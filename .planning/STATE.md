@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 02-10-PLAN.md
-last_updated: "2026-07-10T10:06:33.609Z"
+stopped_at: Completed 02-11-PLAN.md
+last_updated: "2026-07-10T10:36:59.094Z"
 last_activity: 2026-07-10
 progress:
   total_phases: 12
   completed_phases: 1
   total_plans: 19
-  completed_plans: 15
-  percent: 79
+  completed_plans: 16
+  percent: 84
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: `.planning/PROJECT.md` (updated 2026-07-09)
 ## Current Position
 
 Phase: 2 (Semantic Protocol and Oracle Round Trip) — EXECUTING
-Plan: 11 of 14
+Plan: 12 of 14
 Status: Ready to execute
 Last activity: 2026-07-10
 
-Progress: [████████░░] 79%
+Progress: [████████░░] 84%
 
 ## Performance Metrics
 
@@ -62,6 +62,7 @@ Progress: [████████░░] 79%
 | Phase 02 P08 | 26 min | 1 tasks | 9 files |
 | Phase 02 P09 | 12 min | 1 tasks | 7 files |
 | Phase 02 P10 | 33 min | 3 tasks | 13 files |
+| Phase 02 P11 | 29 min | 1 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -99,6 +100,7 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 02]: Keep Phase-2 native execution private and limited to exact-bit empty-world traces with reset epochs.
 - [Phase 02]: Use one synchronous enum state machine for one-shot, finite reuse, and sanitizer child supervision.
 - [Phase 02]: Drain child stdout and stderr concurrently, retain bounded first/last diagnostics, and reap every poisoned child before returning.
+- [Phase 02]: Fixture promotion derives accepted paths from typed artifact kind and scenario ID; explicit candidate-bound review and no-clobber atomic publication are mandatory.
 
 ### Pending Todos
 
@@ -111,6 +113,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-10T10:06:33.606Z
-Stopped at: Completed 02-10-PLAN.md
+Last session: 2026-07-10T10:36:59.091Z
+Stopped at: Completed 02-11-PLAN.md
 Resume file: None
