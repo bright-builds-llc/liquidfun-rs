@@ -137,6 +137,18 @@ fn emit_trace_behavior(
 
     match behavior {
         "large_stderr_valid" => write_stderr(1024 * 1024)?,
+        "concurrent_total_overflow" => {
+            let stderr = thread::spawn(|| write_stderr(65 * 1024 * 1024));
+            let mut stdout = io::stdout().lock();
+            for record in encoded {
+                stdout.write_all(&record)?;
+            }
+            stdout.flush()?;
+            stderr
+                .join()
+                .map_err(|_| io::Error::other("stderr writer panicked"))??;
+            return Ok(());
+        }
         "large_stderr_malformed" => {
             write_stderr(1024 * 1024)?;
             write_then_sleep(b"{}\n")?;

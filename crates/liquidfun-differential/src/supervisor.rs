@@ -57,6 +57,8 @@ struct ReadyChild {
     identity: BuildIdentity,
     handshake_jsonl: Box<[u8]>,
     requests: usize,
+    output_boundary: usize,
+    last_request_baseline: usize,
 }
 
 struct ChildIo {
@@ -70,6 +72,7 @@ struct Teardown {
     stderr: StderrSnapshot,
     was_killed: bool,
     was_reaped: bool,
+    total_output: usize,
 }
 
 struct RequestFailure {
@@ -163,7 +166,13 @@ impl OracleSupervisor {
                 }
                 let teardown = ready.io.shutdown(self.limits.request_timeout(), false);
                 self.state = SessionState::Exited;
-                let maybe_failure_kind = successful_teardown_failure(&teardown);
+                let maybe_failure_kind = enforce_total_output(
+                    teardown.total_output,
+                    ready.last_request_baseline,
+                    &self.limits,
+                )
+                .err()
+                .or_else(|| successful_teardown_failure(&teardown));
                 if let Some(kind) = maybe_failure_kind {
                     return Err(build_failure(
                         kind,
@@ -209,7 +218,14 @@ impl OracleSupervisor {
             let identity = ready.identity.clone();
             let teardown = ready.io.shutdown(self.limits.request_timeout(), false);
             self.state = SessionState::Exited;
-            if let Some(kind) = successful_teardown_failure(&teardown) {
+            let maybe_failure_kind = enforce_total_output(
+                teardown.total_output,
+                ready.last_request_baseline,
+                &self.limits,
+            )
+            .err()
+            .or_else(|| successful_teardown_failure(&teardown));
+            if let Some(kind) = maybe_failure_kind {
                 return Err(build_failure(
                     kind,
                     request,
@@ -349,6 +365,7 @@ impl OracleSupervisor {
                 stderr: StderrSnapshot::default(),
                 was_killed: false,
                 was_reaped: false,
+                total_output: 0,
             },
             &self.limits,
         )
@@ -418,6 +435,8 @@ fn complete_handshake(
     })();
     match identity_result {
         Ok((identity, handshake_jsonl)) => Ok(ReadyChild {
+            output_boundary: child.io.workers.total_output(),
+            last_request_baseline: child.io.workers.total_output(),
             io: child.io,
             identity,
             handshake_jsonl: handshake_jsonl.into_boxed_slice(),
@@ -436,7 +455,8 @@ fn run_request(
     request: &ScenarioRequestRecord,
     limits: &HarnessLimits,
 ) -> Result<CapturedOracleTrace, RequestFailure> {
-    let baseline = ready.io.workers.total_output();
+    let baseline = ready.output_boundary;
+    ready.last_request_baseline = baseline;
     let bytes = encode_jsonl(request, limits, RecordLimit::Input).map_err(|_| RequestFailure {
         kind: HarnessFailureKind::CppAdapterFailure,
         maybe_last_record: Some(LastValidRecord::Handshake),
@@ -527,6 +547,13 @@ fn run_request(
                         kind: error.kind(),
                         maybe_last_record,
                     })?;
+                    ready.output_boundary = reconcile_request_output(
+                        &ready.io.workers,
+                        deadline,
+                        baseline,
+                        limits,
+                        maybe_last_record,
+                    )?;
                     return Ok(CapturedOracleTrace {
                         trace,
                         jsonl: jsonl.into_boxed_slice(),
@@ -542,6 +569,77 @@ fn run_request(
             IoEvent::SanitizerDetected => {
                 return Err(RequestFailure {
                     kind: HarnessFailureKind::SanitizerReport,
+                    maybe_last_record,
+                });
+            }
+            IoEvent::StdoutRecordTooLarge => {
+                return Err(RequestFailure {
+                    kind: HarnessFailureKind::RecordTooLarge,
+                    maybe_last_record,
+                });
+            }
+            IoEvent::StdoutPartial => {
+                return Err(RequestFailure {
+                    kind: HarnessFailureKind::PartialRecord,
+                    maybe_last_record,
+                });
+            }
+            IoEvent::StdoutEof | IoEvent::ReadFailure => {
+                return Err(RequestFailure {
+                    kind: HarnessFailureKind::UnexpectedEof,
+                    maybe_last_record,
+                });
+            }
+        }
+    }
+}
+
+fn reconcile_request_output(
+    workers: &IoWorkers,
+    request_deadline: Instant,
+    baseline: usize,
+    limits: &HarnessLimits,
+    maybe_last_record: Option<LastValidRecord>,
+) -> Result<usize, RequestFailure> {
+    const QUIET_PERIOD: Duration = Duration::from_millis(50);
+    loop {
+        let quiet_deadline = (Instant::now() + QUIET_PERIOD).min(request_deadline);
+        let maybe_event = workers
+            .receive_optional_until(quiet_deadline)
+            .map_err(|kind| RequestFailure {
+                kind,
+                maybe_last_record,
+            })?;
+        let Some(event) = maybe_event else {
+            let total = workers.total_output();
+            enforce_total_output(total, baseline, limits).map_err(|kind| RequestFailure {
+                kind,
+                maybe_last_record,
+            })?;
+            if Instant::now() >= request_deadline {
+                return Err(RequestFailure {
+                    kind: HarnessFailureKind::RequestTimeout,
+                    maybe_last_record,
+                });
+            }
+            return Ok(total);
+        };
+        match event {
+            IoEvent::OutputProgress(total) => {
+                enforce_total_output(total, baseline, limits).map_err(|kind| RequestFailure {
+                    kind,
+                    maybe_last_record,
+                })?;
+            }
+            IoEvent::SanitizerDetected => {
+                return Err(RequestFailure {
+                    kind: HarnessFailureKind::SanitizerReport,
+                    maybe_last_record,
+                });
+            }
+            IoEvent::StdoutRecord(_) => {
+                return Err(RequestFailure {
+                    kind: HarnessFailureKind::SequenceViolation,
                     maybe_last_record,
                 });
             }
@@ -595,11 +693,13 @@ impl ChildIo {
         }
         let was_reaped = maybe_status.is_some();
         let stderr = self.workers.join();
+        let total_output = self.workers.total_output();
         Teardown {
             maybe_status,
             stderr,
             was_killed,
             was_reaped,
+            total_output,
         }
     }
 }

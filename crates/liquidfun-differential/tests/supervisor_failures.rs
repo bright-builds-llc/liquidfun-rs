@@ -232,6 +232,21 @@ fn concurrent_stdout_and_large_stderr_drain_without_pipe_deadlock() {
 }
 
 #[test]
+fn concurrent_overlimit_stderr_fails_one_shot_and_reuse_requests() {
+    // Arrange
+    let request = fixture_request();
+    let profiles = [SessionProfile::OneShot, SessionProfile::Reuse];
+
+    // Act and Assert
+    for profile in profiles {
+        let failure = supervisor("concurrent_total_overflow", profile)
+            .execute(&request)
+            .expect_err("concurrent over-limit stderr should fail");
+        assert_eq!(failure.kind(), HarnessFailureKind::TotalOutputExceeded);
+    }
+}
+
+#[test]
 #[cfg(unix)]
 fn executable_resolution_rejects_symlinked_or_out_of_tree_candidates() {
     use std::os::unix::fs::symlink;

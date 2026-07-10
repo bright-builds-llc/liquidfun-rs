@@ -108,6 +108,21 @@ impl IoWorkers {
             })
     }
 
+    pub(super) fn receive_optional_until(
+        &self,
+        deadline: Instant,
+    ) -> Result<Option<IoEvent>, HarnessFailureKind> {
+        let remaining = deadline.saturating_duration_since(Instant::now());
+        if remaining.is_zero() {
+            return Ok(None);
+        }
+        match self.receiver.recv_timeout(remaining) {
+            Ok(event) => Ok(Some(event)),
+            Err(RecvTimeoutError::Timeout) => Ok(None),
+            Err(RecvTimeoutError::Disconnected) => Err(HarnessFailureKind::UnexpectedEof),
+        }
+    }
+
     pub(super) fn join(&mut self) -> StderrSnapshot {
         if let Some(stdout_handle) = self.stdout_handle.take() {
             let _stdout_joined = stdout_handle.join();
