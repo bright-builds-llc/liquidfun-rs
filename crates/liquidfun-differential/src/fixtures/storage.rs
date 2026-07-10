@@ -48,70 +48,89 @@ pub(super) fn update_manifest_atomically(
     artifact_hash: &str,
     artifact_id: &str,
 ) -> Result<ManifestCommit, FixtureError> {
-    update_manifest_atomically_with_cleanup(
+    update_manifest_atomically_with_operations(
         repository_root,
         metadata,
         review,
         destination,
         artifact_hash,
         artifact_id,
-        |path| fs::remove_file(path),
+        ManifestOperations {
+            sync_directory,
+            cleanup_lock: |path| fs::remove_file(path),
+        },
     )
 }
 
 #[derive(Debug)]
 pub(super) struct ManifestCommit {
-    lock_cleanup_error: Option<io::Error>,
+    post_commit_warnings: Vec<Box<str>>,
 }
 
 impl ManifestCommit {
-    pub(super) fn lock_cleanup_warning(&self) -> Option<String> {
-        self.lock_cleanup_error
-            .as_ref()
-            .map(|error| format!("manifest committed but lock cleanup failed: {error}"))
+    pub(super) fn into_post_commit_warnings(self) -> Vec<Box<str>> {
+        self.post_commit_warnings
     }
 }
 
-fn update_manifest_atomically_with_cleanup<F>(
+#[derive(Clone, Copy)]
+struct ManifestOperations {
+    sync_directory: fn(&Path) -> Result<(), FixtureError>,
+    cleanup_lock: fn(&Path) -> io::Result<()>,
+}
+
+fn update_manifest_atomically_with_operations(
     repository_root: &Path,
     metadata: &CandidateMetadata,
     review: &StoredReview,
     destination: &Path,
     artifact_hash: &str,
     artifact_id: &str,
-    cleanup_lock: F,
-) -> Result<ManifestCommit, FixtureError>
-where
-    F: FnOnce(&Path) -> io::Result<()>,
-{
+    operations: ManifestOperations,
+) -> Result<ManifestCommit, FixtureError> {
+    let ManifestOperations {
+        sync_directory: sync_manifest_directory,
+        cleanup_lock,
+    } = operations;
     let lock_path = repository_root.join("reference/artifacts/manifest.toml.lock");
     write_create_new(&lock_path, artifact_id.as_bytes())?;
-    let result = update_manifest_locked(
+    let result = update_manifest_locked_with_sync(
         repository_root,
         metadata,
         review,
         destination,
         artifact_hash,
         artifact_id,
+        sync_manifest_directory,
     );
-    if let Err(error) = result {
-        let _ignored = cleanup_lock(&lock_path);
-        return Err(error);
-    }
+    let mut commit = match result {
+        Ok(commit) => commit,
+        Err(error) => {
+            let _ignored = cleanup_lock(&lock_path);
+            return Err(error);
+        }
+    };
 
-    Ok(ManifestCommit {
-        lock_cleanup_error: cleanup_lock(&lock_path).err(),
-    })
+    if let Err(error) = cleanup_lock(&lock_path) {
+        commit
+            .post_commit_warnings
+            .push(format!("manifest committed but lock cleanup failed: {error}").into());
+    }
+    Ok(commit)
 }
 
-fn update_manifest_locked(
+fn update_manifest_locked_with_sync<S>(
     repository_root: &Path,
     metadata: &CandidateMetadata,
     review: &StoredReview,
     destination: &Path,
     artifact_hash: &str,
     artifact_id: &str,
-) -> Result<(), FixtureError> {
+    sync_manifest_directory: S,
+) -> Result<ManifestCommit, FixtureError>
+where
+    S: FnOnce(&Path) -> Result<(), FixtureError>,
+{
     let mut manifest = read_manifest(repository_root)?;
     let canonical_root = fs::canonicalize(repository_root)?;
     let relative =
@@ -179,16 +198,22 @@ fn update_manifest_locked(
         .artifacts
         .sort_by(|left, right| left.path.cmp(&right.path));
     let manifest_path = repository_root.join("reference/artifacts/manifest.toml");
+    let manifest_directory = manifest_path
+        .parent()
+        .ok_or_else(|| FixtureError::PathEscape {
+            path: manifest_path.clone(),
+        })?;
     let temporary = manifest_path.with_file_name(format!("manifest.toml.{artifact_id}.tmp"));
     write_create_new(&temporary, toml::to_string_pretty(&manifest)?.as_bytes())?;
     fs::rename(&temporary, &manifest_path)?;
-    sync_directory(
-        manifest_path
-            .parent()
-            .ok_or_else(|| FixtureError::PathEscape {
-                path: manifest_path.clone(),
-            })?,
-    )
+    let mut post_commit_warnings = Vec::new();
+    if let Err(error) = sync_manifest_directory(manifest_directory) {
+        post_commit_warnings
+            .push(format!("manifest committed but directory sync failed: {error}").into());
+    }
+    Ok(ManifestCommit {
+        post_commit_warnings,
+    })
 }
 
 pub(super) fn read_manifest(repository_root: &Path) -> Result<ArtifactManifest, FixtureError> {
@@ -540,16 +565,91 @@ mod tests {
     #[test]
     fn committed_manifest_survives_lock_cleanup_failure() {
         // Arrange
+        let (repository_root, destination, metadata, review) = manifest_fixture("lock-cleanup");
+
+        // Act
+        let commit = update_manifest_atomically_with_operations(
+            &repository_root,
+            &metadata,
+            &review,
+            &destination,
+            &sha256(b"trace\n"),
+            &metadata.artifact_id,
+            ManifestOperations {
+                sync_directory,
+                cleanup_lock: |_path| {
+                    Err(io::Error::new(
+                        io::ErrorKind::PermissionDenied,
+                        "injected lock cleanup failure",
+                    ))
+                },
+            },
+        )
+        .expect("manifest replacement is committed despite cleanup failure");
+
+        // Assert
+        let committed = read_manifest(&repository_root).expect("committed manifest should parse");
+        assert_eq!(committed.artifacts.len(), 1);
+        assert!(destination.is_file());
+        assert_eq!(commit.post_commit_warnings.len(), 1);
+        assert!(commit.post_commit_warnings[0].contains("lock cleanup failed"));
+        assert!(
+            repository_root
+                .join("reference/artifacts/manifest.toml.lock")
+                .is_file()
+        );
+        fs::remove_dir_all(repository_root).expect("fixture should be removed");
+    }
+
+    #[test]
+    fn committed_manifest_survives_directory_sync_failure() {
+        // Arrange
+        let (repository_root, destination, metadata, review) = manifest_fixture("directory-sync");
+
+        // Act
+        let commit = update_manifest_atomically_with_operations(
+            &repository_root,
+            &metadata,
+            &review,
+            &destination,
+            &sha256(b"trace\n"),
+            &metadata.artifact_id,
+            ManifestOperations {
+                sync_directory: |_path| {
+                    Err(FixtureError::Io(io::Error::new(
+                        io::ErrorKind::WriteZero,
+                        "injected post-rename directory sync failure",
+                    )))
+                },
+                cleanup_lock: |path| fs::remove_file(path),
+            },
+        )
+        .expect("manifest replacement is committed despite directory sync failure");
+
+        // Assert
+        let committed = read_manifest(&repository_root).expect("committed manifest should parse");
+        assert_eq!(committed.artifacts.len(), 1);
+        assert!(destination.is_file());
+        assert_eq!(commit.post_commit_warnings.len(), 1);
+        assert!(commit.post_commit_warnings[0].contains("directory sync failed"));
+        assert!(
+            !repository_root
+                .join("reference/artifacts/manifest.toml.lock")
+                .exists()
+        );
+        fs::remove_dir_all(repository_root).expect("fixture should be removed");
+    }
+
+    fn manifest_fixture(test_name: &str) -> (PathBuf, PathBuf, CandidateMetadata, StoredReview) {
         let sequence = NEXT_TEMP.fetch_add(1, Ordering::Relaxed);
         let repository_root = std::env::temp_dir().join(format!(
-            "liquidfun-manifest-cleanup-{}-{sequence}",
+            "liquidfun-manifest-{test_name}-{}-{sequence}",
             std::process::id()
         ));
         let artifact_directory = repository_root.join("reference/artifacts/traces");
         fs::create_dir_all(&artifact_directory).expect("artifact directory should be created");
         let repository_root =
             fs::canonicalize(repository_root).expect("fixture root should canonicalize");
-        let artifact_directory = repository_root.join("reference/artifacts/traces");
         let manifest = ArtifactManifest {
             schema_version: 2,
             record_schema_version: 2,
@@ -562,7 +662,7 @@ mod tests {
             toml::to_string_pretty(&manifest).expect("manifest should serialize"),
         )
         .expect("manifest should be written");
-        let destination = artifact_directory.join("empty-world-v1.jsonl");
+        let destination = repository_root.join("reference/artifacts/traces/empty-world-v1.jsonl");
         fs::write(&destination, b"trace\n").expect("destination should be written");
         let metadata = candidate_metadata();
         let review = StoredReview {
@@ -570,38 +670,10 @@ mod tests {
             artifact_id: metadata.artifact_id.clone(),
             candidate_sha256: metadata.candidate_sha256.clone(),
             reviewer: "reviewer".to_owned(),
-            reviewed_at: "2026-07-10T12:30:00Z".to_owned(),
+            reviewed_at: "2026-07-10T12:50:00Z".to_owned(),
             review_status: ReviewStatus::Approved,
         };
-
-        // Act
-        let commit = update_manifest_atomically_with_cleanup(
-            &repository_root,
-            &metadata,
-            &review,
-            &destination,
-            &sha256(b"trace\n"),
-            &metadata.artifact_id,
-            |_path| {
-                Err(io::Error::new(
-                    io::ErrorKind::PermissionDenied,
-                    "injected lock cleanup failure",
-                ))
-            },
-        )
-        .expect("manifest replacement is committed despite cleanup failure");
-
-        // Assert
-        let committed = read_manifest(&repository_root).expect("committed manifest should parse");
-        assert_eq!(committed.artifacts.len(), 1);
-        assert!(destination.is_file());
-        assert!(commit.lock_cleanup_warning().is_some());
-        assert!(
-            repository_root
-                .join("reference/artifacts/manifest.toml.lock")
-                .is_file()
-        );
-        fs::remove_dir_all(repository_root).expect("fixture should be removed");
+        (repository_root, destination, metadata, review)
     }
 
     fn candidate_metadata() -> CandidateMetadata {

@@ -288,11 +288,7 @@ pub fn promote_candidate(
             return Err(error);
         }
     };
-    let mut post_commit_warnings = manifest_commit
-        .lock_cleanup_warning()
-        .into_iter()
-        .map(String::into_boxed_str)
-        .collect::<Vec<_>>();
+    let mut post_commit_warnings = manifest_commit.into_post_commit_warnings();
     if let Err(error) = fs::remove_file(&temporary) {
         post_commit_warnings
             .push(format!("artifact committed but temporary cleanup failed: {error}").into());
