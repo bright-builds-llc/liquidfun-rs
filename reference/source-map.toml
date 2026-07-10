@@ -1,0 +1,17 @@
+schema_version = 1
+
+# Every [[mapping]] record uses these fields:
+# - local_path: repository-relative path to the local artifact.
+# - upstream_revision: full immutable upstream commit that informed the artifact.
+# - upstream_path: path within that upstream revision, or "." for the tree root.
+# - derivation_kind: how the local artifact relates to upstream material.
+# - alteration_summary: what changed, including an explicit no-copy statement.
+# - notice_class: notice policy that applies to the local artifact.
+
+[[mapping]]
+local_path = "reference/upstream-lock.toml"
+upstream_revision = "7f20402173fd143a3988c921bc384459c6a858f2"
+upstream_path = "."
+derivation_kind = "non-derived-bootstrap"
+alteration_summary = "Repository-authored pointer to the pinned inventory source; no upstream source, test, documentation, or data is copied."
+notice_class = "provenance-only"
