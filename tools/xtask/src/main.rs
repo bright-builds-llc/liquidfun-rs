@@ -22,6 +22,7 @@ Commands:
 enum XtaskError {
     Usage { message: String },
     NotImplemented { command: &'static str },
+    Upstream(upstream::UpstreamError),
 }
 
 impl XtaskError {
@@ -46,6 +47,7 @@ impl Display for XtaskError {
                     "command `{command}` is not implemented by this plan"
                 )
             }
+            Self::Upstream(error) => Display::fmt(error, formatter),
         }
     }
 }
@@ -62,7 +64,7 @@ fn dispatch(args: &[String]) -> Result<(), XtaskError> {
             println!("{USAGE}");
             Ok(())
         }
-        "upstream" => upstream::run(command_args),
+        "upstream" => upstream::run(command_args).map_err(XtaskError::Upstream),
         "inventory" => inventory::run(command_args),
         "provenance" => provenance::run(command_args),
         "package" => package::run(command_args),
@@ -126,7 +128,7 @@ mod tests {
     #[test]
     fn module_commands_delegate_to_matching_module() {
         // Arrange
-        let commands = ["upstream", "inventory", "provenance", "package"];
+        let commands = ["inventory", "provenance", "package"];
 
         for command in commands {
             // Act
