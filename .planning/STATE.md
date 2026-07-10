@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 02-07-PLAN.md
-last_updated: "2026-07-10T08:38:09.609Z"
+stopped_at: Completed 02-08-PLAN.md
+last_updated: "2026-07-10T09:10:04.749Z"
 last_activity: 2026-07-10
 progress:
   total_phases: 12
   completed_phases: 1
   total_plans: 19
-  completed_plans: 12
-  percent: 63
+  completed_plans: 13
+  percent: 68
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: `.planning/PROJECT.md` (updated 2026-07-09)
 ## Current Position
 
 Phase: 2 (Semantic Protocol and Oracle Round Trip) — EXECUTING
-Plan: 8 of 14
+Plan: 9 of 14
 Status: Ready to execute
 Last activity: 2026-07-10
 
-Progress: [██████░░░░] 63%
+Progress: [███████░░░] 68%
 
 ## Performance Metrics
 
@@ -59,6 +59,7 @@ Progress: [██████░░░░] 63%
 | Phase 02 P05 | 9 min | 1 tasks | 9 files |
 | Phase 02 P06 | 27 min | 3 tasks | 11 files |
 | Phase 02 P07 | 6 min | 1 tasks | 4 files |
+| Phase 02 P08 | 26 min | 1 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -87,6 +88,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 02]: Keep reduction pure and deterministic through typed injected signatures, logical elapsed time, and protocol-owned candidate revalidation.
 - [Phase 02]: Use the official nlohmann/json v3.12.0 single-header release asset and immutable tag license. — Exact upstream bytes, source URLs, and local SHA-256 verification make the private C++ parser dependency reproducible and reviewable.
 - [Phase 02]: Keep nlohmann/json entirely under private tools/reference vendoring. — Published Rust crates and ordinary Cargo paths remain free of C++ parser dependencies and build-time downloads.
+- [Phase 02]: Parse C++ oracle requests with a bounded duplicate-aware SAX event sink rather than a mutable JSON DOM.
+- [Phase 02]: Scope every C++ oracle request to a fresh b2World and emit trace_end only after destruction, mapping cleanup, reset proof, and epoch increment.
+- [Phase 02]: Keep exact IEEE-754 and length-prefixed SHA-256 compatibility in a cohesive protocol_bits module while protocol.cpp owns typed parsing and deterministic encoding.
 
 ### Pending Todos
 
@@ -99,6 +103,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-10T08:38:09.606Z
-Stopped at: Completed 02-07-PLAN.md
+Last session: 2026-07-10T09:10:04.746Z
+Stopped at: Completed 02-08-PLAN.md
 Resume file: None
