@@ -9,6 +9,7 @@ mod ids;
 mod limits;
 mod provenance;
 mod scenario;
+#[cfg(test)]
 mod schema;
 mod tolerance;
 mod trace;

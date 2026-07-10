@@ -266,13 +266,13 @@ fn reject_duplicate_fields<'a>(
 }
 
 fn render_protocol_schema() -> String {
-    render_json_schema(json!({
+    render_json_schema(&json!({
         "$id": "https://liquidfun-rs.invalid/protocol/schemas/protocol-v1.schema.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "description": format!("{SCHEMA_DESCRIPTION} This schema presents newline-delimited transport records; framing and duplicate-member rejection remain codec responsibilities."),
         "oneOf": [
             closed_record(
-                json!({
+                &json!({
                     "build_identity": build_identity_schema(),
                     "identity_sha256": sha256_schema(),
                     "protocol_version": version_schema(),
@@ -284,7 +284,7 @@ fn render_protocol_schema() -> String {
                 &["protocol_version", "record_kind", "supported_scenario_versions", "supported_trace_versions", "supported_tolerance_versions", "build_identity", "identity_sha256"],
             ),
             closed_record(
-                json!({
+                &json!({
                     "protocol_version": version_schema(),
                     "record_kind": { "const": "scenario_request" },
                     "request_id": semantic_id_schema(),
@@ -308,7 +308,7 @@ fn render_protocol_schema() -> String {
 }
 
 fn render_scenario_schema() -> String {
-    render_json_schema(json!({
+    render_json_schema(&json!({
         "$id": "https://liquidfun-rs.invalid/protocol/schemas/scenario-v1.schema.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
@@ -316,7 +316,7 @@ fn render_scenario_schema() -> String {
         "properties": {
             "checkpoints": {
                 "items": closed_record(
-                    json!({
+                    &json!({
                         "after_command_id": semantic_id_schema(),
                         "checkpoint_id": semantic_id_schema(),
                         "observables": { "items": { "enum": ["world_counts", "simulation_time"] }, "maxItems": 128, "type": "array" },
@@ -329,7 +329,7 @@ fn render_scenario_schema() -> String {
             },
             "commands": {
                 "items": closed_record(
-                    json!({
+                    &json!({
                         "command_id": semantic_id_schema(),
                         "kind": { "const": "step" },
                         "particle_iterations": { "maximum": 255, "minimum": 1, "type": "integer" },
@@ -357,13 +357,13 @@ fn render_scenario_schema() -> String {
 }
 
 fn render_trace_schema() -> String {
-    render_json_schema(json!({
+    render_json_schema(&json!({
         "$id": "https://liquidfun-rs.invalid/protocol/schemas/trace-v1.schema.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "description": format!("{SCHEMA_DESCRIPTION} Record-sequence state transitions and reset proof validation remain typed-validator responsibilities."),
         "oneOf": [
             closed_record(
-                json!({
+                &json!({
                     "engine_kind": { "enum": ["native_rust", "cpp_oracle"] },
                     "identity_sha256": sha256_schema(),
                     "protocol_version": version_schema(),
@@ -379,7 +379,7 @@ fn render_trace_schema() -> String {
                 &["protocol_version", "record_kind", "request_id", "trace_schema_version", "scenario_id", "scenario_sha256", "source", "tolerance_profile_version", "tolerance_profile_sha256", "engine_kind", "identity_sha256"],
             ),
             closed_record(
-                json!({
+                &json!({
                     "checkpoint_id": semantic_id_schema(),
                     "identity_sha256": sha256_schema(),
                     "ordinal": uint32_schema(),
@@ -393,7 +393,7 @@ fn render_trace_schema() -> String {
                 &["protocol_version", "record_kind", "request_id", "checkpoint_id", "ordinal", "phase", "simulation_time_bits", "world_counts", "identity_sha256"],
             ),
             closed_record(
-                json!({
+                &json!({
                     "checkpoint_count": uint32_schema(),
                     "identity_sha256": sha256_schema(),
                     "protocol_version": version_schema(),
@@ -415,14 +415,14 @@ fn render_trace_schema() -> String {
     }))
 }
 
-fn render_json_schema(document: Value) -> String {
+fn render_json_schema(document: &Value) -> String {
     let mut rendered = serde_json::to_string_pretty(&document)
         .expect("schema documents contain only JSON-native values");
     rendered.push('\n');
     rendered
 }
 
-fn closed_record(properties: Value, required: &[&str]) -> Value {
+fn closed_record(properties: &Value, required: &[&str]) -> Value {
     json!({
         "additionalProperties": false,
         "properties": properties,
@@ -466,9 +466,9 @@ fn sha256_schema() -> Value {
 fn scenario_source_schema() -> Value {
     json!({
         "oneOf": [
-            closed_record(json!({ "kind": { "const": "named" }, "name": bounded_string_schema() }), &["kind", "name"]),
+            closed_record(&json!({ "kind": { "const": "named" }, "name": bounded_string_schema() }), &["kind", "name"]),
             closed_record(
-                json!({
+                &json!({
                     "generator_id": bounded_string_schema(),
                     "generator_version": { "maximum": u32::MAX, "minimum": 1, "type": "integer" },
                     "kind": { "const": "seeded" },
@@ -483,7 +483,7 @@ fn scenario_source_schema() -> Value {
 fn build_identity_schema() -> Value {
     let string = bounded_string_schema();
     closed_record(
-        json!({
+        &json!({
             "adapter_content_sha256": sha256_schema(),
             "adapter_revision": string,
             "build_type": bounded_string_schema(),
@@ -514,7 +514,7 @@ fn build_identity_schema() -> Value {
 
 fn world_counts_schema() -> Value {
     closed_record(
-        json!({
+        &json!({
             "bodies": uint32_schema(),
             "contacts": uint32_schema(),
             "fixtures": uint32_schema(),
