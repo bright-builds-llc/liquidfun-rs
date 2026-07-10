@@ -1,0 +1,16 @@
+schema_version = 1
+record_schema_version = 1
+oracle_revision = "7f20402173fd143a3988c921bc384459c6a858f2"
+record_fields = [
+  "path",
+  "sha256",
+  "generator_revision",
+  "oracle_revision",
+  "preset",
+  "compiler",
+  "target",
+  "flags",
+  "notice_refs",
+  "review_status",
+]
+artifacts = []
