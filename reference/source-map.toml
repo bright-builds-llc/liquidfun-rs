@@ -47,3 +47,19 @@ upstream_path = "liquidfun/Box2D"
 derivation_kind = "generated-compatibility-report"
 alteration_summary = "Generated presentation of repository-authored compatibility metadata and pinned upstream path names; no upstream source or test implementation is copied."
 notice_class = "provenance-only"
+
+[[mapping]]
+local_path = "tools/reference/src/oracle_adapter.hpp"
+upstream_revision = "7f20402173fd143a3988c921bc384459c6a858f2"
+upstream_path = "liquidfun/Box2D/Box2D/Dynamics/b2World.h"
+derivation_kind = "repository-authored-public-api-adapter"
+alteration_summary = "Repository-authored process-adapter interface informed by the pinned b2World lifecycle; no upstream source, private layout, or test implementation is copied."
+notice_class = "provenance-only"
+
+[[mapping]]
+local_path = "tools/reference/src/oracle_adapter.cpp"
+upstream_revision = "7f20402173fd143a3988c921bc384459c6a858f2"
+upstream_path = "liquidfun/Box2D/Box2D/Dynamics/b2World.h"
+derivation_kind = "repository-authored-public-api-adapter"
+alteration_summary = "Repository-authored empty-world execution and semantic-count adapter using the pinned public b2World API; no upstream source, raw object memory, private layout, or test implementation is copied."
+notice_class = "provenance-only"
