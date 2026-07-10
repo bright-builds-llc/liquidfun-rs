@@ -129,7 +129,7 @@ fn emit_trace_behavior(
     framed_request.push(b'\n');
     let request = decode_scenario_request_jsonl(&framed_request, &limits)?;
     let identity = fixture_identity()?;
-    let records = trace_records(&request, &identity, reset_epoch)?;
+    let records = trace_records(&request, &identity, reset_epoch, behavior)?;
     let mut encoded = records
         .iter()
         .map(|record| encode_jsonl(record, &limits, RecordLimit::Output))
@@ -198,6 +198,7 @@ fn trace_records(
     request: &ScenarioRequestRecord,
     identity: &BuildIdentity,
     reset_epoch: u64,
+    behavior: &str,
 ) -> Result<Vec<TraceRecord>, Box<dyn std::error::Error>> {
     let begin = TraceBegin::for_request(request, EngineKind::CppOracle, identity)?;
     let mut time = 0.0_f32;
@@ -210,6 +211,9 @@ fn trace_records(
         .enumerate()
     {
         time += command.timestep_bits().to_f32();
+        if behavior == "value_mismatch" && ordinal == 1 {
+            time += 0.25;
+        }
         checkpoints.push(CheckpointRecord::new(
             request.request_id().clone(),
             requested.checkpoint_id().clone(),

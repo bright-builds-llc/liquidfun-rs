@@ -9,6 +9,7 @@ mod canonical;
 mod comparator;
 mod minimizer;
 mod report;
+mod runner;
 mod rust_adapter;
 mod supervisor;
 
@@ -16,5 +17,6 @@ pub use canonical::*;
 pub use comparator::*;
 pub use minimizer::*;
 pub use report::*;
+pub use runner::*;
 pub use rust_adapter::*;
 pub use supervisor::*;
