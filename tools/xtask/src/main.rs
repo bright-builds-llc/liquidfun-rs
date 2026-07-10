@@ -7,6 +7,9 @@ mod upstream;
 
 use std::error::Error;
 use std::fmt::{self, Display, Formatter};
+use std::fs;
+use std::io::ErrorKind;
+use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 const USAGE: &str = r"Usage: cargo xtask <command> [arguments]
@@ -20,8 +23,8 @@ Commands:
 
 #[derive(Debug, PartialEq, Eq)]
 enum XtaskError {
+    Check { message: String },
     Usage { message: String },
-    NotImplemented { command: &'static str },
     Inventory(inventory::InventoryError),
     Package(package::PackageError),
     Provenance(provenance::ProvenanceError),
@@ -35,21 +38,18 @@ impl XtaskError {
         }
     }
 
-    const fn not_implemented(command: &'static str) -> Self {
-        Self::NotImplemented { command }
+    fn check(message: impl Into<String>) -> Self {
+        Self::Check {
+            message: message.into(),
+        }
     }
 }
 
 impl Display for XtaskError {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
         match self {
+            Self::Check { message } => write!(formatter, "check: {message}"),
             Self::Usage { message } => write!(formatter, "{message}\n\n{USAGE}"),
-            Self::NotImplemented { command } => {
-                write!(
-                    formatter,
-                    "command `{command}` is not implemented by this plan"
-                )
-            }
             Self::Inventory(error) => Display::fmt(error, formatter),
             Self::Package(error) => Display::fmt(error, formatter),
             Self::Provenance(error) => Display::fmt(error, formatter),
@@ -74,9 +74,89 @@ fn dispatch(args: &[String]) -> Result<(), XtaskError> {
         "inventory" => inventory::run(command_args).map_err(XtaskError::Inventory),
         "provenance" => provenance::run(command_args).map_err(XtaskError::Provenance),
         "package" => package::run(command_args).map_err(XtaskError::Package),
-        "check" => Err(XtaskError::not_implemented("check")),
+        "check" => {
+            if !command_args.is_empty() {
+                return Err(XtaskError::usage("check does not accept arguments"));
+            }
+            check()
+        }
         unknown => Err(XtaskError::usage(format!("unknown command `{unknown}`"))),
     }
+}
+
+fn check() -> Result<(), XtaskError> {
+    let repository_root = repository_root()?;
+    let upstream_path = repository_root.join("third_party/liquidfun");
+    let upstream_initialized = directory_has_entries(&upstream_path)?;
+    let check_argument = ["check".to_owned()];
+
+    if upstream_initialized {
+        println!("check: inventory");
+        inventory::run(&check_argument).map_err(XtaskError::Inventory)?;
+    } else {
+        println!(
+            "check: Cargo-only mode - third_party/liquidfun is not initialized; \
+             skipping inventory, upstream, and provenance checks"
+        );
+    }
+
+    println!("check: package isolation");
+    let package_argument = ["verify".to_owned()];
+    package::run(&package_argument).map_err(XtaskError::Package)?;
+
+    if upstream_initialized {
+        println!("check: upstream identity");
+        let upstream_argument = ["verify".to_owned()];
+        upstream::run(&upstream_argument).map_err(XtaskError::Upstream)?;
+
+        println!("check: provenance");
+        provenance::run(&check_argument).map_err(XtaskError::Provenance)?;
+    }
+
+    println!("check: all applicable repository checks passed");
+    Ok(())
+}
+
+fn repository_root() -> Result<PathBuf, XtaskError> {
+    let current_dir = std::env::current_dir()
+        .map_err(|error| XtaskError::check(format!("failed to read current directory: {error}")))?;
+    let Some(root) = current_dir.ancestors().find(|candidate| {
+        candidate.join("Cargo.toml").is_file()
+            && candidate.join("crates/liquidfun/Cargo.toml").is_file()
+    }) else {
+        return Err(XtaskError::check(
+            "could not find the liquidfun Cargo workspace",
+        ));
+    };
+    Ok(root.to_path_buf())
+}
+
+fn directory_has_entries(path: &Path) -> Result<bool, XtaskError> {
+    let metadata = match fs::symlink_metadata(path) {
+        Ok(metadata) => metadata,
+        Err(error) if error.kind() == ErrorKind::NotFound => return Ok(false),
+        Err(error) => {
+            return Err(XtaskError::check(format!(
+                "failed to inspect {}: {error}",
+                path.display()
+            )));
+        }
+    };
+    if !metadata.is_dir() || metadata.file_type().is_symlink() {
+        return Err(XtaskError::check(format!(
+            "{} must be an ordinary directory when present",
+            path.display()
+        )));
+    }
+
+    let mut entries = fs::read_dir(path).map_err(|error| {
+        XtaskError::check(format!("failed to read {}: {error}", path.display()))
+    })?;
+    entries
+        .next()
+        .transpose()
+        .map(|entry| entry.is_some())
+        .map_err(|error| XtaskError::check(format!("failed to read {}: {error}", path.display())))
 }
 
 fn main() -> ExitCode {
@@ -132,14 +212,17 @@ mod tests {
     }
 
     #[test]
-    fn check_command_returns_typed_placeholder_error() {
+    fn check_rejects_arguments() {
         // Arrange
-        let args = vec!["check".to_owned()];
+        let args = vec!["check".to_owned(), "unexpected".to_owned()];
 
         // Act
         let result = dispatch(&args);
 
         // Assert
-        assert_eq!(result, Err(XtaskError::not_implemented("check")));
+        assert_eq!(
+            result,
+            Err(XtaskError::usage("check does not accept arguments"))
+        );
     }
 }
