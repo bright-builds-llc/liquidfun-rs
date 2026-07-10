@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 02-08-PLAN.md
-last_updated: "2026-07-10T09:10:04.749Z"
+stopped_at: Completed 02-09-PLAN.md
+last_updated: "2026-07-10T09:28:25.975Z"
 last_activity: 2026-07-10
 progress:
   total_phases: 12
   completed_phases: 1
   total_plans: 19
-  completed_plans: 13
-  percent: 68
+  completed_plans: 14
+  percent: 74
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: `.planning/PROJECT.md` (updated 2026-07-09)
 ## Current Position
 
 Phase: 2 (Semantic Protocol and Oracle Round Trip) — EXECUTING
-Plan: 9 of 14
+Plan: 10 of 14
 Status: Ready to execute
 Last activity: 2026-07-10
 
-Progress: [███████░░░] 68%
+Progress: [███████░░░] 74%
 
 ## Performance Metrics
 
@@ -60,6 +60,7 @@ Progress: [███████░░░] 68%
 | Phase 02 P06 | 27 min | 3 tasks | 11 files |
 | Phase 02 P07 | 6 min | 1 tasks | 4 files |
 | Phase 02 P08 | 26 min | 1 tasks | 9 files |
+| Phase 02 P09 | 12 min | 1 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -91,6 +92,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 02]: Parse C++ oracle requests with a bounded duplicate-aware SAX event sink rather than a mutable JSON DOM.
 - [Phase 02]: Scope every C++ oracle request to a fresh b2World and emit trace_end only after destruction, mapping cleanup, reset proof, and epoch increment.
 - [Phase 02]: Keep exact IEEE-754 and length-prefixed SHA-256 compatibility in a cohesive protocol_bits module while protocol.cpp owns typed parsing and deterministic encoding.
+- [Phase 02]: Bind every C++ oracle handshake to independently checked lock and adapter identities through a configured out-of-tree header. — xtask and CMake derive the same fixed-source digest before the child can report successful provenance.
+- [Phase 02]: Allow only reviewed oracle presets and the liquidfun-reference build target in xtask. — Structured fixed arguments prevent contributor-provided paths or unrelated native targets from entering oracle orchestration.
+- [Phase 02]: Keep ASan and UBSan fail-fast while demoting only two legacy upstream warnings under Clang sanitizer builds. — Sanitizer evidence must terminate unsuccessfully without modifying the pinned upstream or weakening warning denial for repository-authored code.
 
 ### Pending Todos
 
@@ -103,6 +107,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-10T09:10:04.746Z
-Stopped at: Completed 02-08-PLAN.md
+Last session: 2026-07-10T09:28:25.973Z
+Stopped at: Completed 02-09-PLAN.md
 Resume file: None
