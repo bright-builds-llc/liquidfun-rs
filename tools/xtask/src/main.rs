@@ -23,6 +23,8 @@ enum XtaskError {
     Usage { message: String },
     NotImplemented { command: &'static str },
     Inventory(inventory::InventoryError),
+    Package(package::PackageError),
+    Provenance(provenance::ProvenanceError),
     Upstream(upstream::UpstreamError),
 }
 
@@ -49,6 +51,8 @@ impl Display for XtaskError {
                 )
             }
             Self::Inventory(error) => Display::fmt(error, formatter),
+            Self::Package(error) => Display::fmt(error, formatter),
+            Self::Provenance(error) => Display::fmt(error, formatter),
             Self::Upstream(error) => Display::fmt(error, formatter),
         }
     }
@@ -68,8 +72,8 @@ fn dispatch(args: &[String]) -> Result<(), XtaskError> {
         }
         "upstream" => upstream::run(command_args).map_err(XtaskError::Upstream),
         "inventory" => inventory::run(command_args).map_err(XtaskError::Inventory),
-        "provenance" => provenance::run(command_args),
-        "package" => package::run(command_args),
+        "provenance" => provenance::run(command_args).map_err(XtaskError::Provenance),
+        "package" => package::run(command_args).map_err(XtaskError::Package),
         "check" => Err(XtaskError::not_implemented("check")),
         unknown => Err(XtaskError::usage(format!("unknown command `{unknown}`"))),
     }
@@ -125,20 +129,6 @@ mod tests {
 
         // Assert
         assert_eq!(result, Ok(()));
-    }
-
-    #[test]
-    fn module_commands_delegate_to_matching_module() {
-        // Arrange
-        let commands = ["provenance", "package"];
-
-        for command in commands {
-            // Act
-            let result = dispatch(&[command.to_owned()]);
-
-            // Assert
-            assert_eq!(result, Err(XtaskError::not_implemented(command)));
-        }
     }
 
     #[test]

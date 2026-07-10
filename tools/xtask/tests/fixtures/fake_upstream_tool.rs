@@ -14,6 +14,14 @@ fn main() -> ExitCode {
     if tool.contains("git") {
         return run_git(&args);
     }
+    if tool.contains("cargo") {
+        if let Some(marker) = env::var_os("LIQUIDFUN_TEST_CARGO_MARKER") {
+            if std::fs::write(marker, args.join(" ")).is_err() {
+                return ExitCode::FAILURE;
+            }
+        }
+        return ExitCode::SUCCESS;
+    }
     if tool.contains("cmake") {
         return run_cmake(&args);
     }
@@ -40,6 +48,9 @@ fn run_git(args: &[String]) -> ExitCode {
     }
     if args.iter().any(|argument| argument == "rev-parse") {
         println!("{revision}");
+        return ExitCode::SUCCESS;
+    }
+    if args.iter().any(|argument| argument == "cat-file") {
         return ExitCode::SUCCESS;
     }
     if args.iter().any(|argument| argument == "status") {
