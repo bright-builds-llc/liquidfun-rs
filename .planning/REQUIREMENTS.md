@@ -9,19 +9,19 @@ Requirements for the first release permitted to claim complete parity with the s
 
 ### Foundation and Provenance
 
-- [ ] **FND-01**: Maintainers can identify the canonical upstream LiquidFun repository, exact immutable revision, release context, and Box2D ancestry from `UPSTREAM.md`.
-- [ ] **FND-02**: Maintainers can initialize, verify, and intentionally update the read-only upstream submodule through documented commands without silently following a moving branch.
-- [ ] **FND-03**: Contributors can build the pinned upstream C++ oracle with documented, reproducible CMake/Ninja commands on every supported contributor platform.
-- [ ] **FND-04**: Maintainers can trace translated code, tests, scenarios, and reference data to upstream source paths and revisions with required license and alteration notices.
-- [ ] **FND-05**: Ordinary Rust consumers can build, test, package, and use the published crate through Cargo without C++, CMake, Bazel, the upstream submodule, or reference data.
+- [x] **FND-01**: Maintainers can identify the canonical upstream LiquidFun repository, exact immutable revision, release context, and Box2D ancestry from `UPSTREAM.md`.
+- [x] **FND-02**: Maintainers can initialize, verify, and intentionally update the read-only upstream submodule through documented commands without silently following a moving branch.
+- [x] **FND-03**: Contributors can build the pinned upstream C++ oracle with documented, reproducible CMake/Ninja commands on every supported contributor platform.
+- [x] **FND-04**: Maintainers can trace translated code, tests, scenarios, and reference data to upstream source paths and revisions with required license and alteration notices.
+- [x] **FND-05**: Ordinary Rust consumers can build, test, package, and use the published crate through Cargo without C++, CMake, Bazel, the upstream submodule, or reference data.
 - [ ] **FND-06**: Contributors can use a pinned Rust development toolchain and a declared MSRV, with the complete publishable feature surface verified on both.
-- [ ] **FND-07**: Contributors can discover repository workflows through a root `justfile` whose recipes are thin wrappers around documented Cargo, `xtask`, and oracle commands.
-- [ ] **FND-08**: CI can reject an upstream submodule revision, generated reference artifact, toolchain pin, or packaged-crate content that does not match its recorded provenance.
+- [x] **FND-07**: Contributors can discover repository workflows through a root `justfile` whose recipes are thin wrappers around documented Cargo, `xtask`, and oracle commands.
+- [x] **FND-08**: CI can reject an upstream submodule revision, generated reference artifact, toolchain pin, or packaged-crate content that does not match its recorded provenance.
 
 ### Compatibility Contract
 
-- [ ] **COMP-01**: Maintainers can view an exhaustive matrix mapping every relevant upstream subsystem, public API, source area, test, example, and build option to its Rust implementation and evidence status.
-- [ ] **COMP-02**: Every compatibility row uses distinct states for investigated, planned, implemented, unit tested, differentially validated, platform validated, documented difference, and intentionally unsupported.
+- [x] **COMP-01**: Maintainers can view an exhaustive matrix mapping every relevant upstream subsystem, public API, source area, test, example, and build option to its Rust implementation and evidence status.
+- [x] **COMP-02**: Every compatibility row uses distinct states for investigated, planned, implemented, unit tested, differentially validated, platform validated, documented difference, and intentionally unsupported.
 - [ ] **COMP-03**: Contributors can express a named or seeded simulation as a validated, versioned, engine-neutral scenario with deterministic entity creation and checkpoint requests.
 - [ ] **COMP-04**: Contributors can run the same validated scenario through the Rust engine and a process-isolated C++ oracle without exposing pointers, raw memory, or implementation layouts in the protocol.
 - [ ] **COMP-05**: Every engine trace records scenario/schema versions, upstream revision, adapter revision, compiler/build flags, target/platform, seed, and tolerance profile.
@@ -110,7 +110,7 @@ Requirements for the first release permitted to claim complete parity with the s
 - [ ] **TEST-06**: Miri and Rust sanitizers exercise useful supported subsets, while C++ oracle builds run appropriate sanitizers without crossing failures into the Rust process.
 - [ ] **TEST-07**: Every corrected differential mismatch becomes a minimized named regression that fails before the fix and records its oracle/tolerance provenance.
 - [ ] **TEST-08**: CI reports Rust coverage and keeps C++ coverage separate unless compatible LLVM tooling is explicitly proven; coverage gaps are visible by subsystem.
-- [ ] **TEST-09**: Verification entrypoints can run fast affected checks locally and reserve expensive randomized, differential, sanitizer, coverage, and benchmark suites for appropriate scheduled/manual lanes.
+- [x] **TEST-09**: Verification entrypoints can run fast affected checks locally and reserve expensive randomized, differential, sanitizer, coverage, and benchmark suites for appropriate scheduled/manual lanes.
 
 ### Examples and Testbed
 
@@ -143,7 +143,7 @@ Requirements for the first release permitted to claim complete parity with the s
 
 - [ ] **DOCS-01**: `README.md` accurately states current maturity, implemented and missing capabilities, build/test/example commands, submodule needs, toolchain needs, contribution path, and license status.
 - [ ] **DOCS-02**: `ARCHITECTURE.md` explains crate/module boundaries, dependency direction, handles, callbacks, particle storage, step order, oracle isolation, and renderer independence.
-- [ ] **DOCS-03**: `UPSTREAM.md` records canonical source, exact revision, ancestry, patches, build process, licenses/notices, and intentional update procedure.
+- [x] **DOCS-03**: `UPSTREAM.md` records canonical source, exact revision, ancestry, patches, build process, licenses/notices, and intentional update procedure.
 - [ ] **DOCS-04**: `COMPATIBILITY.md` exposes the complete traceability matrix, evidence states, known differences, tolerance scope, and no-gap parity status.
 - [ ] **DOCS-05**: `TESTING.md` documents test layers, scenario protocol, differential diagnosis, reference-data review, fuzz/Miri/sanitizer/coverage workflows, and CI tiers.
 - [ ] **DOCS-06**: `BENCHMARKING.md` documents comparable workloads, environment capture, profiling workflow, result interpretation, and rules for performance claims.
@@ -194,16 +194,16 @@ Roadmap creation maps every v1 requirement to exactly one phase.
 
 | Requirement | Phase | Status |
 | --- | --- | --- |
-| FND-01 | Phase 1 | Pending |
-| FND-02 | Phase 1 | Pending |
-| FND-03 | Phase 1 | Pending |
-| FND-04 | Phase 1 | Pending |
-| FND-05 | Phase 1 | Pending |
+| FND-01 | Phase 1 | Complete |
+| FND-02 | Phase 1 | Complete |
+| FND-03 | Phase 1 | Complete |
+| FND-04 | Phase 1 | Complete |
+| FND-05 | Phase 1 | Complete |
 | FND-06 | Phase 12 | Pending |
-| FND-07 | Phase 1 | Pending |
-| FND-08 | Phase 1 | Pending |
-| COMP-01 | Phase 1 | Pending |
-| COMP-02 | Phase 1 | Pending |
+| FND-07 | Phase 1 | Complete |
+| FND-08 | Phase 1 | Complete |
+| COMP-01 | Phase 1 | Complete |
+| COMP-02 | Phase 1 | Complete |
 | COMP-03 | Phase 2 | Pending |
 | COMP-04 | Phase 2 | Pending |
 | COMP-05 | Phase 2 | Pending |
@@ -274,7 +274,7 @@ Roadmap creation maps every v1 requirement to exactly one phase.
 | TEST-06 | Phase 12 | Pending |
 | TEST-07 | Phase 12 | Pending |
 | TEST-08 | Phase 12 | Pending |
-| TEST-09 | Phase 1 | Pending |
+| TEST-09 | Phase 1 | Complete |
 | EXMP-01 | Phase 11 | Pending |
 | EXMP-02 | Phase 11 | Pending |
 | EXMP-03 | Phase 11 | Pending |
@@ -295,7 +295,7 @@ Roadmap creation maps every v1 requirement to exactly one phase.
 | PLAT-06 | Phase 12 | Pending |
 | DOCS-01 | Phase 12 | Pending |
 | DOCS-02 | Phase 3 | Pending |
-| DOCS-03 | Phase 1 | Pending |
+| DOCS-03 | Phase 1 | Complete |
 | DOCS-04 | Phase 12 | Pending |
 | DOCS-05 | Phase 2 | Pending |
 | DOCS-06 | Phase 12 | Pending |
