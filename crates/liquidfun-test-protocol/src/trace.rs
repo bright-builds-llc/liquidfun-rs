@@ -374,6 +374,36 @@ impl CheckpointRecord {
         })
     }
 
+    /// Returns the stable semantic checkpoint identity.
+    #[must_use]
+    pub const fn checkpoint_id(&self) -> &CheckpointId {
+        &self.checkpoint_id
+    }
+
+    /// Returns the preserved checkpoint ordinal.
+    #[must_use]
+    pub const fn ordinal(&self) -> u32 {
+        self.ordinal
+    }
+
+    /// Returns the named semantic phase.
+    #[must_use]
+    pub fn phase(&self) -> &str {
+        &self.phase
+    }
+
+    /// Returns the authoritative simulation-time bits.
+    #[must_use]
+    pub const fn simulation_time_bits(&self) -> FloatBits {
+        self.simulation_time_bits
+    }
+
+    /// Returns exact typed world counts.
+    #[must_use]
+    pub const fn world_counts(&self) -> WorldCounts {
+        self.world_counts
+    }
+
     #[cfg(test)]
     pub(crate) fn set_request_id_for_test(&mut self, request_id: RequestId) {
         self.request_id = request_id;
@@ -469,6 +499,66 @@ pub struct ValidatedTrace {
 }
 
 impl ValidatedTrace {
+    /// Returns the validated transport protocol version.
+    #[must_use]
+    pub const fn protocol_version(&self) -> ProtocolVersion {
+        self.begin.protocol_version
+    }
+
+    /// Returns the validated trace schema version.
+    #[must_use]
+    pub const fn trace_schema_version(&self) -> TraceSchemaVersion {
+        self.begin.trace_schema_version
+    }
+
+    /// Returns the in-flight request identity.
+    #[must_use]
+    pub const fn request_id(&self) -> &RequestId {
+        &self.begin.request_id
+    }
+
+    /// Returns the stable scenario identity.
+    #[must_use]
+    pub const fn scenario_id(&self) -> &ScenarioId {
+        &self.begin.scenario_id
+    }
+
+    /// Returns the canonical scenario identity hash.
+    #[must_use]
+    pub const fn scenario_sha256(&self) -> &Sha256Hex {
+        &self.begin.scenario_sha256
+    }
+
+    /// Returns named or seeded source metadata.
+    #[must_use]
+    pub const fn source(&self) -> &ScenarioSource {
+        &self.begin.source
+    }
+
+    /// Returns the independently versioned tolerance profile version.
+    #[must_use]
+    pub const fn tolerance_profile_version(&self) -> ToleranceProfileVersion {
+        self.begin.tolerance_profile_version
+    }
+
+    /// Returns the reviewed tolerance profile identity.
+    #[must_use]
+    pub const fn tolerance_profile_sha256(&self) -> &Sha256Hex {
+        &self.begin.tolerance_profile_sha256
+    }
+
+    /// Returns the engine role carried by the trace.
+    #[must_use]
+    pub const fn engine_kind(&self) -> EngineKind {
+        self.begin.engine_kind
+    }
+
+    /// Returns the validated engine-build identity hash.
+    #[must_use]
+    pub const fn identity_sha256(&self) -> &Sha256Hex {
+        &self.begin.identity_sha256
+    }
+
     /// Returns checkpoints in preserved solver-significant order.
     #[must_use]
     pub fn checkpoints(&self) -> &[CheckpointRecord] {

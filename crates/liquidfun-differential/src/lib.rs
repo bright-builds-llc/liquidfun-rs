@@ -4,3 +4,9 @@
 //! compare semantic traces. It currently establishes only the runner boundary.
 
 #![forbid(unsafe_code)]
+
+mod canonical;
+mod comparator;
+
+pub use canonical::*;
+pub use comparator::*;

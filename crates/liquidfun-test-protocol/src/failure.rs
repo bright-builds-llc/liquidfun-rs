@@ -339,14 +339,17 @@ impl HarnessFailureEvidence {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HarnessFailure {
     kind: HarnessFailureKind,
-    evidence: HarnessFailureEvidence,
+    evidence: Box<HarnessFailureEvidence>,
 }
 
 impl HarnessFailure {
     /// Combines a non-physics failure category with bounded evidence.
     #[must_use]
-    pub const fn new(kind: HarnessFailureKind, evidence: HarnessFailureEvidence) -> Self {
-        Self { kind, evidence }
+    pub fn new(kind: HarnessFailureKind, evidence: HarnessFailureEvidence) -> Self {
+        Self {
+            kind,
+            evidence: Box::new(evidence),
+        }
     }
 
     /// Returns the classified harness failure kind.
