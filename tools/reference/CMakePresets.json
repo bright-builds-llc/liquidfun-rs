@@ -1,0 +1,66 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 25,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "oracle-base",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceParentDir}/../target/reference/${presetName}",
+      "cacheVariables": {
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    },
+    {
+      "name": "oracle-debug",
+      "displayName": "LiquidFun oracle debug",
+      "description": "Assertion-enabled out-of-tree build of the pinned oracle",
+      "inherits": "oracle-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "oracle-release",
+      "displayName": "LiquidFun oracle release",
+      "description": "Ordinary optimized out-of-tree build of the pinned oracle",
+      "inherits": "oracle-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "oracle-asan-ubsan",
+      "displayName": "LiquidFun oracle ASan and UBSan",
+      "description": "Clang debug build with address and undefined behavior sanitizers",
+      "inherits": "oracle-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "CMAKE_C_FLAGS_INIT": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+        "CMAKE_CXX_FLAGS_INIT": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+        "CMAKE_EXE_LINKER_FLAGS_INIT": "-fsanitize=address,undefined",
+        "CMAKE_SHARED_LINKER_FLAGS_INIT": "-fsanitize=address,undefined"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "oracle-debug",
+      "configurePreset": "oracle-debug"
+    },
+    {
+      "name": "oracle-release",
+      "configurePreset": "oracle-release"
+    },
+    {
+      "name": "oracle-asan-ubsan",
+      "configurePreset": "oracle-asan-ubsan"
+    }
+  ]
+}
