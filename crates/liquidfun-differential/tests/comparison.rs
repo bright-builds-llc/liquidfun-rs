@@ -1,8 +1,8 @@
 //! Focused semantic comparison policy and compatibility tests.
 
 use liquidfun_differential::{
-    CanonicalValue, DifferentialOutcome, SemanticCollection, collections_match, compare,
-    exact_values_match, float_values_match,
+    CanonicalValue, DifferentialOutcome, MismatchKind, SemanticCollection, SemanticPath,
+    collections_match, compare, exact_values_match, float_values_match,
 };
 use liquidfun_test_protocol::{
     BuildIdentity, CheckpointRecord, EngineKind, FloatBits, FloatPolicy, HarnessLimits,
@@ -81,6 +81,18 @@ fn validated_trace(
         &HarnessLimits::phase2_default_v1(),
     )
     .expect("complete synthetic trace should validate")
+}
+
+fn mismatch_report(
+    expected: &ValidatedTrace,
+    actual: &ValidatedTrace,
+) -> liquidfun_differential::MismatchReport {
+    let outcome = compare(expected, actual, &ToleranceProfile::phase2_v1())
+        .expect("compatible traces should reach semantic comparison");
+    let DifferentialOutcome::PhysicsMismatch(report) = outcome else {
+        panic!("different traces should produce a physics mismatch");
+    };
+    report
 }
 
 #[test]
@@ -294,4 +306,137 @@ fn typed_collection_policies_preserve_order_and_multiplicity() {
     assert!(!ordered);
     assert!(set);
     assert!(!multiset);
+}
+
+#[test]
+fn first_divergence_reports_earliest_checkpoint_path_and_float_evidence() {
+    // Arrange
+    let request = fixture_request();
+    let identity = fixture_identity();
+    let expected = validated_trace(
+        &request,
+        &identity,
+        EngineKind::CppOracle,
+        [FloatBits::from_f32(0.5), FloatBits::from_f32(1.0)],
+    );
+    let actual = validated_trace(
+        &request,
+        &identity,
+        EngineKind::NativeRust,
+        [FloatBits::from_f32(0.75), FloatBits::from_f32(1.25)],
+    );
+
+    // Act
+    let report = mismatch_report(&expected, &actual);
+
+    // Assert
+    assert_eq!(report.checkpoint_ordinal(), 0);
+    assert_eq!(report.signature().checkpoint_id().as_str(), "after-step-1");
+    assert_eq!(report.signature().phase().as_str(), "after-step-1");
+    assert_eq!(
+        report.signature().semantic_path(),
+        SemanticPath::SimulationTime
+    );
+    assert_eq!(report.signature().kind(), MismatchKind::Numeric);
+    assert_eq!(report.maybe_previous_checkpoint_id(), None);
+    assert_eq!(
+        report
+            .maybe_next_checkpoint_id()
+            .map(liquidfun_test_protocol::CheckpointId::as_str),
+        Some("after-step-2")
+    );
+    let evidence = report
+        .maybe_float_evidence()
+        .expect("numeric mismatch should retain exact float evidence");
+    assert_eq!(evidence.expected_bits(), FloatBits::from_f32(0.5));
+    assert_eq!(evidence.actual_bits(), FloatBits::from_f32(0.75));
+    assert_eq!(evidence.expected_decimal(), "0.5");
+    assert_eq!(evidence.actual_decimal(), "0.75");
+    assert_eq!(report.request_id().as_str(), "empty-world-request");
+    assert_eq!(report.scenario_sha256(), expected.scenario_sha256());
+    assert_eq!(
+        report.policy_sha256(),
+        ToleranceProfile::phase2_v1().profile_sha256()
+    );
+}
+
+#[test]
+fn failure_signature_changes_for_later_or_different_kind_divergence() {
+    // Arrange
+    let request = fixture_request();
+    let identity = fixture_identity();
+    let expected = validated_trace(
+        &request,
+        &identity,
+        EngineKind::CppOracle,
+        [FloatBits::from_f32(0.5), FloatBits::from_f32(1.0)],
+    );
+    let first_actual = validated_trace(
+        &request,
+        &identity,
+        EngineKind::NativeRust,
+        [FloatBits::from_f32(0.75), FloatBits::from_f32(1.0)],
+    );
+    let equivalent_actual = validated_trace(
+        &request,
+        &identity,
+        EngineKind::NativeRust,
+        [FloatBits::from_f32(0.875), FloatBits::from_f32(1.0)],
+    );
+    let later_actual = validated_trace(
+        &request,
+        &identity,
+        EngineKind::NativeRust,
+        [FloatBits::from_f32(0.5), FloatBits::from_f32(1.25)],
+    );
+
+    // Act
+    let first = mismatch_report(&expected, &first_actual);
+    let equivalent = mismatch_report(&expected, &equivalent_actual);
+    let later = mismatch_report(&expected, &later_actual);
+    let different_kind = first.signature().clone().with_kind(MismatchKind::Exact);
+
+    // Assert
+    assert_eq!(first.signature(), equivalent.signature());
+    assert_ne!(first.signature(), later.signature());
+    assert_ne!(first.signature(), &different_kind);
+}
+
+#[test]
+fn deterministic_machine_and_human_reports_share_typed_evidence() {
+    // Arrange
+    let request = fixture_request();
+    let identity = fixture_identity();
+    let expected = validated_trace(
+        &request,
+        &identity,
+        EngineKind::CppOracle,
+        [FloatBits::from_f32(0.5), FloatBits::from_f32(1.0)],
+    );
+    let actual = validated_trace(
+        &request,
+        &identity,
+        EngineKind::NativeRust,
+        [FloatBits::from_f32(0.75), FloatBits::from_f32(1.0)],
+    );
+    let report = mismatch_report(&expected, &actual);
+
+    // Act
+    let first_machine = report
+        .render_machine()
+        .expect("typed report should render as JSON");
+    let second_machine = report
+        .render_machine()
+        .expect("typed report should render deterministically");
+    let parsed: serde_json::Value =
+        serde_json::from_slice(&first_machine).expect("machine report should be parseable");
+    let human = report.render_human();
+
+    // Assert
+    assert_eq!(first_machine, second_machine);
+    assert_eq!(parsed["signature"]["semantic_path"], "simulation_time");
+    assert_eq!(parsed["float_evidence"]["expected_bits"], 1_056_964_608);
+    assert!(human.contains("after-step-1"));
+    assert!(human.contains("0x3f000000"));
+    assert!(human.contains("0x3f400000"));
 }

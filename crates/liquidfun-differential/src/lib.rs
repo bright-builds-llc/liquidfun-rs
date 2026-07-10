@@ -7,6 +7,8 @@
 
 mod canonical;
 mod comparator;
+mod report;
 
 pub use canonical::*;
 pub use comparator::*;
+pub use report::*;

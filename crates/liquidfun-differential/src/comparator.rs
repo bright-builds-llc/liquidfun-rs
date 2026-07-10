@@ -6,40 +6,7 @@ use liquidfun_test_protocol::{
     ValidatedTrace, WorldCounts,
 };
 
-/// Stable broad category of a semantic mismatch.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum MismatchKind {
-    /// An expected semantic value was absent.
-    Missing,
-    /// An unrequested semantic value was present.
-    Unexpected,
-    /// An exact discrete value differed.
-    Exact,
-    /// A floating value violated its field policy.
-    Numeric,
-    /// Solver-significant order differed.
-    Order,
-    /// An explicitly unordered multiset had different multiplicity.
-    Multiplicity,
-}
-
-/// Typed semantic mismatch produced only after trace compatibility succeeds.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct MismatchReport {
-    kind: MismatchKind,
-}
-
-impl MismatchReport {
-    fn new(kind: MismatchKind) -> Self {
-        Self { kind }
-    }
-
-    /// Returns the semantic mismatch category.
-    #[must_use]
-    pub const fn kind(&self) -> MismatchKind {
-        self.kind
-    }
-}
+use crate::{MismatchKind, MismatchReport, SemanticPath, WorldCountField};
 
 /// Complete differential result for two compatible validated traces.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -64,38 +31,86 @@ pub fn compare(
 
     let expected_checkpoints = expected.checkpoints();
     let actual_checkpoints = actual.checkpoints();
-    for (expected_checkpoint, actual_checkpoint) in
-        expected_checkpoints.iter().zip(actual_checkpoints)
+    for (checkpoint_index, (expected_checkpoint, actual_checkpoint)) in expected_checkpoints
+        .iter()
+        .zip(actual_checkpoints)
+        .enumerate()
     {
         if !exact_values_match(
             expected_checkpoint.checkpoint_id(),
             actual_checkpoint.checkpoint_id(),
-        ) || !exact_values_match(&expected_checkpoint.ordinal(), &actual_checkpoint.ordinal())
-            || !exact_values_match(&expected_checkpoint.phase(), &actual_checkpoint.phase())
-        {
-            return Ok(physics_mismatch(MismatchKind::Order));
+        ) {
+            return Ok(physics_mismatch(MismatchReport::discrete(
+                expected,
+                checkpoint_index,
+                SemanticPath::CheckpointId,
+                MismatchKind::Order,
+                policy,
+            )));
         }
-        if !world_counts_match(
+        if !exact_values_match(&expected_checkpoint.ordinal(), &actual_checkpoint.ordinal()) {
+            return Ok(physics_mismatch(MismatchReport::discrete(
+                expected,
+                checkpoint_index,
+                SemanticPath::CheckpointOrdinal,
+                MismatchKind::Order,
+                policy,
+            )));
+        }
+        if !exact_values_match(&expected_checkpoint.phase(), &actual_checkpoint.phase()) {
+            return Ok(physics_mismatch(MismatchReport::discrete(
+                expected,
+                checkpoint_index,
+                SemanticPath::Phase,
+                MismatchKind::Order,
+                policy,
+            )));
+        }
+        if let Some(field) = first_world_count_difference(
             expected_checkpoint.world_counts(),
             actual_checkpoint.world_counts(),
             policy.world_counts(),
         ) {
-            return Ok(physics_mismatch(MismatchKind::Exact));
+            return Ok(physics_mismatch(MismatchReport::discrete(
+                expected,
+                checkpoint_index,
+                SemanticPath::WorldCount(field),
+                MismatchKind::Exact,
+                policy,
+            )));
         }
         if !float_values_match(
             expected_checkpoint.simulation_time_bits(),
             actual_checkpoint.simulation_time_bits(),
             policy.simulation_time(),
         ) {
-            return Ok(physics_mismatch(MismatchKind::Numeric));
+            return Ok(physics_mismatch(MismatchReport::numeric(
+                expected,
+                checkpoint_index,
+                expected_checkpoint.simulation_time_bits(),
+                actual_checkpoint.simulation_time_bits(),
+                policy,
+            )));
         }
     }
 
     if expected_checkpoints.len() > actual_checkpoints.len() {
-        return Ok(physics_mismatch(MismatchKind::Missing));
+        return Ok(physics_mismatch(MismatchReport::discrete(
+            expected,
+            actual_checkpoints.len(),
+            SemanticPath::CheckpointPresence,
+            MismatchKind::Missing,
+            policy,
+        )));
     }
     if expected_checkpoints.len() < actual_checkpoints.len() {
-        return Ok(physics_mismatch(MismatchKind::Unexpected));
+        return Ok(physics_mismatch(MismatchReport::discrete(
+            actual,
+            expected_checkpoints.len(),
+            SemanticPath::CheckpointPresence,
+            MismatchKind::Unexpected,
+            policy,
+        )));
     }
 
     Ok(DifferentialOutcome::Match)
@@ -142,17 +157,43 @@ pub fn exact_values_match<T: PartialEq + ?Sized>(expected: &T, actual: &T) -> bo
     expected == actual
 }
 
-fn world_counts_match(expected: WorldCounts, actual: WorldCounts, policy: DiscretePolicy) -> bool {
+fn first_world_count_difference(
+    expected: WorldCounts,
+    actual: WorldCounts,
+    policy: DiscretePolicy,
+) -> Option<WorldCountField> {
     match policy {
-        DiscretePolicy::Exact => {
-            expected.bodies() == actual.bodies()
-                && expected.fixtures() == actual.fixtures()
-                && expected.joints() == actual.joints()
-                && expected.contacts() == actual.contacts()
-                && expected.particle_systems() == actual.particle_systems()
-                && expected.particle_groups() == actual.particle_groups()
-                && expected.particles() == actual.particles()
-        }
+        DiscretePolicy::Exact => [
+            (WorldCountField::Bodies, expected.bodies(), actual.bodies()),
+            (
+                WorldCountField::Fixtures,
+                expected.fixtures(),
+                actual.fixtures(),
+            ),
+            (WorldCountField::Joints, expected.joints(), actual.joints()),
+            (
+                WorldCountField::Contacts,
+                expected.contacts(),
+                actual.contacts(),
+            ),
+            (
+                WorldCountField::ParticleSystems,
+                expected.particle_systems(),
+                actual.particle_systems(),
+            ),
+            (
+                WorldCountField::ParticleGroups,
+                expected.particle_groups(),
+                actual.particle_groups(),
+            ),
+            (
+                WorldCountField::Particles,
+                expected.particles(),
+                actual.particles(),
+            ),
+        ]
+        .into_iter()
+        .find_map(|(field, expected, actual)| (expected != actual).then_some(field)),
     }
 }
 
@@ -217,8 +258,8 @@ const fn ordered_float_bits(bits: u32) -> u32 {
     }
 }
 
-fn physics_mismatch(kind: MismatchKind) -> DifferentialOutcome {
-    DifferentialOutcome::PhysicsMismatch(MismatchReport::new(kind))
+fn physics_mismatch(report: MismatchReport) -> DifferentialOutcome {
+    DifferentialOutcome::PhysicsMismatch(report)
 }
 
 fn harness_failure(kind: HarnessFailureKind) -> HarnessFailure {
