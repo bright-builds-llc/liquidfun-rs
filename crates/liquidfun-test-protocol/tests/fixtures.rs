@@ -4,10 +4,10 @@ use std::{fs, path::PathBuf};
 
 use liquidfun_test_protocol::{
     BuildIdentity, CodecErrorKind, HarnessLimits, ProtocolSessionValidator, ProtocolVersion,
-    RecordLimit, RequestedObservable, ScenarioDecodeError, ScenarioSchemaVersion, ScenarioSource,
-    Sha256Hex, ToleranceProfile, ToleranceProfileVersion, TraceRecord, TraceSchemaVersion,
-    TraceValidator, decode_handshake_jsonl, decode_scenario_request_jsonl,
-    decode_trace_record_jsonl, encode_jsonl,
+    RecordLimit, RequestedObservable, ScenarioDecodeError, ScenarioErrorKind,
+    ScenarioSchemaVersion, ScenarioSource, Sha256Hex, ToleranceProfile, ToleranceProfileVersion,
+    TraceRecord, TraceSchemaVersion, TraceValidator, decode_handshake_jsonl,
+    decode_scenario_request_jsonl, decode_trace_record_jsonl, encode_jsonl,
 };
 use serde::Serialize;
 
@@ -272,4 +272,30 @@ fn fixtures_oversized_id_has_boundary_category() {
 
     // Act and Assert
     assert_rejected_fixture(path, CodecErrorKind::BoundaryLimitExceeded);
+}
+
+#[test]
+fn fixtures_empty_checkpoint_phase_matches_schema_and_runtime_rejection() {
+    // Arrange
+    let bytes = read_fixture("protocol/fixtures/rejected/empty-checkpoint-phase.jsonl");
+    let record: serde_json::Value =
+        serde_json::from_slice(&bytes).expect("rejected fixture should remain valid JSON");
+    let schema: serde_json::Value =
+        serde_json::from_slice(&read_fixture("protocol/schemas/scenario-v1.schema.json"))
+            .expect("scenario schema should remain valid JSON");
+
+    // Act
+    let error = decode_scenario_request_jsonl(&bytes, &HarnessLimits::phase2_default_v1())
+        .expect_err("empty checkpoint phase should fail typed decoding");
+
+    // Assert
+    assert_eq!(record["scenario"]["checkpoints"][0]["phase"], "");
+    assert_eq!(
+        schema["properties"]["checkpoints"]["items"]["properties"]["phase"]["minLength"],
+        1
+    );
+    assert_eq!(
+        error.scenario_kind(),
+        Some(ScenarioErrorKind::EmptyCheckpointPhase)
+    );
 }

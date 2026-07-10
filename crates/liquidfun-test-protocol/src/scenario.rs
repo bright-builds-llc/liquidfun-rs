@@ -37,6 +37,8 @@ pub enum ScenarioErrorKind {
     CheckpointOrderViolation,
     /// One checkpoint requests the same observable more than once.
     DuplicateObservable,
+    /// A checkpoint phase label is empty.
+    EmptyCheckpointPhase,
     /// A solver iteration count is zero.
     ZeroSolverIterations,
     /// A solver iteration count exceeds the reviewed phase-2 bound.
@@ -543,6 +545,12 @@ fn validate_checkpoint(
         .map_err(|_| ScenarioDecodeError::Validation(ScenarioErrorKind::InvalidIdentifier))?;
     let after_command_id = CommandId::new(raw.after_command_id.into_string())
         .map_err(ScenarioDecodeError::Validation)?;
+    let phase = raw.phase.into_string();
+    if phase.is_empty() {
+        return Err(ScenarioDecodeError::Validation(
+            ScenarioErrorKind::EmptyCheckpointPhase,
+        ));
+    }
     let observables = raw.observables.into_vec();
     let unique: HashSet<_> = observables.iter().copied().collect();
     if unique.len() != observables.len() {
@@ -553,7 +561,7 @@ fn validate_checkpoint(
     Ok(CheckpointRequest {
         checkpoint_id,
         after_command_id,
-        phase: raw.phase.into_string().into_boxed_str(),
+        phase: phase.into_boxed_str(),
         observables,
     })
 }

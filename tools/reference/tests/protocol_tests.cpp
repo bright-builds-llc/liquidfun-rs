@@ -163,6 +163,8 @@ void scenario_references_and_phase_scope_are_validated() {
   // Arrange
   const auto accepted = read_fixture(
       "protocol/fixtures/accepted/empty-world-request.jsonl");
+  const auto empty_phase = read_fixture(
+      "protocol/fixtures/rejected/empty-checkpoint-phase.jsonl");
   auto bad_reference = accepted;
   bad_reference.replace(
       bad_reference.find("\"after_command_id\":\"step-1\""),
@@ -177,6 +179,7 @@ void scenario_references_and_phase_scope_are_validated() {
   // Act / Assert
   expect_rejected(bad_reference, "command reference");
   expect_rejected(nonempty_entities, "entities must be empty");
+  expect_rejected(empty_phase, "checkpoint phase must not be empty");
 }
 
 void reused_adapter_resets_between_requests() {

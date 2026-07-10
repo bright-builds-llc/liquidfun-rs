@@ -153,6 +153,23 @@ fn scenario_rejects_duplicate_ids_and_bad_checkpoint_references() {
 }
 
 #[test]
+fn scenario_rejects_an_empty_checkpoint_phase() {
+    // Arrange
+    let limits = HarnessLimits::phase2_default_v1();
+    let record = valid_record().replace("\"phase\":\"after-first-step\"", "\"phase\":\"\"");
+
+    // Act
+    let error = decode_scenario_request_jsonl(record.as_bytes(), &limits)
+        .expect_err("empty checkpoint phase should fail");
+
+    // Assert
+    assert_eq!(
+        error.scenario_kind(),
+        Some(ScenarioErrorKind::EmptyCheckpointPhase)
+    );
+}
+
+#[test]
 fn scenario_rejects_unknown_duplicate_and_unsupported_boundary_values() {
     // Arrange
     let limits = HarnessLimits::phase2_default_v1();
