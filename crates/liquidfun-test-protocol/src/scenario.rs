@@ -214,6 +214,12 @@ impl ValidatedScenarioV1 {
         &self.scenario_id
     }
 
+    /// Returns the named or seeded reproducibility source.
+    #[must_use]
+    pub const fn source(&self) -> &ScenarioSource {
+        &self.source
+    }
+
     /// Returns the exact horizontal gravity bits.
     #[must_use]
     pub const fn gravity_x_bits(&self) -> FloatBits {
@@ -256,6 +262,12 @@ pub struct ScenarioRequestRecord {
 }
 
 impl ScenarioRequestRecord {
+    /// Returns the transport protocol version.
+    #[must_use]
+    pub const fn protocol_version(&self) -> ProtocolVersion {
+        self.protocol_version
+    }
+
     /// Returns the request identity.
     #[must_use]
     pub const fn request_id(&self) -> &RequestId {
@@ -268,6 +280,12 @@ impl ScenarioRequestRecord {
         &self.scenario
     }
 
+    /// Returns the validated scenario schema version.
+    #[must_use]
+    pub const fn scenario_schema_version(&self) -> ScenarioSchemaVersion {
+        self.scenario_schema_version
+    }
+
     /// Returns the requested trace schema.
     #[must_use]
     pub const fn requested_trace_schema_version(&self) -> TraceSchemaVersion {
@@ -278,6 +296,12 @@ impl ScenarioRequestRecord {
     #[must_use]
     pub const fn tolerance_profile_sha256(&self) -> &Sha256Hex {
         &self.tolerance_profile_sha256
+    }
+
+    /// Returns the selected tolerance policy version.
+    #[must_use]
+    pub const fn tolerance_profile_version(&self) -> ToleranceProfileVersion {
+        self.tolerance_profile_version
     }
 }
 

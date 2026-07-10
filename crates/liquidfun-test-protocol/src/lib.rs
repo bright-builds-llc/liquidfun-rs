@@ -9,6 +9,8 @@ mod ids;
 mod limits;
 mod provenance;
 mod scenario;
+mod tolerance;
+mod trace;
 
 pub use codec::*;
 pub use failure::*;
@@ -17,6 +19,8 @@ pub use ids::*;
 pub use limits::HarnessLimits;
 pub use provenance::*;
 pub use scenario::*;
+pub use tolerance::*;
+pub use trace::*;
 
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
@@ -45,6 +49,9 @@ macro_rules! version_type {
         impl $name {
             /// The only version supported by the phase-2 contract.
             pub const SUPPORTED: u32 = 1;
+
+            /// The validated current phase-2 version.
+            pub const CURRENT: Self = Self(Self::SUPPORTED);
 
             /// Validates a raw version value.
             ///
