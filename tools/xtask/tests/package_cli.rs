@@ -20,6 +20,7 @@ type TestResult = Result<(), Box<dyn Error>>;
 
 #[derive(Clone, Copy)]
 enum ArchiveCase {
+    Valid,
     ForbiddenContent,
     ForbiddenNativeSource,
     ParentTraversal,
@@ -59,6 +60,7 @@ impl PackageFixture {
             root.join("crates/liquidfun/Cargo.toml"),
             "[package]\nname = \"liquidfun\"\nversion = \"0.0.0\"\n",
         )?;
+        fs::write(root.join("LICENSE"), "fixture license\n")?;
         let archive = root.join("fixture.crate");
         write_archive(&archive, case)?;
         Ok(Self {
@@ -81,6 +83,21 @@ impl PackageFixture {
     fn cleanup(self) -> io::Result<()> {
         fs::remove_dir_all(self.root)
     }
+}
+
+#[test]
+fn verify_accepts_archive_with_matching_license() -> TestResult {
+    // Arrange
+    let fixture = PackageFixture::new(ArchiveCase::Valid)?;
+
+    // Act
+    let output = fixture.command()?;
+
+    // Assert
+    assert_success(&output);
+    assert!(fixture.cargo_marker.exists());
+    fixture.cleanup()?;
+    Ok(())
 }
 
 #[test]
@@ -137,7 +154,13 @@ fn write_archive(path: &Path, case: ArchiveCase) -> io::Result<()> {
         "liquidfun-0.0.0/Cargo.toml",
         b"[package]\nname = \"liquidfun\"\nversion = \"0.0.0\"\n",
     )?;
+    append_file(
+        &mut archive,
+        "liquidfun-0.0.0/LICENSE",
+        b"fixture license\n",
+    )?;
     match case {
+        ArchiveCase::Valid => {}
         ArchiveCase::ForbiddenContent => append_file(
             &mut archive,
             "liquidfun-0.0.0/tools/oracle.cpp",
@@ -237,6 +260,10 @@ fn assert_failure_category(output: &Output, category: &str) {
         "expected `{category}` in stderr:\n{}",
         stderr(output)
     );
+}
+
+fn assert_success(output: &Output) {
+    assert!(output.status.success(), "{}", stderr(output));
 }
 
 fn stderr(output: &Output) -> String {

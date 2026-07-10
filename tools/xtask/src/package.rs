@@ -103,6 +103,7 @@ fn verify(repository_root: &Path) -> Result<(), PackageError> {
             format!("archive did not contain {package_prefix}/Cargo.toml"),
         ));
     }
+    verify_license(repository_root, &unpacked_crate)?;
     build_and_test(&unpacked_crate, &temporary_directory.path)?;
     println!(
         "package verified: {} entries built and tested outside the repository",
@@ -191,7 +192,41 @@ fn inspect_archive(
     if paths.is_empty() {
         return Err(PackageError::new("archive", "package archive is empty"));
     }
+    let license_path = Path::new(package_prefix).join("LICENSE");
+    if !unique_paths.contains(&license_path) {
+        return Err(PackageError::new(
+            "required-content",
+            format!("archive did not contain {package_prefix}/LICENSE"),
+        ));
+    }
     Ok(paths)
+}
+
+fn verify_license(repository_root: &Path, unpacked_crate: &Path) -> Result<(), PackageError> {
+    let root_license_path = repository_root.join("LICENSE");
+    let packaged_license_path = unpacked_crate.join("LICENSE");
+    let root_license = fs::read(&root_license_path).map_err(|error| {
+        PackageError::new(
+            "license",
+            format!("failed to read {}: {error}", root_license_path.display()),
+        )
+    })?;
+    let packaged_license = fs::read(&packaged_license_path).map_err(|error| {
+        PackageError::new(
+            "license",
+            format!(
+                "failed to read {}: {error}",
+                packaged_license_path.display()
+            ),
+        )
+    })?;
+    if packaged_license != root_license {
+        return Err(PackageError::new(
+            "license",
+            "packaged LICENSE differs from the repository LICENSE",
+        ));
+    }
+    Ok(())
 }
 
 fn validate_archive_path(path: &Path, package_prefix: &str) -> Result<PathBuf, PackageError> {
