@@ -1,7 +1,6 @@
 //! Concurrent bounded child stdout and stderr drains.
 
 use std::{
-    collections::VecDeque,
     io::{self, Read},
     process::{ChildStderr, ChildStdout},
     sync::{
@@ -33,6 +32,68 @@ pub(super) enum IoEvent {
 pub(super) struct StderrSnapshot {
     pub(super) retained: Vec<u8>,
     pub(super) total_bytes: usize,
+}
+
+struct StderrRetention {
+    first: Vec<u8>,
+    tail: Vec<u8>,
+    first_capacity: usize,
+    tail_capacity: usize,
+    tail_start: usize,
+}
+
+impl StderrRetention {
+    fn new(capacity: usize) -> Self {
+        let first_capacity = capacity / 2;
+        let tail_capacity = capacity - first_capacity;
+        Self {
+            first: Vec::with_capacity(first_capacity),
+            tail: Vec::with_capacity(tail_capacity),
+            first_capacity,
+            tail_capacity,
+            tail_start: 0,
+        }
+    }
+
+    fn retain(&mut self, bytes: &[u8]) {
+        let first_count = bytes
+            .len()
+            .min(self.first_capacity.saturating_sub(self.first.len()));
+        self.first.extend_from_slice(&bytes[..first_count]);
+        let tail_bytes = &bytes[first_count..];
+        if tail_bytes.is_empty() || self.tail_capacity == 0 {
+            return;
+        }
+        if tail_bytes.len() >= self.tail_capacity {
+            self.tail.clear();
+            self.tail
+                .extend_from_slice(&tail_bytes[tail_bytes.len() - self.tail_capacity..]);
+            self.tail_start = 0;
+            return;
+        }
+
+        let fill_count = tail_bytes
+            .len()
+            .min(self.tail_capacity.saturating_sub(self.tail.len()));
+        self.tail.extend_from_slice(&tail_bytes[..fill_count]);
+        let wrapped = &tail_bytes[fill_count..];
+        if wrapped.is_empty() {
+            return;
+        }
+
+        let first_write = wrapped.len().min(self.tail_capacity - self.tail_start);
+        self.tail[self.tail_start..self.tail_start + first_write]
+            .copy_from_slice(&wrapped[..first_write]);
+        self.tail[..wrapped.len() - first_write].copy_from_slice(&wrapped[first_write..]);
+        self.tail_start = (self.tail_start + wrapped.len()) % self.tail_capacity;
+    }
+
+    fn into_retained(self) -> Vec<u8> {
+        let mut retained = self.first;
+        retained.extend_from_slice(&self.tail[self.tail_start..]);
+        retained.extend_from_slice(&self.tail[..self.tail_start]);
+        retained
+    }
 }
 
 pub(super) struct IoWorkers {
@@ -190,10 +251,7 @@ fn drain_stderr(
     total_output: &AtomicUsize,
     sanitizer_detected: &AtomicBool,
 ) -> StderrSnapshot {
-    let first_capacity = retained_stderr_bytes / 2;
-    let tail_capacity = retained_stderr_bytes - first_capacity;
-    let mut first = Vec::with_capacity(first_capacity);
-    let mut tail = VecDeque::with_capacity(tail_capacity);
+    let mut retention = StderrRetention::new(retained_stderr_bytes);
     let mut total_bytes = 0_usize;
     let mut scan_overlap = Vec::with_capacity(SANITIZER_SCAN_OVERLAP);
     let mut chunk = [0_u8; READ_CHUNK_BYTES];
@@ -208,13 +266,7 @@ fn drain_stderr(
         };
         total_bytes = total_bytes.saturating_add(count);
         publish_progress(count, sender, total_output);
-        retain_first_and_last(
-            &chunk[..count],
-            first_capacity,
-            tail_capacity,
-            &mut first,
-            &mut tail,
-        );
+        retention.retain(&chunk[..count]);
         if !sanitizer_detected.load(Ordering::Acquire)
             && contains_sanitizer_marker(&scan_overlap, &chunk[..count])
         {
@@ -224,10 +276,8 @@ fn drain_stderr(
         update_scan_overlap(&mut scan_overlap, &chunk[..count]);
     }
 
-    let mut retained = first;
-    retained.extend(tail);
     StderrSnapshot {
-        retained,
+        retained: retention.into_retained(),
         total_bytes,
     }
 }
@@ -239,42 +289,19 @@ fn publish_progress(count: usize, sender: &Sender<IoEvent>, total_output: &Atomi
     let _progress_sent = sender.send(IoEvent::OutputProgress(total));
 }
 
-fn retain_first_and_last(
-    bytes: &[u8],
-    first_capacity: usize,
-    tail_capacity: usize,
-    first: &mut Vec<u8>,
-    tail: &mut VecDeque<u8>,
-) {
-    for byte in bytes {
-        if first.len() < first_capacity {
-            first.push(*byte);
-            continue;
-        }
-        if tail_capacity == 0 {
-            continue;
-        }
-        if tail.len() == tail_capacity {
-            tail.pop_front();
-        }
-        tail.push_back(*byte);
-    }
-}
-
 fn contains_sanitizer_marker(overlap: &[u8], bytes: &[u8]) -> bool {
-    const MARKERS: [&[u8]; 4] = [
-        b"ERROR: AddressSanitizer",
-        b"SUMMARY: AddressSanitizer",
-        b"UndefinedBehaviorSanitizer",
-        b"runtime error:",
-    ];
     let mut combined = Vec::with_capacity(overlap.len() + bytes.len());
     combined.extend_from_slice(overlap);
     combined.extend_from_slice(bytes);
-    MARKERS.iter().any(|marker| {
-        combined
-            .windows(marker.len())
-            .any(|window| window == *marker)
+    combined.iter().enumerate().any(|(index, byte)| {
+        let remaining = &combined[index..];
+        match *byte {
+            b'E' => remaining.starts_with(b"ERROR: AddressSanitizer"),
+            b'S' => remaining.starts_with(b"SUMMARY: AddressSanitizer"),
+            b'U' => remaining.starts_with(b"UndefinedBehaviorSanitizer"),
+            b'r' => remaining.starts_with(b"runtime error:"),
+            _ => false,
+        }
     })
 }
 
@@ -298,3 +325,47 @@ fn update_scan_overlap(overlap: &mut Vec<u8>, bytes: &[u8]) {
     reason = "documents that drain failures are intentionally converted to events"
 )]
 fn _io_error_is_send_sync(_: io::Error) {}
+
+#[cfg(test)]
+mod tests {
+    use super::{StderrRetention, contains_sanitizer_marker};
+
+    #[test]
+    fn chunk_retention_preserves_first_and_last_across_wraps() {
+        // Arrange
+        let mut retention = StderrRetention::new(10);
+
+        // Act
+        retention.retain(b"abc");
+        retention.retain(b"defgh");
+        retention.retain(b"ijkl");
+
+        // Assert
+        assert_eq!(retention.into_retained(), b"abcdehijkl");
+    }
+
+    #[test]
+    fn chunk_retention_keeps_latest_tail_from_an_oversized_chunk() {
+        // Arrange
+        let mut retention = StderrRetention::new(8);
+
+        // Act
+        retention.retain(b"abcdefghijkl");
+
+        // Assert
+        assert_eq!(retention.into_retained(), b"abcdijkl");
+    }
+
+    #[test]
+    fn sanitizer_marker_detection_spans_read_chunks() {
+        // Arrange
+        let overlap = b"diagnostic: ERROR: Address";
+        let bytes = b"Sanitizer: injected";
+
+        // Act
+        let detected = contains_sanitizer_marker(overlap, bytes);
+
+        // Assert
+        assert!(detected);
+    }
+}

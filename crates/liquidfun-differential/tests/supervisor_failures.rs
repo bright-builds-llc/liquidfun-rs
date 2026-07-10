@@ -151,7 +151,6 @@ fn framing_and_output_limit_failures_are_typed() {
         ("unknown_kind", HarnessFailureKind::UnknownRecordKind),
         ("oversized", HarnessFailureKind::RecordTooLarge),
         ("trace_too_large", HarnessFailureKind::TraceTooLarge),
-        ("total_overflow", HarnessFailureKind::TotalOutputExceeded),
     ];
 
     // Act and Assert
@@ -160,6 +159,20 @@ fn framing_and_output_limit_failures_are_typed() {
         assert_eq!(actual.kind(), expected, "behavior {behavior}");
         assert!(actual.evidence().child_reaped(), "behavior {behavior}");
     }
+}
+
+#[test]
+fn observed_output_overflow_takes_precedence_at_request_deadline() {
+    // Arrange
+    let mut supervisor = supervisor("total_overflow", SessionProfile::OneShot);
+
+    // Act
+    let failure = supervisor
+        .execute(&fixture_request())
+        .expect_err("observed output overflow should fail before timeout classification");
+
+    // Assert
+    assert_eq!(failure.kind(), HarnessFailureKind::TotalOutputExceeded);
 }
 
 #[test]

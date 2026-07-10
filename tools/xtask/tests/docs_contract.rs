@@ -257,6 +257,31 @@ fn oracle_workflow_fails_when_failure_evidence_is_missing() -> TestResult {
     Ok(())
 }
 
+#[test]
+fn oracle_workflow_fetches_full_history_for_every_checkout() -> TestResult {
+    // Arrange
+    let workflow = fs::read_to_string(workspace_root().join(".github/workflows/oracle.yml"))?;
+
+    // Act
+    let checkout_steps = workflow
+        .split("      - name: ")
+        .filter(|step| step.contains("uses: actions/checkout@"))
+        .collect::<Vec<_>>();
+
+    // Assert
+    assert!(
+        !checkout_steps.is_empty(),
+        "Oracle CI must check out sources"
+    );
+    assert!(
+        checkout_steps
+            .iter()
+            .all(|step| step.lines().any(|line| line.trim() == "fetch-depth: 0")),
+        "every Oracle checkout must fetch history for provenance validation"
+    );
+    Ok(())
+}
+
 fn parse_row(line: &str) -> io::Result<Vec<String>> {
     let trimmed = line.trim();
     let Some(contents) = trimmed

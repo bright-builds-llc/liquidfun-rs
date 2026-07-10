@@ -399,10 +399,13 @@ fn complete_handshake(
     let baseline = child.io.workers.total_output();
     let identity_result = (|| {
         loop {
-            let event = child
-                .io
-                .workers
-                .receive_until(deadline, HarnessFailureKind::StartupTimeout)?;
+            let event = receive_with_output_precedence(
+                &child.io.workers,
+                deadline,
+                HarnessFailureKind::StartupTimeout,
+                baseline,
+                limits,
+            )?;
             match event {
                 IoEvent::StdoutRecord(bytes) => {
                     let handshake = decode_handshake_jsonl(&bytes, limits)
@@ -488,14 +491,17 @@ fn run_request(
                 maybe_last_record,
             });
         }
-        let event = ready
-            .io
-            .workers
-            .receive_until(deadline, HarnessFailureKind::RequestTimeout)
-            .map_err(|kind| RequestFailure {
-                kind,
-                maybe_last_record,
-            })?;
+        let event = receive_with_output_precedence(
+            &ready.io.workers,
+            deadline,
+            HarnessFailureKind::RequestTimeout,
+            baseline,
+            limits,
+        )
+        .map_err(|kind| RequestFailure {
+            kind,
+            maybe_last_record,
+        })?;
         match event {
             IoEvent::StdoutRecord(bytes) => {
                 trace_bytes = trace_bytes.saturating_add(bytes.len());
@@ -713,6 +719,25 @@ fn enforce_total_output(
         return Err(HarnessFailureKind::TotalOutputExceeded);
     }
     Ok(())
+}
+
+fn receive_with_output_precedence(
+    workers: &IoWorkers,
+    deadline: Instant,
+    timeout_kind: HarnessFailureKind,
+    baseline: usize,
+    limits: &HarnessLimits,
+) -> Result<IoEvent, HarnessFailureKind> {
+    workers
+        .receive_until(deadline, timeout_kind)
+        .map_err(|kind| match kind {
+            HarnessFailureKind::StartupTimeout | HarnessFailureKind::RequestTimeout => {
+                enforce_total_output(workers.total_output(), baseline, limits)
+                    .err()
+                    .unwrap_or(kind)
+            }
+            _ => kind,
+        })
 }
 
 fn take_ready(state: &mut SessionState) -> ReadyChild {
