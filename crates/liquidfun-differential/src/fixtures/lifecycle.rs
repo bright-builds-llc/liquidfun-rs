@@ -2,7 +2,9 @@
 
 use std::{fs, io, path::Path};
 
-use liquidfun_test_protocol::{HarnessLimits, ToleranceProfile, decode_scenario_request_jsonl};
+use liquidfun_test_protocol::{
+    HarnessLimits, ToleranceProfile, decode_scenario_request_jsonl, trace_payload_sha256,
+};
 
 use crate::{EmptyWorldAdapter, compare};
 
@@ -123,6 +125,9 @@ pub fn stage_candidate(
                 .as_str()
                 .to_owned(),
             oracle_revision: identity.oracle_revision().to_owned(),
+            adapter_revision: identity.adapter_revision().to_owned(),
+            adapter_content_sha256: identity.adapter_content_sha256().as_str().to_owned(),
+            build_identity_sha256: identity.identity_sha256().as_str().to_owned(),
             preset: request.preset.to_owned(),
             session_profile: request.session_profile.to_owned(),
             compiler: format!("{} {}", identity.compiler_id(), identity.compiler_version()),
@@ -139,6 +144,10 @@ pub fn stage_candidate(
             identity_sha256: sha256(identity_bytes),
             stderr_sha256: sha256(request.stderr_bytes),
             scenario_bytes_sha256: sha256(&scenario_bytes),
+            trace_payload_sha256: trace_payload_sha256(trace.checkpoints())
+                .map_err(|error| FixtureError::Replay(error.to_string()))?
+                .as_str()
+                .to_owned(),
             failure_signature_json: maybe_signature_json,
             candidate_sha256: String::new(),
         };
@@ -242,7 +251,7 @@ pub fn promote_candidate(
     let (parent, filename) = match replayed.metadata.artifact_kind {
         ArtifactKind::ReviewedTrace => (
             ensure_directory_chain(repository_root, &["reference", "artifacts", "traces"])?,
-            format!("{}.jsonl", replayed.metadata.scenario_id),
+            format!("{}-v1.jsonl", replayed.metadata.scenario_id),
         ),
         ArtifactKind::MinimizedRegression => (
             ensure_directory_chain(repository_root, &["scenarios", "regressions"])?,
@@ -266,6 +275,7 @@ pub fn promote_candidate(
     let manifest_result = update_manifest_atomically(
         repository_root,
         &replayed.metadata,
+        &review,
         &destination,
         &artifact_hash,
         artifact_id,

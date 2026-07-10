@@ -12,7 +12,8 @@ use sha2::{Digest, Sha256};
 
 use super::domain::{
     ArtifactKind, ArtifactManifest, ArtifactRecord, CandidateMetadata, FixtureError,
-    MANIFEST_FIELDS, ManifestReviewStatus, REQUIRED_FILES, ReviewMetadata,
+    MANIFEST_FIELDS, ManifestArtifactKind, ManifestFailureSignature, ManifestReviewStatus,
+    ManifestSource, REQUIRED_FILES, ReviewMetadata, StoredReview,
 };
 
 pub(super) fn destination_path(
@@ -21,9 +22,10 @@ pub(super) fn destination_path(
 ) -> Result<PathBuf, FixtureError> {
     validate_identifier(&metadata.scenario_id, "scenario")?;
     let relative = match metadata.artifact_kind {
-        ArtifactKind::ReviewedTrace => {
-            format!("reference/artifacts/traces/{}.jsonl", metadata.scenario_id)
-        }
+        ArtifactKind::ReviewedTrace => format!(
+            "reference/artifacts/traces/{}-v1.jsonl",
+            metadata.scenario_id
+        ),
         ArtifactKind::MinimizedRegression => {
             format!("scenarios/regressions/{}.json", metadata.scenario_id)
         }
@@ -41,6 +43,7 @@ pub(super) fn destination_path(
 pub(super) fn update_manifest_atomically(
     repository_root: &Path,
     metadata: &CandidateMetadata,
+    review: &StoredReview,
     destination: &Path,
     artifact_hash: &str,
     artifact_id: &str,
@@ -50,6 +53,7 @@ pub(super) fn update_manifest_atomically(
     let result = update_manifest_locked(
         repository_root,
         metadata,
+        review,
         destination,
         artifact_hash,
         artifact_id,
@@ -65,6 +69,7 @@ pub(super) fn update_manifest_atomically(
 fn update_manifest_locked(
     repository_root: &Path,
     metadata: &CandidateMetadata,
+    review: &StoredReview,
     destination: &Path,
     artifact_hash: &str,
     artifact_id: &str,
@@ -83,16 +88,53 @@ fn update_manifest_locked(
             path: destination.to_path_buf(),
         });
     }
+    let source = serde_json::from_str::<ManifestSource>(&metadata.source_json)?;
+    let (artifact_kind, maybe_trace_payload_sha256, maybe_failure_signature) =
+        match metadata.artifact_kind {
+            ArtifactKind::ReviewedTrace => (
+                ManifestArtifactKind::Trace,
+                Some(metadata.trace_payload_sha256.clone()),
+                None,
+            ),
+            ArtifactKind::MinimizedRegression => (
+                ManifestArtifactKind::Regression,
+                None,
+                Some(serde_json::from_str::<ManifestFailureSignature>(
+                    metadata.failure_signature_json.as_deref().ok_or_else(|| {
+                        FixtureError::Manifest(
+                            "minimized regression has no failure signature".to_owned(),
+                        )
+                    })?,
+                )?),
+            ),
+        };
     manifest.artifacts.push(ArtifactRecord {
+        artifact_kind,
         path,
         sha256: artifact_hash.to_owned(),
         generator_revision: metadata.generator_revision.clone(),
+        request_sha256: metadata.request_sha256.clone(),
+        scenario_content_sha256: metadata.scenario_bytes_sha256.clone(),
+        scenario_sha256: metadata.scenario_sha256.clone(),
+        protocol_version: metadata.protocol_version,
+        scenario_schema_version: metadata.scenario_schema_version,
+        trace_schema_version: metadata.trace_schema_version,
+        tolerance_profile_version: metadata.tolerance_profile_version,
+        tolerance_profile_sha256: metadata.tolerance_profile_sha256.clone(),
         oracle_revision: metadata.oracle_revision.clone(),
+        adapter_revision: metadata.adapter_revision.clone(),
+        adapter_content_sha256: metadata.adapter_content_sha256.clone(),
+        build_identity_sha256: metadata.build_identity_sha256.clone(),
         preset: metadata.preset.clone(),
         compiler: metadata.compiler.clone(),
         target: metadata.target.clone(),
         flags: metadata.flags.clone(),
+        source,
+        trace_payload_sha256: maybe_trace_payload_sha256,
+        failure_signature: maybe_failure_signature,
         notice_refs: vec!["THIRD_PARTY_NOTICES.md".to_owned()],
+        reviewer: review.reviewer.clone(),
+        reviewed_at: review.reviewed_at.clone(),
         review_status: ManifestReviewStatus::Reviewed,
     });
     manifest
@@ -116,8 +158,8 @@ pub(super) fn read_manifest(repository_root: &Path) -> Result<ArtifactManifest, 
     reject_symlink_chain(repository_root, &path)?;
     let text = fs::read_to_string(path)?;
     let manifest: ArtifactManifest = toml::from_str(&text)?;
-    if manifest.schema_version != 1
-        || manifest.record_schema_version != 1
+    if manifest.schema_version != 2
+        || manifest.record_schema_version != 2
         || manifest.record_fields != MANIFEST_FIELDS
         || !is_revision(&manifest.oracle_revision)
     {
@@ -296,6 +338,9 @@ pub(super) fn candidate_sha256(metadata: &CandidateMetadata) -> String {
         metadata.source_json.as_str(),
         metadata.tolerance_profile_sha256.as_str(),
         metadata.oracle_revision.as_str(),
+        metadata.adapter_revision.as_str(),
+        metadata.adapter_content_sha256.as_str(),
+        metadata.build_identity_sha256.as_str(),
         metadata.preset.as_str(),
         metadata.session_profile.as_str(),
         metadata.compiler.as_str(),
@@ -308,6 +353,7 @@ pub(super) fn candidate_sha256(metadata: &CandidateMetadata) -> String {
         metadata.identity_sha256.as_str(),
         metadata.stderr_sha256.as_str(),
         metadata.scenario_bytes_sha256.as_str(),
+        metadata.trace_payload_sha256.as_str(),
         metadata.failure_signature_json.as_deref().unwrap_or(""),
     ] {
         digest.update(value.len().to_be_bytes());

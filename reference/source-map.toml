@@ -63,3 +63,11 @@ upstream_path = "liquidfun/Box2D/Box2D/Dynamics/b2World.h"
 derivation_kind = "repository-authored-public-api-adapter"
 alteration_summary = "Repository-authored empty-world execution and semantic-count adapter using the pinned public b2World API; no upstream source, raw object memory, private layout, or test implementation is copied."
 notice_class = "provenance-only"
+
+[[mapping]]
+local_path = "reference/artifacts/traces/empty-world-v1.jsonl"
+upstream_revision = "7f20402173fd143a3988c921bc384459c6a858f2"
+upstream_path = "liquidfun/Box2D/Box2D/Dynamics/b2World.cpp"
+derivation_kind = "reviewed-semantic-oracle-trace"
+alteration_summary = "Replay-validated semantic empty-world output generated through the repository adapter; no upstream source, raw object memory, private layout, or test implementation is copied."
+notice_class = "provenance-only"

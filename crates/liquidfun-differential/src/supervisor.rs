@@ -13,45 +13,24 @@ use liquidfun_test_protocol::{
     ValidatedTrace, decode_handshake_jsonl, decode_trace_record_jsonl, encode_jsonl,
 };
 
+mod capture;
 mod executable;
 mod failure;
+mod profile;
 mod stdio;
 
+pub use capture::CapturedOracleTrace;
 pub use executable::{OracleExecutable, OracleExecutableError, OraclePreset};
 use failure::{
     build_failure, classify_handshake_decode, classify_poison, classify_trace_decode,
     successful_teardown_failure,
 };
+pub use profile::SessionProfile;
 use stdio::{IoEvent, IoWorkers, StderrSnapshot};
 
 impl OracleExecutable {
     fn command(&self) -> Command {
         Command::new(&self.resolved)
-    }
-}
-
-/// Named immutable lifecycle and resource configuration.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum SessionProfile {
-    /// One process and one request for maximum isolation.
-    OneShot,
-    /// Sequential finite process reuse with periodic cycling.
-    Reuse,
-    /// One fail-fast sanitizer request.
-    Sanitizer,
-}
-
-impl SessionProfile {
-    fn limits(self) -> HarnessLimits {
-        match self {
-            Self::OneShot => HarnessLimits::phase2_default_v1(),
-            Self::Reuse => HarnessLimits::phase2_reuse_v1(),
-            Self::Sanitizer => HarnessLimits::phase2_sanitizer_v1(),
-        }
-    }
-
-    const fn keeps_process(self) -> bool {
-        matches!(self, Self::Reuse)
     }
 }
 
@@ -76,6 +55,7 @@ struct HandshakingChild {
 struct ReadyChild {
     io: ChildIo,
     identity: BuildIdentity,
+    handshake_jsonl: Box<[u8]>,
     requests: usize,
 }
 
@@ -137,6 +117,19 @@ impl OracleSupervisor {
         &mut self,
         request: &ScenarioRequestRecord,
     ) -> Result<ValidatedTrace, HarnessFailure> {
+        self.execute_captured(request)
+            .map(CapturedOracleTrace::into_trace)
+    }
+
+    /// Executes one request and retains the exact validated oracle JSONL for reviewed staging.
+    ///
+    /// # Errors
+    ///
+    /// Returns the same typed harness failures as [`Self::execute`].
+    pub fn execute_captured(
+        &mut self,
+        request: &ScenarioRequestRecord,
+    ) -> Result<CapturedOracleTrace, HarnessFailure> {
         let started = Instant::now();
         self.prepare_ready(request, started)?;
         let current = std::mem::replace(&mut self.state, SessionState::Reaped);
@@ -160,13 +153,13 @@ impl OracleSupervisor {
         };
 
         match result {
-            Ok(trace) => {
+            Ok(captured) => {
                 ready = take_ready(&mut self.state);
                 ready.requests = ready.requests.saturating_add(1);
                 self.requests_in_current_process = ready.requests;
                 if self.profile.keeps_process() {
                     self.state = SessionState::Ready(ready);
-                    return Ok(trace);
+                    return Ok(captured);
                 }
                 let teardown = ready.io.shutdown(self.limits.request_timeout(), false);
                 self.state = SessionState::Exited;
@@ -182,7 +175,7 @@ impl OracleSupervisor {
                         &self.limits,
                     ));
                 }
-                Ok(trace)
+                Ok(captured)
             }
             Err(failure) => Err(self.poison(
                 failure.kind,
@@ -401,10 +394,11 @@ fn complete_handshake(
                     validator
                         .accept_handshake(handshake)
                         .map_err(|error| error.kind())?;
-                    return validator
+                    let identity = validator
                         .maybe_build_identity()
                         .cloned()
-                        .ok_or(HarnessFailureKind::HandshakeMalformed);
+                        .ok_or(HarnessFailureKind::HandshakeMalformed)?;
+                    return Ok((identity, bytes));
                 }
                 IoEvent::OutputProgress(total) => {
                     enforce_total_output(total, baseline, limits)?;
@@ -423,9 +417,10 @@ fn complete_handshake(
         }
     })();
     match identity_result {
-        Ok(identity) => Ok(ReadyChild {
+        Ok((identity, handshake_jsonl)) => Ok(ReadyChild {
             io: child.io,
             identity,
+            handshake_jsonl: handshake_jsonl.into_boxed_slice(),
             requests: 0,
         }),
         Err(kind) => Err((kind, child)),
@@ -440,7 +435,7 @@ fn run_request(
     ready: &mut ReadyChild,
     request: &ScenarioRequestRecord,
     limits: &HarnessLimits,
-) -> Result<ValidatedTrace, RequestFailure> {
+) -> Result<CapturedOracleTrace, RequestFailure> {
     let baseline = ready.io.workers.total_output();
     let bytes = encode_jsonl(request, limits, RecordLimit::Input).map_err(|_| RequestFailure {
         kind: HarnessFailureKind::CppAdapterFailure,
@@ -462,6 +457,7 @@ fn run_request(
 
     let deadline = Instant::now() + limits.request_timeout();
     let mut records = Vec::new();
+    let mut jsonl = Vec::from(ready.handshake_jsonl.as_ref());
     let mut trace_bytes = 0_usize;
     let mut stream_state = 0_u8;
     let mut maybe_last_record = Some(LastValidRecord::Handshake);
@@ -489,6 +485,7 @@ fn run_request(
                         maybe_last_record,
                     });
                 }
+                jsonl.extend_from_slice(&bytes);
                 let record =
                     decode_trace_record_jsonl(&bytes, limits).map_err(|error| RequestFailure {
                         kind: classify_trace_decode(&error),
@@ -514,7 +511,7 @@ fn run_request(
                 maybe_last_record = Some(last);
                 records.push(record);
                 if stream_state == 2 {
-                    return TraceValidator::validate(
+                    let trace = TraceValidator::validate(
                         request,
                         &ready.identity,
                         u64::try_from(ready.requests.saturating_add(1)).map_err(|_| {
@@ -529,6 +526,10 @@ fn run_request(
                     .map_err(|error| RequestFailure {
                         kind: error.kind(),
                         maybe_last_record,
+                    })?;
+                    return Ok(CapturedOracleTrace {
+                        trace,
+                        jsonl: jsonl.into_boxed_slice(),
                     });
                 }
             }

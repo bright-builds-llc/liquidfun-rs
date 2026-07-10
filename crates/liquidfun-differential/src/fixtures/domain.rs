@@ -8,16 +8,33 @@ use serde::{Deserialize, Serialize};
 use crate::FailureSignature;
 
 pub(super) const CANDIDATE_SCHEMA_VERSION: u32 = 1;
-pub(super) const MANIFEST_FIELDS: [&str; 10] = [
+pub(super) const MANIFEST_FIELDS: [&str; 27] = [
+    "artifact_kind",
     "path",
     "sha256",
     "generator_revision",
+    "request_sha256",
+    "scenario_content_sha256",
+    "scenario_sha256",
+    "protocol_version",
+    "scenario_schema_version",
+    "trace_schema_version",
+    "tolerance_profile_version",
+    "tolerance_profile_sha256",
     "oracle_revision",
+    "adapter_revision",
+    "adapter_content_sha256",
+    "build_identity_sha256",
     "preset",
     "compiler",
     "target",
     "flags",
+    "source",
+    "trace_payload_sha256",
+    "failure_signature",
     "notice_refs",
+    "reviewer",
+    "reviewed_at",
     "review_status",
 ];
 pub(super) const REQUIRED_FILES: [&str; 6] = [
@@ -282,6 +299,9 @@ pub(super) struct CandidateMetadata {
     pub(super) tolerance_profile_version: u32,
     pub(super) tolerance_profile_sha256: String,
     pub(super) oracle_revision: String,
+    pub(super) adapter_revision: String,
+    pub(super) adapter_content_sha256: String,
+    pub(super) build_identity_sha256: String,
     pub(super) preset: String,
     pub(super) session_profile: String,
     pub(super) compiler: String,
@@ -295,6 +315,7 @@ pub(super) struct CandidateMetadata {
     pub(super) identity_sha256: String,
     pub(super) stderr_sha256: String,
     pub(super) scenario_bytes_sha256: String,
+    pub(super) trace_payload_sha256: String,
     pub(super) failure_signature_json: Option<String>,
     pub(super) candidate_sha256: String,
 }
@@ -323,16 +344,64 @@ pub(super) struct ArtifactManifest {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(super) struct ArtifactRecord {
+    pub(super) artifact_kind: ManifestArtifactKind,
     pub(super) path: String,
     pub(super) sha256: String,
     pub(super) generator_revision: String,
+    pub(super) request_sha256: String,
+    pub(super) scenario_content_sha256: String,
+    pub(super) scenario_sha256: String,
+    pub(super) protocol_version: u32,
+    pub(super) scenario_schema_version: u32,
+    pub(super) trace_schema_version: u32,
+    pub(super) tolerance_profile_version: u32,
+    pub(super) tolerance_profile_sha256: String,
     pub(super) oracle_revision: String,
+    pub(super) adapter_revision: String,
+    pub(super) adapter_content_sha256: String,
+    pub(super) build_identity_sha256: String,
     pub(super) preset: String,
     pub(super) compiler: String,
     pub(super) target: String,
     pub(super) flags: Vec<String>,
+    pub(super) source: ManifestSource,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(super) trace_payload_sha256: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(super) failure_signature: Option<ManifestFailureSignature>,
     pub(super) notice_refs: Vec<String>,
+    pub(super) reviewer: String,
+    pub(super) reviewed_at: String,
     pub(super) review_status: ManifestReviewStatus,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub(super) enum ManifestArtifactKind {
+    Trace,
+    Regression,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+pub(super) enum ManifestSource {
+    Named {
+        name: String,
+    },
+    Seeded {
+        generator_id: String,
+        generator_version: u32,
+        seed: u64,
+    },
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub(super) struct ManifestFailureSignature {
+    pub(super) checkpoint_id: String,
+    pub(super) phase: String,
+    pub(super) semantic_path: serde_json::Value,
+    pub(super) kind: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

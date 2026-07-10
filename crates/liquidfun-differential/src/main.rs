@@ -9,10 +9,11 @@ use std::{
 };
 
 use liquidfun_differential::{
-    ArtifactKind, DifferentialRunOutcome, MatchRun, MismatchReport, OraclePreset, ReviewMetadata,
-    SessionProfile, StageRequest, promote_candidate, replay_exact, review_candidate, run_named,
-    stage_candidate,
+    ArtifactKind, DifferentialRunOutcome, MatchRun, MismatchReport, OracleExecutable, OraclePreset,
+    OracleSupervisor, ReviewMetadata, SessionProfile, StageRequest, promote_candidate,
+    replay_exact, review_candidate, run_named, stage_candidate,
 };
+use liquidfun_test_protocol::{HarnessLimits, decode_scenario_request_jsonl};
 use serde::Serialize;
 
 const ORACLE_REVISION: &str = "7f20402173fd143a3988c921bc384459c6a858f2";
@@ -125,14 +126,18 @@ fn run_fixture(arguments: impl Iterator<Item = String>) -> Result<ExitCode, CliE
             if scenario != "empty-world" {
                 return Err(CliError::Usage(fixture_usage()));
             }
-            let _preset = parse_preset(preset)?;
-            let _profile = parse_profile(session_profile)?;
+            let parsed_preset = parse_preset(preset)?;
+            let parsed_profile = parse_profile(session_profile)?;
             let request_bytes = fs::read(
                 repository_root.join("protocol/fixtures/accepted/empty-world-request.jsonl"),
             )?;
-            let trace_bytes = fs::read(
-                repository_root.join("protocol/fixtures/accepted/empty-world-trace.jsonl"),
-            )?;
+            let request =
+                decode_scenario_request_jsonl(&request_bytes, &HarnessLimits::phase2_default_v1())?;
+            let executable = OracleExecutable::resolve(&repository_root, parsed_preset)?;
+            let mut supervisor = OracleSupervisor::new(executable, parsed_profile, ORACLE_REVISION);
+            let captured = supervisor
+                .execute_captured(&request)
+                .map_err(|failure| CliError::Harness(failure.kind().as_str().to_owned()))?;
             let generator_revision = generator_revision(&repository_root)?;
             let candidate = stage_candidate(
                 &repository_root,
@@ -144,7 +149,7 @@ fn run_fixture(arguments: impl Iterator<Item = String>) -> Result<ExitCode, CliE
                     session_profile,
                     generator_revision: &generator_revision,
                     request_bytes: &request_bytes,
-                    trace_bytes: &trace_bytes,
+                    trace_bytes: captured.jsonl(),
                     stderr_bytes: b"",
                     maybe_failure_signature: None,
                 },
@@ -389,6 +394,12 @@ enum CliError {
     Json(#[from] serde_json::Error),
     #[error(transparent)]
     Fixture(#[from] liquidfun_differential::FixtureError),
+    #[error(transparent)]
+    Executable(#[from] liquidfun_differential::OracleExecutableError),
+    #[error(transparent)]
+    Scenario(#[from] liquidfun_test_protocol::ScenarioDecodeError),
+    #[error("oracle harness failure while staging: {0}")]
+    Harness(String),
     #[error("could not determine generator revision: {0}")]
     GeneratorRevision(String),
 }

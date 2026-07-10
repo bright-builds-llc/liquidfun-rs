@@ -5,7 +5,7 @@ use std::{fs, io, path::Path};
 use liquidfun_test_protocol::{
     BuildIdentity, HarnessLimits, ProtocolSessionValidator, ScenarioRequestRecord,
     ToleranceProfile, TraceValidator, ValidatedTrace, decode_handshake_jsonl,
-    decode_scenario_request_jsonl, decode_trace_record_jsonl,
+    decode_scenario_request_jsonl, decode_trace_record_jsonl, trace_payload_sha256,
 };
 
 use crate::{DifferentialOutcome, EmptyWorldAdapter, FailureSignature, compare};
@@ -147,6 +147,9 @@ pub(super) fn replay_candidate(
         validate_trace_bundle(&request, &trace_bytes, &manifest.oracle_revision, &limits)?;
     if identity_bytes != actual_identity_bytes
         || identity.oracle_revision() != metadata.oracle_revision
+        || identity.adapter_revision() != metadata.adapter_revision
+        || identity.adapter_content_sha256().as_str() != metadata.adapter_content_sha256
+        || identity.identity_sha256().as_str() != metadata.build_identity_sha256
         || identity.cmake_preset() != metadata.preset
         || format!("{} {}", identity.compiler_id(), identity.compiler_version())
             != metadata.compiler
@@ -157,6 +160,10 @@ pub(super) fn replay_candidate(
                 identity.effective_link_flags().to_owned(),
             ]
         || trace.scenario_sha256().as_str() != metadata.scenario_sha256
+        || trace_payload_sha256(trace.checkpoints())
+            .map_err(|error| FixtureError::Replay(error.to_string()))?
+            .as_str()
+            != metadata.trace_payload_sha256
     {
         return Err(FixtureError::Replay(
             "build or trace identity mismatch".to_owned(),

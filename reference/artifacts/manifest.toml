@@ -1,16 +1,66 @@
-schema_version = 1
-record_schema_version = 1
+schema_version = 2
+record_schema_version = 2
 oracle_revision = "7f20402173fd143a3988c921bc384459c6a858f2"
 record_fields = [
-  "path",
-  "sha256",
-  "generator_revision",
-  "oracle_revision",
-  "preset",
-  "compiler",
-  "target",
-  "flags",
-  "notice_refs",
-  "review_status",
+    "artifact_kind",
+    "path",
+    "sha256",
+    "generator_revision",
+    "request_sha256",
+    "scenario_content_sha256",
+    "scenario_sha256",
+    "protocol_version",
+    "scenario_schema_version",
+    "trace_schema_version",
+    "tolerance_profile_version",
+    "tolerance_profile_sha256",
+    "oracle_revision",
+    "adapter_revision",
+    "adapter_content_sha256",
+    "build_identity_sha256",
+    "preset",
+    "compiler",
+    "target",
+    "flags",
+    "source",
+    "trace_payload_sha256",
+    "failure_signature",
+    "notice_refs",
+    "reviewer",
+    "reviewed_at",
+    "review_status",
 ]
-artifacts = []
+
+[[artifacts]]
+artifact_kind = "trace"
+path = "reference/artifacts/traces/empty-world-v1.jsonl"
+sha256 = "7f72f928d3eb94023135a6b3a2ebc3939c1c8eeba845e9adfaa8c0667a2a7118"
+generator_revision = "a9b3bd8f9adf093bfd93a849748861b8a11c68b3"
+request_sha256 = "831597c0dd55513e0b45e8a44553fb4600406b18a99e8bfeed9da00faf9dda78"
+scenario_content_sha256 = "49642b2ea489384be7850f595269e6366003f7bfab260ab1f9270a9cfcb0fd9e"
+scenario_sha256 = "49642b2ea489384be7850f595269e6366003f7bfab260ab1f9270a9cfcb0fd9e"
+protocol_version = 1
+scenario_schema_version = 1
+trace_schema_version = 1
+tolerance_profile_version = 1
+tolerance_profile_sha256 = "177db8c2ff3011653fc27f74339fe144df5936bb078db85f28402d317e6622c3"
+oracle_revision = "7f20402173fd143a3988c921bc384459c6a858f2"
+adapter_revision = "source-digest-v1"
+adapter_content_sha256 = "fd52237500c01d90380f09470504ed79233c2ba95874e028065617e83096d247"
+build_identity_sha256 = "25764774e41ceaf0cf80c771ebede1a91d8bde1553eb7ee733f505a6252eb5b7"
+preset = "oracle-debug"
+compiler = "AppleClang 21.0.0.21000101"
+target = "native|Darwin|arm64"
+flags = [
+    "-g -Wall -Wextra -Wpedantic -Werror  cxx_std_17",
+    "-L/opt/homebrew/opt/zlib/lib -L/opt/homebrew/opt/llvm/lib",
+]
+trace_payload_sha256 = "00e82d987df9354bb5bdbce907167884de5a8fc587607fce76670fea0fb3a44f"
+notice_refs = ["THIRD_PARTY_NOTICES.md"]
+reviewer = "codex-gsd-executor"
+reviewed_at = "2026-07-10T10:57:37Z"
+review_status = "reviewed"
+
+[artifacts.source]
+kind = "named"
+name = "empty-world"

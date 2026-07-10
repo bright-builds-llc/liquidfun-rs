@@ -45,7 +45,7 @@ impl FixtureRepository {
         fs::write(
             root.join("reference/artifacts/manifest.toml"),
             format!(
-                "schema_version = 1\nrecord_schema_version = 1\noracle_revision = \"{ORACLE_REVISION}\"\nrecord_fields = [\n  \"path\",\n  \"sha256\",\n  \"generator_revision\",\n  \"oracle_revision\",\n  \"preset\",\n  \"compiler\",\n  \"target\",\n  \"flags\",\n  \"notice_refs\",\n  \"review_status\",\n]\nartifacts = []\n"
+                "schema_version = 2\nrecord_schema_version = 2\noracle_revision = \"{ORACLE_REVISION}\"\nrecord_fields = [\n  \"artifact_kind\",\n  \"path\",\n  \"sha256\",\n  \"generator_revision\",\n  \"request_sha256\",\n  \"scenario_content_sha256\",\n  \"scenario_sha256\",\n  \"protocol_version\",\n  \"scenario_schema_version\",\n  \"trace_schema_version\",\n  \"tolerance_profile_version\",\n  \"tolerance_profile_sha256\",\n  \"oracle_revision\",\n  \"adapter_revision\",\n  \"adapter_content_sha256\",\n  \"build_identity_sha256\",\n  \"preset\",\n  \"compiler\",\n  \"target\",\n  \"flags\",\n  \"source\",\n  \"trace_payload_sha256\",\n  \"failure_signature\",\n  \"notice_refs\",\n  \"reviewer\",\n  \"reviewed_at\",\n  \"review_status\",\n]\nartifacts = []\n"
             ),
         )
         .expect("fixture manifest should be written");
@@ -144,7 +144,7 @@ fn reviewed_trace_stages_reviews_diffs_and_promotes() {
         promotion.artifact_path(),
         fs::canonicalize(repository.root())
             .expect("fixture repository should canonicalize")
-            .join("reference/artifacts/traces/empty-world.jsonl")
+            .join("reference/artifacts/traces/empty-world-v1.jsonl")
     );
     assert_eq!(
         fs::read(promotion.artifact_path()).expect("promoted trace should be readable"),
@@ -153,7 +153,13 @@ fn reviewed_trace_stages_reviews_diffs_and_promotes() {
     let manifest = fs::read_to_string(repository.root().join("reference/artifacts/manifest.toml"))
         .expect("manifest should remain readable");
     assert!(manifest.contains("review_status = \"reviewed\""));
-    assert!(manifest.contains("reference/artifacts/traces/empty-world.jsonl"));
+    assert!(manifest.contains("reference/artifacts/traces/empty-world-v1.jsonl"));
+    assert!(manifest.contains("artifact_kind = \"trace\""));
+    assert!(manifest.contains("adapter_revision = \"fixture-adapter-v1\""));
+    assert!(manifest.contains("build_identity_sha256"));
+    assert!(manifest.contains("trace_payload_sha256"));
+    assert!(manifest.contains("reviewer = \"fixture-reviewer\""));
+    assert!(manifest.contains("reviewed_at = \"2026-07-10T10:15:00Z\""));
 }
 
 #[test]
@@ -367,7 +373,7 @@ fn promotion_rejects_an_existing_destination_without_overwrite() {
     .expect("candidate should review");
     let destination = repository
         .root()
-        .join("reference/artifacts/traces/empty-world.jsonl");
+        .join("reference/artifacts/traces/empty-world-v1.jsonl");
     fs::create_dir_all(destination.parent().expect("destination has a parent"))
         .expect("destination parent should be created");
     fs::write(&destination, b"existing accepted bytes\n")

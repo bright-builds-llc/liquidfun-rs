@@ -11,20 +11,10 @@ use std::process::Command;
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
 
+mod artifact;
+
 const USAGE: &str = "Usage: cargo xtask provenance check";
 const SCHEMA_VERSION: u64 = 1;
-const ARTIFACT_FIELDS: [&str; 10] = [
-    "path",
-    "sha256",
-    "generator_revision",
-    "oracle_revision",
-    "preset",
-    "compiler",
-    "target",
-    "flags",
-    "notice_refs",
-    "review_status",
-];
 
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) struct ProvenanceError {
@@ -82,38 +72,6 @@ struct SourceMapping {
     derivation_kind: String,
     alteration_summary: String,
     notice_class: String,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
-struct ArtifactManifest {
-    schema_version: u64,
-    record_schema_version: u64,
-    oracle_revision: String,
-    record_fields: Vec<String>,
-    artifacts: Vec<ArtifactRecord>,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
-struct ArtifactRecord {
-    path: String,
-    sha256: String,
-    generator_revision: String,
-    oracle_revision: String,
-    preset: String,
-    compiler: String,
-    target: String,
-    flags: Vec<String>,
-    notice_refs: Vec<String>,
-    review_status: ReviewStatus,
-}
-
-#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "snake_case")]
-enum ReviewStatus {
-    Pending,
-    Reviewed,
 }
 
 #[derive(Debug, Deserialize)]
@@ -216,20 +174,15 @@ fn check(repository_root: &Path) -> Result<(), ProvenanceError> {
         require_revision(relative, &upstream_lock.revision, &identity.oracle_revision)?;
     }
 
-    let manifest: ArtifactManifest = read_toml(
-        &repository_root.join("reference/artifacts/manifest.toml"),
-        "artifact manifest",
-    )?;
-    validate_artifacts(
+    let artifact_count = artifact::validate_manifest(
         repository_root,
         &confined_paths,
-        &manifest,
+        &source_map,
         &upstream_lock.revision,
     )?;
     println!(
         "provenance verified: oracle {} with {} artifact records",
-        upstream_lock.revision,
-        manifest.artifacts.len()
+        upstream_lock.revision, artifact_count
     );
     Ok(())
 }
@@ -326,131 +279,6 @@ fn validate_source_map(
         }
         let _local_path = confined_paths.file(&mapping.local_path, "source-map local_path")?;
     }
-    Ok(())
-}
-
-fn validate_artifacts(
-    repository_root: &Path,
-    confined_paths: &ConfinedPaths,
-    manifest: &ArtifactManifest,
-    oracle_revision: &str,
-) -> Result<(), ProvenanceError> {
-    require_schema(manifest.schema_version, "artifact manifest")?;
-    require_schema(manifest.record_schema_version, "artifact record")?;
-    require_revision(
-        "artifact manifest",
-        oracle_revision,
-        &manifest.oracle_revision,
-    )?;
-    if manifest.record_fields != ARTIFACT_FIELDS {
-        return Err(ProvenanceError::new(
-            "schema",
-            "artifact record_fields do not match schema version 1",
-        ));
-    }
-    let mut paths = BTreeSet::new();
-    for artifact in &manifest.artifacts {
-        validate_artifact(repository_root, confined_paths, artifact, oracle_revision)?;
-        if !paths.insert(artifact.path.as_str()) {
-            return Err(ProvenanceError::new(
-                "schema",
-                format!("duplicate artifact path `{}`", artifact.path),
-            ));
-        }
-    }
-    Ok(())
-}
-
-fn validate_artifact(
-    repository_root: &Path,
-    confined_paths: &ConfinedPaths,
-    artifact: &ArtifactRecord,
-    oracle_revision: &str,
-) -> Result<(), ProvenanceError> {
-    let artifact_path = confined_paths.file(&artifact.path, "artifact path")?;
-    require_revision("artifact", oracle_revision, &artifact.oracle_revision)?;
-    require_revision_format("generator_revision", &artifact.generator_revision)?;
-    if artifact.review_status != ReviewStatus::Reviewed {
-        return Err(ProvenanceError::new(
-            "review",
-            format!("artifact `{}` is not reviewed", artifact.path),
-        ));
-    }
-    for (field, value) in [
-        ("preset", artifact.preset.as_str()),
-        ("compiler", artifact.compiler.as_str()),
-        ("target", artifact.target.as_str()),
-    ] {
-        require_nonempty(field, value)?;
-    }
-    if artifact.flags.iter().any(|flag| flag.trim().is_empty()) {
-        return Err(ProvenanceError::new(
-            "schema",
-            "artifact flags cannot contain empty values",
-        ));
-    }
-    validate_notice_refs(confined_paths, artifact)?;
-    validate_artifact_hash(&artifact_path, artifact)?;
-    validate_generator_revision(repository_root, &artifact.generator_revision)
-}
-
-fn validate_notice_refs(
-    confined_paths: &ConfinedPaths,
-    artifact: &ArtifactRecord,
-) -> Result<(), ProvenanceError> {
-    if artifact.notice_refs.is_empty() {
-        return Err(ProvenanceError::new(
-            "notice",
-            format!("artifact `{}` has no notice references", artifact.path),
-        ));
-    }
-    for notice_ref in &artifact.notice_refs {
-        let path_part = notice_ref
-            .split_once('#')
-            .map_or(notice_ref.as_str(), |pair| pair.0);
-        let _notice_path = confined_paths.file(path_part, "artifact notice reference")?;
-    }
-    Ok(())
-}
-
-fn validate_artifact_hash(path: &Path, artifact: &ArtifactRecord) -> Result<(), ProvenanceError> {
-    if artifact.sha256.len() != 64 || !is_lower_hex(&artifact.sha256) {
-        return Err(ProvenanceError::new(
-            "hash",
-            format!("artifact `{}` has invalid SHA-256 syntax", artifact.path),
-        ));
-    }
-    let actual = sha256(path)?;
-    if actual != artifact.sha256 {
-        return Err(ProvenanceError::new(
-            "hash",
-            format!(
-                "artifact `{}` SHA-256 mismatch: expected `{}`, actual `{actual}`",
-                artifact.path, artifact.sha256
-            ),
-        ));
-    }
-    Ok(())
-}
-
-fn validate_generator_revision(
-    repository_root: &Path,
-    revision: &str,
-) -> Result<(), ProvenanceError> {
-    let git = env::var_os("LIQUIDFUN_XTASK_GIT").unwrap_or_else(|| OsString::from("git"));
-    let object = format!("{revision}^{{commit}}");
-    let _output = run_git(
-        &git,
-        [
-            OsStr::new("-C"),
-            repository_root.as_os_str(),
-            OsStr::new("cat-file"),
-            OsStr::new("-e"),
-            OsStr::new(&object),
-        ],
-        "verify artifact generator revision",
-    )
-    .map_err(|error| ProvenanceError::new("generator", error.to_string()))?;
     Ok(())
 }
 
