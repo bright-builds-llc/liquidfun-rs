@@ -1,0 +1,8 @@
+schema_version = 1
+repository = "https://github.com/google/liquidfun.git"
+revision = "7f20402173fd143a3988c921bc384459c6a858f2"
+release_tag = "v1.1.0"
+release_tag_object = "d15bcf1879144bf2a4c8ebcc73f6418186756fb2"
+release_commit = "f38db7c627c3dc5ec879d726e16fa5a12ad6e478"
+submodule_path = "third_party/liquidfun"
+patch_set = "none"
