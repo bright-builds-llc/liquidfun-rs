@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 02-05-PLAN.md
-last_updated: "2026-07-10T08:01:26.818Z"
+stopped_at: Completed 02-06-PLAN.md
+last_updated: "2026-07-10T08:31:10.253Z"
 last_activity: 2026-07-10
 progress:
   total_phases: 12
   completed_phases: 1
   total_plans: 19
-  completed_plans: 10
-  percent: 53
+  completed_plans: 11
+  percent: 58
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-09)
 ## Current Position
 
 Phase: 2 (Semantic Protocol and Oracle Round Trip) — EXECUTING
-Plan: 6 of 14
+Plan: 7 of 14
 Status: Ready to execute
 Last activity: 2026-07-10
 
@@ -57,6 +57,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P03 | 32 min | 2 tasks | 7 files |
 | Phase 02 P04 | 18 min | 2 tasks | 7 files |
 | Phase 02 P05 | 9 min | 1 tasks | 9 files |
+| Phase 02 P06 | 27 min | 3 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -80,6 +81,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 02]: Use exact 0.5-second timestep bit patterns so two ordered empty-world checkpoints have distinguishable, exactly representable simulation times.
 - [Phase 02]: Canonicalize checked-in request, handshake, and trace records only in memory through validated public protocol values; verification never rewrites the corpus.
 - [Phase 02]: Keep malformed corpus cases minimal so each rejected file reaches one intended stable codec category.
+- [Phase 02]: Reject incompatible request, scenario, tolerance, schema, and engine-role identities before semantic comparison.
+- [Phase 02]: Identify failures by checkpoint, phase, typed semantic path, and mismatch kind so values may shrink without changing failure identity.
+- [Phase 02]: Keep reduction pure and deterministic through typed injected signatures, logical elapsed time, and protocol-owned candidate revalidation.
 
 ### Pending Todos
 
@@ -92,6 +96,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-10T08:01:26.816Z
-Stopped at: Completed 02-05-PLAN.md
+Last session: 2026-07-10T08:30:34.901Z
+Stopped at: Completed 02-06-PLAN.md
 Resume file: None
