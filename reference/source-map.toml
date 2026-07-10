@@ -15,3 +15,35 @@ upstream_path = "."
 derivation_kind = "non-derived-bootstrap"
 alteration_summary = "Repository-authored pointer to the pinned inventory source; no upstream source, test, documentation, or data is copied."
 notice_class = "provenance-only"
+
+[[mapping]]
+local_path = "reference/compatibility.json"
+upstream_revision = "7f20402173fd143a3988c921bc384459c6a858f2"
+upstream_path = "liquidfun/Box2D"
+derivation_kind = "repository-authored-compatibility-inventory"
+alteration_summary = "Repository-authored compatibility metadata names pinned upstream paths and symbols; no upstream source or test implementation is copied."
+notice_class = "provenance-only"
+
+[[mapping]]
+local_path = "reference/discovery.json"
+upstream_revision = "7f20402173fd143a3988c921bc384459c6a858f2"
+upstream_path = "liquidfun/Box2D"
+derivation_kind = "mechanically-discovered-scope-snapshot"
+alteration_summary = "Deterministic path and build-option inventory derived from the pinned tree; no upstream source or test implementation is copied."
+notice_class = "provenance-only"
+
+[[mapping]]
+local_path = "reference/artifacts/manifest.toml"
+upstream_revision = "7f20402173fd143a3988c921bc384459c6a858f2"
+upstream_path = "."
+derivation_kind = "repository-authored-artifact-schema"
+alteration_summary = "Repository-authored empty manifest schema for future reviewed oracle artifacts; no upstream source, test, documentation, or data is copied."
+notice_class = "provenance-only"
+
+[[mapping]]
+local_path = "COMPATIBILITY.md"
+upstream_revision = "7f20402173fd143a3988c921bc384459c6a858f2"
+upstream_path = "liquidfun/Box2D"
+derivation_kind = "generated-compatibility-report"
+alteration_summary = "Generated presentation of repository-authored compatibility metadata and pinned upstream path names; no upstream source or test implementation is copied."
+notice_class = "provenance-only"
