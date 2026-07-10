@@ -16,15 +16,14 @@ Deliver an independent, maintainable Rust physics engine whose LiquidFun behavio
 
 <!-- Shipped and confirmed valuable. -->
 
-(None yet — ship to validate)
+- [x] Phase 1 selected and pinned official LiquidFun commit `7f20402173fd143a3988c921bc384459c6a858f2`, with release ancestry, licensing, notices, source-mapping, and intentional update rules recorded.
+- [x] Phase 1 established a Cargo-first resolver-3 workspace with one publishable `liquidfun` crate, a private `xtask`, a pinned development toolchain, a provisional Rust 1.92 MSRV, and package isolation from C++/reference inputs.
+- [x] Phase 1 created an authoritative 177-row compatibility ledger, deterministic 161-entry discovery snapshot, generated human report, and fail-closed inventory/provenance/package checks.
 
 ### Active
 
 <!-- Current scope. Building toward these. -->
 
-- [ ] Select the canonical LiquidFun reference repository and pin an exact revision with its release context, Box2D ancestry, rationale, license obligations, and required notices documented.
-- [ ] Establish a cohesive Cargo workspace and crate/module architecture that keeps Cargo sufficient for normal Rust development and use.
-- [ ] Build a complete upstream subsystem, public API, source, example, and test inventory with a traceability matrix that records Rust implementation, unit-test, differential-test, benchmark, compatibility, and documentation status.
 - [ ] Design an idiomatic Rust public object model for worlds, bodies, fixtures, joints, particles, groups, callbacks, user data, mutation, destruction, stable identity, and invalidation without exposing raw C++ ownership patterns.
 - [ ] Implement the Box2D-compatible mathematical, geometric, collision, broad-phase, narrow-phase, solver, sleeping, query, ray-cast, and continuous-collision foundations present in the selected LiquidFun revision.
 - [ ] Implement rigid-body worlds, bodies, fixtures, contacts, all supported shapes and joints, filters, listeners, destruction behavior, debug drawing abstractions, and upstream-equivalent world operations.
@@ -99,8 +98,8 @@ Before substantial physics porting begins, the project should have:
 
 ## Context
 
-- The repository is greenfield: it currently contains the project prompt, Bright Builds Rules, and repository metadata but no Rust implementation or Cargo manifest.
-- Google LiquidFun extends a historical Box2D lineage with particle simulation. The exact canonical repository, stable reference revision, Box2D ancestry, maintenance state, and build behavior must be researched rather than assumed.
+- Phase 1 is complete: the repository now contains a Cargo-first Rust scaffold, private orchestration, an immutable upstream oracle, reproducible CMake/Ninja build commands, compatibility/provenance records, package isolation, and separated CI workflows. Broad physics behavior is not implemented yet.
+- Google LiquidFun extends the Box2D 2.3.0 / revision-280 lineage. Official commit `7f20402173fd143a3988c921bc384459c6a858f2` is the immutable behavioral oracle; `UPSTREAM.md` and ADR 0001 record the release-to-candidate delta and maintenance state.
 - The upstream C++ implementation is the behavioral oracle during development, not a production dependency or the desired public architecture.
 - Particle simulation is a central deliverable, not an optional extension after rigid-body work.
 - The project is necessarily long-running and may span multiple milestones; compatibility status must therefore be visible and evidence-based throughout development.
@@ -136,13 +135,13 @@ Before substantial physics porting begins, the project should have:
 
 | Decision | Rationale | Outcome |
 | --- | --- | --- |
-| Build a genuine Rust implementation rather than production C++ bindings | Independence, safety, idiomatic APIs, Cargo usability, and long-term maintainability are core goals | — Pending |
-| Use a pinned upstream C++ LiquidFun revision as the behavioral oracle | Compatibility needs a stable, inspectable target and reproducible evidence | — Pending |
-| Restrict FFI and C++ tooling to development-time comparison workflows | Published Rust users must not inherit a C++ runtime or toolchain dependency | — Pending |
-| Keep Cargo primary and sufficient for ordinary use | Rust consumers and contributors need a conventional, transparent workflow | — Pending |
-| Evaluate Bazel or hybrid orchestration before adoption | Cross-language and CI orchestration may help, but maintenance cost must be justified | — Pending |
+| Build a genuine Rust implementation rather than production C++ bindings | Independence, safety, idiomatic APIs, Cargo usability, and long-term maintainability are core goals | Accepted in Phase 1 architecture and package boundaries |
+| Use a pinned upstream C++ LiquidFun revision as the behavioral oracle | Compatibility needs a stable, inspectable target and reproducible evidence | Accepted in Phase 1: `7f20402173fd143a3988c921bc384459c6a858f2` |
+| Restrict FFI and C++ tooling to development-time comparison workflows | Published Rust users must not inherit a C++ runtime or toolchain dependency | Accepted in Phase 1; package isolation verified |
+| Keep Cargo primary and sufficient for ordinary use | Rust consumers and contributors need a conventional, transparent workflow | Accepted in Phase 1; `liquidfun` is the sole default member |
+| Evaluate Bazel or hybrid orchestration before adoption | Cross-language and CI orchestration may help, but maintenance cost must be justified | Bazel deferred in Phase 1 absent measured need |
 | Prefer safe Rust and encapsulate any necessary unsafe code | Safety must not be traded away without measurable benefit and explicit invariants | — Pending |
-| Treat compatibility inventory and differential testing as first-class product work | Parity claims require traceable evidence, not implementation intuition | — Pending |
+| Treat compatibility inventory and differential testing as first-class product work | Parity claims require traceable evidence, not implementation intuition | Inventory accepted in Phase 1; differential protocol begins in Phase 2 |
 | Design the Rust ownership, handle, callback, and user-data model before broad porting | C++ pointer and mutation semantics are foundational and expensive to revise late | — Pending |
 | Keep particle systems in core scope | Particle behavior is the defining LiquidFun extension and cannot be deferred as optional polish | — Pending |
 | Keep rendering optional and simulation headless | Core portability, testing, server use, and framework independence depend on this boundary | — Pending |
@@ -151,11 +150,6 @@ Before substantial physics porting begins, the project should have:
 
 ## Open Questions
 
-- Which upstream repository and exact commit provide the most defensible canonical LiquidFun reference?
-- Which historical Box2D version and LiquidFun-specific changes does that revision contain?
-- What license and notice obligations apply to translated implementation details, tests, reference data, and derivative work?
-- Should repository-wide reference orchestration use upstream tooling, CMake wrappers, Bazel with `rules_rust`, Cargo build support, or a narrow hybrid?
-- What crate boundaries provide meaningful isolation without fragmenting the engine?
 - Which handle, arena, lifetime, callback, user-data, and mutation model best balances safety, API ergonomics, identity stability, and upstream behavior?
 - Which observables and tolerances define acceptable parity for each subsystem and platform?
 - How should deterministic iteration and contact ordering be preserved without exposing internal storage?
@@ -184,4 +178,4 @@ This document evolves at phase transitions and milestone boundaries.
 
 ______________________________________________________________________
 
-*Last updated: 2026-07-09 after initialization*
+*Last updated: 2026-07-10 after Phase 1 completion*
