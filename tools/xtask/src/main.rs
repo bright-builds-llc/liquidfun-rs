@@ -1,5 +1,6 @@
 //! Private repository orchestration for `liquidfun-rs`.
 
+mod differential;
 mod inventory;
 mod package;
 mod provenance;
@@ -15,6 +16,7 @@ use std::process::ExitCode;
 const USAGE: &str = r"Usage: cargo xtask <command> [arguments]
 
 Commands:
+  differential Manage semantic Rust/C++ comparison workflows
   upstream    Manage the pinned upstream oracle
   inventory   Manage the compatibility inventory
   provenance  Validate provenance records
@@ -25,6 +27,7 @@ Commands:
 enum XtaskError {
     Check { message: String },
     Usage { message: String },
+    Differential(differential::DifferentialError),
     Inventory(inventory::InventoryError),
     Package(package::PackageError),
     Provenance(provenance::ProvenanceError),
@@ -50,6 +53,7 @@ impl Display for XtaskError {
         match self {
             Self::Check { message } => write!(formatter, "check: {message}"),
             Self::Usage { message } => write!(formatter, "{message}\n\n{USAGE}"),
+            Self::Differential(error) => Display::fmt(error, formatter),
             Self::Inventory(error) => Display::fmt(error, formatter),
             Self::Package(error) => Display::fmt(error, formatter),
             Self::Provenance(error) => Display::fmt(error, formatter),
@@ -71,6 +75,7 @@ fn dispatch(args: &[String]) -> Result<(), XtaskError> {
             Ok(())
         }
         "upstream" => upstream::run(command_args).map_err(XtaskError::Upstream),
+        "differential" => differential::run(command_args).map_err(XtaskError::Differential),
         "inventory" => inventory::run(command_args).map_err(XtaskError::Inventory),
         "provenance" => provenance::run(command_args).map_err(XtaskError::Provenance),
         "package" => package::run(command_args).map_err(XtaskError::Package),
@@ -96,13 +101,16 @@ fn check() -> Result<(), XtaskError> {
     } else {
         println!(
             "check: Cargo-only mode - third_party/liquidfun is not initialized; \
-             skipping inventory, upstream, and provenance checks"
+             skipping inventory, upstream identity, and full provenance checks"
         );
     }
 
     println!("check: package isolation");
     let package_argument = ["verify".to_owned()];
     package::run(&package_argument).map_err(XtaskError::Package)?;
+
+    println!("check: protocol schema presentations and fixtures");
+    differential::check_protocol(&repository_root).map_err(XtaskError::Differential)?;
 
     if upstream_initialized {
         println!("check: upstream identity");
@@ -111,6 +119,9 @@ fn check() -> Result<(), XtaskError> {
 
         println!("check: provenance");
         provenance::run(&check_argument).map_err(XtaskError::Provenance)?;
+    } else {
+        println!("check: artifact provenance (Cargo-only)");
+        provenance::check_artifacts(&repository_root).map_err(XtaskError::Provenance)?;
     }
 
     println!("check: all applicable repository checks passed");

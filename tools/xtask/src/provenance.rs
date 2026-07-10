@@ -154,6 +154,31 @@ pub(crate) fn run(args: &[String]) -> Result<(), ProvenanceError> {
     check(&repository_root)
 }
 
+pub(crate) fn check_artifacts(repository_root: &Path) -> Result<(), ProvenanceError> {
+    let confined_paths = ConfinedPaths::new(repository_root)?;
+    let upstream_lock: UpstreamLock = read_toml(
+        &repository_root.join("reference/upstream-lock.toml"),
+        "upstream lock",
+    )?;
+    validate_lock(&upstream_lock)?;
+    let source_map: SourceMap = read_toml(
+        &repository_root.join("reference/source-map.toml"),
+        "source map",
+    )?;
+    validate_source_map(&confined_paths, &source_map, &upstream_lock.revision)?;
+    let artifact_count = artifact::validate_manifest(
+        repository_root,
+        &confined_paths,
+        &source_map,
+        &upstream_lock.revision,
+    )?;
+    println!(
+        "artifact provenance verified: oracle {} with {} artifact records",
+        upstream_lock.revision, artifact_count
+    );
+    Ok(())
+}
+
 fn check(repository_root: &Path) -> Result<(), ProvenanceError> {
     let confined_paths = ConfinedPaths::new(repository_root)?;
     let upstream_lock: UpstreamLock = read_toml(
