@@ -1,6 +1,7 @@
 use super::{
-    CheckpointRecord, EngineKind, HandshakeRecord, ProtocolSessionValidator, TraceBegin, TraceEnd,
-    TraceRecord, TraceValidator, WorldCounts, trace_payload_sha256,
+    CheckpointRecord, EngineKind, HandshakeRecord, ProtocolSessionValidator, TraceBegin,
+    TraceDecodeError, TraceEnd, TraceRecord, TraceValidator, WorldCounts,
+    decode_trace_record_jsonl, trace_payload_sha256,
 };
 use crate::{
     BuildIdentity, BuildIdentityFields, CheckpointId, FloatBits, HarnessFailureKind, HarnessLimits,
@@ -279,4 +280,33 @@ fn world_counts_expose_every_exact_empty_world_field() {
     assert_eq!(counts.particle_systems(), 0);
     assert_eq!(counts.particle_groups(), 0);
     assert_eq!(counts.particles(), 0);
+}
+
+#[test]
+fn trace_decoder_rejects_an_invalid_named_source_before_validation() {
+    // Arrange
+    let identity = Sha256Hex::new("11".repeat(32)).expect("hash should validate");
+    let record = format!(
+        concat!(
+            "{{\"record_kind\":\"trace_begin\",\"protocol_version\":1,",
+            "\"request_id\":\"request-1\",\"trace_schema_version\":1,",
+            "\"scenario_id\":\"empty-world\",",
+            "\"scenario_sha256\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",",
+            "\"source\":{{\"kind\":\"named\",\"name\":\"\"}},",
+            "\"tolerance_profile_version\":1,",
+            "\"tolerance_profile_sha256\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",",
+            "\"engine_kind\":\"cpp_oracle\",\"identity_sha256\":\"{}\"}}\n"
+        ),
+        identity.as_str()
+    );
+
+    // Act
+    let error = decode_trace_record_jsonl(record.as_bytes(), &HarnessLimits::phase2_default_v1())
+        .expect_err("empty source name should fail at the boundary");
+
+    // Assert
+    let TraceDecodeError::Validation(error) = error else {
+        panic!("expected typed trace validation failure");
+    };
+    assert_eq!(error.kind(), HarnessFailureKind::MalformedRecord);
 }

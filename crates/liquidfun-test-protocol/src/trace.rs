@@ -908,7 +908,7 @@ pub fn decode_trace_record_jsonl(
                 TraceValidationError::new(HarnessFailureKind::MalformedRecord, error.to_string())
             })?,
             scenario_sha256,
-            source: convert_source(source),
+            source: convert_source(source)?,
             tolerance_profile_version,
             tolerance_profile_sha256,
             engine_kind,
@@ -972,21 +972,40 @@ fn parse_request_id(
     })
 }
 
-fn convert_source(raw: RawTraceSource) -> ScenarioSource {
+fn convert_source(raw: RawTraceSource) -> Result<ScenarioSource, TraceValidationError> {
     match raw {
-        RawTraceSource::Named { name } => ScenarioSource::Named {
-            name: name.into_string().into_boxed_str(),
-        },
+        RawTraceSource::Named { name } => {
+            let name = name.into_string();
+            if name.trim().is_empty() {
+                return Err(invalid_trace_source());
+            }
+            Ok(ScenarioSource::Named {
+                name: name.into_boxed_str(),
+            })
+        }
         RawTraceSource::Seeded {
             generator_id,
             generator_version,
             seed,
-        } => ScenarioSource::Seeded {
-            generator_id: generator_id.into_string().into_boxed_str(),
-            generator_version,
-            seed,
-        },
+        } => {
+            let generator_id = generator_id.into_string();
+            if generator_id.trim().is_empty() || generator_version == 0 {
+                return Err(invalid_trace_source());
+            }
+            Ok(ScenarioSource::Seeded {
+                generator_id: generator_id.into_boxed_str(),
+                generator_version,
+                seed,
+            })
+        }
     }
+}
+
+fn invalid_trace_source() -> TraceValidationError {
+    TraceValidationError::new(
+        HarnessFailureKind::MalformedRecord,
+        "trace source identity must be nonempty and versioned",
+    )
 }
 
 #[cfg(test)]
