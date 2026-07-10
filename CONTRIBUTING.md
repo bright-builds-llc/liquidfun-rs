@@ -46,3 +46,113 @@ This managed block is owned upstream by `bright-builds-rules`. If this block nee
 - Note any residual risks or follow-up work.
 
 <!-- bright-builds-rules-contributing:end -->
+
+## Repository-specific workflow
+
+The crate is still a foundation scaffold. Contributions must not describe it
+as a working physics engine unless the corresponding implementation and
+validation evidence exists in the compatibility ledger.
+
+### Prerequisites
+
+Cargo-only work uses the Rust 1.97.0 toolchain selected by
+`rust-toolchain.toml`; the publishable crate also has a provisional Rust 1.92.0
+MSRV check. Ordinary Rust users do not need CMake, C++, the submodule, or
+reference data.
+
+Oracle work additionally requires:
+
+- the exact recursive submodule checkout;
+- CMake 3.25 or newer, with 4.3.3 used by canonical CI;
+- Ninja 1.11 or newer, with 1.13.2 used by canonical CI; and
+- a C++ compiler, with Clang 22.1.8 used by canonical Linux CI.
+
+Initialize and verify the committed oracle identity:
+
+```bash
+git submodule update --init --recursive third_party/liquidfun
+cargo xtask upstream verify
+```
+
+Never edit, format, or regenerate files inside `third_party/liquidfun`.
+
+### Discover commands
+
+The `justfile` is a thin command menu:
+
+```bash
+just --list
+cargo xtask --help
+```
+
+Recipes print and invoke their underlying Cargo or `cargo xtask` commands.
+Validation logic belongs in Rust tooling or the CMake wrapper, not in recipes.
+
+### Required Rust checks
+
+Run these commands in order before every commit:
+
+```bash
+cargo fmt --all
+cargo clippy --all-targets --all-features -- -D warnings
+cargo build --all-targets --all-features
+cargo test --all-features
+```
+
+When private tooling changes, also run the workspace variants and denied-warning
+documentation build listed in [TESTING.md](TESTING.md). `cargo xtask check`
+adds the applicable inventory, package, upstream, and provenance gates; in a
+Cargo-only checkout it labels the skipped oracle-dependent checks explicitly.
+
+### Oracle workflow
+
+After initialization, run the evidence gates before CMake:
+
+```bash
+cargo xtask upstream verify
+cargo xtask provenance check
+cargo xtask inventory check
+cargo xtask upstream configure --preset oracle-debug
+cargo xtask upstream build --preset oracle-debug
+```
+
+`just oracle-debug` is the visible configure-and-build alias. Build outputs
+belong under `target/reference/`, never in the upstream tree or consumer crate.
+
+### Generated files and evidence ownership
+
+- `reference/compatibility.json` is the authoritative curated ledger. Every row
+  keeps independent investigated, planned, implemented, unit-test,
+  differential, platform, documented-difference, and unsupported evidence.
+- `reference/discovery.json` is refreshed only by
+  `cargo xtask inventory discover` against the verified pinned tree.
+- `COMPATIBILITY.md` is generated only by
+  `cargo xtask inventory generate`; do not edit it by hand.
+- `cargo xtask inventory check` is read-only and must leave all three surfaces
+  unchanged.
+- `reference/artifacts/manifest.toml` records reviewed artifact hashes, oracle
+  and generator revisions, compiler/preset/target/flags, and notice references.
+- `reference/upstream-lock.toml` and the submodule gitlink change only through
+  the intentional update review described in [UPSTREAM.md](UPSTREAM.md).
+
+### Provenance and licensing duties
+
+Before translating or deriving source, tests, scenarios, or reference data,
+add or update its `reference/source-map.toml` entry with the local path,
+upstream revision and path, derivation kind, alteration summary, and notice
+class. Preserve the applicable LiquidFun/Box2D notices, mark altered source
+representations where required, and update
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) when a new notice class enters
+the repository.
+
+The root MIT license covers original project work; it does not replace
+upstream attribution, provenance, alteration, or notice obligations. An
+unmapped derivation, dirty submodule, stale generated report, or unexplained
+compatibility claim blocks the contribution.
+
+### Pull request evidence
+
+Describe the changed behavior or repository contract, list the exact commands
+that passed, and call out platform checks that remain CI-only. Physics work
+must update the applicable compatibility rows and cite its unit, differential,
+platform, documentation, and provenance evidence independently.

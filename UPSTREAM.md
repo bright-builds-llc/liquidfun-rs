@@ -72,8 +72,9 @@ git -C third_party/liquidfun status --short
 The revision must be
 `7f20402173fd143a3988c921bc384459c6a858f2`, the status line must begin with a
 space rather than `+` or `-`, and the upstream worktree status must be empty.
-The repository's planned `cargo xtask upstream verify` command will automate
-agreement among the gitlink, checkout, lock, and provenance records.
+`cargo xtask upstream verify` automates agreement among the gitlink, checkout,
+lock, origin URL, clean worktree, and local tool identities. Run
+`cargo xtask provenance check` for the related repository evidence records.
 
 ## Intentional Update
 
@@ -104,16 +105,21 @@ the oracle.
 
 ## Build
 
-The stable contributor-facing build entrypoint is:
+The repository-owned wrapper requires CMake 3.25 or newer and Ninja 1.11 or
+newer. Canonical Linux CI uses CMake 4.3.3, Ninja 1.13.2, and Clang 22.1.8.
+Verify identity and provenance before configuring or building:
 
 ```bash
-cargo xtask upstream
+cargo xtask upstream verify
+cargo xtask provenance check
+cargo xtask upstream configure --preset oracle-debug
+cargo xtask upstream build --preset oracle-debug
 ```
 
-That command is a placeholder until the repository-owned CMake wrapper and
-`xtask` implementation land in the later foundation plan. The wrapper will own
-legacy CMake compatibility outside the submodule and keep ordinary Cargo build,
-test, documentation, and package paths free of C++ requirements.
+`just oracle-debug` is the thin configure-and-build alias. The wrapper owns
+legacy policy compatibility outside the submodule and writes only under
+`target/reference/`. Ordinary Cargo build, test, documentation, and package
+paths remain free of C++ requirements.
 
 ## Patches
 

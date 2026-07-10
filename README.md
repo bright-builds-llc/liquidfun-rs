@@ -10,4 +10,52 @@
 
 <!-- bright-builds-rules-readme-badges:end -->
 
-A Rust port of https://github.com/google/liquidfun
+An in-progress effort to build an independent native Rust implementation of
+Google's LiquidFun physics engine against a pinned C++ oracle.
+
+## Status
+
+This repository is at the foundation stage. The `liquidfun` crate is a version
+`0.0.0` scaffold with no physics simulation behavior yet. The current work
+freezes the upstream oracle, proves Cargo-only package isolation, builds the
+read-only C++ reference, and tracks 177 compatibility rows. The generated
+[compatibility inventory](COMPATIBILITY.md) currently records zero implemented,
+unit-tested, differentially validated, or platform-validated rows.
+
+Do not use this crate for simulation yet. Maturity will be reported only as
+evidence is added to the compatibility ledger.
+
+## Cargo-only quick start
+
+Ordinary Rust development does not require the upstream submodule, CMake, or a
+C++ compiler:
+
+```bash
+cargo build
+cargo test
+```
+
+The workspace selects only `crates/liquidfun` by default. Repository tooling
+and the C++ oracle remain private maintainer workflows.
+
+## Repository workflows
+
+List the transparent contributor commands with `just` or `just --list`. Run
+the applicable foundation checks with `cargo xtask check` or `just check`.
+See [TESTING.md](TESTING.md) for the exact verification tiers and
+[CONTRIBUTING.md](CONTRIBUTING.md) before sending changes.
+
+## Architecture and evidence
+
+- [UPSTREAM.md](UPSTREAM.md) — immutable oracle identity, ancestry, notices,
+  and intentional update policy
+- [COMPATIBILITY.md](COMPATIBILITY.md) — generated inventory and explicit
+  evidence gaps
+- [ARCHITECTURE.md](ARCHITECTURE.md) — native Rust dependency direction and
+  oracle-isolation boundary
+- [TESTING.md](TESTING.md) — local commands, CI lanes, package proof, and
+  deterministic verification policy
+
+Original project work is MIT-licensed. Upstream and derived materials retain
+their applicable provenance, alteration, and notice duties; see
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
