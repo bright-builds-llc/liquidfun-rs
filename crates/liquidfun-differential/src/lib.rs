@@ -7,8 +7,10 @@
 
 mod canonical;
 mod comparator;
+mod minimizer;
 mod report;
 
 pub use canonical::*;
 pub use comparator::*;
+pub use minimizer::*;
 pub use report::*;

@@ -17,6 +17,9 @@ const MAXIMUM_CHECKPOINTS: usize = 4_096;
 const MAXIMUM_OBSERVABLES: usize = 128;
 const MAXIMUM_SOLVER_ITERATIONS: u32 = 255;
 
+mod reduction;
+pub use reduction::*;
+
 /// Stable semantic validation categories for a phase-2 scenario.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ScenarioErrorKind {
