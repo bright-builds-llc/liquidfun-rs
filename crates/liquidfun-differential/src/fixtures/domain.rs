@@ -163,6 +163,7 @@ pub struct PromotionReceipt {
     pub(super) artifact_path: PathBuf,
     pub(super) manifest_path: PathBuf,
     pub(super) sha256: Box<str>,
+    pub(super) post_commit_warnings: Vec<Box<str>>,
 }
 
 impl PromotionReceipt {
@@ -182,6 +183,12 @@ impl PromotionReceipt {
     #[must_use]
     pub fn sha256(&self) -> &str {
         &self.sha256
+    }
+
+    /// Returns diagnostics for cleanup failures that occurred after the manifest committed.
+    #[must_use]
+    pub fn post_commit_warnings(&self) -> &[Box<str>] {
+        &self.post_commit_warnings
     }
 }
 

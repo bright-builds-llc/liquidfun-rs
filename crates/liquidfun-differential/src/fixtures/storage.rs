@@ -47,7 +47,43 @@ pub(super) fn update_manifest_atomically(
     destination: &Path,
     artifact_hash: &str,
     artifact_id: &str,
-) -> Result<(), FixtureError> {
+) -> Result<ManifestCommit, FixtureError> {
+    update_manifest_atomically_with_cleanup(
+        repository_root,
+        metadata,
+        review,
+        destination,
+        artifact_hash,
+        artifact_id,
+        |path| fs::remove_file(path),
+    )
+}
+
+#[derive(Debug)]
+pub(super) struct ManifestCommit {
+    lock_cleanup_error: Option<io::Error>,
+}
+
+impl ManifestCommit {
+    pub(super) fn lock_cleanup_warning(&self) -> Option<String> {
+        self.lock_cleanup_error
+            .as_ref()
+            .map(|error| format!("manifest committed but lock cleanup failed: {error}"))
+    }
+}
+
+fn update_manifest_atomically_with_cleanup<F>(
+    repository_root: &Path,
+    metadata: &CandidateMetadata,
+    review: &StoredReview,
+    destination: &Path,
+    artifact_hash: &str,
+    artifact_id: &str,
+    cleanup_lock: F,
+) -> Result<ManifestCommit, FixtureError>
+where
+    F: FnOnce(&Path) -> io::Result<()>,
+{
     let lock_path = repository_root.join("reference/artifacts/manifest.toml.lock");
     write_create_new(&lock_path, artifact_id.as_bytes())?;
     let result = update_manifest_locked(
@@ -58,12 +94,14 @@ pub(super) fn update_manifest_atomically(
         artifact_hash,
         artifact_id,
     );
-    let cleanup = fs::remove_file(lock_path);
-    match (result, cleanup) {
-        (Err(error), _) => Err(error),
-        (Ok(()), Ok(())) => Ok(()),
-        (Ok(()), Err(error)) => Err(FixtureError::Io(error)),
+    if let Err(error) = result {
+        let _ignored = cleanup_lock(&lock_path);
+        return Err(error);
     }
+
+    Ok(ManifestCommit {
+        lock_cleanup_error: cleanup_lock(&lock_path).err(),
+    })
 }
 
 fn update_manifest_locked(
@@ -487,4 +525,118 @@ pub(super) fn enforce_size(
         return Ok(());
     }
     Err(FixtureError::SizeLimit { field, limit })
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::atomic::{AtomicU64, Ordering};
+
+    use super::*;
+    use crate::fixtures::domain::{CANDIDATE_SCHEMA_VERSION, ReviewStatus};
+
+    static NEXT_TEMP: AtomicU64 = AtomicU64::new(0);
+    const REVISION: &str = "7f20402173fd143a3988c921bc384459c6a858f2";
+
+    #[test]
+    fn committed_manifest_survives_lock_cleanup_failure() {
+        // Arrange
+        let sequence = NEXT_TEMP.fetch_add(1, Ordering::Relaxed);
+        let repository_root = std::env::temp_dir().join(format!(
+            "liquidfun-manifest-cleanup-{}-{sequence}",
+            std::process::id()
+        ));
+        let artifact_directory = repository_root.join("reference/artifacts/traces");
+        fs::create_dir_all(&artifact_directory).expect("artifact directory should be created");
+        let repository_root =
+            fs::canonicalize(repository_root).expect("fixture root should canonicalize");
+        let artifact_directory = repository_root.join("reference/artifacts/traces");
+        let manifest = ArtifactManifest {
+            schema_version: 2,
+            record_schema_version: 2,
+            oracle_revision: REVISION.to_owned(),
+            record_fields: MANIFEST_FIELDS.into_iter().map(str::to_owned).collect(),
+            artifacts: Vec::new(),
+        };
+        fs::write(
+            repository_root.join("reference/artifacts/manifest.toml"),
+            toml::to_string_pretty(&manifest).expect("manifest should serialize"),
+        )
+        .expect("manifest should be written");
+        let destination = artifact_directory.join("empty-world-v1.jsonl");
+        fs::write(&destination, b"trace\n").expect("destination should be written");
+        let metadata = candidate_metadata();
+        let review = StoredReview {
+            schema_version: CANDIDATE_SCHEMA_VERSION,
+            artifact_id: metadata.artifact_id.clone(),
+            candidate_sha256: metadata.candidate_sha256.clone(),
+            reviewer: "reviewer".to_owned(),
+            reviewed_at: "2026-07-10T12:30:00Z".to_owned(),
+            review_status: ReviewStatus::Approved,
+        };
+
+        // Act
+        let commit = update_manifest_atomically_with_cleanup(
+            &repository_root,
+            &metadata,
+            &review,
+            &destination,
+            &sha256(b"trace\n"),
+            &metadata.artifact_id,
+            |_path| {
+                Err(io::Error::new(
+                    io::ErrorKind::PermissionDenied,
+                    "injected lock cleanup failure",
+                ))
+            },
+        )
+        .expect("manifest replacement is committed despite cleanup failure");
+
+        // Assert
+        let committed = read_manifest(&repository_root).expect("committed manifest should parse");
+        assert_eq!(committed.artifacts.len(), 1);
+        assert!(destination.is_file());
+        assert!(commit.lock_cleanup_warning().is_some());
+        assert!(
+            repository_root
+                .join("reference/artifacts/manifest.toml.lock")
+                .is_file()
+        );
+        fs::remove_dir_all(repository_root).expect("fixture should be removed");
+    }
+
+    fn candidate_metadata() -> CandidateMetadata {
+        CandidateMetadata {
+            schema_version: CANDIDATE_SCHEMA_VERSION,
+            artifact_id: "cleanup-failure".to_owned(),
+            artifact_kind: ArtifactKind::ReviewedTrace,
+            scenario_id: "empty-world".to_owned(),
+            scenario_sha256: "0".repeat(64),
+            source_json: r#"{"kind":"named","name":"empty-world"}"#.to_owned(),
+            protocol_version: 1,
+            scenario_schema_version: 1,
+            trace_schema_version: 1,
+            tolerance_profile_version: 1,
+            tolerance_profile_sha256: "1".repeat(64),
+            oracle_revision: REVISION.to_owned(),
+            adapter_revision: "fixture-adapter-v1".to_owned(),
+            adapter_content_sha256: "2".repeat(64),
+            build_identity_sha256: "3".repeat(64),
+            preset: "oracle-debug".to_owned(),
+            session_profile: "one-shot".to_owned(),
+            compiler: "fixture compiler".to_owned(),
+            target: "fixture-target".to_owned(),
+            flags: Vec::new(),
+            generator_revision: REVISION.to_owned(),
+            review_status: ReviewStatus::Pending,
+            request_sha256: "4".repeat(64),
+            trace_sha256: "5".repeat(64),
+            report_sha256: "6".repeat(64),
+            identity_sha256: "7".repeat(64),
+            stderr_sha256: "8".repeat(64),
+            scenario_bytes_sha256: "9".repeat(64),
+            trace_payload_sha256: "a".repeat(64),
+            failure_signature_json: None,
+            candidate_sha256: "b".repeat(64),
+        }
+    }
 }

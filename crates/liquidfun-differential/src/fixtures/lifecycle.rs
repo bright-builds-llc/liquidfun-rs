@@ -272,7 +272,7 @@ pub fn promote_candidate(
         return Err(FixtureError::Io(error));
     }
     let artifact_hash = sha256(&replayed.accepted_bytes);
-    let manifest_result = update_manifest_atomically(
+    let manifest_commit = update_manifest_atomically(
         repository_root,
         &replayed.metadata,
         &review,
@@ -280,17 +280,32 @@ pub fn promote_candidate(
         &artifact_hash,
         artifact_id,
     );
-    if let Err(error) = manifest_result {
-        let _ignored = fs::remove_file(&destination);
-        let _ignored = fs::remove_file(&temporary);
-        return Err(error);
+    let manifest_commit = match manifest_commit {
+        Ok(commit) => commit,
+        Err(error) => {
+            let _ignored = fs::remove_file(&destination);
+            let _ignored = fs::remove_file(&temporary);
+            return Err(error);
+        }
+    };
+    let mut post_commit_warnings = manifest_commit
+        .lock_cleanup_warning()
+        .into_iter()
+        .map(String::into_boxed_str)
+        .collect::<Vec<_>>();
+    if let Err(error) = fs::remove_file(&temporary) {
+        post_commit_warnings
+            .push(format!("artifact committed but temporary cleanup failed: {error}").into());
     }
-    fs::remove_file(&temporary)?;
-    sync_directory(&parent)?;
+    if let Err(error) = sync_directory(&parent) {
+        post_commit_warnings
+            .push(format!("artifact committed but directory sync failed: {error}").into());
+    }
     Ok(PromotionReceipt {
         artifact_id: artifact_id.into(),
         artifact_path: destination,
         manifest_path: repository_root.join("reference/artifacts/manifest.toml"),
         sha256: artifact_hash.into_boxed_str(),
+        post_commit_warnings,
     })
 }
