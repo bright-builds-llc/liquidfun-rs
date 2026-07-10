@@ -406,7 +406,8 @@ fn validate_generator_revision(
             OsStr::new(&object),
         ],
         "verify artifact generator revision",
-    )?;
+    )
+    .map_err(|error| ProvenanceError::new("generator", error.to_string()))?;
     Ok(())
 }
 

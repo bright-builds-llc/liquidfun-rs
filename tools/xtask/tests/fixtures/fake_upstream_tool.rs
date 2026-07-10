@@ -51,7 +51,12 @@ fn run_git(args: &[String]) -> ExitCode {
         return ExitCode::SUCCESS;
     }
     if args.iter().any(|argument| argument == "cat-file") {
-        return ExitCode::SUCCESS;
+        let expected_object = format!("{revision}^{{commit}}");
+        if args.last() == Some(&expected_object) {
+            return ExitCode::SUCCESS;
+        }
+        eprintln!("unknown generator revision");
+        return ExitCode::FAILURE;
     }
     if args.iter().any(|argument| argument == "status") {
         if env::var_os("LIQUIDFUN_TEST_DIRTY").is_some() {

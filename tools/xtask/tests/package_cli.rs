@@ -21,8 +21,24 @@ type TestResult = Result<(), Box<dyn Error>>;
 #[derive(Clone, Copy)]
 enum ArchiveCase {
     ForbiddenContent,
+    ForbiddenNativeSource,
     ParentTraversal,
     AbsolutePath,
+}
+
+#[test]
+fn verify_rejects_native_source_extensions() -> TestResult {
+    // Arrange
+    let fixture = PackageFixture::new(ArchiveCase::ForbiddenNativeSource)?;
+
+    // Act
+    let output = fixture.command()?;
+
+    // Assert
+    assert_failure_category(&output, "package/forbidden-content");
+    assert!(!fixture.cargo_marker.exists());
+    fixture.cleanup()?;
+    Ok(())
 }
 
 struct PackageFixture {
@@ -127,6 +143,9 @@ fn write_archive(path: &Path, case: ArchiveCase) -> io::Result<()> {
             "liquidfun-0.0.0/tools/oracle.cpp",
             b"forbidden",
         )?,
+        ArchiveCase::ForbiddenNativeSource => {
+            append_file(&mut archive, "liquidfun-0.0.0/src/oracle.cpp", b"forbidden")?;
+        }
         ArchiveCase::ParentTraversal => {
             append_raw_file(&mut archive, "../escape", b"traversal")?;
         }

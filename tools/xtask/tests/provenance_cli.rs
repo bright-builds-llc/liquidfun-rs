@@ -50,7 +50,7 @@ impl ProvenanceFixture {
         )?;
         let fixture = Self { root };
         fixture.write_source_map(REVISION)?;
-        fixture.write_manifest(&artifact_hash(), true)?;
+        fixture.write_manifest(&artifact_hash(), true, REVISION)?;
         Ok(fixture)
     }
 
@@ -63,7 +63,12 @@ impl ProvenanceFixture {
         )
     }
 
-    fn write_manifest(&self, hash: &str, include_notice: bool) -> io::Result<()> {
+    fn write_manifest(
+        &self,
+        hash: &str,
+        include_notice: bool,
+        generator_revision: &str,
+    ) -> io::Result<()> {
         let notices = if include_notice {
             "[\"THIRD_PARTY_NOTICES.md\"]"
         } else {
@@ -72,7 +77,7 @@ impl ProvenanceFixture {
         fs::write(
             self.root.join("reference/artifacts/manifest.toml"),
             format!(
-                "schema_version = 1\nrecord_schema_version = 1\noracle_revision = \"{REVISION}\"\nrecord_fields = [\"path\", \"sha256\", \"generator_revision\", \"oracle_revision\", \"preset\", \"compiler\", \"target\", \"flags\", \"notice_refs\", \"review_status\"]\n\n[[artifacts]]\npath = \"reference/artifacts/sample.bin\"\nsha256 = \"{hash}\"\ngenerator_revision = \"{REVISION}\"\noracle_revision = \"{REVISION}\"\npreset = \"oracle-debug\"\ncompiler = \"fixture-clang\"\ntarget = \"fixture-target\"\nflags = []\nnotice_refs = {notices}\nreview_status = \"reviewed\"\n"
+                "schema_version = 1\nrecord_schema_version = 1\noracle_revision = \"{REVISION}\"\nrecord_fields = [\"path\", \"sha256\", \"generator_revision\", \"oracle_revision\", \"preset\", \"compiler\", \"target\", \"flags\", \"notice_refs\", \"review_status\"]\n\n[[artifacts]]\npath = \"reference/artifacts/sample.bin\"\nsha256 = \"{hash}\"\ngenerator_revision = \"{generator_revision}\"\noracle_revision = \"{REVISION}\"\npreset = \"oracle-debug\"\ncompiler = \"fixture-clang\"\ntarget = \"fixture-target\"\nflags = []\nnotice_refs = {notices}\nreview_status = \"reviewed\"\n"
             ),
         )
     }
@@ -124,7 +129,7 @@ fn check_rejects_source_map_revision_mismatch() -> TestResult {
 fn check_rejects_artifact_sha_mismatch() -> TestResult {
     // Arrange
     let fixture = ProvenanceFixture::new()?;
-    fixture.write_manifest(&"0".repeat(64), true)?;
+    fixture.write_manifest(&"0".repeat(64), true, REVISION)?;
 
     // Act
     let output = fixture.command()?;
@@ -139,13 +144,28 @@ fn check_rejects_artifact_sha_mismatch() -> TestResult {
 fn check_rejects_missing_artifact_notice() -> TestResult {
     // Arrange
     let fixture = ProvenanceFixture::new()?;
-    fixture.write_manifest(&artifact_hash(), false)?;
+    fixture.write_manifest(&artifact_hash(), false, REVISION)?;
 
     // Act
     let output = fixture.command()?;
 
     // Assert
     assert_failure_category(&output, "provenance/notice");
+    fixture.cleanup()?;
+    Ok(())
+}
+
+#[test]
+fn check_rejects_unknown_generator_revision() -> TestResult {
+    // Arrange
+    let fixture = ProvenanceFixture::new()?;
+    fixture.write_manifest(&artifact_hash(), true, WRONG_REVISION)?;
+
+    // Act
+    let output = fixture.command()?;
+
+    // Assert
+    assert_failure_category(&output, "provenance/generator");
     fixture.cleanup()?;
     Ok(())
 }
