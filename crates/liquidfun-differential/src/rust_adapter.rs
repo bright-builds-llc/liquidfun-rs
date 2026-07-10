@@ -122,20 +122,19 @@ impl EmptyWorldAdapter {
 }
 
 struct EmptyWorldState {
-    gravity: [FloatBits; 2],
+    _gravity: [FloatBits; 2],
     simulation_time: f32,
 }
 
 impl EmptyWorldState {
     const fn new(gravity: [FloatBits; 2]) -> Self {
         Self {
-            gravity,
+            _gravity: gravity,
             simulation_time: 0.0,
         }
     }
 
     fn step(&mut self, timestep: FloatBits) -> FloatBits {
-        let _gravity_is_part_of_request_state = self.gravity;
         self.simulation_time += timestep.to_f32();
         FloatBits::from_f32(self.simulation_time)
     }

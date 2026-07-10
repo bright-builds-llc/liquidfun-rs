@@ -8,6 +8,10 @@ license.workspace = true
 repository.workspace = true
 publish = false
 
+[[bin]]
+name = "liquidfun-fake-oracle"
+path = "tests/fixtures/fake_oracle.rs"
+
 [dependencies]
 liquidfun = { path = "../liquidfun" }
 liquidfun-test-protocol = { path = "../liquidfun-test-protocol" }
