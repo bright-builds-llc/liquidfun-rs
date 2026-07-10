@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 02-02-PLAN.md
-last_updated: "2026-07-10T06:47:21.118Z"
+stopped_at: Completed 02-03-PLAN.md
+last_updated: "2026-07-10T07:25:33.508Z"
 last_activity: 2026-07-10
 progress:
   total_phases: 12
   completed_phases: 1
   total_plans: 19
-  completed_plans: 7
-  percent: 37
+  completed_plans: 8
+  percent: 42
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-09)
 ## Current Position
 
 Phase: 2 (Semantic Protocol and Oracle Round Trip) — EXECUTING
-Plan: 3 of 14
+Plan: 4 of 14
 Status: Ready to execute
 Last activity: 2026-07-10
 
@@ -54,6 +54,7 @@ Progress: [░░░░░░░░░░] 0%
 *Updated after each plan completion*
 | Phase 02 P01 | 5 min | 1 tasks | 6 files |
 | Phase 02 P02 | 10 min | 1 tasks | 6 files |
+| Phase 02 P03 | 32 min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -69,6 +70,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 02]: Validate protocol versions, semantic IDs, and SHA-256 identities at construction or deserialization so downstream code cannot receive unchecked primitives.
 - [Phase 02]: Expose only named immutable phase-2 limit profiles for one-shot, reusable-corpus, and sanitizer execution.
 - [Phase 02]: Keep physics mismatch outside HarnessFailureKind while preserving bounded request, provenance, process, stderr, and limit evidence.
+- [Phase 02]: Decode newline-complete JSONL directly into bounded strict raw structs before constructing validated scenario and trace domain values.
+- [Phase 02]: Accept trace comparison input only after request/provenance identity, ordered checkpoints, payload hash, and adapter reset proof all validate.
+- [Phase 02]: Keep phase2-v1 simulation time exact-bit and checkpoint order explicit while exposing typed synthetic numeric policies for later comparator tests.
 
 ### Pending Todos
 
@@ -81,6 +85,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-10T06:47:21.115Z
-Stopped at: Completed 02-02-PLAN.md
+Last session: 2026-07-10T07:25:33.505Z
+Stopped at: Completed 02-03-PLAN.md
 Resume file: None
