@@ -7,6 +7,7 @@ use liquidfun_test_protocol::{
     ScenarioRequestRecord, decode_scenario_request_jsonl, encode_jsonl,
 };
 use serde::Serialize;
+use sha2::{Digest, Sha256};
 
 use crate::{
     DifferentialOutcome, EmptyWorldAdapter, EmptyWorldAdapterError, MismatchReport,
@@ -205,7 +206,8 @@ fn requests_for_profile(
     if profile == SessionProfile::OneShot {
         return Ok(vec![request]);
     }
-    let second_id = RequestId::new(format!("{}-reuse-2", request.request_id().as_str()))
+    let digest = Sha256::digest(request.request_id().as_str().as_bytes());
+    let second_id = RequestId::new(format!("reuse-{digest:x}"))
         .map_err(|error| DifferentialRunnerError::Encode(error.to_string()))?;
     let limits = HarnessLimits::phase2_default_v1();
     let encoded = encode_jsonl(&request, &limits, RecordLimit::Input)

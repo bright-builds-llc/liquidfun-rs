@@ -190,6 +190,33 @@ fn exact_request_replay_preserves_serialized_source_metadata() {
 }
 
 #[test]
+fn maximum_length_request_id_runs_in_reuse_and_sanitizer_profiles() {
+    // Arrange
+    let root = fake_repository("valid");
+    let request_id = "r".repeat(128);
+    let request =
+        fs::read_to_string(root.join("protocol/fixtures/accepted/empty-world-request.jsonl"))
+            .expect("exact request should be readable")
+            .replace("empty-world-request", &request_id);
+    let profiles = [
+        (OraclePreset::Debug, SessionProfile::Reuse),
+        (OraclePreset::AsanUbsan, SessionProfile::Sanitizer),
+    ];
+
+    // Act and Assert
+    for (preset, profile) in profiles {
+        let outcome = replay_exact(&root, request.as_bytes(), preset, profile, REVISION)
+            .expect("maximum-length request identity should remain valid");
+        let DifferentialRunOutcome::Match(run) = outcome else {
+            panic!("bounded request identities should match");
+        };
+        assert_eq!(run.requests().len(), 2);
+        assert_eq!(run.requests()[0].request_id(), request_id);
+        assert!(run.requests()[1].request_id().len() <= 128);
+    }
+}
+
+#[test]
 fn cli_distinguishes_harness_failure_from_physics_mismatch_exit_codes() {
     // Arrange
     let root = repository_root();
