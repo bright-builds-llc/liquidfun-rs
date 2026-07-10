@@ -687,11 +687,7 @@ fn process_output(
         || "terminated by signal".to_owned(),
         |code| code.to_string(),
     );
-    let diagnostic = if stderr.trim().is_empty() {
-        "<no stderr>"
-    } else {
-        stderr.trim_end()
-    };
+    let diagnostic = process_diagnostic(&stdout, &stderr);
     Err(UpstreamError::new(
         "process",
         format!(
@@ -699,4 +695,16 @@ fn process_output(
             program.to_string_lossy()
         ),
     ))
+}
+
+fn process_diagnostic(stdout: &str, stderr: &str) -> String {
+    let stdout = stdout.trim_end();
+    let stderr = stderr.trim_end();
+
+    match (stdout.is_empty(), stderr.is_empty()) {
+        (true, true) => "<no stdout or stderr>".to_owned(),
+        (false, true) => format!("stdout:\n{stdout}"),
+        (true, false) => format!("stderr:\n{stderr}"),
+        (false, false) => format!("stdout:\n{stdout}\nstderr:\n{stderr}"),
+    }
 }

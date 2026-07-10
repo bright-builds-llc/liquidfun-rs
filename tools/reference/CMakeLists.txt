@@ -27,12 +27,10 @@ add_subdirectory(
 )
 
 set(REFERENCE_UPSTREAM_COMPATIBILITY_OPTIONS "")
-if(
-  CMAKE_CXX_COMPILER_ID MATCHES "Clang"
-  AND CMAKE_CXX_FLAGS MATCHES "sanitize"
-)
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   # The read-only 2014 oracle trips two modern Clang warnings under its own
-  # -Werror policy. Keep warnings visible without mutating upstream sources.
+  # -Werror policy in ordinary and sanitizer builds. Keep warnings visible
+  # without mutating upstream sources or weakening repository-authored code.
   set(
     REFERENCE_UPSTREAM_COMPATIBILITY_OPTIONS
     -Wno-error=unused-result

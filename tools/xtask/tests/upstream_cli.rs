@@ -365,6 +365,29 @@ fn configure_propagates_cmake_failure() -> TestResult {
     Ok(())
 }
 
+#[test]
+fn configure_retains_stdout_only_cmake_failure_diagnostics() -> TestResult {
+    // Arrange
+    let fixture = RepositoryFixture::new()?;
+    let mut command = fixture.command()?;
+    command
+        .args(["upstream", "configure", "--preset", "oracle-debug"])
+        .env("LIQUIDFUN_TEST_CMAKE_FAIL_STDOUT", "1");
+
+    // Act
+    let output = command.output()?;
+
+    // Assert
+    assert_failure_category(&output, "upstream/process");
+    assert!(
+        stderr(&output).contains("stdout:\nsimulated compiler failure on stdout"),
+        "expected stdout-only compiler diagnostic in stderr: {}",
+        stderr(&output)
+    );
+    fixture.cleanup()?;
+    Ok(())
+}
+
 fn workspace_root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../..")

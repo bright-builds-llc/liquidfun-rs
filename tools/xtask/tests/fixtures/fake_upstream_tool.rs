@@ -78,6 +78,10 @@ fn run_cmake(args: &[String]) -> ExitCode {
         println!("cmake version 4.3.3");
         return ExitCode::SUCCESS;
     }
+    if env::var_os("LIQUIDFUN_TEST_CMAKE_FAIL_STDOUT").is_some() {
+        println!("simulated compiler failure on stdout");
+        return ExitCode::from(42);
+    }
     if env::var_os("LIQUIDFUN_TEST_CMAKE_FAIL").is_some() {
         eprintln!("simulated cmake failure");
         return ExitCode::from(42);
