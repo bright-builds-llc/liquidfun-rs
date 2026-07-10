@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 2 context gathered
-last_updated: "2026-07-10T06:23:14.022Z"
-last_activity: 2026-07-10 -- Phase 2 planning complete
+stopped_at: Completed 02-01-PLAN.md
+last_updated: "2026-07-10T06:32:24.682Z"
+last_activity: 2026-07-10
 progress:
   total_phases: 12
   completed_phases: 1
   total_plans: 19
-  completed_plans: 5
-  percent: 26
+  completed_plans: 6
+  percent: 32
 ---
 
 # Project State
@@ -25,10 +25,10 @@ See: `.planning/PROJECT.md` (updated 2026-07-09)
 
 ## Current Position
 
-Phase: 2
-Plan: Not started
+Phase: 2 (Semantic Protocol and Oracle Round Trip) — EXECUTING
+Plan: 2 of 14
 Status: Ready to execute
-Last activity: 2026-07-10 -- Phase 2 planning complete
+Last activity: 2026-07-10
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -52,6 +52,7 @@ Progress: [░░░░░░░░░░] 0%
 - Trend: Not available
 
 *Updated after each plan completion*
+| Phase 02 P01 | 5 min | 1 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -62,6 +63,8 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - Phase 1 freezes oracle, ancestry, licensing/provenance, build/toolchain, architecture/risk evidence, and repository foundations before broad physics work.
 - Production remains a cohesive Cargo-first native Rust engine; C++ stays isolated to development-time oracle workflows.
 - Compatibility evidence is added per subsystem, and performance optimization waits for the complete scalar baseline.
+- [Phase 02]: Separate engine-neutral protocol contracts from the effectful differential runner so parsing and comparison do not depend on orchestration.
+- [Phase 02]: Keep both harness crates unpublished and outside default-members while preserving liquidfun as the unchanged sole default consumer package.
 
 ### Pending Todos
 
@@ -74,6 +77,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-10T05:06:32.213Z
-Stopped at: Phase 2 context gathered
-Resume file: .planning/phases/02-semantic-protocol-and-oracle-round-trip/02-CONTEXT.md
+Last session: 2026-07-10T06:32:24.679Z
+Stopped at: Completed 02-01-PLAN.md
+Resume file: None

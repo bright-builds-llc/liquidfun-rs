@@ -22,13 +22,13 @@ Requirements for the first release permitted to claim complete parity with the s
 
 - [x] **COMP-01**: Maintainers can view an exhaustive matrix mapping every relevant upstream subsystem, public API, source area, test, example, and build option to its Rust implementation and evidence status.
 - [x] **COMP-02**: Every compatibility row uses distinct states for investigated, planned, implemented, unit tested, differentially validated, platform validated, documented difference, and intentionally unsupported.
-- [ ] **COMP-03**: Contributors can express a named or seeded simulation as a validated, versioned, engine-neutral scenario with deterministic entity creation and checkpoint requests.
+- [x] **COMP-03**: Contributors can express a named or seeded simulation as a validated, versioned, engine-neutral scenario with deterministic entity creation and checkpoint requests.
 - [ ] **COMP-04**: Contributors can run the same validated scenario through the Rust engine and a process-isolated C++ oracle without exposing pointers, raw memory, or implementation layouts in the protocol.
-- [ ] **COMP-05**: Every engine trace records scenario/schema versions, upstream revision, adapter revision, compiler/build flags, target/platform, seed, and tolerance profile.
+- [x] **COMP-05**: Every engine trace records scenario/schema versions, upstream revision, adapter revision, compiler/build flags, target/platform, seed, and tolerance profile.
 - [ ] **COMP-06**: The comparator checks IDs, flags, counts, membership, and event kinds exactly while applying reviewed field-specific numeric policies to floating-point observables.
 - [ ] **COMP-07**: The comparator distinguishes unordered queries/collections from solver-significant and callback/destruction sequences whose order must be preserved.
 - [ ] **COMP-08**: A differential failure can be reproduced by scenario name or seed, diagnosed at the first divergent checkpoint or phase, and reduced into a focused regression fixture.
-- [ ] **COMP-09**: Harness crashes, timeouts, sanitizer failures, schema mismatches, and wrong-oracle provenance are reported as harness failures rather than physics mismatches.
+- [x] **COMP-09**: Harness crashes, timeouts, sanitizer failures, schema mismatches, and wrong-oracle provenance are reported as harness failures rather than physics mismatches.
 - [ ] **COMP-10**: No v1 parity claim can pass the release gate while the compatibility matrix contains an unexplained gap or an unaccounted upstream test/example.
 
 ### Safe Rust API
@@ -204,13 +204,13 @@ Roadmap creation maps every v1 requirement to exactly one phase.
 | FND-08 | Phase 1 | Complete |
 | COMP-01 | Phase 1 | Complete |
 | COMP-02 | Phase 1 | Complete |
-| COMP-03 | Phase 2 | Pending |
+| COMP-03 | Phase 2 | Complete |
 | COMP-04 | Phase 2 | Pending |
-| COMP-05 | Phase 2 | Pending |
+| COMP-05 | Phase 2 | Complete |
 | COMP-06 | Phase 2 | Pending |
 | COMP-07 | Phase 2 | Pending |
 | COMP-08 | Phase 2 | Pending |
-| COMP-09 | Phase 2 | Pending |
+| COMP-09 | Phase 2 | Complete |
 | COMP-10 | Phase 12 | Pending |
 | API-01 | Phase 3 | Pending |
 | API-02 | Phase 3 | Pending |
