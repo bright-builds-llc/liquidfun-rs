@@ -12,7 +12,9 @@ use std::{
 use liquidfun_differential::{
     DifferentialRunOutcome, OracleExecutable, OraclePreset, SessionProfile, replay_exact, run_named,
 };
-use liquidfun_test_protocol::HarnessLimits;
+use liquidfun_test_protocol::{
+    HarnessLimits, RecordLimit, decode_scenario_request_jsonl, encode_jsonl,
+};
 use sha2::{Digest, Sha256};
 
 const REVISION: &str = "7f20402173fd143a3988c921bc384459c6a858f2";
@@ -383,6 +385,98 @@ fn cli_harness_failure_persists_bounded_hash_indexed_evidence() {
 }
 
 #[test]
+fn cli_reuse_and_sanitizer_bundles_bind_the_second_request_and_session_identity() {
+    // Arrange
+    let root = repository_root();
+    let original_request_id = "empty-world-request";
+    let expected_request_id = format!("reuse-{:x}", Sha256::digest(original_request_id.as_bytes()));
+    let profiles = [
+        ("oracle-debug", "reuse"),
+        ("oracle-asan-ubsan", "sanitizer"),
+    ];
+    let cases = [
+        ("second_malformed", 3, "harness_failure"),
+        ("second_value_mismatch", 2, "physics_mismatch"),
+    ];
+
+    // Act and Assert
+    for (preset, profile) in profiles {
+        let arguments = [
+            "compare",
+            "--scenario",
+            "empty-world",
+            "--preset",
+            preset,
+            "--session-profile",
+            profile,
+        ];
+        for (behavior, exit_code, result_kind) in cases {
+            let (output, fake_root) = run_cli_with_root(&root, behavior, &arguments);
+            assert_eq!(
+                output.status.code(),
+                Some(exit_code),
+                "{profile}/{behavior}"
+            );
+            let directory = only_failure_directory(&fake_root);
+            let manifest: serde_json::Value = serde_json::from_slice(
+                &fs::read(directory.join("manifest.json")).expect("manifest should be readable"),
+            )
+            .expect("manifest should be JSON");
+            let request_bytes =
+                fs::read(directory.join("request.jsonl")).expect("request should be readable");
+            let request =
+                decode_scenario_request_jsonl(&request_bytes, &HarnessLimits::phase2_default_v1())
+                    .expect("persisted request should validate");
+            let canonical = encode_jsonl(
+                &request,
+                &HarnessLimits::phase2_default_v1(),
+                RecordLimit::Input,
+            )
+            .expect("persisted request should re-encode");
+            let report: serde_json::Value = serde_json::from_slice(
+                &fs::read(directory.join("report.json")).expect("report should be readable"),
+            )
+            .expect("report should be JSON");
+            let identity: serde_json::Value = serde_json::from_slice(
+                &fs::read(directory.join("identity.json")).expect("identity should be readable"),
+            )
+            .expect("identity should be JSON");
+            let session_identity = identity["session_identity_sha256"]
+                .as_str()
+                .expect("validated session identity should be present");
+
+            assert_eq!(request_bytes, canonical, "{profile}/{behavior}");
+            assert_eq!(
+                request.request_id().as_str(),
+                expected_request_id,
+                "{profile}/{behavior}"
+            );
+            assert_eq!(
+                manifest["request_id"], expected_request_id,
+                "{profile}/{behavior}"
+            );
+            assert_eq!(manifest["result_kind"], result_kind, "{profile}/{behavior}");
+            assert_eq!(
+                report["request_id"], expected_request_id,
+                "{profile}/{behavior}"
+            );
+            assert_eq!(report["result_kind"], result_kind, "{profile}/{behavior}");
+            assert_eq!(
+                report["session_identity_sha256"], session_identity,
+                "{profile}/{behavior}"
+            );
+            assert_eq!(session_identity.len(), 64, "{profile}/{behavior}");
+            if result_kind == "physics_mismatch" {
+                assert_eq!(
+                    report["mismatch"]["request_id"], expected_request_id,
+                    "{profile}/{behavior}"
+                );
+            }
+        }
+    }
+}
+
+#[test]
 fn cli_minimize_persists_smaller_same_signature_scenario() {
     // Arrange
     let root = repository_root();
@@ -456,4 +550,13 @@ fn cli_minimize_persists_smaller_same_signature_scenario() {
             .expect("minimized scenario should be JSON"),
         minimization_report["scenario"]
     );
+}
+
+fn only_failure_directory(repository_root: &Path) -> PathBuf {
+    let directories = fs::read_dir(repository_root.join("target/differential/failures"))
+        .expect("failure evidence root should exist")
+        .collect::<Result<Vec<_>, _>>()
+        .expect("failure evidence entries should be readable");
+    assert_eq!(directories.len(), 1);
+    directories[0].path()
 }

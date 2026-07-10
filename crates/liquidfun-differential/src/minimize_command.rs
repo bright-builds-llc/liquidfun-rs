@@ -11,10 +11,7 @@ use liquidfun_differential::{
     MinimizationBudget, MinimizationResult, MinimizationStatus, OraclePreset, ScenarioTransform,
     SessionProfile, minimize, persist_minimization_artifact, run_scenario_request,
 };
-use liquidfun_test_protocol::{
-    HarnessLimits, RecordLimit, ScenarioRequestRecord, ValidatedScenarioV1,
-    decode_scenario_request_jsonl, encode_jsonl,
-};
+use liquidfun_test_protocol::{ScenarioRequestRecord, ValidatedScenarioV1};
 use serde::Serialize;
 use sha2::{Digest, Sha256};
 
@@ -27,36 +24,26 @@ const MINIMIZATION_DEADLINE: Duration = Duration::from_secs(30);
 
 pub(super) fn run(
     repository_root: &Path,
-    request_bytes: &[u8],
     preset: OraclePreset,
     profile: SessionProfile,
     outcome: DifferentialRunOutcome,
 ) -> Result<ExitCode, CliError> {
-    let request =
-        decode_scenario_request_jsonl(request_bytes, &HarnessLimits::phase2_default_v1())?;
     let mismatch = match outcome {
-        DifferentialRunOutcome::PhysicsMismatch(report) => report,
-        DifferentialRunOutcome::HarnessFailure(failure) => {
+        DifferentialRunOutcome::PhysicsMismatch(run) => run,
+        DifferentialRunOutcome::HarnessFailure(run) => {
             return render_outcome(
                 repository_root,
-                request_bytes,
                 preset,
                 profile,
-                DifferentialRunOutcome::HarnessFailure(failure),
+                DifferentialRunOutcome::HarnessFailure(run),
             );
         }
         DifferentialRunOutcome::Match(_) => return Err(CliError::MinimizeRequiresMismatch),
     };
-    persist_initial_mismatch(
-        repository_root,
-        &request,
-        request_bytes,
-        preset,
-        profile,
-        &mismatch,
-    )?;
+    persist_initial_mismatch(repository_root, preset, profile, &mismatch)?;
 
-    let target = mismatch.signature().clone();
+    let request = mismatch.request().clone();
+    let target = mismatch.report().signature().clone();
     let mut maybe_evaluation_error = None;
     let result = minimize(
         request.scenario(),
@@ -101,22 +88,20 @@ pub(super) fn run(
 
 fn persist_initial_mismatch(
     repository_root: &Path,
-    request: &ScenarioRequestRecord,
-    request_bytes: &[u8],
     preset: OraclePreset,
     profile: SessionProfile,
-    mismatch: &liquidfun_differential::MismatchReport,
+    mismatch: &liquidfun_differential::PhysicsMismatchRun,
 ) -> Result<(), CliError> {
     let report_bytes = json_line(&MachineReport::mismatch(mismatch))?;
     persist_outcome_bundle(
         repository_root,
-        request,
-        request_bytes,
+        mismatch.request(),
+        mismatch.request_jsonl(),
         &report_bytes,
         preset,
         profile,
         "physics_mismatch",
-        None,
+        Some(mismatch.session_identity_sha256().as_str()),
         b"",
     )
 }
@@ -133,51 +118,38 @@ fn evaluate_candidate(
         return Evaluation::new(None, Duration::ZERO);
     }
     let request = original_request.with_scenario(candidate.clone());
-    let candidate_bytes = match encode_jsonl(
-        &request,
-        &HarnessLimits::phase2_default_v1(),
-        RecordLimit::Input,
-    ) {
-        Ok(bytes) => bytes,
-        Err(error) => {
-            *maybe_error = Some(CliError::MinimizationEncode(error.to_string()));
-            return Evaluation::new(None, Duration::ZERO);
-        }
-    };
     let started = Instant::now();
     let outcome = run_scenario_request(
         repository_root,
-        request.clone(),
+        request,
         preset,
         profile,
         super::ORACLE_REVISION,
     );
     let elapsed = started.elapsed();
     match outcome {
-        Ok(DifferentialRunOutcome::PhysicsMismatch(report)) => {
-            Evaluation::new(Some(report.signature().clone()), elapsed)
+        Ok(DifferentialRunOutcome::PhysicsMismatch(run)) => {
+            Evaluation::new(Some(run.report().signature().clone()), elapsed)
         }
         Ok(DifferentialRunOutcome::Match(_)) => Evaluation::new(None, elapsed),
-        Ok(DifferentialRunOutcome::HarnessFailure(failure)) => {
-            let machine = MachineReport::harness(failure.kind().as_str());
+        Ok(DifferentialRunOutcome::HarnessFailure(run)) => {
+            let machine = MachineReport::harness(&run);
             let persistence = json_line(&machine).and_then(|report_bytes| {
                 persist_outcome_bundle(
                     repository_root,
-                    &request,
-                    &candidate_bytes,
+                    run.request(),
+                    run.request_jsonl(),
                     &report_bytes,
                     preset,
                     profile,
                     "harness_failure",
-                    failure
-                        .evidence()
-                        .maybe_session_identity_sha256()
+                    run.maybe_session_identity_sha256()
                         .map(liquidfun_test_protocol::Sha256Hex::as_str),
-                    failure.evidence().stderr().retained(),
+                    run.failure().evidence().stderr().retained(),
                 )
             });
             *maybe_error = Some(match persistence {
-                Ok(()) => CliError::MinimizationHarness(failure.kind().as_str().to_owned()),
+                Ok(()) => CliError::MinimizationHarness(run.failure().kind().as_str().to_owned()),
                 Err(error) => error,
             });
             Evaluation::new(None, elapsed)

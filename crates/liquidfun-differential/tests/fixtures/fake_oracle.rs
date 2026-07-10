@@ -114,6 +114,7 @@ fn handle_request(
             eprintln!("cpp adapter failure: injected failure");
             std::process::exit(9);
         }
+        "second_malformed" if reset_epoch == 2 => write_then_exit(b"{}\n")?,
         _ => emit_trace_behavior(behavior, request_bytes, reset_epoch)?,
     }
     Ok(())
@@ -223,7 +224,10 @@ fn trace_records(
         .enumerate()
     {
         time += command.timestep_bits().to_f32();
-        if behavior == "value_mismatch" && ordinal == 1 {
+        if (behavior == "value_mismatch"
+            || (behavior == "second_value_mismatch" && reset_epoch == 2))
+            && ordinal == 1
+        {
             time += 0.25;
         }
         checkpoints.push(CheckpointRecord::new(

@@ -4,7 +4,7 @@ use std::{fs, io, path::Path};
 
 use liquidfun_test_protocol::{
     HarnessFailure, HarnessLimits, RecordLimit, RequestId, ScenarioDecodeError,
-    ScenarioRequestRecord, decode_scenario_request_jsonl, encode_jsonl,
+    ScenarioRequestRecord, Sha256Hex, decode_scenario_request_jsonl, encode_jsonl,
 };
 use serde::Serialize;
 use sha2::{Digest, Sha256};
@@ -75,6 +75,76 @@ pub struct MatchRun {
     requests: Box<[MatchedRequest]>,
 }
 
+/// Physics mismatch plus the exact executed request and validated oracle identity.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PhysicsMismatchRun {
+    report: MismatchReport,
+    request: ScenarioRequestRecord,
+    request_jsonl: Box<[u8]>,
+    session_identity_sha256: Sha256Hex,
+}
+
+impl PhysicsMismatchRun {
+    /// Returns the semantic first-divergence report.
+    #[must_use]
+    pub const fn report(&self) -> &MismatchReport {
+        &self.report
+    }
+
+    /// Returns the exact typed request whose execution diverged.
+    #[must_use]
+    pub const fn request(&self) -> &ScenarioRequestRecord {
+        &self.request
+    }
+
+    /// Returns the canonical newline-complete JSONL for the diverging request.
+    #[must_use]
+    pub const fn request_jsonl(&self) -> &[u8] {
+        &self.request_jsonl
+    }
+
+    /// Returns the validated C++ oracle build identity for the diverging trace.
+    #[must_use]
+    pub const fn session_identity_sha256(&self) -> &Sha256Hex {
+        &self.session_identity_sha256
+    }
+}
+
+/// Harness failure plus the exact executed request and available validated oracle identity.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct HarnessFailureRun {
+    failure: HarnessFailure,
+    request: ScenarioRequestRecord,
+    request_jsonl: Box<[u8]>,
+    maybe_session_identity_sha256: Option<Sha256Hex>,
+}
+
+impl HarnessFailureRun {
+    /// Returns the classified harness failure.
+    #[must_use]
+    pub const fn failure(&self) -> &HarnessFailure {
+        &self.failure
+    }
+
+    /// Returns the exact typed request whose execution failed.
+    #[must_use]
+    pub const fn request(&self) -> &ScenarioRequestRecord {
+        &self.request
+    }
+
+    /// Returns the canonical newline-complete JSONL for the failed request.
+    #[must_use]
+    pub const fn request_jsonl(&self) -> &[u8] {
+        &self.request_jsonl
+    }
+
+    /// Returns the validated oracle identity when the startup handshake completed.
+    #[must_use]
+    pub const fn maybe_session_identity_sha256(&self) -> Option<&Sha256Hex> {
+        self.maybe_session_identity_sha256.as_ref()
+    }
+}
+
 impl MatchRun {
     /// Returns successful requests in execution order.
     #[must_use]
@@ -89,9 +159,9 @@ pub enum DifferentialRunOutcome {
     /// Every executed request matched.
     Match(MatchRun),
     /// Compatible traces contained a semantic divergence.
-    PhysicsMismatch(MismatchReport),
+    PhysicsMismatch(PhysicsMismatchRun),
     /// Process/protocol/provenance validation failed before physics comparison.
-    HarnessFailure(HarnessFailure),
+    HarnessFailure(HarnessFailureRun),
 }
 
 /// Runs an allowlisted checked-in named scenario.
@@ -175,18 +245,42 @@ pub fn run_scenario_request(
     let mut matches = Vec::with_capacity(requests.len());
 
     for request in requests {
+        let request_jsonl = encode_jsonl(
+            &request,
+            &HarnessLimits::phase2_default_v1(),
+            RecordLimit::Input,
+        )
+        .map_err(|error| DifferentialRunnerError::Encode(error.to_string()))?
+        .into_boxed_slice();
         let rust_trace = native.execute(&request)?;
         let cpp_trace = match supervisor.execute(&request) {
             Ok(trace) => trace,
-            Err(failure) => return Ok(DifferentialRunOutcome::HarnessFailure(failure)),
+            Err(failure) => {
+                let maybe_session_identity_sha256 =
+                    failure.evidence().maybe_session_identity_sha256().cloned();
+                return Ok(DifferentialRunOutcome::HarnessFailure(HarnessFailureRun {
+                    failure,
+                    request,
+                    request_jsonl,
+                    maybe_session_identity_sha256,
+                }));
+            }
         };
+        let session_identity_sha256 = cpp_trace.identity_sha256().clone();
         let outcome = match compare(
             &cpp_trace,
             &rust_trace,
             &liquidfun_test_protocol::ToleranceProfile::phase2_v1(),
         ) {
             Ok(outcome) => outcome,
-            Err(failure) => return Ok(DifferentialRunOutcome::HarnessFailure(failure)),
+            Err(failure) => {
+                return Ok(DifferentialRunOutcome::HarnessFailure(HarnessFailureRun {
+                    failure,
+                    request,
+                    request_jsonl,
+                    maybe_session_identity_sha256: Some(session_identity_sha256),
+                }));
+            }
         };
         match outcome {
             DifferentialOutcome::Match => matches.push(MatchedRequest {
@@ -195,7 +289,14 @@ pub fn run_scenario_request(
                 rust_reset_epoch: rust_trace.reset_epoch(),
             }),
             DifferentialOutcome::PhysicsMismatch(report) => {
-                return Ok(DifferentialRunOutcome::PhysicsMismatch(report));
+                return Ok(DifferentialRunOutcome::PhysicsMismatch(
+                    PhysicsMismatchRun {
+                        report,
+                        request,
+                        request_jsonl,
+                        session_identity_sha256,
+                    },
+                ));
             }
         }
     }

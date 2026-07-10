@@ -9,10 +9,10 @@ use std::{
 };
 
 use liquidfun_differential::{
-    ArtifactKind, DifferentialRunOutcome, FailureBundleRequest, MatchRun, MismatchReport,
-    OracleExecutable, OraclePreset, OracleSupervisor, ReviewMetadata, SessionProfile, StageRequest,
-    persist_failure_bundle, promote_candidate, replay_exact, review_candidate, run_named,
-    stage_candidate,
+    ArtifactKind, DifferentialRunOutcome, FailureBundleRequest, HarnessFailureRun, MatchRun,
+    MismatchReport, OracleExecutable, OraclePreset, OracleSupervisor, PhysicsMismatchRun,
+    ReviewMetadata, SessionProfile, StageRequest, persist_failure_bundle, promote_candidate,
+    replay_exact, review_candidate, run_named, stage_candidate,
 };
 use liquidfun_test_protocol::{HarnessLimits, decode_scenario_request_jsonl};
 use serde::Serialize;
@@ -44,102 +44,78 @@ fn run() -> Result<ExitCode, CliError> {
     }
     let command = CommandConfig::parse(arguments.into_iter())?;
     let repository_root = env::current_dir()?;
-    let (outcome, request_bytes) = match &command.input {
-        Input::Named(name) => {
-            let request_bytes = fs::read(
-                repository_root.join("protocol/fixtures/accepted/empty-world-request.jsonl"),
-            )?;
-            let outcome = run_named(
-                &repository_root,
-                name,
-                command.preset,
-                command.profile,
-                ORACLE_REVISION,
-            )?;
-            (outcome, request_bytes)
-        }
+    let outcome = match &command.input {
+        Input::Named(name) => run_named(
+            &repository_root,
+            name,
+            command.preset,
+            command.profile,
+            ORACLE_REVISION,
+        )?,
         Input::ExactRequest(path) => {
             let bytes = fs::read(path)?;
-            let outcome = replay_exact(
+            replay_exact(
                 &repository_root,
                 &bytes,
                 command.preset,
                 command.profile,
                 ORACLE_REVISION,
-            )?;
-            (outcome, bytes)
+            )?
         }
     };
     if command.action == Action::Minimize {
-        return minimize_command::run(
-            &repository_root,
-            &request_bytes,
-            command.preset,
-            command.profile,
-            outcome,
-        );
+        return minimize_command::run(&repository_root, command.preset, command.profile, outcome);
     }
-    render_outcome(
-        &repository_root,
-        &request_bytes,
-        command.preset,
-        command.profile,
-        outcome,
-    )
+    render_outcome(&repository_root, command.preset, command.profile, outcome)
 }
 
 fn render_outcome(
     repository_root: &std::path::Path,
-    request_bytes: &[u8],
     preset: OraclePreset,
     profile: SessionProfile,
     outcome: DifferentialRunOutcome,
 ) -> Result<ExitCode, CliError> {
-    let request =
-        decode_scenario_request_jsonl(request_bytes, &HarnessLimits::phase2_default_v1())?;
     match outcome {
         DifferentialRunOutcome::Match(run) => {
             write_machine(&MachineReport::matched(&run))?;
             eprintln!("match: {} validated request(s)", run.requests().len());
             Ok(ExitCode::SUCCESS)
         }
-        DifferentialRunOutcome::PhysicsMismatch(report) => {
-            let machine = MachineReport::mismatch(&report);
+        DifferentialRunOutcome::PhysicsMismatch(run) => {
+            let machine = MachineReport::mismatch(&run);
             let report_bytes = json_line(&machine)?;
             persist_outcome_bundle(
                 repository_root,
-                &request,
-                request_bytes,
+                run.request(),
+                run.request_jsonl(),
                 &report_bytes,
                 preset,
                 profile,
                 "physics_mismatch",
-                None,
+                Some(run.session_identity_sha256().as_str()),
                 b"",
             )?;
             write_bytes(&report_bytes)?;
-            eprintln!("{}", report.render_human());
+            eprintln!("{}", run.report().render_human());
             Ok(ExitCode::from(EXIT_PHYSICS_MISMATCH))
         }
-        DifferentialRunOutcome::HarnessFailure(failure) => {
-            let machine = MachineReport::harness(failure.kind().as_str());
+        DifferentialRunOutcome::HarnessFailure(run) => {
+            let machine = MachineReport::harness(&run);
             let report_bytes = json_line(&machine)?;
             persist_outcome_bundle(
                 repository_root,
-                &request,
-                request_bytes,
+                run.request(),
+                run.request_jsonl(),
                 &report_bytes,
                 preset,
                 profile,
                 "harness_failure",
-                failure
-                    .evidence()
-                    .maybe_session_identity_sha256()
+                run.maybe_session_identity_sha256()
                     .map(liquidfun_test_protocol::Sha256Hex::as_str),
-                failure.evidence().stderr().retained(),
+                run.failure().evidence().stderr().retained(),
             )?;
             write_bytes(&report_bytes)?;
-            eprintln!("harness failure: {}", failure.kind().as_str());
+            eprintln!("harness failure: {}", run.failure().kind().as_str());
             Ok(ExitCode::from(EXIT_HARNESS_FAILURE))
         }
     }
@@ -432,6 +408,10 @@ struct MachineReport<'a> {
     failure_kind: Option<&'a str>,
     #[serde(skip_serializing_if = "Option::is_none")]
     mismatch: Option<&'a MismatchReport>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    request_id: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    session_identity_sha256: Option<&'a str>,
 }
 
 impl<'a> MachineReport<'a> {
@@ -441,24 +421,32 @@ impl<'a> MachineReport<'a> {
             requests: Some(run.requests()),
             failure_kind: None,
             mismatch: None,
+            request_id: None,
+            session_identity_sha256: None,
         }
     }
 
-    const fn mismatch(report: &'a MismatchReport) -> Self {
+    fn mismatch(run: &'a PhysicsMismatchRun) -> Self {
         Self {
             result_kind: "physics_mismatch",
             requests: None,
             failure_kind: None,
-            mismatch: Some(report),
+            mismatch: Some(run.report()),
+            request_id: Some(run.request().request_id().as_str()),
+            session_identity_sha256: Some(run.session_identity_sha256().as_str()),
         }
     }
 
-    const fn harness(failure_kind: &'a str) -> Self {
+    fn harness(run: &'a HarnessFailureRun) -> Self {
         Self {
             result_kind: "harness_failure",
             requests: None,
-            failure_kind: Some(failure_kind),
+            failure_kind: Some(run.failure().kind().as_str()),
             mismatch: None,
+            request_id: Some(run.request().request_id().as_str()),
+            session_identity_sha256: run
+                .maybe_session_identity_sha256()
+                .map(liquidfun_test_protocol::Sha256Hex::as_str),
         }
     }
 }
@@ -576,8 +564,6 @@ enum CliError {
     MinimizeRequiresMismatch,
     #[error("minimization candidate encountered harness failure `{0}`")]
     MinimizationHarness(String),
-    #[error("could not encode a minimization candidate: {0}")]
-    MinimizationEncode(String),
     #[error(transparent)]
     Minimization(#[from] liquidfun_differential::MinimizationError),
 }
