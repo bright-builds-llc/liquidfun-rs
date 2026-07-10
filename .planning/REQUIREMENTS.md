@@ -194,13 +194,120 @@ Roadmap creation maps every v1 requirement to exactly one phase.
 
 | Requirement | Phase | Status |
 | --- | --- | --- |
-| (Populated during roadmap creation) | Pending | Pending |
+| FND-01 | Phase 1 | Pending |
+| FND-02 | Phase 1 | Pending |
+| FND-03 | Phase 1 | Pending |
+| FND-04 | Phase 1 | Pending |
+| FND-05 | Phase 1 | Pending |
+| FND-06 | Phase 12 | Pending |
+| FND-07 | Phase 1 | Pending |
+| FND-08 | Phase 1 | Pending |
+| COMP-01 | Phase 1 | Pending |
+| COMP-02 | Phase 1 | Pending |
+| COMP-03 | Phase 2 | Pending |
+| COMP-04 | Phase 2 | Pending |
+| COMP-05 | Phase 2 | Pending |
+| COMP-06 | Phase 2 | Pending |
+| COMP-07 | Phase 2 | Pending |
+| COMP-08 | Phase 2 | Pending |
+| COMP-09 | Phase 2 | Pending |
+| COMP-10 | Phase 12 | Pending |
+| API-01 | Phase 3 | Pending |
+| API-02 | Phase 3 | Pending |
+| API-03 | Phase 3 | Pending |
+| API-04 | Phase 3 | Pending |
+| API-05 | Phase 3 | Pending |
+| API-06 | Phase 3 | Pending |
+| API-07 | Phase 3 | Pending |
+| API-08 | Phase 3 | Pending |
+| API-09 | Phase 9 | Pending |
+| API-10 | Phase 9 | Pending |
+| API-11 | Phase 12 | Pending |
+| API-12 | Phase 12 | Pending |
+| COLL-01 | Phase 4 | Pending |
+| COLL-02 | Phase 5 | Pending |
+| COLL-03 | Phase 5 | Pending |
+| COLL-04 | Phase 5 | Pending |
+| COLL-05 | Phase 5 | Pending |
+| COLL-06 | Phase 5 | Pending |
+| COLL-07 | Phase 5 | Pending |
+| COLL-08 | Phase 4 | Pending |
+| RIGD-01 | Phase 6 | Pending |
+| RIGD-02 | Phase 6 | Pending |
+| RIGD-03 | Phase 7 | Pending |
+| RIGD-04 | Phase 6 | Pending |
+| RIGD-05 | Phase 7 | Pending |
+| RIGD-06 | Phase 7 | Pending |
+| RIGD-07 | Phase 7 | Pending |
+| RIGD-08 | Phase 7 | Pending |
+| RIGD-09 | Phase 7 | Pending |
+| RIGD-10 | Phase 11 | Pending |
+| RIGD-11 | Phase 8 | Pending |
+| JOIN-01 | Phase 8 | Pending |
+| JOIN-02 | Phase 8 | Pending |
+| JOIN-03 | Phase 8 | Pending |
+| JOIN-04 | Phase 8 | Pending |
+| JOIN-05 | Phase 8 | Pending |
+| PART-01 | Phase 9 | Pending |
+| PART-02 | Phase 9 | Pending |
+| PART-03 | Phase 9 | Pending |
+| PART-04 | Phase 9 | Pending |
+| PART-05 | Phase 9 | Pending |
+| PART-06 | Phase 9 | Pending |
+| PART-07 | Phase 9 | Pending |
+| PART-08 | Phase 9 | Pending |
+| PART-09 | Phase 10 | Pending |
+| PART-10 | Phase 10 | Pending |
+| PART-11 | Phase 10 | Pending |
+| PART-12 | Phase 10 | Pending |
+| PART-13 | Phase 10 | Pending |
+| PART-14 | Phase 9 | Pending |
+| PART-15 | Phase 9 | Pending |
+| PART-16 | Phase 9 | Pending |
+| PART-17 | Phase 9 | Pending |
+| PART-18 | Phase 10 | Pending |
+| TEST-01 | Phase 10 | Pending |
+| TEST-02 | Phase 10 | Pending |
+| TEST-03 | Phase 11 | Pending |
+| TEST-04 | Phase 10 | Pending |
+| TEST-05 | Phase 12 | Pending |
+| TEST-06 | Phase 12 | Pending |
+| TEST-07 | Phase 12 | Pending |
+| TEST-08 | Phase 12 | Pending |
+| TEST-09 | Phase 1 | Pending |
+| EXMP-01 | Phase 11 | Pending |
+| EXMP-02 | Phase 11 | Pending |
+| EXMP-03 | Phase 11 | Pending |
+| EXMP-04 | Phase 11 | Pending |
+| EXMP-05 | Phase 11 | Pending |
+| EXMP-06 | Phase 11 | Pending |
+| PERF-01 | Phase 12 | Pending |
+| PERF-02 | Phase 12 | Pending |
+| PERF-03 | Phase 12 | Pending |
+| PERF-04 | Phase 12 | Pending |
+| PERF-05 | Phase 12 | Pending |
+| PERF-06 | Phase 12 | Pending |
+| PLAT-01 | Phase 12 | Pending |
+| PLAT-02 | Phase 12 | Pending |
+| PLAT-03 | Phase 12 | Pending |
+| PLAT-04 | Phase 12 | Pending |
+| PLAT-05 | Phase 12 | Pending |
+| PLAT-06 | Phase 12 | Pending |
+| DOCS-01 | Phase 12 | Pending |
+| DOCS-02 | Phase 3 | Pending |
+| DOCS-03 | Phase 1 | Pending |
+| DOCS-04 | Phase 12 | Pending |
+| DOCS-05 | Phase 2 | Pending |
+| DOCS-06 | Phase 12 | Pending |
+| DOCS-07 | Phase 12 | Pending |
+| DOCS-08 | Phase 12 | Pending |
+| DOCS-09 | Phase 12 | Pending |
 
 **Coverage:**
 
 - v1 requirements: 108
-- Mapped to phases: 0
-- Unmapped: Pending roadmap creation
+- Mapped to phases: 108
+- Unmapped: 0 ✓
 
 *Requirements defined: 2026-07-09*
-*Last updated: 2026-07-09 after initial definition*
+*Last updated: 2026-07-09 after roadmap creation*
