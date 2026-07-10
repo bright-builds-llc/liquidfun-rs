@@ -1,0 +1,114 @@
+name: Cargo CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cargo-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Linux quality and isolation
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out sources without the oracle
+        # actions/checkout v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          persist-credentials: false
+          submodules: false
+      - name: Install pinned Rust toolchains
+        run: |
+          rustup toolchain install 1.97.0 --profile minimal --component clippy --component rustfmt
+          rustup toolchain install 1.92.0 --profile minimal
+      - name: Cache Cargo inputs and outputs
+        # actions/cache v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-quality-1.97.0-${{ hashFiles('Cargo.lock') }}
+      - name: Check formatting
+        run: cargo fmt --all --check
+      - name: Lint the workspace
+        run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+      - name: Build the workspace
+        run: cargo build --workspace --all-targets --all-features
+      - name: Test the workspace
+        run: cargo test --workspace --all-features
+      - name: Build documentation with denied warnings
+        env:
+          RUSTDOCFLAGS: -D warnings
+        run: cargo doc --workspace --all-features --no-deps
+      - name: Exercise inventory checks without the oracle tree
+        run: cargo test -p xtask --test inventory_cli
+      - name: List the consumer package
+        run: cargo package -p liquidfun --list
+      - name: Verify unpacked package isolation
+        run: cargo xtask package verify
+
+  default-features:
+    name: Default features (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - name: Check out sources without the oracle
+        # actions/checkout v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          persist-credentials: false
+          submodules: false
+      - name: Install pinned Rust
+        run: rustup toolchain install 1.97.0 --profile minimal
+      - name: Cache Cargo inputs and outputs
+        # actions/cache v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-defaults-1.97.0-${{ hashFiles('Cargo.lock') }}
+      - name: Build default features
+        run: cargo build -p liquidfun
+      - name: Test default features
+        run: cargo test -p liquidfun
+
+  msrv:
+    name: Rust 1.92 MSRV
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out sources without the oracle
+        # actions/checkout v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          persist-credentials: false
+          submodules: false
+      - name: Install the provisional MSRV
+        run: rustup toolchain install 1.92.0 --profile minimal
+      - name: Cache Cargo inputs and outputs
+        # actions/cache v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-msrv-1.92.0-${{ hashFiles('Cargo.lock') }}
+      - name: Check liquidfun at the MSRV
+        run: cargo +1.92.0 check -p liquidfun --all-targets --all-features
