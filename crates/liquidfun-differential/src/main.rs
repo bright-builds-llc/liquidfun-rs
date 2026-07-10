@@ -17,6 +17,8 @@ use liquidfun_differential::{
 use liquidfun_test_protocol::{HarnessLimits, decode_scenario_request_jsonl};
 use serde::Serialize;
 
+mod minimize_command;
+
 const ORACLE_REVISION: &str = "7f20402173fd143a3988c921bc384459c6a858f2";
 const EXIT_PHYSICS_MISMATCH: u8 = 2;
 const EXIT_HARNESS_FAILURE: u8 = 3;
@@ -68,6 +70,15 @@ fn run() -> Result<ExitCode, CliError> {
             (outcome, bytes)
         }
     };
+    if command.action == Action::Minimize {
+        return minimize_command::run(
+            &repository_root,
+            &request_bytes,
+            command.preset,
+            command.profile,
+            outcome,
+        );
+    }
     render_outcome(
         &repository_root,
         &request_bytes,
@@ -465,7 +476,7 @@ enum Input {
 }
 
 struct CommandConfig {
-    _action: Action,
+    action: Action,
     input: Input,
     preset: OraclePreset,
     profile: SessionProfile,
@@ -506,7 +517,7 @@ impl CommandConfig {
             _ => return Err(CliError::Usage(usage())),
         };
         Ok(Self {
-            _action: action,
+            action,
             input,
             preset,
             profile,
@@ -561,4 +572,12 @@ enum CliError {
     Harness(String),
     #[error("could not determine generator revision: {0}")]
     GeneratorRevision(String),
+    #[error("minimize requires an initial physics mismatch")]
+    MinimizeRequiresMismatch,
+    #[error("minimization candidate encountered harness failure `{0}`")]
+    MinimizationHarness(String),
+    #[error("could not encode a minimization candidate: {0}")]
+    MinimizationEncode(String),
+    #[error(transparent)]
+    Minimization(#[from] liquidfun_differential::MinimizationError),
 }

@@ -37,6 +37,30 @@ pub struct FailureBundleReceipt {
     directory: PathBuf,
 }
 
+/// Bounded minimized scenario and its machine report.
+pub struct MinimizationArtifactRequest<'a> {
+    /// Validated request identity used to derive a confined directory name.
+    pub request_id: &'a RequestId,
+    /// Canonical minimized scenario JSON.
+    pub scenario_json: &'a [u8],
+    /// Machine-readable minimization result.
+    pub report_json: &'a [u8],
+}
+
+/// Successfully persisted minimized scenario evidence.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MinimizationArtifactReceipt {
+    directory: PathBuf,
+}
+
+impl MinimizationArtifactReceipt {
+    /// Returns the newly created minimized-artifact directory.
+    #[must_use]
+    pub fn directory(&self) -> &Path {
+        &self.directory
+    }
+}
+
 impl FailureBundleReceipt {
     /// Returns the newly created bundle directory.
     #[must_use]
@@ -116,7 +140,7 @@ pub fn persist_failure_bundle(
     )?;
     enforce_size("stderr.txt", request.stderr, limits.retained_stderr_bytes())?;
 
-    let root = ensure_failure_root(repository_root)?;
+    let root = ensure_evidence_root(repository_root, "failures")?;
     let directory = create_bundle_directory(&root, request.request_id, request.result_kind)?;
     let result = (|| {
         let evidence = [
@@ -153,10 +177,62 @@ pub fn persist_failure_bundle(
     Ok(FailureBundleReceipt { directory })
 }
 
-fn ensure_failure_root(repository_root: &Path) -> Result<PathBuf, FailureBundleError> {
+/// Persists a canonical minimized scenario and hash-indexed report below the target tree.
+///
+/// # Errors
+///
+/// Returns [`FailureBundleError`] for oversized values, exhausted no-clobber names,
+/// serialization failures, or filesystem errors.
+pub fn persist_minimization_artifact(
+    repository_root: &Path,
+    request: &MinimizationArtifactRequest<'_>,
+) -> Result<MinimizationArtifactReceipt, FailureBundleError> {
+    let limits = HarnessLimits::phase2_default_v1();
+    enforce_size(
+        "scenario.json",
+        request.scenario_json,
+        limits.input_record_bytes(),
+    )?;
+    enforce_size("report.json", request.report_json, MAXIMUM_REPORT_BYTES)?;
+    let root = ensure_evidence_root(repository_root, "minimized")?;
+    let directory = create_bundle_directory(&root, request.request_id, "minimization")?;
+    let result = (|| {
+        let evidence = [
+            ("scenario.json", request.scenario_json),
+            ("report.json", request.report_json),
+        ];
+        let mut files = BTreeMap::new();
+        for (name, bytes) in evidence {
+            write_create_new(&directory.join(name), bytes)?;
+            files.insert(
+                name,
+                BundleFile {
+                    bytes: bytes.len(),
+                    sha256: format!("{:x}", Sha256::digest(bytes)),
+                },
+            );
+        }
+        let manifest = BundleManifest {
+            schema_version: 1,
+            result_kind: "minimization",
+            request_id: request.request_id.as_str().to_owned(),
+            files,
+        };
+        let mut manifest_bytes = serde_json::to_vec_pretty(&manifest)?;
+        manifest_bytes.push(b'\n');
+        write_create_new(&directory.join("manifest.json"), &manifest_bytes)
+    })();
+    if let Err(error) = result {
+        let _ignored = fs::remove_dir_all(&directory);
+        return Err(error);
+    }
+    Ok(MinimizationArtifactReceipt { directory })
+}
+
+fn ensure_evidence_root(repository_root: &Path, leaf: &str) -> Result<PathBuf, FailureBundleError> {
     let canonical_root = fs::canonicalize(repository_root)?;
     let mut path = repository_root.to_path_buf();
-    for component in ["target", "differential", "failures"] {
+    for component in ["target", "differential", leaf] {
         path.push(component);
         match fs::symlink_metadata(&path) {
             Ok(metadata) if metadata.file_type().is_symlink() || !metadata.is_dir() => {

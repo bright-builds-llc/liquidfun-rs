@@ -122,7 +122,7 @@ pub fn run_named(
     }
     let bytes = fs::read(request_path)?;
     let request = decode_scenario_request_jsonl(&bytes, &HarnessLimits::phase2_default_v1())?;
-    run_request(
+    run_scenario_request(
         repository_root,
         request,
         preset,
@@ -146,7 +146,7 @@ pub fn replay_exact(
 ) -> Result<DifferentialRunOutcome, DifferentialRunnerError> {
     let request =
         decode_scenario_request_jsonl(request_bytes, &HarnessLimits::phase2_default_v1())?;
-    run_request(
+    run_scenario_request(
         repository_root,
         request,
         preset,
@@ -155,7 +155,13 @@ pub fn replay_exact(
     )
 }
 
-fn run_request(
+/// Runs one already-validated typed request through the selected differential profile.
+///
+/// # Errors
+///
+/// Returns [`DifferentialRunnerError`] for executable resolution, native execution, or request
+/// derivation failures. Process and comparator failures remain classified outcomes.
+pub fn run_scenario_request(
     repository_root: &Path,
     request: ScenarioRequestRecord,
     preset: OraclePreset,

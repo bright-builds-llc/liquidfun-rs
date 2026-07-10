@@ -308,6 +308,14 @@ impl ScenarioRequestRecord {
     pub const fn tolerance_profile_version(&self) -> ToleranceProfileVersion {
         self.tolerance_profile_version
     }
+
+    /// Replaces the validated scenario while preserving the reviewed transport envelope.
+    #[must_use]
+    pub fn with_scenario(&self, scenario: ValidatedScenarioV1) -> Self {
+        let mut request = self.clone();
+        request.scenario = scenario;
+        request
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

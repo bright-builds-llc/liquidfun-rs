@@ -3,6 +3,7 @@ use std::time::Duration;
 use liquidfun_test_protocol::{
     HarnessLimits, ScenarioReductionError, ScenarioSource, ValidatedScenarioV1,
 };
+use serde::Serialize;
 
 use crate::FailureSignature;
 
@@ -25,7 +26,8 @@ impl MinimizationBudget {
 }
 
 /// Exhausted bound that stopped reduction before convergence.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
 pub enum BudgetExhausted {
     /// Candidate-attempt bound was reached.
     Attempts,
@@ -34,7 +36,8 @@ pub enum BudgetExhausted {
 }
 
 /// Completion state of a bounded minimization run.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
 pub enum MinimizationStatus {
     /// No remaining stable transform retained the target signature.
     Complete,
@@ -43,7 +46,8 @@ pub enum MinimizationStatus {
 }
 
 /// One deterministic hierarchical candidate transform.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
 pub enum ScenarioTransform {
     /// Removes a half-open range of ordered checkpoint requests.
     RemoveCheckpoints {
