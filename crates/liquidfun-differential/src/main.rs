@@ -128,6 +128,7 @@ fn run_fixture(arguments: impl Iterator<Item = String>) -> Result<ExitCode, CliE
             }
             let parsed_preset = parse_preset(preset)?;
             let parsed_profile = parse_profile(session_profile)?;
+            let generator_revision = generator_revision(&repository_root)?;
             let request_bytes = fs::read(
                 repository_root.join("protocol/fixtures/accepted/empty-world-request.jsonl"),
             )?;
@@ -138,7 +139,6 @@ fn run_fixture(arguments: impl Iterator<Item = String>) -> Result<ExitCode, CliE
             let captured = supervisor
                 .execute_captured(&request)
                 .map_err(|failure| CliError::Harness(failure.kind().as_str().to_owned()))?;
-            let generator_revision = generator_revision(&repository_root)?;
             let candidate = stage_candidate(
                 &repository_root,
                 StageRequest {
@@ -231,6 +231,39 @@ fn required_option<'a>(
 }
 
 fn generator_revision(repository_root: &std::path::Path) -> Result<String, CliError> {
+    const GENERATOR_INPUTS: [&str; 12] = [
+        ".gitmodules",
+        "Cargo.lock",
+        "Cargo.toml",
+        "crates/liquidfun",
+        "crates/liquidfun-differential",
+        "crates/liquidfun-test-protocol",
+        "protocol",
+        "reference/artifacts/manifest.toml",
+        "reference/upstream-lock.toml",
+        "rust-toolchain.toml",
+        "third_party/liquidfun",
+        "tools/reference",
+    ];
+    let status = Command::new("git")
+        .arg("-C")
+        .arg(repository_root)
+        .args(["status", "--porcelain=v1", "--untracked-files=all", "--"])
+        .args(GENERATOR_INPUTS)
+        .output()?;
+    if !status.status.success() {
+        return Err(CliError::GeneratorRevision(
+            String::from_utf8_lossy(&status.stderr).trim().to_owned(),
+        ));
+    }
+    let dirty = String::from_utf8_lossy(&status.stdout);
+    if !dirty.trim().is_empty() {
+        return Err(CliError::GeneratorRevision(format!(
+            "relevant generator inputs are dirty:\n{}",
+            dirty.trim_end()
+        )));
+    }
+
     let output = Command::new("git")
         .arg("-C")
         .arg(repository_root)
