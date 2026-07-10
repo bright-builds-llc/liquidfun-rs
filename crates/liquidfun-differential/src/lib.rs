@@ -9,8 +9,10 @@ mod canonical;
 mod comparator;
 mod minimizer;
 mod report;
+mod rust_adapter;
 
 pub use canonical::*;
 pub use comparator::*;
 pub use minimizer::*;
 pub use report::*;
+pub use rust_adapter::*;
