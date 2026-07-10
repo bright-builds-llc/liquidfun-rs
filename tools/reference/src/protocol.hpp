@@ -115,6 +115,7 @@ std::string build_identity_sha256(const BuildIdentity& identity);
 std::string sha256_hex(std::string_view bytes);
 float float_from_bits(std::uint32_t bits);
 std::uint32_t bits_from_float(float value);
+bool read_bounded_record(std::istream& input, std::string& record);
 void write_record(std::ostream& output, std::string_view record);
 
 }  // namespace liquidfun::reference

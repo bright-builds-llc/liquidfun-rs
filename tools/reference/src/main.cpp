@@ -34,18 +34,12 @@ int run() {
 
   liquidfun::reference::OracleAdapter adapter;
   std::string line;
-  while (std::getline(std::cin, line)) {
-    if (!std::cin.eof()) {
-      line.push_back('\n');
-    }
+  while (liquidfun::reference::read_bounded_record(std::cin, line)) {
     const auto request = liquidfun::reference::decode_scenario_request(line);
     const auto trace = adapter.execute(request, identity_sha256);
     for (const auto& record : trace.records) {
       liquidfun::reference::write_record(std::cout, record);
     }
-  }
-  if (!std::cin.eof()) {
-    throw std::runtime_error("failed while reading protocol stdin");
   }
   return 0;
 }

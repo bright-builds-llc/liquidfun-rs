@@ -2,14 +2,17 @@
 
 use std::{
     fs,
+    io::{BufRead, BufReader, Read, Write},
     path::{Path, PathBuf},
-    process::Command,
+    process::{Command, Stdio},
     sync::atomic::{AtomicU64, Ordering},
+    time::{Duration, Instant},
 };
 
 use liquidfun_differential::{
     DifferentialRunOutcome, OracleExecutable, OraclePreset, SessionProfile, replay_exact, run_named,
 };
+use liquidfun_test_protocol::HarnessLimits;
 
 const REVISION: &str = "7f20402173fd143a3988c921bc384459c6a858f2";
 static TEST_DIRECTORY_ID: AtomicU64 = AtomicU64::new(1);
@@ -93,6 +96,70 @@ fn real_oracle_one_shot_and_two_request_reuse_match_or_skip_explicitly() {
     assert_eq!(reused.requests().len(), 2);
     assert_eq!(reused.requests()[0].cpp_reset_epoch(), 1);
     assert_eq!(reused.requests()[1].cpp_reset_epoch(), 2);
+}
+
+#[test]
+fn real_oracle_rejects_oversized_stdin_before_waiting_for_a_newline() {
+    // Arrange
+    let root = repository_root();
+    if OracleExecutable::resolve(&root, OraclePreset::Debug).is_err() {
+        eprintln!(
+            "SKIP real oracle integration prerequisite: run cargo xtask upstream configure/build --preset oracle-debug"
+        );
+        return;
+    }
+    let executable = root
+        .join("target/reference/oracle-debug")
+        .join(if cfg!(windows) {
+            "liquidfun-reference.exe"
+        } else {
+            "liquidfun-reference"
+        });
+    let mut child = Command::new(executable)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("real oracle should start");
+    let mut stdout = BufReader::new(child.stdout.take().expect("stdout should be piped"));
+    let mut handshake = String::new();
+    stdout
+        .read_line(&mut handshake)
+        .expect("oracle handshake should be readable");
+    let mut stdin = child.stdin.take().expect("stdin should be piped");
+    let oversized = vec![b' '; HarnessLimits::phase2_default_v1().input_record_bytes() + 1];
+
+    // Act
+    let write_result = stdin.write_all(&oversized).and_then(|()| stdin.flush());
+    let deadline = Instant::now() + Duration::from_secs(2);
+    let status = loop {
+        if let Some(status) = child
+            .try_wait()
+            .expect("oracle status should be observable")
+        {
+            break status;
+        }
+        if Instant::now() >= deadline {
+            drop(stdin);
+            child.kill().expect("stalled oracle should be killed");
+            child.wait().expect("killed oracle should be reaped");
+            panic!("oracle waited for the oversized record remainder");
+        }
+        std::thread::sleep(Duration::from_millis(10));
+    };
+    drop(stdin);
+    let mut stderr = String::new();
+    child
+        .stderr
+        .take()
+        .expect("stderr should be piped")
+        .read_to_string(&mut stderr)
+        .expect("oracle stderr should be readable");
+
+    // Assert
+    assert!(write_result.is_ok());
+    assert!(!status.success());
+    assert!(stderr.contains("input record exceeds reviewed byte limit"));
 }
 
 #[test]

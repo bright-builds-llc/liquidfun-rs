@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <iomanip>
+#include <istream>
 #include <limits>
 #include <optional>
 #include <ostream>
@@ -618,6 +619,22 @@ std::string encode_trace_end(
          ",\"reset_epoch\":" + std::to_string(reset_epoch) +
          ",\"reset_verified\":" + (reset_verified ? "true" : "false") +
          ",\"identity_sha256\":" + quote(identity_sha256) + "}";
+}
+
+bool read_bounded_record(std::istream& input, std::string& record) {
+  record.clear();
+  char byte = 0;
+  while (input.get(byte)) {
+    if (record.size() == kMaximumRecordBytes) {
+      throw std::runtime_error("input record exceeds reviewed byte limit");
+    }
+    record.push_back(byte);
+    if (byte == '\n') return true;
+  }
+  if (!input.eof()) {
+    throw std::runtime_error("failed while reading protocol stdin");
+  }
+  return !record.empty();
 }
 
 void write_record(std::ostream& output, std::string_view record) {
