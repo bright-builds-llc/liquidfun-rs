@@ -1,7 +1,7 @@
 use std::cmp::Ordering;
 use std::collections::BTreeSet;
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
 
 use super::{
     DiscoveryEntry, DiscoveryKind, DiscoveryLedger, DiscoveryScope, InventoryError, SCHEMA_VERSION,
@@ -229,10 +229,58 @@ fn upstream_path(upstream_root: &Path, path: &Path) -> Result<String, InventoryE
 }
 
 fn path_text(path: &Path, label: &str) -> Result<String, InventoryError> {
-    path.to_str().map(str::to_owned).ok_or_else(|| {
-        InventoryError::new(
+    let mut text = String::new();
+    for component in path.components() {
+        let Component::Normal(value) = component else {
+            return Err(InventoryError::new(
+                "path",
+                format!(
+                    "{label} is not a normalized relative path: {}",
+                    path.display()
+                ),
+            ));
+        };
+        let value = value.to_str().ok_or_else(|| {
+            InventoryError::new(
+                "path",
+                format!("{label} is not valid UTF-8: {}", path.display()),
+            )
+        })?;
+        if !text.is_empty() {
+            text.push('/');
+        }
+        text.push_str(value);
+    }
+    if text.is_empty() {
+        return Err(InventoryError::new(
             "path",
-            format!("{label} is not valid UTF-8: {}", path.display()),
-        )
-    })
+            format!("{label} cannot be empty"),
+        ));
+    }
+    Ok(text)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::path_text;
+    use std::error::Error;
+    use std::path::PathBuf;
+
+    type TestResult = Result<(), Box<dyn Error>>;
+
+    #[test]
+    fn path_text_uses_forward_slashes_between_components() -> TestResult {
+        // Arrange
+        let path = PathBuf::from("liquidfun")
+            .join("Box2D")
+            .join("Box2D")
+            .join("Common");
+
+        // Act
+        let text = path_text(&path, "fixture path")?;
+
+        // Assert
+        assert_eq!(text, "liquidfun/Box2D/Box2D/Common");
+        Ok(())
+    }
 }
