@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 02-09-PLAN.md
-last_updated: "2026-07-10T09:28:25.975Z"
+stopped_at: Completed 02-10-PLAN.md
+last_updated: "2026-07-10T10:06:33.609Z"
 last_activity: 2026-07-10
 progress:
   total_phases: 12
   completed_phases: 1
   total_plans: 19
-  completed_plans: 14
-  percent: 74
+  completed_plans: 15
+  percent: 79
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: `.planning/PROJECT.md` (updated 2026-07-09)
 ## Current Position
 
 Phase: 2 (Semantic Protocol and Oracle Round Trip) — EXECUTING
-Plan: 10 of 14
+Plan: 11 of 14
 Status: Ready to execute
 Last activity: 2026-07-10
 
-Progress: [███████░░░] 74%
+Progress: [████████░░] 79%
 
 ## Performance Metrics
 
@@ -61,6 +61,7 @@ Progress: [███████░░░] 74%
 | Phase 02 P07 | 6 min | 1 tasks | 4 files |
 | Phase 02 P08 | 26 min | 1 tasks | 9 files |
 | Phase 02 P09 | 12 min | 1 tasks | 7 files |
+| Phase 02 P10 | 33 min | 3 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -95,6 +96,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 02]: Bind every C++ oracle handshake to independently checked lock and adapter identities through a configured out-of-tree header. — xtask and CMake derive the same fixed-source digest before the child can report successful provenance.
 - [Phase 02]: Allow only reviewed oracle presets and the liquidfun-reference build target in xtask. — Structured fixed arguments prevent contributor-provided paths or unrelated native targets from entering oracle orchestration.
 - [Phase 02]: Keep ASan and UBSan fail-fast while demoting only two legacy upstream warnings under Clang sanitizer builds. — Sanitizer evidence must terminate unsuccessfully without modifying the pinned upstream or weakening warning denial for repository-authored code.
+- [Phase 02]: Keep Phase-2 native execution private and limited to exact-bit empty-world traces with reset epochs.
+- [Phase 02]: Use one synchronous enum state machine for one-shot, finite reuse, and sanitizer child supervision.
+- [Phase 02]: Drain child stdout and stderr concurrently, retain bounded first/last diagnostics, and reap every poisoned child before returning.
 
 ### Pending Todos
 
@@ -107,6 +111,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-10T09:28:25.973Z
-Stopped at: Completed 02-09-PLAN.md
+Last session: 2026-07-10T10:06:33.606Z
+Stopped at: Completed 02-10-PLAN.md
 Resume file: None
