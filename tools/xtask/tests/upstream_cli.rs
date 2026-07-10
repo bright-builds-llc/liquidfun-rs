@@ -10,9 +10,20 @@ use std::process::{Command, Output};
 use std::sync::OnceLock;
 use std::sync::atomic::{AtomicU64, Ordering};
 
+use sha2::{Digest, Sha256};
+
 const REPOSITORY: &str = "https://github.com/google/liquidfun.git";
 const REVISION: &str = "7f20402173fd143a3988c921bc384459c6a858f2";
 const WRONG_REVISION: &str = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+const ADAPTER_SOURCES: [&str; 7] = [
+    "tools/reference/src/main.cpp",
+    "tools/reference/src/protocol.cpp",
+    "tools/reference/src/protocol_bits.cpp",
+    "tools/reference/src/protocol.hpp",
+    "tools/reference/src/oracle_adapter.cpp",
+    "tools/reference/src/oracle_adapter.hpp",
+    "tools/reference/src/build_identity.hpp.in",
+];
 
 static FIXTURE_ID: AtomicU64 = AtomicU64::new(0);
 static FAKE_TOOLS: OnceLock<Result<FakeTools, String>> = OnceLock::new();
@@ -30,6 +41,7 @@ struct FakeTools {
 #[derive(Debug)]
 struct RepositoryFixture {
     root: PathBuf,
+    cmake_marker: PathBuf,
 }
 
 impl RepositoryFixture {
@@ -41,10 +53,12 @@ impl RepositoryFixture {
         ));
         fs::create_dir_all(root.join("reference"))?;
         fs::create_dir_all(root.join("third_party/liquidfun"))?;
-        fs::create_dir_all(root.join("tools/reference"))?;
+        fs::create_dir_all(root.join("tools/reference/src"))?;
 
-        let fixture = Self { root };
+        let cmake_marker = root.join("cmake-arguments.txt");
+        let fixture = Self { root, cmake_marker };
         fixture.write_lock(REVISION)?;
+        fixture.write_adapter_sources()?;
         fs::write(
             fixture.root.join(".gitmodules"),
             format!(
@@ -67,6 +81,33 @@ impl RepositoryFixture {
         fs::remove_dir_all(self.root.join("third_party/liquidfun"))
     }
 
+    fn write_adapter_sources(&self) -> io::Result<()> {
+        for relative_path in ADAPTER_SOURCES {
+            fs::write(self.root.join(relative_path), format!("{relative_path}\n"))?;
+        }
+        Ok(())
+    }
+
+    fn adapter_source_digest(&self) -> io::Result<String> {
+        let mut digest_input = Sha256::new();
+        for relative_path in ADAPTER_SOURCES {
+            let bytes = fs::read(self.root.join(relative_path))?;
+            let source_digest = Sha256::digest(bytes);
+            digest_input.update(relative_path.as_bytes());
+            digest_input.update(b"=");
+            digest_input.update(format!("{source_digest:x}").as_bytes());
+            digest_input.update(b"\n");
+        }
+        Ok(format!("{:x}", digest_input.finalize()))
+    }
+
+    fn cmake_arguments(&self) -> io::Result<Vec<String>> {
+        Ok(fs::read_to_string(&self.cmake_marker)?
+            .lines()
+            .map(str::to_owned)
+            .collect())
+    }
+
     fn command(&self) -> io::Result<Command> {
         let tools = fake_tools()?;
         let mut command = Command::new(env!("CARGO_BIN_EXE_xtask"));
@@ -77,7 +118,8 @@ impl RepositoryFixture {
             .env("LIQUIDFUN_XTASK_NINJA", &tools.ninja)
             .env("LIQUIDFUN_XTASK_CXX", &tools.cxx)
             .env("LIQUIDFUN_TEST_REVISION", REVISION)
-            .env("LIQUIDFUN_TEST_REMOTE_URL", REPOSITORY);
+            .env("LIQUIDFUN_TEST_REMOTE_URL", REPOSITORY)
+            .env("LIQUIDFUN_TEST_CMAKE_MARKER", &self.cmake_marker);
         Ok(command)
     }
 
@@ -185,6 +227,81 @@ fn configure_rejects_unknown_preset() -> TestResult {
 
     // Assert
     assert_failure_category(&output, "upstream/preset");
+    fixture.cleanup()?;
+    Ok(())
+}
+
+#[test]
+fn configure_passes_revision_and_adapter_digest_as_structured_arguments() -> TestResult {
+    // Arrange
+    let fixture = RepositoryFixture::new()?;
+    let expected_digest = fixture.adapter_source_digest()?;
+    let mut command = fixture.command()?;
+    command.args(["upstream", "configure", "--preset", "oracle-debug"]);
+
+    // Act
+    let output = command.output()?;
+
+    // Assert
+    assert!(output.status.success(), "{}", stderr(&output));
+    assert_eq!(
+        fixture.cmake_arguments()?,
+        [
+            "--preset".to_owned(),
+            "oracle-debug".to_owned(),
+            format!("-DLIQUIDFUN_EXPECTED_ORACLE_REVISION={REVISION}"),
+            format!("-DLIQUIDFUN_EXPECTED_ADAPTER_SHA256={expected_digest}"),
+        ]
+    );
+    fixture.cleanup()?;
+    Ok(())
+}
+
+#[test]
+fn configure_rejects_extra_path_input_before_cmake() -> TestResult {
+    // Arrange
+    let fixture = RepositoryFixture::new()?;
+    let mut command = fixture.command()?;
+    command.args([
+        "upstream",
+        "configure",
+        "--preset",
+        "oracle-debug",
+        "../untrusted",
+    ]);
+
+    // Act
+    let output = command.output()?;
+
+    // Assert
+    assert_failure_category(&output, "upstream/usage");
+    assert!(!fixture.cmake_marker.exists());
+    fixture.cleanup()?;
+    Ok(())
+}
+
+#[test]
+fn build_targets_only_the_registered_reference_executable() -> TestResult {
+    // Arrange
+    let fixture = RepositoryFixture::new()?;
+    let mut command = fixture.command()?;
+    command.args(["upstream", "build", "--preset", "oracle-debug"]);
+
+    // Act
+    let output = command.output()?;
+
+    // Assert
+    assert!(output.status.success(), "{}", stderr(&output));
+    assert_eq!(
+        fixture.cmake_arguments()?,
+        [
+            "--build",
+            "--preset",
+            "oracle-debug",
+            "--target",
+            "liquidfun-reference",
+        ]
+    );
     fixture.cleanup()?;
     Ok(())
 }

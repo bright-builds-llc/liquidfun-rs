@@ -1,3 +1,4 @@
+#include "build_identity.hpp"
 #include "oracle_adapter.hpp"
 #include "protocol.hpp"
 
@@ -9,18 +10,19 @@
 namespace {
 
 liquidfun::reference::BuildIdentity build_identity() {
+  namespace configured = liquidfun::reference::configured_build_identity;
   return liquidfun::reference::BuildIdentity{
-      "7f20402173fd143a3988c921bc384459c6a858f2",
-      "source-digest-v1",
-      LIQUIDFUN_ADAPTER_CONTENT_SHA256,
-      LIQUIDFUN_CMAKE_PRESET,
-      LIQUIDFUN_COMPILER_ID,
-      LIQUIDFUN_COMPILER_VERSION,
-      LIQUIDFUN_TARGET,
-      LIQUIDFUN_BUILD_TYPE,
-      LIQUIDFUN_EFFECTIVE_COMPILE_FLAGS,
-      LIQUIDFUN_EFFECTIVE_LINK_FLAGS,
-      LIQUIDFUN_SANITIZER_MODE};
+      configured::kOracleRevision,
+      configured::kAdapterRevision,
+      configured::kAdapterContentSha256,
+      configured::kCmakePreset,
+      configured::kCompilerId,
+      configured::kCompilerVersion,
+      configured::kTarget,
+      configured::kBuildType,
+      configured::kEffectiveCompileFlags,
+      configured::kEffectiveLinkFlags,
+      configured::kSanitizerMode};
 }
 
 int run() {

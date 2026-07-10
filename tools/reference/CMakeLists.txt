@@ -26,7 +26,57 @@ add_subdirectory(
   "${CMAKE_BINARY_DIR}/upstream"
 )
 
+set(REFERENCE_UPSTREAM_COMPATIBILITY_OPTIONS "")
+if(
+  CMAKE_CXX_COMPILER_ID MATCHES "Clang"
+  AND CMAKE_CXX_FLAGS MATCHES "sanitize"
+)
+  # The read-only 2014 oracle trips two modern Clang warnings under its own
+  # -Werror policy. Keep warnings visible without mutating upstream sources.
+  set(
+    REFERENCE_UPSTREAM_COMPATIBILITY_OPTIONS
+    -Wno-error=unused-result
+    -Wno-error=nontrivial-memcall
+  )
+  target_compile_options(
+    Box2D
+    PRIVATE ${REFERENCE_UPSTREAM_COMPATIBILITY_OPTIONS}
+  )
+endif()
+
 include(CTest)
+
+foreach(
+  REQUIRED_IDENTITY_VARIABLE
+  IN ITEMS
+    LIQUIDFUN_EXPECTED_ORACLE_REVISION
+    LIQUIDFUN_EXPECTED_ADAPTER_SHA256
+)
+  if(
+    NOT DEFINED ${REQUIRED_IDENTITY_VARIABLE}
+    OR "${${REQUIRED_IDENTITY_VARIABLE}}" STREQUAL ""
+  )
+    message(
+      FATAL_ERROR
+      "${REQUIRED_IDENTITY_VARIABLE} must be passed by the verified xtask configure command"
+    )
+  endif()
+endforeach()
+
+string(LENGTH "${LIQUIDFUN_EXPECTED_ORACLE_REVISION}" REFERENCE_REVISION_LENGTH)
+if(
+  NOT REFERENCE_REVISION_LENGTH EQUAL 40
+  OR NOT "${LIQUIDFUN_EXPECTED_ORACLE_REVISION}" MATCHES "^[0-9a-f]+$"
+)
+  message(FATAL_ERROR "LIQUIDFUN_EXPECTED_ORACLE_REVISION must be full lowercase 40-hex")
+endif()
+string(LENGTH "${LIQUIDFUN_EXPECTED_ADAPTER_SHA256}" REFERENCE_DIGEST_LENGTH)
+if(
+  NOT REFERENCE_DIGEST_LENGTH EQUAL 64
+  OR NOT "${LIQUIDFUN_EXPECTED_ADAPTER_SHA256}" MATCHES "^[0-9a-f]+$"
+)
+  message(FATAL_ERROR "LIQUIDFUN_EXPECTED_ADAPTER_SHA256 must be lowercase 64-hex")
+endif()
 
 add_library(
   liquidfun-reference-protocol
@@ -48,27 +98,46 @@ target_include_directories(
 )
 target_link_libraries(liquidfun-reference-protocol PRIVATE Box2D)
 
+set(
+  REFERENCE_ADAPTER_SOURCES
+  tools/reference/src/main.cpp
+  tools/reference/src/protocol.cpp
+  tools/reference/src/protocol_bits.cpp
+  tools/reference/src/protocol.hpp
+  tools/reference/src/oracle_adapter.cpp
+  tools/reference/src/oracle_adapter.hpp
+  tools/reference/src/build_identity.hpp.in
+)
+set(REFERENCE_ADAPTER_DIGEST_INPUT "")
+set(REFERENCE_ADAPTER_DEPENDS "")
+foreach(REFERENCE_ADAPTER_SOURCE IN LISTS REFERENCE_ADAPTER_SOURCES)
+  file(
+    REAL_PATH
+    "${CMAKE_CURRENT_LIST_DIR}/../../${REFERENCE_ADAPTER_SOURCE}"
+    REFERENCE_ADAPTER_PATH
+  )
+  list(APPEND REFERENCE_ADAPTER_DEPENDS "${REFERENCE_ADAPTER_PATH}")
+  file(SHA256 "${REFERENCE_ADAPTER_PATH}" REFERENCE_ADAPTER_SOURCE_SHA256)
+  string(
+    APPEND
+    REFERENCE_ADAPTER_DIGEST_INPUT
+    "${REFERENCE_ADAPTER_SOURCE}=${REFERENCE_ADAPTER_SOURCE_SHA256}\n"
+  )
+endforeach()
+string(SHA256 REFERENCE_CONTENT_SHA256 "${REFERENCE_ADAPTER_DIGEST_INPUT}")
+if(
+  NOT "${REFERENCE_CONTENT_SHA256}" STREQUAL "${LIQUIDFUN_EXPECTED_ADAPTER_SHA256}"
+)
+  message(
+    FATAL_ERROR
+    "adapter digest mismatch: expected ${LIQUIDFUN_EXPECTED_ADAPTER_SHA256}, actual ${REFERENCE_CONTENT_SHA256}"
+  )
+endif()
 set_property(
   DIRECTORY
   APPEND
   PROPERTY CMAKE_CONFIGURE_DEPENDS
-           "${CMAKE_CURRENT_LIST_DIR}/src/main.cpp"
-           "${CMAKE_CURRENT_LIST_DIR}/src/protocol.cpp"
-           "${CMAKE_CURRENT_LIST_DIR}/src/protocol_bits.cpp"
-           "${CMAKE_CURRENT_LIST_DIR}/src/protocol.hpp"
-           "${CMAKE_CURRENT_LIST_DIR}/src/oracle_adapter.cpp"
-           "${CMAKE_CURRENT_LIST_DIR}/src/oracle_adapter.hpp"
-)
-file(SHA256 "${CMAKE_CURRENT_LIST_DIR}/src/main.cpp" REFERENCE_MAIN_SHA256)
-file(SHA256 "${CMAKE_CURRENT_LIST_DIR}/src/protocol.cpp" REFERENCE_PROTOCOL_SHA256)
-file(SHA256 "${CMAKE_CURRENT_LIST_DIR}/src/protocol_bits.cpp" REFERENCE_BITS_SHA256)
-file(SHA256 "${CMAKE_CURRENT_LIST_DIR}/src/protocol.hpp" REFERENCE_PROTOCOL_HEADER_SHA256)
-file(SHA256 "${CMAKE_CURRENT_LIST_DIR}/src/oracle_adapter.cpp" REFERENCE_ADAPTER_SHA256)
-file(SHA256 "${CMAKE_CURRENT_LIST_DIR}/src/oracle_adapter.hpp" REFERENCE_ADAPTER_HEADER_SHA256)
-string(
-  SHA256
-  REFERENCE_CONTENT_SHA256
-  "${REFERENCE_MAIN_SHA256}:${REFERENCE_PROTOCOL_SHA256}:${REFERENCE_BITS_SHA256}:${REFERENCE_PROTOCOL_HEADER_SHA256}:${REFERENCE_ADAPTER_SHA256}:${REFERENCE_ADAPTER_HEADER_SHA256}"
+           ${REFERENCE_ADAPTER_DEPENDS}
 )
 if(CMAKE_PRESET_NAME)
   set(REFERENCE_PRESET "${CMAKE_PRESET_NAME}")
@@ -99,21 +168,93 @@ if(REFERENCE_COMPILE_FLAGS MATCHES "sanitize")
 else()
   set(REFERENCE_SANITIZER_MODE "none")
 endif()
+if(CMAKE_CXX_COMPILER_TARGET)
+  set(REFERENCE_COMPILER_TARGET "${CMAKE_CXX_COMPILER_TARGET}")
+else()
+  set(REFERENCE_COMPILER_TARGET "native")
+endif()
+set(
+  REFERENCE_TARGET
+  "${REFERENCE_COMPILER_TARGET}|${CMAKE_SYSTEM_NAME}|${CMAKE_SYSTEM_PROCESSOR}"
+)
 
-add_executable(liquidfun-reference src/main.cpp)
-target_compile_features(liquidfun-reference PRIVATE cxx_std_17)
-target_compile_definitions(
+if(MSVC)
+  set(REFERENCE_WARNING_OPTIONS /W4 /WX)
+else()
+  set(REFERENCE_WARNING_OPTIONS -Wall -Wextra -Wpedantic -Werror)
+endif()
+string(JOIN " " REFERENCE_WARNING_FLAGS ${REFERENCE_WARNING_OPTIONS})
+string(
+  JOIN
+  " "
+  REFERENCE_UPSTREAM_COMPATIBILITY_FLAGS
+  ${REFERENCE_UPSTREAM_COMPATIBILITY_OPTIONS}
+)
+string(
+  STRIP
+  "${REFERENCE_COMPILE_FLAGS} ${REFERENCE_WARNING_FLAGS} ${REFERENCE_UPSTREAM_COMPATIBILITY_FLAGS} cxx_std_17"
+  REFERENCE_COMPILE_FLAGS
+)
+
+function(reference_escape_cpp_string INPUT_VALUE OUTPUT_VARIABLE)
+  string(REPLACE "\\" "\\\\" ESCAPED_VALUE "${INPUT_VALUE}")
+  string(REPLACE "\"" "\\\"" ESCAPED_VALUE "${ESCAPED_VALUE}")
+  string(REPLACE "\n" "\\n" ESCAPED_VALUE "${ESCAPED_VALUE}")
+  string(REPLACE "\r" "\\r" ESCAPED_VALUE "${ESCAPED_VALUE}")
+  set("${OUTPUT_VARIABLE}" "${ESCAPED_VALUE}" PARENT_SCOPE)
+endfunction()
+
+set(REFERENCE_ADAPTER_REVISION "source-digest-v1")
+reference_escape_cpp_string(
+  "${LIQUIDFUN_EXPECTED_ORACLE_REVISION}"
+  REFERENCE_ORACLE_REVISION_CPP
+)
+reference_escape_cpp_string(
+  "${REFERENCE_ADAPTER_REVISION}"
+  REFERENCE_ADAPTER_REVISION_CPP
+)
+reference_escape_cpp_string(
+  "${REFERENCE_CONTENT_SHA256}"
+  REFERENCE_ADAPTER_CONTENT_SHA256_CPP
+)
+reference_escape_cpp_string("${REFERENCE_PRESET}" REFERENCE_PRESET_CPP)
+reference_escape_cpp_string("${CMAKE_CXX_COMPILER_ID}" REFERENCE_COMPILER_ID_CPP)
+reference_escape_cpp_string(
+  "${CMAKE_CXX_COMPILER_VERSION}"
+  REFERENCE_COMPILER_VERSION_CPP
+)
+reference_escape_cpp_string("${REFERENCE_TARGET}" REFERENCE_TARGET_CPP)
+reference_escape_cpp_string("${CMAKE_BUILD_TYPE}" REFERENCE_BUILD_TYPE_CPP)
+reference_escape_cpp_string(
+  "${REFERENCE_COMPILE_FLAGS}"
+  REFERENCE_COMPILE_FLAGS_CPP
+)
+reference_escape_cpp_string("${REFERENCE_LINK_FLAGS}" REFERENCE_LINK_FLAGS_CPP)
+reference_escape_cpp_string(
+  "${REFERENCE_SANITIZER_MODE}"
+  REFERENCE_SANITIZER_MODE_CPP
+)
+
+set(
+  REFERENCE_BUILD_IDENTITY_HEADER
+  "${CMAKE_CURRENT_BINARY_DIR}/generated/build_identity.hpp"
+)
+configure_file(
+  "${CMAKE_CURRENT_LIST_DIR}/src/build_identity.hpp.in"
+  "${REFERENCE_BUILD_IDENTITY_HEADER}"
+  @ONLY
+  NEWLINE_STYLE UNIX
+)
+
+add_executable(
   liquidfun-reference
-  PRIVATE
-    LIQUIDFUN_ADAPTER_CONTENT_SHA256="${REFERENCE_CONTENT_SHA256}"
-    LIQUIDFUN_BUILD_TYPE="${CMAKE_BUILD_TYPE}"
-    LIQUIDFUN_CMAKE_PRESET="${REFERENCE_PRESET}"
-    LIQUIDFUN_COMPILER_ID="${CMAKE_CXX_COMPILER_ID}"
-    LIQUIDFUN_COMPILER_VERSION="${CMAKE_CXX_COMPILER_VERSION}"
-    LIQUIDFUN_EFFECTIVE_COMPILE_FLAGS="${REFERENCE_COMPILE_FLAGS}"
-    LIQUIDFUN_EFFECTIVE_LINK_FLAGS="${REFERENCE_LINK_FLAGS}"
-    LIQUIDFUN_SANITIZER_MODE="${REFERENCE_SANITIZER_MODE}"
-    LIQUIDFUN_TARGET="${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}"
+  src/main.cpp
+  "${REFERENCE_BUILD_IDENTITY_HEADER}"
+)
+target_compile_features(liquidfun-reference PRIVATE cxx_std_17)
+target_include_directories(
+  liquidfun-reference
+  PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated"
 )
 target_link_libraries(
   liquidfun-reference
@@ -134,21 +275,15 @@ target_link_libraries(
   PRIVATE liquidfun-reference-protocol
 )
 
-if(MSVC)
-  target_compile_options(liquidfun-reference-protocol PRIVATE /W4 /WX)
-  target_compile_options(liquidfun-reference PRIVATE /W4 /WX)
-  target_compile_options(liquidfun-reference-protocol-tests PRIVATE /W4 /WX)
-else()
-  target_compile_options(
-    liquidfun-reference-protocol
-    PRIVATE -Wall -Wextra -Wpedantic -Werror
-  )
-  target_compile_options(liquidfun-reference PRIVATE -Wall -Wextra -Wpedantic -Werror)
-  target_compile_options(
-    liquidfun-reference-protocol-tests
-    PRIVATE -Wall -Wextra -Wpedantic -Werror
-  )
-endif()
+target_compile_options(
+  liquidfun-reference-protocol
+  PRIVATE ${REFERENCE_WARNING_OPTIONS}
+)
+target_compile_options(liquidfun-reference PRIVATE ${REFERENCE_WARNING_OPTIONS})
+target_compile_options(
+  liquidfun-reference-protocol-tests
+  PRIVATE ${REFERENCE_WARNING_OPTIONS}
+)
 
 add_test(
   NAME liquidfun-reference-protocol

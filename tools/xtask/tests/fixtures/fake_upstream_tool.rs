@@ -82,6 +82,11 @@ fn run_cmake(args: &[String]) -> ExitCode {
         eprintln!("simulated cmake failure");
         return ExitCode::from(42);
     }
+    if let Some(marker) = env::var_os("LIQUIDFUN_TEST_CMAKE_MARKER")
+        && std::fs::write(marker, args.join("\n")).is_err()
+    {
+        return ExitCode::FAILURE;
+    }
 
     println!("simulated cmake invocation: {args:?}");
     ExitCode::SUCCESS

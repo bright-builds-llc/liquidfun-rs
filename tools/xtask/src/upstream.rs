@@ -6,6 +6,8 @@ use std::fs;
 use std::path::{Component, Path, PathBuf};
 use std::process::{Command, Output};
 
+use sha2::{Digest, Sha256};
+
 const USAGE: &str = r"Usage: cargo xtask upstream <command> [arguments]
 
 Commands:
@@ -14,6 +16,15 @@ Commands:
   build --preset <oracle-debug|oracle-release|oracle-asan-ubsan>";
 
 const ALLOWED_PRESETS: [&str; 3] = ["oracle-debug", "oracle-release", "oracle-asan-ubsan"];
+const ADAPTER_SOURCES: [&str; 7] = [
+    "tools/reference/src/main.cpp",
+    "tools/reference/src/protocol.cpp",
+    "tools/reference/src/protocol_bits.cpp",
+    "tools/reference/src/protocol.hpp",
+    "tools/reference/src/oracle_adapter.cpp",
+    "tools/reference/src/oracle_adapter.hpp",
+    "tools/reference/src/build_identity.hpp.in",
+];
 const CMAKE_CANONICAL: Version = Version::new(4, 3, 3);
 const CMAKE_FLOOR: Version = Version::new(3, 25, 0);
 const NINJA_CANONICAL: Version = Version::new(1, 13, 2);
@@ -107,19 +118,41 @@ pub(crate) fn run(args: &[String]) -> Result<(), UpstreamError> {
     match command.as_str() {
         "verify" => {
             require_no_arguments(command_args, "verify")?;
-            verify(&repository_root)
+            verify(&repository_root).map(|_| ())
         }
         "configure" => {
             let preset = parse_preset(command_args)?;
-            verify(&repository_root)?;
-            run_cmake(&repository_root, &["--preset", preset], "configure")
+            let upstream_lock = verify(&repository_root)?;
+            let adapter_digest = adapter_source_digest(&repository_root)?;
+            let expected_revision = format!(
+                "-DLIQUIDFUN_EXPECTED_ORACLE_REVISION={}",
+                upstream_lock.revision
+            );
+            let expected_adapter_digest =
+                format!("-DLIQUIDFUN_EXPECTED_ADAPTER_SHA256={adapter_digest}");
+            run_cmake(
+                &repository_root,
+                &[
+                    OsString::from("--preset"),
+                    OsString::from(preset),
+                    OsString::from(expected_revision),
+                    OsString::from(expected_adapter_digest),
+                ],
+                "configure",
+            )
         }
         "build" => {
             let preset = parse_preset(command_args)?;
             verify(&repository_root)?;
             run_cmake(
                 &repository_root,
-                &["--build", "--preset", preset, "--target", "Box2D"],
+                &[
+                    OsString::from("--build"),
+                    OsString::from("--preset"),
+                    OsString::from(preset),
+                    OsString::from("--target"),
+                    OsString::from("liquidfun-reference"),
+                ],
                 "build",
             )
         }
@@ -186,7 +219,7 @@ fn repository_root() -> Result<PathBuf, UpstreamError> {
     Ok(root.to_path_buf())
 }
 
-fn verify(repository_root: &Path) -> Result<(), UpstreamError> {
+fn verify(repository_root: &Path) -> Result<UpstreamLock, UpstreamError> {
     let upstream_lock = read_upstream_lock(repository_root)?;
     verify_gitmodules(repository_root, &upstream_lock)?;
     verify_submodule(repository_root, &upstream_lock)?;
@@ -197,7 +230,27 @@ fn verify(repository_root: &Path) -> Result<(), UpstreamError> {
         upstream_lock.submodule_path.display(),
         upstream_lock.revision
     );
-    Ok(())
+    Ok(upstream_lock)
+}
+
+fn adapter_source_digest(repository_root: &Path) -> Result<String, UpstreamError> {
+    let mut digest_input = Sha256::new();
+    for relative_path in ADAPTER_SOURCES {
+        let path = repository_root.join(relative_path);
+        let bytes = fs::read(&path).map_err(|error| {
+            UpstreamError::new(
+                "adapter-digest",
+                format!("failed to read {}: {error}", path.display()),
+            )
+        })?;
+        let source_digest = Sha256::digest(bytes);
+        digest_input.update(relative_path.as_bytes());
+        digest_input.update(b"=");
+        digest_input.update(format!("{source_digest:x}").as_bytes());
+        digest_input.update(b"\n");
+    }
+
+    Ok(format!("{:x}", digest_input.finalize()))
 }
 
 fn read_upstream_lock(repository_root: &Path) -> Result<UpstreamLock, UpstreamError> {
@@ -550,18 +603,12 @@ fn parse_version(text: &str) -> Option<Version> {
 
 fn run_cmake(
     repository_root: &Path,
-    args: &[&str],
+    args: &[OsString],
     operation: &'static str,
 ) -> Result<(), UpstreamError> {
     let cmake_program = tool_program("LIQUIDFUN_XTASK_CMAKE", "cmake");
-    let command_args: Vec<OsString> = args.iter().map(OsString::from).collect();
     let reference_dir = repository_root.join("tools/reference");
-    let output = run_text_command(
-        &cmake_program,
-        &command_args,
-        Some(&reference_dir),
-        operation,
-    )?;
+    let output = run_text_command(&cmake_program, args, Some(&reference_dir), operation)?;
 
     print!("{}", output.stdout);
     eprint!("{}", output.stderr);

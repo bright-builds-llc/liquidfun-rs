@@ -36,16 +36,20 @@
     {
       "name": "oracle-asan-ubsan",
       "displayName": "LiquidFun oracle ASan and UBSan",
-      "description": "Clang debug build with address and undefined behavior sanitizers",
+      "description": "Fail-fast Clang debug build with address and undefined behavior sanitizers",
       "inherits": "oracle-base",
+      "environment": {
+        "ASAN_OPTIONS": "abort_on_error=1:halt_on_error=1",
+        "UBSAN_OPTIONS": "halt_on_error=1:print_stacktrace=1"
+      },
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_C_COMPILER": "clang",
         "CMAKE_CXX_COMPILER": "clang++",
-        "CMAKE_C_FLAGS_INIT": "-fsanitize=address,undefined -fno-omit-frame-pointer",
-        "CMAKE_CXX_FLAGS_INIT": "-fsanitize=address,undefined -fno-omit-frame-pointer",
-        "CMAKE_EXE_LINKER_FLAGS_INIT": "-fsanitize=address,undefined",
-        "CMAKE_SHARED_LINKER_FLAGS_INIT": "-fsanitize=address,undefined"
+        "CMAKE_C_FLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer -fno-sanitize-recover=undefined",
+        "CMAKE_CXX_FLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer -fno-sanitize-recover=undefined",
+        "CMAKE_EXE_LINKER_FLAGS": "-fsanitize=address,undefined",
+        "CMAKE_SHARED_LINKER_FLAGS": "-fsanitize=address,undefined"
       }
     }
   ],
