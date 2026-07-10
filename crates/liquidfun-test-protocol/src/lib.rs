@@ -2,17 +2,21 @@
 
 #![forbid(unsafe_code)]
 
+mod codec;
 mod failure;
 mod float_bits;
 mod ids;
 mod limits;
 mod provenance;
+mod scenario;
 
+pub use codec::*;
 pub use failure::*;
 pub use float_bits::FloatBits;
 pub use ids::*;
 pub use limits::HarnessLimits;
 pub use provenance::*;
+pub use scenario::*;
 
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
