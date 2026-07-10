@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 02-13-PLAN.md
-last_updated: "2026-07-10T11:24:59.985Z"
+status: verifying
+stopped_at: Completed 02-14-PLAN.md
+last_updated: "2026-07-10T11:50:37.095Z"
 last_activity: 2026-07-10
 progress:
   total_phases: 12
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 19
-  completed_plans: 18
-  percent: 95
+  completed_plans: 19
+  percent: 100
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: `.planning/PROJECT.md` (updated 2026-07-09)
 
 ## Current Position
 
-Phase: 2 (Semantic Protocol and Oracle Round Trip) — EXECUTING
+Phase: 2 (Semantic Protocol and Oracle Round Trip) — VERIFYING
 Plan: 14 of 14
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-07-10
 
-Progress: [██████████] 95%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -65,6 +65,7 @@ Progress: [██████████] 95%
 | Phase 02 P11 | 29 min | 1 tasks | 9 files |
 | Phase 02 P12 | 28 min | 1 tasks | 16 files |
 | Phase 02 P13 | 10 min | 1 tasks | 6 files |
+| Phase 02 P14 | 22 min | 2 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -107,6 +108,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 02]: Stage reviewed traces from exact supervised oracle JSONL and bind accepted evidence to source, identity, policy, notice, and explicit review metadata.
 - [Phase 02]: Parse every differential command into a closed canonical invocation before any upstream verification or child execution. — This prevents invalid contributor input from causing effects and makes every runner argument auditable.
 - [Phase 02]: Keep Cargo-only aggregate checks useful by validating protocol presentations, fixtures, package isolation, and artifact provenance without an initialized C++ submodule. — Artifact evidence remains fail-closed while checkout identity stays reserved for the full initialized mode.
+- [Phase 02]: Make the exact twelve-row TESTING.md layer table executable policy through a strict read-only xtask checker. — Required commands, prerequisites, artifacts, retry policy, placement, and semantic interpretation now fail closed instead of depending on prose review.
+- [Phase 02]: Keep Cargo CI submodule-free while canonical oracle CI alone owns real C++ round trips, sanitizer execution, and read-only evidence assertions. — The trust split preserves ordinary Cargo isolation and keeps exact tool and upstream prerequisites confined to the evidence lane.
+- [Phase 02]: Run the sanitizer profile as a bounded two-request reused session. — The scheduled command must prove both fail-fast sanitizer handling and adapter reset epochs 1 then 2 rather than duplicate one-shot coverage.
 
 ### Pending Todos
 
@@ -119,6 +123,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-10T11:24:42.489Z
-Stopped at: Completed 02-13-PLAN.md
+Last session: 2026-07-10T11:50:37.092Z
+Stopped at: Completed 02-14-PLAN.md
 Resume file: None
