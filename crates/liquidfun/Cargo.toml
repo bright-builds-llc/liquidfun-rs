@@ -1,0 +1,13 @@
+[package]
+name = "liquidfun"
+version = "0.0.0"
+description = "An independent Rust implementation of the LiquidFun physics engine"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+readme.workspace = true
+include = ["Cargo.toml", "src/**/*.rs", "README.md"]
+
+[lints]
+workspace = true
