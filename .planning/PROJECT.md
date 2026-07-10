@@ -19,6 +19,7 @@ Deliver an independent, maintainable Rust physics engine whose LiquidFun behavio
 - [x] Phase 1 selected and pinned official LiquidFun commit `7f20402173fd143a3988c921bc384459c6a858f2`, with release ancestry, licensing, notices, source-mapping, and intentional update rules recorded.
 - [x] Phase 1 established a Cargo-first resolver-3 workspace with one publishable `liquidfun` crate, a private `xtask`, a pinned development toolchain, a provisional Rust 1.92 MSRV, and package isolation from C++/reference inputs.
 - [x] Phase 1 created an authoritative 177-row compatibility ledger, deterministic 161-entry discovery snapshot, generated human report, and fail-closed inventory/provenance/package checks.
+- [x] Phase 2 established a bounded, versioned semantic protocol and private Rust/C++ differential harness with strict provenance, typed comparison and failure classification, replay/minimization, reviewed fixture promotion, and verified one-shot, reuse, and sanitizer empty-world round trips.
 
 ### Active
 
@@ -28,7 +29,7 @@ Deliver an independent, maintainable Rust physics engine whose LiquidFun behavio
 - [ ] Implement the Box2D-compatible mathematical, geometric, collision, broad-phase, narrow-phase, solver, sleeping, query, ray-cast, and continuous-collision foundations present in the selected LiquidFun revision.
 - [ ] Implement rigid-body worlds, bodies, fixtures, contacts, all supported shapes and joints, filters, listeners, destruction behavior, debug drawing abstractions, and upstream-equivalent world operations.
 - [ ] Implement the full LiquidFun particle system, including storage, creation, destruction, lifetimes, buffers, spatial proxies, contacts, body contacts, groups, flags, pair/triad logic, queries, ray casts, callbacks, and every upstream solver behavior.
-- [ ] Build a first-class C++/Rust reference harness for seeded, reproducible, and minimizable differential scenarios with semantic state comparison, configurable tolerances, machine-readable output, and human-readable diagnostics.
+- [ ] Extend the Phase 2 C++/Rust reference harness from the verified empty-world seam to seeded subsystem scenarios and their semantic state, tolerance, regression, and diagnostic requirements.
 - [ ] Create layered unit, integration, upstream-compatibility, differential, property, fuzz, Miri, sanitizer, and regression testing appropriate to each subsystem.
 - [ ] Port or account for upstream tests and examples, with an optional renderer-independent testbed that supports interactive inspection, headless execution, deterministic capture, and Rust/C++ comparison.
 - [ ] Define and enforce numerical-stability, ordering, determinism, and cross-platform tolerance policies before treating differential results as compatibility evidence.
@@ -99,6 +100,7 @@ Before substantial physics porting begins, the project should have:
 ## Context
 
 - Phase 1 is complete: the repository now contains a Cargo-first Rust scaffold, private orchestration, an immutable upstream oracle, reproducible CMake/Ninja build commands, compatibility/provenance records, package isolation, and separated CI workflows. Broad physics behavior is not implemented yet.
+- Phase 2 is complete: the repository now has a strict semantic JSONL contract, native Rust and process-isolated C++ adapters, typed comparison and failure taxonomy, replay/minimization and evidence lifecycles, and verified empty-world one-shot, reuse, and sanitizer round trips. This proves the harness seam, not broad physics parity.
 - Google LiquidFun extends the Box2D 2.3.0 / revision-280 lineage. Official commit `7f20402173fd143a3988c921bc384459c6a858f2` is the immutable behavioral oracle; `UPSTREAM.md` and ADR 0001 record the release-to-candidate delta and maintenance state.
 - The upstream C++ implementation is the behavioral oracle during development, not a production dependency or the desired public architecture.
 - Particle simulation is a central deliverable, not an optional extension after rigid-body work.
