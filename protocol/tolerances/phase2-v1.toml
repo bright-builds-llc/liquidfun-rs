@@ -1,0 +1,32 @@
+profile_id = "phase2-v1"
+version = 1
+profile_sha256 = "177db8c2ff3011653fc27f74339fe144df5936bb078db85f28402d317e6622c3"
+description = "Phase 2 sets no broad rigid-body, joint, or particle tolerance values; synthetic numeric policies exist only for comparator coverage."
+
+[[float_policies]]
+field = "simulation_time"
+scope = "phase2_trace"
+policy = { kind = "exact_bits" }
+
+[[float_policies]]
+field = "synthetic_absolute"
+scope = "comparator_coverage"
+policy = { kind = "absolute", max_bits = 1065353216 }
+
+[[float_policies]]
+field = "synthetic_absolute_relative"
+scope = "comparator_coverage"
+policy = { kind = "absolute_relative", absolute_bits = 1065353216, relative_bits = 1048576000 }
+
+[[float_policies]]
+field = "synthetic_ulps"
+scope = "comparator_coverage"
+policy = { kind = "ulps", max = 4 }
+
+[[discrete_policies]]
+field = "world_counts"
+kind = "exact"
+
+[[collection_policies]]
+field = "checkpoints"
+kind = "ordered"

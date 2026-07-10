@@ -9,6 +9,7 @@ mod ids;
 mod limits;
 mod provenance;
 mod scenario;
+mod schema;
 mod tolerance;
 mod trace;
 
