@@ -1,15 +1,17 @@
 //! Thin allowlisted command dispatch for private differential workflows.
 
 use std::{
+    collections::BTreeMap,
     env, fs,
     io::{self, Write},
     path::PathBuf,
-    process::ExitCode,
+    process::{Command, ExitCode},
 };
 
 use liquidfun_differential::{
-    DifferentialRunOutcome, MatchRun, MismatchReport, OraclePreset, SessionProfile, replay_exact,
-    run_named,
+    ArtifactKind, DifferentialRunOutcome, MatchRun, MismatchReport, OraclePreset, ReviewMetadata,
+    SessionProfile, StageRequest, promote_candidate, replay_exact, review_candidate, run_named,
+    stage_candidate,
 };
 use serde::Serialize;
 
@@ -29,7 +31,14 @@ fn main() -> ExitCode {
 }
 
 fn run() -> Result<ExitCode, CliError> {
-    let command = CommandConfig::parse(env::args().skip(1))?;
+    let arguments = env::args().skip(1).collect::<Vec<_>>();
+    if arguments
+        .first()
+        .is_some_and(|argument| argument == "fixture")
+    {
+        return run_fixture(arguments.into_iter().skip(1));
+    }
+    let command = CommandConfig::parse(arguments.into_iter())?;
     let repository_root = env::current_dir()?;
     let outcome = match &command.input {
         Input::Named(name) => run_named(
@@ -74,11 +83,171 @@ fn render_outcome(outcome: DifferentialRunOutcome) -> Result<ExitCode, CliError>
 }
 
 fn write_machine(report: &MachineReport<'_>) -> Result<(), CliError> {
+    write_json(report)
+}
+
+fn write_json(report: &impl Serialize) -> Result<(), CliError> {
     let stdout = io::stdout();
     let mut locked = stdout.lock();
     serde_json::to_writer(&mut locked, report)?;
     locked.write_all(b"\n")?;
     Ok(())
+}
+
+fn run_fixture(arguments: impl Iterator<Item = String>) -> Result<ExitCode, CliError> {
+    let repository_root = env::current_dir()?;
+    let mut arguments = arguments;
+    let action = arguments
+        .next()
+        .ok_or_else(|| CliError::Usage(fixture_usage()))?;
+    let options = parse_fixture_options(arguments)?;
+    match action.as_str() {
+        "stage" => {
+            require_exact_options(
+                &options,
+                &[
+                    "--artifact-id",
+                    "--artifact-kind",
+                    "--preset",
+                    "--scenario",
+                    "--session-profile",
+                ],
+            )?;
+            let scenario = required_option(&options, "--scenario")?;
+            let artifact_id = required_option(&options, "--artifact-id")?;
+            let preset = required_option(&options, "--preset")?;
+            let session_profile = required_option(&options, "--session-profile")?;
+            let artifact_kind = match required_option(&options, "--artifact-kind")?.as_str() {
+                "reviewed-trace" => ArtifactKind::ReviewedTrace,
+                "minimized-regression" => ArtifactKind::MinimizedRegression,
+                _ => return Err(CliError::Usage(fixture_usage())),
+            };
+            if scenario != "empty-world" {
+                return Err(CliError::Usage(fixture_usage()));
+            }
+            let _preset = parse_preset(preset)?;
+            let _profile = parse_profile(session_profile)?;
+            let request_bytes = fs::read(
+                repository_root.join("protocol/fixtures/accepted/empty-world-request.jsonl"),
+            )?;
+            let trace_bytes = fs::read(
+                repository_root.join("protocol/fixtures/accepted/empty-world-trace.jsonl"),
+            )?;
+            let generator_revision = generator_revision(&repository_root)?;
+            let candidate = stage_candidate(
+                &repository_root,
+                StageRequest {
+                    artifact_id,
+                    artifact_kind,
+                    scenario_id: scenario,
+                    preset,
+                    session_profile,
+                    generator_revision: &generator_revision,
+                    request_bytes: &request_bytes,
+                    trace_bytes: &trace_bytes,
+                    stderr_bytes: b"",
+                    maybe_failure_signature: None,
+                },
+            )?;
+            write_json(&FixtureStageReport {
+                result_kind: "fixture_staged",
+                artifact_id: candidate.artifact_id(),
+                candidate_directory: candidate.directory(),
+            })?;
+        }
+        "review" => {
+            require_exact_options(
+                &options,
+                &[
+                    "--artifact-id",
+                    "--review-status",
+                    "--reviewed-at",
+                    "--reviewer",
+                ],
+            )?;
+            let artifact_id = required_option(&options, "--artifact-id")?;
+            let reviewer = required_option(&options, "--reviewer")?;
+            let reviewed_at = required_option(&options, "--reviewed-at")?;
+            let metadata = match required_option(&options, "--review-status")?.as_str() {
+                "approved" => ReviewMetadata::approved(reviewer, reviewed_at),
+                "rejected" => ReviewMetadata::rejected(reviewer, reviewed_at),
+                _ => return Err(CliError::Usage(fixture_usage())),
+            };
+            let receipt = review_candidate(&repository_root, artifact_id, metadata)?;
+            write_json(&receipt)?;
+        }
+        "promote" => {
+            require_exact_options(&options, &["--artifact-id"])?;
+            let artifact_id = required_option(&options, "--artifact-id")?;
+            let receipt = promote_candidate(&repository_root, artifact_id)?;
+            write_json(&receipt)?;
+        }
+        _ => return Err(CliError::Usage(fixture_usage())),
+    }
+    Ok(ExitCode::SUCCESS)
+}
+
+fn require_exact_options(
+    options: &BTreeMap<String, String>,
+    expected: &[&str],
+) -> Result<(), CliError> {
+    if options.len() == expected.len()
+        && options
+            .keys()
+            .all(|option| expected.contains(&option.as_str()))
+    {
+        return Ok(());
+    }
+    Err(CliError::Usage(fixture_usage()))
+}
+
+fn parse_fixture_options(
+    mut arguments: impl Iterator<Item = String>,
+) -> Result<BTreeMap<String, String>, CliError> {
+    let mut options = BTreeMap::new();
+    while let Some(option) = arguments.next() {
+        let value = arguments
+            .next()
+            .ok_or_else(|| CliError::Usage(fixture_usage()))?;
+        if !option.starts_with("--") || options.insert(option, value).is_some() {
+            return Err(CliError::Usage(fixture_usage()));
+        }
+    }
+    Ok(options)
+}
+
+fn required_option<'a>(
+    options: &'a BTreeMap<String, String>,
+    name: &str,
+) -> Result<&'a String, CliError> {
+    options
+        .get(name)
+        .ok_or_else(|| CliError::Usage(fixture_usage()))
+}
+
+fn generator_revision(repository_root: &std::path::Path) -> Result<String, CliError> {
+    let output = Command::new("git")
+        .arg("-C")
+        .arg(repository_root)
+        .args(["rev-parse", "HEAD"])
+        .output()?;
+    if !output.status.success() {
+        return Err(CliError::GeneratorRevision(
+            String::from_utf8_lossy(&output.stderr).trim().to_owned(),
+        ));
+    }
+    Ok(String::from_utf8_lossy(&output.stdout).trim().to_owned())
+}
+
+fn fixture_usage() -> String {
+    "usage: liquidfun-differential fixture stage --scenario empty-world --preset <oracle-debug|oracle-release|oracle-asan-ubsan> --session-profile <one-shot|reuse|sanitizer> --artifact-kind <reviewed-trace|minimized-regression> --artifact-id <id>; fixture review --artifact-id <id> --reviewer <identity> --reviewed-at <UTC timestamp> --review-status <approved|rejected>; fixture promote --artifact-id <id>".to_owned()
+}
+
+#[derive(Serialize)]
+struct FixtureStageReport<'a> {
+    result_kind: &'static str,
+    artifact_id: &'a str,
+    candidate_directory: &'a std::path::Path,
 }
 
 #[derive(Serialize)]
@@ -218,4 +387,8 @@ enum CliError {
     Runner(#[from] liquidfun_differential::DifferentialRunnerError),
     #[error(transparent)]
     Json(#[from] serde_json::Error),
+    #[error(transparent)]
+    Fixture(#[from] liquidfun_differential::FixtureError),
+    #[error("could not determine generator revision: {0}")]
+    GeneratorRevision(String),
 }
