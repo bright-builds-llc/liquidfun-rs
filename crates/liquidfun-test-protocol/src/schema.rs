@@ -1,6 +1,7 @@
 use std::collections::BTreeSet;
 
 use serde::Deserialize;
+use serde_json::{Value, json};
 
 use crate::{
     CollectionPolicy, DiscretePolicy, FloatBits, FloatPolicy, Sha256Hex, ToleranceProfile,
@@ -8,6 +9,7 @@ use crate::{
 };
 
 const PHASE2_DESCRIPTION: &str = "Phase 2 sets no broad rigid-body, joint, or particle tolerance values; synthetic numeric policies exist only for comparator coverage.";
+const SCHEMA_DESCRIPTION: &str = "Deterministic presentation only. Typed Rust and C++ validation remains authoritative for cross-field references, uniqueness, ordering, hashes, and aggregate limits.";
 
 #[derive(Debug, thiserror::Error)]
 enum PresentationError {
@@ -263,59 +265,275 @@ fn reject_duplicate_fields<'a>(
     Ok(())
 }
 
-#[cfg(test)]
-mod tests {
-    use super::{check_tolerance_profile_presentation, render_tolerance_profile_presentation};
-
-    const TRACKED_TOLERANCE_PROFILE: &str = include_str!(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/../../protocol/tolerances/phase2-v1.toml"
-    ));
-
-    #[test]
-    fn tolerance_profile_presentation_is_strict_and_byte_stable() {
-        // Arrange
-        let unsupported_version =
-            TRACKED_TOLERANCE_PROFILE.replacen("version = 1", "version = 2", 1);
-        let mismatched_hash = TRACKED_TOLERANCE_PROFILE.replacen(
-            "177db8c2ff3011653fc27f74339fe144df5936bb078db85f28402d317e6622c3",
-            "077db8c2ff3011653fc27f74339fe144df5936bb078db85f28402d317e6622c3",
-            1,
-        );
-        let unknown_field = format!("unknown = true\n{TRACKED_TOLERANCE_PROFILE}");
-        let decimal_threshold =
-            TRACKED_TOLERANCE_PROFILE.replacen("max_bits = 1065353216", "max_bits = 1.0", 1);
-        let duplicate_policy = format!(
-            "{TRACKED_TOLERANCE_PROFILE}\n[[float_policies]]\nfield = \"simulation_time\"\nscope = \"phase2_trace\"\npolicy = {{ kind = \"exact_bits\" }}\n"
-        );
-
-        // Act
-        let rendered = render_tolerance_profile_presentation();
-        let strict_results = [
-            check_tolerance_profile_presentation(&unsupported_version),
-            check_tolerance_profile_presentation(&mismatched_hash),
-            check_tolerance_profile_presentation(&unknown_field),
-            check_tolerance_profile_presentation(&decimal_threshold),
-            check_tolerance_profile_presentation(&duplicate_policy),
-        ];
-
-        // Assert
-        assert_eq!(rendered, TRACKED_TOLERANCE_PROFILE);
-        assert!(rendered.ends_with('\n'));
-        assert!(rendered.contains("field = \"simulation_time\""));
-        assert!(rendered.contains("kind = \"exact_bits\""));
-        assert!(rendered.contains("max_bits = 1065353216"));
-        assert!(rendered.contains("absolute_bits = 1065353216"));
-        assert!(rendered.contains("relative_bits = 1048576000"));
-        assert!(strict_results.into_iter().all(|result| result.is_err()));
-    }
-
-    #[test]
-    fn tolerance_profile_presentation_matches_typed_authority() {
-        // Arrange and Act
-        let result = check_tolerance_profile_presentation(TRACKED_TOLERANCE_PROFILE);
-
-        // Assert
-        assert!(result.is_ok());
-    }
+fn render_protocol_schema() -> String {
+    render_json_schema(json!({
+        "$id": "https://liquidfun-rs.invalid/protocol/schemas/protocol-v1.schema.json",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "description": format!("{SCHEMA_DESCRIPTION} This schema presents newline-delimited transport records; framing and duplicate-member rejection remain codec responsibilities."),
+        "oneOf": [
+            closed_record(
+                json!({
+                    "build_identity": build_identity_schema(),
+                    "identity_sha256": sha256_schema(),
+                    "protocol_version": version_schema(),
+                    "record_kind": { "const": "handshake" },
+                    "supported_scenario_versions": version_array_schema(),
+                    "supported_tolerance_versions": version_array_schema(),
+                    "supported_trace_versions": version_array_schema()
+                }),
+                &["protocol_version", "record_kind", "supported_scenario_versions", "supported_trace_versions", "supported_tolerance_versions", "build_identity", "identity_sha256"],
+            ),
+            closed_record(
+                json!({
+                    "protocol_version": version_schema(),
+                    "record_kind": { "const": "scenario_request" },
+                    "request_id": semantic_id_schema(),
+                    "requested_trace_schema_version": version_schema(),
+                    "scenario": { "$ref": "scenario-v1.schema.json" },
+                    "scenario_schema_version": version_schema(),
+                    "tolerance_profile_sha256": sha256_schema(),
+                    "tolerance_profile_version": version_schema()
+                }),
+                &["protocol_version", "record_kind", "request_id", "scenario_schema_version", "requested_trace_schema_version", "tolerance_profile_version", "tolerance_profile_sha256", "scenario"],
+            )
+        ],
+        "title": "liquidfun-rs protocol presentation version 1",
+        "x-version-axes": {
+            "protocol_version": 1,
+            "scenario_schema_version": 1,
+            "tolerance_profile_version": 1,
+            "trace_schema_version": 1
+        }
+    }))
 }
+
+fn render_scenario_schema() -> String {
+    render_json_schema(json!({
+        "$id": "https://liquidfun-rs.invalid/protocol/schemas/scenario-v1.schema.json",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": false,
+        "description": SCHEMA_DESCRIPTION,
+        "properties": {
+            "checkpoints": {
+                "items": closed_record(
+                    json!({
+                        "after_command_id": semantic_id_schema(),
+                        "checkpoint_id": semantic_id_schema(),
+                        "observables": { "items": { "enum": ["world_counts", "simulation_time"] }, "maxItems": 128, "type": "array" },
+                        "phase": bounded_string_schema()
+                    }),
+                    &["checkpoint_id", "after_command_id", "phase", "observables"],
+                ),
+                "maxItems": 4096,
+                "type": "array"
+            },
+            "commands": {
+                "items": closed_record(
+                    json!({
+                        "command_id": semantic_id_schema(),
+                        "kind": { "const": "step" },
+                        "particle_iterations": { "maximum": 255, "minimum": 1, "type": "integer" },
+                        "position_iterations": { "maximum": 255, "minimum": 1, "type": "integer" },
+                        "timestep_bits": float_bits_schema(),
+                        "velocity_iterations": { "maximum": 255, "minimum": 1, "type": "integer" }
+                    }),
+                    &["kind", "command_id", "timestep_bits", "velocity_iterations", "position_iterations", "particle_iterations"],
+                ),
+                "maxItems": 4096,
+                "minItems": 1,
+                "type": "array"
+            },
+            "entities": { "items": false, "maxItems": 0, "type": "array" },
+            "gravity_x_bits": float_bits_schema(),
+            "gravity_y_bits": float_bits_schema(),
+            "scenario_id": semantic_id_schema(),
+            "source": scenario_source_schema()
+        },
+        "required": ["scenario_id", "source", "gravity_x_bits", "gravity_y_bits", "entities", "commands", "checkpoints"],
+        "title": "liquidfun-rs scenario presentation version 1",
+        "type": "object",
+        "x-version-axes": { "scenario_schema_version": 1 }
+    }))
+}
+
+fn render_trace_schema() -> String {
+    render_json_schema(json!({
+        "$id": "https://liquidfun-rs.invalid/protocol/schemas/trace-v1.schema.json",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "description": format!("{SCHEMA_DESCRIPTION} Record-sequence state transitions and reset proof validation remain typed-validator responsibilities."),
+        "oneOf": [
+            closed_record(
+                json!({
+                    "engine_kind": { "enum": ["native_rust", "cpp_oracle"] },
+                    "identity_sha256": sha256_schema(),
+                    "protocol_version": version_schema(),
+                    "record_kind": { "const": "trace_begin" },
+                    "request_id": semantic_id_schema(),
+                    "scenario_id": semantic_id_schema(),
+                    "scenario_sha256": sha256_schema(),
+                    "source": scenario_source_schema(),
+                    "tolerance_profile_sha256": sha256_schema(),
+                    "tolerance_profile_version": version_schema(),
+                    "trace_schema_version": version_schema()
+                }),
+                &["protocol_version", "record_kind", "request_id", "trace_schema_version", "scenario_id", "scenario_sha256", "source", "tolerance_profile_version", "tolerance_profile_sha256", "engine_kind", "identity_sha256"],
+            ),
+            closed_record(
+                json!({
+                    "checkpoint_id": semantic_id_schema(),
+                    "identity_sha256": sha256_schema(),
+                    "ordinal": uint32_schema(),
+                    "phase": bounded_string_schema(),
+                    "protocol_version": version_schema(),
+                    "record_kind": { "const": "checkpoint" },
+                    "request_id": semantic_id_schema(),
+                    "simulation_time_bits": float_bits_schema(),
+                    "world_counts": world_counts_schema()
+                }),
+                &["protocol_version", "record_kind", "request_id", "checkpoint_id", "ordinal", "phase", "simulation_time_bits", "world_counts", "identity_sha256"],
+            ),
+            closed_record(
+                json!({
+                    "checkpoint_count": uint32_schema(),
+                    "identity_sha256": sha256_schema(),
+                    "protocol_version": version_schema(),
+                    "record_kind": { "const": "trace_end" },
+                    "request_id": semantic_id_schema(),
+                    "reset_epoch": uint64_schema(),
+                    "reset_verified": { "const": true },
+                    "trace_payload_sha256": sha256_schema()
+                }),
+                &["protocol_version", "record_kind", "request_id", "checkpoint_count", "trace_payload_sha256", "reset_epoch", "reset_verified", "identity_sha256"],
+            )
+        ],
+        "title": "liquidfun-rs trace presentation version 1",
+        "x-version-axes": {
+            "protocol_version": 1,
+            "tolerance_profile_version": 1,
+            "trace_schema_version": 1
+        }
+    }))
+}
+
+fn render_json_schema(document: Value) -> String {
+    let mut rendered = serde_json::to_string_pretty(&document)
+        .expect("schema documents contain only JSON-native values");
+    rendered.push('\n');
+    rendered
+}
+
+fn closed_record(properties: Value, required: &[&str]) -> Value {
+    json!({
+        "additionalProperties": false,
+        "properties": properties,
+        "required": required,
+        "type": "object"
+    })
+}
+
+fn version_schema() -> Value {
+    json!({ "const": 1, "type": "integer" })
+}
+
+fn version_array_schema() -> Value {
+    json!({ "items": version_schema(), "maxItems": 16, "minItems": 1, "type": "array" })
+}
+
+fn uint32_schema() -> Value {
+    json!({ "maximum": u32::MAX, "minimum": 0, "type": "integer" })
+}
+
+fn uint64_schema() -> Value {
+    json!({ "maximum": u64::MAX, "minimum": 0, "type": "integer" })
+}
+
+fn float_bits_schema() -> Value {
+    uint32_schema()
+}
+
+fn semantic_id_schema() -> Value {
+    json!({ "maxLength": 128, "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$", "type": "string" })
+}
+
+fn bounded_string_schema() -> Value {
+    json!({ "maxLength": 4096, "minLength": 1, "type": "string" })
+}
+
+fn sha256_schema() -> Value {
+    json!({ "pattern": "^[0-9a-f]{64}$", "type": "string" })
+}
+
+fn scenario_source_schema() -> Value {
+    json!({
+        "oneOf": [
+            closed_record(json!({ "kind": { "const": "named" }, "name": bounded_string_schema() }), &["kind", "name"]),
+            closed_record(
+                json!({
+                    "generator_id": bounded_string_schema(),
+                    "generator_version": { "maximum": u32::MAX, "minimum": 1, "type": "integer" },
+                    "kind": { "const": "seeded" },
+                    "seed": uint64_schema()
+                }),
+                &["kind", "generator_id", "generator_version", "seed"],
+            )
+        ]
+    })
+}
+
+fn build_identity_schema() -> Value {
+    let string = bounded_string_schema();
+    closed_record(
+        json!({
+            "adapter_content_sha256": sha256_schema(),
+            "adapter_revision": string,
+            "build_type": bounded_string_schema(),
+            "cmake_preset": bounded_string_schema(),
+            "compiler_id": bounded_string_schema(),
+            "compiler_version": bounded_string_schema(),
+            "effective_compile_flags": bounded_string_schema(),
+            "effective_link_flags": bounded_string_schema(),
+            "oracle_revision": { "pattern": "^[0-9a-f]{40}$", "type": "string" },
+            "sanitizer_mode": bounded_string_schema(),
+            "target": bounded_string_schema()
+        }),
+        &[
+            "oracle_revision",
+            "adapter_revision",
+            "adapter_content_sha256",
+            "cmake_preset",
+            "compiler_id",
+            "compiler_version",
+            "target",
+            "build_type",
+            "effective_compile_flags",
+            "effective_link_flags",
+            "sanitizer_mode",
+        ],
+    )
+}
+
+fn world_counts_schema() -> Value {
+    closed_record(
+        json!({
+            "bodies": uint32_schema(),
+            "contacts": uint32_schema(),
+            "fixtures": uint32_schema(),
+            "joints": uint32_schema(),
+            "particle_groups": uint32_schema(),
+            "particle_systems": uint32_schema(),
+            "particles": uint32_schema()
+        }),
+        &[
+            "bodies",
+            "fixtures",
+            "joints",
+            "contacts",
+            "particle_systems",
+            "particle_groups",
+            "particles",
+        ],
+    )
+}
+
+#[cfg(test)]
+mod tests;

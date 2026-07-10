@@ -1,0 +1,186 @@
+{
+  "$id": "https://liquidfun-rs.invalid/protocol/schemas/protocol-v1.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Deterministic presentation only. Typed Rust and C++ validation remains authoritative for cross-field references, uniqueness, ordering, hashes, and aggregate limits. This schema presents newline-delimited transport records; framing and duplicate-member rejection remain codec responsibilities.",
+  "oneOf": [
+    {
+      "additionalProperties": false,
+      "properties": {
+        "build_identity": {
+          "additionalProperties": false,
+          "properties": {
+            "adapter_content_sha256": {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            "adapter_revision": {
+              "maxLength": 4096,
+              "minLength": 1,
+              "type": "string"
+            },
+            "build_type": {
+              "maxLength": 4096,
+              "minLength": 1,
+              "type": "string"
+            },
+            "cmake_preset": {
+              "maxLength": 4096,
+              "minLength": 1,
+              "type": "string"
+            },
+            "compiler_id": {
+              "maxLength": 4096,
+              "minLength": 1,
+              "type": "string"
+            },
+            "compiler_version": {
+              "maxLength": 4096,
+              "minLength": 1,
+              "type": "string"
+            },
+            "effective_compile_flags": {
+              "maxLength": 4096,
+              "minLength": 1,
+              "type": "string"
+            },
+            "effective_link_flags": {
+              "maxLength": 4096,
+              "minLength": 1,
+              "type": "string"
+            },
+            "oracle_revision": {
+              "pattern": "^[0-9a-f]{40}$",
+              "type": "string"
+            },
+            "sanitizer_mode": {
+              "maxLength": 4096,
+              "minLength": 1,
+              "type": "string"
+            },
+            "target": {
+              "maxLength": 4096,
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "oracle_revision",
+            "adapter_revision",
+            "adapter_content_sha256",
+            "cmake_preset",
+            "compiler_id",
+            "compiler_version",
+            "target",
+            "build_type",
+            "effective_compile_flags",
+            "effective_link_flags",
+            "sanitizer_mode"
+          ],
+          "type": "object"
+        },
+        "identity_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "protocol_version": {
+          "const": 1,
+          "type": "integer"
+        },
+        "record_kind": {
+          "const": "handshake"
+        },
+        "supported_scenario_versions": {
+          "items": {
+            "const": 1,
+            "type": "integer"
+          },
+          "maxItems": 16,
+          "minItems": 1,
+          "type": "array"
+        },
+        "supported_tolerance_versions": {
+          "items": {
+            "const": 1,
+            "type": "integer"
+          },
+          "maxItems": 16,
+          "minItems": 1,
+          "type": "array"
+        },
+        "supported_trace_versions": {
+          "items": {
+            "const": 1,
+            "type": "integer"
+          },
+          "maxItems": 16,
+          "minItems": 1,
+          "type": "array"
+        }
+      },
+      "required": [
+        "protocol_version",
+        "record_kind",
+        "supported_scenario_versions",
+        "supported_trace_versions",
+        "supported_tolerance_versions",
+        "build_identity",
+        "identity_sha256"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "protocol_version": {
+          "const": 1,
+          "type": "integer"
+        },
+        "record_kind": {
+          "const": "scenario_request"
+        },
+        "request_id": {
+          "maxLength": 128,
+          "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+          "type": "string"
+        },
+        "requested_trace_schema_version": {
+          "const": 1,
+          "type": "integer"
+        },
+        "scenario": {
+          "$ref": "scenario-v1.schema.json"
+        },
+        "scenario_schema_version": {
+          "const": 1,
+          "type": "integer"
+        },
+        "tolerance_profile_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "tolerance_profile_version": {
+          "const": 1,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "protocol_version",
+        "record_kind",
+        "request_id",
+        "scenario_schema_version",
+        "requested_trace_schema_version",
+        "tolerance_profile_version",
+        "tolerance_profile_sha256",
+        "scenario"
+      ],
+      "type": "object"
+    }
+  ],
+  "title": "liquidfun-rs protocol presentation version 1",
+  "x-version-axes": {
+    "protocol_version": 1,
+    "scenario_schema_version": 1,
+    "tolerance_profile_version": 1,
+    "trace_schema_version": 1
+  }
+}

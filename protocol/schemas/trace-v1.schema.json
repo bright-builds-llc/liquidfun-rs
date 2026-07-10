@@ -1,0 +1,279 @@
+{
+  "$id": "https://liquidfun-rs.invalid/protocol/schemas/trace-v1.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Deterministic presentation only. Typed Rust and C++ validation remains authoritative for cross-field references, uniqueness, ordering, hashes, and aggregate limits. Record-sequence state transitions and reset proof validation remain typed-validator responsibilities.",
+  "oneOf": [
+    {
+      "additionalProperties": false,
+      "properties": {
+        "engine_kind": {
+          "enum": [
+            "native_rust",
+            "cpp_oracle"
+          ]
+        },
+        "identity_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "protocol_version": {
+          "const": 1,
+          "type": "integer"
+        },
+        "record_kind": {
+          "const": "trace_begin"
+        },
+        "request_id": {
+          "maxLength": 128,
+          "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+          "type": "string"
+        },
+        "scenario_id": {
+          "maxLength": 128,
+          "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+          "type": "string"
+        },
+        "scenario_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "source": {
+          "oneOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "named"
+                },
+                "name": {
+                  "maxLength": 4096,
+                  "minLength": 1,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kind",
+                "name"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "generator_id": {
+                  "maxLength": 4096,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "generator_version": {
+                  "maximum": 4294967295,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "kind": {
+                  "const": "seeded"
+                },
+                "seed": {
+                  "maximum": 18446744073709551615,
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "kind",
+                "generator_id",
+                "generator_version",
+                "seed"
+              ],
+              "type": "object"
+            }
+          ]
+        },
+        "tolerance_profile_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "tolerance_profile_version": {
+          "const": 1,
+          "type": "integer"
+        },
+        "trace_schema_version": {
+          "const": 1,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "protocol_version",
+        "record_kind",
+        "request_id",
+        "trace_schema_version",
+        "scenario_id",
+        "scenario_sha256",
+        "source",
+        "tolerance_profile_version",
+        "tolerance_profile_sha256",
+        "engine_kind",
+        "identity_sha256"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "checkpoint_id": {
+          "maxLength": 128,
+          "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+          "type": "string"
+        },
+        "identity_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "ordinal": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "phase": {
+          "maxLength": 4096,
+          "minLength": 1,
+          "type": "string"
+        },
+        "protocol_version": {
+          "const": 1,
+          "type": "integer"
+        },
+        "record_kind": {
+          "const": "checkpoint"
+        },
+        "request_id": {
+          "maxLength": 128,
+          "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+          "type": "string"
+        },
+        "simulation_time_bits": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "world_counts": {
+          "additionalProperties": false,
+          "properties": {
+            "bodies": {
+              "maximum": 4294967295,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "contacts": {
+              "maximum": 4294967295,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "fixtures": {
+              "maximum": 4294967295,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "joints": {
+              "maximum": 4294967295,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "particle_groups": {
+              "maximum": 4294967295,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "particle_systems": {
+              "maximum": 4294967295,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "particles": {
+              "maximum": 4294967295,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "bodies",
+            "fixtures",
+            "joints",
+            "contacts",
+            "particle_systems",
+            "particle_groups",
+            "particles"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "protocol_version",
+        "record_kind",
+        "request_id",
+        "checkpoint_id",
+        "ordinal",
+        "phase",
+        "simulation_time_bits",
+        "world_counts",
+        "identity_sha256"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "checkpoint_count": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "identity_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "protocol_version": {
+          "const": 1,
+          "type": "integer"
+        },
+        "record_kind": {
+          "const": "trace_end"
+        },
+        "request_id": {
+          "maxLength": 128,
+          "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+          "type": "string"
+        },
+        "reset_epoch": {
+          "maximum": 18446744073709551615,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "reset_verified": {
+          "const": true
+        },
+        "trace_payload_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "protocol_version",
+        "record_kind",
+        "request_id",
+        "checkpoint_count",
+        "trace_payload_sha256",
+        "reset_epoch",
+        "reset_verified",
+        "identity_sha256"
+      ],
+      "type": "object"
+    }
+  ],
+  "title": "liquidfun-rs trace presentation version 1",
+  "x-version-axes": {
+    "protocol_version": 1,
+    "tolerance_profile_version": 1,
+    "trace_schema_version": 1
+  }
+}
