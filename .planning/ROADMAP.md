@@ -9,7 +9,7 @@ The v1 roadmap moves from an immutable, licensed source of truth to a semantic c
 **Phase numbering:** Integer phases are planned milestone work. Decimal phases are reserved for urgent insertions and execute in numeric order between their surrounding integers.
 
 - [x] **Phase 1: Oracle, Provenance, and Repository Foundation** - Freeze the source of truth and establish the licensed, Cargo-first development foundation without broad physics implementation. (completed 2026-07-10)
-- [ ] **Phase 2: Semantic Protocol and Oracle Round Trip** - Prove a versioned, process-isolated Rust/C++ comparison path with trustworthy provenance and failure classification.
+- [x] **Phase 2: Semantic Protocol and Oracle Round Trip** - Prove a versioned, process-isolated Rust/C++ comparison path with trustworthy provenance and failure classification. (completed 2026-07-10)
 - [ ] **Phase 3: Rust Object Model and Storage Architecture** - Prove safe identity, invalidation, callback, mutation, and storage semantics before they harden into the engine API.
 - [ ] **Phase 4: Math, Settings, and Numerical Policy** - Establish the `f32` mathematical vocabulary and explicit determinism/tolerance contract.
 - [ ] **Phase 5: Shapes and Collision Foundation** - Implement and differentially verify shapes, narrow phase, broad phase, and TOI kernels.
