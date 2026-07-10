@@ -98,18 +98,30 @@ target_include_directories(
 )
 target_link_libraries(liquidfun-reference-protocol PRIVATE Box2D)
 
-set(
-  REFERENCE_ADAPTER_SOURCES
-  tools/reference/src/main.cpp
-  tools/reference/src/protocol.cpp
-  tools/reference/src/protocol_bits.cpp
-  tools/reference/src/protocol.hpp
-  tools/reference/src/oracle_adapter.cpp
-  tools/reference/src/oracle_adapter.hpp
-  tools/reference/src/build_identity.hpp.in
-)
+set(REFERENCE_ADAPTER_INPUT_MANIFEST "${CMAKE_CURRENT_LIST_DIR}/adapter-inputs.txt")
+file(STRINGS "${REFERENCE_ADAPTER_INPUT_MANIFEST}" REFERENCE_ADAPTER_INPUT_LINES)
+set(REFERENCE_ADAPTER_SOURCES "")
+foreach(REFERENCE_ADAPTER_INPUT_LINE IN LISTS REFERENCE_ADAPTER_INPUT_LINES)
+  string(STRIP "${REFERENCE_ADAPTER_INPUT_LINE}" REFERENCE_ADAPTER_SOURCE)
+  if(
+    NOT REFERENCE_ADAPTER_SOURCE
+    OR REFERENCE_ADAPTER_SOURCE MATCHES "^#"
+  )
+    continue()
+  endif()
+  if(
+    IS_ABSOLUTE "${REFERENCE_ADAPTER_SOURCE}"
+    OR REFERENCE_ADAPTER_SOURCE MATCHES "(^|/)\\.\\.(/|$)"
+  )
+    message(FATAL_ERROR "invalid adapter input: ${REFERENCE_ADAPTER_SOURCE}")
+  endif()
+  list(APPEND REFERENCE_ADAPTER_SOURCES "${REFERENCE_ADAPTER_SOURCE}")
+endforeach()
+if(NOT REFERENCE_ADAPTER_SOURCES)
+  message(FATAL_ERROR "adapter input manifest is empty")
+endif()
 set(REFERENCE_ADAPTER_DIGEST_INPUT "")
-set(REFERENCE_ADAPTER_DEPENDS "")
+set(REFERENCE_ADAPTER_DEPENDS "${REFERENCE_ADAPTER_INPUT_MANIFEST}")
 foreach(REFERENCE_ADAPTER_SOURCE IN LISTS REFERENCE_ADAPTER_SOURCES)
   file(
     REAL_PATH

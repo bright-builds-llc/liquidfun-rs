@@ -15,7 +15,7 @@ use sha2::{Digest, Sha256};
 const REPOSITORY: &str = "https://github.com/google/liquidfun.git";
 const REVISION: &str = "7f20402173fd143a3988c921bc384459c6a858f2";
 const WRONG_REVISION: &str = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
-const ADAPTER_SOURCES: [&str; 7] = [
+const ADAPTER_SOURCES: [&str; 9] = [
     "tools/reference/src/main.cpp",
     "tools/reference/src/protocol.cpp",
     "tools/reference/src/protocol_bits.cpp",
@@ -23,7 +23,10 @@ const ADAPTER_SOURCES: [&str; 7] = [
     "tools/reference/src/oracle_adapter.cpp",
     "tools/reference/src/oracle_adapter.hpp",
     "tools/reference/src/build_identity.hpp.in",
+    "tools/reference/vendor/nlohmann/json.hpp",
+    "tools/reference/CMakeLists.txt",
 ];
+const ADAPTER_INPUT_MANIFEST: &str = "tools/reference/adapter-inputs.txt";
 
 static FIXTURE_ID: AtomicU64 = AtomicU64::new(0);
 static FAKE_TOOLS: OnceLock<Result<FakeTools, String>> = OnceLock::new();
@@ -83,14 +86,22 @@ impl RepositoryFixture {
 
     fn write_adapter_sources(&self) -> io::Result<()> {
         for relative_path in ADAPTER_SOURCES {
+            if let Some(parent) = self.root.join(relative_path).parent() {
+                fs::create_dir_all(parent)?;
+            }
             fs::write(self.root.join(relative_path), format!("{relative_path}\n"))?;
         }
+        fs::write(
+            self.root.join(ADAPTER_INPUT_MANIFEST),
+            format!("{}\n", ADAPTER_SOURCES.join("\n")),
+        )?;
         Ok(())
     }
 
     fn adapter_source_digest(&self) -> io::Result<String> {
         let mut digest_input = Sha256::new();
-        for relative_path in ADAPTER_SOURCES {
+        let manifest = fs::read_to_string(self.root.join(ADAPTER_INPUT_MANIFEST))?;
+        for relative_path in manifest.lines() {
             let bytes = fs::read(self.root.join(relative_path))?;
             let source_digest = Sha256::digest(bytes);
             digest_input.update(relative_path.as_bytes());
@@ -99,6 +110,10 @@ impl RepositoryFixture {
             digest_input.update(b"\n");
         }
         Ok(format!("{:x}", digest_input.finalize()))
+    }
+
+    fn overwrite_adapter_input(&self, relative_path: &str, bytes: &[u8]) -> io::Result<()> {
+        fs::write(self.root.join(relative_path), bytes)
     }
 
     fn cmake_arguments(&self) -> io::Result<Vec<String>> {
@@ -253,6 +268,32 @@ fn configure_passes_revision_and_adapter_digest_as_structured_arguments() -> Tes
             format!("-DLIQUIDFUN_EXPECTED_ADAPTER_SHA256={expected_digest}"),
         ]
     );
+    fixture.cleanup()?;
+    Ok(())
+}
+
+#[test]
+fn configure_digest_changes_when_vendored_json_header_changes() -> TestResult {
+    // Arrange
+    let fixture = RepositoryFixture::new()?;
+    let original_digest = fixture.adapter_source_digest()?;
+    fixture.overwrite_adapter_input(
+        "tools/reference/vendor/nlohmann/json.hpp",
+        b"mutated vendored parser\n",
+    )?;
+    let changed_digest = fixture.adapter_source_digest()?;
+    let mut command = fixture.command()?;
+    command.args(["upstream", "configure", "--preset", "oracle-debug"]);
+
+    // Act
+    let output = command.output()?;
+
+    // Assert
+    assert_ne!(changed_digest, original_digest);
+    assert!(output.status.success(), "{}", stderr(&output));
+    assert!(fixture.cmake_arguments()?.contains(&format!(
+        "-DLIQUIDFUN_EXPECTED_ADAPTER_SHA256={changed_digest}"
+    )));
     fixture.cleanup()?;
     Ok(())
 }

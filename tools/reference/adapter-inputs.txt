@@ -1,0 +1,10 @@
+# Behavior-affecting inputs included in adapter_content_sha256.
+tools/reference/src/main.cpp
+tools/reference/src/protocol.cpp
+tools/reference/src/protocol_bits.cpp
+tools/reference/src/protocol.hpp
+tools/reference/src/oracle_adapter.cpp
+tools/reference/src/oracle_adapter.hpp
+tools/reference/src/build_identity.hpp.in
+tools/reference/vendor/nlohmann/json.hpp
+tools/reference/CMakeLists.txt
