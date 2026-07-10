@@ -70,6 +70,25 @@ fn adapter_binds_native_identity_and_request_hashes() {
     // Assert
     assert_eq!(adapter.build_identity().oracle_revision(), ORACLE_REVISION);
     assert_eq!(adapter.build_identity().cmake_preset(), "native-rust");
+    assert!(
+        adapter
+            .build_identity()
+            .compiler_version()
+            .contains("rustc ")
+    );
+    assert!(adapter.build_identity().target().contains(";host="));
+    assert!(
+        adapter
+            .build_identity()
+            .effective_compile_flags()
+            .contains("features=")
+    );
+    assert!(
+        adapter
+            .build_identity()
+            .effective_link_flags()
+            .contains("encoded_rustflags=")
+    );
     assert_eq!(
         adapter.build_identity().adapter_revision(),
         env!("CARGO_PKG_VERSION")

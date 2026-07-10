@@ -45,24 +45,33 @@ impl EmptyWorldAdapter {
         comparison_oracle_revision: impl Into<String>,
     ) -> Result<Self, EmptyWorldAdapterError> {
         let adapter_revision = env!("CARGO_PKG_VERSION");
-        let adapter_content_sha256 = native_adapter_content_sha256(adapter_revision);
-        let target = format!("{}-{}", std::env::consts::ARCH, std::env::consts::OS);
-        let build_type = if cfg!(debug_assertions) {
-            "debug"
-        } else {
-            "release"
-        };
+        let adapter_content_sha256 =
+            native_adapter_content_sha256(include_bytes!("rust_adapter.rs"));
+        let target = format!(
+            "target={};host={}",
+            env!("LIQUIDFUN_NATIVE_TARGET"),
+            env!("LIQUIDFUN_NATIVE_HOST")
+        );
+        let compile_flags = format!(
+            "features={};encoded_rustflags={}",
+            env!("LIQUIDFUN_NATIVE_FEATURES"),
+            env!("LIQUIDFUN_NATIVE_ENCODED_RUSTFLAGS")
+        );
+        let link_flags = format!(
+            "encoded_rustflags={}",
+            env!("LIQUIDFUN_NATIVE_ENCODED_RUSTFLAGS")
+        );
         let fields = BuildIdentityFields::new(
             comparison_oracle_revision,
             adapter_revision,
             adapter_content_sha256.as_str(),
             "native-rust",
             "rustc",
-            "repository-toolchain",
+            env!("LIQUIDFUN_NATIVE_RUSTC_VV"),
             target,
-            build_type,
-            "rust-default",
-            "cargo-default",
+            env!("LIQUIDFUN_NATIVE_PROFILE"),
+            compile_flags,
+            link_flags,
             "none",
         );
 
@@ -172,10 +181,25 @@ fn execute_checkpoints(
     Ok(checkpoints)
 }
 
-fn native_adapter_content_sha256(adapter_revision: &str) -> Sha256Hex {
-    let mut hasher = Sha256::new();
-    hasher.update(env!("CARGO_PKG_NAME").as_bytes());
-    hasher.update(adapter_revision.as_bytes());
-    hasher.update(b"phase2-empty-world-adapter-v1");
-    Sha256Hex::from_digest(hasher.finalize().into())
+fn native_adapter_content_sha256(source: &[u8]) -> Sha256Hex {
+    Sha256Hex::from_digest(Sha256::digest(source).into())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::native_adapter_content_sha256;
+
+    #[test]
+    fn adapter_content_digest_changes_with_source_input() {
+        // Arrange
+        let original = b"native adapter source v1";
+        let changed = b"native adapter source v2";
+
+        // Act
+        let original_digest = native_adapter_content_sha256(original);
+        let changed_digest = native_adapter_content_sha256(changed);
+
+        // Assert
+        assert_ne!(original_digest, changed_digest);
+    }
 }
