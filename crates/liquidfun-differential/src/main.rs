@@ -9,9 +9,10 @@ use std::{
 };
 
 use liquidfun_differential::{
-    ArtifactKind, DifferentialRunOutcome, MatchRun, MismatchReport, OracleExecutable, OraclePreset,
-    OracleSupervisor, ReviewMetadata, SessionProfile, StageRequest, promote_candidate,
-    replay_exact, review_candidate, run_named, stage_candidate,
+    ArtifactKind, DifferentialRunOutcome, FailureBundleRequest, MatchRun, MismatchReport,
+    OracleExecutable, OraclePreset, OracleSupervisor, ReviewMetadata, SessionProfile, StageRequest,
+    persist_failure_bundle, promote_candidate, replay_exact, review_candidate, run_named,
+    stage_candidate,
 };
 use liquidfun_test_protocol::{HarnessLimits, decode_scenario_request_jsonl};
 use serde::Serialize;
@@ -41,29 +42,50 @@ fn run() -> Result<ExitCode, CliError> {
     }
     let command = CommandConfig::parse(arguments.into_iter())?;
     let repository_root = env::current_dir()?;
-    let outcome = match &command.input {
-        Input::Named(name) => run_named(
-            &repository_root,
-            name,
-            command.preset,
-            command.profile,
-            ORACLE_REVISION,
-        )?,
+    let (outcome, request_bytes) = match &command.input {
+        Input::Named(name) => {
+            let request_bytes = fs::read(
+                repository_root.join("protocol/fixtures/accepted/empty-world-request.jsonl"),
+            )?;
+            let outcome = run_named(
+                &repository_root,
+                name,
+                command.preset,
+                command.profile,
+                ORACLE_REVISION,
+            )?;
+            (outcome, request_bytes)
+        }
         Input::ExactRequest(path) => {
             let bytes = fs::read(path)?;
-            replay_exact(
+            let outcome = replay_exact(
                 &repository_root,
                 &bytes,
                 command.preset,
                 command.profile,
                 ORACLE_REVISION,
-            )?
+            )?;
+            (outcome, bytes)
         }
     };
-    render_outcome(outcome)
+    render_outcome(
+        &repository_root,
+        &request_bytes,
+        command.preset,
+        command.profile,
+        outcome,
+    )
 }
 
-fn render_outcome(outcome: DifferentialRunOutcome) -> Result<ExitCode, CliError> {
+fn render_outcome(
+    repository_root: &std::path::Path,
+    request_bytes: &[u8],
+    preset: OraclePreset,
+    profile: SessionProfile,
+    outcome: DifferentialRunOutcome,
+) -> Result<ExitCode, CliError> {
+    let request =
+        decode_scenario_request_jsonl(request_bytes, &HarnessLimits::phase2_default_v1())?;
     match outcome {
         DifferentialRunOutcome::Match(run) => {
             write_machine(&MachineReport::matched(&run))?;
@@ -71,12 +93,41 @@ fn render_outcome(outcome: DifferentialRunOutcome) -> Result<ExitCode, CliError>
             Ok(ExitCode::SUCCESS)
         }
         DifferentialRunOutcome::PhysicsMismatch(report) => {
-            write_machine(&MachineReport::mismatch(&report))?;
+            let machine = MachineReport::mismatch(&report);
+            let report_bytes = json_line(&machine)?;
+            persist_outcome_bundle(
+                repository_root,
+                &request,
+                request_bytes,
+                &report_bytes,
+                preset,
+                profile,
+                "physics_mismatch",
+                None,
+                b"",
+            )?;
+            write_bytes(&report_bytes)?;
             eprintln!("{}", report.render_human());
             Ok(ExitCode::from(EXIT_PHYSICS_MISMATCH))
         }
         DifferentialRunOutcome::HarnessFailure(failure) => {
-            write_machine(&MachineReport::harness(failure.kind().as_str()))?;
+            let machine = MachineReport::harness(failure.kind().as_str());
+            let report_bytes = json_line(&machine)?;
+            persist_outcome_bundle(
+                repository_root,
+                &request,
+                request_bytes,
+                &report_bytes,
+                preset,
+                profile,
+                "harness_failure",
+                failure
+                    .evidence()
+                    .maybe_session_identity_sha256()
+                    .map(liquidfun_test_protocol::Sha256Hex::as_str),
+                failure.evidence().stderr().retained(),
+            )?;
+            write_bytes(&report_bytes)?;
             eprintln!("harness failure: {}", failure.kind().as_str());
             Ok(ExitCode::from(EXIT_HARNESS_FAILURE))
         }
@@ -88,11 +139,72 @@ fn write_machine(report: &MachineReport<'_>) -> Result<(), CliError> {
 }
 
 fn write_json(report: &impl Serialize) -> Result<(), CliError> {
+    write_bytes(&json_line(report)?)
+}
+
+fn json_line(report: &impl Serialize) -> Result<Vec<u8>, CliError> {
+    let mut bytes = serde_json::to_vec(report)?;
+    bytes.push(b'\n');
+    Ok(bytes)
+}
+
+fn write_bytes(bytes: &[u8]) -> Result<(), CliError> {
     let stdout = io::stdout();
     let mut locked = stdout.lock();
-    serde_json::to_writer(&mut locked, report)?;
-    locked.write_all(b"\n")?;
+    locked.write_all(bytes)?;
     Ok(())
+}
+
+#[allow(
+    clippy::too_many_arguments,
+    reason = "failure evidence has fixed request, command, identity, report, and stderr inputs"
+)]
+fn persist_outcome_bundle(
+    repository_root: &std::path::Path,
+    request: &liquidfun_test_protocol::ScenarioRequestRecord,
+    request_bytes: &[u8],
+    report_bytes: &[u8],
+    preset: OraclePreset,
+    profile: SessionProfile,
+    result_kind: &'static str,
+    maybe_session_identity_sha256: Option<&str>,
+    stderr: &[u8],
+) -> Result<(), CliError> {
+    let identity = FailureIdentityReport {
+        oracle_revision: ORACLE_REVISION,
+        preset: preset_name(preset),
+        session_profile: profile_name(profile),
+        maybe_session_identity_sha256,
+    };
+    let identity_bytes = json_line(&identity)?;
+    persist_failure_bundle(
+        repository_root,
+        &FailureBundleRequest {
+            result_kind,
+            request_id: request.request_id(),
+            request_jsonl: request_bytes,
+            report_json: report_bytes,
+            identity_json: &identity_bytes,
+            stderr,
+        },
+    )?;
+    Ok(())
+}
+
+const fn preset_name(preset: OraclePreset) -> &'static str {
+    match preset {
+        OraclePreset::Debug => "oracle-debug",
+        OraclePreset::Release => "oracle-release",
+        OraclePreset::AsanUbsan => "oracle-asan-ubsan",
+    }
+}
+
+const fn profile_name(profile: SessionProfile) -> &'static str {
+    match profile {
+        SessionProfile::OneShot => "one-shot",
+        SessionProfile::Reuse => "reuse",
+        SessionProfile::Sanitizer => "sanitizer",
+    }
 }
 
 fn run_fixture(arguments: impl Iterator<Item = String>) -> Result<ExitCode, CliError> {
@@ -289,6 +401,18 @@ struct FixtureStageReport<'a> {
 }
 
 #[derive(Serialize)]
+struct FailureIdentityReport<'a> {
+    oracle_revision: &'static str,
+    preset: &'static str,
+    session_profile: &'static str,
+    #[serde(
+        rename = "session_identity_sha256",
+        skip_serializing_if = "Option::is_none"
+    )]
+    maybe_session_identity_sha256: Option<&'a str>,
+}
+
+#[derive(Serialize)]
 struct MachineReport<'a> {
     result_kind: &'static str,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -427,6 +551,8 @@ enum CliError {
     Json(#[from] serde_json::Error),
     #[error(transparent)]
     Fixture(#[from] liquidfun_differential::FixtureError),
+    #[error(transparent)]
+    FailureBundle(#[from] liquidfun_differential::FailureBundleError),
     #[error(transparent)]
     Executable(#[from] liquidfun_differential::OracleExecutableError),
     #[error(transparent)]

@@ -239,6 +239,24 @@ fn oracle_workflow_only_cancels_superseded_code_change_runs() -> TestResult {
     Ok(())
 }
 
+#[test]
+fn oracle_workflow_fails_when_failure_evidence_is_missing() -> TestResult {
+    // Arrange
+    let workflow = fs::read_to_string(workspace_root().join(".github/workflows/oracle.yml"))?;
+
+    // Act
+    let maybe_missing_file_policy = workflow
+        .lines()
+        .find(|line| line.trim_start().starts_with("if-no-files-found:"));
+
+    // Assert
+    assert_eq!(
+        maybe_missing_file_policy.map(str::trim),
+        Some("if-no-files-found: error")
+    );
+    Ok(())
+}
+
 fn parse_row(line: &str) -> io::Result<Vec<String>> {
     let trimmed = line.trim();
     let Some(contents) = trimmed

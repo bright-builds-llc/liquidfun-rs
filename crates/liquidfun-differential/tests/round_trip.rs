@@ -13,6 +13,7 @@ use liquidfun_differential::{
     DifferentialRunOutcome, OracleExecutable, OraclePreset, SessionProfile, replay_exact, run_named,
 };
 use liquidfun_test_protocol::HarnessLimits;
+use sha2::{Digest, Sha256};
 
 const REVISION: &str = "7f20402173fd143a3988c921bc384459c6a858f2";
 static TEST_DIRECTORY_ID: AtomicU64 = AtomicU64::new(1);
@@ -50,13 +51,22 @@ fn fake_repository(behavior: &str) -> PathBuf {
 }
 
 fn run_cli(root: &Path, behavior: &str, arguments: &[&str]) -> std::process::Output {
+    run_cli_with_root(root, behavior, arguments).0
+}
+
+fn run_cli_with_root(
+    root: &Path,
+    behavior: &str,
+    arguments: &[&str],
+) -> (std::process::Output, PathBuf) {
     let fake_root = fake_repository(behavior);
     assert!(root == repository_root() || root == fake_root);
-    Command::new(env!("CARGO_BIN_EXE_liquidfun-differential"))
+    let output = Command::new(env!("CARGO_BIN_EXE_liquidfun-differential"))
         .current_dir(&fake_root)
         .args(arguments)
         .output()
-        .expect("differential CLI should run")
+        .expect("differential CLI should run");
+    (output, fake_root)
 }
 
 #[test]
@@ -311,4 +321,63 @@ fn cli_distinguishes_harness_failure_from_physics_mismatch_exit_codes() {
     assert_eq!(harness_json["result_kind"], "harness_failure");
     assert_eq!(harness_json["failure_kind"], "malformed_record");
     assert_eq!(mismatch_json["result_kind"], "physics_mismatch");
+}
+
+#[test]
+fn cli_harness_failure_persists_bounded_hash_indexed_evidence() {
+    // Arrange
+    let root = repository_root();
+    let arguments = [
+        "compare",
+        "--scenario",
+        "empty-world",
+        "--preset",
+        "oracle-debug",
+        "--session-profile",
+        "one-shot",
+    ];
+
+    // Act
+    let (output, fake_root) = run_cli_with_root(&root, "malformed", &arguments);
+    let failure_root = fake_root.join("target/differential/failures");
+    let directories = fs::read_dir(&failure_root)
+        .expect("failure evidence root should exist")
+        .collect::<Result<Vec<_>, _>>()
+        .expect("failure evidence entries should be readable");
+
+    // Assert
+    assert_eq!(output.status.code(), Some(3));
+    assert_eq!(directories.len(), 1);
+    let directory = directories[0].path();
+    let manifest: serde_json::Value = serde_json::from_slice(
+        &fs::read(directory.join("manifest.json")).expect("manifest should be readable"),
+    )
+    .expect("manifest should be valid JSON");
+    for name in [
+        "request.jsonl",
+        "report.json",
+        "identity.json",
+        "stderr.txt",
+    ] {
+        let bytes = fs::read(directory.join(name)).expect("evidence file should be readable");
+        assert!(bytes.len() <= HarnessLimits::phase2_default_v1().input_record_bytes());
+        assert_eq!(
+            manifest["files"][name]["sha256"],
+            format!("{:x}", Sha256::digest(&bytes))
+        );
+        assert_eq!(manifest["files"][name]["bytes"], bytes.len());
+    }
+    assert_eq!(manifest["result_kind"], "harness_failure");
+    let identity: serde_json::Value = serde_json::from_slice(
+        &fs::read(directory.join("identity.json")).expect("identity should be readable"),
+    )
+    .expect("identity should be valid JSON");
+    assert_eq!(identity["oracle_revision"], REVISION);
+    assert_eq!(identity["preset"], "oracle-debug");
+    assert_eq!(identity["session_profile"], "one-shot");
+    assert_eq!(
+        fs::read(directory.join("request.jsonl")).expect("request should be readable"),
+        fs::read(fake_root.join("protocol/fixtures/accepted/empty-world-request.jsonl"))
+            .expect("source request should be readable")
+    );
 }

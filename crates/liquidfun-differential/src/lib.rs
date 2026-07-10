@@ -7,6 +7,7 @@
 
 mod canonical;
 mod comparator;
+mod failure_bundle;
 mod fixtures;
 mod minimizer;
 mod report;
@@ -16,6 +17,7 @@ mod supervisor;
 
 pub use canonical::*;
 pub use comparator::*;
+pub use failure_bundle::*;
 pub use fixtures::*;
 pub use minimizer::*;
 pub use report::*;
