@@ -2,95 +2,175 @@
 
 ## Current status
 
-Phase 1 establishes repository boundaries and evidence systems. The publishable
-`liquidfun` crate is still a version `0.0.0` native Rust scaffold; it does not
-yet implement LiquidFun simulation behavior. The generated
-[compatibility inventory](COMPATIBILITY.md) is the authority for implementation
-and validation maturity.
+Phase 2 establishes the permanent semantic-comparison seam and proves one
+bounded empty-world scenario through native Rust and the pinned,
+process-isolated C++ oracle. The publishable `liquidfun` crate remains a native
+Rust `0.0.0` scaffold; this phase does not establish rigid-body or particle
+parity, a public world/object model, or final subsystem tolerances. The
+[compatibility inventory](COMPATIBILITY.md) remains the authority for maturity.
 
 ## Dependency direction
 
-The repository has two deliberately separate paths:
+The implemented dependency graph is deliberately one-way:
 
 ```text
 ordinary Cargo consumer -> crates/liquidfun
 
-maintainer -> just -> cargo xtask -> repository evidence
-                                -> CMake wrapper -> read-only upstream oracle
+crates/liquidfun-differential -> crates/liquidfun-test-protocol
+                              -> crates/liquidfun
+                              -> subprocess: liquidfun-reference
+
+liquidfun-reference -> repository CMake wrapper -> read-only LiquidFun C++
+
+maintainer -> just -> cargo xtask -> Cargo, differential runner, evidence checks
 ```
 
-Dependencies point toward the native Rust library, never from the library into
-repository tooling or upstream C++.
+`crates/liquidfun` is the only default member. Neither unpublished harness crate,
+`tools/xtask`, CMake, the submodule, nor reference evidence is a dependency or
+feature of the published crate. Plain `cargo build`, `cargo test`, and
+`cargo doc` therefore remain Cargo-only consumer operations.
 
-### Published native Rust library
+Production behavior must be native Rust. C++ is a development oracle, not a
+runtime implementation. There is no FFI boundary in Phase 2: the supported
+boundary is an external JSON Lines process. An in-process C ABI remains deferred
+unless profiling later demonstrates a material bottleneck, and it may never
+become a consumer dependency.
 
-`crates/liquidfun` is the only Cargo default member. Plain `cargo build`,
-`cargo test`, and `cargo doc` therefore select the consumer library without
-initializing a submodule, finding CMake, or compiling C++.
+## Private protocol and domain core
 
-Production behavior must be implemented in native Rust. Runtime delegation to
-LiquidFun C++ is prohibited. No `liquidfun` build script, default feature, or
-runtime dependency may discover, compile, link, or load the upstream engine.
-The published crate must not depend on `tools/xtask`, `reference/`, or
-`third_party/`.
+`crates/liquidfun-test-protocol` is an unpublished functional core. It owns:
 
-The simulation library remains headless and renderer-independent. Debug-draw
-data or traits may eventually live in the library, but windows, input, frame
-pacing, UI, and renderer implementations belong in private adapters that
-depend on `liquidfun`.
+- independent protocol, scenario-schema, trace-schema, and tolerance-profile
+  version types;
+- strict bounded JSON Lines framing and raw-to-domain parsing;
+- semantic request, entity, command, checkpoint, provenance, and trace types;
+- authoritative `f32` transport as exact `u32` bit patterns;
+- named immutable limits and session profiles;
+- typed harness failures and deterministic schema/tolerance presentations.
 
-### Private repository orchestration
+Raw JSON never becomes a generic comparison surface. The Rust and C++ codecs
+reject partial records, duplicate or unknown members, unknown record kinds,
+unsupported versions, invalid references, and values outside named limits
+before execution. Once parsed, the rest of the system receives invariant-bearing
+domain values rather than unchecked strings, paths, or maps.
 
-`tools/xtask` is an unpublished imperative shell. It owns repository effects:
-validating boundary data, inspecting Git state, creating and inspecting Cargo
-packages, checking generated evidence, and invoking allowlisted external
-commands with structured arguments. It does not contain production physics.
+Exact transport bits and comparison policy are separate responsibilities.
+Every authoritative float crosses the process boundary exactly. The comparator
+then applies the reviewed field policy: exact bits, absolute, relative, or ULP
+only where that field's typed policy permits it. This separation prevents a JSON
+formatter or global epsilon from silently changing compatibility evidence.
 
-The root `justfile` is only a discoverability layer. Recipes expose Cargo and
-`cargo xtask` commands without duplicating validation or build logic.
+## Differential functional core and imperative shell
 
-### Read-only C++ oracle
+`crates/liquidfun-differential` is also unpublished. Its comparator,
+canonicalization, first-divergence reporting, failure signatures, and scenario
+reducer form the functional core. Typed exhaustive matches compare discrete
+values exactly, apply field-specific float policy, and canonicalize only
+collections explicitly modeled as sets or multisets. Checkpoints and future
+solver, callback, and destruction sequences remain ordered.
 
-`third_party/liquidfun` is an immutable Git submodule used only for research,
-comparison, reference generation, upstream tests, and benchmark comparison.
-Repository-owned CMake files under `tools/reference` adapt the legacy build
-without changing the submodule. All C++ build outputs stay under
-`target/reference/` and outside the consumer package.
+The process supervisor, fixture storage, and CLI are the imperative shell. One
+synchronous supervisor serves one-shot, bounded reuse, and sanitizer profiles;
+there are not separate implementations. Standard-library threads drain stdout
+and stderr concurrently. Requests are sequential with exactly one request in
+flight. A request budget of one maximizes reproduction isolation, while finite
+reviewed budgets exercise reset and bounded process reuse.
 
-The exact repository, revision, release lineage, and patch identity are frozen
-in `reference/upstream-lock.toml` and explained in [UPSTREAM.md](UPSTREAM.md).
-An initialized mismatch or dirty upstream tree is a hard error.
+Every request constructs isolated adapter state. A complete `trace_end` proves
+destruction, cleared semantic mappings, reset verification, and an incremented
+reset epoch. Timeout, malformed or oversized output, sanitizer evidence,
+unexpected exit, identity mismatch, or reset failure poisons the session. The
+supervisor kills when needed, waits and reaps, joins drains, retains bounded
+first/last stderr evidence, and never reuses or silently retries a poisoned
+child.
 
-### Compatibility and provenance evidence
+The Phase-2 native adapter is private and intentionally supports only the
+empty-world lifecycle needed to prove the seam. It is not a provisional public
+`World` API and must not force Phase-3 handle, invalidation, callback, or storage
+decisions.
 
-Machine-readable files under `reference/` are repository evidence, not runtime
-inputs to `liquidfun`:
+## Process-isolated C++ oracle
 
-- `compatibility.json` is the curated compatibility ledger.
-- `discovery.json` is the deterministic pinned-tree discovery snapshot.
-- `source-map.toml` records origins, derivation, alterations, and notice classes.
-- `artifacts/manifest.toml` records hashes and build provenance for reviewed
-  reference artifacts.
-- [COMPATIBILITY.md](COMPATIBILITY.md) is generated presentation and is never
-  the source of truth.
+`tools/reference/liquidfun-reference` is a repository-owned executable built by
+the external CMake wrapper and linked to the pinned read-only submodule. Adapter
+sources stay outside `third_party/liquidfun`; generated builds stay below
+`target/reference/<preset>`.
 
-Tests and check commands validate these records read-only. Regeneration is an
-explicit maintainer action followed by review.
+The executable emits a startup handshake before accepting scenarios. Its build
+identity includes the pinned oracle revision, adapter source digest, preset,
+compiler, target, effective flags, sanitizer mode, and stable identity hash.
+The runner checks that identity independently before comparing semantic values.
+Stdout is protocol-only; diagnostics use stderr.
 
-## Deferred protocol boundary
+The C++ side parses bounded JSON events directly into closed domain structs,
+constructs a fresh `b2World` per request, emits ordered semantic checkpoints,
+destroys request state, verifies reset, and only then emits `trace_end`. C++
+pointers, STL objects, dense indices, padding, and raw memory never cross the
+protocol.
 
-Phase 2 may add a private, long-lived out-of-process protocol for semantic
-comparison with the C++ oracle. That protocol is not part of Phase 1 and will
-not become a feature or dependency of the published crate. In-process FFI is
-also deferred unless later profiling demonstrates a concrete need.
+## Comparison and diagnosis boundary
+
+Only two complete schema-, request-, tolerance-, provenance-, payload-, and
+reset-validated traces may reach comparison. A `PhysicsMismatch` therefore means
+two trustworthy traces differ under a reviewed typed policy. Process crashes,
+timeouts, sanitizer reports, malformed output, wrong provenance, unsupported
+schemas, output limits, and reset failures remain `HarnessFailure` outcomes.
+
+The primary diagnostic stops at the first divergent checkpoint, phase, semantic
+path, and mismatch kind while retaining adjacent identities and exact-bit plus
+human-readable float evidence. A failure signature is stable across reduction;
+a candidate that changes the first divergence is a different failure.
+
+Ordering is never globally normalized. Only payloads explicitly typed as
+unordered use stable set or multiset canonicalization. NaN, infinities, and
+signed zero follow explicit field policy and are never silently normalized.
+
+## Reviewed artifact boundary
+
+Protocol fixtures, named scenarios, and reviewed comparison evidence are
+different artifact classes:
+
+1. `protocol/fixtures` proves strict transport acceptance and rejection.
+1. `scenarios/phase-02` owns hand-reviewed semantic input.
+1. `reference/artifacts` and `scenarios/regressions` own provenance-bound traces
+   and minimized same-signature regressions.
+
+Generation writes only below `target/differential/staging`. The lifecycle
+replays and validates the candidate, renders a reviewable diff, binds explicit
+review metadata, and promotes through a confined no-clobber atomic rename.
+`reference/artifacts/manifest.toml` records content/request/scenario/payload
+hashes, all four versions, tolerance identity, oracle/adapter/build identity,
+compiler/target/flags, source or seed, notices, and review status. Checks are
+read-only and never regenerate or hand-mutate golden data.
+
+## Contributor orchestration
+
+`tools/xtask` is a private imperative shell. Its `differential` commands accept
+only registered scenarios, presets, session profiles, and lifecycle shapes,
+verify upstream identity for oracle-dependent work, and invoke the runner with
+canonical structured arguments. `cargo xtask docs check`, protocol fixture
+tests, provenance checks, and package verification enforce the checked-in
+contracts without generating them.
+
+The root `justfile` remains a transparent discoverability facade. Each
+differential or lifecycle recipe is one visible `cargo xtask` command; it owns
+no validation, loops, retry policy, evidence mutation, or C++ logic.
 
 ## Enforced invariants
 
-- Cargo remains sufficient for ordinary users.
-- C++ remains a development oracle, never the production implementation.
-- Upstream source stays read-only and all adaptations remain outside it.
-- Compatibility claims require explicit ledger evidence; compilation is not
-  physics validation.
-- Solver-visible ordering and seeded scenarios must remain deterministic unless
-  a later reviewed policy explicitly states otherwise.
-- Rendering and testbed choices cannot dictate the simulation architecture.
+- `liquidfun` stays the sole published default member and has no harness,
+  serialization, C++, reference-data, or build-script leakage.
+- Protocol and comparison decisions live in typed functional cores; process,
+  filesystem, Cargo, CMake, and Git effects stay in thin imperative shells.
+- One bounded supervisor owns one-shot, reuse, and sanitizer execution with one
+  request in flight, reset proof, poison, kill, wait, and reap semantics.
+- Exact bits preserve transport fidelity; only reviewed typed field policy may
+  permit numeric tolerance.
+- Solver-visible and callback/destruction order is preserved; there is no global
+  sort or generic JSON-path comparison policy.
+- C++ remains process-isolated, read-only, and external to all consumer paths;
+  there is no FFI or runtime delegation.
+- Artifact checks are read-only. Stage, replay, diff, explicit review, and atomic
+  promote are the only accepted mutation path.
+- Phase 2 proves the empty-world harness seam only. Broad physics behavior,
+  public object ownership, and final tolerance policy remain later-phase work.

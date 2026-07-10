@@ -1,6 +1,7 @@
 //! Private repository orchestration for `liquidfun-rs`.
 
 mod differential;
+mod docs;
 mod inventory;
 mod package;
 mod provenance;
@@ -17,6 +18,7 @@ const USAGE: &str = r"Usage: cargo xtask <command> [arguments]
 
 Commands:
   differential Manage semantic Rust/C++ comparison workflows
+  docs        Validate documentation contracts
   upstream    Manage the pinned upstream oracle
   inventory   Manage the compatibility inventory
   provenance  Validate provenance records
@@ -28,6 +30,7 @@ enum XtaskError {
     Check { message: String },
     Usage { message: String },
     Differential(differential::DifferentialError),
+    Docs(docs::DocsError),
     Inventory(inventory::InventoryError),
     Package(package::PackageError),
     Provenance(provenance::ProvenanceError),
@@ -54,6 +57,7 @@ impl Display for XtaskError {
             Self::Check { message } => write!(formatter, "check: {message}"),
             Self::Usage { message } => write!(formatter, "{message}\n\n{USAGE}"),
             Self::Differential(error) => Display::fmt(error, formatter),
+            Self::Docs(error) => Display::fmt(error, formatter),
             Self::Inventory(error) => Display::fmt(error, formatter),
             Self::Package(error) => Display::fmt(error, formatter),
             Self::Provenance(error) => Display::fmt(error, formatter),
@@ -76,6 +80,7 @@ fn dispatch(args: &[String]) -> Result<(), XtaskError> {
         }
         "upstream" => upstream::run(command_args).map_err(XtaskError::Upstream),
         "differential" => differential::run(command_args).map_err(XtaskError::Differential),
+        "docs" => docs::run(command_args).map_err(XtaskError::Docs),
         "inventory" => inventory::run(command_args).map_err(XtaskError::Inventory),
         "provenance" => provenance::run(command_args).map_err(XtaskError::Provenance),
         "package" => package::run(command_args).map_err(XtaskError::Package),
@@ -111,6 +116,9 @@ fn check() -> Result<(), XtaskError> {
 
     println!("check: protocol schema presentations and fixtures");
     differential::check_protocol(&repository_root).map_err(XtaskError::Differential)?;
+
+    println!("check: documentation contracts");
+    docs::run(&check_argument).map_err(XtaskError::Docs)?;
 
     if upstream_initialized {
         println!("check: upstream identity");
