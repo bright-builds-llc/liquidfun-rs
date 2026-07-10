@@ -23,7 +23,7 @@ Requirements for the first release permitted to claim complete parity with the s
 - [x] **COMP-01**: Maintainers can view an exhaustive matrix mapping every relevant upstream subsystem, public API, source area, test, example, and build option to its Rust implementation and evidence status.
 - [x] **COMP-02**: Every compatibility row uses distinct states for investigated, planned, implemented, unit tested, differentially validated, platform validated, documented difference, and intentionally unsupported.
 - [x] **COMP-03**: Contributors can express a named or seeded simulation as a validated, versioned, engine-neutral scenario with deterministic entity creation and checkpoint requests.
-- [ ] **COMP-04**: Contributors can run the same validated scenario through the Rust engine and a process-isolated C++ oracle without exposing pointers, raw memory, or implementation layouts in the protocol.
+- [x] **COMP-04**: Contributors can run the same validated scenario through the Rust engine and a process-isolated C++ oracle without exposing pointers, raw memory, or implementation layouts in the protocol.
 - [x] **COMP-05**: Every engine trace records scenario/schema versions, upstream revision, adapter revision, compiler/build flags, target/platform, seed, and tolerance profile.
 - [x] **COMP-06**: The comparator checks IDs, flags, counts, membership, and event kinds exactly while applying reviewed field-specific numeric policies to floating-point observables.
 - [x] **COMP-07**: The comparator distinguishes unordered queries/collections from solver-significant and callback/destruction sequences whose order must be preserved.
@@ -205,7 +205,7 @@ Roadmap creation maps every v1 requirement to exactly one phase.
 | COMP-01 | Phase 1 | Complete |
 | COMP-02 | Phase 1 | Complete |
 | COMP-03 | Phase 2 | Complete |
-| COMP-04 | Phase 2 | Pending |
+| COMP-04 | Phase 2 | Complete |
 | COMP-05 | Phase 2 | Complete |
 | COMP-06 | Phase 2 | Complete |
 | COMP-07 | Phase 2 | Complete |
