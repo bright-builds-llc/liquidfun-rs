@@ -153,6 +153,29 @@ fn check_rejects_duplicate_stable_ids() -> TestResult {
 }
 
 #[test]
+fn check_rejects_distinct_ids_for_the_same_upstream_mapping() -> TestResult {
+    // Arrange
+    let fixture = InventoryFixture::new()?;
+    assert_success(&fixture.discover()?);
+    let mut entries = InventoryFixture::valid_entries();
+    let mut duplicate_mapping = entries[0].clone();
+    duplicate_mapping["id"] = json!("example.hello-world-copy");
+    entries.insert(1, duplicate_mapping);
+    fixture.write_compatibility(&entries)?;
+
+    // Act
+    let output = fixture.check()?;
+
+    // Assert
+    assert_failure_category(&output, "inventory/duplicate-mapping");
+    let error = stderr(&output);
+    assert!(error.contains("example.hello-world"));
+    assert!(error.contains("example.hello-world-copy"));
+    fixture.cleanup()?;
+    Ok(())
+}
+
+#[test]
 fn check_rejects_unmapped_discovery_entries() -> TestResult {
     // Arrange
     let fixture = InventoryFixture::new()?;

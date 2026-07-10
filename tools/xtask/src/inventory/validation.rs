@@ -1,4 +1,4 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 use super::{
     ApplicabilityStatus, CompatibilityEntry, CompatibilityKind, CompatibilityLedger,
@@ -28,6 +28,7 @@ pub(super) fn compatibility(
         ));
     }
     let mut ids = BTreeSet::new();
+    let mut mappings = BTreeMap::new();
     let mut maybe_previous_id: Option<&str> = None;
     for entry in &ledger.entries {
         if entry.id.is_empty()
@@ -54,6 +55,25 @@ pub(super) fn compatibility(
         }
         maybe_previous_id = Some(&entry.id);
         compatibility_entry(entry)?;
+        if entry.kind != CompatibilityKind::Subsystem {
+            let mapping = (
+                entry.kind,
+                entry.upstream_path.as_str(),
+                entry.upstream_symbol.as_deref(),
+            );
+            if let Some(previous_id) = mappings.insert(mapping, entry.id.as_str()) {
+                return Err(InventoryError::new(
+                    "duplicate-mapping",
+                    format!(
+                        "compatibility entries `{previous_id}` and `{}` both map {} `{}` symbol `{}`",
+                        entry.id,
+                        entry.kind.as_str(),
+                        entry.upstream_path,
+                        entry.upstream_symbol.as_deref().unwrap_or("<none>")
+                    ),
+                ));
+            }
+        }
     }
     Ok(())
 }
