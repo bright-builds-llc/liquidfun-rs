@@ -69,6 +69,21 @@ impl ProvenanceFixture {
         include_notice: bool,
         generator_revision: &str,
     ) -> io::Result<()> {
+        self.write_manifest_for_path(
+            "reference/artifacts/sample.bin",
+            hash,
+            include_notice,
+            generator_revision,
+        )
+    }
+
+    fn write_manifest_for_path(
+        &self,
+        artifact_path: &str,
+        hash: &str,
+        include_notice: bool,
+        generator_revision: &str,
+    ) -> io::Result<()> {
         let notices = if include_notice {
             "[\"THIRD_PARTY_NOTICES.md\"]"
         } else {
@@ -77,7 +92,7 @@ impl ProvenanceFixture {
         fs::write(
             self.root.join("reference/artifacts/manifest.toml"),
             format!(
-                "schema_version = 1\nrecord_schema_version = 1\noracle_revision = \"{REVISION}\"\nrecord_fields = [\"path\", \"sha256\", \"generator_revision\", \"oracle_revision\", \"preset\", \"compiler\", \"target\", \"flags\", \"notice_refs\", \"review_status\"]\n\n[[artifacts]]\npath = \"reference/artifacts/sample.bin\"\nsha256 = \"{hash}\"\ngenerator_revision = \"{generator_revision}\"\noracle_revision = \"{REVISION}\"\npreset = \"oracle-debug\"\ncompiler = \"fixture-clang\"\ntarget = \"fixture-target\"\nflags = []\nnotice_refs = {notices}\nreview_status = \"reviewed\"\n"
+                "schema_version = 1\nrecord_schema_version = 1\noracle_revision = \"{REVISION}\"\nrecord_fields = [\"path\", \"sha256\", \"generator_revision\", \"oracle_revision\", \"preset\", \"compiler\", \"target\", \"flags\", \"notice_refs\", \"review_status\"]\n\n[[artifacts]]\npath = \"{artifact_path}\"\nsha256 = \"{hash}\"\ngenerator_revision = \"{generator_revision}\"\noracle_revision = \"{REVISION}\"\npreset = \"oracle-debug\"\ncompiler = \"fixture-clang\"\ntarget = \"fixture-target\"\nflags = []\nnotice_refs = {notices}\nreview_status = \"reviewed\"\n"
             ),
         )
     }
@@ -137,6 +152,34 @@ fn check_rejects_artifact_sha_mismatch() -> TestResult {
     // Assert
     assert_failure_category(&output, "provenance/hash");
     fixture.cleanup()?;
+    Ok(())
+}
+
+#[cfg(unix)]
+#[test]
+fn check_rejects_intermediate_symlink_escape_before_hashing() -> TestResult {
+    use std::os::unix::fs::symlink;
+
+    // Arrange
+    let fixture = ProvenanceFixture::new()?;
+    let outside = fixture.root.with_extension("outside");
+    fs::create_dir_all(&outside)?;
+    fs::write(outside.join("sample.bin"), b"artifact")?;
+    symlink(&outside, fixture.root.join("reference/artifacts/link"))?;
+    fixture.write_manifest_for_path(
+        "reference/artifacts/link/sample.bin",
+        &artifact_hash(),
+        true,
+        REVISION,
+    )?;
+
+    // Act
+    let output = fixture.command()?;
+
+    // Assert
+    assert_failure_category(&output, "provenance/path");
+    fixture.cleanup()?;
+    fs::remove_dir_all(outside)?;
     Ok(())
 }
 

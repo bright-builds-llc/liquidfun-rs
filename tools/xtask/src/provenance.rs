@@ -122,6 +122,72 @@ struct RevisionIdentity {
     oracle_revision: String,
 }
 
+struct ConfinedPaths {
+    repository_root: PathBuf,
+    canonical_root: PathBuf,
+}
+
+impl ConfinedPaths {
+    fn new(repository_root: &Path) -> Result<Self, ProvenanceError> {
+        let canonical_root = fs::canonicalize(repository_root).map_err(|error| {
+            ProvenanceError::new(
+                "path",
+                format!(
+                    "failed to canonicalize repository root {}: {error}",
+                    repository_root.display()
+                ),
+            )
+        })?;
+        Ok(Self {
+            repository_root: repository_root.to_path_buf(),
+            canonical_root,
+        })
+    }
+
+    fn file(&self, value: &str, field: &str) -> Result<PathBuf, ProvenanceError> {
+        validate_relative_path(value, field, false)?;
+        let mut candidate = self.repository_root.clone();
+        for component in Path::new(value).components() {
+            candidate.push(component.as_os_str());
+            let metadata = fs::symlink_metadata(&candidate).map_err(|error| {
+                ProvenanceError::new(
+                    "path",
+                    format!("failed to inspect {field} `{value}`: {error}"),
+                )
+            })?;
+            if metadata.file_type().is_symlink() {
+                return Err(ProvenanceError::new(
+                    "path",
+                    format!(
+                        "{field} `{value}` traverses symlink {}",
+                        candidate.display()
+                    ),
+                ));
+            }
+        }
+
+        let canonical_candidate = fs::canonicalize(&candidate).map_err(|error| {
+            ProvenanceError::new(
+                "path",
+                format!("failed to canonicalize {field} `{value}`: {error}"),
+            )
+        })?;
+        if !canonical_candidate.starts_with(&self.canonical_root) {
+            return Err(ProvenanceError::new(
+                "path",
+                format!("{field} `{value}` resolves outside the repository"),
+            ));
+        }
+        if !canonical_candidate.is_file() {
+            return Err(ProvenanceError::new(
+                "path",
+                format!("{field} `{value}` must resolve to a regular file"),
+            ));
+        }
+        Ok(canonical_candidate)
+    }
+}
+
 pub(crate) fn run(args: &[String]) -> Result<(), ProvenanceError> {
     if args != ["check"] {
         return Err(ProvenanceError::usage("expected `check`"));
@@ -131,6 +197,7 @@ pub(crate) fn run(args: &[String]) -> Result<(), ProvenanceError> {
 }
 
 fn check(repository_root: &Path) -> Result<(), ProvenanceError> {
+    let confined_paths = ConfinedPaths::new(repository_root)?;
     let upstream_lock: UpstreamLock = read_toml(
         &repository_root.join("reference/upstream-lock.toml"),
         "upstream lock",
@@ -142,7 +209,7 @@ fn check(repository_root: &Path) -> Result<(), ProvenanceError> {
         &repository_root.join("reference/source-map.toml"),
         "source map",
     )?;
-    validate_source_map(repository_root, &source_map, &upstream_lock.revision)?;
+    validate_source_map(&confined_paths, &source_map, &upstream_lock.revision)?;
     for relative in ["reference/discovery.json", "reference/compatibility.json"] {
         let identity: RevisionIdentity = read_json(&repository_root.join(relative), relative)?;
         require_schema(identity.schema_version, relative)?;
@@ -153,7 +220,12 @@ fn check(repository_root: &Path) -> Result<(), ProvenanceError> {
         &repository_root.join("reference/artifacts/manifest.toml"),
         "artifact manifest",
     )?;
-    validate_artifacts(repository_root, &manifest, &upstream_lock.revision)?;
+    validate_artifacts(
+        repository_root,
+        &confined_paths,
+        &manifest,
+        &upstream_lock.revision,
+    )?;
     println!(
         "provenance verified: oracle {} with {} artifact records",
         upstream_lock.revision,
@@ -225,7 +297,7 @@ fn verify_git_identities(
 }
 
 fn validate_source_map(
-    repository_root: &Path,
+    confined_paths: &ConfinedPaths,
     source_map: &SourceMap,
     oracle_revision: &str,
 ) -> Result<(), ProvenanceError> {
@@ -252,19 +324,14 @@ fn validate_source_map(
         ] {
             require_nonempty(field, value)?;
         }
-        let local_path = repository_root.join(&mapping.local_path);
-        if !local_path.is_file() {
-            return Err(ProvenanceError::new(
-                "source-map",
-                format!("mapped local file is missing: {}", local_path.display()),
-            ));
-        }
+        let _local_path = confined_paths.file(&mapping.local_path, "source-map local_path")?;
     }
     Ok(())
 }
 
 fn validate_artifacts(
     repository_root: &Path,
+    confined_paths: &ConfinedPaths,
     manifest: &ArtifactManifest,
     oracle_revision: &str,
 ) -> Result<(), ProvenanceError> {
@@ -283,7 +350,7 @@ fn validate_artifacts(
     }
     let mut paths = BTreeSet::new();
     for artifact in &manifest.artifacts {
-        validate_artifact(repository_root, artifact, oracle_revision)?;
+        validate_artifact(repository_root, confined_paths, artifact, oracle_revision)?;
         if !paths.insert(artifact.path.as_str()) {
             return Err(ProvenanceError::new(
                 "schema",
@@ -296,10 +363,11 @@ fn validate_artifacts(
 
 fn validate_artifact(
     repository_root: &Path,
+    confined_paths: &ConfinedPaths,
     artifact: &ArtifactRecord,
     oracle_revision: &str,
 ) -> Result<(), ProvenanceError> {
-    validate_relative_path(&artifact.path, "artifact path", false)?;
+    let artifact_path = confined_paths.file(&artifact.path, "artifact path")?;
     require_revision("artifact", oracle_revision, &artifact.oracle_revision)?;
     require_revision_format("generator_revision", &artifact.generator_revision)?;
     if artifact.review_status != ReviewStatus::Reviewed {
@@ -321,13 +389,13 @@ fn validate_artifact(
             "artifact flags cannot contain empty values",
         ));
     }
-    validate_notice_refs(repository_root, artifact)?;
-    validate_artifact_hash(repository_root, artifact)?;
+    validate_notice_refs(confined_paths, artifact)?;
+    validate_artifact_hash(&artifact_path, artifact)?;
     validate_generator_revision(repository_root, &artifact.generator_revision)
 }
 
 fn validate_notice_refs(
-    repository_root: &Path,
+    confined_paths: &ConfinedPaths,
     artifact: &ArtifactRecord,
 ) -> Result<(), ProvenanceError> {
     if artifact.notice_refs.is_empty() {
@@ -340,44 +408,19 @@ fn validate_notice_refs(
         let path_part = notice_ref
             .split_once('#')
             .map_or(notice_ref.as_str(), |pair| pair.0);
-        validate_relative_path(path_part, "artifact notice reference", false)?;
-        if !repository_root.join(path_part).is_file() {
-            return Err(ProvenanceError::new(
-                "notice",
-                format!(
-                    "artifact `{}` notice is missing: {path_part}",
-                    artifact.path
-                ),
-            ));
-        }
+        let _notice_path = confined_paths.file(path_part, "artifact notice reference")?;
     }
     Ok(())
 }
 
-fn validate_artifact_hash(
-    repository_root: &Path,
-    artifact: &ArtifactRecord,
-) -> Result<(), ProvenanceError> {
+fn validate_artifact_hash(path: &Path, artifact: &ArtifactRecord) -> Result<(), ProvenanceError> {
     if artifact.sha256.len() != 64 || !is_lower_hex(&artifact.sha256) {
         return Err(ProvenanceError::new(
             "hash",
             format!("artifact `{}` has invalid SHA-256 syntax", artifact.path),
         ));
     }
-    let path = repository_root.join(&artifact.path);
-    let metadata = fs::symlink_metadata(&path).map_err(|error| {
-        ProvenanceError::new(
-            "hash",
-            format!("failed to inspect {}: {error}", path.display()),
-        )
-    })?;
-    if !metadata.is_file() || metadata.file_type().is_symlink() {
-        return Err(ProvenanceError::new(
-            "hash",
-            format!("artifact path must be a regular file: {}", path.display()),
-        ));
-    }
-    let actual = sha256(&path)?;
+    let actual = sha256(path)?;
     if actual != artifact.sha256 {
         return Err(ProvenanceError::new(
             "hash",
