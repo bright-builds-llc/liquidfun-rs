@@ -19,11 +19,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      CC: clang
-      CXX: clang++
+      CC: clang-22
+      CXX: clang++-22
       LIQUIDFUN_XTASK_CMAKE: cmake
       LIQUIDFUN_XTASK_NINJA: ninja
-      LIQUIDFUN_XTASK_CXX: clang++
+      LIQUIDFUN_XTASK_CXX: clang++-22
     steps:
       - name: Check out sources and the pinned oracle
         # actions/checkout v7
@@ -33,19 +33,12 @@ jobs:
           submodules: recursive
       - name: Install pinned Rust
         run: rustup toolchain install 1.97.0 --profile minimal
-      - name: Restore the canonical LLVM toolchain
-        id: llvm-cache
-        # actions/cache v6
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-        with:
-          path: ${{ runner.temp }}/LLVM-22.1.8-Linux-X64
-          key: llvm-22.1.8-linux-x64-df0e1ecf16caf348
-      - name: Install canonical LLVM 22.1.8
-        if: steps.llvm-cache.outputs.cache-hit != 'true'
+      - name: Install canonical LLVM 22
         run: |
-          curl --fail --location --silent --show-error --output "$RUNNER_TEMP/llvm.tar.xz" https://github.com/llvm/llvm-project/releases/download/llvmorg-22.1.8/LLVM-22.1.8-Linux-X64.tar.xz
-          echo "df0e1ecf16caf3489a272a5eea4eec9b0d82878f6477fa309504f918a0006384  $RUNNER_TEMP/llvm.tar.xz" | sha256sum --check
-          tar -xJf "$RUNNER_TEMP/llvm.tar.xz" -C "$RUNNER_TEMP"
+          curl --fail --location --silent --show-error --output "$RUNNER_TEMP/llvm.sh" https://apt.llvm.org/llvm.sh
+          echo "9474ecd78b52aba6e923976b1e9773f5613027cc7e237b9956986cb536e02a36  $RUNNER_TEMP/llvm.sh" | sha256sum --check
+          chmod 755 "$RUNNER_TEMP/llvm.sh"
+          sudo "$RUNNER_TEMP/llvm.sh" 22
       - name: Install exact CMake and Ninja
         run: |
           curl --fail --location --silent --show-error --output "$RUNNER_TEMP/cmake.tar.gz" https://github.com/Kitware/CMake/releases/download/v4.3.3/cmake-4.3.3-linux-x86_64.tar.gz
@@ -58,13 +51,12 @@ jobs:
           {
             echo "$RUNNER_TEMP/cmake-4.3.3-linux-x86_64/bin"
             echo "$RUNNER_TEMP/ninja-1.13.2"
-            echo "$RUNNER_TEMP/LLVM-22.1.8-Linux-X64/bin"
           } >> "$GITHUB_PATH"
       - name: Assert canonical tool identities
         run: |
           cmake --version | grep --fixed-strings "cmake version 4.3.3"
           test "$(ninja --version)" = "1.13.2"
-          clang++ --version | grep --extended-regexp '^clang version 22\.1\.8'
+          clang++-22 --version | grep --extended-regexp 'clang version 22\.1\.8'
       - name: Cache oracle build outputs
         # actions/cache v6
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
