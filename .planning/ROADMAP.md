@@ -219,7 +219,7 @@ The v1 roadmap moves from an immutable, licensed source of truth to a semantic c
 | Phase | Plans Complete | Status | Completed |
 | --- | --- | --- | --- |
 | 1. Oracle, Provenance, and Repository Foundation | 5/5 | Complete    | 2026-07-10 |
-| 2. Semantic Protocol and Oracle Round Trip | 12/14 | In Progress |  |
+| 2. Semantic Protocol and Oracle Round Trip | 13/14 | In Progress |  |
 | 3. Rust Object Model and Storage Architecture | 0/TBD | Not started | - |
 | 4. Math, Settings, and Numerical Policy | 0/TBD | Not started | - |
 | 5. Shapes and Collision Foundation | 0/TBD | Not started | - |
