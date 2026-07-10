@@ -219,6 +219,26 @@ fn check_rejects_forbidden_placeholder_terms() -> TestResult {
     Ok(())
 }
 
+#[test]
+fn oracle_workflow_only_cancels_superseded_code_change_runs() -> TestResult {
+    // Arrange
+    let workflow = fs::read_to_string(workspace_root().join(".github/workflows/oracle.yml"))?;
+
+    // Act
+    let maybe_policy = workflow
+        .lines()
+        .find(|line| line.trim_start().starts_with("cancel-in-progress:"));
+
+    // Assert
+    assert_eq!(
+        maybe_policy.map(str::trim),
+        Some(
+            "cancel-in-progress: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}"
+        )
+    );
+    Ok(())
+}
+
 fn parse_row(line: &str) -> io::Result<Vec<String>> {
     let trimmed = line.trim();
     let Some(contents) = trimmed

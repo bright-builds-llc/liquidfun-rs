@@ -13,7 +13,7 @@ permissions:
 
 concurrency:
   group: oracle-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
 
 jobs:
   canonical-linux:
