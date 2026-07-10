@@ -63,6 +63,21 @@ misrepresented as being the original software.
 
 ## Developer-Only Dependencies
 
+### nlohmann/json
+
+`tools/reference/vendor/nlohmann/json.hpp` is the official single-header
+release artifact for nlohmann/json 3.12.0. It is vendored solely for the
+private C++ oracle adapter and is not a runtime, build-time download, or
+dependency of any published Rust crate or ordinary Cargo consumer path.
+
+The component is licensed under the MIT License. Its complete, verbatim
+license and copyright notice are preserved in
+`tools/reference/vendor/nlohmann/LICENSE.MIT`. The reviewed version, official
+release and tag-pinned source URLs, and repository-local SHA-256 checksums are
+recorded in `tools/reference/vendor/nlohmann/SHA256SUMS`.
+
+### Pinned upstream test and testbed dependencies
+
 The pinned upstream tree vendors dependencies used by its tests and visual
 testbed:
 
