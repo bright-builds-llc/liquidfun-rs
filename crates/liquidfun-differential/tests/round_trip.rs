@@ -23,16 +23,18 @@ fn fake_repository(behavior: &str) -> PathBuf {
     let root = repository_root()
         .join("target/round-trip-tests")
         .join(format!("{}-{id}", std::process::id()));
-    let oracle_output = root.join("target/reference/oracle-debug");
-    fs::create_dir_all(&oracle_output).expect("fake output should be creatable");
-    let executable = oracle_output.join(if cfg!(windows) {
-        "liquidfun-reference.exe"
-    } else {
-        "liquidfun-reference"
-    });
-    fs::copy(env!("CARGO_BIN_EXE_liquidfun-fake-oracle"), executable)
-        .expect("fake oracle should copy");
-    fs::write(oracle_output.join("behavior.txt"), behavior).expect("behavior should write");
+    for preset in ["oracle-debug", "oracle-asan-ubsan"] {
+        let oracle_output = root.join("target/reference").join(preset);
+        fs::create_dir_all(&oracle_output).expect("fake output should be creatable");
+        let executable = oracle_output.join(if cfg!(windows) {
+            "liquidfun-reference.exe"
+        } else {
+            "liquidfun-reference"
+        });
+        fs::copy(env!("CARGO_BIN_EXE_liquidfun-fake-oracle"), executable)
+            .expect("fake oracle should copy");
+        fs::write(oracle_output.join("behavior.txt"), behavior).expect("behavior should write");
+    }
 
     let fixture_output = root.join("protocol/fixtures/accepted");
     fs::create_dir_all(&fixture_output).expect("fixture output should be creatable");
@@ -130,6 +132,37 @@ fn cli_compare_and_replay_emit_deterministic_match_reports() {
     assert_eq!(compare_json["result_kind"], "match");
     assert_eq!(compare_json["requests"].as_array().map(Vec::len), Some(2));
     assert_eq!(replay_json["result_kind"], "match");
+}
+
+#[test]
+fn cli_sanitizer_profile_reuses_one_process_and_proves_reset() {
+    // Arrange
+    let root = repository_root();
+    let arguments = [
+        "compare",
+        "--scenario",
+        "empty-world",
+        "--preset",
+        "oracle-asan-ubsan",
+        "--session-profile",
+        "sanitizer",
+    ];
+
+    // Act
+    let output = run_cli(&root, "valid", &arguments);
+
+    // Assert
+    assert!(output.status.success());
+    let report: serde_json::Value =
+        serde_json::from_slice(&output.stdout).expect("sanitizer report should be JSON");
+    let requests = report["requests"]
+        .as_array()
+        .expect("sanitizer report should contain requests");
+    assert_eq!(requests.len(), 2);
+    assert_eq!(requests[0]["cpp_reset_epoch"], 1);
+    assert_eq!(requests[1]["cpp_reset_epoch"], 2);
+    assert_eq!(requests[0]["rust_reset_epoch"], 1);
+    assert_eq!(requests[1]["rust_reset_epoch"], 2);
 }
 
 #[test]

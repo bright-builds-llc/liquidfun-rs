@@ -74,7 +74,7 @@ impl DocsFixture {
             found = true;
             let mut cells = parse_row(line).ok()?;
             let cell = cells.get_mut(index)?;
-            *cell = value.to_owned();
+            value.clone_into(cell);
             Some(format!("| {} |", cells.join(" | ")))
         })?;
         if !found {

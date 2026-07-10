@@ -38,10 +38,10 @@ impl HarnessLimits {
         Self::phase2("phase2-reuse-v1", 100)
     }
 
-    /// Returns the isolated sanitizer phase-2 profile.
+    /// Returns the bounded two-request sanitizer phase-2 profile.
     #[must_use]
     pub const fn phase2_sanitizer_v1() -> Self {
-        Self::phase2("phase2-sanitizer-v1", 1)
+        Self::phase2("phase2-sanitizer-v1", 2)
     }
 
     const fn phase2(profile_id: &'static str, request_budget: usize) -> Self {
@@ -239,6 +239,6 @@ mod tests {
         assert_ne!(default_hash, reuse.profile_sha256());
         assert_ne!(default_hash, sanitizer.profile_sha256());
         assert_eq!(reuse.request_budget(), 100);
-        assert_eq!(sanitizer.request_budget(), 1);
+        assert_eq!(sanitizer.request_budget(), 2);
     }
 }

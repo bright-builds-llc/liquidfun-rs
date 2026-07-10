@@ -68,7 +68,7 @@ impl MatchedRequest {
     }
 }
 
-/// Complete successful result for one command, possibly containing two reuse requests.
+/// Complete successful result for one command, possibly containing two reused requests.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct MatchRun {
     requests: Box<[MatchedRequest]>,
@@ -95,7 +95,7 @@ pub enum DifferentialRunOutcome {
 
 /// Runs an allowlisted checked-in named scenario.
 ///
-/// Reuse mode deliberately executes two distinguishable requests through one child.
+/// Reuse and sanitizer modes execute two distinguishable requests through one child.
 ///
 /// # Errors
 ///
@@ -202,7 +202,7 @@ fn requests_for_profile(
     request: ScenarioRequestRecord,
     profile: SessionProfile,
 ) -> Result<Vec<ScenarioRequestRecord>, DifferentialRunnerError> {
-    if profile != SessionProfile::Reuse {
+    if profile == SessionProfile::OneShot {
         return Ok(vec![request]);
     }
     let second_id = RequestId::new(format!("{}-reuse-2", request.request_id().as_str()))

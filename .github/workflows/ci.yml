@@ -46,6 +46,22 @@ jobs:
         run: cargo build --workspace --all-targets --all-features
       - name: Test the workspace
         run: cargo test --workspace --all-features
+      - name: Test protocol schema and fixture contracts
+        run: |
+          cargo test -p liquidfun-test-protocol --all-features --lib schema::tests
+          cargo test -p liquidfun-test-protocol --all-features --test fixtures
+      - name: Test typed comparison and deterministic minimization
+        run: |
+          cargo test -p liquidfun-differential --all-features --test comparison
+          cargo test -p liquidfun-differential --all-features --test minimizer
+      - name: Test supervisor failure injection
+        run: cargo test -p liquidfun-differential --all-features --test supervisor_failures
+      - name: Test provenance schema fixtures
+        run: cargo test -p xtask --test provenance_cli
+      - name: Test documentation contracts
+        run: |
+          cargo test -p xtask --test docs_contract
+          cargo xtask docs check
       - name: Build documentation with denied warnings
         env:
           RUSTDOCFLAGS: -D warnings

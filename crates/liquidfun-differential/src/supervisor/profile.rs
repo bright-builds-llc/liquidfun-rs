@@ -9,7 +9,7 @@ pub enum SessionProfile {
     OneShot,
     /// Sequential finite process reuse with periodic cycling.
     Reuse,
-    /// One fail-fast sanitizer request.
+    /// Sequential two-request fail-fast sanitizer and reset verification.
     Sanitizer,
 }
 
@@ -23,6 +23,6 @@ impl SessionProfile {
     }
 
     pub(super) const fn keeps_process(self) -> bool {
-        matches!(self, Self::Reuse)
+        matches!(self, Self::Reuse | Self::Sanitizer)
     }
 }
