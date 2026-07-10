@@ -125,15 +125,19 @@ fn startup_request_exit_signal_and_sanitizer_failures_are_typed() {
         ("wrong_provenance", HarnessFailureKind::WrongProvenance),
         ("request_timeout", HarnessFailureKind::RequestTimeout),
         ("nonzero", HarnessFailureKind::ChildNonZeroExit),
-        ("signal", HarnessFailureKind::ChildSignaled),
         ("sanitizer", HarnessFailureKind::SanitizerReport),
     ];
-
     // Act and Assert
     for (behavior, expected) in cases {
         let actual = failure(behavior);
         assert_eq!(actual.kind(), expected, "behavior {behavior}");
         assert!(actual.evidence().child_reaped(), "behavior {behavior}");
+    }
+    #[cfg(unix)]
+    {
+        let actual = failure("signal");
+        assert_eq!(actual.kind(), HarnessFailureKind::ChildSignaled);
+        assert!(actual.evidence().child_reaped());
     }
 }
 
