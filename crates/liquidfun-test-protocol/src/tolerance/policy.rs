@@ -216,7 +216,7 @@ impl Phase4PolicyProfile {
         &self.profile_sha256
     }
 
-    /// Finds one explicit field policy; there is no wildcard fallback.
+    /// Finds one explicit field policy; there is no implicit fallback.
     #[must_use]
     pub fn field(&self, semantic_path: &str) -> Option<&FieldPolicy> {
         self.fields
@@ -440,7 +440,7 @@ justification = "Pinned b2_pi token bit pattern."
     }
 
     #[test]
-    fn phase4_profile_has_no_wildcard_fallback() {
+    fn phase4_profile_has_no_implicit_fallback() {
         // Arrange
         let profile = Phase4PolicyProfile::parse_toml(VALID).expect("valid policy should parse");
 
