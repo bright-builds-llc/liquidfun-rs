@@ -17,6 +17,7 @@ use separation::{SeparationFunction, SeparationIndices, SeparationKind, ToiProxy
 
 const MAX_OUTER_ITERATIONS: usize = 20;
 const MAX_ROOT_ITERATIONS: usize = 50;
+const MAX_DIAGNOSTIC_BRANCHES: usize = MAX_OUTER_ITERATIONS * (MAX_POLYGON_VERTICES + 2) + 1;
 
 /// Checked immutable inputs for one time-of-impact query.
 #[derive(Clone, Copy)]
@@ -209,6 +210,7 @@ impl ToiDiagnosticTrace {
         self.separation_kinds.len() <= MAX_OUTER_ITERATIONS
             && self.root_steps.len()
                 <= MAX_OUTER_ITERATIONS * MAX_POLYGON_VERTICES * MAX_ROOT_ITERATIONS
+            && self.branches.len() <= MAX_DIAGNOSTIC_BRANCHES
             && self.outer_iterations <= MAX_OUTER_ITERATIONS
             && self.maximum_push_back_iterations <= MAX_POLYGON_VERTICES
     }
@@ -605,6 +607,22 @@ mod tests {
         assert_eq!(run.output.time().to_bits(), time.to_bits());
         assert!(run.diagnostics.is_bounded());
         assert_eq!(run.diagnostics.branches, [ToiBranch::OuterCap]);
+    }
+
+    #[test]
+    fn toi_diagnostic_branch_history_has_an_explicit_bound() {
+        // Arrange
+        let mut diagnostics = ToiDiagnosticTrace::new(2.0);
+        diagnostics.branches = vec![ToiBranch::RootConverged; MAX_DIAGNOSTIC_BRANCHES];
+
+        // Act
+        let at_bound = diagnostics.is_bounded();
+        diagnostics.branches.push(ToiBranch::OuterCap);
+        let above_bound = diagnostics.is_bounded();
+
+        // Assert
+        assert!(at_bound);
+        assert!(!above_bound);
     }
 
     #[test]
