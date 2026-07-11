@@ -8,6 +8,8 @@ use crate::{
     ParticleId, ParticleSystemId, WorldKeyError,
 };
 
+use super::step::StepState;
+
 #[derive(Debug)]
 struct Body {
     diagnostic_id: u64,
@@ -225,6 +227,7 @@ pub struct World {
     particle_groups: Arena<ParticleGroup, ParticleGroupId>,
     particles: Arena<Particle, ParticleId>,
     next_diagnostic_id: u64,
+    pub(super) step_state: StepState,
 }
 
 impl World {
@@ -243,7 +246,12 @@ impl World {
             particle_groups: Arena::new(world, usize::MAX),
             particles: Arena::new(world, usize::MAX),
             next_diagnostic_id: 1,
+            step_state: StepState::new(),
         })
+    }
+
+    pub(super) fn validate_fixture(&self, fixture: FixtureId) -> Result<(), HandleError> {
+        self.fixtures.get(fixture).map(|_fixture| ())
     }
 
     fn allocate_diagnostic_id(&mut self) -> u64 {
