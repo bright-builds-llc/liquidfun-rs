@@ -28,7 +28,10 @@ pub mod toi;
 pub mod tree;
 
 pub use error::CollisionError;
+pub use types::{
+    Aabb, ChildIndex, CollisionOutcome, ContactFeatureId, FeatureKind, Manifold, ManifoldKind,
+    ManifoldPoint, MassData, PointState, RayCastHit, RayCastInput,
+};
 
-// Shared initialized values are re-exported here as Plan 05-01 implements
-// them. Concrete kernel re-exports remain reserved for serialized Plan 05-07
-// integration so parallel implementation plans do not edit this entrypoint.
+// Concrete kernel re-exports remain reserved for serialized Plan 05-07
+// integration so implementation plans do not edit this entrypoint in parallel.
