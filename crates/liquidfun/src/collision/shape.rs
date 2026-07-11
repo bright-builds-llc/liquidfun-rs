@@ -2,9 +2,11 @@
 
 mod circle;
 mod edge;
+mod polygon;
 
 pub use circle::CircleShape;
 pub use edge::EdgeShape;
+pub use polygon::PolygonShape;
 
 use crate::math::{Transform, Vec2};
 
@@ -51,6 +53,8 @@ pub enum Shape {
     Circle(CircleShape),
     /// One owned line segment with optional adjacency.
     Edge(EdgeShape),
+    /// One owned convex polygon.
+    Polygon(PolygonShape),
 }
 
 impl Shape {
@@ -60,6 +64,7 @@ impl Shape {
         match self {
             Self::Circle(shape) => shape.radius(),
             Self::Edge(shape) => shape.radius(),
+            Self::Polygon(shape) => shape.radius(),
         }
     }
 
@@ -87,6 +92,7 @@ impl Shape {
         match self {
             Self::Circle(shape) => shape.test_point(transform, point),
             Self::Edge(shape) => shape.test_point(transform, point),
+            Self::Polygon(shape) => shape.test_point(transform, point),
         }
     }
 
@@ -105,6 +111,7 @@ impl Shape {
         match self {
             Self::Circle(shape) => shape.distance_to_point(transform, point),
             Self::Edge(shape) => shape.distance_to_point(transform, point),
+            Self::Polygon(shape) => shape.distance_to_point(transform, point),
         }
     }
 
@@ -123,6 +130,7 @@ impl Shape {
         match self {
             Self::Circle(shape) => shape.ray_cast(input, transform),
             Self::Edge(shape) => shape.ray_cast(input, transform),
+            Self::Polygon(shape) => shape.ray_cast(input, transform),
         }
     }
 
@@ -140,6 +148,7 @@ impl Shape {
         match self {
             Self::Circle(shape) => shape.compute_aabb(transform),
             Self::Edge(shape) => shape.compute_aabb(transform),
+            Self::Polygon(shape) => shape.compute_aabb(transform),
         }
     }
 
@@ -152,6 +161,7 @@ impl Shape {
         match self {
             Self::Circle(shape) => shape.compute_mass(density),
             Self::Edge(shape) => shape.compute_mass(density),
+            Self::Polygon(shape) => shape.compute_mass(density),
         }
     }
 }
@@ -165,6 +175,12 @@ impl From<CircleShape> for Shape {
 impl From<EdgeShape> for Shape {
     fn from(shape: EdgeShape) -> Self {
         Self::Edge(shape)
+    }
+}
+
+impl From<PolygonShape> for Shape {
+    fn from(shape: PolygonShape) -> Self {
+        Self::Polygon(shape)
     }
 }
 

@@ -2,8 +2,8 @@
 
 use liquidfun::collision::CollisionError;
 use liquidfun::collision::RayCastInput;
-use liquidfun::collision::shape::{CircleShape, EdgeShape, Shape};
-use liquidfun::math::settings::{PI, POLYGON_RADIUS};
+use liquidfun::collision::shape::{CircleShape, EdgeShape, PolygonShape, Shape};
+use liquidfun::math::settings::{MAX_POLYGON_VERTICES, PI, POLYGON_RADIUS};
 use liquidfun::math::{Transform, Vec2};
 
 #[test]
@@ -160,4 +160,135 @@ fn shape_circle_dispatch_matches_concrete_queries() {
     assert_eq!(shape.radius().to_bits(), circle.radius().to_bits());
     assert_eq!(shape.child_count(), 1);
     assert_eq!(dispatched_mass, concrete_mass);
+}
+
+#[test]
+fn polygon_hull_starts_at_rightmost_lowest_and_preserves_winding() {
+    // Arrange
+    let points = [
+        Vec2::new(-1.0, 1.0),
+        Vec2::new(1.0, 1.0),
+        Vec2::new(-1.0, -1.0),
+        Vec2::new(1.0, -1.0),
+        Vec2::ZERO,
+    ];
+
+    // Act
+    let polygon = PolygonShape::new(&points).expect("convex hull should be valid");
+
+    // Assert
+    assert_eq!(
+        polygon.vertices(),
+        &[
+            Vec2::new(1.0, -1.0),
+            Vec2::new(1.0, 1.0),
+            Vec2::new(-1.0, 1.0),
+            Vec2::new(-1.0, -1.0),
+        ]
+    );
+    assert!(polygon.validate());
+}
+
+#[test]
+fn polygon_box_queries_preserve_pinned_results() {
+    // Arrange
+    let polygon = PolygonShape::box_shape(2.0, 1.0).expect("box should be valid");
+    let ray = RayCastInput::new(Vec2::new(-3.0, 0.0), Vec2::new(3.0, 0.0), 1.0)
+        .expect("ray should be valid");
+
+    // Act
+    let contains = polygon
+        .test_point(Transform::IDENTITY, Vec2::new(2.0, 0.0))
+        .expect("point query should succeed");
+    let hit = polygon
+        .ray_cast(ray, Transform::IDENTITY)
+        .expect("ray query should succeed")
+        .expect("ray should hit");
+    let mass = polygon
+        .compute_mass(3.0)
+        .expect("density should produce mass");
+
+    // Assert
+    assert!(contains);
+    assert_eq!(hit.fraction().to_bits(), (1.0_f32 / 6.0).to_bits());
+    assert_eq!(hit.normal(), Vec2::new(-1.0, 0.0));
+    assert_eq!(mass.mass().to_bits(), 24.0_f32.to_bits());
+    assert_eq!(mass.center(), Vec2::ZERO);
+}
+
+#[test]
+fn polygon_oriented_box_owns_transformed_geometry() {
+    // Arrange
+    let center = Vec2::new(3.0, -2.0);
+
+    // Act
+    let polygon = PolygonShape::oriented_box(2.0, 1.0, center, PI / 2.0)
+        .expect("oriented box should be valid");
+
+    // Assert
+    assert_eq!(polygon.centroid(), center);
+    assert_eq!(polygon.vertex_count(), 4);
+    assert!(
+        polygon
+            .test_point(Transform::IDENTITY, center)
+            .expect("point query should succeed")
+    );
+}
+
+#[test]
+fn polygon_rejects_safe_rust_departure_inputs() {
+    // Arrange
+    let excess = vec![Vec2::ZERO; MAX_POLYGON_VERTICES + 1];
+    let collinear = [Vec2::new(-1.0, 0.0), Vec2::ZERO, Vec2::new(1.0, 0.0)];
+    let non_finite = [Vec2::ZERO, Vec2::new(1.0, 0.0), Vec2::new(f32::NAN, 1.0)];
+
+    // Act
+    let excess_result = PolygonShape::new(&excess);
+    let collinear_result = PolygonShape::new(&collinear);
+    let non_finite_result = PolygonShape::new(&non_finite);
+
+    // Assert
+    assert_eq!(excess_result, Err(CollisionError::InvalidGeometry));
+    assert_eq!(collinear_result, Err(CollisionError::InvalidGeometry));
+    assert_eq!(non_finite_result, Err(CollisionError::NonFiniteValue));
+}
+
+#[test]
+fn polygon_weld_uses_pinned_unsquared_slop_threshold() {
+    // Arrange
+    let points = [
+        Vec2::new(0.0, 0.0),
+        Vec2::new(0.04, 0.0),
+        Vec2::new(1.0, 0.0),
+        Vec2::new(0.0, 1.0),
+    ];
+
+    // Act
+    let polygon = PolygonShape::new(&points).expect("three retained points should form a hull");
+
+    // Assert
+    assert_eq!(polygon.vertex_count(), 3);
+    assert!(!polygon.vertices().contains(&Vec2::new(0.04, 0.0)));
+}
+
+proptest::proptest! {
+    #[test]
+    fn polygon_box_normals_are_unit_and_centroid_is_contained(
+        half_width in 0.01_f32..100.0,
+        half_height in 0.01_f32..100.0,
+    ) {
+        // Arrange
+        let polygon = PolygonShape::box_shape(half_width, half_height)
+            .expect("positive finite half-extents should be valid");
+
+        // Act
+        let normal_lengths: Vec<f32> = polygon.normals().iter().map(|normal| normal.length()).collect();
+        let contains_centroid = polygon
+            .test_point(Transform::IDENTITY, polygon.centroid())
+            .expect("finite point query should succeed");
+
+        // Assert
+        proptest::prop_assert!(normal_lengths.iter().all(|length| (length - 1.0).abs() < 1.0e-5));
+        proptest::prop_assert!(contains_centroid);
+    }
 }
