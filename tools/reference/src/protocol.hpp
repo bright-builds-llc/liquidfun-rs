@@ -1,5 +1,7 @@
 #pragma once
 
+#include "math_probe.hpp"
+
 #include <cstddef>
 #include <cstdint>
 #include <iosfwd>
@@ -22,6 +24,8 @@ inline constexpr std::size_t kMaximumObservableItems = 128;
 inline constexpr std::size_t kMaximumIdBytes = 128;
 
 enum class ScenarioSourceKind { named, seeded };
+
+enum class RequestKind { scenario, math_probe };
 
 struct ScenarioSource {
   ScenarioSourceKind kind = ScenarioSourceKind::named;
@@ -88,6 +92,8 @@ struct WorldCounts {
 };
 
 ScenarioRequest decode_scenario_request(std::string_view record);
+RequestKind decode_request_kind(std::string_view record);
+MathProbeRequest decode_math_probe_request(std::string_view record);
 std::string encode_scenario_request(const ScenarioRequest& request);
 std::string encode_scenario(const ScenarioV1& scenario);
 std::string encode_handshake(const BuildIdentity& identity);
@@ -109,6 +115,11 @@ std::string encode_trace_end(
     std::uint64_t reset_epoch,
     bool reset_verified,
     std::string_view identity_sha256);
+std::string encode_math_probe_result(const MathProbeResult& result);
+std::string encode_math_probe_end(
+    const MathProbeRequest& request,
+    std::uint32_t result_count,
+    std::uint64_t reset_epoch);
 std::string trace_payload_sha256(
     const std::vector<std::string>& checkpoint_records);
 std::string build_identity_sha256(const BuildIdentity& identity);

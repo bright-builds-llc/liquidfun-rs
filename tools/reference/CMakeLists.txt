@@ -79,6 +79,7 @@ endif()
 add_library(
   liquidfun-reference-protocol
   STATIC
+  src/math_probe.cpp
   src/protocol.cpp
   src/protocol_bits.cpp
   src/oracle_adapter.cpp

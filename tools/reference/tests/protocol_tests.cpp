@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <set>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -247,6 +248,50 @@ void record_writer_keeps_stdout_protocol_only() {
       "record writer added non-protocol output or wrong framing");
 }
 
+void protocol_bits_preserve_exceptional_classes() {
+  // Arrange
+  const std::vector<std::uint32_t> bits{
+      0x00000000U, 0x80000000U, 0x00000001U, 0x007FFFFFU,
+      0x7F800000U, 0xFF800000U, 0x7FC00042U, 0x7FA00001U};
+
+  // Act / Assert
+  for (const auto value : bits) {
+    expect(
+        liquidfun::reference::bits_from_float(
+            liquidfun::reference::float_from_bits(value)) == value,
+        "exceptional float bits changed during transport");
+  }
+}
+
+void math_probe_matches_operation_contract() {
+  // Arrange
+  const auto fixture = read_fixture(
+      "protocol/fixtures/accepted/math-probe-request.jsonl");
+  const auto request = liquidfun::reference::decode_math_probe_request(fixture);
+  auto unknown = fixture;
+  unknown.replace(unknown.find("\"is_valid\""),
+                  std::string("\"is_valid\"").size(), "\"run_function\"");
+
+  // Act
+  const auto results = liquidfun::reference::execute_math_probe(request);
+  std::set<liquidfun::reference::MathProbeOperation> operations;
+  for (const auto& result : results) operations.insert(result.operation);
+
+  // Assert
+  expect(results.size() == 39, "math probe corpus result count changed");
+  expect(operations.size() == 24, "math probe operation coverage is incomplete");
+  try {
+    static_cast<void>(liquidfun::reference::decode_math_probe_request(unknown));
+  } catch (const std::exception& error) {
+    expect(
+        std::string(error.what()).find("unsupported math probe operation") !=
+            std::string::npos,
+        "unknown operation produced the wrong rejection");
+    return;
+  }
+  throw std::runtime_error("unknown math probe operation was accepted");
+}
+
 }  // namespace
 
 int main() {
@@ -259,6 +304,8 @@ int main() {
     reused_adapter_resets_between_requests();
     adapter_matches_the_cross_language_trace_fixture();
     record_writer_keeps_stdout_protocol_only();
+    protocol_bits_preserve_exceptional_classes();
+    math_probe_matches_operation_contract();
   } catch (const std::exception& error) {
     std::cerr << "protocol test failure: " << error.what() << '\n';
     return 1;

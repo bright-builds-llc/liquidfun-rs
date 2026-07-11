@@ -2,9 +2,8 @@
 
 #include <algorithm>
 #include <array>
-#include <cmath>
+#include <cstring>
 #include <iomanip>
-#include <limits>
 #include <sstream>
 #include <stdexcept>
 #include <utility>
@@ -172,37 +171,17 @@ std::string trace_payload_sha256(const std::vector<std::string>& records) {
 }
 
 float float_from_bits(std::uint32_t bits) {
-  const auto negative = (bits & 0x80000000U) != 0;
-  const auto exponent = (bits >> 23U) & 0xFFU;
-  const auto fraction = bits & 0x7FFFFFU;
+  static_assert(sizeof(float) == sizeof(std::uint32_t));
   float value = 0.0F;
-  if (exponent == 0xFFU) {
-    value = fraction == 0 ? std::numeric_limits<float>::infinity()
-                          : std::numeric_limits<float>::quiet_NaN();
-  } else if (exponent == 0) {
-    value = std::ldexp(static_cast<float>(fraction), -149);
-  } else {
-    value = std::ldexp(
-        static_cast<float>((1U << 23U) | fraction),
-        static_cast<int>(exponent) - 150);
-  }
-  return negative ? -value : value;
+  std::memcpy(&value, &bits, sizeof(value));
+  return value;
 }
 
 std::uint32_t bits_from_float(float value) {
-  const auto sign = std::signbit(value) ? 0x80000000U : 0U;
-  const auto magnitude = std::fabs(value);
-  if (std::isnan(magnitude)) return sign | 0x7FC00000U;
-  if (std::isinf(magnitude)) return sign | 0x7F800000U;
-  if (magnitude == 0.0F) return sign;
-  int exponent = 0;
-  const auto fraction = std::frexp(magnitude, &exponent);
-  if (exponent <= -126) {
-    return sign | static_cast<std::uint32_t>(std::ldexp(magnitude, 149));
-  }
-  const auto encoded_exponent = static_cast<std::uint32_t>(exponent + 126);
-  const auto significand = static_cast<std::uint32_t>(std::ldexp(fraction, 24));
-  return sign | (encoded_exponent << 23U) | (significand - (1U << 23U));
+  static_assert(sizeof(float) == sizeof(std::uint32_t));
+  std::uint32_t bits = 0;
+  std::memcpy(&bits, &value, sizeof(bits));
+  return bits;
 }
 
 }  // namespace liquidfun::reference
