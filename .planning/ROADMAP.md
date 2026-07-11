@@ -11,7 +11,7 @@ The v1 roadmap moves from an immutable, licensed source of truth to a semantic c
 - [x] **Phase 1: Oracle, Provenance, and Repository Foundation** - Freeze the source of truth and establish the licensed, Cargo-first development foundation without broad physics implementation. (completed 2026-07-10)
 - [x] **Phase 2: Semantic Protocol and Oracle Round Trip** - Prove a versioned, process-isolated Rust/C++ comparison path with trustworthy provenance and failure classification. (completed 2026-07-10)
 - [x] **Phase 3: Rust Object Model and Storage Architecture** - Prove safe identity, invalidation, callback, mutation, and storage semantics before they harden into the engine API.
-- [ ] **Phase 4: Math, Settings, and Numerical Policy** - Establish the `f32` mathematical vocabulary and explicit determinism/tolerance contract.
+- [x] **Phase 4: Math, Settings, and Numerical Policy** - Establish the `f32` mathematical vocabulary and explicit determinism/tolerance contract. (completed 2026-07-11)
 - [ ] **Phase 5: Shapes and Collision Foundation** - Implement and differentially verify shapes, narrow phase, broad phase, and TOI kernels.
 - [ ] **Phase 6: Minimal Rigid World Vertical Slice** - Run bodies, fixtures, and contacts through the complete native Rust and oracle comparison pipeline.
 - [ ] **Phase 7: Rigid Solver, World Operations, and CCD** - Complete rigid stepping, sleeping, continuous collision, configuration, queries, and ray casts.
@@ -221,7 +221,7 @@ The v1 roadmap moves from an immutable, licensed source of truth to a semantic c
 | 1. Oracle, Provenance, and Repository Foundation | 5/5 | Complete    | 2026-07-10 |
 | 2. Semantic Protocol and Oracle Round Trip | 14/14 | Complete    | 2026-07-10 |
 | 3. Rust Object Model and Storage Architecture | 5/5 | Complete    | 2026-07-11 |
-| 4. Math, Settings, and Numerical Policy | 6/7 | In Progress | - |
+| 4. Math, Settings, and Numerical Policy | 7/7 | Complete   | 2026-07-11 |
 | 5. Shapes and Collision Foundation | 0/TBD | Not started | - |
 | 6. Minimal Rigid World Vertical Slice | 0/TBD | Not started | - |
 | 7. Rigid Solver, World Operations, and CCD | 0/TBD | Not started | - |

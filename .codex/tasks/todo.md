@@ -46,3 +46,15 @@ Completion review: The external C++ adapter now executes the complete 39-case Ph
 - [x] Create the lifecycle-bound summary and update GSD progress artifacts.
 
 Completion review: All 39 ordered probe cases compare successfully in debug and release, replay passes, and two independent debug processes produce byte-identical D0 output. The CLI rejects arbitrary paths, executables, compiler flags, profiles, presets, and run counts before effects; schemas remain byte-stable; canonical CI retains exact tools, SHA-pinned actions, read-only permissions, and a final evidence diff assertion. The local Apple Clang evidence remains non-promotable D2, while pinned Linux Clang 22 owns D1 evidence.
+
+## task-04-07-numerical-policy-signoff | 2026-07-11 01:58 CDT | Execute Phase 4 Plan 07
+
+- [x] Document the public math/settings contract and safe-Rust differences.
+- [x] Document exact transport, all float policies, special-value rules, collection semantics, horizons, and D0-D3 authority.
+- [x] Publish exact debug, release, replay, and two-run D0 commands with prerequisites and evidence limits.
+- [x] Update only the three Phase 4 math/settings compatibility rows from executable evidence.
+- [x] Extend documentation contracts for required claims, cross-file counts, and accidental local paths.
+- [x] Run docs, inventory, provenance, rustdoc, package, oracle, overclaim, diff, and exact ordered Rust gates.
+- [x] Create the lifecycle-bound summary and update GSD progress artifacts.
+
+Completion review: The Phase 4 public math, numerical-policy, command, and evidence contracts are now precise and machine-audited. All 39 ordered math probes pass in debug and release, replay is successful, and two independent debug processes are byte-identical. Compatibility status remains conservative: three rows are implemented and unit-tested, only b2Math and the common subsystem carry scoped D2 differential evidence, and zero rows are platform validated. Canonical D1, settings differential parity, shapes, collision, solvers, particles, performance, and production maturity remain pending.
