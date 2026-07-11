@@ -295,7 +295,9 @@ fn render_protocol_schema() -> String {
                     "tolerance_profile_version": version_schema()
                 }),
                 &["protocol_version", "record_kind", "request_id", "scenario_schema_version", "requested_trace_schema_version", "tolerance_profile_version", "tolerance_profile_sha256", "scenario"],
-            )
+            ),
+            probe_request_schema("math_probe_request"),
+            probe_request_schema("collision_probe_request")
         ],
         "title": "liquidfun-rs protocol presentation version 1",
         "x-version-axes": {
@@ -313,7 +315,11 @@ fn render_scenario_schema() -> String {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "$defs": math_probe_definitions(),
         "description": SCHEMA_DESCRIPTION,
-        "oneOf": [physics_scenario_schema(), math_probe_scenario_schema()],
+        "oneOf": [
+            physics_scenario_schema(),
+            math_probe_scenario_schema(),
+            collision_probe_scenario_schema()
+        ],
         "title": "liquidfun-rs scenario presentation version 1",
         "x-version-axes": { "scenario_schema_version": 1 }
     }))
@@ -465,6 +471,273 @@ fn math_probe_scenario_schema() -> Value {
     )
 }
 
+fn probe_request_schema(record_kind: &str) -> Value {
+    closed_record(
+        &json!({
+            "protocol_version": version_schema(),
+            "record_kind": { "const": record_kind },
+            "request_id": semantic_id_schema(),
+            "requested_trace_schema_version": version_schema(),
+            "scenario": { "$ref": "scenario-v1.schema.json" },
+            "scenario_schema_version": version_schema(),
+            "tolerance_profile_sha256": sha256_schema(),
+            "tolerance_profile_version": version_schema()
+        }),
+        &[
+            "protocol_version",
+            "record_kind",
+            "request_id",
+            "scenario_schema_version",
+            "requested_trace_schema_version",
+            "tolerance_profile_version",
+            "tolerance_profile_sha256",
+            "scenario",
+        ],
+    )
+}
+
+fn collision_probe_scenario_schema() -> Value {
+    closed_record(
+        &json!({
+            "cases": {
+                "items": closed_record(
+                    &json!({
+                        "case_id": semantic_id_schema(),
+                        "collection_policy": { "enum": ["ordered", "set"] },
+                        "horizon": collision_probe_horizon_schema(),
+                        "input": collision_probe_input_schema(),
+                        "operation": { "enum": collision_probe_operations() },
+                        "policy_path": { "enum": collision_probe_policy_paths() }
+                    }),
+                    &["case_id", "operation", "policy_path", "horizon", "collection_policy", "input"],
+                ),
+                "maxItems": 256,
+                "minItems": 1,
+                "type": "array"
+            },
+            "scenario_id": semantic_id_schema(),
+            "source": scenario_source_schema()
+        }),
+        &["scenario_id", "source", "cases"],
+    )
+}
+
+fn collision_probe_operations() -> Value {
+    json!([
+        "shape_construction",
+        "shape_unary_query",
+        "distance",
+        "overlap",
+        "clip",
+        "manifold",
+        "pair_dispatch",
+        "feature_transition",
+        "tree_lifecycle",
+        "tree_query",
+        "tree_ray",
+        "tree_metrics",
+        "broad_phase_move_touch",
+        "broad_phase_pairs",
+        "broad_phase_filter",
+        "broad_phase_refilter",
+        "time_of_impact"
+    ])
+}
+
+fn collision_probe_policy_paths() -> Value {
+    json!([
+        "collision.shape_construction.result",
+        "collision.shape_unary_query.result",
+        "collision.distance.result",
+        "collision.overlap.result",
+        "collision.clip.result",
+        "collision.manifold.result",
+        "collision.pair_dispatch.result",
+        "collision.feature_transition.result",
+        "collision.tree_lifecycle.result",
+        "collision.tree_query.result",
+        "collision.tree_ray.result",
+        "collision.tree_metrics.result",
+        "collision.broad_phase_move_touch.result",
+        "collision.broad_phase_pairs.result",
+        "collision.broad_phase_filter.result",
+        "collision.broad_phase_refilter.result",
+        "collision.time_of_impact.result"
+    ])
+}
+
+fn collision_probe_horizon_schema() -> Value {
+    json!({
+        "oneOf": [
+            closed_record(&json!({ "kind": { "const": "operation" } }), &["kind"]),
+            closed_record(&json!({ "kind": { "const": "phase_local" } }), &["kind"])
+        ]
+    })
+}
+
+fn collision_probe_input_schema() -> Value {
+    let shape = collision_shape_schema();
+    let transform = schema_ref("transform_bits");
+    let sweep = schema_ref("sweep_bits");
+    let vec2 = schema_ref("vec2_bits");
+    let feature = collision_feature_schema();
+    let clip_point = closed_record(
+        &json!({ "point": vec2, "feature": feature }),
+        &["point", "feature"],
+    );
+    json!({
+        "oneOf": [
+            tagged_probe_input(
+                "shape",
+                &json!({
+                    "shape": shape,
+                    "child_index": uint32_schema(),
+                    "transform": transform,
+                    "query_point": schema_ref("vec2_bits")
+                }),
+                &["shape", "child_index", "transform", "query_point"],
+            ),
+            tagged_probe_input(
+                "pair",
+                &json!({
+                    "shapes": { "items": collision_shape_schema(), "maxItems": 2, "minItems": 2, "type": "array" },
+                    "child_indices": { "items": uint32_schema(), "maxItems": 2, "minItems": 2, "type": "array" },
+                    "transforms": { "items": schema_ref("transform_bits"), "maxItems": 2, "minItems": 2, "type": "array" },
+                    "use_radii": { "type": "boolean" },
+                    "maybe_cache": nullable_schema(&collision_cache_schema())
+                }),
+                &["shapes", "child_indices", "transforms", "use_radii", "maybe_cache"],
+            ),
+            tagged_probe_input(
+                "clip",
+                &json!({
+                    "points": { "items": clip_point, "maxItems": 2, "minItems": 2, "type": "array" },
+                    "normal": schema_ref("vec2_bits"),
+                    "offset_bits": float_bits_schema(),
+                    "vertex_index_a": { "maximum": u8::MAX, "minimum": 0, "type": "integer" }
+                }),
+                &["points", "normal", "offset_bits", "vertex_index_a"],
+            ),
+            tagged_probe_input(
+                "features",
+                &json!({
+                    "previous": { "items": collision_feature_schema(), "maxItems": 2, "type": "array" },
+                    "current": { "items": collision_feature_schema(), "maxItems": 2, "type": "array" }
+                }),
+                &["previous", "current"],
+            ),
+            tagged_probe_input(
+                "tree",
+                &json!({
+                    "commands": { "items": collision_tree_command_schema(), "maxItems": 128, "minItems": 1, "type": "array" }
+                }),
+                &["commands"],
+            ),
+            tagged_probe_input(
+                "time_of_impact",
+                &json!({
+                    "shapes": { "items": collision_shape_schema(), "maxItems": 2, "minItems": 2, "type": "array" },
+                    "child_indices": { "items": uint32_schema(), "maxItems": 2, "minItems": 2, "type": "array" },
+                    "sweeps": { "items": sweep, "maxItems": 2, "minItems": 2, "type": "array" },
+                    "t_max_bits": float_bits_schema()
+                }),
+                &["shapes", "child_indices", "sweeps", "t_max_bits"],
+            )
+        ]
+    })
+}
+
+fn collision_shape_schema() -> Value {
+    let vec2 = schema_ref("vec2_bits");
+    json!({
+        "oneOf": [
+            tagged_probe_input(
+                "circle",
+                &json!({ "shape_id": semantic_id_schema(), "center": vec2, "radius_bits": float_bits_schema() }),
+                &["shape_id", "center", "radius_bits"],
+            ),
+            tagged_probe_input(
+                "edge",
+                &json!({
+                    "shape_id": semantic_id_schema(),
+                    "start": schema_ref("vec2_bits"),
+                    "end": schema_ref("vec2_bits"),
+                    "maybe_previous": nullable_schema(&schema_ref("vec2_bits")),
+                    "maybe_next": nullable_schema(&schema_ref("vec2_bits"))
+                }),
+                &["shape_id", "start", "end", "maybe_previous", "maybe_next"],
+            ),
+            tagged_probe_input(
+                "polygon",
+                &json!({
+                    "shape_id": semantic_id_schema(),
+                    "vertices": { "items": schema_ref("vec2_bits"), "maxItems": 8, "minItems": 3, "type": "array" }
+                }),
+                &["shape_id", "vertices"],
+            ),
+            tagged_probe_input(
+                "chain",
+                &json!({
+                    "shape_id": semantic_id_schema(),
+                    "vertices": { "items": schema_ref("vec2_bits"), "maxItems": 32, "minItems": 2, "type": "array" },
+                    "closed": { "type": "boolean" }
+                }),
+                &["shape_id", "vertices", "closed"],
+            )
+        ]
+    })
+}
+
+fn collision_cache_schema() -> Value {
+    closed_record(
+        &json!({
+            "support_pairs": {
+                "items": closed_record(
+                    &json!({ "index_a": uint32_schema(), "index_b": uint32_schema() }),
+                    &["index_a", "index_b"],
+                ),
+                "maxItems": 3,
+                "type": "array"
+            },
+            "metric_bits": float_bits_schema()
+        }),
+        &["support_pairs", "metric_bits"],
+    )
+}
+
+fn collision_feature_schema() -> Value {
+    closed_record(
+        &json!({
+            "index_a": { "maximum": u8::MAX, "minimum": 0, "type": "integer" },
+            "index_b": { "maximum": u8::MAX, "minimum": 0, "type": "integer" },
+            "kind_a": { "enum": ["vertex", "face"] },
+            "kind_b": { "enum": ["vertex", "face"] }
+        }),
+        &["index_a", "index_b", "kind_a", "kind_b"],
+    )
+}
+
+fn collision_tree_command_schema() -> Value {
+    let vec2 = schema_ref("vec2_bits");
+    json!({
+        "oneOf": [
+            tagged_probe_input("create", &json!({ "payload_id": uint32_schema(), "lower": vec2, "upper": schema_ref("vec2_bits") }), &["payload_id", "lower", "upper"]),
+            tagged_probe_input("move", &json!({ "payload_id": uint32_schema(), "lower": schema_ref("vec2_bits"), "upper": schema_ref("vec2_bits"), "displacement": schema_ref("vec2_bits") }), &["payload_id", "lower", "upper", "displacement"]),
+            tagged_probe_input("touch", &json!({ "payload_id": uint32_schema() }), &["payload_id"]),
+            tagged_probe_input("destroy", &json!({ "payload_id": uint32_schema() }), &["payload_id"]),
+            tagged_probe_input("query", &json!({ "lower": schema_ref("vec2_bits"), "upper": schema_ref("vec2_bits") }), &["lower", "upper"]),
+            tagged_probe_input("ray", &json!({ "start": schema_ref("vec2_bits"), "end": schema_ref("vec2_bits"), "max_fraction_bits": float_bits_schema() }), &["start", "end", "max_fraction_bits"]),
+            tagged_probe_input("refilter", &json!({ "payload_id": uint32_schema(), "category_bits": { "maximum": u16::MAX, "minimum": 0, "type": "integer" }, "mask_bits": { "maximum": u16::MAX, "minimum": 0, "type": "integer" }, "group_index": { "maximum": i16::MAX, "minimum": i16::MIN, "type": "integer" } }), &["payload_id", "category_bits", "mask_bits", "group_index"]),
+            tagged_probe_input("update_pairs", &json!({}), &[]),
+            tagged_probe_input("metrics", &json!({}), &[])
+        ]
+    })
+}
+
+fn nullable_schema(value: &Value) -> Value {
+    json!({ "oneOf": [value, { "type": "null" }] })
+}
+
 fn math_probe_result_schema() -> Value {
     closed_record(
         &json!({
@@ -613,6 +886,7 @@ fn math_probe_input_schema() -> Value {
 
 fn math_probe_definitions() -> Value {
     json!({
+        "collision_probe_result": collision_probe_result_schema(),
         "mat22_bits": mat22_bits_schema(),
         "mat33_bits": mat33_bits_schema(),
         "math_probe_horizon": math_probe_horizon_schema(),
@@ -621,6 +895,45 @@ fn math_probe_definitions() -> Value {
         "vec2_bits": vec2_bits_schema(),
         "vec3_bits": vec3_bits_schema()
     })
+}
+
+fn collision_probe_result_schema() -> Value {
+    closed_record(
+        &json!({
+            "case_id": semantic_id_schema(),
+            "operation": { "enum": collision_probe_operations() },
+            "policy_path": { "enum": collision_probe_policy_paths() },
+            "horizon": collision_probe_horizon_schema(),
+            "collection_policy": { "enum": ["ordered", "set"] },
+            "numeric": {
+                "items": closed_record(
+                    &json!({ "field": bounded_string_schema(), "bits": float_bits_schema() }),
+                    &["field", "bits"],
+                ),
+                "maxItems": 128,
+                "type": "array"
+            },
+            "discrete": {
+                "items": closed_record(
+                    &json!({ "field": bounded_string_schema(), "value": bounded_string_schema() }),
+                    &["field", "value"],
+                ),
+                "maxItems": 128,
+                "type": "array"
+            },
+            "payload_ids": { "items": uint32_schema(), "maxItems": 128, "type": "array" }
+        }),
+        &[
+            "case_id",
+            "operation",
+            "policy_path",
+            "horizon",
+            "collection_policy",
+            "numeric",
+            "discrete",
+            "payload_ids",
+        ],
+    )
 }
 
 fn schema_ref(name: &str) -> Value {

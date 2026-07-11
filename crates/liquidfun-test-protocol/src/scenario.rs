@@ -17,8 +17,10 @@ const MAXIMUM_CHECKPOINTS: usize = 4_096;
 const MAXIMUM_OBSERVABLES: usize = 128;
 const MAXIMUM_SOLVER_ITERATIONS: u32 = 255;
 
+mod collision_probe;
 mod math_probe;
 mod reduction;
+pub use collision_probe::*;
 pub use math_probe::*;
 pub use reduction::*;
 

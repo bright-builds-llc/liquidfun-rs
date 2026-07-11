@@ -3,8 +3,10 @@ use sha2::{Digest, Sha256};
 
 use crate::{FloatBits, Sha256Hex, ToleranceProfileVersion};
 
+mod collision_policy;
 mod policy;
 
+pub use collision_policy::*;
 pub use policy::*;
 
 /// Closed policy set for authoritative floating-point observables.

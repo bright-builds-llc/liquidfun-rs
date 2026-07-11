@@ -1,0 +1,172 @@
+profile_id = "phase5-v1"
+version = 1
+
+[[fields]]
+semantic_path = "collision.shape_construction.result"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "operation" }
+evidence_tier = "d2_supported"
+justification = "Accepted shape construction records exact finite derived bits."
+
+[[fields]]
+semantic_path = "collision.shape_unary_query.result"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "operation" }
+evidence_tier = "d2_supported"
+justification = "Unary query results begin as exact finite bit evidence."
+
+[[fields]]
+semantic_path = "collision.distance.result"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Bounded GJK witnesses and cache results begin as exact finite bit evidence."
+
+[[fields]]
+semantic_path = "collision.overlap.result"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "operation" }
+evidence_tier = "d2_supported"
+justification = "The strict overlap predicate and supporting distance bits are exact."
+
+[[fields]]
+semantic_path = "collision.clip.result"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "operation" }
+evidence_tier = "d2_supported"
+justification = "Clipping preserves exact count order feature identity and canonical finite bits."
+
+[[fields]]
+semantic_path = "collision.manifold.result"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Manifold branch point order features and finite geometry begin exact."
+
+[[fields]]
+semantic_path = "collision.pair_dispatch.result"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Closed pair dispatch and reversal evidence is exact and ordered."
+
+[[fields]]
+semantic_path = "collision.feature_transition.result"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "operation" }
+evidence_tier = "d2_supported"
+justification = "Feature add persist remove state is exact ordered evidence."
+
+[[fields]]
+semantic_path = "collision.tree_lifecycle.result"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Tree lifecycle and semantic payload evidence is exact and ordered."
+
+[[fields]]
+semantic_path = "collision.tree_query.result"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "set"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Consumer query membership is an explicit unique semantic payload set."
+
+[[fields]]
+semantic_path = "collision.tree_ray.result"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "set"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Consumer ray membership is an explicit unique semantic payload set."
+
+[[fields]]
+semantic_path = "collision.tree_metrics.result"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Tree metric results begin as exact finite bit evidence."
+
+[[fields]]
+semantic_path = "collision.broad_phase_move_touch.result"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Move and touch occurrence evidence preserves exact source order."
+
+[[fields]]
+semantic_path = "collision.broad_phase_pairs.result"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Candidate pair order and deduplication are exact solver feeding evidence."
+
+[[fields]]
+semantic_path = "collision.broad_phase_filter.result"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Pure filter branch results are exact discrete evidence."
+
+[[fields]]
+semantic_path = "collision.broad_phase_refilter.result"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Refilter reconsideration evidence preserves exact pair order."
+
+[[fields]]
+semantic_path = "collision.time_of_impact.result"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "TOI state time branch and bounded counts begin as exact evidence."

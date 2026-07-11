@@ -1,5 +1,159 @@
 {
   "$defs": {
+    "collision_probe_result": {
+      "additionalProperties": false,
+      "properties": {
+        "case_id": {
+          "maxLength": 128,
+          "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+          "type": "string"
+        },
+        "collection_policy": {
+          "enum": [
+            "ordered",
+            "set"
+          ]
+        },
+        "discrete": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "field": {
+                "maxLength": 4096,
+                "minLength": 1,
+                "type": "string"
+              },
+              "value": {
+                "maxLength": 4096,
+                "minLength": 1,
+                "type": "string"
+              }
+            },
+            "required": [
+              "field",
+              "value"
+            ],
+            "type": "object"
+          },
+          "maxItems": 128,
+          "type": "array"
+        },
+        "horizon": {
+          "oneOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "operation"
+                }
+              },
+              "required": [
+                "kind"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "phase_local"
+                }
+              },
+              "required": [
+                "kind"
+              ],
+              "type": "object"
+            }
+          ]
+        },
+        "numeric": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "bits": {
+                "maximum": 4294967295,
+                "minimum": 0,
+                "type": "integer"
+              },
+              "field": {
+                "maxLength": 4096,
+                "minLength": 1,
+                "type": "string"
+              }
+            },
+            "required": [
+              "field",
+              "bits"
+            ],
+            "type": "object"
+          },
+          "maxItems": 128,
+          "type": "array"
+        },
+        "operation": {
+          "enum": [
+            "shape_construction",
+            "shape_unary_query",
+            "distance",
+            "overlap",
+            "clip",
+            "manifold",
+            "pair_dispatch",
+            "feature_transition",
+            "tree_lifecycle",
+            "tree_query",
+            "tree_ray",
+            "tree_metrics",
+            "broad_phase_move_touch",
+            "broad_phase_pairs",
+            "broad_phase_filter",
+            "broad_phase_refilter",
+            "time_of_impact"
+          ]
+        },
+        "payload_ids": {
+          "items": {
+            "maximum": 4294967295,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "maxItems": 128,
+          "type": "array"
+        },
+        "policy_path": {
+          "enum": [
+            "collision.shape_construction.result",
+            "collision.shape_unary_query.result",
+            "collision.distance.result",
+            "collision.overlap.result",
+            "collision.clip.result",
+            "collision.manifold.result",
+            "collision.pair_dispatch.result",
+            "collision.feature_transition.result",
+            "collision.tree_lifecycle.result",
+            "collision.tree_query.result",
+            "collision.tree_ray.result",
+            "collision.tree_metrics.result",
+            "collision.broad_phase_move_touch.result",
+            "collision.broad_phase_pairs.result",
+            "collision.broad_phase_filter.result",
+            "collision.broad_phase_refilter.result",
+            "collision.time_of_impact.result"
+          ]
+        }
+      },
+      "required": [
+        "case_id",
+        "operation",
+        "policy_path",
+        "horizon",
+        "collection_policy",
+        "numeric",
+        "discrete",
+        "payload_ids"
+      ],
+      "type": "object"
+    },
     "mat22_bits": {
       "additionalProperties": false,
       "properties": {
@@ -835,6 +989,1143 @@
               "operation",
               "policy_path",
               "horizon",
+              "input"
+            ],
+            "type": "object"
+          },
+          "maxItems": 256,
+          "minItems": 1,
+          "type": "array"
+        },
+        "scenario_id": {
+          "maxLength": 128,
+          "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+          "type": "string"
+        },
+        "source": {
+          "oneOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "named"
+                },
+                "name": {
+                  "maxLength": 4096,
+                  "minLength": 1,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kind",
+                "name"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "generator_id": {
+                  "maxLength": 4096,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "generator_version": {
+                  "maximum": 4294967295,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "kind": {
+                  "const": "seeded"
+                },
+                "seed": {
+                  "maximum": 18446744073709551615,
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "kind",
+                "generator_id",
+                "generator_version",
+                "seed"
+              ],
+              "type": "object"
+            }
+          ]
+        }
+      },
+      "required": [
+        "scenario_id",
+        "source",
+        "cases"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "cases": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "case_id": {
+                "maxLength": 128,
+                "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                "type": "string"
+              },
+              "collection_policy": {
+                "enum": [
+                  "ordered",
+                  "set"
+                ]
+              },
+              "horizon": {
+                "oneOf": [
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "const": "operation"
+                      }
+                    },
+                    "required": [
+                      "kind"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "const": "phase_local"
+                      }
+                    },
+                    "required": [
+                      "kind"
+                    ],
+                    "type": "object"
+                  }
+                ]
+              },
+              "input": {
+                "oneOf": [
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "child_index": {
+                        "maximum": 4294967295,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "kind": {
+                        "const": "shape"
+                      },
+                      "query_point": {
+                        "$ref": "#/$defs/vec2_bits"
+                      },
+                      "shape": {
+                        "oneOf": [
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "center": {
+                                "$ref": "#/$defs/vec2_bits"
+                              },
+                              "kind": {
+                                "const": "circle"
+                              },
+                              "radius_bits": {
+                                "maximum": 4294967295,
+                                "minimum": 0,
+                                "type": "integer"
+                              },
+                              "shape_id": {
+                                "maxLength": 128,
+                                "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "shape_id",
+                              "center",
+                              "radius_bits"
+                            ],
+                            "type": "object"
+                          },
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "end": {
+                                "$ref": "#/$defs/vec2_bits"
+                              },
+                              "kind": {
+                                "const": "edge"
+                              },
+                              "maybe_next": {
+                                "oneOf": [
+                                  {
+                                    "$ref": "#/$defs/vec2_bits"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "maybe_previous": {
+                                "oneOf": [
+                                  {
+                                    "$ref": "#/$defs/vec2_bits"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "shape_id": {
+                                "maxLength": 128,
+                                "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                "type": "string"
+                              },
+                              "start": {
+                                "$ref": "#/$defs/vec2_bits"
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "shape_id",
+                              "start",
+                              "end",
+                              "maybe_previous",
+                              "maybe_next"
+                            ],
+                            "type": "object"
+                          },
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "const": "polygon"
+                              },
+                              "shape_id": {
+                                "maxLength": 128,
+                                "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                "type": "string"
+                              },
+                              "vertices": {
+                                "items": {
+                                  "$ref": "#/$defs/vec2_bits"
+                                },
+                                "maxItems": 8,
+                                "minItems": 3,
+                                "type": "array"
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "shape_id",
+                              "vertices"
+                            ],
+                            "type": "object"
+                          },
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "closed": {
+                                "type": "boolean"
+                              },
+                              "kind": {
+                                "const": "chain"
+                              },
+                              "shape_id": {
+                                "maxLength": 128,
+                                "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                "type": "string"
+                              },
+                              "vertices": {
+                                "items": {
+                                  "$ref": "#/$defs/vec2_bits"
+                                },
+                                "maxItems": 32,
+                                "minItems": 2,
+                                "type": "array"
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "shape_id",
+                              "vertices",
+                              "closed"
+                            ],
+                            "type": "object"
+                          }
+                        ]
+                      },
+                      "transform": {
+                        "$ref": "#/$defs/transform_bits"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "shape",
+                      "child_index",
+                      "transform",
+                      "query_point"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "child_indices": {
+                        "items": {
+                          "maximum": 4294967295,
+                          "minimum": 0,
+                          "type": "integer"
+                        },
+                        "maxItems": 2,
+                        "minItems": 2,
+                        "type": "array"
+                      },
+                      "kind": {
+                        "const": "pair"
+                      },
+                      "maybe_cache": {
+                        "oneOf": [
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "metric_bits": {
+                                "maximum": 4294967295,
+                                "minimum": 0,
+                                "type": "integer"
+                              },
+                              "support_pairs": {
+                                "items": {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "index_a": {
+                                      "maximum": 4294967295,
+                                      "minimum": 0,
+                                      "type": "integer"
+                                    },
+                                    "index_b": {
+                                      "maximum": 4294967295,
+                                      "minimum": 0,
+                                      "type": "integer"
+                                    }
+                                  },
+                                  "required": [
+                                    "index_a",
+                                    "index_b"
+                                  ],
+                                  "type": "object"
+                                },
+                                "maxItems": 3,
+                                "type": "array"
+                              }
+                            },
+                            "required": [
+                              "support_pairs",
+                              "metric_bits"
+                            ],
+                            "type": "object"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "shapes": {
+                        "items": {
+                          "oneOf": [
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "center": {
+                                  "$ref": "#/$defs/vec2_bits"
+                                },
+                                "kind": {
+                                  "const": "circle"
+                                },
+                                "radius_bits": {
+                                  "maximum": 4294967295,
+                                  "minimum": 0,
+                                  "type": "integer"
+                                },
+                                "shape_id": {
+                                  "maxLength": 128,
+                                  "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "shape_id",
+                                "center",
+                                "radius_bits"
+                              ],
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "end": {
+                                  "$ref": "#/$defs/vec2_bits"
+                                },
+                                "kind": {
+                                  "const": "edge"
+                                },
+                                "maybe_next": {
+                                  "oneOf": [
+                                    {
+                                      "$ref": "#/$defs/vec2_bits"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "maybe_previous": {
+                                  "oneOf": [
+                                    {
+                                      "$ref": "#/$defs/vec2_bits"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "shape_id": {
+                                  "maxLength": 128,
+                                  "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                  "type": "string"
+                                },
+                                "start": {
+                                  "$ref": "#/$defs/vec2_bits"
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "shape_id",
+                                "start",
+                                "end",
+                                "maybe_previous",
+                                "maybe_next"
+                              ],
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "kind": {
+                                  "const": "polygon"
+                                },
+                                "shape_id": {
+                                  "maxLength": 128,
+                                  "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                  "type": "string"
+                                },
+                                "vertices": {
+                                  "items": {
+                                    "$ref": "#/$defs/vec2_bits"
+                                  },
+                                  "maxItems": 8,
+                                  "minItems": 3,
+                                  "type": "array"
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "shape_id",
+                                "vertices"
+                              ],
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "closed": {
+                                  "type": "boolean"
+                                },
+                                "kind": {
+                                  "const": "chain"
+                                },
+                                "shape_id": {
+                                  "maxLength": 128,
+                                  "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                  "type": "string"
+                                },
+                                "vertices": {
+                                  "items": {
+                                    "$ref": "#/$defs/vec2_bits"
+                                  },
+                                  "maxItems": 32,
+                                  "minItems": 2,
+                                  "type": "array"
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "shape_id",
+                                "vertices",
+                                "closed"
+                              ],
+                              "type": "object"
+                            }
+                          ]
+                        },
+                        "maxItems": 2,
+                        "minItems": 2,
+                        "type": "array"
+                      },
+                      "transforms": {
+                        "items": {
+                          "$ref": "#/$defs/transform_bits"
+                        },
+                        "maxItems": 2,
+                        "minItems": 2,
+                        "type": "array"
+                      },
+                      "use_radii": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "shapes",
+                      "child_indices",
+                      "transforms",
+                      "use_radii",
+                      "maybe_cache"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "const": "clip"
+                      },
+                      "normal": {
+                        "$ref": "#/$defs/vec2_bits"
+                      },
+                      "offset_bits": {
+                        "maximum": 4294967295,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "points": {
+                        "items": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "feature": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "index_a": {
+                                  "maximum": 255,
+                                  "minimum": 0,
+                                  "type": "integer"
+                                },
+                                "index_b": {
+                                  "maximum": 255,
+                                  "minimum": 0,
+                                  "type": "integer"
+                                },
+                                "kind_a": {
+                                  "enum": [
+                                    "vertex",
+                                    "face"
+                                  ]
+                                },
+                                "kind_b": {
+                                  "enum": [
+                                    "vertex",
+                                    "face"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "index_a",
+                                "index_b",
+                                "kind_a",
+                                "kind_b"
+                              ],
+                              "type": "object"
+                            },
+                            "point": {
+                              "$ref": "#/$defs/vec2_bits"
+                            }
+                          },
+                          "required": [
+                            "point",
+                            "feature"
+                          ],
+                          "type": "object"
+                        },
+                        "maxItems": 2,
+                        "minItems": 2,
+                        "type": "array"
+                      },
+                      "vertex_index_a": {
+                        "maximum": 255,
+                        "minimum": 0,
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "points",
+                      "normal",
+                      "offset_bits",
+                      "vertex_index_a"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "current": {
+                        "items": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "index_a": {
+                              "maximum": 255,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "index_b": {
+                              "maximum": 255,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "kind_a": {
+                              "enum": [
+                                "vertex",
+                                "face"
+                              ]
+                            },
+                            "kind_b": {
+                              "enum": [
+                                "vertex",
+                                "face"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "index_a",
+                            "index_b",
+                            "kind_a",
+                            "kind_b"
+                          ],
+                          "type": "object"
+                        },
+                        "maxItems": 2,
+                        "type": "array"
+                      },
+                      "kind": {
+                        "const": "features"
+                      },
+                      "previous": {
+                        "items": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "index_a": {
+                              "maximum": 255,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "index_b": {
+                              "maximum": 255,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "kind_a": {
+                              "enum": [
+                                "vertex",
+                                "face"
+                              ]
+                            },
+                            "kind_b": {
+                              "enum": [
+                                "vertex",
+                                "face"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "index_a",
+                            "index_b",
+                            "kind_a",
+                            "kind_b"
+                          ],
+                          "type": "object"
+                        },
+                        "maxItems": 2,
+                        "type": "array"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "previous",
+                      "current"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "commands": {
+                        "items": {
+                          "oneOf": [
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "kind": {
+                                  "const": "create"
+                                },
+                                "lower": {
+                                  "$ref": "#/$defs/vec2_bits"
+                                },
+                                "payload_id": {
+                                  "maximum": 4294967295,
+                                  "minimum": 0,
+                                  "type": "integer"
+                                },
+                                "upper": {
+                                  "$ref": "#/$defs/vec2_bits"
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "payload_id",
+                                "lower",
+                                "upper"
+                              ],
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "displacement": {
+                                  "$ref": "#/$defs/vec2_bits"
+                                },
+                                "kind": {
+                                  "const": "move"
+                                },
+                                "lower": {
+                                  "$ref": "#/$defs/vec2_bits"
+                                },
+                                "payload_id": {
+                                  "maximum": 4294967295,
+                                  "minimum": 0,
+                                  "type": "integer"
+                                },
+                                "upper": {
+                                  "$ref": "#/$defs/vec2_bits"
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "payload_id",
+                                "lower",
+                                "upper",
+                                "displacement"
+                              ],
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "kind": {
+                                  "const": "touch"
+                                },
+                                "payload_id": {
+                                  "maximum": 4294967295,
+                                  "minimum": 0,
+                                  "type": "integer"
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "payload_id"
+                              ],
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "kind": {
+                                  "const": "destroy"
+                                },
+                                "payload_id": {
+                                  "maximum": 4294967295,
+                                  "minimum": 0,
+                                  "type": "integer"
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "payload_id"
+                              ],
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "kind": {
+                                  "const": "query"
+                                },
+                                "lower": {
+                                  "$ref": "#/$defs/vec2_bits"
+                                },
+                                "upper": {
+                                  "$ref": "#/$defs/vec2_bits"
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "lower",
+                                "upper"
+                              ],
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "end": {
+                                  "$ref": "#/$defs/vec2_bits"
+                                },
+                                "kind": {
+                                  "const": "ray"
+                                },
+                                "max_fraction_bits": {
+                                  "maximum": 4294967295,
+                                  "minimum": 0,
+                                  "type": "integer"
+                                },
+                                "start": {
+                                  "$ref": "#/$defs/vec2_bits"
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "start",
+                                "end",
+                                "max_fraction_bits"
+                              ],
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "category_bits": {
+                                  "maximum": 65535,
+                                  "minimum": 0,
+                                  "type": "integer"
+                                },
+                                "group_index": {
+                                  "maximum": 32767,
+                                  "minimum": -32768,
+                                  "type": "integer"
+                                },
+                                "kind": {
+                                  "const": "refilter"
+                                },
+                                "mask_bits": {
+                                  "maximum": 65535,
+                                  "minimum": 0,
+                                  "type": "integer"
+                                },
+                                "payload_id": {
+                                  "maximum": 4294967295,
+                                  "minimum": 0,
+                                  "type": "integer"
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "payload_id",
+                                "category_bits",
+                                "mask_bits",
+                                "group_index"
+                              ],
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "kind": {
+                                  "const": "update_pairs"
+                                }
+                              },
+                              "required": [
+                                "kind"
+                              ],
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "kind": {
+                                  "const": "metrics"
+                                }
+                              },
+                              "required": [
+                                "kind"
+                              ],
+                              "type": "object"
+                            }
+                          ]
+                        },
+                        "maxItems": 128,
+                        "minItems": 1,
+                        "type": "array"
+                      },
+                      "kind": {
+                        "const": "tree"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "commands"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "child_indices": {
+                        "items": {
+                          "maximum": 4294967295,
+                          "minimum": 0,
+                          "type": "integer"
+                        },
+                        "maxItems": 2,
+                        "minItems": 2,
+                        "type": "array"
+                      },
+                      "kind": {
+                        "const": "time_of_impact"
+                      },
+                      "shapes": {
+                        "items": {
+                          "oneOf": [
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "center": {
+                                  "$ref": "#/$defs/vec2_bits"
+                                },
+                                "kind": {
+                                  "const": "circle"
+                                },
+                                "radius_bits": {
+                                  "maximum": 4294967295,
+                                  "minimum": 0,
+                                  "type": "integer"
+                                },
+                                "shape_id": {
+                                  "maxLength": 128,
+                                  "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "shape_id",
+                                "center",
+                                "radius_bits"
+                              ],
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "end": {
+                                  "$ref": "#/$defs/vec2_bits"
+                                },
+                                "kind": {
+                                  "const": "edge"
+                                },
+                                "maybe_next": {
+                                  "oneOf": [
+                                    {
+                                      "$ref": "#/$defs/vec2_bits"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "maybe_previous": {
+                                  "oneOf": [
+                                    {
+                                      "$ref": "#/$defs/vec2_bits"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "shape_id": {
+                                  "maxLength": 128,
+                                  "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                  "type": "string"
+                                },
+                                "start": {
+                                  "$ref": "#/$defs/vec2_bits"
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "shape_id",
+                                "start",
+                                "end",
+                                "maybe_previous",
+                                "maybe_next"
+                              ],
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "kind": {
+                                  "const": "polygon"
+                                },
+                                "shape_id": {
+                                  "maxLength": 128,
+                                  "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                  "type": "string"
+                                },
+                                "vertices": {
+                                  "items": {
+                                    "$ref": "#/$defs/vec2_bits"
+                                  },
+                                  "maxItems": 8,
+                                  "minItems": 3,
+                                  "type": "array"
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "shape_id",
+                                "vertices"
+                              ],
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "closed": {
+                                  "type": "boolean"
+                                },
+                                "kind": {
+                                  "const": "chain"
+                                },
+                                "shape_id": {
+                                  "maxLength": 128,
+                                  "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                  "type": "string"
+                                },
+                                "vertices": {
+                                  "items": {
+                                    "$ref": "#/$defs/vec2_bits"
+                                  },
+                                  "maxItems": 32,
+                                  "minItems": 2,
+                                  "type": "array"
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "shape_id",
+                                "vertices",
+                                "closed"
+                              ],
+                              "type": "object"
+                            }
+                          ]
+                        },
+                        "maxItems": 2,
+                        "minItems": 2,
+                        "type": "array"
+                      },
+                      "sweeps": {
+                        "items": {
+                          "$ref": "#/$defs/sweep_bits"
+                        },
+                        "maxItems": 2,
+                        "minItems": 2,
+                        "type": "array"
+                      },
+                      "t_max_bits": {
+                        "maximum": 4294967295,
+                        "minimum": 0,
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "shapes",
+                      "child_indices",
+                      "sweeps",
+                      "t_max_bits"
+                    ],
+                    "type": "object"
+                  }
+                ]
+              },
+              "operation": {
+                "enum": [
+                  "shape_construction",
+                  "shape_unary_query",
+                  "distance",
+                  "overlap",
+                  "clip",
+                  "manifold",
+                  "pair_dispatch",
+                  "feature_transition",
+                  "tree_lifecycle",
+                  "tree_query",
+                  "tree_ray",
+                  "tree_metrics",
+                  "broad_phase_move_touch",
+                  "broad_phase_pairs",
+                  "broad_phase_filter",
+                  "broad_phase_refilter",
+                  "time_of_impact"
+                ]
+              },
+              "policy_path": {
+                "enum": [
+                  "collision.shape_construction.result",
+                  "collision.shape_unary_query.result",
+                  "collision.distance.result",
+                  "collision.overlap.result",
+                  "collision.clip.result",
+                  "collision.manifold.result",
+                  "collision.pair_dispatch.result",
+                  "collision.feature_transition.result",
+                  "collision.tree_lifecycle.result",
+                  "collision.tree_query.result",
+                  "collision.tree_ray.result",
+                  "collision.tree_metrics.result",
+                  "collision.broad_phase_move_touch.result",
+                  "collision.broad_phase_pairs.result",
+                  "collision.broad_phase_filter.result",
+                  "collision.broad_phase_refilter.result",
+                  "collision.time_of_impact.result"
+                ]
+              }
+            },
+            "required": [
+              "case_id",
+              "operation",
+              "policy_path",
+              "horizon",
+              "collection_policy",
               "input"
             ],
             "type": "object"
