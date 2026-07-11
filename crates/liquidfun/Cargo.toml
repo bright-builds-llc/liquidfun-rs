@@ -9,6 +9,10 @@ repository.workspace = true
 readme.workspace = true
 include = ["Cargo.toml", "src/**/*.rs", "LICENSE", "README.md"]
 
+[features]
+default = []
+differential-internals = []
+
 [lints]
 workspace = true
 
