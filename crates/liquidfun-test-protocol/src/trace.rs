@@ -154,6 +154,149 @@ pub struct MathProbeResult {
     discrete: Box<[MathProbeDiscrete]>,
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct RawMathProbeResult {
+    case_id: BoundedString<MAXIMUM_ID_BYTES>,
+    operation: MathProbeOperation,
+    policy_path: MathProbePolicyPath,
+    horizon: MathProbeHorizon,
+    values: BoundedVec<MathProbeValue, 32>,
+    discrete: BoundedVec<MathProbeDiscrete, 8>,
+}
+
+/// Strictly decodes one bounded, internally consistent math-probe result record.
+///
+/// # Errors
+///
+/// Returns [`TraceDecodeError`] for framing, resource, identifier, or float-metadata failure.
+pub fn decode_math_probe_result_jsonl(
+    bytes: &[u8],
+    limits: &HarnessLimits,
+) -> Result<MathProbeResult, TraceDecodeError> {
+    let raw = decode_jsonl::<RawMathProbeResult>(bytes, limits, RecordLimit::Output)?;
+    let case_id = raw.case_id.into_string();
+    ScenarioId::new(case_id.clone()).map_err(|_| {
+        TraceValidationError::new(
+            HarnessFailureKind::SequenceViolation,
+            "math probe result case ID is invalid",
+        )
+    })?;
+    let values = raw.values.into_vec();
+    for value in &values {
+        let bits = value.bits();
+        if value.class() != classify_math_probe_float(bits)
+            || value.is_negative() != (bits.bits() & 0x8000_0000 != 0)
+        {
+            return Err(TraceValidationError::new(
+                HarnessFailureKind::SequenceViolation,
+                "math probe float metadata does not match authoritative bits",
+            )
+            .into());
+        }
+    }
+    Ok(MathProbeResult::new(
+        case_id,
+        raw.operation,
+        raw.policy_path,
+        raw.horizon,
+        values,
+        raw.discrete.into_vec(),
+    ))
+}
+
+fn classify_math_probe_float(bits: FloatBits) -> MathProbeFloatClass {
+    let value = bits.to_f32();
+    if value.is_nan() {
+        MathProbeFloatClass::Nan
+    } else if value.is_infinite() {
+        MathProbeFloatClass::Infinite
+    } else if value == 0.0 {
+        MathProbeFloatClass::Zero
+    } else if value.is_subnormal() {
+        MathProbeFloatClass::Subnormal
+    } else {
+        MathProbeFloatClass::Normal
+    }
+}
+
+/// Validated terminal record for one one-shot math-probe request.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MathProbeEnd {
+    request_id: RequestId,
+    result_count: u32,
+    reset_epoch: u64,
+}
+
+impl MathProbeEnd {
+    /// Returns the request identity echoed by the adapter.
+    #[must_use]
+    pub const fn request_id(&self) -> &RequestId {
+        &self.request_id
+    }
+
+    /// Returns the exact number of preceding result records.
+    #[must_use]
+    pub const fn result_count(&self) -> u32 {
+        self.result_count
+    }
+
+    /// Returns the independently advanced reset epoch.
+    #[must_use]
+    pub const fn reset_epoch(&self) -> u64 {
+        self.reset_epoch
+    }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct RawMathProbeEnd {
+    protocol_version: ProtocolVersion,
+    record_kind: MathProbeEndKind,
+    request_id: BoundedString<MAXIMUM_ID_BYTES>,
+    result_count: u32,
+    reset_epoch: u64,
+    reset_verified: bool,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "snake_case")]
+enum MathProbeEndKind {
+    MathProbeEnd,
+}
+
+/// Strictly decodes one bounded terminal math-probe record.
+///
+/// # Errors
+///
+/// Returns [`TraceDecodeError`] for framing, resource, identity, or reset-proof failure.
+pub fn decode_math_probe_end_jsonl(
+    bytes: &[u8],
+    limits: &HarnessLimits,
+) -> Result<MathProbeEnd, TraceDecodeError> {
+    let raw = decode_jsonl::<RawMathProbeEnd>(bytes, limits, RecordLimit::Output)?;
+    let request_id = RequestId::new(raw.request_id.into_string()).map_err(|_| {
+        TraceValidationError::new(
+            HarnessFailureKind::SequenceViolation,
+            "math probe end request ID is invalid",
+        )
+    })?;
+    if !raw.reset_verified {
+        return Err(TraceValidationError::new(
+            HarnessFailureKind::AdapterResetFailure,
+            "math probe end did not prove reset",
+        )
+        .into());
+    }
+    let _protocol_version = raw.protocol_version;
+    let _record_kind = raw.record_kind;
+    Ok(MathProbeEnd {
+        request_id,
+        result_count: raw.result_count,
+        reset_epoch: raw.reset_epoch,
+    })
+}
+
 #[allow(
     missing_docs,
     reason = "private harness accessors mirror named wire fields"

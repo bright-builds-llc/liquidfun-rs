@@ -184,7 +184,12 @@ fn execute_case(case: &MathProbeCase) -> Result<MathProbeResult, MathProbeExecut
                 fraction_bits,
             },
         ) => {
-            let transform = sweep_from(case, *sweep)?.transform_at(fraction_bits.to_f32());
+            let transform = sweep_from(case, *sweep)?
+                .transform_at(fraction_bits.to_f32())
+                .map_err(|source| MathProbeExecutionError::Sweep {
+                    case_id: case.case_id().into(),
+                    source,
+                })?;
             push_position(&mut values, transform.position());
             push(
                 &mut values,

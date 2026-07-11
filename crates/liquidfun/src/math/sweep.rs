@@ -188,11 +188,20 @@ impl Sweep {
     /// Returns the interpolated transform at `fraction` relative to the
     /// sweep's current initial state.
     ///
-    /// Values in `0.0..=1.0` interpolate between the current endpoints. This
-    /// pure compatibility kernel also permits raw fractions for probe and
-    /// extrapolation use; it never changes the checked sweep state.
-    #[must_use]
-    pub fn transform_at(self, fraction: f32) -> Transform {
+    /// Values in `0.0..=1.0` interpolate between the current endpoints without
+    /// changing the checked sweep state.
+    ///
+    /// # Errors
+    ///
+    /// Returns a typed [`SweepError`] when `fraction` is non-finite or outside
+    /// the inclusive interpolation interval.
+    #[must_use = "transform interpolation can fail when the fraction is invalid"]
+    pub fn transform_at(self, fraction: f32) -> Result<Transform, SweepError> {
+        validate_fraction(fraction)?;
+        Ok(self.transform_at_raw(fraction))
+    }
+
+    fn transform_at_raw(self, fraction: f32) -> Transform {
         let mut position = (1.0 - fraction) * self.c0 + fraction * self.c;
         let angle = (1.0 - fraction) * self.a0 + fraction * self.a;
         let rotation = Rotation::from_angle(angle);
@@ -415,8 +424,8 @@ mod tests {
         let sweep = ordinary_sweep(0.0);
 
         // Act
-        let initial = sweep.transform_at(0.0);
-        let final_state = sweep.transform_at(1.0);
+        let initial = sweep.transform_at(0.0).expect("zero is a valid fraction");
+        let final_state = sweep.transform_at(1.0).expect("one is a valid fraction");
 
         // Assert
         assert_eq!(initial.position().x.to_bits(), 2.0_f32.to_bits());
@@ -439,6 +448,39 @@ mod tests {
             final_state.rotation().cosine().to_bits(),
             0.75_f32.cos().to_bits()
         );
+    }
+
+    #[test]
+    fn transform_rejects_nonfinite_and_out_of_range_fractions() {
+        // Arrange
+        let sweep = ordinary_sweep(0.0);
+
+        // Act
+        let results =
+            [f32::NAN, f32::INFINITY, -0.25, 1.25].map(|fraction| sweep.transform_at(fraction));
+
+        // Assert
+        assert_eq!(
+            results[0],
+            Err(SweepError::NonFinite {
+                field: SweepField::Fraction
+            })
+        );
+        assert_eq!(
+            results[1],
+            Err(SweepError::NonFinite {
+                field: SweepField::Fraction
+            })
+        );
+        assert_eq!(
+            results[2],
+            Err(SweepError::FractionOutOfRange { fraction: -0.25 })
+        );
+        assert_eq!(
+            results[3],
+            Err(SweepError::FractionOutOfRange { fraction: 1.25 })
+        );
+        assert_eq!(sweep, ordinary_sweep(0.0));
     }
 
     #[test]

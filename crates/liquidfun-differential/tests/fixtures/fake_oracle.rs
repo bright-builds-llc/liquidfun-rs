@@ -114,6 +114,10 @@ fn handle_request(
             eprintln!("cpp adapter failure: injected failure");
             std::process::exit(9);
         }
+        "math_large_stderr_malformed" => {
+            write_stderr(1024 * 1024)?;
+            write_then_sleep(b"{}\n")?;
+        }
         "second_malformed" if reset_epoch == 2 => write_then_exit(b"{}\n")?,
         _ => emit_trace_behavior(behavior, request_bytes, reset_epoch)?,
     }

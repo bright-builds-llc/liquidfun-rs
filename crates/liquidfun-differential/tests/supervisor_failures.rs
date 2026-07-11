@@ -6,20 +6,28 @@ use std::{
     sync::atomic::{AtomicU64, Ordering},
 };
 
+use liquidfun_differential::execute_math_probe_process;
 use liquidfun_differential::{OracleExecutable, OraclePreset, OracleSupervisor, SessionProfile};
 use liquidfun_test_protocol::{
-    HarnessFailure, HarnessFailureKind, HarnessLimits, ScenarioRequestRecord,
-    decode_scenario_request_jsonl,
+    HarnessFailure, HarnessFailureKind, HarnessLimits, MathProbeRequestRecord,
+    ScenarioRequestRecord, decode_math_probe_request_jsonl, decode_scenario_request_jsonl,
 };
 
 const REVISION: &str = "7f20402173fd143a3988c921bc384459c6a858f2";
 const REQUEST_BYTES: &[u8] =
     include_bytes!("../../../protocol/fixtures/accepted/empty-world-request.jsonl");
+const MATH_REQUEST_BYTES: &[u8] =
+    include_bytes!("../../../protocol/fixtures/accepted/math-probe-request.jsonl");
 static TEST_DIRECTORY_ID: AtomicU64 = AtomicU64::new(1);
 
 fn fixture_request() -> ScenarioRequestRecord {
     decode_scenario_request_jsonl(REQUEST_BYTES, &HarnessLimits::phase2_default_v1())
         .expect("checked-in request should validate")
+}
+
+fn math_fixture_request() -> MathProbeRequestRecord {
+    decode_math_probe_request_jsonl(MATH_REQUEST_BYTES, &HarnessLimits::phase2_default_v1())
+        .expect("checked-in math request should validate")
 }
 
 fn fixture_request_with_id(request_id: &str) -> ScenarioRequestRecord {
@@ -242,6 +250,43 @@ fn concurrent_stdout_and_large_stderr_drain_without_pipe_deadlock() {
 
     // Assert
     assert_eq!(trace.checkpoints().len(), 2);
+}
+
+#[test]
+fn math_probe_path_bounds_records_stderr_partial_lines_and_timeouts() {
+    // Arrange
+    let cases = [
+        ("startup_timeout", HarnessFailureKind::StartupTimeout),
+        ("oversized", HarnessFailureKind::RecordTooLarge),
+        ("partial", HarnessFailureKind::PartialRecord),
+        ("request_timeout", HarnessFailureKind::RequestTimeout),
+        (
+            "math_large_stderr_malformed",
+            HarnessFailureKind::MalformedRecord,
+        ),
+    ];
+    let request = math_fixture_request();
+
+    // Act and Assert
+    for (behavior, expected) in cases {
+        let root = fake_repository(behavior);
+        let executable = OracleExecutable::resolve(&root, OraclePreset::Debug)
+            .expect("confined fake oracle should resolve");
+        let failure = execute_math_probe_process(&executable, &request, REVISION)
+            .expect_err("injected math-probe behavior should fail");
+        assert_eq!(failure.kind(), expected, "behavior {behavior}");
+        assert!(failure.child_reaped(), "behavior {behavior}");
+        if behavior != "partial" {
+            assert!(failure.child_killed(), "behavior {behavior}");
+        }
+        if behavior == "math_large_stderr_malformed" {
+            assert_eq!(failure.stderr_bytes(), 1024 * 1024);
+            assert_eq!(
+                failure.retained_stderr().len(),
+                HarnessLimits::phase2_default_v1().retained_stderr_bytes()
+            );
+        }
+    }
 }
 
 #[test]

@@ -49,14 +49,28 @@ fn sweep_endpoints_match_exact_consumer_state_bits() {
     let sweep = ordinary_sweep(0.0);
 
     // Act
-    let initial = sweep.transform_at(0.0);
-    let final_state = sweep.transform_at(1.0);
+    let initial = sweep.transform_at(0.0).expect("zero is a valid fraction");
+    let final_state = sweep.transform_at(1.0).expect("one is a valid fraction");
 
     // Assert
     assert_eq!(initial.position().x.to_bits(), 1.0_f32.to_bits());
     assert_eq!(initial.position().y.to_bits(), 2.0_f32.to_bits());
     assert_eq!(final_state.position().x.to_bits(), 5.0_f32.to_bits());
     assert_eq!(final_state.position().y.to_bits(), 6.0_f32.to_bits());
+}
+
+#[test]
+fn public_sweep_transform_rejects_invalid_fractions_without_mutation() {
+    // Arrange
+    let sweep = ordinary_sweep(0.0);
+
+    // Act
+    let results =
+        [f32::NAN, f32::INFINITY, -0.25, 1.25].map(|fraction| sweep.transform_at(fraction));
+
+    // Assert
+    assert!(results.into_iter().all(|result| result.is_err()));
+    assert_eq!(sweep, ordinary_sweep(0.0));
 }
 
 #[test]

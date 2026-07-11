@@ -4,17 +4,17 @@ use std::error::Error;
 use std::ffi::OsString;
 use std::fmt::{self, Display, Formatter};
 use std::fs;
-use std::io::{BufRead, BufReader, Write};
 use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
+use std::process::Command;
 
 use liquidfun_differential::{
-    EmptyWorldAdapter, NativeMathProbeExecutor, float_values_match_with_policy,
+    EmptyWorldAdapter, NativeMathProbeExecutor, OracleExecutable, OraclePreset,
+    execute_math_probe_process, float_values_match_with_policy,
 };
 use liquidfun_test_protocol::{
     BuildEvidenceTier, BuildIdentity, DivergenceHorizon, EvidenceTier, HarnessLimits,
     MathProbeHorizon, MathProbeRequestRecord, MathProbeResult, Phase4PolicyProfile,
-    ProtocolSessionValidator, decode_handshake_jsonl, decode_math_probe_request_jsonl,
+    decode_math_probe_request_jsonl,
 };
 use sha2::{Digest, Sha256};
 
@@ -344,19 +344,13 @@ fn run_math_probe_command(
     if invocation.action == MathProbeAction::VerifyDeterminism {
         return verify_math_probe_determinism(
             repository_root,
-            &request_bytes,
             &request,
             &invocation.preset,
             invocation.runs,
         );
     }
 
-    let capture = execute_math_probe_once(
-        repository_root,
-        &request_bytes,
-        &request,
-        &invocation.preset,
-    )?;
+    let capture = execute_math_probe_once(repository_root, &request, &invocation.preset)?;
     let native_adapter = EmptyWorldAdapter::new(ORACLE_REVISION)
         .map_err(|error| DifferentialError::new("identity", error.to_string()))?;
     compare_math_probe_results(
@@ -410,59 +404,29 @@ struct MathProbeCapture {
 
 fn execute_math_probe_once(
     repository_root: &Path,
-    request_bytes: &[u8],
     request: &MathProbeRequestRecord,
     preset: &str,
 ) -> Result<MathProbeCapture, DifferentialError> {
-    let executable = repository_root
-        .join("target/reference")
-        .join(preset)
-        .join(if cfg!(windows) {
-            "liquidfun-reference.exe"
-        } else {
-            "liquidfun-reference"
-        });
-    let metadata = fs::symlink_metadata(&executable).map_err(|error| {
-        DifferentialError::new(
-            "oracle",
-            format!(
-                "{} is unavailable: {error}; configure and build preset {preset}",
-                executable.display()
-            ),
-        )
-    })?;
-    if !metadata.is_file() || metadata.file_type().is_symlink() {
-        return Err(DifferentialError::new(
-            "oracle",
-            format!("{} must be a regular executable", executable.display()),
-        ));
-    }
-
-    let mut child = Command::new(&executable)
-        .current_dir(repository_root)
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()
-        .map_err(|error| {
-            DifferentialError::process(format!("failed to start {}: {error}", executable.display()))
+    let oracle_preset = match preset {
+        "oracle-debug" => OraclePreset::Debug,
+        "oracle-release" => OraclePreset::Release,
+        _ => return Err(DifferentialError::usage("unregistered math-probe preset")),
+    };
+    let executable = OracleExecutable::resolve(repository_root, oracle_preset)
+        .map_err(|error| DifferentialError::new("oracle", error.to_string()))?;
+    let capture =
+        execute_math_probe_process(&executable, request, ORACLE_REVISION).map_err(|error| {
+            let stderr = String::from_utf8_lossy(error.retained_stderr());
+            DifferentialError::process(format!(
+                "{}; stderr bytes {}, killed {}, reaped {}: {}",
+                error,
+                error.stderr_bytes(),
+                error.child_killed(),
+                error.child_reaped(),
+                stderr.trim_end()
+            ))
         })?;
-    let mut stdin = child
-        .stdin
-        .take()
-        .ok_or_else(|| DifferentialError::process("oracle stdin was not piped"))?;
-    let stdout = child
-        .stdout
-        .take()
-        .ok_or_else(|| DifferentialError::process("oracle stdout was not piped"))?;
-    let mut stdout = BufReader::new(stdout);
-
-    let handshake_bytes = read_jsonl_record(&mut stdout, "handshake")?;
-    let handshake = decode_handshake_jsonl(&handshake_bytes, &HarnessLimits::phase2_default_v1())
-        .map_err(|error| DifferentialError::new("identity", error.to_string()))?;
-    if handshake.build_identity().cmake_preset() != preset
-        || handshake.build_identity().maybe_phase4().is_none()
-    {
+    if capture.identity().cmake_preset() != preset || capture.identity().maybe_phase4().is_none() {
         return Err(DifferentialError::new(
             "identity",
             "oracle handshake lacks the requested Phase 4 build identity",
@@ -470,15 +434,15 @@ fn execute_math_probe_once(
     }
     let expected_adapter_digest = upstream::adapter_source_digest(repository_root)
         .map_err(|error| DifferentialError::new("identity", error.to_string()))?;
-    if handshake.build_identity().adapter_content_sha256().as_str() != expected_adapter_digest {
+    if capture.identity().adapter_content_sha256().as_str() != expected_adapter_digest {
         return Err(DifferentialError::new(
             "identity",
             "oracle adapter digest differs from independently hashed checked-in inputs",
         ));
     }
     let expected_compile_digest = effective_compile_command_sha256(repository_root, preset)?;
-    let phase4_identity = handshake
-        .build_identity()
+    let phase4_identity = capture
+        .identity()
         .maybe_phase4()
         .ok_or_else(|| DifferentialError::new("identity", "Phase 4 identity is missing"))?;
     if phase4_identity.compile_command_sha256() != expected_compile_digest {
@@ -487,45 +451,10 @@ fn execute_math_probe_once(
             "oracle compile-command digest differs from the effective compile database",
         ));
     }
-    let oracle_identity = handshake.build_identity().clone();
-    let mut session = ProtocolSessionValidator::new(ORACLE_REVISION);
-    session
-        .accept_handshake(handshake)
-        .map_err(|error| DifferentialError::new("identity", error.to_string()))?;
-
-    stdin
-        .write_all(request_bytes)
-        .and_then(|()| stdin.flush())
-        .map_err(|error| DifferentialError::process(format!("failed to write probe: {error}")))?;
-    drop(stdin);
-
-    let mut response_bytes = handshake_bytes;
-    let mut results = Vec::with_capacity(request.scenario().cases().len());
-    for _ in request.scenario().cases() {
-        let line = read_jsonl_record(&mut stdout, "math_probe_result")?;
-        let result = serde_json::from_slice::<MathProbeResult>(&line)
-            .map_err(|error| DifferentialError::new("protocol", error.to_string()))?;
-        response_bytes.extend_from_slice(&line);
-        results.push(result);
-    }
-    let end = read_jsonl_record(&mut stdout, "math_probe_end")?;
-    validate_math_probe_end(&end, request, results.len())?;
-    response_bytes.extend_from_slice(&end);
-
-    let output = child
-        .wait_with_output()
-        .map_err(|error| DifferentialError::process(format!("failed to reap oracle: {error}")))?;
-    if !output.status.success() || !output.stderr.is_empty() {
-        return Err(DifferentialError::process(format!(
-            "oracle failed or emitted diagnostics: {}",
-            String::from_utf8_lossy(&output.stderr).trim_end()
-        )));
-    }
-
     Ok(MathProbeCapture {
-        results,
-        response_bytes,
-        oracle_identity,
+        results: capture.results().to_vec(),
+        response_bytes: capture.response_bytes().to_vec(),
+        oracle_identity: capture.identity().clone(),
     })
 }
 
@@ -583,56 +512,6 @@ fn compile_database_sha256(bytes: &[u8]) -> Result<String, DifferentialError> {
     }
     commands.sort_unstable();
     Ok(format!("{:x}", Sha256::digest(commands.join("\n"))))
-}
-
-fn read_jsonl_record(
-    reader: &mut impl BufRead,
-    expected: &str,
-) -> Result<Vec<u8>, DifferentialError> {
-    let mut line = Vec::new();
-    let read = reader.read_until(b'\n', &mut line).map_err(|error| {
-        DifferentialError::process(format!("failed to read {expected}: {error}"))
-    })?;
-    if read == 0 || !line.ends_with(b"\n") {
-        return Err(DifferentialError::new(
-            "protocol",
-            format!("oracle ended before newline-complete {expected}"),
-        ));
-    }
-    Ok(line)
-}
-
-fn validate_math_probe_end(
-    bytes: &[u8],
-    request: &MathProbeRequestRecord,
-    result_count: usize,
-) -> Result<(), DifferentialError> {
-    let value = serde_json::from_slice::<serde_json::Value>(bytes)
-        .map_err(|error| DifferentialError::new("protocol", error.to_string()))?;
-    let valid = value
-        .get("protocol_version")
-        .and_then(serde_json::Value::as_u64)
-        == Some(1)
-        && value.get("record_kind").and_then(serde_json::Value::as_str) == Some("math_probe_end")
-        && value.get("request_id").and_then(serde_json::Value::as_str)
-            == Some(request.request_id().as_str())
-        && value
-            .get("result_count")
-            .and_then(serde_json::Value::as_u64)
-            == u64::try_from(result_count).ok()
-        && value.get("reset_epoch").and_then(serde_json::Value::as_u64) == Some(1)
-        && value
-            .get("reset_verified")
-            .and_then(serde_json::Value::as_bool)
-            == Some(true)
-        && value.as_object().is_some_and(|fields| fields.len() == 6);
-    if !valid {
-        return Err(DifferentialError::new(
-            "protocol",
-            "math_probe_end does not match the closed one-shot contract",
-        ));
-    }
-    Ok(())
 }
 
 fn compare_math_probe_results(
@@ -769,14 +648,13 @@ fn math_probe_mismatch(message: impl Into<String>) -> DifferentialError {
 
 fn verify_math_probe_determinism(
     repository_root: &Path,
-    request_bytes: &[u8],
     request: &MathProbeRequestRecord,
     preset: &str,
     runs: usize,
 ) -> Result<(), DifferentialError> {
     let mut baseline = None;
     for run in 0..runs {
-        let capture = execute_math_probe_once(repository_root, request_bytes, request, preset)?;
+        let capture = execute_math_probe_once(repository_root, request, preset)?;
         if let Some(expected) = &baseline
             && expected != &capture.response_bytes
         {

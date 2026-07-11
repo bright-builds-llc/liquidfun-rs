@@ -1,7 +1,8 @@
 use super::{
     CheckpointRecord, EngineKind, HandshakeRecord, ProtocolSessionValidator, TraceBegin,
     TraceDecodeError, TraceEnd, TraceRecord, TraceValidator, WorldCounts,
-    decode_trace_record_jsonl, trace_payload_sha256,
+    decode_math_probe_end_jsonl, decode_math_probe_result_jsonl, decode_trace_record_jsonl,
+    trace_payload_sha256,
 };
 use crate::{
     BuildIdentity, BuildIdentityFields, CheckpointId, FloatBits, HarnessFailureKind, HarnessLimits,
@@ -26,6 +27,51 @@ fn identity(revision: &str) -> BuildIdentity {
         "none",
     ))
     .expect("identity fixture should validate")
+}
+
+#[test]
+fn math_probe_result_decoder_bounds_and_validates_float_metadata() {
+    // Arrange
+    let valid = b"{\"case_id\":\"abs-negative-zero\",\"operation\":\"abs\",\"policy_path\":\"math.operation.abs\",\"horizon\":{\"kind\":\"operation\"},\"values\":[{\"field\":\"value\",\"bits\":0,\"class\":\"zero\",\"negative\":false}],\"discrete\":[]}\n";
+    let wrong_class = String::from_utf8(valid.to_vec())
+        .expect("fixture is UTF-8")
+        .replace("\"class\":\"zero\"", "\"class\":\"normal\"");
+    let oversized = format!(
+        "{{\"case_id\":\"{}\",\"operation\":\"abs\",\"policy_path\":\"math.operation.abs\",\"horizon\":{{\"kind\":\"operation\"}},\"values\":[],\"discrete\":[]}}\n",
+        "x".repeat(129)
+    );
+    let limits = HarnessLimits::phase2_default_v1();
+
+    // Act
+    let decoded = decode_math_probe_result_jsonl(valid, &limits);
+    let metadata_error = decode_math_probe_result_jsonl(wrong_class.as_bytes(), &limits);
+    let bound_error = decode_math_probe_result_jsonl(oversized.as_bytes(), &limits);
+
+    // Assert
+    assert_eq!(
+        decoded.expect("valid result should decode").case_id(),
+        "abs-negative-zero"
+    );
+    assert!(metadata_error.is_err());
+    assert!(bound_error.is_err());
+}
+
+#[test]
+fn math_probe_end_decoder_requires_reset_proof() {
+    // Arrange
+    let valid = b"{\"protocol_version\":1,\"record_kind\":\"math_probe_end\",\"request_id\":\"phase-04-math-probe-request\",\"result_count\":39,\"reset_epoch\":1,\"reset_verified\":true}\n";
+    let invalid = String::from_utf8(valid.to_vec())
+        .expect("fixture is UTF-8")
+        .replace("\"reset_verified\":true", "\"reset_verified\":false");
+    let limits = HarnessLimits::phase2_default_v1();
+
+    // Act
+    let decoded = decode_math_probe_end_jsonl(valid, &limits);
+    let invalid = decode_math_probe_end_jsonl(invalid.as_bytes(), &limits);
+
+    // Assert
+    assert_eq!(decoded.expect("valid end should decode").result_count(), 39);
+    assert!(invalid.is_err());
 }
 
 fn request(checkpoint_count: usize) -> crate::ScenarioRequestRecord {

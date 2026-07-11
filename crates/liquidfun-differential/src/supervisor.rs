@@ -16,6 +16,7 @@ use liquidfun_test_protocol::{
 mod capture;
 mod executable;
 mod failure;
+mod math_probe;
 mod profile;
 mod stdio;
 
@@ -25,6 +26,7 @@ use failure::{
     build_failure, classify_handshake_decode, classify_poison, classify_trace_decode,
     successful_teardown_failure,
 };
+pub use math_probe::{CapturedMathProbe, MathProbeProcessError, execute_math_probe_process};
 pub use profile::SessionProfile;
 use stdio::{IoEvent, IoWorkers, StderrSnapshot};
 
