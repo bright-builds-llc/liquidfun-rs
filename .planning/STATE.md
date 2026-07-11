@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 03-02-PLAN.md
-last_updated: "2026-07-11T02:44:20.738Z"
+stopped_at: Completed 03-03-PLAN.md
+last_updated: "2026-07-11T02:55:42.096Z"
 last_activity: 2026-07-11
 progress:
   total_phases: 12
   completed_phases: 2
   total_plans: 24
-  completed_plans: 21
-  percent: 88
+  completed_plans: 22
+  percent: 92
 ---
 
 # Project State
@@ -26,17 +26,17 @@ See: `.planning/PROJECT.md` (updated 2026-07-10)
 ## Current Position
 
 Phase: 3 (Rust Object Model and Storage Architecture) — EXECUTING
-Plan: 3 of 5
+Plan: 4 of 5
 Status: Ready to execute
 Last activity: 2026-07-11
 
-Progress: [██████████] 100%
+Progress: [█████████░] 92%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 19
+- Total plans completed: 22
 - Average duration: Not available
 - Total execution time: 0 hours
 
@@ -69,6 +69,7 @@ Progress: [██████████] 100%
 | Phase 02 P14 | 22 min | 2 tasks | 11 files |
 | Phase 03 P01 | 8 min | 2 tasks | 4 files |
 | Phase 03 P02 | 14 min | 2 tasks | 5 files |
+| Phase 03 P03 | 10 min | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -119,6 +120,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 03]: Permanently retire a slot when its generation cannot advance. — Generation wrap can never resurrect an ancient handle.
 - [Phase 03]: Centralize typed world destruction cascades in documented occurrence order. — Validate the root before mutation, keep adjacency consistent, and retain owned post-invalidation evidence.
 - [Phase 03]: Keep user associations in sealed application-owned typed side tables. — Avoid raw pointers, type erasure, and lifetime coupling while making cascade cleanup explicit.
+- [Phase 03]: Keep contacts transient and expose only borrow-scoped read-only views or owned fixture snapshots. — No durable contact identity or internal reference can escape a hook.
+- [Phase 03]: Apply bounded typed commands sequentially after unlock and continue after recoverable invalid-handle failures. — Request order and every application result remain deterministic evidence.
+- [Phase 03]: Resume hook panics after restoring the lock, discarding pending commands, and poisoning coherent-state operations. — Partial step progress can never masquerade as healthy state.
 
 ### Pending Todos
 
@@ -131,6 +135,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-11T02:44:16.618Z
-Stopped at: Completed 03-02-PLAN.md
+Last session: 2026-07-11T02:55:42.093Z
+Stopped at: Completed 03-03-PLAN.md
 Resume file: None

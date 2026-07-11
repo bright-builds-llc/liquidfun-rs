@@ -35,11 +35,11 @@ Requirements for the first release permitted to claim complete parity with the s
 
 - [x] **API-01**: Rust consumers use distinct world-scoped typed handles for bodies, fixtures, joints, particle systems, particle groups, and stable particles instead of raw pointers.
 - [x] **API-02**: Stale, destroyed, wrong-type, and cross-world handles fail explicitly and cannot silently resolve to a reused object slot.
-- [ ] **API-03**: Object destruction performs documented upstream-equivalent cascades, invalidates affected handles, and returns or emits owned destruction information.
-- [ ] **API-04**: Contacts are exposed as borrow-scoped views or owned snapshots rather than durable handles to transient solver records.
-- [ ] **API-05**: Step hooks receive read-only views and narrow supported directives instead of unrestricted mutable world access.
-- [ ] **API-06**: Application mutations requested during callbacks are represented as commands and applied only at documented unlocked phase boundaries.
-- [ ] **API-07**: Consumers can obtain owned step events with documented timing, multiplicity, ordering, and lifetime without retaining internal references.
+- [x] **API-03**: Object destruction performs documented upstream-equivalent cascades, invalidates affected handles, and returns or emits owned destruction information.
+- [x] **API-04**: Contacts are exposed as borrow-scoped views or owned snapshots rather than durable handles to transient solver records.
+- [x] **API-05**: Step hooks receive read-only views and narrow supported directives instead of unrestricted mutable world access.
+- [x] **API-06**: Application mutations requested during callbacks are represented as commands and applied only at documented unlocked phase boundaries.
+- [x] **API-07**: Consumers can obtain owned step events with documented timing, multiplicity, ordering, and lifetime without retaining internal references.
 - [ ] **API-08**: Consumers can associate user data through a documented safe model that preserves identity and destruction semantics without public raw pointers.
 - [ ] **API-09**: Consumers can inspect particle properties through borrow-scoped bulk views and perform supported mutations without violating aliasing or leaving derived state stale.
 - [ ] **API-10**: Safe external-particle-buffer equivalents preserve documented ownership, capacity, growth, and teardown behavior without requiring arbitrary lifetime raw pointers.
@@ -214,11 +214,11 @@ Roadmap creation maps every v1 requirement to exactly one phase.
 | COMP-10 | Phase 12 | Pending |
 | API-01 | Phase 3 | Complete |
 | API-02 | Phase 3 | Complete |
-| API-03 | Phase 3 | Pending |
-| API-04 | Phase 3 | Pending |
-| API-05 | Phase 3 | Pending |
-| API-06 | Phase 3 | Pending |
-| API-07 | Phase 3 | Pending |
+| API-03 | Phase 3 | Complete |
+| API-04 | Phase 3 | Complete |
+| API-05 | Phase 3 | Complete |
+| API-06 | Phase 3 | Complete |
+| API-07 | Phase 3 | Complete |
 | API-08 | Phase 3 | Pending |
 | API-09 | Phase 9 | Pending |
 | API-10 | Phase 9 | Pending |
