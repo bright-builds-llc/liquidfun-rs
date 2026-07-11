@@ -16,5 +16,19 @@ inline constexpr char kEffectiveCompileFlags[] =
     "@REFERENCE_COMPILE_FLAGS_CPP@";
 inline constexpr char kEffectiveLinkFlags[] = "@REFERENCE_LINK_FLAGS_CPP@";
 inline constexpr char kSanitizerMode[] = "@REFERENCE_SANITIZER_MODE_CPP@";
+inline constexpr char kCompileCommandSha256[] =
+    "@REFERENCE_COMPILE_COMMAND_SHA256_CPP@";
+inline constexpr char kTargetTriple[] = "@REFERENCE_TARGET_TRIPLE_CPP@";
+inline constexpr char kTargetCpu[] = "@REFERENCE_TARGET_CPU_CPP@";
+inline constexpr char kTargetFeatures[] = "@REFERENCE_TARGET_FEATURES_CPP@";
+inline constexpr char kSdkOrSysroot[] = "@REFERENCE_SDK_OR_SYSROOT_CPP@";
+inline constexpr char kOptimization[] = "@REFERENCE_OPTIMIZATION_CPP@";
+inline constexpr char kFpModel[] = "@REFERENCE_FP_MODEL_CPP@";
+inline constexpr char kFpContract[] = "@REFERENCE_FP_CONTRACT_CPP@";
+inline constexpr char kDenormalMode[] = "@REFERENCE_DENORMAL_MODE_CPP@";
+inline constexpr char kFeatureSet[] = "@REFERENCE_FEATURE_SET_CPP@";
+inline constexpr char kOs[] = "@REFERENCE_OS_CPP@";
+inline constexpr char kLibc[] = "@REFERENCE_LIBC_CPP@";
+inline constexpr char kLibm[] = "@REFERENCE_LIBM_CPP@";
 
 }  // namespace liquidfun::reference::configured_build_identity

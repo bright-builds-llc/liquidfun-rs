@@ -79,6 +79,21 @@ struct BuildIdentity {
   std::string effective_compile_flags;
   std::string effective_link_flags;
   std::string sanitizer_mode;
+  std::string compile_command_sha256;
+  std::string target_triple;
+  std::string target_cpu;
+  std::string target_features;
+  std::string sdk_or_sysroot;
+  std::string optimization;
+  std::string fp_model;
+  std::string fp_contract;
+  std::string denormal_mode;
+  std::string feature_set;
+  std::string os;
+  std::string libc;
+  std::string libm;
+  std::string rounding_mode;
+  bool gradual_underflow = false;
 };
 
 struct WorldCounts {

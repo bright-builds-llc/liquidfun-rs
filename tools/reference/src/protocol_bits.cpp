@@ -161,6 +161,37 @@ std::string build_identity_sha256(const BuildIdentity& identity) {
     update_length_prefixed(hasher, name);
     update_length_prefixed(hasher, value);
   }
+  if (identity.compile_command_sha256.empty()) {
+    return digest_hex(hasher.finish());
+  }
+  if (!is_lowercase_hex(identity.compile_command_sha256, 64)) {
+    throw std::runtime_error("compile command digest is invalid");
+  }
+  const std::array<std::pair<std::string_view, std::string_view>, 17>
+      phase4_fields{{
+          {"compile_command_sha256", identity.compile_command_sha256},
+          {"compiler_id", identity.compiler_id},
+          {"compiler_version", identity.compiler_version},
+          {"target_triple", identity.target_triple},
+          {"target_cpu", identity.target_cpu},
+          {"target_features", identity.target_features},
+          {"sdk_or_sysroot", identity.sdk_or_sysroot},
+          {"optimization", identity.optimization},
+          {"fp_model", identity.fp_model},
+          {"fp_contract", identity.fp_contract},
+          {"denormal_mode", identity.denormal_mode},
+          {"feature_set", identity.feature_set},
+          {"os", identity.os},
+          {"libc", identity.libc},
+          {"libm", identity.libm},
+          {"rounding_mode", identity.rounding_mode},
+          {"gradual_underflow",
+           identity.gradual_underflow ? "true" : "false"}}};
+  for (const auto& [name, value] : phase4_fields) {
+    if (value.empty()) throw std::runtime_error("Phase 4 build identity field is empty");
+    update_length_prefixed(hasher, name);
+    update_length_prefixed(hasher, value);
+  }
   return digest_hex(hasher.finish());
 }
 

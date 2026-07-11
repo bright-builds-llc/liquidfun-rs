@@ -81,6 +81,7 @@ pub struct BuildIdentityFields {
     effective_compile_flags: String,
     effective_link_flags: String,
     sanitizer_mode: String,
+    maybe_phase4: Option<Phase4BuildIdentityFields>,
 }
 
 impl BuildIdentityFields {
@@ -114,7 +115,15 @@ impl BuildIdentityFields {
             effective_compile_flags: effective_compile_flags.into(),
             effective_link_flags: effective_link_flags.into(),
             sanitizer_mode: sanitizer_mode.into(),
+            maybe_phase4: None,
         }
+    }
+
+    /// Adds the complete Phase 4 compiler, platform, and runtime floating identity.
+    #[must_use]
+    pub fn with_phase4(mut self, phase4: Phase4BuildIdentityFields) -> Self {
+        self.maybe_phase4 = Some(phase4);
+        self
     }
 
     /// Replaces the raw oracle revision for boundary-focused tests or adapters.
@@ -132,6 +141,100 @@ impl BuildIdentityFields {
     }
 }
 
+/// Raw Phase 4 build fields accepted together or rejected together.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Phase4BuildIdentityFields {
+    compile_command_sha256: String,
+    compiler_id: String,
+    compiler_version: String,
+    target_triple: String,
+    target_cpu: String,
+    target_features: String,
+    sdk_or_sysroot: String,
+    optimization: String,
+    fp_model: String,
+    fp_contract: String,
+    denormal_mode: String,
+    feature_set: String,
+    os: String,
+    libc: String,
+    libm: String,
+    rounding_mode: String,
+    gradual_underflow: bool,
+}
+
+impl Phase4BuildIdentityFields {
+    /// Collects the exact 17-field Phase 4 identity extension.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the Phase 4 protocol has seventeen fixed wire fields"
+    )]
+    pub fn new(
+        compile_command_sha256: impl Into<String>,
+        compiler_id: impl Into<String>,
+        compiler_version: impl Into<String>,
+        target_triple: impl Into<String>,
+        target_cpu: impl Into<String>,
+        target_features: impl Into<String>,
+        sdk_or_sysroot: impl Into<String>,
+        optimization: impl Into<String>,
+        fp_model: impl Into<String>,
+        fp_contract: impl Into<String>,
+        denormal_mode: impl Into<String>,
+        feature_set: impl Into<String>,
+        os: impl Into<String>,
+        libc: impl Into<String>,
+        libm: impl Into<String>,
+        rounding_mode: impl Into<String>,
+        gradual_underflow: bool,
+    ) -> Self {
+        Self {
+            compile_command_sha256: compile_command_sha256.into(),
+            compiler_id: compiler_id.into(),
+            compiler_version: compiler_version.into(),
+            target_triple: target_triple.into(),
+            target_cpu: target_cpu.into(),
+            target_features: target_features.into(),
+            sdk_or_sysroot: sdk_or_sysroot.into(),
+            optimization: optimization.into(),
+            fp_model: fp_model.into(),
+            fp_contract: fp_contract.into(),
+            denormal_mode: denormal_mode.into(),
+            feature_set: feature_set.into(),
+            os: os.into(),
+            libc: libc.into(),
+            libm: libm.into(),
+            rounding_mode: rounding_mode.into(),
+            gradual_underflow,
+        }
+    }
+
+    /// Replaces the feature description for forbidden-flag regression tests.
+    #[must_use]
+    pub fn with_feature_set(mut self, value: impl Into<String>) -> Self {
+        self.feature_set = value.into();
+        self
+    }
+
+    /// Replaces the SDK/sysroot witness for completeness regression tests.
+    #[must_use]
+    pub fn with_sdk_or_sysroot(mut self, value: impl Into<String>) -> Self {
+        self.sdk_or_sysroot = value.into();
+        self
+    }
+}
+
+/// Evidence authority derived from exact compiler, target, and floating witnesses.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BuildEvidenceTier {
+    /// Pinned Linux x86_64 compiler and complete IEEE runtime witnesses.
+    D1Canonical,
+    /// Supported baseline platform with complete identity, but no promotion authority.
+    D2Supported,
+    /// Exploratory or explicitly noncanonical build.
+    D3Exploratory,
+}
+
 /// Error returned when reported build provenance is incomplete or inconsistent.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum BuildIdentityError {
@@ -147,6 +250,53 @@ pub enum BuildIdentityError {
     /// The reported identity hash does not match the recomputed fields.
     #[error("reported build identity SHA-256 does not match its fields")]
     IdentityHashMismatch,
+    /// The complete Phase 4 identity extension is present but malformed.
+    #[error("Phase 4 build identity field `{0}` is invalid or empty")]
+    InvalidPhase4Field(&'static str),
+    /// A would-be canonical identity contains a prohibited optimization or CPU flag.
+    #[error("canonical build identity contains forbidden floating or native tuning flags")]
+    CanonicalForbiddenFlags,
+    /// A would-be canonical identity lacks the required IEEE runtime witnesses.
+    #[error("canonical build identity lacks round-to-nearest or gradual-underflow proof")]
+    CanonicalRuntimeWitness,
+}
+
+/// Validated Phase 4 build and floating-point identity.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Phase4BuildIdentity {
+    fields: Phase4BuildIdentityFields,
+}
+
+impl Phase4BuildIdentity {
+    /// Returns the effective compile-command SHA-256.
+    #[must_use]
+    pub fn compile_command_sha256(&self) -> &str {
+        &self.fields.compile_command_sha256
+    }
+
+    /// Returns the exact compiler identifier.
+    #[must_use]
+    pub fn compiler_id(&self) -> &str {
+        &self.fields.compiler_id
+    }
+
+    /// Returns the exact target triple.
+    #[must_use]
+    pub fn target_triple(&self) -> &str {
+        &self.fields.target_triple
+    }
+
+    /// Returns the recorded feature set and effective flag summary.
+    #[must_use]
+    pub fn feature_set(&self) -> &str {
+        &self.fields.feature_set
+    }
+
+    /// Returns whether gradual underflow was observed at runtime.
+    #[must_use]
+    pub const fn gradual_underflow(&self) -> bool {
+        self.fields.gradual_underflow
+    }
 }
 
 /// Validated, stable identity of one Rust or C++ harness build.
@@ -163,6 +313,8 @@ pub struct BuildIdentity {
     effective_compile_flags: Box<str>,
     effective_link_flags: Box<str>,
     sanitizer_mode: Box<str>,
+    maybe_phase4: Option<Phase4BuildIdentity>,
+    evidence_tier: BuildEvidenceTier,
     identity_sha256: Sha256Hex,
 }
 
@@ -177,6 +329,12 @@ impl BuildIdentity {
         let adapter_content_sha256 = Sha256Hex::new(fields.adapter_content_sha256.clone())
             .map_err(|_| BuildIdentityError::InvalidAdapterContentSha256)?;
         validate_nonempty_fields(&fields)?;
+        let maybe_phase4 = fields
+            .maybe_phase4
+            .as_ref()
+            .map(validate_phase4_identity)
+            .transpose()?;
+        let evidence_tier = classify_evidence_tier(maybe_phase4.as_ref())?;
         let identity_sha256 = hash_identity_fields(&fields);
 
         Ok(Self {
@@ -191,6 +349,8 @@ impl BuildIdentity {
             effective_compile_flags: fields.effective_compile_flags.into_boxed_str(),
             effective_link_flags: fields.effective_link_flags.into_boxed_str(),
             sanitizer_mode: fields.sanitizer_mode.into_boxed_str(),
+            maybe_phase4,
+            evidence_tier,
             identity_sha256,
         })
     }
@@ -277,6 +437,24 @@ impl BuildIdentity {
         &self.sanitizer_mode
     }
 
+    /// Returns the validated Phase 4 extension when this is not a legacy identity.
+    #[must_use]
+    pub const fn maybe_phase4(&self) -> Option<&Phase4BuildIdentity> {
+        self.maybe_phase4.as_ref()
+    }
+
+    /// Returns the derived evidence authority.
+    #[must_use]
+    pub const fn evidence_tier(&self) -> BuildEvidenceTier {
+        self.evidence_tier
+    }
+
+    /// Returns whether this exact build may promote canonical fixtures.
+    #[must_use]
+    pub const fn can_promote_canonical_evidence(&self) -> bool {
+        matches!(self.evidence_tier, BuildEvidenceTier::D1Canonical)
+    }
+
     /// Returns the recomputed stable identity hash.
     #[must_use]
     pub const fn identity_sha256(&self) -> &Sha256Hex {
@@ -316,6 +494,96 @@ fn validate_nonempty_fields(fields: &BuildIdentityFields) -> Result<(), BuildIde
     Ok(())
 }
 
+fn validate_phase4_identity(
+    fields: &Phase4BuildIdentityFields,
+) -> Result<Phase4BuildIdentity, BuildIdentityError> {
+    Sha256Hex::new(fields.compile_command_sha256.clone())
+        .map_err(|_| BuildIdentityError::InvalidPhase4Field("compile_command_sha256"))?;
+    let required = [
+        ("compiler_id", fields.compiler_id.as_str()),
+        ("compiler_version", fields.compiler_version.as_str()),
+        ("target_triple", fields.target_triple.as_str()),
+        ("target_cpu", fields.target_cpu.as_str()),
+        ("target_features", fields.target_features.as_str()),
+        ("sdk_or_sysroot", fields.sdk_or_sysroot.as_str()),
+        ("optimization", fields.optimization.as_str()),
+        ("fp_model", fields.fp_model.as_str()),
+        ("fp_contract", fields.fp_contract.as_str()),
+        ("denormal_mode", fields.denormal_mode.as_str()),
+        ("feature_set", fields.feature_set.as_str()),
+        ("os", fields.os.as_str()),
+        ("libc", fields.libc.as_str()),
+        ("libm", fields.libm.as_str()),
+        ("rounding_mode", fields.rounding_mode.as_str()),
+    ];
+    if let Some((name, _)) = required.iter().find(|(_, value)| value.trim().is_empty()) {
+        return Err(BuildIdentityError::InvalidPhase4Field(name));
+    }
+    Ok(Phase4BuildIdentity {
+        fields: fields.clone(),
+    })
+}
+
+fn classify_evidence_tier(
+    maybe_phase4: Option<&Phase4BuildIdentity>,
+) -> Result<BuildEvidenceTier, BuildIdentityError> {
+    let Some(phase4) = maybe_phase4 else {
+        return Ok(BuildEvidenceTier::D3Exploratory);
+    };
+    let fields = &phase4.fields;
+    let combined = format!(
+        "{} {} {} {} {}",
+        fields.optimization,
+        fields.fp_model,
+        fields.target_cpu,
+        fields.target_features,
+        fields.feature_set
+    );
+    let forbidden = [
+        "-ffast-math",
+        "-Ofast",
+        "-fassociative-math",
+        "-freciprocal-math",
+        "-funsafe-math-optimizations",
+        "-march=native",
+        "-mcpu=native",
+    ]
+    .iter()
+    .any(|flag| combined.split_ascii_whitespace().any(|word| word == *flag));
+    let canonical_compiler = (fields.compiler_id == "Clang" && fields.compiler_version == "22.1.8")
+        || (fields.compiler_id == "rustc" && fields.compiler_version.contains("1.97.0"));
+    let canonical_target = fields.target_triple == "x86_64-unknown-linux-gnu"
+        && fields.target_cpu == "baseline"
+        && fields.os.eq_ignore_ascii_case("linux");
+    let canonical_candidate = canonical_compiler && canonical_target;
+    if canonical_candidate && forbidden {
+        return Err(BuildIdentityError::CanonicalForbiddenFlags);
+    }
+    if canonical_candidate
+        && (fields.fp_model != "precise"
+            || fields.fp_contract != "off"
+            || fields.denormal_mode != "ieee"
+            || fields.rounding_mode != "nearest_ties_even"
+            || !fields.gradual_underflow)
+    {
+        return Err(BuildIdentityError::CanonicalRuntimeWitness);
+    }
+    if canonical_candidate {
+        return Ok(BuildEvidenceTier::D1Canonical);
+    }
+    if forbidden {
+        return Ok(BuildEvidenceTier::D3Exploratory);
+    }
+    let supported_os = ["linux", "macos", "windows"]
+        .iter()
+        .any(|os| fields.os.eq_ignore_ascii_case(os));
+    Ok(if supported_os {
+        BuildEvidenceTier::D2Supported
+    } else {
+        BuildEvidenceTier::D3Exploratory
+    })
+}
+
 fn hash_identity_fields(fields: &BuildIdentityFields) -> Sha256Hex {
     let values = [
         ("oracle_revision", fields.oracle_revision.as_str()),
@@ -343,12 +611,52 @@ fn hash_identity_fields(fields: &BuildIdentityFields) -> Sha256Hex {
         hasher.update(value.len().to_be_bytes());
         hasher.update(value.as_bytes());
     }
+    if let Some(phase4) = &fields.maybe_phase4 {
+        let phase4_values = [
+            (
+                "compile_command_sha256",
+                phase4.compile_command_sha256.as_str(),
+            ),
+            ("compiler_id", phase4.compiler_id.as_str()),
+            ("compiler_version", phase4.compiler_version.as_str()),
+            ("target_triple", phase4.target_triple.as_str()),
+            ("target_cpu", phase4.target_cpu.as_str()),
+            ("target_features", phase4.target_features.as_str()),
+            ("sdk_or_sysroot", phase4.sdk_or_sysroot.as_str()),
+            ("optimization", phase4.optimization.as_str()),
+            ("fp_model", phase4.fp_model.as_str()),
+            ("fp_contract", phase4.fp_contract.as_str()),
+            ("denormal_mode", phase4.denormal_mode.as_str()),
+            ("feature_set", phase4.feature_set.as_str()),
+            ("os", phase4.os.as_str()),
+            ("libc", phase4.libc.as_str()),
+            ("libm", phase4.libm.as_str()),
+            ("rounding_mode", phase4.rounding_mode.as_str()),
+            (
+                "gradual_underflow",
+                if phase4.gradual_underflow {
+                    "true"
+                } else {
+                    "false"
+                },
+            ),
+        ];
+        for (name, value) in phase4_values {
+            hasher.update(name.len().to_be_bytes());
+            hasher.update(name.as_bytes());
+            hasher.update(value.len().to_be_bytes());
+            hasher.update(value.as_bytes());
+        }
+    }
     Sha256Hex::from_digest(hasher.finalize().into())
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{BuildIdentity, BuildIdentityError, BuildIdentityFields, Sha256Hex};
+    use super::{
+        BuildEvidenceTier, BuildIdentity, BuildIdentityError, BuildIdentityFields,
+        Phase4BuildIdentityFields, Sha256Hex,
+    };
 
     fn valid_fields() -> BuildIdentityFields {
         BuildIdentityFields::new(
@@ -363,6 +671,28 @@ mod tests {
             "-O0 -g",
             "-lc++",
             "none",
+        )
+    }
+
+    fn canonical_phase4() -> Phase4BuildIdentityFields {
+        Phase4BuildIdentityFields::new(
+            "11".repeat(32),
+            "Clang",
+            "22.1.8",
+            "x86_64-unknown-linux-gnu",
+            "baseline",
+            "<none>",
+            "<none>",
+            "O3",
+            "precise",
+            "off",
+            "ieee",
+            "scalar baseline",
+            "linux",
+            "glibc",
+            "libm",
+            "nearest_ties_even",
+            true,
         )
     }
 
@@ -416,5 +746,65 @@ mod tests {
 
         // Assert
         assert_eq!(error, BuildIdentityError::IdentityHashMismatch);
+    }
+
+    #[test]
+    fn canonical_identity_rejects_forbidden_fp_flags() {
+        // Arrange
+        let fields = valid_fields()
+            .with_phase4(canonical_phase4().with_feature_set("scalar baseline -ffast-math"));
+
+        // Act
+        let error = BuildIdentity::new(fields).expect_err("canonical fast math should fail");
+
+        // Assert
+        assert_eq!(error, BuildIdentityError::CanonicalForbiddenFlags);
+    }
+
+    #[test]
+    fn canonical_identity_requires_all_fields() {
+        // Arrange
+        let fields = valid_fields().with_phase4(canonical_phase4().with_sdk_or_sysroot(""));
+
+        // Act
+        let error = BuildIdentity::new(fields).expect_err("missing canonical field should fail");
+
+        // Assert
+        assert_eq!(
+            error,
+            BuildIdentityError::InvalidPhase4Field("sdk_or_sysroot")
+        );
+    }
+
+    #[test]
+    fn supported_identity_cannot_promote_canonical_evidence() {
+        // Arrange
+        let supported = Phase4BuildIdentityFields::new(
+            "22".repeat(32),
+            "AppleClang",
+            "21.0.0",
+            "arm64-apple-darwin",
+            "baseline",
+            "<none>",
+            "macos-sdk",
+            "O0",
+            "precise",
+            "off",
+            "ieee",
+            "scalar baseline",
+            "macos",
+            "libSystem",
+            "libSystem",
+            "nearest_ties_even",
+            true,
+        );
+
+        // Act
+        let identity = BuildIdentity::new(valid_fields().with_phase4(supported))
+            .expect("supported identity should validate");
+
+        // Assert
+        assert_eq!(identity.evidence_tier(), BuildEvidenceTier::D2Supported);
+        assert!(!identity.can_promote_canonical_evidence());
     }
 }

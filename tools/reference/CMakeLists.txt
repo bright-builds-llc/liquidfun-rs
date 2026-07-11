@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.25)
 
 project(liquidfun_reference LANGUAGES C CXX)
 
+include(CheckCXXCompilerFlag)
+
 # CMake 4 no longer accepts the upstream project's 2.8 policy baseline unless
 # the caller supplies a modern compatibility floor. Keep that adaptation in
 # this wrapper so the pinned oracle remains byte-for-byte read-only.
@@ -21,10 +23,79 @@ set(BOX2D_BUILD_EXAMPLES OFF CACHE BOOL "Do not build the upstream testbed" FORC
 set(BOX2D_BUILD_UNITTESTS OFF CACHE BOOL "Do not build upstream tests in oracle presets" FORCE)
 set(BOX2D_CODE_COVERAGE OFF CACHE BOOL "Do not instrument canonical oracle builds" FORCE)
 
+set(
+  REFERENCE_REQUIRED_FP_OPTIONS
+  -fno-fast-math
+  -ffp-model=precise
+  -ffp-contract=off
+  -fsigned-zeros
+  -fhonor-nans
+  -fhonor-infinities
+  -fdenormal-fp-math=ieee
+  -fdenormal-fp-math-fp32=ieee
+)
+set(REFERENCE_SUPPORTED_FP_OPTIONS "")
+set(REFERENCE_MISSING_FP_OPTIONS "")
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  foreach(REFERENCE_FP_OPTION IN LISTS REFERENCE_REQUIRED_FP_OPTIONS)
+    string(MAKE_C_IDENTIFIER "${REFERENCE_FP_OPTION}" REFERENCE_FP_OPTION_ID)
+    set(REFERENCE_FP_CHECK "REFERENCE_SUPPORTS_${REFERENCE_FP_OPTION_ID}")
+    check_cxx_compiler_flag("${REFERENCE_FP_OPTION}" "${REFERENCE_FP_CHECK}")
+    if(${REFERENCE_FP_CHECK})
+      list(APPEND REFERENCE_SUPPORTED_FP_OPTIONS "${REFERENCE_FP_OPTION}")
+    else()
+      list(APPEND REFERENCE_MISSING_FP_OPTIONS "${REFERENCE_FP_OPTION}")
+    endif()
+  endforeach()
+else()
+  set(REFERENCE_MISSING_FP_OPTIONS ${REFERENCE_REQUIRED_FP_OPTIONS})
+endif()
+
+string(TOUPPER "${CMAKE_BUILD_TYPE}" REFERENCE_BUILD_TYPE_UPPER)
+set(REFERENCE_CONFIG_COMPILE_FLAGS_VARIABLE "CMAKE_CXX_FLAGS_${REFERENCE_BUILD_TYPE_UPPER}")
+set(
+  REFERENCE_USER_COMPILE_FLAGS
+  "${CMAKE_CXX_FLAGS} ${${REFERENCE_CONFIG_COMPILE_FLAGS_VARIABLE}}"
+)
+set(
+  REFERENCE_FORBIDDEN_FP_PATTERN
+  "(^|[ ;])(-ffast-math|-Ofast|-fassociative-math|-freciprocal-math|-funsafe-math-optimizations|-march=native|-mcpu=native)($|[ ;])"
+)
+set(REFERENCE_HAS_FORBIDDEN_FP_FLAGS FALSE)
+if(REFERENCE_USER_COMPILE_FLAGS MATCHES "${REFERENCE_FORBIDDEN_FP_PATTERN}")
+  set(REFERENCE_HAS_FORBIDDEN_FP_FLAGS TRUE)
+endif()
+set(REFERENCE_D1_CANDIDATE FALSE)
+if(
+  CMAKE_CXX_COMPILER_ID STREQUAL "Clang"
+  AND CMAKE_CXX_COMPILER_VERSION VERSION_EQUAL "22.1.8"
+  AND CMAKE_SYSTEM_NAME STREQUAL "Linux"
+  AND CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|amd64|AMD64)$"
+)
+  set(REFERENCE_D1_CANDIDATE TRUE)
+endif()
+if(REFERENCE_D1_CANDIDATE AND REFERENCE_MISSING_FP_OPTIONS)
+  message(
+    FATAL_ERROR
+    "canonical D1 compiler lacks required floating semantics: ${REFERENCE_MISSING_FP_OPTIONS}"
+  )
+endif()
+if(REFERENCE_D1_CANDIDATE AND REFERENCE_HAS_FORBIDDEN_FP_FLAGS)
+  message(FATAL_ERROR "canonical D1 configuration contains forbidden floating/native flags")
+endif()
+if(REFERENCE_D1_CANDIDATE)
+  set(REFERENCE_EVIDENCE_TIER "d1_canonical")
+elseif(REFERENCE_HAS_FORBIDDEN_FP_FLAGS)
+  set(REFERENCE_EVIDENCE_TIER "d3_exploratory")
+else()
+  set(REFERENCE_EVIDENCE_TIER "d2_supported")
+endif()
+
 add_subdirectory(
   "${CMAKE_CURRENT_LIST_DIR}/../../third_party/liquidfun/liquidfun/Box2D"
   "${CMAKE_BINARY_DIR}/upstream"
 )
+target_compile_options(Box2D PRIVATE ${REFERENCE_SUPPORTED_FP_OPTIONS})
 
 set(REFERENCE_UPSTREAM_COMPATIBILITY_OPTIONS "")
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -182,19 +253,85 @@ endif()
 if(CMAKE_CXX_COMPILER_TARGET)
   set(REFERENCE_COMPILER_TARGET "${CMAKE_CXX_COMPILER_TARGET}")
 else()
-  set(REFERENCE_COMPILER_TARGET "native")
+  execute_process(
+    COMMAND "${CMAKE_CXX_COMPILER}" -dumpmachine
+    OUTPUT_VARIABLE REFERENCE_COMPILER_TARGET
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET
+  )
+endif()
+if(NOT REFERENCE_COMPILER_TARGET)
+  set(REFERENCE_COMPILER_TARGET "${CMAKE_SYSTEM_PROCESSOR}-${CMAKE_SYSTEM_NAME}")
 endif()
 set(
   REFERENCE_TARGET
   "${REFERENCE_COMPILER_TARGET}|${CMAKE_SYSTEM_NAME}|${CMAKE_SYSTEM_PROCESSOR}"
 )
+set(REFERENCE_TARGET_CPU "baseline")
+if(REFERENCE_USER_COMPILE_FLAGS MATCHES "(-march=native|-mcpu=native)")
+  set(REFERENCE_TARGET_CPU "native")
+endif()
+set(REFERENCE_TARGET_FEATURES "<none>")
+if(CMAKE_SYSROOT)
+  set(REFERENCE_SDK_OR_SYSROOT "${CMAKE_SYSROOT}")
+elseif(CMAKE_OSX_SYSROOT)
+  set(REFERENCE_SDK_OR_SYSROOT "${CMAKE_OSX_SYSROOT}")
+else()
+  set(REFERENCE_SDK_OR_SYSROOT "<none>")
+endif()
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+  set(REFERENCE_OPTIMIZATION "O0")
+else()
+  set(REFERENCE_OPTIMIZATION "O3")
+endif()
+list(FIND REFERENCE_SUPPORTED_FP_OPTIONS "-ffp-contract=off" REFERENCE_FP_CONTRACT_INDEX)
+if(REFERENCE_FP_CONTRACT_INDEX EQUAL -1)
+  set(REFERENCE_FP_CONTRACT "unsupported-d2")
+else()
+  set(REFERENCE_FP_CONTRACT "off")
+endif()
+list(FIND REFERENCE_SUPPORTED_FP_OPTIONS "-fdenormal-fp-math=ieee" REFERENCE_DENORMAL_INDEX)
+list(FIND REFERENCE_SUPPORTED_FP_OPTIONS "-fdenormal-fp-math-fp32=ieee" REFERENCE_DENORMAL_FP32_INDEX)
+if(REFERENCE_DENORMAL_INDEX EQUAL -1 OR REFERENCE_DENORMAL_FP32_INDEX EQUAL -1)
+  set(REFERENCE_DENORMAL_MODE "ieee-requested-d2")
+else()
+  set(REFERENCE_DENORMAL_MODE "ieee")
+endif()
+if(REFERENCE_MISSING_FP_OPTIONS)
+  string(JOIN "," REFERENCE_MISSING_FP_FLAGS ${REFERENCE_MISSING_FP_OPTIONS})
+  set(REFERENCE_FP_MODEL "precise-supported-d2")
+else()
+  set(REFERENCE_MISSING_FP_FLAGS "<none>")
+  set(REFERENCE_FP_MODEL "precise")
+endif()
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  set(REFERENCE_OS "linux")
+  set(REFERENCE_LIBC "glibc")
+  set(REFERENCE_LIBM "libm")
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+  set(REFERENCE_OS "macos")
+  set(REFERENCE_LIBC "libSystem")
+  set(REFERENCE_LIBM "libSystem")
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+  set(REFERENCE_OS "windows")
+  set(REFERENCE_LIBC "msvcrt")
+  set(REFERENCE_LIBM "msvcrt")
+else()
+  set(REFERENCE_OS "${CMAKE_SYSTEM_NAME}")
+  set(REFERENCE_LIBC "<unavailable-d3>")
+  set(REFERENCE_LIBM "<unavailable-d3>")
+endif()
 
 if(MSVC)
   set(REFERENCE_WARNING_OPTIONS /W4 /WX)
 else()
   set(REFERENCE_WARNING_OPTIONS -Wall -Wextra -Wpedantic -Werror)
+  if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    list(APPEND REFERENCE_WARNING_OPTIONS -Wno-overriding-option)
+  endif()
 endif()
 string(JOIN " " REFERENCE_WARNING_FLAGS ${REFERENCE_WARNING_OPTIONS})
+string(JOIN " " REFERENCE_FP_FLAGS ${REFERENCE_SUPPORTED_FP_OPTIONS})
 string(
   JOIN
   " "
@@ -203,9 +340,18 @@ string(
 )
 string(
   STRIP
-  "${REFERENCE_COMPILE_FLAGS} ${REFERENCE_WARNING_FLAGS} ${REFERENCE_UPSTREAM_COMPATIBILITY_FLAGS} cxx_std_17"
+  "${REFERENCE_COMPILE_FLAGS} ${REFERENCE_WARNING_FLAGS} ${REFERENCE_FP_FLAGS} ${REFERENCE_UPSTREAM_COMPATIBILITY_FLAGS} cxx_std_17"
   REFERENCE_COMPILE_FLAGS
 )
+set(
+  REFERENCE_FEATURE_SET
+  "evidence=${REFERENCE_EVIDENCE_TIER};applied=${REFERENCE_FP_FLAGS};missing=${REFERENCE_MISSING_FP_FLAGS}"
+)
+set(
+  REFERENCE_COMPILE_COMMAND_DESCRIPTOR
+  "compiler=${CMAKE_CXX_COMPILER};id=${CMAKE_CXX_COMPILER_ID};version=${CMAKE_CXX_COMPILER_VERSION};target=${REFERENCE_COMPILER_TARGET};build=${CMAKE_BUILD_TYPE};flags=${REFERENCE_COMPILE_FLAGS};sources=math_probe.cpp,protocol_bits.cpp"
+)
+string(SHA256 REFERENCE_COMPILE_COMMAND_SHA256 "${REFERENCE_COMPILE_COMMAND_DESCRIPTOR}")
 
 function(reference_escape_cpp_string INPUT_VALUE OUTPUT_VARIABLE)
   string(REPLACE "\\" "\\\\" ESCAPED_VALUE "${INPUT_VALUE}")
@@ -245,6 +391,22 @@ reference_escape_cpp_string(
   "${REFERENCE_SANITIZER_MODE}"
   REFERENCE_SANITIZER_MODE_CPP
 )
+reference_escape_cpp_string(
+  "${REFERENCE_COMPILE_COMMAND_SHA256}"
+  REFERENCE_COMPILE_COMMAND_SHA256_CPP
+)
+reference_escape_cpp_string("${REFERENCE_COMPILER_TARGET}" REFERENCE_TARGET_TRIPLE_CPP)
+reference_escape_cpp_string("${REFERENCE_TARGET_CPU}" REFERENCE_TARGET_CPU_CPP)
+reference_escape_cpp_string("${REFERENCE_TARGET_FEATURES}" REFERENCE_TARGET_FEATURES_CPP)
+reference_escape_cpp_string("${REFERENCE_SDK_OR_SYSROOT}" REFERENCE_SDK_OR_SYSROOT_CPP)
+reference_escape_cpp_string("${REFERENCE_OPTIMIZATION}" REFERENCE_OPTIMIZATION_CPP)
+reference_escape_cpp_string("${REFERENCE_FP_MODEL}" REFERENCE_FP_MODEL_CPP)
+reference_escape_cpp_string("${REFERENCE_FP_CONTRACT}" REFERENCE_FP_CONTRACT_CPP)
+reference_escape_cpp_string("${REFERENCE_DENORMAL_MODE}" REFERENCE_DENORMAL_MODE_CPP)
+reference_escape_cpp_string("${REFERENCE_FEATURE_SET}" REFERENCE_FEATURE_SET_CPP)
+reference_escape_cpp_string("${REFERENCE_OS}" REFERENCE_OS_CPP)
+reference_escape_cpp_string("${REFERENCE_LIBC}" REFERENCE_LIBC_CPP)
+reference_escape_cpp_string("${REFERENCE_LIBM}" REFERENCE_LIBM_CPP)
 
 set(
   REFERENCE_BUILD_IDENTITY_HEADER
@@ -288,12 +450,15 @@ target_link_libraries(
 
 target_compile_options(
   liquidfun-reference-protocol
-  PRIVATE ${REFERENCE_WARNING_OPTIONS}
+  PRIVATE ${REFERENCE_WARNING_OPTIONS} ${REFERENCE_SUPPORTED_FP_OPTIONS}
 )
-target_compile_options(liquidfun-reference PRIVATE ${REFERENCE_WARNING_OPTIONS})
+target_compile_options(
+  liquidfun-reference
+  PRIVATE ${REFERENCE_WARNING_OPTIONS} ${REFERENCE_SUPPORTED_FP_OPTIONS}
+)
 target_compile_options(
   liquidfun-reference-protocol-tests
-  PRIVATE ${REFERENCE_WARNING_OPTIONS}
+  PRIVATE ${REFERENCE_WARNING_OPTIONS} ${REFERENCE_SUPPORTED_FP_OPTIONS}
 )
 
 add_test(

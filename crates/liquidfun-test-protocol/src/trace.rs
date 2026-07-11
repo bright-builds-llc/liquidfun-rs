@@ -3,9 +3,10 @@ use sha2::{Digest, Sha256};
 
 use crate::{
     BuildIdentity, BuildIdentityFields, CheckpointId, CodecError, FloatBits, HarnessFailureKind,
-    HarnessLimits, MathProbeHorizon, MathProbeOperation, MathProbePolicyPath, ProtocolVersion,
-    RecordLimit, RequestId, ScenarioId, ScenarioRequestRecord, ScenarioSchemaVersion,
-    ScenarioSource, Sha256Hex, ToleranceProfileVersion, TraceSchemaVersion,
+    HarnessLimits, MathProbeHorizon, MathProbeOperation, MathProbePolicyPath,
+    Phase4BuildIdentityFields, ProtocolVersion, RecordLimit, RequestId, ScenarioId,
+    ScenarioRequestRecord, ScenarioSchemaVersion, ScenarioSource, Sha256Hex,
+    ToleranceProfileVersion, TraceSchemaVersion,
     codec::{BoundedString, BoundedVec, decode_jsonl},
 };
 
@@ -1062,6 +1063,21 @@ struct RawBuildIdentity {
     effective_compile_flags: BoundedString<MAXIMUM_STRING_BYTES>,
     effective_link_flags: BoundedString<MAXIMUM_STRING_BYTES>,
     sanitizer_mode: BoundedString<MAXIMUM_STRING_BYTES>,
+    compile_command_sha256: Option<BoundedString<MAXIMUM_STRING_BYTES>>,
+    target_triple: Option<BoundedString<MAXIMUM_STRING_BYTES>>,
+    target_cpu: Option<BoundedString<MAXIMUM_STRING_BYTES>>,
+    target_features: Option<BoundedString<MAXIMUM_STRING_BYTES>>,
+    sdk_or_sysroot: Option<BoundedString<MAXIMUM_STRING_BYTES>>,
+    optimization: Option<BoundedString<MAXIMUM_STRING_BYTES>>,
+    fp_model: Option<BoundedString<MAXIMUM_STRING_BYTES>>,
+    fp_contract: Option<BoundedString<MAXIMUM_STRING_BYTES>>,
+    denormal_mode: Option<BoundedString<MAXIMUM_STRING_BYTES>>,
+    feature_set: Option<BoundedString<MAXIMUM_STRING_BYTES>>,
+    os: Option<BoundedString<MAXIMUM_STRING_BYTES>>,
+    libc: Option<BoundedString<MAXIMUM_STRING_BYTES>>,
+    libm: Option<BoundedString<MAXIMUM_STRING_BYTES>>,
+    rounding_mode: Option<BoundedString<MAXIMUM_STRING_BYTES>>,
+    gradual_underflow: Option<bool>,
 }
 
 /// Strictly decodes and independently recomputes one startup handshake.
@@ -1083,19 +1099,43 @@ pub fn decode_handshake_jsonl(
         build_identity: raw_identity,
         identity_sha256,
     } = raw;
-    let fields = BuildIdentityFields::new(
+    let compiler_id = raw_identity.compiler_id.into_string();
+    let compiler_version = raw_identity.compiler_version.into_string();
+    let maybe_phase4 = decode_raw_phase4_identity(
+        &compiler_id,
+        &compiler_version,
+        raw_identity.compile_command_sha256,
+        raw_identity.target_triple,
+        raw_identity.target_cpu,
+        raw_identity.target_features,
+        raw_identity.sdk_or_sysroot,
+        raw_identity.optimization,
+        raw_identity.fp_model,
+        raw_identity.fp_contract,
+        raw_identity.denormal_mode,
+        raw_identity.feature_set,
+        raw_identity.os,
+        raw_identity.libc,
+        raw_identity.libm,
+        raw_identity.rounding_mode,
+        raw_identity.gradual_underflow,
+    )?;
+    let mut fields = BuildIdentityFields::new(
         raw_identity.oracle_revision.into_string(),
         raw_identity.adapter_revision.into_string(),
         raw_identity.adapter_content_sha256.into_string(),
         raw_identity.cmake_preset.into_string(),
-        raw_identity.compiler_id.into_string(),
-        raw_identity.compiler_version.into_string(),
+        compiler_id,
+        compiler_version,
         raw_identity.target.into_string(),
         raw_identity.build_type.into_string(),
         raw_identity.effective_compile_flags.into_string(),
         raw_identity.effective_link_flags.into_string(),
         raw_identity.sanitizer_mode.into_string(),
     );
+    if let Some(phase4) = maybe_phase4 {
+        fields = fields.with_phase4(phase4);
+    }
     let build_identity =
         BuildIdentity::from_reported(fields, &identity_sha256).map_err(|error| {
             TraceValidationError::new(HarnessFailureKind::WrongProvenance, error.to_string())
@@ -1107,6 +1147,89 @@ pub fn decode_handshake_jsonl(
         supported_tolerance_versions: supported_tolerance_versions.into_vec().into_boxed_slice(),
         build_identity,
     })
+}
+
+#[allow(
+    clippy::too_many_arguments,
+    reason = "strict decoding checks the complete fixed Phase 4 wire extension"
+)]
+fn decode_raw_phase4_identity(
+    compiler_id: &str,
+    compiler_version: &str,
+    compile_command_sha256: Option<BoundedString<MAXIMUM_STRING_BYTES>>,
+    target_triple: Option<BoundedString<MAXIMUM_STRING_BYTES>>,
+    target_cpu: Option<BoundedString<MAXIMUM_STRING_BYTES>>,
+    target_features: Option<BoundedString<MAXIMUM_STRING_BYTES>>,
+    sdk_or_sysroot: Option<BoundedString<MAXIMUM_STRING_BYTES>>,
+    optimization: Option<BoundedString<MAXIMUM_STRING_BYTES>>,
+    fp_model: Option<BoundedString<MAXIMUM_STRING_BYTES>>,
+    fp_contract: Option<BoundedString<MAXIMUM_STRING_BYTES>>,
+    denormal_mode: Option<BoundedString<MAXIMUM_STRING_BYTES>>,
+    feature_set: Option<BoundedString<MAXIMUM_STRING_BYTES>>,
+    os: Option<BoundedString<MAXIMUM_STRING_BYTES>>,
+    libc: Option<BoundedString<MAXIMUM_STRING_BYTES>>,
+    libm: Option<BoundedString<MAXIMUM_STRING_BYTES>>,
+    rounding_mode: Option<BoundedString<MAXIMUM_STRING_BYTES>>,
+    gradual_underflow: Option<bool>,
+) -> Result<Option<Phase4BuildIdentityFields>, TraceValidationError> {
+    let fields_present = [
+        compile_command_sha256.is_some(),
+        target_triple.is_some(),
+        target_cpu.is_some(),
+        target_features.is_some(),
+        sdk_or_sysroot.is_some(),
+        optimization.is_some(),
+        fp_model.is_some(),
+        fp_contract.is_some(),
+        denormal_mode.is_some(),
+        feature_set.is_some(),
+        os.is_some(),
+        libc.is_some(),
+        libm.is_some(),
+        rounding_mode.is_some(),
+        gradual_underflow.is_some(),
+    ];
+    if fields_present.iter().all(|present| !present) {
+        return Ok(None);
+    }
+    if !fields_present.iter().all(|present| *present) {
+        return Err(TraceValidationError::new(
+            HarnessFailureKind::WrongProvenance,
+            "Phase 4 build identity fields must be present together",
+        ));
+    }
+    let text = |value: Option<BoundedString<MAXIMUM_STRING_BYTES>>| {
+        value.map(BoundedString::into_string).ok_or_else(|| {
+            TraceValidationError::new(
+                HarnessFailureKind::WrongProvenance,
+                "Phase 4 build identity field is missing",
+            )
+        })
+    };
+    Ok(Some(Phase4BuildIdentityFields::new(
+        text(compile_command_sha256)?,
+        compiler_id,
+        compiler_version,
+        text(target_triple)?,
+        text(target_cpu)?,
+        text(target_features)?,
+        text(sdk_or_sysroot)?,
+        text(optimization)?,
+        text(fp_model)?,
+        text(fp_contract)?,
+        text(denormal_mode)?,
+        text(feature_set)?,
+        text(os)?,
+        text(libc)?,
+        text(libm)?,
+        text(rounding_mode)?,
+        gradual_underflow.ok_or_else(|| {
+            TraceValidationError::new(
+                HarnessFailureKind::WrongProvenance,
+                "Phase 4 gradual-underflow witness is missing",
+            )
+        })?,
+    )))
 }
 
 #[derive(Debug, Deserialize)]

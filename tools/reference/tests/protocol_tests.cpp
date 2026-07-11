@@ -51,18 +51,20 @@ void expect_rejected(
 }
 
 BuildIdentity fixture_identity() {
-  return BuildIdentity{
-      "7f20402173fd143a3988c921bc384459c6a858f2",
-      "fixture-adapter-v1",
-      "c7f36eaf2f184a36b9c9a04636d3e22785d815c4948d55d0b3cbf44ee7245fc8",
-      "oracle-debug",
-      "Clang",
-      "22.1.8",
-      "x86_64-unknown-linux-gnu",
-      "Debug",
-      "-O0 -g",
-      "-lc++",
-      "none"};
+  BuildIdentity identity;
+  identity.oracle_revision = "7f20402173fd143a3988c921bc384459c6a858f2";
+  identity.adapter_revision = "fixture-adapter-v1";
+  identity.adapter_content_sha256 =
+      "c7f36eaf2f184a36b9c9a04636d3e22785d815c4948d55d0b3cbf44ee7245fc8";
+  identity.cmake_preset = "oracle-debug";
+  identity.compiler_id = "Clang";
+  identity.compiler_version = "22.1.8";
+  identity.target = "x86_64-unknown-linux-gnu";
+  identity.build_type = "Debug";
+  identity.effective_compile_flags = "-O0 -g";
+  identity.effective_link_flags = "-lc++";
+  identity.sanitizer_mode = "none";
+  return identity;
 }
 
 std::vector<std::string> split_jsonl(const std::string& jsonl) {

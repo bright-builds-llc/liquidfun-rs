@@ -2,9 +2,9 @@
 
 use liquidfun_test_protocol::{
     BuildIdentity, BuildIdentityError, BuildIdentityFields, CheckpointRecord, EngineKind,
-    FloatBits, HarnessLimits, ScenarioRequestRecord, Sha256Hex, TraceBegin, TraceEnd,
-    TraceHashError, TraceRecord, TraceValidationError, TraceValidator, ValidatedTrace, WorldCounts,
-    trace_payload_sha256,
+    FloatBits, HarnessLimits, Phase4BuildIdentityFields, ScenarioRequestRecord, Sha256Hex,
+    TraceBegin, TraceEnd, TraceHashError, TraceRecord, TraceValidationError, TraceValidator,
+    ValidatedTrace, WorldCounts, trace_payload_sha256,
 };
 use sha2::{Digest, Sha256};
 
@@ -70,6 +70,41 @@ impl EmptyWorldAdapter {
             "encoded_rustflags={}",
             env!("LIQUIDFUN_NATIVE_ENCODED_RUSTFLAGS")
         );
+        let feature_set = format!(
+            "features={};encoded_rustflags={}",
+            env!("LIQUIDFUN_NATIVE_FEATURES"),
+            env!("LIQUIDFUN_NATIVE_ENCODED_RUSTFLAGS")
+        );
+        let compile_descriptor = format!(
+            "rustc={};target={};host={};profile={};optimization={};{}",
+            env!("LIQUIDFUN_NATIVE_RUSTC_VV"),
+            env!("LIQUIDFUN_NATIVE_TARGET"),
+            env!("LIQUIDFUN_NATIVE_HOST"),
+            env!("LIQUIDFUN_NATIVE_PROFILE"),
+            env!("LIQUIDFUN_NATIVE_OPTIMIZATION"),
+            feature_set
+        );
+        let compile_command_sha256 =
+            Sha256Hex::from_digest(Sha256::digest(compile_descriptor).into());
+        let phase4 = Phase4BuildIdentityFields::new(
+            compile_command_sha256.as_str(),
+            "rustc",
+            env!("LIQUIDFUN_NATIVE_RUSTC_VERSION"),
+            env!("LIQUIDFUN_NATIVE_TARGET"),
+            env!("LIQUIDFUN_NATIVE_TARGET_CPU"),
+            env!("LIQUIDFUN_NATIVE_TARGET_FEATURES"),
+            "<none>",
+            env!("LIQUIDFUN_NATIVE_OPTIMIZATION"),
+            "precise",
+            "off",
+            "ieee",
+            feature_set,
+            env!("LIQUIDFUN_NATIVE_TARGET_OS"),
+            env!("LIQUIDFUN_NATIVE_LIBC"),
+            env!("LIQUIDFUN_NATIVE_LIBM"),
+            native_rounding_mode(),
+            native_gradual_underflow(),
+        );
         let fields = BuildIdentityFields::new(
             comparison_oracle_revision,
             adapter_revision,
@@ -82,7 +117,8 @@ impl EmptyWorldAdapter {
             compile_flags,
             link_flags,
             "none",
-        );
+        )
+        .with_phase4(phase4);
 
         Ok(Self {
             build_identity: BuildIdentity::new(fields)?,
@@ -137,6 +173,21 @@ impl EmptyWorldAdapter {
         self.reset_epoch = next_reset_epoch;
         Ok(trace)
     }
+}
+
+fn native_rounding_mode() -> &'static str {
+    let half_ulp = f32::from_bits(0x3380_0000);
+    let ties_even = (1.0_f32 + half_ulp).to_bits() == 1.0_f32.to_bits();
+    let odd_rounds_up = (f32::from_bits(0x3f80_0001) + half_ulp).to_bits() == 0x3f80_0002;
+    if ties_even && odd_rounds_up {
+        "nearest_ties_even"
+    } else {
+        "unsupported"
+    }
+}
+
+fn native_gradual_underflow() -> bool {
+    (f32::MIN_POSITIVE * 0.5_f32).to_bits() == 0x0040_0000
 }
 
 struct EmptyWorldState {

@@ -5,7 +5,8 @@ use super::{
 };
 use crate::{
     BuildIdentity, BuildIdentityFields, CheckpointId, FloatBits, HarnessFailureKind, HarnessLimits,
-    RequestId, Sha256Hex, decode_scenario_request_jsonl,
+    Phase4BuildIdentityFields, RequestId, Sha256Hex, decode_handshake_jsonl,
+    decode_scenario_request_jsonl,
 };
 
 const REVISION: &str = "7f20402173fd143a3988c921bc384459c6a858f2";
@@ -309,4 +310,97 @@ fn trace_decoder_rejects_an_invalid_named_source_before_validation() {
         panic!("expected typed trace validation failure");
     };
     assert_eq!(error.kind(), HarnessFailureKind::MalformedRecord);
+}
+
+#[test]
+fn raw_build_identity_decodes_all_phase4_fields() {
+    // Arrange
+    let phase4 = Phase4BuildIdentityFields::new(
+        "33".repeat(32),
+        "AppleClang",
+        "21.0.0",
+        "arm64-apple-darwin",
+        "baseline",
+        "<none>",
+        "macos-sdk",
+        "O0",
+        "precise",
+        "off",
+        "ieee",
+        "scalar baseline",
+        "macos",
+        "libSystem",
+        "libSystem",
+        "nearest_ties_even",
+        true,
+    );
+    let identity = BuildIdentity::new(
+        BuildIdentityFields::new(
+            REVISION,
+            "adapter-v1",
+            "c7f36eaf2f184a36b9c9a04636d3e22785d815c4948d55d0b3cbf44ee7245fc8",
+            "oracle-debug",
+            "AppleClang",
+            "21.0.0",
+            "arm64-apple-darwin",
+            "Debug",
+            "-O0",
+            "<none>",
+            "none",
+        )
+        .with_phase4(phase4),
+    )
+    .expect("full identity should validate");
+    let record = serde_json::json!({
+        "protocol_version": 1,
+        "record_kind": "handshake",
+        "supported_scenario_versions": [1],
+        "supported_trace_versions": [1],
+        "supported_tolerance_versions": [1],
+        "build_identity": {
+            "oracle_revision": REVISION,
+            "adapter_revision": "adapter-v1",
+            "adapter_content_sha256": "c7f36eaf2f184a36b9c9a04636d3e22785d815c4948d55d0b3cbf44ee7245fc8",
+            "cmake_preset": "oracle-debug",
+            "compiler_id": "AppleClang",
+            "compiler_version": "21.0.0",
+            "target": "arm64-apple-darwin",
+            "build_type": "Debug",
+            "effective_compile_flags": "-O0",
+            "effective_link_flags": "<none>",
+            "sanitizer_mode": "none",
+            "compile_command_sha256": "33".repeat(32),
+            "target_triple": "arm64-apple-darwin",
+            "target_cpu": "baseline",
+            "target_features": "<none>",
+            "sdk_or_sysroot": "macos-sdk",
+            "optimization": "O0",
+            "fp_model": "precise",
+            "fp_contract": "off",
+            "denormal_mode": "ieee",
+            "feature_set": "scalar baseline",
+            "os": "macos",
+            "libc": "libSystem",
+            "libm": "libSystem",
+            "rounding_mode": "nearest_ties_even",
+            "gradual_underflow": true
+        },
+        "identity_sha256": identity.identity_sha256().as_str()
+    });
+    let mut jsonl = serde_json::to_vec(&record).expect("handshake should encode");
+    jsonl.push(b'\n');
+
+    // Act
+    let decoded = decode_handshake_jsonl(&jsonl, &HarnessLimits::phase2_default_v1())
+        .expect("full Phase 4 handshake should decode");
+
+    // Assert
+    let decoded_phase4 = decoded
+        .build_identity()
+        .maybe_phase4()
+        .expect("Phase 4 extension should be present");
+    assert_eq!(decoded_phase4.compile_command_sha256(), "33".repeat(32));
+    assert_eq!(decoded_phase4.compiler_id(), "AppleClang");
+    assert_eq!(decoded_phase4.target_triple(), "arm64-apple-darwin");
+    assert!(decoded_phase4.gradual_underflow());
 }

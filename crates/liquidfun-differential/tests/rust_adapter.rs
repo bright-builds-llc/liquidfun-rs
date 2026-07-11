@@ -2,7 +2,9 @@
 
 use liquidfun_differential::EmptyWorldAdapter;
 use liquidfun_test_protocol::{
-    EngineKind, HarnessLimits, ScenarioRequestRecord, WorldCounts, decode_scenario_request_jsonl,
+    BuildEvidenceTier, BuildIdentity, BuildIdentityError, BuildIdentityFields, EngineKind,
+    HarnessLimits, Phase4BuildIdentityFields, ScenarioRequestRecord, WorldCounts,
+    decode_scenario_request_jsonl,
 };
 
 const ORACLE_REVISION: &str = "7f20402173fd143a3988c921bc384459c6a858f2";
@@ -12,6 +14,45 @@ const REQUEST_BYTES: &[u8] =
 fn fixture_request() -> ScenarioRequestRecord {
     decode_scenario_request_jsonl(REQUEST_BYTES, &HarnessLimits::phase2_default_v1())
         .expect("checked-in request should validate")
+}
+
+fn identity_fields(phase4: Phase4BuildIdentityFields) -> BuildIdentityFields {
+    BuildIdentityFields::new(
+        ORACLE_REVISION,
+        "adapter-v1",
+        "c7f36eaf2f184a36b9c9a04636d3e22785d815c4948d55d0b3cbf44ee7245fc8",
+        "oracle-release",
+        "Clang",
+        "22.1.8",
+        "x86_64-unknown-linux-gnu",
+        "Release",
+        "-O3",
+        "<none>",
+        "none",
+    )
+    .with_phase4(phase4)
+}
+
+fn canonical_phase4() -> Phase4BuildIdentityFields {
+    Phase4BuildIdentityFields::new(
+        "44".repeat(32),
+        "Clang",
+        "22.1.8",
+        "x86_64-unknown-linux-gnu",
+        "baseline",
+        "<none>",
+        "<none>",
+        "O3",
+        "precise",
+        "off",
+        "ieee",
+        "scalar baseline",
+        "linux",
+        "glibc",
+        "libm",
+        "nearest_ties_even",
+        true,
+    )
 }
 
 #[test]
@@ -141,4 +182,82 @@ fn invalid_nonempty_scenario_never_reaches_adapter() {
 
     // Assert
     assert!(result.is_err());
+}
+
+#[test]
+fn native_build_identity_populates_all_phase4_fields() {
+    // Arrange / Act
+    let adapter =
+        EmptyWorldAdapter::new(ORACLE_REVISION).expect("native Phase 4 identity should validate");
+
+    // Assert
+    let phase4 = adapter
+        .build_identity()
+        .maybe_phase4()
+        .expect("native identity should carry the Phase 4 extension");
+    assert_eq!(phase4.compile_command_sha256().len(), 64);
+    assert_eq!(phase4.compiler_id(), "rustc");
+    assert!(!phase4.target_triple().is_empty());
+    assert!(phase4.feature_set().contains("features="));
+    assert!(phase4.gradual_underflow());
+}
+
+#[test]
+fn canonical_identity_rejects_forbidden_fp_flags() {
+    // Arrange
+    let fields =
+        identity_fields(canonical_phase4().with_feature_set("scalar baseline -ffast-math"));
+
+    // Act
+    let error = BuildIdentity::new(fields).expect_err("canonical fast math should fail");
+
+    // Assert
+    assert_eq!(error, BuildIdentityError::CanonicalForbiddenFlags);
+}
+
+#[test]
+fn canonical_identity_requires_all_fields() {
+    // Arrange
+    let fields = identity_fields(canonical_phase4().with_sdk_or_sysroot(""));
+
+    // Act
+    let error = BuildIdentity::new(fields).expect_err("missing canonical field should fail");
+
+    // Assert
+    assert_eq!(
+        error,
+        BuildIdentityError::InvalidPhase4Field("sdk_or_sysroot")
+    );
+}
+
+#[test]
+fn supported_identity_cannot_promote_canonical_evidence() {
+    // Arrange
+    let supported = Phase4BuildIdentityFields::new(
+        "55".repeat(32),
+        "AppleClang",
+        "21.0.0",
+        "arm64-apple-darwin",
+        "baseline",
+        "<none>",
+        "macos-sdk",
+        "O0",
+        "precise",
+        "off",
+        "ieee",
+        "scalar baseline",
+        "macos",
+        "libSystem",
+        "libSystem",
+        "nearest_ties_even",
+        true,
+    );
+
+    // Act
+    let identity =
+        BuildIdentity::new(identity_fields(supported)).expect("supported identity should validate");
+
+    // Assert
+    assert_eq!(identity.evidence_tier(), BuildEvidenceTier::D2Supported);
+    assert!(!identity.can_promote_canonical_evidence());
 }

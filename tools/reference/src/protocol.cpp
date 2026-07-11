@@ -1075,6 +1075,21 @@ std::string encode_handshake(const BuildIdentity& identity) {
          ",\"effective_compile_flags\":" + quote(identity.effective_compile_flags) +
          ",\"effective_link_flags\":" + quote(identity.effective_link_flags) +
          ",\"sanitizer_mode\":" + quote(identity.sanitizer_mode) +
+         ",\"compile_command_sha256\":" + quote(identity.compile_command_sha256) +
+         ",\"target_triple\":" + quote(identity.target_triple) +
+         ",\"target_cpu\":" + quote(identity.target_cpu) +
+         ",\"target_features\":" + quote(identity.target_features) +
+         ",\"sdk_or_sysroot\":" + quote(identity.sdk_or_sysroot) +
+         ",\"optimization\":" + quote(identity.optimization) +
+         ",\"fp_model\":" + quote(identity.fp_model) +
+         ",\"fp_contract\":" + quote(identity.fp_contract) +
+         ",\"denormal_mode\":" + quote(identity.denormal_mode) +
+         ",\"feature_set\":" + quote(identity.feature_set) +
+         ",\"os\":" + quote(identity.os) +
+         ",\"libc\":" + quote(identity.libc) +
+         ",\"libm\":" + quote(identity.libm) +
+         ",\"rounding_mode\":" + quote(identity.rounding_mode) +
+         ",\"gradual_underflow\":" + (identity.gradual_underflow ? "true" : "false") +
          "},\"identity_sha256\":" + quote(identity_sha256) + "}";
 }
 

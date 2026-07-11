@@ -4,12 +4,32 @@
 #include "protocol.hpp"
 
 #include <exception>
+#include <cfenv>
 #include <iostream>
 #include <limits>
 #include <stdexcept>
 #include <string>
 
 namespace {
+
+std::string runtime_rounding_mode() {
+  const auto half_ulp = liquidfun::reference::float_from_bits(0x33800000U);
+  const auto ties_even = (1.0F + half_ulp) == 1.0F;
+  const auto odd_rounds_up =
+      liquidfun::reference::bits_from_float(
+          liquidfun::reference::float_from_bits(0x3F800001U) + half_ulp) ==
+      0x3F800002U;
+  return std::fegetround() == FE_TONEAREST && ties_even && odd_rounds_up
+             ? "nearest_ties_even"
+             : "unsupported";
+}
+
+bool runtime_gradual_underflow() {
+  const auto half_minimum_normal =
+      std::numeric_limits<float>::min() * 0.5F;
+  return liquidfun::reference::bits_from_float(half_minimum_normal) ==
+         0x00400000U;
+}
 
 liquidfun::reference::BuildIdentity build_identity() {
   namespace configured = liquidfun::reference::configured_build_identity;
@@ -24,7 +44,22 @@ liquidfun::reference::BuildIdentity build_identity() {
       configured::kBuildType,
       configured::kEffectiveCompileFlags,
       configured::kEffectiveLinkFlags,
-      configured::kSanitizerMode};
+      configured::kSanitizerMode,
+      configured::kCompileCommandSha256,
+      configured::kTargetTriple,
+      configured::kTargetCpu,
+      configured::kTargetFeatures,
+      configured::kSdkOrSysroot,
+      configured::kOptimization,
+      configured::kFpModel,
+      configured::kFpContract,
+      configured::kDenormalMode,
+      configured::kFeatureSet,
+      configured::kOs,
+      configured::kLibc,
+      configured::kLibm,
+      runtime_rounding_mode(),
+      runtime_gradual_underflow()};
 }
 
 int run() {
