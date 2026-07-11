@@ -1,0 +1,52 @@
+profile_id = "phase4-v1"
+version = 1
+
+[[fields]]
+semantic_path = "math.branch.is_valid"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "operation" }
+evidence_tier = "d1_canonical"
+justification = "Pinned b2IsValid exponent branch is discrete compatibility evidence."
+
+[[fields]]
+semantic_path = "math.composite.transform"
+comparison = { kind = "float", policy = { kind = "absolute_relative", absolute_bits = 897988541, relative_bits = 953267991 } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "scenario_steps", steps = 32 }
+evidence_tier = "d2_supported"
+justification = "Bounded transform composition uses absolute tolerance near zero and relative tolerance at scale."
+
+[[fields]]
+semantic_path = "math.constants.pi"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
+zero_policy = "distinct"
+non_finite_policy = "exact_bits_transport"
+collection_policy = "ordered"
+horizon = { kind = "operation" }
+evidence_tier = "d1_canonical"
+justification = "Pinned b2_pi decimal token has one authoritative f32 bit pattern."
+
+[[fields]]
+semantic_path = "math.kernel.rotation"
+comparison = { kind = "float", policy = { kind = "ulps", max = 4 } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "operation" }
+evidence_tier = "d2_supported"
+justification = "Separate platform libm sine and cosine calls require a reviewed local-kernel ULP bound."
+
+[[fields]]
+semantic_path = "math.kernel.vector_length"
+comparison = { kind = "float", policy = { kind = "ulps", max = 2 } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "operation" }
+evidence_tier = "d1_canonical"
+justification = "One source-ordered multiply-add sequence followed by square root is a bounded local kernel."

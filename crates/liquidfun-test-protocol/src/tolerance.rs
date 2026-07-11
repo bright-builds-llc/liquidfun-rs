@@ -3,6 +3,10 @@ use sha2::{Digest, Sha256};
 
 use crate::{FloatBits, Sha256Hex, ToleranceProfileVersion};
 
+mod policy;
+
+pub use policy::*;
+
 /// Closed policy set for authoritative floating-point observables.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
