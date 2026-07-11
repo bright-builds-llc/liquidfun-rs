@@ -7,6 +7,6 @@ pub use object::{
     CreateObjectError, DestroyedId, DestructionCause, DestructionRecord, ObjectSnapshot, World,
 };
 pub use step::{
-    CollisionDirective, ContactEvent, ContactSnapshot, ContactView, PreSolveDirective, StepError,
-    StepHook, StepLimits, StepReport,
+    CollisionDirective, CommandApplication, CommandError, ContactEvent, ContactSnapshot,
+    ContactView, PreSolveDirective, StepError, StepHook, StepLimits, StepReport, WorldCommand,
 };

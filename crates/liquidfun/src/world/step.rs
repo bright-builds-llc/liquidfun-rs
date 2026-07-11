@@ -4,7 +4,7 @@ use std::cell::Cell;
 use std::error::Error;
 use std::fmt;
 
-use crate::{DestructionRecord, FixtureId, HandleError, World};
+use crate::{BodyId, DestructionRecord, FixtureId, HandleError, World};
 
 const MAX_STEP_EVENTS: usize = 4_096;
 const MAX_STEP_COMMANDS: usize = 1_024;
@@ -188,6 +188,71 @@ pub trait StepHook {
 
     /// Observes one non-filtered occurrence without receiving mutable world access.
     fn observe(&mut self, _contact: ContactView<'_>) {}
+
+    /// Optionally requests one owned mutation after observing an occurrence.
+    ///
+    /// The returned command is queued while locked and revalidated only after the step unlocks.
+    fn command(&mut self, _contact: ContactView<'_>) -> Option<WorldCommand> {
+        None
+    }
+}
+
+/// A supported owned mutation requested by a step hook.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum WorldCommand {
+    /// Destroy a body and its dependents.
+    DestroyBody(BodyId),
+    /// Destroy one fixture.
+    DestroyFixture(FixtureId),
+}
+
+/// Why one deferred command could not be applied.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum CommandError {
+    /// A typed command operand was foreign, stale, or destroyed at application time.
+    InvalidHandle(HandleError),
+    /// An internal lifecycle violation attempted application while the world was locked.
+    Locked,
+}
+
+impl fmt::Display for CommandError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::InvalidHandle(error) => write!(formatter, "invalid command handle: {error}"),
+            Self::Locked => formatter.write_str("cannot apply command while world is locked"),
+        }
+    }
+}
+
+impl Error for CommandError {}
+
+/// Owned deterministic result for one deferred command.
+#[derive(Debug, PartialEq, Eq)]
+pub struct CommandApplication {
+    command: WorldCommand,
+    result: Result<Vec<DestructionRecord>, CommandError>,
+}
+
+impl CommandApplication {
+    /// Returns the exact command requested by the hook.
+    #[must_use]
+    pub const fn command(&self) -> WorldCommand {
+        self.command
+    }
+
+    /// Returns owned destruction evidence or the explicit per-command rejection.
+    ///
+    /// # Errors
+    ///
+    /// Returns the command's recoverable application error when its operand was invalid.
+    pub fn result(&self) -> Result<&[DestructionRecord], CommandError> {
+        self.result
+            .as_ref()
+            .map(Vec::as_slice)
+            .map_err(|error| *error)
+    }
 }
 
 /// Owned callback evidence for one occurrence.
@@ -223,6 +288,7 @@ impl ContactEvent {
 pub struct StepReport {
     events: Vec<ContactEvent>,
     destructions: Vec<DestructionRecord>,
+    command_applications: Vec<CommandApplication>,
 }
 
 impl StepReport {
@@ -236,6 +302,14 @@ impl StepReport {
     #[must_use]
     pub fn destructions(&self) -> &[DestructionRecord] {
         &self.destructions
+    }
+
+    /// Returns one result per requested command in exact request order.
+    ///
+    /// Recoverable stale and cross-world failures do not stop later commands.
+    #[must_use]
+    pub fn command_applications(&self) -> &[CommandApplication] {
+        &self.command_applications
     }
 }
 
@@ -319,16 +393,30 @@ impl World {
         hook: &mut H,
         limits: StepLimits,
     ) -> Result<StepReport, StepError> {
-        let _lock = StepLockGuard::acquire(&self.step_state)?;
+        let (events, commands) = {
+            let _lock = StepLockGuard::acquire(&self.step_state)?;
+            self.dispatch_hooks(contacts, hook, limits)?
+        };
+        let (command_applications, destructions) = self.apply_commands(commands);
+
+        Ok(StepReport {
+            events,
+            destructions,
+            command_applications,
+        })
+    }
+
+    fn dispatch_hooks<H: StepHook>(
+        &self,
+        contacts: &[ContactSnapshot],
+        hook: &mut H,
+        limits: StepLimits,
+    ) -> Result<(Vec<ContactEvent>, Vec<WorldCommand>), StepError> {
         let mut events = Vec::with_capacity(contacts.len().min(limits.max_events));
+        let mut commands = Vec::with_capacity(contacts.len().min(limits.max_commands));
 
         for snapshot in contacts {
-            if events.len() == limits.max_events {
-                return Err(StepError::LimitExceeded {
-                    resource: "event",
-                    limit: limits.max_events,
-                });
-            }
+            check_capacity(events.len(), limits.max_events, "event")?;
             for fixture in snapshot.fixtures() {
                 self.validate_fixture(fixture)
                     .map_err(StepError::InvalidContact)?;
@@ -344,6 +432,10 @@ impl World {
             let maybe_pre_solve = if collision == CollisionDirective::Collide {
                 let directive = hook.pre_solve(view);
                 hook.observe(view);
+                if let Some(command) = hook.command(view) {
+                    check_capacity(commands.len(), limits.max_commands, "command")?;
+                    commands.push(command);
+                }
                 Some(directive)
             } else {
                 None
@@ -355,11 +447,49 @@ impl World {
             });
         }
 
-        Ok(StepReport {
-            events,
-            destructions: Vec::new(),
-        })
+        Ok((events, commands))
     }
+
+    fn apply_commands(
+        &mut self,
+        commands: Vec<WorldCommand>,
+    ) -> (Vec<CommandApplication>, Vec<DestructionRecord>) {
+        let mut applications = Vec::with_capacity(commands.len());
+        let mut destructions = Vec::new();
+        for command in commands {
+            let result = self.apply_command(command);
+            if let Ok(records) = &result {
+                destructions.extend(records.iter().cloned());
+            }
+            applications.push(CommandApplication { command, result });
+        }
+        (applications, destructions)
+    }
+
+    fn apply_command(
+        &mut self,
+        command: WorldCommand,
+    ) -> Result<Vec<DestructionRecord>, CommandError> {
+        if self.step_state.locked.get() {
+            return Err(CommandError::Locked);
+        }
+        match command {
+            WorldCommand::DestroyBody(body) => {
+                self.destroy_body(body).map_err(CommandError::InvalidHandle)
+            }
+            WorldCommand::DestroyFixture(fixture) => self
+                .destroy_fixture(fixture)
+                .map(|record| vec![record])
+                .map_err(CommandError::InvalidHandle),
+        }
+    }
+}
+
+fn check_capacity(current: usize, limit: usize, resource: &'static str) -> Result<(), StepError> {
+    if current == limit {
+        return Err(StepError::LimitExceeded { resource, limit });
+    }
+    Ok(())
 }
 
 #[cfg(test)]
@@ -477,5 +607,160 @@ pub(super) mod hooks {
         );
         assert!(world.contains_fixture(fixtures[0]));
         assert!(world.contains_fixture(fixtures[1]));
+    }
+}
+
+#[cfg(test)]
+mod commands {
+    use super::*;
+
+    struct CommandHook {
+        commands: std::collections::VecDeque<WorldCommand>,
+    }
+
+    impl StepHook for CommandHook {
+        fn command(&mut self, _contact: ContactView<'_>) -> Option<WorldCommand> {
+            self.commands.pop_front()
+        }
+    }
+
+    fn world_with_contact() -> (World, ContactSnapshot) {
+        let mut world = World::new().expect("test world key should remain available");
+        let body = world.create_body().expect("body should fit");
+        let first = world.create_fixture(body).expect("fixture should fit");
+        let second = world.create_fixture(body).expect("fixture should fit");
+        (world, ContactSnapshot::new(first, second))
+    }
+
+    #[test]
+    fn commands_apply_after_unlock_in_request_order() {
+        // Arrange
+        let (mut world, contact) = world_with_contact();
+        let first = world.create_body().expect("body should fit");
+        let second = world.create_body().expect("body should fit");
+        let mut hook = CommandHook {
+            commands: [
+                WorldCommand::DestroyBody(first),
+                WorldCommand::DestroyBody(second),
+            ]
+            .into(),
+        };
+
+        // Act
+        let report = world
+            .step(&[contact, contact], &mut hook, StepLimits::default())
+            .expect("commands should be bounded");
+
+        // Assert
+        assert_eq!(report.command_applications().len(), 2);
+        assert!(report.command_applications()[0].result().is_ok());
+        assert!(report.command_applications()[1].result().is_ok());
+        assert_eq!(
+            report
+                .destructions()
+                .iter()
+                .map(DestructionRecord::destroyed)
+                .collect::<Vec<_>>(),
+            vec![
+                crate::DestroyedId::Body(first),
+                crate::DestroyedId::Body(second)
+            ]
+        );
+    }
+
+    #[test]
+    fn stale_command_does_not_stop_later_commands() {
+        // Arrange
+        let (mut world, contact) = world_with_contact();
+        let invalidated = world.create_body().expect("body should fit");
+        let survivor = world.create_body().expect("body should fit");
+        let mut hook = CommandHook {
+            commands: [
+                WorldCommand::DestroyBody(invalidated),
+                WorldCommand::DestroyBody(invalidated),
+                WorldCommand::DestroyBody(survivor),
+            ]
+            .into(),
+        };
+
+        // Act
+        let report = world
+            .step(
+                &[contact, contact, contact],
+                &mut hook,
+                StepLimits::default(),
+            )
+            .expect("stale command is a per-command result");
+
+        // Assert
+        assert!(report.command_applications()[0].result().is_ok());
+        assert_eq!(
+            report.command_applications()[1].result(),
+            Err(CommandError::InvalidHandle(HandleError::StaleOrDestroyed))
+        );
+        assert!(report.command_applications()[2].result().is_ok());
+        assert!(!world.contains_body(survivor));
+    }
+
+    #[test]
+    fn cross_world_and_reused_slot_commands_fail_at_application_time() {
+        // Arrange
+        let (mut world, contact) = world_with_contact();
+        let stale = world.create_body().expect("body should fit");
+        world.destroy_body(stale).expect("body should be live");
+        let replacement = world.create_body().expect("reused slot should fit");
+        let mut other = World::new().expect("test world key should remain available");
+        let foreign = other.create_body().expect("body should fit");
+        let mut hook = CommandHook {
+            commands: [
+                WorldCommand::DestroyBody(stale),
+                WorldCommand::DestroyBody(foreign),
+            ]
+            .into(),
+        };
+
+        // Act
+        let report = world
+            .step(&[contact, contact], &mut hook, StepLimits::default())
+            .expect("invalid commands are recoverable results");
+
+        // Assert
+        assert_eq!(
+            report.command_applications()[0].result(),
+            Err(CommandError::InvalidHandle(HandleError::StaleOrDestroyed))
+        );
+        assert_eq!(
+            report.command_applications()[1].result(),
+            Err(CommandError::InvalidHandle(HandleError::WrongWorld))
+        );
+        assert!(world.contains_body(replacement));
+    }
+
+    #[test]
+    fn command_overflow_discards_all_queued_commands() {
+        // Arrange
+        let (mut world, contact) = world_with_contact();
+        let body = world.create_body().expect("body should fit");
+        let mut hook = CommandHook {
+            commands: [
+                WorldCommand::DestroyBody(body),
+                WorldCommand::DestroyBody(body),
+            ]
+            .into(),
+        };
+        let limits = StepLimits::new(2, 1).expect("limits are below hard maxima");
+
+        // Act
+        let result = world.step(&[contact, contact], &mut hook, limits);
+
+        // Assert
+        assert_eq!(
+            result,
+            Err(StepError::LimitExceeded {
+                resource: "command",
+                limit: 1,
+            })
+        );
+        assert!(world.contains_body(body));
     }
 }
