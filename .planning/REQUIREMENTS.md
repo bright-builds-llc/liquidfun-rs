@@ -142,7 +142,7 @@ Requirements for the first release permitted to claim complete parity with the s
 ### Documentation and Release
 
 - [ ] **DOCS-01**: `README.md` accurately states current maturity, implemented and missing capabilities, build/test/example commands, submodule needs, toolchain needs, contribution path, and license status.
-- [ ] **DOCS-02**: `ARCHITECTURE.md` explains crate/module boundaries, dependency direction, handles, callbacks, particle storage, step order, oracle isolation, and renderer independence.
+- [x] **DOCS-02**: `ARCHITECTURE.md` explains crate/module boundaries, dependency direction, handles, callbacks, particle storage, step order, oracle isolation, and renderer independence.
 - [x] **DOCS-03**: `UPSTREAM.md` records canonical source, exact revision, ancestry, patches, build process, licenses/notices, and intentional update procedure.
 - [ ] **DOCS-04**: `COMPATIBILITY.md` exposes the complete traceability matrix, evidence states, known differences, tolerance scope, and no-gap parity status.
 - [x] **DOCS-05**: `TESTING.md` documents test layers, scenario protocol, differential diagnosis, reference-data review, fuzz/Miri/sanitizer/coverage workflows, and CI tiers.
@@ -294,7 +294,7 @@ Roadmap creation maps every v1 requirement to exactly one phase.
 | PLAT-05 | Phase 12 | Pending |
 | PLAT-06 | Phase 12 | Pending |
 | DOCS-01 | Phase 12 | Pending |
-| DOCS-02 | Phase 3 | Pending |
+| DOCS-02 | Phase 3 | Complete |
 | DOCS-03 | Phase 1 | Complete |
 | DOCS-04 | Phase 12 | Pending |
 | DOCS-05 | Phase 2 | Complete |
