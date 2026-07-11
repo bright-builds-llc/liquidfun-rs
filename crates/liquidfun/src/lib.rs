@@ -23,6 +23,10 @@
 //! discards queued commands, poisons coherent-state operations, and resumes the
 //! original panic.
 //!
+//! World-local semantic diagnostic IDs use checked allocation. After the final
+//! `u64` identity is issued, later creation returns
+//! [`ArenaInsertError::DiagnosticIdExhausted`] before inserting an object.
+//!
 //! This foundation deliberately exposes no durable contact handle, raw object
 //! constructor, particle dense index, arbitrary callback closure command, raw
 //! pointer, or particle bulk/external-buffer API. Full particle solving and the

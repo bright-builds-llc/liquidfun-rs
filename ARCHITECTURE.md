@@ -135,7 +135,9 @@ make wrong-kind substitution a compile-time error. Foreign handles return
 `StaleOrDestroyed`. Removing an arena entry advances its generation before
 reuse, and a generation that cannot advance retires its slot permanently rather
 than wrapping. Capacity, world-key, and generation exhaustion are explicit
-failures.
+failures. World-local semantic diagnostic IDs likewise advance with checked
+arithmetic: `u64::MAX` may be issued once, after which creation returns
+`DiagnosticIdExhausted` before inserting an object.
 
 All object destruction is centralized in `World`, validates the root before
 mutation, updates both sides of adjacency, invalidates each affected handle,
@@ -233,7 +235,7 @@ not dictate `World`, handle, callback, or particle layout.
 | Decision | Disposition | Executable evidence |
 | --- | --- | --- |
 | D-01 | Implemented: six opaque typed identities use private world/slot/generation coordinates and custom arenas. | `identity.rs`; `arena.rs`; `tests/object_model.rs::public_handle_kinds_are_distinct_types` |
-| D-02 | Implemented: checked generation advance permanently retires exhausted slots and reports finite-space failures. | `arena.rs::tests::maximum_generation_retires_permanently`; seeded arena model test |
+| D-02 | Implemented: checked generation advance permanently retires exhausted slots, checked diagnostic allocation rejects insertion after `u64::MAX`, and finite-space failures remain explicit. | `arena.rs::tests::maximum_generation_retires_permanently`; `world/object.rs::tests::diagnostic_identity_exhaustion_rejects_insertion`; seeded arena model test |
 | D-03 | Implemented: typed signatures reject wrong kinds; runtime lookup distinguishes foreign from stale identities. | crate compile-fail doctest; `tests/object_model.rs` stale/reuse and cross-world tests |
 | D-04 | Implemented: complete identity, including particle-system scope for `ParticleId`, controls equality/hash while constructors, coordinates, serialization, and ordering stay private. | `identity.rs` equality/scope/debug tests; crate raw-parts compile-fail doctest |
 | D-05 | Implemented: handles use auto traits only and production forbids unsafe code. | `identity.rs::tests::handles_are_send_and_sync_through_auto_traits`; `lib.rs` crate lint |

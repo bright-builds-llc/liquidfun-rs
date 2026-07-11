@@ -47,7 +47,7 @@ impl fmt::Display for HandleError {
 
 impl Error for HandleError {}
 
-/// A failure to insert an object into a bounded generational arena.
+/// A failure to allocate or store a world-owned object.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum ArenaInsertError {
@@ -60,6 +60,8 @@ pub enum ArenaInsertError {
     },
     /// Retired generations have made the configured slot space unusable.
     GenerationExhausted,
+    /// The world has issued every semantic diagnostic identity.
+    DiagnosticIdExhausted,
 }
 
 impl fmt::Display for ArenaInsertError {
@@ -71,6 +73,9 @@ impl fmt::Display for ArenaInsertError {
             }
             Self::GenerationExhausted => {
                 formatter.write_str("arena slot generations are exhausted")
+            }
+            Self::DiagnosticIdExhausted => {
+                formatter.write_str("world diagnostic identity space is exhausted")
             }
         }
     }

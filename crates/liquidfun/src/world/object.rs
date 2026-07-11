@@ -227,7 +227,7 @@ pub struct World {
     particle_systems: Arena<ParticleSystem, ParticleSystemId>,
     particle_groups: Arena<ParticleGroup, ParticleGroupId>,
     particles: Arena<Particle, ParticleId>,
-    next_diagnostic_id: u64,
+    next_diagnostic_id: Option<u64>,
     pub(super) step_state: StepState,
 }
 
@@ -246,7 +246,7 @@ impl World {
             particle_systems: Arena::new(world, usize::MAX),
             particle_groups: Arena::new(world, usize::MAX),
             particles: Arena::new(world, usize::MAX),
-            next_diagnostic_id: 1,
+            next_diagnostic_id: Some(1),
             step_state: StepState::new(),
         })
     }
@@ -255,10 +255,17 @@ impl World {
         self.fixtures.get(fixture).map(|_fixture| ())
     }
 
-    fn allocate_diagnostic_id(&mut self) -> u64 {
-        let id = self.next_diagnostic_id;
-        self.next_diagnostic_id = self.next_diagnostic_id.saturating_add(1);
-        id
+    fn allocate_diagnostic_id(&mut self) -> Result<u64, ArenaInsertError> {
+        let Some(id) = self.next_diagnostic_id else {
+            return Err(ArenaInsertError::DiagnosticIdExhausted);
+        };
+        self.next_diagnostic_id = id.checked_add(1);
+        Ok(id)
+    }
+
+    #[cfg(test)]
+    fn set_next_diagnostic_id_for_test(&mut self, next: u64) {
+        self.next_diagnostic_id = Some(next);
     }
 
     /// Creates a body.
@@ -268,7 +275,7 @@ impl World {
     /// Returns an arena error if body storage is exhausted.
     pub fn create_body(&mut self) -> Result<BodyId, ArenaInsertError> {
         self.ensure_not_poisoned_for_insert()?;
-        let diagnostic_id = self.allocate_diagnostic_id();
+        let diagnostic_id = self.allocate_diagnostic_id()?;
         self.bodies.insert(Body {
             diagnostic_id,
             fixtures: Vec::new(),
@@ -284,7 +291,7 @@ impl World {
     pub fn create_fixture(&mut self, body: BodyId) -> Result<FixtureId, CreateObjectError> {
         self.ensure_not_poisoned_for_handle()?;
         self.bodies.get(body)?;
-        let diagnostic_id = self.allocate_diagnostic_id();
+        let diagnostic_id = self.allocate_diagnostic_id()?;
         let fixture = self.fixtures.insert(Fixture {
             diagnostic_id,
             body,
@@ -308,7 +315,7 @@ impl World {
         self.ensure_not_poisoned_for_handle()?;
         self.bodies.get(first)?;
         self.bodies.get(second)?;
-        let diagnostic_id = self.allocate_diagnostic_id();
+        let diagnostic_id = self.allocate_diagnostic_id()?;
         let joint = self.joints.insert(Joint {
             diagnostic_id,
             bodies: [first, second],
@@ -331,7 +338,7 @@ impl World {
     /// Returns an arena error if particle-system storage is exhausted.
     pub fn create_particle_system(&mut self) -> Result<ParticleSystemId, ArenaInsertError> {
         self.ensure_not_poisoned_for_insert()?;
-        let diagnostic_id = self.allocate_diagnostic_id();
+        let diagnostic_id = self.allocate_diagnostic_id()?;
         self.particle_systems.insert(ParticleSystem {
             diagnostic_id,
             groups: Vec::new(),
@@ -350,7 +357,7 @@ impl World {
     ) -> Result<ParticleGroupId, CreateObjectError> {
         self.ensure_not_poisoned_for_handle()?;
         self.particle_systems.get(system)?;
-        let diagnostic_id = self.allocate_diagnostic_id();
+        let diagnostic_id = self.allocate_diagnostic_id()?;
         let group = self.particle_groups.insert(ParticleGroup {
             diagnostic_id,
             system,
@@ -381,7 +388,7 @@ impl World {
                 ));
             }
         }
-        let diagnostic_id = self.allocate_diagnostic_id();
+        let diagnostic_id = self.allocate_diagnostic_id()?;
         let particle = self.particles.insert_particle(
             Particle {
                 diagnostic_id,
@@ -991,5 +998,31 @@ mod tests {
             records[0].snapshot(),
             ObjectSnapshot::Fixture { body: snapshot_body } if *snapshot_body == body
         ));
+    }
+
+    #[test]
+    fn diagnostic_identity_exhaustion_rejects_insertion() {
+        // Arrange
+        let mut world = test_world();
+        world.set_next_diagnostic_id_for_test(u64::MAX - 1);
+        world
+            .create_body()
+            .expect("penultimate ID should remain valid");
+        world.create_body().expect("maximum ID should remain valid");
+
+        // Act
+        let result = world.create_body();
+
+        // Assert
+        assert_eq!(result, Err(ArenaInsertError::DiagnosticIdExhausted));
+        assert_eq!(world.bodies.iter().count(), 2);
+        assert_eq!(
+            world
+                .bodies
+                .iter()
+                .map(|(_body, record)| record.diagnostic_id)
+                .collect::<Vec<_>>(),
+            vec![u64::MAX - 1, u64::MAX]
+        );
     }
 }
