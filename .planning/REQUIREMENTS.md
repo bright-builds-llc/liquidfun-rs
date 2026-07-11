@@ -40,7 +40,7 @@ Requirements for the first release permitted to claim complete parity with the s
 - [x] **API-05**: Step hooks receive read-only views and narrow supported directives instead of unrestricted mutable world access.
 - [x] **API-06**: Application mutations requested during callbacks are represented as commands and applied only at documented unlocked phase boundaries.
 - [x] **API-07**: Consumers can obtain owned step events with documented timing, multiplicity, ordering, and lifetime without retaining internal references.
-- [ ] **API-08**: Consumers can associate user data through a documented safe model that preserves identity and destruction semantics without public raw pointers.
+- [x] **API-08**: Consumers can associate user data through a documented safe model that preserves identity and destruction semantics without public raw pointers.
 - [ ] **API-09**: Consumers can inspect particle properties through borrow-scoped bulk views and perform supported mutations without violating aliasing or leaving derived state stale.
 - [ ] **API-10**: Safe external-particle-buffer equivalents preserve documented ownership, capacity, growth, and teardown behavior without requiring arbitrary lifetime raw pointers.
 - [ ] **API-11**: Every public API has succinct rustdoc covering units, invariants, invalidation, callback restrictions, failure behavior, and upstream concept mapping where relevant.
@@ -219,7 +219,7 @@ Roadmap creation maps every v1 requirement to exactly one phase.
 | API-05 | Phase 3 | Complete |
 | API-06 | Phase 3 | Complete |
 | API-07 | Phase 3 | Complete |
-| API-08 | Phase 3 | Pending |
+| API-08 | Phase 3 | Complete |
 | API-09 | Phase 9 | Pending |
 | API-10 | Phase 9 | Pending |
 | API-11 | Phase 12 | Pending |

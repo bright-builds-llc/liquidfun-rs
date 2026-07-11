@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 03-03-PLAN.md
-last_updated: "2026-07-11T02:55:42.096Z"
+stopped_at: Completed 03-04-PLAN.md
+last_updated: "2026-07-11T03:13:10.098Z"
 last_activity: 2026-07-11
 progress:
   total_phases: 12
   completed_phases: 2
   total_plans: 24
-  completed_plans: 22
-  percent: 92
+  completed_plans: 23
+  percent: 96
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-10)
 ## Current Position
 
 Phase: 3 (Rust Object Model and Storage Architecture) — EXECUTING
-Plan: 4 of 5
+Plan: 5 of 5
 Status: Ready to execute
 Last activity: 2026-07-11
 
@@ -70,6 +70,7 @@ Progress: [█████████░] 92%
 | Phase 03 P01 | 8 min | 2 tasks | 4 files |
 | Phase 03 P02 | 14 min | 2 tasks | 5 files |
 | Phase 03 P03 | 10 min | 3 tasks | 5 files |
+| Phase 03 P04 | 7 min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -123,6 +124,10 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 03]: Keep contacts transient and expose only borrow-scoped read-only views or owned fixture snapshots. — No durable contact identity or internal reference can escape a hook.
 - [Phase 03]: Apply bounded typed commands sequentially after unlock and continue after recoverable invalid-handle failures. — Request order and every application result remain deterministic evidence.
 - [Phase 03]: Resume hook panics after restoring the lock, discarding pending commands, and poisoning coherent-state operations. — Partial step progress can never masquerade as healthy state.
+- [Phase 03]: Keep stable ParticleId values separate from private ephemeral dense particle indices. — World and particle-system scope are validated before dense lookup, so reorder and compaction never leak storage position.
+- [Phase 03]: Use one validate-then-commit particle permutation transaction for all representative lanes and derived indices. — Lane alignment, identity maps, proxies, contacts, pairs, triads, lifetime order, and group ranges cannot partially diverge.
+- [Phase 03]: Preserve pending-delete snapshots until compaction advances or retires the particle identity generation. — Pending and stale states remain distinct while destruction evidence stays owned.
+- [Phase 03]: Keep owned particle lane bundles and declared fixed capacity private until Phase 9. — Phase 3 proves ownership and teardown without publishing raw buffers, bulk mutation, or solver API.
 
 ### Pending Todos
 
@@ -135,6 +140,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-11T02:55:42.093Z
-Stopped at: Completed 03-03-PLAN.md
+Last session: 2026-07-11T03:12:57.317Z
+Stopped at: Completed 03-04-PLAN.md
 Resume file: None
