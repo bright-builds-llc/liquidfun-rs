@@ -248,6 +248,25 @@ fn collision_compile_database_identity_is_covered_by_unit_digest_tests() {
 }
 
 #[test]
+fn collision_required_families_are_validated_before_oracle_execution() {
+    let bytes = include_bytes!("../../../protocol/fixtures/accepted/collision-probe-request.jsonl");
+    let request = liquidfun_test_protocol::decode_collision_probe_request_jsonl(
+        bytes,
+        &liquidfun_test_protocol::HarnessLimits::phase2_default_v1(),
+    )
+    .expect("checked-in collision corpus should be fail-closed and complete");
+    for family in liquidfun_test_protocol::CollisionWitnessFamily::REQUIRED {
+        assert!(
+            request
+                .scenario()
+                .cases()
+                .iter()
+                .any(|case| case.witness_family() == family)
+        );
+    }
+}
+
+#[test]
 fn math_probe_determinism_accepts_only_two_reviewed_runs() -> TestResult {
     // Arrange
     let fixture = RepositoryFixture::new()?;

@@ -1,11 +1,14 @@
 crates/liquidfun-differential/src/rust_adapter.rs
 crates/liquidfun-differential/src/math_probe.rs
 crates/liquidfun-differential/src/collision_probe.rs
+crates/liquidfun-differential/src/collision_probe/support.rs
 crates/liquidfun/src/collision.rs
 crates/liquidfun/src/collision/broad_phase.rs
 crates/liquidfun/src/collision/differential.rs
+crates/liquidfun/src/collision/differential/cache_replay.rs
 crates/liquidfun/src/collision/distance.rs
 crates/liquidfun/src/collision/distance/proxy.rs
+crates/liquidfun/src/collision/distance/replay.rs
 crates/liquidfun/src/collision/distance/simplex.rs
 crates/liquidfun/src/collision/error.rs
 crates/liquidfun/src/collision/narrow.rs

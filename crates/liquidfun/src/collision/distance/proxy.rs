@@ -3,7 +3,7 @@ use crate::collision::{ChildIndex, CollisionError};
 use crate::math::Vec2;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum ProxyKind {
+pub(super) enum ProxyKind {
     Circle,
     Edge,
     Polygon,
@@ -12,10 +12,10 @@ enum ProxyKind {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) struct ProxyIdentity {
-    kind: ProxyKind,
-    child_index: usize,
-    radius_bits: u32,
-    vertex_bits: Vec<(u32, u32)>,
+    pub(super) kind: ProxyKind,
+    pub(super) child_index: usize,
+    pub(super) radius_bits: u32,
+    pub(super) vertex_bits: Vec<(u32, u32)>,
 }
 
 enum ProxyVertices<'a> {

@@ -9,7 +9,7 @@ non_finite_policy = "reject_arithmetic_nan"
 collection_policy = "ordered"
 horizon = { kind = "operation" }
 evidence_tier = "d2_supported"
-justification = "Accepted shape construction records exact finite derived bits."
+justification = "Shape construction compares accepted finite bits or exact rejection category and field."
 
 [[fields]]
 semantic_path = "collision.shape_unary_query.result"

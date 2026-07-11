@@ -1,5 +1,9 @@
 # Behavior-affecting inputs included in adapter_content_sha256.
 tools/reference/src/main.cpp
+tools/reference/src/collision_probe.cpp
+tools/reference/src/collision_probe.hpp
+tools/reference/src/collision_probe_shapes.hpp
+tools/reference/src/collision_probe_spatial.hpp
 tools/reference/src/math_probe.cpp
 tools/reference/src/math_probe.hpp
 tools/reference/src/protocol.cpp

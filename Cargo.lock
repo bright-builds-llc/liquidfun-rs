@@ -227,6 +227,7 @@ dependencies = [
 name = "liquidfun-test-protocol"
 version = "0.0.0"
 dependencies = [
+ "liquidfun",
  "serde",
  "serde_json",
  "sha2",

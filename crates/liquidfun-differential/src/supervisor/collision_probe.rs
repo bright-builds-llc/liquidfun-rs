@@ -5,8 +5,8 @@ use std::{io::Write, process::Stdio, time::Instant};
 use liquidfun_test_protocol::{
     BuildIdentity, CollectionPolicy, CollisionProbeDiscreteValue, CollisionProbeHorizon,
     CollisionProbeNumericValue, CollisionProbeOperation, CollisionProbeRequestRecord,
-    CollisionProbeResult, FloatBits, HarnessFailureKind, HarnessLimits, LastValidRecord,
-    RecordLimit, RequestId, encode_jsonl,
+    CollisionProbeResult, CollisionRejectionCategory, CollisionRejectionField, FloatBits,
+    HarnessFailureKind, HarnessLimits, LastValidRecord, RecordLimit, RequestId, encode_jsonl,
 };
 use serde::Deserialize;
 
@@ -242,9 +242,21 @@ struct RawResult {
     policy_path: Box<str>,
     horizon: CollisionProbeHorizon,
     collection_policy: CollectionPolicy,
-    numeric: Vec<RawNumeric>,
-    discrete: Vec<RawDiscrete>,
-    payload_ids: Vec<u32>,
+    outcome: RawOutcome,
+}
+
+#[derive(Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+enum RawOutcome {
+    Accepted {
+        numeric: Vec<RawNumeric>,
+        discrete: Vec<RawDiscrete>,
+        payload_ids: Vec<u32>,
+    },
+    Rejected {
+        category: CollisionRejectionCategory,
+        field: CollisionRejectionField,
+    },
 }
 
 fn decode_result(
@@ -262,20 +274,32 @@ fn decode_result(
     {
         return Err(HarnessFailureKind::SequenceViolation);
     }
-    CollisionProbeResult::new(
-        raw.case_id,
-        raw.operation,
-        raw.numeric
-            .into_iter()
-            .map(|value| CollisionProbeNumericValue::new(value.field, value.bits))
-            .collect(),
-        raw.discrete
-            .into_iter()
-            .map(|value| CollisionProbeDiscreteValue::new(value.field, value.value))
-            .collect(),
-        raw.payload_ids,
-    )
-    .map_err(|_| HarnessFailureKind::SequenceViolation)
+    match raw.outcome {
+        RawOutcome::Accepted {
+            numeric,
+            discrete,
+            payload_ids,
+        } => CollisionProbeResult::new(
+            raw.case_id,
+            raw.operation,
+            numeric
+                .into_iter()
+                .map(|value| CollisionProbeNumericValue::new(value.field, value.bits))
+                .collect(),
+            discrete
+                .into_iter()
+                .map(|value| CollisionProbeDiscreteValue::new(value.field, value.value))
+                .collect(),
+            payload_ids,
+        )
+        .map_err(|_| HarnessFailureKind::SequenceViolation),
+        RawOutcome::Rejected { category, field } => Ok(CollisionProbeResult::rejected(
+            raw.case_id,
+            raw.operation,
+            category,
+            field,
+        )),
+    }
 }
 
 #[derive(Deserialize)]

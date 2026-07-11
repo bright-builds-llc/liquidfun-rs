@@ -4,8 +4,10 @@ use liquidfun_differential::{
     CollisionDivergence, NativeCollisionProbeExecutor, compare_collision_probe_results,
 };
 use liquidfun_test_protocol::{
-    CollisionProbeDiscreteValue, CollisionProbeNumericValue, CollisionProbeResult, FloatBits,
-    HarnessLimits, Phase5PolicyProfile, decode_collision_probe_request_jsonl,
+    CollisionProbeDiscreteValue, CollisionProbeNumericValue, CollisionProbeResult,
+    CollisionProbeResultOutcome, CollisionRejectionCategory, CollisionRejectionField,
+    CollisionWitnessFamily, FloatBits, HarnessLimits, Phase5PolicyProfile,
+    decode_collision_probe_request_jsonl,
 };
 use sha2::{Digest, Sha256};
 
@@ -41,6 +43,103 @@ fn native_executes_every_closed_collision_operation_in_request_order() {
         assert_eq!(result.horizon(), case.horizon());
         assert_eq!(result.collection_policy(), case.collection_policy());
     }
+}
+
+#[test]
+fn rejected_shape_boundaries_are_executed_and_typed() {
+    // Arrange
+    let request = request();
+
+    // Act
+    let results = NativeCollisionProbeExecutor::execute(&request)
+        .expect("fixed collision corpus should execute natively");
+
+    // Assert
+    for (case, result) in request.scenario().cases().iter().zip(results.iter()) {
+        if !case.witness_family().expects_rejection() {
+            continue;
+        }
+        assert!(matches!(
+            result.outcome(),
+            CollisionProbeResultOutcome::Rejected { .. }
+        ));
+        assert_eq!(
+            format!("{:?}", case.expected_outcome()),
+            format!("{:?}", result.outcome())
+        );
+    }
+}
+
+#[test]
+fn cache_replay_used_reset_rejected_are_semantic_results() {
+    // Arrange
+    let request = request();
+    let results = NativeCollisionProbeExecutor::execute(&request)
+        .expect("fixed collision corpus should execute natively");
+
+    // Act / Assert
+    assert_discrete(
+        &request,
+        &results,
+        CollisionWitnessFamily::DistanceWarmUsed,
+        "cache_outcome",
+        "used",
+    );
+    assert_discrete(
+        &request,
+        &results,
+        CollisionWitnessFamily::DistanceCacheReset,
+        "cache_outcome",
+        "reset",
+    );
+    assert_discrete(
+        &request,
+        &results,
+        CollisionWitnessFamily::DistanceCacheRejected,
+        "cache_outcome",
+        "rejected",
+    );
+}
+
+#[test]
+fn cache_replay_count_one_is_used() {
+    // Arrange
+    let request = request();
+    let results = NativeCollisionProbeExecutor::execute(&request)
+        .expect("fixed collision corpus should execute natively");
+
+    // Act / Assert
+    assert_discrete(
+        &request,
+        &results,
+        CollisionWitnessFamily::DistanceWarmSinglePointUsed,
+        "cache_outcome",
+        "used",
+    );
+}
+
+#[test]
+fn cache_replay_compound_invalid_precedence_is_stable() {
+    // Arrange
+    let request = request();
+    let results = NativeCollisionProbeExecutor::execute(&request)
+        .expect("fixed collision corpus should execute natively");
+
+    // Act / Assert
+    assert_discrete(
+        &request,
+        &results,
+        CollisionWitnessFamily::DistanceCacheRejectedPrecedence,
+        "cache_reason",
+        "proxy_a_fingerprint_mismatch",
+    );
+    assert_discrete(
+        &request,
+        &results,
+        CollisionWitnessFamily::DistanceCacheResetPrecedence,
+        "cache_reason",
+        "metric_ratio",
+    );
 }
 
 #[test]
@@ -154,6 +253,63 @@ fn comparison_canonicalizes_only_declared_payload_sets() {
 }
 
 #[test]
+fn comparison_rejects_agreeing_engines_when_expected_outcome_disagrees() {
+    // Arrange
+    let request = request();
+    let profile = Phase5PolicyProfile::parse_toml(POLICY).expect("policy should validate");
+    let baseline = NativeCollisionProbeExecutor::execute(&request)
+        .expect("fixed collision corpus should execute natively");
+    let rejected_index = request
+        .scenario()
+        .cases()
+        .iter()
+        .position(|case| case.witness_family().expects_rejection())
+        .expect("fixed corpus should contain rejected declarations");
+    let rejected_case = &request.scenario().cases()[rejected_index];
+    let agreed_accepted = CollisionProbeResult::new(
+        rejected_case.case_id(),
+        rejected_case.operation(),
+        Vec::new(),
+        Vec::new(),
+        Vec::new(),
+    )
+    .expect("bounded accepted mutation should construct");
+    let mut both_accepted = baseline.to_vec();
+    both_accepted[rejected_index] = agreed_accepted;
+
+    // Act
+    let accepted_result =
+        compare_collision_probe_results(&request, &both_accepted, &both_accepted, &profile);
+
+    // Assert
+    assert!(matches!(
+        accepted_result,
+        Err(CollisionDivergence::Order(_))
+    ));
+
+    // Arrange
+    let accepted_case = &request.scenario().cases()[0];
+    let agreed_rejected = CollisionProbeResult::rejected(
+        accepted_case.case_id(),
+        accepted_case.operation(),
+        CollisionRejectionCategory::InvalidGeometry,
+        CollisionRejectionField::CircleRadius,
+    );
+    let mut both_rejected = baseline.to_vec();
+    both_rejected[0] = agreed_rejected;
+
+    // Act
+    let rejected_result =
+        compare_collision_probe_results(&request, &both_rejected, &both_rejected, &profile);
+
+    // Assert
+    assert!(matches!(
+        rejected_result,
+        Err(CollisionDivergence::Order(_))
+    ));
+}
+
+#[test]
 fn supervisor_classifies_missing_collision_oracle_as_harness_failure() {
     // This verifies collision capture keeps process failures outside physics comparison.
     let executable = liquidfun_differential::OracleExecutable::resolve(
@@ -177,8 +333,11 @@ fn collision_source_changes_native_identity() {
         .collect::<Vec<_>>();
     for required in [
         "crates/liquidfun-differential/src/collision_probe.rs",
+        "crates/liquidfun-differential/src/collision_probe/support.rs",
         "crates/liquidfun/src/collision/differential.rs",
+        "crates/liquidfun/src/collision/differential/cache_replay.rs",
         "crates/liquidfun/src/collision/distance.rs",
+        "crates/liquidfun/src/collision/distance/replay.rs",
     ] {
         assert!(
             sources.contains(&required),
@@ -199,8 +358,11 @@ fn collision_source_changes_native_identity() {
     );
     for changed in [
         "crates/liquidfun-differential/src/collision_probe.rs",
+        "crates/liquidfun-differential/src/collision_probe/support.rs",
         "crates/liquidfun/src/collision/differential.rs",
+        "crates/liquidfun/src/collision/differential/cache_replay.rs",
         "crates/liquidfun/src/collision/distance.rs",
+        "crates/liquidfun/src/collision/distance/replay.rs",
     ] {
         assert_ne!(digest, source_digest(&root, &sources, Some(changed)));
     }
@@ -219,4 +381,25 @@ fn source_digest(root: &std::path::Path, sources: &[&str], maybe_changed: Option
         hasher.update(file_digest);
     }
     format!("{:x}", hasher.finalize())
+}
+
+fn assert_discrete(
+    request: &liquidfun_test_protocol::CollisionProbeRequestRecord,
+    results: &[CollisionProbeResult],
+    family: CollisionWitnessFamily,
+    field: &str,
+    expected: &str,
+) {
+    let index = request
+        .scenario()
+        .cases()
+        .iter()
+        .position(|case| case.witness_family() == family)
+        .expect("required witness family should exist");
+    let actual = results[index]
+        .discrete()
+        .iter()
+        .find(|value| value.field() == field)
+        .map(CollisionProbeDiscreteValue::value);
+    assert_eq!(actual, Some(expected), "unexpected {field} for {family:?}");
 }

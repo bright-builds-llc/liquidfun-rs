@@ -462,6 +462,211 @@
     {
       "additionalProperties": false,
       "properties": {
+        "case_id": {
+          "maxLength": 128,
+          "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+          "type": "string"
+        },
+        "collection_policy": {
+          "enum": [
+            "ordered",
+            "set"
+          ]
+        },
+        "horizon": {
+          "oneOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "operation"
+                }
+              },
+              "required": [
+                "kind"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "phase_local"
+                }
+              },
+              "required": [
+                "kind"
+              ],
+              "type": "object"
+            }
+          ]
+        },
+        "operation": {
+          "enum": [
+            "shape_construction",
+            "shape_unary_query",
+            "distance",
+            "overlap",
+            "clip",
+            "manifold",
+            "pair_dispatch",
+            "feature_transition",
+            "tree_lifecycle",
+            "tree_query",
+            "tree_ray",
+            "tree_metrics",
+            "broad_phase_move_touch",
+            "broad_phase_pairs",
+            "broad_phase_filter",
+            "broad_phase_refilter",
+            "time_of_impact"
+          ]
+        },
+        "outcome": {
+          "oneOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "discrete": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "field": {
+                        "maxLength": 4096,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "value": {
+                        "maxLength": 4096,
+                        "minLength": 1,
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "field",
+                      "value"
+                    ],
+                    "type": "object"
+                  },
+                  "maxItems": 128,
+                  "type": "array"
+                },
+                "kind": {
+                  "const": "accepted"
+                },
+                "numeric": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "bits": {
+                        "maximum": 4294967295,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "field": {
+                        "maxLength": 4096,
+                        "minLength": 1,
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "field",
+                      "bits"
+                    ],
+                    "type": "object"
+                  },
+                  "maxItems": 128,
+                  "type": "array"
+                },
+                "payload_ids": {
+                  "items": {
+                    "maximum": 4294967295,
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "maxItems": 128,
+                  "type": "array"
+                }
+              },
+              "required": [
+                "kind",
+                "numeric",
+                "discrete",
+                "payload_ids"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "category": {
+                  "enum": [
+                    "non_finite_value",
+                    "invalid_geometry",
+                    "invalid_child_index"
+                  ]
+                },
+                "field": {
+                  "enum": [
+                    "circle_center",
+                    "circle_radius",
+                    "edge_start",
+                    "edge_end",
+                    "edge_previous",
+                    "edge_next",
+                    "polygon_vertices",
+                    "chain_vertices",
+                    "child_index"
+                  ]
+                },
+                "kind": {
+                  "const": "rejected"
+                }
+              },
+              "required": [
+                "kind",
+                "category",
+                "field"
+              ],
+              "type": "object"
+            }
+          ]
+        },
+        "policy_path": {
+          "enum": [
+            "collision.shape_construction.result",
+            "collision.shape_unary_query.result",
+            "collision.distance.result",
+            "collision.overlap.result",
+            "collision.clip.result",
+            "collision.manifold.result",
+            "collision.pair_dispatch.result",
+            "collision.feature_transition.result",
+            "collision.tree_lifecycle.result",
+            "collision.tree_query.result",
+            "collision.tree_ray.result",
+            "collision.tree_metrics.result",
+            "collision.broad_phase_move_touch.result",
+            "collision.broad_phase_pairs.result",
+            "collision.broad_phase_filter.result",
+            "collision.broad_phase_refilter.result",
+            "collision.time_of_impact.result"
+          ]
+        }
+      },
+      "required": [
+        "case_id",
+        "operation",
+        "policy_path",
+        "horizon",
+        "collection_policy",
+        "outcome"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
         "protocol_version": {
           "const": 1,
           "type": "integer"

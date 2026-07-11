@@ -37,24 +37,8 @@ impl Simplex {
         proxy_b: &DistanceProxy<'_>,
         transform_b: Transform,
     ) -> Self {
-        let mut simplex = Self {
-            vertices: [SimplexVertex::default(); 3],
-            count: entries.len(),
-        };
-        for (vertex, entry) in simplex.vertices.iter_mut().zip(entries) {
-            let local_a = proxy_a.vertex(entry.index_a);
-            let local_b = proxy_b.vertex(entry.index_b);
-            let point_a = transform_a.apply(local_a);
-            let point_b = transform_b.apply(local_b);
-            *vertex = SimplexVertex {
-                point_a,
-                point_b,
-                difference: point_b - point_a,
-                weight: 0.0,
-                index_a: entry.index_a,
-                index_b: entry.index_b,
-            };
-        }
+        let mut simplex =
+            Self::from_cache_entries(entries, proxy_a, transform_a, proxy_b, transform_b);
         if simplex.count > 1 {
             let metric = simplex.metric();
             if cache_metric_requires_flush(cached_metric, metric) {
@@ -73,6 +57,45 @@ impl Simplex {
                 index_b: 0,
             };
             simplex.count = 1;
+        }
+        simplex
+    }
+
+    #[cfg(feature = "differential-internals")]
+    pub(super) fn cache_metric(
+        entries: &[CacheEntry],
+        proxy_a: &DistanceProxy<'_>,
+        transform_a: Transform,
+        proxy_b: &DistanceProxy<'_>,
+        transform_b: Transform,
+    ) -> f32 {
+        Self::from_cache_entries(entries, proxy_a, transform_a, proxy_b, transform_b).metric()
+    }
+
+    fn from_cache_entries(
+        entries: &[CacheEntry],
+        proxy_a: &DistanceProxy<'_>,
+        transform_a: Transform,
+        proxy_b: &DistanceProxy<'_>,
+        transform_b: Transform,
+    ) -> Self {
+        let mut simplex = Self {
+            vertices: [SimplexVertex::default(); 3],
+            count: entries.len(),
+        };
+        for (vertex, entry) in simplex.vertices.iter_mut().zip(entries) {
+            let local_a = proxy_a.vertex(entry.index_a);
+            let local_b = proxy_b.vertex(entry.index_b);
+            let point_a = transform_a.apply(local_a);
+            let point_b = transform_b.apply(local_b);
+            *vertex = SimplexVertex {
+                point_a,
+                point_b,
+                difference: point_b - point_a,
+                weight: 0.0,
+                index_a: entry.index_a,
+                index_b: entry.index_b,
+            };
         }
         simplex
     }

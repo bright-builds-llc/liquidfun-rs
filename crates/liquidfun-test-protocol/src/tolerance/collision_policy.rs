@@ -217,7 +217,7 @@ mod tests {
         assert!(profile.field("collision.time_of_impact.result").is_some());
         assert_eq!(
             profile.profile_sha256().as_str(),
-            "440c7ea5e9690357f1b9bc790f1896e688e0d534ea9fe3654f25d0f6124ad051"
+            "78f237860a2cac803f0188fad909a0f0caf4bd7cce9c24eba7b8b6b9bb2f9c1f"
         );
     }
 

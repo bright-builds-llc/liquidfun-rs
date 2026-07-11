@@ -431,6 +431,24 @@ fn chain_rejects_invalid_topology_and_child_access() {
 }
 
 #[test]
+fn production_validation_boundaries_cover_shape_families() {
+    // Arrange
+    let repeated = [Vec2::ZERO, Vec2::ZERO, Vec2::ZERO];
+
+    // Act
+    let circle = CircleShape::new(Vec2::ZERO, -1.0);
+    let edge = EdgeShape::with_adjacency(Vec2::ZERO, Vec2::new(1.0, 0.0), Some(Vec2::ZERO), None);
+    let polygon = PolygonShape::new(&repeated);
+    let chain = ChainShape::closed(&repeated);
+
+    // Assert
+    assert_eq!(circle, Err(CollisionError::InvalidGeometry));
+    assert_eq!(edge, Err(CollisionError::InvalidGeometry));
+    assert_eq!(polygon, Err(CollisionError::InvalidGeometry));
+    assert_eq!(chain, Err(CollisionError::InvalidGeometry));
+}
+
+#[test]
 fn chain_queries_delegate_to_owned_child_edge() {
     // Arrange
     let chain = ChainShape::open(&[Vec2::new(-1.0, 0.0), Vec2::new(1.0, 0.0)], None, None)

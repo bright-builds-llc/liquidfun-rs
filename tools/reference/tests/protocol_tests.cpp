@@ -304,8 +304,8 @@ void collision_probe_uses_existing_protocol_loop() {
       "collision request kind should share the existing loop");
   const auto batch = liquidfun::reference::execute_collision_probe(fixture);
   expect(
-      batch.result_records.size() == 17,
-      "collision request should emit every closed operation");
+      batch.result_records.size() == 78,
+      "collision request should emit every required witness family");
   expect(
       liquidfun::reference::encode_collision_probe_end(batch, 1).find(
           "collision_probe_end") != std::string::npos,

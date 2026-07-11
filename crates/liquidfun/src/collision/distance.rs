@@ -3,14 +3,23 @@
 use std::fmt;
 
 mod proxy;
+#[cfg(feature = "differential-internals")]
+mod replay;
 mod simplex;
+
+#[cfg(feature = "differential-internals")]
+pub(crate) use replay::{
+    ReplayCacheOutcome, ReplayCacheSeed, ReplayCacheSeedPair, ReplayCacheSeedRejection,
+    ReplayCacheSeedReset, ReplayProxyFingerprint, ReplayProxyKind, replay_distance_cache,
+    replay_proxy_fingerprint,
+};
 
 use crate::collision::shape::Shape;
 use crate::collision::{ChildIndex, CollisionError};
-use crate::math::Vec2;
 use crate::math::settings::EPSILON;
+use crate::math::{Transform, Vec2};
 
-use proxy::{DistanceProxy, ProxyIdentity};
+use proxy::{DistanceProxy, ProxyIdentity as DistanceTopologyIdentity};
 use simplex::Simplex;
 
 const MAX_SIMPLEX_VERTICES: usize = 3;
@@ -55,8 +64,8 @@ impl From<CacheEntry> for SupportIndexPair {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct CacheBinding {
-    proxy_a: ProxyIdentity,
-    proxy_b: ProxyIdentity,
+    proxy_a: DistanceTopologyIdentity,
+    proxy_b: DistanceTopologyIdentity,
 }
 
 /// Initialized reusable state for source-ordered GJK distance calls.
@@ -314,10 +323,10 @@ struct GjkDiagnosticTrace {
 pub fn distance(
     shape_a: &Shape,
     child_a: ChildIndex,
-    transform_a: crate::math::Transform,
+    transform_a: Transform,
     shape_b: &Shape,
     child_b: ChildIndex,
-    transform_b: crate::math::Transform,
+    transform_b: Transform,
     use_radii: bool,
     maybe_cache: Option<&DistanceCache>,
 ) -> Result<DistanceResult, CollisionError> {
@@ -428,10 +437,10 @@ pub fn distance(
 pub fn test_overlap(
     shape_a: &Shape,
     child_a: ChildIndex,
-    transform_a: crate::math::Transform,
+    transform_a: Transform,
     shape_b: &Shape,
     child_b: ChildIndex,
-    transform_b: crate::math::Transform,
+    transform_b: Transform,
 ) -> Result<bool, CollisionError> {
     let result = distance(
         shape_a,

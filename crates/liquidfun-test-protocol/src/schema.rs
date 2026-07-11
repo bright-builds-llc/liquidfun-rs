@@ -375,6 +375,7 @@ fn render_trace_schema() -> String {
                 &["protocol_version", "record_kind", "request_id", "checkpoint_count", "trace_payload_sha256", "reset_epoch", "reset_verified", "identity_sha256"],
             ),
             math_probe_result_schema(),
+            collision_probe_result_schema(),
             closed_record(
                 &json!({
                     "protocol_version": version_schema(),
@@ -504,12 +505,14 @@ fn collision_probe_scenario_schema() -> Value {
                     &json!({
                         "case_id": semantic_id_schema(),
                         "collection_policy": { "enum": ["ordered", "set"] },
+                        "expected_outcome": collision_expected_outcome_schema(),
                         "horizon": collision_probe_horizon_schema(),
                         "input": collision_probe_input_schema(),
                         "operation": { "enum": collision_probe_operations() },
-                        "policy_path": { "enum": collision_probe_policy_paths() }
+                        "policy_path": { "enum": collision_probe_policy_paths() },
+                        "witness_family": { "enum": collision_witness_families() }
                     }),
-                    &["case_id", "operation", "policy_path", "horizon", "collection_policy", "input"],
+                    &["case_id", "witness_family", "expected_outcome", "operation", "policy_path", "horizon", "collection_policy", "input"],
                 ),
                 "maxItems": 256,
                 "minItems": 1,
@@ -520,6 +523,27 @@ fn collision_probe_scenario_schema() -> Value {
         }),
         &["scenario_id", "source", "cases"],
     )
+}
+
+fn collision_witness_families() -> Value {
+    serde_json::to_value(crate::CollisionWitnessFamily::REQUIRED.as_slice())
+        .expect("closed witness-family enum serialization cannot fail")
+}
+
+fn collision_expected_outcome_schema() -> Value {
+    json!({
+        "oneOf": [
+            closed_record(&json!({ "kind": { "const": "accepted" } }), &["kind"]),
+            closed_record(
+                &json!({
+                    "kind": { "const": "rejected" },
+                    "category": { "enum": ["non_finite_value", "invalid_geometry", "invalid_child_index"] },
+                    "field": { "enum": ["circle_center", "circle_radius", "edge_start", "edge_end", "edge_previous", "edge_next", "polygon_vertices", "chain_vertices", "child_index"] }
+                }),
+                &["kind", "category", "field"],
+            )
+        ]
+    })
 }
 
 fn collision_probe_operations() -> Value {
@@ -671,7 +695,7 @@ fn collision_shape_schema() -> Value {
                 "polygon",
                 &json!({
                     "shape_id": semantic_id_schema(),
-                    "vertices": { "items": schema_ref("vec2_bits"), "maxItems": 8, "minItems": 3, "type": "array" }
+                    "vertices": { "items": schema_ref("vec2_bits"), "maxItems": 32, "type": "array" }
                 }),
                 &["shape_id", "vertices"],
             ),
@@ -679,10 +703,12 @@ fn collision_shape_schema() -> Value {
                 "chain",
                 &json!({
                     "shape_id": semantic_id_schema(),
-                    "vertices": { "items": schema_ref("vec2_bits"), "maxItems": 32, "minItems": 2, "type": "array" },
-                    "closed": { "type": "boolean" }
+                    "vertices": { "items": schema_ref("vec2_bits"), "maxItems": 32, "type": "array" },
+                    "closed": { "type": "boolean" },
+                    "maybe_previous": nullable_schema(&schema_ref("vec2_bits")),
+                    "maybe_next": nullable_schema(&schema_ref("vec2_bits"))
                 }),
-                &["shape_id", "vertices", "closed"],
+                &["shape_id", "vertices", "closed", "maybe_previous", "maybe_next"],
             )
         ]
     })
@@ -691,17 +717,31 @@ fn collision_shape_schema() -> Value {
 fn collision_cache_schema() -> Value {
     closed_record(
         &json!({
+            "proxy_a": collision_proxy_fingerprint_schema(),
+            "proxy_b": collision_proxy_fingerprint_schema(),
             "support_pairs": {
                 "items": closed_record(
                     &json!({ "index_a": uint32_schema(), "index_b": uint32_schema() }),
                     &["index_a", "index_b"],
                 ),
-                "maxItems": 3,
+                "maxItems": 4,
                 "type": "array"
             },
             "metric_bits": float_bits_schema()
         }),
-        &["support_pairs", "metric_bits"],
+        &["proxy_a", "proxy_b", "support_pairs", "metric_bits"],
+    )
+}
+
+fn collision_proxy_fingerprint_schema() -> Value {
+    closed_record(
+        &json!({
+            "shape_kind": { "enum": ["circle", "edge", "polygon", "chain"] },
+            "child_index": uint32_schema(),
+            "radius_bits": float_bits_schema(),
+            "vertices": { "items": schema_ref("vec2_bits"), "maxItems": 32, "minItems": 1, "type": "array" }
+        }),
+        &["shape_kind", "child_index", "radius_bits", "vertices"],
     )
 }
 
@@ -898,13 +938,9 @@ fn math_probe_definitions() -> Value {
 }
 
 fn collision_probe_result_schema() -> Value {
-    closed_record(
+    let accepted = closed_record(
         &json!({
-            "case_id": semantic_id_schema(),
-            "operation": { "enum": collision_probe_operations() },
-            "policy_path": { "enum": collision_probe_policy_paths() },
-            "horizon": collision_probe_horizon_schema(),
-            "collection_policy": { "enum": ["ordered", "set"] },
+            "kind": { "const": "accepted" },
             "numeric": {
                 "items": closed_record(
                     &json!({ "field": bounded_string_schema(), "bits": float_bits_schema() }),
@@ -923,15 +959,32 @@ fn collision_probe_result_schema() -> Value {
             },
             "payload_ids": { "items": uint32_schema(), "maxItems": 128, "type": "array" }
         }),
+        &["kind", "numeric", "discrete", "payload_ids"],
+    );
+    let rejected = closed_record(
+        &json!({
+            "kind": { "const": "rejected" },
+            "category": { "enum": ["non_finite_value", "invalid_geometry", "invalid_child_index"] },
+            "field": { "enum": ["circle_center", "circle_radius", "edge_start", "edge_end", "edge_previous", "edge_next", "polygon_vertices", "chain_vertices", "child_index"] }
+        }),
+        &["kind", "category", "field"],
+    );
+    closed_record(
+        &json!({
+            "case_id": semantic_id_schema(),
+            "operation": { "enum": collision_probe_operations() },
+            "policy_path": { "enum": collision_probe_policy_paths() },
+            "horizon": collision_probe_horizon_schema(),
+            "collection_policy": { "enum": ["ordered", "set"] },
+            "outcome": { "oneOf": [accepted, rejected] }
+        }),
         &[
             "case_id",
             "operation",
             "policy_path",
             "horizon",
             "collection_policy",
-            "numeric",
-            "discrete",
-            "payload_ids",
+            "outcome",
         ],
     )
 }

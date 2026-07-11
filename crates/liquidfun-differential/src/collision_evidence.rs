@@ -1,8 +1,8 @@
 //! First-divergence comparison and bounded Phase 5 evidence.
 
 use liquidfun_test_protocol::{
-    CollectionPolicy, CollisionProbeRequestRecord, CollisionProbeResult, FloatBits,
-    Phase5PolicyProfile, Sha256Hex,
+    CollectionPolicy, CollisionExpectedOutcome, CollisionProbeRequestRecord, CollisionProbeResult,
+    CollisionProbeResultOutcome, FloatBits, Phase5PolicyProfile, Sha256Hex,
 };
 use serde::Serialize;
 use sha2::{Digest, Sha256};
@@ -142,6 +142,36 @@ pub fn compare_collision_probe_results(
         .zip(actual)
         .enumerate()
     {
+        for (side, result) in [("rust", expected), ("cpp", actual)] {
+            let declaration_matches = match (case.expected_outcome(), result.outcome()) {
+                (
+                    CollisionExpectedOutcome::Accepted,
+                    CollisionProbeResultOutcome::Accepted { .. },
+                ) => true,
+                (
+                    CollisionExpectedOutcome::Rejected {
+                        category: expected_category,
+                        field: expected_field,
+                    },
+                    CollisionProbeResultOutcome::Rejected {
+                        category: actual_category,
+                        field: actual_field,
+                    },
+                ) => expected_category == *actual_category && expected_field == *actual_field,
+                _ => false,
+            };
+            if !declaration_matches {
+                return Err(CollisionDivergence::Order(Box::new(order_report(
+                    request,
+                    profile,
+                    &request_hash,
+                    index,
+                    "expected_outcome",
+                    format!("{side}:{:?}", case.expected_outcome()),
+                    format!("{side}:{:?}", result.outcome()),
+                ))));
+            }
+        }
         let structural = [
             (
                 "case_id",

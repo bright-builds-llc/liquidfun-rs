@@ -9,6 +9,7 @@ repository.workspace = true
 publish = false
 
 [dependencies]
+liquidfun = { path = "../liquidfun" }
 serde.workspace = true
 serde_json.workspace = true
 sha2.workspace = true

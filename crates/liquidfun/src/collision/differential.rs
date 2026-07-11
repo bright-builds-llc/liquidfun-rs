@@ -3,6 +3,14 @@
 //! This module is development-only. Its records intentionally carry semantic
 //! identities and bounded copies rather than engine storage or mutation access.
 
+mod cache_replay;
+
+pub use cache_replay::{
+    DistanceCacheReplayOutcome, DistanceCacheSeed, DistanceCacheSeedError, DistanceCacheSeedPair,
+    DistanceCacheSeedRejection, DistanceCacheSeedReset, DistanceProxyFingerprint,
+    DistanceProxyKind, DistanceProxyVertexBits, distance_proxy_fingerprint, replay_distance_cache,
+};
+
 use crate::math::Vec2;
 
 use super::{
