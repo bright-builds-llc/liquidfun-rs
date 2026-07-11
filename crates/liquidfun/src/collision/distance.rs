@@ -1,15 +1,20 @@
 //! Shape-child distance, overlap, and reusable cache operations.
 
-#[allow(dead_code)] // Task 2 consumes the completed proxy from production GJK.
-mod proxy;
+use std::fmt;
 
-use crate::collision::CollisionError;
+mod proxy;
+mod simplex;
+
+use crate::collision::shape::Shape;
+use crate::collision::{ChildIndex, CollisionError};
 use crate::math::Vec2;
 use crate::math::settings::EPSILON;
 
 use proxy::{DistanceProxy, ProxyIdentity};
+use simplex::Simplex;
 
 const MAX_SIMPLEX_VERTICES: usize = 3;
+const MAX_GJK_ITERATIONS: usize = 20;
 
 /// One semantic ordered support-index pair stored by a distance cache.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -67,12 +72,21 @@ struct CacheBinding {
 ///     metric: 0.0,
 /// };
 /// ```
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub struct DistanceCache {
     entries: [CacheEntry; MAX_SIMPLEX_VERTICES],
     count: usize,
     metric: f32,
     maybe_binding: Option<CacheBinding>,
+}
+
+impl fmt::Debug for DistanceCache {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter
+            .debug_struct("DistanceCache")
+            .field("snapshot", &self.snapshot())
+            .finish()
+    }
 }
 
 impl DistanceCache {
@@ -104,7 +118,6 @@ impl DistanceCache {
         }
     }
 
-    #[allow(dead_code)] // Task 2 reads bounded entries into the simplex.
     fn entries(
         &self,
         proxy_a: &DistanceProxy<'_>,
@@ -119,12 +132,10 @@ impl DistanceCache {
         Ok(&self.entries[..self.count])
     }
 
-    #[allow(dead_code)] // Task 2 applies the pinned metric flush window.
     const fn metric(&self) -> f32 {
         self.metric
     }
 
-    #[allow(dead_code)] // Task 2 writes the solved simplex back to the cache.
     fn write(
         &mut self,
         proxy_a: &DistanceProxy<'_>,
@@ -210,13 +221,27 @@ impl DistanceCacheSnapshot {
 }
 
 /// The initialized result of one source-ordered GJK distance call.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub struct DistanceResult {
     point_a: Vec2,
     point_b: Vec2,
     distance: f32,
     iterations: usize,
     cache: DistanceCache,
+    diagnostic_trace: GjkDiagnosticTrace,
+}
+
+impl fmt::Debug for DistanceResult {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter
+            .debug_struct("DistanceResult")
+            .field("point_a", &self.point_a)
+            .field("point_b", &self.point_b)
+            .field("distance", &self.distance)
+            .field("iterations", &self.iterations)
+            .field("cache", &self.cache)
+            .finish_non_exhaustive()
+    }
 }
 
 impl DistanceResult {
@@ -251,9 +276,174 @@ impl DistanceResult {
     }
 }
 
-#[allow(dead_code)] // Task 2 applies this branch after reconstructing a simplex.
 fn cache_metric_requires_flush(metric1: f32, metric2: f32) -> bool {
     metric2 < 0.5 * metric1 || 2.0 * metric1 < metric2 || metric2 < EPSILON
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum GjkTermination {
+    Triangle,
+    NearZeroDirection,
+    DuplicateSupport,
+    IterationLimit,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct GjkDiagnosticStep {
+    simplex_count: usize,
+    support_pair: SupportIndexPair,
+    closest_non_decrease: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct GjkDiagnosticTrace {
+    steps: Vec<GjkDiagnosticStep>,
+    termination: GjkTermination,
+}
+
+/// Computes closest witnesses through one bounded source-ordered GJK path.
+///
+/// A supplied cache must have been produced for the same ordered shape-child
+/// topology. Incompatible reuse is rejected before any cached index access.
+///
+/// # Errors
+///
+/// Returns a typed error for invalid child selection, incompatible cache
+/// topology, non-finite transforms, or non-finite derived geometry.
+#[allow(clippy::too_many_arguments)] // Mirrors the two complete shape-child inputs.
+pub fn distance(
+    shape_a: &Shape,
+    child_a: ChildIndex,
+    transform_a: crate::math::Transform,
+    shape_b: &Shape,
+    child_b: ChildIndex,
+    transform_b: crate::math::Transform,
+    use_radii: bool,
+    maybe_cache: Option<&DistanceCache>,
+) -> Result<DistanceResult, CollisionError> {
+    super::shape::validate_transform(transform_a)?;
+    super::shape::validate_transform(transform_b)?;
+    let proxy_a = DistanceProxy::new(shape_a, child_a)?;
+    let proxy_b = DistanceProxy::new(shape_b, child_b)?;
+    let mut cache = maybe_cache.cloned().unwrap_or_default();
+    let mut simplex = Simplex::read_cache(
+        cache.entries(&proxy_a, &proxy_b)?,
+        cache.metric(),
+        &proxy_a,
+        transform_a,
+        &proxy_b,
+        transform_b,
+    );
+
+    let mut iterations = 0;
+    let mut previous_distance_squared = f32::MAX;
+    let mut diagnostic_steps = Vec::with_capacity(MAX_GJK_ITERATIONS);
+    let termination = loop {
+        let saved_pairs = simplex.saved_support_pairs();
+        simplex.solve();
+        if simplex.count() == 3 {
+            break GjkTermination::Triangle;
+        }
+
+        let closest = simplex.closest_point();
+        let distance_squared = closest.length_squared();
+        let closest_non_decrease = distance_squared >= previous_distance_squared;
+        previous_distance_squared = distance_squared;
+        let direction = simplex.search_direction();
+        if direction.length_squared() < EPSILON * EPSILON {
+            break GjkTermination::NearZeroDirection;
+        }
+
+        let support_pair =
+            simplex.append_support(&proxy_a, transform_a, &proxy_b, transform_b, direction);
+        iterations += 1;
+        diagnostic_steps.push(GjkDiagnosticStep {
+            simplex_count: simplex.count(),
+            support_pair,
+            closest_non_decrease,
+        });
+        if saved_pairs.contains(support_pair) {
+            break GjkTermination::DuplicateSupport;
+        }
+        simplex.accept_support();
+        if iterations == MAX_GJK_ITERATIONS {
+            break GjkTermination::IterationLimit;
+        }
+    };
+
+    let (mut point_a, mut point_b) = simplex.witness_points();
+    let mut closest_distance = (point_a - point_b).length();
+    let (support_pairs, support_count) = simplex.support_pairs();
+    cache.write(
+        &proxy_a,
+        &proxy_b,
+        simplex.metric(),
+        &support_pairs[..support_count],
+    )?;
+
+    if use_radii {
+        let radius_a = proxy_a.radius();
+        let radius_b = proxy_b.radius();
+        if closest_distance > radius_a + radius_b && closest_distance > EPSILON {
+            closest_distance -= radius_a + radius_b;
+            let mut normal = point_b - point_a;
+            normal.normalize();
+            point_a += radius_a * normal;
+            point_b -= radius_b * normal;
+        } else {
+            let midpoint = 0.5 * (point_a + point_b);
+            point_a = midpoint;
+            point_b = midpoint;
+            closest_distance = 0.0;
+        }
+    }
+
+    if !point_a.is_valid()
+        || !point_b.is_valid()
+        || !closest_distance.is_finite()
+        || closest_distance < 0.0
+    {
+        return Err(CollisionError::NonFiniteValue);
+    }
+    Ok(DistanceResult {
+        point_a,
+        point_b,
+        distance: closest_distance,
+        iterations,
+        cache,
+        diagnostic_trace: GjkDiagnosticTrace {
+            steps: diagnostic_steps,
+            termination,
+        },
+    })
+}
+
+/// Tests overlap with radii and the pinned strict `10 * EPSILON` predicate.
+///
+/// # Errors
+///
+/// Returns the same checked child, transform, and derived-geometry errors as
+/// [`distance`].
+#[allow(clippy::too_many_arguments)] // Mirrors two complete shape-child inputs.
+pub fn test_overlap(
+    shape_a: &Shape,
+    child_a: ChildIndex,
+    transform_a: crate::math::Transform,
+    shape_b: &Shape,
+    child_b: ChildIndex,
+    transform_b: crate::math::Transform,
+) -> Result<bool, CollisionError> {
+    let result = distance(
+        shape_a,
+        child_a,
+        transform_a,
+        shape_b,
+        child_b,
+        transform_b,
+        true,
+        None,
+    )?;
+    Ok(result.distance < 10.0 * EPSILON)
 }
 
 #[cfg(test)]
@@ -261,6 +451,7 @@ mod tests {
     use super::*;
     use crate::collision::ChildIndex;
     use crate::collision::shape::{CircleShape, EdgeShape, PolygonShape, Shape};
+    use crate::math::Transform;
     use crate::math::Vec2;
 
     fn circle(center: Vec2) -> Shape {
@@ -352,5 +543,123 @@ mod tests {
         // Assert
         assert!(below_flushes);
         assert!(!equal_flushes);
+    }
+
+    #[test]
+    fn gjk_identical_points_terminate_on_near_zero_direction() {
+        // Arrange
+        let shape_a = circle(Vec2::ZERO);
+        let shape_b = circle(Vec2::ZERO);
+        let child = shape_a.child_index(0).expect("child should exist");
+
+        // Act
+        let result = distance(
+            &shape_a,
+            child,
+            Transform::IDENTITY,
+            &shape_b,
+            child,
+            Transform::IDENTITY,
+            false,
+            None,
+        )
+        .expect("distance should succeed");
+
+        // Assert
+        assert_eq!(
+            result.diagnostic_trace.termination,
+            GjkTermination::NearZeroDirection
+        );
+        assert_eq!(result.iterations, 0);
+    }
+
+    #[test]
+    fn gjk_separated_points_terminate_on_duplicate_support() {
+        // Arrange
+        let shape_a = circle(Vec2::ZERO);
+        let shape_b = circle(Vec2::new(4.0, 0.0));
+        let child = shape_a.child_index(0).expect("child should exist");
+
+        // Act
+        let result = distance(
+            &shape_a,
+            child,
+            Transform::IDENTITY,
+            &shape_b,
+            child,
+            Transform::IDENTITY,
+            false,
+            None,
+        )
+        .expect("distance should succeed");
+
+        // Assert
+        assert_eq!(
+            result.diagnostic_trace.termination,
+            GjkTermination::DuplicateSupport
+        );
+        assert_eq!(result.diagnostic_trace.steps.len(), 1);
+    }
+
+    #[test]
+    fn gjk_overlapping_polygons_terminate_with_triangle_simplex() {
+        // Arrange
+        let shape_a: Shape = PolygonShape::box_shape(1.0, 1.0)
+            .expect("polygon should be valid")
+            .into();
+        let shape_b: Shape = PolygonShape::oriented_box(1.0, 1.0, Vec2::new(0.25, 0.1), 0.2)
+            .expect("polygon should be valid")
+            .into();
+        let child = shape_a.child_index(0).expect("child should exist");
+
+        // Act
+        let result = distance(
+            &shape_a,
+            child,
+            Transform::IDENTITY,
+            &shape_b,
+            child,
+            Transform::IDENTITY,
+            false,
+            None,
+        )
+        .expect("distance should succeed");
+
+        // Assert
+        assert_eq!(
+            result.diagnostic_trace.termination,
+            GjkTermination::Triangle
+        );
+        assert_eq!(result.cache.snapshot().count(), 3);
+    }
+
+    #[test]
+    fn gjk_iteration_trace_is_bounded_by_pinned_cap() {
+        // Arrange
+        let shape_a: Shape = PolygonShape::box_shape(1.0, 2.0)
+            .expect("polygon should be valid")
+            .into();
+        let shape_b: Shape = PolygonShape::oriented_box(1.5, 0.5, Vec2::new(8.0, 3.0), 0.7)
+            .expect("polygon should be valid")
+            .into();
+        let child = shape_a.child_index(0).expect("child should exist");
+
+        // Act
+        let result = distance(
+            &shape_a,
+            child,
+            Transform::IDENTITY,
+            &shape_b,
+            child,
+            Transform::IDENTITY,
+            false,
+            None,
+        )
+        .expect("distance should succeed");
+
+        // Assert
+        assert_eq!(MAX_GJK_ITERATIONS, 20);
+        assert!(result.iterations <= MAX_GJK_ITERATIONS);
+        assert!(result.diagnostic_trace.steps.len() <= MAX_GJK_ITERATIONS);
     }
 }
