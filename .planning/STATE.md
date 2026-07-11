@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 4 context gathered
-last_updated: "2026-07-11T05:00:09.574Z"
-last_activity: 2026-07-11 -- Phase 4 planning complete
+stopped_at: Completed 04-01-PLAN.md
+last_updated: "2026-07-11T05:10:15.570Z"
+last_activity: 2026-07-11
 progress:
   total_phases: 12
   completed_phases: 3
   total_plans: 31
-  completed_plans: 24
-  percent: 77
+  completed_plans: 25
+  percent: 81
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-07-10)
 
 **Core value:** Deliver an independent, maintainable Rust physics engine whose LiquidFun behavior is demonstrated against a pinned upstream oracle through explicit inventory, tests, differential evidence, and documented tolerances.
-**Current focus:** Phase 3 — Rust Object Model and Storage Architecture
+**Current focus:** Phase 4 — Math, Settings, and Numerical Policy
 
 ## Current Position
 
-Phase: 4
-Plan: Not started
+Phase: 4 (Math, Settings, and Numerical Policy) — EXECUTING
+Plan: 2 of 7
 Status: Ready to execute
-Last activity: 2026-07-11 -- Phase 4 planning complete
+Last activity: 2026-07-11
 
 Progress: [██████████] 100%
 
@@ -47,11 +47,6 @@ Progress: [██████████] 100%
 | 1 | 5 | - | - |
 | 2 | 14 | - | - |
 | 3 | 5 | - | - |
-
-**Recent Trend:**
-
-- Last 5 plans: None
-- Trend: Not available
 
 *Updated after each plan completion*
 | Phase 02 P01 | 5 min | 1 tasks | 6 files |
@@ -73,6 +68,7 @@ Progress: [██████████] 100%
 | Phase 03 P03 | 10 min | 3 tasks | 5 files |
 | Phase 03 P04 | 7 min | 3 tasks | 9 files |
 | Phase 03 P05 | 10 min | 3 tasks | 5 files |
+| Phase 04 P01 | 8 min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -132,6 +128,8 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 03]: Keep owned particle lane bundles and declared fixed capacity private until Phase 9. — Phase 3 proves ownership and teardown without publishing raw buffers, bulk mutation, or solver API.
 - [Phase 03]: Keep the Phase-3 consumer surface limited to opaque identities, owned records, restricted hooks, typed commands, and typed side tables. — Dense particle storage and future external buffers remain private until their Phase-9 contract is implemented and verified.
 - [Phase 03]: Use ARCHITECTURE.md as the evidence-linked sign-off for every locked Phase-3 decision. — Each disposition cites executable code or tests and avoids claiming broad solver parity.
+- [Phase 04]: Keep scalar and vector implementation modules private behind the curated liquidfun::math surface while exposing math::settings as a documented namespace. — This preserves a cohesive deep module and future representation freedom without hiding consumer-required math behavior.
+- [Phase 04]: Preserve the selected b2_pi decimal token and every derived settings expression grouping exactly. — Exact f32 encodings and source-order compatibility take precedence over substituting superficially equivalent standard-library constants.
 
 ### Pending Todos
 
@@ -143,6 +141,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-11T04:23:11.587Z
-Stopped at: Phase 4 context gathered
-Resume file: .planning/phases/04-math-settings-and-numerical-policy/04-CONTEXT.md
+Last session: 2026-07-11T05:10:15.567Z
+Stopped at: Completed 04-01-PLAN.md
+Resume file: None
