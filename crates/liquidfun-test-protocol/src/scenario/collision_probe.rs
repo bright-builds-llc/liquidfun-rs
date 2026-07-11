@@ -685,6 +685,10 @@ fn validate_source(raw: RawSource) -> Result<ScenarioSource, CollisionProbeDecod
     }
 }
 
+#[allow(
+    clippy::too_many_lines,
+    reason = "one exhaustive match makes the closed operation/input registry auditable"
+)]
 fn validate_input(
     operation: CollisionProbeOperation,
     raw: RawInput,

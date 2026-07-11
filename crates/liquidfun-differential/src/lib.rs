@@ -6,6 +6,8 @@
 #![forbid(unsafe_code)]
 
 mod canonical;
+mod collision_evidence;
+mod collision_probe;
 mod comparator;
 mod failure_bundle;
 mod fixtures;
@@ -18,6 +20,8 @@ mod rust_adapter;
 mod supervisor;
 
 pub use canonical::*;
+pub use collision_evidence::*;
+pub use collision_probe::*;
 pub use comparator::*;
 pub use failure_bundle::*;
 pub use fixtures::*;

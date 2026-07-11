@@ -14,6 +14,7 @@ use liquidfun_test_protocol::{
 };
 
 mod capture;
+mod collision_probe;
 mod executable;
 mod failure;
 mod math_probe;
@@ -21,6 +22,9 @@ mod profile;
 mod stdio;
 
 pub use capture::CapturedOracleTrace;
+pub use collision_probe::{
+    CapturedCollisionProbe, CollisionProbeProcessError, execute_collision_probe_process,
+};
 pub use executable::{OracleExecutable, OracleExecutableError, OraclePreset};
 use failure::{
     build_failure, classify_handshake_decode, classify_poison, classify_trace_decode,

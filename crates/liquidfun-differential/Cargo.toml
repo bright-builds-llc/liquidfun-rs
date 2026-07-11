@@ -13,7 +13,7 @@ name = "liquidfun-fake-oracle"
 path = "tests/fixtures/fake_oracle.rs"
 
 [dependencies]
-liquidfun = { path = "../liquidfun" }
+liquidfun = { path = "../liquidfun", features = ["differential-internals"] }
 liquidfun-test-protocol = { path = "../liquidfun-test-protocol" }
 serde.workspace = true
 serde_json.workspace = true
