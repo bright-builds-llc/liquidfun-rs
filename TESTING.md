@@ -255,6 +255,28 @@ local toolchain, replay protects the reviewed corpus, and the two-run command is
 D0 byte identity. None proves contact lifecycle, a solver, another platform, or
 performance.
 
+### Phase 5 completion evidence (2026-07-11)
+
+The Phase 5 sign-off reran the repository-owned commands after the authoritative
+ledger update:
+
+| Check | Observed result | Evidence limit |
+| --- | --- | --- |
+| Inventory generation and check | 177 rows; 18 implemented, 18 unit-tested, 17 differentially validated, 0 platform-validated, and 18 documented differences | Dimensions are independent; contact-manager rows remain pending. |
+| Package isolation | 51 packaged entries built and tested outside the repository | Proves Cargo consumer isolation, not another platform. |
+| Oracle debug comparison | 78 ordered cases matched under `phase5-v1` | Local D2-scoped collision operations only. |
+| Oracle release comparison | 78 ordered cases matched under `phase5-v1` | A second optimization profile, not canonical D1 authority. |
+| Debug replay | 78 ordered cases matched under `phase5-v1` | Protects the reviewed fixed corpus. |
+| Debug determinism | 2 runs were byte-identical | D0 same-build authority only. |
+
+The local reference tools were CMake 3.27.9, Ninja 1.13.2, and Apple Clang
+21.0.0. Because the canonical lane requires CMake 4.3.3 and Clang 22.1.8 on
+scalar Linux x86_64, these passes do not populate the ledger's
+`platform_validated` dimension and do not authorize fixture promotion. The
+generated report retains `subsystem.contacts-and-filtering` and
+`b2ContactManager.h` as not implemented, not unit-tested, and not
+differentially validated.
+
 ## Differential commands
 
 Initialize, verify, configure, and build the oracle first:

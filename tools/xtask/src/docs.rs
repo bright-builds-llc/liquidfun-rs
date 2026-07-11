@@ -60,10 +60,11 @@ const DOCUMENT_CONTRACTS: [(&str, &[&str]); 4] = [
     (
         "COMPATIBILITY.md",
         &[
-            "| `implemented` | 3 | 174 |",
-            "| `unit_tested` | 3 | 174 |",
-            "| `differentially_validated` | 2 | 175 |",
+            "| `implemented` | 18 | 159 |",
+            "| `unit_tested` | 18 | 159 |",
+            "| `differentially_validated` | 17 | 160 |",
             "| `platform_validated` | 0 | 177 |",
+            "| `documented_difference` | 18 | 159 |",
             "`subsystem.common-math-and-settings`",
             "`public-api.liquidfun-box2d-box2d-common-b2math-h`",
             "`public-api.liquidfun-box2d-box2d-common-b2settings-h`",
@@ -79,7 +80,7 @@ const DOCUMENT_CONTRACTS: [(&str, &[&str]); 4] = [
         ],
     ),
 ];
-const PHASE5_DOCUMENT_CONTRACTS: [(&str, &[&str]); 3] = [
+const PHASE5_DOCUMENT_CONTRACTS: [(&str, &[&str]); 4] = [
     (
         "ARCHITECTURE.md",
         &[
@@ -113,6 +114,16 @@ const PHASE5_DOCUMENT_CONTRACTS: [(&str, &[&str]); 3] = [
             "cargo xtask differential compare --scenario collision-probes --preset oracle-release --session-profile one-shot",
             "cargo xtask differential replay --scenario collision-probes --preset oracle-debug --session-profile one-shot",
             "cargo xtask differential verify-determinism --scenario collision-probes --preset oracle-debug --runs 2",
+        ],
+    ),
+    (
+        "COMPATIBILITY.md",
+        &[
+            "| `subsystem.collision-broad-phase` | `liquidfun/Box2D/Box2D/Collision` | `liquidfun::collision` | applicable | yes | yes | yes | yes | yes | no | yes | no |",
+            "| `subsystem.collision-distance-and-toi` | `liquidfun/Box2D/Box2D/Collision` | `liquidfun::collision` | applicable | yes | yes | yes | yes | yes | no | yes | no |",
+            "| `subsystem.collision-shapes-and-manifolds` | `liquidfun/Box2D/Box2D/Collision/Shapes` | `liquidfun::collision` | applicable | yes | yes | yes | yes | yes | no | yes | no |",
+            "| `subsystem.contacts-and-filtering` | `liquidfun/Box2D/Box2D/Dynamics/Contacts` | `liquidfun::dynamics::contacts` | applicable | yes | yes | no | no | no | no | no | no |",
+            "| `public-api.liquidfun-box2d-box2d-dynamics-b2contactmanager-h` | `liquidfun/Box2D/Box2D/Dynamics/b2ContactManager.h` | `liquidfun::dynamics` | applicable | yes | yes | no | no | no | no | no | no |",
         ],
     ),
     (

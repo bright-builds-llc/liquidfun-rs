@@ -280,6 +280,7 @@ fn phase5_contract_rejects_missing_contract_in_each_document() -> TestResult {
     for (document, marker) in [
         ("ARCHITECTURE.md", "## Phase 5 collision boundaries"),
         ("TESTING.md", "## Phase 5 collision comparison policy"),
+        ("COMPATIBILITY.md", "`subsystem.collision-broad-phase`"),
         ("README.md", "Phase 5 immutable shape/collision substrate"),
     ] {
         let fixture = DocsFixture::new()?;
@@ -315,6 +316,39 @@ fn phase5_contract_rejects_false_surface_and_maturity_claims() -> TestResult {
         assert_failure(&output, "docs/phase5-overclaim");
         fixture.cleanup()?;
     }
+    Ok(())
+}
+
+#[test]
+fn phase5_compatibility_report_matches_authoritative_ledger() -> TestResult {
+    // Arrange
+    let mut command = Command::new(env!("CARGO_BIN_EXE_xtask"));
+    command.args(["inventory", "check"]);
+
+    // Act
+    let output = command.output()?;
+
+    // Assert
+    assert_success(&output);
+    Ok(())
+}
+
+#[test]
+fn phase5_contract_rejects_promoted_contact_lifecycle_rows() -> TestResult {
+    // Arrange
+    let fixture = DocsFixture::new()?;
+    fixture.replace_document_text(
+        "COMPATIBILITY.md",
+        "| `subsystem.contacts-and-filtering` | `liquidfun/Box2D/Box2D/Dynamics/Contacts` | `liquidfun::dynamics::contacts` | applicable | yes | yes | no | no | no | no | no | no |",
+        "| `subsystem.contacts-and-filtering` | `liquidfun/Box2D/Box2D/Dynamics/Contacts` | `liquidfun::dynamics::contacts` | applicable | yes | yes | yes | yes | yes | no | no | no |",
+    )?;
+
+    // Act
+    let output = fixture.command()?;
+
+    // Assert
+    assert_failure(&output, "docs/phase5-contract");
+    fixture.cleanup()?;
     Ok(())
 }
 
