@@ -150,6 +150,89 @@ fn typed_association_cleanup_follows_destruction_records() {
 }
 
 #[test]
+fn particle_system_cascade_preserves_owned_snapshots_and_cleanup_order() {
+    // Arrange
+    let mut world = test_world();
+    let system = world
+        .create_particle_system()
+        .expect("particle system should fit");
+    let group = world
+        .create_particle_group(system)
+        .expect("particle group should fit");
+    let grouped = world
+        .create_particle(system, Some(group))
+        .expect("particle should fit");
+    let ungrouped = world
+        .create_particle(system, None)
+        .expect("particle should fit");
+    let mut system_names = AssociationMap::new();
+    let mut group_names = AssociationMap::new();
+    let mut particle_names = AssociationMap::new();
+    system_names.insert(system, "system");
+    group_names.insert(group, "group");
+    particle_names.insert(grouped, "grouped");
+    particle_names.insert(ungrouped, "ungrouped");
+
+    // Act
+    let records = world
+        .destroy_particle_system(system)
+        .expect("particle system should be live");
+    let removed_groups = group_names.cleanup(&records);
+    let removed_particles = particle_names.cleanup(&records);
+    let removed_systems = system_names.cleanup(&records);
+
+    // Assert
+    assert_eq!(
+        records
+            .iter()
+            .map(liquidfun::DestructionRecord::destroyed)
+            .collect::<Vec<_>>(),
+        vec![
+            DestroyedId::ParticleGroup(group),
+            DestroyedId::Particle(grouped),
+            DestroyedId::Particle(ungrouped),
+            DestroyedId::ParticleSystem(system),
+        ]
+    );
+    assert!(matches!(
+        records.first().map(liquidfun::DestructionRecord::snapshot),
+        Some(ObjectSnapshot::ParticleGroup {
+            system: snapshot_system,
+            particles,
+        }) if *snapshot_system == system && particles == &[grouped]
+    ));
+    assert!(matches!(
+        records.get(1).map(liquidfun::DestructionRecord::snapshot),
+        Some(ObjectSnapshot::Particle {
+            system: snapshot_system,
+            maybe_group,
+        }) if *snapshot_system == system && *maybe_group == Some(group)
+    ));
+    assert!(matches!(
+        records.get(2).map(liquidfun::DestructionRecord::snapshot),
+        Some(ObjectSnapshot::Particle {
+            system: snapshot_system,
+            maybe_group,
+        }) if *snapshot_system == system && maybe_group.is_none()
+    ));
+    assert!(matches!(
+        records.last().map(liquidfun::DestructionRecord::snapshot),
+        Some(ObjectSnapshot::ParticleSystem { groups, particles })
+            if groups == &[group] && particles == &[grouped, ungrouped]
+    ));
+    assert!(!world.contains_particle_group(group));
+    assert!(!world.contains_particle(grouped));
+    assert!(!world.contains_particle(ungrouped));
+    assert!(!world.contains_particle_system(system));
+    assert_eq!(removed_groups, vec!["group"]);
+    assert_eq!(removed_particles, vec!["grouped", "ungrouped"]);
+    assert_eq!(removed_systems, vec!["system"]);
+    assert!(group_names.is_empty());
+    assert!(particle_names.is_empty());
+    assert!(system_names.is_empty());
+}
+
+#[test]
 fn particle_group_owner_mismatch_reports_particle_system_scope() {
     // Arrange
     let mut world = test_world();

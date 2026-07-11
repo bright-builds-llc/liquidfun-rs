@@ -50,6 +50,35 @@ struct Particle {
     maybe_group: Option<ParticleGroupId>,
 }
 
+#[derive(Debug, Clone, Copy)]
+struct ParticleDestructionSnapshot {
+    system: ParticleSystemId,
+    maybe_group: Option<ParticleGroupId>,
+}
+
+impl ParticleDestructionSnapshot {
+    fn capture(particle: &Particle) -> Self {
+        Self {
+            system: particle.system,
+            maybe_group: particle.maybe_group,
+        }
+    }
+
+    fn into_object_snapshot(self) -> ObjectSnapshot {
+        ObjectSnapshot::Particle {
+            system: self.system,
+            maybe_group: self.maybe_group,
+        }
+    }
+}
+
+#[derive(Debug)]
+struct ParticleSystemDestructionTransaction {
+    groups: Vec<ParticleGroupId>,
+    particles: Vec<(ParticleId, ParticleDestructionSnapshot)>,
+    root_snapshot: ObjectSnapshot,
+}
+
 /// A failure while creating a world-owned object.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
@@ -505,12 +534,11 @@ impl World {
         system: ParticleSystemId,
     ) -> Result<Vec<DestructionRecord>, HandleError> {
         self.ensure_not_poisoned_for_handle()?;
-        let root = self.particle_systems.get(system)?;
-        let groups = root.groups.clone();
-        let particles = root.particles.clone();
-        let mut records = Vec::with_capacity(groups.len() + particles.len() + 1);
+        let transaction = self.capture_particle_system_destruction(system)?;
+        let mut records =
+            Vec::with_capacity(transaction.groups.len() + transaction.particles.len() + 1);
 
-        for group in groups {
+        for group in transaction.groups {
             records.push(
                 self.remove_particle_group(
                     group,
@@ -518,12 +546,18 @@ impl World {
                 ),
             );
         }
-        for particle in particles {
-            records.push(
-                self.remove_particle(particle, DestructionCause::ParticleSystemCascade { system }),
-            );
+        for (particle, snapshot) in transaction.particles {
+            records.push(self.remove_particle(
+                particle,
+                DestructionCause::ParticleSystemCascade { system },
+                snapshot,
+            ));
         }
-        records.push(self.remove_particle_system(system, DestructionCause::Explicit));
+        records.push(self.remove_particle_system(
+            system,
+            DestructionCause::Explicit,
+            transaction.root_snapshot,
+        ));
         Ok(records)
     }
 
@@ -551,8 +585,37 @@ impl World {
         particle: ParticleId,
     ) -> Result<DestructionRecord, HandleError> {
         self.ensure_not_poisoned_for_handle()?;
-        self.particles.get(particle)?;
-        Ok(self.remove_particle(particle, DestructionCause::Explicit))
+        let snapshot = ParticleDestructionSnapshot::capture(self.particles.get(particle)?);
+        Ok(self.remove_particle(particle, DestructionCause::Explicit, snapshot))
+    }
+
+    fn capture_particle_system_destruction(
+        &self,
+        system: ParticleSystemId,
+    ) -> Result<ParticleSystemDestructionTransaction, HandleError> {
+        let root = self.particle_systems.get(system)?;
+        let groups = root.groups.clone();
+        let particle_ids = root.particles.clone();
+        let particles = particle_ids
+            .iter()
+            .map(|particle| {
+                let record = self
+                    .particles
+                    .get(*particle)
+                    .expect("particle-system membership contains live particles");
+                (*particle, ParticleDestructionSnapshot::capture(record))
+            })
+            .collect();
+        let root_snapshot = ObjectSnapshot::ParticleSystem {
+            groups: groups.clone(),
+            particles: particle_ids,
+        };
+
+        Ok(ParticleSystemDestructionTransaction {
+            groups,
+            particles,
+            root_snapshot,
+        })
     }
 
     fn ensure_not_poisoned_for_handle(&self) -> Result<(), HandleError> {
@@ -633,6 +696,7 @@ impl World {
         &mut self,
         system: ParticleSystemId,
         cause: DestructionCause,
+        snapshot: ObjectSnapshot,
     ) -> DestructionRecord {
         let removed = self
             .particle_systems
@@ -642,10 +706,7 @@ impl World {
             destroyed: DestroyedId::ParticleSystem(system),
             diagnostic_id: removed.diagnostic_id,
             cause,
-            snapshot: ObjectSnapshot::ParticleSystem {
-                groups: removed.groups,
-                particles: removed.particles,
-            },
+            snapshot,
         }
     }
 
@@ -687,11 +748,13 @@ impl World {
         &mut self,
         particle: ParticleId,
         cause: DestructionCause,
+        snapshot: ParticleDestructionSnapshot,
     ) -> DestructionRecord {
         let removed = self
             .particles
             .remove(particle)
             .expect("validated particle adjacency remains live");
+        debug_assert_eq!(removed.system, snapshot.system);
         remove_occurrence(
             &mut self.system_mut_after_validation(removed.system).particles,
             &particle,
@@ -706,10 +769,7 @@ impl World {
             destroyed: DestroyedId::Particle(particle),
             diagnostic_id: removed.diagnostic_id,
             cause,
-            snapshot: ObjectSnapshot::Particle {
-                system: removed.system,
-                maybe_group: removed.maybe_group,
-            },
+            snapshot: snapshot.into_object_snapshot(),
         }
     }
 
@@ -886,7 +946,29 @@ mod tests {
         assert!(!world.contains_particle(ungrouped));
         assert!(matches!(
             records.first().map(DestructionRecord::snapshot),
-            Some(ObjectSnapshot::ParticleGroup { particles, .. }) if particles == &[grouped]
+            Some(ObjectSnapshot::ParticleGroup {
+                system: snapshot_system,
+                particles,
+            }) if *snapshot_system == system && particles == &[grouped]
+        ));
+        assert!(matches!(
+            records.get(1).map(DestructionRecord::snapshot),
+            Some(ObjectSnapshot::Particle {
+                system: snapshot_system,
+                maybe_group,
+            }) if *snapshot_system == system && *maybe_group == Some(group)
+        ));
+        assert!(matches!(
+            records.get(2).map(DestructionRecord::snapshot),
+            Some(ObjectSnapshot::Particle {
+                system: snapshot_system,
+                maybe_group,
+            }) if *snapshot_system == system && maybe_group.is_none()
+        ));
+        assert!(matches!(
+            records.last().map(DestructionRecord::snapshot),
+            Some(ObjectSnapshot::ParticleSystem { groups, particles })
+                if groups == &[group] && particles == &[grouped, ungrouped]
         ));
     }
 

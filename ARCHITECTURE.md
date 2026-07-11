@@ -146,10 +146,12 @@ fixtures, then the body. Particle-system cascades emit groups, then particles,
 then the system. Body joint and fixture adjacency is prepended on creation so
 records, snapshots, and association cleanup preserve the pinned upstream
 newest-first list order within those categories. Particle-system categories
-preserve creation/occurrence order. Owned snapshots capture the required
-pre-invalidation adjacency, owner, group, and diagnostic state and remain usable
-after slot reuse. Direct group destruction clears membership without destroying
-its particles.
+preserve creation/occurrence order. A particle-system cascade captures the root
+membership and every particle's optional group as one transaction before group
+cleanup begins, while still emitting group records before particle records.
+Owned snapshots therefore retain the required pre-invalidation adjacency,
+owner, group, and diagnostic state and remain usable after slot reuse. Direct
+group destruction clears membership without destroying its particles.
 
 ## Transient contacts, restricted hooks, and step order
 
