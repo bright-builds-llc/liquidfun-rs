@@ -23,3 +23,14 @@ Completion review: The supervisor now drains over-limit stderr with deadline hea
 - [x] Run full required Rust checks, review the diff, and record residual risk.
 
 Completion review: Canonical Ubuntu 24.04 with CMake 4.3.3, Ninja 1.13.2, and Clang 22.1.8 now builds `liquidfun-reference`; the legacy diagnostics remain visible as warnings only on upstream `Box2D`, while repository-authored C++ retains strict `-Werror`. Xtask now retains labeled stdout-only compiler diagnostics, covered by a command-level regression test. Targeted tests, clean local oracle configure/build, exact container verification, full workspace format/lint/build/tests, provenance, inventory, differential compare/replay, Markdown formatting, and diff checks pass. Remote Actions confirmation remains pending because this delegated debug task did not commit or push.
+
+## task-04-05-pinned-probes-identity | 2026-07-11 01:03 CDT | Execute Phase 4 Plan 05
+
+- [x] Implement bit-faithful external C++ math-probe dispatch and exact exceptional-bit transport.
+- [x] Add complete strict Rust/C++ build identity and D1/D2/D3 evidence classification.
+- [x] Enforce required and forbidden floating-point/compiler flags with D1 fail-closed behavior.
+- [x] Run every focused C++/Rust/oracle check and the exact full Rust gate before each atomic task commit.
+- [x] Run final debug/release probe comparisons, inspect effective flags/handshake, and verify Cargo-only isolation.
+- [x] Create the lifecycle-bound 04-05 summary, update GSD state/roadmap/requirements, and commit metadata.
+
+Completion review: The external C++ adapter now executes the complete 39-case Phase 4 math-probe corpus with exact `uint32_t`/`float` bit transport, bounded closed dispatch, unknown-operation rejection, and reset/reuse proof. Rust and C++ carry the same strict 17-field floating build identity, with D1 fail-closed required/forbidden flag enforcement and non-promotable D2/D3 evidence. Debug and release probes, C++ protocol tests, focused identity tests, effective compile-command and handshake inspection, Cargo package isolation, upstream verification, and the exact ordered full Rust gate all pass. The local Apple Clang 21 compiler lacks `-fdenormal-fp-math-fp32=ieee`, so it is correctly recorded as D2; canonical Clang 22 D1 requirements remain unchanged and fail closed.
