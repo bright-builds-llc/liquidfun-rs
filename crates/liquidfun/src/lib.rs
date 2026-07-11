@@ -8,8 +8,12 @@
 mod arena;
 mod error;
 mod identity;
+mod world;
 
 pub use error::{ArenaInsertError, HandleError, WorldKeyError};
 pub use identity::{
     BodyId, FixtureId, JointId, ObjectKind, ParticleGroupId, ParticleId, ParticleSystemId,
+};
+pub use world::{
+    CreateObjectError, DestroyedId, DestructionCause, DestructionRecord, ObjectSnapshot, World,
 };

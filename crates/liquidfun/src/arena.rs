@@ -85,6 +85,15 @@ impl<T, H: HandleIdentity> Arena<T, H> {
         self.get_erased(handle.erased())
     }
 
+    pub(crate) fn get_mut(&mut self, handle: H) -> Result<&mut T, HandleError> {
+        self.validate_typed_handle(handle)?;
+        let identity = handle.identity();
+        let Slot::Occupied { value, .. } = &mut self.slots[identity.slot()] else {
+            unreachable!("validated handles always refer to occupied slots")
+        };
+        Ok(value)
+    }
+
     pub(crate) fn get_erased(&self, handle: ErasedHandle) -> Result<&T, HandleError> {
         if handle.kind() != H::KIND {
             return Err(HandleError::WrongKind {
