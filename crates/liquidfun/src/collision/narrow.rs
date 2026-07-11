@@ -2,10 +2,13 @@
 
 mod circle;
 mod clipping;
+mod edge;
 mod polygon;
 
-use crate::collision::shape::{CircleShape, PolygonShape};
-use crate::collision::{CollisionError, Manifold, ManifoldKind, PointState};
+use crate::collision::shape::{CircleShape, EdgeShape, PolygonShape, Shape};
+use crate::collision::{
+    ChildIndex, CollisionError, CollisionOutcome, Manifold, ManifoldKind, PointState,
+};
 use crate::math::{Transform, Vec2};
 
 /// One active world-space contact point and its signed separation.
@@ -47,6 +50,36 @@ impl WorldManifold {
     #[must_use]
     pub fn points(&self) -> &[WorldManifoldPoint] {
         &self.points
+    }
+}
+
+/// Whether a supported pair was already primary or canonically reversed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PairOrientation {
+    /// Input A/B order matches the pinned primary registry order.
+    Primary,
+    /// Input A/B order was reversed to the pinned primary registry order.
+    Reversed,
+}
+
+/// One touching manifold together with its canonicalization orientation.
+#[derive(Debug, Clone, PartialEq)]
+pub struct PairManifold {
+    manifold: Manifold,
+    orientation: PairOrientation,
+}
+
+impl PairManifold {
+    /// Returns the manifold in pinned primary pair orientation.
+    #[must_use]
+    pub const fn manifold(&self) -> &Manifold {
+        &self.manifold
+    }
+
+    /// Returns how the input pair maps to pinned primary orientation.
+    #[must_use]
+    pub const fn orientation(&self) -> PairOrientation {
+        self.orientation
     }
 }
 
@@ -96,6 +129,132 @@ pub fn collide_polygons(
     validate_transform(transform_a)?;
     validate_transform(transform_b)?;
     polygon::collide_polygons(polygon_a, transform_a, polygon_b, transform_b)
+}
+
+/// Generates an edge-circle manifold with the edge as shape A.
+///
+/// # Errors
+///
+/// Returns [`CollisionError::NonFiniteValue`] when either transform is invalid.
+pub fn collide_edge_circle(
+    edge_a: &EdgeShape,
+    transform_a: Transform,
+    circle_b: &CircleShape,
+    transform_b: Transform,
+) -> Result<Option<Manifold>, CollisionError> {
+    validate_transform(transform_a)?;
+    validate_transform(transform_b)?;
+    edge::collide_edge_circle(edge_a, transform_a, circle_b, transform_b)
+}
+
+/// Generates an edge-polygon manifold with the edge as shape A.
+///
+/// # Errors
+///
+/// Returns [`CollisionError::NonFiniteValue`] when either transform is invalid.
+pub fn collide_edge_polygon(
+    edge_a: &EdgeShape,
+    transform_a: Transform,
+    polygon_b: &PolygonShape,
+    transform_b: Transform,
+) -> Result<Option<Manifold>, CollisionError> {
+    validate_transform(transform_a)?;
+    validate_transform(transform_b)?;
+    edge::collide_edge_polygon(edge_a, transform_a, polygon_b, transform_b)
+}
+
+/// Dispatches exactly the seven manifold pair families in the pinned registry.
+///
+/// Supported reversed inputs are evaluated in canonical primary order and
+/// report [`PairOrientation::Reversed`].
+///
+/// # Errors
+///
+/// Returns a typed error for an invalid transform or child coordinate.
+#[allow(clippy::too_many_arguments)] // Mirrors two complete shape-child inputs.
+pub fn collide_shapes(
+    shape_a: &Shape,
+    child_a: ChildIndex,
+    transform_a: Transform,
+    shape_b: &Shape,
+    child_b: ChildIndex,
+    transform_b: Transform,
+) -> Result<CollisionOutcome<PairManifold>, CollisionError> {
+    validate_transform(transform_a)?;
+    validate_transform(transform_b)?;
+    ChildIndex::new(child_a.get(), shape_a.child_count())?;
+    ChildIndex::new(child_b.get(), shape_b.child_count())?;
+
+    let (maybe_manifold, orientation) = match (shape_a, shape_b) {
+        (Shape::Circle(circle_a), Shape::Circle(circle_b)) => (
+            circle::collide_circles(circle_a, transform_a, circle_b, transform_b)?,
+            PairOrientation::Primary,
+        ),
+        (Shape::Polygon(polygon_a), Shape::Circle(circle_b)) => (
+            circle::collide_polygon_circle(polygon_a, transform_a, circle_b, transform_b)?,
+            PairOrientation::Primary,
+        ),
+        (Shape::Circle(circle_a), Shape::Polygon(polygon_b)) => (
+            circle::collide_polygon_circle(polygon_b, transform_b, circle_a, transform_a)?,
+            PairOrientation::Reversed,
+        ),
+        (Shape::Polygon(polygon_a), Shape::Polygon(polygon_b)) => (
+            polygon::collide_polygons(polygon_a, transform_a, polygon_b, transform_b)?,
+            PairOrientation::Primary,
+        ),
+        (Shape::Edge(edge_a), Shape::Circle(circle_b)) => (
+            edge::collide_edge_circle(edge_a, transform_a, circle_b, transform_b)?,
+            PairOrientation::Primary,
+        ),
+        (Shape::Circle(circle_a), Shape::Edge(edge_b)) => (
+            edge::collide_edge_circle(edge_b, transform_b, circle_a, transform_a)?,
+            PairOrientation::Reversed,
+        ),
+        (Shape::Edge(edge_a), Shape::Polygon(polygon_b)) => (
+            edge::collide_edge_polygon(edge_a, transform_a, polygon_b, transform_b)?,
+            PairOrientation::Primary,
+        ),
+        (Shape::Polygon(polygon_a), Shape::Edge(edge_b)) => (
+            edge::collide_edge_polygon(edge_b, transform_b, polygon_a, transform_a)?,
+            PairOrientation::Reversed,
+        ),
+        (Shape::Chain(chain_a), Shape::Circle(circle_b)) => {
+            let child_edge = chain_a.child_edge(child_a)?;
+            (
+                edge::collide_edge_circle(&child_edge, transform_a, circle_b, transform_b)?,
+                PairOrientation::Primary,
+            )
+        }
+        (Shape::Circle(circle_a), Shape::Chain(chain_b)) => {
+            let child_edge = chain_b.child_edge(child_b)?;
+            (
+                edge::collide_edge_circle(&child_edge, transform_b, circle_a, transform_a)?,
+                PairOrientation::Reversed,
+            )
+        }
+        (Shape::Chain(chain_a), Shape::Polygon(polygon_b)) => {
+            let child_edge = chain_a.child_edge(child_a)?;
+            (
+                edge::collide_edge_polygon(&child_edge, transform_a, polygon_b, transform_b)?,
+                PairOrientation::Primary,
+            )
+        }
+        (Shape::Polygon(polygon_a), Shape::Chain(chain_b)) => {
+            let child_edge = chain_b.child_edge(child_b)?;
+            (
+                edge::collide_edge_polygon(&child_edge, transform_b, polygon_a, transform_a)?,
+                PairOrientation::Reversed,
+            )
+        }
+        _ => return Ok(CollisionOutcome::Unsupported),
+    };
+    Ok(match maybe_manifold {
+        Some(manifold) => CollisionOutcome::Touching(PairManifold {
+            manifold,
+            orientation,
+        }),
+        None => CollisionOutcome::Separated,
+    })
 }
 
 /// Converts an active local manifold to world coordinates.
