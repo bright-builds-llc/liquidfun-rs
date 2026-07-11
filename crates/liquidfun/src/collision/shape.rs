@@ -1,9 +1,11 @@
 //! Owned immutable shape values and checked unary shape operations.
 
+mod chain;
 mod circle;
 mod edge;
 mod polygon;
 
+pub use chain::ChainShape;
 pub use circle::CircleShape;
 pub use edge::EdgeShape;
 pub use polygon::PolygonShape;
@@ -45,8 +47,7 @@ impl PointDistance {
 
 /// The closed set of owned shape values supported by the pinned engine.
 ///
-/// Polygon and chain variants are added in the same plan after their checked
-/// constructors establish the required invariants.
+/// Every variant owns validated geometry and dispatches without virtual traits.
 #[derive(Debug, Clone, PartialEq)]
 pub enum Shape {
     /// One owned circle.
@@ -55,6 +56,8 @@ pub enum Shape {
     Edge(EdgeShape),
     /// One owned convex polygon.
     Polygon(PolygonShape),
+    /// One owned open or closed chain.
+    Chain(ChainShape),
 }
 
 impl Shape {
@@ -65,13 +68,19 @@ impl Shape {
             Self::Circle(shape) => shape.radius(),
             Self::Edge(shape) => shape.radius(),
             Self::Polygon(shape) => shape.radius(),
+            Self::Chain(shape) => shape.radius(),
         }
     }
 
     /// Returns the number of selectable child primitives.
     #[must_use]
-    pub const fn child_count(&self) -> usize {
-        1
+    pub fn child_count(&self) -> usize {
+        match self {
+            Self::Circle(shape) => shape.child_count(),
+            Self::Edge(shape) => shape.child_count(),
+            Self::Polygon(shape) => shape.child_count(),
+            Self::Chain(shape) => shape.child_count(),
+        }
     }
 
     /// Checks and returns one child coordinate for this shape.
@@ -79,7 +88,7 @@ impl Shape {
     /// # Errors
     ///
     /// Returns [`CollisionError::ChildIndexOutOfRange`] when absent.
-    pub const fn child_index(&self, requested: usize) -> Result<ChildIndex, CollisionError> {
+    pub fn child_index(&self, requested: usize) -> Result<ChildIndex, CollisionError> {
         ChildIndex::new(requested, self.child_count())
     }
 
@@ -93,6 +102,7 @@ impl Shape {
             Self::Circle(shape) => shape.test_point(transform, point),
             Self::Edge(shape) => shape.test_point(transform, point),
             Self::Polygon(shape) => shape.test_point(transform, point),
+            Self::Chain(shape) => shape.test_point(transform, point),
         }
     }
 
@@ -112,6 +122,7 @@ impl Shape {
             Self::Circle(shape) => shape.distance_to_point(transform, point),
             Self::Edge(shape) => shape.distance_to_point(transform, point),
             Self::Polygon(shape) => shape.distance_to_point(transform, point),
+            Self::Chain(shape) => shape.distance_to_point(transform, point, child_index),
         }
     }
 
@@ -131,6 +142,7 @@ impl Shape {
             Self::Circle(shape) => shape.ray_cast(input, transform),
             Self::Edge(shape) => shape.ray_cast(input, transform),
             Self::Polygon(shape) => shape.ray_cast(input, transform),
+            Self::Chain(shape) => shape.ray_cast(input, transform, child_index),
         }
     }
 
@@ -149,6 +161,7 @@ impl Shape {
             Self::Circle(shape) => shape.compute_aabb(transform),
             Self::Edge(shape) => shape.compute_aabb(transform),
             Self::Polygon(shape) => shape.compute_aabb(transform),
+            Self::Chain(shape) => shape.compute_aabb(transform, child_index),
         }
     }
 
@@ -162,6 +175,7 @@ impl Shape {
             Self::Circle(shape) => shape.compute_mass(density),
             Self::Edge(shape) => shape.compute_mass(density),
             Self::Polygon(shape) => shape.compute_mass(density),
+            Self::Chain(shape) => shape.compute_mass(density),
         }
     }
 }
@@ -181,6 +195,12 @@ impl From<EdgeShape> for Shape {
 impl From<PolygonShape> for Shape {
     fn from(shape: PolygonShape) -> Self {
         Self::Polygon(shape)
+    }
+}
+
+impl From<ChainShape> for Shape {
+    fn from(shape: ChainShape) -> Self {
+        Self::Chain(shape)
     }
 }
 
