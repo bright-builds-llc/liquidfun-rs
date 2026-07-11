@@ -12,9 +12,9 @@ use liquidfun_differential::{
     EmptyWorldAdapter, NativeMathProbeExecutor, float_values_match_with_policy,
 };
 use liquidfun_test_protocol::{
-    BuildEvidenceTier, BuildIdentity, HarnessLimits, MathProbeRequestRecord, MathProbeResult,
-    Phase4PolicyProfile, ProtocolSessionValidator, decode_handshake_jsonl,
-    decode_math_probe_request_jsonl,
+    BuildEvidenceTier, BuildIdentity, DivergenceHorizon, EvidenceTier, HarnessLimits,
+    MathProbeHorizon, MathProbeRequestRecord, MathProbeResult, Phase4PolicyProfile,
+    ProtocolSessionValidator, decode_handshake_jsonl, decode_math_probe_request_jsonl,
 };
 use sha2::{Digest, Sha256};
 
@@ -330,6 +330,16 @@ fn run_math_probe_command(
         .map_err(|error| DifferentialError::new("protocol", error.to_string()))?;
     let policy = Phase4PolicyProfile::parse_toml(policy_text)
         .map_err(|error| DifferentialError::new("policy", error.to_string()))?;
+    if request.tolerance_profile_sha256() != policy.profile_sha256() {
+        return Err(DifferentialError::new(
+            "policy",
+            format!(
+                "request policy hash {} does not match checked-in profile {}",
+                request.tolerance_profile_sha256().as_str(),
+                policy.profile_sha256().as_str()
+            ),
+        ));
+    }
 
     if invocation.action == MathProbeAction::VerifyDeterminism {
         return verify_math_probe_determinism(
@@ -651,6 +661,7 @@ fn compare_math_probe_results(
     }
     let expected = NativeMathProbeExecutor::execute(request)
         .map_err(|error| DifferentialError::new("native", error.to_string()))?;
+    let comparison_tier = comparison_evidence_tier(oracle_identity, native_identity);
     if expected.len() != actual.len() {
         return Err(math_probe_mismatch("result count differs"));
     }
@@ -670,6 +681,22 @@ fn compare_math_probe_results(
         let field_policy = policy
             .field(expected.policy_path().as_str())
             .ok_or_else(|| math_probe_mismatch("policy path is not registered"))?;
+        if !horizons_match(expected.horizon(), field_policy.horizon()) {
+            return Err(math_probe_mismatch(format!(
+                "request horizon does not match policy at case {}",
+                expected.case_id()
+            )));
+        }
+        if !tier_authorizes(comparison_tier, field_policy.evidence_tier()) {
+            return Err(DifferentialError::new(
+                "identity",
+                format!(
+                    "comparison tier {comparison_tier:?} cannot apply policy tier {:?} at case {}",
+                    field_policy.evidence_tier(),
+                    expected.case_id()
+                ),
+            ));
+        }
         for (expected_value, actual_value) in expected.values().iter().zip(actual.values()) {
             if expected_value.field() != actual_value.field()
                 || expected_value.class() != actual_value.class()
@@ -691,6 +718,49 @@ fn compare_math_probe_results(
         }
     }
     Ok(())
+}
+
+fn comparison_evidence_tier(
+    oracle_identity: &BuildIdentity,
+    native_identity: &BuildIdentity,
+) -> EvidenceTier {
+    match (
+        oracle_identity.evidence_tier(),
+        native_identity.evidence_tier(),
+    ) {
+        (BuildEvidenceTier::D1Canonical, BuildEvidenceTier::D1Canonical) => {
+            EvidenceTier::D1Canonical
+        }
+        (BuildEvidenceTier::D3Exploratory, _) | (_, BuildEvidenceTier::D3Exploratory) => {
+            EvidenceTier::D3Exploratory
+        }
+        _ => EvidenceTier::D2Supported,
+    }
+}
+
+const fn horizons_match(request: MathProbeHorizon, policy: DivergenceHorizon) -> bool {
+    match (request, policy) {
+        (MathProbeHorizon::Operation, DivergenceHorizon::Operation) => true,
+        (
+            MathProbeHorizon::ScenarioSteps {
+                steps: request_steps,
+            },
+            DivergenceHorizon::ScenarioSteps {
+                steps: policy_steps,
+            },
+        ) => request_steps == policy_steps,
+        _ => false,
+    }
+}
+
+const fn tier_authorizes(actual: EvidenceTier, policy: EvidenceTier) -> bool {
+    matches!(
+        actual,
+        EvidenceTier::D1Canonical | EvidenceTier::D2Supported
+    ) && matches!(
+        policy,
+        EvidenceTier::D1Canonical | EvidenceTier::D2Supported
+    )
 }
 
 fn math_probe_mismatch(message: impl Into<String>) -> DifferentialError {
@@ -877,7 +947,9 @@ fn repository_root() -> Result<PathBuf, DifferentialError> {
 
 #[cfg(test)]
 mod tests {
-    use super::compile_database_sha256;
+    use liquidfun_test_protocol::{DivergenceHorizon, EvidenceTier, MathProbeHorizon};
+
+    use super::{compile_database_sha256, horizons_match, tier_authorizes};
 
     #[test]
     fn effective_compile_digest_changes_with_material_command_inputs() {
@@ -908,5 +980,39 @@ mod tests {
                 .iter()
                 .all(|changed| changed != &baseline_digest)
         );
+    }
+
+    #[test]
+    fn request_horizon_must_exactly_match_field_policy() {
+        // Arrange / Act / Assert
+        assert!(horizons_match(
+            MathProbeHorizon::ScenarioSteps { steps: 32 },
+            DivergenceHorizon::ScenarioSteps { steps: 32 }
+        ));
+        assert!(!horizons_match(
+            MathProbeHorizon::Operation,
+            DivergenceHorizon::ScenarioSteps { steps: 32 }
+        ));
+        assert!(!horizons_match(
+            MathProbeHorizon::ScenarioSteps { steps: 4 },
+            DivergenceHorizon::ScenarioSteps { steps: 32 }
+        ));
+    }
+
+    #[test]
+    fn exploratory_or_replay_tier_cannot_apply_authoritative_policy() {
+        // Arrange / Act / Assert
+        assert!(tier_authorizes(
+            EvidenceTier::D2Supported,
+            EvidenceTier::D1Canonical
+        ));
+        assert!(!tier_authorizes(
+            EvidenceTier::D3Exploratory,
+            EvidenceTier::D2Supported
+        ));
+        assert!(!tier_authorizes(
+            EvidenceTier::D1Canonical,
+            EvidenceTier::D0Replay
+        ));
     }
 }

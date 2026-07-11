@@ -528,18 +528,30 @@ MathProbePolicyPath decode_math_policy_path(std::string_view value) {
   if (value == "math.branch.is_valid") {
     return MathProbePolicyPath::branch_is_valid;
   }
-  if (value == "math.composite.transform") {
-    return MathProbePolicyPath::composite_transform;
-  }
-  if (value == "math.constants.pi") {
-    return MathProbePolicyPath::constants_pi;
-  }
-  if (value == "math.kernel.rotation") {
-    return MathProbePolicyPath::kernel_rotation;
-  }
-  if (value == "math.kernel.vector_length") {
-    return MathProbePolicyPath::kernel_vector_length;
-  }
+  if (value == "math.operation.abs") return MathProbePolicyPath::operation_abs;
+  if (value == "math.operation.min") return MathProbePolicyPath::operation_min;
+  if (value == "math.pass_through.max") return MathProbePolicyPath::pass_through_max;
+  if (value == "math.operation.clamp") return MathProbePolicyPath::operation_clamp;
+  if (value == "math.operation.inv_sqrt") return MathProbePolicyPath::operation_inv_sqrt;
+  if (value == "math.vector.length") return MathProbePolicyPath::vector_length;
+  if (value == "math.vector.normalize") return MathProbePolicyPath::vector_normalize;
+  if (value == "math.vector.dot") return MathProbePolicyPath::vector_dot;
+  if (value == "math.vector.cross") return MathProbePolicyPath::vector_cross;
+  if (value == "math.matrix22.solve") return MathProbePolicyPath::matrix22_solve;
+  if (value == "math.matrix33.solve") return MathProbePolicyPath::matrix33_solve;
+  if (value == "math.matrix22.inverse") return MathProbePolicyPath::matrix22_inverse;
+  if (value == "math.matrix33.symmetric_inverse") return MathProbePolicyPath::matrix33_symmetric_inverse;
+  if (value == "math.rotation") return MathProbePolicyPath::rotation;
+  if (value == "math.transform.operation") return MathProbePolicyPath::transform_operation;
+  if (value == "math.transform.steps_32") return MathProbePolicyPath::transform_steps_32;
+  if (value == "math.sweep.transform") return MathProbePolicyPath::sweep_transform;
+  if (value == "math.sweep.advance_steps_4") return MathProbePolicyPath::sweep_advance_steps_4;
+  if (value == "math.sweep.normalize") return MathProbePolicyPath::sweep_normalize;
+  if (value == "math.arithmetic.cancellation") return MathProbePolicyPath::arithmetic_cancellation;
+  if (value == "math.arithmetic.halfway_rounding") return MathProbePolicyPath::arithmetic_halfway_rounding;
+  if (value == "math.arithmetic.overflow") return MathProbePolicyPath::arithmetic_overflow;
+  if (value == "math.arithmetic.underflow") return MathProbePolicyPath::arithmetic_underflow;
+  if (value == "math.arithmetic.fma_witness") return MathProbePolicyPath::arithmetic_fma_witness;
   throw std::runtime_error("unsupported math probe policy path");
 }
 
@@ -789,23 +801,48 @@ bool input_matches_operation(
   return false;
 }
 
-MathProbePolicyPath expected_policy_path(MathProbeOperation operation) {
+MathProbePolicyPath expected_policy_path(
+    MathProbeOperation operation,
+    const MathProbeHorizon& horizon) {
   switch (operation) {
     case MathProbeOperation::is_valid:
       return MathProbePolicyPath::branch_is_valid;
-    case MathProbeOperation::rotation:
-    case MathProbeOperation::sweep_transform:
-    case MathProbeOperation::sweep_normalize:
-      return MathProbePolicyPath::kernel_rotation;
+    case MathProbeOperation::abs: return MathProbePolicyPath::operation_abs;
+    case MathProbeOperation::min: return MathProbePolicyPath::operation_min;
+    case MathProbeOperation::max: return MathProbePolicyPath::pass_through_max;
+    case MathProbeOperation::clamp: return MathProbePolicyPath::operation_clamp;
+    case MathProbeOperation::inv_sqrt: return MathProbePolicyPath::operation_inv_sqrt;
+    case MathProbeOperation::vec_length: return MathProbePolicyPath::vector_length;
+    case MathProbeOperation::vec_normalize: return MathProbePolicyPath::vector_normalize;
+    case MathProbeOperation::dot: return MathProbePolicyPath::vector_dot;
+    case MathProbeOperation::cross: return MathProbePolicyPath::vector_cross;
+    case MathProbeOperation::mat22_solve: return MathProbePolicyPath::matrix22_solve;
+    case MathProbeOperation::mat33_solve: return MathProbePolicyPath::matrix33_solve;
+    case MathProbeOperation::mat22_inverse: return MathProbePolicyPath::matrix22_inverse;
+    case MathProbeOperation::mat33_sym_inverse:
+      return MathProbePolicyPath::matrix33_symmetric_inverse;
+    case MathProbeOperation::rotation: return MathProbePolicyPath::rotation;
     case MathProbeOperation::transform:
+      return horizon.is_operation ? MathProbePolicyPath::transform_operation
+                                  : MathProbePolicyPath::transform_steps_32;
+    case MathProbeOperation::sweep_transform:
+      return MathProbePolicyPath::sweep_transform;
     case MathProbeOperation::sweep_advance:
-      return MathProbePolicyPath::composite_transform;
-    case MathProbeOperation::vec_length:
-    case MathProbeOperation::vec_normalize:
-      return MathProbePolicyPath::kernel_vector_length;
-    default:
-      return MathProbePolicyPath::constants_pi;
+      return MathProbePolicyPath::sweep_advance_steps_4;
+    case MathProbeOperation::sweep_normalize:
+      return MathProbePolicyPath::sweep_normalize;
+    case MathProbeOperation::cancellation:
+      return MathProbePolicyPath::arithmetic_cancellation;
+    case MathProbeOperation::halfway_rounding:
+      return MathProbePolicyPath::arithmetic_halfway_rounding;
+    case MathProbeOperation::overflow:
+      return MathProbePolicyPath::arithmetic_overflow;
+    case MathProbeOperation::underflow:
+      return MathProbePolicyPath::arithmetic_underflow;
+    case MathProbeOperation::fma_witness:
+      return MathProbePolicyPath::arithmetic_fma_witness;
   }
+  throw std::runtime_error("unreachable math probe operation");
 }
 
 MathProbeCase decode_math_case(const Node& node) {
@@ -825,17 +862,20 @@ MathProbeCase decode_math_case(const Node& node) {
   if (!input_matches_operation(probe.operation, probe.input)) {
     throw std::runtime_error("math probe operation/input mismatch");
   }
-  if (probe.policy_path != expected_policy_path(probe.operation)) {
+  if (probe.policy_path != expected_policy_path(probe.operation, probe.horizon)) {
     throw std::runtime_error("math probe policy path mismatch");
   }
   if (const auto* advance = std::get_if<SweepAdvanceInput>(&probe.input)) {
     if (advance->fractions.empty() ||
-        advance->fractions.size() != probe.horizon.steps) {
+        advance->fractions.size() != probe.horizon.steps ||
+        probe.horizon.steps != 4) {
       throw std::runtime_error("math probe advance horizon mismatch");
     }
-  } else if (!probe.horizon.is_operation &&
-             !std::holds_alternative<TransformInput>(probe.input)) {
-    throw std::runtime_error("math probe scenario horizon is invalid");
+  } else if (!probe.horizon.is_operation) {
+    if (!std::holds_alternative<TransformInput>(probe.input) ||
+        probe.horizon.steps != 32) {
+      throw std::runtime_error("math probe scenario horizon is invalid");
+    }
   }
   return probe;
 }
@@ -873,10 +913,30 @@ std::string_view math_operation_name(MathProbeOperation operation) {
 std::string_view math_policy_path_name(MathProbePolicyPath path) {
   switch (path) {
     case MathProbePolicyPath::branch_is_valid: return "math.branch.is_valid";
-    case MathProbePolicyPath::composite_transform: return "math.composite.transform";
-    case MathProbePolicyPath::constants_pi: return "math.constants.pi";
-    case MathProbePolicyPath::kernel_rotation: return "math.kernel.rotation";
-    case MathProbePolicyPath::kernel_vector_length: return "math.kernel.vector_length";
+    case MathProbePolicyPath::operation_abs: return "math.operation.abs";
+    case MathProbePolicyPath::operation_min: return "math.operation.min";
+    case MathProbePolicyPath::pass_through_max: return "math.pass_through.max";
+    case MathProbePolicyPath::operation_clamp: return "math.operation.clamp";
+    case MathProbePolicyPath::operation_inv_sqrt: return "math.operation.inv_sqrt";
+    case MathProbePolicyPath::vector_length: return "math.vector.length";
+    case MathProbePolicyPath::vector_normalize: return "math.vector.normalize";
+    case MathProbePolicyPath::vector_dot: return "math.vector.dot";
+    case MathProbePolicyPath::vector_cross: return "math.vector.cross";
+    case MathProbePolicyPath::matrix22_solve: return "math.matrix22.solve";
+    case MathProbePolicyPath::matrix33_solve: return "math.matrix33.solve";
+    case MathProbePolicyPath::matrix22_inverse: return "math.matrix22.inverse";
+    case MathProbePolicyPath::matrix33_symmetric_inverse: return "math.matrix33.symmetric_inverse";
+    case MathProbePolicyPath::rotation: return "math.rotation";
+    case MathProbePolicyPath::transform_operation: return "math.transform.operation";
+    case MathProbePolicyPath::transform_steps_32: return "math.transform.steps_32";
+    case MathProbePolicyPath::sweep_transform: return "math.sweep.transform";
+    case MathProbePolicyPath::sweep_advance_steps_4: return "math.sweep.advance_steps_4";
+    case MathProbePolicyPath::sweep_normalize: return "math.sweep.normalize";
+    case MathProbePolicyPath::arithmetic_cancellation: return "math.arithmetic.cancellation";
+    case MathProbePolicyPath::arithmetic_halfway_rounding: return "math.arithmetic.halfway_rounding";
+    case MathProbePolicyPath::arithmetic_overflow: return "math.arithmetic.overflow";
+    case MathProbePolicyPath::arithmetic_underflow: return "math.arithmetic.underflow";
+    case MathProbePolicyPath::arithmetic_fma_witness: return "math.arithmetic.fma_witness";
   }
   throw std::runtime_error("unreachable math probe policy path");
 }

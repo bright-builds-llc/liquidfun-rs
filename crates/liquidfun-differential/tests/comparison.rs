@@ -289,10 +289,10 @@ fn phase4_field_policies_apply_explicit_special_value_rules() {
     let profile = Phase4PolicyProfile::parse_toml(PHASE4_POLICY)
         .expect("checked-in phase4 policy should validate");
     let exact_transport = profile
-        .field("math.constants.pi")
+        .field("math.pass_through.max")
         .expect("exact transport field should exist");
     let arithmetic = profile
-        .field("math.kernel.vector_length")
+        .field("math.vector.length")
         .expect("arithmetic field should exist");
     let nan = FloatBits::new(0x7fc0_0042);
 
@@ -405,8 +405,11 @@ fn first_divergence_reports_earliest_checkpoint_path_and_float_evidence() {
         report.policy_sha256(),
         ToleranceProfile::phase2_v1().profile_sha256()
     );
-    assert_eq!(report.horizon(), DivergenceHorizon::Operation);
-    assert_eq!(report.evidence_tier(), EvidenceTier::D1Canonical);
+    assert_eq!(
+        report.horizon(),
+        DivergenceHorizon::ScenarioSteps { steps: 1 }
+    );
+    assert_eq!(report.evidence_tier(), EvidenceTier::D3Exploratory);
     assert_eq!(report.sibling_mismatch_count(), 0);
 }
 
@@ -486,8 +489,9 @@ fn deterministic_machine_and_human_reports_share_typed_evidence() {
     assert_eq!(first_machine, second_machine);
     assert_eq!(parsed["signature"]["semantic_path"], "simulation_time");
     assert_eq!(parsed["float_evidence"]["expected_bits"], 1_056_964_608);
-    assert_eq!(parsed["horizon"]["kind"], "operation");
-    assert_eq!(parsed["evidence_tier"], "d1_canonical");
+    assert_eq!(parsed["horizon"]["kind"], "scenario_steps");
+    assert_eq!(parsed["horizon"]["steps"], 1);
+    assert_eq!(parsed["evidence_tier"], "d3_exploratory");
     assert!(parsed["float_evidence"]["ulp_distance"].is_number());
     assert!(human.contains("after-step-1"));
     assert!(human.contains("0x3f000000"));
@@ -524,8 +528,9 @@ fn deliberate_mismatch_reports_phase4_diagnostics() {
 
     // Assert
     assert_eq!(first.signature(), replay.signature());
-    assert_eq!(parsed["horizon"]["kind"], "operation");
-    assert_eq!(parsed["evidence_tier"], "d1_canonical");
+    assert_eq!(parsed["horizon"]["kind"], "scenario_steps");
+    assert_eq!(parsed["horizon"]["steps"], 1);
+    assert_eq!(parsed["evidence_tier"], "d3_exploratory");
     assert_eq!(parsed["sibling_mismatch_count"], 0);
     assert!(parsed["float_evidence"]["absolute_difference_bits"].is_number());
     assert!(parsed["float_evidence"]["relative_difference_bits"].is_number());

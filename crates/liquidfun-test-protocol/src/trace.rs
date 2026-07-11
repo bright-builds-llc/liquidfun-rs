@@ -2,8 +2,8 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
 use crate::{
-    BuildIdentity, BuildIdentityFields, CheckpointId, CodecError, FloatBits, HarnessFailureKind,
-    HarnessLimits, MathProbeHorizon, MathProbeOperation, MathProbePolicyPath,
+    BuildEvidenceTier, BuildIdentity, BuildIdentityFields, CheckpointId, CodecError, FloatBits,
+    HarnessFailureKind, HarnessLimits, MathProbeHorizon, MathProbeOperation, MathProbePolicyPath,
     Phase4BuildIdentityFields, ProtocolVersion, RecordLimit, RequestId, ScenarioId,
     ScenarioRequestRecord, ScenarioSchemaVersion, ScenarioSource, Sha256Hex,
     ToleranceProfileVersion, TraceSchemaVersion,
@@ -688,6 +688,7 @@ pub struct ValidatedTrace {
     begin: TraceBegin,
     checkpoints: Box<[CheckpointRecord]>,
     end: TraceEnd,
+    evidence_tier: BuildEvidenceTier,
 }
 
 impl ValidatedTrace {
@@ -749,6 +750,12 @@ impl ValidatedTrace {
     #[must_use]
     pub const fn identity_sha256(&self) -> &Sha256Hex {
         &self.begin.identity_sha256
+    }
+
+    /// Returns the evidence authority derived from the validated build identity.
+    #[must_use]
+    pub const fn evidence_tier(&self) -> BuildEvidenceTier {
+        self.evidence_tier
     }
 
     /// Returns checkpoints in preserved solver-significant order.
@@ -955,6 +962,7 @@ fn validate_end(
         begin,
         checkpoints: checkpoints.into_boxed_slice(),
         end,
+        evidence_tier: identity.evidence_tier(),
     })
 }
 

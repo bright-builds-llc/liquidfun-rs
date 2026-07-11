@@ -12,27 +12,137 @@ evidence_tier = "d1_canonical"
 justification = "Pinned b2IsValid exponent branch is discrete compatibility evidence."
 
 [[fields]]
-semantic_path = "math.composite.transform"
-comparison = { kind = "float", policy = { kind = "absolute_relative", absolute_bits = 897988541, relative_bits = 953267991 } }
+semantic_path = "math.operation.abs"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
 zero_policy = "distinct"
 non_finite_policy = "reject_arithmetic_nan"
 collection_policy = "ordered"
-horizon = { kind = "scenario_steps", steps = 32 }
-evidence_tier = "d2_supported"
-justification = "Bounded transform composition uses absolute tolerance near zero and relative tolerance at scale."
+horizon = { kind = "operation" }
+evidence_tier = "d1_canonical"
+justification = "Pinned unary sign-bit branch preserves signed-zero behavior exactly."
 
 [[fields]]
-semantic_path = "math.constants.pi"
+semantic_path = "math.operation.min"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "operation" }
+evidence_tier = "d1_canonical"
+justification = "Pinned ordered minimum helper has exact operand-selection behavior."
+
+[[fields]]
+semantic_path = "math.pass_through.max"
 comparison = { kind = "float", policy = { kind = "exact_bits" } }
 zero_policy = "distinct"
 non_finite_policy = "exact_bits_transport"
 collection_policy = "ordered"
 horizon = { kind = "operation" }
 evidence_tier = "d1_canonical"
-justification = "Pinned b2_pi decimal token has one authoritative f32 bit pattern."
+justification = "Explicit operand pass-through probe verifies the selected operand bits, including NaN payloads, without arithmetic comparison."
 
 [[fields]]
-semantic_path = "math.kernel.rotation"
+semantic_path = "math.operation.clamp"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "operation" }
+evidence_tier = "d1_canonical"
+justification = "Pinned nested min/max order selects one exact finite operand."
+
+[[fields]]
+semantic_path = "math.operation.inv_sqrt"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "operation" }
+evidence_tier = "d1_canonical"
+justification = "The pinned bit-seed and Newton step have an exact canonical witness."
+
+[[fields]]
+semantic_path = "math.vector.length"
+comparison = { kind = "float", policy = { kind = "ulps", max = 2 } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "operation" }
+evidence_tier = "d1_canonical"
+justification = "One source-ordered multiply-add sequence followed by square root is a bounded local kernel."
+
+[[fields]]
+semantic_path = "math.vector.normalize"
+comparison = { kind = "float", policy = { kind = "ulps", max = 2 } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "operation" }
+evidence_tier = "d1_canonical"
+justification = "Normalization reports one length and source-ordered component scaling at the epsilon branch."
+
+[[fields]]
+semantic_path = "math.vector.dot"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "operation" }
+evidence_tier = "d1_canonical"
+justification = "The two-term source-ordered dot witness is exact on the canonical scalar baseline."
+
+[[fields]]
+semantic_path = "math.vector.cross"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "operation" }
+evidence_tier = "d1_canonical"
+justification = "The two-product subtraction witness is exact on the canonical scalar baseline."
+
+[[fields]]
+semantic_path = "math.matrix22.solve"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "operation" }
+evidence_tier = "d1_canonical"
+justification = "Singular and near-singular Mat22 solve branches use pinned grouped scalar expressions."
+
+[[fields]]
+semantic_path = "math.matrix33.solve"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "operation" }
+evidence_tier = "d1_canonical"
+justification = "The selected singular Mat33 solve witness has an exact zero branch."
+
+[[fields]]
+semantic_path = "math.matrix22.inverse"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "operation" }
+evidence_tier = "d1_canonical"
+justification = "The well-conditioned diagonal inverse witness is exactly representable."
+
+[[fields]]
+semantic_path = "math.matrix33.symmetric_inverse"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "operation" }
+evidence_tier = "d1_canonical"
+justification = "Pinned symmetric-cofactor grouping is compared exactly on canonical scalar builds."
+
+[[fields]]
+semantic_path = "math.rotation"
 comparison = { kind = "float", policy = { kind = "ulps", max = 4 } }
 zero_policy = "distinct"
 non_finite_policy = "reject_arithmetic_nan"
@@ -42,11 +152,101 @@ evidence_tier = "d2_supported"
 justification = "Separate platform libm sine and cosine calls require a reviewed local-kernel ULP bound."
 
 [[fields]]
-semantic_path = "math.kernel.vector_length"
-comparison = { kind = "float", policy = { kind = "ulps", max = 2 } }
+semantic_path = "math.transform.operation"
+comparison = { kind = "float", policy = { kind = "absolute_relative", absolute_bits = 897988541, relative_bits = 953267991 } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "operation" }
+evidence_tier = "d2_supported"
+justification = "One transform composition uses the fixed composite absolute-relative policy."
+
+[[fields]]
+semantic_path = "math.transform.steps_32"
+comparison = { kind = "float", policy = { kind = "absolute_relative", absolute_bits = 897988541, relative_bits = 953267991 } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "scenario_steps", steps = 32 }
+evidence_tier = "d2_supported"
+justification = "Exactly 32 repeated transform compositions use one fixed non-growing composite policy."
+
+[[fields]]
+semantic_path = "math.sweep.transform"
+comparison = { kind = "float", policy = { kind = "ulps", max = 4 } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "operation" }
+evidence_tier = "d2_supported"
+justification = "One sweep interpolation includes platform libm sine and cosine calls."
+
+[[fields]]
+semantic_path = "math.sweep.advance_steps_4"
+comparison = { kind = "float", policy = { kind = "absolute_relative", absolute_bits = 897988541, relative_bits = 953267991 } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "scenario_steps", steps = 4 }
+evidence_tier = "d2_supported"
+justification = "Exactly four checked sweep advances use one fixed non-growing composite policy."
+
+[[fields]]
+semantic_path = "math.sweep.normalize"
+comparison = { kind = "float", policy = { kind = "ulps", max = 4 } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "operation" }
+evidence_tier = "d2_supported"
+justification = "One shared tau subtraction preserves endpoint angle difference under a local ULP bound."
+
+[[fields]]
+semantic_path = "math.arithmetic.cancellation"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
 zero_policy = "distinct"
 non_finite_policy = "reject_arithmetic_nan"
 collection_policy = "ordered"
 horizon = { kind = "operation" }
 evidence_tier = "d1_canonical"
-justification = "One source-ordered multiply-add sequence followed by square root is a bounded local kernel."
+justification = "The cancellation witness records both source groupings as exact canonical bits."
+
+[[fields]]
+semantic_path = "math.arithmetic.halfway_rounding"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "operation" }
+evidence_tier = "d1_canonical"
+justification = "Halfway witnesses prove round-to-nearest ties-even with exact result bits."
+
+[[fields]]
+semantic_path = "math.arithmetic.overflow"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
+zero_policy = "distinct"
+non_finite_policy = "same_sign_infinity"
+collection_policy = "ordered"
+horizon = { kind = "operation" }
+evidence_tier = "d1_canonical"
+justification = "Overflow is authoritative only when both canonical operands produce infinity with the same sign."
+
+[[fields]]
+semantic_path = "math.arithmetic.underflow"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "operation" }
+evidence_tier = "d1_canonical"
+justification = "Gradual-underflow witness bits are exact after the runtime environment check."
+
+[[fields]]
+semantic_path = "math.arithmetic.fma_witness"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "operation" }
+evidence_tier = "d1_canonical"
+justification = "The non-fused multiply-then-add witness is exact under contraction-off identity."

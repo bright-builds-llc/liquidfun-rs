@@ -270,7 +270,20 @@ struct RawProfile {
 }
 
 fn validate_field(field: &FieldPolicy) -> Result<(), Phase4PolicyError> {
-    if field.semantic_path.is_empty() || field.semantic_path.len() > MAXIMUM_SEMANTIC_PATH_BYTES {
+    let path_is_default_like = field.semantic_path.split('.').any(|segment| {
+        matches!(
+            segment.to_ascii_lowercase().as_str(),
+            "*" | "**" | "any" | "all" | "default" | "fallback"
+        )
+    });
+    if field.semantic_path.is_empty()
+        || field.semantic_path.len() > MAXIMUM_SEMANTIC_PATH_BYTES
+        || field
+            .semantic_path
+            .chars()
+            .any(|character| matches!(character, '*' | '?' | '[' | ']'))
+        || path_is_default_like
+    {
         return Err(Phase4PolicyError::InvalidSemanticPath);
     }
     if field.justification.is_empty() || field.justification.len() > MAXIMUM_JUSTIFICATION_BYTES {
@@ -449,5 +462,24 @@ justification = "Pinned b2_pi token bit pattern."
 
         // Assert
         assert!(missing.is_none());
+    }
+
+    #[test]
+    fn phase4_profile_rejects_wildcard_and_default_like_paths() {
+        // Arrange
+        let invalid_paths = ["math.*.value", "math.default.value", "math.fallback.value"];
+
+        // Act
+        let errors = invalid_paths.map(|path| {
+            Phase4PolicyProfile::parse_toml(&VALID.replace("math.constants.pi", path))
+                .expect_err("default-like policy paths must fail")
+        });
+
+        // Assert
+        assert!(
+            errors
+                .iter()
+                .all(|error| matches!(error, Phase4PolicyError::InvalidSemanticPath))
+        );
     }
 }

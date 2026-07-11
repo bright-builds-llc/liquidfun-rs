@@ -61,7 +61,7 @@ fn schema_presentations_keep_records_closed_and_versions_explicit() {
     assert!(TRACKED_PROTOCOL_SCHEMA.contains("\"trace_schema_version\": 1"));
     assert!(TRACKED_PROTOCOL_SCHEMA.contains("\"tolerance_profile_version\": 1"));
     assert!(TRACKED_SCENARIO_SCHEMA.contains("\"scenario_schema_version\": 1"));
-    assert!(TRACKED_SCENARIO_SCHEMA.contains("\"math.kernel.rotation\""));
+    assert!(TRACKED_SCENARIO_SCHEMA.contains("\"math.rotation\""));
     assert!(TRACKED_SCENARIO_SCHEMA.contains("\"fma_witness\""));
     assert!(TRACKED_TRACE_SCHEMA.contains("\"trace_schema_version\": 1"));
     assert!(TRACKED_TRACE_SCHEMA.contains("\"math_probe_end\""));

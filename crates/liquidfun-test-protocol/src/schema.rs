@@ -540,10 +540,30 @@ fn math_probe_operations() -> Value {
 fn math_probe_policy_paths() -> Value {
     json!([
         "math.branch.is_valid",
-        "math.composite.transform",
-        "math.constants.pi",
-        "math.kernel.rotation",
-        "math.kernel.vector_length"
+        "math.operation.abs",
+        "math.operation.min",
+        "math.pass_through.max",
+        "math.operation.clamp",
+        "math.operation.inv_sqrt",
+        "math.vector.length",
+        "math.vector.normalize",
+        "math.vector.dot",
+        "math.vector.cross",
+        "math.matrix22.solve",
+        "math.matrix33.solve",
+        "math.matrix22.inverse",
+        "math.matrix33.symmetric_inverse",
+        "math.rotation",
+        "math.transform.operation",
+        "math.transform.steps_32",
+        "math.sweep.transform",
+        "math.sweep.advance_steps_4",
+        "math.sweep.normalize",
+        "math.arithmetic.cancellation",
+        "math.arithmetic.halfway_rounding",
+        "math.arithmetic.overflow",
+        "math.arithmetic.underflow",
+        "math.arithmetic.fma_witness"
     ])
 }
 

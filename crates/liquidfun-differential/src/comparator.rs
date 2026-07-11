@@ -42,6 +42,7 @@ pub fn compare(
         ) {
             return Ok(physics_mismatch(MismatchReport::discrete(
                 expected,
+                actual,
                 checkpoint_index,
                 SemanticPath::CheckpointId,
                 MismatchKind::Order,
@@ -51,6 +52,7 @@ pub fn compare(
         if !exact_values_match(&expected_checkpoint.ordinal(), &actual_checkpoint.ordinal()) {
             return Ok(physics_mismatch(MismatchReport::discrete(
                 expected,
+                actual,
                 checkpoint_index,
                 SemanticPath::CheckpointOrdinal,
                 MismatchKind::Order,
@@ -60,6 +62,7 @@ pub fn compare(
         if !exact_values_match(&expected_checkpoint.phase(), &actual_checkpoint.phase()) {
             return Ok(physics_mismatch(MismatchReport::discrete(
                 expected,
+                actual,
                 checkpoint_index,
                 SemanticPath::Phase,
                 MismatchKind::Order,
@@ -73,6 +76,7 @@ pub fn compare(
         ) {
             return Ok(physics_mismatch(MismatchReport::discrete(
                 expected,
+                actual,
                 checkpoint_index,
                 SemanticPath::WorldCount(field),
                 MismatchKind::Exact,
@@ -86,6 +90,7 @@ pub fn compare(
         ) {
             return Ok(physics_mismatch(MismatchReport::numeric(
                 expected,
+                actual,
                 checkpoint_index,
                 expected_checkpoint.simulation_time_bits(),
                 actual_checkpoint.simulation_time_bits(),
@@ -97,6 +102,7 @@ pub fn compare(
     if expected_checkpoints.len() > actual_checkpoints.len() {
         return Ok(physics_mismatch(MismatchReport::discrete(
             expected,
+            actual,
             actual_checkpoints.len(),
             SemanticPath::CheckpointPresence,
             MismatchKind::Missing,
@@ -106,6 +112,7 @@ pub fn compare(
     if expected_checkpoints.len() < actual_checkpoints.len() {
         return Ok(physics_mismatch(MismatchReport::discrete(
             actual,
+            expected,
             expected_checkpoints.len(),
             SemanticPath::CheckpointPresence,
             MismatchKind::Unexpected,

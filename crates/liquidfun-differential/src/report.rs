@@ -1,8 +1,8 @@
 use std::fmt::Write;
 
 use liquidfun_test_protocol::{
-    CheckpointId, DivergenceHorizon, EvidenceTier, FloatBits, HarnessFailure, RequestId, Sha256Hex,
-    ToleranceProfile, ValidatedTrace,
+    BuildEvidenceTier, CheckpointId, DivergenceHorizon, EvidenceTier, FloatBits, HarnessFailure,
+    RequestId, Sha256Hex, ToleranceProfile, ValidatedTrace,
 };
 use serde::Serialize;
 use sha2::{Digest, Sha256};
@@ -340,41 +340,60 @@ pub struct MismatchReport {
 
 impl MismatchReport {
     pub(crate) fn discrete(
-        trace: &ValidatedTrace,
+        expected: &ValidatedTrace,
+        actual: &ValidatedTrace,
         checkpoint_index: usize,
         semantic_path: SemanticPath,
         kind: MismatchKind,
         policy: &ToleranceProfile,
     ) -> Self {
-        Self::new(trace, checkpoint_index, semantic_path, kind, policy, None)
+        Self::new(
+            expected,
+            actual,
+            checkpoint_index,
+            semantic_path,
+            kind,
+            policy,
+            DivergenceHorizon::PhaseLocal,
+            None,
+        )
     }
 
     pub(crate) fn numeric(
-        trace: &ValidatedTrace,
+        expected: &ValidatedTrace,
+        actual: &ValidatedTrace,
         checkpoint_index: usize,
         expected_bits: FloatBits,
         actual_bits: FloatBits,
         policy: &ToleranceProfile,
     ) -> Self {
         Self::new(
-            trace,
+            expected,
+            actual,
             checkpoint_index,
             SemanticPath::SimulationTime,
             MismatchKind::Numeric,
             policy,
+            DivergenceHorizon::ScenarioSteps {
+                steps: expected.checkpoints()[checkpoint_index]
+                    .ordinal()
+                    .saturating_add(1),
+            },
             Some(FloatMismatchEvidence::new(expected_bits, actual_bits)),
         )
     }
 
     fn new(
-        trace: &ValidatedTrace,
+        expected: &ValidatedTrace,
+        actual: &ValidatedTrace,
         checkpoint_index: usize,
         semantic_path: SemanticPath,
         kind: MismatchKind,
         policy: &ToleranceProfile,
+        horizon: DivergenceHorizon,
         maybe_float_evidence: Option<FloatMismatchEvidence>,
     ) -> Self {
-        let checkpoint = &trace.checkpoints()[checkpoint_index];
+        let checkpoint = &expected.checkpoints()[checkpoint_index];
         let phase = PhaseName::new(checkpoint.phase())
             .expect("validated checkpoint phases satisfy report bounds");
         let signature = FailureSignature::new(
@@ -388,19 +407,19 @@ impl MismatchReport {
             checkpoint_ordinal: checkpoint.ordinal(),
             maybe_previous_checkpoint_id: checkpoint_index
                 .checked_sub(1)
-                .and_then(|index| trace.checkpoints().get(index))
+                .and_then(|index| expected.checkpoints().get(index))
                 .map(|checkpoint| checkpoint.checkpoint_id().clone()),
-            maybe_next_checkpoint_id: trace
+            maybe_next_checkpoint_id: expected
                 .checkpoints()
                 .get(checkpoint_index + 1)
                 .map(|checkpoint| checkpoint.checkpoint_id().clone()),
-            request_id: trace.request_id().clone(),
-            request_sha256: request_contract_sha256(trace),
-            scenario_sha256: trace.scenario_sha256().clone(),
+            request_id: expected.request_id().clone(),
+            request_sha256: request_contract_sha256(expected),
+            scenario_sha256: expected.scenario_sha256().clone(),
             policy_id: policy.profile_id().into(),
             policy_sha256: policy.profile_sha256().clone(),
-            horizon: DivergenceHorizon::Operation,
-            evidence_tier: EvidenceTier::D1Canonical,
+            horizon,
+            evidence_tier: weakest_evidence_tier(expected, actual),
             sibling_mismatch_count: 0,
             maybe_float_evidence,
         }
@@ -525,6 +544,58 @@ impl MismatchReport {
         )
         .expect("writing to an owned String cannot fail");
         rendered
+    }
+}
+
+fn weakest_evidence_tier(expected: &ValidatedTrace, actual: &ValidatedTrace) -> EvidenceTier {
+    weakest_build_evidence_tier(expected.evidence_tier(), actual.evidence_tier())
+}
+
+const fn weakest_build_evidence_tier(
+    expected: BuildEvidenceTier,
+    actual: BuildEvidenceTier,
+) -> EvidenceTier {
+    match (expected, actual) {
+        (BuildEvidenceTier::D1Canonical, BuildEvidenceTier::D1Canonical) => {
+            EvidenceTier::D1Canonical
+        }
+        (BuildEvidenceTier::D3Exploratory, _) | (_, BuildEvidenceTier::D3Exploratory) => {
+            EvidenceTier::D3Exploratory
+        }
+        _ => EvidenceTier::D2Supported,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use liquidfun_test_protocol::{BuildEvidenceTier, EvidenceTier};
+
+    use super::weakest_build_evidence_tier;
+
+    #[test]
+    fn report_evidence_tier_is_the_weakest_validated_build() {
+        // Arrange / Act / Assert
+        assert_eq!(
+            weakest_build_evidence_tier(
+                BuildEvidenceTier::D1Canonical,
+                BuildEvidenceTier::D1Canonical
+            ),
+            EvidenceTier::D1Canonical
+        );
+        assert_eq!(
+            weakest_build_evidence_tier(
+                BuildEvidenceTier::D1Canonical,
+                BuildEvidenceTier::D2Supported
+            ),
+            EvidenceTier::D2Supported
+        );
+        assert_eq!(
+            weakest_build_evidence_tier(
+                BuildEvidenceTier::D2Supported,
+                BuildEvidenceTier::D3Exploratory
+            ),
+            EvidenceTier::D3Exploratory
+        );
     }
 }
 

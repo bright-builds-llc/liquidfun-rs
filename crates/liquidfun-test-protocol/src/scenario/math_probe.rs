@@ -74,14 +74,54 @@ pub enum MathProbeOperation {
 pub enum MathProbePolicyPath {
     #[serde(rename = "math.branch.is_valid")]
     MathBranchIsValid,
-    #[serde(rename = "math.composite.transform")]
-    MathCompositeTransform,
-    #[serde(rename = "math.constants.pi")]
-    MathConstantsPi,
-    #[serde(rename = "math.kernel.rotation")]
-    MathKernelRotation,
-    #[serde(rename = "math.kernel.vector_length")]
-    MathKernelVectorLength,
+    #[serde(rename = "math.operation.abs")]
+    MathOperationAbs,
+    #[serde(rename = "math.operation.min")]
+    MathOperationMin,
+    #[serde(rename = "math.pass_through.max")]
+    MathPassThroughMax,
+    #[serde(rename = "math.operation.clamp")]
+    MathOperationClamp,
+    #[serde(rename = "math.operation.inv_sqrt")]
+    MathOperationInvSqrt,
+    #[serde(rename = "math.vector.length")]
+    MathVectorLength,
+    #[serde(rename = "math.vector.normalize")]
+    MathVectorNormalize,
+    #[serde(rename = "math.vector.dot")]
+    MathVectorDot,
+    #[serde(rename = "math.vector.cross")]
+    MathVectorCross,
+    #[serde(rename = "math.matrix22.solve")]
+    MathMatrix22Solve,
+    #[serde(rename = "math.matrix33.solve")]
+    MathMatrix33Solve,
+    #[serde(rename = "math.matrix22.inverse")]
+    MathMatrix22Inverse,
+    #[serde(rename = "math.matrix33.symmetric_inverse")]
+    MathMatrix33SymmetricInverse,
+    #[serde(rename = "math.rotation")]
+    MathRotation,
+    #[serde(rename = "math.transform.operation")]
+    MathTransformOperation,
+    #[serde(rename = "math.transform.steps_32")]
+    MathTransformSteps32,
+    #[serde(rename = "math.sweep.transform")]
+    MathSweepTransform,
+    #[serde(rename = "math.sweep.advance_steps_4")]
+    MathSweepAdvanceSteps4,
+    #[serde(rename = "math.sweep.normalize")]
+    MathSweepNormalize,
+    #[serde(rename = "math.arithmetic.cancellation")]
+    MathArithmeticCancellation,
+    #[serde(rename = "math.arithmetic.halfway_rounding")]
+    MathArithmeticHalfwayRounding,
+    #[serde(rename = "math.arithmetic.overflow")]
+    MathArithmeticOverflow,
+    #[serde(rename = "math.arithmetic.underflow")]
+    MathArithmeticUnderflow,
+    #[serde(rename = "math.arithmetic.fma_witness")]
+    MathArithmeticFmaWitness,
 }
 
 impl MathProbePolicyPath {
@@ -89,10 +129,30 @@ impl MathProbePolicyPath {
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::MathBranchIsValid => "math.branch.is_valid",
-            Self::MathCompositeTransform => "math.composite.transform",
-            Self::MathConstantsPi => "math.constants.pi",
-            Self::MathKernelRotation => "math.kernel.rotation",
-            Self::MathKernelVectorLength => "math.kernel.vector_length",
+            Self::MathOperationAbs => "math.operation.abs",
+            Self::MathOperationMin => "math.operation.min",
+            Self::MathPassThroughMax => "math.pass_through.max",
+            Self::MathOperationClamp => "math.operation.clamp",
+            Self::MathOperationInvSqrt => "math.operation.inv_sqrt",
+            Self::MathVectorLength => "math.vector.length",
+            Self::MathVectorNormalize => "math.vector.normalize",
+            Self::MathVectorDot => "math.vector.dot",
+            Self::MathVectorCross => "math.vector.cross",
+            Self::MathMatrix22Solve => "math.matrix22.solve",
+            Self::MathMatrix33Solve => "math.matrix33.solve",
+            Self::MathMatrix22Inverse => "math.matrix22.inverse",
+            Self::MathMatrix33SymmetricInverse => "math.matrix33.symmetric_inverse",
+            Self::MathRotation => "math.rotation",
+            Self::MathTransformOperation => "math.transform.operation",
+            Self::MathTransformSteps32 => "math.transform.steps_32",
+            Self::MathSweepTransform => "math.sweep.transform",
+            Self::MathSweepAdvanceSteps4 => "math.sweep.advance_steps_4",
+            Self::MathSweepNormalize => "math.sweep.normalize",
+            Self::MathArithmeticCancellation => "math.arithmetic.cancellation",
+            Self::MathArithmeticHalfwayRounding => "math.arithmetic.halfway_rounding",
+            Self::MathArithmeticOverflow => "math.arithmetic.overflow",
+            Self::MathArithmeticUnderflow => "math.arithmetic.underflow",
+            Self::MathArithmeticFmaWitness => "math.arithmetic.fma_witness",
         }
     }
 }
@@ -379,6 +439,10 @@ impl MathProbeRequestRecord {
     pub const fn scenario(&self) -> &MathProbeScenario {
         &self.scenario
     }
+    #[must_use]
+    pub const fn tolerance_profile_sha256(&self) -> &Sha256Hex {
+        &self.tolerance_profile_sha256
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -597,18 +661,52 @@ fn validate_case(raw: &RawCase) -> Result<(), MathProbeDecodeError> {
             MathProbeErrorKind::OperationInputMismatch,
         ));
     }
-    let expected_path = match raw.operation {
-        MathProbeOperation::IsValid => MathProbePolicyPath::MathBranchIsValid,
-        MathProbeOperation::Rotation
-        | MathProbeOperation::SweepTransform
-        | MathProbeOperation::SweepNormalize => MathProbePolicyPath::MathKernelRotation,
-        MathProbeOperation::Transform | MathProbeOperation::SweepAdvance => {
-            MathProbePolicyPath::MathCompositeTransform
+    let expected_path = match (raw.operation, raw.horizon) {
+        (MathProbeOperation::IsValid, _) => MathProbePolicyPath::MathBranchIsValid,
+        (MathProbeOperation::Abs, _) => MathProbePolicyPath::MathOperationAbs,
+        (MathProbeOperation::Min, _) => MathProbePolicyPath::MathOperationMin,
+        (MathProbeOperation::Max, _) => MathProbePolicyPath::MathPassThroughMax,
+        (MathProbeOperation::Clamp, _) => MathProbePolicyPath::MathOperationClamp,
+        (MathProbeOperation::InvSqrt, _) => MathProbePolicyPath::MathOperationInvSqrt,
+        (MathProbeOperation::VecLength, _) => MathProbePolicyPath::MathVectorLength,
+        (MathProbeOperation::VecNormalize, _) => MathProbePolicyPath::MathVectorNormalize,
+        (MathProbeOperation::Dot, _) => MathProbePolicyPath::MathVectorDot,
+        (MathProbeOperation::Cross, _) => MathProbePolicyPath::MathVectorCross,
+        (MathProbeOperation::Mat22Solve, _) => MathProbePolicyPath::MathMatrix22Solve,
+        (MathProbeOperation::Mat33Solve, _) => MathProbePolicyPath::MathMatrix33Solve,
+        (MathProbeOperation::Mat22Inverse, _) => MathProbePolicyPath::MathMatrix22Inverse,
+        (MathProbeOperation::Mat33SymInverse, _) => {
+            MathProbePolicyPath::MathMatrix33SymmetricInverse
         }
-        MathProbeOperation::VecLength | MathProbeOperation::VecNormalize => {
-            MathProbePolicyPath::MathKernelVectorLength
+        (MathProbeOperation::Rotation, _) => MathProbePolicyPath::MathRotation,
+        (MathProbeOperation::Transform, MathProbeHorizon::Operation) => {
+            MathProbePolicyPath::MathTransformOperation
         }
-        _ => MathProbePolicyPath::MathConstantsPi,
+        (MathProbeOperation::Transform, MathProbeHorizon::ScenarioSteps { steps: 32 }) => {
+            MathProbePolicyPath::MathTransformSteps32
+        }
+        (MathProbeOperation::Transform, _) => {
+            return Err(MathProbeDecodeError::Validation(
+                MathProbeErrorKind::InvalidHorizon,
+            ));
+        }
+        (MathProbeOperation::SweepTransform, _) => MathProbePolicyPath::MathSweepTransform,
+        (MathProbeOperation::SweepAdvance, MathProbeHorizon::ScenarioSteps { steps: 4 }) => {
+            MathProbePolicyPath::MathSweepAdvanceSteps4
+        }
+        (MathProbeOperation::SweepAdvance, _) => {
+            return Err(MathProbeDecodeError::Validation(
+                MathProbeErrorKind::InvalidHorizon,
+            ));
+        }
+        (MathProbeOperation::SweepNormalize, _) => MathProbePolicyPath::MathSweepNormalize,
+        (MathProbeOperation::Cancellation, _) => MathProbePolicyPath::MathArithmeticCancellation,
+        (MathProbeOperation::HalfwayRounding, _) => {
+            MathProbePolicyPath::MathArithmeticHalfwayRounding
+        }
+        (MathProbeOperation::Overflow, _) => MathProbePolicyPath::MathArithmeticOverflow,
+        (MathProbeOperation::Underflow, _) => MathProbePolicyPath::MathArithmeticUnderflow,
+        (MathProbeOperation::FmaWitness, _) => MathProbePolicyPath::MathArithmeticFmaWitness,
     };
     if raw.policy_path != expected_path {
         return Err(MathProbeDecodeError::Validation(
