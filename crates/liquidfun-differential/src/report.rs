@@ -1,11 +1,11 @@
 use std::fmt::Write;
 
 use liquidfun_test_protocol::{
-    BuildEvidenceTier, CheckpointId, DivergenceHorizon, EvidenceTier, FieldComparison, FieldPolicy,
-    FloatBits, HarnessFailure, MathProbeFloatClass, MathProbeOperation, MathProbePolicyPath,
-    MathProbeRequestRecord, MathProbeResult, MathProbeValue, MathProbeValueField, NonFinitePolicy,
-    RequestId, ScenarioId, Sha256Hex, ToleranceProfile, ToleranceProfileVersion, ValidatedTrace,
-    ZeroPolicy,
+    BuildEvidenceTier, CheckpointId, CollectionPolicy, DivergenceHorizon, EvidenceTier,
+    FieldComparison, FieldPolicy, FloatBits, HarnessFailure, MathProbeFloatClass,
+    MathProbeOperation, MathProbePolicyPath, MathProbeRequestRecord, MathProbeResult,
+    MathProbeValue, MathProbeValueField, NonFinitePolicy, RequestId, ScenarioId, Sha256Hex,
+    ToleranceProfile, ToleranceProfileVersion, ValidatedTrace, ZeroPolicy,
 };
 use serde::Serialize;
 use sha2::{Digest, Sha256};
@@ -307,6 +307,8 @@ pub struct Phase4MathMismatchReport {
     comparison: FieldComparison,
     zero_policy: ZeroPolicy,
     non_finite_policy: NonFinitePolicy,
+    collection_policy: CollectionPolicy,
+    policy_justification: Box<str>,
     horizon: DivergenceHorizon,
     evidence_tier: EvidenceTier,
     oracle_build_sha256: Sha256Hex,
@@ -388,6 +390,8 @@ impl Phase4MathMismatchReport {
             comparison: field_policy.comparison(),
             zero_policy: field_policy.zero_policy(),
             non_finite_policy: field_policy.non_finite_policy(),
+            collection_policy: field_policy.collection_policy(),
+            policy_justification: field_policy.justification().into(),
             horizon: field_policy.horizon(),
             evidence_tier,
             oracle_build_sha256: oracle_build_sha256.clone(),
@@ -596,7 +600,11 @@ impl MismatchReport {
             policy_id: policy.profile_id().into(),
             policy_sha256: policy.profile_sha256().clone(),
             horizon,
-            evidence_tier: weakest_evidence_tier(expected, actual),
+            evidence_tier: report_evidence_tier(
+                horizon,
+                expected.evidence_tier(),
+                actual.evidence_tier(),
+            ),
             sibling_mismatch_count: 0,
             maybe_float_evidence,
         }
@@ -724,10 +732,6 @@ impl MismatchReport {
     }
 }
 
-fn weakest_evidence_tier(expected: &ValidatedTrace, actual: &ValidatedTrace) -> EvidenceTier {
-    weakest_build_evidence_tier(expected.evidence_tier(), actual.evidence_tier())
-}
-
 const fn weakest_build_evidence_tier(
     expected: BuildEvidenceTier,
     actual: BuildEvidenceTier,
@@ -743,6 +747,17 @@ const fn weakest_build_evidence_tier(
     }
 }
 
+const fn report_evidence_tier(
+    horizon: DivergenceHorizon,
+    expected: BuildEvidenceTier,
+    actual: BuildEvidenceTier,
+) -> EvidenceTier {
+    if matches!(horizon, DivergenceHorizon::Unavailable) {
+        return EvidenceTier::D3Exploratory;
+    }
+    weakest_build_evidence_tier(expected, actual)
+}
+
 #[cfg(test)]
 mod tests {
     use liquidfun_test_protocol::{
@@ -753,7 +768,7 @@ mod tests {
 
     use crate::NativeMathProbeExecutor;
 
-    use super::{Phase4MathMismatchReport, weakest_build_evidence_tier};
+    use super::{Phase4MathMismatchReport, report_evidence_tier, weakest_build_evidence_tier};
 
     #[test]
     fn report_evidence_tier_is_the_weakest_validated_build() {
@@ -776,6 +791,27 @@ mod tests {
             weakest_build_evidence_tier(
                 BuildEvidenceTier::D2Supported,
                 BuildEvidenceTier::D3Exploratory
+            ),
+            EvidenceTier::D3Exploratory
+        );
+    }
+
+    #[test]
+    fn unavailable_horizon_forces_exploratory_authority() {
+        // Arrange / Act / Assert
+        assert_eq!(
+            report_evidence_tier(
+                DivergenceHorizon::Unavailable,
+                BuildEvidenceTier::D1Canonical,
+                BuildEvidenceTier::D1Canonical,
+            ),
+            EvidenceTier::D3Exploratory
+        );
+        assert_eq!(
+            report_evidence_tier(
+                DivergenceHorizon::Unavailable,
+                BuildEvidenceTier::D1Canonical,
+                BuildEvidenceTier::D2Supported,
             ),
             EvidenceTier::D3Exploratory
         );
@@ -883,7 +919,7 @@ mod tests {
 /// Error produced while rendering deterministic machine evidence.
 #[derive(Debug, thiserror::Error)]
 #[error("mismatch report serialization failed: {0}")]
-pub struct ReportRenderError(serde_json::Error);
+pub struct ReportRenderError(pub(crate) serde_json::Error);
 
 /// Harness diagnostics remain a separate type from semantic mismatch reports.
 #[derive(Debug, Clone, PartialEq, Eq)]

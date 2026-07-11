@@ -9,7 +9,9 @@ use std::process::Command;
 
 use liquidfun_differential::{
     EmptyWorldAdapter, NativeMathProbeExecutor, OracleExecutable, OraclePreset,
-    Phase4MathMismatchReport, execute_math_probe_process, float_values_match_with_policy,
+    Phase4ComparisonEvidence, Phase4DiscreteMismatchReport, Phase4HarnessFailureReason,
+    Phase4HarnessFailureReport, Phase4MathMismatchReport, execute_math_probe_process,
+    float_values_match_with_policy,
 };
 use liquidfun_test_protocol::{
     BuildEvidenceTier, BuildIdentity, DivergenceHorizon, EvidenceTier, HarnessLimits,
@@ -46,7 +48,7 @@ const ALLOWED_REVIEW_STATUSES: [&str; 2] = ["approved", "rejected"];
 pub(crate) struct DifferentialError {
     category: &'static str,
     message: String,
-    maybe_math_mismatch: Option<Box<Phase4MathMismatchReport>>,
+    maybe_phase4_evidence: Option<Box<Phase4ComparisonEvidence>>,
 }
 
 impl DifferentialError {
@@ -54,7 +56,7 @@ impl DifferentialError {
         Self {
             category,
             message: message.into(),
-            maybe_math_mismatch: None,
+            maybe_phase4_evidence: None,
         }
     }
 
@@ -66,11 +68,11 @@ impl DifferentialError {
         Self::new("process", message)
     }
 
-    fn math_mismatch(report: Phase4MathMismatchReport) -> Self {
+    fn phase4_evidence(category: &'static str, evidence: Phase4ComparisonEvidence) -> Self {
         Self {
-            category: "physics-mismatch",
-            message: report.render_human(),
-            maybe_math_mismatch: Some(Box::new(report)),
+            category,
+            message: evidence.render_human(),
+            maybe_phase4_evidence: Some(Box::new(evidence)),
         }
     }
 }
@@ -82,8 +84,8 @@ impl Display for DifferentialError {
             "differential/{}: {}",
             self.category, self.message
         )?;
-        if let Some(report) = &self.maybe_math_mismatch {
-            let machine = report.render_machine().map_err(|_| fmt::Error)?;
+        if let Some(evidence) = &self.maybe_phase4_evidence {
+            let machine = evidence.render_machine().map_err(|_| fmt::Error)?;
             write!(formatter, "\n{}", String::from_utf8_lossy(&machine))?;
         }
         Ok(())
@@ -631,39 +633,147 @@ fn compare_math_probe_results(
         .map_err(|error| DifferentialError::new("native", error.to_string()))?;
     let comparison_tier = comparison_evidence_tier(oracle_identity, native_identity);
     if expected.len() != actual.len() {
-        return Err(math_probe_mismatch("result count differs"));
+        return Err(phase4_harness_failure(
+            request,
+            policy,
+            comparison_tier,
+            oracle_identity,
+            native_identity,
+            Phase4HarnessFailureReason::ResultCount,
+            None,
+            expected.len().to_string(),
+            actual.len().to_string(),
+        )?);
     }
     for (case_index, (expected, actual)) in expected.iter().zip(actual).enumerate() {
-        if expected.case_id() != actual.case_id()
-            || expected.operation() != actual.operation()
-            || expected.policy_path() != actual.policy_path()
-            || expected.horizon() != actual.horizon()
-            || expected.discrete() != actual.discrete()
-            || expected.values().len() != actual.values().len()
-        {
-            return Err(math_probe_mismatch(format!(
-                "structural mismatch at case {}",
-                expected.case_id()
-            )));
+        let structural_failure = if expected.case_id() != actual.case_id() {
+            Some((
+                Phase4HarnessFailureReason::CaseIdEcho,
+                expected.case_id().to_owned(),
+                actual.case_id().to_owned(),
+            ))
+        } else if expected.operation() != actual.operation() {
+            Some((
+                Phase4HarnessFailureReason::OperationEcho,
+                format!("{:?}", expected.operation()),
+                format!("{:?}", actual.operation()),
+            ))
+        } else if expected.policy_path() != actual.policy_path() {
+            Some((
+                Phase4HarnessFailureReason::PolicyPathEcho,
+                expected.policy_path().as_str().to_owned(),
+                actual.policy_path().as_str().to_owned(),
+            ))
+        } else if expected.horizon() != actual.horizon() {
+            Some((
+                Phase4HarnessFailureReason::HorizonEcho,
+                format!("{:?}", expected.horizon()),
+                format!("{:?}", actual.horizon()),
+            ))
+        } else if expected.values().len() != actual.values().len() {
+            Some((
+                Phase4HarnessFailureReason::ValueCount,
+                expected.values().len().to_string(),
+                actual.values().len().to_string(),
+            ))
+        } else if expected.discrete().len() != actual.discrete().len() {
+            Some((
+                Phase4HarnessFailureReason::DiscreteCount,
+                expected.discrete().len().to_string(),
+                actual.discrete().len().to_string(),
+            ))
+        } else {
+            None
+        };
+        if let Some((reason, expected_context, actual_context)) = structural_failure {
+            return Err(phase4_harness_failure(
+                request,
+                policy,
+                comparison_tier,
+                oracle_identity,
+                native_identity,
+                reason,
+                Some(case_index),
+                expected_context,
+                actual_context,
+            )?);
         }
-        let field_policy = policy
-            .field(expected.policy_path().as_str())
-            .ok_or_else(|| math_probe_mismatch("policy path is not registered"))?;
+        let Some(field_policy) = policy.field(expected.policy_path().as_str()) else {
+            return Err(phase4_harness_failure(
+                request,
+                policy,
+                comparison_tier,
+                oracle_identity,
+                native_identity,
+                Phase4HarnessFailureReason::UnregisteredPolicy,
+                Some(case_index),
+                expected.policy_path().as_str(),
+                "<missing>",
+            )?);
+        };
         if !horizons_match(expected.horizon(), field_policy.horizon()) {
-            return Err(math_probe_mismatch(format!(
-                "request horizon does not match policy at case {}",
-                expected.case_id()
-            )));
+            return Err(phase4_harness_failure(
+                request,
+                policy,
+                comparison_tier,
+                oracle_identity,
+                native_identity,
+                Phase4HarnessFailureReason::PolicyHorizon,
+                Some(case_index),
+                format!("{:?}", expected.horizon()),
+                format!("{:?}", field_policy.horizon()),
+            )?);
         }
         if !tier_authorizes(comparison_tier, field_policy.evidence_tier()) {
-            return Err(DifferentialError::new(
-                "identity",
-                format!(
-                    "comparison tier {comparison_tier:?} cannot apply policy tier {:?} at case {}",
-                    field_policy.evidence_tier(),
-                    expected.case_id()
-                ),
-            ));
+            return Err(phase4_harness_failure(
+                request,
+                policy,
+                comparison_tier,
+                oracle_identity,
+                native_identity,
+                Phase4HarnessFailureReason::PolicyTier,
+                Some(case_index),
+                format!("{:?}", field_policy.evidence_tier()),
+                format!("{comparison_tier:?}"),
+            )?);
+        }
+        for (expected_discrete, actual_discrete) in
+            expected.discrete().iter().zip(actual.discrete())
+        {
+            if expected_discrete.field() != actual_discrete.field() {
+                return Err(phase4_harness_failure(
+                    request,
+                    policy,
+                    comparison_tier,
+                    oracle_identity,
+                    native_identity,
+                    Phase4HarnessFailureReason::DiscreteFieldEcho,
+                    Some(case_index),
+                    format!("{:?}", expected_discrete.field()),
+                    format!("{:?}", actual_discrete.field()),
+                )?);
+            }
+            if expected_discrete.value() != actual_discrete.value() {
+                let report = Phase4DiscreteMismatchReport::new(
+                    request,
+                    expected,
+                    case_index,
+                    *expected_discrete,
+                    *actual_discrete,
+                    policy.profile_id(),
+                    policy.version(),
+                    policy.profile_sha256(),
+                    field_policy,
+                    comparison_tier,
+                    oracle_identity,
+                    native_identity,
+                )
+                .map_err(|error| DifferentialError::new("report", error.to_string()))?;
+                return Err(DifferentialError::phase4_evidence(
+                    "physics-mismatch",
+                    Phase4ComparisonEvidence::DiscreteMismatch(report),
+                ));
+            }
         }
         for (expected_value, actual_value) in expected.values().iter().zip(actual.values()) {
             if expected_value.field() != actual_value.field()
@@ -690,11 +800,49 @@ fn compare_math_probe_results(
                     native_identity.identity_sha256(),
                 )
                 .map_err(|error| DifferentialError::new("report", error.to_string()))?;
-                return Err(DifferentialError::math_mismatch(report));
+                return Err(DifferentialError::phase4_evidence(
+                    "physics-mismatch",
+                    Phase4ComparisonEvidence::NumericMismatch(report),
+                ));
             }
         }
     }
     Ok(())
+}
+
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the helper binds the failure to request, policy, tier, and both builds"
+)]
+fn phase4_harness_failure(
+    request: &MathProbeRequestRecord,
+    policy: &Phase4PolicyProfile,
+    evidence_tier: EvidenceTier,
+    oracle_identity: &BuildIdentity,
+    native_identity: &BuildIdentity,
+    reason: Phase4HarnessFailureReason,
+    maybe_case_index: Option<usize>,
+    expected: impl Into<String>,
+    actual: impl Into<String>,
+) -> Result<DifferentialError, DifferentialError> {
+    let report = Phase4HarnessFailureReport::new(
+        request,
+        reason,
+        maybe_case_index,
+        expected,
+        actual,
+        policy.profile_id(),
+        policy.version(),
+        policy.profile_sha256(),
+        evidence_tier,
+        oracle_identity,
+        native_identity,
+    )
+    .map_err(|error| DifferentialError::new("report", error.to_string()))?;
+    Ok(DifferentialError::phase4_evidence(
+        "harness-failure",
+        Phase4ComparisonEvidence::HarnessFailure(report),
+    ))
 }
 
 fn comparison_evidence_tier(
@@ -738,10 +886,6 @@ const fn tier_authorizes(actual: EvidenceTier, policy: EvidenceTier) -> bool {
         policy,
         EvidenceTier::D1Canonical | EvidenceTier::D2Supported
     )
-}
-
-fn math_probe_mismatch(message: impl Into<String>) -> DifferentialError {
-    DifferentialError::new("physics-mismatch", message)
 }
 
 fn verify_math_probe_determinism(
@@ -923,11 +1067,15 @@ fn repository_root() -> Result<PathBuf, DifferentialError> {
 
 #[cfg(test)]
 mod tests {
-    use liquidfun_differential::NativeMathProbeExecutor;
+    use liquidfun_differential::{
+        NativeMathProbeExecutor, Phase4ComparisonEvidence, Phase4HarnessFailureReason,
+    };
     use liquidfun_test_protocol::{
         BuildIdentity, BuildIdentityFields, DivergenceHorizon, EvidenceTier, FloatBits,
-        HarnessLimits, MathProbeHorizon, MathProbeResult, MathProbeValue,
-        Phase4BuildIdentityFields, Phase4PolicyProfile, decode_math_probe_request_jsonl,
+        HarnessLimits, MathProbeDiscrete, MathProbeDiscreteField, MathProbeHorizon,
+        MathProbeOperation, MathProbePolicyPath, MathProbeRequestRecord, MathProbeResult,
+        MathProbeValue, Phase4BuildIdentityFields, Phase4PolicyProfile,
+        decode_math_probe_request_jsonl,
     };
 
     use std::{fs, path::Path};
@@ -1080,10 +1228,14 @@ mod tests {
 
         // Assert
         assert_eq!(error.category, "physics-mismatch");
-        let report = error
-            .maybe_math_mismatch
+        let evidence = error
+            .maybe_phase4_evidence
             .expect("actual xtask comparison should retain typed mismatch evidence");
-        let machine = report
+        assert!(matches!(
+            evidence.as_ref(),
+            Phase4ComparisonEvidence::NumericMismatch(_)
+        ));
+        let machine = evidence
             .render_machine()
             .expect("typed report should serialize");
         let machine = String::from_utf8(machine).expect("JSON report should be UTF-8");
@@ -1091,6 +1243,380 @@ mod tests {
         assert!(machine.contains("\"evidence_tier\":\"d2_supported\""));
         assert!(machine.contains("\"oracle_build_sha256\""));
         assert!(machine.contains("\"native_build_sha256\""));
+        assert!(machine.contains("\"collection_policy\":\"ordered\""));
+    }
+
+    #[test]
+    fn actual_xtask_result_count_failure_is_typed_harness_evidence() {
+        // Arrange
+        let (request, policy, mut actual, oracle_identity, native_identity) = math_fixture();
+        actual.pop().expect("fixture should contain results");
+
+        // Act
+        let error = compare_math_probe_results(
+            &request,
+            &actual,
+            &policy,
+            &oracle_identity,
+            &native_identity,
+        )
+        .expect_err("result count violation should fail");
+
+        // Assert
+        assert_harness_reason(error, Phase4HarnessFailureReason::ResultCount);
+    }
+
+    #[test]
+    fn actual_xtask_structural_echo_failure_is_typed_harness_evidence() {
+        // Arrange
+        let (request, policy, mut actual, oracle_identity, native_identity) = math_fixture();
+        let result = &actual[0];
+        actual[0] = MathProbeResult::new(
+            result.case_id(),
+            MathProbeOperation::Abs,
+            result.policy_path(),
+            result.horizon(),
+            result.values().to_vec(),
+            result.discrete().to_vec(),
+        );
+
+        // Act
+        let error = compare_math_probe_results(
+            &request,
+            &actual,
+            &policy,
+            &oracle_identity,
+            &native_identity,
+        )
+        .expect_err("operation echo violation should fail");
+
+        // Assert
+        assert_harness_reason(error, Phase4HarnessFailureReason::OperationEcho);
+    }
+
+    #[test]
+    fn actual_xtask_every_structural_failure_reason_is_typed_harness_evidence() {
+        // Arrange
+        let (request, policy, baseline, oracle_identity, native_identity) = math_fixture();
+        let first = &baseline[0];
+        let mut variants = Vec::new();
+
+        let mut case_id = baseline.clone();
+        case_id[0] = MathProbeResult::new(
+            "changed-case-id",
+            first.operation(),
+            first.policy_path(),
+            first.horizon(),
+            first.values().to_vec(),
+            first.discrete().to_vec(),
+        );
+        variants.push((case_id, Phase4HarnessFailureReason::CaseIdEcho));
+
+        let mut policy_path = baseline.clone();
+        policy_path[0] = MathProbeResult::new(
+            first.case_id(),
+            first.operation(),
+            MathProbePolicyPath::MathOperationAbs,
+            first.horizon(),
+            first.values().to_vec(),
+            first.discrete().to_vec(),
+        );
+        variants.push((policy_path, Phase4HarnessFailureReason::PolicyPathEcho));
+
+        let mut horizon = baseline.clone();
+        horizon[0] = MathProbeResult::new(
+            first.case_id(),
+            first.operation(),
+            first.policy_path(),
+            MathProbeHorizon::ScenarioSteps { steps: 4 },
+            first.values().to_vec(),
+            first.discrete().to_vec(),
+        );
+        variants.push((horizon, Phase4HarnessFailureReason::HorizonEcho));
+
+        let value_index = baseline
+            .iter()
+            .position(|result| !result.values().is_empty())
+            .expect("fixture should contain float values");
+        let value_result = &baseline[value_index];
+        let mut value_count = baseline.clone();
+        let mut shortened_values = value_result.values().to_vec();
+        shortened_values.pop().expect("selected result has a value");
+        value_count[value_index] = MathProbeResult::new(
+            value_result.case_id(),
+            value_result.operation(),
+            value_result.policy_path(),
+            value_result.horizon(),
+            shortened_values,
+            value_result.discrete().to_vec(),
+        );
+        variants.push((value_count, Phase4HarnessFailureReason::ValueCount));
+
+        let discrete_index = baseline
+            .iter()
+            .position(|result| !result.discrete().is_empty())
+            .expect("fixture should contain discrete values");
+        let discrete_result = &baseline[discrete_index];
+        let mut discrete_count = baseline.clone();
+        discrete_count[discrete_index] = MathProbeResult::new(
+            discrete_result.case_id(),
+            discrete_result.operation(),
+            discrete_result.policy_path(),
+            discrete_result.horizon(),
+            discrete_result.values().to_vec(),
+            Vec::new(),
+        );
+        variants.push((discrete_count, Phase4HarnessFailureReason::DiscreteCount));
+
+        let mut discrete_field = baseline.clone();
+        let mut changed_discrete = discrete_result.discrete().to_vec();
+        changed_discrete[0] = MathProbeDiscrete::new(
+            MathProbeDiscreteField::NonZeroDeterminant,
+            changed_discrete[0].value(),
+        );
+        discrete_field[discrete_index] = MathProbeResult::new(
+            discrete_result.case_id(),
+            discrete_result.operation(),
+            discrete_result.policy_path(),
+            discrete_result.horizon(),
+            discrete_result.values().to_vec(),
+            changed_discrete,
+        );
+        variants.push((
+            discrete_field,
+            Phase4HarnessFailureReason::DiscreteFieldEcho,
+        ));
+
+        for (actual, expected_reason) in variants {
+            // Act
+            let error = compare_math_probe_results(
+                &request,
+                &actual,
+                &policy,
+                &oracle_identity,
+                &native_identity,
+            )
+            .expect_err("structural violation should fail");
+
+            // Assert
+            assert_harness_reason(error, expected_reason);
+        }
+    }
+
+    #[test]
+    fn actual_xtask_unregistered_policy_is_typed_harness_evidence() {
+        // Arrange
+        let (request, _policy, actual, oracle_identity, native_identity) = math_fixture();
+        let path = actual[0].policy_path().as_str();
+        let policy_text = policy_without_path(
+            include_str!("../../../protocol/tolerances/phase4-v1.toml"),
+            path,
+        );
+        let policy = Phase4PolicyProfile::parse_toml(&policy_text)
+            .expect("profile without one path remains structurally valid");
+
+        // Act
+        let error = compare_math_probe_results(
+            &request,
+            &actual,
+            &policy,
+            &oracle_identity,
+            &native_identity,
+        )
+        .expect_err("missing policy should fail");
+
+        // Assert
+        assert_harness_reason(error, Phase4HarnessFailureReason::UnregisteredPolicy);
+    }
+
+    #[test]
+    fn actual_xtask_policy_horizon_violation_is_typed_harness_evidence() {
+        // Arrange
+        let (request, _policy, actual, oracle_identity, native_identity) = math_fixture();
+        let path = actual[0].policy_path().as_str();
+        let policy_text = replace_in_policy_block(
+            include_str!("../../../protocol/tolerances/phase4-v1.toml"),
+            path,
+            "horizon = { kind = \"operation\" }",
+            "horizon = { kind = \"scenario_steps\", steps = 4 }",
+        );
+        let policy = Phase4PolicyProfile::parse_toml(&policy_text)
+            .expect("alternate nonzero horizon remains structurally valid");
+
+        // Act
+        let error = compare_math_probe_results(
+            &request,
+            &actual,
+            &policy,
+            &oracle_identity,
+            &native_identity,
+        )
+        .expect_err("policy horizon mismatch should fail");
+
+        // Assert
+        assert_harness_reason(error, Phase4HarnessFailureReason::PolicyHorizon);
+    }
+
+    #[test]
+    fn actual_xtask_policy_tier_violation_is_typed_harness_evidence() {
+        // Arrange
+        let (request, _policy, actual, oracle_identity, native_identity) = math_fixture();
+        let path = actual[0].policy_path().as_str();
+        let policy_text = replace_in_policy_block(
+            include_str!("../../../protocol/tolerances/phase4-v1.toml"),
+            path,
+            "evidence_tier = \"d1_canonical\"",
+            "evidence_tier = \"d3_exploratory\"",
+        );
+        let policy = Phase4PolicyProfile::parse_toml(&policy_text)
+            .expect("exploratory policy tier remains structurally valid");
+
+        // Act
+        let error = compare_math_probe_results(
+            &request,
+            &actual,
+            &policy,
+            &oracle_identity,
+            &native_identity,
+        )
+        .expect_err("unauthorized policy tier should fail");
+
+        // Assert
+        assert_harness_reason(error, Phase4HarnessFailureReason::PolicyTier);
+    }
+
+    #[test]
+    fn actual_xtask_discrete_difference_is_typed_mismatch_evidence() {
+        // Arrange
+        let (request, policy, mut actual, oracle_identity, native_identity) = math_fixture();
+        let case_index = actual
+            .iter()
+            .position(|result| !result.discrete().is_empty())
+            .expect("fixture should contain a discrete result");
+        let result = &actual[case_index];
+        let mut discrete = result.discrete().to_vec();
+        discrete[0] = MathProbeDiscrete::new(discrete[0].field(), !discrete[0].value());
+        actual[case_index] = MathProbeResult::new(
+            result.case_id(),
+            result.operation(),
+            result.policy_path(),
+            result.horizon(),
+            result.values().to_vec(),
+            discrete,
+        );
+
+        // Act
+        let error = compare_math_probe_results(
+            &request,
+            &actual,
+            &policy,
+            &oracle_identity,
+            &native_identity,
+        )
+        .expect_err("discrete semantic difference should fail");
+
+        // Assert
+        assert_eq!(error.category, "physics-mismatch");
+        let evidence = error
+            .maybe_phase4_evidence
+            .expect("discrete mismatch should carry typed evidence");
+        assert!(matches!(
+            evidence.as_ref(),
+            Phase4ComparisonEvidence::DiscreteMismatch(_)
+        ));
+        let machine = String::from_utf8(
+            evidence
+                .render_machine()
+                .expect("discrete evidence should serialize"),
+        )
+        .expect("JSON evidence should be UTF-8");
+        assert!(machine.contains("\"expected_value\""));
+        assert!(machine.contains("\"actual_value\""));
+        assert!(machine.contains("\"policy_id\":\"phase4-v1\""));
+    }
+
+    fn math_fixture() -> (
+        MathProbeRequestRecord,
+        Phase4PolicyProfile,
+        Vec<MathProbeResult>,
+        BuildIdentity,
+        BuildIdentity,
+    ) {
+        let request = decode_math_probe_request_jsonl(
+            include_bytes!("../../../protocol/fixtures/accepted/math-probe-request.jsonl"),
+            &HarnessLimits::phase2_default_v1(),
+        )
+        .expect("checked-in request should decode");
+        let policy = Phase4PolicyProfile::parse_toml(include_str!(
+            "../../../protocol/tolerances/phase4-v1.toml"
+        ))
+        .expect("checked-in policy should parse");
+        let actual = NativeMathProbeExecutor::execute(&request)
+            .expect("checked-in request should execute")
+            .into_vec();
+        (
+            request,
+            policy,
+            actual,
+            supported_math_identity("11"),
+            supported_math_identity("22"),
+        )
+    }
+
+    fn assert_harness_reason(
+        error: super::DifferentialError,
+        expected_reason: Phase4HarnessFailureReason,
+    ) {
+        assert_eq!(error.category, "harness-failure");
+        let evidence = error
+            .maybe_phase4_evidence
+            .expect("harness failure should carry typed evidence");
+        let Phase4ComparisonEvidence::HarnessFailure(report) = evidence.as_ref() else {
+            panic!("expected typed harness evidence");
+        };
+        assert_eq!(report.reason(), expected_reason);
+        assert!(report.render_human().len() < 1024);
+        let machine = serde_json::to_vec(report).expect("harness evidence should serialize");
+        assert!(machine.len() < 4096);
+        assert_eq!(report.signature_sha256().as_str().len(), 64);
+    }
+
+    fn policy_without_path(input: &str, path: &str) -> String {
+        let mut output = String::new();
+        for (index, section) in input.split("[[fields]]").enumerate() {
+            if index == 0 {
+                output.push_str(section);
+                continue;
+            }
+            if section.contains(&format!("semantic_path = \"{path}\"")) {
+                continue;
+            }
+            output.push_str("[[fields]]");
+            output.push_str(section);
+        }
+        output
+    }
+
+    fn replace_in_policy_block(
+        input: &str,
+        path: &str,
+        original: &str,
+        replacement: &str,
+    ) -> String {
+        let mut output = String::new();
+        for (index, section) in input.split("[[fields]]").enumerate() {
+            if index == 0 {
+                output.push_str(section);
+                continue;
+            }
+            output.push_str("[[fields]]");
+            if section.contains(&format!("semantic_path = \"{path}\"")) {
+                output.push_str(&section.replacen(original, replacement, 1));
+            } else {
+                output.push_str(section);
+            }
+        }
+        output
     }
 
     fn supported_math_identity(adapter_digest_byte: &str) -> BuildIdentity {
