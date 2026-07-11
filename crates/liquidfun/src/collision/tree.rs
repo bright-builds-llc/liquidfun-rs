@@ -391,6 +391,14 @@ impl<T> DynamicTree<T> {
         Ok(proxy.node)
     }
 
+    fn proxy_id_for_node(&self, node: NodeIndex) -> ProxyId {
+        ProxyId {
+            tree_key: self.tree_key,
+            node,
+            generation: self.pool.node(node).generation,
+        }
+    }
+
     fn aabb(&self, index: NodeIndex) -> Aabb {
         self.pool
             .node(index)
