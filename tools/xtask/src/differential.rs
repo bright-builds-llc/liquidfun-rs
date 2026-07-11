@@ -9,7 +9,7 @@ use std::process::Command;
 
 use liquidfun_differential::{
     EmptyWorldAdapter, NativeMathProbeExecutor, OracleExecutable, OraclePreset,
-    execute_math_probe_process, float_values_match_with_policy,
+    Phase4MathMismatchReport, execute_math_probe_process, float_values_match_with_policy,
 };
 use liquidfun_test_protocol::{
     BuildEvidenceTier, BuildIdentity, DivergenceHorizon, EvidenceTier, HarnessLimits,
@@ -46,6 +46,7 @@ const ALLOWED_REVIEW_STATUSES: [&str; 2] = ["approved", "rejected"];
 pub(crate) struct DifferentialError {
     category: &'static str,
     message: String,
+    maybe_math_mismatch: Option<Box<Phase4MathMismatchReport>>,
 }
 
 impl DifferentialError {
@@ -53,6 +54,7 @@ impl DifferentialError {
         Self {
             category,
             message: message.into(),
+            maybe_math_mismatch: None,
         }
     }
 
@@ -63,6 +65,14 @@ impl DifferentialError {
     fn process(message: impl Into<String>) -> Self {
         Self::new("process", message)
     }
+
+    fn math_mismatch(report: Phase4MathMismatchReport) -> Self {
+        Self {
+            category: "physics-mismatch",
+            message: report.render_human(),
+            maybe_math_mismatch: Some(Box::new(report)),
+        }
+    }
 }
 
 impl Display for DifferentialError {
@@ -71,7 +81,12 @@ impl Display for DifferentialError {
             formatter,
             "differential/{}: {}",
             self.category, self.message
-        )
+        )?;
+        if let Some(report) = &self.maybe_math_mismatch {
+            let machine = report.render_machine().map_err(|_| fmt::Error)?;
+            write!(formatter, "\n{}", String::from_utf8_lossy(&machine))?;
+        }
+        Ok(())
     }
 }
 
@@ -618,7 +633,7 @@ fn compare_math_probe_results(
     if expected.len() != actual.len() {
         return Err(math_probe_mismatch("result count differs"));
     }
-    for (expected, actual) in expected.iter().zip(actual) {
+    for (case_index, (expected, actual)) in expected.iter().zip(actual).enumerate() {
         if expected.case_id() != actual.case_id()
             || expected.operation() != actual.operation()
             || expected.policy_path() != actual.policy_path()
@@ -660,13 +675,22 @@ fn compare_math_probe_results(
                     field_policy,
                 )
             {
-                return Err(math_probe_mismatch(format!(
-                    "numeric mismatch at case {} field {:?}: expected {:#010x}, actual {:#010x}",
-                    expected.case_id(),
-                    expected_value.field(),
-                    expected_value.bits().bits(),
-                    actual_value.bits().bits()
-                )));
+                let report = Phase4MathMismatchReport::new(
+                    request,
+                    expected,
+                    case_index,
+                    *expected_value,
+                    *actual_value,
+                    policy.profile_id(),
+                    policy.version(),
+                    policy.profile_sha256(),
+                    field_policy,
+                    comparison_tier,
+                    oracle_identity.identity_sha256(),
+                    native_identity.identity_sha256(),
+                )
+                .map_err(|error| DifferentialError::new("report", error.to_string()))?;
+                return Err(DifferentialError::math_mismatch(report));
             }
         }
     }
@@ -899,13 +923,18 @@ fn repository_root() -> Result<PathBuf, DifferentialError> {
 
 #[cfg(test)]
 mod tests {
-    use liquidfun_test_protocol::{DivergenceHorizon, EvidenceTier, MathProbeHorizon};
+    use liquidfun_differential::NativeMathProbeExecutor;
+    use liquidfun_test_protocol::{
+        BuildIdentity, BuildIdentityFields, DivergenceHorizon, EvidenceTier, FloatBits,
+        HarnessLimits, MathProbeHorizon, MathProbeResult, MathProbeValue,
+        Phase4BuildIdentityFields, Phase4PolicyProfile, decode_math_probe_request_jsonl,
+    };
 
     use std::{fs, path::Path};
 
     use super::{
-        compile_database_sha256, horizons_match, native_source_digest_from_manifest,
-        tier_authorizes,
+        ORACLE_REVISION, compare_math_probe_results, compile_database_sha256, horizons_match,
+        native_source_digest_from_manifest, tier_authorizes,
     };
 
     #[test]
@@ -999,6 +1028,108 @@ mod tests {
         // Assert
         assert_ne!(original, changed);
         fs::remove_dir_all(root).expect("temporary fixture should be removed");
+    }
+
+    #[test]
+    fn actual_xtask_math_mismatch_carries_typed_machine_evidence() {
+        // Arrange
+        let request = decode_math_probe_request_jsonl(
+            include_bytes!("../../../protocol/fixtures/accepted/math-probe-request.jsonl"),
+            &HarnessLimits::phase2_default_v1(),
+        )
+        .expect("checked-in request should decode");
+        let policy = Phase4PolicyProfile::parse_toml(include_str!(
+            "../../../protocol/tolerances/phase4-v1.toml"
+        ))
+        .expect("checked-in policy should parse");
+        let mut actual = NativeMathProbeExecutor::execute(&request)
+            .expect("checked-in request should execute")
+            .into_vec();
+        let case_index = actual
+            .iter()
+            .position(|result| {
+                result
+                    .values()
+                    .first()
+                    .is_some_and(|value| value.bits().to_f32().is_finite())
+            })
+            .expect("fixture should contain a finite scalar result");
+        let result = &actual[case_index];
+        let mut values = result.values().to_vec();
+        values[0] = MathProbeValue::new(values[0].field(), FloatBits::new(0x7f80_0000));
+        actual[case_index] = MathProbeResult::new(
+            result.case_id(),
+            result.operation(),
+            result.policy_path(),
+            result.horizon(),
+            values,
+            result.discrete().to_vec(),
+        );
+        let oracle_identity = supported_math_identity("11");
+        let native_identity = supported_math_identity("22");
+
+        // Act
+        let error = compare_math_probe_results(
+            &request,
+            &actual,
+            &policy,
+            &oracle_identity,
+            &native_identity,
+        )
+        .expect_err("deliberate divergence should fail");
+
+        // Assert
+        assert_eq!(error.category, "physics-mismatch");
+        let report = error
+            .maybe_math_mismatch
+            .expect("actual xtask comparison should retain typed mismatch evidence");
+        let machine = report
+            .render_machine()
+            .expect("typed report should serialize");
+        let machine = String::from_utf8(machine).expect("JSON report should be UTF-8");
+        assert!(machine.contains("\"policy_id\":\"phase4-v1\""));
+        assert!(machine.contains("\"evidence_tier\":\"d2_supported\""));
+        assert!(machine.contains("\"oracle_build_sha256\""));
+        assert!(machine.contains("\"native_build_sha256\""));
+    }
+
+    fn supported_math_identity(adapter_digest_byte: &str) -> BuildIdentity {
+        let phase4 = Phase4BuildIdentityFields::new(
+            "33".repeat(32),
+            "AppleClang",
+            "21.0.0",
+            "arm64-apple-darwin",
+            "baseline",
+            "<none>",
+            "<none>",
+            "O0",
+            "precise",
+            "off",
+            "ieee",
+            "scalar baseline",
+            "macos",
+            "libSystem",
+            "libSystem",
+            "nearest_ties_even",
+            true,
+        );
+        BuildIdentity::new(
+            BuildIdentityFields::new(
+                ORACLE_REVISION,
+                "adapter-v1",
+                adapter_digest_byte.repeat(32),
+                "oracle-debug",
+                "AppleClang",
+                "21.0.0",
+                "arm64-apple-darwin",
+                "Debug",
+                "reviewed",
+                "none",
+                "none",
+            )
+            .with_phase4(phase4),
+        )
+        .expect("supported fixture identity should validate")
     }
 
     #[test]

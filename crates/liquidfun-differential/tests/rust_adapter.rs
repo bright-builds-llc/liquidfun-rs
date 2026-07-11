@@ -112,7 +112,14 @@ fn adapter_binds_native_identity_and_request_hashes() {
     assert_eq!(adapter.build_identity().oracle_revision(), ORACLE_REVISION);
     assert_eq!(adapter.build_identity().cmake_preset(), "native-rust");
     assert_eq!(adapter.build_identity().compiler_version(), "1.97.0");
-    assert!(adapter.build_identity().target().contains(";host="));
+    assert_eq!(
+        adapter.build_identity().target(),
+        adapter
+            .build_identity()
+            .maybe_phase4()
+            .expect("native identity should include Phase 4 fields")
+            .target_triple()
+    );
     assert!(
         adapter
             .build_identity()

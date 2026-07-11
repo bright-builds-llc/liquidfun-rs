@@ -37,6 +37,8 @@ pub enum NonFinitePolicy {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum DivergenceHorizon {
+    /// Legacy evidence did not carry a reviewed divergence horizon.
+    Unavailable,
     /// One pure operation.
     Operation,
     /// One named algorithm or solver phase.
@@ -289,8 +291,12 @@ fn validate_field(field: &FieldPolicy) -> Result<(), Phase4PolicyError> {
     if field.justification.is_empty() || field.justification.len() > MAXIMUM_JUSTIFICATION_BYTES {
         return Err(Phase4PolicyError::InvalidJustification);
     }
-    if let DivergenceHorizon::ScenarioSteps { steps } = field.horizon
-        && (steps == 0 || steps > MAXIMUM_SCENARIO_STEPS)
+    if matches!(field.horizon, DivergenceHorizon::Unavailable)
+        || matches!(
+            field.horizon,
+            DivergenceHorizon::ScenarioSteps { steps }
+                if steps == 0 || steps > MAXIMUM_SCENARIO_STEPS
+        )
     {
         return Err(Phase4PolicyError::InvalidHorizon);
     }

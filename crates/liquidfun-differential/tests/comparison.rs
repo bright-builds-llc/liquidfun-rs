@@ -405,10 +405,7 @@ fn first_divergence_reports_earliest_checkpoint_path_and_float_evidence() {
         report.policy_sha256(),
         ToleranceProfile::phase2_v1().profile_sha256()
     );
-    assert_eq!(
-        report.horizon(),
-        DivergenceHorizon::ScenarioSteps { steps: 1 }
-    );
+    assert_eq!(report.horizon(), DivergenceHorizon::Unavailable);
     assert_eq!(report.evidence_tier(), EvidenceTier::D3Exploratory);
     assert_eq!(report.sibling_mismatch_count(), 0);
 }
@@ -489,8 +486,8 @@ fn deterministic_machine_and_human_reports_share_typed_evidence() {
     assert_eq!(first_machine, second_machine);
     assert_eq!(parsed["signature"]["semantic_path"], "simulation_time");
     assert_eq!(parsed["float_evidence"]["expected_bits"], 1_056_964_608);
-    assert_eq!(parsed["horizon"]["kind"], "scenario_steps");
-    assert_eq!(parsed["horizon"]["steps"], 1);
+    assert_eq!(parsed["horizon"]["kind"], "unavailable");
+    assert!(parsed["horizon"].get("steps").is_none());
     assert_eq!(parsed["evidence_tier"], "d3_exploratory");
     assert!(parsed["float_evidence"]["ulp_distance"].is_number());
     assert!(human.contains("after-step-1"));
@@ -528,8 +525,8 @@ fn deliberate_mismatch_reports_phase4_diagnostics() {
 
     // Assert
     assert_eq!(first.signature(), replay.signature());
-    assert_eq!(parsed["horizon"]["kind"], "scenario_steps");
-    assert_eq!(parsed["horizon"]["steps"], 1);
+    assert_eq!(parsed["horizon"]["kind"], "unavailable");
+    assert!(parsed["horizon"].get("steps").is_none());
     assert_eq!(parsed["evidence_tier"], "d3_exploratory");
     assert_eq!(parsed["sibling_mismatch_count"], 0);
     assert!(parsed["float_evidence"]["absolute_difference_bits"].is_number());
