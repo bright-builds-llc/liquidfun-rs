@@ -8,9 +8,11 @@ process-isolated C++ oracle. Phase 3 adds a public native-Rust object-model
 foundation plus a private representative particle-storage spike. It proves
 identity, invalidation, destruction, callback, step-lifecycle, association, and
 storage-remapping contracts. Phase 4 adds the consumer-facing math/settings
-surface, a closed numerical policy, and pure Rust/C++ math probes. It does not
-implement shapes, collision algorithms, rigid-body or particle solvers, broad
-platform parity, or performance parity. The publishable `liquidfun` crate
+surface, a closed numerical policy, and pure Rust/C++ math probes. Phase 5 adds
+the safe native-Rust shape and collision substrate plus a fixed 78-case local
+Rust/C++ collision probe. Bodies, fixtures, world contact lifecycle, rigid-body
+and particle solvers, canonical-platform parity, and performance parity remain
+pending. The publishable `liquidfun` crate
 therefore remains version `0.0.0`, and the
 [compatibility inventory](COMPATIBILITY.md) remains the authority for maturity.
 
@@ -74,6 +76,80 @@ bit transport, typed field policies, horizons, and evidence tiers;
 external C++ adapter executes only repository-defined, bounded probe operations
 against the pinned oracle. None is a dependency or feature of `liquidfun`.
 
+## Phase 5 collision boundaries
+
+The public `liquidfun::collision` deep module owns immutable initialized values.
+`CircleShape`, `EdgeShape`, `PolygonShape`, and `ChainShape` own their geometry;
+the exhaustive `Shape` enum dispatches without public trait objects. Open and
+closed chains are distinct, closed loops store semantic vertices once, and a
+checked `ChildIndex` selects an owned adjacency-bearing child edge. Fallible
+constructors reject non-finite data, invalid radii and densities, degenerate or
+oversized polygons, invalid chains, reversed AABB bounds, invalid ray fractions,
+and invalid TOI intervals before a kernel runs.
+
+Those checks are deliberate safe-Rust differences from the pinned source's
+debug assertions, polygon truncation or fallback box, unchecked child access,
+and arithmetic-NaN results. The circle-center point-distance case returns a
+finite zero normal. Edge and chain point tests remain false, and ray casts that
+start inside retain the pinned no-hit convention. `Aabb`, `RayCastInput`,
+`RayCastHit`, and `MassData` expose initialized semantic values without layout
+or raw-parts promises.
+
+One source-ordered GJK implementation serves distance and overlap. A
+`DistanceCache` begins cold, binds to the ordered shape-child topology that
+created it, and exposes only an owned semantic snapshot of count, ordered
+support-index pairs, and metric. Cross-topology reuse is rejected before index
+access. Source cache validation uses the inclusive metric-ratio window
+`[0.5, 2.0]` and the strict `metric < EPSILON` reset; overlap uses the strict
+`distance < 10.0 * EPSILON` predicate. These are named operation rules, not a
+repository-wide tolerance.
+
+Contact identity is semantic: manifold kind, active point order, reference
+orientation, and typed vertex/face features are observable. The C++ packed
+feature union is never public or compared. The closed pair registry covers
+circle-circle, polygon-circle, polygon-polygon, edge-circle, edge-polygon,
+chain-child-circle, and chain-child-polygon, with explicit reversed-input
+orientation. Outcomes distinguish unsupported, separated, and touching;
+inactive fields and solver impulses are absent.
+
+`DynamicTree<T>` uses opaque tree-scoped generational `ProxyId` values. It
+publishes no slot coordinate, raw constructor, serialization, ordering, or
+whole-tree iterator. Borrow-scoped visitors control AABB queries and rays.
+Collect-all query and ray membership is set-like and its consumer order is
+unspecified. `BroadPhase<T>` preserves exact ordered pair generation: move and
+touch occurrences are queried, candidates sort by private node coordinates,
+and adjacent duplicates are removed. `FilterData` implements the pure group and
+symmetric mask rule; changing a filter touches the proxy so newly eligible
+pairs are reconsidered.
+
+`TimeOfImpactInput` validates both shape children, copies checked `Sweep`
+values, and bounds `t_max` to `0.0..=1.0`. `TimeOfImpactOutput` exposes only
+`Overlapped`, `Touching`, `Separated`, or `Failed` plus time. The fixed kernel
+retains the source target/tolerance formulas, outer cap 20, root cap 50,
+push-back cap `MAX_POLYGON_VERTICES`, and alternating bisection/secant sequence;
+support, branch, and iteration details remain bounded diagnostics.
+
+The `differential-internals` feature is non-default, `#[doc(hidden)]`, and
+enabled solely by the unpublished `liquidfun-differential` workspace crate. It
+is development-only, unstable evidence plumbing carrying bounded owned typed
+records. It exposes no raw storage, mutation, packed keys, private node
+coordinates, or unchecked constructors. Ordinary builds, default rustdoc, and
+packaged consumers do not include its diagnostic module.
+
+Phase 5 proves immutable shape snapshots, semantic manifold identity, ordered
+broad-phase pairs, and pure filter/refilter reconsideration for Phase 6. It has
+no bodies or fixtures, contact-manager insertion, contact persistence or
+destruction, waking, joint suppression, listener timing, warm-start impulses,
+or rigid stepping. In particular, the Phase 5 portion of `COLL-05` is only the
+pair/filter/refilter substrate.
+
+This layout follows the repository guidance and Bright Builds architecture,
+code-shape, testing, verification, and Rust standards: invariant-bearing values
+form the pure core; the differential process is an imperative shell; cohesive
+child modules keep the public seam deep; focused tests lock branch behavior;
+and repository-native checks gate evidence. `standards-overrides.md` contains no
+substantive active exception to those rules.
+
 ## Private protocol and domain core
 
 `crates/liquidfun-test-protocol` is an unpublished functional core. It owns:
@@ -96,7 +172,7 @@ Exact transport bits and comparison policy are separate responsibilities.
 Every authoritative float crosses the process boundary exactly. The comparator
 then applies the reviewed field policy: exact bits, absolute, relative, or ULP
 only where that field's typed policy permits it. This separation prevents a JSON
-formatter or global epsilon from silently changing compatibility evidence.
+formatter or repository-wide numeric tolerance from silently changing evidence.
 
 ## Differential functional core and imperative shell
 

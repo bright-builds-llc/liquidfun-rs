@@ -249,12 +249,70 @@ fn check_rejects_missing_phase4_contract_in_each_document() -> TestResult {
         ),
         ("TESTING.md", "The four float policies are"),
         ("COMPATIBILITY.md", "`subsystem.common-math-and-settings`"),
-        ("README.md", "three Phase 4 math/settings rows"),
+        ("README.md", "bounded Phase 4 math"),
     ] {
         let fixture = DocsFixture::new()?;
         fixture.replace_document_text(document, marker, "removed-contract-marker")?;
         let output = fixture.command()?;
         assert_failure(&output, "docs/phase4-contract");
+        fixture.cleanup()?;
+    }
+    Ok(())
+}
+
+#[test]
+fn phase5_contract_accepts_repository_documents() -> TestResult {
+    // Arrange
+    let fixture = DocsFixture::new()?;
+
+    // Act
+    let output = fixture.command()?;
+
+    // Assert
+    assert_success(&output);
+    fixture.cleanup()?;
+    Ok(())
+}
+
+#[test]
+fn phase5_contract_rejects_missing_contract_in_each_document() -> TestResult {
+    // Arrange, Act, Assert
+    for (document, marker) in [
+        ("ARCHITECTURE.md", "## Phase 5 collision boundaries"),
+        ("TESTING.md", "## Phase 5 collision comparison policy"),
+        ("README.md", "Phase 5 immutable shape/collision substrate"),
+    ] {
+        let fixture = DocsFixture::new()?;
+        fixture.replace_document_text(document, marker, "removed-phase5-contract-marker")?;
+        let output = fixture.command()?;
+        assert_failure(&output, "docs/phase5-contract");
+        fixture.cleanup()?;
+    }
+    Ok(())
+}
+
+#[test]
+fn phase5_contract_rejects_false_surface_and_maturity_claims() -> TestResult {
+    // Arrange, Act, Assert
+    for claim in [
+        "full parity",
+        "production ready",
+        "all platforms validated",
+        "query order is guaranteed",
+        "global epsilon",
+        "cargo xtask differential d0",
+        "packed contact keys are public",
+        "DynamicTree exposes public iteration",
+        "Phase 6 is complete",
+    ] {
+        let fixture = DocsFixture::new()?;
+        fixture.replace_document_text(
+            "README.md",
+            "## Architecture and evidence",
+            &format!("False claim: {claim}\n\n## Architecture and evidence"),
+        )?;
+        let output = fixture.command()?;
+        assert_failure(&output, "docs/phase5-overclaim");
         fixture.cleanup()?;
     }
     Ok(())

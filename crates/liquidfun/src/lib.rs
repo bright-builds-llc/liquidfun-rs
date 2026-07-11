@@ -1,8 +1,31 @@
 //! An independent Rust implementation of the `LiquidFun` physics engine.
 //!
 //! This crate is currently a safe, Cargo-only foundation. Its collision
-//! namespace is being built incrementally and does not yet claim complete
-//! collision behavior or behavioral parity with `LiquidFun`.
+//! namespace contains the Phase 5 shape and collision substrate, but it does
+//! not yet contain a rigid-body world, contact manager, or solver.
+//!
+//! # Phase 5 collision foundation
+//!
+//! [`collision`] provides immutable owned circle, edge, polygon, and chain
+//! shapes; checked child selection and unary queries; source-ordered distance,
+//! overlap, manifold, broad-phase pair, and time-of-impact operations; and a
+//! generic dynamic tree with opaque tree-scoped proxy identity. Invalid or
+//! non-finite geometry is rejected by typed constructors instead of inheriting
+//! the pinned C++ assertions, truncation, fallback hull, or arithmetic-NaN
+//! behavior. Ordinary tree query and ray collection order is intentionally
+//! unspecified, while broad-phase pairs that feed later contact creation are
+//! ordered and deduplicated by private source-compatible coordinates.
+//!
+//! The optional `differential-internals` feature is non-default,
+//! `#[doc(hidden)]`, and reserved for the unpublished workspace differential
+//! harness. It transports only bounded owned typed diagnostics. It is not a
+//! stable consumer API and provides no raw storage identity, mutable cache,
+//! packed contact key, unchecked constructor, or public iteration surface.
+//!
+//! Phase 5 deliberately stops before bodies, fixtures, contact-manager
+//! creation, contact persistence or destruction, waking, joint suppression,
+//! listeners, impulses, and rigid stepping. Those world-owned behaviors remain
+//! Phase 6 work.
 //!
 //! # Phase 3 object model
 //!

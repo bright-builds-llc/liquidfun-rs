@@ -72,7 +72,7 @@ The four compatibility axes are independent and explicit:
 Authoritative `f32` values use exact `u32` bits on the wire. The Phase-2 profile
 compares simulation time exactly and world counts discretely; absolute,
 absolute-relative, and ULP policies exist only as synthetic comparator tests.
-There is no global epsilon and no claimed rigid-body, joint, or particle
+There is no repository-wide numeric tolerance and no claimed rigid-body, joint, or particle
 tolerance. NaN is a mismatch unless exact payload policy says otherwise,
 infinities require the same sign, and signed zero stays distinct unless a future
 reviewed field policy changes it.
@@ -171,6 +171,89 @@ The corresponding aliases are `just math-probes-debug`,
 validated build identity, generated protocol schemas, command output, and
 first-divergence report are the evidence locations. Compare, replay, D0,
 portability, and CI commands are read-only and have no fixture-promotion path.
+
+## Phase 5 collision comparison policy
+
+The fixed `phase5-v1` registry declares every collision observable separately.
+Exact `u32` bit transport preserves the representation crossing JSON Lines;
+field comparison is a later typed decision. Discrete result tags, shape child
+indices, manifold features and point order, support pairs, cache outcomes and
+reason precedence, branches, caps, iteration counts, and broad-phase pair order
+compare exactly. All current finite collision fields begin with named
+`ExactBits` policies; there is no wildcard or runtime widening. Arithmetic NaN
+is rejected, signed zero remains distinct, and any future ULP or dimensioned
+absolute/relative rule requires its own semantic path and canonical evidence.
+
+The registry uses `Operation` for shape construction, unary queries, overlap,
+clipping, and feature transitions. Distance, manifolds, pair dispatch, tree,
+broad phase, filtering/refiltering, and time of impact use `PhaseLocal`.
+Operation and phase-local horizons bound only the claim; they never multiply a
+tolerance. Broad-phase pairs and collision features are `Ordered`. Ordinary
+tree query and ray results are unique `Set` membership, so their callback order
+is not a consumer contract.
+
+Evidence tiers remain independent. D0 requires two byte-identical same-build
+runs. D1 requires the canonical pinned Rust 1.97.0 and Clang 22.1.8 scalar Linux
+x86_64 environment and is the only tier that may promote canonical fixtures.
+D2 records supported local platform evidence under the same structural and
+numeric policies but cannot promote. D3 is diagnostic only. The successful
+Phase 5 local Apple Clang 21.0.0 debug/release comparisons are D2-scoped; they
+do not establish D1 or cross-platform validation.
+
+The 78-case `collision-probes` scenario is declaration-first and fail-closed.
+Each case declares one required witness family and an accepted or rejected
+outcome. Native Rust must satisfy the declaration, then the C++ oracle must
+satisfy it, before the engines are compared. The corpus covers safe invalid
+shape rejection, four shape kinds and checked children, unary queries, cold and
+semantic cache replay outcomes, distance/overlap/clipping, every supported
+manifold pair and reversal, feature transitions, dynamic-tree and broad-phase
+ties/lifecycle/filter/refilter behavior, and checked TOI states and cap
+witnesses. It proves only those operations and horizons.
+
+The diagnostic feature `differential-internals` is non-default,
+`#[doc(hidden)]`, development-only, and enabled solely by the unpublished
+workspace differential crate. It transfers bounded owned typed diagnostics and
+does not expose raw storage, mutable cache state, packed contact keys, private
+tree coordinates, or unchecked constructors. Default/no-feature rustdoc and
+package verification prove the module is absent for ordinary consumers.
+
+Phase 5 has no bodies, fixtures, contact manager, contact creation,
+persistence/destruction, waking, joint suppression, listeners, impulses, or
+rigid stepping. `COLL-05` therefore records only ordered pair generation plus
+pure filter/refilter reconsideration; the world contact lifecycle remains
+pending Phase 6.
+
+## Phase 5 collision-probe commands
+
+Initialize the pinned submodule, verify it, then configure and build both
+reviewed profiles:
+
+```bash
+git submodule update --init --recursive third_party/liquidfun
+cargo xtask upstream verify
+cargo xtask upstream configure --preset oracle-debug
+cargo xtask upstream build --preset oracle-debug
+cargo xtask upstream configure --preset oracle-release
+cargo xtask upstream build --preset oracle-release
+```
+
+Run the closed read-only comparison and replay commands exactly:
+
+```bash
+cargo xtask differential compare --scenario collision-probes --preset oracle-debug --session-profile one-shot
+cargo xtask differential compare --scenario collision-probes --preset oracle-release --session-profile one-shot
+cargo xtask differential replay --scenario collision-probes --preset oracle-debug --session-profile one-shot
+cargo xtask differential verify-determinism --scenario collision-probes --preset oracle-debug --runs 2
+```
+
+The commands accept no external scenario path, executable, policy, destination,
+or arbitrary determinism count. Inputs are the checked-in 78-case scenario,
+`phase5-v1` policy, exact adapter/build identity, and reviewed presets. Outputs
+are machine reports; bounded failure evidence belongs under
+`target/differential/failures`. A comparison pass is D2 evidence on a supported
+local toolchain, replay protects the reviewed corpus, and the two-run command is
+D0 byte identity. None proves contact lifecycle, a solver, another platform, or
+performance.
 
 ## Differential commands
 

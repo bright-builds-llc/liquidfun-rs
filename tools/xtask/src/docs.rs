@@ -73,11 +73,68 @@ const DOCUMENT_CONTRACTS: [(&str, &[&str]); 4] = [
     (
         "README.md",
         &[
-            "three Phase 4 math/settings rows",
-            "collision, solver, particle, platform, performance, and production maturity",
+            "bounded Phase 4 math",
+            "canonical-platform evidence, performance, and production maturity",
             "remain pending",
         ],
     ),
+];
+const PHASE5_DOCUMENT_CONTRACTS: [(&str, &[&str]); 3] = [
+    (
+        "ARCHITECTURE.md",
+        &[
+            "## Phase 5 collision boundaries",
+            "`CircleShape`, `EdgeShape`, `PolygonShape`, and `ChainShape`",
+            "`[0.5, 2.0]`",
+            "`distance < 10.0 * EPSILON`",
+            "Collect-all query and ray membership is set-like",
+            "The `differential-internals` feature is non-default, `#[doc(hidden)]`",
+            "the Phase 5 portion of `COLL-05`",
+            "contact persistence or",
+            "Phase 6",
+            "Bright Builds architecture",
+        ],
+    ),
+    (
+        "TESTING.md",
+        &[
+            "## Phase 5 collision comparison policy",
+            "Exact `u32` bit transport",
+            "`ExactBits` policies",
+            "`Operation`",
+            "`PhaseLocal`",
+            "D0 requires two byte-identical",
+            "D1 requires the canonical pinned Rust 1.97.0 and Clang 22.1.8",
+            "D2-scoped",
+            "78-case `collision-probes`",
+            "world contact lifecycle remains",
+            "## Phase 5 collision-probe commands",
+            "cargo xtask differential compare --scenario collision-probes --preset oracle-debug --session-profile one-shot",
+            "cargo xtask differential compare --scenario collision-probes --preset oracle-release --session-profile one-shot",
+            "cargo xtask differential replay --scenario collision-probes --preset oracle-debug --session-profile one-shot",
+            "cargo xtask differential verify-determinism --scenario collision-probes --preset oracle-debug --runs 2",
+        ],
+    ),
+    (
+        "README.md",
+        &[
+            "Phase 5 immutable shape/collision substrate",
+            "78-case Phase 5 collision corpora",
+            "world contact lifecycle",
+            "remain pending",
+        ],
+    ),
+];
+const FORBIDDEN_PHASE5_CLAIMS: [&str; 9] = [
+    "full parity",
+    "production ready",
+    "all platforms validated",
+    "query order is guaranteed",
+    "global epsilon",
+    "cargo xtask differential d0",
+    "packed contact keys are public",
+    "dynamictree exposes public iteration",
+    "phase 6 is complete",
 ];
 
 #[derive(Clone, Copy)]
@@ -231,15 +288,28 @@ pub(crate) fn run(args: &[String]) -> Result<(), DocsError> {
     check_testing_contract(&contents)?;
     check_document_contracts(&repository_root)?;
     println!(
-        "docs verified: {} testing layers and {} Phase 4 document contracts",
+        "docs verified: {} testing layers, {} Phase 4 document contracts, and {} Phase 5 document contracts",
         LAYER_RULES.len(),
-        DOCUMENT_CONTRACTS.len()
+        DOCUMENT_CONTRACTS.len(),
+        PHASE5_DOCUMENT_CONTRACTS.len()
     );
     Ok(())
 }
 
 fn check_document_contracts(repository_root: &std::path::Path) -> Result<(), DocsError> {
-    for (relative_path, required_markers) in DOCUMENT_CONTRACTS {
+    check_required_markers(repository_root, DOCUMENT_CONTRACTS, "phase4-contract")?;
+    check_required_markers(
+        repository_root,
+        PHASE5_DOCUMENT_CONTRACTS,
+        "phase5-contract",
+    )?;
+
+    for relative_path in [
+        "ARCHITECTURE.md",
+        "TESTING.md",
+        "COMPATIBILITY.md",
+        "README.md",
+    ] {
         let path = repository_root.join(relative_path);
         let contents = fs::read_to_string(&path).map_err(|error| {
             DocsError::new(
@@ -253,10 +323,37 @@ fn check_document_contracts(repository_root: &std::path::Path) -> Result<(), Doc
                 format!("{relative_path} contains an absolute user path"),
             ));
         }
+        let lowercase = contents.to_ascii_lowercase();
+        if let Some(claim) = FORBIDDEN_PHASE5_CLAIMS
+            .iter()
+            .find(|claim| lowercase.contains(**claim))
+        {
+            return Err(DocsError::new(
+                "phase5-overclaim",
+                format!("{relative_path} contains forbidden claim `{claim}`"),
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn check_required_markers<const N: usize>(
+    repository_root: &std::path::Path,
+    contracts: [(&str, &[&str]); N],
+    category: &'static str,
+) -> Result<(), DocsError> {
+    for (relative_path, required_markers) in contracts {
+        let path = repository_root.join(relative_path);
+        let contents = fs::read_to_string(&path).map_err(|error| {
+            DocsError::new(
+                "filesystem",
+                format!("failed to read {}: {error}", path.display()),
+            )
+        })?;
         for marker in required_markers {
             if !contents.contains(marker) {
                 return Err(DocsError::new(
-                    "phase4-contract",
+                    category,
                     format!("{relative_path} must contain `{marker}`"),
                 ));
             }
