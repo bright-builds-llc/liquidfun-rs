@@ -33,6 +33,7 @@ pub(crate) enum ParticleStorageError {
     LaneLengthMismatch,
     InvalidDerivedReference,
     InvalidGroupRange,
+    InvalidLaneBundle,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -60,6 +61,60 @@ struct GroupRange {
     group: u16,
     start: ParticleIndex,
     end: ParticleIndex,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) struct OwnedLaneBundle {
+    pub(crate) positions: Vec<[i32; 2]>,
+    pub(crate) velocities: Vec<[i32; 2]>,
+    pub(crate) flags: Vec<u32>,
+    pub(crate) groups: Vec<u16>,
+    pub(crate) maybe_colors: Option<Vec<[u8; 4]>>,
+    pub(crate) maybe_lifetimes: Option<Vec<u32>>,
+}
+
+impl OwnedLaneBundle {
+    pub(crate) fn with_capacity(capacity: usize, optional: bool) -> Self {
+        Self {
+            positions: Vec::with_capacity(capacity),
+            velocities: Vec::with_capacity(capacity),
+            flags: Vec::with_capacity(capacity),
+            groups: Vec::with_capacity(capacity),
+            maybe_colors: optional.then(|| Vec::with_capacity(capacity)),
+            maybe_lifetimes: optional.then(|| Vec::with_capacity(capacity)),
+        }
+    }
+
+    fn validate_empty(&self, declared_capacity: usize) -> Result<(), ParticleStorageError> {
+        if !self.positions.is_empty()
+            || !self.velocities.is_empty()
+            || !self.flags.is_empty()
+            || !self.groups.is_empty()
+            || self
+                .maybe_colors
+                .as_ref()
+                .is_some_and(|lane| !lane.is_empty())
+            || self
+                .maybe_lifetimes
+                .as_ref()
+                .is_some_and(|lane| !lane.is_empty())
+            || self.positions.capacity() < declared_capacity
+            || self.velocities.capacity() < declared_capacity
+            || self.flags.capacity() < declared_capacity
+            || self.groups.capacity() < declared_capacity
+            || self
+                .maybe_colors
+                .as_ref()
+                .is_some_and(|lane| lane.capacity() < declared_capacity)
+            || self
+                .maybe_lifetimes
+                .as_ref()
+                .is_some_and(|lane| lane.capacity() < declared_capacity)
+        {
+            return Err(ParticleStorageError::InvalidLaneBundle);
+        }
+        Ok(())
+    }
 }
 
 #[derive(Clone, PartialEq, Eq)]
@@ -95,12 +150,31 @@ impl ParticleStorage {
         identity_capacity: usize,
         declared_capacity: usize,
     ) -> Result<Self, ParticleStorageError> {
+        Self::from_owned_lanes(
+            world,
+            system,
+            identity_slot_base,
+            identity_capacity,
+            declared_capacity,
+            OwnedLaneBundle::with_capacity(declared_capacity, false),
+        )
+    }
+
+    pub(crate) fn from_owned_lanes(
+        world: WorldKey,
+        system: ParticleSystemId,
+        identity_slot_base: usize,
+        identity_capacity: usize,
+        declared_capacity: usize,
+        lanes: OwnedLaneBundle,
+    ) -> Result<Self, ParticleStorageError> {
         if system.identity().world() != world {
             return Err(ParticleStorageError::WrongWorld);
         }
         if identity_slot_base.checked_add(identity_capacity).is_none() {
             return Err(ParticleStorageError::IdentityExhausted);
         }
+        lanes.validate_empty(declared_capacity)?;
 
         Ok(Self {
             world,
@@ -112,12 +186,12 @@ impl ParticleStorage {
             free_identity_slots: Vec::new(),
             retired_identity_slots: 0,
             dense_to_id: Vec::with_capacity(declared_capacity),
-            positions: Vec::with_capacity(declared_capacity),
-            velocities: Vec::with_capacity(declared_capacity),
-            flags: Vec::with_capacity(declared_capacity),
-            groups: Vec::with_capacity(declared_capacity),
-            maybe_colors: None,
-            maybe_lifetimes: None,
+            positions: lanes.positions,
+            velocities: lanes.velocities,
+            flags: lanes.flags,
+            groups: lanes.groups,
+            maybe_colors: lanes.maybe_colors,
+            maybe_lifetimes: lanes.maybe_lifetimes,
             proxies: Vec::with_capacity(declared_capacity),
             contacts: Vec::new(),
             pairs: Vec::new(),
@@ -125,6 +199,21 @@ impl ParticleStorage {
             lifetime_order: Vec::with_capacity(declared_capacity),
             group_ranges: Vec::new(),
         })
+    }
+
+    pub(crate) fn positions(&self) -> &[[i32; 2]] {
+        &self.positions
+    }
+
+    pub(crate) fn into_owned_lanes(self) -> OwnedLaneBundle {
+        OwnedLaneBundle {
+            positions: self.positions,
+            velocities: self.velocities,
+            flags: self.flags,
+            groups: self.groups,
+            maybe_colors: self.maybe_colors,
+            maybe_lifetimes: self.maybe_lifetimes,
+        }
     }
 
     pub(crate) fn create(
@@ -609,338 +698,10 @@ fn build_group_ranges(groups: &[u16]) -> Result<Vec<GroupRange>, ParticleStorage
 }
 
 #[cfg(test)]
-pub(crate) mod identity {
-    use super::*;
-
-    fn input(value: i32) -> ParticleInput {
-        ParticleInput {
-            position: [value, -value],
-            velocity: [value + 1, value + 2],
-            flags: u32::try_from(value).expect("test values are non-negative"),
-            group: 0,
-            maybe_color: Some([u8::try_from(value).expect("test values fit u8"); 4]),
-            maybe_lifetime: Some(u32::try_from(value).expect("test values fit u32") + 10),
-        }
-    }
-
-    fn system(world: WorldKey, slot: usize) -> ParticleSystemId {
-        ParticleSystemId::from_identity(Identity::new(world, slot, 0))
-    }
-
-    fn storage(world: WorldKey, system_slot: usize, identity_base: usize) -> ParticleStorage {
-        ParticleStorage::new(world, system(world, system_slot), identity_base, 4, 4)
-            .expect("test storage contract is valid")
-    }
-
-    #[test]
-    fn stable_id_survives_group_rotation() {
-        // Arrange
-        let world = WorldKey::fresh().expect("test world key remains available");
-        let mut storage = storage(world, 0, 0);
-        let first = storage.create(input(1)).expect("first particle fits");
-        let second = storage.create(input(2)).expect("second particle fits");
-        let third = storage.create(input(3)).expect("third particle fits");
-
-        // Act
-        storage.rotate_rows(0, 1, 3).expect("rotation is valid");
-
-        // Assert
-        assert_eq!(storage.input(first), Ok(input(1)));
-        assert_eq!(storage.input(second), Ok(input(2)));
-        assert_eq!(storage.input(third), Ok(input(3)));
-    }
-
-    #[test]
-    fn cross_system_id_is_rejected_before_dense_lookup() {
-        // Arrange
-        let world = WorldKey::fresh().expect("test world key remains available");
-        let mut first = storage(world, 0, 0);
-        let second = storage(world, 1, 4);
-        let id = first.create(input(1)).expect("particle fits");
-
-        // Act
-        let result = second.input(id);
-
-        // Assert
-        assert_eq!(result, Err(ParticleStorageError::WrongParticleSystem));
-    }
-
-    #[test]
-    fn pending_delete_rejects_mutation_but_preserves_snapshot() {
-        // Arrange
-        let world = WorldKey::fresh().expect("test world key remains available");
-        let mut storage = storage(world, 0, 0);
-        let id = storage.create(input(7)).expect("particle fits");
-
-        // Act
-        let snapshot = storage
-            .mark_delete(id)
-            .expect("live particle can be marked");
-        let mutation = storage.set_position(id, [99, 99]);
-
-        // Assert
-        assert_eq!(
-            snapshot,
-            ParticleSnapshot {
-                id,
-                input: input(7)
-            }
-        );
-        assert_eq!(mutation, Err(ParticleStorageError::PendingDelete));
-    }
-
-    #[test]
-    fn compacted_id_is_stale_and_snapshot_remains_owned() {
-        // Arrange
-        let world = WorldKey::fresh().expect("test world key remains available");
-        let mut storage = storage(world, 0, 0);
-        let id = storage.create(input(4)).expect("particle fits");
-        storage
-            .mark_delete(id)
-            .expect("live particle can be marked");
-
-        // Act
-        let destroyed = storage.compact_pending().expect("compaction is valid");
-
-        // Assert
-        assert_eq!(
-            destroyed,
-            vec![ParticleSnapshot {
-                id,
-                input: input(4)
-            }]
-        );
-        assert_eq!(
-            storage.input(id),
-            Err(ParticleStorageError::StaleOrDestroyed)
-        );
-    }
-
-    #[test]
-    fn declared_capacity_does_not_grow_implicitly() {
-        // Arrange
-        let world = WorldKey::fresh().expect("test world key remains available");
-        let mut storage = ParticleStorage::new(world, system(world, 0), 0, 4, 1)
-            .expect("test storage contract is valid");
-        storage.create(input(1)).expect("declared row fits");
-
-        // Act
-        let result = storage.create(input(2));
-
-        // Assert
-        assert_eq!(
-            result,
-            Err(ParticleStorageError::CapacityExceeded { limit: 1 })
-        );
-        assert!(storage.dense_to_id.capacity() >= storage.declared_capacity);
-    }
-
-    #[test]
-    fn retired_identity_reports_exhaustion_without_resurrection() {
-        // Arrange
-        let world = WorldKey::fresh().expect("test world key remains available");
-        let mut storage = ParticleStorage::new(world, system(world, 0), 0, 1, 1)
-            .expect("test storage contract is valid");
-        storage.identities.push(IdentityEntry {
-            generation: u64::MAX,
-            state: IdentityState::Vacant,
-        });
-        storage.free_identity_slots.push(0);
-        let id = storage
-            .create(input(1))
-            .expect("maximum generation can be live once");
-        storage
-            .mark_delete(id)
-            .expect("live particle can be marked");
-        storage.compact_pending().expect("compaction is valid");
-
-        // Act
-        let result = storage.create(input(2));
-
-        // Assert
-        assert_eq!(result, Err(ParticleStorageError::IdentityExhausted));
-        assert_eq!(
-            storage.input(id),
-            Err(ParticleStorageError::StaleOrDestroyed)
-        );
-    }
-}
+pub(crate) mod identity;
 
 #[cfg(test)]
-pub(crate) mod permutation {
-    use super::*;
+pub(crate) mod permutation;
 
-    fn input(value: i32, group: u16, optional: bool) -> ParticleInput {
-        ParticleInput {
-            position: [value, -value],
-            velocity: [value + 10, value + 20],
-            flags: u32::try_from(value).expect("test values are non-negative"),
-            group,
-            maybe_color: optional
-                .then_some([u8::try_from(value).expect("test values fit in a color component"); 4]),
-            maybe_lifetime: optional
-                .then_some(u32::try_from(value).expect("test values are non-negative") + 100),
-        }
-    }
-
-    fn storage() -> ParticleStorage {
-        let world = WorldKey::fresh().expect("test world key remains available");
-        let system = ParticleSystemId::from_identity(Identity::new(world, 0, 0));
-        ParticleStorage::new(world, system, 0, 8, 8).expect("test storage contract is valid")
-    }
-
-    fn input_with_optional_defaults(value: i32, group: u16) -> ParticleInput {
-        let mut value = input(value, group, false);
-        value.maybe_color = Some([0; 4]);
-        value.maybe_lifetime = Some(0);
-        value
-    }
-
-    fn populated_storage() -> (ParticleStorage, [ParticleId; 4]) {
-        let mut storage = storage();
-        let ids = [
-            storage.create(input(1, 0, true)).expect("particle fits"),
-            storage.create(input(2, 0, false)).expect("particle fits"),
-            storage.create(input(3, 1, true)).expect("particle fits"),
-            storage.create(input(4, 1, false)).expect("particle fits"),
-        ];
-        storage.contacts = vec![[ParticleIndex(0), ParticleIndex(2)]];
-        storage.pairs = vec![[ParticleIndex(1), ParticleIndex(3)]];
-        storage.triads = vec![[ParticleIndex(0), ParticleIndex(1), ParticleIndex(3)]];
-        (storage, ids)
-    }
-
-    #[test]
-    fn one_transaction_remaps_all_lanes_indices_and_group_ranges() {
-        // Arrange
-        let (mut storage, ids) = populated_storage();
-
-        // Act
-        storage
-            .rotate_rows(0, 2, 4)
-            .expect("whole-group rotation is valid");
-
-        // Assert
-        assert_eq!(storage.input(ids[0]), Ok(input(1, 0, true)));
-        assert_eq!(
-            storage.input(ids[1]),
-            Ok(input_with_optional_defaults(2, 0))
-        );
-        assert_eq!(storage.input(ids[2]), Ok(input(3, 1, true)));
-        assert_eq!(
-            storage.input(ids[3]),
-            Ok(input_with_optional_defaults(4, 1))
-        );
-        assert_eq!(
-            storage.proxies,
-            vec![
-                ParticleIndex(2),
-                ParticleIndex(3),
-                ParticleIndex(0),
-                ParticleIndex(1)
-            ]
-        );
-        assert_eq!(storage.contacts, vec![[ParticleIndex(2), ParticleIndex(0)]]);
-        assert_eq!(storage.pairs, vec![[ParticleIndex(3), ParticleIndex(1)]]);
-        assert_eq!(
-            storage.triads,
-            vec![[ParticleIndex(2), ParticleIndex(3), ParticleIndex(1)]]
-        );
-        assert_eq!(
-            storage.lifetime_order,
-            vec![
-                ParticleIndex(2),
-                ParticleIndex(3),
-                ParticleIndex(0),
-                ParticleIndex(1)
-            ]
-        );
-        assert_eq!(
-            storage.group_ranges,
-            vec![
-                GroupRange {
-                    group: 1,
-                    start: ParticleIndex(0),
-                    end: ParticleIndex(2)
-                },
-                GroupRange {
-                    group: 0,
-                    start: ParticleIndex(2),
-                    end: ParticleIndex(4)
-                },
-            ]
-        );
-        assert_eq!(storage.check_invariants(), Ok(()));
-    }
-
-    #[test]
-    fn invalid_duplicate_permutation_leaves_state_unchanged() {
-        // Arrange
-        let (mut storage, _ids) = populated_storage();
-        let before = storage.clone();
-
-        // Act
-        let result = storage.apply_permutation(&[Some(0), Some(0), Some(1), Some(2)]);
-
-        // Assert
-        assert_eq!(result, Err(ParticleStorageError::InvalidPermutation));
-        assert!(storage == before);
-    }
-
-    #[test]
-    fn out_of_range_derived_reference_leaves_state_unchanged() {
-        // Arrange
-        let (mut storage, _ids) = populated_storage();
-        storage.contacts.push([ParticleIndex(0), ParticleIndex(99)]);
-        let before = storage.clone();
-
-        // Act
-        let result = storage.rotate_rows(0, 2, 4);
-
-        // Assert
-        assert_eq!(result, Err(ParticleStorageError::InvalidDerivedReference));
-        assert!(storage == before);
-    }
-
-    #[test]
-    fn mismatched_optional_lane_leaves_state_unchanged() {
-        // Arrange
-        let (mut storage, _ids) = populated_storage();
-        storage
-            .maybe_colors
-            .as_mut()
-            .expect("fixture enables the optional color lane")
-            .pop();
-        let before = storage.clone();
-
-        // Act
-        let result = storage.rotate_rows(0, 2, 4);
-
-        // Assert
-        assert_eq!(result, Err(ParticleStorageError::LaneLengthMismatch));
-        assert!(storage == before);
-    }
-
-    #[test]
-    fn compaction_drops_removed_references_and_remaps_survivors() {
-        // Arrange
-        let (mut storage, ids) = populated_storage();
-        storage.mark_delete(ids[0]).expect("particle is live");
-        storage.mark_delete(ids[3]).expect("particle is live");
-
-        // Act
-        let destroyed = storage.compact_pending().expect("compaction is valid");
-
-        // Assert
-        assert_eq!(destroyed.len(), 2);
-        assert!(storage.contacts.is_empty());
-        assert!(storage.pairs.is_empty());
-        assert!(storage.triads.is_empty());
-        assert_eq!(storage.proxies, vec![ParticleIndex(0), ParticleIndex(1)]);
-        assert_eq!(
-            storage.lifetime_order,
-            vec![ParticleIndex(0), ParticleIndex(1)]
-        );
-        assert_eq!(storage.check_invariants(), Ok(()));
-    }
-}
+#[cfg(test)]
+pub(crate) mod properties;

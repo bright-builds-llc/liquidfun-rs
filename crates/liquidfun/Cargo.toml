@@ -11,3 +11,6 @@ include = ["Cargo.toml", "src/**/*.rs", "LICENSE", "README.md"]
 
 [lints]
 workspace = true
+
+[dev-dependencies]
+proptest = { workspace = true }
