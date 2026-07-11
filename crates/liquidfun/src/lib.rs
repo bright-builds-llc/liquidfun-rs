@@ -1,7 +1,8 @@
 //! An independent Rust implementation of the `LiquidFun` physics engine.
 //!
-//! This crate is currently a safe, Cargo-only foundation. It does not yet
-//! implement physics behavior or claim behavioral parity with `LiquidFun`.
+//! This crate is currently a safe, Cargo-only foundation. Its collision
+//! namespace is being built incrementally and does not yet claim complete
+//! collision behavior or behavioral parity with `LiquidFun`.
 //!
 //! # Phase 3 object model
 //!
@@ -60,6 +61,7 @@
 
 mod arena;
 mod association;
+pub mod collision;
 mod error;
 mod identity;
 pub mod math;
