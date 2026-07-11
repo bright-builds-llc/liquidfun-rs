@@ -49,12 +49,12 @@ Requirements for the first release permitted to claim complete parity with the s
 ### Math and Collision
 
 - [x] **COLL-01**: Consumers can use upstream-equivalent `f32` vectors, rotations, transforms, sweeps, matrices, constants, and numerical predicates with documented units and conventions.
-- [ ] **COLL-02**: Consumers can define and query circle, edge, polygon, and chain shapes with upstream-equivalent validation, cloning, mass data, point tests, AABBs, and ray casts.
-- [ ] **COLL-03**: The engine produces upstream-equivalent overlap, distance, manifold, clipping, and shape-pair collision results for every supported combination.
-- [ ] **COLL-04**: The dynamic AABB tree supports proxy creation, movement, removal, queries, ray casts, metrics, and deterministic solver-relevant tie behavior.
+- [x] **COLL-02**: Consumers can define and query circle, edge, polygon, and chain shapes with upstream-equivalent validation, cloning, mass data, point tests, AABBs, and ray casts.
+- [x] **COLL-03**: The engine produces upstream-equivalent overlap, distance, manifold, clipping, and shape-pair collision results for every supported combination.
+- [x] **COLL-04**: The dynamic AABB tree supports proxy creation, movement, removal, queries, ray casts, metrics, and deterministic solver-relevant tie behavior.
 - [ ] **COLL-05**: Broad-phase pair generation, contact creation, contact persistence, filtering, and refiltering match the selected upstream behavior.
-- [ ] **COLL-06**: Time-of-impact and continuous-collision kernels handle supported shape sweeps and edge cases within documented numerical policies.
-- [ ] **COLL-07**: Math and collision behavior has focused unit/property tests and pure differential probes before world-level solvers depend on it.
+- [x] **COLL-06**: Time-of-impact and continuous-collision kernels handle supported shape sweeps and edge cases within documented numerical policies.
+- [x] **COLL-07**: Math and collision behavior has focused unit/property tests and pure differential probes before world-level solvers depend on it.
 - [x] **COLL-08**: Numerical policy explicitly defines compiler/feature assumptions, NaN and signed-zero treatment, determinism tiers, per-observable tolerances, and divergence horizons.
 
 ### Rigid-Body Dynamics
@@ -225,12 +225,12 @@ Roadmap creation maps every v1 requirement to exactly one phase.
 | API-11 | Phase 12 | Pending |
 | API-12 | Phase 12 | Pending |
 | COLL-01 | Phase 4 | Complete |
-| COLL-02 | Phase 5 | Pending |
-| COLL-03 | Phase 5 | Pending |
-| COLL-04 | Phase 5 | Pending |
-| COLL-05 | Phase 5 | Pending |
-| COLL-06 | Phase 5 | Pending |
-| COLL-07 | Phase 5 | Pending |
+| COLL-02 | Phase 5 | Complete |
+| COLL-03 | Phase 5 | Complete |
+| COLL-04 | Phase 5 | Complete |
+| COLL-05 | Phase 5 → Phase 6 | Pending |
+| COLL-06 | Phase 5 | Complete |
+| COLL-07 | Phase 5 | Complete |
 | COLL-08 | Phase 4 | Complete |
 | RIGD-01 | Phase 6 | Pending |
 | RIGD-02 | Phase 6 | Pending |
