@@ -22,18 +22,19 @@ Deliver an independent, maintainable Rust physics engine whose LiquidFun behavio
 - [x] Phase 2 established a bounded, versioned semantic protocol and private Rust/C++ differential harness with strict provenance, typed comparison and failure classification, replay/minimization, reviewed fixture promotion, and verified one-shot, reuse, and sanitizer empty-world round trips.
 - [x] Phase 3 established world-scoped typed handles, checked invalidation and exhaustion, upstream-ordered owned destruction evidence, restricted hooks and deferred mutation, typed user associations, and a stable-particle dense-storage spike with clean review and 17/17 verified must-haves.
 - [x] Phase 4 established the public `f32` math/settings foundation, checked matrix/transform/sweep contracts, a closed per-observable numerical policy, bit-faithful Rust/C++ probes, fail-closed build identity, typed mismatch evidence, and 25/25 verified must-haves.
+- [x] Phase 5 established immutable validated shapes, source-ordered distance/manifold/tree/broad-phase/TOI kernels, pure pair/filter/refilter seams, and a fail-closed 78-family Rust/C++ collision probe with 35/35 verified must-haves; world-owned contact lifecycle remains Phase 6 work.
 
 ### Active
 
 <!-- Current scope. Building toward these. -->
 
-- [ ] Extend the implemented Box2D-compatible math foundation with shapes, geometric collision primitives, broad phase, narrow phase, solvers, sleeping, queries, ray casts, and continuous collision from the selected LiquidFun revision.
+- [ ] Extend the implemented math and collision foundation with rigid solvers, sleeping, world queries, world ray casts, and continuous world stepping from the selected LiquidFun revision.
 - [ ] Implement rigid-body worlds, bodies, fixtures, contacts, all supported shapes and joints, filters, listeners, destruction behavior, debug drawing abstractions, and upstream-equivalent world operations.
 - [ ] Implement the full LiquidFun particle system, including storage, creation, destruction, lifetimes, buffers, spatial proxies, contacts, body contacts, groups, flags, pair/triad logic, queries, ray casts, callbacks, and every upstream solver behavior.
-- [ ] Extend the Phase 2 C++/Rust reference harness from the verified empty-world seam to seeded subsystem scenarios and their semantic state, tolerance, regression, and diagnostic requirements.
+- [ ] Extend the Phase 2 C++/Rust reference harness beyond verified empty-world, math, and collision probes to seeded rigid-world and particle scenarios with their semantic state, tolerance, regression, and diagnostic requirements.
 - [ ] Create layered unit, integration, upstream-compatibility, differential, property, fuzz, Miri, sanitizer, and regression testing appropriate to each subsystem.
 - [ ] Port or account for upstream tests and examples, with an optional renderer-independent testbed that supports interactive inspection, headless execution, deterministic capture, and Rust/C++ comparison.
-- [ ] Extend the Phase 4 numerical-stability, ordering, determinism, and platform-tier policy with subsystem-specific observables and tolerances before treating later differential results as compatibility evidence.
+- [ ] Extend the Phase 4/5 numerical-stability, ordering, determinism, and platform-tier policy with rigid-world and particle observables and tolerances before treating those later differential results as compatibility evidence.
 - [ ] Measure performance against equivalent upstream C++ workloads and optimize only from profiling evidence without silently sacrificing API clarity, safety, determinism, or parity.
 - [ ] Support Linux x86_64, Linux ARM64, macOS ARM64, macOS x86_64 where practical, and Windows x86_64, while investigating WASM, mobile, and realistic smaller `no_std` subsets.
 - [ ] Provide discoverable repository automation through a root `justfile`, CI, pinned toolchains, dependency/license policy, documentation checks, coverage, benchmarks, and scheduled extended verification.
@@ -183,4 +184,4 @@ This document evolves at phase transitions and milestone boundaries.
 
 ______________________________________________________________________
 
-*Last updated: 2026-07-11 after Phase 4 completion*
+*Last updated: 2026-07-11 after Phase 5 completion*
