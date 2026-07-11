@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 04-03-PLAN.md
-last_updated: "2026-07-11T05:28:58.406Z"
+stopped_at: Completed 04-02-PLAN.md
+last_updated: "2026-07-11T05:42:07.145Z"
 last_activity: 2026-07-11
 progress:
   total_phases: 12
   completed_phases: 3
   total_plans: 31
-  completed_plans: 26
-  percent: 84
+  completed_plans: 27
+  percent: 87
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-10)
 ## Current Position
 
 Phase: 4 (Math, Settings, and Numerical Policy) — EXECUTING
-Plan: 3 of 7
+Plan: 4 of 7
 Status: Ready to execute
 Last activity: 2026-07-11
 
@@ -70,6 +70,7 @@ Progress: [██████████] 100%
 | Phase 03 P05 | 10 min | 3 tasks | 5 files |
 | Phase 04 P01 | 8 min | 2 tasks | 5 files |
 | Phase 04 P03 | 15 min | 2 tasks | 6 files |
+| Phase 04 P02 | 14 min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -131,6 +132,7 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 03]: Use ARCHITECTURE.md as the evidence-linked sign-off for every locked Phase-3 decision. — Each disposition cites executable code or tests and avoids claiming broad solver parity.
 - [Phase 04]: Keep scalar and vector implementation modules private behind the curated liquidfun::math surface while exposing math::settings as a documented namespace. — This preserves a cohesive deep module and future representation freedom without hiding consumer-required math behavior.
 - [Phase 04]: Preserve the selected b2_pi decimal token and every derived settings expression grouping exactly. — Exact f32 encodings and source-order compatibility take precedence over substituting superficially equivalent standard-library constants.
+- [Phase 04]: Keep matrix, rotation, transform, and sweep storage private behind initialized APIs, and validate exact sweep advance candidates before mutation. — Preserves representation freedom and finite checked state without changing valid kernel grouping.
 
 ### Pending Todos
 
@@ -142,6 +144,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-11T05:28:58.403Z
-Stopped at: Completed 04-03-PLAN.md
+Last session: 2026-07-11T05:42:07.142Z
+Stopped at: Completed 04-02-PLAN.md
 Resume file: None
