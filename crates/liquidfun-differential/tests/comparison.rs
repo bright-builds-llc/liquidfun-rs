@@ -1,20 +1,22 @@
 //! Focused semantic comparison policy and compatibility tests.
 
 use liquidfun_differential::{
-    CanonicalValue, DifferentialOutcome, MismatchKind, SemanticCollection, SemanticPath,
-    collections_match, compare, exact_values_match, float_values_match,
+    CanonicalValue, DifferentialOutcome, FloatClass, MismatchKind, SemanticCollection,
+    SemanticPath, collections_match, compare, exact_values_match, float_values_match,
+    float_values_match_with_policy,
 };
 use liquidfun_test_protocol::{
-    BuildIdentity, CheckpointRecord, EngineKind, FloatBits, FloatPolicy, HarnessLimits,
-    ScenarioRequestRecord, ToleranceProfile, TraceBegin, TraceEnd, TraceRecord, TraceValidator,
-    ValidatedTrace, WorldCounts, decode_handshake_jsonl, decode_scenario_request_jsonl,
-    trace_payload_sha256,
+    BuildIdentity, CheckpointRecord, DivergenceHorizon, EngineKind, EvidenceTier, FloatBits,
+    FloatPolicy, HarnessLimits, Phase4PolicyProfile, ScenarioRequestRecord, ToleranceProfile,
+    TraceBegin, TraceEnd, TraceRecord, TraceValidator, ValidatedTrace, WorldCounts,
+    decode_handshake_jsonl, decode_scenario_request_jsonl, trace_payload_sha256,
 };
 
 const REQUEST_BYTES: &[u8] =
     include_bytes!("../../../protocol/fixtures/accepted/empty-world-request.jsonl");
 const TRACE_BYTES: &[u8] =
     include_bytes!("../../../protocol/fixtures/accepted/empty-world-trace.jsonl");
+const PHASE4_POLICY: &str = include_str!("../../../protocol/tolerances/phase4-v1.toml");
 
 fn fixture_request() -> ScenarioRequestRecord {
     decode_scenario_request_jsonl(REQUEST_BYTES, &HarnessLimits::phase2_default_v1())
@@ -282,6 +284,40 @@ fn special_float_rules_preserve_nan_infinity_and_signed_zero() {
 }
 
 #[test]
+fn phase4_field_policies_apply_explicit_special_value_rules() {
+    // Arrange
+    let profile = Phase4PolicyProfile::parse_toml(PHASE4_POLICY)
+        .expect("checked-in phase4 policy should validate");
+    let exact_transport = profile
+        .field("math.constants.pi")
+        .expect("exact transport field should exist");
+    let arithmetic = profile
+        .field("math.kernel.vector_length")
+        .expect("arithmetic field should exist");
+    let nan = FloatBits::new(0x7fc0_0042);
+
+    // Act
+    let transported_nan = float_values_match_with_policy(nan, nan, exact_transport);
+    let arithmetic_nan = float_values_match_with_policy(nan, nan, arithmetic);
+    let signed_zero = float_values_match_with_policy(
+        FloatBits::from_f32(0.0),
+        FloatBits::from_f32(-0.0),
+        arithmetic,
+    );
+    let infinity = float_values_match_with_policy(
+        FloatBits::from_f32(f32::INFINITY),
+        FloatBits::from_f32(f32::INFINITY),
+        arithmetic,
+    );
+
+    // Assert
+    assert!(transported_nan);
+    assert!(!arithmetic_nan);
+    assert!(!signed_zero);
+    assert!(!infinity);
+}
+
+#[test]
 fn typed_collection_policies_preserve_order_and_multiplicity() {
     // Arrange
     let first = CanonicalValue::new("body-1", 0_u32);
@@ -352,12 +388,26 @@ fn first_divergence_reports_earliest_checkpoint_path_and_float_evidence() {
     assert_eq!(evidence.actual_bits(), FloatBits::from_f32(0.75));
     assert_eq!(evidence.expected_decimal(), "0.5");
     assert_eq!(evidence.actual_decimal(), "0.75");
+    assert_eq!(evidence.expected_class(), FloatClass::PositiveNormal);
+    assert_eq!(evidence.actual_class(), FloatClass::PositiveNormal);
+    assert_eq!(
+        evidence.absolute_difference_bits(),
+        FloatBits::from_f32(0.25)
+    );
+    assert_eq!(
+        evidence.relative_difference_bits(),
+        FloatBits::from_f32(1.0 / 3.0)
+    );
+    assert!(evidence.ulp_distance() > 0);
     assert_eq!(report.request_id().as_str(), "empty-world-request");
     assert_eq!(report.scenario_sha256(), expected.scenario_sha256());
     assert_eq!(
         report.policy_sha256(),
         ToleranceProfile::phase2_v1().profile_sha256()
     );
+    assert_eq!(report.horizon(), DivergenceHorizon::Operation);
+    assert_eq!(report.evidence_tier(), EvidenceTier::D1Canonical);
+    assert_eq!(report.sibling_mismatch_count(), 0);
 }
 
 #[test]
@@ -436,7 +486,48 @@ fn deterministic_machine_and_human_reports_share_typed_evidence() {
     assert_eq!(first_machine, second_machine);
     assert_eq!(parsed["signature"]["semantic_path"], "simulation_time");
     assert_eq!(parsed["float_evidence"]["expected_bits"], 1_056_964_608);
+    assert_eq!(parsed["horizon"]["kind"], "operation");
+    assert_eq!(parsed["evidence_tier"], "d1_canonical");
+    assert!(parsed["float_evidence"]["ulp_distance"].is_number());
     assert!(human.contains("after-step-1"));
     assert!(human.contains("0x3f000000"));
     assert!(human.contains("0x3f400000"));
+    assert!(human.contains("ulps"));
+}
+
+#[test]
+fn deliberate_mismatch_reports_phase4_diagnostics() {
+    // Arrange
+    let request = fixture_request();
+    let identity = fixture_identity();
+    let expected = validated_trace(
+        &request,
+        &identity,
+        EngineKind::CppOracle,
+        [FloatBits::from_f32(0.5), FloatBits::from_f32(1.0)],
+    );
+    let actual = validated_trace(
+        &request,
+        &identity,
+        EngineKind::NativeRust,
+        [FloatBits::from_f32(0.75), FloatBits::from_f32(1.0)],
+    );
+
+    // Act
+    let first = mismatch_report(&expected, &actual);
+    let replay = mismatch_report(&expected, &actual);
+    let machine = first
+        .render_machine()
+        .expect("diagnostic report should serialize");
+    let parsed: serde_json::Value =
+        serde_json::from_slice(&machine).expect("diagnostic report should be JSON");
+
+    // Assert
+    assert_eq!(first.signature(), replay.signature());
+    assert_eq!(parsed["horizon"]["kind"], "operation");
+    assert_eq!(parsed["evidence_tier"], "d1_canonical");
+    assert_eq!(parsed["sibling_mismatch_count"], 0);
+    assert!(parsed["float_evidence"]["absolute_difference_bits"].is_number());
+    assert!(parsed["float_evidence"]["relative_difference_bits"].is_number());
+    assert!(parsed["float_evidence"]["ulp_distance"].is_number());
 }

@@ -1,9 +1,9 @@
 use std::time::Duration;
 
 use liquidfun_test_protocol::{
-    CollectionPolicy, DiscretePolicy, EngineKind, FloatBits, FloatPolicy, HarnessFailure,
-    HarnessFailureEvidence, HarnessFailureKind, HarnessLimits, StderrEvidence, ToleranceProfile,
-    ValidatedTrace, WorldCounts,
+    CollectionPolicy, DiscretePolicy, EngineKind, FieldComparison, FieldPolicy, FloatBits,
+    FloatPolicy, HarnessFailure, HarnessFailureEvidence, HarnessFailureKind, HarnessLimits,
+    NonFinitePolicy, StderrEvidence, ToleranceProfile, ValidatedTrace, WorldCounts, ZeroPolicy,
 };
 
 use crate::{MismatchKind, MismatchReport, SemanticPath, WorldCountField};
@@ -239,6 +239,44 @@ pub fn float_values_match(expected: FloatBits, actual: FloatBits, policy: FloatP
         }
         FloatPolicy::Ulps { max } => ulp_distance(expected.bits(), actual.bits()) <= max,
     }
+}
+
+/// Applies one complete reviewed Phase 4 field policy.
+#[must_use]
+pub fn float_values_match_with_policy(
+    expected: FloatBits,
+    actual: FloatBits,
+    field_policy: &FieldPolicy,
+) -> bool {
+    let FieldComparison::Float { policy } = field_policy.comparison() else {
+        return false;
+    };
+    let expected_value = expected.to_f32();
+    let actual_value = actual.to_f32();
+
+    if expected_value.is_nan() || actual_value.is_nan() {
+        return field_policy.non_finite_policy() == NonFinitePolicy::ExactBitsTransport
+            && expected == actual;
+    }
+    if expected_value.is_infinite() || actual_value.is_infinite() {
+        return match field_policy.non_finite_policy() {
+            NonFinitePolicy::SameSignInfinity => {
+                expected_value.is_infinite()
+                    && actual_value.is_infinite()
+                    && expected_value.is_sign_negative() == actual_value.is_sign_negative()
+            }
+            NonFinitePolicy::ExactBitsTransport => expected == actual,
+            NonFinitePolicy::RejectArithmeticNaN => false,
+        };
+    }
+    if expected_value == 0.0
+        && actual_value == 0.0
+        && field_policy.zero_policy() == ZeroPolicy::SignInsensitive
+    {
+        return true;
+    }
+
+    float_values_match(expected, actual, policy)
 }
 
 fn valid_threshold(bits: FloatBits) -> Option<f32> {

@@ -1,7 +1,8 @@
 use std::fmt::Write;
 
 use liquidfun_test_protocol::{
-    CheckpointId, FloatBits, HarnessFailure, RequestId, Sha256Hex, ToleranceProfile, ValidatedTrace,
+    CheckpointId, DivergenceHorizon, EvidenceTier, FloatBits, HarnessFailure, RequestId, Sha256Hex,
+    ToleranceProfile, ValidatedTrace,
 };
 use serde::Serialize;
 use sha2::{Digest, Sha256};
@@ -179,15 +180,28 @@ pub struct FloatMismatchEvidence {
     actual_bits: FloatBits,
     expected_decimal: Box<str>,
     actual_decimal: Box<str>,
+    expected_class: FloatClass,
+    actual_class: FloatClass,
+    absolute_difference_bits: FloatBits,
+    relative_difference_bits: FloatBits,
+    ulp_distance: u32,
 }
 
 impl FloatMismatchEvidence {
     fn new(expected_bits: FloatBits, actual_bits: FloatBits) -> Self {
+        let expected = expected_bits.to_f32();
+        let actual = actual_bits.to_f32();
+        let (absolute_difference, relative_difference) = numeric_distances(expected, actual);
         Self {
             expected_bits,
             actual_bits,
-            expected_decimal: expected_bits.to_f32().to_string().into_boxed_str(),
-            actual_decimal: actual_bits.to_f32().to_string().into_boxed_str(),
+            expected_decimal: expected.to_string().into_boxed_str(),
+            actual_decimal: actual.to_string().into_boxed_str(),
+            expected_class: FloatClass::classify(expected_bits),
+            actual_class: FloatClass::classify(actual_bits),
+            absolute_difference_bits: FloatBits::from_f32(absolute_difference),
+            relative_difference_bits: FloatBits::from_f32(relative_difference),
+            ulp_distance: ulp_distance(expected_bits.bits(), actual_bits.bits()),
         }
     }
 
@@ -214,6 +228,95 @@ impl FloatMismatchEvidence {
     pub fn actual_decimal(&self) -> &str {
         &self.actual_decimal
     }
+
+    /// Returns the expected IEEE-754 class and sign.
+    #[must_use]
+    pub const fn expected_class(&self) -> FloatClass {
+        self.expected_class
+    }
+
+    /// Returns the actual IEEE-754 class and sign.
+    #[must_use]
+    pub const fn actual_class(&self) -> FloatClass {
+        self.actual_class
+    }
+
+    /// Returns the non-authoritative absolute difference bits.
+    #[must_use]
+    pub const fn absolute_difference_bits(&self) -> FloatBits {
+        self.absolute_difference_bits
+    }
+
+    /// Returns the non-authoritative relative difference bits.
+    #[must_use]
+    pub const fn relative_difference_bits(&self) -> FloatBits {
+        self.relative_difference_bits
+    }
+
+    /// Returns the ordered representable-value distance.
+    #[must_use]
+    pub const fn ulp_distance(&self) -> u32 {
+        self.ulp_distance
+    }
+}
+
+/// Stable IEEE-754 class and sign diagnostic.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum FloatClass {
+    /// Positive zero.
+    PositiveZero,
+    /// Negative zero.
+    NegativeZero,
+    /// Positive subnormal finite value.
+    PositiveSubnormal,
+    /// Negative subnormal finite value.
+    NegativeSubnormal,
+    /// Positive normal finite value.
+    PositiveNormal,
+    /// Negative normal finite value.
+    NegativeNormal,
+    /// Positive infinity.
+    PositiveInfinity,
+    /// Negative infinity.
+    NegativeInfinity,
+    /// Any NaN bit pattern.
+    Nan,
+}
+
+impl FloatClass {
+    fn classify(bits: FloatBits) -> Self {
+        let value = bits.to_f32();
+        if value.is_nan() {
+            return Self::Nan;
+        }
+        if value == 0.0 {
+            return if value.is_sign_negative() {
+                Self::NegativeZero
+            } else {
+                Self::PositiveZero
+            };
+        }
+        if value.is_infinite() {
+            return if value.is_sign_negative() {
+                Self::NegativeInfinity
+            } else {
+                Self::PositiveInfinity
+            };
+        }
+        if value.is_subnormal() {
+            return if value.is_sign_negative() {
+                Self::NegativeSubnormal
+            } else {
+                Self::PositiveSubnormal
+            };
+        }
+        if value.is_sign_negative() {
+            Self::NegativeNormal
+        } else {
+            Self::PositiveNormal
+        }
+    }
 }
 
 /// Machine-readable first divergence and bounded neighboring context.
@@ -228,6 +331,9 @@ pub struct MismatchReport {
     scenario_sha256: Sha256Hex,
     policy_id: Box<str>,
     policy_sha256: Sha256Hex,
+    horizon: DivergenceHorizon,
+    evidence_tier: EvidenceTier,
+    sibling_mismatch_count: u32,
     #[serde(rename = "float_evidence")]
     maybe_float_evidence: Option<FloatMismatchEvidence>,
 }
@@ -293,6 +399,9 @@ impl MismatchReport {
             scenario_sha256: trace.scenario_sha256().clone(),
             policy_id: policy.profile_id().into(),
             policy_sha256: policy.profile_sha256().clone(),
+            horizon: DivergenceHorizon::Operation,
+            evidence_tier: EvidenceTier::D1Canonical,
+            sibling_mismatch_count: 0,
             maybe_float_evidence,
         }
     }
@@ -345,6 +454,24 @@ impl MismatchReport {
         &self.policy_sha256
     }
 
+    /// Returns the fixed comparison horizon.
+    #[must_use]
+    pub const fn horizon(&self) -> DivergenceHorizon {
+        self.horizon
+    }
+
+    /// Returns the authority tier for this comparison.
+    #[must_use]
+    pub const fn evidence_tier(&self) -> EvidenceTier {
+        self.evidence_tier
+    }
+
+    /// Returns the bounded number of later mismatches summarized separately.
+    #[must_use]
+    pub const fn sibling_mismatch_count(&self) -> u32 {
+        self.sibling_mismatch_count
+    }
+
     /// Returns exact float evidence for numeric mismatches.
     #[must_use]
     pub const fn maybe_float_evidence(&self) -> Option<&FloatMismatchEvidence> {
@@ -381,8 +508,22 @@ impl MismatchReport {
             )
             .expect("writing to an owned String cannot fail");
         }
-        write!(rendered, "; policy {}", self.policy_id)
+        if let Some(evidence) = &self.maybe_float_evidence {
+            write!(
+                rendered,
+                "; absolute 0x{:08x}, relative 0x{:08x}, ulps {}",
+                evidence.absolute_difference_bits.bits(),
+                evidence.relative_difference_bits.bits(),
+                evidence.ulp_distance,
+            )
             .expect("writing to an owned String cannot fail");
+        }
+        write!(
+            rendered,
+            "; policy {}, horizon {:?}, tier {:?}",
+            self.policy_id, self.horizon, self.evidence_tier,
+        )
+        .expect("writing to an owned String cannot fail");
         rendered
     }
 }
@@ -436,4 +577,26 @@ fn request_contract_sha256(trace: &ValidatedTrace) -> Sha256Hex {
 fn update_hash_field(hasher: &mut Sha256, bytes: &[u8]) {
     hasher.update(bytes.len().to_be_bytes());
     hasher.update(bytes);
+}
+
+fn numeric_distances(expected: f32, actual: f32) -> (f32, f32) {
+    if !expected.is_finite() || !actual.is_finite() {
+        return (f32::INFINITY, f32::INFINITY);
+    }
+    let absolute = (expected - actual).abs();
+    let scale = expected.abs().max(actual.abs());
+    let relative = if scale == 0.0 { 0.0 } else { absolute / scale };
+    (absolute, relative)
+}
+
+fn ulp_distance(left: u32, right: u32) -> u32 {
+    ordered_float_bits(left).abs_diff(ordered_float_bits(right))
+}
+
+const fn ordered_float_bits(bits: u32) -> u32 {
+    if bits & 0x8000_0000 == 0 {
+        bits | 0x8000_0000
+    } else {
+        !bits
+    }
 }
