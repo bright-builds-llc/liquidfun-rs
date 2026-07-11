@@ -232,7 +232,12 @@ impl ParticleStorage {
             .identity_slot_base
             .checked_add(local_slot)
             .ok_or(ParticleStorageError::IdentityExhausted)?;
-        let id = ParticleId::from_identity(Identity::new(self.world, particle_slot, generation));
+        let id = ParticleId::from_identity(Identity::new_particle(
+            self.world,
+            particle_slot,
+            generation,
+            self.system.identity(),
+        ));
         let dense = ParticleIndex(self.dense_to_id.len());
         self.identities[local_slot].state = IdentityState::Live(dense);
         self.push_row(id, input);
@@ -383,6 +388,9 @@ impl ParticleStorage {
         let identity = id.identity();
         if identity.world() != self.world {
             return Err(ParticleStorageError::WrongWorld);
+        }
+        if identity.maybe_particle_system() != Some(self.system.identity().scope()) {
+            return Err(ParticleStorageError::WrongParticleSystem);
         }
         let Some(local_slot) = identity.slot().checked_sub(self.identity_slot_base) else {
             return Err(ParticleStorageError::WrongParticleSystem);

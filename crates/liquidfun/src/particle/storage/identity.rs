@@ -43,14 +43,24 @@ fn cross_system_id_is_rejected_before_dense_lookup() {
     // Arrange
     let world = WorldKey::fresh().expect("test world key remains available");
     let mut first = storage(world, 0, 0);
-    let second = storage(world, 1, 4);
-    let id = first.create(input(1)).expect("particle fits");
+    let mut second = storage(world, 1, 0);
+    let first_id = first.create(input(1)).expect("particle fits");
+    let second_id = second.create(input(2)).expect("particle fits");
 
     // Act
-    let result = second.input(id);
+    let first_in_second = second.input(first_id);
+    let second_in_first = first.input(second_id);
 
     // Assert
-    assert_eq!(result, Err(ParticleStorageError::WrongParticleSystem));
+    assert_ne!(first_id, second_id);
+    assert_eq!(
+        first_in_second,
+        Err(ParticleStorageError::WrongParticleSystem)
+    );
+    assert_eq!(
+        second_in_first,
+        Err(ParticleStorageError::WrongParticleSystem)
+    );
 }
 
 #[test]

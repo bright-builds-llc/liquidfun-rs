@@ -2,7 +2,7 @@ use std::error::Error;
 use std::fmt;
 
 use crate::arena::Arena;
-use crate::identity::WorldKey;
+use crate::identity::{HandleIdentity, WorldKey};
 use crate::{
     ArenaInsertError, BodyId, FixtureId, HandleError, JointId, ObjectKind, ParticleGroupId,
     ParticleId, ParticleSystemId, WorldKeyError,
@@ -376,15 +376,20 @@ impl World {
         if let Some(group) = maybe_group {
             let group_record = self.particle_groups.get(group)?;
             if group_record.system != system {
-                return Err(CreateObjectError::InvalidHandle(HandleError::WrongWorld));
+                return Err(CreateObjectError::InvalidHandle(
+                    HandleError::WrongParticleSystem,
+                ));
             }
         }
         let diagnostic_id = self.allocate_diagnostic_id();
-        let particle = self.particles.insert(Particle {
-            diagnostic_id,
-            system,
-            maybe_group,
-        })?;
+        let particle = self.particles.insert_particle(
+            Particle {
+                diagnostic_id,
+                system,
+                maybe_group,
+            },
+            system.identity(),
+        )?;
         self.system_mut_after_validation(system)
             .particles
             .push(particle);

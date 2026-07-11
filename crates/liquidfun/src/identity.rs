@@ -63,6 +63,20 @@ pub(crate) struct Identity {
     world: WorldKey,
     slot: usize,
     generation: u64,
+    maybe_particle_system: Option<IdentityScope>,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+pub(crate) struct IdentityScope {
+    world: WorldKey,
+    slot: usize,
+    generation: u64,
+}
+
+impl IdentityScope {
+    pub(crate) const fn identity(self) -> Identity {
+        Identity::new(self.world, self.slot, self.generation)
+    }
 }
 
 impl Identity {
@@ -71,6 +85,21 @@ impl Identity {
             world,
             slot,
             generation,
+            maybe_particle_system: None,
+        }
+    }
+
+    pub(crate) const fn new_particle(
+        world: WorldKey,
+        slot: usize,
+        generation: u64,
+        system: Identity,
+    ) -> Self {
+        Self {
+            world,
+            slot,
+            generation,
+            maybe_particle_system: Some(system.scope()),
         }
     }
 
@@ -84,6 +113,18 @@ impl Identity {
 
     pub(crate) const fn generation(self) -> u64 {
         self.generation
+    }
+
+    pub(crate) const fn scope(self) -> IdentityScope {
+        IdentityScope {
+            world: self.world,
+            slot: self.slot,
+            generation: self.generation,
+        }
+    }
+
+    pub(crate) const fn maybe_particle_system(self) -> Option<IdentityScope> {
+        self.maybe_particle_system
     }
 
     fn diagnostic_token(self, kind: ObjectKind) -> u64 {
@@ -236,6 +277,23 @@ mod tests {
         // Assert
         assert_eq!(original, equal);
         assert_eq!(identities.len(), 4);
+    }
+
+    #[test]
+    fn particle_system_scope_controls_equality_and_hashing() {
+        // Arrange
+        let world = WorldKey::fresh().expect("test world key should remain available");
+        let first_system = Identity::new(world, 0, 0);
+        let second_system = Identity::new(world, 1, 0);
+        let first = ParticleId::from_identity(Identity::new_particle(world, 0, 0, first_system));
+        let second = ParticleId::from_identity(Identity::new_particle(world, 0, 0, second_system));
+
+        // Act
+        let identities = HashSet::from([first, second]);
+
+        // Assert
+        assert_ne!(first, second);
+        assert_eq!(identities.len(), 2);
     }
 
     #[test]

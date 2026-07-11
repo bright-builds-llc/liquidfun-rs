@@ -3,8 +3,8 @@
 use std::any::TypeId;
 
 use liquidfun::{
-    AssociationMap, BodyId, DestroyedId, DestructionCause, FixtureId, HandleError, JointId,
-    ObjectSnapshot, ParticleGroupId, ParticleId, ParticleSystemId, World,
+    AssociationMap, BodyId, CreateObjectError, DestroyedId, DestructionCause, FixtureId,
+    HandleError, JointId, ObjectSnapshot, ParticleGroupId, ParticleId, ParticleSystemId, World,
 };
 
 fn test_world() -> World {
@@ -147,4 +147,33 @@ fn typed_association_cleanup_follows_destruction_records() {
     assert!(fixture_names.is_empty());
     assert!(body_names.is_empty());
     assert!(world.contains_body(survivor));
+}
+
+#[test]
+fn particle_group_owner_mismatch_reports_particle_system_scope() {
+    // Arrange
+    let mut world = test_world();
+    let first_system = world
+        .create_particle_system()
+        .expect("particle system should fit");
+    let second_system = world
+        .create_particle_system()
+        .expect("particle system should fit");
+    let first_group = world
+        .create_particle_group(first_system)
+        .expect("particle group should fit");
+
+    // Act
+    let result = world.create_particle(second_system, Some(first_group));
+
+    // Assert
+    assert_eq!(
+        result,
+        Err(CreateObjectError::InvalidHandle(
+            HandleError::WrongParticleSystem
+        ))
+    );
+    assert!(world.contains_particle_system(first_system));
+    assert!(world.contains_particle_system(second_system));
+    assert!(world.contains_particle_group(first_group));
 }

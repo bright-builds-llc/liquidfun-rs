@@ -120,19 +120,22 @@ from `liquidfun`.
 ## World ownership, typed handles, and destruction
 
 One `World` owns every object arena. A complete handle identity contains a
-private process-unique world key, private slot, and checked `u64` generation.
-Equality and hashing cover that complete identity, while public constructors,
-slot values, serialization, ordering, and dense positions remain unavailable.
-Handles are authority-free integer identities and receive `Send` and `Sync`
-only through Rust auto traits.
+private process-unique world key, private slot, and checked `u64` generation;
+particle identity additionally contains the complete owning particle-system
+scope. Equality and hashing cover that complete identity, while public
+constructors, slot values, serialization, ordering, and dense positions remain
+unavailable. Handles are authority-free integer identities and receive `Send`
+and `Sync` only through Rust auto traits.
 
-Every lookup validates handle kind internally, then world scope, slot, and
-generation. Public typed signatures make wrong-kind substitution a compile-time
-error. Foreign handles return `WrongWorld`; destroyed or reused-slot identities
-return `StaleOrDestroyed`. Removing an arena entry advances its generation
-before reuse, and a generation that cannot advance retires its slot permanently
-rather than wrapping. Capacity, world-key, and generation exhaustion are
-explicit failures.
+Every lookup validates handle kind internally, then world scope, slot,
+generation, and particle-system scope where applicable. Public typed signatures
+make wrong-kind substitution a compile-time error. Foreign handles return
+`WrongWorld`; same-world particle owner mismatches return
+`WrongParticleSystem`; destroyed or reused-slot identities return
+`StaleOrDestroyed`. Removing an arena entry advances its generation before
+reuse, and a generation that cannot advance retires its slot permanently rather
+than wrapping. Capacity, world-key, and generation exhaustion are explicit
+failures.
 
 All object destruction is centralized in `World`, validates the root before
 mutation, updates both sides of adjacency, invalidates each affected handle,
@@ -192,10 +195,13 @@ other kinds or worlds untouched.
 Public `ParticleId` is stable, world-scoped, and particle-system-scoped; the
 private dense particle index is ephemeral and never crosses `lib.rs`. The
 representative dense SoA keeps required and materialized optional lanes aligned
-and tracks stable-to-dense and dense-to-stable mappings through explicit live,
-pending-delete, vacant, and retired states. Pending deletion rejects ordinary
-mutation while retaining an owned row snapshot. Compaction then advances or
-retires the identity generation, so removed IDs cannot alias surviving rows.
+and embeds the complete owning `ParticleSystemId` scope in every stable identity,
+so different systems may safely reuse the same local slot and generation ranges.
+Every lookup checks that owner before dense resolution. Stable-to-dense and
+dense-to-stable mappings use explicit live, pending-delete, vacant, and retired
+states. Pending deletion rejects ordinary mutation while retaining an owned row
+snapshot. Compaction then advances or retires the identity generation, so
+removed IDs cannot alias surviving rows.
 
 One private validate-then-commit permutation is authoritative for lane reorder
 and compaction. It validates the complete candidate before changing required or
@@ -229,7 +235,7 @@ not dictate `World`, handle, callback, or particle layout.
 | D-01 | Implemented: six opaque typed identities use private world/slot/generation coordinates and custom arenas. | `identity.rs`; `arena.rs`; `tests/object_model.rs::public_handle_kinds_are_distinct_types` |
 | D-02 | Implemented: checked generation advance permanently retires exhausted slots and reports finite-space failures. | `arena.rs::tests::maximum_generation_retires_permanently`; seeded arena model test |
 | D-03 | Implemented: typed signatures reject wrong kinds; runtime lookup distinguishes foreign from stale identities. | crate compile-fail doctest; `tests/object_model.rs` stale/reuse and cross-world tests |
-| D-04 | Implemented: complete identity controls equality/hash while constructors, coordinates, serialization, and ordering stay private. | `identity.rs` equality/debug tests; crate raw-parts compile-fail doctest |
+| D-04 | Implemented: complete identity, including particle-system scope for `ParticleId`, controls equality/hash while constructors, coordinates, serialization, and ordering stay private. | `identity.rs` equality/scope/debug tests; crate raw-parts compile-fail doctest |
 | D-05 | Implemented: handles use auto traits only and production forbids unsafe code. | `identity.rs::tests::handles_are_send_and_sync_through_auto_traits`; `lib.rs` crate lint |
 | D-06 | Implemented for the Phase-3 object graph: centralized cascades preserve pinned upstream newest-first body adjacency order and owned snapshots. | `world/object.rs`; `tests/object_model.rs::body_destruction_returns_owned_ordered_cascade_evidence`; `tests/object_model.rs::typed_association_cleanup_follows_destruction_records` |
 | D-07 | Implemented: contacts are borrow-scoped views or owned snapshots/events with no durable handle. | `world/step.rs` contact-view compile-fail doctest; `tests/hook_contract.rs` |
@@ -237,7 +243,7 @@ not dictate `World`, handle, callback, or particle layout.
 | D-09 | Implemented: owned reports preserve event occurrence order and multiplicity without deduplication. | `tests/hook_contract.rs::owned_events_preserve_hook_order_multiplicity_and_directives` |
 | D-10 | Implemented: bounded commands apply sequentially after unlock with explicit per-command stale/foreign results. | `tests/hook_contract.rs` deferred and stale-command tests |
 | D-11 | Implemented: RAII unlock, command discard, persistent poison, and resumed unwind are consumer-visible. | `tests/hook_contract.rs::hook_panic_restores_lock_and_poison_gates_later_operations` |
-| D-12 | Implemented privately and exposed only as stable identity: dense positions remain ephemeral and group-contiguous. | `particle/storage/identity.rs`; `tests/particle_identity.rs` |
+| D-12 | Implemented privately and exposed only as stable system-scoped identity: overlapping system-local slot/generation ranges cannot alias, while dense positions remain ephemeral and group-contiguous. | `particle/storage/identity.rs::cross_system_id_is_rejected_before_dense_lookup`; `tests/object_model.rs::particle_group_owner_mismatch_reports_particle_system_scope`; `tests/particle_identity.rs` |
 | D-13 | Implemented privately: live, pending-delete, vacant, and retired mappings preserve snapshots then invalidate on compaction. | `particle/storage/identity.rs` pending, compaction, and retirement tests |
 | D-14 | Implemented privately: one validate-then-commit permutation updates every representative lane, map, derived index, and group range. | `particle/storage/permutation.rs` remapping and unchanged-on-error tests |
 | D-15 | Implemented as a bounded architecture spike only; no particle solver pass is present. | `particle/storage/properties.rs::bounded_state_machine_matches_independent_model` |

@@ -11,6 +11,8 @@ pub enum HandleError {
     WorldPoisoned,
     /// The handle belongs to a different world.
     WrongWorld,
+    /// The handle or related particle object belongs to a different particle system.
+    WrongParticleSystem,
     /// The referenced object was destroyed or its slot has since been reused.
     StaleOrDestroyed,
     /// An internal heterogeneous lookup received a different handle kind.
@@ -29,6 +31,9 @@ impl fmt::Display for HandleError {
         match self {
             Self::WorldPoisoned => formatter.write_str("world is poisoned by a prior hook panic"),
             Self::WrongWorld => formatter.write_str("handle belongs to a different world"),
+            Self::WrongParticleSystem => {
+                formatter.write_str("handle belongs to a different particle system")
+            }
             Self::StaleOrDestroyed => formatter.write_str("handle is stale or destroyed"),
             Self::WrongKind { expected, actual } => {
                 write!(

@@ -6,9 +6,10 @@
 //! # Phase 3 object model
 //!
 //! [`World`] exclusively owns all object storage. Its typed handles are opaque,
-//! world-scoped identity tokens: they confer no access by themselves, remain
+//! world-scoped identity tokens, with particle identities additionally scoped
+//! to their owning particle system. They confer no access by themselves, remain
 //! invalid after destruction or slot reuse, and fail explicitly when used with
-//! another world. Destruction returns owned [`DestructionRecord`] values whose
+//! another owner. Destruction returns owned [`DestructionRecord`] values whose
 //! snapshots outlive the invalidated objects. Application data belongs in an
 //! application-owned [`AssociationMap`], with cleanup driven explicitly by
 //! those records.

@@ -6,11 +6,17 @@
 use std::marker::PhantomData;
 
 use crate::error::{ArenaInsertError, HandleError};
-use crate::identity::{ErasedHandle, HandleIdentity, Identity, WorldKey};
+use crate::identity::{ErasedHandle, HandleIdentity, Identity, IdentityScope, WorldKey};
 
 enum Slot<T> {
-    Occupied { generation: u64, value: T },
-    Vacant { generation: u64 },
+    Occupied {
+        generation: u64,
+        maybe_particle_system: Option<IdentityScope>,
+        value: T,
+    },
+    Vacant {
+        generation: u64,
+    },
     Retired,
 }
 
@@ -36,8 +42,24 @@ impl<T, H: HandleIdentity> Arena<T, H> {
     }
 
     pub(crate) fn insert(&mut self, value: T) -> Result<H, ArenaInsertError> {
+        self.insert_with_scope(value, None)
+    }
+
+    pub(crate) fn insert_particle(
+        &mut self,
+        value: T,
+        system: Identity,
+    ) -> Result<H, ArenaInsertError> {
+        self.insert_with_scope(value, Some(system.scope()))
+    }
+
+    fn insert_with_scope(
+        &mut self,
+        value: T,
+        maybe_particle_system: Option<IdentityScope>,
+    ) -> Result<H, ArenaInsertError> {
         let Some(slot_index) = self.free_slots.pop() else {
-            return self.insert_new_slot(value);
+            return self.insert_new_slot(value, maybe_particle_system);
         };
 
         let slot = self
@@ -50,24 +72,42 @@ impl<T, H: HandleIdentity> Arena<T, H> {
                 unreachable!("only vacant slots are placed on the free list")
             }
         };
-        *slot = Slot::Occupied { generation, value };
+        *slot = Slot::Occupied {
+            generation,
+            maybe_particle_system,
+            value,
+        };
 
-        Ok(H::from_identity(Identity::new(
-            self.world, slot_index, generation,
+        Ok(H::from_identity(identity_for_slot(
+            self.world,
+            slot_index,
+            generation,
+            maybe_particle_system,
         )))
     }
 
-    fn insert_new_slot(&mut self, value: T) -> Result<H, ArenaInsertError> {
+    fn insert_new_slot(
+        &mut self,
+        value: T,
+        maybe_particle_system: Option<IdentityScope>,
+    ) -> Result<H, ArenaInsertError> {
         if self.slots.len() >= self.max_slots {
             return Err(self.exhaustion_error());
         }
 
         let slot_index = self.slots.len();
         let generation = 0;
-        self.slots.push(Slot::Occupied { generation, value });
+        self.slots.push(Slot::Occupied {
+            generation,
+            maybe_particle_system,
+            value,
+        });
 
-        Ok(H::from_identity(Identity::new(
-            self.world, slot_index, generation,
+        Ok(H::from_identity(identity_for_slot(
+            self.world,
+            slot_index,
+            generation,
+            maybe_particle_system,
         )))
     }
 
@@ -110,11 +150,19 @@ impl<T, H: HandleIdentity> Arena<T, H> {
         let Some(slot) = self.slots.get(identity.slot()) else {
             return Err(HandleError::StaleOrDestroyed);
         };
-        let Slot::Occupied { generation, value } = slot else {
+        let Slot::Occupied {
+            generation,
+            maybe_particle_system,
+            value,
+        } = slot
+        else {
             return Err(HandleError::StaleOrDestroyed);
         };
         if *generation != identity.generation() {
             return Err(HandleError::StaleOrDestroyed);
+        }
+        if *maybe_particle_system != identity.maybe_particle_system() {
+            return Err(HandleError::WrongParticleSystem);
         }
 
         Ok(value)
@@ -125,7 +173,10 @@ impl<T, H: HandleIdentity> Arena<T, H> {
         let identity = handle.identity();
         let slot = &mut self.slots[identity.slot()];
         let previous = std::mem::replace(slot, Slot::Retired);
-        let Slot::Occupied { generation, value } = previous else {
+        let Slot::Occupied {
+            generation, value, ..
+        } = previous
+        else {
             unreachable!("validated handles always refer to occupied slots")
         };
 
@@ -150,8 +201,17 @@ impl<T, H: HandleIdentity> Arena<T, H> {
             .iter()
             .enumerate()
             .filter_map(|(slot_index, slot)| match slot {
-                Slot::Occupied { generation, value } => Some((
-                    H::from_identity(Identity::new(self.world, slot_index, *generation)),
+                Slot::Occupied {
+                    generation,
+                    maybe_particle_system,
+                    value,
+                } => Some((
+                    H::from_identity(identity_for_slot(
+                        self.world,
+                        slot_index,
+                        *generation,
+                        *maybe_particle_system,
+                    )),
                     value,
                 )),
                 Slot::Vacant { .. } | Slot::Retired => None,
@@ -159,10 +219,22 @@ impl<T, H: HandleIdentity> Arena<T, H> {
     }
 }
 
+fn identity_for_slot(
+    world: WorldKey,
+    slot: usize,
+    generation: u64,
+    maybe_particle_system: Option<IdentityScope>,
+) -> Identity {
+    let Some(system) = maybe_particle_system else {
+        return Identity::new(world, slot, generation);
+    };
+    Identity::new_particle(world, slot, generation, system.identity())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::identity::{BodyId, FixtureId};
+    use crate::identity::{BodyId, FixtureId, ParticleId};
 
     fn test_world() -> WorldKey {
         WorldKey::fresh().expect("test world key should remain available")
@@ -199,6 +271,31 @@ mod tests {
 
         // Assert
         assert_eq!(result, Err(HandleError::WrongWorld));
+    }
+
+    #[test]
+    fn particle_system_scope_is_validated_before_value_access() {
+        // Arrange
+        let world = test_world();
+        let first_system = Identity::new(world, 0, 0);
+        let second_system = Identity::new(world, 1, 0);
+        let mut arena = Arena::<_, ParticleId>::new(world, 1);
+        let local = arena
+            .insert_particle(7, first_system)
+            .expect("first particle should fit");
+        let foreign_scope = ParticleId::from_identity(Identity::new_particle(
+            world,
+            local.identity().slot(),
+            local.identity().generation(),
+            second_system,
+        ));
+
+        // Act
+        let result = arena.get(foreign_scope);
+
+        // Assert
+        assert_eq!(result, Err(HandleError::WrongParticleSystem));
+        assert_eq!(arena.get(local), Ok(&7));
     }
 
     #[test]
@@ -244,6 +341,7 @@ mod tests {
             world,
             slots: vec![Slot::Occupied {
                 generation: u64::MAX,
+                maybe_particle_system: None,
                 value: 7,
             }],
             free_slots: Vec::new(),
