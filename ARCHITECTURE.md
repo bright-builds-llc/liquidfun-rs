@@ -4,9 +4,12 @@
 
 Phase 2 establishes the permanent semantic-comparison seam and proves one
 bounded empty-world scenario through native Rust and the pinned,
-process-isolated C++ oracle. The publishable `liquidfun` crate remains a native
-Rust `0.0.0` scaffold; this phase does not establish rigid-body or particle
-parity, a public world/object model, or final subsystem tolerances. The
+process-isolated C++ oracle. Phase 3 adds a public native-Rust object-model
+foundation plus a private representative particle-storage spike. It proves
+identity, invalidation, destruction, callback, step-lifecycle, association, and
+storage-remapping contracts; it does not implement rigid-body or particle
+solver behavior, broad parity, or final subsystem tolerances. The publishable
+`liquidfun` crate therefore remains version `0.0.0`, and the
 [compatibility inventory](COMPATIBILITY.md) remains the authority for maturity.
 
 ## Dependency direction
@@ -85,9 +88,158 @@ first/last stderr evidence, and never reuses or silently retries a poisoned
 child.
 
 The Phase-2 native adapter is private and intentionally supports only the
-empty-world lifecycle needed to prove the seam. It is not a provisional public
-`World` API and must not force Phase-3 handle, invalidation, callback, or storage
-decisions.
+empty-world lifecycle needed to prove the seam. It is not the public `World`
+API; Phase 3 owns the native handle, invalidation, callback, and storage
+contracts without importing protocol or oracle types into `liquidfun`.
+
+## Native Rust object and module boundaries
+
+The `liquidfun` crate is one deep, safe Rust module. `lib.rs` is the only public
+curation boundary; implementation modules remain private unless a consumer
+contract requires a type:
+
+- `identity.rs` owns six distinct opaque typed handles. `arena.rs` owns the
+  private deterministic generational storage used by world objects.
+- `world/object.rs` exclusively owns bodies, fixtures, joints, particle
+  systems, particle groups, particles, adjacency, and every destruction path.
+- `world/step.rs` owns the representative no-solver step lock, restricted hook
+  calls, bounded event and command collection, command application, and poison
+  state.
+- `association.rs` owns the sealed typed application-side-table abstraction;
+  association values never enter `World`.
+- `particle/storage.rs` and its children are a private representative SoA
+  architecture spike. They are executable evidence for later particle work,
+  not a consumer bulk-storage API.
+
+All production modules compile with `unsafe_code` forbidden. Public handles
+contain no raw pointers and grant no access without validation by their owning
+world. Harness crates may depend on `liquidfun`; no protocol, differential,
+reference, serialization, CMake, C++, or renderer concern may depend inward
+from `liquidfun`.
+
+## World ownership, typed handles, and destruction
+
+One `World` owns every object arena. A complete handle identity contains a
+private process-unique world key, private slot, and checked `u64` generation.
+Equality and hashing cover that complete identity, while public constructors,
+slot values, serialization, ordering, and dense positions remain unavailable.
+Handles are authority-free integer identities and receive `Send` and `Sync`
+only through Rust auto traits.
+
+Every lookup validates handle kind internally, then world scope, slot, and
+generation. Public typed signatures make wrong-kind substitution a compile-time
+error. Foreign handles return `WrongWorld`; destroyed or reused-slot identities
+return `StaleOrDestroyed`. Removing an arena entry advances its generation
+before reuse, and a generation that cannot advance retires its slot permanently
+rather than wrapping. Capacity, world-key, and generation exhaustion are
+explicit failures.
+
+All object destruction is centralized in `World`, validates the root before
+mutation, updates both sides of adjacency, invalidates each affected handle,
+and returns owned semantic records. Body cascades emit attached joints, then
+fixtures, then the body. Particle-system cascades emit groups, then particles,
+then the system. Creation/occurrence order is preserved within each category.
+Owned snapshots capture the required pre-invalidation adjacency, owner, group,
+and diagnostic state and remain usable after slot reuse. Direct group
+destruction clears membership without destroying its particles.
+
+## Transient contacts, restricted hooks, and step order
+
+Contacts have no durable public identity. Callers supply owned semantic
+`ContactSnapshot` values to the representative step; hooks receive only a
+borrow-scoped read-only `ContactView`, and polling consumers receive owned
+`ContactEvent` values. Rust lifetimes prevent retaining an internal contact
+view, and hook trait signatures provide no `&mut World`.
+
+The no-solver Phase-3 step follows one enforceable sequence:
+
+1. Reject a poisoned or already locked world, then acquire the RAII step lock.
+2. Validate each supplied fixture pair in caller order and invoke collision
+   filtering, optional pre-solve control, observation, and optional command
+   request while locked.
+3. Preserve every owned event in exact occurrence order and multiplicity. An
+   ignored collision skips later hooks for that occurrence.
+4. Restore the lock before applying any command.
+5. Apply bounded typed commands sequentially in request order, revalidating
+   every operand at application time. A stale or foreign operand becomes that
+   command's owned failure and does not suppress later applications.
+6. Return one owned `StepReport` containing events, destruction records, and
+   per-command results in their documented orders.
+
+`StepLimits` is caller-configurable only up to reviewed hard maxima of 4,096
+events and 1,024 commands. Limit failure discards the pending command queue;
+hooks cannot return arbitrary closures or build an unreviewed command surface.
+If a hook panics, the step restores the lock through RAII, discards unapplied
+commands, marks the world poisoned, and resumes the original panic. Diagnostic
+lock/poison and handle-liveness queries remain available, but later step,
+creation, and destruction operations fail explicitly instead of treating
+partially progressed state as coherent.
+
+## Safe application associations
+
+`AssociationMap<Id, T>` is an application-owned typed side table sealed to one
+exact public handle kind. It does not use `Any`, raw pointers, lifetime-long
+borrows, or a `World<T>` generic. Destruction cannot mutate application memory
+implicitly: consumers pass owned destruction records to explicit cleanup
+helpers, which remove matching identities in record occurrence order and leave
+other kinds or worlds untouched.
+
+## Particle storage and future buffer boundary
+
+Public `ParticleId` is stable, world-scoped, and particle-system-scoped; the
+private dense particle index is ephemeral and never crosses `lib.rs`. The
+representative dense SoA keeps required and materialized optional lanes aligned
+and tracks stable-to-dense and dense-to-stable mappings through explicit live,
+pending-delete, vacant, and retired states. Pending deletion rejects ordinary
+mutation while retaining an owned row snapshot. Compaction then advances or
+retires the identity generation, so removed IDs cannot alias surviving rows.
+
+One private validate-then-commit permutation is authoritative for lane reorder
+and compaction. It validates the complete candidate before changing required or
+optional lanes, both identity directions, proxies, contacts, pairs, triads,
+deterministic lifetime order, or contiguous group ranges. Invalid duplicates,
+lane lengths, or derived references leave the prior state unchanged. Vectors
+and explicit ordering, rather than hash iteration, determine solver-visible
+storage order. Focused tests and a bounded 128-case model state machine cover
+create, reorder, mark-delete, compact, stale access, and capacity failure.
+
+The future API-09/API-10 particle bulk-mutation and external-buffer surface is
+not public or complete. Phase 3 proves only the locked safe direction with a
+private owned lane bundle: validate ownership and lane lengths at construction,
+track declared fixed capacity separately from allocation capacity, reject
+growth with `CapacityExceeded`, expose no raw pointer, and return owned buffers
+on teardown. Full API design, solver integration, compatibility evidence, and
+performance sign-off remain Phase 9 or later.
+
+## Renderer independence
+
+The simulation and object/storage modules are headless and expose no renderer,
+window, input, UI, GPU, or framework dependency. Future debug-draw data and
+traits must remain renderer-neutral. A private testbed may translate those
+values into a renderer, but testbed scheduling, frame pacing, and storage may
+not dictate `World`, handle, callback, or particle layout.
+
+## Phase 3 decision sign-off
+
+| Decision | Disposition | Executable evidence |
+| --- | --- | --- |
+| D-01 | Implemented: six opaque typed identities use private world/slot/generation coordinates and custom arenas. | `identity.rs`; `arena.rs`; `tests/object_model.rs::public_handle_kinds_are_distinct_types` |
+| D-02 | Implemented: checked generation advance permanently retires exhausted slots and reports finite-space failures. | `arena.rs::tests::maximum_generation_retires_permanently`; seeded arena model test |
+| D-03 | Implemented: typed signatures reject wrong kinds; runtime lookup distinguishes foreign from stale identities. | crate compile-fail doctest; `tests/object_model.rs` stale/reuse and cross-world tests |
+| D-04 | Implemented: complete identity controls equality/hash while constructors, coordinates, serialization, and ordering stay private. | `identity.rs` equality/debug tests; crate raw-parts compile-fail doctest |
+| D-05 | Implemented: handles use auto traits only and production forbids unsafe code. | `identity.rs::tests::handles_are_send_and_sync_through_auto_traits`; `lib.rs` crate lint |
+| D-06 | Implemented for the Phase-3 object graph: centralized cascades preserve documented order and owned snapshots. | `world/object.rs`; `tests/object_model.rs::body_destruction_returns_owned_ordered_cascade_evidence` |
+| D-07 | Implemented: contacts are borrow-scoped views or owned snapshots/events with no durable handle. | `world/step.rs` contact-view compile-fail doctest; `tests/hook_contract.rs` |
+| D-08 | Implemented for representative hooks: read-only views return narrow filter/pre-solve directives and optional typed commands. | `world/step.rs` hook-signature compile-fail doctest; owned-directive integration test |
+| D-09 | Implemented: owned reports preserve event occurrence order and multiplicity without deduplication. | `tests/hook_contract.rs::owned_events_preserve_hook_order_multiplicity_and_directives` |
+| D-10 | Implemented: bounded commands apply sequentially after unlock with explicit per-command stale/foreign results. | `tests/hook_contract.rs` deferred and stale-command tests |
+| D-11 | Implemented: RAII unlock, command discard, persistent poison, and resumed unwind are consumer-visible. | `tests/hook_contract.rs::hook_panic_restores_lock_and_poison_gates_later_operations` |
+| D-12 | Implemented privately and exposed only as stable identity: dense positions remain ephemeral and group-contiguous. | `particle/storage/identity.rs`; `tests/particle_identity.rs` |
+| D-13 | Implemented privately: live, pending-delete, vacant, and retired mappings preserve snapshots then invalidate on compaction. | `particle/storage/identity.rs` pending, compaction, and retirement tests |
+| D-14 | Implemented privately: one validate-then-commit permutation updates every representative lane, map, derived index, and group range. | `particle/storage/permutation.rs` remapping and unchanged-on-error tests |
+| D-15 | Implemented as a bounded architecture spike only; no particle solver pass is present. | `particle/storage/properties.rs::bounded_state_machine_matches_independent_model` |
+| D-16 | Implemented: sealed application-owned typed side tables clean up explicitly from owned destruction records. | `association.rs` compile-fail/unit tests; `tests/object_model.rs` cleanup test |
+| D-17 | Direction locked and proved privately, deferred publicly: owned validated lanes, fixed declared capacity, and owned teardown. | `particle/storage/properties.rs` capacity/teardown tests; public API completion deferred to Phase 9 |
 
 ## Process-isolated C++ oracle
 
@@ -172,5 +324,6 @@ no validation, loops, retry policy, evidence mutation, or C++ logic.
   there is no FFI or runtime delegation.
 - Artifact checks are read-only. Stage, replay, diff, explicit review, and atomic
   promote are the only accepted mutation path.
-- Phase 2 proves the empty-world harness seam only. Broad physics behavior,
-  public object ownership, and final tolerance policy remain later-phase work.
+- Phase 2 proves the empty-world harness seam; Phase 3 proves the public object
+  contract and private particle-storage architecture only. Broad physics
+  behavior, full particle APIs, and final tolerance policy remain later work.
