@@ -391,6 +391,10 @@ impl<T> DynamicTree<T> {
         Ok(proxy.node)
     }
 
+    pub(crate) fn pair_order_key(&self, proxy: ProxyId) -> Result<usize, TreeError> {
+        Ok(self.validate_proxy(proxy)?.0)
+    }
+
     fn proxy_id_for_node(&self, node: NodeIndex) -> ProxyId {
         ProxyId {
             tree_key: self.tree_key,

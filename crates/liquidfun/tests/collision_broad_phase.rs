@@ -2,6 +2,7 @@
 
 use liquidfun::collision::Aabb;
 use liquidfun::collision::RayCastInput;
+use liquidfun::collision::broad_phase::{BroadPhase, FilterData};
 use liquidfun::collision::tree::{DynamicTree, QueryControl, RayCastControl, TreeError};
 use liquidfun::math::Vec2;
 use std::collections::HashSet;
@@ -338,4 +339,207 @@ fn dynamic_tree_ray_collection_is_a_unique_unspecified_order_set() {
 
     // Assert
     assert_eq!(actual, HashSet::from([first, second]));
+}
+
+#[test]
+fn broad_phase_filter_defaults_and_symmetric_masks_match_upstream() {
+    // Arrange
+    let defaults = FilterData::default();
+    let category_two = FilterData::new(0x0002, 0x0001, 0);
+    let rejects_two = FilterData::new(0x0001, 0x0001, 0);
+
+    // Act
+    let default_pair = defaults.should_collide(category_two);
+    let rejected_pair = rejects_two.should_collide(category_two);
+
+    // Assert
+    assert_eq!(defaults.category_bits(), 0x0001);
+    assert_eq!(defaults.mask_bits(), 0xffff);
+    assert_eq!(defaults.group_index(), 0);
+    assert!(default_pair);
+    assert!(!rejected_pair);
+}
+
+#[test]
+fn broad_phase_equal_nonzero_groups_override_masks_by_sign() {
+    // Arrange
+    let positive_a = FilterData::new(0x0001, 0x0000, 4);
+    let positive_b = FilterData::new(0x0002, 0x0000, 4);
+    let negative_a = FilterData::new(0x0001, 0xffff, -4);
+    let negative_b = FilterData::new(0x0002, 0xffff, -4);
+
+    // Act
+    let positive = positive_a.should_collide(positive_b);
+    let negative = negative_a.should_collide(negative_b);
+
+    // Assert
+    assert!(positive);
+    assert!(!negative);
+}
+
+#[test]
+fn broad_phase_creation_reports_each_overlapping_pair_once_in_private_slot_order() {
+    // Arrange
+    let mut broad_phase = BroadPhase::new().expect("a tree key should remain available");
+    broad_phase
+        .create_proxy(aabb(0.0, 0.0, 2.0, 2.0), "a", FilterData::default())
+        .expect("finite bounds should create a proxy");
+    broad_phase
+        .create_proxy(aabb(0.5, 0.5, 2.5, 2.5), "b", FilterData::default())
+        .expect("finite bounds should create a proxy");
+    broad_phase
+        .create_proxy(aabb(1.0, 1.0, 3.0, 3.0), "c", FilterData::default())
+        .expect("finite bounds should create a proxy");
+    let mut pairs = Vec::new();
+
+    // Act
+    broad_phase
+        .update_pairs(|_proxy_a, payload_a, _proxy_b, payload_b| {
+            pairs.push((*payload_a, *payload_b));
+        })
+        .expect("live move entries should update");
+
+    // Assert
+    assert_eq!(pairs, [("a", "b"), ("a", "c"), ("b", "c")]);
+}
+
+#[test]
+fn broad_phase_duplicate_touches_are_deduplicated_after_sorting() {
+    // Arrange
+    let mut broad_phase = BroadPhase::new().expect("a tree key should remain available");
+    let first = broad_phase
+        .create_proxy(aabb(0.0, 0.0, 1.0, 1.0), 1_u8, FilterData::default())
+        .expect("finite bounds should create a proxy");
+    broad_phase
+        .create_proxy(aabb(0.5, 0.5, 1.5, 1.5), 2_u8, FilterData::default())
+        .expect("finite bounds should create a proxy");
+    broad_phase
+        .update_pairs(|_, _, _, _| {})
+        .expect("initial pairs should drain");
+    broad_phase
+        .touch_proxy(first)
+        .expect("a live proxy should touch");
+    broad_phase
+        .touch_proxy(first)
+        .expect("a live proxy should touch");
+    let mut pair_count = 0;
+
+    // Act
+    broad_phase
+        .update_pairs(|_, _, _, _| pair_count += 1)
+        .expect("duplicate move entries should update");
+
+    // Assert
+    assert_eq!(pair_count, 1);
+}
+
+#[test]
+fn broad_phase_destroy_tombstones_every_buffered_occurrence() {
+    // Arrange
+    let mut broad_phase = BroadPhase::new().expect("a tree key should remain available");
+    let first = broad_phase
+        .create_proxy(aabb(0.0, 0.0, 1.0, 1.0), 1_u8, FilterData::default())
+        .expect("finite bounds should create a proxy");
+    broad_phase
+        .create_proxy(aabb(0.5, 0.5, 1.5, 1.5), 2_u8, FilterData::default())
+        .expect("finite bounds should create a proxy");
+    broad_phase
+        .touch_proxy(first)
+        .expect("a live proxy should touch");
+    broad_phase
+        .touch_proxy(first)
+        .expect("a live proxy should touch");
+
+    // Act
+    let removed = broad_phase
+        .destroy_proxy(first)
+        .expect("a live proxy should be destroyed");
+    let mut pair_count = 0;
+    broad_phase
+        .update_pairs(|_, _, _, _| pair_count += 1)
+        .expect("tombstoned entries should be skipped");
+
+    // Assert
+    assert_eq!(removed, 1);
+    assert_eq!(pair_count, 0);
+}
+
+#[test]
+fn broad_phase_contained_move_does_not_buffer_until_touched() {
+    // Arrange
+    let mut broad_phase = BroadPhase::new().expect("a tree key should remain available");
+    let first = broad_phase
+        .create_proxy(aabb(0.0, 0.0, 1.0, 1.0), 1_u8, FilterData::default())
+        .expect("finite bounds should create a proxy");
+    broad_phase
+        .create_proxy(aabb(0.5, 0.5, 1.5, 1.5), 2_u8, FilterData::default())
+        .expect("finite bounds should create a proxy");
+    broad_phase
+        .update_pairs(|_, _, _, _| {})
+        .expect("initial pairs should drain");
+    broad_phase
+        .move_proxy(first, aabb(0.05, 0.05, 0.95, 0.95), Vec2::ZERO)
+        .expect("a contained move should succeed");
+    let mut before_touch = 0;
+    broad_phase
+        .update_pairs(|_, _, _, _| before_touch += 1)
+        .expect("an empty move buffer should update");
+
+    // Act
+    broad_phase
+        .touch_proxy(first)
+        .expect("a live proxy should touch");
+    let mut after_touch = 0;
+    broad_phase
+        .update_pairs(|_, _, _, _| after_touch += 1)
+        .expect("a touched proxy should update");
+
+    // Assert
+    assert_eq!(before_touch, 0);
+    assert_eq!(after_touch, 1);
+}
+
+#[test]
+fn broad_phase_refilter_touches_proxy_for_newly_eligible_pair() {
+    // Arrange
+    let mut broad_phase = BroadPhase::new().expect("a tree key should remain available");
+    let first = broad_phase
+        .create_proxy(
+            aabb(0.0, 0.0, 1.0, 1.0),
+            1_u8,
+            FilterData::new(0x0001, 0x0000, 0),
+        )
+        .expect("finite bounds should create a proxy");
+    let second = broad_phase
+        .create_proxy(
+            aabb(0.5, 0.5, 1.5, 1.5),
+            2_u8,
+            FilterData::new(0x0002, 0x0000, 0),
+        )
+        .expect("finite bounds should create a proxy");
+    broad_phase
+        .update_pairs(|_, _, _, _| {})
+        .expect("initial candidates should drain");
+    assert_eq!(broad_phase.should_collide(first, second), Ok(false));
+
+    // Act
+    broad_phase
+        .set_filter_data(first, FilterData::new(0x0001, 0x0002, 0))
+        .expect("a live proxy should refilter");
+    broad_phase
+        .set_filter_data(second, FilterData::new(0x0002, 0x0001, 0))
+        .expect("a live proxy should refilter");
+    let mut reconsidered = Vec::new();
+    broad_phase
+        .update_pairs(|proxy_a, _, proxy_b, _| {
+            reconsidered.push((proxy_a, proxy_b));
+        })
+        .expect("refiltered proxies should be reconsidered");
+
+    // Assert
+    assert_eq!(reconsidered.len(), 1);
+    assert_eq!(
+        broad_phase.should_collide(reconsidered[0].0, reconsidered[0].1),
+        Ok(true)
+    );
 }
