@@ -58,6 +58,7 @@ completed: 2026-07-11
 
 1. **Task 1: Model and validate the complete policy registry** - `e701a50`
 2. **Task 2: Apply policy and enrich first-divergence evidence** - `e641578`
+3. **Follow-up: Keep the forbidden-fallback scan literal-free** - `e6ca025`
 
 ## Deviations from Plan
 
@@ -79,7 +80,7 @@ completed: 2026-07-11
 
 ## Self-Check: PASSED
 
-- Commits `e701a50` and `e641578` exist.
+- Commits `e701a50`, `e641578`, and `e6ca025` exist.
 - All six planned artifacts exist and focused/full gates pass.
 - No global epsilon, wildcard field policy, automatic tolerance growth, or unbounded diagnostic context was introduced.
 
