@@ -31,6 +31,8 @@ pub(crate) enum ParticleStorageError {
     IdentityExhausted,
     InvalidPermutation,
     LaneLengthMismatch,
+    InvalidDerivedReference,
+    InvalidGroupRange,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -53,6 +55,13 @@ struct IdentityEntry {
     state: IdentityState,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct GroupRange {
+    group: u16,
+    start: ParticleIndex,
+    end: ParticleIndex,
+}
+
 #[derive(Clone, PartialEq, Eq)]
 pub(crate) struct ParticleStorage {
     world: WorldKey,
@@ -70,6 +79,12 @@ pub(crate) struct ParticleStorage {
     groups: Vec<u16>,
     maybe_colors: Option<Vec<[u8; 4]>>,
     maybe_lifetimes: Option<Vec<u32>>,
+    proxies: Vec<ParticleIndex>,
+    contacts: Vec<[ParticleIndex; 2]>,
+    pairs: Vec<[ParticleIndex; 2]>,
+    triads: Vec<[ParticleIndex; 3]>,
+    lifetime_order: Vec<ParticleIndex>,
+    group_ranges: Vec<GroupRange>,
 }
 
 impl ParticleStorage {
@@ -103,6 +118,12 @@ impl ParticleStorage {
             groups: Vec::with_capacity(declared_capacity),
             maybe_colors: None,
             maybe_lifetimes: None,
+            proxies: Vec::with_capacity(declared_capacity),
+            contacts: Vec::new(),
+            pairs: Vec::new(),
+            triads: Vec::new(),
+            lifetime_order: Vec::with_capacity(declared_capacity),
+            group_ranges: Vec::new(),
         })
     }
 
@@ -115,6 +136,7 @@ impl ParticleStorage {
                 limit: self.declared_capacity,
             });
         }
+        self.validate_appended_group(input.group)?;
 
         let (local_slot, generation) = self.allocate_identity_slot()?;
         let particle_slot = self
@@ -125,6 +147,8 @@ impl ParticleStorage {
         let dense = ParticleIndex(self.dense_to_id.len());
         self.identities[local_slot].state = IdentityState::Live(dense);
         self.push_row(id, input);
+        self.group_ranges = build_group_ranges(&self.groups)?;
+        debug_assert_eq!(self.check_invariants(), Ok(()));
         Ok(id)
     }
 
@@ -161,6 +185,9 @@ impl ParticleStorage {
         self.velocities.push(input.velocity);
         self.flags.push(input.flags);
         self.groups.push(input.group);
+        let dense = ParticleIndex(previous_len);
+        self.proxies.push(dense);
+        self.lifetime_order.push(dense);
         push_optional(
             &mut self.maybe_colors,
             input.maybe_color,
@@ -288,11 +315,80 @@ impl ParticleStorage {
         }
     }
 
+    fn validate_appended_group(&self, group: u16) -> Result<(), ParticleStorageError> {
+        let Some(last) = self.groups.last() else {
+            return Ok(());
+        };
+        if *last == group || !self.groups.contains(&group) {
+            return Ok(());
+        }
+        Err(ParticleStorageError::InvalidGroupRange)
+    }
+
+    fn check_invariants(&self) -> Result<(), ParticleStorageError> {
+        let count = self.dense_to_id.len();
+        if self.positions.len() != count
+            || self.velocities.len() != count
+            || self.flags.len() != count
+            || self.groups.len() != count
+            || self
+                .maybe_colors
+                .as_ref()
+                .is_some_and(|lane| lane.len() != count)
+            || self
+                .maybe_lifetimes
+                .as_ref()
+                .is_some_and(|lane| lane.len() != count)
+        {
+            return Err(ParticleStorageError::LaneLengthMismatch);
+        }
+
+        for (dense, id) in self.dense_to_id.iter().copied().enumerate() {
+            let local_slot = self.local_slot(id)?;
+            let entry = self
+                .identities
+                .get(local_slot)
+                .ok_or(ParticleStorageError::StaleOrDestroyed)?;
+            if entry.generation != id.identity().generation()
+                || !matches!(
+                    entry.state,
+                    IdentityState::Live(ParticleIndex(index))
+                        | IdentityState::PendingDelete {
+                            dense: ParticleIndex(index),
+                            ..
+                        } if index == dense
+                )
+            {
+                return Err(ParticleStorageError::StaleOrDestroyed);
+            }
+            if self.dense_to_id[..dense].contains(&id) {
+                return Err(ParticleStorageError::StaleOrDestroyed);
+            }
+        }
+
+        validate_references(&self.proxies, count)?;
+        validate_reference_sets(&self.contacts, count)?;
+        validate_reference_sets(&self.pairs, count)?;
+        validate_reference_sets(&self.triads, count)?;
+        validate_references(&self.lifetime_order, count)?;
+        if self.group_ranges != build_group_ranges(&self.groups)? {
+            return Err(ParticleStorageError::InvalidGroupRange);
+        }
+        Ok(())
+    }
+
     fn apply_permutation(
         &mut self,
         old_to_new: &[Option<usize>],
     ) -> Result<Vec<ParticleSnapshot>, ParticleStorageError> {
-        let new_count = validate_basic_permutation(old_to_new, self.dense_to_id.len())?;
+        self.check_invariants()?;
+        let old_count = self.dense_to_id.len();
+        let new_count = validate_basic_permutation(old_to_new, old_count)?;
+        let proxies = remap_references(&self.proxies, old_to_new)?;
+        let contacts = remap_reference_sets(&self.contacts, old_to_new)?;
+        let pairs = remap_reference_sets(&self.pairs, old_to_new)?;
+        let triads = remap_reference_sets(&self.triads, old_to_new)?;
+        let lifetime_order = remap_references(&self.lifetime_order, old_to_new)?;
         let mut dense_to_id = vec![None; new_count];
         let mut positions = vec![[0; 2]; new_count];
         let mut velocities = vec![[0; 2]; new_count];
@@ -352,6 +448,8 @@ impl ParticleStorage {
             freed_slots.push(local_slot);
         }
 
+        let group_ranges = build_group_ranges(&groups)?;
+
         self.identities = identities;
         self.free_identity_slots.extend(freed_slots);
         self.retired_identity_slots = self
@@ -369,6 +467,13 @@ impl ParticleStorage {
         self.groups = groups;
         self.maybe_colors = maybe_colors;
         self.maybe_lifetimes = maybe_lifetimes;
+        self.proxies = proxies;
+        self.contacts = contacts;
+        self.pairs = pairs;
+        self.triads = triads;
+        self.lifetime_order = lifetime_order;
+        self.group_ranges = group_ranges;
+        debug_assert_eq!(self.check_invariants(), Ok(()));
         Ok(destroyed)
     }
 }
@@ -424,6 +529,83 @@ fn validate_basic_permutation(
         return Err(ParticleStorageError::InvalidPermutation);
     }
     Ok(new_count)
+}
+
+fn validate_references(
+    references: &[ParticleIndex],
+    count: usize,
+) -> Result<(), ParticleStorageError> {
+    if references.iter().any(|index| index.0 >= count) {
+        return Err(ParticleStorageError::InvalidDerivedReference);
+    }
+    Ok(())
+}
+
+fn validate_reference_sets<const N: usize>(
+    references: &[[ParticleIndex; N]],
+    count: usize,
+) -> Result<(), ParticleStorageError> {
+    if references.iter().flatten().any(|index| index.0 >= count) {
+        return Err(ParticleStorageError::InvalidDerivedReference);
+    }
+    Ok(())
+}
+
+fn remap_references(
+    references: &[ParticleIndex],
+    old_to_new: &[Option<usize>],
+) -> Result<Vec<ParticleIndex>, ParticleStorageError> {
+    references
+        .iter()
+        .filter_map(|index| match old_to_new.get(index.0) {
+            Some(Some(destination)) => Some(Ok(ParticleIndex(*destination))),
+            Some(None) => None,
+            None => Some(Err(ParticleStorageError::InvalidDerivedReference)),
+        })
+        .collect()
+}
+
+fn remap_reference_sets<const N: usize>(
+    references: &[[ParticleIndex; N]],
+    old_to_new: &[Option<usize>],
+) -> Result<Vec<[ParticleIndex; N]>, ParticleStorageError> {
+    let mut remapped = Vec::with_capacity(references.len());
+    for reference in references {
+        let mut mapped = [ParticleIndex(0); N];
+        let mut removed = false;
+        for (destination, old) in mapped.iter_mut().zip(reference) {
+            match old_to_new.get(old.0) {
+                Some(Some(new)) => *destination = ParticleIndex(*new),
+                Some(None) => removed = true,
+                None => return Err(ParticleStorageError::InvalidDerivedReference),
+            }
+        }
+        if !removed {
+            remapped.push(mapped);
+        }
+    }
+    Ok(remapped)
+}
+
+fn build_group_ranges(groups: &[u16]) -> Result<Vec<GroupRange>, ParticleStorageError> {
+    let mut ranges: Vec<GroupRange> = Vec::new();
+    for (dense, group) in groups.iter().copied().enumerate() {
+        if let Some(last) = ranges.last_mut()
+            && last.group == group
+        {
+            last.end = ParticleIndex(dense + 1);
+            continue;
+        }
+        if ranges.iter().any(|range| range.group == group) {
+            return Err(ParticleStorageError::InvalidGroupRange);
+        }
+        ranges.push(GroupRange {
+            group,
+            start: ParticleIndex(dense),
+            end: ParticleIndex(dense + 1),
+        });
+    }
+    Ok(ranges)
 }
 
 #[cfg(test)]
@@ -581,5 +763,184 @@ pub(crate) mod identity {
             storage.input(id),
             Err(ParticleStorageError::StaleOrDestroyed)
         );
+    }
+}
+
+#[cfg(test)]
+pub(crate) mod permutation {
+    use super::*;
+
+    fn input(value: i32, group: u16, optional: bool) -> ParticleInput {
+        ParticleInput {
+            position: [value, -value],
+            velocity: [value + 10, value + 20],
+            flags: u32::try_from(value).expect("test values are non-negative"),
+            group,
+            maybe_color: optional
+                .then_some([u8::try_from(value).expect("test values fit in a color component"); 4]),
+            maybe_lifetime: optional
+                .then_some(u32::try_from(value).expect("test values are non-negative") + 100),
+        }
+    }
+
+    fn storage() -> ParticleStorage {
+        let world = WorldKey::fresh().expect("test world key remains available");
+        let system = ParticleSystemId::from_identity(Identity::new(world, 0, 0));
+        ParticleStorage::new(world, system, 0, 8, 8).expect("test storage contract is valid")
+    }
+
+    fn input_with_optional_defaults(value: i32, group: u16) -> ParticleInput {
+        let mut value = input(value, group, false);
+        value.maybe_color = Some([0; 4]);
+        value.maybe_lifetime = Some(0);
+        value
+    }
+
+    fn populated_storage() -> (ParticleStorage, [ParticleId; 4]) {
+        let mut storage = storage();
+        let ids = [
+            storage.create(input(1, 0, true)).expect("particle fits"),
+            storage.create(input(2, 0, false)).expect("particle fits"),
+            storage.create(input(3, 1, true)).expect("particle fits"),
+            storage.create(input(4, 1, false)).expect("particle fits"),
+        ];
+        storage.contacts = vec![[ParticleIndex(0), ParticleIndex(2)]];
+        storage.pairs = vec![[ParticleIndex(1), ParticleIndex(3)]];
+        storage.triads = vec![[ParticleIndex(0), ParticleIndex(1), ParticleIndex(3)]];
+        (storage, ids)
+    }
+
+    #[test]
+    fn one_transaction_remaps_all_lanes_indices_and_group_ranges() {
+        // Arrange
+        let (mut storage, ids) = populated_storage();
+
+        // Act
+        storage
+            .rotate_rows(0, 2, 4)
+            .expect("whole-group rotation is valid");
+
+        // Assert
+        assert_eq!(storage.input(ids[0]), Ok(input(1, 0, true)));
+        assert_eq!(
+            storage.input(ids[1]),
+            Ok(input_with_optional_defaults(2, 0))
+        );
+        assert_eq!(storage.input(ids[2]), Ok(input(3, 1, true)));
+        assert_eq!(
+            storage.input(ids[3]),
+            Ok(input_with_optional_defaults(4, 1))
+        );
+        assert_eq!(
+            storage.proxies,
+            vec![
+                ParticleIndex(2),
+                ParticleIndex(3),
+                ParticleIndex(0),
+                ParticleIndex(1)
+            ]
+        );
+        assert_eq!(storage.contacts, vec![[ParticleIndex(2), ParticleIndex(0)]]);
+        assert_eq!(storage.pairs, vec![[ParticleIndex(3), ParticleIndex(1)]]);
+        assert_eq!(
+            storage.triads,
+            vec![[ParticleIndex(2), ParticleIndex(3), ParticleIndex(1)]]
+        );
+        assert_eq!(
+            storage.lifetime_order,
+            vec![
+                ParticleIndex(2),
+                ParticleIndex(3),
+                ParticleIndex(0),
+                ParticleIndex(1)
+            ]
+        );
+        assert_eq!(
+            storage.group_ranges,
+            vec![
+                GroupRange {
+                    group: 1,
+                    start: ParticleIndex(0),
+                    end: ParticleIndex(2)
+                },
+                GroupRange {
+                    group: 0,
+                    start: ParticleIndex(2),
+                    end: ParticleIndex(4)
+                },
+            ]
+        );
+        assert_eq!(storage.check_invariants(), Ok(()));
+    }
+
+    #[test]
+    fn invalid_duplicate_permutation_leaves_state_unchanged() {
+        // Arrange
+        let (mut storage, _ids) = populated_storage();
+        let before = storage.clone();
+
+        // Act
+        let result = storage.apply_permutation(&[Some(0), Some(0), Some(1), Some(2)]);
+
+        // Assert
+        assert_eq!(result, Err(ParticleStorageError::InvalidPermutation));
+        assert!(storage == before);
+    }
+
+    #[test]
+    fn out_of_range_derived_reference_leaves_state_unchanged() {
+        // Arrange
+        let (mut storage, _ids) = populated_storage();
+        storage.contacts.push([ParticleIndex(0), ParticleIndex(99)]);
+        let before = storage.clone();
+
+        // Act
+        let result = storage.rotate_rows(0, 2, 4);
+
+        // Assert
+        assert_eq!(result, Err(ParticleStorageError::InvalidDerivedReference));
+        assert!(storage == before);
+    }
+
+    #[test]
+    fn mismatched_optional_lane_leaves_state_unchanged() {
+        // Arrange
+        let (mut storage, _ids) = populated_storage();
+        storage
+            .maybe_colors
+            .as_mut()
+            .expect("fixture enables the optional color lane")
+            .pop();
+        let before = storage.clone();
+
+        // Act
+        let result = storage.rotate_rows(0, 2, 4);
+
+        // Assert
+        assert_eq!(result, Err(ParticleStorageError::LaneLengthMismatch));
+        assert!(storage == before);
+    }
+
+    #[test]
+    fn compaction_drops_removed_references_and_remaps_survivors() {
+        // Arrange
+        let (mut storage, ids) = populated_storage();
+        storage.mark_delete(ids[0]).expect("particle is live");
+        storage.mark_delete(ids[3]).expect("particle is live");
+
+        // Act
+        let destroyed = storage.compact_pending().expect("compaction is valid");
+
+        // Assert
+        assert_eq!(destroyed.len(), 2);
+        assert!(storage.contacts.is_empty());
+        assert!(storage.pairs.is_empty());
+        assert!(storage.triads.is_empty());
+        assert_eq!(storage.proxies, vec![ParticleIndex(0), ParticleIndex(1)]);
+        assert_eq!(
+            storage.lifetime_order,
+            vec![ParticleIndex(0), ParticleIndex(1)]
+        );
+        assert_eq!(storage.check_invariants(), Ok(()));
     }
 }
