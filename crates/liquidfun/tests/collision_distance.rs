@@ -5,6 +5,8 @@ use liquidfun::collision::shape::{CircleShape, PolygonShape, Shape};
 use liquidfun::math::settings::EPSILON;
 use liquidfun::math::{Transform, Vec2};
 
+const RADIUS_ADJUSTMENT_ROUNDING_ULPS: f32 = 8.0;
+
 #[test]
 fn cache_empty_state_is_fully_initialized() {
     // Arrange
@@ -47,6 +49,28 @@ fn circle(center: Vec2, radius: f32) -> Shape {
     CircleShape::new(center, radius)
         .expect("circle should be valid")
         .into()
+}
+
+fn scalar_ulp(value: f32) -> f32 {
+    let magnitude = value.abs();
+    f32::from_bits(magnitude.to_bits() + 1) - magnitude
+}
+
+fn witness_distance_rounding_bound(result: &DistanceResult, witness_separation: f32) -> f32 {
+    let point_a = result.point_a();
+    let point_b = result.point_b();
+    let coordinate_storage_rounding = scalar_ulp(point_a.x)
+        + scalar_ulp(point_a.y)
+        + scalar_ulp(point_b.x)
+        + scalar_ulp(point_b.y);
+    let calculation_scale = witness_separation.max(result.distance()).max(1.0);
+
+    // The source path normalizes the offset, shifts both witnesses by their radii,
+    // and a caller reconstructs the length. Eight ULPs cover the half-ULP error
+    // of those operations; coordinate storage is bounded separately above.
+    coordinate_storage_rounding
+        + scalar_ulp(result.distance())
+        + RADIUS_ADJUSTMENT_ROUNDING_ULPS * scalar_ulp(calculation_scale)
 }
 
 #[test]
@@ -128,6 +152,87 @@ fn gjk_radii_collapse_overlapping_witnesses_to_midpoint() {
     assert_eq!(result.point_a(), Vec2::new(0.75, 0.0));
     assert_eq!(result.point_b(), result.point_a());
     assert_eq!(result.distance().to_bits(), 0.0_f32.to_bits());
+}
+
+#[test]
+fn gjk_regression_radii_adjusted_witness_separation_matches_distance() {
+    // Arrange
+    let shape_a = circle(Vec2::new(65.10579, 36.636_276), 0.5);
+    let shape_b = circle(Vec2::new(71.155, 36.84389), 0.75);
+    let child = shape_a.child_index(0).expect("child should exist");
+
+    // Act
+    let result = distance(
+        &shape_a,
+        child,
+        Transform::IDENTITY,
+        &shape_b,
+        child,
+        Transform::IDENTITY,
+        true,
+        None,
+    )
+    .expect("distance should succeed");
+    let witness_separation = (result.point_b() - result.point_a()).length();
+    let reversed = distance(
+        &shape_b,
+        child,
+        Transform::IDENTITY,
+        &shape_a,
+        child,
+        Transform::IDENTITY,
+        true,
+        None,
+    )
+    .expect("reversed distance should succeed");
+    let source_distance =
+        (Vec2::new(71.155, 36.84389) - Vec2::new(65.10579, 36.636_276)).length() - 1.25;
+    let witness_tolerance = witness_distance_rounding_bound(&result, witness_separation);
+
+    // Assert
+    assert_eq!(result.distance().to_bits(), source_distance.to_bits());
+    assert_eq!(reversed.distance().to_bits(), result.distance().to_bits());
+    assert_eq!(reversed.point_a(), result.point_b());
+    assert_eq!(reversed.point_b(), result.point_a());
+    assert!(
+        (witness_separation - result.distance()).abs() <= witness_tolerance,
+        "witness separation {witness_separation:?} must match distance {:?} within {witness_tolerance:?}",
+        result.distance(),
+    );
+}
+
+#[test]
+fn gjk_regression_large_separation_accounts_for_witness_length_rounding() {
+    // Arrange
+    let center_a = Vec2::new(21.711_607, -2.675_165_7);
+    let center_b = Vec2::new(-58.228_626, 8.976_858);
+    let shape_a = circle(center_a, 0.5);
+    let shape_b = circle(center_b, 0.75);
+    let child = shape_a.child_index(0).expect("child should exist");
+
+    // Act
+    let result = distance(
+        &shape_a,
+        child,
+        Transform::IDENTITY,
+        &shape_b,
+        child,
+        Transform::IDENTITY,
+        true,
+        None,
+    )
+    .expect("distance should succeed");
+    let witness_separation = (result.point_b() - result.point_a()).length();
+    let source_distance = (center_b - center_a).length() - 1.25;
+    let witness_tolerance = witness_distance_rounding_bound(&result, witness_separation);
+
+    // Assert
+    assert_eq!(result.distance().to_bits(), source_distance.to_bits());
+    assert!(
+        (witness_separation - result.distance()).abs() <= witness_tolerance,
+        "witness separation {witness_separation:?} must match distance {:?} within {witness_tolerance:?}",
+        result.distance(),
+    );
 }
 
 #[test]
@@ -285,8 +390,8 @@ proptest::proptest! {
         proptest::prop_assert_eq!(ab.distance().to_bits(), ba.distance().to_bits());
         let ab_separation = (ab.point_b() - ab.point_a()).length();
         let ba_separation = (ba.point_b() - ba.point_a()).length();
-        let ab_witness_tolerance = 4.0 * f32::EPSILON * ab.distance().max(1.0);
-        let ba_witness_tolerance = 4.0 * f32::EPSILON * ba.distance().max(1.0);
+        let ab_witness_tolerance = witness_distance_rounding_bound(&ab, ab_separation);
+        let ba_witness_tolerance = witness_distance_rounding_bound(&ba, ba_separation);
         proptest::prop_assert!((ab_separation - ab.distance()).abs() <= ab_witness_tolerance);
         proptest::prop_assert!((ba_separation - ba.distance()).abs() <= ba_witness_tolerance);
         proptest::prop_assert!(ab.iterations() <= 20);
