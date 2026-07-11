@@ -65,7 +65,7 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
           path: target
-          key: ${{ runner.os }}-oracle-debug-${{ hashFiles('Cargo.lock', 'reference/upstream-lock.toml', 'tools/reference/CMakeLists.txt', 'tools/reference/CMakePresets.json') }}
+          key: ${{ runner.os }}-oracle-phase4-${{ hashFiles('Cargo.lock', 'reference/upstream-lock.toml', 'tools/reference/CMakeLists.txt', 'tools/reference/CMakePresets.json') }}
       - name: Verify the exact upstream checkout
         run: cargo xtask upstream verify
       - name: Verify provenance records
@@ -76,6 +76,20 @@ jobs:
         run: cargo xtask upstream configure --preset oracle-debug
       - name: Build oracle-debug
         run: cargo xtask upstream build --preset oracle-debug
+      - name: Configure oracle-release
+        run: cargo xtask upstream configure --preset oracle-release
+      - name: Build oracle-release
+        run: cargo xtask upstream build --preset oracle-release
+      - name: Reject incomplete or forbidden canonical identities
+        run: cargo test -p liquidfun-test-protocol --all-features canonical
+      - name: Compare Phase 4 math probes in debug and release
+        run: |
+          cargo xtask differential compare --scenario math-probes --preset oracle-debug --session-profile one-shot
+          cargo xtask differential compare --scenario math-probes --preset oracle-release --session-profile one-shot
+      - name: Replay Phase 4 math probes
+        run: cargo xtask differential replay --scenario math-probes --preset oracle-debug --session-profile one-shot
+      - name: Verify Phase 4 D0 byte stability
+        run: cargo xtask differential verify-determinism --scenario math-probes --preset oracle-debug --runs 2
       - name: Compare empty-world in one-shot isolation
         run: cargo xtask differential compare --scenario empty-world --preset oracle-debug --session-profile one-shot
       - name: Compare the bounded two-request reuse session

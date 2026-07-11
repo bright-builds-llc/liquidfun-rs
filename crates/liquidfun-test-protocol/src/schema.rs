@@ -311,47 +311,10 @@ fn render_scenario_schema() -> String {
     render_json_schema(&json!({
         "$id": "https://liquidfun-rs.invalid/protocol/schemas/scenario-v1.schema.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
-        "additionalProperties": false,
+        "$defs": math_probe_definitions(),
         "description": SCHEMA_DESCRIPTION,
-        "properties": {
-            "checkpoints": {
-                "items": closed_record(
-                    &json!({
-                        "after_command_id": semantic_id_schema(),
-                        "checkpoint_id": semantic_id_schema(),
-                        "observables": { "items": { "enum": ["world_counts", "simulation_time"] }, "maxItems": 128, "type": "array" },
-                        "phase": bounded_string_schema()
-                    }),
-                    &["checkpoint_id", "after_command_id", "phase", "observables"],
-                ),
-                "maxItems": 4096,
-                "type": "array"
-            },
-            "commands": {
-                "items": closed_record(
-                    &json!({
-                        "command_id": semantic_id_schema(),
-                        "kind": { "const": "step" },
-                        "particle_iterations": { "maximum": 255, "minimum": 1, "type": "integer" },
-                        "position_iterations": { "maximum": 255, "minimum": 1, "type": "integer" },
-                        "timestep_bits": float_bits_schema(),
-                        "velocity_iterations": { "maximum": 255, "minimum": 1, "type": "integer" }
-                    }),
-                    &["kind", "command_id", "timestep_bits", "velocity_iterations", "position_iterations", "particle_iterations"],
-                ),
-                "maxItems": 4096,
-                "minItems": 1,
-                "type": "array"
-            },
-            "entities": { "items": false, "maxItems": 0, "type": "array" },
-            "gravity_x_bits": float_bits_schema(),
-            "gravity_y_bits": float_bits_schema(),
-            "scenario_id": semantic_id_schema(),
-            "source": scenario_source_schema()
-        },
-        "required": ["scenario_id", "source", "gravity_x_bits", "gravity_y_bits", "entities", "commands", "checkpoints"],
+        "oneOf": [physics_scenario_schema(), math_probe_scenario_schema()],
         "title": "liquidfun-rs scenario presentation version 1",
-        "type": "object",
         "x-version-axes": { "scenario_schema_version": 1 }
     }))
 }
@@ -404,6 +367,18 @@ fn render_trace_schema() -> String {
                     "trace_payload_sha256": sha256_schema()
                 }),
                 &["protocol_version", "record_kind", "request_id", "checkpoint_count", "trace_payload_sha256", "reset_epoch", "reset_verified", "identity_sha256"],
+            ),
+            math_probe_result_schema(),
+            closed_record(
+                &json!({
+                    "protocol_version": version_schema(),
+                    "record_kind": { "const": "math_probe_end" },
+                    "request_id": semantic_id_schema(),
+                    "reset_epoch": uint64_schema(),
+                    "reset_verified": { "const": true },
+                    "result_count": uint32_schema()
+                }),
+                &["protocol_version", "record_kind", "request_id", "result_count", "reset_epoch", "reset_verified"],
             )
         ],
         "title": "liquidfun-rs trace presentation version 1",
@@ -413,6 +388,290 @@ fn render_trace_schema() -> String {
             "trace_schema_version": 1
         }
     }))
+}
+
+fn physics_scenario_schema() -> Value {
+    closed_record(
+        &json!({
+            "checkpoints": {
+                "items": closed_record(
+                    &json!({
+                        "after_command_id": semantic_id_schema(),
+                        "checkpoint_id": semantic_id_schema(),
+                        "observables": { "items": { "enum": ["world_counts", "simulation_time"] }, "maxItems": 128, "type": "array" },
+                        "phase": bounded_string_schema()
+                    }),
+                    &["checkpoint_id", "after_command_id", "phase", "observables"],
+                ),
+                "maxItems": 4096,
+                "type": "array"
+            },
+            "commands": {
+                "items": closed_record(
+                    &json!({
+                        "command_id": semantic_id_schema(),
+                        "kind": { "const": "step" },
+                        "particle_iterations": { "maximum": 255, "minimum": 1, "type": "integer" },
+                        "position_iterations": { "maximum": 255, "minimum": 1, "type": "integer" },
+                        "timestep_bits": float_bits_schema(),
+                        "velocity_iterations": { "maximum": 255, "minimum": 1, "type": "integer" }
+                    }),
+                    &["kind", "command_id", "timestep_bits", "velocity_iterations", "position_iterations", "particle_iterations"],
+                ),
+                "maxItems": 4096,
+                "minItems": 1,
+                "type": "array"
+            },
+            "entities": { "items": false, "maxItems": 0, "type": "array" },
+            "gravity_x_bits": float_bits_schema(),
+            "gravity_y_bits": float_bits_schema(),
+            "scenario_id": semantic_id_schema(),
+            "source": scenario_source_schema()
+        }),
+        &[
+            "scenario_id",
+            "source",
+            "gravity_x_bits",
+            "gravity_y_bits",
+            "entities",
+            "commands",
+            "checkpoints",
+        ],
+    )
+}
+
+fn math_probe_scenario_schema() -> Value {
+    closed_record(
+        &json!({
+            "cases": {
+                "items": closed_record(
+                    &json!({
+                        "case_id": semantic_id_schema(),
+                        "horizon": schema_ref("math_probe_horizon"),
+                        "input": math_probe_input_schema(),
+                        "operation": { "enum": math_probe_operations() },
+                        "policy_path": { "enum": math_probe_policy_paths() }
+                    }),
+                    &["case_id", "operation", "policy_path", "horizon", "input"],
+                ),
+                "maxItems": 256,
+                "minItems": 1,
+                "type": "array"
+            },
+            "scenario_id": semantic_id_schema(),
+            "source": scenario_source_schema()
+        }),
+        &["scenario_id", "source", "cases"],
+    )
+}
+
+fn math_probe_result_schema() -> Value {
+    closed_record(
+        &json!({
+            "case_id": semantic_id_schema(),
+            "discrete": {
+                "items": closed_record(
+                    &json!({
+                        "field": { "enum": ["predicate", "non_zero_determinant", "normalized", "advanced"] },
+                        "value": { "type": "boolean" }
+                    }),
+                    &["field", "value"],
+                ),
+                "maxItems": 16,
+                "type": "array"
+            },
+            "horizon": math_probe_horizon_schema(),
+            "operation": { "enum": math_probe_operations() },
+            "policy_path": { "enum": math_probe_policy_paths() },
+            "values": {
+                "items": closed_record(
+                    &json!({
+                        "bits": float_bits_schema(),
+                        "class": { "enum": ["zero", "subnormal", "normal", "infinite", "nan"] },
+                        "field": { "enum": ["value", "x", "y", "z", "length", "sine", "cosine", "position_x", "position_y", "angle", "initial_center_x", "initial_center_y", "initial_angle", "initial_fraction", "left_associated", "right_associated", "even_midpoint", "odd_midpoint"] },
+                        "negative": { "type": "boolean" }
+                    }),
+                    &["field", "bits", "class", "negative"],
+                ),
+                "maxItems": 64,
+                "type": "array"
+            }
+        }),
+        &[
+            "case_id",
+            "operation",
+            "policy_path",
+            "horizon",
+            "values",
+            "discrete",
+        ],
+    )
+}
+
+fn math_probe_operations() -> Value {
+    json!([
+        "is_valid",
+        "abs",
+        "min",
+        "max",
+        "clamp",
+        "inv_sqrt",
+        "vec_length",
+        "vec_normalize",
+        "dot",
+        "cross",
+        "mat22_solve",
+        "mat33_solve",
+        "mat22_inverse",
+        "mat33_sym_inverse",
+        "rotation",
+        "transform",
+        "sweep_transform",
+        "sweep_advance",
+        "sweep_normalize",
+        "cancellation",
+        "halfway_rounding",
+        "overflow",
+        "underflow",
+        "fma_witness"
+    ])
+}
+
+fn math_probe_policy_paths() -> Value {
+    json!([
+        "math.branch.is_valid",
+        "math.composite.transform",
+        "math.constants.pi",
+        "math.kernel.rotation",
+        "math.kernel.vector_length"
+    ])
+}
+
+fn math_probe_horizon_schema() -> Value {
+    json!({
+        "oneOf": [
+            closed_record(&json!({ "kind": { "const": "operation" } }), &["kind"]),
+            closed_record(
+                &json!({ "kind": { "const": "scenario_steps" }, "steps": { "maximum": 32, "minimum": 1, "type": "integer" } }),
+                &["kind", "steps"],
+            )
+        ]
+    })
+}
+
+fn math_probe_input_schema() -> Value {
+    let float = float_bits_schema();
+    let vec2 = schema_ref("vec2_bits");
+    let vec3 = schema_ref("vec3_bits");
+    let mat22 = schema_ref("mat22_bits");
+    let mat33 = schema_ref("mat33_bits");
+    let transform = schema_ref("transform_bits");
+    let sweep = schema_ref("sweep_bits");
+    json!({
+        "oneOf": [
+            tagged_probe_input("scalar", &json!({ "value_bits": float }), &["value_bits"]),
+            tagged_probe_input("binary", &json!({ "a_bits": float, "b_bits": float }), &["a_bits", "b_bits"]),
+            tagged_probe_input("clamp", &json!({ "value_bits": float, "low_bits": float, "high_bits": float }), &["value_bits", "low_bits", "high_bits"]),
+            tagged_probe_input("vector2", &json!({ "vector": vec2 }), &["vector"]),
+            tagged_probe_input("vector_pair", &json!({ "a": vec2, "b": vec2 }), &["a", "b"]),
+            tagged_probe_input("mat22_solve", &json!({ "matrix": mat22, "right": vec2 }), &["matrix", "right"]),
+            tagged_probe_input("mat33_solve", &json!({ "matrix": mat33, "right": vec3 }), &["matrix", "right"]),
+            tagged_probe_input("mat22", &json!({ "matrix": mat22 }), &["matrix"]),
+            tagged_probe_input("mat33", &json!({ "matrix": mat33 }), &["matrix"]),
+            tagged_probe_input("rotation", &json!({ "angle_bits": float }), &["angle_bits"]),
+            tagged_probe_input("transform", &json!({ "left": transform, "right": transform, "point": vec2 }), &["left", "right", "point"]),
+            tagged_probe_input("sweep_transform", &json!({ "sweep": sweep, "fraction_bits": float }), &["sweep", "fraction_bits"]),
+            tagged_probe_input("sweep_advance", &json!({ "sweep": sweep, "fractions_bits": { "items": float, "maxItems": 32, "minItems": 1, "type": "array" } }), &["sweep", "fractions_bits"]),
+            tagged_probe_input("sweep", &json!({ "sweep": sweep }), &["sweep"]),
+            tagged_probe_input("cancellation", &json!({ "large_bits": float, "opposite_bits": float, "tail_bits": float }), &["large_bits", "opposite_bits", "tail_bits"]),
+            tagged_probe_input("halfway_rounding", &json!({ "even_bits": float, "odd_bits": float, "half_ulp_bits": float }), &["even_bits", "odd_bits", "half_ulp_bits"]),
+            tagged_probe_input("scale", &json!({ "value_bits": float, "factor_bits": float }), &["value_bits", "factor_bits"]),
+            tagged_probe_input("fma_witness", &json!({ "a_bits": float, "b_bits": float, "c_bits": float }), &["a_bits", "b_bits", "c_bits"])
+        ]
+    })
+}
+
+fn math_probe_definitions() -> Value {
+    json!({
+        "mat22_bits": mat22_bits_schema(),
+        "mat33_bits": mat33_bits_schema(),
+        "math_probe_horizon": math_probe_horizon_schema(),
+        "sweep_bits": sweep_bits_schema(),
+        "transform_bits": transform_bits_schema(),
+        "vec2_bits": vec2_bits_schema(),
+        "vec3_bits": vec3_bits_schema()
+    })
+}
+
+fn schema_ref(name: &str) -> Value {
+    json!({ "$ref": format!("#/$defs/{name}") })
+}
+
+fn tagged_probe_input(kind: &str, fields: &Value, required: &[&str]) -> Value {
+    let mut properties = fields
+        .as_object()
+        .expect("probe input fields are always JSON objects")
+        .clone();
+    properties.insert("kind".to_owned(), json!({ "const": kind }));
+    let mut required_fields = vec!["kind"];
+    required_fields.extend_from_slice(required);
+    closed_record(&Value::Object(properties), &required_fields)
+}
+
+fn vec2_bits_schema() -> Value {
+    closed_record(
+        &json!({ "x_bits": float_bits_schema(), "y_bits": float_bits_schema() }),
+        &["x_bits", "y_bits"],
+    )
+}
+
+fn vec3_bits_schema() -> Value {
+    closed_record(
+        &json!({ "x_bits": float_bits_schema(), "y_bits": float_bits_schema(), "z_bits": float_bits_schema() }),
+        &["x_bits", "y_bits", "z_bits"],
+    )
+}
+
+fn mat22_bits_schema() -> Value {
+    closed_record(
+        &json!({ "first": schema_ref("vec2_bits"), "second": schema_ref("vec2_bits") }),
+        &["first", "second"],
+    )
+}
+
+fn mat33_bits_schema() -> Value {
+    closed_record(
+        &json!({ "first": schema_ref("vec3_bits"), "second": schema_ref("vec3_bits"), "third": schema_ref("vec3_bits") }),
+        &["first", "second", "third"],
+    )
+}
+
+fn transform_bits_schema() -> Value {
+    closed_record(
+        &json!({ "position": schema_ref("vec2_bits"), "angle_bits": float_bits_schema() }),
+        &["position", "angle_bits"],
+    )
+}
+
+fn sweep_bits_schema() -> Value {
+    closed_record(
+        &json!({
+            "local_center": schema_ref("vec2_bits"),
+            "initial_center": schema_ref("vec2_bits"),
+            "center": schema_ref("vec2_bits"),
+            "initial_angle_bits": float_bits_schema(),
+            "angle_bits": float_bits_schema(),
+            "initial_fraction_bits": float_bits_schema()
+        }),
+        &[
+            "local_center",
+            "initial_center",
+            "center",
+            "initial_angle_bits",
+            "angle_bits",
+            "initial_fraction_bits",
+        ],
+    )
 }
 
 fn render_json_schema(document: &Value) -> String {

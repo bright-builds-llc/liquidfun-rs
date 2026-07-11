@@ -168,6 +168,114 @@ fn replay_and_minimize_pass_only_named_scenario_arguments() -> TestResult {
 }
 
 #[test]
+fn math_probe_compare_and_replay_pass_only_reviewed_arguments() -> TestResult {
+    // Arrange
+    for action in ["compare", "replay"] {
+        let fixture = RepositoryFixture::new()?;
+        let mut command = fixture.command()?;
+        let arguments = [
+            "differential",
+            action,
+            "--scenario",
+            "math-probes",
+            "--preset",
+            "oracle-release",
+            "--session-profile",
+            "one-shot",
+        ];
+        command.args(arguments);
+
+        // Act
+        let output = command.output()?;
+
+        // Assert
+        assert!(output.status.success(), "{}", stderr(&output));
+        assert_eq!(fixture.differential_arguments()?, &arguments[1..]);
+        fixture.cleanup()?;
+    }
+    Ok(())
+}
+
+#[test]
+fn math_probe_determinism_accepts_only_two_reviewed_runs() -> TestResult {
+    // Arrange
+    let fixture = RepositoryFixture::new()?;
+    let mut command = fixture.command()?;
+    command.args([
+        "differential",
+        "verify-determinism",
+        "--scenario",
+        "math-probes",
+        "--preset",
+        "oracle-debug",
+        "--runs",
+        "2",
+    ]);
+
+    // Act
+    let output = command.output()?;
+
+    // Assert
+    assert!(output.status.success(), "{}", stderr(&output));
+    assert_eq!(
+        fixture.differential_arguments()?,
+        [
+            "verify-determinism",
+            "--scenario",
+            "math-probes",
+            "--preset",
+            "oracle-debug",
+            "--runs",
+            "2",
+        ]
+    );
+    fixture.cleanup()?;
+    Ok(())
+}
+
+#[test]
+fn math_probe_commands_reject_unreviewed_profiles_and_run_counts() -> TestResult {
+    // Arrange
+    let cases = [
+        vec![
+            "differential",
+            "compare",
+            "--scenario",
+            "math-probes",
+            "--preset",
+            "oracle-debug",
+            "--session-profile",
+            "reuse",
+        ],
+        vec![
+            "differential",
+            "verify-determinism",
+            "--scenario",
+            "math-probes",
+            "--preset",
+            "oracle-debug",
+            "--runs",
+            "3",
+        ],
+    ];
+
+    for arguments in cases {
+        let fixture = RepositoryFixture::new()?;
+        let mut command = fixture.command()?;
+        command.args(arguments);
+
+        // Act
+        let output = command.output()?;
+
+        // Assert
+        assert_failure_category(&output, "differential/usage");
+        assert!(!fixture.differential_marker.exists());
+        fixture.cleanup()?;
+    }
+    Ok(())
+}
+
+#[test]
 fn fixture_stage_passes_only_lifecycle_metadata() -> TestResult {
     // Arrange
     let fixture = RepositoryFixture::new()?;

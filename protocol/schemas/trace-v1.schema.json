@@ -268,6 +268,215 @@
         "identity_sha256"
       ],
       "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "case_id": {
+          "maxLength": 128,
+          "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+          "type": "string"
+        },
+        "discrete": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "field": {
+                "enum": [
+                  "predicate",
+                  "non_zero_determinant",
+                  "normalized",
+                  "advanced"
+                ]
+              },
+              "value": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "field",
+              "value"
+            ],
+            "type": "object"
+          },
+          "maxItems": 16,
+          "type": "array"
+        },
+        "horizon": {
+          "oneOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "operation"
+                }
+              },
+              "required": [
+                "kind"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "scenario_steps"
+                },
+                "steps": {
+                  "maximum": 32,
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "kind",
+                "steps"
+              ],
+              "type": "object"
+            }
+          ]
+        },
+        "operation": {
+          "enum": [
+            "is_valid",
+            "abs",
+            "min",
+            "max",
+            "clamp",
+            "inv_sqrt",
+            "vec_length",
+            "vec_normalize",
+            "dot",
+            "cross",
+            "mat22_solve",
+            "mat33_solve",
+            "mat22_inverse",
+            "mat33_sym_inverse",
+            "rotation",
+            "transform",
+            "sweep_transform",
+            "sweep_advance",
+            "sweep_normalize",
+            "cancellation",
+            "halfway_rounding",
+            "overflow",
+            "underflow",
+            "fma_witness"
+          ]
+        },
+        "policy_path": {
+          "enum": [
+            "math.branch.is_valid",
+            "math.composite.transform",
+            "math.constants.pi",
+            "math.kernel.rotation",
+            "math.kernel.vector_length"
+          ]
+        },
+        "values": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "bits": {
+                "maximum": 4294967295,
+                "minimum": 0,
+                "type": "integer"
+              },
+              "class": {
+                "enum": [
+                  "zero",
+                  "subnormal",
+                  "normal",
+                  "infinite",
+                  "nan"
+                ]
+              },
+              "field": {
+                "enum": [
+                  "value",
+                  "x",
+                  "y",
+                  "z",
+                  "length",
+                  "sine",
+                  "cosine",
+                  "position_x",
+                  "position_y",
+                  "angle",
+                  "initial_center_x",
+                  "initial_center_y",
+                  "initial_angle",
+                  "initial_fraction",
+                  "left_associated",
+                  "right_associated",
+                  "even_midpoint",
+                  "odd_midpoint"
+                ]
+              },
+              "negative": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "field",
+              "bits",
+              "class",
+              "negative"
+            ],
+            "type": "object"
+          },
+          "maxItems": 64,
+          "type": "array"
+        }
+      },
+      "required": [
+        "case_id",
+        "operation",
+        "policy_path",
+        "horizon",
+        "values",
+        "discrete"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "protocol_version": {
+          "const": 1,
+          "type": "integer"
+        },
+        "record_kind": {
+          "const": "math_probe_end"
+        },
+        "request_id": {
+          "maxLength": 128,
+          "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+          "type": "string"
+        },
+        "reset_epoch": {
+          "maximum": 18446744073709551615,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "reset_verified": {
+          "const": true
+        },
+        "result_count": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "protocol_version",
+        "record_kind",
+        "request_id",
+        "result_count",
+        "reset_epoch",
+        "reset_verified"
+      ],
+      "type": "object"
     }
   ],
   "title": "liquidfun-rs trace presentation version 1",

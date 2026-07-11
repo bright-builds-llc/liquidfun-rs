@@ -291,7 +291,7 @@ fn fixtures_empty_checkpoint_phase_matches_schema_and_runtime_rejection() {
     // Assert
     assert_eq!(record["scenario"]["checkpoints"][0]["phase"], "");
     assert_eq!(
-        schema["properties"]["checkpoints"]["items"]["properties"]["phase"]["minLength"],
+        schema["oneOf"][0]["properties"]["checkpoints"]["items"]["properties"]["phase"]["minLength"],
         1
     );
     assert_eq!(

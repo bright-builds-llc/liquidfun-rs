@@ -39,6 +39,18 @@ differential-reuse:
 differential-replay:
     cargo xtask differential replay --scenario empty-world --preset oracle-debug --session-profile one-shot
 
+math-probes-debug:
+    cargo xtask differential compare --scenario math-probes --preset oracle-debug --session-profile one-shot
+
+math-probes-release:
+    cargo xtask differential compare --scenario math-probes --preset oracle-release --session-profile one-shot
+
+math-probes-replay:
+    cargo xtask differential replay --scenario math-probes --preset oracle-debug --session-profile one-shot
+
+math-probes-determinism:
+    cargo xtask differential verify-determinism --scenario math-probes --preset oracle-debug --runs 2
+
 differential-minimize:
     cargo xtask differential minimize --scenario empty-world --preset oracle-debug --session-profile one-shot
 

@@ -1,181 +1,895 @@
 {
-  "$id": "https://liquidfun-rs.invalid/protocol/schemas/scenario-v1.schema.json",
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "additionalProperties": false,
-  "description": "Deterministic presentation only. Typed Rust and C++ validation remains authoritative for cross-field references, uniqueness, ordering, hashes, and aggregate limits.",
-  "properties": {
-    "checkpoints": {
-      "items": {
-        "additionalProperties": false,
-        "properties": {
-          "after_command_id": {
-            "maxLength": 128,
-            "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
-            "type": "string"
-          },
-          "checkpoint_id": {
-            "maxLength": 128,
-            "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
-            "type": "string"
-          },
-          "observables": {
-            "items": {
-              "enum": [
-                "world_counts",
-                "simulation_time"
-              ]
-            },
-            "maxItems": 128,
-            "type": "array"
-          },
-          "phase": {
-            "maxLength": 4096,
-            "minLength": 1,
-            "type": "string"
-          }
+  "$defs": {
+    "mat22_bits": {
+      "additionalProperties": false,
+      "properties": {
+        "first": {
+          "$ref": "#/$defs/vec2_bits"
         },
-        "required": [
-          "checkpoint_id",
-          "after_command_id",
-          "phase",
-          "observables"
-        ],
-        "type": "object"
+        "second": {
+          "$ref": "#/$defs/vec2_bits"
+        }
       },
-      "maxItems": 4096,
-      "type": "array"
+      "required": [
+        "first",
+        "second"
+      ],
+      "type": "object"
     },
-    "commands": {
-      "items": {
-        "additionalProperties": false,
-        "properties": {
-          "command_id": {
-            "maxLength": 128,
-            "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
-            "type": "string"
-          },
-          "kind": {
-            "const": "step"
-          },
-          "particle_iterations": {
-            "maximum": 255,
-            "minimum": 1,
-            "type": "integer"
-          },
-          "position_iterations": {
-            "maximum": 255,
-            "minimum": 1,
-            "type": "integer"
-          },
-          "timestep_bits": {
-            "maximum": 4294967295,
-            "minimum": 0,
-            "type": "integer"
-          },
-          "velocity_iterations": {
-            "maximum": 255,
-            "minimum": 1,
-            "type": "integer"
-          }
+    "mat33_bits": {
+      "additionalProperties": false,
+      "properties": {
+        "first": {
+          "$ref": "#/$defs/vec3_bits"
         },
-        "required": [
-          "kind",
-          "command_id",
-          "timestep_bits",
-          "velocity_iterations",
-          "position_iterations",
-          "particle_iterations"
-        ],
-        "type": "object"
+        "second": {
+          "$ref": "#/$defs/vec3_bits"
+        },
+        "third": {
+          "$ref": "#/$defs/vec3_bits"
+        }
       },
-      "maxItems": 4096,
-      "minItems": 1,
-      "type": "array"
+      "required": [
+        "first",
+        "second",
+        "third"
+      ],
+      "type": "object"
     },
-    "entities": {
-      "items": false,
-      "maxItems": 0,
-      "type": "array"
-    },
-    "gravity_x_bits": {
-      "maximum": 4294967295,
-      "minimum": 0,
-      "type": "integer"
-    },
-    "gravity_y_bits": {
-      "maximum": 4294967295,
-      "minimum": 0,
-      "type": "integer"
-    },
-    "scenario_id": {
-      "maxLength": 128,
-      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
-      "type": "string"
-    },
-    "source": {
+    "math_probe_horizon": {
       "oneOf": [
         {
           "additionalProperties": false,
           "properties": {
             "kind": {
-              "const": "named"
-            },
-            "name": {
-              "maxLength": 4096,
-              "minLength": 1,
-              "type": "string"
+              "const": "operation"
             }
           },
           "required": [
-            "kind",
-            "name"
+            "kind"
           ],
           "type": "object"
         },
         {
           "additionalProperties": false,
           "properties": {
-            "generator_id": {
-              "maxLength": 4096,
-              "minLength": 1,
-              "type": "string"
-            },
-            "generator_version": {
-              "maximum": 4294967295,
-              "minimum": 1,
-              "type": "integer"
-            },
             "kind": {
-              "const": "seeded"
+              "const": "scenario_steps"
             },
-            "seed": {
-              "maximum": 18446744073709551615,
-              "minimum": 0,
+            "steps": {
+              "maximum": 32,
+              "minimum": 1,
               "type": "integer"
             }
           },
           "required": [
             "kind",
-            "generator_id",
-            "generator_version",
-            "seed"
+            "steps"
           ],
           "type": "object"
         }
       ]
+    },
+    "sweep_bits": {
+      "additionalProperties": false,
+      "properties": {
+        "angle_bits": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "center": {
+          "$ref": "#/$defs/vec2_bits"
+        },
+        "initial_angle_bits": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "initial_center": {
+          "$ref": "#/$defs/vec2_bits"
+        },
+        "initial_fraction_bits": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "local_center": {
+          "$ref": "#/$defs/vec2_bits"
+        }
+      },
+      "required": [
+        "local_center",
+        "initial_center",
+        "center",
+        "initial_angle_bits",
+        "angle_bits",
+        "initial_fraction_bits"
+      ],
+      "type": "object"
+    },
+    "transform_bits": {
+      "additionalProperties": false,
+      "properties": {
+        "angle_bits": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "position": {
+          "$ref": "#/$defs/vec2_bits"
+        }
+      },
+      "required": [
+        "position",
+        "angle_bits"
+      ],
+      "type": "object"
+    },
+    "vec2_bits": {
+      "additionalProperties": false,
+      "properties": {
+        "x_bits": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "y_bits": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "x_bits",
+        "y_bits"
+      ],
+      "type": "object"
+    },
+    "vec3_bits": {
+      "additionalProperties": false,
+      "properties": {
+        "x_bits": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "y_bits": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "z_bits": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "x_bits",
+        "y_bits",
+        "z_bits"
+      ],
+      "type": "object"
     }
   },
-  "required": [
-    "scenario_id",
-    "source",
-    "gravity_x_bits",
-    "gravity_y_bits",
-    "entities",
-    "commands",
-    "checkpoints"
+  "$id": "https://liquidfun-rs.invalid/protocol/schemas/scenario-v1.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Deterministic presentation only. Typed Rust and C++ validation remains authoritative for cross-field references, uniqueness, ordering, hashes, and aggregate limits.",
+  "oneOf": [
+    {
+      "additionalProperties": false,
+      "properties": {
+        "checkpoints": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "after_command_id": {
+                "maxLength": 128,
+                "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                "type": "string"
+              },
+              "checkpoint_id": {
+                "maxLength": 128,
+                "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                "type": "string"
+              },
+              "observables": {
+                "items": {
+                  "enum": [
+                    "world_counts",
+                    "simulation_time"
+                  ]
+                },
+                "maxItems": 128,
+                "type": "array"
+              },
+              "phase": {
+                "maxLength": 4096,
+                "minLength": 1,
+                "type": "string"
+              }
+            },
+            "required": [
+              "checkpoint_id",
+              "after_command_id",
+              "phase",
+              "observables"
+            ],
+            "type": "object"
+          },
+          "maxItems": 4096,
+          "type": "array"
+        },
+        "commands": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "command_id": {
+                "maxLength": 128,
+                "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                "type": "string"
+              },
+              "kind": {
+                "const": "step"
+              },
+              "particle_iterations": {
+                "maximum": 255,
+                "minimum": 1,
+                "type": "integer"
+              },
+              "position_iterations": {
+                "maximum": 255,
+                "minimum": 1,
+                "type": "integer"
+              },
+              "timestep_bits": {
+                "maximum": 4294967295,
+                "minimum": 0,
+                "type": "integer"
+              },
+              "velocity_iterations": {
+                "maximum": 255,
+                "minimum": 1,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "kind",
+              "command_id",
+              "timestep_bits",
+              "velocity_iterations",
+              "position_iterations",
+              "particle_iterations"
+            ],
+            "type": "object"
+          },
+          "maxItems": 4096,
+          "minItems": 1,
+          "type": "array"
+        },
+        "entities": {
+          "items": false,
+          "maxItems": 0,
+          "type": "array"
+        },
+        "gravity_x_bits": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "gravity_y_bits": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "scenario_id": {
+          "maxLength": 128,
+          "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+          "type": "string"
+        },
+        "source": {
+          "oneOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "named"
+                },
+                "name": {
+                  "maxLength": 4096,
+                  "minLength": 1,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kind",
+                "name"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "generator_id": {
+                  "maxLength": 4096,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "generator_version": {
+                  "maximum": 4294967295,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "kind": {
+                  "const": "seeded"
+                },
+                "seed": {
+                  "maximum": 18446744073709551615,
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "kind",
+                "generator_id",
+                "generator_version",
+                "seed"
+              ],
+              "type": "object"
+            }
+          ]
+        }
+      },
+      "required": [
+        "scenario_id",
+        "source",
+        "gravity_x_bits",
+        "gravity_y_bits",
+        "entities",
+        "commands",
+        "checkpoints"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "cases": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "case_id": {
+                "maxLength": 128,
+                "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                "type": "string"
+              },
+              "horizon": {
+                "$ref": "#/$defs/math_probe_horizon"
+              },
+              "input": {
+                "oneOf": [
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "const": "scalar"
+                      },
+                      "value_bits": {
+                        "maximum": 4294967295,
+                        "minimum": 0,
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "value_bits"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "a_bits": {
+                        "maximum": 4294967295,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "b_bits": {
+                        "maximum": 4294967295,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "kind": {
+                        "const": "binary"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "a_bits",
+                      "b_bits"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "high_bits": {
+                        "maximum": 4294967295,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "kind": {
+                        "const": "clamp"
+                      },
+                      "low_bits": {
+                        "maximum": 4294967295,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "value_bits": {
+                        "maximum": 4294967295,
+                        "minimum": 0,
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "value_bits",
+                      "low_bits",
+                      "high_bits"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "const": "vector2"
+                      },
+                      "vector": {
+                        "$ref": "#/$defs/vec2_bits"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "vector"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "a": {
+                        "$ref": "#/$defs/vec2_bits"
+                      },
+                      "b": {
+                        "$ref": "#/$defs/vec2_bits"
+                      },
+                      "kind": {
+                        "const": "vector_pair"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "a",
+                      "b"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "const": "mat22_solve"
+                      },
+                      "matrix": {
+                        "$ref": "#/$defs/mat22_bits"
+                      },
+                      "right": {
+                        "$ref": "#/$defs/vec2_bits"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "matrix",
+                      "right"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "const": "mat33_solve"
+                      },
+                      "matrix": {
+                        "$ref": "#/$defs/mat33_bits"
+                      },
+                      "right": {
+                        "$ref": "#/$defs/vec3_bits"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "matrix",
+                      "right"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "const": "mat22"
+                      },
+                      "matrix": {
+                        "$ref": "#/$defs/mat22_bits"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "matrix"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "const": "mat33"
+                      },
+                      "matrix": {
+                        "$ref": "#/$defs/mat33_bits"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "matrix"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "angle_bits": {
+                        "maximum": 4294967295,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "kind": {
+                        "const": "rotation"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "angle_bits"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "const": "transform"
+                      },
+                      "left": {
+                        "$ref": "#/$defs/transform_bits"
+                      },
+                      "point": {
+                        "$ref": "#/$defs/vec2_bits"
+                      },
+                      "right": {
+                        "$ref": "#/$defs/transform_bits"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "left",
+                      "right",
+                      "point"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "fraction_bits": {
+                        "maximum": 4294967295,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "kind": {
+                        "const": "sweep_transform"
+                      },
+                      "sweep": {
+                        "$ref": "#/$defs/sweep_bits"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "sweep",
+                      "fraction_bits"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "fractions_bits": {
+                        "items": {
+                          "maximum": 4294967295,
+                          "minimum": 0,
+                          "type": "integer"
+                        },
+                        "maxItems": 32,
+                        "minItems": 1,
+                        "type": "array"
+                      },
+                      "kind": {
+                        "const": "sweep_advance"
+                      },
+                      "sweep": {
+                        "$ref": "#/$defs/sweep_bits"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "sweep",
+                      "fractions_bits"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "const": "sweep"
+                      },
+                      "sweep": {
+                        "$ref": "#/$defs/sweep_bits"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "sweep"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "const": "cancellation"
+                      },
+                      "large_bits": {
+                        "maximum": 4294967295,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "opposite_bits": {
+                        "maximum": 4294967295,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "tail_bits": {
+                        "maximum": 4294967295,
+                        "minimum": 0,
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "large_bits",
+                      "opposite_bits",
+                      "tail_bits"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "even_bits": {
+                        "maximum": 4294967295,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "half_ulp_bits": {
+                        "maximum": 4294967295,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "kind": {
+                        "const": "halfway_rounding"
+                      },
+                      "odd_bits": {
+                        "maximum": 4294967295,
+                        "minimum": 0,
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "even_bits",
+                      "odd_bits",
+                      "half_ulp_bits"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "factor_bits": {
+                        "maximum": 4294967295,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "kind": {
+                        "const": "scale"
+                      },
+                      "value_bits": {
+                        "maximum": 4294967295,
+                        "minimum": 0,
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "value_bits",
+                      "factor_bits"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "a_bits": {
+                        "maximum": 4294967295,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "b_bits": {
+                        "maximum": 4294967295,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "c_bits": {
+                        "maximum": 4294967295,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "kind": {
+                        "const": "fma_witness"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "a_bits",
+                      "b_bits",
+                      "c_bits"
+                    ],
+                    "type": "object"
+                  }
+                ]
+              },
+              "operation": {
+                "enum": [
+                  "is_valid",
+                  "abs",
+                  "min",
+                  "max",
+                  "clamp",
+                  "inv_sqrt",
+                  "vec_length",
+                  "vec_normalize",
+                  "dot",
+                  "cross",
+                  "mat22_solve",
+                  "mat33_solve",
+                  "mat22_inverse",
+                  "mat33_sym_inverse",
+                  "rotation",
+                  "transform",
+                  "sweep_transform",
+                  "sweep_advance",
+                  "sweep_normalize",
+                  "cancellation",
+                  "halfway_rounding",
+                  "overflow",
+                  "underflow",
+                  "fma_witness"
+                ]
+              },
+              "policy_path": {
+                "enum": [
+                  "math.branch.is_valid",
+                  "math.composite.transform",
+                  "math.constants.pi",
+                  "math.kernel.rotation",
+                  "math.kernel.vector_length"
+                ]
+              }
+            },
+            "required": [
+              "case_id",
+              "operation",
+              "policy_path",
+              "horizon",
+              "input"
+            ],
+            "type": "object"
+          },
+          "maxItems": 256,
+          "minItems": 1,
+          "type": "array"
+        },
+        "scenario_id": {
+          "maxLength": 128,
+          "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+          "type": "string"
+        },
+        "source": {
+          "oneOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "named"
+                },
+                "name": {
+                  "maxLength": 4096,
+                  "minLength": 1,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kind",
+                "name"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "generator_id": {
+                  "maxLength": 4096,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "generator_version": {
+                  "maximum": 4294967295,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "kind": {
+                  "const": "seeded"
+                },
+                "seed": {
+                  "maximum": 18446744073709551615,
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "kind",
+                "generator_id",
+                "generator_version",
+                "seed"
+              ],
+              "type": "object"
+            }
+          ]
+        }
+      },
+      "required": [
+        "scenario_id",
+        "source",
+        "cases"
+      ],
+      "type": "object"
+    }
   ],
   "title": "liquidfun-rs scenario presentation version 1",
-  "type": "object",
   "x-version-axes": {
     "scenario_schema_version": 1
   }

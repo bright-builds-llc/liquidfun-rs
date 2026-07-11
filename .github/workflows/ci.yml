@@ -103,6 +103,10 @@ jobs:
         run: cargo build -p liquidfun
       - name: Test default features
         run: cargo test -p liquidfun
+      - name: Test public math contracts and numerical policy
+        run: |
+          cargo test -p liquidfun --all-features math
+          cargo test -p liquidfun-test-protocol --all-features phase4
 
   msrv:
     name: Rust 1.92 MSRV
