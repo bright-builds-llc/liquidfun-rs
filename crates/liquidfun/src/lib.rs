@@ -9,6 +9,7 @@ mod arena;
 mod association;
 mod error;
 mod identity;
+mod particle;
 mod world;
 
 pub use association::{AssociationId, AssociationMap};
