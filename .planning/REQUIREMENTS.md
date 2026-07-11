@@ -55,7 +55,7 @@ Requirements for the first release permitted to claim complete parity with the s
 - [ ] **COLL-05**: Broad-phase pair generation, contact creation, contact persistence, filtering, and refiltering match the selected upstream behavior.
 - [ ] **COLL-06**: Time-of-impact and continuous-collision kernels handle supported shape sweeps and edge cases within documented numerical policies.
 - [ ] **COLL-07**: Math and collision behavior has focused unit/property tests and pure differential probes before world-level solvers depend on it.
-- [ ] **COLL-08**: Numerical policy explicitly defines compiler/feature assumptions, NaN and signed-zero treatment, determinism tiers, per-observable tolerances, and divergence horizons.
+- [x] **COLL-08**: Numerical policy explicitly defines compiler/feature assumptions, NaN and signed-zero treatment, determinism tiers, per-observable tolerances, and divergence horizons.
 
 ### Rigid-Body Dynamics
 
@@ -231,7 +231,7 @@ Roadmap creation maps every v1 requirement to exactly one phase.
 | COLL-05 | Phase 5 | Pending |
 | COLL-06 | Phase 5 | Pending |
 | COLL-07 | Phase 5 | Pending |
-| COLL-08 | Phase 4 | Pending |
+| COLL-08 | Phase 4 | Complete |
 | RIGD-01 | Phase 6 | Pending |
 | RIGD-02 | Phase 6 | Pending |
 | RIGD-03 | Phase 7 | Pending |
