@@ -138,10 +138,13 @@ All object destruction is centralized in `World`, validates the root before
 mutation, updates both sides of adjacency, invalidates each affected handle,
 and returns owned semantic records. Body cascades emit attached joints, then
 fixtures, then the body. Particle-system cascades emit groups, then particles,
-then the system. Creation/occurrence order is preserved within each category.
-Owned snapshots capture the required pre-invalidation adjacency, owner, group,
-and diagnostic state and remain usable after slot reuse. Direct group
-destruction clears membership without destroying its particles.
+then the system. Body joint and fixture adjacency is prepended on creation so
+records, snapshots, and association cleanup preserve the pinned upstream
+newest-first list order within those categories. Particle-system categories
+preserve creation/occurrence order. Owned snapshots capture the required
+pre-invalidation adjacency, owner, group, and diagnostic state and remain usable
+after slot reuse. Direct group destruction clears membership without destroying
+its particles.
 
 ## Transient contacts, restricted hooks, and step order
 
@@ -228,7 +231,7 @@ not dictate `World`, handle, callback, or particle layout.
 | D-03 | Implemented: typed signatures reject wrong kinds; runtime lookup distinguishes foreign from stale identities. | crate compile-fail doctest; `tests/object_model.rs` stale/reuse and cross-world tests |
 | D-04 | Implemented: complete identity controls equality/hash while constructors, coordinates, serialization, and ordering stay private. | `identity.rs` equality/debug tests; crate raw-parts compile-fail doctest |
 | D-05 | Implemented: handles use auto traits only and production forbids unsafe code. | `identity.rs::tests::handles_are_send_and_sync_through_auto_traits`; `lib.rs` crate lint |
-| D-06 | Implemented for the Phase-3 object graph: centralized cascades preserve documented order and owned snapshots. | `world/object.rs`; `tests/object_model.rs::body_destruction_returns_owned_ordered_cascade_evidence` |
+| D-06 | Implemented for the Phase-3 object graph: centralized cascades preserve pinned upstream newest-first body adjacency order and owned snapshots. | `world/object.rs`; `tests/object_model.rs::body_destruction_returns_owned_ordered_cascade_evidence`; `tests/object_model.rs::typed_association_cleanup_follows_destruction_records` |
 | D-07 | Implemented: contacts are borrow-scoped views or owned snapshots/events with no durable handle. | `world/step.rs` contact-view compile-fail doctest; `tests/hook_contract.rs` |
 | D-08 | Implemented for representative hooks: read-only views return narrow filter/pre-solve directives and optional typed commands. | `world/step.rs` hook-signature compile-fail doctest; owned-directive integration test |
 | D-09 | Implemented: owned reports preserve event occurrence order and multiplicity without deduplication. | `tests/hook_contract.rs::owned_events_preserve_hook_order_multiplicity_and_directives` |

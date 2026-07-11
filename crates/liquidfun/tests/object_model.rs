@@ -73,7 +73,10 @@ fn body_destruction_returns_owned_ordered_cascade_evidence() {
     let survivor = world.create_body().expect("body should fit");
     let first_fixture = world.create_fixture(root).expect("fixture should fit");
     let second_fixture = world.create_fixture(root).expect("fixture should fit");
-    let joint = world
+    let first_joint = world
+        .create_joint(root, survivor)
+        .expect("joint should fit");
+    let second_joint = world
         .create_joint(root, survivor)
         .expect("joint should fit");
 
@@ -87,16 +90,18 @@ fn body_destruction_returns_owned_ordered_cascade_evidence() {
             .map(liquidfun::DestructionRecord::destroyed)
             .collect::<Vec<_>>(),
         vec![
-            DestroyedId::Joint(joint),
-            DestroyedId::Fixture(first_fixture),
+            DestroyedId::Joint(second_joint),
+            DestroyedId::Joint(first_joint),
             DestroyedId::Fixture(second_fixture),
+            DestroyedId::Fixture(first_fixture),
             DestroyedId::Body(root),
         ]
     );
     assert!(matches!(
         records.last().map(liquidfun::DestructionRecord::snapshot),
         Some(ObjectSnapshot::Body { fixtures, joints })
-            if fixtures == &[first_fixture, second_fixture] && joints == &[joint]
+            if fixtures == &[second_fixture, first_fixture]
+                && joints == &[second_joint, first_joint]
     ));
     assert_eq!(
         records.last().map(liquidfun::DestructionRecord::cause),
@@ -110,20 +115,36 @@ fn typed_association_cleanup_follows_destruction_records() {
     // Arrange
     let mut world = test_world();
     let body = world.create_body().expect("body should fit");
-    let fixture = world.create_fixture(body).expect("fixture should fit");
+    let survivor = world.create_body().expect("body should fit");
+    let first_fixture = world.create_fixture(body).expect("fixture should fit");
+    let second_fixture = world.create_fixture(body).expect("fixture should fit");
+    let first_joint = world
+        .create_joint(body, survivor)
+        .expect("joint should fit");
+    let second_joint = world
+        .create_joint(body, survivor)
+        .expect("joint should fit");
     let mut body_names = AssociationMap::new();
     let mut fixture_names = AssociationMap::new();
+    let mut joint_names = AssociationMap::new();
     body_names.insert(body, "body");
-    fixture_names.insert(fixture, "fixture");
+    fixture_names.insert(first_fixture, "first fixture");
+    fixture_names.insert(second_fixture, "second fixture");
+    joint_names.insert(first_joint, "first joint");
+    joint_names.insert(second_joint, "second joint");
     let records = world.destroy_body(body).expect("body should be live");
 
     // Act
+    let removed_joints = joint_names.cleanup(&records);
     let removed_fixtures = fixture_names.cleanup(&records);
     let removed_bodies = body_names.cleanup(&records);
 
     // Assert
-    assert_eq!(removed_fixtures, vec!["fixture"]);
+    assert_eq!(removed_joints, vec!["second joint", "first joint"]);
+    assert_eq!(removed_fixtures, vec!["second fixture", "first fixture"]);
     assert_eq!(removed_bodies, vec!["body"]);
+    assert!(joint_names.is_empty());
     assert!(fixture_names.is_empty());
     assert!(body_names.is_empty());
+    assert!(world.contains_body(survivor));
 }

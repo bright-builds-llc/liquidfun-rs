@@ -218,7 +218,8 @@ impl DestructionRecord {
 /// This type intentionally contains no stepping, collision, or solver behavior. Destruction is
 /// transactional with respect to public input: the root handle is validated before any mutation.
 /// Body cascades emit joints, then fixtures, then the body. Particle-system cascades emit groups,
-/// then particles, then the system. Within each category, creation/occurrence order is preserved.
+/// then particles, then the system. Body fixture and joint categories use the pinned upstream
+/// newest-first list order; particle-system categories preserve creation/occurrence order.
 pub struct World {
     bodies: Arena<Body, BodyId>,
     fixtures: Arena<Fixture, FixtureId>,
@@ -288,7 +289,9 @@ impl World {
             diagnostic_id,
             body,
         })?;
-        self.body_mut_after_validation(body).fixtures.push(fixture);
+        self.body_mut_after_validation(body)
+            .fixtures
+            .insert(0, fixture);
         Ok(fixture)
     }
 
@@ -310,9 +313,13 @@ impl World {
             diagnostic_id,
             bodies: [first, second],
         })?;
-        self.body_mut_after_validation(first).joints.push(joint);
+        self.body_mut_after_validation(first)
+            .joints
+            .insert(0, joint);
         if second != first {
-            self.body_mut_after_validation(second).joints.push(joint);
+            self.body_mut_after_validation(second)
+                .joints
+                .insert(0, joint);
         }
         Ok(joint)
     }
@@ -743,7 +750,10 @@ mod tests {
         let survivor = world.create_body().expect("body should fit");
         let first_fixture = world.create_fixture(root).expect("fixture should fit");
         let second_fixture = world.create_fixture(root).expect("fixture should fit");
-        let joint = world
+        let first_joint = world
+            .create_joint(root, survivor)
+            .expect("joint should fit");
+        let second_joint = world
             .create_joint(root, survivor)
             .expect("joint should fit");
 
@@ -757,14 +767,16 @@ mod tests {
                 .map(DestructionRecord::destroyed)
                 .collect::<Vec<_>>(),
             vec![
-                DestroyedId::Joint(joint),
-                DestroyedId::Fixture(first_fixture),
+                DestroyedId::Joint(second_joint),
+                DestroyedId::Joint(first_joint),
                 DestroyedId::Fixture(second_fixture),
+                DestroyedId::Fixture(first_fixture),
                 DestroyedId::Body(root),
             ]
         );
         assert!(!world.contains_body(root));
-        assert!(!world.contains_joint(joint));
+        assert!(!world.contains_joint(first_joint));
+        assert!(!world.contains_joint(second_joint));
         assert!(!world.contains_fixture(first_fixture));
         assert!(!world.contains_fixture(second_fixture));
         assert!(world.contains_body(survivor));
@@ -779,7 +791,8 @@ mod tests {
         assert!(matches!(
             records.last().map(DestructionRecord::snapshot),
             Some(ObjectSnapshot::Body { fixtures, joints })
-                if fixtures == &[first_fixture, second_fixture] && joints == &[joint]
+                if fixtures == &[second_fixture, first_fixture]
+                    && joints == &[second_joint, first_joint]
         ));
     }
 
