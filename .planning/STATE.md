@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: planning
-stopped_at: Phase 3 context gathered
-last_updated: "2026-07-11T01:31:23.564Z"
-last_activity: 2026-07-10
+status: executing
+stopped_at: Completed 03-01-PLAN.md
+last_updated: "2026-07-11T02:28:14.040Z"
+last_activity: 2026-07-11
 progress:
   total_phases: 12
   completed_phases: 2
-  total_plans: 19
-  completed_plans: 19
-  percent: 100
+  total_plans: 24
+  completed_plans: 20
+  percent: 83
 ---
 
 # Project State
@@ -25,10 +25,10 @@ See: `.planning/PROJECT.md` (updated 2026-07-10)
 
 ## Current Position
 
-Phase: 3
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-07-10
+Phase: 3 (Rust Object Model and Storage Architecture) — EXECUTING
+Plan: 2 of 5
+Status: Ready to execute
+Last activity: 2026-07-11
 
 Progress: [██████████] 100%
 
@@ -67,6 +67,7 @@ Progress: [██████████] 100%
 | Phase 02 P12 | 28 min | 1 tasks | 16 files |
 | Phase 02 P13 | 10 min | 1 tasks | 6 files |
 | Phase 02 P14 | 22 min | 2 tasks | 11 files |
+| Phase 03 P01 | 8 min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -112,6 +113,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 02]: Make the exact twelve-row TESTING.md layer table executable policy through a strict read-only xtask checker. — Required commands, prerequisites, artifacts, retry policy, placement, and semantic interpretation now fail closed instead of depending on prose review.
 - [Phase 02]: Keep Cargo CI submodule-free while canonical oracle CI alone owns real C++ round trips, sanitizer execution, and read-only evidence assertions. — The trust split preserves ordinary Cargo isolation and keeps exact tool and upstream prerequisites confined to the evidence lane.
 - [Phase 02]: Run the sanitizer profile as a bounded two-request reused session. — The scheduled command must prove both fail-fast sanitizer handling and adapter reset epochs 1 then 2 rather than duplicate one-shot coverage.
+- [Phase 03]: Use complete private world-key, slot, and u64 generation identity for every typed handle. — Complete identity prevents stale-slot and cross-world aliasing without exposing layout.
+- [Phase 03]: Use deterministic LIFO vacant-slot reuse with explicit ascending-slot iteration. — Allocation and traversal remain reproducible without hash iteration.
+- [Phase 03]: Permanently retire a slot when its generation cannot advance. — Generation wrap can never resurrect an ancient handle.
 
 ### Pending Todos
 
@@ -124,6 +128,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-11T01:31:23.561Z
-Stopped at: Phase 3 context gathered
-Resume file: .planning/phases/03-rust-object-model-and-storage-architecture/03-CONTEXT.md
+Last session: 2026-07-11T02:27:45.436Z
+Stopped at: Completed 03-01-PLAN.md
+Resume file: None

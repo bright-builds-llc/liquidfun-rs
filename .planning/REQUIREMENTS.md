@@ -33,8 +33,8 @@ Requirements for the first release permitted to claim complete parity with the s
 
 ### Safe Rust API
 
-- [ ] **API-01**: Rust consumers use distinct world-scoped typed handles for bodies, fixtures, joints, particle systems, particle groups, and stable particles instead of raw pointers.
-- [ ] **API-02**: Stale, destroyed, wrong-type, and cross-world handles fail explicitly and cannot silently resolve to a reused object slot.
+- [x] **API-01**: Rust consumers use distinct world-scoped typed handles for bodies, fixtures, joints, particle systems, particle groups, and stable particles instead of raw pointers.
+- [x] **API-02**: Stale, destroyed, wrong-type, and cross-world handles fail explicitly and cannot silently resolve to a reused object slot.
 - [ ] **API-03**: Object destruction performs documented upstream-equivalent cascades, invalidates affected handles, and returns or emits owned destruction information.
 - [ ] **API-04**: Contacts are exposed as borrow-scoped views or owned snapshots rather than durable handles to transient solver records.
 - [ ] **API-05**: Step hooks receive read-only views and narrow supported directives instead of unrestricted mutable world access.
@@ -212,8 +212,8 @@ Roadmap creation maps every v1 requirement to exactly one phase.
 | COMP-08 | Phase 2 | Complete |
 | COMP-09 | Phase 2 | Complete |
 | COMP-10 | Phase 12 | Pending |
-| API-01 | Phase 3 | Pending |
-| API-02 | Phase 3 | Pending |
+| API-01 | Phase 3 | Complete |
+| API-02 | Phase 3 | Complete |
 | API-03 | Phase 3 | Pending |
 | API-04 | Phase 3 | Pending |
 | API-05 | Phase 3 | Pending |
