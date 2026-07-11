@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 03-01-PLAN.md
-last_updated: "2026-07-11T02:28:14.040Z"
+stopped_at: Completed 03-02-PLAN.md
+last_updated: "2026-07-11T02:44:20.738Z"
 last_activity: 2026-07-11
 progress:
   total_phases: 12
   completed_phases: 2
   total_plans: 24
-  completed_plans: 20
-  percent: 83
+  completed_plans: 21
+  percent: 88
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-10)
 ## Current Position
 
 Phase: 3 (Rust Object Model and Storage Architecture) — EXECUTING
-Plan: 2 of 5
+Plan: 3 of 5
 Status: Ready to execute
 Last activity: 2026-07-11
 
@@ -68,6 +68,7 @@ Progress: [██████████] 100%
 | Phase 02 P13 | 10 min | 1 tasks | 6 files |
 | Phase 02 P14 | 22 min | 2 tasks | 11 files |
 | Phase 03 P01 | 8 min | 2 tasks | 4 files |
+| Phase 03 P02 | 14 min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -116,6 +117,8 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 03]: Use complete private world-key, slot, and u64 generation identity for every typed handle. — Complete identity prevents stale-slot and cross-world aliasing without exposing layout.
 - [Phase 03]: Use deterministic LIFO vacant-slot reuse with explicit ascending-slot iteration. — Allocation and traversal remain reproducible without hash iteration.
 - [Phase 03]: Permanently retire a slot when its generation cannot advance. — Generation wrap can never resurrect an ancient handle.
+- [Phase 03]: Centralize typed world destruction cascades in documented occurrence order. — Validate the root before mutation, keep adjacency consistent, and retain owned post-invalidation evidence.
+- [Phase 03]: Keep user associations in sealed application-owned typed side tables. — Avoid raw pointers, type erasure, and lifetime coupling while making cascade cleanup explicit.
 
 ### Pending Todos
 
@@ -128,6 +131,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-11T02:27:45.436Z
-Stopped at: Completed 03-01-PLAN.md
+Last session: 2026-07-11T02:44:16.618Z
+Stopped at: Completed 03-02-PLAN.md
 Resume file: None
