@@ -197,6 +197,57 @@ fn math_probe_compare_and_replay_pass_only_reviewed_arguments() -> TestResult {
 }
 
 #[test]
+fn collision_compare_replay_and_determinism_pass_only_reviewed_arguments() -> TestResult {
+    // Arrange
+    for action in ["compare", "replay"] {
+        let fixture = RepositoryFixture::new()?;
+        let mut command = fixture.command()?;
+        let arguments = [
+            "differential",
+            action,
+            "--scenario",
+            "collision-probes",
+            "--preset",
+            "oracle-release",
+            "--session-profile",
+            "one-shot",
+        ];
+        command.args(arguments);
+
+        // Act
+        let output = command.output()?;
+
+        // Assert
+        assert!(output.status.success(), "{}", stderr(&output));
+        assert_eq!(fixture.differential_arguments()?, &arguments[1..]);
+        fixture.cleanup()?;
+    }
+
+    let fixture = RepositoryFixture::new()?;
+    let mut command = fixture.command()?;
+    command.args([
+        "differential",
+        "verify-determinism",
+        "--scenario",
+        "collision-probes",
+        "--preset",
+        "oracle-debug",
+        "--runs",
+        "2",
+    ]);
+    let output = command.output()?;
+    assert!(output.status.success(), "{}", stderr(&output));
+    fixture.cleanup()?;
+    Ok(())
+}
+
+#[test]
+fn collision_compile_database_identity_is_covered_by_unit_digest_tests() {
+    // The unit digest fixtures name collision_probe.cpp explicitly and are run by this filter.
+    assert!(include_str!("../src/differential.rs").contains("collision_probe.cpp"));
+}
+
+#[test]
 fn math_probe_determinism_accepts_only_two_reviewed_runs() -> TestResult {
     // Arrange
     let fixture = RepositoryFixture::new()?;

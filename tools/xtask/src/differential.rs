@@ -8,15 +8,17 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use liquidfun_differential::{
-    EmptyWorldAdapter, NativeMathProbeExecutor, OracleExecutable, OraclePreset,
-    Phase4ComparisonEvidence, Phase4DiscreteMismatchReport, Phase4HarnessFailureReason,
-    Phase4HarnessFailureReport, Phase4MathMismatchReport, execute_math_probe_process,
+    EmptyWorldAdapter, NativeCollisionProbeExecutor, NativeMathProbeExecutor, OracleExecutable,
+    OraclePreset, Phase4ComparisonEvidence, Phase4DiscreteMismatchReport,
+    Phase4HarnessFailureReason, Phase4HarnessFailureReport, Phase4MathMismatchReport,
+    compare_collision_probe_results, execute_collision_probe_process, execute_math_probe_process,
     float_values_match_with_policy,
 };
 use liquidfun_test_protocol::{
-    BuildEvidenceTier, BuildIdentity, DivergenceHorizon, EvidenceTier, HarnessLimits,
-    MathProbeHorizon, MathProbeRequestRecord, MathProbeResult, Phase4PolicyProfile,
-    decode_math_probe_request_jsonl,
+    BuildEvidenceTier, BuildIdentity, CollisionProbeRequestRecord, CollisionProbeResult,
+    DivergenceHorizon, EvidenceTier, HarnessLimits, MathProbeHorizon, MathProbeRequestRecord,
+    MathProbeResult, Phase4PolicyProfile, Phase5PolicyProfile,
+    decode_collision_probe_request_jsonl, decode_math_probe_request_jsonl,
 };
 use sha2::{Digest, Sha256};
 
@@ -25,10 +27,10 @@ use crate::upstream;
 const USAGE: &str = r"Usage: cargo xtask differential <command> [arguments]
 
 Commands:
-  compare  --scenario <empty-world|math-probes> --preset <oracle-debug|oracle-release|oracle-asan-ubsan> --session-profile <one-shot|reuse|sanitizer>
-  replay   --scenario <empty-world|math-probes> --preset <oracle-debug|oracle-release|oracle-asan-ubsan> --session-profile <one-shot|reuse|sanitizer>
+  compare  --scenario <empty-world|math-probes|collision-probes> --preset <oracle-debug|oracle-release|oracle-asan-ubsan> --session-profile <one-shot|reuse|sanitizer>
+  replay   --scenario <empty-world|math-probes|collision-probes> --preset <oracle-debug|oracle-release|oracle-asan-ubsan> --session-profile <one-shot|reuse|sanitizer>
   minimize --scenario empty-world --preset <oracle-debug|oracle-release|oracle-asan-ubsan> --session-profile <one-shot|reuse|sanitizer>
-  verify-determinism --scenario math-probes --preset <oracle-debug|oracle-release> --runs 2
+  verify-determinism --scenario <math-probes|collision-probes> --preset <oracle-debug|oracle-release> --runs 2
   fixture stage   --scenario empty-world --preset <preset> --session-profile <profile> --artifact-kind <reviewed-trace|minimized-regression> --artifact-id <id>
   fixture review  --artifact-id <id> --reviewer <identity> --reviewed-at <UTC timestamp> --review-status <approved|rejected>
   fixture promote --artifact-id <id>";
@@ -36,8 +38,10 @@ Commands:
 const ORACLE_REVISION: &str = "7f20402173fd143a3988c921bc384459c6a858f2";
 const MATH_PROBE_REQUEST: &str = "protocol/fixtures/accepted/math-probe-request.jsonl";
 const PHASE4_POLICY: &str = "protocol/tolerances/phase4-v1.toml";
+const COLLISION_PROBE_REQUEST: &str = "protocol/fixtures/accepted/collision-probe-request.jsonl";
+const PHASE5_POLICY: &str = "protocol/tolerances/phase5-v1.toml";
 const NATIVE_SOURCE_MANIFEST: &str = "crates/liquidfun-differential/native-math-sources.txt";
-const ALLOWED_SCENARIOS: [&str; 2] = ["empty-world", "math-probes"];
+const ALLOWED_SCENARIOS: [&str; 3] = ["empty-world", "math-probes", "collision-probes"];
 const ALLOWED_PRESETS: [&str; 3] = ["oracle-debug", "oracle-release", "oracle-asan-ubsan"];
 const MATH_PROBE_PRESETS: [&str; 2] = ["oracle-debug", "oracle-release"];
 const ALLOWED_PROFILES: [&str; 3] = ["one-shot", "reuse", "sanitizer"];
@@ -108,8 +112,15 @@ enum MathProbeAction {
     VerifyDeterminism,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ProbeKind {
+    Math,
+    Collision,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct MathProbeInvocation {
+    kind: ProbeKind,
     action: MathProbeAction,
     preset: String,
     runs: usize,
@@ -128,8 +139,11 @@ pub(crate) fn run(args: &[String]) -> Result<(), DifferentialError> {
     if env::var_os("LIQUIDFUN_XTASK_DIFFERENTIAL").is_some() {
         return run_differential(&repository_root, &invocation.arguments);
     }
-    if let Some(math_probe) = invocation.math_probe {
-        return run_math_probe_command(&repository_root, &math_probe);
+    if let Some(probe) = invocation.math_probe {
+        return match probe.kind {
+            ProbeKind::Math => run_math_probe_command(&repository_root, &probe),
+            ProbeKind::Collision => run_collision_probe_command(&repository_root, &probe),
+        };
     }
     run_differential(&repository_root, &invocation.arguments)
 }
@@ -191,13 +205,18 @@ fn parse_scenario_command(
     let scenario = require_allowed(&options, "--scenario", &ALLOWED_SCENARIOS)?;
     let preset = require_allowed(&options, "--preset", &ALLOWED_PRESETS)?;
     let profile = require_allowed(&options, "--session-profile", &ALLOWED_PROFILES)?;
-    let math_probe = if scenario == "math-probes" {
+    let math_probe = if matches!(scenario, "math-probes" | "collision-probes") {
         if command == "minimize" || profile != "one-shot" || !MATH_PROBE_PRESETS.contains(&preset) {
             return Err(DifferentialError::usage(
-                "math-probes supports compare/replay with one-shot debug or release only",
+                "probe scenarios support compare/replay with one-shot debug or release only",
             ));
         }
         Some(MathProbeInvocation {
+            kind: if scenario == "math-probes" {
+                ProbeKind::Math
+            } else {
+                ProbeKind::Collision
+            },
             action: if command == "compare" {
                 MathProbeAction::Compare
             } else {
@@ -227,7 +246,7 @@ fn parse_scenario_command(
 fn parse_determinism_command(args: &[String]) -> Result<RunnerInvocation, DifferentialError> {
     let options = parse_options(args)?;
     require_exact_options(&options, &["--scenario", "--preset", "--runs"])?;
-    let scenario = require_allowed(&options, "--scenario", &["math-probes"])?;
+    let scenario = require_allowed(&options, "--scenario", &["math-probes", "collision-probes"])?;
     let preset = require_allowed(&options, "--preset", &MATH_PROBE_PRESETS)?;
     let runs = require_allowed(&options, "--runs", &["2"])?;
 
@@ -242,6 +261,11 @@ fn parse_determinism_command(args: &[String]) -> Result<RunnerInvocation, Differ
         ),
         oracle_dependent: true,
         math_probe: Some(MathProbeInvocation {
+            kind: if scenario == "math-probes" {
+                ProbeKind::Math
+            } else {
+                ProbeKind::Collision
+            },
             action: MathProbeAction::VerifyDeterminism,
             preset: preset.to_owned(),
             runs: 2,
@@ -404,6 +428,66 @@ fn run_math_probe_command(
     Ok(())
 }
 
+fn run_collision_probe_command(
+    repository_root: &Path,
+    invocation: &MathProbeInvocation,
+) -> Result<(), DifferentialError> {
+    let request_bytes = read_regular_file(repository_root, COLLISION_PROBE_REQUEST)?;
+    let policy_bytes = read_regular_file(repository_root, PHASE5_POLICY)?;
+    let request =
+        decode_collision_probe_request_jsonl(&request_bytes, &HarnessLimits::phase2_default_v1())
+            .map_err(|error| DifferentialError::new("protocol", error.to_string()))?;
+    let policy_text = std::str::from_utf8(&policy_bytes)
+        .map_err(|error| DifferentialError::new("protocol", error.to_string()))?;
+    let policy = Phase5PolicyProfile::parse_toml(policy_text)
+        .map_err(|error| DifferentialError::new("policy", error.to_string()))?;
+    if request.tolerance_profile_sha256() != policy.profile_sha256() {
+        return Err(DifferentialError::new(
+            "policy",
+            "collision request policy hash differs from the checked-in Phase 5 profile",
+        ));
+    }
+    if invocation.action == MathProbeAction::VerifyDeterminism {
+        return verify_collision_probe_determinism(
+            repository_root,
+            &request,
+            &invocation.preset,
+            invocation.runs,
+        );
+    }
+    let capture = execute_collision_probe_once(repository_root, &request, &invocation.preset)?;
+    let native = NativeCollisionProbeExecutor::execute(&request)
+        .map_err(|error| DifferentialError::new("native", error.to_string()))?;
+    compare_collision_probe_results(&request, &native, &capture.results, &policy).map_err(
+        |divergence| {
+            DifferentialError::new(
+                "collision",
+                format!(
+                    "first divergence {}: {}",
+                    divergence.signature_sha256().as_str(),
+                    String::from_utf8_lossy(
+                        &divergence
+                            .render_machine()
+                            .unwrap_or_else(|_| b"{}".to_vec())
+                    )
+                ),
+            )
+        },
+    )?;
+    let action = match invocation.action {
+        MathProbeAction::Compare => "compare",
+        MathProbeAction::Replay => "replay",
+        MathProbeAction::VerifyDeterminism => unreachable!("handled before execution"),
+    };
+    println!(
+        "collision-probes {action}: {} ordered cases matched under {} ({})",
+        capture.results.len(),
+        policy.profile_id(),
+        invocation.preset
+    );
+    Ok(())
+}
+
 fn native_source_manifest_sha256(repository_root: &Path) -> Result<String, DifferentialError> {
     let manifest_path = repository_root.join(NATIVE_SOURCE_MANIFEST);
     let manifest = fs::read_to_string(&manifest_path).map_err(|error| {
@@ -477,6 +561,70 @@ struct MathProbeCapture {
     results: Vec<MathProbeResult>,
     response_bytes: Vec<u8>,
     oracle_identity: BuildIdentity,
+}
+
+struct CollisionProbeCapture {
+    results: Vec<CollisionProbeResult>,
+    response_bytes: Vec<u8>,
+}
+
+fn execute_collision_probe_once(
+    repository_root: &Path,
+    request: &CollisionProbeRequestRecord,
+    preset: &str,
+) -> Result<CollisionProbeCapture, DifferentialError> {
+    let oracle_preset = match preset {
+        "oracle-debug" => OraclePreset::Debug,
+        "oracle-release" => OraclePreset::Release,
+        _ => {
+            return Err(DifferentialError::usage(
+                "unregistered collision-probe preset",
+            ));
+        }
+    };
+    let executable = OracleExecutable::resolve(repository_root, oracle_preset)
+        .map_err(|error| DifferentialError::new("oracle", error.to_string()))?;
+    let capture = execute_collision_probe_process(&executable, request, ORACLE_REVISION).map_err(
+        |error| {
+            DifferentialError::process(format!(
+                "{}; stderr bytes {}, killed {}, reaped {}: {}",
+                error,
+                error.stderr_bytes(),
+                error.child_killed(),
+                error.child_reaped(),
+                String::from_utf8_lossy(error.retained_stderr()).trim_end()
+            ))
+        },
+    )?;
+    if capture.identity().cmake_preset() != preset || capture.identity().maybe_phase4().is_none() {
+        return Err(DifferentialError::new(
+            "identity",
+            "oracle handshake lacks the requested collision build identity",
+        ));
+    }
+    let expected_adapter_digest = upstream::adapter_source_digest(repository_root)
+        .map_err(|error| DifferentialError::new("identity", error.to_string()))?;
+    if capture.identity().adapter_content_sha256().as_str() != expected_adapter_digest {
+        return Err(DifferentialError::new(
+            "identity",
+            "oracle adapter digest differs from checked-in inputs",
+        ));
+    }
+    let expected_compile_digest = effective_compile_command_sha256(repository_root, preset)?;
+    if capture
+        .identity()
+        .maybe_phase4()
+        .is_none_or(|identity| identity.compile_command_sha256() != expected_compile_digest)
+    {
+        return Err(DifferentialError::new(
+            "identity",
+            "oracle collision compile-command digest differs from the effective database",
+        ));
+    }
+    Ok(CollisionProbeCapture {
+        results: capture.results().to_vec(),
+        response_bytes: capture.response_bytes().to_vec(),
+    })
 }
 
 fn execute_math_probe_once(
@@ -562,7 +710,10 @@ fn compile_database_sha256(
         .filter_map(|entry| {
             let source = entry.get("file")?.as_str()?;
             let filename = Path::new(source).file_name()?.to_str()?;
-            if !matches!(filename, "math_probe.cpp" | "protocol_bits.cpp") {
+            if !matches!(
+                filename,
+                "collision_probe.cpp" | "math_probe.cpp" | "protocol_bits.cpp"
+            ) {
                 return None;
             }
             let command =
@@ -584,11 +735,11 @@ fn compile_database_sha256(
             Some(format!("{normalized_source}\n{normalized_command}"))
         })
         .collect::<Vec<_>>();
-    if commands.len() != 2 {
+    if commands.len() != 3 {
         return Err(DifferentialError::new(
             "identity",
             format!(
-                "expected two effective math/probe compile commands, found {}",
+                "expected three effective probe compile commands, found {}",
                 commands.len()
             ),
         ));
@@ -915,6 +1066,29 @@ fn verify_math_probe_determinism(
     Ok(())
 }
 
+fn verify_collision_probe_determinism(
+    repository_root: &Path,
+    request: &CollisionProbeRequestRecord,
+    preset: &str,
+    runs: usize,
+) -> Result<(), DifferentialError> {
+    let mut baseline = None;
+    for run in 0..runs {
+        let capture = execute_collision_probe_once(repository_root, request, preset)?;
+        if let Some(expected) = &baseline
+            && expected != &capture.response_bytes
+        {
+            return Err(DifferentialError::new(
+                "determinism",
+                format!("collision D0 response bytes changed on run {}", run + 1),
+            ));
+        }
+        baseline = Some(capture.response_bytes);
+    }
+    println!("collision-probes D0: {runs} byte-identical {preset} runs");
+    Ok(())
+}
+
 fn parse_options(args: &[String]) -> Result<BTreeMap<String, String>, DifferentialError> {
     let mut options = BTreeMap::new();
     for pair in args.chunks_exact(2) {
@@ -1093,6 +1267,7 @@ mod tests {
     fn effective_compile_digest_changes_with_material_command_inputs() {
         // Arrange
         let baseline = br#"[
+          {"file":"/repo/collision_probe.cpp","command":"clang++ -I/a -DFLAG=1 -c collision_probe.cpp"},
           {"file":"/repo/math_probe.cpp","command":"clang++ -I/a -DFLAG=1 -march=x86-64 -c math_probe.cpp"},
           {"file":"/repo/protocol_bits.cpp","command":"clang++ -I/a -DFLAG=1 -c protocol_bits.cpp"}
         ]"#;
@@ -1134,6 +1309,7 @@ mod tests {
     fn effective_compile_digest_is_stable_across_repository_relocation() {
         // Arrange
         let first = br#"[
+          {"file":"/first/repo/tools/reference/src/collision_probe.cpp","command":"clang++ -I/first/repo/tools/reference/src -o /first/repo/target/reference/oracle-release/collision.o -c /first/repo/tools/reference/src/collision_probe.cpp"},
           {"file":"/first/repo/tools/reference/src/math_probe.cpp","command":"clang++ -I/first/repo/tools/reference/src -o /first/repo/target/reference/oracle-release/probe.o -c /first/repo/tools/reference/src/math_probe.cpp"},
           {"file":"/first/repo/tools/reference/src/protocol_bits.cpp","command":"clang++ -I/first/repo/tools/reference/src -o /first/repo/target/reference/oracle-release/bits.o -c /first/repo/tools/reference/src/protocol_bits.cpp"}
         ]"#;

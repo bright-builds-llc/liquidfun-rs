@@ -190,7 +190,7 @@ fn execute_case(
                         }
                         CollisionOutcome::Separated => label(&mut discrete, "outcome", "separated"),
                         CollisionOutcome::Unsupported => {
-                            label(&mut discrete, "outcome", "unsupported")
+                            label(&mut discrete, "outcome", "unsupported");
                         }
                     }
                 }
@@ -396,7 +396,7 @@ fn execute_tree(
                 tree.query(aabb(case, lower, upper)?, |_proxy, payload| {
                     payload_ids.push(*payload);
                     QueryControl::Continue
-                })
+                });
             }
             CollisionTreeCommand::Ray {
                 start,
@@ -423,7 +423,7 @@ fn execute_tree(
             ),
             CollisionTreeCommand::Touch { payload_id }
             | CollisionTreeCommand::Refilter { payload_id, .. } => {
-                label(discrete, "unsupported_tree_command_payload", payload_id)
+                label(discrete, "unsupported_tree_command_payload", payload_id);
             }
             CollisionTreeCommand::UpdatePairs => label(discrete, "update_pairs", "not_applicable"),
         }
@@ -537,7 +537,7 @@ fn execute_broad_phase(
                 broad.tree_area_ratio(),
             ),
             CollisionTreeCommand::Query { .. } | CollisionTreeCommand::Ray { .. } => {
-                label(discrete, "unsupported_broad_phase_command", "query_or_ray")
+                label(discrete, "unsupported_broad_phase_command", "query_or_ray");
             }
         }
     }

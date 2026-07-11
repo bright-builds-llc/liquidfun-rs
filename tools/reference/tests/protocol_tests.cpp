@@ -1,3 +1,4 @@
+#include "collision_probe.hpp"
 #include "oracle_adapter.hpp"
 #include "protocol.hpp"
 
@@ -294,6 +295,23 @@ void math_probe_matches_operation_contract() {
   throw std::runtime_error("unknown math probe operation was accepted");
 }
 
+void collision_probe_uses_existing_protocol_loop() {
+  const auto fixture = read_fixture(
+      "protocol/fixtures/accepted/collision-probe-request.jsonl");
+  expect(
+      liquidfun::reference::decode_request_kind(fixture) ==
+          liquidfun::reference::RequestKind::collision_probe,
+      "collision request kind should share the existing loop");
+  const auto batch = liquidfun::reference::execute_collision_probe(fixture);
+  expect(
+      batch.result_records.size() == 17,
+      "collision request should emit every closed operation");
+  expect(
+      liquidfun::reference::encode_collision_probe_end(batch, 1).find(
+          "collision_probe_end") != std::string::npos,
+      "collision request should emit its terminal record");
+}
+
 }  // namespace
 
 int main() {
@@ -308,6 +326,7 @@ int main() {
     record_writer_keeps_stdout_protocol_only();
     protocol_bits_preserve_exceptional_classes();
     math_probe_matches_operation_contract();
+    collision_probe_uses_existing_protocol_loop();
   } catch (const std::exception& error) {
     std::cerr << "protocol test failure: " << error.what() << '\n';
     return 1;

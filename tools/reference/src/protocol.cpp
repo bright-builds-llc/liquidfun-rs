@@ -992,6 +992,7 @@ RequestKind decode_request_kind(std::string_view record) {
       member(object, "record_kind", "protocol request"), "record kind");
   if (kind == "scenario_request") return RequestKind::scenario;
   if (kind == "math_probe_request") return RequestKind::math_probe;
+  if (kind == "collision_probe_request") return RequestKind::collision_probe;
   throw std::runtime_error("unsupported record kind");
 }
 

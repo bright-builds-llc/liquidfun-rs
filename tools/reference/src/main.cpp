@@ -1,4 +1,5 @@
 #include "build_identity.hpp"
+#include "collision_probe.hpp"
 #include "math_probe.hpp"
 #include "oracle_adapter.hpp"
 #include "protocol.hpp"
@@ -78,15 +79,32 @@ int run() {
 
   liquidfun::reference::OracleAdapter adapter;
   std::uint64_t math_probe_reset_epoch = 0;
+  std::uint64_t collision_probe_reset_epoch = 0;
   std::string line;
   while (liquidfun::reference::read_bounded_record(std::cin, line)) {
-    if (liquidfun::reference::decode_request_kind(line) ==
-        liquidfun::reference::RequestKind::scenario) {
+    const auto request_kind = liquidfun::reference::decode_request_kind(line);
+    if (request_kind == liquidfun::reference::RequestKind::scenario) {
       const auto request = liquidfun::reference::decode_scenario_request(line);
       const auto trace = adapter.execute(request, identity_sha256);
       for (const auto& record : trace.records) {
         liquidfun::reference::write_record(std::cout, record);
       }
+      continue;
+    }
+    if (request_kind == liquidfun::reference::RequestKind::collision_probe) {
+      const auto batch = liquidfun::reference::execute_collision_probe(line);
+      if (collision_probe_reset_epoch ==
+          std::numeric_limits<std::uint64_t>::max()) {
+        throw std::runtime_error("collision probe reset counter overflow");
+      }
+      for (const auto& result : batch.result_records) {
+        liquidfun::reference::write_record(std::cout, result);
+      }
+      ++collision_probe_reset_epoch;
+      liquidfun::reference::write_record(
+          std::cout,
+          liquidfun::reference::encode_collision_probe_end(
+              batch, collision_probe_reset_epoch));
       continue;
     }
     const auto request = liquidfun::reference::decode_math_probe_request(line);

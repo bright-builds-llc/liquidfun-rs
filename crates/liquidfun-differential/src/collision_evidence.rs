@@ -100,6 +100,10 @@ pub struct CollisionOrderReport {
 /// # Errors
 ///
 /// Returns a structural, numeric, or ordered-semantic first divergence.
+#[allow(
+    clippy::too_many_lines,
+    reason = "one ordered traversal keeps Phase 5 first-divergence alignment fail-closed"
+)]
 pub fn compare_collision_probe_results(
     request: &CollisionProbeRequestRecord,
     expected: &[CollisionProbeResult],

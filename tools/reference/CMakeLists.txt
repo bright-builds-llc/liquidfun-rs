@@ -150,6 +150,7 @@ endif()
 add_library(
   liquidfun-reference-protocol
   STATIC
+  src/collision_probe.cpp
   src/math_probe.cpp
   src/protocol.cpp
   src/protocol_bits.cpp
@@ -437,6 +438,7 @@ add_custom_command(
   DEPENDS
     "${CMAKE_BINARY_DIR}/compile_commands.json"
     "${REFERENCE_BUILD_IDENTITY_SCRIPT}"
+    "${CMAKE_CURRENT_LIST_DIR}/src/collision_probe.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/src/math_probe.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/src/protocol_bits.cpp"
   COMMENT "Hashing effective math/probe compile commands"

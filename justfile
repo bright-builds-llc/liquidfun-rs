@@ -51,6 +51,18 @@ math-probes-replay:
 math-probes-determinism:
     cargo xtask differential verify-determinism --scenario math-probes --preset oracle-debug --runs 2
 
+collision-probes-debug:
+    cargo xtask differential compare --scenario collision-probes --preset oracle-debug --session-profile one-shot
+
+collision-probes-release:
+    cargo xtask differential compare --scenario collision-probes --preset oracle-release --session-profile one-shot
+
+collision-probes-replay:
+    cargo xtask differential replay --scenario collision-probes --preset oracle-debug --session-profile one-shot
+
+collision-probes-determinism:
+    cargo xtask differential verify-determinism --scenario collision-probes --preset oracle-debug --runs 2
+
 differential-minimize:
     cargo xtask differential minimize --scenario empty-world --preset oracle-debug --session-profile one-shot
 
