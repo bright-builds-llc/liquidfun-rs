@@ -4,3 +4,11 @@
 //! implement physics behavior or claim behavioral parity with `LiquidFun`.
 
 #![forbid(unsafe_code)]
+
+mod error;
+mod identity;
+
+pub use error::{ArenaInsertError, HandleError, WorldKeyError};
+pub use identity::{
+    BodyId, FixtureId, JointId, ObjectKind, ParticleGroupId, ParticleId, ParticleSystemId,
+};
