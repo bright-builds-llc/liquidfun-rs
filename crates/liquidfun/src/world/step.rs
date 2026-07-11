@@ -3,6 +3,7 @@
 use std::cell::Cell;
 use std::error::Error;
 use std::fmt;
+use std::panic::{AssertUnwindSafe, catch_unwind, resume_unwind};
 
 use crate::{BodyId, DestructionRecord, FixtureId, HandleError, World};
 
@@ -12,13 +13,23 @@ const MAX_STEP_COMMANDS: usize = 1_024;
 #[derive(Debug)]
 pub(super) struct StepState {
     locked: Cell<bool>,
+    poisoned: Cell<bool>,
 }
 
 impl StepState {
     pub(super) const fn new() -> Self {
         Self {
             locked: Cell::new(false),
+            poisoned: Cell::new(false),
         }
+    }
+
+    pub(super) fn is_poisoned(&self) -> bool {
+        self.poisoned.get()
+    }
+
+    fn poison(&self) {
+        self.poisoned.set(true);
     }
 }
 
@@ -317,6 +328,8 @@ impl StepReport {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum StepError {
+    /// A prior hook panic left the representative world step poisoned.
+    Poisoned,
     /// One of the contact fixture identities is foreign, stale, or destroyed.
     InvalidContact(HandleError),
     /// The world is already executing a step.
@@ -340,6 +353,7 @@ pub enum StepError {
 impl fmt::Display for StepError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::Poisoned => formatter.write_str("world is poisoned by a prior hook panic"),
             Self::InvalidContact(error) => write!(formatter, "invalid contact fixture: {error}"),
             Self::Locked => formatter.write_str("world is locked by an active step"),
             Self::LimitExceeded { resource, limit } => {
@@ -393,6 +407,9 @@ impl World {
         hook: &mut H,
         limits: StepLimits,
     ) -> Result<StepReport, StepError> {
+        if self.step_state.is_poisoned() {
+            return Err(StepError::Poisoned);
+        }
         let (events, commands) = {
             let _lock = StepLockGuard::acquire(&self.step_state)?;
             self.dispatch_hooks(contacts, hook, limits)?
@@ -428,18 +445,18 @@ impl World {
             let view = ContactView {
                 contact: &transient,
             };
-            let collision = hook.filter(view);
-            let maybe_pre_solve = if collision == CollisionDirective::Collide {
-                let directive = hook.pre_solve(view);
-                hook.observe(view);
-                if let Some(command) = hook.command(view) {
-                    check_capacity(commands.len(), limits.max_commands, "command")?;
-                    commands.push(command);
+            let callback = catch_unwind(AssertUnwindSafe(|| invoke_hook(hook, view)));
+            let (collision, maybe_pre_solve, maybe_command) = match callback {
+                Ok(output) => output,
+                Err(payload) => {
+                    self.step_state.poison();
+                    resume_unwind(payload);
                 }
-                Some(directive)
-            } else {
-                None
             };
+            if let Some(command) = maybe_command {
+                check_capacity(commands.len(), limits.max_commands, "command")?;
+                commands.push(command);
+            }
             events.push(ContactEvent {
                 contact: view.snapshot(),
                 collision,
@@ -483,6 +500,39 @@ impl World {
                 .map_err(CommandError::InvalidHandle),
         }
     }
+
+    /// Returns whether this world is currently inside its step lock.
+    ///
+    /// This diagnostic remains available after poisoning so callers can verify unwind cleanup.
+    #[must_use]
+    pub fn is_locked(&self) -> bool {
+        self.step_state.locked.get()
+    }
+
+    /// Returns whether a hook panic permanently poisoned coherent-state operations.
+    #[must_use]
+    pub fn is_poisoned(&self) -> bool {
+        self.step_state.is_poisoned()
+    }
+}
+
+fn invoke_hook<H: StepHook>(
+    hook: &mut H,
+    view: ContactView<'_>,
+) -> (
+    CollisionDirective,
+    Option<PreSolveDirective>,
+    Option<WorldCommand>,
+) {
+    let collision = hook.filter(view);
+    if collision == CollisionDirective::Ignore {
+        return (collision, None, None);
+    }
+
+    let directive = hook.pre_solve(view);
+    hook.observe(view);
+    let maybe_command = hook.command(view);
+    (collision, Some(directive), maybe_command)
 }
 
 fn check_capacity(current: usize, limit: usize, resource: &'static str) -> Result<(), StepError> {
@@ -762,5 +812,71 @@ mod commands {
             })
         );
         assert!(world.contains_body(body));
+    }
+}
+
+#[cfg(test)]
+mod panic {
+    use std::collections::VecDeque;
+    use std::panic::{AssertUnwindSafe, catch_unwind};
+
+    use super::*;
+
+    struct PanickingHook {
+        calls: usize,
+        commands: VecDeque<WorldCommand>,
+    }
+
+    impl StepHook for PanickingHook {
+        fn observe(&mut self, _contact: ContactView<'_>) {
+            self.calls += 1;
+            assert!(self.calls < 2, "intentional hook panic");
+        }
+
+        fn command(&mut self, _contact: ContactView<'_>) -> Option<WorldCommand> {
+            self.commands.pop_front()
+        }
+    }
+
+    #[test]
+    fn hook_panic_restores_lock_discards_commands_and_poisons_world() {
+        // Arrange
+        let mut world = World::new().expect("test world key should remain available");
+        let contact_body = world.create_body().expect("body should fit");
+        let first = world
+            .create_fixture(contact_body)
+            .expect("fixture should fit");
+        let second = world
+            .create_fixture(contact_body)
+            .expect("fixture should fit");
+        let contact = ContactSnapshot::new(first, second);
+        let command_body = world.create_body().expect("body should fit");
+        let mut hook = PanickingHook {
+            calls: 0,
+            commands: [WorldCommand::DestroyBody(command_body)].into(),
+        };
+
+        // Act
+        let panic = catch_unwind(AssertUnwindSafe(|| {
+            let _report = world.step(&[contact, contact], &mut hook, StepLimits::default());
+        }));
+
+        // Assert
+        assert!(panic.is_err());
+        assert!(!world.is_locked());
+        assert!(world.is_poisoned());
+        assert!(world.contains_body(command_body));
+        assert_eq!(
+            world.destroy_body(command_body),
+            Err(HandleError::WorldPoisoned)
+        );
+        assert_eq!(
+            world.create_body(),
+            Err(crate::ArenaInsertError::WorldPoisoned)
+        );
+        assert_eq!(
+            world.step(&[], &mut hook, StepLimits::default()),
+            Err(StepError::Poisoned)
+        );
     }
 }

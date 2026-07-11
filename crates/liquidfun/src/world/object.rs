@@ -266,6 +266,7 @@ impl World {
     ///
     /// Returns an arena error if body storage is exhausted.
     pub fn create_body(&mut self) -> Result<BodyId, ArenaInsertError> {
+        self.ensure_not_poisoned_for_insert()?;
         let diagnostic_id = self.allocate_diagnostic_id();
         self.bodies.insert(Body {
             diagnostic_id,
@@ -280,6 +281,7 @@ impl World {
     ///
     /// Returns an error if `body` is invalid or fixture storage is exhausted.
     pub fn create_fixture(&mut self, body: BodyId) -> Result<FixtureId, CreateObjectError> {
+        self.ensure_not_poisoned_for_handle()?;
         self.bodies.get(body)?;
         let diagnostic_id = self.allocate_diagnostic_id();
         let fixture = self.fixtures.insert(Fixture {
@@ -300,6 +302,7 @@ impl World {
         first: BodyId,
         second: BodyId,
     ) -> Result<JointId, CreateObjectError> {
+        self.ensure_not_poisoned_for_handle()?;
         self.bodies.get(first)?;
         self.bodies.get(second)?;
         let diagnostic_id = self.allocate_diagnostic_id();
@@ -320,6 +323,7 @@ impl World {
     ///
     /// Returns an arena error if particle-system storage is exhausted.
     pub fn create_particle_system(&mut self) -> Result<ParticleSystemId, ArenaInsertError> {
+        self.ensure_not_poisoned_for_insert()?;
         let diagnostic_id = self.allocate_diagnostic_id();
         self.particle_systems.insert(ParticleSystem {
             diagnostic_id,
@@ -337,6 +341,7 @@ impl World {
         &mut self,
         system: ParticleSystemId,
     ) -> Result<ParticleGroupId, CreateObjectError> {
+        self.ensure_not_poisoned_for_handle()?;
         self.particle_systems.get(system)?;
         let diagnostic_id = self.allocate_diagnostic_id();
         let group = self.particle_groups.insert(ParticleGroup {
@@ -359,6 +364,7 @@ impl World {
         system: ParticleSystemId,
         maybe_group: Option<ParticleGroupId>,
     ) -> Result<ParticleId, CreateObjectError> {
+        self.ensure_not_poisoned_for_handle()?;
         self.particle_systems.get(system)?;
         if let Some(group) = maybe_group {
             let group_record = self.particle_groups.get(group)?;
@@ -425,6 +431,7 @@ impl World {
     ///
     /// Returns a handle error without mutation when `body` is foreign, stale, or destroyed.
     pub fn destroy_body(&mut self, body: BodyId) -> Result<Vec<DestructionRecord>, HandleError> {
+        self.ensure_not_poisoned_for_handle()?;
         let root = self.bodies.get(body)?;
         let joints = root.joints.clone();
         let fixtures = root.fixtures.clone();
@@ -453,6 +460,7 @@ impl World {
         &mut self,
         fixture: FixtureId,
     ) -> Result<DestructionRecord, HandleError> {
+        self.ensure_not_poisoned_for_handle()?;
         self.fixtures.get(fixture)?;
         Ok(self.remove_fixture(fixture, DestructionCause::Explicit))
     }
@@ -463,6 +471,7 @@ impl World {
     ///
     /// Returns a handle error without mutation when `joint` is foreign, stale, or destroyed.
     pub fn destroy_joint(&mut self, joint: JointId) -> Result<DestructionRecord, HandleError> {
+        self.ensure_not_poisoned_for_handle()?;
         self.joints.get(joint)?;
         Ok(self.remove_joint(joint, DestructionCause::Explicit))
     }
@@ -476,6 +485,7 @@ impl World {
         &mut self,
         system: ParticleSystemId,
     ) -> Result<Vec<DestructionRecord>, HandleError> {
+        self.ensure_not_poisoned_for_handle()?;
         let root = self.particle_systems.get(system)?;
         let groups = root.groups.clone();
         let particles = root.particles.clone();
@@ -507,6 +517,7 @@ impl World {
         &mut self,
         group: ParticleGroupId,
     ) -> Result<DestructionRecord, HandleError> {
+        self.ensure_not_poisoned_for_handle()?;
         self.particle_groups.get(group)?;
         Ok(self.remove_particle_group(group, DestructionCause::Explicit))
     }
@@ -520,8 +531,23 @@ impl World {
         &mut self,
         particle: ParticleId,
     ) -> Result<DestructionRecord, HandleError> {
+        self.ensure_not_poisoned_for_handle()?;
         self.particles.get(particle)?;
         Ok(self.remove_particle(particle, DestructionCause::Explicit))
+    }
+
+    fn ensure_not_poisoned_for_handle(&self) -> Result<(), HandleError> {
+        if self.step_state.is_poisoned() {
+            return Err(HandleError::WorldPoisoned);
+        }
+        Ok(())
+    }
+
+    fn ensure_not_poisoned_for_insert(&self) -> Result<(), ArenaInsertError> {
+        if self.step_state.is_poisoned() {
+            return Err(ArenaInsertError::WorldPoisoned);
+        }
+        Ok(())
     }
 
     fn remove_body(

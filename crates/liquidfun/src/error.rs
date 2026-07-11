@@ -7,6 +7,8 @@ use crate::ObjectKind;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum HandleError {
+    /// The world was poisoned by a panic during a step hook.
+    WorldPoisoned,
     /// The handle belongs to a different world.
     WrongWorld,
     /// The referenced object was destroyed or its slot has since been reused.
@@ -25,6 +27,7 @@ pub enum HandleError {
 impl fmt::Display for HandleError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::WorldPoisoned => formatter.write_str("world is poisoned by a prior hook panic"),
             Self::WrongWorld => formatter.write_str("handle belongs to a different world"),
             Self::StaleOrDestroyed => formatter.write_str("handle is stale or destroyed"),
             Self::WrongKind { expected, actual } => {
@@ -43,6 +46,8 @@ impl Error for HandleError {}
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum ArenaInsertError {
+    /// The world was poisoned by a panic during a step hook.
+    WorldPoisoned,
     /// Every configured slot is occupied.
     CapacityExceeded {
         /// The configured maximum number of slots.
@@ -55,6 +60,7 @@ pub enum ArenaInsertError {
 impl fmt::Display for ArenaInsertError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::WorldPoisoned => formatter.write_str("world is poisoned by a prior hook panic"),
             Self::CapacityExceeded { limit } => {
                 write!(formatter, "arena capacity of {limit} objects is exhausted")
             }
