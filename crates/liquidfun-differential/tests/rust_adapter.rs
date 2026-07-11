@@ -252,7 +252,8 @@ fn supported_identity_cannot_promote_canonical_evidence() {
     let identity = BuildIdentity::new(
         identity_fields(supported)
             .with_compiler_id("AppleClang")
-            .with_compiler_version("21.0.0"),
+            .with_compiler_version("21.0.0")
+            .with_target("arm64-apple-darwin"),
     )
     .expect("supported identity should validate");
 

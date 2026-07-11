@@ -59,7 +59,7 @@ set(
 )
 set(
   REFERENCE_FORBIDDEN_FP_PATTERN
-  "(^|[ ;])(-ffast-math|-Ofast|-fassociative-math|-freciprocal-math|-funsafe-math-optimizations|-march=native|-mcpu=native)($|[ ;])"
+  "(^|[ ;])(-ffast-math|-Ofast|-fassociative-math|-freciprocal-math|-funsafe-math-optimizations|-march=[^ ;]+|-mcpu=[^ ;]+|-mtune=[^ ;]+|-mavx[^ ;]*|-mfma|-msse[^ ;]*|-mllvm|-Xclang)($|[ ;])|unsafe-fp|no-nans-fp|no-infs-fp|fp-contract=(fast|on)"
 )
 set(REFERENCE_HAS_FORBIDDEN_FP_FLAGS FALSE)
 if(REFERENCE_USER_COMPILE_FLAGS MATCHES "${REFERENCE_FORBIDDEN_FP_PATTERN}")
@@ -263,19 +263,19 @@ endif()
 if(NOT REFERENCE_COMPILER_TARGET)
   set(REFERENCE_COMPILER_TARGET "${CMAKE_SYSTEM_PROCESSOR}-${CMAKE_SYSTEM_NAME}")
 endif()
-set(
-  REFERENCE_TARGET
-  "${REFERENCE_COMPILER_TARGET}|${CMAKE_SYSTEM_NAME}|${CMAKE_SYSTEM_PROCESSOR}"
-)
+set(REFERENCE_TARGET "${REFERENCE_COMPILER_TARGET}")
 set(REFERENCE_TARGET_CPU "baseline")
-if(REFERENCE_USER_COMPILE_FLAGS MATCHES "(-march=native|-mcpu=native)")
-  set(REFERENCE_TARGET_CPU "native")
+if(REFERENCE_USER_COMPILE_FLAGS MATCHES "(-march=|-mcpu=|-mtune=)")
+  set(REFERENCE_TARGET_CPU "explicit")
 endif()
 set(REFERENCE_TARGET_FEATURES "<none>")
+if(REFERENCE_USER_COMPILE_FLAGS MATCHES "(-mavx|-mfma|-msse)")
+  set(REFERENCE_TARGET_FEATURES "explicit")
+endif()
 if(CMAKE_SYSROOT)
-  set(REFERENCE_SDK_OR_SYSROOT "${CMAKE_SYSROOT}")
+  set(REFERENCE_SDK_OR_SYSROOT "<configured>")
 elseif(CMAKE_OSX_SYSROOT)
-  set(REFERENCE_SDK_OR_SYSROOT "${CMAKE_OSX_SYSROOT}")
+  set(REFERENCE_SDK_OR_SYSROOT "<configured>")
 else()
   set(REFERENCE_SDK_OR_SYSROOT "<none>")
 endif()
@@ -356,6 +356,11 @@ set(
   REFERENCE_FEATURE_SET
   "evidence=${REFERENCE_EVIDENCE_TIER};applied=${REFERENCE_FP_FLAGS};missing=${REFERENCE_MISSING_FP_FLAGS};compile_database=math_probe.cpp,protocol_bits.cpp"
 )
+set(
+  REFERENCE_PUBLIC_COMPILE_SUMMARY
+  "optimization=${REFERENCE_OPTIMIZATION};fp_model=${REFERENCE_FP_MODEL};fp_contract=${REFERENCE_FP_CONTRACT};denormal=${REFERENCE_DENORMAL_MODE};target_cpu=${REFERENCE_TARGET_CPU};target_features=${REFERENCE_TARGET_FEATURES}"
+)
+set(REFERENCE_PUBLIC_LINK_SUMMARY "sanitizer=${REFERENCE_SANITIZER_MODE}")
 
 function(reference_escape_cpp_string INPUT_VALUE OUTPUT_VARIABLE)
   string(REPLACE "\\" "\\\\" ESCAPED_VALUE "${INPUT_VALUE}")
@@ -387,10 +392,13 @@ reference_escape_cpp_string(
 reference_escape_cpp_string("${REFERENCE_TARGET}" REFERENCE_TARGET_CPP)
 reference_escape_cpp_string("${CMAKE_BUILD_TYPE}" REFERENCE_BUILD_TYPE_CPP)
 reference_escape_cpp_string(
-  "${REFERENCE_COMPILE_FLAGS}"
-  REFERENCE_COMPILE_FLAGS_CPP
+  "${REFERENCE_PUBLIC_COMPILE_SUMMARY}"
+  REFERENCE_PUBLIC_COMPILE_SUMMARY_CPP
 )
-reference_escape_cpp_string("${REFERENCE_LINK_FLAGS}" REFERENCE_LINK_FLAGS_CPP)
+reference_escape_cpp_string(
+  "${REFERENCE_PUBLIC_LINK_SUMMARY}"
+  REFERENCE_PUBLIC_LINK_SUMMARY_CPP
+)
 reference_escape_cpp_string(
   "${REFERENCE_SANITIZER_MODE}"
   REFERENCE_SANITIZER_MODE_CPP
@@ -407,6 +415,7 @@ reference_escape_cpp_string("${REFERENCE_FEATURE_SET}" REFERENCE_FEATURE_SET_CPP
 reference_escape_cpp_string("${REFERENCE_OS}" REFERENCE_OS_CPP)
 reference_escape_cpp_string("${REFERENCE_LIBC}" REFERENCE_LIBC_CPP)
 reference_escape_cpp_string("${REFERENCE_LIBM}" REFERENCE_LIBM_CPP)
+file(REAL_PATH "${CMAKE_CURRENT_LIST_DIR}/../.." REFERENCE_REPOSITORY_ROOT)
 
 set(
   REFERENCE_BUILD_IDENTITY_HEADER

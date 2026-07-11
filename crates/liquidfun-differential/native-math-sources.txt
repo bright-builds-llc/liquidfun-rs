@@ -1,0 +1,9 @@
+crates/liquidfun-differential/src/rust_adapter.rs
+crates/liquidfun-differential/src/math_probe.rs
+crates/liquidfun/src/math.rs
+crates/liquidfun/src/math/matrix.rs
+crates/liquidfun/src/math/scalar.rs
+crates/liquidfun/src/math/settings.rs
+crates/liquidfun/src/math/sweep.rs
+crates/liquidfun/src/math/transform.rs
+crates/liquidfun/src/math/vector.rs

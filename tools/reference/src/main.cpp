@@ -13,11 +13,17 @@
 namespace {
 
 std::string runtime_rounding_mode() {
-  const auto half_ulp = liquidfun::reference::float_from_bits(0x33800000U);
-  const auto ties_even = (1.0F + half_ulp) == 1.0F;
+  volatile float half_ulp_input =
+      liquidfun::reference::float_from_bits(0x33800000U);
+  volatile float one_input = 1.0F;
+  volatile float odd_input =
+      liquidfun::reference::float_from_bits(0x3F800001U);
+  const auto half_ulp = half_ulp_input;
+  const auto one = one_input;
+  const auto odd = odd_input;
+  const auto ties_even = (one + half_ulp) == one;
   const auto odd_rounds_up =
-      liquidfun::reference::bits_from_float(
-          liquidfun::reference::float_from_bits(0x3F800001U) + half_ulp) ==
+      liquidfun::reference::bits_from_float(odd + half_ulp) ==
       0x3F800002U;
   return std::fegetround() == FE_TONEAREST && ties_even && odd_rounds_up
              ? "nearest_ties_even"
@@ -25,8 +31,9 @@ std::string runtime_rounding_mode() {
 }
 
 bool runtime_gradual_underflow() {
-  const auto half_minimum_normal =
-      std::numeric_limits<float>::min() * 0.5F;
+  volatile float minimum_normal_input = std::numeric_limits<float>::min();
+  volatile float half_input = 0.5F;
+  const auto half_minimum_normal = minimum_normal_input * half_input;
   return liquidfun::reference::bits_from_float(half_minimum_normal) ==
          0x00400000U;
 }

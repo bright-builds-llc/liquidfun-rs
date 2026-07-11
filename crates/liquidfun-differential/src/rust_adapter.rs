@@ -54,13 +54,9 @@ impl EmptyWorldAdapter {
         comparison_oracle_revision: impl Into<String>,
     ) -> Result<Self, EmptyWorldAdapterError> {
         let adapter_revision = env!("CARGO_PKG_VERSION");
-        let adapter_content_sha256 =
-            native_adapter_content_sha256(include_bytes!("rust_adapter.rs"));
-        let target = format!(
-            "target={};host={}",
-            env!("LIQUIDFUN_NATIVE_TARGET"),
-            env!("LIQUIDFUN_NATIVE_HOST")
-        );
+        let adapter_content_sha256 = Sha256Hex::new(env!("LIQUIDFUN_NATIVE_SOURCE_SHA256"))
+            .map_err(|_| BuildIdentityError::InvalidAdapterContentSha256)?;
+        let target = env!("LIQUIDFUN_NATIVE_TARGET");
         let compile_flags = format!(
             "features={};encoded_rustflags={}",
             env!("LIQUIDFUN_NATIVE_FEATURES"),
@@ -78,13 +74,14 @@ impl EmptyWorldAdapter {
             env!("LIQUIDFUN_NATIVE_ENCODED_RUSTFLAGS")
         );
         let compile_descriptor = format!(
-            "rustc={};target={};host={};profile={};optimization={};{}",
+            "rustc={};target={};host={};profile={};optimization={};{};sources={}",
             env!("LIQUIDFUN_NATIVE_RUSTC_VV"),
             env!("LIQUIDFUN_NATIVE_TARGET"),
             env!("LIQUIDFUN_NATIVE_HOST"),
             env!("LIQUIDFUN_NATIVE_PROFILE"),
             env!("LIQUIDFUN_NATIVE_OPTIMIZATION"),
-            feature_set
+            feature_set,
+            adapter_content_sha256.as_str()
         );
         let compile_command_sha256 =
             Sha256Hex::from_digest(Sha256::digest(compile_descriptor).into());
@@ -178,9 +175,11 @@ impl EmptyWorldAdapter {
 }
 
 fn native_rounding_mode() -> &'static str {
-    let half_ulp = f32::from_bits(0x3380_0000);
-    let ties_even = (1.0_f32 + half_ulp).to_bits() == 1.0_f32.to_bits();
-    let odd_rounds_up = (f32::from_bits(0x3f80_0001) + half_ulp).to_bits() == 0x3f80_0002;
+    let half_ulp = std::hint::black_box(f32::from_bits(0x3380_0000));
+    let one = std::hint::black_box(1.0_f32);
+    let odd = std::hint::black_box(f32::from_bits(0x3f80_0001));
+    let ties_even = (one + half_ulp).to_bits() == one.to_bits();
+    let odd_rounds_up = (odd + half_ulp).to_bits() == 0x3f80_0002;
     if ties_even && odd_rounds_up {
         "nearest_ties_even"
     } else {
@@ -189,7 +188,9 @@ fn native_rounding_mode() -> &'static str {
 }
 
 fn native_gradual_underflow() -> bool {
-    (f32::MIN_POSITIVE * 0.5_f32).to_bits() == 0x0040_0000
+    let minimum_normal = std::hint::black_box(f32::MIN_POSITIVE);
+    let half = std::hint::black_box(0.5_f32);
+    (minimum_normal * half).to_bits() == 0x0040_0000
 }
 
 struct EmptyWorldState {
@@ -241,27 +242,4 @@ fn execute_checkpoints(
     }
 
     Ok(checkpoints)
-}
-
-fn native_adapter_content_sha256(source: &[u8]) -> Sha256Hex {
-    Sha256Hex::from_digest(Sha256::digest(source).into())
-}
-
-#[cfg(test)]
-mod tests {
-    use super::native_adapter_content_sha256;
-
-    #[test]
-    fn adapter_content_digest_changes_with_source_input() {
-        // Arrange
-        let original = b"native adapter source v1";
-        let changed = b"native adapter source v2";
-
-        // Act
-        let original_digest = native_adapter_content_sha256(original);
-        let changed_digest = native_adapter_content_sha256(changed);
-
-        // Assert
-        assert_ne!(original_digest, changed_digest);
-    }
 }

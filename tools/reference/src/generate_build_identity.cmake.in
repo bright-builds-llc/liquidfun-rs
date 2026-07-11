@@ -30,7 +30,21 @@ if(COMPILE_ENTRY_COUNT GREATER 0)
         endforeach()
       endif()
     endif()
-    list(APPEND PROBE_COMMANDS "${SOURCE_FILE}\n${EFFECTIVE_COMMAND}")
+    set(NORMALIZED_SOURCE_FILE "${SOURCE_FILE}")
+    set(NORMALIZED_COMMAND "${EFFECTIVE_COMMAND}")
+    foreach(
+      PATH_REPLACEMENT
+      IN ITEMS
+        "@CMAKE_BINARY_DIR@|<build>"
+        "@REFERENCE_REPOSITORY_ROOT@|<repo>"
+    )
+      string(REPLACE "|" ";" PATH_REPLACEMENT_PARTS "${PATH_REPLACEMENT}")
+      list(GET PATH_REPLACEMENT_PARTS 0 RAW_PATH)
+      list(GET PATH_REPLACEMENT_PARTS 1 PLACEHOLDER)
+      string(REPLACE "${RAW_PATH}" "${PLACEHOLDER}" NORMALIZED_SOURCE_FILE "${NORMALIZED_SOURCE_FILE}")
+      string(REPLACE "${RAW_PATH}" "${PLACEHOLDER}" NORMALIZED_COMMAND "${NORMALIZED_COMMAND}")
+    endforeach()
+    list(APPEND PROBE_COMMANDS "${NORMALIZED_SOURCE_FILE}\n${NORMALIZED_COMMAND}")
   endforeach()
 endif()
 
@@ -41,7 +55,7 @@ endif()
 list(SORT PROBE_COMMANDS)
 string(JOIN "\n" EFFECTIVE_COMPILE_COMMANDS ${PROBE_COMMANDS})
 
-set(FORBIDDEN_PATTERN "(^|[ ;\\n])(-ffast-math|-Ofast|-fassociative-math|-freciprocal-math|-funsafe-math-optimizations|-march=native|-mcpu=native)($|[ ;\\n])")
+set(FORBIDDEN_PATTERN "(^|[ ;\\n])(-ffast-math|-Ofast|-fassociative-math|-freciprocal-math|-funsafe-math-optimizations|-march=[^ ;\\n]+|-mcpu=[^ ;\\n]+|-mtune=[^ ;\\n]+|-mavx[^ ;\\n]*|-mfma|-msse[^ ;\\n]*|-mllvm|-Xclang)($|[ ;\\n])|unsafe-fp|no-nans-fp|no-infs-fp|fp-contract=(fast|on)")
 if(EFFECTIVE_COMPILE_COMMANDS MATCHES "${FORBIDDEN_PATTERN}" AND D1_CANDIDATE)
   message(FATAL_ERROR "canonical effective compile command contains forbidden floating/native flags")
 endif()
@@ -56,8 +70,6 @@ function(escape_cpp_string INPUT_VALUE OUTPUT_VARIABLE)
   set("${OUTPUT_VARIABLE}" "${ESCAPED_VALUE}" PARENT_SCOPE)
 endfunction()
 
-escape_cpp_string("${EFFECTIVE_COMPILE_COMMANDS}" EFFECTIVE_COMPILE_COMMANDS_CPP)
-
 file(WRITE "${OUTPUT_HEADER}" "#pragma once\n\n")
 file(APPEND "${OUTPUT_HEADER}" "// Generated at build time from the effective compile database.\n")
 file(APPEND "${OUTPUT_HEADER}" "namespace liquidfun::reference::configured_build_identity {\n\n")
@@ -69,8 +81,8 @@ file(APPEND "${OUTPUT_HEADER}" "inline constexpr char kCompilerId[] = \"@REFEREN
 file(APPEND "${OUTPUT_HEADER}" "inline constexpr char kCompilerVersion[] = \"@REFERENCE_COMPILER_VERSION_CPP@\";\n")
 file(APPEND "${OUTPUT_HEADER}" "inline constexpr char kTarget[] = \"@REFERENCE_TARGET_CPP@\";\n")
 file(APPEND "${OUTPUT_HEADER}" "inline constexpr char kBuildType[] = \"@REFERENCE_BUILD_TYPE_CPP@\";\n")
-file(APPEND "${OUTPUT_HEADER}" "inline constexpr char kEffectiveCompileFlags[] = \"${EFFECTIVE_COMPILE_COMMANDS_CPP}\";\n")
-file(APPEND "${OUTPUT_HEADER}" "inline constexpr char kEffectiveLinkFlags[] = \"@REFERENCE_LINK_FLAGS_CPP@\";\n")
+file(APPEND "${OUTPUT_HEADER}" "inline constexpr char kEffectiveCompileFlags[] = \"@REFERENCE_PUBLIC_COMPILE_SUMMARY_CPP@\";\n")
+file(APPEND "${OUTPUT_HEADER}" "inline constexpr char kEffectiveLinkFlags[] = \"@REFERENCE_PUBLIC_LINK_SUMMARY_CPP@\";\n")
 file(APPEND "${OUTPUT_HEADER}" "inline constexpr char kSanitizerMode[] = \"@REFERENCE_SANITIZER_MODE_CPP@\";\n")
 file(APPEND "${OUTPUT_HEADER}" "inline constexpr char kCompileCommandSha256[] = \"${COMPILE_COMMAND_SHA256}\";\n")
 file(APPEND "${OUTPUT_HEADER}" "inline constexpr char kTargetTriple[] = \"@REFERENCE_TARGET_TRIPLE_CPP@\";\n")

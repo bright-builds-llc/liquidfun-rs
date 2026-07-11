@@ -147,6 +147,13 @@ impl BuildIdentityFields {
         self
     }
 
+    /// Replaces the base target for exact Phase 4 agreement tests.
+    #[must_use]
+    pub fn with_target(mut self, value: impl Into<String>) -> Self {
+        self.target = value.into();
+        self
+    }
+
     /// Replaces effective compile flags for provenance regression tests.
     #[must_use]
     pub fn with_effective_compile_flags(mut self, value: impl Into<String>) -> Self {
@@ -270,6 +277,9 @@ pub enum BuildIdentityError {
     /// The Phase 4 compiler identity disagrees with the base build identity.
     #[error("Phase 4 compiler identity does not exactly match the base build identity")]
     Phase4CompilerMismatch,
+    /// The Phase 4 target disagrees with the base build identity.
+    #[error("Phase 4 target does not exactly match the base build identity")]
+    Phase4TargetMismatch,
     /// A would-be canonical identity contains a prohibited optimization or CPU flag.
     #[error("canonical build identity contains forbidden floating or native tuning flags")]
     CanonicalForbiddenFlags,
@@ -374,6 +384,11 @@ impl BuildIdentity {
                 || phase4.fields.compiler_version != fields.compiler_version)
         {
             return Err(BuildIdentityError::Phase4CompilerMismatch);
+        }
+        if let Some(phase4) = &maybe_phase4
+            && phase4.fields.target_triple != fields.target
+        {
+            return Err(BuildIdentityError::Phase4TargetMismatch);
         }
         let evidence_tier = classify_evidence_tier(&fields, maybe_phase4.as_ref())?;
         let identity_sha256 = hash_identity_fields(&fields);
@@ -583,29 +598,20 @@ fn classify_evidence_tier(
         identity.effective_compile_flags,
         identity.effective_link_flags,
     );
-    let forbidden = [
-        "-ffast-math",
-        "-Ofast",
-        "-fassociative-math",
-        "-freciprocal-math",
-        "-funsafe-math-optimizations",
-        "-march=native",
-        "-mcpu=native",
-        "target-cpu=native",
-        "-Ctarget-cpu=native",
-        "-enable-unsafe-fp-math",
-        "-enable-no-nans-fp-math",
-        "-enable-no-infs-fp-math",
-    ]
-    .iter()
-    .any(|flag| flag_tokens(&combined).iter().any(|word| word == *flag));
+    let tokens = flag_tokens(&combined);
+    let forbidden = tokens.iter().any(|word| has_unreviewed_codegen_flag(word));
     let canonical_compiler = (fields.compiler_id == "Clang" && fields.compiler_version == "22.1.8")
         || (fields.compiler_id == "rustc" && fields.compiler_version == "1.97.0");
-    let canonical_target = fields.target_triple == "x86_64-unknown-linux-gnu"
-        && fields.target_cpu == "baseline"
+    let canonical_candidate = canonical_compiler
+        && fields.target_triple == "x86_64-unknown-linux-gnu"
         && fields.os.eq_ignore_ascii_case("linux");
-    let canonical_candidate = canonical_compiler && canonical_target;
-    if canonical_candidate && forbidden {
+    let canonical_features = match fields.compiler_id.as_str() {
+        "Clang" => fields.target_features == "<none>",
+        "rustc" => fields.target_features == "cfg=fxsr,sse,sse2;explicit=<none>",
+        _ => false,
+    };
+    let canonical_codegen = fields.target_cpu == "baseline" && canonical_features && !forbidden;
+    if canonical_candidate && !canonical_codegen {
         return Err(BuildIdentityError::CanonicalForbiddenFlags);
     }
     if canonical_candidate
@@ -617,7 +623,7 @@ fn classify_evidence_tier(
     {
         return Err(BuildIdentityError::CanonicalRuntimeWitness);
     }
-    if canonical_candidate {
+    if canonical_candidate && canonical_codegen {
         return Ok(BuildEvidenceTier::D1Canonical);
     }
     if forbidden {
@@ -631,6 +637,33 @@ fn classify_evidence_tier(
     } else {
         BuildEvidenceTier::D3Exploratory
     })
+}
+
+fn has_unreviewed_codegen_flag(word: &str) -> bool {
+    let lowered = word.to_ascii_lowercase();
+    [
+        "-ffast-math",
+        "-ofast",
+        "-fassociative-math",
+        "-freciprocal-math",
+        "-funsafe-math-optimizations",
+        "target-cpu=",
+        "target-feature=",
+        "llvm-args=",
+        "-march=",
+        "-mcpu=",
+        "-mtune=",
+        "-mavx",
+        "-mfma",
+        "-msse",
+        "unsafe-fp",
+        "fp-contract=fast",
+        "fp-contract=on",
+        "no-nans-fp",
+        "no-infs-fp",
+    ]
+    .iter()
+    .any(|needle| lowered.contains(needle))
 }
 
 fn flag_tokens(value: &str) -> Vec<String> {
@@ -746,7 +779,7 @@ mod tests {
             "oracle-debug",
             "Clang",
             "22.1.8",
-            "aarch64-apple-darwin",
+            "x86_64-unknown-linux-gnu",
             "Debug",
             "-O0 -g",
             "-lc++",
@@ -862,6 +895,61 @@ mod tests {
     }
 
     #[test]
+    fn canonical_identity_rejects_fixed_cpu_and_simd_tuning() {
+        for tuning in ["-march=haswell", "-mavx2", "-mfma"] {
+            // Arrange
+            let fields = valid_fields()
+                .with_effective_compile_flags(tuning)
+                .with_phase4(canonical_phase4());
+
+            // Act
+            let error = BuildIdentity::new(fields).expect_err("fixed tuning must fail closed");
+
+            // Assert
+            assert_eq!(error, BuildIdentityError::CanonicalForbiddenFlags);
+        }
+    }
+
+    #[test]
+    fn canonical_identity_rejects_explicit_features_and_nested_llvm_fp_options() {
+        for encoded in [
+            "hexvec:2d43,7461726765742d666561747572653d2b617678322c2b666d61",
+            "hexvec:2d43,6c6c766d2d617267733d2d656e61626c652d756e736166652d66702d6d617468",
+        ] {
+            // Arrange
+            let fields = valid_fields()
+                .with_compiler_id("rustc")
+                .with_compiler_version("1.97.0")
+                .with_effective_compile_flags(format!("encoded_rustflags={encoded}"))
+                .with_phase4(Phase4BuildIdentityFields::new(
+                    "11".repeat(32),
+                    "rustc",
+                    "1.97.0",
+                    "x86_64-unknown-linux-gnu",
+                    "baseline",
+                    "cfg=fxsr,sse,sse2;explicit=<none>",
+                    "<none>",
+                    "O3",
+                    "precise",
+                    "off",
+                    "ieee",
+                    "scalar baseline",
+                    "linux",
+                    "glibc",
+                    "libm",
+                    "nearest_ties_even",
+                    true,
+                ));
+
+            // Act
+            let error = BuildIdentity::new(fields).expect_err("LLVM tuning must fail closed");
+
+            // Assert
+            assert_eq!(error, BuildIdentityError::CanonicalForbiddenFlags);
+        }
+    }
+
+    #[test]
     fn phase4_compiler_must_match_base_identity_exactly() {
         // Arrange
         let mut phase4 = canonical_phase4();
@@ -873,6 +961,22 @@ mod tests {
 
         // Assert
         assert_eq!(error, BuildIdentityError::Phase4CompilerMismatch);
+    }
+
+    #[test]
+    fn phase4_target_must_match_base_identity_exactly() {
+        // Arrange
+        let fields = valid_fields().with_phase4(canonical_phase4().with_sdk_or_sysroot("<none>"));
+        let mismatched = BuildIdentityFields {
+            target: "aarch64-unknown-linux-gnu".to_owned(),
+            ..fields
+        };
+
+        // Act
+        let error = BuildIdentity::new(mismatched).expect_err("target mismatch must fail closed");
+
+        // Assert
+        assert_eq!(error, BuildIdentityError::Phase4TargetMismatch);
     }
 
     #[test]
@@ -918,6 +1022,7 @@ mod tests {
             valid_fields()
                 .with_compiler_id("AppleClang")
                 .with_compiler_version("21.0.0")
+                .with_target("arm64-apple-darwin")
                 .with_phase4(supported),
         )
         .expect("supported identity should validate");

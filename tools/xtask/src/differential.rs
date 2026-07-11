@@ -34,6 +34,7 @@ Commands:
 const ORACLE_REVISION: &str = "7f20402173fd143a3988c921bc384459c6a858f2";
 const MATH_PROBE_REQUEST: &str = "protocol/fixtures/accepted/math-probe-request.jsonl";
 const PHASE4_POLICY: &str = "protocol/tolerances/phase4-v1.toml";
+const NATIVE_SOURCE_MANIFEST: &str = "crates/liquidfun-differential/native-math-sources.txt";
 const ALLOWED_SCENARIOS: [&str; 2] = ["empty-world", "math-probes"];
 const ALLOWED_PRESETS: [&str; 3] = ["oracle-debug", "oracle-release", "oracle-asan-ubsan"];
 const MATH_PROBE_PRESETS: [&str; 2] = ["oracle-debug", "oracle-release"];
@@ -353,6 +354,18 @@ fn run_math_probe_command(
     let capture = execute_math_probe_once(repository_root, &request, &invocation.preset)?;
     let native_adapter = EmptyWorldAdapter::new(ORACLE_REVISION)
         .map_err(|error| DifferentialError::new("identity", error.to_string()))?;
+    let expected_native_digest = native_source_manifest_sha256(repository_root)?;
+    if native_adapter
+        .build_identity()
+        .adapter_content_sha256()
+        .as_str()
+        != expected_native_digest
+    {
+        return Err(DifferentialError::new(
+            "identity",
+            "native adapter digest differs from independently hashed reviewed math inputs",
+        ));
+    }
     compare_math_probe_results(
         &request,
         &capture.results,
@@ -372,6 +385,53 @@ fn run_math_probe_command(
         invocation.preset
     );
     Ok(())
+}
+
+fn native_source_manifest_sha256(repository_root: &Path) -> Result<String, DifferentialError> {
+    let manifest_path = repository_root.join(NATIVE_SOURCE_MANIFEST);
+    let manifest = fs::read_to_string(&manifest_path).map_err(|error| {
+        DifferentialError::new(
+            "identity",
+            format!("failed to read {}: {error}", manifest_path.display()),
+        )
+    })?;
+    native_source_digest_from_manifest(repository_root, &manifest)
+}
+
+fn native_source_digest_from_manifest(
+    repository_root: &Path,
+    manifest: &str,
+) -> Result<String, DifferentialError> {
+    let mut hasher = Sha256::new();
+    for relative in manifest
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty())
+    {
+        let path = Path::new(relative);
+        if path.is_absolute()
+            || path
+                .components()
+                .any(|part| matches!(part, std::path::Component::ParentDir))
+        {
+            return Err(DifferentialError::new(
+                "identity",
+                format!("invalid native source manifest path `{relative}`"),
+            ));
+        }
+        let bytes = fs::read(repository_root.join(path)).map_err(|error| {
+            DifferentialError::new(
+                "identity",
+                format!("failed to hash native source `{relative}`: {error}"),
+            )
+        })?;
+        let relative_len = u64::try_from(relative.len())
+            .map_err(|_| DifferentialError::new("identity", "native source path is too long"))?;
+        hasher.update(relative_len.to_be_bytes());
+        hasher.update(relative.as_bytes());
+        hasher.update(Sha256::digest(bytes));
+    }
+    Ok(format!("{:x}", hasher.finalize()))
 }
 
 fn read_regular_file(repository_root: &Path, relative: &str) -> Result<Vec<u8>, DifferentialError> {
@@ -462,20 +522,22 @@ fn effective_compile_command_sha256(
     repository_root: &Path,
     preset: &str,
 ) -> Result<String, DifferentialError> {
-    let path = repository_root
-        .join("target/reference")
-        .join(preset)
-        .join("compile_commands.json");
+    let build_directory = repository_root.join("target/reference").join(preset);
+    let path = build_directory.join("compile_commands.json");
     let bytes = fs::read(&path).map_err(|error| {
         DifferentialError::new(
             "identity",
             format!("failed to read {}: {error}", path.display()),
         )
     })?;
-    compile_database_sha256(&bytes)
+    compile_database_sha256(&bytes, repository_root, &build_directory)
 }
 
-fn compile_database_sha256(bytes: &[u8]) -> Result<String, DifferentialError> {
+fn compile_database_sha256(
+    bytes: &[u8],
+    repository_root: &Path,
+    build_directory: &Path,
+) -> Result<String, DifferentialError> {
     let entries: Vec<serde_json::Value> = serde_json::from_slice(bytes)
         .map_err(|error| DifferentialError::new("identity", error.to_string()))?;
     let mut commands = entries
@@ -498,7 +560,11 @@ fn compile_database_sha256(bytes: &[u8]) -> Result<String, DifferentialError> {
                     }
                     command
                 };
-            Some(format!("{source}\n{command}"))
+            let normalized_source =
+                normalize_compile_path(source, repository_root, build_directory);
+            let normalized_command =
+                normalize_compile_path(&command, repository_root, build_directory);
+            Some(format!("{normalized_source}\n{normalized_command}"))
         })
         .collect::<Vec<_>>();
     if commands.len() != 2 {
@@ -512,6 +578,14 @@ fn compile_database_sha256(bytes: &[u8]) -> Result<String, DifferentialError> {
     }
     commands.sort_unstable();
     Ok(format!("{:x}", Sha256::digest(commands.join("\n"))))
+}
+
+fn normalize_compile_path(value: &str, repository_root: &Path, build_directory: &Path) -> String {
+    let build = build_directory.to_string_lossy();
+    let repository = repository_root.to_string_lossy();
+    value
+        .replace(build.as_ref(), "<build>")
+        .replace(repository.as_ref(), "<repo>")
 }
 
 fn compare_math_probe_results(
@@ -827,7 +901,12 @@ fn repository_root() -> Result<PathBuf, DifferentialError> {
 mod tests {
     use liquidfun_test_protocol::{DivergenceHorizon, EvidenceTier, MathProbeHorizon};
 
-    use super::{compile_database_sha256, horizons_match, tier_authorizes};
+    use std::{fs, path::Path};
+
+    use super::{
+        compile_database_sha256, horizons_match, native_source_digest_from_manifest,
+        tier_authorizes,
+    };
 
     #[test]
     fn effective_compile_digest_changes_with_material_command_inputs() {
@@ -844,11 +923,21 @@ mod tests {
         ];
 
         // Act
-        let baseline_digest = compile_database_sha256(baseline).expect("baseline should hash");
+        let baseline_digest = compile_database_sha256(
+            baseline,
+            Path::new("/repo"),
+            Path::new("/repo/target/reference/oracle-release"),
+        )
+        .expect("baseline should hash");
         let changed_digests = variants
             .iter()
             .map(|changed| {
-                compile_database_sha256(changed.as_bytes()).expect("changed command should hash")
+                compile_database_sha256(
+                    changed.as_bytes(),
+                    Path::new("/repo"),
+                    Path::new("/repo/target/reference/oracle-release"),
+                )
+                .expect("changed command should hash")
             })
             .collect::<Vec<_>>();
 
@@ -858,6 +947,58 @@ mod tests {
                 .iter()
                 .all(|changed| changed != &baseline_digest)
         );
+    }
+
+    #[test]
+    fn effective_compile_digest_is_stable_across_repository_relocation() {
+        // Arrange
+        let first = br#"[
+          {"file":"/first/repo/tools/reference/src/math_probe.cpp","command":"clang++ -I/first/repo/tools/reference/src -o /first/repo/target/reference/oracle-release/probe.o -c /first/repo/tools/reference/src/math_probe.cpp"},
+          {"file":"/first/repo/tools/reference/src/protocol_bits.cpp","command":"clang++ -I/first/repo/tools/reference/src -o /first/repo/target/reference/oracle-release/bits.o -c /first/repo/tools/reference/src/protocol_bits.cpp"}
+        ]"#;
+        let second = String::from_utf8(first.to_vec())
+            .expect("fixture is UTF-8")
+            .replace("/first/repo", "/second/repo");
+
+        // Act
+        let first_digest = compile_database_sha256(
+            first,
+            Path::new("/first/repo"),
+            Path::new("/first/repo/target/reference/oracle-release"),
+        )
+        .expect("first location should hash");
+        let second_digest = compile_database_sha256(
+            second.as_bytes(),
+            Path::new("/second/repo"),
+            Path::new("/second/repo/target/reference/oracle-release"),
+        )
+        .expect("second location should hash");
+
+        // Assert
+        assert_eq!(first_digest, second_digest);
+    }
+
+    #[test]
+    fn native_source_digest_changes_when_an_executor_input_changes() {
+        // Arrange
+        let root =
+            std::env::temp_dir().join(format!("liquidfun-native-manifest-{}", std::process::id()));
+        let source = root.join("crates/liquidfun-differential/src/math_probe.rs");
+        fs::create_dir_all(source.parent().expect("fixture source has a parent"))
+            .expect("temporary fixture directory should be created");
+        fs::write(&source, b"executor v1").expect("first fixture should be written");
+        let manifest = "crates/liquidfun-differential/src/math_probe.rs\n";
+        let original = native_source_digest_from_manifest(&root, manifest)
+            .expect("original manifest should hash");
+
+        // Act
+        fs::write(&source, b"executor v2").expect("changed fixture should be written");
+        let changed = native_source_digest_from_manifest(&root, manifest)
+            .expect("changed manifest should hash");
+
+        // Assert
+        assert_ne!(original, changed);
+        fs::remove_dir_all(root).expect("temporary fixture should be removed");
     }
 
     #[test]

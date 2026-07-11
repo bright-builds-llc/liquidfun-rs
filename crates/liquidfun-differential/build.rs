@@ -1,9 +1,16 @@
 //! Captures exact native Rust compiler, target, profile, feature, and flag provenance.
 
-use std::{env, error::Error, io, process::Command};
+use sha2::{Digest, Sha256};
+use std::{env, error::Error, fs, io, path::Path, process::Command};
 
 fn main() -> Result<(), Box<dyn Error>> {
-    println!("cargo:rerun-if-changed=src/rust_adapter.rs");
+    let manifest_dir = env::var("CARGO_MANIFEST_DIR")?;
+    let repository_root = Path::new(&manifest_dir).ancestors().nth(2).ok_or_else(|| {
+        io::Error::other("differential crate is not nested under repository root")
+    })?;
+    let source_manifest = Path::new(&manifest_dir).join("native-math-sources.txt");
+    println!("cargo:rerun-if-changed={}", source_manifest.display());
+    let source_digest = native_source_manifest_sha256(repository_root, &source_manifest)?;
     println!("cargo:rerun-if-env-changed=CARGO_ENCODED_RUSTFLAGS");
 
     let rustc = env::var("RUSTC")?;
@@ -30,7 +37,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     let optimization = format!("O{}", env::var("OPT_LEVEL")?);
     let target_os = env::var("CARGO_CFG_TARGET_OS")?;
     let target_env = env::var("CARGO_CFG_TARGET_ENV").unwrap_or_default();
-    let target_features = env::var("CARGO_CFG_TARGET_FEATURE").unwrap_or_default();
+    let mut target_features = env::var("CARGO_CFG_TARGET_FEATURE")
+        .unwrap_or_default()
+        .split(',')
+        .filter(|feature| !feature.is_empty())
+        .map(str::to_owned)
+        .collect::<Vec<_>>();
+    target_features.sort();
     let mut features = env::vars()
         .filter_map(|(name, _value)| name.strip_prefix("CARGO_FEATURE_").map(str::to_owned))
         .collect::<Vec<_>>();
@@ -57,25 +70,24 @@ fn main() -> Result<(), Box<dyn Error>> {
                 .join(",")
         )
     };
-    let target_cpu = if rustflags_have_value(&rustflags, "target-cpu", "native") {
-        "native"
+    let explicit_target_cpu = rustflag_values(&rustflags, "target-cpu");
+    let target_cpu = if explicit_target_cpu.is_empty() {
+        "baseline".to_owned()
     } else {
-        "baseline"
+        format!("explicit={explicit_target_cpu}")
     };
     let explicit_target_features = rustflag_values(&rustflags, "target-feature");
-    let target_features = [
-        (!target_features.is_empty()).then_some(target_features.as_str()),
-        (!explicit_target_features.is_empty()).then_some(explicit_target_features.as_str()),
-    ]
-    .into_iter()
-    .flatten()
-    .collect::<Vec<_>>()
-    .join(",");
-    let target_features = if target_features.is_empty() {
+    let cfg_target_features = if target_features.is_empty() {
         "<none>".to_owned()
     } else {
-        target_features
+        target_features.join(",")
     };
+    let explicit_target_features = if explicit_target_features.is_empty() {
+        "<none>".to_owned()
+    } else {
+        explicit_target_features
+    };
+    let target_features = format!("cfg={cfg_target_features};explicit={explicit_target_features}");
     let runtime_version =
         command_line("uname", &["-r"]).unwrap_or_else(|| format!("target-env-{target_env}"));
     let libc = match (target_os.as_str(), target_env.as_str()) {
@@ -106,7 +118,44 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("cargo:rustc-env=LIQUIDFUN_NATIVE_LIBM={libm}");
     println!("cargo:rustc-env=LIQUIDFUN_NATIVE_FEATURES={features}");
     println!("cargo:rustc-env=LIQUIDFUN_NATIVE_ENCODED_RUSTFLAGS={rendered_rustflags}");
+    println!("cargo:rustc-env=LIQUIDFUN_NATIVE_SOURCE_SHA256={source_digest}");
     Ok(())
+}
+
+fn native_source_manifest_sha256(
+    repository_root: &Path,
+    source_manifest: &Path,
+) -> Result<String, Box<dyn Error>> {
+    let manifest = fs::read_to_string(source_manifest)?;
+    let mut hasher = Sha256::new();
+    for relative in manifest
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty())
+    {
+        let path = Path::new(relative);
+        if path.is_absolute()
+            || path
+                .components()
+                .any(|part| matches!(part, std::path::Component::ParentDir))
+        {
+            return Err(io::Error::other(format!(
+                "invalid native source manifest path `{relative}`"
+            ))
+            .into());
+        }
+        let bytes = fs::read(repository_root.join(path))?;
+        println!(
+            "cargo:rerun-if-changed={}",
+            repository_root.join(path).display()
+        );
+        let file_digest = Sha256::digest(bytes);
+        let relative_len = u64::try_from(relative.len())?;
+        hasher.update(relative_len.to_be_bytes());
+        hasher.update(relative.as_bytes());
+        hasher.update(file_digest);
+    }
+    Ok(hex_encode(&hasher.finalize()))
 }
 
 fn rustflag_values(flags: &[&str], key: &str) -> String {
@@ -131,12 +180,6 @@ fn rustflag_values(flags: &[&str], key: &str) -> String {
         index += 1;
     }
     values.join(",")
-}
-
-fn rustflags_have_value(flags: &[&str], key: &str, expected: &str) -> bool {
-    rustflag_values(flags, key)
-        .split(',')
-        .any(|value| value == expected)
 }
 
 fn command_line(program: &str, arguments: &[&str]) -> Option<String> {
