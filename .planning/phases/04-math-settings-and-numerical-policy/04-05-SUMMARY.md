@@ -1,53 +1,50 @@
-______________________________________________________________________
-
+---
 phase: 04-math-settings-and-numerical-policy
 plan: "05"
 subsystem: cpp-math-probes-and-build-identity
 tags: [cpp, rust, ieee-754, build-provenance, differential-testing]
 requires:
-
-- phase: 04-math-settings-and-numerical-policy
-  plan: "04"
-  provides: Strict bounded native math-probe request, result, and witness contract
-  provides:
-- External C++ execution of the complete 39-case Phase 4 math-probe corpus
-- Representation-preserving float bit transport across the JSONL boundary
-- Strict 17-field Rust and C++ floating build identity with D1/D2/D3 classification
-- Fail-closed canonical compiler, target, floating flag, and runtime witness validation
-  affects: [phase-5-collision, differential-evidence, canonical-oracle-ci]
-  tech-stack:
+  - phase: 04-math-settings-and-numerical-policy
+    plan: "04"
+    provides: Strict bounded native math-probe request, result, and witness contract
+provides:
+  - External C++ execution of the complete 39-case Phase 4 math-probe corpus
+  - Representation-preserving float bit transport across the JSONL boundary
+  - Strict 17-field Rust and C++ floating build identity with D1/D2/D3 classification
+  - Fail-closed canonical compiler, target, floating flag, and runtime witness validation
+affects: [phase-5-collision, differential-evidence, canonical-oracle-ci]
+tech-stack:
   added: []
   patterns: [closed C++ dispatch, memcpy bit transport, strict provenance identity, fail-closed evidence tiers]
-  key-files:
+key-files:
   created:
-  - tools/reference/src/math_probe.hpp
-  - tools/reference/src/math_probe.cpp
-    modified:
-  - tools/reference/src/protocol_bits.cpp
-  - tools/reference/src/protocol.cpp
-  - tools/reference/src/main.cpp
-  - tools/reference/CMakeLists.txt
-  - tools/reference/src/build_identity.hpp.in
-  - crates/liquidfun-test-protocol/src/provenance.rs
-  - crates/liquidfun-test-protocol/src/trace.rs
-  - crates/liquidfun-differential/src/rust_adapter.rs
-  - crates/liquidfun-differential/tests/round_trip.rs
-    key-decisions:
-- "Mirror the closed Rust math-probe contract in external C++ and preserve every float payload through memcpy-based uint32_t transport."
-- "Treat canonical D1 compiler, target, flags, and runtime witnesses as a fail-closed identity contract before numerical comparison."
-- "Record supported but noncanonical local toolchains as D2 or D3 evidence that cannot promote canonical results."
-  patterns-established:
-- "C++ probe parity: identical operation IDs, ordered case IDs, exact-bit results, bounded decode, and reset epochs across debug and release profiles."
-- "Floating identity: all 17 Phase 4 fields participate in strict validation and identity hashing, while unsupported canonical capabilities remain explicit evidence-tier boundaries."
-  requirements-completed: [COLL-01, COLL-08]
-  generated_by: gsd-execute-plan
-  lifecycle_mode: yolo
-  phase_lifecycle_id: 4-2026-07-11T04-16-20
-  generated_at: 2026-07-11T06:32:06Z
-  duration: 29 min
-  completed: 2026-07-11
-
-______________________________________________________________________
+    - tools/reference/src/math_probe.hpp
+    - tools/reference/src/math_probe.cpp
+  modified:
+    - tools/reference/src/protocol_bits.cpp
+    - tools/reference/src/protocol.cpp
+    - tools/reference/src/main.cpp
+    - tools/reference/CMakeLists.txt
+    - tools/reference/src/build_identity.hpp.in
+    - crates/liquidfun-test-protocol/src/provenance.rs
+    - crates/liquidfun-test-protocol/src/trace.rs
+    - crates/liquidfun-differential/src/rust_adapter.rs
+    - crates/liquidfun-differential/tests/round_trip.rs
+key-decisions:
+  - "Mirror the closed Rust math-probe contract in external C++ and preserve every float payload through memcpy-based uint32_t transport."
+  - "Treat canonical D1 compiler, target, flags, and runtime witnesses as a fail-closed identity contract before numerical comparison."
+  - "Record supported but noncanonical local toolchains as D2 or D3 evidence that cannot promote canonical results."
+patterns-established:
+  - "C++ probe parity: identical operation IDs, ordered case IDs, exact-bit results, bounded decode, and reset epochs across debug and release profiles."
+  - "Floating identity: all 17 Phase 4 fields participate in strict validation and identity hashing, while unsupported canonical capabilities remain explicit evidence-tier boundaries."
+requirements-completed: [COLL-01, COLL-08]
+generated_by: gsd-execute-plan
+lifecycle_mode: yolo
+phase_lifecycle_id: 4-2026-07-11T04-16-20
+generated_at: 2026-07-11T06:32:06Z
+duration: 29 min
+completed: 2026-07-11
+---
 
 # Phase 4 Plan 05: Pinned C++ Probes and Floating Build Identity Summary
 
