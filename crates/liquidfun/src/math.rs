@@ -22,6 +22,7 @@ mod matrix;
 mod scalar;
 /// Immutable constants translated from the selected upstream `b2Settings.h`.
 pub mod settings;
+mod sweep;
 mod transform;
 mod vector;
 
@@ -30,5 +31,6 @@ pub use scalar::{
     abs, clamp, distance, distance_squared, inverse_sqrt, is_power_of_two, is_valid, max, min,
     next_power_of_two,
 };
+pub use sweep::{Sweep, SweepError, SweepField};
 pub use transform::{Rotation, Transform};
 pub use vector::{Vec2, Vec3, Vec4};
