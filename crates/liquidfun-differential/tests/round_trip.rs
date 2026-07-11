@@ -26,22 +26,28 @@ fn repository_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..")
 }
 
-fn real_oracle_path() -> Option<PathBuf> {
+fn real_oracle_path(preset: OraclePreset) -> Option<PathBuf> {
     let root = repository_root();
-    OracleExecutable::resolve(&root, OraclePreset::Debug)
-        .ok()
-        .map(|_| {
-            root.join("target/reference/oracle-debug")
-                .join(if cfg!(windows) {
-                    "liquidfun-reference.exe"
-                } else {
-                    "liquidfun-reference"
-                })
-        })
+    let directory = match preset {
+        OraclePreset::Debug => "oracle-debug",
+        OraclePreset::Release => "oracle-release",
+        OraclePreset::AsanUbsan => "oracle-asan-ubsan",
+    };
+    OracleExecutable::resolve(&root, preset).ok().map(|_| {
+        root.join("target/reference")
+            .join(directory)
+            .join(if cfg!(windows) {
+                "liquidfun-reference.exe"
+            } else {
+                "liquidfun-reference"
+            })
+    })
 }
 
-fn run_cpp_math_probe_twice() -> Option<(Vec<MathProbeResult>, Vec<serde_json::Value>)> {
-    let maybe_executable = real_oracle_path();
+fn run_cpp_math_probe_twice(
+    preset: OraclePreset,
+) -> Option<(Vec<MathProbeResult>, Vec<serde_json::Value>)> {
+    let maybe_executable = real_oracle_path(preset);
     let Some(executable) = maybe_executable else {
         eprintln!(
             "SKIP real oracle integration prerequisite: run cargo xtask upstream configure/build --preset oracle-debug"
@@ -139,7 +145,7 @@ fn run_cpp_math_probe_twice() -> Option<(Vec<MathProbeResult>, Vec<serde_json::V
 fn cpp_protocol_bits_preserve_exceptional_classes() {
     // Arrange
     let root = repository_root();
-    if real_oracle_path().is_none() {
+    if real_oracle_path(OraclePreset::Debug).is_none() {
         eprintln!(
             "SKIP real oracle integration prerequisite: run cargo xtask upstream configure/build --preset oracle-debug"
         );
@@ -170,18 +176,18 @@ fn cpp_protocol_bits_preserve_exceptional_classes() {
 
 #[test]
 fn cpp_math_probe_matches_operation_contract() {
-    // Arrange / Act
-    let Some((results, ends)) = run_cpp_math_probe_twice() else {
-        return;
-    };
-
-    // Assert
-    assert_eq!(results.len(), 39);
-    assert_eq!(ends[0]["result_count"], 39);
-    assert_eq!(ends[0]["reset_epoch"], 1);
-    assert_eq!(ends[1]["reset_epoch"], 2);
-    assert_eq!(ends[0]["reset_verified"], true);
-    assert_eq!(ends[1]["reset_verified"], true);
+    // Arrange / Act / Assert
+    for preset in [OraclePreset::Debug, OraclePreset::Release] {
+        let Some((results, ends)) = run_cpp_math_probe_twice(preset) else {
+            return;
+        };
+        assert_eq!(results.len(), 39);
+        assert_eq!(ends[0]["result_count"], 39);
+        assert_eq!(ends[0]["reset_epoch"], 1);
+        assert_eq!(ends[1]["reset_epoch"], 2);
+        assert_eq!(ends[0]["reset_verified"], true);
+        assert_eq!(ends[1]["reset_verified"], true);
+    }
 }
 
 fn fake_repository(behavior: &str) -> PathBuf {
