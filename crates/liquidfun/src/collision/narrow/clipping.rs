@@ -1,20 +1,12 @@
 use crate::collision::{ContactFeatureId, FeatureKind};
 use crate::math::Vec2;
 
-#[allow(
-    dead_code,
-    reason = "the private clip kernel is consumed by the next manifold task"
-)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(super) struct ClipVertex {
     pub(super) point: Vec2,
     pub(super) feature_id: ContactFeatureId,
 }
 
-#[allow(
-    dead_code,
-    reason = "the private clip kernel is consumed by the next manifold task"
-)]
 pub(super) fn clip_segment_to_line(
     input: [ClipVertex; 2],
     normal: Vec2,
