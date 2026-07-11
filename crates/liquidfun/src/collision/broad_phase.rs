@@ -194,6 +194,15 @@ impl<T> BroadPhase<T> {
         Ok(&self.tree.payload(proxy)?.payload)
     }
 
+    /// Returns the embedded tree's fat AABB for a live proxy.
+    ///
+    /// # Errors
+    ///
+    /// Returns an explicit foreign or stale/destroyed proxy error.
+    pub fn fat_aabb(&self, proxy: ProxyId) -> Result<Aabb, TreeError> {
+        self.tree.fat_aabb(proxy)
+    }
+
     /// Reports all buffered potential pairs in private node-coordinate order.
     ///
     /// Every live move occurrence performs a fat-AABB query. Candidate pairs
@@ -260,6 +269,24 @@ impl<T> BroadPhase<T> {
     #[must_use]
     pub const fn proxy_count(&self) -> usize {
         self.tree.proxy_count()
+    }
+
+    /// Returns the embedded tree height.
+    #[must_use]
+    pub fn tree_height(&self) -> i32 {
+        self.tree.height()
+    }
+
+    /// Returns the embedded tree's maximum child-height difference.
+    #[must_use]
+    pub fn tree_max_balance(&self) -> i32 {
+        self.tree.max_balance()
+    }
+
+    /// Returns the embedded tree's total-to-root perimeter ratio.
+    #[must_use]
+    pub fn tree_area_ratio(&self) -> f32 {
+        self.tree.area_ratio()
     }
 
     fn buffer_move(&mut self, proxy: ProxyId) {

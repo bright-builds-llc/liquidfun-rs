@@ -170,6 +170,55 @@ fn dynamic_tree_metrics_and_validation_survive_rebalancing_and_origin_shift() {
 }
 
 #[test]
+fn dynamic_tree_seeded_lifecycle_history_preserves_invariants() {
+    // Arrange
+    let mut tree = DynamicTree::new().expect("a tree key should remain available");
+    let mut live = Vec::new();
+    let mut state = 0x9e37_79b9_u32;
+
+    // Act
+    for step in 0_u16..256 {
+        state ^= state << 13;
+        state ^= state >> 17;
+        state ^= state << 5;
+        match state % 4 {
+            0 | 1 => {
+                let x = f32::from(step % 31) - 15.0;
+                let proxy = tree
+                    .create_proxy(aabb(x, -1.0, x + 0.25, 1.0), step)
+                    .expect("bounded finite history should create a proxy");
+                live.push(Some(proxy));
+            }
+            2 if !live.is_empty() => {
+                let selected = usize::try_from(state)
+                    .expect("u32 should fit usize on supported targets")
+                    % live.len();
+                if let Some(proxy) = live[selected].take() {
+                    tree.destroy_proxy(proxy)
+                        .expect("selected live proxy should be destroyed");
+                }
+            }
+            3 if !live.is_empty() => {
+                let selected = usize::try_from(state)
+                    .expect("u32 should fit usize on supported targets")
+                    % live.len();
+                if let Some(proxy) = live[selected] {
+                    let x = f32::from(step % 23) - 11.0;
+                    tree.move_proxy(proxy, aabb(x, -0.5, x + 0.5, 0.5), Vec2::new(0.25, -0.25))
+                        .expect("selected live proxy should move");
+                }
+            }
+            _ => {}
+        }
+        assert!(tree.validate(), "seeded invariant failed at step {step}");
+    }
+
+    // Assert
+    let expected_live = live.iter().flatten().count();
+    assert_eq!(tree.proxy_count(), expected_live);
+}
+
+#[test]
 fn dynamic_tree_query_visitor_can_stop_without_allocating() {
     // Arrange
     let mut tree = DynamicTree::new().expect("a tree key should remain available");
@@ -378,7 +427,7 @@ fn broad_phase_equal_nonzero_groups_override_masks_by_sign() {
 }
 
 #[test]
-fn broad_phase_creation_reports_each_overlapping_pair_once_in_private_slot_order() {
+fn broad_phase_pairs_report_each_overlap_once_in_private_slot_order() {
     // Arrange
     let mut broad_phase = BroadPhase::new().expect("a tree key should remain available");
     broad_phase
@@ -542,4 +591,41 @@ fn broad_phase_refilter_touches_proxy_for_newly_eligible_pair() {
         broad_phase.should_collide(reconsidered[0].0, reconsidered[0].1),
         Ok(true)
     );
+}
+
+#[test]
+fn broad_phase_distinct_groups_fall_back_to_symmetric_masks() {
+    // Arrange
+    let first = FilterData::new(0x0001, 0x0002, 7);
+    let second = FilterData::new(0x0002, 0x0001, -7);
+    let rejected = FilterData::new(0x0002, 0x0000, -7);
+
+    // Act
+    let accepted = first.should_collide(second);
+    let rejected = first.should_collide(rejected);
+
+    // Assert
+    assert!(accepted);
+    assert!(!rejected);
+}
+
+#[test]
+fn broad_phase_metrics_forward_embedded_tree_state() {
+    // Arrange
+    let mut broad_phase = BroadPhase::new().expect("a tree key should remain available");
+    let proxy = broad_phase
+        .create_proxy(aabb(0.0, 0.0, 1.0, 1.0), (), FilterData::default())
+        .expect("finite bounds should create a proxy");
+
+    // Act
+    let fat_aabb = broad_phase
+        .fat_aabb(proxy)
+        .expect("a live proxy should have fat bounds");
+
+    // Assert
+    assert_eq!(broad_phase.proxy_count(), 1);
+    assert_eq!(broad_phase.tree_height(), 0);
+    assert_eq!(broad_phase.tree_max_balance(), 0);
+    assert_eq!(broad_phase.tree_area_ratio().to_bits(), 1.0_f32.to_bits());
+    assert!(fat_aabb.contains(aabb(0.0, 0.0, 1.0, 1.0)));
 }

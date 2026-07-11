@@ -444,7 +444,7 @@ impl<T> DynamicTree<T> {
             if cost < cost1 && cost < cost2 {
                 break;
             }
-            index = if cost1 < cost2 { child1 } else { child2 };
+            index = descend_child(child1, child2, cost1, cost2);
         }
 
         let sibling = index;
@@ -576,7 +576,7 @@ impl<T> DynamicTree<T> {
             self.maybe_root = Some(index_c);
         }
 
-        if self.node_height(index_f) > self.node_height(index_g) {
+        if first_height_wins(self.node_height(index_f), self.node_height(index_g)) {
             self.pool.node_mut(index_c).maybe_child2 = Some(index_f);
             self.pool.node_mut(index_a).maybe_child2 = Some(index_g);
             self.pool.node_mut(index_g).maybe_parent = Some(index_a);
@@ -610,7 +610,7 @@ impl<T> DynamicTree<T> {
             self.maybe_root = Some(index_b);
         }
 
-        if self.node_height(index_d) > self.node_height(index_e) {
+        if first_height_wins(self.node_height(index_d), self.node_height(index_e)) {
             self.pool.node_mut(index_b).maybe_child2 = Some(index_d);
             self.pool.node_mut(index_a).maybe_child1 = Some(index_e);
             self.pool.node_mut(index_e).maybe_parent = Some(index_a);
@@ -657,4 +657,43 @@ fn predicted_fat_aabb(aabb: Aabb, displacement: Vec2) -> Result<Aabb, TreeError>
     }
 
     Aabb::new(lower, upper).map_err(|_error| TreeError::AabbOverflow)
+}
+
+fn descend_child(child1: NodeIndex, child2: NodeIndex, cost1: f32, cost2: f32) -> NodeIndex {
+    if cost1 < cost2 { child1 } else { child2 }
+}
+
+fn first_height_wins(height1: i32, height2: i32) -> bool {
+    height1 > height2
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn equal_insertion_cost_descends_to_child2() {
+        // Arrange
+        let child1 = NodeIndex(4);
+        let child2 = NodeIndex(9);
+
+        // Act
+        let selected = descend_child(child1, child2, 3.0, 3.0);
+
+        // Assert
+        assert_eq!(selected, child2);
+    }
+
+    #[test]
+    fn equal_rotation_heights_choose_grandchild2() {
+        // Arrange
+        let first_height = 2;
+        let second_height = 2;
+
+        // Act
+        let first_selected = first_height_wins(first_height, second_height);
+
+        // Assert
+        assert!(!first_selected);
+    }
 }
