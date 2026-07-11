@@ -7,9 +7,11 @@ bounded empty-world scenario through native Rust and the pinned,
 process-isolated C++ oracle. Phase 3 adds a public native-Rust object-model
 foundation plus a private representative particle-storage spike. It proves
 identity, invalidation, destruction, callback, step-lifecycle, association, and
-storage-remapping contracts; it does not implement rigid-body or particle
-solver behavior, broad parity, or final subsystem tolerances. The publishable
-`liquidfun` crate therefore remains version `0.0.0`, and the
+storage-remapping contracts. Phase 4 adds the consumer-facing math/settings
+surface, a closed numerical policy, and pure Rust/C++ math probes. It does not
+implement shapes, collision algorithms, rigid-body or particle solvers, broad
+platform parity, or performance parity. The publishable `liquidfun` crate
+therefore remains version `0.0.0`, and the
 [compatibility inventory](COMPATIBILITY.md) remains the authority for maturity.
 
 ## Dependency direction
@@ -38,6 +40,39 @@ runtime implementation. There is no FFI boundary in Phase 2: the supported
 boundary is an external JSON Lines process. An in-process C ABI remains deferred
 unless profiling later demonstrates a material bottleneck, and it may never
 become a consumer dependency.
+
+## Phase 4 math and numerical boundaries
+
+The public `liquidfun::math` deep module owns the native consumer contract. It
+maps the selected `b2Math.h` concepts to initialized safe Rust values:
+`Vec2`, `Vec3`, `Vec4`, `Mat22`, `Mat33`, `Rotation`, `Transform`, and `Sweep`.
+Vectors expose coordinates, while matrices, rotations, transforms, and sweeps
+keep representation private behind initialized constructors and accessors.
+Unlike the C++ source, there are no uninitialized defaults, raw indexing,
+pointer/layout promises, allocator hooks, mutable global settings, or public
+approximate-equality API. `Sweep` validates stored finite state and monotonic
+fractions with typed errors before mutation.
+
+The `math::settings` namespace maps the behavior-affecting `b2Settings.h`
+constants to immutable Rust constants. Physics uses meters-kilograms-seconds
+(MKS), angles use radians, and angular velocity uses radians per second. Matrix
+operations are column-major; `Transform` maps local coordinates into a parent
+frame by rotation then translation; `Sweep` interpolates between its initial
+and final centers and angles at a checked normalized fraction. Rendering scale
+and pixel conversion remain outside the engine.
+
+Compatibility-sensitive arithmetic preserves the pinned source's operand
+order, branch direction, and expression grouping. It deliberately avoids
+`mul_add`, `sin_cos`, reassociation, and general-purpose math dependencies.
+Raw math values can carry signed zero, subnormals, infinities, and NaNs for
+probe fidelity, while physics-domain boundaries require finite values.
+
+The numerical-policy and probe machinery points inward toward the public math
+module but never leaks outward: `liquidfun-test-protocol` privately owns exact
+bit transport, typed field policies, horizons, and evidence tiers;
+`liquidfun-differential` privately owns comparison and diagnostics; and the
+external C++ adapter executes only repository-defined, bounded probe operations
+against the pinned oracle. None is a dependency or feature of `liquidfun`.
 
 ## Private protocol and domain core
 

@@ -17,12 +17,14 @@ Google's LiquidFun physics engine against a pinned C++ oracle.
 
 ## Status
 
-This repository is at the foundation stage. The `liquidfun` crate is a version
-`0.0.0` scaffold with no physics simulation behavior yet. The current work
-freezes the upstream oracle, proves Cargo-only package isolation, builds the
-read-only C++ reference, and tracks 177 compatibility rows. The generated
-[compatibility inventory](COMPATIBILITY.md) currently records zero implemented,
-unit-tested, differentially validated, or platform-validated rows.
+This repository is at the foundation stage. The `liquidfun` crate is version
+`0.0.0` and does not yet provide physics simulation. It now includes a native,
+consumer-facing math/settings layer plus object-model foundations, while the
+read-only C++ oracle and private harness verify a bounded Phase 4 math-probe
+corpus. The generated [compatibility inventory](COMPATIBILITY.md) records the
+three Phase 4 math/settings rows at only their demonstrated dimensions; broad
+collision, solver, particle, platform, performance, and production maturity
+remain pending.
 
 Do not use this crate for simulation yet. Maturity will be reported only as
 evidence is added to the compatibility ledger.

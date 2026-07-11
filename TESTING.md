@@ -5,11 +5,14 @@
 Phase 2 proves a trustworthy empty-world harness seam: versioned and bounded
 scenario input, native Rust execution, a process-isolated pinned C++ oracle,
 typed semantic comparison, first-divergence diagnosis, deterministic reduction,
-reviewed trace replay, and harness-failure classification. It does not prove
-rigid-body or particle parity, a public object model, final subsystem tolerance
-values, or completion of the deferred fuzz, Miri, Rust-sanitizer, benchmark, and
-coverage lanes. [COMPATIBILITY.md](COMPATIBILITY.md) remains authoritative for
-feature and evidence maturity.
+reviewed trace replay, and harness-failure classification. Phase 4 additionally
+proves the native math/settings contract and a bounded 39-case Rust/C++ probe
+corpus under the reviewed `phase4-v1` policy. Local oracle results are D2
+supported-portability evidence, not canonical D1 or all-platform validation.
+Shapes, collision, rigid-body and particle solver parity, performance parity,
+and the deferred fuzz, Miri, Rust-sanitizer, benchmark, and coverage lanes remain
+pending. [COMPATIBILITY.md](COMPATIBILITY.md) remains authoritative for feature
+and evidence maturity.
 
 ## Required Rust sequence
 
@@ -86,6 +89,88 @@ The Rust and C++ boundaries reject blank or partial records, duplicate and
 unknown members, unknown record kinds, unsupported versions, invalid semantic
 IDs/references, malformed sequences, oversized values, request/identity/payload
 mismatches, and missing reset proof before semantic comparison.
+
+## Phase 4 numerical policy
+
+Transport and comparison answer different questions. Every probe `f32` crosses
+JSON Lines as an exact `u32` bit pattern, with class and sign metadata; C++ uses
+representation-preserving copying and Rust uses `to_bits`/`from_bits`. Semantic
+comparison then resolves the case's explicit path in the sorted, hashed
+`protocol/tolerances/phase4-v1.toml` registry. There is no wildcard, global
+epsilon, runtime widening, or tolerance growth with elapsed steps.
+
+The four float policies are `ExactBits`, `Ulps`, `Absolute`, and
+`AbsoluteRelative`. Exact comparison also governs IDs, flags, counts,
+predicates, branch results, checkpoint identity, and solver-visible ordering.
+Arithmetic NaN is a mismatch even when both sides produce NaN; exact NaN
+payload comparison is reserved for named transport/pass-through evidence.
+Infinities match only with identical sign when a field explicitly permits
+them. Positive and negative zero are distinct by default and may be merged only
+by a named field policy that documents why their sign is unobservable.
+
+Collection policy is also explicit: `Ordered` preserves checkpoint, phase,
+callback, destruction, and future solver-pass order; `Set` canonicalizes unique
+order-insensitive results by stable semantic keys; `Multiset` does the same
+while preserving multiplicity. Hash iteration is never observable order.
+
+Divergence horizons bound the claim rather than changing its tolerance:
+`Operation` covers one pure kernel, `PhaseLocal` covers one named algorithm
+phase, and `ScenarioSteps(n)` covers exactly the declared repeated-evolution
+checkpoints. Comparison stops at the first in-horizon mismatch; beyond-horizon
+output is diagnostic only.
+
+Evidence authority is fixed:
+
+- D0 is same-build replay determinism and requires byte-identical output.
+- D1 is canonical parity from pinned Rust 1.97.0 and Clang 22.1.8 on scalar
+  Linux x86_64 with reviewed IEEE flags and runtime witnesses. Only D1 may
+  promote canonical fixtures.
+- D2 is supported Linux, macOS, or Windows portability with exact structure and
+  order plus reviewed numeric policy. D2 cannot promote canonical fixtures.
+- D3 is exploratory evidence for alternate libm, FTZ/DAZ, SIMD, native CPU,
+  fast-math, or other noncanonical configurations and is diagnostic only.
+
+Canonical Rust uses the pinned toolchain, baseline target features, ordinary
+source-ordered operators, and no explicit fused multiply-add. Canonical C++
+must reject fast math, reassociation, reciprocal approximation, native CPU
+tuning, and unsafe-math flags; it disables contraction and records the effective
+compile-command hash, compiler, target, CPU/features, optimization, floating
+flags, SDK/sysroot, OS/libc/libm, Rust profile/codegen/features, and runtime
+rounding/gradual-underflow witnesses. Debug and release are independent probes;
+an optimization difference is a policy finding, not permission to widen bounds.
+
+The 39-case corpus covers special values, cancellation, halfway rounding,
+overflow, underflow, a non-fused FMA witness, ordered helpers, inverse square
+root, epsilon-adjacent normalization, matrices, rotations, transforms, and
+sweeps. Its evidence is limited to those named operations and horizons; it does
+not prove collision, solver, particle, performance, or complete platform parity.
+
+## Phase 4 math-probe commands
+
+Initialize the pinned submodule, then verify, configure, and build both reviewed
+profiles before running the commands:
+
+```bash
+git submodule update --init --recursive third_party/liquidfun
+cargo xtask upstream verify
+cargo xtask upstream configure --preset oracle-debug
+cargo xtask upstream build --preset oracle-debug
+cargo xtask upstream configure --preset oracle-release
+cargo xtask upstream build --preset oracle-release
+cargo xtask differential compare --scenario math-probes --preset oracle-debug --session-profile one-shot
+cargo xtask differential compare --scenario math-probes --preset oracle-release --session-profile one-shot
+cargo xtask differential replay --scenario math-probes --preset oracle-debug --session-profile one-shot
+cargo xtask differential verify-determinism --scenario math-probes --preset oracle-debug --runs 2
+```
+
+The corresponding aliases are `just math-probes-debug`,
+`just math-probes-release`, `just math-probes-replay`, and
+`just math-probes-determinism`. Inputs are closed to the checked-in
+`scenarios/phase-04/math-probes.json`; outputs and build products stay below
+`target/reference` and `target/differential`. The policy registry and its hash,
+validated build identity, generated protocol schemas, command output, and
+first-divergence report are the evidence locations. Compare, replay, D0,
+portability, and CI commands are read-only and have no fixture-promotion path.
 
 ## Differential commands
 

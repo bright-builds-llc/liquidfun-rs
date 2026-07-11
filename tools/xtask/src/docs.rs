@@ -21,6 +21,64 @@ const COLUMNS: [&str; 9] = [
 const ALLOWED_STATUSES: [&str; 2] = ["current", "deferred"];
 const ALLOWED_PLACEMENTS: [&str; 4] = ["local", "pull request", "scheduled", "manual release"];
 const PLACEHOLDERS: [&str; 5] = ["TODO", "TBD", "PLACEHOLDER", "REPLACE_ME", "REPLACE WITH"];
+const DOCUMENT_CONTRACTS: [(&str, &[&str]); 4] = [
+    (
+        "ARCHITECTURE.md",
+        &[
+            "## Phase 4 math and numerical boundaries",
+            "`Vec2`, `Vec3`, `Vec4`, `Mat22`, `Mat33`, `Rotation`, `Transform`, and `Sweep`",
+            "(MKS), angles use radians",
+            "operations are column-major",
+            "external C++ adapter",
+            "None is a dependency or feature of `liquidfun`",
+        ],
+    ),
+    (
+        "TESTING.md",
+        &[
+            "## Phase 4 numerical policy",
+            "The four float policies are",
+            "`ExactBits`",
+            "`Ulps`",
+            "`Absolute`",
+            "`AbsoluteRelative`",
+            "Arithmetic NaN is a mismatch",
+            "Positive and negative zero are distinct by default",
+            "`Operation`",
+            "`PhaseLocal`",
+            "`ScenarioSteps(n)`",
+            "D1 is canonical parity",
+            "promote canonical fixtures.",
+            "D2 cannot promote canonical fixtures",
+            "## Phase 4 math-probe commands",
+            "cargo xtask differential compare --scenario math-probes --preset oracle-debug --session-profile one-shot",
+            "cargo xtask differential compare --scenario math-probes --preset oracle-release --session-profile one-shot",
+            "cargo xtask differential replay --scenario math-probes --preset oracle-debug --session-profile one-shot",
+            "cargo xtask differential verify-determinism --scenario math-probes --preset oracle-debug --runs 2",
+        ],
+    ),
+    (
+        "COMPATIBILITY.md",
+        &[
+            "| `implemented` | 3 | 174 |",
+            "| `unit_tested` | 3 | 174 |",
+            "| `differentially_validated` | 2 | 175 |",
+            "| `platform_validated` | 0 | 177 |",
+            "`subsystem.common-math-and-settings`",
+            "`public-api.liquidfun-box2d-box2d-common-b2math-h`",
+            "`public-api.liquidfun-box2d-box2d-common-b2settings-h`",
+            "| applicable | yes | yes | yes | yes | no | no | yes | no |",
+        ],
+    ),
+    (
+        "README.md",
+        &[
+            "three Phase 4 math/settings rows",
+            "collision, solver, particle, platform, performance, and production maturity",
+            "remain pending",
+        ],
+    ),
+];
 
 #[derive(Clone, Copy)]
 struct LayerRule {
@@ -171,10 +229,39 @@ pub(crate) fn run(args: &[String]) -> Result<(), DocsError> {
         )
     })?;
     check_testing_contract(&contents)?;
+    check_document_contracts(&repository_root)?;
     println!(
-        "docs verified: {} testing layers with complete DOCS-05 contracts",
-        LAYER_RULES.len()
+        "docs verified: {} testing layers and {} Phase 4 document contracts",
+        LAYER_RULES.len(),
+        DOCUMENT_CONTRACTS.len()
     );
+    Ok(())
+}
+
+fn check_document_contracts(repository_root: &std::path::Path) -> Result<(), DocsError> {
+    for (relative_path, required_markers) in DOCUMENT_CONTRACTS {
+        let path = repository_root.join(relative_path);
+        let contents = fs::read_to_string(&path).map_err(|error| {
+            DocsError::new(
+                "filesystem",
+                format!("failed to read {}: {error}", path.display()),
+            )
+        })?;
+        if contents.contains("/Users/") || contents.contains("C:\\Users\\") {
+            return Err(DocsError::new(
+                "local-path",
+                format!("{relative_path} contains an absolute user path"),
+            ));
+        }
+        for marker in required_markers {
+            if !contents.contains(marker) {
+                return Err(DocsError::new(
+                    "phase4-contract",
+                    format!("{relative_path} must contain `{marker}`"),
+                ));
+            }
+        }
+    }
     Ok(())
 }
 

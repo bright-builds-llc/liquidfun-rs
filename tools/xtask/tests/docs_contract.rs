@@ -21,6 +21,12 @@ const LAYERS: [&str; 12] = [
     "benchmark",
     "coverage",
 ];
+const CONTRACT_DOCUMENTS: [&str; 4] = [
+    "ARCHITECTURE.md",
+    "TESTING.md",
+    "COMPATIBILITY.md",
+    "README.md",
+];
 static FIXTURE_ID: AtomicU64 = AtomicU64::new(0);
 
 type TestResult = Result<(), Box<dyn Error>>;
@@ -37,7 +43,9 @@ impl DocsFixture {
             std::process::id()
         ));
         fs::create_dir_all(&root)?;
-        fs::copy(workspace_root().join("TESTING.md"), root.join("TESTING.md"))?;
+        for document in CONTRACT_DOCUMENTS {
+            fs::copy(workspace_root().join(document), root.join(document))?;
+        }
         Ok(Self { root })
     }
 
@@ -99,6 +107,18 @@ impl DocsFixture {
 
     fn cleanup(self) -> io::Result<()> {
         fs::remove_dir_all(self.root)
+    }
+
+    fn replace_document_text(&self, document: &str, from: &str, to: &str) -> io::Result<()> {
+        let path = self.root.join(document);
+        let contents = fs::read_to_string(&path)?;
+        if !contents.contains(from) {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!("{document} does not contain expected contract text `{from}`"),
+            ));
+        }
+        fs::write(path, contents.replace(from, to))
     }
 }
 
@@ -216,6 +236,46 @@ fn check_rejects_forbidden_placeholder_terms() -> TestResult {
         assert_failure(&output, "docs/placeholder");
         fixture.cleanup()?;
     }
+    Ok(())
+}
+
+#[test]
+fn check_rejects_missing_phase4_contract_in_each_document() -> TestResult {
+    // Arrange, Act, Assert
+    for (document, marker) in [
+        (
+            "ARCHITECTURE.md",
+            "## Phase 4 math and numerical boundaries",
+        ),
+        ("TESTING.md", "The four float policies are"),
+        ("COMPATIBILITY.md", "`subsystem.common-math-and-settings`"),
+        ("README.md", "three Phase 4 math/settings rows"),
+    ] {
+        let fixture = DocsFixture::new()?;
+        fixture.replace_document_text(document, marker, "removed-contract-marker")?;
+        let output = fixture.command()?;
+        assert_failure(&output, "docs/phase4-contract");
+        fixture.cleanup()?;
+    }
+    Ok(())
+}
+
+#[test]
+fn check_rejects_absolute_user_paths() -> TestResult {
+    // Arrange
+    let fixture = DocsFixture::new()?;
+    fixture.replace_document_text(
+        "README.md",
+        "## Architecture and evidence",
+        "Local evidence: /Users/example/private\n\n## Architecture and evidence",
+    )?;
+
+    // Act
+    let output = fixture.command()?;
+
+    // Assert
+    assert_failure(&output, "docs/local-path");
+    fixture.cleanup()?;
     Ok(())
 }
 
