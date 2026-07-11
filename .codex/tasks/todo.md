@@ -34,3 +34,15 @@ Completion review: Canonical Ubuntu 24.04 with CMake 4.3.3, Ninja 1.13.2, and Cl
 - [x] Create the lifecycle-bound 04-05 summary, update GSD state/roadmap/requirements, and commit metadata.
 
 Completion review: The external C++ adapter now executes the complete 39-case Phase 4 math-probe corpus with exact `uint32_t`/`float` bit transport, bounded closed dispatch, unknown-operation rejection, and reset/reuse proof. Rust and C++ carry the same strict 17-field floating build identity, with D1 fail-closed required/forbidden flag enforcement and non-promotable D2/D3 evidence. Debug and release probes, C++ protocol tests, focused identity tests, effective compile-command and handshake inspection, Cargo package isolation, upstream verification, and the exact ordered full Rust gate all pass. The local Apple Clang 21 compiler lacks `-fdenormal-fp-math-fp32=ieee`, so it is correctly recorded as D2; canonical Clang 22 D1 requirements remain unchanged and fail closed.
+
+## task-04-06-verification-entrypoints | 2026-07-11 01:48 CDT | Execute Phase 4 Plan 06
+
+- [x] Add closed math-probe compare, replay, and fixed two-run D0 commands.
+- [x] Compare typed native/C++ results under the reviewed Phase 4 field-policy registry.
+- [x] Regenerate deterministic closed scenario and trace schema presentations.
+- [x] Add transparent just recipes and supported/canonical CI coverage.
+- [x] Run focused schema, fixture, CLI, debug/release/replay/D0, and workflow checks.
+- [x] Run the exact ordered full Rust gate and review the task diff before committing.
+- [x] Create the lifecycle-bound summary and update GSD progress artifacts.
+
+Completion review: All 39 ordered probe cases compare successfully in debug and release, replay passes, and two independent debug processes produce byte-identical D0 output. The CLI rejects arbitrary paths, executables, compiler flags, profiles, presets, and run counts before effects; schemas remain byte-stable; canonical CI retains exact tools, SHA-pinned actions, read-only permissions, and a final evidence diff assertion. The local Apple Clang evidence remains non-promotable D2, while pinned Linux Clang 22 owns D1 evidence.
