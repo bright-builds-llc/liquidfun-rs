@@ -62,6 +62,7 @@ mod arena;
 mod association;
 mod error;
 mod identity;
+pub mod math;
 mod particle;
 mod world;
 
