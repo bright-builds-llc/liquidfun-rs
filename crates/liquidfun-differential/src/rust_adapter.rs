@@ -1,4 +1,4 @@
-//! Private native-Rust execution seam for the Phase-2 empty-world scenario.
+//! Private native-Rust execution seams for empty-world traces and pure math probes.
 
 use liquidfun_test_protocol::{
     BuildIdentity, BuildIdentityError, BuildIdentityFields, CheckpointRecord, EngineKind,
@@ -7,6 +7,8 @@ use liquidfun_test_protocol::{
     trace_payload_sha256,
 };
 use sha2::{Digest, Sha256};
+
+use crate::{MathProbeExecutionError, NativeMathProbeExecutor};
 
 /// Failure while constructing or executing the private native adapter.
 #[derive(Debug, thiserror::Error)]
@@ -35,6 +37,13 @@ pub struct EmptyWorldAdapter {
 }
 
 impl EmptyWorldAdapter {
+    /// Executes a validated pure math request without creating or mutating world state.
+    pub fn execute_math_probe(
+        request: &liquidfun_test_protocol::MathProbeRequestRecord,
+    ) -> Result<Box<[liquidfun_test_protocol::MathProbeResult]>, MathProbeExecutionError> {
+        NativeMathProbeExecutor::execute(request)
+    }
+
     /// Creates a native adapter bound to the selected comparison-oracle revision.
     ///
     /// # Errors

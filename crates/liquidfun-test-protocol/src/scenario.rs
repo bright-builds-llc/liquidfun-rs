@@ -17,7 +17,9 @@ const MAXIMUM_CHECKPOINTS: usize = 4_096;
 const MAXIMUM_OBSERVABLES: usize = 128;
 const MAXIMUM_SOLVER_ITERATIONS: u32 = 255;
 
+mod math_probe;
 mod reduction;
+pub use math_probe::*;
 pub use reduction::*;
 
 /// Stable semantic validation categories for a phase-2 scenario.
