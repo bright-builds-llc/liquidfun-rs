@@ -10,6 +10,10 @@ use crate::{MismatchKind, MismatchReport, SemanticPath, WorldCountField};
 
 /// Complete differential result for two compatible validated traces.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[allow(
+    clippy::large_enum_variant,
+    reason = "the private result keeps owned mismatch evidence allocation-free on the error path"
+)]
 pub enum DifferentialOutcome {
     /// Every typed semantic observable matched its reviewed policy.
     Match,

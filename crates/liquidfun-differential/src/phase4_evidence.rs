@@ -132,7 +132,7 @@ impl Phase4HarnessFailureReport {
             request_id: request.request_id().as_str(),
             scenario_id: request.scenario().scenario_id().as_str(),
             reason,
-            maybe_case_id: maybe_case.map(|case| case.case_id()),
+            maybe_case_id: maybe_case.map(liquidfun_test_protocol::MathProbeCase::case_id),
             policy_sha256: policy_sha256.as_str(),
         };
         Ok(Self {

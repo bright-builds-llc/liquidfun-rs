@@ -88,22 +88,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         explicit_target_features
     };
     let target_features = format!("cfg={cfg_target_features};explicit={explicit_target_features}");
-    let runtime_version =
-        command_line("uname", &["-r"]).unwrap_or_else(|| format!("target-env-{target_env}"));
-    let libc = match (target_os.as_str(), target_env.as_str()) {
-        ("linux", "gnu") => command_line("getconf", &["GNU_LIBC_VERSION"])
-            .unwrap_or_else(|| format!("glibc@{runtime_version}")),
-        ("linux", "musl") => format!("musl@{runtime_version}"),
-        ("macos", _) => format!("libSystem@Darwin-{runtime_version}"),
-        ("windows", "msvc") => format!("ucrt@{runtime_version}"),
-        _ => "<unavailable-d2>".to_owned(),
-    };
-    let libm = match target_os.as_str() {
-        "macos" => format!("libSystem-libm@Darwin-{runtime_version}"),
-        "linux" => format!("libm@{libc}"),
-        "windows" => format!("ucrt-libm@{runtime_version}"),
-        _ => "<unavailable-d2>".to_owned(),
-    };
+    let (c_runtime, math_runtime) = platform_runtime_identity(&target_os, &target_env);
 
     println!("cargo:rustc-env=LIQUIDFUN_NATIVE_RUSTC_VV={rustc_verbose}");
     println!("cargo:rustc-env=LIQUIDFUN_NATIVE_RUSTC_VERSION={rustc_version}");
@@ -114,12 +99,32 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("cargo:rustc-env=LIQUIDFUN_NATIVE_TARGET_CPU={target_cpu}");
     println!("cargo:rustc-env=LIQUIDFUN_NATIVE_TARGET_FEATURES={target_features}");
     println!("cargo:rustc-env=LIQUIDFUN_NATIVE_TARGET_OS={target_os}");
-    println!("cargo:rustc-env=LIQUIDFUN_NATIVE_LIBC={libc}");
-    println!("cargo:rustc-env=LIQUIDFUN_NATIVE_LIBM={libm}");
+    println!("cargo:rustc-env=LIQUIDFUN_NATIVE_LIBC={c_runtime}");
+    println!("cargo:rustc-env=LIQUIDFUN_NATIVE_LIBM={math_runtime}");
     println!("cargo:rustc-env=LIQUIDFUN_NATIVE_FEATURES={features}");
     println!("cargo:rustc-env=LIQUIDFUN_NATIVE_ENCODED_RUSTFLAGS={rendered_rustflags}");
     println!("cargo:rustc-env=LIQUIDFUN_NATIVE_SOURCE_SHA256={source_digest}");
     Ok(())
+}
+
+fn platform_runtime_identity(target_os: &str, target_env: &str) -> (String, String) {
+    let runtime_version =
+        command_line("uname", &["-r"]).unwrap_or_else(|| format!("target-env-{target_env}"));
+    let c_runtime = match (target_os, target_env) {
+        ("linux", "gnu") => command_line("getconf", &["GNU_LIBC_VERSION"])
+            .unwrap_or_else(|| format!("glibc@{runtime_version}")),
+        ("linux", "musl") => format!("musl@{runtime_version}"),
+        ("macos", _) => format!("libSystem@Darwin-{runtime_version}"),
+        ("windows", "msvc") => format!("ucrt@{runtime_version}"),
+        _ => "<unavailable-d2>".to_owned(),
+    };
+    let math_runtime = match target_os {
+        "macos" => format!("libSystem-libm@Darwin-{runtime_version}"),
+        "linux" => format!("libm@{c_runtime}"),
+        "windows" => format!("ucrt-libm@{runtime_version}"),
+        _ => "<unavailable-d2>".to_owned(),
+    };
+    (c_runtime, math_runtime)
 }
 
 fn native_source_manifest_sha256(

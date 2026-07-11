@@ -340,6 +340,10 @@ impl Phase4MathMismatchReport {
     ///
     /// Returns [`ReportRenderError`] if canonical request, scenario, or signature serialization
     /// fails.
+    ///
+    /// # Panics
+    ///
+    /// Panics only if a validated, protocol-bounded case index cannot fit in `u32`.
     #[allow(
         clippy::too_many_arguments,
         reason = "the report binds the compared values, policy, tier, and both builds"
@@ -564,6 +568,10 @@ impl MismatchReport {
         )
     }
 
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "one constructor binds the full legacy first-divergence contract"
+    )]
     fn new(
         expected: &ValidatedTrace,
         actual: &ValidatedTrace,

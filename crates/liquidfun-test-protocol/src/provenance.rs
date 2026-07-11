@@ -187,8 +187,9 @@ pub struct Phase4BuildIdentityFields {
 impl Phase4BuildIdentityFields {
     /// Collects the exact 17-field Phase 4 identity extension.
     #[allow(
+        clippy::similar_names,
         clippy::too_many_arguments,
-        reason = "the Phase 4 protocol has seventeen fixed wire fields"
+        reason = "the fixed wire vocabulary deliberately distinguishes libc from libm"
     )]
     pub fn new(
         compile_command_sha256: impl Into<String>,
@@ -248,7 +249,7 @@ impl Phase4BuildIdentityFields {
 /// Evidence authority derived from exact compiler, target, and floating witnesses.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BuildEvidenceTier {
-    /// Pinned Linux x86_64 compiler and complete IEEE runtime witnesses.
+    /// Pinned Linux `x86_64` compiler and complete IEEE runtime witnesses.
     D1Canonical,
     /// Supported baseline platform with complete identity, but no promotion authority.
     D2Supported,
@@ -682,7 +683,7 @@ fn flag_tokens(value: &str) -> Vec<String> {
 }
 
 fn decode_hex(value: &str) -> Option<String> {
-    if value.is_empty() || value.len() % 2 != 0 {
+    if value.is_empty() || !value.len().is_multiple_of(2) {
         return None;
     }
     let bytes = value

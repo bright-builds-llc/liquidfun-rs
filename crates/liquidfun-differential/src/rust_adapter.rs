@@ -38,6 +38,10 @@ pub struct EmptyWorldAdapter {
 
 impl EmptyWorldAdapter {
     /// Executes a validated pure math request without creating or mutating world state.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`MathProbeExecutionError`] if checked sweep construction or advancement fails.
     pub fn execute_math_probe(
         request: &liquidfun_test_protocol::MathProbeRequestRecord,
     ) -> Result<Box<[liquidfun_test_protocol::MathProbeResult]>, MathProbeExecutionError> {

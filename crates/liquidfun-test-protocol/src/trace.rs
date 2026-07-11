@@ -274,26 +274,33 @@ pub fn decode_math_probe_end_jsonl(
     bytes: &[u8],
     limits: &HarnessLimits,
 ) -> Result<MathProbeEnd, TraceDecodeError> {
-    let raw = decode_jsonl::<RawMathProbeEnd>(bytes, limits, RecordLimit::Output)?;
-    let request_id = RequestId::new(raw.request_id.into_string()).map_err(|_| {
+    let RawMathProbeEnd {
+        protocol_version,
+        record_kind,
+        request_id,
+        result_count,
+        reset_epoch,
+        reset_verified,
+    } = decode_jsonl::<RawMathProbeEnd>(bytes, limits, RecordLimit::Output)?;
+    let _ = protocol_version;
+    let _ = record_kind;
+    let request_id = RequestId::new(request_id.into_string()).map_err(|_| {
         TraceValidationError::new(
             HarnessFailureKind::SequenceViolation,
             "math probe end request ID is invalid",
         )
     })?;
-    if !raw.reset_verified {
+    if !reset_verified {
         return Err(TraceValidationError::new(
             HarnessFailureKind::AdapterResetFailure,
             "math probe end did not prove reset",
         )
         .into());
     }
-    let _protocol_version = raw.protocol_version;
-    let _record_kind = raw.record_kind;
     Ok(MathProbeEnd {
         request_id,
-        result_count: raw.result_count,
-        reset_epoch: raw.reset_epoch,
+        result_count,
+        reset_epoch,
     })
 }
 
@@ -428,7 +435,7 @@ impl HandshakeRecord {
 
 enum SessionState {
     AwaitingHandshake,
-    Ready(BuildIdentity),
+    Ready(Box<BuildIdentity>),
 }
 
 /// Enforces startup handshake ordering and expected pinned provenance.
@@ -487,7 +494,7 @@ impl ProtocolSessionValidator {
                 "handshake oracle revision differs from the pinned revision",
             ));
         }
-        self.state = SessionState::Ready(handshake.build_identity);
+        self.state = SessionState::Ready(Box::new(handshake.build_identity));
         Ok(())
     }
 
@@ -1301,8 +1308,9 @@ pub fn decode_handshake_jsonl(
 }
 
 #[allow(
+    clippy::similar_names,
     clippy::too_many_arguments,
-    reason = "strict decoding checks the complete fixed Phase 4 wire extension"
+    reason = "the fixed wire vocabulary deliberately distinguishes libc from libm"
 )]
 fn decode_raw_phase4_identity(
     compiler_id: &str,

@@ -155,6 +155,10 @@ impl MatchRun {
 
 /// Top-level distinction between match, physics mismatch, and harness failure.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[allow(
+    clippy::large_enum_variant,
+    reason = "the private run result owns one complete diagnostic bundle on terminal paths"
+)]
 pub enum DifferentialRunOutcome {
     /// Every executed request matched.
     Match(MatchRun),

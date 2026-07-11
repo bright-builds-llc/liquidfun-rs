@@ -605,6 +605,10 @@ fn normalize_compile_path(value: &str, repository_root: &Path, build_directory: 
         .replace(repository.as_ref(), "<repo>")
 }
 
+#[allow(
+    clippy::too_many_lines,
+    reason = "one ordered traversal keeps every typed Phase 4 failure path fail-closed"
+)]
 fn compare_math_probe_results(
     request: &MathProbeRequestRecord,
     actual: &[MathProbeResult],

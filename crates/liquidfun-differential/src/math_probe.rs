@@ -26,6 +26,11 @@ pub struct NativeMathProbeExecutor;
 
 impl NativeMathProbeExecutor {
     /// Executes all validated cases in request order.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`MathProbeExecutionError`] if validated probe bits cannot construct or advance a
+    /// checked sweep.
     pub fn execute(
         request: &MathProbeRequestRecord,
     ) -> Result<Box<[MathProbeResult]>, MathProbeExecutionError> {
@@ -39,6 +44,10 @@ impl NativeMathProbeExecutor {
     }
 }
 
+#[allow(
+    clippy::too_many_lines,
+    reason = "one exhaustive dispatch keeps the closed 24-operation contract auditable"
+)]
 fn execute_case(case: &MathProbeCase) -> Result<MathProbeResult, MathProbeExecutionError> {
     let mut values = Vec::new();
     let mut discrete = Vec::new();

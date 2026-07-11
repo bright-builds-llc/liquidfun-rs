@@ -496,6 +496,11 @@ struct RawCase {
 }
 
 /// Decodes one newline-complete, strict, bounded math-probe request.
+///
+/// # Errors
+///
+/// Returns [`MathProbeDecodeError`] when framing, resource bounds, or the closed operation,
+/// policy, and horizon contract is invalid.
 pub fn decode_math_probe_request_jsonl(
     bytes: &[u8],
     limits: &HarnessLimits,
@@ -585,6 +590,10 @@ fn validate_source(raw: RawSource) -> Result<ScenarioSource, MathProbeDecodeErro
     }
 }
 
+#[allow(
+    clippy::too_many_lines,
+    reason = "one exhaustive table keeps the closed operation/input/path contract auditable"
+)]
 fn validate_case(raw: &RawCase) -> Result<(), MathProbeDecodeError> {
     let input_matches = matches!(
         (raw.operation, &raw.input),
@@ -685,16 +694,11 @@ fn validate_case(raw: &RawCase) -> Result<(), MathProbeDecodeError> {
         (MathProbeOperation::Transform, MathProbeHorizon::ScenarioSteps { steps: 32 }) => {
             MathProbePolicyPath::MathTransformSteps32
         }
-        (MathProbeOperation::Transform, _) => {
-            return Err(MathProbeDecodeError::Validation(
-                MathProbeErrorKind::InvalidHorizon,
-            ));
-        }
         (MathProbeOperation::SweepTransform, _) => MathProbePolicyPath::MathSweepTransform,
         (MathProbeOperation::SweepAdvance, MathProbeHorizon::ScenarioSteps { steps: 4 }) => {
             MathProbePolicyPath::MathSweepAdvanceSteps4
         }
-        (MathProbeOperation::SweepAdvance, _) => {
+        (MathProbeOperation::Transform | MathProbeOperation::SweepAdvance, _) => {
             return Err(MathProbeDecodeError::Validation(
                 MathProbeErrorKind::InvalidHorizon,
             ));
@@ -725,10 +729,10 @@ fn validate_case(raw: &RawCase) -> Result<(), MathProbeDecodeError> {
             MathProbeInput::SweepAdvance { fractions_bits, .. },
         ) if usize::try_from(*steps).ok() == Some(fractions_bits.as_slice().len())
             && !fractions_bits.as_slice().is_empty() => {}
-        (MathProbeHorizon::ScenarioSteps { .. }, MathProbeInput::Transform { .. }) => {}
         (MathProbeHorizon::Operation, MathProbeInput::SweepAdvance { fractions_bits, .. })
             if fractions_bits.as_slice().len() == 1 => {}
-        (MathProbeHorizon::Operation, _) => {}
+        (MathProbeHorizon::ScenarioSteps { .. }, MathProbeInput::Transform { .. })
+        | (MathProbeHorizon::Operation, _) => {}
         _ => {
             return Err(MathProbeDecodeError::Validation(
                 MathProbeErrorKind::InvalidHorizon,
