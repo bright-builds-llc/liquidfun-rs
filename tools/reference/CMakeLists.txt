@@ -306,16 +306,25 @@ else()
 endif()
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
   set(REFERENCE_OS "linux")
-  set(REFERENCE_LIBC "glibc")
-  set(REFERENCE_LIBM "libm")
+  execute_process(
+    COMMAND getconf GNU_LIBC_VERSION
+    OUTPUT_VARIABLE REFERENCE_GLIBC_VERSION
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET
+  )
+  if(NOT REFERENCE_GLIBC_VERSION)
+    set(REFERENCE_GLIBC_VERSION "glibc@${CMAKE_SYSTEM_VERSION}")
+  endif()
+  set(REFERENCE_LIBC "${REFERENCE_GLIBC_VERSION}")
+  set(REFERENCE_LIBM "libm@${REFERENCE_GLIBC_VERSION}")
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
   set(REFERENCE_OS "macos")
-  set(REFERENCE_LIBC "libSystem")
-  set(REFERENCE_LIBM "libSystem")
+  set(REFERENCE_LIBC "libSystem@Darwin-${CMAKE_SYSTEM_VERSION}")
+  set(REFERENCE_LIBM "libSystem-libm@Darwin-${CMAKE_SYSTEM_VERSION}")
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
   set(REFERENCE_OS "windows")
-  set(REFERENCE_LIBC "msvcrt")
-  set(REFERENCE_LIBM "msvcrt")
+  set(REFERENCE_LIBC "ucrt@Windows-${CMAKE_SYSTEM_VERSION}")
+  set(REFERENCE_LIBM "ucrt-libm@Windows-${CMAKE_SYSTEM_VERSION}")
 else()
   set(REFERENCE_OS "${CMAKE_SYSTEM_NAME}")
   set(REFERENCE_LIBC "<unavailable-d3>")
@@ -345,13 +354,8 @@ string(
 )
 set(
   REFERENCE_FEATURE_SET
-  "evidence=${REFERENCE_EVIDENCE_TIER};applied=${REFERENCE_FP_FLAGS};missing=${REFERENCE_MISSING_FP_FLAGS}"
+  "evidence=${REFERENCE_EVIDENCE_TIER};applied=${REFERENCE_FP_FLAGS};missing=${REFERENCE_MISSING_FP_FLAGS};compile_database=math_probe.cpp,protocol_bits.cpp"
 )
-set(
-  REFERENCE_COMPILE_COMMAND_DESCRIPTOR
-  "compiler=${CMAKE_CXX_COMPILER};id=${CMAKE_CXX_COMPILER_ID};version=${CMAKE_CXX_COMPILER_VERSION};target=${REFERENCE_COMPILER_TARGET};build=${CMAKE_BUILD_TYPE};flags=${REFERENCE_COMPILE_FLAGS};sources=math_probe.cpp,protocol_bits.cpp"
-)
-string(SHA256 REFERENCE_COMPILE_COMMAND_SHA256 "${REFERENCE_COMPILE_COMMAND_DESCRIPTOR}")
 
 function(reference_escape_cpp_string INPUT_VALUE OUTPUT_VARIABLE)
   string(REPLACE "\\" "\\\\" ESCAPED_VALUE "${INPUT_VALUE}")
@@ -391,10 +395,6 @@ reference_escape_cpp_string(
   "${REFERENCE_SANITIZER_MODE}"
   REFERENCE_SANITIZER_MODE_CPP
 )
-reference_escape_cpp_string(
-  "${REFERENCE_COMPILE_COMMAND_SHA256}"
-  REFERENCE_COMPILE_COMMAND_SHA256_CPP
-)
 reference_escape_cpp_string("${REFERENCE_COMPILER_TARGET}" REFERENCE_TARGET_TRIPLE_CPP)
 reference_escape_cpp_string("${REFERENCE_TARGET_CPU}" REFERENCE_TARGET_CPU_CPP)
 reference_escape_cpp_string("${REFERENCE_TARGET_FEATURES}" REFERENCE_TARGET_FEATURES_CPP)
@@ -412,11 +412,30 @@ set(
   REFERENCE_BUILD_IDENTITY_HEADER
   "${CMAKE_CURRENT_BINARY_DIR}/generated/build_identity.hpp"
 )
+set(
+  REFERENCE_BUILD_IDENTITY_SCRIPT
+  "${CMAKE_CURRENT_BINARY_DIR}/generated/generate_build_identity.cmake"
+)
 configure_file(
-  "${CMAKE_CURRENT_LIST_DIR}/src/build_identity.hpp.in"
-  "${REFERENCE_BUILD_IDENTITY_HEADER}"
+  "${CMAKE_CURRENT_LIST_DIR}/src/generate_build_identity.cmake.in"
+  "${REFERENCE_BUILD_IDENTITY_SCRIPT}"
   @ONLY
   NEWLINE_STYLE UNIX
+)
+add_custom_command(
+  OUTPUT "${REFERENCE_BUILD_IDENTITY_HEADER}"
+  COMMAND "${CMAKE_COMMAND}" -P "${REFERENCE_BUILD_IDENTITY_SCRIPT}"
+  DEPENDS
+    "${CMAKE_BINARY_DIR}/compile_commands.json"
+    "${REFERENCE_BUILD_IDENTITY_SCRIPT}"
+    "${CMAKE_CURRENT_LIST_DIR}/src/math_probe.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/src/protocol_bits.cpp"
+  COMMENT "Hashing effective math/probe compile commands"
+  VERBATIM
+)
+set_source_files_properties(
+  "${REFERENCE_BUILD_IDENTITY_HEADER}"
+  PROPERTIES GENERATED TRUE
 )
 
 add_executable(

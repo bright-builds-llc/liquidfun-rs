@@ -111,12 +111,7 @@ fn adapter_binds_native_identity_and_request_hashes() {
     // Assert
     assert_eq!(adapter.build_identity().oracle_revision(), ORACLE_REVISION);
     assert_eq!(adapter.build_identity().cmake_preset(), "native-rust");
-    assert!(
-        adapter
-            .build_identity()
-            .compiler_version()
-            .contains("rustc ")
-    );
+    assert_eq!(adapter.build_identity().compiler_version(), "1.97.0");
     assert!(adapter.build_identity().target().contains(";host="));
     assert!(
         adapter
@@ -254,8 +249,12 @@ fn supported_identity_cannot_promote_canonical_evidence() {
     );
 
     // Act
-    let identity =
-        BuildIdentity::new(identity_fields(supported)).expect("supported identity should validate");
+    let identity = BuildIdentity::new(
+        identity_fields(supported)
+            .with_compiler_id("AppleClang")
+            .with_compiler_version("21.0.0"),
+    )
+    .expect("supported identity should validate");
 
     // Assert
     assert_eq!(identity.evidence_tier(), BuildEvidenceTier::D2Supported);

@@ -41,33 +41,56 @@ fn main() -> Result<(), Box<dyn Error>> {
         features.join(",")
     };
     let encoded_rustflags = env::var("CARGO_ENCODED_RUSTFLAGS").unwrap_or_default();
-    let encoded_rustflags = if encoded_rustflags.is_empty() {
+    let rustflags = encoded_rustflags
+        .split('\u{1f}')
+        .filter(|flag| !flag.is_empty())
+        .collect::<Vec<_>>();
+    let rendered_rustflags = if rustflags.is_empty() {
         "<none>".to_owned()
     } else {
-        format!("hex:{}", hex_encode(encoded_rustflags.as_bytes()))
+        format!(
+            "hexvec:{}",
+            rustflags
+                .iter()
+                .map(|flag| hex_encode(flag.as_bytes()))
+                .collect::<Vec<_>>()
+                .join(",")
+        )
     };
-    let target_cpu = if encoded_rustflags.contains("target-cpu=native") {
+    let target_cpu = if rustflags_have_value(&rustflags, "target-cpu", "native") {
         "native"
     } else {
         "baseline"
     };
+    let explicit_target_features = rustflag_values(&rustflags, "target-feature");
+    let target_features = [
+        (!target_features.is_empty()).then_some(target_features.as_str()),
+        (!explicit_target_features.is_empty()).then_some(explicit_target_features.as_str()),
+    ]
+    .into_iter()
+    .flatten()
+    .collect::<Vec<_>>()
+    .join(",");
     let target_features = if target_features.is_empty() {
         "<none>".to_owned()
     } else {
         target_features
     };
+    let runtime_version =
+        command_line("uname", &["-r"]).unwrap_or_else(|| format!("target-env-{target_env}"));
     let libc = match (target_os.as_str(), target_env.as_str()) {
-        ("linux", "gnu") => "glibc",
-        ("linux", "musl") => "musl",
-        ("macos", _) => "libSystem",
-        ("windows", "msvc") => "msvcrt",
-        _ => "<unavailable-d2>",
+        ("linux", "gnu") => command_line("getconf", &["GNU_LIBC_VERSION"])
+            .unwrap_or_else(|| format!("glibc@{runtime_version}")),
+        ("linux", "musl") => format!("musl@{runtime_version}"),
+        ("macos", _) => format!("libSystem@Darwin-{runtime_version}"),
+        ("windows", "msvc") => format!("ucrt@{runtime_version}"),
+        _ => "<unavailable-d2>".to_owned(),
     };
     let libm = match target_os.as_str() {
-        "macos" => "libSystem",
-        "linux" => "libm",
-        "windows" => "msvcrt",
-        _ => "<unavailable-d2>",
+        "macos" => format!("libSystem-libm@Darwin-{runtime_version}"),
+        "linux" => format!("libm@{libc}"),
+        "windows" => format!("ucrt-libm@{runtime_version}"),
+        _ => "<unavailable-d2>".to_owned(),
     };
 
     println!("cargo:rustc-env=LIQUIDFUN_NATIVE_RUSTC_VV={rustc_verbose}");
@@ -82,8 +105,48 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("cargo:rustc-env=LIQUIDFUN_NATIVE_LIBC={libc}");
     println!("cargo:rustc-env=LIQUIDFUN_NATIVE_LIBM={libm}");
     println!("cargo:rustc-env=LIQUIDFUN_NATIVE_FEATURES={features}");
-    println!("cargo:rustc-env=LIQUIDFUN_NATIVE_ENCODED_RUSTFLAGS={encoded_rustflags}");
+    println!("cargo:rustc-env=LIQUIDFUN_NATIVE_ENCODED_RUSTFLAGS={rendered_rustflags}");
     Ok(())
+}
+
+fn rustflag_values(flags: &[&str], key: &str) -> String {
+    let mut values = Vec::new();
+    let mut index = 0;
+    while index < flags.len() {
+        let flag = flags[index];
+        let maybe_value = flag
+            .strip_prefix("-C")
+            .and_then(|value| value.strip_prefix(key))
+            .and_then(|value| value.strip_prefix('='))
+            .or_else(|| {
+                (flag == "-C")
+                    .then(|| flags.get(index + 1).copied())
+                    .flatten()
+                    .and_then(|value| value.strip_prefix(key))
+                    .and_then(|value| value.strip_prefix('='))
+            });
+        if let Some(value) = maybe_value {
+            values.push(value);
+        }
+        index += 1;
+    }
+    values.join(",")
+}
+
+fn rustflags_have_value(flags: &[&str], key: &str, expected: &str) -> bool {
+    rustflag_values(flags, key)
+        .split(',')
+        .any(|value| value == expected)
+}
+
+fn command_line(program: &str, arguments: &[&str]) -> Option<String> {
+    let output = Command::new(program).args(arguments).output().ok()?;
+    if !output.status.success() {
+        return None;
+    }
+    let value = String::from_utf8(output.stdout).ok()?;
+    let value = value.trim();
+    (!value.is_empty()).then(|| value.to_owned())
 }
 
 fn hex_encode(bytes: &[u8]) -> String {

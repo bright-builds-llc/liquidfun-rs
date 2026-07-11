@@ -139,6 +139,20 @@ impl BuildIdentityFields {
         self.compiler_id = value.into();
         self
     }
+
+    /// Replaces the raw compiler version for boundary-focused tests or adapters.
+    #[must_use]
+    pub fn with_compiler_version(mut self, value: impl Into<String>) -> Self {
+        self.compiler_version = value.into();
+        self
+    }
+
+    /// Replaces effective compile flags for provenance regression tests.
+    #[must_use]
+    pub fn with_effective_compile_flags(mut self, value: impl Into<String>) -> Self {
+        self.effective_compile_flags = value.into();
+        self
+    }
 }
 
 /// Raw Phase 4 build fields accepted together or rejected together.
@@ -253,6 +267,9 @@ pub enum BuildIdentityError {
     /// The complete Phase 4 identity extension is present but malformed.
     #[error("Phase 4 build identity field `{0}` is invalid or empty")]
     InvalidPhase4Field(&'static str),
+    /// The Phase 4 compiler identity disagrees with the base build identity.
+    #[error("Phase 4 compiler identity does not exactly match the base build identity")]
+    Phase4CompilerMismatch,
     /// A would-be canonical identity contains a prohibited optimization or CPU flag.
     #[error("canonical build identity contains forbidden floating or native tuning flags")]
     CanonicalForbiddenFlags,
@@ -280,10 +297,28 @@ impl Phase4BuildIdentity {
         &self.fields.compiler_id
     }
 
+    /// Returns the exact compiler release string used for tier classification.
+    #[must_use]
+    pub fn compiler_version(&self) -> &str {
+        &self.fields.compiler_version
+    }
+
     /// Returns the exact target triple.
     #[must_use]
     pub fn target_triple(&self) -> &str {
         &self.fields.target_triple
+    }
+
+    /// Returns the effective target CPU classification.
+    #[must_use]
+    pub fn target_cpu(&self) -> &str {
+        &self.fields.target_cpu
+    }
+
+    /// Returns the effective target-feature set.
+    #[must_use]
+    pub fn target_features(&self) -> &str {
+        &self.fields.target_features
     }
 
     /// Returns the recorded feature set and effective flag summary.
@@ -334,7 +369,13 @@ impl BuildIdentity {
             .as_ref()
             .map(validate_phase4_identity)
             .transpose()?;
-        let evidence_tier = classify_evidence_tier(maybe_phase4.as_ref())?;
+        if let Some(phase4) = &maybe_phase4
+            && (phase4.fields.compiler_id != fields.compiler_id
+                || phase4.fields.compiler_version != fields.compiler_version)
+        {
+            return Err(BuildIdentityError::Phase4CompilerMismatch);
+        }
+        let evidence_tier = classify_evidence_tier(&fields, maybe_phase4.as_ref())?;
         let identity_sha256 = hash_identity_fields(&fields);
 
         Ok(Self {
@@ -525,6 +566,7 @@ fn validate_phase4_identity(
 }
 
 fn classify_evidence_tier(
+    identity: &BuildIdentityFields,
     maybe_phase4: Option<&Phase4BuildIdentity>,
 ) -> Result<BuildEvidenceTier, BuildIdentityError> {
     let Some(phase4) = maybe_phase4 else {
@@ -532,12 +574,14 @@ fn classify_evidence_tier(
     };
     let fields = &phase4.fields;
     let combined = format!(
-        "{} {} {} {} {}",
+        "{} {} {} {} {} {} {}",
         fields.optimization,
         fields.fp_model,
         fields.target_cpu,
         fields.target_features,
-        fields.feature_set
+        fields.feature_set,
+        identity.effective_compile_flags,
+        identity.effective_link_flags,
     );
     let forbidden = [
         "-ffast-math",
@@ -547,11 +591,16 @@ fn classify_evidence_tier(
         "-funsafe-math-optimizations",
         "-march=native",
         "-mcpu=native",
+        "target-cpu=native",
+        "-Ctarget-cpu=native",
+        "-enable-unsafe-fp-math",
+        "-enable-no-nans-fp-math",
+        "-enable-no-infs-fp-math",
     ]
     .iter()
-    .any(|flag| combined.split_ascii_whitespace().any(|word| word == *flag));
+    .any(|flag| flag_tokens(&combined).iter().any(|word| word == *flag));
     let canonical_compiler = (fields.compiler_id == "Clang" && fields.compiler_version == "22.1.8")
-        || (fields.compiler_id == "rustc" && fields.compiler_version.contains("1.97.0"));
+        || (fields.compiler_id == "rustc" && fields.compiler_version == "1.97.0");
     let canonical_target = fields.target_triple == "x86_64-unknown-linux-gnu"
         && fields.target_cpu == "baseline"
         && fields.os.eq_ignore_ascii_case("linux");
@@ -582,6 +631,37 @@ fn classify_evidence_tier(
     } else {
         BuildEvidenceTier::D3Exploratory
     })
+}
+
+fn flag_tokens(value: &str) -> Vec<String> {
+    value
+        .split_ascii_whitespace()
+        .flat_map(|word| {
+            let Some((_, encoded)) = word.split_once("hexvec:") else {
+                return vec![word.to_owned()];
+            };
+            encoded
+                .split(',')
+                .filter_map(decode_hex)
+                .collect::<Vec<_>>()
+        })
+        .collect()
+}
+
+fn decode_hex(value: &str) -> Option<String> {
+    if value.is_empty() || value.len() % 2 != 0 {
+        return None;
+    }
+    let bytes = value
+        .as_bytes()
+        .chunks_exact(2)
+        .map(|pair| {
+            let high = char::from(pair[0]).to_digit(16)?;
+            let low = char::from(pair[1]).to_digit(16)?;
+            u8::try_from((high << 4) | low).ok()
+        })
+        .collect::<Option<Vec<_>>>()?;
+    String::from_utf8(bytes).ok()
 }
 
 fn hash_identity_fields(fields: &BuildIdentityFields) -> Sha256Hex {
@@ -762,6 +842,40 @@ mod tests {
     }
 
     #[test]
+    fn canonical_identity_decodes_and_rejects_hex_encoded_rustflags() {
+        // Arrange: `-C` and `target-cpu=native` as a parsed rustflag vector.
+        let encoded = "hexvec:2d43,7461726765742d6370753d6e6174697665";
+        let mut phase4 = canonical_phase4();
+        phase4.compiler_id = "rustc".to_owned();
+        phase4.compiler_version = "1.97.0".to_owned();
+        let fields = valid_fields()
+            .with_compiler_id("rustc")
+            .with_compiler_version("1.97.0")
+            .with_effective_compile_flags(format!("encoded_rustflags={encoded}"))
+            .with_phase4(phase4);
+
+        // Act
+        let error = BuildIdentity::new(fields).expect_err("native CPU tuning must fail closed");
+
+        // Assert
+        assert_eq!(error, BuildIdentityError::CanonicalForbiddenFlags);
+    }
+
+    #[test]
+    fn phase4_compiler_must_match_base_identity_exactly() {
+        // Arrange
+        let mut phase4 = canonical_phase4();
+        phase4.compiler_version = "22.1.7".to_owned();
+        let fields = valid_fields().with_phase4(phase4);
+
+        // Act
+        let error = BuildIdentity::new(fields).expect_err("compiler mismatch must fail closed");
+
+        // Assert
+        assert_eq!(error, BuildIdentityError::Phase4CompilerMismatch);
+    }
+
+    #[test]
     fn canonical_identity_requires_all_fields() {
         // Arrange
         let fields = valid_fields().with_phase4(canonical_phase4().with_sdk_or_sysroot(""));
@@ -800,8 +914,13 @@ mod tests {
         );
 
         // Act
-        let identity = BuildIdentity::new(valid_fields().with_phase4(supported))
-            .expect("supported identity should validate");
+        let identity = BuildIdentity::new(
+            valid_fields()
+                .with_compiler_id("AppleClang")
+                .with_compiler_version("21.0.0")
+                .with_phase4(supported),
+        )
+        .expect("supported identity should validate");
 
         // Assert
         assert_eq!(identity.evidence_tier(), BuildEvidenceTier::D2Supported);

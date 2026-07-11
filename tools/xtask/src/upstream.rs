@@ -225,7 +225,7 @@ fn verify(repository_root: &Path) -> Result<UpstreamLock, UpstreamError> {
     Ok(upstream_lock)
 }
 
-fn adapter_source_digest(repository_root: &Path) -> Result<String, UpstreamError> {
+pub(crate) fn adapter_source_digest(repository_root: &Path) -> Result<String, UpstreamError> {
     let mut digest_input = Sha256::new();
     for relative_path in adapter_input_paths(repository_root)? {
         let path = repository_root.join(&relative_path);

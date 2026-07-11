@@ -7,6 +7,6 @@ tools/reference/src/protocol_bits.cpp
 tools/reference/src/protocol.hpp
 tools/reference/src/oracle_adapter.cpp
 tools/reference/src/oracle_adapter.hpp
-tools/reference/src/build_identity.hpp.in
+tools/reference/src/generate_build_identity.cmake.in
 tools/reference/vendor/nlohmann/json.hpp
 tools/reference/CMakeLists.txt

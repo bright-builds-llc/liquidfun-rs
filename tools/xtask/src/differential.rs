@@ -8,11 +8,15 @@ use std::io::{BufRead, BufReader, Write};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
-use liquidfun_differential::{NativeMathProbeExecutor, float_values_match_with_policy};
-use liquidfun_test_protocol::{
-    HarnessLimits, MathProbeRequestRecord, MathProbeResult, Phase4PolicyProfile,
-    ProtocolSessionValidator, decode_handshake_jsonl, decode_math_probe_request_jsonl,
+use liquidfun_differential::{
+    EmptyWorldAdapter, NativeMathProbeExecutor, float_values_match_with_policy,
 };
+use liquidfun_test_protocol::{
+    BuildEvidenceTier, BuildIdentity, HarnessLimits, MathProbeRequestRecord, MathProbeResult,
+    Phase4PolicyProfile, ProtocolSessionValidator, decode_handshake_jsonl,
+    decode_math_probe_request_jsonl,
+};
+use sha2::{Digest, Sha256};
 
 use crate::upstream;
 
@@ -343,7 +347,15 @@ fn run_math_probe_command(
         &request,
         &invocation.preset,
     )?;
-    compare_math_probe_results(&request, &capture.results, &policy)?;
+    let native_adapter = EmptyWorldAdapter::new(ORACLE_REVISION)
+        .map_err(|error| DifferentialError::new("identity", error.to_string()))?;
+    compare_math_probe_results(
+        &request,
+        &capture.results,
+        &policy,
+        &capture.oracle_identity,
+        native_adapter.build_identity(),
+    )?;
     let action = match invocation.action {
         MathProbeAction::Compare => "compare",
         MathProbeAction::Replay => "replay",
@@ -383,6 +395,7 @@ fn read_regular_file(repository_root: &Path, relative: &str) -> Result<Vec<u8>, 
 struct MathProbeCapture {
     results: Vec<MathProbeResult>,
     response_bytes: Vec<u8>,
+    oracle_identity: BuildIdentity,
 }
 
 fn execute_math_probe_once(
@@ -445,6 +458,26 @@ fn execute_math_probe_once(
             "oracle handshake lacks the requested Phase 4 build identity",
         ));
     }
+    let expected_adapter_digest = upstream::adapter_source_digest(repository_root)
+        .map_err(|error| DifferentialError::new("identity", error.to_string()))?;
+    if handshake.build_identity().adapter_content_sha256().as_str() != expected_adapter_digest {
+        return Err(DifferentialError::new(
+            "identity",
+            "oracle adapter digest differs from independently hashed checked-in inputs",
+        ));
+    }
+    let expected_compile_digest = effective_compile_command_sha256(repository_root, preset)?;
+    let phase4_identity = handshake
+        .build_identity()
+        .maybe_phase4()
+        .ok_or_else(|| DifferentialError::new("identity", "Phase 4 identity is missing"))?;
+    if phase4_identity.compile_command_sha256() != expected_compile_digest {
+        return Err(DifferentialError::new(
+            "identity",
+            "oracle compile-command digest differs from the effective compile database",
+        ));
+    }
+    let oracle_identity = handshake.build_identity().clone();
     let mut session = ProtocolSessionValidator::new(ORACLE_REVISION);
     session
         .accept_handshake(handshake)
@@ -482,7 +515,64 @@ fn execute_math_probe_once(
     Ok(MathProbeCapture {
         results,
         response_bytes,
+        oracle_identity,
     })
+}
+
+fn effective_compile_command_sha256(
+    repository_root: &Path,
+    preset: &str,
+) -> Result<String, DifferentialError> {
+    let path = repository_root
+        .join("target/reference")
+        .join(preset)
+        .join("compile_commands.json");
+    let bytes = fs::read(&path).map_err(|error| {
+        DifferentialError::new(
+            "identity",
+            format!("failed to read {}: {error}", path.display()),
+        )
+    })?;
+    compile_database_sha256(&bytes)
+}
+
+fn compile_database_sha256(bytes: &[u8]) -> Result<String, DifferentialError> {
+    let entries: Vec<serde_json::Value> = serde_json::from_slice(bytes)
+        .map_err(|error| DifferentialError::new("identity", error.to_string()))?;
+    let mut commands = entries
+        .into_iter()
+        .filter_map(|entry| {
+            let source = entry.get("file")?.as_str()?;
+            let filename = Path::new(source).file_name()?.to_str()?;
+            if !matches!(filename, "math_probe.cpp" | "protocol_bits.cpp") {
+                return None;
+            }
+            let command =
+                if let Some(command) = entry.get("command").and_then(|value| value.as_str()) {
+                    command.to_owned()
+                } else {
+                    let arguments = entry.get("arguments")?.as_array()?;
+                    let mut command = String::new();
+                    for argument in arguments {
+                        command.push_str(argument.as_str()?);
+                        command.push('\n');
+                    }
+                    command
+                };
+            Some(format!("{source}\n{command}"))
+        })
+        .collect::<Vec<_>>();
+    if commands.len() != 2 {
+        return Err(DifferentialError::new(
+            "identity",
+            format!(
+                "expected two effective math/probe compile commands, found {}",
+                commands.len()
+            ),
+        ));
+    }
+    commands.sort_unstable();
+    Ok(format!("{:x}", Sha256::digest(commands.join("\n"))))
 }
 
 fn read_jsonl_record(
@@ -539,7 +629,26 @@ fn compare_math_probe_results(
     request: &MathProbeRequestRecord,
     actual: &[MathProbeResult],
     policy: &Phase4PolicyProfile,
+    oracle_identity: &BuildIdentity,
+    native_identity: &BuildIdentity,
 ) -> Result<(), DifferentialError> {
+    for (engine, identity) in [
+        ("C++ oracle", oracle_identity),
+        ("native Rust", native_identity),
+    ] {
+        if identity.oracle_revision() != ORACLE_REVISION || identity.maybe_phase4().is_none() {
+            return Err(DifferentialError::new(
+                "identity",
+                format!("{engine} identity is not bound to the Phase 4 oracle contract"),
+            ));
+        }
+        if identity.evidence_tier() == BuildEvidenceTier::D3Exploratory {
+            return Err(DifferentialError::new(
+                "identity",
+                format!("{engine} exploratory identity cannot authorize Phase 4 comparison"),
+            ));
+        }
+    }
     let expected = NativeMathProbeExecutor::execute(request)
         .map_err(|error| DifferentialError::new("native", error.to_string()))?;
     if expected.len() != actual.len() {
@@ -764,4 +873,40 @@ fn repository_root() -> Result<PathBuf, DifferentialError> {
         ));
     };
     Ok(root.to_path_buf())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::compile_database_sha256;
+
+    #[test]
+    fn effective_compile_digest_changes_with_material_command_inputs() {
+        // Arrange
+        let baseline = br#"[
+          {"file":"/repo/math_probe.cpp","command":"clang++ -I/a -DFLAG=1 -march=x86-64 -c math_probe.cpp"},
+          {"file":"/repo/protocol_bits.cpp","command":"clang++ -I/a -DFLAG=1 -c protocol_bits.cpp"}
+        ]"#;
+        let baseline_text = String::from_utf8(baseline.to_vec()).expect("fixture is UTF-8");
+        let variants = [
+            baseline_text.replace("-DFLAG=1", "-DFLAG=2"),
+            baseline_text.replace("-I/a", "-I/b"),
+            baseline_text.replace("-march=x86-64", "-march=x86-64-v3"),
+        ];
+
+        // Act
+        let baseline_digest = compile_database_sha256(baseline).expect("baseline should hash");
+        let changed_digests = variants
+            .iter()
+            .map(|changed| {
+                compile_database_sha256(changed.as_bytes()).expect("changed command should hash")
+            })
+            .collect::<Vec<_>>();
+
+        // Assert
+        assert!(
+            changed_digests
+                .iter()
+                .all(|changed| changed != &baseline_digest)
+        );
+    }
 }

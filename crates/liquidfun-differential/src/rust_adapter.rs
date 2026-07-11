@@ -71,8 +71,10 @@ impl EmptyWorldAdapter {
             env!("LIQUIDFUN_NATIVE_ENCODED_RUSTFLAGS")
         );
         let feature_set = format!(
-            "features={};encoded_rustflags={}",
+            "features={};target_cpu={};target_features={};encoded_rustflags={}",
             env!("LIQUIDFUN_NATIVE_FEATURES"),
+            env!("LIQUIDFUN_NATIVE_TARGET_CPU"),
+            env!("LIQUIDFUN_NATIVE_TARGET_FEATURES"),
             env!("LIQUIDFUN_NATIVE_ENCODED_RUSTFLAGS")
         );
         let compile_descriptor = format!(
@@ -111,7 +113,7 @@ impl EmptyWorldAdapter {
             adapter_content_sha256.as_str(),
             "native-rust",
             "rustc",
-            env!("LIQUIDFUN_NATIVE_RUSTC_VV"),
+            env!("LIQUIDFUN_NATIVE_RUSTC_VERSION"),
             target,
             env!("LIQUIDFUN_NATIVE_PROFILE"),
             compile_flags,
