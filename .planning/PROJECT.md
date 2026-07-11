@@ -21,18 +21,19 @@ Deliver an independent, maintainable Rust physics engine whose LiquidFun behavio
 - [x] Phase 1 created an authoritative 177-row compatibility ledger, deterministic 161-entry discovery snapshot, generated human report, and fail-closed inventory/provenance/package checks.
 - [x] Phase 2 established a bounded, versioned semantic protocol and private Rust/C++ differential harness with strict provenance, typed comparison and failure classification, replay/minimization, reviewed fixture promotion, and verified one-shot, reuse, and sanitizer empty-world round trips.
 - [x] Phase 3 established world-scoped typed handles, checked invalidation and exhaustion, upstream-ordered owned destruction evidence, restricted hooks and deferred mutation, typed user associations, and a stable-particle dense-storage spike with clean review and 17/17 verified must-haves.
+- [x] Phase 4 established the public `f32` math/settings foundation, checked matrix/transform/sweep contracts, a closed per-observable numerical policy, bit-faithful Rust/C++ probes, fail-closed build identity, typed mismatch evidence, and 25/25 verified must-haves.
 
 ### Active
 
 <!-- Current scope. Building toward these. -->
 
-- [ ] Implement the Box2D-compatible mathematical, geometric, collision, broad-phase, narrow-phase, solver, sleeping, query, ray-cast, and continuous-collision foundations present in the selected LiquidFun revision.
+- [ ] Extend the implemented Box2D-compatible math foundation with shapes, geometric collision primitives, broad phase, narrow phase, solvers, sleeping, queries, ray casts, and continuous collision from the selected LiquidFun revision.
 - [ ] Implement rigid-body worlds, bodies, fixtures, contacts, all supported shapes and joints, filters, listeners, destruction behavior, debug drawing abstractions, and upstream-equivalent world operations.
 - [ ] Implement the full LiquidFun particle system, including storage, creation, destruction, lifetimes, buffers, spatial proxies, contacts, body contacts, groups, flags, pair/triad logic, queries, ray casts, callbacks, and every upstream solver behavior.
 - [ ] Extend the Phase 2 C++/Rust reference harness from the verified empty-world seam to seeded subsystem scenarios and their semantic state, tolerance, regression, and diagnostic requirements.
 - [ ] Create layered unit, integration, upstream-compatibility, differential, property, fuzz, Miri, sanitizer, and regression testing appropriate to each subsystem.
 - [ ] Port or account for upstream tests and examples, with an optional renderer-independent testbed that supports interactive inspection, headless execution, deterministic capture, and Rust/C++ comparison.
-- [ ] Define and enforce numerical-stability, ordering, determinism, and cross-platform tolerance policies before treating differential results as compatibility evidence.
+- [ ] Extend the Phase 4 numerical-stability, ordering, determinism, and platform-tier policy with subsystem-specific observables and tolerances before treating later differential results as compatibility evidence.
 - [ ] Measure performance against equivalent upstream C++ workloads and optimize only from profiling evidence without silently sacrificing API clarity, safety, determinism, or parity.
 - [ ] Support Linux x86_64, Linux ARM64, macOS ARM64, macOS x86_64 where practical, and Windows x86_64, while investigating WASM, mobile, and realistic smaller `no_std` subsets.
 - [ ] Provide discoverable repository automation through a root `justfile`, CI, pinned toolchains, dependency/license policy, documentation checks, coverage, benchmarks, and scheduled extended verification.
@@ -102,6 +103,7 @@ Before substantial physics porting begins, the project should have:
 - Phase 1 is complete: the repository now contains a Cargo-first Rust scaffold, private orchestration, an immutable upstream oracle, reproducible CMake/Ninja build commands, compatibility/provenance records, package isolation, and separated CI workflows. Broad physics behavior is not implemented yet.
 - Phase 2 is complete: the repository now has a strict semantic JSONL contract, native Rust and process-isolated C++ adapters, typed comparison and failure taxonomy, replay/minimization and evidence lifecycles, and verified empty-world one-shot, reuse, and sanitizer round trips. This proves the harness seam, not broad physics parity.
 - Phase 3 is complete: the native crate now has typed world-scoped identities, explicit stale/cross-world/cross-system failures, checked arena retirement, upstream-ordered destruction cascades with pre-mutation snapshots, restricted step hooks, bounded deferred commands, panic poisoning, typed association side tables, and stable particle identity over transactional dense permutations. Broad solver behavior and the complete Phase 9 particle-buffer API remain deferred.
+- Phase 4 is complete: consumers have documented source-ordered scalar, vector, matrix, rotation, transform, sweep, and fixed-setting APIs; a closed 25-path policy defines special values, comparison modes, horizons, ordering, and authority tiers; and supervised Rust/C++ probes verify 39 ordered cases in debug and release. Local AppleClang evidence remains non-promotable D2, while canonical D1 execution remains pinned CI evidence.
 - Google LiquidFun extends the Box2D 2.3.0 / revision-280 lineage. Official commit `7f20402173fd143a3988c921bc384459c6a858f2` is the immutable behavioral oracle; `UPSTREAM.md` and ADR 0001 record the release-to-candidate delta and maintenance state.
 - The upstream C++ implementation is the behavioral oracle during development, not a production dependency or the desired public architecture.
 - Particle simulation is a central deliverable, not an optional extension after rigid-body work.
@@ -148,8 +150,8 @@ Before substantial physics porting begins, the project should have:
 | Design the Rust ownership, handle, callback, and user-data model before broad porting | C++ pointer and mutation semantics are foundational and expensive to revise late | Accepted and verified in Phase 3; future subsystem APIs must preserve the documented identity, callback, event, mutation, and storage boundaries |
 | Keep particle systems in core scope | Particle behavior is the defining LiquidFun extension and cannot be deferred as optional polish | — Pending |
 | Keep rendering optional and simulation headless | Core portability, testing, server use, and framework independence depend on this boundary | — Pending |
-| Prioritize correctness and parity before optimization | Premature layout, SIMD, or parallel decisions could hide incompatibilities and destabilize the API | — Pending |
-| Require explicit compatibility sign-off per subsystem | Incremental, reviewable evidence prevents premature global parity claims | — Pending |
+| Prioritize correctness and parity before optimization | Premature layout, SIMD, or parallel decisions could hide incompatibilities and destabilize the API | Accepted in Phase 4 through source-ordered scalar kernels and fail-closed rejection of nonbaseline CPU, SIMD/FMA, contraction, and unsafe floating options |
+| Require explicit compatibility sign-off per subsystem | Incremental, reviewable evidence prevents premature global parity claims | Accepted for math/settings in Phase 4; later subsystems must repeat scoped inventory, unit, differential, documentation, review, and security evidence |
 
 ## Open Questions
 
@@ -181,4 +183,4 @@ This document evolves at phase transitions and milestone boundaries.
 
 ______________________________________________________________________
 
-*Last updated: 2026-07-11 after Phase 3 completion*
+*Last updated: 2026-07-11 after Phase 4 completion*
