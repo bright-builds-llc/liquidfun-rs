@@ -6,10 +6,12 @@
 #![forbid(unsafe_code)]
 
 mod arena;
+mod association;
 mod error;
 mod identity;
 mod world;
 
+pub use association::{AssociationId, AssociationMap};
 pub use error::{ArenaInsertError, HandleError, WorldKeyError};
 pub use identity::{
     BodyId, FixtureId, JointId, ObjectKind, ParticleGroupId, ParticleId, ParticleSystemId,
