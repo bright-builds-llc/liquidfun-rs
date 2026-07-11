@@ -61,12 +61,12 @@ impl WorldKey {
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub(crate) struct Identity {
     world: WorldKey,
-    slot: u32,
+    slot: usize,
     generation: u64,
 }
 
 impl Identity {
-    pub(crate) const fn new(world: WorldKey, slot: u32, generation: u64) -> Self {
+    pub(crate) const fn new(world: WorldKey, slot: usize, generation: u64) -> Self {
         Self {
             world,
             slot,
@@ -78,7 +78,7 @@ impl Identity {
         self.world
     }
 
-    pub(crate) const fn slot(self) -> u32 {
+    pub(crate) const fn slot(self) -> usize {
         self.slot
     }
 
