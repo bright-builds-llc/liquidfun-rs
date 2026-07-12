@@ -7,9 +7,9 @@ use super::fixture::FixtureBoundsError;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) struct FixtureProxy {
-    fixture: FixtureId,
-    body: BodyId,
-    child_index: ChildIndex,
+    pub(super) fixture: FixtureId,
+    pub(super) body: BodyId,
+    pub(super) child_index: ChildIndex,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -42,6 +42,13 @@ impl FixtureProxies {
 
     pub(super) fn len(&self) -> usize {
         self.entries.len()
+    }
+
+    pub(super) fn maybe_proxy_id(&self, child_index: ChildIndex) -> Option<ProxyId> {
+        self.entries
+            .iter()
+            .find(|entry| entry.child_index == child_index)
+            .map(|entry| entry.id)
     }
 
     pub(super) fn prepare_creation(

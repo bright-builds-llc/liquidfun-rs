@@ -1,6 +1,8 @@
 //! World ownership and minimal non-solver object storage.
 
 mod body;
+mod contact;
+mod contact_manager;
 mod fixture;
 pub(crate) mod object;
 mod proxy;
@@ -9,6 +11,9 @@ mod step;
 pub use body::{
     BodyActivationError, BodyDef, BodyDefError, BodyMassData, BodyMassDataError, BodySnapshot,
     BodyTransformError, BodyType,
+};
+pub use contact::{
+    ContactPointSnapshot, ContactTransition, ContactTransitionKind, ManagedContactSnapshot,
 };
 pub use fixture::{
     FixtureBoundsError, FixtureDef, FixtureDefError, FixtureMutationError, FixtureSnapshot,
@@ -19,5 +24,6 @@ pub use object::{
 };
 pub use step::{
     CollisionDirective, CommandApplication, CommandError, ContactEvent, ContactSnapshot,
-    ContactView, PreSolveDirective, StepError, StepHook, StepLimits, StepReport, WorldCommand,
+    ContactView, PreSolveDirective, StepError, StepHook, StepLifecycleEvent, StepLimits,
+    StepReport, WorldCommand,
 };

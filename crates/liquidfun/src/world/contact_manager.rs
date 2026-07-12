@@ -1,0 +1,408 @@
+use crate::arena::Arena;
+use crate::collision::{BroadPhase, CollisionOutcome, collide_shapes, test_overlap};
+use crate::{BodyId, FixtureId};
+
+use super::body::BodyType;
+use super::contact::{
+    Contact, ContactEndpoint, ContactKey, ContactTransition, ContactTransitionKind,
+    canonical_contact_key,
+};
+use super::object::{Body, Fixture};
+use super::proxy::FixtureProxy;
+
+#[derive(Debug, Default)]
+pub(super) struct ContactManager {
+    contacts: Vec<Contact>,
+    next_ordinal: u64,
+    transitions: Vec<ContactTransition>,
+}
+
+impl ContactManager {
+    pub(super) const fn new() -> Self {
+        Self {
+            contacts: Vec::new(),
+            next_ordinal: 0,
+            transitions: Vec::new(),
+        }
+    }
+
+    pub(super) fn len(&self) -> usize {
+        self.contacts.len()
+    }
+
+    pub(super) fn find_new_contacts(
+        &mut self,
+        broad_phase: &mut BroadPhase<FixtureProxy>,
+        bodies: &mut Arena<Body, BodyId>,
+        fixtures: &mut Arena<Fixture, FixtureId>,
+    ) {
+        let mut pairs = Vec::new();
+        broad_phase
+            .update_pairs(|_first_id, first, _second_id, second| pairs.push((*first, *second)))
+            .expect("world-owned broad-phase entries must remain coherent");
+
+        for (first, second) in pairs {
+            self.add_pair(first, second, bodies, fixtures);
+        }
+    }
+
+    pub(super) fn update_contacts(
+        &mut self,
+        broad_phase: &BroadPhase<FixtureProxy>,
+        bodies: &mut Arena<Body, BodyId>,
+        fixtures: &mut Arena<Fixture, FixtureId>,
+    ) {
+        let mut index = 0;
+        while index < self.contacts.len() {
+            let key = self.contacts[index].key;
+            if self.contacts[index].needs_filtering() && !pair_is_eligible(key, bodies, fixtures) {
+                self.destroy_at(index, bodies, fixtures);
+                continue;
+            }
+            self.contacts[index].set_needs_filtering(false);
+
+            if !broad_phase_overlap(key, broad_phase, fixtures) {
+                self.destroy_at(index, bodies, fixtures);
+                continue;
+            }
+
+            let maybe_transition = update_contact(&mut self.contacts[index], bodies, fixtures);
+            if let Some(transition) = maybe_transition {
+                self.transitions.push(transition);
+            }
+            fixtures
+                .get_mut(key.first.fixture)
+                .expect("contact fixture A remains live")
+                .pending_refilter = false;
+            fixtures
+                .get_mut(key.second.fixture)
+                .expect("contact fixture B remains live")
+                .pending_refilter = false;
+            index += 1;
+        }
+    }
+
+    pub(super) fn flag_fixture_for_filtering(&mut self, fixture: FixtureId) {
+        for contact in &mut self.contacts {
+            if contact.key.first.fixture == fixture || contact.key.second.fixture == fixture {
+                contact.set_needs_filtering(true);
+            }
+        }
+    }
+
+    pub(super) fn destroy_for_body(
+        &mut self,
+        body: BodyId,
+        bodies: &mut Arena<Body, BodyId>,
+        fixtures: &mut Arena<Fixture, FixtureId>,
+    ) {
+        let mut index = 0;
+        while index < self.contacts.len() {
+            let key = self.contacts[index].key;
+            if key.first.body == body || key.second.body == body {
+                self.destroy_at(index, bodies, fixtures);
+            } else {
+                index += 1;
+            }
+        }
+    }
+
+    pub(super) fn destroy_for_fixture(
+        &mut self,
+        fixture: FixtureId,
+        bodies: &mut Arena<Body, BodyId>,
+        fixtures: &mut Arena<Fixture, FixtureId>,
+    ) {
+        let mut index = 0;
+        while index < self.contacts.len() {
+            let key = self.contacts[index].key;
+            if key.first.fixture == fixture || key.second.fixture == fixture {
+                self.destroy_at(index, bodies, fixtures);
+            } else {
+                index += 1;
+            }
+        }
+    }
+
+    pub(super) fn drain_transitions(&mut self) -> Vec<ContactTransition> {
+        std::mem::take(&mut self.transitions)
+    }
+
+    fn add_pair(
+        &mut self,
+        first_proxy: FixtureProxy,
+        second_proxy: FixtureProxy,
+        bodies: &mut Arena<Body, BodyId>,
+        fixtures: &mut Arena<Fixture, FixtureId>,
+    ) {
+        let first_fixture = fixtures
+            .get(first_proxy.fixture)
+            .expect("broad-phase fixture A must remain live");
+        let second_fixture = fixtures
+            .get(second_proxy.fixture)
+            .expect("broad-phase fixture B must remain live");
+        let first = ContactEndpoint {
+            fixture: first_proxy.fixture,
+            body: first_proxy.body,
+            child_index: first_proxy.child_index,
+        };
+        let second = ContactEndpoint {
+            fixture: second_proxy.fixture,
+            body: second_proxy.body,
+            child_index: second_proxy.child_index,
+        };
+        let Some(key) = canonical_contact_key(
+            first,
+            first_fixture.definition.shape(),
+            second,
+            second_fixture.definition.shape(),
+        ) else {
+            return;
+        };
+        if !pair_is_eligible(key, bodies, fixtures)
+            || self
+                .contacts
+                .iter()
+                .any(|contact| contact.key.matches_unordered(key))
+        {
+            return;
+        }
+
+        let fixture_a = fixtures
+            .get(key.first.fixture)
+            .expect("canonical fixture A remains live");
+        let fixture_b = fixtures
+            .get(key.second.fixture)
+            .expect("canonical fixture B remains live");
+        let ordinal = self.next_ordinal;
+        self.next_ordinal = self
+            .next_ordinal
+            .checked_add(1)
+            .expect("private contact occurrence ordinals cannot exhaust in one process");
+        let contact = Contact::new(
+            key,
+            ordinal,
+            fixture_a.definition.friction(),
+            fixture_b.definition.friction(),
+            fixture_a.definition.restitution(),
+            fixture_b.definition.restitution(),
+        );
+        self.contacts.insert(0, contact);
+        link_contact(ordinal, key, bodies, fixtures);
+    }
+
+    fn destroy_at(
+        &mut self,
+        index: usize,
+        bodies: &mut Arena<Body, BodyId>,
+        fixtures: &mut Arena<Fixture, FixtureId>,
+    ) {
+        let contact = self.contacts.remove(index);
+        unlink_contact(contact.ordinal, contact.key, bodies, fixtures);
+        if contact.is_touching() {
+            self.transitions.push(ContactTransition::new(
+                ContactTransitionKind::End,
+                contact.snapshot(),
+            ));
+        }
+    }
+}
+
+fn pair_is_eligible(
+    key: ContactKey,
+    bodies: &Arena<Body, BodyId>,
+    fixtures: &Arena<Fixture, FixtureId>,
+) -> bool {
+    if key.first.body == key.second.body {
+        return false;
+    }
+    let body_a = bodies
+        .get(key.first.body)
+        .expect("contact body A must remain live");
+    let body_b = bodies
+        .get(key.second.body)
+        .expect("contact body B must remain live");
+    if !body_a.state.snapshot().is_active() || !body_b.state.snapshot().is_active() {
+        return false;
+    }
+    if body_a.state.snapshot().body_type() == BodyType::Static
+        && body_b.state.snapshot().body_type() == BodyType::Static
+    {
+        return false;
+    }
+    let fixture_a = fixtures
+        .get(key.first.fixture)
+        .expect("contact fixture A must remain live");
+    let fixture_b = fixtures
+        .get(key.second.fixture)
+        .expect("contact fixture B must remain live");
+    fixture_a
+        .definition
+        .filter_data()
+        .should_collide(fixture_b.definition.filter_data())
+}
+
+fn broad_phase_overlap(
+    key: ContactKey,
+    broad_phase: &BroadPhase<FixtureProxy>,
+    fixtures: &Arena<Fixture, FixtureId>,
+) -> bool {
+    let fixture_a = fixtures
+        .get(key.first.fixture)
+        .expect("contact fixture A remains live");
+    let fixture_b = fixtures
+        .get(key.second.fixture)
+        .expect("contact fixture B remains live");
+    let Some(proxy_a) = fixture_a.proxies.maybe_proxy_id(key.first.child_index) else {
+        return false;
+    };
+    let Some(proxy_b) = fixture_b.proxies.maybe_proxy_id(key.second.child_index) else {
+        return false;
+    };
+    let aabb_a = broad_phase
+        .fat_aabb(proxy_a)
+        .expect("contact proxy A remains live");
+    let aabb_b = broad_phase
+        .fat_aabb(proxy_b)
+        .expect("contact proxy B remains live");
+    aabb_a.overlaps(aabb_b)
+}
+
+fn update_contact(
+    contact: &mut Contact,
+    bodies: &Arena<Body, BodyId>,
+    fixtures: &Arena<Fixture, FixtureId>,
+) -> Option<ContactTransition> {
+    let fixture_a = fixtures
+        .get(contact.key.first.fixture)
+        .expect("contact fixture A remains live");
+    let fixture_b = fixtures
+        .get(contact.key.second.fixture)
+        .expect("contact fixture B remains live");
+    let transform_a = bodies
+        .get(contact.key.first.body)
+        .expect("contact body A remains live")
+        .state
+        .transform();
+    let transform_b = bodies
+        .get(contact.key.second.body)
+        .expect("contact body B remains live")
+        .state
+        .transform();
+    let was_touching = contact.is_touching();
+    contact.set_enabled(true);
+    contact.set_sensor(fixture_a.definition.is_sensor() || fixture_b.definition.is_sensor());
+    let touching = if contact.is_sensor() {
+        contact.clear_manifold();
+        test_overlap(
+            fixture_a.definition.shape(),
+            contact.key.first.child_index,
+            transform_a,
+            fixture_b.definition.shape(),
+            contact.key.second.child_index,
+            transform_b,
+        )
+        .expect("checked contact geometry must produce a finite overlap result")
+    } else {
+        let maybe_manifold = match collide_shapes(
+            fixture_a.definition.shape(),
+            contact.key.first.child_index,
+            transform_a,
+            fixture_b.definition.shape(),
+            contact.key.second.child_index,
+            transform_b,
+        )
+        .expect("checked contact geometry must produce a finite manifold result")
+        {
+            CollisionOutcome::Touching(pair) => Some(pair.manifold().clone()),
+            CollisionOutcome::Separated => None,
+            CollisionOutcome::Unsupported => {
+                unreachable!("only registered shape pairs become contacts")
+            }
+        };
+        let touching = maybe_manifold.is_some();
+        contact.replace_manifold(maybe_manifold);
+        touching
+    };
+
+    contact.set_touching(touching);
+    let kind = match (was_touching, contact.is_touching()) {
+        (false, true) => Some(ContactTransitionKind::Begin),
+        (true, true) => Some(ContactTransitionKind::Persist),
+        (true, false) => Some(ContactTransitionKind::End),
+        (false, false) => None,
+    };
+    kind.map(|kind| ContactTransition::new(kind, contact.snapshot()))
+}
+
+fn link_contact(
+    ordinal: u64,
+    key: ContactKey,
+    bodies: &mut Arena<Body, BodyId>,
+    fixtures: &mut Arena<Fixture, FixtureId>,
+) {
+    bodies
+        .get_mut(key.first.body)
+        .expect("contact body A remains live")
+        .contacts
+        .insert(0, ordinal);
+    bodies
+        .get_mut(key.second.body)
+        .expect("contact body B remains live")
+        .contacts
+        .insert(0, ordinal);
+    fixtures
+        .get_mut(key.first.fixture)
+        .expect("contact fixture A remains live")
+        .contacts
+        .insert(0, ordinal);
+    fixtures
+        .get_mut(key.second.fixture)
+        .expect("contact fixture B remains live")
+        .contacts
+        .insert(0, ordinal);
+}
+
+fn unlink_contact(
+    ordinal: u64,
+    key: ContactKey,
+    bodies: &mut Arena<Body, BodyId>,
+    fixtures: &mut Arena<Fixture, FixtureId>,
+) {
+    remove_contact(
+        &mut bodies
+            .get_mut(key.first.body)
+            .expect("live body A")
+            .contacts,
+        ordinal,
+    );
+    remove_contact(
+        &mut bodies
+            .get_mut(key.second.body)
+            .expect("live body B")
+            .contacts,
+        ordinal,
+    );
+    remove_contact(
+        &mut fixtures
+            .get_mut(key.first.fixture)
+            .expect("live fixture A")
+            .contacts,
+        ordinal,
+    );
+    remove_contact(
+        &mut fixtures
+            .get_mut(key.second.fixture)
+            .expect("live fixture B")
+            .contacts,
+        ordinal,
+    );
+}
+
+fn remove_contact(adjacency: &mut Vec<u64>, ordinal: u64) {
+    let position = adjacency
+        .iter()
+        .position(|candidate| *candidate == ordinal)
+        .expect("contact adjacency contains the manager occurrence");
+    adjacency.remove(position);
+}

@@ -7,6 +7,8 @@ use std::panic::{AssertUnwindSafe, catch_unwind, resume_unwind};
 
 use crate::{BodyId, DestructionRecord, FixtureId, HandleError, World};
 
+use super::contact::ContactTransition;
+
 #[cfg(test)]
 use super::fixture::test_fixture_definition;
 #[cfg(test)]
@@ -300,9 +302,21 @@ impl ContactEvent {
 }
 
 /// Owned results from one representative step.
-#[derive(Debug, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
+pub enum StepLifecycleEvent {
+    /// A private manager contact began, persisted, or ended touching.
+    Contact(ContactTransition),
+    /// A world object was invalidated after dependent contact evidence.
+    Destruction(DestructionRecord),
+}
+
+/// Owned results from one representative step.
+#[derive(Debug, Default, PartialEq)]
 pub struct StepReport {
     events: Vec<ContactEvent>,
+    contact_transitions: Vec<ContactTransition>,
+    lifecycle: Vec<StepLifecycleEvent>,
     destructions: Vec<DestructionRecord>,
     command_applications: Vec<CommandApplication>,
 }
@@ -312,6 +326,18 @@ impl StepReport {
     #[must_use]
     pub fn events(&self) -> &[ContactEvent] {
         &self.events
+    }
+
+    /// Returns automatic touching transitions in private manager occurrence order.
+    #[must_use]
+    pub fn contact_transitions(&self) -> &[ContactTransition] {
+        &self.contact_transitions
+    }
+
+    /// Returns contact and destruction evidence in exact production order.
+    #[must_use]
+    pub fn lifecycle(&self) -> &[StepLifecycleEvent] {
+        &self.lifecycle
     }
 
     /// Returns owned destruction evidence in command-application order.
@@ -415,14 +441,27 @@ impl World {
         if self.step_state.is_poisoned() {
             return Err(StepError::Poisoned);
         }
+        self.find_new_contacts();
+        self.update_contacts();
+        let mut contact_transitions = self.contact_manager.drain_transitions();
+        let mut lifecycle = contact_transitions
+            .iter()
+            .cloned()
+            .map(StepLifecycleEvent::Contact)
+            .collect::<Vec<_>>();
         let (events, commands) = {
             let _lock = StepLockGuard::acquire(&self.step_state)?;
             self.dispatch_hooks(contacts, hook, limits)?
         };
-        let (command_applications, destructions) = self.apply_commands(commands);
+        let (command_applications, destructions, command_transitions, command_lifecycle) =
+            self.apply_commands(commands);
+        contact_transitions.extend(command_transitions);
+        lifecycle.extend(command_lifecycle);
 
         Ok(StepReport {
             events,
+            contact_transitions,
+            lifecycle,
             destructions,
             command_applications,
         })
@@ -475,17 +514,28 @@ impl World {
     fn apply_commands(
         &mut self,
         commands: Vec<WorldCommand>,
-    ) -> (Vec<CommandApplication>, Vec<DestructionRecord>) {
+    ) -> (
+        Vec<CommandApplication>,
+        Vec<DestructionRecord>,
+        Vec<ContactTransition>,
+        Vec<StepLifecycleEvent>,
+    ) {
         let mut applications = Vec::with_capacity(commands.len());
         let mut destructions = Vec::new();
+        let mut contact_transitions = Vec::new();
+        let mut lifecycle = Vec::new();
         for command in commands {
             let result = self.apply_command(command);
+            let transitions = self.contact_manager.drain_transitions();
+            lifecycle.extend(transitions.iter().cloned().map(StepLifecycleEvent::Contact));
+            contact_transitions.extend(transitions);
             if let Ok(records) = &result {
                 destructions.extend(records.iter().cloned());
+                lifecycle.extend(records.iter().cloned().map(StepLifecycleEvent::Destruction));
             }
             applications.push(CommandApplication { command, result });
         }
-        (applications, destructions)
+        (applications, destructions, contact_transitions, lifecycle)
     }
 
     fn apply_command(

@@ -10,6 +10,7 @@ use crate::{
 
 use super::body::BodyActivationError;
 use super::body::{BodyDef, BodyMassData, BodySnapshot, BodyState, BodyTransformError, BodyType};
+use super::contact_manager::ContactManager;
 use super::fixture::{FixtureBoundsError, FixtureDef, FixtureMutationError, WorldFixtureSnapshot};
 use super::proxy::{FixtureProxies, FixtureProxy, PreparedFixtureBounds, PreparedSynchronization};
 use super::step::StepState;
@@ -20,26 +21,24 @@ use crate::math::Vec2;
 use super::fixture::test_fixture_definition;
 
 #[derive(Debug)]
-struct Body {
-    diagnostic_id: u64,
-    state: BodyState,
-    fixtures: Vec<FixtureId>,
-    joints: Vec<JointId>,
-    pending_contact_destruction: bool,
-    pending_wake: bool,
+pub(super) struct Body {
+    pub(super) diagnostic_id: u64,
+    pub(super) state: BodyState,
+    pub(super) fixtures: Vec<FixtureId>,
+    pub(super) joints: Vec<JointId>,
+    pub(super) contacts: Vec<u64>,
+    pub(super) pending_contact_destruction: bool,
+    pub(super) pending_wake: bool,
 }
 
 #[derive(Debug)]
-struct Fixture {
-    diagnostic_id: u64,
-    body: BodyId,
-    definition: FixtureDef,
-    proxies: FixtureProxies,
-    #[allow(
-        dead_code,
-        reason = "Plan 06-04 consumes deferred fixture refilter state"
-    )]
-    pending_refilter: bool,
+pub(super) struct Fixture {
+    pub(super) diagnostic_id: u64,
+    pub(super) body: BodyId,
+    pub(super) definition: FixtureDef,
+    pub(super) proxies: FixtureProxies,
+    pub(super) contacts: Vec<u64>,
+    pub(super) pending_refilter: bool,
 }
 
 #[derive(Debug)]
@@ -296,6 +295,7 @@ pub struct World {
     particle_groups: Arena<ParticleGroup, ParticleGroupId>,
     particles: Arena<Particle, ParticleId>,
     broad_phase: BroadPhase<FixtureProxy>,
+    pub(super) contact_manager: ContactManager,
     next_diagnostic_id: Option<u64>,
     pub(super) step_state: StepState,
 }
@@ -316,6 +316,7 @@ impl World {
             particle_groups: Arena::new(world, usize::MAX),
             particles: Arena::new(world, usize::MAX),
             broad_phase: new_world_broad_phase(),
+            contact_manager: ContactManager::new(),
             next_diagnostic_id: Some(1),
             step_state: StepState::new(),
         })
@@ -351,6 +352,7 @@ impl World {
             state: BodyState::from_definition(definition),
             fixtures: Vec::new(),
             joints: Vec::new(),
+            contacts: Vec::new(),
             pending_contact_destruction: false,
             pending_wake: false,
         })
@@ -378,6 +380,7 @@ impl World {
             return Ok(());
         }
         let fixtures = record.fixtures.clone();
+        self.destroy_contacts_for_body(body);
         {
             let record = self.body_mut_after_validation(body);
             record.state.set_body_type(body_type);
@@ -446,6 +449,7 @@ impl World {
             let creations = self.prepare_body_fixture_creations(&fixtures, transform)?;
             self.create_body_fixture_entries(body, creations);
         } else {
+            self.destroy_contacts_for_body(body);
             self.destroy_body_fixture_entries(body, fixtures);
         }
         let record = self.body_mut_after_validation(body);
@@ -490,6 +494,7 @@ impl World {
             body,
             definition: definition.clone(),
             proxies: FixtureProxies::new(),
+            contacts: Vec::new(),
             pending_refilter: false,
         })?;
         if let Some(prepared) = maybe_prepared {
@@ -527,6 +532,12 @@ impl World {
     #[must_use]
     pub fn broad_phase_entry_count(&self) -> usize {
         self.broad_phase.proxy_count()
+    }
+
+    /// Returns the number of private automatic contact occurrences.
+    #[must_use]
+    pub fn contact_count(&self) -> usize {
+        self.contact_manager.len()
     }
 
     /// Recomputes a body's mass properties from its current fixtures in source list order.
@@ -820,6 +831,7 @@ impl World {
         for joint in joints {
             records.push(self.remove_joint(joint, DestructionCause::BodyCascade { body }));
         }
+        self.destroy_contacts_for_body(body);
         for fixture in fixtures {
             records.push(self.remove_fixture(fixture, DestructionCause::BodyCascade { body }));
         }
@@ -979,6 +991,7 @@ impl World {
     }
 
     fn remove_fixture(&mut self, fixture: FixtureId, cause: DestructionCause) -> DestructionRecord {
+        self.destroy_contacts_for_fixture(fixture);
         let record = self
             .fixtures
             .get_mut(fixture)
@@ -1159,15 +1172,44 @@ impl World {
     }
 
     fn set_fixture_filter_after_validation(&mut self, fixture: FixtureId, filter: FilterData) {
-        let record = self
-            .fixtures
-            .get_mut(fixture)
-            .expect("validated fixture remains live during refilter");
-        record.definition.set_filter_data(filter);
-        record.pending_refilter = true;
-        record
-            .proxies
-            .set_filter(&mut self.broad_phase, fixture, record.body, filter);
+        {
+            let record = self
+                .fixtures
+                .get_mut(fixture)
+                .expect("validated fixture remains live during refilter");
+            record.definition.set_filter_data(filter);
+            record.pending_refilter = true;
+            record
+                .proxies
+                .set_filter(&mut self.broad_phase, fixture, record.body, filter);
+        }
+        self.contact_manager.flag_fixture_for_filtering(fixture);
+    }
+
+    pub(super) fn find_new_contacts(&mut self) {
+        self.contact_manager.find_new_contacts(
+            &mut self.broad_phase,
+            &mut self.bodies,
+            &mut self.fixtures,
+        );
+    }
+
+    pub(super) fn update_contacts(&mut self) {
+        self.contact_manager.update_contacts(
+            &self.broad_phase,
+            &mut self.bodies,
+            &mut self.fixtures,
+        );
+    }
+
+    pub(super) fn destroy_contacts_for_body(&mut self, body: BodyId) {
+        self.contact_manager
+            .destroy_for_body(body, &mut self.bodies, &mut self.fixtures);
+    }
+
+    pub(super) fn destroy_contacts_for_fixture(&mut self, fixture: FixtureId) {
+        self.contact_manager
+            .destroy_for_fixture(fixture, &mut self.bodies, &mut self.fixtures);
     }
 
     fn prepare_body_synchronizations(
