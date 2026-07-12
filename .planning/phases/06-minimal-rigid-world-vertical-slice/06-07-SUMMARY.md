@@ -69,6 +69,7 @@ completed: 2026-07-12
 ## Task Commits
 
 1. **Task 1: Add phase6-v1 field policies and deterministic schemas** - `533c011` (feat)
+2. **Task 1 verification correction: Keep the test-only renderer warning-clean** - `7e5d6dc` (fix)
 
 ## Files Created/Modified
 
@@ -98,11 +99,20 @@ completed: 2026-07-12
 - **Verification:** Focused policy tests, `git diff --check`, and the complete ordered Rust gate passed after the correction.
 - **Committed in:** `533c011` (amended task commit)
 
-**Total deviations:** 1 auto-fixed bug. **Impact:** Canonical presentation bytes are stricter; scope and behavior are unchanged.
+**2. [Rule 1 - Bug] Made the test-only renderer match exhaustive**
+
+- **Found during:** Final package-scoped strict Clippy verification
+- **Issue:** A wildcard match represented only the remaining `FieldComparison::Float` variant and violated the repository's warning-denied Clippy policy.
+- **Fix:** Named the remaining float comparison variant explicitly without changing renderer behavior.
+- **Files modified:** `crates/liquidfun-test-protocol/src/tolerance/rigid_policy.rs`
+- **Verification:** Package-scoped strict Clippy and the complete ordered Rust gate passed.
+- **Committed in:** `7e5d6dc`
+
+**Total deviations:** 2 auto-fixed bugs. **Impact:** Canonical presentation bytes and warning-denied verification are stricter; scope and runtime behavior are unchanged.
 
 ## Issues Encountered
 
-None beyond the auto-fixed presentation whitespace defect.
+None beyond the two auto-fixed presentation and verification defects.
 
 ## User Setup Required
 
@@ -117,7 +127,7 @@ None - no external service configuration required.
 ## Self-Check: PASSED
 
 - Created policy and rigid schema modules exist on disk.
-- Task commit `533c011` exists and contains all nine task files.
+- Task commits `533c011` and `7e5d6dc` exist and contain the complete implementation plus its warning-clean verification correction.
 - Focused policy, schema, rigid-world decode, fixture, wildcard, byte-stability, Clippy, build, test, and diff checks pass.
 
 ***
