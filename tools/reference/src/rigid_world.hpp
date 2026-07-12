@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <string>
@@ -8,6 +9,11 @@
 #include <vector>
 
 namespace liquidfun::reference {
+
+inline constexpr std::size_t kRigidWorldMaximumActions = 128;
+inline constexpr std::uint32_t kRigidWorldTimestepBits = 0x3c888889U;
+inline constexpr std::uint32_t kRigidWorldVelocityIterations = 8;
+inline constexpr std::uint32_t kRigidWorldPositionIterations = 3;
 
 struct RigidVec2Bits {
   std::uint32_t x = 0;

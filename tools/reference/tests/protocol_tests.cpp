@@ -5,6 +5,8 @@
 
 #include "../vendor/nlohmann/json.hpp"
 
+#include <algorithm>
+#include <cstdint>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -12,6 +14,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace {
@@ -410,7 +413,9 @@ void rigid_world_rejects_untrusted_records_before_execution() {
   const auto out_of_order = out_of_order_json.dump() + '\n';
   auto oversized = nlohmann::json::parse(fixture);
   auto& actions = oversized.at("scenario").at("timelines").at(0).at("actions");
-  while (actions.size() <= 64) actions.push_back(actions.back());
+  while (actions.size() <= liquidfun::reference::kRigidWorldMaximumActions) {
+    actions.push_back(actions.back());
+  }
   const auto oversized_record = oversized.dump() + '\n';
   auto missing_static_kinematic = fixture;
   const auto static_kinematic =
@@ -454,6 +459,91 @@ void rigid_world_rejects_untrusted_records_before_execution() {
   }
 }
 
+void rigid_world_boundary_matches_the_fixed_rust_contract() {
+  // Arrange
+  const auto fixture = read_fixture(
+      "protocol/fixtures/accepted/rigid-world-request.jsonl");
+  auto maximum = nlohmann::json::parse(fixture);
+  auto& maximum_actions =
+      maximum.at("scenario").at("timelines").at(0).at("actions");
+  const auto inspect_template = maximum_actions.at(9);
+  while (maximum_actions.size() <
+         liquidfun::reference::kRigidWorldMaximumActions) {
+    auto action = inspect_template;
+    action["action_id"] =
+        "maximum-action-" + std::to_string(maximum_actions.size());
+    maximum_actions.insert(maximum_actions.end() - 6, std::move(action));
+  }
+  auto maximum_plus_one = maximum;
+  auto& maximum_plus_one_actions =
+      maximum_plus_one.at("scenario").at("timelines").at(0).at("actions");
+  auto extra = inspect_template;
+  extra["action_id"] = "maximum-action-128";
+  maximum_plus_one_actions.insert(
+      maximum_plus_one_actions.end() - 6, std::move(extra));
+
+  std::vector<nlohmann::json> alternate_steps;
+  for (const auto& [field, value] :
+       std::vector<std::pair<std::string, std::uint32_t>>{
+           {"timestep_bits", liquidfun::reference::kRigidWorldTimestepBits + 1},
+           {"velocity_iterations",
+            liquidfun::reference::kRigidWorldVelocityIterations + 1},
+           {"position_iterations",
+            liquidfun::reference::kRigidWorldPositionIterations + 1}}) {
+    auto alternate = nlohmann::json::parse(fixture);
+    auto& timeline_actions =
+        alternate.at("scenario").at("timelines").at(0).at("actions");
+    auto step = std::find_if(
+        timeline_actions.begin(), timeline_actions.end(),
+        [](const auto& action) {
+          return action.at("action_id") == "nc-step-zero";
+        });
+    expect(step != timeline_actions.end(), "fixed step action is missing");
+    step->at("action")[field] = value;
+    alternate_steps.push_back(std::move(alternate));
+  }
+
+  auto invalid_mass = nlohmann::json::parse(fixture);
+  auto& invalid_mass_actions =
+      invalid_mass.at("scenario").at("timelines").at(0).at("actions");
+  auto custom_mass = std::find_if(
+      invalid_mass_actions.begin(), invalid_mass_actions.end(),
+      [](const auto& action) {
+        return action.at("action_id") == "nc-custom-mass";
+      });
+  expect(custom_mass != invalid_mass_actions.end(), "custom mass action is missing");
+  custom_mass->at("action")["mass_bits"] = 0x3f800000U;
+  custom_mass->at("action")["center"]["x_bits"] = 0x40000000U;
+  custom_mass->at("action")["center"]["y_bits"] = 0U;
+  custom_mass->at("action")["inertia_bits"] = 0x3f800000U;
+
+  // Act
+  const auto accepted = decode_rigid_world_request(maximum.dump() + '\n');
+
+  // Assert
+  expect(
+      accepted.timelines.at(0).actions.size() ==
+          liquidfun::reference::kRigidWorldMaximumActions,
+      "exact rigid action maximum was rejected");
+  for (const auto& [record, expected] :
+       std::vector<std::pair<std::string, std::string>>{
+           {maximum_plus_one.dump() + '\n', "action count"},
+           {alternate_steps.at(0).dump() + '\n', "fixed Phase 6 tuple"},
+           {alternate_steps.at(1).dump() + '\n', "fixed Phase 6 tuple"},
+           {alternate_steps.at(2).dump() + '\n', "fixed Phase 6 tuple"},
+           {invalid_mass.dump() + '\n', "centered inertia"}}) {
+    try {
+      static_cast<void>(decode_rigid_world_request(record));
+    } catch (const std::exception& error) {
+      expect(
+          std::string(error.what()).find(expected) != std::string::npos,
+          "unexpected rigid boundary rejection: " + std::string(error.what()));
+      continue;
+    }
+    throw std::runtime_error("invalid rigid boundary record was accepted");
+  }
+}
+
 void rigid_world_reuse_advances_reset_without_state_leakage() {
   // Arrange
   const auto fixture = read_fixture(
@@ -487,6 +577,7 @@ int main() {
     collision_probe_uses_existing_protocol_loop();
     rigid_world_executes_both_complete_witness_families();
     rigid_world_rejects_untrusted_records_before_execution();
+    rigid_world_boundary_matches_the_fixed_rust_contract();
     rigid_world_reuse_advances_reset_without_state_leakage();
   } catch (const std::exception& error) {
     std::cerr << "protocol test failure: " << error.what() << '\n';

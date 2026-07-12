@@ -282,15 +282,26 @@ inline RigidAction action(const Json& value) {
         "custom-mass action");
     const auto mass = u32(member(value, "mass_bits", "action"), "mass bits");
     const auto inertia = u32(member(value, "inertia_bits", "action"), "inertia bits");
+    const auto center = vec2(member(value, "center", "action"), "mass center");
     require_finite(mass, "mass bits");
     require_nonnegative(inertia, "inertia bits");
-    if (float_from_bits(mass) <= 0.0F) {
+    const auto mass_value = float_from_bits(mass);
+    if (mass_value <= 0.0F) {
       throw std::runtime_error("custom mass must be positive");
+    }
+    const auto center_x = float_from_bits(center.x);
+    const auto center_y = float_from_bits(center.y);
+    const auto center_dot = center_x * center_x + center_y * center_y;
+    const auto parallel_axis = mass_value * center_dot;
+    const auto centered_inertia = float_from_bits(inertia) - parallel_axis;
+    if (!std::isfinite(center_dot) || !std::isfinite(parallel_axis) ||
+        !std::isfinite(centered_inertia) || centered_inertia < 0.0F) {
+      throw std::runtime_error("custom mass centered inertia is invalid");
     }
     return SetCustomMassData{
         id(member(value, "body_id", "action"), "body ID"),
         mass,
-        vec2(member(value, "center", "action"), "mass center"),
+        center,
         inertia};
   }
   if (kind == "step") {
@@ -301,10 +312,10 @@ inline RigidAction action(const Json& value) {
     const auto timestep = u32(member(value, "timestep_bits", "action"), "timestep bits");
     const auto velocity = u32(member(value, "velocity_iterations", "action"), "velocity iterations");
     const auto position = u32(member(value, "position_iterations", "action"), "position iterations");
-    require_finite(timestep, "timestep bits");
-    if (float_from_bits(timestep) <= 0.0F || velocity == 0 || velocity > 255 ||
-        position == 0 || position > 255) {
-      throw std::runtime_error("step action is outside reviewed bounds");
+    if (timestep != kRigidWorldTimestepBits ||
+        velocity != kRigidWorldVelocityIterations ||
+        position != kRigidWorldPositionIterations) {
+      throw std::runtime_error("step action does not match the fixed Phase 6 tuple");
     }
     return RigidStep{timestep, velocity, position};
   }
@@ -396,7 +407,8 @@ inline std::string action_name(const RigidAction& value) {
 inline void validate_timeline(RigidTimeline& timeline) {
   if (timeline.bodies.empty() || timeline.bodies.size() > 64 ||
       timeline.fixtures.empty() || timeline.fixtures.size() > 128 ||
-      timeline.actions.empty() || timeline.actions.size() > 64 ||
+      timeline.actions.empty() ||
+      timeline.actions.size() > kRigidWorldMaximumActions ||
       timeline.checkpoints.empty() || timeline.checkpoints.size() > 64) {
     throw std::runtime_error("rigid timeline collection count outside reviewed bounds");
   }
@@ -615,7 +627,7 @@ inline RigidWorldRequest decode(std::string_view record) {
         !checkpoints.is_array()) {
       throw std::runtime_error("rigid timeline collections must be arrays");
     }
-    if (actions.size() > 64) {
+    if (actions.size() > kRigidWorldMaximumActions) {
       throw std::runtime_error("rigid action count outside reviewed bounds");
     }
     for (const auto& raw_body : bodies) {
