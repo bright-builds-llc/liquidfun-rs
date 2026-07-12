@@ -52,10 +52,12 @@ impl_association_id!(ParticleId, Particle);
 /// Handle kinds cannot be mixed:
 ///
 /// ```compile_fail
-/// use liquidfun::{AssociationMap, BodyId, World};
+/// use liquidfun::{AssociationMap, BodyDef, BodyId, World};
 ///
 /// let mut world = World::new().expect("world key should remain available");
-/// let body = world.create_body().expect("body should fit");
+/// let body = world
+///     .create_body(&BodyDef::default())
+///     .expect("body should fit");
 /// let fixture = world.create_fixture(body).expect("fixture should fit");
 /// let mut body_names = AssociationMap::<BodyId, _>::new();
 /// body_names.insert(fixture, "wrong kind");
@@ -137,7 +139,7 @@ impl<Id: AssociationId, T> AssociationMap<Id, T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::World;
+    use crate::{BodyDef, World};
 
     fn test_world() -> World {
         World::new().expect("test world key should remain available")
@@ -147,8 +149,12 @@ mod tests {
     fn body_cascade_cleanup_removes_exact_typed_identities_and_preserves_survivors() {
         // Arrange
         let mut world = test_world();
-        let destroyed_body = world.create_body().expect("body should fit");
-        let surviving_body = world.create_body().expect("body should fit");
+        let destroyed_body = world
+            .create_body(&BodyDef::default())
+            .expect("body should fit");
+        let surviving_body = world
+            .create_body(&BodyDef::default())
+            .expect("body should fit");
         let fixture = world
             .create_fixture(destroyed_body)
             .expect("fixture should fit");
@@ -221,7 +227,9 @@ mod tests {
     fn cleanup_record_for_other_kind_or_missing_identity_is_a_no_op() {
         // Arrange
         let mut world = test_world();
-        let body = world.create_body().expect("body should fit");
+        let body = world
+            .create_body(&BodyDef::default())
+            .expect("body should fit");
         let fixture = world.create_fixture(body).expect("fixture should fit");
         let fixture_record = world
             .destroy_fixture(fixture)

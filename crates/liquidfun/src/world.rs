@@ -5,7 +5,10 @@ mod fixture;
 pub(crate) mod object;
 mod step;
 
-pub use body::{BodyDef, BodyDefError, BodyMassData, BodyMassDataError, BodySnapshot, BodyType};
+pub use body::{
+    BodyDef, BodyDefError, BodyMassData, BodyMassDataError, BodySnapshot, BodyTransformError,
+    BodyType,
+};
 pub use fixture::{FixtureDef, FixtureDefError, FixtureSnapshot};
 pub use object::{
     CreateObjectError, DestroyedId, DestructionCause, DestructionRecord, ObjectSnapshot, World,

@@ -1,7 +1,8 @@
 use std::error::Error;
 use std::fmt;
 
-use crate::math::{Transform, Vec2};
+use crate::HandleError;
+use crate::math::{Sweep, Transform, Vec2};
 
 /// The closed set of rigid-body motion types supported by `LiquidFun`.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
@@ -39,6 +40,39 @@ impl fmt::Display for BodyDefError {
 }
 
 impl Error for BodyDefError {}
+
+/// A failure while changing a body's checked transform through its owning world.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum BodyTransformError {
+    /// The body identity does not resolve in this world.
+    InvalidHandle(HandleError),
+    /// The requested position or angle is not finite.
+    InvalidTransform(BodyDefError),
+}
+
+impl fmt::Display for BodyTransformError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::InvalidHandle(error) => write!(formatter, "invalid body handle: {error}"),
+            Self::InvalidTransform(error) => write!(formatter, "invalid body transform: {error}"),
+        }
+    }
+}
+
+impl Error for BodyTransformError {}
+
+impl From<HandleError> for BodyTransformError {
+    fn from(error: HandleError) -> Self {
+        Self::InvalidHandle(error)
+    }
+}
+
+impl From<BodyDefError> for BodyTransformError {
+    fn from(error: BodyDefError) -> Self {
+        Self::InvalidTransform(error)
+    }
+}
 
 /// A reusable checked body definition for the Phase 6 rigid-world slice.
 ///
@@ -142,6 +176,8 @@ pub struct BodySnapshot {
     active: bool,
 }
 
+impl Eq for BodySnapshot {}
+
 impl BodySnapshot {
     /// Returns the body's motion type.
     #[must_use]
@@ -172,6 +208,70 @@ impl BodySnapshot {
     pub const fn is_active(self) -> bool {
         self.active
     }
+}
+
+#[derive(Debug, Clone, Copy)]
+#[allow(
+    dead_code,
+    reason = "the private transform, sweep, and velocity lanes are consumed by Plan 06-05"
+)]
+pub(super) struct BodyState {
+    snapshot: BodySnapshot,
+    transform: Transform,
+    sweep: Sweep,
+    linear_velocity: Vec2,
+    angular_velocity: f32,
+}
+
+impl BodyState {
+    pub(super) fn from_definition(definition: &BodyDef) -> Self {
+        let position = definition.position();
+        let angle = definition.angle();
+        Self {
+            snapshot: definition.snapshot(),
+            transform: definition.transform(),
+            sweep: initial_sweep(position, angle),
+            linear_velocity: Vec2::ZERO,
+            angular_velocity: 0.0,
+        }
+    }
+
+    pub(super) const fn snapshot(self) -> BodySnapshot {
+        self.snapshot
+    }
+
+    pub(super) fn with_transform(self, position: Vec2, angle: f32) -> Result<Self, BodyDefError> {
+        let definition = BodyDef::new(
+            self.snapshot.body_type,
+            position,
+            angle,
+            self.snapshot.active,
+        )?;
+        Ok(Self {
+            snapshot: definition.snapshot(),
+            transform: definition.transform(),
+            sweep: initial_sweep(position, angle),
+            linear_velocity: self.linear_velocity,
+            angular_velocity: self.angular_velocity,
+        })
+    }
+
+    pub(super) fn set_body_type(&mut self, body_type: BodyType) {
+        self.snapshot.body_type = body_type;
+        if body_type == BodyType::Static {
+            self.linear_velocity = Vec2::ZERO;
+            self.angular_velocity = 0.0;
+        }
+    }
+
+    pub(super) fn set_active(&mut self, active: bool) {
+        self.snapshot.active = active;
+    }
+}
+
+fn initial_sweep(position: Vec2, angle: f32) -> Sweep {
+    Sweep::new(Vec2::ZERO, position, position, angle, angle, 0.0)
+        .expect("checked body transforms always produce a valid initial sweep")
 }
 
 /// A failure while constructing checked custom body mass data.

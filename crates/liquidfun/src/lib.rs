@@ -62,7 +62,7 @@
 //! use liquidfun::World;
 //!
 //! let mut world = World::new().expect("world key should remain available");
-//! let body = world.create_body().expect("body should fit");
+//! let body = world.create_body(&liquidfun::BodyDef::default()).expect("body should fit");
 //! let fixture = world.create_fixture(body).expect("fixture should fit");
 //! world.destroy_body(fixture);
 //! ```
@@ -97,8 +97,8 @@ pub use identity::{
     BodyId, FixtureId, JointId, ObjectKind, ParticleGroupId, ParticleId, ParticleSystemId,
 };
 pub use world::{
-    BodyDef, BodyDefError, BodyMassData, BodyMassDataError, BodySnapshot, BodyType,
-    CollisionDirective, CommandApplication, CommandError, ContactEvent, ContactSnapshot,
+    BodyDef, BodyDefError, BodyMassData, BodyMassDataError, BodySnapshot, BodyTransformError,
+    BodyType, CollisionDirective, CommandApplication, CommandError, ContactEvent, ContactSnapshot,
     ContactView, CreateObjectError, DestroyedId, DestructionCause, DestructionRecord, FixtureDef,
     FixtureDefError, FixtureSnapshot, ObjectSnapshot, PreSolveDirective, StepError, StepHook,
     StepLimits, StepReport, World, WorldCommand,

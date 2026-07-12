@@ -3,7 +3,7 @@
 use std::any::TypeId;
 
 use liquidfun::{
-    AssociationMap, BodyId, CreateObjectError, DestroyedId, DestructionCause, FixtureId,
+    AssociationMap, BodyDef, BodyId, CreateObjectError, DestroyedId, DestructionCause, FixtureId,
     HandleError, JointId, ObjectSnapshot, ParticleGroupId, ParticleId, ParticleSystemId, World,
 };
 
@@ -37,9 +37,13 @@ fn public_handle_kinds_are_distinct_types() {
 fn destroyed_handle_stays_stale_after_slot_reuse() {
     // Arrange
     let mut world = test_world();
-    let stale = world.create_body().expect("body should fit");
+    let stale = world
+        .create_body(&BodyDef::default())
+        .expect("body should fit");
     world.destroy_body(stale).expect("body should be live");
-    let replacement = world.create_body().expect("reused slot should fit");
+    let replacement = world
+        .create_body(&BodyDef::default())
+        .expect("reused slot should fit");
 
     // Act
     let result = world.destroy_body(stale);
@@ -53,9 +57,13 @@ fn destroyed_handle_stays_stale_after_slot_reuse() {
 fn cross_world_handle_fails_without_mutating_local_state() {
     // Arrange
     let mut world = test_world();
-    let local = world.create_body().expect("body should fit");
+    let local = world
+        .create_body(&BodyDef::default())
+        .expect("body should fit");
     let mut other = test_world();
-    let foreign = other.create_body().expect("body should fit");
+    let foreign = other
+        .create_body(&BodyDef::default())
+        .expect("body should fit");
 
     // Act
     let result = world.destroy_body(foreign);
@@ -69,8 +77,12 @@ fn cross_world_handle_fails_without_mutating_local_state() {
 fn body_destruction_returns_owned_ordered_cascade_evidence() {
     // Arrange
     let mut world = test_world();
-    let root = world.create_body().expect("body should fit");
-    let survivor = world.create_body().expect("body should fit");
+    let root = world
+        .create_body(&BodyDef::default())
+        .expect("body should fit");
+    let survivor = world
+        .create_body(&BodyDef::default())
+        .expect("body should fit");
     let first_fixture = world.create_fixture(root).expect("fixture should fit");
     let second_fixture = world.create_fixture(root).expect("fixture should fit");
     let first_joint = world
@@ -99,7 +111,9 @@ fn body_destruction_returns_owned_ordered_cascade_evidence() {
     );
     assert!(matches!(
         records.last().map(liquidfun::DestructionRecord::snapshot),
-        Some(ObjectSnapshot::Body { fixtures, joints })
+        Some(ObjectSnapshot::Body {
+            fixtures, joints, ..
+        })
             if fixtures == &[second_fixture, first_fixture]
                 && joints == &[second_joint, first_joint]
     ));
@@ -114,8 +128,12 @@ fn body_destruction_returns_owned_ordered_cascade_evidence() {
 fn typed_association_cleanup_follows_destruction_records() {
     // Arrange
     let mut world = test_world();
-    let body = world.create_body().expect("body should fit");
-    let survivor = world.create_body().expect("body should fit");
+    let body = world
+        .create_body(&BodyDef::default())
+        .expect("body should fit");
+    let survivor = world
+        .create_body(&BodyDef::default())
+        .expect("body should fit");
     let first_fixture = world.create_fixture(body).expect("fixture should fit");
     let second_fixture = world.create_fixture(body).expect("fixture should fit");
     let first_joint = world

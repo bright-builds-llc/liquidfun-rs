@@ -4,13 +4,15 @@ use std::collections::VecDeque;
 use std::panic::{AssertUnwindSafe, catch_unwind};
 
 use liquidfun::{
-    CollisionDirective, CommandError, ContactSnapshot, ContactView, HandleError, PreSolveDirective,
-    StepError, StepHook, StepLimits, World, WorldCommand,
+    BodyDef, CollisionDirective, CommandError, ContactSnapshot, ContactView, HandleError,
+    PreSolveDirective, StepError, StepHook, StepLimits, World, WorldCommand,
 };
 
 fn world_with_contact() -> (World, ContactSnapshot) {
     let mut world = World::new().expect("test world key should remain available");
-    let body = world.create_body().expect("body should fit");
+    let body = world
+        .create_body(&BodyDef::default())
+        .expect("body should fit");
     let first = world.create_fixture(body).expect("fixture should fit");
     let second = world.create_fixture(body).expect("fixture should fit");
     (world, ContactSnapshot::new(first, second))
@@ -69,7 +71,9 @@ impl StepHook for CommandHook {
 fn deferred_commands_apply_only_after_all_hook_dispatch_unlocks() {
     // Arrange
     let (mut world, contact) = world_with_contact();
-    let contact_body = world.create_body().expect("body should fit");
+    let contact_body = world
+        .create_body(&BodyDef::default())
+        .expect("body should fit");
     let first = world
         .create_fixture(contact_body)
         .expect("fixture should fit");
@@ -101,9 +105,13 @@ fn deferred_commands_apply_only_after_all_hook_dispatch_unlocks() {
 fn stale_command_result_does_not_hide_later_command_success() {
     // Arrange
     let (mut world, contact) = world_with_contact();
-    let stale = world.create_body().expect("body should fit");
+    let stale = world
+        .create_body(&BodyDef::default())
+        .expect("body should fit");
     world.destroy_body(stale).expect("body should be live");
-    let live = world.create_body().expect("body should fit");
+    let live = world
+        .create_body(&BodyDef::default())
+        .expect("body should fit");
     let mut hook = CommandHook {
         commands: [
             WorldCommand::DestroyBody(stale),
@@ -130,7 +138,9 @@ fn stale_command_result_does_not_hide_later_command_success() {
 fn finite_event_limit_fails_without_applying_commands() {
     // Arrange
     let (mut world, contact) = world_with_contact();
-    let body = world.create_body().expect("body should fit");
+    let body = world
+        .create_body(&BodyDef::default())
+        .expect("body should fit");
     let mut hook = CommandHook {
         commands: [WorldCommand::DestroyBody(body)].into(),
     };
@@ -162,7 +172,9 @@ impl StepHook for PanickingHook {
 fn hook_panic_restores_lock_and_poison_gates_later_operations() {
     // Arrange
     let (mut world, contact) = world_with_contact();
-    let body = world.create_body().expect("body should fit");
+    let body = world
+        .create_body(&BodyDef::default())
+        .expect("body should fit");
     let mut hook = PanickingHook;
 
     // Act

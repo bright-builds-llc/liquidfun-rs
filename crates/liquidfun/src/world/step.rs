@@ -7,6 +7,9 @@ use std::panic::{AssertUnwindSafe, catch_unwind, resume_unwind};
 
 use crate::{BodyId, DestructionRecord, FixtureId, HandleError, World};
 
+#[cfg(test)]
+use crate::BodyDef;
+
 const MAX_STEP_EVENTS: usize = 4_096;
 const MAX_STEP_COMMANDS: usize = 1_024;
 
@@ -558,7 +561,9 @@ pub(super) mod hooks {
 
     fn world_with_contact() -> (World, ContactSnapshot) {
         let mut world = World::new().expect("test world key should remain available");
-        let body = world.create_body().expect("body should fit");
+        let body = world
+            .create_body(&BodyDef::default())
+            .expect("body should fit");
         let first = world.create_fixture(body).expect("fixture should fit");
         let second = world.create_fixture(body).expect("fixture should fit");
         (world, ContactSnapshot::new(first, second))
@@ -568,7 +573,9 @@ pub(super) mod hooks {
     fn reports_preserve_occurrence_order_and_multiplicity() {
         // Arrange
         let (mut world, first) = world_with_contact();
-        let body = world.create_body().expect("body should fit");
+        let body = world
+            .create_body(&BodyDef::default())
+            .expect("body should fit");
         let third = world.create_fixture(body).expect("fixture should fit");
         let second = ContactSnapshot::new(first.fixtures()[1], third);
         let contacts = [first, second, first];
@@ -676,7 +683,9 @@ mod commands {
 
     fn world_with_contact() -> (World, ContactSnapshot) {
         let mut world = World::new().expect("test world key should remain available");
-        let body = world.create_body().expect("body should fit");
+        let body = world
+            .create_body(&BodyDef::default())
+            .expect("body should fit");
         let first = world.create_fixture(body).expect("fixture should fit");
         let second = world.create_fixture(body).expect("fixture should fit");
         (world, ContactSnapshot::new(first, second))
@@ -686,8 +695,12 @@ mod commands {
     fn commands_apply_after_unlock_in_request_order() {
         // Arrange
         let (mut world, contact) = world_with_contact();
-        let first = world.create_body().expect("body should fit");
-        let second = world.create_body().expect("body should fit");
+        let first = world
+            .create_body(&BodyDef::default())
+            .expect("body should fit");
+        let second = world
+            .create_body(&BodyDef::default())
+            .expect("body should fit");
         let mut hook = CommandHook {
             commands: [
                 WorldCommand::DestroyBody(first),
@@ -722,8 +735,12 @@ mod commands {
     fn stale_command_does_not_stop_later_commands() {
         // Arrange
         let (mut world, contact) = world_with_contact();
-        let invalidated = world.create_body().expect("body should fit");
-        let survivor = world.create_body().expect("body should fit");
+        let invalidated = world
+            .create_body(&BodyDef::default())
+            .expect("body should fit");
+        let survivor = world
+            .create_body(&BodyDef::default())
+            .expect("body should fit");
         let mut hook = CommandHook {
             commands: [
                 WorldCommand::DestroyBody(invalidated),
@@ -756,11 +773,17 @@ mod commands {
     fn cross_world_and_reused_slot_commands_fail_at_application_time() {
         // Arrange
         let (mut world, contact) = world_with_contact();
-        let stale = world.create_body().expect("body should fit");
+        let stale = world
+            .create_body(&BodyDef::default())
+            .expect("body should fit");
         world.destroy_body(stale).expect("body should be live");
-        let replacement = world.create_body().expect("reused slot should fit");
+        let replacement = world
+            .create_body(&BodyDef::default())
+            .expect("reused slot should fit");
         let mut other = World::new().expect("test world key should remain available");
-        let foreign = other.create_body().expect("body should fit");
+        let foreign = other
+            .create_body(&BodyDef::default())
+            .expect("body should fit");
         let mut hook = CommandHook {
             commands: [
                 WorldCommand::DestroyBody(stale),
@@ -790,7 +813,9 @@ mod commands {
     fn command_overflow_discards_all_queued_commands() {
         // Arrange
         let (mut world, contact) = world_with_contact();
-        let body = world.create_body().expect("body should fit");
+        let body = world
+            .create_body(&BodyDef::default())
+            .expect("body should fit");
         let mut hook = CommandHook {
             commands: [
                 WorldCommand::DestroyBody(body),
@@ -842,7 +867,9 @@ mod panic {
     fn hook_panic_restores_lock_discards_commands_and_poisons_world() {
         // Arrange
         let mut world = World::new().expect("test world key should remain available");
-        let contact_body = world.create_body().expect("body should fit");
+        let contact_body = world
+            .create_body(&BodyDef::default())
+            .expect("body should fit");
         let first = world
             .create_fixture(contact_body)
             .expect("fixture should fit");
@@ -850,7 +877,9 @@ mod panic {
             .create_fixture(contact_body)
             .expect("fixture should fit");
         let contact = ContactSnapshot::new(first, second);
-        let command_body = world.create_body().expect("body should fit");
+        let command_body = world
+            .create_body(&BodyDef::default())
+            .expect("body should fit");
         let mut hook = PanickingHook {
             calls: 0,
             commands: [WorldCommand::DestroyBody(command_body)].into(),
@@ -871,7 +900,7 @@ mod panic {
             Err(HandleError::WorldPoisoned)
         );
         assert_eq!(
-            world.create_body(),
+            world.create_body(&BodyDef::default()),
             Err(crate::ArenaInsertError::WorldPoisoned)
         );
         assert_eq!(

@@ -8,11 +8,14 @@ use crate::{
     ParticleId, ParticleSystemId, WorldKeyError,
 };
 
+use super::body::{BodyDef, BodySnapshot, BodyState, BodyTransformError, BodyType};
 use super::step::StepState;
+use crate::math::Vec2;
 
 #[derive(Debug)]
 struct Body {
     diagnostic_id: u64,
+    state: BodyState,
     fixtures: Vec<FixtureId>,
     joints: Vec<JointId>,
 }
@@ -169,6 +172,8 @@ pub enum DestructionCause {
 pub enum ObjectSnapshot {
     /// Body adjacency at the start of its destruction transaction.
     Body {
+        /// Checked semantic body state captured before invalidation.
+        state: BodySnapshot,
         /// Attached fixtures in occurrence order.
         fixtures: Vec<FixtureId>,
         /// Attached joints in occurrence order.
@@ -297,19 +302,78 @@ impl World {
         self.next_diagnostic_id = Some(next);
     }
 
-    /// Creates a body.
+    /// Creates a body from a reusable checked definition.
     ///
     /// # Errors
     ///
     /// Returns an arena error if body storage is exhausted.
-    pub fn create_body(&mut self) -> Result<BodyId, ArenaInsertError> {
+    pub fn create_body(&mut self, definition: &BodyDef) -> Result<BodyId, ArenaInsertError> {
         self.ensure_not_poisoned_for_insert()?;
         let diagnostic_id = self.allocate_diagnostic_id()?;
         self.bodies.insert(Body {
             diagnostic_id,
+            state: BodyState::from_definition(definition),
             fixtures: Vec::new(),
             joints: Vec::new(),
         })
+    }
+
+    /// Returns an owned semantic snapshot of a live body.
+    ///
+    /// # Errors
+    ///
+    /// Returns a handle error when `body` is foreign, stale, or destroyed.
+    pub fn body_snapshot(&self, body: BodyId) -> Result<BodySnapshot, HandleError> {
+        self.ensure_not_poisoned_for_handle()?;
+        self.bodies.get(body).map(|record| record.state.snapshot())
+    }
+
+    /// Changes the motion type of a live body.
+    ///
+    /// # Errors
+    ///
+    /// Returns a handle error without mutation when `body` is foreign, stale, or destroyed.
+    pub fn set_body_type(&mut self, body: BodyId, body_type: BodyType) -> Result<(), HandleError> {
+        self.ensure_not_poisoned_for_handle()?;
+        self.bodies.get_mut(body)?.state.set_body_type(body_type);
+        Ok(())
+    }
+
+    /// Changes a live body's position and angle after validating the complete candidate state.
+    ///
+    /// Accepted values retain their exact `f32` bits. A failure leaves the prior body state
+    /// unchanged.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`BodyTransformError::InvalidHandle`] when `body` is invalid, or
+    /// [`BodyTransformError::InvalidTransform`] when a position coordinate or angle is
+    /// non-finite.
+    pub fn set_body_transform(
+        &mut self,
+        body: BodyId,
+        position: Vec2,
+        angle: f32,
+    ) -> Result<(), BodyTransformError> {
+        self.ensure_not_poisoned_for_handle()?;
+        let candidate = self
+            .bodies
+            .get(body)?
+            .state
+            .with_transform(position, angle)?;
+        self.bodies.get_mut(body)?.state = candidate;
+        Ok(())
+    }
+
+    /// Changes whether a live body participates in simulation.
+    ///
+    /// # Errors
+    ///
+    /// Returns a handle error without mutation when `body` is foreign, stale, or destroyed.
+    pub fn set_body_active(&mut self, body: BodyId, active: bool) -> Result<(), HandleError> {
+        self.ensure_not_poisoned_for_handle()?;
+        self.bodies.get_mut(body)?.state.set_active(active);
+        Ok(())
     }
 
     /// Creates a fixture attached to `body`.
@@ -484,6 +548,7 @@ impl World {
         let joints = root.joints.clone();
         let fixtures = root.fixtures.clone();
         let root_snapshot = ObjectSnapshot::Body {
+            state: root.state.snapshot(),
             fixtures: fixtures.clone(),
             joints: joints.clone(),
         };
@@ -818,8 +883,12 @@ mod tests {
     fn body_destruction_cascades_joints_then_fixtures_and_preserves_other_body() {
         // Arrange
         let mut world = test_world();
-        let root = world.create_body().expect("body should fit");
-        let survivor = world.create_body().expect("body should fit");
+        let root = world
+            .create_body(&BodyDef::default())
+            .expect("body should fit");
+        let survivor = world
+            .create_body(&BodyDef::default())
+            .expect("body should fit");
         let first_fixture = world.create_fixture(root).expect("fixture should fit");
         let second_fixture = world.create_fixture(root).expect("fixture should fit");
         let first_joint = world
@@ -862,7 +931,9 @@ mod tests {
         );
         assert!(matches!(
             records.last().map(DestructionRecord::snapshot),
-            Some(ObjectSnapshot::Body { fixtures, joints })
+            Some(ObjectSnapshot::Body {
+                fixtures, joints, ..
+            })
                 if fixtures == &[second_fixture, first_fixture]
                     && joints == &[second_joint, first_joint]
         ));
@@ -872,10 +943,14 @@ mod tests {
     fn invalid_body_destruction_is_state_preserving() {
         // Arrange
         let mut world = test_world();
-        let body = world.create_body().expect("body should fit");
+        let body = world
+            .create_body(&BodyDef::default())
+            .expect("body should fit");
         let fixture = world.create_fixture(body).expect("fixture should fit");
         let mut other = test_world();
-        let foreign = other.create_body().expect("body should fit");
+        let foreign = other
+            .create_body(&BodyDef::default())
+            .expect("body should fit");
 
         // Act
         let result = world.destroy_body(foreign);
@@ -892,9 +967,13 @@ mod tests {
     fn stale_body_destruction_is_state_preserving() {
         // Arrange
         let mut world = test_world();
-        let stale = world.create_body().expect("body should fit");
+        let stale = world
+            .create_body(&BodyDef::default())
+            .expect("body should fit");
         world.destroy_body(stale).expect("body should be live");
-        let survivor = world.create_body().expect("body should fit");
+        let survivor = world
+            .create_body(&BodyDef::default())
+            .expect("body should fit");
 
         // Act
         let result = world.destroy_body(stale);
@@ -1002,8 +1081,12 @@ mod tests {
     fn direct_dependent_destruction_updates_all_adjacency() {
         // Arrange
         let mut world = test_world();
-        let first = world.create_body().expect("body should fit");
-        let second = world.create_body().expect("body should fit");
+        let first = world
+            .create_body(&BodyDef::default())
+            .expect("body should fit");
+        let second = world
+            .create_body(&BodyDef::default())
+            .expect("body should fit");
         let fixture = world.create_fixture(first).expect("fixture should fit");
         let joint = world.create_joint(first, second).expect("joint should fit");
         let system = world
@@ -1065,12 +1148,16 @@ mod tests {
     fn owned_records_remain_usable_after_slot_reuse() {
         // Arrange
         let mut world = test_world();
-        let body = world.create_body().expect("body should fit");
+        let body = world
+            .create_body(&BodyDef::default())
+            .expect("body should fit");
         let fixture = world.create_fixture(body).expect("fixture should fit");
 
         // Act
         let records = world.destroy_body(body).expect("body should be live");
-        let replacement = world.create_body().expect("reused slot should fit");
+        let replacement = world
+            .create_body(&BodyDef::default())
+            .expect("reused slot should fit");
 
         // Assert
         assert_ne!(body, replacement);
@@ -1088,12 +1175,14 @@ mod tests {
         let mut world = test_world();
         world.set_next_diagnostic_id_for_test(u64::MAX - 1);
         world
-            .create_body()
+            .create_body(&BodyDef::default())
             .expect("penultimate ID should remain valid");
-        world.create_body().expect("maximum ID should remain valid");
+        world
+            .create_body(&BodyDef::default())
+            .expect("maximum ID should remain valid");
 
         // Act
-        let result = world.create_body();
+        let result = world.create_body(&BodyDef::default());
 
         // Assert
         assert_eq!(result, Err(ArenaInsertError::DiagnosticIdExhausted));
