@@ -544,6 +544,53 @@ fn rigid_ci_commands_stay_in_the_native_reference_workflow() {
 }
 
 #[test]
+fn sanitizer_rigid_protocol_and_compare_run_before_read_only_assertion() {
+    // Arrange
+    let workflow = include_str!("../../../.github/workflows/oracle.yml");
+    let sanitizer_job = workflow
+        .split("  sanitizer-linux:")
+        .nth(1)
+        .and_then(|suffix| suffix.split("  portability-macos:").next())
+        .expect("sanitizer job must remain in the Oracle workflow");
+    let build = "cargo xtask upstream build --preset oracle-asan-ubsan";
+    let protocol = "ctest --test-dir target/reference/oracle-asan-ubsan";
+    let rigid = "cargo xtask differential compare --scenario rigid-world --preset oracle-asan-ubsan --session-profile one-shot";
+    let read_only = "git diff --exit-code -- protocol scenarios reference COMPATIBILITY.md";
+
+    // Act
+    let positions = [build, protocol, rigid, read_only].map(|marker| sanitizer_job.find(marker));
+
+    // Assert
+    assert!(positions.iter().all(Option::is_some));
+    assert!(positions.windows(2).all(|pair| pair[0] < pair[1]));
+}
+
+#[test]
+fn sanitizer_rigid_commands_use_fail_fast_environment_without_status_suppression() {
+    // Arrange
+    let workflow = include_str!("../../../.github/workflows/oracle.yml");
+    let sanitizer_job = workflow
+        .split("  sanitizer-linux:")
+        .nth(1)
+        .and_then(|suffix| suffix.split("  portability-macos:").next())
+        .expect("sanitizer job must remain in the Oracle workflow");
+    let fail_fast = "UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 ASAN_OPTIONS=abort_on_error=1:halt_on_error=1";
+    let required_commands = [
+        "ctest --test-dir target/reference/oracle-asan-ubsan",
+        "cargo xtask differential compare --scenario rigid-world --preset oracle-asan-ubsan --session-profile one-shot",
+    ];
+
+    // Act / Assert
+    for command in required_commands {
+        let expected = format!("{fail_fast} {command}");
+        assert!(sanitizer_job.contains(&expected), "missing `{expected}`");
+    }
+    assert!(!sanitizer_job.contains("continue-on-error:"));
+    assert!(!sanitizer_job.contains("|| true"));
+    assert!(!sanitizer_job.contains("|| echo"));
+}
+
+#[test]
 fn collision_compile_database_identity_is_covered_by_unit_digest_tests() {
     // The unit digest fixtures name collision_probe.cpp explicitly and are run by this filter.
     assert!(include_str!("../src/differential.rs").contains("collision_probe.cpp"));

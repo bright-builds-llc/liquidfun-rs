@@ -55,7 +55,7 @@ one row for every required layer; every cell is an enforceable contract.
 | checked-in regression | current | Replay reviewed traces and later minimized scenarios that preserve an accepted first-divergence signature. | `cargo xtask differential replay --scenario empty-world --preset oracle-debug --session-profile one-shot` | Reviewed trace in the artifact manifest; later cases also require a minimized scenario under `scenarios/regressions`. | Replay report, manifest provenance, and any same failure signature evidence stored with the regression under `scenarios/regressions`. | No deterministic retry; byte-stable replay must be reproducible. | local, pull request, scheduled, manual release | A checked-in case protects one reviewed behavior or same failure signature from recurrence. |
 | fuzz | deferred | Exercise bounded protocol decoders, scenario validation, world mutation, and future unsafe boundaries. | Planned `cargo fuzz run protocol_decode -- -max_total_time=300`; reproduce with `cargo fuzz run protocol_decode fuzz/artifacts/protocol_decode/<case>`. | pinned nightly, `cargo-fuzz`, reviewed target bounds, and no secrets or external service. | libFuzzer logs, exact crashing input, seed when present, and minimized corpus under `fuzz/artifacts`. | No deterministic retry; retain and minimize the exact input before fixing. | scheduled, manual release | A crash, timeout, sanitizer finding, or malformed-boundary defect is a harness failure, not a physics mismatch. |
 | Miri/UB-aliasing | deferred | Detect undefined behavior and aliasing defects in the pure Rust subset and any future unsafe modules. | Planned `cargo miri test --workspace --all-features` on a date-pinned nightly after `cargo miri setup`. | pinned nightly with the Miri component; exclude the external C++ process from interpretation. | Miri diagnostics with the exact test, stack, flags, and pinned toolchain identity. | No deterministic retry; preserve the deterministic failing test and environment. | scheduled, manual release | Miri undefined behavior is a harness failure and safety defect, never a physics mismatch. |
-| native sanitizer | current | Run the C++ oracle fail-fast and later run supported Rust sanitizer subsets without crossing findings into comparison. | `UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 ASAN_OPTIONS=abort_on_error=1:halt_on_error=1 cargo xtask differential compare --scenario empty-world --preset oracle-asan-ubsan --session-profile one-shot` | Exact Clang 22.1.8 lane, configured and built `oracle-asan-ubsan`, ASan/UBSan runtimes; Rust sanitizer work additionally needs pinned nightly. | Bounded request, identity, report, and stderr evidence under `target/differential/failures`; CI uploads only this directory on failure. | No deterministic retry; sanitizer markers fail even if a child exits zero. | scheduled, manual release | Any ASan, UBSan, Rust sanitizer, signal, timeout, or reset defect is a harness failure, not a physics mismatch. |
+| native sanitizer | current | Run the C++ protocol and oracle fail-fast, including the Phase 6 rigid adapter, and later run supported Rust sanitizer subsets without crossing findings into comparison. | `UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 ASAN_OPTIONS=abort_on_error=1:halt_on_error=1 cargo xtask differential compare --scenario rigid-world --preset oracle-asan-ubsan --session-profile one-shot` after fail-fast CTest. | Exact Clang 22.1.8 lane, configured and built `oracle-asan-ubsan`, ASan/UBSan runtimes; Rust sanitizer work additionally needs pinned nightly. | Bounded request, identity, report, and stderr evidence under `target/differential/failures`; CI uploads only this directory on failure. | No deterministic retry; sanitizer markers fail even if a child exits zero. | scheduled, manual release | Any ASan, UBSan, Rust sanitizer, signal, timeout, or reset defect is a harness failure, not a physics mismatch. |
 | benchmark | deferred | Measure equivalent Rust and C++ workloads only after representative native behavior exists. | Planned `cargo bench --workspace` plus a paired oracle runner with recorded release identities. | controlled hardware, release builds, equivalent scenarios, warm-up policy, and recorded compiler flags. | Criterion reports under `target/criterion` plus paired environment and oracle identity records. | No deterministic retry; reruns form an explicitly analyzed sample rather than hiding regressions. | scheduled, manual release | Benchmark data is performance evidence, not parity or correctness evidence. |
 | coverage | deferred | Report exercised Rust lines and branches separately from C++ oracle coverage. | Planned `cargo llvm-cov --workspace --all-features --lcov --output-path target/llvm-cov/rust.lcov`. | `llvm-tools-preview`, reviewed `cargo-llvm-cov` version, and separately compatible Clang tooling for C++. | Rust LCOV under `target/llvm-cov`; C++ coverage remains a separate report until LLVM compatibility is proven. | No deterministic retry; investigate deterministic coverage changes from the same suite. | scheduled, manual release | coverage is not parity; percentages do not replace semantic differential evidence. |
 
@@ -526,15 +526,26 @@ cargo xtask upstream configure --preset oracle-asan-ubsan
 cargo xtask upstream build --preset oracle-asan-ubsan
 ```
 
-From the repository root, run the exact one-shot and bounded reset/reuse corpus:
+From the repository root, first execute the C++ protocol tests and the complete
+Phase 6 rigid decode/world/contact/teardown/trace path under the same fail-fast
+environment, then preserve the existing empty-world one-shot and bounded
+reset/reuse corpus:
 
 ```bash
+UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 ASAN_OPTIONS=abort_on_error=1:halt_on_error=1 ctest --test-dir target/reference/oracle-asan-ubsan --output-on-failure --no-tests=error -R '^liquidfun-reference-protocol$'
+UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 ASAN_OPTIONS=abort_on_error=1:halt_on_error=1 cargo xtask differential compare --scenario rigid-world --preset oracle-asan-ubsan --session-profile one-shot
 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 ASAN_OPTIONS=abort_on_error=1:halt_on_error=1 cargo xtask differential compare --scenario empty-world --preset oracle-asan-ubsan --session-profile one-shot
 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 ASAN_OPTIONS=abort_on_error=1:halt_on_error=1 cargo xtask differential compare --scenario empty-world --preset oracle-asan-ubsan --session-profile sanitizer
 ```
 
-The sanitizer profile sends a finite reset/reuse corpus through the same
-supervisor. ASan/UBSan markers fail even if a misconfigured child exits zero.
+Every command is status-propagating and runs before the read-only assertion;
+there is no retry or `continue-on-error` path. The sanitizer profile sends a
+finite reset/reuse corpus through the same supervisor. ASan/UBSan markers fail
+even if a misconfigured child exits zero. On job failure, CI uploads only the
+existing bounded `target/differential/failures` directory, requires it to exist
+with `if-no-files-found: error`, and retains failures for seven days. A CTest
+failure with no harness bundle therefore remains a failed job and cannot widen
+the artifact path to capture arbitrary workspace files.
 
 ### Coverage
 
@@ -573,7 +584,8 @@ isolation. Oracle jobs alone initialize the submodule and use CMake/C++.
 Canonical Linux oracle CI verifies exact tool and source identity, builds
 `oracle-debug`, runs one-shot plus bounded reuse, replays the reviewed trace, and
 asserts evidence remains byte-identical. The scheduled/manual sanitizer lane
-runs both exact fail-fast commands above. Portability builds are non-canonical,
+runs the exact fail-fast protocol, rigid, one-shot, and reuse commands above.
+Portability builds are non-canonical,
 read-only, and cannot publish or promote evidence. All workflows use
 `contents: read`, full-SHA external actions, bounded job timeouts, and no secrets.
 

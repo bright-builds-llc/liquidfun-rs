@@ -420,6 +420,23 @@ fn phase6_contract_rejects_missing_non_dynamic_admission_witnesses() -> TestResu
 }
 
 #[test]
+fn phase6_contract_rejects_missing_sanitizer_execution_evidence() -> TestResult {
+    // Arrange, Act, Assert
+    for marker in [
+        "ctest --test-dir target/reference/oracle-asan-ubsan --output-on-failure --no-tests=error -R '^liquidfun-reference-protocol$'",
+        "cargo xtask differential compare --scenario rigid-world --preset oracle-asan-ubsan --session-profile one-shot",
+        "retains failures for seven days",
+    ] {
+        let fixture = DocsFixture::new()?;
+        fixture.replace_document_text("TESTING.md", marker, "removed-sanitizer-contract")?;
+        let output = fixture.command()?;
+        assert_failure(&output, "docs/phase6-contract");
+        fixture.cleanup()?;
+    }
+    Ok(())
+}
+
+#[test]
 fn phase6_contract_rejects_deferred_surface_and_identity_overclaims() -> TestResult {
     // Arrange, Act, Assert
     for claim in [
@@ -511,6 +528,31 @@ fn oracle_workflow_fails_when_failure_evidence_is_missing() -> TestResult {
         maybe_missing_file_policy.map(str::trim),
         Some("if-no-files-found: error")
     );
+    Ok(())
+}
+
+#[test]
+fn oracle_workflow_bounds_sanitizer_failure_artifacts() -> TestResult {
+    // Arrange
+    let workflow = fs::read_to_string(workspace_root().join(".github/workflows/oracle.yml"))?;
+    let upload_step = workflow
+        .split("      - name: Upload bounded differential failure evidence")
+        .nth(1)
+        .and_then(|suffix| suffix.split("\n  portability-macos:").next())
+        .expect("sanitizer failure upload step must remain present");
+
+    // Act
+    let artifact_paths = upload_step
+        .lines()
+        .filter_map(|line| line.trim().strip_prefix("path:"))
+        .map(str::trim)
+        .collect::<Vec<_>>();
+
+    // Assert
+    assert_eq!(artifact_paths, ["target/differential/failures"]);
+    assert!(upload_step.contains("if: failure()"));
+    assert!(upload_step.contains("if-no-files-found: error"));
+    assert!(upload_step.contains("retention-days: 7"));
     Ok(())
 }
 

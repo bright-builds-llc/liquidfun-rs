@@ -169,6 +169,9 @@ const PHASE6_DOCUMENT_CONTRACTS: [(&str, &[&str]); 5] = [
             "cargo xtask differential compare --scenario rigid-world --preset oracle-release --session-profile one-shot",
             "cargo xtask differential replay --scenario rigid-world --preset oracle-debug --session-profile one-shot",
             "cargo xtask differential verify-determinism --scenario rigid-world --preset oracle-debug --runs 2",
+            "ctest --test-dir target/reference/oracle-asan-ubsan --output-on-failure --no-tests=error -R '^liquidfun-reference-protocol$'",
+            "cargo xtask differential compare --scenario rigid-world --preset oracle-asan-ubsan --session-profile one-shot",
+            "retains failures for seven days",
         ],
     ),
     (
