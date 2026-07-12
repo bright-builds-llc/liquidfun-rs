@@ -59,11 +59,17 @@
 //! Handle kinds cannot be substituted for one another:
 //!
 //! ```compile_fail
-//! use liquidfun::World;
+//! use liquidfun::collision::{FilterData, Shape};
+//! use liquidfun::collision::shape::CircleShape;
+//! use liquidfun::math::Vec2;
+//! use liquidfun::{FixtureDef, World};
 //!
 //! let mut world = World::new().expect("world key should remain available");
 //! let body = world.create_body(&liquidfun::BodyDef::default()).expect("body should fit");
-//! let fixture = world.create_fixture(body).expect("fixture should fit");
+//! let shape = Shape::from(CircleShape::new(Vec2::ZERO, 0.5).expect("valid circle"));
+//! let definition = FixtureDef::new(shape, 0.0, 0.2, 0.0, false, FilterData::default())
+//!     .expect("valid fixture definition");
+//! let fixture = world.create_fixture(body, &definition).expect("fixture should fit");
 //! world.destroy_body(fixture);
 //! ```
 //!
@@ -101,5 +107,5 @@ pub use world::{
     BodyType, CollisionDirective, CommandApplication, CommandError, ContactEvent, ContactSnapshot,
     ContactView, CreateObjectError, DestroyedId, DestructionCause, DestructionRecord, FixtureDef,
     FixtureDefError, FixtureSnapshot, ObjectSnapshot, PreSolveDirective, StepError, StepHook,
-    StepLimits, StepReport, World, WorldCommand,
+    StepLimits, StepReport, World, WorldCommand, WorldFixtureSnapshot,
 };

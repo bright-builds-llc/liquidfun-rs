@@ -1,6 +1,7 @@
 use std::error::Error;
 use std::fmt;
 
+use crate::BodyId;
 use crate::collision::{FilterData, Shape};
 
 /// A failure while constructing a checked [`FixtureDef`].
@@ -168,6 +169,8 @@ pub struct FixtureSnapshot {
     filter_data: FilterData,
 }
 
+impl Eq for FixtureSnapshot {}
+
 impl FixtureSnapshot {
     /// Returns the captured immutable shape.
     #[must_use]
@@ -206,6 +209,64 @@ impl FixtureSnapshot {
     }
 }
 
+/// Owned semantic state for one fixture attached to a world-owned body.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WorldFixtureSnapshot {
+    body: BodyId,
+    definition: FixtureSnapshot,
+}
+
+impl WorldFixtureSnapshot {
+    pub(super) fn from_definition(body: BodyId, definition: &FixtureDef) -> Self {
+        Self {
+            body,
+            definition: definition.snapshot(),
+        }
+    }
+
+    /// Returns the fixture's owning body identity.
+    #[must_use]
+    pub const fn body(&self) -> BodyId {
+        self.body
+    }
+
+    /// Returns the captured immutable shape.
+    #[must_use]
+    pub const fn shape(&self) -> &Shape {
+        self.definition.shape()
+    }
+
+    /// Returns density in kilograms per square meter.
+    #[must_use]
+    pub const fn density(&self) -> f32 {
+        self.definition.density()
+    }
+
+    /// Returns the captured friction coefficient.
+    #[must_use]
+    pub const fn friction(&self) -> f32 {
+        self.definition.friction()
+    }
+
+    /// Returns the captured restitution coefficient.
+    #[must_use]
+    pub const fn restitution(&self) -> f32 {
+        self.definition.restitution()
+    }
+
+    /// Returns whether the captured fixture is a sensor.
+    #[must_use]
+    pub const fn is_sensor(&self) -> bool {
+        self.definition.is_sensor()
+    }
+
+    /// Returns the captured collision filter.
+    #[must_use]
+    pub const fn filter_data(&self) -> FilterData {
+        self.definition.filter_data()
+    }
+}
+
 fn validate_fixture_material(
     density: f32,
     friction: f32,
@@ -230,4 +291,14 @@ fn validate_fixture_material(
         return Err(FixtureDefError::NegativeRestitution);
     }
     Ok(())
+}
+
+#[cfg(test)]
+pub(super) fn test_fixture_definition() -> FixtureDef {
+    use crate::collision::shape::CircleShape;
+    use crate::math::Vec2;
+
+    let shape = Shape::from(CircleShape::new(Vec2::ZERO, 0.5).expect("circle should be valid"));
+    FixtureDef::new(shape, 0.0, 0.2, 0.0, false, FilterData::default())
+        .expect("fixture definition should be valid")
 }

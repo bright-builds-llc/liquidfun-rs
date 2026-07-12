@@ -1,13 +1,30 @@
 //! Black-box checks for handle-oriented rigid world state.
 
+use liquidfun::collision::FilterData;
+use liquidfun::collision::shape::{CircleShape, Shape};
 use liquidfun::math::Vec2;
 use liquidfun::{
-    BodyDef, BodyDefError, BodyTransformError, BodyType, HandleError, ObjectSnapshot, World,
+    BodyDef, BodyDefError, BodyTransformError, BodyType, CreateObjectError, DestroyedId,
+    FixtureDef, HandleError, ObjectSnapshot, World,
 };
 
 fn body_definition(body_type: BodyType) -> BodyDef {
     BodyDef::new(body_type, Vec2::new(3.5, -2.25), -0.75, false)
         .expect("finite body definition should be accepted")
+}
+
+fn fixture_definition() -> FixtureDef {
+    let shape =
+        Shape::from(CircleShape::new(Vec2::new(-0.0, 1.25), 0.75).expect("circle should be valid"));
+    FixtureDef::new(
+        shape,
+        f32::from_bits(0x3f80_0001),
+        -0.0,
+        0.5,
+        true,
+        FilterData::new(0x0004, 0x00f0, -3),
+    )
+    .expect("fixture definition should be valid")
 }
 
 #[test]
@@ -140,5 +157,161 @@ fn body_destruction_retains_semantic_state_before_immediate_invalidation() {
         records.last().map(liquidfun::DestructionRecord::snapshot),
         Some(ObjectSnapshot::Body { state, fixtures, joints })
             if *state == definition.snapshot() && fixtures.is_empty() && joints.is_empty()
+    ));
+}
+
+#[test]
+fn fixture_creation_clones_definition_and_exposes_semantic_owner_state() {
+    // Arrange
+    let mut world = World::new().expect("world key should remain available");
+    let body = world
+        .create_body(&BodyDef::default())
+        .expect("body should fit");
+    let definition = fixture_definition();
+    let expected = definition.snapshot();
+
+    // Act
+    let fixture = world
+        .create_fixture(body, &definition)
+        .expect("fixture should fit");
+    drop(definition);
+    let snapshot = world
+        .fixture_snapshot(fixture)
+        .expect("fixture should remain live");
+
+    // Assert
+    assert_eq!(snapshot.body(), body);
+    assert_eq!(snapshot.shape(), expected.shape());
+    assert_eq!(snapshot.density().to_bits(), expected.density().to_bits());
+    assert_eq!(snapshot.friction().to_bits(), expected.friction().to_bits());
+    assert_eq!(
+        snapshot.restitution().to_bits(),
+        expected.restitution().to_bits()
+    );
+    assert_eq!(snapshot.is_sensor(), expected.is_sensor());
+    assert_eq!(snapshot.filter_data(), expected.filter_data());
+}
+
+#[test]
+fn fixture_creation_rejects_invalid_body_without_partial_mutation() {
+    // Arrange
+    let mut world = World::new().expect("world key should remain available");
+    let local = world
+        .create_body(&BodyDef::default())
+        .expect("body should fit");
+    let stale = world
+        .create_body(&BodyDef::default())
+        .expect("body should fit");
+    world.destroy_body(stale).expect("body should be live");
+    let mut other = World::new().expect("world key should remain available");
+    let foreign = other
+        .create_body(&BodyDef::default())
+        .expect("body should fit");
+    let definition = fixture_definition();
+
+    // Act
+    let stale_result = world.create_fixture(stale, &definition);
+    let foreign_result = world.create_fixture(foreign, &definition);
+    let records = world
+        .destroy_body(local)
+        .expect("local body should be live");
+
+    // Assert
+    assert_eq!(
+        stale_result,
+        Err(CreateObjectError::InvalidHandle(
+            HandleError::StaleOrDestroyed
+        ))
+    );
+    assert_eq!(
+        foreign_result,
+        Err(CreateObjectError::InvalidHandle(HandleError::WrongWorld))
+    );
+    assert_eq!(records.len(), 1);
+    assert_eq!(records[0].destroyed(), DestroyedId::Body(local));
+}
+
+#[test]
+fn fixture_snapshot_rejects_stale_and_cross_world_handles() {
+    // Arrange
+    let mut world = World::new().expect("world key should remain available");
+    let body = world
+        .create_body(&BodyDef::default())
+        .expect("body should fit");
+    let stale = world
+        .create_fixture(body, &fixture_definition())
+        .expect("fixture should fit");
+    world
+        .destroy_fixture(stale)
+        .expect("fixture should be live");
+    let replacement = world
+        .create_fixture(body, &fixture_definition())
+        .expect("reused slot should fit");
+    let mut other = World::new().expect("world key should remain available");
+    let other_body = other
+        .create_body(&BodyDef::default())
+        .expect("body should fit");
+    let foreign = other
+        .create_fixture(other_body, &fixture_definition())
+        .expect("fixture should fit");
+
+    // Act
+    let stale_result = world.fixture_snapshot(stale);
+    let foreign_result = world.fixture_snapshot(foreign);
+
+    // Assert
+    assert_eq!(stale_result, Err(HandleError::StaleOrDestroyed));
+    assert_eq!(foreign_result, Err(HandleError::WrongWorld));
+    assert_ne!(stale, replacement);
+    assert!(world.fixture_snapshot(replacement).is_ok());
+}
+
+#[test]
+fn fixture_cascade_is_newest_first_and_retains_owned_semantic_state() {
+    // Arrange
+    let mut world = World::new().expect("world key should remain available");
+    let body = world
+        .create_body(&BodyDef::default())
+        .expect("body should fit");
+    let first_definition = fixture_definition();
+    let second_definition = FixtureDef::new(
+        Shape::from(CircleShape::new(Vec2::ZERO, 2.0).expect("circle should be valid")),
+        2.0,
+        0.25,
+        0.75,
+        false,
+        FilterData::default(),
+    )
+    .expect("fixture definition should be valid");
+    let first = world
+        .create_fixture(body, &first_definition)
+        .expect("fixture should fit");
+    let second = world
+        .create_fixture(body, &second_definition)
+        .expect("fixture should fit");
+
+    // Act
+    let records = world.destroy_body(body).expect("body should be live");
+
+    // Assert
+    assert_eq!(
+        records
+            .iter()
+            .map(liquidfun::DestructionRecord::destroyed)
+            .collect::<Vec<_>>(),
+        vec![
+            DestroyedId::Fixture(second),
+            DestroyedId::Fixture(first),
+            DestroyedId::Body(body),
+        ]
+    );
+    assert!(matches!(
+        records.first().map(liquidfun::DestructionRecord::snapshot),
+        Some(ObjectSnapshot::Fixture {
+            body: snapshot_body,
+            state,
+        }) if *snapshot_body == body
+            && state.body() == body
+            && state.shape() == second_definition.shape()
     ));
 }

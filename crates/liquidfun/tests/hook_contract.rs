@@ -3,18 +3,32 @@
 use std::collections::VecDeque;
 use std::panic::{AssertUnwindSafe, catch_unwind};
 
+use liquidfun::collision::FilterData;
+use liquidfun::collision::shape::{CircleShape, Shape};
+use liquidfun::math::Vec2;
 use liquidfun::{
-    BodyDef, CollisionDirective, CommandError, ContactSnapshot, ContactView, HandleError,
-    PreSolveDirective, StepError, StepHook, StepLimits, World, WorldCommand,
+    BodyDef, CollisionDirective, CommandError, ContactSnapshot, ContactView, FixtureDef,
+    HandleError, PreSolveDirective, StepError, StepHook, StepLimits, World, WorldCommand,
 };
+
+fn fixture_definition() -> FixtureDef {
+    let shape =
+        Shape::from(CircleShape::new(Vec2::ZERO, 0.5).expect("test circle should be valid"));
+    FixtureDef::new(shape, 0.0, 0.2, 0.0, false, FilterData::default())
+        .expect("test fixture definition should be valid")
+}
 
 fn world_with_contact() -> (World, ContactSnapshot) {
     let mut world = World::new().expect("test world key should remain available");
     let body = world
         .create_body(&BodyDef::default())
         .expect("body should fit");
-    let first = world.create_fixture(body).expect("fixture should fit");
-    let second = world.create_fixture(body).expect("fixture should fit");
+    let first = world
+        .create_fixture(body, &fixture_definition())
+        .expect("fixture should fit");
+    let second = world
+        .create_fixture(body, &fixture_definition())
+        .expect("fixture should fit");
     (world, ContactSnapshot::new(first, second))
 }
 
@@ -75,10 +89,10 @@ fn deferred_commands_apply_only_after_all_hook_dispatch_unlocks() {
         .create_body(&BodyDef::default())
         .expect("body should fit");
     let first = world
-        .create_fixture(contact_body)
+        .create_fixture(contact_body, &fixture_definition())
         .expect("fixture should fit");
     let second = world
-        .create_fixture(contact_body)
+        .create_fixture(contact_body, &fixture_definition())
         .expect("fixture should fit");
     let command_contact = ContactSnapshot::new(first, second);
     let mut hook = CommandHook {

@@ -8,6 +8,8 @@ use std::panic::{AssertUnwindSafe, catch_unwind, resume_unwind};
 use crate::{BodyId, DestructionRecord, FixtureId, HandleError, World};
 
 #[cfg(test)]
+use super::fixture::test_fixture_definition;
+#[cfg(test)]
 use crate::BodyDef;
 
 const MAX_STEP_EVENTS: usize = 4_096;
@@ -564,8 +566,12 @@ pub(super) mod hooks {
         let body = world
             .create_body(&BodyDef::default())
             .expect("body should fit");
-        let first = world.create_fixture(body).expect("fixture should fit");
-        let second = world.create_fixture(body).expect("fixture should fit");
+        let first = world
+            .create_fixture(body, &test_fixture_definition())
+            .expect("fixture should fit");
+        let second = world
+            .create_fixture(body, &test_fixture_definition())
+            .expect("fixture should fit");
         (world, ContactSnapshot::new(first, second))
     }
 
@@ -576,7 +582,9 @@ pub(super) mod hooks {
         let body = world
             .create_body(&BodyDef::default())
             .expect("body should fit");
-        let third = world.create_fixture(body).expect("fixture should fit");
+        let third = world
+            .create_fixture(body, &test_fixture_definition())
+            .expect("fixture should fit");
         let second = ContactSnapshot::new(first.fixtures()[1], third);
         let contacts = [first, second, first];
         let mut hook = RecordingHook {
@@ -686,8 +694,12 @@ mod commands {
         let body = world
             .create_body(&BodyDef::default())
             .expect("body should fit");
-        let first = world.create_fixture(body).expect("fixture should fit");
-        let second = world.create_fixture(body).expect("fixture should fit");
+        let first = world
+            .create_fixture(body, &test_fixture_definition())
+            .expect("fixture should fit");
+        let second = world
+            .create_fixture(body, &test_fixture_definition())
+            .expect("fixture should fit");
         (world, ContactSnapshot::new(first, second))
     }
 
@@ -871,10 +883,10 @@ mod panic {
             .create_body(&BodyDef::default())
             .expect("body should fit");
         let first = world
-            .create_fixture(contact_body)
+            .create_fixture(contact_body, &test_fixture_definition())
             .expect("fixture should fit");
         let second = world
-            .create_fixture(contact_body)
+            .create_fixture(contact_body, &test_fixture_definition())
             .expect("fixture should fit");
         let contact = ContactSnapshot::new(first, second);
         let command_body = world

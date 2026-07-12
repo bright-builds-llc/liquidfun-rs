@@ -2,13 +2,24 @@
 
 use std::any::TypeId;
 
+use liquidfun::collision::FilterData;
+use liquidfun::collision::shape::{CircleShape, Shape};
+use liquidfun::math::Vec2;
 use liquidfun::{
-    AssociationMap, BodyDef, BodyId, CreateObjectError, DestroyedId, DestructionCause, FixtureId,
-    HandleError, JointId, ObjectSnapshot, ParticleGroupId, ParticleId, ParticleSystemId, World,
+    AssociationMap, BodyDef, BodyId, CreateObjectError, DestroyedId, DestructionCause, FixtureDef,
+    FixtureId, HandleError, JointId, ObjectSnapshot, ParticleGroupId, ParticleId, ParticleSystemId,
+    World,
 };
 
 fn test_world() -> World {
     World::new().expect("test world key should remain available")
+}
+
+fn fixture_definition() -> FixtureDef {
+    let shape =
+        Shape::from(CircleShape::new(Vec2::ZERO, 0.5).expect("test circle should be valid"));
+    FixtureDef::new(shape, 0.0, 0.2, 0.0, false, FilterData::default())
+        .expect("test fixture definition should be valid")
 }
 
 #[test]
@@ -83,8 +94,12 @@ fn body_destruction_returns_owned_ordered_cascade_evidence() {
     let survivor = world
         .create_body(&BodyDef::default())
         .expect("body should fit");
-    let first_fixture = world.create_fixture(root).expect("fixture should fit");
-    let second_fixture = world.create_fixture(root).expect("fixture should fit");
+    let first_fixture = world
+        .create_fixture(root, &fixture_definition())
+        .expect("fixture should fit");
+    let second_fixture = world
+        .create_fixture(root, &fixture_definition())
+        .expect("fixture should fit");
     let first_joint = world
         .create_joint(root, survivor)
         .expect("joint should fit");
@@ -134,8 +149,12 @@ fn typed_association_cleanup_follows_destruction_records() {
     let survivor = world
         .create_body(&BodyDef::default())
         .expect("body should fit");
-    let first_fixture = world.create_fixture(body).expect("fixture should fit");
-    let second_fixture = world.create_fixture(body).expect("fixture should fit");
+    let first_fixture = world
+        .create_fixture(body, &fixture_definition())
+        .expect("fixture should fit");
+    let second_fixture = world
+        .create_fixture(body, &fixture_definition())
+        .expect("fixture should fit");
     let first_joint = world
         .create_joint(body, survivor)
         .expect("joint should fit");

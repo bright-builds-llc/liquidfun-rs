@@ -9,8 +9,12 @@ use crate::{
 };
 
 use super::body::{BodyDef, BodySnapshot, BodyState, BodyTransformError, BodyType};
+use super::fixture::{FixtureDef, WorldFixtureSnapshot};
 use super::step::StepState;
 use crate::math::Vec2;
+
+#[cfg(test)]
+use super::fixture::test_fixture_definition;
 
 #[derive(Debug)]
 struct Body {
@@ -24,6 +28,7 @@ struct Body {
 struct Fixture {
     diagnostic_id: u64,
     body: BodyId,
+    definition: FixtureDef,
 }
 
 #[derive(Debug)]
@@ -183,6 +188,8 @@ pub enum ObjectSnapshot {
     Fixture {
         /// Owning body at destruction time.
         body: BodyId,
+        /// Checked semantic fixture state captured before invalidation.
+        state: WorldFixtureSnapshot,
     },
     /// The two body endpoints of a joint.
     Joint {
@@ -376,23 +383,43 @@ impl World {
         Ok(())
     }
 
-    /// Creates a fixture attached to `body`.
+    /// Creates a fixture attached to `body` by cloning a checked definition.
     ///
     /// # Errors
     ///
     /// Returns an error if `body` is invalid or fixture storage is exhausted.
-    pub fn create_fixture(&mut self, body: BodyId) -> Result<FixtureId, CreateObjectError> {
+    pub fn create_fixture(
+        &mut self,
+        body: BodyId,
+        definition: &FixtureDef,
+    ) -> Result<FixtureId, CreateObjectError> {
         self.ensure_not_poisoned_for_handle()?;
         self.bodies.get(body)?;
         let diagnostic_id = self.allocate_diagnostic_id()?;
         let fixture = self.fixtures.insert(Fixture {
             diagnostic_id,
             body,
+            definition: definition.clone(),
         })?;
         self.body_mut_after_validation(body)
             .fixtures
             .insert(0, fixture);
         Ok(fixture)
+    }
+
+    /// Returns owned semantic state for a live fixture.
+    ///
+    /// # Errors
+    ///
+    /// Returns a handle error when `fixture` is foreign, stale, or destroyed.
+    pub fn fixture_snapshot(
+        &self,
+        fixture: FixtureId,
+    ) -> Result<WorldFixtureSnapshot, HandleError> {
+        self.ensure_not_poisoned_for_handle()?;
+        self.fixtures
+            .get(fixture)
+            .map(|record| WorldFixtureSnapshot::from_definition(record.body, &record.definition))
     }
 
     /// Creates a joint between two live bodies.
@@ -728,7 +755,10 @@ impl World {
             destroyed: DestroyedId::Fixture(fixture),
             diagnostic_id: removed.diagnostic_id,
             cause,
-            snapshot: ObjectSnapshot::Fixture { body: removed.body },
+            snapshot: ObjectSnapshot::Fixture {
+                body: removed.body,
+                state: WorldFixtureSnapshot::from_definition(removed.body, &removed.definition),
+            },
         }
     }
 
@@ -889,8 +919,12 @@ mod tests {
         let survivor = world
             .create_body(&BodyDef::default())
             .expect("body should fit");
-        let first_fixture = world.create_fixture(root).expect("fixture should fit");
-        let second_fixture = world.create_fixture(root).expect("fixture should fit");
+        let first_fixture = world
+            .create_fixture(root, &test_fixture_definition())
+            .expect("fixture should fit");
+        let second_fixture = world
+            .create_fixture(root, &test_fixture_definition())
+            .expect("fixture should fit");
         let first_joint = world
             .create_joint(root, survivor)
             .expect("joint should fit");
@@ -946,7 +980,9 @@ mod tests {
         let body = world
             .create_body(&BodyDef::default())
             .expect("body should fit");
-        let fixture = world.create_fixture(body).expect("fixture should fit");
+        let fixture = world
+            .create_fixture(body, &test_fixture_definition())
+            .expect("fixture should fit");
         let mut other = test_world();
         let foreign = other
             .create_body(&BodyDef::default())
@@ -1087,7 +1123,9 @@ mod tests {
         let second = world
             .create_body(&BodyDef::default())
             .expect("body should fit");
-        let fixture = world.create_fixture(first).expect("fixture should fit");
+        let fixture = world
+            .create_fixture(first, &test_fixture_definition())
+            .expect("fixture should fit");
         let joint = world.create_joint(first, second).expect("joint should fit");
         let system = world
             .create_particle_system()
@@ -1151,7 +1189,9 @@ mod tests {
         let body = world
             .create_body(&BodyDef::default())
             .expect("body should fit");
-        let fixture = world.create_fixture(body).expect("fixture should fit");
+        let fixture = world
+            .create_fixture(body, &test_fixture_definition())
+            .expect("fixture should fit");
 
         // Act
         let records = world.destroy_body(body).expect("body should be live");
@@ -1165,7 +1205,10 @@ mod tests {
         assert_eq!(records[1].destroyed(), DestroyedId::Body(body));
         assert!(matches!(
             records[0].snapshot(),
-            ObjectSnapshot::Fixture { body: snapshot_body } if *snapshot_body == body
+            ObjectSnapshot::Fixture {
+                body: snapshot_body,
+                ..
+            } if *snapshot_body == body
         ));
     }
 

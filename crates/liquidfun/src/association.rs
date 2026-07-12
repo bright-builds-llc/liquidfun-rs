@@ -52,13 +52,21 @@ impl_association_id!(ParticleId, Particle);
 /// Handle kinds cannot be mixed:
 ///
 /// ```compile_fail
-/// use liquidfun::{AssociationMap, BodyDef, BodyId, World};
+/// use liquidfun::collision::{FilterData, Shape};
+/// use liquidfun::collision::shape::CircleShape;
+/// use liquidfun::math::Vec2;
+/// use liquidfun::{AssociationMap, BodyDef, BodyId, FixtureDef, World};
 ///
 /// let mut world = World::new().expect("world key should remain available");
 /// let body = world
 ///     .create_body(&BodyDef::default())
 ///     .expect("body should fit");
-/// let fixture = world.create_fixture(body).expect("fixture should fit");
+/// let shape = Shape::from(CircleShape::new(Vec2::ZERO, 0.5).expect("valid circle"));
+/// let definition = FixtureDef::new(shape, 0.0, 0.2, 0.0, false, FilterData::default())
+///     .expect("valid fixture definition");
+/// let fixture = world
+///     .create_fixture(body, &definition)
+///     .expect("fixture should fit");
 /// let mut body_names = AssociationMap::<BodyId, _>::new();
 /// body_names.insert(fixture, "wrong kind");
 /// ```
@@ -139,7 +147,18 @@ impl<Id: AssociationId, T> AssociationMap<Id, T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{BodyDef, World};
+    use crate::collision::FilterData;
+    use crate::collision::shape::{CircleShape, Shape};
+    use crate::math::Vec2;
+    use crate::{BodyDef, FixtureDef, World};
+
+    fn fixture_definition() -> FixtureDef {
+        let shape = Shape::from(
+            CircleShape::new(Vec2::ZERO, 0.5).expect("test circle should remain valid"),
+        );
+        FixtureDef::new(shape, 0.0, 0.2, 0.0, false, FilterData::default())
+            .expect("test fixture definition should remain valid")
+    }
 
     fn test_world() -> World {
         World::new().expect("test world key should remain available")
@@ -156,7 +175,7 @@ mod tests {
             .create_body(&BodyDef::default())
             .expect("body should fit");
         let fixture = world
-            .create_fixture(destroyed_body)
+            .create_fixture(destroyed_body, &fixture_definition())
             .expect("fixture should fit");
         let joint = world
             .create_joint(destroyed_body, surviving_body)
@@ -230,7 +249,9 @@ mod tests {
         let body = world
             .create_body(&BodyDef::default())
             .expect("body should fit");
-        let fixture = world.create_fixture(body).expect("fixture should fit");
+        let fixture = world
+            .create_fixture(body, &fixture_definition())
+            .expect("fixture should fit");
         let fixture_record = world
             .destroy_fixture(fixture)
             .expect("fixture should be live");
