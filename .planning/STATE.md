@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 06-14-PLAN.md
-last_updated: "2026-07-12T16:26:26.711Z"
+stopped_at: Completed 06-15-PLAN.md
+last_updated: "2026-07-12T16:44:59.419Z"
 last_activity: 2026-07-12
 progress:
   total_phases: 12
   completed_phases: 5
   total_plans: 57
-  completed_plans: 53
-  percent: 93
+  completed_plans: 54
+  percent: 95
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-11)
 ## Current Position
 
 Phase: 6 (Minimal Rigid World Vertical Slice) — EXECUTING
-Plan: 15 of 18
+Plan: 16 of 18
 Status: Ready to execute
 Last activity: 2026-07-12
 
@@ -78,6 +78,7 @@ Progress: [██████████] 100%
 | Phase 04 P06 | 31 min | 1 tasks | 12 files |
 | Phase 04 P07 | 17 min | 1 tasks | 7 files |
 | Phase 06 P14 | 9 min | 1 tasks | 5 files |
+| Phase 06 P15 | 16 min | 2 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -145,6 +146,8 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 04]: Treat local Phase 4 probe passes as scoped D2 differential evidence and leave D1/platform validation unclaimed. — Evidence dimensions remain independent and cannot be promoted from configured CI or one local noncanonical toolchain.
 - [Phase 04]: Keep b2Settings differential validation absent until the complete settings surface is directly probed. — Implementation and unit tests do not substitute for cross-language semantic evidence.
 - [Phase 06]: Build a complete candidate BodyState before aggregate mass mutation. — Candidate-first source ordering and one final replacement make create/reset failures effect-free.
+- [Phase 06]: Require at least one dynamic body before contact admission. — This mirrors the pinned ShouldCollide predicate and rejects every non-dynamic pair before filtering or allocation.
+- [Phase 06]: Use separate exact post-overlap witnesses for static/kinematic and kinematic/kinematic admission. — Declaration-first zero-contact checkpoints prevent a shared omission from passing cross-engine equality.
 
 ### Pending Todos
 
@@ -152,6 +155,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-12T16:26:26.708Z
-Stopped at: Completed 06-14-PLAN.md
+Last session: 2026-07-12T16:44:59.417Z
+Stopped at: Completed 06-15-PLAN.md
 Resume file: None

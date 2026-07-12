@@ -62,7 +62,7 @@ Requirements for the first release permitted to claim complete parity with the s
 - [ ] **RIGD-01**: Consumers can create, mutate, inspect, activate, deactivate, and destroy static, kinematic, and dynamic bodies with upstream-equivalent transforms and identity behavior.
 - [ ] **RIGD-02**: Consumers can attach fixtures and sensors with upstream-equivalent density, mass/inertia, friction, restitution, collision filtering, and destruction behavior.
 - [ ] **RIGD-03**: Consumers can apply forces, torques, linear/angular impulses, damping, gravity scale, fixed rotation, bullet mode, and velocity changes with upstream-equivalent effects.
-- [ ] **RIGD-04**: The engine creates, updates, filters, solves, and destroys rigid contacts with upstream-equivalent manifolds, material mixing, warm starting, and sensor behavior.
+- [x] **RIGD-04**: The engine creates, updates, filters, solves, and destroys rigid contacts with upstream-equivalent manifolds, material mixing, warm starting, and sensor behavior.
 - [ ] **RIGD-05**: Island construction and velocity/position constraint solving reproduce upstream-equivalent world stepping within the approved order and numeric policies.
 - [ ] **RIGD-06**: Sleeping and waking behavior, thresholds, allowed-sleep controls, and activation transitions match the selected upstream behavior.
 - [ ] **RIGD-07**: Bullet handling, sub-stepping, continuous collision, and TOI solving prevent tunneling and reproduce supported upstream outcomes.
@@ -235,7 +235,7 @@ Roadmap creation maps every v1 requirement to exactly one phase.
 | RIGD-01 | Phase 6 | Pending |
 | RIGD-02 | Phase 6 | Pending |
 | RIGD-03 | Phase 7 | Pending |
-| RIGD-04 | Phase 6 | Pending |
+| RIGD-04 | Phase 6 | Complete |
 | RIGD-05 | Phase 7 | Pending |
 | RIGD-06 | Phase 7 | Pending |
 | RIGD-07 | Phase 7 | Pending |
