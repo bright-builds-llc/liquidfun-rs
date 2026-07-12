@@ -421,4 +421,5 @@ pub(super) struct ReplayedCandidate {
     pub(super) directory: PathBuf,
     pub(super) metadata: CandidateMetadata,
     pub(super) accepted_bytes: Vec<u8>,
+    pub(super) maybe_rigid_identity: Option<liquidfun_test_protocol::BuildIdentity>,
 }

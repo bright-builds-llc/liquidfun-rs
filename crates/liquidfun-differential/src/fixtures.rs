@@ -7,6 +7,8 @@
 mod domain;
 mod lifecycle;
 mod replay;
+#[path = "rigid_fixtures.rs"]
+mod rigid;
 mod storage;
 
 pub use domain::{
@@ -14,3 +16,4 @@ pub use domain::{
     StageRequest,
 };
 pub use lifecycle::{promote_candidate, review_candidate, stage_candidate};
+pub use rigid::{RIGID_FIXTURE_SCENARIO_ID, stage_rigid_candidate};

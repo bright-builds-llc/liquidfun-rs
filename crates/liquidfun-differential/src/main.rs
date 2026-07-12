@@ -13,6 +13,7 @@ use liquidfun_differential::{
     MismatchReport, NativeRigidWorldExecutor, OracleExecutable, OraclePreset, OracleSupervisor,
     PhysicsMismatchRun, ReviewMetadata, SessionProfile, StageRequest, persist_failure_bundle,
     promote_candidate, replay_exact, review_candidate, run_named, stage_candidate,
+    stage_rigid_candidate,
 };
 use liquidfun_test_protocol::{
     HarnessLimits, decode_rigid_world_request_jsonl, decode_scenario_request_jsonl,
@@ -249,12 +250,29 @@ fn run_fixture(arguments: impl Iterator<Item = String>) -> Result<ExitCode, CliE
                 "minimized-regression" => ArtifactKind::MinimizedRegression,
                 _ => return Err(CliError::Usage(fixture_usage())),
             };
-            if scenario != "empty-world" {
-                return Err(CliError::Usage(fixture_usage()));
-            }
             let parsed_preset = parse_preset(preset)?;
             let parsed_profile = parse_profile(session_profile)?;
             let generator_revision = generator_revision(&repository_root)?;
+            if scenario == "rigid-world" {
+                let candidate = stage_rigid_candidate(
+                    &repository_root,
+                    artifact_id,
+                    artifact_kind,
+                    parsed_preset,
+                    preset,
+                    session_profile,
+                    &generator_revision,
+                )?;
+                write_json(&FixtureStageReport {
+                    result_kind: "fixture_staged",
+                    artifact_id: candidate.artifact_id(),
+                    candidate_directory: candidate.directory(),
+                })?;
+                return Ok(ExitCode::SUCCESS);
+            }
+            if scenario != "empty-world" {
+                return Err(CliError::Usage(fixture_usage()));
+            }
             let request_bytes = fs::read(
                 repository_root.join("protocol/fixtures/accepted/empty-world-request.jsonl"),
             )?;
@@ -404,7 +422,7 @@ fn generator_revision(repository_root: &std::path::Path) -> Result<String, CliEr
 }
 
 fn fixture_usage() -> String {
-    "usage: liquidfun-differential fixture stage --scenario empty-world --preset <oracle-debug|oracle-release|oracle-asan-ubsan> --session-profile <one-shot|reuse|sanitizer> --artifact-kind <reviewed-trace|minimized-regression> --artifact-id <id>; fixture review --artifact-id <id> --reviewer <identity> --reviewed-at <UTC timestamp> --review-status <approved|rejected>; fixture promote --artifact-id <id>".to_owned()
+    "usage: liquidfun-differential fixture stage --scenario <empty-world|rigid-world> --preset <oracle-debug|oracle-release|oracle-asan-ubsan> --session-profile <one-shot|reuse|sanitizer> --artifact-kind <reviewed-trace|minimized-regression> --artifact-id <id>; fixture review --artifact-id <id> --reviewer <identity> --reviewed-at <UTC timestamp> --review-status <approved|rejected>; fixture promote --artifact-id <id>".to_owned()
 }
 
 #[derive(Serialize)]

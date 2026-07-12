@@ -6,6 +6,7 @@ use liquidfun_test_protocol::{
     HarnessLimits, ToleranceProfile, decode_scenario_request_jsonl, trace_payload_sha256,
 };
 
+use crate::validate_rigid_promotion_authority;
 use crate::{EmptyWorldAdapter, compare};
 
 use super::{
@@ -182,6 +183,10 @@ pub fn review_candidate(
 ) -> Result<ReviewReceipt, FixtureError> {
     validate_review(review)?;
     let replayed = replay_candidate(repository_root, artifact_id)?;
+    if let Some(identity) = &replayed.maybe_rigid_identity {
+        validate_rigid_promotion_authority(identity, replayed.metadata.artifact_kind)
+            .map_err(|error| FixtureError::Replay(error.to_string()))?;
+    }
     let destination = destination_path(repository_root, &replayed.metadata)?;
     reject_symlink_chain(repository_root, &destination)?;
     let diff = if destination.exists() {
@@ -229,6 +234,10 @@ pub fn promote_candidate(
     artifact_id: &str,
 ) -> Result<PromotionReceipt, FixtureError> {
     let replayed = replay_candidate(repository_root, artifact_id)?;
+    if let Some(identity) = &replayed.maybe_rigid_identity {
+        validate_rigid_promotion_authority(identity, replayed.metadata.artifact_kind)
+            .map_err(|error| FixtureError::Replay(error.to_string()))?;
+    }
     let review_path = replayed.directory.join("review.toml");
     if !review_path.exists() {
         return Err(FixtureError::ReviewRequired);

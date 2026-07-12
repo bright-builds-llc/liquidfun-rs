@@ -127,6 +127,18 @@ pub(super) fn replay_candidate(
             });
         }
     }
+    if metadata.scenario_id == super::rigid::RIGID_FIXTURE_SCENARIO_ID {
+        return super::rigid::replay_rigid_candidate(
+            repository_root,
+            canonical_directory,
+            metadata,
+            request_bytes,
+            trace_bytes,
+            report_bytes,
+            identity_bytes,
+            scenario_bytes,
+        );
+    }
     let request = decode_scenario_request_jsonl(&request_bytes, &limits)
         .map_err(|error| FixtureError::Replay(error.to_string()))?;
     if request.scenario().scenario_id().as_str() != metadata.scenario_id
@@ -190,6 +202,7 @@ pub(super) fn replay_candidate(
         directory: canonical_directory,
         metadata,
         accepted_bytes,
+        maybe_rigid_identity: None,
     })
 }
 
