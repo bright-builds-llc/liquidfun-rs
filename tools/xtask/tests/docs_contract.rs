@@ -353,6 +353,79 @@ fn phase5_contract_rejects_promoted_contact_lifecycle_rows() -> TestResult {
 }
 
 #[test]
+fn phase6_contract_accepts_repository_documents() -> TestResult {
+    // Arrange
+    let fixture = DocsFixture::new()?;
+
+    // Act
+    let output = fixture.command()?;
+
+    // Assert
+    assert_success(&output);
+    fixture.cleanup()?;
+    Ok(())
+}
+
+#[test]
+fn phase6_contract_rejects_missing_contract_in_each_document() -> TestResult {
+    // Arrange, Act, Assert
+    for (document, marker) in [
+        ("ARCHITECTURE.md", "## Phase 6 rigid-world boundaries"),
+        ("TESTING.md", "## Phase 6 rigid-world comparison policy"),
+        (
+            "COMPATIBILITY.md",
+            "`public-api.liquidfun-box2d-box2d-dynamics-b2body-h`",
+        ),
+        ("README.md", "Phase 6 minimal rigid-world vertical slice"),
+    ] {
+        let fixture = DocsFixture::new()?;
+        fixture.replace_document_text(document, marker, "removed-phase6-contract-marker")?;
+        let output = fixture.command()?;
+        assert_failure(&output, "docs/phase6-contract");
+        fixture.cleanup()?;
+    }
+    Ok(())
+}
+
+#[test]
+fn phase6_contract_rejects_deferred_surface_and_identity_overclaims() -> TestResult {
+    // Arrange, Act, Assert
+    for claim in [
+        "full rigid parity",
+        "public durable contacts",
+        "mutable shapes",
+        "global epsilon",
+        "general solver is implemented",
+        "complete island solver",
+        "forces are implemented",
+        "sleeping is implemented",
+        "CCD is implemented",
+        "world queries are implemented",
+        "world configuration is implemented",
+        "joint solving is implemented",
+        "platform validated",
+        "raw contact identity",
+        "raw proxy identity",
+    ] {
+        let fixture = DocsFixture::new()?;
+        fixture.replace_document_text(
+            "README.md",
+            "## Architecture and evidence",
+            &format!("False claim: {claim}\n\n## Architecture and evidence"),
+        )?;
+        let output = fixture.command()?;
+        let category = if claim == "global epsilon" {
+            "docs/phase5-overclaim"
+        } else {
+            "docs/phase6-overclaim"
+        };
+        assert_failure(&output, category);
+        fixture.cleanup()?;
+    }
+    Ok(())
+}
+
+#[test]
 fn check_rejects_absolute_user_paths() -> TestResult {
     // Arrange
     let fixture = DocsFixture::new()?;

@@ -1,8 +1,9 @@
 //! An independent Rust implementation of the `LiquidFun` physics engine.
 //!
-//! This crate is currently a safe, Cargo-only foundation. Its collision
-//! namespace contains the Phase 5 shape and collision substrate, but it does
-//! not yet contain a rigid-body world, contact manager, or solver.
+//! This crate is currently a safe, Cargo-only early vertical slice. Its
+//! collision namespace contains the Phase 5 substrate, and [`World`] now owns
+//! the Phase 6 checked body, fixture, broad-phase proxy, automatic contact, and
+//! bounded one-contact solver lifecycle.
 //!
 //! # Phase 5 collision foundation
 //!
@@ -25,6 +26,38 @@
 //! Phase 6 now adds checked body and fixture ownership, automatic contact
 //! lifecycle, and one bounded static/dynamic contact solve. General islands,
 //! joints, sleeping, forces, and continuous world stepping remain later work.
+//!
+//! # Phase 6 rigid-world contract
+//!
+//! [`BodyDef`] and [`FixtureDef`] are reusable checked definitions.
+//! [`FixtureDef`] owns an immutable [`collision::Shape`] snapshot by value.
+//! [`World::create_body`], [`World::body_snapshot`],
+//! [`World::set_body_type`], [`World::set_body_transform`],
+//! [`World::set_body_active`], [`World::create_fixture`], and
+//! [`World::fixture_snapshot`] validate complete world-scoped handles before
+//! effects and return owned state rather than storage borrows.
+//!
+//! Creating a positive-density fixture and destroying any fixture reset body
+//! mass. [`World::set_fixture_density`] does not reset it;
+//! [`World::reset_body_mass_data`] is explicit. [`World::set_body_mass_data`]
+//! is a current dynamic-body override and is a no-op for static and kinematic
+//! bodies. Later reset-triggering fixture or body-type changes replace it.
+//! Fixture friction and restitution affect contacts created afterward, while
+//! existing contacts retain their creation-time mixed values. Sensor and
+//! filter changes are observed by the next contact update.
+//!
+//! [`World::step`] discovers pairs, updates contacts, invokes restricted hooks,
+//! solves at most one supported static/dynamic occurrence, unlocks, then
+//! applies bounded deferred commands. Sensors use overlap-only touching and
+//! have no manifold, pre-solve callback, or constraint. Persistent manifold
+//! points carry normal and tangent impulses by semantic feature identity.
+//! Contacts expose only borrow-scoped [`ContactView`] values and owned report
+//! snapshots; no reusable contact handle or proxy coordinate is public.
+//!
+//! Phase 7 retains forces, public velocity controls, damping, sleeping, the
+//! general island solver, multi-contact stacks, CCD/TOI world orchestration,
+//! queries, ray casts, and broad world configuration. Joint solving follows in
+//! Phase 8.
 //!
 //! # Phase 3 object model
 //!

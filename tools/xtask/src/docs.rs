@@ -136,6 +136,64 @@ const PHASE5_DOCUMENT_CONTRACTS: [(&str, &[&str]); 4] = [
         ],
     ),
 ];
+const PHASE6_DOCUMENT_CONTRACTS: [(&str, &[&str]); 4] = [
+    (
+        "ARCHITECTURE.md",
+        &[
+            "## Phase 6 rigid-world boundaries",
+            "`BodyDef` and `FixtureDef`",
+            "`World::set_body_transform`",
+            "`World::reset_body_mass_data`",
+            "`World::set_body_mass_data`",
+            "`World::set_fixture_sensor`",
+            "`World::set_fixture_filter`",
+            "creation-time mixed friction and restitution",
+            "`FindPairs`, `UpdateContacts`, `Hook`, `Solve`, `Unlock`",
+            "one static/dynamic contact",
+            "No durable contact identity",
+            "Phase 7",
+            "Phase 8",
+        ],
+    ),
+    (
+        "TESTING.md",
+        &[
+            "## Phase 6 rigid-world comparison policy",
+            "`phase6-v1`",
+            "`non_colliding_body_fixture_lifecycle`",
+            "`single_contact_lifecycle`",
+            "declaration-first",
+            "Local successful comparisons are D2",
+            "D0 requires exactly two byte-identical",
+            "D1 remains the only fixture-promotion authority",
+            "## Phase 6 rigid-world commands",
+            "cargo xtask differential compare --scenario rigid-world --preset oracle-debug --session-profile one-shot",
+            "cargo xtask differential compare --scenario rigid-world --preset oracle-release --session-profile one-shot",
+            "cargo xtask differential replay --scenario rigid-world --preset oracle-debug --session-profile one-shot",
+            "cargo xtask differential verify-determinism --scenario rigid-world --preset oracle-debug --runs 2",
+        ],
+    ),
+    (
+        "COMPATIBILITY.md",
+        &[
+            "`subsystem.contacts-and-filtering`",
+            "`public-api.liquidfun-box2d-box2d-dynamics-b2body-h`",
+            "`public-api.liquidfun-box2d-box2d-dynamics-b2fixture-h`",
+            "`public-api.liquidfun-box2d-box2d-dynamics-b2contactmanager-h`",
+        ],
+    ),
+    (
+        "README.md",
+        &[
+            "Phase 6 minimal rigid-world vertical slice",
+            "phase6-v1",
+            "non_colliding_body_fixture_lifecycle",
+            "single_contact_lifecycle",
+            "Phase 7",
+            "remain pending",
+        ],
+    ),
+];
 const FORBIDDEN_PHASE5_CLAIMS: [&str; 9] = [
     "full parity",
     "production ready",
@@ -146,6 +204,23 @@ const FORBIDDEN_PHASE5_CLAIMS: [&str; 9] = [
     "packed contact keys are public",
     "dynamictree exposes public iteration",
     "phase 6 is complete",
+];
+const FORBIDDEN_PHASE6_CLAIMS: [&str; 15] = [
+    "full rigid parity",
+    "public durable contacts",
+    "mutable shapes",
+    "global epsilon",
+    "general solver is implemented",
+    "complete island solver",
+    "forces are implemented",
+    "sleeping is implemented",
+    "ccd is implemented",
+    "world queries are implemented",
+    "world configuration is implemented",
+    "joint solving is implemented",
+    "platform validated",
+    "raw contact identity",
+    "raw proxy identity",
 ];
 
 #[derive(Clone, Copy)]
@@ -299,10 +374,11 @@ pub(crate) fn run(args: &[String]) -> Result<(), DocsError> {
     check_testing_contract(&contents)?;
     check_document_contracts(&repository_root)?;
     println!(
-        "docs verified: {} testing layers, {} Phase 4 document contracts, and {} Phase 5 document contracts",
+        "docs verified: {} testing layers, {} Phase 4, {} Phase 5, and {} Phase 6 document contracts",
         LAYER_RULES.len(),
         DOCUMENT_CONTRACTS.len(),
-        PHASE5_DOCUMENT_CONTRACTS.len()
+        PHASE5_DOCUMENT_CONTRACTS.len(),
+        PHASE6_DOCUMENT_CONTRACTS.len()
     );
     Ok(())
 }
@@ -313,6 +389,11 @@ fn check_document_contracts(repository_root: &std::path::Path) -> Result<(), Doc
         repository_root,
         PHASE5_DOCUMENT_CONTRACTS,
         "phase5-contract",
+    )?;
+    check_required_markers(
+        repository_root,
+        PHASE6_DOCUMENT_CONTRACTS,
+        "phase6-contract",
     )?;
 
     for relative_path in [
@@ -341,6 +422,15 @@ fn check_document_contracts(repository_root: &std::path::Path) -> Result<(), Doc
         {
             return Err(DocsError::new(
                 "phase5-overclaim",
+                format!("{relative_path} contains forbidden claim `{claim}`"),
+            ));
+        }
+        if let Some(claim) = FORBIDDEN_PHASE6_CLAIMS
+            .iter()
+            .find(|claim| lowercase.contains(**claim))
+        {
+            return Err(DocsError::new(
+                "phase6-overclaim",
                 format!("{relative_path} contains forbidden claim `{claim}`"),
             ));
         }

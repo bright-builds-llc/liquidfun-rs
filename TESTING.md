@@ -6,13 +6,15 @@ Phase 2 proves a trustworthy empty-world harness seam: versioned and bounded
 scenario input, native Rust execution, a process-isolated pinned C++ oracle,
 typed semantic comparison, first-divergence diagnosis, deterministic reduction,
 reviewed trace replay, and harness-failure classification. Phase 4 additionally
-proves the native math/settings contract and a bounded 39-case Rust/C++ probe
-corpus under the reviewed `phase4-v1` policy. Local oracle results are D2
-supported-portability evidence, not canonical D1 or all-platform validation.
-Shapes, collision, rigid-body and particle solver parity, performance parity,
-and the deferred fuzz, Miri, Rust-sanitizer, benchmark, and coverage lanes remain
-pending. [COMPATIBILITY.md](COMPATIBILITY.md) remains authoritative for feature
-and evidence maturity.
+proves the native math/settings contract and a bounded 39-case Rust/C++ probe;
+Phase 5 proves a fixed 78-case shape/collision corpus. Phase 6 adds checked body
+and fixture ownership, automatic proxy/contact lifecycle, and one bounded
+static/dynamic contact solve through two fixed declaration-first rigid-world
+timelines. Local oracle results are D2 supported-toolchain evidence, not
+canonical D1 or all-platform validation. General rigid and particle solver
+parity, performance parity, and the deferred fuzz, Miri, Rust-sanitizer,
+benchmark, and coverage lanes remain pending. [COMPATIBILITY.md](COMPATIBILITY.md)
+remains authoritative for feature and evidence maturity.
 
 ## Required Rust sequence
 
@@ -276,6 +278,88 @@ scalar Linux x86_64, these passes do not populate the ledger's
 generated report retains `subsystem.contacts-and-filtering` and
 `b2ContactManager.h` as not implemented, not unit-tested, and not
 differentially validated.
+
+## Phase 6 rigid-world comparison policy
+
+The closed `phase6-v1` registry names every rigid observable. Body and fixture
+declaration order, manager contact order, manifold-point order, lifecycle and
+hook order, destruction order, counts, body type, active/sensor/filter state,
+feature identity, and solver branch state compare structurally and in order.
+Float values cross JSON Lines as exact `u32` bits and are then evaluated only by
+their named field policy for transforms, mass, material, manifold, and
+impulses. There is no wildcard, repository-wide epsilon, or iteration-based
+widening.
+
+The request contains two mandatory witness families. The
+`non_colliding_body_fixture_lifecycle` timeline covers static, kinematic, and
+dynamic body state; transform, type, activation, fixture material, sensor,
+filter, density, explicit/custom mass behavior; a zero-contact step; and
+explicit teardown. The `single_contact_lifecycle` timeline covers contact
+creation and persistence, feature-keyed warm-start carry, one bounded solve,
+sensor overlap without a manifold or pre-solve, filter removal and
+reconsideration, activation-driven destruction and recreation, and ordered
+fixture/body teardown.
+
+Validation is declaration-first: the native result must satisfy all declared
+witnesses, counts, semantic IDs, action/checkpoint phases, and terminal reset;
+the oracle result must independently satisfy the same contract; only then may
+the comparator read a cross-engine physics field. Agreement on a shared
+omission is therefore a protocol failure, not passing evidence.
+
+Evidence authority stays dimensioned. Local successful comparisons are D2
+supported-toolchain evidence. D0 requires exactly two byte-identical native
+and oracle runs from the same build.
+D1 remains the only fixture-promotion authority and requires the pinned scalar
+Linux x86_64 Rust 1.97.0/Clang 22.1.8 lane plus complete adapter/build identity.
+Local debug/release results neither populate `platform_validated` nor authorize
+stage/review/promote publication.
+
+The supported solver claim is limited to one discrete static/dynamic contact
+with at most two canonical manifold points and warm-start impulse write-back.
+Forces, torques, public velocity controls, damping, gravity scale, sleeping,
+the general island solver, multi-contact stacks, CCD/TOI world orchestration,
+queries, ray casts, broad world configuration, and joint solving remain Phase
+7 or Phase 8. Contacts remain transient; raw handles, proxy coordinates, and
+private occurrence identity are not compatibility observables.
+
+## Phase 6 rigid-world commands
+
+Initialize and verify the pinned submodule, then configure and build both
+reviewed profiles before comparison:
+
+```bash
+git submodule update --init --recursive third_party/liquidfun
+cargo xtask upstream verify
+cargo xtask upstream configure --preset oracle-debug
+cargo xtask upstream build --preset oracle-debug
+cargo xtask upstream configure --preset oracle-release
+cargo xtask upstream build --preset oracle-release
+```
+
+Run the complete fixed Phase 6 signoff surface exactly:
+
+```bash
+cargo xtask differential compare --scenario rigid-world --preset oracle-debug --session-profile one-shot
+cargo xtask differential compare --scenario rigid-world --preset oracle-release --session-profile one-shot
+cargo xtask differential replay --scenario rigid-world --preset oracle-debug --session-profile one-shot
+cargo xtask differential verify-determinism --scenario rigid-world --preset oracle-debug --runs 2
+```
+
+The thin aliases are `just rigid-world-debug`, `just rigid-world-release`,
+`just rigid-world-replay`, and `just rigid-world-determinism`. All commands are
+closed over `protocol/fixtures/accepted/rigid-world-request.jsonl`, the
+`phase6-v1` policy, reviewed presets, and the complete C++ adapter/build
+identity. Compare and replay exercise both required witness families in one
+request. Determinism executes exactly two complete native/oracle runs and
+requires byte identity. Outputs remain under `target/reference` and
+`target/differential`; no passing command rewrites accepted evidence.
+
+Failure diagnosis preserves the witness family, preceding action, checkpoint,
+semantic field path, mismatch kind, policy hash, and bounded process evidence.
+Replay protects the checked-in request and result contract. Minimization may
+operate only on valid action reductions that reproduce the same signature.
+Fixture staging, explicit review, and no-clobber promotion reuse the established
+Phase 2 lifecycle, but local D2 runs intentionally fail the D1 promotion gate.
 
 ## Differential commands
 

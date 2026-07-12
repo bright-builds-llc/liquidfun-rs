@@ -2,19 +2,17 @@
 
 ## Current status
 
-Phase 2 establishes the permanent semantic-comparison seam and proves one
-bounded empty-world scenario through native Rust and the pinned,
-process-isolated C++ oracle. Phase 3 adds a public native-Rust object-model
-foundation plus a private representative particle-storage spike. It proves
-identity, invalidation, destruction, callback, step-lifecycle, association, and
-storage-remapping contracts. Phase 4 adds the consumer-facing math/settings
-surface, a closed numerical policy, and pure Rust/C++ math probes. Phase 5 adds
-the safe native-Rust shape and collision substrate plus a fixed 78-case local
-Rust/C++ collision probe. Bodies, fixtures, world contact lifecycle, rigid-body
-and particle solvers, canonical-platform parity, and performance parity remain
-pending. The publishable `liquidfun` crate
-therefore remains version `0.0.0`, and the
-[compatibility inventory](COMPATIBILITY.md) remains the authority for maturity.
+Phase 2 establishes the permanent semantic-comparison seam. Phase 3 adds the
+native-Rust object model, Phase 4 the consumer math/settings surface, and Phase
+5 the safe shape/collision substrate. Phase 6 now adds a minimal rigid-world
+vertical slice: checked bodies and fixtures, world-owned proxies and contacts,
+and one bounded static/dynamic contact solve. Both required rigid lifecycle
+timelines execute through the native adapter and pinned process-isolated C++
+oracle in local debug and release builds. General rigid dynamics, broad solver
+topologies, canonical-platform parity, particles, and performance parity remain
+pending. The publishable `liquidfun` crate therefore remains version `0.0.0`, and the
+generated [compatibility inventory](COMPATIBILITY.md) remains the authority for
+maturity.
 
 ## Dependency direction
 
@@ -150,6 +148,79 @@ child modules keep the public seam deep; focused tests lock branch behavior;
 and repository-native checks gate evidence. `standards-overrides.md` contains no
 substantive active exception to those rules.
 
+## Phase 6 rigid-world boundaries
+
+The public rigid-world seam is `World` plus checked, reusable `BodyDef` and `FixtureDef`
+values. `BodyType` is closed over static, kinematic, and dynamic bodies.
+`FixtureDef` owns an immutable `Shape` snapshot by value; neither a
+definition nor a live fixture exposes mutable geometry or storage authority.
+Every public operation validates the complete world-scoped handle before an
+effect. The supported body/fixture operations are `World::create_body`,
+`World::body_snapshot`, `World::set_body_type`,
+`World::set_body_transform`, `World::set_body_active`,
+`World::create_fixture`, `World::fixture_snapshot`, and the corresponding
+destruction methods. Non-finite transforms, invalid material or mass values,
+invalid topology, and foreign or stale handles return typed errors rather than
+being clamped or partially applied.
+
+Fixture children have private world-owned broad-phase proxies. A transform
+change synchronizes those proxies immediately, but discovery and contact update
+wait for the next `World::step`. Deactivation destroys contacts before proxies;
+activation recreates proxies and likewise waits for stepping to discover
+contacts. A type change destroys contacts, resets source-compatible body state,
+and touches proxies for later reconsideration. These transitions run through
+centralized validate-then-commit paths so contact-end evidence is captured while
+its body and fixture semantics are still live.
+
+Mass behavior deliberately preserves the pinned asymmetry. Creating a fixture
+with positive density resets mass, and fixture destruction always resets it.
+`World::set_fixture_density` changes density without recomputing mass;
+`World::reset_body_mass_data` performs the explicit recomputation.
+`World::set_body_mass_data` is a current dynamic-body override and a
+source-compatible no-op for static or kinematic bodies. A later reset-triggering
+fixture or body-type operation replaces the override.
+
+Private contact-manager occurrences consume Phase 5 ordered broad-phase pairs,
+use canonical manifold feature identity, and preserve manager, manifold-point,
+hook, report, and destruction order. Friction uses the pinned geometric mean
+and restitution the pinned maximum when a contact is created. Those
+creation-time mixed friction and restitution values persist when fixture
+material changes and change only when the contact is recreated. Sensor changes
+wake the parent for the next update through `World::set_fixture_sensor`;
+sensors use overlap-only touching with no manifold, pre-solve call, or
+constraint. `World::set_fixture_filter` flags current contacts and touches every
+active proxy for the next update.
+
+`World::step` exposes the reviewed order through `StepPhase` and `StepReport`:
+`FindPairs`, `UpdateContacts`, `Hook`, `Solve`, `Unlock`, followed by
+`ApplyCommands` only when hooks requested deferred work. Reports own ordered
+begin, persist, end, hook, solve, command, and destruction evidence. Hooks see
+only a borrow-scoped `ContactView`, receive no mutable `World`, and may request
+one bounded typed command per occurrence. No durable contact identity crosses
+the public boundary; the harness-only occurrence ordinal is available solely
+under the non-default hidden `differential-internals` feature.
+
+The solver boundary is intentionally one static/dynamic contact with at most
+two canonical manifold points. It carries normal and tangent impulses by
+semantic feature identity and fails closed before velocity or impulse mutation
+for unsupported topology or non-finite derived state. Phase 7 owns forces,
+torques, public velocity control, damping, gravity scale, fixed rotation,
+sleeping, the general island solver, multi-contact stacks, CCD/TOI world
+orchestration, queries, ray casts, origin shifting, and broad world
+configuration. Phase 8 owns joint solving. Public contact handles and mutable
+shape storage remain intentionally excluded rather than deferred.
+
+The private evidence boundary is one declaration-first rigid timeline using
+the `phase6-v1` closed field policy. The
+`non_colliding_body_fixture_lifecycle` family covers all body types, fixture and
+mass mutations, zero contacts, and explicit teardown. The
+`single_contact_lifecycle` family covers creation, persistence, warm-start
+carry, sensor/filter/activation changes, recreation, and ordered destruction.
+Each engine must satisfy the declared witnesses and counts before the two
+results are compared. Exact transport, field-specific policy, D0 byte identity,
+D1 canonical authority, and local D2 evidence remain separate dimensions; a
+local pass cannot promote a canonical fixture or platform claim.
+
 ## Private protocol and domain core
 
 `crates/liquidfun-test-protocol` is an unpublished functional core. It owns:
@@ -213,9 +284,15 @@ contract requires a type:
   private deterministic generational storage used by world objects.
 - `world/object.rs` exclusively owns bodies, fixtures, joints, particle
   systems, particle groups, particles, adjacency, and every destruction path.
-- `world/step.rs` owns the representative no-solver step lock, restricted hook
-  calls, bounded event and command collection, command application, and poison
-  state.
+- `world/body.rs`, `world/fixture.rs`, and `world/proxy.rs` own checked rigid
+  definitions, private live state, immutable shape ownership, and world-owned
+  broad-phase entries.
+- `world/contact.rs`, `world/contact_manager.rs`, and
+  `world/contact_solver.rs` own private automatic contacts, semantic manifold
+  persistence, creation-time material, and the bounded one-contact solve.
+- `world/step.rs` owns the automatic step lock, restricted hook calls, bounded
+  event and command collection, ordered reports, command application, and
+  poison state.
 - `association.rs` owns the sealed typed application-side-table abstraction;
   association values never enter `World`.
 - `particle/storage.rs` and its children are a private representative SoA
@@ -266,26 +343,26 @@ group destruction clears membership without destroying its particles.
 
 ## Transient contacts, restricted hooks, and step order
 
-Contacts have no durable public identity. Callers supply owned semantic
-`ContactSnapshot` values to the representative step; hooks receive only a
-borrow-scoped read-only `ContactView`, and polling consumers receive owned
-`ContactEvent` values. Rust lifetimes prevent retaining an internal contact
-view, and hook trait signatures provide no `&mut World`.
+Contacts have no durable public identity. The private contact manager owns
+their lifecycle; hooks receive only a borrow-scoped read-only `ContactView`,
+and polling consumers receive owned snapshots through `ContactEvent`,
+`ContactTransition`, `ContactSolve`, and `StepReport`. Rust lifetimes prevent
+retaining an internal contact view, and hook trait signatures provide no
+`&mut World`.
 
-The no-solver Phase-3 step follows one enforceable sequence:
+The Phase 6 step follows one enforceable sequence:
 
 1. Reject a poisoned or already locked world, then acquire the RAII step lock.
-2. Validate each supplied fixture pair in caller order and invoke collision
-   filtering, optional pre-solve control, observation, and optional command
-   request while locked.
-3. Preserve every owned event in exact occurrence order and multiplicity. An
-   ignored collision skips later hooks for that occurrence.
-4. Restore the lock before applying any command.
-5. Apply bounded typed commands sequentially in request order, revalidating
+1. Discover ordered broad-phase pairs and admit eligible private contacts.
+1. Refilter, update, or destroy contacts and capture touching transitions.
+1. Preflight the supported topology, invoke restricted hooks, and solve the
+   one reviewed occurrence with semantic impulse carry.
+1. Restore the lock before applying any command.
+1. Apply bounded typed commands sequentially in request order, revalidating
    every operand at application time. A stale or foreign operand becomes that
    command's owned failure and does not suppress later applications.
-6. Return one owned `StepReport` containing events, destruction records, and
-   per-command results in their documented orders.
+1. Return one owned `StepReport` containing exact phase, transition, hook,
+   solve, destruction, and command-result order.
 
 `StepLimits` is caller-configurable only up to reviewed hard maxima of 4,096
 events and 1,024 commands. Limit failure discards the pending command queue;
