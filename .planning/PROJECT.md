@@ -23,18 +23,19 @@ Deliver an independent, maintainable Rust physics engine whose LiquidFun behavio
 - [x] Phase 3 established world-scoped typed handles, checked invalidation and exhaustion, upstream-ordered owned destruction evidence, restricted hooks and deferred mutation, typed user associations, and a stable-particle dense-storage spike with clean review and 17/17 verified must-haves.
 - [x] Phase 4 established the public `f32` math/settings foundation, checked matrix/transform/sweep contracts, a closed per-observable numerical policy, bit-faithful Rust/C++ probes, fail-closed build identity, typed mismatch evidence, and 25/25 verified must-haves.
 - [x] Phase 5 established immutable validated shapes, source-ordered distance/manifold/tree/broad-phase/TOI kernels, pure pair/filter/refilter seams, and a fail-closed 78-family Rust/C++ collision probe with 35/35 verified must-haves; world-owned contact lifecycle remains Phase 6 work.
+- [x] Phase 6 established the native body, fixture, sensor, and contact vertical slice with stable typed identity; atomic mass, proxy, mutation, and destruction behavior; source-ordered contact solving and deferred hooks; checkout-bound oracle provenance; and debug, release, replay, determinism, and sanitizer differential evidence with 77/77 verified must-haves.
 
 ### Active
 
 <!-- Current scope. Building toward these. -->
 
-- [ ] Extend the implemented math and collision foundation with rigid solvers, sleeping, world queries, world ray casts, and continuous world stepping from the selected LiquidFun revision.
-- [ ] Implement rigid-body worlds, bodies, fixtures, contacts, all supported shapes and joints, filters, listeners, destruction behavior, debug drawing abstractions, and upstream-equivalent world operations.
+- [ ] Extend the implemented minimal rigid-world slice with complete force and impulse application, configurable solvers, sleeping, continuous collision detection, world queries, and world ray casts from the selected LiquidFun revision.
+- [ ] Implement all supported joints, standalone rope, remaining callbacks and listeners, diagnostic dump, debug drawing abstractions, and the broad rigid-body compatibility gate.
 - [ ] Implement the full LiquidFun particle system, including storage, creation, destruction, lifetimes, buffers, spatial proxies, contacts, body contacts, groups, flags, pair/triad logic, queries, ray casts, callbacks, and every upstream solver behavior.
-- [ ] Extend the Phase 2 C++/Rust reference harness beyond verified empty-world, math, and collision probes to seeded rigid-world and particle scenarios with their semantic state, tolerance, regression, and diagnostic requirements.
+- [ ] Extend the Phase 2 C++/Rust reference harness beyond verified empty-world, math, collision, and minimal rigid-world probes to broad rigid-solver, joint, and particle scenarios with their semantic state, tolerance, regression, and diagnostic requirements.
 - [ ] Create layered unit, integration, upstream-compatibility, differential, property, fuzz, Miri, sanitizer, and regression testing appropriate to each subsystem.
 - [ ] Port or account for upstream tests and examples, with an optional renderer-independent testbed that supports interactive inspection, headless execution, deterministic capture, and Rust/C++ comparison.
-- [ ] Extend the Phase 4/5 numerical-stability, ordering, determinism, and platform-tier policy with rigid-world and particle observables and tolerances before treating those later differential results as compatibility evidence.
+- [ ] Extend the Phase 4-6 numerical-stability, ordering, determinism, and platform-tier policy with broad rigid-solver, joint, and particle observables and tolerances before treating those later differential results as compatibility evidence.
 - [ ] Measure performance against equivalent upstream C++ workloads and optimize only from profiling evidence without silently sacrificing API clarity, safety, determinism, or parity.
 - [ ] Support Linux x86_64, Linux ARM64, macOS ARM64, macOS x86_64 where practical, and Windows x86_64, while investigating WASM, mobile, and realistic smaller `no_std` subsets.
 - [ ] Provide discoverable repository automation through a root `justfile`, CI, pinned toolchains, dependency/license policy, documentation checks, coverage, benchmarks, and scheduled extended verification.
@@ -105,6 +106,8 @@ Before substantial physics porting begins, the project should have:
 - Phase 2 is complete: the repository now has a strict semantic JSONL contract, native Rust and process-isolated C++ adapters, typed comparison and failure taxonomy, replay/minimization and evidence lifecycles, and verified empty-world one-shot, reuse, and sanitizer round trips. This proves the harness seam, not broad physics parity.
 - Phase 3 is complete: the native crate now has typed world-scoped identities, explicit stale/cross-world/cross-system failures, checked arena retirement, upstream-ordered destruction cascades with pre-mutation snapshots, restricted step hooks, bounded deferred commands, panic poisoning, typed association side tables, and stable particle identity over transactional dense permutations. Broad solver behavior and the complete Phase 9 particle-buffer API remain deferred.
 - Phase 4 is complete: consumers have documented source-ordered scalar, vector, matrix, rotation, transform, sweep, and fixed-setting APIs; a closed 25-path policy defines special values, comparison modes, horizons, ordering, and authority tiers; and supervised Rust/C++ probes verify 39 ordered cases in debug and release. Local AppleClang evidence remains non-promotable D2, while canonical D1 execution remains pinned CI evidence.
+- Phase 5 is complete: immutable checked shapes, source-ordered collision kernels, dynamic-tree and broad-phase behavior, and TOI are implemented and covered by the fail-closed collision differential probe.
+- Phase 6 is complete: native bodies, fixtures, sensors, contact lifecycle, the minimal contact solver, deferred hook mutation, and semantic rigid-world differential execution now work end to end. The next target is Phase 7's complete rigid solver, sleeping, world operations, and CCD; broad rigid parity remains unclaimed.
 - Google LiquidFun extends the Box2D 2.3.0 / revision-280 lineage. Official commit `7f20402173fd143a3988c921bc384459c6a858f2` is the immutable behavioral oracle; `UPSTREAM.md` and ADR 0001 record the release-to-candidate delta and maintenance state.
 - The upstream C++ implementation is the behavioral oracle during development, not a production dependency or the desired public architecture.
 - Particle simulation is a central deliverable, not an optional extension after rigid-body work.
@@ -152,7 +155,7 @@ Before substantial physics porting begins, the project should have:
 | Keep particle systems in core scope | Particle behavior is the defining LiquidFun extension and cannot be deferred as optional polish | — Pending |
 | Keep rendering optional and simulation headless | Core portability, testing, server use, and framework independence depend on this boundary | — Pending |
 | Prioritize correctness and parity before optimization | Premature layout, SIMD, or parallel decisions could hide incompatibilities and destabilize the API | Accepted in Phase 4 through source-ordered scalar kernels and fail-closed rejection of nonbaseline CPU, SIMD/FMA, contraction, and unsafe floating options |
-| Require explicit compatibility sign-off per subsystem | Incremental, reviewable evidence prevents premature global parity claims | Accepted for math/settings in Phase 4; later subsystems must repeat scoped inventory, unit, differential, documentation, review, and security evidence |
+| Require explicit compatibility sign-off per subsystem | Incremental, reviewable evidence prevents premature global parity claims | Accepted for math/settings in Phase 4, collision in Phase 5, and the minimal rigid-world slice in Phase 6; later subsystems must repeat scoped inventory, unit, differential, documentation, review, and security evidence |
 
 ## Open Questions
 
@@ -184,4 +187,4 @@ This document evolves at phase transitions and milestone boundaries.
 
 ______________________________________________________________________
 
-*Last updated: 2026-07-11 after Phase 5 completion*
+*Last updated: 2026-07-12 after Phase 6 completion*
