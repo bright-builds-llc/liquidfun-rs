@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 06-21-PLAN.md; ready for 06-20-PLAN.md
-last_updated: "2026-07-12T21:26:29.664Z"
-last_activity: 2026-07-12 -- Phase 6 execution started
+stopped_at: Completed 06-20-PLAN.md; ready for 06-22-PLAN.md
+last_updated: "2026-07-12T21:42:22.166Z"
+last_activity: 2026-07-12
 progress:
   total_phases: 12
   completed_phases: 5
   total_plans: 61
-  completed_plans: 59
-  percent: 97
+  completed_plans: 60
+  percent: 98
 ---
 
 # Project State
@@ -26,9 +26,9 @@ See: `.planning/PROJECT.md` (updated 2026-07-11)
 ## Current Position
 
 Phase: 6 (Minimal Rigid World Vertical Slice) — EXECUTING
-Plan: 20 of 22
-Status: Executing Phase 6
-Last activity: 2026-07-12 -- Phase 6 execution started
+Plan: 21 of 22
+Status: Ready to execute
+Last activity: 2026-07-12
 
 Progress: [██████████] 100%
 
@@ -84,6 +84,7 @@ Progress: [██████████] 100%
 | Phase 06 P18 | 13 min | 2 tasks | 9 files |
 | Phase 06 P19 | 8 min | 1 tasks | 9 files |
 | Phase 06 P21 | 16 min | 2 tasks | 9 files |
+| Phase 06 P20 | 24 min | 2 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -163,6 +164,8 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 06]: Pass explicit fixture removal a prevalidated remaining-fixture BodyState while body cascades skip mass recomputation. — The explicit path needs atomic reset semantics, while a destroyed parent has no mass state to preserve.
 - [Phase 06]: Use one private current-checkout identity core for ordinary rigid execution and fixture lifecycle paths. — A single adapter and compile digest implementation prevents provenance drift between compare, stage, review, and promotion.
 - [Phase 06]: Recompute rigid checkout identity during every candidate replay before review or promotion effects. — Fresh validation prevents a stage-time result from authorizing evidence after adapter or effective compile database drift.
+- [Phase 06]: Treat exact origin inertia zero as the pinned no-inertia branch without evaluating the parallel-axis subtraction. — Matches the pinned SetMassData branch while positive origin inertia remains strictly validated before effects.
+- [Phase 06]: Require finite source-ordered intermediates and strictly positive centered inertia for positive origin inertia. — Prevents the equality boundary from reaching an assertion or inverse-inertia divide by zero.
 
 ### Pending Todos
 
@@ -170,6 +173,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-12T21:26:29.661Z
-Stopped at: Completed 06-21-PLAN.md; ready for 06-20-PLAN.md
+Last session: 2026-07-12T21:42:22.163Z
+Stopped at: Completed 06-20-PLAN.md; ready for 06-22-PLAN.md
 Resume file: None
