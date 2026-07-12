@@ -323,10 +323,6 @@ impl World {
         })
     }
 
-    pub(super) fn validate_fixture(&self, fixture: FixtureId) -> Result<(), HandleError> {
-        self.fixtures.get(fixture).map(|_fixture| ())
-    }
-
     fn allocate_diagnostic_id(&mut self) -> Result<u64, ArenaInsertError> {
         let Some(id) = self.next_diagnostic_id else {
             return Err(ArenaInsertError::DiagnosticIdExhausted);
@@ -1206,6 +1202,10 @@ impl World {
     pub(super) fn solve_contacts(&mut self) -> Result<Vec<ContactSolve>, ContactSolveFailure> {
         self.contact_manager
             .solve_contacts(&mut self.bodies, &self.fixtures)
+    }
+
+    pub(super) fn preflight_contact_solver(&self) -> Result<(), ContactSolveFailure> {
+        self.contact_manager.preflight_solver(&self.bodies)
     }
 
     #[cfg(test)]

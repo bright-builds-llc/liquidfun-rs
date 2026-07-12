@@ -3,7 +3,8 @@
 use liquidfun::collision::{CircleShape, FilterData, PolygonShape, Shape};
 use liquidfun::math::Vec2;
 use liquidfun::{
-    BodyDef, BodyId, BodyType, FixtureDef, FixtureId, StepError, StepHook, StepLimits, World,
+    BodyDef, BodyId, BodyType, ContactView, FixtureDef, FixtureId, StepError, StepHook, StepLimits,
+    StepPhase, World, WorldCommand,
 };
 
 struct NoopHook;
@@ -77,7 +78,7 @@ fn cold_contact_solves_with_finite_zero_impulses() {
 
     // Act
     let report = world
-        .step(&[], &mut hook, StepLimits::default())
+        .step(&mut hook, StepLimits::default())
         .expect("one supported contact should solve");
 
     // Assert
@@ -96,12 +97,12 @@ fn persistent_feature_reuses_warm_start_lanes_in_source_order() {
     let (mut world, _, _, _, _) = circle_contact_world(BodyType::Static, BodyType::Dynamic, false);
     let mut hook = NoopHook;
     let first = world
-        .step(&[], &mut hook, StepLimits::default())
+        .step(&mut hook, StepLimits::default())
         .expect("cold solve should succeed");
 
     // Act
     let second = world
-        .step(&[], &mut hook, StepLimits::default())
+        .step(&mut hook, StepLimits::default())
         .expect("warm solve should succeed");
 
     // Assert
@@ -125,7 +126,7 @@ fn recreated_contact_starts_with_cold_impulse_lanes() {
         circle_contact_world(BodyType::Static, BodyType::Dynamic, false);
     let mut hook = NoopHook;
     world
-        .step(&[], &mut hook, StepLimits::default())
+        .step(&mut hook, StepLimits::default())
         .expect("initial contact should solve");
     world
         .set_body_active(dynamic_body, false)
@@ -136,7 +137,7 @@ fn recreated_contact_starts_with_cold_impulse_lanes() {
 
     // Act
     let recreated = world
-        .step(&[], &mut hook, StepLimits::default())
+        .step(&mut hook, StepLimits::default())
         .expect("recreated contact should solve");
 
     // Assert
@@ -153,7 +154,7 @@ fn sensor_contact_bypasses_constraint_creation() {
 
     // Act
     let report = world
-        .step(&[], &mut hook, StepLimits::default())
+        .step(&mut hook, StepLimits::default())
         .expect("sensor lifecycle should succeed");
 
     // Assert
@@ -187,7 +188,7 @@ fn two_point_contact_uses_fixed_capacity_and_preserves_material() {
 
     // Act
     let report = world
-        .step(&[], &mut hook, StepLimits::default())
+        .step(&mut hook, StepLimits::default())
         .expect("two-point contact should solve");
 
     // Assert
@@ -215,7 +216,7 @@ fn unsupported_topology_keeps_lifecycle_and_pre_step_state_bit_identical() {
 
     // Act
     let error = world
-        .step(&[], &mut hook, StepLimits::default())
+        .step(&mut hook, StepLimits::default())
         .expect_err("dynamic/dynamic solving is deferred to Phase 7");
     let first_after = world
         .body_snapshot(first_body)
@@ -244,4 +245,57 @@ fn unsupported_topology_keeps_lifecycle_and_pre_step_state_bit_identical() {
                 point.normal_impulse().to_bits() == 0 && point.tangent_impulse().to_bits() == 0
             })
     );
+}
+
+struct DestroyAfterSolveHook {
+    target: Option<BodyId>,
+    pre_solve_calls: usize,
+}
+
+impl StepHook for DestroyAfterSolveHook {
+    fn pre_solve(&mut self, _contact: ContactView<'_>) -> liquidfun::PreSolveDirective {
+        self.pre_solve_calls += 1;
+        liquidfun::PreSolveDirective::Enable
+    }
+
+    fn command(&mut self, _contact: ContactView<'_>) -> Option<WorldCommand> {
+        self.target.take().map(WorldCommand::DestroyBody)
+    }
+}
+
+#[test]
+fn step_order_discovers_hooks_solves_unlocks_and_applies_commands() {
+    // Arrange
+    let (mut world, _, _, _, _) = circle_contact_world(BodyType::Static, BodyType::Dynamic, false);
+    let command_body = world
+        .create_body(&BodyDef::default())
+        .expect("command body should fit");
+    let mut hook = DestroyAfterSolveHook {
+        target: Some(command_body),
+        pre_solve_calls: 0,
+    };
+
+    // Act
+    let report = world
+        .step(&mut hook, StepLimits::default())
+        .expect("supported automatic step should succeed");
+
+    // Assert
+    assert_eq!(
+        report.phases(),
+        &[
+            StepPhase::FindPairs,
+            StepPhase::UpdateContacts,
+            StepPhase::Hook,
+            StepPhase::Solve,
+            StepPhase::Unlock,
+            StepPhase::ApplyCommands,
+        ]
+    );
+    assert_eq!(hook.pre_solve_calls, 1);
+    assert_eq!(report.events().len(), 1);
+    assert_eq!(report.contact_solves().len(), 1);
+    assert_eq!(report.command_applications().len(), 1);
+    assert!(!world.contains_body(command_body));
+    assert!(!world.is_locked());
 }

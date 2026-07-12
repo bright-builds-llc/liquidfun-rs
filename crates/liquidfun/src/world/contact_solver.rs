@@ -217,18 +217,16 @@ fn build_constraint(
     {
         let r_a = world_point.point() - first.center;
         let r_b = world_point.point() - second.center;
-        let rn_a = r_a.cross(constraint.normal);
-        let rn_b = r_b.cross(constraint.normal);
+        let normal_arms = [r_a.cross(constraint.normal), r_b.cross(constraint.normal)];
         let normal_k = first.inverse_mass
             + second.inverse_mass
-            + first.inverse_inertia * rn_a * rn_a
-            + second.inverse_inertia * rn_b * rn_b;
-        let rt_a = r_a.cross(tangent);
-        let rt_b = r_b.cross(tangent);
+            + first.inverse_inertia * normal_arms[0] * normal_arms[0]
+            + second.inverse_inertia * normal_arms[1] * normal_arms[1];
+        let tangent_arms = [r_a.cross(tangent), r_b.cross(tangent)];
         let tangent_k = first.inverse_mass
             + second.inverse_mass
-            + first.inverse_inertia * rt_a * rt_a
-            + second.inverse_inertia * rt_b * rt_b;
+            + first.inverse_inertia * tangent_arms[0] * tangent_arms[0]
+            + second.inverse_inertia * tangent_arms[1] * tangent_arms[1];
         let relative = second.linear_velocity + Vec2::scalar_cross(second.angular_velocity, r_b)
             - first.linear_velocity
             - Vec2::scalar_cross(first.angular_velocity, r_a);
@@ -276,22 +274,28 @@ fn prepare_two_point_block(
     }
     let first_point = constraint.points[0];
     let second_point = constraint.points[1];
-    let rn_1a = first_point.r_a.cross(constraint.normal);
-    let rn_1b = first_point.r_b.cross(constraint.normal);
-    let rn_2a = second_point.r_a.cross(constraint.normal);
-    let rn_2b = second_point.r_b.cross(constraint.normal);
+    let normal_arms = [
+        [
+            first_point.r_a.cross(constraint.normal),
+            first_point.r_b.cross(constraint.normal),
+        ],
+        [
+            second_point.r_a.cross(constraint.normal),
+            second_point.r_b.cross(constraint.normal),
+        ],
+    ];
     let k11 = first.inverse_mass
         + second.inverse_mass
-        + first.inverse_inertia * rn_1a * rn_1a
-        + second.inverse_inertia * rn_1b * rn_1b;
+        + first.inverse_inertia * normal_arms[0][0] * normal_arms[0][0]
+        + second.inverse_inertia * normal_arms[0][1] * normal_arms[0][1];
     let k22 = first.inverse_mass
         + second.inverse_mass
-        + first.inverse_inertia * rn_2a * rn_2a
-        + second.inverse_inertia * rn_2b * rn_2b;
+        + first.inverse_inertia * normal_arms[1][0] * normal_arms[1][0]
+        + second.inverse_inertia * normal_arms[1][1] * normal_arms[1][1];
     let k12 = first.inverse_mass
         + second.inverse_mass
-        + first.inverse_inertia * rn_1a * rn_2a
-        + second.inverse_inertia * rn_1b * rn_2b;
+        + first.inverse_inertia * normal_arms[0][0] * normal_arms[1][0]
+        + second.inverse_inertia * normal_arms[0][1] * normal_arms[1][1];
     let determinant = k11 * k22 - k12 * k12;
     if k11 * k11 >= MAX_CONDITION_NUMBER * determinant || determinant == 0.0 {
         constraint.point_count = 1;
@@ -522,7 +526,7 @@ mod tests {
             .expect("first dynamic fixture should fit");
         let mut hook = NoopHook;
         world
-            .step(&[], &mut hook, StepLimits::default())
+            .step(&mut hook, StepLimits::default())
             .expect("one supported contact should solve");
         world.seed_first_contact_impulses_for_test(2.0, -0.5);
         world.set_body_solver_velocity_for_test(first_dynamic, Vec2::new(3.0, -4.0), 0.75);
@@ -539,7 +543,7 @@ mod tests {
 
         // Act
         let error = world
-            .step(&[], &mut hook, StepLimits::default())
+            .step(&mut hook, StepLimits::default())
             .expect_err("multi-contact topology should fail closed");
 
         // Assert

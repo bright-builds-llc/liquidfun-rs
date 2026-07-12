@@ -22,10 +22,9 @@
 //! stable consumer API and provides no raw storage identity, mutable cache,
 //! packed contact key, unchecked constructor, or public iteration surface.
 //!
-//! Phase 5 deliberately stops before bodies, fixtures, contact-manager
-//! creation, contact persistence or destruction, waking, joint suppression,
-//! listeners, impulses, and rigid stepping. Those world-owned behaviors remain
-//! Phase 6 work.
+//! Phase 6 now adds checked body and fixture ownership, automatic contact
+//! lifecycle, and one bounded static/dynamic contact solve. General islands,
+//! joints, sleeping, forces, and continuous world stepping remain later work.
 //!
 //! # Phase 3 object model
 //!
@@ -38,14 +37,14 @@
 //! application-owned [`AssociationMap`], with cleanup driven explicitly by
 //! those records.
 //!
-//! A representative [`World::step`] accepts caller-owned contact snapshots,
-//! exposes contacts to [`StepHook`] only through borrow-scoped read-only views,
-//! and records ordered, non-deduplicated owned events. Hooks return narrow
-//! directives and at most one typed command per contact. Commands are bounded,
-//! applied sequentially after unlock, and report stale or foreign operands per
-//! command without hiding later results. A hook panic restores the lock,
-//! discards queued commands, poisons coherent-state operations, and resumes the
-//! original panic.
+//! [`World::step`] discovers and updates private manager contacts, exposes them
+//! to [`StepHook`] only through borrow-scoped read-only views, solves the one
+//! supported rigid occurrence, and records ordered owned evidence. Hooks
+//! return narrow directives and at most one typed command per occurrence.
+//! Commands are bounded, applied sequentially after unlock, and report stale
+//! or foreign operands without hiding later results. A hook panic restores the
+//! lock, discards queued commands, poisons coherent-state operations, and
+//! resumes the original panic.
 //!
 //! World-local semantic diagnostic IDs use checked allocation. After the final
 //! `u64` identity is issued, later creation returns
@@ -105,10 +104,10 @@ pub use identity::{
 pub use world::{
     BodyActivationError, BodyDef, BodyDefError, BodyMassData, BodyMassDataError, BodySnapshot,
     BodyTransformError, BodyType, CollisionDirective, CommandApplication, CommandError,
-    ContactEvent, ContactPointSnapshot, ContactSnapshot, ContactSolve, ContactTransition,
-    ContactTransitionKind, ContactView, CreateObjectError, DestroyedId, DestructionCause,
-    DestructionRecord, FixtureBoundsError, FixtureDef, FixtureDefError, FixtureMutationError,
-    FixtureSnapshot, ManagedContactSnapshot, ObjectSnapshot, PreSolveDirective, StepError,
-    StepHook, StepLifecycleEvent, StepLimits, StepReport, World, WorldCommand,
+    ContactEvent, ContactPointSnapshot, ContactSolve, ContactTransition, ContactTransitionKind,
+    ContactView, CreateObjectError, DestroyedId, DestructionCause, DestructionRecord,
+    FixtureBoundsError, FixtureDef, FixtureDefError, FixtureMutationError, FixtureSnapshot,
+    ManagedContactSnapshot, ObjectSnapshot, PreSolveDirective, StepError, StepHook,
+    StepLifecycleEvent, StepLimits, StepPhase, StepReport, World, WorldCommand,
     WorldFixtureSnapshot,
 };

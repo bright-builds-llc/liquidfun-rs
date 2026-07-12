@@ -1,47 +1,55 @@
-//! Restricted step hooks and owned reporting for the no-solver architecture spike.
+//! Automatic Phase 6 contact stepping, restricted hooks, and owned reports.
 
-use std::cell::Cell;
 use std::error::Error;
 use std::fmt;
 use std::panic::{AssertUnwindSafe, catch_unwind, resume_unwind};
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use crate::{BodyId, DestructionRecord, FixtureId, HandleError, World};
 
-use super::contact::ContactTransition;
+use super::contact::{ContactPointSnapshot, ContactTransition, ManagedContactSnapshot};
+use super::contact_manager::HookContactOccurrence;
 use super::contact_solver::{ContactSolve, ContactSolveFailure};
-
-#[cfg(test)]
-use super::fixture::test_fixture_definition;
-#[cfg(test)]
-use crate::BodyDef;
 
 const MAX_STEP_EVENTS: usize = 4_096;
 const MAX_STEP_COMMANDS: usize = 1_024;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(super) struct StepState {
-    locked: Cell<bool>,
-    poisoned: Cell<bool>,
+    inner: Arc<StepStateInner>,
+}
+
+#[derive(Debug)]
+struct StepStateInner {
+    locked: AtomicBool,
+    poisoned: AtomicBool,
 }
 
 impl StepState {
-    pub(super) const fn new() -> Self {
+    pub(super) fn new() -> Self {
         Self {
-            locked: Cell::new(false),
-            poisoned: Cell::new(false),
+            inner: Arc::new(StepStateInner {
+                locked: AtomicBool::new(false),
+                poisoned: AtomicBool::new(false),
+            }),
         }
     }
 
     pub(super) fn is_poisoned(&self) -> bool {
-        self.poisoned.get()
+        self.inner.poisoned.load(Ordering::Relaxed)
     }
 
     fn poison(&self) {
-        self.poisoned.set(true);
+        self.inner.poisoned.store(true, Ordering::Relaxed);
+    }
+
+    fn is_locked(&self) -> bool {
+        self.inner.locked.load(Ordering::Relaxed)
     }
 }
 
-/// Reviewed finite limits for one representative step.
+/// Reviewed finite limits for one automatic step.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct StepLimits {
     max_events: usize,
@@ -89,36 +97,6 @@ impl Default for StepLimits {
     }
 }
 
-/// Owned fixture identities describing one transient contact occurrence.
-///
-/// This value is a semantic snapshot, not a durable contact identity. Supplying the same fixture
-/// pair more than once represents distinct occurrences, and reports preserve those duplicates.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct ContactSnapshot {
-    fixtures: [FixtureId; 2],
-}
-
-impl ContactSnapshot {
-    /// Creates an owned contact snapshot from two typed fixture identities.
-    #[must_use]
-    pub const fn new(first: FixtureId, second: FixtureId) -> Self {
-        Self {
-            fixtures: [first, second],
-        }
-    }
-
-    /// Returns the fixture identities in occurrence order.
-    #[must_use]
-    pub const fn fixtures(self) -> [FixtureId; 2] {
-        self.fixtures
-    }
-}
-
-#[derive(Debug)]
-struct TransientContact {
-    snapshot: ContactSnapshot,
-}
-
 /// A read-only view valid only for the duration of one hook call.
 ///
 /// A hook cannot retain the view beyond its callback lifetime:
@@ -138,18 +116,60 @@ struct TransientContact {
 /// ```
 #[derive(Clone, Copy)]
 pub struct ContactView<'step> {
-    contact: &'step TransientContact,
+    contact: &'step ManagedContactSnapshot,
 }
 
-impl ContactView<'_> {
+impl<'step> ContactView<'step> {
     /// Returns owned typed fixture identities without exposing contact storage.
     #[must_use]
     pub const fn fixtures(self) -> [FixtureId; 2] {
-        self.contact.snapshot.fixtures()
+        self.contact.fixtures()
     }
 
-    fn snapshot(self) -> ContactSnapshot {
-        self.contact.snapshot
+    /// Returns shape-child coordinates in oriented manager order.
+    #[must_use]
+    pub const fn child_indices(self) -> [crate::collision::ChildIndex; 2] {
+        self.contact.child_indices()
+    }
+
+    /// Returns whether the occurrence is currently touching.
+    #[must_use]
+    pub const fn is_touching(self) -> bool {
+        self.contact.is_touching()
+    }
+
+    /// Returns whether the occurrence bypasses pre-solve and constraints.
+    #[must_use]
+    pub const fn is_sensor(self) -> bool {
+        self.contact.is_sensor()
+    }
+
+    /// Returns the canonical manifold when this is a solid touching occurrence.
+    #[must_use]
+    pub const fn maybe_manifold(self) -> Option<&'step crate::collision::Manifold> {
+        self.contact.maybe_manifold()
+    }
+
+    /// Returns warm-start points in canonical manifold order.
+    #[must_use]
+    pub fn points(self) -> &'step [ContactPointSnapshot] {
+        self.contact.points()
+    }
+
+    /// Returns the creation-time mixed friction coefficient.
+    #[must_use]
+    pub const fn friction(self) -> f32 {
+        self.contact.friction()
+    }
+
+    /// Returns the creation-time mixed restitution coefficient.
+    #[must_use]
+    pub const fn restitution(self) -> f32 {
+        self.contact.restitution()
+    }
+
+    fn snapshot(self) -> ManagedContactSnapshot {
+        self.contact.clone()
     }
 }
 
@@ -158,6 +178,9 @@ impl fmt::Debug for ContactView<'_> {
         formatter
             .debug_struct("ContactView")
             .field("fixtures", &self.fixtures())
+            .field("child_indices", &self.child_indices())
+            .field("touching", &self.is_touching())
+            .field("sensor", &self.is_sensor())
             .finish_non_exhaustive()
     }
 }
@@ -182,8 +205,8 @@ pub enum PreSolveDirective {
 
 /// Restricted synchronous step hooks.
 ///
-/// Hooks receive only borrow-scoped read-only contact views and return narrow decisions. They do
-/// not receive mutable world access:
+/// Hooks receive only borrow-scoped read-only contact views and return narrow
+/// decisions. They do not receive mutable world access:
 ///
 /// ```compile_fail
 /// use liquidfun::{ContactView, StepHook, World};
@@ -200,17 +223,15 @@ pub trait StepHook {
         CollisionDirective::Collide
     }
 
-    /// Decides whether a non-filtered occurrence remains enabled for this step.
+    /// Decides whether one supported solid occurrence remains enabled.
     fn pre_solve(&mut self, _contact: ContactView<'_>) -> PreSolveDirective {
         PreSolveDirective::Enable
     }
 
-    /// Observes one non-filtered occurrence without receiving mutable world access.
+    /// Observes one non-filtered occurrence without mutable world access.
     fn observe(&mut self, _contact: ContactView<'_>) {}
 
     /// Optionally requests one owned mutation after observing an occurrence.
-    ///
-    /// The returned command is queued while locked and revalidated only after the step unlocks.
     fn command(&mut self, _contact: ContactView<'_>) -> Option<WorldCommand> {
         None
     }
@@ -248,7 +269,7 @@ impl fmt::Display for CommandError {
 impl Error for CommandError {}
 
 /// Owned deterministic result for one deferred command.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CommandApplication {
     command: WorldCommand,
     result: Result<Vec<DestructionRecord>, CommandError>,
@@ -274,10 +295,10 @@ impl CommandApplication {
     }
 }
 
-/// Owned callback evidence for one occurrence.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Owned callback evidence for one manager occurrence.
+#[derive(Debug, Clone, PartialEq)]
 pub struct ContactEvent {
-    contact: ContactSnapshot,
+    contact: ManagedContactSnapshot,
     collision: CollisionDirective,
     maybe_pre_solve: Option<PreSolveDirective>,
 }
@@ -285,36 +306,61 @@ pub struct ContactEvent {
 impl ContactEvent {
     /// Returns the owned semantic contact snapshot.
     #[must_use]
-    pub const fn contact(self) -> ContactSnapshot {
-        self.contact
+    pub const fn contact(&self) -> &ManagedContactSnapshot {
+        &self.contact
     }
 
     /// Returns the collision-filter decision.
     #[must_use]
-    pub const fn collision(self) -> CollisionDirective {
+    pub const fn collision(&self) -> CollisionDirective {
         self.collision
     }
 
-    /// Returns the pre-solve decision when collision filtering allowed the occurrence.
+    /// Returns the pre-solve decision for a supported non-sensor occurrence.
     #[must_use]
-    pub const fn maybe_pre_solve(self) -> Option<PreSolveDirective> {
+    pub const fn maybe_pre_solve(&self) -> Option<PreSolveDirective> {
         self.maybe_pre_solve
     }
 }
 
-/// Owned results from one representative step.
+/// One named Phase 6 step seam in exact execution order.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum StepPhase {
+    /// Discover broad-phase pairs and admit new private contacts.
+    FindPairs,
+    /// Refilter and update all admitted contact occurrences.
+    UpdateContacts,
+    /// Invoke restricted hooks for touching manager occurrences.
+    Hook,
+    /// Execute the reviewed bounded constraint solve.
+    Solve,
+    /// Release the world lock before requested mutation.
+    Unlock,
+    /// Apply all queued commands sequentially after unlock.
+    ApplyCommands,
+}
+
+/// Owned results from one step occurrence in exact production order.
 #[derive(Debug, Clone, PartialEq)]
 #[non_exhaustive]
 pub enum StepLifecycleEvent {
     /// A private manager contact began, persisted, or ended touching.
     Contact(ContactTransition),
+    /// A restricted hook observed one owned manager occurrence.
+    Hook(ContactEvent),
+    /// One private manager occurrence completed bounded solving.
+    Solve(ContactSolve),
+    /// One requested mutation completed after unlock.
+    Command(CommandApplication),
     /// A world object was invalidated after dependent contact evidence.
     Destruction(DestructionRecord),
 }
 
-/// Owned results from one representative step.
+/// Owned results from one automatic step.
 #[derive(Debug, Default, PartialEq)]
 pub struct StepReport {
+    phases: Vec<StepPhase>,
     events: Vec<ContactEvent>,
     contact_transitions: Vec<ContactTransition>,
     contact_solves: Vec<ContactSolve>,
@@ -324,13 +370,19 @@ pub struct StepReport {
 }
 
 impl StepReport {
-    /// Returns callback events in exact occurrence order, including duplicates.
+    /// Returns named execution seams in exact phase order.
+    #[must_use]
+    pub fn phases(&self) -> &[StepPhase] {
+        &self.phases
+    }
+
+    /// Returns callback events in exact manager occurrence order.
     #[must_use]
     pub fn events(&self) -> &[ContactEvent] {
         &self.events
     }
 
-    /// Returns automatic touching transitions in private manager occurrence order.
+    /// Returns automatic touching transitions in manager occurrence order.
     #[must_use]
     pub fn contact_transitions(&self) -> &[ContactTransition] {
         &self.contact_transitions
@@ -342,7 +394,7 @@ impl StepReport {
         &self.contact_solves
     }
 
-    /// Returns contact and destruction evidence in exact production order.
+    /// Returns all owned lifecycle evidence in exact production order.
     #[must_use]
     pub fn lifecycle(&self) -> &[StepLifecycleEvent] {
         &self.lifecycle
@@ -355,22 +407,18 @@ impl StepReport {
     }
 
     /// Returns one result per requested command in exact request order.
-    ///
-    /// Recoverable stale and cross-world failures do not stop later commands.
     #[must_use]
     pub fn command_applications(&self) -> &[CommandApplication] {
         &self.command_applications
     }
 }
 
-/// A representative step-lifecycle failure.
+/// A Phase 6 step-lifecycle failure.
 #[derive(Debug, Clone, PartialEq)]
 #[non_exhaustive]
 pub enum StepError {
-    /// A prior hook panic left the representative world step poisoned.
+    /// A prior hook panic left coherent world operations poisoned.
     Poisoned,
-    /// One of the contact fixture identities is foreign, stale, or destroyed.
-    InvalidContact(HandleError),
     /// Contact lifecycle completed, but its active solver topology is deferred.
     UnsupportedSolverTopology {
         /// Owned lifecycle evidence committed before fail-closed preflight.
@@ -403,7 +451,6 @@ impl fmt::Display for StepError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Poisoned => formatter.write_str("world is poisoned by a prior hook panic"),
-            Self::InvalidContact(error) => write!(formatter, "invalid contact fixture: {error}"),
             Self::UnsupportedSolverTopology { .. } => {
                 formatter.write_str("contact solver topology is deferred beyond Phase 6")
             }
@@ -427,70 +474,86 @@ impl fmt::Display for StepError {
 
 impl Error for StepError {}
 
-struct StepLockGuard<'world> {
-    state: &'world StepState,
+struct StepLockGuard {
+    state: StepState,
 }
 
-impl<'world> StepLockGuard<'world> {
-    fn acquire(state: &'world StepState) -> Result<Self, StepError> {
-        if state.locked.replace(true) {
+impl StepLockGuard {
+    fn acquire(state: &StepState) -> Result<Self, StepError> {
+        if state.inner.locked.swap(true, Ordering::Relaxed) {
             return Err(StepError::Locked);
         }
-        Ok(Self { state })
+        Ok(Self {
+            state: state.clone(),
+        })
     }
 }
 
-impl Drop for StepLockGuard<'_> {
+impl Drop for StepLockGuard {
     fn drop(&mut self) {
-        self.state.locked.set(false);
+        self.state.inner.locked.store(false, Ordering::Relaxed);
     }
 }
 
 impl World {
-    /// Runs a bounded no-solver step over supplied semantic contact occurrences.
-    ///
-    /// Every occurrence is validated and dispatched in slice order. Duplicate snapshots remain
-    /// duplicate events. Filtering and pre-solve hooks execute while the world is locked; this
-    /// representative lifecycle performs no physics integration.
+    /// Runs one automatic bounded Phase 6 contact lifecycle and solve.
     ///
     /// # Errors
     ///
-    /// Returns an error for invalid contact handles, nested stepping, or an exhausted event limit.
+    /// Returns an error for poisoned or nested stepping, exhausted limits,
+    /// unsupported topology, or non-finite solver state.
     pub fn step<H: StepHook>(
         &mut self,
-        contacts: &[ContactSnapshot],
         hook: &mut H,
         limits: StepLimits,
     ) -> Result<StepReport, StepError> {
         if self.step_state.is_poisoned() {
             return Err(StepError::Poisoned);
         }
-        self.find_new_contacts();
-        self.update_contacts();
-        let mut contact_transitions = self.contact_manager.drain_transitions();
-        let contact_solves = self.solve_contacts().map_err(|error| match error {
-            ContactSolveFailure::UnsupportedTopology => StepError::UnsupportedSolverTopology {
-                contact_transitions: contact_transitions.clone(),
-            },
-            ContactSolveFailure::NonFinite => StepError::NonFiniteSolverState {
-                contact_transitions: contact_transitions.clone(),
-            },
-        })?;
+        let mut phases = Vec::with_capacity(6);
+        let (mut contact_transitions, events, commands, contact_solves) = {
+            let _lock = StepLockGuard::acquire(&self.step_state)?;
+            phases.push(StepPhase::FindPairs);
+            self.find_pairs();
+            phases.push(StepPhase::UpdateContacts);
+            self.update_contacts_for_step();
+            let contact_transitions = self.contact_manager.drain_transitions();
+            self.preflight_contact_solver()
+                .map_err(|error| solver_step_error(error, &contact_transitions))?;
+
+            phases.push(StepPhase::Hook);
+            let occurrences = self.contact_manager.hook_contacts();
+            let (events, commands) = self.run_contact_hooks(&occurrences, hook, limits)?;
+            phases.push(StepPhase::Solve);
+            let contact_solves = self
+                .solve_contact_constraints()
+                .map_err(|error| solver_step_error(error, &contact_transitions))?;
+            (contact_transitions, events, commands, contact_solves)
+        };
+        phases.push(StepPhase::Unlock);
+
         let mut lifecycle = contact_transitions
             .iter()
             .cloned()
             .map(StepLifecycleEvent::Contact)
             .collect::<Vec<_>>();
-        let (events, commands) = {
-            let _lock = StepLockGuard::acquire(&self.step_state)?;
-            self.dispatch_hooks(contacts, hook, limits)?
-        };
+        lifecycle.extend(events.iter().cloned().map(StepLifecycleEvent::Hook));
+        lifecycle.extend(
+            contact_solves
+                .iter()
+                .cloned()
+                .map(StepLifecycleEvent::Solve),
+        );
+        if !commands.is_empty() {
+            phases.push(StepPhase::ApplyCommands);
+        }
         let (command_applications, destructions, command_transitions, command_lifecycle) =
             self.apply_commands(commands);
         contact_transitions.extend(command_transitions);
         lifecycle.extend(command_lifecycle);
 
         Ok(StepReport {
+            phases,
             events,
             contact_transitions,
             contact_solves,
@@ -500,29 +563,34 @@ impl World {
         })
     }
 
-    fn dispatch_hooks<H: StepHook>(
-        &self,
-        contacts: &[ContactSnapshot],
+    fn find_pairs(&mut self) {
+        self.find_new_contacts();
+    }
+
+    fn update_contacts_for_step(&mut self) {
+        self.update_contacts();
+    }
+
+    fn solve_contact_constraints(&mut self) -> Result<Vec<ContactSolve>, ContactSolveFailure> {
+        self.solve_contacts()
+    }
+
+    fn run_contact_hooks<H: StepHook>(
+        &mut self,
+        occurrences: &[HookContactOccurrence],
         hook: &mut H,
         limits: StepLimits,
     ) -> Result<(Vec<ContactEvent>, Vec<WorldCommand>), StepError> {
-        let mut events = Vec::with_capacity(contacts.len().min(limits.max_events));
-        let mut commands = Vec::with_capacity(contacts.len().min(limits.max_commands));
-
-        for snapshot in contacts {
+        let mut events = Vec::with_capacity(occurrences.len().min(limits.max_events));
+        let mut commands = Vec::with_capacity(occurrences.len().min(limits.max_commands));
+        for occurrence in occurrences {
             check_capacity(events.len(), limits.max_events, "event")?;
-            for fixture in snapshot.fixtures() {
-                self.validate_fixture(fixture)
-                    .map_err(StepError::InvalidContact)?;
-            }
-
-            let transient = TransientContact {
-                snapshot: *snapshot,
-            };
             let view = ContactView {
-                contact: &transient,
+                contact: &occurrence.snapshot,
             };
-            let callback = catch_unwind(AssertUnwindSafe(|| invoke_hook(hook, view)));
+            let callback = catch_unwind(AssertUnwindSafe(|| {
+                invoke_hook(hook, view, !view.is_sensor())
+            }));
             let (collision, maybe_pre_solve, maybe_command) = match callback {
                 Ok(output) => output,
                 Err(payload) => {
@@ -530,6 +598,10 @@ impl World {
                     resume_unwind(payload);
                 }
             };
+            let enabled = collision == CollisionDirective::Collide
+                && maybe_pre_solve != Some(PreSolveDirective::Disable);
+            self.contact_manager
+                .set_hook_enabled(occurrence.ordinal, enabled);
             if let Some(command) = maybe_command {
                 check_capacity(commands.len(), limits.max_commands, "command")?;
                 commands.push(command);
@@ -540,7 +612,6 @@ impl World {
                 maybe_pre_solve,
             });
         }
-
         Ok((events, commands))
     }
 
@@ -560,13 +631,15 @@ impl World {
         for command in commands {
             let result = self.apply_command(command);
             let transitions = self.contact_manager.drain_transitions();
+            let application = CommandApplication { command, result };
+            lifecycle.push(StepLifecycleEvent::Command(application.clone()));
             lifecycle.extend(transitions.iter().cloned().map(StepLifecycleEvent::Contact));
             contact_transitions.extend(transitions);
-            if let Ok(records) = &result {
+            if let Ok(records) = &application.result {
                 destructions.extend(records.iter().cloned());
                 lifecycle.extend(records.iter().cloned().map(StepLifecycleEvent::Destruction));
             }
-            applications.push(CommandApplication { command, result });
+            applications.push(application);
         }
         (applications, destructions, contact_transitions, lifecycle)
     }
@@ -575,7 +648,7 @@ impl World {
         &mut self,
         command: WorldCommand,
     ) -> Result<Vec<DestructionRecord>, CommandError> {
-        if self.step_state.locked.get() {
+        if self.step_state.is_locked() {
             return Err(CommandError::Locked);
         }
         match command {
@@ -590,14 +663,12 @@ impl World {
     }
 
     /// Returns whether this world is currently inside its step lock.
-    ///
-    /// This diagnostic remains available after poisoning so callers can verify unwind cleanup.
     #[must_use]
     pub fn is_locked(&self) -> bool {
-        self.step_state.locked.get()
+        self.step_state.is_locked()
     }
 
-    /// Returns whether a hook panic permanently poisoned coherent-state operations.
+    /// Returns whether a hook panic permanently poisoned coherent operations.
     #[must_use]
     pub fn is_poisoned(&self) -> bool {
         self.step_state.is_poisoned()
@@ -607,6 +678,7 @@ impl World {
 fn invoke_hook<H: StepHook>(
     hook: &mut H,
     view: ContactView<'_>,
+    allow_pre_solve: bool,
 ) -> (
     CollisionDirective,
     Option<PreSolveDirective>,
@@ -616,11 +688,24 @@ fn invoke_hook<H: StepHook>(
     if collision == CollisionDirective::Ignore {
         return (collision, None, None);
     }
-
-    let directive = hook.pre_solve(view);
+    let maybe_directive = allow_pre_solve.then(|| hook.pre_solve(view));
     hook.observe(view);
     let maybe_command = hook.command(view);
-    (collision, Some(directive), maybe_command)
+    (collision, maybe_directive, maybe_command)
+}
+
+fn solver_step_error(
+    error: ContactSolveFailure,
+    contact_transitions: &[ContactTransition],
+) -> StepError {
+    match error {
+        ContactSolveFailure::UnsupportedTopology => StepError::UnsupportedSolverTopology {
+            contact_transitions: contact_transitions.to_vec(),
+        },
+        ContactSolveFailure::NonFinite => StepError::NonFiniteSolverState {
+            contact_transitions: contact_transitions.to_vec(),
+        },
+    }
 }
 
 fn check_capacity(current: usize, limit: usize, resource: &'static str) -> Result<(), StepError> {
@@ -628,379 +713,4 @@ fn check_capacity(current: usize, limit: usize, resource: &'static str) -> Resul
         return Err(StepError::LimitExceeded { resource, limit });
     }
     Ok(())
-}
-
-#[cfg(test)]
-pub(super) mod hooks {
-    use super::*;
-
-    struct RecordingHook {
-        observed: Vec<[FixtureId; 2]>,
-    }
-
-    impl StepHook for RecordingHook {
-        fn observe(&mut self, contact: ContactView<'_>) {
-            self.observed.push(contact.fixtures());
-        }
-    }
-
-    fn world_with_contact() -> (World, ContactSnapshot) {
-        let mut world = World::new().expect("test world key should remain available");
-        let body = world
-            .create_body(&BodyDef::default())
-            .expect("body should fit");
-        let first = world
-            .create_fixture(body, &test_fixture_definition())
-            .expect("fixture should fit");
-        let second = world
-            .create_fixture(body, &test_fixture_definition())
-            .expect("fixture should fit");
-        (world, ContactSnapshot::new(first, second))
-    }
-
-    #[test]
-    fn reports_preserve_occurrence_order_and_multiplicity() {
-        // Arrange
-        let (mut world, first) = world_with_contact();
-        let body = world
-            .create_body(&BodyDef::default())
-            .expect("body should fit");
-        let third = world
-            .create_fixture(body, &test_fixture_definition())
-            .expect("fixture should fit");
-        let second = ContactSnapshot::new(first.fixtures()[1], third);
-        let contacts = [first, second, first];
-        let mut hook = RecordingHook {
-            observed: Vec::new(),
-        };
-
-        // Act
-        let report = world
-            .step(&contacts, &mut hook, StepLimits::default())
-            .expect("bounded contacts should step");
-
-        // Assert
-        assert_eq!(
-            report
-                .events()
-                .iter()
-                .map(|event| event.contact())
-                .collect::<Vec<_>>(),
-            contacts
-        );
-        assert_eq!(hook.observed, contacts.map(ContactSnapshot::fixtures));
-    }
-
-    #[test]
-    fn filtering_returns_a_narrow_directive_and_skips_later_hooks() {
-        struct FilteringHook {
-            pre_solve_calls: usize,
-            observe_calls: usize,
-        }
-
-        impl StepHook for FilteringHook {
-            fn filter(&mut self, _contact: ContactView<'_>) -> CollisionDirective {
-                CollisionDirective::Ignore
-            }
-
-            fn pre_solve(&mut self, _contact: ContactView<'_>) -> PreSolveDirective {
-                self.pre_solve_calls += 1;
-                PreSolveDirective::Enable
-            }
-
-            fn observe(&mut self, _contact: ContactView<'_>) {
-                self.observe_calls += 1;
-            }
-        }
-
-        // Arrange
-        let (mut world, contact) = world_with_contact();
-        let mut hook = FilteringHook {
-            pre_solve_calls: 0,
-            observe_calls: 0,
-        };
-
-        // Act
-        let report = world
-            .step(&[contact], &mut hook, StepLimits::default())
-            .expect("contact should be valid");
-
-        // Assert
-        assert_eq!(report.events()[0].collision(), CollisionDirective::Ignore);
-        assert_eq!(report.events()[0].maybe_pre_solve(), None);
-        assert_eq!(hook.pre_solve_calls, 0);
-        assert_eq!(hook.observe_calls, 0);
-    }
-
-    #[test]
-    fn event_limit_fails_without_mutating_world_objects() {
-        // Arrange
-        let (mut world, contact) = world_with_contact();
-        let fixtures = contact.fixtures();
-        let mut hook = RecordingHook {
-            observed: Vec::new(),
-        };
-        let limits = StepLimits::new(1, 0).expect("limits are below hard maxima");
-
-        // Act
-        let result = world.step(&[contact, contact], &mut hook, limits);
-
-        // Assert
-        assert_eq!(
-            result,
-            Err(StepError::LimitExceeded {
-                resource: "event",
-                limit: 1,
-            })
-        );
-        assert!(world.contains_fixture(fixtures[0]));
-        assert!(world.contains_fixture(fixtures[1]));
-    }
-}
-
-#[cfg(test)]
-mod commands {
-    use super::*;
-
-    struct CommandHook {
-        commands: std::collections::VecDeque<WorldCommand>,
-    }
-
-    impl StepHook for CommandHook {
-        fn command(&mut self, _contact: ContactView<'_>) -> Option<WorldCommand> {
-            self.commands.pop_front()
-        }
-    }
-
-    fn world_with_contact() -> (World, ContactSnapshot) {
-        let mut world = World::new().expect("test world key should remain available");
-        let body = world
-            .create_body(&BodyDef::default())
-            .expect("body should fit");
-        let first = world
-            .create_fixture(body, &test_fixture_definition())
-            .expect("fixture should fit");
-        let second = world
-            .create_fixture(body, &test_fixture_definition())
-            .expect("fixture should fit");
-        (world, ContactSnapshot::new(first, second))
-    }
-
-    #[test]
-    fn commands_apply_after_unlock_in_request_order() {
-        // Arrange
-        let (mut world, contact) = world_with_contact();
-        let first = world
-            .create_body(&BodyDef::default())
-            .expect("body should fit");
-        let second = world
-            .create_body(&BodyDef::default())
-            .expect("body should fit");
-        let mut hook = CommandHook {
-            commands: [
-                WorldCommand::DestroyBody(first),
-                WorldCommand::DestroyBody(second),
-            ]
-            .into(),
-        };
-
-        // Act
-        let report = world
-            .step(&[contact, contact], &mut hook, StepLimits::default())
-            .expect("commands should be bounded");
-
-        // Assert
-        assert_eq!(report.command_applications().len(), 2);
-        assert!(report.command_applications()[0].result().is_ok());
-        assert!(report.command_applications()[1].result().is_ok());
-        assert_eq!(
-            report
-                .destructions()
-                .iter()
-                .map(DestructionRecord::destroyed)
-                .collect::<Vec<_>>(),
-            vec![
-                crate::DestroyedId::Body(first),
-                crate::DestroyedId::Body(second)
-            ]
-        );
-    }
-
-    #[test]
-    fn stale_command_does_not_stop_later_commands() {
-        // Arrange
-        let (mut world, contact) = world_with_contact();
-        let invalidated = world
-            .create_body(&BodyDef::default())
-            .expect("body should fit");
-        let survivor = world
-            .create_body(&BodyDef::default())
-            .expect("body should fit");
-        let mut hook = CommandHook {
-            commands: [
-                WorldCommand::DestroyBody(invalidated),
-                WorldCommand::DestroyBody(invalidated),
-                WorldCommand::DestroyBody(survivor),
-            ]
-            .into(),
-        };
-
-        // Act
-        let report = world
-            .step(
-                &[contact, contact, contact],
-                &mut hook,
-                StepLimits::default(),
-            )
-            .expect("stale command is a per-command result");
-
-        // Assert
-        assert!(report.command_applications()[0].result().is_ok());
-        assert_eq!(
-            report.command_applications()[1].result(),
-            Err(CommandError::InvalidHandle(HandleError::StaleOrDestroyed))
-        );
-        assert!(report.command_applications()[2].result().is_ok());
-        assert!(!world.contains_body(survivor));
-    }
-
-    #[test]
-    fn cross_world_and_reused_slot_commands_fail_at_application_time() {
-        // Arrange
-        let (mut world, contact) = world_with_contact();
-        let stale = world
-            .create_body(&BodyDef::default())
-            .expect("body should fit");
-        world.destroy_body(stale).expect("body should be live");
-        let replacement = world
-            .create_body(&BodyDef::default())
-            .expect("reused slot should fit");
-        let mut other = World::new().expect("test world key should remain available");
-        let foreign = other
-            .create_body(&BodyDef::default())
-            .expect("body should fit");
-        let mut hook = CommandHook {
-            commands: [
-                WorldCommand::DestroyBody(stale),
-                WorldCommand::DestroyBody(foreign),
-            ]
-            .into(),
-        };
-
-        // Act
-        let report = world
-            .step(&[contact, contact], &mut hook, StepLimits::default())
-            .expect("invalid commands are recoverable results");
-
-        // Assert
-        assert_eq!(
-            report.command_applications()[0].result(),
-            Err(CommandError::InvalidHandle(HandleError::StaleOrDestroyed))
-        );
-        assert_eq!(
-            report.command_applications()[1].result(),
-            Err(CommandError::InvalidHandle(HandleError::WrongWorld))
-        );
-        assert!(world.contains_body(replacement));
-    }
-
-    #[test]
-    fn command_overflow_discards_all_queued_commands() {
-        // Arrange
-        let (mut world, contact) = world_with_contact();
-        let body = world
-            .create_body(&BodyDef::default())
-            .expect("body should fit");
-        let mut hook = CommandHook {
-            commands: [
-                WorldCommand::DestroyBody(body),
-                WorldCommand::DestroyBody(body),
-            ]
-            .into(),
-        };
-        let limits = StepLimits::new(2, 1).expect("limits are below hard maxima");
-
-        // Act
-        let result = world.step(&[contact, contact], &mut hook, limits);
-
-        // Assert
-        assert_eq!(
-            result,
-            Err(StepError::LimitExceeded {
-                resource: "command",
-                limit: 1,
-            })
-        );
-        assert!(world.contains_body(body));
-    }
-}
-
-#[cfg(test)]
-mod panic {
-    use std::collections::VecDeque;
-    use std::panic::{AssertUnwindSafe, catch_unwind};
-
-    use super::*;
-
-    struct PanickingHook {
-        calls: usize,
-        commands: VecDeque<WorldCommand>,
-    }
-
-    impl StepHook for PanickingHook {
-        fn observe(&mut self, _contact: ContactView<'_>) {
-            self.calls += 1;
-            assert!(self.calls < 2, "intentional hook panic");
-        }
-
-        fn command(&mut self, _contact: ContactView<'_>) -> Option<WorldCommand> {
-            self.commands.pop_front()
-        }
-    }
-
-    #[test]
-    fn hook_panic_restores_lock_discards_commands_and_poisons_world() {
-        // Arrange
-        let mut world = World::new().expect("test world key should remain available");
-        let contact_body = world
-            .create_body(&BodyDef::default())
-            .expect("body should fit");
-        let first = world
-            .create_fixture(contact_body, &test_fixture_definition())
-            .expect("fixture should fit");
-        let second = world
-            .create_fixture(contact_body, &test_fixture_definition())
-            .expect("fixture should fit");
-        let contact = ContactSnapshot::new(first, second);
-        let command_body = world
-            .create_body(&BodyDef::default())
-            .expect("body should fit");
-        let mut hook = PanickingHook {
-            calls: 0,
-            commands: [WorldCommand::DestroyBody(command_body)].into(),
-        };
-
-        // Act
-        let panic = catch_unwind(AssertUnwindSafe(|| {
-            let _report = world.step(&[contact, contact], &mut hook, StepLimits::default());
-        }));
-
-        // Assert
-        assert!(panic.is_err());
-        assert!(!world.is_locked());
-        assert!(world.is_poisoned());
-        assert!(world.contains_body(command_body));
-        assert_eq!(
-            world.destroy_body(command_body),
-            Err(HandleError::WorldPoisoned)
-        );
-        assert_eq!(
-            world.create_body(&BodyDef::default()),
-            Err(crate::ArenaInsertError::WorldPoisoned)
-        );
-        assert_eq!(
-            world.step(&[], &mut hook, StepLimits::default()),
-            Err(StepError::Poisoned)
-        );
-    }
 }
