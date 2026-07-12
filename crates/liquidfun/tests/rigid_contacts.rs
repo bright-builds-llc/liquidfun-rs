@@ -3,8 +3,8 @@
 use liquidfun::collision::{CircleShape, FilterData, Shape};
 use liquidfun::math::Vec2;
 use liquidfun::{
-    BodyDef, BodyId, BodyType, ContactTransitionKind, FixtureDef, FixtureId, StepHook, StepLimits,
-    World,
+    BodyDef, BodyId, BodyType, ContactSnapshot, ContactTransitionKind, DestroyedId, FixtureDef,
+    FixtureId, StepHook, StepLifecycleEvent, StepLimits, World, WorldCommand,
 };
 
 struct NoopHook;
@@ -180,4 +180,219 @@ fn sensor_lifecycle_uses_overlap_without_a_manifold() {
         assert!(contact.maybe_manifold().is_none());
         assert!(contact.points().is_empty());
     }
+}
+
+#[test]
+fn filtering_is_deferred_and_reconsideration_recreates_the_contact() {
+    // Arrange
+    let (mut world, _dynamic_body, static_fixture, _dynamic_fixture) = touching_world(false);
+    let mut hook = NoopHook;
+    world
+        .step(&[], &mut hook, StepLimits::default())
+        .expect("initial contact should begin");
+
+    // Act
+    world
+        .set_fixture_filter(static_fixture, FilterData::new(0x0001, 0x0000, 0))
+        .expect("filter edit should succeed");
+    let count_before_update = world.contact_count();
+    let rejected = world
+        .step(&[], &mut hook, StepLimits::default())
+        .expect("deferred refilter should succeed");
+    world
+        .set_fixture_filter(static_fixture, FilterData::default())
+        .expect("filter restoration should succeed");
+    let reconsidered = world
+        .step(&[], &mut hook, StepLimits::default())
+        .expect("touched pair should be reconsidered");
+
+    // Assert
+    assert_eq!(count_before_update, 1);
+    assert_eq!(rejected.contact_transitions().len(), 1);
+    assert_eq!(
+        rejected.contact_transitions()[0].kind(),
+        ContactTransitionKind::End
+    );
+    assert_eq!(reconsidered.contact_transitions().len(), 1);
+    assert_eq!(
+        reconsidered.contact_transitions()[0].kind(),
+        ContactTransitionKind::Begin
+    );
+    assert_eq!(world.contact_count(), 1);
+}
+
+#[test]
+fn destruction_deactivation_emits_end_and_activation_waits_for_step() {
+    // Arrange
+    let (mut world, dynamic_body, _static_fixture, _dynamic_fixture) = touching_world(false);
+    let mut hook = NoopHook;
+    world
+        .step(&[], &mut hook, StepLimits::default())
+        .expect("initial contact should begin");
+
+    // Act
+    world
+        .set_body_active(dynamic_body, false)
+        .expect("deactivation should succeed");
+    let after_deactivation = world.contact_count();
+    world
+        .set_body_active(dynamic_body, true)
+        .expect("activation should succeed");
+    let before_step = world.contact_count();
+    let report = world
+        .step(&[], &mut hook, StepLimits::default())
+        .expect("activation discovery step should succeed");
+
+    // Assert
+    assert_eq!(after_deactivation, 0);
+    assert_eq!(before_step, 0);
+    assert_eq!(
+        report
+            .contact_transitions()
+            .iter()
+            .map(liquidfun::ContactTransition::kind)
+            .collect::<Vec<_>>(),
+        vec![ContactTransitionKind::End, ContactTransitionKind::Begin]
+    );
+    assert_eq!(world.contact_count(), 1);
+}
+
+struct OneCommandHook {
+    maybe_command: Option<WorldCommand>,
+}
+
+impl StepHook for OneCommandHook {
+    fn command(&mut self, _contact: liquidfun::ContactView<'_>) -> Option<WorldCommand> {
+        self.maybe_command.take()
+    }
+}
+
+#[test]
+fn destruction_fixture_uses_end_before_invalidation() {
+    // Arrange
+    let (mut world, _dynamic_body, static_fixture, dynamic_fixture) = touching_world(false);
+    let mut noop = NoopHook;
+    world
+        .step(&[], &mut noop, StepLimits::default())
+        .expect("initial contact should begin");
+    let mut hook = OneCommandHook {
+        maybe_command: Some(WorldCommand::DestroyFixture(static_fixture)),
+    };
+
+    // Act
+    let report = world
+        .step(
+            &[ContactSnapshot::new(static_fixture, dynamic_fixture)],
+            &mut hook,
+            StepLimits::default(),
+        )
+        .expect("fixture destruction command should succeed");
+
+    // Assert
+    assert!(matches!(
+        report.lifecycle(),
+        [
+            StepLifecycleEvent::Contact(persist),
+            StepLifecycleEvent::Contact(end),
+            StepLifecycleEvent::Destruction(record),
+        ] if persist.kind() == ContactTransitionKind::Persist
+            && end.kind() == ContactTransitionKind::End
+            && record.destroyed() == DestroyedId::Fixture(static_fixture)
+    ));
+    assert!(!world.contains_fixture(static_fixture));
+    assert_eq!(world.contact_count(), 0);
+}
+
+#[test]
+fn destruction_body_cascade_orders_end_before_fixture_before_body() {
+    // Arrange
+    let (mut world, dynamic_body, static_fixture, dynamic_fixture) = touching_world(false);
+    let mut noop = NoopHook;
+    world
+        .step(&[], &mut noop, StepLimits::default())
+        .expect("initial contact should begin");
+    let mut hook = OneCommandHook {
+        maybe_command: Some(WorldCommand::DestroyBody(dynamic_body)),
+    };
+
+    // Act
+    let report = world
+        .step(
+            &[ContactSnapshot::new(static_fixture, dynamic_fixture)],
+            &mut hook,
+            StepLimits::default(),
+        )
+        .expect("body destruction command should succeed");
+
+    // Assert
+    assert!(matches!(
+        report.lifecycle(),
+        [
+            StepLifecycleEvent::Contact(persist),
+            StepLifecycleEvent::Contact(end),
+            StepLifecycleEvent::Destruction(fixture),
+            StepLifecycleEvent::Destruction(body),
+        ] if persist.kind() == ContactTransitionKind::Persist
+            && end.kind() == ContactTransitionKind::End
+            && fixture.destroyed() == DestroyedId::Fixture(dynamic_fixture)
+            && body.destroyed() == DestroyedId::Body(dynamic_body)
+    ));
+    assert!(!world.contains_body(dynamic_body));
+    assert!(!world.contains_fixture(dynamic_fixture));
+    assert_eq!(world.contact_count(), 0);
+}
+
+#[test]
+fn filtering_preserves_duplicate_event_multiplicity_in_manager_order() {
+    // Arrange
+    let (mut world, _dynamic_body, static_fixture, dynamic_fixture) = touching_world(false);
+    let static_body = world
+        .fixture_snapshot(static_fixture)
+        .expect("static fixture should remain live")
+        .body();
+    let second_static_fixture = world
+        .create_fixture(static_body, &fixture_definition(false, 0.25, 0.1))
+        .expect("second static fixture should fit");
+    let mut hook = NoopHook;
+    let began = world
+        .step(&[], &mut hook, StepLimits::default())
+        .expect("both contacts should begin");
+
+    // Act
+    world
+        .set_fixture_filter(dynamic_fixture, FilterData::new(0x0001, 0x0000, 0))
+        .expect("shared fixture refilter should succeed");
+    let ended = world
+        .step(&[], &mut hook, StepLimits::default())
+        .expect("both contacts should end");
+
+    // Assert
+    assert_eq!(began.contact_transitions().len(), 2);
+    assert_eq!(ended.contact_transitions().len(), 2);
+    assert_eq!(
+        began
+            .contact_transitions()
+            .iter()
+            .map(|transition| transition.contact().fixtures())
+            .collect::<Vec<_>>(),
+        ended
+            .contact_transitions()
+            .iter()
+            .map(|transition| transition.contact().fixtures())
+            .collect::<Vec<_>>()
+    );
+    assert!(began.contact_transitions().iter().all(|transition| {
+        let fixtures = transition.contact().fixtures();
+        transition.kind() == ContactTransitionKind::Begin
+            && fixtures.contains(&dynamic_fixture)
+            && fixtures
+                .iter()
+                .any(|fixture| [static_fixture, second_static_fixture].contains(fixture))
+    }));
+    assert!(
+        ended
+            .contact_transitions()
+            .iter()
+            .all(|transition| transition.kind() == ContactTransitionKind::End)
+    );
 }

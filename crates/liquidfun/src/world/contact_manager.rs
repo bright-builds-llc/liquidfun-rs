@@ -56,13 +56,13 @@ impl ContactManager {
         while index < self.contacts.len() {
             let key = self.contacts[index].key;
             if self.contacts[index].needs_filtering() && !pair_is_eligible(key, bodies, fixtures) {
-                self.destroy_at(index, bodies, fixtures);
+                self.destroy_contact(index, bodies, fixtures);
                 continue;
             }
             self.contacts[index].set_needs_filtering(false);
 
             if !broad_phase_overlap(key, broad_phase, fixtures) {
-                self.destroy_at(index, bodies, fixtures);
+                self.destroy_contact(index, bodies, fixtures);
                 continue;
             }
 
@@ -100,7 +100,7 @@ impl ContactManager {
         while index < self.contacts.len() {
             let key = self.contacts[index].key;
             if key.first.body == body || key.second.body == body {
-                self.destroy_at(index, bodies, fixtures);
+                self.destroy_contact(index, bodies, fixtures);
             } else {
                 index += 1;
             }
@@ -117,7 +117,7 @@ impl ContactManager {
         while index < self.contacts.len() {
             let key = self.contacts[index].key;
             if key.first.fixture == fixture || key.second.fixture == fixture {
-                self.destroy_at(index, bodies, fixtures);
+                self.destroy_contact(index, bodies, fixtures);
             } else {
                 index += 1;
             }
@@ -191,7 +191,7 @@ impl ContactManager {
         link_contact(ordinal, key, bodies, fixtures);
     }
 
-    fn destroy_at(
+    fn destroy_contact(
         &mut self,
         index: usize,
         bodies: &mut Arena<Body, BodyId>,
