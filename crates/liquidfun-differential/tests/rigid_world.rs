@@ -90,6 +90,34 @@ fn native_contract_executes_the_exact_fixed_step_tuple() {
 }
 
 #[test]
+fn native_centered_inertia_zero_origin_branch_executes_without_mutation_failure() {
+    // Arrange
+    let mut value = serde_json::from_slice::<Value>(REQUEST).expect("fixture should be JSON");
+    let actions = value["scenario"]["timelines"][0]["actions"]
+        .as_array_mut()
+        .expect("fixture actions should be an array");
+    let custom_mass = actions
+        .iter_mut()
+        .find(|action| action["action_id"] == "nc-custom-mass")
+        .expect("custom mass action should exist");
+    custom_mass["action"]["mass_bits"] = json!(1.0_f32.to_bits());
+    custom_mass["action"]["center"]["x_bits"] = json!(1.0_f32.to_bits());
+    custom_mass["action"]["center"]["y_bits"] = json!(0.0_f32.to_bits());
+    custom_mass["action"]["inertia_bits"] = json!(0.0_f32.to_bits());
+    let request = decode_rigid_world_request_jsonl(
+        &encode_value(&value),
+        &HarnessLimits::phase2_default_v1(),
+    )
+    .expect("zero origin inertia should decode through the no-inertia branch");
+
+    // Act
+    let result = NativeRigidWorldExecutor::execute(&request);
+
+    // Assert
+    assert!(result.is_ok());
+}
+
+#[test]
 fn native_boundary_rejects_invalid_owner_and_unknown_identity() {
     // Arrange
     let limits = HarnessLimits::phase2_default_v1();
