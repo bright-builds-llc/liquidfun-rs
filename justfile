@@ -81,6 +81,12 @@ rigid-world-minimize:
 rigid-fixture-stage artifact_id:
     cargo xtask differential fixture stage --scenario rigid-world --preset oracle-debug --session-profile one-shot --artifact-kind reviewed-trace --artifact-id {{quote(artifact_id)}}
 
+rigid-fixture-review artifact_id reviewer reviewed_at review_status="approved":
+    cargo xtask differential fixture review --artifact-id {{quote(artifact_id)}} --reviewer {{quote(reviewer)}} --reviewed-at {{quote(reviewed_at)}} --review-status {{quote(review_status)}}
+
+rigid-fixture-promote artifact_id:
+    cargo xtask differential fixture promote --artifact-id {{quote(artifact_id)}}
+
 differential-minimize:
     cargo xtask differential minimize --scenario empty-world --preset oracle-debug --session-profile one-shot
 

@@ -330,6 +330,86 @@ fn rigid_fixture_stage_passes_only_fixed_lifecycle_metadata() -> TestResult {
 }
 
 #[test]
+fn rigid_fixture_real_binary_accepts_d1_and_rejects_d2_before_effects() -> TestResult {
+    // Arrange
+    let fixture = RepositoryFixture::new()?;
+    prepare_real_rigid_repository(&fixture.root, "rigid_d1")?;
+    let real_differential = workspace_root()
+        .join("target/debug")
+        .join(executable_name("liquidfun-differential"));
+    let arguments = [
+        "differential",
+        "fixture",
+        "stage",
+        "--scenario",
+        "rigid-world",
+        "--preset",
+        "oracle-debug",
+        "--session-profile",
+        "one-shot",
+        "--artifact-kind",
+        "reviewed-trace",
+        "--artifact-id",
+        "xtask-rigid-d1",
+    ];
+    let mut accepted = fixture.command()?;
+    accepted
+        .env("LIQUIDFUN_XTASK_DIFFERENTIAL", &real_differential)
+        .args(arguments);
+
+    // Act
+    let accepted_output = accepted.output()?;
+    fs::write(
+        fixture
+            .root
+            .join("target/reference/oracle-debug/behavior.txt"),
+        "rigid_d2",
+    )?;
+    let mut rejected = fixture.command()?;
+    rejected
+        .env("LIQUIDFUN_XTASK_DIFFERENTIAL", &real_differential)
+        .args([
+            "differential",
+            "fixture",
+            "stage",
+            "--scenario",
+            "rigid-world",
+            "--preset",
+            "oracle-debug",
+            "--session-profile",
+            "one-shot",
+            "--artifact-kind",
+            "reviewed-trace",
+            "--artifact-id",
+            "xtask-rigid-d2",
+        ]);
+    let rejected_output = rejected.output()?;
+
+    // Assert
+    assert!(
+        accepted_output.status.success(),
+        "{}",
+        stderr(&accepted_output)
+    );
+    assert!(
+        fixture
+            .root
+            .join("target/differential/staging/xtask-rigid-d1/candidate.toml")
+            .is_file()
+    );
+    assert!(!rejected_output.status.success());
+    assert!(stderr(&rejected_output).contains("requires D1 canonical authority"));
+    assert!(
+        !fixture
+            .root
+            .join("target/differential/staging/xtask-rigid-d2")
+            .exists()
+    );
+    fixture.cleanup()?;
+    Ok(())
+}
+
+#[test]
 fn rigid_commands_reject_unreviewed_shapes_before_effects() -> TestResult {
     // Arrange
     let scenario_file_option = ["--scenario", "-file"].concat();
@@ -783,6 +863,56 @@ fn workspace_root() -> PathBuf {
         .join("../..")
         .components()
         .collect()
+}
+
+fn prepare_real_rigid_repository(root: &Path, behavior: &str) -> io::Result<()> {
+    fs::create_dir_all(root.join("protocol/fixtures/accepted"))?;
+    fs::create_dir_all(root.join("protocol/tolerances"))?;
+    fs::create_dir_all(root.join("reference/artifacts"))?;
+    fs::create_dir_all(root.join("scenarios/regressions"))?;
+    fs::copy(
+        workspace_root().join("protocol/fixtures/accepted/rigid-world-request.jsonl"),
+        root.join("protocol/fixtures/accepted/rigid-world-request.jsonl"),
+    )?;
+    fs::copy(
+        workspace_root().join("protocol/tolerances/phase6-v1.toml"),
+        root.join("protocol/tolerances/phase6-v1.toml"),
+    )?;
+    fs::copy(
+        workspace_root().join("reference/artifacts/manifest.toml"),
+        root.join("reference/artifacts/manifest.toml"),
+    )?;
+    fs::write(root.join("THIRD_PARTY_NOTICES.md"), "fixture notices\n")?;
+    run_system_git(root, &["init", "--quiet"])?;
+    run_system_git(root, &["config", "user.name", "Fixture User"])?;
+    run_system_git(root, &["config", "user.email", "fixture@example.invalid"])?;
+    run_system_git(root, &["add", "."])?;
+    run_system_git(root, &["commit", "--quiet", "-m", "fixture"])?;
+    let oracle_directory = root.join("target/reference/oracle-debug");
+    fs::create_dir_all(&oracle_directory)?;
+    fs::copy(
+        workspace_root()
+            .join("target/debug")
+            .join(executable_name("liquidfun-fake-oracle")),
+        oracle_directory.join(executable_name("liquidfun-reference")),
+    )?;
+    fs::write(oracle_directory.join("behavior.txt"), behavior)
+}
+
+fn run_system_git(root: &Path, arguments: &[&str]) -> io::Result<()> {
+    let output = Command::new("git")
+        .arg("-C")
+        .arg(root)
+        .args(arguments)
+        .output()?;
+    if output.status.success() {
+        return Ok(());
+    }
+    Err(io::Error::other(format!(
+        "git {} failed: {}",
+        arguments.join(" "),
+        String::from_utf8_lossy(&output.stderr).trim()
+    )))
 }
 
 fn fake_tools() -> io::Result<&'static FakeTools> {

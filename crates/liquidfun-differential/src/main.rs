@@ -270,7 +270,7 @@ fn run_fixture(arguments: impl Iterator<Item = String>) -> Result<ExitCode, CliE
                 })?;
                 return Ok(ExitCode::SUCCESS);
             }
-            if scenario != "empty-world" {
+            if !matches!(scenario.as_str(), "empty-world") {
                 return Err(CliError::Usage(fixture_usage()));
             }
             let request_bytes = fs::read(

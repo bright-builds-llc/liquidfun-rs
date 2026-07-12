@@ -7,9 +7,11 @@ use std::{
     time::Duration,
 };
 
+use liquidfun_differential::NativeRigidWorldExecutor;
 use liquidfun_test_protocol::{
-    BuildIdentity, CheckpointRecord, EngineKind, FloatBits, HarnessLimits, RecordLimit,
-    ScenarioRequestRecord, TraceBegin, TraceEnd, TraceRecord, WorldCounts, decode_handshake_jsonl,
+    BuildIdentity, BuildIdentityFields, CheckpointRecord, EngineKind, FloatBits, HarnessLimits,
+    Phase4BuildIdentityFields, RecordLimit, ScenarioRequestRecord, TraceBegin, TraceEnd,
+    TraceRecord, WorldCounts, decode_handshake_jsonl, decode_rigid_world_request_jsonl,
     decode_scenario_request_jsonl, encode_jsonl, trace_payload_sha256,
 };
 
@@ -56,7 +58,13 @@ fn handshake_bytes() -> &'static [u8] {
 }
 
 fn write_handshake(behavior: &str) -> io::Result<()> {
-    let mut bytes = handshake_bytes().to_vec();
+    let mut bytes = if behavior.starts_with("rigid_d1") {
+        rigid_handshake(true).map_err(io::Error::other)?.0
+    } else if behavior.starts_with("rigid_d2") {
+        rigid_handshake(false).map_err(io::Error::other)?.0
+    } else {
+        handshake_bytes().to_vec()
+    };
     if behavior == "unsupported_version" {
         bytes = String::from_utf8_lossy(&bytes)
             .replacen("\"protocol_version\":1", "\"protocol_version\":2", 1)
@@ -132,6 +140,9 @@ fn emit_trace_behavior(
     let limits = HarnessLimits::phase2_default_v1();
     let mut framed_request = request_bytes.to_vec();
     framed_request.push(b'\n');
+    if behavior.starts_with("rigid_d1") || behavior.starts_with("rigid_d2") {
+        return emit_rigid_behavior(behavior, &framed_request, reset_epoch);
+    }
     let request = decode_scenario_request_jsonl(&framed_request, &limits)?;
     let identity = fixture_identity()?;
     let records = trace_records(&request, &identity, reset_epoch, behavior)?;
@@ -201,6 +212,132 @@ fn emit_trace_behavior(
         thread::sleep(Duration::from_secs(12));
     }
     Ok(())
+}
+
+fn emit_rigid_behavior(
+    behavior: &str,
+    request_bytes: &[u8],
+    reset_epoch: u64,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let limits = HarnessLimits::phase2_default_v1();
+    let request = decode_rigid_world_request_jsonl(request_bytes, &limits)?;
+    let result = NativeRigidWorldExecutor::execute(&request)?;
+    let result_bytes = encode_jsonl(&result, &limits, RecordLimit::Output)?;
+    let end = serde_json::json!({
+        "protocol_version": 1,
+        "record_kind": "rigid_world_end",
+        "request_id": request.request_id().as_str(),
+        "result_count": 1,
+        "reset_epoch": reset_epoch,
+        "reset_verified": true,
+    });
+    let mut end_bytes = serde_json::to_vec(&end)?;
+    end_bytes.push(b'\n');
+    if behavior.ends_with("_nonzero") {
+        eprintln!("rigid child failed after decode");
+        std::process::exit(7);
+    }
+    let mut stdout = io::stdout().lock();
+    stdout.write_all(&result_bytes)?;
+    stdout.write_all(&end_bytes)?;
+    stdout.flush()?;
+    Ok(())
+}
+
+fn rigid_handshake(canonical: bool) -> Result<(Vec<u8>, BuildIdentity), String> {
+    let (compiler_id, compiler_version, target, os, target_features) = if canonical {
+        (
+            "Clang",
+            "22.1.8",
+            "x86_64-unknown-linux-gnu",
+            "linux",
+            "<none>",
+        )
+    } else {
+        (
+            "AppleClang",
+            "21.0.0",
+            "x86_64-apple-darwin",
+            "macos",
+            "<none>",
+        )
+    };
+    let phase4 = Phase4BuildIdentityFields::new(
+        "11".repeat(32),
+        compiler_id,
+        compiler_version,
+        target,
+        "baseline",
+        target_features,
+        "<none>",
+        "O0",
+        "precise",
+        "off",
+        "ieee",
+        "scalar baseline",
+        os,
+        if canonical { "glibc" } else { "libSystem" },
+        if canonical { "libm" } else { "libSystem" },
+        "nearest_ties_even",
+        true,
+    );
+    let identity = BuildIdentity::new(
+        BuildIdentityFields::new(
+            "7f20402173fd143a3988c921bc384459c6a858f2",
+            "fixture-rigid-adapter-v1",
+            "22".repeat(32),
+            "oracle-debug",
+            compiler_id,
+            compiler_version,
+            target,
+            "Debug",
+            "-O0 -g",
+            "-lc++",
+            "none",
+        )
+        .with_phase4(phase4),
+    )
+    .map_err(|error| error.to_string())?;
+    let build_identity = serde_json::json!({
+        "oracle_revision": identity.oracle_revision(),
+        "adapter_revision": identity.adapter_revision(),
+        "adapter_content_sha256": identity.adapter_content_sha256().as_str(),
+        "cmake_preset": identity.cmake_preset(),
+        "compiler_id": compiler_id,
+        "compiler_version": compiler_version,
+        "target": target,
+        "build_type": "Debug",
+        "effective_compile_flags": "-O0 -g",
+        "effective_link_flags": "-lc++",
+        "sanitizer_mode": "none",
+        "compile_command_sha256": "11".repeat(32),
+        "target_triple": target,
+        "target_cpu": "baseline",
+        "target_features": target_features,
+        "sdk_or_sysroot": "<none>",
+        "optimization": "O0",
+        "fp_model": "precise",
+        "fp_contract": "off",
+        "denormal_mode": "ieee",
+        "feature_set": "scalar baseline",
+        "os": os,
+        "libc": if canonical { "glibc" } else { "libSystem" },
+        "libm": if canonical { "libm" } else { "libSystem" },
+        "rounding_mode": "nearest_ties_even",
+        "gradual_underflow": true,
+    });
+    let mut bytes = serde_json::to_vec(&serde_json::json!({
+        "protocol_version": 1,
+        "record_kind": "handshake",
+        "supported_scenario_versions": [1],
+        "supported_trace_versions": [1],
+        "supported_tolerance_versions": [1],
+        "build_identity": build_identity,
+        "identity_sha256": identity.identity_sha256().as_str(),
+    }))
+    .map_err(|error| error.to_string())?;
+    bytes.push(b'\n');
+    Ok((bytes, identity))
 }
 
 fn fixture_identity() -> Result<BuildIdentity, Box<dyn std::error::Error>> {
