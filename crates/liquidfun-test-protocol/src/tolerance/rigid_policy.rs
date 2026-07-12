@@ -298,7 +298,9 @@ fn render_phase6_policy_presentation(profile: &Phase6PolicyProfile) -> String {
             FieldComparison::Float {
                 policy: FloatPolicy::ExactBits,
             } => "{ kind = \"float\", policy = { kind = \"exact_bits\" } }",
-            _ => unreachable!("validated Phase 6 policy begins with exact comparisons"),
+            FieldComparison::Float { .. } => {
+                unreachable!("validated Phase 6 policy begins with exact comparisons")
+            }
         };
         let tier = match field.evidence_tier() {
             EvidenceTier::D1Canonical => "d1_canonical",
