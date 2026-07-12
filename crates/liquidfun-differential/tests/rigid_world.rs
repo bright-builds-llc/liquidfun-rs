@@ -77,6 +77,19 @@ fn native_executes_both_families_deterministically_and_resets() {
 }
 
 #[test]
+fn native_contract_executes_the_exact_fixed_step_tuple() {
+    // Arrange
+    let request = request();
+
+    // Act
+    let result = NativeRigidWorldExecutor::execute(&request)
+        .expect("the validated fixed tuple should execute natively");
+
+    // Assert
+    assert_eq!(result.timelines().len(), 2);
+}
+
+#[test]
 fn native_boundary_rejects_invalid_owner_and_unknown_identity() {
     // Arrange
     let limits = HarnessLimits::phase2_default_v1();

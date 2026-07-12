@@ -33,7 +33,16 @@ fn schema_presentations_are_byte_stable_and_newline_terminated() {
 
     // Assert
     for (rendered, tracked) in presentations {
-        assert_eq!(rendered, tracked);
+        let maybe_mismatch = rendered
+            .lines()
+            .zip(tracked.lines())
+            .enumerate()
+            .find(|(_, (actual, expected))| actual != expected);
+        assert_eq!(
+            maybe_mismatch, None,
+            "schema presentation first differs at {maybe_mismatch:?}"
+        );
+        assert_eq!(rendered.len(), tracked.len());
         assert!(rendered.ends_with('\n'));
     }
 }
@@ -70,6 +79,9 @@ fn schema_presentations_keep_records_closed_and_versions_explicit() {
     assert!(TRACKED_SCENARIO_SCHEMA.contains("\"collision_probe_result\""));
     assert!(TRACKED_SCENARIO_SCHEMA.contains("\"single_contact_lifecycle\""));
     assert!(TRACKED_SCENARIO_SCHEMA.contains("\"set_custom_mass_data\""));
+    assert!(TRACKED_SCENARIO_SCHEMA.contains("\"const\": 1015580809"));
+    assert!(TRACKED_SCENARIO_SCHEMA.contains("\"const\": 8"));
+    assert!(TRACKED_SCENARIO_SCHEMA.contains("\"const\": 3"));
     assert!(TRACKED_TRACE_SCHEMA.contains("\"trace_schema_version\": 1"));
     assert!(TRACKED_TRACE_SCHEMA.contains("\"math_probe_end\""));
     assert!(TRACKED_TRACE_SCHEMA.contains("\"initial_fraction\""));

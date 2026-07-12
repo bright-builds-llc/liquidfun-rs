@@ -9,11 +9,12 @@ use geometry::{
 };
 
 use super::{
-    RigidBodyDeclaration, RigidBodyKind, RigidContactIdentity, RigidExpectedCheckpoint,
-    RigidExpectedCounts, RigidExpectedTransition, RigidFilterBits, RigidFixtureDeclaration,
-    RigidFixtureShape, RigidWorldAction, RigidWorldActionRecord, RigidWorldDecodeError,
-    RigidWorldErrorKind, RigidWorldRequestKind, RigidWorldRequestRecord, RigidWorldScenario,
-    RigidWorldTimeline, RigidWorldWitness, RigidWorldWitnessFamily, validation,
+    RIGID_WORLD_MAXIMUM_ACTIONS, RIGID_WORLD_POSITION_ITERATIONS, RIGID_WORLD_TIMESTEP_BITS,
+    RIGID_WORLD_VELOCITY_ITERATIONS, RigidBodyDeclaration, RigidBodyKind, RigidContactIdentity,
+    RigidExpectedCheckpoint, RigidExpectedCounts, RigidExpectedTransition, RigidFilterBits,
+    RigidFixtureDeclaration, RigidFixtureShape, RigidWorldAction, RigidWorldActionRecord,
+    RigidWorldDecodeError, RigidWorldErrorKind, RigidWorldRequestKind, RigidWorldRequestRecord,
+    RigidWorldScenario, RigidWorldTimeline, RigidWorldWitness, RigidWorldWitnessFamily, validation,
 };
 use crate::{
     FloatBits, HarnessLimits, ProtocolVersion, RecordLimit, RequestId, ScenarioId,
@@ -27,12 +28,10 @@ const MAXIMUM_STRING_BYTES: usize = 4 * 1024;
 const MAXIMUM_TIMELINES: usize = 2;
 const MAXIMUM_BODIES: usize = 64;
 const MAXIMUM_FIXTURES: usize = 128;
-const MAXIMUM_ACTIONS: usize = 128;
 const MAXIMUM_CHECKPOINTS: usize = 64;
 const MAXIMUM_TRANSITIONS: usize = 64;
 const MAXIMUM_POLYGON_VERTICES: usize = 8;
 const MAXIMUM_AGGREGATE_ITEMS: usize = 2_048;
-const MAXIMUM_SOLVER_ITERATIONS: u32 = 255;
 
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -74,7 +73,7 @@ struct RawTimeline {
     witness_family: RigidWorldWitnessFamily,
     bodies: BoundedVec<RawBodyDeclaration, MAXIMUM_BODIES>,
     fixtures: BoundedVec<RawFixtureDeclaration, MAXIMUM_FIXTURES>,
-    actions: BoundedVec<RawActionRecord, MAXIMUM_ACTIONS>,
+    actions: BoundedVec<RawActionRecord, RIGID_WORLD_MAXIMUM_ACTIONS>,
     checkpoints: BoundedVec<RawCheckpoint, MAXIMUM_CHECKPOINTS>,
 }
 
@@ -384,9 +383,7 @@ fn validate_action(
             inertia_bits,
         } => {
             require_live(body_id, live_bodies, RigidWorldErrorKind::UnknownBody)?;
-            validate_positive(*mass_bits)?;
-            validate_vec2(*center)?;
-            validate_nonnegative(*inertia_bits)?;
+            validate_custom_mass(*mass_bits, *center, *inertia_bits)?;
         }
         RigidWorldAction::InspectFixture { fixture_id }
         | RigidWorldAction::SetFixtureSensor { fixture_id, .. }
@@ -426,11 +423,9 @@ fn validate_action(
             velocity_iterations,
             position_iterations,
         } => {
-            validate_positive(*timestep_bits)?;
-            if *velocity_iterations == 0
-                || *position_iterations == 0
-                || *velocity_iterations > MAXIMUM_SOLVER_ITERATIONS
-                || *position_iterations > MAXIMUM_SOLVER_ITERATIONS
+            if timestep_bits.bits() != RIGID_WORLD_TIMESTEP_BITS
+                || *velocity_iterations != RIGID_WORLD_VELOCITY_ITERATIONS
+                || *position_iterations != RIGID_WORLD_POSITION_ITERATIONS
             {
                 return Err(validation(RigidWorldErrorKind::InvalidActionOrder));
             }
@@ -446,6 +441,31 @@ fn validate_action(
             }
             live_fixtures.retain(|fixture_id| fixture_owners.get(fixture_id) != Some(body_id));
         }
+    }
+    Ok(())
+}
+
+fn validate_custom_mass(
+    mass_bits: FloatBits,
+    center: crate::Vec2Bits,
+    inertia_bits: FloatBits,
+) -> Result<(), RigidWorldDecodeError> {
+    validate_positive(mass_bits)?;
+    validate_vec2(center)?;
+    validate_nonnegative(inertia_bits)?;
+
+    let mass = mass_bits.to_f32();
+    let center_x = center.x_bits.to_f32();
+    let center_y = center.y_bits.to_f32();
+    let center_dot = center_x * center_x + center_y * center_y;
+    let parallel_axis = mass * center_dot;
+    let centered_inertia = inertia_bits.to_f32() - parallel_axis;
+    if !center_dot.is_finite()
+        || !parallel_axis.is_finite()
+        || !centered_inertia.is_finite()
+        || centered_inertia < 0.0
+    {
+        return Err(validation(RigidWorldErrorKind::InvalidGeometry));
     }
     Ok(())
 }

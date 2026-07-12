@@ -7,8 +7,9 @@ use super::{
     vec2_bits_schema, version_schema,
 };
 use crate::{
-    RigidBodyKind, RigidContactEventKind, RigidFeatureKind, RigidManifoldKind, RigidWorldWitness,
-    RigidWorldWitnessFamily,
+    RIGID_WORLD_MAXIMUM_ACTIONS, RIGID_WORLD_POSITION_ITERATIONS, RIGID_WORLD_TIMESTEP_BITS,
+    RIGID_WORLD_VELOCITY_ITERATIONS, RigidBodyKind, RigidContactEventKind, RigidFeatureKind,
+    RigidManifoldKind, RigidWorldWitness, RigidWorldWitnessFamily,
 };
 
 pub(super) fn rigid_world_request_schema() -> Value {
@@ -104,7 +105,7 @@ fn rigid_world_timeline_schema() -> Value {
             },
             "actions": {
                 "items": action_record_schema(),
-                "maxItems": 128,
+                "maxItems": RIGID_WORLD_MAXIMUM_ACTIONS,
                 "minItems": 1,
                 "type": "array"
             },
@@ -229,7 +230,7 @@ fn rigid_world_action_schema() -> Value {
             tagged_probe_input("set_fixture_density", &json!({ "fixture_id": semantic_id_schema(), "density_bits": float_bits_schema() }), &["fixture_id", "density_bits"]),
             tagged_probe_input("reset_mass_data", &body_id(), &["body_id"]),
             tagged_probe_input("set_custom_mass_data", &json!({ "body_id": semantic_id_schema(), "mass_bits": float_bits_schema(), "center": schema_ref("vec2_bits"), "inertia_bits": float_bits_schema() }), &["body_id", "mass_bits", "center", "inertia_bits"]),
-            tagged_probe_input("step", &json!({ "timestep_bits": float_bits_schema(), "velocity_iterations": { "maximum": 255, "minimum": 1, "type": "integer" }, "position_iterations": { "maximum": 255, "minimum": 1, "type": "integer" } }), &["timestep_bits", "velocity_iterations", "position_iterations"]),
+            tagged_probe_input("step", &json!({ "timestep_bits": { "const": RIGID_WORLD_TIMESTEP_BITS }, "velocity_iterations": { "const": RIGID_WORLD_VELOCITY_ITERATIONS }, "position_iterations": { "const": RIGID_WORLD_POSITION_ITERATIONS } }), &["timestep_bits", "velocity_iterations", "position_iterations"]),
             tagged_probe_input("destroy_fixture", &fixture_id(), &["fixture_id"]),
             tagged_probe_input("destroy_body", &body_id(), &["body_id"])
         ]

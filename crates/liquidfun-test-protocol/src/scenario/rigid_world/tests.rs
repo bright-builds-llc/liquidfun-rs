@@ -27,6 +27,20 @@ fn timeline_mut<'a>(value: &'a mut Value, family: &str) -> &'a mut Value {
         .expect("fixture should contain requested witness family")
 }
 
+fn action_mut<'a>(value: &'a mut Value, action_id: &str) -> &'a mut Value {
+    value["scenario"]["timelines"]
+        .as_array_mut()
+        .expect("fixture timelines should be an array")
+        .iter_mut()
+        .flat_map(|timeline| {
+            timeline["actions"]
+                .as_array_mut()
+                .expect("fixture actions should be an array")
+        })
+        .find(|action| action["action_id"] == action_id)
+        .expect("fixture should contain requested action")
+}
+
 #[test]
 fn rigid_world_fixture_decodes_into_two_required_timelines() {
     // Arrange
@@ -341,6 +355,151 @@ fn rigid_world_rejects_n_plus_one_collections_before_execution() {
         errors
             .iter()
             .all(|error| matches!(error, RigidWorldDecodeError::Codec(_)))
+    );
+}
+
+#[test]
+fn rigid_world_accepts_exact_action_maximum() {
+    // Arrange
+    let limits = HarnessLimits::phase2_default_v1();
+    let mut value = fixture_value();
+    let actions = timeline_mut(&mut value, "non_colliding_body_fixture_lifecycle")["actions"]
+        .as_array_mut()
+        .expect("actions should be an array");
+    let template = actions[9].clone();
+    while actions.len() < RIGID_WORLD_MAXIMUM_ACTIONS {
+        let mut action = template.clone();
+        action["action_id"] = json!(format!("maximum-action-{}", actions.len()));
+        actions.insert(actions.len() - 6, action);
+    }
+
+    // Act
+    let result = decode_rigid_world_request_jsonl(&encode_value(&value), &limits);
+
+    // Assert
+    assert!(result.is_ok());
+}
+
+#[test]
+fn rigid_world_rejects_alternate_timestep_bits() {
+    // Arrange
+    let limits = HarnessLimits::phase2_default_v1();
+    let mut value = fixture_value();
+    action_mut(&mut value, "nc-step-zero")["action"]["timestep_bits"] =
+        json!(RIGID_WORLD_TIMESTEP_BITS + 1);
+
+    // Act
+    let error = decode_rigid_world_request_jsonl(&encode_value(&value), &limits)
+        .expect_err("alternate timestep must fail before execution");
+
+    // Assert
+    assert_eq!(
+        error.rigid_world_kind(),
+        Some(RigidWorldErrorKind::InvalidActionOrder)
+    );
+}
+
+#[test]
+fn rigid_world_rejects_alternate_velocity_iterations() {
+    // Arrange
+    let limits = HarnessLimits::phase2_default_v1();
+    let mut value = fixture_value();
+    action_mut(&mut value, "nc-step-zero")["action"]["velocity_iterations"] =
+        json!(RIGID_WORLD_VELOCITY_ITERATIONS + 1);
+
+    // Act
+    let error = decode_rigid_world_request_jsonl(&encode_value(&value), &limits)
+        .expect_err("alternate velocity iterations must fail before execution");
+
+    // Assert
+    assert_eq!(
+        error.rigid_world_kind(),
+        Some(RigidWorldErrorKind::InvalidActionOrder)
+    );
+}
+
+#[test]
+fn rigid_world_rejects_alternate_position_iterations() {
+    // Arrange
+    let limits = HarnessLimits::phase2_default_v1();
+    let mut value = fixture_value();
+    action_mut(&mut value, "nc-step-zero")["action"]["position_iterations"] =
+        json!(RIGID_WORLD_POSITION_ITERATIONS + 1);
+
+    // Act
+    let error = decode_rigid_world_request_jsonl(&encode_value(&value), &limits)
+        .expect_err("alternate position iterations must fail before execution");
+
+    // Assert
+    assert_eq!(
+        error.rigid_world_kind(),
+        Some(RigidWorldErrorKind::InvalidActionOrder)
+    );
+}
+
+#[test]
+fn rigid_world_rejects_negative_centered_inertia() {
+    // Arrange
+    let limits = HarnessLimits::phase2_default_v1();
+    let mut value = fixture_value();
+    let action = &mut action_mut(&mut value, "nc-custom-mass")["action"];
+    action["mass_bits"] = json!(1.0_f32.to_bits());
+    action["center"]["x_bits"] = json!(2.0_f32.to_bits());
+    action["center"]["y_bits"] = json!(0.0_f32.to_bits());
+    action["inertia_bits"] = json!(1.0_f32.to_bits());
+
+    // Act
+    let error = decode_rigid_world_request_jsonl(&encode_value(&value), &limits)
+        .expect_err("negative centered inertia must fail before execution");
+
+    // Assert
+    assert_eq!(
+        error.rigid_world_kind(),
+        Some(RigidWorldErrorKind::InvalidGeometry)
+    );
+}
+
+#[test]
+fn rigid_world_rejects_non_finite_center_dot_product() {
+    // Arrange
+    let limits = HarnessLimits::phase2_default_v1();
+    let mut value = fixture_value();
+    let action = &mut action_mut(&mut value, "nc-custom-mass")["action"];
+    action["mass_bits"] = json!(1.0_f32.to_bits());
+    action["center"]["x_bits"] = json!(f32::MAX.to_bits());
+    action["center"]["y_bits"] = json!(0.0_f32.to_bits());
+    action["inertia_bits"] = json!(f32::MAX.to_bits());
+
+    // Act
+    let error = decode_rigid_world_request_jsonl(&encode_value(&value), &limits)
+        .expect_err("non-finite center dot product must fail before execution");
+
+    // Assert
+    assert_eq!(
+        error.rigid_world_kind(),
+        Some(RigidWorldErrorKind::InvalidGeometry)
+    );
+}
+
+#[test]
+fn rigid_world_rejects_non_finite_parallel_axis_product() {
+    // Arrange
+    let limits = HarnessLimits::phase2_default_v1();
+    let mut value = fixture_value();
+    let action = &mut action_mut(&mut value, "nc-custom-mass")["action"];
+    action["mass_bits"] = json!(f32::MAX.to_bits());
+    action["center"]["x_bits"] = json!(2.0_f32.to_bits());
+    action["center"]["y_bits"] = json!(0.0_f32.to_bits());
+    action["inertia_bits"] = json!(f32::MAX.to_bits());
+
+    // Act
+    let error = decode_rigid_world_request_jsonl(&encode_value(&value), &limits)
+        .expect_err("non-finite parallel-axis product must fail before execution");
+
+    // Assert
+    assert_eq!(
+        error.rigid_world_kind(),
+        Some(RigidWorldErrorKind::InvalidGeometry)
     );
 }
 

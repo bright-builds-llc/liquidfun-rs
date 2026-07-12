@@ -4,10 +4,11 @@ use std::{fs, path::PathBuf};
 
 use liquidfun_test_protocol::{
     BuildIdentity, CodecErrorKind, HarnessLimits, ProtocolSessionValidator, ProtocolVersion,
-    RecordLimit, RequestedObservable, ScenarioDecodeError, ScenarioErrorKind,
+    RecordLimit, RequestedObservable, RigidWorldErrorKind, ScenarioDecodeError, ScenarioErrorKind,
     ScenarioSchemaVersion, ScenarioSource, Sha256Hex, ToleranceProfile, ToleranceProfileVersion,
     TraceRecord, TraceSchemaVersion, TraceValidator, decode_handshake_jsonl,
-    decode_scenario_request_jsonl, decode_trace_record_jsonl, encode_jsonl,
+    decode_rigid_world_request_jsonl, decode_scenario_request_jsonl, decode_trace_record_jsonl,
+    encode_jsonl,
 };
 use serde::Serialize;
 
@@ -17,6 +18,23 @@ fn repository_path(relative: &str) -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("../..")
         .join(relative)
+}
+
+#[test]
+fn rigid_world_negative_centered_inertia_is_rejected_before_execution() {
+    // Arrange
+    let bytes =
+        read_fixture("protocol/fixtures/rejected/rigid-world-negative-centered-inertia.jsonl");
+
+    // Act
+    let error = decode_rigid_world_request_jsonl(&bytes, &HarnessLimits::phase2_default_v1())
+        .expect_err("invalid centered inertia must fail at the typed boundary");
+
+    // Assert
+    assert_eq!(
+        error.rigid_world_kind(),
+        Some(RigidWorldErrorKind::InvalidGeometry)
+    );
 }
 
 fn read_fixture(relative: &str) -> Vec<u8> {

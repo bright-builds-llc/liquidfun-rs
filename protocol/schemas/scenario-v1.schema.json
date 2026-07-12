@@ -2914,19 +2914,13 @@
                               "const": "step"
                             },
                             "position_iterations": {
-                              "maximum": 255,
-                              "minimum": 1,
-                              "type": "integer"
+                              "const": 3
                             },
                             "timestep_bits": {
-                              "maximum": 4294967295,
-                              "minimum": 0,
-                              "type": "integer"
+                              "const": 1015580809
                             },
                             "velocity_iterations": {
-                              "maximum": 255,
-                              "minimum": 1,
-                              "type": "integer"
+                              "const": 8
                             }
                           },
                           "required": [
@@ -3163,6 +3157,8 @@
                               "density_changed_without_mass_reset",
                               "mass_reset",
                               "custom_mass_set",
+                              "static_kinematic_overlap_rejected",
+                              "kinematic_kinematic_overlap_rejected",
                               "zero_contact_step",
                               "fixture_destroyed",
                               "body_destroyed",

@@ -8,14 +8,16 @@ use liquidfun::{
     FixtureDef, FixtureId, ManagedContactSnapshot, StepHook, StepLimits, StepReport, World,
 };
 use liquidfun_test_protocol::{
-    FloatBits, RigidBodyDeclaration, RigidBodyKind, RigidBodySnapshot, RigidContactEvent,
-    RigidContactEventKind, RigidContactFeature, RigidContactIdentity, RigidContactResult,
-    RigidDestructionRecord, RigidExpectedCheckpoint, RigidExpectedCounts, RigidFeatureKind,
-    RigidFilterBits, RigidFixtureDeclaration, RigidFixtureShape, RigidFixtureSnapshot,
-    RigidManifoldKind, RigidManifoldPoint, RigidManifoldResult, RigidWorldAction,
-    RigidWorldActionRecord, RigidWorldDecodeError, RigidWorldRequestRecord, RigidWorldResultRecord,
-    RigidWorldTimeline, RigidWorldTimelineResult, RigidWorldWitness, RigidWorldWitnessFamily,
-    ScenarioId, TransformBits, Vec2Bits, validate_rigid_world_result_against_request,
+    FloatBits, RIGID_WORLD_POSITION_ITERATIONS, RIGID_WORLD_TIMESTEP_BITS,
+    RIGID_WORLD_VELOCITY_ITERATIONS, RigidBodyDeclaration, RigidBodyKind, RigidBodySnapshot,
+    RigidContactEvent, RigidContactEventKind, RigidContactFeature, RigidContactIdentity,
+    RigidContactResult, RigidDestructionRecord, RigidExpectedCheckpoint, RigidExpectedCounts,
+    RigidFeatureKind, RigidFilterBits, RigidFixtureDeclaration, RigidFixtureShape,
+    RigidFixtureSnapshot, RigidManifoldKind, RigidManifoldPoint, RigidManifoldResult,
+    RigidWorldAction, RigidWorldActionRecord, RigidWorldDecodeError, RigidWorldRequestRecord,
+    RigidWorldResultRecord, RigidWorldTimeline, RigidWorldTimelineResult, RigidWorldWitness,
+    RigidWorldWitnessFamily, ScenarioId, TransformBits, Vec2Bits,
+    validate_rigid_world_result_against_request,
 };
 
 /// Typed failure while mapping a validated rigid timeline onto native world APIs.
@@ -399,7 +401,17 @@ fn execute_action(
                 .map_err(|error| action_error(record, error))?;
             executor.push_observation(RigidWorldWitness::CustomMassSet, None);
         }
-        RigidWorldAction::Step { .. } => {
+        RigidWorldAction::Step {
+            timestep_bits,
+            velocity_iterations,
+            position_iterations,
+        } => {
+            if timestep_bits.bits() != RIGID_WORLD_TIMESTEP_BITS
+                || *velocity_iterations != RIGID_WORLD_VELOCITY_ITERATIONS
+                || *position_iterations != RIGID_WORLD_POSITION_ITERATIONS
+            {
+                return Err(action_error(record, "unsupported Phase 6 step tuple"));
+            }
             let report = executor
                 .world
                 .step(&mut NativeHook, StepLimits::default())
