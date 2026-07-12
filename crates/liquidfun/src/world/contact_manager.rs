@@ -383,9 +383,9 @@ fn pair_is_eligible(
     if !body_a.state.snapshot().is_active() || !body_b.state.snapshot().is_active() {
         return false;
     }
-    if body_a.state.snapshot().body_type() == BodyType::Static
-        && body_b.state.snapshot().body_type() == BodyType::Static
-    {
+    let at_least_one_dynamic = body_a.state.snapshot().body_type() == BodyType::Dynamic
+        || body_b.state.snapshot().body_type() == BodyType::Dynamic;
+    if !at_least_one_dynamic {
         return false;
     }
     let fixture_a = fixtures

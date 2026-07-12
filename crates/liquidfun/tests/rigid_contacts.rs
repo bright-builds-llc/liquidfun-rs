@@ -47,6 +47,66 @@ fn touching_world(sensor: bool) -> (World, BodyId, FixtureId, FixtureId) {
 }
 
 #[test]
+fn non_dynamic_static_kinematic_overlap_is_rejected() {
+    // Arrange
+    let mut world = World::new().expect("test world key should remain available");
+    let static_body = world
+        .create_body(&body_definition(BodyType::Static, Vec2::ZERO))
+        .expect("static body should fit");
+    let kinematic_body = world
+        .create_body(&body_definition(BodyType::Kinematic, Vec2::new(1.5, 0.0)))
+        .expect("kinematic body should fit");
+    world
+        .create_fixture(static_body, &fixture_definition(false, 0.25, 0.1))
+        .expect("static fixture should fit");
+    world
+        .create_fixture(kinematic_body, &fixture_definition(false, 1.0, 0.8))
+        .expect("kinematic fixture should fit");
+    let mut hook = NoopHook;
+
+    // Act
+    let report = world
+        .step(&mut hook, StepLimits::default())
+        .expect("non-dynamic overlap step should succeed");
+
+    // Assert
+    assert_eq!(world.contact_count(), 0);
+    assert!(report.contact_transitions().is_empty());
+    assert!(report.events().is_empty());
+    assert!(report.contact_solves().is_empty());
+}
+
+#[test]
+fn non_dynamic_kinematic_kinematic_overlap_is_rejected() {
+    // Arrange
+    let mut world = World::new().expect("test world key should remain available");
+    let first_body = world
+        .create_body(&body_definition(BodyType::Kinematic, Vec2::ZERO))
+        .expect("first kinematic body should fit");
+    let second_body = world
+        .create_body(&body_definition(BodyType::Kinematic, Vec2::new(1.5, 0.0)))
+        .expect("second kinematic body should fit");
+    world
+        .create_fixture(first_body, &fixture_definition(false, 0.25, 0.1))
+        .expect("first kinematic fixture should fit");
+    world
+        .create_fixture(second_body, &fixture_definition(false, 1.0, 0.8))
+        .expect("second kinematic fixture should fit");
+    let mut hook = NoopHook;
+
+    // Act
+    let report = world
+        .step(&mut hook, StepLimits::default())
+        .expect("non-dynamic overlap step should succeed");
+
+    // Assert
+    assert_eq!(world.contact_count(), 0);
+    assert!(report.contact_transitions().is_empty());
+    assert!(report.events().is_empty());
+    assert!(report.contact_solves().is_empty());
+}
+
+#[test]
 fn lifecycle_creates_persists_and_suppresses_duplicate_pairs() {
     // Arrange
     let (mut world, _dynamic_body, static_fixture, _dynamic_fixture) = touching_world(false);
