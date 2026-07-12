@@ -114,7 +114,7 @@ The v1 roadmap moves from an immutable, licensed source of truth to a semantic c
 1. One non-colliding and one colliding world step pass through the complete scenario, Rust adapter, C++ oracle, comparator, and regression-fixture path.
 
 **Research / ADR flags**: Audit pinned body/fixture/contact creation order, intrusive-list replacement, mass reset rules, material mixing, sensor timing, and destruction cascades before the slice is signed off.
-**Plans**: TBD during phase planning
+**Plans**: 22/22 plans complete
 
 ### Phase 7: Rigid Solver, World Operations, and CCD
 
@@ -223,7 +223,7 @@ The v1 roadmap moves from an immutable, licensed source of truth to a semantic c
 | 3. Rust Object Model and Storage Architecture | 5/5 | Complete    | 2026-07-11 |
 | 4. Math, Settings, and Numerical Policy | 7/7 | Complete    | 2026-07-11 |
 | 5. Shapes and Collision Foundation | 8/8 | Complete    | 2026-07-11 |
-| 6. Minimal Rigid World Vertical Slice | 13/13 | Complete   | 2026-07-12 |
+| 6. Minimal Rigid World Vertical Slice | 22/22 | Complete    | 2026-07-12 |
 | 7. Rigid Solver, World Operations, and CCD | 0/TBD | Not started | - |
 | 8. Joints, Rope, Callbacks, and Rigid Sign-Off | 0/TBD | Not started | - |
 | 9. Particle Storage, Lifecycle, and Coupling | 0/TBD | Not started | - |
