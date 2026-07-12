@@ -20,9 +20,11 @@ const MAXIMUM_SOLVER_ITERATIONS: u32 = 255;
 mod collision_probe;
 mod math_probe;
 mod reduction;
+mod rigid_world;
 pub use collision_probe::*;
 pub use math_probe::*;
 pub use reduction::*;
+pub use rigid_world::*;
 
 /// Stable semantic validation categories for a phase-2 scenario.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
