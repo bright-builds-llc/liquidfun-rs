@@ -97,6 +97,7 @@ pub use identity::{
     BodyId, FixtureId, JointId, ObjectKind, ParticleGroupId, ParticleId, ParticleSystemId,
 };
 pub use world::{
+    BodyDef, BodyDefError, BodyMassData, BodyMassDataError, BodySnapshot, BodyType,
     CollisionDirective, CommandApplication, CommandError, ContactEvent, ContactSnapshot,
     ContactView, CreateObjectError, DestroyedId, DestructionCause, DestructionRecord,
     ObjectSnapshot, PreSolveDirective, StepError, StepHook, StepLimits, StepReport, World,
