@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 06-15-PLAN.md
-last_updated: "2026-07-12T16:44:59.419Z"
+stopped_at: Completed 06-16-PLAN.md
+last_updated: "2026-07-12T16:59:55.676Z"
 last_activity: 2026-07-12
 progress:
   total_phases: 12
   completed_phases: 5
   total_plans: 57
-  completed_plans: 54
-  percent: 95
+  completed_plans: 55
+  percent: 96
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-11)
 ## Current Position
 
 Phase: 6 (Minimal Rigid World Vertical Slice) — EXECUTING
-Plan: 16 of 18
+Plan: 17 of 18
 Status: Ready to execute
 Last activity: 2026-07-12
 
@@ -79,6 +79,7 @@ Progress: [██████████] 100%
 | Phase 04 P07 | 17 min | 1 tasks | 7 files |
 | Phase 06 P14 | 9 min | 1 tasks | 5 files |
 | Phase 06 P15 | 16 min | 2 tasks | 12 files |
+| Phase 06 P16 | 15 min | 2 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -148,6 +149,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 06]: Build a complete candidate BodyState before aggregate mass mutation. — Candidate-first source ordering and one final replacement make create/reset failures effect-free.
 - [Phase 06]: Require at least one dynamic body before contact admission. — This mirrors the pinned ShouldCollide predicate and rejects every non-dynamic pair before filtering or allocation.
 - [Phase 06]: Use separate exact post-overlap witnesses for static/kinematic and kinematic/kinematic admission. — Declaration-first zero-contact checkpoints prevent a shared omission from passing cross-engine equality.
+- [Phase 06]: Admit only the exact fixed Phase 6 step tuple at every protocol boundary. — Keeps configurable solver semantics deferred to Phase 7 while preventing cross-engine input divergence.
+- [Phase 06]: Use one 128-action maximum across Rust, schema, and C++. — A single reviewed bound prevents native acceptance from becoming an oracle harness error.
+- [Phase 06]: Reject custom mass data through source-ordered centered-inertia intermediates before effects. — Malformed or overflowing mass data remains an input validation failure instead of reaching either engine.
 
 ### Pending Todos
 
@@ -155,6 +159,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-12T16:44:59.417Z
-Stopped at: Completed 06-15-PLAN.md
+Last session: 2026-07-12T16:59:55.673Z
+Stopped at: Completed 06-16-PLAN.md
 Resume file: None
