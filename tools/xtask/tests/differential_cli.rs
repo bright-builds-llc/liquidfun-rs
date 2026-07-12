@@ -439,6 +439,31 @@ fn local_rigid_identity_cannot_authorize_canonical_promotion() {
 }
 
 #[test]
+fn rigid_ci_commands_stay_in_the_native_reference_workflow() {
+    // Arrange
+    let native_reference_workflow = include_str!("../../../.github/workflows/oracle.yml");
+    let cargo_workflow = include_str!("../../../.github/workflows/ci.yml");
+    let required = [
+        "cargo xtask differential compare --scenario rigid-world --preset oracle-debug --session-profile one-shot",
+        "cargo xtask differential compare --scenario rigid-world --preset oracle-release --session-profile one-shot",
+        "cargo xtask differential replay --scenario rigid-world --preset oracle-debug --session-profile one-shot",
+        "cargo xtask differential verify-determinism --scenario rigid-world --preset oracle-debug --runs 2",
+    ];
+
+    // Act
+    let all_reference_commands_present = required
+        .iter()
+        .all(|command| native_reference_workflow.contains(command));
+    let cargo_only_isolated = ["submodules: recursive", "cmake", "oracle", "rigid-world"]
+        .iter()
+        .all(|forbidden| !cargo_workflow.to_ascii_lowercase().contains(forbidden));
+
+    // Assert
+    assert!(all_reference_commands_present);
+    assert!(cargo_only_isolated);
+}
+
+#[test]
 fn collision_compile_database_identity_is_covered_by_unit_digest_tests() {
     // The unit digest fixtures name collision_probe.cpp explicitly and are run by this filter.
     assert!(include_str!("../src/differential.rs").contains("collision_probe.cpp"));

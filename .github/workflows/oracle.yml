@@ -98,6 +98,14 @@ jobs:
         run: cargo xtask differential replay --scenario collision-probes --preset oracle-debug --session-profile one-shot
       - name: Verify Phase 5 collision D0 byte stability
         run: cargo xtask differential verify-determinism --scenario collision-probes --preset oracle-debug --runs 2
+      - name: Compare Phase 6 rigid world in debug and release
+        run: |
+          cargo xtask differential compare --scenario rigid-world --preset oracle-debug --session-profile one-shot
+          cargo xtask differential compare --scenario rigid-world --preset oracle-release --session-profile one-shot
+      - name: Replay the Phase 6 rigid world
+        run: cargo xtask differential replay --scenario rigid-world --preset oracle-debug --session-profile one-shot
+      - name: Verify Phase 6 rigid D0 byte stability
+        run: cargo xtask differential verify-determinism --scenario rigid-world --preset oracle-debug --runs 2
       - name: Compare empty-world in one-shot isolation
         run: cargo xtask differential compare --scenario empty-world --preset oracle-debug --session-profile one-shot
       - name: Compare the bounded two-request reuse session
