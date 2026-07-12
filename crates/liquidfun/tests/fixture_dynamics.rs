@@ -4,8 +4,8 @@ use liquidfun::collision::FilterData;
 use liquidfun::collision::shape::{ChainShape, CircleShape, Shape};
 use liquidfun::math::Vec2;
 use liquidfun::{
-    BodyActivationError, BodyDef, BodyTransformError, BodyType, FixtureBoundsError, FixtureDef,
-    World,
+    BodyActivationError, BodyDef, BodyMassData, BodyTransformError, BodyType, FixtureBoundsError,
+    FixtureDef, FixtureDefError, FixtureMutationError, World,
 };
 
 fn body_definition(body_type: BodyType, active: bool) -> BodyDef {
@@ -23,7 +23,7 @@ fn far_circle_fixture() -> FixtureDef {
     let shape = Shape::from(
         CircleShape::new(Vec2::new(f32::MAX, 0.0), 1.0).expect("circle should be valid"),
     );
-    FixtureDef::new(shape, 1.0, 0.2, 0.0, false, FilterData::default())
+    FixtureDef::new(shape, 0.0, 0.2, 0.0, false, FilterData::default())
         .expect("fixture definition should be valid")
 }
 
@@ -224,4 +224,271 @@ fn proxy_type_change_preserves_entries_for_step_time_reconsideration() {
     // Assert
     assert_eq!(snapshot.body_type(), BodyType::Static);
     assert_eq!(world.broad_phase_entry_count(), 1);
+}
+
+#[test]
+fn mass_positive_density_creation_and_every_destruction_reset_body_mass() {
+    // Arrange
+    let mut world = World::new().expect("world key should remain available");
+    let body = world
+        .create_body(&body_definition(BodyType::Dynamic, true))
+        .expect("body should fit");
+    let definition = circle_fixture();
+    let expected = definition
+        .shape()
+        .compute_mass(definition.density())
+        .expect("checked fixture mass should remain valid");
+
+    // Act
+    let fixture = world
+        .create_fixture(body, &definition)
+        .expect("fixture should fit");
+    let after_create = world.body_snapshot(body).expect("body should remain live");
+    world
+        .destroy_fixture(fixture)
+        .expect("fixture should remain live");
+    let after_destroy = world.body_snapshot(body).expect("body should remain live");
+
+    // Assert
+    assert_eq!(after_create.mass().to_bits(), expected.mass().to_bits());
+    assert_eq!(after_create.local_center(), expected.center());
+    assert_eq!(
+        after_create.rotational_inertia().to_bits(),
+        (expected.rotational_inertia()
+            - expected.mass() * expected.center().dot(expected.center()))
+        .to_bits()
+    );
+    assert_eq!(after_destroy.mass().to_bits(), 1.0_f32.to_bits());
+    assert_eq!(after_destroy.local_center(), Vec2::ZERO);
+    assert_eq!(
+        after_destroy.rotational_inertia().to_bits(),
+        0.0_f32.to_bits()
+    );
+}
+
+#[test]
+fn mass_zero_density_creation_preserves_dynamic_default() {
+    // Arrange
+    let mut world = World::new().expect("world key should remain available");
+    let body = world
+        .create_body(&body_definition(BodyType::Dynamic, true))
+        .expect("body should fit");
+    let definition = FixtureDef::new(
+        circle_fixture().shape().clone(),
+        0.0,
+        0.2,
+        0.0,
+        false,
+        FilterData::default(),
+    )
+    .expect("fixture definition should be valid");
+
+    // Act
+    world
+        .create_fixture(body, &definition)
+        .expect("fixture should fit");
+    let snapshot = world.body_snapshot(body).expect("body should remain live");
+
+    // Assert
+    assert_eq!(snapshot.mass().to_bits(), 1.0_f32.to_bits());
+    assert_eq!(snapshot.local_center(), Vec2::ZERO);
+}
+
+#[test]
+fn mass_density_edit_waits_for_explicit_reset() {
+    // Arrange
+    let mut world = World::new().expect("world key should remain available");
+    let body = world
+        .create_body(&body_definition(BodyType::Dynamic, true))
+        .expect("body should fit");
+    let fixture = world
+        .create_fixture(body, &circle_fixture())
+        .expect("fixture should fit");
+    let before = world.body_snapshot(body).expect("body should remain live");
+
+    // Act
+    world
+        .set_fixture_density(fixture, 3.0)
+        .expect("finite density should be accepted");
+    let before_reset = world.body_snapshot(body).expect("body should remain live");
+    world
+        .reset_body_mass_data(body)
+        .expect("body should remain live");
+    let after_reset = world.body_snapshot(body).expect("body should remain live");
+
+    // Assert
+    assert_eq!(before_reset.mass().to_bits(), before.mass().to_bits());
+    assert_eq!(before_reset.local_center(), before.local_center());
+    assert_eq!(
+        before_reset.rotational_inertia().to_bits(),
+        before.rotational_inertia().to_bits()
+    );
+    assert_eq!(
+        world
+            .fixture_snapshot(fixture)
+            .expect("fixture should remain live")
+            .density()
+            .to_bits(),
+        3.0_f32.to_bits()
+    );
+    assert_eq!(
+        after_reset.mass().to_bits(),
+        (3.0 * std::f32::consts::PI).to_bits()
+    );
+}
+
+#[test]
+fn mass_custom_override_is_dynamic_only_and_replaced_by_reset_triggers() {
+    // Arrange
+    let mut world = World::new().expect("world key should remain available");
+    let dynamic = world
+        .create_body(&body_definition(BodyType::Dynamic, true))
+        .expect("body should fit");
+    let static_body = world
+        .create_body(&body_definition(BodyType::Static, true))
+        .expect("body should fit");
+    let custom =
+        BodyMassData::new(5.0, Vec2::new(0.25, -0.5), 8.0).expect("custom mass should be valid");
+
+    // Act
+    world
+        .set_body_mass_data(dynamic, custom)
+        .expect("dynamic body should remain live");
+    world
+        .set_body_mass_data(static_body, custom)
+        .expect("static custom mass is a no-op");
+    let dynamic_override = world
+        .body_snapshot(dynamic)
+        .expect("dynamic body should remain live");
+    let static_after = world
+        .body_snapshot(static_body)
+        .expect("static body should remain live");
+    world
+        .create_fixture(dynamic, &circle_fixture())
+        .expect("positive-density fixture should fit");
+    let after_fixture = world
+        .body_snapshot(dynamic)
+        .expect("dynamic body should remain live");
+    world
+        .set_body_type(dynamic, BodyType::Static)
+        .expect("body should remain live");
+    let after_type = world
+        .body_snapshot(dynamic)
+        .expect("body should remain live");
+
+    // Assert
+    assert_eq!(dynamic_override.mass().to_bits(), 5.0_f32.to_bits());
+    assert_eq!(dynamic_override.local_center(), Vec2::new(0.25, -0.5));
+    assert_eq!(
+        dynamic_override.rotational_inertia().to_bits(),
+        custom.centered_rotational_inertia().to_bits()
+    );
+    assert_eq!(static_after.mass().to_bits(), 0.0_f32.to_bits());
+    assert_ne!(after_fixture.mass().to_bits(), 5.0_f32.to_bits());
+    assert_eq!(after_type.mass().to_bits(), 0.0_f32.to_bits());
+    assert_eq!(after_type.local_center(), Vec2::ZERO);
+}
+
+#[test]
+fn mass_zero_custom_value_validates_against_the_effective_unit_mass() {
+    // Arrange
+    let center = Vec2::new(2.0, 0.0);
+
+    // Act
+    let result = BodyMassData::new(0.0, center, 3.0);
+
+    // Assert
+    assert_eq!(
+        result,
+        Err(liquidfun::BodyMassDataError::NegativeCenteredRotationalInertia)
+    );
+}
+
+#[test]
+fn mutation_material_edits_preserve_exact_accepted_bits() {
+    // Arrange
+    let mut world = World::new().expect("world key should remain available");
+    let body = world
+        .create_body(&body_definition(BodyType::Dynamic, true))
+        .expect("body should fit");
+    let fixture = world
+        .create_fixture(body, &circle_fixture())
+        .expect("fixture should fit");
+    let friction = f32::from_bits(0x3e4c_cccd);
+    let restitution = -0.0_f32;
+
+    // Act
+    world
+        .set_fixture_friction(fixture, friction)
+        .expect("friction should be accepted");
+    world
+        .set_fixture_restitution(fixture, restitution)
+        .expect("restitution should be accepted");
+    let snapshot = world
+        .fixture_snapshot(fixture)
+        .expect("fixture should remain live");
+
+    // Assert
+    assert_eq!(snapshot.friction().to_bits(), friction.to_bits());
+    assert_eq!(snapshot.restitution().to_bits(), restitution.to_bits());
+}
+
+#[test]
+fn mutation_sensor_and_filter_update_fixture_state_without_entry_churn() {
+    // Arrange
+    let mut world = World::new().expect("world key should remain available");
+    let body = world
+        .create_body(&body_definition(BodyType::Dynamic, true))
+        .expect("body should fit");
+    let fixture = world
+        .create_fixture(body, &circle_fixture())
+        .expect("fixture should fit");
+    let filter = FilterData::new(0x0004, 0x00f0, -3);
+
+    // Act
+    world
+        .set_fixture_sensor(fixture, true)
+        .expect("fixture should remain live");
+    world
+        .set_fixture_filter(fixture, filter)
+        .expect("fixture should remain live");
+    let snapshot = world
+        .fixture_snapshot(fixture)
+        .expect("fixture should remain live");
+
+    // Assert
+    assert!(snapshot.is_sensor());
+    assert_eq!(snapshot.filter_data(), filter);
+    assert_eq!(snapshot.broad_phase_entry_count(), 1);
+    assert_eq!(world.broad_phase_entry_count(), 1);
+}
+
+#[test]
+fn mutation_invalid_material_rejection_is_atomic() {
+    // Arrange
+    let mut world = World::new().expect("world key should remain available");
+    let body = world
+        .create_body(&body_definition(BodyType::Dynamic, true))
+        .expect("body should fit");
+    let fixture = world
+        .create_fixture(body, &circle_fixture())
+        .expect("fixture should fit");
+    let before = world
+        .fixture_snapshot(fixture)
+        .expect("fixture should remain live");
+
+    // Act
+    let result = world.set_fixture_friction(fixture, f32::NAN);
+    let after = world
+        .fixture_snapshot(fixture)
+        .expect("fixture should remain live");
+
+    // Assert
+    assert_eq!(
+        result,
+        Err(FixtureMutationError::InvalidValue(
+            FixtureDefError::NonFiniteFriction
+        ))
+    );
+    assert_eq!(after, before);
 }

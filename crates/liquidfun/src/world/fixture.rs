@@ -1,8 +1,8 @@
 use std::error::Error;
 use std::fmt;
 
-use crate::BodyId;
 use crate::collision::{FilterData, Shape};
+use crate::{BodyId, HandleError};
 
 /// A failure while deriving or extending fixture bounds for broad-phase storage.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -59,6 +59,44 @@ impl fmt::Display for FixtureDefError {
 }
 
 impl Error for FixtureDefError {}
+
+/// A failure while changing checked material state on a world-owned fixture.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum FixtureMutationError {
+    /// The fixture identity does not resolve in this world.
+    InvalidHandle(HandleError),
+    /// The requested material value is invalid.
+    InvalidValue(FixtureDefError),
+    /// The requested density produces non-finite shape mass properties.
+    InvalidDerivedMass,
+}
+
+impl fmt::Display for FixtureMutationError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::InvalidHandle(error) => write!(formatter, "invalid fixture handle: {error}"),
+            Self::InvalidValue(error) => write!(formatter, "invalid fixture value: {error}"),
+            Self::InvalidDerivedMass => {
+                formatter.write_str("fixture density produces invalid mass properties")
+            }
+        }
+    }
+}
+
+impl Error for FixtureMutationError {}
+
+impl From<HandleError> for FixtureMutationError {
+    fn from(error: HandleError) -> Self {
+        Self::InvalidHandle(error)
+    }
+}
+
+impl From<FixtureDefError> for FixtureMutationError {
+    fn from(error: FixtureDefError) -> Self {
+        Self::InvalidValue(error)
+    }
+}
 
 /// A reusable checked fixture definition with an owned immutable shape.
 ///
@@ -177,6 +215,32 @@ impl FixtureDef {
             sensor: self.sensor,
             filter_data: self.filter_data,
         }
+    }
+
+    pub(super) fn set_density(&mut self, density: f32) -> Result<(), FixtureDefError> {
+        validate_density(density)?;
+        self.density = density;
+        Ok(())
+    }
+
+    pub(super) fn set_friction(&mut self, friction: f32) -> Result<(), FixtureDefError> {
+        validate_friction(friction)?;
+        self.friction = friction;
+        Ok(())
+    }
+
+    pub(super) fn set_restitution(&mut self, restitution: f32) -> Result<(), FixtureDefError> {
+        validate_restitution(restitution)?;
+        self.restitution = restitution;
+        Ok(())
+    }
+
+    pub(super) fn set_sensor(&mut self, sensor: bool) {
+        self.sensor = sensor;
+    }
+
+    pub(super) fn set_filter_data(&mut self, filter_data: FilterData) {
+        self.filter_data = filter_data;
     }
 }
 
@@ -306,20 +370,35 @@ fn validate_fixture_material(
     friction: f32,
     restitution: f32,
 ) -> Result<(), FixtureDefError> {
+    validate_density(density)?;
+    validate_friction(friction)?;
+    validate_restitution(restitution)?;
+    Ok(())
+}
+
+fn validate_density(density: f32) -> Result<(), FixtureDefError> {
     if !density.is_finite() {
         return Err(FixtureDefError::NonFiniteDensity);
-    }
-    if !friction.is_finite() {
-        return Err(FixtureDefError::NonFiniteFriction);
-    }
-    if !restitution.is_finite() {
-        return Err(FixtureDefError::NonFiniteRestitution);
     }
     if density < 0.0 {
         return Err(FixtureDefError::NegativeDensity);
     }
+    Ok(())
+}
+
+fn validate_friction(friction: f32) -> Result<(), FixtureDefError> {
+    if !friction.is_finite() {
+        return Err(FixtureDefError::NonFiniteFriction);
+    }
     if friction < 0.0 {
         return Err(FixtureDefError::NegativeFriction);
+    }
+    Ok(())
+}
+
+fn validate_restitution(restitution: f32) -> Result<(), FixtureDefError> {
+    if !restitution.is_finite() {
+        return Err(FixtureDefError::NonFiniteRestitution);
     }
     if restitution < 0.0 {
         return Err(FixtureDefError::NegativeRestitution);

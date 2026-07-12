@@ -106,7 +106,7 @@ pub use world::{
     BodyActivationError, BodyDef, BodyDefError, BodyMassData, BodyMassDataError, BodySnapshot,
     BodyTransformError, BodyType, CollisionDirective, CommandApplication, CommandError,
     ContactEvent, ContactSnapshot, ContactView, CreateObjectError, DestroyedId, DestructionCause,
-    DestructionRecord, FixtureBoundsError, FixtureDef, FixtureDefError, FixtureSnapshot,
-    ObjectSnapshot, PreSolveDirective, StepError, StepHook, StepLimits, StepReport, World,
-    WorldCommand, WorldFixtureSnapshot,
+    DestructionRecord, FixtureBoundsError, FixtureDef, FixtureDefError, FixtureMutationError,
+    FixtureSnapshot, ObjectSnapshot, PreSolveDirective, StepError, StepHook, StepLimits,
+    StepReport, World, WorldCommand, WorldFixtureSnapshot,
 };

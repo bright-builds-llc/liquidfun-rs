@@ -11,7 +11,8 @@ pub use body::{
     BodyTransformError, BodyType,
 };
 pub use fixture::{
-    FixtureBoundsError, FixtureDef, FixtureDefError, FixtureSnapshot, WorldFixtureSnapshot,
+    FixtureBoundsError, FixtureDef, FixtureDefError, FixtureMutationError, FixtureSnapshot,
+    WorldFixtureSnapshot,
 };
 pub use object::{
     CreateObjectError, DestroyedId, DestructionCause, DestructionRecord, ObjectSnapshot, World,

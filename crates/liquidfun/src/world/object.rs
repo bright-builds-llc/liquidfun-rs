@@ -9,11 +9,11 @@ use crate::{
 };
 
 use super::body::BodyActivationError;
-use super::body::{BodyDef, BodySnapshot, BodyState, BodyTransformError, BodyType};
-use super::fixture::{FixtureBoundsError, FixtureDef, WorldFixtureSnapshot};
+use super::body::{BodyDef, BodyMassData, BodySnapshot, BodyState, BodyTransformError, BodyType};
+use super::fixture::{FixtureBoundsError, FixtureDef, FixtureMutationError, WorldFixtureSnapshot};
 use super::proxy::{FixtureProxies, FixtureProxy, PreparedFixtureBounds, PreparedSynchronization};
 use super::step::StepState;
-use crate::collision::BroadPhase;
+use crate::collision::{BroadPhase, FilterData, MassData};
 use crate::math::Vec2;
 
 #[cfg(test)]
@@ -35,6 +35,11 @@ struct Fixture {
     body: BodyId,
     definition: FixtureDef,
     proxies: FixtureProxies,
+    #[allow(
+        dead_code,
+        reason = "Plan 06-04 consumes deferred fixture refilter state"
+    )]
+    pending_refilter: bool,
 }
 
 #[derive(Debug)]
@@ -103,6 +108,8 @@ pub enum CreateObjectError {
     Arena(ArenaInsertError),
     /// A fixture child cannot be represented in broad-phase coordinates.
     InvalidFixtureBounds(FixtureBoundsError),
+    /// Fixture density produces non-finite shape mass properties.
+    InvalidFixtureMass,
 }
 
 impl fmt::Display for CreateObjectError {
@@ -112,6 +119,9 @@ impl fmt::Display for CreateObjectError {
             Self::Arena(error) => write!(formatter, "could not store object: {error}"),
             Self::InvalidFixtureBounds(error) => {
                 write!(formatter, "invalid fixture bounds: {error}")
+            }
+            Self::InvalidFixtureMass => {
+                formatter.write_str("fixture density produces invalid mass properties")
             }
         }
     }
@@ -368,11 +378,14 @@ impl World {
             return Ok(());
         }
         let fixtures = record.fixtures.clone();
+        {
+            let record = self.body_mut_after_validation(body);
+            record.state.set_body_type(body_type);
+            record.pending_contact_destruction = true;
+            record.pending_wake = true;
+        }
+        self.reset_body_mass_after_validation(body);
         self.touch_body_fixture_entries(body, &fixtures);
-        let record = self.body_mut_after_validation(body);
-        record.state.set_body_type(body_type);
-        record.pending_contact_destruction = true;
-        record.pending_wake = true;
         Ok(())
     }
 
@@ -463,12 +476,21 @@ impl World {
         } else {
             None
         };
+        if definition.density() > 0.0
+            && definition
+                .shape()
+                .compute_mass(definition.density())
+                .is_err()
+        {
+            return Err(CreateObjectError::InvalidFixtureMass);
+        }
         let diagnostic_id = self.allocate_diagnostic_id()?;
         let fixture = self.fixtures.insert(Fixture {
             diagnostic_id,
             body,
             definition: definition.clone(),
             proxies: FixtureProxies::new(),
+            pending_refilter: false,
         })?;
         if let Some(prepared) = maybe_prepared {
             self.create_fixture_entries(fixture, body, prepared);
@@ -476,6 +498,9 @@ impl World {
         self.body_mut_after_validation(body)
             .fixtures
             .insert(0, fixture);
+        if definition.density() > 0.0 {
+            self.reset_body_mass_after_validation(body);
+        }
         Ok(fixture)
     }
 
@@ -502,6 +527,135 @@ impl World {
     #[must_use]
     pub fn broad_phase_entry_count(&self) -> usize {
         self.broad_phase.proxy_count()
+    }
+
+    /// Recomputes a body's mass properties from its current fixtures in source list order.
+    ///
+    /// # Errors
+    ///
+    /// Returns a handle error without mutation when `body` is foreign, stale, or destroyed.
+    pub fn reset_body_mass_data(&mut self, body: BodyId) -> Result<(), HandleError> {
+        self.ensure_not_poisoned_for_handle()?;
+        self.bodies.get(body)?;
+        self.reset_body_mass_after_validation(body);
+        Ok(())
+    }
+
+    /// Replaces current mass properties on a dynamic body.
+    ///
+    /// Static and kinematic bodies accept this operation as a source-compatible no-op.
+    ///
+    /// # Errors
+    ///
+    /// Returns a handle error without mutation when `body` is foreign, stale, or destroyed.
+    pub fn set_body_mass_data(
+        &mut self,
+        body: BodyId,
+        data: BodyMassData,
+    ) -> Result<(), HandleError> {
+        self.ensure_not_poisoned_for_handle()?;
+        self.bodies.get_mut(body)?.state.set_mass_data(data);
+        Ok(())
+    }
+
+    /// Changes fixture density without implicitly recomputing its body's mass.
+    ///
+    /// # Errors
+    ///
+    /// Returns a typed handle or checked material error without mutation.
+    pub fn set_fixture_density(
+        &mut self,
+        fixture: FixtureId,
+        density: f32,
+    ) -> Result<(), FixtureMutationError> {
+        self.ensure_not_poisoned_for_handle()?;
+        let record = self.fixtures.get(fixture)?;
+        if density > 0.0 && record.definition.shape().compute_mass(density).is_err() {
+            return Err(FixtureMutationError::InvalidDerivedMass);
+        }
+        self.fixtures
+            .get_mut(fixture)?
+            .definition
+            .set_density(density)?;
+        Ok(())
+    }
+
+    /// Changes the friction used when future contacts are created.
+    ///
+    /// # Errors
+    ///
+    /// Returns a typed handle or checked material error without mutation.
+    pub fn set_fixture_friction(
+        &mut self,
+        fixture: FixtureId,
+        friction: f32,
+    ) -> Result<(), FixtureMutationError> {
+        self.ensure_not_poisoned_for_handle()?;
+        self.fixtures
+            .get_mut(fixture)?
+            .definition
+            .set_friction(friction)?;
+        Ok(())
+    }
+
+    /// Changes the restitution used when future contacts are created.
+    ///
+    /// # Errors
+    ///
+    /// Returns a typed handle or checked material error without mutation.
+    pub fn set_fixture_restitution(
+        &mut self,
+        fixture: FixtureId,
+        restitution: f32,
+    ) -> Result<(), FixtureMutationError> {
+        self.ensure_not_poisoned_for_handle()?;
+        self.fixtures
+            .get_mut(fixture)?
+            .definition
+            .set_restitution(restitution)?;
+        Ok(())
+    }
+
+    /// Changes whether a fixture reports overlap without collision response.
+    ///
+    /// A changed sensor state records the owning body's pending wake side effect.
+    ///
+    /// # Errors
+    ///
+    /// Returns a handle error without mutation when `fixture` is foreign, stale, or destroyed.
+    pub fn set_fixture_sensor(
+        &mut self,
+        fixture: FixtureId,
+        sensor: bool,
+    ) -> Result<(), HandleError> {
+        self.ensure_not_poisoned_for_handle()?;
+        let record = self.fixtures.get(fixture)?;
+        if record.definition.is_sensor() == sensor {
+            return Ok(());
+        }
+        let body = record.body;
+        self.fixtures
+            .get_mut(fixture)?
+            .definition
+            .set_sensor(sensor);
+        self.body_mut_after_validation(body).pending_wake = true;
+        Ok(())
+    }
+
+    /// Replaces collision filtering and touches every active broad-phase child.
+    ///
+    /// # Errors
+    ///
+    /// Returns a handle error without mutation when `fixture` is foreign, stale, or destroyed.
+    pub fn set_fixture_filter(
+        &mut self,
+        fixture: FixtureId,
+        filter: FilterData,
+    ) -> Result<(), HandleError> {
+        self.ensure_not_poisoned_for_handle()?;
+        self.fixtures.get(fixture)?;
+        self.set_fixture_filter_after_validation(fixture, filter);
+        Ok(())
     }
 
     /// Creates a joint between two live bodies.
@@ -841,6 +995,7 @@ impl World {
             &mut self.body_mut_after_validation(removed.body).fixtures,
             &fixture,
         );
+        self.reset_body_mass_after_validation(removed.body);
         DestructionRecord {
             destroyed: DestroyedId::Fixture(fixture),
             diagnostic_id: removed.diagnostic_id,
@@ -970,6 +1125,49 @@ impl World {
                 .expect("body fixture adjacency contains a live fixture");
             record.proxies.touch(&mut self.broad_phase, *fixture, body);
         }
+    }
+
+    fn reset_body_mass_after_validation(&mut self, body: BodyId) {
+        let fixture_ids = self
+            .bodies
+            .get(body)
+            .expect("validated body remains live during mass reset")
+            .fixtures
+            .clone();
+        let fixture_mass_data = fixture_ids
+            .iter()
+            .filter_map(|fixture| {
+                let definition = &self
+                    .fixtures
+                    .get(*fixture)
+                    .expect("body fixture adjacency contains a live fixture")
+                    .definition;
+                if definition.density() == 0.0 {
+                    return None;
+                }
+                Some(
+                    definition
+                        .shape()
+                        .compute_mass(definition.density())
+                        .expect("checked fixture shape and density produce valid mass data"),
+                )
+            })
+            .collect::<Vec<MassData>>();
+        self.body_mut_after_validation(body)
+            .state
+            .reset_mass_data(&fixture_mass_data);
+    }
+
+    fn set_fixture_filter_after_validation(&mut self, fixture: FixtureId, filter: FilterData) {
+        let record = self
+            .fixtures
+            .get_mut(fixture)
+            .expect("validated fixture remains live during refilter");
+        record.definition.set_filter_data(filter);
+        record.pending_refilter = true;
+        record
+            .proxies
+            .set_filter(&mut self.broad_phase, fixture, record.body, filter);
     }
 
     fn prepare_body_synchronizations(
@@ -1444,6 +1642,102 @@ mod tests {
                 .map(|(_body, record)| record.diagnostic_id)
                 .collect::<Vec<_>>(),
             vec![u64::MAX - 1, u64::MAX]
+        );
+    }
+
+    #[test]
+    fn sensor_change_records_pending_body_wake() {
+        // Arrange
+        let mut world = test_world();
+        let body = world
+            .create_body(&BodyDef::default())
+            .expect("body should fit");
+        let fixture = world
+            .create_fixture(body, &test_fixture_definition())
+            .expect("fixture should fit");
+
+        // Act
+        world
+            .set_fixture_sensor(fixture, true)
+            .expect("fixture should remain live");
+
+        // Assert
+        assert!(
+            world
+                .bodies
+                .get(body)
+                .expect("body should remain live")
+                .pending_wake
+        );
+    }
+
+    #[test]
+    fn filter_change_records_refilter_and_touches_without_entry_churn() {
+        // Arrange
+        let mut world = test_world();
+        let body = world
+            .create_body(&BodyDef::default())
+            .expect("body should fit");
+        let fixture = world
+            .create_fixture(body, &test_fixture_definition())
+            .expect("fixture should fit");
+        let before_count = world.broad_phase.proxy_count();
+
+        // Act
+        world
+            .set_fixture_filter(fixture, FilterData::new(0x0002, 0x0004, -1))
+            .expect("fixture should remain live");
+
+        // Assert
+        assert!(
+            world
+                .fixtures
+                .get(fixture)
+                .expect("fixture should remain live")
+                .pending_refilter
+        );
+        assert_eq!(world.broad_phase.proxy_count(), before_count);
+    }
+
+    #[test]
+    fn type_change_records_pending_wake_and_contact_destruction() {
+        // Arrange
+        let mut world = test_world();
+        let definition = BodyDef::new(BodyType::Dynamic, Vec2::ZERO, 0.0, true)
+            .expect("body definition should be valid");
+        let body = world.create_body(&definition).expect("body should fit");
+
+        // Act
+        world
+            .set_body_type(body, BodyType::Static)
+            .expect("body should remain live");
+
+        // Assert
+        let record = world.bodies.get(body).expect("body should remain live");
+        assert!(record.pending_wake);
+        assert!(record.pending_contact_destruction);
+    }
+
+    #[test]
+    fn deactivation_records_pending_contact_destruction() {
+        // Arrange
+        let mut world = test_world();
+        let body = world
+            .create_body(&BodyDef::default())
+            .expect("body should fit");
+
+        // Act
+        world
+            .set_body_active(body, false)
+            .expect("body should remain live");
+
+        // Assert
+        assert!(
+            world
+                .bodies
+                .get(body)
+                .expect("body should remain live")
+                .pending_contact_destruction
         );
     }
 }

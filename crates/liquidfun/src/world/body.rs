@@ -2,6 +2,7 @@ use std::error::Error;
 use std::fmt;
 
 use crate::HandleError;
+use crate::collision::MassData;
 use crate::math::{Sweep, Transform, Vec2};
 
 use super::fixture::FixtureBoundsError;
@@ -28,6 +29,8 @@ pub enum BodyDefError {
     NonFinitePositionY,
     /// The body angle is not finite.
     NonFiniteAngle,
+    /// Applying the body transform to its current local center is not finite.
+    NonFiniteDerivedCenter,
 }
 
 impl fmt::Display for BodyDefError {
@@ -36,6 +39,7 @@ impl fmt::Display for BodyDefError {
             Self::NonFinitePositionX => "position.x",
             Self::NonFinitePositionY => "position.y",
             Self::NonFiniteAngle => "angle",
+            Self::NonFiniteDerivedCenter => "derived center",
         };
         write!(formatter, "body definition {field} must be finite")
     }
@@ -195,11 +199,15 @@ impl BodyDef {
     /// Returns an owned semantic snapshot of this definition.
     #[must_use]
     pub const fn snapshot(&self) -> BodySnapshot {
+        let mass = initial_body_mass(self.body_type);
         BodySnapshot {
             body_type: self.body_type,
             position: self.position,
             angle: self.angle,
             active: self.active,
+            mass,
+            local_center: Vec2::ZERO,
+            rotational_inertia: 0.0,
         }
     }
 }
@@ -222,6 +230,9 @@ pub struct BodySnapshot {
     position: Vec2,
     angle: f32,
     active: bool,
+    mass: f32,
+    local_center: Vec2,
+    rotational_inertia: f32,
 }
 
 impl Eq for BodySnapshot {}
@@ -256,6 +267,24 @@ impl BodySnapshot {
     pub const fn is_active(self) -> bool {
         self.active
     }
+
+    /// Returns body mass in kilograms.
+    #[must_use]
+    pub const fn mass(self) -> f32 {
+        self.mass
+    }
+
+    /// Returns the local center of mass in meters.
+    #[must_use]
+    pub const fn local_center(self) -> Vec2 {
+        self.local_center
+    }
+
+    /// Returns rotational inertia about the local center of mass.
+    #[must_use]
+    pub const fn rotational_inertia(self) -> f32 {
+        self.rotational_inertia
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -269,18 +298,23 @@ pub(super) struct BodyState {
     sweep: Sweep,
     linear_velocity: Vec2,
     angular_velocity: f32,
+    inverse_mass: f32,
+    inverse_inertia: f32,
 }
 
 impl BodyState {
     pub(super) fn from_definition(definition: &BodyDef) -> Self {
         let position = definition.position();
         let angle = definition.angle();
+        let mass = initial_body_mass(definition.body_type());
         Self {
             snapshot: definition.snapshot(),
             transform: definition.transform(),
             sweep: initial_sweep(position, angle),
             linear_velocity: Vec2::ZERO,
             angular_velocity: 0.0,
+            inverse_mass: mass,
+            inverse_inertia: 0.0,
         }
     }
 
@@ -299,12 +333,26 @@ impl BodyState {
             angle,
             self.snapshot.active,
         )?;
+        let mut snapshot = definition.snapshot();
+        snapshot.mass = self.snapshot.mass;
+        snapshot.local_center = self.snapshot.local_center;
+        snapshot.rotational_inertia = self.snapshot.rotational_inertia;
         Ok(Self {
-            snapshot: definition.snapshot(),
+            snapshot,
             transform: definition.transform(),
-            sweep: initial_sweep(position, angle),
+            sweep: Sweep::new(
+                self.snapshot.local_center,
+                definition.transform().apply(self.snapshot.local_center),
+                definition.transform().apply(self.snapshot.local_center),
+                angle,
+                angle,
+                0.0,
+            )
+            .map_err(|_error| BodyDefError::NonFiniteDerivedCenter)?,
             linear_velocity: self.linear_velocity,
             angular_velocity: self.angular_velocity,
+            inverse_mass: self.inverse_mass,
+            inverse_inertia: self.inverse_inertia,
         })
     }
 
@@ -318,6 +366,84 @@ impl BodyState {
 
     pub(super) fn set_active(&mut self, active: bool) {
         self.snapshot.active = active;
+    }
+
+    pub(super) fn reset_mass_data(&mut self, fixture_mass_data: &[MassData]) {
+        if self.snapshot.body_type != BodyType::Dynamic {
+            self.apply_mass_state(0.0, Vec2::ZERO, 0.0);
+            return;
+        }
+
+        let mut mass = 0.0;
+        let mut local_center = Vec2::ZERO;
+        let mut rotational_inertia = 0.0;
+        for data in fixture_mass_data {
+            mass += data.mass();
+            local_center += data.mass() * data.center();
+            rotational_inertia += data.rotational_inertia();
+        }
+
+        if mass > 0.0 {
+            local_center *= 1.0 / mass;
+        } else {
+            mass = 1.0;
+        }
+
+        if rotational_inertia > 0.0 {
+            rotational_inertia -= mass * local_center.dot(local_center);
+            assert!(
+                rotational_inertia > 0.0,
+                "checked aggregate fixture inertia must remain positive after centering"
+            );
+        } else {
+            rotational_inertia = 0.0;
+        }
+        self.apply_mass_state(mass, local_center, rotational_inertia);
+    }
+
+    pub(super) fn set_mass_data(&mut self, data: BodyMassData) {
+        if self.snapshot.body_type != BodyType::Dynamic {
+            return;
+        }
+        let mass = if data.mass() > 0.0 { data.mass() } else { 1.0 };
+        let rotational_inertia = if data.rotational_inertia() > 0.0 {
+            data.centered_rotational_inertia()
+        } else {
+            0.0
+        };
+        self.apply_mass_state(mass, data.center(), rotational_inertia);
+    }
+
+    fn apply_mass_state(&mut self, mass: f32, local_center: Vec2, rotational_inertia: f32) {
+        let old_center = self.sweep.center();
+        let current_center = self.transform.apply(local_center);
+        self.snapshot.mass = mass;
+        self.snapshot.local_center = local_center;
+        self.snapshot.rotational_inertia = rotational_inertia;
+        self.inverse_mass = if mass > 0.0 { 1.0 / mass } else { 0.0 };
+        self.inverse_inertia = if rotational_inertia > 0.0 {
+            1.0 / rotational_inertia
+        } else {
+            0.0
+        };
+        self.sweep = Sweep::new(
+            local_center,
+            current_center,
+            current_center,
+            self.snapshot.angle,
+            self.snapshot.angle,
+            0.0,
+        )
+        .expect("checked mass state and body transform produce a valid sweep");
+        self.linear_velocity +=
+            Vec2::scalar_cross(self.angular_velocity, current_center - old_center);
+    }
+}
+
+const fn initial_body_mass(body_type: BodyType) -> f32 {
+    match body_type {
+        BodyType::Dynamic => 1.0,
+        BodyType::Static | BodyType::Kinematic => 0.0,
     }
 }
 
@@ -399,7 +525,8 @@ impl BodyMassData {
             return Err(BodyMassDataError::NegativeMass);
         }
 
-        let centered_rotational_inertia = rotational_inertia - mass * center.dot(center);
+        let effective_mass = if mass > 0.0 { mass } else { 1.0 };
+        let centered_rotational_inertia = rotational_inertia - effective_mass * center.dot(center);
         if !centered_rotational_inertia.is_finite() {
             return Err(BodyMassDataError::NonFiniteCenteredRotationalInertia);
         }

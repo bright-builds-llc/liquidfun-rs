@@ -147,6 +147,21 @@ impl FixtureProxies {
         }
     }
 
+    pub(super) fn set_filter(
+        &self,
+        broad_phase: &mut BroadPhase<FixtureProxy>,
+        fixture: FixtureId,
+        body: BodyId,
+        filter: FilterData,
+    ) {
+        self.validate_payloads(broad_phase, fixture, body);
+        for entry in &self.entries {
+            broad_phase
+                .set_filter_data(entry.id, filter)
+                .expect("validated fixture entry must remain live");
+        }
+    }
+
     pub(super) fn destroy(
         &mut self,
         broad_phase: &mut BroadPhase<FixtureProxy>,
