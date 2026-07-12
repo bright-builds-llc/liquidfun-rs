@@ -44,6 +44,23 @@ impl ContactPoint {
             tangent_impulse: self.tangent_impulse,
         }
     }
+
+    pub(super) const fn feature_id(self) -> ContactFeatureId {
+        self.feature_id
+    }
+
+    pub(super) const fn normal_impulse(self) -> f32 {
+        self.normal_impulse
+    }
+
+    pub(super) const fn tangent_impulse(self) -> f32 {
+        self.tangent_impulse
+    }
+
+    pub(super) fn set_impulses(&mut self, normal_impulse: f32, tangent_impulse: f32) {
+        self.normal_impulse = normal_impulse;
+        self.tangent_impulse = tangent_impulse;
+    }
 }
 
 #[derive(Debug)]
@@ -102,6 +119,18 @@ impl Contact {
     pub(super) fn clear_manifold(&mut self) {
         self.maybe_manifold = None;
         self.points.clear();
+    }
+
+    pub(super) fn store_impulses(&mut self, impulses: &[(ContactFeatureId, f32, f32)]) {
+        for (feature_id, normal_impulse, tangent_impulse) in impulses {
+            let maybe_point = self
+                .points
+                .iter_mut()
+                .find(|point| point.feature_id() == *feature_id);
+            if let Some(point) = maybe_point {
+                point.set_impulses(*normal_impulse, *tangent_impulse);
+            }
+        }
     }
 
     pub(super) const fn is_touching(&self) -> bool {

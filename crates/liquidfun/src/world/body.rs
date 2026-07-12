@@ -288,10 +288,6 @@ impl BodySnapshot {
 }
 
 #[derive(Debug, Clone, Copy)]
-#[allow(
-    dead_code,
-    reason = "the private transform, sweep, and velocity lanes are consumed by Plan 06-05"
-)]
 pub(super) struct BodyState {
     snapshot: BodySnapshot,
     transform: Transform,
@@ -324,6 +320,31 @@ impl BodyState {
 
     pub(super) const fn transform(self) -> Transform {
         self.transform
+    }
+
+    pub(super) const fn sweep(self) -> Sweep {
+        self.sweep
+    }
+
+    pub(super) const fn solver_linear(self) -> Vec2 {
+        self.linear_velocity
+    }
+
+    pub(super) const fn solver_angular(self) -> f32 {
+        self.angular_velocity
+    }
+
+    pub(super) const fn inverse_mass(self) -> f32 {
+        self.inverse_mass
+    }
+
+    pub(super) const fn inverse_inertia(self) -> f32 {
+        self.inverse_inertia
+    }
+
+    pub(super) fn set_solver_motion(&mut self, linear_velocity: Vec2, angular_velocity: f32) {
+        self.linear_velocity = linear_velocity;
+        self.angular_velocity = angular_velocity;
     }
 
     pub(super) fn with_transform(self, position: Vec2, angle: f32) -> Result<Self, BodyDefError> {

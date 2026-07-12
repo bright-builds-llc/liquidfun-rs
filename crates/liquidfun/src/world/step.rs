@@ -8,6 +8,7 @@ use std::panic::{AssertUnwindSafe, catch_unwind, resume_unwind};
 use crate::{BodyId, DestructionRecord, FixtureId, HandleError, World};
 
 use super::contact::ContactTransition;
+use super::contact_solver::{ContactSolve, ContactSolveFailure};
 
 #[cfg(test)]
 use super::fixture::test_fixture_definition;
@@ -316,6 +317,7 @@ pub enum StepLifecycleEvent {
 pub struct StepReport {
     events: Vec<ContactEvent>,
     contact_transitions: Vec<ContactTransition>,
+    contact_solves: Vec<ContactSolve>,
     lifecycle: Vec<StepLifecycleEvent>,
     destructions: Vec<DestructionRecord>,
     command_applications: Vec<CommandApplication>,
@@ -332,6 +334,12 @@ impl StepReport {
     #[must_use]
     pub fn contact_transitions(&self) -> &[ContactTransition] {
         &self.contact_transitions
+    }
+
+    /// Returns post-solve semantic state in fixed solver order.
+    #[must_use]
+    pub fn contact_solves(&self) -> &[ContactSolve] {
+        &self.contact_solves
     }
 
     /// Returns contact and destruction evidence in exact production order.
@@ -356,13 +364,23 @@ impl StepReport {
 }
 
 /// A representative step-lifecycle failure.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 #[non_exhaustive]
 pub enum StepError {
     /// A prior hook panic left the representative world step poisoned.
     Poisoned,
     /// One of the contact fixture identities is foreign, stale, or destroyed.
     InvalidContact(HandleError),
+    /// Contact lifecycle completed, but its active solver topology is deferred.
+    UnsupportedSolverTopology {
+        /// Owned lifecycle evidence committed before fail-closed preflight.
+        contact_transitions: Vec<ContactTransition>,
+    },
+    /// Contact lifecycle completed, but solver construction produced non-finite state.
+    NonFiniteSolverState {
+        /// Owned lifecycle evidence committed before fail-closed construction.
+        contact_transitions: Vec<ContactTransition>,
+    },
     /// The world is already executing a step.
     Locked,
     /// A bounded per-step resource reached its configured limit.
@@ -386,6 +404,12 @@ impl fmt::Display for StepError {
         match self {
             Self::Poisoned => formatter.write_str("world is poisoned by a prior hook panic"),
             Self::InvalidContact(error) => write!(formatter, "invalid contact fixture: {error}"),
+            Self::UnsupportedSolverTopology { .. } => {
+                formatter.write_str("contact solver topology is deferred beyond Phase 6")
+            }
+            Self::NonFiniteSolverState { .. } => {
+                formatter.write_str("contact solver produced non-finite state")
+            }
             Self::Locked => formatter.write_str("world is locked by an active step"),
             Self::LimitExceeded { resource, limit } => {
                 write!(formatter, "step {resource} limit of {limit} was exceeded")
@@ -444,6 +468,14 @@ impl World {
         self.find_new_contacts();
         self.update_contacts();
         let mut contact_transitions = self.contact_manager.drain_transitions();
+        let contact_solves = self.solve_contacts().map_err(|error| match error {
+            ContactSolveFailure::UnsupportedTopology => StepError::UnsupportedSolverTopology {
+                contact_transitions: contact_transitions.clone(),
+            },
+            ContactSolveFailure::NonFinite => StepError::NonFiniteSolverState {
+                contact_transitions: contact_transitions.clone(),
+            },
+        })?;
         let mut lifecycle = contact_transitions
             .iter()
             .cloned()
@@ -461,6 +493,7 @@ impl World {
         Ok(StepReport {
             events,
             contact_transitions,
+            contact_solves,
             lifecycle,
             destructions,
             command_applications,

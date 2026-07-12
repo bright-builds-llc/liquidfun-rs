@@ -7,6 +7,7 @@ use super::contact::{
     Contact, ContactEndpoint, ContactKey, ContactTransition, ContactTransitionKind,
     canonical_contact_key,
 };
+use super::contact_solver::{ContactSolve, ContactSolveFailure, solve_contact};
 use super::object::{Body, Fixture};
 use super::proxy::FixtureProxy;
 
@@ -126,6 +127,96 @@ impl ContactManager {
 
     pub(super) fn drain_transitions(&mut self) -> Vec<ContactTransition> {
         std::mem::take(&mut self.transitions)
+    }
+
+    #[cfg(test)]
+    pub(super) fn snapshots_for_test(&self) -> Vec<super::contact::ManagedContactSnapshot> {
+        self.contacts.iter().map(Contact::snapshot).collect()
+    }
+
+    #[cfg(test)]
+    pub(super) fn seed_first_impulses_for_test(&mut self, normal: f32, tangent: f32) {
+        let contact = self
+            .contacts
+            .first_mut()
+            .expect("test contact should exist before seeding impulses");
+        let feature_id = contact.points[0].feature_id();
+        contact.store_impulses(&[(feature_id, normal, tangent)]);
+    }
+
+    pub(super) fn solve_contacts(
+        &mut self,
+        bodies: &mut Arena<Body, BodyId>,
+        fixtures: &Arena<Fixture, FixtureId>,
+    ) -> Result<Vec<ContactSolve>, ContactSolveFailure> {
+        let mut maybe_index = None;
+        for (index, contact) in self.contacts.iter().enumerate() {
+            if !contact.is_touching() || !contact.is_enabled() || contact.is_sensor() {
+                continue;
+            }
+            let first_type = bodies
+                .get(contact.key.first.body)
+                .expect("contact body A remains live")
+                .state
+                .snapshot()
+                .body_type();
+            let second_type = bodies
+                .get(contact.key.second.body)
+                .expect("contact body B remains live")
+                .state
+                .snapshot()
+                .body_type();
+            let supported_pair = matches!(
+                (first_type, second_type),
+                (BodyType::Static, BodyType::Dynamic) | (BodyType::Dynamic, BodyType::Static)
+            );
+            if !supported_pair || maybe_index.replace(index).is_some() {
+                return Err(ContactSolveFailure::UnsupportedTopology);
+            }
+        }
+        let Some(index) = maybe_index else {
+            return Ok(Vec::new());
+        };
+
+        let key = self.contacts[index].key;
+        let first_state = bodies
+            .get(key.first.body)
+            .expect("solver body A remains live")
+            .state;
+        let second_state = bodies
+            .get(key.second.body)
+            .expect("solver body B remains live")
+            .state;
+        let first_shape = fixtures
+            .get(key.first.fixture)
+            .expect("solver fixture A remains live")
+            .definition
+            .shape();
+        let second_shape = fixtures
+            .get(key.second.fixture)
+            .expect("solver fixture B remains live")
+            .definition
+            .shape();
+        let commit = solve_contact(
+            &self.contacts[index],
+            first_state,
+            second_state,
+            first_shape,
+            second_shape,
+        )?;
+
+        bodies
+            .get_mut(key.first.body)
+            .expect("solver body A remains live during commit")
+            .state
+            .set_solver_motion(commit.first_motion.linear, commit.first_motion.angular);
+        bodies
+            .get_mut(key.second.body)
+            .expect("solver body B remains live during commit")
+            .state
+            .set_solver_motion(commit.second_motion.linear, commit.second_motion.angular);
+        self.contacts[index].store_impulses(&commit.impulses);
+        Ok(vec![ContactSolve::new(self.contacts[index].snapshot())])
     }
 
     fn add_pair(

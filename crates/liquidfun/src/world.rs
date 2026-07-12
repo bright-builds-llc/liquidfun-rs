@@ -3,6 +3,7 @@
 mod body;
 mod contact;
 mod contact_manager;
+mod contact_solver;
 mod fixture;
 pub(crate) mod object;
 mod proxy;
@@ -15,6 +16,7 @@ pub use body::{
 pub use contact::{
     ContactPointSnapshot, ContactTransition, ContactTransitionKind, ManagedContactSnapshot,
 };
+pub use contact_solver::ContactSolve;
 pub use fixture::{
     FixtureBoundsError, FixtureDef, FixtureDefError, FixtureMutationError, FixtureSnapshot,
     WorldFixtureSnapshot,

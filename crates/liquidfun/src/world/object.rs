@@ -11,6 +11,7 @@ use crate::{
 use super::body::BodyActivationError;
 use super::body::{BodyDef, BodyMassData, BodySnapshot, BodyState, BodyTransformError, BodyType};
 use super::contact_manager::ContactManager;
+use super::contact_solver::{ContactSolve, ContactSolveFailure};
 use super::fixture::{FixtureBoundsError, FixtureDef, FixtureMutationError, WorldFixtureSnapshot};
 use super::proxy::{FixtureProxies, FixtureProxy, PreparedFixtureBounds, PreparedSynchronization};
 use super::step::StepState;
@@ -1200,6 +1201,46 @@ impl World {
             &mut self.bodies,
             &mut self.fixtures,
         );
+    }
+
+    pub(super) fn solve_contacts(&mut self) -> Result<Vec<ContactSolve>, ContactSolveFailure> {
+        self.contact_manager
+            .solve_contacts(&mut self.bodies, &self.fixtures)
+    }
+
+    #[cfg(test)]
+    pub(super) fn set_body_solver_velocity_for_test(
+        &mut self,
+        body: BodyId,
+        linear: Vec2,
+        angular: f32,
+    ) {
+        self.bodies
+            .get_mut(body)
+            .expect("test body should remain live")
+            .state
+            .set_solver_motion(linear, angular);
+    }
+
+    #[cfg(test)]
+    pub(super) fn body_solver_velocity_for_test(&self, body: BodyId) -> (Vec2, f32) {
+        let state = self
+            .bodies
+            .get(body)
+            .expect("test body should remain live")
+            .state;
+        (state.solver_linear(), state.solver_angular())
+    }
+
+    #[cfg(test)]
+    pub(super) fn contact_snapshots_for_test(&self) -> Vec<super::contact::ManagedContactSnapshot> {
+        self.contact_manager.snapshots_for_test()
+    }
+
+    #[cfg(test)]
+    pub(super) fn seed_first_contact_impulses_for_test(&mut self, normal: f32, tangent: f32) {
+        self.contact_manager
+            .seed_first_impulses_for_test(normal, tangent);
     }
 
     pub(super) fn destroy_contacts_for_body(&mut self, body: BodyId) {
