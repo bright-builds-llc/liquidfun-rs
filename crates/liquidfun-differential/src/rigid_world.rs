@@ -582,6 +582,8 @@ fn collect_transitions(
 fn observe_step(executor: &mut TimelineExecutor, phase: &str) {
     let maybe_contact = executor.maybe_last_contact.clone();
     let witnesses: &[RigidWorldWitness] = match phase {
+        "static-kinematic-admission" => &[RigidWorldWitness::StaticKinematicOverlapRejected],
+        "kinematic-kinematic-admission" => &[RigidWorldWitness::KinematicKinematicOverlapRejected],
         "step-zero" => &[RigidWorldWitness::ZeroContactStep],
         "contact-begin" => &[
             RigidWorldWitness::ContactCreated,

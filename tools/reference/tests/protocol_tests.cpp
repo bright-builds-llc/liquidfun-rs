@@ -348,8 +348,22 @@ void rigid_world_executes_both_complete_witness_families() {
       "single-contact witness family is missing");
   const auto& non_colliding = result.at("timelines").at(0).at("checkpoints");
   const auto& single_contact = result.at("timelines").at(1).at("checkpoints");
-  expect(non_colliding.size() == 5, "non-colliding checkpoints are incomplete");
+  expect(non_colliding.size() == 8, "non-colliding checkpoints are incomplete");
   expect(single_contact.size() == 10, "contact checkpoints are incomplete");
+  expect(
+      non_colliding.at(1).at("checkpoint_id") ==
+              "nc-static-kinematic-rejected" &&
+          non_colliding.at(1).at("counts").at("contacts") == 0 &&
+          non_colliding.at(1).at("counts").at("manifold_points") == 0 &&
+          non_colliding.at(1).at("counts").at("events") == 0,
+      "static/kinematic admission checkpoint changed");
+  expect(
+      non_colliding.at(3).at("checkpoint_id") ==
+              "nc-kinematic-kinematic-rejected" &&
+          non_colliding.at(3).at("counts").at("contacts") == 0 &&
+          non_colliding.at(3).at("counts").at("manifold_points") == 0 &&
+          non_colliding.at(3).at("counts").at("events") == 0,
+      "kinematic/kinematic admission checkpoint changed");
   const auto& begin = single_contact.at(1);
   expect(
       begin.at("events") == nlohmann::json::parse(
@@ -398,6 +412,26 @@ void rigid_world_rejects_untrusted_records_before_execution() {
   auto& actions = oversized.at("scenario").at("timelines").at(0).at("actions");
   while (actions.size() <= 64) actions.push_back(actions.back());
   const auto oversized_record = oversized.dump() + '\n';
+  auto missing_static_kinematic = fixture;
+  const auto static_kinematic =
+      missing_static_kinematic.find("static_kinematic_overlap_rejected");
+  expect(
+      static_kinematic != std::string::npos,
+      "static/kinematic admission witness is missing from fixture");
+  missing_static_kinematic.replace(
+      static_kinematic,
+      std::string("static_kinematic_overlap_rejected").size(),
+      "removed_static_kinematic_witness");
+  auto missing_kinematic_kinematic = fixture;
+  const auto kinematic_kinematic =
+      missing_kinematic_kinematic.find("kinematic_kinematic_overlap_rejected");
+  expect(
+      kinematic_kinematic != std::string::npos,
+      "kinematic/kinematic admission witness is missing from fixture");
+  missing_kinematic_kinematic.replace(
+      kinematic_kinematic,
+      std::string("kinematic_kinematic_overlap_rejected").size(),
+      "removed_kinematic_kinematic_witness");
 
   // Act / Assert
   for (const auto& [record, expected] :
@@ -405,7 +439,9 @@ void rigid_world_rejects_untrusted_records_before_execution() {
            {duplicate, "duplicate member"},
            {unknown, "unknown member"},
            {out_of_order, "action order"},
-           {oversized_record, "action count"}}) {
+           {oversized_record, "action count"},
+           {missing_static_kinematic, "witness registry is incomplete"},
+           {missing_kinematic_kinematic, "witness registry is incomplete"}}) {
     try {
       static_cast<void>(decode_rigid_world_request(record));
     } catch (const std::exception& error) {

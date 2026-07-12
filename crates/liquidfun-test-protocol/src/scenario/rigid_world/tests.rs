@@ -52,6 +52,131 @@ fn rigid_world_fixture_decodes_into_two_required_timelines() {
 }
 
 #[test]
+fn rigid_world_non_dynamic_admission_witnesses_follow_separate_fixed_steps() {
+    // Arrange
+    let mut value = fixture_value();
+    let timeline = timeline_mut(&mut value, "non_colliding_body_fixture_lifecycle").clone();
+    let actions = timeline["actions"]
+        .as_array()
+        .expect("fixture actions should be an array");
+    let checkpoints = timeline["checkpoints"]
+        .as_array()
+        .expect("fixture checkpoints should be an array");
+
+    // Act / Assert
+    let bodies = timeline["bodies"]
+        .as_array()
+        .expect("fixture bodies should be an array");
+    let static_body = bodies
+        .iter()
+        .find(|body| body["body_id"] == "nc-static")
+        .expect("static admission body should exist");
+    let kinematic_body = bodies
+        .iter()
+        .find(|body| body["body_id"] == "nc-kinematic")
+        .expect("kinematic admission body should exist");
+    assert_eq!(static_body["body_kind"], "static");
+    assert_eq!(static_body["transform"]["position"]["x_bits"], 0);
+    assert_eq!(kinematic_body["body_kind"], "kinematic");
+    assert_eq!(
+        kinematic_body["transform"]["position"]["x_bits"],
+        1.5_f32.to_bits()
+    );
+    let type_change = actions
+        .iter()
+        .find(|action| action["action_id"] == "nc-type")
+        .expect("kinematic/kinematic configuration action should exist");
+    assert_eq!(type_change["action"]["body_id"], "nc-static");
+    assert_eq!(type_change["action"]["body_kind"], "kinematic");
+
+    for (action_id, checkpoint_id, witness) in [
+        (
+            "nc-step-static-kinematic",
+            "nc-static-kinematic-rejected",
+            "static_kinematic_overlap_rejected",
+        ),
+        (
+            "nc-step-kinematic-kinematic",
+            "nc-kinematic-kinematic-rejected",
+            "kinematic_kinematic_overlap_rejected",
+        ),
+    ] {
+        let action = actions
+            .iter()
+            .find(|action| action["action_id"] == action_id)
+            .expect("admission witness step should exist");
+        assert_eq!(action["action"]["kind"], "step");
+        assert_eq!(action["action"]["timestep_bits"], 0x3c88_8889_u32);
+        assert_eq!(action["action"]["velocity_iterations"], 8);
+        assert_eq!(action["action"]["position_iterations"], 3);
+
+        let checkpoint = checkpoints
+            .iter()
+            .find(|checkpoint| checkpoint["checkpoint_id"] == checkpoint_id)
+            .expect("admission witness checkpoint should exist");
+        assert_eq!(checkpoint["after_action_id"], action_id);
+        assert_eq!(checkpoint["counts"]["contacts"], 0);
+        assert_eq!(checkpoint["counts"]["manifold_points"], 0);
+        assert_eq!(checkpoint["counts"]["events"], 0);
+        assert_eq!(
+            checkpoint["transitions"],
+            json!([{
+                "witness": witness,
+                "maybe_contact": null
+            }])
+        );
+    }
+}
+
+#[test]
+fn rigid_world_non_dynamic_admission_step_deletion_fails_closed() {
+    // Arrange
+    let limits = HarnessLimits::phase2_default_v1();
+
+    // Act / Assert
+    for action_id in ["nc-step-static-kinematic", "nc-step-kinematic-kinematic"] {
+        let mut value = fixture_value();
+        timeline_mut(&mut value, "non_colliding_body_fixture_lifecycle")["actions"]
+            .as_array_mut()
+            .expect("fixture actions should be an array")
+            .retain(|action| action["action_id"] != action_id);
+        let error = decode_rigid_world_request_jsonl(&encode_value(&value), &limits)
+            .expect_err("deleting either admission witness step must fail");
+        assert_eq!(
+            error.rigid_world_kind(),
+            Some(RigidWorldErrorKind::InvalidCheckpointOrder)
+        );
+    }
+}
+
+#[test]
+fn rigid_world_non_dynamic_admission_contact_expectation_fails_closed() {
+    // Arrange
+    let limits = HarnessLimits::phase2_default_v1();
+    let mut value = fixture_value();
+    let checkpoints =
+        timeline_mut(&mut value, "non_colliding_body_fixture_lifecycle")["checkpoints"]
+            .as_array_mut()
+            .expect("fixture checkpoints should be an array");
+    let checkpoint = checkpoints
+        .iter_mut()
+        .find(|checkpoint| checkpoint["checkpoint_id"] == "nc-kinematic-kinematic-rejected")
+        .expect("admission witness checkpoint should exist");
+    checkpoint["counts"]["contacts"] = json!(1);
+    checkpoint["counts"]["manifold_points"] = json!(1);
+
+    // Act
+    let error = decode_rigid_world_request_jsonl(&encode_value(&value), &limits)
+        .expect_err("permitting an admission contact must fail");
+
+    // Assert
+    assert_eq!(
+        error.rigid_world_kind(),
+        Some(RigidWorldErrorKind::ExpectedCountMismatch)
+    );
+}
+
+#[test]
 fn rigid_world_required_family_deletion_fails_closed() {
     // Arrange
     let limits = HarnessLimits::phase2_default_v1();

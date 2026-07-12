@@ -29,6 +29,8 @@ pub enum RigidWorldWitness {
     DensityChangedWithoutMassReset,
     MassReset,
     CustomMassSet,
+    StaticKinematicOverlapRejected,
+    KinematicKinematicOverlapRejected,
     ZeroContactStep,
     FixtureDestroyed,
     BodyDestroyed,
@@ -48,7 +50,7 @@ pub enum RigidWorldWitness {
     BodyCascadeEndOrdered,
 }
 
-const NON_COLLIDING_WITNESSES: [RigidWorldWitness; 20] = [
+const NON_COLLIDING_WITNESSES: [RigidWorldWitness; 22] = [
     RigidWorldWitness::StaticBodyCreated,
     RigidWorldWitness::KinematicBodyCreated,
     RigidWorldWitness::DynamicBodyCreated,
@@ -66,6 +68,8 @@ const NON_COLLIDING_WITNESSES: [RigidWorldWitness; 20] = [
     RigidWorldWitness::DensityChangedWithoutMassReset,
     RigidWorldWitness::MassReset,
     RigidWorldWitness::CustomMassSet,
+    RigidWorldWitness::StaticKinematicOverlapRejected,
+    RigidWorldWitness::KinematicKinematicOverlapRejected,
     RigidWorldWitness::ZeroContactStep,
     RigidWorldWitness::FixtureDestroyed,
     RigidWorldWitness::BodyDestroyed,

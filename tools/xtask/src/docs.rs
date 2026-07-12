@@ -134,7 +134,7 @@ const PHASE5_DOCUMENT_CONTRACTS: [(&str, &[&str]); 4] = [
         ],
     ),
 ];
-const PHASE6_DOCUMENT_CONTRACTS: [(&str, &[&str]); 4] = [
+const PHASE6_DOCUMENT_CONTRACTS: [(&str, &[&str]); 5] = [
     (
         "ARCHITECTURE.md",
         &[
@@ -198,6 +198,13 @@ const PHASE6_DOCUMENT_CONTRACTS: [(&str, &[&str]); 4] = [
             "single_contact_lifecycle",
             "Phase 7",
             "remain pending",
+        ],
+    ),
+    (
+        "protocol/fixtures/accepted/rigid-world-request.jsonl",
+        &[
+            "static_kinematic_overlap_rejected",
+            "kinematic_kinematic_overlap_rejected",
         ],
     ),
 ];

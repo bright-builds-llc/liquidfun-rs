@@ -70,7 +70,7 @@ fn native_executes_both_families_deterministically_and_resets() {
     // Assert
     assert_eq!(first, second);
     assert_eq!(first.timelines().len(), 2);
-    assert_eq!(first.timelines()[0].checkpoints.len(), 5);
+    assert_eq!(first.timelines()[0].checkpoints.len(), 8);
     assert_eq!(first.timelines()[1].checkpoints.len(), 10);
     validate_native_rigid_world_result(&request, &first)
         .expect("native result should agree with every declaration");
@@ -86,8 +86,14 @@ fn native_boundary_rejects_invalid_owner_and_unknown_identity() {
         json!("missing-body");
     let mut unknown_identity =
         serde_json::from_slice::<Value>(REQUEST).expect("fixture should be JSON");
-    unknown_identity["scenario"]["timelines"][0]["actions"][6]["action"]["body_id"] =
-        json!("missing-body");
+    let actions = unknown_identity["scenario"]["timelines"][0]["actions"]
+        .as_array_mut()
+        .expect("fixture actions should be an array");
+    let inspect_body = actions
+        .iter_mut()
+        .find(|action| action["action_id"] == "nc-inspect-body")
+        .expect("inspect-body action should exist");
+    inspect_body["action"]["body_id"] = json!("missing-body");
 
     // Act
     let owner_error = decode_rigid_world_request_jsonl(&encode_value(&invalid_owner), &limits)

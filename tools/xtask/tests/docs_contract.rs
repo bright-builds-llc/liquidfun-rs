@@ -27,6 +27,7 @@ const CONTRACT_DOCUMENTS: [&str; 4] = [
     "COMPATIBILITY.md",
     "README.md",
 ];
+const CONTRACT_SUPPORT_FILES: [&str; 1] = ["protocol/fixtures/accepted/rigid-world-request.jsonl"];
 static FIXTURE_ID: AtomicU64 = AtomicU64::new(0);
 
 type TestResult = Result<(), Box<dyn Error>>;
@@ -45,6 +46,17 @@ impl DocsFixture {
         fs::create_dir_all(&root)?;
         for document in CONTRACT_DOCUMENTS {
             fs::copy(workspace_root().join(document), root.join(document))?;
+        }
+        for support_file in CONTRACT_SUPPORT_FILES {
+            let destination = root.join(support_file);
+            let Some(parent) = destination.parent() else {
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidInput,
+                    "contract support file must have a parent directory",
+                ));
+            };
+            fs::create_dir_all(parent)?;
+            fs::copy(workspace_root().join(support_file), destination)?;
         }
         Ok(Self { root })
     }
@@ -380,6 +392,26 @@ fn phase6_contract_rejects_missing_contract_in_each_document() -> TestResult {
     ] {
         let fixture = DocsFixture::new()?;
         fixture.replace_document_text(document, marker, "removed-phase6-contract-marker")?;
+        let output = fixture.command()?;
+        assert_failure(&output, "docs/phase6-contract");
+        fixture.cleanup()?;
+    }
+    Ok(())
+}
+
+#[test]
+fn phase6_contract_rejects_missing_non_dynamic_admission_witnesses() -> TestResult {
+    // Arrange, Act, Assert
+    for witness in [
+        "static_kinematic_overlap_rejected",
+        "kinematic_kinematic_overlap_rejected",
+    ] {
+        let fixture = DocsFixture::new()?;
+        fixture.replace_document_text(
+            "protocol/fixtures/accepted/rigid-world-request.jsonl",
+            witness,
+            "removed-admission-witness",
+        )?;
         let output = fixture.command()?;
         assert_failure(&output, "docs/phase6-contract");
         fixture.cleanup()?;

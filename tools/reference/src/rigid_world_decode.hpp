@@ -369,8 +369,9 @@ inline const std::vector<std::string_view>& required_witnesses(
       "body_transform_changed", "body_type_changed", "body_deactivated",
       "body_reactivated", "sensor_enabled", "sensor_disabled",
       "material_changed", "filter_changed", "density_changed_without_mass_reset",
-      "mass_reset", "custom_mass_set", "zero_contact_step", "fixture_destroyed",
-      "body_destroyed"};
+      "mass_reset", "custom_mass_set", "static_kinematic_overlap_rejected",
+      "kinematic_kinematic_overlap_rejected", "zero_contact_step",
+      "fixture_destroyed", "body_destroyed"};
   static const std::vector<std::string_view> single_contact{
       "contact_created", "contact_begin", "contact_persisted", "manifold_active",
       "contact_solved", "warm_start_transferred", "sensor_touching",
