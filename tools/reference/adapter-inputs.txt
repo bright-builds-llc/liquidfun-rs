@@ -9,6 +9,10 @@ tools/reference/src/math_probe.hpp
 tools/reference/src/protocol.cpp
 tools/reference/src/protocol_bits.cpp
 tools/reference/src/protocol.hpp
+tools/reference/src/rigid_world.cpp
+tools/reference/src/rigid_world.hpp
+tools/reference/src/rigid_world_decode.hpp
+tools/reference/src/rigid_world_trace.hpp
 tools/reference/src/oracle_adapter.cpp
 tools/reference/src/oracle_adapter.hpp
 tools/reference/src/generate_build_identity.cmake.in

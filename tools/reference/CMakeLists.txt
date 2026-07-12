@@ -356,7 +356,7 @@ string(
 )
 set(
   REFERENCE_FEATURE_SET
-  "evidence=${REFERENCE_EVIDENCE_TIER};applied=${REFERENCE_FP_FLAGS};missing=${REFERENCE_MISSING_FP_FLAGS};compile_database=math_probe.cpp,protocol_bits.cpp"
+  "evidence=${REFERENCE_EVIDENCE_TIER};applied=${REFERENCE_FP_FLAGS};missing=${REFERENCE_MISSING_FP_FLAGS};compile_database=collision_probe.cpp,math_probe.cpp,protocol_bits.cpp,rigid_world.cpp"
 )
 set(
   REFERENCE_PUBLIC_COMPILE_SUMMARY
@@ -442,6 +442,7 @@ add_custom_command(
     "${CMAKE_CURRENT_LIST_DIR}/src/collision_probe.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/src/math_probe.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/src/protocol_bits.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/src/rigid_world.cpp"
   COMMENT "Hashing effective math/probe compile commands"
   VERBATIM
 )

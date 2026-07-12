@@ -703,49 +703,108 @@ fn compile_database_sha256(
     repository_root: &Path,
     build_directory: &Path,
 ) -> Result<String, DifferentialError> {
+    const RESULT_TRANSLATION_UNITS: [&str; 4] = [
+        "collision_probe.cpp",
+        "math_probe.cpp",
+        "protocol_bits.cpp",
+        "rigid_world.cpp",
+    ];
+
     let entries: Vec<serde_json::Value> = serde_json::from_slice(bytes)
         .map_err(|error| DifferentialError::new("identity", error.to_string()))?;
-    let mut commands = entries
-        .into_iter()
-        .filter_map(|entry| {
-            let source = entry.get("file")?.as_str()?;
-            let filename = Path::new(source).file_name()?.to_str()?;
-            if !matches!(
-                filename,
-                "collision_probe.cpp" | "math_probe.cpp" | "protocol_bits.cpp"
-            ) {
-                return None;
-            }
-            let command =
-                if let Some(command) = entry.get("command").and_then(|value| value.as_str()) {
-                    command.to_owned()
-                } else {
-                    let arguments = entry.get("arguments")?.as_array()?;
-                    let mut command = String::new();
-                    for argument in arguments {
-                        command.push_str(argument.as_str()?);
-                        command.push('\n');
-                    }
-                    command
-                };
-            let normalized_source =
-                normalize_compile_path(source, repository_root, build_directory);
-            let normalized_command =
-                normalize_compile_path(&command, repository_root, build_directory);
-            Some(format!("{normalized_source}\n{normalized_command}"))
-        })
-        .collect::<Vec<_>>();
-    if commands.len() != 3 {
+    let mut commands = Vec::new();
+    let mut command_signatures = Vec::new();
+    let mut found_units = Vec::new();
+    for entry in entries {
+        let Some(source) = entry.get("file").and_then(|value| value.as_str()) else {
+            continue;
+        };
+        let Some(filename) = Path::new(source)
+            .file_name()
+            .and_then(|value| value.to_str())
+        else {
+            continue;
+        };
+        if !RESULT_TRANSLATION_UNITS.contains(&filename) {
+            continue;
+        }
+        if found_units.iter().any(|found| found == filename) {
+            return Err(DifferentialError::new(
+                "identity",
+                format!("duplicate effective compile command for {filename}"),
+            ));
+        }
+        found_units.push(filename.to_owned());
+        let command = compile_database_command(&entry, filename)?;
+        let normalized_source = normalize_compile_path(source, repository_root, build_directory);
+        let normalized_command = normalize_compile_path(&command, repository_root, build_directory);
+        command_signatures.push(normalized_command.replace(filename, "<result-unit>.cpp"));
+        commands.push(format!("{normalized_source}\n{normalized_command}"));
+    }
+    if commands.len() != RESULT_TRANSLATION_UNITS.len() {
         return Err(DifferentialError::new(
             "identity",
             format!(
-                "expected three effective probe compile commands, found {}",
+                "expected four effective result compile commands, found {}",
                 commands.len()
             ),
         ));
     }
+    for expected in RESULT_TRANSLATION_UNITS {
+        if !found_units.iter().any(|found| found == expected) {
+            return Err(DifferentialError::new(
+                "identity",
+                format!("missing effective compile command for {expected}"),
+            ));
+        }
+    }
+    let Some(first_signature) = command_signatures.first() else {
+        return Err(DifferentialError::new(
+            "identity",
+            "effective result compile commands are empty",
+        ));
+    };
+    if command_signatures
+        .iter()
+        .any(|signature| signature != first_signature)
+    {
+        return Err(DifferentialError::new(
+            "identity",
+            "result translation units use divergent effective compile flags",
+        ));
+    }
     commands.sort_unstable();
     Ok(format!("{:x}", Sha256::digest(commands.join("\n"))))
+}
+
+fn compile_database_command(
+    entry: &serde_json::Value,
+    filename: &str,
+) -> Result<String, DifferentialError> {
+    if let Some(command) = entry.get("command").and_then(|value| value.as_str()) {
+        return Ok(command.to_owned());
+    }
+    let arguments = entry
+        .get("arguments")
+        .and_then(|value| value.as_array())
+        .ok_or_else(|| {
+            DifferentialError::new(
+                "identity",
+                format!("effective compile command for {filename} has no command or arguments"),
+            )
+        })?;
+    let mut command = String::new();
+    for argument in arguments {
+        let argument = argument.as_str().ok_or_else(|| {
+            DifferentialError::new(
+                "identity",
+                format!("effective compile arguments for {filename} contain a non-string"),
+            )
+        })?;
+        command.push_str(argument);
+        command.push('\n');
+    }
+    Ok(command)
 }
 
 fn normalize_compile_path(value: &str, repository_root: &Path, build_directory: &Path) -> String {
@@ -1268,14 +1327,15 @@ mod tests {
         // Arrange
         let baseline = br#"[
           {"file":"/repo/collision_probe.cpp","command":"clang++ -I/a -DFLAG=1 -c collision_probe.cpp"},
-          {"file":"/repo/math_probe.cpp","command":"clang++ -I/a -DFLAG=1 -march=x86-64 -c math_probe.cpp"},
-          {"file":"/repo/protocol_bits.cpp","command":"clang++ -I/a -DFLAG=1 -c protocol_bits.cpp"}
+          {"file":"/repo/math_probe.cpp","command":"clang++ -I/a -DFLAG=1 -c math_probe.cpp"},
+          {"file":"/repo/protocol_bits.cpp","command":"clang++ -I/a -DFLAG=1 -c protocol_bits.cpp"},
+          {"file":"/repo/rigid_world.cpp","command":"clang++ -I/a -DFLAG=1 -c rigid_world.cpp"}
         ]"#;
         let baseline_text = String::from_utf8(baseline.to_vec()).expect("fixture is UTF-8");
         let variants = [
             baseline_text.replace("-DFLAG=1", "-DFLAG=2"),
             baseline_text.replace("-I/a", "-I/b"),
-            baseline_text.replace("-march=x86-64", "-march=x86-64-v3"),
+            baseline_text.replace("clang++", "/opt/clang++"),
         ];
 
         // Act
@@ -1309,9 +1369,10 @@ mod tests {
     fn effective_compile_digest_is_stable_across_repository_relocation() {
         // Arrange
         let first = br#"[
-          {"file":"/first/repo/tools/reference/src/collision_probe.cpp","command":"clang++ -I/first/repo/tools/reference/src -o /first/repo/target/reference/oracle-release/collision.o -c /first/repo/tools/reference/src/collision_probe.cpp"},
-          {"file":"/first/repo/tools/reference/src/math_probe.cpp","command":"clang++ -I/first/repo/tools/reference/src -o /first/repo/target/reference/oracle-release/probe.o -c /first/repo/tools/reference/src/math_probe.cpp"},
-          {"file":"/first/repo/tools/reference/src/protocol_bits.cpp","command":"clang++ -I/first/repo/tools/reference/src -o /first/repo/target/reference/oracle-release/bits.o -c /first/repo/tools/reference/src/protocol_bits.cpp"}
+          {"file":"/first/repo/tools/reference/src/collision_probe.cpp","command":"clang++ -I/first/repo/tools/reference/src -o /first/repo/target/reference/oracle-release/collision_probe.cpp.o -c /first/repo/tools/reference/src/collision_probe.cpp"},
+          {"file":"/first/repo/tools/reference/src/math_probe.cpp","command":"clang++ -I/first/repo/tools/reference/src -o /first/repo/target/reference/oracle-release/math_probe.cpp.o -c /first/repo/tools/reference/src/math_probe.cpp"},
+          {"file":"/first/repo/tools/reference/src/protocol_bits.cpp","command":"clang++ -I/first/repo/tools/reference/src -o /first/repo/target/reference/oracle-release/protocol_bits.cpp.o -c /first/repo/tools/reference/src/protocol_bits.cpp"},
+          {"file":"/first/repo/tools/reference/src/rigid_world.cpp","command":"clang++ -I/first/repo/tools/reference/src -o /first/repo/target/reference/oracle-release/rigid_world.cpp.o -c /first/repo/tools/reference/src/rigid_world.cpp"}
         ]"#;
         let second = String::from_utf8(first.to_vec())
             .expect("fixture is UTF-8")
@@ -1333,6 +1394,62 @@ mod tests {
 
         // Assert
         assert_eq!(first_digest, second_digest);
+    }
+
+    #[test]
+    fn rigid_compile_database_identity_rejects_missing_duplicate_or_divergent_commands() {
+        // Arrange
+        let baseline = r#"[
+          {"file":"/repo/collision_probe.cpp","command":"clang++ -Wall -fno-fast-math -o collision_probe.cpp.o -c collision_probe.cpp"},
+          {"file":"/repo/math_probe.cpp","command":"clang++ -Wall -fno-fast-math -o math_probe.cpp.o -c math_probe.cpp"},
+          {"file":"/repo/protocol_bits.cpp","command":"clang++ -Wall -fno-fast-math -o protocol_bits.cpp.o -c protocol_bits.cpp"},
+          {"file":"/repo/rigid_world.cpp","command":"clang++ -Wall -fno-fast-math -o rigid_world.cpp.o -c rigid_world.cpp"}
+        ]"#;
+        let baseline_value: serde_json::Value =
+            serde_json::from_str(baseline).expect("compile database fixture should parse");
+        let mut missing_value = baseline_value.clone();
+        missing_value
+            .as_array_mut()
+            .expect("compile database fixture should be an array")
+            .pop();
+        let missing = serde_json::to_vec(&missing_value).expect("missing fixture should encode");
+        let mut duplicate_value = baseline_value.clone();
+        let duplicate_entry = duplicate_value
+            .as_array()
+            .expect("compile database fixture should be an array")[0]
+            .clone();
+        duplicate_value
+            .as_array_mut()
+            .expect("compile database fixture should be an array")[3] = duplicate_entry;
+        let duplicate =
+            serde_json::to_vec(&duplicate_value).expect("duplicate fixture should encode");
+        let mut divergent_value = baseline_value.clone();
+        divergent_value
+            .as_array_mut()
+            .expect("compile database fixture should be an array")[3]["command"] =
+            serde_json::Value::String(
+                "clang++ -Wall -o rigid_world.cpp.o -c rigid_world.cpp".to_owned(),
+            );
+        let divergent =
+            serde_json::to_vec(&divergent_value).expect("divergent fixture should encode");
+
+        // Act
+        let baseline_result = compile_database_sha256(
+            baseline.as_bytes(),
+            Path::new("/repo"),
+            Path::new("/repo/target/reference/oracle-debug"),
+        );
+        let failures = [missing, duplicate, divergent].map(|fixture| {
+            compile_database_sha256(
+                &fixture,
+                Path::new("/repo"),
+                Path::new("/repo/target/reference/oracle-debug"),
+            )
+        });
+
+        // Assert
+        assert!(baseline_result.is_ok());
+        assert!(failures.into_iter().all(|result| result.is_err()));
     }
 
     #[test]

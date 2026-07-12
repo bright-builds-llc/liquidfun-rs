@@ -708,3 +708,48 @@ fn process_diagnostic(stdout: &str, stderr: &str) -> String {
         (false, false) => format!("stdout:\n{stdout}\nstderr:\n{stderr}"),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::fs;
+
+    use super::adapter_source_digest;
+
+    #[test]
+    fn rigid_adapter_identity_changes_when_cpp_or_included_header_changes() {
+        // Arrange
+        let root = std::env::temp_dir().join(format!(
+            "liquidfun-rigid-adapter-identity-{}",
+            std::process::id()
+        ));
+        if root.exists() {
+            fs::remove_dir_all(&root).expect("stale adapter fixture should be removable");
+        }
+        let reference = root.join("tools/reference");
+        let source = reference.join("src");
+        fs::create_dir_all(&source).expect("adapter fixture directory should be created");
+        fs::write(
+            reference.join("adapter-inputs.txt"),
+            "tools/reference/src/rigid_world.cpp\ntools/reference/src/rigid_world_decode.hpp\n",
+        )
+        .expect("adapter manifest should be written");
+        let cpp = source.join("rigid_world.cpp");
+        let header = source.join("rigid_world_decode.hpp");
+        fs::write(&cpp, b"rigid implementation v1").expect("C++ fixture should be written");
+        fs::write(&header, b"rigid decoder v1").expect("header fixture should be written");
+        let baseline = adapter_source_digest(&root).expect("baseline adapter should hash");
+
+        // Act
+        fs::write(&cpp, b"rigid implementation v2").expect("C++ fixture should mutate");
+        let cpp_changed = adapter_source_digest(&root).expect("changed C++ adapter should hash");
+        fs::write(&cpp, b"rigid implementation v1").expect("C++ fixture should reset");
+        fs::write(&header, b"rigid decoder v2").expect("header fixture should mutate");
+        let header_changed =
+            adapter_source_digest(&root).expect("changed header adapter should hash");
+
+        // Assert
+        assert_ne!(baseline, cpp_changed);
+        assert_ne!(baseline, header_changed);
+        fs::remove_dir_all(root).expect("adapter fixture should be removed");
+    }
+}
