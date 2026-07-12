@@ -1,4 +1,64 @@
 {
+  "$defs": {
+    "rigid_transform_bits": {
+      "additionalProperties": false,
+      "properties": {
+        "angle_bits": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "position": {
+          "$ref": "#/$defs/vec2_bits"
+        }
+      },
+      "required": [
+        "position",
+        "angle_bits"
+      ],
+      "type": "object"
+    },
+    "rigid_vec2_bits": {
+      "additionalProperties": false,
+      "properties": {
+        "x_bits": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "y_bits": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "x_bits",
+        "y_bits"
+      ],
+      "type": "object"
+    },
+    "vec2_bits": {
+      "additionalProperties": false,
+      "properties": {
+        "x_bits": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "y_bits": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "x_bits",
+        "y_bits"
+      ],
+      "type": "object"
+    }
+  },
   "$id": "https://liquidfun-rs.invalid/protocol/schemas/trace-v1.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "Deterministic presentation only. Typed Rust and C++ validation remains authoritative for cross-field references, uniqueness, ordering, hashes, and aggregate limits. Record-sequence state transitions and reset proof validation remain typed-validator responsibilities.",
@@ -661,6 +721,599 @@
         "horizon",
         "collection_policy",
         "outcome"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "protocol_version": {
+          "const": 1,
+          "type": "integer"
+        },
+        "record_kind": {
+          "const": "rigid_world_result"
+        },
+        "request_id": {
+          "maxLength": 128,
+          "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+          "type": "string"
+        },
+        "scenario_id": {
+          "maxLength": 128,
+          "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+          "type": "string"
+        },
+        "timelines": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "checkpoints": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "bodies": {
+                      "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "active": {
+                            "type": "boolean"
+                          },
+                          "angular_velocity_bits": {
+                            "maximum": 4294967295,
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "body_id": {
+                            "maxLength": 128,
+                            "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                            "type": "string"
+                          },
+                          "body_kind": {
+                            "enum": [
+                              "static",
+                              "kinematic",
+                              "dynamic"
+                            ]
+                          },
+                          "inertia_bits": {
+                            "maximum": 4294967295,
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "linear_velocity": {
+                            "$ref": "#/$defs/rigid_vec2_bits"
+                          },
+                          "local_center": {
+                            "$ref": "#/$defs/rigid_vec2_bits"
+                          },
+                          "mass_bits": {
+                            "maximum": 4294967295,
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "transform": {
+                            "$ref": "#/$defs/rigid_transform_bits"
+                          }
+                        },
+                        "required": [
+                          "body_id",
+                          "body_kind",
+                          "transform",
+                          "active",
+                          "linear_velocity",
+                          "angular_velocity_bits",
+                          "mass_bits",
+                          "local_center",
+                          "inertia_bits"
+                        ],
+                        "type": "object"
+                      },
+                      "maxItems": 64,
+                      "type": "array"
+                    },
+                    "checkpoint_id": {
+                      "maxLength": 128,
+                      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                      "type": "string"
+                    },
+                    "contacts": {
+                      "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "enabled": {
+                            "type": "boolean"
+                          },
+                          "identity": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "child_a": {
+                                "maximum": 4294967295,
+                                "minimum": 0,
+                                "type": "integer"
+                              },
+                              "child_b": {
+                                "maximum": 4294967295,
+                                "minimum": 0,
+                                "type": "integer"
+                              },
+                              "fixture_a_id": {
+                                "maxLength": 128,
+                                "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                "type": "string"
+                              },
+                              "fixture_b_id": {
+                                "maxLength": 128,
+                                "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                "type": "string"
+                              },
+                              "occurrence": {
+                                "maximum": 4294967295,
+                                "minimum": 1,
+                                "type": "integer"
+                              }
+                            },
+                            "required": [
+                              "fixture_a_id",
+                              "child_a",
+                              "fixture_b_id",
+                              "child_b",
+                              "occurrence"
+                            ],
+                            "type": "object"
+                          },
+                          "maybe_manifold": {
+                            "oneOf": [
+                              {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "local_normal": {
+                                    "$ref": "#/$defs/rigid_vec2_bits"
+                                  },
+                                  "local_point": {
+                                    "$ref": "#/$defs/rigid_vec2_bits"
+                                  },
+                                  "manifold_kind": {
+                                    "enum": [
+                                      "circles",
+                                      "face_a",
+                                      "face_b"
+                                    ]
+                                  },
+                                  "points": {
+                                    "items": {
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "feature": {
+                                          "additionalProperties": false,
+                                          "properties": {
+                                            "index_a": {
+                                              "maximum": 255,
+                                              "minimum": 0,
+                                              "type": "integer"
+                                            },
+                                            "index_b": {
+                                              "maximum": 255,
+                                              "minimum": 0,
+                                              "type": "integer"
+                                            },
+                                            "kind_a": {
+                                              "enum": [
+                                                "vertex",
+                                                "face"
+                                              ]
+                                            },
+                                            "kind_b": {
+                                              "enum": [
+                                                "vertex",
+                                                "face"
+                                              ]
+                                            }
+                                          },
+                                          "required": [
+                                            "index_a",
+                                            "index_b",
+                                            "kind_a",
+                                            "kind_b"
+                                          ],
+                                          "type": "object"
+                                        },
+                                        "normal_impulse_bits": {
+                                          "maximum": 4294967295,
+                                          "minimum": 0,
+                                          "type": "integer"
+                                        },
+                                        "point": {
+                                          "$ref": "#/$defs/rigid_vec2_bits"
+                                        },
+                                        "tangent_impulse_bits": {
+                                          "maximum": 4294967295,
+                                          "minimum": 0,
+                                          "type": "integer"
+                                        }
+                                      },
+                                      "required": [
+                                        "point",
+                                        "feature",
+                                        "normal_impulse_bits",
+                                        "tangent_impulse_bits"
+                                      ],
+                                      "type": "object"
+                                    },
+                                    "maxItems": 2,
+                                    "type": "array"
+                                  }
+                                },
+                                "required": [
+                                  "manifold_kind",
+                                  "local_normal",
+                                  "local_point",
+                                  "points"
+                                ],
+                                "type": "object"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "mixed_friction_bits": {
+                            "maximum": 4294967295,
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "mixed_restitution_bits": {
+                            "maximum": 4294967295,
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "sensor": {
+                            "type": "boolean"
+                          },
+                          "touching": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "identity",
+                          "touching",
+                          "enabled",
+                          "sensor",
+                          "mixed_friction_bits",
+                          "mixed_restitution_bits",
+                          "maybe_manifold"
+                        ],
+                        "type": "object"
+                      },
+                      "maxItems": 128,
+                      "type": "array"
+                    },
+                    "counts": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "bodies": {
+                          "maximum": 4294967295,
+                          "minimum": 0,
+                          "type": "integer"
+                        },
+                        "contacts": {
+                          "maximum": 4294967295,
+                          "minimum": 0,
+                          "type": "integer"
+                        },
+                        "destructions": {
+                          "maximum": 4294967295,
+                          "minimum": 0,
+                          "type": "integer"
+                        },
+                        "events": {
+                          "maximum": 4294967295,
+                          "minimum": 0,
+                          "type": "integer"
+                        },
+                        "fixtures": {
+                          "maximum": 4294967295,
+                          "minimum": 0,
+                          "type": "integer"
+                        },
+                        "manifold_points": {
+                          "maximum": 4294967295,
+                          "minimum": 0,
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "bodies",
+                        "fixtures",
+                        "contacts",
+                        "manifold_points",
+                        "events",
+                        "destructions"
+                      ],
+                      "type": "object"
+                    },
+                    "destructions": {
+                      "items": {
+                        "oneOf": [
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "contact": {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "child_a": {
+                                    "maximum": 4294967295,
+                                    "minimum": 0,
+                                    "type": "integer"
+                                  },
+                                  "child_b": {
+                                    "maximum": 4294967295,
+                                    "minimum": 0,
+                                    "type": "integer"
+                                  },
+                                  "fixture_a_id": {
+                                    "maxLength": 128,
+                                    "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                    "type": "string"
+                                  },
+                                  "fixture_b_id": {
+                                    "maxLength": 128,
+                                    "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                    "type": "string"
+                                  },
+                                  "occurrence": {
+                                    "maximum": 4294967295,
+                                    "minimum": 1,
+                                    "type": "integer"
+                                  }
+                                },
+                                "required": [
+                                  "fixture_a_id",
+                                  "child_a",
+                                  "fixture_b_id",
+                                  "child_b",
+                                  "occurrence"
+                                ],
+                                "type": "object"
+                              },
+                              "kind": {
+                                "const": "contact"
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "contact"
+                            ],
+                            "type": "object"
+                          },
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "fixture_id": {
+                                "maxLength": 128,
+                                "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                "type": "string"
+                              },
+                              "kind": {
+                                "const": "fixture"
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "fixture_id"
+                            ],
+                            "type": "object"
+                          },
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "body_id": {
+                                "maxLength": 128,
+                                "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                "type": "string"
+                              },
+                              "kind": {
+                                "const": "body"
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "body_id"
+                            ],
+                            "type": "object"
+                          }
+                        ]
+                      },
+                      "maxItems": 256,
+                      "type": "array"
+                    },
+                    "events": {
+                      "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "contact": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "child_a": {
+                                "maximum": 4294967295,
+                                "minimum": 0,
+                                "type": "integer"
+                              },
+                              "child_b": {
+                                "maximum": 4294967295,
+                                "minimum": 0,
+                                "type": "integer"
+                              },
+                              "fixture_a_id": {
+                                "maxLength": 128,
+                                "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                "type": "string"
+                              },
+                              "fixture_b_id": {
+                                "maxLength": 128,
+                                "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                "type": "string"
+                              },
+                              "occurrence": {
+                                "maximum": 4294967295,
+                                "minimum": 1,
+                                "type": "integer"
+                              }
+                            },
+                            "required": [
+                              "fixture_a_id",
+                              "child_a",
+                              "fixture_b_id",
+                              "child_b",
+                              "occurrence"
+                            ],
+                            "type": "object"
+                          },
+                          "kind": {
+                            "enum": [
+                              "created",
+                              "begin",
+                              "persist",
+                              "end",
+                              "pre_solve",
+                              "post_solve",
+                              "destroyed"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "contact"
+                        ],
+                        "type": "object"
+                      },
+                      "maxItems": 256,
+                      "type": "array"
+                    },
+                    "fixtures": {
+                      "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "density_bits": {
+                            "maximum": 4294967295,
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "filter": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "category_bits": {
+                                "maximum": 65535,
+                                "minimum": 0,
+                                "type": "integer"
+                              },
+                              "group_index": {
+                                "maximum": 32767,
+                                "minimum": -32768,
+                                "type": "integer"
+                              },
+                              "mask_bits": {
+                                "maximum": 65535,
+                                "minimum": 0,
+                                "type": "integer"
+                              }
+                            },
+                            "required": [
+                              "category_bits",
+                              "mask_bits",
+                              "group_index"
+                            ],
+                            "type": "object"
+                          },
+                          "fixture_id": {
+                            "maxLength": 128,
+                            "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                            "type": "string"
+                          },
+                          "friction_bits": {
+                            "maximum": 4294967295,
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "owner_body_id": {
+                            "maxLength": 128,
+                            "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                            "type": "string"
+                          },
+                          "restitution_bits": {
+                            "maximum": 4294967295,
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "sensor": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "fixture_id",
+                          "owner_body_id",
+                          "sensor",
+                          "density_bits",
+                          "friction_bits",
+                          "restitution_bits",
+                          "filter"
+                        ],
+                        "type": "object"
+                      },
+                      "maxItems": 128,
+                      "type": "array"
+                    },
+                    "phase": {
+                      "maxLength": 4096,
+                      "minLength": 1,
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "checkpoint_id",
+                    "phase",
+                    "counts",
+                    "bodies",
+                    "fixtures",
+                    "contacts",
+                    "events",
+                    "destructions"
+                  ],
+                  "type": "object"
+                },
+                "maxItems": 64,
+                "minItems": 1,
+                "type": "array"
+              },
+              "witness_family": {
+                "enum": [
+                  "non_colliding_body_fixture_lifecycle",
+                  "single_contact_lifecycle"
+                ]
+              }
+            },
+            "required": [
+              "witness_family",
+              "checkpoints"
+            ],
+            "type": "object"
+          },
+          "maxItems": 2,
+          "minItems": 1,
+          "type": "array"
+        },
+        "trace_schema_version": {
+          "const": 1,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "protocol_version",
+        "record_kind",
+        "request_id",
+        "trace_schema_version",
+        "scenario_id",
+        "timelines"
       ],
       "type": "object"
     },

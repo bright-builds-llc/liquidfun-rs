@@ -2521,6 +2521,840 @@
         "cases"
       ],
       "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "scenario_id": {
+          "maxLength": 128,
+          "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+          "type": "string"
+        },
+        "source": {
+          "oneOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "named"
+                },
+                "name": {
+                  "maxLength": 4096,
+                  "minLength": 1,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kind",
+                "name"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "generator_id": {
+                  "maxLength": 4096,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "generator_version": {
+                  "maximum": 4294967295,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "kind": {
+                  "const": "seeded"
+                },
+                "seed": {
+                  "maximum": 18446744073709551615,
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "kind",
+                "generator_id",
+                "generator_version",
+                "seed"
+              ],
+              "type": "object"
+            }
+          ]
+        },
+        "timelines": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "actions": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "action": {
+                      "oneOf": [
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "body_id": {
+                              "maxLength": 128,
+                              "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                              "type": "string"
+                            },
+                            "kind": {
+                              "const": "create_body"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "body_id"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "fixture_id": {
+                              "maxLength": 128,
+                              "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                              "type": "string"
+                            },
+                            "kind": {
+                              "const": "create_fixture"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "fixture_id"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "body_id": {
+                              "maxLength": 128,
+                              "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                              "type": "string"
+                            },
+                            "kind": {
+                              "const": "inspect_body"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "body_id"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "fixture_id": {
+                              "maxLength": 128,
+                              "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                              "type": "string"
+                            },
+                            "kind": {
+                              "const": "inspect_fixture"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "fixture_id"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "body_id": {
+                              "maxLength": 128,
+                              "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                              "type": "string"
+                            },
+                            "kind": {
+                              "const": "set_body_transform"
+                            },
+                            "transform": {
+                              "$ref": "#/$defs/transform_bits"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "body_id",
+                            "transform"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "body_id": {
+                              "maxLength": 128,
+                              "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                              "type": "string"
+                            },
+                            "body_kind": {
+                              "enum": [
+                                "static",
+                                "kinematic",
+                                "dynamic"
+                              ]
+                            },
+                            "kind": {
+                              "const": "set_body_type"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "body_id",
+                            "body_kind"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "active": {
+                              "type": "boolean"
+                            },
+                            "body_id": {
+                              "maxLength": 128,
+                              "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                              "type": "string"
+                            },
+                            "kind": {
+                              "const": "set_body_active"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "body_id",
+                            "active"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "fixture_id": {
+                              "maxLength": 128,
+                              "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                              "type": "string"
+                            },
+                            "kind": {
+                              "const": "set_fixture_sensor"
+                            },
+                            "sensor": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "fixture_id",
+                            "sensor"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "fixture_id": {
+                              "maxLength": 128,
+                              "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                              "type": "string"
+                            },
+                            "friction_bits": {
+                              "maximum": 4294967295,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "kind": {
+                              "const": "set_fixture_material"
+                            },
+                            "restitution_bits": {
+                              "maximum": 4294967295,
+                              "minimum": 0,
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "fixture_id",
+                            "friction_bits",
+                            "restitution_bits"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "filter": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "category_bits": {
+                                  "maximum": 65535,
+                                  "minimum": 0,
+                                  "type": "integer"
+                                },
+                                "group_index": {
+                                  "maximum": 32767,
+                                  "minimum": -32768,
+                                  "type": "integer"
+                                },
+                                "mask_bits": {
+                                  "maximum": 65535,
+                                  "minimum": 0,
+                                  "type": "integer"
+                                }
+                              },
+                              "required": [
+                                "category_bits",
+                                "mask_bits",
+                                "group_index"
+                              ],
+                              "type": "object"
+                            },
+                            "fixture_id": {
+                              "maxLength": 128,
+                              "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                              "type": "string"
+                            },
+                            "kind": {
+                              "const": "set_fixture_filter"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "fixture_id",
+                            "filter"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "density_bits": {
+                              "maximum": 4294967295,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "fixture_id": {
+                              "maxLength": 128,
+                              "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                              "type": "string"
+                            },
+                            "kind": {
+                              "const": "set_fixture_density"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "fixture_id",
+                            "density_bits"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "body_id": {
+                              "maxLength": 128,
+                              "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                              "type": "string"
+                            },
+                            "kind": {
+                              "const": "reset_mass_data"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "body_id"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "body_id": {
+                              "maxLength": 128,
+                              "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                              "type": "string"
+                            },
+                            "center": {
+                              "$ref": "#/$defs/vec2_bits"
+                            },
+                            "inertia_bits": {
+                              "maximum": 4294967295,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "kind": {
+                              "const": "set_custom_mass_data"
+                            },
+                            "mass_bits": {
+                              "maximum": 4294967295,
+                              "minimum": 0,
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "body_id",
+                            "mass_bits",
+                            "center",
+                            "inertia_bits"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "const": "step"
+                            },
+                            "position_iterations": {
+                              "maximum": 255,
+                              "minimum": 1,
+                              "type": "integer"
+                            },
+                            "timestep_bits": {
+                              "maximum": 4294967295,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "velocity_iterations": {
+                              "maximum": 255,
+                              "minimum": 1,
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "timestep_bits",
+                            "velocity_iterations",
+                            "position_iterations"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "fixture_id": {
+                              "maxLength": 128,
+                              "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                              "type": "string"
+                            },
+                            "kind": {
+                              "const": "destroy_fixture"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "fixture_id"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "body_id": {
+                              "maxLength": 128,
+                              "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                              "type": "string"
+                            },
+                            "kind": {
+                              "const": "destroy_body"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "body_id"
+                          ],
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    "action_id": {
+                      "maxLength": 128,
+                      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                      "type": "string"
+                    },
+                    "phase": {
+                      "maxLength": 4096,
+                      "minLength": 1,
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "action_id",
+                    "phase",
+                    "action"
+                  ],
+                  "type": "object"
+                },
+                "maxItems": 128,
+                "minItems": 1,
+                "type": "array"
+              },
+              "bodies": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "active": {
+                      "type": "boolean"
+                    },
+                    "body_id": {
+                      "maxLength": 128,
+                      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                      "type": "string"
+                    },
+                    "body_kind": {
+                      "enum": [
+                        "static",
+                        "kinematic",
+                        "dynamic"
+                      ]
+                    },
+                    "transform": {
+                      "$ref": "#/$defs/transform_bits"
+                    }
+                  },
+                  "required": [
+                    "body_id",
+                    "body_kind",
+                    "transform",
+                    "active"
+                  ],
+                  "type": "object"
+                },
+                "maxItems": 64,
+                "minItems": 1,
+                "type": "array"
+              },
+              "checkpoints": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "after_action_id": {
+                      "maxLength": 128,
+                      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                      "type": "string"
+                    },
+                    "checkpoint_id": {
+                      "maxLength": 128,
+                      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                      "type": "string"
+                    },
+                    "counts": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "bodies": {
+                          "maximum": 4294967295,
+                          "minimum": 0,
+                          "type": "integer"
+                        },
+                        "contacts": {
+                          "maximum": 4294967295,
+                          "minimum": 0,
+                          "type": "integer"
+                        },
+                        "destructions": {
+                          "maximum": 4294967295,
+                          "minimum": 0,
+                          "type": "integer"
+                        },
+                        "events": {
+                          "maximum": 4294967295,
+                          "minimum": 0,
+                          "type": "integer"
+                        },
+                        "fixtures": {
+                          "maximum": 4294967295,
+                          "minimum": 0,
+                          "type": "integer"
+                        },
+                        "manifold_points": {
+                          "maximum": 4294967295,
+                          "minimum": 0,
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "bodies",
+                        "fixtures",
+                        "contacts",
+                        "manifold_points",
+                        "events",
+                        "destructions"
+                      ],
+                      "type": "object"
+                    },
+                    "phase": {
+                      "maxLength": 4096,
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "transitions": {
+                      "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "maybe_contact": {
+                            "oneOf": [
+                              {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "child_a": {
+                                    "maximum": 4294967295,
+                                    "minimum": 0,
+                                    "type": "integer"
+                                  },
+                                  "child_b": {
+                                    "maximum": 4294967295,
+                                    "minimum": 0,
+                                    "type": "integer"
+                                  },
+                                  "fixture_a_id": {
+                                    "maxLength": 128,
+                                    "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                    "type": "string"
+                                  },
+                                  "fixture_b_id": {
+                                    "maxLength": 128,
+                                    "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                    "type": "string"
+                                  },
+                                  "occurrence": {
+                                    "maximum": 4294967295,
+                                    "minimum": 1,
+                                    "type": "integer"
+                                  }
+                                },
+                                "required": [
+                                  "fixture_a_id",
+                                  "child_a",
+                                  "fixture_b_id",
+                                  "child_b",
+                                  "occurrence"
+                                ],
+                                "type": "object"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "witness": {
+                            "enum": [
+                              "static_body_created",
+                              "kinematic_body_created",
+                              "dynamic_body_created",
+                              "fixtures_created",
+                              "body_inspected",
+                              "fixture_inspected",
+                              "body_transform_changed",
+                              "body_type_changed",
+                              "body_deactivated",
+                              "body_reactivated",
+                              "sensor_enabled",
+                              "sensor_disabled",
+                              "material_changed",
+                              "filter_changed",
+                              "density_changed_without_mass_reset",
+                              "mass_reset",
+                              "custom_mass_set",
+                              "zero_contact_step",
+                              "fixture_destroyed",
+                              "body_destroyed",
+                              "contact_created",
+                              "contact_begin",
+                              "contact_persisted",
+                              "manifold_active",
+                              "contact_solved",
+                              "warm_start_transferred",
+                              "sensor_touching",
+                              "sensor_without_manifold",
+                              "filter_removed_contact",
+                              "filter_recreated_contact",
+                              "deactivation_destroyed_contact",
+                              "reactivation_recreated_contact",
+                              "fixture_destroyed_contact",
+                              "body_cascade_end_ordered"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "witness",
+                          "maybe_contact"
+                        ],
+                        "type": "object"
+                      },
+                      "maxItems": 64,
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "checkpoint_id",
+                    "after_action_id",
+                    "phase",
+                    "counts",
+                    "transitions"
+                  ],
+                  "type": "object"
+                },
+                "maxItems": 64,
+                "minItems": 1,
+                "type": "array"
+              },
+              "fixtures": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "density_bits": {
+                      "maximum": 4294967295,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "filter": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "category_bits": {
+                          "maximum": 65535,
+                          "minimum": 0,
+                          "type": "integer"
+                        },
+                        "group_index": {
+                          "maximum": 32767,
+                          "minimum": -32768,
+                          "type": "integer"
+                        },
+                        "mask_bits": {
+                          "maximum": 65535,
+                          "minimum": 0,
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "category_bits",
+                        "mask_bits",
+                        "group_index"
+                      ],
+                      "type": "object"
+                    },
+                    "fixture_id": {
+                      "maxLength": 128,
+                      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                      "type": "string"
+                    },
+                    "friction_bits": {
+                      "maximum": 4294967295,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "owner_body_id": {
+                      "maxLength": 128,
+                      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                      "type": "string"
+                    },
+                    "restitution_bits": {
+                      "maximum": 4294967295,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "sensor": {
+                      "type": "boolean"
+                    },
+                    "shape": {
+                      "oneOf": [
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "center": {
+                              "$ref": "#/$defs/vec2_bits"
+                            },
+                            "kind": {
+                              "const": "circle"
+                            },
+                            "radius_bits": {
+                              "maximum": 4294967295,
+                              "minimum": 0,
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "center",
+                            "radius_bits"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "const": "polygon"
+                            },
+                            "vertices": {
+                              "items": {
+                                "$ref": "#/$defs/vec2_bits"
+                              },
+                              "maxItems": 8,
+                              "minItems": 3,
+                              "type": "array"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "vertices"
+                          ],
+                          "type": "object"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "fixture_id",
+                    "owner_body_id",
+                    "shape",
+                    "density_bits",
+                    "friction_bits",
+                    "restitution_bits",
+                    "sensor",
+                    "filter"
+                  ],
+                  "type": "object"
+                },
+                "maxItems": 128,
+                "minItems": 1,
+                "type": "array"
+              },
+              "witness_family": {
+                "enum": [
+                  "non_colliding_body_fixture_lifecycle",
+                  "single_contact_lifecycle"
+                ]
+              }
+            },
+            "required": [
+              "witness_family",
+              "bodies",
+              "fixtures",
+              "actions",
+              "checkpoints"
+            ],
+            "type": "object"
+          },
+          "maxItems": 2,
+          "minItems": 1,
+          "type": "array"
+        }
+      },
+      "required": [
+        "scenario_id",
+        "source",
+        "timelines"
+      ],
+      "type": "object"
     }
   ],
   "title": "liquidfun-rs scenario presentation version 1",

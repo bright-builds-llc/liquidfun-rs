@@ -61,15 +61,20 @@ fn schema_presentations_keep_records_closed_and_versions_explicit() {
     assert!(TRACKED_PROTOCOL_SCHEMA.contains("\"trace_schema_version\": 1"));
     assert!(TRACKED_PROTOCOL_SCHEMA.contains("\"tolerance_profile_version\": 1"));
     assert!(TRACKED_PROTOCOL_SCHEMA.contains("\"collision_probe_request\""));
+    assert!(TRACKED_PROTOCOL_SCHEMA.contains("\"rigid_world_request\""));
     assert!(TRACKED_SCENARIO_SCHEMA.contains("\"scenario_schema_version\": 1"));
     assert!(TRACKED_SCENARIO_SCHEMA.contains("\"math.rotation\""));
     assert!(TRACKED_SCENARIO_SCHEMA.contains("\"fma_witness\""));
     assert!(TRACKED_SCENARIO_SCHEMA.contains("\"collision.distance.result\""));
     assert!(TRACKED_SCENARIO_SCHEMA.contains("\"time_of_impact\""));
     assert!(TRACKED_SCENARIO_SCHEMA.contains("\"collision_probe_result\""));
+    assert!(TRACKED_SCENARIO_SCHEMA.contains("\"single_contact_lifecycle\""));
+    assert!(TRACKED_SCENARIO_SCHEMA.contains("\"set_custom_mass_data\""));
     assert!(TRACKED_TRACE_SCHEMA.contains("\"trace_schema_version\": 1"));
     assert!(TRACKED_TRACE_SCHEMA.contains("\"math_probe_end\""));
     assert!(TRACKED_TRACE_SCHEMA.contains("\"initial_fraction\""));
+    assert!(TRACKED_TRACE_SCHEMA.contains("\"rigid_world_result\""));
+    assert!(TRACKED_TRACE_SCHEMA.contains("\"normal_impulse_bits\""));
     assert!(schemas.iter().all(|schema| schema.contains(
         "Typed Rust and C++ validation remains authoritative for cross-field references"
     )));

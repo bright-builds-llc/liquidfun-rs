@@ -1,0 +1,572 @@
+profile_id = "phase6-v1"
+version = 1
+
+[[fields]]
+semantic_path = "rigid_world.result.request_id"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Rigid-world identity, structure, count, feature, or lifecycle state is exact evidence."
+
+[[fields]]
+semantic_path = "rigid_world.result.scenario_id"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Rigid-world identity, structure, count, feature, or lifecycle state is exact evidence."
+
+[[fields]]
+semantic_path = "rigid_world.timelines.order"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Declaration, manager, manifold-point, report, or destruction order is solver-significant exact evidence."
+
+[[fields]]
+semantic_path = "rigid_world.timeline.witness_family"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Rigid-world identity, structure, count, feature, or lifecycle state is exact evidence."
+
+[[fields]]
+semantic_path = "rigid_world.checkpoints.order"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Declaration, manager, manifold-point, report, or destruction order is solver-significant exact evidence."
+
+[[fields]]
+semantic_path = "rigid_world.checkpoint.id"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Rigid-world identity, structure, count, feature, or lifecycle state is exact evidence."
+
+[[fields]]
+semantic_path = "rigid_world.checkpoint.phase"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Rigid-world identity, structure, count, feature, or lifecycle state is exact evidence."
+
+[[fields]]
+semantic_path = "rigid_world.checkpoint.counts"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Rigid-world identity, structure, count, feature, or lifecycle state is exact evidence."
+
+[[fields]]
+semantic_path = "rigid_world.checkpoint.bodies.declaration_order"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Declaration, manager, manifold-point, report, or destruction order is solver-significant exact evidence."
+
+[[fields]]
+semantic_path = "rigid_world.body.id"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Rigid-world identity, structure, count, feature, or lifecycle state is exact evidence."
+
+[[fields]]
+semantic_path = "rigid_world.body.kind"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Rigid-world identity, structure, count, feature, or lifecycle state is exact evidence."
+
+[[fields]]
+semantic_path = "rigid_world.body.active"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Rigid-world identity, structure, count, feature, or lifecycle state is exact evidence."
+
+[[fields]]
+semantic_path = "rigid_world.checkpoint.fixtures.declaration_order"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Declaration, manager, manifold-point, report, or destruction order is solver-significant exact evidence."
+
+[[fields]]
+semantic_path = "rigid_world.fixture.id"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Rigid-world identity, structure, count, feature, or lifecycle state is exact evidence."
+
+[[fields]]
+semantic_path = "rigid_world.fixture.owner_body_id"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Rigid-world identity, structure, count, feature, or lifecycle state is exact evidence."
+
+[[fields]]
+semantic_path = "rigid_world.fixture.sensor"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Rigid-world identity, structure, count, feature, or lifecycle state is exact evidence."
+
+[[fields]]
+semantic_path = "rigid_world.fixture.filter.category_bits"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Rigid-world identity, structure, count, feature, or lifecycle state is exact evidence."
+
+[[fields]]
+semantic_path = "rigid_world.fixture.filter.mask_bits"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Rigid-world identity, structure, count, feature, or lifecycle state is exact evidence."
+
+[[fields]]
+semantic_path = "rigid_world.fixture.filter.group_index"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Rigid-world identity, structure, count, feature, or lifecycle state is exact evidence."
+
+[[fields]]
+semantic_path = "rigid_world.checkpoint.contacts.manager_order"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Declaration, manager, manifold-point, report, or destruction order is solver-significant exact evidence."
+
+[[fields]]
+semantic_path = "rigid_world.contact.identity"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Rigid-world identity, structure, count, feature, or lifecycle state is exact evidence."
+
+[[fields]]
+semantic_path = "rigid_world.contact.touching"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Rigid-world identity, structure, count, feature, or lifecycle state is exact evidence."
+
+[[fields]]
+semantic_path = "rigid_world.contact.enabled"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Rigid-world identity, structure, count, feature, or lifecycle state is exact evidence."
+
+[[fields]]
+semantic_path = "rigid_world.contact.sensor"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Rigid-world identity, structure, count, feature, or lifecycle state is exact evidence."
+
+[[fields]]
+semantic_path = "rigid_world.contact.manifold.presence"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Rigid-world identity, structure, count, feature, or lifecycle state is exact evidence."
+
+[[fields]]
+semantic_path = "rigid_world.contact.manifold.kind"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Rigid-world identity, structure, count, feature, or lifecycle state is exact evidence."
+
+[[fields]]
+semantic_path = "rigid_world.contact.manifold.points.order"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Declaration, manager, manifold-point, report, or destruction order is solver-significant exact evidence."
+
+[[fields]]
+semantic_path = "rigid_world.contact.manifold.point.feature"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Rigid-world identity, structure, count, feature, or lifecycle state is exact evidence."
+
+[[fields]]
+semantic_path = "rigid_world.checkpoint.events.report_order"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Declaration, manager, manifold-point, report, or destruction order is solver-significant exact evidence."
+
+[[fields]]
+semantic_path = "rigid_world.event.kind"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Rigid-world identity, structure, count, feature, or lifecycle state is exact evidence."
+
+[[fields]]
+semantic_path = "rigid_world.event.contact_identity"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Rigid-world identity, structure, count, feature, or lifecycle state is exact evidence."
+
+[[fields]]
+semantic_path = "rigid_world.checkpoint.destructions.report_order"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Declaration, manager, manifold-point, report, or destruction order is solver-significant exact evidence."
+
+[[fields]]
+semantic_path = "rigid_world.destruction.kind"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Rigid-world identity, structure, count, feature, or lifecycle state is exact evidence."
+
+[[fields]]
+semantic_path = "rigid_world.destruction.identity"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Rigid-world identity, structure, count, feature, or lifecycle state is exact evidence."
+
+[[fields]]
+semantic_path = "rigid_world.body.transform.position.x"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Finite rigid-world physical state begins as exact supported-platform bit evidence; widening requires canonical source or probe evidence."
+
+[[fields]]
+semantic_path = "rigid_world.body.transform.position.y"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Finite rigid-world physical state begins as exact supported-platform bit evidence; widening requires canonical source or probe evidence."
+
+[[fields]]
+semantic_path = "rigid_world.body.transform.angle"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Finite rigid-world physical state begins as exact supported-platform bit evidence; widening requires canonical source or probe evidence."
+
+[[fields]]
+semantic_path = "rigid_world.body.linear_velocity.x"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Finite rigid-world physical state begins as exact supported-platform bit evidence; widening requires canonical source or probe evidence."
+
+[[fields]]
+semantic_path = "rigid_world.body.linear_velocity.y"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Finite rigid-world physical state begins as exact supported-platform bit evidence; widening requires canonical source or probe evidence."
+
+[[fields]]
+semantic_path = "rigid_world.body.angular_velocity"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Finite rigid-world physical state begins as exact supported-platform bit evidence; widening requires canonical source or probe evidence."
+
+[[fields]]
+semantic_path = "rigid_world.body.mass"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Finite mass, center, and inertia state begins as exact supported-platform bit evidence for one named local phase."
+
+[[fields]]
+semantic_path = "rigid_world.body.local_center.x"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Finite mass, center, and inertia state begins as exact supported-platform bit evidence for one named local phase."
+
+[[fields]]
+semantic_path = "rigid_world.body.local_center.y"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Finite mass, center, and inertia state begins as exact supported-platform bit evidence for one named local phase."
+
+[[fields]]
+semantic_path = "rigid_world.body.inertia"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Finite mass, center, and inertia state begins as exact supported-platform bit evidence for one named local phase."
+
+[[fields]]
+semantic_path = "rigid_world.fixture.density"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Finite material state begins as exact supported-platform bit evidence; no global epsilon or iteration widening applies."
+
+[[fields]]
+semantic_path = "rigid_world.fixture.friction"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Finite material state begins as exact supported-platform bit evidence; no global epsilon or iteration widening applies."
+
+[[fields]]
+semantic_path = "rigid_world.fixture.restitution"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Finite material state begins as exact supported-platform bit evidence; no global epsilon or iteration widening applies."
+
+[[fields]]
+semantic_path = "rigid_world.contact.mixed_friction"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Finite material state begins as exact supported-platform bit evidence; no global epsilon or iteration widening applies."
+
+[[fields]]
+semantic_path = "rigid_world.contact.mixed_restitution"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Finite material state begins as exact supported-platform bit evidence; no global epsilon or iteration widening applies."
+
+[[fields]]
+semantic_path = "rigid_world.contact.manifold.local_normal.x"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Finite manifold geometry and impulse state begins as exact supported-platform bit evidence for one named local phase."
+
+[[fields]]
+semantic_path = "rigid_world.contact.manifold.local_normal.y"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Finite manifold geometry and impulse state begins as exact supported-platform bit evidence for one named local phase."
+
+[[fields]]
+semantic_path = "rigid_world.contact.manifold.local_point.x"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Finite manifold geometry and impulse state begins as exact supported-platform bit evidence for one named local phase."
+
+[[fields]]
+semantic_path = "rigid_world.contact.manifold.local_point.y"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Finite manifold geometry and impulse state begins as exact supported-platform bit evidence for one named local phase."
+
+[[fields]]
+semantic_path = "rigid_world.contact.manifold.point.position.x"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Finite manifold geometry and impulse state begins as exact supported-platform bit evidence for one named local phase."
+
+[[fields]]
+semantic_path = "rigid_world.contact.manifold.point.position.y"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Finite manifold geometry and impulse state begins as exact supported-platform bit evidence for one named local phase."
+
+[[fields]]
+semantic_path = "rigid_world.contact.manifold.point.normal_impulse"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Finite manifold geometry and impulse state begins as exact supported-platform bit evidence for one named local phase."
+
+[[fields]]
+semantic_path = "rigid_world.contact.manifold.point.tangent_impulse"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Finite manifold geometry and impulse state begins as exact supported-platform bit evidence for one named local phase."

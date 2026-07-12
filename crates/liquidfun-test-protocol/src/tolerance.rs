@@ -5,9 +5,11 @@ use crate::{FloatBits, Sha256Hex, ToleranceProfileVersion};
 
 mod collision_policy;
 mod policy;
+mod rigid_policy;
 
 pub use collision_policy::*;
 pub use policy::*;
+pub use rigid_policy::*;
 
 /// Closed policy set for authoritative floating-point observables.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

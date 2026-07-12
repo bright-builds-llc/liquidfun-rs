@@ -8,6 +8,13 @@ use crate::{
     ToleranceProfileVersion,
 };
 
+mod rigid_world;
+
+use rigid_world::{
+    rigid_world_request_schema, rigid_world_result_schema, rigid_world_scenario_schema,
+    rigid_world_trace_definitions,
+};
+
 const PHASE2_DESCRIPTION: &str = "Phase 2 sets no broad rigid-body, joint, or particle tolerance values; synthetic numeric policies exist only for comparator coverage.";
 const SCHEMA_DESCRIPTION: &str = "Deterministic presentation only. Typed Rust and C++ validation remains authoritative for cross-field references, uniqueness, ordering, hashes, and aggregate limits.";
 
@@ -297,7 +304,8 @@ fn render_protocol_schema() -> String {
                 &["protocol_version", "record_kind", "request_id", "scenario_schema_version", "requested_trace_schema_version", "tolerance_profile_version", "tolerance_profile_sha256", "scenario"],
             ),
             probe_request_schema("math_probe_request"),
-            probe_request_schema("collision_probe_request")
+            probe_request_schema("collision_probe_request"),
+            rigid_world_request_schema()
         ],
         "title": "liquidfun-rs protocol presentation version 1",
         "x-version-axes": {
@@ -318,7 +326,8 @@ fn render_scenario_schema() -> String {
         "oneOf": [
             physics_scenario_schema(),
             math_probe_scenario_schema(),
-            collision_probe_scenario_schema()
+            collision_probe_scenario_schema(),
+            rigid_world_scenario_schema()
         ],
         "title": "liquidfun-rs scenario presentation version 1",
         "x-version-axes": { "scenario_schema_version": 1 }
@@ -329,6 +338,7 @@ fn render_trace_schema() -> String {
     render_json_schema(&json!({
         "$id": "https://liquidfun-rs.invalid/protocol/schemas/trace-v1.schema.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$defs": rigid_world_trace_definitions(),
         "description": format!("{SCHEMA_DESCRIPTION} Record-sequence state transitions and reset proof validation remain typed-validator responsibilities."),
         "oneOf": [
             closed_record(
@@ -376,6 +386,7 @@ fn render_trace_schema() -> String {
             ),
             math_probe_result_schema(),
             collision_probe_result_schema(),
+            rigid_world_result_schema(),
             closed_record(
                 &json!({
                     "protocol_version": version_schema(),
@@ -989,11 +1000,11 @@ fn collision_probe_result_schema() -> Value {
     )
 }
 
-fn schema_ref(name: &str) -> Value {
+pub(super) fn schema_ref(name: &str) -> Value {
     json!({ "$ref": format!("#/$defs/{name}") })
 }
 
-fn tagged_probe_input(kind: &str, fields: &Value, required: &[&str]) -> Value {
+pub(super) fn tagged_probe_input(kind: &str, fields: &Value, required: &[&str]) -> Value {
     let mut properties = fields
         .as_object()
         .expect("probe input fields are always JSON objects")
@@ -1004,7 +1015,7 @@ fn tagged_probe_input(kind: &str, fields: &Value, required: &[&str]) -> Value {
     closed_record(&Value::Object(properties), &required_fields)
 }
 
-fn vec2_bits_schema() -> Value {
+pub(super) fn vec2_bits_schema() -> Value {
     closed_record(
         &json!({ "x_bits": float_bits_schema(), "y_bits": float_bits_schema() }),
         &["x_bits", "y_bits"],
@@ -1032,7 +1043,7 @@ fn mat33_bits_schema() -> Value {
     )
 }
 
-fn transform_bits_schema() -> Value {
+pub(super) fn transform_bits_schema() -> Value {
     closed_record(
         &json!({ "position": schema_ref("vec2_bits"), "angle_bits": float_bits_schema() }),
         &["position", "angle_bits"],
@@ -1067,7 +1078,7 @@ fn render_json_schema(document: &Value) -> String {
     rendered
 }
 
-fn closed_record(properties: &Value, required: &[&str]) -> Value {
+pub(super) fn closed_record(properties: &Value, required: &[&str]) -> Value {
     json!({
         "additionalProperties": false,
         "properties": properties,
@@ -1076,7 +1087,7 @@ fn closed_record(properties: &Value, required: &[&str]) -> Value {
     })
 }
 
-fn version_schema() -> Value {
+pub(super) fn version_schema() -> Value {
     json!({ "const": 1, "type": "integer" })
 }
 
@@ -1084,31 +1095,31 @@ fn version_array_schema() -> Value {
     json!({ "items": version_schema(), "maxItems": 16, "minItems": 1, "type": "array" })
 }
 
-fn uint32_schema() -> Value {
+pub(super) fn uint32_schema() -> Value {
     json!({ "maximum": u32::MAX, "minimum": 0, "type": "integer" })
 }
 
-fn uint64_schema() -> Value {
+pub(super) fn uint64_schema() -> Value {
     json!({ "maximum": u64::MAX, "minimum": 0, "type": "integer" })
 }
 
-fn float_bits_schema() -> Value {
+pub(super) fn float_bits_schema() -> Value {
     uint32_schema()
 }
 
-fn semantic_id_schema() -> Value {
+pub(super) fn semantic_id_schema() -> Value {
     json!({ "maxLength": 128, "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$", "type": "string" })
 }
 
-fn bounded_string_schema() -> Value {
+pub(super) fn bounded_string_schema() -> Value {
     json!({ "maxLength": 4096, "minLength": 1, "type": "string" })
 }
 
-fn sha256_schema() -> Value {
+pub(super) fn sha256_schema() -> Value {
     json!({ "pattern": "^[0-9a-f]{64}$", "type": "string" })
 }
 
-fn scenario_source_schema() -> Value {
+pub(super) fn scenario_source_schema() -> Value {
     json!({
         "oneOf": [
             closed_record(&json!({ "kind": { "const": "named" }, "name": bounded_string_schema() }), &["kind", "name"]),
