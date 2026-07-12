@@ -140,10 +140,11 @@ pub use identity::{
 pub use world::{
     AggregateMassError, BodyActivationError, BodyDef, BodyDefError, BodyMassData,
     BodyMassDataError, BodyMassResetError, BodySnapshot, BodyTransformError, BodyType,
-    CollisionDirective, CommandApplication, CommandError, ContactEvent, ContactPointSnapshot,
-    ContactSolve, ContactTransition, ContactTransitionKind, ContactView, CreateObjectError,
-    DestroyedId, DestructionCause, DestructionRecord, FixtureBoundsError, FixtureDef,
-    FixtureDefError, FixtureMutationError, FixtureSnapshot, ManagedContactSnapshot, ObjectSnapshot,
-    PreSolveDirective, StepError, StepHook, StepLifecycleEvent, StepLimits, StepPhase, StepReport,
-    World, WorldCommand, WorldFixtureSnapshot,
+    BodyTypeChangeError, CollisionDirective, CommandApplication, CommandError, ContactEvent,
+    ContactPointSnapshot, ContactSolve, ContactTransition, ContactTransitionKind, ContactView,
+    CreateObjectError, DestroyedId, DestructionCause, DestructionRecord, FixtureBoundsError,
+    FixtureDef, FixtureDefError, FixtureDestructionError, FixtureMutationError, FixtureSnapshot,
+    ManagedContactSnapshot, ObjectSnapshot, PreSolveDirective, StepError, StepHook,
+    StepLifecycleEvent, StepLimits, StepPhase, StepReport, World, WorldCommand,
+    WorldFixtureSnapshot,
 };

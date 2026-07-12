@@ -12,14 +12,15 @@ mod step;
 pub use body::{
     AggregateMassError, BodyActivationError, BodyDef, BodyDefError, BodyMassData,
     BodyMassDataError, BodyMassResetError, BodySnapshot, BodyTransformError, BodyType,
+    BodyTypeChangeError,
 };
 pub use contact::{
     ContactPointSnapshot, ContactTransition, ContactTransitionKind, ManagedContactSnapshot,
 };
 pub use contact_solver::ContactSolve;
 pub use fixture::{
-    FixtureBoundsError, FixtureDef, FixtureDefError, FixtureMutationError, FixtureSnapshot,
-    WorldFixtureSnapshot,
+    FixtureBoundsError, FixtureDef, FixtureDefError, FixtureDestructionError, FixtureMutationError,
+    FixtureSnapshot, WorldFixtureSnapshot,
 };
 pub use object::{
     CreateObjectError, DestroyedId, DestructionCause, DestructionRecord, ObjectSnapshot, World,

@@ -6,7 +6,9 @@ use std::panic::{AssertUnwindSafe, catch_unwind, resume_unwind};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use crate::{BodyId, DestructionRecord, FixtureId, HandleError, World};
+use crate::{AggregateMassError, BodyId, DestructionRecord, FixtureId, HandleError, World};
+
+use super::fixture::FixtureDestructionError;
 
 use super::contact::{ContactPointSnapshot, ContactTransition, ManagedContactSnapshot};
 use super::contact_manager::HookContactOccurrence;
@@ -253,6 +255,8 @@ pub enum WorldCommand {
 pub enum CommandError {
     /// A typed command operand was foreign, stale, or destroyed at application time.
     InvalidHandle(HandleError),
+    /// A fixture destruction would produce an invalid aggregate body mass.
+    InvalidAggregateMass(AggregateMassError),
     /// An internal lifecycle violation attempted application while the world was locked.
     Locked,
 }
@@ -261,6 +265,9 @@ impl fmt::Display for CommandError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::InvalidHandle(error) => write!(formatter, "invalid command handle: {error}"),
+            Self::InvalidAggregateMass(error) => {
+                write!(formatter, "invalid aggregate body mass: {error}")
+            }
             Self::Locked => formatter.write_str("cannot apply command while world is locked"),
         }
     }
@@ -658,7 +665,14 @@ impl World {
             WorldCommand::DestroyFixture(fixture) => self
                 .destroy_fixture(fixture)
                 .map(|record| vec![record])
-                .map_err(CommandError::InvalidHandle),
+                .map_err(|error| match error {
+                    FixtureDestructionError::InvalidHandle(error) => {
+                        CommandError::InvalidHandle(error)
+                    }
+                    FixtureDestructionError::InvalidAggregateMass(error) => {
+                        CommandError::InvalidAggregateMass(error)
+                    }
+                }),
         }
     }
 

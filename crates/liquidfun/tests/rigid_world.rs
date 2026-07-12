@@ -4,8 +4,8 @@ use liquidfun::collision::FilterData;
 use liquidfun::collision::shape::{CircleShape, Shape};
 use liquidfun::math::Vec2;
 use liquidfun::{
-    BodyActivationError, BodyDef, BodyDefError, BodyTransformError, BodyType, CreateObjectError,
-    DestroyedId, FixtureDef, HandleError, ObjectSnapshot, World,
+    BodyActivationError, BodyDef, BodyDefError, BodyTransformError, BodyType, BodyTypeChangeError,
+    CreateObjectError, DestroyedId, FixtureDef, HandleError, ObjectSnapshot, World,
 };
 
 fn body_definition(body_type: BodyType) -> BodyDef {
@@ -140,7 +140,10 @@ fn body_operations_reject_cross_world_and_stale_handles_without_mutation() {
             HandleError::StaleOrDestroyed
         ))
     );
-    assert_eq!(foreign_result, Err(HandleError::WrongWorld));
+    assert_eq!(
+        foreign_result,
+        Err(BodyTypeChangeError::InvalidHandle(HandleError::WrongWorld))
+    );
     assert_ne!(stale, replacement);
     assert_eq!(after, before);
 }

@@ -126,6 +126,41 @@ impl From<FixtureBoundsError> for BodyActivationError {
     }
 }
 
+/// A failure while changing a body's motion type through its owning world.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum BodyTypeChangeError {
+    /// The body identity does not resolve in this world.
+    InvalidHandle(HandleError),
+    /// The target type's complete source-ordered fixture aggregate is invalid.
+    InvalidAggregateMass(AggregateMassError),
+}
+
+impl fmt::Display for BodyTypeChangeError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::InvalidHandle(error) => write!(formatter, "invalid body handle: {error}"),
+            Self::InvalidAggregateMass(error) => {
+                write!(formatter, "invalid aggregate body mass: {error}")
+            }
+        }
+    }
+}
+
+impl Error for BodyTypeChangeError {}
+
+impl From<HandleError> for BodyTypeChangeError {
+    fn from(error: HandleError) -> Self {
+        Self::InvalidHandle(error)
+    }
+}
+
+impl From<AggregateMassError> for BodyTypeChangeError {
+    fn from(error: AggregateMassError) -> Self {
+        Self::InvalidAggregateMass(error)
+    }
+}
+
 /// A reusable checked body definition for the Phase 6 rigid-world slice.
 ///
 /// Position coordinates are meters and `angle` is radians. This definition
@@ -391,12 +426,18 @@ impl BodyState {
         })
     }
 
-    pub(super) fn set_body_type(&mut self, body_type: BodyType) {
+    pub(super) fn with_body_type_and_reset_mass_data(
+        mut self,
+        body_type: BodyType,
+        fixture_mass_data: &[MassData],
+    ) -> Result<Self, AggregateMassError> {
         self.snapshot.body_type = body_type;
         if body_type == BodyType::Static {
             self.linear_velocity = Vec2::ZERO;
             self.angular_velocity = 0.0;
         }
+        let mass_state = aggregate_mass_state(body_type, fixture_mass_data)?;
+        self.with_mass_state(mass_state)
     }
 
     pub(super) fn set_active(&mut self, active: bool) {

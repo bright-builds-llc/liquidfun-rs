@@ -4,6 +4,8 @@ use std::fmt;
 use crate::collision::{FilterData, Shape};
 use crate::{BodyId, HandleError};
 
+use super::body::AggregateMassError;
+
 /// A failure while deriving or extending fixture bounds for broad-phase storage.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
@@ -95,6 +97,41 @@ impl From<HandleError> for FixtureMutationError {
 impl From<FixtureDefError> for FixtureMutationError {
     fn from(error: FixtureDefError) -> Self {
         Self::InvalidValue(error)
+    }
+}
+
+/// A failure while explicitly destroying a world-owned fixture.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum FixtureDestructionError {
+    /// The fixture identity does not resolve in this world.
+    InvalidHandle(HandleError),
+    /// The parent body's complete remaining-fixture aggregate is invalid.
+    InvalidAggregateMass(AggregateMassError),
+}
+
+impl fmt::Display for FixtureDestructionError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::InvalidHandle(error) => write!(formatter, "invalid fixture handle: {error}"),
+            Self::InvalidAggregateMass(error) => {
+                write!(formatter, "invalid aggregate body mass: {error}")
+            }
+        }
+    }
+}
+
+impl Error for FixtureDestructionError {}
+
+impl From<HandleError> for FixtureDestructionError {
+    fn from(error: HandleError) -> Self {
+        Self::InvalidHandle(error)
+    }
+}
+
+impl From<AggregateMassError> for FixtureDestructionError {
+    fn from(error: AggregateMassError) -> Self {
+        Self::InvalidAggregateMass(error)
     }
 }
 

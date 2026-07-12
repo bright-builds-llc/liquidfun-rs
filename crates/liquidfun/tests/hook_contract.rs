@@ -6,8 +6,9 @@ use std::panic::{AssertUnwindSafe, catch_unwind};
 use liquidfun::collision::{CircleShape, FilterData, Shape};
 use liquidfun::math::Vec2;
 use liquidfun::{
-    BodyDef, BodyType, CollisionDirective, CommandError, ContactView, FixtureDef, HandleError,
-    PreSolveDirective, StepError, StepHook, StepLimits, World, WorldCommand,
+    AggregateMassError, BodyDef, BodyType, CollisionDirective, CommandError, ContactView,
+    FixtureDef, HandleError, PreSolveDirective, StepError, StepHook, StepLimits, World,
+    WorldCommand,
 };
 
 fn body_definition(body_type: BodyType, position: Vec2) -> BodyDef {
@@ -234,6 +235,62 @@ fn stale_command_does_not_hide_later_success() {
         report.command_applications()[0].result(),
         Err(CommandError::InvalidHandle(HandleError::StaleOrDestroyed))
     );
+    assert!(report.command_applications()[1].result().is_ok());
+    assert!(!world.contains_body(live));
+}
+
+#[test]
+fn aggregate_mass_command_error_does_not_hide_later_success() {
+    // Arrange
+    let mut world = two_sensor_occurrence_world();
+    let target_body = world
+        .create_body(&body_definition(BodyType::Dynamic, Vec2::new(100.0, 0.0)))
+        .expect("target body should fit");
+    let high_density_fixture = || {
+        let shape = Shape::from(
+            CircleShape::new(Vec2::ZERO, 1.0).expect("high-density circle should be valid"),
+        );
+        FixtureDef::new(shape, 0.0, 0.2, 0.0, false, FilterData::default())
+            .expect("high-density fixture definition should be valid")
+    };
+    let first = world
+        .create_fixture(target_body, &high_density_fixture())
+        .expect("first fixture should fit");
+    let second = world
+        .create_fixture(target_body, &high_density_fixture())
+        .expect("second fixture should fit");
+    let target = world
+        .create_fixture(target_body, &high_density_fixture())
+        .expect("target fixture should fit");
+    for fixture in [first, second, target] {
+        world
+            .set_fixture_density(fixture, f32::MAX / 4.0)
+            .expect("individual fixture mass should remain finite");
+    }
+    let live = world
+        .create_body(&BodyDef::default())
+        .expect("later command body should fit");
+    let mut hook = CommandHook {
+        commands: [
+            WorldCommand::DestroyFixture(target),
+            WorldCommand::DestroyBody(live),
+        ]
+        .into(),
+    };
+
+    // Act
+    let report = world
+        .step(&mut hook, StepLimits::default())
+        .expect("aggregate command rejection should be recoverable");
+
+    // Assert
+    assert_eq!(
+        report.command_applications()[0].result(),
+        Err(CommandError::InvalidAggregateMass(
+            AggregateMassError::NonFiniteMass
+        ))
+    );
+    assert!(world.contains_fixture(target));
     assert!(report.command_applications()[1].result().is_ok());
     assert!(!world.contains_body(live));
 }

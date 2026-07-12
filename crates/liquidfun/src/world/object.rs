@@ -11,13 +11,16 @@ use crate::{
 use super::body::BodyActivationError;
 use super::body::{
     AggregateMassError, BodyDef, BodyMassData, BodyMassResetError, BodySnapshot, BodyState,
-    BodyTransformError, BodyType,
+    BodyTransformError, BodyType, BodyTypeChangeError,
 };
 #[cfg(feature = "differential-internals")]
 use super::contact::ContactTransition;
 use super::contact_manager::ContactManager;
 use super::contact_solver::{ContactSolve, ContactSolveFailure};
-use super::fixture::{FixtureBoundsError, FixtureDef, FixtureMutationError, WorldFixtureSnapshot};
+use super::fixture::{
+    FixtureBoundsError, FixtureDef, FixtureDestructionError, FixtureMutationError,
+    WorldFixtureSnapshot,
+};
 use super::proxy::{FixtureProxies, FixtureProxy, PreparedFixtureBounds, PreparedSynchronization};
 use super::step::StepState;
 use crate::collision::{BroadPhase, FilterData, MassData};
@@ -385,22 +388,32 @@ impl World {
     ///
     /// # Errors
     ///
-    /// Returns a handle error without mutation when `body` is foreign, stale, or destroyed.
-    pub fn set_body_type(&mut self, body: BodyId, body_type: BodyType) -> Result<(), HandleError> {
+    /// Returns [`BodyTypeChangeError::InvalidHandle`] when `body` is foreign, stale, or
+    /// destroyed, or [`BodyTypeChangeError::InvalidAggregateMass`] when the complete target-type
+    /// fixture aggregate is invalid. Either failure leaves body, contact, proxy, and fixture state
+    /// unchanged.
+    pub fn set_body_type(
+        &mut self,
+        body: BodyId,
+        target_type: BodyType,
+    ) -> Result<(), BodyTypeChangeError> {
         self.ensure_not_poisoned_for_handle()?;
         let record = self.bodies.get(body)?;
-        if record.state.snapshot().body_type() == body_type {
+        if record.state.snapshot().body_type() == target_type {
             return Ok(());
         }
         let fixtures = record.fixtures.clone();
+        let fixture_mass_data = self.collect_fixture_mass_data(body, None, None);
+        let candidate = record
+            .state
+            .with_body_type_and_reset_mass_data(target_type, &fixture_mass_data)?;
         self.destroy_contacts_for_body(body);
         {
             let record = self.body_mut_after_validation(body);
-            record.state.set_body_type(body_type);
+            record.state = candidate;
             record.pending_contact_destruction = true;
             record.pending_wake = true;
         }
-        self.reset_body_mass_after_validation(body);
         self.touch_body_fixture_entries(body, &fixtures);
         Ok(())
     }
@@ -498,7 +511,7 @@ impl World {
                 .shape()
                 .compute_mass(definition.density())
                 .map_err(|_error| CreateObjectError::InvalidFixtureMass)?;
-            Some(self.prepare_body_mass_state(body, Some(fixture_mass))?)
+            Some(self.prepare_body_mass_state(body, Some(fixture_mass), None)?)
         } else {
             None
         };
@@ -596,7 +609,7 @@ impl World {
     pub fn reset_body_mass_data(&mut self, body: BodyId) -> Result<(), BodyMassResetError> {
         self.ensure_not_poisoned_for_handle()?;
         self.bodies.get(body)?;
-        let mass_state = self.prepare_body_mass_state(body, None)?;
+        let mass_state = self.prepare_body_mass_state(body, None, None)?;
         self.body_mut_after_validation(body).state = mass_state;
         Ok(())
     }
@@ -882,7 +895,11 @@ impl World {
         }
         self.destroy_contacts_for_body(body);
         for fixture in fixtures {
-            records.push(self.remove_fixture(fixture, DestructionCause::BodyCascade { body }));
+            records.push(self.remove_fixture(
+                fixture,
+                DestructionCause::BodyCascade { body },
+                None,
+            ));
         }
         records.push(self.remove_body(body, DestructionCause::Explicit, root_snapshot));
         Ok(records)
@@ -892,14 +909,18 @@ impl World {
     ///
     /// # Errors
     ///
-    /// Returns a handle error without mutation when `fixture` is foreign, stale, or destroyed.
+    /// Returns [`FixtureDestructionError::InvalidHandle`] when `fixture` is foreign, stale, or
+    /// destroyed, or [`FixtureDestructionError::InvalidAggregateMass`] when the complete
+    /// remaining-fixture aggregate is invalid. Either failure leaves contacts, proxies, fixture
+    /// storage, adjacency, and body mass state unchanged.
     pub fn destroy_fixture(
         &mut self,
         fixture: FixtureId,
-    ) -> Result<DestructionRecord, HandleError> {
+    ) -> Result<DestructionRecord, FixtureDestructionError> {
         self.ensure_not_poisoned_for_handle()?;
-        self.fixtures.get(fixture)?;
-        Ok(self.remove_fixture(fixture, DestructionCause::Explicit))
+        let body = self.fixtures.get(fixture)?.body;
+        let candidate = self.prepare_body_mass_state(body, None, Some(fixture))?;
+        Ok(self.remove_fixture(fixture, DestructionCause::Explicit, Some(candidate)))
     }
 
     /// Destroys one joint after validating it before mutation.
@@ -1039,7 +1060,12 @@ impl World {
         }
     }
 
-    fn remove_fixture(&mut self, fixture: FixtureId, cause: DestructionCause) -> DestructionRecord {
+    fn remove_fixture(
+        &mut self,
+        fixture: FixtureId,
+        cause: DestructionCause,
+        maybe_mass_state: Option<BodyState>,
+    ) -> DestructionRecord {
         self.destroy_contacts_for_fixture(fixture);
         let record = self
             .fixtures
@@ -1057,7 +1083,9 @@ impl World {
             &mut self.body_mut_after_validation(removed.body).fixtures,
             &fixture,
         );
-        self.reset_body_mass_after_validation(removed.body);
+        if let Some(mass_state) = maybe_mass_state {
+            self.body_mut_after_validation(removed.body).state = mass_state;
+        }
         DestructionRecord {
             destroyed: DestroyedId::Fixture(fixture),
             diagnostic_id: removed.diagnostic_id,
@@ -1193,19 +1221,37 @@ impl World {
         &self,
         body: BodyId,
         maybe_candidate: Option<MassData>,
+        maybe_excluded_fixture: Option<FixtureId>,
     ) -> Result<BodyState, AggregateMassError> {
-        let fixture_ids = self
-            .bodies
+        let fixture_mass_data =
+            self.collect_fixture_mass_data(body, maybe_candidate, maybe_excluded_fixture);
+        self.bodies
             .get(body)
             .expect("validated body remains live during mass reset")
-            .fixtures
-            .clone();
+            .state
+            .with_reset_mass_data(&fixture_mass_data)
+    }
+
+    fn collect_fixture_mass_data(
+        &self,
+        body: BodyId,
+        maybe_candidate: Option<MassData>,
+        maybe_excluded_fixture: Option<FixtureId>,
+    ) -> Vec<MassData> {
+        let fixture_ids = &self
+            .bodies
+            .get(body)
+            .expect("validated body remains live during mass collection")
+            .fixtures;
         let mut fixture_mass_data =
             Vec::with_capacity(fixture_ids.len() + usize::from(maybe_candidate.is_some()));
         if let Some(candidate) = maybe_candidate {
             fixture_mass_data.push(candidate);
         }
         fixture_mass_data.extend(fixture_ids.iter().filter_map(|fixture| {
+            if Some(*fixture) == maybe_excluded_fixture {
+                return None;
+            }
             let definition = &self
                 .fixtures
                 .get(*fixture)
@@ -1221,18 +1267,7 @@ impl World {
                     .expect("checked fixture shape and density produce valid mass data"),
             )
         }));
-        self.bodies
-            .get(body)
-            .expect("validated body remains live during mass reset")
-            .state
-            .with_reset_mass_data(&fixture_mass_data)
-    }
-
-    fn reset_body_mass_after_validation(&mut self, body: BodyId) {
-        let mass_state = self
-            .prepare_body_mass_state(body, None)
-            .expect("committed fixture mass state must remain valid during implicit reset");
-        self.body_mut_after_validation(body).state = mass_state;
+        fixture_mass_data
     }
 
     fn set_fixture_filter_after_validation(&mut self, fixture: FixtureId, filter: FilterData) {
