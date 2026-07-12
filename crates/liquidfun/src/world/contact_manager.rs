@@ -234,12 +234,22 @@ impl ContactManager {
             .get_mut(key.first.body)
             .expect("solver body A remains live during commit")
             .state
-            .set_solver_motion(commit.first_motion.linear, commit.first_motion.angular);
+            .set_solver_state(
+                commit.first_motion.position,
+                commit.first_motion.angle,
+                commit.first_motion.linear,
+                commit.first_motion.angular,
+            );
         bodies
             .get_mut(key.second.body)
             .expect("solver body B remains live during commit")
             .state
-            .set_solver_motion(commit.second_motion.linear, commit.second_motion.angular);
+            .set_solver_state(
+                commit.second_motion.position,
+                commit.second_motion.angle,
+                commit.second_motion.linear,
+                commit.second_motion.angular,
+            );
         self.contacts[index].store_impulses(&commit.impulses);
         Ok(vec![ContactSolve::new(self.contacts[index].snapshot())])
     }

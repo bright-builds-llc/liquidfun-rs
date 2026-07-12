@@ -8,17 +8,19 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use liquidfun_differential::{
-    EmptyWorldAdapter, NativeCollisionProbeExecutor, NativeMathProbeExecutor, OracleExecutable,
-    OraclePreset, Phase4ComparisonEvidence, Phase4DiscreteMismatchReport,
-    Phase4HarnessFailureReason, Phase4HarnessFailureReport, Phase4MathMismatchReport,
-    compare_collision_probe_results, execute_collision_probe_process, execute_math_probe_process,
-    float_values_match_with_policy,
+    CapturedRigidWorld, EmptyWorldAdapter, NativeCollisionProbeExecutor, NativeMathProbeExecutor,
+    NativeRigidWorldExecutor, OracleExecutable, OraclePreset, Phase4ComparisonEvidence,
+    Phase4DiscreteMismatchReport, Phase4HarnessFailureReason, Phase4HarnessFailureReport,
+    Phase4MathMismatchReport, RigidComparisonOutcome, compare_collision_probe_results,
+    compare_rigid_world_results, execute_collision_probe_process, execute_math_probe_process,
+    execute_rigid_world_process, float_values_match_with_policy,
 };
 use liquidfun_test_protocol::{
     BuildEvidenceTier, BuildIdentity, CollisionProbeRequestRecord, CollisionProbeResult,
     DivergenceHorizon, EvidenceTier, HarnessLimits, MathProbeHorizon, MathProbeRequestRecord,
-    MathProbeResult, Phase4PolicyProfile, Phase5PolicyProfile,
-    decode_collision_probe_request_jsonl, decode_math_probe_request_jsonl,
+    MathProbeResult, Phase4PolicyProfile, Phase5PolicyProfile, Phase6PolicyProfile,
+    RigidWorldRequestRecord, decode_collision_probe_request_jsonl, decode_math_probe_request_jsonl,
+    decode_rigid_world_request_jsonl,
 };
 use sha2::{Digest, Sha256};
 
@@ -27,11 +29,11 @@ use crate::upstream;
 const USAGE: &str = r"Usage: cargo xtask differential <command> [arguments]
 
 Commands:
-  compare  --scenario <empty-world|math-probes|collision-probes> --preset <oracle-debug|oracle-release|oracle-asan-ubsan> --session-profile <one-shot|reuse|sanitizer>
-  replay   --scenario <empty-world|math-probes|collision-probes> --preset <oracle-debug|oracle-release|oracle-asan-ubsan> --session-profile <one-shot|reuse|sanitizer>
-  minimize --scenario empty-world --preset <oracle-debug|oracle-release|oracle-asan-ubsan> --session-profile <one-shot|reuse|sanitizer>
-  verify-determinism --scenario <math-probes|collision-probes> --preset <oracle-debug|oracle-release> --runs 2
-  fixture stage   --scenario empty-world --preset <preset> --session-profile <profile> --artifact-kind <reviewed-trace|minimized-regression> --artifact-id <id>
+  compare  --scenario <empty-world|math-probes|collision-probes|rigid-world> --preset <oracle-debug|oracle-release|oracle-asan-ubsan> --session-profile <one-shot|reuse|sanitizer>
+  replay   --scenario <empty-world|math-probes|collision-probes|rigid-world> --preset <oracle-debug|oracle-release|oracle-asan-ubsan> --session-profile <one-shot|reuse|sanitizer>
+  minimize --scenario <empty-world|rigid-world> --preset <oracle-debug|oracle-release|oracle-asan-ubsan> --session-profile <one-shot|reuse|sanitizer>
+  verify-determinism --scenario <math-probes|collision-probes|rigid-world> --preset <oracle-debug|oracle-release> --runs 2
+  fixture stage   --scenario <empty-world|rigid-world> --preset <preset> --session-profile <profile> --artifact-kind <reviewed-trace|minimized-regression> --artifact-id <id>
   fixture review  --artifact-id <id> --reviewer <identity> --reviewed-at <UTC timestamp> --review-status <approved|rejected>
   fixture promote --artifact-id <id>";
 
@@ -40,8 +42,15 @@ const MATH_PROBE_REQUEST: &str = "protocol/fixtures/accepted/math-probe-request.
 const PHASE4_POLICY: &str = "protocol/tolerances/phase4-v1.toml";
 const COLLISION_PROBE_REQUEST: &str = "protocol/fixtures/accepted/collision-probe-request.jsonl";
 const PHASE5_POLICY: &str = "protocol/tolerances/phase5-v1.toml";
+const RIGID_WORLD_REQUEST: &str = "protocol/fixtures/accepted/rigid-world-request.jsonl";
+const PHASE6_POLICY: &str = "protocol/tolerances/phase6-v1.toml";
 const NATIVE_SOURCE_MANIFEST: &str = "crates/liquidfun-differential/native-math-sources.txt";
-const ALLOWED_SCENARIOS: [&str; 3] = ["empty-world", "math-probes", "collision-probes"];
+const ALLOWED_SCENARIOS: [&str; 4] = [
+    "empty-world",
+    "math-probes",
+    "collision-probes",
+    "rigid-world",
+];
 const ALLOWED_PRESETS: [&str; 3] = ["oracle-debug", "oracle-release", "oracle-asan-ubsan"];
 const MATH_PROBE_PRESETS: [&str; 2] = ["oracle-debug", "oracle-release"];
 const ALLOWED_PROFILES: [&str; 3] = ["one-shot", "reuse", "sanitizer"];
@@ -109,6 +118,7 @@ struct RunnerInvocation {
 enum MathProbeAction {
     Compare,
     Replay,
+    Minimize,
     VerifyDeterminism,
 }
 
@@ -116,6 +126,7 @@ enum MathProbeAction {
 enum ProbeKind {
     Math,
     Collision,
+    Rigid,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -143,6 +154,7 @@ pub(crate) fn run(args: &[String]) -> Result<(), DifferentialError> {
         return match probe.kind {
             ProbeKind::Math => run_math_probe_command(&repository_root, &probe),
             ProbeKind::Collision => run_collision_probe_command(&repository_root, &probe),
+            ProbeKind::Rigid => run_rigid_world_command(&repository_root, &probe),
         };
     }
     run_differential(&repository_root, &invocation.arguments)
@@ -205,22 +217,26 @@ fn parse_scenario_command(
     let scenario = require_allowed(&options, "--scenario", &ALLOWED_SCENARIOS)?;
     let preset = require_allowed(&options, "--preset", &ALLOWED_PRESETS)?;
     let profile = require_allowed(&options, "--session-profile", &ALLOWED_PROFILES)?;
-    let math_probe = if matches!(scenario, "math-probes" | "collision-probes") {
-        if command == "minimize" || profile != "one-shot" || !MATH_PROBE_PRESETS.contains(&preset) {
+    let math_probe = if matches!(scenario, "math-probes" | "collision-probes" | "rigid-world") {
+        let shape_is_reviewed = profile == "one-shot" && MATH_PROBE_PRESETS.contains(&preset);
+        let action_is_reviewed = scenario == "rigid-world" || command != "minimize";
+        if !shape_is_reviewed || !action_is_reviewed {
             return Err(DifferentialError::usage(
-                "probe scenarios support compare/replay with one-shot debug or release only",
+                "fixed evidence scenarios support only their reviewed one-shot debug or release shape",
             ));
         }
         Some(MathProbeInvocation {
-            kind: if scenario == "math-probes" {
-                ProbeKind::Math
-            } else {
-                ProbeKind::Collision
+            kind: match scenario {
+                "math-probes" => ProbeKind::Math,
+                "collision-probes" => ProbeKind::Collision,
+                "rigid-world" => ProbeKind::Rigid,
+                _ => unreachable!("closed fixed evidence scenario"),
             },
-            action: if command == "compare" {
-                MathProbeAction::Compare
-            } else {
-                MathProbeAction::Replay
+            action: match command {
+                "compare" => MathProbeAction::Compare,
+                "replay" => MathProbeAction::Replay,
+                "minimize" => MathProbeAction::Minimize,
+                _ => unreachable!("closed scenario command"),
             },
             preset: preset.to_owned(),
             runs: 1,
@@ -246,7 +262,11 @@ fn parse_scenario_command(
 fn parse_determinism_command(args: &[String]) -> Result<RunnerInvocation, DifferentialError> {
     let options = parse_options(args)?;
     require_exact_options(&options, &["--scenario", "--preset", "--runs"])?;
-    let scenario = require_allowed(&options, "--scenario", &["math-probes", "collision-probes"])?;
+    let scenario = require_allowed(
+        &options,
+        "--scenario",
+        &["math-probes", "collision-probes", "rigid-world"],
+    )?;
     let preset = require_allowed(&options, "--preset", &MATH_PROBE_PRESETS)?;
     let runs = require_allowed(&options, "--runs", &["2"])?;
 
@@ -261,10 +281,11 @@ fn parse_determinism_command(args: &[String]) -> Result<RunnerInvocation, Differ
         ),
         oracle_dependent: true,
         math_probe: Some(MathProbeInvocation {
-            kind: if scenario == "math-probes" {
-                ProbeKind::Math
-            } else {
-                ProbeKind::Collision
+            kind: match scenario {
+                "math-probes" => ProbeKind::Math,
+                "collision-probes" => ProbeKind::Collision,
+                "rigid-world" => ProbeKind::Rigid,
+                _ => unreachable!("closed determinism scenario"),
             },
             action: MathProbeAction::VerifyDeterminism,
             preset: preset.to_owned(),
@@ -417,6 +438,7 @@ fn run_math_probe_command(
     let action = match invocation.action {
         MathProbeAction::Compare => "compare",
         MathProbeAction::Replay => "replay",
+        MathProbeAction::Minimize => unreachable!("math probes do not support minimization"),
         MathProbeAction::VerifyDeterminism => unreachable!("handled before execution"),
     };
     println!(
@@ -477,6 +499,7 @@ fn run_collision_probe_command(
     let action = match invocation.action {
         MathProbeAction::Compare => "compare",
         MathProbeAction::Replay => "replay",
+        MathProbeAction::Minimize => unreachable!("collision probes do not support minimization"),
         MathProbeAction::VerifyDeterminism => unreachable!("handled before execution"),
     };
     println!(
@@ -486,6 +509,192 @@ fn run_collision_probe_command(
         invocation.preset
     );
     Ok(())
+}
+
+fn run_rigid_world_command(
+    repository_root: &Path,
+    invocation: &MathProbeInvocation,
+) -> Result<(), DifferentialError> {
+    let policy_bytes = read_regular_file(repository_root, PHASE6_POLICY)?;
+    let policy_text = std::str::from_utf8(&policy_bytes)
+        .map_err(|error| DifferentialError::new("protocol", error.to_string()))?;
+    let policy = Phase6PolicyProfile::parse_toml(policy_text)
+        .map_err(|error| DifferentialError::new("policy", error.to_string()))?;
+    let request = rigid_world_request(repository_root, &policy)?;
+
+    if invocation.action == MathProbeAction::VerifyDeterminism {
+        return verify_rigid_world_determinism(
+            repository_root,
+            &request,
+            &invocation.preset,
+            invocation.runs,
+        );
+    }
+
+    let captured = execute_rigid_world_once(repository_root, &request, &invocation.preset)?;
+    let native = NativeRigidWorldExecutor::execute(&request)
+        .map_err(|error| DifferentialError::new("native", error.to_string()))?;
+    let outcome = compare_rigid_world_results(&request, &native, captured.result(), &policy)
+        .map_err(|error| {
+            DifferentialError::new(
+                "rigid-harness",
+                serde_json::to_string(&error).unwrap_or_else(|_| format!("{error:?}")),
+            )
+        })?;
+    let RigidComparisonOutcome::Match = outcome else {
+        let RigidComparisonOutcome::PhysicsMismatch(report) = outcome else {
+            unreachable!("rigid comparison has exactly two outcomes")
+        };
+        return Err(DifferentialError::new(
+            "physics-mismatch",
+            String::from_utf8_lossy(
+                &report
+                    .render_machine()
+                    .map_err(|error| DifferentialError::new("report", error.to_string()))?,
+            )
+            .into_owned(),
+        ));
+    };
+    if invocation.action == MathProbeAction::Minimize {
+        return Err(DifferentialError::new(
+            "minimization",
+            "rigid-world minimization requires a captured first-divergence signature",
+        ));
+    }
+
+    let native_identity = EmptyWorldAdapter::new(ORACLE_REVISION)
+        .map_err(|error| DifferentialError::new("identity", error.to_string()))?;
+    let action = match invocation.action {
+        MathProbeAction::Compare => "compare",
+        MathProbeAction::Replay => "replay",
+        MathProbeAction::Minimize | MathProbeAction::VerifyDeterminism => {
+            unreachable!("handled before matched output")
+        }
+    };
+    println!(
+        "rigid-world {action}: {} required families matched under {} ({}); oracle={}, native={}",
+        request.scenario().timelines().len(),
+        policy.profile_id(),
+        invocation.preset,
+        build_evidence_label(captured.identity().evidence_tier()),
+        build_evidence_label(native_identity.build_identity().evidence_tier()),
+    );
+    Ok(())
+}
+
+fn rigid_world_request(
+    repository_root: &Path,
+    policy: &Phase6PolicyProfile,
+) -> Result<RigidWorldRequestRecord, DifferentialError> {
+    let request_bytes = read_regular_file(repository_root, RIGID_WORLD_REQUEST)?;
+    let mut request_value: serde_json::Value = serde_json::from_slice(&request_bytes)
+        .map_err(|error| DifferentialError::new("protocol", error.to_string()))?;
+    request_value["tolerance_profile_sha256"] =
+        serde_json::Value::String(policy.profile_sha256().as_str().to_owned());
+    let mut bound_bytes = serde_json::to_vec(&request_value)
+        .map_err(|error| DifferentialError::new("protocol", error.to_string()))?;
+    bound_bytes.push(b'\n');
+    decode_rigid_world_request_jsonl(&bound_bytes, &HarnessLimits::phase2_default_v1())
+        .map_err(|error| DifferentialError::new("protocol", error.to_string()))
+}
+
+fn execute_rigid_world_once(
+    repository_root: &Path,
+    request: &RigidWorldRequestRecord,
+    preset: &str,
+) -> Result<CapturedRigidWorld, DifferentialError> {
+    let oracle_preset = match preset {
+        "oracle-debug" => OraclePreset::Debug,
+        "oracle-release" => OraclePreset::Release,
+        _ => return Err(DifferentialError::usage("unregistered rigid-world preset")),
+    };
+    let oracle_program = OracleExecutable::resolve(repository_root, oracle_preset)
+        .map_err(|error| DifferentialError::new("oracle", error.to_string()))?;
+    let captured = execute_rigid_world_process(&oracle_program, request, ORACLE_REVISION).map_err(
+        |error| {
+            DifferentialError::process(format!(
+                "{}; stderr bytes {}, killed {}, reaped {}: {}",
+                error,
+                error.stderr_bytes(),
+                error.child_killed(),
+                error.child_reaped(),
+                String::from_utf8_lossy(error.retained_stderr()).trim_end()
+            ))
+        },
+    )?;
+    if captured.identity().cmake_preset() != preset || captured.identity().maybe_phase4().is_none()
+    {
+        return Err(DifferentialError::new(
+            "identity",
+            "oracle handshake lacks the requested rigid-world build identity",
+        ));
+    }
+    let expected_adapter_digest = upstream::adapter_source_digest(repository_root)
+        .map_err(|error| DifferentialError::new("identity", error.to_string()))?;
+    if captured.identity().adapter_content_sha256().as_str() != expected_adapter_digest {
+        return Err(DifferentialError::new(
+            "identity",
+            "rigid-world adapter digest differs from checked-in inputs",
+        ));
+    }
+    let expected_compile_digest = effective_compile_command_sha256(repository_root, preset)?;
+    if captured
+        .identity()
+        .maybe_phase4()
+        .is_none_or(|identity| identity.compile_command_sha256() != expected_compile_digest)
+    {
+        return Err(DifferentialError::new(
+            "identity",
+            "rigid-world compile-command digest differs from the effective database",
+        ));
+    }
+    Ok(captured)
+}
+
+fn verify_rigid_world_determinism(
+    repository_root: &Path,
+    request: &RigidWorldRequestRecord,
+    preset: &str,
+    runs: usize,
+) -> Result<(), DifferentialError> {
+    let mut maybe_oracle_baseline: Option<Vec<u8>> = None;
+    let mut maybe_native_baseline: Option<Vec<u8>> = None;
+    for run in 0..runs {
+        let capture = execute_rigid_world_once(repository_root, request, preset)?;
+        if let Some(expected) = &maybe_oracle_baseline
+            && expected.as_slice() != capture.response_bytes()
+        {
+            return Err(DifferentialError::new(
+                "determinism",
+                format!("rigid oracle D0 response bytes changed on run {}", run + 1),
+            ));
+        }
+        maybe_oracle_baseline = Some(capture.response_bytes().to_vec());
+
+        let native = NativeRigidWorldExecutor::execute(request)
+            .map_err(|error| DifferentialError::new("native", error.to_string()))?;
+        let native_bytes = serde_json::to_vec(&native)
+            .map_err(|error| DifferentialError::new("protocol", error.to_string()))?;
+        if let Some(expected) = &maybe_native_baseline
+            && expected != &native_bytes
+        {
+            return Err(DifferentialError::new(
+                "determinism",
+                format!("native rigid D0 bytes changed on run {}", run + 1),
+            ));
+        }
+        maybe_native_baseline = Some(native_bytes);
+    }
+    println!("rigid-world D0: {runs} byte-identical native and {preset} runs");
+    Ok(())
+}
+
+const fn build_evidence_label(tier: BuildEvidenceTier) -> &'static str {
+    match tier {
+        BuildEvidenceTier::D1Canonical => "d1_canonical",
+        BuildEvidenceTier::D2Supported => "d2_supported",
+        BuildEvidenceTier::D3Exploratory => "d3_exploratory",
+    }
 }
 
 fn native_source_manifest_sha256(repository_root: &Path) -> Result<String, DifferentialError> {

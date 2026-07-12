@@ -1,11 +1,16 @@
 use crate::collision::{ContactFeatureId, Shape, world_manifold};
-use crate::math::settings::VELOCITY_THRESHOLD;
-use crate::math::{Transform, Vec2, max};
+use crate::math::settings::{
+    BAUMGARTE, LINEAR_SLOP, MAX_LINEAR_CORRECTION, MAX_ROTATION, MAX_ROTATION_SQUARED,
+    MAX_TRANSLATION, MAX_TRANSLATION_SQUARED, VELOCITY_THRESHOLD,
+};
+use crate::math::{Transform, Vec2, clamp, max};
 
 use super::body::BodyState;
 use super::contact::{Contact, ManagedContactSnapshot};
 
 const WITNESS_TIME_STEP_BITS: u32 = 1_015_580_809;
+const VELOCITY_ITERATIONS: usize = 8;
+const POSITION_ITERATIONS: usize = 3;
 const WARM_START_RATIO: f32 = 1.0;
 const MAX_CONDITION_NUMBER: f32 = 1_000.0;
 
@@ -35,6 +40,8 @@ pub(super) enum ContactSolveFailure {
 
 #[derive(Debug, Clone, Copy)]
 pub(super) struct SolvedBodyMotion {
+    pub(super) position: Vec2,
+    pub(super) angle: f32,
     pub(super) linear: Vec2,
     pub(super) angular: f32,
 }
@@ -49,6 +56,8 @@ pub(super) struct ContactSolveCommit {
 #[derive(Debug, Clone, Copy)]
 struct SolverBody {
     center: Vec2,
+    local_center: Vec2,
+    angle: f32,
     transform: Transform,
     linear_velocity: Vec2,
     angular_velocity: f32,
@@ -60,6 +69,8 @@ impl SolverBody {
     fn from_state(state: BodyState) -> Result<Self, ContactSolveFailure> {
         let body = Self {
             center: state.sweep().center(),
+            local_center: state.sweep().local_center(),
+            angle: state.snapshot().angle(),
             transform: state.transform(),
             linear_velocity: state.solver_linear(),
             angular_velocity: state.solver_angular(),
@@ -77,6 +88,7 @@ impl SolverBody {
             && self.transform.position().is_valid()
             && self.transform.rotation().sine().is_finite()
             && self.transform.rotation().cosine().is_finite()
+            && self.angle.is_finite()
             && self.linear_velocity.is_valid()
             && self.angular_velocity.is_finite()
             && self.inverse_mass.is_finite()
@@ -148,7 +160,17 @@ pub(super) fn solve_contact(
     let mut second = SolverBody::from_state(second_state)?;
     let mut constraint = build_constraint(contact, first, second, first_shape, second_shape)?;
     warm_start(&constraint, &mut first, &mut second);
-    solve_velocity_constraints(&mut constraint, &mut first, &mut second);
+    for _iteration in 0..VELOCITY_ITERATIONS {
+        solve_velocity_constraints(&mut constraint, &mut first, &mut second);
+    }
+    integrate_position(&mut first, witness_time_step);
+    integrate_position(&mut second, witness_time_step);
+    for _iteration in 0..POSITION_ITERATIONS {
+        if solve_position_constraints(contact, &mut first, &mut second, first_shape, second_shape)?
+        {
+            break;
+        }
+    }
     validate_solution(&constraint, first, second)?;
 
     let impulses = constraint.points[..constraint.point_count]
@@ -163,15 +185,102 @@ pub(super) fn solve_contact(
         .collect();
     Ok(ContactSolveCommit {
         first_motion: SolvedBodyMotion {
+            position: first.transform.position(),
+            angle: first.angle,
             linear: first.linear_velocity,
             angular: first.angular_velocity,
         },
         second_motion: SolvedBodyMotion {
+            position: second.transform.position(),
+            angle: second.angle,
             linear: second.linear_velocity,
             angular: second.angular_velocity,
         },
         impulses,
     })
+}
+
+fn integrate_position(body: &mut SolverBody, time_step: f32) {
+    let mut translation = time_step * body.linear_velocity;
+    if translation.length_squared() > MAX_TRANSLATION_SQUARED {
+        body.linear_velocity *= MAX_TRANSLATION / translation.length();
+        translation = time_step * body.linear_velocity;
+    }
+    let mut rotation = time_step * body.angular_velocity;
+    if rotation * rotation > MAX_ROTATION_SQUARED {
+        body.angular_velocity *= MAX_ROTATION / rotation.abs();
+        rotation = time_step * body.angular_velocity;
+    }
+    body.center += translation;
+    body.angle += rotation;
+    body.synchronize_transform();
+}
+
+fn solve_position_constraints(
+    contact: &Contact,
+    first: &mut SolverBody,
+    second: &mut SolverBody,
+    first_shape: &Shape,
+    second_shape: &Shape,
+) -> Result<bool, ContactSolveFailure> {
+    let Some(manifold) = contact.maybe_manifold.as_ref() else {
+        return Err(ContactSolveFailure::UnsupportedTopology);
+    };
+    let mut minimum_separation = 0.0_f32;
+    for point_index in 0..manifold.points().len() {
+        let maybe_world = world_manifold(
+            manifold,
+            first.transform,
+            shape_radius(first_shape),
+            second.transform,
+            shape_radius(second_shape),
+        )
+        .map_err(|_error| ContactSolveFailure::NonFinite)?;
+        let Some(world) = maybe_world else {
+            return Err(ContactSolveFailure::UnsupportedTopology);
+        };
+        let Some(point) = world.points().get(point_index).copied() else {
+            return Err(ContactSolveFailure::UnsupportedTopology);
+        };
+        let normal = world.normal();
+        let r_a = point.point() - first.center;
+        let r_b = point.point() - second.center;
+        minimum_separation = minimum_separation.min(point.separation());
+        let correction = clamp(
+            BAUMGARTE * (point.separation() + LINEAR_SLOP),
+            -MAX_LINEAR_CORRECTION,
+            0.0,
+        );
+        let normal_arm_a = r_a.cross(normal);
+        let normal_arm_b = r_b.cross(normal);
+        let effective_mass = first.inverse_mass
+            + second.inverse_mass
+            + first.inverse_inertia * normal_arm_a * normal_arm_a
+            + second.inverse_inertia * normal_arm_b * normal_arm_b;
+        let impulse = if effective_mass > 0.0 {
+            -correction / effective_mass
+        } else {
+            0.0
+        };
+        let position_impulse = impulse * normal;
+        first.center -= first.inverse_mass * position_impulse;
+        first.angle -= first.inverse_inertia * r_a.cross(position_impulse);
+        second.center += second.inverse_mass * position_impulse;
+        second.angle += second.inverse_inertia * r_b.cross(position_impulse);
+        first.synchronize_transform();
+        second.synchronize_transform();
+    }
+    Ok(minimum_separation >= -3.0 * LINEAR_SLOP)
+}
+
+impl SolverBody {
+    fn synchronize_transform(&mut self) {
+        let rotation = crate::math::Rotation::from_angle(self.angle);
+        self.transform = Transform::from_position_angle(
+            self.center - rotation.apply(self.local_center),
+            self.angle,
+        );
+    }
 }
 
 fn build_constraint(

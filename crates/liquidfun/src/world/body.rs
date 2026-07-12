@@ -347,6 +347,20 @@ impl BodyState {
         self.angular_velocity = angular_velocity;
     }
 
+    pub(super) fn set_solver_state(
+        &mut self,
+        position: Vec2,
+        angle: f32,
+        linear_velocity: Vec2,
+        angular_velocity: f32,
+    ) {
+        let mut updated = self
+            .with_transform(position, angle)
+            .expect("finite solver state must produce a checked body transform");
+        updated.set_solver_motion(linear_velocity, angular_velocity);
+        *self = updated;
+    }
+
     pub(super) fn with_transform(self, position: Vec2, angle: f32) -> Result<Self, BodyDefError> {
         let definition = BodyDef::new(
             self.snapshot.body_type,

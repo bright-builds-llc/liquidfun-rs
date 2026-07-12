@@ -92,6 +92,38 @@ fn cold_contact_solves_with_finite_zero_impulses() {
 }
 
 #[test]
+fn contact_step_commits_source_ordered_position_correction() {
+    // Arrange
+    let mut world = World::new().expect("test world key should remain available");
+    let static_body = world
+        .create_body(&body_definition(BodyType::Static, Vec2::ZERO))
+        .expect("static body should fit");
+    let dynamic_body = world
+        .create_body(&body_definition(BodyType::Dynamic, Vec2::new(1.0, 0.0)))
+        .expect("dynamic body should fit");
+    world
+        .create_fixture(static_body, &circle_fixture(false, 0.5, 0.125))
+        .expect("static fixture should fit");
+    world
+        .create_fixture(dynamic_body, &circle_fixture(false, 0.25, 0.5))
+        .expect("dynamic fixture should fit");
+    let mut hook = NoopHook;
+
+    // Act
+    world
+        .step(&mut hook, StepLimits::default())
+        .expect("one supported contact should solve");
+    let snapshot = world
+        .body_snapshot(dynamic_body)
+        .expect("dynamic body should remain live");
+
+    // Assert
+    assert_eq!(snapshot.position().x.to_bits(), 0x3fbe_26d4);
+    assert_eq!(snapshot.position().y.to_bits(), 0);
+    assert_eq!(snapshot.angle().to_bits(), 0);
+}
+
+#[test]
 fn persistent_feature_reuses_warm_start_lanes_in_source_order() {
     // Arrange
     let (mut world, _, _, _, _) = circle_contact_world(BodyType::Static, BodyType::Dynamic, false);

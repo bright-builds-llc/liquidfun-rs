@@ -242,6 +242,203 @@ fn collision_compare_replay_and_determinism_pass_only_reviewed_arguments() -> Te
 }
 
 #[test]
+fn rigid_compare_replay_and_minimize_pass_only_reviewed_arguments() -> TestResult {
+    // Arrange
+    for action in ["compare", "replay", "minimize"] {
+        let fixture = RepositoryFixture::new()?;
+        let mut command = fixture.command()?;
+        let arguments = [
+            "differential",
+            action,
+            "--scenario",
+            "rigid-world",
+            "--preset",
+            "oracle-debug",
+            "--session-profile",
+            "one-shot",
+        ];
+        command.args(arguments);
+
+        // Act
+        let output = command.output()?;
+
+        // Assert
+        assert!(output.status.success(), "{}", stderr(&output));
+        assert_eq!(fixture.differential_arguments()?, &arguments[1..]);
+        fixture.cleanup()?;
+    }
+    Ok(())
+}
+
+#[test]
+fn rigid_determinism_accepts_exactly_two_debug_runs() -> TestResult {
+    // Arrange
+    let fixture = RepositoryFixture::new()?;
+    let mut command = fixture.command()?;
+    let arguments = [
+        "differential",
+        "verify-determinism",
+        "--scenario",
+        "rigid-world",
+        "--preset",
+        "oracle-debug",
+        "--runs",
+        "2",
+    ];
+    command.args(arguments);
+
+    // Act
+    let output = command.output()?;
+
+    // Assert
+    assert!(output.status.success(), "{}", stderr(&output));
+    assert_eq!(fixture.differential_arguments()?, &arguments[1..]);
+    fixture.cleanup()?;
+    Ok(())
+}
+
+#[test]
+fn rigid_fixture_stage_passes_only_fixed_lifecycle_metadata() -> TestResult {
+    // Arrange
+    let fixture = RepositoryFixture::new()?;
+    let mut command = fixture.command()?;
+    let arguments = [
+        "differential",
+        "fixture",
+        "stage",
+        "--scenario",
+        "rigid-world",
+        "--preset",
+        "oracle-debug",
+        "--session-profile",
+        "one-shot",
+        "--artifact-kind",
+        "reviewed-trace",
+        "--artifact-id",
+        "rigid-trace-1",
+    ];
+    command.args(arguments);
+
+    // Act
+    let output = command.output()?;
+
+    // Assert
+    assert!(output.status.success(), "{}", stderr(&output));
+    assert_eq!(fixture.differential_arguments()?, &arguments[1..]);
+    fixture.cleanup()?;
+    Ok(())
+}
+
+#[test]
+fn rigid_commands_reject_unreviewed_shapes_before_effects() -> TestResult {
+    // Arrange
+    let scenario_file_option = ["--scenario", "-file"].concat();
+    let cases = [
+        vec![
+            "differential",
+            "compare",
+            "--scenario",
+            "../rigid-world.jsonl",
+            "--preset",
+            "oracle-debug",
+            "--session-profile",
+            "one-shot",
+        ],
+        vec![
+            "differential",
+            "compare",
+            "--scenario",
+            "rigid-world",
+            "--preset",
+            "oracle-debug",
+            "--session-profile",
+            "reuse",
+        ],
+        vec![
+            "differential",
+            "verify-determinism",
+            "--scenario",
+            "rigid-world",
+            "--preset",
+            "oracle-debug",
+            "--runs",
+            "3",
+        ],
+        vec![
+            "differential",
+            "compare",
+            "--scenario",
+            "rigid-world",
+            "--preset",
+            "oracle-debug",
+            "--session-profile",
+            "one-shot",
+            scenario_file_option.as_str(),
+            "../outside.jsonl",
+        ],
+    ];
+
+    for arguments in cases {
+        let fixture = RepositoryFixture::new()?;
+        let mut command = fixture.command()?;
+        command.args(arguments);
+
+        // Act
+        let output = command.output()?;
+
+        // Assert
+        assert_failure_category(&output, "differential/usage");
+        assert!(!fixture.differential_marker.exists());
+        fixture.cleanup()?;
+    }
+    Ok(())
+}
+
+#[test]
+fn rigid_child_failure_status_is_propagated() -> TestResult {
+    // Arrange
+    let fixture = RepositoryFixture::new()?;
+    let mut command = fixture.command()?;
+    command
+        .args([
+            "differential",
+            "compare",
+            "--scenario",
+            "rigid-world",
+            "--preset",
+            "oracle-debug",
+            "--session-profile",
+            "one-shot",
+        ])
+        .env("LIQUIDFUN_TEST_DIFFERENTIAL_FAIL", "1");
+
+    // Act
+    let output = command.output()?;
+
+    // Assert
+    assert_failure_category(&output, "differential/process");
+    assert!(stderr(&output).contains("status 42"));
+    fixture.cleanup()?;
+    Ok(())
+}
+
+#[test]
+fn local_rigid_identity_cannot_authorize_canonical_promotion() {
+    // Arrange
+    let identity = liquidfun_differential::EmptyWorldAdapter::new(REVISION)
+        .expect("local native identity should validate");
+
+    // Act
+    let result = liquidfun_differential::validate_rigid_promotion_authority(
+        identity.build_identity(),
+        liquidfun_differential::ArtifactKind::ReviewedTrace,
+    );
+
+    // Assert
+    assert!(result.is_err());
+}
+
+#[test]
 fn collision_compile_database_identity_is_covered_by_unit_digest_tests() {
     // The unit digest fixtures name collision_probe.cpp explicitly and are run by this filter.
     assert!(include_str!("../src/differential.rs").contains("collision_probe.cpp"));

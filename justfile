@@ -63,6 +63,24 @@ collision-probes-replay:
 collision-probes-determinism:
     cargo xtask differential verify-determinism --scenario collision-probes --preset oracle-debug --runs 2
 
+rigid-world-debug:
+    cargo xtask differential compare --scenario rigid-world --preset oracle-debug --session-profile one-shot
+
+rigid-world-release:
+    cargo xtask differential compare --scenario rigid-world --preset oracle-release --session-profile one-shot
+
+rigid-world-replay:
+    cargo xtask differential replay --scenario rigid-world --preset oracle-debug --session-profile one-shot
+
+rigid-world-determinism:
+    cargo xtask differential verify-determinism --scenario rigid-world --preset oracle-debug --runs 2
+
+rigid-world-minimize:
+    cargo xtask differential minimize --scenario rigid-world --preset oracle-debug --session-profile one-shot
+
+rigid-fixture-stage artifact_id:
+    cargo xtask differential fixture stage --scenario rigid-world --preset oracle-debug --session-profile one-shot --artifact-kind reviewed-trace --artifact-id {{quote(artifact_id)}}
+
 differential-minimize:
     cargo xtask differential minimize --scenario empty-world --preset oracle-debug --session-profile one-shot
 
