@@ -289,14 +289,21 @@ inline RigidAction action(const Json& value) {
     if (mass_value <= 0.0F) {
       throw std::runtime_error("custom mass must be positive");
     }
-    const auto center_x = float_from_bits(center.x);
-    const auto center_y = float_from_bits(center.y);
-    const auto center_dot = center_x * center_x + center_y * center_y;
-    const auto parallel_axis = mass_value * center_dot;
-    const auto centered_inertia = float_from_bits(inertia) - parallel_axis;
-    if (!std::isfinite(center_dot) || !std::isfinite(parallel_axis) ||
-        !std::isfinite(centered_inertia) || centered_inertia < 0.0F) {
-      throw std::runtime_error("custom mass centered inertia is invalid");
+    const auto origin_inertia = float_from_bits(inertia);
+    if (origin_inertia > 0.0F) {
+      const auto center_x = float_from_bits(center.x);
+      const auto center_y = float_from_bits(center.y);
+      const std::array<float, 2> squared_center{
+          center_x * center_x, center_y * center_y};
+      const auto center_dot = squared_center[0] + squared_center[1];
+      const auto parallel_axis = mass_value * center_dot;
+      const auto centered_inertia = origin_inertia - parallel_axis;
+      if (!std::isfinite(squared_center[0]) ||
+          !std::isfinite(squared_center[1]) || !std::isfinite(center_dot) ||
+          !std::isfinite(parallel_axis) || !std::isfinite(centered_inertia) ||
+          centered_inertia <= 0.0F) {
+        throw std::runtime_error("custom mass centered inertia is invalid");
+      }
     }
     return SetCustomMassData{
         id(member(value, "body_id", "action"), "body ID"),

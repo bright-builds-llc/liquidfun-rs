@@ -86,6 +86,17 @@ std::vector<std::string> split_jsonl(const std::string& jsonl) {
   return records;
 }
 
+nlohmann::json& custom_mass_action(nlohmann::json& request) {
+  auto& actions =
+      request.at("scenario").at("timelines").at(0).at("actions");
+  auto found = std::find_if(
+      actions.begin(), actions.end(), [](const auto& action) {
+        return action.at("action_id") == "nc-custom-mass";
+      });
+  expect(found != actions.end(), "custom mass action is missing");
+  return found->at("action");
+}
+
 void accepted_fixture_round_trips_exact_bits() {
   // Arrange
   const auto fixture = read_fixture(
@@ -544,6 +555,65 @@ void rigid_world_boundary_matches_the_fixed_rust_contract() {
   }
 }
 
+void rigid_world_rejects_zero_centered_inertia_before_execution() {
+  // Arrange
+  const auto fixture = read_fixture(
+      "protocol/fixtures/rejected/rigid-world-zero-centered-inertia.jsonl");
+
+  // Act / Assert
+  try {
+    static_cast<void>(decode_rigid_world_request(fixture));
+  } catch (const std::exception& error) {
+    expect(
+        std::string(error.what()).find("centered inertia") != std::string::npos,
+        "zero centered inertia produced an unstable diagnostic");
+    return;
+  }
+  throw std::runtime_error("zero centered inertia reached adapter execution");
+}
+
+void rigid_world_accepts_zero_origin_inertia_with_nonzero_center() {
+  // Arrange
+  auto request = nlohmann::json::parse(read_fixture(
+      "protocol/fixtures/accepted/rigid-world-request.jsonl"));
+  auto& action = custom_mass_action(request);
+  action["mass_bits"] = 0x3f800000U;
+  action["center"]["x_bits"] = 0x3f800000U;
+  action["center"]["y_bits"] = 0U;
+  action["inertia_bits"] = 0U;
+
+  // Act
+  const auto decoded = decode_rigid_world_request(request.dump() + '\n');
+
+  // Assert
+  expect(
+      decoded.timelines.at(0).actions.size() ==
+          request.at("scenario").at("timelines").at(0).at("actions").size(),
+      "zero origin inertia did not preserve the reviewed action timeline");
+}
+
+void rigid_world_rejects_non_finite_centered_inertia_intermediates() {
+  // Arrange
+  auto request = nlohmann::json::parse(read_fixture(
+      "protocol/fixtures/accepted/rigid-world-request.jsonl"));
+  auto& action = custom_mass_action(request);
+  action["mass_bits"] = 0x3f800000U;
+  action["center"]["x_bits"] = 0x7f7fffffU;
+  action["center"]["y_bits"] = 0U;
+  action["inertia_bits"] = 0x7f7fffffU;
+
+  // Act / Assert
+  try {
+    static_cast<void>(decode_rigid_world_request(request.dump() + '\n'));
+  } catch (const std::exception& error) {
+    expect(
+        std::string(error.what()).find("centered inertia") != std::string::npos,
+        "non-finite centered inertia produced an unstable diagnostic");
+    return;
+  }
+  throw std::runtime_error("non-finite centered inertia was accepted");
+}
+
 void rigid_world_reuse_advances_reset_without_state_leakage() {
   // Arrange
   const auto fixture = read_fixture(
@@ -578,6 +648,9 @@ int main() {
     rigid_world_executes_both_complete_witness_families();
     rigid_world_rejects_untrusted_records_before_execution();
     rigid_world_boundary_matches_the_fixed_rust_contract();
+    rigid_world_rejects_zero_centered_inertia_before_execution();
+    rigid_world_accepts_zero_origin_inertia_with_nonzero_center();
+    rigid_world_rejects_non_finite_centered_inertia_intermediates();
     rigid_world_reuse_advances_reset_without_state_leakage();
   } catch (const std::exception& error) {
     std::cerr << "protocol test failure: " << error.what() << '\n';
