@@ -13,7 +13,7 @@ use liquidfun_differential::{
     Phase4DiscreteMismatchReport, Phase4HarnessFailureReason, Phase4HarnessFailureReport,
     Phase4MathMismatchReport, RigidComparisonOutcome, compare_collision_probe_results,
     compare_rigid_world_results, execute_collision_probe_process, execute_math_probe_process,
-    execute_rigid_world_process, float_values_match_with_policy,
+    execute_rigid_world_process, float_values_match_with_policy, validate_oracle_checkout_identity,
 };
 use liquidfun_test_protocol::{
     BuildEvidenceTier, BuildIdentity, CollisionProbeRequestRecord, CollisionProbeResult,
@@ -633,25 +633,8 @@ fn execute_rigid_world_once(
             "oracle handshake lacks the requested rigid-world build identity",
         ));
     }
-    let expected_adapter_digest = upstream::adapter_source_digest(repository_root)
+    validate_oracle_checkout_identity(repository_root, preset, captured.identity())
         .map_err(|error| DifferentialError::new("identity", error.to_string()))?;
-    if captured.identity().adapter_content_sha256().as_str() != expected_adapter_digest {
-        return Err(DifferentialError::new(
-            "identity",
-            "rigid-world adapter digest differs from checked-in inputs",
-        ));
-    }
-    let expected_compile_digest = effective_compile_command_sha256(repository_root, preset)?;
-    if captured
-        .identity()
-        .maybe_phase4()
-        .is_none_or(|identity| identity.compile_command_sha256() != expected_compile_digest)
-    {
-        return Err(DifferentialError::new(
-            "identity",
-            "rigid-world compile-command digest differs from the effective database",
-        ));
-    }
     Ok(captured)
 }
 
@@ -815,7 +798,7 @@ fn execute_collision_probe_once(
             "oracle handshake lacks the requested collision build identity",
         ));
     }
-    let expected_adapter_digest = upstream::adapter_source_digest(repository_root)
+    let expected_adapter_digest = liquidfun_differential::adapter_source_digest(repository_root)
         .map_err(|error| DifferentialError::new("identity", error.to_string()))?;
     if capture.identity().adapter_content_sha256().as_str() != expected_adapter_digest {
         return Err(DifferentialError::new(
@@ -823,7 +806,9 @@ fn execute_collision_probe_once(
             "oracle adapter digest differs from checked-in inputs",
         ));
     }
-    let expected_compile_digest = effective_compile_command_sha256(repository_root, preset)?;
+    let expected_compile_digest =
+        liquidfun_differential::effective_compile_command_sha256(repository_root, preset)
+            .map_err(|error| DifferentialError::new("identity", error.to_string()))?;
     if capture
         .identity()
         .maybe_phase4()
@@ -870,7 +855,7 @@ fn execute_math_probe_once(
             "oracle handshake lacks the requested Phase 4 build identity",
         ));
     }
-    let expected_adapter_digest = upstream::adapter_source_digest(repository_root)
+    let expected_adapter_digest = liquidfun_differential::adapter_source_digest(repository_root)
         .map_err(|error| DifferentialError::new("identity", error.to_string()))?;
     if capture.identity().adapter_content_sha256().as_str() != expected_adapter_digest {
         return Err(DifferentialError::new(
@@ -878,7 +863,9 @@ fn execute_math_probe_once(
             "oracle adapter digest differs from independently hashed checked-in inputs",
         ));
     }
-    let expected_compile_digest = effective_compile_command_sha256(repository_root, preset)?;
+    let expected_compile_digest =
+        liquidfun_differential::effective_compile_command_sha256(repository_root, preset)
+            .map_err(|error| DifferentialError::new("identity", error.to_string()))?;
     let phase4_identity = capture
         .identity()
         .maybe_phase4()
@@ -894,138 +881,6 @@ fn execute_math_probe_once(
         response_bytes: capture.response_bytes().to_vec(),
         oracle_identity: capture.identity().clone(),
     })
-}
-
-fn effective_compile_command_sha256(
-    repository_root: &Path,
-    preset: &str,
-) -> Result<String, DifferentialError> {
-    let build_directory = repository_root.join("target/reference").join(preset);
-    let path = build_directory.join("compile_commands.json");
-    let bytes = fs::read(&path).map_err(|error| {
-        DifferentialError::new(
-            "identity",
-            format!("failed to read {}: {error}", path.display()),
-        )
-    })?;
-    compile_database_sha256(&bytes, repository_root, &build_directory)
-}
-
-fn compile_database_sha256(
-    bytes: &[u8],
-    repository_root: &Path,
-    build_directory: &Path,
-) -> Result<String, DifferentialError> {
-    const RESULT_TRANSLATION_UNITS: [&str; 4] = [
-        "collision_probe.cpp",
-        "math_probe.cpp",
-        "protocol_bits.cpp",
-        "rigid_world.cpp",
-    ];
-
-    let entries: Vec<serde_json::Value> = serde_json::from_slice(bytes)
-        .map_err(|error| DifferentialError::new("identity", error.to_string()))?;
-    let mut commands = Vec::new();
-    let mut command_signatures = Vec::new();
-    let mut found_units = Vec::new();
-    for entry in entries {
-        let Some(source) = entry.get("file").and_then(|value| value.as_str()) else {
-            continue;
-        };
-        let Some(filename) = Path::new(source)
-            .file_name()
-            .and_then(|value| value.to_str())
-        else {
-            continue;
-        };
-        if !RESULT_TRANSLATION_UNITS.contains(&filename) {
-            continue;
-        }
-        if found_units.iter().any(|found| found == filename) {
-            return Err(DifferentialError::new(
-                "identity",
-                format!("duplicate effective compile command for {filename}"),
-            ));
-        }
-        found_units.push(filename.to_owned());
-        let command = compile_database_command(&entry, filename)?;
-        let normalized_source = normalize_compile_path(source, repository_root, build_directory);
-        let normalized_command = normalize_compile_path(&command, repository_root, build_directory);
-        command_signatures.push(normalized_command.replace(filename, "<result-unit>.cpp"));
-        commands.push(format!("{normalized_source}\n{normalized_command}"));
-    }
-    if commands.len() != RESULT_TRANSLATION_UNITS.len() {
-        return Err(DifferentialError::new(
-            "identity",
-            format!(
-                "expected four effective result compile commands, found {}",
-                commands.len()
-            ),
-        ));
-    }
-    for expected in RESULT_TRANSLATION_UNITS {
-        if !found_units.iter().any(|found| found == expected) {
-            return Err(DifferentialError::new(
-                "identity",
-                format!("missing effective compile command for {expected}"),
-            ));
-        }
-    }
-    let Some(first_signature) = command_signatures.first() else {
-        return Err(DifferentialError::new(
-            "identity",
-            "effective result compile commands are empty",
-        ));
-    };
-    if command_signatures
-        .iter()
-        .any(|signature| signature != first_signature)
-    {
-        return Err(DifferentialError::new(
-            "identity",
-            "result translation units use divergent effective compile flags",
-        ));
-    }
-    commands.sort_unstable();
-    Ok(format!("{:x}", Sha256::digest(commands.join("\n"))))
-}
-
-fn compile_database_command(
-    entry: &serde_json::Value,
-    filename: &str,
-) -> Result<String, DifferentialError> {
-    if let Some(command) = entry.get("command").and_then(|value| value.as_str()) {
-        return Ok(command.to_owned());
-    }
-    let arguments = entry
-        .get("arguments")
-        .and_then(|value| value.as_array())
-        .ok_or_else(|| {
-            DifferentialError::new(
-                "identity",
-                format!("effective compile command for {filename} has no command or arguments"),
-            )
-        })?;
-    let mut command = String::new();
-    for argument in arguments {
-        let argument = argument.as_str().ok_or_else(|| {
-            DifferentialError::new(
-                "identity",
-                format!("effective compile arguments for {filename} contain a non-string"),
-            )
-        })?;
-        command.push_str(argument);
-        command.push('\n');
-    }
-    Ok(command)
-}
-
-fn normalize_compile_path(value: &str, repository_root: &Path, build_directory: &Path) -> String {
-    let build = build_directory.to_string_lossy();
-    let repository = repository_root.to_string_lossy();
-    value
-        .replace(build.as_ref(), "<build>")
-        .replace(repository.as_ref(), "<repo>")
 }
 
 #[allow(
@@ -1528,142 +1383,12 @@ mod tests {
         decode_math_probe_request_jsonl,
     };
 
-    use std::{fs, path::Path};
+    use std::fs;
 
     use super::{
-        ORACLE_REVISION, compare_math_probe_results, compile_database_sha256, horizons_match,
+        ORACLE_REVISION, compare_math_probe_results, horizons_match,
         native_source_digest_from_manifest, tier_authorizes,
     };
-
-    #[test]
-    fn effective_compile_digest_changes_with_material_command_inputs() {
-        // Arrange
-        let baseline = br#"[
-          {"file":"/repo/collision_probe.cpp","command":"clang++ -I/a -DFLAG=1 -c collision_probe.cpp"},
-          {"file":"/repo/math_probe.cpp","command":"clang++ -I/a -DFLAG=1 -c math_probe.cpp"},
-          {"file":"/repo/protocol_bits.cpp","command":"clang++ -I/a -DFLAG=1 -c protocol_bits.cpp"},
-          {"file":"/repo/rigid_world.cpp","command":"clang++ -I/a -DFLAG=1 -c rigid_world.cpp"}
-        ]"#;
-        let baseline_text = String::from_utf8(baseline.to_vec()).expect("fixture is UTF-8");
-        let variants = [
-            baseline_text.replace("-DFLAG=1", "-DFLAG=2"),
-            baseline_text.replace("-I/a", "-I/b"),
-            baseline_text.replace("clang++", "/opt/clang++"),
-        ];
-
-        // Act
-        let baseline_digest = compile_database_sha256(
-            baseline,
-            Path::new("/repo"),
-            Path::new("/repo/target/reference/oracle-release"),
-        )
-        .expect("baseline should hash");
-        let changed_digests = variants
-            .iter()
-            .map(|changed| {
-                compile_database_sha256(
-                    changed.as_bytes(),
-                    Path::new("/repo"),
-                    Path::new("/repo/target/reference/oracle-release"),
-                )
-                .expect("changed command should hash")
-            })
-            .collect::<Vec<_>>();
-
-        // Assert
-        assert!(
-            changed_digests
-                .iter()
-                .all(|changed| changed != &baseline_digest)
-        );
-    }
-
-    #[test]
-    fn effective_compile_digest_is_stable_across_repository_relocation() {
-        // Arrange
-        let first = br#"[
-          {"file":"/first/repo/tools/reference/src/collision_probe.cpp","command":"clang++ -I/first/repo/tools/reference/src -o /first/repo/target/reference/oracle-release/collision_probe.cpp.o -c /first/repo/tools/reference/src/collision_probe.cpp"},
-          {"file":"/first/repo/tools/reference/src/math_probe.cpp","command":"clang++ -I/first/repo/tools/reference/src -o /first/repo/target/reference/oracle-release/math_probe.cpp.o -c /first/repo/tools/reference/src/math_probe.cpp"},
-          {"file":"/first/repo/tools/reference/src/protocol_bits.cpp","command":"clang++ -I/first/repo/tools/reference/src -o /first/repo/target/reference/oracle-release/protocol_bits.cpp.o -c /first/repo/tools/reference/src/protocol_bits.cpp"},
-          {"file":"/first/repo/tools/reference/src/rigid_world.cpp","command":"clang++ -I/first/repo/tools/reference/src -o /first/repo/target/reference/oracle-release/rigid_world.cpp.o -c /first/repo/tools/reference/src/rigid_world.cpp"}
-        ]"#;
-        let second = String::from_utf8(first.to_vec())
-            .expect("fixture is UTF-8")
-            .replace("/first/repo", "/second/repo");
-
-        // Act
-        let first_digest = compile_database_sha256(
-            first,
-            Path::new("/first/repo"),
-            Path::new("/first/repo/target/reference/oracle-release"),
-        )
-        .expect("first location should hash");
-        let second_digest = compile_database_sha256(
-            second.as_bytes(),
-            Path::new("/second/repo"),
-            Path::new("/second/repo/target/reference/oracle-release"),
-        )
-        .expect("second location should hash");
-
-        // Assert
-        assert_eq!(first_digest, second_digest);
-    }
-
-    #[test]
-    fn rigid_compile_database_identity_rejects_missing_duplicate_or_divergent_commands() {
-        // Arrange
-        let baseline = r#"[
-          {"file":"/repo/collision_probe.cpp","command":"clang++ -Wall -fno-fast-math -o collision_probe.cpp.o -c collision_probe.cpp"},
-          {"file":"/repo/math_probe.cpp","command":"clang++ -Wall -fno-fast-math -o math_probe.cpp.o -c math_probe.cpp"},
-          {"file":"/repo/protocol_bits.cpp","command":"clang++ -Wall -fno-fast-math -o protocol_bits.cpp.o -c protocol_bits.cpp"},
-          {"file":"/repo/rigid_world.cpp","command":"clang++ -Wall -fno-fast-math -o rigid_world.cpp.o -c rigid_world.cpp"}
-        ]"#;
-        let baseline_value: serde_json::Value =
-            serde_json::from_str(baseline).expect("compile database fixture should parse");
-        let mut missing_value = baseline_value.clone();
-        missing_value
-            .as_array_mut()
-            .expect("compile database fixture should be an array")
-            .pop();
-        let missing = serde_json::to_vec(&missing_value).expect("missing fixture should encode");
-        let mut duplicate_value = baseline_value.clone();
-        let duplicate_entry = duplicate_value
-            .as_array()
-            .expect("compile database fixture should be an array")[0]
-            .clone();
-        duplicate_value
-            .as_array_mut()
-            .expect("compile database fixture should be an array")[3] = duplicate_entry;
-        let duplicate =
-            serde_json::to_vec(&duplicate_value).expect("duplicate fixture should encode");
-        let mut divergent_value = baseline_value.clone();
-        divergent_value
-            .as_array_mut()
-            .expect("compile database fixture should be an array")[3]["command"] =
-            serde_json::Value::String(
-                "clang++ -Wall -o rigid_world.cpp.o -c rigid_world.cpp".to_owned(),
-            );
-        let divergent =
-            serde_json::to_vec(&divergent_value).expect("divergent fixture should encode");
-
-        // Act
-        let baseline_result = compile_database_sha256(
-            baseline.as_bytes(),
-            Path::new("/repo"),
-            Path::new("/repo/target/reference/oracle-debug"),
-        );
-        let failures = [missing, duplicate, divergent].map(|fixture| {
-            compile_database_sha256(
-                &fixture,
-                Path::new("/repo"),
-                Path::new("/repo/target/reference/oracle-debug"),
-            )
-        });
-
-        // Assert
-        assert!(baseline_result.is_ok());
-        assert!(failures.into_iter().all(|result| result.is_err()));
-    }
 
     #[test]
     fn native_source_digest_changes_when_an_executor_input_changes() {

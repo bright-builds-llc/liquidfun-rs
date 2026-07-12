@@ -6,8 +6,6 @@ use std::fs;
 use std::path::{Component, Path, PathBuf};
 use std::process::{Command, Output};
 
-use sha2::{Digest, Sha256};
-
 const USAGE: &str = r"Usage: cargo xtask upstream <command> [arguments]
 
 Commands:
@@ -16,7 +14,6 @@ Commands:
   build --preset <oracle-debug|oracle-release|oracle-asan-ubsan>";
 
 const ALLOWED_PRESETS: [&str; 3] = ["oracle-debug", "oracle-release", "oracle-asan-ubsan"];
-const ADAPTER_INPUT_MANIFEST: &str = "tools/reference/adapter-inputs.txt";
 const CMAKE_CANONICAL: Version = Version::new(4, 3, 3);
 const CMAKE_FLOOR: Version = Version::new(3, 25, 0);
 const NINJA_CANONICAL: Version = Version::new(1, 13, 2);
@@ -115,7 +112,8 @@ pub(crate) fn run(args: &[String]) -> Result<(), UpstreamError> {
         "configure" => {
             let preset = parse_preset(command_args)?;
             let upstream_lock = verify(&repository_root)?;
-            let adapter_digest = adapter_source_digest(&repository_root)?;
+            let adapter_digest = liquidfun_differential::adapter_source_digest(&repository_root)
+                .map_err(|error| UpstreamError::new("adapter-digest", error.to_string()))?;
             let expected_revision = format!(
                 "-DLIQUIDFUN_EXPECTED_ORACLE_REVISION={}",
                 upstream_lock.revision
@@ -223,63 +221,6 @@ fn verify(repository_root: &Path) -> Result<UpstreamLock, UpstreamError> {
         upstream_lock.revision
     );
     Ok(upstream_lock)
-}
-
-pub(crate) fn adapter_source_digest(repository_root: &Path) -> Result<String, UpstreamError> {
-    let mut digest_input = Sha256::new();
-    for relative_path in adapter_input_paths(repository_root)? {
-        let path = repository_root.join(&relative_path);
-        let bytes = fs::read(&path).map_err(|error| {
-            UpstreamError::new(
-                "adapter-digest",
-                format!("failed to read {}: {error}", path.display()),
-            )
-        })?;
-        let source_digest = Sha256::digest(bytes);
-        digest_input.update(relative_path.as_bytes());
-        digest_input.update(b"=");
-        digest_input.update(format!("{source_digest:x}").as_bytes());
-        digest_input.update(b"\n");
-    }
-
-    Ok(format!("{:x}", digest_input.finalize()))
-}
-
-fn adapter_input_paths(repository_root: &Path) -> Result<Vec<String>, UpstreamError> {
-    let manifest_path = repository_root.join(ADAPTER_INPUT_MANIFEST);
-    let contents = fs::read_to_string(&manifest_path).map_err(|error| {
-        UpstreamError::new(
-            "adapter-digest",
-            format!("failed to read {}: {error}", manifest_path.display()),
-        )
-    })?;
-    let mut paths = Vec::new();
-    for line in contents.lines() {
-        let relative_path = line.trim();
-        if relative_path.is_empty() || relative_path.starts_with('#') {
-            continue;
-        }
-        let path = Path::new(relative_path);
-        if path.is_absolute()
-            || path
-                .components()
-                .any(|component| !matches!(component, Component::Normal(_)))
-            || paths.iter().any(|existing| existing == relative_path)
-        {
-            return Err(UpstreamError::new(
-                "adapter-digest",
-                format!("invalid adapter input `{relative_path}`"),
-            ));
-        }
-        paths.push(relative_path.to_owned());
-    }
-    if paths.is_empty() {
-        return Err(UpstreamError::new(
-            "adapter-digest",
-            "adapter input manifest is empty",
-        ));
-    }
-    Ok(paths)
 }
 
 fn read_upstream_lock(repository_root: &Path) -> Result<UpstreamLock, UpstreamError> {
@@ -713,7 +654,7 @@ fn process_diagnostic(stdout: &str, stderr: &str) -> String {
 mod tests {
     use std::fs;
 
-    use super::adapter_source_digest;
+    use liquidfun_differential::adapter_source_digest;
 
     #[test]
     fn rigid_adapter_identity_changes_when_cpp_or_included_header_changes() {

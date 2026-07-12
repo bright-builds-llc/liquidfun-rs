@@ -11,7 +11,8 @@ use serde::Deserialize;
 
 use crate::{
     NativeRigidWorldExecutor, OracleExecutable, OraclePreset, RigidComparisonOutcome,
-    compare_rigid_world_results, execute_rigid_world_process, validate_rigid_promotion_authority,
+    compare_rigid_world_results, execute_rigid_world_process, validate_oracle_checkout_identity,
+    validate_rigid_promotion_authority,
 };
 
 use super::{
@@ -87,6 +88,9 @@ pub fn stage_rigid_candidate(
     )?;
     enforce_size("report", &report_bytes, MAX_REPORT_BYTES)?;
 
+    validate_oracle_checkout_identity(repository_root, preset_name, captured.identity())
+        .map_err(|error| FixtureError::Replay(error.to_string()))?;
+
     // This guard deliberately precedes `ensure_directory_chain`, the first filesystem write.
     validate_rigid_promotion_authority(captured.identity(), artifact_kind)
         .map_err(|error| FixtureError::Replay(error.to_string()))?;
@@ -159,6 +163,8 @@ pub(super) fn replay_rigid_candidate(
             "rigid build identity mismatch".to_owned(),
         ));
     }
+    validate_oracle_checkout_identity(repository_root, &metadata.preset, &identity)
+        .map_err(|error| FixtureError::Replay(error.to_string()))?;
     let native = NativeRigidWorldExecutor::execute(&request)
         .map_err(|error| FixtureError::Replay(error.to_string()))?;
     let outcome = compare_rigid_world_results(&request, &native, &oracle, &policy)
