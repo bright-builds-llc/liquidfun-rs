@@ -10,8 +10,8 @@ mod proxy;
 mod step;
 
 pub use body::{
-    BodyActivationError, BodyDef, BodyDefError, BodyMassData, BodyMassDataError, BodySnapshot,
-    BodyTransformError, BodyType,
+    AggregateMassError, BodyActivationError, BodyDef, BodyDefError, BodyMassData,
+    BodyMassDataError, BodyMassResetError, BodySnapshot, BodyTransformError, BodyType,
 };
 pub use contact::{
     ContactPointSnapshot, ContactTransition, ContactTransitionKind, ManagedContactSnapshot,

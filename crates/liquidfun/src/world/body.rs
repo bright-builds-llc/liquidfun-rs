@@ -403,37 +403,12 @@ impl BodyState {
         self.snapshot.active = active;
     }
 
-    pub(super) fn reset_mass_data(&mut self, fixture_mass_data: &[MassData]) {
-        if self.snapshot.body_type != BodyType::Dynamic {
-            self.apply_mass_state(0.0, Vec2::ZERO, 0.0);
-            return;
-        }
-
-        let mut mass = 0.0;
-        let mut local_center = Vec2::ZERO;
-        let mut rotational_inertia = 0.0;
-        for data in fixture_mass_data {
-            mass += data.mass();
-            local_center += data.mass() * data.center();
-            rotational_inertia += data.rotational_inertia();
-        }
-
-        if mass > 0.0 {
-            local_center *= 1.0 / mass;
-        } else {
-            mass = 1.0;
-        }
-
-        if rotational_inertia > 0.0 {
-            rotational_inertia -= mass * local_center.dot(local_center);
-            assert!(
-                rotational_inertia > 0.0,
-                "checked aggregate fixture inertia must remain positive after centering"
-            );
-        } else {
-            rotational_inertia = 0.0;
-        }
-        self.apply_mass_state(mass, local_center, rotational_inertia);
+    pub(super) fn with_reset_mass_data(
+        self,
+        fixture_mass_data: &[MassData],
+    ) -> Result<Self, AggregateMassError> {
+        let mass_state = aggregate_mass_state(self.snapshot.body_type, fixture_mass_data)?;
+        self.with_mass_state(mass_state)
     }
 
     pub(super) fn set_mass_data(&mut self, data: BodyMassData) {
@@ -473,6 +448,268 @@ impl BodyState {
         self.linear_velocity +=
             Vec2::scalar_cross(self.angular_velocity, current_center - old_center);
     }
+
+    fn with_mass_state(self, mass_state: MassState) -> Result<Self, AggregateMassError> {
+        let old_center = self.sweep.center();
+        let current_center = self.transform.apply(mass_state.local_center);
+        if !current_center.x.is_finite() || !current_center.y.is_finite() {
+            return Err(AggregateMassError::NonFiniteDerivedCenter);
+        }
+        let sweep = Sweep::new(
+            mass_state.local_center,
+            current_center,
+            current_center,
+            self.snapshot.angle,
+            self.snapshot.angle,
+            0.0,
+        )
+        .map_err(|_error| AggregateMassError::NonFiniteDerivedCenter)?;
+        let linear_velocity = self.linear_velocity
+            + Vec2::scalar_cross(self.angular_velocity, current_center - old_center);
+        if !linear_velocity.x.is_finite() || !linear_velocity.y.is_finite() {
+            return Err(AggregateMassError::NonFiniteDerivedVelocity);
+        }
+
+        let mut snapshot = self.snapshot;
+        snapshot.mass = mass_state.mass;
+        snapshot.local_center = mass_state.local_center;
+        snapshot.rotational_inertia = mass_state.rotational_inertia;
+        Ok(Self {
+            snapshot,
+            transform: self.transform,
+            sweep,
+            linear_velocity,
+            angular_velocity: self.angular_velocity,
+            inverse_mass: mass_state.inverse_mass,
+            inverse_inertia: mass_state.inverse_inertia,
+        })
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+struct MassState {
+    mass: f32,
+    local_center: Vec2,
+    rotational_inertia: f32,
+    inverse_mass: f32,
+    inverse_inertia: f32,
+}
+
+/// A failure while aggregating fixture mass properties in source order.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum AggregateMassError {
+    /// Adding a fixture mass produced a non-finite aggregate.
+    NonFiniteMass,
+    /// Multiplying or adding the weighted x-coordinate produced a non-finite value.
+    NonFiniteWeightedCenterX,
+    /// Multiplying or adding the weighted y-coordinate produced a non-finite value.
+    NonFiniteWeightedCenterY,
+    /// Adding fixture inertia produced a non-finite aggregate.
+    NonFiniteRotationalInertia,
+    /// Inverting positive aggregate mass produced a non-finite value.
+    NonFiniteInverseMass,
+    /// Normalizing the aggregate center produced a non-finite x-coordinate.
+    NonFiniteLocalCenterX,
+    /// Normalizing the aggregate center produced a non-finite y-coordinate.
+    NonFiniteLocalCenterY,
+    /// Computing the squared aggregate center produced a non-finite value.
+    NonFiniteCenterMagnitude,
+    /// Applying the parallel-axis mass shift produced a non-finite value.
+    NonFiniteCenterShift,
+    /// Subtracting the parallel-axis shift produced a non-finite centered inertia.
+    NonFiniteCenteredRotationalInertia,
+    /// Positive origin inertia did not remain positive after centering.
+    NonPositiveCenteredRotationalInertia,
+    /// Inverting centered rotational inertia produced a non-finite value.
+    NonFiniteInverseInertia,
+    /// The aggregate center cannot be transformed into a finite world center.
+    NonFiniteDerivedCenter,
+    /// Moving the center of mass produced a non-finite linear velocity.
+    NonFiniteDerivedVelocity,
+}
+
+impl fmt::Display for AggregateMassError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let message = match self {
+            Self::NonFiniteMass => "aggregate fixture mass must remain finite",
+            Self::NonFiniteWeightedCenterX => {
+                "aggregate fixture weighted center.x must remain finite"
+            }
+            Self::NonFiniteWeightedCenterY => {
+                "aggregate fixture weighted center.y must remain finite"
+            }
+            Self::NonFiniteRotationalInertia => {
+                "aggregate fixture rotational inertia must remain finite"
+            }
+            Self::NonFiniteInverseMass => "aggregate fixture inverse mass must remain finite",
+            Self::NonFiniteLocalCenterX => "aggregate fixture local center.x must remain finite",
+            Self::NonFiniteLocalCenterY => "aggregate fixture local center.y must remain finite",
+            Self::NonFiniteCenterMagnitude => {
+                "aggregate fixture center magnitude must remain finite"
+            }
+            Self::NonFiniteCenterShift => {
+                "aggregate fixture parallel-axis shift must remain finite"
+            }
+            Self::NonFiniteCenteredRotationalInertia => {
+                "aggregate fixture centered inertia must remain finite"
+            }
+            Self::NonPositiveCenteredRotationalInertia => {
+                "aggregate fixture centered inertia must remain positive"
+            }
+            Self::NonFiniteInverseInertia => "aggregate fixture inverse inertia must remain finite",
+            Self::NonFiniteDerivedCenter => {
+                "aggregate fixture center must produce a finite world center"
+            }
+            Self::NonFiniteDerivedVelocity => {
+                "aggregate fixture center shift must produce finite velocity"
+            }
+        };
+        formatter.write_str(message)
+    }
+}
+
+impl Error for AggregateMassError {}
+
+/// A failure while explicitly recomputing a body's fixture-derived mass state.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum BodyMassResetError {
+    /// The body identity does not resolve in this world.
+    InvalidHandle(HandleError),
+    /// The complete source-ordered fixture aggregate is invalid.
+    InvalidAggregateMass(AggregateMassError),
+}
+
+impl fmt::Display for BodyMassResetError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::InvalidHandle(error) => write!(formatter, "invalid body handle: {error}"),
+            Self::InvalidAggregateMass(error) => {
+                write!(formatter, "invalid aggregate body mass: {error}")
+            }
+        }
+    }
+}
+
+impl Error for BodyMassResetError {}
+
+impl From<HandleError> for BodyMassResetError {
+    fn from(error: HandleError) -> Self {
+        Self::InvalidHandle(error)
+    }
+}
+
+impl From<AggregateMassError> for BodyMassResetError {
+    fn from(error: AggregateMassError) -> Self {
+        Self::InvalidAggregateMass(error)
+    }
+}
+
+fn aggregate_mass_state(
+    body_type: BodyType,
+    fixture_mass_data: &[MassData],
+) -> Result<MassState, AggregateMassError> {
+    if body_type != BodyType::Dynamic {
+        return Ok(MassState {
+            mass: 0.0,
+            local_center: Vec2::ZERO,
+            rotational_inertia: 0.0,
+            inverse_mass: 0.0,
+            inverse_inertia: 0.0,
+        });
+    }
+
+    let mut mass = 0.0;
+    let mut weighted_center = Vec2::ZERO;
+    let mut rotational_inertia = 0.0;
+    for data in fixture_mass_data {
+        mass = checked_finite(mass + data.mass(), AggregateMassError::NonFiniteMass)?;
+        let weighted_x = checked_finite(
+            data.mass() * data.center().x,
+            AggregateMassError::NonFiniteWeightedCenterX,
+        )?;
+        weighted_center.x = checked_finite(
+            weighted_center.x + weighted_x,
+            AggregateMassError::NonFiniteWeightedCenterX,
+        )?;
+        let weighted_y = checked_finite(
+            data.mass() * data.center().y,
+            AggregateMassError::NonFiniteWeightedCenterY,
+        )?;
+        weighted_center.y = checked_finite(
+            weighted_center.y + weighted_y,
+            AggregateMassError::NonFiniteWeightedCenterY,
+        )?;
+        rotational_inertia = checked_finite(
+            rotational_inertia + data.rotational_inertia(),
+            AggregateMassError::NonFiniteRotationalInertia,
+        )?;
+    }
+
+    let (mass, inverse_mass, local_center) = if mass > 0.0 {
+        let inverse_mass = checked_finite(1.0 / mass, AggregateMassError::NonFiniteInverseMass)?;
+        let local_center = Vec2::new(
+            checked_finite(
+                weighted_center.x * inverse_mass,
+                AggregateMassError::NonFiniteLocalCenterX,
+            )?,
+            checked_finite(
+                weighted_center.y * inverse_mass,
+                AggregateMassError::NonFiniteLocalCenterY,
+            )?,
+        );
+        (mass, inverse_mass, local_center)
+    } else {
+        (1.0, 1.0, Vec2::ZERO)
+    };
+
+    let (rotational_inertia, inverse_inertia) = if rotational_inertia > 0.0 {
+        let squared_center = [
+            checked_finite(
+                local_center.x * local_center.x,
+                AggregateMassError::NonFiniteCenterMagnitude,
+            )?,
+            checked_finite(
+                local_center.y * local_center.y,
+                AggregateMassError::NonFiniteCenterMagnitude,
+            )?,
+        ];
+        let center_magnitude = checked_finite(
+            squared_center[0] + squared_center[1],
+            AggregateMassError::NonFiniteCenterMagnitude,
+        )?;
+        let center_shift = checked_finite(
+            mass * center_magnitude,
+            AggregateMassError::NonFiniteCenterShift,
+        )?;
+        let centered = checked_finite(
+            rotational_inertia - center_shift,
+            AggregateMassError::NonFiniteCenteredRotationalInertia,
+        )?;
+        if centered <= 0.0 {
+            return Err(AggregateMassError::NonPositiveCenteredRotationalInertia);
+        }
+        let inverse = checked_finite(1.0 / centered, AggregateMassError::NonFiniteInverseInertia)?;
+        (centered, inverse)
+    } else {
+        (0.0, 0.0)
+    };
+
+    Ok(MassState {
+        mass,
+        local_center,
+        rotational_inertia,
+        inverse_mass,
+        inverse_inertia,
+    })
+}
+
+fn checked_finite(value: f32, error: AggregateMassError) -> Result<f32, AggregateMassError> {
+    if !value.is_finite() {
+        return Err(error);
+    }
+    Ok(value)
 }
 
 const fn initial_body_mass(body_type: BodyType) -> f32 {

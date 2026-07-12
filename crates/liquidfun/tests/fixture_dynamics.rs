@@ -4,8 +4,9 @@ use liquidfun::collision::FilterData;
 use liquidfun::collision::shape::{ChainShape, CircleShape, Shape};
 use liquidfun::math::Vec2;
 use liquidfun::{
-    BodyActivationError, BodyDef, BodyMassData, BodyTransformError, BodyType, FixtureBoundsError,
-    FixtureDef, FixtureDefError, FixtureMutationError, World,
+    AggregateMassError, BodyActivationError, BodyDef, BodyMassData, BodyMassResetError,
+    BodyTransformError, BodyType, CreateObjectError, FixtureBoundsError, FixtureDef,
+    FixtureDefError, FixtureMutationError, ObjectSnapshot, World,
 };
 
 fn body_definition(body_type: BodyType, active: bool) -> BodyDef {
@@ -25,6 +26,28 @@ fn far_circle_fixture() -> FixtureDef {
     );
     FixtureDef::new(shape, 0.0, 0.2, 0.0, false, FilterData::default())
         .expect("fixture definition should be valid")
+}
+
+fn high_density_circle_fixture(density: f32) -> FixtureDef {
+    let shape = Shape::from(CircleShape::new(Vec2::ZERO, 1.0).expect("circle should be valid"));
+    FixtureDef::new(shape, density, 0.2, 0.0, false, FilterData::default())
+        .expect("finite high-density fixture definition should be valid")
+}
+
+fn assert_mass_bits_equal(actual: liquidfun::BodySnapshot, expected: liquidfun::BodySnapshot) {
+    assert_eq!(actual.mass().to_bits(), expected.mass().to_bits());
+    assert_eq!(
+        actual.local_center().x.to_bits(),
+        expected.local_center().x.to_bits()
+    );
+    assert_eq!(
+        actual.local_center().y.to_bits(),
+        expected.local_center().y.to_bits()
+    );
+    assert_eq!(
+        actual.rotational_inertia().to_bits(),
+        expected.rotational_inertia().to_bits()
+    );
 }
 
 #[test]
@@ -402,6 +425,118 @@ fn mass_zero_custom_value_validates_against_the_effective_unit_mass() {
         result,
         Err(liquidfun::BodyMassDataError::NegativeCenteredRotationalInertia)
     );
+}
+
+#[test]
+fn aggregate_mass_overflow_rejects_fixture_creation_without_effects() {
+    // Arrange
+    let mut world = World::new().expect("world key should remain available");
+    let body = world
+        .create_body(&body_definition(BodyType::Dynamic, true))
+        .expect("body should fit");
+    let density = f32::MAX / 4.0;
+    let definition = high_density_circle_fixture(density);
+    let fixture = world
+        .create_fixture(body, &definition)
+        .expect("one high-density fixture should have finite mass");
+    let body_before = world.body_snapshot(body).expect("body should remain live");
+    let fixture_before = world
+        .fixture_snapshot(fixture)
+        .expect("fixture should remain live");
+    let proxy_count_before = world.broad_phase_entry_count();
+    let contact_count_before = world.contact_count();
+
+    // Act
+    let result = world.create_fixture(body, &definition);
+
+    // Assert
+    assert_eq!(
+        result,
+        Err(CreateObjectError::InvalidAggregateMass(
+            AggregateMassError::NonFiniteMass
+        ))
+    );
+    assert_mass_bits_equal(
+        world.body_snapshot(body).expect("body should remain live"),
+        body_before,
+    );
+    assert_eq!(
+        world
+            .fixture_snapshot(fixture)
+            .expect("fixture should remain live"),
+        fixture_before
+    );
+    assert_eq!(world.broad_phase_entry_count(), proxy_count_before);
+    assert_eq!(world.contact_count(), contact_count_before);
+
+    let records = world.destroy_body(body).expect("body should remain live");
+    assert!(matches!(
+        records.last().map(liquidfun::DestructionRecord::snapshot),
+        Some(ObjectSnapshot::Body { fixtures, .. }) if fixtures == &[fixture]
+    ));
+}
+
+#[test]
+fn aggregate_mass_overflow_rejects_explicit_reset_without_effects() {
+    // Arrange
+    let mut world = World::new().expect("world key should remain available");
+    let body = world
+        .create_body(&body_definition(BodyType::Dynamic, true))
+        .expect("body should fit");
+    let density = f32::MAX / 4.0;
+    let first = world
+        .create_fixture(body, &high_density_circle_fixture(density))
+        .expect("one high-density fixture should have finite mass");
+    let second = world
+        .create_fixture(body, &high_density_circle_fixture(0.0))
+        .expect("zero-density fixture should not reset mass");
+    world
+        .set_fixture_density(second, density)
+        .expect("individual high-density fixture mass should remain finite");
+    let body_before = world.body_snapshot(body).expect("body should remain live");
+    let first_before = world
+        .fixture_snapshot(first)
+        .expect("first fixture should remain live");
+    let second_before = world
+        .fixture_snapshot(second)
+        .expect("second fixture should remain live");
+    let proxy_count_before = world.broad_phase_entry_count();
+    let contact_count_before = world.contact_count();
+
+    // Act
+    let result = world.reset_body_mass_data(body);
+
+    // Assert
+    assert_eq!(
+        result,
+        Err(BodyMassResetError::InvalidAggregateMass(
+            AggregateMassError::NonFiniteMass
+        ))
+    );
+    assert_mass_bits_equal(
+        world.body_snapshot(body).expect("body should remain live"),
+        body_before,
+    );
+    assert_eq!(
+        world
+            .fixture_snapshot(first)
+            .expect("first fixture should remain live"),
+        first_before
+    );
+    assert_eq!(
+        world
+            .fixture_snapshot(second)
+            .expect("second fixture should remain live"),
+        second_before
+    );
+    assert_eq!(world.broad_phase_entry_count(), proxy_count_before);
+    assert_eq!(world.contact_count(), contact_count_before);
+
+    let records = world.destroy_body(body).expect("body should remain live");
+    assert!(matches!(
+        records.last().map(liquidfun::DestructionRecord::snapshot),
+        Some(ObjectSnapshot::Body { fixtures, .. }) if fixtures == &[second, first]
+    ));
 }
 
 #[test]

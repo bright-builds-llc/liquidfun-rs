@@ -9,7 +9,10 @@ use crate::{
 };
 
 use super::body::BodyActivationError;
-use super::body::{BodyDef, BodyMassData, BodySnapshot, BodyState, BodyTransformError, BodyType};
+use super::body::{
+    AggregateMassError, BodyDef, BodyMassData, BodyMassResetError, BodySnapshot, BodyState,
+    BodyTransformError, BodyType,
+};
 #[cfg(feature = "differential-internals")]
 use super::contact::ContactTransition;
 use super::contact_manager::ContactManager;
@@ -112,6 +115,8 @@ pub enum CreateObjectError {
     InvalidFixtureBounds(FixtureBoundsError),
     /// Fixture density produces non-finite shape mass properties.
     InvalidFixtureMass,
+    /// The complete prospective fixture aggregate is invalid.
+    InvalidAggregateMass(AggregateMassError),
 }
 
 impl fmt::Display for CreateObjectError {
@@ -124,6 +129,9 @@ impl fmt::Display for CreateObjectError {
             }
             Self::InvalidFixtureMass => {
                 formatter.write_str("fixture density produces invalid mass properties")
+            }
+            Self::InvalidAggregateMass(error) => {
+                write!(formatter, "invalid aggregate body mass: {error}")
             }
         }
     }
@@ -146,6 +154,12 @@ impl From<ArenaInsertError> for CreateObjectError {
 impl From<FixtureBoundsError> for CreateObjectError {
     fn from(error: FixtureBoundsError) -> Self {
         Self::InvalidFixtureBounds(error)
+    }
+}
+
+impl From<AggregateMassError> for CreateObjectError {
+    fn from(error: AggregateMassError) -> Self {
+        Self::InvalidAggregateMass(error)
     }
 }
 
@@ -479,14 +493,15 @@ impl World {
         } else {
             None
         };
-        if definition.density() > 0.0
-            && definition
+        let maybe_mass_state = if definition.density() > 0.0 {
+            let fixture_mass = definition
                 .shape()
                 .compute_mass(definition.density())
-                .is_err()
-        {
-            return Err(CreateObjectError::InvalidFixtureMass);
-        }
+                .map_err(|_error| CreateObjectError::InvalidFixtureMass)?;
+            Some(self.prepare_body_mass_state(body, Some(fixture_mass))?)
+        } else {
+            None
+        };
         let diagnostic_id = self.allocate_diagnostic_id()?;
         let fixture = self.fixtures.insert(Fixture {
             diagnostic_id,
@@ -502,8 +517,8 @@ impl World {
         self.body_mut_after_validation(body)
             .fixtures
             .insert(0, fixture);
-        if definition.density() > 0.0 {
-            self.reset_body_mass_after_validation(body);
+        if let Some(mass_state) = maybe_mass_state {
+            self.body_mut_after_validation(body).state = mass_state;
         }
         Ok(fixture)
     }
@@ -578,10 +593,11 @@ impl World {
     /// # Errors
     ///
     /// Returns a handle error without mutation when `body` is foreign, stale, or destroyed.
-    pub fn reset_body_mass_data(&mut self, body: BodyId) -> Result<(), HandleError> {
+    pub fn reset_body_mass_data(&mut self, body: BodyId) -> Result<(), BodyMassResetError> {
         self.ensure_not_poisoned_for_handle()?;
         self.bodies.get(body)?;
-        self.reset_body_mass_after_validation(body);
+        let mass_state = self.prepare_body_mass_state(body, None)?;
+        self.body_mut_after_validation(body).state = mass_state;
         Ok(())
     }
 
@@ -1173,35 +1189,50 @@ impl World {
         }
     }
 
-    fn reset_body_mass_after_validation(&mut self, body: BodyId) {
+    fn prepare_body_mass_state(
+        &self,
+        body: BodyId,
+        maybe_candidate: Option<MassData>,
+    ) -> Result<BodyState, AggregateMassError> {
         let fixture_ids = self
             .bodies
             .get(body)
             .expect("validated body remains live during mass reset")
             .fixtures
             .clone();
-        let fixture_mass_data = fixture_ids
-            .iter()
-            .filter_map(|fixture| {
-                let definition = &self
-                    .fixtures
-                    .get(*fixture)
-                    .expect("body fixture adjacency contains a live fixture")
-                    .definition;
-                if definition.density() == 0.0 {
-                    return None;
-                }
-                Some(
-                    definition
-                        .shape()
-                        .compute_mass(definition.density())
-                        .expect("checked fixture shape and density produce valid mass data"),
-                )
-            })
-            .collect::<Vec<MassData>>();
-        self.body_mut_after_validation(body)
+        let mut fixture_mass_data =
+            Vec::with_capacity(fixture_ids.len() + usize::from(maybe_candidate.is_some()));
+        if let Some(candidate) = maybe_candidate {
+            fixture_mass_data.push(candidate);
+        }
+        fixture_mass_data.extend(fixture_ids.iter().filter_map(|fixture| {
+            let definition = &self
+                .fixtures
+                .get(*fixture)
+                .expect("body fixture adjacency contains a live fixture")
+                .definition;
+            if definition.density() == 0.0 {
+                return None;
+            }
+            Some(
+                definition
+                    .shape()
+                    .compute_mass(definition.density())
+                    .expect("checked fixture shape and density produce valid mass data"),
+            )
+        }));
+        self.bodies
+            .get(body)
+            .expect("validated body remains live during mass reset")
             .state
-            .reset_mass_data(&fixture_mass_data);
+            .with_reset_mass_data(&fixture_mass_data)
+    }
+
+    fn reset_body_mass_after_validation(&mut self, body: BodyId) {
+        let mass_state = self
+            .prepare_body_mass_state(body, None)
+            .expect("committed fixture mass state must remain valid during implicit reset");
+        self.body_mut_after_validation(body).state = mass_state;
     }
 
     fn set_fixture_filter_after_validation(&mut self, fixture: FixtureId, filter: FilterData) {
