@@ -223,7 +223,7 @@ The v1 roadmap moves from an immutable, licensed source of truth to a semantic c
 | 3. Rust Object Model and Storage Architecture | 5/5 | Complete    | 2026-07-11 |
 | 4. Math, Settings, and Numerical Policy | 7/7 | Complete    | 2026-07-11 |
 | 5. Shapes and Collision Foundation | 8/8 | Complete    | 2026-07-11 |
-| 6. Minimal Rigid World Vertical Slice | 10/13 | In Progress|  |
+| 6. Minimal Rigid World Vertical Slice | 11/13 | In Progress|  |
 | 7. Rigid Solver, World Operations, and CCD | 0/TBD | Not started | - |
 | 8. Joints, Rope, Callbacks, and Rigid Sign-Off | 0/TBD | Not started | - |
 | 9. Particle Storage, Lifecycle, and Coupling | 0/TBD | Not started | - |
