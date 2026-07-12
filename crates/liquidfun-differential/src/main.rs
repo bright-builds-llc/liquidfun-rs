@@ -199,6 +199,7 @@ fn persist_outcome_bundle(
             report_json: report_bytes,
             identity_json: &identity_bytes,
             stderr,
+            maybe_failure_signature_json: None,
         },
     )?;
     Ok(())

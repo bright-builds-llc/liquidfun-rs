@@ -19,6 +19,7 @@ mod executable;
 mod failure;
 mod math_probe;
 mod profile;
+mod rigid_world;
 mod stdio;
 
 pub use capture::CapturedOracleTrace;
@@ -32,6 +33,7 @@ use failure::{
 };
 pub use math_probe::{CapturedMathProbe, MathProbeProcessError, execute_math_probe_process};
 pub use profile::SessionProfile;
+pub use rigid_world::{CapturedRigidWorld, RigidWorldProcessError, execute_rigid_world_process};
 use stdio::{IoEvent, IoWorkers, StderrSnapshot};
 
 impl OracleExecutable {

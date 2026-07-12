@@ -29,6 +29,8 @@ pub struct FailureBundleRequest<'a> {
     pub identity_json: &'a [u8],
     /// Bounded retained stderr, empty when no stderr was produced.
     pub stderr: &'a [u8],
+    /// Optional exact typed first-divergence signature for replay and reduction.
+    pub maybe_failure_signature_json: Option<&'a [u8]>,
 }
 
 /// Successfully persisted evidence directory and its manifest.
@@ -139,6 +141,9 @@ pub fn persist_failure_bundle(
         MAXIMUM_IDENTITY_BYTES,
     )?;
     enforce_size("stderr.txt", request.stderr, limits.retained_stderr_bytes())?;
+    if let Some(signature) = request.maybe_failure_signature_json {
+        enforce_size("failure-signature.json", signature, MAXIMUM_IDENTITY_BYTES)?;
+    }
 
     let root = ensure_evidence_root(repository_root, "failures")?;
     let directory = create_bundle_directory(&root, request.request_id, request.result_kind)?;
@@ -151,6 +156,17 @@ pub fn persist_failure_bundle(
         ];
         let mut files = BTreeMap::new();
         for (name, bytes) in evidence {
+            write_create_new(&directory.join(name), bytes)?;
+            files.insert(
+                name,
+                BundleFile {
+                    bytes: bytes.len(),
+                    sha256: format!("{:x}", Sha256::digest(bytes)),
+                },
+            );
+        }
+        if let Some(bytes) = request.maybe_failure_signature_json {
+            let name = "failure-signature.json";
             write_create_new(&directory.join(name), bytes)?;
             files.insert(
                 name,
