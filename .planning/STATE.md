@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 06-17-PLAN.md
-last_updated: "2026-07-12T17:14:09.827Z"
+status: verifying
+stopped_at: Completed 06-18-PLAN.md; awaiting phase code review and formal verification
+last_updated: "2026-07-12T17:29:21.228Z"
 last_activity: 2026-07-12
 progress:
   total_phases: 12
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 57
-  completed_plans: 56
-  percent: 98
+  completed_plans: 57
+  percent: 100
 ---
 
 # Project State
@@ -27,7 +27,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-11)
 
 Phase: 6 (Minimal Rigid World Vertical Slice) — EXECUTING
 Plan: 18 of 18
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-07-12
 
 Progress: [██████████] 100%
@@ -81,6 +81,7 @@ Progress: [██████████] 100%
 | Phase 06 P15 | 16 min | 2 tasks | 12 files |
 | Phase 06 P16 | 15 min | 2 tasks | 13 files |
 | Phase 06 P17 | 14 min | 2 tasks | 10 files |
+| Phase 06 P18 | 13 min | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -153,6 +154,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 06]: Admit only the exact fixed Phase 6 step tuple at every protocol boundary. — Keeps configurable solver semantics deferred to Phase 7 while preventing cross-engine input divergence.
 - [Phase 06]: Use one 128-action maximum across Rust, schema, and C++. — A single reviewed bound prevents native acceptance from becoming an oracle harness error.
 - [Phase 06]: Reject custom mass data through source-ordered centered-inertia intermediates before effects. — Malformed or overflowing mass data remains an input validation failure instead of reaching either engine.
+- [Phase 06]: Execute C++ protocol tests and rigid-world comparison under the sanitizer preset before read-only assertion. — Compile-only coverage cannot prove the rigid decode, contact, teardown, and trace paths are sanitizer-clean.
+- [Phase 06]: Admit only one-shot rigid-world compare for the oracle-asan-ubsan Phase 6 command shape. — Keep sanitizer execution closed without widening replay, minimization, reuse, or public step configuration.
+- [Phase 06]: Demote overriding-option only for the read-only upstream Box2D target when sanitizer flags are present. — Apple Clang can build the reviewed sanitizer preset while repository-authored warning denial and canonical D1 constraints remain intact.
 
 ### Pending Todos
 
@@ -160,6 +164,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-12T17:14:09.824Z
-Stopped at: Completed 06-17-PLAN.md
+Last session: 2026-07-12T17:28:42.515Z
+Stopped at: Completed 06-18-PLAN.md; awaiting phase code review and formal verification
 Resume file: None
