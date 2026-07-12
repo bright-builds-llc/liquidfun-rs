@@ -1,166 +1,144 @@
 ---
+status: issues_found
 phase: 06-minimal-rigid-world-vertical-slice
-reviewed: 2026-07-12T07:39:31Z
 depth: standard
-files_reviewed: 66
-files_reviewed_list:
-  - .github/workflows/ci.yml
-  - .github/workflows/oracle.yml
-  - ARCHITECTURE.md
-  - COMPATIBILITY.md
-  - README.md
-  - TESTING.md
-  - crates/liquidfun-differential/native-math-sources.txt
-  - crates/liquidfun-differential/src/failure_bundle.rs
-  - crates/liquidfun-differential/src/main.rs
-  - crates/liquidfun-differential/src/minimizer.rs
-  - crates/liquidfun-differential/src/rigid_evidence.rs
-  - crates/liquidfun-differential/src/rigid_world.rs
-  - crates/liquidfun-differential/src/supervisor.rs
-  - crates/liquidfun-differential/src/supervisor/rigid_world.rs
-  - crates/liquidfun-differential/tests/rigid_world.rs
-  - crates/liquidfun-test-protocol/src/scenario.rs
-  - crates/liquidfun-test-protocol/src/scenario/rigid_world.rs
-  - crates/liquidfun-test-protocol/src/scenario/rigid_world/result.rs
-  - crates/liquidfun-test-protocol/src/scenario/rigid_world/types.rs
-  - crates/liquidfun-test-protocol/src/scenario/rigid_world/validation.rs
-  - crates/liquidfun-test-protocol/src/scenario/rigid_world/witness_registry.rs
-  - crates/liquidfun-test-protocol/src/schema.rs
-  - crates/liquidfun-test-protocol/src/schema/rigid_world.rs
-  - crates/liquidfun-test-protocol/src/schema/tests.rs
-  - crates/liquidfun-test-protocol/src/tolerance.rs
-  - crates/liquidfun-test-protocol/src/tolerance/rigid_policy.rs
-  - crates/liquidfun/src/lib.rs
-  - crates/liquidfun/src/rigid_differential.rs
-  - crates/liquidfun/src/world.rs
-  - crates/liquidfun/src/world/body.rs
-  - crates/liquidfun/src/world/contact.rs
-  - crates/liquidfun/src/world/contact_manager.rs
-  - crates/liquidfun/src/world/contact_solver.rs
-  - crates/liquidfun/src/world/fixture.rs
-  - crates/liquidfun/src/world/object.rs
-  - crates/liquidfun/src/world/proxy.rs
-  - crates/liquidfun/src/world/step.rs
-  - crates/liquidfun/tests/fixture_dynamics.rs
-  - crates/liquidfun/tests/hook_contract.rs
-  - crates/liquidfun/tests/rigid_contact_solver.rs
-  - crates/liquidfun/tests/rigid_contacts.rs
-  - crates/liquidfun/tests/rigid_definitions.rs
-  - crates/liquidfun/tests/rigid_world.rs
-  - justfile
-  - protocol/fixtures/accepted/rigid-world-request.jsonl
-  - protocol/schemas/protocol-v1.schema.json
-  - protocol/schemas/scenario-v1.schema.json
-  - protocol/schemas/trace-v1.schema.json
-  - protocol/tolerances/phase6-v1.toml
-  - reference/compatibility.json
-  - tools/reference/CMakeLists.txt
-  - tools/reference/adapter-inputs.txt
-  - tools/reference/src/generate_build_identity.cmake.in
-  - tools/reference/src/main.cpp
-  - tools/reference/src/protocol.cpp
-  - tools/reference/src/protocol.hpp
-  - tools/reference/src/rigid_world.cpp
-  - tools/reference/src/rigid_world.hpp
-  - tools/reference/src/rigid_world_decode.hpp
-  - tools/reference/src/rigid_world_trace.hpp
-  - tools/reference/tests/protocol_tests.cpp
-  - tools/xtask/src/differential.rs
-  - tools/xtask/src/docs.rs
-  - tools/xtask/src/upstream.rs
-  - tools/xtask/tests/differential_cli.rs
-  - tools/xtask/tests/docs_contract.rs
+files_reviewed: 74
 findings:
   critical: 1
-  warning: 6
+  warning: 2
   info: 0
-  total: 7
-status: issues_found
+  total: 3
+generated_by: gsd-code-reviewer
+lifecycle_mode: yolo
+phase_lifecycle_id: 6-2026-07-12T02-22-53
+generated_at: 2026-07-12T17:35:58Z
 ---
 
 # Phase 6: Code Review Report
 
-**Reviewed:** 2026-07-12T07:39:31Z  
-**Depth:** standard  
-**Files Reviewed:** 66  
+**Reviewed:** 2026-07-12T17:35:58Z
+**Depth:** standard
+**Files Reviewed:** 74
 **Status:** issues_found
 
 ## Summary
 
-The minimal rigid-world slice is well bounded and the existing focused Rust/protocol/differential tests pass, but the review found one safe-public-API panic with partial mutation, one upstream contact-admission mismatch, and several places where the Rust protocol, native executor, C++ adapter, staging workflow, and sanitizer lane do not share the same accepted contract.
+The gap-closure work fixes the original contact-admission, fixed-step, action-bound, negative-inertia, real-binary fixture, and sanitizer-execution gaps. Aggregate fixture creation and explicit reset are also transactional now. Three correctness gaps remain: other implicit mass-reset paths can still panic after mutation, the custom-mass boundary accepts the zero-centered-inertia equality that the pinned debug oracle asserts against, and rigid fixture promotion trusts a self-reported D1 identity without binding its adapter and compile-command digests to the current checkout.
 
-The review applied the repository's `AGENTS.md`, `AGENTS.bright-builds.md`, `standards-overrides.md`, and the architecture, code-shape, verification, testing, and Rust standards. In particular, findings emphasize validate-before-commit state transitions, parse-at-boundary invariants, exact oracle parity, and evidence authority.
+This review applied the repository's `AGENTS.md`, `AGENTS.bright-builds.md`, `standards-overrides.md`, and the architecture, code-shape, testing, verification, and Rust standards. Findings emphasize validate-before-commit public transitions, parse-at-boundary parity, and evidence provenance tied to the checked-in implementation.
 
 ## Critical Issues
 
-### CR-01: Aggregate fixture mass can panic after the new fixture is committed
+### CR-01: Implicit mass resets can still panic after body or fixture mutation
 
-**File:** `crates/liquidfun/src/world/body.rs:412-432` (commit begins in `crates/liquidfun/src/world/object.rs:490-507`)
+**Files:** `crates/liquidfun/src/world/object.rs:389-405`, `crates/liquidfun/src/world/object.rs:1042-1060`, `crates/liquidfun/src/world/object.rs:1231-1235`
 
-**Issue:** `create_fixture` validates only the candidate fixture's individual `MassData`, inserts the fixture, creates its proxies, links it to the body, and then calls `reset_body_mass_after_validation`. That reset adds individually finite masses/inertias without checking each aggregate operation. Two valid centered circles of radius `1.0` and density approximately `f32::MAX / 4.0` each have finite mass and inertia, but their total mass overflows to infinity; the subsequent `mass * local_center.dot(local_center)` becomes NaN for a zero center and the assertion at lines 429-432 panics. The second fixture and its proxies have already been committed, so a caller that catches the unwind retains partially updated topology and stale mass state. The same unchecked aggregation is reachable through explicit mass reset after density edits.
+**Issue:** The new fallible aggregate calculation is used transactionally only by fixture creation and explicit `reset_body_mass_data`. `set_body_type` still destroys contacts and changes the body type before calling `reset_body_mass_after_validation`, while fixture destruction removes contacts, proxies, storage, and adjacency before the same helper. That helper converts `AggregateMassError` into `expect`, even though invalid committed fixture aggregates remain constructible by supported APIs. For example, a static body can own two individually valid circles at density `f32::MAX / 4.0`; changing it to dynamic overflows the aggregate and panics after the type/contact mutation. Likewise, a dynamic body can hold three zero-density fixtures, have each density changed independently to that value without resetting mass, and then panic after destroying one fixture because the two remaining fixtures overflow. These are safe public APIs, and caught unwinds leave partially mutated world topology or body state.
 
-**Fix:** Make aggregate mass calculation fallible and validate every source-ordered addition, weighted-center operation, division, and centered-inertia subtraction before mutating the body. Precompute the complete post-create aggregate before inserting a positive-density fixture, and return a typed fixture/mass-reset error on overflow. Add regression tests that prove both creation and explicit reset reject aggregate overflow without changing fixture, proxy, adjacency, or body-mass state.
+**Fix:** Make every mass-resetting transition validate its complete prospective aggregate before effects. At minimum, compute the prospective body state before contact destruction/type mutation and compute the remaining-fixture state before fixture/contact/proxy removal. Return typed aggregate errors from body-type and fixture-destruction operations rather than routing fallible user state through `expect`. Add regression tests for static-to-dynamic overflow and post-density-edit fixture destruction that assert no changes to type, contacts, fixtures, proxies, adjacency, or mass bits.
 
 ## Warnings
 
-### WR-01: Contacts are admitted between two non-dynamic bodies
+### WR-01: Zero centered inertia still passes the boundary and trips the pinned debug assertion
 
-**File:** `crates/liquidfun/src/world/contact_manager.rs:383-389`
+**Files:** `crates/liquidfun-test-protocol/src/scenario/rigid_world/validation.rs:448-470`, `tools/reference/src/rigid_world_decode.hpp:283-305`, `crates/liquidfun/src/world/body.rs:790-807`
 
-**Issue:** `pair_is_eligible` rejects only static/static pairs. The pinned `b2Body::ShouldCollide` rejects every pair where neither body is dynamic, so overlapping static/kinematic and kinematic/kinematic fixtures incorrectly create Rust contacts. The fixed corpus keeps those body types separated, leaving this upstream mismatch unexercised while the contact-manager compatibility row is marked differentially validated.
+**Issue:** Rust protocol validation, the C++ decoder, and `BodyMassData::new` reject centered inertia only when it is negative, so `mass = 1`, `center = (1, 0)`, and origin inertia `1` is accepted with centered inertia exactly zero. The pinned `b2Body::SetMassData` branch executes because origin inertia is positive and asserts `m_I > 0` after subtraction. A request accepted by both decoders can therefore abort the debug oracle instead of producing a typed boundary rejection; release behavior can also divide by zero when computing inverse inertia. The new tests cover negative and non-finite results but not this equality boundary.
 
-**Fix:** Reject the pair when both body types are not `BodyType::Dynamic`, matching the pinned `ShouldCollide` predicate. Add focused overlapping static/kinematic and kinematic/kinematic tests and include at least one such declaration-first oracle witness before treating admission parity as complete.
+**Fix:** When origin inertia is positive, require the centered result to be strictly positive in the Rust domain constructor, protocol validator, and C++ decoder; continue allowing origin inertia zero through the no-inertia branch. Add matched Rust/C++ tests for the equality case alongside the negative fixture.
 
-### WR-02: The native executor ignores validated step parameters
+### WR-02: Rigid fixture promotion does not bind D1 identity to the current adapter or compile database
 
-**File:** `crates/liquidfun-differential/src/rigid_world.rs:402-406`
+**Files:** `crates/liquidfun-differential/src/rigid_fixtures.rs:62-103`, `crates/liquidfun-differential/src/rigid_fixtures.rs:138-175`, `tools/xtask/src/differential.rs:629-654`
 
-**Issue:** `RigidWorldAction::Step` carries `timestep_bits`, `velocity_iterations`, and `position_iterations`, and the C++ adapter executes those exact values at `tools/reference/src/rigid_world.cpp:253-267`. The native path matches `Step { .. }` and always runs the library's hard-coded `1/60`, 8, and 3 solver constants. Requests with any other values are accepted by the schema/decoder but do not describe the native execution being compared; iteration changes can even produce a match while proving different authored inputs.
+**Issue:** Ordinary rigid comparison rejects a stale oracle by recomputing the checked-in adapter-source digest and effective compile-command digest. The new fixture-stage path omits both checks: it verifies only the manifest revision, requested preset, internally consistent handshake, semantic comparison, and self-derived D1 tier. Replay compares that self-reported identity only with candidate metadata. Consequently, a stale canonical binary from an earlier checkout can stage, review, and promote while metadata records the current `generator_revision`; the real-binary tests reinforce this gap by accepting a fake D1 identity with arbitrary adapter and compile digests. This weakens the promised source-to-evidence provenance even when the semantic trace happens to match.
 
-**Fix:** Either thread the validated step tuple through `World::step` and `solve_contact`, or, for the intentionally fixed Phase 6 solver, require the exact witness timestep/iteration tuple in the Rust decoder, generated schema, and C++ decoder. Add negative boundary tests for every alternate tuple.
+**Fix:** Share the adapter-source and effective compile-command identity validation used by `execute_rigid_world_once` with rigid staging. Before the first candidate write, compare the captured adapter digest and Phase 4 compile-command digest with values recomputed from the current checkout and selected preset. Recheck the same binding during review/promotion or bind it to immutable candidate generator inputs, and add a real-binary stale-digest rejection proving no staging or accepted-path mutation.
 
-### WR-03: Rust and C++ accept different action-count bounds
+## Files Reviewed
 
-**File:** `tools/reference/src/rigid_world_decode.hpp:395-400`
-
-**Issue:** The authoritative Rust boundary and generated schema allow 128 actions per timeline (`crates/liquidfun-test-protocol/src/scenario/rigid_world/validation.rs:30` and `crates/liquidfun-test-protocol/src/schema/rigid_world.rs:105-108`), but the C++ decoder rejects more than 64. A request with 65-128 otherwise valid actions therefore passes native validation and fails only as an oracle harness error.
-
-**Fix:** Define this limit once in the protocol contract and make the Rust bounded type, generated schema, and C++ decoder use the same value. Add an oracle protocol test at the accepted maximum and maximum-plus-one.
-
-### WR-04: Invalid centered custom inertia passes protocol validation
-
-**File:** `crates/liquidfun-test-protocol/src/scenario/rigid_world/validation.rs:380-390`
-
-**Issue:** Request validation checks positive mass, finite center, and nonnegative origin inertia independently, but never validates `inertia - effective_mass * dot(center, center)`. For example, mass `1`, center `(2, 0)`, and inertia `1` is accepted as a validated request. The native executor then rejects it through `BodyMassData`, while the C++ decoder also accepts it and a debug oracle reaches the pinned `b2Assert(m_I > 0)`. This turns malformed boundary input into an execution/harness failure instead of a typed decode rejection.
-
-**Fix:** Perform the same source-ordered finite centered-inertia calculation in the protocol validator and C++ decoder before constructing the action. Reject negative/non-finite centered inertia consistently and add matched Rust/schema/C++ fixtures.
-
-### WR-05: The advertised rigid fixture-stage command is rejected by the real runner
-
-**File:** `crates/liquidfun-differential/src/main.rs:243-254`
-
-**Issue:** `tools/xtask` and `just rigid-stage` allow `--scenario rigid-world`, but the delegated differential binary accepts only `empty-world` and returns usage for every rigid stage attempt. The xtask test uses a fake child that records arguments, so it proves dispatch shape but never exercises the actual rejection. In addition, `validate_rigid_promotion_authority` is not called by any production staging or promotion path, so the D1 guard tested in isolation is not an integrated workflow.
-
-**Fix:** Implement a rigid-specific stage/replay transaction that decodes the rigid request/result, verifies the complete build identity and exact comparison, calls `validate_rigid_promotion_authority` before any candidate write or promotion, and then reuses only the confined storage/review primitives. Add an end-to-end test through the real differential binary for both canonical acceptance and D2 rejection.
-
-### WR-06: The sanitizer lane never executes the Phase 6 C++ adapter
-
-**File:** `.github/workflows/oracle.yml:176-185`
-
-**Issue:** The ASan/UBSan job builds the new rigid-world adapter but runs only `empty-world` comparisons. None of the Phase 6 decoder, raw-pointer contact identity tracking, fixture/body destruction bookkeeping, or rigid trace encoding executes under sanitizers, so ownership/lifetime defects in the reviewed C++ surface can pass the scheduled sanitizer lane.
-
-**Fix:** Add a fail-fast `rigid-world` comparison using `oracle-asan-ubsan` (and run the reference protocol tests under that preset) before the read-only assertion. Keep sanitizer failures classified as harness failures and uploaded through the existing bounded artifact path.
+- `.github/workflows/ci.yml`
+- `.github/workflows/oracle.yml`
+- `ARCHITECTURE.md`
+- `COMPATIBILITY.md`
+- `README.md`
+- `TESTING.md`
+- `crates/liquidfun-differential/native-math-sources.txt`
+- `crates/liquidfun-differential/src/failure_bundle.rs`
+- `crates/liquidfun-differential/src/fixtures/lifecycle.rs`
+- `crates/liquidfun-differential/src/fixtures/replay.rs`
+- `crates/liquidfun-differential/src/main.rs`
+- `crates/liquidfun-differential/src/minimizer.rs`
+- `crates/liquidfun-differential/src/rigid_evidence.rs`
+- `crates/liquidfun-differential/src/rigid_fixtures.rs`
+- `crates/liquidfun-differential/src/rigid_world.rs`
+- `crates/liquidfun-differential/src/supervisor.rs`
+- `crates/liquidfun-differential/src/supervisor/rigid_world.rs`
+- `crates/liquidfun-differential/tests/fixtures/fake_oracle.rs`
+- `crates/liquidfun-differential/tests/rigid_fixture_workflow.rs`
+- `crates/liquidfun-differential/tests/rigid_world.rs`
+- `crates/liquidfun-test-protocol/src/scenario.rs`
+- `crates/liquidfun-test-protocol/src/scenario/rigid_world.rs`
+- `crates/liquidfun-test-protocol/src/scenario/rigid_world/result.rs`
+- `crates/liquidfun-test-protocol/src/scenario/rigid_world/tests.rs`
+- `crates/liquidfun-test-protocol/src/scenario/rigid_world/types.rs`
+- `crates/liquidfun-test-protocol/src/scenario/rigid_world/validation.rs`
+- `crates/liquidfun-test-protocol/src/scenario/rigid_world/witness_registry.rs`
+- `crates/liquidfun-test-protocol/src/schema.rs`
+- `crates/liquidfun-test-protocol/src/schema/rigid_world.rs`
+- `crates/liquidfun-test-protocol/src/schema/tests.rs`
+- `crates/liquidfun-test-protocol/src/tolerance.rs`
+- `crates/liquidfun-test-protocol/src/tolerance/rigid_policy.rs`
+- `crates/liquidfun-test-protocol/tests/fixtures.rs`
+- `crates/liquidfun/src/lib.rs`
+- `crates/liquidfun/src/rigid_differential.rs`
+- `crates/liquidfun/src/world.rs`
+- `crates/liquidfun/src/world/body.rs`
+- `crates/liquidfun/src/world/contact.rs`
+- `crates/liquidfun/src/world/contact_manager.rs`
+- `crates/liquidfun/src/world/contact_solver.rs`
+- `crates/liquidfun/src/world/fixture.rs`
+- `crates/liquidfun/src/world/object.rs`
+- `crates/liquidfun/src/world/proxy.rs`
+- `crates/liquidfun/src/world/step.rs`
+- `crates/liquidfun/tests/fixture_dynamics.rs`
+- `crates/liquidfun/tests/hook_contract.rs`
+- `crates/liquidfun/tests/rigid_contact_solver.rs`
+- `crates/liquidfun/tests/rigid_contacts.rs`
+- `crates/liquidfun/tests/rigid_definitions.rs`
+- `crates/liquidfun/tests/rigid_world.rs`
+- `justfile`
+- `protocol/fixtures/accepted/rigid-world-request.jsonl`
+- `protocol/fixtures/rejected/rigid-world-negative-centered-inertia.jsonl`
+- `protocol/schemas/protocol-v1.schema.json`
+- `protocol/schemas/scenario-v1.schema.json`
+- `protocol/schemas/trace-v1.schema.json`
+- `protocol/tolerances/phase6-v1.toml`
+- `reference/compatibility.json`
+- `tools/reference/CMakeLists.txt`
+- `tools/reference/adapter-inputs.txt`
+- `tools/reference/src/generate_build_identity.cmake.in`
+- `tools/reference/src/main.cpp`
+- `tools/reference/src/protocol.cpp`
+- `tools/reference/src/protocol.hpp`
+- `tools/reference/src/rigid_world.cpp`
+- `tools/reference/src/rigid_world.hpp`
+- `tools/reference/src/rigid_world_decode.hpp`
+- `tools/reference/src/rigid_world_trace.hpp`
+- `tools/reference/tests/protocol_tests.cpp`
+- `tools/xtask/src/differential.rs`
+- `tools/xtask/src/docs.rs`
+- `tools/xtask/src/upstream.rs`
+- `tools/xtask/tests/differential_cli.rs`
+- `tools/xtask/tests/docs_contract.rs`
 
 ## Verification
 
-- `cargo test -p liquidfun --all-features` passed, including doctests.
-- `cargo test -p liquidfun-test-protocol --all-features` passed.
-- `cargo test -p liquidfun-differential --all-features --test rigid_world` passed (12 tests).
-- `cargo test -p xtask --test differential_cli` passed (23 tests).
-- Existing worktree change `.planning/config.json` was preserved and is unrelated to this report.
+- Reviewed the complete 74-file Phase 6 source scope and the gap-closure commit range `a068668..630d186`.
+- Confirmed the original seven review findings against their current implementation and regression evidence.
+- `git diff --check` is required after this report write; no source files were edited by the reviewer.
 
 ***
 
-_Reviewed: 2026-07-12T07:39:31Z_  
-_Reviewer: the agent (gsd-code-reviewer)_  
-_Depth: standard_
+_Reviewer: gsd-code-reviewer_
+_Lifecycle: 6-2026-07-12T02-22-53_
