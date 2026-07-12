@@ -669,7 +669,10 @@ fn sanitizer_rigid_compare_passes_only_the_reviewed_one_shot_shape() -> TestResu
 #[test]
 fn collision_compile_database_identity_is_covered_by_unit_digest_tests() {
     // The unit digest fixtures name collision_probe.cpp explicitly and are run by this filter.
-    assert!(include_str!("../src/differential.rs").contains("collision_probe.cpp"));
+    assert!(
+        include_str!("../../../crates/liquidfun-differential/src/oracle_identity.rs")
+            .contains("collision_probe.cpp")
+    );
 }
 
 #[test]
