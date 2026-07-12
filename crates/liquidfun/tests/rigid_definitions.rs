@@ -1,7 +1,11 @@
 //! Black-box checks for checked rigid body and fixture definitions.
 
+use liquidfun::collision::FilterData;
+use liquidfun::collision::shape::{ChainShape, CircleShape, Shape};
 use liquidfun::math::Vec2;
-use liquidfun::{BodyDef, BodyDefError, BodyMassData, BodyMassDataError, BodyType};
+use liquidfun::{
+    BodyDef, BodyDefError, BodyMassData, BodyMassDataError, BodyType, FixtureDef, FixtureDefError,
+};
 
 #[test]
 fn body_definition_round_trips_each_body_type() {
@@ -156,4 +160,118 @@ fn body_mass_data_rejects_each_non_finite_lane() {
             BodyMassDataError::NonFiniteRotationalInertia,
         ]
     );
+}
+
+#[test]
+fn fixture_definition_preserves_owned_shape_material_and_filter_bits() {
+    // Arrange
+    let shape =
+        Shape::from(CircleShape::new(Vec2::new(-0.0, 2.0), 0.75).expect("circle should be valid"));
+    let density = f32::from_bits(0x3f80_0001);
+    let friction = -0.0_f32;
+    let restitution = 0.5_f32;
+    let filter = FilterData::new(0x0004, 0x00f0, -3);
+
+    // Act
+    let definition = FixtureDef::new(shape.clone(), density, friction, restitution, true, filter)
+        .expect("finite non-negative material should be accepted");
+    let snapshot = definition.snapshot();
+
+    // Assert
+    assert_eq!(definition.shape(), &shape);
+    assert_eq!(definition.density().to_bits(), density.to_bits());
+    assert_eq!(definition.friction().to_bits(), friction.to_bits());
+    assert_eq!(definition.restitution().to_bits(), restitution.to_bits());
+    assert!(definition.is_sensor());
+    assert_eq!(definition.filter_data(), filter);
+    assert_eq!(snapshot.shape(), &shape);
+    assert_eq!(snapshot.density().to_bits(), density.to_bits());
+    assert_eq!(snapshot.friction().to_bits(), friction.to_bits());
+    assert_eq!(snapshot.restitution().to_bits(), restitution.to_bits());
+    assert!(snapshot.is_sensor());
+    assert_eq!(snapshot.filter_data(), filter);
+}
+
+#[test]
+fn fixture_definition_clone_owns_chain_topology() {
+    // Arrange
+    let mut source = vec![
+        Vec2::new(0.0, 0.0),
+        Vec2::new(1.0, 0.0),
+        Vec2::new(2.0, 1.0),
+    ];
+    let chain = ChainShape::open(&source, None, None).expect("chain should be valid");
+    let definition = FixtureDef::new(
+        Shape::from(chain),
+        1.0,
+        0.2,
+        0.0,
+        false,
+        FilterData::default(),
+    )
+    .expect("fixture definition should be valid");
+
+    // Act
+    let cloned = definition.clone();
+    source[1] = Vec2::new(99.0, 99.0);
+    drop(definition);
+
+    // Assert
+    let Shape::Chain(cloned_chain) = cloned.shape() else {
+        panic!("cloned definition should retain its chain shape");
+    };
+    assert_eq!(
+        cloned_chain.vertices(),
+        [
+            Vec2::new(0.0, 0.0),
+            Vec2::new(1.0, 0.0),
+            Vec2::new(2.0, 1.0),
+        ]
+    );
+}
+
+#[test]
+fn fixture_definition_rejects_negative_material_values() {
+    // Arrange
+    let shape = || Shape::from(CircleShape::new(Vec2::ZERO, 1.0).expect("circle should be valid"));
+
+    // Act
+    let density = FixtureDef::new(shape(), -1.0, 0.0, 0.0, false, FilterData::default());
+    let friction = FixtureDef::new(shape(), 0.0, -1.0, 0.0, false, FilterData::default());
+    let restitution = FixtureDef::new(shape(), 0.0, 0.0, -1.0, false, FilterData::default());
+
+    // Assert
+    assert_eq!(density, Err(FixtureDefError::NegativeDensity));
+    assert_eq!(friction, Err(FixtureDefError::NegativeFriction));
+    assert_eq!(restitution, Err(FixtureDefError::NegativeRestitution));
+}
+
+#[test]
+fn fixture_definition_rejects_non_finite_material_values() {
+    // Arrange
+    let shape = || Shape::from(CircleShape::new(Vec2::ZERO, 1.0).expect("circle should be valid"));
+
+    // Act
+    let density = FixtureDef::new(shape(), f32::NAN, 0.0, 0.0, false, FilterData::default());
+    let friction = FixtureDef::new(
+        shape(),
+        0.0,
+        f32::INFINITY,
+        0.0,
+        false,
+        FilterData::default(),
+    );
+    let restitution = FixtureDef::new(
+        shape(),
+        0.0,
+        0.0,
+        f32::NEG_INFINITY,
+        false,
+        FilterData::default(),
+    );
+
+    // Assert
+    assert_eq!(density, Err(FixtureDefError::NonFiniteDensity));
+    assert_eq!(friction, Err(FixtureDefError::NonFiniteFriction));
+    assert_eq!(restitution, Err(FixtureDefError::NonFiniteRestitution));
 }

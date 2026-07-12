@@ -1,10 +1,12 @@
 //! World ownership and minimal non-solver object storage.
 
 mod body;
+mod fixture;
 pub(crate) mod object;
 mod step;
 
 pub use body::{BodyDef, BodyDefError, BodyMassData, BodyMassDataError, BodySnapshot, BodyType};
+pub use fixture::{FixtureDef, FixtureDefError, FixtureSnapshot};
 pub use object::{
     CreateObjectError, DestroyedId, DestructionCause, DestructionRecord, ObjectSnapshot, World,
 };
