@@ -168,9 +168,13 @@ change synchronizes those proxies immediately, but discovery and contact update
 wait for the next `World::step`. Deactivation destroys contacts before proxies;
 activation recreates proxies and likewise waits for stepping to discover
 contacts. A type change destroys contacts, resets source-compatible body state,
-and touches proxies for later reconsideration. These transitions run through
-centralized validate-then-commit paths so contact-end evidence is captured while
-its body and fixture semantics are still live.
+and touches proxies for later reconsideration. `World::set_body_type` and
+`World::destroy_fixture` expose `BodyTypeChangeError` and `FixtureDestructionError`;
+an invalid prospective aggregate returns through
+those typed errors without changing body type, mass bits, contacts, fixtures,
+proxies, or adjacency. These transitions run through centralized
+validate-then-commit paths so contact-end evidence is captured while its body
+and fixture semantics are still live.
 
 Mass behavior deliberately preserves the pinned asymmetry. Creating a fixture
 with positive density resets mass, and fixture destruction always resets it.
@@ -180,13 +184,16 @@ with positive density resets mass, and fixture destruction always resets it.
 source-compatible no-op for static or kinematic bodies. A later reset-triggering
 fixture or body-type operation replaces the override.
 
-Aggregate mass is a validate-before-commit transaction. Fixture creation and
-explicit reset first calculate one complete candidate body state in pinned
-source order, checking every sum, weighted center, inertia, parallel-axis, and
-derived velocity intermediate. Only a valid candidate may replace body state or
-permit fixture, proxy, and adjacency insertion. Aggregate overflow therefore
-returns a typed error without changing topology, proxies, contacts, or prior
-mass state.
+Aggregate mass is a validate-before-commit transaction. Fixture creation,
+explicit reset, body-type changes, and explicit fixture destruction first
+calculate one complete candidate body state in pinned source order, checking
+every sum, weighted center, inertia, parallel-axis, and derived velocity
+intermediate. Only a valid candidate may replace body state or permit topology
+effects. Aggregate overflow therefore returns a typed error without changing
+topology, proxies, contacts, or prior mass state. A body-destruction cascade
+deliberately skips the mass reset because its parent body is being destroyed;
+recomputing the remaining fixture aggregate would add a fallible result with no
+state that could observe it.
 
 Private contact-manager occurrences consume Phase 5 ordered broad-phase pairs,
 use canonical manifold feature identity, and preserve manager, manifold-point,
@@ -237,13 +244,18 @@ local pass cannot promote a canonical fixture or platform claim.
 The Phase 6 request boundary admits exactly timestep bits `0x3c888889`, eight
 velocity iterations, three position iterations, and at most 128 actions. Rust,
 schema, native execution, and C++ decoding share those values. Custom mass data
-must also produce finite non-negative centered inertia through the same
-source-ordered subtraction before either engine executes.
+with origin inertia exactly zero follows the pinned no-inertia branch without a
+parallel-axis subtraction. For positive-origin inertia, every source-ordered
+intermediate must be finite and positive-origin inertia must remain finite and strictly positive
+after centering before either engine executes.
 
 Rigid fixture stage, review, and promotion run through the real typed binary.
 Request/result/build identity, declaration completeness, comparison, and D1
 authority are checked before every candidate, receipt, accepted artifact, or
-manifest write; local D2 results remain read-only. The scheduled
+manifest write. D1 authority alone is insufficient: stage and every replay used
+by review or promotion independently recompute the adapter-source and effective compile-command digests
+from the current checkout and selected preset before
+mutation. Local D2 results remain read-only. The scheduled
 `oracle-asan-ubsan` lane executes the C++ protocol target and one fail-fast rigid
 comparison before its read-only assertion, while uploading only bounded harness
 failure bundles.

@@ -399,12 +399,15 @@ a passing happy-path corpus from silently reopening a source or workflow gap:
 | `non-dynamic-contact-admission` | `cargo test -p liquidfun --test rigid_contacts non_dynamic --all-features` plus the two declaration-first overlap witnesses prove both no-dynamic branches. | Fixed contact-admission scope; not general islands. |
 | `ignored-step-parameters` | Rust/schema/C++ boundary tests admit only `0x3c888889`, eight velocity iterations, and three position iterations. | Fixed Phase 6 tuple; public step configuration remains Phase 7. |
 | `rigid-action-bound-mismatch` | Rust and C++ tests accept exactly 128 actions and reject 129 before execution. | One bounded request contract, not unbounded scenario input. |
-| `invalid-centered-inertia-boundary` | Protocol fixture and C++ tests reject source-ordered negative or non-finite centered inertia before world construction. | Input-boundary evidence; arbitrary mass/solver behavior is not claimed. |
+| `invalid-centered-inertia-boundary` | Protocol fixture and C++ tests reject source-ordered negative, zero-after-centering, or non-finite centered inertia when origin inertia is positive, while retaining the zero-origin no-inertia branch. | Input-boundary evidence; arbitrary mass/solver behavior is not claimed. |
 | `rigid-staging-not-integrated` | `cargo test -p liquidfun-differential --test rigid_fixture_workflow --all-features` and the xtask real-child test prove canonical D1 acceptance, D2 no-effect rejection, exact replay, and repeated pre-write authority checks. | Test-owned D1 identity proves the transaction; local real-oracle D2 runs cannot promote. |
 | `rigid-sanitizer-not-executed` | Oracle workflow contracts require fail-fast CTest and `rigid-world` compare under `oracle-asan-ubsan` before read-only assertion. | Executed in scheduled/manual canonical Linux CI; local noncanonical runs do not become D1. |
+| `implicit-aggregate-mass-atomicity` | `cargo test -p liquidfun --test fixture_dynamics implicit_aggregate_mass --all-features` proves `BodyTypeChangeError` and `FixtureDestructionError` reject invalid prospective aggregates with exact no-effect body, contact, fixture, proxy, adjacency, and mass evidence. | Native safe-API atomicity; body cascades intentionally do not reset mass because the parent is being destroyed. |
+| `zero-centered-inertia-boundary` | Public, protocol-fixture, native-defense, and C++ protocol tests prove that the zero-origin branch remains no-inertia while positive-origin custom mass requires finite, strictly positive centered inertia. | Rust/C++ boundary parity for custom mass; broader mass solving remains deferred. |
+| `rigid-fixture-checkout-provenance` | Shared identity tests and stale real-binary stage/review/promotion tests recompute current-checkout adapter-source and effective compile-command digests before every mutation and prove exact no-effect rejection. | Test-owned canonical identities exercise D1 gating; local real-oracle execution does not claim D1. |
 
-These closures preserve the existing evidence labels: local debug/release and
-replay passes are D2, exactly two same-build byte-identical runs are D0, and
+These closures preserve the existing evidence labels: local debug/release and replay passes are D2, exactly two
+same-build byte-identical runs are D0, and
 only the pinned canonical lane can produce D1. Formal phase sign-off is derived
 from code and executed evidence rather than this table.
 

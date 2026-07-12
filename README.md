@@ -27,12 +27,15 @@ the 78-case Phase 5 collision corpus, and both Phase 6 `phase6-v1` timelines:
 generated [compatibility inventory](COMPATIBILITY.md) records each row only at
 its demonstrated dimensions.
 
-The slice now rejects aggregate fixture-mass overflow before mutation, rejects
-overlapping pairs without a dynamic body, and shares one fixed 128-action step
-contract across Rust, schema, and C++. Custom mass data is rejected before
-execution when its centered inertia is invalid. The real rigid fixture lifecycle
-requires canonical D1 authority before every write, while local debug, release,
-replay, and two-run determinism remain D2/D0 evidence only. The scheduled Clang
+The slice now rejects aggregate fixture-mass overflow before mutation through
+`BodyTypeChangeError` and `FixtureDestructionError`, rejects overlapping pairs
+without a dynamic body, and shares one fixed 128-action step contract across
+Rust, schema, and C++. The zero-origin custom-mass branch remains no-inertia;
+positive-origin custom mass requires finite, strictly positive centered inertia
+before execution. The real rigid fixture lifecycle requires canonical D1 authority before every write
+and independently recomputes the current checkout's adapter-source and effective compile-command digests
+before stage, review, or promotion mutation. Local debug, release, replay, and two-run
+determinism remain D2/D0 evidence only. The scheduled Clang
 ASan/UBSan lane executes both the C++ protocol tests and the rigid-world path;
 that CI wiring is not a local D1 or cross-platform claim.
 

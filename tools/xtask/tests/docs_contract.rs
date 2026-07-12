@@ -447,9 +447,44 @@ fn phase6_contract_rejects_missing_verifier_gap_closure() -> TestResult {
         "invalid-centered-inertia-boundary",
         "rigid-staging-not-integrated",
         "rigid-sanitizer-not-executed",
+        "implicit-aggregate-mass-atomicity",
+        "zero-centered-inertia-boundary",
+        "rigid-fixture-checkout-provenance",
     ] {
         let fixture = DocsFixture::new()?;
         fixture.replace_document_text("TESTING.md", gap_id, "removed-gap-closure")?;
+        let output = fixture.command()?;
+        assert_failure(&output, "docs/phase6-contract");
+        fixture.cleanup()?;
+    }
+    Ok(())
+}
+
+#[test]
+fn phase6_contract_rejects_missing_second_round_boundary_contracts() -> TestResult {
+    // Arrange, Act, Assert
+    for (document, marker) in [
+        (
+            "ARCHITECTURE.md",
+            "`BodyTypeChangeError` and `FixtureDestructionError`",
+        ),
+        (
+            "ARCHITECTURE.md",
+            "positive-origin inertia must remain finite and strictly positive",
+        ),
+        (
+            "ARCHITECTURE.md",
+            "adapter-source and effective compile-command digests",
+        ),
+        ("TESTING.md", "local debug/release and replay passes are D2"),
+        ("TESTING.md", "same-build byte-identical runs are D0"),
+        (
+            "README.md",
+            "current checkout's adapter-source and effective compile-command digests",
+        ),
+    ] {
+        let fixture = DocsFixture::new()?;
+        fixture.replace_document_text(document, marker, "removed-boundary-contract")?;
         let output = fixture.command()?;
         assert_failure(&output, "docs/phase6-contract");
         fixture.cleanup()?;
