@@ -437,6 +437,27 @@ fn phase6_contract_rejects_missing_sanitizer_execution_evidence() -> TestResult 
 }
 
 #[test]
+fn phase6_contract_rejects_missing_verifier_gap_closure() -> TestResult {
+    // Arrange, Act, Assert
+    for gap_id in [
+        "aggregate-mass-atomicity",
+        "non-dynamic-contact-admission",
+        "ignored-step-parameters",
+        "rigid-action-bound-mismatch",
+        "invalid-centered-inertia-boundary",
+        "rigid-staging-not-integrated",
+        "rigid-sanitizer-not-executed",
+    ] {
+        let fixture = DocsFixture::new()?;
+        fixture.replace_document_text("TESTING.md", gap_id, "removed-gap-closure")?;
+        let output = fixture.command()?;
+        assert_failure(&output, "docs/phase6-contract");
+        fixture.cleanup()?;
+    }
+    Ok(())
+}
+
+#[test]
 fn phase6_contract_rejects_deferred_surface_and_identity_overclaims() -> TestResult {
     // Arrange, Act, Assert
     for claim in [

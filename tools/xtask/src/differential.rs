@@ -218,7 +218,10 @@ fn parse_scenario_command(
     let preset = require_allowed(&options, "--preset", &ALLOWED_PRESETS)?;
     let profile = require_allowed(&options, "--session-profile", &ALLOWED_PROFILES)?;
     let math_probe = if matches!(scenario, "math-probes" | "collision-probes" | "rigid-world") {
-        let shape_is_reviewed = profile == "one-shot" && MATH_PROBE_PRESETS.contains(&preset);
+        let sanitizer_rigid_compare =
+            scenario == "rigid-world" && command == "compare" && preset == "oracle-asan-ubsan";
+        let shape_is_reviewed = profile == "one-shot"
+            && (MATH_PROBE_PRESETS.contains(&preset) || sanitizer_rigid_compare);
         let action_is_reviewed = scenario == "rigid-world" || command != "minimize";
         if !shape_is_reviewed || !action_is_reviewed {
             return Err(DifferentialError::usage(
@@ -606,6 +609,7 @@ fn execute_rigid_world_once(
     let oracle_preset = match preset {
         "oracle-debug" => OraclePreset::Debug,
         "oracle-release" => OraclePreset::Release,
+        "oracle-asan-ubsan" => OraclePreset::AsanUbsan,
         _ => return Err(DifferentialError::usage("unregistered rigid-world preset")),
     };
     let oracle_program = OracleExecutable::resolve(repository_root, oracle_preset)

@@ -388,6 +388,26 @@ The ledger deliberately keeps general islands, broad world operations,
 non-circle contact classes, forces, sleeping, CCD, queries, configuration,
 joints, and broad rigid scenarios pending for Phase 7 or Phase 8.
 
+### Phase 6 verification-gap closure evidence
+
+The original verifier findings remain named so documentation checks can prevent
+a passing happy-path corpus from silently reopening a source or workflow gap:
+
+| Gap ID | Direct executable evidence | Authority limit |
+| --- | --- | --- |
+| `aggregate-mass-atomicity` | `cargo test -p liquidfun --test fixture_dynamics aggregate_mass --all-features` proves create/reset rejection preserves fixture adjacency, proxies, contacts, and body mass. | Native safe-API atomicity for the Phase 6 fixture surface. |
+| `non-dynamic-contact-admission` | `cargo test -p liquidfun --test rigid_contacts non_dynamic --all-features` plus the two declaration-first overlap witnesses prove both no-dynamic branches. | Fixed contact-admission scope; not general islands. |
+| `ignored-step-parameters` | Rust/schema/C++ boundary tests admit only `0x3c888889`, eight velocity iterations, and three position iterations. | Fixed Phase 6 tuple; public step configuration remains Phase 7. |
+| `rigid-action-bound-mismatch` | Rust and C++ tests accept exactly 128 actions and reject 129 before execution. | One bounded request contract, not unbounded scenario input. |
+| `invalid-centered-inertia-boundary` | Protocol fixture and C++ tests reject source-ordered negative or non-finite centered inertia before world construction. | Input-boundary evidence; arbitrary mass/solver behavior is not claimed. |
+| `rigid-staging-not-integrated` | `cargo test -p liquidfun-differential --test rigid_fixture_workflow --all-features` and the xtask real-child test prove canonical D1 acceptance, D2 no-effect rejection, exact replay, and repeated pre-write authority checks. | Test-owned D1 identity proves the transaction; local real-oracle D2 runs cannot promote. |
+| `rigid-sanitizer-not-executed` | Oracle workflow contracts require fail-fast CTest and `rigid-world` compare under `oracle-asan-ubsan` before read-only assertion. | Executed in scheduled/manual canonical Linux CI; local noncanonical runs do not become D1. |
+
+These closures preserve the existing evidence labels: local debug/release and
+replay passes are D2, exactly two same-build byte-identical runs are D0, and
+only the pinned canonical lane can produce D1. Formal phase sign-off is derived
+from code and executed evidence rather than this table.
+
 ## Differential commands
 
 Initialize, verify, configure, and build the oracle first:
@@ -454,10 +474,12 @@ traces, and minimized regressions. `reference/artifacts/manifest.toml` records
 content, request, scenario, payload, policy, oracle, adapter, build, compiler,
 target, flags, source/seed, notices, reviewer, UTC review time, and status.
 
-Stage only to the confined candidate area:
+Stage only to the confined candidate area. The rigid path uses the same lifecycle
+with its closed real-binary transaction:
 
 ```bash
 cargo xtask differential fixture stage --scenario empty-world --preset oracle-debug --session-profile one-shot --artifact-kind reviewed-trace --artifact-id "$ARTIFACT_ID"
+cargo xtask differential fixture stage --scenario rigid-world --preset oracle-debug --session-profile one-shot --artifact-kind reviewed-trace --artifact-id "$ARTIFACT_ID"
 ```
 
 Replay the candidate, inspect its receipt and reviewable diff, then bind an
@@ -475,7 +497,10 @@ cargo xtask differential fixture promote --artifact-id "$ARTIFACT_ID"
 
 Promotion derives the accepted path from typed artifact kind and scenario ID,
 refuses existing destinations, and publishes through a no-clobber atomic rename.
-Checks never regenerate evidence. Portability or CI jobs never review or promote.
+Rigid stage validates request/result/build identity and comparison before the
+first write; review and promotion replay the exact candidate and independently
+repeat the D1 authority guard before their own writes. Checks never regenerate
+evidence. Portability or CI jobs never review or promote.
 
 Minimization operates on validated typed scenarios in stable transform order.
 Every candidate revalidates and must reproduce the same failure signature. A
@@ -532,6 +557,7 @@ environment, then preserve the existing empty-world one-shot and bounded
 reset/reuse corpus:
 
 ```bash
+cmake --build target/reference/oracle-asan-ubsan --target liquidfun-reference-protocol-tests
 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 ASAN_OPTIONS=abort_on_error=1:halt_on_error=1 ctest --test-dir target/reference/oracle-asan-ubsan --output-on-failure --no-tests=error -R '^liquidfun-reference-protocol$'
 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 ASAN_OPTIONS=abort_on_error=1:halt_on_error=1 cargo xtask differential compare --scenario rigid-world --preset oracle-asan-ubsan --session-profile one-shot
 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 ASAN_OPTIONS=abort_on_error=1:halt_on_error=1 cargo xtask differential compare --scenario empty-world --preset oracle-asan-ubsan --session-profile one-shot

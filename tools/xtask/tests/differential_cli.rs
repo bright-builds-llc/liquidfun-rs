@@ -553,12 +553,14 @@ fn sanitizer_rigid_protocol_and_compare_run_before_read_only_assertion() {
         .and_then(|suffix| suffix.split("  portability-macos:").next())
         .expect("sanitizer job must remain in the Oracle workflow");
     let build = "cargo xtask upstream build --preset oracle-asan-ubsan";
+    let protocol_build = "cmake --build target/reference/oracle-asan-ubsan --target liquidfun-reference-protocol-tests";
     let protocol = "ctest --test-dir target/reference/oracle-asan-ubsan";
     let rigid = "cargo xtask differential compare --scenario rigid-world --preset oracle-asan-ubsan --session-profile one-shot";
     let read_only = "git diff --exit-code -- protocol scenarios reference COMPATIBILITY.md";
 
     // Act
-    let positions = [build, protocol, rigid, read_only].map(|marker| sanitizer_job.find(marker));
+    let positions = [build, protocol_build, protocol, rigid, read_only]
+        .map(|marker| sanitizer_job.find(marker));
 
     // Assert
     assert!(positions.iter().all(Option::is_some));
@@ -588,6 +590,33 @@ fn sanitizer_rigid_commands_use_fail_fast_environment_without_status_suppression
     assert!(!sanitizer_job.contains("continue-on-error:"));
     assert!(!sanitizer_job.contains("|| true"));
     assert!(!sanitizer_job.contains("|| echo"));
+}
+
+#[test]
+fn sanitizer_rigid_compare_passes_only_the_reviewed_one_shot_shape() -> TestResult {
+    // Arrange
+    let fixture = RepositoryFixture::new()?;
+    let mut command = fixture.command()?;
+    let arguments = [
+        "differential",
+        "compare",
+        "--scenario",
+        "rigid-world",
+        "--preset",
+        "oracle-asan-ubsan",
+        "--session-profile",
+        "one-shot",
+    ];
+    command.args(arguments);
+
+    // Act
+    let output = command.output()?;
+
+    // Assert
+    assert!(output.status.success(), "{}", stderr(&output));
+    assert_eq!(fixture.differential_arguments()?, &arguments[1..]);
+    fixture.cleanup()?;
+    Ok(())
 }
 
 #[test]

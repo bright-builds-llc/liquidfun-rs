@@ -27,6 +27,15 @@ the 78-case Phase 5 collision corpus, and both Phase 6 `phase6-v1` timelines:
 generated [compatibility inventory](COMPATIBILITY.md) records each row only at
 its demonstrated dimensions.
 
+The slice now rejects aggregate fixture-mass overflow before mutation, rejects
+overlapping pairs without a dynamic body, and shares one fixed 128-action step
+contract across Rust, schema, and C++. Custom mass data is rejected before
+execution when its centered inertia is invalid. The real rigid fixture lifecycle
+requires canonical D1 authority before every write, while local debug, release,
+replay, and two-run determinism remain D2/D0 evidence only. The scheduled Clang
+ASan/UBSan lane executes both the C++ protocol tests and the rigid-world path;
+that CI wiring is not a local D1 or cross-platform claim.
+
 This is not broad rigid-body support. Phase 7 still owns forces, velocity
 controls, damping, sleeping, the general island solver, multi-contact stacks,
 CCD/TOI world orchestration, queries, ray casts, and broad world configuration;
@@ -68,6 +77,11 @@ The fixed rigid-world evidence commands are `just rigid-world-debug`,
 exercise both declared Phase 6 timelines, and report local passes as D2 plus
 same-build byte identity as D0. They do not promote canonical D1 fixtures or a
 platform claim.
+
+Maintainers can stage the same typed rigid transaction with
+`just rigid-fixture-stage <artifact-id>`, then use the explicit review and
+promotion recipes. Each mutation repeats the D1 guard; a local D2 run is
+rejected before the staging or accepted-evidence tree changes.
 
 ## Architecture and evidence
 

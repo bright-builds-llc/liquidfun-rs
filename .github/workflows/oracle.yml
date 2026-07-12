@@ -177,6 +177,8 @@ jobs:
         run: cargo xtask upstream configure --preset oracle-asan-ubsan
       - name: Build oracle-asan-ubsan
         run: cargo xtask upstream build --preset oracle-asan-ubsan
+      - name: Build rigid reference protocol tests
+        run: cmake --build target/reference/oracle-asan-ubsan --target liquidfun-reference-protocol-tests
       - name: Run rigid reference protocol tests under fail-fast sanitizers
         run: UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 ASAN_OPTIONS=abort_on_error=1:halt_on_error=1 ctest --test-dir target/reference/oracle-asan-ubsan --output-on-failure --no-tests=error -R '^liquidfun-reference-protocol$'
       - name: Compare the Phase 6 rigid world under fail-fast sanitizers
