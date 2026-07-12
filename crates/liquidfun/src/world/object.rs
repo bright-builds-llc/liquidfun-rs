@@ -8,9 +8,12 @@ use crate::{
     ParticleId, ParticleSystemId, WorldKeyError,
 };
 
+use super::body::BodyActivationError;
 use super::body::{BodyDef, BodySnapshot, BodyState, BodyTransformError, BodyType};
-use super::fixture::{FixtureDef, WorldFixtureSnapshot};
+use super::fixture::{FixtureBoundsError, FixtureDef, WorldFixtureSnapshot};
+use super::proxy::{FixtureProxies, FixtureProxy, PreparedFixtureBounds, PreparedSynchronization};
 use super::step::StepState;
+use crate::collision::BroadPhase;
 use crate::math::Vec2;
 
 #[cfg(test)]
@@ -22,6 +25,8 @@ struct Body {
     state: BodyState,
     fixtures: Vec<FixtureId>,
     joints: Vec<JointId>,
+    pending_contact_destruction: bool,
+    pending_wake: bool,
 }
 
 #[derive(Debug)]
@@ -29,6 +34,7 @@ struct Fixture {
     diagnostic_id: u64,
     body: BodyId,
     definition: FixtureDef,
+    proxies: FixtureProxies,
 }
 
 #[derive(Debug)]
@@ -95,6 +101,8 @@ pub enum CreateObjectError {
     InvalidHandle(HandleError),
     /// The arena for the new object cannot accept another entry.
     Arena(ArenaInsertError),
+    /// A fixture child cannot be represented in broad-phase coordinates.
+    InvalidFixtureBounds(FixtureBoundsError),
 }
 
 impl fmt::Display for CreateObjectError {
@@ -102,6 +110,9 @@ impl fmt::Display for CreateObjectError {
         match self {
             Self::InvalidHandle(error) => write!(formatter, "invalid related handle: {error}"),
             Self::Arena(error) => write!(formatter, "could not store object: {error}"),
+            Self::InvalidFixtureBounds(error) => {
+                write!(formatter, "invalid fixture bounds: {error}")
+            }
         }
     }
 }
@@ -117,6 +128,12 @@ impl From<HandleError> for CreateObjectError {
 impl From<ArenaInsertError> for CreateObjectError {
     fn from(error: ArenaInsertError) -> Self {
         Self::Arena(error)
+    }
+}
+
+impl From<FixtureBoundsError> for CreateObjectError {
+    fn from(error: FixtureBoundsError) -> Self {
+        Self::InvalidFixtureBounds(error)
     }
 }
 
@@ -268,6 +285,7 @@ pub struct World {
     particle_systems: Arena<ParticleSystem, ParticleSystemId>,
     particle_groups: Arena<ParticleGroup, ParticleGroupId>,
     particles: Arena<Particle, ParticleId>,
+    broad_phase: BroadPhase<FixtureProxy>,
     next_diagnostic_id: Option<u64>,
     pub(super) step_state: StepState,
 }
@@ -287,6 +305,7 @@ impl World {
             particle_systems: Arena::new(world, usize::MAX),
             particle_groups: Arena::new(world, usize::MAX),
             particles: Arena::new(world, usize::MAX),
+            broad_phase: new_world_broad_phase(),
             next_diagnostic_id: Some(1),
             step_state: StepState::new(),
         })
@@ -322,6 +341,8 @@ impl World {
             state: BodyState::from_definition(definition),
             fixtures: Vec::new(),
             joints: Vec::new(),
+            pending_contact_destruction: false,
+            pending_wake: false,
         })
     }
 
@@ -342,7 +363,16 @@ impl World {
     /// Returns a handle error without mutation when `body` is foreign, stale, or destroyed.
     pub fn set_body_type(&mut self, body: BodyId, body_type: BodyType) -> Result<(), HandleError> {
         self.ensure_not_poisoned_for_handle()?;
-        self.bodies.get_mut(body)?.state.set_body_type(body_type);
+        let record = self.bodies.get(body)?;
+        if record.state.snapshot().body_type() == body_type {
+            return Ok(());
+        }
+        let fixtures = record.fixtures.clone();
+        self.touch_body_fixture_entries(body, &fixtures);
+        let record = self.body_mut_after_validation(body);
+        record.state.set_body_type(body_type);
+        record.pending_contact_destruction = true;
+        record.pending_wake = true;
         Ok(())
     }
 
@@ -368,7 +398,17 @@ impl World {
             .get(body)?
             .state
             .with_transform(position, angle)?;
-        self.bodies.get_mut(body)?.state = candidate;
+        let record = self.bodies.get(body)?;
+        let previous = record.state.transform();
+        let fixtures = record.fixtures.clone();
+        let active = record.state.snapshot().is_active();
+        let synchronizations = if active {
+            self.prepare_body_synchronizations(body, &fixtures, previous, candidate.transform())?
+        } else {
+            Vec::new()
+        };
+        self.apply_body_synchronizations(synchronizations);
+        self.body_mut_after_validation(body).state = candidate;
         Ok(())
     }
 
@@ -377,9 +417,29 @@ impl World {
     /// # Errors
     ///
     /// Returns a handle error without mutation when `body` is foreign, stale, or destroyed.
-    pub fn set_body_active(&mut self, body: BodyId, active: bool) -> Result<(), HandleError> {
+    pub fn set_body_active(
+        &mut self,
+        body: BodyId,
+        active: bool,
+    ) -> Result<(), BodyActivationError> {
         self.ensure_not_poisoned_for_handle()?;
-        self.bodies.get_mut(body)?.state.set_active(active);
+        let record = self.bodies.get(body)?;
+        if record.state.snapshot().is_active() == active {
+            return Ok(());
+        }
+        let transform = record.state.transform();
+        let fixtures = record.fixtures.clone();
+        if active {
+            let creations = self.prepare_body_fixture_creations(&fixtures, transform)?;
+            self.create_body_fixture_entries(body, creations);
+        } else {
+            self.destroy_body_fixture_entries(body, fixtures);
+        }
+        let record = self.body_mut_after_validation(body);
+        record.state.set_active(active);
+        if !active {
+            record.pending_contact_destruction = true;
+        }
         Ok(())
     }
 
@@ -394,13 +454,25 @@ impl World {
         definition: &FixtureDef,
     ) -> Result<FixtureId, CreateObjectError> {
         self.ensure_not_poisoned_for_handle()?;
-        self.bodies.get(body)?;
+        let body_record = self.bodies.get(body)?;
+        let maybe_prepared = if body_record.state.snapshot().is_active() {
+            Some(FixtureProxies::prepare_creation(
+                definition.shape(),
+                body_record.state.transform(),
+            )?)
+        } else {
+            None
+        };
         let diagnostic_id = self.allocate_diagnostic_id()?;
         let fixture = self.fixtures.insert(Fixture {
             diagnostic_id,
             body,
             definition: definition.clone(),
+            proxies: FixtureProxies::new(),
         })?;
+        if let Some(prepared) = maybe_prepared {
+            self.create_fixture_entries(fixture, body, prepared);
+        }
         self.body_mut_after_validation(body)
             .fixtures
             .insert(0, fixture);
@@ -417,9 +489,19 @@ impl World {
         fixture: FixtureId,
     ) -> Result<WorldFixtureSnapshot, HandleError> {
         self.ensure_not_poisoned_for_handle()?;
-        self.fixtures
-            .get(fixture)
-            .map(|record| WorldFixtureSnapshot::from_definition(record.body, &record.definition))
+        self.fixtures.get(fixture).map(|record| {
+            WorldFixtureSnapshot::from_definition(
+                record.body,
+                &record.definition,
+                record.proxies.len(),
+            )
+        })
+    }
+
+    /// Returns the number of shape children currently stored for broad-phase discovery.
+    #[must_use]
+    pub fn broad_phase_entry_count(&self) -> usize {
+        self.broad_phase.proxy_count()
     }
 
     /// Creates a joint between two live bodies.
@@ -743,6 +825,14 @@ impl World {
     }
 
     fn remove_fixture(&mut self, fixture: FixtureId, cause: DestructionCause) -> DestructionRecord {
+        let record = self
+            .fixtures
+            .get_mut(fixture)
+            .expect("validated fixture adjacency remains live");
+        let broad_phase_entry_count = record.proxies.len();
+        record
+            .proxies
+            .destroy(&mut self.broad_phase, fixture, record.body);
         let removed = self
             .fixtures
             .remove(fixture)
@@ -757,7 +847,11 @@ impl World {
             cause,
             snapshot: ObjectSnapshot::Fixture {
                 body: removed.body,
-                state: WorldFixtureSnapshot::from_definition(removed.body, &removed.definition),
+                state: WorldFixtureSnapshot::from_definition(
+                    removed.body,
+                    &removed.definition,
+                    broad_phase_entry_count,
+                ),
             },
         }
     }
@@ -868,6 +962,115 @@ impl World {
         }
     }
 
+    fn touch_body_fixture_entries(&mut self, body: BodyId, fixtures: &[FixtureId]) {
+        for fixture in fixtures {
+            let record = self
+                .fixtures
+                .get(*fixture)
+                .expect("body fixture adjacency contains a live fixture");
+            record.proxies.touch(&mut self.broad_phase, *fixture, body);
+        }
+    }
+
+    fn prepare_body_synchronizations(
+        &self,
+        body: BodyId,
+        fixtures: &[FixtureId],
+        previous: crate::math::Transform,
+        current: crate::math::Transform,
+    ) -> Result<Vec<(FixtureId, PreparedSynchronization)>, FixtureBoundsError> {
+        fixtures
+            .iter()
+            .map(|fixture| {
+                let record = self
+                    .fixtures
+                    .get(*fixture)
+                    .expect("body fixture adjacency contains a live fixture");
+                record
+                    .proxies
+                    .prepare_synchronization(
+                        &self.broad_phase,
+                        *fixture,
+                        body,
+                        record.definition.shape(),
+                        previous,
+                        current,
+                    )
+                    .map(|prepared| (*fixture, prepared))
+            })
+            .collect()
+    }
+
+    fn apply_body_synchronizations(
+        &mut self,
+        synchronizations: Vec<(FixtureId, PreparedSynchronization)>,
+    ) {
+        for (fixture, prepared) in synchronizations {
+            self.fixtures
+                .get_mut(fixture)
+                .expect("prepared fixture remains live during transform commit")
+                .proxies
+                .synchronize(&mut self.broad_phase, prepared);
+        }
+    }
+
+    fn prepare_body_fixture_creations(
+        &self,
+        fixtures: &[FixtureId],
+        transform: crate::math::Transform,
+    ) -> Result<Vec<(FixtureId, PreparedFixtureBounds)>, FixtureBoundsError> {
+        fixtures
+            .iter()
+            .map(|fixture| {
+                let record = self
+                    .fixtures
+                    .get(*fixture)
+                    .expect("body fixture adjacency contains a live fixture");
+                FixtureProxies::prepare_creation(record.definition.shape(), transform)
+                    .map(|prepared| (*fixture, prepared))
+            })
+            .collect()
+    }
+
+    fn create_body_fixture_entries(
+        &mut self,
+        body: BodyId,
+        creations: Vec<(FixtureId, PreparedFixtureBounds)>,
+    ) {
+        for (fixture, prepared) in creations {
+            self.create_fixture_entries(fixture, body, prepared);
+        }
+    }
+
+    fn create_fixture_entries(
+        &mut self,
+        fixture: FixtureId,
+        body: BodyId,
+        prepared: PreparedFixtureBounds,
+    ) {
+        let record = self
+            .fixtures
+            .get_mut(fixture)
+            .expect("prepared fixture remains live during entry creation");
+        record.proxies.create(
+            &mut self.broad_phase,
+            fixture,
+            body,
+            record.definition.filter_data(),
+            prepared,
+        );
+    }
+
+    fn destroy_body_fixture_entries(&mut self, body: BodyId, fixtures: Vec<FixtureId>) {
+        for fixture in fixtures {
+            self.fixtures
+                .get_mut(fixture)
+                .expect("body fixture adjacency contains a live fixture")
+                .proxies
+                .destroy(&mut self.broad_phase, fixture, body);
+        }
+    }
+
     fn body_mut_after_validation(&mut self, body: BodyId) -> &mut Body {
         self.bodies
             .get_mut(body)
@@ -891,6 +1094,10 @@ impl World {
             .get_mut(particle)
             .expect("validated particle remains live during one operation")
     }
+}
+
+fn new_world_broad_phase() -> BroadPhase<FixtureProxy> {
+    BroadPhase::new().expect("a process cannot exhaust broad-phase identities after one world key")
 }
 
 fn remove_occurrence<T: PartialEq>(items: &mut Vec<T>, target: &T) {

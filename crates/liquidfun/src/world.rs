@@ -3,13 +3,16 @@
 mod body;
 mod fixture;
 pub(crate) mod object;
+mod proxy;
 mod step;
 
 pub use body::{
-    BodyDef, BodyDefError, BodyMassData, BodyMassDataError, BodySnapshot, BodyTransformError,
-    BodyType,
+    BodyActivationError, BodyDef, BodyDefError, BodyMassData, BodyMassDataError, BodySnapshot,
+    BodyTransformError, BodyType,
 };
-pub use fixture::{FixtureDef, FixtureDefError, FixtureSnapshot, WorldFixtureSnapshot};
+pub use fixture::{
+    FixtureBoundsError, FixtureDef, FixtureDefError, FixtureSnapshot, WorldFixtureSnapshot,
+};
 pub use object::{
     CreateObjectError, DestroyedId, DestructionCause, DestructionRecord, ObjectSnapshot, World,
 };

@@ -4,8 +4,8 @@ use liquidfun::collision::FilterData;
 use liquidfun::collision::shape::{CircleShape, Shape};
 use liquidfun::math::Vec2;
 use liquidfun::{
-    BodyDef, BodyDefError, BodyTransformError, BodyType, CreateObjectError, DestroyedId,
-    FixtureDef, HandleError, ObjectSnapshot, World,
+    BodyActivationError, BodyDef, BodyDefError, BodyTransformError, BodyType, CreateObjectError,
+    DestroyedId, FixtureDef, HandleError, ObjectSnapshot, World,
 };
 
 fn body_definition(body_type: BodyType) -> BodyDef {
@@ -134,7 +134,12 @@ fn body_operations_reject_cross_world_and_stale_handles_without_mutation() {
         .expect("survivor should remain live");
 
     // Assert
-    assert_eq!(stale_result, Err(HandleError::StaleOrDestroyed));
+    assert_eq!(
+        stale_result,
+        Err(BodyActivationError::InvalidHandle(
+            HandleError::StaleOrDestroyed
+        ))
+    );
     assert_eq!(foreign_result, Err(HandleError::WrongWorld));
     assert_ne!(stale, replacement);
     assert_eq!(after, before);

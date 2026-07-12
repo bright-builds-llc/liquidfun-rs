@@ -4,6 +4,28 @@ use std::fmt;
 use crate::BodyId;
 use crate::collision::{FilterData, Shape};
 
+/// A failure while deriving or extending fixture bounds for broad-phase storage.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum FixtureBoundsError {
+    /// A checked shape and body transform produced a non-finite child AABB.
+    NonFiniteDerivedBounds,
+    /// Broad-phase fattening or displacement prediction overflowed finite coordinates.
+    BroadPhaseOverflow,
+}
+
+impl fmt::Display for FixtureBoundsError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let message = match self {
+            Self::NonFiniteDerivedBounds => "fixture transform produced non-finite bounds",
+            Self::BroadPhaseOverflow => "fixture broad-phase bounds overflowed",
+        };
+        formatter.write_str(message)
+    }
+}
+
+impl Error for FixtureBoundsError {}
+
 /// A failure while constructing a checked [`FixtureDef`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
@@ -214,13 +236,19 @@ impl FixtureSnapshot {
 pub struct WorldFixtureSnapshot {
     body: BodyId,
     definition: FixtureSnapshot,
+    broad_phase_entry_count: usize,
 }
 
 impl WorldFixtureSnapshot {
-    pub(super) fn from_definition(body: BodyId, definition: &FixtureDef) -> Self {
+    pub(super) fn from_definition(
+        body: BodyId,
+        definition: &FixtureDef,
+        broad_phase_entry_count: usize,
+    ) -> Self {
         Self {
             body,
             definition: definition.snapshot(),
+            broad_phase_entry_count,
         }
     }
 
@@ -264,6 +292,12 @@ impl WorldFixtureSnapshot {
     #[must_use]
     pub const fn filter_data(&self) -> FilterData {
         self.definition.filter_data()
+    }
+
+    /// Returns the number of shape children currently participating in broad-phase discovery.
+    #[must_use]
+    pub const fn broad_phase_entry_count(&self) -> usize {
+        self.broad_phase_entry_count
     }
 }
 

@@ -103,9 +103,10 @@ pub use identity::{
     BodyId, FixtureId, JointId, ObjectKind, ParticleGroupId, ParticleId, ParticleSystemId,
 };
 pub use world::{
-    BodyDef, BodyDefError, BodyMassData, BodyMassDataError, BodySnapshot, BodyTransformError,
-    BodyType, CollisionDirective, CommandApplication, CommandError, ContactEvent, ContactSnapshot,
-    ContactView, CreateObjectError, DestroyedId, DestructionCause, DestructionRecord, FixtureDef,
-    FixtureDefError, FixtureSnapshot, ObjectSnapshot, PreSolveDirective, StepError, StepHook,
-    StepLimits, StepReport, World, WorldCommand, WorldFixtureSnapshot,
+    BodyActivationError, BodyDef, BodyDefError, BodyMassData, BodyMassDataError, BodySnapshot,
+    BodyTransformError, BodyType, CollisionDirective, CommandApplication, CommandError,
+    ContactEvent, ContactSnapshot, ContactView, CreateObjectError, DestroyedId, DestructionCause,
+    DestructionRecord, FixtureBoundsError, FixtureDef, FixtureDefError, FixtureSnapshot,
+    ObjectSnapshot, PreSolveDirective, StepError, StepHook, StepLimits, StepReport, World,
+    WorldCommand, WorldFixtureSnapshot,
 };

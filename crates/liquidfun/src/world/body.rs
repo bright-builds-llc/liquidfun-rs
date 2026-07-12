@@ -4,6 +4,8 @@ use std::fmt;
 use crate::HandleError;
 use crate::math::{Sweep, Transform, Vec2};
 
+use super::fixture::FixtureBoundsError;
+
 /// The closed set of rigid-body motion types supported by `LiquidFun`.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum BodyType {
@@ -49,6 +51,8 @@ pub enum BodyTransformError {
     InvalidHandle(HandleError),
     /// The requested position or angle is not finite.
     InvalidTransform(BodyDefError),
+    /// Fixture child bounds cannot be represented at the requested transform.
+    InvalidFixtureBounds(FixtureBoundsError),
 }
 
 impl fmt::Display for BodyTransformError {
@@ -56,6 +60,9 @@ impl fmt::Display for BodyTransformError {
         match self {
             Self::InvalidHandle(error) => write!(formatter, "invalid body handle: {error}"),
             Self::InvalidTransform(error) => write!(formatter, "invalid body transform: {error}"),
+            Self::InvalidFixtureBounds(error) => {
+                write!(formatter, "invalid transformed fixture bounds: {error}")
+            }
         }
     }
 }
@@ -71,6 +78,47 @@ impl From<HandleError> for BodyTransformError {
 impl From<BodyDefError> for BodyTransformError {
     fn from(error: BodyDefError) -> Self {
         Self::InvalidTransform(error)
+    }
+}
+
+impl From<FixtureBoundsError> for BodyTransformError {
+    fn from(error: FixtureBoundsError) -> Self {
+        Self::InvalidFixtureBounds(error)
+    }
+}
+
+/// A failure while changing whether a body participates in simulation.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum BodyActivationError {
+    /// The body identity does not resolve in this world.
+    InvalidHandle(HandleError),
+    /// Fixture child bounds cannot be represented during activation.
+    InvalidFixtureBounds(FixtureBoundsError),
+}
+
+impl fmt::Display for BodyActivationError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::InvalidHandle(error) => write!(formatter, "invalid body handle: {error}"),
+            Self::InvalidFixtureBounds(error) => {
+                write!(formatter, "invalid activated fixture bounds: {error}")
+            }
+        }
+    }
+}
+
+impl Error for BodyActivationError {}
+
+impl From<HandleError> for BodyActivationError {
+    fn from(error: HandleError) -> Self {
+        Self::InvalidHandle(error)
+    }
+}
+
+impl From<FixtureBoundsError> for BodyActivationError {
+    fn from(error: FixtureBoundsError) -> Self {
+        Self::InvalidFixtureBounds(error)
     }
 }
 
@@ -238,6 +286,10 @@ impl BodyState {
 
     pub(super) const fn snapshot(self) -> BodySnapshot {
         self.snapshot
+    }
+
+    pub(super) const fn transform(self) -> Transform {
+        self.transform
     }
 
     pub(super) fn with_transform(self, position: Vec2, angle: f32) -> Result<Self, BodyDefError> {
