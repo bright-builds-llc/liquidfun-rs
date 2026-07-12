@@ -135,6 +135,21 @@ impl ContactManager {
         std::mem::take(&mut self.transitions)
     }
 
+    #[cfg(feature = "differential-internals")]
+    pub(super) fn rigid_diagnostics(
+        &self,
+    ) -> Vec<crate::rigid_differential::RigidContactDiagnostic> {
+        self.contacts
+            .iter()
+            .map(|contact| {
+                crate::rigid_differential::RigidContactDiagnostic::new(
+                    contact.ordinal + 1,
+                    contact.snapshot(),
+                )
+            })
+            .collect()
+    }
+
     pub(super) fn hook_contacts(&self) -> Vec<HookContactOccurrence> {
         self.contacts
             .iter()

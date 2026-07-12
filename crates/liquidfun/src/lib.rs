@@ -94,6 +94,9 @@ mod error;
 mod identity;
 pub mod math;
 mod particle;
+#[cfg(feature = "differential-internals")]
+#[doc(hidden)]
+pub mod rigid_differential;
 mod world;
 
 pub use association::{AssociationId, AssociationMap};

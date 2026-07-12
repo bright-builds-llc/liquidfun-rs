@@ -10,6 +10,8 @@ use crate::{
 
 use super::body::BodyActivationError;
 use super::body::{BodyDef, BodyMassData, BodySnapshot, BodyState, BodyTransformError, BodyType};
+#[cfg(feature = "differential-internals")]
+use super::contact::ContactTransition;
 use super::contact_manager::ContactManager;
 use super::contact_solver::{ContactSolve, ContactSolveFailure};
 use super::fixture::{FixtureBoundsError, FixtureDef, FixtureMutationError, WorldFixtureSnapshot};
@@ -535,6 +537,40 @@ impl World {
     #[must_use]
     pub fn contact_count(&self) -> usize {
         self.contact_manager.len()
+    }
+
+    /// Copies one body's complete Phase 6 diagnostic state.
+    #[cfg(feature = "differential-internals")]
+    #[doc(hidden)]
+    pub fn rigid_body_diagnostic(
+        &self,
+        body: BodyId,
+    ) -> Result<crate::rigid_differential::RigidBodyDiagnostic, HandleError> {
+        self.ensure_not_poisoned_for_handle()?;
+        self.bodies.get(body).map(|record| {
+            crate::rigid_differential::RigidBodyDiagnostic::new(
+                record.state.snapshot(),
+                record.state.solver_linear(),
+                record.state.solver_angular(),
+            )
+        })
+    }
+
+    /// Copies current manager occurrences in exact manager order.
+    #[cfg(feature = "differential-internals")]
+    #[doc(hidden)]
+    #[must_use]
+    pub fn rigid_contact_diagnostics(
+        &self,
+    ) -> Vec<crate::rigid_differential::RigidContactDiagnostic> {
+        self.contact_manager.rigid_diagnostics()
+    }
+
+    /// Drains owned contact transitions produced outside [`World::step`].
+    #[cfg(feature = "differential-internals")]
+    #[doc(hidden)]
+    pub fn rigid_drain_contact_transitions(&mut self) -> Vec<ContactTransition> {
+        self.contact_manager.drain_transitions()
     }
 
     /// Recomputes a body's mass properties from its current fixtures in source list order.

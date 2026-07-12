@@ -10,11 +10,13 @@ use std::{
 
 use liquidfun_differential::{
     ArtifactKind, DifferentialRunOutcome, FailureBundleRequest, HarnessFailureRun, MatchRun,
-    MismatchReport, OracleExecutable, OraclePreset, OracleSupervisor, PhysicsMismatchRun,
-    ReviewMetadata, SessionProfile, StageRequest, persist_failure_bundle, promote_candidate,
-    replay_exact, review_candidate, run_named, stage_candidate,
+    MismatchReport, NativeRigidWorldExecutor, OracleExecutable, OraclePreset, OracleSupervisor,
+    PhysicsMismatchRun, ReviewMetadata, SessionProfile, StageRequest, persist_failure_bundle,
+    promote_candidate, replay_exact, review_candidate, run_named, stage_candidate,
 };
-use liquidfun_test_protocol::{HarnessLimits, decode_scenario_request_jsonl};
+use liquidfun_test_protocol::{
+    HarnessLimits, decode_rigid_world_request_jsonl, decode_scenario_request_jsonl,
+};
 use serde::Serialize;
 
 mod minimize_command;
@@ -42,6 +44,12 @@ fn run() -> Result<ExitCode, CliError> {
     {
         return run_fixture(arguments.into_iter().skip(1));
     }
+    if arguments
+        .first()
+        .is_some_and(|argument| argument == "native-rigid-world")
+    {
+        return run_native_rigid_world(arguments.into_iter().skip(1));
+    }
     let command = CommandConfig::parse(arguments.into_iter())?;
     let repository_root = env::current_dir()?;
     let outcome = match &command.input {
@@ -67,6 +75,24 @@ fn run() -> Result<ExitCode, CliError> {
         return minimize_command::run(&repository_root, command.preset, command.profile, outcome);
     }
     render_outcome(&repository_root, command.preset, command.profile, outcome)
+}
+
+fn run_native_rigid_world(
+    mut arguments: impl Iterator<Item = String>,
+) -> Result<ExitCode, CliError> {
+    let request_path = match (
+        arguments.next().as_deref(),
+        arguments.next(),
+        arguments.next(),
+    ) {
+        (Some("--request"), Some(path), None) => PathBuf::from(path),
+        _ => return Err(CliError::Usage(usage())),
+    };
+    let bytes = fs::read(request_path)?;
+    let request = decode_rigid_world_request_jsonl(&bytes, &HarnessLimits::phase2_default_v1())?;
+    let result = NativeRigidWorldExecutor::execute(&request)?;
+    write_json(&result)?;
+    Ok(ExitCode::SUCCESS)
 }
 
 fn render_outcome(
@@ -532,7 +558,8 @@ fn parse_profile(value: &str) -> Result<SessionProfile, CliError> {
 }
 
 fn usage() -> String {
-    "usage: liquidfun-differential <compare|replay|minimize> --scenario empty-world \
+    "usage: liquidfun-differential native-rigid-world --request <file>; or \
+     <compare|replay|minimize> --scenario empty-world \
      --preset <oracle-debug|oracle-release|oracle-asan-ubsan> \
      --session-profile <one-shot|reuse|sanitizer>; replay also accepts --exact-request <file>"
         .to_owned()
@@ -556,6 +583,10 @@ enum CliError {
     Executable(#[from] liquidfun_differential::OracleExecutableError),
     #[error(transparent)]
     Scenario(#[from] liquidfun_test_protocol::ScenarioDecodeError),
+    #[error(transparent)]
+    RigidWorld(#[from] liquidfun_test_protocol::RigidWorldDecodeError),
+    #[error(transparent)]
+    NativeRigidWorld(#[from] liquidfun_differential::NativeRigidWorldError),
     #[error("oracle harness failure while staging: {0}")]
     Harness(String),
     #[error("could not determine generator revision: {0}")]

@@ -175,6 +175,7 @@ impl Contact {
 
     pub(super) fn snapshot(&self) -> ManagedContactSnapshot {
         ManagedContactSnapshot {
+            occurrence: self.ordinal,
             fixtures: [self.key.first.fixture, self.key.second.fixture],
             child_indices: [self.key.first.child_index, self.key.second.child_index],
             touching: self.is_touching(),
@@ -253,6 +254,7 @@ impl ContactPointSnapshot {
 /// This snapshot carries no reusable contact identity or storage coordinate.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ManagedContactSnapshot {
+    occurrence: u64,
     fixtures: [FixtureId; 2],
     child_indices: [ChildIndex; 2],
     touching: bool,
@@ -265,6 +267,13 @@ pub struct ManagedContactSnapshot {
 }
 
 impl ManagedContactSnapshot {
+    #[cfg(feature = "differential-internals")]
+    #[doc(hidden)]
+    #[must_use]
+    pub const fn differential_occurrence(&self) -> u64 {
+        self.occurrence + 1
+    }
+
     /// Returns fixture identities in the manager's oriented occurrence order.
     #[must_use]
     pub const fn fixtures(&self) -> [FixtureId; 2] {
