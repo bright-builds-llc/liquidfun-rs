@@ -410,6 +410,53 @@ fn rigid_fixture_real_binary_accepts_d1_and_rejects_d2_before_effects() -> TestR
 }
 
 #[test]
+fn rigid_fixture_stale_identity_real_binary_rejects_before_effects() -> TestResult {
+    // Arrange
+    let fixture = RepositoryFixture::new()?;
+    prepare_real_rigid_repository(&fixture.root, "rigid_d1_stale_adapter")?;
+    let manifest_path = fixture.root.join("reference/artifacts/manifest.toml");
+    let manifest_before = fs::read(&manifest_path)?;
+    let real_differential = workspace_root()
+        .join("target/debug")
+        .join(executable_name("liquidfun-differential"));
+    let mut command = fixture.command()?;
+    command
+        .env("LIQUIDFUN_XTASK_DIFFERENTIAL", &real_differential)
+        .args([
+            "differential",
+            "fixture",
+            "stage",
+            "--scenario",
+            "rigid-world",
+            "--preset",
+            "oracle-debug",
+            "--session-profile",
+            "one-shot",
+            "--artifact-kind",
+            "reviewed-trace",
+            "--artifact-id",
+            "xtask-rigid-stale-adapter",
+        ]);
+
+    // Act
+    let output = command.output()?;
+
+    // Assert
+    assert!(!output.status.success());
+    assert!(stderr(&output).contains("adapter digest differs from current checkout inputs"));
+    assert!(!fixture.root.join("target/differential/staging").exists());
+    assert_eq!(fs::read(manifest_path)?, manifest_before);
+    assert!(
+        !fixture
+            .root
+            .join("reference/artifacts/traces/phase-06-rigid-world-v1.jsonl")
+            .exists()
+    );
+    fixture.cleanup()?;
+    Ok(())
+}
+
+#[test]
 fn rigid_commands_reject_unreviewed_shapes_before_effects() -> TestResult {
     // Arrange
     let scenario_file_option = ["--scenario", "-file"].concat();
@@ -959,6 +1006,7 @@ fn prepare_real_rigid_repository(root: &Path, behavior: &str) -> io::Result<()> 
         root.join("reference/artifacts/manifest.toml"),
     )?;
     fs::write(root.join("THIRD_PARTY_NOTICES.md"), "fixture notices\n")?;
+    write_real_adapter_inputs(root)?;
     run_system_git(root, &["init", "--quiet"])?;
     run_system_git(root, &["config", "user.name", "Fixture User"])?;
     run_system_git(root, &["config", "user.email", "fixture@example.invalid"])?;
@@ -972,7 +1020,55 @@ fn prepare_real_rigid_repository(root: &Path, behavior: &str) -> io::Result<()> 
             .join(executable_name("liquidfun-fake-oracle")),
         oracle_directory.join(executable_name("liquidfun-reference")),
     )?;
+    write_real_compile_database(root)?;
     fs::write(oracle_directory.join("behavior.txt"), behavior)
+}
+
+fn write_real_adapter_inputs(root: &Path) -> io::Result<()> {
+    let source = root.join("tools/reference/src");
+    fs::create_dir_all(&source)?;
+    fs::write(
+        root.join("tools/reference/adapter-inputs.txt"),
+        "tools/reference/src/fixture_adapter.cpp\ntools/reference/src/fixture_adapter.hpp\n",
+    )?;
+    fs::write(
+        source.join("fixture_adapter.cpp"),
+        b"fixture adapter implementation\n",
+    )?;
+    fs::write(
+        source.join("fixture_adapter.hpp"),
+        b"fixture adapter interface\n",
+    )
+}
+
+fn write_real_compile_database(root: &Path) -> io::Result<()> {
+    let build = root.join("target/reference/oracle-debug");
+    fs::create_dir_all(&build)?;
+    let units = [
+        "collision_probe.cpp",
+        "math_probe.cpp",
+        "protocol_bits.cpp",
+        "rigid_world.cpp",
+    ];
+    let entries = units
+        .map(|unit| {
+            let source = root.join("tools/reference/src").join(unit);
+            serde_json::json!({
+                "directory": build,
+                "file": source,
+                "command": format!(
+                    "clang++ -I{}/tools/reference/src -DREVIEWED=1 -o {}/{unit}.o -c {}",
+                    root.display(),
+                    build.display(),
+                    source.display()
+                ),
+            })
+        })
+        .to_vec();
+    fs::write(
+        build.join("compile_commands.json"),
+        serde_json::to_vec_pretty(&entries)?,
+    )
 }
 
 fn run_system_git(root: &Path, arguments: &[&str]) -> io::Result<()> {

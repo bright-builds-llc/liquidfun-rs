@@ -7,7 +7,9 @@ use std::{
     time::Duration,
 };
 
-use liquidfun_differential::NativeRigidWorldExecutor;
+use liquidfun_differential::{
+    NativeRigidWorldExecutor, adapter_source_digest, effective_compile_command_sha256,
+};
 use liquidfun_test_protocol::{
     BuildIdentity, BuildIdentityFields, CheckpointRecord, EngineKind, FloatBits, HarnessLimits,
     Phase4BuildIdentityFields, RecordLimit, ScenarioRequestRecord, TraceBegin, TraceEnd,
@@ -58,10 +60,8 @@ fn handshake_bytes() -> &'static [u8] {
 }
 
 fn write_handshake(behavior: &str) -> io::Result<()> {
-    let mut bytes = if behavior.starts_with("rigid_d1") {
-        rigid_handshake(true).map_err(io::Error::other)?.0
-    } else if behavior.starts_with("rigid_d2") {
-        rigid_handshake(false).map_err(io::Error::other)?.0
+    let mut bytes = if behavior.starts_with("rigid_d1") || behavior.starts_with("rigid_d2") {
+        rigid_handshake(behavior).map_err(io::Error::other)?.0
     } else {
         handshake_bytes().to_vec()
     };
@@ -244,7 +244,19 @@ fn emit_rigid_behavior(
     Ok(())
 }
 
-fn rigid_handshake(canonical: bool) -> Result<(Vec<u8>, BuildIdentity), String> {
+fn rigid_handshake(behavior: &str) -> Result<(Vec<u8>, BuildIdentity), String> {
+    let canonical = behavior.starts_with("rigid_d1");
+    let repository_root = std::env::current_dir().map_err(|error| error.to_string())?;
+    let mut adapter_digest =
+        adapter_source_digest(&repository_root).map_err(|error| error.to_string())?;
+    let mut compile_digest = effective_compile_command_sha256(&repository_root, "oracle-debug")
+        .map_err(|error| error.to_string())?;
+    if behavior == "rigid_d1_stale_adapter" {
+        adapter_digest = stale_digest(&adapter_digest);
+    }
+    if behavior == "rigid_d1_stale_compile" {
+        compile_digest = stale_digest(&compile_digest);
+    }
     let (compiler_id, compiler_version, target, os, target_features) = if canonical {
         (
             "Clang",
@@ -263,7 +275,7 @@ fn rigid_handshake(canonical: bool) -> Result<(Vec<u8>, BuildIdentity), String> 
         )
     };
     let phase4 = Phase4BuildIdentityFields::new(
-        "11".repeat(32),
+        &compile_digest,
         compiler_id,
         compiler_version,
         target,
@@ -285,7 +297,7 @@ fn rigid_handshake(canonical: bool) -> Result<(Vec<u8>, BuildIdentity), String> 
         BuildIdentityFields::new(
             "7f20402173fd143a3988c921bc384459c6a858f2",
             "fixture-rigid-adapter-v1",
-            "22".repeat(32),
+            &adapter_digest,
             "oracle-debug",
             compiler_id,
             compiler_version,
@@ -310,7 +322,7 @@ fn rigid_handshake(canonical: bool) -> Result<(Vec<u8>, BuildIdentity), String> 
         "effective_compile_flags": "-O0 -g",
         "effective_link_flags": "-lc++",
         "sanitizer_mode": "none",
-        "compile_command_sha256": "11".repeat(32),
+        "compile_command_sha256": compile_digest,
         "target_triple": target,
         "target_cpu": "baseline",
         "target_features": target_features,
@@ -338,6 +350,11 @@ fn rigid_handshake(canonical: bool) -> Result<(Vec<u8>, BuildIdentity), String> 
     .map_err(|error| error.to_string())?;
     bytes.push(b'\n');
     Ok((bytes, identity))
+}
+
+fn stale_digest(current: &str) -> String {
+    let replacement = if current.starts_with('0') { '1' } else { '0' };
+    format!("{replacement}{}", &current[1..])
 }
 
 fn fixture_identity() -> Result<BuildIdentity, Box<dyn std::error::Error>> {
