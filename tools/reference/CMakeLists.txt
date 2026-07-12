@@ -154,6 +154,7 @@ add_library(
   src/math_probe.cpp
   src/protocol.cpp
   src/protocol_bits.cpp
+  src/rigid_world.cpp
   src/oracle_adapter.cpp
 )
 target_compile_features(liquidfun-reference-protocol PUBLIC cxx_std_17)

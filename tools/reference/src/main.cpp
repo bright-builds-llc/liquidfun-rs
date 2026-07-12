@@ -3,6 +3,7 @@
 #include "math_probe.hpp"
 #include "oracle_adapter.hpp"
 #include "protocol.hpp"
+#include "rigid_world.hpp"
 
 #include <exception>
 #include <cfenv>
@@ -80,6 +81,7 @@ int run() {
   liquidfun::reference::OracleAdapter adapter;
   std::uint64_t math_probe_reset_epoch = 0;
   std::uint64_t collision_probe_reset_epoch = 0;
+  liquidfun::reference::RigidWorldAdapter rigid_world_adapter;
   std::string line;
   while (liquidfun::reference::read_bounded_record(std::cin, line)) {
     const auto request_kind = liquidfun::reference::decode_request_kind(line);
@@ -105,6 +107,12 @@ int run() {
           std::cout,
           liquidfun::reference::encode_collision_probe_end(
               batch, collision_probe_reset_epoch));
+      continue;
+    }
+    if (request_kind == liquidfun::reference::RequestKind::rigid_world) {
+      const auto trace = rigid_world_adapter.execute(line);
+      liquidfun::reference::write_record(std::cout, trace.result_record);
+      liquidfun::reference::write_record(std::cout, trace.end_record);
       continue;
     }
     const auto request = liquidfun::reference::decode_math_probe_request(line);

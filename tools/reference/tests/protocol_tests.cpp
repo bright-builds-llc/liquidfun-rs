@@ -1,6 +1,9 @@
 #include "collision_probe.hpp"
 #include "oracle_adapter.hpp"
 #include "protocol.hpp"
+#include "rigid_world.hpp"
+
+#include "../vendor/nlohmann/json.hpp"
 
 #include <filesystem>
 #include <fstream>
@@ -15,6 +18,8 @@ namespace {
 
 using liquidfun::reference::BuildIdentity;
 using liquidfun::reference::OracleAdapter;
+using liquidfun::reference::RigidWorldAdapter;
+using liquidfun::reference::decode_rigid_world_request;
 using liquidfun::reference::decode_scenario_request;
 using liquidfun::reference::encode_scenario_request;
 using liquidfun::reference::write_record;
@@ -312,6 +317,123 @@ void collision_probe_uses_existing_protocol_loop() {
       "collision request should emit its terminal record");
 }
 
+void rigid_world_executes_both_complete_witness_families() {
+  // Arrange
+  const auto fixture = read_fixture(
+      "protocol/fixtures/accepted/rigid-world-request.jsonl");
+  RigidWorldAdapter adapter;
+
+  // Act
+  const auto trace = adapter.execute(fixture);
+  const auto result = nlohmann::json::parse(trace.result_record);
+
+  // Assert
+  expect(trace.reset_verified, "rigid-world reset was not verified");
+  expect(trace.reset_epoch == 1, "first rigid-world reset epoch was not one");
+  expect(
+      liquidfun::reference::decode_request_kind(fixture) ==
+          liquidfun::reference::RequestKind::rigid_world,
+      "rigid-world request did not use the existing process loop");
+  expect(
+      result.at("record_kind") == "rigid_world_result",
+      "rigid-world result kind changed");
+  expect(result.at("timelines").size() == 2, "rigid witness families are incomplete");
+  expect(
+      result.at("timelines").at(0).at("witness_family") ==
+          "non_colliding_body_fixture_lifecycle",
+      "non-colliding witness family is missing");
+  expect(
+      result.at("timelines").at(1).at("witness_family") ==
+          "single_contact_lifecycle",
+      "single-contact witness family is missing");
+  const auto& non_colliding = result.at("timelines").at(0).at("checkpoints");
+  const auto& single_contact = result.at("timelines").at(1).at("checkpoints");
+  expect(non_colliding.size() == 5, "non-colliding checkpoints are incomplete");
+  expect(single_contact.size() == 10, "contact checkpoints are incomplete");
+  const auto& begin = single_contact.at(1);
+  expect(
+      begin.at("events") == nlohmann::json::parse(
+          R"([{"kind":"created","contact":{"fixture_a_id":"contact-static-fixture","child_a":0,"fixture_b_id":"contact-dynamic-fixture","child_b":0,"occurrence":1}},{"kind":"begin","contact":{"fixture_a_id":"contact-static-fixture","child_a":0,"fixture_b_id":"contact-dynamic-fixture","child_b":0,"occurrence":1}},{"kind":"pre_solve","contact":{"fixture_a_id":"contact-static-fixture","child_a":0,"fixture_b_id":"contact-dynamic-fixture","child_b":0,"occurrence":1}},{"kind":"post_solve","contact":{"fixture_a_id":"contact-static-fixture","child_a":0,"fixture_b_id":"contact-dynamic-fixture","child_b":0,"occurrence":1}}])"),
+      "contact begin event order or identity changed");
+  expect(
+      begin.at("contacts").at(0).at("maybe_manifold").at("points").size() == 1,
+      "active contact manifold is incomplete");
+  expect(
+      single_contact.at(3).at("contacts").at(0).at("sensor") &&
+          single_contact.at(3).at("contacts").at(0).at("maybe_manifold").is_null(),
+      "sensor contact exposed an inactive manifold payload");
+  expect(
+      single_contact.at(8).at("destructions").at(0).at("kind") == "contact" &&
+          single_contact.at(8).at("destructions").at(1).at("kind") == "fixture",
+      "fixture teardown order changed");
+  expect(
+      single_contact.at(9).at("destructions").at(0).at("body_id") ==
+              "contact-dynamic" &&
+          single_contact.at(9).at("destructions").at(1).at("body_id") ==
+              "contact-static",
+      "body teardown order changed");
+  expect(
+      trace.result_record.find("pointer") == std::string::npos &&
+          trace.result_record.find("address") == std::string::npos,
+      "rigid trace leaked layout identity");
+  expect(
+      trace.end_record.find("\"reset_verified\":true") != std::string::npos,
+      "terminal rigid-world reset proof is missing");
+}
+
+void rigid_world_rejects_untrusted_records_before_execution() {
+  // Arrange
+  const auto fixture = read_fixture(
+      "protocol/fixtures/accepted/rigid-world-request.jsonl");
+  auto duplicate = fixture;
+  duplicate.insert(1, "\"protocol_version\":1,");
+  auto unknown = fixture;
+  unknown.insert(1, "\"unexpected\":true,");
+  auto out_of_order_json = nlohmann::json::parse(fixture);
+  auto& out_of_order_actions =
+      out_of_order_json.at("scenario").at("timelines").at(0).at("actions");
+  std::swap(out_of_order_actions.at(0), out_of_order_actions.at(3));
+  const auto out_of_order = out_of_order_json.dump() + '\n';
+  auto oversized = nlohmann::json::parse(fixture);
+  auto& actions = oversized.at("scenario").at("timelines").at(0).at("actions");
+  while (actions.size() <= 64) actions.push_back(actions.back());
+  const auto oversized_record = oversized.dump() + '\n';
+
+  // Act / Assert
+  for (const auto& [record, expected] :
+       std::vector<std::pair<std::string, std::string>>{
+           {duplicate, "duplicate member"},
+           {unknown, "unknown member"},
+           {out_of_order, "action order"},
+           {oversized_record, "action count"}}) {
+    try {
+      static_cast<void>(decode_rigid_world_request(record));
+    } catch (const std::exception& error) {
+      expect(
+          std::string(error.what()).find(expected) != std::string::npos,
+          "unexpected rigid rejection: " + std::string(error.what()));
+      continue;
+    }
+    throw std::runtime_error("untrusted rigid record was accepted");
+  }
+}
+
+void rigid_world_reuse_advances_reset_without_state_leakage() {
+  // Arrange
+  const auto fixture = read_fixture(
+      "protocol/fixtures/accepted/rigid-world-request.jsonl");
+  RigidWorldAdapter adapter;
+
+  // Act
+  const auto first = adapter.execute(fixture);
+  const auto second = adapter.execute(fixture);
+
+  // Assert
+  expect(first.reset_epoch == 1, "first rigid reset epoch changed");
+  expect(second.reset_epoch == 2, "second rigid reset epoch changed");
+  expect(first.result_record == second.result_record, "rigid request leaked state");
+}
+
 }  // namespace
 
 int main() {
@@ -327,6 +449,9 @@ int main() {
     protocol_bits_preserve_exceptional_classes();
     math_probe_matches_operation_contract();
     collision_probe_uses_existing_protocol_loop();
+    rigid_world_executes_both_complete_witness_families();
+    rigid_world_rejects_untrusted_records_before_execution();
+    rigid_world_reuse_advances_reset_without_state_leakage();
   } catch (const std::exception& error) {
     std::cerr << "protocol test failure: " << error.what() << '\n';
     return 1;

@@ -993,6 +993,7 @@ RequestKind decode_request_kind(std::string_view record) {
   if (kind == "scenario_request") return RequestKind::scenario;
   if (kind == "math_probe_request") return RequestKind::math_probe;
   if (kind == "collision_probe_request") return RequestKind::collision_probe;
+  if (kind == "rigid_world_request") return RequestKind::rigid_world;
   throw std::runtime_error("unsupported record kind");
 }
 
@@ -1249,6 +1250,10 @@ bool read_bounded_record(std::istream& input, std::string& record) {
     throw std::runtime_error("failed while reading protocol stdin");
   }
   return !record.empty();
+}
+
+void validate_bounded_json_record(std::string_view record) {
+  static_cast<void>(decode_record_node(record));
 }
 
 void write_record(std::ostream& output, std::string_view record) {

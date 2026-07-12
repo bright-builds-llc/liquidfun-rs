@@ -25,7 +25,7 @@ inline constexpr std::size_t kMaximumIdBytes = 128;
 
 enum class ScenarioSourceKind { named, seeded };
 
-enum class RequestKind { scenario, math_probe, collision_probe };
+enum class RequestKind { scenario, math_probe, collision_probe, rigid_world };
 
 struct ScenarioSource {
   ScenarioSourceKind kind = ScenarioSourceKind::named;
@@ -142,6 +142,7 @@ std::string sha256_hex(std::string_view bytes);
 float float_from_bits(std::uint32_t bits);
 std::uint32_t bits_from_float(float value);
 bool read_bounded_record(std::istream& input, std::string& record);
+void validate_bounded_json_record(std::string_view record);
 void write_record(std::ostream& output, std::string_view record);
 
 }  // namespace liquidfun::reference
