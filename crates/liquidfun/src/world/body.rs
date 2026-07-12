@@ -781,8 +781,8 @@ pub enum BodyMassDataError {
     NonFiniteCenteredRotationalInertia,
     /// Mass is negative.
     NegativeMass,
-    /// Inertia about the center of mass is negative.
-    NegativeCenteredRotationalInertia,
+    /// Positive origin inertia did not produce positive inertia about the center of mass.
+    NonPositiveCenteredRotationalInertia,
 }
 
 impl fmt::Display for BodyMassDataError {
@@ -796,8 +796,8 @@ impl fmt::Display for BodyMassDataError {
                 "body centered rotational inertia must be finite"
             }
             Self::NegativeMass => "body mass must be non-negative",
-            Self::NegativeCenteredRotationalInertia => {
-                "body centered rotational inertia must be non-negative"
+            Self::NonPositiveCenteredRotationalInertia => {
+                "body centered rotational inertia must be positive"
             }
         };
         formatter.write_str(message)
@@ -810,8 +810,8 @@ impl Error for BodyMassDataError {}
 ///
 /// Mass is kilograms, `center` is meters in the body's local frame, and
 /// rotational inertia is kilograms-meter-squared about the local origin.
-/// Construction also proves that the parallel-axis adjustment produces a
-/// finite, non-negative inertia about the center of mass.
+/// Origin inertia zero selects the pinned no-inertia branch. Positive origin
+/// inertia must produce finite, positive inertia about the center of mass.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct BodyMassData {
     mass: f32,
@@ -826,7 +826,8 @@ impl BodyMassData {
     /// # Errors
     ///
     /// Returns a typed error for any non-finite input, negative mass, or a
-    /// non-finite or negative source-ordered centered inertia.
+    /// non-finite or non-positive source-ordered centered inertia when origin
+    /// inertia is positive.
     #[must_use = "body mass-data construction can fail for invalid values"]
     pub fn new(
         mass: f32,
@@ -838,14 +839,22 @@ impl BodyMassData {
             return Err(BodyMassDataError::NegativeMass);
         }
 
-        let effective_mass = if mass > 0.0 { mass } else { 1.0 };
-        let centered_rotational_inertia = rotational_inertia - effective_mass * center.dot(center);
-        if !centered_rotational_inertia.is_finite() {
-            return Err(BodyMassDataError::NonFiniteCenteredRotationalInertia);
-        }
-        if centered_rotational_inertia < 0.0 {
-            return Err(BodyMassDataError::NegativeCenteredRotationalInertia);
-        }
+        let centered_rotational_inertia = if rotational_inertia == 0.0 {
+            0.0
+        } else {
+            let effective_mass = if mass > 0.0 { mass } else { 1.0 };
+            let squared_center = [
+                checked_body_mass_finite(center.x * center.x)?,
+                checked_body_mass_finite(center.y * center.y)?,
+            ];
+            let center_dot = checked_body_mass_finite(squared_center[0] + squared_center[1])?;
+            let parallel_axis = checked_body_mass_finite(effective_mass * center_dot)?;
+            let centered = checked_body_mass_finite(rotational_inertia - parallel_axis)?;
+            if centered <= 0.0 {
+                return Err(BodyMassDataError::NonPositiveCenteredRotationalInertia);
+            }
+            centered
+        };
 
         Ok(Self {
             mass,
@@ -878,6 +887,13 @@ impl BodyMassData {
     pub const fn centered_rotational_inertia(self) -> f32 {
         self.centered_rotational_inertia
     }
+}
+
+fn checked_body_mass_finite(value: f32) -> Result<f32, BodyMassDataError> {
+    if !value.is_finite() {
+        return Err(BodyMassDataError::NonFiniteCenteredRotationalInertia);
+    }
+    Ok(value)
 }
 
 fn validate_body_transform(position: Vec2, angle: f32) -> Result<(), BodyDefError> {

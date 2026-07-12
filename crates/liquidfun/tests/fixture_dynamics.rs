@@ -434,7 +434,7 @@ fn mass_zero_custom_value_validates_against_the_effective_unit_mass() {
     // Assert
     assert_eq!(
         result,
-        Err(liquidfun::BodyMassDataError::NegativeCenteredRotationalInertia)
+        Err(liquidfun::BodyMassDataError::NonPositiveCenteredRotationalInertia)
     );
 }
 

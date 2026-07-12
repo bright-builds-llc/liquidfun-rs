@@ -37,6 +37,22 @@ fn rigid_world_negative_centered_inertia_is_rejected_before_execution() {
     );
 }
 
+#[test]
+fn rigid_world_zero_centered_inertia_is_rejected_before_execution() {
+    // Arrange
+    let bytes = read_fixture("protocol/fixtures/rejected/rigid-world-zero-centered-inertia.jsonl");
+
+    // Act
+    let error = decode_rigid_world_request_jsonl(&bytes, &HarnessLimits::phase2_default_v1())
+        .expect_err("zero centered inertia must fail at the typed boundary");
+
+    // Assert
+    assert_eq!(
+        error.rigid_world_kind(),
+        Some(RigidWorldErrorKind::InvalidGeometry)
+    );
+}
+
 fn read_fixture(relative: &str) -> Vec<u8> {
     fs::read(repository_path(relative)).expect("checked-in fixture should be readable")
 }

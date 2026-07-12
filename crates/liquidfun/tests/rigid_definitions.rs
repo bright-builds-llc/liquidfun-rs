@@ -133,7 +133,44 @@ fn body_mass_data_rejects_negative_centered_inertia() {
     // Assert
     assert_eq!(
         result,
-        Err(BodyMassDataError::NegativeCenteredRotationalInertia)
+        Err(BodyMassDataError::NonPositiveCenteredRotationalInertia)
+    );
+}
+
+#[test]
+fn body_mass_data_rejects_zero_centered_inertia_for_positive_origin_inertia() {
+    // Arrange
+    let mass = 1.0;
+    let center = Vec2::new(1.0, 0.0);
+    let rotational_inertia = 1.0;
+
+    // Act
+    let result = BodyMassData::new(mass, center, rotational_inertia);
+
+    // Assert
+    assert_eq!(
+        result,
+        Err(BodyMassDataError::NonPositiveCenteredRotationalInertia)
+    );
+}
+
+#[test]
+fn body_mass_data_accepts_zero_origin_inertia_with_nonzero_center() {
+    // Arrange
+    let mass = 1.0;
+    let center = Vec2::new(1.0, -2.0);
+
+    // Act
+    let data = BodyMassData::new(mass, center, 0.0)
+        .expect("zero origin inertia should select the no-inertia branch");
+
+    // Assert
+    assert_eq!(data.mass().to_bits(), mass.to_bits());
+    assert_eq!(data.center(), center);
+    assert_eq!(data.rotational_inertia().to_bits(), 0.0_f32.to_bits());
+    assert_eq!(
+        data.centered_rotational_inertia().to_bits(),
+        0.0_f32.to_bits()
     );
 }
 

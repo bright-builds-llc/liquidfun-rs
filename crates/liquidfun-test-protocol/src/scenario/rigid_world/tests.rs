@@ -460,6 +460,46 @@ fn rigid_world_rejects_negative_centered_inertia() {
 }
 
 #[test]
+fn rigid_world_rejects_zero_centered_inertia() {
+    // Arrange
+    let limits = HarnessLimits::phase2_default_v1();
+    let mut value = fixture_value();
+    let action = &mut action_mut(&mut value, "nc-custom-mass")["action"];
+    action["mass_bits"] = json!(1.0_f32.to_bits());
+    action["center"]["x_bits"] = json!(1.0_f32.to_bits());
+    action["center"]["y_bits"] = json!(0.0_f32.to_bits());
+    action["inertia_bits"] = json!(1.0_f32.to_bits());
+
+    // Act
+    let error = decode_rigid_world_request_jsonl(&encode_value(&value), &limits)
+        .expect_err("zero centered inertia must fail before execution");
+
+    // Assert
+    assert_eq!(
+        error.rigid_world_kind(),
+        Some(RigidWorldErrorKind::InvalidGeometry)
+    );
+}
+
+#[test]
+fn rigid_world_accepts_zero_origin_inertia_with_nonzero_center() {
+    // Arrange
+    let limits = HarnessLimits::phase2_default_v1();
+    let mut value = fixture_value();
+    let action = &mut action_mut(&mut value, "nc-custom-mass")["action"];
+    action["mass_bits"] = json!(1.0_f32.to_bits());
+    action["center"]["x_bits"] = json!(1.0_f32.to_bits());
+    action["center"]["y_bits"] = json!(0.0_f32.to_bits());
+    action["inertia_bits"] = json!(0.0_f32.to_bits());
+
+    // Act
+    let result = decode_rigid_world_request_jsonl(&encode_value(&value), &limits);
+
+    // Assert
+    assert!(result.is_ok());
+}
+
+#[test]
 fn rigid_world_rejects_non_finite_center_dot_product() {
     // Arrange
     let limits = HarnessLimits::phase2_default_v1();

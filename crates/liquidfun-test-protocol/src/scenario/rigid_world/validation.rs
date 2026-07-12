@@ -455,15 +455,22 @@ fn validate_custom_mass(
     validate_nonnegative(inertia_bits)?;
 
     let mass = mass_bits.to_f32();
+    let origin_inertia = inertia_bits.to_f32();
+    if origin_inertia == 0.0 {
+        return Ok(());
+    }
     let center_x = center.x_bits.to_f32();
     let center_y = center.y_bits.to_f32();
-    let center_dot = center_x * center_x + center_y * center_y;
+    let squared_center = [center_x * center_x, center_y * center_y];
+    let center_dot = squared_center[0] + squared_center[1];
     let parallel_axis = mass * center_dot;
-    let centered_inertia = inertia_bits.to_f32() - parallel_axis;
-    if !center_dot.is_finite()
+    let centered_inertia = origin_inertia - parallel_axis;
+    if !squared_center[0].is_finite()
+        || !squared_center[1].is_finite()
+        || !center_dot.is_finite()
         || !parallel_axis.is_finite()
         || !centered_inertia.is_finite()
-        || centered_inertia < 0.0
+        || centered_inertia <= 0.0
     {
         return Err(validation(RigidWorldErrorKind::InvalidGeometry));
     }

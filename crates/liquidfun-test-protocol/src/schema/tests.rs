@@ -82,6 +82,8 @@ fn schema_presentations_keep_records_closed_and_versions_explicit() {
     assert!(TRACKED_SCENARIO_SCHEMA.contains("\"const\": 1015580809"));
     assert!(TRACKED_SCENARIO_SCHEMA.contains("\"const\": 8"));
     assert!(TRACKED_SCENARIO_SCHEMA.contains("\"const\": 3"));
+    // Cross-field f32 bit arithmetic is intentionally enforced by typed Rust/C++ decode.
+    assert!(!TRACKED_SCENARIO_SCHEMA.contains("centered_inertia_minimum"));
     assert!(TRACKED_TRACE_SCHEMA.contains("\"trace_schema_version\": 1"));
     assert!(TRACKED_TRACE_SCHEMA.contains("\"math_probe_end\""));
     assert!(TRACKED_TRACE_SCHEMA.contains("\"initial_fraction\""));
