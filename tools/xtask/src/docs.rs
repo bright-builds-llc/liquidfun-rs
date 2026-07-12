@@ -60,11 +60,11 @@ const DOCUMENT_CONTRACTS: [(&str, &[&str]); 4] = [
     (
         "COMPATIBILITY.md",
         &[
-            "| `implemented` | 18 | 159 |",
-            "| `unit_tested` | 18 | 159 |",
-            "| `differentially_validated` | 17 | 160 |",
+            "| `implemented` | 30 | 147 |",
+            "| `unit_tested` | 30 | 147 |",
+            "| `differentially_validated` | 29 | 148 |",
             "| `platform_validated` | 0 | 177 |",
-            "| `documented_difference` | 18 | 159 |",
+            "| `documented_difference` | 30 | 147 |",
             "`subsystem.common-math-and-settings`",
             "`public-api.liquidfun-box2d-box2d-common-b2math-h`",
             "`public-api.liquidfun-box2d-box2d-common-b2settings-h`",
@@ -122,8 +122,6 @@ const PHASE5_DOCUMENT_CONTRACTS: [(&str, &[&str]); 4] = [
             "| `subsystem.collision-broad-phase` | `liquidfun/Box2D/Box2D/Collision` | `liquidfun::collision` | applicable | yes | yes | yes | yes | yes | no | yes | no |",
             "| `subsystem.collision-distance-and-toi` | `liquidfun/Box2D/Box2D/Collision` | `liquidfun::collision` | applicable | yes | yes | yes | yes | yes | no | yes | no |",
             "| `subsystem.collision-shapes-and-manifolds` | `liquidfun/Box2D/Box2D/Collision/Shapes` | `liquidfun::collision` | applicable | yes | yes | yes | yes | yes | no | yes | no |",
-            "| `subsystem.contacts-and-filtering` | `liquidfun/Box2D/Box2D/Dynamics/Contacts` | `liquidfun::dynamics::contacts` | applicable | yes | yes | no | no | no | no | no | no |",
-            "| `public-api.liquidfun-box2d-box2d-dynamics-b2contactmanager-h` | `liquidfun/Box2D/Box2D/Dynamics/b2ContactManager.h` | `liquidfun::dynamics` | applicable | yes | yes | no | no | no | no | no | no |",
         ],
     ),
     (
@@ -176,10 +174,19 @@ const PHASE6_DOCUMENT_CONTRACTS: [(&str, &[&str]); 4] = [
     (
         "COMPATIBILITY.md",
         &[
-            "`subsystem.contacts-and-filtering`",
-            "`public-api.liquidfun-box2d-box2d-dynamics-b2body-h`",
-            "`public-api.liquidfun-box2d-box2d-dynamics-b2fixture-h`",
-            "`public-api.liquidfun-box2d-box2d-dynamics-b2contactmanager-h`",
+            "| `subsystem.contacts-and-filtering` | `liquidfun/Box2D/Box2D/Dynamics/Contacts` | `liquidfun::dynamics::contacts` | applicable | yes | yes | yes | yes | yes | no | yes | no |",
+            "| `subsystem.rigid-bodies-and-fixtures` | `liquidfun/Box2D/Box2D/Dynamics` | `liquidfun::dynamics` | applicable | yes | yes | yes | yes | yes | no | yes | no |",
+            "| `subsystem.rigid-islands-and-solver` | `liquidfun/Box2D/Box2D/Dynamics` | `liquidfun::dynamics` | applicable | yes | yes | no | no | no | no | no | no |",
+            "| `subsystem.world-operations-and-observation` | `liquidfun/Box2D/Box2D/Dynamics` | `liquidfun::world` | applicable | yes | yes | no | no | no | no | no | no |",
+            "| `public-api.liquidfun-box2d-box2d-dynamics-b2body-h` | `liquidfun/Box2D/Box2D/Dynamics/b2Body.h` | `liquidfun::dynamics` | applicable | yes | yes | yes | yes | yes | no | yes | no |",
+            "| `public-api.liquidfun-box2d-box2d-dynamics-b2fixture-h` | `liquidfun/Box2D/Box2D/Dynamics/b2Fixture.h` | `liquidfun::dynamics` | applicable | yes | yes | yes | yes | yes | no | yes | no |",
+            "| `public-api.liquidfun-box2d-box2d-dynamics-b2contactmanager-h` | `liquidfun/Box2D/Box2D/Dynamics/b2ContactManager.h` | `liquidfun::dynamics` | applicable | yes | yes | yes | yes | yes | no | yes | no |",
+            "| `public-api.liquidfun-box2d-box2d-dynamics-b2world-h` | `liquidfun/Box2D/Box2D/Dynamics/b2World.h` | `liquidfun::dynamics` | applicable | yes | yes | yes | yes | yes | no | yes | no |",
+            "| `public-api.liquidfun-box2d-box2d-dynamics-contacts-b2circlecontact-h` | `liquidfun/Box2D/Box2D/Dynamics/Contacts/b2CircleContact.h` | `liquidfun::dynamics::contacts` | applicable | yes | yes | yes | yes | yes | no | yes | no |",
+            "| `public-api.liquidfun-box2d-box2d-dynamics-contacts-b2contactsolver-h` | `liquidfun/Box2D/Box2D/Dynamics/Contacts/b2ContactSolver.h` | `liquidfun::dynamics::contacts` | applicable | yes | yes | yes | yes | yes | no | yes | no |",
+            "| `public-api.liquidfun-box2d-box2d-dynamics-contacts-b2polygoncontact-h` | `liquidfun/Box2D/Box2D/Dynamics/Contacts/b2PolygonContact.h` | `liquidfun::dynamics::contacts` | applicable | yes | yes | no | no | no | no | no | no |",
+            "| `source-area.liquidfun-box2d-box2d-dynamics` | `liquidfun/Box2D/Box2D/Dynamics` | `liquidfun::dynamics` | applicable | yes | yes | yes | yes | yes | no | yes | no |",
+            "| `source-area.liquidfun-box2d-box2d-dynamics-contacts` | `liquidfun/Box2D/Box2D/Dynamics/Contacts` | `liquidfun::dynamics::contacts` | applicable | yes | yes | yes | yes | yes | no | yes | no |",
         ],
     ),
     (

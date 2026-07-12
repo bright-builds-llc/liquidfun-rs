@@ -42,11 +42,11 @@ Each dimension is independent. `Evidenced` requires at least one cited reference
 | --- | ---: | ---: |
 | `investigated` | 177 | 0 |
 | `planned` | 177 | 0 |
-| `implemented` | 18 | 159 |
-| `unit_tested` | 18 | 159 |
-| `differentially_validated` | 17 | 160 |
+| `implemented` | 30 | 147 |
+| `unit_tested` | 30 | 147 |
+| `differentially_validated` | 29 | 148 |
 | `platform_validated` | 0 | 177 |
-| `documented_difference` | 18 | 159 |
+| `documented_difference` | 30 | 147 |
 | `intentionally_unsupported` | 0 | 177 |
 
 ## Subsystem
@@ -59,13 +59,13 @@ Each dimension is independent. `Evidenced` requires at least one cited reference
 | `subsystem.collision-shapes-and-manifolds` | `liquidfun/Box2D/Box2D/Collision/Shapes` | `liquidfun::collision` | applicable | yes | yes | yes | yes | yes | no | yes | no |
 | `subsystem.common-math-and-settings` | `liquidfun/Box2D/Box2D/Common` | `liquidfun::math` | applicable | yes | yes | yes | yes | yes | no | yes | no |
 | `subsystem.common-memory-and-utilities` | `liquidfun/Box2D/Box2D/Common` | `liquidfun::internal` | applicable | yes | yes | no | no | no | no | no | no |
-| `subsystem.contacts-and-filtering` | `liquidfun/Box2D/Box2D/Dynamics/Contacts` | `liquidfun::dynamics::contacts` | applicable | yes | yes | no | no | no | no | no | no |
+| `subsystem.contacts-and-filtering` | `liquidfun/Box2D/Box2D/Dynamics/Contacts` | `liquidfun::dynamics::contacts` | applicable | yes | yes | yes | yes | yes | no | yes | no |
 | `subsystem.joints` | `liquidfun/Box2D/Box2D/Dynamics/Joints` | `liquidfun::dynamics::joints` | applicable | yes | yes | no | no | no | no | no | no |
 | `subsystem.particle-contacts-and-coupling` | `liquidfun/Box2D/Box2D/Particle` | `liquidfun::particle` | applicable | yes | yes | no | no | no | no | no | no |
 | `subsystem.particle-groups-pairs-and-triads` | `liquidfun/Box2D/Box2D/Particle` | `liquidfun::particle` | applicable | yes | yes | no | no | no | no | no | no |
 | `subsystem.particle-solver-behaviors` | `liquidfun/Box2D/Box2D/Particle` | `liquidfun::particle` | applicable | yes | yes | no | no | no | no | no | no |
 | `subsystem.particle-storage-and-lifecycle` | `liquidfun/Box2D/Box2D/Particle` | `liquidfun::particle` | applicable | yes | yes | no | no | no | no | no | no |
-| `subsystem.rigid-bodies-and-fixtures` | `liquidfun/Box2D/Box2D/Dynamics` | `liquidfun::dynamics` | applicable | yes | yes | no | no | no | no | no | no |
+| `subsystem.rigid-bodies-and-fixtures` | `liquidfun/Box2D/Box2D/Dynamics` | `liquidfun::dynamics` | applicable | yes | yes | yes | yes | yes | no | yes | no |
 | `subsystem.rigid-islands-and-solver` | `liquidfun/Box2D/Box2D/Dynamics` | `liquidfun::dynamics` | applicable | yes | yes | no | no | no | no | no | no |
 | `subsystem.rope` | `liquidfun/Box2D/Box2D/Rope` | `liquidfun::rope` | applicable | yes | yes | no | no | no | no | no | no |
 | `subsystem.world-operations-and-observation` | `liquidfun/Box2D/Box2D/Dynamics` | `liquidfun::world` | applicable | yes | yes | no | no | no | no | no | no |
@@ -98,18 +98,18 @@ Each dimension is independent. `Evidenced` requires at least one cited reference
 | `public-api.liquidfun-box2d-box2d-common-b2stat-h` | `liquidfun/Box2D/Box2D/Common/b2Stat.h` | `liquidfun::internal` | applicable | yes | yes | no | no | no | no | no | no |
 | `public-api.liquidfun-box2d-box2d-common-b2timer-h` | `liquidfun/Box2D/Box2D/Common/b2Timer.h` | `liquidfun::internal` | applicable | yes | yes | no | no | no | no | no | no |
 | `public-api.liquidfun-box2d-box2d-common-b2trackedblock-h` | `liquidfun/Box2D/Box2D/Common/b2TrackedBlock.h` | `liquidfun::internal` | applicable | yes | yes | no | no | no | no | no | no |
-| `public-api.liquidfun-box2d-box2d-dynamics-b2body-h` | `liquidfun/Box2D/Box2D/Dynamics/b2Body.h` | `liquidfun::dynamics` | applicable | yes | yes | no | no | no | no | no | no |
-| `public-api.liquidfun-box2d-box2d-dynamics-b2contactmanager-h` | `liquidfun/Box2D/Box2D/Dynamics/b2ContactManager.h` | `liquidfun::dynamics` | applicable | yes | yes | no | no | no | no | no | no |
-| `public-api.liquidfun-box2d-box2d-dynamics-b2fixture-h` | `liquidfun/Box2D/Box2D/Dynamics/b2Fixture.h` | `liquidfun::dynamics` | applicable | yes | yes | no | no | no | no | no | no |
+| `public-api.liquidfun-box2d-box2d-dynamics-b2body-h` | `liquidfun/Box2D/Box2D/Dynamics/b2Body.h` | `liquidfun::dynamics` | applicable | yes | yes | yes | yes | yes | no | yes | no |
+| `public-api.liquidfun-box2d-box2d-dynamics-b2contactmanager-h` | `liquidfun/Box2D/Box2D/Dynamics/b2ContactManager.h` | `liquidfun::dynamics` | applicable | yes | yes | yes | yes | yes | no | yes | no |
+| `public-api.liquidfun-box2d-box2d-dynamics-b2fixture-h` | `liquidfun/Box2D/Box2D/Dynamics/b2Fixture.h` | `liquidfun::dynamics` | applicable | yes | yes | yes | yes | yes | no | yes | no |
 | `public-api.liquidfun-box2d-box2d-dynamics-b2island-h` | `liquidfun/Box2D/Box2D/Dynamics/b2Island.h` | `liquidfun::dynamics` | applicable | yes | yes | no | no | no | no | no | no |
 | `public-api.liquidfun-box2d-box2d-dynamics-b2timestep-h` | `liquidfun/Box2D/Box2D/Dynamics/b2TimeStep.h` | `liquidfun::dynamics` | applicable | yes | yes | no | no | no | no | no | no |
-| `public-api.liquidfun-box2d-box2d-dynamics-b2world-h` | `liquidfun/Box2D/Box2D/Dynamics/b2World.h` | `liquidfun::dynamics` | applicable | yes | yes | no | no | no | no | no | no |
-| `public-api.liquidfun-box2d-box2d-dynamics-b2worldcallbacks-h` | `liquidfun/Box2D/Box2D/Dynamics/b2WorldCallbacks.h` | `liquidfun::dynamics` | applicable | yes | yes | no | no | no | no | no | no |
+| `public-api.liquidfun-box2d-box2d-dynamics-b2world-h` | `liquidfun/Box2D/Box2D/Dynamics/b2World.h` | `liquidfun::dynamics` | applicable | yes | yes | yes | yes | yes | no | yes | no |
+| `public-api.liquidfun-box2d-box2d-dynamics-b2worldcallbacks-h` | `liquidfun/Box2D/Box2D/Dynamics/b2WorldCallbacks.h` | `liquidfun::dynamics` | applicable | yes | yes | yes | yes | yes | no | yes | no |
 | `public-api.liquidfun-box2d-box2d-dynamics-contacts-b2chainandcirclecontact-h` | `liquidfun/Box2D/Box2D/Dynamics/Contacts/b2ChainAndCircleContact.h` | `liquidfun::dynamics::contacts` | applicable | yes | yes | no | no | no | no | no | no |
 | `public-api.liquidfun-box2d-box2d-dynamics-contacts-b2chainandpolygoncontact-h` | `liquidfun/Box2D/Box2D/Dynamics/Contacts/b2ChainAndPolygonContact.h` | `liquidfun::dynamics::contacts` | applicable | yes | yes | no | no | no | no | no | no |
-| `public-api.liquidfun-box2d-box2d-dynamics-contacts-b2circlecontact-h` | `liquidfun/Box2D/Box2D/Dynamics/Contacts/b2CircleContact.h` | `liquidfun::dynamics::contacts` | applicable | yes | yes | no | no | no | no | no | no |
-| `public-api.liquidfun-box2d-box2d-dynamics-contacts-b2contact-h` | `liquidfun/Box2D/Box2D/Dynamics/Contacts/b2Contact.h` | `liquidfun::dynamics::contacts` | applicable | yes | yes | no | no | no | no | no | no |
-| `public-api.liquidfun-box2d-box2d-dynamics-contacts-b2contactsolver-h` | `liquidfun/Box2D/Box2D/Dynamics/Contacts/b2ContactSolver.h` | `liquidfun::dynamics::contacts` | applicable | yes | yes | no | no | no | no | no | no |
+| `public-api.liquidfun-box2d-box2d-dynamics-contacts-b2circlecontact-h` | `liquidfun/Box2D/Box2D/Dynamics/Contacts/b2CircleContact.h` | `liquidfun::dynamics::contacts` | applicable | yes | yes | yes | yes | yes | no | yes | no |
+| `public-api.liquidfun-box2d-box2d-dynamics-contacts-b2contact-h` | `liquidfun/Box2D/Box2D/Dynamics/Contacts/b2Contact.h` | `liquidfun::dynamics::contacts` | applicable | yes | yes | yes | yes | yes | no | yes | no |
+| `public-api.liquidfun-box2d-box2d-dynamics-contacts-b2contactsolver-h` | `liquidfun/Box2D/Box2D/Dynamics/Contacts/b2ContactSolver.h` | `liquidfun::dynamics::contacts` | applicable | yes | yes | yes | yes | yes | no | yes | no |
 | `public-api.liquidfun-box2d-box2d-dynamics-contacts-b2edgeandcirclecontact-h` | `liquidfun/Box2D/Box2D/Dynamics/Contacts/b2EdgeAndCircleContact.h` | `liquidfun::dynamics::contacts` | applicable | yes | yes | no | no | no | no | no | no |
 | `public-api.liquidfun-box2d-box2d-dynamics-contacts-b2edgeandpolygoncontact-h` | `liquidfun/Box2D/Box2D/Dynamics/Contacts/b2EdgeAndPolygonContact.h` | `liquidfun::dynamics::contacts` | applicable | yes | yes | no | no | no | no | no | no |
 | `public-api.liquidfun-box2d-box2d-dynamics-contacts-b2polygonandcirclecontact-h` | `liquidfun/Box2D/Box2D/Dynamics/Contacts/b2PolygonAndCircleContact.h` | `liquidfun::dynamics::contacts` | applicable | yes | yes | no | no | no | no | no | no |
@@ -141,8 +141,8 @@ Each dimension is independent. `Evidenced` requires at least one cited reference
 | `source-area.liquidfun-box2d-box2d-collision` | `liquidfun/Box2D/Box2D/Collision` | `liquidfun::collision` | applicable | yes | yes | yes | yes | yes | no | yes | no |
 | `source-area.liquidfun-box2d-box2d-collision-shapes` | `liquidfun/Box2D/Box2D/Collision/Shapes` | `liquidfun::collision` | applicable | yes | yes | yes | yes | yes | no | yes | no |
 | `source-area.liquidfun-box2d-box2d-common` | `liquidfun/Box2D/Box2D/Common` | `liquidfun::internal` | applicable | yes | yes | no | no | no | no | no | no |
-| `source-area.liquidfun-box2d-box2d-dynamics` | `liquidfun/Box2D/Box2D/Dynamics` | `liquidfun::dynamics` | applicable | yes | yes | no | no | no | no | no | no |
-| `source-area.liquidfun-box2d-box2d-dynamics-contacts` | `liquidfun/Box2D/Box2D/Dynamics/Contacts` | `liquidfun::dynamics::contacts` | applicable | yes | yes | no | no | no | no | no | no |
+| `source-area.liquidfun-box2d-box2d-dynamics` | `liquidfun/Box2D/Box2D/Dynamics` | `liquidfun::dynamics` | applicable | yes | yes | yes | yes | yes | no | yes | no |
+| `source-area.liquidfun-box2d-box2d-dynamics-contacts` | `liquidfun/Box2D/Box2D/Dynamics/Contacts` | `liquidfun::dynamics::contacts` | applicable | yes | yes | yes | yes | yes | no | yes | no |
 | `source-area.liquidfun-box2d-box2d-dynamics-joints` | `liquidfun/Box2D/Box2D/Dynamics/Joints` | `liquidfun::dynamics::joints` | applicable | yes | yes | no | no | no | no | no | no |
 | `source-area.liquidfun-box2d-box2d-particle` | `liquidfun/Box2D/Box2D/Particle` | `liquidfun::particle` | applicable | yes | yes | no | no | no | no | no | no |
 | `source-area.liquidfun-box2d-box2d-rope` | `liquidfun/Box2D/Box2D/Rope` | `liquidfun::rope` | applicable | yes | yes | no | no | no | no | no | no |
@@ -366,18 +366,18 @@ Every row below names its currently missing evidence dimensions. Absence is not 
 | `public-api.liquidfun-box2d-box2d-common-b2stat-h` | implemented, unit_tested, differentially_validated, platform_validated, documented_difference, intentionally_unsupported |
 | `public-api.liquidfun-box2d-box2d-common-b2timer-h` | implemented, unit_tested, differentially_validated, platform_validated, documented_difference, intentionally_unsupported |
 | `public-api.liquidfun-box2d-box2d-common-b2trackedblock-h` | implemented, unit_tested, differentially_validated, platform_validated, documented_difference, intentionally_unsupported |
-| `public-api.liquidfun-box2d-box2d-dynamics-b2body-h` | implemented, unit_tested, differentially_validated, platform_validated, documented_difference, intentionally_unsupported |
-| `public-api.liquidfun-box2d-box2d-dynamics-b2contactmanager-h` | implemented, unit_tested, differentially_validated, platform_validated, documented_difference, intentionally_unsupported |
-| `public-api.liquidfun-box2d-box2d-dynamics-b2fixture-h` | implemented, unit_tested, differentially_validated, platform_validated, documented_difference, intentionally_unsupported |
+| `public-api.liquidfun-box2d-box2d-dynamics-b2body-h` | platform_validated, intentionally_unsupported |
+| `public-api.liquidfun-box2d-box2d-dynamics-b2contactmanager-h` | platform_validated, intentionally_unsupported |
+| `public-api.liquidfun-box2d-box2d-dynamics-b2fixture-h` | platform_validated, intentionally_unsupported |
 | `public-api.liquidfun-box2d-box2d-dynamics-b2island-h` | implemented, unit_tested, differentially_validated, platform_validated, documented_difference, intentionally_unsupported |
 | `public-api.liquidfun-box2d-box2d-dynamics-b2timestep-h` | implemented, unit_tested, differentially_validated, platform_validated, documented_difference, intentionally_unsupported |
-| `public-api.liquidfun-box2d-box2d-dynamics-b2world-h` | implemented, unit_tested, differentially_validated, platform_validated, documented_difference, intentionally_unsupported |
-| `public-api.liquidfun-box2d-box2d-dynamics-b2worldcallbacks-h` | implemented, unit_tested, differentially_validated, platform_validated, documented_difference, intentionally_unsupported |
+| `public-api.liquidfun-box2d-box2d-dynamics-b2world-h` | platform_validated, intentionally_unsupported |
+| `public-api.liquidfun-box2d-box2d-dynamics-b2worldcallbacks-h` | platform_validated, intentionally_unsupported |
 | `public-api.liquidfun-box2d-box2d-dynamics-contacts-b2chainandcirclecontact-h` | implemented, unit_tested, differentially_validated, platform_validated, documented_difference, intentionally_unsupported |
 | `public-api.liquidfun-box2d-box2d-dynamics-contacts-b2chainandpolygoncontact-h` | implemented, unit_tested, differentially_validated, platform_validated, documented_difference, intentionally_unsupported |
-| `public-api.liquidfun-box2d-box2d-dynamics-contacts-b2circlecontact-h` | implemented, unit_tested, differentially_validated, platform_validated, documented_difference, intentionally_unsupported |
-| `public-api.liquidfun-box2d-box2d-dynamics-contacts-b2contact-h` | implemented, unit_tested, differentially_validated, platform_validated, documented_difference, intentionally_unsupported |
-| `public-api.liquidfun-box2d-box2d-dynamics-contacts-b2contactsolver-h` | implemented, unit_tested, differentially_validated, platform_validated, documented_difference, intentionally_unsupported |
+| `public-api.liquidfun-box2d-box2d-dynamics-contacts-b2circlecontact-h` | platform_validated, intentionally_unsupported |
+| `public-api.liquidfun-box2d-box2d-dynamics-contacts-b2contact-h` | platform_validated, intentionally_unsupported |
+| `public-api.liquidfun-box2d-box2d-dynamics-contacts-b2contactsolver-h` | platform_validated, intentionally_unsupported |
 | `public-api.liquidfun-box2d-box2d-dynamics-contacts-b2edgeandcirclecontact-h` | implemented, unit_tested, differentially_validated, platform_validated, documented_difference, intentionally_unsupported |
 | `public-api.liquidfun-box2d-box2d-dynamics-contacts-b2edgeandpolygoncontact-h` | implemented, unit_tested, differentially_validated, platform_validated, documented_difference, intentionally_unsupported |
 | `public-api.liquidfun-box2d-box2d-dynamics-contacts-b2polygonandcirclecontact-h` | implemented, unit_tested, differentially_validated, platform_validated, documented_difference, intentionally_unsupported |
@@ -404,8 +404,8 @@ Every row below names its currently missing evidence dimensions. Absence is not 
 | `source-area.liquidfun-box2d-box2d-collision` | platform_validated, intentionally_unsupported |
 | `source-area.liquidfun-box2d-box2d-collision-shapes` | platform_validated, intentionally_unsupported |
 | `source-area.liquidfun-box2d-box2d-common` | implemented, unit_tested, differentially_validated, platform_validated, documented_difference, intentionally_unsupported |
-| `source-area.liquidfun-box2d-box2d-dynamics` | implemented, unit_tested, differentially_validated, platform_validated, documented_difference, intentionally_unsupported |
-| `source-area.liquidfun-box2d-box2d-dynamics-contacts` | implemented, unit_tested, differentially_validated, platform_validated, documented_difference, intentionally_unsupported |
+| `source-area.liquidfun-box2d-box2d-dynamics` | platform_validated, intentionally_unsupported |
+| `source-area.liquidfun-box2d-box2d-dynamics-contacts` | platform_validated, intentionally_unsupported |
 | `source-area.liquidfun-box2d-box2d-dynamics-joints` | implemented, unit_tested, differentially_validated, platform_validated, documented_difference, intentionally_unsupported |
 | `source-area.liquidfun-box2d-box2d-particle` | implemented, unit_tested, differentially_validated, platform_validated, documented_difference, intentionally_unsupported |
 | `source-area.liquidfun-box2d-box2d-rope` | implemented, unit_tested, differentially_validated, platform_validated, documented_difference, intentionally_unsupported |
@@ -415,13 +415,13 @@ Every row below names its currently missing evidence dimensions. Absence is not 
 | `subsystem.collision-shapes-and-manifolds` | platform_validated, intentionally_unsupported |
 | `subsystem.common-math-and-settings` | platform_validated, intentionally_unsupported |
 | `subsystem.common-memory-and-utilities` | implemented, unit_tested, differentially_validated, platform_validated, documented_difference, intentionally_unsupported |
-| `subsystem.contacts-and-filtering` | implemented, unit_tested, differentially_validated, platform_validated, documented_difference, intentionally_unsupported |
+| `subsystem.contacts-and-filtering` | platform_validated, intentionally_unsupported |
 | `subsystem.joints` | implemented, unit_tested, differentially_validated, platform_validated, documented_difference, intentionally_unsupported |
 | `subsystem.particle-contacts-and-coupling` | implemented, unit_tested, differentially_validated, platform_validated, documented_difference, intentionally_unsupported |
 | `subsystem.particle-groups-pairs-and-triads` | implemented, unit_tested, differentially_validated, platform_validated, documented_difference, intentionally_unsupported |
 | `subsystem.particle-solver-behaviors` | implemented, unit_tested, differentially_validated, platform_validated, documented_difference, intentionally_unsupported |
 | `subsystem.particle-storage-and-lifecycle` | implemented, unit_tested, differentially_validated, platform_validated, documented_difference, intentionally_unsupported |
-| `subsystem.rigid-bodies-and-fixtures` | implemented, unit_tested, differentially_validated, platform_validated, documented_difference, intentionally_unsupported |
+| `subsystem.rigid-bodies-and-fixtures` | platform_validated, intentionally_unsupported |
 | `subsystem.rigid-islands-and-solver` | implemented, unit_tested, differentially_validated, platform_validated, documented_difference, intentionally_unsupported |
 | `subsystem.rope` | implemented, unit_tested, differentially_validated, platform_validated, documented_difference, intentionally_unsupported |
 | `subsystem.world-operations-and-observation` | implemented, unit_tested, differentially_validated, platform_validated, documented_difference, intentionally_unsupported |

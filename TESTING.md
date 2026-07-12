@@ -273,11 +273,11 @@ ledger update:
 
 The local reference tools were CMake 3.27.9, Ninja 1.13.2, and Apple Clang
 21.0.0. Because the canonical lane requires CMake 4.3.3 and Clang 22.1.8 on
-scalar Linux x86_64, these passes do not populate the ledger's
-`platform_validated` dimension and do not authorize fixture promotion. The
-generated report retains `subsystem.contacts-and-filtering` and
-`b2ContactManager.h` as not implemented, not unit-tested, and not
-differentially validated.
+scalar Linux x86_64, these passes did not populate the ledger's
+`platform_validated` dimension or authorize fixture promotion. At Phase 5
+signoff, `subsystem.contacts-and-filtering` and `b2ContactManager.h` were still
+pending; the independently executed Phase 6 lifecycle below is the later
+evidence that changes those rows.
 
 ## Phase 6 rigid-world comparison policy
 
@@ -360,6 +360,33 @@ Replay protects the checked-in request and result contract. Minimization may
 operate only on valid action reductions that reproduce the same signature.
 Fixture staging, explicit review, and no-clobber promotion reuse the established
 Phase 2 lifecycle, but local D2 runs intentionally fail the D1 promotion gate.
+
+### Phase 6 completion evidence (2026-07-12)
+
+The Phase 6 signoff reran every fixed workflow after the authoritative ledger
+and generated report changed:
+
+| Check | Observed result | Evidence limit |
+| --- | --- | --- |
+| Inventory generation and check | 177 rows; 30 implemented, 30 unit-tested, 29 differentially validated, 0 platform-validated, and 30 documented differences | Only 12 body, fixture, world, contact-manager, circle-contact, and bounded-solver rows were promoted. |
+| Package isolation | 58 packaged entries built and tested outside the repository | Proves Cargo consumer isolation, not another platform. |
+| Oracle debug comparison | Both required rigid timelines matched under `phase6-v1` | Local D2 for the fixed Phase 6 scope. |
+| Oracle release comparison | Both required rigid timelines matched under `phase6-v1` | A second optimization profile, not canonical D1 authority. |
+| Debug replay | Both required rigid timelines matched under `phase6-v1` | Protects the reviewed request and declaration contract. |
+| Debug determinism | Two complete native/oracle runs were byte-identical | D0 same-build authority only. |
+
+The pinned C++ adapter executes the same declaration-first timeline in
+`tools/reference/src/rigid_world.cpp`. Its content identity includes the decode
+and trace headers, while build identity requires the exact four reviewed result
+translation units and one shared effective compile signature. The successful
+local tools were CMake 3.27.9, Ninja 1.13.2, and Apple Clang 21.0.0. They differ
+from canonical CMake 4.3.3 and Clang 22.1.8 on scalar Linux x86_64, so all 177
+`platform_validated` states remain false and no local fixture promotion is
+authorized.
+
+The ledger deliberately keeps general islands, broad world operations,
+non-circle contact classes, forces, sleeping, CCD, queries, configuration,
+joints, and broad rigid scenarios pending for Phase 7 or Phase 8.
 
 ## Differential commands
 

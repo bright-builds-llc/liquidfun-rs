@@ -334,20 +334,20 @@ fn phase5_compatibility_report_matches_authoritative_ledger() -> TestResult {
 }
 
 #[test]
-fn phase5_contract_rejects_promoted_contact_lifecycle_rows() -> TestResult {
+fn phase6_contract_rejects_broad_solver_promotion() -> TestResult {
     // Arrange
     let fixture = DocsFixture::new()?;
     fixture.replace_document_text(
         "COMPATIBILITY.md",
-        "| `subsystem.contacts-and-filtering` | `liquidfun/Box2D/Box2D/Dynamics/Contacts` | `liquidfun::dynamics::contacts` | applicable | yes | yes | no | no | no | no | no | no |",
-        "| `subsystem.contacts-and-filtering` | `liquidfun/Box2D/Box2D/Dynamics/Contacts` | `liquidfun::dynamics::contacts` | applicable | yes | yes | yes | yes | yes | no | no | no |",
+        "| `subsystem.rigid-islands-and-solver` | `liquidfun/Box2D/Box2D/Dynamics` | `liquidfun::dynamics` | applicable | yes | yes | no | no | no | no | no | no |",
+        "| `subsystem.rigid-islands-and-solver` | `liquidfun/Box2D/Box2D/Dynamics` | `liquidfun::dynamics` | applicable | yes | yes | yes | yes | yes | no | yes | no |",
     )?;
 
     // Act
     let output = fixture.command()?;
 
     // Assert
-    assert_failure(&output, "docs/phase5-contract");
+    assert_failure(&output, "docs/phase6-contract");
     fixture.cleanup()?;
     Ok(())
 }
