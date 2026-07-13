@@ -5,7 +5,7 @@ use liquidfun_differential::{
     RigidMismatchKind, compare_phase7_rigid_world_results, minimize_rigid_world_request,
 };
 use liquidfun_test_protocol::{
-    FieldComparison, HarnessLimits, Phase6PolicyProfile, Phase7PolicyProfile,
+    FieldComparison, FloatBits, HarnessLimits, Phase6PolicyProfile, Phase7PolicyProfile,
     RigidWorldRequestRecord, RigidWorldResultRecord, decode_rigid_world_request_jsonl,
     decode_rigid_world_result_jsonl,
 };
@@ -136,6 +136,53 @@ fn arbitrary_clip_order_results(
         .reverse();
     let oracle = decode_result(&oracle_value);
     (request, native, oracle)
+}
+
+fn duplicate_ray_results(
+    profile: &Phase7PolicyProfile,
+    expected_fractions: &[u32],
+    actual_fractions: &[u32],
+) -> (
+    RigidWorldRequestRecord,
+    RigidWorldResultRecord,
+    RigidWorldResultRecord,
+) {
+    let request = request_with_ray_rules(profile, json!([]));
+    let baseline = NativeRigidWorldExecutor::execute(&request)
+        .expect("profile-bound exhaustive ray request should execute");
+    let mut expected_value = serde_json::to_value(&baseline).expect("result should serialize");
+    let ray = observation_mut(phase7_observations(&mut expected_value), "ray_cast");
+    ray["observation"]["completion"] = json!("exhausted");
+    ray["observation"]["final_max_fraction_bits"] = json!(1.0_f32.to_bits());
+    ray["observation"]["hits"] = Value::Array(
+        expected_fractions
+            .iter()
+            .copied()
+            .map(duplicate_ray_hit)
+            .collect(),
+    );
+    let expected = decode_result(&expected_value);
+    let mut actual_value = expected_value;
+    observation_mut(phase7_observations(&mut actual_value), "ray_cast")["observation"]["hits"] =
+        Value::Array(
+            actual_fractions
+                .iter()
+                .copied()
+                .map(duplicate_ray_hit)
+                .collect(),
+        );
+    let actual = decode_result(&actual_value);
+    (request, expected, actual)
+}
+
+fn duplicate_ray_hit(fraction_bits: u32) -> Value {
+    json!({
+        "fixture_id": "nc-static-fixture",
+        "child_index": 0,
+        "point": { "x_bits": 0.0_f32.to_bits(), "y_bits": 0.0_f32.to_bits() },
+        "normal": { "x_bits": 1.0_f32.to_bits(), "y_bits": 0.0_f32.to_bits() },
+        "fraction_bits": fraction_bits
+    })
 }
 
 fn request_with_split_phase7_checkpoints(profile: &Phase7PolicyProfile) -> RigidWorldRequestRecord {
@@ -319,6 +366,86 @@ fn rigid_comparator_compares_equal_fraction_ray_hits_as_multisets() {
 
     // Assert
     assert_eq!(outcome, RigidComparisonOutcome::Match);
+}
+
+#[test]
+fn rigid_comparator_reassigns_adversarial_duplicate_hits_in_both_actual_orders() {
+    // Arrange
+    let (phase6, phase7) = profiles();
+    let base = 0.5_f32.to_bits();
+    let expected_fractions = [base, base - 4];
+    let actual_orders = [[base - 2, base + 4], [base + 4, base - 2]];
+
+    // Act and Assert
+    for actual_fractions in actual_orders {
+        let (request, expected, actual) =
+            duplicate_ray_results(&phase7, &expected_fractions, &actual_fractions);
+        let outcome =
+            compare_phase7_rigid_world_results(&request, &expected, &actual, &phase6, &phase7)
+                .expect("registered Phase 7 fields should compare");
+        assert_eq!(outcome, RigidComparisonOutcome::Match);
+    }
+}
+
+#[test]
+fn rigid_comparator_reports_stable_fraction_when_no_perfect_matching_exists() {
+    // Arrange
+    let (phase6, phase7) = profiles();
+    let base = 0.5_f32.to_bits();
+    let expected_fractions = [base, base - 4];
+    let actual_orders = [[base - 2, base + 5], [base + 5, base - 2]];
+    let mut reports = Vec::new();
+
+    // Act
+    for actual_fractions in actual_orders {
+        let (request, expected, actual) =
+            duplicate_ray_results(&phase7, &expected_fractions, &actual_fractions);
+        let outcome =
+            compare_phase7_rigid_world_results(&request, &expected, &actual, &phase6, &phase7)
+                .expect("registered Phase 7 fields should compare");
+        let RigidComparisonOutcome::PhysicsMismatch(report) = outcome else {
+            panic!("a duplicate-hit group without a perfect matching must mismatch");
+        };
+        reports.push((
+            report.signature().clone(),
+            report.maybe_expected_bits(),
+            report.maybe_actual_bits(),
+        ));
+    }
+
+    // Assert
+    assert_eq!(reports[0], reports[1]);
+    assert_eq!(
+        reports[0].0.semantic_path(),
+        "rigid_world.phase7.ray.fraction"
+    );
+    assert_ne!(reports[0].1, reports[0].2);
+    assert_eq!(reports[0].1.map(FloatBits::bits), Some(base));
+    assert_eq!(reports[0].2.map(FloatBits::bits), Some(base + 5));
+}
+
+#[test]
+fn rigid_comparator_preserves_duplicate_ray_hit_multiplicity() {
+    // Arrange
+    let (phase6, phase7) = profiles();
+    let fraction = 0.5_f32.to_bits();
+    let (request, expected, actual) =
+        duplicate_ray_results(&phase7, &[fraction, fraction], &[fraction]);
+
+    // Act
+    let outcome =
+        compare_phase7_rigid_world_results(&request, &expected, &actual, &phase6, &phase7)
+            .expect("registered Phase 7 fields should compare");
+
+    // Assert
+    let RigidComparisonOutcome::PhysicsMismatch(report) = outcome else {
+        panic!("removing one duplicate ray hit must mismatch");
+    };
+    assert_eq!(report.kind(), RigidMismatchKind::Order);
+    assert_eq!(
+        report.semantic_path(),
+        "rigid_world.phase7.ray.hit.identity"
+    );
 }
 
 #[test]
