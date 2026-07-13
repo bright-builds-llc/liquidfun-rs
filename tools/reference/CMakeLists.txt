@@ -26,7 +26,6 @@ set(BOX2D_CODE_COVERAGE OFF CACHE BOOL "Do not instrument canonical oracle build
 set(
   REFERENCE_REQUIRED_FP_OPTIONS
   -fno-fast-math
-  -ffp-model=precise
   -ffp-contract=off
   -fsigned-zeros
   -fhonor-nans

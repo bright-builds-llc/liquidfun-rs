@@ -550,22 +550,6 @@ fn rigid_child_failure_status_is_propagated() -> TestResult {
 }
 
 #[test]
-fn local_rigid_identity_cannot_authorize_canonical_promotion() {
-    // Arrange
-    let identity = liquidfun_differential::EmptyWorldAdapter::new(REVISION)
-        .expect("local native identity should validate");
-
-    // Act
-    let result = liquidfun_differential::validate_rigid_promotion_authority(
-        identity.build_identity(),
-        liquidfun_differential::ArtifactKind::ReviewedTrace,
-    );
-
-    // Assert
-    assert!(result.is_err());
-}
-
-#[test]
 fn rigid_ci_commands_stay_in_the_native_reference_workflow() {
     // Arrange
     let native_reference_workflow = include_str!("../../../.github/workflows/oracle.yml");

@@ -4,7 +4,7 @@
 
 - State: resolved
 - Started: 2026-07-13 13:00 CDT
-- Resolved: 2026-07-13 13:01 CDT
+- Resolved: 2026-07-13 13:16 CDT
 - Goal: find and fix
 - Approved scope: rigid promotion authority regression test and canonical Clang floating-point capability configuration
 
@@ -49,5 +49,35 @@
 
 ## Residual Risk
 
-- The patched CMake configure has not yet run on the GitHub-hosted canonical Linux image. The original CI log plus an exact standalone Clang 22.1.8 flag reproduction prove the removed option was the sole failed capability check, but remote end-to-end confirmation remains pending until the orchestrator pushes.
+- The follow-on FP option-ordering fix has not yet run on the GitHub-hosted canonical Linux image. Exact direct compiler probes and local oracle builds cover the changed option set, but remote end-to-end confirmation remains pending until the orchestrator pushes.
 - The root orchestrator owns the full Rust pre-commit sequence and resulting workflow recheck.
+
+## Follow-on: Canonical Clang Option Ordering
+
+### Evidence
+
+- Post-push Oracle run `29273063424` passed `Configure oracle-debug`, proving removal of the nonexistent `fp32` flag fixed the original configure failure.
+- `Build oracle-debug` then failed every first-wave Box2D compile because Clang 22.1.8 reported `overriding '-ffp-model=precise' option with '-ffp-contract=off'` and upstream's `-Werror` promoted the warning.
+- AppleClang 21 reproduces the same diagnostic with the exact required FP option sequence under `-Werror`.
+- Removing only `-ffp-model=precise` makes the remaining required option sequence compile cleanly while retaining `-fno-fast-math`, explicit contraction disablement, signed zeros, NaN and infinity honoring, and IEEE denormal handling.
+
+### Confirmed Root Cause
+
+`-ffp-model=precise` is an umbrella option whose precise mode enables its own contraction policy. The immediately following, deliberately stricter `-ffp-contract=off` overrides that umbrella setting. The combination is semantically intentional but internally contradictory, and Clang 22 diagnoses it. Suppressing the warning would preserve a redundant conflict in the canonical command and weaken the usefulness of `-Werror`.
+
+### Resolution
+
+- Removed the redundant `-ffp-model=precise` umbrella option.
+- Kept the explicit deterministic FP controls, especially `-ffp-contract=off`, rather than weakening contraction policy or suppressing the diagnostic.
+- Continued reporting the validated FP model as `precise` only when every explicit required FP control is supported.
+
+### Verification
+
+- Exact Ubuntu 24.04 compile using the workflow checksum-pinned `llvm.sh` and Ubuntu Clang 22.1.8 (`++20260613092238+e80beda6e255...`) with `-Werror` and the remaining required FP option set — passed without an override diagnostic.
+- Direct AppleClang 21 compile with `-Werror` and the remaining required FP option set — passed without an override diagnostic.
+- `target/debug/xtask upstream configure --preset oracle-debug` — passed with the recomputed adapter digest.
+- `target/debug/xtask upstream build --preset oracle-debug` — all 64 steps passed, including the previously failing first-wave Box2D objects.
+- Debug `compile_commands.json` inspection — every reviewed probe command retains `-fno-fast-math -ffp-contract=off -fsigned-zeros -fhonor-nans -fhonor-infinities -fdenormal-fp-math=ieee` and contains no `-ffp-model=precise`.
+- `target/debug/xtask upstream configure --preset oracle-release` and `target/debug/xtask upstream build --preset oracle-release` — passed all 64 steps.
+- `target/debug/xtask differential compare --scenario math-probes --preset oracle-debug --session-profile one-shot` — all 39 ordered cases matched under `phase4-v1`.
+- `git diff --check` — passed.
