@@ -1,49 +1,49 @@
 ---
 phase: 07-rigid-solver-world-operations-and-ccd
 review_path: .planning/phases/07-rigid-solver-world-operations-and-ccd/07-REVIEW.md
-fixed_at: 2026-07-13T15:38:14Z
-iteration: 6
-findings_in_scope: 5
-fixed: 5
+fixed_at: 2026-07-13T16:46:20Z
+iteration: 7
+findings_in_scope: 3
+fixed: 3
 skipped: 0
 status: all_fixed
 ---
 
-# Phase 07 Review Fixes — Iteration 6
+# Phase 07 Review Fixes — Iteration 7
 
-All five iteration-5 warnings are fixed in six atomic commits. Query and ray evidence is now independently validated against action-time live topology and callback rules, ray payloads and requests fail closed on invalid floating-point geometry, and arbitrary clip histories compare only within the exact final interval shared by both engines.
+All three iteration-6 warnings are fixed in four atomic commits. The C++ request boundary now rejects nonexistent selector children before execution, duplicate ray hits compare through deterministic maximum matching rather than order-sensitive first-fit pairing, and final-interval projection retains every hit inside the registered ray-fraction boundary tolerance.
 
 ## Findings
 
 | Finding | Severity | Commit | Resolution |
 | --- | --- | --- | --- |
-| WR-16 | Warning | `2c3d346`, `42ea28d` | Binds query occurrences and ray hits to live fixture-child topology, replays directives and completion, rejects post-destruction identities, and evaluates topology at each observation's action rather than at checkpoint end. |
-| WR-17 | Warning | `82a0b90` | Rejects every non-finite ray hit point and normal component before completion-based canonicalization. |
-| WR-18 | Warning | `e767dfa` | Exact-compares final intervals first, projects non-terminated hits into that interval, and compares the remaining records as a multiplicity-preserving multiset without inventing closest-hit semantics. |
-| WR-19 | Warning | `06abde9` | Rejects positive and negative zero clip directives at both Rust and C++ request boundaries before traversal. |
-| WR-20 | Warning | `ca5bde6` | Replays source-ordered direction and squared-length arithmetic in both decoders and rejects zero, non-finite, underflowed, and overflowed derived ray geometry before execution. |
+| WR-21 | Warning | `777abca`, `75e1021` | Resolves query and ray selectors against live declared fixtures during C++ timeline validation, rejects children outside each shape's topology before adapter execution, and keeps the compiled regression C++17-clean. |
+| WR-22 | Warning | `c0475df` | Canonically groups duplicate hits by semantic identity and uses deterministic maximum bipartite matching over all five registered numeric-field policies. |
+| WR-23 | Warning | `6b7b958` | Exact-compares final interval evidence, then retains hits at or below the interval or within the registered four-ULP fraction-policy boundary band before multiset comparison. |
 
 ## Implementation Evidence
 
-- Independent result validation reconstructs checkpoint lifecycle state action by action. Query and ray fixture-child selectors must resolve against the topology live when the observation executes, including body-destruction fixture cascades.
-- Query observations replay callback directives in occurrence order, reject occurrences after termination, and require the declared completion state to equal the replayed state. Ray observations retain the same fail-closed directive, completion, and exact final-interval replay.
-- Every ray hit fraction, point coordinate, and normal coordinate is finite before any comparator projection can discard payload detail. Per-engine mutation tests cover NaN, positive infinity, and negative infinity for all four point/normal components.
-- Non-terminated ray observations exact-compare their validated final interval, discard only hits beyond that interval, and compare all retained semantic records as a multiset. Terminated rays remain intentionally reduced to completion, exact final interval, and callback count after independent validation.
-- Removing the obsolete equal-minimum identity rule closes the Phase 7 tolerance profile at 36 explicit fields. Its canonical SHA-256 is `59cf32e2564d857bbf56ec7e8423bd73046f4c7698f2e0e3eb83c5ea7ab2b86a`, and the accepted rigid-world request carries that hash.
-- Both request decoders reject `Clip(+0.0)` and `Clip(-0.0)`. Native and compiled-C++ regressions use multiple fraction-zero candidates so rejection cannot be confused with accidental single-hit behavior.
-- Both request decoders evaluate ray direction components, their squares, and the sum in source order. Regressions cover signed-zero endpoint equality, subnormal squared-length underflow, subtraction overflow, and finite-component squared-length overflow.
-- Architecture, testing, xtask documentation contracts, accepted request provenance, and Phase 7 state metadata match the executable comparison and validation behavior.
+- C++ timeline validation tracks declared fixture shape topology alongside live fixture identity. Both terminating query and terminating ray selectors reject `child_index: 1` for the current single-child circle and polygon shapes before world execution.
+- Compiled C++ protocol tests exercise both invalid selector families. A real-process Rust regression proves that the oracle emits no result record, exits nonzero, and reports the stable invalid-child diagnostic.
+- Ray hits are sorted canonically and partitioned by `(fixture_id, child_index)`. Each identity group uses augmenting-path maximum matching, where an edge exists only when fraction, point, and normal fields all satisfy their named Phase 7 policies.
+- A perfect matching is order-independent. When none exists, the comparator reports a stable canonical numeric divergence and fails closed if a supposedly unmatched pair is still policy-compatible. Duplicate identity multiplicity remains exact.
+- Duplicate-hit regressions cover the adversarial reassignment case in both callback orders, a stable no-perfect-matching fraction diagnostic, and duplicate multiplicity loss.
+- Final maximum-fraction bits remain exact evidence. For non-terminated rays, projection retains raw `fraction <= final` hits and hits matching the exact final bits under `rigid_world.phase7.ray.fraction`; only hits proven beyond both tests are discarded.
+- Boundary regressions cover the exact boundary and one through four ULPs in both engine directions, five ULPs in both directions, payload differences discarded beyond the boundary band, and payload differences compared when a hit remains inside the band.
+- Architecture, testing, and executable xtask documentation contracts describe the tolerance-aware final-interval projection.
 
 ## Verification
 
-Each atomic commit passed the required Rust pre-commit sequence in order before commit:
+The required Rust pre-commit sequence was run in order for the scoped commits:
 
 - `cargo fmt --all`
 - `cargo clippy --all-targets --all-features -- -D warnings`
 - `cargo build --all-targets --all-features`
 - `cargo test --all-features`
 
-The final committed tree passed the full workspace sequence:
+WR-21, WR-23, and the C++17 portability follow-up passed the literal sequence before commit. During WR-22, macOS repeatedly stalled repository-path test executables in `_dyld_start`; the same all-features suite first passed from fresh `/tmp` artifacts, then the literal four-command sequence passed immediately on committed `c0475df` through a temporary ignored target symlink before work continued. No history was rewritten.
+
+The final Rust source and documentation tree passed the full workspace sequence:
 
 - `cargo fmt --all -- --check`
 - `cargo clippy --workspace --all-targets --all-features -- -D warnings`
@@ -56,28 +56,29 @@ Focused Rust evidence passed:
 - Rigid-world fixture boundary suite: 2/2 tests.
 - Protocol schema presentation suite: 4/4 tests.
 - Typed Phase 7 policy suite: 6/6 tests.
-- Differential rigid-world integration suite: 40/40 tests.
+- Differential rigid-world integration suite: 46/46 tests.
 - Rigid fixture workflow integration suite: 15/15 tests.
+- Real-oracle invalid selector-child process regression: 1/1 test.
 
 Cross-language and repository evidence passed:
 
-- Fresh `oracle-debug` configure and build succeeded after the adapter digest was regenerated from the final C++ sources.
-- CTest reference protocol suite passed 1/1 compiled test.
+- Fresh `oracle-debug` configure rebuilt the final reference executable and compiled protocol-test target.
+- CTest reference protocol suite passed 1/1.
 - Rigid compare and replay each matched all 9 required families under `phase7-v1` at local D2-supported authority.
 - `cargo xtask docs check` verified all 5 Phase 7 document contracts.
 - `cargo xtask inventory check` verified 177 compatibility rows.
 - `cargo xtask check` passed package isolation for 69 entries, protocol schema and fixture presentation, documentation, inventory, upstream identity, and provenance.
 - GSD schema-drift verification reported no drift and no blocker.
-- `git diff --check 43ce9d8..HEAD` and final `git diff --check` passed.
+- `git diff --check 86c6be7..HEAD` and final pre-report `git diff --check` passed.
 
-The first post-WR-16 integration run exposed that checkpoint-end topology incorrectly rejected an observation that preceded later teardown in the same window. Commit `42ea28d` corrected validation to replay lifecycle state at action time, and the complete final gate proves the combined behavior.
+The first fresh C++ build exposed that the WR-21 test lambda captured a structured-binding name, which is a C++20 extension under the repository's C++17 target. Commit `75e1021` replaced that capture with ordinary pair bindings; the freshly rebuilt target and CTest then passed. No stale CTest result is counted as evidence.
 
-The first WR-20 C++ build attempt correctly rejected a stale configured adapter digest after the source changed. A fresh configure regenerated the identity; the subsequent build and newly compiled CTest run passed. No stale CTest output is counted as evidence.
+The macOS loader intermittently stalled binaries executed from the repository target. Final workspace testing therefore used fresh Cargo artifacts under `/tmp` while retaining the real repository target for fixture roots and C++ provenance. A whole-target symlink was rejected after it correctly changed canonical fixture paths and caused provenance digest failures; rebuilding the stale xtask integration artifact and rerunning with the original fixture root produced a complete zero-exit workspace result.
 
 The local CMake 3.27.9 and Apple Clang 21.0.0 differ from canonical CMake 4.3.3 and Clang 22.1.8, so successful local compare and replay remain D2-supported evidence rather than canonical D1 authority.
 
 ## Worktree and Residual Risk
 
-No iteration-6 finding was skipped. `.planning/config.json` remained user-owned, unstaged, and unedited throughout this fix run. Its final observed SHA-256 is `440f14fa5b03113fe46105f252bace03fa84094e2b862c9ec1757a855fca5eba`; its Git blob hash is `621946b2b075747d8342124a8abb2226e77546ad`. This iteration-6 report intentionally remains uncommitted for the review workflow.
+No iteration-7 finding was skipped. `.planning/config.json` remained user-owned, unstaged, and unedited throughout this fix run. Its final observed SHA-256 is `440f14fa5b03113fe46105f252bace03fa84094e2b862c9ec1757a855fca5eba`; its Git blob hash is `621946b2b075747d8342124a8abb2226e77546ad`. This iteration-7 report intentionally remains uncommitted for the review workflow.
 
-The final worktree is expected to contain only `.planning/config.json` and this report as unstaged modifications. Expensive scheduled fuzzing, sanitizer, and randomized differential campaigns remain later evidence lanes rather than blockers for these focused boundary and comparator corrections.
+The final worktree is expected to contain only `.planning/config.json` and this report as unstaged modifications. Expensive scheduled fuzzing, sanitizer, randomized differential, canonical-toolchain, and wider platform campaigns remain later evidence lanes rather than blockers for these focused parser and comparator corrections.
