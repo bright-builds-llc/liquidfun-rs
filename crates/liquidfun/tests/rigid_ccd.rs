@@ -299,6 +299,52 @@ fn substepping_accepts_one_toi_event_and_resumes_without_repeating_discrete_work
 }
 
 #[test]
+fn failed_resume_hook_limit_preserves_pending_checkpoint() {
+    // Arrange
+    let (mut world, moving, _target, configuration) = automatic_ccd_world(BodyType::Static);
+    world
+        .set_sub_stepping_enabled(true)
+        .expect("test configuration should remain mutable");
+    let pending = world
+        .step(configuration, &mut NoopHook, StepLimits::default())
+        .expect("first sub-step should succeed");
+    let position_after_pending = world
+        .body_snapshot(moving)
+        .expect("moving body should remain live")
+        .position();
+    let hook_limit = StepLimits::new(0, StepLimits::default().max_commands())
+        .expect("zero events should be a valid bounded limit");
+
+    // Act
+    let failed = world.step(configuration, &mut NoopHook, hook_limit);
+    let position_after_failure = world
+        .body_snapshot(moving)
+        .expect("moving body should remain live")
+        .position();
+    let resumed = world
+        .step(configuration, &mut NoopHook, StepLimits::default())
+        .expect("matching retry should retain and complete the checkpoint");
+    let position_after_resume = world
+        .body_snapshot(moving)
+        .expect("moving body should remain live")
+        .position();
+
+    // Assert
+    assert_eq!(pending.completion(), StepCompletion::ContinuousPending);
+    assert!(matches!(
+        failed,
+        Err(StepError::LimitExceeded {
+            resource: "event",
+            limit: 0
+        })
+    ));
+    assert_eq!(position_after_failure, position_after_pending);
+    assert_eq!(resumed.completion(), StepCompletion::Complete);
+    assert_eq!(position_after_resume, position_after_pending);
+    assert!(resumed.contact_solves().is_empty());
+}
+
+#[test]
 fn exhausted_budget_returns_coherent_partial_evidence_and_can_resume() {
     // Arrange
     let (mut world, moving, _target, configuration) = automatic_ccd_world(BodyType::Static);

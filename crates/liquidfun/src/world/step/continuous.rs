@@ -73,6 +73,7 @@ impl World {
                     continuous_step_error(error, contact_transitions)
                 })?;
             let Some(event) = maybe_event else {
+                self.continuous_step_state.invalidate();
                 return Ok(ContinuousStageResult {
                     completion: StepCompletion::Complete,
                     contact_solves,

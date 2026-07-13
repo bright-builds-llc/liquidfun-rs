@@ -601,9 +601,10 @@ impl ContinuousStepState {
         key: ContinuousStepKey,
         contact_manager: &mut ContactManager,
     ) -> ContinuousStepKind {
-        if self.maybe_pending.take() == Some(key) {
+        if self.maybe_pending == Some(key) {
             return ContinuousStepKind::Resumed;
         }
+        self.maybe_pending = None;
         contact_manager.reset_toi_state();
         ContinuousStepKind::Fresh
     }
