@@ -670,6 +670,7 @@ impl BodyState {
         self.torque
     }
 
+    #[cfg(test)]
     pub(super) fn set_solver_motion(&mut self, linear_velocity: Vec2, angular_velocity: f32) {
         self.linear_velocity = linear_velocity;
         self.angular_velocity = angular_velocity;
@@ -677,18 +678,43 @@ impl BodyState {
         self.snapshot.angular_velocity = angular_velocity;
     }
 
-    pub(super) fn set_solver_state(
-        &mut self,
+    pub(super) fn candidate_set_solver_state(
+        self,
         position: Vec2,
         angle: f32,
         linear_velocity: Vec2,
         angular_velocity: f32,
-    ) {
-        let mut updated = self
-            .with_transform(position, angle)
-            .expect("finite solver state must produce a checked body transform");
-        updated.set_solver_motion(linear_velocity, angular_velocity);
-        *self = updated;
+    ) -> Result<Self, BodyDefError> {
+        validate_body_transform(position, angle)?;
+        if !linear_velocity.is_valid() || !angular_velocity.is_finite() {
+            return Err(BodyDefError::NonFiniteDerivedCenter);
+        }
+        let transform = Transform::from_position_angle(position, angle);
+        let mut snapshot = self.snapshot;
+        snapshot.position = position;
+        snapshot.angle = angle;
+        snapshot.linear_velocity = linear_velocity;
+        snapshot.angular_velocity = angular_velocity;
+        Ok(Self {
+            snapshot,
+            transform,
+            sweep: Sweep::new(
+                self.sweep.local_center(),
+                self.sweep.center(),
+                transform.apply(self.sweep.local_center()),
+                self.sweep.angle(),
+                angle,
+                0.0,
+            )
+            .map_err(|_error| BodyDefError::NonFiniteDerivedCenter)?,
+            linear_velocity,
+            angular_velocity,
+            inverse_mass: self.inverse_mass,
+            inverse_inertia: self.inverse_inertia,
+            force: self.force,
+            torque: self.torque,
+            sleep_time: self.sleep_time,
+        })
     }
 
     pub(super) fn with_transform(self, position: Vec2, angle: f32) -> Result<Self, BodyDefError> {

@@ -57,6 +57,7 @@ impl StepState {
 pub struct StepLimits {
     max_events: usize,
     max_commands: usize,
+    maybe_failure_injection: Option<super::island::SolveFailureInjection>,
 }
 
 impl StepLimits {
@@ -75,6 +76,7 @@ impl StepLimits {
         Ok(Self {
             max_events,
             max_commands,
+            maybe_failure_injection: None,
         })
     }
 
@@ -89,6 +91,25 @@ impl StepLimits {
     pub const fn max_commands(self) -> usize {
         self.max_commands
     }
+
+    /// Returns limits with one bounded transactional-solver failure injection.
+    #[cfg(feature = "differential-internals")]
+    #[doc(hidden)]
+    #[must_use]
+    pub fn with_rigid_failure_injection(
+        mut self,
+        injection: crate::rigid_differential::RigidStepFailureInjection,
+    ) -> Self {
+        self.maybe_failure_injection = Some(match injection {
+            crate::rigid_differential::RigidStepFailureInjection::LateIsland { solved_islands } => {
+                super::island::SolveFailureInjection::LateIsland { solved_islands }
+            }
+            crate::rigid_differential::RigidStepFailureInjection::ProxyBounds { fixture } => {
+                super::island::SolveFailureInjection::ProxyBounds { fixture }
+            }
+        });
+        self
+    }
 }
 
 impl Default for StepLimits {
@@ -96,6 +117,7 @@ impl Default for StepLimits {
         Self {
             max_events: 256,
             max_commands: 64,
+            maybe_failure_injection: None,
         }
     }
 }
@@ -451,6 +473,11 @@ pub enum StepError {
         /// Owned lifecycle evidence committed before fail-closed construction.
         contact_transitions: Vec<ContactTransition>,
     },
+    /// Staged body motion would produce invalid broad-phase synchronization bounds.
+    InvalidSolverProxyBounds {
+        /// Owned lifecycle evidence committed before fail-closed solver staging.
+        contact_transitions: Vec<ContactTransition>,
+    },
     /// The world is already executing a step.
     Locked,
     /// A bounded per-step resource reached its configured limit.
@@ -478,6 +505,9 @@ impl fmt::Display for StepError {
             }
             Self::NonFiniteSolverState { .. } => {
                 formatter.write_str("contact solver produced non-finite state")
+            }
+            Self::InvalidSolverProxyBounds { .. } => {
+                formatter.write_str("contact solver produced invalid proxy bounds")
             }
             Self::Locked => formatter.write_str("world is locked by an active step"),
             Self::LimitExceeded { resource, limit } => {
@@ -552,8 +582,12 @@ impl World {
             let (events, commands) = self.run_contact_hooks(&occurrences, hook, limits)?;
             let contact_solves = if configuration.time_step() > 0.0 {
                 phases.push(StepPhase::Solve);
-                self.solve_contact_constraints(configuration, timing.time_step_ratio())
-                    .map_err(|error| solver_step_error(error, &contact_transitions))?
+                self.solve_contact_constraints(
+                    configuration,
+                    timing,
+                    limits.maybe_failure_injection,
+                )
+                .map_err(|error| solver_step_error(error, &contact_transitions))?
             } else {
                 Vec::new()
             };
@@ -618,9 +652,10 @@ impl World {
     fn solve_contact_constraints(
         &mut self,
         configuration: StepConfiguration,
-        time_step_ratio: f32,
+        timing: super::config::StepTiming,
+        maybe_failure_injection: Option<super::island::SolveFailureInjection>,
     ) -> Result<Vec<ContactSolve>, ContactSolveFailure> {
-        self.solve_contacts(configuration, time_step_ratio)
+        self.solve_contacts(configuration, timing, maybe_failure_injection)
     }
 
     fn run_contact_hooks<H: StepHook>(
@@ -763,6 +798,9 @@ fn solver_step_error(
         ContactSolveFailure::CapacityExceeded { resource, limit } => {
             StepError::LimitExceeded { resource, limit }
         }
+        ContactSolveFailure::InvalidProxyBounds => StepError::InvalidSolverProxyBounds {
+            contact_transitions: contact_transitions.to_vec(),
+        },
     }
 }
 

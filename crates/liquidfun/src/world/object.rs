@@ -13,16 +13,19 @@ use super::body::{
     AggregateMassError, BodyControlError, BodyDef, BodyMassData, BodyMassResetError, BodySnapshot,
     BodyState, BodyTransformError, BodyType, BodyTypeChangeError, WakePolicy,
 };
-use super::config::{WorldConfiguration, WorldConfigurationError};
+use super::config::{StepTiming, WorldConfiguration, WorldConfigurationError};
 #[cfg(feature = "differential-internals")]
 use super::contact::ContactTransition;
 use super::contact_manager::ContactManager;
-use super::contact_solver::{ContactSolve, ContactSolveFailure};
+use super::contact_solver::{ContactImpulseSolution, ContactSolve, ContactSolveFailure};
 use super::fixture::{
     FixtureBoundsError, FixtureDef, FixtureDestructionError, FixtureMutationError,
     WorldFixtureSnapshot,
 };
-use super::island::{IslandBuildError, IslandLimits, build_islands, solve_islands};
+use super::island::{
+    IslandBuildError, IslandLimits, IslandSolution, IslandSolveParameters, SolveFailureInjection,
+    build_islands, solve_islands,
+};
 use super::proxy::{FixtureProxies, FixtureProxy, PreparedFixtureBounds, PreparedSynchronization};
 use super::step::StepState;
 use crate::collision::{BroadPhase, FilterData, MassData};
@@ -79,6 +82,14 @@ struct Particle {
     maybe_group: Option<ParticleGroupId>,
 }
 
+struct WorldStepCandidate {
+    body_states: Vec<(BodyId, BodyState)>,
+    contact_impulses: Vec<ContactImpulseSolution>,
+    contact_solves: Vec<ContactSolve>,
+    synchronizations: Vec<(FixtureId, PreparedSynchronization)>,
+    timing: StepTiming,
+}
+
 fn contact_solve_build_error(error: IslandBuildError) -> ContactSolveFailure {
     match error {
         IslandBuildError::CapacityExceeded { resource, limit } => {
@@ -86,6 +97,19 @@ fn contact_solve_build_error(error: IslandBuildError) -> ContactSolveFailure {
         }
         IslandBuildError::InvalidGraph => ContactSolveFailure::UnsupportedTopology,
     }
+}
+
+fn maybe_solution_body_state(solutions: &[IslandSolution], body_id: BodyId) -> Option<BodyState> {
+    for solution in solutions {
+        let maybe_index = solution
+            .body_ids
+            .iter()
+            .position(|candidate| *candidate == body_id);
+        if let Some(index) = maybe_index {
+            return solution.body_states.get(index).copied();
+        }
+    }
+    None
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -1699,8 +1723,20 @@ impl World {
     pub(super) fn solve_contacts(
         &mut self,
         configuration: super::config::StepConfiguration,
-        time_step_ratio: f32,
+        timing: StepTiming,
+        maybe_failure_injection: Option<SolveFailureInjection>,
     ) -> Result<Vec<ContactSolve>, ContactSolveFailure> {
+        let candidate =
+            self.prepare_world_step_candidate(configuration, timing, maybe_failure_injection)?;
+        Ok(self.commit_world_step_candidate(candidate))
+    }
+
+    fn prepare_world_step_candidate(
+        &self,
+        configuration: super::config::StepConfiguration,
+        timing: StepTiming,
+        maybe_failure_injection: Option<SolveFailureInjection>,
+    ) -> Result<WorldStepCandidate, ContactSolveFailure> {
         let islands = build_islands(
             &self.body_order,
             &self.bodies,
@@ -1712,30 +1748,109 @@ impl World {
             &islands,
             &self.contact_manager,
             &self.fixtures,
-            self.gravity(),
-            configuration,
-            time_step_ratio,
-            self.is_warm_starting_enabled(),
+            IslandSolveParameters::new(
+                self.gravity(),
+                configuration,
+                timing.time_step_ratio(),
+                self.is_warm_starting_enabled(),
+                maybe_failure_injection,
+            ),
         )?;
 
-        for solution in &solutions {
-            for (body_id, state) in solution.body_ids.iter().zip(&solution.body_states) {
-                self.bodies
-                    .get_mut(*body_id)
-                    .expect("staged island body remains live during commit")
-                    .state = *state;
+        let mut body_states = Vec::new();
+        body_states
+            .try_reserve_exact(self.body_order.len())
+            .map_err(|_| ContactSolveFailure::CapacityExceeded {
+                resource: "world step body candidates",
+                limit: self.body_order.len(),
+            })?;
+        for body_id in &self.body_order {
+            if let Some(state) = maybe_solution_body_state(&solutions, *body_id) {
+                body_states.push((*body_id, state));
             }
         }
-        let mut reports = Vec::new();
+
+        let contact_count = solutions
+            .iter()
+            .map(|solution| solution.contact_impulses.len())
+            .sum();
+        let mut contact_impulses = Vec::new();
+        contact_impulses
+            .try_reserve_exact(contact_count)
+            .map_err(|_| ContactSolveFailure::CapacityExceeded {
+                resource: "world step contact impulses",
+                limit: contact_count,
+            })?;
         for solution in solutions {
-            for contact in solution.contact_impulses {
-                reports.push(
-                    self.contact_manager
-                        .commit_impulses(contact.contact_index, &contact.impulses),
-                );
-            }
+            contact_impulses.extend(solution.contact_impulses);
         }
-        Ok(reports)
+
+        let mut contact_solves = Vec::new();
+        contact_solves
+            .try_reserve_exact(contact_impulses.len())
+            .map_err(|_| ContactSolveFailure::CapacityExceeded {
+                resource: "world step contact reports",
+                limit: contact_impulses.len(),
+            })?;
+        for contact in &contact_impulses {
+            let maybe_solve = self
+                .contact_manager
+                .maybe_staged_solve(contact.contact_index, &contact.impulses);
+            let Some(solve) = maybe_solve else {
+                return Err(ContactSolveFailure::UnsupportedTopology);
+            };
+            contact_solves.push(solve);
+        }
+
+        let mut synchronizations = Vec::new();
+        for (body_id, state) in &body_states {
+            let body = self
+                .bodies
+                .get(*body_id)
+                .map_err(|_| ContactSolveFailure::UnsupportedTopology)?;
+            if state.snapshot().body_type() == BodyType::Static || !state.snapshot().is_active() {
+                continue;
+            }
+            if let Some(SolveFailureInjection::ProxyBounds { fixture }) = maybe_failure_injection
+                && body.fixtures.contains(&fixture)
+            {
+                return Err(ContactSolveFailure::InvalidProxyBounds);
+            }
+            let prepared = self
+                .prepare_body_synchronizations(
+                    *body_id,
+                    &body.fixtures,
+                    body.state.transform(),
+                    state.transform(),
+                )
+                .map_err(|_error| ContactSolveFailure::InvalidProxyBounds)?;
+            synchronizations.extend(prepared);
+        }
+
+        Ok(WorldStepCandidate {
+            body_states,
+            contact_impulses,
+            contact_solves,
+            synchronizations,
+            timing,
+        })
+    }
+
+    fn commit_world_step_candidate(&mut self, candidate: WorldStepCandidate) -> Vec<ContactSolve> {
+        for (body_id, state) in candidate.body_states {
+            self.bodies
+                .get_mut(body_id)
+                .expect("staged island body remains live during commit")
+                .state = state;
+        }
+        for contact in candidate.contact_impulses {
+            self.contact_manager
+                .commit_impulses(contact.contact_index, &contact.impulses);
+        }
+        self.apply_body_synchronizations(candidate.synchronizations);
+        self.find_new_contacts();
+        self.commit_step_timing(candidate.timing);
+        candidate.contact_solves
     }
 
     pub(super) fn preflight_contact_solver(&self) -> Result<(), ContactSolveFailure> {

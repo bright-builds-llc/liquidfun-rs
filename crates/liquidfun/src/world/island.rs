@@ -43,6 +43,39 @@ pub(super) enum IslandBuildError {
     InvalidGraph,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum SolveFailureInjection {
+    LateIsland { solved_islands: usize },
+    ProxyBounds { fixture: FixtureId },
+}
+
+#[derive(Debug, Clone, Copy)]
+pub(super) struct IslandSolveParameters {
+    gravity: Vec2,
+    configuration: StepConfiguration,
+    time_step_ratio: f32,
+    warm_starting: bool,
+    maybe_failure_injection: Option<SolveFailureInjection>,
+}
+
+impl IslandSolveParameters {
+    pub(super) const fn new(
+        gravity: Vec2,
+        configuration: StepConfiguration,
+        time_step_ratio: f32,
+        warm_starting: bool,
+        maybe_failure_injection: Option<SolveFailureInjection>,
+    ) -> Self {
+        Self {
+            gravity,
+            configuration,
+            time_step_ratio,
+            warm_starting,
+            maybe_failure_injection,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub(super) struct IslandPosition {
     pub(super) position: Vec2,
@@ -230,10 +263,7 @@ pub(super) fn solve_islands(
     islands: &[Island],
     contact_manager: &ContactManager,
     fixtures: &Arena<Fixture, FixtureId>,
-    gravity: Vec2,
-    configuration: StepConfiguration,
-    time_step_ratio: f32,
-    warm_starting: bool,
+    parameters: IslandSolveParameters,
 ) -> Result<Vec<IslandSolution>, ContactSolveFailure> {
     let mut solutions = Vec::new();
     solutions.try_reserve_exact(islands.len()).map_err(|_| {
@@ -302,23 +332,37 @@ pub(super) fn solve_islands(
         let solved = solve_island_constraints(
             &island.body_states,
             &inputs,
-            gravity,
-            configuration,
-            time_step_ratio,
-            warm_starting,
+            parameters.gravity,
+            parameters.configuration,
+            parameters.time_step_ratio,
+            parameters.warm_starting,
         )?;
         let mut body_states = island.body_states.clone();
         if body_states.len() != solved.motions.len() {
             return Err(ContactSolveFailure::UnsupportedTopology);
         }
         for (state, motion) in body_states.iter_mut().zip(solved.motions) {
-            state.set_solver_state(motion.position, motion.angle, motion.linear, motion.angular);
+            *state = state
+                .candidate_set_solver_state(
+                    motion.position,
+                    motion.angle,
+                    motion.linear,
+                    motion.angular,
+                )
+                .map_err(|_error| ContactSolveFailure::NonFinite)?;
         }
         solutions.push(IslandSolution {
             body_ids: island.body_ids.clone(),
             body_states,
             contact_impulses: solved.contact_impulses,
         });
+        if matches!(
+            parameters.maybe_failure_injection,
+            Some(SolveFailureInjection::LateIsland { solved_islands })
+                if solutions.len() == solved_islands
+        ) {
+            return Err(ContactSolveFailure::NonFinite);
+        }
     }
     Ok(solutions)
 }

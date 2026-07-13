@@ -203,6 +203,16 @@ impl ContactManager {
         ContactSolve::new(contact.snapshot())
     }
 
+    pub(super) fn maybe_staged_solve(
+        &self,
+        contact_index: usize,
+        impulses: &[(crate::collision::ContactFeatureId, f32, f32)],
+    ) -> Option<ContactSolve> {
+        self.contacts
+            .get(contact_index)
+            .map(|contact| ContactSolve::new(contact.staged_snapshot(impulses)))
+    }
+
     fn add_pair(
         &mut self,
         first_proxy: FixtureProxy,

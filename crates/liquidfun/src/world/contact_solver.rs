@@ -33,6 +33,7 @@ impl ContactSolve {
 pub(super) enum ContactSolveFailure {
     UnsupportedTopology,
     NonFinite,
+    InvalidProxyBounds,
     CapacityExceeded {
         resource: &'static str,
         limit: usize,

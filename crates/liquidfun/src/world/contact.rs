@@ -193,6 +193,24 @@ impl Contact {
         }
     }
 
+    pub(super) fn staged_snapshot(
+        &self,
+        impulses: &[(ContactFeatureId, f32, f32)],
+    ) -> ManagedContactSnapshot {
+        let mut snapshot = self.snapshot();
+        for (feature_id, normal_impulse, tangent_impulse) in impulses {
+            let maybe_point = snapshot
+                .points
+                .iter_mut()
+                .find(|point| point.feature_id == *feature_id);
+            if let Some(point) = maybe_point {
+                point.normal_impulse = *normal_impulse;
+                point.tangent_impulse = *tangent_impulse;
+            }
+        }
+        snapshot
+    }
+
     pub(super) fn other_body(&self, body: BodyId) -> Option<BodyId> {
         if self.key.first.body == body {
             return Some(self.key.second.body);

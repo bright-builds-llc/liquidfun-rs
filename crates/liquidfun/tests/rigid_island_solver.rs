@@ -2,9 +2,11 @@
 
 use liquidfun::collision::{CircleShape, FilterData, PolygonShape, Shape};
 use liquidfun::math::Vec2;
+#[cfg(feature = "differential-internals")]
+use liquidfun::rigid_differential::RigidStepFailureInjection;
 use liquidfun::{
-    BodyDef, BodyId, BodyType, FixtureDef, StepConfiguration, StepHook, StepLimits, WakePolicy,
-    World,
+    BodyDef, BodyId, BodyType, FixtureDef, StepConfiguration, StepError, StepHook, StepLimits,
+    WakePolicy, World,
 };
 
 #[derive(Default)]
@@ -361,4 +363,133 @@ fn constraints_disabled_warm_start_still_stores_new_impulses() {
     assert!(point.normal_impulse() > 0.0);
     assert!(point.normal_impulse().is_finite());
     assert!(point.tangent_impulse().is_finite());
+}
+
+#[test]
+fn atomic_successful_step_synchronizes_proxies_before_finding_new_contacts() {
+    // Arrange
+    let mut world = World::new().expect("world key should remain available");
+    let moving_definition = body_definition(BodyType::Dynamic, Vec2::ZERO)
+        .with_linear_velocity(Vec2::new(4.0, 0.0))
+        .expect("moving velocity should be valid");
+    let moving = world
+        .create_body(&moving_definition)
+        .expect("moving body should fit");
+    let boundary = create_body(&mut world, BodyType::Static, Vec2::new(3.5, 0.0));
+    let _moving_fixture = attach_circle(&mut world, moving);
+    let _boundary_fixture = attach_circle(&mut world, boundary);
+    let mut hook = NoopHook;
+
+    // Act
+    let report = world
+        .step(step_configuration(0.5), &mut hook, StepLimits::default())
+        .expect("moving island should commit and synchronize");
+
+    // Assert
+    assert!(report.contact_transitions().is_empty());
+    assert_eq!(world.contact_count(), 1);
+    assert_eq!(
+        world
+            .body_snapshot(moving)
+            .expect("moving body should remain live")
+            .position()
+            .x
+            .to_bits(),
+        2.0_f32.to_bits()
+    );
+}
+
+#[cfg(feature = "differential-internals")]
+#[test]
+fn atomic_late_island_failure_preserves_every_body_and_impulse_lane() {
+    // Arrange
+    let mut world = two_disconnected_contact_islands();
+    let mut hook = NoopHook;
+    world
+        .step(step_configuration(0.0), &mut hook, StepLimits::default())
+        .expect("zero step should discover both contact islands");
+    let body_ids = world.rigid_body_order_diagnostic();
+    for body in &body_ids {
+        let snapshot = world
+            .body_snapshot(*body)
+            .expect("diagnostic body should remain live");
+        if snapshot.body_type() == BodyType::Dynamic {
+            world
+                .set_body_linear_velocity(*body, Vec2::new(-2.0, 0.0))
+                .expect("impact velocity should be valid");
+        }
+    }
+    let bodies_before = body_ids
+        .iter()
+        .map(|body| world.body_snapshot(*body).expect("body should remain live"))
+        .collect::<Vec<_>>();
+    let contacts_before = world.rigid_contact_diagnostics();
+    let limits = StepLimits::default()
+        .with_rigid_failure_injection(RigidStepFailureInjection::LateIsland { solved_islands: 1 });
+
+    // Act
+    let result = world.step(step_configuration(1.0 / 60.0), &mut hook, limits);
+
+    // Assert
+    assert!(matches!(
+        result,
+        Err(StepError::NonFiniteSolverState { .. })
+    ));
+    assert_eq!(
+        body_ids
+            .iter()
+            .map(|body| world.body_snapshot(*body).expect("body should remain live"))
+            .collect::<Vec<_>>(),
+        bodies_before
+    );
+    assert_eq!(world.rigid_contact_diagnostics(), contacts_before);
+}
+
+#[cfg(feature = "differential-internals")]
+#[test]
+fn atomic_proxy_bound_failure_preserves_motion_impulses_and_contact_topology() {
+    // Arrange
+    let mut world = World::new().expect("world key should remain available");
+    let moving_definition = body_definition(BodyType::Dynamic, Vec2::ZERO)
+        .with_linear_velocity(Vec2::new(2.0, 0.0))
+        .expect("moving velocity should be valid");
+    let moving = world
+        .create_body(&moving_definition)
+        .expect("moving body should fit");
+    let fixture = attach_circle(&mut world, moving);
+    let body_before = world
+        .body_snapshot(moving)
+        .expect("moving body should remain live");
+    let contacts_before = world.rigid_contact_diagnostics();
+    let limits = StepLimits::default()
+        .with_rigid_failure_injection(RigidStepFailureInjection::ProxyBounds { fixture });
+    let mut hook = NoopHook;
+
+    // Act
+    let result = world.step(step_configuration(0.25), &mut hook, limits);
+
+    // Assert
+    assert!(matches!(
+        result,
+        Err(StepError::InvalidSolverProxyBounds { .. })
+    ));
+    assert_eq!(
+        world
+            .body_snapshot(moving)
+            .expect("moving body should remain live"),
+        body_before
+    );
+    assert_eq!(world.rigid_contact_diagnostics(), contacts_before);
+    assert_eq!(world.contact_count(), 0);
+}
+
+fn two_disconnected_contact_islands() -> World {
+    let mut world = World::new().expect("world key should remain available");
+    for offset in [0.0, 10.0] {
+        let boundary = create_body(&mut world, BodyType::Static, Vec2::new(offset, 0.0));
+        let dynamic = create_body(&mut world, BodyType::Dynamic, Vec2::new(offset + 1.5, 0.0));
+        let _boundary_fixture = attach_circle(&mut world, boundary);
+        let _dynamic_fixture = attach_circle(&mut world, dynamic);
+    }
+    world
 }

@@ -1,7 +1,22 @@
 //! Owned diagnostics reserved for the unpublished rigid-world differential harness.
 
 use crate::math::Vec2;
-use crate::{BodyId, BodySnapshot, ManagedContactSnapshot};
+use crate::{BodyId, BodySnapshot, FixtureId, ManagedContactSnapshot};
+
+/// Bounded failure injection used only to prove transactional world stepping.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RigidStepFailureInjection {
+    /// Reject after this many island solutions have been staged.
+    LateIsland {
+        /// Number of successfully staged island solutions before rejection.
+        solved_islands: usize,
+    },
+    /// Reject the staged broad-phase synchronization for one fixture.
+    ProxyBounds {
+        /// Fixture whose prepared synchronization is rejected.
+        fixture: FixtureId,
+    },
+}
 
 /// Owned body state needed to compare the bounded Phase 6 solver witness.
 #[derive(Debug, Clone, Copy, PartialEq)]
