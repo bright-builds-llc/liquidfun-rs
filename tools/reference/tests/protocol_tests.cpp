@@ -552,10 +552,12 @@ void rigid_world_rejects_invalid_derived_ray_geometry_before_execution() {
 
 void rigid_world_rejects_invalid_selector_children_before_execution() {
   // Arrange and Act / Assert
-  for (const auto& [action_id, context] :
+  for (const auto& test_case :
        std::array<std::pair<std::string, std::string>, 2>{
            std::pair{"query-07", "query directive"},
            std::pair{"query-11", "ray directive"}}) {
+    const auto& action_id = test_case.first;
+    const auto& context = test_case.second;
     auto request = nlohmann::json::parse(read_fixture(
         "protocol/fixtures/accepted/rigid-world-request.jsonl"));
     auto& actions = query_timeline(request).at("actions");
