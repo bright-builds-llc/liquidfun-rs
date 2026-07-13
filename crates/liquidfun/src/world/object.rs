@@ -310,6 +310,7 @@ impl DestructionRecord {
 /// newest-first list order; particle-system categories preserve creation/occurrence order.
 pub struct World {
     bodies: Arena<Body, BodyId>,
+    body_order: Vec<BodyId>,
     fixtures: Arena<Fixture, FixtureId>,
     joints: Arena<Joint, JointId>,
     particle_systems: Arena<ParticleSystem, ParticleSystemId>,
@@ -332,6 +333,7 @@ impl World {
         let world = WorldKey::fresh()?;
         Ok(Self {
             bodies: Arena::new(world, usize::MAX),
+            body_order: Vec::new(),
             fixtures: Arena::new(world, usize::MAX),
             joints: Arena::new(world, usize::MAX),
             particle_systems: Arena::new(world, usize::MAX),
@@ -366,7 +368,7 @@ impl World {
     pub fn create_body(&mut self, definition: &BodyDef) -> Result<BodyId, ArenaInsertError> {
         self.ensure_not_poisoned_for_insert()?;
         let diagnostic_id = self.allocate_diagnostic_id()?;
-        self.bodies.insert(Body {
+        let body = self.bodies.insert(Body {
             diagnostic_id,
             state: BodyState::from_definition(definition),
             fixtures: Vec::new(),
@@ -374,7 +376,10 @@ impl World {
             contacts: Vec::new(),
             pending_contact_destruction: false,
             pending_wake: false,
-        })
+        })?;
+        self.body_order.insert(0, body);
+        self.debug_assert_body_order_invariant();
+        Ok(body)
     }
 
     /// Returns an owned semantic snapshot of a live body.
@@ -870,6 +875,14 @@ impl World {
         self.contact_manager.rigid_diagnostics()
     }
 
+    /// Copies body identities in exact pinned newest-first world-list order.
+    #[cfg(feature = "differential-internals")]
+    #[doc(hidden)]
+    #[must_use]
+    pub fn rigid_body_order_diagnostic(&self) -> Vec<BodyId> {
+        self.body_order.clone()
+    }
+
     /// Drains owned contact transitions produced outside [`World::step`].
     #[cfg(feature = "differential-internals")]
     #[doc(hidden)]
@@ -1346,6 +1359,8 @@ impl World {
             .bodies
             .remove(body)
             .expect("validated destruction root and adjacency remain live");
+        remove_occurrence(&mut self.body_order, &body);
+        self.debug_assert_body_order_invariant();
         DestructionRecord {
             destroyed: DestroyedId::Body(body),
             diagnostic_id: removed.diagnostic_id,
@@ -1752,6 +1767,20 @@ impl World {
         self.bodies
             .get_mut(body)
             .expect("validated body remains live during one operation")
+    }
+
+    fn debug_assert_body_order_invariant(&self) {
+        debug_assert_eq!(self.body_order.len(), self.bodies.iter().count());
+        debug_assert!(
+            self.body_order
+                .iter()
+                .all(|body| self.bodies.get(*body).is_ok())
+        );
+        debug_assert!(self.body_order.iter().enumerate().all(|(index, body)| {
+            self.body_order[index + 1..]
+                .iter()
+                .all(|candidate| candidate != body)
+        }));
     }
 
     fn system_mut_after_validation(&mut self, system: ParticleSystemId) -> &mut ParticleSystem {
