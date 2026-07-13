@@ -8,7 +8,11 @@ use evidence::{
     capture_checkpoint, collect_direct_transitions, collect_step_report, observe_step,
     push_object_destruction, remove_destroyed_mapping,
 };
-use model::*;
+use model::{
+    action_error, body_created_witness, body_declaration, body_type, checked_u32,
+    declaration_error, feature, filter_data, fixture_declaration, fixture_definition,
+    native_body_mass_data, rigid_body_kind, rigid_filter, transform_bits, vec2, vec2_bits,
+};
 
 use liquidfun::collision::shape::{CircleShape, PolygonShape};
 use liquidfun::collision::{FeatureKind, FilterData, ManifoldKind, Shape};

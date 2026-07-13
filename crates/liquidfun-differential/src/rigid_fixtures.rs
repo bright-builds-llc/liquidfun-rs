@@ -120,15 +120,15 @@ pub(super) fn replay_rigid_candidate(
     repository_root: &Path,
     directory: std::path::PathBuf,
     metadata: CandidateMetadata,
-    request_bytes: Vec<u8>,
+    request_bytes: &[u8],
     trace_bytes: Vec<u8>,
-    report_bytes: Vec<u8>,
-    identity_bytes: Vec<u8>,
+    report_bytes: &[u8],
+    identity_bytes: &[u8],
     scenario_bytes: Vec<u8>,
 ) -> Result<ReplayedCandidate, FixtureError> {
     let policy = read_policy(repository_root)?;
     let limits = HarnessLimits::phase2_default_v1();
-    let request = decode_rigid_world_request_jsonl(&request_bytes, &limits)
+    let request = decode_rigid_world_request_jsonl(request_bytes, &limits)
         .map_err(|error| FixtureError::Replay(error.to_string()))?;
     if request.tolerance_profile_sha256() != policy.profile_sha256()
         || request.scenario().scenario_id().as_str() != metadata.scenario_id
@@ -142,7 +142,7 @@ pub(super) fn replay_rigid_candidate(
     let (identity, oracle) = validate_rigid_response(
         &request,
         &trace_bytes,
-        &identity_bytes,
+        identity_bytes,
         &metadata.oracle_revision,
         &limits,
     )?;
@@ -173,7 +173,7 @@ pub(super) fn replay_rigid_candidate(
         metadata.artifact_kind,
         &outcome,
         metadata.failure_signature_json.as_deref(),
-        &report_bytes,
+        report_bytes,
     )?;
 
     // Replay and every caller that mutates review/accepted state independently re-check D1.

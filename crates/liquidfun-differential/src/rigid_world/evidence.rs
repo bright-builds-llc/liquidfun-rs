@@ -1,6 +1,15 @@
 //! Checkpoint capture and source-ordered semantic evidence.
 
-use super::*;
+use super::{
+    BodyId, DestroyedId, DestructionCause, DestructionRecord, FixtureId, FloatBits,
+    ManagedContactSnapshot, ManifoldKind, NativeRigidWorldError, Observation, RigidBodyDeclaration,
+    RigidBodySnapshot, RigidContactEvent, RigidContactEventKind, RigidContactResult,
+    RigidDestructionRecord, RigidExpectedCheckpoint, RigidExpectedCounts, RigidFixtureDeclaration,
+    RigidFixtureSnapshot, RigidManifoldKind, RigidManifoldPoint, RigidManifoldResult,
+    RigidWorldTimeline, RigidWorldWitness, ScenarioId, StepReport, TimelineExecutor, Vec2,
+    checked_u32, declaration_error, feature, rigid_body_kind, rigid_filter, transform_bits,
+    vec2_bits,
+};
 
 pub(super) fn capture_checkpoint(
     executor: &mut TimelineExecutor,

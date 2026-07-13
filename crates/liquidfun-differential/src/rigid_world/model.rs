@@ -1,6 +1,12 @@
 //! Closed protocol-to-engine value mapping.
 
-use super::*;
+use super::{
+    BodyMassData, BodyType, CircleShape, FeatureKind, FilterData, FixtureDef, FloatBits,
+    NativeRigidWorldError, PolygonShape, RigidBodyDeclaration, RigidBodyKind, RigidContactFeature,
+    RigidExpectedCheckpoint, RigidFeatureKind, RigidFilterBits, RigidFixtureDeclaration,
+    RigidFixtureShape, RigidWorldActionRecord, RigidWorldTimeline, RigidWorldWitness, ScenarioId,
+    Shape, TransformBits, Vec2, Vec2Bits,
+};
 
 pub(super) fn native_body_mass_data(
     mass_bits: FloatBits,

@@ -90,7 +90,6 @@ impl IdentityRepository {
     }
 
     fn identity(
-        &self,
         adapter_digest: &str,
         compile_digest: &str,
     ) -> Result<BuildIdentity, liquidfun_test_protocol::BuildIdentityError> {
@@ -281,9 +280,9 @@ fn checkout_validator_accepts_current_identity_and_rejects_each_stale_digest()
     let repository = IdentityRepository::new()?;
     let adapter = adapter_source_digest(&repository.root)?;
     let compile = effective_compile_command_sha256(&repository.root, PRESET)?;
-    let current = repository.identity(&adapter, &compile)?;
-    let stale_adapter = repository.identity(&"aa".repeat(32), &compile)?;
-    let stale_compile = repository.identity(&adapter, &"bb".repeat(32))?;
+    let current = IdentityRepository::identity(&adapter, &compile)?;
+    let stale_adapter = IdentityRepository::identity(&"aa".repeat(32), &compile)?;
+    let stale_compile = IdentityRepository::identity(&adapter, &"bb".repeat(32))?;
 
     // Act
     let accepted = validate_oracle_checkout_identity(&repository.root, PRESET, &current);

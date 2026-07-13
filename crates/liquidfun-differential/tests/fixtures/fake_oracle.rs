@@ -244,6 +244,10 @@ fn emit_rigid_behavior(
     Ok(())
 }
 
+#[allow(
+    clippy::too_many_lines,
+    reason = "the fake oracle handshake mirrors one complete protocol identity record"
+)]
 fn rigid_handshake(behavior: &str) -> Result<(Vec<u8>, BuildIdentity), String> {
     let canonical = behavior.starts_with("rigid_d1");
     let repository_root = std::env::current_dir().map_err(|error| error.to_string())?;

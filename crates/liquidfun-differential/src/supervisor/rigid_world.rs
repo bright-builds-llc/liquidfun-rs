@@ -275,7 +275,9 @@ fn decode_end(bytes: &[u8], limits: &HarnessLimits) -> Result<RawEnd, HarnessFai
     }
     let end: RawEnd =
         serde_json::from_slice(bytes).map_err(|_error| HarnessFailureKind::MalformedRecord)?;
-    let _record_kind = &end.record_kind;
+    match end.record_kind {
+        EndKind::RigidWorldEnd => {}
+    }
     Ok(end)
 }
 

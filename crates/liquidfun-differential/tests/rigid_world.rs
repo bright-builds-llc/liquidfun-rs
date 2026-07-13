@@ -1,5 +1,9 @@
 //! Native Phase 6 rigid-world adapter integration tests.
 
+#[path = "support/phase7_comparator.rs"]
+mod phase7_comparator;
+mod support;
+
 use std::fs;
 use std::process::Command;
 use std::time::Duration;
@@ -47,54 +51,6 @@ fn comparison_request() -> RigidWorldRequestRecord {
         .expect("profile-bound rigid request should decode")
 }
 
-fn phase7_request() -> RigidWorldRequestRecord {
-    let mut value = serde_json::from_slice::<Value>(REQUEST).expect("fixture should be JSON");
-    let actions = value["scenario"]["timelines"][0]["actions"]
-        .as_array_mut()
-        .expect("fixture actions should be an array");
-    let insert_at = actions
-        .iter()
-        .position(|record| record["action"]["kind"] == "destroy_fixture")
-        .expect("fixture should contain destruction actions");
-    let vector = json!({ "x_bits": 1.0_f32.to_bits(), "y_bits": 0.0_f32.to_bits() });
-    let phase7_actions = [
-        json!({ "kind": "set_linear_velocity", "body_id": "nc-dynamic", "velocity": vector }),
-        json!({ "kind": "set_angular_velocity", "body_id": "nc-dynamic", "angular_velocity_bits": 0.5_f32.to_bits() }),
-        json!({ "kind": "apply_force", "body_id": "nc-dynamic", "force": vector, "point": vector, "wake_policy": "wake" }),
-        json!({ "kind": "apply_torque", "body_id": "nc-dynamic", "torque_bits": 0.25_f32.to_bits(), "wake_policy": "preserve_sleep" }),
-        json!({ "kind": "apply_linear_impulse", "body_id": "nc-dynamic", "impulse": vector, "point": vector, "wake_policy": "wake" }),
-        json!({ "kind": "apply_angular_impulse", "body_id": "nc-dynamic", "impulse_bits": 0.25_f32.to_bits(), "wake_policy": "preserve_sleep" }),
-        json!({ "kind": "set_body_damping", "body_id": "nc-dynamic", "linear_damping_bits": 0.1_f32.to_bits(), "angular_damping_bits": 0.2_f32.to_bits() }),
-        json!({ "kind": "set_gravity_scale", "body_id": "nc-dynamic", "gravity_scale_bits": 0.75_f32.to_bits() }),
-        json!({ "kind": "set_fixed_rotation", "body_id": "nc-dynamic", "fixed_rotation": true }),
-        json!({ "kind": "set_sleeping_allowed", "body_id": "nc-dynamic", "sleeping_allowed": true }),
-        json!({ "kind": "set_awake", "body_id": "nc-dynamic", "awake": true }),
-        json!({ "kind": "set_bullet", "body_id": "nc-dynamic", "bullet": true }),
-        json!({ "kind": "set_world_gravity", "gravity": { "x_bits": 0.0_f32.to_bits(), "y_bits": (-10.0_f32).to_bits() } }),
-        json!({ "kind": "set_automatic_force_clearing", "enabled": false }),
-        json!({ "kind": "set_warm_starting", "enabled": false }),
-        json!({ "kind": "set_continuous_physics", "enabled": true }),
-        json!({ "kind": "set_sub_stepping", "enabled": false }),
-        json!({ "kind": "clear_forces" }),
-        json!({ "kind": "configured_step", "timestep_bits": (1.0_f32 / 60.0).to_bits(), "velocity_iterations": 8, "position_iterations": 3, "continuous_work_budget": 64 }),
-        json!({ "kind": "query_aabb", "aabb": { "lower": { "x_bits": (-100.0_f32).to_bits(), "y_bits": (-100.0_f32).to_bits() }, "upper": { "x_bits": 100.0_f32.to_bits(), "y_bits": 100.0_f32.to_bits() } }, "directive_rules": [] }),
-        json!({ "kind": "ray_cast", "start": { "x_bits": (-100.0_f32).to_bits(), "y_bits": 0.0_f32.to_bits() }, "end": { "x_bits": 100.0_f32.to_bits(), "y_bits": 0.0_f32.to_bits() }, "directive_rules": [] }),
-        json!({ "kind": "shift_origin", "shift": vector }),
-    ];
-    for (index, action) in phase7_actions.into_iter().enumerate().rev() {
-        actions.insert(
-            insert_at,
-            json!({
-                "action_id": format!("phase7-action-{index}"),
-                "phase": "phase7-adapter",
-                "action": action,
-            }),
-        );
-    }
-    decode_rigid_world_request_jsonl(&encode_value(&value), &HarnessLimits::phase2_default_v1())
-        .expect("closed Phase 7 adapter request should decode")
-}
-
 fn decode_result_value(value: &Value) -> RigidWorldResultRecord {
     decode_rigid_world_result_jsonl(&encode_value(value), &HarnessLimits::phase2_default_v1())
         .expect("mutated result should remain internally valid")
@@ -140,7 +96,7 @@ fn native_contract_executes_the_exact_fixed_step_tuple() {
 #[test]
 fn native_executes_closed_phase7_actions_and_emits_semantic_observations() {
     // Arrange
-    let request = phase7_request();
+    let request = support::phase7_request();
 
     // Act
     let result = NativeRigidWorldExecutor::execute(&request)
@@ -177,7 +133,7 @@ fn oracle_executes_closed_phase7_actions_and_emits_semantic_observations() {
     let Ok(executable) = OracleExecutable::resolve(&root, OraclePreset::Debug) else {
         return;
     };
-    let request = phase7_request();
+    let request = support::phase7_request();
 
     // Act
     let captured = execute_rigid_world_process(&executable, &request, REVISION)

@@ -509,8 +509,9 @@ impl RigidReductionState {
 
 /// Minimizes timeline actions while retaining request validity and one exact rigid signature.
 ///
-/// Required witness families, declaration identities, transition witnesses, lifecycle order,
-/// checkpoint references, and bounds are preserved by decoding every candidate through the
+/// The divergent action and its same-timeline setup prefix remain bit-identical. Required witness
+/// families, declaration identities, transition witnesses, lifecycle order, checkpoint
+/// references, and bounds are additionally preserved by decoding every candidate through the
 /// strict rigid request boundary before evaluation.
 ///
 /// # Errors
@@ -541,7 +542,7 @@ where
     }
 
     loop {
-        let transforms = rigid_candidate_transforms(&state.request);
+        let transforms = rigid_candidate_transforms(&state.request, target);
         let mut accepted = false;
         for transform in transforms {
             if state.attempts >= budget.max_attempts {
@@ -583,15 +584,25 @@ where
     }
 }
 
-fn rigid_candidate_transforms(request: &RigidWorldRequestRecord) -> Vec<RigidScenarioTransform> {
+fn rigid_candidate_transforms(
+    request: &RigidWorldRequestRecord,
+    target: &RigidFailureSignature,
+) -> Vec<RigidScenarioTransform> {
     request
         .scenario()
         .timelines()
         .iter()
         .enumerate()
         .flat_map(|(timeline_index, timeline)| {
+            let maybe_protected_prefix_end = timeline
+                .actions()
+                .iter()
+                .position(|action| action.action_id().as_str() == target.action_id());
             removal_ranges(timeline.actions().len())
                 .into_iter()
+                .filter(move |(start, _end)| {
+                    maybe_protected_prefix_end.is_none_or(|protected| *start > protected)
+                })
                 .map(move |(start, end)| RigidScenarioTransform::RemoveActions {
                     timeline_index,
                     start,

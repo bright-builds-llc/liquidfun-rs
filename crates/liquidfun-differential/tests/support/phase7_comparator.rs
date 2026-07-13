@@ -1,0 +1,242 @@
+use std::time::Duration;
+
+use liquidfun_differential::{
+    MinimizationBudget, NativeRigidWorldExecutor, RigidComparisonOutcome, RigidEvaluation,
+    RigidMismatchKind, compare_phase7_rigid_world_results, minimize_rigid_world_request,
+};
+use liquidfun_test_protocol::{
+    FieldComparison, HarnessLimits, Phase6PolicyProfile, Phase7PolicyProfile,
+    RigidWorldRequestRecord, RigidWorldResultRecord, decode_rigid_world_result_jsonl,
+};
+use serde_json::{Value, json};
+
+const PHASE6_POLICY: &str = include_str!("../../../../protocol/tolerances/phase6-v1.toml");
+const PHASE7_POLICY: &str = include_str!("../../../../protocol/tolerances/phase7-v1.toml");
+
+fn profiles() -> (Phase6PolicyProfile, Phase7PolicyProfile) {
+    (
+        Phase6PolicyProfile::parse_toml(PHASE6_POLICY)
+            .expect("checked-in Phase 6 policy should validate"),
+        Phase7PolicyProfile::parse_toml(PHASE7_POLICY)
+            .expect("checked-in Phase 7 policy should validate"),
+    )
+}
+
+fn request(profile: &Phase7PolicyProfile) -> RigidWorldRequestRecord {
+    crate::support::phase7_request_with_profile(Some(profile.profile_sha256()))
+}
+
+fn decode_result(value: &Value) -> RigidWorldResultRecord {
+    let mut bytes = serde_json::to_vec(value).expect("result mutation should encode");
+    bytes.push(b'\n');
+    decode_rigid_world_result_jsonl(&bytes, &HarnessLimits::phase2_default_v1())
+        .expect("bounded semantic result mutation should decode")
+}
+
+fn phase7_observations(value: &mut Value) -> &mut Vec<Value> {
+    value["timelines"][0]["checkpoints"][6]["observations"]
+        .as_array_mut()
+        .expect("Phase 7 checkpoint should contain observations")
+}
+
+fn observation_mut<'a>(observations: &'a mut [Value], kind: &str) -> &'a mut Value {
+    observations
+        .iter_mut()
+        .find(|observation| observation["kind"] == kind)
+        .expect("requested Phase 7 observation should exist")
+}
+
+#[test]
+fn rigid_comparator_treats_queries_as_multiplicity_preserving_multisets() {
+    // Arrange
+    let (phase6, phase7) = profiles();
+    let request = request(&phase7);
+    let baseline = NativeRigidWorldExecutor::execute(&request)
+        .expect("profile-bound Phase 7 request should execute");
+    let mut native_value = serde_json::to_value(&baseline).expect("result should serialize");
+    let query = observation_mut(phase7_observations(&mut native_value), "query");
+    let occurrences = query["observation"]["occurrences"]
+        .as_array_mut()
+        .expect("query occurrences should be an array");
+    let duplicate = occurrences[0].clone();
+    occurrences.push(duplicate);
+    let native = decode_result(&native_value);
+    let mut oracle_value = native_value.clone();
+    oracle_value["timelines"][0]["checkpoints"][6]["observations"]
+        .as_array_mut()
+        .expect("observations should be an array")
+        .iter_mut()
+        .find(|observation| observation["kind"] == "query")
+        .expect("query should exist")["observation"]["occurrences"]
+        .as_array_mut()
+        .expect("query occurrences should be an array")
+        .reverse();
+    let oracle = decode_result(&oracle_value);
+
+    // Act
+    let reordered =
+        compare_phase7_rigid_world_results(&request, &native, &oracle, &phase6, &phase7)
+            .expect("registered Phase 7 fields should compare");
+    let occurrences = observation_mut(phase7_observations(&mut oracle_value), "query")
+        ["observation"]["occurrences"]
+        .as_array_mut()
+        .expect("query occurrences should be an array");
+    occurrences.pop();
+    let missing_duplicate = compare_phase7_rigid_world_results(
+        &request,
+        &native,
+        &decode_result(&oracle_value),
+        &phase6,
+        &phase7,
+    )
+    .expect("registered Phase 7 fields should compare");
+
+    // Assert
+    assert_eq!(reordered, RigidComparisonOutcome::Match);
+    let RigidComparisonOutcome::PhysicsMismatch(report) = missing_duplicate else {
+        panic!("removing one duplicate occurrence must mismatch");
+    };
+    assert_eq!(report.kind(), RigidMismatchKind::Order);
+    assert_eq!(
+        report.semantic_path(),
+        "rigid_world.phase7.query.occurrences.identity"
+    );
+}
+
+#[test]
+fn rigid_comparator_reports_action_stage_values_policy_and_completion_context() {
+    // Arrange
+    let (phase6, phase7) = profiles();
+    let request = request(&phase7);
+    let native = NativeRigidWorldExecutor::execute(&request)
+        .expect("profile-bound Phase 7 request should execute");
+    let mut oracle_value = serde_json::to_value(&native).expect("result should serialize");
+    let step = observation_mut(phase7_observations(&mut oracle_value), "step");
+    step["outcome"]["completion"] = json!("continuous_pending");
+    let oracle = decode_result(&oracle_value);
+
+    // Act
+    let outcome = compare_phase7_rigid_world_results(&request, &native, &oracle, &phase6, &phase7)
+        .expect("registered Phase 7 fields should compare");
+
+    // Assert
+    let RigidComparisonOutcome::PhysicsMismatch(report) = outcome else {
+        panic!("completion mutation must mismatch");
+    };
+    assert_eq!(report.action_id(), "phase7-action-18");
+    assert_eq!(report.stage(), "phase7-adapter");
+    assert_eq!(report.maybe_entity(), None);
+    assert_eq!(report.semantic_path(), "rigid_world.phase7.step.completion");
+    assert_eq!(report.expected(), "Complete");
+    assert_eq!(report.actual(), "ContinuousPending");
+    assert_eq!(report.policy().comparison(), FieldComparison::ExactDiscrete);
+    assert!(report.maybe_completion_context().is_some());
+}
+
+#[test]
+fn rigid_comparator_compares_equal_minimum_ray_identities_as_sets() {
+    // Arrange
+    let (phase6, phase7) = profiles();
+    let request = request(&phase7);
+    let baseline = NativeRigidWorldExecutor::execute(&request)
+        .expect("profile-bound Phase 7 request should execute");
+    let mut native_value = serde_json::to_value(&baseline).expect("result should serialize");
+    let ray = observation_mut(phase7_observations(&mut native_value), "ray_cast");
+    ray["observation"]["hits"] = json!([
+        {
+            "fixture_id": "nc-static-fixture",
+            "child_index": 0,
+            "point": { "x_bits": 0.0_f32.to_bits(), "y_bits": 0.0_f32.to_bits() },
+            "normal": { "x_bits": 1.0_f32.to_bits(), "y_bits": 0.0_f32.to_bits() },
+            "fraction_bits": 0.5_f32.to_bits()
+        },
+        {
+            "fixture_id": "nc-dynamic-fixture",
+            "child_index": 0,
+            "point": { "x_bits": 0.0_f32.to_bits(), "y_bits": 0.0_f32.to_bits() },
+            "normal": { "x_bits": 1.0_f32.to_bits(), "y_bits": 0.0_f32.to_bits() },
+            "fraction_bits": 0.5_f32.to_bits()
+        }
+    ]);
+    let native = decode_result(&native_value);
+    let mut oracle_value = native_value;
+    observation_mut(phase7_observations(&mut oracle_value), "ray_cast")["observation"]["hits"]
+        .as_array_mut()
+        .expect("ray hits should be an array")
+        .reverse();
+    let oracle = decode_result(&oracle_value);
+
+    // Act
+    let outcome = compare_phase7_rigid_world_results(&request, &native, &oracle, &phase6, &phase7)
+        .expect("registered Phase 7 fields should compare");
+
+    // Assert
+    assert_eq!(outcome, RigidComparisonOutcome::Match);
+}
+
+#[test]
+fn rigid_minimization_preserves_divergent_action_setup_directives_budget_and_bits() {
+    // Arrange
+    let (phase6, phase7) = profiles();
+    let request = request(&phase7);
+    let native = NativeRigidWorldExecutor::execute(&request)
+        .expect("profile-bound Phase 7 request should execute");
+    let mut oracle_value = serde_json::to_value(&native).expect("result should serialize");
+    let ray = observation_mut(phase7_observations(&mut oracle_value), "ray_cast");
+    for hit in ray["observation"]["hits"]
+        .as_array_mut()
+        .expect("ray hits should be an array")
+    {
+        hit["point"]["x_bits"] = json!(100.0_f32.to_bits());
+    }
+    let oracle = decode_result(&oracle_value);
+    let RigidComparisonOutcome::PhysicsMismatch(report) =
+        compare_phase7_rigid_world_results(&request, &native, &oracle, &phase6, &phase7)
+            .expect("registered Phase 7 fields should compare")
+    else {
+        panic!("ray-point mutation must mismatch");
+    };
+    assert_eq!(report.action_id(), "phase7-action-20");
+    assert!(
+        report
+            .maybe_entity()
+            .is_some_and(|entity| entity.ends_with(":0"))
+    );
+    assert!(report.maybe_expected_bits().is_some());
+    assert!(report.maybe_actual_bits().is_some());
+    assert!(report.maybe_expected_decimal().is_some());
+    assert!(report.maybe_actual_decimal().is_some());
+    assert!(report.maybe_completion_context().is_some());
+    let target = report.signature().clone();
+    let original = serde_json::to_value(&request).expect("request should serialize");
+
+    // Act
+    let result = minimize_rigid_world_request(
+        &request,
+        &target,
+        MinimizationBudget::new(256, Duration::from_secs(1)),
+        |_candidate| RigidEvaluation::new(Some(target.clone()), Duration::from_millis(1)),
+    )
+    .expect("Phase 7 minimization should retain its exact failure class");
+
+    // Assert
+    let minimized = serde_json::to_value(result.request()).expect("request should serialize");
+    for action_id in ["nc-create-dynamic", "phase7-action-18", "phase7-action-20"] {
+        assert_eq!(
+            action(&minimized, action_id),
+            action(&original, action_id),
+            "required setup and divergent operations must remain bit-identical"
+        );
+    }
+    assert_eq!(target.action_id(), "phase7-action-20");
+    assert_eq!(target.kind(), RigidMismatchKind::Numeric);
+}
+
+fn action<'a>(request: &'a Value, action_id: &str) -> &'a Value {
+    request["scenario"]["timelines"][0]["actions"]
+        .as_array()
+        .expect("actions should be an array")
+        .iter()
+        .find(|record| record["action_id"] == action_id)
+        .expect("required action should remain present")
+}

@@ -132,10 +132,10 @@ pub(super) fn replay_candidate(
             repository_root,
             canonical_directory,
             metadata,
-            request_bytes,
+            &request_bytes,
             trace_bytes,
-            report_bytes,
-            identity_bytes,
+            &report_bytes,
+            &identity_bytes,
             scenario_bytes,
         );
     }

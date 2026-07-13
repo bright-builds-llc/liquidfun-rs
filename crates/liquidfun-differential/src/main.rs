@@ -222,6 +222,10 @@ const fn profile_name(profile: SessionProfile) -> &'static str {
     }
 }
 
+#[allow(
+    clippy::too_many_lines,
+    reason = "the fixture CLI keeps its closed option validation and action dispatch together"
+)]
 fn run_fixture(arguments: impl Iterator<Item = String>) -> Result<ExitCode, CliError> {
     let repository_root = env::current_dir()?;
     let mut arguments = arguments;

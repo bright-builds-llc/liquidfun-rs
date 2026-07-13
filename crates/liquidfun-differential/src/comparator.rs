@@ -168,6 +168,35 @@ pub fn exact_values_match<T: PartialEq + ?Sized>(expected: &T, actual: &T) -> bo
     expected == actual
 }
 
+/// Compares collection members without order while preserving every occurrence.
+#[must_use]
+pub fn multiset_values_match<T: PartialEq>(expected: &[T], actual: &[T]) -> bool {
+    if expected.len() != actual.len() {
+        return false;
+    }
+    let mut matched = vec![false; actual.len()];
+    expected.iter().all(|expected_value| {
+        let Some(index) = actual.iter().enumerate().find_map(|(index, actual_value)| {
+            (!matched[index] && expected_value == actual_value).then_some(index)
+        }) else {
+            return false;
+        };
+        matched[index] = true;
+        true
+    })
+}
+
+/// Compares unique collection membership without observing traversal order.
+#[must_use]
+pub fn set_values_match<T: PartialEq>(expected: &[T], actual: &[T]) -> bool {
+    expected
+        .iter()
+        .all(|expected_value| actual.contains(expected_value))
+        && actual
+            .iter()
+            .all(|actual_value| expected.contains(actual_value))
+}
+
 fn first_world_count_difference(
     expected: WorldCounts,
     actual: WorldCounts,

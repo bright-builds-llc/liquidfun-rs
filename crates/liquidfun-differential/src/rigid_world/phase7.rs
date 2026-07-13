@@ -19,6 +19,10 @@ use super::{
     collect_step_report, observe_step, vec2, vec2_bits,
 };
 
+#[allow(
+    clippy::too_many_lines,
+    reason = "the closed protocol action dispatch stays centralized to preserve source ordering"
+)]
 pub(super) fn execute_action(
     executor: &mut TimelineExecutor,
     record: &RigidWorldActionRecord,
