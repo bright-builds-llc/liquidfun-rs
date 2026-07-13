@@ -125,9 +125,6 @@ impl From<AggregateMassError> for BodyControlError {
     }
 }
 
-// Task 2 wires every candidate through the owning world; Task 1 verifies the
-// pure state transition layer before that authority boundary exists.
-#[allow(dead_code)]
 impl BodyState {
     pub(crate) fn candidate_set_linear_velocity(
         mut self,
@@ -567,6 +564,21 @@ mod tests {
     }
 
     #[test]
+    fn wake_policy_wakes_before_a_valid_application() {
+        // Arrange
+        let body = body_state(BodyType::Dynamic, false);
+
+        // Act
+        let candidate = body
+            .candidate_apply_force_to_center(Vec2::new(1.0, 0.0), WakePolicy::Wake)
+            .expect("finite force should be accepted");
+
+        // Assert
+        assert!(candidate.snapshot().is_awake());
+        assert_eq!(candidate.force, Vec2::new(1.0, 0.0));
+    }
+
+    #[test]
     fn nonzero_velocity_wakes_while_zero_velocity_preserves_sleep() {
         // Arrange
         let body = body_state(BodyType::Dynamic, false);
@@ -624,6 +636,38 @@ mod tests {
         // Assert
         assert!(!candidate.snapshot().is_sleeping_allowed());
         assert!(candidate.snapshot().is_awake());
+    }
+
+    #[test]
+    fn passive_controls_preserve_sleep() {
+        // Arrange
+        let body = body_state(BodyType::Dynamic, false);
+
+        // Act
+        let candidate = body
+            .candidate_set_linear_damping(0.25)
+            .expect("finite damping should be accepted")
+            .candidate_set_angular_damping(0.5)
+            .expect("finite damping should be accepted")
+            .candidate_set_gravity_scale(-1.0)
+            .expect("finite gravity scale should be accepted")
+            .candidate_set_bullet(true);
+
+        // Assert
+        assert!(!candidate.snapshot().is_awake());
+        assert_eq!(
+            candidate.snapshot().linear_damping().to_bits(),
+            0.25_f32.to_bits()
+        );
+        assert_eq!(
+            candidate.snapshot().angular_damping().to_bits(),
+            0.5_f32.to_bits()
+        );
+        assert_eq!(
+            candidate.snapshot().gravity_scale().to_bits(),
+            (-1.0_f32).to_bits()
+        );
+        assert!(candidate.snapshot().is_bullet());
     }
 
     #[test]

@@ -10,8 +10,8 @@ use crate::{
 
 use super::body::BodyActivationError;
 use super::body::{
-    AggregateMassError, BodyDef, BodyMassData, BodyMassResetError, BodySnapshot, BodyState,
-    BodyTransformError, BodyType, BodyTypeChangeError,
+    AggregateMassError, BodyControlError, BodyDef, BodyMassData, BodyMassResetError, BodySnapshot,
+    BodyState, BodyTransformError, BodyType, BodyTypeChangeError, WakePolicy,
 };
 #[cfg(feature = "differential-internals")]
 use super::contact::ContactTransition;
@@ -382,6 +382,265 @@ impl World {
     pub fn body_snapshot(&self, body: BodyId) -> Result<BodySnapshot, HandleError> {
         self.ensure_not_poisoned_for_handle()?;
         self.bodies.get(body).map(|record| record.state.snapshot())
+    }
+
+    /// Sets a live body's linear velocity.
+    ///
+    /// A static body accepts this call without changing state. A nonzero
+    /// velocity wakes a non-static body; zero velocity preserves its wake state.
+    ///
+    /// # Errors
+    ///
+    /// Returns a typed error for an invalid handle or non-finite velocity.
+    pub fn set_body_linear_velocity(
+        &mut self,
+        body: BodyId,
+        velocity: Vec2,
+    ) -> Result<(), BodyControlError> {
+        self.update_body_state(body, |state| state.candidate_set_linear_velocity(velocity))
+    }
+
+    /// Sets a live body's angular velocity.
+    ///
+    /// A static body accepts this call without changing state. A nonzero
+    /// velocity wakes a non-static body; zero velocity preserves its wake state.
+    ///
+    /// # Errors
+    ///
+    /// Returns a typed error for an invalid handle or non-finite velocity.
+    pub fn set_body_angular_velocity(
+        &mut self,
+        body: BodyId,
+        angular_velocity: f32,
+    ) -> Result<(), BodyControlError> {
+        self.update_body_state(body, |state| {
+            state.candidate_set_angular_velocity(angular_velocity)
+        })
+    }
+
+    /// Applies force at a world point using the requested wake policy.
+    ///
+    /// Static and kinematic bodies, plus asleep bodies under
+    /// [`WakePolicy::PreserveSleep`], accept this call without changing state.
+    ///
+    /// # Errors
+    ///
+    /// Returns a typed error for an invalid handle, invalid input, or
+    /// non-finite derived accumulation.
+    pub fn apply_body_force(
+        &mut self,
+        body: BodyId,
+        force: Vec2,
+        point: Vec2,
+        wake_policy: WakePolicy,
+    ) -> Result<(), BodyControlError> {
+        self.update_body_state(body, |state| {
+            state.candidate_apply_force(force, point, wake_policy)
+        })
+    }
+
+    /// Applies force at a body's center of mass using the requested wake policy.
+    ///
+    /// Static and kinematic bodies, plus asleep bodies under
+    /// [`WakePolicy::PreserveSleep`], accept this call without changing state.
+    ///
+    /// # Errors
+    ///
+    /// Returns a typed error for an invalid handle, invalid input, or
+    /// non-finite force accumulation.
+    pub fn apply_body_force_to_center(
+        &mut self,
+        body: BodyId,
+        force: Vec2,
+        wake_policy: WakePolicy,
+    ) -> Result<(), BodyControlError> {
+        self.update_body_state(body, |state| {
+            state.candidate_apply_force_to_center(force, wake_policy)
+        })
+    }
+
+    /// Applies torque using the requested wake policy.
+    ///
+    /// Static and kinematic bodies, plus asleep bodies under
+    /// [`WakePolicy::PreserveSleep`], accept this call without changing state.
+    ///
+    /// # Errors
+    ///
+    /// Returns a typed error for an invalid handle, invalid input, or
+    /// non-finite torque accumulation.
+    pub fn apply_body_torque(
+        &mut self,
+        body: BodyId,
+        torque: f32,
+        wake_policy: WakePolicy,
+    ) -> Result<(), BodyControlError> {
+        self.update_body_state(body, |state| {
+            state.candidate_apply_torque(torque, wake_policy)
+        })
+    }
+
+    /// Applies linear impulse at a world point using the requested wake policy.
+    ///
+    /// Static and kinematic bodies, plus asleep bodies under
+    /// [`WakePolicy::PreserveSleep`], accept this call without changing state.
+    ///
+    /// # Errors
+    ///
+    /// Returns a typed error for an invalid handle, invalid input, or
+    /// non-finite derived velocity.
+    pub fn apply_body_linear_impulse(
+        &mut self,
+        body: BodyId,
+        impulse: Vec2,
+        point: Vec2,
+        wake_policy: WakePolicy,
+    ) -> Result<(), BodyControlError> {
+        self.update_body_state(body, |state| {
+            state.candidate_apply_linear_impulse(impulse, point, wake_policy)
+        })
+    }
+
+    /// Applies linear impulse at a body's center using the requested wake policy.
+    ///
+    /// Static and kinematic bodies, plus asleep bodies under
+    /// [`WakePolicy::PreserveSleep`], accept this call without changing state.
+    ///
+    /// # Errors
+    ///
+    /// Returns a typed error for an invalid handle, invalid input, or
+    /// non-finite derived velocity.
+    pub fn apply_body_linear_impulse_to_center(
+        &mut self,
+        body: BodyId,
+        impulse: Vec2,
+        wake_policy: WakePolicy,
+    ) -> Result<(), BodyControlError> {
+        self.update_body_state(body, |state| {
+            state.candidate_apply_linear_impulse_to_center(impulse, wake_policy)
+        })
+    }
+
+    /// Applies angular impulse using the requested wake policy.
+    ///
+    /// Static and kinematic bodies, plus asleep bodies under
+    /// [`WakePolicy::PreserveSleep`], accept this call without changing state.
+    ///
+    /// # Errors
+    ///
+    /// Returns a typed error for an invalid handle, invalid input, or
+    /// non-finite derived angular velocity.
+    pub fn apply_body_angular_impulse(
+        &mut self,
+        body: BodyId,
+        impulse: f32,
+        wake_policy: WakePolicy,
+    ) -> Result<(), BodyControlError> {
+        self.update_body_state(body, |state| {
+            state.candidate_apply_angular_impulse(impulse, wake_policy)
+        })
+    }
+
+    /// Changes whether a live body is awake.
+    ///
+    /// Sleeping clears velocity, accumulated force, accumulated torque, and
+    /// sleep time atomically.
+    ///
+    /// # Errors
+    ///
+    /// Returns a typed error when `body` is foreign, stale, destroyed, or its
+    /// world is poisoned.
+    pub fn set_body_awake(&mut self, body: BodyId, awake: bool) -> Result<(), BodyControlError> {
+        self.update_body_state(body, |state| Ok(state.candidate_set_awake(awake)))
+    }
+
+    /// Changes whether a live body may sleep automatically.
+    ///
+    /// Disabling sleep wakes the body immediately.
+    ///
+    /// # Errors
+    ///
+    /// Returns a typed error when `body` is foreign, stale, destroyed, or its
+    /// world is poisoned.
+    pub fn set_body_sleeping_allowed(
+        &mut self,
+        body: BodyId,
+        sleeping_allowed: bool,
+    ) -> Result<(), BodyControlError> {
+        self.update_body_state(body, |state| {
+            Ok(state.candidate_set_sleeping_allowed(sleeping_allowed))
+        })
+    }
+
+    /// Sets a live body's linear damping without changing wake state.
+    ///
+    /// # Errors
+    ///
+    /// Returns a typed error for an invalid handle or non-finite or negative damping.
+    pub fn set_body_linear_damping(
+        &mut self,
+        body: BodyId,
+        damping: f32,
+    ) -> Result<(), BodyControlError> {
+        self.update_body_state(body, |state| state.candidate_set_linear_damping(damping))
+    }
+
+    /// Sets a live body's angular damping without changing wake state.
+    ///
+    /// # Errors
+    ///
+    /// Returns a typed error for an invalid handle or non-finite or negative damping.
+    pub fn set_body_angular_damping(
+        &mut self,
+        body: BodyId,
+        damping: f32,
+    ) -> Result<(), BodyControlError> {
+        self.update_body_state(body, |state| state.candidate_set_angular_damping(damping))
+    }
+
+    /// Sets a live body's gravity scale without changing wake state.
+    ///
+    /// # Errors
+    ///
+    /// Returns a typed error for an invalid handle or non-finite gravity scale.
+    pub fn set_body_gravity_scale(
+        &mut self,
+        body: BodyId,
+        gravity_scale: f32,
+    ) -> Result<(), BodyControlError> {
+        self.update_body_state(body, |state| {
+            state.candidate_set_gravity_scale(gravity_scale)
+        })
+    }
+
+    /// Changes whether a live body receives continuous bullet treatment.
+    ///
+    /// # Errors
+    ///
+    /// Returns a typed error when `body` is foreign, stale, destroyed, or its
+    /// world is poisoned.
+    pub fn set_body_bullet(&mut self, body: BodyId, bullet: bool) -> Result<(), BodyControlError> {
+        self.update_body_state(body, |state| Ok(state.candidate_set_bullet(bullet)))
+    }
+
+    /// Changes whether a live body has fixed rotation.
+    ///
+    /// A changed setting clears angular velocity and recomputes fixture-derived
+    /// mass state before replacing the body state once.
+    ///
+    /// # Errors
+    ///
+    /// Returns a typed error for an invalid handle or invalid aggregate mass.
+    pub fn set_body_fixed_rotation(
+        &mut self,
+        body: BodyId,
+        fixed_rotation: bool,
+    ) -> Result<(), BodyControlError> {
+        self.ensure_not_poisoned_for_handle()?;
+        let state = self.bodies.get(body)?.state;
+        let fixture_mass_data = self.collect_fixture_mass_data(body, None, None);
+        let candidate = state.candidate_set_fixed_rotation(fixed_rotation, &fixture_mass_data)?;
+        self.body_mut_after_validation(body).state = candidate;
+        Ok(())
     }
 
     /// Changes the motion type of a live body.
@@ -1032,6 +1291,18 @@ impl World {
         if self.step_state.is_poisoned() {
             return Err(HandleError::WorldPoisoned);
         }
+        Ok(())
+    }
+
+    fn update_body_state(
+        &mut self,
+        body: BodyId,
+        prepare: impl FnOnce(BodyState) -> Result<BodyState, BodyControlError>,
+    ) -> Result<(), BodyControlError> {
+        self.ensure_not_poisoned_for_handle()?;
+        let state = self.bodies.get(body)?.state;
+        let candidate = prepare(state)?;
+        self.body_mut_after_validation(body).state = candidate;
         Ok(())
     }
 
