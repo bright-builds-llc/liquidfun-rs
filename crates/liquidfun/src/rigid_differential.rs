@@ -3,6 +3,71 @@
 use crate::math::Vec2;
 use crate::{BodyId, BodySnapshot, FixtureId, ManagedContactSnapshot};
 
+/// Bounded semantic controls used only to witness private CCD rejection paths.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RigidCcdFailureInjection {
+    /// Reject the named one-based manager occurrence after tentative refresh.
+    RejectCandidate {
+        /// One-based semantic manager occurrence.
+        occurrence: u64,
+    },
+    /// Treat the named occurrence as having exhausted the pinned sub-step budget.
+    ExhaustSubStepBudget {
+        /// One-based semantic manager occurrence.
+        occurrence: u64,
+    },
+}
+
+/// A bounded failure while producing semantic CCD diagnostic evidence.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RigidCcdScanError {
+    /// A reviewed private scan collection exceeded its finite capacity.
+    CapacityExceeded {
+        /// Stable semantic resource name.
+        resource: &'static str,
+        /// Configured finite limit.
+        limit: usize,
+    },
+    /// Private world/contact/sweep state was not coherent.
+    InvalidState,
+}
+
+/// Owned semantic evidence for one accepted private CCD candidate.
+#[derive(Debug, Clone, PartialEq)]
+pub struct RigidCcdCandidateDiagnostic {
+    occurrence: u64,
+    alpha: f32,
+    contact: ManagedContactSnapshot,
+}
+
+impl RigidCcdCandidateDiagnostic {
+    pub(crate) const fn new(occurrence: u64, alpha: f32, contact: ManagedContactSnapshot) -> Self {
+        Self {
+            occurrence,
+            alpha,
+            contact,
+        }
+    }
+
+    /// Returns the selected one-based manager occurrence.
+    #[must_use]
+    pub const fn occurrence(&self) -> u64 {
+        self.occurrence
+    }
+
+    /// Returns the accepted absolute step fraction.
+    #[must_use]
+    pub const fn alpha(&self) -> f32 {
+        self.alpha
+    }
+
+    /// Returns the accepted owned semantic contact snapshot.
+    #[must_use]
+    pub const fn contact(&self) -> &ManagedContactSnapshot {
+        &self.contact
+    }
+}
+
 /// Bounded failure injection used only to prove transactional world stepping.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RigidStepFailureInjection {

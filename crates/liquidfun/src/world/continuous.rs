@@ -1,5 +1,431 @@
+use crate::BodyId;
+use crate::collision::{CollisionError, TimeOfImpactInput, TimeOfImpactState, time_of_impact};
+use crate::math::settings::{EPSILON, MAX_SUB_STEPS};
+use crate::math::{SweepError, min};
+
 use super::config::StepConfiguration;
+use super::contact::{ToiAlpha, ToiCountLimitReached};
 use super::contact_manager::ContactManager;
+use super::object::World;
+
+const REVIEWED_MAX_CCD_SCAN_CONTACTS: usize = 8_192;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct ContinuousContactIndex(usize);
+
+impl ContinuousContactIndex {
+    fn new(index: usize, contact_count: usize) -> Result<Self, ContinuousScanError> {
+        if index >= contact_count || index >= REVIEWED_MAX_CCD_SCAN_CONTACTS {
+            return Err(ContinuousScanError::InvalidGraph);
+        }
+        Ok(Self(index))
+    }
+
+    const fn get(self) -> usize {
+        self.0
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub(super) struct ContinuousCandidate {
+    contact_index: ContinuousContactIndex,
+    alpha: ToiAlpha,
+    bodies: [BodyId; 2],
+}
+
+impl ContinuousCandidate {
+    pub(super) const fn contact_index(self) -> usize {
+        self.contact_index.get()
+    }
+
+    pub(super) const fn alpha(self) -> f32 {
+        self.alpha.get()
+    }
+
+    pub(super) const fn bodies(self) -> [BodyId; 2] {
+        self.bodies
+    }
+}
+
+#[derive(Debug, Clone, Copy, Default)]
+struct ContinuousScanControl {
+    maybe_reject_ordinal: Option<u64>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub(super) enum ContinuousScanError {
+    CapacityExceeded {
+        resource: &'static str,
+        limit: usize,
+    },
+    InvalidGraph,
+    Collision(CollisionError),
+    Sweep(SweepError),
+    ToiCountLimit,
+}
+
+impl From<CollisionError> for ContinuousScanError {
+    fn from(error: CollisionError) -> Self {
+        Self::Collision(error)
+    }
+}
+
+impl From<SweepError> for ContinuousScanError {
+    fn from(error: SweepError) -> Self {
+        Self::Sweep(error)
+    }
+}
+
+impl From<ToiCountLimitReached> for ContinuousScanError {
+    fn from(_error: ToiCountLimitReached) -> Self {
+        Self::ToiCountLimit
+    }
+}
+
+impl World {
+    #[allow(dead_code)] // The production step lifecycle calls this in Plan 07-09.
+    pub(super) fn select_continuous_candidate(
+        &mut self,
+    ) -> Result<Option<ContinuousCandidate>, ContinuousScanError> {
+        self.select_continuous_candidate_with_control(ContinuousScanControl::default())
+    }
+
+    fn select_continuous_candidate_with_control(
+        &mut self,
+        control: ContinuousScanControl,
+    ) -> Result<Option<ContinuousCandidate>, ContinuousScanError> {
+        let contact_count = self.contact_manager.len();
+        if contact_count > REVIEWED_MAX_CCD_SCAN_CONTACTS {
+            return Err(ContinuousScanError::CapacityExceeded {
+                resource: "ccd scan contacts",
+                limit: REVIEWED_MAX_CCD_SCAN_CONTACTS,
+            });
+        }
+
+        let mut rejection_count = 0_usize;
+        loop {
+            let Some(candidate) = self.scan_earliest_continuous_contact()? else {
+                return Ok(None);
+            };
+            if self.validate_continuous_candidate(candidate, control)? {
+                return Ok(Some(candidate));
+            }
+            rejection_count =
+                rejection_count
+                    .checked_add(1)
+                    .ok_or(ContinuousScanError::CapacityExceeded {
+                        resource: "ccd rejected candidates",
+                        limit: REVIEWED_MAX_CCD_SCAN_CONTACTS,
+                    })?;
+            if rejection_count > contact_count {
+                return Err(ContinuousScanError::InvalidGraph);
+            }
+        }
+    }
+
+    fn scan_earliest_continuous_contact(
+        &mut self,
+    ) -> Result<Option<ContinuousCandidate>, ContinuousScanError> {
+        let contact_count = self.contact_manager.len();
+        let mut maybe_candidate = None;
+        let mut minimum_alpha = 1.0_f32;
+
+        for index in 0..contact_count {
+            let maybe_alpha = self.continuous_contact_alpha(index)?;
+            let Some(alpha) = maybe_alpha else {
+                continue;
+            };
+            if alpha.get() < minimum_alpha {
+                let contact = self
+                    .contact_manager
+                    .contacts()
+                    .get(index)
+                    .ok_or(ContinuousScanError::InvalidGraph)?;
+                maybe_candidate = Some(ContinuousCandidate {
+                    contact_index: ContinuousContactIndex::new(index, contact_count)?,
+                    alpha,
+                    bodies: [contact.key.first.body, contact.key.second.body],
+                });
+                minimum_alpha = alpha.get();
+            }
+        }
+
+        if 1.0 - 10.0 * EPSILON < minimum_alpha {
+            return Ok(None);
+        }
+        Ok(maybe_candidate)
+    }
+
+    fn continuous_contact_alpha(
+        &mut self,
+        index: usize,
+    ) -> Result<Option<ToiAlpha>, ContinuousScanError> {
+        let contact = self
+            .contact_manager
+            .contacts()
+            .get(index)
+            .ok_or(ContinuousScanError::InvalidGraph)?;
+        if !contact.is_enabled() || contact.toi_count() > MAX_SUB_STEPS {
+            return Ok(None);
+        }
+        if let Some(alpha) = contact.maybe_toi_alpha() {
+            return Ok(Some(alpha));
+        }
+
+        let key = contact.key;
+        let fixture_a = self
+            .fixtures
+            .get(key.first.fixture)
+            .map_err(|_error| ContinuousScanError::InvalidGraph)?;
+        let fixture_b = self
+            .fixtures
+            .get(key.second.fixture)
+            .map_err(|_error| ContinuousScanError::InvalidGraph)?;
+        if fixture_a.definition.is_sensor() || fixture_b.definition.is_sensor() {
+            return Ok(None);
+        }
+        let body_a = self
+            .bodies
+            .get(key.first.body)
+            .map_err(|_error| ContinuousScanError::InvalidGraph)?;
+        let body_b = self
+            .bodies
+            .get(key.second.body)
+            .map_err(|_error| ContinuousScanError::InvalidGraph)?;
+        let snapshot_a = body_a.state.snapshot();
+        let snapshot_b = body_b.state.snapshot();
+        let active_a =
+            snapshot_a.is_awake() && snapshot_a.body_type() != super::body::BodyType::Static;
+        let active_b =
+            snapshot_b.is_awake() && snapshot_b.body_type() != super::body::BodyType::Static;
+        if !active_a && !active_b {
+            return Ok(None);
+        }
+        let collide_a =
+            snapshot_a.is_bullet() || snapshot_a.body_type() != super::body::BodyType::Dynamic;
+        let collide_b =
+            snapshot_b.is_bullet() || snapshot_b.body_type() != super::body::BodyType::Dynamic;
+        if !collide_a && !collide_b {
+            return Ok(None);
+        }
+
+        let (sweep_a, sweep_b, alpha0) =
+            self.equalized_contact_sweeps(key.first.body, key.second.body)?;
+        let alpha = if alpha0 >= 1.0 {
+            ToiAlpha::new(1.0).ok_or(ContinuousScanError::InvalidGraph)?
+        } else {
+            let fixture_a = self
+                .fixtures
+                .get(key.first.fixture)
+                .map_err(|_error| ContinuousScanError::InvalidGraph)?;
+            let fixture_b = self
+                .fixtures
+                .get(key.second.fixture)
+                .map_err(|_error| ContinuousScanError::InvalidGraph)?;
+            let input = TimeOfImpactInput::new(
+                fixture_a.definition.shape(),
+                key.first.child_index,
+                sweep_a,
+                fixture_b.definition.shape(),
+                key.second.child_index,
+                sweep_b,
+                1.0,
+            )?;
+            let output = time_of_impact(&input)?;
+            let value = if output.state() == TimeOfImpactState::Touching {
+                min(alpha0 + (1.0 - alpha0) * output.time(), 1.0)
+            } else {
+                1.0
+            };
+            ToiAlpha::new(value).ok_or(ContinuousScanError::InvalidGraph)?
+        };
+        self.contact_manager
+            .contact_mut(index)
+            .ok_or(ContinuousScanError::InvalidGraph)?
+            .cache_toi_alpha(alpha);
+        Ok(Some(alpha))
+    }
+
+    fn equalized_contact_sweeps(
+        &mut self,
+        body_a: BodyId,
+        body_b: BodyId,
+    ) -> Result<(crate::math::Sweep, crate::math::Sweep, f32), ContinuousScanError> {
+        if body_a == body_b {
+            return Err(ContinuousScanError::InvalidGraph);
+        }
+        let mut state_a = self
+            .bodies
+            .get(body_a)
+            .map_err(|_error| ContinuousScanError::InvalidGraph)?
+            .state;
+        let mut state_b = self
+            .bodies
+            .get(body_b)
+            .map_err(|_error| ContinuousScanError::InvalidGraph)?
+            .state;
+        let mut alpha0 = state_a.sweep().initial_fraction();
+        if state_a.sweep().initial_fraction() < state_b.sweep().initial_fraction() {
+            alpha0 = state_b.sweep().initial_fraction();
+            state_a = state_a.candidate_equalize_sweep(alpha0)?;
+            self.bodies
+                .get_mut(body_a)
+                .map_err(|_error| ContinuousScanError::InvalidGraph)?
+                .state = state_a;
+        } else if state_b.sweep().initial_fraction() < state_a.sweep().initial_fraction() {
+            alpha0 = state_a.sweep().initial_fraction();
+            state_b = state_b.candidate_equalize_sweep(alpha0)?;
+            self.bodies
+                .get_mut(body_b)
+                .map_err(|_error| ContinuousScanError::InvalidGraph)?
+                .state = state_b;
+        }
+        Ok((state_a.sweep(), state_b.sweep(), alpha0))
+    }
+
+    fn validate_continuous_candidate(
+        &mut self,
+        candidate: ContinuousCandidate,
+        control: ContinuousScanControl,
+    ) -> Result<bool, ContinuousScanError> {
+        let index = candidate.contact_index();
+        let contact = self
+            .contact_manager
+            .contacts()
+            .get(index)
+            .ok_or(ContinuousScanError::InvalidGraph)?;
+        let ordinal = contact.ordinal;
+        let [body_a, body_b] = candidate.bodies();
+        if body_a == body_b {
+            return Err(ContinuousScanError::InvalidGraph);
+        }
+        let backup_a = self
+            .bodies
+            .get(body_a)
+            .map_err(|_error| ContinuousScanError::InvalidGraph)?
+            .state;
+        let backup_b = self
+            .bodies
+            .get(body_b)
+            .map_err(|_error| ContinuousScanError::InvalidGraph)?
+            .state;
+        let advanced_a = backup_a.candidate_advance_to(candidate.alpha())?;
+        let advanced_b = backup_b.candidate_advance_to(candidate.alpha())?;
+        self.bodies
+            .get_mut(body_a)
+            .map_err(|_error| ContinuousScanError::InvalidGraph)?
+            .state = advanced_a;
+        self.bodies
+            .get_mut(body_b)
+            .map_err(|_error| ContinuousScanError::InvalidGraph)?
+            .state = advanced_b;
+
+        self.contact_manager
+            .refresh_continuous_contact(index, &mut self.bodies, &self.fixtures)
+            .ok_or(ContinuousScanError::InvalidGraph)?;
+        let contact = self
+            .contact_manager
+            .contact_mut(index)
+            .ok_or(ContinuousScanError::InvalidGraph)?;
+        contact.increment_toi_count()?;
+        if control.maybe_reject_ordinal == Some(ordinal) {
+            contact.set_enabled(false);
+        }
+        let accepted = contact.is_enabled() && contact.is_touching();
+        if !accepted {
+            contact.set_enabled(false);
+            self.bodies
+                .get_mut(body_a)
+                .map_err(|_error| ContinuousScanError::InvalidGraph)?
+                .state = backup_a;
+            self.bodies
+                .get_mut(body_b)
+                .map_err(|_error| ContinuousScanError::InvalidGraph)?
+                .state = backup_b;
+            return Ok(false);
+        }
+
+        for body_id in [body_a, body_b] {
+            let body = self
+                .bodies
+                .get_mut(body_id)
+                .map_err(|_error| ContinuousScanError::InvalidGraph)?;
+            body.state = body.state.candidate_set_awake(true);
+            body.pending_wake = false;
+        }
+        Ok(true)
+    }
+
+    #[cfg(feature = "differential-internals")]
+    #[doc(hidden)]
+    pub fn rigid_ccd_candidate_diagnostic(
+        &mut self,
+        maybe_injection: Option<crate::rigid_differential::RigidCcdFailureInjection>,
+    ) -> Result<
+        Option<crate::rigid_differential::RigidCcdCandidateDiagnostic>,
+        crate::rigid_differential::RigidCcdScanError,
+    > {
+        let mut control = ContinuousScanControl::default();
+        if let Some(injection) = maybe_injection {
+            let (occurrence, reject) = match injection {
+                crate::rigid_differential::RigidCcdFailureInjection::RejectCandidate {
+                    occurrence,
+                } => (occurrence, true),
+                crate::rigid_differential::RigidCcdFailureInjection::ExhaustSubStepBudget {
+                    occurrence,
+                } => (occurrence, false),
+            };
+            let ordinal = occurrence
+                .checked_sub(1)
+                .ok_or(crate::rigid_differential::RigidCcdScanError::InvalidState)?;
+            if reject {
+                if self
+                    .contact_manager
+                    .contact_index_for_ordinal(ordinal)
+                    .is_none()
+                {
+                    return Err(crate::rigid_differential::RigidCcdScanError::InvalidState);
+                }
+                control.maybe_reject_ordinal = Some(ordinal);
+            } else {
+                self.contact_manager
+                    .exhaust_toi_budget_for_diagnostic(ordinal)
+                    .ok_or(crate::rigid_differential::RigidCcdScanError::InvalidState)?;
+            }
+        }
+
+        let maybe_candidate = self
+            .select_continuous_candidate_with_control(control)
+            .map_err(|error| match error {
+                ContinuousScanError::CapacityExceeded { resource, limit } => {
+                    crate::rigid_differential::RigidCcdScanError::CapacityExceeded {
+                        resource,
+                        limit,
+                    }
+                }
+                ContinuousScanError::InvalidGraph
+                | ContinuousScanError::Collision(_)
+                | ContinuousScanError::Sweep(_)
+                | ContinuousScanError::ToiCountLimit => {
+                    crate::rigid_differential::RigidCcdScanError::InvalidState
+                }
+            })?;
+        maybe_candidate
+            .map(|candidate| {
+                let contact = self
+                    .contact_manager
+                    .contacts()
+                    .get(candidate.contact_index())
+                    .ok_or(crate::rigid_differential::RigidCcdScanError::InvalidState)?;
+                Ok(crate::rigid_differential::RigidCcdCandidateDiagnostic::new(
+                    contact.ordinal + 1,
+                    candidate.alpha(),
+                    contact.snapshot(),
+                ))
+            })
+            .transpose()
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[allow(dead_code)] // The public step lifecycle consumes this key in Plan 07-09.
@@ -63,122 +489,4 @@ impl ContinuousStepState {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::{ContinuousStepKey, ContinuousStepKind, ContinuousStepState};
-    use crate::collision::{CircleShape, FilterData, Shape};
-    use crate::math::Vec2;
-    use crate::math::settings::MAX_SUB_STEPS;
-    use crate::{BodyDef, BodyType, FixtureDef, StepConfiguration, World};
-
-    fn world_with_contact() -> (World, crate::BodyId) {
-        let mut world = World::new().expect("test world key should remain available");
-        let static_body = world
-            .create_body(
-                &BodyDef::new(BodyType::Static, Vec2::ZERO, 0.0, true)
-                    .expect("test static body definition should be valid"),
-            )
-            .expect("test static body should fit");
-        let dynamic_body = world
-            .create_body(
-                &BodyDef::new(BodyType::Dynamic, Vec2::new(0.5, 0.0), 0.0, true)
-                    .expect("test dynamic body definition should be valid"),
-            )
-            .expect("test dynamic body should fit");
-        let fixture = FixtureDef::new(
-            Shape::from(CircleShape::new(Vec2::ZERO, 1.0).expect("test circle should be valid")),
-            1.0,
-            0.2,
-            0.0,
-            false,
-            FilterData::default(),
-        )
-        .expect("test fixture definition should be valid");
-        world
-            .create_fixture(static_body, &fixture)
-            .expect("test static fixture should fit");
-        world
-            .create_fixture(dynamic_body, &fixture)
-            .expect("test dynamic fixture should fit");
-        world.find_new_contacts();
-        world.update_contacts();
-        (world, dynamic_body)
-    }
-
-    fn step_key(time_step: f32) -> ContinuousStepKey {
-        let configuration = StepConfiguration::new(time_step, 8, 3)
-            .expect("test step configuration should be valid");
-        ContinuousStepKey::from_configuration(configuration)
-    }
-
-    #[test]
-    fn ccd_cache_is_invalidated_by_contact_and_sweep_changes() {
-        // Arrange
-        let (mut world, dynamic_body) = world_with_contact();
-        let ordinal = world.contact_manager.contacts()[0].ordinal;
-        world
-            .contact_manager
-            .seed_toi_state_for_test(ordinal, 0.25, MAX_SUB_STEPS + 1)
-            .expect("bounded test TOI state should be accepted");
-
-        // Act
-        world.contact_manager.set_hook_enabled(ordinal, false);
-
-        // Assert
-        assert_eq!(
-            world.contact_manager.toi_state_for_test(ordinal),
-            Some((None, MAX_SUB_STEPS + 1))
-        );
-        assert!(
-            world
-                .contact_manager
-                .increment_toi_count_for_test(ordinal)
-                .is_err(),
-            "the checked count must reject values above the strict upstream guard"
-        );
-
-        // Arrange
-        world
-            .contact_manager
-            .seed_toi_state_for_test(ordinal, 0.5, 1)
-            .expect("bounded test TOI state should be accepted");
-
-        // Act
-        world.contact_manager.invalidate_toi_for_body(dynamic_body);
-
-        // Assert
-        assert_eq!(
-            world.contact_manager.toi_state_for_test(ordinal),
-            Some((None, 1))
-        );
-    }
-
-    #[test]
-    fn pending_ccd_state_survives_only_the_matching_step() {
-        // Arrange
-        let (mut world, _dynamic_body) = world_with_contact();
-        let ordinal = world.contact_manager.contacts()[0].ordinal;
-        let mut state = ContinuousStepState::new();
-        let matching = step_key(1.0 / 60.0);
-        let different = step_key(1.0 / 30.0);
-        world
-            .contact_manager
-            .seed_toi_state_for_test(ordinal, 0.25, 1)
-            .expect("bounded test TOI state should be accepted");
-        state.mark_pending(matching);
-
-        // Act
-        let matching_kind = state.begin_step(matching, &mut world.contact_manager);
-        let retained_state = world.contact_manager.toi_state_for_test(ordinal);
-        state.mark_pending(matching);
-        let different_kind = state.begin_step(different, &mut world.contact_manager);
-        let reset_state = world.contact_manager.toi_state_for_test(ordinal);
-        let stale_kind = state.begin_step(matching, &mut world.contact_manager);
-
-        // Assert
-        assert_eq!(matching_kind, ContinuousStepKind::Resumed);
-        assert_eq!(retained_state, Some((Some(0.25), 1)));
-        assert_eq!(different_kind, ContinuousStepKind::Fresh);
-        assert_eq!(reset_state, Some((None, 0)));
-        assert_eq!(stale_kind, ContinuousStepKind::Fresh);
-    }
-}
+mod tests;

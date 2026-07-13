@@ -1,5 +1,7 @@
 use crate::arena::Arena;
 use crate::collision::{BroadPhase, CollisionOutcome, collide_shapes, test_overlap};
+#[cfg(feature = "differential-internals")]
+use crate::math::settings::MAX_SUB_STEPS;
 use crate::{BodyId, FixtureId};
 
 use super::body::BodyType;
@@ -43,6 +45,10 @@ impl ContactManager {
         &self.contacts
     }
 
+    pub(super) fn contact_mut(&mut self, index: usize) -> Option<&mut Contact> {
+        self.contacts.get_mut(index)
+    }
+
     pub(super) fn contact_index_for_ordinal(&self, ordinal: u64) -> Option<usize> {
         self.contacts
             .iter()
@@ -61,6 +67,35 @@ impl ContactManager {
                 contact.invalidate_toi();
             }
         }
+    }
+
+    pub(super) fn refresh_continuous_contact(
+        &mut self,
+        index: usize,
+        bodies: &mut Arena<Body, BodyId>,
+        fixtures: &Arena<Fixture, FixtureId>,
+    ) -> Option<()> {
+        let contact = self.contacts.get_mut(index)?;
+        let maybe_transition = update_contact(contact, bodies, fixtures);
+        if let Some(transition) = maybe_transition {
+            self.transitions.push(transition);
+        }
+        Some(())
+    }
+
+    #[cfg(feature = "differential-internals")]
+    pub(super) fn exhaust_toi_budget_for_diagnostic(&mut self, ordinal: u64) -> Option<()> {
+        let contact = self
+            .contacts
+            .iter_mut()
+            .find(|contact| contact.ordinal == ordinal)?;
+        contact.reset_toi_state();
+        for _ in 0..=MAX_SUB_STEPS {
+            contact
+                .increment_toi_count()
+                .expect("the named diagnostic budget remains representable");
+        }
+        Some(())
     }
 
     #[cfg(test)]

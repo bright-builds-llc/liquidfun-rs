@@ -3,13 +3,11 @@ use crate::math::max;
 use crate::math::settings::MAX_SUB_STEPS;
 use crate::{BodyId, FixtureId};
 
-#[allow(dead_code)] // The scanner consumes the checked terminal count in Task 07-08-02.
 const MAX_STORED_TOI_COUNT: usize = MAX_SUB_STEPS + 1;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(super) struct ToiAlpha(f32);
 
-#[allow(dead_code)] // The scanner creates and reads cached fractions in Task 07-08-02.
 impl ToiAlpha {
     pub(super) fn new(alpha: f32) -> Option<Self> {
         if alpha.is_finite() && (0.0..=1.0).contains(&alpha) {
@@ -38,12 +36,10 @@ impl ContactToiState {
         self.maybe_alpha = None;
     }
 
-    #[allow(dead_code)] // The scanner consumes cached fractions in Task 07-08-02.
     fn cache(&mut self, alpha: ToiAlpha) {
         self.maybe_alpha = Some(alpha);
     }
 
-    #[allow(dead_code)] // The scanner increments this bound in Task 07-08-02.
     fn increment_count(&mut self) -> Result<(), ToiCountLimitReached> {
         if self.count >= MAX_STORED_TOI_COUNT {
             return Err(ToiCountLimitReached);
@@ -64,7 +60,6 @@ impl ContactToiState {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[allow(dead_code)] // The scanner reports this checked bound in Task 07-08-02.
 pub(super) struct ToiCountLimitReached;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -254,22 +249,18 @@ impl Contact {
         self.toi.invalidate();
     }
 
-    #[allow(dead_code)] // The scanner consumes cache state in Task 07-08-02.
     pub(super) const fn maybe_toi_alpha(&self) -> Option<ToiAlpha> {
         self.toi.maybe_alpha
     }
 
-    #[allow(dead_code)] // The scanner consumes this guard in Task 07-08-02.
     pub(super) const fn toi_count(&self) -> usize {
         self.toi.count
     }
 
-    #[allow(dead_code)] // The scanner consumes cached fractions in Task 07-08-02.
     pub(super) fn cache_toi_alpha(&mut self, alpha: ToiAlpha) {
         self.toi.cache(alpha);
     }
 
-    #[allow(dead_code)] // The scanner increments this bound in Task 07-08-02.
     pub(super) fn increment_toi_count(&mut self) -> Result<(), ToiCountLimitReached> {
         self.toi.increment_count()
     }

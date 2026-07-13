@@ -3,7 +3,7 @@ use std::fmt;
 
 use crate::HandleError;
 use crate::collision::MassData;
-use crate::math::{Sweep, Transform, Vec2};
+use crate::math::{Sweep, SweepError, Transform, Vec2};
 
 use super::fixture::FixtureBoundsError;
 
@@ -601,7 +601,7 @@ impl BodySnapshot {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub(super) struct BodyState {
     snapshot: BodySnapshot,
     transform: Transform,
@@ -644,6 +644,20 @@ impl BodyState {
 
     pub(super) const fn sweep(self) -> Sweep {
         self.sweep
+    }
+
+    pub(super) fn candidate_equalize_sweep(mut self, fraction: f32) -> Result<Self, SweepError> {
+        self.sweep.advance(fraction)?;
+        Ok(self)
+    }
+
+    pub(super) fn candidate_advance_to(mut self, fraction: f32) -> Result<Self, SweepError> {
+        self.sweep.advance(fraction)?;
+        let transform = self.sweep.transform_at(0.0)?;
+        self.transform = transform;
+        self.snapshot.position = transform.position();
+        self.snapshot.angle = self.sweep.initial_angle();
+        Ok(self)
     }
 
     pub(super) const fn solver_linear(self) -> Vec2 {
