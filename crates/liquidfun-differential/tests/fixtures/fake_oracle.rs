@@ -222,7 +222,16 @@ fn emit_rigid_behavior(
     let limits = HarnessLimits::phase2_default_v1();
     let request = decode_rigid_world_request_jsonl(request_bytes, &limits)?;
     let result = NativeRigidWorldExecutor::execute(&request)?;
-    let result_bytes = encode_jsonl(&result, &limits, RecordLimit::Output)?;
+    let result_bytes = if behavior == "rigid_d1_mismatch" {
+        let mut value = serde_json::to_value(&result)?;
+        value["timelines"][0]["checkpoints"][0]["bodies"][0]["active"] =
+            serde_json::Value::Bool(false);
+        let mut bytes = serde_json::to_vec(&value)?;
+        bytes.push(b'\n');
+        bytes
+    } else {
+        encode_jsonl(&result, &limits, RecordLimit::Output)?
+    };
     let end = serde_json::json!({
         "protocol_version": 1,
         "record_kind": "rigid_world_end",
@@ -250,10 +259,14 @@ fn emit_rigid_behavior(
 )]
 fn rigid_handshake(behavior: &str) -> Result<(Vec<u8>, BuildIdentity), String> {
     let canonical = behavior.starts_with("rigid_d1");
-    let repository_root = std::env::current_dir().map_err(|error| error.to_string())?;
+    let executable = std::env::current_exe().map_err(|error| error.to_string())?;
+    let repository_root = executable
+        .ancestors()
+        .nth(4)
+        .ok_or_else(|| "fake rigid oracle path does not contain a repository root".to_owned())?;
     let mut adapter_digest =
-        adapter_source_digest(&repository_root).map_err(|error| error.to_string())?;
-    let mut compile_digest = effective_compile_command_sha256(&repository_root, "oracle-debug")
+        adapter_source_digest(repository_root).map_err(|error| error.to_string())?;
+    let mut compile_digest = effective_compile_command_sha256(repository_root, "oracle-debug")
         .map_err(|error| error.to_string())?;
     if behavior == "rigid_d1_stale_adapter" {
         adapter_digest = stale_digest(&adapter_digest);

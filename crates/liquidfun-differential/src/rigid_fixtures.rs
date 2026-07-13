@@ -7,10 +7,11 @@ use liquidfun_test_protocol::{
     RigidWorldRequestRecord, RigidWorldResultRecord, decode_handshake_jsonl,
     decode_rigid_world_request_jsonl, decode_rigid_world_result_jsonl,
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::{
-    NativeRigidWorldExecutor, OracleExecutable, OraclePreset, RigidComparisonOutcome,
+    CapturedRigidWorld, MinimizationStatus, NativeRigidWorldExecutor, OracleExecutable,
+    OraclePreset, RigidComparisonOutcome, RigidMinimizationResult,
     compare_phase7_rigid_world_results, execute_rigid_world_process,
     validate_oracle_checkout_identity, validate_rigid_promotion_authority,
 };
@@ -52,6 +53,7 @@ pub fn stage_rigid_candidate(
     preset_name: &str,
     session_profile: &str,
     generator_revision: &str,
+    maybe_minimization: Option<&RigidMinimizationResult>,
 ) -> Result<ArtifactCandidate, FixtureError> {
     validate_identifier(artifact_id, "artifact")?;
     validate_revision(generator_revision)?;
@@ -64,37 +66,53 @@ pub fn stage_rigid_candidate(
     let manifest = read_manifest(repository_root)?;
     let (phase6_policy, phase7_policy) = read_policies(repository_root)?;
     let limits = HarnessLimits::phase2_default_v1();
-    let request_bytes = fs::read(repository_root.join(REQUEST_PATH))?;
-    enforce_size("request", &request_bytes, limits.input_record_bytes())?;
-    let request = decode_rigid_world_request_jsonl(&request_bytes, &limits)
+    let original_request_bytes = fs::read(repository_root.join(REQUEST_PATH))?;
+    enforce_size(
+        "request",
+        &original_request_bytes,
+        limits.input_record_bytes(),
+    )?;
+    let original_request = decode_rigid_world_request_jsonl(&original_request_bytes, &limits)
         .map_err(|error| FixtureError::Replay(error.to_string()))?;
-    if request.tolerance_profile_sha256() != phase7_policy.profile_sha256() {
+    if original_request.tolerance_profile_sha256() != phase7_policy.profile_sha256() {
         return Err(FixtureError::Replay(format!(
             "rigid-world request policy hash {} does not match checked-in profile {}",
-            request.tolerance_profile_sha256().as_str(),
+            original_request.tolerance_profile_sha256().as_str(),
             phase7_policy.profile_sha256().as_str()
         )));
     }
-    let native = NativeRigidWorldExecutor::execute(&request)
-        .map_err(|error| FixtureError::Replay(error.to_string()))?;
     let executable = OracleExecutable::resolve(repository_root, preset)
         .map_err(|error| FixtureError::Replay(error.to_string()))?;
-    let captured = execute_rigid_world_process(&executable, &request, &manifest.oracle_revision)
-        .map_err(|error| FixtureError::Replay(error.to_string()))?;
+    let (request_bytes, request) = select_staged_request(
+        artifact_kind,
+        maybe_minimization,
+        &original_request_bytes,
+        &original_request,
+        &executable,
+        &manifest.oracle_revision,
+        &phase6_policy,
+        &phase7_policy,
+        &limits,
+    )?;
+    let (captured, outcome) = execute_and_compare_rigid(
+        &executable,
+        &request,
+        &manifest.oracle_revision,
+        &phase6_policy,
+        &phase7_policy,
+    )?;
     if captured.identity().cmake_preset() != preset_name {
         return Err(FixtureError::Replay(
             "oracle preset identity mismatch".to_owned(),
         ));
     }
-    let outcome = compare_phase7_rigid_world_results(
-        &request,
-        &native,
-        captured.result(),
-        &phase6_policy,
-        &phase7_policy,
-    )
-    .map_err(|error| FixtureError::Replay(format!("{error:?}")))?;
-    let (report_bytes, maybe_failure_signature_json) = rigid_stage_report(artifact_kind, &outcome)?;
+    let (report_bytes, maybe_failure_signature_json) = rigid_stage_report(
+        artifact_kind,
+        &outcome,
+        maybe_minimization,
+        &original_request_bytes,
+        &request_bytes,
+    )?;
     enforce_size(
         "trace",
         captured.response_bytes(),
@@ -123,6 +141,119 @@ pub fn stage_rigid_candidate(
         &report_bytes,
         maybe_failure_signature_json,
     )
+}
+
+#[allow(
+    clippy::too_many_arguments,
+    reason = "request selection validates one complete minimization provenance boundary"
+)]
+fn select_staged_request(
+    artifact_kind: ArtifactKind,
+    maybe_minimization: Option<&RigidMinimizationResult>,
+    original_request_bytes: &[u8],
+    original_request: &RigidWorldRequestRecord,
+    executable: &OracleExecutable,
+    oracle_revision: &str,
+    phase6_policy: &Phase6PolicyProfile,
+    phase7_policy: &Phase7PolicyProfile,
+    limits: &HarnessLimits,
+) -> Result<(Vec<u8>, RigidWorldRequestRecord), FixtureError> {
+    match (artifact_kind, maybe_minimization) {
+        (ArtifactKind::ReviewedTrace, None) => {
+            Ok((original_request_bytes.to_vec(), original_request.clone()))
+        }
+        (ArtifactKind::ReviewedTrace, Some(_)) => Err(FixtureError::Replay(
+            "reviewed rigid traces do not accept minimization provenance".to_owned(),
+        )),
+        (ArtifactKind::MinimizedRegression, None) => Err(FixtureError::Replay(
+            "minimized rigid regressions require a completed minimization result".to_owned(),
+        )),
+        (ArtifactKind::MinimizedRegression, Some(minimization)) => {
+            let (bytes, request) = validate_minimized_request(
+                original_request_bytes,
+                minimization,
+                phase7_policy,
+                limits,
+            )?;
+            let (_original_capture, original_outcome) = execute_and_compare_rigid(
+                executable,
+                original_request,
+                oracle_revision,
+                phase6_policy,
+                phase7_policy,
+            )?;
+            let RigidComparisonOutcome::PhysicsMismatch(original_report) = original_outcome else {
+                return Err(FixtureError::Replay(
+                    "minimized rigid regression source request no longer mismatches".to_owned(),
+                ));
+            };
+            if original_report.signature() != minimization.target_signature() {
+                return Err(FixtureError::Replay(
+                    "minimization target differs from the source first divergence".to_owned(),
+                ));
+            }
+            Ok((bytes, request))
+        }
+    }
+}
+
+fn validate_minimized_request(
+    original_request_bytes: &[u8],
+    minimization: &RigidMinimizationResult,
+    phase7_policy: &Phase7PolicyProfile,
+    limits: &HarnessLimits,
+) -> Result<(Vec<u8>, RigidWorldRequestRecord), FixtureError> {
+    if minimization.status() != MinimizationStatus::Complete {
+        return Err(FixtureError::Replay(
+            "minimized rigid regressions require complete reduction".to_owned(),
+        ));
+    }
+    if minimization.attempted_transforms().is_empty()
+        || minimization.accepted_transforms().is_empty()
+    {
+        return Err(FixtureError::Replay(
+            "minimized rigid regressions require recorded accepted transforms".to_owned(),
+        ));
+    }
+    let request_bytes = minimization.canonical_request_bytes().to_vec();
+    if request_bytes == original_request_bytes {
+        return Err(FixtureError::Replay(
+            "minimized rigid regression did not reduce the source request".to_owned(),
+        ));
+    }
+    enforce_size("request", &request_bytes, limits.input_record_bytes())?;
+    let request = decode_rigid_world_request_jsonl(&request_bytes, limits)
+        .map_err(|error| FixtureError::Replay(error.to_string()))?;
+    if &request != minimization.request()
+        || request.tolerance_profile_sha256() != phase7_policy.profile_sha256()
+    {
+        return Err(FixtureError::Replay(
+            "minimized rigid request bytes or policy provenance disagree".to_owned(),
+        ));
+    }
+    Ok((request_bytes, request))
+}
+
+fn execute_and_compare_rigid(
+    executable: &OracleExecutable,
+    request: &RigidWorldRequestRecord,
+    oracle_revision: &str,
+    phase6_policy: &Phase6PolicyProfile,
+    phase7_policy: &Phase7PolicyProfile,
+) -> Result<(CapturedRigidWorld, RigidComparisonOutcome), FixtureError> {
+    let native = NativeRigidWorldExecutor::execute(request)
+        .map_err(|error| FixtureError::Replay(error.to_string()))?;
+    let captured = execute_rigid_world_process(executable, request, oracle_revision)
+        .map_err(|error| FixtureError::Replay(error.to_string()))?;
+    let outcome = compare_phase7_rigid_world_results(
+        request,
+        &native,
+        captured.result(),
+        phase6_policy,
+        phase7_policy,
+    )
+    .map_err(|error| FixtureError::Replay(format!("{error:?}")))?;
+    Ok((captured, outcome))
 }
 
 #[allow(
@@ -190,10 +321,12 @@ pub(super) fn replay_rigid_candidate(
     )
     .map_err(|error| FixtureError::Replay(format!("{error:?}")))?;
     verify_rigid_report(
+        repository_root,
         metadata.artifact_kind,
         &outcome,
         metadata.failure_signature_json.as_deref(),
         report_bytes,
+        request_bytes,
     )?;
 
     // Replay and every caller that mutates review/accepted state independently re-check D1.
@@ -336,15 +469,33 @@ fn read_policy_text(repository_root: &Path, relative: &str) -> Result<String, Fi
 fn rigid_stage_report(
     kind: ArtifactKind,
     outcome: &RigidComparisonOutcome,
+    maybe_minimization: Option<&RigidMinimizationResult>,
+    original_request_bytes: &[u8],
+    request_bytes: &[u8],
 ) -> Result<(Vec<u8>, Option<String>), FixtureError> {
-    match (kind, outcome) {
-        (ArtifactKind::ReviewedTrace, RigidComparisonOutcome::Match) => {
+    match (kind, outcome, maybe_minimization) {
+        (ArtifactKind::ReviewedTrace, RigidComparisonOutcome::Match, None) => {
             Ok((b"{\"result_kind\":\"match\"}\n".to_vec(), None))
         }
-        (ArtifactKind::MinimizedRegression, RigidComparisonOutcome::PhysicsMismatch(report)) => {
-            let mut bytes = report
-                .render_machine()
-                .map_err(|error| FixtureError::Replay(error.to_string()))?;
+        (
+            ArtifactKind::MinimizedRegression,
+            RigidComparisonOutcome::PhysicsMismatch(report),
+            Some(minimization),
+        ) if report.signature() == minimization.target_signature() => {
+            let regression = RigidMinimizedRegressionReport {
+                result_kind: "rigid_minimized_regression".to_owned(),
+                status: "complete".to_owned(),
+                target_signature_sha256: minimization
+                    .target_signature()
+                    .signature_sha256()
+                    .as_str()
+                    .to_owned(),
+                attempted_transforms: transform_values(minimization.attempted_transforms())?,
+                accepted_transforms: transform_values(minimization.accepted_transforms())?,
+                original_request_sha256: sha256(original_request_bytes),
+                minimized_request_sha256: sha256(request_bytes),
+            };
+            let mut bytes = serde_json::to_vec(&regression)?;
             bytes.push(b'\n');
             Ok((bytes, Some(serde_json::to_string(report.signature())?)))
         }
@@ -354,17 +505,61 @@ fn rigid_stage_report(
     }
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct RigidMinimizedRegressionReport {
+    result_kind: String,
+    status: String,
+    target_signature_sha256: String,
+    attempted_transforms: Vec<serde_json::Value>,
+    accepted_transforms: Vec<serde_json::Value>,
+    original_request_sha256: String,
+    minimized_request_sha256: String,
+}
+
+fn transform_values(
+    transforms: &[crate::RigidScenarioTransform],
+) -> Result<Vec<serde_json::Value>, FixtureError> {
+    let value = serde_json::to_value(transforms)?;
+    value.as_array().cloned().ok_or_else(|| {
+        FixtureError::Replay("rigid minimization transforms did not encode as an array".to_owned())
+    })
+}
+
 fn verify_rigid_report(
+    repository_root: &Path,
     kind: ArtifactKind,
     outcome: &RigidComparisonOutcome,
     maybe_signature: Option<&str>,
     report_bytes: &[u8],
+    request_bytes: &[u8],
 ) -> Result<(), FixtureError> {
-    let (expected, expected_signature) = rigid_stage_report(kind, outcome)?;
-    if expected == report_bytes && expected_signature.as_deref() == maybe_signature {
-        return Ok(());
+    match (kind, outcome) {
+        (ArtifactKind::ReviewedTrace, RigidComparisonOutcome::Match)
+            if report_bytes == b"{\"result_kind\":\"match\"}\n" && maybe_signature.is_none() =>
+        {
+            Ok(())
+        }
+        (ArtifactKind::MinimizedRegression, RigidComparisonOutcome::PhysicsMismatch(report)) => {
+            let regression: RigidMinimizedRegressionReport = serde_json::from_slice(report_bytes)?;
+            let original_request_bytes = fs::read(repository_root.join(REQUEST_PATH))?;
+            let signature_json = serde_json::to_string(report.signature())?;
+            if regression.result_kind == "rigid_minimized_regression"
+                && regression.status == "complete"
+                && regression.target_signature_sha256
+                    == report.signature().signature_sha256().as_str()
+                && !regression.attempted_transforms.is_empty()
+                && !regression.accepted_transforms.is_empty()
+                && regression.original_request_sha256 == sha256(&original_request_bytes)
+                && regression.minimized_request_sha256 == sha256(request_bytes)
+                && maybe_signature == Some(signature_json.as_str())
+            {
+                return Ok(());
+            }
+            Err(FixtureError::SignatureMismatch)
+        }
+        _ => Err(FixtureError::SignatureMismatch),
     }
-    Err(FixtureError::SignatureMismatch)
 }
 
 fn validate_rigid_response(

@@ -388,6 +388,7 @@ impl RigidEvaluation {
 pub struct RigidMinimizationResult {
     request: RigidWorldRequestRecord,
     canonical_request_bytes: Box<[u8]>,
+    target_signature: RigidFailureSignature,
     status: MinimizationStatus,
     attempts: usize,
     evaluations: usize,
@@ -408,6 +409,7 @@ impl RigidMinimizationResult {
         Ok(Self {
             request: state.request,
             canonical_request_bytes: canonical_request_bytes.into_boxed_slice(),
+            target_signature: state.target_signature,
             status,
             attempts: state.attempts,
             evaluations: state.evaluations,
@@ -428,6 +430,12 @@ impl RigidMinimizationResult {
     #[must_use]
     pub fn canonical_request_bytes(&self) -> &[u8] {
         &self.canonical_request_bytes
+    }
+
+    /// Returns the exact first-divergence signature every accepted transform retained.
+    #[must_use]
+    pub const fn target_signature(&self) -> &RigidFailureSignature {
+        &self.target_signature
     }
 
     /// Returns complete or explicitly incomplete status.
@@ -483,6 +491,7 @@ pub enum RigidMinimizationError {
 
 struct RigidReductionState {
     request: RigidWorldRequestRecord,
+    target_signature: RigidFailureSignature,
     attempts: usize,
     evaluations: usize,
     elapsed: Duration,
@@ -493,9 +502,10 @@ struct RigidReductionState {
 }
 
 impl RigidReductionState {
-    fn new(request: &RigidWorldRequestRecord) -> Self {
+    fn new(request: &RigidWorldRequestRecord, target: &RigidFailureSignature) -> Self {
         Self {
             request: request.clone(),
+            target_signature: target.clone(),
             attempts: 0,
             evaluations: 0,
             elapsed: Duration::ZERO,
@@ -527,7 +537,7 @@ where
     F: FnMut(&RigidWorldRequestRecord) -> RigidEvaluation,
 {
     let limits = HarnessLimits::phase2_default_v1();
-    let mut state = RigidReductionState::new(request);
+    let mut state = RigidReductionState::new(request, target);
     if budget.max_attempts == 0 {
         return RigidMinimizationResult::new(
             state,

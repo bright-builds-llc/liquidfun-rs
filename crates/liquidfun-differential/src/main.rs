@@ -266,6 +266,7 @@ fn run_fixture(arguments: impl Iterator<Item = String>) -> Result<ExitCode, CliE
                     preset,
                     session_profile,
                     &generator_revision,
+                    None,
                 )?;
                 write_json(&FixtureStageReport {
                     result_kind: "fixture_staged",
