@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 07-02-PLAN.md
-last_updated: "2026-07-13T02:04:03.612Z"
+stopped_at: Completed 07-03-PLAN.md
+last_updated: "2026-07-13T02:21:08.481Z"
 last_activity: 2026-07-13
 progress:
   total_phases: 12
   completed_phases: 6
   total_plans: 74
-  completed_plans: 64
-  percent: 86
+  completed_plans: 65
+  percent: 88
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 ## Current Position
 
 Phase: 7 (Rigid Solver, World Operations, and CCD) — EXECUTING
-Plan: 3 of 13
+Plan: 4 of 13
 Status: Ready to execute
 Last activity: 2026-07-13
 
@@ -90,6 +90,7 @@ Progress: [██████████] 100%
 | Phase 07 P01 | 21 min | 2 tasks | 6 files |
 | Phase 07 P10 | 23min | 2 tasks | 13 files |
 | Phase 07 P02 | 22 min | 2 tasks | 14 files |
+| Phase 07 P03 | 13 min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -180,6 +181,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 07]: Use the already-reviewed Phase 7 protocol maximum of 1024 for both public solver-iteration bounds. — Production and closed evidence boundaries now share one resource ceiling.
 - [Phase 07]: Compute the warm-start ratio as previous_inverse_time_step * current_time_step and retain the previous inverse across zero-duration calls. — This preserves the pinned source expression and variable-step history.
 - [Phase 07]: Expose only Complete and ContinuousPending while applying automatic force clearing through one status-independent successful-step finalizer. — Later CCD can remain private without changing successful clearing semantics.
+- [Phase 07]: Maintain a transactional newest-first body lane independent of ascending arena slot iteration. — Pinned world-list seed order must survive destruction and slot reuse without changing the generic arena contract.
+- [Phase 07]: Resolve private contact ordinals to manager occurrence indices during immutable island preflight. — Island scratch preserves manager and adjacency order without exposing a durable public contact identity.
+- [Phase 07]: Use mark-on-push LIFO DFS and clear only static visitation after each island. — This matches pinned traversal and lets static boundaries participate in later disconnected islands.
 
 ### Pending Todos
 
@@ -187,6 +191,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-13T02:04:03.609Z
-Stopped at: Completed 07-02-PLAN.md
+Last session: 2026-07-13T02:21:08.478Z
+Stopped at: Completed 07-03-PLAN.md
 Resume file: None
