@@ -318,9 +318,13 @@ profile and one bounded nine-family request. Action kinds, checkpoints,
 completion, identities, flags, counts, and production-ordered lifecycle and
 solve records compare exactly. Numeric body, impulse, query, ray, and origin
 fields use only their named absolute, absolute-relative, or ULP policies. For
-comparison alone, query occurrences are multiplicity-preserving multisets and
-equal-minimum ray identities are sets; nonminimum ray hits and all
-solver-visible production sequences retain their declared ordering.
+comparison alone, query occurrences are multiplicity-preserving multisets.
+Non-terminated exhaustive or filtered ray-hit records use the same multiset
+policy. When both results report independently validated callback-applied
+clipping, equal-minimum ray identities are sets and their numeric hit fields use
+the named policies. A declared clip selector that is not reached remains
+exhaustive, while terminated rays compare completion and callback count.
+Solver-visible production sequences retain their declared ordering.
 
 The C++ executable, protocol, schemas, tolerance registry, and differential
 harness remain private, optional maintainer tooling. None is a dependency or

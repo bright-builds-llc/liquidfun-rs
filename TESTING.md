@@ -426,18 +426,25 @@ read. Unknown actions, observations, policy paths, or witness families fail
 closed.
 
 Action and checkpoint kinds, body/contact/fixture identities, counts, flags,
-wake and sleep states, completion, directives, lifecycle order, manifold-point
-order, and solve order compare exactly. Numeric body position, angle, velocity,
-damping, gravity scale, force, torque, impulse, separation, query, ray, and
-shift fields use only the path-specific exact, absolute, absolute-relative, or
-ULP rule recorded in `protocol/tolerances/phase7-v1.toml`. There is no fallback
-policy and no widening based on iteration count or elapsed steps.
+wake and sleep states, completion, lifecycle order, manifold-point order, and
+solve order compare exactly. Numeric body position, angle, velocity, damping,
+gravity scale, force, torque, impulse, query, ray, and shift fields use only the
+path-specific exact, absolute, absolute-relative, or ULP rule recorded in
+`protocol/tolerances/phase7-v1.toml`. Callback directives are validated request
+inputs, and signed separation remains private solver state; neither is emitted
+as a result observable or registered Phase 7 comparison path. There is no
+fallback policy and no widening based on iteration count or elapsed steps.
 
 World query and ray callback order is intentionally outside the consumer
-contract. The evidence layer compares query occurrences as a multiplicity-preserving multiset and equal-minimum ray identities as a set.
-That canonicalization occurs only during comparison. Nonminimum ray hits and
-all solver-visible body, contact, manifold, lifecycle, and source order remain
-ordered; production traversal is never sorted to satisfy evidence.
+contract. The evidence layer compares query occurrences as a multiplicity-preserving multiset.
+Non-terminated exhaustive or filtered ray-hit records use the same
+multiplicity-preserving multiset policy. When both sides independently validate
+that a callback applied clipping, the evidence layer compares equal-minimum ray identities as a set and applies the named numeric hit policies.
+Declaring a clip rule does not select closest-hit semantics unless its selector
+is actually reached. Terminated rays compare completion and callback count.
+This canonicalization occurs only during comparison; production traversal is
+never sorted to satisfy evidence. Solver-visible body, contact, manifold,
+lifecycle, and source sequences remain ordered.
 
 Continuous evidence exposes only `Complete`, `ContinuousPending`, bounded
 work exhaustion, committed event counts, and transient semantic solve records.
