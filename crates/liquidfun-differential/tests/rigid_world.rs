@@ -17,8 +17,8 @@ use liquidfun_differential::{
 };
 use liquidfun_test_protocol::{
     HarnessLimits, Phase6PolicyProfile, RecordLimit, RigidWorldErrorKind, RigidWorldObservation,
-    RigidWorldRequestRecord, RigidWorldResultRecord, decode_rigid_world_request_jsonl,
-    decode_rigid_world_result_jsonl, encode_jsonl,
+    RigidWorldRequestRecord, RigidWorldResultRecord, RigidWorldWitnessFamily,
+    decode_rigid_world_request_jsonl, decode_rigid_world_result_jsonl, encode_jsonl,
 };
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
@@ -61,7 +61,7 @@ fn result_value(result: &RigidWorldResultRecord) -> Value {
 }
 
 #[test]
-fn native_executes_both_families_deterministically_and_resets() {
+fn native_executes_all_locked_families_deterministically_and_resets() {
     // Arrange
     let request = request();
 
@@ -73,7 +73,7 @@ fn native_executes_both_families_deterministically_and_resets() {
 
     // Assert
     assert_eq!(first, second);
-    assert_eq!(first.timelines().len(), 2);
+    assert_eq!(first.timelines().len(), RigidWorldWitnessFamily::ALL.len());
     assert_eq!(first.timelines()[0].checkpoints.len(), 8);
     assert_eq!(first.timelines()[1].checkpoints.len(), 10);
     validate_native_rigid_world_result(&request, &first)
@@ -90,7 +90,7 @@ fn native_contract_executes_the_exact_fixed_step_tuple() {
         .expect("the validated fixed tuple should execute natively");
 
     // Assert
-    assert_eq!(result.timelines().len(), 2);
+    assert_eq!(result.timelines().len(), RigidWorldWitnessFamily::ALL.len());
 }
 
 #[test]
@@ -280,7 +280,7 @@ fn native_cli_dispatches_through_existing_binary() {
     );
     let result: liquidfun_test_protocol::RigidWorldResultRecord =
         serde_json::from_slice(&output.stdout).expect("CLI stdout should be one result record");
-    assert_eq!(result.timelines().len(), 2);
+    assert_eq!(result.timelines().len(), RigidWorldWitnessFamily::ALL.len());
 }
 
 #[test]
@@ -511,7 +511,10 @@ fn reduction_preserves_validity_family_and_exact_first_divergence_signature() {
     .expect("typed rigid reduction should serialize its best candidate");
 
     // Assert
-    assert_eq!(result.request().scenario().timelines().len(), 2);
+    assert_eq!(
+        result.request().scenario().timelines().len(),
+        RigidWorldWitnessFamily::ALL.len()
+    );
     assert!(
         result.request().scenario().timelines()[0].actions().len() < original_actions,
         "the redundant action should be removable"

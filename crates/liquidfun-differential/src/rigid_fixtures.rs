@@ -3,16 +3,16 @@
 use std::{fs, io, path::Path};
 
 use liquidfun_test_protocol::{
-    BuildIdentity, HarnessLimits, Phase6PolicyProfile, RigidWorldRequestRecord,
-    RigidWorldResultRecord, decode_handshake_jsonl, decode_rigid_world_request_jsonl,
-    decode_rigid_world_result_jsonl,
+    BuildIdentity, HarnessLimits, Phase6PolicyProfile, Phase7PolicyProfile,
+    RigidWorldRequestRecord, RigidWorldResultRecord, decode_handshake_jsonl,
+    decode_rigid_world_request_jsonl, decode_rigid_world_result_jsonl,
 };
 use serde::Deserialize;
 
 use crate::{
     NativeRigidWorldExecutor, OracleExecutable, OraclePreset, RigidComparisonOutcome,
-    compare_rigid_world_results, execute_rigid_world_process, validate_oracle_checkout_identity,
-    validate_rigid_promotion_authority,
+    compare_phase7_rigid_world_results, execute_rigid_world_process,
+    validate_oracle_checkout_identity, validate_rigid_promotion_authority,
 };
 
 use super::{
@@ -28,10 +28,11 @@ use super::{
 };
 
 /// Recorded scenario identity used to dispatch rigid replay without probing unchecked formats.
-pub const RIGID_FIXTURE_SCENARIO_ID: &str = "phase-06-rigid-world";
+pub const RIGID_FIXTURE_SCENARIO_ID: &str = "phase-07-rigid-world";
 
 const REQUEST_PATH: &str = "protocol/fixtures/accepted/rigid-world-request.jsonl";
-const POLICY_PATH: &str = "protocol/tolerances/phase6-v1.toml";
+const PHASE6_POLICY_PATH: &str = "protocol/tolerances/phase6-v1.toml";
+const PHASE7_POLICY_PATH: &str = "protocol/tolerances/phase7-v1.toml";
 
 /// Executes, compares, authorizes, and stages the fixed rigid-world request.
 ///
@@ -61,8 +62,8 @@ pub fn stage_rigid_candidate(
         ));
     }
     let manifest = read_manifest(repository_root)?;
-    let policy = read_policy(repository_root)?;
-    let request_bytes = bind_request(repository_root, &policy)?;
+    let (phase6_policy, phase7_policy) = read_policies(repository_root)?;
+    let request_bytes = bind_request(repository_root, &phase7_policy)?;
     let limits = HarnessLimits::phase2_default_v1();
     enforce_size("request", &request_bytes, limits.input_record_bytes())?;
     let request = decode_rigid_world_request_jsonl(&request_bytes, &limits)
@@ -78,8 +79,14 @@ pub fn stage_rigid_candidate(
             "oracle preset identity mismatch".to_owned(),
         ));
     }
-    let outcome = compare_rigid_world_results(&request, &native, captured.result(), &policy)
-        .map_err(|error| FixtureError::Replay(format!("{error:?}")))?;
+    let outcome = compare_phase7_rigid_world_results(
+        &request,
+        &native,
+        captured.result(),
+        &phase6_policy,
+        &phase7_policy,
+    )
+    .map_err(|error| FixtureError::Replay(format!("{error:?}")))?;
     let (report_bytes, maybe_failure_signature_json) = rigid_stage_report(artifact_kind, &outcome)?;
     enforce_size(
         "trace",
@@ -126,11 +133,11 @@ pub(super) fn replay_rigid_candidate(
     identity_bytes: &[u8],
     scenario_bytes: Vec<u8>,
 ) -> Result<ReplayedCandidate, FixtureError> {
-    let policy = read_policy(repository_root)?;
+    let (phase6_policy, phase7_policy) = read_policies(repository_root)?;
     let limits = HarnessLimits::phase2_default_v1();
     let request = decode_rigid_world_request_jsonl(request_bytes, &limits)
         .map_err(|error| FixtureError::Replay(error.to_string()))?;
-    if request.tolerance_profile_sha256() != policy.profile_sha256()
+    if request.tolerance_profile_sha256() != phase7_policy.profile_sha256()
         || request.scenario().scenario_id().as_str() != metadata.scenario_id
         || serde_json::to_vec(request.scenario())? != scenario_bytes
         || serde_json::to_string(request.scenario().source())? != metadata.source_json
@@ -167,8 +174,14 @@ pub(super) fn replay_rigid_candidate(
         .map_err(|error| FixtureError::Replay(error.to_string()))?;
     let native = NativeRigidWorldExecutor::execute(&request)
         .map_err(|error| FixtureError::Replay(error.to_string()))?;
-    let outcome = compare_rigid_world_results(&request, &native, &oracle, &policy)
-        .map_err(|error| FixtureError::Replay(format!("{error:?}")))?;
+    let outcome = compare_phase7_rigid_world_results(
+        &request,
+        &native,
+        &oracle,
+        &phase6_policy,
+        &phase7_policy,
+    )
+    .map_err(|error| FixtureError::Replay(format!("{error:?}")))?;
     verify_rigid_report(
         metadata.artifact_kind,
         &outcome,
@@ -295,16 +308,27 @@ fn write_rigid_candidate(
     })
 }
 
-fn read_policy(repository_root: &Path) -> Result<Phase6PolicyProfile, FixtureError> {
-    let bytes = fs::read(repository_root.join(POLICY_PATH))?;
-    let text =
-        std::str::from_utf8(&bytes).map_err(|error| FixtureError::Replay(error.to_string()))?;
-    Phase6PolicyProfile::parse_toml(text).map_err(|error| FixtureError::Replay(error.to_string()))
+fn read_policies(
+    repository_root: &Path,
+) -> Result<(Phase6PolicyProfile, Phase7PolicyProfile), FixtureError> {
+    let phase6 = read_policy_text(repository_root, PHASE6_POLICY_PATH)?;
+    let phase7 = read_policy_text(repository_root, PHASE7_POLICY_PATH)?;
+    Ok((
+        Phase6PolicyProfile::parse_toml(&phase6)
+            .map_err(|error| FixtureError::Replay(error.to_string()))?,
+        Phase7PolicyProfile::parse_toml(&phase7)
+            .map_err(|error| FixtureError::Replay(error.to_string()))?,
+    ))
+}
+
+fn read_policy_text(repository_root: &Path, relative: &str) -> Result<String, FixtureError> {
+    let bytes = fs::read(repository_root.join(relative))?;
+    String::from_utf8(bytes).map_err(|error| FixtureError::Replay(error.to_string()))
 }
 
 fn bind_request(
     repository_root: &Path,
-    policy: &Phase6PolicyProfile,
+    policy: &Phase7PolicyProfile,
 ) -> Result<Vec<u8>, FixtureError> {
     let bytes = fs::read(repository_root.join(REQUEST_PATH))?;
     let mut value: serde_json::Value = serde_json::from_slice(&bytes)?;

@@ -12,15 +12,16 @@ use liquidfun_differential::{
     NativeRigidWorldExecutor, OracleExecutable, OraclePreset, Phase4ComparisonEvidence,
     Phase4DiscreteMismatchReport, Phase4HarnessFailureReason, Phase4HarnessFailureReport,
     Phase4MathMismatchReport, RigidComparisonOutcome, compare_collision_probe_results,
-    compare_rigid_world_results, execute_collision_probe_process, execute_math_probe_process,
-    execute_rigid_world_process, float_values_match_with_policy, validate_oracle_checkout_identity,
+    compare_phase7_rigid_world_results, execute_collision_probe_process,
+    execute_math_probe_process, execute_rigid_world_process, float_values_match_with_policy,
+    validate_oracle_checkout_identity,
 };
 use liquidfun_test_protocol::{
     BuildEvidenceTier, BuildIdentity, CollisionProbeRequestRecord, CollisionProbeResult,
     DivergenceHorizon, EvidenceTier, HarnessLimits, MathProbeHorizon, MathProbeRequestRecord,
     MathProbeResult, Phase4PolicyProfile, Phase5PolicyProfile, Phase6PolicyProfile,
-    RigidWorldRequestRecord, decode_collision_probe_request_jsonl, decode_math_probe_request_jsonl,
-    decode_rigid_world_request_jsonl,
+    Phase7PolicyProfile, RigidWorldRequestRecord, decode_collision_probe_request_jsonl,
+    decode_math_probe_request_jsonl, decode_rigid_world_request_jsonl,
 };
 use sha2::{Digest, Sha256};
 
@@ -44,6 +45,7 @@ const COLLISION_PROBE_REQUEST: &str = "protocol/fixtures/accepted/collision-prob
 const PHASE5_POLICY: &str = "protocol/tolerances/phase5-v1.toml";
 const RIGID_WORLD_REQUEST: &str = "protocol/fixtures/accepted/rigid-world-request.jsonl";
 const PHASE6_POLICY: &str = "protocol/tolerances/phase6-v1.toml";
+const PHASE7_POLICY: &str = "protocol/tolerances/phase7-v1.toml";
 const NATIVE_SOURCE_MANIFEST: &str = "crates/liquidfun-differential/native-math-sources.txt";
 const ALLOWED_SCENARIOS: [&str; 4] = [
     "empty-world",
@@ -518,12 +520,17 @@ fn run_rigid_world_command(
     repository_root: &Path,
     invocation: &MathProbeInvocation,
 ) -> Result<(), DifferentialError> {
-    let policy_bytes = read_regular_file(repository_root, PHASE6_POLICY)?;
-    let policy_text = std::str::from_utf8(&policy_bytes)
+    let phase6_policy_bytes = read_regular_file(repository_root, PHASE6_POLICY)?;
+    let phase6_policy_text = std::str::from_utf8(&phase6_policy_bytes)
         .map_err(|error| DifferentialError::new("protocol", error.to_string()))?;
-    let policy = Phase6PolicyProfile::parse_toml(policy_text)
+    let phase6_policy = Phase6PolicyProfile::parse_toml(phase6_policy_text)
         .map_err(|error| DifferentialError::new("policy", error.to_string()))?;
-    let request = rigid_world_request(repository_root, &policy)?;
+    let phase7_policy_bytes = read_regular_file(repository_root, PHASE7_POLICY)?;
+    let phase7_policy_text = std::str::from_utf8(&phase7_policy_bytes)
+        .map_err(|error| DifferentialError::new("protocol", error.to_string()))?;
+    let phase7_policy = Phase7PolicyProfile::parse_toml(phase7_policy_text)
+        .map_err(|error| DifferentialError::new("policy", error.to_string()))?;
+    let request = rigid_world_request(repository_root, &phase7_policy)?;
 
     if invocation.action == MathProbeAction::VerifyDeterminism {
         return verify_rigid_world_determinism(
@@ -537,13 +544,19 @@ fn run_rigid_world_command(
     let captured = execute_rigid_world_once(repository_root, &request, &invocation.preset)?;
     let native = NativeRigidWorldExecutor::execute(&request)
         .map_err(|error| DifferentialError::new("native", error.to_string()))?;
-    let outcome = compare_rigid_world_results(&request, &native, captured.result(), &policy)
-        .map_err(|error| {
-            DifferentialError::new(
-                "rigid-harness",
-                serde_json::to_string(&error).unwrap_or_else(|_| format!("{error:?}")),
-            )
-        })?;
+    let outcome = compare_phase7_rigid_world_results(
+        &request,
+        &native,
+        captured.result(),
+        &phase6_policy,
+        &phase7_policy,
+    )
+    .map_err(|error| {
+        DifferentialError::new(
+            "rigid-harness",
+            serde_json::to_string(&error).unwrap_or_else(|_| format!("{error:?}")),
+        )
+    })?;
     let RigidComparisonOutcome::Match = outcome else {
         let RigidComparisonOutcome::PhysicsMismatch(report) = outcome else {
             unreachable!("rigid comparison has exactly two outcomes")
@@ -577,7 +590,7 @@ fn run_rigid_world_command(
     println!(
         "rigid-world {action}: {} required families matched under {} ({}); oracle={}, native={}",
         request.scenario().timelines().len(),
-        policy.profile_id(),
+        phase7_policy.profile_id(),
         invocation.preset,
         build_evidence_label(captured.identity().evidence_tier()),
         build_evidence_label(native_identity.build_identity().evidence_tier()),
@@ -587,7 +600,7 @@ fn run_rigid_world_command(
 
 fn rigid_world_request(
     repository_root: &Path,
-    policy: &Phase6PolicyProfile,
+    policy: &Phase7PolicyProfile,
 ) -> Result<RigidWorldRequestRecord, DifferentialError> {
     let request_bytes = read_regular_file(repository_root, RIGID_WORLD_REQUEST)?;
     let mut request_value: serde_json::Value = serde_json::from_slice(&request_bytes)

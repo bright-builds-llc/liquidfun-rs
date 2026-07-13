@@ -16,15 +16,22 @@
            {"gravity_scale_bits", bits_from_float(value.GetGravityScale())}}}});
   }
   void configured_step(const ConfiguredStep& step) {
+    const auto velocity_iterations = static_cast<int32>(step.velocity_iterations);
+    const auto position_iterations = static_cast<int32>(step.position_iterations);
+    const auto bounded_budget_pause =
+        timeline_.family == RigidWitnessFamily::continuous_budget &&
+        step.continuous_work_budget == 1 && !budget_pending_;
+    const auto original_sub_stepping = world_.GetSubStepping();
+    if (bounded_budget_pause) world_.SetSubStepping(true);
     world_.Step(
         float_from_bits(step.timestep),
-        static_cast<int32>(step.velocity_iterations),
-        static_cast<int32>(step.position_iterations),
+        velocity_iterations,
+        position_iterations,
         1);
+    if (bounded_budget_pause) world_.SetSubStepping(original_sub_stepping);
+    const auto budget_paused = bounded_budget_pause && world_.GetContactCount() > 0;
     Json outcome;
-    if (timeline_.family == RigidWitnessFamily::continuous_budget &&
-        step.continuous_work_budget == 1 && world_.GetContactCount() > 0 &&
-        !budget_pending_) {
+    if (budget_paused) {
       budget_pending_ = true;
       outcome = {
           {"kind", "partial"},

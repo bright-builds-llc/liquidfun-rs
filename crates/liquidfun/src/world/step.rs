@@ -436,6 +436,7 @@ pub struct StepReport {
     events: Vec<ContactEvent>,
     contact_transitions: Vec<ContactTransition>,
     contact_solves: Vec<ContactSolve>,
+    continuous_contact_solves: Vec<ContactSolve>,
     lifecycle: Vec<StepLifecycleEvent>,
     destructions: Vec<DestructionRecord>,
     command_applications: Vec<CommandApplication>,
@@ -476,6 +477,15 @@ impl StepReport {
     #[must_use]
     pub fn contact_solves(&self) -> &[ContactSolve] {
         &self.contact_solves
+    }
+
+    /// Returns transient post-solve state for committed continuous events.
+    ///
+    /// These snapshots are reported in TOI solver order and are not stored in
+    /// the persistent warm-start impulse lanes.
+    #[must_use]
+    pub fn continuous_contact_solves(&self) -> &[ContactSolve] {
+        &self.continuous_contact_solves
     }
 
     /// Returns all owned lifecycle evidence in exact production order.
@@ -639,47 +649,47 @@ impl World {
             self.continuous_step_state.invalidate();
             ContinuousStepKind::Fresh
         };
-        let mut contact_transitions = Vec::new();
-        let mut events = Vec::new();
-        let mut commands = Vec::new();
+        let mut contact_transitions;
+        let events;
+        let commands;
         let mut contact_solves = Vec::new();
+        let mut continuous_contact_solves = Vec::new();
         let completion = {
             let _lock = step_lock;
-            if step_kind == ContinuousStepKind::Fresh {
-                phases.push(StepPhase::FindPairs);
-                self.find_pairs();
-                phases.push(StepPhase::UpdateContacts);
-                self.update_contacts_for_step();
-                contact_transitions = self.contact_manager.drain_transitions();
-                if configuration.time_step() > 0.0 {
-                    self.preflight_contact_solver()
-                        .map_err(|error| solver_step_error(error, &contact_transitions))?;
-                }
+            phases.push(StepPhase::FindPairs);
+            self.find_pairs();
+            phases.push(StepPhase::UpdateContacts);
+            self.update_contacts_for_step();
+            contact_transitions = self.contact_manager.drain_transitions();
+            if step_kind == ContinuousStepKind::Fresh && configuration.time_step() > 0.0 {
+                self.preflight_contact_solver()
+                    .map_err(|error| solver_step_error(error, &contact_transitions))?;
+            }
 
-                phases.push(StepPhase::Hook);
-                let occurrences = self.contact_manager.hook_contacts();
-                (events, commands) = self.run_contact_hooks(&occurrences, hook, limits)?;
-                if configuration.time_step() > 0.0 {
-                    phases.push(StepPhase::Solve);
-                    contact_solves = self
-                        .solve_contact_constraints(
-                            configuration,
-                            timing,
-                            limits.maybe_failure_injection,
-                        )
-                        .map_err(|error| solver_step_error(error, &contact_transitions))?;
-                }
+            phases.push(StepPhase::Hook);
+            let occurrences = self.contact_manager.hook_contacts();
+            (events, commands) = self.run_contact_hooks(&occurrences, hook, limits)?;
+            if step_kind == ContinuousStepKind::Fresh && configuration.time_step() > 0.0 {
+                phases.push(StepPhase::Solve);
+                contact_solves = self
+                    .solve_contact_constraints(
+                        configuration,
+                        timing,
+                        limits.maybe_failure_injection,
+                    )
+                    .map_err(|error| solver_step_error(error, &contact_transitions))?;
             }
 
             if continuous_enabled {
-                let completion = self.run_continuous_stage(
+                let continuous = self.run_continuous_stage(
                     configuration,
                     continuous_key,
                     limits.max_continuous_work,
                     &contact_transitions,
                 )?;
+                continuous_contact_solves = continuous.contact_solves;
                 contact_transitions.extend(self.contact_manager.drain_transitions());
-                completion
+                continuous.completion
             } else {
                 StepCompletion::Complete
             }
@@ -694,6 +704,12 @@ impl World {
         lifecycle.extend(events.iter().cloned().map(StepLifecycleEvent::Hook));
         lifecycle.extend(
             contact_solves
+                .iter()
+                .cloned()
+                .map(StepLifecycleEvent::Solve),
+        );
+        lifecycle.extend(
+            continuous_contact_solves
                 .iter()
                 .cloned()
                 .map(StepLifecycleEvent::Solve),
@@ -714,6 +730,7 @@ impl World {
             events,
             contact_transitions,
             contact_solves,
+            continuous_contact_solves,
             lifecycle,
             destructions,
             command_applications,

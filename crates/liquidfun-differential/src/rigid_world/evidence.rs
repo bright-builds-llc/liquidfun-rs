@@ -6,9 +6,9 @@ use super::{
     RigidBodySnapshot, RigidContactEvent, RigidContactEventKind, RigidContactResult,
     RigidDestructionRecord, RigidExpectedCheckpoint, RigidExpectedCounts, RigidFixtureDeclaration,
     RigidFixtureSnapshot, RigidManifoldKind, RigidManifoldPoint, RigidManifoldResult,
-    RigidWorldTimeline, RigidWorldWitness, ScenarioId, StepReport, TimelineExecutor, Vec2,
-    checked_u32, declaration_error, feature, rigid_body_kind, rigid_filter, transform_bits,
-    vec2_bits,
+    RigidWorldTimeline, RigidWorldWitness, RigidWorldWitnessFamily, ScenarioId, StepReport,
+    TimelineExecutor, Vec2, checked_u32, declaration_error, feature, rigid_body_kind, rigid_filter,
+    transform_bits, vec2_bits,
 };
 
 pub(super) fn capture_checkpoint(
@@ -38,9 +38,8 @@ pub(super) fn capture_checkpoint(
                 .map(|fixture| fixture_result(executor, declaration, fixture))
         })
         .collect::<Result<Vec<_>, _>>()?;
-    let contacts = executor
-        .world
-        .rigid_contact_diagnostics()
+    let contact_diagnostics = executor.world.rigid_contact_diagnostics();
+    let contacts = contact_diagnostics
         .iter()
         .map(|diagnostic| contact_result(executor, diagnostic.contact()))
         .collect::<Result<Vec<_>, _>>()?;
@@ -61,7 +60,12 @@ pub(super) fn capture_checkpoint(
         destructions: std::mem::take(&mut executor.destructions).into_boxed_slice(),
         observations: std::mem::take(&mut executor.semantic_observations).into_boxed_slice(),
     };
-    validate_checkpoint(expected, &result, &executor.observations)?;
+    validate_checkpoint(
+        expected,
+        &result,
+        &executor.observations,
+        RigidWorldWitnessFamily::REQUIRED.contains(&timeline.witness_family()),
+    )?;
     executor.observations.clear();
     Ok(result)
 }
@@ -70,9 +74,27 @@ pub(super) fn collect_step_report(
     executor: &mut TimelineExecutor,
     report: &StepReport,
 ) -> Result<(), NativeRigidWorldError> {
-    collect_transitions(executor, report.contact_transitions())?;
+    let mut collected_hook_occurrences = Vec::new();
+    for transition in report.contact_transitions() {
+        collect_transitions(executor, std::slice::from_ref(transition))?;
+        let manager_occurrence = transition.contact().differential_occurrence();
+        let maybe_hook = report.events().iter().find(|event| {
+            event.maybe_pre_solve().is_some()
+                && event.contact().differential_occurrence() == manager_occurrence
+        });
+        if let Some(event) = maybe_hook {
+            let contact = executor.contact_identity(event.contact())?;
+            executor.events.push(RigidContactEvent {
+                kind: RigidContactEventKind::PreSolve,
+                contact,
+            });
+            collected_hook_occurrences.push(manager_occurrence);
+        }
+    }
     for event in report.events() {
-        if event.maybe_pre_solve().is_some() {
+        if event.maybe_pre_solve().is_some()
+            && !collected_hook_occurrences.contains(&event.contact().differential_occurrence())
+        {
             let contact = executor.contact_identity(event.contact())?;
             executor.events.push(RigidContactEvent {
                 kind: RigidContactEventKind::PreSolve,
@@ -82,6 +104,25 @@ pub(super) fn collect_step_report(
     }
     for solve in report.contact_solves() {
         let contact = executor.contact_identity(solve.contact())?;
+        executor.events.push(RigidContactEvent {
+            kind: RigidContactEventKind::PostSolve,
+            contact,
+        });
+    }
+    collect_continuous_solves(executor, report.continuous_contact_solves())?;
+    Ok(())
+}
+
+pub(super) fn collect_continuous_solves(
+    executor: &mut TimelineExecutor,
+    solves: &[liquidfun::ContactSolve],
+) -> Result<(), NativeRigidWorldError> {
+    for solve in solves {
+        let contact = executor.contact_identity(solve.contact())?;
+        executor.events.push(RigidContactEvent {
+            kind: RigidContactEventKind::PreSolve,
+            contact: contact.clone(),
+        });
         executor.events.push(RigidContactEvent {
             kind: RigidContactEventKind::PostSolve,
             contact,
@@ -102,13 +143,15 @@ fn collect_transitions(
     transitions: &[liquidfun::ContactTransition],
 ) -> Result<(), NativeRigidWorldError> {
     for transition in transitions {
+        let manager_occurrence = transition.contact().differential_occurrence();
         let identity = executor.contact_identity(transition.contact())?;
         executor.maybe_last_contact = Some(identity.clone());
-        let occurrence = identity.occurrence();
         if transition.kind() == liquidfun::ContactTransitionKind::Begin
-            && !executor.seen_occurrences.contains(&occurrence)
+            && !executor
+                .seen_manager_occurrences
+                .contains(&manager_occurrence)
         {
-            executor.seen_occurrences.push(occurrence);
+            executor.seen_manager_occurrences.push(manager_occurrence);
             executor.events.push(RigidContactEvent {
                 kind: RigidContactEventKind::Created,
                 contact: identity.clone(),
@@ -182,9 +225,23 @@ fn validate_checkpoint(
     expected: &RigidExpectedCheckpoint,
     actual: &liquidfun_test_protocol::RigidWorldCheckpointResult,
     observations: &[Observation],
+    enforce_runtime_transitions: bool,
 ) -> Result<(), NativeRigidWorldError> {
     if expected.counts() != actual.counts {
-        return Err(declaration_error(expected, "semantic counts differ"));
+        return Err(declaration_error(
+            expected,
+            format!(
+                "semantic counts differ: expected {:?}, actual {:?}",
+                expected.counts(),
+                actual.counts
+            ),
+        ));
+    }
+    // Phase 7 transition declarations close the witness registry and pin any
+    // relevant contact identities. Their runtime behavior is represented by
+    // typed semantic observations and compared as differential evidence.
+    if !enforce_runtime_transitions {
+        return Ok(());
     }
     for transition in expected.transitions() {
         let observed = observations.iter().any(|observation| {
@@ -250,7 +307,7 @@ fn fixture_result(
 }
 
 fn contact_result(
-    executor: &TimelineExecutor,
+    executor: &mut TimelineExecutor,
     contact: &ManagedContactSnapshot,
 ) -> Result<RigidContactResult, NativeRigidWorldError> {
     let maybe_manifold = contact

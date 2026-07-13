@@ -299,8 +299,9 @@ fn execute_configured_step(
                     outcome: RigidStepOutcome::Completed { completion },
                 });
         }
-        Err(StepError::ContinuousWorkLimitExceeded { .. }) => {
+        Err(StepError::ContinuousWorkLimitExceeded { progress, .. }) => {
             collect_direct_transitions(executor)?;
+            super::evidence::collect_continuous_solves(executor, progress.contact_solves())?;
             executor
                 .semantic_observations
                 .push(RigidWorldObservation::Step {

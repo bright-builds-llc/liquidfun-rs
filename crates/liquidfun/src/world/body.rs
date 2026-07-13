@@ -653,10 +653,14 @@ impl BodyState {
 
     pub(super) fn candidate_advance_to(mut self, fraction: f32) -> Result<Self, SweepError> {
         self.sweep.advance(fraction)?;
+        let local_center = self.sweep.local_center();
+        let center = self.sweep.initial_center();
+        let angle = self.sweep.initial_angle();
+        self.sweep = Sweep::new(local_center, center, center, angle, angle, fraction)?;
         let transform = self.sweep.transform_at(0.0)?;
         self.transform = transform;
         self.snapshot.position = transform.position();
-        self.snapshot.angle = self.sweep.initial_angle();
+        self.snapshot.angle = angle;
         Ok(self)
     }
 

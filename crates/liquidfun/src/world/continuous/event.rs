@@ -107,6 +107,26 @@ impl World {
         if !transient_normal_impulse_sum.is_finite() {
             return Err(ContinuousEventError::Solve(ContactSolveFailure::NonFinite));
         }
+        let mut contact_solves = Vec::new();
+        contact_solves
+            .try_reserve_exact(solution.contact_impulses.len())
+            .map_err(|_| {
+                ContinuousEventError::Solve(ContactSolveFailure::CapacityExceeded {
+                    resource: "continuous contact reports",
+                    limit: solution.contact_impulses.len(),
+                })
+            })?;
+        for contact in &solution.contact_impulses {
+            let maybe_solve = self
+                .contact_manager
+                .maybe_staged_solve(contact.contact_index, &contact.impulses);
+            let Some(solve) = maybe_solve else {
+                return Err(ContinuousEventError::Solve(
+                    ContactSolveFailure::UnsupportedTopology,
+                ));
+            };
+            contact_solves.push(solve);
+        }
 
         for (body_id, state) in solution
             .body_ids
@@ -135,6 +155,7 @@ impl World {
             body_ids: solution.body_ids,
             contact_occurrences,
             transient_normal_impulse_sum,
+            contact_solves,
         }))
     }
 

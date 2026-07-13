@@ -4,7 +4,7 @@ mod base;
 mod declaration;
 mod phase7;
 
-use base::{compare_checkpoint, first_rigid_divergence};
+use base::{compare_checkpoint_inherited, first_rigid_divergence};
 use declaration::validate_rigid_declarations_with_identity;
 
 use liquidfun_test_protocol::{

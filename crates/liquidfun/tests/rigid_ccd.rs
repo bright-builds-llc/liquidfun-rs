@@ -52,6 +52,32 @@ fn create_circle_body(
     body
 }
 
+fn create_unit_circle_body(world: &mut World, body_type: BodyType, position: Vec2) -> BodyId {
+    let body = world
+        .create_body(
+            &BodyDef::new(body_type, position, 0.0, true)
+                .expect("test body definition should be valid"),
+        )
+        .expect("test body should fit");
+    let fixture = FixtureDef::new(
+        Shape::from(CircleShape::new(Vec2::ZERO, 1.0).expect("test circle should be valid")),
+        if body_type == BodyType::Dynamic {
+            1.0
+        } else {
+            0.0
+        },
+        0.2,
+        0.0,
+        false,
+        FilterData::default(),
+    )
+    .expect("test fixture definition should be valid");
+    world
+        .create_fixture(body, &fixture)
+        .expect("test fixture should fit");
+    body
+}
+
 fn swept_world(target_count: usize) -> (World, BodyId, Vec<BodyId>, StepConfiguration) {
     let mut world = World::new().expect("test world key should remain available");
     let moving = create_circle_body(
@@ -83,6 +109,33 @@ fn swept_world(target_count: usize) -> (World, BodyId, Vec<BodyId>, StepConfigur
         .set_continuous_physics_enabled(true)
         .expect("test configuration should remain mutable");
     (world, moving, targets, configuration)
+}
+
+#[test]
+fn accepted_substep_preserves_symmetric_multi_contact_center() {
+    // Arrange
+    let mut world = World::new().expect("test world key should remain available");
+    world
+        .set_sub_stepping_enabled(true)
+        .expect("sub-stepping control should remain mutable");
+    let _left = create_unit_circle_body(&mut world, BodyType::Static, Vec2::new(-1.0, 0.0));
+    let dynamic = create_unit_circle_body(&mut world, BodyType::Dynamic, Vec2::ZERO);
+    let _right = create_unit_circle_body(&mut world, BodyType::Static, Vec2::new(1.0, 0.0));
+    let configuration =
+        StepConfiguration::new(1.0 / 60.0, 8, 3).expect("test step should be valid");
+
+    // Act
+    let report = world
+        .step(configuration, &mut NoopHook, StepLimits::default())
+        .expect("one accepted TOI event should remain coherent");
+    let snapshot = world
+        .body_snapshot(dynamic)
+        .expect("dynamic body should remain live");
+
+    // Assert
+    assert_eq!(report.completion(), StepCompletion::ContinuousPending);
+    assert_eq!(snapshot.position().x.to_bits(), 0.0_f32.to_bits());
+    assert_eq!(snapshot.position().y.to_bits(), 0.0_f32.to_bits());
 }
 
 #[test]
@@ -208,6 +261,7 @@ fn substepping_accepts_one_toi_event_and_resumes_without_repeating_discrete_work
         .body_snapshot(moving)
         .expect("moving body should remain live")
         .position();
+    let stored_after_pending = world.rigid_contact_diagnostics();
     let complete = world
         .step(configuration, &mut NoopHook, StepLimits::default())
         .expect("matching continuation should succeed");
@@ -218,10 +272,30 @@ fn substepping_accepts_one_toi_event_and_resumes_without_repeating_discrete_work
 
     // Assert
     assert_eq!(pending.completion(), StepCompletion::ContinuousPending);
+    assert_eq!(pending.continuous_contact_solves().len(), 1);
+    assert!(
+        pending.continuous_contact_solves()[0]
+            .contact()
+            .points()
+            .iter()
+            .any(|point| point.normal_impulse() > 0.0)
+    );
+    assert!(
+        stored_after_pending
+            .iter()
+            .flat_map(|contact| contact.contact().points())
+            .all(
+                |point| point.normal_impulse().to_bits() == 0.0_f32.to_bits()
+                    && point.tangent_impulse().to_bits() == 0.0_f32.to_bits()
+            )
+    );
     assert_eq!(complete.completion(), StepCompletion::Complete);
     assert_eq!(position_after_resume, position_after_pending);
-    assert!(complete.events().is_empty());
+    assert_eq!(complete.contact_transitions().len(), 1);
+    assert_eq!(complete.events().len(), 1);
+    assert!(complete.events()[0].maybe_pre_solve().is_some());
     assert!(complete.contact_solves().is_empty());
+    assert!(complete.continuous_contact_solves().is_empty());
 }
 
 #[test]

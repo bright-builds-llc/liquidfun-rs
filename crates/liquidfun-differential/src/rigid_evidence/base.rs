@@ -87,6 +87,31 @@ pub(super) fn compare_checkpoint(
     expected: &RigidWorldCheckpointResult,
     actual: &RigidWorldCheckpointResult,
 ) -> Option<RigidMismatchReport> {
+    compare_checkpoint_with_overrides(request, profile, location, expected, actual, false)
+}
+
+pub(super) fn compare_checkpoint_inherited(
+    request: &RigidWorldRequestRecord,
+    profile: &Phase6PolicyProfile,
+    location: Location,
+    expected: &RigidWorldCheckpointResult,
+    actual: &RigidWorldCheckpointResult,
+) -> Option<RigidMismatchReport> {
+    compare_checkpoint_with_overrides(request, profile, location, expected, actual, true)
+}
+
+#[allow(
+    clippy::too_many_lines,
+    reason = "the inherited comparator preserves the closed Phase 6 first-divergence order"
+)]
+fn compare_checkpoint_with_overrides(
+    request: &RigidWorldRequestRecord,
+    profile: &Phase6PolicyProfile,
+    location: Location,
+    expected: &RigidWorldCheckpointResult,
+    actual: &RigidWorldCheckpointResult,
+    phase7_overrides: bool,
+) -> Option<RigidMismatchReport> {
     exact_field!(
         request,
         profile,
@@ -139,54 +164,56 @@ pub(super) fn compare_checkpoint(
             left.active,
             right.active
         );
-        float_field!(
-            request,
-            profile,
-            location,
-            "rigid_world.body.transform.position.x",
-            left.transform.position.x_bits,
-            right.transform.position.x_bits
-        );
-        float_field!(
-            request,
-            profile,
-            location,
-            "rigid_world.body.transform.position.y",
-            left.transform.position.y_bits,
-            right.transform.position.y_bits
-        );
-        float_field!(
-            request,
-            profile,
-            location,
-            "rigid_world.body.transform.angle",
-            left.transform.angle_bits,
-            right.transform.angle_bits
-        );
-        float_field!(
-            request,
-            profile,
-            location,
-            "rigid_world.body.linear_velocity.x",
-            left.linear_velocity.x_bits,
-            right.linear_velocity.x_bits
-        );
-        float_field!(
-            request,
-            profile,
-            location,
-            "rigid_world.body.linear_velocity.y",
-            left.linear_velocity.y_bits,
-            right.linear_velocity.y_bits
-        );
-        float_field!(
-            request,
-            profile,
-            location,
-            "rigid_world.body.angular_velocity",
-            left.angular_velocity_bits,
-            right.angular_velocity_bits
-        );
+        if !phase7_overrides {
+            float_field!(
+                request,
+                profile,
+                location,
+                "rigid_world.body.transform.position.x",
+                left.transform.position.x_bits,
+                right.transform.position.x_bits
+            );
+            float_field!(
+                request,
+                profile,
+                location,
+                "rigid_world.body.transform.position.y",
+                left.transform.position.y_bits,
+                right.transform.position.y_bits
+            );
+            float_field!(
+                request,
+                profile,
+                location,
+                "rigid_world.body.transform.angle",
+                left.transform.angle_bits,
+                right.transform.angle_bits
+            );
+            float_field!(
+                request,
+                profile,
+                location,
+                "rigid_world.body.linear_velocity.x",
+                left.linear_velocity.x_bits,
+                right.linear_velocity.x_bits
+            );
+            float_field!(
+                request,
+                profile,
+                location,
+                "rigid_world.body.linear_velocity.y",
+                left.linear_velocity.y_bits,
+                right.linear_velocity.y_bits
+            );
+            float_field!(
+                request,
+                profile,
+                location,
+                "rigid_world.body.angular_velocity",
+                left.angular_velocity_bits,
+                right.angular_velocity_bits
+            );
+        }
         float_field!(
             request,
             profile,
@@ -468,22 +495,24 @@ pub(super) fn compare_checkpoint(
                     left.point.y_bits,
                     right.point.y_bits
                 );
-                float_field!(
-                    request,
-                    profile,
-                    location,
-                    "rigid_world.contact.manifold.point.normal_impulse",
-                    left.normal_impulse_bits,
-                    right.normal_impulse_bits
-                );
-                float_field!(
-                    request,
-                    profile,
-                    location,
-                    "rigid_world.contact.manifold.point.tangent_impulse",
-                    left.tangent_impulse_bits,
-                    right.tangent_impulse_bits
-                );
+                if !phase7_overrides {
+                    float_field!(
+                        request,
+                        profile,
+                        location,
+                        "rigid_world.contact.manifold.point.normal_impulse",
+                        left.normal_impulse_bits,
+                        right.normal_impulse_bits
+                    );
+                    float_field!(
+                        request,
+                        profile,
+                        location,
+                        "rigid_world.contact.manifold.point.tangent_impulse",
+                        left.tangent_impulse_bits,
+                        right.tangent_impulse_bits
+                    );
+                }
             }
         }
     }

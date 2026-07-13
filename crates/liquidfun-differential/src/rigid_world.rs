@@ -123,7 +123,8 @@ struct TimelineExecutor {
     world: World,
     bodies: Vec<(ScenarioId, BodyId)>,
     fixtures: Vec<(ScenarioId, FixtureId)>,
-    seen_occurrences: Vec<u32>,
+    contact_identities: Vec<(u64, RigidContactIdentity)>,
+    seen_manager_occurrences: Vec<u64>,
     maybe_last_contact: Option<RigidContactIdentity>,
     events: Vec<RigidContactEvent>,
     destructions: Vec<RigidDestructionRecord>,
@@ -154,7 +155,8 @@ impl TimelineExecutor {
             world,
             bodies: Vec::new(),
             fixtures: Vec::new(),
-            seen_occurrences: Vec::new(),
+            contact_identities: Vec::new(),
+            seen_manager_occurrences: Vec::new(),
             maybe_last_contact: None,
             events: Vec::new(),
             destructions: Vec::new(),
@@ -196,25 +198,45 @@ impl TimelineExecutor {
     }
 
     fn contact_identity(
-        &self,
+        &mut self,
         contact: &ManagedContactSnapshot,
     ) -> Result<RigidContactIdentity, NativeRigidWorldError> {
+        let manager_occurrence = contact.differential_occurrence();
+        if let Some((_, identity)) = self
+            .contact_identities
+            .iter()
+            .find(|(candidate, _)| *candidate == manager_occurrence)
+        {
+            return Ok(identity.clone());
+        }
         let fixtures = contact.fixtures();
         let children = contact.child_indices();
-        let occurrence = u32::try_from(contact.differential_occurrence()).map_err(|_| {
-            NativeRigidWorldError::Declaration {
+        let fixture_a_id = self.semantic_fixture(fixtures[0])?;
+        let fixture_b_id = self.semantic_fixture(fixtures[1])?;
+        let child_a = checked_u32(children[0].get(), "contact-child")?;
+        let child_b = checked_u32(children[1].get(), "contact-child")?;
+        let prior_occurrences = self
+            .contact_identities
+            .iter()
+            .filter(|(_, identity)| {
+                identity.fixture_a_id() == &fixture_a_id
+                    && identity.child_a() == child_a
+                    && identity.fixture_b_id() == &fixture_b_id
+                    && identity.child_b() == child_b
+            })
+            .count();
+        let occurrence = u32::try_from(prior_occurrences)
+            .ok()
+            .and_then(|count| count.checked_add(1))
+            .ok_or_else(|| NativeRigidWorldError::Declaration {
                 checkpoint_id: "contact-occurrence".into(),
                 message: "contact occurrence exceeded the protocol representation".into(),
-            }
-        })?;
-        RigidContactIdentity::new(
-            self.semantic_fixture(fixtures[0])?,
-            checked_u32(children[0].get(), "contact-child")?,
-            self.semantic_fixture(fixtures[1])?,
-            checked_u32(children[1].get(), "contact-child")?,
-            occurrence,
-        )
-        .map_err(Into::into)
+            })?;
+        let identity =
+            RigidContactIdentity::new(fixture_a_id, child_a, fixture_b_id, child_b, occurrence)?;
+        self.contact_identities
+            .push((manager_occurrence, identity.clone()));
+        Ok(identity)
     }
 
     fn push_observation(

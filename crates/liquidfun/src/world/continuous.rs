@@ -6,7 +6,7 @@ use crate::math::{SweepError, min};
 use super::config::StepConfiguration;
 use super::contact::{ToiAlpha, ToiCountLimitReached};
 use super::contact_manager::ContactManager;
-use super::contact_solver::ContactSolveFailure;
+use super::contact_solver::{ContactSolve, ContactSolveFailure};
 use super::fixture::FixtureBoundsError;
 use super::island::{
     IslandBuildError, ToiIsland, ToiIslandLimits, ToiIslandSolution, solve_toi_island,
@@ -116,6 +116,7 @@ pub(super) struct ContinuousEvent {
     pub(super) body_ids: Vec<BodyId>,
     pub(super) contact_occurrences: Vec<u64>,
     pub(super) transient_normal_impulse_sum: f32,
+    pub(super) contact_solves: Vec<ContactSolve>,
 }
 
 struct ContinuousWorldBackup {

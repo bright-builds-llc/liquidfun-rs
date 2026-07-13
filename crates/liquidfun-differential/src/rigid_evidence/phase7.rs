@@ -16,7 +16,7 @@ use crate::{float_values_match_with_policy, multiset_values_match};
 
 use super::{
     EvidenceContext, Location, RigidComparisonFailure, RigidCompletionContext, RigidHarnessReport,
-    RigidMismatchKind, RigidMismatchReport, compare_checkpoint, mismatch_with_context,
+    RigidMismatchKind, RigidMismatchReport, compare_checkpoint_inherited, mismatch_with_context,
 };
 use context::{checkpoint_action, checkpoint_context, observation_action, observation_entity};
 use observation::{compare_body_observation, compare_step};
@@ -78,7 +78,7 @@ pub(super) fn first_divergence(
             )? {
                 return Ok(Some(report));
             }
-            if let Some(report) = compare_checkpoint(
+            if let Some(report) = compare_checkpoint_inherited(
                 request,
                 phase6_profile,
                 location,

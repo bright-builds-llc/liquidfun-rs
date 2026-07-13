@@ -175,6 +175,30 @@ fn rigid_comparator_compares_equal_minimum_ray_identities_as_sets() {
 }
 
 #[test]
+fn rigid_comparator_does_not_reapply_inherited_exact_bits_after_phase7_numeric_match() {
+    // Arrange
+    let (phase6, phase7) = profiles();
+    let request = request(&phase7);
+    let native = NativeRigidWorldExecutor::execute(&request)
+        .expect("profile-bound Phase 7 request should execute");
+    let mut oracle_value = serde_json::to_value(&native).expect("result should serialize");
+    let position_bits = oracle_value["timelines"][3]["checkpoints"][0]["bodies"][1]
+        ["transform"]["position"]["x_bits"]
+        .as_u64()
+        .expect("island position should use exact float bits");
+    oracle_value["timelines"][3]["checkpoints"][0]["bodies"][1]["transform"]["position"]["x_bits"] =
+        json!(position_bits + 1);
+    let oracle = decode_result(&oracle_value);
+
+    // Act
+    let outcome = compare_phase7_rigid_world_results(&request, &native, &oracle, &phase6, &phase7)
+        .expect("registered Phase 7 fields should compare");
+
+    // Assert
+    assert_eq!(outcome, RigidComparisonOutcome::Match);
+}
+
+#[test]
 fn rigid_minimization_preserves_divergent_action_setup_directives_budget_and_bits() {
     // Arrange
     let (phase6, phase7) = profiles();

@@ -1,36 +1,51 @@
 use super::{ContactTransition, StepCompletion, StepConfiguration, StepError};
 use crate::World;
 
-use crate::world::contact_solver::ContactSolveFailure;
+use crate::world::contact_solver::{ContactSolve, ContactSolveFailure};
 use crate::world::continuous::{ContinuousEventError, ContinuousScanError, ContinuousStepKey};
 use crate::world::island::{IslandBuildError, ToiIslandLimits};
 
 /// Semantic progress retained after one continuous-work budget is exhausted.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct ContinuousProgress {
     discrete_completed: bool,
     completed_events: usize,
+    contact_solves: Vec<ContactSolve>,
 }
 
 impl ContinuousProgress {
-    const fn after_discrete(completed_events: usize) -> Self {
+    const fn after_discrete(completed_events: usize, contact_solves: Vec<ContactSolve>) -> Self {
         Self {
             discrete_completed: true,
             completed_events,
+            contact_solves,
         }
     }
 
     /// Returns whether the discrete stage committed before the checkpoint.
     #[must_use]
-    pub const fn discrete_completed(self) -> bool {
+    pub const fn discrete_completed(&self) -> bool {
         self.discrete_completed
     }
 
     /// Returns the number of continuous events committed by this call.
     #[must_use]
-    pub const fn completed_events(self) -> usize {
+    pub const fn completed_events(&self) -> usize {
         self.completed_events
     }
+
+    /// Returns transient post-solve state for committed continuous events.
+    ///
+    /// These snapshots do not populate persistent warm-start impulse lanes.
+    #[must_use]
+    pub fn contact_solves(&self) -> &[ContactSolve] {
+        &self.contact_solves
+    }
+}
+
+pub(super) struct ContinuousStageResult {
+    pub(super) completion: StepCompletion,
+    pub(super) contact_solves: Vec<ContactSolve>,
 }
 
 impl World {
@@ -40,14 +55,15 @@ impl World {
         key: ContinuousStepKey,
         work_limit: usize,
         contact_transitions: &[ContactTransition],
-    ) -> Result<StepCompletion, StepError> {
+    ) -> Result<ContinuousStageResult, StepError> {
         let mut completed_events = 0;
+        let mut contact_solves = Vec::new();
         loop {
             if completed_events == work_limit {
                 self.continuous_step_state.mark_pending(key);
                 return Err(StepError::ContinuousWorkLimitExceeded {
                     limit: work_limit,
-                    progress: ContinuousProgress::after_discrete(completed_events),
+                    progress: ContinuousProgress::after_discrete(completed_events, contact_solves),
                 });
             }
             let maybe_event = self
@@ -56,13 +72,20 @@ impl World {
                     self.continuous_step_state.mark_pending(key);
                     continuous_step_error(error, contact_transitions)
                 })?;
-            let Some(_event) = maybe_event else {
-                return Ok(StepCompletion::Complete);
+            let Some(event) = maybe_event else {
+                return Ok(ContinuousStageResult {
+                    completion: StepCompletion::Complete,
+                    contact_solves,
+                });
             };
+            contact_solves.extend(event.contact_solves);
             completed_events += 1;
             if self.is_sub_stepping_enabled() {
                 self.continuous_step_state.mark_pending(key);
-                return Ok(StepCompletion::ContinuousPending);
+                return Ok(ContinuousStageResult {
+                    completion: StepCompletion::ContinuousPending,
+                    contact_solves,
+                });
             }
         }
     }

@@ -606,17 +606,19 @@ class TimelineExecution {
   void validate_checkpoint_contact_identity(
       const RigidCheckpoint& checkpoint,
       const Json& contacts) const {
-    const auto expected = std::find_if(
-        checkpoint.transitions.begin(),
-        checkpoint.transitions.end(),
-        [](const auto& transition) {
-          return transition.maybe_contact.has_value();
-        });
-    if (expected == checkpoint.transitions.end()) return;
-    const auto expected_json =
-        encode_rigid_contact_identity(*expected->maybe_contact);
+    std::vector<Json> expected_contacts;
+    for (const auto& transition : checkpoint.transitions) {
+      if (!transition.maybe_contact.has_value()) continue;
+      const auto encoded = encode_rigid_contact_identity(*transition.maybe_contact);
+      if (std::find(expected_contacts.begin(), expected_contacts.end(), encoded) ==
+          expected_contacts.end()) {
+        expected_contacts.push_back(encoded);
+      }
+    }
+    if (expected_contacts.empty()) return;
     const auto check = [&](const Json& actual) {
-      if (actual != expected_json) {
+      if (std::find(expected_contacts.begin(), expected_contacts.end(), actual) ==
+          expected_contacts.end()) {
         throw std::runtime_error(
             "pinned contact identity disagrees with declaration at " +
             checkpoint.id);
