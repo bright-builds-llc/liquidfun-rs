@@ -437,12 +437,14 @@ fallback policy and no widening based on iteration count or elapsed steps.
 
 World query and ray callback order is intentionally outside the consumer
 contract. The evidence layer compares query occurrences as a multiplicity-preserving multiset.
-For non-terminated rays, it compares ray hits at or below the exact final interval as a multiplicity-preserving multiset
-and applies the named numeric hit policies. Each result records the exact final maximum-fraction bits after
+For non-terminated rays, it compares ray hits at or below the exact final interval, plus hits within the registered
+fraction-policy boundary band, as a multiplicity-preserving multiset and applies the named numeric hit policies.
+Each result records the exact final maximum-fraction bits after
 replaying callbacks from the initial `1.0` interval; validation rejects any
 later clip that would expand the interval. Hits recorded before a strict clip
-but above its final interval are excluded, so arbitrary valid clip fractions do
-not make comparison depend on callback visitation order. An unreached clip or
+are excluded only when proven beyond the final-interval boundary band, so
+arbitrary valid clip fractions do not make comparison depend on callback
+visitation order. An unreached clip or
 reached no-op `Clip(1.0)` retains the full hit multiset. Terminated rays compare
 completion, final interval, and callback count.
 This canonicalization occurs only during comparison; production traversal is

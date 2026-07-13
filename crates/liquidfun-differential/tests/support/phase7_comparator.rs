@@ -185,6 +185,60 @@ fn duplicate_ray_hit(fraction_bits: u32) -> Value {
     })
 }
 
+fn boundary_clip_results(
+    profile: &Phase7PolicyProfile,
+    expected_fraction_bits: u32,
+    actual_fraction_bits: u32,
+) -> (
+    RigidWorldRequestRecord,
+    RigidWorldResultRecord,
+    RigidWorldResultRecord,
+) {
+    let final_fraction_bits = 0.1_f32.to_bits();
+    let request = request_with_ray_rules(
+        profile,
+        json!([{
+            "target": { "fixture_id": "nc-dynamic-fixture", "child_index": 0 },
+            "directive": { "kind": "clip", "fraction_bits": final_fraction_bits }
+        }]),
+    );
+    let baseline = NativeRigidWorldExecutor::execute(&request)
+        .expect("profile-bound boundary clip request should execute");
+    let mut expected_value = serde_json::to_value(&baseline).expect("result should serialize");
+    let ray = observation_mut(phase7_observations(&mut expected_value), "ray_cast");
+    ray["observation"]["completion"] = json!("exhausted");
+    ray["observation"]["final_max_fraction_bits"] = json!(final_fraction_bits);
+    ray["observation"]["hits"] = json!([boundary_clip_hit(expected_fraction_bits)]);
+    let expected = decode_result(&expected_value);
+
+    let mut actual_value = expected_value;
+    observation_mut(phase7_observations(&mut actual_value), "ray_cast")["observation"]["hits"] =
+        json!([boundary_clip_hit(actual_fraction_bits)]);
+    let actual = decode_result(&actual_value);
+    (request, expected, actual)
+}
+
+fn boundary_clip_hit(fraction_bits: u32) -> Value {
+    json!({
+        "fixture_id": "nc-dynamic-fixture",
+        "child_index": 0,
+        "point": { "x_bits": 1.0_f32.to_bits(), "y_bits": 0.0_f32.to_bits() },
+        "normal": { "x_bits": (-1.0_f32).to_bits(), "y_bits": 0.0_f32.to_bits() },
+        "fraction_bits": fraction_bits
+    })
+}
+
+fn with_single_ray_point_x(
+    result: &RigidWorldResultRecord,
+    point_x_bits: u32,
+) -> RigidWorldResultRecord {
+    let mut value = serde_json::to_value(result).expect("result should serialize");
+    let hit =
+        &mut observation_mut(phase7_observations(&mut value), "ray_cast")["observation"]["hits"][0];
+    hit["point"]["x_bits"] = json!(point_x_bits);
+    decode_result(&value)
+}
+
 fn request_with_split_phase7_checkpoints(profile: &Phase7PolicyProfile) -> RigidWorldRequestRecord {
     let mut value = serde_json::to_value(request(profile)).expect("request should serialize");
     let checkpoints = value["scenario"]["timelines"][0]["checkpoints"]
@@ -485,6 +539,81 @@ fn rigid_comparator_reports_mismatch_inside_the_final_interval() {
     // Assert
     let RigidComparisonOutcome::PhysicsMismatch(report) = outcome else {
         panic!("inside-interval numeric divergence must mismatch");
+    };
+    assert_eq!(report.semantic_path(), "rigid_world.phase7.ray.point.x");
+}
+
+#[test]
+fn rigid_comparator_retains_boundary_tolerant_ray_hits_in_both_engine_directions() {
+    // Arrange
+    let (phase6, phase7) = profiles();
+    let boundary = 0.1_f32.to_bits();
+
+    // Act and Assert
+    for ulps in 0..=4 {
+        for (expected_fraction, actual_fraction) in
+            [(boundary, boundary + ulps), (boundary + ulps, boundary)]
+        {
+            let (request, expected, actual) =
+                boundary_clip_results(&phase7, expected_fraction, actual_fraction);
+            let outcome =
+                compare_phase7_rigid_world_results(&request, &expected, &actual, &phase6, &phase7)
+                    .expect("registered Phase 7 fields should compare");
+            assert_eq!(outcome, RigidComparisonOutcome::Match);
+        }
+    }
+}
+
+#[test]
+fn rigid_comparator_discards_ray_hits_proven_beyond_the_boundary_policy() {
+    // Arrange
+    let (phase6, phase7) = profiles();
+    let boundary = 0.1_f32.to_bits();
+    let (request, expected, actual) = boundary_clip_results(&phase7, boundary + 5, boundary + 9);
+    let actual = with_single_ray_point_x(&actual, 2.0_f32.to_bits());
+
+    // Act
+    let outcome =
+        compare_phase7_rigid_world_results(&request, &expected, &actual, &phase6, &phase7)
+            .expect("registered Phase 7 fields should compare");
+
+    // Assert
+    assert_eq!(outcome, RigidComparisonOutcome::Match);
+
+    for (expected_fraction, actual_fraction) in [(boundary, boundary + 5), (boundary + 5, boundary)]
+    {
+        let (request, expected, actual) =
+            boundary_clip_results(&phase7, expected_fraction, actual_fraction);
+        let outcome =
+            compare_phase7_rigid_world_results(&request, &expected, &actual, &phase6, &phase7)
+                .expect("registered Phase 7 fields should compare");
+        let RigidComparisonOutcome::PhysicsMismatch(report) = outcome else {
+            panic!("a five-ULP boundary straddle must mismatch");
+        };
+        assert_eq!(report.kind(), RigidMismatchKind::Order);
+        assert_eq!(
+            report.semantic_path(),
+            "rigid_world.phase7.ray.hit.identity"
+        );
+    }
+}
+
+#[test]
+fn rigid_comparator_compares_payloads_retained_by_the_boundary_policy() {
+    // Arrange
+    let (phase6, phase7) = profiles();
+    let boundary = 0.1_f32.to_bits();
+    let (request, expected, actual) = boundary_clip_results(&phase7, boundary, boundary + 4);
+    let actual = with_single_ray_point_x(&actual, 2.0_f32.to_bits());
+
+    // Act
+    let outcome =
+        compare_phase7_rigid_world_results(&request, &expected, &actual, &phase6, &phase7)
+            .expect("registered Phase 7 fields should compare");
+
+    // Assert
+    let RigidComparisonOutcome::PhysicsMismatch(report) = outcome else {
+        panic!("retained boundary-band payload divergence must mismatch");
     };
     assert_eq!(report.semantic_path(), "rigid_world.phase7.ray.point.x");
 }

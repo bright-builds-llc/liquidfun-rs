@@ -3,7 +3,7 @@
 use std::collections::BTreeMap;
 
 use liquidfun_test_protocol::{
-    FloatBits, Phase7PolicyProfile, RigidFixtureChildOccurrence, RigidRayCompletion,
+    FieldPolicy, FloatBits, Phase7PolicyProfile, RigidFixtureChildOccurrence, RigidRayCompletion,
     RigidRayHitObservation, RigidRayObservation, RigidWorldRequestRecord,
 };
 
@@ -14,6 +14,8 @@ use crate::rigid_evidence::{
     EvidenceContext, RigidComparisonFailure, RigidHarnessReport, RigidMismatchKind,
     RigidMismatchReport, mismatch_with_context,
 };
+
+const RAY_FRACTION_PATH: &str = "rigid_world.phase7.ray.fraction";
 
 pub(super) fn compare_ray(
     request: &RigidWorldRequestRecord,
@@ -47,9 +49,12 @@ pub(super) fn compare_ray(
     if expected.completion == RigidRayCompletion::Terminated {
         return compare_terminated_count(request, profile, context, expected, actual);
     }
-    let final_max_fraction = expected.final_max_fraction_bits.to_f32();
-    let expected_hits = hits_within_final_interval(&expected.hits, final_max_fraction);
-    let actual_hits = hits_within_final_interval(&actual.hits, final_max_fraction);
+    let fraction_policy = policy(profile, RAY_FRACTION_PATH)?;
+    let final_max_fraction_bits = expected.final_max_fraction_bits;
+    let expected_hits =
+        hits_within_final_interval(&expected.hits, final_max_fraction_bits, fraction_policy);
+    let actual_hits =
+        hits_within_final_interval(&actual.hits, final_max_fraction_bits, fraction_policy);
     compare_hit_multisets(request, profile, context, &expected_hits, &actual_hits)
 }
 
@@ -281,7 +286,7 @@ fn hit_float_fields(
 ) -> [(&'static str, FloatBits, FloatBits); 5] {
     [
         (
-            "rigid_world.phase7.ray.fraction",
+            RAY_FRACTION_PATH,
             expected.fraction_bits,
             actual.fraction_bits,
         ),
@@ -308,12 +313,21 @@ fn hit_float_fields(
     ]
 }
 
-fn hits_within_final_interval(
-    hits: &[RigidRayHitObservation],
-    final_max_fraction: f32,
-) -> Vec<&RigidRayHitObservation> {
+fn hits_within_final_interval<'a>(
+    hits: &'a [RigidRayHitObservation],
+    final_max_fraction_bits: FloatBits,
+    fraction_policy: &FieldPolicy,
+) -> Vec<&'a RigidRayHitObservation> {
+    let final_max_fraction = final_max_fraction_bits.to_f32();
     hits.iter()
-        .filter(|hit| hit.fraction_bits.to_f32() <= final_max_fraction)
+        .filter(|hit| {
+            hit.fraction_bits.to_f32() <= final_max_fraction
+                || float_values_match_with_policy(
+                    hit.fraction_bits,
+                    final_max_fraction_bits,
+                    fraction_policy,
+                )
+        })
         .collect()
 }
 
