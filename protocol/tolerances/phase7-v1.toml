@@ -166,7 +166,7 @@ semantic_path = "rigid_world.phase7.ray.hit.identity"
 comparison = { kind = "exact_discrete" }
 zero_policy = "distinct"
 non_finite_policy = "reject_arithmetic_nan"
-collection_policy = "ordered"
+collection_policy = "multiset"
 horizon = { kind = "phase_local" }
 evidence_tier = "d1_canonical"
 justification = "Semantic identities, topology, statuses, flags, counts, and declared traces are exact."
@@ -360,4 +360,3 @@ collection_policy = "ordered"
 horizon = { kind = "phase_local" }
 evidence_tier = "d2_supported"
 justification = "Dimensionless or operation-grouped scalar evidence uses a reviewed four-ULP bound."
-

@@ -302,7 +302,10 @@ fn validate_phase7_field(field: &FieldPolicy) -> Result<(), Phase7PolicyError> {
     }
     let path = field.semantic_path();
     if PHASE7_STRUCTURAL_PATHS.contains(&path) {
-        let expected_collection = if path == "rigid_world.phase7.query.occurrences.identity" {
+        let expected_collection = if matches!(
+            path,
+            "rigid_world.phase7.query.occurrences.identity" | "rigid_world.phase7.ray.hit.identity"
+        ) {
             CollectionPolicy::Multiset
         } else if path == "rigid_world.phase7.ray.equal_minimum.identities" {
             CollectionPolicy::Set
@@ -732,7 +735,10 @@ mod tests {
         // Assert
         assert_eq!(profile.profile_id(), "phase7-v1");
         assert_eq!(profile.fields().len(), 36);
-        assert_eq!(profile.profile_sha256().as_str().len(), 64);
+        assert_eq!(
+            profile.profile_sha256().as_str(),
+            "54ed48d847ad6e075e0d07e8d018ed65c131a89c2942e91c7dde631db7e85b9e"
+        );
         assert_eq!(
             profile
                 .field("rigid_world.phase7.query.occurrences.identity")
@@ -746,6 +752,13 @@ mod tests {
                 .expect("ray tie policy")
                 .collection_policy(),
             CollectionPolicy::Set
+        );
+        assert_eq!(
+            profile
+                .field("rigid_world.phase7.ray.hit.identity")
+                .expect("ray hit identity policy")
+                .collection_policy(),
+            CollectionPolicy::Multiset
         );
         assert!(matches!(
             profile

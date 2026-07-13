@@ -6,7 +6,8 @@ use liquidfun_differential::{
 };
 use liquidfun_test_protocol::{
     FieldComparison, HarnessLimits, Phase6PolicyProfile, Phase7PolicyProfile,
-    RigidWorldRequestRecord, RigidWorldResultRecord, decode_rigid_world_result_jsonl,
+    RigidWorldRequestRecord, RigidWorldResultRecord, decode_rigid_world_request_jsonl,
+    decode_rigid_world_result_jsonl,
 };
 use serde_json::{Value, json};
 
@@ -31,6 +32,24 @@ fn decode_result(value: &Value) -> RigidWorldResultRecord {
     bytes.push(b'\n');
     decode_rigid_world_result_jsonl(&bytes, &HarnessLimits::phase2_default_v1())
         .expect("bounded semantic result mutation should decode")
+}
+
+fn request_with_ray_rules(
+    profile: &Phase7PolicyProfile,
+    directive_rules: Value,
+) -> RigidWorldRequestRecord {
+    let mut value = serde_json::to_value(request(profile)).expect("request should serialize");
+    let ray_action = value["scenario"]["timelines"][0]["actions"]
+        .as_array_mut()
+        .expect("timeline actions should be an array")
+        .iter_mut()
+        .find(|record| record["action_id"] == "phase7-action-20")
+        .expect("Phase 7 ray action should exist");
+    ray_action["action"]["directive_rules"] = directive_rules;
+    let mut bytes = serde_json::to_vec(&value).expect("request mutation should encode");
+    bytes.push(b'\n');
+    decode_rigid_world_request_jsonl(&bytes, &HarnessLimits::phase2_default_v1())
+        .expect("bounded ray request mutation should decode")
 }
 
 fn phase7_observations(value: &mut Value) -> &mut Vec<Value> {
@@ -164,6 +183,87 @@ fn rigid_comparator_compares_equal_minimum_ray_identities_as_sets() {
         .as_array_mut()
         .expect("ray hits should be an array")
         .reverse();
+    let oracle = decode_result(&oracle_value);
+
+    // Act
+    let outcome = compare_phase7_rigid_world_results(&request, &native, &oracle, &phase6, &phase7)
+        .expect("registered Phase 7 fields should compare");
+
+    // Assert
+    assert_eq!(outcome, RigidComparisonOutcome::Match);
+}
+
+#[test]
+fn rigid_comparator_treats_exhaustive_ray_hits_as_record_multisets() {
+    // Arrange
+    let (phase6, phase7) = profiles();
+    let request = request_with_ray_rules(&phase7, json!([]));
+    let baseline = NativeRigidWorldExecutor::execute(&request)
+        .expect("profile-bound exhaustive ray request should execute");
+    let mut native_value = serde_json::to_value(&baseline).expect("result should serialize");
+    let ray = observation_mut(phase7_observations(&mut native_value), "ray_cast");
+    ray["observation"]["completion"] = json!("exhausted");
+    ray["observation"]["hits"] = json!([
+        {
+            "fixture_id": "nc-static-fixture",
+            "child_index": 0,
+            "point": { "x_bits": (-1.0_f32).to_bits(), "y_bits": 0.0_f32.to_bits() },
+            "normal": { "x_bits": 1.0_f32.to_bits(), "y_bits": 0.0_f32.to_bits() },
+            "fraction_bits": 0.25_f32.to_bits()
+        },
+        {
+            "fixture_id": "nc-dynamic-fixture",
+            "child_index": 0,
+            "point": { "x_bits": 1.0_f32.to_bits(), "y_bits": 0.0_f32.to_bits() },
+            "normal": { "x_bits": (-1.0_f32).to_bits(), "y_bits": 0.0_f32.to_bits() },
+            "fraction_bits": 0.75_f32.to_bits()
+        }
+    ]);
+    let native = decode_result(&native_value);
+    let mut oracle_value = native_value;
+    observation_mut(phase7_observations(&mut oracle_value), "ray_cast")["observation"]["hits"]
+        .as_array_mut()
+        .expect("ray hits should be an array")
+        .reverse();
+    let oracle = decode_result(&oracle_value);
+
+    // Act
+    let outcome = compare_phase7_rigid_world_results(&request, &native, &oracle, &phase6, &phase7)
+        .expect("registered Phase 7 fields should compare");
+
+    // Assert
+    assert_eq!(outcome, RigidComparisonOutcome::Match);
+}
+
+#[test]
+fn rigid_comparator_termination_observes_only_status_and_hit_count() {
+    // Arrange
+    let (phase6, phase7) = profiles();
+    let request = request_with_ray_rules(
+        &phase7,
+        json!([{
+            "target": { "fixture_id": "nc-dynamic-fixture", "child_index": 0 },
+            "directive": { "kind": "terminate" }
+        }]),
+    );
+    let baseline = NativeRigidWorldExecutor::execute(&request)
+        .expect("profile-bound terminating ray request should execute");
+    let mut native_value = serde_json::to_value(&baseline).expect("result should serialize");
+    let ray = observation_mut(phase7_observations(&mut native_value), "ray_cast");
+    ray["observation"]["completion"] = json!("terminated");
+    ray["observation"]["hits"] = json!([{
+        "fixture_id": "nc-static-fixture",
+        "child_index": 0,
+        "point": { "x_bits": (-1.0_f32).to_bits(), "y_bits": 0.0_f32.to_bits() },
+        "normal": { "x_bits": 1.0_f32.to_bits(), "y_bits": 0.0_f32.to_bits() },
+        "fraction_bits": 0.25_f32.to_bits()
+    }]);
+    let native = decode_result(&native_value);
+    let mut oracle_value = native_value;
+    let oracle_hit = &mut observation_mut(phase7_observations(&mut oracle_value), "ray_cast")["observation"]
+        ["hits"][0];
+    oracle_hit["fixture_id"] = json!("nc-dynamic-fixture");
+    oracle_hit["point"]["x_bits"] = json!(100.0_f32.to_bits());
     let oracle = decode_result(&oracle_value);
 
     // Act
