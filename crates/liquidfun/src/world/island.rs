@@ -1,15 +1,14 @@
-#![allow(
-    dead_code,
-    reason = "Phase 7 Plan 04 consumes the private island solver lanes"
-)]
-
 use crate::arena::Arena;
 use crate::math::Vec2;
-use crate::{BodyId, JointId};
+use crate::{BodyId, FixtureId, JointId};
 
 use super::body::{BodyState, BodyType};
+use super::config::StepConfiguration;
 use super::contact_manager::ContactManager;
-use super::object::Body;
+use super::contact_solver::{
+    ContactConstraintInput, ContactImpulseSolution, ContactSolveFailure, solve_island_constraints,
+};
+use super::object::{Body, Fixture};
 
 const REVIEWED_MAX_ISLAND_BODIES: usize = 4_096;
 const REVIEWED_MAX_ISLAND_CONTACTS: usize = 8_192;
@@ -64,6 +63,13 @@ pub(super) struct Island {
     pub(super) joint_ids: Vec<JointId>,
     pub(super) positions: Vec<IslandPosition>,
     pub(super) velocities: Vec<IslandVelocity>,
+}
+
+#[derive(Debug)]
+pub(super) struct IslandSolution {
+    pub(super) body_ids: Vec<BodyId>,
+    pub(super) body_states: Vec<BodyState>,
+    pub(super) contact_impulses: Vec<ContactImpulseSolution>,
 }
 
 impl Island {
@@ -218,6 +224,103 @@ pub(super) fn build_islands(
         islands.push(island);
     }
     Ok(islands)
+}
+
+pub(super) fn solve_islands(
+    islands: &[Island],
+    contact_manager: &ContactManager,
+    fixtures: &Arena<Fixture, FixtureId>,
+    gravity: Vec2,
+    configuration: StepConfiguration,
+    time_step_ratio: f32,
+    warm_starting: bool,
+) -> Result<Vec<IslandSolution>, ContactSolveFailure> {
+    let mut solutions = Vec::new();
+    solutions.try_reserve_exact(islands.len()).map_err(|_| {
+        ContactSolveFailure::CapacityExceeded {
+            resource: "island solutions",
+            limit: islands.len(),
+        }
+    })?;
+    for island in islands {
+        if island.body_ids.len() != island.body_states.len()
+            || island.body_ids.len() != island.positions.len()
+            || island.body_ids.len() != island.velocities.len()
+            || island
+                .positions
+                .iter()
+                .any(|position| !position.position.is_valid() || !position.angle.is_finite())
+            || island
+                .velocities
+                .iter()
+                .any(|velocity| !velocity.linear.is_valid() || !velocity.angular.is_finite())
+        {
+            return Err(ContactSolveFailure::UnsupportedTopology);
+        }
+        let mut inputs = Vec::new();
+        inputs
+            .try_reserve_exact(island.contact_indices.len())
+            .map_err(|_| ContactSolveFailure::CapacityExceeded {
+                resource: "island contact inputs",
+                limit: island.contact_indices.len(),
+            })?;
+        for contact_index in &island.contact_indices {
+            let contact = contact_manager
+                .contacts()
+                .get(*contact_index)
+                .ok_or(ContactSolveFailure::UnsupportedTopology)?;
+            let first_body_index = island
+                .body_ids
+                .iter()
+                .position(|body| *body == contact.key.first.body)
+                .ok_or(ContactSolveFailure::UnsupportedTopology)?;
+            let second_body_index = island
+                .body_ids
+                .iter()
+                .position(|body| *body == contact.key.second.body)
+                .ok_or(ContactSolveFailure::UnsupportedTopology)?;
+            let first_shape = fixtures
+                .get(contact.key.first.fixture)
+                .map_err(|_| ContactSolveFailure::UnsupportedTopology)?
+                .definition
+                .shape();
+            let second_shape = fixtures
+                .get(contact.key.second.fixture)
+                .map_err(|_| ContactSolveFailure::UnsupportedTopology)?
+                .definition
+                .shape();
+            inputs.push(ContactConstraintInput {
+                contact_index: *contact_index,
+                first_body_index,
+                second_body_index,
+                contact,
+                first_shape,
+                second_shape,
+            });
+        }
+
+        let solved = solve_island_constraints(
+            &island.body_states,
+            &inputs,
+            gravity,
+            configuration,
+            time_step_ratio,
+            warm_starting,
+        )?;
+        let mut body_states = island.body_states.clone();
+        if body_states.len() != solved.motions.len() {
+            return Err(ContactSolveFailure::UnsupportedTopology);
+        }
+        for (state, motion) in body_states.iter_mut().zip(solved.motions) {
+            state.set_solver_state(motion.position, motion.angle, motion.linear, motion.angular);
+        }
+        solutions.push(IslandSolution {
+            body_ids: island.body_ids.clone(),
+            body_states,
+            contact_impulses: solved.contact_impulses,
+        });
+    }
+    Ok(solutions)
 }
 
 fn preflight_graph(

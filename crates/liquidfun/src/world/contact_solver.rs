@@ -1,4 +1,4 @@
-use crate::collision::{ContactFeatureId, Shape, world_manifold};
+use crate::collision::{ContactFeatureId, Manifold, Shape, world_manifold};
 use crate::math::settings::{
     BAUMGARTE, LINEAR_SLOP, MAX_LINEAR_CORRECTION, MAX_ROTATION, MAX_ROTATION_SQUARED,
     MAX_TRANSLATION, MAX_TRANSLATION_SQUARED, VELOCITY_THRESHOLD,
@@ -6,12 +6,9 @@ use crate::math::settings::{
 use crate::math::{Transform, Vec2, clamp, max};
 
 use super::body::BodyState;
-use super::contact::{Contact, ManagedContactSnapshot};
+use super::config::StepConfiguration;
+use super::contact::{Contact, ContactPoint, ManagedContactSnapshot};
 
-const WITNESS_TIME_STEP_BITS: u32 = 1_015_580_809;
-const VELOCITY_ITERATIONS: usize = 8;
-const POSITION_ITERATIONS: usize = 3;
-const WARM_START_RATIO: f32 = 1.0;
 const MAX_CONDITION_NUMBER: f32 = 1_000.0;
 
 /// Owned post-solve evidence for one private manager contact occurrence.
@@ -36,6 +33,10 @@ impl ContactSolve {
 pub(super) enum ContactSolveFailure {
     UnsupportedTopology,
     NonFinite,
+    CapacityExceeded {
+        resource: &'static str,
+        limit: usize,
+    },
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -44,13 +45,6 @@ pub(super) struct SolvedBodyMotion {
     pub(super) angle: f32,
     pub(super) linear: Vec2,
     pub(super) angular: f32,
-}
-
-#[derive(Debug)]
-pub(super) struct ContactSolveCommit {
-    pub(super) first_motion: SolvedBodyMotion,
-    pub(super) second_motion: SolvedBodyMotion,
-    pub(super) impulses: Vec<(ContactFeatureId, f32, f32)>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -135,6 +129,12 @@ impl ConstraintPoint {
 
 #[derive(Debug)]
 struct VelocityConstraint {
+    contact_index: usize,
+    first_body_index: usize,
+    second_body_index: usize,
+    manifold: Manifold,
+    first_radius: f32,
+    second_radius: f32,
     points: [ConstraintPoint; 2],
     point_count: usize,
     normal: Vec2,
@@ -143,61 +143,154 @@ struct VelocityConstraint {
     normal_mass: [[f32; 2]; 2],
 }
 
-#[allow(clippy::too_many_arguments)]
-pub(super) fn solve_contact(
-    contact: &Contact,
-    first_state: BodyState,
-    second_state: BodyState,
-    first_shape: &Shape,
-    second_shape: &Shape,
-) -> Result<ContactSolveCommit, ContactSolveFailure> {
-    let witness_time_step = f32::from_bits(WITNESS_TIME_STEP_BITS);
-    if !witness_time_step.is_finite() || witness_time_step <= 0.0 {
-        return Err(ContactSolveFailure::NonFinite);
+pub(super) struct ContactConstraintInput<'a> {
+    pub(super) contact_index: usize,
+    pub(super) first_body_index: usize,
+    pub(super) second_body_index: usize,
+    pub(super) contact: &'a Contact,
+    pub(super) first_shape: &'a Shape,
+    pub(super) second_shape: &'a Shape,
+}
+
+#[derive(Debug)]
+pub(super) struct ContactImpulseSolution {
+    pub(super) contact_index: usize,
+    pub(super) impulses: Vec<(ContactFeatureId, f32, f32)>,
+}
+
+#[derive(Debug)]
+pub(super) struct IslandConstraintSolution {
+    pub(super) motions: Vec<SolvedBodyMotion>,
+    pub(super) contact_impulses: Vec<ContactImpulseSolution>,
+}
+
+pub(super) fn solve_island_constraints(
+    body_states: &[BodyState],
+    inputs: &[ContactConstraintInput<'_>],
+    gravity: Vec2,
+    configuration: StepConfiguration,
+    time_step_ratio: f32,
+    warm_starting: bool,
+) -> Result<IslandConstraintSolution, ContactSolveFailure> {
+    let mut bodies = Vec::new();
+    bodies.try_reserve_exact(body_states.len()).map_err(|_| {
+        ContactSolveFailure::CapacityExceeded {
+            resource: "island solver bodies",
+            limit: body_states.len(),
+        }
+    })?;
+    for state in body_states {
+        let mut body = SolverBody::from_state(*state)?;
+        integrate_velocity(&mut body, *state, gravity, configuration.time_step())?;
+        bodies.push(body);
     }
 
-    let mut first = SolverBody::from_state(first_state)?;
-    let mut second = SolverBody::from_state(second_state)?;
-    let mut constraint = build_constraint(contact, first, second, first_shape, second_shape)?;
-    warm_start(&constraint, &mut first, &mut second);
-    for _iteration in 0..VELOCITY_ITERATIONS {
-        solve_velocity_constraints(&mut constraint, &mut first, &mut second);
+    let mut constraints = Vec::new();
+    constraints.try_reserve_exact(inputs.len()).map_err(|_| {
+        ContactSolveFailure::CapacityExceeded {
+            resource: "island contact constraints",
+            limit: inputs.len(),
+        }
+    })?;
+    for input in inputs {
+        constraints.push(build_constraint(
+            input,
+            &bodies,
+            time_step_ratio,
+            warm_starting,
+        )?);
     }
-    integrate_position(&mut first, witness_time_step);
-    integrate_position(&mut second, witness_time_step);
-    for _iteration in 0..POSITION_ITERATIONS {
-        if solve_position_constraints(contact, &mut first, &mut second, first_shape, second_shape)?
-        {
+
+    if warm_starting {
+        for constraint in &constraints {
+            warm_start(constraint, &mut bodies)?;
+        }
+    }
+    for _iteration in 0..configuration.velocity_iterations() {
+        for constraint in &mut constraints {
+            solve_velocity_constraints(constraint, &mut bodies)?;
+        }
+    }
+
+    let mut contact_impulses = Vec::new();
+    contact_impulses
+        .try_reserve_exact(constraints.len())
+        .map_err(|_| ContactSolveFailure::CapacityExceeded {
+            resource: "island contact impulses",
+            limit: constraints.len(),
+        })?;
+    for constraint in &constraints {
+        contact_impulses.push(ContactImpulseSolution {
+            contact_index: constraint.contact_index,
+            impulses: constraint.points[..constraint.point_count]
+                .iter()
+                .map(|point| {
+                    (
+                        point.feature_id,
+                        point.normal_impulse,
+                        point.tangent_impulse,
+                    )
+                })
+                .collect(),
+        });
+    }
+
+    for body in &mut bodies {
+        integrate_position(body, configuration.time_step());
+    }
+    for _iteration in 0..configuration.position_iterations() {
+        let mut contacts_solved = true;
+        for constraint in &constraints {
+            contacts_solved =
+                solve_position_constraints(constraint, &mut bodies)? && contacts_solved;
+        }
+        if contacts_solved {
             break;
         }
     }
-    validate_solution(&constraint, first, second)?;
 
-    let impulses = constraint.points[..constraint.point_count]
-        .iter()
-        .map(|point| {
-            (
-                point.feature_id,
-                point.normal_impulse,
-                point.tangent_impulse,
-            )
-        })
-        .collect();
-    Ok(ContactSolveCommit {
-        first_motion: SolvedBodyMotion {
-            position: first.transform.position(),
-            angle: first.angle,
-            linear: first.linear_velocity,
-            angular: first.angular_velocity,
-        },
-        second_motion: SolvedBodyMotion {
-            position: second.transform.position(),
-            angle: second.angle,
-            linear: second.linear_velocity,
-            angular: second.angular_velocity,
-        },
-        impulses,
+    for body in &bodies {
+        if !body.is_finite() {
+            return Err(ContactSolveFailure::NonFinite);
+        }
+    }
+    for constraint in &constraints {
+        validate_solution(constraint, &bodies)?;
+    }
+
+    Ok(IslandConstraintSolution {
+        motions: bodies
+            .into_iter()
+            .map(|body| SolvedBodyMotion {
+                position: body.transform.position(),
+                angle: body.angle,
+                linear: body.linear_velocity,
+                angular: body.angular_velocity,
+            })
+            .collect(),
+        contact_impulses,
     })
+}
+
+fn integrate_velocity(
+    body: &mut SolverBody,
+    state: BodyState,
+    gravity: Vec2,
+    time_step: f32,
+) -> Result<(), ContactSolveFailure> {
+    if state.snapshot().body_type() != super::body::BodyType::Dynamic {
+        return Ok(());
+    }
+    body.linear_velocity += time_step
+        * (state.snapshot().gravity_scale() * gravity
+            + state.inverse_mass() * state.accumulated_force());
+    body.angular_velocity += time_step * state.inverse_inertia() * state.accumulated_torque();
+    body.linear_velocity *= 1.0 / (1.0 + time_step * state.snapshot().linear_damping());
+    body.angular_velocity *= 1.0 / (1.0 + time_step * state.snapshot().angular_damping());
+    if !body.is_finite() {
+        return Err(ContactSolveFailure::NonFinite);
+    }
+    Ok(())
 }
 
 fn integrate_position(body: &mut SolverBody, time_step: f32) {
@@ -217,23 +310,18 @@ fn integrate_position(body: &mut SolverBody, time_step: f32) {
 }
 
 fn solve_position_constraints(
-    contact: &Contact,
-    first: &mut SolverBody,
-    second: &mut SolverBody,
-    first_shape: &Shape,
-    second_shape: &Shape,
+    constraint: &VelocityConstraint,
+    bodies: &mut [SolverBody],
 ) -> Result<bool, ContactSolveFailure> {
-    let Some(manifold) = contact.maybe_manifold.as_ref() else {
-        return Err(ContactSolveFailure::UnsupportedTopology);
-    };
+    let (mut first, mut second) = constraint_bodies(constraint, bodies)?;
     let mut minimum_separation = 0.0_f32;
-    for point_index in 0..manifold.points().len() {
+    for point_index in 0..constraint.manifold.points().len() {
         let maybe_world = world_manifold(
-            manifold,
+            &constraint.manifold,
             first.transform,
-            shape_radius(first_shape),
+            constraint.first_radius,
             second.transform,
-            shape_radius(second_shape),
+            constraint.second_radius,
         )
         .map_err(|_error| ContactSolveFailure::NonFinite)?;
         let Some(world) = maybe_world else {
@@ -270,6 +358,7 @@ fn solve_position_constraints(
         first.synchronize_transform();
         second.synchronize_transform();
     }
+    store_constraint_bodies(constraint, bodies, first, second)?;
     Ok(minimum_separation >= -3.0 * LINEAR_SLOP)
 }
 
@@ -284,12 +373,21 @@ impl SolverBody {
 }
 
 fn build_constraint(
-    contact: &Contact,
-    first: SolverBody,
-    second: SolverBody,
-    first_shape: &Shape,
-    second_shape: &Shape,
+    input: &ContactConstraintInput<'_>,
+    bodies: &[SolverBody],
+    time_step_ratio: f32,
+    warm_starting: bool,
 ) -> Result<VelocityConstraint, ContactSolveFailure> {
+    if input.first_body_index == input.second_body_index {
+        return Err(ContactSolveFailure::UnsupportedTopology);
+    }
+    let first = *bodies
+        .get(input.first_body_index)
+        .ok_or(ContactSolveFailure::UnsupportedTopology)?;
+    let second = *bodies
+        .get(input.second_body_index)
+        .ok_or(ContactSolveFailure::UnsupportedTopology)?;
+    let contact = input.contact;
     let Some(manifold) = contact.maybe_manifold.as_ref() else {
         return Err(ContactSolveFailure::UnsupportedTopology);
     };
@@ -299,9 +397,9 @@ fn build_constraint(
     let maybe_world_manifold = world_manifold(
         manifold,
         first.transform,
-        shape_radius(first_shape),
+        shape_radius(input.first_shape),
         second.transform,
-        shape_radius(second_shape),
+        shape_radius(input.second_shape),
     )
     .map_err(|_error| ContactSolveFailure::NonFinite)?;
     let Some(world) = maybe_world_manifold else {
@@ -313,6 +411,12 @@ fn build_constraint(
 
     let placeholder = ConstraintPoint::cold(contact.points[0].feature_id());
     let mut constraint = VelocityConstraint {
+        contact_index: input.contact_index,
+        first_body_index: input.first_body_index,
+        second_body_index: input.second_body_index,
+        manifold: manifold.clone(),
+        first_radius: shape_radius(input.first_shape),
+        second_radius: shape_radius(input.second_shape),
         points: [placeholder; 2],
         point_count: contact.points.len(),
         normal: world.normal(),
@@ -324,41 +428,17 @@ fn build_constraint(
     for (index, (contact_point, world_point)) in
         contact.points.iter().zip(world.points()).enumerate()
     {
-        let r_a = world_point.point() - first.center;
-        let r_b = world_point.point() - second.center;
-        let normal_arms = [r_a.cross(constraint.normal), r_b.cross(constraint.normal)];
-        let normal_k = first.inverse_mass
-            + second.inverse_mass
-            + first.inverse_inertia * normal_arms[0] * normal_arms[0]
-            + second.inverse_inertia * normal_arms[1] * normal_arms[1];
-        let tangent_arms = [r_a.cross(tangent), r_b.cross(tangent)];
-        let tangent_k = first.inverse_mass
-            + second.inverse_mass
-            + first.inverse_inertia * tangent_arms[0] * tangent_arms[0]
-            + second.inverse_inertia * tangent_arms[1] * tangent_arms[1];
-        let relative = second.linear_velocity + Vec2::scalar_cross(second.angular_velocity, r_b)
-            - first.linear_velocity
-            - Vec2::scalar_cross(first.angular_velocity, r_a);
-        let relative_normal_velocity = constraint.normal.dot(relative);
-        let velocity_bias = if relative_normal_velocity < -VELOCITY_THRESHOLD {
-            -contact.restitution * relative_normal_velocity
-        } else {
-            0.0
-        };
-        constraint.points[index] = ConstraintPoint {
-            feature_id: contact_point.feature_id(),
-            r_a,
-            r_b,
-            normal_impulse: WARM_START_RATIO * contact_point.normal_impulse(),
-            tangent_impulse: WARM_START_RATIO * contact_point.tangent_impulse(),
-            normal_mass: if normal_k > 0.0 { 1.0 / normal_k } else { 0.0 },
-            tangent_mass: if tangent_k > 0.0 {
-                1.0 / tangent_k
-            } else {
-                0.0
-            },
-            velocity_bias,
-        };
+        constraint.points[index] = build_constraint_point(
+            *contact_point,
+            world_point.point(),
+            constraint.normal,
+            tangent,
+            first,
+            second,
+            contact.restitution,
+            time_step_ratio,
+            warm_starting,
+        );
     }
     prepare_two_point_block(&mut constraint, first, second);
     if !constraint.normal.is_valid()
@@ -371,6 +451,64 @@ fn build_constraint(
         return Err(ContactSolveFailure::NonFinite);
     }
     Ok(constraint)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn build_constraint_point(
+    contact_point: ContactPoint,
+    world_point: Vec2,
+    normal: Vec2,
+    tangent: Vec2,
+    first: SolverBody,
+    second: SolverBody,
+    restitution: f32,
+    time_step_ratio: f32,
+    warm_starting: bool,
+) -> ConstraintPoint {
+    let r_a = world_point - first.center;
+    let r_b = world_point - second.center;
+    let normal_arm_a = r_a.cross(normal);
+    let normal_arm_b = r_b.cross(normal);
+    let normal_k = first.inverse_mass
+        + second.inverse_mass
+        + first.inverse_inertia * normal_arm_a * normal_arm_a
+        + second.inverse_inertia * normal_arm_b * normal_arm_b;
+    let tangent_arm_a = r_a.cross(tangent);
+    let tangent_arm_b = r_b.cross(tangent);
+    let tangent_k = first.inverse_mass
+        + second.inverse_mass
+        + first.inverse_inertia * tangent_arm_a * tangent_arm_a
+        + second.inverse_inertia * tangent_arm_b * tangent_arm_b;
+    let relative = second.linear_velocity + Vec2::scalar_cross(second.angular_velocity, r_b)
+        - first.linear_velocity
+        - Vec2::scalar_cross(first.angular_velocity, r_a);
+    let relative_normal_velocity = normal.dot(relative);
+    ConstraintPoint {
+        feature_id: contact_point.feature_id(),
+        r_a,
+        r_b,
+        normal_impulse: if warm_starting {
+            time_step_ratio * contact_point.normal_impulse()
+        } else {
+            0.0
+        },
+        tangent_impulse: if warm_starting {
+            time_step_ratio * contact_point.tangent_impulse()
+        } else {
+            0.0
+        },
+        normal_mass: if normal_k > 0.0 { 1.0 / normal_k } else { 0.0 },
+        tangent_mass: if tangent_k > 0.0 {
+            1.0 / tangent_k
+        } else {
+            0.0
+        },
+        velocity_bias: if relative_normal_velocity < -VELOCITY_THRESHOLD {
+            -restitution * relative_normal_velocity
+        } else {
+            0.0
+        },
+    }
 }
 
 fn prepare_two_point_block(
@@ -418,7 +556,11 @@ fn prepare_two_point_block(
     ];
 }
 
-fn warm_start(constraint: &VelocityConstraint, first: &mut SolverBody, second: &mut SolverBody) {
+fn warm_start(
+    constraint: &VelocityConstraint,
+    bodies: &mut [SolverBody],
+) -> Result<(), ContactSolveFailure> {
+    let (mut first, mut second) = constraint_bodies(constraint, bodies)?;
     let tangent = constraint.normal.cross_scalar(1.0);
     for point in &constraint.points[..constraint.point_count] {
         let impulse = point.normal_impulse * constraint.normal + point.tangent_impulse * tangent;
@@ -427,19 +569,21 @@ fn warm_start(constraint: &VelocityConstraint, first: &mut SolverBody, second: &
         second.angular_velocity += second.inverse_inertia * point.r_b.cross(impulse);
         second.linear_velocity += second.inverse_mass * impulse;
     }
+    store_constraint_bodies(constraint, bodies, first, second)
 }
 
 fn solve_velocity_constraints(
     constraint: &mut VelocityConstraint,
-    first: &mut SolverBody,
-    second: &mut SolverBody,
-) {
-    solve_tangent_constraints(constraint, first, second);
+    bodies: &mut [SolverBody],
+) -> Result<(), ContactSolveFailure> {
+    let (mut first, mut second) = constraint_bodies(constraint, bodies)?;
+    solve_tangent_constraints(constraint, &mut first, &mut second);
     if constraint.point_count == 1 {
-        solve_one_normal_constraint(constraint, first, second);
+        solve_one_normal_constraint(constraint, &mut first, &mut second);
     } else {
-        solve_two_normal_constraints(constraint, first, second);
+        solve_two_normal_constraints(constraint, &mut first, &mut second);
     }
+    store_constraint_bodies(constraint, bodies, first, second)
 }
 
 fn solve_tangent_constraints(
@@ -572,9 +716,9 @@ fn apply_two_impulses(
 
 fn validate_solution(
     constraint: &VelocityConstraint,
-    first: SolverBody,
-    second: SolverBody,
+    bodies: &[SolverBody],
 ) -> Result<(), ContactSolveFailure> {
+    let (first, second) = constraint_bodies(constraint, bodies)?;
     if !first.is_finite()
         || !second.is_finite()
         || constraint.points[..constraint.point_count]
@@ -583,6 +727,41 @@ fn validate_solution(
     {
         return Err(ContactSolveFailure::NonFinite);
     }
+    Ok(())
+}
+
+fn constraint_bodies(
+    constraint: &VelocityConstraint,
+    bodies: &[SolverBody],
+) -> Result<(SolverBody, SolverBody), ContactSolveFailure> {
+    let first = bodies
+        .get(constraint.first_body_index)
+        .copied()
+        .ok_or(ContactSolveFailure::UnsupportedTopology)?;
+    let second = bodies
+        .get(constraint.second_body_index)
+        .copied()
+        .ok_or(ContactSolveFailure::UnsupportedTopology)?;
+    Ok((first, second))
+}
+
+fn store_constraint_bodies(
+    constraint: &VelocityConstraint,
+    bodies: &mut [SolverBody],
+    first: SolverBody,
+    second: SolverBody,
+) -> Result<(), ContactSolveFailure> {
+    if constraint.first_body_index == constraint.second_body_index {
+        return Err(ContactSolveFailure::UnsupportedTopology);
+    }
+    let Some(first_lane) = bodies.get_mut(constraint.first_body_index) else {
+        return Err(ContactSolveFailure::UnsupportedTopology);
+    };
+    *first_lane = first;
+    let Some(second_lane) = bodies.get_mut(constraint.second_body_index) else {
+        return Err(ContactSolveFailure::UnsupportedTopology);
+    };
+    *second_lane = second;
     Ok(())
 }
 
@@ -598,9 +777,7 @@ const fn shape_radius(shape: &Shape) -> f32 {
 #[cfg(test)]
 mod tests {
     use crate::collision::{CircleShape, FilterData};
-    use crate::{
-        BodyDef, BodyType, FixtureDef, StepConfiguration, StepError, StepHook, StepLimits, World,
-    };
+    use crate::{BodyDef, BodyType, FixtureDef, StepConfiguration, StepHook, StepLimits, World};
 
     use super::*;
 
@@ -624,7 +801,7 @@ mod tests {
     }
 
     #[test]
-    fn unsupported_preflight_preserves_seeded_velocities_and_all_impulses() {
+    fn multi_contact_island_solves_all_manager_occurrences() {
         // Arrange
         let mut world = World::new().expect("test world should be available");
         let static_body = world
@@ -656,60 +833,27 @@ mod tests {
             .create_fixture(second_dynamic, &fixture_definition())
             .expect("second dynamic fixture should fit");
         world.set_body_solver_velocity_for_test(second_dynamic, Vec2::new(-2.0, 5.0), -0.25);
-        let first_velocity_before = world.body_solver_velocity_for_test(first_dynamic);
-        let second_velocity_before = world.body_solver_velocity_for_test(second_dynamic);
-        let contacts_before = world.contact_snapshots_for_test();
-
         // Act
-        let error = world
+        let report = world
             .step(
                 phase6_step_configuration(),
                 &mut hook,
                 StepLimits::default(),
             )
-            .expect_err("multi-contact topology should fail closed");
+            .expect("multi-contact topology should solve as one island");
 
         // Assert
-        assert!(matches!(error, StepError::UnsupportedSolverTopology { .. }));
-        assert_eq!(
-            world.body_solver_velocity_for_test(first_dynamic),
-            first_velocity_before
+        assert_eq!(report.contact_solves().len(), 2);
+        assert!(
+            report
+                .contact_solves()
+                .iter()
+                .any(|solve| solve.contact().fixtures() == [static_fixture, first_dynamic_fixture])
         );
-        assert_eq!(
-            world.body_solver_velocity_for_test(second_dynamic),
-            second_velocity_before
-        );
-        let contacts_after = world.contact_snapshots_for_test();
-        let existing_before = contacts_before
-            .iter()
-            .find(|contact| {
-                contact.fixtures() == [static_fixture, first_dynamic_fixture]
-                    || contact.fixtures() == [first_dynamic_fixture, static_fixture]
-            })
-            .expect("existing contact should be captured before preflight");
-        let existing_after = contacts_after
-            .iter()
-            .find(|contact| {
-                contact.fixtures() == [static_fixture, first_dynamic_fixture]
-                    || contact.fixtures() == [first_dynamic_fixture, static_fixture]
-            })
-            .expect("existing contact should remain after preflight");
-        assert_eq!(existing_before.points(), existing_after.points());
-        assert_eq!(
-            existing_after.points()[0].normal_impulse().to_bits(),
-            2.0_f32.to_bits()
-        );
-        assert_eq!(
-            existing_after.points()[0].tangent_impulse().to_bits(),
-            (-0.5_f32).to_bits()
-        );
-        for contact in contacts_after
-            .iter()
-            .filter(|contact| contact.fixtures() != existing_after.fixtures())
-        {
-            assert!(contact.points().iter().all(|point| {
-                point.normal_impulse().to_bits() == 0 && point.tangent_impulse().to_bits() == 0
-            }));
+        for body in [first_dynamic, second_dynamic] {
+            let (linear, angular) = world.body_solver_velocity_for_test(body);
+            assert!(linear.is_valid());
+            assert!(angular.is_finite());
         }
     }
 }

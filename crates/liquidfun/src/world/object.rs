@@ -22,8 +22,7 @@ use super::fixture::{
     FixtureBoundsError, FixtureDef, FixtureDestructionError, FixtureMutationError,
     WorldFixtureSnapshot,
 };
-#[cfg(feature = "differential-internals")]
-use super::island::{IslandBuildError, IslandLimits, build_islands};
+use super::island::{IslandBuildError, IslandLimits, build_islands, solve_islands};
 use super::proxy::{FixtureProxies, FixtureProxy, PreparedFixtureBounds, PreparedSynchronization};
 use super::step::StepState;
 use crate::collision::{BroadPhase, FilterData, MassData};
@@ -78,6 +77,15 @@ struct Particle {
     diagnostic_id: u64,
     system: ParticleSystemId,
     maybe_group: Option<ParticleGroupId>,
+}
+
+fn contact_solve_build_error(error: IslandBuildError) -> ContactSolveFailure {
+    match error {
+        IslandBuildError::CapacityExceeded { resource, limit } => {
+            ContactSolveFailure::CapacityExceeded { resource, limit }
+        }
+        IslandBuildError::InvalidGraph => ContactSolveFailure::UnsupportedTopology,
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -1688,13 +1696,57 @@ impl World {
         );
     }
 
-    pub(super) fn solve_contacts(&mut self) -> Result<Vec<ContactSolve>, ContactSolveFailure> {
-        self.contact_manager
-            .solve_contacts(&mut self.bodies, &self.fixtures)
+    pub(super) fn solve_contacts(
+        &mut self,
+        configuration: super::config::StepConfiguration,
+        time_step_ratio: f32,
+    ) -> Result<Vec<ContactSolve>, ContactSolveFailure> {
+        let islands = build_islands(
+            &self.body_order,
+            &self.bodies,
+            &self.contact_manager,
+            IslandLimits::REVIEWED,
+        )
+        .map_err(contact_solve_build_error)?;
+        let solutions = solve_islands(
+            &islands,
+            &self.contact_manager,
+            &self.fixtures,
+            self.gravity(),
+            configuration,
+            time_step_ratio,
+            self.is_warm_starting_enabled(),
+        )?;
+
+        for solution in &solutions {
+            for (body_id, state) in solution.body_ids.iter().zip(&solution.body_states) {
+                self.bodies
+                    .get_mut(*body_id)
+                    .expect("staged island body remains live during commit")
+                    .state = *state;
+            }
+        }
+        let mut reports = Vec::new();
+        for solution in solutions {
+            for contact in solution.contact_impulses {
+                reports.push(
+                    self.contact_manager
+                        .commit_impulses(contact.contact_index, &contact.impulses),
+                );
+            }
+        }
+        Ok(reports)
     }
 
     pub(super) fn preflight_contact_solver(&self) -> Result<(), ContactSolveFailure> {
-        self.contact_manager.preflight_solver(&self.bodies)
+        build_islands(
+            &self.body_order,
+            &self.bodies,
+            &self.contact_manager,
+            IslandLimits::REVIEWED,
+        )
+        .map(|_islands| ())
+        .map_err(contact_solve_build_error)
     }
 
     #[cfg(test)]
@@ -1719,11 +1771,6 @@ impl World {
             .expect("test body should remain live")
             .state;
         (state.solver_linear(), state.solver_angular())
-    }
-
-    #[cfg(test)]
-    pub(super) fn contact_snapshots_for_test(&self) -> Vec<super::contact::ManagedContactSnapshot> {
-        self.contact_manager.snapshots_for_test()
     }
 
     #[cfg(test)]

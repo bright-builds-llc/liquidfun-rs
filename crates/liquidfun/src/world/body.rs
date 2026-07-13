@@ -662,6 +662,14 @@ impl BodyState {
         self.inverse_inertia
     }
 
+    pub(super) const fn accumulated_force(self) -> Vec2 {
+        self.force
+    }
+
+    pub(super) const fn accumulated_torque(self) -> f32 {
+        self.torque
+    }
+
     pub(super) fn set_solver_motion(&mut self, linear_velocity: Vec2, angular_velocity: f32) {
         self.linear_velocity = linear_velocity;
         self.angular_velocity = angular_velocity;

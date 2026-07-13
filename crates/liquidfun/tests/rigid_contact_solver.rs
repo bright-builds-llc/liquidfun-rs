@@ -3,8 +3,8 @@
 use liquidfun::collision::{CircleShape, FilterData, PolygonShape, Shape};
 use liquidfun::math::Vec2;
 use liquidfun::{
-    BodyDef, BodyId, BodyType, ContactView, FixtureDef, FixtureId, StepConfiguration, StepError,
-    StepHook, StepLimits, StepPhase, World, WorldCommand,
+    BodyDef, BodyId, BodyType, ContactView, FixtureDef, FixtureId, StepConfiguration, StepHook,
+    StepLimits, StepPhase, World, WorldCommand,
 };
 
 struct NoopHook;
@@ -270,7 +270,7 @@ fn two_point_contact_uses_fixed_capacity_and_preserves_material() {
 }
 
 #[test]
-fn unsupported_topology_keeps_lifecycle_and_pre_step_state_bit_identical() {
+fn dynamic_pair_solves_as_one_source_ordered_island() {
     // Arrange
     let (mut world, first_body, second_body, _, _) =
         circle_contact_world(BodyType::Dynamic, BodyType::Dynamic, false);
@@ -283,13 +283,13 @@ fn unsupported_topology_keeps_lifecycle_and_pre_step_state_bit_identical() {
     let mut hook = NoopHook;
 
     // Act
-    let error = world
+    let report = world
         .step(
             phase6_step_configuration(),
             &mut hook,
             StepLimits::default(),
         )
-        .expect_err("dynamic/dynamic solving is deferred to Phase 7");
+        .expect("dynamic/dynamic contact should solve in Phase 7");
     let first_after = world
         .body_snapshot(first_body)
         .expect("first body should remain live");
@@ -298,18 +298,13 @@ fn unsupported_topology_keeps_lifecycle_and_pre_step_state_bit_identical() {
         .expect("second body should remain live");
 
     // Assert
-    let StepError::UnsupportedSolverTopology {
-        contact_transitions,
-    } = error
-    else {
-        panic!("unexpected step error: {error}");
-    };
     assert_eq!(world.contact_count(), 1);
-    assert_eq!(first_before, first_after);
-    assert_eq!(second_before, second_after);
-    assert_eq!(contact_transitions.len(), 1);
+    assert_ne!(first_before.position(), first_after.position());
+    assert_ne!(second_before.position(), second_after.position());
+    assert_eq!(report.contact_transitions().len(), 1);
+    assert_eq!(report.contact_solves().len(), 1);
     assert!(
-        contact_transitions[0]
+        report.contact_solves()[0]
             .contact()
             .points()
             .iter()

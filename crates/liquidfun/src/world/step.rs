@@ -552,7 +552,7 @@ impl World {
             let (events, commands) = self.run_contact_hooks(&occurrences, hook, limits)?;
             let contact_solves = if configuration.time_step() > 0.0 {
                 phases.push(StepPhase::Solve);
-                self.solve_contact_constraints()
+                self.solve_contact_constraints(configuration, timing.time_step_ratio())
                     .map_err(|error| solver_step_error(error, &contact_transitions))?
             } else {
                 Vec::new()
@@ -615,8 +615,12 @@ impl World {
         self.update_contacts();
     }
 
-    fn solve_contact_constraints(&mut self) -> Result<Vec<ContactSolve>, ContactSolveFailure> {
-        self.solve_contacts()
+    fn solve_contact_constraints(
+        &mut self,
+        configuration: StepConfiguration,
+        time_step_ratio: f32,
+    ) -> Result<Vec<ContactSolve>, ContactSolveFailure> {
+        self.solve_contacts(configuration, time_step_ratio)
     }
 
     fn run_contact_hooks<H: StepHook>(
@@ -756,6 +760,9 @@ fn solver_step_error(
         ContactSolveFailure::NonFinite => StepError::NonFiniteSolverState {
             contact_transitions: contact_transitions.to_vec(),
         },
+        ContactSolveFailure::CapacityExceeded { resource, limit } => {
+            StepError::LimitExceeded { resource, limit }
+        }
     }
 }
 
