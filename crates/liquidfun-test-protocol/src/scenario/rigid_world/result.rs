@@ -397,29 +397,63 @@ pub fn validate_rigid_world_result_against_request(
                 rigid_world_checkpoint_live_identities(expected_timeline, checkpoint_index)
                     .ok_or_else(|| validation(RigidWorldErrorKind::ResultCheckpointMismatch))?;
             validate_checkpoint_declaration_order(&live_identities, actual)?;
-            let actions = rigid_world_checkpoint_action_window(expected_timeline, checkpoint_index)
-                .ok_or_else(|| validation(RigidWorldErrorKind::ResultCheckpointMismatch))?;
-            validate_checkpoint_observations(actions, &live_identities, &actual.observations)?;
+            validate_checkpoint_observations(
+                expected_timeline,
+                checkpoint_index,
+                &actual.observations,
+            )?;
         }
     }
     Ok(())
 }
 
 fn validate_checkpoint_observations(
-    actions: &[super::RigidWorldActionRecord],
-    live_identities: &RigidCheckpointLiveIdentities<'_>,
+    timeline: &super::RigidWorldTimeline,
+    checkpoint_index: usize,
     observations: &[RigidWorldObservation],
 ) -> Result<(), RigidWorldDecodeError> {
-    let expected = actions
+    let actions = rigid_world_checkpoint_action_window(timeline, checkpoint_index)
+        .ok_or_else(|| validation(RigidWorldErrorKind::ResultCheckpointMismatch))?;
+    let first_action = actions
+        .first()
+        .ok_or_else(|| validation(RigidWorldErrorKind::ResultCheckpointMismatch))?;
+    let action_start = timeline
+        .actions()
         .iter()
-        .filter_map(|action| expected_observation(action.action()))
-        .collect::<Vec<_>>();
-    if expected.len() != observations.len()
-        || expected
-            .iter()
-            .zip(observations)
-            .any(|(expected, actual)| !expected.matches(live_identities, actual))
-    {
+        .position(|action| action.action_id() == first_action.action_id())
+        .ok_or_else(|| validation(RigidWorldErrorKind::ResultCheckpointMismatch))?;
+    let fixture_owners = rigid_fixture_owners(timeline);
+    let mut live_bodies = HashSet::new();
+    let mut live_fixtures = HashSet::new();
+    for action in &timeline.actions()[..action_start] {
+        super::types::apply_lifecycle_action(
+            action.action(),
+            &fixture_owners,
+            &mut live_bodies,
+            &mut live_fixtures,
+        );
+    }
+
+    let mut actual_observations = observations.iter();
+    for action in actions {
+        super::types::apply_lifecycle_action(
+            action.action(),
+            &fixture_owners,
+            &mut live_bodies,
+            &mut live_fixtures,
+        );
+        let Some(expected) = expected_observation(action.action()) else {
+            continue;
+        };
+        let live_identities = rigid_world_live_identities(timeline, &live_bodies, &live_fixtures);
+        let Some(actual) = actual_observations.next() else {
+            return Err(validation(RigidWorldErrorKind::ResultObservationMismatch));
+        };
+        if !expected.matches(&live_identities, actual) {
+            return Err(validation(RigidWorldErrorKind::ResultObservationMismatch));
+        }
+    }
+    if actual_observations.next().is_some() {
         return Err(validation(RigidWorldErrorKind::ResultObservationMismatch));
     }
     Ok(())
@@ -660,16 +694,7 @@ pub fn rigid_world_checkpoint_live_identities(
         .actions()
         .iter()
         .position(|action| action.action_id() == action_end)?;
-    let fixture_owners = timeline
-        .fixtures()
-        .iter()
-        .map(|fixture| {
-            (
-                fixture.fixture_id().clone(),
-                fixture.owner_body_id().clone(),
-            )
-        })
-        .collect::<HashMap<_, _>>();
+    let fixture_owners = rigid_fixture_owners(timeline);
     let mut live_bodies = HashSet::new();
     let mut live_fixtures = HashSet::new();
     for action in &timeline.actions()[..=action_end] {
@@ -680,12 +705,37 @@ pub fn rigid_world_checkpoint_live_identities(
             &mut live_fixtures,
         );
     }
+    Some(rigid_world_live_identities(
+        timeline,
+        &live_bodies,
+        &live_fixtures,
+    ))
+}
+
+fn rigid_fixture_owners(timeline: &super::RigidWorldTimeline) -> HashMap<ScenarioId, ScenarioId> {
+    timeline
+        .fixtures()
+        .iter()
+        .map(|fixture| {
+            (
+                fixture.fixture_id().clone(),
+                fixture.owner_body_id().clone(),
+            )
+        })
+        .collect()
+}
+
+fn rigid_world_live_identities<'a>(
+    timeline: &'a super::RigidWorldTimeline,
+    live_bodies: &HashSet<ScenarioId>,
+    live_fixtures: &HashSet<ScenarioId>,
+) -> RigidCheckpointLiveIdentities<'a> {
     let fixtures = timeline
         .fixtures()
         .iter()
         .filter(|fixture| live_fixtures.contains(fixture.fixture_id()))
         .collect::<Vec<_>>();
-    Some(RigidCheckpointLiveIdentities {
+    RigidCheckpointLiveIdentities {
         body_ids: timeline
             .bodies()
             .iter()
@@ -697,7 +747,7 @@ pub fn rigid_world_checkpoint_live_identities(
             .map(|fixture| fixture.fixture_id())
             .collect(),
         fixtures,
-    })
+    }
 }
 
 fn validate_result_bounds(result: &RigidWorldResultRecord) -> Result<(), RigidWorldDecodeError> {
