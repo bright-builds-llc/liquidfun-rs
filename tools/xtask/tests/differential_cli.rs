@@ -449,7 +449,7 @@ fn rigid_fixture_stale_identity_real_binary_rejects_before_effects() -> TestResu
     assert!(
         !fixture
             .root
-            .join("reference/artifacts/traces/phase-06-rigid-world-v1.jsonl")
+            .join("reference/artifacts/traces/phase-07-rigid-world-v1.jsonl")
             .exists()
     );
     fixture.cleanup()?;
@@ -1003,6 +1003,10 @@ fn prepare_real_rigid_repository(root: &Path, behavior: &str) -> io::Result<()> 
     fs::copy(
         workspace_root().join("protocol/tolerances/phase6-v1.toml"),
         root.join("protocol/tolerances/phase6-v1.toml"),
+    )?;
+    fs::copy(
+        workspace_root().join("protocol/tolerances/phase7-v1.toml"),
+        root.join("protocol/tolerances/phase7-v1.toml"),
     )?;
     fs::copy(
         workspace_root().join("reference/artifacts/manifest.toml"),

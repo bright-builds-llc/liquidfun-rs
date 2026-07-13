@@ -7,7 +7,37 @@ use std::{
     sync::atomic::{AtomicU64, Ordering},
 };
 
+use liquidfun_test_protocol::{
+    HarnessLimits, Phase7PolicyProfile, RigidWorldWitnessFamily, decode_rigid_world_request_jsonl,
+};
+
 static NEXT_REPOSITORY: AtomicU64 = AtomicU64::new(0);
+
+#[test]
+fn checked_in_request_locks_every_phase7_family_and_policy() {
+    // Arrange
+    let request_bytes =
+        include_bytes!("../../../protocol/fixtures/accepted/rigid-world-request.jsonl");
+    let policy = Phase7PolicyProfile::parse_toml(include_str!(
+        "../../../protocol/tolerances/phase7-v1.toml"
+    ))
+    .expect("checked-in Phase 7 policy should parse");
+
+    // Act
+    let request =
+        decode_rigid_world_request_jsonl(request_bytes, &HarnessLimits::phase2_default_v1())
+            .expect("checked-in rigid request should decode");
+    let families = request
+        .scenario()
+        .timelines()
+        .iter()
+        .map(|timeline| timeline.witness_family())
+        .collect::<Vec<_>>();
+
+    // Assert
+    assert_eq!(request.tolerance_profile_sha256(), policy.profile_sha256());
+    assert_eq!(families, RigidWorldWitnessFamily::ALL);
+}
 
 struct RigidFixtureRepository {
     root: PathBuf,
@@ -32,6 +62,10 @@ impl RigidFixtureRepository {
         fs::copy(
             workspace_root().join("protocol/tolerances/phase6-v1.toml"),
             root.join("protocol/tolerances/phase6-v1.toml"),
+        )?;
+        fs::copy(
+            workspace_root().join("protocol/tolerances/phase7-v1.toml"),
+            root.join("protocol/tolerances/phase7-v1.toml"),
         )?;
         fs::copy(
             workspace_root().join("reference/artifacts/manifest.toml"),
@@ -170,11 +204,11 @@ fn transaction_real_binary_stages_replays_and_promotes_canonical_rigid_trace()
     assert!(
         repository
             .root
-            .join("reference/artifacts/traces/phase-06-rigid-world-v1.jsonl")
+            .join("reference/artifacts/traces/phase-07-rigid-world-v1.jsonl")
             .is_file()
     );
     let manifest = fs::read_to_string(repository.root.join("reference/artifacts/manifest.toml"))?;
-    assert!(manifest.contains("phase-06-rigid-world-v1.jsonl"));
+    assert!(manifest.contains("phase-07-rigid-world-v1.jsonl"));
     Ok(())
 }
 
@@ -200,7 +234,7 @@ fn real_binary_rejects_d2_before_staging_or_accepted_mutation()
     assert!(
         !repository
             .root
-            .join("reference/artifacts/traces/phase-06-rigid-world-v1.jsonl")
+            .join("reference/artifacts/traces/phase-07-rigid-world-v1.jsonl")
             .exists()
     );
     Ok(())
@@ -308,7 +342,7 @@ fn review_and_promotion_recompute_checkout_identity_before_writes()
     assert!(
         !repository
             .root
-            .join("reference/artifacts/traces/phase-06-rigid-world-v1.jsonl")
+            .join("reference/artifacts/traces/phase-07-rigid-world-v1.jsonl")
             .exists()
     );
     Ok(())
