@@ -172,10 +172,11 @@ pub use identity::{
     BodyId, FixtureId, JointId, ObjectKind, ParticleGroupId, ParticleId, ParticleSystemId,
 };
 pub use joint::{
-    DistanceJointDef, FrictionJointDef, GearJointDef, JointDef, JointDefError, JointKind,
-    JointLimitState, JointSnapshot, JointSpecificSnapshot, MotorJointDef, MouseJointDef,
-    PrismaticJointDef, PrismaticJointSnapshot, PulleyJointDef, RevoluteJointDef,
-    RevoluteJointSnapshot, RopeJointDef, WeldJointDef, WheelJointDef,
+    DistanceJointDef, DistanceJointSnapshot, FrictionJointDef, GearJointDef, JointDef,
+    JointDefError, JointKind, JointLimitState, JointSnapshot, JointSpecificSnapshot, MotorJointDef,
+    MouseJointDef, MouseJointSnapshot, PrismaticJointDef, PrismaticJointSnapshot, PulleyJointDef,
+    PulleyJointSnapshot, RevoluteJointDef, RevoluteJointSnapshot, RopeJointDef, WeldJointDef,
+    WheelJointDef,
 };
 pub use world::{
     AggregateMassError, BodyActivationError, BodyControlError, BodyDef, BodyDefError, BodyMassData,

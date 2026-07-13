@@ -11,24 +11,37 @@ use crate::{
 
 use super::object::{DestructionCause, World};
 
+mod distance;
+mod mouse;
 mod prismatic;
+mod pulley;
 mod revolute;
 
 #[derive(Debug, Clone, Copy)]
 pub(super) enum JointRuntime {
     Revolute(revolute::RevoluteRuntime),
     Prismatic(prismatic::PrismaticRuntime),
+    Distance(distance::DistanceRuntime),
+    Pulley(pulley::PulleyRuntime),
+    Mouse(mouse::MouseRuntime),
     Pending,
 }
 
 impl JointRuntime {
-    fn from_definition(definition: JointDef) -> Self {
+    fn from_definition(definition: JointDef, body_b_transform: crate::math::Transform) -> Self {
         match definition {
             JointDef::Revolute(definition) => {
                 Self::Revolute(revolute::RevoluteRuntime::new(definition))
             }
             JointDef::Prismatic(definition) => {
                 Self::Prismatic(prismatic::PrismaticRuntime::new(definition))
+            }
+            JointDef::Distance(definition) => {
+                Self::Distance(distance::DistanceRuntime::new(definition))
+            }
+            JointDef::Pulley(definition) => Self::Pulley(pulley::PulleyRuntime::new(definition)),
+            JointDef::Mouse(definition) => {
+                Self::Mouse(mouse::MouseRuntime::new(definition, body_b_transform))
             }
             _ => Self::Pending,
         }
@@ -299,7 +312,7 @@ impl World {
         }
         let bodies = definition.bodies();
         self.bodies.get(bodies[0])?;
-        self.bodies.get(bodies[1])?;
+        let body_b_transform = self.bodies.get(bodies[1])?.state.snapshot().transform();
         if bodies[0] == bodies[1] {
             return Err(JointCreationError::InvalidDefinition(
                 JointDefError::SameBody,
@@ -313,7 +326,7 @@ impl World {
             bodies,
             definition,
             collide_connected,
-            runtime: JointRuntime::from_definition(definition),
+            runtime: JointRuntime::from_definition(definition, body_b_transform),
             island_flag: false,
             reverse_gear_dependents: Vec::new(),
         })?;
@@ -340,6 +353,9 @@ impl World {
         match record.runtime {
             JointRuntime::Revolute(runtime) => revolute::snapshot(self, record, runtime),
             JointRuntime::Prismatic(runtime) => prismatic::snapshot(self, record, runtime),
+            JointRuntime::Distance(runtime) => distance::snapshot(self, record, runtime),
+            JointRuntime::Pulley(runtime) => pulley::snapshot(self, record, runtime),
+            JointRuntime::Mouse(runtime) => mouse::snapshot(self, record, runtime),
             JointRuntime::Pending => Ok(JointSnapshot::from_definition(record.definition)),
         }
     }
@@ -377,6 +393,9 @@ impl World {
         match record.runtime {
             JointRuntime::Revolute(runtime) => Ok(runtime.reaction_force(inverse_timestep)),
             JointRuntime::Prismatic(runtime) => Ok(runtime.reaction_force(inverse_timestep)),
+            JointRuntime::Distance(runtime) => Ok(runtime.reaction_force(inverse_timestep)),
+            JointRuntime::Pulley(runtime) => Ok(runtime.reaction_force(inverse_timestep)),
+            JointRuntime::Mouse(runtime) => Ok(runtime.reaction_force(inverse_timestep)),
             JointRuntime::Pending => Ok(Vec2::ZERO),
         }
     }
@@ -396,7 +415,10 @@ impl World {
         match record.runtime {
             JointRuntime::Revolute(runtime) => Ok(runtime.reaction_torque(inverse_timestep)),
             JointRuntime::Prismatic(runtime) => Ok(runtime.reaction_torque(inverse_timestep)),
-            JointRuntime::Pending => Ok(0.0),
+            JointRuntime::Distance(_)
+            | JointRuntime::Pulley(_)
+            | JointRuntime::Mouse(_)
+            | JointRuntime::Pending => Ok(0.0),
         }
     }
 
