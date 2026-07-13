@@ -108,6 +108,7 @@ pub enum RigidRayCompletion {
 #[serde(deny_unknown_fields)]
 pub struct RigidRayObservation {
     pub completion: RigidRayCompletion,
+    pub clipping_applied: bool,
     pub hits: Box<[RigidRayHitObservation]>,
 }
 
@@ -405,7 +406,7 @@ enum ExpectedObservation<'a> {
     BodyState(&'a ScenarioId),
     Step,
     Query,
-    RayCast,
+    RayCast(&'a [super::RigidRayDirectiveRule]),
     OriginShift(Vec2Bits),
 }
 
@@ -416,8 +417,17 @@ impl ExpectedObservation<'_> {
                 expected == &state.body_id
             }
             (Self::Step, RigidWorldObservation::Step { .. })
-            | (Self::Query, RigidWorldObservation::Query { .. })
-            | (Self::RayCast, RigidWorldObservation::RayCast { .. }) => true,
+            | (Self::Query, RigidWorldObservation::Query { .. }) => true,
+            (Self::RayCast(rules), RigidWorldObservation::RayCast { observation }) => {
+                observation.clipping_applied
+                    == observation.hits.iter().any(|hit| {
+                        rules.iter().any(|rule| {
+                            rule.target.fixture_id == hit.fixture_id
+                                && rule.target.child_index == hit.child_index
+                                && matches!(rule.directive, super::RigidRayDirective::Clip { .. })
+                        })
+                    })
+            }
             (Self::OriginShift(expected), RigidWorldObservation::OriginShift { shift }) => {
                 expected == *shift
             }
@@ -444,7 +454,9 @@ fn expected_observation(action: &RigidWorldAction) -> Option<ExpectedObservation
         }
         RigidWorldAction::ConfiguredStep { .. } => Some(ExpectedObservation::Step),
         RigidWorldAction::QueryAabb { .. } => Some(ExpectedObservation::Query),
-        RigidWorldAction::RayCast { .. } => Some(ExpectedObservation::RayCast),
+        RigidWorldAction::RayCast {
+            directive_rules, ..
+        } => Some(ExpectedObservation::RayCast(directive_rules)),
         RigidWorldAction::ShiftOrigin { shift } => Some(ExpectedObservation::OriginShift(*shift)),
         _ => None,
     }

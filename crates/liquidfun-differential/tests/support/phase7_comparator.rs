@@ -52,6 +52,28 @@ fn request_with_ray_rules(
         .expect("bounded ray request mutation should decode")
 }
 
+fn request_with_out_of_ray_clip(profile: &Phase7PolicyProfile) -> RigidWorldRequestRecord {
+    let request = request_with_ray_rules(
+        profile,
+        json!([{
+            "target": { "fixture_id": "nc-dynamic-fixture", "child_index": 0 },
+            "directive": { "kind": "clip", "fraction_bits": 0.5_f32.to_bits() }
+        }]),
+    );
+    let mut value = serde_json::to_value(request).expect("request should serialize");
+    let ray_action = value["scenario"]["timelines"][0]["actions"]
+        .as_array_mut()
+        .expect("timeline actions should be an array")
+        .iter_mut()
+        .find(|record| record["action_id"] == "phase7-action-20")
+        .expect("Phase 7 ray action should exist");
+    ray_action["action"]["end"]["x_bits"] = json!(5.0_f32.to_bits());
+    let mut bytes = serde_json::to_vec(&value).expect("request mutation should encode");
+    bytes.push(b'\n');
+    decode_rigid_world_request_jsonl(&bytes, &HarnessLimits::phase2_default_v1())
+        .expect("bounded ray request mutation should decode")
+}
+
 fn phase7_observations(value: &mut Value) -> &mut Vec<Value> {
     value["timelines"][0]["checkpoints"][6]["observations"]
         .as_array_mut()
@@ -233,6 +255,49 @@ fn rigid_comparator_treats_exhaustive_ray_hits_as_record_multisets() {
 
     // Assert
     assert_eq!(outcome, RigidComparisonOutcome::Match);
+}
+
+#[test]
+fn rigid_comparator_uses_exhaustive_semantics_when_declared_clip_is_not_applied() {
+    // Arrange
+    let (phase6, phase7) = profiles();
+    let request = request_with_out_of_ray_clip(&phase7);
+    let baseline = NativeRigidWorldExecutor::execute(&request)
+        .expect("profile-bound out-of-ray clip request should execute");
+    let mut native_value = serde_json::to_value(&baseline).expect("result should serialize");
+    let ray = observation_mut(phase7_observations(&mut native_value), "ray_cast");
+    assert_eq!(ray["observation"]["clipping_applied"], json!(false));
+    ray["observation"]["hits"] = json!([
+        {
+            "fixture_id": "nc-static-fixture",
+            "child_index": 0,
+            "point": { "x_bits": (-1.0_f32).to_bits(), "y_bits": 0.0_f32.to_bits() },
+            "normal": { "x_bits": 1.0_f32.to_bits(), "y_bits": 0.0_f32.to_bits() },
+            "fraction_bits": 0.25_f32.to_bits()
+        },
+        {
+            "fixture_id": "nc-kinematic-fixture",
+            "child_index": 0,
+            "point": { "x_bits": 1.0_f32.to_bits(), "y_bits": 0.0_f32.to_bits() },
+            "normal": { "x_bits": (-1.0_f32).to_bits(), "y_bits": 0.0_f32.to_bits() },
+            "fraction_bits": 0.75_f32.to_bits()
+        }
+    ]);
+    let native = decode_result(&native_value);
+    let mut oracle_value = native_value;
+    observation_mut(phase7_observations(&mut oracle_value), "ray_cast")["observation"]["hits"][1]
+        ["point"]["x_bits"] = json!(2.0_f32.to_bits());
+    let oracle = decode_result(&oracle_value);
+
+    // Act
+    let outcome = compare_phase7_rigid_world_results(&request, &native, &oracle, &phase6, &phase7)
+        .expect("registered Phase 7 fields should compare");
+
+    // Assert
+    let RigidComparisonOutcome::PhysicsMismatch(report) = outcome else {
+        panic!("a nonminimum hit mismatch must remain visible when clipping was not applied");
+    };
+    assert_eq!(report.semantic_path(), "rigid_world.phase7.ray.point.x");
 }
 
 #[test]

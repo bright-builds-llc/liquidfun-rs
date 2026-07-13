@@ -387,6 +387,7 @@ fn execute_ray_cast(
         .map_err(|error| action_error(action, error))?;
     let fixture_ids = executor.fixtures.clone();
     let mut terminated = false;
+    let mut clipping_applied = false;
     let mut invalid = false;
     let mut hits = Vec::new();
     let result = executor.world.ray_cast(input, |hit| {
@@ -422,6 +423,7 @@ fn execute_ray_cast(
             }
             RigidRayDirective::Continue => RayCastDirective::Continue,
             RigidRayDirective::Clip { fraction_bits } => {
+                clipping_applied = true;
                 match RayCastFraction::new(fraction_bits.to_f32()) {
                     Ok(fraction) => RayCastDirective::Clip(fraction),
                     Err(_error) => {
@@ -448,6 +450,7 @@ fn execute_ray_cast(
                 } else {
                     RigidRayCompletion::Exhausted
                 },
+                clipping_applied,
                 hits: hits.into_boxed_slice(),
             },
         });

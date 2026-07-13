@@ -2,8 +2,7 @@
 
 use liquidfun_test_protocol::{
     FloatBits, Phase7PolicyProfile, RigidFixtureChildOccurrence, RigidRayCompletion,
-    RigidRayDirective, RigidRayHitObservation, RigidRayObservation, RigidWorldAction,
-    RigidWorldRequestRecord,
+    RigidRayHitObservation, RigidRayObservation, RigidWorldRequestRecord,
 };
 
 use crate::{float_values_match_with_policy, multiset_values_match, set_values_match};
@@ -35,7 +34,7 @@ pub(super) fn compare_ray(
     if expected.completion == RigidRayCompletion::Terminated {
         return compare_terminated_count(request, profile, context, expected, actual);
     }
-    if ray_uses_clipping(request, context) {
+    if expected.clipping_applied && actual.clipping_applied {
         return compare_closest_hits(request, profile, context, expected, actual);
     }
     compare_hit_multisets(request, profile, context, &expected.hits, &actual.hits)
@@ -163,27 +162,6 @@ fn compare_hit_multisets(
         }
     }
     Ok(None)
-}
-
-fn ray_uses_clipping(request: &RigidWorldRequestRecord, context: EvidenceContext<'_>) -> bool {
-    let Some(action_id) = context.maybe_action_id else {
-        return false;
-    };
-    request.scenario().timelines()[context.location.timeline_index]
-        .actions()
-        .iter()
-        .find(|record| record.action_id().as_str() == action_id)
-        .is_some_and(|record| {
-            let RigidWorldAction::RayCast {
-                directive_rules, ..
-            } = record.action()
-            else {
-                return false;
-            };
-            directive_rules
-                .iter()
-                .any(|rule| matches!(rule.directive, RigidRayDirective::Clip { .. }))
-        })
 }
 
 fn hit_values_match(

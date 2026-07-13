@@ -1453,6 +1453,9 @@
                               "observation": {
                                 "additionalProperties": false,
                                 "properties": {
+                                  "clipping_applied": {
+                                    "type": "boolean"
+                                  },
                                   "completion": {
                                     "enum": [
                                       "exhausted",
@@ -1500,6 +1503,7 @@
                                 },
                                 "required": [
                                   "completion",
+                                  "clipping_applied",
                                   "hits"
                                 ],
                                 "type": "object"

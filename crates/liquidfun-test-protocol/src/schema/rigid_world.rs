@@ -506,9 +506,10 @@ fn ray_observation_schema() -> Value {
     closed_record(
         &json!({
             "completion": { "enum": enum_values(&[RigidRayCompletion::Exhausted, RigidRayCompletion::Terminated]) },
+            "clipping_applied": { "type": "boolean" },
             "hits": { "items": ray_hit_schema(), "maxItems": 256, "type": "array" }
         }),
-        &["completion", "hits"],
+        &["completion", "clipping_applied", "hits"],
     )
 }
 

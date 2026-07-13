@@ -108,11 +108,13 @@
           const std::unordered_map<const b2Fixture*, std::string>& fixture_ids,
           const std::vector<RigidRayRule>& rules,
           Json& hits,
-          bool& terminated)
+          bool& terminated,
+          bool& clipping_applied)
           : fixture_ids_(fixture_ids),
             rules_(rules),
             hits_(hits),
-            terminated_(terminated) {}
+            terminated_(terminated),
+            clipping_applied_(clipping_applied) {}
 
       float32 ReportFixture(
           b2Fixture* fixture,
@@ -140,6 +142,7 @@
         }
         if (rule->directive.kind == RigidRayDirectiveKind::ignore) return -1.0F;
         if (rule->directive.kind == RigidRayDirectiveKind::clip) {
+          clipping_applied_ = true;
           return float_from_bits(rule->directive.fraction);
         }
         terminated_ = true;
@@ -151,15 +154,18 @@
       const std::vector<RigidRayRule>& rules_;
       Json& hits_;
       bool& terminated_;
+      bool& clipping_applied_;
     };
 
     Json hits = Json::array();
     bool terminated = false;
-    Callback callback(fixture_ids_, ray.rules, hits, terminated);
+    bool clipping_applied = false;
+    Callback callback(fixture_ids_, ray.rules, hits, terminated, clipping_applied);
     world_.RayCast(&callback, vector(ray.start), vector(ray.end));
     observations_.push_back(
         {{"kind", "ray_cast"},
          {"observation",
           {{"completion", terminated ? "terminated" : "exhausted"},
+           {"clipping_applied", clipping_applied},
            {"hits", std::move(hits)}}}});
   }
