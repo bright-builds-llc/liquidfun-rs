@@ -12,10 +12,13 @@ use crate::{
 use super::object::{DestructionCause, World};
 
 mod distance;
+mod friction;
+mod motor;
 mod mouse;
 mod prismatic;
 mod pulley;
 mod revolute;
+mod rope;
 mod weld;
 mod wheel;
 
@@ -28,6 +31,9 @@ pub(super) enum JointRuntime {
     Mouse(mouse::MouseRuntime),
     Wheel(wheel::WheelRuntime),
     Weld(weld::WeldRuntime),
+    Friction(friction::FrictionRuntime),
+    Rope(rope::RopeJointRuntime),
+    Motor(motor::MotorRuntime),
     Pending,
 }
 
@@ -49,7 +55,12 @@ impl JointRuntime {
             }
             JointDef::Wheel(definition) => Self::Wheel(wheel::WheelRuntime::new(definition)),
             JointDef::Weld(definition) => Self::Weld(weld::WeldRuntime::new(definition)),
-            _ => Self::Pending,
+            JointDef::Friction(definition) => {
+                Self::Friction(friction::FrictionRuntime::new(definition))
+            }
+            JointDef::Rope(definition) => Self::Rope(rope::RopeJointRuntime::new(definition)),
+            JointDef::Motor(definition) => Self::Motor(motor::MotorRuntime::new(definition)),
+            JointDef::Gear(_) => Self::Pending,
         }
     }
 }
@@ -364,6 +375,9 @@ impl World {
             JointRuntime::Mouse(runtime) => mouse::snapshot(self, record, runtime),
             JointRuntime::Wheel(runtime) => wheel::snapshot(self, record, runtime),
             JointRuntime::Weld(runtime) => weld::snapshot(self, record, runtime),
+            JointRuntime::Friction(runtime) => friction::snapshot(self, record, runtime),
+            JointRuntime::Rope(runtime) => rope::snapshot(self, record, runtime),
+            JointRuntime::Motor(runtime) => motor::snapshot(self, record, runtime),
             JointRuntime::Pending => Ok(JointSnapshot::from_definition(record.definition)),
         }
     }
@@ -406,6 +420,9 @@ impl World {
             JointRuntime::Mouse(runtime) => Ok(runtime.reaction_force(inverse_timestep)),
             JointRuntime::Wheel(runtime) => Ok(runtime.reaction_force(inverse_timestep)),
             JointRuntime::Weld(runtime) => Ok(runtime.reaction_force(inverse_timestep)),
+            JointRuntime::Friction(runtime) => Ok(runtime.reaction_force(inverse_timestep)),
+            JointRuntime::Rope(runtime) => Ok(runtime.reaction_force(inverse_timestep)),
+            JointRuntime::Motor(runtime) => Ok(runtime.reaction_force(inverse_timestep)),
             JointRuntime::Pending => Ok(Vec2::ZERO),
         }
     }
@@ -427,9 +444,12 @@ impl World {
             JointRuntime::Prismatic(runtime) => Ok(runtime.reaction_torque(inverse_timestep)),
             JointRuntime::Wheel(runtime) => Ok(runtime.reaction_torque(inverse_timestep)),
             JointRuntime::Weld(runtime) => Ok(runtime.reaction_torque(inverse_timestep)),
+            JointRuntime::Friction(runtime) => Ok(runtime.reaction_torque(inverse_timestep)),
+            JointRuntime::Motor(runtime) => Ok(runtime.reaction_torque(inverse_timestep)),
             JointRuntime::Distance(_)
             | JointRuntime::Pulley(_)
             | JointRuntime::Mouse(_)
+            | JointRuntime::Rope(_)
             | JointRuntime::Pending => Ok(0.0),
         }
     }
