@@ -7,6 +7,7 @@ use std::{
     sync::atomic::{AtomicU64, Ordering},
 };
 
+use liquidfun_differential::{ArtifactKind, OraclePreset, stage_rigid_candidate};
 use liquidfun_test_protocol::{
     HarnessLimits, Phase7PolicyProfile, RigidWorldWitnessFamily, decode_rigid_world_request_jsonl,
 };
@@ -140,6 +141,17 @@ impl RigidFixtureRepository {
         fs::write(self.oracle_directory.join("behavior.txt"), behavior)
     }
 
+    fn set_request_policy_hash(&self, hash: &str) -> io::Result<()> {
+        let path = self
+            .root
+            .join("protocol/fixtures/accepted/rigid-world-request.jsonl");
+        let mut value: serde_json::Value = serde_json::from_slice(&fs::read(&path)?)?;
+        value["tolerance_profile_sha256"] = serde_json::Value::String(hash.to_owned());
+        let mut bytes = serde_json::to_vec(&value)?;
+        bytes.push(b'\n');
+        fs::write(path, bytes)
+    }
+
     fn candidate(&self, artifact_id: &str) -> PathBuf {
         self.root
             .join("target/differential/staging")
@@ -237,6 +249,34 @@ fn real_binary_rejects_d2_before_staging_or_accepted_mutation()
             .join("reference/artifacts/traces/phase-07-rigid-world-v1.jsonl")
             .exists()
     );
+    Ok(())
+}
+
+#[test]
+fn stale_request_policy_rejects_before_staging_or_oracle_execution()
+-> Result<(), Box<dyn std::error::Error>> {
+    // Arrange
+    let repository = RigidFixtureRepository::new("rigid_d1")?;
+    repository.set_request_policy_hash(&"0".repeat(64))?;
+    repository.set_behavior("rigid_d1_nonzero")?;
+    let before = FixtureMutationSnapshot::capture(&repository)?;
+
+    // Act
+    let error = stage_rigid_candidate(
+        &repository.root,
+        "stale-policy",
+        ArtifactKind::ReviewedTrace,
+        OraclePreset::Debug,
+        "oracle-debug",
+        "one-shot",
+        "7f20402173fd143a3988c921bc384459c6a858f2",
+    )
+    .expect_err("stale request provenance must fail closed");
+
+    // Assert
+    assert!(error.to_string().contains("request policy hash"));
+    assert_eq!(FixtureMutationSnapshot::capture(&repository)?, before);
+    assert!(!repository.candidate("stale-policy").exists());
     Ok(())
 }
 

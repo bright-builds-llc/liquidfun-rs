@@ -603,15 +603,20 @@ fn rigid_world_request(
     policy: &Phase7PolicyProfile,
 ) -> Result<RigidWorldRequestRecord, DifferentialError> {
     let request_bytes = read_regular_file(repository_root, RIGID_WORLD_REQUEST)?;
-    let mut request_value: serde_json::Value = serde_json::from_slice(&request_bytes)
-        .map_err(|error| DifferentialError::new("protocol", error.to_string()))?;
-    request_value["tolerance_profile_sha256"] =
-        serde_json::Value::String(policy.profile_sha256().as_str().to_owned());
-    let mut bound_bytes = serde_json::to_vec(&request_value)
-        .map_err(|error| DifferentialError::new("protocol", error.to_string()))?;
-    bound_bytes.push(b'\n');
-    decode_rigid_world_request_jsonl(&bound_bytes, &HarnessLimits::phase2_default_v1())
-        .map_err(|error| DifferentialError::new("protocol", error.to_string()))
+    let request =
+        decode_rigid_world_request_jsonl(&request_bytes, &HarnessLimits::phase2_default_v1())
+            .map_err(|error| DifferentialError::new("protocol", error.to_string()))?;
+    if request.tolerance_profile_sha256() != policy.profile_sha256() {
+        return Err(DifferentialError::new(
+            "policy",
+            format!(
+                "rigid-world request policy hash {} does not match checked-in profile {}",
+                request.tolerance_profile_sha256().as_str(),
+                policy.profile_sha256().as_str()
+            ),
+        ));
+    }
+    Ok(request)
 }
 
 fn execute_rigid_world_once(
@@ -1392,16 +1397,50 @@ mod tests {
         BuildIdentity, BuildIdentityFields, DivergenceHorizon, EvidenceTier, FloatBits,
         HarnessLimits, MathProbeDiscrete, MathProbeDiscreteField, MathProbeHorizon,
         MathProbeOperation, MathProbePolicyPath, MathProbeRequestRecord, MathProbeResult,
-        MathProbeValue, Phase4BuildIdentityFields, Phase4PolicyProfile,
+        MathProbeValue, Phase4BuildIdentityFields, Phase4PolicyProfile, Phase7PolicyProfile,
         decode_math_probe_request_jsonl,
     };
 
     use std::fs;
 
     use super::{
-        ORACLE_REVISION, compare_math_probe_results, horizons_match,
-        native_source_digest_from_manifest, tier_authorizes,
+        ORACLE_REVISION, RIGID_WORLD_REQUEST, compare_math_probe_results, horizons_match,
+        native_source_digest_from_manifest, rigid_world_request, tier_authorizes,
     };
+
+    #[test]
+    fn rigid_world_request_rejects_stale_policy_provenance() {
+        // Arrange
+        let root = std::env::temp_dir().join(format!(
+            "liquidfun-rigid-policy-provenance-{}",
+            std::process::id()
+        ));
+        let request_path = root.join(RIGID_WORLD_REQUEST);
+        fs::create_dir_all(request_path.parent().expect("request path has a parent"))
+            .expect("temporary request directory should be created");
+        let mut request_value: serde_json::Value = serde_json::from_slice(include_bytes!(
+            "../../../protocol/fixtures/accepted/rigid-world-request.jsonl"
+        ))
+        .expect("checked-in request should parse");
+        request_value["tolerance_profile_sha256"] = serde_json::Value::String("0".repeat(64));
+        let mut request_bytes =
+            serde_json::to_vec(&request_value).expect("stale request should encode");
+        request_bytes.push(b'\n');
+        fs::write(&request_path, request_bytes).expect("stale request should be written");
+        let policy = Phase7PolicyProfile::parse_toml(include_str!(
+            "../../../protocol/tolerances/phase7-v1.toml"
+        ))
+        .expect("checked-in Phase 7 policy should parse");
+
+        // Act
+        let error = rigid_world_request(&root, &policy)
+            .expect_err("stale request provenance must fail closed");
+
+        // Assert
+        assert_eq!(error.category, "policy");
+        assert!(error.message.contains("request policy hash"));
+        fs::remove_dir_all(root).expect("temporary fixture should be removed");
+    }
 
     #[test]
     fn native_source_digest_changes_when_an_executor_input_changes() {

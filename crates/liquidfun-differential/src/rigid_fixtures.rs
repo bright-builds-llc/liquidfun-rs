@@ -63,11 +63,18 @@ pub fn stage_rigid_candidate(
     }
     let manifest = read_manifest(repository_root)?;
     let (phase6_policy, phase7_policy) = read_policies(repository_root)?;
-    let request_bytes = bind_request(repository_root, &phase7_policy)?;
     let limits = HarnessLimits::phase2_default_v1();
+    let request_bytes = fs::read(repository_root.join(REQUEST_PATH))?;
     enforce_size("request", &request_bytes, limits.input_record_bytes())?;
     let request = decode_rigid_world_request_jsonl(&request_bytes, &limits)
         .map_err(|error| FixtureError::Replay(error.to_string()))?;
+    if request.tolerance_profile_sha256() != phase7_policy.profile_sha256() {
+        return Err(FixtureError::Replay(format!(
+            "rigid-world request policy hash {} does not match checked-in profile {}",
+            request.tolerance_profile_sha256().as_str(),
+            phase7_policy.profile_sha256().as_str()
+        )));
+    }
     let native = NativeRigidWorldExecutor::execute(&request)
         .map_err(|error| FixtureError::Replay(error.to_string()))?;
     let executable = OracleExecutable::resolve(repository_root, preset)
@@ -324,19 +331,6 @@ fn read_policies(
 fn read_policy_text(repository_root: &Path, relative: &str) -> Result<String, FixtureError> {
     let bytes = fs::read(repository_root.join(relative))?;
     String::from_utf8(bytes).map_err(|error| FixtureError::Replay(error.to_string()))
-}
-
-fn bind_request(
-    repository_root: &Path,
-    policy: &Phase7PolicyProfile,
-) -> Result<Vec<u8>, FixtureError> {
-    let bytes = fs::read(repository_root.join(REQUEST_PATH))?;
-    let mut value: serde_json::Value = serde_json::from_slice(&bytes)?;
-    value["tolerance_profile_sha256"] =
-        serde_json::Value::String(policy.profile_sha256().as_str().to_owned());
-    let mut bound = serde_json::to_vec(&value)?;
-    bound.push(b'\n');
-    Ok(bound)
 }
 
 fn rigid_stage_report(
