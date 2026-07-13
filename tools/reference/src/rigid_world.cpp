@@ -120,21 +120,20 @@ class TimelineExecution {
       const b2Contact* contact,
       bool emit_created) {
     const auto found = contact_identities_.find(contact);
-    if (found != contact_identities_.end()) return found->second;
-    const auto fixture_a = fixture_ids_.find(contact->GetFixtureA());
-    const auto fixture_b = fixture_ids_.find(contact->GetFixtureB());
-    if (fixture_a == fixture_ids_.end() || fixture_b == fixture_ids_.end()) {
-      throw std::runtime_error("contact references an unmapped fixture");
+    const auto fixtures_mapped =
+        fixture_ids_.count(contact->GetFixtureA()) != 0 &&
+        fixture_ids_.count(contact->GetFixtureB()) != 0;
+    if (found != contact_identities_.end() && !fixtures_mapped) {
+      return found->second;
     }
-    auto fixture_a_id = fixture_a->second;
-    auto fixture_b_id = fixture_b->second;
-    auto child_a = checked_child(contact->GetChildIndexA());
-    auto child_b = checked_child(contact->GetChildIndexB());
-    if (fixture_order_.at(fixture_b_id) < fixture_order_.at(fixture_a_id)) {
-      std::swap(fixture_a_id, fixture_b_id);
-      std::swap(child_a, child_b);
+    const auto key = contact_pair(contact);
+    auto identity_replaced = false;
+    if (found != contact_identities_.end()) {
+      if (identity_matches(found->second, key)) return found->second;
+      record_contact_destruction(found);
+      identity_replaced = true;
     }
-    const PairKey key{fixture_a_id, child_a, fixture_b_id, child_b};
+    const auto& [fixture_a_id, child_a, fixture_b_id, child_b] = key;
     auto& occurrence = occurrences_[key];
     if (occurrence == std::numeric_limits<std::uint32_t>::max()) {
       throw std::runtime_error("contact occurrence overflowed");
@@ -149,12 +148,39 @@ class TimelineExecution {
             child_b,
             occurrence});
     if (!was_inserted) throw std::runtime_error("contact identity insertion failed");
-    if (emit_created) {
+    if (emit_created || identity_replaced) {
       events_.push_back(
           {{"kind", "created"},
            {"contact", encode_rigid_contact_identity(inserted->second)}});
     }
     return inserted->second;
+  }
+
+  PairKey contact_pair(const b2Contact* contact) const {
+    const auto fixture_a = fixture_ids_.find(contact->GetFixtureA());
+    const auto fixture_b = fixture_ids_.find(contact->GetFixtureB());
+    if (fixture_a == fixture_ids_.end() || fixture_b == fixture_ids_.end()) {
+      throw std::runtime_error("contact references an unmapped fixture");
+    }
+    auto fixture_a_id = fixture_a->second;
+    auto fixture_b_id = fixture_b->second;
+    auto child_a = checked_child(contact->GetChildIndexA());
+    auto child_b = checked_child(contact->GetChildIndexB());
+    if (fixture_order_.at(fixture_b_id) < fixture_order_.at(fixture_a_id)) {
+      std::swap(fixture_a_id, fixture_b_id);
+      std::swap(child_a, child_b);
+    }
+    return {fixture_a_id, child_a, fixture_b_id, child_b};
+  }
+
+  static bool identity_matches(
+      const RigidContactIdentity& identity,
+      const PairKey& key) {
+    return std::tie(
+               identity.fixture_a_id,
+               identity.child_a,
+               identity.fixture_b_id,
+               identity.child_b) == key;
   }
 
   static std::uint32_t checked_child(int32 child) {

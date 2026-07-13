@@ -6,6 +6,7 @@
 #include "../vendor/nlohmann/json.hpp"
 
 #include <algorithm>
+#include <array>
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
@@ -331,7 +332,7 @@ void collision_probe_uses_existing_protocol_loop() {
       "collision request should emit its terminal record");
 }
 
-void rigid_world_executes_both_complete_witness_families() {
+void rigid_world_executes_all_complete_witness_families() {
   // Arrange
   const auto fixture = read_fixture(
       "protocol/fixtures/accepted/rigid-world-request.jsonl");
@@ -351,15 +352,41 @@ void rigid_world_executes_both_complete_witness_families() {
   expect(
       result.at("record_kind") == "rigid_world_result",
       "rigid-world result kind changed");
-  expect(result.at("timelines").size() == 2, "rigid witness families are incomplete");
+  const std::array expected_families{
+      "non_colliding_body_fixture_lifecycle",
+      "single_contact_lifecycle",
+      "body_control_and_force_policy",
+      "multi_contact_island_and_warm_start",
+      "sleeping_and_waking",
+      "continuous_collision_and_sub_stepping",
+      "continuous_budget_resume",
+      "world_query_and_ray_cast",
+      "origin_shift_covariance"};
+  const std::array expected_phase7_checkpoints{
+      "control-checkpoint",
+      "island-checkpoint",
+      "sleep-checkpoint",
+      "ccd-checkpoint",
+      "budget-checkpoint",
+      "query-checkpoint",
+      "origin-checkpoint"};
+  const auto& timelines = result.at("timelines");
   expect(
-      result.at("timelines").at(0).at("witness_family") ==
-          "non_colliding_body_fixture_lifecycle",
-      "non-colliding witness family is missing");
-  expect(
-      result.at("timelines").at(1).at("witness_family") ==
-          "single_contact_lifecycle",
-      "single-contact witness family is missing");
+      timelines.size() == expected_families.size(),
+      "rigid witness families are incomplete");
+  for (std::size_t index = 0; index < expected_families.size(); ++index) {
+    expect(
+        timelines.at(index).at("witness_family") == expected_families[index],
+        "rigid witness family order changed");
+  }
+  for (std::size_t index = 0; index < expected_phase7_checkpoints.size(); ++index) {
+    const auto& checkpoints = timelines.at(index + 2).at("checkpoints");
+    expect(
+        checkpoints.size() == 1 &&
+            checkpoints.at(0).at("checkpoint_id") ==
+                expected_phase7_checkpoints[index],
+        "Phase 7 rigid checkpoint coverage is incomplete");
+  }
   const auto& non_colliding = result.at("timelines").at(0).at("checkpoints");
   const auto& single_contact = result.at("timelines").at(1).at("checkpoints");
   expect(non_colliding.size() == 8, "non-colliding checkpoints are incomplete");
@@ -623,11 +650,14 @@ void rigid_world_reuse_advances_reset_without_state_leakage() {
   // Act
   const auto first = adapter.execute(fixture);
   const auto second = adapter.execute(fixture);
+  const auto third = adapter.execute(fixture);
 
   // Assert
   expect(first.reset_epoch == 1, "first rigid reset epoch changed");
   expect(second.reset_epoch == 2, "second rigid reset epoch changed");
+  expect(third.reset_epoch == 3, "third rigid reset epoch changed");
   expect(first.result_record == second.result_record, "rigid request leaked state");
+  expect(second.result_record == third.result_record, "rigid allocation history changed identity");
 }
 
 }  // namespace
@@ -645,7 +675,7 @@ int main() {
     protocol_bits_preserve_exceptional_classes();
     math_probe_matches_operation_contract();
     collision_probe_uses_existing_protocol_loop();
-    rigid_world_executes_both_complete_witness_families();
+    rigid_world_executes_all_complete_witness_families();
     rigid_world_rejects_untrusted_records_before_execution();
     rigid_world_boundary_matches_the_fixed_rust_contract();
     rigid_world_rejects_zero_centered_inertia_before_execution();
