@@ -1557,7 +1557,14 @@
               "witness_family": {
                 "enum": [
                   "non_colliding_body_fixture_lifecycle",
-                  "single_contact_lifecycle"
+                  "single_contact_lifecycle",
+                  "body_control_and_force_policy",
+                  "multi_contact_island_and_warm_start",
+                  "sleeping_and_waking",
+                  "continuous_collision_and_sub_stepping",
+                  "continuous_budget_resume",
+                  "world_query_and_ray_cast",
+                  "origin_shift_covariance"
                 ]
               }
             },
@@ -1567,7 +1574,7 @@
             ],
             "type": "object"
           },
-          "maxItems": 2,
+          "maxItems": 9,
           "minItems": 1,
           "type": "array"
         },

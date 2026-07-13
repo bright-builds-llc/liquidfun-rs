@@ -10,7 +10,7 @@ use crate::{
     TraceSchemaVersion, TransformBits, Vec2Bits, decode_jsonl,
 };
 
-const MAXIMUM_RESULT_TIMELINES: usize = 2;
+const MAXIMUM_RESULT_TIMELINES: usize = 9;
 const MAXIMUM_RESULT_CHECKPOINTS: usize = 64;
 const MAXIMUM_RESULT_BODIES: usize = 64;
 const MAXIMUM_RESULT_FIXTURES: usize = 128;
@@ -49,6 +49,10 @@ pub enum RigidStepOutcome {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
+#[allow(
+    clippy::struct_excessive_bools,
+    reason = "the protocol transports independent upstream body flags exactly"
+)]
 pub struct RigidBodyControlSnapshot {
     pub body_id: ScenarioId,
     pub linear_velocity: Vec2Bits,

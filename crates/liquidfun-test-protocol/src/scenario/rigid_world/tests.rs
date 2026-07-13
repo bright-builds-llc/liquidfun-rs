@@ -41,6 +41,10 @@ fn action_mut<'a>(value: &'a mut Value, action_id: &str) -> &'a mut Value {
         .expect("fixture should contain requested action")
 }
 
+#[allow(
+    clippy::needless_pass_by_value,
+    reason = "test call sites construct owned JSON action values inline"
+)]
 fn insert_non_colliding_action(value: &mut Value, action_id: &str, action: Value) {
     let actions = timeline_mut(value, "non_colliding_body_fixture_lifecycle")["actions"]
         .as_array_mut()

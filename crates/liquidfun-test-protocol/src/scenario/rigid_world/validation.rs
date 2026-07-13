@@ -28,7 +28,7 @@ use crate::{
 
 const MAXIMUM_ID_BYTES: usize = 128;
 const MAXIMUM_STRING_BYTES: usize = 4 * 1024;
-const MAXIMUM_TIMELINES: usize = 2;
+const MAXIMUM_TIMELINES: usize = 9;
 const MAXIMUM_BODIES: usize = 64;
 const MAXIMUM_FIXTURES: usize = 128;
 const MAXIMUM_CHECKPOINTS: usize = 64;

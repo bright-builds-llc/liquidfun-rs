@@ -1,0 +1,423 @@
+profile_id = "phase7-v1"
+version = 1
+
+[[fields]]
+semantic_path = "rigid_world.phase7.observations.order"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Semantic identities, topology, statuses, flags, counts, and declared traces are exact."
+
+[[fields]]
+semantic_path = "rigid_world.phase7.body.id"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Semantic identities, topology, statuses, flags, counts, and declared traces are exact."
+
+[[fields]]
+semantic_path = "rigid_world.phase7.body.awake"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Semantic identities, topology, statuses, flags, counts, and declared traces are exact."
+
+[[fields]]
+semantic_path = "rigid_world.phase7.body.bullet"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Semantic identities, topology, statuses, flags, counts, and declared traces are exact."
+
+[[fields]]
+semantic_path = "rigid_world.phase7.body.sleeping_allowed"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Semantic identities, topology, statuses, flags, counts, and declared traces are exact."
+
+[[fields]]
+semantic_path = "rigid_world.phase7.body.fixed_rotation"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Semantic identities, topology, statuses, flags, counts, and declared traces are exact."
+
+[[fields]]
+semantic_path = "rigid_world.phase7.step.outcome.kind"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Semantic identities, topology, statuses, flags, counts, and declared traces are exact."
+
+[[fields]]
+semantic_path = "rigid_world.phase7.step.completion"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Semantic identities, topology, statuses, flags, counts, and declared traces are exact."
+
+[[fields]]
+semantic_path = "rigid_world.phase7.step.partial_classification"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Semantic identities, topology, statuses, flags, counts, and declared traces are exact."
+
+[[fields]]
+semantic_path = "rigid_world.phase7.contact.transitions.order"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Semantic identities, topology, statuses, flags, counts, and declared traces are exact."
+
+[[fields]]
+semantic_path = "rigid_world.phase7.contact.identity"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Semantic identities, topology, statuses, flags, counts, and declared traces are exact."
+
+[[fields]]
+semantic_path = "rigid_world.phase7.island.body_order"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Semantic identities, topology, statuses, flags, counts, and declared traces are exact."
+
+[[fields]]
+semantic_path = "rigid_world.phase7.island.contact_order"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Semantic identities, topology, statuses, flags, counts, and declared traces are exact."
+
+[[fields]]
+semantic_path = "rigid_world.phase7.warm_start.enabled"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Semantic identities, topology, statuses, flags, counts, and declared traces are exact."
+
+[[fields]]
+semantic_path = "rigid_world.phase7.force_clearing.enabled"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Semantic identities, topology, statuses, flags, counts, and declared traces are exact."
+
+[[fields]]
+semantic_path = "rigid_world.phase7.query.completion"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Semantic identities, topology, statuses, flags, counts, and declared traces are exact."
+
+[[fields]]
+semantic_path = "rigid_world.phase7.query.occurrences.identity"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "multiset"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Semantic identities, topology, statuses, flags, counts, and declared traces are exact."
+
+[[fields]]
+semantic_path = "rigid_world.phase7.query.directive_trace"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Semantic identities, topology, statuses, flags, counts, and declared traces are exact."
+
+[[fields]]
+semantic_path = "rigid_world.phase7.ray.completion"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Semantic identities, topology, statuses, flags, counts, and declared traces are exact."
+
+[[fields]]
+semantic_path = "rigid_world.phase7.ray.hit.identity"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Semantic identities, topology, statuses, flags, counts, and declared traces are exact."
+
+[[fields]]
+semantic_path = "rigid_world.phase7.ray.equal_minimum.identities"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "set"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Semantic identities, topology, statuses, flags, counts, and declared traces are exact."
+
+[[fields]]
+semantic_path = "rigid_world.phase7.ray.directive_trace"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Semantic identities, topology, statuses, flags, counts, and declared traces are exact."
+
+[[fields]]
+semantic_path = "rigid_world.phase7.origin_shift.topology"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Semantic identities, topology, statuses, flags, counts, and declared traces are exact."
+
+[[fields]]
+semantic_path = "rigid_world.phase7.body.transform.position.x"
+comparison = { kind = "float", policy = { kind = "absolute_relative", absolute_bits = 897988541, relative_bits = 953267991 } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Dimensioned motion evidence uses reviewed absolute and relative bounds at one phase-local horizon."
+
+[[fields]]
+semantic_path = "rigid_world.phase7.body.transform.position.y"
+comparison = { kind = "float", policy = { kind = "absolute_relative", absolute_bits = 897988541, relative_bits = 953267991 } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Dimensioned motion evidence uses reviewed absolute and relative bounds at one phase-local horizon."
+
+[[fields]]
+semantic_path = "rigid_world.phase7.body.linear_velocity.x"
+comparison = { kind = "float", policy = { kind = "absolute_relative", absolute_bits = 897988541, relative_bits = 953267991 } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Dimensioned motion evidence uses reviewed absolute and relative bounds at one phase-local horizon."
+
+[[fields]]
+semantic_path = "rigid_world.phase7.body.linear_velocity.y"
+comparison = { kind = "float", policy = { kind = "absolute_relative", absolute_bits = 897988541, relative_bits = 953267991 } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Dimensioned motion evidence uses reviewed absolute and relative bounds at one phase-local horizon."
+
+[[fields]]
+semantic_path = "rigid_world.phase7.ray.point.x"
+comparison = { kind = "float", policy = { kind = "absolute_relative", absolute_bits = 897988541, relative_bits = 953267991 } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Dimensioned motion evidence uses reviewed absolute and relative bounds at one phase-local horizon."
+
+[[fields]]
+semantic_path = "rigid_world.phase7.ray.point.y"
+comparison = { kind = "float", policy = { kind = "absolute_relative", absolute_bits = 897988541, relative_bits = 953267991 } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Dimensioned motion evidence uses reviewed absolute and relative bounds at one phase-local horizon."
+
+[[fields]]
+semantic_path = "rigid_world.phase7.origin_shift.x"
+comparison = { kind = "float", policy = { kind = "absolute_relative", absolute_bits = 897988541, relative_bits = 953267991 } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Dimensioned motion evidence uses reviewed absolute and relative bounds at one phase-local horizon."
+
+[[fields]]
+semantic_path = "rigid_world.phase7.origin_shift.y"
+comparison = { kind = "float", policy = { kind = "absolute_relative", absolute_bits = 897988541, relative_bits = 953267991 } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Dimensioned motion evidence uses reviewed absolute and relative bounds at one phase-local horizon."
+
+[[fields]]
+semantic_path = "rigid_world.phase7.body.transform.angle"
+comparison = { kind = "float", policy = { kind = "ulps", max = 4 } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Dimensionless or operation-grouped scalar evidence uses a reviewed four-ULP bound."
+
+[[fields]]
+semantic_path = "rigid_world.phase7.body.angular_velocity"
+comparison = { kind = "float", policy = { kind = "ulps", max = 4 } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Dimensionless or operation-grouped scalar evidence uses a reviewed four-ULP bound."
+
+[[fields]]
+semantic_path = "rigid_world.phase7.body.linear_damping"
+comparison = { kind = "float", policy = { kind = "ulps", max = 4 } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Dimensionless or operation-grouped scalar evidence uses a reviewed four-ULP bound."
+
+[[fields]]
+semantic_path = "rigid_world.phase7.body.angular_damping"
+comparison = { kind = "float", policy = { kind = "ulps", max = 4 } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Dimensionless or operation-grouped scalar evidence uses a reviewed four-ULP bound."
+
+[[fields]]
+semantic_path = "rigid_world.phase7.body.gravity_scale"
+comparison = { kind = "float", policy = { kind = "ulps", max = 4 } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Dimensionless or operation-grouped scalar evidence uses a reviewed four-ULP bound."
+
+[[fields]]
+semantic_path = "rigid_world.phase7.contact.normal_impulse"
+comparison = { kind = "float", policy = { kind = "ulps", max = 4 } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Dimensionless or operation-grouped scalar evidence uses a reviewed four-ULP bound."
+
+[[fields]]
+semantic_path = "rigid_world.phase7.contact.tangent_impulse"
+comparison = { kind = "float", policy = { kind = "ulps", max = 4 } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Dimensionless or operation-grouped scalar evidence uses a reviewed four-ULP bound."
+
+[[fields]]
+semantic_path = "rigid_world.phase7.ray.fraction"
+comparison = { kind = "float", policy = { kind = "ulps", max = 4 } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Dimensionless or operation-grouped scalar evidence uses a reviewed four-ULP bound."
+
+[[fields]]
+semantic_path = "rigid_world.phase7.ray.normal.x"
+comparison = { kind = "float", policy = { kind = "ulps", max = 4 } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Dimensionless or operation-grouped scalar evidence uses a reviewed four-ULP bound."
+
+[[fields]]
+semantic_path = "rigid_world.phase7.ray.normal.y"
+comparison = { kind = "float", policy = { kind = "ulps", max = 4 } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Dimensionless or operation-grouped scalar evidence uses a reviewed four-ULP bound."
+
+[[fields]]
+semantic_path = "rigid_world.phase7.continuous.signed_separation"
+comparison = { kind = "float", policy = { kind = "absolute", max_bits = 897988541 } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Signed separation uses a dimensioned absolute bound that cannot erase tunneling classification."
+

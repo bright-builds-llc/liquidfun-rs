@@ -48,7 +48,7 @@ pub(super) fn rigid_world_scenario_schema() -> Value {
             "source": scenario_source_schema(),
             "timelines": {
                 "items": rigid_world_timeline_schema(),
-                "maxItems": 2,
+                "maxItems": 9,
                 "minItems": 1,
                 "type": "array"
             }
@@ -75,7 +75,7 @@ pub(super) fn rigid_world_result_schema() -> Value {
             "scenario_id": semantic_id_schema(),
             "timelines": {
                 "items": rigid_world_timeline_result_schema(),
-                "maxItems": 2,
+                "maxItems": 9,
                 "minItems": 1,
                 "type": "array"
             }
@@ -670,11 +670,11 @@ fn destruction_schema() -> Value {
 }
 
 fn witness_families() -> Value {
-    enum_values(&RigidWorldWitnessFamily::REQUIRED)
+    enum_values(&RigidWorldWitnessFamily::ALL)
 }
 
 fn witnesses() -> Value {
-    let witnesses = RigidWorldWitnessFamily::REQUIRED
+    let witnesses = RigidWorldWitnessFamily::ALL
         .into_iter()
         .flat_map(RigidWorldWitnessFamily::required_witnesses)
         .copied()

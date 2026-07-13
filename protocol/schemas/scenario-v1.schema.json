@@ -3818,7 +3818,53 @@
                               "deactivation_destroyed_contact",
                               "reactivation_recreated_contact",
                               "fixture_destroyed_contact",
-                              "body_cascade_end_ordered"
+                              "body_cascade_end_ordered",
+                              "force_wake_policy",
+                              "force_preserve_sleep_policy",
+                              "impulse_wake_policy",
+                              "velocity_wake_policy",
+                              "damping_and_gravity_scale_applied",
+                              "fixed_rotation_applied",
+                              "automatic_force_clearing_applied",
+                              "manual_force_clearing_applied",
+                              "multi_contact_island_solved",
+                              "island_traversal_ordered",
+                              "warm_start_applied",
+                              "warm_start_disabled_then_stored",
+                              "sleeping_threshold_reached",
+                              "whole_island_slept",
+                              "mutation_woke_body",
+                              "contact_woke_island",
+                              "activation_preserved_sleep",
+                              "continuous_physics_prevented_tunneling",
+                              "disabled_continuous_physics_tunneled",
+                              "bullet_state_selected_continuous_contact",
+                              "continuous_step_completed",
+                              "sub_step_reported_pending",
+                              "sub_step_resume_completed",
+                              "continuous_transitions_ordered",
+                              "continuous_budget_exhausted",
+                              "continuous_budget_state_coherent",
+                              "continuous_budget_resume_completed",
+                              "query_preserved_duplicate_occurrences",
+                              "query_exhausted",
+                              "query_terminated",
+                              "query_explicit_filter_applied",
+                              "ray_missed",
+                              "ray_rejected_invalid_directive",
+                              "ray_ignored_hit",
+                              "ray_continued_without_clipping",
+                              "ray_clipped",
+                              "ray_terminated",
+                              "ray_nearest_hit_selected",
+                              "ray_equal_fraction_tie_set",
+                              "origin_shift_rejected_while_locked",
+                              "origin_shift_rejected_non_finite",
+                              "origin_shift_rejected_overflow",
+                              "origin_shift_translated_bodies",
+                              "origin_shift_preserved_query_hits",
+                              "origin_shift_preserved_ray_fractions_and_normals",
+                              "origin_shift_preserved_topology"
                             ]
                           }
                         },
@@ -3970,7 +4016,14 @@
               "witness_family": {
                 "enum": [
                   "non_colliding_body_fixture_lifecycle",
-                  "single_contact_lifecycle"
+                  "single_contact_lifecycle",
+                  "body_control_and_force_policy",
+                  "multi_contact_island_and_warm_start",
+                  "sleeping_and_waking",
+                  "continuous_collision_and_sub_stepping",
+                  "continuous_budget_resume",
+                  "world_query_and_ray_cast",
+                  "origin_shift_covariance"
                 ]
               }
             },
@@ -3983,7 +4036,7 @@
             ],
             "type": "object"
           },
-          "maxItems": 2,
+          "maxItems": 9,
           "minItems": 1,
           "type": "array"
         }
