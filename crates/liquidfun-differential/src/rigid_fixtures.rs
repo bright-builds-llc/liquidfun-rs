@@ -16,9 +16,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     CapturedRigidWorld, MinimizationStatus, NativeRigidWorldExecutor, OracleExecutable,
-    OraclePreset, RigidComparisonOutcome, RigidMinimizationResult,
-    compare_phase7_rigid_world_results, execute_rigid_world_process,
-    validate_oracle_checkout_identity, validate_rigid_promotion_authority,
+    OraclePreset, RigidComparisonOutcome, RigidMinimizationResult, RigidScenarioTransform,
+    canonical_rigid_request_bytes, compare_phase7_rigid_world_results, execute_rigid_world_process,
+    reconstruct_complete_rigid_minimization, validate_oracle_checkout_identity,
+    validate_rigid_promotion_authority,
 };
 
 use super::{
@@ -590,8 +591,8 @@ fn rigid_stage_report(
                     .signature_sha256()
                     .as_str()
                     .to_owned(),
-                attempted_transforms: transform_values(minimization.attempted_transforms())?,
-                accepted_transforms: transform_values(minimization.accepted_transforms())?,
+                attempted_transforms: minimization.attempted_transforms().to_vec(),
+                accepted_transforms: minimization.accepted_transforms().to_vec(),
                 original_request_sha256: sha256(original_request_bytes),
                 minimized_request_sha256: sha256(request_bytes),
             };
@@ -611,19 +612,10 @@ struct RigidMinimizedRegressionReport {
     result_kind: String,
     status: String,
     target_signature_sha256: String,
-    attempted_transforms: Vec<serde_json::Value>,
-    accepted_transforms: Vec<serde_json::Value>,
+    attempted_transforms: Vec<RigidScenarioTransform>,
+    accepted_transforms: Vec<RigidScenarioTransform>,
     original_request_sha256: String,
     minimized_request_sha256: String,
-}
-
-fn transform_values(
-    transforms: &[crate::RigidScenarioTransform],
-) -> Result<Vec<serde_json::Value>, FixtureError> {
-    let value = serde_json::to_value(transforms)?;
-    value.as_array().cloned().ok_or_else(|| {
-        FixtureError::Replay("rigid minimization transforms did not encode as an array".to_owned())
-    })
 }
 
 fn verify_rigid_report(
@@ -644,19 +636,39 @@ fn verify_rigid_report(
             let regression: RigidMinimizedRegressionReport = serde_json::from_slice(report_bytes)?;
             let original_request_bytes = fs::read(repository_root.join(REQUEST_PATH))?;
             let signature_json = serde_json::to_string(report.signature())?;
-            if regression.result_kind == "rigid_minimized_regression"
-                && regression.status == "complete"
-                && regression.target_signature_sha256
-                    == report.signature().signature_sha256().as_str()
-                && !regression.attempted_transforms.is_empty()
-                && !regression.accepted_transforms.is_empty()
-                && regression.original_request_sha256 == sha256(&original_request_bytes)
-                && regression.minimized_request_sha256 == sha256(request_bytes)
-                && maybe_signature == Some(signature_json.as_str())
+            if regression.result_kind != "rigid_minimized_regression"
+                || regression.status != "complete"
+                || regression.target_signature_sha256
+                    != report.signature().signature_sha256().as_str()
+                || regression.attempted_transforms.is_empty()
+                || regression.accepted_transforms.is_empty()
+                || regression.original_request_sha256 != sha256(&original_request_bytes)
+                || regression.minimized_request_sha256 != sha256(request_bytes)
+                || maybe_signature != Some(signature_json.as_str())
             {
-                return Ok(());
+                return Err(FixtureError::SignatureMismatch);
             }
-            Err(FixtureError::SignatureMismatch)
+            enforce_size(
+                "request",
+                &original_request_bytes,
+                HarnessLimits::phase2_default_v1().input_record_bytes(),
+            )?;
+            let limits = HarnessLimits::phase2_default_v1();
+            let source = decode_rigid_world_request_jsonl(&original_request_bytes, &limits)
+                .map_err(|error| FixtureError::Replay(error.to_string()))?;
+            let Some(reconstructed) = reconstruct_complete_rigid_minimization(
+                &source,
+                report.signature(),
+                &regression.attempted_transforms,
+                &regression.accepted_transforms,
+                &limits,
+            ) else {
+                return Err(FixtureError::SignatureMismatch);
+            };
+            if canonical_rigid_request_bytes(&reconstructed)? != request_bytes {
+                return Err(FixtureError::SignatureMismatch);
+            }
+            Ok(())
         }
         _ => Err(FixtureError::SignatureMismatch),
     }

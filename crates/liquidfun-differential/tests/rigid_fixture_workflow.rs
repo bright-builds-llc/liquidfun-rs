@@ -1,5 +1,8 @@
 //! Real-binary lifecycle coverage for canonical rigid-world evidence.
 
+#[path = "rigid_fixture_workflow/provenance.rs"]
+mod provenance;
+
 use std::{
     fs,
     io::{self, Write},

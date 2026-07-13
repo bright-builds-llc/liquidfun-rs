@@ -4,7 +4,7 @@ use liquidfun_test_protocol::{
     HarnessLimits, RigidWorldRequestRecord, ScenarioReductionError, ScenarioSource,
     ValidatedScenarioV1, decode_rigid_world_request_jsonl,
 };
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::FailureSignature;
 use crate::RigidFailureSignature;
@@ -351,8 +351,8 @@ fn apply_transform(
 }
 
 /// One deterministic validity-preserving rigid timeline transform.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
-#[serde(rename_all = "snake_case")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case", deny_unknown_fields)]
 pub enum RigidScenarioTransform {
     /// Removes a half-open range of ordered timeline actions.
     RemoveActions {
@@ -403,9 +403,8 @@ impl RigidMinimizationResult {
         state: RigidReductionState,
         status: MinimizationStatus,
     ) -> Result<Self, RigidMinimizationError> {
-        let mut canonical_request_bytes =
-            serde_json::to_vec(&state.request).map_err(RigidMinimizationError::Serialize)?;
-        canonical_request_bytes.push(b'\n');
+        let canonical_request_bytes = canonical_rigid_request_bytes(&state.request)
+            .map_err(RigidMinimizationError::Serialize)?;
         Ok(Self {
             request: state.request,
             canonical_request_bytes: canonical_request_bytes.into_boxed_slice(),
@@ -563,7 +562,9 @@ where
             }
             state.attempts += 1;
             state.attempted_transforms.push(transform);
-            let Some(candidate) = apply_rigid_transform(&state.request, transform, &limits) else {
+            let Some(candidate) =
+                apply_rigid_scenario_transform(&state.request, transform, &limits)
+            else {
                 state.rejected_invalid_candidates += 1;
                 continue;
             };
@@ -622,7 +623,7 @@ fn rigid_candidate_transforms(
         .collect()
 }
 
-fn apply_rigid_transform(
+pub(crate) fn apply_rigid_scenario_transform(
     request: &RigidWorldRequestRecord,
     transform: RigidScenarioTransform,
     limits: &HarnessLimits,
@@ -647,4 +648,42 @@ fn apply_rigid_transform(
     let mut bytes = serde_json::to_vec(&value).ok()?;
     bytes.push(b'\n');
     decode_rigid_world_request_jsonl(&bytes, limits).ok()
+}
+
+pub(crate) fn reconstruct_complete_rigid_minimization(
+    source: &RigidWorldRequestRecord,
+    target: &RigidFailureSignature,
+    attempted: &[RigidScenarioTransform],
+    accepted: &[RigidScenarioTransform],
+    limits: &HarnessLimits,
+) -> Option<RigidWorldRequestRecord> {
+    let mut reconstructed = source.clone();
+    let mut attempted_offset = 0_usize;
+    for accepted_transform in accepted {
+        let candidates = rigid_candidate_transforms(&reconstructed, target);
+        let accepted_index = candidates
+            .iter()
+            .position(|candidate| candidate == accepted_transform)?;
+        let attempted_end = attempted_offset.checked_add(accepted_index + 1)?;
+        if attempted.get(attempted_offset..attempted_end)? != candidates.get(..=accepted_index)? {
+            return None;
+        }
+        reconstructed =
+            apply_rigid_scenario_transform(&reconstructed, *accepted_transform, limits)?;
+        attempted_offset = attempted_end;
+    }
+
+    let final_candidates = rigid_candidate_transforms(&reconstructed, target);
+    if attempted.get(attempted_offset..)? != final_candidates.as_slice() {
+        return None;
+    }
+    Some(reconstructed)
+}
+
+pub(crate) fn canonical_rigid_request_bytes(
+    request: &RigidWorldRequestRecord,
+) -> Result<Vec<u8>, serde_json::Error> {
+    let mut bytes = serde_json::to_vec(request)?;
+    bytes.push(b'\n');
+    Ok(bytes)
 }
