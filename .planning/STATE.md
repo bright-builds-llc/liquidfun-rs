@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 07-10-PLAN.md
-last_updated: "2026-07-13T01:37:57.215Z"
+stopped_at: Completed 07-02-PLAN.md
+last_updated: "2026-07-13T02:04:03.612Z"
 last_activity: 2026-07-13
 progress:
   total_phases: 12
   completed_phases: 6
   total_plans: 74
-  completed_plans: 63
-  percent: 85
+  completed_plans: 64
+  percent: 86
 ---
 
 # Project State
@@ -89,6 +89,7 @@ Progress: [██████████] 100%
 | Phase 06 P22 | 15 min | 2 tasks | 7 files |
 | Phase 07 P01 | 21 min | 2 tasks | 6 files |
 | Phase 07 P10 | 23min | 2 tasks | 13 files |
+| Phase 07 P02 | 22 min | 2 tasks | 14 files |
 
 ## Accumulated Context
 
@@ -176,6 +177,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 07]: Retain the two-family Phase 6 REQUIRED corpus while exposing PHASE7_REQUIRED and ALL registries. — Keeps accepted Phase 6 fixtures valid while closing schema and adapter inputs over all nine bounded families.
 - [Phase 07]: Expose only semantic CCD completion and bounded partial-progress classification. — Candidate indices, caches, counters, queues, and sweep bookkeeping remain private implementation state.
 - [Phase 07]: Canonicalize query multiplicity and equal-fraction ray ties only in evidence policy. — Production callback traversal remains source-faithful and does not acquire a new ordering contract.
+- [Phase 07]: Use the already-reviewed Phase 7 protocol maximum of 1024 for both public solver-iteration bounds. — Production and closed evidence boundaries now share one resource ceiling.
+- [Phase 07]: Compute the warm-start ratio as previous_inverse_time_step * current_time_step and retain the previous inverse across zero-duration calls. — This preserves the pinned source expression and variable-step history.
+- [Phase 07]: Expose only Complete and ContinuousPending while applying automatic force clearing through one status-independent successful-step finalizer. — Later CCD can remain private without changing successful clearing semantics.
 
 ### Pending Todos
 
@@ -183,6 +187,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-13T01:37:57.211Z
-Stopped at: Completed 07-10-PLAN.md
+Last session: 2026-07-13T02:04:03.609Z
+Stopped at: Completed 07-02-PLAN.md
 Resume file: None
