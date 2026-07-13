@@ -1,7 +1,8 @@
 ---
 phase: 07-rigid-solver-world-operations-and-ccd
-reviewed: 2026-07-13T10:25:54Z
+reviewed: 2026-07-13T12:06:54Z
 depth: standard
+iteration: 2
 files_reviewed: 67
 files_reviewed_list:
   - ARCHITECTURE.md
@@ -72,122 +73,72 @@ files_reviewed_list:
   - tools/xtask/tests/differential_cli.rs
   - tools/xtask/tests/docs_contract.rs
 findings:
-  critical: 1
-  warning: 11
-  info: 1
-  total: 13
+  critical: 0
+  warning: 1
+  info: 0
+  total: 1
 status: issues_found
 ---
 
-# Phase 7: Code Review Report
+# Phase 7: Code Review Report — Iteration 2
 
-**Reviewed:** 2026-07-13T10:25:54Z  
-**Depth:** standard  
-**Files:** 67  
+**Reviewed:** 2026-07-13T12:06:54Z
+**Depth:** standard
+**Files:** 67
 **Status:** issues found
 
 ## Summary
 
-The Phase 7 implementation has substantial deterministic solver, world-operation, and differential-evidence coverage, and its focused native comparison passes all nine required families. The review nevertheless found one public-API crash/partial-mutation path, one resumable-CCD state-loss path, and several gaps where the evidence workflow can accept, misclassify, or incompletely persist results.
+The fix pass closes 12 of the 13 iteration-1 findings. The public custom-mass mutation is transactional, CCD resume checkpoints survive pre-continuous failures, Phase 7 observations and selector bounds fail closed, the policy registry matches comparator dispatch, C++ contact identity is stable across the covered reuse cases, ray comparison follows the declared callback semantics, checked-in policy provenance is immutable, the production minimizer is reachable, candidate publication is atomic, the C++ protocol test covers all nine families, and workspace Clippy is clean.
 
-The review applied the repository `AGENTS.md`, `AGENTS.bright-builds.md`, the absence of substantive local overrides, and the relevant architecture, code-shape, testing, verification, and Rust standards. In particular, findings were evaluated against transactional mutation, deterministic semantic identity, closed comparison policy, and fail-closed evidence requirements.
+WR-09 is only partially fixed. Initial staging now accepts minimized regressions only from a complete typed `RigidMinimizationResult`, but replay does not independently prove that the recorded accepted transforms reconstruct the candidate request. Because replay is the promotion trust boundary, this leaves one warning open.
 
-## Critical Issues
+The review applied the current repository `AGENTS.md`, `AGENTS.bright-builds.md`, the absence of substantive local overrides, and the relevant architecture, code-shape, testing, verification, and Rust standards. The decisive requirements were transactional mutation, deterministic semantic identity, closed comparison policy, and fail-closed evidence promotion.
 
-### CR-01: Valid custom mass data can panic after partially mutating a body
+## Warning
 
-**Files:** `crates/liquidfun/src/world/body.rs:903`, `crates/liquidfun/src/world/object.rs:1060`  
-**Issue:** `BodyMassData` validates its source fields, but `BodyState::apply_mass_state` does not validate the transformed center or derived velocity. For example, a dynamic body positioned at `f32::MAX` and valid mass data whose local center is `f32::MAX` overflows `Transform::apply` to infinity. The method writes mass, center, inertia, and inverse values before `Sweep::new(...).expect(...)` panics at line 921. A different finite-input overflow at lines 922-924 can store a non-finite linear velocity without panicking. The public `set_body_mass_data` call therefore violates its result-based API and the repository's atomic-mutation contract; if the unwind is caught, the world may remain partially mutated.  
-**Fix:** Prepare a copied `BodyState` through the checked `with_mass_state` path, validate both the derived center and velocity, and commit only after every calculation succeeds. Widen the public error to a typed mass-mutation error carrying handle and derived-state failures. Add no-panic, no-mutation regressions for transformed-center and velocity overflow.
+### WR-09: Minimized-regression replay does not validate transformation provenance
 
-## Warnings
+**File:** `crates/liquidfun-differential/src/rigid_fixtures.rs:610`
+**Issue:** Candidate staging is now sound: it requires a complete, reduced `RigidMinimizationResult` and persists the typed reducer's attempted and accepted transforms. Candidate replay weakens those transforms to `Vec<serde_json::Value>` and, at lines 643-655, checks only that both arrays are nonempty alongside source/request hashes and the reproduced failure signature. It never decodes the transforms as `RigidScenarioTransform`, verifies that accepted transforms are a valid ordered subset of attempts, or reapplies them to the checked-in source request. A candidate can therefore contain arbitrary nonempty transform JSON, recompute its self-declared metadata hashes, and pass replay if its independently constructed request still reproduces the signature. The promotion gate consequently proves a reduced same-signature request, but not the recorded minimization provenance claimed by the artifact.
 
-### WR-01: A failed CCD resume loses its pending checkpoint and repeats discrete work
+**Fix:** Deserialize a closed typed transformation report, validate the attempted/accepted relationship, and sequentially reapply accepted transforms through the same strict request decoder used by minimization. Require the reconstructed canonical bytes to equal `request.jsonl`. Add review/replay regressions that recompute candidate metadata after replacing the transforms with malformed, valid-but-unrelated, and wrong-order records; all must fail before review state is written.
 
-**Files:** `crates/liquidfun/src/world/continuous.rs:604`, `crates/liquidfun/src/world/step.rs:653`  
-**Issue:** `ContinuousStepState::begin_step` destructively `take`s a matching pending key before the resume-time contact and hook phases. Event-capacity or command-capacity failure at `step.rs:786` or `step.rs:805` then returns before `run_continuous_stage` can mark the key pending again. The next identical call is classified as `Fresh`, resets TOI state, and repeats discrete solving/integration, contrary to the D-14 continuation contract and D-15 coherent-resume requirement.  
-**Fix:** Retain or peek at the pending key until the continuous stage completes, clearing it only on successful completion or an explicit invalidating mutation. Alternatively, use a guard that restores the key on every pre-continuous error. Add a pending -> hook-limit error -> retry regression that proves discrete motion is not applied twice.
+## Prior-Finding Disposition
 
-### WR-02: Missing Phase 7 observations can still compare as a match
-
-**Files:** `crates/liquidfun-test-protocol/src/scenario/rigid_world/result.rs:242`, `crates/liquidfun-differential/src/rigid_evidence.rs:393`  
-**Issue:** Result decoding defaults an omitted `observations` member to an empty list, while declaration validation checks identities, checkpoints, counts, and declaration order but never derives the observation sequence required by the checkpoint's actions. The comparator validates each side and then compares them, so two adapters that omit every Phase 7 `BodyState`, `Step`, `Query`, `RayCast`, and `OriginShift` observation can compare empty-to-empty and return `Match`.  
-**Fix:** Derive the exact expected observation kind, action, target, and order for every Phase 7 checkpoint and validate each engine independently before cross-engine comparison. Keep omission legal only for Phase 6 timelines that do not declare Phase 7 observations. Add an all-observations-omitted rejection test for each engine side.
-
-### WR-03: The policy registry claims evidence for observables that are never dispatched
-
-**Files:** `crates/liquidfun-test-protocol/src/tolerance/rigid_policy.rs:83`, `crates/liquidfun-differential/src/rigid_evidence/phase7.rs:374`  
-**Issue:** The closed Phase 7 registry includes warm-start enabled, force-clearing enabled, query/ray directive traces, origin-shift topology, and continuous signed separation. The result observation model and comparator dispatch only cover body state, step outcome, query occurrences, ray hits, and the origin-shift vector. Consequently, policy completeness and witness registration pass for semantic paths that no adapter emits and no comparator evaluates, allowing compatibility rows to be marked evidenced while those behaviors can diverge undetected.  
-**Fix:** Add typed observations in both adapters and explicit comparator branches for every registered path, with registry-to-dispatch coverage. Otherwise remove the paths and their witness/evidenced claims until real observations exist.
-
-### WR-04: The C++ oracle's contact identity cache is vulnerable to pointer-reuse ABA
-
-**File:** `tools/reference/src/rigid_world.cpp:119`  
-**Issue:** `identity_for` treats a raw `b2Contact*` address as sufficient lifetime identity and immediately returns the cached semantic identity. Action-boundary lifecycle detection likewise compares sets of raw addresses. If LiquidFun destroys a contact and allocates another at the same address before cleanup observes the gap, the new contact inherits the old fixture pair and occurrence. This is reproducible as process-history-sensitive evidence: the fresh one-shot oracle accepts the Phase 7 fixture, while the freshly rebuilt C++ protocol suite fails at `island-checkpoint` with `pinned contact identity disagrees with declaration`.  
-**Fix:** Bind identity to a lifecycle-stable generation and semantic endpoints, explicitly retiring an identity before its address can be reused. At minimum, verify normalized fixture/child endpoints before reusing a pointer-keyed entry and treat a mismatch as destruction plus creation. Add allocation-perturbed and reused-adapter regressions that must produce the same trace.
-
-### WR-05: Query and ray rules accept selectors for nonexistent fixture children
-
-**File:** `crates/liquidfun-test-protocol/src/scenario/rigid_world/validation.rs:610`  
-**Issue:** Selector validation checks only fixture liveness and selector uniqueness. It does not validate `child_index` against the declared shape's child count. Current Phase 7 circle and polygon fixtures expose only child zero, so a terminate, ignore, or clip rule targeting child greater than zero is accepted, never matches either adapter's callback, silently defaults to continue, and can still compare as `Match`.  
-**Fix:** Resolve each selector to its fixture declaration and validate the child index against the shape child count; for the current closed shape set, require zero. Add rejected-boundary cases for both query and ray rules.
-
-### WR-06: Ray comparison incorrectly treats callback order as semantic
-
-**File:** `crates/liquidfun-differential/src/rigid_evidence/phase7/ray.rs:53`  
-**Issue:** The comparator exact-compares nonminimum hit identities in callback order and then zips numeric payloads in that order. Phase 7 deliberately leaves traversal callback order unspecified: exhaustive/filtered results are multiplicity-preserving multisets, equal closest hits are sets, and termination is represented by count/completion semantics. Two engines can therefore report the same valid ray result in different traversal orders and be classified as a physics mismatch.  
-**Fix:** Select comparison semantics from the ray directive/completion contract. Match identity-plus-numeric records as multiplicity-preserving multisets for exhaustive and filtered casts, retain set comparison for equal minima, and compare only the specified count/status fields for termination. Add reordered-equivalent result tests.
-
-### WR-07: Rigid workflows silently rewrite checked-in policy provenance
-
-**Files:** `tools/xtask/src/differential.rs:601`, `crates/liquidfun-differential/src/rigid_fixtures.rs:329`  
-**Issue:** Both compare and staging parse the checked-in request as generic JSON, overwrite `tolerance_profile_sha256` with the current profile hash, and only then perform typed decoding. This executes synthesized bytes that differ from the reviewed fixture and masks stale or tampered policy provenance; the math and collision workflows instead fail closed on a stale hash.  
-**Fix:** Decode and validate the unchanged request bytes against the loaded policy hash. Move fixture regeneration to an explicit reviewed update command and make compare/stage reject any mismatch.
-
-### WR-08: The advertised rigid-world minimization command never invokes the reducer
-
-**File:** `tools/xtask/src/differential.rs:560`  
-**Issue:** On a physics mismatch the command immediately returns an error report, while on a match it reports that minimization needs a captured signature. No production branch calls `minimize_rigid_world_request`; the CLI coverage only checks argument pass-through to a fake external command. Users therefore cannot execute the documented D-24 minimization workflow.  
-**Fix:** On mismatch, retain the exact first-divergence signature, invoke the reducer with a real native/oracle evaluator, and persist the minimized request, completion status, and transform provenance. Cover the internal CLI path with a deterministic mismatch fixture.
-
-### WR-09: A full request can be labeled as a minimized regression
-
-**File:** `crates/liquidfun-differential/src/rigid_fixtures.rs:47`  
-**Issue:** `stage_rigid_candidate` always executes the fixed full request, and `rigid_stage_report` accepts any `PhysicsMismatch` for `ArtifactKind::MinimizedRegression`. It does not require a completed minimization result, canonical reduced bytes, preserved signature proof, or transformation provenance. The evidence store can therefore contain artifacts whose label makes a stronger claim than their contents.  
-**Fix:** Require a `RigidMinimizationResult` with `Complete` status, exact preserved first-divergence signature, canonical minimized request bytes, and recorded transformations before accepting `MinimizedRegression`. Stage those reduced bytes rather than the fixed request.
-
-### WR-10: Candidate staging exposes partially written evidence
-
-**File:** `crates/liquidfun-differential/src/rigid_fixtures.rs:235`  
-**Issue:** Staging creates the final artifact directory and writes each file into it sequentially. A concurrent reader can observe a partial candidate, and a crash can leave that directory behind so a retry returns `CandidateExists`. Cleanup errors on ordinary failure are also discarded. This breaks the transaction semantics expected of promotion evidence.  
-**Fix:** Write and fsync every file in a unique sibling temporary directory, fsync that directory, atomically rename it to the final artifact ID, and fsync the parent. Surface cleanup failures with context and add an interrupted-write/retry test.
-
-### WR-11: The expanded accepted fixture leaves the compiled C++ protocol contract stale
-
-**File:** `protocol/fixtures/accepted/rigid-world-request.jsonl:1`  
-**Issue:** The accepted request now contains nine witness families, but the compiled C++ self-test at `tools/reference/tests/protocol_tests.cpp:354` still requires exactly two timelines and validates only the Phase 6 entries. Once WR-04 no longer aborts first, this assertion necessarily fails, so the repository-wide test suite still cannot pass and the Phase 7 C++ contract lacks direct family/checkpoint coverage.  
-**Fix:** Update the protocol self-test in the same change as the fixture to assert all nine declared families and their required Phase 7 checkpoints. Prefer deriving expected family count/order from the decoded declaration where doing so does not weaken the explicit witness checks.
-
-## Info
-
-### IN-01: Workspace Clippy fails on ambiguous fixture identifier names
-
-**File:** `crates/liquidfun-differential/src/rigid_world.rs:214`  
-**Issue:** `cargo clippy --workspace --all-targets --all-features -- -D warnings` fails because `fixture_a_id` and `fixture_b_id` trigger `clippy::similar_names`. This is a naming/verification issue rather than a runtime defect.  
-**Fix:** Rename the locals to unambiguous semantic names such as `first_fixture_id` and `second_fixture_id`, then rerun the required workspace lint command.
+| Finding | Iteration-2 disposition | Evidence |
+| --- | --- | --- |
+| CR-01 | Fixed | Custom mass state is prepared and fully validated before world commit; overflow regressions prove no panic and no mutation. |
+| WR-01 | Fixed | Matching CCD resume keys are retained through hook-limit failure and cleared only after confirmed completion or invalidation. |
+| WR-02 | Fixed | Each result side must contain the exact action-derived Phase 7 observation sequence before comparison. |
+| WR-03 | Fixed | Unemitted observables were removed from the closed policy registry and checked-in profile. |
+| WR-04 | Fixed for the reviewed contract | The oracle revalidates semantic endpoints before pointer-key reuse, advances pair occurrences on replacement, and passes repeated-adapter protocol coverage. |
+| WR-05 | Fixed | Query and ray selectors are checked against shape child counts. |
+| WR-06 | Fixed | Exhaustive/filtered ray hits compare as multisets, closest hits as equal-minimum sets, and termination by completion/count semantics. |
+| WR-07 | Fixed | Rigid compare and staging decode unchanged fixture bytes and reject a stale policy hash. |
+| WR-08 | Fixed | A captured mismatch now invokes the bounded reducer with real oracle/native evaluation and persists its report. |
+| WR-09 | Partially fixed; warning remains | Staging requires a complete typed result, but replay does not reconstruct the request from recorded transforms. |
+| WR-10 | Fixed | Files are synced in a unique sibling directory, atomically renamed, parent-synced, and cleaned on interruption. |
+| WR-11 | Fixed | The compiled C++ protocol test asserts all nine families and seven Phase 7 checkpoints; CTest passes. |
+| IN-01 | Fixed | Workspace Clippy passes with warning denial. |
 
 ## Verification Evidence
 
 - `cargo fmt --all -- --check` passed.
+- `cargo clippy --workspace --all-targets --all-features -- -D warnings` passed.
 - `cargo build --workspace --all-targets --all-features` passed.
-- `cargo test -p liquidfun --all-features` passed.
-- `cargo test --workspace --all-features` failed in `cpp_protocol_bits_preserve_exceptional_classes`; the isolated test reproduced the C++ `island-checkpoint` identity failure after a fresh oracle configure/build.
-- `cargo clippy --workspace --all-targets --all-features -- -D warnings` failed only on IN-01.
-- `cargo xtask docs check` and `cargo xtask inventory check` passed.
-- `cargo xtask differential compare --scenario rigid-world --preset oracle-debug --session-profile one-shot` passed all nine required Phase 7 families with both sides at D2-supported authority.
+- `cargo test --workspace --all-features` passed, including the custom-mass overflow regressions, CCD resume regression, observation/selector/ray comparator regressions, rigid fixture workflow, Rust protocol tests, xtask tests, and doctests.
+- `cargo xtask upstream configure --preset oracle-debug` passed against upstream revision `7f20402173fd143a3988c921bc384459c6a858f2`.
+- `cargo xtask upstream build --preset oracle-debug` passed.
+- `ctest --test-dir target/reference/oracle-debug --output-on-failure --no-tests=error` passed 1/1 test.
+- `cargo xtask differential compare --scenario rigid-world --preset oracle-debug --session-profile one-shot` passed all nine required families with both engines at D2-supported authority.
+- `cargo xtask differential replay --scenario rigid-world --preset oracle-debug --session-profile one-shot` passed all nine required families with both engines at D2-supported authority.
+- `git diff --check` passed.
+
+The local CMake 3.27.9 and Apple Clang 21.0.0 differ from the canonical CMake 4.3.3 and Clang 22.1.8 pins; the repository wrapper reported those expected noncanonical-tool warnings while all requested local checks passed.
 
 ***
 
-_Reviewed: 2026-07-13T10:25:54Z_  
-_Reviewer: the agent (gsd-code-reviewer)_  
+_Reviewed: 2026-07-13T12:06:54Z_
+_Reviewer: the agent (gsd-code-reviewer)_
 _Depth: standard_
