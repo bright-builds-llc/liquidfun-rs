@@ -28,7 +28,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 Phase: 8
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-07-13
+Last activity: 2026-07-13 - Completed quick task 260713-j7f: Adopt mdformat 1.0.0 for non-GSD repository Markdown with config, just check, local guidance, and Cargo CI enforcement
 
 Progress: [██████████] 100%
 
@@ -229,6 +229,12 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 ### Pending Todos
 
 None yet.
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+| --- | --- | --- | --- | --- |
+| 260713-j7f | Adopt mdformat 1.0.0 for non-GSD repository Markdown with config, just check, local guidance, and Cargo CI enforcement | 2026-07-13 | 716e371 | [260713-j7f-adopt-mdformat-1-0-0-for-non-gsd-reposit](./quick/260713-j7f-adopt-mdformat-1-0-0-for-non-gsd-reposit/) |
 
 ## Session Continuity
 
