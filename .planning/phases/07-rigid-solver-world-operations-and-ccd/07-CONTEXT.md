@@ -1,6 +1,9 @@
-______________________________________________________________________
-
-## generated_by: gsd-discuss-phase lifecycle_mode: yolo phase_lifecycle_id: 7-2026-07-12T23-36-17 generated_at: 2026-07-12T23:44:54.491Z
+---
+generated_by: gsd-discuss-phase
+lifecycle_mode: yolo
+phase_lifecycle_id: 7-2026-07-12T23-36-17
+generated_at: 2026-07-12T23:44:54.491Z
+---
 
 # Phase 7: Rigid Solver, World Operations, and CCD - Context
 
