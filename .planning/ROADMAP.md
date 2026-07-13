@@ -14,7 +14,7 @@ The v1 roadmap moves from an immutable, licensed source of truth to a semantic c
 - [x] **Phase 4: Math, Settings, and Numerical Policy** - Establish the `f32` mathematical vocabulary and explicit determinism/tolerance contract. (completed 2026-07-11)
 - [x] **Phase 5: Shapes and Collision Foundation** - Implement and differentially verify shapes, narrow phase, broad phase, and TOI kernels. (completed 2026-07-11)
 - [x] **Phase 6: Minimal Rigid World Vertical Slice** - Run bodies, fixtures, and contacts through the complete native Rust and oracle comparison pipeline. (completed 2026-07-12)
-- [ ] **Phase 7: Rigid Solver, World Operations, and CCD** - Complete rigid stepping, sleeping, continuous collision, configuration, queries, and ray casts.
+- [x] **Phase 7: Rigid Solver, World Operations, and CCD** - Complete rigid stepping, sleeping, continuous collision, configuration, queries, and ray casts. (completed 2026-07-13)
 - [ ] **Phase 8: Joints, Rope, Callbacks, and Rigid Sign-Off** - Complete joints, standalone rope, hook timing, diagnostic dump, and the broad rigid-body compatibility gate.
 - [ ] **Phase 9: Particle Storage, Lifecycle, and Coupling** - Implement safe particle systems, storage, lifecycle, contacts, buffers, queries, callbacks, and rigid coupling.
 - [ ] **Phase 10: Particle Groups, Solvers, and Compatibility Sign-Off** - Complete group topology and every particle behavior in pinned upstream pass order.
@@ -224,7 +224,7 @@ The v1 roadmap moves from an immutable, licensed source of truth to a semantic c
 | 4. Math, Settings, and Numerical Policy | 7/7 | Complete    | 2026-07-11 |
 | 5. Shapes and Collision Foundation | 8/8 | Complete    | 2026-07-11 |
 | 6. Minimal Rigid World Vertical Slice | 22/22 | Complete    | 2026-07-12 |
-| 7. Rigid Solver, World Operations, and CCD | 12/13 | In Progress|  |
+| 7. Rigid Solver, World Operations, and CCD | 13/13 | Complete   | 2026-07-13 |
 | 8. Joints, Rope, Callbacks, and Rigid Sign-Off | 0/TBD | Not started | - |
 | 9. Particle Storage, Lifecycle, and Coupling | 0/TBD | Not started | - |
 | 10. Particle Groups, Solvers, and Compatibility Sign-Off | 0/TBD | Not started | - |

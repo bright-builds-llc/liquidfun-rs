@@ -61,13 +61,13 @@ Requirements for the first release permitted to claim complete parity with the s
 
 - [x] **RIGD-01**: Consumers can create, mutate, inspect, activate, deactivate, and destroy static, kinematic, and dynamic bodies with upstream-equivalent transforms and identity behavior.
 - [x] **RIGD-02**: Consumers can attach fixtures and sensors with upstream-equivalent density, mass/inertia, friction, restitution, collision filtering, and destruction behavior.
-- [ ] **RIGD-03**: Consumers can apply forces, torques, linear/angular impulses, damping, gravity scale, fixed rotation, bullet mode, and velocity changes with upstream-equivalent effects.
+- [x] **RIGD-03**: Consumers can apply forces, torques, linear/angular impulses, damping, gravity scale, fixed rotation, bullet mode, and velocity changes with upstream-equivalent effects.
 - [x] **RIGD-04**: The engine creates, updates, filters, solves, and destroys rigid contacts with upstream-equivalent manifolds, material mixing, warm starting, and sensor behavior.
-- [ ] **RIGD-05**: Island construction and velocity/position constraint solving reproduce upstream-equivalent world stepping within the approved order and numeric policies.
-- [ ] **RIGD-06**: Sleeping and waking behavior, thresholds, allowed-sleep controls, and activation transitions match the selected upstream behavior.
-- [ ] **RIGD-07**: Bullet handling, sub-stepping, continuous collision, and TOI solving prevent tunneling and reproduce supported upstream outcomes.
-- [ ] **RIGD-08**: Consumers can configure gravity, warm starting, continuous physics, sub-stepping, automatic force clearing, timestep iterations, and world origin shifting.
-- [ ] **RIGD-09**: Consumers can query fixtures by AABB and ray-cast through the world with upstream-equivalent clipping, termination, filtering, and explicitly unspecified callback order.
+- [x] **RIGD-05**: Island construction and velocity/position constraint solving reproduce upstream-equivalent world stepping within the approved order and numeric policies.
+- [x] **RIGD-06**: Sleeping and waking behavior, thresholds, allowed-sleep controls, and activation transitions match the selected upstream behavior.
+- [x] **RIGD-07**: Bullet handling, sub-stepping, continuous collision, and TOI solving prevent tunneling and reproduce supported upstream outcomes.
+- [x] **RIGD-08**: Consumers can configure gravity, warm starting, continuous physics, sub-stepping, automatic force clearing, timestep iterations, and world origin shifting.
+- [x] **RIGD-09**: Consumers can query fixtures by AABB and ray-cast through the world with upstream-equivalent clipping, termination, filtering, and explicitly unspecified callback order.
 - [ ] **RIGD-10**: Consumers can inspect body/contact/joint/proxy counts, tree metrics, timing profiles, and renderer-independent debug-draw primitives without accessing internal storage.
 - [ ] **RIGD-11**: Rigid-body scenarios covering non-colliding, colliding, stacked, sleeping, fast-moving, filtered, queried, and destroyed worlds pass semantic differential validation.
 
@@ -234,13 +234,13 @@ Roadmap creation maps every v1 requirement to exactly one phase.
 | COLL-08 | Phase 4 | Complete |
 | RIGD-01 | Phase 6 | Complete |
 | RIGD-02 | Phase 6 | Complete |
-| RIGD-03 | Phase 7 | Pending |
+| RIGD-03 | Phase 7 | Complete |
 | RIGD-04 | Phase 6 | Complete |
-| RIGD-05 | Phase 7 | Pending |
-| RIGD-06 | Phase 7 | Pending |
-| RIGD-07 | Phase 7 | Pending |
-| RIGD-08 | Phase 7 | Pending |
-| RIGD-09 | Phase 7 | Pending |
+| RIGD-05 | Phase 7 | Complete |
+| RIGD-06 | Phase 7 | Complete |
+| RIGD-07 | Phase 7 | Complete |
+| RIGD-08 | Phase 7 | Complete |
+| RIGD-09 | Phase 7 | Complete |
 | RIGD-10 | Phase 11 | Pending |
 | RIGD-11 | Phase 8 | Pending |
 | JOIN-01 | Phase 8 | Pending |
