@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 08-02-PLAN.md
-last_updated: "2026-07-13T23:08:02.610Z"
+stopped_at: Completed 08-03-PLAN.md
+last_updated: "2026-07-13T23:24:50.251Z"
 last_activity: 2026-07-13
 progress:
   total_phases: 12
   completed_phases: 7
   total_plans: 90
-  completed_plans: 76
-  percent: 84
+  completed_plans: 77
+  percent: 86
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 ## Current Position
 
 Phase: 8
-Plan: 2 of 16
+Plan: 3 of 16
 Status: Ready to execute
 Last activity: 2026-07-13
 
@@ -103,6 +103,7 @@ Progress: [█░░░░░░░░░] 6%
 | Phase 07 P13 | 27 min | 2 tasks | 9 files |
 | Phase 08 P01 | 33 min | 1 tasks | 11 files |
 | Phase 08 P02 | 31 min | 2 tasks | 9 files |
+| Phase 08 P03 | 16 min | 3 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -229,6 +230,8 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 07]: Keep local replay at D2 and same-build determinism at D0 without inferring D1 or D3. — Local tool identities differ from canonical pins and no canonical review or broader validation was performed.
 - [Phase 08]: Preserve exact source equality for changed-only joint setters — Pinned setter branches are behaviorally visible through waking and cache resets
 - [Phase 08]: Keep revolute and prismatic solver caches private — Owned semantic snapshots expose stable observations without publishing solver representation
+- [Phase 08]: Preserve pinned setter asymmetry for distance and mouse joints — Distance tuning and mouse force/frequency/damping do not wake bodies, while mouse target wakes only body B.
+- [Phase 08]: Keep family solver caches private and transactional — Owned snapshots expose semantic anchors, lengths, configuration, and reactions without publishing mutable solver representation.
 
 ### Pending Todos
 
@@ -242,6 +245,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-13T23:07:11.833Z
-Stopped at: Completed 08-02-PLAN.md
+Last session: 2026-07-13T23:24:27.890Z
+Stopped at: Completed 08-03-PLAN.md
 Resume file: None
