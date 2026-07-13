@@ -1,9 +1,10 @@
 ---
 phase: 07-rigid-solver-world-operations-and-ccd
-reviewed: 2026-07-13T12:49:00Z
+reviewed: 2026-07-13T13:53:06Z
 depth: standard
-iteration: 3
-files_reviewed: 68
+iteration: 4
+review_kind: manual_post_cleanup
+files_reviewed: 71
 files_reviewed_list:
   - ARCHITECTURE.md
   - COMPATIBILITY.md
@@ -13,14 +14,17 @@ files_reviewed_list:
   - crates/liquidfun-differential/src/minimizer.rs
   - crates/liquidfun-differential/src/rigid_evidence.rs
   - crates/liquidfun-differential/src/rigid_evidence/base.rs
+  - crates/liquidfun-differential/src/rigid_evidence/declaration.rs
   - crates/liquidfun-differential/src/rigid_evidence/phase7.rs
   - crates/liquidfun-differential/src/rigid_evidence/phase7/context.rs
   - crates/liquidfun-differential/src/rigid_evidence/phase7/observation.rs
   - crates/liquidfun-differential/src/rigid_evidence/phase7/ray.rs
   - crates/liquidfun-differential/src/rigid_fixtures.rs
   - crates/liquidfun-differential/src/rigid_world.rs
+  - crates/liquidfun-differential/src/rigid_world/phase7.rs
   - crates/liquidfun-differential/tests/rigid_fixture_workflow.rs
   - crates/liquidfun-differential/tests/rigid_fixture_workflow/provenance.rs
+  - crates/liquidfun-differential/tests/rigid_world.rs
   - crates/liquidfun-differential/tests/support/phase7_comparator.rs
   - crates/liquidfun-test-protocol/src/scenario/rigid_world/result.rs
   - crates/liquidfun-test-protocol/src/scenario/rigid_world/types.rs
@@ -75,95 +79,77 @@ files_reviewed_list:
   - tools/xtask/tests/docs_contract.rs
 findings:
   critical: 0
-  warning: 4
+  warning: 1
   info: 0
-  total: 4
+  total: 1
 status: issues_found
 ---
 
-# Phase 7: Code Review Report — Iteration 3
+# Phase 7: Manual Post-Cleanup Code Review — Iteration 4
 
-**Reviewed:** 2026-07-13T12:49:00Z
+**Reviewed:** 2026-07-13T13:53:06Z
 **Depth:** standard
-**Files:** 68
+**Files:** 71
 **Status:** issues found
 
 ## Summary
 
-Commit `d2c7346` closes WR-09 without introducing a new defect in its four-file diff. The minimization report now uses closed typed deserialization, replay deterministically reconstructs the attempted and accepted transform streams through the same reducer and strict transform application used during minimization, canonical reconstruction must equal the staged source-derived request, and malformed, unrelated, reordered, and excess-duplicate transform reports are rejected before review state is written even when their hashes are recomputed. The focused fixture workflow passes all 15 tests.
+This fresh manual review inspected the prior 68-file Phase 7 scope plus all files changed by cleanup commits `d2039e2`, `64cbc46`, `b04720e`, and `85f68c1`, deduplicated to 71 files at report commit `80a5186`. WR-13, WR-14, and WR-15 are closed end to end, and every earlier iteration-1 through iteration-3 finding remains closed.
 
-All 13 iteration-1 findings are now fixed. The iteration-3 review retains four distinct warnings found while reconfirming the original 68-file scope: declared rather than applied ray clipping can suppress mismatches, checkpoint validation does not prove exact live identities, later checkpoint observations can be attributed to earlier actions, and evidence documentation contradicts the implemented runtime policy.
+WR-12 is improved but not fully closed. The schema and both adapters now expose reached clip evidence, each result is independently checked against its request rules, an unreached declared clip retains exhaustive comparison, and closest/termination regressions pass. However, the boolean records that a clip directive was reached rather than that it strictly narrowed the effective interval. A valid reached `Clip(1.0)` leaves the initial ray exhaustive but selects closest-only comparison, allowing a nonminimum mismatch to be hidden.
 
-The review applied the current repository `AGENTS.md`, `AGENTS.bright-builds.md`, the absence of substantive local overrides, and the relevant architecture, code-shape, testing, verification, and Rust standards. The decisive requirements were deterministic semantic identity, fail-closed evidence promotion, independently validated result structure, and documentation that matches verified behavior.
+The review applied the current repository `AGENTS.md`, `AGENTS.bright-builds.md`, the absence of substantive local overrides, and the managed architecture, code-shape, testing, verification, and Rust standards. The decisive requirements were fail-closed evidence boundaries, exact semantic identity, shared lifecycle/action-window derivation, and documentation that does not overstate emitted or compared behavior.
 
-## Warnings
+## Warning
 
-### WR-12: Declared clipping can hide exhaustive-ray mismatches
+### WR-12: A reached no-op clip is misclassified as effective clipping
 
-**File:** `crates/liquidfun-differential/src/rigid_evidence/phase7/ray.rs:38`
-**Issue:** The comparator selects closest-hit semantics whenever an action declares any `Clip` rule. A valid clip selector may be live but outside the ray and therefore never invoked; execution is then effectively exhaustive, yet differences in nonminimum hits are ignored. The result records completion and hits, but not whether clipping was applied or the final effective maximum fraction.
+**Files:** `crates/liquidfun-differential/src/rigid_world/phase7.rs:425`, `tools/reference/src/rigid_world_phase7_execute.hpp:144`, `crates/liquidfun-test-protocol/src/scenario/rigid_world/result.rs:440`, `crates/liquidfun-differential/src/rigid_evidence/phase7/ray.rs:37`
 
-**Fix:** Record and independently validate applied clipping or the effective final maximum fraction, then select comparison semantics from execution evidence. Add a regression with a clip target outside the ray and a differing nonminimum hit.
+**Issue:** Both adapters set `clipping_applied` for every reached `Clip` directive. Request validation permits finite fractions in the inclusive range `0.0..=1.0`, so `Clip(1.0)` is valid. When it is the first clip, the effective maximum fraction remains `1.0`; the traversal is still exhaustive. Result validation proves only that a hit matched a declared clip rule, and the comparator then uses equal-minimum closest-hit semantics whenever both flags are true. Two independently declaration-valid results can therefore share the same minimum hit, differ in a nonminimum hit, and compare equal after a reached no-op `Clip(1.0)`.
 
-### WR-13: Checkpoint validation accepts wrong live body and fixture identities
+The same missing effective-interval model also leaves cross-adapter behavior underspecified for a later clip fraction greater than the already reduced interval: native Rust rejects expansion as `ClipOutsideCurrentInterval`, while upstream C++ accepts the returned positive fraction and expands its traversal bound.
 
-**File:** `crates/liquidfun-test-protocol/src/scenario/rigid_world/result.rs:453`
-**Issue:** Checkpoint validation requires body and fixture snapshots only to form declaration-ordered subsequences and separately checks their counts. It does not prove that the reported IDs are the objects actually live at that checkpoint. After destroying body `A` while `B` remains, a same-sized result containing `A` can pass; if both engines agree on the stale ID, cross-engine comparison can report a match.
+**Fix:** Track the callback-ordered effective maximum fraction in both adapters. Mark clipping effective only after a strict reduction, reject or consistently define attempted interval expansion on both sides, and independently replay observed hit/rule pairs during result validation to verify the recorded effective-clipping evidence. Add regressions for reached `Clip(1.0)` with a differing nonminimum hit and for multiple clips that attempt to expand a previously reduced interval.
 
-**Fix:** Replay create and destroy actions through each checkpoint, derive the exact declaration-ordered live body and fixture IDs, and require exact equality. Add same-count stale or swapped identity regressions for each result side.
+## Cleanup-Finding Disposition
 
-### WR-14: Later checkpoint observations can be attributed to earlier actions and stages
-
-**File:** `crates/liquidfun-differential/src/rigid_evidence/phase7/context.rs:57`
-**Issue:** Result validation correctly scopes observations to the action interval after the prior checkpoint, but evidence-context lookup scans from the start of the timeline through the current checkpoint. At checkpoint two, observation zero can therefore map to the first earlier observation-emitting action. The resulting failure signature has the wrong action and stage, and minimization can protect the wrong action prefix.
-
-**Fix:** Start observation lookup immediately after the prior checkpoint action, preferably through a shared checkpoint action-window helper. Add a two-checkpoint regression that asserts the second checkpoint's failure action, stage, and minimizer prefix.
-
-### WR-15: Evidence documentation contradicts the implemented runtime policy
-
-**Files:** `ARCHITECTURE.md:316`, `TESTING.md:428`
-**Issue:** The documentation says nonminimum ray hits retain order, while exhaustive and filtered hit comparison is a multiplicity-preserving multiset. It also claims directive and signed-separation observables are compared, although those paths were deliberately removed from the closed Phase 7 policy registry and checked-in profile.
-
-**Fix:** Document exhaustive and filtered ray hits as multisets, describe closest-hit sets in terms of execution-resolved clipping semantics, and remove claims for directive and signed-separation observables that are not emitted or compared.
-
-## Prior-Finding Disposition
-
-| Finding | Iteration-3 disposition | Evidence |
+| Finding | Iteration-4 disposition | Evidence |
 | --- | --- | --- |
-| CR-01 | Fixed | Custom mass state is prepared and fully validated before world commit; overflow regressions prove no panic and no mutation. |
-| WR-01 | Fixed | Matching CCD resume keys survive pre-continuous failures and clear only after completion or invalidation. |
-| WR-02 | Fixed | Each result side must contain the exact action-derived Phase 7 observation sequence before comparison. |
-| WR-03 | Fixed | Unemitted observables were removed from the closed runtime policy registry and checked-in profile. |
-| WR-04 | Fixed for the reviewed contract | The oracle revalidates semantic endpoints before pointer-key reuse and advances pair occurrences on replacement. |
-| WR-05 | Fixed | Query and ray selectors are checked against shape child counts. |
-| WR-06 | Fixed | The original hit-order defect is fixed; WR-12 is a distinct declaration-versus-execution clipping defect. |
-| WR-07 | Fixed | Rigid compare and staging decode unchanged fixture bytes and reject stale policy hashes. |
-| WR-08 | Fixed | A captured mismatch invokes the bounded reducer with real oracle/native evaluation and persists its report. |
-| WR-09 | Fixed | Closed typed transforms, deterministic stream reconstruction, shared transform application, source reconstruction, and fail-before-review tamper tests close the provenance boundary. |
-| WR-10 | Fixed | Candidate files are staged in a unique sibling directory, atomically renamed, parent-synced, and cleaned on interruption. |
-| WR-11 | Fixed | The compiled C++ protocol test covers all nine required families and Phase 7 checkpoints. |
-| IN-01 | Fixed | Workspace Clippy passes with warning denial. |
+| WR-12 | Partially fixed; warning remains | Typed/schema evidence, both adapters, independent validation, unreached-clip exhaustive behavior, closest sets, and termination count are covered, but reached no-op clips do not prove a strict interval reduction. |
+| WR-13 | Fixed | Shared lifecycle replay derives exact declaration-ordered live body and fixture IDs through each checkpoint, including `DestroyBody` fixture cascades; stale same-count identities fail independently on both result sides. |
+| WR-14 | Fixed | Result validation and evidence attribution share checkpoint-local action windows; the two-checkpoint regression proves the later action/stage and minimizer-protected prefix. |
+| WR-15 | Fixed | Architecture and testing docs describe emitted runtime fields, multiset/set ray policies, explicit termination semantics, and the non-observable directive/separation state without overclaim. |
 
-## WR-09 End-to-End Evidence
+## Earlier-Finding Reconfirmation
 
-- `RigidScenarioTransform` and the persisted minimization report use closed typed deserialization with unknown fields denied.
-- Reducer replay regenerates deterministic candidates, matches every accepted transform against the attempted stream in order, verifies checked offsets, and consumes the complete terminal tail.
-- Minimization and replay share `rigid_candidate_transforms` and strict `apply_rigid_scenario_transform` logic.
-- Candidate verification decodes the checked-in source request, applies the accepted transforms, and requires canonical reconstructed bytes to equal `request.jsonl`.
-- Replay verification completes before `review.toml` is written.
-- Positive provenance replay passes. Malformed, unrelated, reordered, and excess-duplicate transform reports recompute both report and candidate hashes and still fail without creating review state.
+- CR-01 and WR-01 through WR-11 remain closed under unchanged implementation paths and the full workspace/focused regression suites.
+- WR-09 provenance remains closed by typed transformation reports, deterministic attempted/accepted reconstruction, shared strict transform application, canonical source reconstruction, and hash-recomputed tamper rejection before review state.
+- IN-01 remains closed: workspace all-target/all-feature Clippy passes with warning denial.
+- No additional Critical, Warning, or Info issue was found in `d21015d..85f68c1` beyond the residual WR-12 warning above.
 
 ## Verification Evidence
 
-- Full diff inspection of `d2c7346^..d2c7346` covered `minimizer.rs`, `rigid_fixtures.rs`, `rigid_fixture_workflow.rs`, and the new `rigid_fixture_workflow/provenance.rs`; no cross-language source, accepted request, tolerance profile, or compare/replay path changed.
 - `cargo fmt --all -- --check` passed.
 - `cargo clippy --workspace --all-targets --all-features -- -D warnings` passed.
 - `cargo build --workspace --all-targets --all-features` passed.
 - `cargo test --workspace --all-features` passed.
-- `cargo test -p liquidfun-differential --test rigid_fixture_workflow` passed 15/15 tests.
-- `git diff --check d2c7346^ d2c7346` passed.
-- Iteration 3 did not rerun the explicit C++ configure/CTest or nine-family compare/replay commands because `d2c7346` changed only Rust minimizer, fixture replay, and test files. The fresh iteration-2 evidence remains applicable: CTest passed 1/1 and compare/replay passed all nine families; the iteration-3 workspace test also exercised the compiled C++ round-trip protocol test successfully.
-- Final `git diff --check` passed.
+- `cargo test -p liquidfun-test-protocol --all-features rigid_world` passed 26 selected tests across the crate targets.
+- `cargo test -p liquidfun-differential --all-features --test rigid_world` passed 29/29 tests, including WR-12, WR-13, and WR-14 regressions.
+- `cargo test -p liquidfun-differential --all-features --test rigid_fixture_workflow` passed 15/15 tests.
+- `cargo test -p liquidfun-test-protocol --all-features --lib schema::tests` passed 4/4 byte-stability and closed-schema tests.
+- `cargo test -p liquidfun-test-protocol --all-features --test fixtures` passed 11/11 fixture tests.
+- `cargo xtask docs check` passed: 12 testing layers and all 5 Phase 7 documentation contracts verified.
+- `cargo xtask inventory check` passed: 177 compatibility rows verified.
+- `cargo xtask check` passed, including 69-entry package isolation, protocol schema/fixture drift checks, documentation contracts, inventory, upstream identity, and provenance.
+- `cargo xtask upstream configure --preset oracle-debug` passed.
+- `cargo xtask upstream build --preset oracle-debug` passed.
+- `ctest --test-dir target/reference/oracle-debug --output-on-failure --no-tests=error` passed 1/1 test.
+- `cargo xtask differential compare --scenario rigid-world --preset oracle-debug --session-profile one-shot` passed all 9 required families at D2-supported authority.
+- `cargo xtask differential replay --scenario rigid-world --preset oracle-debug --session-profile one-shot` passed all 9 required families at D2-supported authority.
+- `git diff --check d21015d..85f68c1` and final `git diff --check` passed.
+
+The local CMake 3.27.9 and Apple Clang 21.0.0 differ from the canonical CMake 4.3.3 and Clang 22.1.8 pins. The repository reported those expected noncanonical-tool warnings; the successful comparison and replay are local D2 evidence, not canonical D1 authority.
 
 ## Worktree State
 
@@ -178,6 +164,6 @@ The pre-existing `.planning/config.json` modification was preserved byte-for-byt
 
 ***
 
-_Reviewed: 2026-07-13T12:49:00Z_
+_Reviewed: 2026-07-13T13:53:06Z_
 _Reviewer: the agent (gsd-code-reviewer)_
 _Depth: standard_
