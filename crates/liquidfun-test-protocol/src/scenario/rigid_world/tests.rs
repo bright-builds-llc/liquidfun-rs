@@ -654,12 +654,48 @@ fn rigid_world_rejects_invalid_phase7_step_and_directive_bounds() {
             }]
         }),
     );
+    let mut invalid_query_child = fixture_value();
+    insert_non_colliding_action(
+        &mut invalid_query_child,
+        "invalid-query-child",
+        json!({
+            "kind": "query_aabb",
+            "aabb": {
+                "lower": { "x_bits": (-1.0_f32).to_bits(), "y_bits": (-1.0_f32).to_bits() },
+                "upper": { "x_bits": 1.0_f32.to_bits(), "y_bits": 1.0_f32.to_bits() }
+            },
+            "directive_rules": [{
+                "target": { "fixture_id": "nc-dynamic-fixture", "child_index": 1 },
+                "directive": "terminate"
+            }]
+        }),
+    );
+    let mut invalid_ray_child = fixture_value();
+    insert_non_colliding_action(
+        &mut invalid_ray_child,
+        "invalid-ray-child",
+        json!({
+            "kind": "ray_cast",
+            "start": { "x_bits": (-1.0_f32).to_bits(), "y_bits": 0.0_f32.to_bits() },
+            "end": { "x_bits": 1.0_f32.to_bits(), "y_bits": 0.0_f32.to_bits() },
+            "directive_rules": [{
+                "target": { "fixture_id": "nc-dynamic-fixture", "child_index": 1 },
+                "directive": { "kind": "terminate" }
+            }]
+        }),
+    );
 
     // Act
     let step_error = decode_rigid_world_request_jsonl(&encode_value(&invalid_step), &limits)
         .expect_err("zero velocity iterations must fail");
     let ray_error = decode_rigid_world_request_jsonl(&encode_value(&invalid_ray), &limits)
         .expect_err("clip fractions above one must fail");
+    let query_child_error =
+        decode_rigid_world_request_jsonl(&encode_value(&invalid_query_child), &limits)
+            .expect_err("a query selector outside fixture topology must fail");
+    let ray_child_error =
+        decode_rigid_world_request_jsonl(&encode_value(&invalid_ray_child), &limits)
+            .expect_err("a ray selector outside fixture topology must fail");
 
     // Assert
     assert_eq!(
@@ -668,6 +704,14 @@ fn rigid_world_rejects_invalid_phase7_step_and_directive_bounds() {
     );
     assert_eq!(
         ray_error.rigid_world_kind(),
+        Some(RigidWorldErrorKind::InvalidRayDirective)
+    );
+    assert_eq!(
+        query_child_error.rigid_world_kind(),
+        Some(RigidWorldErrorKind::InvalidQueryDirective)
+    );
+    assert_eq!(
+        ray_child_error.rigid_world_kind(),
         Some(RigidWorldErrorKind::InvalidRayDirective)
     );
 }

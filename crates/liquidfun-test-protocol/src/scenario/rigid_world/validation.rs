@@ -194,11 +194,16 @@ fn validate_timeline(raw: RawTimeline) -> Result<RigidWorldTimeline, RigidWorldD
         .iter()
         .map(|fixture| (fixture.fixture_id.clone(), fixture.owner_body_id.clone()))
         .collect::<HashMap<_, _>>();
+    let fixture_shapes = fixtures
+        .iter()
+        .map(|fixture| (fixture.fixture_id.clone(), fixture.shape.clone()))
+        .collect::<HashMap<_, _>>();
     let actions = validate_actions(
         raw.actions.into_vec(),
         raw.witness_family,
         &body_ids,
         &fixture_owners,
+        &fixture_shapes,
     )?;
     let checkpoints = validate_checkpoints(
         raw.checkpoints.into_vec(),
@@ -284,6 +289,7 @@ fn validate_actions(
     family: RigidWorldWitnessFamily,
     body_ids: &HashSet<ScenarioId>,
     fixture_owners: &HashMap<ScenarioId, ScenarioId>,
+    fixture_shapes: &HashMap<ScenarioId, RigidFixtureShape>,
 ) -> Result<Vec<RigidWorldActionRecord>, RigidWorldDecodeError> {
     if raw_actions.is_empty() {
         return Err(validation(RigidWorldErrorKind::InvalidActionOrder));
@@ -308,6 +314,7 @@ fn validate_actions(
             &raw.action,
             body_ids,
             fixture_owners,
+            fixture_shapes,
             &mut live_bodies,
             &mut live_fixtures,
             &mut created_bodies,
@@ -344,6 +351,7 @@ fn validate_action(
     action: &RigidWorldAction,
     body_ids: &HashSet<ScenarioId>,
     fixture_owners: &HashMap<ScenarioId, ScenarioId>,
+    fixture_shapes: &HashMap<ScenarioId, RigidFixtureShape>,
     live_bodies: &mut HashSet<ScenarioId>,
     live_fixtures: &mut HashSet<ScenarioId>,
     created_bodies: &mut HashSet<ScenarioId>,
@@ -520,7 +528,7 @@ fn validate_action(
             directive_rules,
         } => {
             validate_aabb(*aabb)?;
-            validate_query_rules(directive_rules, live_fixtures)?;
+            validate_query_rules(directive_rules, live_fixtures, fixture_shapes)?;
         }
         RigidWorldAction::RayCast {
             start,
@@ -532,7 +540,7 @@ fn validate_action(
             if start == end {
                 return Err(validation(RigidWorldErrorKind::InvalidRayDirective));
             }
-            validate_ray_rules(directive_rules, live_fixtures)?;
+            validate_ray_rules(directive_rules, live_fixtures, fixture_shapes)?;
         }
         RigidWorldAction::DestroyFixture { fixture_id } => {
             if !live_fixtures.remove(fixture_id) {
@@ -573,6 +581,7 @@ fn validate_aabb(aabb: RigidAabbBits) -> Result<(), RigidWorldDecodeError> {
 fn validate_query_rules(
     rules: &[RigidQueryDirectiveRule],
     live_fixtures: &HashSet<ScenarioId>,
+    fixture_shapes: &HashMap<ScenarioId, RigidFixtureShape>,
 ) -> Result<(), RigidWorldDecodeError> {
     if rules.len() > RIGID_WORLD_MAXIMUM_DIRECTIVES {
         return Err(validation(RigidWorldErrorKind::AggregateLimitExceeded));
@@ -580,6 +589,7 @@ fn validate_query_rules(
     validate_unique_selectors(
         rules.iter().map(|rule| &rule.target),
         live_fixtures,
+        fixture_shapes,
         RigidWorldErrorKind::InvalidQueryDirective,
     )
 }
@@ -587,6 +597,7 @@ fn validate_query_rules(
 fn validate_ray_rules(
     rules: &[RigidRayDirectiveRule],
     live_fixtures: &HashSet<ScenarioId>,
+    fixture_shapes: &HashMap<ScenarioId, RigidFixtureShape>,
 ) -> Result<(), RigidWorldDecodeError> {
     if rules.len() > RIGID_WORLD_MAXIMUM_DIRECTIVES {
         return Err(validation(RigidWorldErrorKind::AggregateLimitExceeded));
@@ -594,6 +605,7 @@ fn validate_ray_rules(
     validate_unique_selectors(
         rules.iter().map(|rule| &rule.target),
         live_fixtures,
+        fixture_shapes,
         RigidWorldErrorKind::InvalidRayDirective,
     )?;
     for rule in rules {
@@ -610,15 +622,26 @@ fn validate_ray_rules(
 fn validate_unique_selectors<'a>(
     selectors: impl Iterator<Item = &'a RigidFixtureChildSelector>,
     live_fixtures: &HashSet<ScenarioId>,
+    fixture_shapes: &HashMap<ScenarioId, RigidFixtureShape>,
     kind: RigidWorldErrorKind,
 ) -> Result<(), RigidWorldDecodeError> {
     let mut unique = HashSet::new();
     for selector in selectors {
-        if !live_fixtures.contains(&selector.fixture_id) || !unique.insert(selector.clone()) {
+        let maybe_shape = fixture_shapes.get(&selector.fixture_id);
+        if !live_fixtures.contains(&selector.fixture_id)
+            || maybe_shape.is_none_or(|shape| selector.child_index >= shape_child_count(shape))
+            || !unique.insert(selector.clone())
+        {
             return Err(validation(kind));
         }
     }
     Ok(())
+}
+
+const fn shape_child_count(shape: &RigidFixtureShape) -> u32 {
+    match shape {
+        RigidFixtureShape::Circle { .. } | RigidFixtureShape::Polygon { .. } => 1,
+    }
 }
 
 fn validate_custom_mass(
