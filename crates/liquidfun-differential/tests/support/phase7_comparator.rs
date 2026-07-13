@@ -74,6 +74,34 @@ fn request_with_out_of_ray_clip(profile: &Phase7PolicyProfile) -> RigidWorldRequ
         .expect("bounded ray request mutation should decode")
 }
 
+fn request_with_split_phase7_checkpoints(profile: &Phase7PolicyProfile) -> RigidWorldRequestRecord {
+    let mut value = serde_json::to_value(request(profile)).expect("request should serialize");
+    let checkpoints = value["scenario"]["timelines"][0]["checkpoints"]
+        .as_array_mut()
+        .expect("non-colliding checkpoints should be an array");
+    checkpoints.insert(
+        6,
+        json!({
+            "checkpoint_id": "phase7-step-checkpoint",
+            "after_action_id": "phase7-action-18",
+            "phase": "phase7-adapter",
+            "counts": {
+                "bodies": 3,
+                "fixtures": 3,
+                "contacts": 0,
+                "manifold_points": 0,
+                "events": 0,
+                "destructions": 0
+            },
+            "transitions": []
+        }),
+    );
+    let mut bytes = serde_json::to_vec(&value).expect("request mutation should encode");
+    bytes.push(b'\n');
+    decode_rigid_world_request_jsonl(&bytes, &HarnessLimits::phase2_default_v1())
+        .expect("split Phase 7 checkpoint request should decode")
+}
+
 fn phase7_observations(value: &mut Value) -> &mut Vec<Value> {
     value["timelines"][0]["checkpoints"][6]["observations"]
         .as_array_mut()
@@ -85,6 +113,20 @@ fn observation_mut<'a>(observations: &'a mut [Value], kind: &str) -> &'a mut Val
         .iter_mut()
         .find(|observation| observation["kind"] == kind)
         .expect("requested Phase 7 observation should exist")
+}
+
+fn checkpoint_observations_mut<'a>(
+    value: &'a mut Value,
+    checkpoint_id: &str,
+) -> &'a mut Vec<Value> {
+    value["timelines"][0]["checkpoints"]
+        .as_array_mut()
+        .expect("non-colliding checkpoints should be an array")
+        .iter_mut()
+        .find(|checkpoint| checkpoint["checkpoint_id"] == checkpoint_id)
+        .expect("requested checkpoint should exist")["observations"]
+        .as_array_mut()
+        .expect("checkpoint observations should be an array")
 }
 
 #[test]
@@ -419,6 +461,62 @@ fn rigid_minimization_preserves_divergent_action_setup_directives_budget_and_bit
     }
     assert_eq!(target.action_id(), "phase7-action-20");
     assert_eq!(target.kind(), RigidMismatchKind::Numeric);
+}
+
+#[test]
+fn second_checkpoint_evidence_and_minimization_use_its_local_action_window() {
+    // Arrange
+    let (phase6, phase7) = profiles();
+    let request = request_with_split_phase7_checkpoints(&phase7);
+    let native = NativeRigidWorldExecutor::execute(&request)
+        .expect("split Phase 7 checkpoint request should execute");
+    let mut oracle_value = serde_json::to_value(&native).expect("result should serialize");
+    let ray = observation_mut(
+        checkpoint_observations_mut(&mut oracle_value, "nc-fixtures-destroyed"),
+        "ray_cast",
+    );
+    for hit in ray["observation"]["hits"]
+        .as_array_mut()
+        .expect("ray hits should be an array")
+    {
+        hit["point"]["x_bits"] = json!(100.0_f32.to_bits());
+    }
+    let oracle = decode_result(&oracle_value);
+    let RigidComparisonOutcome::PhysicsMismatch(report) =
+        compare_phase7_rigid_world_results(&request, &native, &oracle, &phase6, &phase7)
+            .expect("registered Phase 7 fields should compare")
+    else {
+        panic!("second-checkpoint ray mutation must mismatch");
+    };
+    let target = report.signature().clone();
+    let original = serde_json::to_value(&request).expect("request should serialize");
+
+    // Act
+    let result = minimize_rigid_world_request(
+        &request,
+        &target,
+        MinimizationBudget::new(256, Duration::from_secs(1)),
+        |_candidate| RigidEvaluation::new(Some(target.clone()), Duration::from_millis(1)),
+    )
+    .expect("minimization should preserve the second-checkpoint signature");
+
+    // Assert
+    assert_eq!(target.checkpoint_id(), "nc-fixtures-destroyed");
+    assert_eq!(target.action_id(), "phase7-action-20");
+    assert_eq!(report.stage(), "phase7-adapter");
+    let minimized = serde_json::to_value(result.request()).expect("request should serialize");
+    for action_id in [
+        "nc-create-dynamic",
+        "phase7-action-18",
+        "phase7-action-19",
+        "phase7-action-20",
+    ] {
+        assert_eq!(
+            action(&minimized, action_id),
+            action(&original, action_id),
+            "the second-checkpoint protected prefix must remain bit-identical"
+        );
+    }
 }
 
 fn action<'a>(request: &'a Value, action_id: &str) -> &'a Value {

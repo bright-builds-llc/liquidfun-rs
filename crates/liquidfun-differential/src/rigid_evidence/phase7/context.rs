@@ -2,6 +2,7 @@
 
 use liquidfun_test_protocol::{
     RigidWorldAction, RigidWorldCheckpointResult, RigidWorldObservation, RigidWorldRequestRecord,
+    rigid_world_checkpoint_action_window,
 };
 
 use super::super::{EvidenceContext, Location, RigidCompletionContext};
@@ -28,12 +29,7 @@ fn checkpoint_step_action(
     location: Location,
 ) -> Option<(&str, &str)> {
     let timeline = &request.scenario().timelines()[location.timeline_index];
-    let checkpoint = &timeline.checkpoints()[location.checkpoint_index];
-    let end = timeline
-        .actions()
-        .iter()
-        .position(|action| action.action_id() == checkpoint.after_action_id())?;
-    timeline.actions()[..=end]
+    rigid_world_checkpoint_action_window(timeline, location.checkpoint_index)?
         .iter()
         .rev()
         .find(|action| matches!(action.action(), RigidWorldAction::ConfiguredStep { .. }))
@@ -60,12 +56,7 @@ pub(super) fn observation_action(
     observation_index: usize,
 ) -> Option<(&str, &str)> {
     let timeline = &request.scenario().timelines()[location.timeline_index];
-    let checkpoint = &timeline.checkpoints()[location.checkpoint_index];
-    let end = timeline
-        .actions()
-        .iter()
-        .position(|action| action.action_id() == checkpoint.after_action_id())?;
-    timeline.actions()[..=end]
+    rigid_world_checkpoint_action_window(timeline, location.checkpoint_index)?
         .iter()
         .filter(|action| action_emits_observation(action.action()))
         .nth(observation_index)
