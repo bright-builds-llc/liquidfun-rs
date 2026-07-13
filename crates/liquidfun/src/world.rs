@@ -9,6 +9,7 @@ mod fixture;
 mod island;
 pub(crate) mod object;
 mod proxy;
+mod query;
 mod step;
 
 pub use body::{
@@ -30,6 +31,7 @@ pub use fixture::{
 pub use object::{
     CreateObjectError, DestroyedId, DestructionCause, DestructionRecord, ObjectSnapshot, World,
 };
+pub use query::{FixtureQueryOccurrence, QueryDirective};
 pub use step::{
     CollisionDirective, CommandApplication, CommandError, ContactEvent, ContactView,
     PreSolveDirective, StepError, StepHook, StepLifecycleEvent, StepLimits, StepPhase, StepReport,

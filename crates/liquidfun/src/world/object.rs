@@ -350,7 +350,7 @@ pub struct World {
     particle_systems: Arena<ParticleSystem, ParticleSystemId>,
     particle_groups: Arena<ParticleGroup, ParticleGroupId>,
     particles: Arena<Particle, ParticleId>,
-    broad_phase: BroadPhase<FixtureProxy>,
+    pub(super) broad_phase: BroadPhase<FixtureProxy>,
     pub(super) contact_manager: ContactManager,
     next_diagnostic_id: Option<u64>,
     pub(super) step_state: StepState,

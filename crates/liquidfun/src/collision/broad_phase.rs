@@ -203,6 +203,18 @@ impl<T> BroadPhase<T> {
         self.tree.fat_aabb(proxy)
     }
 
+    /// Visits payloads whose broad-phase bounds overlap `aabb`.
+    ///
+    /// Private tree identities remain inside the broad phase. Traversal keeps
+    /// the dynamic tree's LIFO behavior, but callers must not rely on order.
+    pub(crate) fn query_aabb<F>(&self, aabb: Aabb, mut visitor: F)
+    where
+        F: FnMut(&T) -> QueryControl,
+    {
+        self.tree
+            .query(aabb, |_proxy, entry| visitor(&entry.payload));
+    }
+
     /// Reports all buffered potential pairs in private node-coordinate order.
     ///
     /// Every live move occurrence performs a fat-AABB query. Candidate pairs

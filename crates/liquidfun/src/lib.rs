@@ -143,8 +143,9 @@ pub use world::{
     BodyTypeChangeError, CollisionDirective, CommandApplication, CommandError, ContactEvent,
     ContactPointSnapshot, ContactSolve, ContactTransition, ContactTransitionKind, ContactView,
     CreateObjectError, DestroyedId, DestructionCause, DestructionRecord, FixtureBoundsError,
-    FixtureDef, FixtureDefError, FixtureDestructionError, FixtureMutationError, FixtureSnapshot,
-    ManagedContactSnapshot, ObjectSnapshot, PreSolveDirective, StepCompletion, StepConfiguration,
-    StepConfigurationError, StepError, StepHook, StepLifecycleEvent, StepLimits, StepPhase,
-    StepReport, WakePolicy, World, WorldCommand, WorldConfigurationError, WorldFixtureSnapshot,
+    FixtureDef, FixtureDefError, FixtureDestructionError, FixtureMutationError,
+    FixtureQueryOccurrence, FixtureSnapshot, ManagedContactSnapshot, ObjectSnapshot,
+    PreSolveDirective, QueryDirective, StepCompletion, StepConfiguration, StepConfigurationError,
+    StepError, StepHook, StepLifecycleEvent, StepLimits, StepPhase, StepReport, WakePolicy, World,
+    WorldCommand, WorldConfigurationError, WorldFixtureSnapshot,
 };
