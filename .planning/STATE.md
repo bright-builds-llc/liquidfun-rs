@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 07-07-PLAN.md
-last_updated: "2026-07-13T05:47:14.370Z"
+stopped_at: Completed 07-08-PLAN.md
+last_updated: "2026-07-13T06:24:25.232Z"
 last_activity: 2026-07-13
 progress:
   total_phases: 12
   completed_phases: 6
   total_plans: 74
-  completed_plans: 69
-  percent: 93
+  completed_plans: 70
+  percent: 95
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 ## Current Position
 
 Phase: 7 (Rigid Solver, World Operations, and CCD) — EXECUTING
-Plan: 8 of 13
+Plan: 9 of 13
 Status: Ready to execute
 Last activity: 2026-07-13
 
@@ -95,6 +95,7 @@ Progress: [██████████] 100%
 | Phase 07 P06 | 21 min | 2 tasks | 6 files |
 | Phase 07 P05 | 21 min | 2 tasks | 7 files |
 | Phase 7 P07 | 20 min | 2 tasks | 10 files |
+| Phase 07 P08 | 32 min | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -200,6 +201,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 7]: Prepare every translated body, proxy, and tree value before replacing live world state. — A complete candidate makes non-finite arithmetic and inconsistent proxy failures effect-free across every coordinate-owning lane.
 - [Phase 7]: Shift the existing dynamic tree in place through an opaque checked candidate. — Preserving topology, proxy generations, free-list links, and move-buffer contents avoids accidental traversal or identity changes.
 - [Phase 7]: Compare shifted public queries and rays by semantic fixture-child identity and declared numeric meaning. — Multiset and exact hit-property evidence proves translation covariance without creating a callback-order contract.
+- [Phase 07]: Scan manager contact order directly and replace the winner only on strict-less alpha. — This preserves the pinned first-equal occurrence without pointer, hash, or floating sort order.
+- [Phase 07]: Bound CCD scans at 8192 contacts and retain the strict count-greater-than-MAX_SUB_STEPS exclusion. — The scan is adversarially bounded while the pinned terminal count remains representable.
+- [Phase 07]: Keep CCD storage private and expose only feature-gated owned semantic diagnostics. — Selection and rollback are testable without publishing cache, count, index, sweep, or resume representation.
 
 ### Pending Todos
 
@@ -207,6 +211,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-13T05:47:14.367Z
-Stopped at: Completed 07-07-PLAN.md
+Last session: 2026-07-13T06:24:25.229Z
+Stopped at: Completed 07-08-PLAN.md
 Resume file: None
