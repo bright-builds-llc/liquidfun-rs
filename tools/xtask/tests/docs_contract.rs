@@ -27,7 +27,10 @@ const CONTRACT_DOCUMENTS: [&str; 4] = [
     "COMPATIBILITY.md",
     "README.md",
 ];
-const CONTRACT_SUPPORT_FILES: [&str; 1] = ["protocol/fixtures/accepted/rigid-world-request.jsonl"];
+const CONTRACT_SUPPORT_FILES: [&str; 2] = [
+    "crates/liquidfun/src/lib.rs",
+    "protocol/fixtures/accepted/rigid-world-request.jsonl",
+];
 static FIXTURE_ID: AtomicU64 = AtomicU64::new(0);
 
 type TestResult = Result<(), Box<dyn Error>>;
@@ -523,6 +526,77 @@ fn phase6_contract_rejects_deferred_surface_and_identity_overclaims() -> TestRes
             "docs/phase5-overclaim"
         } else {
             "docs/phase6-overclaim"
+        };
+        assert_failure(&output, category);
+        fixture.cleanup()?;
+    }
+    Ok(())
+}
+
+#[test]
+fn phase7_contract_accepts_repository_documents() -> TestResult {
+    // Arrange
+    let fixture = DocsFixture::new()?;
+
+    // Act
+    let output = fixture.command()?;
+
+    // Assert
+    assert_success(&output);
+    fixture.cleanup()?;
+    Ok(())
+}
+
+#[test]
+fn phase7_contract_rejects_missing_contract_in_each_document() -> TestResult {
+    // Arrange, Act, Assert
+    for (document, marker) in [
+        (
+            "crates/liquidfun/src/lib.rs",
+            "# Phase 7 checked rigid-world contract",
+        ),
+        (
+            "ARCHITECTURE.md",
+            "## Phase 7 rigid solver, world operations, and CCD boundaries",
+        ),
+        ("TESTING.md", "## Phase 7 rigid-world comparison policy"),
+        ("README.md", "Phase 7 checked rigid-world slice"),
+    ] {
+        let fixture = DocsFixture::new()?;
+        fixture.replace_document_text(document, marker, "removed-phase7-contract-marker")?;
+        let output = fixture.command()?;
+        assert_failure(&output, "docs/phase7-contract");
+        fixture.cleanup()?;
+    }
+    Ok(())
+}
+
+#[test]
+fn phase7_contract_rejects_unreviewed_maturity_and_private_state_claims() -> TestResult {
+    // Arrange, Act, Assert
+    for claim in [
+        "complete rigid solver",
+        "complete rigid-world parity",
+        "D3-validated",
+        "D3 validated",
+        "Phase 7 platform validated",
+        "multi-platform parity",
+        "query callbacks are ordered",
+        "ray callbacks are ordered",
+        "public CCD cache",
+        "public TOI counter",
+    ] {
+        let fixture = DocsFixture::new()?;
+        fixture.replace_document_text(
+            "README.md",
+            "## Architecture and evidence",
+            &format!("False claim: {claim}\n\n## Architecture and evidence"),
+        )?;
+        let output = fixture.command()?;
+        let category = if claim == "Phase 7 platform validated" {
+            "docs/phase6-overclaim"
+        } else {
+            "docs/phase7-overclaim"
         };
         assert_failure(&output, category);
         fixture.cleanup()?;

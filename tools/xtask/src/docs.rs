@@ -242,6 +242,65 @@ const PHASE6_DOCUMENT_CONTRACTS: [(&str, &[&str]); 5] = [
         ],
     ),
 ];
+const PHASE7_DOCUMENT_CONTRACTS: [(&str, &[&str]); 4] = [
+    (
+        "crates/liquidfun/src/lib.rs",
+        &[
+            "# Phase 7 checked rigid-world contract",
+            "`WakePolicy::PreserveSleep`",
+            "`StepConfiguration`",
+            "`StepCompletion::ContinuousPending`",
+            "`ContinuousProgress`",
+            "`World::query_aabb`",
+            "`World::ray_cast`",
+            "`World::shift_origin`",
+            "private and resumable",
+            "successful step",
+        ],
+    ),
+    (
+        "ARCHITECTURE.md",
+        &[
+            "## Phase 7 rigid solver, world operations, and CCD boundaries",
+            "body and contact source order",
+            "CCD candidate, cache, and TOI counter state remains private",
+            "`ContinuousProgress`",
+            "query occurrences are multiplicity-preserving multisets",
+            "equal-minimum ray identities are sets",
+            "callback visitation order is intentionally unspecified",
+            "out-of-process",
+            "Cargo-only",
+            "local D2",
+        ],
+    ),
+    (
+        "TESTING.md",
+        &[
+            "## Phase 7 rigid-world comparison policy",
+            "`phase7-v1`",
+            "nine-family",
+            "query occurrences as a multiplicity-preserving multiset",
+            "equal-minimum ray identities as a set",
+            "local debug, replay, and sanitizer passes are D2",
+            "exactly two byte-identical same-build runs are D0",
+            "D3 review remains pending",
+            "cargo xtask differential replay --scenario rigid-world --preset oracle-debug --session-profile one-shot",
+            "cargo xtask differential compare --scenario rigid-world --preset oracle-asan-ubsan --session-profile one-shot",
+        ],
+    ),
+    (
+        "README.md",
+        &[
+            "Phase 7 checked rigid-world slice",
+            "nine-family",
+            "Cargo-only",
+            "private, optional C++ oracle",
+            "local D2 and same-build D0",
+            "D3 review",
+            "remain pending",
+        ],
+    ),
+];
 const FORBIDDEN_PHASE5_CLAIMS: [&str; 9] = [
     "full parity",
     "production ready",
@@ -269,6 +328,18 @@ const FORBIDDEN_PHASE6_CLAIMS: [&str; 15] = [
     "platform validated",
     "raw contact identity",
     "raw proxy identity",
+];
+const FORBIDDEN_PHASE7_CLAIMS: [&str; 10] = [
+    "complete rigid solver",
+    "complete rigid-world parity",
+    "d3-validated",
+    "d3 validated",
+    "phase 7 platform validated",
+    "multi-platform parity",
+    "query callbacks are ordered",
+    "ray callbacks are ordered",
+    "public ccd cache",
+    "public toi counter",
 ];
 
 #[derive(Clone, Copy)]
@@ -422,11 +493,12 @@ pub(crate) fn run(args: &[String]) -> Result<(), DocsError> {
     check_testing_contract(&contents)?;
     check_document_contracts(&repository_root)?;
     println!(
-        "docs verified: {} testing layers, {} Phase 4, {} Phase 5, and {} Phase 6 document contracts",
+        "docs verified: {} testing layers, {} Phase 4, {} Phase 5, {} Phase 6, and {} Phase 7 document contracts",
         LAYER_RULES.len(),
         DOCUMENT_CONTRACTS.len(),
         PHASE5_DOCUMENT_CONTRACTS.len(),
-        PHASE6_DOCUMENT_CONTRACTS.len()
+        PHASE6_DOCUMENT_CONTRACTS.len(),
+        PHASE7_DOCUMENT_CONTRACTS.len()
     );
     Ok(())
 }
@@ -442,6 +514,11 @@ fn check_document_contracts(repository_root: &std::path::Path) -> Result<(), Doc
         repository_root,
         PHASE6_DOCUMENT_CONTRACTS,
         "phase6-contract",
+    )?;
+    check_required_markers(
+        repository_root,
+        PHASE7_DOCUMENT_CONTRACTS,
+        "phase7-contract",
     )?;
 
     for relative_path in [
@@ -479,6 +556,15 @@ fn check_document_contracts(repository_root: &std::path::Path) -> Result<(), Doc
         {
             return Err(DocsError::new(
                 "phase6-overclaim",
+                format!("{relative_path} contains forbidden claim `{claim}`"),
+            ));
+        }
+        if let Some(claim) = FORBIDDEN_PHASE7_CLAIMS
+            .iter()
+            .find(|claim| lowercase.contains(**claim))
+        {
+            return Err(DocsError::new(
+                "phase7-overclaim",
                 format!("{relative_path} contains forbidden claim `{claim}`"),
             ));
         }

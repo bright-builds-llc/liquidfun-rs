@@ -18,37 +18,42 @@ Google's LiquidFun physics engine against a pinned C++ oracle.
 ## Status
 
 This repository is at an early vertical-slice stage. The `liquidfun` crate is
-version `0.0.0` and now provides the Phase 6 minimal rigid-world vertical slice:
-checked static, kinematic, and dynamic bodies; immutable-shape fixtures;
-automatic proxy/contact lifecycle; and one bounded static/dynamic contact
-solve. The read-only C++ oracle and private harness verify bounded Phase 4 math,
-the 78-case Phase 5 collision corpus, and both Phase 6 `phase6-v1` timelines:
-`non_colliding_body_fixture_lifecycle` and `single_contact_lifecycle`. The
-generated [compatibility inventory](COMPATIBILITY.md) records each row only at
-its demonstrated dimensions.
+version `0.0.0` and now provides a Phase 7 checked rigid-world slice: granular
+body controls and wake policy, checked step and world configuration,
+deterministic multi-contact island solving, warm starting and sleeping, bounded
+private CCD/sub-step continuation, streaming world queries and ray casts, and
+atomic origin shifting. The generated
+[compatibility inventory](COMPATIBILITY.md) records each row only at its
+demonstrated dimensions.
 
-The slice now rejects aggregate fixture-mass overflow before mutation through
-`BodyTypeChangeError` and `FixtureDestructionError`, rejects overlapping pairs
-without a dynamic body, and shares one fixed 128-action step contract across
-Rust, schema, and C++. The zero-origin custom-mass branch remains no-inertia;
-positive-origin custom mass requires finite, strictly positive centered inertia
-before execution. The real rigid fixture lifecycle requires canonical D1 authority before every write
+The earlier Phase 6 minimal rigid-world vertical slice remains in the locked
+corpus. Its `phase6-v1` timelines,
+`non_colliding_body_fixture_lifecycle` and `single_contact_lifecycle`, cover
+checked body/fixture ownership, automatic proxy/contact lifecycle, and the
+initial bounded contact solve. That boundary retains its fixed 128-action step,
+`BodyTypeChangeError` and `FixtureDestructionError`, and the rule that
+positive-origin custom mass requires finite, strictly positive centered inertia.
+The real rigid fixture lifecycle requires canonical D1 authority before every write
 and independently recomputes the current checkout's adapter-source and effective compile-command digests
-before stage, review, or promotion mutation. Local debug, release, replay, and two-run
-determinism remain D2/D0 evidence only. The scheduled Clang
-ASan/UBSan lane executes both the C++ protocol tests and the rigid-world path;
-that CI wiring is not a local D1 or cross-platform claim.
+before stage, review, or promotion mutation.
 
-This is not broad rigid-body support. Phase 7 still owns forces, velocity
-controls, damping, sleeping, the general island solver, multi-contact stacks,
-CCD/TOI world orchestration, queries, ray casts, and broad world configuration;
-joint solving follows in Phase 8. Canonical-platform evidence, performance,
-particles, and production maturity also remain pending.
+The Phase 7 `phase7-v1` nine-family request retains those two families and adds
+force/configuration, multi-contact/warm-start, sleep/wake, CCD/sub-step,
+continuous-budget, query/ray, and origin-shift witnesses. Local debug, release,
+replay, sanitizer, and two-run determinism remain D2/D0 evidence only: the
+executed signoff is local D2 and same-build D0, without canonical D1 promotion,
+D3 review, or platform coverage. The scheduled Clang ASan/UBSan lane executes
+both the C++ protocol tests and the rigid-world path; that wiring does not widen
+the local claim.
 
-Phase 5's world contact lifecycle gap is covered only by the bounded Phase 6
-slice described above. The Phase 5 immutable shape/collision substrate and its
-fixed 78-case Phase 5 collision corpora remain the geometric evidence
-foundation.
+This is not broad rigid-body support. Joint solving follows in Phase 8, while
+particle behavior follows in later phases. Canonical evidence, additional
+platforms, performance, particles, and production maturity remain pending.
+
+Phase 5's world contact lifecycle gap is covered by the bounded later slices.
+The Phase 5 immutable shape/collision substrate and its fixed 78-case Phase 5
+collision corpora remain the geometric evidence foundation. The private oracle
+continues to verify bounded Phase 4 math and those 78-case Phase 5 collision corpora.
 The canonical-platform evidence, performance, and production maturity remain pending.
 
 Do not use this crate for simulation yet. Maturity will be reported only as
@@ -56,8 +61,8 @@ evidence is added to the compatibility ledger.
 
 ## Cargo-only quick start
 
-Ordinary Rust development does not require the upstream submodule, CMake, or a
-C++ compiler:
+Ordinary Rust development is Cargo-only and does not require the upstream
+submodule, CMake, or a C++ compiler:
 
 ```bash
 cargo build
@@ -65,7 +70,7 @@ cargo test
 ```
 
 The workspace selects only `crates/liquidfun` by default. Repository tooling
-and the C++ oracle remain private maintainer workflows.
+and the private, optional C++ oracle remain maintainer workflows.
 
 ## Repository workflows
 
@@ -77,9 +82,9 @@ See [TESTING.md](TESTING.md) for the exact verification tiers and
 The fixed rigid-world evidence commands are `just rigid-world-debug`,
 `just rigid-world-release`, `just rigid-world-replay`, and
 `just rigid-world-determinism`. They require the initialized pinned C++ oracle,
-exercise both declared Phase 6 timelines, and report local passes as D2 plus
-same-build byte identity as D0. They do not promote canonical D1 fixtures or a
-platform claim.
+exercise the nine-family Phase 7 request, and report local passes as D2 plus
+same-build byte identity as D0. They do not promote canonical D1 fixtures,
+establish D3 evidence, or make a platform claim.
 
 Maintainers can stage the same typed rigid transaction with
 `just rigid-fixture-stage <artifact-id>`, then use the explicit review and

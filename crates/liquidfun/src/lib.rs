@@ -1,9 +1,9 @@
 //! An independent Rust implementation of the `LiquidFun` physics engine.
 //!
 //! This crate is currently a safe, Cargo-only early vertical slice. Its
-//! collision namespace contains the Phase 5 substrate, and [`World`] now owns
-//! the Phase 6 checked body, fixture, broad-phase proxy, automatic contact, and
-//! bounded one-contact solver lifecycle.
+//! collision namespace contains the Phase 5 substrate, while [`World`] owns the
+//! checked Phase 7 body, fixture, contact, multi-contact island, continuous
+//! collision, query, ray-cast, and origin-shift behavior described below.
 //!
 //! # Phase 5 collision foundation
 //!
@@ -22,10 +22,6 @@
 //! harness. It transports only bounded owned typed diagnostics. It is not a
 //! stable consumer API and provides no raw storage identity, mutable cache,
 //! packed contact key, unchecked constructor, or public iteration surface.
-//!
-//! Phase 6 now adds checked body and fixture ownership, automatic contact
-//! lifecycle, and one bounded static/dynamic contact solve. General islands,
-//! joints, sleeping, forces, and continuous world stepping remain later work.
 //!
 //! # Phase 6 rigid-world contract
 //!
@@ -46,18 +42,55 @@
 //! existing contacts retain their creation-time mixed values. Sensor and
 //! filter changes are observed by the next contact update.
 //!
-//! [`World::step`] discovers pairs, updates contacts, invokes restricted hooks,
-//! solves at most one supported static/dynamic occurrence, unlocks, then
-//! applies bounded deferred commands. Sensors use overlap-only touching and
-//! have no manifold, pre-solve callback, or constraint. Persistent manifold
-//! points carry normal and tangent impulses by semantic feature identity.
-//! Contacts expose only borrow-scoped [`ContactView`] values and owned report
-//! snapshots; no reusable contact handle or proxy coordinate is public.
+//! Sensors use overlap-only touching and have no manifold, pre-solve callback,
+//! or constraint. Persistent manifold points carry normal and tangent impulses
+//! by semantic feature identity. Contacts expose only borrow-scoped
+//! [`ContactView`] values and owned report snapshots; no reusable contact
+//! handle or proxy coordinate is public.
 //!
-//! Phase 7 retains forces, public velocity controls, damping, sleeping, the
-//! general island solver, multi-contact stacks, CCD/TOI world orchestration,
-//! queries, ray casts, and broad world configuration. Joint solving follows in
-//! Phase 8.
+//! # Phase 7 checked rigid-world contract
+//!
+//! Granular velocity, force, impulse, damping, gravity-scale, awake, sleep,
+//! bullet, and fixed-rotation controls validate a complete candidate before
+//! replacing live body state. Non-finite input or derived arithmetic returns a
+//! typed no-effect error. Forces and impulses apply only to dynamic bodies;
+//! [`WakePolicy::Wake`] wakes before application, while
+//! [`WakePolicy::PreserveSleep`] accepts an asleep body without applying the
+//! control. Setting a body asleep atomically clears velocity, accumulated force
+//! and torque, and sleep time.
+//!
+//! [`StepConfiguration`] validates timestep and solver iteration counts before
+//! a step begins. [`World::step`] traverses bodies, contacts, manifold points,
+//! and islands in deterministic source order, stages a complete island solve,
+//! and commits body, impulse, and proxy state together. Warm-start impulses are
+//! keyed by semantic contact features; disabling warm starting clears their
+//! contribution for that call. Eligible quiet dynamic islands sleep together,
+//! and relevant contacts, controls, or configuration changes wake them under
+//! the documented policy. A successful step clears accumulated forces when
+//! automatic clearing is enabled; applications that disable it use
+//! [`World::clear_forces`] explicitly.
+//!
+//! Continuous-collision candidate, cache, and time-of-impact state is private and resumable.
+//! Sub-stepping reports
+//! [`StepCompletion::ContinuousPending`] after one accepted continuous event;
+//! a matching later call resumes without repeating committed discrete work.
+//! Exhausting the checked continuous-work budget returns semantic
+//! [`ContinuousProgress`] through
+//! [`StepError::ContinuousWorkLimitExceeded`], again preserving a coherent
+//! resume point. Transient continuous solves are reported but do not overwrite
+//! the persistent discrete warm-start lanes.
+//!
+//! [`World::query_aabb`] and [`World::ray_cast`] stream borrow-scoped semantic
+//! fixture-child occurrences. Visitors may terminate, and ray visitors may
+//! ignore, continue, or narrow the remaining interval. Their visitation order,
+//! including equal-distance ray hits, is intentionally unspecified; fixture
+//! multiplicity remains observable. [`World::shift_origin`] validates every
+//! translated body, sweep, fixture bound, and broad-phase bound before one
+//! atomic commit while preserving identities and local geometry.
+//!
+//! These APIs remain a bounded rigid-world slice. Joint solving, particle
+//! solving, project-wide compatibility, reviewed platform coverage, and release
+//! maturity remain later work.
 //!
 //! # Phase 3 object model
 //!

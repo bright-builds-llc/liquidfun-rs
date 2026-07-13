@@ -1,4 +1,4 @@
-//! Automatic Phase 6 contact stepping, restricted hooks, and owned reports.
+//! Automatic checked rigid-world stepping, restricted hooks, and owned reports.
 
 use std::error::Error;
 use std::fmt;
@@ -507,7 +507,7 @@ impl StepReport {
     }
 }
 
-/// A Phase 6 step-lifecycle failure.
+/// A checked step-lifecycle failure.
 #[derive(Debug, Clone, PartialEq)]
 #[non_exhaustive]
 pub enum StepError {
@@ -621,7 +621,15 @@ impl Drop for StepLockGuard {
 }
 
 impl World {
-    /// Runs one automatic bounded Phase 6 contact lifecycle and solve.
+    /// Runs one automatic bounded rigid-world lifecycle and solve.
+    ///
+    /// Checked configuration is supplied by [`StepConfiguration`]. Discrete
+    /// islands are staged and committed transactionally in deterministic source
+    /// order. Continuous work remains private and resumable: sub-stepping uses
+    /// [`StepCompletion::ContinuousPending`], while budget exhaustion returns
+    /// [`StepError::ContinuousWorkLimitExceeded`] with [`ContinuousProgress`].
+    /// Accumulated forces clear only after a successful call when automatic
+    /// clearing is enabled.
     ///
     /// # Errors
     ///

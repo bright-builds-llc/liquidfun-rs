@@ -3,16 +3,18 @@
 ## Current status
 
 Phase 2 establishes the permanent semantic-comparison seam. Phase 3 adds the
-native-Rust object model, Phase 4 the consumer math/settings surface, and Phase
-5 the safe shape/collision substrate. Phase 6 now adds a minimal rigid-world
-vertical slice: checked bodies and fixtures, world-owned proxies and contacts,
-and one bounded static/dynamic contact solve. Both required rigid lifecycle
-timelines execute through the native adapter and pinned process-isolated C++
-oracle in local debug and release builds. General rigid dynamics, broad solver
-topologies, canonical-platform parity, particles, and performance parity remain
-pending. The publishable `liquidfun` crate therefore remains version `0.0.0`, and the
-generated [compatibility inventory](COMPATIBILITY.md) remains the authority for
-maturity.
+native-Rust object model, Phase 4 the consumer math/settings surface, Phase 5
+the safe shape/collision substrate, and Phase 6 the first checked rigid-world
+vertical slice. Phase 7 extends that slice with granular body controls,
+deterministic multi-contact islands, warm starting and sleeping, bounded
+private continuous collision, world configuration, queries, rays, and origin
+translation. One nine-family request executes through the native adapter and
+pinned process-isolated C++ oracle. Local compare, replay, sanitizer, and
+same-build determinism evidence does not establish canonical or platform
+coverage. Joints, particles, broader compatibility, and performance remain
+pending. The publishable `liquidfun` crate therefore remains version `0.0.0`,
+and the generated [compatibility inventory](COMPATIBILITY.md) remains the
+authority for maturity.
 
 ## Dependency direction
 
@@ -260,6 +262,74 @@ mutation. Local D2 results remain read-only. The scheduled
 comparison before its read-only assertion, while uploading only bounded harness
 failure bundles.
 
+## Phase 7 rigid solver, world operations, and CCD boundaries
+
+Phase 7 keeps `World` as the only rigid-state owner. Velocity, force, torque,
+impulse, damping, gravity-scale, awake, sleep, bullet, and fixed-rotation
+controls first validate the full handle, inputs, and derived arithmetic. Static
+and kinematic bodies accept force or impulse calls without changing state.
+`WakePolicy::Wake` wakes an asleep dynamic body before applying the control;
+`WakePolicy::PreserveSleep` leaves it asleep and does not apply the control.
+Sleeping clears velocity, accumulated force, accumulated torque, and sleep time
+together. Configuration setters reject poisoned or locked worlds before
+mutation, and automatic force clearing occurs only after a successful step;
+applications that disable it call `World::clear_forces` explicitly.
+
+`StepConfiguration` validates a finite non-negative timestep and positive
+bounded velocity and position iteration counts before stepping. Island
+construction follows deterministic body and contact source order, then retains
+source order for manifold points and solve evidence. A complete island stages
+body motion, constraint impulses, and proxy synchronization before one commit,
+so a late arithmetic or proxy-bound error cannot publish a partially solved
+island. Warm-start impulses persist by semantic contact feature, scale by the
+checked timestep ratio, and contribute only when warm starting is enabled.
+Eligible quiet dynamic bodies sleep as an island; relevant controls, contacts,
+or disabling sleep wake them according to the public policy.
+
+Continuous collision is an internal world concern. CCD candidate, cache, and TOI counter state remains private;
+only semantic completion and owned solve observations cross a public or
+evidence boundary. Enabling sub-stepping commits one accepted continuous event
+and returns `StepCompletion::ContinuousPending`; a later step with the matching
+configuration resumes without repeating the committed discrete stage. Reaching
+the checked continuous-work budget returns
+`StepError::ContinuousWorkLimitExceeded` with `ContinuousProgress`, including
+the committed event count and transient continuous solves. Those solves do not
+populate persistent discrete warm-start lanes. Relevant body, fixture, or
+continuous-configuration changes invalidate pending private continuation state.
+
+`World::query_aabb` and `World::ray_cast` are immutable streaming traversals.
+Visitors receive only semantic fixture and child identities; ray hits also own
+point, normal, and fraction. Directives may stop either traversal, and ray
+directives may ignore, continue, or narrow the remaining interval. Production
+callback visitation order is intentionally unspecified, including equal-distance
+ray hits, and fixture-child multiplicity remains observable. No query or ray
+result is globally sorted in production.
+
+`World::shift_origin` prepares translated body transforms, sweeps, fixture
+bounds, and broad-phase bounds before one atomic commit. It preserves handles,
+local geometry, velocity, force, contact semantics, filtering, broad-phase
+topology, and buffered moves. Body/configuration/origin validation errors have
+no engine-state effect. Solver errors preserve the explicitly returned contact
+lifecycle evidence while the staged island state remains uncommitted; callback
+side effects outside the engine remain application-owned.
+
+The private out-of-process comparison boundary uses the closed `phase7-v1`
+profile and one bounded nine-family request. Action kinds, checkpoints,
+completion, identities, flags, counts, and production-ordered lifecycle and
+solve records compare exactly. Numeric body, impulse, query, ray, and origin
+fields use only their named absolute, absolute-relative, or ULP policies. For
+comparison alone, query occurrences are multiplicity-preserving multisets and
+equal-minimum ray identities are sets; nonminimum ray hits and all
+solver-visible production sequences retain their declared ordering.
+
+The C++ executable, protocol, schemas, tolerance registry, and differential
+harness remain private, optional maintainer tooling. None is a dependency or
+feature of `liquidfun`, so normal builds remain Cargo-only. Executed Phase 7
+compare, replay, and sanitizer results are local D2 evidence, and exactly two
+same-build byte-identical runs are D0 evidence. They do not establish canonical
+fixture authority, exploratory D3 review, platform-wide coverage, release
+maturity, or broader rigid compatibility.
+
 ## Private protocol and domain core
 
 `crates/liquidfun-test-protocol` is an unpublished functional core. It owns:
@@ -326,12 +396,15 @@ contract requires a type:
 - `world/body.rs`, `world/fixture.rs`, and `world/proxy.rs` own checked rigid
   definitions, private live state, immutable shape ownership, and world-owned
   broad-phase entries.
-- `world/contact.rs`, `world/contact_manager.rs`, and
-  `world/contact_solver.rs` own private automatic contacts, semantic manifold
-  persistence, creation-time material, and the bounded one-contact solve.
-- `world/step.rs` owns the automatic step lock, restricted hook calls, bounded
-  event and command collection, ordered reports, command application, and
-  poison state.
+- `world/contact.rs`, `world/contact_manager.rs`, `world/contact_solver.rs`, and
+  `world/island.rs` own private automatic contacts, semantic manifold
+  persistence, creation-time material, deterministic islands, transactional
+  multi-contact solving, warm starting, and sleep transitions.
+- `world/config.rs`, `world/step.rs`, and `world/continuous.rs` own checked
+  world/step configuration, the automatic step lock, restricted hook calls,
+  bounded event/command/continuous work, resumable private CCD state, ordered
+  reports, command application, and poison state. `world/query.rs` and
+  `world/origin.rs` own streaming observation and atomic coordinate translation.
 - `association.rs` owns the sealed typed application-side-table abstraction;
   association values never enter `World`.
 - `particle/storage.rs` and its children are a private representative SoA
@@ -389,13 +462,16 @@ and polling consumers receive owned snapshots through `ContactEvent`,
 retaining an internal contact view, and hook trait signatures provide no
 `&mut World`.
 
-The Phase 6 step follows one enforceable sequence:
+The Phase 7 step follows one enforceable sequence:
 
 1. Reject a poisoned or already locked world, then acquire the RAII step lock.
 1. Discover ordered broad-phase pairs and admit eligible private contacts.
 1. Refilter, update, or destroy contacts and capture touching transitions.
-1. Preflight the supported topology, invoke restricted hooks, and solve the
-   one reviewed occurrence with semantic impulse carry.
+1. Preflight checked configuration, invoke restricted hooks, build islands in
+   deterministic source order, and stage velocity, position, warm-start, sleep,
+   body-motion, and proxy results before committing each complete solve.
+1. Run bounded private continuous work; return semantic pending/progress state
+   when later calls must resume it.
 1. Restore the lock before applying any command.
 1. Apply bounded typed commands sequentially in request order, revalidating
    every operand at application time. A stale or foreign operand becomes that
@@ -404,7 +480,9 @@ The Phase 6 step follows one enforceable sequence:
    solve, destruction, and command-result order.
 
 `StepLimits` is caller-configurable only up to reviewed hard maxima of 4,096
-events and 1,024 commands. Limit failure discards the pending command queue;
+events, 1,024 commands, and 1,024 continuous events. Event/command limit
+failure discards the pending command queue; continuous-work exhaustion retains
+a coherent private resume point and owned semantic progress.
 hooks cannot return arbitrary closures or build an unreviewed command surface.
 If a hook panics, the step restores the lock through RAII, discards unapplied
 commands, marks the world poisoned, and resumes the original panic. Diagnostic

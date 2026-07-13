@@ -8,13 +8,16 @@ typed semantic comparison, first-divergence diagnosis, deterministic reduction,
 reviewed trace replay, and harness-failure classification. Phase 4 additionally
 proves the native math/settings contract and a bounded 39-case Rust/C++ probe;
 Phase 5 proves a fixed 78-case shape/collision corpus. Phase 6 adds checked body
-and fixture ownership, automatic proxy/contact lifecycle, and one bounded
-static/dynamic contact solve through two fixed declaration-first rigid-world
-timelines. Local oracle results are D2 supported-toolchain evidence, not
-canonical D1 or all-platform validation. General rigid and particle solver
-parity, performance parity, and the deferred fuzz, Miri, Rust-sanitizer,
-benchmark, and coverage lanes remain pending. [COMPATIBILITY.md](COMPATIBILITY.md)
-remains authoritative for feature and evidence maturity.
+and fixture ownership plus the first bounded contact lifecycle. Phase 7 adds
+granular controls, configured deterministic multi-contact islands, warm
+starting and sleeping, private resumable CCD, world queries and rays, and
+origin shifting through one closed nine-family rigid-world request. Local
+oracle results are D2 supported-toolchain evidence and exact two-run
+determinism is D0; neither establishes canonical D1, D3 review, or platform
+coverage. Joint and particle solving, performance, and the deferred fuzz, Miri,
+Rust-sanitizer, benchmark, and coverage lanes remain pending.
+[COMPATIBILITY.md](COMPATIBILITY.md) remains authoritative for feature and
+evidence maturity.
 
 ## Required Rust sequence
 
@@ -50,12 +53,12 @@ one row for every required layer; every cell is an enforceable contract.
 | integration/API | current | Exercise supported private CLI, fixture lifecycle, supervisor, and crate-boundary workflows. | `cargo test --workspace --tests` | Rust 1.97.0; fake-child suites need only repository files and standard process support. | Standard test output plus bounded fake-child request, identity, report, and stderr diagnostics. | No deterministic retry; preserve the failing case and investigate it. | local, pull request | A pass proves the supported API workflow under test, not unimplemented engine behavior. |
 | doctest | current | Compile and run public documentation examples independently from nextest-style suites. | `cargo test --workspace --doc` | Rust 1.97.0 with rustdoc; no oracle or external service. | rustdoc output names the failing crate and documentation example. | No deterministic retry; documentation and code must agree. | local, pull request | A documentation example proves only the documented API statement it exercises. |
 | upstream compatibility | current | Verify immutable oracle identity and build the repository-owned external adapter. | `cargo xtask upstream verify` then `cargo xtask upstream configure --preset oracle-debug` and `cargo xtask upstream build --preset oracle-debug`. | Exact initialized submodule, reviewed CMake and Ninja, and the lane's recorded C++ compiler. | Tool/upstream identity diagnostics and out-of-tree build evidence under `target/reference`. | No deterministic retry; identity or build failures remain oracle infrastructure results. | local, pull request, scheduled, manual release | A successful oracle build proves oracle infrastructure, not Rust physics compatibility. |
-| differential | current | Run the same validated empty-world request through Rust and C++ and compare semantic traces. | `cargo xtask differential compare --scenario empty-world --preset oracle-debug --session-profile one-shot` | Verified and built `oracle-debug` executable plus matching protocol, tolerance, and upstream identities. | Machine report on stdout; bounded request, identity, report, and stderr evidence belongs under `target/differential/failures` on failure. | No deterministic retry; a stable mismatch or harness failure must be diagnosed. | local, pull request, scheduled, manual release | Only validated traces can produce a physics mismatch; process, schema, sanitizer, provenance, and reset errors are harness failures. |
+| differential | current | Run the same validated rigid-world request through Rust and C++ and compare semantic traces. | `cargo xtask differential compare --scenario rigid-world --preset oracle-debug --session-profile one-shot` | Verified and built `oracle-debug` executable plus matching protocol, tolerance, and upstream identities. | Machine report on stdout; bounded request, identity, report, and stderr evidence belongs under `target/differential/failures` on failure. | No deterministic retry; a stable mismatch or harness failure must be diagnosed. | local, pull request, scheduled, manual release | Only validated traces can produce a physics mismatch; process, schema, sanitizer, provenance, and reset errors are harness failures. |
 | property | deferred | Generate bounded valid values that probe geometry, ordering, handles, mutation, and later physics invariants. | Planned `cargo test --workspace property -- --nocapture` with persisted seeds and typed shrinkers. | Rust 1.97.0 now; reviewed generator version and deterministic seed model before activation. | Property test output plus the seed and minimized input promoted to an ordinary regression when confirmed. | No deterministic retry; reproduce the same invariant failure from the persisted value. | scheduled, manual release | A property pass samples an invariant domain and cannot prove exhaustive compatibility. |
-| checked-in regression | current | Replay reviewed traces and later minimized scenarios that preserve an accepted first-divergence signature. | `cargo xtask differential replay --scenario empty-world --preset oracle-debug --session-profile one-shot` | Reviewed trace in the artifact manifest; later cases also require a minimized scenario under `scenarios/regressions`. | Replay report, manifest provenance, and any same failure signature evidence stored with the regression under `scenarios/regressions`. | No deterministic retry; byte-stable replay must be reproducible. | local, pull request, scheduled, manual release | A checked-in case protects one reviewed behavior or same failure signature from recurrence. |
+| checked-in regression | current | Replay reviewed traces and later minimized scenarios that preserve an accepted first-divergence signature. | `cargo xtask differential replay --scenario rigid-world --preset oracle-debug --session-profile one-shot` | Reviewed trace in the artifact manifest; later cases also require a minimized scenario under `scenarios/regressions`. | Replay report, manifest provenance, and any same failure signature evidence stored with the regression under `scenarios/regressions`. | No deterministic retry; byte-stable replay must be reproducible. | local, pull request, scheduled, manual release | A checked-in case protects one reviewed behavior or same failure signature from recurrence. |
 | fuzz | deferred | Exercise bounded protocol decoders, scenario validation, world mutation, and future unsafe boundaries. | Planned `cargo fuzz run protocol_decode -- -max_total_time=300`; reproduce with `cargo fuzz run protocol_decode fuzz/artifacts/protocol_decode/<case>`. | pinned nightly, `cargo-fuzz`, reviewed target bounds, and no secrets or external service. | libFuzzer logs, exact crashing input, seed when present, and minimized corpus under `fuzz/artifacts`. | No deterministic retry; retain and minimize the exact input before fixing. | scheduled, manual release | A crash, timeout, sanitizer finding, or malformed-boundary defect is a harness failure, not a physics mismatch. |
 | Miri/UB-aliasing | deferred | Detect undefined behavior and aliasing defects in the pure Rust subset and any future unsafe modules. | Planned `cargo miri test --workspace --all-features` on a date-pinned nightly after `cargo miri setup`. | pinned nightly with the Miri component; exclude the external C++ process from interpretation. | Miri diagnostics with the exact test, stack, flags, and pinned toolchain identity. | No deterministic retry; preserve the deterministic failing test and environment. | scheduled, manual release | Miri undefined behavior is a harness failure and safety defect, never a physics mismatch. |
-| native sanitizer | current | Run the C++ protocol and oracle fail-fast, including the Phase 6 rigid adapter, and later run supported Rust sanitizer subsets without crossing findings into comparison. | `UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 ASAN_OPTIONS=abort_on_error=1:halt_on_error=1 cargo xtask differential compare --scenario rigid-world --preset oracle-asan-ubsan --session-profile one-shot` after fail-fast CTest. | Exact Clang 22.1.8 lane, configured and built `oracle-asan-ubsan`, ASan/UBSan runtimes; Rust sanitizer work additionally needs pinned nightly. | Bounded request, identity, report, and stderr evidence under `target/differential/failures`; CI uploads only this directory on failure. | No deterministic retry; sanitizer markers fail even if a child exits zero. | scheduled, manual release | Any ASan, UBSan, Rust sanitizer, signal, timeout, or reset defect is a harness failure, not a physics mismatch. |
+| native sanitizer | current | Run the C++ protocol and oracle fail-fast, including the Phase 7 rigid adapter, and later run supported Rust sanitizer subsets without crossing findings into comparison. | `UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 ASAN_OPTIONS=abort_on_error=1:halt_on_error=1 cargo xtask differential compare --scenario rigid-world --preset oracle-asan-ubsan --session-profile one-shot` after fail-fast CTest. | Exact Clang 22.1.8 lane, configured and built `oracle-asan-ubsan`, ASan/UBSan runtimes; Rust sanitizer work additionally needs pinned nightly. | Bounded request, identity, report, and stderr evidence under `target/differential/failures`; CI uploads only this directory on failure. | No deterministic retry; sanitizer markers fail even if a child exits zero. | scheduled, manual release | Any ASan, UBSan, Rust sanitizer, signal, timeout, or reset defect is a harness failure, not a physics mismatch. |
 | benchmark | deferred | Measure equivalent Rust and C++ workloads only after representative native behavior exists. | Planned `cargo bench --workspace` plus a paired oracle runner with recorded release identities. | controlled hardware, release builds, equivalent scenarios, warm-up policy, and recorded compiler flags. | Criterion reports under `target/criterion` plus paired environment and oracle identity records. | No deterministic retry; reruns form an explicitly analyzed sample rather than hiding regressions. | scheduled, manual release | Benchmark data is performance evidence, not parity or correctness evidence. |
 | coverage | deferred | Report exercised Rust lines and branches separately from C++ oracle coverage. | Planned `cargo llvm-cov --workspace --all-features --lcov --output-path target/llvm-cov/rust.lcov`. | `llvm-tools-preview`, reviewed `cargo-llvm-cov` version, and separately compatible Clang tooling for C++. | Rust LCOV under `target/llvm-cov`; C++ coverage remains a separate report until LLVM compatibility is proven. | No deterministic retry; investigate deterministic coverage changes from the same suite. | scheduled, manual release | coverage is not parity; percentages do not replace semantic differential evidence. |
 
@@ -410,6 +413,66 @@ These closures preserve the existing evidence labels: local debug/release and re
 same-build byte-identical runs are D0, and
 only the pinned canonical lane can produce D1. Formal phase sign-off is derived
 from code and executed evidence rather than this table.
+
+## Phase 7 rigid-world comparison policy
+
+The closed `phase7-v1` profile governs one bounded nine-family request. It
+retains both Phase 6 lifecycle families, then adds force/configuration,
+multi-contact/warm-start, sleep/wake, CCD/sub-step, continuous-budget,
+query/ray, and origin-shift witnesses in registry order. Both native and oracle
+results must independently satisfy the declared actions, checkpoints, counts,
+identities, completion states, and reset proof before a cross-engine field is
+read. Unknown actions, observations, policy paths, or witness families fail
+closed.
+
+Action and checkpoint kinds, body/contact/fixture identities, counts, flags,
+wake and sleep states, completion, directives, lifecycle order, manifold-point
+order, and solve order compare exactly. Numeric body position, angle, velocity,
+damping, gravity scale, force, torque, impulse, separation, query, ray, and
+shift fields use only the path-specific exact, absolute, absolute-relative, or
+ULP rule recorded in `protocol/tolerances/phase7-v1.toml`. There is no fallback
+policy and no widening based on iteration count or elapsed steps.
+
+World query and ray callback order is intentionally outside the consumer
+contract. The evidence layer compares query occurrences as a multiplicity-preserving multiset and equal-minimum ray identities as a set.
+That canonicalization occurs only during comparison. Nonminimum ray hits and
+all solver-visible body, contact, manifold, lifecycle, and source order remain
+ordered; production traversal is never sorted to satisfy evidence.
+
+Continuous evidence exposes only `Complete`, `ContinuousPending`, bounded
+work exhaustion, committed event counts, and transient semantic solve records.
+Candidate pairs, TOI caches, counters, storage coordinates, and pointers remain
+private. A work-budget error must carry a coherent progress checkpoint that a
+matching later call resumes without repeating discrete integration. The first
+divergence report preserves action, stage, entity, exact values and bits,
+policy, profile identity, and surrounding completion state. Minimization must
+retain the divergent operation and its complete setup prefix, including
+directives, work budget, and transported float bits.
+
+The fixed completion commands are:
+
+```bash
+cargo xtask differential compare --scenario rigid-world --preset oracle-debug --session-profile one-shot
+cargo xtask differential compare --scenario rigid-world --preset oracle-release --session-profile one-shot
+cargo xtask differential replay --scenario rigid-world --preset oracle-debug --session-profile one-shot
+cargo xtask differential verify-determinism --scenario rigid-world --preset oracle-debug --runs 2
+cargo xtask differential compare --scenario rigid-world --preset oracle-asan-ubsan --session-profile one-shot
+```
+
+The locked request matched all nine families in local debug, replay, and
+fail-fast sanitizer execution. The local debug, replay, and sanitizer passes are D2;
+exactly two byte-identical same-build runs are D0. The local CMake and Apple
+Clang identities differ from the canonical Linux pins, so they cannot publish
+canonical fixtures or populate platform evidence. D3 review remains pending,
+as do additional platforms, release maturity, broader rigid scenarios, joints,
+and particles.
+
+The C++ adapter remains a private, optional out-of-process maintainer tool.
+Ordinary `liquidfun` builds and tests are Cargo-only. Passing evidence stays
+read-only under `target/reference` and `target/differential`; every canonical
+stage, review, or promotion boundary independently recomputes D1 authority and
+current checkout, adapter, compile-command, policy, request, and evidence-tier
+identity before writing.
 
 ## Differential commands
 
