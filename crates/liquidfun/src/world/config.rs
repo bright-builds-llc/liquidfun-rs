@@ -357,7 +357,7 @@ impl World {
         }
     }
 
-    fn ensure_configuration_mutable(&self) -> Result<(), WorldConfigurationError> {
+    pub(super) fn ensure_configuration_mutable(&self) -> Result<(), WorldConfigurationError> {
         if self.is_poisoned() {
             return Err(WorldConfigurationError::Poisoned);
         }

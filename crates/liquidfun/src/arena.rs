@@ -217,6 +217,13 @@ impl<T, H: HandleIdentity> Arena<T, H> {
                 Slot::Vacant { .. } | Slot::Retired => None,
             })
     }
+
+    pub(crate) fn values_mut(&mut self) -> impl Iterator<Item = &mut T> + '_ {
+        self.slots.iter_mut().filter_map(|slot| match slot {
+            Slot::Occupied { value, .. } => Some(value),
+            Slot::Vacant { .. } | Slot::Retired => None,
+        })
+    }
 }
 
 fn identity_for_slot(

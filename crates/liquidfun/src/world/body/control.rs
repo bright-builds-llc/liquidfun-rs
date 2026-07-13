@@ -126,6 +126,11 @@ impl From<AggregateMassError> for BodyControlError {
 }
 
 impl BodyState {
+    pub(crate) fn clear_accumulated_forces(&mut self) {
+        self.force = Vec2::ZERO;
+        self.torque = 0.0;
+    }
+
     pub(crate) fn candidate_set_linear_velocity(
         mut self,
         velocity: Vec2,

@@ -581,9 +581,9 @@ impl World {
         contact_transitions.extend(command_transitions);
         lifecycle.extend(command_lifecycle);
 
-        self.commit_step_timing(timing);
+        let completion = self.finish_successful_step(timing, StepCompletion::Complete);
         Ok(StepReport {
-            completion: StepCompletion::Complete,
+            completion,
             time_step_ratio: timing.time_step_ratio(),
             phases,
             events,
@@ -597,6 +597,18 @@ impl World {
 
     fn find_pairs(&mut self) {
         self.find_new_contacts();
+    }
+
+    fn finish_successful_step(
+        &mut self,
+        timing: super::config::StepTiming,
+        completion: StepCompletion,
+    ) -> StepCompletion {
+        self.commit_step_timing(timing);
+        if self.is_automatic_force_clearing_enabled() {
+            self.clear_force_accumulators();
+        }
+        completion
     }
 
     fn update_contacts_for_step(&mut self) {
@@ -752,4 +764,38 @@ fn check_capacity(current: usize, limit: usize, resource: &'static str) -> Resul
         return Err(StepError::LimitExceeded { resource, limit });
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::math::Vec2;
+    use crate::{BodyDef, BodyType, StepConfiguration, WakePolicy, World};
+
+    use super::StepCompletion;
+
+    #[test]
+    fn successful_continuous_pending_path_clears_forces() {
+        // Arrange
+        let mut world = World::new().expect("world key should remain available");
+        let definition = BodyDef::new(BodyType::Dynamic, Vec2::ZERO, 0.0, true)
+            .expect("test body definition should be valid");
+        let body = world
+            .create_body(&definition)
+            .expect("test body should fit");
+        world
+            .apply_body_force_to_center(body, Vec2::new(f32::MAX, 0.0), WakePolicy::Wake)
+            .expect("first finite force should be accepted");
+        let configuration = StepConfiguration::new(1.0 / 60.0, 8, 3)
+            .expect("test step configuration should be valid");
+        let timing = world.prepare_step_timing(configuration);
+
+        // Act
+        let completion = world.finish_successful_step(timing, StepCompletion::ContinuousPending);
+
+        // Assert
+        assert_eq!(completion, StepCompletion::ContinuousPending);
+        world
+            .apply_body_force_to_center(body, Vec2::new(f32::MAX, 0.0), WakePolicy::Wake)
+            .expect("successful pending path should clear the force accumulator");
+    }
 }

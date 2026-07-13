@@ -2,8 +2,8 @@
 
 use liquidfun::math::Vec2;
 use liquidfun::{
-    StepCompletion, StepConfiguration, StepConfigurationError, StepHook, StepLimits, World,
-    WorldConfigurationError,
+    BodyControlError, BodyDef, BodyType, StepCompletion, StepConfiguration, StepConfigurationError,
+    StepHook, StepLimits, WakePolicy, World, WorldConfigurationError,
 };
 
 struct NoopHook;
@@ -12,6 +12,14 @@ impl StepHook for NoopHook {}
 
 fn configuration(time_step: f32) -> StepConfiguration {
     StepConfiguration::new(time_step, 8, 3).expect("test step configuration should be valid")
+}
+
+fn dynamic_body(world: &mut World) -> liquidfun::BodyId {
+    let definition = BodyDef::new(BodyType::Dynamic, Vec2::ZERO, 0.0, true)
+        .expect("test body definition should be valid");
+    world
+        .create_body(&definition)
+        .expect("test body should fit")
 }
 
 #[test]
@@ -182,4 +190,122 @@ fn configuration_zero_step_retains_prior_inverse_timestep_for_exact_ratio() {
     assert_eq!(first.completion(), StepCompletion::Complete);
     assert_eq!(zero.completion(), StepCompletion::Complete);
     assert_eq!(next.completion(), StepCompletion::Complete);
+}
+
+#[test]
+fn force_clearing_manual_clear_resets_force_and_torque_accumulators() {
+    // Arrange
+    let mut world = World::new().expect("world key should remain available");
+    let body = dynamic_body(&mut world);
+    world
+        .apply_body_force_to_center(body, Vec2::new(f32::MAX, 0.0), WakePolicy::Wake)
+        .expect("first finite force should be accepted");
+    world
+        .apply_body_torque(body, f32::MAX, WakePolicy::Wake)
+        .expect("first finite torque should be accepted");
+
+    // Act
+    world
+        .clear_forces()
+        .expect("coherent unlocked world should clear forces");
+
+    // Assert
+    world
+        .apply_body_force_to_center(body, Vec2::new(f32::MAX, 0.0), WakePolicy::Wake)
+        .expect("cleared force accumulator should accept the same force");
+    world
+        .apply_body_torque(body, f32::MAX, WakePolicy::Wake)
+        .expect("cleared torque accumulator should accept the same torque");
+}
+
+#[test]
+fn force_clearing_automatic_default_clears_after_positive_step() {
+    // Arrange
+    let mut world = World::new().expect("world key should remain available");
+    let body = dynamic_body(&mut world);
+    let mut hook = NoopHook;
+    world
+        .apply_body_force_to_center(body, Vec2::new(f32::MAX, 0.0), WakePolicy::Wake)
+        .expect("first finite force should be accepted");
+
+    // Act
+    let report = world
+        .step(configuration(1.0 / 60.0), &mut hook, StepLimits::default())
+        .expect("empty positive step should succeed");
+
+    // Assert
+    assert_eq!(report.completion(), StepCompletion::Complete);
+    world
+        .apply_body_force_to_center(body, Vec2::new(f32::MAX, 0.0), WakePolicy::Wake)
+        .expect("successful step should clear the force accumulator");
+}
+
+#[test]
+fn force_clearing_disabled_persists_until_explicit_clear() {
+    // Arrange
+    let mut world = World::new().expect("world key should remain available");
+    let body = dynamic_body(&mut world);
+    let mut hook = NoopHook;
+    world
+        .set_automatic_force_clearing_enabled(false)
+        .expect("world configuration should be mutable");
+    world
+        .apply_body_force_to_center(body, Vec2::new(f32::MAX, 0.0), WakePolicy::Wake)
+        .expect("first finite force should be accepted");
+
+    // Act
+    world
+        .step(configuration(1.0 / 60.0), &mut hook, StepLimits::default())
+        .expect("empty positive step should succeed");
+    let persisted =
+        world.apply_body_force_to_center(body, Vec2::new(f32::MAX, 0.0), WakePolicy::Wake);
+    world
+        .clear_forces()
+        .expect("coherent unlocked world should clear forces");
+
+    // Assert
+    assert_eq!(persisted, Err(BodyControlError::NonFiniteDerivedForceX));
+    world
+        .apply_body_force_to_center(body, Vec2::new(f32::MAX, 0.0), WakePolicy::Wake)
+        .expect("manual clearing should reset a persisted accumulator");
+}
+
+#[test]
+fn force_clearing_zero_duration_success_still_clears() {
+    // Arrange
+    let mut world = World::new().expect("world key should remain available");
+    let body = dynamic_body(&mut world);
+    let mut hook = NoopHook;
+    world
+        .apply_body_force_to_center(body, Vec2::new(f32::MAX, 0.0), WakePolicy::Wake)
+        .expect("first finite force should be accepted");
+
+    // Act
+    world
+        .step(configuration(0.0), &mut hook, StepLimits::default())
+        .expect("zero-duration step should succeed");
+
+    // Assert
+    world
+        .apply_body_force_to_center(body, Vec2::new(f32::MAX, 0.0), WakePolicy::Wake)
+        .expect("successful zero-duration step should clear forces");
+}
+
+#[test]
+fn force_clearing_invalid_configuration_has_no_effect() {
+    // Arrange
+    let mut world = World::new().expect("world key should remain available");
+    let body = dynamic_body(&mut world);
+    world
+        .apply_body_force_to_center(body, Vec2::new(f32::MAX, 0.0), WakePolicy::Wake)
+        .expect("first finite force should be accepted");
+
+    // Act
+    let invalid = StepConfiguration::new(f32::NAN, 8, 3);
+    let accumulated =
+        world.apply_body_force_to_center(body, Vec2::new(f32::MAX, 0.0), WakePolicy::Wake);
+
+    // Assert
+    assert_eq!(invalid, Err(StepConfigurationError::NonFiniteTimeStep));
+    assert_eq!(accumulated, Err(BodyControlError::NonFiniteDerivedForceX));
 }

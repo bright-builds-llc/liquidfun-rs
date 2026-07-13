@@ -13,7 +13,7 @@ use super::body::{
     AggregateMassError, BodyControlError, BodyDef, BodyMassData, BodyMassResetError, BodySnapshot,
     BodyState, BodyTransformError, BodyType, BodyTypeChangeError, WakePolicy,
 };
-use super::config::WorldConfiguration;
+use super::config::{WorldConfiguration, WorldConfigurationError};
 #[cfg(feature = "differential-internals")]
 use super::contact::ContactTransition;
 use super::contact_manager::ContactManager;
@@ -385,6 +385,20 @@ impl World {
     pub fn body_snapshot(&self, body: BodyId) -> Result<BodySnapshot, HandleError> {
         self.ensure_not_poisoned_for_handle()?;
         self.bodies.get(body).map(|record| record.state.snapshot())
+    }
+
+    /// Clears accumulated force and torque from every live body.
+    ///
+    /// Use this after an application-managed sequence of sub-steps when
+    /// automatic force clearing is disabled.
+    ///
+    /// # Errors
+    ///
+    /// Returns a typed no-effect error for a poisoned or locked world.
+    pub fn clear_forces(&mut self) -> Result<(), WorldConfigurationError> {
+        self.ensure_configuration_mutable()?;
+        self.clear_force_accumulators();
+        Ok(())
     }
 
     /// Sets a live body's linear velocity.
@@ -1307,6 +1321,12 @@ impl World {
         let candidate = prepare(state)?;
         self.body_mut_after_validation(body).state = candidate;
         Ok(())
+    }
+
+    pub(super) fn clear_force_accumulators(&mut self) {
+        for body in self.bodies.values_mut() {
+            body.state.clear_accumulated_forces();
+        }
     }
 
     fn ensure_not_poisoned_for_insert(&self) -> Result<(), ArenaInsertError> {
