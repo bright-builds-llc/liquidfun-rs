@@ -31,10 +31,65 @@ pub enum RigidWorldErrorKind {
     MissingWitness,
     UnexpectedWitness,
     InvalidContactIdentity,
+    InvalidBodyControl,
+    InvalidStepConfiguration,
+    InvalidQueryDirective,
+    InvalidRayDirective,
     AggregateLimitExceeded,
     ResultTimelineMismatch,
     ResultCheckpointMismatch,
     ResultDeclarationOrderMismatch,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum RigidWakePolicy {
+    Wake,
+    PreserveSleep,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RigidAabbBits {
+    pub lower: Vec2Bits,
+    pub upper: Vec2Bits,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RigidFixtureChildSelector {
+    pub fixture_id: ScenarioId,
+    pub child_index: u32,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum RigidQueryDirective {
+    Continue,
+    Terminate,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RigidQueryDirectiveRule {
+    pub target: RigidFixtureChildSelector,
+    pub directive: RigidQueryDirective,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+pub enum RigidRayDirective {
+    Ignore,
+    Terminate,
+    Continue,
+    Clip { fraction_bits: FloatBits },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RigidRayDirectiveRule {
+    pub target: RigidFixtureChildSelector,
+    pub directive: RigidRayDirective,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -220,6 +275,61 @@ pub enum RigidWorldAction {
         body_id: ScenarioId,
         active: bool,
     },
+    SetLinearVelocity {
+        body_id: ScenarioId,
+        velocity: Vec2Bits,
+    },
+    SetAngularVelocity {
+        body_id: ScenarioId,
+        angular_velocity_bits: FloatBits,
+    },
+    ApplyForce {
+        body_id: ScenarioId,
+        force: Vec2Bits,
+        point: Vec2Bits,
+        wake_policy: RigidWakePolicy,
+    },
+    ApplyTorque {
+        body_id: ScenarioId,
+        torque_bits: FloatBits,
+        wake_policy: RigidWakePolicy,
+    },
+    ApplyLinearImpulse {
+        body_id: ScenarioId,
+        impulse: Vec2Bits,
+        point: Vec2Bits,
+        wake_policy: RigidWakePolicy,
+    },
+    ApplyAngularImpulse {
+        body_id: ScenarioId,
+        impulse_bits: FloatBits,
+        wake_policy: RigidWakePolicy,
+    },
+    SetBodyDamping {
+        body_id: ScenarioId,
+        linear_damping_bits: FloatBits,
+        angular_damping_bits: FloatBits,
+    },
+    SetGravityScale {
+        body_id: ScenarioId,
+        gravity_scale_bits: FloatBits,
+    },
+    SetFixedRotation {
+        body_id: ScenarioId,
+        fixed_rotation: bool,
+    },
+    SetSleepingAllowed {
+        body_id: ScenarioId,
+        sleeping_allowed: bool,
+    },
+    SetAwake {
+        body_id: ScenarioId,
+        awake: bool,
+    },
+    SetBullet {
+        body_id: ScenarioId,
+        bullet: bool,
+    },
     SetFixtureSensor {
         fixture_id: ScenarioId,
         sensor: bool,
@@ -251,6 +361,40 @@ pub enum RigidWorldAction {
         velocity_iterations: u32,
         position_iterations: u32,
     },
+    SetWorldGravity {
+        gravity: Vec2Bits,
+    },
+    SetAutomaticForceClearing {
+        enabled: bool,
+    },
+    SetWarmStarting {
+        enabled: bool,
+    },
+    SetContinuousPhysics {
+        enabled: bool,
+    },
+    SetSubStepping {
+        enabled: bool,
+    },
+    ClearForces,
+    ConfiguredStep {
+        timestep_bits: FloatBits,
+        velocity_iterations: u32,
+        position_iterations: u32,
+        continuous_work_budget: u32,
+    },
+    QueryAabb {
+        aabb: RigidAabbBits,
+        directive_rules: Box<[RigidQueryDirectiveRule]>,
+    },
+    RayCast {
+        start: Vec2Bits,
+        end: Vec2Bits,
+        directive_rules: Box<[RigidRayDirectiveRule]>,
+    },
+    ShiftOrigin {
+        shift: Vec2Bits,
+    },
     DestroyFixture {
         fixture_id: ScenarioId,
     },
@@ -268,6 +412,18 @@ pub(super) enum RigidWorldActionKind {
     SetBodyTransform,
     SetBodyType,
     SetBodyActive,
+    SetLinearVelocity,
+    SetAngularVelocity,
+    ApplyForce,
+    ApplyTorque,
+    ApplyLinearImpulse,
+    ApplyAngularImpulse,
+    SetBodyDamping,
+    SetGravityScale,
+    SetFixedRotation,
+    SetSleepingAllowed,
+    SetAwake,
+    SetBullet,
     SetFixtureSensor,
     SetFixtureMaterial,
     SetFixtureFilter,
@@ -275,6 +431,16 @@ pub(super) enum RigidWorldActionKind {
     ResetMassData,
     SetCustomMassData,
     Step,
+    SetWorldGravity,
+    SetAutomaticForceClearing,
+    SetWarmStarting,
+    SetContinuousPhysics,
+    SetSubStepping,
+    ClearForces,
+    ConfiguredStep,
+    QueryAabb,
+    RayCast,
+    ShiftOrigin,
     DestroyFixture,
     DestroyBody,
 }
@@ -289,6 +455,18 @@ impl RigidWorldAction {
             Self::SetBodyTransform { .. } => RigidWorldActionKind::SetBodyTransform,
             Self::SetBodyType { .. } => RigidWorldActionKind::SetBodyType,
             Self::SetBodyActive { .. } => RigidWorldActionKind::SetBodyActive,
+            Self::SetLinearVelocity { .. } => RigidWorldActionKind::SetLinearVelocity,
+            Self::SetAngularVelocity { .. } => RigidWorldActionKind::SetAngularVelocity,
+            Self::ApplyForce { .. } => RigidWorldActionKind::ApplyForce,
+            Self::ApplyTorque { .. } => RigidWorldActionKind::ApplyTorque,
+            Self::ApplyLinearImpulse { .. } => RigidWorldActionKind::ApplyLinearImpulse,
+            Self::ApplyAngularImpulse { .. } => RigidWorldActionKind::ApplyAngularImpulse,
+            Self::SetBodyDamping { .. } => RigidWorldActionKind::SetBodyDamping,
+            Self::SetGravityScale { .. } => RigidWorldActionKind::SetGravityScale,
+            Self::SetFixedRotation { .. } => RigidWorldActionKind::SetFixedRotation,
+            Self::SetSleepingAllowed { .. } => RigidWorldActionKind::SetSleepingAllowed,
+            Self::SetAwake { .. } => RigidWorldActionKind::SetAwake,
+            Self::SetBullet { .. } => RigidWorldActionKind::SetBullet,
             Self::SetFixtureSensor { .. } => RigidWorldActionKind::SetFixtureSensor,
             Self::SetFixtureMaterial { .. } => RigidWorldActionKind::SetFixtureMaterial,
             Self::SetFixtureFilter { .. } => RigidWorldActionKind::SetFixtureFilter,
@@ -296,6 +474,18 @@ impl RigidWorldAction {
             Self::ResetMassData { .. } => RigidWorldActionKind::ResetMassData,
             Self::SetCustomMassData { .. } => RigidWorldActionKind::SetCustomMassData,
             Self::Step { .. } => RigidWorldActionKind::Step,
+            Self::SetWorldGravity { .. } => RigidWorldActionKind::SetWorldGravity,
+            Self::SetAutomaticForceClearing { .. } => {
+                RigidWorldActionKind::SetAutomaticForceClearing
+            }
+            Self::SetWarmStarting { .. } => RigidWorldActionKind::SetWarmStarting,
+            Self::SetContinuousPhysics { .. } => RigidWorldActionKind::SetContinuousPhysics,
+            Self::SetSubStepping { .. } => RigidWorldActionKind::SetSubStepping,
+            Self::ClearForces => RigidWorldActionKind::ClearForces,
+            Self::ConfiguredStep { .. } => RigidWorldActionKind::ConfiguredStep,
+            Self::QueryAabb { .. } => RigidWorldActionKind::QueryAabb,
+            Self::RayCast { .. } => RigidWorldActionKind::RayCast,
+            Self::ShiftOrigin { .. } => RigidWorldActionKind::ShiftOrigin,
             Self::DestroyFixture { .. } => RigidWorldActionKind::DestroyFixture,
             Self::DestroyBody { .. } => RigidWorldActionKind::DestroyBody,
         }

@@ -79,6 +79,10 @@ fn schema_presentations_keep_records_closed_and_versions_explicit() {
     assert!(TRACKED_SCENARIO_SCHEMA.contains("\"collision_probe_result\""));
     assert!(TRACKED_SCENARIO_SCHEMA.contains("\"single_contact_lifecycle\""));
     assert!(TRACKED_SCENARIO_SCHEMA.contains("\"set_custom_mass_data\""));
+    assert!(TRACKED_SCENARIO_SCHEMA.contains("\"configured_step\""));
+    assert!(TRACKED_SCENARIO_SCHEMA.contains("\"query_aabb\""));
+    assert!(TRACKED_SCENARIO_SCHEMA.contains("\"ray_cast\""));
+    assert!(TRACKED_SCENARIO_SCHEMA.contains("\"shift_origin\""));
     assert!(TRACKED_SCENARIO_SCHEMA.contains("\"const\": 1015580809"));
     assert!(TRACKED_SCENARIO_SCHEMA.contains("\"const\": 8"));
     assert!(TRACKED_SCENARIO_SCHEMA.contains("\"const\": 3"));
@@ -89,6 +93,10 @@ fn schema_presentations_keep_records_closed_and_versions_explicit() {
     assert!(TRACKED_TRACE_SCHEMA.contains("\"initial_fraction\""));
     assert!(TRACKED_TRACE_SCHEMA.contains("\"rigid_world_result\""));
     assert!(TRACKED_TRACE_SCHEMA.contains("\"normal_impulse_bits\""));
+    assert!(TRACKED_TRACE_SCHEMA.contains("\"continuous_pending\""));
+    assert!(TRACKED_TRACE_SCHEMA.contains("\"continuous_work_budget_exhausted\""));
+    assert!(!TRACKED_TRACE_SCHEMA.contains("toi_count"));
+    assert!(!TRACKED_TRACE_SCHEMA.contains("cached_toi"));
     assert!(schemas.iter().all(|schema| schema.contains(
         "Typed Rust and C++ validation remains authoritative for cross-field references"
     )));

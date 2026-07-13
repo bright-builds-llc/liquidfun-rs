@@ -9,10 +9,13 @@ use geometry::{
 };
 
 use super::{
-    RIGID_WORLD_MAXIMUM_ACTIONS, RIGID_WORLD_POSITION_ITERATIONS, RIGID_WORLD_TIMESTEP_BITS,
-    RIGID_WORLD_VELOCITY_ITERATIONS, RigidBodyDeclaration, RigidBodyKind, RigidContactIdentity,
+    RIGID_WORLD_MAXIMUM_ACTIONS, RIGID_WORLD_MAXIMUM_CONTINUOUS_WORK,
+    RIGID_WORLD_MAXIMUM_DIRECTIVES, RIGID_WORLD_MAXIMUM_ITERATIONS,
+    RIGID_WORLD_POSITION_ITERATIONS, RIGID_WORLD_TIMESTEP_BITS, RIGID_WORLD_VELOCITY_ITERATIONS,
+    RigidAabbBits, RigidBodyDeclaration, RigidBodyKind, RigidContactIdentity,
     RigidExpectedCheckpoint, RigidExpectedCounts, RigidExpectedTransition, RigidFilterBits,
-    RigidFixtureDeclaration, RigidFixtureShape, RigidWorldAction, RigidWorldActionRecord,
+    RigidFixtureChildSelector, RigidFixtureDeclaration, RigidFixtureShape, RigidQueryDirectiveRule,
+    RigidRayDirective, RigidRayDirectiveRule, RigidWorldAction, RigidWorldActionRecord,
     RigidWorldDecodeError, RigidWorldErrorKind, RigidWorldRequestKind, RigidWorldRequestRecord,
     RigidWorldScenario, RigidWorldTimeline, RigidWorldWitness, RigidWorldWitnessFamily, validation,
 };
@@ -369,8 +372,65 @@ fn validate_action(
         RigidWorldAction::InspectBody { body_id }
         | RigidWorldAction::ResetMassData { body_id }
         | RigidWorldAction::SetBodyType { body_id, .. }
-        | RigidWorldAction::SetBodyActive { body_id, .. } => {
+        | RigidWorldAction::SetBodyActive { body_id, .. }
+        | RigidWorldAction::SetFixedRotation { body_id, .. }
+        | RigidWorldAction::SetSleepingAllowed { body_id, .. }
+        | RigidWorldAction::SetAwake { body_id, .. }
+        | RigidWorldAction::SetBullet { body_id, .. } => {
             require_live(body_id, live_bodies, RigidWorldErrorKind::UnknownBody)?;
+        }
+        RigidWorldAction::SetLinearVelocity { body_id, velocity } => {
+            require_live(body_id, live_bodies, RigidWorldErrorKind::UnknownBody)?;
+            validate_vec2(*velocity)?;
+        }
+        RigidWorldAction::SetAngularVelocity {
+            body_id,
+            angular_velocity_bits,
+        }
+        | RigidWorldAction::ApplyTorque {
+            body_id,
+            torque_bits: angular_velocity_bits,
+            ..
+        }
+        | RigidWorldAction::ApplyAngularImpulse {
+            body_id,
+            impulse_bits: angular_velocity_bits,
+            ..
+        }
+        | RigidWorldAction::SetGravityScale {
+            body_id,
+            gravity_scale_bits: angular_velocity_bits,
+        } => {
+            require_live(body_id, live_bodies, RigidWorldErrorKind::UnknownBody)?;
+            validate_finite(
+                *angular_velocity_bits,
+                RigidWorldErrorKind::InvalidBodyControl,
+            )?;
+        }
+        RigidWorldAction::ApplyForce {
+            body_id,
+            force,
+            point,
+            ..
+        }
+        | RigidWorldAction::ApplyLinearImpulse {
+            body_id,
+            impulse: force,
+            point,
+            ..
+        } => {
+            require_live(body_id, live_bodies, RigidWorldErrorKind::UnknownBody)?;
+            validate_vec2(*force)?;
+            validate_vec2(*point)?;
+        }
+        RigidWorldAction::SetBodyDamping {
+            body_id,
+            linear_damping_bits,
+            angular_damping_bits,
+        } => {
+            require_live(body_id, live_bodies, RigidWorldErrorKind::UnknownBody)?;
+            validate_nonnegative(*linear_damping_bits)?;
+            validate_nonnegative(*angular_damping_bits)?;
         }
         RigidWorldAction::SetBodyTransform { body_id, transform } => {
             require_live(body_id, live_bodies, RigidWorldErrorKind::UnknownBody)?;
@@ -430,6 +490,50 @@ fn validate_action(
                 return Err(validation(RigidWorldErrorKind::InvalidActionOrder));
             }
         }
+        RigidWorldAction::SetWorldGravity { gravity }
+        | RigidWorldAction::ShiftOrigin { shift: gravity } => {
+            validate_vec2(*gravity)?;
+        }
+        RigidWorldAction::SetAutomaticForceClearing { .. }
+        | RigidWorldAction::SetWarmStarting { .. }
+        | RigidWorldAction::SetContinuousPhysics { .. }
+        | RigidWorldAction::SetSubStepping { .. }
+        | RigidWorldAction::ClearForces => {}
+        RigidWorldAction::ConfiguredStep {
+            timestep_bits,
+            velocity_iterations,
+            position_iterations,
+            continuous_work_budget,
+        } => {
+            let timestep = timestep_bits.to_f32();
+            if !timestep.is_finite()
+                || timestep < 0.0
+                || !(1..=RIGID_WORLD_MAXIMUM_ITERATIONS).contains(velocity_iterations)
+                || !(1..=RIGID_WORLD_MAXIMUM_ITERATIONS).contains(position_iterations)
+                || !(1..=RIGID_WORLD_MAXIMUM_CONTINUOUS_WORK).contains(continuous_work_budget)
+            {
+                return Err(validation(RigidWorldErrorKind::InvalidStepConfiguration));
+            }
+        }
+        RigidWorldAction::QueryAabb {
+            aabb,
+            directive_rules,
+        } => {
+            validate_aabb(*aabb)?;
+            validate_query_rules(directive_rules, live_fixtures)?;
+        }
+        RigidWorldAction::RayCast {
+            start,
+            end,
+            directive_rules,
+        } => {
+            validate_vec2(*start)?;
+            validate_vec2(*end)?;
+            if start == end {
+                return Err(validation(RigidWorldErrorKind::InvalidRayDirective));
+            }
+            validate_ray_rules(directive_rules, live_fixtures)?;
+        }
         RigidWorldAction::DestroyFixture { fixture_id } => {
             if !live_fixtures.remove(fixture_id) {
                 return Err(validation(RigidWorldErrorKind::InvalidActionOrder));
@@ -440,6 +544,78 @@ fn validate_action(
                 return Err(validation(RigidWorldErrorKind::InvalidActionOrder));
             }
             live_fixtures.retain(|fixture_id| fixture_owners.get(fixture_id) != Some(body_id));
+        }
+    }
+    Ok(())
+}
+
+fn validate_finite(
+    value: FloatBits,
+    kind: RigidWorldErrorKind,
+) -> Result<(), RigidWorldDecodeError> {
+    if !value.to_f32().is_finite() {
+        return Err(validation(kind));
+    }
+    Ok(())
+}
+
+fn validate_aabb(aabb: RigidAabbBits) -> Result<(), RigidWorldDecodeError> {
+    validate_vec2(aabb.lower)?;
+    validate_vec2(aabb.upper)?;
+    if aabb.lower.x_bits.to_f32() > aabb.upper.x_bits.to_f32()
+        || aabb.lower.y_bits.to_f32() > aabb.upper.y_bits.to_f32()
+    {
+        return Err(validation(RigidWorldErrorKind::InvalidQueryDirective));
+    }
+    Ok(())
+}
+
+fn validate_query_rules(
+    rules: &[RigidQueryDirectiveRule],
+    live_fixtures: &HashSet<ScenarioId>,
+) -> Result<(), RigidWorldDecodeError> {
+    if rules.len() > RIGID_WORLD_MAXIMUM_DIRECTIVES {
+        return Err(validation(RigidWorldErrorKind::AggregateLimitExceeded));
+    }
+    validate_unique_selectors(
+        rules.iter().map(|rule| &rule.target),
+        live_fixtures,
+        RigidWorldErrorKind::InvalidQueryDirective,
+    )
+}
+
+fn validate_ray_rules(
+    rules: &[RigidRayDirectiveRule],
+    live_fixtures: &HashSet<ScenarioId>,
+) -> Result<(), RigidWorldDecodeError> {
+    if rules.len() > RIGID_WORLD_MAXIMUM_DIRECTIVES {
+        return Err(validation(RigidWorldErrorKind::AggregateLimitExceeded));
+    }
+    validate_unique_selectors(
+        rules.iter().map(|rule| &rule.target),
+        live_fixtures,
+        RigidWorldErrorKind::InvalidRayDirective,
+    )?;
+    for rule in rules {
+        if let RigidRayDirective::Clip { fraction_bits } = rule.directive {
+            let fraction = fraction_bits.to_f32();
+            if !fraction.is_finite() || !(0.0..=1.0).contains(&fraction) {
+                return Err(validation(RigidWorldErrorKind::InvalidRayDirective));
+            }
+        }
+    }
+    Ok(())
+}
+
+fn validate_unique_selectors<'a>(
+    selectors: impl Iterator<Item = &'a RigidFixtureChildSelector>,
+    live_fixtures: &HashSet<ScenarioId>,
+    kind: RigidWorldErrorKind,
+) -> Result<(), RigidWorldDecodeError> {
+    let mut unique = HashSet::new();
+    for selector in selectors {
+        if !live_fixtures.contains(&selector.fixture_id) || !unique.insert(selector.clone()) {
+            return Err(validation(kind));
         }
     }
     Ok(())

@@ -419,6 +419,33 @@ fn execute_action(
             collect_step_report(executor, &report)?;
             observe_step(executor, record.phase());
         }
+        RigidWorldAction::SetLinearVelocity { .. }
+        | RigidWorldAction::SetAngularVelocity { .. }
+        | RigidWorldAction::ApplyForce { .. }
+        | RigidWorldAction::ApplyTorque { .. }
+        | RigidWorldAction::ApplyLinearImpulse { .. }
+        | RigidWorldAction::ApplyAngularImpulse { .. }
+        | RigidWorldAction::SetBodyDamping { .. }
+        | RigidWorldAction::SetGravityScale { .. }
+        | RigidWorldAction::SetFixedRotation { .. }
+        | RigidWorldAction::SetSleepingAllowed { .. }
+        | RigidWorldAction::SetAwake { .. }
+        | RigidWorldAction::SetBullet { .. }
+        | RigidWorldAction::SetWorldGravity { .. }
+        | RigidWorldAction::SetAutomaticForceClearing { .. }
+        | RigidWorldAction::SetWarmStarting { .. }
+        | RigidWorldAction::SetContinuousPhysics { .. }
+        | RigidWorldAction::SetSubStepping { .. }
+        | RigidWorldAction::ClearForces
+        | RigidWorldAction::ConfiguredStep { .. }
+        | RigidWorldAction::QueryAabb { .. }
+        | RigidWorldAction::RayCast { .. }
+        | RigidWorldAction::ShiftOrigin { .. } => {
+            return Err(action_error(
+                record,
+                "Phase 7 action execution is not available before Plan 07-11",
+            ));
+        }
         RigidWorldAction::DestroyFixture { fixture_id } => {
             let fixture = executor.fixture(fixture_id, record)?;
             let record_result = executor
@@ -517,6 +544,7 @@ fn capture_checkpoint(
         contacts: contacts.into_boxed_slice(),
         events: std::mem::take(&mut executor.events).into_boxed_slice(),
         destructions: std::mem::take(&mut executor.destructions).into_boxed_slice(),
+        observations: Box::new([]),
     };
     validate_checkpoint(expected, &result, &executor.observations)?;
     executor.observations.clear();

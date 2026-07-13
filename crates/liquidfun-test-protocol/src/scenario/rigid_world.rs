@@ -16,6 +16,12 @@ pub const RIGID_WORLD_VELOCITY_ITERATIONS: u32 = 8;
 pub const RIGID_WORLD_POSITION_ITERATIONS: u32 = 3;
 /// Maximum number of actions accepted in one rigid-world timeline.
 pub const RIGID_WORLD_MAXIMUM_ACTIONS: usize = 128;
+/// Maximum number of query or ray directive rules in one closed action.
+pub const RIGID_WORLD_MAXIMUM_DIRECTIVES: usize = 128;
+/// Maximum accepted solver iteration count for a configured Phase 7 step.
+pub const RIGID_WORLD_MAXIMUM_ITERATIONS: u32 = 1_024;
+/// Maximum aggregate continuous-work budget for one configured step call.
+pub const RIGID_WORLD_MAXIMUM_CONTINUOUS_WORK: u32 = 1_000_000;
 
 pub use result::*;
 pub use types::*;

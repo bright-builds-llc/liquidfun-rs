@@ -1263,6 +1263,275 @@
                       "maxItems": 128,
                       "type": "array"
                     },
+                    "observations": {
+                      "items": {
+                        "oneOf": [
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "const": "body_state"
+                              },
+                              "state": {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "angular_damping_bits": {
+                                    "maximum": 4294967295,
+                                    "minimum": 0,
+                                    "type": "integer"
+                                  },
+                                  "angular_velocity_bits": {
+                                    "maximum": 4294967295,
+                                    "minimum": 0,
+                                    "type": "integer"
+                                  },
+                                  "awake": {
+                                    "type": "boolean"
+                                  },
+                                  "body_id": {
+                                    "maxLength": 128,
+                                    "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                    "type": "string"
+                                  },
+                                  "bullet": {
+                                    "type": "boolean"
+                                  },
+                                  "fixed_rotation": {
+                                    "type": "boolean"
+                                  },
+                                  "gravity_scale_bits": {
+                                    "maximum": 4294967295,
+                                    "minimum": 0,
+                                    "type": "integer"
+                                  },
+                                  "linear_damping_bits": {
+                                    "maximum": 4294967295,
+                                    "minimum": 0,
+                                    "type": "integer"
+                                  },
+                                  "linear_velocity": {
+                                    "$ref": "#/$defs/rigid_vec2_bits"
+                                  },
+                                  "sleeping_allowed": {
+                                    "type": "boolean"
+                                  }
+                                },
+                                "required": [
+                                  "body_id",
+                                  "linear_velocity",
+                                  "angular_velocity_bits",
+                                  "awake",
+                                  "bullet",
+                                  "sleeping_allowed",
+                                  "fixed_rotation",
+                                  "linear_damping_bits",
+                                  "angular_damping_bits",
+                                  "gravity_scale_bits"
+                                ],
+                                "type": "object"
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "state"
+                            ],
+                            "type": "object"
+                          },
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "const": "step"
+                              },
+                              "outcome": {
+                                "oneOf": [
+                                  {
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "completion": {
+                                        "enum": [
+                                          "complete",
+                                          "continuous_pending"
+                                        ]
+                                      },
+                                      "kind": {
+                                        "const": "completed"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "completion"
+                                    ],
+                                    "type": "object"
+                                  },
+                                  {
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "classification": {
+                                        "enum": [
+                                          "continuous_work_budget_exhausted"
+                                        ]
+                                      },
+                                      "kind": {
+                                        "const": "partial"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "classification"
+                                    ],
+                                    "type": "object"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "outcome"
+                            ],
+                            "type": "object"
+                          },
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "const": "query"
+                              },
+                              "observation": {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "completion": {
+                                    "enum": [
+                                      "exhausted",
+                                      "terminated"
+                                    ]
+                                  },
+                                  "occurrences": {
+                                    "items": {
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "child_index": {
+                                          "maximum": 4294967295,
+                                          "minimum": 0,
+                                          "type": "integer"
+                                        },
+                                        "fixture_id": {
+                                          "maxLength": 128,
+                                          "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "fixture_id",
+                                        "child_index"
+                                      ],
+                                      "type": "object"
+                                    },
+                                    "maxItems": 256,
+                                    "type": "array"
+                                  }
+                                },
+                                "required": [
+                                  "completion",
+                                  "occurrences"
+                                ],
+                                "type": "object"
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "observation"
+                            ],
+                            "type": "object"
+                          },
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "const": "ray_cast"
+                              },
+                              "observation": {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "completion": {
+                                    "enum": [
+                                      "exhausted",
+                                      "terminated"
+                                    ]
+                                  },
+                                  "hits": {
+                                    "items": {
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "child_index": {
+                                          "maximum": 4294967295,
+                                          "minimum": 0,
+                                          "type": "integer"
+                                        },
+                                        "fixture_id": {
+                                          "maxLength": 128,
+                                          "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                          "type": "string"
+                                        },
+                                        "fraction_bits": {
+                                          "maximum": 4294967295,
+                                          "minimum": 0,
+                                          "type": "integer"
+                                        },
+                                        "normal": {
+                                          "$ref": "#/$defs/rigid_vec2_bits"
+                                        },
+                                        "point": {
+                                          "$ref": "#/$defs/rigid_vec2_bits"
+                                        }
+                                      },
+                                      "required": [
+                                        "fixture_id",
+                                        "child_index",
+                                        "point",
+                                        "normal",
+                                        "fraction_bits"
+                                      ],
+                                      "type": "object"
+                                    },
+                                    "maxItems": 256,
+                                    "type": "array"
+                                  }
+                                },
+                                "required": [
+                                  "completion",
+                                  "hits"
+                                ],
+                                "type": "object"
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "observation"
+                            ],
+                            "type": "object"
+                          },
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "const": "origin_shift"
+                              },
+                              "shift": {
+                                "$ref": "#/$defs/rigid_vec2_bits"
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "shift"
+                            ],
+                            "type": "object"
+                          }
+                        ]
+                      },
+                      "maxItems": 256,
+                      "type": "array"
+                    },
                     "phase": {
                       "maxLength": 4096,
                       "minLength": 1,

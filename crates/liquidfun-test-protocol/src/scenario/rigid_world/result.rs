@@ -19,6 +19,103 @@ const MAXIMUM_RESULT_EVENTS: usize = 256;
 const MAXIMUM_RESULT_DESTRUCTIONS: usize = 256;
 const MAXIMUM_MANIFOLD_POINTS: usize = 2;
 const MAXIMUM_RESULT_AGGREGATE: usize = 4_096;
+const MAXIMUM_RESULT_OBSERVATIONS: usize = 256;
+const MAXIMUM_QUERY_OCCURRENCES: usize = 256;
+const MAXIMUM_RAY_HITS: usize = 256;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum RigidStepCompletion {
+    Complete,
+    ContinuousPending,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum RigidPartialProgressClassification {
+    ContinuousWorkBudgetExhausted,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+pub enum RigidStepOutcome {
+    Completed {
+        completion: RigidStepCompletion,
+    },
+    Partial {
+        classification: RigidPartialProgressClassification,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RigidBodyControlSnapshot {
+    pub body_id: ScenarioId,
+    pub linear_velocity: Vec2Bits,
+    pub angular_velocity_bits: FloatBits,
+    pub awake: bool,
+    pub bullet: bool,
+    pub sleeping_allowed: bool,
+    pub fixed_rotation: bool,
+    pub linear_damping_bits: FloatBits,
+    pub angular_damping_bits: FloatBits,
+    pub gravity_scale_bits: FloatBits,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RigidFixtureChildOccurrence {
+    pub fixture_id: ScenarioId,
+    pub child_index: u32,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum RigidQueryCompletion {
+    Exhausted,
+    Terminated,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RigidQueryObservation {
+    pub completion: RigidQueryCompletion,
+    pub occurrences: Box<[RigidFixtureChildOccurrence]>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RigidRayHitObservation {
+    pub fixture_id: ScenarioId,
+    pub child_index: u32,
+    pub point: Vec2Bits,
+    pub normal: Vec2Bits,
+    pub fraction_bits: FloatBits,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum RigidRayCompletion {
+    Exhausted,
+    Terminated,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RigidRayObservation {
+    pub completion: RigidRayCompletion,
+    pub hits: Box<[RigidRayHitObservation]>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+pub enum RigidWorldObservation {
+    BodyState { state: RigidBodyControlSnapshot },
+    Step { outcome: RigidStepOutcome },
+    Query { observation: RigidQueryObservation },
+    RayCast { observation: RigidRayObservation },
+    OriginShift { shift: Vec2Bits },
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -138,6 +235,8 @@ pub struct RigidWorldCheckpointResult {
     pub contacts: Box<[RigidContactResult]>,
     pub events: Box<[RigidContactEvent]>,
     pub destructions: Box<[RigidDestructionRecord]>,
+    #[serde(default, skip_serializing_if = "observations_are_empty")]
+    pub observations: Box<[RigidWorldObservation]>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -336,6 +435,7 @@ fn validate_result_bounds(result: &RigidWorldResultRecord) -> Result<(), RigidWo
                 || checkpoint.contacts.len() > MAXIMUM_RESULT_CONTACTS
                 || checkpoint.events.len() > MAXIMUM_RESULT_EVENTS
                 || checkpoint.destructions.len() > MAXIMUM_RESULT_DESTRUCTIONS
+                || checkpoint.observations.len() > MAXIMUM_RESULT_OBSERVATIONS
             {
                 return Err(validation(RigidWorldErrorKind::AggregateLimitExceeded));
             }
@@ -349,6 +449,21 @@ fn validate_result_bounds(result: &RigidWorldResultRecord) -> Result<(), RigidWo
                         .map_or(0, |manifold| manifold.points.len())
                 })
                 .sum::<usize>();
+            if checkpoint
+                .observations
+                .iter()
+                .any(|observation| match observation {
+                    RigidWorldObservation::Query { observation } => {
+                        observation.occurrences.len() > MAXIMUM_QUERY_OCCURRENCES
+                    }
+                    RigidWorldObservation::RayCast { observation } => {
+                        observation.hits.len() > MAXIMUM_RAY_HITS
+                    }
+                    _ => false,
+                })
+            {
+                return Err(validation(RigidWorldErrorKind::AggregateLimitExceeded));
+            }
             if checkpoint.contacts.iter().any(|contact| {
                 contact
                     .maybe_manifold
@@ -376,7 +491,8 @@ fn validate_result_bounds(result: &RigidWorldResultRecord) -> Result<(), RigidWo
                         + checkpoint.contacts.len()
                         + manifold_points
                         + checkpoint.events.len()
-                        + checkpoint.destructions.len(),
+                        + checkpoint.destructions.len()
+                        + checkpoint.observations.len(),
                 )
                 .ok_or_else(|| validation(RigidWorldErrorKind::AggregateLimitExceeded))?;
             if aggregate > MAXIMUM_RESULT_AGGREGATE {
@@ -385,6 +501,10 @@ fn validate_result_bounds(result: &RigidWorldResultRecord) -> Result<(), RigidWo
         }
     }
     Ok(())
+}
+
+fn observations_are_empty(observations: &[RigidWorldObservation]) -> bool {
+    observations.is_empty()
 }
 
 fn checked_u32(value: usize) -> Result<u32, RigidWorldDecodeError> {

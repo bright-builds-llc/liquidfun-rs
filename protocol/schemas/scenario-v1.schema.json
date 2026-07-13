@@ -2737,6 +2737,322 @@
                         {
                           "additionalProperties": false,
                           "properties": {
+                            "body_id": {
+                              "maxLength": 128,
+                              "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                              "type": "string"
+                            },
+                            "kind": {
+                              "const": "set_linear_velocity"
+                            },
+                            "velocity": {
+                              "$ref": "#/$defs/vec2_bits"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "body_id",
+                            "velocity"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "angular_velocity_bits": {
+                              "maximum": 4294967295,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "body_id": {
+                              "maxLength": 128,
+                              "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                              "type": "string"
+                            },
+                            "kind": {
+                              "const": "set_angular_velocity"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "body_id",
+                            "angular_velocity_bits"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "body_id": {
+                              "maxLength": 128,
+                              "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                              "type": "string"
+                            },
+                            "force": {
+                              "$ref": "#/$defs/vec2_bits"
+                            },
+                            "kind": {
+                              "const": "apply_force"
+                            },
+                            "point": {
+                              "$ref": "#/$defs/vec2_bits"
+                            },
+                            "wake_policy": {
+                              "enum": [
+                                "wake",
+                                "preserve_sleep"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "body_id",
+                            "force",
+                            "point",
+                            "wake_policy"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "body_id": {
+                              "maxLength": 128,
+                              "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                              "type": "string"
+                            },
+                            "kind": {
+                              "const": "apply_torque"
+                            },
+                            "torque_bits": {
+                              "maximum": 4294967295,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "wake_policy": {
+                              "enum": [
+                                "wake",
+                                "preserve_sleep"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "body_id",
+                            "torque_bits",
+                            "wake_policy"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "body_id": {
+                              "maxLength": 128,
+                              "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                              "type": "string"
+                            },
+                            "impulse": {
+                              "$ref": "#/$defs/vec2_bits"
+                            },
+                            "kind": {
+                              "const": "apply_linear_impulse"
+                            },
+                            "point": {
+                              "$ref": "#/$defs/vec2_bits"
+                            },
+                            "wake_policy": {
+                              "enum": [
+                                "wake",
+                                "preserve_sleep"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "body_id",
+                            "impulse",
+                            "point",
+                            "wake_policy"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "body_id": {
+                              "maxLength": 128,
+                              "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                              "type": "string"
+                            },
+                            "impulse_bits": {
+                              "maximum": 4294967295,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "kind": {
+                              "const": "apply_angular_impulse"
+                            },
+                            "wake_policy": {
+                              "enum": [
+                                "wake",
+                                "preserve_sleep"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "body_id",
+                            "impulse_bits",
+                            "wake_policy"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "angular_damping_bits": {
+                              "maximum": 4294967295,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "body_id": {
+                              "maxLength": 128,
+                              "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                              "type": "string"
+                            },
+                            "kind": {
+                              "const": "set_body_damping"
+                            },
+                            "linear_damping_bits": {
+                              "maximum": 4294967295,
+                              "minimum": 0,
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "body_id",
+                            "linear_damping_bits",
+                            "angular_damping_bits"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "body_id": {
+                              "maxLength": 128,
+                              "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                              "type": "string"
+                            },
+                            "gravity_scale_bits": {
+                              "maximum": 4294967295,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "kind": {
+                              "const": "set_gravity_scale"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "body_id",
+                            "gravity_scale_bits"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "body_id": {
+                              "maxLength": 128,
+                              "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                              "type": "string"
+                            },
+                            "fixed_rotation": {
+                              "type": "boolean"
+                            },
+                            "kind": {
+                              "const": "set_fixed_rotation"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "body_id",
+                            "fixed_rotation"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "body_id": {
+                              "maxLength": 128,
+                              "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                              "type": "string"
+                            },
+                            "kind": {
+                              "const": "set_sleeping_allowed"
+                            },
+                            "sleeping_allowed": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "body_id",
+                            "sleeping_allowed"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "awake": {
+                              "type": "boolean"
+                            },
+                            "body_id": {
+                              "maxLength": 128,
+                              "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                              "type": "string"
+                            },
+                            "kind": {
+                              "const": "set_awake"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "body_id",
+                            "awake"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "body_id": {
+                              "maxLength": 128,
+                              "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                              "type": "string"
+                            },
+                            "bullet": {
+                              "type": "boolean"
+                            },
+                            "kind": {
+                              "const": "set_bullet"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "body_id",
+                            "bullet"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
                             "fixture_id": {
                               "maxLength": 128,
                               "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
@@ -2928,6 +3244,333 @@
                             "timestep_bits",
                             "velocity_iterations",
                             "position_iterations"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "gravity": {
+                              "$ref": "#/$defs/vec2_bits"
+                            },
+                            "kind": {
+                              "const": "set_world_gravity"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "gravity"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "enabled": {
+                              "type": "boolean"
+                            },
+                            "kind": {
+                              "const": "set_automatic_force_clearing"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "enabled"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "enabled": {
+                              "type": "boolean"
+                            },
+                            "kind": {
+                              "const": "set_warm_starting"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "enabled"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "enabled": {
+                              "type": "boolean"
+                            },
+                            "kind": {
+                              "const": "set_continuous_physics"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "enabled"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "enabled": {
+                              "type": "boolean"
+                            },
+                            "kind": {
+                              "const": "set_sub_stepping"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "enabled"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "const": "clear_forces"
+                            }
+                          },
+                          "required": [
+                            "kind"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "continuous_work_budget": {
+                              "maximum": 1000000,
+                              "minimum": 1,
+                              "type": "integer"
+                            },
+                            "kind": {
+                              "const": "configured_step"
+                            },
+                            "position_iterations": {
+                              "maximum": 1024,
+                              "minimum": 1,
+                              "type": "integer"
+                            },
+                            "timestep_bits": {
+                              "maximum": 4294967295,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "velocity_iterations": {
+                              "maximum": 1024,
+                              "minimum": 1,
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "timestep_bits",
+                            "velocity_iterations",
+                            "position_iterations",
+                            "continuous_work_budget"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "aabb": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "lower": {
+                                  "$ref": "#/$defs/vec2_bits"
+                                },
+                                "upper": {
+                                  "$ref": "#/$defs/vec2_bits"
+                                }
+                              },
+                              "required": [
+                                "lower",
+                                "upper"
+                              ],
+                              "type": "object"
+                            },
+                            "directive_rules": {
+                              "items": {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "directive": {
+                                    "enum": [
+                                      "continue",
+                                      "terminate"
+                                    ]
+                                  },
+                                  "target": {
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "child_index": {
+                                        "maximum": 4294967295,
+                                        "minimum": 0,
+                                        "type": "integer"
+                                      },
+                                      "fixture_id": {
+                                        "maxLength": 128,
+                                        "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "fixture_id",
+                                      "child_index"
+                                    ],
+                                    "type": "object"
+                                  }
+                                },
+                                "required": [
+                                  "target",
+                                  "directive"
+                                ],
+                                "type": "object"
+                              },
+                              "maxItems": 128,
+                              "type": "array"
+                            },
+                            "kind": {
+                              "const": "query_aabb"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "aabb",
+                            "directive_rules"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "directive_rules": {
+                              "items": {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "directive": {
+                                    "oneOf": [
+                                      {
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "kind": {
+                                            "const": "ignore"
+                                          }
+                                        },
+                                        "required": [
+                                          "kind"
+                                        ],
+                                        "type": "object"
+                                      },
+                                      {
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "kind": {
+                                            "const": "terminate"
+                                          }
+                                        },
+                                        "required": [
+                                          "kind"
+                                        ],
+                                        "type": "object"
+                                      },
+                                      {
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "kind": {
+                                            "const": "continue"
+                                          }
+                                        },
+                                        "required": [
+                                          "kind"
+                                        ],
+                                        "type": "object"
+                                      },
+                                      {
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "fraction_bits": {
+                                            "maximum": 4294967295,
+                                            "minimum": 0,
+                                            "type": "integer"
+                                          },
+                                          "kind": {
+                                            "const": "clip"
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "fraction_bits"
+                                        ],
+                                        "type": "object"
+                                      }
+                                    ]
+                                  },
+                                  "target": {
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "child_index": {
+                                        "maximum": 4294967295,
+                                        "minimum": 0,
+                                        "type": "integer"
+                                      },
+                                      "fixture_id": {
+                                        "maxLength": 128,
+                                        "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "fixture_id",
+                                      "child_index"
+                                    ],
+                                    "type": "object"
+                                  }
+                                },
+                                "required": [
+                                  "target",
+                                  "directive"
+                                ],
+                                "type": "object"
+                              },
+                              "maxItems": 128,
+                              "type": "array"
+                            },
+                            "end": {
+                              "$ref": "#/$defs/vec2_bits"
+                            },
+                            "kind": {
+                              "const": "ray_cast"
+                            },
+                            "start": {
+                              "$ref": "#/$defs/vec2_bits"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "start",
+                            "end",
+                            "directive_rules"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "const": "shift_origin"
+                            },
+                            "shift": {
+                              "$ref": "#/$defs/vec2_bits"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "shift"
                           ],
                           "type": "object"
                         },

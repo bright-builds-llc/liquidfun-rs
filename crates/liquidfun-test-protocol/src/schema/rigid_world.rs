@@ -7,9 +7,13 @@ use super::{
     vec2_bits_schema, version_schema,
 };
 use crate::{
-    RIGID_WORLD_MAXIMUM_ACTIONS, RIGID_WORLD_POSITION_ITERATIONS, RIGID_WORLD_TIMESTEP_BITS,
-    RIGID_WORLD_VELOCITY_ITERATIONS, RigidBodyKind, RigidContactEventKind, RigidFeatureKind,
-    RigidManifoldKind, RigidWorldWitness, RigidWorldWitnessFamily,
+    RIGID_WORLD_MAXIMUM_ACTIONS, RIGID_WORLD_MAXIMUM_CONTINUOUS_WORK,
+    RIGID_WORLD_MAXIMUM_DIRECTIVES, RIGID_WORLD_MAXIMUM_ITERATIONS,
+    RIGID_WORLD_POSITION_ITERATIONS, RIGID_WORLD_TIMESTEP_BITS, RIGID_WORLD_VELOCITY_ITERATIONS,
+    RigidBodyKind, RigidContactEventKind, RigidFeatureKind, RigidManifoldKind,
+    RigidPartialProgressClassification, RigidQueryCompletion, RigidQueryDirective,
+    RigidRayCompletion, RigidStepCompletion, RigidWakePolicy, RigidWorldWitness,
+    RigidWorldWitnessFamily,
 };
 
 pub(super) fn rigid_world_request_schema() -> Value {
@@ -224,6 +228,18 @@ fn rigid_world_action_schema() -> Value {
             tagged_probe_input("set_body_transform", &json!({ "body_id": semantic_id_schema(), "transform": schema_ref("transform_bits") }), &["body_id", "transform"]),
             tagged_probe_input("set_body_type", &json!({ "body_id": semantic_id_schema(), "body_kind": { "enum": body_kinds() } }), &["body_id", "body_kind"]),
             tagged_probe_input("set_body_active", &json!({ "body_id": semantic_id_schema(), "active": { "type": "boolean" } }), &["body_id", "active"]),
+            tagged_probe_input("set_linear_velocity", &json!({ "body_id": semantic_id_schema(), "velocity": schema_ref("vec2_bits") }), &["body_id", "velocity"]),
+            tagged_probe_input("set_angular_velocity", &json!({ "body_id": semantic_id_schema(), "angular_velocity_bits": float_bits_schema() }), &["body_id", "angular_velocity_bits"]),
+            tagged_probe_input("apply_force", &json!({ "body_id": semantic_id_schema(), "force": schema_ref("vec2_bits"), "point": schema_ref("vec2_bits"), "wake_policy": wake_policy_schema() }), &["body_id", "force", "point", "wake_policy"]),
+            tagged_probe_input("apply_torque", &json!({ "body_id": semantic_id_schema(), "torque_bits": float_bits_schema(), "wake_policy": wake_policy_schema() }), &["body_id", "torque_bits", "wake_policy"]),
+            tagged_probe_input("apply_linear_impulse", &json!({ "body_id": semantic_id_schema(), "impulse": schema_ref("vec2_bits"), "point": schema_ref("vec2_bits"), "wake_policy": wake_policy_schema() }), &["body_id", "impulse", "point", "wake_policy"]),
+            tagged_probe_input("apply_angular_impulse", &json!({ "body_id": semantic_id_schema(), "impulse_bits": float_bits_schema(), "wake_policy": wake_policy_schema() }), &["body_id", "impulse_bits", "wake_policy"]),
+            tagged_probe_input("set_body_damping", &json!({ "body_id": semantic_id_schema(), "linear_damping_bits": float_bits_schema(), "angular_damping_bits": float_bits_schema() }), &["body_id", "linear_damping_bits", "angular_damping_bits"]),
+            tagged_probe_input("set_gravity_scale", &json!({ "body_id": semantic_id_schema(), "gravity_scale_bits": float_bits_schema() }), &["body_id", "gravity_scale_bits"]),
+            tagged_probe_input("set_fixed_rotation", &json!({ "body_id": semantic_id_schema(), "fixed_rotation": { "type": "boolean" } }), &["body_id", "fixed_rotation"]),
+            tagged_probe_input("set_sleeping_allowed", &json!({ "body_id": semantic_id_schema(), "sleeping_allowed": { "type": "boolean" } }), &["body_id", "sleeping_allowed"]),
+            tagged_probe_input("set_awake", &json!({ "body_id": semantic_id_schema(), "awake": { "type": "boolean" } }), &["body_id", "awake"]),
+            tagged_probe_input("set_bullet", &json!({ "body_id": semantic_id_schema(), "bullet": { "type": "boolean" } }), &["body_id", "bullet"]),
             tagged_probe_input("set_fixture_sensor", &json!({ "fixture_id": semantic_id_schema(), "sensor": { "type": "boolean" } }), &["fixture_id", "sensor"]),
             tagged_probe_input("set_fixture_material", &json!({ "fixture_id": semantic_id_schema(), "friction_bits": float_bits_schema(), "restitution_bits": float_bits_schema() }), &["fixture_id", "friction_bits", "restitution_bits"]),
             tagged_probe_input("set_fixture_filter", &json!({ "fixture_id": semantic_id_schema(), "filter": filter_schema() }), &["fixture_id", "filter"]),
@@ -231,6 +247,28 @@ fn rigid_world_action_schema() -> Value {
             tagged_probe_input("reset_mass_data", &body_id(), &["body_id"]),
             tagged_probe_input("set_custom_mass_data", &json!({ "body_id": semantic_id_schema(), "mass_bits": float_bits_schema(), "center": schema_ref("vec2_bits"), "inertia_bits": float_bits_schema() }), &["body_id", "mass_bits", "center", "inertia_bits"]),
             tagged_probe_input("step", &json!({ "timestep_bits": { "const": RIGID_WORLD_TIMESTEP_BITS }, "velocity_iterations": { "const": RIGID_WORLD_VELOCITY_ITERATIONS }, "position_iterations": { "const": RIGID_WORLD_POSITION_ITERATIONS } }), &["timestep_bits", "velocity_iterations", "position_iterations"]),
+            tagged_probe_input("set_world_gravity", &json!({ "gravity": schema_ref("vec2_bits") }), &["gravity"]),
+            tagged_probe_input("set_automatic_force_clearing", &json!({ "enabled": { "type": "boolean" } }), &["enabled"]),
+            tagged_probe_input("set_warm_starting", &json!({ "enabled": { "type": "boolean" } }), &["enabled"]),
+            tagged_probe_input("set_continuous_physics", &json!({ "enabled": { "type": "boolean" } }), &["enabled"]),
+            tagged_probe_input("set_sub_stepping", &json!({ "enabled": { "type": "boolean" } }), &["enabled"]),
+            tagged_probe_input("clear_forces", &json!({}), &[]),
+            tagged_probe_input("configured_step", &json!({
+                "timestep_bits": float_bits_schema(),
+                "velocity_iterations": { "maximum": RIGID_WORLD_MAXIMUM_ITERATIONS, "minimum": 1, "type": "integer" },
+                "position_iterations": { "maximum": RIGID_WORLD_MAXIMUM_ITERATIONS, "minimum": 1, "type": "integer" },
+                "continuous_work_budget": { "maximum": RIGID_WORLD_MAXIMUM_CONTINUOUS_WORK, "minimum": 1, "type": "integer" }
+            }), &["timestep_bits", "velocity_iterations", "position_iterations", "continuous_work_budget"]),
+            tagged_probe_input("query_aabb", &json!({
+                "aabb": aabb_schema(),
+                "directive_rules": { "items": query_directive_rule_schema(), "maxItems": RIGID_WORLD_MAXIMUM_DIRECTIVES, "type": "array" }
+            }), &["aabb", "directive_rules"]),
+            tagged_probe_input("ray_cast", &json!({
+                "start": schema_ref("vec2_bits"),
+                "end": schema_ref("vec2_bits"),
+                "directive_rules": { "items": ray_directive_rule_schema(), "maxItems": RIGID_WORLD_MAXIMUM_DIRECTIVES, "type": "array" }
+            }), &["start", "end", "directive_rules"]),
+            tagged_probe_input("shift_origin", &json!({ "shift": schema_ref("vec2_bits") }), &["shift"]),
             tagged_probe_input("destroy_fixture", &fixture_id(), &["fixture_id"]),
             tagged_probe_input("destroy_body", &body_id(), &["body_id"])
         ]
@@ -333,7 +371,8 @@ fn checkpoint_result_schema() -> Value {
             "fixtures": { "items": fixture_snapshot_schema(), "maxItems": 128, "type": "array" },
             "contacts": { "items": contact_result_schema(), "maxItems": 128, "type": "array" },
             "events": { "items": event_schema(), "maxItems": 256, "type": "array" },
-            "destructions": { "items": destruction_schema(), "maxItems": 256, "type": "array" }
+            "destructions": { "items": destruction_schema(), "maxItems": 256, "type": "array" },
+            "observations": { "items": world_observation_schema(), "maxItems": 256, "type": "array" }
         }),
         &[
             "checkpoint_id",
@@ -344,6 +383,150 @@ fn checkpoint_result_schema() -> Value {
             "contacts",
             "events",
             "destructions",
+        ],
+    )
+}
+
+fn wake_policy_schema() -> Value {
+    json!({ "enum": enum_values(&[RigidWakePolicy::Wake, RigidWakePolicy::PreserveSleep]) })
+}
+
+fn aabb_schema() -> Value {
+    closed_record(
+        &json!({
+            "lower": schema_ref("vec2_bits"),
+            "upper": schema_ref("vec2_bits")
+        }),
+        &["lower", "upper"],
+    )
+}
+
+fn fixture_child_selector_schema() -> Value {
+    closed_record(
+        &json!({
+            "fixture_id": semantic_id_schema(),
+            "child_index": uint32_schema()
+        }),
+        &["fixture_id", "child_index"],
+    )
+}
+
+fn query_directive_rule_schema() -> Value {
+    closed_record(
+        &json!({
+            "target": fixture_child_selector_schema(),
+            "directive": { "enum": enum_values(&[RigidQueryDirective::Continue, RigidQueryDirective::Terminate]) }
+        }),
+        &["target", "directive"],
+    )
+}
+
+fn ray_directive_rule_schema() -> Value {
+    closed_record(
+        &json!({
+            "target": fixture_child_selector_schema(),
+            "directive": {
+                "oneOf": [
+                    tagged_probe_input("ignore", &json!({}), &[]),
+                    tagged_probe_input("terminate", &json!({}), &[]),
+                    tagged_probe_input("continue", &json!({}), &[]),
+                    tagged_probe_input("clip", &json!({ "fraction_bits": float_bits_schema() }), &["fraction_bits"])
+                ]
+            }
+        }),
+        &["target", "directive"],
+    )
+}
+
+fn world_observation_schema() -> Value {
+    json!({
+        "oneOf": [
+            tagged_probe_input("body_state", &json!({ "state": body_control_snapshot_schema() }), &["state"]),
+            tagged_probe_input("step", &json!({ "outcome": step_outcome_schema() }), &["outcome"]),
+            tagged_probe_input("query", &json!({ "observation": query_observation_schema() }), &["observation"]),
+            tagged_probe_input("ray_cast", &json!({ "observation": ray_observation_schema() }), &["observation"]),
+            tagged_probe_input("origin_shift", &json!({ "shift": schema_ref("rigid_vec2_bits") }), &["shift"])
+        ]
+    })
+}
+
+fn body_control_snapshot_schema() -> Value {
+    closed_record(
+        &json!({
+            "body_id": semantic_id_schema(),
+            "linear_velocity": schema_ref("rigid_vec2_bits"),
+            "angular_velocity_bits": float_bits_schema(),
+            "awake": { "type": "boolean" },
+            "bullet": { "type": "boolean" },
+            "sleeping_allowed": { "type": "boolean" },
+            "fixed_rotation": { "type": "boolean" },
+            "linear_damping_bits": float_bits_schema(),
+            "angular_damping_bits": float_bits_schema(),
+            "gravity_scale_bits": float_bits_schema()
+        }),
+        &[
+            "body_id",
+            "linear_velocity",
+            "angular_velocity_bits",
+            "awake",
+            "bullet",
+            "sleeping_allowed",
+            "fixed_rotation",
+            "linear_damping_bits",
+            "angular_damping_bits",
+            "gravity_scale_bits",
+        ],
+    )
+}
+
+fn step_outcome_schema() -> Value {
+    json!({
+        "oneOf": [
+            tagged_probe_input("completed", &json!({
+                "completion": { "enum": enum_values(&[RigidStepCompletion::Complete, RigidStepCompletion::ContinuousPending]) }
+            }), &["completion"]),
+            tagged_probe_input("partial", &json!({
+                "classification": { "enum": enum_values(&[RigidPartialProgressClassification::ContinuousWorkBudgetExhausted]) }
+            }), &["classification"])
+        ]
+    })
+}
+
+fn query_observation_schema() -> Value {
+    closed_record(
+        &json!({
+            "completion": { "enum": enum_values(&[RigidQueryCompletion::Exhausted, RigidQueryCompletion::Terminated]) },
+            "occurrences": { "items": fixture_child_selector_schema(), "maxItems": 256, "type": "array" }
+        }),
+        &["completion", "occurrences"],
+    )
+}
+
+fn ray_observation_schema() -> Value {
+    closed_record(
+        &json!({
+            "completion": { "enum": enum_values(&[RigidRayCompletion::Exhausted, RigidRayCompletion::Terminated]) },
+            "hits": { "items": ray_hit_schema(), "maxItems": 256, "type": "array" }
+        }),
+        &["completion", "hits"],
+    )
+}
+
+fn ray_hit_schema() -> Value {
+    closed_record(
+        &json!({
+            "fixture_id": semantic_id_schema(),
+            "child_index": uint32_schema(),
+            "point": schema_ref("rigid_vec2_bits"),
+            "normal": schema_ref("rigid_vec2_bits"),
+            "fraction_bits": float_bits_schema()
+        }),
+        &[
+            "fixture_id",
+            "child_index",
+            "point",
+            "normal",
+            "fraction_bits",
         ],
     )
 }
