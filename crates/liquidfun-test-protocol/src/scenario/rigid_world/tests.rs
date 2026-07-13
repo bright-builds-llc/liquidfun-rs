@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use serde_json::{Value, json};
 
 use super::*;
@@ -60,7 +58,7 @@ fn insert_non_colliding_action(value: &mut Value, action_id: &str, action: Value
 }
 
 #[test]
-fn rigid_world_fixture_decodes_into_two_required_timelines() {
+fn rigid_world_fixture_decodes_into_all_required_timelines() {
     // Arrange
     let limits = HarnessLimits::phase2_default_v1();
 
@@ -72,10 +70,10 @@ fn rigid_world_fixture_decodes_into_two_required_timelines() {
         .timelines()
         .iter()
         .map(RigidWorldTimeline::witness_family)
-        .collect::<HashSet<_>>();
+        .collect::<Vec<_>>();
 
     // Assert
-    assert_eq!(actual, HashSet::from(RigidWorldWitnessFamily::REQUIRED));
+    assert_eq!(actual, RigidWorldWitnessFamily::ALL);
     assert_eq!(
         encode_jsonl(&request, &limits, RecordLimit::Input)
             .expect("validated rigid-world request should encode"),
@@ -565,17 +563,17 @@ fn rigid_world_rejects_non_finite_parallel_axis_product() {
 fn rigid_world_rejects_unknown_and_deferred_operations() {
     // Arrange
     let limits = HarnessLimits::phase2_default_v1();
-    let text = std::str::from_utf8(REQUEST).expect("fixture should be UTF-8");
-    let unknown = text.replacen(
-        "\"request_id\":\"phase-06-rigid-world-request\"",
-        "\"request_id\":\"phase-06-rigid-world-request\",\"unknown\":true",
-        1,
-    );
-    let deferred = text.replacen("\"kind\":\"inspect_body\"", "\"kind\":\"create_joint\"", 1);
+    let mut unknown = fixture_value();
+    unknown
+        .as_object_mut()
+        .expect("fixture request should be an object")
+        .insert("unknown".to_owned(), json!(true));
+    let mut deferred = fixture_value();
+    action_mut(&mut deferred, "nc-create-static")["action"]["kind"] = json!("create_joint");
 
     // Act
     let errors = [unknown, deferred].map(|record| {
-        decode_rigid_world_request_jsonl(record.as_bytes(), &limits)
+        decode_rigid_world_request_jsonl(&encode_value(&record), &limits)
             .expect_err("unknown fields and deferred actions must fail")
     });
 
