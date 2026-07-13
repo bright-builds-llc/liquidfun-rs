@@ -11,12 +11,37 @@ use crate::{
 
 use super::object::{DestructionCause, World};
 
+mod prismatic;
+mod revolute;
+
+#[derive(Debug, Clone, Copy)]
+pub(super) enum JointRuntime {
+    Revolute(revolute::RevoluteRuntime),
+    Prismatic(prismatic::PrismaticRuntime),
+    Pending,
+}
+
+impl JointRuntime {
+    fn from_definition(definition: JointDef) -> Self {
+        match definition {
+            JointDef::Revolute(definition) => {
+                Self::Revolute(revolute::RevoluteRuntime::new(definition))
+            }
+            JointDef::Prismatic(definition) => {
+                Self::Prismatic(prismatic::PrismaticRuntime::new(definition))
+            }
+            _ => Self::Pending,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub(super) struct JointRecord {
     pub(super) diagnostic_id: u64,
     pub(super) bodies: [BodyId; 2],
     pub(super) definition: JointDef,
     pub(super) collide_connected: bool,
+    pub(super) runtime: JointRuntime,
     #[allow(dead_code, reason = "consumed by the Phase 8 island solver plans")]
     pub(super) island_flag: bool,
     #[allow(dead_code, reason = "consumed by the Phase 8 gear lifecycle plan")]
@@ -175,6 +200,8 @@ pub enum JointQueryError {
     },
     /// The inverse timestep is negative or non-finite.
     InvalidInverseTimestep,
+    /// Checked source arithmetic produced a non-finite semantic result.
+    NonFiniteDerivedState,
     /// A prior hook panic poisoned coherent world operations.
     Poisoned,
 }
@@ -188,6 +215,9 @@ impl fmt::Display for JointQueryError {
             }
             Self::InvalidInverseTimestep => {
                 formatter.write_str("inverse timestep must be finite and non-negative")
+            }
+            Self::NonFiniteDerivedState => {
+                formatter.write_str("joint query produced non-finite state")
             }
             Self::Poisoned => formatter.write_str("world is poisoned by a prior hook panic"),
         }
@@ -283,6 +313,7 @@ impl World {
             bodies,
             definition,
             collide_connected,
+            runtime: JointRuntime::from_definition(definition),
             island_flag: false,
             reverse_gear_dependents: Vec::new(),
         })?;
@@ -306,7 +337,11 @@ impl World {
     pub fn joint_snapshot(&self, joint: JointId) -> Result<JointSnapshot, JointQueryError> {
         self.ensure_joint_queryable()?;
         let record = self.joints.get(joint)?;
-        Ok(JointSnapshot::from_definition(record.definition))
+        match record.runtime {
+            JointRuntime::Revolute(runtime) => revolute::snapshot(self, record, runtime),
+            JointRuntime::Prismatic(runtime) => prismatic::snapshot(self, record, runtime),
+            JointRuntime::Pending => Ok(JointSnapshot::from_definition(record.definition)),
+        }
     }
 
     /// Returns a snapshot after checking its concrete kind.
@@ -338,7 +373,12 @@ impl World {
         inverse_timestep: f32,
     ) -> Result<Vec2, JointQueryError> {
         self.validate_reaction_query(joint, inverse_timestep)?;
-        Ok(Vec2::ZERO)
+        let record = self.joints.get(joint)?;
+        match record.runtime {
+            JointRuntime::Revolute(runtime) => Ok(runtime.reaction_force(inverse_timestep)),
+            JointRuntime::Prismatic(runtime) => Ok(runtime.reaction_force(inverse_timestep)),
+            JointRuntime::Pending => Ok(Vec2::ZERO),
+        }
     }
 
     /// Returns the reaction torque on body B for an explicit inverse timestep.
@@ -352,7 +392,12 @@ impl World {
         inverse_timestep: f32,
     ) -> Result<f32, JointQueryError> {
         self.validate_reaction_query(joint, inverse_timestep)?;
-        Ok(0.0)
+        let record = self.joints.get(joint)?;
+        match record.runtime {
+            JointRuntime::Revolute(runtime) => Ok(runtime.reaction_torque(inverse_timestep)),
+            JointRuntime::Prismatic(runtime) => Ok(runtime.reaction_torque(inverse_timestep)),
+            JointRuntime::Pending => Ok(0.0),
+        }
     }
 
     /// Destroys one live joint after validating the complete operation.
@@ -403,6 +448,19 @@ impl World {
             return Err(JointMutationError::Locked);
         }
         Ok(())
+    }
+
+    fn wake_joint_bodies(&mut self, bodies: [BodyId; 2]) {
+        for body in bodies {
+            let record = self.body_mut_after_validation(body);
+            record.state = record.state.candidate_set_awake(true);
+        }
+    }
+
+    fn joint_mut_after_validation(&mut self, joint: JointId) -> &mut JointRecord {
+        self.joints
+            .get_mut(joint)
+            .expect("validated joint remains live during one operation")
     }
 
     fn has_suppressing_joint_between(&self, bodies: [BodyId; 2]) -> bool {

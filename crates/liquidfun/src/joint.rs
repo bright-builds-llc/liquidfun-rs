@@ -8,7 +8,10 @@ pub use definition::{
     MouseJointDef, PrismaticJointDef, PulleyJointDef, RevoluteJointDef, RopeJointDef, WeldJointDef,
     WheelJointDef,
 };
-pub use snapshot::{JointLimitState, JointSnapshot};
+pub use snapshot::{
+    JointLimitState, JointSnapshot, JointSpecificSnapshot, PrismaticJointSnapshot,
+    RevoluteJointSnapshot,
+};
 
 /// The closed set of joint kinds in the pinned `LiquidFun` revision.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
