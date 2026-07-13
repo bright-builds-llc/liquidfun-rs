@@ -598,13 +598,19 @@ const fn shape_radius(shape: &Shape) -> f32 {
 #[cfg(test)]
 mod tests {
     use crate::collision::{CircleShape, FilterData};
-    use crate::{BodyDef, BodyType, FixtureDef, StepError, StepHook, StepLimits, World};
+    use crate::{
+        BodyDef, BodyType, FixtureDef, StepConfiguration, StepError, StepHook, StepLimits, World,
+    };
 
     use super::*;
 
     struct NoopHook;
 
     impl StepHook for NoopHook {}
+
+    fn phase6_step_configuration() -> StepConfiguration {
+        StepConfiguration::new(1.0 / 60.0, 8, 3).expect("fixed test configuration should be valid")
+    }
 
     fn body_definition(body_type: BodyType, position: Vec2) -> BodyDef {
         BodyDef::new(body_type, position, 0.0, true).expect("test body should be valid")
@@ -635,7 +641,11 @@ mod tests {
             .expect("first dynamic fixture should fit");
         let mut hook = NoopHook;
         world
-            .step(&mut hook, StepLimits::default())
+            .step(
+                phase6_step_configuration(),
+                &mut hook,
+                StepLimits::default(),
+            )
             .expect("one supported contact should solve");
         world.seed_first_contact_impulses_for_test(2.0, -0.5);
         world.set_body_solver_velocity_for_test(first_dynamic, Vec2::new(3.0, -4.0), 0.75);
@@ -652,7 +662,11 @@ mod tests {
 
         // Act
         let error = world
-            .step(&mut hook, StepLimits::default())
+            .step(
+                phase6_step_configuration(),
+                &mut hook,
+                StepLimits::default(),
+            )
             .expect_err("multi-contact topology should fail closed");
 
         // Assert

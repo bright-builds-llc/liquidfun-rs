@@ -1,6 +1,7 @@
 //! World ownership and minimal non-solver object storage.
 
 mod body;
+mod config;
 mod contact;
 mod contact_manager;
 mod contact_solver;
@@ -13,6 +14,9 @@ pub use body::{
     AggregateMassError, BodyActivationError, BodyControlError, BodyDef, BodyDefError, BodyMassData,
     BodyMassDataError, BodyMassResetError, BodySnapshot, BodyTransformError, BodyType,
     BodyTypeChangeError, WakePolicy,
+};
+pub use config::{
+    StepCompletion, StepConfiguration, StepConfigurationError, WorldConfigurationError,
 };
 pub use contact::{
     ContactPointSnapshot, ContactTransition, ContactTransitionKind, ManagedContactSnapshot,

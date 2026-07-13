@@ -5,7 +5,8 @@ use liquidfun::collision::{FeatureKind, FilterData, ManifoldKind, Shape};
 use liquidfun::math::Vec2;
 use liquidfun::{
     BodyDef, BodyId, BodyMassData, BodyType, DestroyedId, DestructionCause, DestructionRecord,
-    FixtureDef, FixtureId, ManagedContactSnapshot, StepHook, StepLimits, StepReport, World,
+    FixtureDef, FixtureId, ManagedContactSnapshot, StepConfiguration, StepHook, StepLimits,
+    StepReport, World,
 };
 use liquidfun_test_protocol::{
     FloatBits, RIGID_WORLD_POSITION_ITERATIONS, RIGID_WORLD_TIMESTEP_BITS,
@@ -412,9 +413,15 @@ fn execute_action(
             {
                 return Err(action_error(record, "unsupported Phase 6 step tuple"));
             }
+            let configuration = StepConfiguration::new(
+                timestep_bits.to_f32(),
+                *velocity_iterations,
+                *position_iterations,
+            )
+            .map_err(|error| action_error(record, error))?;
             let report = executor
                 .world
-                .step(&mut NativeHook, StepLimits::default())
+                .step(configuration, &mut NativeHook, StepLimits::default())
                 .map_err(|error| action_error(record, error))?;
             collect_step_report(executor, &report)?;
             observe_step(executor, record.phase());

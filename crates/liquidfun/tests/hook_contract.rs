@@ -7,9 +7,13 @@ use liquidfun::collision::{CircleShape, FilterData, Shape};
 use liquidfun::math::Vec2;
 use liquidfun::{
     AggregateMassError, BodyDef, BodyType, CollisionDirective, CommandError, ContactView,
-    FixtureDef, HandleError, PreSolveDirective, StepError, StepHook, StepLimits, World,
-    WorldCommand,
+    FixtureDef, HandleError, PreSolveDirective, StepConfiguration, StepError, StepHook, StepLimits,
+    World, WorldCommand,
 };
+
+fn phase6_step_configuration() -> StepConfiguration {
+    StepConfiguration::new(1.0 / 60.0, 8, 3).expect("fixed test configuration should be valid")
+}
 
 fn body_definition(body_type: BodyType, position: Vec2) -> BodyDef {
     BodyDef::new(body_type, position, 0.0, true).expect("test body definition should be valid")
@@ -87,7 +91,11 @@ fn contact_view_owns_semantic_state_without_durable_identity() {
 
     // Act
     let report = world
-        .step(&mut hook, StepLimits::default())
+        .step(
+            phase6_step_configuration(),
+            &mut hook,
+            StepLimits::default(),
+        )
         .expect("supported contact hooks should succeed");
 
     // Assert
@@ -130,7 +138,11 @@ fn sensor_occurrence_skips_pre_solve_and_constraint_creation() {
 
     // Act
     let report = world
-        .step(&mut hook, StepLimits::default())
+        .step(
+            phase6_step_configuration(),
+            &mut hook,
+            StepLimits::default(),
+        )
         .expect("sensor hook should succeed");
 
     // Assert
@@ -148,7 +160,11 @@ fn manager_occurrence_multiplicity_is_not_deduplicated() {
 
     // Act
     let report = world
-        .step(&mut hook, StepLimits::default())
+        .step(
+            phase6_step_configuration(),
+            &mut hook,
+            StepLimits::default(),
+        )
         .expect("two sensor occurrences should remain bounded");
 
     // Assert
@@ -188,7 +204,11 @@ fn deferred_commands_apply_after_unlock_in_occurrence_order() {
 
     // Act
     let report = world
-        .step(&mut hook, StepLimits::default())
+        .step(
+            phase6_step_configuration(),
+            &mut hook,
+            StepLimits::default(),
+        )
         .expect("queued commands should apply after unlock");
 
     // Assert
@@ -227,7 +247,11 @@ fn stale_command_does_not_hide_later_success() {
 
     // Act
     let report = world
-        .step(&mut hook, StepLimits::default())
+        .step(
+            phase6_step_configuration(),
+            &mut hook,
+            StepLimits::default(),
+        )
         .expect("stale commands are recoverable per occurrence");
 
     // Assert
@@ -280,7 +304,11 @@ fn aggregate_mass_command_error_does_not_hide_later_success() {
 
     // Act
     let report = world
-        .step(&mut hook, StepLimits::default())
+        .step(
+            phase6_step_configuration(),
+            &mut hook,
+            StepLimits::default(),
+        )
         .expect("aggregate command rejection should be recoverable");
 
     // Assert
@@ -308,7 +336,7 @@ fn event_overflow_discards_queued_commands() {
     let limits = StepLimits::new(1, 1).expect("limits should be below hard maxima");
 
     // Act
-    let result = world.step(&mut hook, limits);
+    let result = world.step(phase6_step_configuration(), &mut hook, limits);
 
     // Assert
     assert_eq!(
@@ -341,7 +369,11 @@ fn hook_panic_restores_lock_discards_commands_and_poisons_world() {
 
     // Act
     let panic = catch_unwind(AssertUnwindSafe(|| {
-        let _result = world.step(&mut hook, StepLimits::default());
+        let _result = world.step(
+            phase6_step_configuration(),
+            &mut hook,
+            StepLimits::default(),
+        );
     }));
 
     // Assert
@@ -351,7 +383,11 @@ fn hook_panic_restores_lock_discards_commands_and_poisons_world() {
     assert!(world.contains_body(body));
     assert_eq!(world.destroy_body(body), Err(HandleError::WorldPoisoned));
     assert_eq!(
-        world.step(&mut hook, StepLimits::default()),
+        world.step(
+            phase6_step_configuration(),
+            &mut hook,
+            StepLimits::default()
+        ),
         Err(StepError::Poisoned)
     );
 }

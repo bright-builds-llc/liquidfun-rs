@@ -13,6 +13,7 @@ use super::body::{
     AggregateMassError, BodyControlError, BodyDef, BodyMassData, BodyMassResetError, BodySnapshot,
     BodyState, BodyTransformError, BodyType, BodyTypeChangeError, WakePolicy,
 };
+use super::config::WorldConfiguration;
 #[cfg(feature = "differential-internals")]
 use super::contact::ContactTransition;
 use super::contact_manager::ContactManager;
@@ -318,6 +319,7 @@ pub struct World {
     pub(super) contact_manager: ContactManager,
     next_diagnostic_id: Option<u64>,
     pub(super) step_state: StepState,
+    pub(super) configuration: WorldConfiguration,
 }
 
 impl World {
@@ -339,6 +341,7 @@ impl World {
             contact_manager: ContactManager::new(),
             next_diagnostic_id: Some(1),
             step_state: StepState::new(),
+            configuration: WorldConfiguration::default(),
         })
     }
 

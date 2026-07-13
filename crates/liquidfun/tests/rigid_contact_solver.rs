@@ -3,13 +3,17 @@
 use liquidfun::collision::{CircleShape, FilterData, PolygonShape, Shape};
 use liquidfun::math::Vec2;
 use liquidfun::{
-    BodyDef, BodyId, BodyType, ContactView, FixtureDef, FixtureId, StepError, StepHook, StepLimits,
-    StepPhase, World, WorldCommand,
+    BodyDef, BodyId, BodyType, ContactView, FixtureDef, FixtureId, StepConfiguration, StepError,
+    StepHook, StepLimits, StepPhase, World, WorldCommand,
 };
 
 struct NoopHook;
 
 impl StepHook for NoopHook {}
+
+fn phase6_step_configuration() -> StepConfiguration {
+    StepConfiguration::new(1.0 / 60.0, 8, 3).expect("fixed test configuration should be valid")
+}
 
 fn body_definition(body_type: BodyType, position: Vec2) -> BodyDef {
     BodyDef::new(body_type, position, 0.0, true).expect("test body definition should be valid")
@@ -78,7 +82,11 @@ fn cold_contact_solves_with_finite_zero_impulses() {
 
     // Act
     let report = world
-        .step(&mut hook, StepLimits::default())
+        .step(
+            phase6_step_configuration(),
+            &mut hook,
+            StepLimits::default(),
+        )
         .expect("one supported contact should solve");
 
     // Assert
@@ -111,7 +119,11 @@ fn contact_step_commits_source_ordered_position_correction() {
 
     // Act
     world
-        .step(&mut hook, StepLimits::default())
+        .step(
+            phase6_step_configuration(),
+            &mut hook,
+            StepLimits::default(),
+        )
         .expect("one supported contact should solve");
     let snapshot = world
         .body_snapshot(dynamic_body)
@@ -129,12 +141,20 @@ fn persistent_feature_reuses_warm_start_lanes_in_source_order() {
     let (mut world, _, _, _, _) = circle_contact_world(BodyType::Static, BodyType::Dynamic, false);
     let mut hook = NoopHook;
     let first = world
-        .step(&mut hook, StepLimits::default())
+        .step(
+            phase6_step_configuration(),
+            &mut hook,
+            StepLimits::default(),
+        )
         .expect("cold solve should succeed");
 
     // Act
     let second = world
-        .step(&mut hook, StepLimits::default())
+        .step(
+            phase6_step_configuration(),
+            &mut hook,
+            StepLimits::default(),
+        )
         .expect("warm solve should succeed");
 
     // Assert
@@ -158,7 +178,11 @@ fn recreated_contact_starts_with_cold_impulse_lanes() {
         circle_contact_world(BodyType::Static, BodyType::Dynamic, false);
     let mut hook = NoopHook;
     world
-        .step(&mut hook, StepLimits::default())
+        .step(
+            phase6_step_configuration(),
+            &mut hook,
+            StepLimits::default(),
+        )
         .expect("initial contact should solve");
     world
         .set_body_active(dynamic_body, false)
@@ -169,7 +193,11 @@ fn recreated_contact_starts_with_cold_impulse_lanes() {
 
     // Act
     let recreated = world
-        .step(&mut hook, StepLimits::default())
+        .step(
+            phase6_step_configuration(),
+            &mut hook,
+            StepLimits::default(),
+        )
         .expect("recreated contact should solve");
 
     // Assert
@@ -186,7 +214,11 @@ fn sensor_contact_bypasses_constraint_creation() {
 
     // Act
     let report = world
-        .step(&mut hook, StepLimits::default())
+        .step(
+            phase6_step_configuration(),
+            &mut hook,
+            StepLimits::default(),
+        )
         .expect("sensor lifecycle should succeed");
 
     // Assert
@@ -220,7 +252,11 @@ fn two_point_contact_uses_fixed_capacity_and_preserves_material() {
 
     // Act
     let report = world
-        .step(&mut hook, StepLimits::default())
+        .step(
+            phase6_step_configuration(),
+            &mut hook,
+            StepLimits::default(),
+        )
         .expect("two-point contact should solve");
 
     // Assert
@@ -248,7 +284,11 @@ fn unsupported_topology_keeps_lifecycle_and_pre_step_state_bit_identical() {
 
     // Act
     let error = world
-        .step(&mut hook, StepLimits::default())
+        .step(
+            phase6_step_configuration(),
+            &mut hook,
+            StepLimits::default(),
+        )
         .expect_err("dynamic/dynamic solving is deferred to Phase 7");
     let first_after = world
         .body_snapshot(first_body)
@@ -309,7 +349,11 @@ fn step_order_discovers_hooks_solves_unlocks_and_applies_commands() {
 
     // Act
     let report = world
-        .step(&mut hook, StepLimits::default())
+        .step(
+            phase6_step_configuration(),
+            &mut hook,
+            StepLimits::default(),
+        )
         .expect("supported automatic step should succeed");
 
     // Assert

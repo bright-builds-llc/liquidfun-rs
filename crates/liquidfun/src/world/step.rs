@@ -10,6 +10,7 @@ use crate::{AggregateMassError, BodyId, DestructionRecord, FixtureId, HandleErro
 
 use super::fixture::FixtureDestructionError;
 
+use super::config::{StepCompletion, StepConfiguration};
 use super::contact::{ContactPointSnapshot, ContactTransition, ManagedContactSnapshot};
 use super::contact_manager::HookContactOccurrence;
 use super::contact_solver::{ContactSolve, ContactSolveFailure};
@@ -367,6 +368,8 @@ pub enum StepLifecycleEvent {
 /// Owned results from one automatic step.
 #[derive(Debug, Default, PartialEq)]
 pub struct StepReport {
+    completion: StepCompletion,
+    time_step_ratio: f32,
     phases: Vec<StepPhase>,
     events: Vec<ContactEvent>,
     contact_transitions: Vec<ContactTransition>,
@@ -377,6 +380,18 @@ pub struct StepReport {
 }
 
 impl StepReport {
+    /// Returns whether continuous work completed or remains pending.
+    #[must_use]
+    pub const fn completion(&self) -> StepCompletion {
+        self.completion
+    }
+
+    /// Returns the source-ordered warm-start ratio for this call.
+    #[must_use]
+    pub const fn time_step_ratio(&self) -> f32 {
+        self.time_step_ratio
+    }
+
     /// Returns named execution seams in exact phase order.
     #[must_use]
     pub fn phases(&self) -> &[StepPhase] {
@@ -511,12 +526,14 @@ impl World {
     /// unsupported topology, or non-finite solver state.
     pub fn step<H: StepHook>(
         &mut self,
+        configuration: StepConfiguration,
         hook: &mut H,
         limits: StepLimits,
     ) -> Result<StepReport, StepError> {
         if self.step_state.is_poisoned() {
             return Err(StepError::Poisoned);
         }
+        let timing = self.prepare_step_timing(configuration);
         let mut phases = Vec::with_capacity(6);
         let (mut contact_transitions, events, commands, contact_solves) = {
             let _lock = StepLockGuard::acquire(&self.step_state)?;
@@ -525,16 +542,21 @@ impl World {
             phases.push(StepPhase::UpdateContacts);
             self.update_contacts_for_step();
             let contact_transitions = self.contact_manager.drain_transitions();
-            self.preflight_contact_solver()
-                .map_err(|error| solver_step_error(error, &contact_transitions))?;
+            if configuration.time_step() > 0.0 {
+                self.preflight_contact_solver()
+                    .map_err(|error| solver_step_error(error, &contact_transitions))?;
+            }
 
             phases.push(StepPhase::Hook);
             let occurrences = self.contact_manager.hook_contacts();
             let (events, commands) = self.run_contact_hooks(&occurrences, hook, limits)?;
-            phases.push(StepPhase::Solve);
-            let contact_solves = self
-                .solve_contact_constraints()
-                .map_err(|error| solver_step_error(error, &contact_transitions))?;
+            let contact_solves = if configuration.time_step() > 0.0 {
+                phases.push(StepPhase::Solve);
+                self.solve_contact_constraints()
+                    .map_err(|error| solver_step_error(error, &contact_transitions))?
+            } else {
+                Vec::new()
+            };
             (contact_transitions, events, commands, contact_solves)
         };
         phases.push(StepPhase::Unlock);
@@ -559,7 +581,10 @@ impl World {
         contact_transitions.extend(command_transitions);
         lifecycle.extend(command_lifecycle);
 
+        self.commit_step_timing(timing);
         Ok(StepReport {
+            completion: StepCompletion::Complete,
+            time_step_ratio: timing.time_step_ratio(),
             phases,
             events,
             contact_transitions,

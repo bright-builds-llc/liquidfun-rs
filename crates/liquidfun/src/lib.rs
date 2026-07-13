@@ -144,7 +144,7 @@ pub use world::{
     ContactPointSnapshot, ContactSolve, ContactTransition, ContactTransitionKind, ContactView,
     CreateObjectError, DestroyedId, DestructionCause, DestructionRecord, FixtureBoundsError,
     FixtureDef, FixtureDefError, FixtureDestructionError, FixtureMutationError, FixtureSnapshot,
-    ManagedContactSnapshot, ObjectSnapshot, PreSolveDirective, StepError, StepHook,
-    StepLifecycleEvent, StepLimits, StepPhase, StepReport, WakePolicy, World, WorldCommand,
-    WorldFixtureSnapshot,
+    ManagedContactSnapshot, ObjectSnapshot, PreSolveDirective, StepCompletion, StepConfiguration,
+    StepConfigurationError, StepError, StepHook, StepLifecycleEvent, StepLimits, StepPhase,
+    StepReport, WakePolicy, World, WorldCommand, WorldConfigurationError, WorldFixtureSnapshot,
 };

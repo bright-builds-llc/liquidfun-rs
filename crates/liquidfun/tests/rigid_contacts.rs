@@ -3,13 +3,17 @@
 use liquidfun::collision::{CircleShape, FilterData, Shape};
 use liquidfun::math::Vec2;
 use liquidfun::{
-    BodyDef, BodyId, BodyType, ContactTransitionKind, DestroyedId, FixtureDef, FixtureId, StepHook,
-    StepLifecycleEvent, StepLimits, World, WorldCommand,
+    BodyDef, BodyId, BodyType, ContactTransitionKind, DestroyedId, FixtureDef, FixtureId,
+    StepConfiguration, StepHook, StepLifecycleEvent, StepLimits, World, WorldCommand,
 };
 
 struct NoopHook;
 
 impl StepHook for NoopHook {}
+
+fn phase6_step_configuration() -> StepConfiguration {
+    StepConfiguration::new(1.0 / 60.0, 8, 3).expect("fixed test configuration should be valid")
+}
 
 fn body_definition(body_type: BodyType, position: Vec2) -> BodyDef {
     BodyDef::new(body_type, position, 0.0, true).expect("test body definition should be valid")
@@ -66,7 +70,11 @@ fn non_dynamic_static_kinematic_overlap_is_rejected() {
 
     // Act
     let report = world
-        .step(&mut hook, StepLimits::default())
+        .step(
+            phase6_step_configuration(),
+            &mut hook,
+            StepLimits::default(),
+        )
         .expect("non-dynamic overlap step should succeed");
 
     // Assert
@@ -96,7 +104,11 @@ fn non_dynamic_kinematic_kinematic_overlap_is_rejected() {
 
     // Act
     let report = world
-        .step(&mut hook, StepLimits::default())
+        .step(
+            phase6_step_configuration(),
+            &mut hook,
+            StepLimits::default(),
+        )
         .expect("non-dynamic overlap step should succeed");
 
     // Assert
@@ -114,13 +126,21 @@ fn lifecycle_creates_persists_and_suppresses_duplicate_pairs() {
 
     // Act
     let first = world
-        .step(&mut hook, StepLimits::default())
+        .step(
+            phase6_step_configuration(),
+            &mut hook,
+            StepLimits::default(),
+        )
         .expect("first automatic contact step should succeed");
     world
         .set_fixture_filter(static_fixture, FilterData::default())
         .expect("touching the fixture should succeed");
     let second = world
-        .step(&mut hook, StepLimits::default())
+        .step(
+            phase6_step_configuration(),
+            &mut hook,
+            StepLimits::default(),
+        )
         .expect("persistent automatic contact step should succeed");
 
     // Assert
@@ -154,7 +174,11 @@ fn lifecycle_material_mix_remains_authoritative_until_recreation() {
     let (mut world, dynamic_body, static_fixture, _dynamic_fixture) = touching_world(false);
     let mut hook = NoopHook;
     let created = world
-        .step(&mut hook, StepLimits::default())
+        .step(
+            phase6_step_configuration(),
+            &mut hook,
+            StepLimits::default(),
+        )
         .expect("contact creation should succeed");
 
     // Act
@@ -165,7 +189,11 @@ fn lifecycle_material_mix_remains_authoritative_until_recreation() {
         .set_fixture_restitution(static_fixture, 1.2)
         .expect("restitution edit should be valid");
     let persisted = world
-        .step(&mut hook, StepLimits::default())
+        .step(
+            phase6_step_configuration(),
+            &mut hook,
+            StepLimits::default(),
+        )
         .expect("existing contact should persist");
     world
         .set_body_active(dynamic_body, false)
@@ -174,7 +202,11 @@ fn lifecycle_material_mix_remains_authoritative_until_recreation() {
         .set_body_active(dynamic_body, true)
         .expect("activation should succeed");
     let recreated = world
-        .step(&mut hook, StepLimits::default())
+        .step(
+            phase6_step_configuration(),
+            &mut hook,
+            StepLimits::default(),
+        )
         .expect("recreated contact should succeed on the next step");
 
     // Assert
@@ -209,16 +241,28 @@ fn sensor_lifecycle_uses_overlap_without_a_manifold() {
 
     // Act
     let began = world
-        .step(&mut hook, StepLimits::default())
+        .step(
+            phase6_step_configuration(),
+            &mut hook,
+            StepLimits::default(),
+        )
         .expect("sensor begin should succeed");
     let persisted = world
-        .step(&mut hook, StepLimits::default())
+        .step(
+            phase6_step_configuration(),
+            &mut hook,
+            StepLimits::default(),
+        )
         .expect("sensor persistence should succeed");
     world
         .set_body_active(dynamic_body, false)
         .expect("sensor body deactivation should succeed");
     let ended = world
-        .step(&mut hook, StepLimits::default())
+        .step(
+            phase6_step_configuration(),
+            &mut hook,
+            StepLimits::default(),
+        )
         .expect("sensor end evidence should succeed");
 
     // Assert
@@ -248,7 +292,11 @@ fn filtering_is_deferred_and_reconsideration_recreates_the_contact() {
     let (mut world, _dynamic_body, static_fixture, _dynamic_fixture) = touching_world(false);
     let mut hook = NoopHook;
     world
-        .step(&mut hook, StepLimits::default())
+        .step(
+            phase6_step_configuration(),
+            &mut hook,
+            StepLimits::default(),
+        )
         .expect("initial contact should begin");
 
     // Act
@@ -257,13 +305,21 @@ fn filtering_is_deferred_and_reconsideration_recreates_the_contact() {
         .expect("filter edit should succeed");
     let count_before_update = world.contact_count();
     let rejected = world
-        .step(&mut hook, StepLimits::default())
+        .step(
+            phase6_step_configuration(),
+            &mut hook,
+            StepLimits::default(),
+        )
         .expect("deferred refilter should succeed");
     world
         .set_fixture_filter(static_fixture, FilterData::default())
         .expect("filter restoration should succeed");
     let reconsidered = world
-        .step(&mut hook, StepLimits::default())
+        .step(
+            phase6_step_configuration(),
+            &mut hook,
+            StepLimits::default(),
+        )
         .expect("touched pair should be reconsidered");
 
     // Assert
@@ -287,7 +343,11 @@ fn destruction_deactivation_emits_end_and_activation_waits_for_step() {
     let (mut world, dynamic_body, _static_fixture, _dynamic_fixture) = touching_world(false);
     let mut hook = NoopHook;
     world
-        .step(&mut hook, StepLimits::default())
+        .step(
+            phase6_step_configuration(),
+            &mut hook,
+            StepLimits::default(),
+        )
         .expect("initial contact should begin");
 
     // Act
@@ -300,7 +360,11 @@ fn destruction_deactivation_emits_end_and_activation_waits_for_step() {
         .expect("activation should succeed");
     let before_step = world.contact_count();
     let report = world
-        .step(&mut hook, StepLimits::default())
+        .step(
+            phase6_step_configuration(),
+            &mut hook,
+            StepLimits::default(),
+        )
         .expect("activation discovery step should succeed");
 
     // Assert
@@ -333,7 +397,11 @@ fn destruction_fixture_uses_end_before_invalidation() {
     let (mut world, _dynamic_body, static_fixture, _dynamic_fixture) = touching_world(false);
     let mut noop = NoopHook;
     world
-        .step(&mut noop, StepLimits::default())
+        .step(
+            phase6_step_configuration(),
+            &mut noop,
+            StepLimits::default(),
+        )
         .expect("initial contact should begin");
     let mut hook = OneCommandHook {
         maybe_command: Some(WorldCommand::DestroyFixture(static_fixture)),
@@ -341,7 +409,11 @@ fn destruction_fixture_uses_end_before_invalidation() {
 
     // Act
     let report = world
-        .step(&mut hook, StepLimits::default())
+        .step(
+            phase6_step_configuration(),
+            &mut hook,
+            StepLimits::default(),
+        )
         .expect("fixture destruction command should succeed");
 
     // Assert
@@ -368,7 +440,11 @@ fn destruction_body_cascade_orders_end_before_fixture_before_body() {
     let (mut world, dynamic_body, _static_fixture, dynamic_fixture) = touching_world(false);
     let mut noop = NoopHook;
     world
-        .step(&mut noop, StepLimits::default())
+        .step(
+            phase6_step_configuration(),
+            &mut noop,
+            StepLimits::default(),
+        )
         .expect("initial contact should begin");
     let mut hook = OneCommandHook {
         maybe_command: Some(WorldCommand::DestroyBody(dynamic_body)),
@@ -376,7 +452,11 @@ fn destruction_body_cascade_orders_end_before_fixture_before_body() {
 
     // Act
     let report = world
-        .step(&mut hook, StepLimits::default())
+        .step(
+            phase6_step_configuration(),
+            &mut hook,
+            StepLimits::default(),
+        )
         .expect("body destruction command should succeed");
 
     // Assert
@@ -416,7 +496,11 @@ fn filtering_preserves_duplicate_event_multiplicity_in_manager_order() {
         .expect("second static fixture should fit");
     let mut hook = NoopHook;
     let began = world
-        .step(&mut hook, StepLimits::default())
+        .step(
+            phase6_step_configuration(),
+            &mut hook,
+            StepLimits::default(),
+        )
         .expect("both contacts should begin");
 
     // Act
@@ -424,7 +508,11 @@ fn filtering_preserves_duplicate_event_multiplicity_in_manager_order() {
         .set_fixture_filter(dynamic_fixture, FilterData::new(0x0001, 0x0000, 0))
         .expect("shared fixture refilter should succeed");
     let ended = world
-        .step(&mut hook, StepLimits::default())
+        .step(
+            phase6_step_configuration(),
+            &mut hook,
+            StepLimits::default(),
+        )
         .expect("both contacts should end");
 
     // Assert

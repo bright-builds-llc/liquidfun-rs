@@ -7,12 +7,16 @@ use liquidfun::{
     AggregateMassError, BodyActivationError, BodyDef, BodyMassData, BodyMassResetError,
     BodyTransformError, BodyType, BodyTypeChangeError, CreateObjectError, FixtureBoundsError,
     FixtureDef, FixtureDefError, FixtureDestructionError, FixtureMutationError, ObjectSnapshot,
-    StepHook, StepLimits, World,
+    StepConfiguration, StepHook, StepLimits, World,
 };
 
 struct NoopHook;
 
 impl StepHook for NoopHook {}
+
+fn phase6_step_configuration() -> StepConfiguration {
+    StepConfiguration::new(1.0 / 60.0, 8, 3).expect("fixed test configuration should be valid")
+}
 
 fn body_definition(body_type: BodyType, active: bool) -> BodyDef {
     BodyDef::new(body_type, Vec2::ZERO, 0.0, active)
@@ -576,7 +580,11 @@ fn implicit_aggregate_mass_type_change_is_atomic() {
         .create_fixture(contact_body, &circle_fixture())
         .expect("contact fixture should fit");
     let report = world
-        .step(&mut NoopHook, StepLimits::default())
+        .step(
+            phase6_step_configuration(),
+            &mut NoopHook,
+            StepLimits::default(),
+        )
         .expect("sensor contacts should be discovered");
     assert!(world.contact_count() > 0);
     assert!(!report.contact_transitions().is_empty());
@@ -654,7 +662,11 @@ fn implicit_aggregate_mass_fixture_destruction_is_atomic() {
         .create_fixture(contact_body, &circle_fixture())
         .expect("contact fixture should fit");
     let report = world
-        .step(&mut NoopHook, StepLimits::default())
+        .step(
+            phase6_step_configuration(),
+            &mut NoopHook,
+            StepLimits::default(),
+        )
         .expect("sensor contacts should be discovered");
     assert!(world.contact_count() > 0);
     assert!(!report.contact_transitions().is_empty());
