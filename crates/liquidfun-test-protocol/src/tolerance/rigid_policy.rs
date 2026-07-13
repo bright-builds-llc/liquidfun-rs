@@ -99,7 +99,6 @@ const PHASE7_STRUCTURAL_PATHS: &[&str] = &[
     "rigid_world.phase7.ray.completion",
     "rigid_world.phase7.ray.final_max_fraction",
     "rigid_world.phase7.ray.hit.identity",
-    "rigid_world.phase7.ray.equal_minimum.identities",
 ];
 
 const PHASE7_ABSOLUTE_RELATIVE_PATHS: &[&str] = &[
@@ -255,7 +254,7 @@ fn phase7_witness_policy_paths(family: RigidWorldWitnessFamily) -> &'static [&'s
         ],
         RigidWorldWitnessFamily::WorldQueryAndRayCast => &[
             "rigid_world.phase7.query.occurrences.identity",
-            "rigid_world.phase7.ray.equal_minimum.identities",
+            "rigid_world.phase7.ray.hit.identity",
             "rigid_world.phase7.ray.completion",
             "rigid_world.phase7.ray.final_max_fraction",
         ],
@@ -310,8 +309,6 @@ fn validate_phase7_field(field: &FieldPolicy) -> Result<(), Phase7PolicyError> {
             "rigid_world.phase7.query.occurrences.identity" | "rigid_world.phase7.ray.hit.identity"
         ) {
             CollectionPolicy::Multiset
-        } else if path == "rigid_world.phase7.ray.equal_minimum.identities" {
-            CollectionPolicy::Set
         } else {
             CollectionPolicy::Ordered
         };
@@ -737,10 +734,10 @@ mod tests {
 
         // Assert
         assert_eq!(profile.profile_id(), "phase7-v1");
-        assert_eq!(profile.fields().len(), 37);
+        assert_eq!(profile.fields().len(), 36);
         assert_eq!(
             profile.profile_sha256().as_str(),
-            "a28360556d0339627ec26dc988fcb5585d12e14ba88ecb801c9cf9bdb1a193fe"
+            "59cf32e2564d857bbf56ec7e8423bd73046f4c7698f2e0e3eb83c5ea7ab2b86a"
         );
         assert_eq!(
             profile
@@ -748,13 +745,6 @@ mod tests {
                 .expect("query occurrence policy")
                 .collection_policy(),
             CollectionPolicy::Multiset
-        );
-        assert_eq!(
-            profile
-                .field("rigid_world.phase7.ray.equal_minimum.identities")
-                .expect("ray tie policy")
-                .collection_policy(),
-            CollectionPolicy::Set
         );
         assert_eq!(
             profile

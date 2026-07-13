@@ -182,16 +182,6 @@ evidence_tier = "d1_canonical"
 justification = "Semantic identities, topology, statuses, flags, counts, and declared traces are exact."
 
 [[fields]]
-semantic_path = "rigid_world.phase7.ray.equal_minimum.identities"
-comparison = { kind = "exact_discrete" }
-zero_policy = "distinct"
-non_finite_policy = "reject_arithmetic_nan"
-collection_policy = "set"
-horizon = { kind = "phase_local" }
-evidence_tier = "d1_canonical"
-justification = "Semantic identities, topology, statuses, flags, counts, and declared traces are exact."
-
-[[fields]]
 semantic_path = "rigid_world.phase7.body.transform.position.x"
 comparison = { kind = "float", policy = { kind = "absolute_relative", absolute_bits = 897988541, relative_bits = 953267991 } }
 zero_policy = "distinct"

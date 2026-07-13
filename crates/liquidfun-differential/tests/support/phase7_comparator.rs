@@ -52,6 +52,24 @@ fn request_with_ray_rules(
         .expect("bounded ray request mutation should decode")
 }
 
+fn request_with_query_rules(
+    profile: &Phase7PolicyProfile,
+    directive_rules: Value,
+) -> RigidWorldRequestRecord {
+    let mut value = serde_json::to_value(request(profile)).expect("request should serialize");
+    let query_action = value["scenario"]["timelines"][0]["actions"]
+        .as_array_mut()
+        .expect("timeline actions should be an array")
+        .iter_mut()
+        .find(|record| record["action_id"] == "phase7-action-19")
+        .expect("Phase 7 query action should exist");
+    query_action["action"]["directive_rules"] = directive_rules;
+    let mut bytes = serde_json::to_vec(&value).expect("request mutation should encode");
+    bytes.push(b'\n');
+    decode_rigid_world_request_jsonl(&bytes, &HarnessLimits::phase2_default_v1())
+        .expect("bounded query request mutation should decode")
+}
+
 fn request_with_out_of_ray_clip(profile: &Phase7PolicyProfile) -> RigidWorldRequestRecord {
     let request = request_with_ray_rules(
         profile,
@@ -72,6 +90,52 @@ fn request_with_out_of_ray_clip(profile: &Phase7PolicyProfile) -> RigidWorldRequ
     bytes.push(b'\n');
     decode_rigid_world_request_jsonl(&bytes, &HarnessLimits::phase2_default_v1())
         .expect("bounded ray request mutation should decode")
+}
+
+fn arbitrary_clip_order_results(
+    profile: &Phase7PolicyProfile,
+) -> (
+    RigidWorldRequestRecord,
+    RigidWorldResultRecord,
+    RigidWorldResultRecord,
+) {
+    let request = request_with_ray_rules(
+        profile,
+        json!([{
+            "target": { "fixture_id": "nc-dynamic-fixture", "child_index": 0 },
+            "directive": { "kind": "clip", "fraction_bits": 0.1_f32.to_bits() }
+        }]),
+    );
+    let baseline = NativeRigidWorldExecutor::execute(&request)
+        .expect("profile-bound arbitrary clip request should execute");
+    let mut native_value = serde_json::to_value(&baseline).expect("result should serialize");
+    let ray = observation_mut(phase7_observations(&mut native_value), "ray_cast");
+    ray["observation"]["completion"] = json!("exhausted");
+    ray["observation"]["final_max_fraction_bits"] = json!(0.1_f32.to_bits());
+    ray["observation"]["hits"] = json!([
+        {
+            "fixture_id": "nc-dynamic-fixture",
+            "child_index": 0,
+            "point": { "x_bits": 1.0_f32.to_bits(), "y_bits": 0.0_f32.to_bits() },
+            "normal": { "x_bits": (-1.0_f32).to_bits(), "y_bits": 0.0_f32.to_bits() },
+            "fraction_bits": 0.75_f32.to_bits()
+        },
+        {
+            "fixture_id": "nc-static-fixture",
+            "child_index": 0,
+            "point": { "x_bits": (-1.0_f32).to_bits(), "y_bits": 0.0_f32.to_bits() },
+            "normal": { "x_bits": 1.0_f32.to_bits(), "y_bits": 0.0_f32.to_bits() },
+            "fraction_bits": 0.05_f32.to_bits()
+        }
+    ]);
+    let native = decode_result(&native_value);
+    let mut oracle_value = native_value;
+    observation_mut(phase7_observations(&mut oracle_value), "ray_cast")["observation"]["hits"]
+        .as_array_mut()
+        .expect("ray hits should be an array")
+        .reverse();
+    let oracle = decode_result(&oracle_value);
+    (request, native, oracle)
 }
 
 fn request_with_split_phase7_checkpoints(profile: &Phase7PolicyProfile) -> RigidWorldRequestRecord {
@@ -133,7 +197,7 @@ fn checkpoint_observations_mut<'a>(
 fn rigid_comparator_treats_queries_as_multiplicity_preserving_multisets() {
     // Arrange
     let (phase6, phase7) = profiles();
-    let request = request(&phase7);
+    let request = request_with_query_rules(&phase7, json!([]));
     let baseline = NativeRigidWorldExecutor::execute(&request)
         .expect("profile-bound Phase 7 request should execute");
     let mut native_value = serde_json::to_value(&baseline).expect("result should serialize");
@@ -217,7 +281,7 @@ fn rigid_comparator_reports_action_stage_values_policy_and_completion_context() 
 }
 
 #[test]
-fn rigid_comparator_compares_equal_minimum_ray_identities_as_sets() {
+fn rigid_comparator_compares_equal_fraction_ray_hits_as_multisets() {
     // Arrange
     let (phase6, phase7) = profiles();
     let request = request(&phase7);
@@ -255,6 +319,47 @@ fn rigid_comparator_compares_equal_minimum_ray_identities_as_sets() {
 
     // Assert
     assert_eq!(outcome, RigidComparisonOutcome::Match);
+}
+
+#[test]
+fn rigid_comparator_ignores_reversed_pre_clip_history_above_the_final_interval() {
+    // Arrange
+    let (phase6, phase7) = profiles();
+    let (request, native, oracle) = arbitrary_clip_order_results(&phase7);
+
+    // Act
+    let outcome = compare_phase7_rigid_world_results(&request, &native, &oracle, &phase6, &phase7)
+        .expect("valid arbitrary clip histories should compare");
+
+    // Assert
+    assert_eq!(outcome, RigidComparisonOutcome::Match);
+}
+
+#[test]
+fn rigid_comparator_reports_mismatch_inside_the_final_interval() {
+    // Arrange
+    let (phase6, phase7) = profiles();
+    let (request, native, oracle) = arbitrary_clip_order_results(&phase7);
+    let mut oracle_value = serde_json::to_value(&oracle).expect("result should serialize");
+    let ray = observation_mut(phase7_observations(&mut oracle_value), "ray_cast");
+    let hit = ray["observation"]["hits"]
+        .as_array_mut()
+        .expect("ray hits should be an array")
+        .iter_mut()
+        .find(|hit| hit["fixture_id"] == "nc-static-fixture")
+        .expect("inside-interval hit should exist");
+    hit["point"]["x_bits"] = json!((-0.5_f32).to_bits());
+    let oracle = decode_result(&oracle_value);
+
+    // Act
+    let outcome = compare_phase7_rigid_world_results(&request, &native, &oracle, &phase6, &phase7)
+        .expect("valid arbitrary clip histories should compare");
+
+    // Assert
+    let RigidComparisonOutcome::PhysicsMismatch(report) = outcome else {
+        panic!("inside-interval numeric divergence must mismatch");
+    };
+    assert_eq!(report.semantic_path(), "rigid_world.phase7.ray.point.x");
 }
 
 #[test]
