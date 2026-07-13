@@ -503,6 +503,9 @@ fn ray_observation_matches(
         if terminated || !fixture_child_is_live(live_identities, &hit.fixture_id, hit.child_index) {
             return false;
         }
+        if !ray_hit_geometry_is_finite(hit) {
+            return false;
+        }
         let hit_fraction = hit.fraction_bits.to_f32();
         if !hit_fraction.is_finite() || hit_fraction < 0.0 || hit_fraction > current_max_fraction {
             return false;
@@ -537,6 +540,17 @@ fn ray_observation_matches(
     };
     observation.completion == expected_completion
         && observation.final_max_fraction_bits == current_max_fraction_bits
+}
+
+fn ray_hit_geometry_is_finite(hit: &RigidRayHitObservation) -> bool {
+    [
+        hit.point.x_bits,
+        hit.point.y_bits,
+        hit.normal.x_bits,
+        hit.normal.y_bits,
+    ]
+    .into_iter()
+    .all(|bits| bits.to_f32().is_finite())
 }
 
 fn fixture_child_is_live(

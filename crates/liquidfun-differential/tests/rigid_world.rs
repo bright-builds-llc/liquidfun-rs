@@ -679,6 +679,44 @@ fn comparison_rejects_unknown_ray_hit_identity_on_each_engine_side() {
 }
 
 #[test]
+fn comparison_rejects_every_non_finite_ray_hit_coordinate_on_each_engine_side() {
+    // Arrange
+    let request = comparison_request();
+    let profile = profile();
+    let complete = NativeRigidWorldExecutor::execute(&request)
+        .expect("profile-bound request should execute natively");
+    let complete_value = result_value(&complete);
+
+    // Act and Assert
+    for vector in ["point", "normal"] {
+        for coordinate in ["x_bits", "y_bits"] {
+            for invalid_bits in [
+                f32::NAN.to_bits(),
+                f32::INFINITY.to_bits(),
+                f32::NEG_INFINITY.to_bits(),
+            ] {
+                let mut mutated_value = complete_value.clone();
+                let observations = mutated_value["timelines"][7]["checkpoints"][0]["observations"]
+                    .as_array_mut()
+                    .expect("query checkpoint should contain observations");
+                let ray = observations
+                    .iter_mut()
+                    .find(|observation| {
+                        observation["kind"] == "ray_cast"
+                            && observation["observation"]["hits"]
+                                .as_array()
+                                .is_some_and(|hits| !hits.is_empty())
+                    })
+                    .expect("ray observation with a hit should exist");
+                ray["observation"]["hits"][0][vector][coordinate] = json!(invalid_bits);
+                let mutated = decode_result_value(&mutated_value);
+                assert_observation_rejected_on_each_side(&request, &complete, &mutated, &profile);
+            }
+        }
+    }
+}
+
+#[test]
 fn comparison_rejects_invalid_child_hit_before_valid_ray_termination_on_each_engine_side() {
     // Arrange
     let request = comparison_request();
