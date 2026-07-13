@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 07-05-PLAN.md
-last_updated: "2026-07-13T05:17:02.495Z"
+stopped_at: Completed 07-07-PLAN.md
+last_updated: "2026-07-13T05:47:14.370Z"
 last_activity: 2026-07-13
 progress:
   total_phases: 12
   completed_phases: 6
   total_plans: 74
-  completed_plans: 68
-  percent: 92
+  completed_plans: 69
+  percent: 93
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 ## Current Position
 
 Phase: 7 (Rigid Solver, World Operations, and CCD) — EXECUTING
-Plan: 7 of 13
+Plan: 8 of 13
 Status: Ready to execute
 Last activity: 2026-07-13
 
@@ -94,6 +94,7 @@ Progress: [██████████] 100%
 | Phase 07 P04 | 40min | 2 tasks | 10 files |
 | Phase 07 P06 | 21 min | 2 tasks | 6 files |
 | Phase 07 P05 | 21 min | 2 tasks | 7 files |
+| Phase 7 P07 | 20 min | 2 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -196,6 +197,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 07]: Carry final position convergence from the contact solver into transactional island sleep evaluation. — Sleep eligibility must use the exact last position-iteration result without duplicating geometry work.
 - [Phase 07]: Resolve pending mutation wakes in newest-first body order before contact discovery and island seeding. — Type and sensor wake sources must participate deterministically without adding a second persistent queue.
 - [Phase 07]: Wake both stored endpoints for solid contact creation, touching changes, and touching destruction; sensor contacts remain wake-neutral. — This preserves the pinned contact-manager and contact-update asymmetry in manager/source order.
+- [Phase 7]: Prepare every translated body, proxy, and tree value before replacing live world state. — A complete candidate makes non-finite arithmetic and inconsistent proxy failures effect-free across every coordinate-owning lane.
+- [Phase 7]: Shift the existing dynamic tree in place through an opaque checked candidate. — Preserving topology, proxy generations, free-list links, and move-buffer contents avoids accidental traversal or identity changes.
+- [Phase 7]: Compare shifted public queries and rays by semantic fixture-child identity and declared numeric meaning. — Multiset and exact hit-property evidence proves translation covariance without creating a callback-order contract.
 
 ### Pending Todos
 
@@ -203,6 +207,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-13T05:17:02.491Z
-Stopped at: Completed 07-05-PLAN.md
+Last session: 2026-07-13T05:47:14.367Z
+Stopped at: Completed 07-07-PLAN.md
 Resume file: None
