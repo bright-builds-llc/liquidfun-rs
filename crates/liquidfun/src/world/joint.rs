@@ -16,6 +16,8 @@ mod mouse;
 mod prismatic;
 mod pulley;
 mod revolute;
+mod weld;
+mod wheel;
 
 #[derive(Debug, Clone, Copy)]
 pub(super) enum JointRuntime {
@@ -24,6 +26,8 @@ pub(super) enum JointRuntime {
     Distance(distance::DistanceRuntime),
     Pulley(pulley::PulleyRuntime),
     Mouse(mouse::MouseRuntime),
+    Wheel(wheel::WheelRuntime),
+    Weld(weld::WeldRuntime),
     Pending,
 }
 
@@ -43,6 +47,8 @@ impl JointRuntime {
             JointDef::Mouse(definition) => {
                 Self::Mouse(mouse::MouseRuntime::new(definition, body_b_transform))
             }
+            JointDef::Wheel(definition) => Self::Wheel(wheel::WheelRuntime::new(definition)),
+            JointDef::Weld(definition) => Self::Weld(weld::WeldRuntime::new(definition)),
             _ => Self::Pending,
         }
     }
@@ -356,6 +362,8 @@ impl World {
             JointRuntime::Distance(runtime) => distance::snapshot(self, record, runtime),
             JointRuntime::Pulley(runtime) => pulley::snapshot(self, record, runtime),
             JointRuntime::Mouse(runtime) => mouse::snapshot(self, record, runtime),
+            JointRuntime::Wheel(runtime) => wheel::snapshot(self, record, runtime),
+            JointRuntime::Weld(runtime) => weld::snapshot(self, record, runtime),
             JointRuntime::Pending => Ok(JointSnapshot::from_definition(record.definition)),
         }
     }
@@ -396,6 +404,8 @@ impl World {
             JointRuntime::Distance(runtime) => Ok(runtime.reaction_force(inverse_timestep)),
             JointRuntime::Pulley(runtime) => Ok(runtime.reaction_force(inverse_timestep)),
             JointRuntime::Mouse(runtime) => Ok(runtime.reaction_force(inverse_timestep)),
+            JointRuntime::Wheel(runtime) => Ok(runtime.reaction_force(inverse_timestep)),
+            JointRuntime::Weld(runtime) => Ok(runtime.reaction_force(inverse_timestep)),
             JointRuntime::Pending => Ok(Vec2::ZERO),
         }
     }
@@ -415,6 +425,8 @@ impl World {
         match record.runtime {
             JointRuntime::Revolute(runtime) => Ok(runtime.reaction_torque(inverse_timestep)),
             JointRuntime::Prismatic(runtime) => Ok(runtime.reaction_torque(inverse_timestep)),
+            JointRuntime::Wheel(runtime) => Ok(runtime.reaction_torque(inverse_timestep)),
+            JointRuntime::Weld(runtime) => Ok(runtime.reaction_torque(inverse_timestep)),
             JointRuntime::Distance(_)
             | JointRuntime::Pulley(_)
             | JointRuntime::Mouse(_)

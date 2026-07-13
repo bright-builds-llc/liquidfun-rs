@@ -176,7 +176,7 @@ pub use joint::{
     JointDefError, JointKind, JointLimitState, JointSnapshot, JointSpecificSnapshot, MotorJointDef,
     MouseJointDef, MouseJointSnapshot, PrismaticJointDef, PrismaticJointSnapshot, PulleyJointDef,
     PulleyJointSnapshot, RevoluteJointDef, RevoluteJointSnapshot, RopeJointDef, WeldJointDef,
-    WheelJointDef,
+    WeldJointSnapshot, WheelJointDef, WheelJointSnapshot,
 };
 pub use world::{
     AggregateMassError, BodyActivationError, BodyControlError, BodyDef, BodyDefError, BodyMassData,

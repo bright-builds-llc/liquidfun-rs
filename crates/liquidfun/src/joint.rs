@@ -11,6 +11,7 @@ pub use definition::{
 pub use snapshot::{
     DistanceJointSnapshot, JointLimitState, JointSnapshot, JointSpecificSnapshot,
     MouseJointSnapshot, PrismaticJointSnapshot, PulleyJointSnapshot, RevoluteJointSnapshot,
+    WeldJointSnapshot, WheelJointSnapshot,
 };
 
 /// The closed set of joint kinds in the pinned `LiquidFun` revision.
