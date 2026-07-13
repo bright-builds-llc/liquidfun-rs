@@ -5,6 +5,9 @@ default:
 check:
     cargo xtask check
 
+markdown-check:
+    mdformat --check .
+
 fmt:
     cargo fmt --all --check
 

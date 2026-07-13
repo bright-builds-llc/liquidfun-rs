@@ -1,0 +1,18 @@
+wrap = "keep"
+number = false
+end_of_line = "lf"
+validate = true
+exclude = [
+  ".planning/**",
+  "third_party/**",
+  "target/**",
+  ".git/**",
+  "backup/**",
+  "**/backup/**",
+  "backups/**",
+  "**/backups/**",
+  ".backup/**",
+  "**/.backup/**",
+  ".backups/**",
+  "**/.backups/**",
+]

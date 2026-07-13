@@ -33,6 +33,13 @@ Use this routing map when deciding what to load next:
 
 <!-- bright-builds-rules-managed:end -->
 
+## Repo-Local Guidance
+
+- Format repository-owned non-GSD Markdown with mdformat 1.0.0 under Python 3.13; configuration-based exclusions require Python 3.13 or newer.
+- Run `just markdown-check` after changing non-GSD Markdown.
+- `.planning/**` is parser-owned GSD content and must never be formatted with mdformat.
+- Use repeated `1.` markers for ordered task and lesson fields.
+
 <!-- GSD:project-start source:PROJECT.md -->
 
 ## Project
