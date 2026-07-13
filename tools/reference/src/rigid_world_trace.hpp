@@ -59,9 +59,21 @@ inline nlohmann::json encode_rigid_contact_identity(
 }
 
 inline std::string_view rigid_family_name(RigidWitnessFamily family) {
-  return family == RigidWitnessFamily::non_colliding
-             ? "non_colliding_body_fixture_lifecycle"
-             : "single_contact_lifecycle";
+  switch (family) {
+    case RigidWitnessFamily::non_colliding:
+      return "non_colliding_body_fixture_lifecycle";
+    case RigidWitnessFamily::single_contact: return "single_contact_lifecycle";
+    case RigidWitnessFamily::body_control: return "body_control_and_force_policy";
+    case RigidWitnessFamily::island_warm_start:
+      return "multi_contact_island_and_warm_start";
+    case RigidWitnessFamily::sleeping_waking: return "sleeping_and_waking";
+    case RigidWitnessFamily::continuous_collision:
+      return "continuous_collision_and_sub_stepping";
+    case RigidWitnessFamily::continuous_budget: return "continuous_budget_resume";
+    case RigidWitnessFamily::query_ray: return "world_query_and_ray_cast";
+    case RigidWitnessFamily::origin_shift: return "origin_shift_covariance";
+  }
+  throw std::runtime_error("unsupported rigid witness family");
 }
 
 inline std::string encode_rigid_world_result(const nlohmann::json& result) {

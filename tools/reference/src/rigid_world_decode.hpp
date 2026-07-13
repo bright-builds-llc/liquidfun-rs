@@ -12,6 +12,7 @@
 #include <set>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -174,6 +175,82 @@ inline RigidBodyKind body_kind(const Json& value) {
   throw std::runtime_error("unsupported body kind");
 }
 
+inline RigidWakePolicy wake_policy(const Json& value) {
+  const auto name = text(value, "wake policy");
+  if (name == "wake") return RigidWakePolicy::wake;
+  if (name == "preserve_sleep") return RigidWakePolicy::preserve_sleep;
+  throw std::runtime_error("unsupported wake policy");
+}
+
+inline RigidFixtureChildSelector fixture_child_selector(const Json& value) {
+  require_members(value, {"fixture_id", "child_index"}, "fixture child selector");
+  return {
+      id(member(value, "fixture_id", "selector"), "fixture ID"),
+      u32(member(value, "child_index", "selector"), "child index")};
+}
+
+inline std::vector<RigidQueryRule> query_rules(const Json& value) {
+  if (!value.is_array() || value.size() > kRigidWorldMaximumDirectives) {
+    throw std::runtime_error("query directives exceed reviewed bounds");
+  }
+  std::vector<RigidQueryRule> result;
+  std::set<std::pair<std::string, std::uint32_t>> selectors;
+  for (const auto& raw : value) {
+    require_members(raw, {"target", "directive"}, "query directive rule");
+    const auto target = fixture_child_selector(member(raw, "target", "query rule"));
+    if (!selectors.emplace(target.fixture_id, target.child_index).second) {
+      throw std::runtime_error("duplicate query directive selector");
+    }
+    const auto name = text(member(raw, "directive", "query rule"), "query directive");
+    const auto directive = name == "continue"
+                               ? RigidQueryDirective::continue_query
+                               : name == "terminate" ? RigidQueryDirective::terminate
+                                                      : throw std::runtime_error("unsupported query directive");
+    result.push_back({target, directive});
+  }
+  return result;
+}
+
+inline std::vector<RigidRayRule> ray_rules(const Json& value) {
+  if (!value.is_array() || value.size() > kRigidWorldMaximumDirectives) {
+    throw std::runtime_error("ray directives exceed reviewed bounds");
+  }
+  std::vector<RigidRayRule> result;
+  std::set<std::pair<std::string, std::uint32_t>> selectors;
+  for (const auto& raw : value) {
+    require_members(raw, {"target", "directive"}, "ray directive rule");
+    const auto target = fixture_child_selector(member(raw, "target", "ray rule"));
+    if (!selectors.emplace(target.fixture_id, target.child_index).second) {
+      throw std::runtime_error("duplicate ray directive selector");
+    }
+    const auto& raw_directive = member(raw, "directive", "ray rule");
+    const auto kind = text(member(raw_directive, "kind", "ray directive"), "ray directive kind");
+    RigidRayDirectiveValue directive;
+    if (kind == "ignore") {
+      require_members(raw_directive, {"kind"}, "ignore ray directive");
+      directive.kind = RigidRayDirectiveKind::ignore;
+    } else if (kind == "terminate") {
+      require_members(raw_directive, {"kind"}, "terminate ray directive");
+      directive.kind = RigidRayDirectiveKind::terminate;
+    } else if (kind == "continue") {
+      require_members(raw_directive, {"kind"}, "continue ray directive");
+      directive.kind = RigidRayDirectiveKind::continue_ray;
+    } else if (kind == "clip") {
+      require_members(raw_directive, {"kind", "fraction_bits"}, "clip ray directive");
+      directive.kind = RigidRayDirectiveKind::clip;
+      directive.fraction = u32(member(raw_directive, "fraction_bits", "ray directive"), "clip fraction");
+      const auto fraction = float_from_bits(directive.fraction);
+      if (!std::isfinite(fraction) || fraction < 0.0F || fraction > 1.0F) {
+        throw std::runtime_error("ray clip fraction is outside reviewed bounds");
+      }
+    } else {
+      throw std::runtime_error("unsupported ray directive");
+    }
+    result.push_back({target, directive});
+  }
+  return result;
+}
+
 inline RigidShape shape(const Json& value) {
   const auto kind = text(member(value, "kind", "shape"), "shape kind");
   if (kind == "circle") {
@@ -202,141 +279,7 @@ inline RigidShape shape(const Json& value) {
   throw std::runtime_error("unsupported fixture shape");
 }
 
-inline RigidAction action(const Json& value) {
-  const auto kind = text(member(value, "kind", "action"), "action kind");
-  if (kind == "create_body") {
-    require_members(value, {"kind", "body_id"}, "create-body action");
-    return CreateBody{id(member(value, "body_id", "action"), "body ID")};
-  }
-  if (kind == "create_fixture") {
-    require_members(value, {"kind", "fixture_id"}, "create-fixture action");
-    return CreateFixture{id(member(value, "fixture_id", "action"), "fixture ID")};
-  }
-  if (kind == "inspect_body") {
-    require_members(value, {"kind", "body_id"}, "inspect-body action");
-    return InspectBody{id(member(value, "body_id", "action"), "body ID")};
-  }
-  if (kind == "inspect_fixture") {
-    require_members(value, {"kind", "fixture_id"}, "inspect-fixture action");
-    return InspectFixture{id(member(value, "fixture_id", "action"), "fixture ID")};
-  }
-  if (kind == "set_body_transform") {
-    require_members(value, {"kind", "body_id", "transform"}, "body-transform action");
-    return SetBodyTransform{
-        id(member(value, "body_id", "action"), "body ID"),
-        transform(member(value, "transform", "action"))};
-  }
-  if (kind == "set_body_type") {
-    require_members(value, {"kind", "body_id", "body_kind"}, "body-type action");
-    return SetBodyType{
-        id(member(value, "body_id", "action"), "body ID"),
-        body_kind(member(value, "body_kind", "action"))};
-  }
-  if (kind == "set_body_active") {
-    require_members(value, {"kind", "body_id", "active"}, "body-active action");
-    return SetBodyActive{
-        id(member(value, "body_id", "action"), "body ID"),
-        boolean(member(value, "active", "action"), "active")};
-  }
-  if (kind == "set_fixture_sensor") {
-    require_members(value, {"kind", "fixture_id", "sensor"}, "fixture-sensor action");
-    return SetFixtureSensor{
-        id(member(value, "fixture_id", "action"), "fixture ID"),
-        boolean(member(value, "sensor", "action"), "sensor")};
-  }
-  if (kind == "set_fixture_material") {
-    require_members(
-        value,
-        {"kind", "fixture_id", "friction_bits", "restitution_bits"},
-        "fixture-material action");
-    const auto friction = u32(member(value, "friction_bits", "action"), "friction bits");
-    const auto restitution = u32(member(value, "restitution_bits", "action"), "restitution bits");
-    require_nonnegative(friction, "friction bits");
-    require_nonnegative(restitution, "restitution bits");
-    return SetFixtureMaterial{
-        id(member(value, "fixture_id", "action"), "fixture ID"),
-        friction,
-        restitution};
-  }
-  if (kind == "set_fixture_filter") {
-    require_members(value, {"kind", "fixture_id", "filter"}, "fixture-filter action");
-    return SetFixtureFilter{
-        id(member(value, "fixture_id", "action"), "fixture ID"),
-        filter(member(value, "filter", "action"))};
-  }
-  if (kind == "set_fixture_density") {
-    require_members(value, {"kind", "fixture_id", "density_bits"}, "fixture-density action");
-    const auto density = u32(member(value, "density_bits", "action"), "density bits");
-    require_nonnegative(density, "density bits");
-    return SetFixtureDensity{
-        id(member(value, "fixture_id", "action"), "fixture ID"), density};
-  }
-  if (kind == "reset_mass_data") {
-    require_members(value, {"kind", "body_id"}, "reset-mass action");
-    return ResetMassData{id(member(value, "body_id", "action"), "body ID")};
-  }
-  if (kind == "set_custom_mass_data") {
-    require_members(
-        value,
-        {"kind", "body_id", "mass_bits", "center", "inertia_bits"},
-        "custom-mass action");
-    const auto mass = u32(member(value, "mass_bits", "action"), "mass bits");
-    const auto inertia = u32(member(value, "inertia_bits", "action"), "inertia bits");
-    const auto center = vec2(member(value, "center", "action"), "mass center");
-    require_finite(mass, "mass bits");
-    require_nonnegative(inertia, "inertia bits");
-    const auto mass_value = float_from_bits(mass);
-    if (mass_value <= 0.0F) {
-      throw std::runtime_error("custom mass must be positive");
-    }
-    const auto origin_inertia = float_from_bits(inertia);
-    if (origin_inertia > 0.0F) {
-      const auto center_x = float_from_bits(center.x);
-      const auto center_y = float_from_bits(center.y);
-      const std::array<float, 2> squared_center{
-          center_x * center_x, center_y * center_y};
-      const auto center_dot = squared_center[0] + squared_center[1];
-      const auto parallel_axis = mass_value * center_dot;
-      const auto centered_inertia = origin_inertia - parallel_axis;
-      if (!std::isfinite(squared_center[0]) ||
-          !std::isfinite(squared_center[1]) || !std::isfinite(center_dot) ||
-          !std::isfinite(parallel_axis) || !std::isfinite(centered_inertia) ||
-          centered_inertia <= 0.0F) {
-        throw std::runtime_error("custom mass centered inertia is invalid");
-      }
-    }
-    return SetCustomMassData{
-        id(member(value, "body_id", "action"), "body ID"),
-        mass,
-        center,
-        inertia};
-  }
-  if (kind == "step") {
-    require_members(
-        value,
-        {"kind", "timestep_bits", "velocity_iterations", "position_iterations"},
-        "step action");
-    const auto timestep = u32(member(value, "timestep_bits", "action"), "timestep bits");
-    const auto velocity = u32(member(value, "velocity_iterations", "action"), "velocity iterations");
-    const auto position = u32(member(value, "position_iterations", "action"), "position iterations");
-    if (timestep != kRigidWorldTimestepBits ||
-        velocity != kRigidWorldVelocityIterations ||
-        position != kRigidWorldPositionIterations) {
-      throw std::runtime_error("step action does not match the fixed Phase 6 tuple");
-    }
-    return RigidStep{timestep, velocity, position};
-  }
-  if (kind == "destroy_fixture") {
-    require_members(value, {"kind", "fixture_id"}, "destroy-fixture action");
-    return DestroyFixture{id(member(value, "fixture_id", "action"), "fixture ID")};
-  }
-  if (kind == "destroy_body") {
-    require_members(value, {"kind", "body_id"}, "destroy-body action");
-    return DestroyBody{id(member(value, "body_id", "action"), "body ID")};
-  }
-  throw std::runtime_error("unsupported rigid-world action");
-}
-
+#include "rigid_world_action_decode.hpp"
 inline RigidExpectedCounts counts(const Json& value) {
   require_members(
       value,
@@ -376,191 +319,17 @@ inline RigidWitnessFamily family(const Json& value) {
   if (name == "single_contact_lifecycle") {
     return RigidWitnessFamily::single_contact;
   }
+  if (name == "body_control_and_force_policy") return RigidWitnessFamily::body_control;
+  if (name == "multi_contact_island_and_warm_start") return RigidWitnessFamily::island_warm_start;
+  if (name == "sleeping_and_waking") return RigidWitnessFamily::sleeping_waking;
+  if (name == "continuous_collision_and_sub_stepping") return RigidWitnessFamily::continuous_collision;
+  if (name == "continuous_budget_resume") return RigidWitnessFamily::continuous_budget;
+  if (name == "world_query_and_ray_cast") return RigidWitnessFamily::query_ray;
+  if (name == "origin_shift_covariance") return RigidWitnessFamily::origin_shift;
   throw std::runtime_error("unsupported witness family");
 }
 
-inline const std::vector<std::string_view>& required_witnesses(
-    RigidWitnessFamily value) {
-  static const std::vector<std::string_view> non_colliding{
-      "static_body_created", "kinematic_body_created", "dynamic_body_created",
-      "fixtures_created", "body_inspected", "fixture_inspected",
-      "body_transform_changed", "body_type_changed", "body_deactivated",
-      "body_reactivated", "sensor_enabled", "sensor_disabled",
-      "material_changed", "filter_changed", "density_changed_without_mass_reset",
-      "mass_reset", "custom_mass_set", "static_kinematic_overlap_rejected",
-      "kinematic_kinematic_overlap_rejected", "zero_contact_step",
-      "fixture_destroyed", "body_destroyed"};
-  static const std::vector<std::string_view> single_contact{
-      "contact_created", "contact_begin", "contact_persisted", "manifold_active",
-      "contact_solved", "warm_start_transferred", "sensor_touching",
-      "sensor_without_manifold", "filter_removed_contact",
-      "filter_recreated_contact", "deactivation_destroyed_contact",
-      "reactivation_recreated_contact", "fixture_destroyed_contact",
-      "body_cascade_end_ordered"};
-  return value == RigidWitnessFamily::non_colliding ? non_colliding
-                                                     : single_contact;
-}
-
-inline std::string action_name(const RigidAction& value) {
-  static constexpr std::array<std::string_view, 16> names{
-      "create_body", "create_fixture", "inspect_body", "inspect_fixture",
-      "set_body_transform", "set_body_type", "set_body_active",
-      "set_fixture_sensor", "set_fixture_material", "set_fixture_filter",
-      "set_fixture_density", "reset_mass_data", "set_custom_mass_data", "step",
-      "destroy_fixture", "destroy_body"};
-  return std::string(names[value.index()]);
-}
-
-inline void validate_timeline(RigidTimeline& timeline) {
-  if (timeline.bodies.empty() || timeline.bodies.size() > 64 ||
-      timeline.fixtures.empty() || timeline.fixtures.size() > 128 ||
-      timeline.actions.empty() ||
-      timeline.actions.size() > kRigidWorldMaximumActions ||
-      timeline.checkpoints.empty() || timeline.checkpoints.size() > 64) {
-    throw std::runtime_error("rigid timeline collection count outside reviewed bounds");
-  }
-  std::unordered_set<std::string> body_ids;
-  for (const auto& body : timeline.bodies) {
-    if (!body_ids.insert(body.id).second) throw std::runtime_error("duplicate body ID");
-  }
-  std::unordered_map<std::string, std::string> fixture_owners;
-  for (const auto& fixture : timeline.fixtures) {
-    if (!body_ids.count(fixture.owner_body_id)) throw std::runtime_error("invalid fixture owner");
-    if (!fixture_owners.emplace(fixture.id, fixture.owner_body_id).second) {
-      throw std::runtime_error("duplicate fixture ID");
-    }
-  }
-  std::unordered_set<std::string> live_bodies;
-  std::unordered_set<std::string> live_fixtures;
-  std::unordered_set<std::string> created_bodies;
-  std::unordered_set<std::string> created_fixtures;
-  std::unordered_set<std::string> action_ids;
-  std::unordered_set<std::string> action_kinds;
-  std::unordered_map<std::string, std::size_t> action_positions;
-  std::vector<std::pair<std::size_t, std::size_t>> live_counts;
-  for (std::size_t index = 0; index < timeline.actions.size(); ++index) {
-    const auto& record = timeline.actions[index];
-    if (!action_ids.insert(record.id).second) throw std::runtime_error("duplicate action ID");
-    if (record.phase.empty()) throw std::runtime_error("action phase must not be empty");
-    action_positions.emplace(record.id, index);
-    action_kinds.insert(action_name(record.action));
-    std::visit(
-        [&](const auto& current) {
-          using T = std::decay_t<decltype(current)>;
-          if constexpr (std::is_same_v<T, CreateBody>) {
-            if (!body_ids.count(current.body_id) ||
-                !created_bodies.insert(current.body_id).second ||
-                !live_bodies.insert(current.body_id).second) {
-              throw std::runtime_error("invalid rigid action order");
-            }
-          } else if constexpr (std::is_same_v<T, CreateFixture>) {
-            const auto owner = fixture_owners.find(current.fixture_id);
-            if (owner == fixture_owners.end() || !live_bodies.count(owner->second) ||
-                !created_fixtures.insert(current.fixture_id).second ||
-                !live_fixtures.insert(current.fixture_id).second) {
-              throw std::runtime_error("invalid rigid action order");
-            }
-          } else if constexpr (std::is_same_v<T, DestroyFixture>) {
-            if (live_fixtures.erase(current.fixture_id) != 1) {
-              throw std::runtime_error("invalid rigid action order");
-            }
-          } else if constexpr (std::is_same_v<T, DestroyBody>) {
-            if (live_bodies.erase(current.body_id) != 1) {
-              throw std::runtime_error("invalid rigid action order");
-            }
-            for (auto fixture = live_fixtures.begin(); fixture != live_fixtures.end();) {
-              fixture = fixture_owners.at(*fixture) == current.body_id
-                            ? live_fixtures.erase(fixture)
-                            : std::next(fixture);
-            }
-          } else if constexpr (
-              std::is_same_v<T, InspectBody> ||
-              std::is_same_v<T, SetBodyTransform> ||
-              std::is_same_v<T, SetBodyType> ||
-              std::is_same_v<T, SetBodyActive> ||
-              std::is_same_v<T, ResetMassData> ||
-              std::is_same_v<T, SetCustomMassData>) {
-            if (!live_bodies.count(current.body_id)) {
-              throw std::runtime_error("invalid rigid action order");
-            }
-          } else if constexpr (!std::is_same_v<T, RigidStep>) {
-            if (!live_fixtures.count(current.fixture_id)) {
-              throw std::runtime_error("invalid rigid action order");
-            }
-          }
-        },
-        record.action);
-    live_counts.emplace_back(live_bodies.size(), live_fixtures.size());
-  }
-  if (!live_bodies.empty() || !live_fixtures.empty() ||
-      created_bodies.size() != body_ids.size() ||
-      created_fixtures.size() != fixture_owners.size()) {
-    throw std::runtime_error("invalid rigid action order");
-  }
-  const auto required_actions = timeline.family == RigidWitnessFamily::non_colliding
-                                    ? std::vector<std::string>{
-                                          "create_body", "create_fixture", "inspect_body",
-                                          "inspect_fixture", "set_body_transform", "set_body_type",
-                                          "set_body_active", "set_fixture_sensor",
-                                          "set_fixture_material", "set_fixture_filter",
-                                          "set_fixture_density", "reset_mass_data",
-                                          "set_custom_mass_data", "step", "destroy_fixture",
-                                          "destroy_body"}
-                                    : std::vector<std::string>{
-                                          "create_body", "create_fixture", "set_body_active",
-                                          "set_fixture_sensor", "set_fixture_filter", "step",
-                                          "destroy_fixture", "destroy_body"};
-  for (const auto& required : required_actions) {
-    if (!action_kinds.count(required)) throw std::runtime_error("missing rigid action kind");
-  }
-  std::unordered_set<std::string> checkpoint_ids;
-  std::unordered_set<std::string> witnesses;
-  std::size_t previous_position = 0;
-  bool first = true;
-  for (const auto& checkpoint : timeline.checkpoints) {
-    if (!checkpoint_ids.insert(checkpoint.id).second) {
-      throw std::runtime_error("duplicate checkpoint ID");
-    }
-    const auto found = action_positions.find(checkpoint.after_action_id);
-    if (found == action_positions.end() || (!first && found->second <= previous_position)) {
-      throw std::runtime_error("invalid checkpoint order");
-    }
-    first = false;
-    previous_position = found->second;
-    if (checkpoint.phase != timeline.actions[found->second].phase) {
-      throw std::runtime_error("checkpoint phase mismatch");
-    }
-    if (checkpoint.counts.bodies != live_counts[found->second].first ||
-        checkpoint.counts.fixtures != live_counts[found->second].second ||
-        checkpoint.counts.manifold_points > checkpoint.counts.contacts * 2 ||
-        (timeline.family == RigidWitnessFamily::non_colliding &&
-         (checkpoint.counts.contacts != 0 || checkpoint.counts.manifold_points != 0)) ||
-        (timeline.family == RigidWitnessFamily::single_contact &&
-         checkpoint.counts.contacts > 1)) {
-      throw std::runtime_error("expected checkpoint count mismatch");
-    }
-    for (const auto& transition : checkpoint.transitions) {
-      if (!witnesses.insert(transition.witness).second) {
-        throw std::runtime_error("duplicate witness");
-      }
-      if (transition.maybe_contact.has_value() &&
-          (!fixture_owners.count(transition.maybe_contact->fixture_a_id) ||
-           !fixture_owners.count(transition.maybe_contact->fixture_b_id) ||
-           transition.maybe_contact->child_a != 0 ||
-           transition.maybe_contact->child_b != 0)) {
-        throw std::runtime_error("invalid contact identity");
-      }
-    }
-  }
-  const auto& required = required_witnesses(timeline.family);
-  if (witnesses.size() != required.size() ||
-      std::any_of(required.begin(), required.end(), [&](std::string_view witness) {
-        return !witnesses.count(std::string(witness));
-      })) {
-    throw std::runtime_error("rigid witness registry is incomplete");
-  }
-}
-
+#include "rigid_world_validate.hpp"
 inline RigidWorldRequest decode(std::string_view record) {
   validate_bounded_json_record(record);
   const auto root = Json::parse(record.begin(), record.end());
@@ -607,8 +376,8 @@ inline RigidWorldRequest decode(std::string_view record) {
     throw std::runtime_error("unsupported source kind");
   }
   const auto& timelines = member(scenario, "timelines", "scenario");
-  if (!timelines.is_array() || timelines.size() != 2) {
-    throw std::runtime_error("rigid request must contain both witness families");
+  if (!timelines.is_array() || timelines.size() < 2 || timelines.size() > 9) {
+    throw std::runtime_error("rigid request timeline count is outside reviewed bounds");
   }
   RigidWorldRequest request{
       id(member(root, "request_id", "request"), "request ID"),

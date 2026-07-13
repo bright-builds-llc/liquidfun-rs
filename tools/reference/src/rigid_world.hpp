@@ -11,6 +11,9 @@
 namespace liquidfun::reference {
 
 inline constexpr std::size_t kRigidWorldMaximumActions = 128;
+inline constexpr std::size_t kRigidWorldMaximumDirectives = 128;
+inline constexpr std::uint32_t kRigidWorldMaximumIterations = 1024;
+inline constexpr std::uint32_t kRigidWorldMaximumContinuousWork = 1000000;
 inline constexpr std::uint32_t kRigidWorldTimestepBits = 0x3c888889U;
 inline constexpr std::uint32_t kRigidWorldVelocityIterations = 8;
 inline constexpr std::uint32_t kRigidWorldPositionIterations = 3;
@@ -32,7 +35,20 @@ struct RigidFilterBits {
 };
 
 enum class RigidBodyKind { static_body, kinematic_body, dynamic_body };
-enum class RigidWitnessFamily { non_colliding, single_contact };
+enum class RigidWitnessFamily {
+  non_colliding,
+  single_contact,
+  body_control,
+  island_warm_start,
+  sleeping_waking,
+  continuous_collision,
+  continuous_budget,
+  query_ray,
+  origin_shift,
+};
+enum class RigidWakePolicy { wake, preserve_sleep };
+enum class RigidQueryDirective { continue_query, terminate };
+enum class RigidRayDirectiveKind { ignore, terminate, continue_ray, clip };
 
 struct RigidCircleShape {
   RigidVec2Bits center;
@@ -79,6 +95,40 @@ struct SetBodyActive {
   std::string body_id;
   bool active = false;
 };
+struct SetLinearVelocity { std::string body_id; RigidVec2Bits velocity; };
+struct SetAngularVelocity { std::string body_id; std::uint32_t velocity = 0; };
+struct ApplyForce {
+  std::string body_id;
+  RigidVec2Bits force;
+  RigidVec2Bits point;
+  RigidWakePolicy wake_policy = RigidWakePolicy::wake;
+};
+struct ApplyTorque {
+  std::string body_id;
+  std::uint32_t torque = 0;
+  RigidWakePolicy wake_policy = RigidWakePolicy::wake;
+};
+struct ApplyLinearImpulse {
+  std::string body_id;
+  RigidVec2Bits impulse;
+  RigidVec2Bits point;
+  RigidWakePolicy wake_policy = RigidWakePolicy::wake;
+};
+struct ApplyAngularImpulse {
+  std::string body_id;
+  std::uint32_t impulse = 0;
+  RigidWakePolicy wake_policy = RigidWakePolicy::wake;
+};
+struct SetBodyDamping {
+  std::string body_id;
+  std::uint32_t linear = 0;
+  std::uint32_t angular = 0;
+};
+struct SetGravityScale { std::string body_id; std::uint32_t scale = 0; };
+struct SetFixedRotation { std::string body_id; bool fixed = false; };
+struct SetSleepingAllowed { std::string body_id; bool allowed = true; };
+struct SetAwake { std::string body_id; bool awake = true; };
+struct SetBullet { std::string body_id; bool bullet = false; };
 struct SetFixtureSensor {
   std::string fixture_id;
   bool sensor = false;
@@ -108,6 +158,45 @@ struct RigidStep {
   std::uint32_t velocity_iterations = 0;
   std::uint32_t position_iterations = 0;
 };
+struct SetWorldGravity { RigidVec2Bits gravity; };
+struct SetAutomaticForceClearing { bool enabled = true; };
+struct SetWarmStarting { bool enabled = true; };
+struct SetContinuousPhysics { bool enabled = true; };
+struct SetSubStepping { bool enabled = false; };
+struct ClearForces {};
+struct ConfiguredStep {
+  std::uint32_t timestep = 0;
+  std::uint32_t velocity_iterations = 0;
+  std::uint32_t position_iterations = 0;
+  std::uint32_t continuous_work_budget = 0;
+};
+struct RigidAabbBits { RigidVec2Bits lower; RigidVec2Bits upper; };
+struct RigidFixtureChildSelector {
+  std::string fixture_id;
+  std::uint32_t child_index = 0;
+};
+struct RigidQueryRule {
+  RigidFixtureChildSelector target;
+  RigidQueryDirective directive = RigidQueryDirective::continue_query;
+};
+struct QueryAabb {
+  RigidAabbBits aabb;
+  std::vector<RigidQueryRule> rules;
+};
+struct RigidRayDirectiveValue {
+  RigidRayDirectiveKind kind = RigidRayDirectiveKind::continue_ray;
+  std::uint32_t fraction = 0;
+};
+struct RigidRayRule {
+  RigidFixtureChildSelector target;
+  RigidRayDirectiveValue directive;
+};
+struct RayCast {
+  RigidVec2Bits start;
+  RigidVec2Bits end;
+  std::vector<RigidRayRule> rules;
+};
+struct ShiftOrigin { RigidVec2Bits shift; };
 struct DestroyFixture { std::string fixture_id; };
 struct DestroyBody { std::string body_id; };
 
@@ -119,6 +208,18 @@ using RigidAction = std::variant<
     SetBodyTransform,
     SetBodyType,
     SetBodyActive,
+    SetLinearVelocity,
+    SetAngularVelocity,
+    ApplyForce,
+    ApplyTorque,
+    ApplyLinearImpulse,
+    ApplyAngularImpulse,
+    SetBodyDamping,
+    SetGravityScale,
+    SetFixedRotation,
+    SetSleepingAllowed,
+    SetAwake,
+    SetBullet,
     SetFixtureSensor,
     SetFixtureMaterial,
     SetFixtureFilter,
@@ -126,6 +227,16 @@ using RigidAction = std::variant<
     ResetMassData,
     SetCustomMassData,
     RigidStep,
+    SetWorldGravity,
+    SetAutomaticForceClearing,
+    SetWarmStarting,
+    SetContinuousPhysics,
+    SetSubStepping,
+    ClearForces,
+    ConfiguredStep,
+    QueryAabb,
+    RayCast,
+    ShiftOrigin,
     DestroyFixture,
     DestroyBody>;
 

@@ -3,6 +3,9 @@ crates/liquidfun-differential/src/math_probe.rs
 crates/liquidfun-differential/src/collision_probe.rs
 crates/liquidfun-differential/src/collision_probe/support.rs
 crates/liquidfun-differential/src/rigid_world.rs
+crates/liquidfun-differential/src/rigid_world/evidence.rs
+crates/liquidfun-differential/src/rigid_world/model.rs
+crates/liquidfun-differential/src/rigid_world/phase7.rs
 crates/liquidfun-test-protocol/src/scenario/rigid_world.rs
 crates/liquidfun-test-protocol/src/scenario/rigid_world/result.rs
 crates/liquidfun-test-protocol/src/scenario/rigid_world/types.rs

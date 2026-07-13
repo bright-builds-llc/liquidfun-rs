@@ -36,6 +36,15 @@ b2BodyType body_type(RigidBodyKind kind) {
   throw std::runtime_error("unreachable rigid body kind");
 }
 
+bool is_phase6_family(RigidWitnessFamily family) {
+  return family == RigidWitnessFamily::non_colliding ||
+         family == RigidWitnessFamily::single_contact;
+}
+
+bool should_wake(RigidWakePolicy policy) {
+  return policy == RigidWakePolicy::wake;
+}
+
 class TimelineExecution;
 
 class SemanticContactListener final : public b2ContactListener {
@@ -206,6 +215,8 @@ class TimelineExecution {
     contact_identities_.erase(found);
   }
 
+#include "rigid_world_phase7_execute.hpp"
+
   void execute(const RigidAction& action) {
     begin_action();
     bool was_step = false;
@@ -228,6 +239,48 @@ class TimelineExecution {
             body(current.body_id).SetType(body_type(current.kind));
           } else if constexpr (std::is_same_v<T, SetBodyActive>) {
             body(current.body_id).SetActive(current.active);
+          } else if constexpr (std::is_same_v<T, SetLinearVelocity>) {
+            body(current.body_id).SetLinearVelocity(vector(current.velocity));
+            observe_body(current.body_id);
+          } else if constexpr (std::is_same_v<T, SetAngularVelocity>) {
+            body(current.body_id).SetAngularVelocity(float_from_bits(current.velocity));
+            observe_body(current.body_id);
+          } else if constexpr (std::is_same_v<T, ApplyForce>) {
+            body(current.body_id).ApplyForce(
+                vector(current.force), vector(current.point), should_wake(current.wake_policy));
+            observe_body(current.body_id);
+          } else if constexpr (std::is_same_v<T, ApplyTorque>) {
+            body(current.body_id).ApplyTorque(
+                float_from_bits(current.torque), should_wake(current.wake_policy));
+            observe_body(current.body_id);
+          } else if constexpr (std::is_same_v<T, ApplyLinearImpulse>) {
+            body(current.body_id).ApplyLinearImpulse(
+                vector(current.impulse), vector(current.point), should_wake(current.wake_policy));
+            observe_body(current.body_id);
+          } else if constexpr (std::is_same_v<T, ApplyAngularImpulse>) {
+            body(current.body_id).ApplyAngularImpulse(
+                float_from_bits(current.impulse), should_wake(current.wake_policy));
+            observe_body(current.body_id);
+          } else if constexpr (std::is_same_v<T, SetBodyDamping>) {
+            auto& target = body(current.body_id);
+            target.SetLinearDamping(float_from_bits(current.linear));
+            target.SetAngularDamping(float_from_bits(current.angular));
+            observe_body(current.body_id);
+          } else if constexpr (std::is_same_v<T, SetGravityScale>) {
+            body(current.body_id).SetGravityScale(float_from_bits(current.scale));
+            observe_body(current.body_id);
+          } else if constexpr (std::is_same_v<T, SetFixedRotation>) {
+            body(current.body_id).SetFixedRotation(current.fixed);
+            observe_body(current.body_id);
+          } else if constexpr (std::is_same_v<T, SetSleepingAllowed>) {
+            body(current.body_id).SetSleepingAllowed(current.allowed);
+            observe_body(current.body_id);
+          } else if constexpr (std::is_same_v<T, SetAwake>) {
+            body(current.body_id).SetAwake(current.awake);
+            observe_body(current.body_id);
+          } else if constexpr (std::is_same_v<T, SetBullet>) {
+            body(current.body_id).SetBullet(current.bullet);
+            observe_body(current.body_id);
           } else if constexpr (std::is_same_v<T, SetFixtureSensor>) {
             fixture(current.fixture_id).SetSensor(current.sensor);
           } else if constexpr (std::is_same_v<T, SetFixtureMaterial>) {
@@ -265,6 +318,31 @@ class TimelineExecution {
                 const_cast<b2ContactManager&>(world_.GetContactManager());
             contact_manager.FindNewContacts();
             world_.Step(timestep, velocity_iterations, position_iterations, 1);
+          } else if constexpr (std::is_same_v<T, SetWorldGravity>) {
+            world_.SetGravity(vector(current.gravity));
+          } else if constexpr (std::is_same_v<T, SetAutomaticForceClearing>) {
+            world_.SetAutoClearForces(current.enabled);
+          } else if constexpr (std::is_same_v<T, SetWarmStarting>) {
+            world_.SetWarmStarting(current.enabled);
+          } else if constexpr (std::is_same_v<T, SetContinuousPhysics>) {
+            world_.SetContinuousPhysics(current.enabled);
+          } else if constexpr (std::is_same_v<T, SetSubStepping>) {
+            world_.SetSubStepping(current.enabled);
+          } else if constexpr (std::is_same_v<T, ClearForces>) {
+            world_.ClearForces();
+          } else if constexpr (std::is_same_v<T, ConfiguredStep>) {
+            was_step = true;
+            step_start_contacts_ = contacts();
+            configured_step(current);
+          } else if constexpr (std::is_same_v<T, QueryAabb>) {
+            query_aabb(current);
+          } else if constexpr (std::is_same_v<T, RayCast>) {
+            ray_cast(current);
+          } else if constexpr (std::is_same_v<T, ShiftOrigin>) {
+            world_.ShiftOrigin(vector(current.shift));
+            observations_.push_back(
+                {{"kind", "origin_shift"},
+                 {"shift", encode_rigid_vector(vector(current.shift))}});
           } else if constexpr (std::is_same_v<T, DestroyFixture>) {
             destroy_fixture(current.fixture_id);
           } else if constexpr (std::is_same_v<T, DestroyBody>) {
@@ -285,7 +363,7 @@ class TimelineExecution {
     definition.position = vector(declaration->second->transform.position);
     definition.angle = float_from_bits(declaration->second->transform.angle);
     definition.active = declaration->second->active;
-    definition.allowSleep = false;
+    definition.allowSleep = !is_phase6_family(timeline_.family);
     auto* created = world_.CreateBody(&definition);
     if (created == nullptr || !bodies_.emplace(id, created).second) {
       throw std::runtime_error("pinned world failed to create body");
@@ -516,8 +594,12 @@ class TimelineExecution {
         {"contacts", std::move(contacts)},
         {"events", std::move(events_)},
         {"destructions", std::move(destructions_)}};
+    if (!observations_.empty()) {
+      result["observations"] = std::move(observations_);
+    }
     events_ = Json::array();
     destructions_ = Json::array();
+    observations_ = Json::array();
     return result;
   }
 
@@ -563,6 +645,9 @@ class TimelineExecution {
   std::set<const b2Contact*> persisted_;
   Json events_ = Json::array();
   Json destructions_ = Json::array();
+  Json observations_ = Json::array();
+  bool substep_pending_ = false;
+  bool budget_pending_ = false;
 
   friend class SemanticContactListener;
 };
@@ -597,20 +682,22 @@ RigidWorldTrace RigidWorldAdapter::execute(std::string_view record) {
   const auto request = decode_rigid_world_request(record);
   Json timeline_results = Json::array();
   bool world_active = false;
-  {
-    b2World world({0.0F, 0.0F});
-    world.SetAllowSleeping(false);
-    world.SetContinuousPhysics(false);
-    world_active = true;
-    for (const auto& timeline : request.timelines) {
+  for (const auto& timeline : request.timelines) {
+    {
+      b2World world({0.0F, 0.0F});
+      if (is_phase6_family(timeline.family)) {
+        world.SetAllowSleeping(false);
+        world.SetContinuousPhysics(false);
+      }
+      world_active = true;
       TimelineExecution execution(world, timeline);
       timeline_results.push_back(execution.run());
+      if (world.GetBodyCount() != 0 || world.GetContactCount() != 0) {
+        throw std::runtime_error("rigid request left pinned world state live");
+      }
     }
-    if (world.GetBodyCount() != 0 || world.GetContactCount() != 0) {
-      throw std::runtime_error("rigid request left pinned world state live");
-    }
+    world_active = false;
   }
-  world_active = false;
   if (world_active) throw std::runtime_error("rigid world reset proof failed");
   if (reset_epoch_ == std::numeric_limits<std::uint64_t>::max()) {
     throw std::runtime_error("rigid world reset epoch overflowed");
