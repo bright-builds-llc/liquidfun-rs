@@ -4,7 +4,7 @@ use std::fmt::Debug;
 
 use liquidfun_test_protocol::{
     RigidWorldRequestRecord, RigidWorldResultRecord, Sha256Hex,
-    validate_rigid_world_result_against_request,
+    rigid_world_checkpoint_live_identities, validate_rigid_world_result_against_request,
 };
 
 use super::{
@@ -131,12 +131,10 @@ pub(super) fn validate_rigid_declarations_with_identity(
                 .iter()
                 .map(|body| &body.body_id)
                 .collect::<Vec<_>>();
-            let declared_body_ids = declared
-                .bodies()
-                .iter()
-                .map(liquidfun_test_protocol::RigidBodyDeclaration::body_id)
-                .collect::<Vec<_>>();
-            if !is_subsequence(&declared_body_ids, &body_ids) {
+            let live_identities =
+                rigid_world_checkpoint_live_identities(declared, checkpoint_index)
+                    .expect("validated checkpoint action exists");
+            if live_identities.body_ids() != body_ids {
                 return declaration(
                     request,
                     profile_sha256,
@@ -144,8 +142,8 @@ pub(super) fn validate_rigid_declarations_with_identity(
                     timeline_index,
                     checkpoint_index,
                     "rigid_world.checkpoint.bodies.declaration_order",
-                    declared_body_ids,
-                    body_ids,
+                    live_identities.body_ids(),
+                    body_ids.as_slice(),
                 );
             }
             let fixture_ids = actual
@@ -153,12 +151,7 @@ pub(super) fn validate_rigid_declarations_with_identity(
                 .iter()
                 .map(|fixture| &fixture.fixture_id)
                 .collect::<Vec<_>>();
-            let declared_fixture_ids = declared
-                .fixtures()
-                .iter()
-                .map(liquidfun_test_protocol::RigidFixtureDeclaration::fixture_id)
-                .collect::<Vec<_>>();
-            if !is_subsequence(&declared_fixture_ids, &fixture_ids) {
+            if live_identities.fixture_ids() != fixture_ids {
                 return declaration(
                     request,
                     profile_sha256,
@@ -166,8 +159,8 @@ pub(super) fn validate_rigid_declarations_with_identity(
                     timeline_index,
                     checkpoint_index,
                     "rigid_world.checkpoint.fixtures.declaration_order",
-                    declared_fixture_ids,
-                    fixture_ids,
+                    live_identities.fixture_ids(),
+                    fixture_ids.as_slice(),
                 );
             }
         }
@@ -232,18 +225,4 @@ fn declaration_root<T: Debug>(
 
 fn first_missing_index(expected: usize, actual: usize) -> usize {
     expected.min(actual)
-}
-
-fn is_subsequence<T: PartialEq>(declared: &[T], actual: &[T]) -> bool {
-    let mut next = 0;
-    for item in actual {
-        let Some(offset) = declared[next..]
-            .iter()
-            .position(|declared_item| declared_item == item)
-        else {
-            return false;
-        };
-        next += offset + 1;
-    }
-    true
 }

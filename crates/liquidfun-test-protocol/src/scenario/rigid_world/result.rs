@@ -1,3 +1,5 @@
+use std::collections::{HashMap, HashSet};
+
 use serde::{Deserialize, Serialize};
 
 use super::{
@@ -251,6 +253,27 @@ pub struct RigidWorldTimelineResult {
     pub checkpoints: Box<[RigidWorldCheckpointResult]>,
 }
 
+/// Declaration-ordered live identities expected at one rigid-world checkpoint.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RigidCheckpointLiveIdentities<'a> {
+    body_ids: Vec<&'a ScenarioId>,
+    fixture_ids: Vec<&'a ScenarioId>,
+}
+
+impl<'a> RigidCheckpointLiveIdentities<'a> {
+    /// Returns live body identities in declaration order.
+    #[must_use]
+    pub fn body_ids(&self) -> &[&'a ScenarioId] {
+        &self.body_ids
+    }
+
+    /// Returns live fixture identities in declaration order.
+    #[must_use]
+    pub fn fixture_ids(&self) -> &[&'a ScenarioId] {
+        &self.fixture_ids
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct RigidWorldResultRecord {
@@ -354,11 +377,11 @@ pub fn validate_rigid_world_result_against_request(
             return Err(validation(RigidWorldErrorKind::ResultTimelineMismatch));
         }
 
-        let mut action_start = 0;
-        for (expected, actual) in expected_timeline
+        for (checkpoint_index, (expected, actual)) in expected_timeline
             .checkpoints()
             .iter()
             .zip(actual_timeline.checkpoints.iter())
+            .enumerate()
         {
             if expected.checkpoint_id() != &actual.checkpoint_id
                 || expected.phase() != actual.phase.as_ref()
@@ -366,17 +389,13 @@ pub fn validate_rigid_world_result_against_request(
             {
                 return Err(validation(RigidWorldErrorKind::ResultCheckpointMismatch));
             }
-            validate_checkpoint_declaration_order(expected_timeline, actual)?;
-            let action_end = expected_timeline
-                .actions()
-                .iter()
-                .position(|action| action.action_id() == expected.after_action_id())
+            let live_identities =
+                rigid_world_checkpoint_live_identities(expected_timeline, checkpoint_index)
+                    .ok_or_else(|| validation(RigidWorldErrorKind::ResultCheckpointMismatch))?;
+            validate_checkpoint_declaration_order(&live_identities, actual)?;
+            let actions = rigid_world_checkpoint_action_window(expected_timeline, checkpoint_index)
                 .ok_or_else(|| validation(RigidWorldErrorKind::ResultCheckpointMismatch))?;
-            validate_checkpoint_observations(
-                &expected_timeline.actions()[action_start..=action_end],
-                &actual.observations,
-            )?;
-            action_start = action_end + 1;
+            validate_checkpoint_observations(actions, &actual.observations)?;
         }
     }
     Ok(())
@@ -463,36 +482,26 @@ fn expected_observation(action: &RigidWorldAction) -> Option<ExpectedObservation
 }
 
 fn validate_checkpoint_declaration_order(
-    timeline: &super::RigidWorldTimeline,
+    expected: &RigidCheckpointLiveIdentities<'_>,
     checkpoint: &RigidWorldCheckpointResult,
 ) -> Result<(), RigidWorldDecodeError> {
-    let declared_bodies = timeline
-        .bodies()
-        .iter()
-        .map(super::RigidBodyDeclaration::body_id)
-        .collect::<Vec<_>>();
     let actual_bodies = checkpoint
         .bodies
         .iter()
         .map(|body| &body.body_id)
         .collect::<Vec<_>>();
-    if !is_declared_subsequence(&declared_bodies, &actual_bodies) {
+    if expected.body_ids != actual_bodies {
         return Err(validation(
             RigidWorldErrorKind::ResultDeclarationOrderMismatch,
         ));
     }
 
-    let declared_fixtures = timeline
-        .fixtures()
-        .iter()
-        .map(super::RigidFixtureDeclaration::fixture_id)
-        .collect::<Vec<_>>();
     let actual_fixtures = checkpoint
         .fixtures
         .iter()
         .map(|fixture| &fixture.fixture_id)
         .collect::<Vec<_>>();
-    if !is_declared_subsequence(&declared_fixtures, &actual_fixtures) {
+    if expected.fixture_ids != actual_fixtures {
         return Err(validation(
             RigidWorldErrorKind::ResultDeclarationOrderMismatch,
         ));
@@ -500,18 +509,76 @@ fn validate_checkpoint_declaration_order(
     Ok(())
 }
 
-fn is_declared_subsequence<T: PartialEq>(declared: &[T], actual: &[T]) -> bool {
-    let mut next = 0;
-    for item in actual {
-        let Some(offset) = declared[next..]
+/// Returns the actions owned by one checkpoint, excluding actions owned by the prior checkpoint.
+#[must_use]
+pub fn rigid_world_checkpoint_action_window(
+    timeline: &super::RigidWorldTimeline,
+    checkpoint_index: usize,
+) -> Option<&[super::RigidWorldActionRecord]> {
+    let checkpoint = timeline.checkpoints().get(checkpoint_index)?;
+    let action_end = timeline
+        .actions()
+        .iter()
+        .position(|action| action.action_id() == checkpoint.after_action_id())?;
+    let action_start = if checkpoint_index == 0 {
+        0
+    } else {
+        let previous = timeline.checkpoints().get(checkpoint_index - 1)?;
+        timeline
+            .actions()
             .iter()
-            .position(|declared_item| declared_item == item)
-        else {
-            return false;
-        };
-        next += offset + 1;
+            .position(|action| action.action_id() == previous.after_action_id())?
+            .checked_add(1)?
+    };
+    timeline.actions().get(action_start..=action_end)
+}
+
+/// Replays lifecycle actions through one checkpoint and returns exact live identities.
+#[must_use]
+pub fn rigid_world_checkpoint_live_identities(
+    timeline: &super::RigidWorldTimeline,
+    checkpoint_index: usize,
+) -> Option<RigidCheckpointLiveIdentities<'_>> {
+    let action_window = rigid_world_checkpoint_action_window(timeline, checkpoint_index)?;
+    let action_end = action_window.last()?.action_id();
+    let action_end = timeline
+        .actions()
+        .iter()
+        .position(|action| action.action_id() == action_end)?;
+    let fixture_owners = timeline
+        .fixtures()
+        .iter()
+        .map(|fixture| {
+            (
+                fixture.fixture_id().clone(),
+                fixture.owner_body_id().clone(),
+            )
+        })
+        .collect::<HashMap<_, _>>();
+    let mut live_bodies = HashSet::new();
+    let mut live_fixtures = HashSet::new();
+    for action in &timeline.actions()[..=action_end] {
+        super::types::apply_lifecycle_action(
+            action.action(),
+            &fixture_owners,
+            &mut live_bodies,
+            &mut live_fixtures,
+        );
     }
-    true
+    Some(RigidCheckpointLiveIdentities {
+        body_ids: timeline
+            .bodies()
+            .iter()
+            .map(super::RigidBodyDeclaration::body_id)
+            .filter(|body_id| live_bodies.contains(*body_id))
+            .collect(),
+        fixture_ids: timeline
+            .fixtures()
+            .iter()
+            .map(super::RigidFixtureDeclaration::fixture_id)
+            .filter(|fixture_id| live_fixtures.contains(*fixture_id))
+            .collect(),
+    })
 }
 
 fn validate_result_bounds(result: &RigidWorldResultRecord) -> Result<(), RigidWorldDecodeError> {

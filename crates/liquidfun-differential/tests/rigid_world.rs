@@ -11,14 +11,16 @@ use std::time::Duration;
 use liquidfun_differential::{
     ArtifactKind, EmptyWorldAdapter, FailureBundleRequest, MinimizationBudget,
     NativeRigidWorldExecutor, OracleExecutable, OraclePreset, RigidComparisonFailure,
-    RigidComparisonOutcome, RigidEvaluation, RigidMismatchKind, RigidPromotionError,
-    compare_rigid_world_results, execute_rigid_world_process, minimize_rigid_world_request,
-    persist_failure_bundle, validate_native_rigid_world_result, validate_rigid_promotion_authority,
+    RigidComparisonOutcome, RigidEngineSide, RigidEvaluation, RigidMismatchKind,
+    RigidPromotionError, compare_rigid_world_results, execute_rigid_world_process,
+    minimize_rigid_world_request, persist_failure_bundle, validate_native_rigid_world_result,
+    validate_rigid_promotion_authority,
 };
 use liquidfun_test_protocol::{
     HarnessLimits, Phase6PolicyProfile, RecordLimit, RigidWorldErrorKind, RigidWorldObservation,
     RigidWorldRequestRecord, RigidWorldResultRecord, RigidWorldWitnessFamily,
     decode_rigid_world_request_jsonl, decode_rigid_world_result_jsonl, encode_jsonl,
+    rigid_world_checkpoint_live_identities,
 };
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
@@ -49,6 +51,63 @@ fn comparison_request() -> RigidWorldRequestRecord {
     value["tolerance_profile_sha256"] = json!(profile.profile_sha256().as_str());
     decode_rigid_world_request_jsonl(&encode_value(&value), &HarnessLimits::phase2_default_v1())
         .expect("profile-bound rigid request should decode")
+}
+
+fn comparison_request_with_partial_body_checkpoint() -> RigidWorldRequestRecord {
+    let profile = profile();
+    let mut value = serde_json::from_slice::<Value>(REQUEST).expect("fixture should be JSON");
+    value["tolerance_profile_sha256"] = json!(profile.profile_sha256().as_str());
+    let checkpoints = value["scenario"]["timelines"][0]["checkpoints"]
+        .as_array_mut()
+        .expect("non-colliding checkpoints should be an array");
+    let final_checkpoint = checkpoints
+        .last_mut()
+        .expect("non-colliding timeline should have a final checkpoint");
+    final_checkpoint["counts"]["destructions"] = json!(2);
+    let insert_at = checkpoints.len() - 1;
+    checkpoints.insert(
+        insert_at,
+        json!({
+            "checkpoint_id": "nc-first-body-destroyed",
+            "after_action_id": "nc-destroy-body-static",
+            "phase": "destroy-bodies",
+            "counts": {
+                "bodies": 2,
+                "fixtures": 0,
+                "contacts": 0,
+                "manifold_points": 0,
+                "events": 0,
+                "destructions": 1
+            },
+            "transitions": []
+        }),
+    );
+    decode_rigid_world_request_jsonl(&encode_value(&value), &HarnessLimits::phase2_default_v1())
+        .expect("partial body-destruction checkpoint should decode")
+}
+
+fn assert_identity_rejected_on_each_side(
+    request: &RigidWorldRequestRecord,
+    complete: &RigidWorldResultRecord,
+    mutated: &RigidWorldResultRecord,
+    profile: &Phase6PolicyProfile,
+    path: &str,
+) {
+    for side in [RigidEngineSide::Native, RigidEngineSide::Oracle] {
+        let result = match side {
+            RigidEngineSide::Native => {
+                compare_rigid_world_results(request, mutated, complete, profile)
+            }
+            RigidEngineSide::Oracle => {
+                compare_rigid_world_results(request, complete, mutated, profile)
+            }
+        };
+        let Err(RigidComparisonFailure::Declaration(report)) = result else {
+            panic!("{side:?} identity disagreement must fail declaration validation");
+        };
+        assert_eq!(report.engine_side(), side);
+        assert_eq!(report.semantic_path(), path);
+    }
 }
 
 fn decode_result_value(value: &Value) -> RigidWorldResultRecord {
@@ -374,6 +433,108 @@ fn comparison_rejects_omitted_phase7_observations_on_each_engine_side() {
         oracle_error,
         Err(RigidComparisonFailure::Harness(_))
     ));
+}
+
+#[test]
+fn comparison_rejects_same_count_stale_body_identities_on_each_engine_side() {
+    // Arrange
+    let request = comparison_request_with_partial_body_checkpoint();
+    let profile = profile();
+    let complete = NativeRigidWorldExecutor::execute(&request)
+        .expect("request with partial body destruction should execute");
+    let mut mutated_value = result_value(&complete);
+    let bodies = mutated_value["timelines"][0]["checkpoints"][7]["bodies"]
+        .as_array_mut()
+        .expect("partial destruction checkpoint should contain body snapshots");
+    assert_eq!(bodies[0]["body_id"], json!("nc-kinematic"));
+    assert_eq!(bodies[1]["body_id"], json!("nc-dynamic"));
+    bodies[0]["body_id"] = json!("nc-static");
+    bodies[1]["body_id"] = json!("nc-kinematic");
+    let mutated = decode_result_value(&mutated_value);
+
+    // Act and Assert
+    assert_identity_rejected_on_each_side(
+        &request,
+        &complete,
+        &mutated,
+        &profile,
+        "rigid_world.checkpoint.bodies.declaration_order",
+    );
+}
+
+#[test]
+fn comparison_rejects_same_count_stale_fixture_identities_on_each_engine_side() {
+    // Arrange
+    let request = comparison_request();
+    let profile = profile();
+    let complete = NativeRigidWorldExecutor::execute(&request)
+        .expect("profile-bound request should execute natively");
+    let mut mutated_value = result_value(&complete);
+    let fixtures = mutated_value["timelines"][1]["checkpoints"][8]["fixtures"]
+        .as_array_mut()
+        .expect("fixture-destruction checkpoint should contain one fixture snapshot");
+    assert_eq!(fixtures[0]["fixture_id"], json!("contact-static-fixture"));
+    fixtures[0]["fixture_id"] = json!("contact-dynamic-fixture");
+    let mutated = decode_result_value(&mutated_value);
+
+    // Act and Assert
+    assert_identity_rejected_on_each_side(
+        &request,
+        &complete,
+        &mutated,
+        &profile,
+        "rigid_world.checkpoint.fixtures.declaration_order",
+    );
+}
+
+#[test]
+fn checkpoint_live_identities_apply_body_destruction_fixture_cascades() {
+    // Arrange
+    let mut value = serde_json::from_slice::<Value>(REQUEST).expect("fixture should be JSON");
+    value["scenario"]["timelines"][8]["checkpoints"]
+        .as_array_mut()
+        .expect("origin checkpoints should be an array")
+        .push(json!({
+            "checkpoint_id": "origin-right-destroyed",
+            "after_action_id": "origin-09",
+            "phase": "teardown",
+            "counts": {
+                "bodies": 1,
+                "fixtures": 1,
+                "contacts": 0,
+                "manifold_points": 0,
+                "events": 0,
+                "destructions": 2
+            },
+            "transitions": []
+        }));
+    let request = decode_rigid_world_request_jsonl(
+        &encode_value(&value),
+        &HarnessLimits::phase2_default_v1(),
+    )
+    .expect("cascade checkpoint should decode");
+
+    // Act
+    let identities = rigid_world_checkpoint_live_identities(&request.scenario().timelines()[8], 1)
+        .expect("validated cascade checkpoint should have live identities");
+
+    // Assert
+    assert_eq!(
+        identities
+            .body_ids()
+            .iter()
+            .map(|id| id.as_str())
+            .collect::<Vec<_>>(),
+        ["origin-left"]
+    );
+    assert_eq!(
+        identities
+            .fixture_ids()
+            .iter()
+            .map(|id| id.as_str())
+            .collect::<Vec<_>>(),
+        ["origin-left-fixture"]
+    );
 }
 
 #[test]

@@ -772,22 +772,12 @@ fn action_live_counts(
     let mut fixtures = HashSet::new();
     let mut counts = Vec::with_capacity(actions.len());
     for action in actions {
-        match &action.action {
-            RigidWorldAction::CreateBody { body_id } => {
-                bodies.insert(body_id.clone());
-            }
-            RigidWorldAction::CreateFixture { fixture_id } => {
-                fixtures.insert(fixture_id.clone());
-            }
-            RigidWorldAction::DestroyFixture { fixture_id } => {
-                fixtures.remove(fixture_id);
-            }
-            RigidWorldAction::DestroyBody { body_id } => {
-                bodies.remove(body_id);
-                fixtures.retain(|fixture_id| fixture_owners.get(fixture_id) != Some(body_id));
-            }
-            _ => {}
-        }
+        super::types::apply_lifecycle_action(
+            action.action(),
+            fixture_owners,
+            &mut bodies,
+            &mut fixtures,
+        );
         counts.push((bodies.len(), fixtures.len()));
     }
     counts
