@@ -261,6 +261,7 @@ pub struct RigidWorldTimelineResult {
 pub struct RigidCheckpointLiveIdentities<'a> {
     body_ids: Vec<&'a ScenarioId>,
     fixture_ids: Vec<&'a ScenarioId>,
+    fixtures: Vec<&'a super::RigidFixtureDeclaration>,
 }
 
 impl<'a> RigidCheckpointLiveIdentities<'a> {
@@ -398,7 +399,7 @@ pub fn validate_rigid_world_result_against_request(
             validate_checkpoint_declaration_order(&live_identities, actual)?;
             let actions = rigid_world_checkpoint_action_window(expected_timeline, checkpoint_index)
                 .ok_or_else(|| validation(RigidWorldErrorKind::ResultCheckpointMismatch))?;
-            validate_checkpoint_observations(actions, &actual.observations)?;
+            validate_checkpoint_observations(actions, &live_identities, &actual.observations)?;
         }
     }
     Ok(())
@@ -406,6 +407,7 @@ pub fn validate_rigid_world_result_against_request(
 
 fn validate_checkpoint_observations(
     actions: &[super::RigidWorldActionRecord],
+    live_identities: &RigidCheckpointLiveIdentities<'_>,
     observations: &[RigidWorldObservation],
 ) -> Result<(), RigidWorldDecodeError> {
     let expected = actions
@@ -416,7 +418,7 @@ fn validate_checkpoint_observations(
         || expected
             .iter()
             .zip(observations)
-            .any(|(expected, actual)| !expected.matches(actual))
+            .any(|(expected, actual)| !expected.matches(live_identities, actual))
     {
         return Err(validation(RigidWorldErrorKind::ResultObservationMismatch));
     }
@@ -427,21 +429,27 @@ fn validate_checkpoint_observations(
 enum ExpectedObservation<'a> {
     BodyState(&'a ScenarioId),
     Step,
-    Query,
+    Query(&'a [super::RigidQueryDirectiveRule]),
     RayCast(&'a [super::RigidRayDirectiveRule]),
     OriginShift(Vec2Bits),
 }
 
 impl ExpectedObservation<'_> {
-    fn matches(self, actual: &RigidWorldObservation) -> bool {
+    fn matches(
+        self,
+        live_identities: &RigidCheckpointLiveIdentities<'_>,
+        actual: &RigidWorldObservation,
+    ) -> bool {
         match (self, actual) {
             (Self::BodyState(expected), RigidWorldObservation::BodyState { state }) => {
                 expected == &state.body_id
             }
-            (Self::Step, RigidWorldObservation::Step { .. })
-            | (Self::Query, RigidWorldObservation::Query { .. }) => true,
+            (Self::Step, RigidWorldObservation::Step { .. }) => true,
+            (Self::Query(rules), RigidWorldObservation::Query { observation }) => {
+                query_observation_matches(live_identities, rules, observation)
+            }
             (Self::RayCast(rules), RigidWorldObservation::RayCast { observation }) => {
-                ray_observation_matches(rules, observation)
+                ray_observation_matches(live_identities, rules, observation)
             }
             (Self::OriginShift(expected), RigidWorldObservation::OriginShift { shift }) => {
                 expected == *shift
@@ -451,7 +459,39 @@ impl ExpectedObservation<'_> {
     }
 }
 
+fn query_observation_matches(
+    live_identities: &RigidCheckpointLiveIdentities<'_>,
+    rules: &[super::RigidQueryDirectiveRule],
+    observation: &RigidQueryObservation,
+) -> bool {
+    let mut terminated = false;
+    for occurrence in &observation.occurrences {
+        if terminated
+            || !fixture_child_is_live(
+                live_identities,
+                &occurrence.fixture_id,
+                occurrence.child_index,
+            )
+        {
+            return false;
+        }
+        terminated = rules.iter().any(|rule| {
+            rule.target.fixture_id == occurrence.fixture_id
+                && rule.target.child_index == occurrence.child_index
+                && rule.directive == super::RigidQueryDirective::Terminate
+        });
+    }
+
+    observation.completion
+        == if terminated {
+            RigidQueryCompletion::Terminated
+        } else {
+            RigidQueryCompletion::Exhausted
+        }
+}
+
 fn ray_observation_matches(
+    live_identities: &RigidCheckpointLiveIdentities<'_>,
     rules: &[super::RigidRayDirectiveRule],
     observation: &RigidRayObservation,
 ) -> bool {
@@ -460,7 +500,7 @@ fn ray_observation_matches(
     let mut terminated = false;
 
     for hit in &observation.hits {
-        if terminated {
+        if terminated || !fixture_child_is_live(live_identities, &hit.fixture_id, hit.child_index) {
             return false;
         }
         let hit_fraction = hit.fraction_bits.to_f32();
@@ -499,6 +539,21 @@ fn ray_observation_matches(
         && observation.final_max_fraction_bits == current_max_fraction_bits
 }
 
+fn fixture_child_is_live(
+    live_identities: &RigidCheckpointLiveIdentities<'_>,
+    fixture_id: &ScenarioId,
+    child_index: u32,
+) -> bool {
+    live_identities.fixtures.iter().any(|fixture| {
+        fixture.fixture_id() == fixture_id
+            && child_index
+                < match fixture.shape() {
+                    super::RigidFixtureShape::Circle { .. }
+                    | super::RigidFixtureShape::Polygon { .. } => 1,
+                }
+    })
+}
+
 fn expected_observation(action: &RigidWorldAction) -> Option<ExpectedObservation<'_>> {
     match action {
         RigidWorldAction::SetLinearVelocity { body_id, .. }
@@ -516,7 +571,9 @@ fn expected_observation(action: &RigidWorldAction) -> Option<ExpectedObservation
             Some(ExpectedObservation::BodyState(body_id))
         }
         RigidWorldAction::ConfiguredStep { .. } => Some(ExpectedObservation::Step),
-        RigidWorldAction::QueryAabb { .. } => Some(ExpectedObservation::Query),
+        RigidWorldAction::QueryAabb {
+            directive_rules, ..
+        } => Some(ExpectedObservation::Query(directive_rules)),
         RigidWorldAction::RayCast {
             directive_rules, ..
         } => Some(ExpectedObservation::RayCast(directive_rules)),
@@ -609,6 +666,11 @@ pub fn rigid_world_checkpoint_live_identities(
             &mut live_fixtures,
         );
     }
+    let fixtures = timeline
+        .fixtures()
+        .iter()
+        .filter(|fixture| live_fixtures.contains(fixture.fixture_id()))
+        .collect::<Vec<_>>();
     Some(RigidCheckpointLiveIdentities {
         body_ids: timeline
             .bodies()
@@ -616,12 +678,11 @@ pub fn rigid_world_checkpoint_live_identities(
             .map(super::RigidBodyDeclaration::body_id)
             .filter(|body_id| live_bodies.contains(*body_id))
             .collect(),
-        fixture_ids: timeline
-            .fixtures()
+        fixture_ids: fixtures
             .iter()
-            .map(super::RigidFixtureDeclaration::fixture_id)
-            .filter(|fixture_id| live_fixtures.contains(*fixture_id))
+            .map(|fixture| fixture.fixture_id())
             .collect(),
+        fixtures,
     })
 }
 

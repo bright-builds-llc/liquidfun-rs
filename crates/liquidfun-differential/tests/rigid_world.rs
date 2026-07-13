@@ -86,6 +86,59 @@ fn comparison_request_with_partial_body_checkpoint() -> RigidWorldRequestRecord 
         .expect("partial body-destruction checkpoint should decode")
 }
 
+fn comparison_request_with_cascade_query_checkpoint() -> RigidWorldRequestRecord {
+    let profile = profile();
+    let mut value = serde_json::from_slice::<Value>(REQUEST).expect("fixture should be JSON");
+    value["tolerance_profile_sha256"] = json!(profile.profile_sha256().as_str());
+    let timeline = value["scenario"]["timelines"]
+        .as_array_mut()
+        .expect("fixture timelines should be an array")
+        .iter_mut()
+        .find(|timeline| timeline["witness_family"] == "world_query_and_ray_cast")
+        .expect("query timeline should exist");
+    let actions = timeline["actions"]
+        .as_array_mut()
+        .expect("query actions should be an array");
+    let destroy_index = actions
+        .iter()
+        .position(|action| action["action_id"] == "query-12")
+        .expect("right-body destruction should exist");
+    actions.insert(
+        destroy_index + 1,
+        json!({
+            "action_id": "query-12-cascade-query",
+            "phase": "teardown-query",
+            "action": {
+                "kind": "query_aabb",
+                "aabb": {
+                    "lower": { "x_bits": (-4.0_f32).to_bits(), "y_bits": (-2.0_f32).to_bits() },
+                    "upper": { "x_bits": 4.0_f32.to_bits(), "y_bits": 2.0_f32.to_bits() }
+                },
+                "directive_rules": []
+            }
+        }),
+    );
+    timeline["checkpoints"]
+        .as_array_mut()
+        .expect("query checkpoints should be an array")
+        .push(json!({
+            "checkpoint_id": "query-right-cascade-query",
+            "after_action_id": "query-12-cascade-query",
+            "phase": "teardown-query",
+            "counts": {
+                "bodies": 2,
+                "fixtures": 2,
+                "contacts": 0,
+                "manifold_points": 0,
+                "events": 0,
+                "destructions": 1
+            },
+            "transitions": []
+        }));
+    decode_rigid_world_request_jsonl(&encode_value(&value), &HarnessLimits::phase2_default_v1())
+        .expect("query checkpoint after fixture cascade should decode")
+}
+
 fn request_with_expanding_ray_clips() -> RigidWorldRequestRecord {
     let mut value = serde_json::from_slice::<Value>(REQUEST).expect("fixture should be JSON");
     let query_timeline = value["scenario"]["timelines"]
@@ -135,6 +188,28 @@ fn assert_identity_rejected_on_each_side(
         };
         assert_eq!(report.engine_side(), side);
         assert_eq!(report.semantic_path(), path);
+    }
+}
+
+fn assert_observation_rejected_on_each_side(
+    request: &RigidWorldRequestRecord,
+    complete: &RigidWorldResultRecord,
+    mutated: &RigidWorldResultRecord,
+    profile: &Phase6PolicyProfile,
+) {
+    for side in [RigidEngineSide::Native, RigidEngineSide::Oracle] {
+        let result = match side {
+            RigidEngineSide::Native => {
+                compare_rigid_world_results(request, mutated, complete, profile)
+            }
+            RigidEngineSide::Oracle => {
+                compare_rigid_world_results(request, complete, mutated, profile)
+            }
+        };
+        assert!(
+            matches!(result, Err(RigidComparisonFailure::Harness(_))),
+            "{side:?} invalid observation must fail request-bound validation"
+        );
     }
 }
 
@@ -527,6 +602,113 @@ fn comparison_rejects_omitted_phase7_observations_on_each_engine_side() {
         oracle_error,
         Err(RigidComparisonFailure::Harness(_))
     ));
+}
+
+#[test]
+fn comparison_rejects_invalid_all_continue_query_termination_on_each_engine_side() {
+    // Arrange
+    let request = comparison_request();
+    let profile = profile();
+    let complete = NativeRigidWorldExecutor::execute(&request)
+        .expect("profile-bound request should execute natively");
+    let mut mutated_value = result_value(&complete);
+    let observations = mutated_value["timelines"][7]["checkpoints"][0]["observations"]
+        .as_array_mut()
+        .expect("query checkpoint should contain observations");
+    let query = observations
+        .iter_mut()
+        .find(|observation| {
+            observation["kind"] == "query"
+                && observation["observation"]["completion"] == "exhausted"
+        })
+        .expect("all-continue query observation should exist");
+    query["observation"]["completion"] = json!("terminated");
+    let mutated = decode_result_value(&mutated_value);
+
+    // Act and Assert
+    assert_observation_rejected_on_each_side(&request, &complete, &mutated, &profile);
+}
+
+#[test]
+fn comparison_rejects_query_occurrence_removed_by_body_cascade_on_each_engine_side() {
+    // Arrange
+    let request = comparison_request_with_cascade_query_checkpoint();
+    let profile = profile();
+    let complete = NativeRigidWorldExecutor::execute(&request)
+        .expect("request with a post-cascade query should execute natively");
+    let mut mutated_value = result_value(&complete);
+    let occurrences = mutated_value["timelines"][7]["checkpoints"][1]["observations"][0]
+        ["observation"]["occurrences"]
+        .as_array_mut()
+        .expect("post-cascade query should contain occurrences");
+    occurrences.push(json!({
+        "fixture_id": "query-right-fixture",
+        "child_index": 0
+    }));
+    let mutated = decode_result_value(&mutated_value);
+
+    // Act and Assert
+    assert_observation_rejected_on_each_side(&request, &complete, &mutated, &profile);
+}
+
+#[test]
+fn comparison_rejects_unknown_ray_hit_identity_on_each_engine_side() {
+    // Arrange
+    let request = comparison_request();
+    let profile = profile();
+    let complete = NativeRigidWorldExecutor::execute(&request)
+        .expect("profile-bound request should execute natively");
+    let mut mutated_value = result_value(&complete);
+    let observations = mutated_value["timelines"][7]["checkpoints"][0]["observations"]
+        .as_array_mut()
+        .expect("query checkpoint should contain observations");
+    let ray = observations
+        .iter_mut()
+        .find(|observation| {
+            observation["kind"] == "ray_cast"
+                && observation["observation"]["hits"]
+                    .as_array()
+                    .is_some_and(|hits| !hits.is_empty())
+        })
+        .expect("ray observation with a hit should exist");
+    ray["observation"]["hits"][0]["fixture_id"] = json!("unknown-ray-fixture");
+    let mutated = decode_result_value(&mutated_value);
+
+    // Act and Assert
+    assert_observation_rejected_on_each_side(&request, &complete, &mutated, &profile);
+}
+
+#[test]
+fn comparison_rejects_invalid_child_hit_before_valid_ray_termination_on_each_engine_side() {
+    // Arrange
+    let request = comparison_request();
+    let profile = profile();
+    let complete = NativeRigidWorldExecutor::execute(&request)
+        .expect("profile-bound request should execute natively");
+    let mut mutated_value = result_value(&complete);
+    let observations = mutated_value["timelines"][7]["checkpoints"][0]["observations"]
+        .as_array_mut()
+        .expect("query checkpoint should contain observations");
+    let ray = observations
+        .iter_mut()
+        .find(|observation| {
+            observation["kind"] == "ray_cast"
+                && observation["observation"]["completion"] == "terminated"
+        })
+        .expect("terminated ray observation should exist");
+    let hits = ray["observation"]["hits"]
+        .as_array_mut()
+        .expect("terminated ray should contain hits");
+    let mut fabricated = hits
+        .first()
+        .expect("terminated ray should contain its terminating hit")
+        .clone();
+    fabricated["child_index"] = json!(1);
+    hits.insert(0, fabricated);
+    let mutated = decode_result_value(&mutated_value);
+
+    // Act and Assert
+    assert_observation_rejected_on_each_side(&request, &complete, &mutated, &profile);
 }
 
 #[test]
