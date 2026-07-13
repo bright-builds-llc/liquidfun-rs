@@ -351,6 +351,32 @@ fn comparison_validates_each_engine_declaration_before_cross_engine_fields() {
 }
 
 #[test]
+fn comparison_rejects_omitted_phase7_observations_on_each_engine_side() {
+    // Arrange
+    let request = comparison_request();
+    let profile = profile();
+    let complete = NativeRigidWorldExecutor::execute(&request)
+        .expect("profile-bound request should execute natively");
+    let mut omitted_value = result_value(&complete);
+    omitted_value["timelines"][2]["checkpoints"][0]["observations"] = json!([]);
+    let omitted = decode_result_value(&omitted_value);
+
+    // Act
+    let native_error = compare_rigid_world_results(&request, &omitted, &complete, &profile);
+    let oracle_error = compare_rigid_world_results(&request, &complete, &omitted, &profile);
+
+    // Assert
+    assert!(matches!(
+        native_error,
+        Err(RigidComparisonFailure::Harness(_))
+    ));
+    assert!(matches!(
+        oracle_error,
+        Err(RigidComparisonFailure::Harness(_))
+    ));
+}
+
+#[test]
 fn comparison_reports_stable_first_numeric_divergence() {
     // Arrange
     let request = comparison_request();

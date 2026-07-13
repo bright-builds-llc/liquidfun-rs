@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use super::{
-    RigidBodyKind, RigidContactIdentity, RigidExpectedCounts, RigidFilterBits,
+    RigidBodyKind, RigidContactIdentity, RigidExpectedCounts, RigidFilterBits, RigidWorldAction,
     RigidWorldDecodeError, RigidWorldErrorKind, RigidWorldRequestRecord, RigidWorldWitnessFamily,
     validation,
 };
@@ -353,6 +353,7 @@ pub fn validate_rigid_world_result_against_request(
             return Err(validation(RigidWorldErrorKind::ResultTimelineMismatch));
         }
 
+        let mut action_start = 0;
         for (expected, actual) in expected_timeline
             .checkpoints()
             .iter()
@@ -365,9 +366,88 @@ pub fn validate_rigid_world_result_against_request(
                 return Err(validation(RigidWorldErrorKind::ResultCheckpointMismatch));
             }
             validate_checkpoint_declaration_order(expected_timeline, actual)?;
+            let action_end = expected_timeline
+                .actions()
+                .iter()
+                .position(|action| action.action_id() == expected.after_action_id())
+                .ok_or_else(|| validation(RigidWorldErrorKind::ResultCheckpointMismatch))?;
+            validate_checkpoint_observations(
+                &expected_timeline.actions()[action_start..=action_end],
+                &actual.observations,
+            )?;
+            action_start = action_end + 1;
         }
     }
     Ok(())
+}
+
+fn validate_checkpoint_observations(
+    actions: &[super::RigidWorldActionRecord],
+    observations: &[RigidWorldObservation],
+) -> Result<(), RigidWorldDecodeError> {
+    let expected = actions
+        .iter()
+        .filter_map(|action| expected_observation(action.action()))
+        .collect::<Vec<_>>();
+    if expected.len() != observations.len()
+        || expected
+            .iter()
+            .zip(observations)
+            .any(|(expected, actual)| !expected.matches(actual))
+    {
+        return Err(validation(RigidWorldErrorKind::ResultObservationMismatch));
+    }
+    Ok(())
+}
+
+#[derive(Debug, Clone, Copy)]
+enum ExpectedObservation<'a> {
+    BodyState(&'a ScenarioId),
+    Step,
+    Query,
+    RayCast,
+    OriginShift(Vec2Bits),
+}
+
+impl ExpectedObservation<'_> {
+    fn matches(self, actual: &RigidWorldObservation) -> bool {
+        match (self, actual) {
+            (Self::BodyState(expected), RigidWorldObservation::BodyState { state }) => {
+                expected == &state.body_id
+            }
+            (Self::Step, RigidWorldObservation::Step { .. })
+            | (Self::Query, RigidWorldObservation::Query { .. })
+            | (Self::RayCast, RigidWorldObservation::RayCast { .. }) => true,
+            (Self::OriginShift(expected), RigidWorldObservation::OriginShift { shift }) => {
+                expected == *shift
+            }
+            _ => false,
+        }
+    }
+}
+
+fn expected_observation(action: &RigidWorldAction) -> Option<ExpectedObservation<'_>> {
+    match action {
+        RigidWorldAction::SetLinearVelocity { body_id, .. }
+        | RigidWorldAction::SetAngularVelocity { body_id, .. }
+        | RigidWorldAction::ApplyForce { body_id, .. }
+        | RigidWorldAction::ApplyTorque { body_id, .. }
+        | RigidWorldAction::ApplyLinearImpulse { body_id, .. }
+        | RigidWorldAction::ApplyAngularImpulse { body_id, .. }
+        | RigidWorldAction::SetBodyDamping { body_id, .. }
+        | RigidWorldAction::SetGravityScale { body_id, .. }
+        | RigidWorldAction::SetFixedRotation { body_id, .. }
+        | RigidWorldAction::SetSleepingAllowed { body_id, .. }
+        | RigidWorldAction::SetAwake { body_id, .. }
+        | RigidWorldAction::SetBullet { body_id, .. } => {
+            Some(ExpectedObservation::BodyState(body_id))
+        }
+        RigidWorldAction::ConfiguredStep { .. } => Some(ExpectedObservation::Step),
+        RigidWorldAction::QueryAabb { .. } => Some(ExpectedObservation::Query),
+        RigidWorldAction::RayCast { .. } => Some(ExpectedObservation::RayCast),
+        RigidWorldAction::ShiftOrigin { shift } => Some(ExpectedObservation::OriginShift(*shift)),
+        _ => None,
+    }
 }
 
 fn validate_checkpoint_declaration_order(
