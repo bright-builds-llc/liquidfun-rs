@@ -6,15 +6,19 @@ use std::fmt::{self, Display, Formatter};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::time::{Duration, Instant};
 
 use liquidfun_differential::{
-    CapturedRigidWorld, EmptyWorldAdapter, NativeCollisionProbeExecutor, NativeMathProbeExecutor,
-    NativeRigidWorldExecutor, OracleExecutable, OraclePreset, Phase4ComparisonEvidence,
-    Phase4DiscreteMismatchReport, Phase4HarnessFailureReason, Phase4HarnessFailureReport,
-    Phase4MathMismatchReport, RigidComparisonOutcome, compare_collision_probe_results,
-    compare_phase7_rigid_world_results, execute_collision_probe_process,
-    execute_math_probe_process, execute_rigid_world_process, float_values_match_with_policy,
-    validate_oracle_checkout_identity,
+    CapturedRigidWorld, EmptyWorldAdapter, MinimizationBudget, MinimizationStatus,
+    NativeCollisionProbeExecutor, NativeMathProbeExecutor, NativeRigidWorldExecutor,
+    OracleExecutable, OraclePreset, Phase4ComparisonEvidence, Phase4DiscreteMismatchReport,
+    Phase4HarnessFailureReason, Phase4HarnessFailureReport, Phase4MathMismatchReport,
+    RigidComparisonOutcome, RigidEvaluation, RigidFailureSignature,
+    RigidMinimizationArtifactRequest, RigidMinimizationResult, RigidScenarioTransform,
+    compare_collision_probe_results, compare_phase7_rigid_world_results,
+    execute_collision_probe_process, execute_math_probe_process, execute_rigid_world_process,
+    float_values_match_with_policy, minimize_rigid_world_request,
+    persist_rigid_minimization_artifact, validate_oracle_checkout_identity,
 };
 use liquidfun_test_protocol::{
     BuildEvidenceTier, BuildIdentity, CollisionProbeRequestRecord, CollisionProbeResult,
@@ -23,6 +27,7 @@ use liquidfun_test_protocol::{
     Phase7PolicyProfile, RigidWorldRequestRecord, decode_collision_probe_request_jsonl,
     decode_math_probe_request_jsonl, decode_rigid_world_request_jsonl,
 };
+use serde::Serialize;
 use sha2::{Digest, Sha256};
 
 use crate::upstream;
@@ -47,6 +52,8 @@ const RIGID_WORLD_REQUEST: &str = "protocol/fixtures/accepted/rigid-world-reques
 const PHASE6_POLICY: &str = "protocol/tolerances/phase6-v1.toml";
 const PHASE7_POLICY: &str = "protocol/tolerances/phase7-v1.toml";
 const NATIVE_SOURCE_MANIFEST: &str = "crates/liquidfun-differential/native-math-sources.txt";
+const RIGID_MINIMIZATION_MAXIMUM_ATTEMPTS: usize = 128;
+const RIGID_MINIMIZATION_DEADLINE: Duration = Duration::from_secs(30);
 const ALLOWED_SCENARIOS: [&str; 4] = [
     "empty-world",
     "math-probes",
@@ -557,25 +564,37 @@ fn run_rigid_world_command(
             serde_json::to_string(&error).unwrap_or_else(|_| format!("{error:?}")),
         )
     })?;
-    let RigidComparisonOutcome::Match = outcome else {
-        let RigidComparisonOutcome::PhysicsMismatch(report) = outcome else {
-            unreachable!("rigid comparison has exactly two outcomes")
-        };
-        return Err(DifferentialError::new(
-            "physics-mismatch",
-            String::from_utf8_lossy(
-                &report
-                    .render_machine()
-                    .map_err(|error| DifferentialError::new("report", error.to_string()))?,
-            )
-            .into_owned(),
-        ));
-    };
-    if invocation.action == MathProbeAction::Minimize {
-        return Err(DifferentialError::new(
-            "minimization",
-            "rigid-world minimization requires a captured first-divergence signature",
-        ));
+    match outcome {
+        RigidComparisonOutcome::PhysicsMismatch(report)
+            if invocation.action == MathProbeAction::Minimize =>
+        {
+            return run_rigid_world_minimization(
+                repository_root,
+                &request,
+                report.signature(),
+                &phase6_policy,
+                &phase7_policy,
+                &invocation.preset,
+            );
+        }
+        RigidComparisonOutcome::PhysicsMismatch(report) => {
+            return Err(DifferentialError::new(
+                "physics-mismatch",
+                String::from_utf8_lossy(
+                    &report
+                        .render_machine()
+                        .map_err(|error| DifferentialError::new("report", error.to_string()))?,
+                )
+                .into_owned(),
+            ));
+        }
+        RigidComparisonOutcome::Match if invocation.action == MathProbeAction::Minimize => {
+            return Err(DifferentialError::new(
+                "minimization",
+                "rigid-world minimization requires a captured first-divergence signature",
+            ));
+        }
+        RigidComparisonOutcome::Match => {}
     }
 
     let native_identity = EmptyWorldAdapter::new(ORACLE_REVISION)
@@ -596,6 +615,160 @@ fn run_rigid_world_command(
         build_evidence_label(native_identity.build_identity().evidence_tier()),
     );
     Ok(())
+}
+
+fn run_rigid_world_minimization(
+    repository_root: &Path,
+    request: &RigidWorldRequestRecord,
+    target: &RigidFailureSignature,
+    phase6_policy: &Phase6PolicyProfile,
+    phase7_policy: &Phase7PolicyProfile,
+    preset: &str,
+) -> Result<(), DifferentialError> {
+    let mut maybe_evaluation_error = None;
+    let result = reduce_rigid_world_mismatch(
+        request,
+        target,
+        MinimizationBudget::new(
+            RIGID_MINIMIZATION_MAXIMUM_ATTEMPTS,
+            RIGID_MINIMIZATION_DEADLINE,
+        ),
+        |candidate| {
+            evaluate_rigid_world_candidate(
+                repository_root,
+                candidate,
+                phase6_policy,
+                phase7_policy,
+                preset,
+                &mut maybe_evaluation_error,
+            )
+        },
+    )?;
+    if let Some(error) = maybe_evaluation_error {
+        return Err(error);
+    }
+
+    let report = RigidMinimizationMachineReport::new(target, request, &result)?;
+    let mut report_bytes = serde_json::to_vec(&report)
+        .map_err(|error| DifferentialError::new("report", error.to_string()))?;
+    report_bytes.push(b'\n');
+    let receipt = persist_rigid_minimization_artifact(
+        repository_root,
+        &RigidMinimizationArtifactRequest {
+            request_id: request.request_id(),
+            request_jsonl: result.canonical_request_bytes(),
+            report_json: &report_bytes,
+        },
+    )
+    .map_err(|error| DifferentialError::new("minimization-persistence", error.to_string()))?;
+    println!("{}", String::from_utf8_lossy(&report_bytes).trim_end());
+    eprintln!(
+        "rigid-world minimization {:?}: {} -> {} request bytes; persisted {}",
+        result.status(),
+        report.original_request_bytes,
+        result.canonical_request_bytes().len(),
+        receipt.directory().display()
+    );
+    Ok(())
+}
+
+fn reduce_rigid_world_mismatch<F>(
+    request: &RigidWorldRequestRecord,
+    target: &RigidFailureSignature,
+    budget: MinimizationBudget,
+    evaluator: F,
+) -> Result<RigidMinimizationResult, DifferentialError>
+where
+    F: FnMut(&RigidWorldRequestRecord) -> RigidEvaluation,
+{
+    minimize_rigid_world_request(request, target, budget, evaluator)
+        .map_err(|error| DifferentialError::new("minimization", error.to_string()))
+}
+
+fn evaluate_rigid_world_candidate(
+    repository_root: &Path,
+    request: &RigidWorldRequestRecord,
+    phase6_policy: &Phase6PolicyProfile,
+    phase7_policy: &Phase7PolicyProfile,
+    preset: &str,
+    maybe_error: &mut Option<DifferentialError>,
+) -> RigidEvaluation {
+    if maybe_error.is_some() {
+        return RigidEvaluation::new(None, Duration::ZERO);
+    }
+    let started = Instant::now();
+    let evaluation = (|| {
+        let captured = execute_rigid_world_once(repository_root, request, preset)?;
+        let native = NativeRigidWorldExecutor::execute(request)
+            .map_err(|error| DifferentialError::new("native", error.to_string()))?;
+        compare_phase7_rigid_world_results(
+            request,
+            &native,
+            captured.result(),
+            phase6_policy,
+            phase7_policy,
+        )
+        .map_err(|error| {
+            DifferentialError::new(
+                "rigid-harness",
+                serde_json::to_string(&error).unwrap_or_else(|_| format!("{error:?}")),
+            )
+        })
+    })();
+    let elapsed = started.elapsed();
+    match evaluation {
+        Ok(RigidComparisonOutcome::PhysicsMismatch(report)) => {
+            RigidEvaluation::new(Some(report.signature().clone()), elapsed)
+        }
+        Ok(RigidComparisonOutcome::Match) => RigidEvaluation::new(None, elapsed),
+        Err(error) => {
+            *maybe_error = Some(error);
+            RigidEvaluation::new(None, elapsed)
+        }
+    }
+}
+
+#[derive(Serialize)]
+struct RigidMinimizationMachineReport<'a> {
+    result_kind: &'static str,
+    status: MinimizationStatus,
+    target_signature: &'a RigidFailureSignature,
+    original_request_bytes: usize,
+    minimized_request_bytes: usize,
+    attempts: usize,
+    evaluations: usize,
+    rejected_invalid_candidates: usize,
+    rejected_changed_signatures: usize,
+    attempted_transforms: &'a [RigidScenarioTransform],
+    accepted_transforms: &'a [RigidScenarioTransform],
+    request_sha256: String,
+}
+
+impl<'a> RigidMinimizationMachineReport<'a> {
+    fn new(
+        target: &'a RigidFailureSignature,
+        original: &RigidWorldRequestRecord,
+        result: &'a RigidMinimizationResult,
+    ) -> Result<Self, DifferentialError> {
+        let original_request_bytes = serde_json::to_vec(original)
+            .map_err(|error| DifferentialError::new("report", error.to_string()))?
+            .len()
+            + 1;
+        Ok(Self {
+            result_kind: "rigid_world_minimization",
+            status: result.status(),
+            target_signature: target,
+            original_request_bytes,
+            minimized_request_bytes: result.canonical_request_bytes().len(),
+            attempts: result.attempts(),
+            evaluations: result.evaluations(),
+            rejected_invalid_candidates: result.rejected_invalid_candidates(),
+            rejected_changed_signatures: result.rejected_changed_signatures(),
+            attempted_transforms: result.attempted_transforms(),
+            accepted_transforms: result.accepted_transforms(),
+            request_sha256: format!("{:x}", Sha256::digest(result.canonical_request_bytes())),
+        })
+    }
 }
 
 fn rigid_world_request(
@@ -1391,21 +1564,25 @@ fn repository_root() -> Result<PathBuf, DifferentialError> {
 #[cfg(test)]
 mod tests {
     use liquidfun_differential::{
-        NativeMathProbeExecutor, Phase4ComparisonEvidence, Phase4HarnessFailureReason,
+        NativeMathProbeExecutor, NativeRigidWorldExecutor, Phase4ComparisonEvidence,
+        Phase4HarnessFailureReason, RigidComparisonOutcome, RigidEvaluation,
+        compare_phase7_rigid_world_results,
     };
     use liquidfun_test_protocol::{
         BuildIdentity, BuildIdentityFields, DivergenceHorizon, EvidenceTier, FloatBits,
         HarnessLimits, MathProbeDiscrete, MathProbeDiscreteField, MathProbeHorizon,
         MathProbeOperation, MathProbePolicyPath, MathProbeRequestRecord, MathProbeResult,
-        MathProbeValue, Phase4BuildIdentityFields, Phase4PolicyProfile, Phase7PolicyProfile,
-        decode_math_probe_request_jsonl,
+        MathProbeValue, Phase4BuildIdentityFields, Phase4PolicyProfile, Phase6PolicyProfile,
+        Phase7PolicyProfile, decode_math_probe_request_jsonl, decode_rigid_world_request_jsonl,
+        decode_rigid_world_result_jsonl,
     };
 
-    use std::fs;
+    use std::{fs, time::Duration};
 
     use super::{
-        ORACLE_REVISION, RIGID_WORLD_REQUEST, compare_math_probe_results, horizons_match,
-        native_source_digest_from_manifest, rigid_world_request, tier_authorizes,
+        ORACLE_REVISION, RIGID_WORLD_REQUEST, RigidMinimizationMachineReport,
+        compare_math_probe_results, horizons_match, native_source_digest_from_manifest,
+        reduce_rigid_world_mismatch, rigid_world_request, tier_authorizes,
     };
 
     #[test]
@@ -1439,6 +1616,93 @@ mod tests {
         // Assert
         assert_eq!(error.category, "policy");
         assert!(error.message.contains("request policy hash"));
+        fs::remove_dir_all(root).expect("temporary fixture should be removed");
+    }
+
+    #[test]
+    fn rigid_minimization_path_runs_reducer_and_records_transform_provenance() {
+        // Arrange
+        let request = decode_rigid_world_request_jsonl(
+            include_bytes!("../../../protocol/fixtures/accepted/rigid-world-request.jsonl"),
+            &HarnessLimits::phase2_default_v1(),
+        )
+        .expect("checked-in rigid request should decode");
+        let phase6 = Phase6PolicyProfile::parse_toml(include_str!(
+            "../../../protocol/tolerances/phase6-v1.toml"
+        ))
+        .expect("checked-in Phase 6 policy should parse");
+        let phase7 = Phase7PolicyProfile::parse_toml(include_str!(
+            "../../../protocol/tolerances/phase7-v1.toml"
+        ))
+        .expect("checked-in Phase 7 policy should parse");
+        let native = NativeRigidWorldExecutor::execute(&request)
+            .expect("checked-in rigid request should execute");
+        let mut oracle_value = serde_json::to_value(&native).expect("result should serialize");
+        oracle_value["timelines"][0]["checkpoints"][0]["bodies"][0]["active"] =
+            serde_json::Value::Bool(false);
+        let mut oracle_bytes =
+            serde_json::to_vec(&oracle_value).expect("mismatched result should encode");
+        oracle_bytes.push(b'\n');
+        let oracle =
+            decode_rigid_world_result_jsonl(&oracle_bytes, &HarnessLimits::phase2_default_v1())
+                .expect("mismatched semantic result should decode");
+        let RigidComparisonOutcome::PhysicsMismatch(mismatch) =
+            compare_phase7_rigid_world_results(&request, &native, &oracle, &phase6, &phase7)
+                .expect("registered rigid evidence should compare")
+        else {
+            panic!("active-state mutation must mismatch");
+        };
+        let target = mismatch.signature().clone();
+
+        // Act
+        let result = reduce_rigid_world_mismatch(
+            &request,
+            &target,
+            liquidfun_differential::MinimizationBudget::new(128, Duration::from_secs(1)),
+            |_candidate| RigidEvaluation::new(Some(target.clone()), Duration::from_millis(1)),
+        )
+        .expect("internal rigid minimization path should run the reducer");
+        let report = RigidMinimizationMachineReport::new(&target, &request, &result)
+            .expect("minimization report should encode its source request");
+        let report_value = serde_json::to_value(&report).expect("report should serialize");
+        let root = std::env::temp_dir().join(format!(
+            "liquidfun-rigid-minimization-{}",
+            std::process::id()
+        ));
+        if root.exists() {
+            fs::remove_dir_all(&root).expect("stale temporary fixture should be removed");
+        }
+        fs::create_dir(&root).expect("temporary persistence root should be created");
+        let report_bytes = serde_json::to_vec(&report).expect("report should encode");
+        let receipt = liquidfun_differential::persist_rigid_minimization_artifact(
+            &root,
+            &liquidfun_differential::RigidMinimizationArtifactRequest {
+                request_id: request.request_id(),
+                request_jsonl: result.canonical_request_bytes(),
+                report_json: &report_bytes,
+            },
+        )
+        .expect("minimized rigid request should persist");
+
+        // Assert
+        assert!(result.evaluations() > 0);
+        assert!(!result.accepted_transforms().is_empty());
+        assert_eq!(
+            report_value["accepted_transforms"]
+                .as_array()
+                .expect("accepted transforms should be an array")
+                .len(),
+            result.accepted_transforms().len()
+        );
+        assert_eq!(
+            report_value["status"],
+            serde_json::to_value(result.status()).expect("status should serialize")
+        );
+        assert_eq!(
+            fs::read(receipt.directory().join("request.jsonl"))
+                .expect("persisted request should be readable"),
+            result.canonical_request_bytes()
+        );
         fs::remove_dir_all(root).expect("temporary fixture should be removed");
     }
 

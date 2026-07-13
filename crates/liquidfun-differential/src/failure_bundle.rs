@@ -49,6 +49,16 @@ pub struct MinimizationArtifactRequest<'a> {
     pub report_json: &'a [u8],
 }
 
+/// Canonical minimized rigid request and its machine report.
+pub struct RigidMinimizationArtifactRequest<'a> {
+    /// Validated request identity used to derive a confined directory name.
+    pub request_id: &'a RequestId,
+    /// Canonical newline-complete minimized rigid request.
+    pub request_jsonl: &'a [u8],
+    /// Machine-readable minimization result including status and transforms.
+    pub report_json: &'a [u8],
+}
+
 /// Successfully persisted minimized scenario evidence.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MinimizationArtifactReceipt {
@@ -203,20 +213,51 @@ pub fn persist_minimization_artifact(
     repository_root: &Path,
     request: &MinimizationArtifactRequest<'_>,
 ) -> Result<MinimizationArtifactReceipt, FailureBundleError> {
-    let limits = HarnessLimits::phase2_default_v1();
-    enforce_size(
+    persist_minimization_files(
+        repository_root,
+        request.request_id,
+        "minimized",
         "scenario.json",
         request.scenario_json,
-        limits.input_record_bytes(),
-    )?;
-    enforce_size("report.json", request.report_json, MAXIMUM_REPORT_BYTES)?;
-    let root = ensure_evidence_root(repository_root, "minimized")?;
-    let directory = create_bundle_directory(&root, request.request_id, "minimization")?;
+        request.report_json,
+    )
+}
+
+/// Persists a canonical minimized rigid request and reducer report below the target tree.
+///
+/// # Errors
+///
+/// Returns [`FailureBundleError`] for oversized values, exhausted no-clobber names,
+/// serialization failures, or filesystem errors.
+pub fn persist_rigid_minimization_artifact(
+    repository_root: &Path,
+    request: &RigidMinimizationArtifactRequest<'_>,
+) -> Result<MinimizationArtifactReceipt, FailureBundleError> {
+    persist_minimization_files(
+        repository_root,
+        request.request_id,
+        "minimized-rigid",
+        "request.jsonl",
+        request.request_jsonl,
+        request.report_json,
+    )
+}
+
+fn persist_minimization_files(
+    repository_root: &Path,
+    request_id: &RequestId,
+    leaf: &str,
+    value_name: &'static str,
+    value_bytes: &[u8],
+    report_json: &[u8],
+) -> Result<MinimizationArtifactReceipt, FailureBundleError> {
+    let limits = HarnessLimits::phase2_default_v1();
+    enforce_size(value_name, value_bytes, limits.input_record_bytes())?;
+    enforce_size("report.json", report_json, MAXIMUM_REPORT_BYTES)?;
+    let root = ensure_evidence_root(repository_root, leaf)?;
+    let directory = create_bundle_directory(&root, request_id, "minimization")?;
     let result = (|| {
-        let evidence = [
-            ("scenario.json", request.scenario_json),
-            ("report.json", request.report_json),
-        ];
+        let evidence = [(value_name, value_bytes), ("report.json", report_json)];
         let mut files = BTreeMap::new();
         for (name, bytes) in evidence {
             write_create_new(&directory.join(name), bytes)?;
@@ -231,7 +272,7 @@ pub fn persist_minimization_artifact(
         let manifest = BundleManifest {
             schema_version: 1,
             result_kind: "minimization",
-            request_id: request.request_id.as_str().to_owned(),
+            request_id: request_id.as_str().to_owned(),
             files,
         };
         let mut manifest_bytes = serde_json::to_vec_pretty(&manifest)?;
