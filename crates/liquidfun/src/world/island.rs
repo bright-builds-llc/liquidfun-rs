@@ -8,11 +8,15 @@ use super::config::StepConfiguration;
 use super::contact_manager::ContactManager;
 use super::contact_solver::{
     ContactConstraintInput, ContactImpulseSolution, ContactSolveFailure, solve_island_constraints,
+    solve_toi_constraints,
 };
 use super::object::{Body, Fixture};
 
 const REVIEWED_MAX_ISLAND_BODIES: usize = 4_096;
 const REVIEWED_MAX_ISLAND_CONTACTS: usize = 8_192;
+
+mod toi;
+pub(super) use toi::{ToiIsland, ToiIslandLimits, ToiIslandSolution, solve_toi_island};
 
 #[derive(Debug, Clone, Copy)]
 pub(super) struct IslandLimits {

@@ -123,7 +123,7 @@ impl ContactPoint {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(super) struct Contact {
     pub(super) key: ContactKey,
     pub(super) ordinal: u64,

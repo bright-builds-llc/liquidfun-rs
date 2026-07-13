@@ -6,9 +6,17 @@ use crate::math::{SweepError, min};
 use super::config::StepConfiguration;
 use super::contact::{ToiAlpha, ToiCountLimitReached};
 use super::contact_manager::ContactManager;
+use super::contact_solver::ContactSolveFailure;
+use super::fixture::FixtureBoundsError;
+use super::island::{
+    IslandBuildError, ToiIsland, ToiIslandLimits, ToiIslandSolution, solve_toi_island,
+};
 use super::object::World;
+use super::proxy::PreparedSynchronization;
 
 const REVIEWED_MAX_CCD_SCAN_CONTACTS: usize = 8_192;
+
+mod event;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct ContinuousContactIndex(usize);
@@ -62,6 +70,57 @@ pub(super) enum ContinuousScanError {
     Collision(CollisionError),
     Sweep(SweepError),
     ToiCountLimit,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub(super) enum ContinuousEventError {
+    Scan(ContinuousScanError),
+    Island(IslandBuildError),
+    Solve(ContactSolveFailure),
+    ProxyBounds,
+    InjectedFailure,
+}
+
+impl From<ContinuousScanError> for ContinuousEventError {
+    fn from(error: ContinuousScanError) -> Self {
+        Self::Scan(error)
+    }
+}
+
+impl From<IslandBuildError> for ContinuousEventError {
+    fn from(error: IslandBuildError) -> Self {
+        Self::Island(error)
+    }
+}
+
+impl From<ContactSolveFailure> for ContinuousEventError {
+    fn from(error: ContactSolveFailure) -> Self {
+        Self::Solve(error)
+    }
+}
+
+impl From<FixtureBoundsError> for ContinuousEventError {
+    fn from(_error: FixtureBoundsError) -> Self {
+        Self::ProxyBounds
+    }
+}
+
+impl From<SweepError> for ContinuousEventError {
+    fn from(error: SweepError) -> Self {
+        Self::Scan(ContinuousScanError::Sweep(error))
+    }
+}
+
+#[derive(Debug)]
+pub(super) struct ContinuousEvent {
+    pub(super) body_ids: Vec<BodyId>,
+    pub(super) contact_occurrences: Vec<u64>,
+    pub(super) transient_normal_impulse_sum: f32,
+}
+
+struct ContinuousWorldBackup {
+    bodies: Vec<(BodyId, super::body::BodyState, bool, bool)>,
+    contact_manager: ContactManager,
 }
 
 impl From<CollisionError> for ContinuousScanError {
@@ -358,6 +417,52 @@ impl World {
 
     #[cfg(feature = "differential-internals")]
     #[doc(hidden)]
+    pub fn rigid_toi_event_diagnostic(
+        &mut self,
+        configuration: StepConfiguration,
+        limits: crate::rigid_differential::RigidToiIslandLimits,
+        maybe_failure: Option<crate::rigid_differential::RigidToiFailureInjection>,
+    ) -> Result<
+        Option<crate::rigid_differential::RigidToiEventDiagnostic>,
+        crate::rigid_differential::RigidToiSolveError,
+    > {
+        let reviewed = ToiIslandLimits::REVIEWED;
+        if limits.max_bodies() > reviewed.max_bodies
+            || limits.max_contacts() > reviewed.max_contacts
+        {
+            return Err(
+                crate::rigid_differential::RigidToiSolveError::CapacityExceeded {
+                    resource: "TOI island diagnostic limits",
+                    limit: reviewed.max_bodies.max(reviewed.max_contacts),
+                },
+            );
+        }
+        let inject_after_solve = matches!(
+            maybe_failure,
+            Some(crate::rigid_differential::RigidToiFailureInjection::AfterSolve)
+        );
+        self.solve_next_continuous_event(
+            configuration,
+            ToiIslandLimits {
+                max_bodies: limits.max_bodies(),
+                max_contacts: limits.max_contacts(),
+            },
+            inject_after_solve,
+        )
+        .map(|maybe_event| {
+            maybe_event.map(|event| {
+                crate::rigid_differential::RigidToiEventDiagnostic::new(
+                    event.body_ids,
+                    event.contact_occurrences,
+                    event.transient_normal_impulse_sum,
+                )
+            })
+        })
+        .map_err(rigid_toi_solve_error)
+    }
+
+    #[cfg(feature = "differential-internals")]
+    #[doc(hidden)]
     pub fn rigid_ccd_candidate_diagnostic(
         &mut self,
         maybe_injection: Option<crate::rigid_differential::RigidCcdFailureInjection>,
@@ -424,6 +529,35 @@ impl World {
                 ))
             })
             .transpose()
+    }
+}
+
+#[cfg(feature = "differential-internals")]
+fn rigid_toi_solve_error(
+    error: ContinuousEventError,
+) -> crate::rigid_differential::RigidToiSolveError {
+    use crate::rigid_differential::RigidToiSolveError;
+
+    match error {
+        ContinuousEventError::Island(IslandBuildError::CapacityExceeded { resource, limit })
+        | ContinuousEventError::Solve(ContactSolveFailure::CapacityExceeded { resource, limit })
+        | ContinuousEventError::Scan(ContinuousScanError::CapacityExceeded { resource, limit }) => {
+            RigidToiSolveError::CapacityExceeded { resource, limit }
+        }
+        ContinuousEventError::InjectedFailure => RigidToiSolveError::InjectedFailure,
+        ContinuousEventError::Scan(
+            ContinuousScanError::InvalidGraph
+            | ContinuousScanError::Collision(_)
+            | ContinuousScanError::Sweep(_)
+            | ContinuousScanError::ToiCountLimit,
+        )
+        | ContinuousEventError::Island(IslandBuildError::InvalidGraph)
+        | ContinuousEventError::Solve(
+            ContactSolveFailure::UnsupportedTopology
+            | ContactSolveFailure::NonFinite
+            | ContactSolveFailure::InvalidProxyBounds,
+        )
+        | ContinuousEventError::ProxyBounds => RigidToiSolveError::InvalidState,
     }
 }
 

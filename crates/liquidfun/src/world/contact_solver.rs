@@ -1,7 +1,7 @@
 use crate::collision::{ContactFeatureId, Manifold, Shape, world_manifold};
 use crate::math::settings::{
     BAUMGARTE, LINEAR_SLOP, MAX_LINEAR_CORRECTION, MAX_ROTATION, MAX_ROTATION_SQUARED,
-    MAX_TRANSLATION, MAX_TRANSLATION_SQUARED, VELOCITY_THRESHOLD,
+    MAX_TRANSLATION, MAX_TRANSLATION_SQUARED, TOI_BAUMGARTE, VELOCITY_THRESHOLD,
 };
 use crate::math::{Transform, Vec2, clamp, max};
 
@@ -10,6 +10,9 @@ use super::config::StepConfiguration;
 use super::contact::{Contact, ContactPoint, ManagedContactSnapshot};
 
 const MAX_CONDITION_NUMBER: f32 = 1_000.0;
+
+mod toi;
+pub(super) use toi::solve_toi_constraints;
 
 /// Owned post-solve evidence for one private manager contact occurrence.
 #[derive(Debug, Clone, PartialEq)]
@@ -166,6 +169,58 @@ pub(super) struct IslandConstraintSolution {
     pub(super) position_solved: bool,
 }
 
+fn build_constraints(
+    inputs: &[ContactConstraintInput<'_>],
+    bodies: &[SolverBody],
+    time_step_ratio: f32,
+    warm_starting: bool,
+) -> Result<Vec<VelocityConstraint>, ContactSolveFailure> {
+    let mut constraints = Vec::new();
+    constraints.try_reserve_exact(inputs.len()).map_err(|_| {
+        ContactSolveFailure::CapacityExceeded {
+            resource: "island contact constraints",
+            limit: inputs.len(),
+        }
+    })?;
+    for input in inputs {
+        constraints.push(build_constraint(
+            input,
+            bodies,
+            time_step_ratio,
+            warm_starting,
+        )?);
+    }
+    Ok(constraints)
+}
+
+fn transient_impulses(
+    constraints: &[VelocityConstraint],
+) -> Result<Vec<ContactImpulseSolution>, ContactSolveFailure> {
+    let mut contact_impulses = Vec::new();
+    contact_impulses
+        .try_reserve_exact(constraints.len())
+        .map_err(|_| ContactSolveFailure::CapacityExceeded {
+            resource: "island contact impulses",
+            limit: constraints.len(),
+        })?;
+    for constraint in constraints {
+        contact_impulses.push(ContactImpulseSolution {
+            contact_index: constraint.contact_index,
+            impulses: constraint.points[..constraint.point_count]
+                .iter()
+                .map(|point| {
+                    (
+                        point.feature_id,
+                        point.normal_impulse,
+                        point.tangent_impulse,
+                    )
+                })
+                .collect(),
+        });
+    }
+    Ok(contact_impulses)
+}
+
 pub(super) fn solve_island_constraints(
     body_states: &[BodyState],
     inputs: &[ContactConstraintInput<'_>],
@@ -187,21 +242,7 @@ pub(super) fn solve_island_constraints(
         bodies.push(body);
     }
 
-    let mut constraints = Vec::new();
-    constraints.try_reserve_exact(inputs.len()).map_err(|_| {
-        ContactSolveFailure::CapacityExceeded {
-            resource: "island contact constraints",
-            limit: inputs.len(),
-        }
-    })?;
-    for input in inputs {
-        constraints.push(build_constraint(
-            input,
-            &bodies,
-            time_step_ratio,
-            warm_starting,
-        )?);
-    }
+    let mut constraints = build_constraints(inputs, &bodies, time_step_ratio, warm_starting)?;
 
     if warm_starting {
         for constraint in &constraints {
@@ -214,28 +255,7 @@ pub(super) fn solve_island_constraints(
         }
     }
 
-    let mut contact_impulses = Vec::new();
-    contact_impulses
-        .try_reserve_exact(constraints.len())
-        .map_err(|_| ContactSolveFailure::CapacityExceeded {
-            resource: "island contact impulses",
-            limit: constraints.len(),
-        })?;
-    for constraint in &constraints {
-        contact_impulses.push(ContactImpulseSolution {
-            contact_index: constraint.contact_index,
-            impulses: constraint.points[..constraint.point_count]
-                .iter()
-                .map(|point| {
-                    (
-                        point.feature_id,
-                        point.normal_impulse,
-                        point.tangent_impulse,
-                    )
-                })
-                .collect(),
-        });
-    }
+    let contact_impulses = transient_impulses(&constraints)?;
 
     for body in &mut bodies {
         integrate_position(body, configuration.time_step());

@@ -771,6 +771,51 @@ impl BodyState {
         })
     }
 
+    pub(super) fn candidate_set_toi_solver_state(
+        self,
+        initial_center: Vec2,
+        initial_angle: f32,
+        position: Vec2,
+        angle: f32,
+        linear_velocity: Vec2,
+        angular_velocity: f32,
+    ) -> Result<Self, BodyDefError> {
+        validate_body_transform(position, angle)?;
+        if !initial_center.is_valid()
+            || !initial_angle.is_finite()
+            || !linear_velocity.is_valid()
+            || !angular_velocity.is_finite()
+        {
+            return Err(BodyDefError::NonFiniteDerivedCenter);
+        }
+        let transform = Transform::from_position_angle(position, angle);
+        let mut snapshot = self.snapshot;
+        snapshot.position = position;
+        snapshot.angle = angle;
+        snapshot.linear_velocity = linear_velocity;
+        snapshot.angular_velocity = angular_velocity;
+        Ok(Self {
+            snapshot,
+            transform,
+            sweep: Sweep::new(
+                self.sweep.local_center(),
+                initial_center,
+                transform.apply(self.sweep.local_center()),
+                initial_angle,
+                angle,
+                self.sweep.initial_fraction(),
+            )
+            .map_err(|_error| BodyDefError::NonFiniteDerivedCenter)?,
+            linear_velocity,
+            angular_velocity,
+            inverse_mass: self.inverse_mass,
+            inverse_inertia: self.inverse_inertia,
+            force: self.force,
+            torque: self.torque,
+            sleep_time: self.sleep_time,
+        })
+    }
+
     pub(super) fn with_transform(self, position: Vec2, angle: f32) -> Result<Self, BodyDefError> {
         validate_body_transform(position, angle)?;
         let transform = Transform::from_position_angle(position, angle);

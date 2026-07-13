@@ -3,6 +3,100 @@
 use crate::math::Vec2;
 use crate::{BodyId, BodySnapshot, FixtureId, ManagedContactSnapshot};
 
+/// Reviewed private storage bounds for one TOI island diagnostic.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct RigidToiIslandLimits {
+    max_bodies: usize,
+    max_contacts: usize,
+}
+
+impl RigidToiIslandLimits {
+    /// Returns the pinned `2 * b2_maxTOIContacts` body and
+    /// `b2_maxTOIContacts` contact capacities.
+    #[must_use]
+    pub const fn reviewed() -> Self {
+        Self {
+            max_bodies: 2 * crate::math::settings::MAX_TOI_CONTACTS,
+            max_contacts: crate::math::settings::MAX_TOI_CONTACTS,
+        }
+    }
+
+    /// Returns the accepted body capacity.
+    #[must_use]
+    pub const fn max_bodies(self) -> usize {
+        self.max_bodies
+    }
+
+    /// Returns the accepted contact capacity.
+    #[must_use]
+    pub const fn max_contacts(self) -> usize {
+        self.max_contacts
+    }
+}
+
+/// Bounded failure injection used only to prove TOI-event atomicity.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RigidToiFailureInjection {
+    /// Reject after every numerical and proxy candidate has been prepared.
+    AfterSolve,
+}
+
+/// A bounded failure while solving one private TOI event.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RigidToiSolveError {
+    /// A reviewed private collection exceeded its finite capacity.
+    CapacityExceeded {
+        /// Stable semantic resource name.
+        resource: &'static str,
+        /// Configured finite limit.
+        limit: usize,
+    },
+    /// Private world, graph, collision, or numerical state was not coherent.
+    InvalidState,
+    /// The requested diagnostic failure was injected after preparation.
+    InjectedFailure,
+}
+
+/// Owned semantic evidence for one committed private TOI island.
+#[derive(Debug, Clone, PartialEq)]
+pub struct RigidToiEventDiagnostic {
+    body_ids: Vec<BodyId>,
+    contact_occurrences: Vec<u64>,
+    transient_normal_impulse_sum: f32,
+}
+
+impl RigidToiEventDiagnostic {
+    pub(crate) const fn new(
+        body_ids: Vec<BodyId>,
+        contact_occurrences: Vec<u64>,
+        transient_normal_impulse_sum: f32,
+    ) -> Self {
+        Self {
+            body_ids,
+            contact_occurrences,
+            transient_normal_impulse_sum,
+        }
+    }
+
+    /// Returns bodies in exact TOI-island insertion order.
+    #[must_use]
+    pub fn body_ids(&self) -> &[BodyId] {
+        &self.body_ids
+    }
+
+    /// Returns one-based contacts in exact TOI-island insertion order.
+    #[must_use]
+    pub fn contact_occurrences(&self) -> &[u64] {
+        &self.contact_occurrences
+    }
+
+    /// Returns the transient solved normal-impulse sum without storing it.
+    #[must_use]
+    pub const fn transient_normal_impulse_sum(&self) -> f32 {
+        self.transient_normal_impulse_sum
+    }
+}
+
 /// Bounded semantic controls used only to witness private CCD rejection paths.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RigidCcdFailureInjection {

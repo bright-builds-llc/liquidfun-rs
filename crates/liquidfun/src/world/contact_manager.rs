@@ -15,7 +15,7 @@ use super::contact_solver::ContactSolve;
 use super::object::{Body, Fixture};
 use super::proxy::FixtureProxy;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Clone, Default)]
 pub(super) struct ContactManager {
     contacts: Vec<Contact>,
     next_ordinal: u64,

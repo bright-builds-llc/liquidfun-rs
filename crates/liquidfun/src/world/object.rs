@@ -1960,7 +1960,7 @@ impl World {
             .destroy_for_fixture(fixture, &mut self.bodies, &mut self.fixtures);
     }
 
-    fn prepare_body_synchronizations(
+    pub(super) fn prepare_body_synchronizations(
         &self,
         body: BodyId,
         fixtures: &[FixtureId],
@@ -1989,7 +1989,7 @@ impl World {
             .collect()
     }
 
-    fn apply_body_synchronizations(
+    pub(super) fn apply_body_synchronizations(
         &mut self,
         synchronizations: Vec<(FixtureId, PreparedSynchronization)>,
     ) {
