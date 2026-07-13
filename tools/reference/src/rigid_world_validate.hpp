@@ -116,6 +116,33 @@ inline const std::vector<std::string_view>& required_actions(RigidWitnessFamily 
   return origin;
 }
 
+inline std::size_t shape_child_count(const RigidShape& shape) {
+  return std::visit(
+      [](const auto& closed_shape) {
+        static_cast<void>(closed_shape);
+        return std::size_t{1};
+      },
+      shape);
+}
+
+inline void validate_fixture_child_selector(
+    const RigidFixtureChildSelector& selector,
+    const std::unordered_map<std::string, const RigidFixtureDeclaration*>&
+        fixture_declarations,
+    const std::unordered_set<std::string>& live_fixtures,
+    std::string_view context) {
+  const auto fixture = fixture_declarations.find(selector.fixture_id);
+  if (fixture == fixture_declarations.end() ||
+      !live_fixtures.count(selector.fixture_id)) {
+    throw std::runtime_error(
+        std::string(context) + " references non-live fixture");
+  }
+  if (selector.child_index >= shape_child_count(fixture->second->shape)) {
+    throw std::runtime_error(
+        std::string(context) + " references invalid fixture child");
+  }
+}
+
 inline void validate_timeline(RigidTimeline& timeline) {
   if (timeline.bodies.empty() || timeline.bodies.size() > 64 ||
       timeline.fixtures.empty() || timeline.fixtures.size() > 128 ||
@@ -129,11 +156,14 @@ inline void validate_timeline(RigidTimeline& timeline) {
     if (!body_ids.insert(body.id).second) throw std::runtime_error("duplicate body ID");
   }
   std::unordered_map<std::string, std::string> fixture_owners;
+  std::unordered_map<std::string, const RigidFixtureDeclaration*>
+      fixture_declarations;
   for (const auto& fixture : timeline.fixtures) {
     if (!body_ids.count(fixture.owner_body_id)) throw std::runtime_error("invalid fixture owner");
     if (!fixture_owners.emplace(fixture.id, fixture.owner_body_id).second) {
       throw std::runtime_error("duplicate fixture ID");
     }
+    fixture_declarations.emplace(fixture.id, &fixture);
   }
   std::unordered_set<std::string> live_bodies;
   std::unordered_set<std::string> live_fixtures;
@@ -211,15 +241,19 @@ inline void validate_timeline(RigidTimeline& timeline) {
             }
           } else if constexpr (std::is_same_v<T, QueryAabb>) {
             for (const auto& rule : current.rules) {
-              if (!live_fixtures.count(rule.target.fixture_id)) {
-                throw std::runtime_error("query directive references non-live fixture");
-              }
+              validate_fixture_child_selector(
+                  rule.target,
+                  fixture_declarations,
+                  live_fixtures,
+                  "query directive");
             }
           } else if constexpr (std::is_same_v<T, RayCast>) {
             for (const auto& rule : current.rules) {
-              if (!live_fixtures.count(rule.target.fixture_id)) {
-                throw std::runtime_error("ray directive references non-live fixture");
-              }
+              validate_fixture_child_selector(
+                  rule.target,
+                  fixture_declarations,
+                  live_fixtures,
+                  "ray directive");
             }
           }
         },

@@ -341,6 +341,73 @@ fn real_oracle_rejects_oversized_stdin_before_waiting_for_a_newline() {
 }
 
 #[test]
+fn real_oracle_rejects_invalid_query_child_without_result_records() {
+    // Arrange
+    let Some(executable) = real_oracle_path(OraclePreset::Debug) else {
+        eprintln!(
+            "SKIP real oracle integration prerequisite: run cargo xtask upstream configure/build --preset oracle-debug"
+        );
+        return;
+    };
+    let request_bytes =
+        fs::read(repository_root().join("protocol/fixtures/accepted/rigid-world-request.jsonl"))
+            .expect("rigid-world request should be readable");
+    let mut request: serde_json::Value =
+        serde_json::from_slice(&request_bytes).expect("rigid-world request should be JSON");
+    let query_timeline = request["scenario"]["timelines"]
+        .as_array_mut()
+        .expect("timelines should be an array")
+        .iter_mut()
+        .find(|timeline| timeline["witness_family"] == "world_query_and_ray_cast")
+        .expect("query timeline should exist");
+    let terminate_query = query_timeline["actions"]
+        .as_array_mut()
+        .expect("actions should be an array")
+        .iter_mut()
+        .find(|action| action["action_id"] == "query-07")
+        .expect("terminating query should exist");
+    terminate_query["action"]["directive_rules"][0]["target"]["child_index"] = serde_json::json!(1);
+    let request = encode_jsonl(
+        &request,
+        &HarnessLimits::phase2_default_v1(),
+        RecordLimit::Input,
+    )
+    .expect("mutated request should encode");
+    let mut child = Command::new(executable)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("real oracle should start");
+    let mut stdout = BufReader::new(child.stdout.take().expect("stdout should be piped"));
+    let mut handshake = String::new();
+    stdout
+        .read_line(&mut handshake)
+        .expect("oracle handshake should be readable");
+    let mut stdin = child.stdin.take().expect("stdin should be piped");
+
+    // Act
+    stdin
+        .write_all(&request)
+        .and_then(|()| stdin.flush())
+        .expect("invalid query request should write");
+    drop(stdin);
+    let mut result_records = String::new();
+    stdout
+        .read_to_string(&mut result_records)
+        .expect("oracle result stream should be readable");
+    let output = child.wait_with_output().expect("oracle should be reaped");
+
+    // Assert
+    assert!(!output.status.success());
+    assert!(result_records.is_empty());
+    assert!(
+        String::from_utf8_lossy(&output.stderr)
+            .contains("query directive references invalid fixture child")
+    );
+}
+
+#[test]
 fn cli_compare_and_replay_emit_deterministic_match_reports() {
     // Arrange
     let root = repository_root();

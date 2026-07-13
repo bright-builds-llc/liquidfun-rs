@@ -550,6 +550,39 @@ void rigid_world_rejects_invalid_derived_ray_geometry_before_execution() {
   }
 }
 
+void rigid_world_rejects_invalid_selector_children_before_execution() {
+  // Arrange and Act / Assert
+  for (const auto& [action_id, context] :
+       std::array<std::pair<std::string, std::string>, 2>{
+           std::pair{"query-07", "query directive"},
+           std::pair{"query-11", "ray directive"}}) {
+    auto request = nlohmann::json::parse(read_fixture(
+        "protocol/fixtures/accepted/rigid-world-request.jsonl"));
+    auto& actions = query_timeline(request).at("actions");
+    const auto selected_action = std::find_if(
+        actions.begin(), actions.end(), [&](const auto& action) {
+          return action.at("action_id") == action_id;
+        });
+    expect(selected_action != actions.end(), "selector action is missing");
+    selected_action->at("action")["directive_rules"][0]["target"]
+                   ["child_index"] = 1U;
+    RigidWorldAdapter adapter;
+
+    try {
+      static_cast<void>(adapter.execute(request.dump() + '\n'));
+    } catch (const std::exception& error) {
+      expect(
+          std::string(error.what()).find(
+              context + " references invalid fixture child") !=
+              std::string::npos,
+          "invalid selector child produced an unstable diagnostic");
+      continue;
+    }
+    throw std::runtime_error(
+        "invalid selector child reached rigid-world execution");
+  }
+}
+
 void rigid_world_rejects_untrusted_records_before_execution() {
   // Arrange
   const auto fixture = read_fixture(
@@ -793,6 +826,7 @@ int main() {
     rigid_world_rejects_expanding_ray_clip_during_execution();
     rigid_world_rejects_signed_zero_clips_before_execution();
     rigid_world_rejects_invalid_derived_ray_geometry_before_execution();
+    rigid_world_rejects_invalid_selector_children_before_execution();
     rigid_world_rejects_untrusted_records_before_execution();
     rigid_world_boundary_matches_the_fixed_rust_contract();
     rigid_world_rejects_zero_centered_inertia_before_execution();
