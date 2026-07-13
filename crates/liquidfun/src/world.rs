@@ -16,8 +16,8 @@ mod step;
 
 pub use body::{
     AggregateMassError, BodyActivationError, BodyControlError, BodyDef, BodyDefError, BodyMassData,
-    BodyMassDataError, BodyMassResetError, BodySnapshot, BodyTransformError, BodyType,
-    BodyTypeChangeError, WakePolicy,
+    BodyMassDataError, BodyMassMutationError, BodyMassResetError, BodySnapshot, BodyTransformError,
+    BodyType, BodyTypeChangeError, WakePolicy,
 };
 pub use config::{
     StepCompletion, StepConfiguration, StepConfigurationError, WorldConfigurationError,

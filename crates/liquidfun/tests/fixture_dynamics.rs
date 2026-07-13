@@ -443,6 +443,59 @@ fn mass_zero_custom_value_validates_against_the_effective_unit_mass() {
 }
 
 #[test]
+fn custom_mass_rejects_derived_center_overflow_without_panicking_or_mutating() {
+    // Arrange
+    let definition = BodyDef::new(BodyType::Dynamic, Vec2::new(f32::MAX, 0.0), 0.0, true)
+        .expect("finite transform should be accepted");
+    let mut world = World::new().expect("world key should remain available");
+    let body = world.create_body(&definition).expect("body should fit");
+    let before = world.body_snapshot(body).expect("body should remain live");
+    let custom = BodyMassData::new(1.0, Vec2::new(f32::MAX, 0.0), 0.0)
+        .expect("finite custom mass should be accepted");
+
+    // Act
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        world.set_body_mass_data(body, custom)
+    }));
+    let after = world.body_snapshot(body).expect("body should remain live");
+
+    // Assert
+    assert!(matches!(
+        result,
+        Ok(Err(liquidfun::BodyMassMutationError::InvalidDerivedMass(
+            liquidfun::AggregateMassError::NonFiniteDerivedCenter
+        )))
+    ));
+    assert_eq!(after, before);
+}
+
+#[test]
+fn custom_mass_rejects_derived_velocity_overflow_without_mutating() {
+    // Arrange
+    let definition = body_definition(BodyType::Dynamic, true)
+        .with_angular_velocity(2.0)
+        .expect("finite angular velocity should be accepted");
+    let mut world = World::new().expect("world key should remain available");
+    let body = world.create_body(&definition).expect("body should fit");
+    let before = world.body_snapshot(body).expect("body should remain live");
+    let custom = BodyMassData::new(1.0, Vec2::new(f32::MAX, 0.0), 0.0)
+        .expect("finite custom mass should be accepted");
+
+    // Act
+    let result = world.set_body_mass_data(body, custom);
+    let after = world.body_snapshot(body).expect("body should remain live");
+
+    // Assert
+    assert!(matches!(
+        result,
+        Err(liquidfun::BodyMassMutationError::InvalidDerivedMass(
+            liquidfun::AggregateMassError::NonFiniteDerivedVelocity
+        ))
+    ));
+    assert_eq!(after, before);
+}
+
+#[test]
 fn aggregate_mass_overflow_rejects_fixture_creation_without_effects() {
     // Arrange
     let mut world = World::new().expect("world key should remain available");

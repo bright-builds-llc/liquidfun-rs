@@ -884,9 +884,12 @@ impl BodyState {
         self.with_mass_state(mass_state)
     }
 
-    pub(super) fn set_mass_data(&mut self, data: BodyMassData) {
+    pub(super) fn with_custom_mass_data(
+        self,
+        data: BodyMassData,
+    ) -> Result<Self, AggregateMassError> {
         if self.snapshot.body_type != BodyType::Dynamic {
-            return;
+            return Ok(self);
         }
         let mass = if data.mass() > 0.0 { data.mass() } else { 1.0 };
         let rotational_inertia =
@@ -895,33 +898,22 @@ impl BodyState {
             } else {
                 0.0
             };
-        self.apply_mass_state(mass, data.center(), rotational_inertia);
-    }
-
-    fn apply_mass_state(&mut self, mass: f32, local_center: Vec2, rotational_inertia: f32) {
-        let old_center = self.sweep.center();
-        let current_center = self.transform.apply(local_center);
-        self.snapshot.mass = mass;
-        self.snapshot.local_center = local_center;
-        self.snapshot.rotational_inertia = rotational_inertia;
-        self.inverse_mass = if mass > 0.0 { 1.0 / mass } else { 0.0 };
-        self.inverse_inertia = if rotational_inertia > 0.0 {
-            1.0 / rotational_inertia
+        let inverse_mass = checked_finite(1.0 / mass, AggregateMassError::NonFiniteInverseMass)?;
+        let inverse_inertia = if rotational_inertia > 0.0 {
+            checked_finite(
+                1.0 / rotational_inertia,
+                AggregateMassError::NonFiniteInverseInertia,
+            )?
         } else {
             0.0
         };
-        self.sweep = Sweep::new(
-            local_center,
-            current_center,
-            current_center,
-            self.snapshot.angle,
-            self.snapshot.angle,
-            0.0,
-        )
-        .expect("checked mass state and body transform produce a valid sweep");
-        self.linear_velocity +=
-            Vec2::scalar_cross(self.angular_velocity, current_center - old_center);
-        self.snapshot.linear_velocity = self.linear_velocity;
+        self.with_mass_state(MassState {
+            mass,
+            local_center: data.center(),
+            rotational_inertia,
+            inverse_mass,
+            inverse_inertia,
+        })
     }
 
     fn with_mass_state(self, mass_state: MassState) -> Result<Self, AggregateMassError> {
@@ -1058,6 +1050,41 @@ pub enum BodyMassResetError {
     InvalidHandle(HandleError),
     /// The complete source-ordered fixture aggregate is invalid.
     InvalidAggregateMass(AggregateMassError),
+}
+
+/// A failure while replacing a body's custom mass state.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum BodyMassMutationError {
+    /// The body identity does not resolve in this world.
+    InvalidHandle(HandleError),
+    /// The checked source data produced an invalid derived body state.
+    InvalidDerivedMass(AggregateMassError),
+}
+
+impl fmt::Display for BodyMassMutationError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::InvalidHandle(error) => write!(formatter, "invalid body handle: {error}"),
+            Self::InvalidDerivedMass(error) => {
+                write!(formatter, "invalid custom body mass: {error}")
+            }
+        }
+    }
+}
+
+impl Error for BodyMassMutationError {}
+
+impl From<HandleError> for BodyMassMutationError {
+    fn from(error: HandleError) -> Self {
+        Self::InvalidHandle(error)
+    }
+}
+
+impl From<AggregateMassError> for BodyMassMutationError {
+    fn from(error: AggregateMassError) -> Self {
+        Self::InvalidDerivedMass(error)
+    }
 }
 
 impl fmt::Display for BodyMassResetError {

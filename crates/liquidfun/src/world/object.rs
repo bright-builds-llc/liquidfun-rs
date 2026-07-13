@@ -10,8 +10,9 @@ use crate::{
 
 use super::body::BodyActivationError;
 use super::body::{
-    AggregateMassError, BodyControlError, BodyDef, BodyMassData, BodyMassResetError, BodySnapshot,
-    BodyState, BodyTransformError, BodyType, BodyTypeChangeError, WakePolicy,
+    AggregateMassError, BodyControlError, BodyDef, BodyMassData, BodyMassMutationError,
+    BodyMassResetError, BodySnapshot, BodyState, BodyTransformError, BodyType, BodyTypeChangeError,
+    WakePolicy,
 };
 use super::config::{StepTiming, WorldConfiguration, WorldConfigurationError};
 #[cfg(feature = "differential-internals")]
@@ -1050,14 +1051,15 @@ impl World {
     ///
     /// # Errors
     ///
-    /// Returns a handle error without mutation when `body` is foreign, stale, or destroyed.
+    /// Returns a typed handle or derived-mass error without mutation.
     pub fn set_body_mass_data(
         &mut self,
         body: BodyId,
         data: BodyMassData,
-    ) -> Result<(), HandleError> {
+    ) -> Result<(), BodyMassMutationError> {
         self.ensure_not_poisoned_for_handle()?;
-        self.bodies.get_mut(body)?.state.set_mass_data(data);
+        let prepared = self.bodies.get(body)?.state.with_custom_mass_data(data)?;
+        self.body_mut_after_validation(body).state = prepared;
         self.invalidate_continuous_for_body(body);
         Ok(())
     }
