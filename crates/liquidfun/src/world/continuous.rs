@@ -142,7 +142,6 @@ impl From<ToiCountLimitReached> for ContinuousScanError {
 }
 
 impl World {
-    #[allow(dead_code)] // The production step lifecycle calls this in Plan 07-09.
     pub(super) fn select_continuous_candidate(
         &mut self,
     ) -> Result<Option<ContinuousCandidate>, ContinuousScanError> {
@@ -562,14 +561,12 @@ fn rigid_toi_solve_error(
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[allow(dead_code)] // The public step lifecycle consumes this key in Plan 07-09.
 pub(super) struct ContinuousStepKey {
     time_step_bits: u32,
     velocity_iterations: u32,
     position_iterations: u32,
 }
 
-#[allow(dead_code)] // The public step lifecycle consumes this key in Plan 07-09.
 impl ContinuousStepKey {
     pub(super) fn from_configuration(configuration: StepConfiguration) -> Self {
         Self {
@@ -581,7 +578,6 @@ impl ContinuousStepKey {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[allow(dead_code)] // The public step lifecycle consumes this result in Plan 07-09.
 pub(super) enum ContinuousStepKind {
     Fresh,
     Resumed,
@@ -599,7 +595,6 @@ impl ContinuousStepState {
         }
     }
 
-    #[allow(dead_code)] // The public step lifecycle calls this in Plan 07-09.
     pub(super) fn begin_step(
         &mut self,
         key: ContinuousStepKey,
@@ -612,7 +607,6 @@ impl ContinuousStepState {
         ContinuousStepKind::Fresh
     }
 
-    #[allow(dead_code)] // The public step lifecycle calls this in Plan 07-09.
     pub(super) fn mark_pending(&mut self, key: ContinuousStepKey) {
         self.maybe_pending = Some(key);
     }

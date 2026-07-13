@@ -5,7 +5,7 @@ use super::{
 };
 
 impl World {
-    pub(super) fn solve_next_continuous_event(
+    pub(in crate::world) fn solve_next_continuous_event(
         &mut self,
         configuration: StepConfiguration,
         limits: ToiIslandLimits,

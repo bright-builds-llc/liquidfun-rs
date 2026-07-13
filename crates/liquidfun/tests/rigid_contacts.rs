@@ -15,6 +15,14 @@ fn phase6_step_configuration() -> StepConfiguration {
     StepConfiguration::new(1.0 / 60.0, 8, 3).expect("fixed test configuration should be valid")
 }
 
+fn discrete_world() -> World {
+    let mut world = World::new().expect("test world key should remain available");
+    world
+        .set_continuous_physics_enabled(false)
+        .expect("test configuration should remain mutable");
+    world
+}
+
 fn body_definition(body_type: BodyType, position: Vec2) -> BodyDef {
     BodyDef::new(body_type, position, 0.0, true).expect("test body definition should be valid")
 }
@@ -34,7 +42,7 @@ fn fixture_definition(sensor: bool, friction: f32, restitution: f32) -> FixtureD
 }
 
 fn touching_world(sensor: bool) -> (World, BodyId, FixtureId, FixtureId) {
-    let mut world = World::new().expect("test world key should remain available");
+    let mut world = discrete_world();
     let static_body = world
         .create_body(&body_definition(BodyType::Static, Vec2::ZERO))
         .expect("static body should fit");
@@ -53,7 +61,7 @@ fn touching_world(sensor: bool) -> (World, BodyId, FixtureId, FixtureId) {
 #[test]
 fn non_dynamic_static_kinematic_overlap_is_rejected() {
     // Arrange
-    let mut world = World::new().expect("test world key should remain available");
+    let mut world = discrete_world();
     let static_body = world
         .create_body(&body_definition(BodyType::Static, Vec2::ZERO))
         .expect("static body should fit");
@@ -87,7 +95,7 @@ fn non_dynamic_static_kinematic_overlap_is_rejected() {
 #[test]
 fn non_dynamic_kinematic_kinematic_overlap_is_rejected() {
     // Arrange
-    let mut world = World::new().expect("test world key should remain available");
+    let mut world = discrete_world();
     let first_body = world
         .create_body(&body_definition(BodyType::Kinematic, Vec2::ZERO))
         .expect("first kinematic body should fit");

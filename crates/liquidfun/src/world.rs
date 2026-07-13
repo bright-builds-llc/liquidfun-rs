@@ -40,6 +40,6 @@ pub use query::{
 };
 pub use step::{
     CollisionDirective, CommandApplication, CommandError, ContactEvent, ContactView,
-    PreSolveDirective, StepError, StepHook, StepLifecycleEvent, StepLimits, StepPhase, StepReport,
-    WorldCommand,
+    ContinuousProgress, PreSolveDirective, StepError, StepHook, StepLifecycleEvent, StepLimits,
+    StepPhase, StepReport, WorldCommand,
 };

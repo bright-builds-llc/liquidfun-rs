@@ -60,8 +60,14 @@ fn advance_discretely(world: &mut World) {
     let configuration =
         StepConfiguration::new(1.0, 8, 3).expect("test step configuration should be valid");
     world
+        .set_continuous_physics_enabled(false)
+        .expect("test configuration should remain mutable");
+    world
         .step(configuration, &mut NoopHook, StepLimits::default())
         .expect("test discrete step should succeed");
+    world
+        .set_continuous_physics_enabled(true)
+        .expect("test configuration should remain mutable");
 }
 
 fn single_target_world(target_type: BodyType, sensor: bool) -> (World, BodyId) {

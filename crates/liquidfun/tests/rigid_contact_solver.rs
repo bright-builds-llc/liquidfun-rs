@@ -15,6 +15,14 @@ fn phase6_step_configuration() -> StepConfiguration {
     StepConfiguration::new(1.0 / 60.0, 8, 3).expect("fixed test configuration should be valid")
 }
 
+fn discrete_world() -> World {
+    let mut world = World::new().expect("test world key should remain available");
+    world
+        .set_continuous_physics_enabled(false)
+        .expect("test configuration should remain mutable");
+    world
+}
+
 fn body_definition(body_type: BodyType, position: Vec2) -> BodyDef {
     BodyDef::new(body_type, position, 0.0, true).expect("test body definition should be valid")
 }
@@ -52,7 +60,7 @@ fn circle_contact_world(
     second_type: BodyType,
     sensor: bool,
 ) -> (World, BodyId, BodyId, FixtureId, FixtureId) {
-    let mut world = World::new().expect("test world key should remain available");
+    let mut world = discrete_world();
     let first_body = world
         .create_body(&body_definition(first_type, Vec2::ZERO))
         .expect("first body should fit");
@@ -102,7 +110,7 @@ fn cold_contact_solves_with_finite_zero_impulses() {
 #[test]
 fn contact_step_commits_source_ordered_position_correction() {
     // Arrange
-    let mut world = World::new().expect("test world key should remain available");
+    let mut world = discrete_world();
     let static_body = world
         .create_body(&body_definition(BodyType::Static, Vec2::ZERO))
         .expect("static body should fit");
@@ -235,7 +243,7 @@ fn sensor_contact_bypasses_constraint_creation() {
 #[test]
 fn two_point_contact_uses_fixed_capacity_and_preserves_material() {
     // Arrange
-    let mut world = World::new().expect("test world key should remain available");
+    let mut world = discrete_world();
     let static_body = world
         .create_body(&body_definition(BodyType::Static, Vec2::ZERO))
         .expect("static body should fit");

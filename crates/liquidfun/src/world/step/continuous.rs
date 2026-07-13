@@ -1,0 +1,102 @@
+use super::{ContactTransition, StepCompletion, StepConfiguration, StepError};
+use crate::World;
+
+use crate::world::contact_solver::ContactSolveFailure;
+use crate::world::continuous::{ContinuousEventError, ContinuousScanError, ContinuousStepKey};
+use crate::world::island::{IslandBuildError, ToiIslandLimits};
+
+/// Semantic progress retained after one continuous-work budget is exhausted.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ContinuousProgress {
+    discrete_completed: bool,
+    completed_events: usize,
+}
+
+impl ContinuousProgress {
+    const fn after_discrete(completed_events: usize) -> Self {
+        Self {
+            discrete_completed: true,
+            completed_events,
+        }
+    }
+
+    /// Returns whether the discrete stage committed before the checkpoint.
+    #[must_use]
+    pub const fn discrete_completed(self) -> bool {
+        self.discrete_completed
+    }
+
+    /// Returns the number of continuous events committed by this call.
+    #[must_use]
+    pub const fn completed_events(self) -> usize {
+        self.completed_events
+    }
+}
+
+impl World {
+    pub(super) fn run_continuous_stage(
+        &mut self,
+        configuration: StepConfiguration,
+        key: ContinuousStepKey,
+        work_limit: usize,
+        contact_transitions: &[ContactTransition],
+    ) -> Result<StepCompletion, StepError> {
+        let mut completed_events = 0;
+        loop {
+            if completed_events == work_limit {
+                self.continuous_step_state.mark_pending(key);
+                return Err(StepError::ContinuousWorkLimitExceeded {
+                    limit: work_limit,
+                    progress: ContinuousProgress::after_discrete(completed_events),
+                });
+            }
+            let maybe_event = self
+                .solve_next_continuous_event(configuration, ToiIslandLimits::REVIEWED, false)
+                .map_err(|error| {
+                    self.continuous_step_state.mark_pending(key);
+                    continuous_step_error(error, contact_transitions)
+                })?;
+            let Some(_event) = maybe_event else {
+                return Ok(StepCompletion::Complete);
+            };
+            completed_events += 1;
+            if self.is_sub_stepping_enabled() {
+                self.continuous_step_state.mark_pending(key);
+                return Ok(StepCompletion::ContinuousPending);
+            }
+        }
+    }
+}
+
+fn continuous_step_error(
+    error: ContinuousEventError,
+    contact_transitions: &[ContactTransition],
+) -> StepError {
+    match error {
+        ContinuousEventError::Scan(ContinuousScanError::CapacityExceeded { resource, limit })
+        | ContinuousEventError::Island(IslandBuildError::CapacityExceeded { resource, limit })
+        | ContinuousEventError::Solve(ContactSolveFailure::CapacityExceeded { resource, limit }) => {
+            StepError::LimitExceeded { resource, limit }
+        }
+        ContinuousEventError::Scan(ContinuousScanError::InvalidGraph)
+        | ContinuousEventError::Island(IslandBuildError::InvalidGraph)
+        | ContinuousEventError::Solve(ContactSolveFailure::UnsupportedTopology) => {
+            StepError::UnsupportedSolverTopology {
+                contact_transitions: contact_transitions.to_vec(),
+            }
+        }
+        ContinuousEventError::Solve(ContactSolveFailure::InvalidProxyBounds)
+        | ContinuousEventError::ProxyBounds => StepError::InvalidSolverProxyBounds {
+            contact_transitions: contact_transitions.to_vec(),
+        },
+        ContinuousEventError::Scan(
+            ContinuousScanError::Collision(_)
+            | ContinuousScanError::Sweep(_)
+            | ContinuousScanError::ToiCountLimit,
+        )
+        | ContinuousEventError::Solve(ContactSolveFailure::NonFinite)
+        | ContinuousEventError::InjectedFailure => StepError::NonFiniteSolverState {
+            contact_transitions: contact_transitions.to_vec(),
+        },
+    }
+}

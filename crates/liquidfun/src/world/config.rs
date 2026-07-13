@@ -295,6 +295,7 @@ impl World {
         enabled: bool,
     ) -> Result<(), WorldConfigurationError> {
         self.ensure_configuration_mutable()?;
+        self.continuous_step_state.invalidate();
         self.configuration
             .flags
             .set(WorldFlags::CONTINUOUS_PHYSICS, enabled);
@@ -317,6 +318,7 @@ impl World {
         enabled: bool,
     ) -> Result<(), WorldConfigurationError> {
         self.ensure_configuration_mutable()?;
+        self.continuous_step_state.invalidate();
         self.configuration
             .flags
             .set(WorldFlags::SUB_STEPPING, enabled);

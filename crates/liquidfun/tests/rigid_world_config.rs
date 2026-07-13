@@ -1,9 +1,10 @@
 //! Black-box checks for checked rigid-world and timestep configuration.
 
+use liquidfun::collision::{CircleShape, FilterData, Shape};
 use liquidfun::math::Vec2;
 use liquidfun::{
-    BodyControlError, BodyDef, BodyType, StepCompletion, StepConfiguration, StepConfigurationError,
-    StepHook, StepLimits, WakePolicy, World, WorldConfigurationError,
+    BodyControlError, BodyDef, BodyType, FixtureDef, StepCompletion, StepConfiguration,
+    StepConfigurationError, StepHook, StepLimits, WakePolicy, World, WorldConfigurationError,
 };
 
 struct NoopHook;
@@ -308,4 +309,60 @@ fn force_clearing_invalid_configuration_has_no_effect() {
     // Assert
     assert_eq!(invalid, Err(StepConfigurationError::NonFiniteTimeStep));
     assert_eq!(accumulated, Err(BodyControlError::NonFiniteDerivedForceX));
+}
+
+#[test]
+fn continuous_pending_success_obeys_force_clear_policy() {
+    // Arrange
+    let mut world = World::new().expect("world key should remain available");
+    let force_body = dynamic_body(&mut world);
+    world
+        .set_body_active(force_body, false)
+        .expect("test force body should deactivate");
+    let moving_definition = BodyDef::new(BodyType::Dynamic, Vec2::new(-3.5, 0.0), 0.0, true)
+        .expect("test moving definition should be valid")
+        .with_linear_velocity(Vec2::new(4.0, 0.0))
+        .expect("test moving velocity should be valid")
+        .with_bullet(true);
+    let moving = world
+        .create_body(&moving_definition)
+        .expect("test moving body should fit");
+    let target = world
+        .create_body(
+            &BodyDef::new(BodyType::Static, Vec2::ZERO, 0.0, true)
+                .expect("test target definition should be valid"),
+        )
+        .expect("test target body should fit");
+    let fixture = FixtureDef::new(
+        Shape::from(CircleShape::new(Vec2::ZERO, 1.0).expect("test circle should be valid")),
+        1.0,
+        0.2,
+        0.0,
+        false,
+        FilterData::default(),
+    )
+    .expect("test fixture should be valid");
+    world
+        .create_fixture(moving, &fixture)
+        .expect("test moving fixture should fit");
+    world
+        .create_fixture(target, &fixture)
+        .expect("test target fixture should fit");
+    world
+        .set_sub_stepping_enabled(true)
+        .expect("test configuration should remain mutable");
+    world
+        .apply_body_force_to_center(force_body, Vec2::new(f32::MAX, 0.0), WakePolicy::Wake)
+        .expect("first finite force should be accepted");
+
+    // Act
+    let report = world
+        .step(configuration(1.0), &mut NoopHook, StepLimits::default())
+        .expect("continuous sub-step should succeed");
+
+    // Assert
+    assert_eq!(report.completion(), StepCompletion::ContinuousPending);
+    world
+        .apply_body_force_to_center(force_body, Vec2::new(f32::MAX, 0.0), WakePolicy::Wake)
+        .expect("successful continuous-pending step should clear forces");
 }

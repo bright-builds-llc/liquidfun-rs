@@ -6,7 +6,8 @@ use liquidfun::collision::{CircleShape, FilterData, Shape};
 use liquidfun::math::Vec2;
 use liquidfun::rigid_differential::{RigidToiFailureInjection, RigidToiIslandLimits};
 use liquidfun::{
-    BodyDef, BodyId, BodyType, FixtureDef, StepConfiguration, StepHook, StepLimits, World,
+    BodyDef, BodyId, BodyType, FixtureDef, StepCompletion, StepConfiguration, StepError, StepHook,
+    StepLimits, World,
 };
 
 #[derive(Default)]
@@ -174,4 +175,114 @@ fn failed_toi_event_is_atomic() {
         target_before
     );
     assert_eq!(world.rigid_contact_diagnostics(), contacts_before);
+}
+
+fn automatic_ccd_world(target_type: BodyType) -> (World, BodyId, BodyId, StepConfiguration) {
+    let mut world = World::new().expect("test world key should remain available");
+    let moving = create_circle_body(
+        &mut world,
+        BodyType::Dynamic,
+        Vec2::new(-2.0, 0.0),
+        Vec2::new(2.0, 0.0),
+        true,
+    );
+    let target = create_circle_body(&mut world, target_type, Vec2::ZERO, Vec2::ZERO, false);
+    let configuration =
+        StepConfiguration::new(1.0, 8, 3).expect("test step configuration should be valid");
+    (world, moving, target, configuration)
+}
+
+#[test]
+fn substepping_accepts_one_toi_event_and_resumes_without_repeating_discrete_work() {
+    // Arrange
+    let (mut world, moving, _target, configuration) = automatic_ccd_world(BodyType::Static);
+    world
+        .set_sub_stepping_enabled(true)
+        .expect("test configuration should remain mutable");
+
+    // Act
+    let pending = world
+        .step(configuration, &mut NoopHook, StepLimits::default())
+        .expect("first sub-step should succeed");
+    let position_after_pending = world
+        .body_snapshot(moving)
+        .expect("moving body should remain live")
+        .position();
+    let complete = world
+        .step(configuration, &mut NoopHook, StepLimits::default())
+        .expect("matching continuation should succeed");
+    let position_after_resume = world
+        .body_snapshot(moving)
+        .expect("moving body should remain live")
+        .position();
+
+    // Assert
+    assert_eq!(pending.completion(), StepCompletion::ContinuousPending);
+    assert_eq!(complete.completion(), StepCompletion::Complete);
+    assert_eq!(position_after_resume, position_after_pending);
+    assert!(complete.events().is_empty());
+    assert!(complete.contact_solves().is_empty());
+}
+
+#[test]
+fn exhausted_budget_returns_coherent_partial_evidence_and_can_resume() {
+    // Arrange
+    let (mut world, moving, _target, configuration) = automatic_ccd_world(BodyType::Static);
+    let exhausted_limits = StepLimits::default()
+        .with_continuous_work_limit(0)
+        .expect("zero is a coherent pre-event work boundary");
+
+    // Act
+    let exhausted = world.step(configuration, &mut NoopHook, exhausted_limits);
+    let position_after_discrete = world
+        .body_snapshot(moving)
+        .expect("moving body should remain live")
+        .position();
+    let resumed = world
+        .step(configuration, &mut NoopHook, StepLimits::default())
+        .expect("same world should resume continuous work");
+
+    // Assert
+    let Err(StepError::ContinuousWorkLimitExceeded { limit, progress }) = exhausted else {
+        panic!("zero continuous work must return typed partial evidence");
+    };
+    assert_eq!(limit, 0);
+    assert!(progress.discrete_completed());
+    assert_eq!(progress.completed_events(), 0);
+    assert_eq!(resumed.completion(), StepCompletion::Complete);
+    assert!(
+        world
+            .body_snapshot(moving)
+            .expect("moving body should remain live")
+            .position()
+            .x
+            < position_after_discrete.x
+    );
+}
+
+#[test]
+fn anti_tunneling_witnesses_stop_bullets_without_corrupting_contacts() {
+    for target_type in [BodyType::Static, BodyType::Kinematic, BodyType::Dynamic] {
+        // Arrange
+        let (mut world, moving, target, configuration) = automatic_ccd_world(target_type);
+
+        // Act
+        let report = world
+            .step(configuration, &mut NoopHook, StepLimits::default())
+            .expect("bounded continuous step should succeed");
+        let moving_position = world
+            .body_snapshot(moving)
+            .expect("moving body should remain live")
+            .position();
+        let target_position = world
+            .body_snapshot(target)
+            .expect("target body should remain live")
+            .position();
+
+        // Assert
+        assert_eq!(report.completion(), StepCompletion::Complete);
+        assert!(moving_position.x <= target_position.x);
+        assert_eq!(world.contact_count(), 1);
+        assert!(world.rigid_contact_diagnostics()[0].contact().is_touching());
+    }
 }

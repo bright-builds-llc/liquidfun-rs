@@ -14,9 +14,14 @@ use super::config::{StepCompletion, StepConfiguration};
 use super::contact::{ContactPointSnapshot, ContactTransition, ManagedContactSnapshot};
 use super::contact_manager::HookContactOccurrence;
 use super::contact_solver::{ContactSolve, ContactSolveFailure};
+use super::continuous::{ContinuousStepKey, ContinuousStepKind};
+
+mod continuous;
+pub use continuous::ContinuousProgress;
 
 const MAX_STEP_EVENTS: usize = 4_096;
 const MAX_STEP_COMMANDS: usize = 1_024;
+const MAX_CONTINUOUS_WORK: usize = 1_024;
 
 #[derive(Debug, Clone)]
 pub(super) struct StepState {
@@ -62,6 +67,7 @@ impl StepState {
 pub struct StepLimits {
     max_events: usize,
     max_commands: usize,
+    max_continuous_work: usize,
     maybe_failure_injection: Option<super::island::SolveFailureInjection>,
 }
 
@@ -81,6 +87,7 @@ impl StepLimits {
         Ok(Self {
             max_events,
             max_commands,
+            max_continuous_work: 64,
             maybe_failure_injection: None,
         })
     }
@@ -95,6 +102,33 @@ impl StepLimits {
     #[must_use]
     pub const fn max_commands(self) -> usize {
         self.max_commands
+    }
+
+    /// Returns the maximum number of continuous events accepted by one call.
+    #[must_use]
+    pub const fn max_continuous_work(self) -> usize {
+        self.max_continuous_work
+    }
+
+    /// Returns limits with a checked per-call continuous-event budget.
+    ///
+    /// Zero is valid and creates a coherent checkpoint immediately after the
+    /// discrete stage. A matching later call resumes without repeating that
+    /// stage.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`StepError::InvalidContinuousWorkLimit`] when `maximum`
+    /// exceeds the reviewed hard maximum.
+    pub const fn with_continuous_work_limit(mut self, maximum: usize) -> Result<Self, StepError> {
+        if maximum > MAX_CONTINUOUS_WORK {
+            return Err(StepError::InvalidContinuousWorkLimit {
+                requested: maximum,
+                maximum: MAX_CONTINUOUS_WORK,
+            });
+        }
+        self.max_continuous_work = maximum;
+        Ok(self)
     }
 
     /// Returns limits with one bounded transactional-solver failure injection.
@@ -122,6 +156,7 @@ impl Default for StepLimits {
         Self {
             max_events: 256,
             max_commands: 64,
+            max_continuous_work: 64,
             maybe_failure_injection: None,
         }
     }
@@ -492,12 +527,26 @@ pub enum StepError {
         /// Configured finite limit.
         limit: usize,
     },
+    /// A coherent continuous checkpoint reached its configured work budget.
+    ContinuousWorkLimitExceeded {
+        /// Configured finite limit for this call.
+        limit: usize,
+        /// Semantic progress retained for a matching continuation.
+        progress: ContinuousProgress,
+    },
     /// Requested limits exceed the reviewed hard maxima.
     InvalidLimits {
         /// Requested event limit.
         max_events: usize,
         /// Requested command limit.
         max_commands: usize,
+    },
+    /// A requested continuous-work limit exceeds the reviewed hard maximum.
+    InvalidContinuousWorkLimit {
+        /// Rejected continuous-event budget.
+        requested: usize,
+        /// Largest accepted continuous-event budget.
+        maximum: usize,
     },
 }
 
@@ -518,12 +567,21 @@ impl fmt::Display for StepError {
             Self::LimitExceeded { resource, limit } => {
                 write!(formatter, "step {resource} limit of {limit} was exceeded")
             }
+            Self::ContinuousWorkLimitExceeded { limit, progress } => write!(
+                formatter,
+                "continuous work limit of {limit} was reached after {} committed events",
+                progress.completed_events()
+            ),
             Self::InvalidLimits {
                 max_events,
                 max_commands,
             } => write!(
                 formatter,
                 "step limits exceed hard maxima: events={max_events}, commands={max_commands}"
+            ),
+            Self::InvalidContinuousWorkLimit { requested, maximum } => write!(
+                formatter,
+                "continuous work limit must be within 0..={maximum}, got {requested}"
             ),
         }
     }
@@ -570,33 +628,61 @@ impl World {
         }
         let timing = self.prepare_step_timing(configuration);
         let mut phases = Vec::with_capacity(6);
-        let (mut contact_transitions, events, commands, contact_solves) = {
-            let _lock = StepLockGuard::acquire(&self.step_state)?;
-            phases.push(StepPhase::FindPairs);
-            self.find_pairs();
-            phases.push(StepPhase::UpdateContacts);
-            self.update_contacts_for_step();
-            let contact_transitions = self.contact_manager.drain_transitions();
-            if configuration.time_step() > 0.0 {
-                self.preflight_contact_solver()
-                    .map_err(|error| solver_step_error(error, &contact_transitions))?;
+        let continuous_enabled =
+            self.is_continuous_physics_enabled() && configuration.time_step() > 0.0;
+        let continuous_key = ContinuousStepKey::from_configuration(configuration);
+        let step_lock = StepLockGuard::acquire(&self.step_state)?;
+        let step_kind = if continuous_enabled {
+            self.continuous_step_state
+                .begin_step(continuous_key, &mut self.contact_manager)
+        } else {
+            self.continuous_step_state.invalidate();
+            ContinuousStepKind::Fresh
+        };
+        let mut contact_transitions = Vec::new();
+        let mut events = Vec::new();
+        let mut commands = Vec::new();
+        let mut contact_solves = Vec::new();
+        let completion = {
+            let _lock = step_lock;
+            if step_kind == ContinuousStepKind::Fresh {
+                phases.push(StepPhase::FindPairs);
+                self.find_pairs();
+                phases.push(StepPhase::UpdateContacts);
+                self.update_contacts_for_step();
+                contact_transitions = self.contact_manager.drain_transitions();
+                if configuration.time_step() > 0.0 {
+                    self.preflight_contact_solver()
+                        .map_err(|error| solver_step_error(error, &contact_transitions))?;
+                }
+
+                phases.push(StepPhase::Hook);
+                let occurrences = self.contact_manager.hook_contacts();
+                (events, commands) = self.run_contact_hooks(&occurrences, hook, limits)?;
+                if configuration.time_step() > 0.0 {
+                    phases.push(StepPhase::Solve);
+                    contact_solves = self
+                        .solve_contact_constraints(
+                            configuration,
+                            timing,
+                            limits.maybe_failure_injection,
+                        )
+                        .map_err(|error| solver_step_error(error, &contact_transitions))?;
+                }
             }
 
-            phases.push(StepPhase::Hook);
-            let occurrences = self.contact_manager.hook_contacts();
-            let (events, commands) = self.run_contact_hooks(&occurrences, hook, limits)?;
-            let contact_solves = if configuration.time_step() > 0.0 {
-                phases.push(StepPhase::Solve);
-                self.solve_contact_constraints(
+            if continuous_enabled {
+                let completion = self.run_continuous_stage(
                     configuration,
-                    timing,
-                    limits.maybe_failure_injection,
-                )
-                .map_err(|error| solver_step_error(error, &contact_transitions))?
+                    continuous_key,
+                    limits.max_continuous_work,
+                    &contact_transitions,
+                )?;
+                contact_transitions.extend(self.contact_manager.drain_transitions());
+                completion
             } else {
-                Vec::new()
-            };
-            (contact_transitions, events, commands, contact_solves)
+                StepCompletion::Complete
+            }
         };
         phases.push(StepPhase::Unlock);
 
@@ -620,7 +706,7 @@ impl World {
         contact_transitions.extend(command_transitions);
         lifecycle.extend(command_lifecycle);
 
-        let completion = self.finish_successful_step(timing, StepCompletion::Complete);
+        let completion = self.finish_successful_step(timing, completion);
         Ok(StepReport {
             completion,
             time_step_ratio: timing.time_step_ratio(),

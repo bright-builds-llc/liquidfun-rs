@@ -18,6 +18,14 @@ fn step_configuration(time_step: f32) -> StepConfiguration {
     StepConfiguration::new(time_step, 8, 3).expect("test step configuration should be valid")
 }
 
+fn discrete_world() -> World {
+    let mut world = World::new().expect("world key should remain available");
+    world
+        .set_continuous_physics_enabled(false)
+        .expect("test configuration should remain mutable");
+    world
+}
+
 fn body_definition(body_type: BodyType, position: Vec2) -> BodyDef {
     BodyDef::new(body_type, position, 0.0, true).expect("test body definition should be valid")
 }
@@ -73,7 +81,7 @@ fn box_fixture(friction: f32, restitution: f32) -> FixtureDef {
 #[test]
 fn constraints_dynamic_dynamic_contact_solves() {
     // Arrange
-    let mut world = World::new().expect("world key should remain available");
+    let mut world = discrete_world();
     let first = create_body(&mut world, BodyType::Dynamic, Vec2::ZERO);
     let second = create_body(&mut world, BodyType::Dynamic, Vec2::new(1.5, 0.0));
     let _first_fixture = attach_circle(&mut world, first);
@@ -99,7 +107,7 @@ fn constraints_dynamic_dynamic_contact_solves() {
 #[test]
 fn constraints_multi_contact_island_preserves_manager_order() {
     // Arrange
-    let mut world = World::new().expect("world key should remain available");
+    let mut world = discrete_world();
     let boundary = create_body(&mut world, BodyType::Static, Vec2::ZERO);
     let middle = create_body(&mut world, BodyType::Dynamic, Vec2::new(1.5, 0.0));
     let outer = create_body(&mut world, BodyType::Dynamic, Vec2::new(3.0, 0.0));
@@ -132,7 +140,7 @@ fn constraints_multi_contact_island_preserves_manager_order() {
 #[test]
 fn constraints_integrate_force_gravity_and_pade_damping_before_motion() {
     // Arrange
-    let mut world = World::new().expect("world key should remain available");
+    let mut world = discrete_world();
     world
         .set_gravity(Vec2::new(0.0, -10.0))
         .expect("test gravity should be valid");
@@ -187,7 +195,7 @@ fn constraints_integrate_force_gravity_and_pade_damping_before_motion() {
 #[test]
 fn constraints_kinematic_velocity_stays_user_driven_while_dynamic_body_solves() {
     // Arrange
-    let mut world = World::new().expect("world key should remain available");
+    let mut world = discrete_world();
     let kinematic_definition = body_definition(BodyType::Kinematic, Vec2::ZERO)
         .with_linear_velocity(Vec2::new(2.0, 0.0))
         .expect("kinematic velocity should be valid");
@@ -227,7 +235,7 @@ fn constraints_kinematic_velocity_stays_user_driven_while_dynamic_body_solves() 
 #[test]
 fn constraints_two_point_contact_preserves_manifold_order_and_material() {
     // Arrange
-    let mut world = World::new().expect("world key should remain available");
+    let mut world = discrete_world();
     let boundary = create_body(&mut world, BodyType::Static, Vec2::ZERO);
     let dynamic = create_body(&mut world, BodyType::Dynamic, Vec2::new(0.0, 1.5));
     let _boundary_fixture = world
@@ -261,7 +269,7 @@ fn constraints_two_point_contact_preserves_manifold_order_and_material() {
 #[test]
 fn constraints_friction_reduces_tangent_motion_after_normal_impact() {
     // Arrange
-    let mut world = World::new().expect("world key should remain available");
+    let mut world = discrete_world();
     let boundary = create_body(&mut world, BodyType::Static, Vec2::ZERO);
     let dynamic_definition = body_definition(BodyType::Dynamic, Vec2::new(1.5, 0.0))
         .with_linear_velocity(Vec2::new(-2.0, 3.0))
@@ -293,7 +301,7 @@ fn constraints_friction_reduces_tangent_motion_after_normal_impact() {
 #[test]
 fn constraints_restitution_uses_the_maximum_mixed_value() {
     // Arrange
-    let mut world = World::new().expect("world key should remain available");
+    let mut world = discrete_world();
     let boundary = create_body(&mut world, BodyType::Static, Vec2::ZERO);
     let dynamic_definition = body_definition(BodyType::Dynamic, Vec2::new(1.5, 0.0))
         .with_linear_velocity(Vec2::new(-2.0, 0.0))
@@ -333,7 +341,7 @@ fn constraints_restitution_uses_the_maximum_mixed_value() {
 #[test]
 fn constraints_disabled_warm_start_still_stores_new_impulses() {
     // Arrange
-    let mut world = World::new().expect("world key should remain available");
+    let mut world = discrete_world();
     world
         .set_warm_starting_enabled(false)
         .expect("warm starting control should be available");
@@ -368,7 +376,7 @@ fn constraints_disabled_warm_start_still_stores_new_impulses() {
 #[test]
 fn atomic_successful_step_synchronizes_proxies_before_finding_new_contacts() {
     // Arrange
-    let mut world = World::new().expect("world key should remain available");
+    let mut world = discrete_world();
     let moving_definition = body_definition(BodyType::Dynamic, Vec2::ZERO)
         .with_linear_velocity(Vec2::new(4.0, 0.0))
         .expect("moving velocity should be valid");
@@ -449,7 +457,7 @@ fn atomic_late_island_failure_preserves_every_body_and_impulse_lane() {
 #[test]
 fn atomic_proxy_bound_failure_preserves_motion_impulses_and_contact_topology() {
     // Arrange
-    let mut world = World::new().expect("world key should remain available");
+    let mut world = discrete_world();
     let moving_definition = body_definition(BodyType::Dynamic, Vec2::ZERO)
         .with_linear_velocity(Vec2::new(2.0, 0.0))
         .expect("moving velocity should be valid");
@@ -484,7 +492,7 @@ fn atomic_proxy_bound_failure_preserves_motion_impulses_and_contact_topology() {
 }
 
 fn two_disconnected_contact_islands() -> World {
-    let mut world = World::new().expect("world key should remain available");
+    let mut world = discrete_world();
     for offset in [0.0, 10.0] {
         let boundary = create_body(&mut world, BodyType::Static, Vec2::new(offset, 0.0));
         let dynamic = create_body(&mut world, BodyType::Dynamic, Vec2::new(offset + 1.5, 0.0));
