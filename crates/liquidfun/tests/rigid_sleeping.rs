@@ -258,3 +258,208 @@ fn thresholds_sleep_candidates_roll_back_with_late_island_failure() {
     assert!(after_failure.is_awake());
     assert!(!after_success.is_awake());
 }
+
+#[test]
+fn wake_sources_type_and_sensor_markers_wake_before_island_seeding() {
+    // Arrange
+    let mut world = World::new().expect("world key should remain available");
+    world
+        .set_gravity(Vec2::ZERO)
+        .expect("zero gravity should be valid");
+    let type_body = create_body(
+        &mut world,
+        &body_definition(Vec2::new(-4.0, 0.0)).with_awake(false),
+    );
+    let sensor_body = create_body(
+        &mut world,
+        &body_definition(Vec2::new(4.0, 0.0)).with_awake(false),
+    );
+    let sensor_shape =
+        Shape::from(CircleShape::new(Vec2::ZERO, 1.0).expect("test circle should be valid"));
+    let sensor_fixture = world
+        .create_fixture(
+            sensor_body,
+            &FixtureDef::new(sensor_shape, 1.0, 0.2, 0.0, false, FilterData::default())
+                .expect("test fixture should be valid"),
+        )
+        .expect("test fixture should fit");
+
+    // Act
+    world
+        .set_body_type(type_body, BodyType::Kinematic)
+        .expect("body type change should be valid");
+    world
+        .set_fixture_sensor(sensor_fixture, true)
+        .expect("sensor change should be valid");
+    step(&mut world, 0.1, 3);
+    let type_after = world
+        .body_snapshot(type_body)
+        .expect("type body should remain live");
+    let sensor_after = world
+        .body_snapshot(sensor_body)
+        .expect("sensor body should remain live");
+
+    // Assert
+    assert!(type_after.is_awake());
+    assert!(sensor_after.is_awake());
+}
+
+#[test]
+fn wake_sources_solid_contact_creation_wakes_both_bodies() {
+    // Arrange
+    let mut world = World::new().expect("world key should remain available");
+    world
+        .set_gravity(Vec2::ZERO)
+        .expect("zero gravity should be valid");
+    let first = create_body(&mut world, &body_definition(Vec2::ZERO).with_awake(false));
+    let second = create_body(
+        &mut world,
+        &body_definition(Vec2::new(2.0, 0.0)).with_awake(false),
+    );
+    attach_circle(&mut world, first);
+    attach_circle(&mut world, second);
+
+    // Act
+    step(&mut world, 0.1, 3);
+
+    // Assert
+    assert!(
+        world
+            .body_snapshot(first)
+            .expect("first body should remain live")
+            .is_awake()
+    );
+    assert!(
+        world
+            .body_snapshot(second)
+            .expect("second body should remain live")
+            .is_awake()
+    );
+}
+
+#[test]
+fn wake_sources_solid_contact_transition_wakes_both_bodies() {
+    // Arrange
+    let mut world = World::new().expect("world key should remain available");
+    world
+        .set_gravity(Vec2::ZERO)
+        .expect("zero gravity should be valid");
+    let first = create_body(&mut world, &body_definition(Vec2::ZERO));
+    let second = create_body(&mut world, &body_definition(Vec2::new(2.0, 0.0)));
+    attach_circle(&mut world, first);
+    attach_circle(&mut world, second);
+    step(&mut world, TIME_TO_SLEEP, 3);
+    assert!(
+        !world
+            .body_snapshot(first)
+            .expect("first body should remain live")
+            .is_awake()
+    );
+    assert!(
+        !world
+            .body_snapshot(second)
+            .expect("second body should remain live")
+            .is_awake()
+    );
+
+    // Act
+    world
+        .set_body_transform(second, Vec2::new(2.05, 0.0), 0.0)
+        .expect("separating transform should be valid");
+    step(&mut world, 0.1, 3);
+
+    // Assert
+    assert!(
+        world
+            .body_snapshot(first)
+            .expect("first body should remain live")
+            .is_awake()
+    );
+    assert!(
+        world
+            .body_snapshot(second)
+            .expect("second body should remain live")
+            .is_awake()
+    );
+}
+
+#[test]
+fn wake_sources_sensor_contact_creation_preserves_sleep() {
+    // Arrange
+    let mut world = World::new().expect("world key should remain available");
+    world
+        .set_gravity(Vec2::ZERO)
+        .expect("zero gravity should be valid");
+    let first = create_body(&mut world, &body_definition(Vec2::ZERO).with_awake(false));
+    let second = create_body(
+        &mut world,
+        &body_definition(Vec2::new(2.0, 0.0)).with_awake(false),
+    );
+    attach_circle(&mut world, first);
+    let sensor_shape =
+        Shape::from(CircleShape::new(Vec2::ZERO, 1.0).expect("test circle should be valid"));
+    world
+        .create_fixture(
+            second,
+            &FixtureDef::new(sensor_shape, 1.0, 0.2, 0.0, true, FilterData::default())
+                .expect("test sensor fixture should be valid"),
+        )
+        .expect("test sensor fixture should fit");
+
+    // Act
+    step(&mut world, 0.1, 3);
+
+    // Assert
+    assert!(
+        !world
+            .body_snapshot(first)
+            .expect("first body should remain live")
+            .is_awake()
+    );
+    assert!(
+        !world
+            .body_snapshot(second)
+            .expect("second body should remain live")
+            .is_awake()
+    );
+}
+
+#[test]
+fn wake_sources_activation_and_passive_controls_do_not_invent_waking() {
+    // Arrange
+    let mut world = World::new().expect("world key should remain available");
+    let definition = BodyDef::new(BodyType::Dynamic, Vec2::ZERO, 0.0, false)
+        .expect("inactive body definition should be valid")
+        .with_awake(false);
+    let body = create_body(&mut world, &definition);
+
+    // Act
+    world
+        .set_body_active(body, true)
+        .expect("activation should be valid");
+    world
+        .set_body_linear_damping(body, 0.5)
+        .expect("linear damping should be valid");
+    world
+        .set_body_angular_damping(body, 0.25)
+        .expect("angular damping should be valid");
+    world
+        .set_body_gravity_scale(body, -1.0)
+        .expect("gravity scale should be valid");
+    world
+        .set_body_bullet(body, true)
+        .expect("bullet state should be valid");
+    world
+        .set_gravity(Vec2::new(0.0, -10.0))
+        .expect("world gravity should be valid");
+    world
+        .set_body_linear_velocity(body, Vec2::ZERO)
+        .expect("zero velocity should be valid");
+    world
+        .apply_body_force_to_center(body, Vec2::new(1.0, 0.0), WakePolicy::PreserveSleep)
+        .expect("preserve-sleep force should be a successful no-op");
+    let after = world.body_snapshot(body).expect("body should remain live");
+
+    // Assert
+    assert!(!after.is_awake());
+}

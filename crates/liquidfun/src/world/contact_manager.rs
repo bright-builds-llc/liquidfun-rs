@@ -264,6 +264,7 @@ impl ContactManager {
             .next_ordinal
             .checked_add(1)
             .expect("private contact occurrence ordinals cannot exhaust in one process");
+        let solid = !fixture_a.definition.is_sensor() && !fixture_b.definition.is_sensor();
         let contact = Contact::new(
             key,
             ordinal,
@@ -274,6 +275,9 @@ impl ContactManager {
         );
         self.contacts.insert(0, contact);
         link_contact(ordinal, key, bodies, fixtures);
+        if solid {
+            wake_contact_bodies(key, bodies);
+        }
     }
 
     fn destroy_contact(
@@ -283,6 +287,9 @@ impl ContactManager {
         fixtures: &mut Arena<Fixture, FixtureId>,
     ) {
         let contact = self.contacts.remove(index);
+        if contact.is_touching() && !contact.is_sensor() {
+            wake_contact_bodies(contact.key, bodies);
+        }
         unlink_contact(contact.ordinal, contact.key, bodies, fixtures);
         if contact.is_touching() {
             self.transitions.push(ContactTransition::new(
@@ -355,7 +362,7 @@ fn broad_phase_overlap(
 
 fn update_contact(
     contact: &mut Contact,
-    bodies: &Arena<Body, BodyId>,
+    bodies: &mut Arena<Body, BodyId>,
     fixtures: &Arena<Fixture, FixtureId>,
 ) -> Option<ContactTransition> {
     let fixture_a = fixtures
@@ -410,6 +417,9 @@ fn update_contact(
         touching
     };
 
+    if !contact.is_sensor() && touching != was_touching {
+        wake_contact_bodies(contact.key, bodies);
+    }
     contact.set_touching(touching);
     let kind = match (was_touching, contact.is_touching()) {
         (false, true) => Some(ContactTransitionKind::Begin),
@@ -418,6 +428,16 @@ fn update_contact(
         (false, false) => None,
     };
     kind.map(|kind| ContactTransition::new(kind, contact.snapshot()))
+}
+
+fn wake_contact_bodies(key: ContactKey, bodies: &mut Arena<Body, BodyId>) {
+    for body_id in [key.first.body, key.second.body] {
+        let body = bodies
+            .get_mut(body_id)
+            .expect("contact body remains live while applying wake transition");
+        body.state = body.state.candidate_set_awake(true);
+        body.pending_wake = false;
+    }
 }
 
 fn link_contact(

@@ -1727,11 +1727,26 @@ impl World {
     }
 
     pub(super) fn find_new_contacts(&mut self) {
+        self.resolve_pending_body_wakes();
         self.contact_manager.find_new_contacts(
             &mut self.broad_phase,
             &mut self.bodies,
             &mut self.fixtures,
         );
+    }
+
+    fn resolve_pending_body_wakes(&mut self) {
+        for body_id in self.body_order.iter().copied() {
+            let record = self
+                .bodies
+                .get_mut(body_id)
+                .expect("source-ordered body remains live while resolving wake markers");
+            if !record.pending_wake {
+                continue;
+            }
+            record.state = record.state.candidate_set_awake(true);
+            record.pending_wake = false;
+        }
     }
 
     pub(super) fn update_contacts(&mut self) {

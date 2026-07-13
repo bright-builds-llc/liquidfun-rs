@@ -187,6 +187,9 @@ fn dfs_wakes_a_reached_body_only_in_candidate_scratch() {
     attach_circle(&mut world, sleeping, false);
     attach_circle(&mut world, awake, false);
     discover_contacts(&mut world, &mut NoopHook);
+    world
+        .set_body_awake(sleeping, false)
+        .expect("connected body should remain live");
 
     // Act
     let islands = world
