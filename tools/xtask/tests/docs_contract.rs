@@ -338,7 +338,7 @@ fn phase5_contract_rejects_false_surface_and_maturity_claims() -> TestResult {
 fn phase5_compatibility_report_matches_authoritative_ledger() -> TestResult {
     // Arrange
     let mut command = Command::new(env!("CARGO_BIN_EXE_xtask"));
-    command.args(["inventory", "check"]);
+    command.args(["inventory", "check-report"]);
 
     // Act
     let output = command.output()?;

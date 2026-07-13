@@ -15,7 +15,9 @@ const USAGE: &str = r"Usage: cargo xtask inventory <command>
 Commands:
   discover   Explicitly refresh reference/discovery.json from the pinned tree
   generate   Explicitly refresh COMPATIBILITY.md from validated ledgers
-  check      Read-only validation of schemas, coverage, discovery, and report";
+  check      Read-only validation of schemas, coverage, discovery, and report
+  check-report
+             Read-only validation of schemas, coverage, and generated report";
 const SCHEMA_VERSION: u64 = 1;
 const EVIDENCE_DIMENSIONS: [&str; 8] = [
     "investigated",
@@ -239,6 +241,7 @@ pub(crate) fn run(args: &[String]) -> Result<(), InventoryError> {
         "discover" => discover(&repository_root, &oracle_revision),
         "generate" => generate(&repository_root, &oracle_revision),
         "check" => check(&repository_root, &oracle_revision),
+        "check-report" => check_report(&repository_root, &oracle_revision),
         unknown => Err(InventoryError::usage(format!(
             "unknown inventory command `{unknown}`"
         ))),
@@ -283,18 +286,35 @@ fn generate(repository_root: &Path, oracle_revision: &str) -> Result<(), Invento
 fn check(repository_root: &Path, oracle_revision: &str) -> Result<(), InventoryError> {
     let (compatibility, _) = validated_ledgers(repository_root, oracle_revision)?;
     require_current_discovery(repository_root, oracle_revision)?;
-    let expected_report = report::render(&compatibility);
-    require_exact_file(
-        &repository_root.join("COMPATIBILITY.md"),
-        &expected_report,
-        "report",
-        "run `cargo xtask inventory generate`",
-    )?;
+    require_current_report(repository_root, &compatibility)?;
     println!(
         "inventory verified: {} compatibility rows",
         compatibility.entries.len()
     );
     Ok(())
+}
+
+fn check_report(repository_root: &Path, oracle_revision: &str) -> Result<(), InventoryError> {
+    let (compatibility, _) = validated_ledgers(repository_root, oracle_revision)?;
+    require_current_report(repository_root, &compatibility)?;
+    println!(
+        "compatibility report verified: {} rows",
+        compatibility.entries.len()
+    );
+    Ok(())
+}
+
+fn require_current_report(
+    repository_root: &Path,
+    compatibility: &CompatibilityLedger,
+) -> Result<(), InventoryError> {
+    let expected_report = report::render(compatibility);
+    require_exact_file(
+        &repository_root.join("COMPATIBILITY.md"),
+        &expected_report,
+        "report",
+        "run `cargo xtask inventory generate`",
+    )
 }
 
 fn validated_ledgers(

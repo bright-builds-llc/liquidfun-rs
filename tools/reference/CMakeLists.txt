@@ -105,6 +105,13 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     -Wno-error=unused-result
     -Wno-error=nontrivial-memcall
   )
+  if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    list(
+      APPEND
+      REFERENCE_UPSTREAM_COMPATIBILITY_OPTIONS
+      -Wno-error=unused-but-set-variable
+    )
+  endif()
   if(REFERENCE_USER_COMPILE_FLAGS MATCHES "(^|[ ;])-fsanitize=")
     list(
       APPEND

@@ -70,6 +70,10 @@ impl InventoryFixture {
         self.command(&["inventory", "check"])
     }
 
+    fn check_report(&self) -> io::Result<Output> {
+        self.command(&["inventory", "check-report"])
+    }
+
     fn valid_entries() -> Vec<Value> {
         let evidence = valid_evidence();
         vec![
@@ -231,6 +235,25 @@ fn discover_and_generate_are_byte_deterministic() -> TestResult {
     assert_eq!(first_discovery, second_discovery);
     assert_eq!(first_report, second_report);
     assert_success(&fixture.check()?);
+    fixture.cleanup()?;
+    Ok(())
+}
+
+#[test]
+fn report_check_uses_validated_ledgers_without_native_sources() -> TestResult {
+    // Arrange
+    let fixture = InventoryFixture::new()?;
+    assert_success(&fixture.discover()?);
+    assert_success(&fixture.generate()?);
+    fs::remove_dir_all(fixture.root.join("third_party"))?;
+
+    // Act
+    let report_output = fixture.check_report()?;
+    let full_output = fixture.check()?;
+
+    // Assert
+    assert_success(&report_output);
+    assert_failure_category(&full_output, "inventory/discovery");
     fixture.cleanup()?;
     Ok(())
 }
