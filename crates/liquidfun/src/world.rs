@@ -8,6 +8,7 @@ mod contact_solver;
 mod fixture;
 mod island;
 pub(crate) mod object;
+mod origin;
 mod proxy;
 mod query;
 mod step;
@@ -31,6 +32,7 @@ pub use fixture::{
 pub use object::{
     CreateObjectError, DestroyedId, DestructionCause, DestructionRecord, ObjectSnapshot, World,
 };
+pub use origin::OriginShiftError;
 pub use query::{
     FixtureQueryOccurrence, QueryDirective, RayCastDirective, RayCastFraction,
     RayCastFractionError, WorldRayCastError, WorldRayHit,

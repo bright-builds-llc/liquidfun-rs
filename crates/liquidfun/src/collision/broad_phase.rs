@@ -3,7 +3,9 @@
 use crate::collision::{Aabb, RayCastInput};
 use crate::math::Vec2;
 
-use super::tree::{DynamicTree, ProxyId, QueryControl, RayCastControl, TreeError};
+use super::tree::{
+    DynamicTree, PreparedOriginShift, ProxyId, QueryControl, RayCastControl, TreeError,
+};
 
 /// Pure collision-filter data matching the selected upstream defaults and rule.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -75,6 +77,10 @@ struct CandidatePair {
 pub struct BroadPhase<T> {
     tree: DynamicTree<BroadProxy<T>>,
     move_buffer: Vec<Option<ProxyId>>,
+}
+
+pub(crate) struct PreparedBroadPhaseOriginShift {
+    tree: PreparedOriginShift,
 }
 
 impl<T> BroadPhase<T> {
@@ -203,6 +209,19 @@ impl<T> BroadPhase<T> {
         self.tree.fat_aabb(proxy)
     }
 
+    pub(crate) fn prepare_origin_shift(
+        &self,
+        shift: Vec2,
+    ) -> Result<PreparedBroadPhaseOriginShift, TreeError> {
+        self.tree
+            .prepare_origin_shift(shift)
+            .map(|tree| PreparedBroadPhaseOriginShift { tree })
+    }
+
+    pub(crate) fn commit_origin_shift(&mut self, prepared: PreparedBroadPhaseOriginShift) {
+        self.tree.commit_origin_shift(prepared.tree);
+    }
+
     /// Visits payloads whose broad-phase bounds overlap `aabb`.
     ///
     /// Private tree identities remain inside the broad phase. Traversal keeps
@@ -316,5 +335,10 @@ impl<T> BroadPhase<T> {
 
     fn buffer_move(&mut self, proxy: ProxyId) {
         self.move_buffer.push(Some(proxy));
+    }
+
+    #[cfg(test)]
+    pub(crate) fn move_buffer_for_origin_test(&self) -> &[Option<ProxyId>] {
+        &self.move_buffer
     }
 }

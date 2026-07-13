@@ -674,6 +674,37 @@ impl BodyState {
         self.sleep_time
     }
 
+    pub(super) fn maybe_shifted_origin(self, shift: Vec2) -> Option<Self> {
+        let position = self.snapshot.position - shift;
+        if !position.is_valid() {
+            return None;
+        }
+        let sweep = Sweep::new(
+            self.sweep.local_center(),
+            self.sweep.initial_center() - shift,
+            self.sweep.center() - shift,
+            self.sweep.initial_angle(),
+            self.sweep.angle(),
+            self.sweep.initial_fraction(),
+        )
+        .ok()?;
+
+        let mut snapshot = self.snapshot;
+        snapshot.position = position;
+        Some(Self {
+            snapshot,
+            transform: Transform::from_position_angle(position, snapshot.angle),
+            sweep,
+            linear_velocity: self.linear_velocity,
+            angular_velocity: self.angular_velocity,
+            inverse_mass: self.inverse_mass,
+            inverse_inertia: self.inverse_inertia,
+            force: self.force,
+            torque: self.torque,
+            sleep_time: self.sleep_time,
+        })
+    }
+
     pub(super) fn candidate_set_sleep_time(mut self, sleep_time: f32) -> Self {
         self.sleep_time = sleep_time;
         self

@@ -33,6 +33,16 @@ pub(super) struct PreparedSynchronization {
     displacement: Vec2,
 }
 
+pub(super) struct PreparedProxyOriginShift {
+    children: Vec<(ChildIndex, Aabb)>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum ProxyOriginShiftError {
+    InconsistentProxy,
+    NonFiniteBounds,
+}
+
 impl FixtureProxies {
     pub(super) const fn new() -> Self {
         Self {
@@ -49,6 +59,59 @@ impl FixtureProxies {
             .iter()
             .find(|entry| entry.child_index == child_index)
             .map(|entry| entry.id)
+    }
+
+    pub(super) fn prepare_origin_shift(
+        &self,
+        broad_phase: &BroadPhase<FixtureProxy>,
+        fixture: FixtureId,
+        body: BodyId,
+        shape: &Shape,
+        active: bool,
+        shift: Vec2,
+    ) -> Result<PreparedProxyOriginShift, ProxyOriginShiftError> {
+        let expected_children = if active { shape.child_count() } else { 0 };
+        if self.entries.len() != expected_children {
+            return Err(ProxyOriginShiftError::InconsistentProxy);
+        }
+
+        let mut children = Vec::with_capacity(self.entries.len());
+        for (expected_index, entry) in self.entries.iter().enumerate() {
+            let expected_child = shape
+                .child_index(expected_index)
+                .map_err(|_error| ProxyOriginShiftError::InconsistentProxy)?;
+            if entry.child_index != expected_child
+                || self.entries[..expected_index]
+                    .iter()
+                    .any(|prior| prior.id == entry.id)
+            {
+                return Err(ProxyOriginShiftError::InconsistentProxy);
+            }
+            let payload = broad_phase
+                .payload(entry.id)
+                .map_err(|_error| ProxyOriginShiftError::InconsistentProxy)?;
+            if payload.fixture != fixture
+                || payload.body != body
+                || payload.child_index != entry.child_index
+            {
+                return Err(ProxyOriginShiftError::InconsistentProxy);
+            }
+            let fat_aabb = broad_phase
+                .fat_aabb(entry.id)
+                .map_err(|_error| ProxyOriginShiftError::InconsistentProxy)?;
+            shifted_aabb(fat_aabb, shift)?;
+            children.push((entry.child_index, shifted_aabb(entry.aabb, shift)?));
+        }
+
+        Ok(PreparedProxyOriginShift { children })
+    }
+
+    pub(super) fn commit_origin_shift(&mut self, prepared: PreparedProxyOriginShift) {
+        debug_assert_eq!(self.entries.len(), prepared.children.len());
+        for (entry, (child_index, aabb)) in self.entries.iter_mut().zip(prepared.children) {
+            debug_assert_eq!(entry.child_index, child_index);
+            entry.aabb = aabb;
+        }
     }
 
     pub(super) fn prepare_creation(
@@ -255,4 +318,9 @@ fn validate_predicted_fat_aabb(aabb: Aabb, displacement: Vec2) -> Result<(), Fix
     Aabb::new(lower, upper)
         .map(|_aabb| ())
         .map_err(|_error| FixtureBoundsError::BroadPhaseOverflow)
+}
+
+fn shifted_aabb(aabb: Aabb, shift: Vec2) -> Result<Aabb, ProxyOriginShiftError> {
+    Aabb::new(aabb.lower_bound() - shift, aabb.upper_bound() - shift)
+        .map_err(|_error| ProxyOriginShiftError::NonFiniteBounds)
 }

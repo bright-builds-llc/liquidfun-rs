@@ -345,9 +345,9 @@ impl DestructionRecord {
 /// then particles, then the system. Body fixture and joint categories use the pinned upstream
 /// newest-first list order; particle-system categories preserve creation/occurrence order.
 pub struct World {
-    bodies: Arena<Body, BodyId>,
+    pub(super) bodies: Arena<Body, BodyId>,
     body_order: Vec<BodyId>,
-    fixtures: Arena<Fixture, FixtureId>,
+    pub(super) fixtures: Arena<Fixture, FixtureId>,
     joints: Arena<Joint, JointId>,
     particle_systems: Arena<ParticleSystem, ParticleSystemId>,
     particle_groups: Arena<ParticleGroup, ParticleGroupId>,

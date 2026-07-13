@@ -47,8 +47,13 @@ impl StepState {
         self.inner.poisoned.store(true, Ordering::Relaxed);
     }
 
-    fn is_locked(&self) -> bool {
+    pub(super) fn is_locked(&self) -> bool {
         self.inner.locked.load(Ordering::Relaxed)
+    }
+
+    #[cfg(test)]
+    pub(super) fn set_locked_for_test(&self, locked: bool) {
+        self.inner.locked.store(locked, Ordering::Relaxed);
     }
 }
 

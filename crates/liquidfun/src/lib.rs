@@ -145,8 +145,8 @@ pub use world::{
     CreateObjectError, DestroyedId, DestructionCause, DestructionRecord, FixtureBoundsError,
     FixtureDef, FixtureDefError, FixtureDestructionError, FixtureMutationError,
     FixtureQueryOccurrence, FixtureSnapshot, ManagedContactSnapshot, ObjectSnapshot,
-    PreSolveDirective, QueryDirective, RayCastDirective, RayCastFraction, RayCastFractionError,
-    StepCompletion, StepConfiguration, StepConfigurationError, StepError, StepHook,
-    StepLifecycleEvent, StepLimits, StepPhase, StepReport, WakePolicy, World, WorldCommand,
-    WorldConfigurationError, WorldFixtureSnapshot, WorldRayCastError, WorldRayHit,
+    OriginShiftError, PreSolveDirective, QueryDirective, RayCastDirective, RayCastFraction,
+    RayCastFractionError, StepCompletion, StepConfiguration, StepConfigurationError, StepError,
+    StepHook, StepLifecycleEvent, StepLimits, StepPhase, StepReport, WakePolicy, World,
+    WorldCommand, WorldConfigurationError, WorldFixtureSnapshot, WorldRayCastError, WorldRayHit,
 };
