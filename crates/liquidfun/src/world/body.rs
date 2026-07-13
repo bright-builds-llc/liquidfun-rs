@@ -7,6 +7,10 @@ use crate::math::{Sweep, Transform, Vec2};
 
 use super::fixture::FixtureBoundsError;
 
+mod control;
+
+pub use control::{BodyControlError, WakePolicy};
+
 /// The closed set of rigid-body motion types supported by `LiquidFun`.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum BodyType {
@@ -17,6 +21,38 @@ pub enum BodyType {
     Kinematic,
     /// A positive-mass body affected by rigid contact solving.
     Dynamic,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+struct BodyFlags(u8);
+
+impl BodyFlags {
+    const ACTIVE: u8 = 1 << 0;
+    const SLEEPING_ALLOWED: u8 = 1 << 1;
+    const AWAKE: u8 = 1 << 2;
+    const FIXED_ROTATION: u8 = 1 << 3;
+    const BULLET: u8 = 1 << 4;
+
+    const fn contains(self, flag: u8) -> bool {
+        self.0 & flag != 0
+    }
+
+    fn set(&mut self, flag: u8, enabled: bool) {
+        if enabled {
+            self.0 |= flag;
+        } else {
+            self.0 &= !flag;
+        }
+    }
+}
+
+const INITIAL_BODY_FLAGS: BodyFlags =
+    BodyFlags(BodyFlags::ACTIVE | BodyFlags::SLEEPING_ALLOWED | BodyFlags::AWAKE);
+
+fn configured_initial_flags(active: bool) -> BodyFlags {
+    let mut flags = INITIAL_BODY_FLAGS;
+    flags.set(BodyFlags::ACTIVE, active);
+    flags
 }
 
 /// A failure while constructing a checked [`BodyDef`].
@@ -31,6 +67,22 @@ pub enum BodyDefError {
     NonFiniteAngle,
     /// Applying the body transform to its current local center is not finite.
     NonFiniteDerivedCenter,
+    /// The x-coordinate of linear velocity is not finite.
+    NonFiniteLinearVelocityX,
+    /// The y-coordinate of linear velocity is not finite.
+    NonFiniteLinearVelocityY,
+    /// Angular velocity is not finite.
+    NonFiniteAngularVelocity,
+    /// Linear damping is not finite.
+    NonFiniteLinearDamping,
+    /// Linear damping is negative.
+    NegativeLinearDamping,
+    /// Angular damping is not finite.
+    NonFiniteAngularDamping,
+    /// Angular damping is negative.
+    NegativeAngularDamping,
+    /// Gravity scale is not finite.
+    NonFiniteGravityScale,
 }
 
 impl fmt::Display for BodyDefError {
@@ -40,6 +92,18 @@ impl fmt::Display for BodyDefError {
             Self::NonFinitePositionY => "position.y",
             Self::NonFiniteAngle => "angle",
             Self::NonFiniteDerivedCenter => "derived center",
+            Self::NonFiniteLinearVelocityX => "linear_velocity.x",
+            Self::NonFiniteLinearVelocityY => "linear_velocity.y",
+            Self::NonFiniteAngularVelocity => "angular_velocity",
+            Self::NonFiniteLinearDamping => "linear_damping",
+            Self::NegativeLinearDamping => {
+                return formatter.write_str("body definition linear_damping must be non-negative");
+            }
+            Self::NonFiniteAngularDamping => "angular_damping",
+            Self::NegativeAngularDamping => {
+                return formatter.write_str("body definition angular_damping must be non-negative");
+            }
+            Self::NonFiniteGravityScale => "gravity_scale",
         };
         write!(formatter, "body definition {field} must be finite")
     }
@@ -161,18 +225,21 @@ impl From<AggregateMassError> for BodyTypeChangeError {
     }
 }
 
-/// A reusable checked body definition for the Phase 6 rigid-world slice.
+/// A reusable checked rigid-body definition.
 ///
-/// Position coordinates are meters and `angle` is radians. This definition
-/// intentionally contains only body type, transform, and active state. All
-/// broader motion and integration controls remain outside the Phase 6 consumer
-/// contract.
+/// Position coordinates are meters, `angle` is radians, linear velocity is
+/// meters per second, and angular velocity is radians per second.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct BodyDef {
     body_type: BodyType,
     position: Vec2,
     angle: f32,
-    active: bool,
+    linear_velocity: Vec2,
+    angular_velocity: f32,
+    linear_damping: f32,
+    angular_damping: f32,
+    gravity_scale: f32,
+    flags: BodyFlags,
 }
 
 impl BodyDef {
@@ -197,8 +264,97 @@ impl BodyDef {
             body_type,
             position,
             angle,
-            active,
+            linear_velocity: Vec2::ZERO,
+            angular_velocity: 0.0,
+            linear_damping: 0.0,
+            angular_damping: 0.0,
+            gravity_scale: 1.0,
+            flags: configured_initial_flags(active),
         })
+    }
+
+    /// Returns a copy configured with checked initial linear velocity.
+    ///
+    /// # Errors
+    ///
+    /// Returns a coordinate-specific error when the velocity is non-finite.
+    pub fn with_linear_velocity(mut self, velocity: Vec2) -> Result<Self, BodyDefError> {
+        validate_linear_velocity(velocity)?;
+        self.linear_velocity = velocity;
+        Ok(self)
+    }
+
+    /// Returns a copy configured with checked initial angular velocity.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when `angular_velocity` is non-finite.
+    pub fn with_angular_velocity(mut self, angular_velocity: f32) -> Result<Self, BodyDefError> {
+        validate_angular_velocity(angular_velocity)?;
+        self.angular_velocity = angular_velocity;
+        Ok(self)
+    }
+
+    /// Returns a copy configured with checked linear damping.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when `linear_damping` is non-finite or negative.
+    pub fn with_linear_damping(mut self, linear_damping: f32) -> Result<Self, BodyDefError> {
+        validate_linear_damping(linear_damping)?;
+        self.linear_damping = linear_damping;
+        Ok(self)
+    }
+
+    /// Returns a copy configured with checked angular damping.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when `angular_damping` is non-finite or negative.
+    pub fn with_angular_damping(mut self, angular_damping: f32) -> Result<Self, BodyDefError> {
+        validate_angular_damping(angular_damping)?;
+        self.angular_damping = angular_damping;
+        Ok(self)
+    }
+
+    /// Returns a copy configured with checked gravity scale.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when `gravity_scale` is non-finite.
+    pub fn with_gravity_scale(mut self, gravity_scale: f32) -> Result<Self, BodyDefError> {
+        validate_gravity_scale(gravity_scale)?;
+        self.gravity_scale = gravity_scale;
+        Ok(self)
+    }
+
+    /// Returns a copy configured to allow or disallow automatic sleep.
+    #[must_use]
+    pub fn with_sleeping_allowed(mut self, sleeping_allowed: bool) -> Self {
+        self.flags
+            .set(BodyFlags::SLEEPING_ALLOWED, sleeping_allowed);
+        self
+    }
+
+    /// Returns a copy configured as initially awake or asleep.
+    #[must_use]
+    pub fn with_awake(mut self, awake: bool) -> Self {
+        self.flags.set(BodyFlags::AWAKE, awake);
+        self
+    }
+
+    /// Returns a copy configured with fixed or free rotation.
+    #[must_use]
+    pub fn with_fixed_rotation(mut self, fixed_rotation: bool) -> Self {
+        self.flags.set(BodyFlags::FIXED_ROTATION, fixed_rotation);
+        self
+    }
+
+    /// Returns a copy configured for continuous collision treatment as a bullet.
+    #[must_use]
+    pub fn with_bullet(mut self, bullet: bool) -> Self {
+        self.flags.set(BodyFlags::BULLET, bullet);
+        self
     }
 
     /// Returns the configured motion type.
@@ -228,7 +384,61 @@ impl BodyDef {
     /// Returns whether the body initially participates in simulation.
     #[must_use]
     pub const fn is_active(&self) -> bool {
-        self.active
+        self.flags.contains(BodyFlags::ACTIVE)
+    }
+
+    /// Returns initial linear velocity in meters per second.
+    #[must_use]
+    pub const fn linear_velocity(&self) -> Vec2 {
+        self.linear_velocity
+    }
+
+    /// Returns initial angular velocity in radians per second.
+    #[must_use]
+    pub const fn angular_velocity(&self) -> f32 {
+        self.angular_velocity
+    }
+
+    /// Returns linear damping.
+    #[must_use]
+    pub const fn linear_damping(&self) -> f32 {
+        self.linear_damping
+    }
+
+    /// Returns angular damping.
+    #[must_use]
+    pub const fn angular_damping(&self) -> f32 {
+        self.angular_damping
+    }
+
+    /// Returns the body's gravity multiplier.
+    #[must_use]
+    pub const fn gravity_scale(&self) -> f32 {
+        self.gravity_scale
+    }
+
+    /// Returns whether automatic sleep is allowed.
+    #[must_use]
+    pub const fn is_sleeping_allowed(&self) -> bool {
+        self.flags.contains(BodyFlags::SLEEPING_ALLOWED)
+    }
+
+    /// Returns whether the body starts awake.
+    #[must_use]
+    pub const fn is_awake(&self) -> bool {
+        self.flags.contains(BodyFlags::AWAKE)
+    }
+
+    /// Returns whether rotation is fixed.
+    #[must_use]
+    pub const fn is_fixed_rotation(&self) -> bool {
+        self.flags.contains(BodyFlags::FIXED_ROTATION)
+    }
+
+    /// Returns whether continuous collision treatment is requested.
+    #[must_use]
+    pub const fn is_bullet(&self) -> bool {
+        self.flags.contains(BodyFlags::BULLET)
     }
 
     /// Returns an owned semantic snapshot of this definition.
@@ -239,10 +449,15 @@ impl BodyDef {
             body_type: self.body_type,
             position: self.position,
             angle: self.angle,
-            active: self.active,
             mass,
             local_center: Vec2::ZERO,
             rotational_inertia: 0.0,
+            linear_velocity: self.linear_velocity,
+            angular_velocity: self.angular_velocity,
+            linear_damping: self.linear_damping,
+            angular_damping: self.angular_damping,
+            gravity_scale: self.gravity_scale,
+            flags: self.flags,
         }
     }
 }
@@ -253,7 +468,12 @@ impl Default for BodyDef {
             body_type: BodyType::Static,
             position: Vec2::ZERO,
             angle: 0.0,
-            active: true,
+            linear_velocity: Vec2::ZERO,
+            angular_velocity: 0.0,
+            linear_damping: 0.0,
+            angular_damping: 0.0,
+            gravity_scale: 1.0,
+            flags: INITIAL_BODY_FLAGS,
         }
     }
 }
@@ -264,10 +484,15 @@ pub struct BodySnapshot {
     body_type: BodyType,
     position: Vec2,
     angle: f32,
-    active: bool,
     mass: f32,
     local_center: Vec2,
     rotational_inertia: f32,
+    linear_velocity: Vec2,
+    angular_velocity: f32,
+    linear_damping: f32,
+    angular_damping: f32,
+    gravity_scale: f32,
+    flags: BodyFlags,
 }
 
 impl Eq for BodySnapshot {}
@@ -300,7 +525,7 @@ impl BodySnapshot {
     /// Returns whether the body was active when captured.
     #[must_use]
     pub const fn is_active(self) -> bool {
-        self.active
+        self.flags.contains(BodyFlags::ACTIVE)
     }
 
     /// Returns body mass in kilograms.
@@ -320,6 +545,60 @@ impl BodySnapshot {
     pub const fn rotational_inertia(self) -> f32 {
         self.rotational_inertia
     }
+
+    /// Returns linear velocity in meters per second.
+    #[must_use]
+    pub const fn linear_velocity(self) -> Vec2 {
+        self.linear_velocity
+    }
+
+    /// Returns angular velocity in radians per second.
+    #[must_use]
+    pub const fn angular_velocity(self) -> f32 {
+        self.angular_velocity
+    }
+
+    /// Returns linear damping.
+    #[must_use]
+    pub const fn linear_damping(self) -> f32 {
+        self.linear_damping
+    }
+
+    /// Returns angular damping.
+    #[must_use]
+    pub const fn angular_damping(self) -> f32 {
+        self.angular_damping
+    }
+
+    /// Returns the body's gravity multiplier.
+    #[must_use]
+    pub const fn gravity_scale(self) -> f32 {
+        self.gravity_scale
+    }
+
+    /// Returns whether automatic sleep is allowed.
+    #[must_use]
+    pub const fn is_sleeping_allowed(self) -> bool {
+        self.flags.contains(BodyFlags::SLEEPING_ALLOWED)
+    }
+
+    /// Returns whether the body is awake.
+    #[must_use]
+    pub const fn is_awake(self) -> bool {
+        self.flags.contains(BodyFlags::AWAKE)
+    }
+
+    /// Returns whether rotation is fixed.
+    #[must_use]
+    pub const fn is_fixed_rotation(self) -> bool {
+        self.flags.contains(BodyFlags::FIXED_ROTATION)
+    }
+
+    /// Returns whether continuous collision treatment is requested.
+    #[must_use]
+    pub const fn is_bullet(self) -> bool {
+        self.flags.contains(BodyFlags::BULLET)
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -331,6 +610,9 @@ pub(super) struct BodyState {
     angular_velocity: f32,
     inverse_mass: f32,
     inverse_inertia: f32,
+    force: Vec2,
+    torque: f32,
+    sleep_time: f32,
 }
 
 impl BodyState {
@@ -342,10 +624,13 @@ impl BodyState {
             snapshot: definition.snapshot(),
             transform: definition.transform(),
             sweep: initial_sweep(position, angle),
-            linear_velocity: Vec2::ZERO,
-            angular_velocity: 0.0,
+            linear_velocity: definition.linear_velocity(),
+            angular_velocity: definition.angular_velocity(),
             inverse_mass: mass,
             inverse_inertia: 0.0,
+            force: Vec2::ZERO,
+            torque: 0.0,
+            sleep_time: 0.0,
         }
     }
 
@@ -380,6 +665,8 @@ impl BodyState {
     pub(super) fn set_solver_motion(&mut self, linear_velocity: Vec2, angular_velocity: f32) {
         self.linear_velocity = linear_velocity;
         self.angular_velocity = angular_velocity;
+        self.snapshot.linear_velocity = linear_velocity;
+        self.snapshot.angular_velocity = angular_velocity;
     }
 
     pub(super) fn set_solver_state(
@@ -397,23 +684,18 @@ impl BodyState {
     }
 
     pub(super) fn with_transform(self, position: Vec2, angle: f32) -> Result<Self, BodyDefError> {
-        let definition = BodyDef::new(
-            self.snapshot.body_type,
-            position,
-            angle,
-            self.snapshot.active,
-        )?;
-        let mut snapshot = definition.snapshot();
-        snapshot.mass = self.snapshot.mass;
-        snapshot.local_center = self.snapshot.local_center;
-        snapshot.rotational_inertia = self.snapshot.rotational_inertia;
+        validate_body_transform(position, angle)?;
+        let transform = Transform::from_position_angle(position, angle);
+        let mut snapshot = self.snapshot;
+        snapshot.position = position;
+        snapshot.angle = angle;
         Ok(Self {
             snapshot,
-            transform: definition.transform(),
+            transform,
             sweep: Sweep::new(
                 self.snapshot.local_center,
-                definition.transform().apply(self.snapshot.local_center),
-                definition.transform().apply(self.snapshot.local_center),
+                transform.apply(self.snapshot.local_center),
+                transform.apply(self.snapshot.local_center),
                 angle,
                 angle,
                 0.0,
@@ -423,6 +705,9 @@ impl BodyState {
             angular_velocity: self.angular_velocity,
             inverse_mass: self.inverse_mass,
             inverse_inertia: self.inverse_inertia,
+            force: self.force,
+            torque: self.torque,
+            sleep_time: self.sleep_time,
         })
     }
 
@@ -435,20 +720,30 @@ impl BodyState {
         if body_type == BodyType::Static {
             self.linear_velocity = Vec2::ZERO;
             self.angular_velocity = 0.0;
+            self.snapshot.linear_velocity = Vec2::ZERO;
+            self.snapshot.angular_velocity = 0.0;
         }
-        let mass_state = aggregate_mass_state(body_type, fixture_mass_data)?;
+        let mass_state = aggregate_mass_state(
+            body_type,
+            self.snapshot.is_fixed_rotation(),
+            fixture_mass_data,
+        )?;
         self.with_mass_state(mass_state)
     }
 
     pub(super) fn set_active(&mut self, active: bool) {
-        self.snapshot.active = active;
+        self.snapshot.flags.set(BodyFlags::ACTIVE, active);
     }
 
     pub(super) fn with_reset_mass_data(
         self,
         fixture_mass_data: &[MassData],
     ) -> Result<Self, AggregateMassError> {
-        let mass_state = aggregate_mass_state(self.snapshot.body_type, fixture_mass_data)?;
+        let mass_state = aggregate_mass_state(
+            self.snapshot.body_type,
+            self.snapshot.is_fixed_rotation(),
+            fixture_mass_data,
+        )?;
         self.with_mass_state(mass_state)
     }
 
@@ -457,11 +752,12 @@ impl BodyState {
             return;
         }
         let mass = if data.mass() > 0.0 { data.mass() } else { 1.0 };
-        let rotational_inertia = if data.rotational_inertia() > 0.0 {
-            data.centered_rotational_inertia()
-        } else {
-            0.0
-        };
+        let rotational_inertia =
+            if !self.snapshot.is_fixed_rotation() && data.rotational_inertia() > 0.0 {
+                data.centered_rotational_inertia()
+            } else {
+                0.0
+            };
         self.apply_mass_state(mass, data.center(), rotational_inertia);
     }
 
@@ -488,6 +784,7 @@ impl BodyState {
         .expect("checked mass state and body transform produce a valid sweep");
         self.linear_velocity +=
             Vec2::scalar_cross(self.angular_velocity, current_center - old_center);
+        self.snapshot.linear_velocity = self.linear_velocity;
     }
 
     fn with_mass_state(self, mass_state: MassState) -> Result<Self, AggregateMassError> {
@@ -515,6 +812,7 @@ impl BodyState {
         snapshot.mass = mass_state.mass;
         snapshot.local_center = mass_state.local_center;
         snapshot.rotational_inertia = mass_state.rotational_inertia;
+        snapshot.linear_velocity = linear_velocity;
         Ok(Self {
             snapshot,
             transform: self.transform,
@@ -523,6 +821,9 @@ impl BodyState {
             angular_velocity: self.angular_velocity,
             inverse_mass: mass_state.inverse_mass,
             inverse_inertia: mass_state.inverse_inertia,
+            force: self.force,
+            torque: self.torque,
+            sleep_time: self.sleep_time,
         })
     }
 }
@@ -649,6 +950,7 @@ impl From<AggregateMassError> for BodyMassResetError {
 
 fn aggregate_mass_state(
     body_type: BodyType,
+    fixed_rotation: bool,
     fixture_mass_data: &[MassData],
 ) -> Result<MassState, AggregateMassError> {
     if body_type != BodyType::Dynamic {
@@ -705,7 +1007,7 @@ fn aggregate_mass_state(
         (1.0, 1.0, Vec2::ZERO)
     };
 
-    let (rotational_inertia, inverse_inertia) = if rotational_inertia > 0.0 {
+    let (rotational_inertia, inverse_inertia) = if rotational_inertia > 0.0 && !fixed_rotation {
         let squared_center = [
             checked_finite(
                 local_center.x * local_center.x,
@@ -905,6 +1207,50 @@ fn validate_body_transform(position: Vec2, angle: f32) -> Result<(), BodyDefErro
     }
     if !angle.is_finite() {
         return Err(BodyDefError::NonFiniteAngle);
+    }
+    Ok(())
+}
+
+fn validate_linear_velocity(velocity: Vec2) -> Result<(), BodyDefError> {
+    if !velocity.x.is_finite() {
+        return Err(BodyDefError::NonFiniteLinearVelocityX);
+    }
+    if !velocity.y.is_finite() {
+        return Err(BodyDefError::NonFiniteLinearVelocityY);
+    }
+    Ok(())
+}
+
+fn validate_angular_velocity(angular_velocity: f32) -> Result<(), BodyDefError> {
+    if !angular_velocity.is_finite() {
+        return Err(BodyDefError::NonFiniteAngularVelocity);
+    }
+    Ok(())
+}
+
+fn validate_linear_damping(damping: f32) -> Result<(), BodyDefError> {
+    if !damping.is_finite() {
+        return Err(BodyDefError::NonFiniteLinearDamping);
+    }
+    if damping < 0.0 {
+        return Err(BodyDefError::NegativeLinearDamping);
+    }
+    Ok(())
+}
+
+fn validate_angular_damping(damping: f32) -> Result<(), BodyDefError> {
+    if !damping.is_finite() {
+        return Err(BodyDefError::NonFiniteAngularDamping);
+    }
+    if damping < 0.0 {
+        return Err(BodyDefError::NegativeAngularDamping);
+    }
+    Ok(())
+}
+
+fn validate_gravity_scale(gravity_scale: f32) -> Result<(), BodyDefError> {
+    if !gravity_scale.is_finite() {
+        return Err(BodyDefError::NonFiniteGravityScale);
     }
     Ok(())
 }

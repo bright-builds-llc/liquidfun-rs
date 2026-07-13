@@ -138,13 +138,13 @@ pub use identity::{
     BodyId, FixtureId, JointId, ObjectKind, ParticleGroupId, ParticleId, ParticleSystemId,
 };
 pub use world::{
-    AggregateMassError, BodyActivationError, BodyDef, BodyDefError, BodyMassData,
+    AggregateMassError, BodyActivationError, BodyControlError, BodyDef, BodyDefError, BodyMassData,
     BodyMassDataError, BodyMassResetError, BodySnapshot, BodyTransformError, BodyType,
     BodyTypeChangeError, CollisionDirective, CommandApplication, CommandError, ContactEvent,
     ContactPointSnapshot, ContactSolve, ContactTransition, ContactTransitionKind, ContactView,
     CreateObjectError, DestroyedId, DestructionCause, DestructionRecord, FixtureBoundsError,
     FixtureDef, FixtureDefError, FixtureDestructionError, FixtureMutationError, FixtureSnapshot,
     ManagedContactSnapshot, ObjectSnapshot, PreSolveDirective, StepError, StepHook,
-    StepLifecycleEvent, StepLimits, StepPhase, StepReport, World, WorldCommand,
+    StepLifecycleEvent, StepLimits, StepPhase, StepReport, WakePolicy, World, WorldCommand,
     WorldFixtureSnapshot,
 };
