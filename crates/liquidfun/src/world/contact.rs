@@ -192,6 +192,16 @@ impl Contact {
             restitution: self.restitution,
         }
     }
+
+    pub(super) fn other_body(&self, body: BodyId) -> Option<BodyId> {
+        if self.key.first.body == body {
+            return Some(self.key.second.body);
+        }
+        if self.key.second.body == body {
+            return Some(self.key.first.body);
+        }
+        None
+    }
 }
 
 pub(super) fn canonical_contact_key(

@@ -1,7 +1,7 @@
 //! Owned diagnostics reserved for the unpublished rigid-world differential harness.
 
 use crate::math::Vec2;
-use crate::{BodySnapshot, ManagedContactSnapshot};
+use crate::{BodyId, BodySnapshot, ManagedContactSnapshot};
 
 /// Owned body state needed to compare the bounded Phase 6 solver witness.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -68,5 +68,86 @@ impl RigidContactDiagnostic {
     #[must_use]
     pub const fn contact(&self) -> &ManagedContactSnapshot {
         &self.contact
+    }
+}
+
+/// Diagnostic classification for a bounded private island-build failure.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum RigidIslandBuildError {
+    /// A reviewed scratch collection cannot contain the persistent graph.
+    CapacityExceeded {
+        /// Stable semantic resource name.
+        resource: &'static str,
+        /// Configured finite limit.
+        limit: usize,
+    },
+    /// Private persistent graph invariants were not coherent.
+    InvalidGraph,
+}
+
+/// Owned evidence for one ephemeral source-ordered rigid island.
+#[derive(Debug, Clone, PartialEq)]
+pub struct RigidIslandDiagnostic {
+    body_ids: Vec<BodyId>,
+    body_snapshots: Vec<BodySnapshot>,
+    contact_occurrences: Vec<u64>,
+    position_count: usize,
+    velocity_count: usize,
+    joint_count: usize,
+}
+
+impl RigidIslandDiagnostic {
+    pub(crate) fn new(
+        body_ids: Vec<BodyId>,
+        body_snapshots: Vec<BodySnapshot>,
+        contact_occurrences: Vec<u64>,
+        position_count: usize,
+        velocity_count: usize,
+        joint_count: usize,
+    ) -> Self {
+        Self {
+            body_ids,
+            body_snapshots,
+            contact_occurrences,
+            position_count,
+            velocity_count,
+            joint_count,
+        }
+    }
+
+    /// Returns body identities in solver-visible island order.
+    #[must_use]
+    pub fn body_ids(&self) -> &[BodyId] {
+        &self.body_ids
+    }
+
+    /// Returns candidate body snapshots in matching island order.
+    #[must_use]
+    pub fn body_snapshots(&self) -> &[BodySnapshot] {
+        &self.body_snapshots
+    }
+
+    /// Returns one-based semantic occurrences in solver-visible contact order.
+    #[must_use]
+    pub fn contact_occurrences(&self) -> &[u64] {
+        &self.contact_occurrences
+    }
+
+    /// Returns the number of position scratch lanes.
+    #[must_use]
+    pub const fn position_count(&self) -> usize {
+        self.position_count
+    }
+
+    /// Returns the number of velocity scratch lanes.
+    #[must_use]
+    pub const fn velocity_count(&self) -> usize {
+        self.velocity_count
+    }
+
+    /// Returns the reserved Phase 8 joint-lane count.
+    #[must_use]
+    pub const fn joint_count(&self) -> usize {
+        self.joint_count
     }
 }

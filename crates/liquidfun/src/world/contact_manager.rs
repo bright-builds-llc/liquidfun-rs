@@ -37,6 +37,16 @@ impl ContactManager {
         self.contacts.len()
     }
 
+    pub(super) fn contacts(&self) -> &[Contact] {
+        &self.contacts
+    }
+
+    pub(super) fn contact_index_for_ordinal(&self, ordinal: u64) -> Option<usize> {
+        self.contacts
+            .iter()
+            .position(|contact| contact.ordinal == ordinal)
+    }
+
     pub(super) fn find_new_contacts(
         &mut self,
         broad_phase: &mut BroadPhase<FixtureProxy>,

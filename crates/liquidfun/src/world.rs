@@ -6,6 +6,7 @@ mod contact;
 mod contact_manager;
 mod contact_solver;
 mod fixture;
+mod island;
 pub(crate) mod object;
 mod proxy;
 mod step;

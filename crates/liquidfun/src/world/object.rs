@@ -22,6 +22,8 @@ use super::fixture::{
     FixtureBoundsError, FixtureDef, FixtureDestructionError, FixtureMutationError,
     WorldFixtureSnapshot,
 };
+#[cfg(feature = "differential-internals")]
+use super::island::{IslandBuildError, IslandLimits, build_islands};
 use super::proxy::{FixtureProxies, FixtureProxy, PreparedFixtureBounds, PreparedSynchronization};
 use super::step::StepState;
 use crate::collision::{BroadPhase, FilterData, MassData};
@@ -881,6 +883,82 @@ impl World {
     #[must_use]
     pub fn rigid_body_order_diagnostic(&self) -> Vec<BodyId> {
         self.body_order.clone()
+    }
+
+    /// Builds owned evidence from the reviewed bounded ephemeral island graph.
+    #[cfg(feature = "differential-internals")]
+    #[doc(hidden)]
+    pub fn rigid_island_diagnostics(
+        &self,
+    ) -> Result<
+        Vec<crate::rigid_differential::RigidIslandDiagnostic>,
+        crate::rigid_differential::RigidIslandBuildError,
+    > {
+        self.rigid_island_diagnostics_for_limits(IslandLimits::REVIEWED)
+    }
+
+    /// Builds owned island evidence with smaller diagnostic-only capacity limits.
+    #[cfg(feature = "differential-internals")]
+    #[doc(hidden)]
+    pub fn rigid_island_diagnostics_with_limits(
+        &self,
+        max_bodies: usize,
+        max_contacts: usize,
+    ) -> Result<
+        Vec<crate::rigid_differential::RigidIslandDiagnostic>,
+        crate::rigid_differential::RigidIslandBuildError,
+    > {
+        self.rigid_island_diagnostics_for_limits(IslandLimits::diagnostic(max_bodies, max_contacts))
+    }
+
+    #[cfg(feature = "differential-internals")]
+    fn rigid_island_diagnostics_for_limits(
+        &self,
+        limits: IslandLimits,
+    ) -> Result<
+        Vec<crate::rigid_differential::RigidIslandDiagnostic>,
+        crate::rigid_differential::RigidIslandBuildError,
+    > {
+        let islands = build_islands(
+            &self.body_order,
+            &self.bodies,
+            &self.contact_manager,
+            limits,
+        )
+        .map_err(|error| match error {
+            IslandBuildError::CapacityExceeded { resource, limit } => {
+                crate::rigid_differential::RigidIslandBuildError::CapacityExceeded {
+                    resource,
+                    limit,
+                }
+            }
+            IslandBuildError::InvalidGraph => {
+                crate::rigid_differential::RigidIslandBuildError::InvalidGraph
+            }
+        })?;
+        Ok(islands
+            .into_iter()
+            .map(|island| {
+                let snapshots = island
+                    .body_states
+                    .iter()
+                    .map(|state| state.snapshot())
+                    .collect();
+                let occurrences = island
+                    .contact_indices
+                    .iter()
+                    .map(|index| self.contact_manager.contacts()[*index].ordinal + 1)
+                    .collect();
+                crate::rigid_differential::RigidIslandDiagnostic::new(
+                    island.body_ids,
+                    snapshots,
+                    occurrences,
+                    island.positions.len(),
+                    island.velocities.len(),
+                    island.joint_ids.len(),
+                )
+            })
+            .collect())
     }
 
     /// Drains owned contact transitions produced outside [`World::step`].
