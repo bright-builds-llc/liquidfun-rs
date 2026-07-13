@@ -263,8 +263,18 @@ inline RigidAction action(const Json& value) {
     require_members(value, {"kind", "start", "end", "directive_rules"}, "ray-cast action");
     const auto start = vec2(member(value, "start", "ray action"), "ray start");
     const auto end = vec2(member(value, "end", "ray action"), "ray end");
-    if (start.x == end.x && start.y == end.y) {
-      throw std::runtime_error("ray must have a non-zero direction");
+    const auto direction_x =
+        float_from_bits(end.x) - float_from_bits(start.x);
+    const auto direction_y =
+        float_from_bits(end.y) - float_from_bits(start.y);
+    const auto squared_x = direction_x * direction_x;
+    const auto squared_y = direction_y * direction_y;
+    const auto length_squared = squared_x + squared_y;
+    if (!std::isfinite(direction_x) || !std::isfinite(direction_y) ||
+        !std::isfinite(squared_x) || !std::isfinite(squared_y) ||
+        !std::isfinite(length_squared) || length_squared == 0.0F) {
+      throw std::runtime_error(
+          "ray must have a finite non-zero squared direction");
     }
     return RayCast{start, end, ray_rules(member(value, "directive_rules", "ray action"))};
   }

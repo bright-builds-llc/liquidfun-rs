@@ -537,9 +537,7 @@ fn validate_action(
         } => {
             validate_vec2(*start)?;
             validate_vec2(*end)?;
-            if start == end {
-                return Err(validation(RigidWorldErrorKind::InvalidRayDirective));
-            }
+            validate_ray_geometry(*start, *end)?;
             validate_ray_rules(directive_rules, live_fixtures, fixture_shapes)?;
         }
         RigidWorldAction::DestroyFixture { fixture_id } => {
@@ -592,6 +590,27 @@ fn validate_query_rules(
         fixture_shapes,
         RigidWorldErrorKind::InvalidQueryDirective,
     )
+}
+
+fn validate_ray_geometry(
+    start: crate::Vec2Bits,
+    end: crate::Vec2Bits,
+) -> Result<(), RigidWorldDecodeError> {
+    let direction_x = end.x_bits.to_f32() - start.x_bits.to_f32();
+    let direction_y = end.y_bits.to_f32() - start.y_bits.to_f32();
+    let squared_x = direction_x * direction_x;
+    let squared_y = direction_y * direction_y;
+    let length_squared = squared_x + squared_y;
+    if !direction_x.is_finite()
+        || !direction_y.is_finite()
+        || !squared_x.is_finite()
+        || !squared_y.is_finite()
+        || !length_squared.is_finite()
+        || length_squared == 0.0
+    {
+        return Err(validation(RigidWorldErrorKind::InvalidRayDirective));
+    }
+    Ok(())
 }
 
 fn validate_ray_rules(

@@ -751,6 +751,46 @@ fn rigid_world_rejects_both_zero_ray_clip_bit_patterns_before_execution() {
 }
 
 #[test]
+fn rigid_world_rejects_derived_degenerate_and_overflowing_rays_before_execution() {
+    // Arrange and Act
+    let limits = HarnessLimits::phase2_default_v1();
+    let errors = [
+        (0.0_f32.to_bits(), 0_u32, (-0.0_f32).to_bits(), 0_u32),
+        (0.0_f32.to_bits(), 0_u32, 1_u32, 0_u32),
+        ((-f32::MAX).to_bits(), 0_u32, f32::MAX.to_bits(), 0_u32),
+        (0.0_f32.to_bits(), 0_u32, f32::MAX.to_bits(), 0_u32),
+    ]
+    .map(|(start_x_bits, start_y_bits, end_x_bits, end_y_bits)| {
+        let mut value = fixture_value();
+        let timeline = timeline_mut(&mut value, "world_query_and_ray_cast");
+        let action = timeline["actions"]
+            .as_array_mut()
+            .expect("query actions should be an array")
+            .iter_mut()
+            .find(|action| action["action_id"] == "query-08")
+            .expect("ray action should exist");
+        action["action"]["start"] = json!({
+            "x_bits": start_x_bits,
+            "y_bits": start_y_bits
+        });
+        action["action"]["end"] = json!({
+            "x_bits": end_x_bits,
+            "y_bits": end_y_bits
+        });
+        decode_rigid_world_request_jsonl(&encode_value(&value), &limits)
+            .expect_err("invalid derived ray geometry must fail before execution")
+    });
+
+    // Assert
+    for error in errors {
+        assert_eq!(
+            error.rigid_world_kind(),
+            Some(RigidWorldErrorKind::InvalidRayDirective)
+        );
+    }
+}
+
+#[test]
 fn rigid_world_phase7_results_expose_semantics_without_ccd_storage() {
     // Arrange
     let observations = vec![

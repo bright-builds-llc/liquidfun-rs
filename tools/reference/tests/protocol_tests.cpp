@@ -515,6 +515,41 @@ void rigid_world_rejects_signed_zero_clips_before_execution() {
   }
 }
 
+void rigid_world_rejects_invalid_derived_ray_geometry_before_execution() {
+  // Arrange and Act / Assert
+  const std::array<std::array<std::uint32_t, 4>, 4> endpoints{{
+      {0U, 0U, 0x80000000U, 0U},
+      {0U, 0U, 1U, 0U},
+      {0xff7fffffU, 0U, 0x7f7fffffU, 0U},
+      {0U, 0U, 0x7f7fffffU, 0U},
+  }};
+  for (const auto& endpoint : endpoints) {
+    auto request = nlohmann::json::parse(read_fixture(
+        "protocol/fixtures/accepted/rigid-world-request.jsonl"));
+    auto& actions = query_timeline(request).at("actions");
+    const auto ray_action = std::find_if(
+        actions.begin(), actions.end(), [](const auto& action) {
+          return action.at("action_id") == "query-08";
+        });
+    expect(ray_action != actions.end(), "ray action is missing");
+    ray_action->at("action")["start"] = {
+        {"x_bits", endpoint[0]}, {"y_bits", endpoint[1]}};
+    ray_action->at("action")["end"] = {
+        {"x_bits", endpoint[2]}, {"y_bits", endpoint[3]}};
+
+    try {
+      static_cast<void>(decode_rigid_world_request(request.dump() + '\n'));
+    } catch (const std::exception& error) {
+      expect(
+          std::string(error.what()).find("finite non-zero squared direction") !=
+              std::string::npos,
+          "derived ray geometry produced an unstable diagnostic");
+      continue;
+    }
+    throw std::runtime_error("invalid derived ray geometry reached execution");
+  }
+}
+
 void rigid_world_rejects_untrusted_records_before_execution() {
   // Arrange
   const auto fixture = read_fixture(
@@ -757,6 +792,7 @@ int main() {
     rigid_world_executes_all_complete_witness_families();
     rigid_world_rejects_expanding_ray_clip_during_execution();
     rigid_world_rejects_signed_zero_clips_before_execution();
+    rigid_world_rejects_invalid_derived_ray_geometry_before_execution();
     rigid_world_rejects_untrusted_records_before_execution();
     rigid_world_boundary_matches_the_fixed_rust_contract();
     rigid_world_rejects_zero_centered_inertia_before_execution();
