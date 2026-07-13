@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 07-03-PLAN.md
-last_updated: "2026-07-13T02:21:08.481Z"
+stopped_at: Completed 07-04-PLAN.md
+last_updated: "2026-07-13T03:05:29.690Z"
 last_activity: 2026-07-13
 progress:
   total_phases: 12
   completed_phases: 6
   total_plans: 74
-  completed_plans: 65
-  percent: 88
+  completed_plans: 66
+  percent: 89
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 ## Current Position
 
 Phase: 7 (Rigid Solver, World Operations, and CCD) — EXECUTING
-Plan: 4 of 13
+Plan: 5 of 13
 Status: Ready to execute
 Last activity: 2026-07-13
 
@@ -91,6 +91,7 @@ Progress: [██████████] 100%
 | Phase 07 P10 | 23min | 2 tasks | 13 files |
 | Phase 07 P02 | 22 min | 2 tasks | 14 files |
 | Phase 07 P03 | 13 min | 2 tasks | 7 files |
+| Phase 07 P04 | 40min | 2 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -184,6 +185,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 07]: Maintain a transactional newest-first body lane independent of ascending arena slot iteration. — Pinned world-list seed order must survive destruction and slot reuse without changing the generic arena contract.
 - [Phase 07]: Resolve private contact ordinals to manager occurrence indices during immutable island preflight. — Island scratch preserves manager and adjacency order without exposing a durable public contact identity.
 - [Phase 07]: Use mark-on-push LIFO DFS and clear only static visitation after each island. — This matches pinned traversal and lets static boundaries participate in later disconnected islands.
+- [Phase 07]: Index every contact constraint into copied island body lanes and retain island contact, manager occurrence, and manifold point order throughout solving and impulse storage. — Copied deterministic lanes preserve source ordering and keep numeric validation separate from persistent World state.
+- [Phase 07]: Apply cached impulses scaled by the exact time-step ratio only when warm starting is enabled; cold starts zero current impulses but still persist newly solved values. — This implements the pinned D-09 and D-10 semantics without letting the warm-start flag suppress final impulse storage.
+- [Phase 07]: Prepare every solved body and sweep, contact impulse and report, proxy synchronization, and timing update before one no-fail world commit, then discover pairs after newest-first non-static proxy synchronization. — All fallible island and broad-phase preparation finishes before persistent solver state changes, so late failure cannot leave a partial step.
 
 ### Pending Todos
 
@@ -191,6 +195,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-13T02:21:08.478Z
-Stopped at: Completed 07-03-PLAN.md
+Last session: 2026-07-13T03:05:29.687Z
+Stopped at: Completed 07-04-PLAN.md
 Resume file: None
