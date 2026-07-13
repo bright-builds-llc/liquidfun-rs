@@ -32,7 +32,6 @@ set(
   -fhonor-nans
   -fhonor-infinities
   -fdenormal-fp-math=ieee
-  -fdenormal-fp-math-fp32=ieee
 )
 set(REFERENCE_SUPPORTED_FP_OPTIONS "")
 set(REFERENCE_MISSING_FP_OPTIONS "")
@@ -300,8 +299,7 @@ else()
   set(REFERENCE_FP_CONTRACT "off")
 endif()
 list(FIND REFERENCE_SUPPORTED_FP_OPTIONS "-fdenormal-fp-math=ieee" REFERENCE_DENORMAL_INDEX)
-list(FIND REFERENCE_SUPPORTED_FP_OPTIONS "-fdenormal-fp-math-fp32=ieee" REFERENCE_DENORMAL_FP32_INDEX)
-if(REFERENCE_DENORMAL_INDEX EQUAL -1 OR REFERENCE_DENORMAL_FP32_INDEX EQUAL -1)
+if(REFERENCE_DENORMAL_INDEX EQUAL -1)
   set(REFERENCE_DENORMAL_MODE "ieee-requested-d2")
 else()
   set(REFERENCE_DENORMAL_MODE "ieee")

@@ -9,12 +9,10 @@ use std::process::Command;
 use std::time::Duration;
 
 use liquidfun_differential::{
-    ArtifactKind, EmptyWorldAdapter, FailureBundleRequest, MinimizationBudget,
-    NativeRigidWorldExecutor, OracleExecutable, OraclePreset, RigidComparisonFailure,
-    RigidComparisonOutcome, RigidEngineSide, RigidEvaluation, RigidMismatchKind,
-    RigidPromotionError, compare_rigid_world_results, execute_rigid_world_process,
+    FailureBundleRequest, MinimizationBudget, NativeRigidWorldExecutor, OracleExecutable,
+    OraclePreset, RigidComparisonFailure, RigidComparisonOutcome, RigidEngineSide, RigidEvaluation,
+    RigidMismatchKind, compare_rigid_world_results, execute_rigid_world_process,
     minimize_rigid_world_request, persist_failure_bundle, validate_native_rigid_world_result,
-    validate_rigid_promotion_authority,
 };
 use liquidfun_test_protocol::{
     HarnessLimits, Phase6PolicyProfile, RecordLimit, RigidWorldErrorKind, RigidWorldObservation,
@@ -947,24 +945,6 @@ fn supervisor_captures_rigid_result_identity_terminal_and_reset() {
     assert!(captured.reset_verified());
     assert!(!captured.response_bytes().is_empty());
     assert_eq!(captured.identity().oracle_revision(), REVISION);
-}
-
-#[test]
-fn supervisor_rejects_local_d2_rigid_output_for_promotion() {
-    // Arrange
-    let identity = EmptyWorldAdapter::new(REVISION)
-        .expect("native identity should validate")
-        .build_identity()
-        .clone();
-
-    // Act
-    let result = validate_rigid_promotion_authority(&identity, ArtifactKind::ReviewedTrace);
-
-    // Assert
-    assert!(matches!(
-        result,
-        Err(RigidPromotionError::NonCanonicalAuthority { .. })
-    ));
 }
 
 #[test]

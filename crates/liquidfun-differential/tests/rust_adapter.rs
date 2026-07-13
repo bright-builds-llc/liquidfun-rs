@@ -1,6 +1,8 @@
 //! Native empty-world adapter contract tests.
 
-use liquidfun_differential::EmptyWorldAdapter;
+use liquidfun_differential::{
+    ArtifactKind, EmptyWorldAdapter, RigidPromotionError, validate_rigid_promotion_authority,
+};
 use liquidfun_test_protocol::{
     BuildEvidenceTier, BuildIdentity, BuildIdentityError, BuildIdentityFields, EngineKind,
     HarnessLimits, Phase4BuildIdentityFields, ScenarioRequestRecord, WorldCounts,
@@ -233,7 +235,7 @@ fn canonical_identity_requires_all_fields() {
 }
 
 #[test]
-fn supported_identity_cannot_promote_canonical_evidence() {
+fn supported_identity_is_rejected_for_rigid_promotion() {
     // Arrange
     let supported = Phase4BuildIdentityFields::new(
         "55".repeat(32),
@@ -264,7 +266,13 @@ fn supported_identity_cannot_promote_canonical_evidence() {
     )
     .expect("supported identity should validate");
 
+    // Act
+    let result = validate_rigid_promotion_authority(&identity, ArtifactKind::ReviewedTrace);
+
     // Assert
     assert_eq!(identity.evidence_tier(), BuildEvidenceTier::D2Supported);
-    assert!(!identity.can_promote_canonical_evidence());
+    assert!(matches!(
+        result,
+        Err(RigidPromotionError::NonCanonicalAuthority { .. })
+    ));
 }

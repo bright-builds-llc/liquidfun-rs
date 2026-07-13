@@ -58,3 +58,12 @@ Completion review: All 39 ordered probe cases compare successfully in debug and 
 - [x] Create the lifecycle-bound summary and update GSD progress artifacts.
 
 Completion review: The Phase 4 public math, numerical-policy, command, and evidence contracts are now precise and machine-audited. All 39 ordered math probes pass in debug and release, replay is successful, and two independent debug processes are byte-identical. Compatibility status remains conservative: three rows are implemented and unit-tested, only b2Math and the common subsystem carry scoped D2 differential evidence, and zero rows are platform validated. Canonical D1, settings differential parity, shapes, collision, solvers, particles, performance, and production maturity remain pending.
+
+## task-fix-main-ci-4ee1b282 | 2026-07-13 12:50 CDT | Fix Cargo and Oracle CI on main
+
+- [x] Confirm the failing Cargo CI test and canonical Oracle configure root causes.
+- [x] Apply focused fixes with regression coverage.
+- [x] Run the required Rust pre-commit checks in order and affected oracle verification.
+- [x] Review the complete diff and record residual risk.
+
+Completion review: The rigid-promotion regression now uses an explicit D2 identity instead of host-dependent build metadata, and the canonical oracle requires only Clang's supported general IEEE denormal option. The exact Rust format, lint, build, and test sequence passed; workspace-wide CI-equivalent lint, build, and tests passed; local oracle configure/build, provenance, inventory, and diff checks passed. Exact Ubuntu Clang 22.1.8 reproduction confirmed the removed `fp32` spelling was the sole failed capability probe. Residual risk is limited to end-to-end confirmation on the GitHub-hosted canonical runner after push.
