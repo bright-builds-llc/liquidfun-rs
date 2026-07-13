@@ -164,6 +164,7 @@ mod particle;
 #[cfg(feature = "differential-internals")]
 #[doc(hidden)]
 pub mod rigid_differential;
+pub mod rope;
 mod world;
 
 pub use association::{AssociationId, AssociationMap};

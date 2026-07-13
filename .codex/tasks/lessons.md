@@ -18,3 +18,10 @@
 1. What went wrong: A Cargo-only documentation contract invoked the full inventory check, which correctly requires the native source checkout that Cargo CI deliberately omits.
 1. Preventive rule: Keep checked-in ledger and report validation separate from live-source discovery, and test both the isolated Cargo-only path and the full native-source path.
 1. Trigger signal to catch it earlier: If a Cargo-only test invokes xtask, inventory, provenance, packaging, or documentation commands, verify that every transitive input exists in a checkout without submodules.
+
+## lesson-never-self-bless-oracle-bits | 2026-07-13 18:54
+
+1. Date: 2026-07-13 18:54 CDT
+1. What went wrong: An exact-bit standalone-rope fixture was provisionally updated from the Rust implementation under test after a guessed expectation failed.
+1. Preventive rule: Exact compatibility fixtures must come from the pinned upstream oracle or an independently derived source-faithful calculation, never from the implementation being tested.
+1. Trigger signal to catch it earlier: If an exact expected value is copied from an assertion's actual output, stop and reproduce the case with the pinned oracle before editing the fixture.
