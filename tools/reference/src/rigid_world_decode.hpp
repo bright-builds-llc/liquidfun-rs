@@ -240,7 +240,7 @@ inline std::vector<RigidRayRule> ray_rules(const Json& value) {
       directive.kind = RigidRayDirectiveKind::clip;
       directive.fraction = u32(member(raw_directive, "fraction_bits", "ray directive"), "clip fraction");
       const auto fraction = float_from_bits(directive.fraction);
-      if (!std::isfinite(fraction) || fraction < 0.0F || fraction > 1.0F) {
+      if (!std::isfinite(fraction) || fraction <= 0.0F || fraction > 1.0F) {
         throw std::runtime_error("ray clip fraction is outside reviewed bounds");
       }
     } else {

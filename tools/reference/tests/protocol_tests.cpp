@@ -98,6 +98,16 @@ nlohmann::json& custom_mass_action(nlohmann::json& request) {
   return found->at("action");
 }
 
+nlohmann::json& query_timeline(nlohmann::json& request) {
+  auto& timelines = request.at("scenario").at("timelines");
+  const auto found = std::find_if(
+      timelines.begin(), timelines.end(), [](const auto& timeline) {
+        return timeline.at("witness_family") == "world_query_and_ray_cast";
+      });
+  expect(found != timelines.end(), "query timeline is missing");
+  return *found;
+}
+
 void accepted_fixture_round_trips_exact_bits() {
   // Arrange
   const auto fixture = read_fixture(
@@ -469,6 +479,42 @@ void rigid_world_rejects_expanding_ray_clip_during_execution() {
   throw std::runtime_error("expanding ray clip was accepted");
 }
 
+void rigid_world_rejects_signed_zero_clips_before_execution() {
+  // Arrange and Act / Assert
+  for (const auto fraction_bits :
+       std::array<std::uint32_t, 2>{0U, 0x80000000U}) {
+    auto request = nlohmann::json::parse(read_fixture(
+        "protocol/fixtures/accepted/rigid-world-request.jsonl"));
+    auto& timeline = query_timeline(request);
+    for (auto& body : timeline.at("bodies")) {
+      if (body.at("body_id") == "query-left" ||
+          body.at("body_id") == "query-center") {
+        body["transform"]["position"]["x_bits"] = 0xc0400000U;
+      }
+    }
+    auto& actions = timeline.at("actions");
+    const auto ray_action = std::find_if(
+        actions.begin(), actions.end(), [](const auto& action) {
+          return action.at("action_id") == "query-10";
+        });
+    expect(ray_action != actions.end(), "clip action is missing");
+    ray_action->at("action")["directive_rules"][0]["directive"]
+              ["fraction_bits"] = fraction_bits;
+
+    try {
+      static_cast<void>(decode_rigid_world_request(request.dump() + '\n'));
+    } catch (const std::exception& error) {
+      expect(
+          std::string(error.what()).find("outside reviewed bounds") !=
+              std::string::npos,
+          "signed-zero clip produced an unstable diagnostic");
+      continue;
+    }
+    throw std::runtime_error(
+        "signed-zero clip reached multiple fraction-zero hit execution");
+  }
+}
+
 void rigid_world_rejects_untrusted_records_before_execution() {
   // Arrange
   const auto fixture = read_fixture(
@@ -710,6 +756,7 @@ int main() {
     collision_probe_uses_existing_protocol_loop();
     rigid_world_executes_all_complete_witness_families();
     rigid_world_rejects_expanding_ray_clip_during_execution();
+    rigid_world_rejects_signed_zero_clips_before_execution();
     rigid_world_rejects_untrusted_records_before_execution();
     rigid_world_boundary_matches_the_fixed_rust_contract();
     rigid_world_rejects_zero_centered_inertia_before_execution();

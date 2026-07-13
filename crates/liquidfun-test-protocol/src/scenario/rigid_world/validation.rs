@@ -611,7 +611,7 @@ fn validate_ray_rules(
     for rule in rules {
         if let RigidRayDirective::Clip { fraction_bits } = rule.directive {
             let fraction = fraction_bits.to_f32();
-            if !fraction.is_finite() || !(0.0..=1.0).contains(&fraction) {
+            if !fraction.is_finite() || fraction <= 0.0 || fraction > 1.0 {
                 return Err(validation(RigidWorldErrorKind::InvalidRayDirective));
             }
         }

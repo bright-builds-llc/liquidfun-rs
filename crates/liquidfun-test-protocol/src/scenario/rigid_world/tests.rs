@@ -715,6 +715,42 @@ fn rigid_world_rejects_invalid_phase7_step_and_directive_bounds() {
 }
 
 #[test]
+fn rigid_world_rejects_both_zero_ray_clip_bit_patterns_before_execution() {
+    // Arrange and Act
+    let limits = HarnessLimits::phase2_default_v1();
+    let errors = [0.0_f32.to_bits(), (-0.0_f32).to_bits()].map(|fraction_bits| {
+        let mut value = fixture_value();
+        let timeline = timeline_mut(&mut value, "world_query_and_ray_cast");
+        for body_id in ["query-left", "query-center"] {
+            let body = timeline["bodies"]
+                .as_array_mut()
+                .expect("query bodies should be an array")
+                .iter_mut()
+                .find(|body| body["body_id"] == body_id)
+                .expect("fraction-zero witness body should exist");
+            body["transform"]["position"]["x_bits"] = json!((-3.0_f32).to_bits());
+        }
+        let action = timeline["actions"]
+            .as_array_mut()
+            .expect("query actions should be an array")
+            .iter_mut()
+            .find(|action| action["action_id"] == "query-10")
+            .expect("clip action should exist");
+        action["action"]["directive_rules"][0]["directive"]["fraction_bits"] = json!(fraction_bits);
+        decode_rigid_world_request_jsonl(&encode_value(&value), &limits)
+            .expect_err("zero clips must fail before multiple fraction-zero hits execute")
+    });
+
+    // Assert
+    for error in errors {
+        assert_eq!(
+            error.rigid_world_kind(),
+            Some(RigidWorldErrorKind::InvalidRayDirective)
+        );
+    }
+}
+
+#[test]
 fn rigid_world_phase7_results_expose_semantics_without_ccd_storage() {
     // Arrange
     let observations = vec![
