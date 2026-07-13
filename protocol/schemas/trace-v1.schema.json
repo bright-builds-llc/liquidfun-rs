@@ -1453,14 +1453,16 @@
                               "observation": {
                                 "additionalProperties": false,
                                 "properties": {
-                                  "clipping_applied": {
-                                    "type": "boolean"
-                                  },
                                   "completion": {
                                     "enum": [
                                       "exhausted",
                                       "terminated"
                                     ]
+                                  },
+                                  "final_max_fraction_bits": {
+                                    "maximum": 4294967295,
+                                    "minimum": 0,
+                                    "type": "integer"
                                   },
                                   "hits": {
                                     "items": {
@@ -1503,7 +1505,7 @@
                                 },
                                 "required": [
                                   "completion",
-                                  "clipping_applied",
+                                  "final_max_fraction_bits",
                                   "hits"
                                 ],
                                 "type": "object"

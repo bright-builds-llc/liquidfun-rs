@@ -106,11 +106,14 @@ pub enum RigidRayCompletion {
     Terminated,
 }
 
+/// Exact initial maximum fraction for every closed rigid-world ray cast.
+pub const RIGID_RAY_INITIAL_MAX_FRACTION_BITS: FloatBits = FloatBits::new(1.0_f32.to_bits());
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct RigidRayObservation {
     pub completion: RigidRayCompletion,
-    pub clipping_applied: bool,
+    pub final_max_fraction_bits: FloatBits,
     pub hits: Box<[RigidRayHitObservation]>,
 }
 
@@ -438,14 +441,7 @@ impl ExpectedObservation<'_> {
             (Self::Step, RigidWorldObservation::Step { .. })
             | (Self::Query, RigidWorldObservation::Query { .. }) => true,
             (Self::RayCast(rules), RigidWorldObservation::RayCast { observation }) => {
-                observation.clipping_applied
-                    == observation.hits.iter().any(|hit| {
-                        rules.iter().any(|rule| {
-                            rule.target.fixture_id == hit.fixture_id
-                                && rule.target.child_index == hit.child_index
-                                && matches!(rule.directive, super::RigidRayDirective::Clip { .. })
-                        })
-                    })
+                ray_observation_matches(rules, observation)
             }
             (Self::OriginShift(expected), RigidWorldObservation::OriginShift { shift }) => {
                 expected == *shift
@@ -453,6 +449,54 @@ impl ExpectedObservation<'_> {
             _ => false,
         }
     }
+}
+
+fn ray_observation_matches(
+    rules: &[super::RigidRayDirectiveRule],
+    observation: &RigidRayObservation,
+) -> bool {
+    let mut current_max_fraction_bits = RIGID_RAY_INITIAL_MAX_FRACTION_BITS;
+    let mut current_max_fraction = current_max_fraction_bits.to_f32();
+    let mut terminated = false;
+
+    for hit in &observation.hits {
+        if terminated {
+            return false;
+        }
+        let hit_fraction = hit.fraction_bits.to_f32();
+        if !hit_fraction.is_finite() || hit_fraction < 0.0 || hit_fraction > current_max_fraction {
+            return false;
+        }
+        let directive = rules
+            .iter()
+            .find(|rule| {
+                rule.target.fixture_id == hit.fixture_id
+                    && rule.target.child_index == hit.child_index
+            })
+            .map_or(super::RigidRayDirective::Continue, |rule| rule.directive);
+        match directive {
+            super::RigidRayDirective::Ignore | super::RigidRayDirective::Continue => {}
+            super::RigidRayDirective::Terminate => terminated = true,
+            super::RigidRayDirective::Clip { fraction_bits } => {
+                let fraction = fraction_bits.to_f32();
+                if !fraction.is_finite() || fraction < 0.0 || fraction > current_max_fraction {
+                    return false;
+                }
+                if fraction < current_max_fraction {
+                    current_max_fraction = fraction;
+                    current_max_fraction_bits = fraction_bits;
+                }
+            }
+        }
+    }
+
+    let expected_completion = if terminated {
+        RigidRayCompletion::Terminated
+    } else {
+        RigidRayCompletion::Exhausted
+    };
+    observation.completion == expected_completion
+        && observation.final_max_fraction_bits == current_max_fraction_bits
 }
 
 fn expected_observation(action: &RigidWorldAction) -> Option<ExpectedObservation<'_>> {

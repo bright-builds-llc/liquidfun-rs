@@ -109,12 +109,12 @@
           const std::vector<RigidRayRule>& rules,
           Json& hits,
           bool& terminated,
-          bool& clipping_applied)
+          float32& final_max_fraction)
           : fixture_ids_(fixture_ids),
             rules_(rules),
             hits_(hits),
             terminated_(terminated),
-            clipping_applied_(clipping_applied) {}
+            final_max_fraction_(final_max_fraction) {}
 
       float32 ReportFixture(
           b2Fixture* fixture,
@@ -138,12 +138,16 @@
             });
         if (rule == rules_.end() ||
             rule->directive.kind == RigidRayDirectiveKind::continue_ray) {
-          return 1.0F;
+          return -1.0F;
         }
         if (rule->directive.kind == RigidRayDirectiveKind::ignore) return -1.0F;
         if (rule->directive.kind == RigidRayDirectiveKind::clip) {
-          clipping_applied_ = true;
-          return float_from_bits(rule->directive.fraction);
+          const auto candidate = float_from_bits(rule->directive.fraction);
+          if (candidate > final_max_fraction_) {
+            throw std::runtime_error("ray clip would expand current interval");
+          }
+          if (candidate < final_max_fraction_) final_max_fraction_ = candidate;
+          return candidate;
         }
         terminated_ = true;
         return 0.0F;
@@ -154,18 +158,18 @@
       const std::vector<RigidRayRule>& rules_;
       Json& hits_;
       bool& terminated_;
-      bool& clipping_applied_;
+      float32& final_max_fraction_;
     };
 
     Json hits = Json::array();
     bool terminated = false;
-    bool clipping_applied = false;
-    Callback callback(fixture_ids_, ray.rules, hits, terminated, clipping_applied);
+    float32 final_max_fraction = 1.0F;
+    Callback callback(fixture_ids_, ray.rules, hits, terminated, final_max_fraction);
     world_.RayCast(&callback, vector(ray.start), vector(ray.end));
     observations_.push_back(
         {{"kind", "ray_cast"},
          {"observation",
           {{"completion", terminated ? "terminated" : "exhausted"},
-           {"clipping_applied", clipping_applied},
+           {"final_max_fraction_bits", bits_from_float(final_max_fraction)},
            {"hits", std::move(hits)}}}});
   }

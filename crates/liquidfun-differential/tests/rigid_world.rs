@@ -20,7 +20,7 @@ use liquidfun_test_protocol::{
     HarnessLimits, Phase6PolicyProfile, RecordLimit, RigidWorldErrorKind, RigidWorldObservation,
     RigidWorldRequestRecord, RigidWorldResultRecord, RigidWorldWitnessFamily,
     decode_rigid_world_request_jsonl, decode_rigid_world_result_jsonl, encode_jsonl,
-    rigid_world_checkpoint_live_identities,
+    rigid_world_checkpoint_live_identities, validate_rigid_world_result_against_request,
 };
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
@@ -84,6 +84,34 @@ fn comparison_request_with_partial_body_checkpoint() -> RigidWorldRequestRecord 
     );
     decode_rigid_world_request_jsonl(&encode_value(&value), &HarnessLimits::phase2_default_v1())
         .expect("partial body-destruction checkpoint should decode")
+}
+
+fn request_with_expanding_ray_clips() -> RigidWorldRequestRecord {
+    let mut value = serde_json::from_slice::<Value>(REQUEST).expect("fixture should be JSON");
+    let query_timeline = value["scenario"]["timelines"]
+        .as_array_mut()
+        .expect("fixture timelines should be an array")
+        .iter_mut()
+        .find(|timeline| timeline["witness_family"] == "world_query_and_ray_cast")
+        .expect("query timeline should exist");
+    let ray_action = query_timeline["actions"]
+        .as_array_mut()
+        .expect("query actions should be an array")
+        .iter_mut()
+        .find(|action| action["action_id"] == "query-10")
+        .expect("clip action should exist");
+    ray_action["action"]["directive_rules"] = json!([
+        {
+            "target": { "fixture_id": "query-right-fixture", "child_index": 0 },
+            "directive": { "kind": "clip", "fraction_bits": 0.5_f32.to_bits() }
+        },
+        {
+            "target": { "fixture_id": "query-center-fixture", "child_index": 0 },
+            "directive": { "kind": "clip", "fraction_bits": 0.75_f32.to_bits() }
+        }
+    ]);
+    decode_rigid_world_request_jsonl(&encode_value(&value), &HarnessLimits::phase2_default_v1())
+        .expect("bounded expanding-clip request should decode")
 }
 
 fn assert_identity_rejected_on_each_side(
@@ -219,6 +247,72 @@ fn oracle_executes_closed_phase7_actions_and_emits_semantic_observations() {
         observations
             .iter()
             .any(|observation| matches!(observation, RigidWorldObservation::OriginShift { .. }))
+    );
+}
+
+#[test]
+fn expanding_ray_clips_fail_closed_in_native_oracle_and_result_validation() {
+    // Arrange
+    let baseline_request = request();
+    let baseline = NativeRigidWorldExecutor::execute(&baseline_request)
+        .expect("baseline rigid request should execute");
+    let expanding_request = request_with_expanding_ray_clips();
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let maybe_executable = OracleExecutable::resolve(&root, OraclePreset::Debug).ok();
+
+    // Act
+    let native = NativeRigidWorldExecutor::execute(&expanding_request);
+    let validation = validate_rigid_world_result_against_request(&expanding_request, &baseline);
+    let maybe_oracle = maybe_executable
+        .map(|executable| execute_rigid_world_process(&executable, &expanding_request, REVISION));
+
+    // Assert
+    assert!(
+        native.is_err(),
+        "native adapter must reject interval expansion"
+    );
+    assert_eq!(
+        validation
+            .expect_err("result validation must reject interval expansion")
+            .rigid_world_kind(),
+        Some(RigidWorldErrorKind::ResultObservationMismatch)
+    );
+    if let Some(oracle) = maybe_oracle {
+        assert!(
+            oracle.is_err(),
+            "oracle adapter must reject interval expansion"
+        );
+    }
+}
+
+#[test]
+fn result_validation_rejects_inconsistent_final_ray_interval() {
+    // Arrange
+    let request = request();
+    let baseline =
+        NativeRigidWorldExecutor::execute(&request).expect("baseline rigid request should execute");
+    let mut value = result_value(&baseline);
+    let observations = value["timelines"][7]["checkpoints"][0]["observations"]
+        .as_array_mut()
+        .expect("query observations should be an array");
+    let clipped_ray = observations
+        .iter_mut()
+        .find(|observation| {
+            observation["kind"] == "ray_cast"
+                && observation["observation"]["final_max_fraction_bits"] == json!(0.5_f32.to_bits())
+        })
+        .expect("strictly clipped ray observation should exist");
+    clipped_ray["observation"]["final_max_fraction_bits"] = json!(1.0_f32.to_bits());
+    let inconsistent = decode_result_value(&value);
+
+    // Act
+    let error = validate_rigid_world_result_against_request(&request, &inconsistent)
+        .expect_err("recorded final interval must match callback replay");
+
+    // Assert
+    assert_eq!(
+        error.rigid_world_kind(),
+        Some(RigidWorldErrorKind::ResultObservationMismatch)
     );
 }
 

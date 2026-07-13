@@ -6,12 +6,12 @@ use liquidfun::{
     StepError, StepLimits, WakePolicy,
 };
 use liquidfun_test_protocol::{
-    FloatBits, RigidAabbBits, RigidBodyControlSnapshot, RigidFixtureChildOccurrence,
-    RigidPartialProgressClassification, RigidQueryCompletion, RigidQueryDirective,
-    RigidQueryDirectiveRule, RigidQueryObservation, RigidRayCompletion, RigidRayDirective,
-    RigidRayDirectiveRule, RigidRayHitObservation, RigidRayObservation, RigidStepCompletion,
-    RigidStepOutcome, RigidWakePolicy, RigidWorldAction, RigidWorldActionRecord,
-    RigidWorldObservation, ScenarioId, Vec2Bits,
+    FloatBits, RIGID_RAY_INITIAL_MAX_FRACTION_BITS, RigidAabbBits, RigidBodyControlSnapshot,
+    RigidFixtureChildOccurrence, RigidPartialProgressClassification, RigidQueryCompletion,
+    RigidQueryDirective, RigidQueryDirectiveRule, RigidQueryObservation, RigidRayCompletion,
+    RigidRayDirective, RigidRayDirectiveRule, RigidRayHitObservation, RigidRayObservation,
+    RigidStepCompletion, RigidStepOutcome, RigidWakePolicy, RigidWorldAction,
+    RigidWorldActionRecord, RigidWorldObservation, ScenarioId, Vec2Bits,
 };
 
 use super::{
@@ -387,7 +387,8 @@ fn execute_ray_cast(
         .map_err(|error| action_error(action, error))?;
     let fixture_ids = executor.fixtures.clone();
     let mut terminated = false;
-    let mut clipping_applied = false;
+    let mut final_max_fraction_bits = RIGID_RAY_INITIAL_MAX_FRACTION_BITS;
+    let mut final_max_fraction = final_max_fraction_bits.to_f32();
     let mut invalid = false;
     let mut hits = Vec::new();
     let result = executor.world.ray_cast(input, |hit| {
@@ -423,14 +424,20 @@ fn execute_ray_cast(
             }
             RigidRayDirective::Continue => RayCastDirective::Continue,
             RigidRayDirective::Clip { fraction_bits } => {
-                clipping_applied = true;
-                match RayCastFraction::new(fraction_bits.to_f32()) {
-                    Ok(fraction) => RayCastDirective::Clip(fraction),
-                    Err(_error) => {
-                        invalid = true;
-                        RayCastDirective::Terminate
-                    }
+                let fraction = fraction_bits.to_f32();
+                let Ok(fraction_value) = RayCastFraction::new(fraction) else {
+                    invalid = true;
+                    return RayCastDirective::Terminate;
+                };
+                if fraction > final_max_fraction {
+                    invalid = true;
+                    return RayCastDirective::Terminate;
                 }
+                if fraction < final_max_fraction {
+                    final_max_fraction = fraction;
+                    final_max_fraction_bits = fraction_bits;
+                }
+                RayCastDirective::Clip(fraction_value)
             }
         }
     });
@@ -450,7 +457,7 @@ fn execute_ray_cast(
                 } else {
                     RigidRayCompletion::Exhausted
                 },
-                clipping_applied,
+                final_max_fraction_bits,
                 hits: hits.into_boxed_slice(),
             },
         });

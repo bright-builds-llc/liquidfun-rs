@@ -436,6 +436,39 @@ void rigid_world_executes_all_complete_witness_families() {
       "terminal rigid-world reset proof is missing");
 }
 
+void rigid_world_rejects_expanding_ray_clip_during_execution() {
+  // Arrange
+  auto request = nlohmann::json::parse(read_fixture(
+      "protocol/fixtures/accepted/rigid-world-request.jsonl"));
+  auto& timelines = request.at("scenario").at("timelines");
+  const auto query_timeline = std::find_if(
+      timelines.begin(), timelines.end(), [](const auto& timeline) {
+        return timeline.at("witness_family") == "world_query_and_ray_cast";
+      });
+  expect(query_timeline != timelines.end(), "query timeline is missing");
+  auto& actions = query_timeline->at("actions");
+  const auto ray_action = std::find_if(
+      actions.begin(), actions.end(), [](const auto& action) {
+        return action.at("action_id") == "query-10";
+      });
+  expect(ray_action != actions.end(), "clip action is missing");
+  ray_action->at("action")["directive_rules"] = nlohmann::json::parse(
+      R"([{"target":{"fixture_id":"query-right-fixture","child_index":0},"directive":{"kind":"clip","fraction_bits":1056964608}},{"target":{"fixture_id":"query-center-fixture","child_index":0},"directive":{"kind":"clip","fraction_bits":1061158912}}])");
+  RigidWorldAdapter adapter;
+
+  // Act / Assert
+  try {
+    static_cast<void>(adapter.execute(request.dump() + '\n'));
+  } catch (const std::exception& error) {
+    expect(
+        std::string(error.what()).find("expand current interval") !=
+            std::string::npos,
+        "expanding clip produced an unstable diagnostic");
+    return;
+  }
+  throw std::runtime_error("expanding ray clip was accepted");
+}
+
 void rigid_world_rejects_untrusted_records_before_execution() {
   // Arrange
   const auto fixture = read_fixture(
@@ -676,6 +709,7 @@ int main() {
     math_probe_matches_operation_contract();
     collision_probe_uses_existing_protocol_loop();
     rigid_world_executes_all_complete_witness_families();
+    rigid_world_rejects_expanding_ray_clip_during_execution();
     rigid_world_rejects_untrusted_records_before_execution();
     rigid_world_boundary_matches_the_fixed_rust_contract();
     rigid_world_rejects_zero_centered_inertia_before_execution();

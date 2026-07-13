@@ -1,8 +1,9 @@
 //! Equal-minimum ray identity and numeric comparison.
 
 use liquidfun_test_protocol::{
-    FloatBits, Phase7PolicyProfile, RigidFixtureChildOccurrence, RigidRayCompletion,
-    RigidRayHitObservation, RigidRayObservation, RigidWorldRequestRecord,
+    FloatBits, Phase7PolicyProfile, RIGID_RAY_INITIAL_MAX_FRACTION_BITS,
+    RigidFixtureChildOccurrence, RigidRayCompletion, RigidRayHitObservation, RigidRayObservation,
+    RigidWorldRequestRecord,
 };
 
 use crate::{float_values_match_with_policy, multiset_values_match, set_values_match};
@@ -31,10 +32,24 @@ pub(super) fn compare_ray(
     )? {
         return Ok(Some(report));
     }
+    if let Some(report) = exact(
+        request,
+        profile,
+        context,
+        "rigid_world.phase7.ray.final_max_fraction",
+        RigidMismatchKind::Exact,
+        &expected.final_max_fraction_bits.bits(),
+        &actual.final_max_fraction_bits.bits(),
+    )? {
+        return Ok(Some(report));
+    }
     if expected.completion == RigidRayCompletion::Terminated {
         return compare_terminated_count(request, profile, context, expected, actual);
     }
-    if expected.clipping_applied && actual.clipping_applied {
+    let initial_max_fraction = RIGID_RAY_INITIAL_MAX_FRACTION_BITS.to_f32();
+    if expected.final_max_fraction_bits.to_f32() < initial_max_fraction
+        && actual.final_max_fraction_bits.to_f32() < initial_max_fraction
+    {
         return compare_closest_hits(request, profile, context, expected, actual);
     }
     compare_hit_multisets(request, profile, context, &expected.hits, &actual.hits)

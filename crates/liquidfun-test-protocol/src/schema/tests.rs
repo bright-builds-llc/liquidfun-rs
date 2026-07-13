@@ -95,6 +95,8 @@ fn schema_presentations_keep_records_closed_and_versions_explicit() {
     assert!(TRACKED_TRACE_SCHEMA.contains("\"normal_impulse_bits\""));
     assert!(TRACKED_TRACE_SCHEMA.contains("\"continuous_pending\""));
     assert!(TRACKED_TRACE_SCHEMA.contains("\"continuous_work_budget_exhausted\""));
+    assert!(TRACKED_TRACE_SCHEMA.contains("\"final_max_fraction_bits\""));
+    assert!(!TRACKED_TRACE_SCHEMA.contains("\"clipping_applied\""));
     assert!(!TRACKED_TRACE_SCHEMA.contains("toi_count"));
     assert!(!TRACKED_TRACE_SCHEMA.contains("cached_toi"));
     assert!(schemas.iter().all(|schema| schema.contains(

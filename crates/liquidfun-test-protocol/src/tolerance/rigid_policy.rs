@@ -97,6 +97,7 @@ const PHASE7_STRUCTURAL_PATHS: &[&str] = &[
     "rigid_world.phase7.query.completion",
     "rigid_world.phase7.query.occurrences.identity",
     "rigid_world.phase7.ray.completion",
+    "rigid_world.phase7.ray.final_max_fraction",
     "rigid_world.phase7.ray.hit.identity",
     "rigid_world.phase7.ray.equal_minimum.identities",
 ];
@@ -256,11 +257,13 @@ fn phase7_witness_policy_paths(family: RigidWorldWitnessFamily) -> &'static [&'s
             "rigid_world.phase7.query.occurrences.identity",
             "rigid_world.phase7.ray.equal_minimum.identities",
             "rigid_world.phase7.ray.completion",
+            "rigid_world.phase7.ray.final_max_fraction",
         ],
         RigidWorldWitnessFamily::OriginShiftCovariance => &[
             "rigid_world.phase7.origin_shift.x",
             "rigid_world.phase7.origin_shift.y",
             "rigid_world.phase7.query.occurrences.identity",
+            "rigid_world.phase7.ray.final_max_fraction",
             "rigid_world.phase7.ray.fraction",
         ],
         RigidWorldWitnessFamily::NonCollidingBodyFixtureLifecycle
@@ -734,10 +737,10 @@ mod tests {
 
         // Assert
         assert_eq!(profile.profile_id(), "phase7-v1");
-        assert_eq!(profile.fields().len(), 36);
+        assert_eq!(profile.fields().len(), 37);
         assert_eq!(
             profile.profile_sha256().as_str(),
-            "54ed48d847ad6e075e0d07e8d018ed65c131a89c2942e91c7dde631db7e85b9e"
+            "a28360556d0339627ec26dc988fcb5585d12e14ba88ecb801c9cf9bdb1a193fe"
         );
         assert_eq!(
             profile

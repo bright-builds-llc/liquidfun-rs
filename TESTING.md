@@ -438,10 +438,13 @@ fallback policy and no widening based on iteration count or elapsed steps.
 World query and ray callback order is intentionally outside the consumer
 contract. The evidence layer compares query occurrences as a multiplicity-preserving multiset.
 Non-terminated exhaustive or filtered ray-hit records use the same
-multiplicity-preserving multiset policy. When both sides independently validate
-that a callback applied clipping, the evidence layer compares equal-minimum ray identities as a set and applies the named numeric hit policies.
-Declaring a clip rule does not select closest-hit semantics unless its selector
-is actually reached. Terminated rays compare completion and callback count.
+multiplicity-preserving multiset policy. Each result records the exact final
+maximum-fraction bits after replaying callbacks from the initial `1.0` interval;
+validation rejects any later clip that would expand the interval. Closest-hit
+semantics apply only when both validated intervals strictly decrease, after
+which comparison treats equal-minimum ray identities as a set and applies the
+named numeric hit policies. An unreached clip or reached no-op `Clip(1.0)` remains exhaustive.
+Terminated rays compare completion, final interval, and callback count.
 This canonicalization occurs only during comparison; production traversal is
 never sorted to satisfy evidence. Solver-visible body, contact, manifold,
 lifecycle, and source sequences remain ordered.

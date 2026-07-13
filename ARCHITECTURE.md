@@ -320,10 +320,13 @@ solve records compare exactly. Numeric body, impulse, query, ray, and origin
 fields use only their named absolute, absolute-relative, or ULP policies. For
 comparison alone, query occurrences are multiplicity-preserving multisets.
 Non-terminated exhaustive or filtered ray-hit records use the same multiset
-policy. When both results report independently validated callback-applied
-clipping, equal-minimum ray identities are sets and their numeric hit fields use
-the named policies. A declared clip selector that is not reached remains
-exhaustive, while terminated rays compare completion and callback count.
+policy. Each result records the exact callback-ordered final maximum-fraction
+bits, starting at `1.0`; validation replays the hit directives and rejects any
+attempt to expand the current interval. Only a strict reduction on both sides
+selects closest-hit comparison, where equal-minimum ray identities are sets and
+their numeric hit fields use the named policies. An unreached clip selector or
+a reached no-op `Clip(1.0)` remains exhaustive, while terminated rays compare
+completion, final interval, and callback count.
 Solver-visible production sequences retain their declared ordering.
 
 The C++ executable, protocol, schemas, tolerance registry, and differential
