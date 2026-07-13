@@ -60,11 +60,11 @@ const DOCUMENT_CONTRACTS: [(&str, &[&str]); 4] = [
     (
         "COMPATIBILITY.md",
         &[
-            "| `implemented` | 30 | 147 |",
-            "| `unit_tested` | 30 | 147 |",
-            "| `differentially_validated` | 29 | 148 |",
+            "| `implemented` | 34 | 143 |",
+            "| `unit_tested` | 34 | 143 |",
+            "| `differentially_validated` | 33 | 144 |",
             "| `platform_validated` | 0 | 177 |",
-            "| `documented_difference` | 30 | 147 |",
+            "| `documented_difference` | 34 | 143 |",
             "`subsystem.common-math-and-settings`",
             "`public-api.liquidfun-box2d-box2d-common-b2math-h`",
             "`public-api.liquidfun-box2d-box2d-common-b2settings-h`",
@@ -203,8 +203,6 @@ const PHASE6_DOCUMENT_CONTRACTS: [(&str, &[&str]); 5] = [
         &[
             "| `subsystem.contacts-and-filtering` | `liquidfun/Box2D/Box2D/Dynamics/Contacts` | `liquidfun::dynamics::contacts` | applicable | yes | yes | yes | yes | yes | no | yes | no |",
             "| `subsystem.rigid-bodies-and-fixtures` | `liquidfun/Box2D/Box2D/Dynamics` | `liquidfun::dynamics` | applicable | yes | yes | yes | yes | yes | no | yes | no |",
-            "| `subsystem.rigid-islands-and-solver` | `liquidfun/Box2D/Box2D/Dynamics` | `liquidfun::dynamics` | applicable | yes | yes | no | no | no | no | no | no |",
-            "| `subsystem.world-operations-and-observation` | `liquidfun/Box2D/Box2D/Dynamics` | `liquidfun::world` | applicable | yes | yes | no | no | no | no | no | no |",
             "| `public-api.liquidfun-box2d-box2d-dynamics-b2body-h` | `liquidfun/Box2D/Box2D/Dynamics/b2Body.h` | `liquidfun::dynamics` | applicable | yes | yes | yes | yes | yes | no | yes | no |",
             "| `public-api.liquidfun-box2d-box2d-dynamics-b2fixture-h` | `liquidfun/Box2D/Box2D/Dynamics/b2Fixture.h` | `liquidfun::dynamics` | applicable | yes | yes | yes | yes | yes | no | yes | no |",
             "| `public-api.liquidfun-box2d-box2d-dynamics-b2contactmanager-h` | `liquidfun/Box2D/Box2D/Dynamics/b2ContactManager.h` | `liquidfun::dynamics` | applicable | yes | yes | yes | yes | yes | no | yes | no |",
@@ -242,7 +240,7 @@ const PHASE6_DOCUMENT_CONTRACTS: [(&str, &[&str]); 5] = [
         ],
     ),
 ];
-const PHASE7_DOCUMENT_CONTRACTS: [(&str, &[&str]); 4] = [
+const PHASE7_DOCUMENT_CONTRACTS: [(&str, &[&str]); 5] = [
     (
         "crates/liquidfun/src/lib.rs",
         &[
@@ -298,6 +296,20 @@ const PHASE7_DOCUMENT_CONTRACTS: [(&str, &[&str]); 4] = [
             "local D2 and same-build D0",
             "D3 review",
             "remain pending",
+        ],
+    ),
+    (
+        "COMPATIBILITY.md",
+        &[
+            "| `implemented` | 34 | 143 |",
+            "| `unit_tested` | 34 | 143 |",
+            "| `differentially_validated` | 33 | 144 |",
+            "| `platform_validated` | 0 | 177 |",
+            "| `documented_difference` | 34 | 143 |",
+            "| `subsystem.rigid-islands-and-solver` | `liquidfun/Box2D/Box2D/Dynamics` | `liquidfun::dynamics` | applicable | yes | yes | yes | yes | yes | no | yes | no |",
+            "| `subsystem.world-operations-and-observation` | `liquidfun/Box2D/Box2D/Dynamics` | `liquidfun::world` | applicable | yes | yes | yes | yes | yes | no | yes | no |",
+            "| `public-api.liquidfun-box2d-box2d-dynamics-b2island-h` | `liquidfun/Box2D/Box2D/Dynamics/b2Island.h` | `liquidfun::dynamics` | applicable | yes | yes | yes | yes | yes | no | yes | no |",
+            "| `public-api.liquidfun-box2d-box2d-dynamics-b2timestep-h` | `liquidfun/Box2D/Box2D/Dynamics/b2TimeStep.h` | `liquidfun::dynamics` | applicable | yes | yes | yes | yes | yes | no | yes | no |",
         ],
     ),
 ];

@@ -349,20 +349,20 @@ fn phase5_compatibility_report_matches_authoritative_ledger() -> TestResult {
 }
 
 #[test]
-fn phase6_contract_rejects_broad_solver_promotion() -> TestResult {
+fn phase7_contract_rejects_missing_solver_promotion() -> TestResult {
     // Arrange
     let fixture = DocsFixture::new()?;
     fixture.replace_document_text(
         "COMPATIBILITY.md",
-        "| `subsystem.rigid-islands-and-solver` | `liquidfun/Box2D/Box2D/Dynamics` | `liquidfun::dynamics` | applicable | yes | yes | no | no | no | no | no | no |",
         "| `subsystem.rigid-islands-and-solver` | `liquidfun/Box2D/Box2D/Dynamics` | `liquidfun::dynamics` | applicable | yes | yes | yes | yes | yes | no | yes | no |",
+        "| `subsystem.rigid-islands-and-solver` | `liquidfun/Box2D/Box2D/Dynamics` | `liquidfun::dynamics` | applicable | yes | yes | no | no | no | no | no | no |",
     )?;
 
     // Act
     let output = fixture.command()?;
 
     // Assert
-    assert_failure(&output, "docs/phase6-contract");
+    assert_failure(&output, "docs/phase7-contract");
     fixture.cleanup()?;
     Ok(())
 }
@@ -561,6 +561,10 @@ fn phase7_contract_rejects_missing_contract_in_each_document() -> TestResult {
         ),
         ("TESTING.md", "## Phase 7 rigid-world comparison policy"),
         ("README.md", "Phase 7 checked rigid-world slice"),
+        (
+            "COMPATIBILITY.md",
+            "`public-api.liquidfun-box2d-box2d-dynamics-b2island-h`",
+        ),
     ] {
         let fixture = DocsFixture::new()?;
         fixture.replace_document_text(document, marker, "removed-phase7-contract-marker")?;

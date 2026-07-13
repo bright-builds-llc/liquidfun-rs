@@ -42,11 +42,11 @@ Each dimension is independent. `Evidenced` requires at least one cited reference
 | --- | ---: | ---: |
 | `investigated` | 177 | 0 |
 | `planned` | 177 | 0 |
-| `implemented` | 30 | 147 |
-| `unit_tested` | 30 | 147 |
-| `differentially_validated` | 29 | 148 |
+| `implemented` | 34 | 143 |
+| `unit_tested` | 34 | 143 |
+| `differentially_validated` | 33 | 144 |
 | `platform_validated` | 0 | 177 |
-| `documented_difference` | 30 | 147 |
+| `documented_difference` | 34 | 143 |
 | `intentionally_unsupported` | 0 | 177 |
 
 ## Subsystem
@@ -66,9 +66,9 @@ Each dimension is independent. `Evidenced` requires at least one cited reference
 | `subsystem.particle-solver-behaviors` | `liquidfun/Box2D/Box2D/Particle` | `liquidfun::particle` | applicable | yes | yes | no | no | no | no | no | no |
 | `subsystem.particle-storage-and-lifecycle` | `liquidfun/Box2D/Box2D/Particle` | `liquidfun::particle` | applicable | yes | yes | no | no | no | no | no | no |
 | `subsystem.rigid-bodies-and-fixtures` | `liquidfun/Box2D/Box2D/Dynamics` | `liquidfun::dynamics` | applicable | yes | yes | yes | yes | yes | no | yes | no |
-| `subsystem.rigid-islands-and-solver` | `liquidfun/Box2D/Box2D/Dynamics` | `liquidfun::dynamics` | applicable | yes | yes | no | no | no | no | no | no |
+| `subsystem.rigid-islands-and-solver` | `liquidfun/Box2D/Box2D/Dynamics` | `liquidfun::dynamics` | applicable | yes | yes | yes | yes | yes | no | yes | no |
 | `subsystem.rope` | `liquidfun/Box2D/Box2D/Rope` | `liquidfun::rope` | applicable | yes | yes | no | no | no | no | no | no |
-| `subsystem.world-operations-and-observation` | `liquidfun/Box2D/Box2D/Dynamics` | `liquidfun::world` | applicable | yes | yes | no | no | no | no | no | no |
+| `subsystem.world-operations-and-observation` | `liquidfun/Box2D/Box2D/Dynamics` | `liquidfun::world` | applicable | yes | yes | yes | yes | yes | no | yes | no |
 
 ## Public api
 
@@ -101,8 +101,8 @@ Each dimension is independent. `Evidenced` requires at least one cited reference
 | `public-api.liquidfun-box2d-box2d-dynamics-b2body-h` | `liquidfun/Box2D/Box2D/Dynamics/b2Body.h` | `liquidfun::dynamics` | applicable | yes | yes | yes | yes | yes | no | yes | no |
 | `public-api.liquidfun-box2d-box2d-dynamics-b2contactmanager-h` | `liquidfun/Box2D/Box2D/Dynamics/b2ContactManager.h` | `liquidfun::dynamics` | applicable | yes | yes | yes | yes | yes | no | yes | no |
 | `public-api.liquidfun-box2d-box2d-dynamics-b2fixture-h` | `liquidfun/Box2D/Box2D/Dynamics/b2Fixture.h` | `liquidfun::dynamics` | applicable | yes | yes | yes | yes | yes | no | yes | no |
-| `public-api.liquidfun-box2d-box2d-dynamics-b2island-h` | `liquidfun/Box2D/Box2D/Dynamics/b2Island.h` | `liquidfun::dynamics` | applicable | yes | yes | no | no | no | no | no | no |
-| `public-api.liquidfun-box2d-box2d-dynamics-b2timestep-h` | `liquidfun/Box2D/Box2D/Dynamics/b2TimeStep.h` | `liquidfun::dynamics` | applicable | yes | yes | no | no | no | no | no | no |
+| `public-api.liquidfun-box2d-box2d-dynamics-b2island-h` | `liquidfun/Box2D/Box2D/Dynamics/b2Island.h` | `liquidfun::dynamics` | applicable | yes | yes | yes | yes | yes | no | yes | no |
+| `public-api.liquidfun-box2d-box2d-dynamics-b2timestep-h` | `liquidfun/Box2D/Box2D/Dynamics/b2TimeStep.h` | `liquidfun::dynamics` | applicable | yes | yes | yes | yes | yes | no | yes | no |
 | `public-api.liquidfun-box2d-box2d-dynamics-b2world-h` | `liquidfun/Box2D/Box2D/Dynamics/b2World.h` | `liquidfun::dynamics` | applicable | yes | yes | yes | yes | yes | no | yes | no |
 | `public-api.liquidfun-box2d-box2d-dynamics-b2worldcallbacks-h` | `liquidfun/Box2D/Box2D/Dynamics/b2WorldCallbacks.h` | `liquidfun::dynamics` | applicable | yes | yes | yes | yes | yes | no | yes | no |
 | `public-api.liquidfun-box2d-box2d-dynamics-contacts-b2chainandcirclecontact-h` | `liquidfun/Box2D/Box2D/Dynamics/Contacts/b2ChainAndCircleContact.h` | `liquidfun::dynamics::contacts` | applicable | yes | yes | no | no | no | no | no | no |
@@ -369,8 +369,8 @@ Every row below names its currently missing evidence dimensions. Absence is not 
 | `public-api.liquidfun-box2d-box2d-dynamics-b2body-h` | platform_validated, intentionally_unsupported |
 | `public-api.liquidfun-box2d-box2d-dynamics-b2contactmanager-h` | platform_validated, intentionally_unsupported |
 | `public-api.liquidfun-box2d-box2d-dynamics-b2fixture-h` | platform_validated, intentionally_unsupported |
-| `public-api.liquidfun-box2d-box2d-dynamics-b2island-h` | implemented, unit_tested, differentially_validated, platform_validated, documented_difference, intentionally_unsupported |
-| `public-api.liquidfun-box2d-box2d-dynamics-b2timestep-h` | implemented, unit_tested, differentially_validated, platform_validated, documented_difference, intentionally_unsupported |
+| `public-api.liquidfun-box2d-box2d-dynamics-b2island-h` | platform_validated, intentionally_unsupported |
+| `public-api.liquidfun-box2d-box2d-dynamics-b2timestep-h` | platform_validated, intentionally_unsupported |
 | `public-api.liquidfun-box2d-box2d-dynamics-b2world-h` | platform_validated, intentionally_unsupported |
 | `public-api.liquidfun-box2d-box2d-dynamics-b2worldcallbacks-h` | platform_validated, intentionally_unsupported |
 | `public-api.liquidfun-box2d-box2d-dynamics-contacts-b2chainandcirclecontact-h` | implemented, unit_tested, differentially_validated, platform_validated, documented_difference, intentionally_unsupported |
@@ -422,9 +422,9 @@ Every row below names its currently missing evidence dimensions. Absence is not 
 | `subsystem.particle-solver-behaviors` | implemented, unit_tested, differentially_validated, platform_validated, documented_difference, intentionally_unsupported |
 | `subsystem.particle-storage-and-lifecycle` | implemented, unit_tested, differentially_validated, platform_validated, documented_difference, intentionally_unsupported |
 | `subsystem.rigid-bodies-and-fixtures` | platform_validated, intentionally_unsupported |
-| `subsystem.rigid-islands-and-solver` | implemented, unit_tested, differentially_validated, platform_validated, documented_difference, intentionally_unsupported |
+| `subsystem.rigid-islands-and-solver` | platform_validated, intentionally_unsupported |
 | `subsystem.rope` | implemented, unit_tested, differentially_validated, platform_validated, documented_difference, intentionally_unsupported |
-| `subsystem.world-operations-and-observation` | implemented, unit_tested, differentially_validated, platform_validated, documented_difference, intentionally_unsupported |
+| `subsystem.world-operations-and-observation` | platform_validated, intentionally_unsupported |
 | `test.liquidfun-box2d-unittests-blockallocator-blockallocatortests-cpp` | implemented, unit_tested, differentially_validated, platform_validated, documented_difference, intentionally_unsupported |
 | `test.liquidfun-box2d-unittests-bodycontacts-bodycontactstests-cpp` | implemented, unit_tested, differentially_validated, platform_validated, documented_difference, intentionally_unsupported |
 | `test.liquidfun-box2d-unittests-callback-callbacktests-cpp` | implemented, unit_tested, differentially_validated, platform_validated, documented_difference, intentionally_unsupported |
