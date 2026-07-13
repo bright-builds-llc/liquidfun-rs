@@ -25,6 +25,16 @@ jobs:
         with:
           persist-credentials: false
           submodules: false
+      - name: Install pinned Python for Markdown formatting
+        # actions/setup-python v6
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.13"
+      - name: Check Markdown formatting
+        run: |
+          python -m venv "${RUNNER_TEMP}/mdformat-venv"
+          "${RUNNER_TEMP}/mdformat-venv/bin/python" -m pip install --disable-pip-version-check mdformat==1.0.0
+          "${RUNNER_TEMP}/mdformat-venv/bin/mdformat" --check .
       - name: Install pinned Rust toolchains
         run: |
           rustup toolchain install 1.97.0 --profile minimal --component clippy --component rustfmt
