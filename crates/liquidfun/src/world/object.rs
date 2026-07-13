@@ -1,6 +1,7 @@
 use std::error::Error;
 use std::fmt;
 
+use super::joint::JointRecord;
 use crate::arena::Arena;
 use crate::identity::{HandleIdentity, WorldKey};
 use crate::{
@@ -57,12 +58,6 @@ pub(super) struct Fixture {
     pub(super) proxies: FixtureProxies,
     pub(super) contacts: Vec<u64>,
     pub(super) pending_refilter: bool,
-}
-
-#[derive(Debug)]
-struct Joint {
-    diagnostic_id: u64,
-    bodies: [BodyId; 2],
 }
 
 #[derive(Debug)]
@@ -350,7 +345,7 @@ pub struct World {
     pub(super) bodies: Arena<Body, BodyId>,
     body_order: Vec<BodyId>,
     pub(super) fixtures: Arena<Fixture, FixtureId>,
-    joints: Arena<Joint, JointId>,
+    pub(super) joints: Arena<JointRecord, JointId>,
     particle_systems: Arena<ParticleSystem, ParticleSystemId>,
     particle_groups: Arena<ParticleGroup, ParticleGroupId>,
     particles: Arena<Particle, ParticleId>,
@@ -387,7 +382,7 @@ impl World {
         })
     }
 
-    fn allocate_diagnostic_id(&mut self) -> Result<u64, ArenaInsertError> {
+    pub(super) fn allocate_diagnostic_id(&mut self) -> Result<u64, ArenaInsertError> {
         let Some(id) = self.next_diagnostic_id else {
             return Err(ArenaInsertError::DiagnosticIdExhausted);
         };
@@ -1166,35 +1161,6 @@ impl World {
         Ok(())
     }
 
-    /// Creates a joint between two live bodies.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if either body is invalid or joint storage is exhausted.
-    pub fn create_joint(
-        &mut self,
-        first: BodyId,
-        second: BodyId,
-    ) -> Result<JointId, CreateObjectError> {
-        self.ensure_not_poisoned_for_handle()?;
-        self.bodies.get(first)?;
-        self.bodies.get(second)?;
-        let diagnostic_id = self.allocate_diagnostic_id()?;
-        let joint = self.joints.insert(Joint {
-            diagnostic_id,
-            bodies: [first, second],
-        })?;
-        self.body_mut_after_validation(first)
-            .joints
-            .insert(0, joint);
-        if second != first {
-            self.body_mut_after_validation(second)
-                .joints
-                .insert(0, joint);
-        }
-        Ok(joint)
-    }
-
     /// Creates a particle system.
     ///
     /// # Errors
@@ -1356,17 +1322,6 @@ impl World {
         let body = self.fixtures.get(fixture)?.body;
         let candidate = self.prepare_body_mass_state(body, None, Some(fixture))?;
         Ok(self.remove_fixture(fixture, DestructionCause::Explicit, Some(candidate)))
-    }
-
-    /// Destroys one joint after validating it before mutation.
-    ///
-    /// # Errors
-    ///
-    /// Returns a handle error without mutation when `joint` is foreign, stale, or destroyed.
-    pub fn destroy_joint(&mut self, joint: JointId) -> Result<DestructionRecord, HandleError> {
-        self.ensure_not_poisoned_for_handle()?;
-        self.joints.get(joint)?;
-        Ok(self.remove_joint(joint, DestructionCause::Explicit))
     }
 
     /// Destroys a particle system and all its groups and particles.
@@ -1563,7 +1518,11 @@ impl World {
         }
     }
 
-    fn remove_joint(&mut self, joint: JointId, cause: DestructionCause) -> DestructionRecord {
+    pub(super) fn remove_joint(
+        &mut self,
+        joint: JointId,
+        cause: DestructionCause,
+    ) -> DestructionRecord {
         let removed = self
             .joints
             .remove(joint)
@@ -2061,7 +2020,7 @@ impl World {
         }
     }
 
-    fn body_mut_after_validation(&mut self, body: BodyId) -> &mut Body {
+    pub(super) fn body_mut_after_validation(&mut self, body: BodyId) -> &mut Body {
         self.bodies
             .get_mut(body)
             .expect("validated body remains live during one operation")
@@ -2137,10 +2096,18 @@ mod tests {
             .create_fixture(root, &test_fixture_definition())
             .expect("fixture should fit");
         let first_joint = world
-            .create_joint(root, survivor)
+            .create_joint(
+                crate::RevoluteJointDef::new(root, survivor)
+                    .expect("distinct bodies form a valid joint")
+                    .into(),
+            )
             .expect("joint should fit");
         let second_joint = world
-            .create_joint(root, survivor)
+            .create_joint(
+                crate::RevoluteJointDef::new(root, survivor)
+                    .expect("distinct bodies form a valid joint")
+                    .into(),
+            )
             .expect("joint should fit");
 
         // Act
@@ -2337,7 +2304,13 @@ mod tests {
         let fixture = world
             .create_fixture(first, &test_fixture_definition())
             .expect("fixture should fit");
-        let joint = world.create_joint(first, second).expect("joint should fit");
+        let joint = world
+            .create_joint(
+                crate::RevoluteJointDef::new(first, second)
+                    .expect("distinct bodies form a valid joint")
+                    .into(),
+            )
+            .expect("joint should fit");
         let system = world
             .create_particle_system()
             .expect("particle system should fit");

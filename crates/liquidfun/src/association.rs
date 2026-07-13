@@ -178,7 +178,11 @@ mod tests {
             .create_fixture(destroyed_body, &fixture_definition())
             .expect("fixture should fit");
         let joint = world
-            .create_joint(destroyed_body, surviving_body)
+            .create_joint(
+                crate::RevoluteJointDef::new(destroyed_body, surviving_body)
+                    .expect("distinct bodies form a valid joint")
+                    .into(),
+            )
             .expect("joint should fit");
         let mut bodies = AssociationMap::new();
         let mut fixtures = AssociationMap::new();

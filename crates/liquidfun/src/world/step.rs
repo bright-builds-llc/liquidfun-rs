@@ -60,6 +60,11 @@ impl StepState {
     pub(super) fn set_locked_for_test(&self, locked: bool) {
         self.inner.locked.store(locked, Ordering::Relaxed);
     }
+
+    #[cfg(test)]
+    pub(super) fn set_poisoned_for_test(&self, poisoned: bool) {
+        self.inner.poisoned.store(poisoned, Ordering::Relaxed);
+    }
 }
 
 /// Reviewed finite limits for one automatic step.

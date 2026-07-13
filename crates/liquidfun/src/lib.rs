@@ -158,6 +158,7 @@ mod association;
 pub mod collision;
 mod error;
 mod identity;
+pub mod joint;
 pub mod math;
 mod particle;
 #[cfg(feature = "differential-internals")]
@@ -170,6 +171,11 @@ pub use error::{ArenaInsertError, HandleError, WorldKeyError};
 pub use identity::{
     BodyId, FixtureId, JointId, ObjectKind, ParticleGroupId, ParticleId, ParticleSystemId,
 };
+pub use joint::{
+    DistanceJointDef, FrictionJointDef, GearJointDef, JointDef, JointDefError, JointKind,
+    JointLimitState, JointSnapshot, MotorJointDef, MouseJointDef, PrismaticJointDef,
+    PulleyJointDef, RevoluteJointDef, RopeJointDef, WeldJointDef, WheelJointDef,
+};
 pub use world::{
     AggregateMassError, BodyActivationError, BodyControlError, BodyDef, BodyDefError, BodyMassData,
     BodyMassDataError, BodyMassMutationError, BodyMassResetError, BodySnapshot, BodyTransformError,
@@ -177,10 +183,10 @@ pub use world::{
     ContactEvent, ContactPointSnapshot, ContactSolve, ContactTransition, ContactTransitionKind,
     ContactView, ContinuousProgress, CreateObjectError, DestroyedId, DestructionCause,
     DestructionRecord, FixtureBoundsError, FixtureDef, FixtureDefError, FixtureDestructionError,
-    FixtureMutationError, FixtureQueryOccurrence, FixtureSnapshot, ManagedContactSnapshot,
-    ObjectSnapshot, OriginShiftError, PreSolveDirective, QueryDirective, RayCastDirective,
-    RayCastFraction, RayCastFractionError, StepCompletion, StepConfiguration,
-    StepConfigurationError, StepError, StepHook, StepLifecycleEvent, StepLimits, StepPhase,
-    StepReport, WakePolicy, World, WorldCommand, WorldConfigurationError, WorldFixtureSnapshot,
-    WorldRayCastError, WorldRayHit,
+    FixtureMutationError, FixtureQueryOccurrence, FixtureSnapshot, JointCreationError,
+    JointMutationError, JointQueryError, ManagedContactSnapshot, ObjectSnapshot, OriginShiftError,
+    PreSolveDirective, QueryDirective, RayCastDirective, RayCastFraction, RayCastFractionError,
+    StepCompletion, StepConfiguration, StepConfigurationError, StepError, StepHook,
+    StepLifecycleEvent, StepLimits, StepPhase, StepReport, WakePolicy, World, WorldCommand,
+    WorldConfigurationError, WorldFixtureSnapshot, WorldRayCastError, WorldRayHit,
 };

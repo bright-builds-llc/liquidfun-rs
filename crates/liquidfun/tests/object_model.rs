@@ -101,10 +101,18 @@ fn body_destruction_returns_owned_ordered_cascade_evidence() {
         .create_fixture(root, &fixture_definition())
         .expect("fixture should fit");
     let first_joint = world
-        .create_joint(root, survivor)
+        .create_joint(
+            liquidfun::RevoluteJointDef::new(root, survivor)
+                .expect("distinct bodies form a valid joint")
+                .into(),
+        )
         .expect("joint should fit");
     let second_joint = world
-        .create_joint(root, survivor)
+        .create_joint(
+            liquidfun::RevoluteJointDef::new(root, survivor)
+                .expect("distinct bodies form a valid joint")
+                .into(),
+        )
         .expect("joint should fit");
 
     // Act
@@ -156,10 +164,18 @@ fn typed_association_cleanup_follows_destruction_records() {
         .create_fixture(body, &fixture_definition())
         .expect("fixture should fit");
     let first_joint = world
-        .create_joint(body, survivor)
+        .create_joint(
+            liquidfun::RevoluteJointDef::new(body, survivor)
+                .expect("distinct bodies form a valid joint")
+                .into(),
+        )
         .expect("joint should fit");
     let second_joint = world
-        .create_joint(body, survivor)
+        .create_joint(
+            liquidfun::RevoluteJointDef::new(body, survivor)
+                .expect("distinct bodies form a valid joint")
+                .into(),
+        )
         .expect("joint should fit");
     let mut body_names = AssociationMap::new();
     let mut fixture_names = AssociationMap::new();

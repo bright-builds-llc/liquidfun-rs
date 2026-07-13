@@ -8,6 +8,7 @@ mod contact_solver;
 mod continuous;
 mod fixture;
 mod island;
+mod joint;
 pub(crate) mod object;
 mod origin;
 mod proxy;
@@ -30,6 +31,7 @@ pub use fixture::{
     FixtureBoundsError, FixtureDef, FixtureDefError, FixtureDestructionError, FixtureMutationError,
     FixtureSnapshot, WorldFixtureSnapshot,
 };
+pub use joint::{JointCreationError, JointMutationError, JointQueryError};
 pub use object::{
     CreateObjectError, DestroyedId, DestructionCause, DestructionRecord, ObjectSnapshot, World,
 };
