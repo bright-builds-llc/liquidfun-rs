@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 07-09-PLAN.md
-last_updated: "2026-07-13T07:10:12.303Z"
+stopped_at: Completed 07-11-PLAN.md
+last_updated: "2026-07-13T08:19:07.354Z"
 last_activity: 2026-07-13
 progress:
   total_phases: 12
   completed_phases: 6
   total_plans: 74
-  completed_plans: 71
-  percent: 96
+  completed_plans: 72
+  percent: 97
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 ## Current Position
 
 Phase: 7 (Rigid Solver, World Operations, and CCD) — EXECUTING
-Plan: 11 of 13
+Plan: 12 of 13
 Status: Ready to execute
 Last activity: 2026-07-13
 
@@ -97,6 +97,7 @@ Progress: [██████████] 100%
 | Phase 7 P07 | 20 min | 2 tasks | 10 files |
 | Phase 07 P08 | 32 min | 2 tasks | 9 files |
 | Phase 07 P09 | 41 min | 2 tasks | 22 files |
+| Phase 07 P11 | 1h 4m | 2 tasks | 31 files |
 
 ## Accumulated Context
 
@@ -209,6 +210,10 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 07]: Back up complete world event state before each accepted TOI solve and restore it on every failure. — Whole-event rollback prevents body, contact, cache, sweep, or proxy lanes from exposing a partial continuous commit.
 - [Phase 07]: Resume continuous work only for an exact matching checked step configuration and skip the completed discrete stage. — Tokenless resume must not duplicate force integration, callbacks, pair discovery, or already accepted TOI work.
 - [Phase 07]: Expose aggregate budget exhaustion only as discrete completion plus committed continuous-event count. — Semantic partial progress supports deterministic resume without publishing candidate indices, caches, sweeps, counters, or continuation tokens.
+- [Phase 07]: Keep native Rust and pinned C++ Phase 7 dispatch source-ordered behind one validated semantic action/result contract. — Adapter symmetry stays executable without introducing source-path coupling, foreign pointers, or runtime C++ dependencies.
+- [Phase 07]: Canonicalize query occurrences as multisets and equal-minimum ray identities as sets only in the evidence layer. — Production traversal remains source-faithful while the closed Phase 7 policy removes only explicitly unspecified order.
+- [Phase 07]: Bind rigid failure signatures to action, stage, entity, exact values and bits, policy identity, and completion context. — Replay and minimization must preserve the actual first-divergence classification rather than only its semantic path.
+- [Phase 07]: Protect the divergent action and its complete same-timeline setup prefix during reduction. — Callback directives, configured budget, and exact float payloads cannot be removed or changed while claiming the same failure.
 
 ### Pending Todos
 
@@ -216,6 +221,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-13T07:10:12.301Z
-Stopped at: Completed 07-09-PLAN.md
+Last session: 2026-07-13T08:18:50.611Z
+Stopped at: Completed 07-11-PLAN.md
 Resume file: None
