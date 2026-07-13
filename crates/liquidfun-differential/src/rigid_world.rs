@@ -211,17 +211,17 @@ impl TimelineExecutor {
         }
         let fixtures = contact.fixtures();
         let children = contact.child_indices();
-        let fixture_a_id = self.semantic_fixture(fixtures[0])?;
-        let fixture_b_id = self.semantic_fixture(fixtures[1])?;
+        let first_fixture_id = self.semantic_fixture(fixtures[0])?;
+        let second_fixture_id = self.semantic_fixture(fixtures[1])?;
         let child_a = checked_u32(children[0].get(), "contact-child")?;
         let child_b = checked_u32(children[1].get(), "contact-child")?;
         let prior_occurrences = self
             .contact_identities
             .iter()
             .filter(|(_, identity)| {
-                identity.fixture_a_id() == &fixture_a_id
+                identity.fixture_a_id() == &first_fixture_id
                     && identity.child_a() == child_a
-                    && identity.fixture_b_id() == &fixture_b_id
+                    && identity.fixture_b_id() == &second_fixture_id
                     && identity.child_b() == child_b
             })
             .count();
@@ -232,8 +232,13 @@ impl TimelineExecutor {
                 checkpoint_id: "contact-occurrence".into(),
                 message: "contact occurrence exceeded the protocol representation".into(),
             })?;
-        let identity =
-            RigidContactIdentity::new(fixture_a_id, child_a, fixture_b_id, child_b, occurrence)?;
+        let identity = RigidContactIdentity::new(
+            first_fixture_id,
+            child_a,
+            second_fixture_id,
+            child_b,
+            occurrence,
+        )?;
         self.contact_identities
             .push((manager_occurrence, identity.clone()));
         Ok(identity)
