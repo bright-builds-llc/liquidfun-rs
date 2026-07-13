@@ -28,7 +28,9 @@ use super::island::{
 };
 use super::proxy::{FixtureProxies, FixtureProxy, PreparedFixtureBounds, PreparedSynchronization};
 use super::step::StepState;
-use crate::collision::{BroadPhase, FilterData, MassData};
+use crate::collision::{
+    BroadPhase, ChildIndex, CollisionError, FilterData, MassData, RayCastHit, RayCastInput,
+};
 use crate::math::Vec2;
 
 #[cfg(test)]
@@ -868,6 +870,26 @@ impl World {
                 record.proxies.len(),
             )
         })
+    }
+
+    pub(super) fn ray_cast_fixture_child(
+        &self,
+        fixture: FixtureId,
+        child_index: ChildIndex,
+        input: RayCastInput,
+    ) -> Result<Option<RayCastHit>, CollisionError> {
+        let fixture_record = self
+            .fixtures
+            .get(fixture)
+            .expect("broad-phase fixture identities must remain live");
+        let body = self
+            .bodies
+            .get(fixture_record.body)
+            .expect("live fixture owners must remain live");
+        fixture_record
+            .definition
+            .shape()
+            .ray_cast(input, body.state.transform(), child_index)
     }
 
     /// Returns the number of shape children currently stored for broad-phase discovery.

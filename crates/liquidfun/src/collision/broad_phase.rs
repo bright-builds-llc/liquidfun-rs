@@ -1,9 +1,9 @@
 //! Broad-phase move buffering, ordered pair generation, and pure filtering.
 
-use crate::collision::Aabb;
+use crate::collision::{Aabb, RayCastInput};
 use crate::math::Vec2;
 
-use super::tree::{DynamicTree, ProxyId, QueryControl, TreeError};
+use super::tree::{DynamicTree, ProxyId, QueryControl, RayCastControl, TreeError};
 
 /// Pure collision-filter data matching the selected upstream defaults and rule.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -213,6 +213,19 @@ impl<T> BroadPhase<T> {
     {
         self.tree
             .query(aabb, |_proxy, entry| visitor(&entry.payload));
+    }
+
+    /// Visits payloads whose broad-phase bounds intersect a checked ray.
+    ///
+    /// Private tree identities remain inside the broad phase. Each visitor
+    /// receives the tree's narrowed sub-input for exact shape testing.
+    pub(crate) fn ray_cast<F>(&self, input: RayCastInput, mut visitor: F) -> Result<(), TreeError>
+    where
+        F: FnMut(&T, RayCastInput) -> RayCastControl,
+    {
+        self.tree.ray_cast(input, |_proxy, entry, sub_input| {
+            visitor(&entry.payload, sub_input)
+        })
     }
 
     /// Reports all buffered potential pairs in private node-coordinate order.
