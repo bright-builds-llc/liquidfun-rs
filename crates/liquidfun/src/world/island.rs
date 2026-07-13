@@ -1,5 +1,6 @@
 use crate::arena::Arena;
 use crate::math::Vec2;
+use crate::math::settings::{ANGULAR_SLEEP_TOLERANCE, LINEAR_SLEEP_TOLERANCE, TIME_TO_SLEEP};
 use crate::{BodyId, FixtureId, JointId};
 
 use super::body::{BodyState, BodyType};
@@ -273,20 +274,7 @@ pub(super) fn solve_islands(
         }
     })?;
     for island in islands {
-        if island.body_ids.len() != island.body_states.len()
-            || island.body_ids.len() != island.positions.len()
-            || island.body_ids.len() != island.velocities.len()
-            || island
-                .positions
-                .iter()
-                .any(|position| !position.position.is_valid() || !position.angle.is_finite())
-            || island
-                .velocities
-                .iter()
-                .any(|velocity| !velocity.linear.is_valid() || !velocity.angular.is_finite())
-        {
-            return Err(ContactSolveFailure::UnsupportedTopology);
-        }
+        validate_island_lanes(island)?;
         let mut inputs = Vec::new();
         inputs
             .try_reserve_exact(island.contact_indices.len())
@@ -351,6 +339,11 @@ pub(super) fn solve_islands(
                 )
                 .map_err(|_error| ContactSolveFailure::NonFinite)?;
         }
+        evaluate_sleep_candidates(
+            &mut body_states,
+            parameters.configuration.time_step(),
+            solved.position_solved,
+        )?;
         solutions.push(IslandSolution {
             body_ids: island.body_ids.clone(),
             body_states,
@@ -365,6 +358,63 @@ pub(super) fn solve_islands(
         }
     }
     Ok(solutions)
+}
+
+fn validate_island_lanes(island: &Island) -> Result<(), ContactSolveFailure> {
+    let body_count = island.body_ids.len();
+    if body_count != island.body_states.len()
+        || body_count != island.positions.len()
+        || body_count != island.velocities.len()
+        || island
+            .positions
+            .iter()
+            .any(|position| !position.position.is_valid() || !position.angle.is_finite())
+        || island
+            .velocities
+            .iter()
+            .any(|velocity| !velocity.linear.is_valid() || !velocity.angular.is_finite())
+    {
+        return Err(ContactSolveFailure::UnsupportedTopology);
+    }
+    Ok(())
+}
+
+fn evaluate_sleep_candidates(
+    body_states: &mut [BodyState],
+    time_step: f32,
+    position_solved: bool,
+) -> Result<(), ContactSolveFailure> {
+    let linear_tolerance_squared = LINEAR_SLEEP_TOLERANCE * LINEAR_SLEEP_TOLERANCE;
+    let angular_tolerance_squared = ANGULAR_SLEEP_TOLERANCE * ANGULAR_SLEEP_TOLERANCE;
+    let mut minimum_sleep_time = f32::MAX;
+
+    for state in body_states.iter_mut() {
+        let snapshot = state.snapshot();
+        if snapshot.body_type() == BodyType::Static {
+            continue;
+        }
+        if !snapshot.is_sleeping_allowed()
+            || state.solver_angular() * state.solver_angular() > angular_tolerance_squared
+            || state.solver_linear().length_squared() > linear_tolerance_squared
+        {
+            *state = state.candidate_set_sleep_time(0.0);
+            minimum_sleep_time = 0.0;
+            continue;
+        }
+        let sleep_time = state.sleep_time() + time_step;
+        if !sleep_time.is_finite() {
+            return Err(ContactSolveFailure::NonFinite);
+        }
+        *state = state.candidate_set_sleep_time(sleep_time);
+        minimum_sleep_time = minimum_sleep_time.min(sleep_time);
+    }
+
+    if minimum_sleep_time >= TIME_TO_SLEEP && position_solved {
+        for state in body_states.iter_mut() {
+            *state = state.candidate_set_awake(false);
+        }
+    }
+    Ok(())
 }
 
 fn preflight_graph(

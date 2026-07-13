@@ -670,6 +670,15 @@ impl BodyState {
         self.torque
     }
 
+    pub(super) const fn sleep_time(self) -> f32 {
+        self.sleep_time
+    }
+
+    pub(super) fn candidate_set_sleep_time(mut self, sleep_time: f32) -> Self {
+        self.sleep_time = sleep_time;
+        self
+    }
+
     #[cfg(test)]
     pub(super) fn set_solver_motion(&mut self, linear_velocity: Vec2, angular_velocity: f32) {
         self.linear_velocity = linear_velocity;

@@ -163,6 +163,7 @@ pub(super) struct ContactImpulseSolution {
 pub(super) struct IslandConstraintSolution {
     pub(super) motions: Vec<SolvedBodyMotion>,
     pub(super) contact_impulses: Vec<ContactImpulseSolution>,
+    pub(super) position_solved: bool,
 }
 
 pub(super) fn solve_island_constraints(
@@ -239,13 +240,14 @@ pub(super) fn solve_island_constraints(
     for body in &mut bodies {
         integrate_position(body, configuration.time_step());
     }
+    let mut position_solved = false;
     for _iteration in 0..configuration.position_iterations() {
-        let mut contacts_solved = true;
+        position_solved = true;
         for constraint in &constraints {
-            contacts_solved =
-                solve_position_constraints(constraint, &mut bodies)? && contacts_solved;
+            position_solved =
+                solve_position_constraints(constraint, &mut bodies)? && position_solved;
         }
-        if contacts_solved {
+        if position_solved {
             break;
         }
     }
@@ -270,6 +272,7 @@ pub(super) fn solve_island_constraints(
             })
             .collect(),
         contact_impulses,
+        position_solved,
     })
 }
 
