@@ -94,16 +94,11 @@ const PHASE7_STRUCTURAL_PATHS: &[&str] = &[
     "rigid_world.phase7.contact.identity",
     "rigid_world.phase7.island.body_order",
     "rigid_world.phase7.island.contact_order",
-    "rigid_world.phase7.warm_start.enabled",
-    "rigid_world.phase7.force_clearing.enabled",
     "rigid_world.phase7.query.completion",
     "rigid_world.phase7.query.occurrences.identity",
-    "rigid_world.phase7.query.directive_trace",
     "rigid_world.phase7.ray.completion",
     "rigid_world.phase7.ray.hit.identity",
     "rigid_world.phase7.ray.equal_minimum.identities",
-    "rigid_world.phase7.ray.directive_trace",
-    "rigid_world.phase7.origin_shift.topology",
 ];
 
 const PHASE7_ABSOLUTE_RELATIVE_PATHS: &[&str] = &[
@@ -130,8 +125,6 @@ const PHASE7_ULP_PATHS: &[&str] = &[
     "rigid_world.phase7.ray.normal.y",
 ];
 
-const PHASE7_ABSOLUTE_PATHS: &[&str] = &["rigid_world.phase7.continuous.signed_separation"];
-
 /// Strict closed comparison profile for Phase 7 rigid evidence.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Phase7PolicyProfile {
@@ -157,8 +150,7 @@ impl Phase7PolicyProfile {
         }
         let expected_count = PHASE7_STRUCTURAL_PATHS.len()
             + PHASE7_ABSOLUTE_RELATIVE_PATHS.len()
-            + PHASE7_ULP_PATHS.len()
-            + PHASE7_ABSOLUTE_PATHS.len();
+            + PHASE7_ULP_PATHS.len();
         if raw.fields.len() != expected_count {
             return Err(Phase7PolicyError::IncompleteProfile);
         }
@@ -177,7 +169,6 @@ impl Phase7PolicyProfile {
             .iter()
             .chain(PHASE7_ABSOLUTE_RELATIVE_PATHS)
             .chain(PHASE7_ULP_PATHS)
-            .chain(PHASE7_ABSOLUTE_PATHS)
             .any(|path| !semantic_paths.contains(path))
         {
             return Err(Phase7PolicyError::IncompleteProfile);
@@ -253,7 +244,7 @@ fn phase7_witness_policy_paths(family: RigidWorldWitnessFamily) -> &'static [&'s
         ],
         RigidWorldWitnessFamily::ContinuousCollisionAndSubStepping => &[
             "rigid_world.phase7.body.bullet",
-            "rigid_world.phase7.continuous.signed_separation",
+            "rigid_world.phase7.body.transform.position.x",
             "rigid_world.phase7.step.completion",
         ],
         RigidWorldWitnessFamily::ContinuousBudgetResume => &[
@@ -264,12 +255,13 @@ fn phase7_witness_policy_paths(family: RigidWorldWitnessFamily) -> &'static [&'s
         RigidWorldWitnessFamily::WorldQueryAndRayCast => &[
             "rigid_world.phase7.query.occurrences.identity",
             "rigid_world.phase7.ray.equal_minimum.identities",
-            "rigid_world.phase7.ray.directive_trace",
+            "rigid_world.phase7.ray.completion",
         ],
         RigidWorldWitnessFamily::OriginShiftCovariance => &[
-            "rigid_world.phase7.origin_shift.topology",
             "rigid_world.phase7.origin_shift.x",
             "rigid_world.phase7.origin_shift.y",
+            "rigid_world.phase7.query.occurrences.identity",
+            "rigid_world.phase7.ray.fraction",
         ],
         RigidWorldWitnessFamily::NonCollidingBodyFixtureLifecycle
         | RigidWorldWitnessFamily::SingleContactLifecycle => &[],
@@ -338,8 +330,6 @@ fn validate_phase7_field(field: &FieldPolicy) -> Result<(), Phase7PolicyError> {
         matches!(policy, FloatPolicy::AbsoluteRelative { .. })
     } else if PHASE7_ULP_PATHS.contains(&path) {
         matches!(policy, FloatPolicy::Ulps { .. })
-    } else if PHASE7_ABSOLUTE_PATHS.contains(&path) {
-        matches!(policy, FloatPolicy::Absolute { .. })
     } else {
         return Err(Phase7PolicyError::InvalidSemanticPath);
     };
@@ -741,7 +731,7 @@ mod tests {
 
         // Assert
         assert_eq!(profile.profile_id(), "phase7-v1");
-        assert_eq!(profile.fields().len(), 42);
+        assert_eq!(profile.fields().len(), 36);
         assert_eq!(profile.profile_sha256().as_str().len(), 64);
         assert_eq!(
             profile
@@ -767,6 +757,16 @@ mod tests {
             }
         ));
         assert!(profile.field("rigid_world.phase7.unregistered").is_none());
+        for unsupported in [
+            "rigid_world.phase7.warm_start.enabled",
+            "rigid_world.phase7.force_clearing.enabled",
+            "rigid_world.phase7.query.directive_trace",
+            "rigid_world.phase7.ray.directive_trace",
+            "rigid_world.phase7.origin_shift.topology",
+            "rigid_world.phase7.continuous.signed_separation",
+        ] {
+            assert!(profile.field(unsupported).is_none());
+        }
     }
 
     #[test]

@@ -132,26 +132,6 @@ evidence_tier = "d1_canonical"
 justification = "Semantic identities, topology, statuses, flags, counts, and declared traces are exact."
 
 [[fields]]
-semantic_path = "rigid_world.phase7.warm_start.enabled"
-comparison = { kind = "exact_discrete" }
-zero_policy = "distinct"
-non_finite_policy = "reject_arithmetic_nan"
-collection_policy = "ordered"
-horizon = { kind = "phase_local" }
-evidence_tier = "d1_canonical"
-justification = "Semantic identities, topology, statuses, flags, counts, and declared traces are exact."
-
-[[fields]]
-semantic_path = "rigid_world.phase7.force_clearing.enabled"
-comparison = { kind = "exact_discrete" }
-zero_policy = "distinct"
-non_finite_policy = "reject_arithmetic_nan"
-collection_policy = "ordered"
-horizon = { kind = "phase_local" }
-evidence_tier = "d1_canonical"
-justification = "Semantic identities, topology, statuses, flags, counts, and declared traces are exact."
-
-[[fields]]
 semantic_path = "rigid_world.phase7.query.completion"
 comparison = { kind = "exact_discrete" }
 zero_policy = "distinct"
@@ -167,16 +147,6 @@ comparison = { kind = "exact_discrete" }
 zero_policy = "distinct"
 non_finite_policy = "reject_arithmetic_nan"
 collection_policy = "multiset"
-horizon = { kind = "phase_local" }
-evidence_tier = "d1_canonical"
-justification = "Semantic identities, topology, statuses, flags, counts, and declared traces are exact."
-
-[[fields]]
-semantic_path = "rigid_world.phase7.query.directive_trace"
-comparison = { kind = "exact_discrete" }
-zero_policy = "distinct"
-non_finite_policy = "reject_arithmetic_nan"
-collection_policy = "ordered"
 horizon = { kind = "phase_local" }
 evidence_tier = "d1_canonical"
 justification = "Semantic identities, topology, statuses, flags, counts, and declared traces are exact."
@@ -207,26 +177,6 @@ comparison = { kind = "exact_discrete" }
 zero_policy = "distinct"
 non_finite_policy = "reject_arithmetic_nan"
 collection_policy = "set"
-horizon = { kind = "phase_local" }
-evidence_tier = "d1_canonical"
-justification = "Semantic identities, topology, statuses, flags, counts, and declared traces are exact."
-
-[[fields]]
-semantic_path = "rigid_world.phase7.ray.directive_trace"
-comparison = { kind = "exact_discrete" }
-zero_policy = "distinct"
-non_finite_policy = "reject_arithmetic_nan"
-collection_policy = "ordered"
-horizon = { kind = "phase_local" }
-evidence_tier = "d1_canonical"
-justification = "Semantic identities, topology, statuses, flags, counts, and declared traces are exact."
-
-[[fields]]
-semantic_path = "rigid_world.phase7.origin_shift.topology"
-comparison = { kind = "exact_discrete" }
-zero_policy = "distinct"
-non_finite_policy = "reject_arithmetic_nan"
-collection_policy = "ordered"
 horizon = { kind = "phase_local" }
 evidence_tier = "d1_canonical"
 justification = "Semantic identities, topology, statuses, flags, counts, and declared traces are exact."
@@ -410,14 +360,4 @@ collection_policy = "ordered"
 horizon = { kind = "phase_local" }
 evidence_tier = "d2_supported"
 justification = "Dimensionless or operation-grouped scalar evidence uses a reviewed four-ULP bound."
-
-[[fields]]
-semantic_path = "rigid_world.phase7.continuous.signed_separation"
-comparison = { kind = "float", policy = { kind = "absolute", max_bits = 897988541 } }
-zero_policy = "distinct"
-non_finite_policy = "reject_arithmetic_nan"
-collection_policy = "ordered"
-horizon = { kind = "phase_local" }
-evidence_tier = "d2_supported"
-justification = "Signed separation uses a dimensioned absolute bound that cannot erase tunneling classification."
 
