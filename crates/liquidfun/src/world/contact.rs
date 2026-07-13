@@ -1,6 +1,71 @@
 use crate::collision::{ChildIndex, ContactFeatureId, Manifold, Shape};
 use crate::math::max;
+use crate::math::settings::MAX_SUB_STEPS;
 use crate::{BodyId, FixtureId};
+
+#[allow(dead_code)] // The scanner consumes the checked terminal count in Task 07-08-02.
+const MAX_STORED_TOI_COUNT: usize = MAX_SUB_STEPS + 1;
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub(super) struct ToiAlpha(f32);
+
+#[allow(dead_code)] // The scanner creates and reads cached fractions in Task 07-08-02.
+impl ToiAlpha {
+    pub(super) fn new(alpha: f32) -> Option<Self> {
+        if alpha.is_finite() && (0.0..=1.0).contains(&alpha) {
+            return Some(Self(alpha));
+        }
+        None
+    }
+
+    pub(super) const fn get(self) -> f32 {
+        self.0
+    }
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq)]
+struct ContactToiState {
+    maybe_alpha: Option<ToiAlpha>,
+    count: usize,
+}
+
+impl ContactToiState {
+    fn reset(&mut self) {
+        *self = Self::default();
+    }
+
+    fn invalidate(&mut self) {
+        self.maybe_alpha = None;
+    }
+
+    #[allow(dead_code)] // The scanner consumes cached fractions in Task 07-08-02.
+    fn cache(&mut self, alpha: ToiAlpha) {
+        self.maybe_alpha = Some(alpha);
+    }
+
+    #[allow(dead_code)] // The scanner increments this bound in Task 07-08-02.
+    fn increment_count(&mut self) -> Result<(), ToiCountLimitReached> {
+        if self.count >= MAX_STORED_TOI_COUNT {
+            return Err(ToiCountLimitReached);
+        }
+        self.count = self.count.checked_add(1).ok_or(ToiCountLimitReached)?;
+        Ok(())
+    }
+
+    #[cfg(test)]
+    fn seed(&mut self, alpha: ToiAlpha, count: usize) -> Result<(), ToiCountLimitReached> {
+        if count > MAX_STORED_TOI_COUNT {
+            return Err(ToiCountLimitReached);
+        }
+        self.maybe_alpha = Some(alpha);
+        self.count = count;
+        Ok(())
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(dead_code)] // The scanner reports this checked bound in Task 07-08-02.
+pub(super) struct ToiCountLimitReached;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) struct ContactEndpoint {
@@ -72,6 +137,7 @@ pub(super) struct Contact {
     pub(super) points: Vec<ContactPoint>,
     pub(super) friction: f32,
     pub(super) restitution: f32,
+    toi: ContactToiState,
 }
 
 impl Contact {
@@ -96,10 +162,12 @@ impl Contact {
             points: Vec::new(),
             friction: (friction_a * friction_b).sqrt(),
             restitution: max(restitution_a, restitution_b),
+            toi: ContactToiState::default(),
         }
     }
 
     pub(super) fn replace_manifold(&mut self, maybe_manifold: Option<Manifold>) {
+        self.toi.invalidate();
         let previous = std::mem::take(&mut self.points);
         self.points = maybe_manifold
             .as_ref()
@@ -117,6 +185,7 @@ impl Contact {
     }
 
     pub(super) fn clear_manifold(&mut self) {
+        self.toi.invalidate();
         self.maybe_manifold = None;
         self.points.clear();
     }
@@ -166,11 +235,52 @@ impl Contact {
     }
 
     fn set_flag(&mut self, flag: u8, value: bool) {
+        let was_set = self.flags & flag != 0;
+        if was_set != value {
+            self.toi.invalidate();
+        }
         if value {
             self.flags |= flag;
         } else {
             self.flags &= !flag;
         }
+    }
+
+    pub(super) fn reset_toi_state(&mut self) {
+        self.toi.reset();
+    }
+
+    pub(super) fn invalidate_toi(&mut self) {
+        self.toi.invalidate();
+    }
+
+    #[allow(dead_code)] // The scanner consumes cache state in Task 07-08-02.
+    pub(super) const fn maybe_toi_alpha(&self) -> Option<ToiAlpha> {
+        self.toi.maybe_alpha
+    }
+
+    #[allow(dead_code)] // The scanner consumes this guard in Task 07-08-02.
+    pub(super) const fn toi_count(&self) -> usize {
+        self.toi.count
+    }
+
+    #[allow(dead_code)] // The scanner consumes cached fractions in Task 07-08-02.
+    pub(super) fn cache_toi_alpha(&mut self, alpha: ToiAlpha) {
+        self.toi.cache(alpha);
+    }
+
+    #[allow(dead_code)] // The scanner increments this bound in Task 07-08-02.
+    pub(super) fn increment_toi_count(&mut self) -> Result<(), ToiCountLimitReached> {
+        self.toi.increment_count()
+    }
+
+    #[cfg(test)]
+    pub(super) fn seed_toi_state(
+        &mut self,
+        alpha: ToiAlpha,
+        count: usize,
+    ) -> Result<(), ToiCountLimitReached> {
+        self.toi.seed(alpha, count)
     }
 
     pub(super) fn snapshot(&self) -> ManagedContactSnapshot {

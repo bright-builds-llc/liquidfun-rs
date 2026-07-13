@@ -5,6 +5,7 @@ mod config;
 mod contact;
 mod contact_manager;
 mod contact_solver;
+mod continuous;
 mod fixture;
 mod island;
 pub(crate) mod object;

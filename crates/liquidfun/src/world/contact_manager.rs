@@ -7,6 +7,8 @@ use super::contact::{
     Contact, ContactEndpoint, ContactKey, ContactTransition, ContactTransitionKind,
     ManagedContactSnapshot, canonical_contact_key,
 };
+#[cfg(test)]
+use super::contact::{ToiAlpha, ToiCountLimitReached};
 use super::contact_solver::ContactSolve;
 use super::object::{Body, Fixture};
 use super::proxy::FixtureProxy;
@@ -45,6 +47,62 @@ impl ContactManager {
         self.contacts
             .iter()
             .position(|contact| contact.ordinal == ordinal)
+    }
+
+    pub(super) fn reset_toi_state(&mut self) {
+        for contact in &mut self.contacts {
+            contact.reset_toi_state();
+        }
+    }
+
+    pub(super) fn invalidate_toi_for_body(&mut self, body: BodyId) {
+        for contact in &mut self.contacts {
+            if contact.key.first.body == body || contact.key.second.body == body {
+                contact.invalidate_toi();
+            }
+        }
+    }
+
+    #[cfg(test)]
+    pub(super) fn seed_toi_state_for_test(
+        &mut self,
+        ordinal: u64,
+        alpha: f32,
+        count: usize,
+    ) -> Result<(), ToiCountLimitReached> {
+        let alpha = ToiAlpha::new(alpha).ok_or(ToiCountLimitReached)?;
+        let contact = self
+            .contacts
+            .iter_mut()
+            .find(|contact| contact.ordinal == ordinal)
+            .expect("test contact occurrence must remain live");
+        contact.seed_toi_state(alpha, count)
+    }
+
+    #[cfg(test)]
+    pub(super) fn toi_state_for_test(&self, ordinal: u64) -> Option<(Option<f32>, usize)> {
+        self.contacts
+            .iter()
+            .find(|contact| contact.ordinal == ordinal)
+            .map(|contact| {
+                (
+                    contact.maybe_toi_alpha().map(ToiAlpha::get),
+                    contact.toi_count(),
+                )
+            })
+    }
+
+    #[cfg(test)]
+    pub(super) fn increment_toi_count_for_test(
+        &mut self,
+        ordinal: u64,
+    ) -> Result<(), ToiCountLimitReached> {
+        let contact = self
+            .contacts
+            .iter_mut()
+            .find(|contact| contact.ordinal == ordinal)
+            .expect("test contact occurrence must remain live");
+        contact.increment_toi_count()
     }
 
     pub(super) fn find_new_contacts(

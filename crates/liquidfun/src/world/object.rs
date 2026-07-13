@@ -18,6 +18,7 @@ use super::config::{StepTiming, WorldConfiguration, WorldConfigurationError};
 use super::contact::ContactTransition;
 use super::contact_manager::ContactManager;
 use super::contact_solver::{ContactImpulseSolution, ContactSolve, ContactSolveFailure};
+use super::continuous::ContinuousStepState;
 use super::fixture::{
     FixtureBoundsError, FixtureDef, FixtureDestructionError, FixtureMutationError,
     WorldFixtureSnapshot,
@@ -354,6 +355,7 @@ pub struct World {
     particles: Arena<Particle, ParticleId>,
     pub(super) broad_phase: BroadPhase<FixtureProxy>,
     pub(super) contact_manager: ContactManager,
+    pub(super) continuous_step_state: ContinuousStepState,
     next_diagnostic_id: Option<u64>,
     pub(super) step_state: StepState,
     pub(super) configuration: WorldConfiguration,
@@ -377,6 +379,7 @@ impl World {
             particles: Arena::new(world, usize::MAX),
             broad_phase: new_world_broad_phase(),
             contact_manager: ContactManager::new(),
+            continuous_step_state: ContinuousStepState::new(),
             next_diagnostic_id: Some(1),
             step_state: StepState::new(),
             configuration: WorldConfiguration::default(),
@@ -698,6 +701,7 @@ impl World {
         let fixture_mass_data = self.collect_fixture_mass_data(body, None, None);
         let candidate = state.candidate_set_fixed_rotation(fixed_rotation, &fixture_mass_data)?;
         self.body_mut_after_validation(body).state = candidate;
+        self.invalidate_continuous_for_body(body);
         Ok(())
     }
 
@@ -732,6 +736,7 @@ impl World {
             record.pending_wake = true;
         }
         self.touch_body_fixture_entries(body, &fixtures);
+        self.invalidate_continuous_for_body(body);
         Ok(())
     }
 
@@ -768,6 +773,7 @@ impl World {
         };
         self.apply_body_synchronizations(synchronizations);
         self.body_mut_after_validation(body).state = candidate;
+        self.invalidate_continuous_for_body(body);
         Ok(())
     }
 
@@ -800,6 +806,7 @@ impl World {
         if !active {
             record.pending_contact_destruction = true;
         }
+        self.invalidate_continuous_for_body(body);
         Ok(())
     }
 
@@ -850,6 +857,7 @@ impl World {
         if let Some(mass_state) = maybe_mass_state {
             self.body_mut_after_validation(body).state = mass_state;
         }
+        self.invalidate_continuous_for_body(body);
         Ok(fixture)
     }
 
@@ -1032,6 +1040,7 @@ impl World {
         self.bodies.get(body)?;
         let mass_state = self.prepare_body_mass_state(body, None, None)?;
         self.body_mut_after_validation(body).state = mass_state;
+        self.invalidate_continuous_for_body(body);
         Ok(())
     }
 
@@ -1049,6 +1058,7 @@ impl World {
     ) -> Result<(), HandleError> {
         self.ensure_not_poisoned_for_handle()?;
         self.bodies.get_mut(body)?.state.set_mass_data(data);
+        self.invalidate_continuous_for_body(body);
         Ok(())
     }
 
@@ -1133,6 +1143,7 @@ impl World {
             .definition
             .set_sensor(sensor);
         self.body_mut_after_validation(body).pending_wake = true;
+        self.invalidate_continuous_for_body(body);
         Ok(())
     }
 
@@ -1147,8 +1158,9 @@ impl World {
         filter: FilterData,
     ) -> Result<(), HandleError> {
         self.ensure_not_poisoned_for_handle()?;
-        self.fixtures.get(fixture)?;
+        let body = self.fixtures.get(fixture)?.body;
         self.set_fixture_filter_after_validation(fixture, filter);
+        self.invalidate_continuous_for_body(body);
         Ok(())
     }
 
@@ -1465,7 +1477,13 @@ impl World {
         let state = self.bodies.get(body)?.state;
         let candidate = prepare(state)?;
         self.body_mut_after_validation(body).state = candidate;
+        self.invalidate_continuous_for_body(body);
         Ok(())
+    }
+
+    fn invalidate_continuous_for_body(&mut self, body: BodyId) {
+        self.continuous_step_state.invalidate();
+        self.contact_manager.invalidate_toi_for_body(body);
     }
 
     pub(super) fn clear_force_accumulators(&mut self) {
@@ -1527,6 +1545,7 @@ impl World {
         if let Some(mass_state) = maybe_mass_state {
             self.body_mut_after_validation(removed.body).state = mass_state;
         }
+        self.invalidate_continuous_for_body(removed.body);
         DestructionRecord {
             destroyed: DestroyedId::Fixture(fixture),
             diagnostic_id: removed.diagnostic_id,
