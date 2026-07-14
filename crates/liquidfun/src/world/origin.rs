@@ -6,13 +6,14 @@ use std::fmt;
 use crate::collision::TreeError;
 use crate::collision::broad_phase::PreparedBroadPhaseOriginShift;
 use crate::math::Vec2;
-use crate::{BodyId, FixtureId, World};
+use crate::{BodyId, FixtureId, JointDef, JointId, World};
 
 use super::body::BodyState;
 use super::proxy::{PreparedProxyOriginShift, ProxyOriginShiftError};
 
 struct OriginShiftCandidate {
     body_states: Vec<(BodyId, BodyState)>,
+    joint_definitions: Vec<(JointId, JointDef)>,
     proxy_states: Vec<(FixtureId, PreparedProxyOriginShift)>,
     broad_phase: PreparedBroadPhaseOriginShift,
 }
@@ -31,6 +32,8 @@ pub enum OriginShiftError {
     NonFiniteBodyState,
     /// Translating a fixture or tree bound produced a non-finite coordinate.
     NonFiniteProxyBounds,
+    /// Translating a joint world anchor or target produced a non-finite coordinate.
+    NonFiniteJointState,
     /// Fixture proxy bookkeeping did not match live broad-phase storage.
     InconsistentProxy,
     /// Private broad-phase state rejected an otherwise checked translation.
@@ -49,6 +52,9 @@ impl fmt::Display for OriginShiftError {
             Self::NonFiniteProxyBounds => {
                 "world origin shift produced non-finite broad-phase bounds"
             }
+            Self::NonFiniteJointState => {
+                "world origin shift produced a non-finite joint anchor or target"
+            }
             Self::InconsistentProxy => {
                 "world fixture proxy bookkeeping is inconsistent with the broad phase"
             }
@@ -66,8 +72,8 @@ impl World {
     /// Subtracts `shift` from every rigid world-space coordinate atomically.
     ///
     /// Body and fixture identities, local geometry, velocity, forces, contacts,
-    /// filtering, broad-phase topology, and buffered moves are preserved. Joint
-    /// anchor translation remains reserved for the joint implementation.
+    /// filtering, broad-phase topology, and buffered moves are preserved. Pulley
+    /// ground anchors and mouse targets translate with the rigid world.
     ///
     /// # Errors
     ///
@@ -99,6 +105,17 @@ impl World {
                     return Err(OriginShiftError::NonFiniteBodyState);
                 };
                 Ok((body, state))
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+
+        let joint_definitions = self
+            .joints
+            .iter()
+            .map(|(joint, record)| {
+                record
+                    .shifted_definition(shift)
+                    .map(|definition| (joint, definition))
+                    .map_err(|_error| OriginShiftError::NonFiniteJointState)
             })
             .collect::<Result<Vec<_>, _>>()?;
 
@@ -136,6 +153,7 @@ impl World {
             .map_err(map_tree_error)?;
         Ok(OriginShiftCandidate {
             body_states,
+            joint_definitions,
             proxy_states,
             broad_phase,
         })
@@ -147,6 +165,12 @@ impl World {
                 .get_mut(body)
                 .expect("prepared origin-shift body remains live during commit")
                 .state = state;
+        }
+        for (joint, definition) in candidate.joint_definitions {
+            self.joints
+                .get_mut(joint)
+                .expect("prepared origin-shift joint remains live during commit")
+                .definition = definition;
         }
         for (fixture, prepared) in candidate.proxy_states {
             self.fixtures

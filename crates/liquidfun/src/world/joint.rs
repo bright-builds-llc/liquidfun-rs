@@ -22,6 +22,7 @@ mod prismatic;
 mod pulley;
 mod revolute;
 mod rope;
+pub(super) mod solver;
 mod weld;
 mod wheel;
 
@@ -76,10 +77,40 @@ pub(super) struct JointRecord {
     pub(super) definition: JointDef,
     pub(super) collide_connected: bool,
     pub(super) runtime: JointRuntime,
-    #[allow(dead_code, reason = "consumed by the Phase 8 island solver plans")]
-    pub(super) island_flag: bool,
+    pub(super) solver_linear_impulse: Vec2,
+    pub(super) solver_angular_impulse: f32,
     #[allow(dead_code, reason = "consumed by the Phase 8 gear lifecycle plan")]
     pub(super) reverse_gear_dependents: Vec<JointId>,
+}
+
+impl JointRecord {
+    pub(super) fn shifted_definition(&self, shift: Vec2) -> Result<JointDef, JointMutationError> {
+        match self.definition {
+            JointDef::Pulley(definition) => {
+                let anchors = pulley::PulleyRuntime::shifted_ground_anchors(definition, shift)?;
+                definition
+                    .with_geometry(
+                        anchors[0],
+                        anchors[1],
+                        definition.local_anchor_a(),
+                        definition.local_anchor_b(),
+                        definition.length_a(),
+                        definition.length_b(),
+                        definition.ratio(),
+                    )
+                    .map(JointDef::from)
+                    .map_err(|_error| JointMutationError::NonFiniteDerivedState)
+            }
+            JointDef::Mouse(definition) => {
+                let target = mouse::MouseRuntime::shifted_target(definition, shift)?;
+                definition
+                    .with_target(target)
+                    .map(JointDef::from)
+                    .map_err(|_error| JointMutationError::NonFiniteDerivedState)
+            }
+            definition => Ok(definition),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -392,7 +423,8 @@ impl World {
             definition,
             collide_connected,
             runtime,
-            island_flag: false,
+            solver_linear_impulse: Vec2::ZERO,
+            solver_angular_impulse: 0.0,
             reverse_gear_dependents: Vec::new(),
         })?;
         self.body_mut_after_validation(bodies[0])
@@ -662,10 +694,15 @@ impl World {
                 .copied(),
         );
         for fixture in fixtures {
-            self.fixtures
+            let record = self
+                .fixtures
                 .get_mut(fixture)
-                .expect("body fixture adjacency remains live")
-                .pending_refilter = true;
+                .expect("body fixture adjacency remains live");
+            record.pending_refilter = true;
+            record
+                .proxies
+                .touch(&mut self.broad_phase, fixture, record.body);
+            self.contact_manager.flag_fixture_for_filtering(fixture);
         }
     }
 }

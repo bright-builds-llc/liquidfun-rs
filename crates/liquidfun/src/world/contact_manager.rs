@@ -2,7 +2,7 @@ use crate::arena::Arena;
 use crate::collision::{BroadPhase, CollisionOutcome, collide_shapes, test_overlap};
 #[cfg(feature = "differential-internals")]
 use crate::math::settings::MAX_SUB_STEPS;
-use crate::{BodyId, FixtureId};
+use crate::{BodyId, FixtureId, JointId};
 
 use super::body::BodyType;
 use super::contact::{
@@ -12,6 +12,7 @@ use super::contact::{
 #[cfg(test)]
 use super::contact::{ToiAlpha, ToiCountLimitReached};
 use super::contact_solver::ContactSolve;
+use super::joint::JointRecord;
 use super::object::{Body, Fixture};
 use super::proxy::FixtureProxy;
 
@@ -145,6 +146,7 @@ impl ContactManager {
         broad_phase: &mut BroadPhase<FixtureProxy>,
         bodies: &mut Arena<Body, BodyId>,
         fixtures: &mut Arena<Fixture, FixtureId>,
+        joints: &Arena<JointRecord, JointId>,
     ) {
         let mut pairs = Vec::new();
         broad_phase
@@ -152,7 +154,7 @@ impl ContactManager {
             .expect("world-owned broad-phase entries must remain coherent");
 
         for (first, second) in pairs {
-            self.add_pair(first, second, bodies, fixtures);
+            self.add_pair(first, second, bodies, fixtures, joints);
         }
     }
 
@@ -161,11 +163,14 @@ impl ContactManager {
         broad_phase: &BroadPhase<FixtureProxy>,
         bodies: &mut Arena<Body, BodyId>,
         fixtures: &mut Arena<Fixture, FixtureId>,
+        joints: &Arena<JointRecord, JointId>,
     ) {
         let mut index = 0;
         while index < self.contacts.len() {
             let key = self.contacts[index].key;
-            if self.contacts[index].needs_filtering() && !pair_is_eligible(key, bodies, fixtures) {
+            if self.contacts[index].needs_filtering()
+                && !pair_is_eligible(key, bodies, fixtures, joints)
+            {
                 self.destroy_contact(index, bodies, fixtures);
                 continue;
             }
@@ -312,6 +317,7 @@ impl ContactManager {
         second_proxy: FixtureProxy,
         bodies: &mut Arena<Body, BodyId>,
         fixtures: &mut Arena<Fixture, FixtureId>,
+        joints: &Arena<JointRecord, JointId>,
     ) {
         let first_fixture = fixtures
             .get(first_proxy.fixture)
@@ -337,7 +343,7 @@ impl ContactManager {
         ) else {
             return;
         };
-        if !pair_is_eligible(key, bodies, fixtures)
+        if !pair_is_eligible(key, bodies, fixtures, joints)
             || self
                 .contacts
                 .iter()
@@ -397,6 +403,7 @@ fn pair_is_eligible(
     key: ContactKey,
     bodies: &Arena<Body, BodyId>,
     fixtures: &Arena<Fixture, FixtureId>,
+    joints: &Arena<JointRecord, JointId>,
 ) -> bool {
     if key.first.body == key.second.body {
         return false;
@@ -413,6 +420,16 @@ fn pair_is_eligible(
     let at_least_one_dynamic = body_a.state.snapshot().body_type() == BodyType::Dynamic
         || body_b.state.snapshot().body_type() == BodyType::Dynamic;
     if !at_least_one_dynamic {
+        return false;
+    }
+    if body_a.joints.iter().any(|joint_id| {
+        let joint = joints
+            .get(*joint_id)
+            .expect("body joint adjacency contains only live joints");
+        !joint.collide_connected
+            && (joint.bodies == [key.first.body, key.second.body]
+                || joint.bodies == [key.second.body, key.first.body])
+    }) {
         return false;
     }
     let fixture_a = fixtures

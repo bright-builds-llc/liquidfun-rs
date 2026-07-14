@@ -8,6 +8,11 @@ use crate::math::{Transform, Vec2, clamp, max};
 use super::body::BodyState;
 use super::config::StepConfiguration;
 use super::contact::{Contact, ContactPoint, ManagedContactSnapshot};
+use super::joint::solver::{
+    JointConstraintInput, JointImpulseSolution, build_constraints as build_joint_constraints,
+    solve_position as solve_joint_position, solve_velocity as solve_joint_velocity,
+    transient_impulses as transient_joint_impulses, warm_start as warm_start_joints,
+};
 
 const MAX_CONDITION_NUMBER: f32 = 1_000.0;
 
@@ -52,15 +57,15 @@ pub(super) struct SolvedBodyMotion {
 }
 
 #[derive(Debug, Clone, Copy)]
-struct SolverBody {
-    center: Vec2,
-    local_center: Vec2,
-    angle: f32,
-    transform: Transform,
-    linear_velocity: Vec2,
-    angular_velocity: f32,
-    inverse_mass: f32,
-    inverse_inertia: f32,
+pub(super) struct SolverBody {
+    pub(super) center: Vec2,
+    pub(super) local_center: Vec2,
+    pub(super) angle: f32,
+    pub(super) transform: Transform,
+    pub(super) linear_velocity: Vec2,
+    pub(super) angular_velocity: f32,
+    pub(super) inverse_mass: f32,
+    pub(super) inverse_inertia: f32,
 }
 
 impl SolverBody {
@@ -81,7 +86,7 @@ impl SolverBody {
         Ok(body)
     }
 
-    fn is_finite(self) -> bool {
+    pub(super) fn is_finite(self) -> bool {
         self.center.is_valid()
             && self.transform.position().is_valid()
             && self.transform.rotation().sine().is_finite()
@@ -166,6 +171,7 @@ pub(super) struct ContactImpulseSolution {
 pub(super) struct IslandConstraintSolution {
     pub(super) motions: Vec<SolvedBodyMotion>,
     pub(super) contact_impulses: Vec<ContactImpulseSolution>,
+    pub(super) joint_impulses: Vec<JointImpulseSolution>,
     pub(super) position_solved: bool,
 }
 
@@ -224,6 +230,7 @@ fn transient_impulses(
 pub(super) fn solve_island_constraints(
     body_states: &[BodyState],
     inputs: &[ContactConstraintInput<'_>],
+    joint_inputs: &[JointConstraintInput<'_>],
     gravity: Vec2,
     configuration: StepConfiguration,
     time_step_ratio: f32,
@@ -243,19 +250,31 @@ pub(super) fn solve_island_constraints(
     }
 
     let mut constraints = build_constraints(inputs, &bodies, time_step_ratio, warm_starting)?;
+    let mut joint_constraints = build_joint_constraints(
+        joint_inputs,
+        &bodies,
+        configuration.time_step(),
+        time_step_ratio,
+        warm_starting,
+    )?;
 
     if warm_starting {
         for constraint in &constraints {
             warm_start(constraint, &mut bodies)?;
         }
+        warm_start_joints(&joint_constraints, &mut bodies)?;
     }
     for _iteration in 0..configuration.velocity_iterations() {
+        for constraint in &mut joint_constraints {
+            solve_joint_velocity(constraint, &mut bodies)?;
+        }
         for constraint in &mut constraints {
             solve_velocity_constraints(constraint, &mut bodies)?;
         }
     }
 
     let contact_impulses = transient_impulses(&constraints)?;
+    let joint_impulses = transient_joint_impulses(&joint_constraints);
 
     for body in &mut bodies {
         integrate_position(body, configuration.time_step());
@@ -266,6 +285,9 @@ pub(super) fn solve_island_constraints(
         for constraint in &constraints {
             position_solved =
                 solve_position_constraints(constraint, &mut bodies)? && position_solved;
+        }
+        for constraint in &joint_constraints {
+            position_solved = solve_joint_position(*constraint, &mut bodies)? && position_solved;
         }
         if position_solved {
             break;
@@ -292,6 +314,7 @@ pub(super) fn solve_island_constraints(
             })
             .collect(),
         contact_impulses,
+        joint_impulses,
         position_solved,
     })
 }
@@ -387,7 +410,7 @@ fn solve_position_constraints(
 }
 
 impl SolverBody {
-    fn synchronize_transform(&mut self) {
+    pub(super) fn synchronize_transform(&mut self) {
         let rotation = crate::math::Rotation::from_angle(self.angle);
         self.transform = Transform::from_position_angle(
             self.center - rotation.apply(self.local_center),

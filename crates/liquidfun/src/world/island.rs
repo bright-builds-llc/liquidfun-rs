@@ -10,31 +10,37 @@ use super::contact_solver::{
     ContactConstraintInput, ContactImpulseSolution, ContactSolveFailure, solve_island_constraints,
     solve_toi_constraints,
 };
+use super::joint::JointRecord;
+use super::joint::solver::{JointConstraintInput, JointImpulseSolution};
 use super::object::{Body, Fixture};
 
 const REVIEWED_MAX_ISLAND_BODIES: usize = 4_096;
 const REVIEWED_MAX_ISLAND_CONTACTS: usize = 8_192;
+const REVIEWED_MAX_ISLAND_JOINTS: usize = 8_192;
 
 mod toi;
 pub(super) use toi::{ToiIsland, ToiIslandLimits, ToiIslandSolution, solve_toi_island};
 
 #[derive(Debug, Clone, Copy)]
 pub(super) struct IslandLimits {
-    max_bodies: usize,
-    max_contacts: usize,
+    bodies: usize,
+    contacts: usize,
+    joints: usize,
 }
 
 impl IslandLimits {
     pub(super) const REVIEWED: Self = Self {
-        max_bodies: REVIEWED_MAX_ISLAND_BODIES,
-        max_contacts: REVIEWED_MAX_ISLAND_CONTACTS,
+        bodies: REVIEWED_MAX_ISLAND_BODIES,
+        contacts: REVIEWED_MAX_ISLAND_CONTACTS,
+        joints: REVIEWED_MAX_ISLAND_JOINTS,
     };
 
     #[cfg(feature = "differential-internals")]
     pub(super) const fn diagnostic(max_bodies: usize, max_contacts: usize) -> Self {
         Self {
-            max_bodies,
-            max_contacts,
+            bodies: max_bodies,
+            contacts: max_contacts,
+            joints: REVIEWED_MAX_ISLAND_JOINTS,
         }
     }
 }
@@ -108,6 +114,7 @@ pub(super) struct IslandSolution {
     pub(super) body_ids: Vec<BodyId>,
     pub(super) body_states: Vec<BodyState>,
     pub(super) contact_impulses: Vec<ContactImpulseSolution>,
+    pub(super) joint_impulses: Vec<JointImpulseSolution>,
 }
 
 impl Island {
@@ -163,23 +170,45 @@ impl Island {
         self.contact_indices.push(index);
         Ok(())
     }
+
+    fn add_joint(&mut self, joint: JointId, limit: usize) -> Result<(), IslandBuildError> {
+        if self.joint_ids.len() >= limit {
+            return Err(IslandBuildError::CapacityExceeded {
+                resource: "island joints",
+                limit,
+            });
+        }
+        reserve_one(&mut self.joint_ids, "island joints", limit)?;
+        self.joint_ids.push(joint);
+        Ok(())
+    }
 }
 
+#[allow(
+    clippy::too_many_lines,
+    reason = "source-ordered contact and joint DFS is clearer as one auditable traversal"
+)]
 pub(super) fn build_islands(
     body_order: &[BodyId],
     bodies: &Arena<Body, BodyId>,
+    joints: &Arena<JointRecord, JointId>,
     contact_manager: &ContactManager,
     limits: IslandLimits,
 ) -> Result<Vec<Island>, IslandBuildError> {
-    preflight_graph(body_order, bodies, contact_manager, limits)?;
+    preflight_graph(body_order, bodies, joints, contact_manager, limits)?;
     let mut body_visited = bounded_false_lanes(body_order.len(), "body visitation")?;
     let mut contact_visited = bounded_false_lanes(contact_manager.len(), "contact visitation")?;
+    let joint_order = joints
+        .iter()
+        .map(|(joint, _record)| joint)
+        .collect::<Vec<_>>();
+    let mut joint_visited = bounded_false_lanes(joint_order.len(), "joint visitation")?;
     let mut stack = Vec::new();
     stack
         .try_reserve_exact(body_order.len())
         .map_err(|_| IslandBuildError::CapacityExceeded {
             resource: "island DFS stack",
-            limit: limits.max_bodies,
+            limit: limits.bodies,
         })?;
     let mut islands = Vec::new();
 
@@ -206,7 +235,7 @@ pub(super) fn build_islands(
                 .get(body_id)
                 .map_err(|_| IslandBuildError::InvalidGraph)?;
             let candidate = body.state.candidate_set_awake(true);
-            island.add_body(body_id, candidate, limits.max_bodies)?;
+            island.add_body(body_id, candidate, limits.bodies)?;
             if candidate.snapshot().body_type() == BodyType::Static {
                 continue;
             }
@@ -222,7 +251,7 @@ pub(super) fn build_islands(
                 if !contact.is_enabled() || !contact.is_touching() || contact.is_sensor() {
                     continue;
                 }
-                island.add_contact(contact_index, limits.max_contacts)?;
+                island.add_contact(contact_index, limits.contacts)?;
                 contact_visited[contact_index] = true;
 
                 let other = contact
@@ -232,6 +261,43 @@ pub(super) fn build_islands(
                     .iter()
                     .position(|candidate| *candidate == other)
                     .ok_or(IslandBuildError::InvalidGraph)?;
+                if body_visited[other_index] {
+                    continue;
+                }
+                body_visited[other_index] = true;
+                stack.push(other_index);
+            }
+
+            for joint_id in &body.joints {
+                let joint_index = joint_order
+                    .iter()
+                    .position(|candidate| candidate == joint_id)
+                    .ok_or(IslandBuildError::InvalidGraph)?;
+                if joint_visited[joint_index] {
+                    continue;
+                }
+                let joint = joints
+                    .get(*joint_id)
+                    .map_err(|_| IslandBuildError::InvalidGraph)?;
+                let other = if joint.bodies[0] == body_id {
+                    joint.bodies[1]
+                } else if joint.bodies[1] == body_id {
+                    joint.bodies[0]
+                } else {
+                    return Err(IslandBuildError::InvalidGraph);
+                };
+                let other_index = body_order
+                    .iter()
+                    .position(|candidate| *candidate == other)
+                    .ok_or(IslandBuildError::InvalidGraph)?;
+                let other_body = bodies
+                    .get(other)
+                    .map_err(|_| IslandBuildError::InvalidGraph)?;
+                if !other_body.state.snapshot().is_active() {
+                    continue;
+                }
+                island.add_joint(*joint_id, limits.joints)?;
+                joint_visited[joint_index] = true;
                 if body_visited[other_index] {
                     continue;
                 }
@@ -257,17 +323,22 @@ pub(super) fn build_islands(
             .try_reserve(1)
             .map_err(|_| IslandBuildError::CapacityExceeded {
                 resource: "island collection",
-                limit: limits.max_bodies,
+                limit: limits.bodies,
             })?;
         islands.push(island);
     }
     Ok(islands)
 }
 
+#[allow(
+    clippy::too_many_lines,
+    reason = "transactional contact and joint input staging stays together for auditability"
+)]
 pub(super) fn solve_islands(
     islands: &[Island],
     contact_manager: &ContactManager,
     fixtures: &Arena<Fixture, FixtureId>,
+    joints: &Arena<JointRecord, JointId>,
     parameters: IslandSolveParameters,
 ) -> Result<Vec<IslandSolution>, ContactSolveFailure> {
     let mut solutions = Vec::new();
@@ -321,9 +392,39 @@ pub(super) fn solve_islands(
             });
         }
 
+        let mut joint_inputs = Vec::new();
+        joint_inputs
+            .try_reserve_exact(island.joint_ids.len())
+            .map_err(|_| ContactSolveFailure::CapacityExceeded {
+                resource: "island joint inputs",
+                limit: island.joint_ids.len(),
+            })?;
+        for joint_id in &island.joint_ids {
+            let record = joints
+                .get(*joint_id)
+                .map_err(|_| ContactSolveFailure::UnsupportedTopology)?;
+            let first_body_index = island
+                .body_ids
+                .iter()
+                .position(|body| *body == record.bodies[0])
+                .ok_or(ContactSolveFailure::UnsupportedTopology)?;
+            let second_body_index = island
+                .body_ids
+                .iter()
+                .position(|body| *body == record.bodies[1])
+                .ok_or(ContactSolveFailure::UnsupportedTopology)?;
+            joint_inputs.push(JointConstraintInput {
+                joint_id: *joint_id,
+                first_body_index,
+                second_body_index,
+                record,
+            });
+        }
+
         let solved = solve_island_constraints(
             &island.body_states,
             &inputs,
+            &joint_inputs,
             parameters.gravity,
             parameters.configuration,
             parameters.time_step_ratio,
@@ -352,6 +453,7 @@ pub(super) fn solve_islands(
             body_ids: island.body_ids.clone(),
             body_states,
             contact_impulses: solved.contact_impulses,
+            joint_impulses: solved.joint_impulses,
         });
         if matches!(
             parameters.maybe_failure_injection,
@@ -424,19 +526,26 @@ fn evaluate_sleep_candidates(
 fn preflight_graph(
     body_order: &[BodyId],
     bodies: &Arena<Body, BodyId>,
+    joints: &Arena<JointRecord, JointId>,
     contact_manager: &ContactManager,
     limits: IslandLimits,
 ) -> Result<(), IslandBuildError> {
-    if body_order.len() > limits.max_bodies {
+    if body_order.len() > limits.bodies {
         return Err(IslandBuildError::CapacityExceeded {
             resource: "island bodies",
-            limit: limits.max_bodies,
+            limit: limits.bodies,
         });
     }
-    if contact_manager.len() > limits.max_contacts {
+    if contact_manager.len() > limits.contacts {
         return Err(IslandBuildError::CapacityExceeded {
             resource: "island contacts",
-            limit: limits.max_contacts,
+            limit: limits.contacts,
+        });
+    }
+    if joints.iter().count() > limits.joints {
+        return Err(IslandBuildError::CapacityExceeded {
+            resource: "island joints",
+            limit: limits.joints,
         });
     }
     if body_order.len() != bodies.iter().count() {
@@ -460,6 +569,14 @@ fn preflight_graph(
                 return Err(IslandBuildError::InvalidGraph);
             }
         }
+        for joint_id in &body.joints {
+            let joint = joints
+                .get(*joint_id)
+                .map_err(|_| IslandBuildError::InvalidGraph)?;
+            if joint.bodies[0] != body_id && joint.bodies[1] != body_id {
+                return Err(IslandBuildError::InvalidGraph);
+            }
+        }
     }
     for (index, contact) in contact_manager.contacts().iter().enumerate() {
         if contact_manager.contacts()[index + 1..]
@@ -476,6 +593,22 @@ fn preflight_graph(
                 .contacts
                 .iter()
                 .filter(|ordinal| **ordinal == contact.ordinal)
+                .count()
+                != 1
+            {
+                return Err(IslandBuildError::InvalidGraph);
+            }
+        }
+    }
+    for (joint_id, joint) in joints.iter() {
+        for body_id in joint.bodies {
+            let body = bodies
+                .get(body_id)
+                .map_err(|_| IslandBuildError::InvalidGraph)?;
+            if body
+                .joints
+                .iter()
+                .filter(|candidate| **candidate == joint_id)
                 .count()
                 != 1
             {

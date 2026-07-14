@@ -29,6 +29,7 @@ use super::island::{
     IslandBuildError, IslandLimits, IslandSolution, IslandSolveParameters, SolveFailureInjection,
     build_islands, solve_islands,
 };
+use super::joint::solver::JointImpulseSolution;
 use super::proxy::{FixtureProxies, FixtureProxy, PreparedFixtureBounds, PreparedSynchronization};
 use super::step::StepState;
 use crate::collision::{
@@ -84,6 +85,7 @@ struct Particle {
 struct WorldStepCandidate {
     body_states: Vec<(BodyId, BodyState)>,
     contact_impulses: Vec<ContactImpulseSolution>,
+    joint_impulses: Vec<JointImpulseSolution>,
     contact_solves: Vec<ContactSolve>,
     synchronizations: Vec<(FixtureId, PreparedSynchronization)>,
     timing: StepTiming,
@@ -962,6 +964,23 @@ impl World {
         self.rigid_island_diagnostics_for_limits(IslandLimits::REVIEWED)
     }
 
+    /// Copies private joint warm-start caches in stable arena order.
+    #[cfg(feature = "differential-internals")]
+    #[doc(hidden)]
+    #[must_use]
+    pub fn rigid_joint_solver_impulse_diagnostics(&self) -> Vec<(JointId, Vec2, f32)> {
+        self.joints
+            .iter()
+            .map(|(joint, record)| {
+                (
+                    joint,
+                    record.solver_linear_impulse,
+                    record.solver_angular_impulse,
+                )
+            })
+            .collect()
+    }
+
     /// Builds owned island evidence with smaller diagnostic-only capacity limits.
     #[cfg(feature = "differential-internals")]
     #[doc(hidden)]
@@ -987,6 +1006,7 @@ impl World {
         let islands = build_islands(
             &self.body_order,
             &self.bodies,
+            &self.joints,
             &self.contact_manager,
             limits,
         )
@@ -1773,6 +1793,7 @@ impl World {
             &mut self.broad_phase,
             &mut self.bodies,
             &mut self.fixtures,
+            &self.joints,
         );
     }
 
@@ -1795,6 +1816,7 @@ impl World {
             &self.broad_phase,
             &mut self.bodies,
             &mut self.fixtures,
+            &self.joints,
         );
     }
 
@@ -1809,6 +1831,10 @@ impl World {
         Ok(self.commit_world_step_candidate(candidate))
     }
 
+    #[allow(
+        clippy::too_many_lines,
+        reason = "the complete world step candidate must remain one prepare-before-commit transaction"
+    )]
     fn prepare_world_step_candidate(
         &self,
         configuration: super::config::StepConfiguration,
@@ -1818,6 +1844,7 @@ impl World {
         let islands = build_islands(
             &self.body_order,
             &self.bodies,
+            &self.joints,
             &self.contact_manager,
             IslandLimits::REVIEWED,
         )
@@ -1826,6 +1853,7 @@ impl World {
             &islands,
             &self.contact_manager,
             &self.fixtures,
+            &self.joints,
             IslandSolveParameters::new(
                 self.gravity(),
                 configuration,
@@ -1852,6 +1880,10 @@ impl World {
             .iter()
             .map(|solution| solution.contact_impulses.len())
             .sum();
+        let joint_count = solutions
+            .iter()
+            .map(|solution| solution.joint_impulses.len())
+            .sum();
         let mut contact_impulses = Vec::new();
         contact_impulses
             .try_reserve_exact(contact_count)
@@ -1859,8 +1891,16 @@ impl World {
                 resource: "world step contact impulses",
                 limit: contact_count,
             })?;
+        let mut joint_impulses = Vec::new();
+        joint_impulses.try_reserve_exact(joint_count).map_err(|_| {
+            ContactSolveFailure::CapacityExceeded {
+                resource: "world step joint impulses",
+                limit: joint_count,
+            }
+        })?;
         for solution in solutions {
             contact_impulses.extend(solution.contact_impulses);
+            joint_impulses.extend(solution.joint_impulses);
         }
 
         let mut contact_solves = Vec::new();
@@ -1908,6 +1948,7 @@ impl World {
         Ok(WorldStepCandidate {
             body_states,
             contact_impulses,
+            joint_impulses,
             contact_solves,
             synchronizations,
             timing,
@@ -1925,6 +1966,14 @@ impl World {
             self.contact_manager
                 .commit_impulses(contact.contact_index, &contact.impulses);
         }
+        for joint in candidate.joint_impulses {
+            let record = self
+                .joints
+                .get_mut(joint.joint_id)
+                .expect("staged island joint remains live during commit");
+            record.solver_linear_impulse = joint.linear_impulse;
+            record.solver_angular_impulse = joint.angular_impulse;
+        }
         self.apply_body_synchronizations(candidate.synchronizations);
         self.find_new_contacts();
         self.commit_step_timing(candidate.timing);
@@ -1935,6 +1984,7 @@ impl World {
         build_islands(
             &self.body_order,
             &self.bodies,
+            &self.joints,
             &self.contact_manager,
             IslandLimits::REVIEWED,
         )
