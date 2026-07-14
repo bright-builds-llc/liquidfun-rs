@@ -287,7 +287,7 @@ fn native_executes_closed_phase7_actions_and_emits_semantic_observations() {
 }
 
 #[test]
-fn oracle_fails_closed_for_phase8_until_the_plan_08_13_adapter() {
+fn oracle_executes_phase8_after_the_plan_08_13_adapter() {
     // Arrange
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let Ok(executable) = OracleExecutable::resolve(&root, OraclePreset::Debug) else {
@@ -296,20 +296,12 @@ fn oracle_fails_closed_for_phase8_until_the_plan_08_13_adapter() {
     let request = support::phase7_request();
 
     // Act
-    let error = execute_rigid_world_process(&executable, &request, REVISION)
-        .expect_err("Phase 8 must not enter the pre-08-13 C++ adapter");
+    let captured = execute_rigid_world_process(&executable, &request, REVISION)
+        .expect("Phase 8 should execute through the C++ adapter");
 
     // Assert
-    assert_eq!(
-        error.kind(),
-        liquidfun_test_protocol::HarnessFailureKind::CppAdapterFailure
-    );
-    assert_eq!(
-        error.retained_stderr(),
-        b"phase8_cpp_adapter_pending_plan_08_13"
-    );
-    assert!(!error.child_killed());
-    assert!(!error.child_reaped());
+    assert!(captured.reset_verified());
+    assert_eq!(captured.result().timelines().len(), 19);
 }
 
 #[test]
@@ -916,7 +908,7 @@ fn comparison_never_canonicalizes_manager_report_or_destruction_order() {
 }
 
 #[test]
-fn supervisor_rejects_phase8_before_spawning_the_pre_08_13_oracle() {
+fn supervisor_accepts_phase8_with_the_plan_08_13_oracle() {
     // Arrange
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let Ok(executable) = OracleExecutable::resolve(&root, OraclePreset::Debug) else {
@@ -925,20 +917,12 @@ fn supervisor_rejects_phase8_before_spawning_the_pre_08_13_oracle() {
     let request = request();
 
     // Act
-    let error = execute_rigid_world_process(&executable, &request, REVISION)
-        .expect_err("Phase 8 must fail closed before the pre-08-13 oracle is spawned");
+    let captured = execute_rigid_world_process(&executable, &request, REVISION)
+        .expect("Phase 8 must execute through the reviewed oracle");
 
     // Assert
-    assert_eq!(
-        error.kind(),
-        liquidfun_test_protocol::HarnessFailureKind::CppAdapterFailure
-    );
-    assert_eq!(
-        error.retained_stderr(),
-        b"phase8_cpp_adapter_pending_plan_08_13"
-    );
-    assert!(!error.child_killed());
-    assert!(!error.child_reaped());
+    assert!(captured.reset_verified());
+    assert_eq!(captured.result().timelines().len(), 19);
 }
 
 #[test]

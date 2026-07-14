@@ -15,7 +15,7 @@ use liquidfun_differential::{
     Phase4HarnessFailureReason, Phase4HarnessFailureReport, Phase4MathMismatchReport,
     RigidComparisonOutcome, RigidEvaluation, RigidFailureSignature,
     RigidMinimizationArtifactRequest, RigidMinimizationResult, RigidScenarioTransform,
-    compare_collision_probe_results, compare_phase7_rigid_world_results,
+    compare_collision_probe_results, compare_phase8_rigid_world_results,
     execute_collision_probe_process, execute_math_probe_process, execute_rigid_world_process,
     float_values_match_with_policy, minimize_rigid_world_request,
     persist_rigid_minimization_artifact, validate_oracle_checkout_identity,
@@ -24,8 +24,9 @@ use liquidfun_test_protocol::{
     BuildEvidenceTier, BuildIdentity, CollisionProbeRequestRecord, CollisionProbeResult,
     DivergenceHorizon, EvidenceTier, HarnessLimits, MathProbeHorizon, MathProbeRequestRecord,
     MathProbeResult, Phase4PolicyProfile, Phase5PolicyProfile, Phase6PolicyProfile,
-    Phase7PolicyProfile, RigidWorldRequestRecord, decode_collision_probe_request_jsonl,
-    decode_math_probe_request_jsonl, decode_rigid_world_request_jsonl,
+    Phase7PolicyProfile, Phase8PolicyProfile, RigidWorldRequestRecord,
+    decode_collision_probe_request_jsonl, decode_math_probe_request_jsonl,
+    decode_rigid_world_request_jsonl,
 };
 use serde::Serialize;
 use sha2::{Digest, Sha256};
@@ -51,6 +52,7 @@ const PHASE5_POLICY: &str = "protocol/tolerances/phase5-v1.toml";
 const RIGID_WORLD_REQUEST: &str = "protocol/fixtures/accepted/rigid-world-request.jsonl";
 const PHASE6_POLICY: &str = "protocol/tolerances/phase6-v1.toml";
 const PHASE7_POLICY: &str = "protocol/tolerances/phase7-v1.toml";
+const PHASE8_POLICY: &str = "protocol/tolerances/phase8-v1.toml";
 const NATIVE_SOURCE_MANIFEST: &str = "crates/liquidfun-differential/native-math-sources.txt";
 const RIGID_MINIMIZATION_MAXIMUM_ATTEMPTS: usize = 128;
 const RIGID_MINIMIZATION_DEADLINE: Duration = Duration::from_secs(30);
@@ -537,7 +539,12 @@ fn run_rigid_world_command(
         .map_err(|error| DifferentialError::new("protocol", error.to_string()))?;
     let phase7_policy = Phase7PolicyProfile::parse_toml(phase7_policy_text)
         .map_err(|error| DifferentialError::new("policy", error.to_string()))?;
-    let request = rigid_world_request(repository_root, &phase7_policy)?;
+    let phase8_policy_bytes = read_regular_file(repository_root, PHASE8_POLICY)?;
+    let phase8_policy_text = std::str::from_utf8(&phase8_policy_bytes)
+        .map_err(|error| DifferentialError::new("protocol", error.to_string()))?;
+    let phase8_policy = Phase8PolicyProfile::parse_toml(phase8_policy_text)
+        .map_err(|error| DifferentialError::new("policy", error.to_string()))?;
+    let request = rigid_world_request(repository_root, &phase8_policy)?;
 
     if invocation.action == MathProbeAction::VerifyDeterminism {
         return verify_rigid_world_determinism(
@@ -551,12 +558,13 @@ fn run_rigid_world_command(
     let captured = execute_rigid_world_once(repository_root, &request, &invocation.preset)?;
     let native = NativeRigidWorldExecutor::execute(&request)
         .map_err(|error| DifferentialError::new("native", error.to_string()))?;
-    let outcome = compare_phase7_rigid_world_results(
+    let outcome = compare_phase8_rigid_world_results(
         &request,
         &native,
         captured.result(),
         &phase6_policy,
         &phase7_policy,
+        &phase8_policy,
     )
     .map_err(|error| {
         DifferentialError::new(
@@ -574,6 +582,7 @@ fn run_rigid_world_command(
                 report.signature(),
                 &phase6_policy,
                 &phase7_policy,
+                &phase8_policy,
                 &invocation.preset,
             );
         }
@@ -609,7 +618,7 @@ fn run_rigid_world_command(
     println!(
         "rigid-world {action}: {} required families matched under {} ({}); oracle={}, native={}",
         request.scenario().timelines().len(),
-        phase7_policy.profile_id(),
+        phase8_policy.profile_id(),
         invocation.preset,
         build_evidence_label(captured.identity().evidence_tier()),
         build_evidence_label(native_identity.build_identity().evidence_tier()),
@@ -623,6 +632,7 @@ fn run_rigid_world_minimization(
     target: &RigidFailureSignature,
     phase6_policy: &Phase6PolicyProfile,
     phase7_policy: &Phase7PolicyProfile,
+    phase8_policy: &Phase8PolicyProfile,
     preset: &str,
 ) -> Result<(), DifferentialError> {
     let mut maybe_evaluation_error = None;
@@ -639,6 +649,7 @@ fn run_rigid_world_minimization(
                 candidate,
                 phase6_policy,
                 phase7_policy,
+                phase8_policy,
                 preset,
                 &mut maybe_evaluation_error,
             )
@@ -690,6 +701,7 @@ fn evaluate_rigid_world_candidate(
     request: &RigidWorldRequestRecord,
     phase6_policy: &Phase6PolicyProfile,
     phase7_policy: &Phase7PolicyProfile,
+    phase8_policy: &Phase8PolicyProfile,
     preset: &str,
     maybe_error: &mut Option<DifferentialError>,
 ) -> RigidEvaluation {
@@ -701,12 +713,13 @@ fn evaluate_rigid_world_candidate(
         let captured = execute_rigid_world_once(repository_root, request, preset)?;
         let native = NativeRigidWorldExecutor::execute(request)
             .map_err(|error| DifferentialError::new("native", error.to_string()))?;
-        compare_phase7_rigid_world_results(
+        compare_phase8_rigid_world_results(
             request,
             &native,
             captured.result(),
             phase6_policy,
             phase7_policy,
+            phase8_policy,
         )
         .map_err(|error| {
             DifferentialError::new(
@@ -773,7 +786,7 @@ impl<'a> RigidMinimizationMachineReport<'a> {
 
 fn rigid_world_request(
     repository_root: &Path,
-    policy: &Phase7PolicyProfile,
+    policy: &Phase8PolicyProfile,
 ) -> Result<RigidWorldRequestRecord, DifferentialError> {
     let request_bytes = read_regular_file(repository_root, RIGID_WORLD_REQUEST)?;
     let request =
@@ -1566,15 +1579,15 @@ mod tests {
     use liquidfun_differential::{
         NativeMathProbeExecutor, NativeRigidWorldExecutor, Phase4ComparisonEvidence,
         Phase4HarnessFailureReason, RigidComparisonOutcome, RigidEvaluation,
-        compare_phase7_rigid_world_results,
+        compare_phase8_rigid_world_results,
     };
     use liquidfun_test_protocol::{
         BuildIdentity, BuildIdentityFields, DivergenceHorizon, EvidenceTier, FloatBits,
         HarnessLimits, MathProbeDiscrete, MathProbeDiscreteField, MathProbeHorizon,
         MathProbeOperation, MathProbePolicyPath, MathProbeRequestRecord, MathProbeResult,
         MathProbeValue, Phase4BuildIdentityFields, Phase4PolicyProfile, Phase6PolicyProfile,
-        Phase7PolicyProfile, decode_math_probe_request_jsonl, decode_rigid_world_request_jsonl,
-        decode_rigid_world_result_jsonl,
+        Phase7PolicyProfile, Phase8PolicyProfile, decode_math_probe_request_jsonl,
+        decode_rigid_world_request_jsonl, decode_rigid_world_result_jsonl,
     };
 
     use std::{fs, time::Duration};
@@ -1604,8 +1617,8 @@ mod tests {
             serde_json::to_vec(&request_value).expect("stale request should encode");
         request_bytes.push(b'\n');
         fs::write(&request_path, request_bytes).expect("stale request should be written");
-        let policy = Phase7PolicyProfile::parse_toml(include_str!(
-            "../../../protocol/tolerances/phase7-v1.toml"
+        let policy = Phase8PolicyProfile::parse_toml(include_str!(
+            "../../../protocol/tolerances/phase8-v1.toml"
         ))
         .expect("checked-in Phase 7 policy should parse");
 
@@ -1635,6 +1648,10 @@ mod tests {
             "../../../protocol/tolerances/phase7-v1.toml"
         ))
         .expect("checked-in Phase 7 policy should parse");
+        let phase8 = Phase8PolicyProfile::parse_toml(include_str!(
+            "../../../protocol/tolerances/phase8-v1.toml"
+        ))
+        .expect("checked-in Phase 8 policy should parse");
         let native = NativeRigidWorldExecutor::execute(&request)
             .expect("checked-in rigid request should execute");
         let mut oracle_value = serde_json::to_value(&native).expect("result should serialize");
@@ -1646,10 +1663,10 @@ mod tests {
         let oracle =
             decode_rigid_world_result_jsonl(&oracle_bytes, &HarnessLimits::phase2_default_v1())
                 .expect("mismatched semantic result should decode");
-        let RigidComparisonOutcome::PhysicsMismatch(mismatch) =
-            compare_phase7_rigid_world_results(&request, &native, &oracle, &phase6, &phase7)
-                .expect("registered rigid evidence should compare")
-        else {
+        let RigidComparisonOutcome::PhysicsMismatch(mismatch) = compare_phase8_rigid_world_results(
+            &request, &native, &oracle, &phase6, &phase7, &phase8,
+        )
+        .expect("registered rigid evidence should compare") else {
             panic!("active-state mutation must mismatch");
         };
         let target = mismatch.signature().clone();

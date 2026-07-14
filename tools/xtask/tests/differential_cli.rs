@@ -334,9 +334,7 @@ fn rigid_fixture_real_binary_accepts_d1_and_rejects_d2_before_effects() -> TestR
     // Arrange
     let fixture = RepositoryFixture::new()?;
     prepare_real_rigid_repository(&fixture.root, "rigid_d1")?;
-    let real_differential = workspace_root()
-        .join("target/debug")
-        .join(executable_name("liquidfun-differential"));
+    let real_differential = debug_binary("liquidfun-differential");
     let arguments = [
         "differential",
         "fixture",
@@ -416,9 +414,7 @@ fn rigid_fixture_stale_identity_real_binary_rejects_before_effects() -> TestResu
     prepare_real_rigid_repository(&fixture.root, "rigid_d1_stale_adapter")?;
     let manifest_path = fixture.root.join("reference/artifacts/manifest.toml");
     let manifest_before = fs::read(&manifest_path)?;
-    let real_differential = workspace_root()
-        .join("target/debug")
-        .join(executable_name("liquidfun-differential"));
+    let real_differential = debug_binary("liquidfun-differential");
     let mut command = fixture.command()?;
     command
         .env("LIQUIDFUN_XTASK_DIFFERENTIAL", &real_differential)
@@ -975,6 +971,13 @@ fn workspace_root() -> PathBuf {
         .collect()
 }
 
+fn debug_binary(name: &str) -> PathBuf {
+    let target_directory = env::var_os("CARGO_TARGET_DIR")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| workspace_root().join("target"));
+    target_directory.join("debug").join(executable_name(name))
+}
+
 fn prepare_real_rigid_repository(root: &Path, behavior: &str) -> io::Result<()> {
     fs::create_dir_all(root.join("protocol/fixtures/accepted"))?;
     fs::create_dir_all(root.join("protocol/tolerances"))?;
@@ -993,6 +996,10 @@ fn prepare_real_rigid_repository(root: &Path, behavior: &str) -> io::Result<()> 
         root.join("protocol/tolerances/phase7-v1.toml"),
     )?;
     fs::copy(
+        workspace_root().join("protocol/tolerances/phase8-v1.toml"),
+        root.join("protocol/tolerances/phase8-v1.toml"),
+    )?;
+    fs::copy(
         workspace_root().join("reference/artifacts/manifest.toml"),
         root.join("reference/artifacts/manifest.toml"),
     )?;
@@ -1006,9 +1013,7 @@ fn prepare_real_rigid_repository(root: &Path, behavior: &str) -> io::Result<()> 
     let oracle_directory = root.join("target/reference/oracle-debug");
     fs::create_dir_all(&oracle_directory)?;
     fs::copy(
-        workspace_root()
-            .join("target/debug")
-            .join(executable_name("liquidfun-fake-oracle")),
+        debug_binary("liquidfun-fake-oracle"),
         oracle_directory.join(executable_name("liquidfun-reference")),
     )?;
     write_real_compile_database(root)?;

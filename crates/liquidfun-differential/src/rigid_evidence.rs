@@ -10,8 +10,8 @@ use declaration::validate_rigid_declarations_with_identity;
 
 use liquidfun_test_protocol::{
     BuildEvidenceTier, BuildIdentity, FieldPolicy, FloatBits, Phase6PolicyProfile,
-    Phase7PolicyProfile, RigidStepOutcome, RigidWorldRequestRecord, RigidWorldResultRecord,
-    RigidWorldWitnessFamily, Sha256Hex,
+    Phase7PolicyProfile, Phase8PolicyProfile, RigidStepOutcome, RigidWorldRequestRecord,
+    RigidWorldResultRecord, RigidWorldWitnessFamily, Sha256Hex,
 };
 use serde::Serialize;
 use sha2::{Digest, Sha256};
@@ -405,6 +405,53 @@ pub fn compare_phase7_rigid_world_results(
     )?;
     if let Some(report) =
         phase7::first_divergence(request, native, oracle, phase6_profile, phase7_profile)?
+    {
+        return Ok(RigidComparisonOutcome::PhysicsMismatch(Box::new(report)));
+    }
+    Ok(RigidComparisonOutcome::Match)
+}
+
+/// Compares the complete Phase 8 rigid corpus under inherited Phase 6/7 and
+/// closed Phase 8 policies.
+///
+/// # Errors
+///
+/// Returns a declaration or harness boundary failure before producing
+/// physics evidence.
+pub fn compare_phase8_rigid_world_results(
+    request: &RigidWorldRequestRecord,
+    native: &RigidWorldResultRecord,
+    oracle: &RigidWorldResultRecord,
+    phase6_profile: &Phase6PolicyProfile,
+    phase7_profile: &Phase7PolicyProfile,
+    phase8_profile: &Phase8PolicyProfile,
+) -> Result<RigidComparisonOutcome, RigidComparisonFailure> {
+    if request.tolerance_profile_sha256() != phase8_profile.profile_sha256() {
+        return Err(RigidComparisonFailure::Harness(RigidHarnessReport {
+            reason: "profile_identity".into(),
+            expected: phase8_profile.profile_sha256().as_str().into(),
+            actual: request.tolerance_profile_sha256().as_str().into(),
+        }));
+    }
+    validate_rigid_declarations_with_identity(
+        request,
+        native,
+        phase8_profile.profile_sha256(),
+        RigidEngineSide::Native,
+    )?;
+    validate_rigid_declarations_with_identity(
+        request,
+        oracle,
+        phase8_profile.profile_sha256(),
+        RigidEngineSide::Oracle,
+    )?;
+    if let Some(report) =
+        phase7::first_divergence(request, native, oracle, phase6_profile, phase7_profile)?
+    {
+        return Ok(RigidComparisonOutcome::PhysicsMismatch(Box::new(report)));
+    }
+    if let Some(report) =
+        phase8::first_divergence(request, native, oracle, phase6_profile, phase8_profile)?
     {
         return Ok(RigidComparisonOutcome::PhysicsMismatch(Box::new(report)));
     }

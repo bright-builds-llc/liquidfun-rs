@@ -264,7 +264,7 @@ fn native_phase8_applies_filter_and_pre_solve_directives_at_step_time() {
 }
 
 #[test]
-fn phase8_cpp_execution_is_explicitly_gated_until_plan_08_13() {
+fn phase8_cpp_execution_gate_is_open_after_plan_08_13() {
     // Arrange
     let request = request();
 
@@ -272,5 +272,5 @@ fn phase8_cpp_execution_is_explicitly_gated_until_plan_08_13() {
     let maybe_reason = rigid_world_cpp_adapter_gate_reason(&request);
 
     // Assert
-    assert_eq!(maybe_reason, Some("phase8_cpp_adapter_pending_plan_08_13"));
+    assert_eq!(maybe_reason, None);
 }
