@@ -287,7 +287,7 @@ fn native_executes_closed_phase7_actions_and_emits_semantic_observations() {
 }
 
 #[test]
-fn oracle_rejects_step_bearing_phase8_until_plan_08_21() {
+fn oracle_executes_step_bearing_phase8_after_plan_08_21() {
     // Arrange
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let Ok(executable) = OracleExecutable::resolve(&root, OraclePreset::Debug) else {
@@ -296,16 +296,13 @@ fn oracle_rejects_step_bearing_phase8_until_plan_08_21() {
     let request = support::phase7_request();
 
     // Act
-    let error = execute_rigid_world_process(&executable, &request, REVISION)
-        .expect_err("the pre-08-21 C++ adapter must reject step-bearing Phase 8 actions");
+    let captured = execute_rigid_world_process(&executable, &request, REVISION)
+        .expect("the Plan 08-21 C++ adapter should execute step-bearing Phase 8 actions");
 
     // Assert
-    assert_eq!(
-        error.retained_stderr(),
-        b"liquidfun-reference: unsupported Phase 8 execution action\n"
-    );
-    assert!(error.child_killed());
-    assert!(error.child_reaped());
+    assert_eq!(captured.result().timelines().len(), 19);
+    assert!(captured.reset_verified());
+    assert_eq!(captured.reset_epoch(), 1);
 }
 
 #[test]
@@ -912,7 +909,7 @@ fn comparison_never_canonicalizes_manager_report_or_destruction_order() {
 }
 
 #[test]
-fn supervisor_fails_closed_before_the_step_bearing_oracle_is_available() {
+fn supervisor_accepts_the_step_bearing_oracle_after_plan_08_21() {
     // Arrange
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let Ok(executable) = OracleExecutable::resolve(&root, OraclePreset::Debug) else {
@@ -921,16 +918,12 @@ fn supervisor_fails_closed_before_the_step_bearing_oracle_is_available() {
     let request = request();
 
     // Act
-    let error = execute_rigid_world_process(&executable, &request, REVISION)
-        .expect_err("the supervisor must reject the unsupported step-bearing request");
+    let captured = execute_rigid_world_process(&executable, &request, REVISION)
+        .expect("the supervisor should accept the implemented step-bearing request");
 
     // Assert
-    assert_eq!(
-        error.retained_stderr(),
-        b"liquidfun-reference: unsupported Phase 8 execution action\n"
-    );
-    assert!(error.child_killed());
-    assert!(error.child_reaped());
+    assert_eq!(captured.result().timelines().len(), 19);
+    assert!(captured.reset_verified());
 }
 
 #[test]

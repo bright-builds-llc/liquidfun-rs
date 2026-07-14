@@ -40,6 +40,99 @@ inline bool phase8_known_action(std::string_view kind) {
   return std::find(kinds.begin(), kinds.end(), kind) != kinds.end();
 }
 
+inline void validate_phase8_bits(const Json& value, std::string_view context);
+
+inline void require_phase8_positive_bits(
+    std::uint32_t bits,
+    std::string_view context) {
+  require_finite(bits, context);
+  if (!(float_from_bits(bits) > 0.0F)) {
+    throw std::runtime_error(std::string(context) + " must be positive");
+  }
+}
+
+inline void validate_phase8_action(const Json& action) {
+  const auto kind = text(member(action, "kind", "Phase 8 action"), "action kind");
+  if (!phase8_known_action(kind)) {
+    throw std::runtime_error("unsupported Phase 8 action kind");
+  }
+  if (kind == "create_body" || kind == "inspect_body" || kind == "destroy_body") {
+    require_members(action, {"kind", "body_id"}, "Phase 8 body action");
+    static_cast<void>(id(member(action, "body_id", "body action"), "body ID"));
+  } else if (kind == "create_fixture" || kind == "destroy_fixture") {
+    require_members(action, {"kind", "fixture_id"}, "Phase 8 fixture action");
+    static_cast<void>(id(member(action, "fixture_id", "fixture action"), "fixture ID"));
+  } else if (kind == "create_joint" || kind == "inspect_joint" ||
+             kind == "destroy_joint") {
+    require_members(action, {"kind", "joint_id"}, "Phase 8 joint action");
+    static_cast<void>(id(member(action, "joint_id", "joint action"), "joint ID"));
+  } else if (kind == "mutate_joint") {
+    require_members(action, {"kind", "joint_id", "mutation"}, "Phase 8 mutation action");
+    static_cast<void>(id(member(action, "joint_id", "mutation action"), "joint ID"));
+    const auto& mutation = member(action, "mutation", "mutation action");
+    static_cast<void>(text(member(mutation, "kind", "joint mutation"), "mutation kind"));
+  } else if (kind == "create_rope" || kind == "inspect_rope" ||
+             kind == "destroy_rope") {
+    require_members(action, {"kind", "rope_id"}, "Phase 8 rope action");
+    static_cast<void>(id(member(action, "rope_id", "rope action"), "rope ID"));
+  } else if (kind == "set_rope_angle") {
+    require_members(action, {"kind", "rope_id", "angle_bits"}, "Phase 8 rope angle action");
+    static_cast<void>(id(member(action, "rope_id", "rope angle"), "rope ID"));
+  } else if (kind == "step_rope") {
+    require_members(
+        action, {"kind", "rope_id", "timestep_bits", "iterations"},
+        "Phase 8 rope step action");
+    static_cast<void>(id(member(action, "rope_id", "rope step"), "rope ID"));
+    require_phase8_positive_bits(
+        u32(member(action, "timestep_bits", "rope step"), "rope timestep"),
+        "rope timestep");
+    if (u32(member(action, "iterations", "rope step"), "rope iterations") == 0) {
+      throw std::runtime_error("Phase 8 rope iterations must be positive");
+    }
+  } else if (kind == "step") {
+    require_members(
+        action,
+        {"kind", "timestep_bits", "velocity_iterations", "position_iterations"},
+        "Phase 8 step action");
+    require_phase8_positive_bits(
+        u32(member(action, "timestep_bits", "step"), "step timestep"),
+        "step timestep");
+    if (u32(member(action, "velocity_iterations", "step"), "velocity iterations") == 0 ||
+        u32(member(action, "position_iterations", "step"), "position iterations") == 0) {
+      throw std::runtime_error("Phase 8 solver iterations must be positive");
+    }
+  } else if (kind == "set_linear_velocity") {
+    require_members(action, {"kind", "body_id", "velocity"}, "Phase 8 velocity action");
+    static_cast<void>(id(member(action, "body_id", "velocity action"), "body ID"));
+    static_cast<void>(vec2(member(action, "velocity", "velocity action"), "velocity"));
+  } else if (kind == "set_contact_filter_directive") {
+    require_members(
+        action, {"kind", "target", "should_collide"},
+        "Phase 8 filter directive action");
+    const auto& target = member(action, "target", "filter directive");
+    require_members(target, {"fixture_a_id", "fixture_b_id"}, "Phase 8 fixture pair");
+    static_cast<void>(id(member(target, "fixture_a_id", "fixture pair"), "fixture ID"));
+    static_cast<void>(id(member(target, "fixture_b_id", "fixture pair"), "fixture ID"));
+    static_cast<void>(boolean(member(action, "should_collide", "filter directive"), "should collide"));
+  } else if (kind == "set_pre_solve_directive") {
+    require_members(action, {"kind", "target", "directive"}, "Phase 8 pre-solve action");
+    const auto& target = member(action, "target", "pre-solve directive");
+    require_members(target, {"fixture_a_id", "fixture_b_id"}, "Phase 8 fixture pair");
+    static_cast<void>(id(member(target, "fixture_a_id", "fixture pair"), "fixture ID"));
+    static_cast<void>(id(member(target, "fixture_b_id", "fixture pair"), "fixture ID"));
+    const auto& directive = member(action, "directive", "pre-solve action");
+    require_members(
+        directive,
+        {"enabled", "maybe_friction_bits", "maybe_restitution_bits",
+         "maybe_tangent_speed_bits"},
+        "Phase 8 pre-solve directive");
+    static_cast<void>(boolean(member(directive, "enabled", "pre-solve directive"), "enabled"));
+  } else if (kind == "request_reconstruction" || kind == "request_diagnostics") {
+    require_members(action, {"kind"}, "Phase 8 request action");
+  }
+  validate_phase8_bits(action, "Phase 8 action");
+}
+
 inline void validate_phase8_bits(const Json& value, std::string_view context) {
   if (value.is_object()) {
     for (const auto& [name, child] : value.items()) {
@@ -162,16 +255,38 @@ inline void validate_phase8_timeline(
     }
   }
   std::unordered_set<std::string> action_ids;
+  std::unordered_set<std::string> post_step_joint_inspections;
+  bool positive_step_seen = false;
   for (const auto& record : actions) {
     require_members(record, {"action_id", "phase", "action"}, "Phase 8 action record");
     if (!action_ids.insert(id(member(record, "action_id", "action"), "action ID")).second) {
       throw std::runtime_error("duplicate Phase 8 action ID");
     }
     const auto& action = member(record, "action", "action record");
+    validate_phase8_action(action);
     const auto kind = text(member(action, "kind", "action"), "action kind");
-    if (!phase8_known_action(kind)) throw std::runtime_error("unsupported Phase 8 action kind");
-    validate_phase8_bits(action, "Phase 8 action");
+    if (kind == "step") positive_step_seen = true;
+    if (kind == "inspect_joint" && positive_step_seen) {
+      post_step_joint_inspections.insert(
+          text(member(action, "joint_id", "joint inspection"), "joint ID"));
+    }
   }
+  const auto requires_joint_step_observations =
+      std::find(phase8_family_names().begin(), phase8_family_names().begin() + 6,
+                expected_family) != phase8_family_names().begin() + 6;
+  if (requires_joint_step_observations) {
+    if (!positive_step_seen) {
+      throw std::runtime_error("Phase 8 joint family is missing a positive step");
+    }
+    for (const auto& joint : joints) {
+      const auto joint_id = text(member(joint, "joint_id", "joint"), "joint ID");
+      if (!post_step_joint_inspections.count(joint_id)) {
+        throw std::runtime_error("Phase 8 joint family is missing a post-step observation");
+      }
+    }
+  }
+  std::size_t previous_checkpoint_action = 0;
+  bool first_checkpoint = true;
   for (const auto& checkpoint : checkpoints) {
     require_members(
         checkpoint,
@@ -180,6 +295,16 @@ inline void validate_phase8_timeline(
     static_cast<void>(id(member(checkpoint, "checkpoint_id", "checkpoint"), "checkpoint ID"));
     const auto after = id(member(checkpoint, "after_action_id", "checkpoint"), "after-action ID");
     if (!action_ids.count(after)) throw std::runtime_error("invalid Phase 8 checkpoint action");
+    const auto action_index = static_cast<std::size_t>(std::distance(
+        actions.begin(),
+        std::find_if(actions.begin(), actions.end(), [&](const auto& action) {
+          return action.at("action_id") == after;
+        })));
+    if (!first_checkpoint && action_index <= previous_checkpoint_action) {
+      throw std::runtime_error("Phase 8 checkpoints are out of action order");
+    }
+    previous_checkpoint_action = action_index;
+    first_checkpoint = false;
     const auto& transitions = member(checkpoint, "transitions", "checkpoint");
     if (!transitions.is_array() || transitions.empty() || transitions.size() > 64) {
       throw std::runtime_error("Phase 8 transition count outside reviewed bounds");

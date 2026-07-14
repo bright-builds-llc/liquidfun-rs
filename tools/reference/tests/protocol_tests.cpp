@@ -409,19 +409,84 @@ void rigid_world_executes_all_complete_witness_families() {
   }
   const auto& joint_observations =
       timelines.at(9).at("checkpoints").at(0).at("observations");
-  expect(joint_observations.size() == 13, "Phase 8 joint coverage is incomplete");
+  expect(joint_observations.size() == 23, "Phase 8 joint coverage is incomplete");
   expect(
       joint_observations.at(10).at("snapshot").at("dependencies").size() == 2,
       "Phase 8 gear dependencies are incomplete");
+  std::set<std::string> stepped_joint_kinds;
+  for (std::size_t index = 12; index < joint_observations.size(); ++index) {
+    stepped_joint_kinds.insert(
+        joint_observations.at(index).at("snapshot").at("joint_kind"));
+  }
+  expect(
+      stepped_joint_kinds.size() == 11,
+      "Phase 8 did not inspect every pinned joint kind after stepping");
+  const auto nontrivial_joint_count = std::count_if(
+          joint_observations.begin() + 12,
+          joint_observations.end(),
+          [](const auto& observation) {
+            const auto& snapshot = observation.at("snapshot");
+            return snapshot.at("branch_state") != "inactive" ||
+                   snapshot.at("coordinate_bits") != 0U ||
+                   snapshot.at("speed_bits") != 0U ||
+                   snapshot.at("reaction_force").at("x_bits") != 0U ||
+                   snapshot.at("reaction_force").at("y_bits") != 0U ||
+                   snapshot.at("reaction_torque_bits") != 0U;
+          });
+  expect(
+      nontrivial_joint_count >= 10,
+      "Phase 8 post-step joint observations remained trivial");
   const auto& rope_observations =
       timelines.at(15).at("checkpoints").at(0).at("observations");
   expect(rope_observations.size() == 3, "Phase 8 rope coverage is incomplete");
+  std::set<std::string> gear_ids;
+  for (const auto& observation :
+       timelines.at(13).at("checkpoints").at(0).at("observations")) {
+    if (observation.at("kind") == "joint" &&
+        observation.at("snapshot").at("joint_kind") == "gear") {
+      gear_ids.insert(observation.at("snapshot").at("joint_id"));
+    }
+  }
+  expect(
+      gear_ids == std::set<std::string>{
+                      "gear-0-joint", "gear-1-joint", "gear-2-joint",
+                      "gear-3-joint"},
+      "Phase 8 did not execute all four gear source combinations");
   const auto& diagnostic_observations =
       timelines.at(18).at("checkpoints").at(0).at("observations");
   expect(
-      diagnostic_observations.size() == 5 &&
-          diagnostic_observations.back().at("kind") == "diagnostics",
+      diagnostic_observations.size() == 17 &&
+          diagnostic_observations.back().at("kind") == "diagnostics" &&
+          std::any_of(
+              diagnostic_observations.begin(),
+              diagnostic_observations.end(),
+              [](const auto& observation) {
+                return observation.at("kind") == "reconstruction" &&
+                       observation.at("record").at("support") ==
+                           "unsupported_mouse_joint";
+              }),
       "Phase 8 reconstruction or diagnostics are incomplete");
+  const auto& callback_lifecycle =
+      timelines.at(16).at("checkpoints").at(0).at("observations");
+  expect(
+      callback_lifecycle == nlohmann::json::parse(
+          R"([{"kind":"lifecycle","event":{"ordinal":0,"kind":"filter_decision","maybe_contact":null,"maybe_entity_id":"callback-fa"}},{"kind":"lifecycle","event":{"ordinal":1,"kind":"filter_decision","maybe_contact":null,"maybe_entity_id":"callback-fa"}},{"kind":"lifecycle","event":{"ordinal":2,"kind":"contact_created","maybe_contact":{"fixture_a_id":"callback-fa","child_a":0,"fixture_b_id":"callback-fb","child_b":0,"occurrence":1},"maybe_entity_id":null}},{"kind":"lifecycle","event":{"ordinal":3,"kind":"begin_contact","maybe_contact":{"fixture_a_id":"callback-fa","child_a":0,"fixture_b_id":"callback-fb","child_b":0,"occurrence":1},"maybe_entity_id":null}},{"kind":"lifecycle","event":{"ordinal":4,"kind":"pre_solve","maybe_contact":{"fixture_a_id":"callback-fa","child_a":0,"fixture_b_id":"callback-fb","child_b":0,"occurrence":1},"maybe_entity_id":null}},{"kind":"lifecycle","event":{"ordinal":5,"kind":"post_solve","maybe_contact":{"fixture_a_id":"callback-fa","child_a":0,"fixture_b_id":"callback-fb","child_b":0,"occurrence":1},"maybe_entity_id":null}},{"kind":"lifecycle","event":{"ordinal":6,"kind":"pre_solve","maybe_contact":{"fixture_a_id":"callback-fa","child_a":0,"fixture_b_id":"callback-fb","child_b":0,"occurrence":1},"maybe_entity_id":null}},{"kind":"lifecycle","event":{"ordinal":7,"kind":"post_solve","maybe_contact":{"fixture_a_id":"callback-fa","child_a":0,"fixture_b_id":"callback-fb","child_b":0,"occurrence":1},"maybe_entity_id":null}},{"kind":"lifecycle","event":{"ordinal":8,"kind":"pre_solve","maybe_contact":{"fixture_a_id":"callback-fa","child_a":0,"fixture_b_id":"callback-fb","child_b":0,"occurrence":1},"maybe_entity_id":null}}])"),
+      "Phase 8 callback lifecycle order or multiplicity changed");
+  const auto& destruction_observations =
+      timelines.at(17).at("checkpoints").at(0).at("observations");
+  std::vector<std::string> destruction_kinds;
+  for (const auto& observation : destruction_observations) {
+    if (observation.at("kind") == "lifecycle") {
+      destruction_kinds.push_back(observation.at("event").at("kind"));
+    }
+  }
+  expect(
+      destruction_kinds == std::vector<std::string>{
+          "filter_decision", "filter_decision", "contact_created",
+          "begin_contact", "pre_solve", "post_solve", "pre_solve",
+          "post_solve", "joint_goodbye", "end_contact",
+          "contact_destroyed", "fixture_goodbye", "body_destroyed"},
+      "Phase 8 destruction lifecycle order or multiplicity changed");
   const auto& non_colliding = result.at("timelines").at(0).at("checkpoints");
   const auto& single_contact = result.at("timelines").at(1).at("checkpoints");
   expect(non_colliding.size() == 8, "non-colliding checkpoints are incomplete");
@@ -836,6 +901,8 @@ void rigid_world_reuse_advances_reset_without_state_leakage() {
 
 void rigid_world_phase8_decode_fails_closed_at_reviewed_boundaries() {
   // Arrange
+  constexpr std::size_t maximum_phase8_ropes = 8;
+  constexpr std::size_t maximum_phase8_rope_vertices = 128;
   const auto fixture = read_fixture(
       "protocol/fixtures/accepted/rigid-world-request.jsonl");
   auto unknown_action = nlohmann::json::parse(fixture);
@@ -851,13 +918,50 @@ void rigid_world_phase8_decode_fails_closed_at_reviewed_boundaries() {
   auto missing_family = nlohmann::json::parse(fixture);
   missing_family["scenario"]["timelines"].erase(
       missing_family["scenario"]["timelines"].begin() + 9);
+  auto zero_step = nlohmann::json::parse(fixture);
+  zero_step["scenario"]["timelines"][9]["actions"][16]["action"]
+           ["timestep_bits"] = 0U;
+  auto missing_post_step_observation = nlohmann::json::parse(fixture);
+  auto& observation_actions =
+      missing_post_step_observation["scenario"]["timelines"][10]["actions"];
+  observation_actions.erase(observation_actions.begin() + 11);
+  auto duplicate_id = nlohmann::json::parse(fixture);
+  duplicate_id["scenario"]["timelines"][9]["bodies"][1]["body_id"] =
+      duplicate_id["scenario"]["timelines"][9]["bodies"][0]["body_id"];
+  auto too_many_actions = nlohmann::json::parse(fixture);
+  auto& actions = too_many_actions["scenario"]["timelines"][9]["actions"];
+  while (actions.size() <= liquidfun::reference::kRigidWorldMaximumActions) {
+    auto duplicate = actions.back();
+    duplicate["action_id"] = "bounded-action-" + std::to_string(actions.size());
+    actions.push_back(std::move(duplicate));
+  }
+  auto too_many_ropes = nlohmann::json::parse(fixture);
+  auto& ropes = too_many_ropes["scenario"]["timelines"][15]["ropes"];
+  while (ropes.size() <= maximum_phase8_ropes) {
+    auto duplicate = ropes.at(0);
+    duplicate["rope_id"] = "bounded-rope-" + std::to_string(ropes.size());
+    ropes.push_back(std::move(duplicate));
+  }
+  auto too_many_rope_vertices = nlohmann::json::parse(fixture);
+  auto& bounded_rope =
+      too_many_rope_vertices["scenario"]["timelines"][15]["ropes"][0];
+  while (bounded_rope["vertices"].size() <= maximum_phase8_rope_vertices) {
+    bounded_rope["vertices"].push_back(bounded_rope["vertices"].back());
+    bounded_rope["masses_bits"].push_back(bounded_rope["masses_bits"].back());
+  }
 
   // Act / Assert
   for (const auto& [request, expected] :
-       std::array<std::pair<nlohmann::json, std::string_view>, 3>{
+       std::array<std::pair<nlohmann::json, std::string_view>, 9>{
            std::pair{unknown_action, "unsupported Phase 8 action kind"},
            std::pair{too_many_joints, "collection count"},
-           std::pair{missing_family, "timeline count"}}) {
+           std::pair{missing_family, "timeline count"},
+           std::pair{zero_step, "must be positive"},
+           std::pair{missing_post_step_observation, "post-step observation"},
+           std::pair{duplicate_id, "duplicate Phase 8 ID"},
+           std::pair{too_many_actions, "collection count"},
+           std::pair{too_many_ropes, "collection count"},
+           std::pair{too_many_rope_vertices, "rope vertex count"}}) {
     try {
       static_cast<void>(decode_rigid_world_request(request.dump() + '\n'));
     } catch (const std::exception& error) {
