@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 08-12-PLAN.md
-last_updated: "2026-07-14T02:31:44.828Z"
+stopped_at: Completed 08-13-PLAN.md
+last_updated: "2026-07-14T03:01:07.270Z"
 last_activity: 2026-07-14
 progress:
   total_phases: 12
   completed_phases: 7
   total_plans: 90
-  completed_plans: 86
-  percent: 96
+  completed_plans: 87
+  percent: 97
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 ## Current Position
 
 Phase: 8
-Plan: 12 of 16
+Plan: 13 of 16
 Status: Ready to execute
 Last activity: 2026-07-14
 
@@ -113,6 +113,7 @@ Progress: [█░░░░░░░░░] 6%
 | Phase 08 P10 | 12 min | 1 tasks | 5 files |
 | Phase 08 P11 | 24min | 1 tasks | 13 files |
 | Phase 08 P12 | 27min | 1 tasks | 19 files |
+| Phase 08 P13 | 29min | 2 tasks | 15 files |
 
 ## Accumulated Context
 
@@ -257,6 +258,8 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 08]: Phase 8 is a strict protocol superset requiring all nineteen retained and new witness families. — Retained Phase 6 and Phase 7 coverage cannot silently disappear.
 - [Phase 08]: Transported configuration remains exact-bit while computed observations select one explicit named numeric policy. — Configuration identity and computed compatibility evidence have different comparison semantics.
 - [Phase 08]: Joint, rope, directive, and timeline collections are bounded during strict decode before domain allocation. — Untrusted JSONL must fail before unbounded allocation or execution.
+- [Phase 08]: Guard pre-solver joint reactions as defined positive zero; preserve exact pinned getter bits after solver initialization.
+- [Phase 08]: Layer the closed Phase 8 comparator after the complete inherited Phase 7 comparison.
 
 ### Pending Todos
 
@@ -270,6 +273,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-14T02:04:22.211Z
-Stopped at: Completed 08-11-PLAN.md
+Last session: 2026-07-14T03:01:07.267Z
+Stopped at: Completed 08-13-PLAN.md
 Resume file: None
