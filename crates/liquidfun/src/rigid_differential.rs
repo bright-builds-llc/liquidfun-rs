@@ -3,6 +3,12 @@
 use crate::math::Vec2;
 use crate::{BodyId, BodySnapshot, FixtureId, ManagedContactSnapshot};
 
+pub use crate::world::{
+    BodyReconstruction, FixtureReconstruction, JointReconstruction, ReconstructionIndex,
+    ReconstructionSupport, ReconstructionUnsupported, WorldDiagnostics, WorldReconstruction,
+    WorldReconstructionError, WorldReconstructionLimits,
+};
+
 /// Reviewed private storage bounds for one TOI island diagnostic.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct RigidToiIslandLimits {

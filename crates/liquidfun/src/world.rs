@@ -6,6 +6,8 @@ mod contact;
 mod contact_manager;
 mod contact_solver;
 mod continuous;
+#[cfg(feature = "differential-internals")]
+mod diagnostics;
 mod fixture;
 mod island;
 mod joint;
@@ -27,6 +29,12 @@ pub use contact::{
     ContactPointSnapshot, ContactTransition, ContactTransitionKind, ManagedContactSnapshot,
 };
 pub use contact_solver::ContactSolve;
+#[cfg(feature = "differential-internals")]
+pub use diagnostics::{
+    BodyReconstruction, FixtureReconstruction, JointReconstruction, ReconstructionIndex,
+    ReconstructionSupport, ReconstructionUnsupported, WorldDiagnostics, WorldReconstruction,
+    WorldReconstructionError, WorldReconstructionLimits,
+};
 pub use fixture::{
     FixtureBoundsError, FixtureDef, FixtureDefError, FixtureDestructionError, FixtureMutationError,
     FixtureSnapshot, WorldFixtureSnapshot,
