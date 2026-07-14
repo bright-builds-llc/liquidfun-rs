@@ -371,7 +371,17 @@ void rigid_world_executes_all_complete_witness_families() {
       "continuous_collision_and_sub_stepping",
       "continuous_budget_resume",
       "world_query_and_ray_cast",
-      "origin_shift_covariance"};
+      "origin_shift_covariance",
+      "joint_definitions_and_mutations",
+      "revolute_prismatic_limits_and_motors",
+      "distance_pulley_mouse_constraints",
+      "wheel_weld_friction_rope_motor_constraints",
+      "gear_dependencies_and_four_body_solver",
+      "mixed_joint_island_order_and_collision_suppression",
+      "standalone_rope_evolution",
+      "contact_filter_listener_and_pre_solve_timing",
+      "destruction_listener_and_dependency_cascades",
+      "diagnostic_reconstruction_and_dump_order"};
   const std::array expected_phase7_checkpoints{
       "control-checkpoint",
       "island-checkpoint",
@@ -397,6 +407,21 @@ void rigid_world_executes_all_complete_witness_families() {
                 expected_phase7_checkpoints[index],
         "Phase 7 rigid checkpoint coverage is incomplete");
   }
+  const auto& joint_observations =
+      timelines.at(9).at("checkpoints").at(0).at("observations");
+  expect(joint_observations.size() == 13, "Phase 8 joint coverage is incomplete");
+  expect(
+      joint_observations.at(10).at("snapshot").at("dependencies").size() == 2,
+      "Phase 8 gear dependencies are incomplete");
+  const auto& rope_observations =
+      timelines.at(15).at("checkpoints").at(0).at("observations");
+  expect(rope_observations.size() == 3, "Phase 8 rope coverage is incomplete");
+  const auto& diagnostic_observations =
+      timelines.at(18).at("checkpoints").at(0).at("observations");
+  expect(
+      diagnostic_observations.size() == 5 &&
+          diagnostic_observations.back().at("kind") == "diagnostics",
+      "Phase 8 reconstruction or diagnostics are incomplete");
   const auto& non_colliding = result.at("timelines").at(0).at("checkpoints");
   const auto& single_contact = result.at("timelines").at(1).at("checkpoints");
   expect(non_colliding.size() == 8, "non-colliding checkpoints are incomplete");
@@ -809,6 +834,49 @@ void rigid_world_reuse_advances_reset_without_state_leakage() {
   expect(second.result_record == third.result_record, "rigid allocation history changed identity");
 }
 
+void rigid_world_phase8_decode_fails_closed_at_reviewed_boundaries() {
+  // Arrange
+  const auto fixture = read_fixture(
+      "protocol/fixtures/accepted/rigid-world-request.jsonl");
+  auto unknown_action = nlohmann::json::parse(fixture);
+  unknown_action["scenario"]["timelines"][9]["actions"][0]["action"]["kind"] =
+      "unknown_phase8_action";
+  auto too_many_joints = nlohmann::json::parse(fixture);
+  auto& joints = too_many_joints["scenario"]["timelines"][9]["joints"];
+  while (joints.size() <= liquidfun::reference::kRigidWorldMaximumJoints) {
+    auto duplicate = joints.at(0);
+    duplicate["joint_id"] = "bounded-joint-" + std::to_string(joints.size());
+    joints.push_back(std::move(duplicate));
+  }
+  auto missing_family = nlohmann::json::parse(fixture);
+  missing_family["scenario"]["timelines"].erase(
+      missing_family["scenario"]["timelines"].begin() + 9);
+
+  // Act / Assert
+  for (const auto& [request, expected] :
+       std::array<std::pair<nlohmann::json, std::string_view>, 3>{
+           std::pair{unknown_action, "unsupported Phase 8 action kind"},
+           std::pair{too_many_joints, "collection count"},
+           std::pair{missing_family, "timeline count"}}) {
+    try {
+      static_cast<void>(decode_rigid_world_request(request.dump() + '\n'));
+    } catch (const std::exception& error) {
+      expect(
+          std::string(error.what()).find(expected) != std::string::npos,
+          "Phase 8 boundary produced an unstable diagnostic");
+      continue;
+    }
+    throw std::runtime_error("invalid Phase 8 request was accepted");
+  }
+}
+
+void phase8_reactions_guard_uninitialized_solver_scratch() {
+  // Arrange / Act / Assert
+  expect(
+      liquidfun::reference::phase8_reaction_guard_self_test(),
+      "Phase 8 reaction guard did not separate undefined and initialized state");
+}
+
 }  // namespace
 
 int main() {
@@ -835,6 +903,8 @@ int main() {
     rigid_world_accepts_zero_origin_inertia_with_nonzero_center();
     rigid_world_rejects_non_finite_centered_inertia_intermediates();
     rigid_world_reuse_advances_reset_without_state_leakage();
+    rigid_world_phase8_decode_fails_closed_at_reviewed_boundaries();
+    phase8_reactions_guard_uninitialized_solver_scratch();
   } catch (const std::exception& error) {
     std::cerr << "protocol test failure: " << error.what() << '\n';
     return 1;

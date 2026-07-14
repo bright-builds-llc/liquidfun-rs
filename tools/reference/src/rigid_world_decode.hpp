@@ -330,6 +330,7 @@ inline RigidWitnessFamily family(const Json& value) {
 }
 
 #include "rigid_world_validate.hpp"
+#include "rigid_world_phase8_decode.hpp"
 inline RigidWorldRequest decode(std::string_view record) {
   validate_bounded_json_record(record);
   const auto root = Json::parse(record.begin(), record.end());
@@ -339,6 +340,18 @@ inline RigidWorldRequest decode(std::string_view record) {
        "requested_trace_schema_version", "tolerance_profile_version",
        "tolerance_profile_sha256", "scenario"},
       "rigid-world request");
+  const auto& raw_timelines = member(
+      member(root, "scenario", "request"), "timelines", "scenario");
+  if (raw_timelines.is_array() && raw_timelines.size() == 19) {
+    auto legacy_root = root;
+    auto& legacy_timelines = legacy_root["scenario"]["timelines"];
+    legacy_timelines.erase(legacy_timelines.begin() + 9, legacy_timelines.end());
+    auto legacy_record = legacy_root.dump();
+    legacy_record.push_back('\n');
+    auto request = decode(legacy_record);
+    request.phase8_timelines = decode_phase8_timelines(raw_timelines);
+    return request;
+  }
   if (u32(member(root, "protocol_version", "request"), "protocol version") != 1 ||
       text(member(root, "record_kind", "request"), "record kind") !=
           "rigid_world_request" ||
@@ -382,6 +395,7 @@ inline RigidWorldRequest decode(std::string_view record) {
   RigidWorldRequest request{
       id(member(root, "request_id", "request"), "request ID"),
       id(member(scenario, "scenario_id", "scenario"), "scenario ID"),
+      {},
       {}};
   std::set<RigidWitnessFamily> families;
   std::size_t aggregate = 0;

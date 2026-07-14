@@ -3,6 +3,7 @@
 #include "protocol.hpp"
 #include "rigid_world_decode.hpp"
 #include "rigid_world_trace.hpp"
+#include "rigid_world_phase8_execute.hpp"
 
 #include <Box2D/Box2D.h>
 
@@ -702,6 +703,43 @@ void SemanticContactListener::PostSolve(
 
 }  // namespace
 
+RigidVec2Bits semantic_phase8_reaction_force_bits(
+    const b2Joint& joint,
+    float inverse_timestep,
+    bool solver_initialized) {
+  const auto value = phase8_detail::semantic_reaction_force(
+      joint, inverse_timestep, solver_initialized);
+  return {bits_from_float(value.x), bits_from_float(value.y)};
+}
+
+bool phase8_reaction_guard_self_test() {
+  b2World world({0.0F, 0.0F});
+  b2BodyDef static_definition;
+  auto* static_body = world.CreateBody(&static_definition);
+  b2BodyDef dynamic_definition;
+  dynamic_definition.type = b2_dynamicBody;
+  dynamic_definition.position.Set(2.0F, 0.0F);
+  auto* dynamic_body = world.CreateBody(&dynamic_definition);
+  b2CircleShape circle;
+  circle.m_radius = 0.25F;
+  dynamic_body->CreateFixture(&circle, 1.0F);
+  b2DistanceJointDef joint_definition;
+  joint_definition.bodyA = static_body;
+  joint_definition.bodyB = dynamic_body;
+  joint_definition.length = 1.0F;
+  joint_definition.frequencyHz = 1.0F;
+  auto* joint = world.CreateJoint(&joint_definition);
+  if (joint == nullptr) return false;
+  const auto before = semantic_phase8_reaction_force_bits(*joint, 60.0F, false);
+  world.Step(1.0F / 60.0F, 8, 3, 1);
+  const auto after = semantic_phase8_reaction_force_bits(*joint, 60.0F, true);
+  const auto exact_after = joint->GetReactionForce(60.0F);
+  return before.x == 0U && before.y == 0U &&
+         after.x == bits_from_float(exact_after.x) &&
+         after.y == bits_from_float(exact_after.y) &&
+         (after.x != 0U || after.y != 0U);
+}
+
 RigidWorldRequest decode_rigid_world_request(std::string_view record) {
   return rigid_world_decode::decode(record);
 }
@@ -722,6 +760,18 @@ RigidWorldTrace RigidWorldAdapter::execute(std::string_view record) {
       timeline_results.push_back(execution.run());
       if (world.GetBodyCount() != 0 || world.GetContactCount() != 0) {
         throw std::runtime_error("rigid request left pinned world state live");
+      }
+    }
+    world_active = false;
+  }
+  for (const auto& raw_timeline : request.phase8_timelines) {
+    {
+      b2World world({0.0F, 0.0F});
+      world_active = true;
+      timeline_results.push_back(execute_phase8_timeline(world, raw_timeline));
+      if (world.GetBodyCount() != 0 || world.GetJointCount() != 0 ||
+          world.GetContactCount() != 0) {
+        throw std::runtime_error("Phase 8 request left pinned world state live");
       }
     }
     world_active = false;

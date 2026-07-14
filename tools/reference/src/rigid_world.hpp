@@ -8,10 +8,13 @@
 #include <variant>
 #include <vector>
 
+class b2Joint;
+
 namespace liquidfun::reference {
 
 inline constexpr std::size_t kRigidWorldMaximumActions = 128;
 inline constexpr std::size_t kRigidWorldMaximumDirectives = 128;
+inline constexpr std::size_t kRigidWorldMaximumJoints = 64;
 inline constexpr std::uint32_t kRigidWorldMaximumIterations = 1024;
 inline constexpr std::uint32_t kRigidWorldMaximumContinuousWork = 1000000;
 inline constexpr std::uint32_t kRigidWorldTimestepBits = 0x3c888889U;
@@ -288,6 +291,7 @@ struct RigidWorldRequest {
   std::string request_id;
   std::string scenario_id;
   std::vector<RigidTimeline> timelines;
+  std::vector<std::string> phase8_timelines;
 };
 
 struct RigidWorldTrace {
@@ -298,6 +302,12 @@ struct RigidWorldTrace {
 };
 
 RigidWorldRequest decode_rigid_world_request(std::string_view record);
+
+RigidVec2Bits semantic_phase8_reaction_force_bits(
+    const b2Joint& joint,
+    float inverse_timestep,
+    bool solver_initialized);
+bool phase8_reaction_guard_self_test();
 
 class RigidWorldAdapter {
  public:
