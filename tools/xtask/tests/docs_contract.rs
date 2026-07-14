@@ -715,6 +715,36 @@ fn oracle_workflow_fetches_full_history_for_every_checkout() -> TestResult {
     Ok(())
 }
 
+#[test]
+fn windows_oracle_step_fails_fast_on_native_command_errors() -> TestResult {
+    // Arrange
+    let workflow = fs::read_to_string(workspace_root().join(".github/workflows/oracle.yml"))?;
+    let windows_job = workflow
+        .split("  portability-windows:")
+        .nth(1)
+        .expect("Windows portability job must remain in the Oracle workflow");
+    let build_step = windows_job
+        .split("      - name: Verify and build with the native Visual Studio environment")
+        .nth(1)
+        .expect("Windows verify-and-build step must remain present");
+
+    // Act
+    let error_preference = build_step
+        .find("$ErrorActionPreference = \"Stop\"")
+        .expect("PowerShell errors must stop the Windows build step");
+    let native_preference = build_step
+        .find("$PSNativeCommandUseErrorActionPreference = $true")
+        .expect("native command failures must stop the Windows build step");
+    let first_command = build_step
+        .find("cargo xtask upstream verify")
+        .expect("Windows build step must verify the upstream checkout");
+
+    // Assert
+    assert!(error_preference < first_command);
+    assert!(native_preference < first_command);
+    Ok(())
+}
+
 fn parse_row(line: &str) -> io::Result<Vec<String>> {
     let trimmed = line.trim();
     let Some(contents) = trimmed

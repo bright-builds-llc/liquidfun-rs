@@ -102,6 +102,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   # weakening repository-authored code.
   set(
     REFERENCE_UPSTREAM_COMPATIBILITY_OPTIONS
+    -Wno-error=deprecated-copy-with-user-provided-copy
     -Wno-error=unused-result
     -Wno-error=nontrivial-memcall
   )
