@@ -4,8 +4,12 @@ use liquidfun::math::Vec2;
 use liquidfun::{
     BodyDef, BodyId, BodyType, DestroyedId, DestructionCause, GearJointDef, HandleError, JointId,
     JointKind, JointMutationError, JointSpecificSnapshot, PrismaticJointDef, RevoluteJointDef,
-    World,
+    StepConfiguration, StepHook, StepLimits, World,
 };
+
+struct NoopHook;
+
+impl StepHook for NoopHook {}
 
 fn body(world: &mut World, position: Vec2, angle: f32) -> BodyId {
     world
@@ -34,6 +38,110 @@ fn prismatic(world: &mut World, body_a: BodyId, body_b: BodyId) -> JointId {
                 .into(),
         )
         .expect("prismatic joint should fit")
+}
+
+fn attach_mass(world: &mut World, body: BodyId) {
+    use liquidfun::FixtureDef;
+    use liquidfun::collision::{CircleShape, FilterData, Shape};
+
+    let shape = Shape::from(CircleShape::new(Vec2::ZERO, 0.5).expect("circle"));
+    let fixture = FixtureDef::new(shape, 1.0, 0.0, 0.0, false, FilterData::default())
+        .expect("fixture definition");
+    world.create_fixture(body, &fixture).expect("fixture");
+}
+
+#[test]
+fn all_source_combinations_solve_through_four_body_world_lanes() {
+    // Arrange
+    let combinations = [
+        (false, false, 2.0),
+        (false, true, -0.5),
+        (true, false, 0.0),
+        (true, true, 3.0),
+    ];
+
+    for (first_prismatic, second_prismatic, ratio) in combinations {
+        let mut world = World::new().expect("world");
+        let body_c = body(&mut world, Vec2::new(-3.0, 0.0), 0.0);
+        let body_a = body(&mut world, Vec2::new(-1.0, 0.5), 0.25);
+        let body_d = body(&mut world, Vec2::new(1.0, -0.5), -0.25);
+        let body_b = body(&mut world, Vec2::new(3.0, 0.0), 0.5);
+        for body in [body_a, body_b, body_c, body_d] {
+            attach_mass(&mut world, body);
+        }
+        let joint1 = if first_prismatic {
+            prismatic(&mut world, body_c, body_a)
+        } else {
+            revolute(&mut world, body_c, body_a)
+        };
+        let joint2 = if second_prismatic {
+            prismatic(&mut world, body_d, body_b)
+        } else {
+            revolute(&mut world, body_d, body_b)
+        };
+        let gear = world
+            .create_joint(
+                GearJointDef::new(joint1, joint2)
+                    .expect("distinct sources")
+                    .with_ratio(ratio)
+                    .expect("finite ratio")
+                    .into(),
+            )
+            .expect("gear should fit");
+        world
+            .set_body_linear_velocity(body_a, Vec2::new(4.0, -1.0))
+            .expect("body A velocity");
+        world
+            .set_body_angular_velocity(body_a, 3.0)
+            .expect("body A angular velocity");
+        world
+            .set_body_linear_velocity(body_b, Vec2::new(-2.0, 2.0))
+            .expect("body B velocity");
+        world
+            .set_body_angular_velocity(body_b, -2.0)
+            .expect("body B angular velocity");
+        world
+            .set_body_linear_velocity(body_c, Vec2::new(-1.0, 0.5))
+            .expect("body C velocity");
+        world
+            .set_body_angular_velocity(body_c, -1.0)
+            .expect("body C angular velocity");
+        world
+            .set_body_linear_velocity(body_d, Vec2::new(1.0, -0.5))
+            .expect("body D velocity");
+        world
+            .set_body_angular_velocity(body_d, 1.0)
+            .expect("body D angular velocity");
+
+        // Act
+        let mut hook = NoopHook;
+        world
+            .step(
+                StepConfiguration::new(1.0 / 60.0, 8, 3).expect("configuration"),
+                &mut hook,
+                StepLimits::default(),
+            )
+            .expect("four-body gear should solve");
+        let force = world
+            .joint_reaction_force(gear, 60.0)
+            .expect("gear reaction force");
+        let torque = world
+            .joint_reaction_torque(gear, 60.0)
+            .expect("gear reaction torque");
+
+        // Assert
+        assert!(force.is_valid());
+        assert!(torque.is_finite());
+        assert!(
+            force != Vec2::ZERO || torque != 0.0,
+            "{first_prismatic:?}/{second_prismatic:?} ratio {ratio} must use the live gear cache"
+        );
+        for body in [body_a, body_b, body_c, body_d] {
+            let snapshot = world.body_snapshot(body).expect("body remains live");
+            assert!(snapshot.position().is_valid());
+            assert!(snapshot.linear_velocity().is_valid());
+        }
+    }
 }
 
 #[test]

@@ -969,23 +969,6 @@ impl World {
         self.rigid_island_diagnostics_for_limits(IslandLimits::REVIEWED)
     }
 
-    /// Copies private joint warm-start caches in stable arena order.
-    #[cfg(feature = "differential-internals")]
-    #[doc(hidden)]
-    #[must_use]
-    pub fn rigid_joint_solver_impulse_diagnostics(&self) -> Vec<(JointId, Vec2, f32)> {
-        self.joints
-            .iter()
-            .map(|(joint, record)| {
-                (
-                    joint,
-                    record.solver_linear_impulse,
-                    record.solver_angular_impulse,
-                )
-            })
-            .collect()
-    }
-
     /// Builds owned island evidence with smaller diagnostic-only capacity limits.
     #[cfg(feature = "differential-internals")]
     #[doc(hidden)]
@@ -2035,14 +2018,7 @@ impl World {
                 .joints
                 .get_mut(joint.joint_id)
                 .expect("staged island joint remains live during commit");
-            if let Some(runtime) = joint.maybe_runtime {
-                record.runtime = runtime;
-                record.solver_linear_impulse = Vec2::ZERO;
-                record.solver_angular_impulse = 0.0;
-            } else {
-                record.solver_linear_impulse = joint.linear_impulse;
-                record.solver_angular_impulse = joint.angular_impulse;
-            }
+            record.runtime = joint.runtime;
         }
         for solve in &candidate.contact_solves {
             hook_run.record_discrete_solve(solve.clone())?;

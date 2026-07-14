@@ -423,12 +423,7 @@ pub(super) fn solve_islands(
                     solver_body_lane(island, source_b.bodies[0]),
                 );
                 joint_inputs.push(JointConstraintInput::gear(
-                    *joint_id,
-                    &lanes,
-                    definition,
-                    runtime,
-                    record.solver_linear_impulse,
-                    record.solver_angular_impulse,
+                    *joint_id, &lanes, definition, runtime,
                 ));
                 continue;
             }
@@ -440,8 +435,6 @@ pub(super) fn solve_islands(
                 ),
                 record.definition,
                 record.runtime,
-                record.solver_linear_impulse,
-                record.solver_angular_impulse,
             ));
         }
 

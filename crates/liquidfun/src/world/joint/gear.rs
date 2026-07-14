@@ -1,10 +1,5 @@
 //! Source-ordered gear ownership, semantic state, and four-body solver core.
 
-#![allow(
-    dead_code,
-    reason = "the Phase 8 mixed-island integration plan consumes the solver core"
-)]
-
 use crate::math::{Rotation, Vec2};
 use crate::{
     BodyId, GearJointDef, GearJointSnapshot, JointDef, JointId, JointKind, JointMutationError,
@@ -143,21 +138,27 @@ impl GearRuntime {
 
     pub(super) fn initialize_velocity(
         &mut self,
-        bodies: &mut [GearSolverBody; 4],
+        bodies: &[GearSolverBody; 4],
         warm_starting: bool,
     ) -> Result<(), JointMutationError> {
-        let previous = *self;
         if !bodies.iter().all(|body| body.is_valid()) {
             return Err(JointMutationError::NonFiniteDerivedState);
         }
         self.jacobian = build_jacobian(self.source_a, self.source_b, self.ratio, bodies)?;
         if !warm_starting {
             self.impulse = 0.0;
-            return Ok(());
         }
+        Ok(())
+    }
+
+    pub(super) fn warm_start(
+        &self,
+        bodies: &mut [GearSolverBody; 4],
+    ) -> Result<(), JointMutationError> {
+        let previous = *bodies;
         apply_impulse(bodies, self.jacobian, self.impulse);
         if !bodies.iter().all(|body| body.is_valid()) {
-            *self = previous;
+            *bodies = previous;
             return Err(JointMutationError::NonFiniteDerivedState);
         }
         Ok(())
@@ -484,7 +485,7 @@ mod tests {
 
             // Act
             runtime
-                .initialize_velocity(&mut bodies, false)
+                .initialize_velocity(&bodies, false)
                 .expect("initialize");
             runtime.solve_velocity(&mut bodies).expect("velocity solve");
             bodies[0].center.x += 0.25;

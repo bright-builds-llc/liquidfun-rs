@@ -40,12 +40,14 @@ pub(super) enum JointRuntime {
     Gear(gear::GearRuntime),
     Rope(rope::RopeJointRuntime),
     Motor(motor::MotorRuntime),
-    Pending,
 }
 
 impl JointRuntime {
-    fn from_definition(definition: JointDef, body_b_transform: crate::math::Transform) -> Self {
-        match definition {
+    fn maybe_from_definition(
+        definition: JointDef,
+        body_b_transform: crate::math::Transform,
+    ) -> Option<Self> {
+        Some(match definition {
             JointDef::Revolute(definition) => {
                 Self::Revolute(revolute::RevoluteRuntime::new(definition))
             }
@@ -66,8 +68,8 @@ impl JointRuntime {
             }
             JointDef::Rope(definition) => Self::Rope(rope::RopeJointRuntime::new(definition)),
             JointDef::Motor(definition) => Self::Motor(motor::MotorRuntime::new(definition)),
-            JointDef::Gear(_) => Self::Pending,
-        }
+            JointDef::Gear(_) => return None,
+        })
     }
 }
 
@@ -78,8 +80,6 @@ pub(super) struct JointRecord {
     pub(super) definition: JointDef,
     pub(super) collide_connected: bool,
     pub(super) runtime: JointRuntime,
-    pub(super) solver_linear_impulse: Vec2,
-    pub(super) solver_angular_impulse: f32,
     #[allow(dead_code, reason = "consumed by the Phase 8 gear lifecycle plan")]
     pub(super) reverse_gear_dependents: Vec<JointId>,
 }
@@ -404,11 +404,11 @@ impl World {
             };
             self.bodies.get(bodies[0])?;
             let body_b_transform = self.bodies.get(bodies[1])?.state.snapshot().transform();
-            (
-                bodies,
-                JointRuntime::from_definition(definition, body_b_transform),
-                None,
-            )
+            let Some(runtime) = JointRuntime::maybe_from_definition(definition, body_b_transform)
+            else {
+                return Err(JointCreationError::InvalidGearTopology);
+            };
+            (bodies, runtime, None)
         };
         if bodies[0] == bodies[1] {
             return Err(JointCreationError::InvalidDefinition(
@@ -424,8 +424,6 @@ impl World {
             definition,
             collide_connected,
             runtime,
-            solver_linear_impulse: Vec2::ZERO,
-            solver_angular_impulse: 0.0,
             reverse_gear_dependents: Vec::new(),
         })?;
         self.body_mut_after_validation(bodies[0])
@@ -467,10 +465,6 @@ impl World {
             JointRuntime::Gear(runtime) => gear::snapshot(self, record, runtime),
             JointRuntime::Rope(runtime) => rope::snapshot(self, record, runtime),
             JointRuntime::Motor(runtime) => motor::snapshot(self, record, runtime),
-            JointRuntime::Pending => Ok(JointSnapshot::from_definition(
-                record.definition,
-                record.bodies,
-            )),
         }
     }
 
@@ -516,7 +510,6 @@ impl World {
             JointRuntime::Gear(runtime) => Ok(runtime.reaction_force(inverse_timestep)),
             JointRuntime::Rope(runtime) => Ok(runtime.reaction_force(inverse_timestep)),
             JointRuntime::Motor(runtime) => Ok(runtime.reaction_force(inverse_timestep)),
-            JointRuntime::Pending => Ok(Vec2::ZERO),
         }
     }
 
@@ -543,8 +536,7 @@ impl World {
             JointRuntime::Distance(_)
             | JointRuntime::Pulley(_)
             | JointRuntime::Mouse(_)
-            | JointRuntime::Rope(_)
-            | JointRuntime::Pending => Ok(0.0),
+            | JointRuntime::Rope(_) => Ok(0.0),
         }
     }
 

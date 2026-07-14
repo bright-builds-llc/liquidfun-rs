@@ -155,8 +155,6 @@ pub(crate) struct JointConstraintInput {
     pub(crate) lanes: JointSolverLanes,
     pub(crate) definition: JointDef,
     pub(crate) runtime: JointRuntime,
-    pub(crate) legacy_linear_impulse: Vec2,
-    pub(crate) legacy_angular_impulse: f32,
 }
 
 impl JointConstraintInput {
@@ -165,16 +163,12 @@ impl JointConstraintInput {
         lanes: OrdinarySolverLanes,
         definition: JointDef,
         runtime: JointRuntime,
-        legacy_linear_impulse: Vec2,
-        legacy_angular_impulse: f32,
     ) -> Self {
         Self {
             joint_id,
             lanes: JointSolverLanes::Ordinary(lanes),
             definition,
             runtime,
-            legacy_linear_impulse,
-            legacy_angular_impulse,
         }
     }
 
@@ -183,16 +177,12 @@ impl JointConstraintInput {
         lanes: &GearSolverLanes,
         definition: GearJointDef,
         runtime: GearRuntime,
-        legacy_linear_impulse: Vec2,
-        legacy_angular_impulse: f32,
     ) -> Self {
         Self {
             joint_id,
             lanes: JointSolverLanes::Gear(*lanes),
             definition: JointDef::Gear(definition),
             runtime: JointRuntime::Gear(runtime),
-            legacy_linear_impulse,
-            legacy_angular_impulse,
         }
     }
 }
@@ -200,22 +190,7 @@ impl JointConstraintInput {
 #[derive(Debug)]
 pub(crate) struct JointImpulseSolution {
     pub(crate) joint_id: JointId,
-    pub(crate) linear_impulse: Vec2,
-    pub(crate) angular_impulse: f32,
-    pub(crate) maybe_runtime: Option<JointRuntime>,
-}
-
-#[derive(Debug, Clone, Copy)]
-pub(crate) struct CommonConstraint {
-    body_a: usize,
-    body_b: usize,
-    local_axis_a: Vec2,
-    reference_delta: Vec2,
-    linear_impulse: Vec2,
-    angular_impulse: f32,
-    constrain_angular: bool,
-    max_linear_impulse: f32,
-    max_angular_impulse: f32,
+    pub(crate) runtime: JointRuntime,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -231,71 +206,6 @@ pub(crate) struct FamilyCandidate<D, R, L> {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub(crate) struct LegacyUnmigrated<C> {
-    candidate: C,
-    constraint: CommonConstraint,
-}
-
-/// Closed activation state. Only the legacy variant owns the compatibility solver.
-#[derive(Debug, Clone, Copy)]
-#[allow(dead_code, reason = "family plans activate variants incrementally")]
-pub(crate) enum FamilyActivation<C> {
-    Activated(C),
-    LegacyUnmigrated(LegacyUnmigrated<C>),
-}
-
-pub(crate) trait CompleteRuntimeCandidate: Copy {
-    fn joint_id(self) -> JointId;
-    fn complete_runtime(self) -> JointRuntime;
-}
-
-macro_rules! runtime_candidate {
-    ($definition:ty, $runtime:ty, $lanes:ty, $variant:ident) => {
-        impl CompleteRuntimeCandidate for FamilyCandidate<$definition, $runtime, $lanes> {
-            fn joint_id(self) -> JointId {
-                self.joint_id
-            }
-
-            fn complete_runtime(self) -> JointRuntime {
-                JointRuntime::$variant(self.runtime)
-            }
-        }
-    };
-}
-
-runtime_candidate!(
-    RevoluteJointDef,
-    RevoluteRuntime,
-    OrdinarySolverLanes,
-    Revolute
-);
-runtime_candidate!(
-    PrismaticJointDef,
-    PrismaticRuntime,
-    OrdinarySolverLanes,
-    Prismatic
-);
-runtime_candidate!(
-    DistanceJointDef,
-    DistanceRuntime,
-    OrdinarySolverLanes,
-    Distance
-);
-runtime_candidate!(PulleyJointDef, PulleyRuntime, OrdinarySolverLanes, Pulley);
-runtime_candidate!(MouseJointDef, MouseRuntime, OrdinarySolverLanes, Mouse);
-runtime_candidate!(GearJointDef, GearRuntime, GearSolverLanes, Gear);
-runtime_candidate!(WheelJointDef, WheelRuntime, OrdinarySolverLanes, Wheel);
-runtime_candidate!(WeldJointDef, WeldRuntime, OrdinarySolverLanes, Weld);
-runtime_candidate!(
-    FrictionJointDef,
-    FrictionRuntime,
-    OrdinarySolverLanes,
-    Friction
-);
-runtime_candidate!(RopeJointDef, RopeJointRuntime, OrdinarySolverLanes, Rope);
-runtime_candidate!(MotorJointDef, MotorRuntime, OrdinarySolverLanes, Motor);
-
-#[derive(Debug, Clone, Copy)]
 #[allow(
     clippy::large_enum_variant,
     reason = "transactional candidates intentionally own complete typed definitions and runtimes"
@@ -306,7 +216,7 @@ pub(crate) enum JointVelocityConstraint {
     Distance(DistanceConstraint),
     Pulley(PulleyConstraint),
     Mouse(MouseConstraint),
-    Gear(FamilyActivation<FamilyCandidate<GearJointDef, GearRuntime, GearSolverLanes>>),
+    Gear(GearConstraint),
     Wheel(WheelConstraint),
     Weld(WeldConstraint),
     Friction(FrictionConstraint),
@@ -417,8 +327,7 @@ pub(crate) fn build_constraints(
                 JointDef::Gear(definition),
                 JointRuntime::Gear(runtime),
                 JointSolverLanes::Gear(lanes),
-            ) => JointVelocityConstraint::Gear(stage_legacy_unmigrated(
-                input,
+            ) => JointVelocityConstraint::Gear(stage_gear(
                 FamilyCandidate {
                     joint_id: input.joint_id,
                     lanes,
@@ -426,8 +335,6 @@ pub(crate) fn build_constraints(
                     runtime,
                 },
                 bodies,
-                time_step,
-                time_step_ratio,
                 warm_starting,
             )?),
             (
@@ -572,6 +479,12 @@ pub(crate) struct MouseConstraint {
     r_b: Vec2,
     angular_damping: f32,
     time_step: f32,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct GearConstraint {
+    candidate: FamilyCandidate<GearJointDef, GearRuntime, GearSolverLanes>,
+    body_indices: [usize; 4],
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -1214,49 +1127,21 @@ fn map_joint_error(_error: crate::JointMutationError) -> ContactSolveFailure {
     ContactSolveFailure::NonFinite
 }
 
-fn stage_legacy_unmigrated<C: Copy>(
-    input: &JointConstraintInput,
-    candidate: C,
+fn stage_gear(
+    mut candidate: FamilyCandidate<GearJointDef, GearRuntime, GearSolverLanes>,
     bodies: &[SolverBody],
-    time_step: f32,
-    time_step_ratio: f32,
     warm_starting: bool,
-) -> Result<FamilyActivation<C>, ContactSolveFailure> {
-    let indices = match input.lanes {
-        JointSolverLanes::Ordinary(lanes) => lanes.solver_indices(bodies)?,
-        JointSolverLanes::Gear(lanes) => {
-            let [body_a, body_b, _body_c, _body_d] = lanes.solver_indices(bodies)?;
-            [body_a, body_b]
-        }
-    };
-    let body_a = bodies[indices[0]];
-    let body_b = bodies[indices[1]];
-    let (local_axis_a, maybe_max_linear_force, maybe_max_angular_torque) =
-        constraint_parameters(input.definition);
-    let ratio = if warm_starting { time_step_ratio } else { 0.0 };
-    let common = CommonConstraint {
-        body_a: indices[0],
-        body_b: indices[1],
-        local_axis_a,
-        reference_delta: body_b.center - body_a.center,
-        linear_impulse: ratio * input.legacy_linear_impulse,
-        angular_impulse: ratio * input.legacy_angular_impulse,
-        constrain_angular: constrains_angular_velocity(input.definition),
-        max_linear_impulse: scaled_cap(time_step, maybe_max_linear_force),
-        max_angular_impulse: scaled_cap(time_step, maybe_max_angular_torque),
-    };
-    if !common.reference_delta.is_valid()
-        || !common.linear_impulse.is_valid()
-        || !common.angular_impulse.is_finite()
-        || !common.max_linear_impulse.is_finite()
-        || !common.max_angular_impulse.is_finite()
-    {
-        return Err(ContactSolveFailure::NonFinite);
-    }
-    Ok(FamilyActivation::LegacyUnmigrated(LegacyUnmigrated {
+) -> Result<GearConstraint, ContactSolveFailure> {
+    let body_indices = candidate.lanes.solver_indices(bodies)?;
+    let solver_bodies = gear_solver_bodies(body_indices, bodies)?;
+    candidate
+        .runtime
+        .initialize_velocity(&solver_bodies, warm_starting)
+        .map_err(map_joint_error)?;
+    Ok(GearConstraint {
         candidate,
-        constraint: common,
-    }))
+        body_indices,
+    })
 }
 
 pub(crate) fn warm_start(
@@ -1291,7 +1176,7 @@ pub(crate) fn solve_velocity(
         JointVelocityConstraint::Distance(stage) => stage.solve_velocity(bodies),
         JointVelocityConstraint::Pulley(stage) => stage.solve_velocity(bodies),
         JointVelocityConstraint::Mouse(stage) => stage.solve_velocity(bodies),
-        JointVelocityConstraint::Gear(stage) => stage.solve_velocity(bodies, AxisMode::None),
+        JointVelocityConstraint::Gear(stage) => stage.solve_velocity(bodies),
         JointVelocityConstraint::Wheel(stage) => stage.solve_velocity(bodies),
         JointVelocityConstraint::Weld(stage) => stage.solve_velocity(bodies),
         JointVelocityConstraint::Friction(stage) => stage.solve_velocity(bodies),
@@ -1310,7 +1195,7 @@ pub(crate) fn solve_position(
         JointVelocityConstraint::Distance(stage) => stage.solve_position(bodies),
         JointVelocityConstraint::Pulley(stage) => stage.solve_position(bodies),
         JointVelocityConstraint::Mouse(_stage) => Ok(true),
-        JointVelocityConstraint::Gear(stage) => stage.solve_position(bodies, AxisMode::None),
+        JointVelocityConstraint::Gear(stage) => stage.solve_position(bodies),
         JointVelocityConstraint::Wheel(stage) => stage.solve_position(bodies),
         JointVelocityConstraint::Weld(stage) => stage.solve_position(bodies),
         JointVelocityConstraint::Friction(_) | JointVelocityConstraint::Motor(_) => Ok(true),
@@ -1478,9 +1363,7 @@ impl RevoluteConstraint {
     fn finalize(self) -> JointImpulseSolution {
         JointImpulseSolution {
             joint_id: self.candidate.joint_id,
-            linear_impulse: Vec2::ZERO,
-            angular_impulse: 0.0,
-            maybe_runtime: Some(JointRuntime::Revolute(self.candidate.runtime)),
+            runtime: JointRuntime::Revolute(self.candidate.runtime),
         }
     }
 }
@@ -1666,9 +1549,7 @@ impl PrismaticConstraint {
     fn finalize(self) -> JointImpulseSolution {
         JointImpulseSolution {
             joint_id: self.candidate.joint_id,
-            linear_impulse: Vec2::ZERO,
-            angular_impulse: 0.0,
-            maybe_runtime: Some(JointRuntime::Prismatic(self.candidate.runtime)),
+            runtime: JointRuntime::Prismatic(self.candidate.runtime),
         }
     }
 }
@@ -1747,9 +1628,7 @@ impl DistanceConstraint {
     fn finalize(self) -> JointImpulseSolution {
         JointImpulseSolution {
             joint_id: self.candidate.joint_id,
-            linear_impulse: Vec2::ZERO,
-            angular_impulse: 0.0,
-            maybe_runtime: Some(JointRuntime::Distance(self.candidate.runtime)),
+            runtime: JointRuntime::Distance(self.candidate.runtime),
         }
     }
 }
@@ -1842,9 +1721,7 @@ impl PulleyConstraint {
     fn finalize(self) -> JointImpulseSolution {
         JointImpulseSolution {
             joint_id: self.candidate.joint_id,
-            linear_impulse: Vec2::ZERO,
-            angular_impulse: 0.0,
-            maybe_runtime: Some(JointRuntime::Pulley(self.candidate.runtime)),
+            runtime: JointRuntime::Pulley(self.candidate.runtime),
         }
     }
 }
@@ -1883,9 +1760,7 @@ impl MouseConstraint {
     fn finalize(self) -> JointImpulseSolution {
         JointImpulseSolution {
             joint_id: self.candidate.joint_id,
-            linear_impulse: Vec2::ZERO,
-            angular_impulse: 0.0,
-            maybe_runtime: Some(JointRuntime::Mouse(self.candidate.runtime)),
+            runtime: JointRuntime::Mouse(self.candidate.runtime),
         }
     }
 }
@@ -2291,12 +2166,7 @@ impl MotorConstraint {
 }
 
 fn typed_solution(joint_id: JointId, runtime: JointRuntime) -> JointImpulseSolution {
-    JointImpulseSolution {
-        joint_id,
-        linear_impulse: Vec2::ZERO,
-        angular_impulse: 0.0,
-        maybe_runtime: Some(runtime),
-    }
+    JointImpulseSolution { joint_id, runtime }
 }
 
 fn point_velocity_difference(body_a: SolverBody, body_b: SolverBody, r_a: Vec2, r_b: Vec2) -> Vec2 {
@@ -2370,287 +2240,159 @@ fn store_solver_body_pair(
     Ok(())
 }
 
-#[derive(Debug, Clone, Copy)]
-#[allow(
-    dead_code,
-    reason = "gear is the sole remaining legacy family before Plan 08-18"
-)]
-enum AxisMode {
-    None,
-    Perpendicular,
-    Separation,
-}
-
-impl<C: CompleteRuntimeCandidate> FamilyActivation<C> {
-    fn warm_start(self, bodies: &mut [SolverBody]) -> Result<(), ContactSolveFailure> {
-        match self {
-            Self::Activated(_candidate) => Ok(()),
-            Self::LegacyUnmigrated(stage) => stage.legacy_unmigrated_warm_start(bodies),
-        }
+impl GearConstraint {
+    fn warm_start(&self, bodies: &mut [SolverBody]) -> Result<(), ContactSolveFailure> {
+        let before = gear_solver_bodies(self.body_indices, bodies)?;
+        let mut solved = before;
+        self.candidate
+            .runtime
+            .warm_start(&mut solved)
+            .map_err(map_joint_error)?;
+        store_gear_velocity_deltas(self.body_indices, bodies, before, solved)
     }
 
-    fn solve_velocity(
-        &mut self,
-        bodies: &mut [SolverBody],
-        axis_mode: AxisMode,
-    ) -> Result<(), ContactSolveFailure> {
-        match self {
-            Self::Activated(_candidate) => Ok(()),
-            Self::LegacyUnmigrated(stage) => {
-                stage.legacy_unmigrated_solve_velocity(bodies, axis_mode)
-            }
-        }
+    fn solve_velocity(&mut self, bodies: &mut [SolverBody]) -> Result<(), ContactSolveFailure> {
+        let before = gear_solver_bodies(self.body_indices, bodies)?;
+        let mut solved = before;
+        self.candidate
+            .runtime
+            .solve_velocity(&mut solved)
+            .map_err(map_joint_error)?;
+        store_gear_velocity_deltas(self.body_indices, bodies, before, solved)
     }
 
-    fn solve_position(
-        &mut self,
-        bodies: &mut [SolverBody],
-        axis_mode: AxisMode,
-    ) -> Result<bool, ContactSolveFailure> {
-        match self {
-            Self::Activated(_candidate) => Ok(true),
-            Self::LegacyUnmigrated(stage) => {
-                stage.legacy_unmigrated_solve_position(bodies, axis_mode)
-            }
-        }
+    fn solve_position(&mut self, bodies: &mut [SolverBody]) -> Result<bool, ContactSolveFailure> {
+        let before = gear_solver_bodies(self.body_indices, bodies)?;
+        let mut solved = before;
+        let position_solved = self
+            .candidate
+            .runtime
+            .solve_position(&mut solved)
+            .map_err(map_joint_error)?;
+        store_gear_position_deltas(self.body_indices, bodies, before, solved)?;
+        Ok(position_solved)
     }
-}
 
-impl<C: CompleteRuntimeCandidate> FamilyActivation<C> {
-    fn finalize(&self) -> JointImpulseSolution {
-        match *self {
-            Self::Activated(candidate) => JointImpulseSolution {
-                joint_id: candidate.joint_id(),
-                linear_impulse: Vec2::ZERO,
-                angular_impulse: 0.0,
-                maybe_runtime: Some(candidate.complete_runtime()),
-            },
-            Self::LegacyUnmigrated(stage) => stage.legacy_unmigrated_solution(),
-        }
-    }
-}
-
-impl<C: CompleteRuntimeCandidate> LegacyUnmigrated<C> {
-    fn legacy_unmigrated_warm_start(
-        self,
-        bodies: &mut [SolverBody],
-    ) -> Result<(), ContactSolveFailure> {
-        apply_velocity_impulse(
-            bodies,
-            self.constraint,
-            self.constraint.linear_impulse,
-            self.constraint.angular_impulse,
+    fn finalize(self) -> JointImpulseSolution {
+        typed_solution(
+            self.candidate.joint_id,
+            JointRuntime::Gear(self.candidate.runtime),
         )
     }
-
-    fn legacy_unmigrated_solve_velocity(
-        &mut self,
-        bodies: &mut [SolverBody],
-        axis_mode: AxisMode,
-    ) -> Result<(), ContactSolveFailure> {
-        let common = self.constraint;
-        let (body_a, body_b) = constraint_bodies(common, bodies)?;
-        let inverse_mass = body_a.inverse_mass + body_b.inverse_mass;
-        let inverse_inertia = body_a.inverse_inertia + body_b.inverse_inertia;
-        let relative_linear = body_b.linear_velocity - body_a.linear_velocity;
-        let relative_angular = body_b.angular_velocity - body_a.angular_velocity;
-        let mut linear_impulse = if inverse_mass > 0.0 {
-            -relative_linear / inverse_mass
-        } else {
-            Vec2::ZERO
-        };
-        if !matches!(axis_mode, AxisMode::None) {
-            let axis = Rotation::from_angle(body_a.angle).apply(common.local_axis_a);
-            let direction = legacy_axis_direction(axis_mode, axis, body_a, body_b);
-            linear_impulse = linear_impulse.dot(direction) * direction;
-        }
-        let angular_impulse = if common.constrain_angular && inverse_inertia > 0.0 {
-            -relative_angular / inverse_inertia
-        } else {
-            0.0
-        };
-        let previous_linear = common.linear_impulse;
-        let previous_angular = common.angular_impulse;
-        let common_mut = &mut self.constraint;
-        common_mut.linear_impulse += linear_impulse;
-        common_mut.angular_impulse += angular_impulse;
-        clamp_impulses(common_mut);
-        apply_velocity_impulse(
-            bodies,
-            *common_mut,
-            common_mut.linear_impulse - previous_linear,
-            common_mut.angular_impulse - previous_angular,
-        )
-    }
-
-    fn legacy_unmigrated_solve_position(
-        &mut self,
-        bodies: &mut [SolverBody],
-        axis_mode: AxisMode,
-    ) -> Result<bool, ContactSolveFailure> {
-        let common = self.constraint;
-        let (body_a, body_b) = constraint_bodies(common, bodies)?;
-        let inverse_mass = body_a.inverse_mass + body_b.inverse_mass;
-        if inverse_mass == 0.0 {
-            return Ok(true);
-        }
-        let delta = body_b.center - body_a.center;
-        let mut error = delta - common.reference_delta;
-        if !matches!(axis_mode, AxisMode::None) {
-            let axis = Rotation::from_angle(body_a.angle).apply(common.local_axis_a);
-            let direction = legacy_axis_direction(axis_mode, axis, body_a, body_b);
-            error = error.dot(direction) * direction;
-        }
-        let error_length = error.length();
-        if error_length <= LINEAR_SLOP {
-            return Ok(true);
-        }
-        let correction = error_length.min(MAX_LINEAR_CORRECTION);
-        let impulse = -(correction / error_length) * error / inverse_mass;
-        apply_position_impulse(bodies, common, impulse)?;
-        Ok(error_length <= 3.0 * LINEAR_SLOP)
-    }
-
-    fn legacy_unmigrated_solution(self) -> JointImpulseSolution {
-        JointImpulseSolution {
-            joint_id: self.candidate.joint_id(),
-            linear_impulse: self.constraint.linear_impulse,
-            angular_impulse: self.constraint.angular_impulse,
-            maybe_runtime: None,
-        }
-    }
 }
 
-fn legacy_axis_direction(
-    axis_mode: AxisMode,
-    axis: Vec2,
-    body_a: SolverBody,
-    body_b: SolverBody,
-) -> Vec2 {
-    match axis_mode {
-        AxisMode::None => Vec2::ZERO,
-        AxisMode::Perpendicular => Vec2::scalar_cross(1.0, axis),
-        AxisMode::Separation => {
-            let mut separation = body_b.center - body_a.center;
-            separation.normalize();
-            separation
-        }
-    }
-}
-
-fn constraint_parameters(definition: JointDef) -> (Vec2, Option<f32>, Option<f32>) {
-    match definition {
-        JointDef::Prismatic(value) => (value.local_axis_a(), None, None),
-        JointDef::Wheel(value) => (value.local_axis_a(), None, Some(value.max_motor_torque())),
-        JointDef::Distance(_) | JointDef::Rope(_) => (Vec2::new(1.0, 0.0), None, Some(0.0)),
-        JointDef::Mouse(value) => (Vec2::ZERO, Some(value.max_force()), Some(0.0)),
-        JointDef::Friction(value) => (
-            Vec2::ZERO,
-            Some(value.max_force()),
-            Some(value.max_torque()),
-        ),
-        JointDef::Motor(value) => (
-            Vec2::ZERO,
-            Some(value.max_force()),
-            Some(value.max_torque()),
-        ),
-        JointDef::Revolute(_) | JointDef::Pulley(_) | JointDef::Gear(_) | JointDef::Weld(_) => {
-            (Vec2::ZERO, None, None)
-        }
-    }
-}
-
-fn constrains_angular_velocity(definition: JointDef) -> bool {
-    match definition {
-        JointDef::Revolute(value) => value.is_limit_enabled() || value.is_motor_enabled(),
-        JointDef::Prismatic(_)
-        | JointDef::Gear(_)
-        | JointDef::Weld(_)
-        | JointDef::Friction(_)
-        | JointDef::Motor(_) => true,
-        JointDef::Wheel(value) => value.is_motor_enabled(),
-        JointDef::Distance(_) | JointDef::Pulley(_) | JointDef::Mouse(_) | JointDef::Rope(_) => {
-            false
-        }
-    }
-}
-
-fn scaled_cap(time_step: f32, maybe_cap: Option<f32>) -> f32 {
-    maybe_cap.map_or(f32::MAX, |cap| time_step * cap)
-}
-
-fn clamp_impulses(common: &mut CommonConstraint) {
-    if common.linear_impulse.length_squared()
-        > common.max_linear_impulse * common.max_linear_impulse
-    {
-        let length = common.linear_impulse.normalize();
-        if length > 0.0 {
-            common.linear_impulse *= common.max_linear_impulse;
-        }
-    }
-    common.angular_impulse = common
-        .angular_impulse
-        .clamp(-common.max_angular_impulse, common.max_angular_impulse);
-}
-
-fn constraint_bodies(
-    common: CommonConstraint,
+fn gear_solver_bodies(
+    indices: [usize; 4],
     bodies: &[SolverBody],
-) -> Result<(SolverBody, SolverBody), ContactSolveFailure> {
-    let body_a = bodies
-        .get(common.body_a)
+) -> Result<[super::gear::GearSolverBody; 4], ContactSolveFailure> {
+    Ok([
+        gear_solver_body(indices[0], bodies)?,
+        gear_solver_body(indices[1], bodies)?,
+        gear_solver_body(indices[2], bodies)?,
+        gear_solver_body(indices[3], bodies)?,
+    ])
+}
+
+fn gear_solver_body(
+    index: usize,
+    bodies: &[SolverBody],
+) -> Result<super::gear::GearSolverBody, ContactSolveFailure> {
+    let body = bodies
+        .get(index)
         .copied()
         .ok_or(ContactSolveFailure::UnsupportedTopology)?;
-    let body_b = bodies
-        .get(common.body_b)
-        .copied()
-        .ok_or(ContactSolveFailure::UnsupportedTopology)?;
-    Ok((body_a, body_b))
+    Ok(super::gear::GearSolverBody {
+        center: body.center,
+        angle: body.angle,
+        linear_velocity: body.linear_velocity,
+        angular_velocity: body.angular_velocity,
+        local_center: body.local_center,
+        inverse_mass: body.inverse_mass,
+        inverse_inertia: body.inverse_inertia,
+    })
 }
 
-fn apply_velocity_impulse(
+fn store_gear_velocity_deltas(
+    indices: [usize; 4],
     bodies: &mut [SolverBody],
-    common: CommonConstraint,
-    linear_impulse: Vec2,
-    angular_impulse: f32,
+    before: [super::gear::GearSolverBody; 4],
+    solved: [super::gear::GearSolverBody; 4],
 ) -> Result<(), ContactSolveFailure> {
-    let (mut body_a, mut body_b) = constraint_bodies(common, bodies)?;
-    body_a.linear_velocity -= body_a.inverse_mass * linear_impulse;
-    body_a.angular_velocity -= body_a.inverse_inertia * angular_impulse;
-    body_b.linear_velocity += body_b.inverse_mass * linear_impulse;
-    body_b.angular_velocity += body_b.inverse_inertia * angular_impulse;
-    store_constraint_bodies(common, bodies, body_a, body_b)
+    let mut candidates = [None; 4];
+    for lane in 0..4 {
+        if indices[..lane].contains(&indices[lane]) {
+            continue;
+        }
+        let mut linear_delta = Vec2::ZERO;
+        let mut angular_delta = 0.0;
+        for matching in 0..4 {
+            if indices[matching] == indices[lane] {
+                linear_delta += solved[matching].linear_velocity - before[matching].linear_velocity;
+                angular_delta +=
+                    solved[matching].angular_velocity - before[matching].angular_velocity;
+            }
+        }
+        let mut candidate = bodies
+            .get(indices[lane])
+            .copied()
+            .ok_or(ContactSolveFailure::UnsupportedTopology)?;
+        candidate.linear_velocity += linear_delta;
+        candidate.angular_velocity += angular_delta;
+        if !candidate.is_finite() {
+            return Err(ContactSolveFailure::NonFinite);
+        }
+        candidates[lane] = Some(candidate);
+    }
+    commit_gear_candidates(indices, bodies, candidates)
 }
 
-fn apply_position_impulse(
+fn store_gear_position_deltas(
+    indices: [usize; 4],
     bodies: &mut [SolverBody],
-    common: CommonConstraint,
-    impulse: Vec2,
+    before: [super::gear::GearSolverBody; 4],
+    solved: [super::gear::GearSolverBody; 4],
 ) -> Result<(), ContactSolveFailure> {
-    let (mut body_a, mut body_b) = constraint_bodies(common, bodies)?;
-    body_a.center -= body_a.inverse_mass * impulse;
-    body_b.center += body_b.inverse_mass * impulse;
-    body_a.synchronize_transform();
-    body_b.synchronize_transform();
-    store_constraint_bodies(common, bodies, body_a, body_b)
+    let mut candidates = [None; 4];
+    for lane in 0..4 {
+        if indices[..lane].contains(&indices[lane]) {
+            continue;
+        }
+        let mut center_delta = Vec2::ZERO;
+        let mut angle_delta = 0.0;
+        for matching in 0..4 {
+            if indices[matching] == indices[lane] {
+                center_delta += solved[matching].center - before[matching].center;
+                angle_delta += solved[matching].angle - before[matching].angle;
+            }
+        }
+        let mut candidate = bodies
+            .get(indices[lane])
+            .copied()
+            .ok_or(ContactSolveFailure::UnsupportedTopology)?;
+        candidate.center += center_delta;
+        candidate.angle += angle_delta;
+        candidate.synchronize_transform();
+        if !candidate.is_finite() {
+            return Err(ContactSolveFailure::NonFinite);
+        }
+        candidates[lane] = Some(candidate);
+    }
+    commit_gear_candidates(indices, bodies, candidates)
 }
 
-fn store_constraint_bodies(
-    common: CommonConstraint,
+fn commit_gear_candidates(
+    indices: [usize; 4],
     bodies: &mut [SolverBody],
-    body_a: SolverBody,
-    body_b: SolverBody,
+    candidates: [Option<SolverBody>; 4],
 ) -> Result<(), ContactSolveFailure> {
-    let Some(first) = bodies.get_mut(common.body_a) else {
-        return Err(ContactSolveFailure::UnsupportedTopology);
-    };
-    *first = body_a;
-    let Some(second) = bodies.get_mut(common.body_b) else {
-        return Err(ContactSolveFailure::UnsupportedTopology);
-    };
-    *second = body_b;
-    if !body_a.is_finite() || !body_b.is_finite() {
-        return Err(ContactSolveFailure::NonFinite);
+    for (lane, maybe_candidate) in candidates.into_iter().enumerate() {
+        let Some(candidate) = maybe_candidate else {
+            continue;
+        };
+        let body = bodies
+            .get_mut(indices[lane])
+            .ok_or(ContactSolveFailure::UnsupportedTopology)?;
+        *body = candidate;
     }
     Ok(())
 }
@@ -2700,8 +2442,6 @@ mod tests {
             OrdinarySolverLanes::resolved(body_a, 0, body_b, 1),
             record.definition,
             record.runtime,
-            record.solver_linear_impulse,
-            record.solver_angular_impulse,
         );
         let bodies = [test_solver_body(), test_solver_body()];
 
@@ -2723,7 +2463,7 @@ mod tests {
     }
 
     #[test]
-    fn unresolved_lane_is_rejected_before_legacy_dispatch() {
+    fn unresolved_lane_is_rejected_before_typed_dispatch() {
         // Arrange
         let mut world = World::new().expect("test world should be available");
         let body_a = world
@@ -2745,8 +2485,6 @@ mod tests {
             ),
             record.definition,
             record.runtime,
-            Vec2::ZERO,
-            0.0,
         );
 
         // Act
@@ -2766,7 +2504,7 @@ mod tests {
     }
 
     #[test]
-    fn activated_finalize_stages_complete_runtime_without_legacy_cache() {
+    fn typed_solution_stages_the_complete_runtime() {
         // Arrange
         let mut world = World::new().expect("test world should be available");
         let body_a = world
@@ -2783,23 +2521,14 @@ mod tests {
         let JointRuntime::Revolute(runtime) = record.runtime else {
             panic!("revolute runtime should match its definition");
         };
-        let activated = FamilyActivation::Activated(FamilyCandidate {
-            joint_id,
-            lanes: OrdinarySolverLanes::resolved(body_a, 0, body_b, 1),
-            definition,
-            runtime,
-        });
-
         // Act
-        let solution = activated.finalize();
+        let solution = typed_solution(joint_id, JointRuntime::Revolute(runtime));
 
         // Assert
         assert_eq!(solution.joint_id, joint_id);
-        assert_eq!(solution.linear_impulse, Vec2::ZERO);
-        assert_eq!(solution.angular_impulse.to_bits(), 0.0_f32.to_bits());
         assert!(matches!(
-            solution.maybe_runtime,
-            Some(JointRuntime::Revolute(candidate_runtime))
+            solution.runtime,
+            JointRuntime::Revolute(candidate_runtime)
                 if candidate_runtime.reaction_force(1.0) == runtime.reaction_force(1.0)
         ));
     }
@@ -2835,8 +2564,6 @@ mod tests {
                 OrdinarySolverLanes::resolved(body_a, 0, body_b, 1),
                 record.definition,
                 record.runtime,
-                Vec2::ZERO,
-                0.0,
             )
         });
         let bodies = [test_solver_body(), test_solver_body()];
@@ -2896,6 +2623,27 @@ mod tests {
             missing_result,
             Err(ContactSolveFailure::UnsupportedTopology)
         );
+    }
+
+    #[test]
+    fn gear_alias_scatter_combines_repeated_lane_deltas() {
+        // Arrange
+        let mut bodies = [test_solver_body(), test_solver_body(), test_solver_body()];
+        let indices = [0, 1, 2, 2];
+        let before = gear_solver_bodies(indices, &bodies).expect("gear bodies");
+        let mut solved = before;
+        solved[2].linear_velocity += Vec2::new(1.0, -2.0);
+        solved[2].angular_velocity += 3.0;
+        solved[3].linear_velocity += Vec2::new(4.0, 5.0);
+        solved[3].angular_velocity -= 1.0;
+
+        // Act
+        store_gear_velocity_deltas(indices, &mut bodies, before, solved)
+            .expect("aliased deltas should merge");
+
+        // Assert
+        assert_eq!(bodies[2].linear_velocity, Vec2::new(5.0, 3.0));
+        assert_eq!(bodies[2].angular_velocity.to_bits(), 2.0_f32.to_bits());
     }
 
     fn test_solver_body() -> SolverBody {
