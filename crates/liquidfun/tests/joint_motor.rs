@@ -1,7 +1,27 @@
 //! Motor-joint offsets, caps, correction, and wake coverage.
 
+use liquidfun::collision::{CircleShape, FilterData, Shape};
 use liquidfun::math::Vec2;
-use liquidfun::{BodyDef, BodyType, JointDefError, JointSpecificSnapshot, MotorJointDef, World};
+use liquidfun::{
+    BodyDef, BodyType, FixtureDef, JointDefError, JointSpecificSnapshot, MotorJointDef,
+    StepConfiguration, StepHook, StepLimits, World,
+};
+
+struct NoopHook;
+impl StepHook for NoopHook {}
+
+fn attach_mass(world: &mut World, body: liquidfun::BodyId) {
+    let fixture = FixtureDef::new(
+        Shape::from(CircleShape::new(Vec2::ZERO, 0.5).expect("circle")),
+        1.0,
+        0.0,
+        0.0,
+        false,
+        FilterData::default(),
+    )
+    .expect("fixture");
+    world.create_fixture(body, &fixture).expect("mass fixture");
+}
 
 fn bodies(world: &mut World) -> (liquidfun::BodyId, liquidfun::BodyId) {
     let body_a = world
@@ -99,4 +119,54 @@ fn motor_snapshot_reports_offsets_caps_and_correction() {
     assert_eq!(state.linear_offset(), Vec2::new(1.0, 2.0));
     assert_eq!(state.angular_offset().to_bits(), 0.5_f32.to_bits());
     assert_eq!(state.correction_factor().to_bits(), 0.6_f32.to_bits());
+}
+
+#[test]
+fn motor_world_step_commits_offset_correction_with_force_and_torque_caps() {
+    // Arrange
+    let mut world = World::new().expect("world");
+    let (body_a, body_b) = bodies(&mut world);
+    attach_mass(&mut world, body_a);
+    attach_mass(&mut world, body_b);
+    let joint = world
+        .create_joint(
+            MotorJointDef::new(body_a, body_b)
+                .expect("definition")
+                .with_offsets(Vec2::new(-1.0, 0.5), -0.25)
+                .expect("offsets")
+                .with_caps(3.0, 2.0)
+                .expect("caps")
+                .with_correction_factor(0.5)
+                .expect("correction")
+                .into(),
+        )
+        .expect("joint");
+    world
+        .set_body_linear_velocity(body_b, Vec2::new(100.0, -50.0))
+        .expect("linear velocity");
+    world
+        .set_body_angular_velocity(body_b, 100.0)
+        .expect("angular velocity");
+    let mut hook = NoopHook;
+
+    // Act
+    world
+        .step(
+            StepConfiguration::new(1.0 / 60.0, 1, 1).expect("configuration"),
+            &mut hook,
+            StepLimits::default(),
+        )
+        .expect("step");
+    let force = world.joint_reaction_force(joint, 60.0).expect("force");
+    let torque = world.joint_reaction_torque(joint, 60.0).expect("torque");
+
+    // Assert
+    assert!(
+        force.length() > 0.0 && force.length() <= 3.0 + f32::EPSILON * 4.0,
+        "unexpected motor force {force:?}"
+    );
+    assert!(
+        torque.abs() > 0.0 && torque.abs() <= 2.0,
+        "unexpected motor torque {torque}"
+    );
 }

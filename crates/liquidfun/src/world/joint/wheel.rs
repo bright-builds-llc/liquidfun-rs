@@ -51,6 +51,10 @@ impl WheelRuntime {
         inverse_timestep * self.motor_impulse
     }
 
+    pub(super) const fn solver_impulses(self) -> [f32; 3] {
+        [self.line_impulse, self.spring_impulse, self.motor_impulse]
+    }
+
     #[allow(
         clippy::too_many_arguments,
         dead_code,

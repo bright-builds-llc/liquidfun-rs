@@ -457,3 +457,157 @@ fn live_distance_pulley_and_mouse_runtimes_are_atomic_on_late_island_failure() {
         before_bodies
     );
 }
+
+fn create_remaining_live_joints(
+    world: &mut World,
+    body_a: liquidfun::BodyId,
+    body_b: liquidfun::BodyId,
+) -> [liquidfun::JointId; 5] {
+    [
+        world
+            .create_joint(
+                WheelJointDef::new(body_a, body_b)
+                    .expect("wheel")
+                    .with_frame(
+                        Vec2::new(0.5, 0.0),
+                        Vec2::new(-0.25, 0.5),
+                        Vec2::new(1.0, 0.0),
+                    )
+                    .expect("wheel frame")
+                    .with_motor(true, 2.0, 8.0)
+                    .expect("wheel motor")
+                    .into(),
+            )
+            .expect("wheel should fit"),
+        world
+            .create_joint(
+                WeldJointDef::new(body_a, body_b)
+                    .expect("weld")
+                    .with_frame(Vec2::new(0.25, 0.0), Vec2::new(-0.5, 0.25), 0.0)
+                    .expect("weld frame")
+                    .into(),
+            )
+            .expect("weld should fit"),
+        world
+            .create_joint(
+                FrictionJointDef::new(body_a, body_b)
+                    .expect("friction")
+                    .with_max_force(4.0)
+                    .expect("friction force")
+                    .with_max_torque(3.0)
+                    .expect("friction torque")
+                    .into(),
+            )
+            .expect("friction should fit"),
+        world
+            .create_joint(
+                RopeJointDef::new(body_a, body_b)
+                    .expect("rope")
+                    .with_max_length(1.5)
+                    .expect("rope length")
+                    .into(),
+            )
+            .expect("rope should fit"),
+        world
+            .create_joint(
+                MotorJointDef::new(body_a, body_b)
+                    .expect("motor")
+                    .with_offsets(Vec2::new(0.5, -0.25), 0.25)
+                    .expect("motor offsets")
+                    .with_caps(4.0, 3.0)
+                    .expect("motor caps")
+                    .into(),
+            )
+            .expect("motor should fit"),
+    ]
+}
+
+#[test]
+fn live_wheel_weld_friction_rope_and_motor_runtimes_are_atomic_on_late_failure() {
+    // Arrange
+    let mut world = World::new().expect("test world should be available");
+    let first_a = world
+        .create_body(&dynamic_body(Vec2::new(-5.0, 0.0)))
+        .expect("first A should fit");
+    let first_b = world
+        .create_body(&dynamic_body(Vec2::new(-2.0, 1.0)))
+        .expect("first B should fit");
+    let second_a = world
+        .create_body(&dynamic_body(Vec2::new(3.0, 0.0)))
+        .expect("second A should fit");
+    let second_b = world
+        .create_body(&dynamic_body(Vec2::new(5.0, 0.0)))
+        .expect("second B should fit");
+    for body in [first_a, first_b, second_a, second_b] {
+        attach_mass(&mut world, body);
+    }
+    let joints = create_remaining_live_joints(&mut world, first_a, first_b);
+    world
+        .create_joint(
+            DistanceJointDef::new(second_a, second_b)
+                .expect("second distance")
+                .into(),
+        )
+        .expect("second distance should fit");
+    let configuration =
+        StepConfiguration::new(1.0 / 60.0, 8, 3).expect("configuration should be valid");
+    let mut hook = NoopHook;
+    world
+        .set_body_linear_velocity(first_b, Vec2::new(-4.0, 3.0))
+        .expect("initial linear velocity");
+    world
+        .set_body_angular_velocity(first_b, -2.0)
+        .expect("initial angular velocity");
+    world
+        .step(configuration, &mut hook, StepLimits::default())
+        .expect("cold step should solve");
+    world
+        .set_body_linear_velocity(first_b, Vec2::new(8.0, -6.0))
+        .expect("candidate linear velocity");
+    world
+        .set_body_angular_velocity(first_b, 5.0)
+        .expect("candidate angular velocity");
+    let before_reactions = joints.map(|joint| {
+        (
+            world
+                .joint_reaction_force(joint, 60.0)
+                .expect("reaction force"),
+            world
+                .joint_reaction_torque(joint, 60.0)
+                .expect("reaction torque"),
+        )
+    });
+    let before_bodies = [first_a, first_b, second_a, second_b]
+        .map(|body| world.body_snapshot(body).expect("body should remain live"));
+
+    // Act
+    let result = world.step(
+        configuration,
+        &mut hook,
+        StepLimits::default().with_rigid_failure_injection(RigidStepFailureInjection::LateIsland {
+            solved_islands: 1,
+        }),
+    );
+
+    // Assert
+    assert!(matches!(
+        result,
+        Err(StepError::NonFiniteSolverState { .. })
+    ));
+    assert_eq!(
+        joints.map(|joint| (
+            world
+                .joint_reaction_force(joint, 60.0)
+                .expect("reaction force"),
+            world
+                .joint_reaction_torque(joint, 60.0)
+                .expect("reaction torque"),
+        )),
+        before_reactions
+    );
+    assert_eq!(
+        [first_a, first_b, second_a, second_b]
+            .map(|body| world.body_snapshot(body).expect("body should remain live")),
+        before_bodies
+    );
+}

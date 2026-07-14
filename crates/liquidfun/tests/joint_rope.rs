@@ -1,9 +1,27 @@
 //! `RopeJoint` contract coverage, deliberately separate from standalone rope.
 
+use liquidfun::collision::{CircleShape, FilterData, Shape};
 use liquidfun::math::Vec2;
 use liquidfun::{
-    BodyDef, BodyType, JointDefError, JointLimitState, JointSpecificSnapshot, RopeJointDef, World,
+    BodyDef, BodyType, FixtureDef, JointDefError, JointLimitState, JointSpecificSnapshot,
+    RopeJointDef, StepConfiguration, StepHook, StepLimits, World,
 };
+
+struct NoopHook;
+impl StepHook for NoopHook {}
+
+fn attach_mass(world: &mut World, body: liquidfun::BodyId) {
+    let fixture = FixtureDef::new(
+        Shape::from(CircleShape::new(Vec2::ZERO, 0.5).expect("circle")),
+        1.0,
+        0.0,
+        0.0,
+        false,
+        FilterData::default(),
+    )
+    .expect("fixture");
+    world.create_fixture(body, &fixture).expect("mass fixture");
+}
 
 fn bodies(world: &mut World) -> (liquidfun::BodyId, liquidfun::BodyId) {
     let body_a = world
@@ -102,4 +120,48 @@ fn rope_joint_max_length_setter_is_no_wake_and_name_is_distinct() {
         std::any::type_name::<RopeJointDef>().rsplit("::").next(),
         Some("RopeJointDef")
     );
+}
+
+#[test]
+fn rope_world_step_applies_only_an_upper_limit_reaction() {
+    // Arrange
+    let mut world = World::new().expect("world");
+    let (body_a, body_b) = bodies(&mut world);
+    attach_mass(&mut world, body_a);
+    attach_mass(&mut world, body_b);
+    let inactive = world
+        .create_joint(
+            RopeJointDef::new(body_a, body_b)
+                .expect("definition")
+                .with_max_length(10.0)
+                .expect("inactive length")
+                .into(),
+        )
+        .expect("inactive joint");
+    let upper = world
+        .create_joint(
+            RopeJointDef::new(body_a, body_b)
+                .expect("definition")
+                .with_max_length(2.0)
+                .expect("upper length")
+                .into(),
+        )
+        .expect("upper joint");
+    world
+        .set_body_linear_velocity(body_b, Vec2::new(3.0, 0.0))
+        .expect("velocity");
+    let mut hook = NoopHook;
+
+    // Act
+    world
+        .step(
+            StepConfiguration::new(1.0 / 60.0, 8, 3).expect("configuration"),
+            &mut hook,
+            StepLimits::default(),
+        )
+        .expect("step");
+
+    // Assert
+    assert_eq!(world.joint_reaction_force(inactive, 60.0), Ok(Vec2::ZERO));
+    assert_ne!(world.joint_reaction_force(upper, 60.0), Ok(Vec2::ZERO));
 }

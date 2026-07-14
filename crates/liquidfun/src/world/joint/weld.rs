@@ -37,6 +37,10 @@ impl WeldRuntime {
         inverse_timestep * self.impulse.z
     }
 
+    pub(super) const fn solver_impulse(self) -> Vec3 {
+        self.impulse
+    }
+
     #[allow(dead_code, reason = "used by the mixed-island integration plan")]
     pub(super) fn initialize(
         &mut self,
@@ -136,6 +140,42 @@ impl WeldRuntime {
             self.impulse += impulse;
             impulse
         };
+        if !impulse.is_valid() || !self.impulse.is_valid() {
+            *self = previous;
+            return Err(JointMutationError::NonFiniteDerivedState);
+        }
+        Ok(impulse)
+    }
+
+    pub(super) fn solve_soft_angular(
+        &mut self,
+        angular_error: f32,
+    ) -> Result<f32, JointMutationError> {
+        let previous = *self;
+        if !angular_error.is_finite() {
+            return Err(JointMutationError::InvalidValue);
+        }
+        let impulse = -self.effective_mass.third_column().z
+            * (angular_error + self.bias + self.gamma * self.impulse.z);
+        self.impulse.z += impulse;
+        if !impulse.is_finite() || !self.impulse.is_valid() {
+            *self = previous;
+            return Err(JointMutationError::NonFiniteDerivedState);
+        }
+        Ok(impulse)
+    }
+
+    pub(super) fn solve_soft_linear(
+        &mut self,
+        linear_error: Vec2,
+    ) -> Result<Vec2, JointMutationError> {
+        let previous = *self;
+        if !linear_error.is_valid() {
+            return Err(JointMutationError::InvalidValue);
+        }
+        let impulse = -self.effective_mass.apply22(linear_error);
+        self.impulse.x += impulse.x;
+        self.impulse.y += impulse.y;
         if !impulse.is_valid() || !self.impulse.is_valid() {
             *self = previous;
             return Err(JointMutationError::NonFiniteDerivedState);

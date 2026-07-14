@@ -34,6 +34,12 @@ impl RopeJointRuntime {
     pub(super) fn reaction_force(self, inverse_timestep: f32) -> Vec2 {
         (inverse_timestep * self.impulse) * self.direction
     }
+    pub(super) const fn solver_impulse(self) -> f32 {
+        self.impulse
+    }
+    pub(super) const fn solver_direction(self) -> Vec2 {
+        self.direction
+    }
     #[allow(dead_code, reason = "used by the mixed-island integration plan")]
     pub(super) fn initialize(
         &mut self,

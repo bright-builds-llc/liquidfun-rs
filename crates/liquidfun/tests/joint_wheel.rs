@@ -1,7 +1,22 @@
 //! Wheel-joint definition, mutation, and semantic query coverage.
 
+use liquidfun::collision::{CircleShape, FilterData, Shape};
 use liquidfun::math::Vec2;
-use liquidfun::{BodyDef, BodyType, JointDefError, JointSpecificSnapshot, WheelJointDef, World};
+use liquidfun::{
+    BodyDef, BodyType, FixtureDef, JointDefError, JointSpecificSnapshot, StepConfiguration,
+    StepHook, StepLimits, WheelJointDef, World,
+};
+
+struct NoopHook;
+
+impl StepHook for NoopHook {}
+
+fn attach_mass(world: &mut World, body: liquidfun::BodyId) {
+    let shape = Shape::from(CircleShape::new(Vec2::ZERO, 0.5).expect("circle"));
+    let fixture = FixtureDef::new(shape, 1.0, 0.0, 0.0, false, FilterData::default())
+        .expect("fixture definition");
+    world.create_fixture(body, &fixture).expect("fixture");
+}
 
 fn bodies(world: &mut World) -> (liquidfun::BodyId, liquidfun::BodyId) {
     let body_a = world
@@ -92,4 +107,59 @@ fn wheel_setters_wake_both_bodies_and_update_configuration() {
     assert!(world.body_snapshot(body_a).expect("A").is_awake());
     assert!(world.body_snapshot(body_b).expect("B").is_awake());
     assert_eq!(world.wheel_motor_torque(joint, 60.0), Ok(0.0));
+}
+
+#[test]
+fn wheel_world_step_commits_live_line_spring_and_motor_caches() {
+    // Arrange
+    let mut world = World::new().expect("world");
+    let (body_a, body_b) = bodies(&mut world);
+    attach_mass(&mut world, body_a);
+    attach_mass(&mut world, body_b);
+    let joint = world
+        .create_joint(
+            WheelJointDef::new(body_a, body_b)
+                .expect("definition")
+                .with_frame(
+                    Vec2::new(0.5, 0.25),
+                    Vec2::new(-0.25, 0.5),
+                    Vec2::new(1.0, 0.0),
+                )
+                .expect("frame")
+                .with_motor(true, 3.0, 12.0)
+                .expect("motor")
+                .with_spring(2.0, 0.7)
+                .expect("spring")
+                .into(),
+        )
+        .expect("joint");
+    world
+        .set_body_linear_velocity(body_b, Vec2::new(-4.0, 3.0))
+        .expect("linear velocity");
+    world
+        .set_body_angular_velocity(body_b, -2.0)
+        .expect("angular velocity");
+    let mut hook = NoopHook;
+
+    // Act
+    world
+        .step(
+            StepConfiguration::new(1.0 / 60.0, 8, 3).expect("configuration"),
+            &mut hook,
+            StepLimits::default(),
+        )
+        .expect("step");
+
+    // Assert
+    assert_ne!(
+        world.joint_reaction_force(joint, 60.0).expect("force"),
+        Vec2::ZERO
+    );
+    assert_ne!(
+        world
+            .joint_reaction_torque(joint, 60.0)
+            .expect("torque")
+            .to_bits(),
+        0.0_f32.to_bits()
+    );
 }

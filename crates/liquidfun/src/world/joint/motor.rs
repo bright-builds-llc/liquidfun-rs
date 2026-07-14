@@ -36,6 +36,9 @@ impl MotorRuntime {
     pub(super) fn reaction_torque(self, inverse_timestep: f32) -> f32 {
         inverse_timestep * self.angular_impulse
     }
+    pub(super) const fn solver_impulses(self) -> (Vec2, f32) {
+        (self.linear_impulse, self.angular_impulse)
+    }
     #[allow(dead_code, reason = "used by the mixed-island integration plan")]
     pub(super) fn initialize(
         &mut self,

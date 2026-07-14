@@ -1,7 +1,27 @@
 //! Weld-joint definition, mutation, and semantic query coverage.
 
+use liquidfun::collision::{CircleShape, FilterData, Shape};
 use liquidfun::math::Vec2;
-use liquidfun::{BodyDef, BodyType, JointDefError, JointSpecificSnapshot, WeldJointDef, World};
+use liquidfun::{
+    BodyDef, BodyType, FixtureDef, JointDefError, JointSpecificSnapshot, StepConfiguration,
+    StepHook, StepLimits, WeldJointDef, World,
+};
+
+struct NoopHook;
+impl StepHook for NoopHook {}
+
+fn attach_mass(world: &mut World, body: liquidfun::BodyId) {
+    let fixture = FixtureDef::new(
+        Shape::from(CircleShape::new(Vec2::ZERO, 0.5).expect("circle")),
+        1.0,
+        0.0,
+        0.0,
+        false,
+        FilterData::default(),
+    )
+    .expect("fixture");
+    world.create_fixture(body, &fixture).expect("mass fixture");
+}
 
 fn bodies(world: &mut World) -> (liquidfun::BodyId, liquidfun::BodyId) {
     let body_a = world
@@ -86,4 +106,77 @@ fn weld_softness_setters_follow_source_no_wake_behavior() {
     assert!(!world.body_snapshot(body_b).expect("B").is_awake());
     assert_eq!(world.joint_reaction_force(joint, 60.0), Ok(Vec2::ZERO));
     assert_eq!(world.joint_reaction_torque(joint, 60.0), Ok(0.0));
+}
+
+#[test]
+fn rigid_weld_world_step_commits_complete_linear_and_angular_impulse() {
+    // Arrange
+    let mut world = World::new().expect("world");
+    let (body_a, body_b) = bodies(&mut world);
+    attach_mass(&mut world, body_a);
+    attach_mass(&mut world, body_b);
+    let joint = world
+        .create_joint(
+            WeldJointDef::new(body_a, body_b)
+                .expect("definition")
+                .with_frame(Vec2::new(0.5, 0.0), Vec2::new(-0.25, 0.5), 0.0)
+                .expect("frame")
+                .into(),
+        )
+        .expect("joint");
+    world
+        .set_body_linear_velocity(body_b, Vec2::new(-3.0, 2.0))
+        .expect("linear velocity");
+    world
+        .set_body_angular_velocity(body_b, -2.0)
+        .expect("angular velocity");
+    let mut hook = NoopHook;
+
+    // Act
+    world
+        .step(
+            StepConfiguration::new(1.0 / 60.0, 8, 3).expect("configuration"),
+            &mut hook,
+            StepLimits::default(),
+        )
+        .expect("step");
+
+    // Assert
+    assert_ne!(world.joint_reaction_force(joint, 60.0), Ok(Vec2::ZERO));
+    assert_ne!(world.joint_reaction_torque(joint, 60.0), Ok(0.0));
+}
+
+#[test]
+fn soft_weld_world_step_retains_angular_spring_reaction() {
+    // Arrange
+    let mut world = World::new().expect("world");
+    let (body_a, body_b) = bodies(&mut world);
+    attach_mass(&mut world, body_a);
+    attach_mass(&mut world, body_b);
+    let joint = world
+        .create_joint(
+            WeldJointDef::new(body_a, body_b)
+                .expect("definition")
+                .with_frame(Vec2::ZERO, Vec2::ZERO, 0.0)
+                .expect("frame")
+                .with_frequency(2.0)
+                .expect("frequency")
+                .with_damping_ratio(0.7)
+                .expect("damping")
+                .into(),
+        )
+        .expect("joint");
+    let mut hook = NoopHook;
+
+    // Act
+    world
+        .step(
+            StepConfiguration::new(1.0 / 60.0, 8, 3).expect("configuration"),
+            &mut hook,
+            StepLimits::default(),
+        )
+        .expect("step");
+
+    // Assert
+    assert_ne!(world.joint_reaction_torque(joint, 60.0), Ok(0.0));
 }
