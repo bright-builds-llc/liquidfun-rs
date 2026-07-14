@@ -231,7 +231,7 @@ fn transient_impulses(
 pub(super) fn solve_island_constraints(
     body_states: &[BodyState],
     inputs: &[ContactConstraintInput<'_>],
-    joint_inputs: &[JointConstraintInput<'_>],
+    joint_inputs: &[JointConstraintInput],
     gravity: Vec2,
     configuration: StepConfiguration,
     time_step_ratio: f32,
@@ -275,7 +275,6 @@ pub(super) fn solve_island_constraints(
     }
 
     let contact_impulses = transient_impulses(&constraints)?;
-    let joint_impulses = transient_joint_impulses(&joint_constraints);
 
     for body in &mut bodies {
         integrate_position(body, configuration.time_step());
@@ -287,8 +286,8 @@ pub(super) fn solve_island_constraints(
             position_solved =
                 solve_position_constraints(constraint, &mut bodies)? && position_solved;
         }
-        for constraint in &joint_constraints {
-            position_solved = solve_joint_position(*constraint, &mut bodies)? && position_solved;
+        for constraint in &mut joint_constraints {
+            position_solved = solve_joint_position(constraint, &mut bodies)? && position_solved;
         }
         if position_solved {
             break;
@@ -303,6 +302,7 @@ pub(super) fn solve_island_constraints(
     for constraint in &constraints {
         validate_solution(constraint, &bodies)?;
     }
+    let joint_impulses = transient_joint_impulses(&joint_constraints);
 
     Ok(IslandConstraintSolution {
         motions: bodies

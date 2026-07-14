@@ -2035,8 +2035,14 @@ impl World {
                 .joints
                 .get_mut(joint.joint_id)
                 .expect("staged island joint remains live during commit");
-            record.solver_linear_impulse = joint.linear_impulse;
-            record.solver_angular_impulse = joint.angular_impulse;
+            if let Some(runtime) = joint.maybe_runtime {
+                record.runtime = runtime;
+                record.solver_linear_impulse = Vec2::ZERO;
+                record.solver_angular_impulse = 0.0;
+            } else {
+                record.solver_linear_impulse = joint.linear_impulse;
+                record.solver_angular_impulse = joint.angular_impulse;
+            }
         }
         for solve in &candidate.contact_solves {
             hook_run.record_discrete_solve(solve.clone())?;

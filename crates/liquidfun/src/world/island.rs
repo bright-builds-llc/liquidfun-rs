@@ -1,7 +1,7 @@
 use crate::arena::Arena;
 use crate::math::Vec2;
 use crate::math::settings::{ANGULAR_SLEEP_TOLERANCE, LINEAR_SLEEP_TOLERANCE, TIME_TO_SLEEP};
-use crate::{BodyId, FixtureId, JointId};
+use crate::{BodyId, FixtureId, JointDef, JointId};
 
 use super::body::{BodyState, BodyType};
 use super::config::StepConfiguration;
@@ -10,8 +10,11 @@ use super::contact_solver::{
     ContactConstraintInput, ContactImpulseSolution, ContactSolveFailure, solve_island_constraints,
     solve_toi_constraints,
 };
-use super::joint::JointRecord;
-use super::joint::solver::{JointConstraintInput, JointImpulseSolution};
+use super::joint::solver::{
+    GearSolverLanes, JointConstraintInput, JointImpulseSolution, OrdinarySolverLanes,
+    SolverBodyLane,
+};
+use super::joint::{JointRecord, JointRuntime};
 use super::object::{Body, Fixture};
 
 const REVIEWED_MAX_ISLAND_BODIES: usize = 4_096;
@@ -403,22 +406,43 @@ pub(super) fn solve_islands(
             let record = joints
                 .get(*joint_id)
                 .map_err(|_| ContactSolveFailure::UnsupportedTopology)?;
-            let first_body_index = island
-                .body_ids
-                .iter()
-                .position(|body| *body == record.bodies[0])
-                .ok_or(ContactSolveFailure::UnsupportedTopology)?;
-            let second_body_index = island
-                .body_ids
-                .iter()
-                .position(|body| *body == record.bodies[1])
-                .ok_or(ContactSolveFailure::UnsupportedTopology)?;
-            joint_inputs.push(JointConstraintInput {
-                joint_id: *joint_id,
-                first_body_index,
-                second_body_index,
-                record,
-            });
+            if let (JointDef::Gear(definition), JointRuntime::Gear(runtime)) =
+                (record.definition, record.runtime)
+            {
+                let source_joints = definition.source_joints();
+                let source_a = joints
+                    .get(source_joints[0])
+                    .map_err(|_| ContactSolveFailure::UnsupportedTopology)?;
+                let source_b = joints
+                    .get(source_joints[1])
+                    .map_err(|_| ContactSolveFailure::UnsupportedTopology)?;
+                let lanes = GearSolverLanes::new(
+                    solver_body_lane(island, source_a.bodies[1]),
+                    solver_body_lane(island, source_b.bodies[1]),
+                    solver_body_lane(island, source_a.bodies[0]),
+                    solver_body_lane(island, source_b.bodies[0]),
+                );
+                joint_inputs.push(JointConstraintInput::gear(
+                    *joint_id,
+                    &lanes,
+                    definition,
+                    runtime,
+                    record.solver_linear_impulse,
+                    record.solver_angular_impulse,
+                ));
+                continue;
+            }
+            joint_inputs.push(JointConstraintInput::ordinary(
+                *joint_id,
+                OrdinarySolverLanes::new(
+                    solver_body_lane(island, record.bodies[0]),
+                    solver_body_lane(island, record.bodies[1]),
+                ),
+                record.definition,
+                record.runtime,
+                record.solver_linear_impulse,
+                record.solver_angular_impulse,
+            ));
         }
 
         let solved = solve_island_constraints(
@@ -464,6 +488,17 @@ pub(super) fn solve_islands(
         }
     }
     Ok(solutions)
+}
+
+fn solver_body_lane(island: &Island, body_id: BodyId) -> SolverBodyLane {
+    let maybe_solver_index = island
+        .body_ids
+        .iter()
+        .position(|candidate| *candidate == body_id);
+    maybe_solver_index.map_or_else(
+        || SolverBodyLane::unresolved(body_id),
+        |solver_index| SolverBodyLane::resolved(body_id, solver_index),
+    )
 }
 
 fn validate_island_lanes(island: &Island) -> Result<(), ContactSolveFailure> {
