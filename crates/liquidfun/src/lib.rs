@@ -88,9 +88,24 @@
 //! translated body, sweep, fixture bound, and broad-phase bound before one
 //! atomic commit while preserving identities and local geometry.
 //!
-//! These APIs remain a bounded rigid-world slice. Joint solving, particle
-//! solving, project-wide compatibility, reviewed platform coverage, and release
-//! maturity remain later work.
+//! # Phase 8 joints, rope, and callback contract
+//!
+//! [`World`] now owns checked definitions, snapshots, mutation, dependency
+//! cascades, origin shifting, and transactional island solving for all eleven joint kinds.
+//! Collision decisions, pre-solve controls, contact/destruction
+//! events, and semantic reconstruction stay borrow-scoped or owned; no raw
+//! contact, joint-storage, callback, or renderer authority escapes the world.
+//! The standalone [`rope::Rope`] model remains independent of `World` and the
+//! world-owned rope joint.
+//!
+//! The Phase 8 result has canonical scalar rigid-body and joint differential sign-off for the closed Phase 8 corpus.
+//! That statement is limited to the
+//! reviewed 19-family scalar Linux `x86_64` corpus and its named `phase8-v1`
+//! policies. RIGD-10, particles, D3 evidence, cross-platform parity,
+//! performance, the testbed, and release readiness remain pending.
+//!
+//! These APIs remain a bounded rigid-world slice. Particle solving and
+//! project-wide compatibility remain later work.
 //!
 //! # Phase 3 object model
 //!

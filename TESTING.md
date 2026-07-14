@@ -13,9 +13,11 @@ granular controls, configured deterministic multi-contact islands, warm
 starting and sleeping, private resumable CCD, world queries and rays, and
 origin shifting through one closed nine-family rigid-world request. Local
 oracle results are D2 supported-toolchain evidence and exact two-run
-determinism is D0; neither establishes canonical D1, D3 review, or platform
-coverage. Joint and particle solving, performance, and the deferred fuzz, Miri,
-Rust-sanitizer, benchmark, and coverage lanes remain pending.
+determinism is D0. Phase 8 extends that request to 19 families covering joints,
+standalone rope, callback/destruction timing, and reconstruction. Exact
+canonical D1 evidence now supports only that accumulated scalar rigid corpus;
+D3 review, other platforms, particles, performance, and the deferred fuzz,
+Miri, Rust-sanitizer, benchmark, and coverage lanes remain pending.
 [COMPATIBILITY.md](COMPATIBILITY.md) remains authoritative for feature and
 evidence maturity.
 
@@ -58,7 +60,7 @@ one row for every required layer; every cell is an enforceable contract.
 | checked-in regression | current | Replay reviewed traces and later minimized scenarios that preserve an accepted first-divergence signature. | `cargo xtask differential replay --scenario rigid-world --preset oracle-debug --session-profile one-shot` | Reviewed trace in the artifact manifest; later cases also require a minimized scenario under `scenarios/regressions`. | Replay report, manifest provenance, and any same failure signature evidence stored with the regression under `scenarios/regressions`. | No deterministic retry; byte-stable replay must be reproducible. | local, pull request, scheduled, manual release | A checked-in case protects one reviewed behavior or same failure signature from recurrence. |
 | fuzz | deferred | Exercise bounded protocol decoders, scenario validation, world mutation, and future unsafe boundaries. | Planned `cargo fuzz run protocol_decode -- -max_total_time=300`; reproduce with `cargo fuzz run protocol_decode fuzz/artifacts/protocol_decode/<case>`. | pinned nightly, `cargo-fuzz`, reviewed target bounds, and no secrets or external service. | libFuzzer logs, exact crashing input, seed when present, and minimized corpus under `fuzz/artifacts`. | No deterministic retry; retain and minimize the exact input before fixing. | scheduled, manual release | A crash, timeout, sanitizer finding, or malformed-boundary defect is a harness failure, not a physics mismatch. |
 | Miri/UB-aliasing | deferred | Detect undefined behavior and aliasing defects in the pure Rust subset and any future unsafe modules. | Planned `cargo miri test --workspace --all-features` on a date-pinned nightly after `cargo miri setup`. | pinned nightly with the Miri component; exclude the external C++ process from interpretation. | Miri diagnostics with the exact test, stack, flags, and pinned toolchain identity. | No deterministic retry; preserve the deterministic failing test and environment. | scheduled, manual release | Miri undefined behavior is a harness failure and safety defect, never a physics mismatch. |
-| native sanitizer | current | Run the C++ protocol and oracle fail-fast, including the Phase 7 rigid adapter, and later run supported Rust sanitizer subsets without crossing findings into comparison. | `UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 ASAN_OPTIONS=abort_on_error=1:halt_on_error=1 cargo xtask differential compare --scenario rigid-world --preset oracle-asan-ubsan --session-profile one-shot` after fail-fast CTest. | Exact Clang 22.1.8 lane, configured and built `oracle-asan-ubsan`, ASan/UBSan runtimes; Rust sanitizer work additionally needs pinned nightly. | Bounded request, identity, report, and stderr evidence under `target/differential/failures`; CI uploads only this directory on failure. | No deterministic retry; sanitizer markers fail even if a child exits zero. | scheduled, manual release | Any ASan, UBSan, Rust sanitizer, signal, timeout, or reset defect is a harness failure, not a physics mismatch. |
+| native sanitizer | current | Run the C++ protocol and oracle fail-fast, including the Phase 8 rigid adapter, and later run supported Rust sanitizer subsets without crossing findings into comparison. | `UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 ASAN_OPTIONS=abort_on_error=1:halt_on_error=1 cargo xtask differential compare --scenario rigid-world --preset oracle-asan-ubsan --session-profile one-shot` after fail-fast CTest. | Exact Clang 22.1.8 lane, configured and built `oracle-asan-ubsan`, ASan/UBSan runtimes; Rust sanitizer work additionally needs pinned nightly. | Bounded request, identity, report, and stderr evidence under `target/differential/failures`; CI uploads only this directory on failure. | No deterministic retry; sanitizer markers fail even if a child exits zero. | scheduled, manual release | Any ASan, UBSan, Rust sanitizer, signal, timeout, or reset defect is a harness failure, not a physics mismatch. |
 | benchmark | deferred | Measure equivalent Rust and C++ workloads only after representative native behavior exists. | Planned `cargo bench --workspace` plus a paired oracle runner with recorded release identities. | controlled hardware, release builds, equivalent scenarios, warm-up policy, and recorded compiler flags. | Criterion reports under `target/criterion` plus paired environment and oracle identity records. | No deterministic retry; reruns form an explicitly analyzed sample rather than hiding regressions. | scheduled, manual release | Benchmark data is performance evidence, not parity or correctness evidence. |
 | coverage | deferred | Report exercised Rust lines and branches separately from C++ oracle coverage. | Planned `cargo llvm-cov --workspace --all-features --lcov --output-path target/llvm-cov/rust.lcov`. | `llvm-tools-preview`, reviewed `cargo-llvm-cov` version, and separately compatible Clang tooling for C++. | Rust LCOV under `target/llvm-cov`; C++ coverage remains a separate report until LLVM compatibility is proven. | No deterministic retry; investigate deterministic coverage changes from the same suite. | scheduled, manual release | coverage is not parity; percentages do not replace semantic differential evidence. |
 
@@ -486,6 +488,47 @@ stage, review, or promotion boundary independently recomputes D1 authority and
 current checkout, adapter, compile-command, policy, request, and evidence-tier
 identity before writing.
 
+## Phase 8 canonical rigid-world sign-off
+
+The `phase8-v1` request is a strict superset with 19 required witness families:
+two retained Phase 6 families, seven retained Phase 7 families, and ten Phase 8
+families for all joint kinds and gear dependencies, standalone rope,
+filter/pre-solve/listener timing, destruction cascades, and diagnostic
+reconstruction. Both engines independently validate every declaration,
+checkpoint count, action, witness, semantic identity, lifecycle occurrence,
+and reset proof before comparison. Unknown or missing values fail closed.
+
+The checked policy file has profile ID `phase8-v1` and SHA-256
+`e31c47660bb5cce5aeb502ad510448176b419e604ef5048d74403bdef2f3a493`.
+Transported configuration, IDs, kinds, branch states, counts, dependencies,
+ordering, multiplicity, and signed zero remain exact. Named computed coordinate,
+speed, force, and torque paths use only their parser-locked exact, ULP,
+absolute, or absolute-relative policies. There is no wildcard, repository-wide epsilon,
+or automatic widening.
+
+GitHub Actions
+[run 29374708477](https://github.com/bright-builds-llc/liquidfun-rs/actions/runs/29374708477)
+was a successful `workflow_dispatch` for exact head
+`533c2ccf97b3921079baf7c339ddb4dad1a4038b`. The unique successful
+`canonical-linux` and `sanitizer-linux` identities were downloaded from:
+
+- `phase8-canonical-29374708477-533c2ccf97b3921079baf7c339ddb4dad1a4038b`
+- `phase8-sanitizer-29374708477-533c2ccf97b3921079baf7c339ddb4dad1a4038b`
+
+Both identities record Rust 1.97.0, CMake 4.3.3, Ninja 1.13.2, Clang 22.1.8,
+upstream revision `7f20402173fd143a3988c921bc384459c6a858f2`, and policy profile
+`phase8-v1`. The canonical job completed debug and release comparison, replay,
+and exactly two byte-identical D0 runs; the sanitizer job completed the
+fail-fast protocol and rigid corpus. Together they support
+canonical scalar rigid-body and joint differential sign-off for the closed Phase 8 corpus.
+
+That result populates platform evidence only for the 16 accumulated rigid rows
+and 17 Phase 8 joint/rope rows exercised by this request. The 19-family corpus
+does not complete RIGD-10, particles, D3, cross-platform parity, performance,
+the testbed, or release readiness. Local runs remain D2/D0 and cannot substitute
+for the exact run, SHA, artifact, job, toolchain, upstream, and policy identities
+above.
+
 ## Differential commands
 
 Initialize, verify, configure, and build the oracle first:
@@ -630,7 +673,7 @@ cargo xtask upstream build --preset oracle-asan-ubsan
 ```
 
 From the repository root, first execute the C++ protocol tests and the complete
-Phase 6 rigid decode/world/contact/teardown/trace path under the same fail-fast
+Phase 8 rigid/joint/rope/callback/teardown/trace path under the same fail-fast
 environment, then preserve the existing empty-world one-shot and bounded
 reset/reuse corpus:
 
@@ -686,9 +729,10 @@ provenance-schema fixtures, rustdoc, docs contracts, and consumer package
 isolation. Oracle jobs alone initialize the submodule and use CMake/C++.
 
 Canonical Linux oracle CI verifies exact tool and source identity, builds
-`oracle-debug`, runs one-shot plus bounded reuse, replays the reviewed trace, and
-asserts evidence remains byte-identical. The scheduled/manual sanitizer lane
-runs the exact fail-fast protocol, rigid, one-shot, and reuse commands above.
+`oracle-debug` and `oracle-release`, compares the closed Phase 8 rigid corpus,
+replays it, and asserts exactly two runs remain byte-identical. The
+scheduled/manual sanitizer lane runs the exact fail-fast protocol, rigid,
+one-shot, and reuse commands above.
 Portability builds are non-canonical,
 read-only, and cannot publish or promote evidence. All workflows use
 `contents: read`, full-SHA external actions, bounded job timeouts, and no secrets.

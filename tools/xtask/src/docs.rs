@@ -60,11 +60,11 @@ const DOCUMENT_CONTRACTS: [(&str, &[&str]); 4] = [
     (
         "COMPATIBILITY.md",
         &[
-            "| `implemented` | 34 | 143 |",
-            "| `unit_tested` | 34 | 143 |",
-            "| `differentially_validated` | 33 | 144 |",
-            "| `platform_validated` | 0 | 177 |",
-            "| `documented_difference` | 34 | 143 |",
+            "| `implemented` | 51 | 126 |",
+            "| `unit_tested` | 51 | 126 |",
+            "| `differentially_validated` | 50 | 127 |",
+            "| `platform_validated` | 33 | 144 |",
+            "| `documented_difference` | 51 | 126 |",
             "`subsystem.common-math-and-settings`",
             "`public-api.liquidfun-box2d-box2d-common-b2math-h`",
             "`public-api.liquidfun-box2d-box2d-common-b2settings-h`",
@@ -201,17 +201,17 @@ const PHASE6_DOCUMENT_CONTRACTS: [(&str, &[&str]); 5] = [
     (
         "COMPATIBILITY.md",
         &[
-            "| `subsystem.contacts-and-filtering` | `liquidfun/Box2D/Box2D/Dynamics/Contacts` | `liquidfun::dynamics::contacts` | applicable | yes | yes | yes | yes | yes | no | yes | no |",
-            "| `subsystem.rigid-bodies-and-fixtures` | `liquidfun/Box2D/Box2D/Dynamics` | `liquidfun::dynamics` | applicable | yes | yes | yes | yes | yes | no | yes | no |",
-            "| `public-api.liquidfun-box2d-box2d-dynamics-b2body-h` | `liquidfun/Box2D/Box2D/Dynamics/b2Body.h` | `liquidfun::dynamics` | applicable | yes | yes | yes | yes | yes | no | yes | no |",
-            "| `public-api.liquidfun-box2d-box2d-dynamics-b2fixture-h` | `liquidfun/Box2D/Box2D/Dynamics/b2Fixture.h` | `liquidfun::dynamics` | applicable | yes | yes | yes | yes | yes | no | yes | no |",
-            "| `public-api.liquidfun-box2d-box2d-dynamics-b2contactmanager-h` | `liquidfun/Box2D/Box2D/Dynamics/b2ContactManager.h` | `liquidfun::dynamics` | applicable | yes | yes | yes | yes | yes | no | yes | no |",
-            "| `public-api.liquidfun-box2d-box2d-dynamics-b2world-h` | `liquidfun/Box2D/Box2D/Dynamics/b2World.h` | `liquidfun::dynamics` | applicable | yes | yes | yes | yes | yes | no | yes | no |",
-            "| `public-api.liquidfun-box2d-box2d-dynamics-contacts-b2circlecontact-h` | `liquidfun/Box2D/Box2D/Dynamics/Contacts/b2CircleContact.h` | `liquidfun::dynamics::contacts` | applicable | yes | yes | yes | yes | yes | no | yes | no |",
-            "| `public-api.liquidfun-box2d-box2d-dynamics-contacts-b2contactsolver-h` | `liquidfun/Box2D/Box2D/Dynamics/Contacts/b2ContactSolver.h` | `liquidfun::dynamics::contacts` | applicable | yes | yes | yes | yes | yes | no | yes | no |",
+            "| `subsystem.contacts-and-filtering` | `liquidfun/Box2D/Box2D/Dynamics/Contacts` | `liquidfun::dynamics::contacts` | applicable | yes | yes | yes | yes | yes | yes | yes | no |",
+            "| `subsystem.rigid-bodies-and-fixtures` | `liquidfun/Box2D/Box2D/Dynamics` | `liquidfun::dynamics` | applicable | yes | yes | yes | yes | yes | yes | yes | no |",
+            "| `public-api.liquidfun-box2d-box2d-dynamics-b2body-h` | `liquidfun/Box2D/Box2D/Dynamics/b2Body.h` | `liquidfun::dynamics` | applicable | yes | yes | yes | yes | yes | yes | yes | no |",
+            "| `public-api.liquidfun-box2d-box2d-dynamics-b2fixture-h` | `liquidfun/Box2D/Box2D/Dynamics/b2Fixture.h` | `liquidfun::dynamics` | applicable | yes | yes | yes | yes | yes | yes | yes | no |",
+            "| `public-api.liquidfun-box2d-box2d-dynamics-b2contactmanager-h` | `liquidfun/Box2D/Box2D/Dynamics/b2ContactManager.h` | `liquidfun::dynamics` | applicable | yes | yes | yes | yes | yes | yes | yes | no |",
+            "| `public-api.liquidfun-box2d-box2d-dynamics-b2world-h` | `liquidfun/Box2D/Box2D/Dynamics/b2World.h` | `liquidfun::dynamics` | applicable | yes | yes | yes | yes | yes | yes | yes | no |",
+            "| `public-api.liquidfun-box2d-box2d-dynamics-contacts-b2circlecontact-h` | `liquidfun/Box2D/Box2D/Dynamics/Contacts/b2CircleContact.h` | `liquidfun::dynamics::contacts` | applicable | yes | yes | yes | yes | yes | yes | yes | no |",
+            "| `public-api.liquidfun-box2d-box2d-dynamics-contacts-b2contactsolver-h` | `liquidfun/Box2D/Box2D/Dynamics/Contacts/b2ContactSolver.h` | `liquidfun::dynamics::contacts` | applicable | yes | yes | yes | yes | yes | yes | yes | no |",
             "| `public-api.liquidfun-box2d-box2d-dynamics-contacts-b2polygoncontact-h` | `liquidfun/Box2D/Box2D/Dynamics/Contacts/b2PolygonContact.h` | `liquidfun::dynamics::contacts` | applicable | yes | yes | no | no | no | no | no | no |",
-            "| `source-area.liquidfun-box2d-box2d-dynamics` | `liquidfun/Box2D/Box2D/Dynamics` | `liquidfun::dynamics` | applicable | yes | yes | yes | yes | yes | no | yes | no |",
-            "| `source-area.liquidfun-box2d-box2d-dynamics-contacts` | `liquidfun/Box2D/Box2D/Dynamics/Contacts` | `liquidfun::dynamics::contacts` | applicable | yes | yes | yes | yes | yes | no | yes | no |",
+            "| `source-area.liquidfun-box2d-box2d-dynamics` | `liquidfun/Box2D/Box2D/Dynamics` | `liquidfun::dynamics` | applicable | yes | yes | yes | yes | yes | yes | yes | no |",
+            "| `source-area.liquidfun-box2d-box2d-dynamics-contacts` | `liquidfun/Box2D/Box2D/Dynamics/Contacts` | `liquidfun::dynamics::contacts` | applicable | yes | yes | yes | yes | yes | yes | yes | no |",
         ],
     ),
     (
@@ -301,15 +301,84 @@ const PHASE7_DOCUMENT_CONTRACTS: [(&str, &[&str]); 5] = [
     (
         "COMPATIBILITY.md",
         &[
-            "| `implemented` | 34 | 143 |",
-            "| `unit_tested` | 34 | 143 |",
-            "| `differentially_validated` | 33 | 144 |",
-            "| `platform_validated` | 0 | 177 |",
-            "| `documented_difference` | 34 | 143 |",
-            "| `subsystem.rigid-islands-and-solver` | `liquidfun/Box2D/Box2D/Dynamics` | `liquidfun::dynamics` | applicable | yes | yes | yes | yes | yes | no | yes | no |",
-            "| `subsystem.world-operations-and-observation` | `liquidfun/Box2D/Box2D/Dynamics` | `liquidfun::world` | applicable | yes | yes | yes | yes | yes | no | yes | no |",
-            "| `public-api.liquidfun-box2d-box2d-dynamics-b2island-h` | `liquidfun/Box2D/Box2D/Dynamics/b2Island.h` | `liquidfun::dynamics` | applicable | yes | yes | yes | yes | yes | no | yes | no |",
-            "| `public-api.liquidfun-box2d-box2d-dynamics-b2timestep-h` | `liquidfun/Box2D/Box2D/Dynamics/b2TimeStep.h` | `liquidfun::dynamics` | applicable | yes | yes | yes | yes | yes | no | yes | no |",
+            "| `implemented` | 51 | 126 |",
+            "| `unit_tested` | 51 | 126 |",
+            "| `differentially_validated` | 50 | 127 |",
+            "| `platform_validated` | 33 | 144 |",
+            "| `documented_difference` | 51 | 126 |",
+            "| `subsystem.rigid-islands-and-solver` | `liquidfun/Box2D/Box2D/Dynamics` | `liquidfun::dynamics` | applicable | yes | yes | yes | yes | yes | yes | yes | no |",
+            "| `subsystem.world-operations-and-observation` | `liquidfun/Box2D/Box2D/Dynamics` | `liquidfun::world` | applicable | yes | yes | yes | yes | yes | yes | yes | no |",
+            "| `public-api.liquidfun-box2d-box2d-dynamics-b2island-h` | `liquidfun/Box2D/Box2D/Dynamics/b2Island.h` | `liquidfun::dynamics` | applicable | yes | yes | yes | yes | yes | yes | yes | no |",
+            "| `public-api.liquidfun-box2d-box2d-dynamics-b2timestep-h` | `liquidfun/Box2D/Box2D/Dynamics/b2TimeStep.h` | `liquidfun::dynamics` | applicable | yes | yes | yes | yes | yes | yes | yes | no |",
+        ],
+    ),
+];
+const PHASE8_SIGNOFF: &str =
+    "canonical scalar rigid-body and joint differential sign-off for the closed Phase 8 corpus";
+const PHASE8_DOCUMENT_CONTRACTS: [(&str, &[&str]); 5] = [
+    (
+        "crates/liquidfun/src/lib.rs",
+        &[
+            "# Phase 8 joints, rope, and callback contract",
+            PHASE8_SIGNOFF,
+            "all eleven joint kinds",
+            "standalone [`rope::Rope`]",
+            "RIGD-10",
+            "release readiness remain pending",
+        ],
+    ),
+    (
+        "ARCHITECTURE.md",
+        &[
+            "## Phase 8 joints, rope, callbacks, and rigid sign-off boundaries",
+            PHASE8_SIGNOFF,
+            "19 required witness families",
+            "29374708477",
+            "533c2ccf97b3921079baf7c339ddb4dad1a4038b",
+            "phase8-canonical-29374708477-533c2ccf97b3921079baf7c339ddb4dad1a4038b",
+            "phase8-sanitizer-29374708477-533c2ccf97b3921079baf7c339ddb4dad1a4038b",
+            "Rust 1.97.0, CMake 4.3.3, Ninja 1.13.2, and Clang 22.1.8",
+            "7f20402173fd143a3988c921bc384459c6a858f2",
+            "`phase8-v1`",
+        ],
+    ),
+    (
+        "TESTING.md",
+        &[
+            "## Phase 8 canonical rigid-world sign-off",
+            PHASE8_SIGNOFF,
+            "19 required witness families",
+            "29374708477",
+            "533c2ccf97b3921079baf7c339ddb4dad1a4038b",
+            "canonical-linux",
+            "sanitizer-linux",
+            "RIGD-10",
+            "D3",
+        ],
+    ),
+    (
+        "README.md",
+        &[
+            "Phase 8 checked joint and rope slice",
+            PHASE8_SIGNOFF,
+            "19-family",
+            "29374708477",
+            "RIGD-10",
+            "release readiness remain pending",
+        ],
+    ),
+    (
+        "COMPATIBILITY.md",
+        &[
+            "| `implemented` | 51 | 126 |",
+            "| `unit_tested` | 51 | 126 |",
+            "| `differentially_validated` | 50 | 127 |",
+            "| `platform_validated` | 33 | 144 |",
+            "| `documented_difference` | 51 | 126 |",
+            "| `subsystem.joints` | `liquidfun/Box2D/Box2D/Dynamics/Joints` | `liquidfun::dynamics::joints` | applicable | yes | yes | yes | yes | yes | yes | yes | no |",
+            "| `subsystem.rope` | `liquidfun/Box2D/Box2D/Rope` | `liquidfun::rope` | applicable | yes | yes | yes | yes | yes | yes | yes | no |",
+            "| `public-api.liquidfun-box2d-box2d-dynamics-joints-b2joint-h` | `liquidfun/Box2D/Box2D/Dynamics/Joints/b2Joint.h` | `liquidfun::dynamics::joints` | applicable | yes | yes | yes | yes | yes | yes | yes | no |",
+            "| `public-api.liquidfun-box2d-box2d-rope-b2rope-h` | `liquidfun/Box2D/Box2D/Rope/b2Rope.h` | `liquidfun::rope` | applicable | yes | yes | yes | yes | yes | yes | yes | no |",
         ],
     ),
 ];
@@ -352,6 +421,14 @@ const FORBIDDEN_PHASE7_CLAIMS: [&str; 10] = [
     "ray callbacks are ordered",
     "public ccd cache",
     "public toi counter",
+];
+const FORBIDDEN_PHASE8_CLAIMS: [&str; 6] = [
+    "rigd-10 is complete",
+    "particle parity is complete",
+    "cross-platform parity is complete",
+    "performance is validated",
+    "the testbed is complete",
+    "release ready",
 ];
 
 #[derive(Clone, Copy)]
@@ -505,12 +582,13 @@ pub(crate) fn run(args: &[String]) -> Result<(), DocsError> {
     check_testing_contract(&contents)?;
     check_document_contracts(&repository_root)?;
     println!(
-        "docs verified: {} testing layers, {} Phase 4, {} Phase 5, {} Phase 6, and {} Phase 7 document contracts",
+        "docs verified: {} testing layers, {} Phase 4, {} Phase 5, {} Phase 6, {} Phase 7, and {} Phase 8 document contracts",
         LAYER_RULES.len(),
         DOCUMENT_CONTRACTS.len(),
         PHASE5_DOCUMENT_CONTRACTS.len(),
         PHASE6_DOCUMENT_CONTRACTS.len(),
-        PHASE7_DOCUMENT_CONTRACTS.len()
+        PHASE7_DOCUMENT_CONTRACTS.len(),
+        PHASE8_DOCUMENT_CONTRACTS.len()
     );
     Ok(())
 }
@@ -531,6 +609,11 @@ fn check_document_contracts(repository_root: &std::path::Path) -> Result<(), Doc
         repository_root,
         PHASE7_DOCUMENT_CONTRACTS,
         "phase7-contract",
+    )?;
+    check_required_markers(
+        repository_root,
+        PHASE8_DOCUMENT_CONTRACTS,
+        "phase8-contract",
     )?;
 
     for relative_path in [
@@ -577,6 +660,15 @@ fn check_document_contracts(repository_root: &std::path::Path) -> Result<(), Doc
         {
             return Err(DocsError::new(
                 "phase7-overclaim",
+                format!("{relative_path} contains forbidden claim `{claim}`"),
+            ));
+        }
+        if let Some(claim) = FORBIDDEN_PHASE8_CLAIMS
+            .iter()
+            .find(|claim| lowercase.contains(**claim))
+        {
+            return Err(DocsError::new(
+                "phase8-overclaim",
                 format!("{relative_path} contains forbidden claim `{claim}`"),
             ));
         }

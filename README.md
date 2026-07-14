@@ -18,11 +18,11 @@ Google's LiquidFun physics engine against a pinned C++ oracle.
 ## Status
 
 This repository is at an early vertical-slice stage. The `liquidfun` crate is
-version `0.0.0` and now provides a Phase 7 checked rigid-world slice: granular
-body controls and wake policy, checked step and world configuration,
-deterministic multi-contact island solving, warm starting and sleeping, bounded
-private CCD/sub-step continuation, streaming world queries and ray casts, and
-atomic origin shifting. The generated
+version `0.0.0` and now provides a Phase 8 checked joint and rope slice on top
+of the Phase 7 checked rigid-world slice: all eleven world-owned joint kinds, an independent
+standalone rope, source-timed collision/pre-solve decisions, owned lifecycle
+and destruction evidence, and semantic reconstruction with explicit unsupported
+cases. The generated
 [compatibility inventory](COMPATIBILITY.md) records each row only at its
 demonstrated dimensions.
 
@@ -46,9 +46,23 @@ D3 review, or platform coverage. The scheduled Clang ASan/UBSan lane executes
 both the C++ protocol tests and the rigid-world path; that wiring does not widen
 the local claim.
 
-This is not broad rigid-body support. Joint solving follows in Phase 8, while
-particle behavior follows in later phases. Canonical evidence, additional
-platforms, performance, particles, and production maturity remain pending.
+The Phase 8 `phase8-v1` request accumulates 19 required witness families: the
+Phase 6 and Phase 7 families plus all joint types, gear dependencies, standalone
+rope, filter/pre-solve/listener timing, destruction cascades, and semantic
+reconstruction. GitHub Actions
+[run 29374708477](https://github.com/bright-builds-llc/liquidfun-rs/actions/runs/29374708477)
+at commit `533c2ccf97b3921079baf7c339ddb4dad1a4038b` established
+canonical scalar rigid-body and joint differential sign-off for the closed Phase 8 corpus. Its
+exact artifacts are
+`phase8-canonical-29374708477-533c2ccf97b3921079baf7c339ddb4dad1a4038b`
+and
+`phase8-sanitizer-29374708477-533c2ccf97b3921079baf7c339ddb4dad1a4038b`.
+Both bind upstream revision `7f20402173fd143a3988c921bc384459c6a858f2`,
+Rust 1.97.0, CMake 4.3.3, Ninja 1.13.2, Clang 22.1.8, and `phase8-v1`.
+
+This remains a scoped scalar corpus result, not broad project parity. RIGD-10,
+particles, D3 review, cross-platform parity, performance, the testbed, and
+release readiness remain pending.
 
 Phase 5's world contact lifecycle gap is covered by the bounded later slices.
 The Phase 5 immutable shape/collision substrate and its fixed 78-case Phase 5
@@ -82,9 +96,9 @@ See [TESTING.md](TESTING.md) for the exact verification tiers and
 The fixed rigid-world evidence commands are `just rigid-world-debug`,
 `just rigid-world-release`, `just rigid-world-replay`, and
 `just rigid-world-determinism`. They require the initialized pinned C++ oracle,
-exercise the nine-family Phase 7 request, and report local passes as D2 plus
-same-build byte identity as D0. They do not promote canonical D1 fixtures,
-establish D3 evidence, or make a platform claim.
+exercise the 19-family Phase 8 request, and report local passes as D2 plus
+same-build byte identity as D0. They do not substitute for the exact canonical
+run above, establish D3 evidence, or make another platform claim.
 
 Maintainers can stage the same typed rigid transaction with
 `just rigid-fixture-stage <artifact-id>`, then use the explicit review and

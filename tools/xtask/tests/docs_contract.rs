@@ -354,7 +354,7 @@ fn phase7_contract_rejects_missing_solver_promotion() -> TestResult {
     let fixture = DocsFixture::new()?;
     fixture.replace_document_text(
         "COMPATIBILITY.md",
-        "| `subsystem.rigid-islands-and-solver` | `liquidfun/Box2D/Box2D/Dynamics` | `liquidfun::dynamics` | applicable | yes | yes | yes | yes | yes | no | yes | no |",
+        "| `subsystem.rigid-islands-and-solver` | `liquidfun/Box2D/Box2D/Dynamics` | `liquidfun::dynamics` | applicable | yes | yes | yes | yes | yes | yes | yes | no |",
         "| `subsystem.rigid-islands-and-solver` | `liquidfun/Box2D/Box2D/Dynamics` | `liquidfun::dynamics` | applicable | yes | yes | no | no | no | no | no | no |",
     )?;
 
@@ -603,6 +603,88 @@ fn phase7_contract_rejects_unreviewed_maturity_and_private_state_claims() -> Tes
             "docs/phase7-overclaim"
         };
         assert_failure(&output, category);
+        fixture.cleanup()?;
+    }
+    Ok(())
+}
+
+#[test]
+fn phase8_contract_accepts_repository_documents() -> TestResult {
+    // Arrange
+    let fixture = DocsFixture::new()?;
+
+    // Act
+    let output = fixture.command()?;
+
+    // Assert
+    assert_success(&output);
+    fixture.cleanup()?;
+    Ok(())
+}
+
+#[test]
+fn phase8_contract_rejects_missing_evidence_identity_in_each_document() -> TestResult {
+    // Arrange, Act, Assert
+    for (document, marker) in [
+        (
+            "crates/liquidfun/src/lib.rs",
+            "# Phase 8 joints, rope, and callback contract",
+        ),
+        (
+            "ARCHITECTURE.md",
+            "phase8-canonical-29374708477-533c2ccf97b3921079baf7c339ddb4dad1a4038b",
+        ),
+        ("TESTING.md", "## Phase 8 canonical rigid-world sign-off"),
+        ("README.md", "Phase 8 checked joint and rope slice"),
+        ("COMPATIBILITY.md", "`subsystem.joints`"),
+    ] {
+        let fixture = DocsFixture::new()?;
+        fixture.replace_document_text(document, marker, "removed-phase8-contract-marker")?;
+        let output = fixture.command()?;
+        assert_failure(&output, "docs/phase8-contract");
+        fixture.cleanup()?;
+    }
+    Ok(())
+}
+
+#[test]
+fn phase8_contract_rejects_platform_demotion() -> TestResult {
+    // Arrange
+    let fixture = DocsFixture::new()?;
+    fixture.replace_document_text(
+        "COMPATIBILITY.md",
+        "| `subsystem.joints` | `liquidfun/Box2D/Box2D/Dynamics/Joints` | `liquidfun::dynamics::joints` | applicable | yes | yes | yes | yes | yes | yes | yes | no |",
+        "| `subsystem.joints` | `liquidfun/Box2D/Box2D/Dynamics/Joints` | `liquidfun::dynamics::joints` | applicable | yes | yes | yes | yes | yes | no | yes | no |",
+    )?;
+
+    // Act
+    let output = fixture.command()?;
+
+    // Assert
+    assert_failure(&output, "docs/phase8-contract");
+    fixture.cleanup()?;
+    Ok(())
+}
+
+#[test]
+fn phase8_contract_rejects_broader_maturity_claims() -> TestResult {
+    // Arrange, Act, Assert
+    for claim in [
+        "RIGD-10 is complete",
+        "particle parity is complete",
+        "cross-platform parity is complete",
+        "performance is validated",
+        "the testbed is complete",
+        "release ready",
+    ] {
+        let fixture = DocsFixture::new()?;
+        fixture.replace_document_text(
+            "README.md",
+            "## Architecture and evidence",
+            &format!("False claim: {claim}\n\n## Architecture and evidence"),
+        )?;
+        let output = fixture.command()?;
+        assert_failure(&output, "docs/phase8-overclaim");
         fixture.cleanup()?;
     }
     Ok(())

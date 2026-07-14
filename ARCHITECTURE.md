@@ -10,11 +10,14 @@ deterministic multi-contact islands, warm starting and sleeping, bounded
 private continuous collision, world configuration, queries, rays, and origin
 translation. One nine-family request executes through the native adapter and
 pinned process-isolated C++ oracle. Local compare, replay, sanitizer, and
-same-build determinism evidence does not establish canonical or platform
-coverage. Joints, particles, broader compatibility, and performance remain
-pending. The publishable `liquidfun` crate therefore remains version `0.0.0`,
-and the generated [compatibility inventory](COMPATIBILITY.md) remains the
-authority for maturity.
+same-build determinism evidence remains D2/D0. Phase 8 adds all eleven joint
+kinds, standalone rope, source-timed callback controls, destruction timing, and
+semantic reconstruction. The accumulated 19-family rigid corpus has exact
+canonical scalar Linux x86_64 evidence, but particles, RIGD-10, broader
+platforms, performance, testbed work, and release readiness remain pending.
+The publishable `liquidfun` crate therefore remains version `0.0.0`, and the
+generated [compatibility inventory](COMPATIBILITY.md) remains the authority for
+maturity.
 
 ## Dependency direction
 
@@ -339,6 +342,69 @@ compare, replay, and sanitizer results are local D2 evidence, and exactly two
 same-build byte-identical runs are D0 evidence. They do not establish canonical
 fixture authority, exploratory D3 review, platform-wide coverage, release
 maturity, or broader rigid compatibility.
+
+## Phase 8 joints, rope, callbacks, and rigid sign-off boundaries
+
+`World` owns creation, inspection, checked mutation, solving, and destruction
+for revolute, prismatic, distance, pulley, mouse, gear, wheel, weld, friction,
+rope, and motor joints. Common joint state and exhaustive kind-specific state
+cross the public boundary only as owned snapshots. Joint definitions validate
+the complete request before topology, waking, contact refiltering, or cached
+impulse effects. Gear joints derive their four semantic body roles from two live
+same-world revolute or prismatic source joints, keep forward and reverse
+dependency edges, and destroy dependent gears before their sources.
+
+Island assembly stages typed family-specific constraints in source order.
+Ordinary joints resolve semantic A/B roles; gears resolve and merge A/B/C/D
+roles by physical body. Velocity and position solving preserve each pinned
+family's expression grouping, branch state, wake asymmetry, and private impulse
+caches. A complete joint runtime is installed only with the existing
+transactional world commit. Joint suppression/refiltering and origin shifting
+remain world-owned, and no generic compatibility solver or public cache lane is
+available.
+
+The standalone `rope::Rope` is not a joint and owns checked vertices, inverse
+masses, gravity, damping, stretch, and bend configuration independently of
+`World`. Its step keeps the pinned integrate, stretch/bend/stretch iteration,
+and velocity-recompute order. Zero timestep is a no-op, and invalid input or
+derived state has no partial effect.
+
+Collision filtering and pre-solve are synchronous borrowed decisions at their
+source-equivalent contact-manager points. One authoritative owned lifecycle
+timeline retains filter decisions, begin/end transitions, pre-solve controls,
+post-solve impulses, destruction events, and deferred command completion in
+occurrence order. Explicit fixture/joint destruction does not fabricate
+upstream goodbye callbacks. Semantic reconstruction emits bodies and fixtures,
+then non-gear joints, then gear joints; mouse reconstruction stays explicitly
+unsupported because the pinned dump cannot reconstruct it faithfully. Counts
+and tree metrics are semantic diagnostics, while timing profiles and complete
+renderer-neutral debug drawing remain outside this phase.
+
+The closed `phase8-v1` request contains 19 required witness families: the two
+retained Phase 6 families, seven retained Phase 7 families, and ten Phase 8
+joint, rope, callback, destruction, and diagnostic families. Unknown or missing
+families, joint kinds, observations, declarations, lifecycle multiplicity, or
+policy paths fail before comparison. Structural state and occurrence order
+compare exactly; only named computed float paths may use their parser-locked
+exact, ULP, absolute, or absolute-relative policy. There is no wildcard or
+automatic widening.
+
+GitHub Actions
+[run 29374708477](https://github.com/bright-builds-llc/liquidfun-rs/actions/runs/29374708477)
+executed commit `533c2ccf97b3921079baf7c339ddb4dad1a4038b` and produced exactly two
+validated identities:
+`phase8-canonical-29374708477-533c2ccf97b3921079baf7c339ddb4dad1a4038b`
+from `canonical-linux` and
+`phase8-sanitizer-29374708477-533c2ccf97b3921079baf7c339ddb4dad1a4038b`
+from `sanitizer-linux`. Both name
+Rust 1.97.0, CMake 4.3.3, Ninja 1.13.2, and Clang 22.1.8, upstream revision
+`7f20402173fd143a3988c921bc384459c6a858f2`, and policy profile `phase8-v1`.
+That exact evidence supports
+canonical scalar rigid-body and joint differential sign-off for the closed Phase 8 corpus.
+
+The sign-off is intentionally narrow. It does not complete RIGD-10, particles,
+D3 evidence, cross-platform parity, performance validation, the testbed, or
+release readiness. Those remain owned by later roadmap phases.
 
 ## Private protocol and domain core
 
