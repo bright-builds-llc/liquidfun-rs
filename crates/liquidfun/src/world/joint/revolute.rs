@@ -34,6 +34,14 @@ impl RevoluteRuntime {
         inverse_timestep * self.impulse.z
     }
 
+    pub(super) const fn solver_impulses(self) -> (Vec3, f32) {
+        (self.impulse, self.motor_impulse)
+    }
+
+    pub(super) const fn solver_limit_state(self) -> JointLimitState {
+        self.limit_state
+    }
+
     #[allow(
         dead_code,
         reason = "used by the Phase 8 mixed-island integration plan"
@@ -47,13 +55,16 @@ impl RevoluteRuntime {
     ) -> Result<(), JointMutationError> {
         let previous = *self;
         let candidate_state = classify_limit(definition, angle, fixed_rotation);
-        if candidate_state != self.limit_state
-            && matches!(
-                candidate_state,
-                JointLimitState::AtLower | JointLimitState::AtUpper
-            )
-        {
-            self.impulse.z = 0.0;
+        match candidate_state {
+            JointLimitState::AtLower | JointLimitState::AtUpper
+                if candidate_state != self.limit_state =>
+            {
+                self.impulse.z = 0.0;
+            }
+            JointLimitState::Inactive if definition.is_limit_enabled() && !fixed_rotation => {
+                self.impulse.z = 0.0;
+            }
+            _ => {}
         }
         self.limit_state = candidate_state;
         if !definition.is_motor_enabled() || fixed_rotation {
@@ -511,5 +522,25 @@ mod tests {
         // Assert
         assert_eq!(applied, Vec3::ZERO);
         assert_eq!(runtime.impulse, Vec3::ZERO);
+    }
+
+    #[test]
+    fn disabled_limit_initialization_retains_source_axial_cache() {
+        // Arrange
+        let definition = definition();
+        let mut runtime = RevoluteRuntime {
+            impulse: Vec3::new(0.0, 0.0, 3.0),
+            motor_impulse: 0.0,
+            limit_state: JointLimitState::AtLower,
+        };
+
+        // Act
+        runtime
+            .initialize(definition, 0.0, Some(1.0), false)
+            .expect("initialize");
+
+        // Assert
+        assert_eq!(runtime.impulse.z.to_bits(), 3.0_f32.to_bits());
+        assert_eq!(runtime.limit_state, JointLimitState::Inactive);
     }
 }

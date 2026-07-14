@@ -41,6 +41,14 @@ impl PrismaticRuntime {
         inverse_timestep * self.impulse.y
     }
 
+    pub(super) const fn solver_impulses(self) -> (Vec3, f32) {
+        (self.impulse, self.motor_impulse)
+    }
+
+    pub(super) const fn solver_limit_state(self) -> JointLimitState {
+        self.limit_state
+    }
+
     #[allow(
         dead_code,
         reason = "used by the Phase 8 mixed-island integration plan"
@@ -57,8 +65,14 @@ impl PrismaticRuntime {
             return Err(JointMutationError::NonFiniteDerivedState);
         }
         let candidate_state = classify_limit(definition, translation);
-        if candidate_state != self.limit_state {
-            self.impulse.z = 0.0;
+        match candidate_state {
+            JointLimitState::AtLower | JointLimitState::AtUpper
+                if candidate_state != self.limit_state =>
+            {
+                self.impulse.z = 0.0;
+            }
+            JointLimitState::Inactive => self.impulse.z = 0.0,
+            JointLimitState::Equal | JointLimitState::AtLower | JointLimitState::AtUpper => {}
         }
         self.limit_state = candidate_state;
         self.axis = world_axis;
@@ -537,5 +551,27 @@ mod tests {
         // Assert
         assert_eq!(applied, Vec3::ZERO);
         assert_eq!(runtime.impulse, Vec3::ZERO);
+    }
+
+    #[test]
+    fn entering_equal_limit_retains_source_axial_cache() {
+        // Arrange
+        let definition = definition().with_limits(true, 0.0, 0.0).expect("limits");
+        let mut runtime = PrismaticRuntime {
+            impulse: Vec3::new(0.0, 0.0, 3.0),
+            motor_impulse: 0.0,
+            limit_state: JointLimitState::AtLower,
+            axis: Vec2::new(1.0, 0.0),
+            perpendicular: Vec2::new(0.0, 1.0),
+        };
+
+        // Act
+        runtime
+            .initialize(definition, 0.0, Vec2::new(1.0, 0.0), Some(1.0))
+            .expect("initialize");
+
+        // Assert
+        assert_eq!(runtime.impulse.z.to_bits(), 3.0_f32.to_bits());
+        assert_eq!(runtime.limit_state, JointLimitState::Equal);
     }
 }

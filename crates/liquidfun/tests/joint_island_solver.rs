@@ -3,12 +3,13 @@
 //! Mixed joint-island ordering and exhaustive solver-dispatch regressions.
 
 use liquidfun::StepError;
+use liquidfun::collision::{CircleShape, FilterData, Shape};
 use liquidfun::math::Vec2;
 use liquidfun::rigid_differential::RigidStepFailureInjection;
 use liquidfun::{
-    BodyDef, BodyType, DistanceJointDef, FrictionJointDef, GearJointDef, JointDef, MotorJointDef,
-    MouseJointDef, PrismaticJointDef, PulleyJointDef, RevoluteJointDef, RopeJointDef,
-    StepConfiguration, StepHook, StepLimits, WeldJointDef, WheelJointDef, World,
+    BodyDef, BodyType, DistanceJointDef, FixtureDef, FrictionJointDef, GearJointDef, JointDef,
+    MotorJointDef, MouseJointDef, PrismaticJointDef, PulleyJointDef, RevoluteJointDef,
+    RopeJointDef, StepConfiguration, StepHook, StepLimits, WeldJointDef, WheelJointDef, World,
 };
 
 struct NoopHook;
@@ -18,6 +19,13 @@ impl StepHook for NoopHook {}
 fn dynamic_body(position: Vec2) -> BodyDef {
     BodyDef::new(BodyType::Dynamic, position, 0.0, true)
         .expect("test body definition should be valid")
+}
+
+fn attach_mass(world: &mut World, body: liquidfun::BodyId) {
+    let shape = Shape::from(CircleShape::new(Vec2::ZERO, 0.5).expect("circle"));
+    let fixture = FixtureDef::new(shape, 1.0, 0.0, 0.0, false, FilterData::default())
+        .expect("fixture definition");
+    world.create_fixture(body, &fixture).expect("fixture");
 }
 
 #[test]
@@ -217,6 +225,102 @@ fn joint_warm_cache_survives_zero_step_and_late_failure_is_atomic() {
         Err(StepError::NonFiniteSolverState { .. })
     ));
     assert_eq!(world.rigid_joint_solver_impulse_diagnostics(), cache);
+    assert_eq!(
+        [first_a, first_b, second_a, second_b]
+            .map(|body| world.body_snapshot(body).expect("body should remain live")),
+        before_bodies
+    );
+}
+
+#[test]
+fn live_revolute_and_prismatic_runtimes_are_atomic_on_late_island_failure() {
+    // Arrange
+    let mut world = World::new().expect("test world should be available");
+    let first_a = world
+        .create_body(
+            &BodyDef::new(BodyType::Static, Vec2::new(-4.0, 0.0), 0.0, true).expect("first A"),
+        )
+        .expect("first A should fit");
+    let first_b = world
+        .create_body(&dynamic_body(Vec2::new(-3.0, 0.5)))
+        .expect("first B should fit");
+    let second_a = world
+        .create_body(
+            &BodyDef::new(BodyType::Static, Vec2::new(3.0, 0.0), 0.0, true).expect("second A"),
+        )
+        .expect("second A should fit");
+    let second_b = world
+        .create_body(&dynamic_body(Vec2::new(4.5, -0.5)))
+        .expect("second B should fit");
+    attach_mass(&mut world, first_b);
+    attach_mass(&mut world, second_b);
+    let revolute = world
+        .create_joint(
+            RevoluteJointDef::new(first_a, first_b)
+                .expect("revolute")
+                .with_frame(Vec2::new(0.5, 0.0), Vec2::new(-0.25, 0.5), 0.0)
+                .expect("revolute frame")
+                .with_motor(true, 2.0, 10.0)
+                .expect("revolute motor")
+                .into(),
+        )
+        .expect("revolute should fit");
+    let prismatic = world
+        .create_joint(
+            PrismaticJointDef::new(second_a, second_b)
+                .expect("prismatic")
+                .with_frame(
+                    Vec2::new(0.25, 0.0),
+                    Vec2::new(-0.5, 0.5),
+                    Vec2::new(1.0, 0.0),
+                    0.0,
+                )
+                .expect("prismatic frame")
+                .with_motor(true, -2.0, 10.0)
+                .expect("prismatic motor")
+                .into(),
+        )
+        .expect("prismatic should fit");
+    let configuration =
+        StepConfiguration::new(1.0 / 60.0, 8, 3).expect("configuration should be valid");
+    let mut hook = NoopHook;
+    world
+        .step(configuration, &mut hook, StepLimits::default())
+        .expect("cold step should solve");
+    world
+        .set_body_angular_velocity(first_b, -3.0)
+        .expect("revolute velocity");
+    world
+        .set_body_linear_velocity(second_b, Vec2::new(-4.0, 1.0))
+        .expect("prismatic velocity");
+    let before_joints = [revolute, prismatic].map(|joint| {
+        world
+            .joint_snapshot(joint)
+            .expect("joint should remain live")
+    });
+    let before_bodies = [first_a, first_b, second_a, second_b]
+        .map(|body| world.body_snapshot(body).expect("body should remain live"));
+
+    // Act
+    let result = world.step(
+        configuration,
+        &mut hook,
+        StepLimits::default().with_rigid_failure_injection(RigidStepFailureInjection::LateIsland {
+            solved_islands: 1,
+        }),
+    );
+
+    // Assert
+    assert!(matches!(
+        result,
+        Err(StepError::NonFiniteSolverState { .. })
+    ));
+    assert_eq!(
+        [revolute, prismatic].map(|joint| world
+            .joint_snapshot(joint)
+            .expect("joint should remain live")),
+        before_joints
+    );
     assert_eq!(
         [first_a, first_b, second_a, second_b]
             .map(|body| world.body_snapshot(body).expect("body should remain live")),
