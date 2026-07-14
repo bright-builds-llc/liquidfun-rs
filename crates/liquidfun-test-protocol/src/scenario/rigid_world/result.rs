@@ -2,6 +2,10 @@ use std::collections::{HashMap, HashSet};
 
 use serde::{Deserialize, Serialize};
 
+mod phase8;
+
+use phase8::{ExpectedObservation, expected_observation, validate_phase8_observation_contract};
+
 use super::{
     RigidBodyKind, RigidContactIdentity, RigidExpectedCounts, RigidFilterBits, RigidWorldAction,
     RigidWorldDecodeError, RigidWorldErrorKind, RigidWorldRequestRecord, RigidWorldWitnessFamily,
@@ -534,6 +538,7 @@ fn validate_checkpoint_observations(
 ) -> Result<(), RigidWorldDecodeError> {
     let actions = rigid_world_checkpoint_action_window(timeline, checkpoint_index)
         .ok_or_else(|| validation(RigidWorldErrorKind::ResultCheckpointMismatch))?;
+    validate_phase8_observation_contract(timeline.witness_family(), actions, observations)?;
     let first_action = actions
         .first()
         .ok_or_else(|| validation(RigidWorldErrorKind::ResultCheckpointMismatch))?;
@@ -603,199 +608,6 @@ fn validate_checkpoint_observations(
         return Err(validation(RigidWorldErrorKind::ResultObservationMismatch));
     }
     Ok(())
-}
-
-#[derive(Debug, Clone, Copy)]
-enum ExpectedObservation<'a> {
-    BodyState(&'a ScenarioId),
-    Step,
-    Query(&'a [super::RigidQueryDirectiveRule]),
-    RayCast(&'a [super::RigidRayDirectiveRule]),
-    OriginShift(Vec2Bits),
-    Joint(&'a ScenarioId),
-    Rope(&'a ScenarioId),
-    Reconstruction,
-    Diagnostics,
-}
-
-impl ExpectedObservation<'_> {
-    fn matches(
-        self,
-        live_identities: &RigidCheckpointLiveIdentities<'_>,
-        actual: &RigidWorldObservation,
-    ) -> bool {
-        match (self, actual) {
-            (Self::BodyState(expected), RigidWorldObservation::BodyState { state }) => {
-                expected == &state.body_id
-            }
-            (Self::Step, RigidWorldObservation::Step { .. }) => true,
-            (Self::Query(rules), RigidWorldObservation::Query { observation }) => {
-                query_observation_matches(live_identities, rules, observation)
-            }
-            (Self::RayCast(rules), RigidWorldObservation::RayCast { observation }) => {
-                ray_observation_matches(live_identities, rules, observation)
-            }
-            (Self::OriginShift(expected), RigidWorldObservation::OriginShift { shift }) => {
-                expected == *shift
-            }
-            (Self::Joint(expected), RigidWorldObservation::Joint { snapshot }) => {
-                expected == &snapshot.joint_id
-            }
-            (Self::Rope(expected), RigidWorldObservation::Rope { snapshot }) => {
-                expected == &snapshot.rope_id
-            }
-            (Self::Reconstruction, RigidWorldObservation::Reconstruction { .. })
-            | (Self::Diagnostics, RigidWorldObservation::Diagnostics { .. }) => true,
-            _ => false,
-        }
-    }
-}
-
-fn query_observation_matches(
-    live_identities: &RigidCheckpointLiveIdentities<'_>,
-    rules: &[super::RigidQueryDirectiveRule],
-    observation: &RigidQueryObservation,
-) -> bool {
-    let mut terminated = false;
-    for occurrence in &observation.occurrences {
-        if terminated
-            || !fixture_child_is_live(
-                live_identities,
-                &occurrence.fixture_id,
-                occurrence.child_index,
-            )
-        {
-            return false;
-        }
-        terminated = rules.iter().any(|rule| {
-            rule.target.fixture_id == occurrence.fixture_id
-                && rule.target.child_index == occurrence.child_index
-                && rule.directive == super::RigidQueryDirective::Terminate
-        });
-    }
-
-    observation.completion
-        == if terminated {
-            RigidQueryCompletion::Terminated
-        } else {
-            RigidQueryCompletion::Exhausted
-        }
-}
-
-fn ray_observation_matches(
-    live_identities: &RigidCheckpointLiveIdentities<'_>,
-    rules: &[super::RigidRayDirectiveRule],
-    observation: &RigidRayObservation,
-) -> bool {
-    let mut current_max_fraction_bits = RIGID_RAY_INITIAL_MAX_FRACTION_BITS;
-    let mut current_max_fraction = current_max_fraction_bits.to_f32();
-    let mut terminated = false;
-
-    for hit in &observation.hits {
-        if terminated || !fixture_child_is_live(live_identities, &hit.fixture_id, hit.child_index) {
-            return false;
-        }
-        if !ray_hit_geometry_is_finite(hit) {
-            return false;
-        }
-        let hit_fraction = hit.fraction_bits.to_f32();
-        if !hit_fraction.is_finite() || hit_fraction < 0.0 || hit_fraction > current_max_fraction {
-            return false;
-        }
-        let directive = rules
-            .iter()
-            .find(|rule| {
-                rule.target.fixture_id == hit.fixture_id
-                    && rule.target.child_index == hit.child_index
-            })
-            .map_or(super::RigidRayDirective::Continue, |rule| rule.directive);
-        match directive {
-            super::RigidRayDirective::Ignore | super::RigidRayDirective::Continue => {}
-            super::RigidRayDirective::Terminate => terminated = true,
-            super::RigidRayDirective::Clip { fraction_bits } => {
-                let fraction = fraction_bits.to_f32();
-                if !fraction.is_finite() || fraction < 0.0 || fraction > current_max_fraction {
-                    return false;
-                }
-                if fraction < current_max_fraction {
-                    current_max_fraction = fraction;
-                    current_max_fraction_bits = fraction_bits;
-                }
-            }
-        }
-    }
-
-    let expected_completion = if terminated {
-        RigidRayCompletion::Terminated
-    } else {
-        RigidRayCompletion::Exhausted
-    };
-    observation.completion == expected_completion
-        && observation.final_max_fraction_bits == current_max_fraction_bits
-}
-
-fn ray_hit_geometry_is_finite(hit: &RigidRayHitObservation) -> bool {
-    [
-        hit.point.x_bits,
-        hit.point.y_bits,
-        hit.normal.x_bits,
-        hit.normal.y_bits,
-    ]
-    .into_iter()
-    .all(|bits| bits.to_f32().is_finite())
-}
-
-fn fixture_child_is_live(
-    live_identities: &RigidCheckpointLiveIdentities<'_>,
-    fixture_id: &ScenarioId,
-    child_index: u32,
-) -> bool {
-    live_identities.fixtures.iter().any(|fixture| {
-        fixture.fixture_id() == fixture_id
-            && child_index
-                < match fixture.shape() {
-                    super::RigidFixtureShape::Circle { .. }
-                    | super::RigidFixtureShape::Polygon { .. } => 1,
-                }
-    })
-}
-
-fn expected_observation(action: &RigidWorldAction) -> Option<ExpectedObservation<'_>> {
-    match action {
-        RigidWorldAction::SetLinearVelocity { body_id, .. }
-        | RigidWorldAction::SetAngularVelocity { body_id, .. }
-        | RigidWorldAction::ApplyForce { body_id, .. }
-        | RigidWorldAction::ApplyTorque { body_id, .. }
-        | RigidWorldAction::ApplyLinearImpulse { body_id, .. }
-        | RigidWorldAction::ApplyAngularImpulse { body_id, .. }
-        | RigidWorldAction::SetBodyDamping { body_id, .. }
-        | RigidWorldAction::SetGravityScale { body_id, .. }
-        | RigidWorldAction::SetFixedRotation { body_id, .. }
-        | RigidWorldAction::SetSleepingAllowed { body_id, .. }
-        | RigidWorldAction::SetAwake { body_id, .. }
-        | RigidWorldAction::SetBullet { body_id, .. } => {
-            Some(ExpectedObservation::BodyState(body_id))
-        }
-        RigidWorldAction::ConfiguredStep { .. } => Some(ExpectedObservation::Step),
-        RigidWorldAction::QueryAabb {
-            directive_rules, ..
-        } => Some(ExpectedObservation::Query(directive_rules)),
-        RigidWorldAction::RayCast {
-            directive_rules, ..
-        } => Some(ExpectedObservation::RayCast(directive_rules)),
-        RigidWorldAction::ShiftOrigin { shift } => Some(ExpectedObservation::OriginShift(*shift)),
-        RigidWorldAction::CreateJoint { joint_id, .. }
-        | RigidWorldAction::InspectJoint { joint_id, .. }
-        | RigidWorldAction::MutateJoint { joint_id, .. } => {
-            Some(ExpectedObservation::Joint(joint_id))
-        }
-        RigidWorldAction::InspectRope { rope_id, .. }
-        | RigidWorldAction::SetRopeAngle { rope_id, .. }
-        | RigidWorldAction::StepRope { rope_id, .. } => Some(ExpectedObservation::Rope(rope_id)),
-        RigidWorldAction::RequestReconstruction => Some(ExpectedObservation::Reconstruction),
-        RigidWorldAction::RequestDiagnostics => Some(ExpectedObservation::Diagnostics),
-        _ => None,
-    }
 }
 
 fn validate_checkpoint_declaration_order(

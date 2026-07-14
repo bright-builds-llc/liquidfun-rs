@@ -1767,7 +1767,7 @@
                                   },
                                   "ordinal": {
                                     "maximum": 4294967295,
-                                    "minimum": 1,
+                                    "minimum": 0,
                                     "type": "integer"
                                   }
                                 },
@@ -1821,7 +1821,7 @@
                                   },
                                   "ordinal": {
                                     "maximum": 4294967295,
-                                    "minimum": 1,
+                                    "minimum": 0,
                                     "type": "integer"
                                   },
                                   "support": {

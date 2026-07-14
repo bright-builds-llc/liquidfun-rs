@@ -803,7 +803,7 @@ fn rope_snapshot_schema() -> Value {
 fn lifecycle_observation_schema() -> Value {
     closed_record(
         &json!({
-            "ordinal": { "maximum": u32::MAX, "minimum": 1, "type": "integer" },
+            "ordinal": { "maximum": u32::MAX, "minimum": 0, "type": "integer" },
             "kind": { "enum": enum_values(&[
                 RigidLifecycleObservationKind::FilterDecision,
                 RigidLifecycleObservationKind::ContactCreated,
@@ -826,7 +826,7 @@ fn lifecycle_observation_schema() -> Value {
 fn reconstruction_observation_schema() -> Value {
     closed_record(
         &json!({
-            "ordinal": { "maximum": u32::MAX, "minimum": 1, "type": "integer" },
+            "ordinal": { "maximum": u32::MAX, "minimum": 0, "type": "integer" },
             "kind": { "enum": enum_values(&[RigidReconstructionKind::Body, RigidReconstructionKind::Fixture, RigidReconstructionKind::Joint]) },
             "entity_id": semantic_id_schema(),
             "support": { "enum": enum_values(&[RigidReconstructionSupport::Supported, RigidReconstructionSupport::UnsupportedMouseJoint]) },

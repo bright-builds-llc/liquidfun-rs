@@ -346,40 +346,75 @@ fn validate_phase8_field(field: &FieldPolicy) -> Result<(), Phase8PolicyError> {
 
 fn phase8_witness_policy_paths(family: RigidWorldWitnessFamily) -> &'static [&'static str] {
     match family {
-        RigidWorldWitnessFamily::JointDefinitionsAndMutations => &[
-            "rigid_world.phase8.joint.id",
-            "rigid_world.phase8.joint.configuration.bits",
-        ],
-        RigidWorldWitnessFamily::RevolutePrismaticLimitsAndMotors
+        RigidWorldWitnessFamily::JointDefinitionsAndMutations
+        | RigidWorldWitnessFamily::RevolutePrismaticLimitsAndMotors
         | RigidWorldWitnessFamily::DistancePulleyMouseConstraints
-        | RigidWorldWitnessFamily::WheelWeldFrictionRopeMotorConstraints => &[
+        | RigidWorldWitnessFamily::WheelWeldFrictionRopeMotorConstraints
+        | RigidWorldWitnessFamily::MixedJointIslandOrderAndCollisionSuppression => &[
+            "rigid_world.phase8.joint.id",
             "rigid_world.phase8.joint.kind",
+            "rigid_world.phase8.joint.body_ids",
+            "rigid_world.phase8.joint.collide_connected",
+            "rigid_world.phase8.joint.configuration.bits",
+            "rigid_world.phase8.joint.anchor.x",
+            "rigid_world.phase8.joint.anchor.y",
             "rigid_world.phase8.joint.coordinate",
+            "rigid_world.phase8.joint.speed",
+            "rigid_world.phase8.joint.branch_state",
             "rigid_world.phase8.joint.reaction_force.x",
+            "rigid_world.phase8.joint.reaction_force.y",
+            "rigid_world.phase8.joint.reaction_torque",
+            "rigid_world.phase8.observations.order",
         ],
         RigidWorldWitnessFamily::GearDependenciesAndFourBodySolver => &[
+            "rigid_world.phase8.joint.id",
+            "rigid_world.phase8.joint.kind",
+            "rigid_world.phase8.joint.body_ids",
             "rigid_world.phase8.joint.dependencies.order",
+            "rigid_world.phase8.joint.anchor.x",
+            "rigid_world.phase8.joint.anchor.y",
+            "rigid_world.phase8.joint.coordinate",
+            "rigid_world.phase8.joint.speed",
             "rigid_world.phase8.joint.branch_state",
-        ],
-        RigidWorldWitnessFamily::MixedJointIslandOrderAndCollisionSuppression => &[
-            "rigid_world.phase8.joint.collide_connected",
-            "rigid_world.phase8.lifecycle.order",
+            "rigid_world.phase8.joint.reaction_force.x",
+            "rigid_world.phase8.joint.reaction_force.y",
+            "rigid_world.phase8.joint.reaction_torque",
+            "rigid_world.phase8.observations.order",
         ],
         RigidWorldWitnessFamily::StandaloneRopeEvolution => &[
             "rigid_world.phase8.rope.id",
+            "rigid_world.phase8.rope.vertex_count",
+            "rigid_world.phase8.rope.configuration.bits",
             "rigid_world.phase8.rope.vertex.x",
+            "rigid_world.phase8.rope.vertex.y",
+            "rigid_world.phase8.rope.angle",
+            "rigid_world.phase8.observations.order",
         ],
         RigidWorldWitnessFamily::ContactFilterListenerAndPreSolveTiming => &[
             "rigid_world.phase8.lifecycle.order",
+            "rigid_world.phase8.lifecycle.kind",
+            "rigid_world.phase8.lifecycle.identity",
+            "rigid_world.phase8.lifecycle.multiplicity",
+            "rigid_world.phase8.filter.directive.bits",
             "rigid_world.phase8.pre_solve.friction.bits",
+            "rigid_world.phase8.pre_solve.restitution.bits",
+            "rigid_world.phase8.pre_solve.tangent_speed.bits",
         ],
         RigidWorldWitnessFamily::DestructionListenerAndDependencyCascades => &[
+            "rigid_world.phase8.lifecycle.order",
             "rigid_world.phase8.lifecycle.kind",
+            "rigid_world.phase8.lifecycle.identity",
             "rigid_world.phase8.lifecycle.multiplicity",
         ],
         RigidWorldWitnessFamily::DiagnosticReconstructionAndDumpOrder => &[
             "rigid_world.phase8.reconstruction.order",
+            "rigid_world.phase8.reconstruction.kind",
+            "rigid_world.phase8.reconstruction.support",
+            "rigid_world.phase8.reconstruction.dependencies.order",
+            "rigid_world.phase8.diagnostics.counts",
             "rigid_world.phase8.diagnostics.tree_quality",
+            "rigid_world.phase8.dump.order",
+            "rigid_world.phase8.field.presence",
         ],
         _ => &[],
     }
@@ -1090,7 +1125,7 @@ mod tests {
         assert_eq!(profile.fields().len(), 37);
         assert_eq!(
             profile.profile_sha256().as_str(),
-            "e22f8e559a65ac442471d37f7c790030b59ff85df694e0b85eea22f206c7bdbc"
+            "72075452596abf03013832b19cf865315b2621654a3debf7f74f4c5a45146c55"
         );
         assert!(matches!(
             profile

@@ -111,38 +111,134 @@ pub enum RigidWorldWitness {
     OriginShiftPreservedQueryHits,
     OriginShiftPreservedRayFractionsAndNormals,
     OriginShiftPreservedTopology,
-    JointDefinitionsAndMutationsCovered,
-    RevolutePrismaticLimitsAndMotorsCovered,
-    DistancePulleyMouseConstraintsCovered,
-    WheelWeldFrictionRopeMotorConstraintsCovered,
-    GearDependenciesAndFourBodySolverCovered,
-    MixedJointIslandOrderAndCollisionSuppressionCovered,
-    StandaloneRopeEvolutionCovered,
-    ContactFilterListenerAndPreSolveTimingCovered,
-    DestructionListenerAndDependencyCascadesCovered,
-    DiagnosticReconstructionAndDumpOrderCovered,
+    AllJointKindsCreated,
+    JointMutationApplied,
+    JointPositiveStepCompleted,
+    JointWarmStartStepCompleted,
+    AllJointKindsInspected,
+    RevoluteLimitsAndMotorStepped,
+    PrismaticLimitsAndMotorStepped,
+    JointLowerLimitObserved,
+    JointUpperLimitObserved,
+    JointEqualLimitObserved,
+    RevolutePrismaticReactionObserved,
+    RigidDistanceStepped,
+    SoftDistanceStepped,
+    PulleyRatioStepped,
+    MouseTargetAndForceStepped,
+    DistancePulleyMouseReactionObserved,
+    WheelSpringAndMotorStepped,
+    RigidWeldStepped,
+    SoftWeldStepped,
+    FrictionCapsStepped,
+    RopeJointInactiveStepped,
+    RopeJointUpperLimitStepped,
+    MotorCorrectionStepped,
+    CoupledJointReactionObserved,
+    GearRevoluteRevoluteStepped,
+    GearRevolutePrismaticStepped,
+    GearPrismaticRevoluteStepped,
+    GearPrismaticPrismaticStepped,
+    GearSignedRatiosObserved,
+    GearFourBodyTopologyObserved,
+    GearDependencyOrderObserved,
+    MixedJointContactOrderObserved,
+    JointCollisionSuppressed,
+    JointCollisionRestored,
+    MixedJointWarmStartObserved,
+    MixedJointReactionObserved,
+    StandaloneRopePositiveStep,
+    StandaloneRopeAngleObserved,
+    StandaloneRopeVerticesObserved,
+    FilterRejectionObserved,
+    FilterAdmissionObserved,
+    CallbackLifecycleOrderObserved,
+    PreSolveDisableObserved,
+    PreSolveMaterialObserved,
+    CallbackRepeatedOccurrenceObserved,
+    TouchingContactEstablished,
+    ExplicitJointNoGoodbye,
+    ExplicitFixtureNoGoodbye,
+    DependentGearDestroyedFirst,
+    DestructionLifecycleOrderObserved,
+    ReconstructionDependencyOrderObserved,
+    UnsupportedMouseReconstructionObserved,
+    DiagnosticsCountsObserved,
 }
 
-const JOINT_DEFINITION_WITNESSES: [RigidWorldWitness; 1] =
-    [RigidWorldWitness::JointDefinitionsAndMutationsCovered];
-const REVOLUTE_PRISMATIC_WITNESSES: [RigidWorldWitness; 1] =
-    [RigidWorldWitness::RevolutePrismaticLimitsAndMotorsCovered];
-const DISTANCE_PULLEY_MOUSE_WITNESSES: [RigidWorldWitness; 1] =
-    [RigidWorldWitness::DistancePulleyMouseConstraintsCovered];
-const COUPLED_JOINT_WITNESSES: [RigidWorldWitness; 1] =
-    [RigidWorldWitness::WheelWeldFrictionRopeMotorConstraintsCovered];
-const GEAR_WITNESSES: [RigidWorldWitness; 1] =
-    [RigidWorldWitness::GearDependenciesAndFourBodySolverCovered];
-const MIXED_JOINT_WITNESSES: [RigidWorldWitness; 1] =
-    [RigidWorldWitness::MixedJointIslandOrderAndCollisionSuppressionCovered];
-const STANDALONE_ROPE_WITNESSES: [RigidWorldWitness; 1] =
-    [RigidWorldWitness::StandaloneRopeEvolutionCovered];
-const CALLBACK_TIMING_WITNESSES: [RigidWorldWitness; 1] =
-    [RigidWorldWitness::ContactFilterListenerAndPreSolveTimingCovered];
-const DESTRUCTION_TIMING_WITNESSES: [RigidWorldWitness; 1] =
-    [RigidWorldWitness::DestructionListenerAndDependencyCascadesCovered];
-const DIAGNOSTIC_WITNESSES: [RigidWorldWitness; 1] =
-    [RigidWorldWitness::DiagnosticReconstructionAndDumpOrderCovered];
+const JOINT_DEFINITION_WITNESSES: [RigidWorldWitness; 5] = [
+    RigidWorldWitness::AllJointKindsCreated,
+    RigidWorldWitness::JointMutationApplied,
+    RigidWorldWitness::JointPositiveStepCompleted,
+    RigidWorldWitness::JointWarmStartStepCompleted,
+    RigidWorldWitness::AllJointKindsInspected,
+];
+const REVOLUTE_PRISMATIC_WITNESSES: [RigidWorldWitness; 6] = [
+    RigidWorldWitness::RevoluteLimitsAndMotorStepped,
+    RigidWorldWitness::PrismaticLimitsAndMotorStepped,
+    RigidWorldWitness::JointLowerLimitObserved,
+    RigidWorldWitness::JointUpperLimitObserved,
+    RigidWorldWitness::JointEqualLimitObserved,
+    RigidWorldWitness::RevolutePrismaticReactionObserved,
+];
+const DISTANCE_PULLEY_MOUSE_WITNESSES: [RigidWorldWitness; 5] = [
+    RigidWorldWitness::RigidDistanceStepped,
+    RigidWorldWitness::SoftDistanceStepped,
+    RigidWorldWitness::PulleyRatioStepped,
+    RigidWorldWitness::MouseTargetAndForceStepped,
+    RigidWorldWitness::DistancePulleyMouseReactionObserved,
+];
+const COUPLED_JOINT_WITNESSES: [RigidWorldWitness; 8] = [
+    RigidWorldWitness::WheelSpringAndMotorStepped,
+    RigidWorldWitness::RigidWeldStepped,
+    RigidWorldWitness::SoftWeldStepped,
+    RigidWorldWitness::FrictionCapsStepped,
+    RigidWorldWitness::RopeJointInactiveStepped,
+    RigidWorldWitness::RopeJointUpperLimitStepped,
+    RigidWorldWitness::MotorCorrectionStepped,
+    RigidWorldWitness::CoupledJointReactionObserved,
+];
+const GEAR_WITNESSES: [RigidWorldWitness; 7] = [
+    RigidWorldWitness::GearRevoluteRevoluteStepped,
+    RigidWorldWitness::GearRevolutePrismaticStepped,
+    RigidWorldWitness::GearPrismaticRevoluteStepped,
+    RigidWorldWitness::GearPrismaticPrismaticStepped,
+    RigidWorldWitness::GearSignedRatiosObserved,
+    RigidWorldWitness::GearFourBodyTopologyObserved,
+    RigidWorldWitness::GearDependencyOrderObserved,
+];
+const MIXED_JOINT_WITNESSES: [RigidWorldWitness; 5] = [
+    RigidWorldWitness::MixedJointContactOrderObserved,
+    RigidWorldWitness::JointCollisionSuppressed,
+    RigidWorldWitness::JointCollisionRestored,
+    RigidWorldWitness::MixedJointWarmStartObserved,
+    RigidWorldWitness::MixedJointReactionObserved,
+];
+const STANDALONE_ROPE_WITNESSES: [RigidWorldWitness; 3] = [
+    RigidWorldWitness::StandaloneRopePositiveStep,
+    RigidWorldWitness::StandaloneRopeAngleObserved,
+    RigidWorldWitness::StandaloneRopeVerticesObserved,
+];
+const CALLBACK_TIMING_WITNESSES: [RigidWorldWitness; 6] = [
+    RigidWorldWitness::FilterRejectionObserved,
+    RigidWorldWitness::FilterAdmissionObserved,
+    RigidWorldWitness::CallbackLifecycleOrderObserved,
+    RigidWorldWitness::PreSolveDisableObserved,
+    RigidWorldWitness::PreSolveMaterialObserved,
+    RigidWorldWitness::CallbackRepeatedOccurrenceObserved,
+];
+const DESTRUCTION_TIMING_WITNESSES: [RigidWorldWitness; 5] = [
+    RigidWorldWitness::TouchingContactEstablished,
+    RigidWorldWitness::ExplicitJointNoGoodbye,
+    RigidWorldWitness::ExplicitFixtureNoGoodbye,
+    RigidWorldWitness::DependentGearDestroyedFirst,
+    RigidWorldWitness::DestructionLifecycleOrderObserved,
+];
+const DIAGNOSTIC_WITNESSES: [RigidWorldWitness; 3] = [
+    RigidWorldWitness::ReconstructionDependencyOrderObserved,
+    RigidWorldWitness::UnsupportedMouseReconstructionObserved,
+    RigidWorldWitness::DiagnosticsCountsObserved,
+];
 
 const NON_COLLIDING_WITNESSES: [RigidWorldWitness; 22] = [
     RigidWorldWitness::StaticBodyCreated,
@@ -354,15 +450,20 @@ const ORIGIN_SHIFT_ACTIONS: [RigidWorldActionKind; 5] = [
     RigidWorldActionKind::ShiftOrigin,
 ];
 
-const JOINT_DEFINITION_ACTIONS: [RigidWorldActionKind; 4] = [
+const JOINT_DEFINITION_ACTIONS: [RigidWorldActionKind; 6] = [
     RigidWorldActionKind::CreateJoint,
-    RigidWorldActionKind::InspectJoint,
     RigidWorldActionKind::MutateJoint,
+    RigidWorldActionKind::Step,
+    RigidWorldActionKind::InspectJoint,
     RigidWorldActionKind::DestroyJoint,
+    RigidWorldActionKind::DestroyBody,
 ];
-const JOINT_EXECUTION_ACTIONS: [RigidWorldActionKind; 2] = [
+const JOINT_EXECUTION_ACTIONS: [RigidWorldActionKind; 5] = [
     RigidWorldActionKind::CreateJoint,
+    RigidWorldActionKind::Step,
+    RigidWorldActionKind::InspectJoint,
     RigidWorldActionKind::DestroyJoint,
+    RigidWorldActionKind::DestroyBody,
 ];
 const ROPE_ACTIONS: [RigidWorldActionKind; 5] = [
     RigidWorldActionKind::CreateRope,
@@ -371,12 +472,19 @@ const ROPE_ACTIONS: [RigidWorldActionKind; 5] = [
     RigidWorldActionKind::InspectRope,
     RigidWorldActionKind::DestroyRope,
 ];
-const CALLBACK_ACTIONS: [RigidWorldActionKind; 2] = [
+const CALLBACK_ACTIONS: [RigidWorldActionKind; 5] = [
     RigidWorldActionKind::SetContactFilterDirective,
     RigidWorldActionKind::SetPreSolveDirective,
+    RigidWorldActionKind::Step,
+    RigidWorldActionKind::InspectBody,
+    RigidWorldActionKind::DestroyBody,
 ];
-const DESTRUCTION_ACTIONS: [RigidWorldActionKind; 2] = [
+const DESTRUCTION_ACTIONS: [RigidWorldActionKind; 6] = [
     RigidWorldActionKind::CreateJoint,
+    RigidWorldActionKind::Step,
+    RigidWorldActionKind::InspectBody,
+    RigidWorldActionKind::DestroyJoint,
+    RigidWorldActionKind::DestroyFixture,
     RigidWorldActionKind::DestroyBody,
 ];
 const DIAGNOSTIC_ACTIONS: [RigidWorldActionKind; 2] = [
@@ -545,9 +653,7 @@ mod tests {
         assert!(witnesses.contains(&RigidWorldWitness::OriginShiftPreservedTopology));
         assert_eq!(RigidWorldWitnessFamily::ALL.len(), 19);
         assert_eq!(RigidWorldWitnessFamily::PHASE8_REQUIRED.len(), 10);
-        assert!(witnesses.contains(&RigidWorldWitness::StandaloneRopeEvolutionCovered));
-        assert!(
-            witnesses.contains(&RigidWorldWitness::DiagnosticReconstructionAndDumpOrderCovered)
-        );
+        assert!(witnesses.contains(&RigidWorldWitness::StandaloneRopePositiveStep));
+        assert!(witnesses.contains(&RigidWorldWitness::DiagnosticsCountsObserved));
     }
 }

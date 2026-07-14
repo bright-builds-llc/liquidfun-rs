@@ -3,10 +3,12 @@ use std::collections::{HashMap, HashSet};
 use serde::Deserialize;
 
 mod geometry;
+mod phase8;
 
 use geometry::{
     validate_nonnegative, validate_positive, validate_shape, validate_transform, validate_vec2,
 };
+use phase8::validate_phase8_behavior;
 
 use super::{
     RIGID_WORLD_MAXIMUM_ACTIONS, RIGID_WORLD_MAXIMUM_CONTINUOUS_WORK,
@@ -228,6 +230,33 @@ fn validate_timeline(raw: RawTimeline) -> Result<RigidWorldTimeline, RigidWorldD
         .iter()
         .map(|joint| (joint.joint_id.clone(), joint.definition.joint_kind()))
         .collect::<HashMap<_, _>>();
+    let joint_bodies = joints
+        .iter()
+        .map(|joint| {
+            (
+                joint.joint_id.clone(),
+                [joint.body_a_id.clone(), joint.body_b_id.clone()],
+            )
+        })
+        .collect::<HashMap<_, _>>();
+    let mut gear_dependents: HashMap<ScenarioId, Vec<ScenarioId>> = HashMap::new();
+    for joint in &joints {
+        if let RigidJointDefinition::Gear {
+            joint_a_id,
+            joint_b_id,
+            ..
+        } = &joint.definition
+        {
+            gear_dependents
+                .entry(joint_a_id.clone())
+                .or_default()
+                .push(joint.joint_id.clone());
+            gear_dependents
+                .entry(joint_b_id.clone())
+                .or_default()
+                .push(joint.joint_id.clone());
+        }
+    }
     let rope_ids = ropes
         .iter()
         .map(|rope| rope.rope_id.clone())
@@ -240,7 +269,17 @@ fn validate_timeline(raw: RawTimeline) -> Result<RigidWorldTimeline, RigidWorldD
         &fixture_shapes,
         &joint_ids,
         &joint_kinds,
+        &joint_bodies,
+        &gear_dependents,
         &rope_ids,
+    )?;
+    validate_phase8_behavior(
+        raw.witness_family,
+        &bodies,
+        &fixtures,
+        &joints,
+        &ropes,
+        &actions,
     )?;
     let checkpoints = validate_checkpoints(
         raw.checkpoints.into_vec(),
@@ -336,6 +375,8 @@ fn validate_actions(
     fixture_shapes: &HashMap<ScenarioId, RigidFixtureShape>,
     joint_ids: &HashSet<ScenarioId>,
     joint_kinds: &HashMap<ScenarioId, RigidJointKind>,
+    joint_bodies: &HashMap<ScenarioId, [ScenarioId; 2]>,
+    gear_dependents: &HashMap<ScenarioId, Vec<ScenarioId>>,
     rope_ids: &HashSet<ScenarioId>,
 ) -> Result<Vec<RigidWorldActionRecord>, RigidWorldDecodeError> {
     if raw_actions.is_empty() {
@@ -372,6 +413,8 @@ fn validate_actions(
             &mut created_fixtures,
             joint_ids,
             joint_kinds,
+            joint_bodies,
+            gear_dependents,
             rope_ids,
             &mut live_joints,
             &mut live_ropes,
@@ -420,6 +463,8 @@ fn validate_action(
     created_fixtures: &mut HashSet<ScenarioId>,
     joint_ids: &HashSet<ScenarioId>,
     joint_kinds: &HashMap<ScenarioId, RigidJointKind>,
+    joint_bodies: &HashMap<ScenarioId, [ScenarioId; 2]>,
+    gear_dependents: &HashMap<ScenarioId, Vec<ScenarioId>>,
     rope_ids: &HashSet<ScenarioId>,
     live_joints: &mut HashSet<ScenarioId>,
     live_ropes: &mut HashSet<ScenarioId>,
@@ -584,7 +629,7 @@ fn validate_action(
         } => {
             let timestep = timestep_bits.to_f32();
             if !timestep.is_finite()
-                || timestep < 0.0
+                || timestep <= 0.0
                 || !(1..=RIGID_WORLD_MAXIMUM_ITERATIONS).contains(velocity_iterations)
                 || !(1..=RIGID_WORLD_MAXIMUM_ITERATIONS).contains(position_iterations)
                 || !(1..=RIGID_WORLD_MAXIMUM_CONTINUOUS_WORK).contains(continuous_work_budget)
@@ -628,9 +673,10 @@ fn validate_action(
             validate_joint_mutation(*joint_kind, *mutation)?;
         }
         RigidWorldAction::DestroyJoint { joint_id } => {
-            if !live_joints.remove(joint_id) {
+            if !live_joints.contains(joint_id) {
                 return Err(validation(RigidWorldErrorKind::InvalidActionOrder));
             }
+            remove_joint_cascade(joint_id, live_joints, gear_dependents);
         }
         RigidWorldAction::CreateRope { rope_id } => {
             if !rope_ids.contains(rope_id)
@@ -655,7 +701,7 @@ fn validate_action(
             require_live(rope_id, live_ropes, RigidWorldErrorKind::UnknownRope)?;
             let timestep = timestep_bits.to_f32();
             if !timestep.is_finite()
-                || timestep < 0.0
+                || timestep <= 0.0
                 || !(1..=RIGID_WORLD_MAXIMUM_ITERATIONS).contains(iterations)
             {
                 return Err(validation(RigidWorldErrorKind::InvalidRopeDefinition));
@@ -687,6 +733,18 @@ fn validate_action(
                 return Err(validation(RigidWorldErrorKind::InvalidActionOrder));
             }
             live_fixtures.retain(|fixture_id| fixture_owners.get(fixture_id) != Some(body_id));
+            let attached = live_joints
+                .iter()
+                .filter(|joint_id| {
+                    joint_bodies
+                        .get(*joint_id)
+                        .is_some_and(|endpoints| endpoints.contains(body_id))
+                })
+                .cloned()
+                .collect::<Vec<_>>();
+            for joint_id in attached {
+                remove_joint_cascade(&joint_id, live_joints, gear_dependents);
+            }
         }
     }
     Ok(())
@@ -746,6 +804,19 @@ fn validate_joints(
         );
     }
     Ok(joints)
+}
+
+fn remove_joint_cascade(
+    joint_id: &ScenarioId,
+    live_joints: &mut HashSet<ScenarioId>,
+    gear_dependents: &HashMap<ScenarioId, Vec<ScenarioId>>,
+) {
+    if let Some(dependents) = gear_dependents.get(joint_id) {
+        for dependent in dependents.iter().rev() {
+            live_joints.remove(dependent);
+        }
+    }
+    live_joints.remove(joint_id);
 }
 
 #[allow(
