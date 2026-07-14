@@ -278,6 +278,50 @@ pub(super) struct FixturePairSnapshot {
     child_indices: [crate::collision::ChildIndex; 2],
 }
 
+/// Owned evidence for one source-timed collision-filter decision.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct CollisionFilterEvent {
+    fixtures: [FixtureId; 2],
+    bodies: [BodyId; 2],
+    child_indices: [crate::collision::ChildIndex; 2],
+    decision: CollisionDirective,
+}
+
+impl CollisionFilterEvent {
+    const fn new(pair: FixturePairSnapshot, decision: CollisionDirective) -> Self {
+        Self {
+            fixtures: pair.fixtures,
+            bodies: pair.bodies,
+            child_indices: pair.child_indices,
+            decision,
+        }
+    }
+
+    /// Returns fixture identities in canonical pair order.
+    #[must_use]
+    pub const fn fixtures(self) -> [FixtureId; 2] {
+        self.fixtures
+    }
+
+    /// Returns body identities in canonical pair order.
+    #[must_use]
+    pub const fn bodies(self) -> [BodyId; 2] {
+        self.bodies
+    }
+
+    /// Returns shape-child coordinates in canonical pair order.
+    #[must_use]
+    pub const fn child_indices(self) -> [crate::collision::ChildIndex; 2] {
+        self.child_indices
+    }
+
+    /// Returns the exact decision made at the admission or refilter point.
+    #[must_use]
+    pub const fn decision(self) -> CollisionDirective {
+        self.decision
+    }
+}
+
 impl FixturePairSnapshot {
     pub(super) const fn new(
         fixtures: [FixtureId; 2],
@@ -625,7 +669,7 @@ impl<H: StepHook + ?Sized> CollisionDecisionHook for H {
 pub(super) struct ContactHookRun<'hook, H> {
     hook: &'hook mut H,
     limits: StepLimits,
-    events: Vec<ContactEvent>,
+    lifecycle: Vec<LifecycleEvent>,
     commands: Vec<WorldCommand>,
 }
 
@@ -634,13 +678,17 @@ impl<'hook, H: CollisionDecisionHook> ContactHookRun<'hook, H> {
         Self {
             hook,
             limits,
-            events: Vec::new(),
+            lifecycle: Vec::new(),
             commands: Vec::new(),
         }
     }
 
-    pub(super) fn should_collide(&mut self, pair: &FixturePairSnapshot) -> bool {
-        self.hook.should_collide(FixturePairView::new(pair)) == CollisionDirective::Collide
+    pub(super) fn should_collide(&mut self, pair: &FixturePairSnapshot) -> Result<bool, StepError> {
+        let decision = self.hook.should_collide(FixturePairView::new(pair));
+        self.push_lifecycle(LifecycleEvent::Filter(CollisionFilterEvent::new(
+            *pair, decision,
+        )))?;
+        Ok(decision == CollisionDirective::Collide)
     }
 
     pub(super) fn contact_updated(
@@ -649,7 +697,6 @@ impl<'hook, H: CollisionDecisionHook> ContactHookRun<'hook, H> {
         maybe_previous_manifold: Option<&crate::collision::Manifold>,
         allow_pre_solve: bool,
     ) -> Result<PreSolveDirective, StepError> {
-        check_capacity(self.events.len(), self.limits.max_events, "event")?;
         let contact = ContactView { contact: current };
         let directive = if allow_pre_solve {
             self.hook
@@ -662,16 +709,62 @@ impl<'hook, H: CollisionDecisionHook> ContactHookRun<'hook, H> {
             check_capacity(self.commands.len(), self.limits.max_commands, "command")?;
             self.commands.push(command);
         }
-        self.events.push(ContactEvent {
+        self.push_lifecycle(LifecycleEvent::Hook(ContactEvent {
             contact: current.clone(),
             collision: CollisionDirective::Collide,
             maybe_pre_solve: allow_pre_solve.then_some(directive),
-        });
+        }))?;
         Ok(directive)
     }
 
-    fn finish(self) -> (Vec<ContactEvent>, Vec<WorldCommand>) {
-        (self.events, self.commands)
+    pub(super) fn record_contact(
+        &mut self,
+        transition: ContactTransition,
+    ) -> Result<(), StepError> {
+        self.push_lifecycle(LifecycleEvent::Contact(transition))
+    }
+
+    pub(super) fn record_contact_destruction(
+        &mut self,
+        transition: ContactTransition,
+    ) -> Result<(), StepError> {
+        self.push_lifecycle(LifecycleEvent::ContactDestruction(transition))
+    }
+
+    pub(super) fn record_discrete_solve(&mut self, solve: ContactSolve) -> Result<(), StepError> {
+        self.push_lifecycle(LifecycleEvent::Solve(solve))
+    }
+
+    pub(super) fn record_continuous_solve(&mut self, solve: ContactSolve) -> Result<(), StepError> {
+        self.push_lifecycle(LifecycleEvent::ContinuousSolve(solve))
+    }
+
+    pub(super) fn ensure_lifecycle_capacity(&self, additional: usize) -> Result<(), StepError> {
+        let required =
+            self.lifecycle
+                .len()
+                .checked_add(additional)
+                .ok_or(StepError::LimitExceeded {
+                    resource: "event",
+                    limit: self.limits.max_events,
+                })?;
+        if required > self.limits.max_events {
+            return Err(StepError::LimitExceeded {
+                resource: "event",
+                limit: self.limits.max_events,
+            });
+        }
+        Ok(())
+    }
+
+    fn push_lifecycle(&mut self, event: LifecycleEvent) -> Result<(), StepError> {
+        check_capacity(self.lifecycle.len(), self.limits.max_events, "event")?;
+        self.lifecycle.push(event);
+        Ok(())
+    }
+
+    fn finish(self) -> (Vec<LifecycleEvent>, Vec<WorldCommand>) {
+        (self.lifecycle, self.commands)
     }
 }
 
@@ -788,17 +881,30 @@ pub enum StepPhase {
 #[derive(Debug, Clone, PartialEq)]
 #[non_exhaustive]
 pub enum StepLifecycleEvent {
+    /// A fixture pair was accepted or rejected at its source filter point.
+    Filter(CollisionFilterEvent),
     /// A private manager contact began, persisted, or ended touching.
     Contact(ContactTransition),
+    /// A touching contact ended because its private manager occurrence was destroyed.
+    ContactDestruction(ContactTransition),
     /// A restricted hook observed one owned manager occurrence.
     Hook(ContactEvent),
     /// One private manager occurrence completed bounded solving.
     Solve(ContactSolve),
+    /// One private manager occurrence completed a transient TOI solve.
+    ContinuousSolve(ContactSolve),
+    /// An implicitly destroyed joint emitted source-compatible goodbye evidence.
+    JointGoodbye(DestructionRecord),
+    /// An implicitly destroyed fixture emitted source-compatible goodbye evidence.
+    FixtureGoodbye(DestructionRecord),
     /// One requested mutation completed after unlock.
     Command(CommandApplication),
     /// A world object was invalidated after dependent contact evidence.
     Destruction(DestructionRecord),
 }
+
+/// The authoritative owned lifecycle vocabulary shared by step and mutation reports.
+pub type LifecycleEvent = StepLifecycleEvent;
 
 /// Owned results from one automatic step.
 #[derive(Debug, Default, PartialEq)]
@@ -1035,14 +1141,15 @@ impl World {
             ContinuousStepKind::Fresh
         };
         let mut hook_run = ContactHookRun::new(hook, limits);
-        let mut contact_transitions;
-        let mut contact_solves = Vec::new();
-        let mut continuous_contact_solves = Vec::new();
+        let mut contact_transitions = self.contact_manager.drain_transitions();
+        for transition in contact_transitions.iter().cloned() {
+            hook_run.record_contact_destruction(transition)?;
+        }
         let completion = {
             let _lock = step_lock;
             phases.push(StepPhase::FindPairs);
             let hook_result = catch_unwind(AssertUnwindSafe(|| {
-                self.find_pairs_with_hook(&mut hook_run);
+                self.find_pairs_with_hook(&mut hook_run)?;
                 phases.push(StepPhase::UpdateContacts);
                 self.update_contacts_for_step(&mut hook_run)
             }));
@@ -1053,7 +1160,7 @@ impl World {
                     resume_unwind(payload);
                 }
             }
-            contact_transitions = self.contact_manager.drain_transitions();
+            contact_transitions.extend(self.contact_manager.drain_transitions());
             if step_kind == ContinuousStepKind::Fresh && configuration.time_step() > 0.0 {
                 self.preflight_contact_solver()
                     .map_err(|error| solver_step_error(error, &contact_transitions))?;
@@ -1062,13 +1169,13 @@ impl World {
             phases.push(StepPhase::Hook);
             if step_kind == ContinuousStepKind::Fresh && configuration.time_step() > 0.0 {
                 phases.push(StepPhase::Solve);
-                contact_solves = self
-                    .solve_contact_constraints(
-                        configuration,
-                        timing,
-                        limits.maybe_failure_injection,
-                    )
-                    .map_err(|error| solver_step_error(error, &contact_transitions))?;
+                self.solve_contact_constraints(
+                    configuration,
+                    timing,
+                    limits.maybe_failure_injection,
+                    &contact_transitions,
+                    &mut hook_run,
+                )?;
             }
 
             if continuous_enabled {
@@ -1088,41 +1195,65 @@ impl World {
                         resume_unwind(payload);
                     }
                 };
-                continuous_contact_solves = continuous.contact_solves;
-                contact_transitions.extend(self.contact_manager.drain_transitions());
+                drop(continuous.contact_solves);
+                drop(self.contact_manager.drain_transitions());
                 continuous.completion
             } else {
                 StepCompletion::Complete
             }
         };
-        let (events, commands) = hook_run.finish();
+        let (mut lifecycle, commands) = hook_run.finish();
         phases.push(StepPhase::Unlock);
-
-        let mut lifecycle = contact_transitions
-            .iter()
-            .cloned()
-            .map(StepLifecycleEvent::Contact)
-            .collect::<Vec<_>>();
-        lifecycle.extend(events.iter().cloned().map(StepLifecycleEvent::Hook));
-        lifecycle.extend(
-            contact_solves
-                .iter()
-                .cloned()
-                .map(StepLifecycleEvent::Solve),
-        );
-        lifecycle.extend(
-            continuous_contact_solves
-                .iter()
-                .cloned()
-                .map(StepLifecycleEvent::Solve),
-        );
         if !commands.is_empty() {
             phases.push(StepPhase::ApplyCommands);
         }
-        let (command_applications, destructions, command_transitions, command_lifecycle) =
-            self.apply_commands(commands);
-        contact_transitions.extend(command_transitions);
-        lifecycle.extend(command_lifecycle);
+        lifecycle.extend(self.apply_commands(commands));
+
+        let contact_transitions = lifecycle
+            .iter()
+            .filter_map(|event| match event {
+                LifecycleEvent::Contact(transition)
+                | LifecycleEvent::ContactDestruction(transition) => Some(transition.clone()),
+                _ => None,
+            })
+            .collect();
+        let events = lifecycle
+            .iter()
+            .filter_map(|event| match event {
+                LifecycleEvent::Hook(event) => Some(event.clone()),
+                _ => None,
+            })
+            .collect();
+        let contact_solves = lifecycle
+            .iter()
+            .filter_map(|event| match event {
+                LifecycleEvent::Solve(solve) => Some(solve.clone()),
+                _ => None,
+            })
+            .collect();
+        let continuous_contact_solves = lifecycle
+            .iter()
+            .filter_map(|event| match event {
+                LifecycleEvent::ContinuousSolve(solve) => Some(solve.clone()),
+                _ => None,
+            })
+            .collect();
+        let destructions = lifecycle
+            .iter()
+            .filter_map(|event| match event {
+                LifecycleEvent::JointGoodbye(record)
+                | LifecycleEvent::FixtureGoodbye(record)
+                | LifecycleEvent::Destruction(record) => Some(record.clone()),
+                _ => None,
+            })
+            .collect();
+        let command_applications = lifecycle
+            .iter()
+            .filter_map(|event| match event {
+                LifecycleEvent::Command(application) => Some(application.clone()),
+                _ => None,
+            })
+            .collect();
 
         let completion = self.finish_successful_step(timing, completion);
         Ok(StepReport {
@@ -1142,8 +1273,8 @@ impl World {
     fn find_pairs_with_hook<H: CollisionDecisionHook>(
         &mut self,
         hook_run: &mut ContactHookRun<'_, H>,
-    ) {
-        self.find_new_contacts_with_hook(hook_run);
+    ) -> Result<(), StepError> {
+        self.find_new_contacts_with_hook(hook_run)
     }
 
     fn finish_successful_step(
@@ -1165,48 +1296,48 @@ impl World {
         self.update_contacts_with_hook(hook_run)
     }
 
-    fn solve_contact_constraints(
+    fn solve_contact_constraints<H: CollisionDecisionHook>(
         &mut self,
         configuration: StepConfiguration,
         timing: super::config::StepTiming,
         maybe_failure_injection: Option<super::island::SolveFailureInjection>,
-    ) -> Result<Vec<ContactSolve>, ContactSolveFailure> {
-        self.solve_contacts(configuration, timing, maybe_failure_injection)
+        contact_transitions: &[ContactTransition],
+        hook_run: &mut ContactHookRun<'_, H>,
+    ) -> Result<Vec<ContactSolve>, StepError> {
+        self.solve_contacts(
+            configuration,
+            timing,
+            maybe_failure_injection,
+            contact_transitions,
+            hook_run,
+        )
     }
 
-    fn apply_commands(
-        &mut self,
-        commands: Vec<WorldCommand>,
-    ) -> (
-        Vec<CommandApplication>,
-        Vec<DestructionRecord>,
-        Vec<ContactTransition>,
-        Vec<StepLifecycleEvent>,
-    ) {
-        let mut applications = Vec::with_capacity(commands.len());
-        let mut destructions = Vec::new();
-        let mut contact_transitions = Vec::new();
+    fn apply_commands(&mut self, commands: Vec<WorldCommand>) -> Vec<StepLifecycleEvent> {
         let mut lifecycle = Vec::new();
         for command in commands {
             let result = self.apply_command(command);
-            let transitions = self.contact_manager.drain_transitions();
-            let application = CommandApplication { command, result };
+            let (owned_result, mutation_lifecycle) = match result {
+                Ok(report) => {
+                    let mutation_lifecycle = report.lifecycle().to_vec();
+                    (Ok(report.into_value()), mutation_lifecycle)
+                }
+                Err(error) => (Err(error), Vec::new()),
+            };
+            lifecycle.extend(mutation_lifecycle);
+            let application = CommandApplication {
+                command,
+                result: owned_result,
+            };
             lifecycle.push(StepLifecycleEvent::Command(application.clone()));
-            lifecycle.extend(transitions.iter().cloned().map(StepLifecycleEvent::Contact));
-            contact_transitions.extend(transitions);
-            if let Ok(records) = &application.result {
-                destructions.extend(records.iter().cloned());
-                lifecycle.extend(records.iter().cloned().map(StepLifecycleEvent::Destruction));
-            }
-            applications.push(application);
         }
-        (applications, destructions, contact_transitions, lifecycle)
+        lifecycle
     }
 
     fn apply_command(
         &mut self,
         command: WorldCommand,
-    ) -> Result<Vec<DestructionRecord>, CommandError> {
+    ) -> Result<crate::DestructionReport, CommandError> {
         if self.step_state.is_locked() {
             return Err(CommandError::Locked);
         }
@@ -1214,17 +1345,16 @@ impl World {
             WorldCommand::DestroyBody(body) => {
                 self.destroy_body(body).map_err(CommandError::InvalidHandle)
             }
-            WorldCommand::DestroyFixture(fixture) => self
-                .destroy_fixture(fixture)
-                .map(|record| vec![record])
-                .map_err(|error| match error {
+            WorldCommand::DestroyFixture(fixture) => {
+                self.destroy_fixture(fixture).map_err(|error| match error {
                     FixtureDestructionError::InvalidHandle(error) => {
                         CommandError::InvalidHandle(error)
                     }
                     FixtureDestructionError::InvalidAggregateMass(error) => {
                         CommandError::InvalidAggregateMass(error)
                     }
-                }),
+                })
+            }
         }
     }
 
@@ -1241,7 +1371,7 @@ impl World {
     }
 }
 
-fn solver_step_error(
+pub(super) fn solver_step_error(
     error: ContactSolveFailure,
     contact_transitions: &[ContactTransition],
 ) -> StepError {

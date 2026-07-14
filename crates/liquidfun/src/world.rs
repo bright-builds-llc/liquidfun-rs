@@ -33,7 +33,8 @@ pub use fixture::{
 };
 pub use joint::{JointCreationError, JointMutationError, JointQueryError};
 pub use object::{
-    CreateObjectError, DestroyedId, DestructionCause, DestructionRecord, ObjectSnapshot, World,
+    CreateObjectError, DestroyedId, DestructionCause, DestructionRecord, DestructionReport,
+    MutationReport, ObjectSnapshot, World,
 };
 pub use origin::OriginShiftError;
 pub use query::{
@@ -41,8 +42,8 @@ pub use query::{
     RayCastFractionError, WorldRayCastError, WorldRayHit,
 };
 pub use step::{
-    CollisionDecisionHook, CollisionDirective, CommandApplication, CommandError,
-    ContactControlError, ContactEvent, ContactView, ContinuousProgress, FixturePairView,
-    NoDecisionHook, PreSolveDirective, PreSolveView, StepError, StepHook, StepLifecycleEvent,
-    StepLimits, StepPhase, StepReport, WorldCommand,
+    CollisionDecisionHook, CollisionDirective, CollisionFilterEvent, CommandApplication,
+    CommandError, ContactControlError, ContactEvent, ContactView, ContinuousProgress,
+    FixturePairView, LifecycleEvent, NoDecisionHook, PreSolveDirective, PreSolveView, StepError,
+    StepHook, StepLifecycleEvent, StepLimits, StepPhase, StepReport, WorldCommand,
 };

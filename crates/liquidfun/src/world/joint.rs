@@ -9,7 +9,8 @@ use crate::{
     JointKind, JointSnapshot,
 };
 
-use super::object::{DestructionCause, World};
+use super::object::{DestructionCause, DestructionReport, MutationReport, World};
+use super::step::LifecycleEvent;
 
 type GearCreation = ([BodyId; 2], [JointDef; 2], [gear::GearBodyGeometry; 4]);
 
@@ -555,19 +556,24 @@ impl World {
     pub fn destroy_joint(
         &mut self,
         joint: JointId,
-    ) -> Result<Vec<DestructionRecord>, JointMutationError> {
+    ) -> Result<DestructionReport, JointMutationError> {
         self.ensure_joint_mutable()?;
         let record = self.joints.get(joint)?;
         let dependents = record.reverse_gear_dependents.clone();
         let mut records = Vec::with_capacity(dependents.len() + 1);
+        let mut lifecycle = Vec::with_capacity(dependents.len() + 1);
         for dependent in dependents {
-            records.push(self.remove_joint_with_refilter(
+            let record = self.remove_joint_with_refilter(
                 dependent,
                 DestructionCause::GearDependencyCascade { source: joint },
-            ));
+            );
+            lifecycle.push(LifecycleEvent::JointGoodbye(record.clone()));
+            records.push(record);
         }
-        records.push(self.remove_joint_with_refilter(joint, DestructionCause::Explicit));
-        Ok(records)
+        let root = self.remove_joint_with_refilter(joint, DestructionCause::Explicit);
+        lifecycle.push(LifecycleEvent::Destruction(root.clone()));
+        records.push(root);
+        Ok(MutationReport::new(records, lifecycle))
     }
 
     fn prepare_gear_creation(

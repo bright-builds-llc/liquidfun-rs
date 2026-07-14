@@ -425,19 +425,23 @@ fn destruction_fixture_uses_end_before_invalidation() {
         .expect("fixture destruction command should succeed");
 
     // Assert
-    assert!(matches!(
-        report.lifecycle(),
-        [
-            StepLifecycleEvent::Contact(persist),
-            StepLifecycleEvent::Hook(_),
-            StepLifecycleEvent::Solve(_),
-            StepLifecycleEvent::Command(_),
-            StepLifecycleEvent::Contact(end),
-            StepLifecycleEvent::Destruction(record),
-        ] if persist.kind() == ContactTransitionKind::Persist
-            && end.kind() == ContactTransitionKind::End
-            && record.destroyed() == DestroyedId::Fixture(static_fixture)
-    ));
+    assert!(
+        matches!(
+            report.lifecycle(),
+            [
+                StepLifecycleEvent::Contact(persist),
+                StepLifecycleEvent::Hook(_),
+                StepLifecycleEvent::Solve(_),
+                StepLifecycleEvent::ContactDestruction(end),
+                StepLifecycleEvent::Destruction(record),
+                StepLifecycleEvent::Command(_),
+            ] if persist.kind() == ContactTransitionKind::Persist
+                && end.kind() == ContactTransitionKind::End
+                && record.destroyed() == DestroyedId::Fixture(static_fixture)
+        ),
+        "{:#?}",
+        report.lifecycle()
+    );
     assert!(!world.contains_fixture(static_fixture));
     assert_eq!(world.contact_count(), 0);
 }
@@ -468,21 +472,25 @@ fn destruction_body_cascade_orders_end_before_fixture_before_body() {
         .expect("body destruction command should succeed");
 
     // Assert
-    assert!(matches!(
-        report.lifecycle(),
-        [
-            StepLifecycleEvent::Contact(persist),
-            StepLifecycleEvent::Hook(_),
-            StepLifecycleEvent::Solve(_),
-            StepLifecycleEvent::Command(_),
-            StepLifecycleEvent::Contact(end),
-            StepLifecycleEvent::Destruction(fixture),
-            StepLifecycleEvent::Destruction(body),
-        ] if persist.kind() == ContactTransitionKind::Persist
-            && end.kind() == ContactTransitionKind::End
-            && fixture.destroyed() == DestroyedId::Fixture(dynamic_fixture)
-            && body.destroyed() == DestroyedId::Body(dynamic_body)
-    ));
+    assert!(
+        matches!(
+            report.lifecycle(),
+            [
+                StepLifecycleEvent::Contact(persist),
+                StepLifecycleEvent::Hook(_),
+                StepLifecycleEvent::Solve(_),
+                StepLifecycleEvent::ContactDestruction(end),
+                StepLifecycleEvent::FixtureGoodbye(fixture),
+                StepLifecycleEvent::Destruction(body),
+                StepLifecycleEvent::Command(_),
+            ] if persist.kind() == ContactTransitionKind::Persist
+                && end.kind() == ContactTransitionKind::End
+                && fixture.destroyed() == DestroyedId::Fixture(dynamic_fixture)
+                && body.destroyed() == DestroyedId::Body(dynamic_body)
+        ),
+        "{:#?}",
+        report.lifecycle()
+    );
     assert!(!world.contains_body(dynamic_body));
     assert!(!world.contains_fixture(dynamic_fixture));
     assert_eq!(world.contact_count(), 0);

@@ -1,7 +1,8 @@
 use super::{
     BodyId, ContactSolveFailure, ContinuousCandidate, ContinuousEvent, ContinuousEventError,
-    ContinuousScanControl, ContinuousWorldBackup, IslandBuildError, PreparedSynchronization,
-    StepConfiguration, ToiIsland, ToiIslandLimits, ToiIslandSolution, World, solve_toi_island,
+    ContinuousScanControl, ContinuousScanError, ContinuousWorldBackup, IslandBuildError,
+    PreparedSynchronization, StepConfiguration, ToiIsland, ToiIslandLimits, ToiIslandSolution,
+    World, solve_toi_island,
 };
 use crate::world::step::{CollisionDecisionHook, ContactHookRun, NoDecisionHook, StepLimits};
 
@@ -152,6 +153,9 @@ impl World {
             };
             contact_solves.push(solve);
         }
+        hook_run
+            .ensure_lifecycle_capacity(contact_solves.len())
+            .map_err(ContinuousScanError::Hook)?;
 
         for (body_id, state) in solution
             .body_ids
@@ -174,7 +178,13 @@ impl World {
                 self.contact_manager.invalidate_toi_for_body(body_id);
             }
         }
-        self.find_new_contacts_with_hook(hook_run);
+        for solve in &contact_solves {
+            hook_run
+                .record_continuous_solve(solve.clone())
+                .map_err(ContinuousScanError::Hook)?;
+        }
+        self.find_new_contacts_with_hook(hook_run)
+            .map_err(ContinuousScanError::Hook)?;
 
         Ok(Some(ContinuousEvent {
             body_ids: solution.body_ids,

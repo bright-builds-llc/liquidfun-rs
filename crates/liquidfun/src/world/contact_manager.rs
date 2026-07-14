@@ -77,7 +77,8 @@ impl ContactManager {
         };
         let update = update_contact(contact, bodies, fixtures);
         if let Some(transition) = update.maybe_transition {
-            self.transitions.push(transition);
+            self.transitions.push(transition.clone());
+            hook_run.record_contact(transition)?;
         }
         let contact = self
             .contacts
@@ -151,15 +152,16 @@ impl ContactManager {
         fixtures: &mut Arena<Fixture, FixtureId>,
         joints: &Arena<JointRecord, JointId>,
         hook_run: &mut ContactHookRun<'_, H>,
-    ) {
+    ) -> Result<(), StepError> {
         let mut pairs = Vec::new();
         broad_phase
             .update_pairs(|_first_id, first, _second_id, second| pairs.push((*first, *second)))
             .expect("world-owned broad-phase entries must remain coherent");
 
         for (first, second) in pairs {
-            self.add_pair(first, second, bodies, fixtures, joints, hook_run);
+            self.add_pair(first, second, bodies, fixtures, joints, hook_run)?;
         }
+        Ok(())
     }
 
     pub(super) fn update_contacts<H: CollisionDecisionHook>(
@@ -175,22 +177,23 @@ impl ContactManager {
             let key = self.contacts[index].key;
             if self.contacts[index].needs_filtering() {
                 let eligible = pair_is_eligible(key, bodies, fixtures, joints)
-                    && hook_run.should_collide(&fixture_pair_snapshot(key));
+                    && hook_run.should_collide(&fixture_pair_snapshot(key))?;
                 if !eligible {
-                    self.destroy_contact(index, bodies, fixtures);
+                    self.destroy_contact_with_hook(index, bodies, fixtures, hook_run)?;
                     continue;
                 }
             }
             self.contacts[index].set_needs_filtering(false);
 
             if !broad_phase_overlap(key, broad_phase, fixtures) {
-                self.destroy_contact(index, bodies, fixtures);
+                self.destroy_contact_with_hook(index, bodies, fixtures, hook_run)?;
                 continue;
             }
 
             let update = update_contact(&mut self.contacts[index], bodies, fixtures);
             if let Some(transition) = update.maybe_transition {
-                self.transitions.push(transition);
+                self.transitions.push(transition.clone());
+                hook_run.record_contact(transition)?;
             }
             apply_contact_hook(
                 &mut self.contacts[index],
@@ -266,6 +269,14 @@ impl ContactManager {
         std::mem::take(&mut self.transitions)
     }
 
+    pub(super) fn transition_checkpoint(&self) -> usize {
+        self.transitions.len()
+    }
+
+    pub(super) fn drain_transitions_since(&mut self, checkpoint: usize) -> Vec<ContactTransition> {
+        self.transitions.split_off(checkpoint)
+    }
+
     #[cfg(feature = "differential-internals")]
     pub(super) fn rigid_diagnostics(
         &self,
@@ -322,7 +333,7 @@ impl ContactManager {
         fixtures: &mut Arena<Fixture, FixtureId>,
         joints: &Arena<JointRecord, JointId>,
         hook_run: &mut ContactHookRun<'_, H>,
-    ) {
+    ) -> Result<(), StepError> {
         let first_fixture = fixtures
             .get(first_proxy.fixture)
             .expect("broad-phase fixture A must remain live");
@@ -345,20 +356,20 @@ impl ContactManager {
             second,
             second_fixture.definition.shape(),
         ) else {
-            return;
+            return Ok(());
         };
         if !pair_is_eligible(key, bodies, fixtures, joints) {
-            return;
+            return Ok(());
         }
         if self
             .contacts
             .iter()
             .any(|contact| contact.key.matches_unordered(key))
         {
-            return;
+            return Ok(());
         }
-        if !hook_run.should_collide(&fixture_pair_snapshot(key)) {
-            return;
+        if !hook_run.should_collide(&fixture_pair_snapshot(key))? {
+            return Ok(());
         }
 
         let fixture_a = fixtures
@@ -386,6 +397,21 @@ impl ContactManager {
         if solid {
             wake_contact_bodies(key, bodies);
         }
+        Ok(())
+    }
+
+    fn destroy_contact_with_hook<H: CollisionDecisionHook>(
+        &mut self,
+        index: usize,
+        bodies: &mut Arena<Body, BodyId>,
+        fixtures: &mut Arena<Fixture, FixtureId>,
+        hook_run: &mut ContactHookRun<'_, H>,
+    ) -> Result<(), StepError> {
+        let maybe_transition = self.destroy_contact(index, bodies, fixtures);
+        if let Some(transition) = maybe_transition {
+            hook_run.record_contact_destruction(transition)?;
+        }
+        Ok(())
     }
 
     fn destroy_contact(
@@ -393,18 +419,18 @@ impl ContactManager {
         index: usize,
         bodies: &mut Arena<Body, BodyId>,
         fixtures: &mut Arena<Fixture, FixtureId>,
-    ) {
+    ) -> Option<ContactTransition> {
         let contact = self.contacts.remove(index);
         if contact.is_touching() && !contact.is_sensor() {
             wake_contact_bodies(contact.key, bodies);
         }
         unlink_contact(contact.ordinal, contact.key, bodies, fixtures);
         if contact.is_touching() {
-            self.transitions.push(ContactTransition::new(
-                ContactTransitionKind::End,
-                contact.snapshot(),
-            ));
+            let transition = ContactTransition::new(ContactTransitionKind::End, contact.snapshot());
+            self.transitions.push(transition.clone());
+            return Some(transition);
         }
+        None
     }
 }
 

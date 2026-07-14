@@ -31,13 +31,16 @@ use super::island::{
 };
 use super::joint::solver::JointImpulseSolution;
 use super::proxy::{FixtureProxies, FixtureProxy, PreparedFixtureBounds, PreparedSynchronization};
-use super::step::{
-    CollisionDecisionHook, ContactHookRun, NoDecisionHook, StepError, StepLimits, StepState,
-};
+use super::step::{CollisionDecisionHook, ContactHookRun, LifecycleEvent, StepError, StepState};
+#[cfg(test)]
+use super::step::{NoDecisionHook, StepLimits};
 use crate::collision::{
     BroadPhase, ChildIndex, CollisionError, FilterData, MassData, RayCastHit, RayCastInput,
 };
 use crate::math::Vec2;
+
+mod report;
+pub use report::{DestructionReport, MutationReport};
 
 #[cfg(test)]
 use super::fixture::test_fixture_definition;
@@ -1314,8 +1317,9 @@ impl World {
     /// # Errors
     ///
     /// Returns a handle error without mutation when `body` is foreign, stale, or destroyed.
-    pub fn destroy_body(&mut self, body: BodyId) -> Result<Vec<DestructionRecord>, HandleError> {
+    pub fn destroy_body(&mut self, body: BodyId) -> Result<DestructionReport, HandleError> {
         self.ensure_not_poisoned_for_handle()?;
+        let transition_checkpoint = self.contact_manager.transition_checkpoint();
         let root = self.bodies.get(body)?;
         let joints = root.joints.clone();
         let fixtures = root.fixtures.clone();
@@ -1327,30 +1331,47 @@ impl World {
         let dependent_gears = self.collect_body_gear_dependents(&joints);
         let mut records =
             Vec::with_capacity(dependent_gears.len() + joints.len() + fixtures.len() + 1);
+        let mut lifecycle = Vec::with_capacity(records.capacity() + root.contacts.len());
 
         for (gear, source) in &dependent_gears {
-            records.push(self.remove_joint(
+            let record = self.remove_joint(
                 *gear,
                 DestructionCause::GearDependencyCascade { source: *source },
-            ));
+            );
+            lifecycle.push(LifecycleEvent::JointGoodbye(record.clone()));
+            records.push(record);
         }
 
         for joint in joints {
             if dependent_gears.iter().any(|(gear, _source)| *gear == joint) {
                 continue;
             }
-            records.push(self.remove_joint(joint, DestructionCause::BodyCascade { body }));
+            let record = self.remove_joint(joint, DestructionCause::BodyCascade { body });
+            lifecycle.push(LifecycleEvent::JointGoodbye(record.clone()));
+            records.push(record);
         }
         self.destroy_contacts_for_body(body);
+        lifecycle.extend(
+            self.contact_manager
+                .drain_transitions_since(transition_checkpoint)
+                .into_iter()
+                .map(LifecycleEvent::ContactDestruction),
+        );
         for fixture in fixtures {
-            records.push(self.remove_fixture(
-                fixture,
-                DestructionCause::BodyCascade { body },
-                None,
-            ));
+            let record = self.remove_fixture(fixture, DestructionCause::BodyCascade { body }, None);
+            lifecycle.extend(
+                self.contact_manager
+                    .drain_transitions()
+                    .into_iter()
+                    .map(LifecycleEvent::ContactDestruction),
+            );
+            lifecycle.push(LifecycleEvent::FixtureGoodbye(record.clone()));
+            records.push(record);
         }
-        records.push(self.remove_body(body, DestructionCause::Explicit, root_snapshot));
-        Ok(records)
+        let root = self.remove_body(body, DestructionCause::Explicit, root_snapshot);
+        lifecycle.push(LifecycleEvent::Destruction(root.clone()));
+        records.push(root);
+        Ok(MutationReport::new(records, lifecycle))
     }
 
     /// Destroys one fixture after validating it before mutation.
@@ -1364,11 +1385,20 @@ impl World {
     pub fn destroy_fixture(
         &mut self,
         fixture: FixtureId,
-    ) -> Result<DestructionRecord, FixtureDestructionError> {
+    ) -> Result<DestructionReport, FixtureDestructionError> {
         self.ensure_not_poisoned_for_handle()?;
+        let transition_checkpoint = self.contact_manager.transition_checkpoint();
         let body = self.fixtures.get(fixture)?.body;
         let candidate = self.prepare_body_mass_state(body, None, Some(fixture))?;
-        Ok(self.remove_fixture(fixture, DestructionCause::Explicit, Some(candidate)))
+        let record = self.remove_fixture(fixture, DestructionCause::Explicit, Some(candidate));
+        let mut lifecycle = self
+            .contact_manager
+            .drain_transitions_since(transition_checkpoint)
+            .into_iter()
+            .map(LifecycleEvent::ContactDestruction)
+            .collect::<Vec<_>>();
+        lifecycle.push(LifecycleEvent::Destruction(record.clone()));
+        Ok(MutationReport::new(vec![record], lifecycle))
     }
 
     /// Destroys a particle system and all its groups and particles.
@@ -1789,16 +1819,18 @@ impl World {
         self.contact_manager.flag_fixture_for_filtering(fixture);
     }
 
+    #[cfg(test)]
     pub(super) fn find_new_contacts(&mut self) {
         let mut hook = NoDecisionHook;
         let mut hook_run = ContactHookRun::new(&mut hook, StepLimits::default());
-        self.find_new_contacts_with_hook(&mut hook_run);
+        self.find_new_contacts_with_hook(&mut hook_run)
+            .expect("default internal contact discovery remains within reviewed limits");
     }
 
     pub(super) fn find_new_contacts_with_hook<H: CollisionDecisionHook>(
         &mut self,
         hook_run: &mut ContactHookRun<'_, H>,
-    ) {
+    ) -> Result<(), StepError> {
         self.resolve_pending_body_wakes();
         self.contact_manager.find_new_contacts(
             &mut self.broad_phase,
@@ -1806,7 +1838,7 @@ impl World {
             &mut self.fixtures,
             &self.joints,
             hook_run,
-        );
+        )
     }
 
     fn resolve_pending_body_wakes(&mut self) {
@@ -1844,15 +1876,18 @@ impl World {
         )
     }
 
-    pub(super) fn solve_contacts(
+    pub(super) fn solve_contacts<H: CollisionDecisionHook>(
         &mut self,
         configuration: super::config::StepConfiguration,
         timing: StepTiming,
         maybe_failure_injection: Option<SolveFailureInjection>,
-    ) -> Result<Vec<ContactSolve>, ContactSolveFailure> {
-        let candidate =
-            self.prepare_world_step_candidate(configuration, timing, maybe_failure_injection)?;
-        Ok(self.commit_world_step_candidate(candidate))
+        contact_transitions: &[super::contact::ContactTransition],
+        hook_run: &mut ContactHookRun<'_, H>,
+    ) -> Result<Vec<ContactSolve>, StepError> {
+        let candidate = self
+            .prepare_world_step_candidate(configuration, timing, maybe_failure_injection)
+            .map_err(|error| super::step::solver_step_error(error, contact_transitions))?;
+        self.commit_world_step_candidate(candidate, hook_run)
     }
 
     #[allow(
@@ -1979,7 +2014,12 @@ impl World {
         })
     }
 
-    fn commit_world_step_candidate(&mut self, candidate: WorldStepCandidate) -> Vec<ContactSolve> {
+    fn commit_world_step_candidate<H: CollisionDecisionHook>(
+        &mut self,
+        candidate: WorldStepCandidate,
+        hook_run: &mut ContactHookRun<'_, H>,
+    ) -> Result<Vec<ContactSolve>, StepError> {
+        hook_run.ensure_lifecycle_capacity(candidate.contact_solves.len())?;
         for (body_id, state) in candidate.body_states {
             self.bodies
                 .get_mut(body_id)
@@ -1998,10 +2038,13 @@ impl World {
             record.solver_linear_impulse = joint.linear_impulse;
             record.solver_angular_impulse = joint.angular_impulse;
         }
+        for solve in &candidate.contact_solves {
+            hook_run.record_discrete_solve(solve.clone())?;
+        }
         self.apply_body_synchronizations(candidate.synchronizations);
-        self.find_new_contacts();
+        self.find_new_contacts_with_hook(hook_run)?;
         self.commit_step_timing(candidate.timing);
-        candidate.contact_solves
+        Ok(candidate.contact_solves)
     }
 
     pub(super) fn preflight_contact_solver(&self) -> Result<(), ContactSolveFailure> {
