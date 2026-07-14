@@ -65,7 +65,7 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
           path: target
-          key: ${{ runner.os }}-oracle-phase4-${{ hashFiles('Cargo.lock', 'reference/upstream-lock.toml', 'tools/reference/CMakeLists.txt', 'tools/reference/CMakePresets.json') }}
+          key: ${{ runner.os }}-oracle-phase8-${{ hashFiles('Cargo.lock', 'reference/upstream-lock.toml', 'protocol/tolerances/phase8-v1.toml', 'protocol/fixtures/accepted/rigid-world-request.jsonl', 'tools/reference/CMakeLists.txt', 'tools/reference/CMakePresets.json') }}
       - name: Verify the exact upstream checkout
         run: cargo xtask upstream verify
       - name: Verify provenance records
@@ -82,6 +82,8 @@ jobs:
         run: cargo xtask upstream build --preset oracle-release
       - name: Reject incomplete or forbidden canonical identities
         run: cargo test -p liquidfun-test-protocol --all-features canonical
+      - name: Verify the closed Phase 8 policy
+        run: cargo test -p liquidfun-test-protocol --all-features phase8
       - name: Compare Phase 4 math probes in debug and release
         run: |
           cargo xtask differential compare --scenario math-probes --preset oracle-debug --session-profile one-shot
@@ -98,14 +100,16 @@ jobs:
         run: cargo xtask differential replay --scenario collision-probes --preset oracle-debug --session-profile one-shot
       - name: Verify Phase 5 collision D0 byte stability
         run: cargo xtask differential verify-determinism --scenario collision-probes --preset oracle-debug --runs 2
-      - name: Compare Phase 6 rigid world in debug and release
+      - name: Prepare Phase 8 canonical evidence logs
+        run: mkdir -p target/oracle-evidence/phase8-canonical/logs
+      - name: Compare Phase 8 rigid world in debug and release
         run: |
-          cargo xtask differential compare --scenario rigid-world --preset oracle-debug --session-profile one-shot
-          cargo xtask differential compare --scenario rigid-world --preset oracle-release --session-profile one-shot
-      - name: Replay the Phase 6 rigid world
-        run: cargo xtask differential replay --scenario rigid-world --preset oracle-debug --session-profile one-shot
-      - name: Verify Phase 6 rigid D0 byte stability
-        run: cargo xtask differential verify-determinism --scenario rigid-world --preset oracle-debug --runs 2
+          cargo xtask differential compare --scenario rigid-world --preset oracle-debug --session-profile one-shot 2>&1 | tee target/oracle-evidence/phase8-canonical/logs/compare-debug.log
+          cargo xtask differential compare --scenario rigid-world --preset oracle-release --session-profile one-shot 2>&1 | tee target/oracle-evidence/phase8-canonical/logs/compare-release.log
+      - name: Replay the Phase 8 rigid world
+        run: cargo xtask differential replay --scenario rigid-world --preset oracle-debug --session-profile one-shot 2>&1 | tee target/oracle-evidence/phase8-canonical/logs/replay.log
+      - name: Verify Phase 8 rigid D0 byte stability
+        run: cargo xtask differential verify-determinism --scenario rigid-world --preset oracle-debug --runs 2 2>&1 | tee target/oracle-evidence/phase8-canonical/logs/determinism.log
       - name: Compare empty-world in one-shot isolation
         run: cargo xtask differential compare --scenario empty-world --preset oracle-debug --session-profile one-shot
       - name: Compare the bounded two-request reuse session
@@ -114,8 +118,19 @@ jobs:
         run: cargo xtask differential replay --scenario empty-world --preset oracle-debug --session-profile one-shot
       - name: Recheck provenance and assert evidence stayed read-only
         run: |
-          cargo xtask provenance check
-          git diff --exit-code -- protocol scenarios reference COMPATIBILITY.md
+          cargo xtask provenance check 2>&1 | tee target/oracle-evidence/phase8-canonical/logs/provenance.log
+          git diff --exit-code -- protocol scenarios reference COMPATIBILITY.md 2>&1 | tee target/oracle-evidence/phase8-canonical/logs/read-only.log
+      - name: Write exact Phase 8 canonical identity
+        run: |
+          printf '%s\n' '{"run_id":${{ github.run_id }},"head_sha":"${{ github.sha }}","job":"${{ github.job }}","upstream_revision":"7f20402173fd143a3988c921bc384459c6a858f2","rust":"1.97.0","cmake":"4.3.3","ninja":"1.13.2","clang":"22.1.8","policy_profile":"phase8-v1"}' > target/oracle-evidence/phase8-canonical/identity.json
+      - name: Upload Phase 8 canonical evidence
+        # actions/upload-artifact v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: phase8-canonical-${{ github.run_id }}-${{ github.sha }}
+          path: target/oracle-evidence/phase8-canonical
+          if-no-files-found: error
+          retention-days: 30
 
   sanitizer-linux:
     name: Scheduled fail-fast sanitizer and reset corpus
@@ -123,11 +138,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      CC: clang
-      CXX: clang++
+      CC: clang-22
+      CXX: clang++-22
       LIQUIDFUN_XTASK_CMAKE: cmake
       LIQUIDFUN_XTASK_NINJA: ninja
-      LIQUIDFUN_XTASK_CXX: clang++
+      LIQUIDFUN_XTASK_CXX: clang++-22
     steps:
       - name: Check out sources and the pinned oracle
         # actions/checkout v7
@@ -162,7 +177,7 @@ jobs:
         run: |
           cmake --version | grep --fixed-strings "cmake version 4.3.3"
           test "$(ninja --version)" = "1.13.2"
-          clang++ --version | grep --extended-regexp 'clang version 22\.1\.8'
+          clang++-22 --version | grep --extended-regexp 'clang version 22\.1\.8'
       - name: Cache sanitizer build outputs
         # actions/cache v6
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
@@ -173,6 +188,7 @@ jobs:
         run: |
           cargo xtask upstream verify
           cargo xtask provenance check
+          cargo test -p liquidfun-test-protocol --all-features phase8
       - name: Configure oracle-asan-ubsan
         run: cargo xtask upstream configure --preset oracle-asan-ubsan
       - name: Build oracle-asan-ubsan
@@ -181,14 +197,27 @@ jobs:
         run: cmake --build target/reference/oracle-asan-ubsan --target liquidfun-reference-protocol-tests
       - name: Run rigid reference protocol tests under fail-fast sanitizers
         run: UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 ASAN_OPTIONS=abort_on_error=1:halt_on_error=1 ctest --test-dir target/reference/oracle-asan-ubsan --output-on-failure --no-tests=error -R '^liquidfun-reference-protocol$'
-      - name: Compare the Phase 6 rigid world under fail-fast sanitizers
-        run: UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 ASAN_OPTIONS=abort_on_error=1:halt_on_error=1 cargo xtask differential compare --scenario rigid-world --preset oracle-asan-ubsan --session-profile one-shot
+      - name: Prepare Phase 8 sanitizer evidence logs
+        run: mkdir -p target/oracle-evidence/phase8-sanitizer/logs
+      - name: Compare the Phase 8 rigid world under fail-fast sanitizers
+        run: UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 ASAN_OPTIONS=abort_on_error=1:halt_on_error=1 cargo xtask differential compare --scenario rigid-world --preset oracle-asan-ubsan --session-profile one-shot 2>&1 | tee target/oracle-evidence/phase8-sanitizer/logs/compare.log
       - name: Run fail-fast one-shot sanitizer comparison
         run: UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 ASAN_OPTIONS=abort_on_error=1:halt_on_error=1 cargo xtask differential compare --scenario empty-world --preset oracle-asan-ubsan --session-profile one-shot
       - name: Run bounded reset and reuse sanitizer corpus
         run: UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 ASAN_OPTIONS=abort_on_error=1:halt_on_error=1 cargo xtask differential compare --scenario empty-world --preset oracle-asan-ubsan --session-profile sanitizer
       - name: Assert sanitizer evidence stayed read-only
-        run: git diff --exit-code -- protocol scenarios reference COMPATIBILITY.md
+        run: git diff --exit-code -- protocol scenarios reference COMPATIBILITY.md 2>&1 | tee target/oracle-evidence/phase8-sanitizer/logs/read-only.log
+      - name: Write exact Phase 8 sanitizer identity
+        run: |
+          printf '%s\n' '{"run_id":${{ github.run_id }},"head_sha":"${{ github.sha }}","job":"${{ github.job }}","upstream_revision":"7f20402173fd143a3988c921bc384459c6a858f2","rust":"1.97.0","cmake":"4.3.3","ninja":"1.13.2","clang":"22.1.8","policy_profile":"phase8-v1"}' > target/oracle-evidence/phase8-sanitizer/identity.json
+      - name: Upload Phase 8 sanitizer evidence
+        # actions/upload-artifact v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: phase8-sanitizer-${{ github.run_id }}-${{ github.sha }}
+          path: target/oracle-evidence/phase8-sanitizer
+          if-no-files-found: error
+          retention-days: 30
       - name: Upload bounded differential failure evidence
         if: failure()
         # actions/upload-artifact v7
