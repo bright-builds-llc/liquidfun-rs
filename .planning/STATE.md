@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 08-06-PLAN.md
-last_updated: "2026-07-14T00:43:40.910Z"
+stopped_at: Completed 08-08-PLAN.md
+last_updated: "2026-07-14T01:02:59.250Z"
 last_activity: 2026-07-14
 progress:
   total_phases: 12
   completed_phases: 7
   total_plans: 90
-  completed_plans: 81
-  percent: 90
+  completed_plans: 82
+  percent: 91
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 ## Current Position
 
 Phase: 8
-Plan: 7 of 16
+Plan: 8 of 16
 Status: Ready to execute
 Last activity: 2026-07-14
 
@@ -108,6 +108,7 @@ Progress: [█░░░░░░░░░] 6%
 | Phase 08 P07 | 16 min | 1 tasks | 5 files |
 | Phase 08 P05 | 45 min | 1 tasks | 20 files |
 | Phase 08 P06 | 20 min | 1 tasks | 9 files |
+| Phase 08 P08 | 18 min | 1 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -241,6 +242,8 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 08]: Gear definitions own source JointIds and World derives their moving endpoints after complete live-kind validation. — This removes caller-supplied duplicate topology, preserves world authority, and makes cross-world, stale, and wrong-kind rejection effect-free.
 - [Phase 08]: Use an ephemeral bounded joint visitation lane so candidate island construction stays read-only and transactional. — Avoid cleanup-sensitive persistent traversal flags while preserving bounded deterministic source ordering.
 - [Phase 08]: Commit joint warm caches only after every island, body, contact, and proxy candidate validates. — A late island or synchronization failure must not expose partial solver progress.
+- [Phase 08]: Use CollisionDecisionHook as the source-timed authority while adapting legacy StepHook observers without persistent registration. — Pair filtering now precedes contact effects while existing observation and deferred-command consumers retain borrow-scoped compatibility.
+- [Phase 08]: Keep enabled state per-update while validated friction, restitution, and tangent speed follow pinned persistent setter behavior. — The distinction matches b2Contact::Update and the inventoried b2Contact setters without exposing arbitrary mutation.
 
 ### Pending Todos
 
@@ -254,6 +257,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-14T00:43:40.907Z
-Stopped at: Completed 08-06-PLAN.md
+Last session: 2026-07-14T01:02:51.134Z
+Stopped at: Completed 08-08-PLAN.md
 Resume file: None

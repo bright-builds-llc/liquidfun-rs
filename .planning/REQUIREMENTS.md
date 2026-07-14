@@ -76,7 +76,7 @@ Requirements for the first release permitted to claim complete parity with the s
 - [x] **JOIN-01**: Consumers can create, configure, inspect, simulate, and destroy revolute, prismatic, distance, pulley, mouse, gear, wheel, weld, friction, rope, and motor joints.
 - [x] **JOIN-02**: Joint limits, motors, anchors, reaction forces/torques, body dependencies, collision settings, and destruction cascades match the selected upstream behavior.
 - [ ] **JOIN-03**: Consumers can use the standalone upstream-equivalent rope model independently of the rope joint.
-- [ ] **JOIN-04**: Contact filters, contact listeners, destruction listeners, and supported pre-solve controls reproduce upstream timing and behavior through the safe hook/event API.
+- [x] **JOIN-04**: Contact filters, contact listeners, destruction listeners, and supported pre-solve controls reproduce upstream timing and behavior through the safe hook/event API.
 - [ ] **JOIN-05**: Every joint type, standalone rope behavior, filter path, listener path, and diagnostic-dump representation has focused and differential coverage.
 
 ### Particle Systems
@@ -246,7 +246,7 @@ Roadmap creation maps every v1 requirement to exactly one phase.
 | JOIN-01 | Phase 8 | Complete |
 | JOIN-02 | Phase 8 | Complete |
 | JOIN-03 | Phase 8 | Pending |
-| JOIN-04 | Phase 8 | Pending |
+| JOIN-04 | Phase 8 | Complete |
 | JOIN-05 | Phase 8 | Pending |
 | PART-01 | Phase 9 | Pending |
 | PART-02 | Phase 9 | Pending |
