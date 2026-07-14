@@ -1,17 +1,17 @@
 ---
 phase: 08-joints-rope-callbacks-and-rigid-sign-off
-reviewed: 2026-07-14T03:05:14Z
+reviewed: 2026-07-14T06:24:09Z
 depth: standard
-iteration: 1
-review_kind: pre-evidence_implementation_and_corpus_review
-diff_range: 5c332cdd09bd80f607d1070d864c28e6e2bb0a14..e6f8533be0e71e512b4e8871951932168b957a57
+iteration: 2
+review_kind: remediation_and_local_evidence_review
+diff_range: 5c332cdd09bd80f607d1070d864c28e6e2bb0a14..dc809b9b34b1784a000cd61c9beabe6ff1ad369e
 files_reviewed: 108
 findings:
-  blocking: 2
+  blocking: 0
   warning: 0
   info: 0
-  total: 2
-status: blocked
+  total: 0
+status: passed
 generated_by: gsd-code-reviewer
 lifecycle_mode: yolo
 phase_lifecycle_id: 8-2026-07-13T21-26-30
@@ -30,17 +30,25 @@ call chain, the native/C++ Phase 8 execution paths, and the complete accepted
 the managed architecture, code-shape, testing, verification, and Rust
 standards.
 
-Phase 8 is blocked from canonical evidence collection. The public definitions,
-identity/lifecycle work, standalone rope, and much of the bounded protocol
-surface are substantial, but the live world step does not execute the pinned
-per-kind joint solvers and the accepted corpus does not exercise the behaviors
-whose witness-family names claim solver, callback, and destruction coverage.
+The initial review blocked Phase 8 from canonical evidence collection. It
+found that the live world step did not execute the pinned per-kind joint
+solvers and that the accepted corpus did not exercise the behaviors whose
+witness-family names claimed solver, callback, and destruction coverage.
+
+The remediation review resolves both findings. Plans 08-14 through 08-18
+replaced the generic staging path with exhaustive typed runtime candidates and
+live two- and four-body solver dispatch. Plans 08-19 through 08-21 replaced the
+non-step-bearing corpus with validated step sequences executed by both native
+Rust and the pinned C++ adapter. Plan 08-22 closed Phase 8 comparison and
+replay policy, then passed the complete local debug, release, replay, D0, and
+fail-fast sanitizer matrix. These results are local D2 evidence only; canonical
+D1 publication remains pending Plan 08-23.
 
 ## Findings
 
 ### CR-08-14-01 — Blocking — Live islands use one generic two-body constraint instead of the pinned per-kind joint solvers
 
-- **Status:** open
+- **Status:** resolved
 - **Evidence:** `crates/liquidfun/src/world/joint/solver.rs:10-15` gives every
   joint exactly two solver-body indices. `CommonConstraint` at lines 24-36
   stores only a center delta, one linear impulse, one angular impulse, an axis,
@@ -69,9 +77,21 @@ whose witness-family names claim solver, callback, and destruction coverage.
   `cargo test -p liquidfun --all-features` and the complete Phase 8 compare,
   replay, D0, and sanitizer commands.
 
+#### Resolution
+
+Commits `a2f5d5b`, `e4949b9`, `1ea8c5b`, `a9f1558`, and `38d5951`
+introduced the staged typed call graph, activated all eleven joint runtimes,
+and supplied semantic A/B/C/D lanes for every revolute/prismatic gear-source
+combination. The live island tests now cover exhaustive dispatch, late-failure
+atomicity, complete warm-cache commit, and four-body alias/scatter behavior.
+The post-remediation Rust gate passed 185 library tests, every integration
+target, and 13 doctests. The complete accepted corpus also matched the pinned
+oracle in debug, release, replay, and sanitizer configurations, with two
+byte-identical D0 runs.
+
 ### CR-08-14-02 — Blocking — The closed Phase 8 corpus names behavioral witnesses without executing them
 
-- **Status:** open
+- **Status:** resolved
 - **Evidence:** `protocol/fixtures/accepted/rigid-world-request.jsonl:1` has zero
   `step` actions in all of these families: `joint_definitions_and_mutations`,
   `revolute_prismatic_limits_and_motors`,
@@ -101,18 +121,28 @@ whose witness-family names claim solver, callback, and destruction coverage.
   family, followed by debug/release compare, replay, exactly two D0 runs, and
   fail-fast ASan/UBSan over the complete accumulated corpus.
 
+#### Resolution
+
+Commit `83dc3bf` made the accepted request validator require meaningful step and
+post-step observations for every step-dependent Phase 8 family, all eleven
+joint variants, all four gear lanes, callback timing, destruction cascades,
+rope evolution, reconstruction, and diagnostics. Commits `bf2d79c` and
+`053651a` execute that same typed corpus in native Rust and the pinned C++
+adapter. Commit `dc809b9` migrated staging/replay to the inherited Phase 8
+comparator, locked the reviewed field-specific residual policies, and added
+stable first-divergence mutations including lifecycle multiplicity and every
+gear result lane. Debug and release comparison, debug replay, exactly one
+`verify-determinism --runs 2`, and fail-fast ASan/UBSan protocol/comparison all
+exited successfully across 19 required families.
+
 ## Remediation gate
 
-No remediation was attempted. CR-08-14-02 necessarily changes
-`protocol/fixtures/accepted/rigid-world-request.jsonl` and focused Rust/C++
-tests, which are outside Plan 08-14 task 02's explicit remediation allowlist.
-The plan says any required path outside that list is a hard replanning blocker.
-CR-08-14-01 also needs new behavior-focused regression files outside that
-allowlist before its large solver replacement can be considered safe.
-
-Because the review is blocked, `oracle.yml` must not be updated to publish a
-Phase 8 canonical/sanitizer matrix, and no workflow may be dispatched until a
-revised plan closes both findings.
+The revised Plans 08-14 through 08-22 supplied the required implementation,
+corpus, native adapter, C++ adapter, comparator, and local evidence paths.
+CR-08-14-01 and CR-08-14-02 are resolved with zero blocking or open findings.
+`oracle.yml` may now be prepared for the Plan 08-23 human-controlled exact-ref
+checkpoint. This review does not authorize a workflow dispatch, push, or
+compatibility claim.
 
 ## Verification evidence
 
@@ -125,8 +155,19 @@ revised plan closes both findings.
 - Ordered Rust gate passed with `CARGO_TARGET_DIR=/tmp/liquidfun-rs-target`:
   `cargo fmt --all`; `cargo clippy --all-targets --all-features -- -D warnings`;
   `cargo build --all-targets --all-features`; and
-  `cargo test --all-features` (176 library tests, all integration targets, and
+  `cargo test --all-features` (185 library tests, all integration targets, and
   13 doctests passed).
+- Fresh configure/build passed for `oracle-debug`, `oracle-release`, and
+  `oracle-asan-ubsan` before their evidence was consumed.
+- Debug protocol CTest passed; debug and release Phase 8 comparisons each
+  matched all 19 required families under `phase8-v1`.
+- Debug replay matched all 19 required families, and exactly one
+  `verify-determinism --runs 2` command produced two byte-identical native and
+  oracle-debug runs.
+- Fail-fast ASan/UBSan protocol CTest and the complete 19-family sanitizer
+  comparison passed with recovery disabled.
+- The local evidence used CMake 3.27.9, Ninja 1.13.2, and Apple Clang 21.0.0;
+  it is therefore recorded only as D2-supported evidence, not canonical D1.
 
 ***
 
