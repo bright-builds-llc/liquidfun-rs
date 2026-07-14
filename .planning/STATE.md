@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 08-05-PLAN.md
-last_updated: "2026-07-14T00:23:46.705Z"
+stopped_at: Completed 08-06-PLAN.md
+last_updated: "2026-07-14T00:43:40.910Z"
 last_activity: 2026-07-14
 progress:
   total_phases: 12
   completed_phases: 7
   total_plans: 90
-  completed_plans: 80
-  percent: 89
+  completed_plans: 81
+  percent: 90
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 ## Current Position
 
 Phase: 8
-Plan: 6 of 16
+Plan: 7 of 16
 Status: Ready to execute
 Last activity: 2026-07-14
 
@@ -107,6 +107,7 @@ Progress: [█░░░░░░░░░] 6%
 | Phase 08 P04 | 17 min | 2 tasks | 15 files |
 | Phase 08 P07 | 16 min | 1 tasks | 5 files |
 | Phase 08 P05 | 45 min | 1 tasks | 20 files |
+| Phase 08 P06 | 20 min | 1 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -238,6 +239,8 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 08]: Preserve each pinned setter's wake asymmetry: wheel motor operations wake unconditionally, motor offsets wake only on exact change, and softness/cap/rope-length tuning does not wake. — Exact source branches are observable through sleep state and must not be replaced by a generic joint-mutation policy.
 - [Phase 08]: Require RopeJointDef maximum length to remain strictly positive while keeping RopeJoint world-owned and distinct from standalone rope. — The checked Rust boundary rejects an inert invalid length while preserving the pinned unilateral solver and preventing API confusion with Plan 08-07's independent rope model.
 - [Phase 08]: Gear definitions own source JointIds and World derives their moving endpoints after complete live-kind validation. — This removes caller-supplied duplicate topology, preserves world authority, and makes cross-world, stale, and wrong-kind rejection effect-free.
+- [Phase 08]: Use an ephemeral bounded joint visitation lane so candidate island construction stays read-only and transactional. — Avoid cleanup-sensitive persistent traversal flags while preserving bounded deterministic source ordering.
+- [Phase 08]: Commit joint warm caches only after every island, body, contact, and proxy candidate validates. — A late island or synchronization failure must not expose partial solver progress.
 
 ### Pending Todos
 
@@ -251,6 +254,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-14T00:23:23.874Z
-Stopped at: Completed 08-05-PLAN.md
+Last session: 2026-07-14T00:43:40.907Z
+Stopped at: Completed 08-06-PLAN.md
 Resume file: None
