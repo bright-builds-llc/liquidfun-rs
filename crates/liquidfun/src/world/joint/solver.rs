@@ -303,11 +303,9 @@ runtime_candidate!(MotorJointDef, MotorRuntime, OrdinarySolverLanes, Motor);
 pub(crate) enum JointVelocityConstraint {
     Revolute(RevoluteConstraint),
     Prismatic(PrismaticConstraint),
-    Distance(
-        FamilyActivation<FamilyCandidate<DistanceJointDef, DistanceRuntime, OrdinarySolverLanes>>,
-    ),
-    Pulley(FamilyActivation<FamilyCandidate<PulleyJointDef, PulleyRuntime, OrdinarySolverLanes>>),
-    Mouse(FamilyActivation<FamilyCandidate<MouseJointDef, MouseRuntime, OrdinarySolverLanes>>),
+    Distance(DistanceConstraint),
+    Pulley(PulleyConstraint),
+    Mouse(MouseConstraint),
     Gear(FamilyActivation<FamilyCandidate<GearJointDef, GearRuntime, GearSolverLanes>>),
     Wheel(FamilyActivation<FamilyCandidate<WheelJointDef, WheelRuntime, OrdinarySolverLanes>>),
     Weld(FamilyActivation<FamilyCandidate<WeldJointDef, WeldRuntime, OrdinarySolverLanes>>),
@@ -374,8 +372,7 @@ pub(crate) fn build_constraints(
                 JointDef::Distance(definition),
                 JointRuntime::Distance(runtime),
                 JointSolverLanes::Ordinary(lanes),
-            ) => JointVelocityConstraint::Distance(stage_legacy_unmigrated(
-                input,
+            ) => JointVelocityConstraint::Distance(stage_distance(
                 FamilyCandidate {
                     joint_id: input.joint_id,
                     lanes,
@@ -391,8 +388,7 @@ pub(crate) fn build_constraints(
                 JointDef::Pulley(definition),
                 JointRuntime::Pulley(runtime),
                 JointSolverLanes::Ordinary(lanes),
-            ) => JointVelocityConstraint::Pulley(stage_legacy_unmigrated(
-                input,
+            ) => JointVelocityConstraint::Pulley(stage_pulley(
                 FamilyCandidate {
                     joint_id: input.joint_id,
                     lanes,
@@ -400,7 +396,6 @@ pub(crate) fn build_constraints(
                     runtime,
                 },
                 bodies,
-                time_step,
                 time_step_ratio,
                 warm_starting,
             )?),
@@ -408,8 +403,7 @@ pub(crate) fn build_constraints(
                 JointDef::Mouse(definition),
                 JointRuntime::Mouse(runtime),
                 JointSolverLanes::Ordinary(lanes),
-            ) => JointVelocityConstraint::Mouse(stage_legacy_unmigrated(
-                input,
+            ) => JointVelocityConstraint::Mouse(stage_mouse(
                 FamilyCandidate {
                     joint_id: input.joint_id,
                     lanes,
@@ -560,6 +554,33 @@ pub(crate) struct PrismaticConstraint {
     time_step: f32,
 }
 
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct DistanceConstraint {
+    candidate: FamilyCandidate<DistanceJointDef, DistanceRuntime, OrdinarySolverLanes>,
+    body_a: usize,
+    body_b: usize,
+    r_a: Vec2,
+    r_b: Vec2,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct PulleyConstraint {
+    candidate: FamilyCandidate<PulleyJointDef, PulleyRuntime, OrdinarySolverLanes>,
+    body_a: usize,
+    body_b: usize,
+    r_a: Vec2,
+    r_b: Vec2,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct MouseConstraint {
+    candidate: FamilyCandidate<MouseJointDef, MouseRuntime, OrdinarySolverLanes>,
+    body_b: usize,
+    r_b: Vec2,
+    angular_damping: f32,
+    time_step: f32,
+}
+
 fn stage_revolute(
     mut candidate: FamilyCandidate<RevoluteJointDef, RevoluteRuntime, OrdinarySolverLanes>,
     bodies: &[SolverBody],
@@ -706,6 +727,160 @@ fn stage_prismatic(
     Ok(constraint)
 }
 
+fn stage_distance(
+    mut candidate: FamilyCandidate<DistanceJointDef, DistanceRuntime, OrdinarySolverLanes>,
+    bodies: &[SolverBody],
+    time_step: f32,
+    time_step_ratio: f32,
+    warm_starting: bool,
+) -> Result<DistanceConstraint, ContactSolveFailure> {
+    let [first_index, second_index] = candidate.lanes.solver_indices(bodies)?;
+    let body_a = bodies[first_index];
+    let body_b = bodies[second_index];
+    let q_a = Rotation::from_angle(body_a.angle);
+    let q_b = Rotation::from_angle(body_b.angle);
+    let r_a = q_a.apply(candidate.definition.local_anchor_a() - body_a.local_center);
+    let r_b = q_b.apply(candidate.definition.local_anchor_b() - body_b.local_center);
+    let displacement = body_b.center + r_b - body_a.center - r_a;
+    let mut direction = displacement;
+    let length = direction.length();
+    if length > LINEAR_SLOP {
+        direction *= 1.0 / length;
+    } else {
+        direction = Vec2::ZERO;
+    }
+    let anchor_lever_a = r_a.cross(direction);
+    let anchor_lever_b = r_b.cross(direction);
+    let inverse_mass = body_a.inverse_mass
+        + body_a.inverse_inertia * anchor_lever_a * anchor_lever_a
+        + body_b.inverse_mass
+        + body_b.inverse_inertia * anchor_lever_b * anchor_lever_b;
+    candidate
+        .runtime
+        .initialize(
+            candidate.definition,
+            displacement,
+            inverse_mass,
+            time_step,
+            warm_starting.then_some(time_step_ratio),
+        )
+        .map_err(map_joint_error)?;
+    let constraint = DistanceConstraint {
+        candidate,
+        body_a: first_index,
+        body_b: second_index,
+        r_a,
+        r_b,
+    };
+    if !constraint.is_finite() {
+        return Err(ContactSolveFailure::NonFinite);
+    }
+    Ok(constraint)
+}
+
+fn stage_pulley(
+    mut candidate: FamilyCandidate<PulleyJointDef, PulleyRuntime, OrdinarySolverLanes>,
+    bodies: &[SolverBody],
+    time_step_ratio: f32,
+    warm_starting: bool,
+) -> Result<PulleyConstraint, ContactSolveFailure> {
+    let [first_index, second_index] = candidate.lanes.solver_indices(bodies)?;
+    let body_a = bodies[first_index];
+    let body_b = bodies[second_index];
+    let q_a = Rotation::from_angle(body_a.angle);
+    let q_b = Rotation::from_angle(body_b.angle);
+    let r_a = q_a.apply(candidate.definition.local_anchor_a() - body_a.local_center);
+    let r_b = q_b.apply(candidate.definition.local_anchor_b() - body_b.local_center);
+    let segment_a = body_a.center + r_a - candidate.definition.ground_anchor_a();
+    let segment_b = body_b.center + r_b - candidate.definition.ground_anchor_b();
+    let direction_a = normalized_pulley_segment(segment_a);
+    let direction_b = normalized_pulley_segment(segment_b);
+    let anchor_lever_a = r_a.cross(direction_a);
+    let anchor_lever_b = r_b.cross(direction_b);
+    let effective_mass_a =
+        body_a.inverse_mass + body_a.inverse_inertia * anchor_lever_a * anchor_lever_a;
+    let effective_mass_b =
+        body_b.inverse_mass + body_b.inverse_inertia * anchor_lever_b * anchor_lever_b;
+    candidate
+        .runtime
+        .initialize(
+            candidate.definition,
+            segment_a,
+            segment_b,
+            effective_mass_a,
+            effective_mass_b,
+            warm_starting.then_some(time_step_ratio),
+        )
+        .map_err(map_joint_error)?;
+    let constraint = PulleyConstraint {
+        candidate,
+        body_a: first_index,
+        body_b: second_index,
+        r_a,
+        r_b,
+    };
+    if !constraint.is_finite() {
+        return Err(ContactSolveFailure::NonFinite);
+    }
+    Ok(constraint)
+}
+
+fn stage_mouse(
+    mut candidate: FamilyCandidate<MouseJointDef, MouseRuntime, OrdinarySolverLanes>,
+    bodies: &[SolverBody],
+    time_step: f32,
+    time_step_ratio: f32,
+    warm_starting: bool,
+) -> Result<MouseConstraint, ContactSolveFailure> {
+    let [_first_index, second_index] = candidate.lanes.solver_indices(bodies)?;
+    let body_b = bodies[second_index];
+    let q_b = Rotation::from_angle(body_b.angle);
+    let r_b = q_b.apply(candidate.runtime.solver_local_anchor_b() - body_b.local_center);
+    let body_mass = if body_b.inverse_mass > 0.0 {
+        1.0 / body_b.inverse_mass
+    } else {
+        0.0
+    };
+    let damped_angular_velocity = candidate
+        .runtime
+        .initialize(
+            candidate.definition,
+            time_step,
+            body_mass,
+            body_b.inverse_mass,
+            body_b.inverse_inertia,
+            r_b,
+            body_b.center,
+            warm_starting.then_some(time_step_ratio),
+            body_b.angular_velocity,
+        )
+        .map_err(map_joint_error)?;
+    if !damped_angular_velocity.is_finite() {
+        return Err(ContactSolveFailure::NonFinite);
+    }
+    let constraint = MouseConstraint {
+        candidate,
+        body_b: second_index,
+        r_b,
+        angular_damping: 0.98,
+        time_step,
+    };
+    if !constraint.is_finite() {
+        return Err(ContactSolveFailure::NonFinite);
+    }
+    Ok(constraint)
+}
+
+fn normalized_pulley_segment(mut segment: Vec2) -> Vec2 {
+    let length = segment.length();
+    if length > 10.0 * LINEAR_SLOP {
+        segment *= 1.0 / length;
+        segment
+    } else {
+        Vec2::ZERO
+    }
+}
+
 fn map_joint_error(_error: crate::JointMutationError) -> ContactSolveFailure {
     ContactSolveFailure::NonFinite
 }
@@ -784,11 +959,9 @@ pub(crate) fn solve_velocity(
     match constraint {
         JointVelocityConstraint::Revolute(stage) => stage.solve_velocity(bodies),
         JointVelocityConstraint::Prismatic(stage) => stage.solve_velocity(bodies),
-        JointVelocityConstraint::Distance(stage) => {
-            stage.solve_velocity(bodies, AxisMode::Separation)
-        }
-        JointVelocityConstraint::Pulley(stage) => stage.solve_velocity(bodies, AxisMode::None),
-        JointVelocityConstraint::Mouse(stage) => stage.solve_velocity(bodies, AxisMode::None),
+        JointVelocityConstraint::Distance(stage) => stage.solve_velocity(bodies),
+        JointVelocityConstraint::Pulley(stage) => stage.solve_velocity(bodies),
+        JointVelocityConstraint::Mouse(stage) => stage.solve_velocity(bodies),
         JointVelocityConstraint::Gear(stage) => stage.solve_velocity(bodies, AxisMode::None),
         JointVelocityConstraint::Wheel(stage) => {
             stage.solve_velocity(bodies, AxisMode::Perpendicular)
@@ -807,11 +980,9 @@ pub(crate) fn solve_position(
     match constraint {
         JointVelocityConstraint::Revolute(stage) => stage.solve_position(bodies),
         JointVelocityConstraint::Prismatic(stage) => stage.solve_position(bodies),
-        JointVelocityConstraint::Distance(stage) => {
-            stage.solve_position(bodies, AxisMode::Separation)
-        }
-        JointVelocityConstraint::Pulley(stage) => stage.solve_position(bodies, AxisMode::None),
-        JointVelocityConstraint::Mouse(stage) => stage.solve_position(bodies, AxisMode::None),
+        JointVelocityConstraint::Distance(stage) => stage.solve_position(bodies),
+        JointVelocityConstraint::Pulley(stage) => stage.solve_position(bodies),
+        JointVelocityConstraint::Mouse(_stage) => Ok(true),
         JointVelocityConstraint::Gear(stage) => stage.solve_position(bodies, AxisMode::None),
         JointVelocityConstraint::Wheel(stage) => {
             stage.solve_position(bodies, AxisMode::Perpendicular)
@@ -1176,6 +1347,245 @@ impl PrismaticConstraint {
             maybe_runtime: Some(JointRuntime::Prismatic(self.candidate.runtime)),
         }
     }
+}
+
+impl DistanceConstraint {
+    fn is_finite(self) -> bool {
+        self.r_a.is_valid()
+            && self.r_b.is_valid()
+            && self.candidate.runtime.solver_direction().is_valid()
+            && self.candidate.runtime.solver_impulse().is_finite()
+    }
+
+    fn warm_start(self, bodies: &mut [SolverBody]) -> Result<(), ContactSolveFailure> {
+        let (mut body_a, mut body_b) = solver_body_pair(self.body_a, self.body_b, bodies)?;
+        let impulse = self.candidate.runtime.solver_impulse();
+        let direction = self.candidate.runtime.solver_direction();
+        let linear = impulse * direction;
+        body_a.linear_velocity -= body_a.inverse_mass * linear;
+        body_a.angular_velocity -= body_a.inverse_inertia * self.r_a.cross(linear);
+        body_b.linear_velocity += body_b.inverse_mass * linear;
+        body_b.angular_velocity += body_b.inverse_inertia * self.r_b.cross(linear);
+        store_solver_body_pair(self.body_a, self.body_b, bodies, body_a, body_b)
+    }
+
+    fn solve_velocity(&mut self, bodies: &mut [SolverBody]) -> Result<(), ContactSolveFailure> {
+        let (mut body_a, mut body_b) = solver_body_pair(self.body_a, self.body_b, bodies)?;
+        let point_velocity_a =
+            body_a.linear_velocity + Vec2::scalar_cross(body_a.angular_velocity, self.r_a);
+        let point_velocity_b =
+            body_b.linear_velocity + Vec2::scalar_cross(body_b.angular_velocity, self.r_b);
+        let applied = self
+            .candidate
+            .runtime
+            .solve_velocity(point_velocity_b - point_velocity_a)
+            .map_err(map_joint_error)?;
+        let linear = applied * self.candidate.runtime.solver_direction();
+        body_a.linear_velocity -= body_a.inverse_mass * linear;
+        body_a.angular_velocity -= body_a.inverse_inertia * self.r_a.cross(linear);
+        body_b.linear_velocity += body_b.inverse_mass * linear;
+        body_b.angular_velocity += body_b.inverse_inertia * self.r_b.cross(linear);
+        store_solver_body_pair(self.body_a, self.body_b, bodies, body_a, body_b)
+    }
+
+    fn solve_position(&mut self, bodies: &mut [SolverBody]) -> Result<bool, ContactSolveFailure> {
+        if self.candidate.definition.frequency() > 0.0 {
+            return Ok(true);
+        }
+        let (mut body_a, mut body_b) = solver_body_pair(self.body_a, self.body_b, bodies)?;
+        let q_a = Rotation::from_angle(body_a.angle);
+        let q_b = Rotation::from_angle(body_b.angle);
+        let r_a = q_a.apply(self.candidate.definition.local_anchor_a() - body_a.local_center);
+        let r_b = q_b.apply(self.candidate.definition.local_anchor_b() - body_b.local_center);
+        let mut direction = body_b.center + r_b - body_a.center - r_a;
+        let length = direction.normalize();
+        let correction = (length - self.candidate.definition.length())
+            .clamp(-MAX_LINEAR_CORRECTION, MAX_LINEAR_CORRECTION);
+        let Some(applied) = self
+            .candidate
+            .runtime
+            .position_impulse(self.candidate.definition, length)
+            .map_err(map_joint_error)?
+        else {
+            return Ok(true);
+        };
+        let linear = applied * direction;
+        body_a.center -= body_a.inverse_mass * linear;
+        body_a.angle -= body_a.inverse_inertia * r_a.cross(linear);
+        body_b.center += body_b.inverse_mass * linear;
+        body_b.angle += body_b.inverse_inertia * r_b.cross(linear);
+        body_a.synchronize_transform();
+        body_b.synchronize_transform();
+        store_solver_body_pair(self.body_a, self.body_b, bodies, body_a, body_b)?;
+        Ok(correction.abs() < LINEAR_SLOP)
+    }
+
+    fn finalize(self) -> JointImpulseSolution {
+        JointImpulseSolution {
+            joint_id: self.candidate.joint_id,
+            linear_impulse: Vec2::ZERO,
+            angular_impulse: 0.0,
+            maybe_runtime: Some(JointRuntime::Distance(self.candidate.runtime)),
+        }
+    }
+}
+
+impl PulleyConstraint {
+    fn is_finite(self) -> bool {
+        let directions = self.candidate.runtime.solver_directions();
+        self.r_a.is_valid()
+            && self.r_b.is_valid()
+            && directions[0].is_valid()
+            && directions[1].is_valid()
+            && self.candidate.runtime.solver_impulse().is_finite()
+    }
+
+    fn warm_start(self, bodies: &mut [SolverBody]) -> Result<(), ContactSolveFailure> {
+        let (mut body_a, mut body_b) = solver_body_pair(self.body_a, self.body_b, bodies)?;
+        let impulse = self.candidate.runtime.solver_impulse();
+        let [direction_a, direction_b] = self.candidate.runtime.solver_directions();
+        let linear_a = -impulse * direction_a;
+        let linear_b = (-self.candidate.definition.ratio() * impulse) * direction_b;
+        body_a.linear_velocity += body_a.inverse_mass * linear_a;
+        body_a.angular_velocity += body_a.inverse_inertia * self.r_a.cross(linear_a);
+        body_b.linear_velocity += body_b.inverse_mass * linear_b;
+        body_b.angular_velocity += body_b.inverse_inertia * self.r_b.cross(linear_b);
+        store_solver_body_pair(self.body_a, self.body_b, bodies, body_a, body_b)
+    }
+
+    fn solve_velocity(&mut self, bodies: &mut [SolverBody]) -> Result<(), ContactSolveFailure> {
+        let (mut body_a, mut body_b) = solver_body_pair(self.body_a, self.body_b, bodies)?;
+        let point_velocity_a =
+            body_a.linear_velocity + Vec2::scalar_cross(body_a.angular_velocity, self.r_a);
+        let point_velocity_b =
+            body_b.linear_velocity + Vec2::scalar_cross(body_b.angular_velocity, self.r_b);
+        let applied = self
+            .candidate
+            .runtime
+            .solve_velocity(
+                self.candidate.definition,
+                point_velocity_a,
+                point_velocity_b,
+            )
+            .map_err(map_joint_error)?;
+        let [direction_a, direction_b] = self.candidate.runtime.solver_directions();
+        let linear_a = -applied * direction_a;
+        let linear_b = (-self.candidate.definition.ratio() * applied) * direction_b;
+        body_a.linear_velocity += body_a.inverse_mass * linear_a;
+        body_a.angular_velocity += body_a.inverse_inertia * self.r_a.cross(linear_a);
+        body_b.linear_velocity += body_b.inverse_mass * linear_b;
+        body_b.angular_velocity += body_b.inverse_inertia * self.r_b.cross(linear_b);
+        store_solver_body_pair(self.body_a, self.body_b, bodies, body_a, body_b)
+    }
+
+    fn solve_position(&mut self, bodies: &mut [SolverBody]) -> Result<bool, ContactSolveFailure> {
+        let (mut body_a, mut body_b) = solver_body_pair(self.body_a, self.body_b, bodies)?;
+        let q_a = Rotation::from_angle(body_a.angle);
+        let q_b = Rotation::from_angle(body_b.angle);
+        let r_a = q_a.apply(self.candidate.definition.local_anchor_a() - body_a.local_center);
+        let r_b = q_b.apply(self.candidate.definition.local_anchor_b() - body_b.local_center);
+        let segment_a = body_a.center + r_a - self.candidate.definition.ground_anchor_a();
+        let segment_b = body_b.center + r_b - self.candidate.definition.ground_anchor_b();
+        let length_a = segment_a.length();
+        let length_b = segment_b.length();
+        let direction_a = normalized_pulley_segment(segment_a);
+        let direction_b = normalized_pulley_segment(segment_b);
+        let anchor_lever_a = r_a.cross(direction_a);
+        let anchor_lever_b = r_b.cross(direction_b);
+        let mass_a = body_a.inverse_mass + body_a.inverse_inertia * anchor_lever_a * anchor_lever_a;
+        let mass_b = body_b.inverse_mass + body_b.inverse_inertia * anchor_lever_b * anchor_lever_b;
+        let ratio = self.candidate.definition.ratio();
+        let inverse_mass = mass_a + ratio * ratio * mass_b;
+        let mass = if inverse_mass > 0.0 {
+            1.0 / inverse_mass
+        } else {
+            0.0
+        };
+        let constraint = self.candidate.definition.constant() - length_a - ratio * length_b;
+        let applied = -mass * constraint;
+        let linear_a = -applied * direction_a;
+        let linear_b = (-ratio * applied) * direction_b;
+        body_a.center += body_a.inverse_mass * linear_a;
+        body_a.angle += body_a.inverse_inertia * r_a.cross(linear_a);
+        body_b.center += body_b.inverse_mass * linear_b;
+        body_b.angle += body_b.inverse_inertia * r_b.cross(linear_b);
+        body_a.synchronize_transform();
+        body_b.synchronize_transform();
+        store_solver_body_pair(self.body_a, self.body_b, bodies, body_a, body_b)?;
+        Ok(constraint.abs() < LINEAR_SLOP)
+    }
+
+    fn finalize(self) -> JointImpulseSolution {
+        JointImpulseSolution {
+            joint_id: self.candidate.joint_id,
+            linear_impulse: Vec2::ZERO,
+            angular_impulse: 0.0,
+            maybe_runtime: Some(JointRuntime::Pulley(self.candidate.runtime)),
+        }
+    }
+}
+
+impl MouseConstraint {
+    fn is_finite(self) -> bool {
+        self.r_b.is_valid()
+            && self.angular_damping.is_finite()
+            && self.time_step.is_finite()
+            && self.candidate.runtime.solver_impulse().is_valid()
+    }
+
+    fn warm_start(self, bodies: &mut [SolverBody]) -> Result<(), ContactSolveFailure> {
+        let mut body_b = solver_body(self.body_b, bodies)?;
+        body_b.angular_velocity *= self.angular_damping;
+        let impulse = self.candidate.runtime.solver_impulse();
+        body_b.linear_velocity += body_b.inverse_mass * impulse;
+        body_b.angular_velocity += body_b.inverse_inertia * self.r_b.cross(impulse);
+        store_solver_body(self.body_b, bodies, body_b)
+    }
+
+    fn solve_velocity(&mut self, bodies: &mut [SolverBody]) -> Result<(), ContactSolveFailure> {
+        let mut body_b = solver_body(self.body_b, bodies)?;
+        let point_velocity =
+            body_b.linear_velocity + Vec2::scalar_cross(body_b.angular_velocity, self.r_b);
+        let applied = self
+            .candidate
+            .runtime
+            .solve_velocity(self.candidate.definition, self.time_step, point_velocity)
+            .map_err(map_joint_error)?;
+        body_b.linear_velocity += body_b.inverse_mass * applied;
+        body_b.angular_velocity += body_b.inverse_inertia * self.r_b.cross(applied);
+        store_solver_body(self.body_b, bodies, body_b)
+    }
+
+    fn finalize(self) -> JointImpulseSolution {
+        JointImpulseSolution {
+            joint_id: self.candidate.joint_id,
+            linear_impulse: Vec2::ZERO,
+            angular_impulse: 0.0,
+            maybe_runtime: Some(JointRuntime::Mouse(self.candidate.runtime)),
+        }
+    }
+}
+
+fn solver_body(index: usize, bodies: &[SolverBody]) -> Result<SolverBody, ContactSolveFailure> {
+    bodies
+        .get(index)
+        .copied()
+        .ok_or(ContactSolveFailure::UnsupportedTopology)
+}
+
+fn store_solver_body(
+    index: usize,
+    bodies: &mut [SolverBody],
+    body: SolverBody,
+) -> Result<(), ContactSolveFailure> {
+    if !body.is_finite() {
+        return Err(ContactSolveFailure::NonFinite);
+    }
+    let Some(slot) = bodies.get_mut(index) else {
+        return Err(ContactSolveFailure::UnsupportedTopology);
+    };
+    *slot = body;
+    Ok(())
 }
 
 fn solver_body_pair(

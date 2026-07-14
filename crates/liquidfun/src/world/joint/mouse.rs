@@ -36,6 +36,14 @@ impl MouseRuntime {
         inverse_timestep * self.impulse
     }
 
+    pub(super) const fn solver_local_anchor_b(self) -> Vec2 {
+        self.local_anchor_b
+    }
+
+    pub(super) const fn solver_impulse(self) -> Vec2 {
+        self.impulse
+    }
+
     #[allow(
         clippy::too_many_arguments,
         dead_code,

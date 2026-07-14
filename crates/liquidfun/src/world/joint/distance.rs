@@ -34,6 +34,14 @@ impl DistanceRuntime {
         (inverse_timestep * self.impulse) * self.direction
     }
 
+    pub(super) const fn solver_impulse(self) -> f32 {
+        self.impulse
+    }
+
+    pub(super) const fn solver_direction(self) -> Vec2 {
+        self.direction
+    }
+
     #[allow(
         dead_code,
         reason = "used by the Phase 8 mixed-island integration plan"

@@ -1,10 +1,22 @@
 //! Distance definition, query, mutation, and runtime contract coverage.
 
+use liquidfun::collision::{CircleShape, FilterData, Shape};
 use liquidfun::math::Vec2;
 use liquidfun::{
-    BodyDef, BodyType, DistanceJointDef, JointDefError, JointMutationError, JointSpecificSnapshot,
-    World,
+    BodyDef, BodyType, DistanceJointDef, FixtureDef, JointDefError, JointMutationError,
+    JointSpecificSnapshot, StepConfiguration, StepHook, StepLimits, World,
 };
+
+struct NoopHook;
+
+impl StepHook for NoopHook {}
+
+fn attach_mass(world: &mut World, body: liquidfun::BodyId) {
+    let shape = Shape::from(CircleShape::new(Vec2::new(0.25, 0.0), 0.5).expect("circle"));
+    let fixture = FixtureDef::new(shape, 1.0, 0.0, 0.0, false, FilterData::default())
+        .expect("fixture definition");
+    world.create_fixture(body, &fixture).expect("fixture");
+}
 
 fn bodies(world: &mut World) -> (liquidfun::BodyId, liquidfun::BodyId) {
     let body_a = world
@@ -123,4 +135,56 @@ fn invalid_distance_mutation_is_atomic() {
         panic!("distance state expected");
     };
     assert_eq!(state.length().to_bits(), 1.0_f32.to_bits());
+}
+
+#[test]
+fn live_rigid_and_soft_off_center_steps_populate_warm_reactions() {
+    for frequency in [0.0, 3.0] {
+        // Arrange
+        let mut world = World::new().expect("world");
+        let body_a = world
+            .create_body(
+                &BodyDef::new(BodyType::Static, Vec2::ZERO, 0.25, true).expect("static body"),
+            )
+            .expect("body A");
+        let body_b = world
+            .create_body(
+                &BodyDef::new(BodyType::Dynamic, Vec2::new(2.0, 0.5), -0.5, true)
+                    .expect("dynamic body")
+                    .with_linear_velocity(Vec2::new(-3.0, 1.0))
+                    .expect("linear velocity")
+                    .with_angular_velocity(2.0)
+                    .expect("angular velocity"),
+            )
+            .expect("body B");
+        attach_mass(&mut world, body_b);
+        let definition = DistanceJointDef::new(body_a, body_b)
+            .expect("distance")
+            .with_anchors(Vec2::new(0.5, -0.25), Vec2::new(-0.5, 0.5))
+            .expect("anchors")
+            .with_length(1.0)
+            .expect("length")
+            .with_frequency(frequency)
+            .expect("frequency")
+            .with_damping_ratio(0.5)
+            .expect("damping");
+        let joint = world.create_joint(definition.into()).expect("joint");
+        let step = StepConfiguration::new(1.0 / 60.0, 8, 3).expect("step");
+        let mut hook = NoopHook;
+
+        // Act
+        world
+            .step(step, &mut hook, StepLimits::default())
+            .expect("cold step");
+        let cold_reaction = world.joint_reaction_force(joint, 60.0).expect("reaction");
+        world
+            .step(step, &mut hook, StepLimits::default())
+            .expect("warm step");
+        let warm_reaction = world.joint_reaction_force(joint, 60.0).expect("reaction");
+
+        // Assert
+        assert_ne!(cold_reaction, Vec2::ZERO, "frequency {frequency}");
+        assert!(cold_reaction.is_valid(), "frequency {frequency}");
+        assert!(warm_reaction.is_valid(), "frequency {frequency}");
+    }
 }

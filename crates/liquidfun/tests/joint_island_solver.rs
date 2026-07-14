@@ -176,15 +176,15 @@ fn joint_warm_cache_survives_zero_step_and_late_failure_is_atomic() {
     let second_b = world
         .create_body(&dynamic_body(Vec2::new(4.0, 0.0)))
         .expect("second B should fit");
-    for (body_a, body_b) in [(first_a, first_b), (second_a, second_b)] {
+    let joints = [(first_a, first_b), (second_a, second_b)].map(|(body_a, body_b)| {
         world
             .create_joint(
                 DistanceJointDef::new(body_a, body_b)
                     .expect("distance")
                     .into(),
             )
-            .expect("distance should fit");
-    }
+            .expect("distance should fit")
+    });
     world
         .set_body_linear_velocity(first_a, Vec2::new(3.0, 0.0))
         .expect("velocity should be valid");
@@ -194,12 +194,12 @@ fn joint_warm_cache_survives_zero_step_and_late_failure_is_atomic() {
     world
         .step(configuration, &mut hook, StepLimits::default())
         .expect("cold step should solve");
-    let cache = world.rigid_joint_solver_impulse_diagnostics();
-    assert!(
-        cache
-            .iter()
-            .any(|(_joint, linear, _angular)| *linear != Vec2::ZERO)
-    );
+    let cache = joints.map(|joint| {
+        world
+            .joint_reaction_force(joint, 60.0)
+            .expect("distance reaction should remain observable")
+    });
+    assert!(cache.into_iter().any(|reaction| reaction != Vec2::ZERO));
     world
         .step(
             StepConfiguration::new(0.0, 1, 1).expect("zero step should be valid"),
@@ -224,7 +224,12 @@ fn joint_warm_cache_survives_zero_step_and_late_failure_is_atomic() {
         result,
         Err(StepError::NonFiniteSolverState { .. })
     ));
-    assert_eq!(world.rigid_joint_solver_impulse_diagnostics(), cache);
+    assert_eq!(
+        joints.map(|joint| world
+            .joint_reaction_force(joint, 60.0)
+            .expect("distance reaction should remain observable")),
+        cache
+    );
     assert_eq!(
         [first_a, first_b, second_a, second_b]
             .map(|body| world.body_snapshot(body).expect("body should remain live")),
@@ -317,6 +322,131 @@ fn live_revolute_and_prismatic_runtimes_are_atomic_on_late_island_failure() {
     ));
     assert_eq!(
         [revolute, prismatic].map(|joint| world
+            .joint_snapshot(joint)
+            .expect("joint should remain live")),
+        before_joints
+    );
+    assert_eq!(
+        [first_a, first_b, second_a, second_b]
+            .map(|body| world.body_snapshot(body).expect("body should remain live")),
+        before_bodies
+    );
+}
+
+fn create_distance_pulley_mouse_joints(
+    world: &mut World,
+    body_a: liquidfun::BodyId,
+    body_b: liquidfun::BodyId,
+) -> [liquidfun::JointId; 3] {
+    let distance = world
+        .create_joint(
+            DistanceJointDef::new(body_a, body_b)
+                .expect("distance")
+                .with_anchors(Vec2::new(0.5, -0.25), Vec2::new(-0.5, 0.5))
+                .expect("distance anchors")
+                .with_length(1.5)
+                .expect("distance length")
+                .into(),
+        )
+        .expect("distance should fit");
+    let pulley = world
+        .create_joint(
+            PulleyJointDef::new(body_a, body_b)
+                .expect("pulley")
+                .with_geometry(
+                    Vec2::new(-5.0, 4.0),
+                    Vec2::new(0.0, 5.0),
+                    Vec2::new(0.25, 0.5),
+                    Vec2::new(-0.5, 0.25),
+                    4.0,
+                    5.0,
+                    2.0,
+                )
+                .expect("pulley geometry")
+                .into(),
+        )
+        .expect("pulley should fit");
+    let mouse = world
+        .create_joint(
+            MouseJointDef::new(body_a, body_b)
+                .expect("mouse")
+                .with_target(Vec2::new(-0.5, 1.0))
+                .expect("mouse target")
+                .with_max_force(10.0)
+                .expect("mouse force")
+                .into(),
+        )
+        .expect("mouse should fit");
+    [distance, pulley, mouse]
+}
+
+#[test]
+fn live_distance_pulley_and_mouse_runtimes_are_atomic_on_late_island_failure() {
+    // Arrange
+    let mut world = World::new().expect("test world should be available");
+    let first_a = world
+        .create_body(&dynamic_body(Vec2::new(-4.0, 0.0)))
+        .expect("first A should fit");
+    let first_b = world
+        .create_body(&dynamic_body(Vec2::new(-1.0, 0.5)))
+        .expect("first B should fit");
+    let second_a = world
+        .create_body(&dynamic_body(Vec2::new(3.0, 0.0)))
+        .expect("second A should fit");
+    let second_b = world
+        .create_body(&dynamic_body(Vec2::new(5.0, 0.0)))
+        .expect("second B should fit");
+    for body in [first_a, first_b, second_a, second_b] {
+        attach_mass(&mut world, body);
+    }
+    let [distance, pulley, mouse] =
+        create_distance_pulley_mouse_joints(&mut world, first_a, first_b);
+    world
+        .create_joint(
+            DistanceJointDef::new(second_a, second_b)
+                .expect("second distance")
+                .into(),
+        )
+        .expect("second distance should fit");
+    let configuration =
+        StepConfiguration::new(1.0 / 60.0, 8, 3).expect("configuration should be valid");
+    let mut hook = NoopHook;
+    world
+        .step(configuration, &mut hook, StepLimits::default())
+        .expect("cold step should solve");
+    world
+        .set_body_linear_velocity(first_a, Vec2::new(4.0, -1.0))
+        .expect("velocity A");
+    world
+        .set_body_angular_velocity(first_b, -3.0)
+        .expect("velocity B");
+    world
+        .set_mouse_target(mouse, Vec2::new(-6.0, -2.0))
+        .expect("mouse target update");
+    let before_joints = [distance, pulley, mouse].map(|joint| {
+        world
+            .joint_snapshot(joint)
+            .expect("joint should remain live")
+    });
+    let before_bodies = [first_a, first_b, second_a, second_b]
+        .map(|body| world.body_snapshot(body).expect("body should remain live"));
+
+    // Act
+    let result = world.step(
+        configuration,
+        &mut hook,
+        StepLimits::default().with_rigid_failure_injection(RigidStepFailureInjection::LateIsland {
+            solved_islands: 1,
+        }),
+    );
+
+    // Assert
+    assert!(matches!(
+        result,
+        Err(StepError::NonFiniteSolverState { .. })
+    ));
+    assert_eq!(
+        [distance, pulley, mouse].map(|joint| world
             .joint_snapshot(joint)
             .expect("joint should remain live")),
         before_joints

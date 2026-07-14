@@ -34,6 +34,14 @@ impl PulleyRuntime {
         inverse_timestep * (self.impulse * self.direction_b)
     }
 
+    pub(super) const fn solver_impulse(self) -> f32 {
+        self.impulse
+    }
+
+    pub(super) const fn solver_directions(self) -> [Vec2; 2] {
+        [self.direction_a, self.direction_b]
+    }
+
     #[allow(
         dead_code,
         reason = "used by the Phase 8 mixed-island integration plan"
