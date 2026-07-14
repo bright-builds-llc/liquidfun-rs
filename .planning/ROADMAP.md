@@ -225,7 +225,7 @@ The v1 roadmap moves from an immutable, licensed source of truth to a semantic c
 | 5. Shapes and Collision Foundation | 8/8 | Complete    | 2026-07-11 |
 | 6. Minimal Rigid World Vertical Slice | 22/22 | Complete    | 2026-07-12 |
 | 7. Rigid Solver, World Operations, and CCD | 13/13 | Complete    | 2026-07-13 |
-| 8. Joints, Rope, Callbacks, and Rigid Sign-Off | 17/24 | In Progress|  |
+| 8. Joints, Rope, Callbacks, and Rigid Sign-Off | 18/24 | In Progress|  |
 | 9. Particle Storage, Lifecycle, and Coupling | 0/TBD | Not started | - |
 | 10. Particle Groups, Solvers, and Compatibility Sign-Off | 0/TBD | Not started | - |
 | 11. Examples, Headless Tooling, and Testbed | 0/TBD | Not started | - |

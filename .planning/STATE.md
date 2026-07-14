@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 08-17-PLAN.md
-last_updated: "2026-07-14T04:19:39.054Z"
+stopped_at: Completed 08-18-PLAN.md
+last_updated: "2026-07-14T04:32:47.455Z"
 last_activity: 2026-07-14
 progress:
   total_phases: 12
   completed_phases: 7
   total_plans: 98
-  completed_plans: 91
-  percent: 93
+  completed_plans: 92
+  percent: 94
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 ## Current Position
 
 Phase: 8
-Plan: 17 of 24
+Plan: 18 of 24
 Status: Ready to execute
 Last activity: 2026-07-14
 
@@ -118,6 +118,7 @@ Progress: [█░░░░░░░░░] 6%
 | Phase 08 P15 | 14min | 1 tasks | 6 files |
 | Phase 08 P16 | 10min | 1 tasks | 8 files |
 | Phase 08 P17 | 14 min | 1 tasks | 12 files |
+| Phase 08 P18 | 12min | 1 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -270,6 +271,8 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 08]: Activate distance, pulley, and mouse as dedicated typed live constraints; apply mouse damping at source-ordered warm-start time and recompute pulley position mass from the current candidate pose. — This removes every shared fallback for the three families while preserving earlier warm impulses, pinned current-pose geometry, and transactional runtime commit.
 - [Phase 08]: Wheel, weld, friction, rope, and motor use dedicated activated constraints. — Distinct staged geometry and caches preserve pinned family semantics while the world commit remains transactional.
 - [Phase 08]: Soft weld applies its angular impulse before deriving linear point velocity. — The pinned soft branch mutates angular velocities first, so the later point constraint must observe those candidates.
+- [Phase 08]: Merge repeated gear solver roles by physical body before candidate commit — Semantic A/B/C/D contributions must not overwrite one another when source base lanes alias
+- [Phase 08]: Commit only complete typed joint runtimes — Removing the temporary generic cache makes exhaustive live-family dispatch structural
 
 ### Pending Todos
 
@@ -283,6 +286,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-14T04:19:17.378Z
-Stopped at: Completed 08-17-PLAN.md
+Last session: 2026-07-14T04:32:47.451Z
+Stopped at: Completed 08-18-PLAN.md
 Resume file: None
