@@ -69,15 +69,15 @@ Requirements for the first release permitted to claim complete parity with the s
 - [x] **RIGD-08**: Consumers can configure gravity, warm starting, continuous physics, sub-stepping, automatic force clearing, timestep iterations, and world origin shifting.
 - [x] **RIGD-09**: Consumers can query fixtures by AABB and ray-cast through the world with upstream-equivalent clipping, termination, filtering, and explicitly unspecified callback order.
 - [ ] **RIGD-10**: Consumers can inspect body/contact/joint/proxy counts, tree metrics, timing profiles, and renderer-independent debug-draw primitives without accessing internal storage.
-- [ ] **RIGD-11**: Rigid-body scenarios covering non-colliding, colliding, stacked, sleeping, fast-moving, filtered, queried, and destroyed worlds pass semantic differential validation.
+- [x] **RIGD-11**: Rigid-body scenarios covering non-colliding, colliding, stacked, sleeping, fast-moving, filtered, queried, and destroyed worlds pass semantic differential validation.
 
 ### Joints, Rope, and Callbacks
 
 - [x] **JOIN-01**: Consumers can create, configure, inspect, simulate, and destroy revolute, prismatic, distance, pulley, mouse, gear, wheel, weld, friction, rope, and motor joints.
 - [x] **JOIN-02**: Joint limits, motors, anchors, reaction forces/torques, body dependencies, collision settings, and destruction cascades match the selected upstream behavior.
-- [ ] **JOIN-03**: Consumers can use the standalone upstream-equivalent rope model independently of the rope joint.
+- [x] **JOIN-03**: Consumers can use the standalone upstream-equivalent rope model independently of the rope joint.
 - [x] **JOIN-04**: Contact filters, contact listeners, destruction listeners, and supported pre-solve controls reproduce upstream timing and behavior through the safe hook/event API.
-- [ ] **JOIN-05**: Every joint type, standalone rope behavior, filter path, listener path, and diagnostic-dump representation has focused and differential coverage.
+- [x] **JOIN-05**: Every joint type, standalone rope behavior, filter path, listener path, and diagnostic-dump representation has focused and differential coverage.
 
 ### Particle Systems
 
@@ -242,12 +242,12 @@ Roadmap creation maps every v1 requirement to exactly one phase.
 | RIGD-08 | Phase 7 | Complete |
 | RIGD-09 | Phase 7 | Complete |
 | RIGD-10 | Phase 11 | Pending |
-| RIGD-11 | Phase 8 | Pending |
+| RIGD-11 | Phase 8 | Complete |
 | JOIN-01 | Phase 8 | Complete |
 | JOIN-02 | Phase 8 | Complete |
-| JOIN-03 | Phase 8 | Pending |
+| JOIN-03 | Phase 8 | Complete |
 | JOIN-04 | Phase 8 | Complete |
-| JOIN-05 | Phase 8 | Pending |
+| JOIN-05 | Phase 8 | Complete |
 | PART-01 | Phase 9 | Pending |
 | PART-02 | Phase 9 | Pending |
 | PART-03 | Phase 9 | Pending |
