@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 08-13-PLAN.md
-last_updated: "2026-07-14T03:23:37.068Z"
-last_activity: 2026-07-14 -- Phase 8 planning complete
+stopped_at: Completed 08-14-PLAN.md
+last_updated: "2026-07-14T03:38:52.197Z"
+last_activity: 2026-07-14
 progress:
   total_phases: 12
   completed_phases: 7
   total_plans: 98
-  completed_plans: 87
-  percent: 89
+  completed_plans: 88
+  percent: 90
 ---
 
 # Project State
@@ -26,9 +26,9 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 ## Current Position
 
 Phase: 8
-Plan: 13 of 16
+Plan: 14 of 24
 Status: Ready to execute
-Last activity: 2026-07-14 -- Phase 8 planning complete
+Last activity: 2026-07-14
 
 Progress: [█░░░░░░░░░] 6%
 
@@ -114,6 +114,7 @@ Progress: [█░░░░░░░░░] 6%
 | Phase 08 P11 | 24min | 1 tasks | 13 files |
 | Phase 08 P12 | 27min | 1 tasks | 19 files |
 | Phase 08 P13 | 29min | 2 tasks | 15 files |
+| Phase 08 P14 | 25min | 1 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -260,6 +261,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 08]: Joint, rope, directive, and timeline collections are bounded during strict decode before domain allocation. — Untrusted JSONL must fail before unbounded allocation or execution.
 - [Phase 08]: Guard pre-solver joint reactions as defined positive zero; preserve exact pinned getter bits after solver initialization.
 - [Phase 08]: Layer the closed Phase 8 comparator after the complete inherited Phase 7 comparison.
+- [Phase 08]: Let only LegacyUnmigrated own CommonConstraint so activated family candidates cannot reach the compatibility solver.
+- [Phase 08]: Resolve semantic ordinary A/B and gear A/B/C/D identities plus optional solver indices while building source-ordered island inputs.
+- [Phase 08]: Finalize a complete activated JointRuntime after position solving and install it only inside the existing post-validation world commit.
 
 ### Pending Todos
 
@@ -273,6 +277,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-14T03:01:07.267Z
-Stopped at: Completed 08-13-PLAN.md
-Resume file: None
+Last session: 2026-07-14T03:38:52.195Z
+Stopped at: Completed 08-14-PLAN.md
+Resume file: .planning/phases/08-joints-rope-callbacks-and-rigid-sign-off/08-15-PLAN.md
