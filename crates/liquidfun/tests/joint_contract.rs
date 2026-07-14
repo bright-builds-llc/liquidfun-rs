@@ -21,13 +21,33 @@ fn test_world_with_bodies() -> (World, liquidfun::BodyId, liquidfun::BodyId) {
 fn closed_definition_contract_creates_all_eleven_joint_kinds() {
     // Arrange
     let (mut world, body_a, body_b) = test_world_with_bodies();
+    let gear_body_a = world
+        .create_body(&BodyDef::default())
+        .expect("gear body A should fit");
+    let gear_body_b = world
+        .create_body(&BodyDef::default())
+        .expect("gear body B should fit");
+    let gear_source1 = world
+        .create_joint(
+            RevoluteJointDef::new(body_a, gear_body_a)
+                .expect("gear source 1 endpoints")
+                .into(),
+        )
+        .expect("gear source 1 should fit");
+    let gear_source2 = world
+        .create_joint(
+            PrismaticJointDef::new(body_b, gear_body_b)
+                .expect("gear source 2 endpoints")
+                .into(),
+        )
+        .expect("gear source 2 should fit");
     let definitions = [
         JointDef::from(RevoluteJointDef::new(body_a, body_b).expect("valid endpoints")),
         JointDef::from(PrismaticJointDef::new(body_a, body_b).expect("valid endpoints")),
         JointDef::from(DistanceJointDef::new(body_a, body_b).expect("valid endpoints")),
         JointDef::from(PulleyJointDef::new(body_a, body_b).expect("valid endpoints")),
         JointDef::from(MouseJointDef::new(body_a, body_b).expect("valid endpoints")),
-        JointDef::from(GearJointDef::new(body_a, body_b).expect("valid endpoints")),
+        JointDef::from(GearJointDef::new(gear_source1, gear_source2).expect("valid dependencies")),
         JointDef::from(WheelJointDef::new(body_a, body_b).expect("valid endpoints")),
         JointDef::from(WeldJointDef::new(body_a, body_b).expect("valid endpoints")),
         JointDef::from(FrictionJointDef::new(body_a, body_b).expect("valid endpoints")),

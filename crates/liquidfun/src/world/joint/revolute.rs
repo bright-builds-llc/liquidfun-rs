@@ -188,7 +188,7 @@ pub(super) fn snapshot(
     }
     let limit_state = classify_limit(definition, angle, false);
     Ok(
-        JointSnapshot::from_definition(record.definition).with_runtime(
+        JointSnapshot::from_definition(record.definition, record.bodies).with_runtime(
             anchor_a,
             anchor_b,
             JointSpecificSnapshot::Revolute(RevoluteJointSnapshot::new(

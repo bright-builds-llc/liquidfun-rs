@@ -11,8 +11,11 @@ use crate::{
 
 use super::object::{DestructionCause, World};
 
+type GearCreation = ([BodyId; 2], [JointDef; 2], [gear::GearBodyGeometry; 4]);
+
 mod distance;
 mod friction;
+mod gear;
 mod motor;
 mod mouse;
 mod prismatic;
@@ -32,6 +35,7 @@ pub(super) enum JointRuntime {
     Wheel(wheel::WheelRuntime),
     Weld(weld::WeldRuntime),
     Friction(friction::FrictionRuntime),
+    Gear(gear::GearRuntime),
     Rope(rope::RopeJointRuntime),
     Motor(motor::MotorRuntime),
     Pending,
@@ -179,6 +183,17 @@ pub enum JointCreationError {
     InvalidHandle(HandleError),
     /// The checked definition is invalid.
     InvalidDefinition(JointDefError),
+    /// A gear dependency is live but is not revolute or prismatic.
+    WrongDependencyKind {
+        /// Source joint that has the unsupported kind.
+        dependency: JointId,
+        /// Concrete unsupported kind.
+        actual: JointKind,
+    },
+    /// Gear source topology does not produce two distinct derived endpoints.
+    InvalidGearTopology,
+    /// Checked gear coordinate arithmetic produced a non-finite result.
+    NonFiniteDerivedState,
     /// Joint storage cannot accept another entry.
     Arena(ArenaInsertError),
     /// The world is locked by an active step.
@@ -193,6 +208,18 @@ impl fmt::Display for JointCreationError {
             Self::InvalidHandle(error) => write!(formatter, "invalid joint endpoint: {error}"),
             Self::InvalidDefinition(error) => {
                 write!(formatter, "invalid joint definition: {error}")
+            }
+            Self::WrongDependencyKind { dependency, actual } => {
+                write!(
+                    formatter,
+                    "gear dependency {dependency:?} has unsupported kind {actual:?}"
+                )
+            }
+            Self::InvalidGearTopology => {
+                formatter.write_str("gear sources must derive two distinct moving bodies")
+            }
+            Self::NonFiniteDerivedState => {
+                formatter.write_str("gear creation produced non-finite derived state")
             }
             Self::Arena(error) => write!(formatter, "could not store joint: {error}"),
             Self::Locked => formatter.write_str("world is locked by an active step"),
@@ -327,9 +354,30 @@ impl World {
         if self.step_state.is_locked() {
             return Err(JointCreationError::Locked);
         }
-        let bodies = definition.bodies();
-        self.bodies.get(bodies[0])?;
-        let body_b_transform = self.bodies.get(bodies[1])?.state.snapshot().transform();
+        let (bodies, runtime, maybe_dependencies) = if let JointDef::Gear(gear_definition) =
+            definition
+        {
+            let (bodies, source_definitions, geometries) =
+                self.prepare_gear_creation(gear_definition)?;
+            let runtime = gear::GearRuntime::new(gear_definition, &source_definitions, geometries)
+                .map_err(|_| JointCreationError::NonFiniteDerivedState)?;
+            (
+                bodies,
+                JointRuntime::Gear(runtime),
+                Some(gear_definition.source_joints()),
+            )
+        } else {
+            let Some(bodies) = definition.bodies() else {
+                return Err(JointCreationError::InvalidGearTopology);
+            };
+            self.bodies.get(bodies[0])?;
+            let body_b_transform = self.bodies.get(bodies[1])?.state.snapshot().transform();
+            (
+                bodies,
+                JointRuntime::from_definition(definition, body_b_transform),
+                None,
+            )
+        };
         if bodies[0] == bodies[1] {
             return Err(JointCreationError::InvalidDefinition(
                 JointDefError::SameBody,
@@ -343,7 +391,7 @@ impl World {
             bodies,
             definition,
             collide_connected,
-            runtime: JointRuntime::from_definition(definition, body_b_transform),
+            runtime,
             island_flag: false,
             reverse_gear_dependents: Vec::new(),
         })?;
@@ -353,6 +401,13 @@ impl World {
         self.body_mut_after_validation(bodies[1])
             .joints
             .insert(0, joint);
+        if let Some(dependencies) = maybe_dependencies {
+            for dependency in dependencies {
+                self.joint_mut_after_validation(dependency)
+                    .reverse_gear_dependents
+                    .insert(0, joint);
+            }
+        }
         if !collide_connected {
             self.mark_joint_bodies_for_refilter(bodies);
         }
@@ -376,9 +431,13 @@ impl World {
             JointRuntime::Wheel(runtime) => wheel::snapshot(self, record, runtime),
             JointRuntime::Weld(runtime) => weld::snapshot(self, record, runtime),
             JointRuntime::Friction(runtime) => friction::snapshot(self, record, runtime),
+            JointRuntime::Gear(runtime) => gear::snapshot(self, record, runtime),
             JointRuntime::Rope(runtime) => rope::snapshot(self, record, runtime),
             JointRuntime::Motor(runtime) => motor::snapshot(self, record, runtime),
-            JointRuntime::Pending => Ok(JointSnapshot::from_definition(record.definition)),
+            JointRuntime::Pending => Ok(JointSnapshot::from_definition(
+                record.definition,
+                record.bodies,
+            )),
         }
     }
 
@@ -421,6 +480,7 @@ impl World {
             JointRuntime::Wheel(runtime) => Ok(runtime.reaction_force(inverse_timestep)),
             JointRuntime::Weld(runtime) => Ok(runtime.reaction_force(inverse_timestep)),
             JointRuntime::Friction(runtime) => Ok(runtime.reaction_force(inverse_timestep)),
+            JointRuntime::Gear(runtime) => Ok(runtime.reaction_force(inverse_timestep)),
             JointRuntime::Rope(runtime) => Ok(runtime.reaction_force(inverse_timestep)),
             JointRuntime::Motor(runtime) => Ok(runtime.reaction_force(inverse_timestep)),
             JointRuntime::Pending => Ok(Vec2::ZERO),
@@ -445,6 +505,7 @@ impl World {
             JointRuntime::Wheel(runtime) => Ok(runtime.reaction_torque(inverse_timestep)),
             JointRuntime::Weld(runtime) => Ok(runtime.reaction_torque(inverse_timestep)),
             JointRuntime::Friction(runtime) => Ok(runtime.reaction_torque(inverse_timestep)),
+            JointRuntime::Gear(runtime) => Ok(runtime.reaction_torque(inverse_timestep)),
             JointRuntime::Motor(runtime) => Ok(runtime.reaction_torque(inverse_timestep)),
             JointRuntime::Distance(_)
             | JointRuntime::Pulley(_)
@@ -462,16 +523,77 @@ impl World {
     pub fn destroy_joint(
         &mut self,
         joint: JointId,
-    ) -> Result<DestructionRecord, JointMutationError> {
+    ) -> Result<Vec<DestructionRecord>, JointMutationError> {
         self.ensure_joint_mutable()?;
         let record = self.joints.get(joint)?;
+        let dependents = record.reverse_gear_dependents.clone();
+        let mut records = Vec::with_capacity(dependents.len() + 1);
+        for dependent in dependents {
+            records.push(self.remove_joint_with_refilter(
+                dependent,
+                DestructionCause::GearDependencyCascade { source: joint },
+            ));
+        }
+        records.push(self.remove_joint_with_refilter(joint, DestructionCause::Explicit));
+        Ok(records)
+    }
+
+    fn prepare_gear_creation(
+        &self,
+        definition: crate::GearJointDef,
+    ) -> Result<GearCreation, JointCreationError> {
+        let dependencies = definition.source_joints();
+        let source1 = self.joints.get(dependencies[0])?;
+        let source2 = self.joints.get(dependencies[1])?;
+        for (dependency, source) in dependencies.into_iter().zip([source1, source2]) {
+            if !matches!(
+                source.definition,
+                JointDef::Revolute(_) | JointDef::Prismatic(_)
+            ) {
+                return Err(JointCreationError::WrongDependencyKind {
+                    dependency,
+                    actual: JointKind::from_definition(source.definition),
+                });
+            }
+        }
+        let source_bodies = [
+            source1.bodies[1],
+            source2.bodies[1],
+            source1.bodies[0],
+            source2.bodies[0],
+        ];
+        if source_bodies[0] == source_bodies[1] {
+            return Err(JointCreationError::InvalidGearTopology);
+        }
+        let geometries = [
+            gear::body_geometry(self, source_bodies[0])?,
+            gear::body_geometry(self, source_bodies[1])?,
+            gear::body_geometry(self, source_bodies[2])?,
+            gear::body_geometry(self, source_bodies[3])?,
+        ];
+        Ok((
+            [source_bodies[0], source_bodies[1]],
+            [source1.definition, source2.definition],
+            geometries,
+        ))
+    }
+
+    fn remove_joint_with_refilter(
+        &mut self,
+        joint: JointId,
+        cause: DestructionCause,
+    ) -> DestructionRecord {
+        let record = self
+            .joints
+            .get(joint)
+            .expect("collected joint cascade remains live");
         let bodies = record.bodies;
         let was_suppressing = !record.collide_connected;
-        let destruction = self.remove_joint(joint, DestructionCause::Explicit);
+        let destruction = self.remove_joint(joint, cause);
         if was_suppressing && !self.has_suppressing_joint_between(bodies) {
             self.mark_joint_bodies_for_refilter(bodies);
         }
-        Ok(destruction)
+        destruction
     }
 
     fn validate_reaction_query(

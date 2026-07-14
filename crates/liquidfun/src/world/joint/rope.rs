@@ -150,7 +150,7 @@ pub(super) fn snapshot(
         JointLimitState::Inactive
     };
     Ok(
-        JointSnapshot::from_definition(record.definition).with_runtime(
+        JointSnapshot::from_definition(record.definition, record.bodies).with_runtime(
             anchor_a,
             anchor_b,
             JointSpecificSnapshot::Rope(RopeJointSnapshot::new(

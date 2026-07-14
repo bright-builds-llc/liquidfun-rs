@@ -187,7 +187,7 @@ pub(super) fn snapshot(
         runtime.angular_error
     };
     Ok(
-        JointSnapshot::from_definition(record.definition).with_runtime(
+        JointSnapshot::from_definition(record.definition, record.bodies).with_runtime(
             anchor_a,
             anchor_b,
             JointSpecificSnapshot::Motor(MotorJointSnapshot::new(

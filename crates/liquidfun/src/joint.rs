@@ -9,10 +9,10 @@ pub use definition::{
     WheelJointDef,
 };
 pub use snapshot::{
-    DistanceJointSnapshot, FrictionJointSnapshot, JointLimitState, JointSnapshot,
-    JointSpecificSnapshot, MotorJointSnapshot, MouseJointSnapshot, PrismaticJointSnapshot,
-    PulleyJointSnapshot, RevoluteJointSnapshot, RopeJointSnapshot, WeldJointSnapshot,
-    WheelJointSnapshot,
+    DistanceJointSnapshot, FrictionJointSnapshot, GearJointSnapshot, JointLimitState,
+    JointSnapshot, JointSpecificSnapshot, MotorJointSnapshot, MouseJointSnapshot,
+    PrismaticJointSnapshot, PulleyJointSnapshot, RevoluteJointSnapshot, RopeJointSnapshot,
+    WeldJointSnapshot, WheelJointSnapshot,
 };
 
 /// The closed set of joint kinds in the pinned `LiquidFun` revision.

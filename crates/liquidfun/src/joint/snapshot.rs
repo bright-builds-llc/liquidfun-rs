@@ -1,7 +1,7 @@
 //! Owned semantic joint snapshots.
 
 use crate::math::Vec2;
-use crate::{BodyId, JointDef, JointKind};
+use crate::{BodyId, JointDef, JointId, JointKind};
 
 /// Runtime state of a joint limit.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
@@ -31,6 +31,10 @@ pub struct JointSnapshot {
 
 /// Owned runtime details for a supported concrete joint family.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[allow(
+    clippy::large_enum_variant,
+    reason = "owned gear evidence includes six opaque world-scoped identities"
+)]
 pub enum JointSpecificSnapshot {
     /// Revolute runtime state.
     Revolute(RevoluteJointSnapshot),
@@ -42,6 +46,8 @@ pub enum JointSpecificSnapshot {
     Pulley(PulleyJointSnapshot),
     /// Mouse runtime state.
     Mouse(MouseJointSnapshot),
+    /// Gear runtime state.
+    Gear(GearJointSnapshot),
     /// Wheel runtime state.
     Wheel(WheelJointSnapshot),
     /// Weld runtime state.
@@ -54,6 +60,73 @@ pub enum JointSpecificSnapshot {
     Motor(MotorJointSnapshot),
     /// A later Phase 8 family has not populated runtime state yet.
     Pending,
+}
+
+/// Owned semantic state of a gear joint and both source constraints.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct GearJointSnapshot {
+    source_joints: [JointId; 2],
+    source_bodies: [BodyId; 4],
+    ratio: f32,
+    constant: f32,
+    coordinate1: f32,
+    coordinate2: f32,
+}
+
+impl GearJointSnapshot {
+    pub(crate) const fn new(
+        source_joints: [JointId; 2],
+        source_bodies: [BodyId; 4],
+        ratio: f32,
+        constant: f32,
+        coordinate1: f32,
+        coordinate2: f32,
+    ) -> Self {
+        Self {
+            source_joints,
+            source_bodies,
+            ratio,
+            constant,
+            coordinate1,
+            coordinate2,
+        }
+    }
+
+    /// Returns the two source constraints in definition order.
+    #[must_use]
+    pub const fn source_joints(self) -> [JointId; 2] {
+        self.source_joints
+    }
+
+    /// Returns derived bodies `[A, B, C, D]` in pinned solver order.
+    #[must_use]
+    pub const fn source_bodies(self) -> [BodyId; 4] {
+        self.source_bodies
+    }
+
+    /// Returns the current ratio.
+    #[must_use]
+    pub const fn ratio(self) -> f32 {
+        self.ratio
+    }
+
+    /// Returns the creation-time constraint constant.
+    #[must_use]
+    pub const fn constant(self) -> f32 {
+        self.constant
+    }
+
+    /// Returns the current first source coordinate.
+    #[must_use]
+    pub const fn coordinate1(self) -> f32 {
+        self.coordinate1
+    }
+
+    /// Returns the current second source coordinate.
+    #[must_use]
+    pub const fn coordinate2(self) -> f32 {
+        self.coordinate2
+    }
 }
 
 /// Owned semantic friction-joint state.
@@ -628,10 +701,10 @@ impl PrismaticJointSnapshot {
 }
 
 impl JointSnapshot {
-    pub(crate) const fn from_definition(definition: JointDef) -> Self {
+    pub(crate) const fn from_definition(definition: JointDef, bodies: [BodyId; 2]) -> Self {
         Self {
             kind: JointKind::from_definition(definition),
-            bodies: definition.bodies(),
+            bodies,
             collide_connected: definition.collide_connected(),
             anchor_a: Vec2::ZERO,
             anchor_b: Vec2::ZERO,
@@ -640,6 +713,10 @@ impl JointSnapshot {
         }
     }
 
+    #[allow(
+        clippy::large_types_passed_by_value,
+        reason = "the closed owned snapshot remains Copy by design"
+    )]
     pub(crate) const fn with_runtime(
         mut self,
         anchor_a: Vec2,

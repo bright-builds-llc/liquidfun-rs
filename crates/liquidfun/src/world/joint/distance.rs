@@ -174,7 +174,7 @@ pub(super) fn snapshot(
         return Err(JointQueryError::NonFiniteDerivedState);
     }
     Ok(
-        JointSnapshot::from_definition(record.definition).with_runtime(
+        JointSnapshot::from_definition(record.definition, record.bodies).with_runtime(
             anchor_a,
             anchor_b,
             JointSpecificSnapshot::Distance(DistanceJointSnapshot::new(

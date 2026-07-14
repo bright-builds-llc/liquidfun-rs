@@ -244,6 +244,11 @@ pub enum DestructionCause {
         /// Body whose destruction caused this invalidation.
         body: BodyId,
     },
+    /// Destruction of a source joint invalidated a dependent gear first.
+    GearDependencyCascade {
+        /// Source joint whose destruction caused the gear invalidation.
+        source: JointId,
+    },
     /// A particle-system destruction invalidated a contained object.
     ParticleSystemCascade {
         /// Particle system whose destruction caused this invalidation.
@@ -275,6 +280,8 @@ pub enum ObjectSnapshot {
     Joint {
         /// Joint endpoints at destruction time.
         bodies: [BodyId; 2],
+        /// Gear source identities, when the destroyed joint was a gear.
+        maybe_gear_dependencies: Option<[JointId; 2]>,
     },
     /// Particle-system membership at the start of its destruction transaction.
     ParticleSystem {
@@ -1256,6 +1263,12 @@ impl World {
         self.joints.get(joint).is_ok()
     }
 
+    /// Returns the number of live joints, including gear joints.
+    #[must_use]
+    pub fn joint_count(&self) -> usize {
+        self.joints.iter().count()
+    }
+
     /// Returns whether a particle-system handle resolves in this world.
     #[must_use]
     pub fn contains_particle_system(&self, system: ParticleSystemId) -> bool {
@@ -1289,9 +1302,21 @@ impl World {
             fixtures: fixtures.clone(),
             joints: joints.clone(),
         };
-        let mut records = Vec::with_capacity(joints.len() + fixtures.len() + 1);
+        let dependent_gears = self.collect_body_gear_dependents(&joints);
+        let mut records =
+            Vec::with_capacity(dependent_gears.len() + joints.len() + fixtures.len() + 1);
+
+        for (gear, source) in &dependent_gears {
+            records.push(self.remove_joint(
+                *gear,
+                DestructionCause::GearDependencyCascade { source: *source },
+            ));
+        }
 
         for joint in joints {
+            if dependent_gears.iter().any(|(gear, _source)| *gear == joint) {
+                continue;
+            }
             records.push(self.remove_joint(joint, DestructionCause::BodyCascade { body }));
         }
         self.destroy_contacts_for_body(body);
@@ -1527,6 +1552,18 @@ impl World {
             .joints
             .remove(joint)
             .expect("validated joint adjacency remains live");
+        if let crate::JointDef::Gear(definition) = removed.definition {
+            for dependency in definition.source_joints() {
+                remove_occurrence(
+                    &mut self
+                        .joints
+                        .get_mut(dependency)
+                        .expect("live gear sources remain valid until dependent removal")
+                        .reverse_gear_dependents,
+                    &joint,
+                );
+            }
+        }
         remove_occurrence(
             &mut self.body_mut_after_validation(removed.bodies[0]).joints,
             &joint,
@@ -1543,8 +1580,32 @@ impl World {
             cause,
             snapshot: ObjectSnapshot::Joint {
                 bodies: removed.bodies,
+                maybe_gear_dependencies: match removed.definition {
+                    crate::JointDef::Gear(definition) => Some(definition.source_joints()),
+                    _ => None,
+                },
             },
         }
+    }
+
+    fn collect_body_gear_dependents(&self, joints: &[JointId]) -> Vec<(JointId, JointId)> {
+        let mut dependents = Vec::new();
+        for source in joints {
+            let record = self
+                .joints
+                .get(*source)
+                .expect("body joint adjacency contains only live joints");
+            for gear in &record.reverse_gear_dependents {
+                if dependents
+                    .iter()
+                    .any(|(existing, _source)| existing == gear)
+                {
+                    continue;
+                }
+                dependents.push((*gear, *source));
+            }
+        }
+        dependents
     }
 
     fn remove_particle_system(

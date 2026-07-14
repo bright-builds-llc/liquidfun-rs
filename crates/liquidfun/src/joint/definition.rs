@@ -3,7 +3,7 @@
 use std::error::Error;
 use std::fmt;
 
-use crate::BodyId;
+use crate::{BodyId, JointId};
 
 /// A failure while constructing a reusable joint definition.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -11,6 +11,8 @@ use crate::BodyId;
 pub enum JointDefError {
     /// A joint cannot connect a body to itself.
     SameBody,
+    /// A gear joint requires two distinct source joints.
+    SameJoint,
     /// A scalar or vector component is not finite.
     NonFiniteValue,
     /// A force or torque cap is negative.
@@ -27,6 +29,7 @@ impl fmt::Display for JointDefError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::SameBody => formatter.write_str("a joint must connect two distinct bodies"),
+            Self::SameJoint => formatter.write_str("a gear joint requires two distinct sources"),
             Self::NonFiniteValue => formatter.write_str("joint values must be finite"),
             Self::NegativeValue => {
                 formatter.write_str("joint force and torque caps must be non-negative")
@@ -45,51 +48,6 @@ impl fmt::Display for JointDefError {
 }
 
 impl Error for JointDefError {}
-
-macro_rules! basic_joint_definition {
-    ($name:ident, $doc:literal) => {
-        #[doc = $doc]
-        #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-        pub struct $name {
-            body_a: BodyId,
-            body_b: BodyId,
-            collide_connected: bool,
-        }
-
-        impl $name {
-            /// Creates a checked definition with collision disabled between its bodies.
-            ///
-            /// # Errors
-            ///
-            /// Returns [`JointDefError::SameBody`] when both endpoints are identical.
-            pub fn new(body_a: BodyId, body_b: BodyId) -> Result<Self, JointDefError> {
-                if body_a == body_b {
-                    return Err(JointDefError::SameBody);
-                }
-                Ok(Self {
-                    body_a,
-                    body_b,
-                    collide_connected: false,
-                })
-            }
-
-            /// Chooses whether the connected bodies may collide.
-            #[must_use]
-            pub const fn with_collide_connected(mut self, collide_connected: bool) -> Self {
-                self.collide_connected = collide_connected;
-                self
-            }
-
-            pub(crate) const fn bodies(self) -> [BodyId; 2] {
-                [self.body_a, self.body_b]
-            }
-
-            pub(crate) const fn collide_connected(self) -> bool {
-                self.collide_connected
-            }
-        }
-    };
-}
 
 /// Definition of a revolute joint.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -778,7 +736,69 @@ impl MouseJointDef {
         self.collide_connected
     }
 }
-basic_joint_definition!(GearJointDef, "Definition of a gear joint.");
+/// Definition of a gear joint over two live revolute or prismatic joints.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct GearJointDef {
+    joint1: JointId,
+    joint2: JointId,
+    ratio: f32,
+    collide_connected: bool,
+}
+
+impl GearJointDef {
+    /// Creates a gear definition with the pinned default ratio of `1`.
+    ///
+    /// The source joints are resolved and kind-checked atomically by [`crate::World`].
+    ///
+    /// # Errors
+    ///
+    /// Returns [`JointDefError::SameJoint`] when both source identities are equal.
+    pub fn new(joint1: JointId, joint2: JointId) -> Result<Self, JointDefError> {
+        if joint1 == joint2 {
+            return Err(JointDefError::SameJoint);
+        }
+        Ok(Self {
+            joint1,
+            joint2,
+            ratio: 1.0,
+            collide_connected: false,
+        })
+    }
+
+    /// Sets the finite gear ratio. Positive, negative, and zero ratios are accepted.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`JointDefError::NonFiniteValue`] for a non-finite ratio.
+    pub fn with_ratio(mut self, ratio: f32) -> Result<Self, JointDefError> {
+        validate_scalar(ratio)?;
+        self.ratio = ratio;
+        Ok(self)
+    }
+
+    /// Chooses whether the two derived gear bodies may collide.
+    #[must_use]
+    pub const fn with_collide_connected(mut self, value: bool) -> Self {
+        self.collide_connected = value;
+        self
+    }
+
+    /// Returns the two source-joint identities.
+    #[must_use]
+    pub const fn source_joints(self) -> [JointId; 2] {
+        [self.joint1, self.joint2]
+    }
+
+    /// Returns the configured ratio.
+    #[must_use]
+    pub const fn ratio(self) -> f32 {
+        self.ratio
+    }
+
+    pub(crate) const fn collide_connected(self) -> bool {
+        self.collide_connected
+    }
+}
 
 /// Definition of a wheel joint.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -1374,21 +1394,24 @@ pub enum JointDef {
 }
 
 impl JointDef {
-    /// Returns the connected body identities.
+    /// Returns the connected body identities when they are definition-owned.
+    ///
+    /// Gear endpoints are derived from their two live source joints during
+    /// world creation, so gear definitions return `None` here.
     #[must_use]
-    pub const fn bodies(self) -> [BodyId; 2] {
+    pub const fn bodies(self) -> Option<[BodyId; 2]> {
         match self {
-            Self::Revolute(definition) => definition.bodies(),
-            Self::Prismatic(definition) => definition.bodies(),
-            Self::Distance(definition) => definition.bodies(),
-            Self::Pulley(definition) => definition.bodies(),
-            Self::Mouse(definition) => definition.bodies(),
-            Self::Gear(definition) => definition.bodies(),
-            Self::Wheel(definition) => definition.bodies(),
-            Self::Weld(definition) => definition.bodies(),
-            Self::Friction(definition) => definition.bodies(),
-            Self::Rope(definition) => definition.bodies(),
-            Self::Motor(definition) => definition.bodies(),
+            Self::Revolute(definition) => Some(definition.bodies()),
+            Self::Prismatic(definition) => Some(definition.bodies()),
+            Self::Distance(definition) => Some(definition.bodies()),
+            Self::Pulley(definition) => Some(definition.bodies()),
+            Self::Mouse(definition) => Some(definition.bodies()),
+            Self::Gear(_) => None,
+            Self::Wheel(definition) => Some(definition.bodies()),
+            Self::Weld(definition) => Some(definition.bodies()),
+            Self::Friction(definition) => Some(definition.bodies()),
+            Self::Rope(definition) => Some(definition.bodies()),
+            Self::Motor(definition) => Some(definition.bodies()),
         }
     }
 
