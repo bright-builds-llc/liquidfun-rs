@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 08-08-PLAN.md
-last_updated: "2026-07-14T01:02:59.250Z"
+stopped_at: Completed 08-09-PLAN.md
+last_updated: "2026-07-14T01:25:55.922Z"
 last_activity: 2026-07-14
 progress:
   total_phases: 12
   completed_phases: 7
   total_plans: 90
-  completed_plans: 82
-  percent: 91
+  completed_plans: 83
+  percent: 92
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 ## Current Position
 
 Phase: 8
-Plan: 8 of 16
+Plan: 9 of 16
 Status: Ready to execute
 Last activity: 2026-07-14
 
@@ -109,6 +109,7 @@ Progress: [█░░░░░░░░░] 6%
 | Phase 08 P05 | 45 min | 1 tasks | 20 files |
 | Phase 08 P06 | 20 min | 1 tasks | 9 files |
 | Phase 08 P08 | 18 min | 1 tasks | 11 files |
+| Phase 08 P09 | 50min | 1 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -244,6 +245,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 08]: Commit joint warm caches only after every island, body, contact, and proxy candidate validates. — A late island or synchronization failure must not expose partial solver progress.
 - [Phase 08]: Use CollisionDecisionHook as the source-timed authority while adapting legacy StepHook observers without persistent registration. — Pair filtering now precedes contact effects while existing observation and deferred-command consumers retain borrow-scoped compatibility.
 - [Phase 08]: Keep enabled state per-update while validated friction, restitution, and tangent speed follow pinned persistent setter behavior. — The distinction matches b2Contact::Update and the inventoried b2Contact setters without exposing arbitrary mutation.
+- [Phase 08]: Use one owned LifecycleEvent timeline as step and mutation authority. — Source-site appends preserve exact occurrence order and make convenience views projection-only.
+- [Phase 08]: Record command completion after its mutation lifecycle effects. — CommandApplication represents completion while recoverable failures remain ordered and do not stop later commands.
+- [Phase 08]: Emit goodbye events only for implicit joint and fixture destruction. — This matches the pinned upstream listener contract and avoids fabricated notifications for explicit operations.
 
 ### Pending Todos
 
@@ -257,6 +261,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-14T01:02:51.134Z
-Stopped at: Completed 08-08-PLAN.md
+Last session: 2026-07-14T01:25:34.283Z
+Stopped at: Completed 08-09-PLAN.md
 Resume file: None
