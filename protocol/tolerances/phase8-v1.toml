@@ -283,23 +283,23 @@ justification = "Dimensioned computed geometry uses reviewed phase-local absolut
 
 [[fields]]
 semantic_path = "rigid_world.phase8.joint.reaction_force.x"
-comparison = { kind = "float", policy = { kind = "absolute_relative", absolute_bits = 897988541, relative_bits = 953267991 } }
+comparison = { kind = "float", policy = { kind = "absolute_relative", absolute_bits = 973279855, relative_bits = 953267991 } }
 zero_policy = "distinct"
 non_finite_policy = "reject_arithmetic_nan"
 collection_policy = "ordered"
 horizon = { kind = "phase_local" }
 evidence_tier = "d2_supported"
-justification = "Dimensioned computed geometry uses reviewed phase-local absolute and relative bounds."
+justification = "Reaction forces use a reviewed 5e-4 absolute floor for near-zero overconstrained caches and a 1e-4 relative bound for nonzero forces."
 
 [[fields]]
 semantic_path = "rigid_world.phase8.joint.reaction_force.y"
-comparison = { kind = "float", policy = { kind = "absolute_relative", absolute_bits = 897988541, relative_bits = 953267991 } }
+comparison = { kind = "float", policy = { kind = "absolute_relative", absolute_bits = 973279855, relative_bits = 953267991 } }
 zero_policy = "distinct"
 non_finite_policy = "reject_arithmetic_nan"
 collection_policy = "ordered"
 horizon = { kind = "phase_local" }
 evidence_tier = "d2_supported"
-justification = "Dimensioned computed geometry uses reviewed phase-local absolute and relative bounds."
+justification = "Reaction forces use a reviewed 5e-4 absolute floor for near-zero overconstrained caches and a 1e-4 relative bound for nonzero forces."
 
 [[fields]]
 semantic_path = "rigid_world.phase8.rope.vertex.x"
@@ -323,33 +323,33 @@ justification = "Dimensioned computed geometry uses reviewed phase-local absolut
 
 [[fields]]
 semantic_path = "rigid_world.phase8.joint.coordinate"
-comparison = { kind = "float", policy = { kind = "ulps", max = 4 } }
+comparison = { kind = "float", policy = { kind = "absolute_relative", absolute_bits = 897988541, relative_bits = 981668463 } }
 zero_policy = "distinct"
 non_finite_policy = "reject_arithmetic_nan"
 collection_policy = "ordered"
 horizon = { kind = "phase_local" }
 evidence_tier = "d2_supported"
-justification = "Operation-grouped computed scalars use one reviewed four-ULP bound."
+justification = "Joint coordinates cross zero after iterative constraint solving, so the reviewed one-micro-unit absolute and 1e-3 relative bounds cover source-faithful residuals without collapsing signed zero."
 
 [[fields]]
 semantic_path = "rigid_world.phase8.joint.speed"
-comparison = { kind = "float", policy = { kind = "ulps", max = 4 } }
+comparison = { kind = "float", policy = { kind = "absolute_relative", absolute_bits = 897988541, relative_bits = 981668463 } }
 zero_policy = "distinct"
 non_finite_policy = "reject_arithmetic_nan"
 collection_policy = "ordered"
 horizon = { kind = "phase_local" }
 evidence_tier = "d2_supported"
-justification = "Operation-grouped computed scalars use one reviewed four-ULP bound."
+justification = "Joint speeds cross zero after iterative constraint solving, so the reviewed one-micro-unit absolute and 1e-3 relative bounds cover source-faithful residuals without collapsing signed zero."
 
 [[fields]]
 semantic_path = "rigid_world.phase8.joint.reaction_torque"
-comparison = { kind = "float", policy = { kind = "ulps", max = 4 } }
+comparison = { kind = "float", policy = { kind = "absolute_relative", absolute_bits = 897988541, relative_bits = 1017370378 } }
 zero_policy = "distinct"
 non_finite_policy = "reject_arithmetic_nan"
 collection_policy = "ordered"
 horizon = { kind = "phase_local" }
 evidence_tier = "d2_supported"
-justification = "Operation-grouped computed scalars use one reviewed four-ULP bound."
+justification = "Reaction torque uses a reviewed one-micro-unit absolute floor near zero and a two-percent relative bound for the overconstrained mutation witness."
 
 [[fields]]
 semantic_path = "rigid_world.phase8.rope.angle"

@@ -445,7 +445,7 @@ fn rigid_fixture_stale_identity_real_binary_rejects_before_effects() -> TestResu
     assert!(
         !fixture
             .root
-            .join("reference/artifacts/traces/phase-07-rigid-world-v1.jsonl")
+            .join("reference/artifacts/traces/phase-08-rigid-world-v1.jsonl")
             .exists()
     );
     fixture.cleanup()?;

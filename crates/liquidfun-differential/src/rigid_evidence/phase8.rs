@@ -236,6 +236,27 @@ fn compare_observations(
     actual: &RigidWorldCheckpointResult,
 ) -> Result<Option<RigidMismatchReport>, RigidComparisonFailure> {
     let context = EvidenceContext::checkpoint(location);
+    let expected_lifecycle_count = expected
+        .observations
+        .iter()
+        .filter(|observation| matches!(observation, RigidWorldObservation::Lifecycle { .. }))
+        .count();
+    let actual_lifecycle_count = actual
+        .observations
+        .iter()
+        .filter(|observation| matches!(observation, RigidWorldObservation::Lifecycle { .. }))
+        .count();
+    if let Some(report) = exact(
+        request,
+        profile,
+        context,
+        "rigid_world.phase8.lifecycle.multiplicity",
+        RigidMismatchKind::Order,
+        &expected_lifecycle_count,
+        &actual_lifecycle_count,
+    )? {
+        return Ok(Some(report));
+    }
     let expected_order = expected
         .observations
         .iter()

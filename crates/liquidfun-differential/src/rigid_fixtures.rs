@@ -8,7 +8,7 @@ use std::{
 };
 
 use liquidfun_test_protocol::{
-    BuildIdentity, HarnessLimits, Phase6PolicyProfile, Phase7PolicyProfile,
+    BuildIdentity, HarnessLimits, Phase6PolicyProfile, Phase7PolicyProfile, Phase8PolicyProfile,
     RigidWorldRequestRecord, RigidWorldResultRecord, decode_handshake_jsonl,
     decode_rigid_world_request_jsonl, decode_rigid_world_result_jsonl,
 };
@@ -17,7 +17,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     CapturedRigidWorld, MinimizationStatus, NativeRigidWorldExecutor, OracleExecutable,
     OraclePreset, RigidComparisonOutcome, RigidMinimizationResult, RigidScenarioTransform,
-    canonical_rigid_request_bytes, compare_phase7_rigid_world_results, execute_rigid_world_process,
+    canonical_rigid_request_bytes, compare_phase8_rigid_world_results, execute_rigid_world_process,
     reconstruct_complete_rigid_minimization, validate_oracle_checkout_identity,
     validate_rigid_promotion_authority,
 };
@@ -35,11 +35,12 @@ use super::{
 };
 
 /// Recorded scenario identity used to dispatch rigid replay without probing unchecked formats.
-pub const RIGID_FIXTURE_SCENARIO_ID: &str = "phase-07-rigid-world";
+pub const RIGID_FIXTURE_SCENARIO_ID: &str = "phase-08-rigid-world";
 
 const REQUEST_PATH: &str = "protocol/fixtures/accepted/rigid-world-request.jsonl";
 const PHASE6_POLICY_PATH: &str = "protocol/tolerances/phase6-v1.toml";
 const PHASE7_POLICY_PATH: &str = "protocol/tolerances/phase7-v1.toml";
+const PHASE8_POLICY_PATH: &str = "protocol/tolerances/phase8-v1.toml";
 static NEXT_TEMPORARY_DIRECTORY: AtomicU64 = AtomicU64::new(0);
 
 /// Executes, compares, authorizes, and stages the fixed rigid-world request.
@@ -71,7 +72,7 @@ pub fn stage_rigid_candidate(
         ));
     }
     let manifest = read_manifest(repository_root)?;
-    let (phase6_policy, phase7_policy) = read_policies(repository_root)?;
+    let (phase6_policy, phase7_policy, phase8_policy) = read_policies(repository_root)?;
     let limits = HarnessLimits::phase2_default_v1();
     let original_request_bytes = fs::read(repository_root.join(REQUEST_PATH))?;
     enforce_size(
@@ -81,11 +82,11 @@ pub fn stage_rigid_candidate(
     )?;
     let original_request = decode_rigid_world_request_jsonl(&original_request_bytes, &limits)
         .map_err(|error| FixtureError::Replay(error.to_string()))?;
-    if original_request.tolerance_profile_sha256() != phase7_policy.profile_sha256() {
+    if original_request.tolerance_profile_sha256() != phase8_policy.profile_sha256() {
         return Err(FixtureError::Replay(format!(
             "rigid-world request policy hash {} does not match checked-in profile {}",
             original_request.tolerance_profile_sha256().as_str(),
-            phase7_policy.profile_sha256().as_str()
+            phase8_policy.profile_sha256().as_str()
         )));
     }
     let executable = OracleExecutable::resolve(repository_root, preset)
@@ -99,6 +100,7 @@ pub fn stage_rigid_candidate(
         &manifest.oracle_revision,
         &phase6_policy,
         &phase7_policy,
+        &phase8_policy,
         &limits,
     )?;
     let (captured, outcome) = execute_and_compare_rigid(
@@ -107,6 +109,7 @@ pub fn stage_rigid_candidate(
         &manifest.oracle_revision,
         &phase6_policy,
         &phase7_policy,
+        &phase8_policy,
     )?;
     if captured.identity().cmake_preset() != preset_name {
         return Err(FixtureError::Replay(
@@ -163,6 +166,7 @@ fn select_staged_request(
     oracle_revision: &str,
     phase6_policy: &Phase6PolicyProfile,
     phase7_policy: &Phase7PolicyProfile,
+    phase8_policy: &Phase8PolicyProfile,
     limits: &HarnessLimits,
 ) -> Result<(Vec<u8>, RigidWorldRequestRecord), FixtureError> {
     match (artifact_kind, maybe_minimization) {
@@ -179,7 +183,7 @@ fn select_staged_request(
             let (bytes, request) = validate_minimized_request(
                 original_request_bytes,
                 minimization,
-                phase7_policy,
+                phase8_policy,
                 limits,
             )?;
             let (_original_capture, original_outcome) = execute_and_compare_rigid(
@@ -188,6 +192,7 @@ fn select_staged_request(
                 oracle_revision,
                 phase6_policy,
                 phase7_policy,
+                phase8_policy,
             )?;
             let RigidComparisonOutcome::PhysicsMismatch(original_report) = original_outcome else {
                 return Err(FixtureError::Replay(
@@ -207,7 +212,7 @@ fn select_staged_request(
 fn validate_minimized_request(
     original_request_bytes: &[u8],
     minimization: &RigidMinimizationResult,
-    phase7_policy: &Phase7PolicyProfile,
+    phase8_policy: &Phase8PolicyProfile,
     limits: &HarnessLimits,
 ) -> Result<(Vec<u8>, RigidWorldRequestRecord), FixtureError> {
     if minimization.status() != MinimizationStatus::Complete {
@@ -232,7 +237,7 @@ fn validate_minimized_request(
     let request = decode_rigid_world_request_jsonl(&request_bytes, limits)
         .map_err(|error| FixtureError::Replay(error.to_string()))?;
     if &request != minimization.request()
-        || request.tolerance_profile_sha256() != phase7_policy.profile_sha256()
+        || request.tolerance_profile_sha256() != phase8_policy.profile_sha256()
     {
         return Err(FixtureError::Replay(
             "minimized rigid request bytes or policy provenance disagree".to_owned(),
@@ -247,17 +252,19 @@ fn execute_and_compare_rigid(
     oracle_revision: &str,
     phase6_policy: &Phase6PolicyProfile,
     phase7_policy: &Phase7PolicyProfile,
+    phase8_policy: &Phase8PolicyProfile,
 ) -> Result<(CapturedRigidWorld, RigidComparisonOutcome), FixtureError> {
     let native = NativeRigidWorldExecutor::execute(request)
         .map_err(|error| FixtureError::Replay(error.to_string()))?;
     let captured = execute_rigid_world_process(executable, request, oracle_revision)
         .map_err(|error| FixtureError::Replay(error.to_string()))?;
-    let outcome = compare_phase7_rigid_world_results(
+    let outcome = compare_phase8_rigid_world_results(
         request,
         &native,
         captured.result(),
         phase6_policy,
         phase7_policy,
+        phase8_policy,
     )
     .map_err(|error| FixtureError::Replay(format!("{error:?}")))?;
     Ok((captured, outcome))
@@ -278,11 +285,11 @@ pub(super) fn replay_rigid_candidate(
     identity_bytes: &[u8],
     scenario_bytes: Vec<u8>,
 ) -> Result<ReplayedCandidate, FixtureError> {
-    let (phase6_policy, phase7_policy) = read_policies(repository_root)?;
+    let (phase6_policy, phase7_policy, phase8_policy) = read_policies(repository_root)?;
     let limits = HarnessLimits::phase2_default_v1();
     let request = decode_rigid_world_request_jsonl(request_bytes, &limits)
         .map_err(|error| FixtureError::Replay(error.to_string()))?;
-    if request.tolerance_profile_sha256() != phase7_policy.profile_sha256()
+    if request.tolerance_profile_sha256() != phase8_policy.profile_sha256()
         || request.scenario().scenario_id().as_str() != metadata.scenario_id
         || serde_json::to_vec(request.scenario())? != scenario_bytes
         || serde_json::to_string(request.scenario().source())? != metadata.source_json
@@ -319,12 +326,13 @@ pub(super) fn replay_rigid_candidate(
         .map_err(|error| FixtureError::Replay(error.to_string()))?;
     let native = NativeRigidWorldExecutor::execute(&request)
         .map_err(|error| FixtureError::Replay(error.to_string()))?;
-    let outcome = compare_phase7_rigid_world_results(
+    let outcome = compare_phase8_rigid_world_results(
         &request,
         &native,
         &oracle,
         &phase6_policy,
         &phase7_policy,
+        &phase8_policy,
     )
     .map_err(|error| FixtureError::Replay(format!("{error:?}")))?;
     verify_rigid_report(
@@ -551,13 +559,23 @@ fn cleanup_directory(path: &Path) -> io::Result<()> {
 
 fn read_policies(
     repository_root: &Path,
-) -> Result<(Phase6PolicyProfile, Phase7PolicyProfile), FixtureError> {
+) -> Result<
+    (
+        Phase6PolicyProfile,
+        Phase7PolicyProfile,
+        Phase8PolicyProfile,
+    ),
+    FixtureError,
+> {
     let phase6 = read_policy_text(repository_root, PHASE6_POLICY_PATH)?;
     let phase7 = read_policy_text(repository_root, PHASE7_POLICY_PATH)?;
+    let phase8 = read_policy_text(repository_root, PHASE8_POLICY_PATH)?;
     Ok((
         Phase6PolicyProfile::parse_toml(&phase6)
             .map_err(|error| FixtureError::Replay(error.to_string()))?,
         Phase7PolicyProfile::parse_toml(&phase7)
+            .map_err(|error| FixtureError::Replay(error.to_string()))?,
+        Phase8PolicyProfile::parse_toml(&phase8)
             .map_err(|error| FixtureError::Replay(error.to_string()))?,
     ))
 }

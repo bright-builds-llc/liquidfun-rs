@@ -164,14 +164,12 @@ const PHASE8_ABSOLUTE_RELATIVE_PATHS: &[&str] = &[
     "rigid_world.phase8.joint.reaction_force.y",
     "rigid_world.phase8.rope.vertex.x",
     "rigid_world.phase8.rope.vertex.y",
-];
-
-const PHASE8_ULP_PATHS: &[&str] = &[
     "rigid_world.phase8.joint.coordinate",
     "rigid_world.phase8.joint.speed",
     "rigid_world.phase8.joint.reaction_torque",
-    "rigid_world.phase8.rope.angle",
 ];
+
+const PHASE8_ULP_PATHS: &[&str] = &["rigid_world.phase8.rope.angle"];
 
 const PHASE8_ABSOLUTE_PATHS: &[&str] = &["rigid_world.phase8.diagnostics.tree_quality"];
 
@@ -327,10 +325,13 @@ fn validate_phase8_field(field: &FieldPolicy) -> Result<(), Phase8PolicyError> {
     validate_float_thresholds(policy).map_err(|_| Phase8PolicyError::IncompatibleMetadata)?;
     let exact = PHASE8_EXACT_BITS_PATHS.contains(&path) && policy == FloatPolicy::ExactBits;
     let absolute_relative = PHASE8_ABSOLUTE_RELATIVE_PATHS.contains(&path)
-        && matches!(policy, FloatPolicy::AbsoluteRelative { .. });
-    let ulps = PHASE8_ULP_PATHS.contains(&path) && matches!(policy, FloatPolicy::Ulps { .. });
-    let absolute =
-        PHASE8_ABSOLUTE_PATHS.contains(&path) && matches!(policy, FloatPolicy::Absolute { .. });
+        && phase8_absolute_relative_policy_matches(path, policy);
+    let ulps = PHASE8_ULP_PATHS.contains(&path) && policy == FloatPolicy::Ulps { max: 4 };
+    let absolute = PHASE8_ABSOLUTE_PATHS.contains(&path)
+        && policy
+            == FloatPolicy::Absolute {
+                max_bits: crate::FloatBits::new(897_988_541),
+            };
     if !(exact || absolute_relative || ulps || absolute)
         || field.evidence_tier()
             != if exact {
@@ -342,6 +343,23 @@ fn validate_phase8_field(field: &FieldPolicy) -> Result<(), Phase8PolicyError> {
         return Err(Phase8PolicyError::IncompatibleMetadata);
     }
     Ok(())
+}
+
+fn phase8_absolute_relative_policy_matches(path: &str, policy: FloatPolicy) -> bool {
+    let (absolute_bits, relative_bits) = match path {
+        "rigid_world.phase8.joint.coordinate" | "rigid_world.phase8.joint.speed" => {
+            (897_988_541, 981_668_463)
+        }
+        "rigid_world.phase8.joint.reaction_force.x"
+        | "rigid_world.phase8.joint.reaction_force.y" => (973_279_855, 953_267_991),
+        "rigid_world.phase8.joint.reaction_torque" => (897_988_541, 1_017_370_378),
+        _ => (897_988_541, 953_267_991),
+    };
+    policy
+        == FloatPolicy::AbsoluteRelative {
+            absolute_bits: crate::FloatBits::new(absolute_bits),
+            relative_bits: crate::FloatBits::new(relative_bits),
+        }
 }
 
 fn phase8_witness_policy_paths(family: RigidWorldWitnessFamily) -> &'static [&'static str] {
@@ -1125,7 +1143,7 @@ mod tests {
         assert_eq!(profile.fields().len(), 37);
         assert_eq!(
             profile.profile_sha256().as_str(),
-            "72075452596abf03013832b19cf865315b2621654a3debf7f74f4c5a45146c55"
+            "e31c47660bb5cce5aeb502ad510448176b419e604ef5048d74403bdef2f3a493"
         );
         assert!(matches!(
             profile

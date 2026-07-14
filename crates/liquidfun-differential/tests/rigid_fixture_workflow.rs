@@ -15,7 +15,7 @@ use std::{
 use liquidfun_differential::{
     ArtifactKind, MinimizationBudget, MinimizationStatus, NativeRigidWorldExecutor, OraclePreset,
     RigidComparisonOutcome, RigidEvaluation, RigidFailureSignature, RigidMinimizationResult,
-    compare_phase7_rigid_world_results, minimize_rigid_world_request, stage_rigid_candidate,
+    compare_phase8_rigid_world_results, minimize_rigid_world_request, stage_rigid_candidate,
 };
 use liquidfun_test_protocol::{
     HarnessLimits, Phase6PolicyProfile, Phase7PolicyProfile, Phase8PolicyProfile,
@@ -79,22 +79,10 @@ impl RigidFixtureRepository {
             workspace_root().join("protocol/tolerances/phase7-v1.toml"),
             root.join("protocol/tolerances/phase7-v1.toml"),
         )?;
-        let phase7_policy = Phase7PolicyProfile::parse_toml(&fs::read_to_string(
-            root.join("protocol/tolerances/phase7-v1.toml"),
-        )?)
-        .map_err(|error| io::Error::other(error.to_string()))?;
-        let request_path = root.join("protocol/fixtures/accepted/rigid-world-request.jsonl");
-        let mut request_value: serde_json::Value =
-            serde_json::from_slice(&fs::read(&request_path)?)?;
-        request_value["request_id"] =
-            serde_json::Value::String("phase-07-rigid-world-request".to_owned());
-        request_value["tolerance_profile_sha256"] =
-            serde_json::Value::String(phase7_policy.profile_sha256().as_str().to_owned());
-        request_value["scenario"]["scenario_id"] =
-            serde_json::Value::String("phase-07-rigid-world".to_owned());
-        let mut request_bytes = serde_json::to_vec(&request_value)?;
-        request_bytes.push(b'\n');
-        fs::write(request_path, request_bytes)?;
+        fs::copy(
+            workspace_root().join("protocol/tolerances/phase8-v1.toml"),
+            root.join("protocol/tolerances/phase8-v1.toml"),
+        )?;
         fs::copy(
             workspace_root().join("reference/artifacts/manifest.toml"),
             root.join("reference/artifacts/manifest.toml"),
@@ -243,11 +231,11 @@ fn transaction_real_binary_stages_replays_and_promotes_canonical_rigid_trace()
     assert!(
         repository
             .root
-            .join("reference/artifacts/traces/phase-07-rigid-world-v1.jsonl")
+            .join("reference/artifacts/traces/phase-08-rigid-world-v1.jsonl")
             .is_file()
     );
     let manifest = fs::read_to_string(repository.root.join("reference/artifacts/manifest.toml"))?;
-    assert!(manifest.contains("phase-07-rigid-world-v1.jsonl"));
+    assert!(manifest.contains("phase-08-rigid-world-v1.jsonl"));
     Ok(())
 }
 
@@ -273,7 +261,7 @@ fn real_binary_rejects_d2_before_staging_or_accepted_mutation()
     assert!(
         !repository
             .root
-            .join("reference/artifacts/traces/phase-07-rigid-world-v1.jsonl")
+            .join("reference/artifacts/traces/phase-08-rigid-world-v1.jsonl")
             .exists()
     );
     Ok(())
@@ -410,7 +398,7 @@ fn review_and_promotion_recompute_checkout_identity_before_writes()
     assert!(
         !repository
             .root
-            .join("reference/artifacts/traces/phase-07-rigid-world-v1.jsonl")
+            .join("reference/artifacts/traces/phase-08-rigid-world-v1.jsonl")
             .exists()
     );
     Ok(())
@@ -581,7 +569,10 @@ fn rigid_minimization(
     let phase7 = Phase7PolicyProfile::parse_toml(&fs::read_to_string(
         root.join("protocol/tolerances/phase7-v1.toml"),
     )?)?;
-    let Some(target) = rigid_mismatch_signature(&request, &phase6, &phase7) else {
+    let phase8 = Phase8PolicyProfile::parse_toml(&fs::read_to_string(
+        root.join("protocol/tolerances/phase8-v1.toml"),
+    )?)?;
+    let Some(target) = rigid_mismatch_signature(&request, &phase6, &phase7, &phase8) else {
         return Err(io::Error::other("injected rigid mismatch unexpectedly matched").into());
     };
     minimize_rigid_world_request(
@@ -590,7 +581,7 @@ fn rigid_minimization(
         MinimizationBudget::new(effective_max_attempts, Duration::from_secs(1)),
         |candidate| {
             RigidEvaluation::new(
-                rigid_mismatch_signature(candidate, &phase6, &phase7),
+                rigid_mismatch_signature(candidate, &phase6, &phase7, &phase8),
                 Duration::ZERO,
             )
         },
@@ -602,6 +593,7 @@ fn rigid_mismatch_signature(
     request: &RigidWorldRequestRecord,
     phase6: &Phase6PolicyProfile,
     phase7: &Phase7PolicyProfile,
+    phase8: &Phase8PolicyProfile,
 ) -> Option<RigidFailureSignature> {
     let limits = HarnessLimits::phase2_default_v1();
     let native = NativeRigidWorldExecutor::execute(request).ok()?;
@@ -612,7 +604,8 @@ fn rigid_mismatch_signature(
     oracle_bytes.push(b'\n');
     let oracle = decode_rigid_world_result_jsonl(&oracle_bytes, &limits).ok()?;
     let outcome =
-        compare_phase7_rigid_world_results(request, &native, &oracle, phase6, phase7).ok()?;
+        compare_phase8_rigid_world_results(request, &native, &oracle, phase6, phase7, phase8)
+            .ok()?;
     let RigidComparisonOutcome::PhysicsMismatch(report) = outcome else {
         return None;
     };
