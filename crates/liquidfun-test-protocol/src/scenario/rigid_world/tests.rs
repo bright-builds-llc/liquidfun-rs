@@ -1001,6 +1001,53 @@ fn rigid_world_phase8_step_dependent_families_step_before_observation() {
 }
 
 #[test]
+fn rigid_world_phase8_mixed_joint_restores_collision_after_suppressor_destruction() {
+    // Arrange
+    let mut value = fixture_value();
+    let timeline = timeline_mut(
+        &mut value,
+        "mixed_joint_island_order_and_collision_suppression",
+    );
+    let joints = timeline["joints"]
+        .as_array()
+        .expect("mixed-joint declarations should be an array");
+    let actions = timeline["actions"]
+        .as_array()
+        .expect("mixed-joint actions should be an array");
+
+    // Act
+    let suppresses_collision = joints
+        .iter()
+        .find(|joint| joint["joint_id"] == "joint-mixed-suppress")
+        .and_then(|joint| joint["collide_connected"].as_bool());
+    let permits_collision = joints
+        .iter()
+        .find(|joint| joint["joint_id"] == "joint-mixed-connected")
+        .and_then(|joint| joint["collide_connected"].as_bool());
+    let destroy_suppressor = actions
+        .iter()
+        .position(|action| action["action_id"] == "joint-mixed-destroy-suppress");
+    let restored_step = actions
+        .iter()
+        .position(|action| action["action_id"] == "joint-mixed-step-restored");
+    let destroy_connected = actions
+        .iter()
+        .position(|action| action["action_id"] == "joint-mixed-destroy-connected");
+
+    // Assert
+    assert_eq!(suppresses_collision, Some(false));
+    assert_eq!(permits_collision, Some(true));
+    assert!(
+        matches!(
+            (destroy_suppressor, restored_step, destroy_connected),
+            (Some(suppressor), Some(step), Some(connected))
+                if suppressor < step && step < connected
+        ),
+        "the permitting joint must remain live when collision is restored"
+    );
+}
+
+#[test]
 fn rigid_world_phase8_uses_explicit_behavior_witnesses() {
     // Arrange
     let value = fixture_value();

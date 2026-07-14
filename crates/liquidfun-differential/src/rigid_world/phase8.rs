@@ -81,6 +81,7 @@ pub(super) fn execute_action(
                 fixture_b,
                 *should_collide,
             );
+            refresh_filter_pair(executor, [fixture_a, fixture_b], action)?;
         }
         RigidWorldAction::SetPreSolveDirective { target, directive } => {
             let [fixture_a, fixture_b] = directive_fixtures(executor, target, action)?;
@@ -107,19 +108,58 @@ pub(super) fn step(
     let mut hook = Phase8Hook {
         filter_directives: executor.filter_directives.clone(),
         pre_solve_directives: executor.pre_solve_directives.clone(),
+        allow_unconfigured_contacts: captures_contact_behavior(executor.family),
     };
     executor.world.step(configuration, &mut hook, limits)
+}
+
+fn captures_contact_behavior(family: RigidWorldWitnessFamily) -> bool {
+    // Solver-only timelines use fixtures solely to give moving bodies mass. Rejecting their
+    // undeclared cross-family pairs keeps joint evidence independent of incidental contacts;
+    // the C++ adapter must mirror this typed-family rule.
+    matches!(
+        family,
+        RigidWorldWitnessFamily::MixedJointIslandOrderAndCollisionSuppression
+            | RigidWorldWitnessFamily::ContactFilterListenerAndPreSolveTiming
+            | RigidWorldWitnessFamily::DestructionListenerAndDependencyCascades
+    ) || !RigidWorldWitnessFamily::PHASE8_REQUIRED.contains(&family)
+}
+
+fn refresh_filter_pair(
+    executor: &mut TimelineExecutor,
+    fixtures: [FixtureId; 2],
+    action: &RigidWorldActionRecord,
+) -> Result<(), NativeRigidWorldError> {
+    for fixture in fixtures {
+        let filter = executor
+            .world
+            .fixture_snapshot(fixture)
+            .map_err(|error| action_error(action, error))?
+            .filter_data();
+        executor
+            .world
+            .set_fixture_filter(fixture, filter)
+            .map_err(|error| action_error(action, error))?;
+    }
+    Ok(())
 }
 
 struct Phase8Hook {
     filter_directives: Vec<(FixtureId, FixtureId, bool)>,
     pre_solve_directives: Vec<(FixtureId, FixtureId, PreSolveDirective)>,
+    allow_unconfigured_contacts: bool,
 }
 
 impl CollisionDecisionHook for Phase8Hook {
     fn should_collide(&mut self, pair: FixturePairView<'_>) -> CollisionDirective {
-        pair_value(&self.filter_directives, pair.fixtures()).map_or(
-            CollisionDirective::Collide,
+        pair_value(&self.filter_directives, pair.fixtures()).map_or_else(
+            || {
+                if self.allow_unconfigured_contacts {
+                    CollisionDirective::Collide
+                } else {
+                    CollisionDirective::Ignore
+                }
+            },
             |should_collide| {
                 if *should_collide {
                     CollisionDirective::Collide
@@ -843,7 +883,7 @@ pub(super) fn collect_step_lifecycle(
     executor: &mut TimelineExecutor,
     report: &StepReport,
 ) -> Result<(), NativeRigidWorldError> {
-    if !RigidWorldWitnessFamily::PHASE8_REQUIRED.contains(&executor.family) {
+    if !captures_lifecycle_evidence(executor.family) {
         return Ok(());
     }
     collect_mutation_lifecycle(executor, report.lifecycle())
@@ -853,7 +893,7 @@ pub(super) fn collect_mutation_lifecycle(
     executor: &mut TimelineExecutor,
     lifecycle: &[LifecycleEvent],
 ) -> Result<(), NativeRigidWorldError> {
-    if !RigidWorldWitnessFamily::PHASE8_REQUIRED.contains(&executor.family) {
+    if !captures_lifecycle_evidence(executor.family) {
         return Ok(());
     }
     for event in lifecycle {
@@ -963,6 +1003,14 @@ pub(super) fn collect_mutation_lifecycle(
         }
     }
     Ok(())
+}
+
+fn captures_lifecycle_evidence(family: RigidWorldWitnessFamily) -> bool {
+    matches!(
+        family,
+        RigidWorldWitnessFamily::ContactFilterListenerAndPreSolveTiming
+            | RigidWorldWitnessFamily::DestructionListenerAndDependencyCascades
+    )
 }
 
 fn push_lifecycle(

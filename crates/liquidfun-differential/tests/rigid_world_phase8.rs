@@ -2,9 +2,9 @@
 
 use liquidfun_differential::{NativeRigidWorldExecutor, rigid_world_cpp_adapter_gate_reason};
 use liquidfun_test_protocol::{
-    HarnessLimits, RIGID_WORLD_POSITION_ITERATIONS, RIGID_WORLD_TIMESTEP_BITS,
-    RIGID_WORLD_VELOCITY_ITERATIONS, RigidJointKind, RigidLifecycleObservationKind,
-    RigidWorldObservation, RigidWorldWitnessFamily, decode_rigid_world_request_jsonl,
+    HarnessLimits, RigidContactIdentity, RigidJointBranchState, RigidJointKind, RigidJointSnapshot,
+    RigidLifecycleObservation, RigidLifecycleObservationKind, RigidWorldObservation,
+    RigidWorldWitnessFamily, ScenarioId, decode_rigid_world_request_jsonl,
 };
 use serde_json::{Value, json};
 
@@ -77,6 +77,120 @@ fn native_phase8_corpus_emits_every_joint_kind() {
     }
 }
 
+fn joint_snapshot_is_nontrivial(snapshot: &RigidJointSnapshot) -> bool {
+    snapshot.branch_state != RigidJointBranchState::Inactive
+        || snapshot.coordinate_bits.to_f32() != 0.0
+        || snapshot.speed_bits.to_f32() != 0.0
+        || snapshot.reaction_force.x_bits.to_f32() != 0.0
+        || snapshot.reaction_force.y_bits.to_f32() != 0.0
+        || snapshot.reaction_torque_bits.to_f32() != 0.0
+}
+
+#[test]
+fn native_phase8_corpus_emits_nontrivial_live_records_for_every_joint_kind() {
+    // Arrange
+    let request = request();
+
+    // Act
+    let result = NativeRigidWorldExecutor::execute(&request)
+        .expect("the complete Phase 8 request should execute natively");
+    let mut snapshots = Vec::<&RigidJointSnapshot>::new();
+    for snapshot in result
+        .timelines()
+        .iter()
+        .flat_map(|timeline| &timeline.checkpoints)
+        .flat_map(|checkpoint| &checkpoint.observations)
+        .filter_map(|observation| match observation {
+            RigidWorldObservation::Joint { snapshot } => Some(snapshot),
+            _ => None,
+        })
+    {
+        if let Some(existing) = snapshots
+            .iter_mut()
+            .find(|existing| existing.joint_id == snapshot.joint_id)
+        {
+            *existing = snapshot;
+        } else {
+            snapshots.push(snapshot);
+        }
+    }
+
+    // Assert
+    for kind in RigidJointKind::ALL {
+        assert!(
+            snapshots
+                .iter()
+                .filter(|snapshot| snapshot.joint_kind == kind)
+                .any(|snapshot| joint_snapshot_is_nontrivial(snapshot)),
+            "{kind:?} must expose a nontrivial public post-step record"
+        );
+    }
+}
+
+#[test]
+fn native_phase8_gear_records_pin_all_four_live_topologies() {
+    // Arrange
+    let request = request();
+    let combinations = [
+        (RigidJointKind::Revolute, RigidJointKind::Revolute),
+        (RigidJointKind::Revolute, RigidJointKind::Prismatic),
+        (RigidJointKind::Prismatic, RigidJointKind::Revolute),
+        (RigidJointKind::Prismatic, RigidJointKind::Prismatic),
+    ];
+
+    // Act
+    let result = NativeRigidWorldExecutor::execute(&request)
+        .expect("the four-body gear corpus should execute natively");
+    let observations = result
+        .timelines()
+        .iter()
+        .find(|timeline| {
+            timeline.witness_family == RigidWorldWitnessFamily::GearDependenciesAndFourBodySolver
+        })
+        .expect("gear result should exist")
+        .checkpoints[0]
+        .observations
+        .iter()
+        .filter_map(|observation| match observation {
+            RigidWorldObservation::Joint { snapshot } => Some(snapshot),
+            _ => None,
+        })
+        .collect::<Vec<_>>();
+
+    // Assert
+    for (index, expected_kinds) in combinations.into_iter().enumerate() {
+        let source_a_id = scenario_id(&format!("gear-{index}-source-a"));
+        let source_b_id = scenario_id(&format!("gear-{index}-source-b"));
+        let gear_id = scenario_id(&format!("gear-{index}-joint"));
+        let source_a = observations
+            .iter()
+            .rev()
+            .find(|snapshot| snapshot.joint_id == source_a_id)
+            .expect("gear source A should be observed after the live step");
+        let source_b = observations
+            .iter()
+            .rev()
+            .find(|snapshot| snapshot.joint_id == source_b_id)
+            .expect("gear source B should be observed after the live step");
+        let gear = observations
+            .iter()
+            .rev()
+            .find(|snapshot| snapshot.joint_id == gear_id)
+            .expect("gear should be observed after the live step");
+
+        assert_eq!((source_a.joint_kind, source_b.joint_kind), expected_kinds);
+        assert_eq!(gear.dependencies.as_ref(), [source_a_id, source_b_id]);
+        assert_eq!(
+            (&gear.body_a_id, &gear.body_b_id),
+            (
+                &scenario_id(&format!("gear-{index}-moving-a")),
+                &scenario_id(&format!("gear-{index}-moving-b")),
+            )
+        );
+        assert!(joint_snapshot_is_nontrivial(gear));
+    }
+}
+
 #[test]
 fn native_phase8_corpus_emits_rope_reconstruction_and_diagnostics() {
     // Arrange
@@ -108,6 +222,44 @@ fn native_phase8_corpus_emits_rope_reconstruction_and_diagnostics() {
             .iter()
             .any(|observation| matches!(observation, RigidWorldObservation::Diagnostics { .. }))
     );
+}
+
+#[test]
+fn native_phase8_solver_only_families_reject_incidental_contacts() {
+    // Arrange
+    let request = request();
+    let solver_only = [
+        RigidWorldWitnessFamily::JointDefinitionsAndMutations,
+        RigidWorldWitnessFamily::RevolutePrismaticLimitsAndMotors,
+        RigidWorldWitnessFamily::DistancePulleyMouseConstraints,
+        RigidWorldWitnessFamily::WheelWeldFrictionRopeMotorConstraints,
+        RigidWorldWitnessFamily::GearDependenciesAndFourBodySolver,
+    ];
+
+    // Act
+    let result = NativeRigidWorldExecutor::execute(&request)
+        .expect("the solver-only corpus should execute without incidental contacts");
+
+    // Assert
+    for family in solver_only {
+        let timeline = result
+            .timelines()
+            .iter()
+            .find(|timeline| timeline.witness_family == family)
+            .expect("solver-only result should exist");
+        assert!(
+            timeline
+                .checkpoints
+                .iter()
+                .all(|checkpoint| checkpoint.contacts.is_empty())
+        );
+        assert!(timeline.checkpoints.iter().all(|checkpoint| {
+            checkpoint
+                .observations
+                .iter()
+                .all(|observation| !matches!(observation, RigidWorldObservation::Lifecycle { .. }))
+        }));
+    }
 }
 
 #[test]
@@ -203,62 +355,216 @@ fn native_phase8_executes_every_closed_joint_mutation() {
     assert!(results.iter().all(Result::is_ok));
 }
 
+fn lifecycle_for(
+    result: &liquidfun_test_protocol::RigidWorldResultRecord,
+    family: RigidWorldWitnessFamily,
+) -> Vec<RigidLifecycleObservation> {
+    result
+        .timelines()
+        .iter()
+        .find(|timeline| timeline.witness_family == family)
+        .expect("requested Phase 8 result should exist")
+        .checkpoints
+        .iter()
+        .flat_map(|checkpoint| &checkpoint.observations)
+        .filter_map(|observation| match observation {
+            RigidWorldObservation::Lifecycle { event } => Some(event.clone()),
+            _ => None,
+        })
+        .collect()
+}
+
+fn scenario_id(value: &str) -> ScenarioId {
+    ScenarioId::new(value).expect("test identity should validate")
+}
+
+fn contact(fixture_a_id: &str, fixture_b_id: &str) -> RigidContactIdentity {
+    RigidContactIdentity::new(
+        scenario_id(fixture_a_id),
+        0,
+        scenario_id(fixture_b_id),
+        0,
+        1,
+    )
+    .expect("test contact identity should validate")
+}
+
+fn contact_event(
+    ordinal: u32,
+    kind: RigidLifecycleObservationKind,
+    contact: &RigidContactIdentity,
+) -> RigidLifecycleObservation {
+    RigidLifecycleObservation {
+        ordinal,
+        kind,
+        maybe_contact: Some(contact.clone()),
+        maybe_entity_id: None,
+    }
+}
+
+fn entity_event(
+    ordinal: u32,
+    kind: RigidLifecycleObservationKind,
+    entity_id: &str,
+) -> RigidLifecycleObservation {
+    RigidLifecycleObservation {
+        ordinal,
+        kind,
+        maybe_contact: None,
+        maybe_entity_id: Some(scenario_id(entity_id)),
+    }
+}
+
 #[test]
-fn native_phase8_applies_filter_and_pre_solve_directives_at_step_time() {
+fn native_phase8_preserves_callback_lifecycle_order_and_multiplicity() {
     // Arrange
-    let mut value = request_value();
-    let timeline = timeline_mut(&mut value, "contact_filter_listener_and_pre_solve_timing");
-    timeline["actions"][5]["action"]["directive"]["enabled"] = json!(false);
-    let actions = timeline["actions"]
-        .as_array_mut()
-        .expect("timeline actions should be an array");
-    actions.insert(
-        6,
-        json!({
-            "action_id": "callback-step",
-            "phase": "callback-step",
-            "action": {
-                "kind": "step",
-                "timestep_bits": RIGID_WORLD_TIMESTEP_BITS,
-                "velocity_iterations": RIGID_WORLD_VELOCITY_ITERATIONS,
-                "position_iterations": RIGID_WORLD_POSITION_ITERATIONS
-            }
-        }),
-    );
-    timeline["checkpoints"][0]["after_action_id"] = json!("callback-step");
-    timeline["checkpoints"][0]["phase"] = json!("callback-step");
-    timeline["checkpoints"][0]["counts"]["contacts"] = json!(1);
-    timeline["checkpoints"][0]["counts"]["manifold_points"] = json!(1);
-    timeline["checkpoints"][0]["counts"]["events"] = json!(3);
-    let request = decode_value(&value);
+    let request = request();
 
     // Act
     let result = NativeRigidWorldExecutor::execute(&request)
-        .expect("callback directives should execute through the native hook");
-    let lifecycle = result
-        .timelines()
-        .iter()
-        .find(|result| {
-            result.witness_family == RigidWorldWitnessFamily::ContactFilterListenerAndPreSolveTiming
-        })
-        .expect("callback result should exist")
-        .checkpoints[0]
-        .observations
-        .iter()
-        .filter_map(|observation| match observation {
-            RigidWorldObservation::Lifecycle { event } => Some(event.kind),
-            _ => None,
-        })
-        .collect::<Vec<_>>();
+        .expect("the callback corpus should execute through the native hook");
+    let lifecycle = lifecycle_for(
+        &result,
+        RigidWorldWitnessFamily::ContactFilterListenerAndPreSolveTiming,
+    );
+    let callback_contact = contact("callback-fa", "callback-fb");
 
     // Assert
     assert_eq!(
         lifecycle,
         [
-            RigidLifecycleObservationKind::FilterDecision,
-            RigidLifecycleObservationKind::ContactCreated,
-            RigidLifecycleObservationKind::BeginContact,
-            RigidLifecycleObservationKind::PreSolve,
+            entity_event(
+                0,
+                RigidLifecycleObservationKind::FilterDecision,
+                "callback-fa"
+            ),
+            entity_event(
+                1,
+                RigidLifecycleObservationKind::FilterDecision,
+                "callback-fa"
+            ),
+            contact_event(
+                2,
+                RigidLifecycleObservationKind::ContactCreated,
+                &callback_contact
+            ),
+            contact_event(
+                3,
+                RigidLifecycleObservationKind::BeginContact,
+                &callback_contact
+            ),
+            contact_event(
+                4,
+                RigidLifecycleObservationKind::PreSolve,
+                &callback_contact
+            ),
+            contact_event(
+                5,
+                RigidLifecycleObservationKind::PostSolve,
+                &callback_contact
+            ),
+            contact_event(
+                6,
+                RigidLifecycleObservationKind::PreSolve,
+                &callback_contact
+            ),
+            contact_event(
+                7,
+                RigidLifecycleObservationKind::PostSolve,
+                &callback_contact
+            ),
+            contact_event(
+                8,
+                RigidLifecycleObservationKind::PreSolve,
+                &callback_contact
+            ),
+        ]
+    );
+}
+
+#[test]
+fn native_phase8_preserves_destruction_lifecycle_order_and_multiplicity() {
+    // Arrange
+    let request = request();
+
+    // Act
+    let result = NativeRigidWorldExecutor::execute(&request)
+        .expect("the destruction corpus should execute through owned mutation reports");
+    let lifecycle = lifecycle_for(
+        &result,
+        RigidWorldWitnessFamily::DestructionListenerAndDependencyCascades,
+    );
+    let touching_contact = contact("destruction-moving-a-fixture", "destruction-base-b-fixture");
+
+    // Assert
+    assert_eq!(
+        lifecycle,
+        [
+            entity_event(
+                0,
+                RigidLifecycleObservationKind::FilterDecision,
+                "destruction-base-a-fixture",
+            ),
+            entity_event(
+                1,
+                RigidLifecycleObservationKind::FilterDecision,
+                "destruction-moving-a-fixture",
+            ),
+            contact_event(
+                2,
+                RigidLifecycleObservationKind::ContactCreated,
+                &touching_contact,
+            ),
+            contact_event(
+                3,
+                RigidLifecycleObservationKind::BeginContact,
+                &touching_contact,
+            ),
+            contact_event(
+                4,
+                RigidLifecycleObservationKind::PreSolve,
+                &touching_contact
+            ),
+            contact_event(
+                5,
+                RigidLifecycleObservationKind::PostSolve,
+                &touching_contact
+            ),
+            contact_event(
+                6,
+                RigidLifecycleObservationKind::PreSolve,
+                &touching_contact
+            ),
+            contact_event(
+                7,
+                RigidLifecycleObservationKind::PostSolve,
+                &touching_contact
+            ),
+            entity_event(
+                8,
+                RigidLifecycleObservationKind::JointGoodbye,
+                "destruction-dependent-gear",
+            ),
+            contact_event(
+                9,
+                RigidLifecycleObservationKind::EndContact,
+                &touching_contact
+            ),
+            contact_event(
+                10,
+                RigidLifecycleObservationKind::ContactDestroyed,
+                &touching_contact,
+            ),
+            entity_event(
+                11,
+                RigidLifecycleObservationKind::FixtureGoodbye,
+                "destruction-moving-b-fixture",
+            ),
+            entity_event(
+                12,
+                RigidLifecycleObservationKind::BodyDestroyed,
+                "destruction-moving-b",
+            ),
         ]
     );
 }

@@ -46,6 +46,19 @@ fn mutated_result(
         .expect("bounded mutation should decode")
 }
 
+fn observation_mut<'a>(
+    value: &'a mut serde_json::Value,
+    timeline_index: usize,
+    kind: &str,
+) -> &'a mut serde_json::Value {
+    value["timelines"][timeline_index]["checkpoints"][0]["observations"]
+        .as_array_mut()
+        .expect("checkpoint observations should be an array")
+        .iter_mut()
+        .find(|observation| observation["kind"] == kind)
+        .expect("strengthened checkpoint should contain the requested observation kind")
+}
+
 #[test]
 fn complete_phase8_result_matches_itself() {
     // Arrange
@@ -68,35 +81,35 @@ fn every_phase8_observation_family_reports_a_first_divergence() {
         (
             "joint-kind",
             Box::new(|value| {
-                value["timelines"][9]["checkpoints"][0]["observations"][0]["snapshot"]["joint_kind"] =
+                observation_mut(value, 9, "joint")["snapshot"]["joint_kind"] =
                     serde_json::Value::String("distance".into());
             }),
         ),
         (
             "joint-coordinate",
             Box::new(|value| {
-                value["timelines"][9]["checkpoints"][0]["observations"][0]["snapshot"]["coordinate_bits"] =
+                observation_mut(value, 9, "joint")["snapshot"]["coordinate_bits"] =
                     serde_json::Value::from(0x3f80_0000_u32);
             }),
         ),
         (
             "rope-vertex",
             Box::new(|value| {
-                value["timelines"][15]["checkpoints"][0]["observations"][0]["snapshot"]["vertices"]
-                    [1]["x_bits"] = serde_json::Value::from(1_u32);
+                observation_mut(value, 15, "rope")["snapshot"]["vertices"][1]["x_bits"] =
+                    serde_json::Value::from(1_u32);
             }),
         ),
         (
             "reconstruction-support",
             Box::new(|value| {
-                value["timelines"][18]["checkpoints"][0]["observations"][0]["record"]["support"] =
+                observation_mut(value, 18, "reconstruction")["record"]["support"] =
                     serde_json::Value::String("unsupported_mouse_joint".into());
             }),
         ),
         (
             "tree-quality",
             Box::new(|value| {
-                value["timelines"][18]["checkpoints"][0]["observations"][4]["snapshot"]["tree_quality_bits"] =
+                observation_mut(value, 18, "diagnostics")["snapshot"]["tree_quality_bits"] =
                     serde_json::Value::from(0_u32);
             }),
         ),
@@ -120,8 +133,8 @@ fn signed_zero_reaction_is_not_collapsed() {
     // Arrange
     let (request, native, phase6, phase7, phase8) = fixtures();
     let oracle = mutated_result(&native, |value| {
-        value["timelines"][9]["checkpoints"][0]["observations"][0]["snapshot"]["reaction_force"]
-            ["x_bits"] = serde_json::Value::from(0x8000_0000_u32);
+        observation_mut(value, 9, "joint")["snapshot"]["reaction_force"]["x_bits"] =
+            serde_json::Value::from(0x8000_0000_u32);
     });
 
     // Act

@@ -76,6 +76,10 @@ pub(super) fn collect_step_report(
     executor: &mut TimelineExecutor,
     report: &StepReport,
 ) -> Result<(), NativeRigidWorldError> {
+    if RigidWorldWitnessFamily::PHASE8_REQUIRED.contains(&executor.family) {
+        return Ok(());
+    }
+
     let mut collected_hook_occurrences = Vec::new();
     for transition in report.contact_transitions() {
         collect_transitions(executor, std::slice::from_ref(transition))?;
@@ -147,6 +151,10 @@ pub(super) fn collect_mutation_report(
     executor: &mut TimelineExecutor,
     report: &DestructionReport,
 ) -> Result<(), NativeRigidWorldError> {
+    if RigidWorldWitnessFamily::PHASE8_REQUIRED.contains(&executor.family) {
+        return Ok(());
+    }
+
     for event in report.lifecycle() {
         match event {
             LifecycleEvent::Contact(transition)

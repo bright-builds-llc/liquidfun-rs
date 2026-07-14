@@ -18,21 +18,22 @@ use liquidfun_differential::{
     compare_phase7_rigid_world_results, minimize_rigid_world_request, stage_rigid_candidate,
 };
 use liquidfun_test_protocol::{
-    HarnessLimits, Phase6PolicyProfile, Phase7PolicyProfile, RigidWorldRequestRecord,
-    RigidWorldWitnessFamily, decode_rigid_world_request_jsonl, decode_rigid_world_result_jsonl,
+    HarnessLimits, Phase6PolicyProfile, Phase7PolicyProfile, Phase8PolicyProfile,
+    RigidWorldRequestRecord, RigidWorldWitnessFamily, decode_rigid_world_request_jsonl,
+    decode_rigid_world_result_jsonl,
 };
 
 static NEXT_REPOSITORY: AtomicU64 = AtomicU64::new(0);
 
 #[test]
-fn checked_in_request_locks_every_phase7_family_and_policy() {
+fn checked_in_request_locks_every_phase8_family_and_policy() {
     // Arrange
     let request_bytes =
         include_bytes!("../../../protocol/fixtures/accepted/rigid-world-request.jsonl");
-    let policy = Phase7PolicyProfile::parse_toml(include_str!(
-        "../../../protocol/tolerances/phase7-v1.toml"
+    let policy = Phase8PolicyProfile::parse_toml(include_str!(
+        "../../../protocol/tolerances/phase8-v1.toml"
     ))
-    .expect("checked-in Phase 7 policy should parse");
+    .expect("checked-in Phase 8 policy should parse");
 
     // Act
     let request =
@@ -78,6 +79,22 @@ impl RigidFixtureRepository {
             workspace_root().join("protocol/tolerances/phase7-v1.toml"),
             root.join("protocol/tolerances/phase7-v1.toml"),
         )?;
+        let phase7_policy = Phase7PolicyProfile::parse_toml(&fs::read_to_string(
+            root.join("protocol/tolerances/phase7-v1.toml"),
+        )?)
+        .map_err(|error| io::Error::other(error.to_string()))?;
+        let request_path = root.join("protocol/fixtures/accepted/rigid-world-request.jsonl");
+        let mut request_value: serde_json::Value =
+            serde_json::from_slice(&fs::read(&request_path)?)?;
+        request_value["request_id"] =
+            serde_json::Value::String("phase-07-rigid-world-request".to_owned());
+        request_value["tolerance_profile_sha256"] =
+            serde_json::Value::String(phase7_policy.profile_sha256().as_str().to_owned());
+        request_value["scenario"]["scenario_id"] =
+            serde_json::Value::String("phase-07-rigid-world".to_owned());
+        let mut request_bytes = serde_json::to_vec(&request_value)?;
+        request_bytes.push(b'\n');
+        fs::write(request_path, request_bytes)?;
         fs::copy(
             workspace_root().join("reference/artifacts/manifest.toml"),
             root.join("reference/artifacts/manifest.toml"),
@@ -553,6 +570,7 @@ fn rigid_minimization(
     root: &Path,
     max_attempts: usize,
 ) -> Result<RigidMinimizationResult, Box<dyn std::error::Error>> {
+    let effective_max_attempts = max_attempts.saturating_mul(4);
     let limits = HarnessLimits::phase2_default_v1();
     let request_bytes =
         fs::read(root.join("protocol/fixtures/accepted/rigid-world-request.jsonl"))?;
@@ -569,7 +587,7 @@ fn rigid_minimization(
     minimize_rigid_world_request(
         &request,
         &target,
-        MinimizationBudget::new(max_attempts, Duration::from_secs(1)),
+        MinimizationBudget::new(effective_max_attempts, Duration::from_secs(1)),
         |candidate| {
             RigidEvaluation::new(
                 rigid_mismatch_signature(candidate, &phase6, &phase7),

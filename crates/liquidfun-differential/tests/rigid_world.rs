@@ -287,7 +287,7 @@ fn native_executes_closed_phase7_actions_and_emits_semantic_observations() {
 }
 
 #[test]
-fn oracle_executes_phase8_after_the_plan_08_13_adapter() {
+fn oracle_rejects_step_bearing_phase8_until_plan_08_21() {
     // Arrange
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let Ok(executable) = OracleExecutable::resolve(&root, OraclePreset::Debug) else {
@@ -296,12 +296,16 @@ fn oracle_executes_phase8_after_the_plan_08_13_adapter() {
     let request = support::phase7_request();
 
     // Act
-    let captured = execute_rigid_world_process(&executable, &request, REVISION)
-        .expect("Phase 8 should execute through the C++ adapter");
+    let error = execute_rigid_world_process(&executable, &request, REVISION)
+        .expect_err("the pre-08-21 C++ adapter must reject step-bearing Phase 8 actions");
 
     // Assert
-    assert!(captured.reset_verified());
-    assert_eq!(captured.result().timelines().len(), 19);
+    assert_eq!(
+        error.retained_stderr(),
+        b"liquidfun-reference: unsupported Phase 8 execution action\n"
+    );
+    assert!(error.child_killed());
+    assert!(error.child_reaped());
 }
 
 #[test]
@@ -908,7 +912,7 @@ fn comparison_never_canonicalizes_manager_report_or_destruction_order() {
 }
 
 #[test]
-fn supervisor_accepts_phase8_with_the_plan_08_13_oracle() {
+fn supervisor_fails_closed_before_the_step_bearing_oracle_is_available() {
     // Arrange
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let Ok(executable) = OracleExecutable::resolve(&root, OraclePreset::Debug) else {
@@ -917,12 +921,16 @@ fn supervisor_accepts_phase8_with_the_plan_08_13_oracle() {
     let request = request();
 
     // Act
-    let captured = execute_rigid_world_process(&executable, &request, REVISION)
-        .expect("Phase 8 must execute through the reviewed oracle");
+    let error = execute_rigid_world_process(&executable, &request, REVISION)
+        .expect_err("the supervisor must reject the unsupported step-bearing request");
 
     // Assert
-    assert!(captured.reset_verified());
-    assert_eq!(captured.result().timelines().len(), 19);
+    assert_eq!(
+        error.retained_stderr(),
+        b"liquidfun-reference: unsupported Phase 8 execution action\n"
+    );
+    assert!(error.child_killed());
+    assert!(error.child_reaped());
 }
 
 #[test]

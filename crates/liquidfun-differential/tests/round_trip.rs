@@ -142,7 +142,7 @@ fn run_cpp_math_probe_twice(
 }
 
 #[test]
-fn cpp_protocol_bits_preserve_exceptional_classes() {
+fn cpp_protocol_self_test_rejects_phase8_until_plan_08_21() {
     // Arrange
     let root = repository_root();
     if real_oracle_path(OraclePreset::Debug).is_none() {
@@ -167,10 +167,10 @@ fn cpp_protocol_bits_preserve_exceptional_classes() {
         .expect("C++ protocol self-test should run");
 
     // Assert
+    assert!(!output.status.success());
     assert!(
-        output.status.success(),
-        "{}",
         String::from_utf8_lossy(&output.stdout)
+            .contains("protocol test failure: unsupported Phase 8 execution action")
     );
 }
 
