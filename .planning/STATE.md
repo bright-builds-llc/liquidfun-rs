@@ -3,15 +3,15 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 08-20-PLAN.md
-last_updated: "2026-07-14T05:35:51.522Z"
+stopped_at: Completed 08-21-PLAN.md
+last_updated: "2026-07-14T05:57:11.396Z"
 last_activity: "2026-07-14"
 progress:
   total_phases: 12
   completed_phases: 7
   total_plans: 98
-  completed_plans: 94
-  percent: 96
+  completed_plans: 95
+  percent: 97
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 ## Current Position
 
 Phase: 8
-Plan: 20 of 24
+Plan: 21 of 24
 Status: Ready to execute
 Last activity: 2026-07-14
 
@@ -121,6 +121,7 @@ Progress: [█░░░░░░░░░] 6%
 | Phase 08 P18 | 12min | 1 tasks | 7 files |
 | Phase 08 P19 | 60min | 1 tasks | 12 files |
 | Phase 08 P20 | 40min | 1 tasks | 9 files |
+| Phase 08 P21 | 20min | 1 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -275,6 +276,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 08]: Soft weld applies its angular impulse before deriving linear point velocity. — The pinned soft branch mutates angular velocities first, so the later point constraint must observe those candidates.
 - [Phase 08]: Merge repeated gear solver roles by physical body before candidate commit — Semantic A/B/C/D contributions must not overwrite one another when source base lanes alias
 - [Phase 08]: Commit only complete typed joint runtimes — Removing the temporary generic cache makes exhaustive live-family dispatch structural
+- [Phase 08]: Capture Phase 8 C++ lifecycle evidence only from live pinned contacts and listener invocations. — Keeps callback order causal while solver-only timelines reject incidental fixture pairs.
+- [Phase 08]: Touch fixture proxies after removing a collision-suppressing joint. — The strengthened mixed-joint witness must deterministically reconsider a pair that had no preexisting contact.
+- [Phase 08]: Derive C++ Phase 8 checkpoint counts from actual pinned state before emission. — Declaration-only counts could otherwise conceal malformed contact evidence.
 
 ### Pending Todos
 
@@ -288,6 +292,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-14T05:35:51.519Z
-Stopped at: Completed 08-20-PLAN.md
+Last session: 2026-07-14T05:56:36.864Z
+Stopped at: Completed 08-21-PLAN.md
 Resume file: None
