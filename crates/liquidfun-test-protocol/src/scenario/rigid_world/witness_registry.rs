@@ -14,6 +14,16 @@ pub enum RigidWorldWitnessFamily {
     ContinuousBudgetResume,
     WorldQueryAndRayCast,
     OriginShiftCovariance,
+    JointDefinitionsAndMutations,
+    RevolutePrismaticLimitsAndMotors,
+    DistancePulleyMouseConstraints,
+    WheelWeldFrictionRopeMotorConstraints,
+    GearDependenciesAndFourBodySolver,
+    MixedJointIslandOrderAndCollisionSuppression,
+    StandaloneRopeEvolution,
+    ContactFilterListenerAndPreSolveTiming,
+    DestructionListenerAndDependencyCascades,
+    DiagnosticReconstructionAndDumpOrder,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -101,7 +111,38 @@ pub enum RigidWorldWitness {
     OriginShiftPreservedQueryHits,
     OriginShiftPreservedRayFractionsAndNormals,
     OriginShiftPreservedTopology,
+    JointDefinitionsAndMutationsCovered,
+    RevolutePrismaticLimitsAndMotorsCovered,
+    DistancePulleyMouseConstraintsCovered,
+    WheelWeldFrictionRopeMotorConstraintsCovered,
+    GearDependenciesAndFourBodySolverCovered,
+    MixedJointIslandOrderAndCollisionSuppressionCovered,
+    StandaloneRopeEvolutionCovered,
+    ContactFilterListenerAndPreSolveTimingCovered,
+    DestructionListenerAndDependencyCascadesCovered,
+    DiagnosticReconstructionAndDumpOrderCovered,
 }
+
+const JOINT_DEFINITION_WITNESSES: [RigidWorldWitness; 1] =
+    [RigidWorldWitness::JointDefinitionsAndMutationsCovered];
+const REVOLUTE_PRISMATIC_WITNESSES: [RigidWorldWitness; 1] =
+    [RigidWorldWitness::RevolutePrismaticLimitsAndMotorsCovered];
+const DISTANCE_PULLEY_MOUSE_WITNESSES: [RigidWorldWitness; 1] =
+    [RigidWorldWitness::DistancePulleyMouseConstraintsCovered];
+const COUPLED_JOINT_WITNESSES: [RigidWorldWitness; 1] =
+    [RigidWorldWitness::WheelWeldFrictionRopeMotorConstraintsCovered];
+const GEAR_WITNESSES: [RigidWorldWitness; 1] =
+    [RigidWorldWitness::GearDependenciesAndFourBodySolverCovered];
+const MIXED_JOINT_WITNESSES: [RigidWorldWitness; 1] =
+    [RigidWorldWitness::MixedJointIslandOrderAndCollisionSuppressionCovered];
+const STANDALONE_ROPE_WITNESSES: [RigidWorldWitness; 1] =
+    [RigidWorldWitness::StandaloneRopeEvolutionCovered];
+const CALLBACK_TIMING_WITNESSES: [RigidWorldWitness; 1] =
+    [RigidWorldWitness::ContactFilterListenerAndPreSolveTimingCovered];
+const DESTRUCTION_TIMING_WITNESSES: [RigidWorldWitness; 1] =
+    [RigidWorldWitness::DestructionListenerAndDependencyCascadesCovered];
+const DIAGNOSTIC_WITNESSES: [RigidWorldWitness; 1] =
+    [RigidWorldWitness::DiagnosticReconstructionAndDumpOrderCovered];
 
 const NON_COLLIDING_WITNESSES: [RigidWorldWitness; 22] = [
     RigidWorldWitness::StaticBodyCreated,
@@ -313,6 +354,36 @@ const ORIGIN_SHIFT_ACTIONS: [RigidWorldActionKind; 5] = [
     RigidWorldActionKind::ShiftOrigin,
 ];
 
+const JOINT_DEFINITION_ACTIONS: [RigidWorldActionKind; 4] = [
+    RigidWorldActionKind::CreateJoint,
+    RigidWorldActionKind::InspectJoint,
+    RigidWorldActionKind::MutateJoint,
+    RigidWorldActionKind::DestroyJoint,
+];
+const JOINT_EXECUTION_ACTIONS: [RigidWorldActionKind; 2] = [
+    RigidWorldActionKind::CreateJoint,
+    RigidWorldActionKind::DestroyJoint,
+];
+const ROPE_ACTIONS: [RigidWorldActionKind; 5] = [
+    RigidWorldActionKind::CreateRope,
+    RigidWorldActionKind::SetRopeAngle,
+    RigidWorldActionKind::StepRope,
+    RigidWorldActionKind::InspectRope,
+    RigidWorldActionKind::DestroyRope,
+];
+const CALLBACK_ACTIONS: [RigidWorldActionKind; 2] = [
+    RigidWorldActionKind::SetContactFilterDirective,
+    RigidWorldActionKind::SetPreSolveDirective,
+];
+const DESTRUCTION_ACTIONS: [RigidWorldActionKind; 2] = [
+    RigidWorldActionKind::CreateJoint,
+    RigidWorldActionKind::DestroyBody,
+];
+const DIAGNOSTIC_ACTIONS: [RigidWorldActionKind; 2] = [
+    RigidWorldActionKind::RequestReconstruction,
+    RigidWorldActionKind::RequestDiagnostics,
+];
+
 impl RigidWorldWitnessFamily {
     pub const REQUIRED: [Self; 2] = [
         Self::NonCollidingBodyFixtureLifecycle,
@@ -320,7 +391,7 @@ impl RigidWorldWitnessFamily {
     ];
 
     /// Complete closed registry used by generated schema and Phase 7 evidence.
-    pub const ALL: [Self; 9] = [
+    pub const ALL: [Self; 19] = [
         Self::NonCollidingBodyFixtureLifecycle,
         Self::SingleContactLifecycle,
         Self::BodyControlAndForcePolicy,
@@ -330,6 +401,16 @@ impl RigidWorldWitnessFamily {
         Self::ContinuousBudgetResume,
         Self::WorldQueryAndRayCast,
         Self::OriginShiftCovariance,
+        Self::JointDefinitionsAndMutations,
+        Self::RevolutePrismaticLimitsAndMotors,
+        Self::DistancePulleyMouseConstraints,
+        Self::WheelWeldFrictionRopeMotorConstraints,
+        Self::GearDependenciesAndFourBodySolver,
+        Self::MixedJointIslandOrderAndCollisionSuppression,
+        Self::StandaloneRopeEvolution,
+        Self::ContactFilterListenerAndPreSolveTiming,
+        Self::DestructionListenerAndDependencyCascades,
+        Self::DiagnosticReconstructionAndDumpOrder,
     ];
 
     /// Phase 7 witness families without the retained Phase 6 compatibility corpus.
@@ -341,6 +422,20 @@ impl RigidWorldWitnessFamily {
         Self::ContinuousBudgetResume,
         Self::WorldQueryAndRayCast,
         Self::OriginShiftCovariance,
+    ];
+
+    /// New Phase 8 witness families without the retained Phase 6/7 corpus.
+    pub const PHASE8_REQUIRED: [Self; 10] = [
+        Self::JointDefinitionsAndMutations,
+        Self::RevolutePrismaticLimitsAndMotors,
+        Self::DistancePulleyMouseConstraints,
+        Self::WheelWeldFrictionRopeMotorConstraints,
+        Self::GearDependenciesAndFourBodySolver,
+        Self::MixedJointIslandOrderAndCollisionSuppression,
+        Self::StandaloneRopeEvolution,
+        Self::ContactFilterListenerAndPreSolveTiming,
+        Self::DestructionListenerAndDependencyCascades,
+        Self::DiagnosticReconstructionAndDumpOrder,
     ];
 
     #[must_use]
@@ -355,6 +450,16 @@ impl RigidWorldWitnessFamily {
             Self::ContinuousBudgetResume => &BUDGET_WITNESSES,
             Self::WorldQueryAndRayCast => &QUERY_RAY_WITNESSES,
             Self::OriginShiftCovariance => &ORIGIN_SHIFT_WITNESSES,
+            Self::JointDefinitionsAndMutations => &JOINT_DEFINITION_WITNESSES,
+            Self::RevolutePrismaticLimitsAndMotors => &REVOLUTE_PRISMATIC_WITNESSES,
+            Self::DistancePulleyMouseConstraints => &DISTANCE_PULLEY_MOUSE_WITNESSES,
+            Self::WheelWeldFrictionRopeMotorConstraints => &COUPLED_JOINT_WITNESSES,
+            Self::GearDependenciesAndFourBodySolver => &GEAR_WITNESSES,
+            Self::MixedJointIslandOrderAndCollisionSuppression => &MIXED_JOINT_WITNESSES,
+            Self::StandaloneRopeEvolution => &STANDALONE_ROPE_WITNESSES,
+            Self::ContactFilterListenerAndPreSolveTiming => &CALLBACK_TIMING_WITNESSES,
+            Self::DestructionListenerAndDependencyCascades => &DESTRUCTION_TIMING_WITNESSES,
+            Self::DiagnosticReconstructionAndDumpOrder => &DIAGNOSTIC_WITNESSES,
         }
     }
 
@@ -369,6 +474,16 @@ impl RigidWorldWitnessFamily {
             Self::ContinuousBudgetResume => &BUDGET_ACTIONS,
             Self::WorldQueryAndRayCast => &QUERY_RAY_ACTIONS,
             Self::OriginShiftCovariance => &ORIGIN_SHIFT_ACTIONS,
+            Self::JointDefinitionsAndMutations => &JOINT_DEFINITION_ACTIONS,
+            Self::RevolutePrismaticLimitsAndMotors
+            | Self::DistancePulleyMouseConstraints
+            | Self::WheelWeldFrictionRopeMotorConstraints
+            | Self::GearDependenciesAndFourBodySolver
+            | Self::MixedJointIslandOrderAndCollisionSuppression => &JOINT_EXECUTION_ACTIONS,
+            Self::StandaloneRopeEvolution => &ROPE_ACTIONS,
+            Self::ContactFilterListenerAndPreSolveTiming => &CALLBACK_ACTIONS,
+            Self::DestructionListenerAndDependencyCascades => &DESTRUCTION_ACTIONS,
+            Self::DiagnosticReconstructionAndDumpOrder => &DIAGNOSTIC_ACTIONS,
         }
     }
 }
@@ -428,5 +543,11 @@ mod tests {
         assert!(witnesses.contains(&RigidWorldWitness::RayEqualFractionTieSet));
         assert!(witnesses.contains(&RigidWorldWitness::ContinuousBudgetResumeCompleted));
         assert!(witnesses.contains(&RigidWorldWitness::OriginShiftPreservedTopology));
+        assert_eq!(RigidWorldWitnessFamily::ALL.len(), 19);
+        assert_eq!(RigidWorldWitnessFamily::PHASE8_REQUIRED.len(), 10);
+        assert!(witnesses.contains(&RigidWorldWitness::StandaloneRopeEvolutionCovered));
+        assert!(
+            witnesses.contains(&RigidWorldWitness::DiagnosticReconstructionAndDumpOrderCovered)
+        );
     }
 }

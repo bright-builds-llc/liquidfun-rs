@@ -3577,6 +3577,641 @@
                         {
                           "additionalProperties": false,
                           "properties": {
+                            "joint_id": {
+                              "maxLength": 128,
+                              "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                              "type": "string"
+                            },
+                            "kind": {
+                              "const": "create_joint"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "joint_id"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "joint_id": {
+                              "maxLength": 128,
+                              "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                              "type": "string"
+                            },
+                            "kind": {
+                              "const": "inspect_joint"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "joint_id"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "joint_id": {
+                              "maxLength": 128,
+                              "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                              "type": "string"
+                            },
+                            "kind": {
+                              "const": "mutate_joint"
+                            },
+                            "mutation": {
+                              "oneOf": [
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "enabled": {
+                                      "type": "boolean"
+                                    },
+                                    "kind": {
+                                      "const": "limit_enabled"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "enabled"
+                                  ],
+                                  "type": "object"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "kind": {
+                                      "const": "limits"
+                                    },
+                                    "lower_bits": {
+                                      "maximum": 4294967295,
+                                      "minimum": 0,
+                                      "type": "integer"
+                                    },
+                                    "upper_bits": {
+                                      "maximum": 4294967295,
+                                      "minimum": 0,
+                                      "type": "integer"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "lower_bits",
+                                    "upper_bits"
+                                  ],
+                                  "type": "object"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "enabled": {
+                                      "type": "boolean"
+                                    },
+                                    "kind": {
+                                      "const": "motor_enabled"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "enabled"
+                                  ],
+                                  "type": "object"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "kind": {
+                                      "const": "motor_speed"
+                                    },
+                                    "speed_bits": {
+                                      "maximum": 4294967295,
+                                      "minimum": 0,
+                                      "type": "integer"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "speed_bits"
+                                  ],
+                                  "type": "object"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "force_bits": {
+                                      "maximum": 4294967295,
+                                      "minimum": 0,
+                                      "type": "integer"
+                                    },
+                                    "kind": {
+                                      "const": "max_motor_force"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "force_bits"
+                                  ],
+                                  "type": "object"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "kind": {
+                                      "const": "max_motor_torque"
+                                    },
+                                    "torque_bits": {
+                                      "maximum": 4294967295,
+                                      "minimum": 0,
+                                      "type": "integer"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "torque_bits"
+                                  ],
+                                  "type": "object"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "kind": {
+                                      "const": "length"
+                                    },
+                                    "length_bits": {
+                                      "maximum": 4294967295,
+                                      "minimum": 0,
+                                      "type": "integer"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "length_bits"
+                                  ],
+                                  "type": "object"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "frequency_bits": {
+                                      "maximum": 4294967295,
+                                      "minimum": 0,
+                                      "type": "integer"
+                                    },
+                                    "kind": {
+                                      "const": "frequency"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "frequency_bits"
+                                  ],
+                                  "type": "object"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "damping_ratio_bits": {
+                                      "maximum": 4294967295,
+                                      "minimum": 0,
+                                      "type": "integer"
+                                    },
+                                    "kind": {
+                                      "const": "damping_ratio"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "damping_ratio_bits"
+                                  ],
+                                  "type": "object"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "kind": {
+                                      "const": "mouse_target"
+                                    },
+                                    "target": {
+                                      "$ref": "#/$defs/vec2_bits"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "target"
+                                  ],
+                                  "type": "object"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "force_bits": {
+                                      "maximum": 4294967295,
+                                      "minimum": 0,
+                                      "type": "integer"
+                                    },
+                                    "kind": {
+                                      "const": "max_force"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "force_bits"
+                                  ],
+                                  "type": "object"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "kind": {
+                                      "const": "max_torque"
+                                    },
+                                    "torque_bits": {
+                                      "maximum": 4294967295,
+                                      "minimum": 0,
+                                      "type": "integer"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "torque_bits"
+                                  ],
+                                  "type": "object"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "kind": {
+                                      "const": "gear_ratio"
+                                    },
+                                    "ratio_bits": {
+                                      "maximum": 4294967295,
+                                      "minimum": 0,
+                                      "type": "integer"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "ratio_bits"
+                                  ],
+                                  "type": "object"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "kind": {
+                                      "const": "rope_max_length"
+                                    },
+                                    "max_length_bits": {
+                                      "maximum": 4294967295,
+                                      "minimum": 0,
+                                      "type": "integer"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "max_length_bits"
+                                  ],
+                                  "type": "object"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "kind": {
+                                      "const": "linear_offset"
+                                    },
+                                    "offset": {
+                                      "$ref": "#/$defs/vec2_bits"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "offset"
+                                  ],
+                                  "type": "object"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "kind": {
+                                      "const": "angular_offset"
+                                    },
+                                    "offset_bits": {
+                                      "maximum": 4294967295,
+                                      "minimum": 0,
+                                      "type": "integer"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "offset_bits"
+                                  ],
+                                  "type": "object"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "factor_bits": {
+                                      "maximum": 4294967295,
+                                      "minimum": 0,
+                                      "type": "integer"
+                                    },
+                                    "kind": {
+                                      "const": "correction_factor"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "factor_bits"
+                                  ],
+                                  "type": "object"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "joint_id",
+                            "mutation"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "joint_id": {
+                              "maxLength": 128,
+                              "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                              "type": "string"
+                            },
+                            "kind": {
+                              "const": "destroy_joint"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "joint_id"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "const": "create_rope"
+                            },
+                            "rope_id": {
+                              "maxLength": 128,
+                              "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "rope_id"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "angle_bits": {
+                              "maximum": 4294967295,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "kind": {
+                              "const": "set_rope_angle"
+                            },
+                            "rope_id": {
+                              "maxLength": 128,
+                              "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "rope_id",
+                            "angle_bits"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "iterations": {
+                              "maximum": 1024,
+                              "minimum": 1,
+                              "type": "integer"
+                            },
+                            "kind": {
+                              "const": "step_rope"
+                            },
+                            "rope_id": {
+                              "maxLength": 128,
+                              "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                              "type": "string"
+                            },
+                            "timestep_bits": {
+                              "maximum": 4294967295,
+                              "minimum": 0,
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "rope_id",
+                            "timestep_bits",
+                            "iterations"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "const": "inspect_rope"
+                            },
+                            "rope_id": {
+                              "maxLength": 128,
+                              "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "rope_id"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "const": "destroy_rope"
+                            },
+                            "rope_id": {
+                              "maxLength": 128,
+                              "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "rope_id"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "const": "set_contact_filter_directive"
+                            },
+                            "should_collide": {
+                              "type": "boolean"
+                            },
+                            "target": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "fixture_a_id": {
+                                  "maxLength": 128,
+                                  "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                  "type": "string"
+                                },
+                                "fixture_b_id": {
+                                  "maxLength": 128,
+                                  "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "fixture_a_id",
+                                "fixture_b_id"
+                              ],
+                              "type": "object"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "target",
+                            "should_collide"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "directive": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "enabled": {
+                                  "type": "boolean"
+                                },
+                                "maybe_friction_bits": {
+                                  "oneOf": [
+                                    {
+                                      "maximum": 4294967295,
+                                      "minimum": 0,
+                                      "type": "integer"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "maybe_restitution_bits": {
+                                  "oneOf": [
+                                    {
+                                      "maximum": 4294967295,
+                                      "minimum": 0,
+                                      "type": "integer"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "maybe_tangent_speed_bits": {
+                                  "oneOf": [
+                                    {
+                                      "maximum": 4294967295,
+                                      "minimum": 0,
+                                      "type": "integer"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "enabled",
+                                "maybe_friction_bits",
+                                "maybe_restitution_bits",
+                                "maybe_tangent_speed_bits"
+                              ],
+                              "type": "object"
+                            },
+                            "kind": {
+                              "const": "set_pre_solve_directive"
+                            },
+                            "target": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "fixture_a_id": {
+                                  "maxLength": 128,
+                                  "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                  "type": "string"
+                                },
+                                "fixture_b_id": {
+                                  "maxLength": 128,
+                                  "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "fixture_a_id",
+                                "fixture_b_id"
+                              ],
+                              "type": "object"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "target",
+                            "directive"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "const": "request_reconstruction"
+                            }
+                          },
+                          "required": [
+                            "kind"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "const": "request_diagnostics"
+                            }
+                          },
+                          "required": [
+                            "kind"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
                             "fixture_id": {
                               "maxLength": 128,
                               "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
@@ -3864,7 +4499,17 @@
                               "origin_shift_translated_bodies",
                               "origin_shift_preserved_query_hits",
                               "origin_shift_preserved_ray_fractions_and_normals",
-                              "origin_shift_preserved_topology"
+                              "origin_shift_preserved_topology",
+                              "joint_definitions_and_mutations_covered",
+                              "revolute_prismatic_limits_and_motors_covered",
+                              "distance_pulley_mouse_constraints_covered",
+                              "wheel_weld_friction_rope_motor_constraints_covered",
+                              "gear_dependencies_and_four_body_solver_covered",
+                              "mixed_joint_island_order_and_collision_suppression_covered",
+                              "standalone_rope_evolution_covered",
+                              "contact_filter_listener_and_pre_solve_timing_covered",
+                              "destruction_listener_and_dependency_cascades_covered",
+                              "diagnostic_reconstruction_and_dump_order_covered"
                             ]
                           }
                         },
@@ -4013,6 +4658,561 @@
                 "minItems": 1,
                 "type": "array"
               },
+              "joints": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "body_a_id": {
+                      "maxLength": 128,
+                      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                      "type": "string"
+                    },
+                    "body_b_id": {
+                      "maxLength": 128,
+                      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                      "type": "string"
+                    },
+                    "collide_connected": {
+                      "type": "boolean"
+                    },
+                    "definition": {
+                      "oneOf": [
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "const": "revolute"
+                            },
+                            "limit_enabled": {
+                              "type": "boolean"
+                            },
+                            "local_anchor_a": {
+                              "$ref": "#/$defs/vec2_bits"
+                            },
+                            "local_anchor_b": {
+                              "$ref": "#/$defs/vec2_bits"
+                            },
+                            "lower_angle_bits": {
+                              "maximum": 4294967295,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "max_motor_torque_bits": {
+                              "maximum": 4294967295,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "motor_enabled": {
+                              "type": "boolean"
+                            },
+                            "motor_speed_bits": {
+                              "maximum": 4294967295,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "reference_angle_bits": {
+                              "maximum": 4294967295,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "upper_angle_bits": {
+                              "maximum": 4294967295,
+                              "minimum": 0,
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "local_anchor_a",
+                            "local_anchor_b",
+                            "reference_angle_bits",
+                            "lower_angle_bits",
+                            "upper_angle_bits",
+                            "motor_speed_bits",
+                            "max_motor_torque_bits",
+                            "limit_enabled",
+                            "motor_enabled"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "const": "prismatic"
+                            },
+                            "limit_enabled": {
+                              "type": "boolean"
+                            },
+                            "local_anchor_a": {
+                              "$ref": "#/$defs/vec2_bits"
+                            },
+                            "local_anchor_b": {
+                              "$ref": "#/$defs/vec2_bits"
+                            },
+                            "local_axis_a": {
+                              "$ref": "#/$defs/vec2_bits"
+                            },
+                            "lower_translation_bits": {
+                              "maximum": 4294967295,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "max_motor_force_bits": {
+                              "maximum": 4294967295,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "motor_enabled": {
+                              "type": "boolean"
+                            },
+                            "motor_speed_bits": {
+                              "maximum": 4294967295,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "reference_angle_bits": {
+                              "maximum": 4294967295,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "upper_translation_bits": {
+                              "maximum": 4294967295,
+                              "minimum": 0,
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "local_anchor_a",
+                            "local_anchor_b",
+                            "local_axis_a",
+                            "reference_angle_bits",
+                            "lower_translation_bits",
+                            "upper_translation_bits",
+                            "motor_speed_bits",
+                            "max_motor_force_bits",
+                            "limit_enabled",
+                            "motor_enabled"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "damping_ratio_bits": {
+                              "maximum": 4294967295,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "frequency_bits": {
+                              "maximum": 4294967295,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "kind": {
+                              "const": "distance"
+                            },
+                            "length_bits": {
+                              "maximum": 4294967295,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "local_anchor_a": {
+                              "$ref": "#/$defs/vec2_bits"
+                            },
+                            "local_anchor_b": {
+                              "$ref": "#/$defs/vec2_bits"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "local_anchor_a",
+                            "local_anchor_b",
+                            "length_bits",
+                            "frequency_bits",
+                            "damping_ratio_bits"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "ground_anchor_a": {
+                              "$ref": "#/$defs/vec2_bits"
+                            },
+                            "ground_anchor_b": {
+                              "$ref": "#/$defs/vec2_bits"
+                            },
+                            "kind": {
+                              "const": "pulley"
+                            },
+                            "length_a_bits": {
+                              "maximum": 4294967295,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "length_b_bits": {
+                              "maximum": 4294967295,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "local_anchor_a": {
+                              "$ref": "#/$defs/vec2_bits"
+                            },
+                            "local_anchor_b": {
+                              "$ref": "#/$defs/vec2_bits"
+                            },
+                            "ratio_bits": {
+                              "maximum": 4294967295,
+                              "minimum": 0,
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "ground_anchor_a",
+                            "ground_anchor_b",
+                            "local_anchor_a",
+                            "local_anchor_b",
+                            "length_a_bits",
+                            "length_b_bits",
+                            "ratio_bits"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "damping_ratio_bits": {
+                              "maximum": 4294967295,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "frequency_bits": {
+                              "maximum": 4294967295,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "kind": {
+                              "const": "mouse"
+                            },
+                            "max_force_bits": {
+                              "maximum": 4294967295,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "target": {
+                              "$ref": "#/$defs/vec2_bits"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "target",
+                            "max_force_bits",
+                            "frequency_bits",
+                            "damping_ratio_bits"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "joint_a_id": {
+                              "maxLength": 128,
+                              "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                              "type": "string"
+                            },
+                            "joint_b_id": {
+                              "maxLength": 128,
+                              "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                              "type": "string"
+                            },
+                            "kind": {
+                              "const": "gear"
+                            },
+                            "ratio_bits": {
+                              "maximum": 4294967295,
+                              "minimum": 0,
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "joint_a_id",
+                            "joint_b_id",
+                            "ratio_bits"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "damping_ratio_bits": {
+                              "maximum": 4294967295,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "frequency_bits": {
+                              "maximum": 4294967295,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "kind": {
+                              "const": "wheel"
+                            },
+                            "local_anchor_a": {
+                              "$ref": "#/$defs/vec2_bits"
+                            },
+                            "local_anchor_b": {
+                              "$ref": "#/$defs/vec2_bits"
+                            },
+                            "local_axis_a": {
+                              "$ref": "#/$defs/vec2_bits"
+                            },
+                            "max_motor_torque_bits": {
+                              "maximum": 4294967295,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "motor_enabled": {
+                              "type": "boolean"
+                            },
+                            "motor_speed_bits": {
+                              "maximum": 4294967295,
+                              "minimum": 0,
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "local_anchor_a",
+                            "local_anchor_b",
+                            "local_axis_a",
+                            "motor_speed_bits",
+                            "max_motor_torque_bits",
+                            "frequency_bits",
+                            "damping_ratio_bits",
+                            "motor_enabled"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "damping_ratio_bits": {
+                              "maximum": 4294967295,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "frequency_bits": {
+                              "maximum": 4294967295,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "kind": {
+                              "const": "weld"
+                            },
+                            "local_anchor_a": {
+                              "$ref": "#/$defs/vec2_bits"
+                            },
+                            "local_anchor_b": {
+                              "$ref": "#/$defs/vec2_bits"
+                            },
+                            "reference_angle_bits": {
+                              "maximum": 4294967295,
+                              "minimum": 0,
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "local_anchor_a",
+                            "local_anchor_b",
+                            "reference_angle_bits",
+                            "frequency_bits",
+                            "damping_ratio_bits"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "const": "friction"
+                            },
+                            "local_anchor_a": {
+                              "$ref": "#/$defs/vec2_bits"
+                            },
+                            "local_anchor_b": {
+                              "$ref": "#/$defs/vec2_bits"
+                            },
+                            "max_force_bits": {
+                              "maximum": 4294967295,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "max_torque_bits": {
+                              "maximum": 4294967295,
+                              "minimum": 0,
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "local_anchor_a",
+                            "local_anchor_b",
+                            "max_force_bits",
+                            "max_torque_bits"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "const": "rope"
+                            },
+                            "local_anchor_a": {
+                              "$ref": "#/$defs/vec2_bits"
+                            },
+                            "local_anchor_b": {
+                              "$ref": "#/$defs/vec2_bits"
+                            },
+                            "max_length_bits": {
+                              "maximum": 4294967295,
+                              "minimum": 0,
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "local_anchor_a",
+                            "local_anchor_b",
+                            "max_length_bits"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "angular_offset_bits": {
+                              "maximum": 4294967295,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "correction_factor_bits": {
+                              "maximum": 4294967295,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "kind": {
+                              "const": "motor"
+                            },
+                            "linear_offset": {
+                              "$ref": "#/$defs/vec2_bits"
+                            },
+                            "max_force_bits": {
+                              "maximum": 4294967295,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "max_torque_bits": {
+                              "maximum": 4294967295,
+                              "minimum": 0,
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "linear_offset",
+                            "angular_offset_bits",
+                            "max_force_bits",
+                            "max_torque_bits",
+                            "correction_factor_bits"
+                          ],
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    "joint_id": {
+                      "maxLength": 128,
+                      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "joint_id",
+                    "body_a_id",
+                    "body_b_id",
+                    "collide_connected",
+                    "definition"
+                  ],
+                  "type": "object"
+                },
+                "maxItems": 64,
+                "type": "array"
+              },
+              "ropes": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "bend_stiffness_bits": {
+                      "maximum": 4294967295,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "damping_bits": {
+                      "maximum": 4294967295,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "gravity": {
+                      "$ref": "#/$defs/vec2_bits"
+                    },
+                    "masses_bits": {
+                      "items": {
+                        "maximum": 4294967295,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "maxItems": 64,
+                      "minItems": 2,
+                      "type": "array"
+                    },
+                    "rope_id": {
+                      "maxLength": 128,
+                      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                      "type": "string"
+                    },
+                    "stretch_stiffness_bits": {
+                      "maximum": 4294967295,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "vertices": {
+                      "items": {
+                        "$ref": "#/$defs/vec2_bits"
+                      },
+                      "maxItems": 64,
+                      "minItems": 2,
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "rope_id",
+                    "vertices",
+                    "masses_bits",
+                    "gravity",
+                    "damping_bits",
+                    "stretch_stiffness_bits",
+                    "bend_stiffness_bits"
+                  ],
+                  "type": "object"
+                },
+                "maxItems": 16,
+                "type": "array"
+              },
               "witness_family": {
                 "enum": [
                   "non_colliding_body_fixture_lifecycle",
@@ -4023,7 +5223,17 @@
                   "continuous_collision_and_sub_stepping",
                   "continuous_budget_resume",
                   "world_query_and_ray_cast",
-                  "origin_shift_covariance"
+                  "origin_shift_covariance",
+                  "joint_definitions_and_mutations",
+                  "revolute_prismatic_limits_and_motors",
+                  "distance_pulley_mouse_constraints",
+                  "wheel_weld_friction_rope_motor_constraints",
+                  "gear_dependencies_and_four_body_solver",
+                  "mixed_joint_island_order_and_collision_suppression",
+                  "standalone_rope_evolution",
+                  "contact_filter_listener_and_pre_solve_timing",
+                  "destruction_listener_and_dependency_cascades",
+                  "diagnostic_reconstruction_and_dump_order"
                 ]
               }
             },
@@ -4036,7 +5246,7 @@
             ],
             "type": "object"
           },
-          "maxItems": 9,
+          "maxItems": 19,
           "minItems": 1,
           "type": "array"
         }

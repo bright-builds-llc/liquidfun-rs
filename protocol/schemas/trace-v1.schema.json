@@ -1121,6 +1121,24 @@
                               "body_id"
                             ],
                             "type": "object"
+                          },
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "joint_id": {
+                                "maxLength": 128,
+                                "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                "type": "string"
+                              },
+                              "kind": {
+                                "const": "joint"
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "joint_id"
+                            ],
+                            "type": "object"
                           }
                         ]
                       },
@@ -1532,6 +1550,365 @@
                               "shift"
                             ],
                             "type": "object"
+                          },
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "const": "joint"
+                              },
+                              "snapshot": {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "body_a_id": {
+                                    "maxLength": 128,
+                                    "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                    "type": "string"
+                                  },
+                                  "body_b_id": {
+                                    "maxLength": 128,
+                                    "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                    "type": "string"
+                                  },
+                                  "branch_state": {
+                                    "enum": [
+                                      "inactive",
+                                      "at_lower",
+                                      "at_upper",
+                                      "equal",
+                                      "active"
+                                    ]
+                                  },
+                                  "collide_connected": {
+                                    "type": "boolean"
+                                  },
+                                  "coordinate_bits": {
+                                    "maximum": 4294967295,
+                                    "minimum": 0,
+                                    "type": "integer"
+                                  },
+                                  "dependencies": {
+                                    "items": {
+                                      "maxLength": 128,
+                                      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                      "type": "string"
+                                    },
+                                    "maxItems": 2,
+                                    "type": "array"
+                                  },
+                                  "joint_id": {
+                                    "maxLength": 128,
+                                    "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                    "type": "string"
+                                  },
+                                  "joint_kind": {
+                                    "enum": [
+                                      "revolute",
+                                      "prismatic",
+                                      "distance",
+                                      "pulley",
+                                      "mouse",
+                                      "gear",
+                                      "wheel",
+                                      "weld",
+                                      "friction",
+                                      "rope",
+                                      "motor"
+                                    ]
+                                  },
+                                  "reaction_force": {
+                                    "$ref": "#/$defs/rigid_vec2_bits"
+                                  },
+                                  "reaction_torque_bits": {
+                                    "maximum": 4294967295,
+                                    "minimum": 0,
+                                    "type": "integer"
+                                  },
+                                  "speed_bits": {
+                                    "maximum": 4294967295,
+                                    "minimum": 0,
+                                    "type": "integer"
+                                  }
+                                },
+                                "required": [
+                                  "joint_id",
+                                  "joint_kind",
+                                  "body_a_id",
+                                  "body_b_id",
+                                  "collide_connected",
+                                  "dependencies",
+                                  "branch_state",
+                                  "coordinate_bits",
+                                  "speed_bits",
+                                  "reaction_force",
+                                  "reaction_torque_bits"
+                                ],
+                                "type": "object"
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "snapshot"
+                            ],
+                            "type": "object"
+                          },
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "const": "rope"
+                              },
+                              "snapshot": {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "rope_id": {
+                                    "maxLength": 128,
+                                    "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                    "type": "string"
+                                  },
+                                  "vertices": {
+                                    "items": {
+                                      "$ref": "#/$defs/rigid_vec2_bits"
+                                    },
+                                    "maxItems": 64,
+                                    "minItems": 2,
+                                    "type": "array"
+                                  }
+                                },
+                                "required": [
+                                  "rope_id",
+                                  "vertices"
+                                ],
+                                "type": "object"
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "snapshot"
+                            ],
+                            "type": "object"
+                          },
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "event": {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "enum": [
+                                      "filter_decision",
+                                      "contact_created",
+                                      "begin_contact",
+                                      "pre_solve",
+                                      "post_solve",
+                                      "end_contact",
+                                      "contact_destroyed",
+                                      "joint_goodbye",
+                                      "fixture_goodbye",
+                                      "body_destroyed"
+                                    ]
+                                  },
+                                  "maybe_contact": {
+                                    "oneOf": [
+                                      {
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "child_a": {
+                                            "maximum": 4294967295,
+                                            "minimum": 0,
+                                            "type": "integer"
+                                          },
+                                          "child_b": {
+                                            "maximum": 4294967295,
+                                            "minimum": 0,
+                                            "type": "integer"
+                                          },
+                                          "fixture_a_id": {
+                                            "maxLength": 128,
+                                            "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                            "type": "string"
+                                          },
+                                          "fixture_b_id": {
+                                            "maxLength": 128,
+                                            "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                            "type": "string"
+                                          },
+                                          "occurrence": {
+                                            "maximum": 4294967295,
+                                            "minimum": 1,
+                                            "type": "integer"
+                                          }
+                                        },
+                                        "required": [
+                                          "fixture_a_id",
+                                          "child_a",
+                                          "fixture_b_id",
+                                          "child_b",
+                                          "occurrence"
+                                        ],
+                                        "type": "object"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "maybe_entity_id": {
+                                    "oneOf": [
+                                      {
+                                        "maxLength": 128,
+                                        "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                        "type": "string"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "ordinal": {
+                                    "maximum": 4294967295,
+                                    "minimum": 1,
+                                    "type": "integer"
+                                  }
+                                },
+                                "required": [
+                                  "ordinal",
+                                  "kind",
+                                  "maybe_contact",
+                                  "maybe_entity_id"
+                                ],
+                                "type": "object"
+                              },
+                              "kind": {
+                                "const": "lifecycle"
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "event"
+                            ],
+                            "type": "object"
+                          },
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "const": "reconstruction"
+                              },
+                              "record": {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "dependency_ids": {
+                                    "items": {
+                                      "maxLength": 128,
+                                      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                      "type": "string"
+                                    },
+                                    "maxItems": 2,
+                                    "type": "array"
+                                  },
+                                  "entity_id": {
+                                    "maxLength": 128,
+                                    "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                    "type": "string"
+                                  },
+                                  "kind": {
+                                    "enum": [
+                                      "body",
+                                      "fixture",
+                                      "joint"
+                                    ]
+                                  },
+                                  "ordinal": {
+                                    "maximum": 4294967295,
+                                    "minimum": 1,
+                                    "type": "integer"
+                                  },
+                                  "support": {
+                                    "enum": [
+                                      "supported",
+                                      "unsupported_mouse_joint"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "ordinal",
+                                  "kind",
+                                  "entity_id",
+                                  "support",
+                                  "dependency_ids"
+                                ],
+                                "type": "object"
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "record"
+                            ],
+                            "type": "object"
+                          },
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "const": "diagnostics"
+                              },
+                              "snapshot": {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "body_count": {
+                                    "maximum": 4294967295,
+                                    "minimum": 0,
+                                    "type": "integer"
+                                  },
+                                  "contact_count": {
+                                    "maximum": 4294967295,
+                                    "minimum": 0,
+                                    "type": "integer"
+                                  },
+                                  "fixture_count": {
+                                    "maximum": 4294967295,
+                                    "minimum": 0,
+                                    "type": "integer"
+                                  },
+                                  "joint_count": {
+                                    "maximum": 4294967295,
+                                    "minimum": 0,
+                                    "type": "integer"
+                                  },
+                                  "tree_height": {
+                                    "maximum": 4294967295,
+                                    "minimum": 0,
+                                    "type": "integer"
+                                  },
+                                  "tree_max_balance": {
+                                    "maximum": 4294967295,
+                                    "minimum": 0,
+                                    "type": "integer"
+                                  },
+                                  "tree_quality_bits": {
+                                    "maximum": 4294967295,
+                                    "minimum": 0,
+                                    "type": "integer"
+                                  }
+                                },
+                                "required": [
+                                  "body_count",
+                                  "fixture_count",
+                                  "joint_count",
+                                  "contact_count",
+                                  "tree_height",
+                                  "tree_max_balance",
+                                  "tree_quality_bits"
+                                ],
+                                "type": "object"
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "snapshot"
+                            ],
+                            "type": "object"
                           }
                         ]
                       },
@@ -1570,7 +1947,17 @@
                   "continuous_collision_and_sub_stepping",
                   "continuous_budget_resume",
                   "world_query_and_ray_cast",
-                  "origin_shift_covariance"
+                  "origin_shift_covariance",
+                  "joint_definitions_and_mutations",
+                  "revolute_prismatic_limits_and_motors",
+                  "distance_pulley_mouse_constraints",
+                  "wheel_weld_friction_rope_motor_constraints",
+                  "gear_dependencies_and_four_body_solver",
+                  "mixed_joint_island_order_and_collision_suppression",
+                  "standalone_rope_evolution",
+                  "contact_filter_listener_and_pre_solve_timing",
+                  "destruction_listener_and_dependency_cascades",
+                  "diagnostic_reconstruction_and_dump_order"
                 ]
               }
             },
@@ -1580,7 +1967,7 @@
             ],
             "type": "object"
           },
-          "maxItems": 9,
+          "maxItems": 19,
           "minItems": 1,
           "type": "array"
         },

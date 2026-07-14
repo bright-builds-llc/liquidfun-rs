@@ -83,6 +83,11 @@ fn schema_presentations_keep_records_closed_and_versions_explicit() {
     assert!(TRACKED_SCENARIO_SCHEMA.contains("\"query_aabb\""));
     assert!(TRACKED_SCENARIO_SCHEMA.contains("\"ray_cast\""));
     assert!(TRACKED_SCENARIO_SCHEMA.contains("\"shift_origin\""));
+    assert!(TRACKED_SCENARIO_SCHEMA.contains("\"joint_definitions_and_mutations\""));
+    assert!(TRACKED_SCENARIO_SCHEMA.contains("\"standalone_rope_evolution\""));
+    assert!(TRACKED_SCENARIO_SCHEMA.contains("\"create_joint\""));
+    assert!(TRACKED_SCENARIO_SCHEMA.contains("\"mutate_joint\""));
+    assert!(TRACKED_SCENARIO_SCHEMA.contains("\"set_pre_solve_directive\""));
     assert!(TRACKED_SCENARIO_SCHEMA.contains("\"const\": 1015580809"));
     assert!(TRACKED_SCENARIO_SCHEMA.contains("\"const\": 8"));
     assert!(TRACKED_SCENARIO_SCHEMA.contains("\"const\": 3"));
@@ -96,6 +101,8 @@ fn schema_presentations_keep_records_closed_and_versions_explicit() {
     assert!(TRACKED_TRACE_SCHEMA.contains("\"continuous_pending\""));
     assert!(TRACKED_TRACE_SCHEMA.contains("\"continuous_work_budget_exhausted\""));
     assert!(TRACKED_TRACE_SCHEMA.contains("\"final_max_fraction_bits\""));
+    assert!(TRACKED_TRACE_SCHEMA.contains("\"unsupported_mouse_joint\""));
+    assert!(TRACKED_TRACE_SCHEMA.contains("\"tree_quality_bits\""));
     assert!(!TRACKED_TRACE_SCHEMA.contains("\"clipping_applied\""));
     assert!(!TRACKED_TRACE_SCHEMA.contains("toi_count"));
     assert!(!TRACKED_TRACE_SCHEMA.contains("cached_toi"));

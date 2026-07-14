@@ -1,0 +1,372 @@
+profile_id = "phase8-v1"
+version = 1
+
+[[fields]]
+semantic_path = "rigid_world.phase8.observations.order"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Semantic identity, topology, status, presence, ordering, and multiplicity are exact."
+
+[[fields]]
+semantic_path = "rigid_world.phase8.joint.id"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Semantic identity, topology, status, presence, ordering, and multiplicity are exact."
+
+[[fields]]
+semantic_path = "rigid_world.phase8.joint.kind"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Semantic identity, topology, status, presence, ordering, and multiplicity are exact."
+
+[[fields]]
+semantic_path = "rigid_world.phase8.joint.body_ids"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Semantic identity, topology, status, presence, ordering, and multiplicity are exact."
+
+[[fields]]
+semantic_path = "rigid_world.phase8.joint.collide_connected"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Semantic identity, topology, status, presence, ordering, and multiplicity are exact."
+
+[[fields]]
+semantic_path = "rigid_world.phase8.joint.dependencies.order"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Semantic identity, topology, status, presence, ordering, and multiplicity are exact."
+
+[[fields]]
+semantic_path = "rigid_world.phase8.joint.branch_state"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Semantic identity, topology, status, presence, ordering, and multiplicity are exact."
+
+[[fields]]
+semantic_path = "rigid_world.phase8.rope.id"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Semantic identity, topology, status, presence, ordering, and multiplicity are exact."
+
+[[fields]]
+semantic_path = "rigid_world.phase8.rope.vertex_count"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Semantic identity, topology, status, presence, ordering, and multiplicity are exact."
+
+[[fields]]
+semantic_path = "rigid_world.phase8.lifecycle.order"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Semantic identity, topology, status, presence, ordering, and multiplicity are exact."
+
+[[fields]]
+semantic_path = "rigid_world.phase8.lifecycle.kind"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Semantic identity, topology, status, presence, ordering, and multiplicity are exact."
+
+[[fields]]
+semantic_path = "rigid_world.phase8.lifecycle.identity"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Semantic identity, topology, status, presence, ordering, and multiplicity are exact."
+
+[[fields]]
+semantic_path = "rigid_world.phase8.lifecycle.multiplicity"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Semantic identity, topology, status, presence, ordering, and multiplicity are exact."
+
+[[fields]]
+semantic_path = "rigid_world.phase8.reconstruction.order"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Semantic identity, topology, status, presence, ordering, and multiplicity are exact."
+
+[[fields]]
+semantic_path = "rigid_world.phase8.reconstruction.kind"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Semantic identity, topology, status, presence, ordering, and multiplicity are exact."
+
+[[fields]]
+semantic_path = "rigid_world.phase8.reconstruction.support"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Semantic identity, topology, status, presence, ordering, and multiplicity are exact."
+
+[[fields]]
+semantic_path = "rigid_world.phase8.reconstruction.dependencies.order"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Semantic identity, topology, status, presence, ordering, and multiplicity are exact."
+
+[[fields]]
+semantic_path = "rigid_world.phase8.diagnostics.counts"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Semantic identity, topology, status, presence, ordering, and multiplicity are exact."
+
+[[fields]]
+semantic_path = "rigid_world.phase8.dump.order"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Semantic identity, topology, status, presence, ordering, and multiplicity are exact."
+
+[[fields]]
+semantic_path = "rigid_world.phase8.field.presence"
+comparison = { kind = "exact_discrete" }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Semantic identity, topology, status, presence, ordering, and multiplicity are exact."
+
+[[fields]]
+semantic_path = "rigid_world.phase8.joint.configuration.bits"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Transported configuration preserves the declared IEEE-754 bit pattern exactly."
+
+[[fields]]
+semantic_path = "rigid_world.phase8.rope.configuration.bits"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Transported configuration preserves the declared IEEE-754 bit pattern exactly."
+
+[[fields]]
+semantic_path = "rigid_world.phase8.filter.directive.bits"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Transported configuration preserves the declared IEEE-754 bit pattern exactly."
+
+[[fields]]
+semantic_path = "rigid_world.phase8.pre_solve.friction.bits"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Transported configuration preserves the declared IEEE-754 bit pattern exactly."
+
+[[fields]]
+semantic_path = "rigid_world.phase8.pre_solve.restitution.bits"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Transported configuration preserves the declared IEEE-754 bit pattern exactly."
+
+[[fields]]
+semantic_path = "rigid_world.phase8.pre_solve.tangent_speed.bits"
+comparison = { kind = "float", policy = { kind = "exact_bits" } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d1_canonical"
+justification = "Transported configuration preserves the declared IEEE-754 bit pattern exactly."
+
+[[fields]]
+semantic_path = "rigid_world.phase8.joint.anchor.x"
+comparison = { kind = "float", policy = { kind = "absolute_relative", absolute_bits = 897988541, relative_bits = 953267991 } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Dimensioned computed geometry uses reviewed phase-local absolute and relative bounds."
+
+[[fields]]
+semantic_path = "rigid_world.phase8.joint.anchor.y"
+comparison = { kind = "float", policy = { kind = "absolute_relative", absolute_bits = 897988541, relative_bits = 953267991 } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Dimensioned computed geometry uses reviewed phase-local absolute and relative bounds."
+
+[[fields]]
+semantic_path = "rigid_world.phase8.joint.reaction_force.x"
+comparison = { kind = "float", policy = { kind = "absolute_relative", absolute_bits = 897988541, relative_bits = 953267991 } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Dimensioned computed geometry uses reviewed phase-local absolute and relative bounds."
+
+[[fields]]
+semantic_path = "rigid_world.phase8.joint.reaction_force.y"
+comparison = { kind = "float", policy = { kind = "absolute_relative", absolute_bits = 897988541, relative_bits = 953267991 } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Dimensioned computed geometry uses reviewed phase-local absolute and relative bounds."
+
+[[fields]]
+semantic_path = "rigid_world.phase8.rope.vertex.x"
+comparison = { kind = "float", policy = { kind = "absolute_relative", absolute_bits = 897988541, relative_bits = 953267991 } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Dimensioned computed geometry uses reviewed phase-local absolute and relative bounds."
+
+[[fields]]
+semantic_path = "rigid_world.phase8.rope.vertex.y"
+comparison = { kind = "float", policy = { kind = "absolute_relative", absolute_bits = 897988541, relative_bits = 953267991 } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Dimensioned computed geometry uses reviewed phase-local absolute and relative bounds."
+
+[[fields]]
+semantic_path = "rigid_world.phase8.joint.coordinate"
+comparison = { kind = "float", policy = { kind = "ulps", max = 4 } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Operation-grouped computed scalars use one reviewed four-ULP bound."
+
+[[fields]]
+semantic_path = "rigid_world.phase8.joint.speed"
+comparison = { kind = "float", policy = { kind = "ulps", max = 4 } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Operation-grouped computed scalars use one reviewed four-ULP bound."
+
+[[fields]]
+semantic_path = "rigid_world.phase8.joint.reaction_torque"
+comparison = { kind = "float", policy = { kind = "ulps", max = 4 } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Operation-grouped computed scalars use one reviewed four-ULP bound."
+
+[[fields]]
+semantic_path = "rigid_world.phase8.rope.angle"
+comparison = { kind = "float", policy = { kind = "ulps", max = 4 } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Operation-grouped computed scalars use one reviewed four-ULP bound."
+
+[[fields]]
+semantic_path = "rigid_world.phase8.diagnostics.tree_quality"
+comparison = { kind = "float", policy = { kind = "absolute", max_bits = 897988541 } }
+zero_policy = "distinct"
+non_finite_policy = "reject_arithmetic_nan"
+collection_policy = "ordered"
+horizon = { kind = "phase_local" }
+evidence_tier = "d2_supported"
+justification = "Dimensionless tree quality uses one reviewed phase-local absolute residual."

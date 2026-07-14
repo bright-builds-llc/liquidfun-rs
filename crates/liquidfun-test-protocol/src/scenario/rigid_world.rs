@@ -22,6 +22,12 @@ pub const RIGID_WORLD_MAXIMUM_DIRECTIVES: usize = 128;
 pub const RIGID_WORLD_MAXIMUM_ITERATIONS: u32 = 1_024;
 /// Maximum aggregate continuous-work budget for one configured step call.
 pub const RIGID_WORLD_MAXIMUM_CONTINUOUS_WORK: u32 = 1_000_000;
+/// Maximum joints declared in one bounded Phase 8 timeline.
+pub const RIGID_WORLD_MAXIMUM_JOINTS: usize = 64;
+/// Maximum standalone ropes declared in one bounded Phase 8 timeline.
+pub const RIGID_WORLD_MAXIMUM_ROPES: usize = 16;
+/// Maximum vertices declared by one standalone rope.
+pub const RIGID_WORLD_MAXIMUM_ROPE_VERTICES: usize = 64;
 
 pub use result::*;
 pub use types::*;

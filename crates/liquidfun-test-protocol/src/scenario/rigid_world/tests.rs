@@ -904,3 +904,228 @@ fn rigid_world_result_round_trip_contains_only_semantic_identity() {
     assert!(!text.contains("handle"));
     assert!(!text.contains("pointer"));
 }
+
+#[test]
+fn rigid_world_phase8_fixture_covers_all_new_families_and_joint_kinds() {
+    // Arrange
+    let value = fixture_value();
+    let timelines = value["scenario"]["timelines"]
+        .as_array()
+        .expect("fixture timelines should be an array");
+    let expected_families = RigidWorldWitnessFamily::PHASE8_REQUIRED
+        .map(|family| serde_json::to_value(family).expect("family should serialize"));
+    let joint_timeline = timelines
+        .iter()
+        .find(|timeline| timeline["witness_family"] == "joint_definitions_and_mutations")
+        .expect("joint definition timeline should exist");
+
+    // Act
+    let actual_families = timelines
+        .iter()
+        .skip(RigidWorldWitnessFamily::ALL.len() - RigidWorldWitnessFamily::PHASE8_REQUIRED.len())
+        .map(|timeline| timeline["witness_family"].clone())
+        .collect::<Vec<_>>();
+    let actual_kinds = joint_timeline["joints"]
+        .as_array()
+        .expect("joint declarations should be an array")
+        .iter()
+        .map(|joint| joint["definition"]["kind"].clone())
+        .collect::<Vec<_>>();
+    let expected_kinds = [
+        RigidJointKind::Revolute,
+        RigidJointKind::Prismatic,
+        RigidJointKind::Distance,
+        RigidJointKind::Pulley,
+        RigidJointKind::Mouse,
+        RigidJointKind::Wheel,
+        RigidJointKind::Weld,
+        RigidJointKind::Friction,
+        RigidJointKind::Rope,
+        RigidJointKind::Motor,
+        RigidJointKind::Gear,
+    ]
+    .map(|kind| serde_json::to_value(kind).expect("joint kind should serialize"));
+
+    // Assert
+    assert_eq!(actual_families, expected_families);
+    assert_eq!(actual_kinds, expected_kinds);
+}
+
+#[test]
+fn rigid_world_phase8_family_deletion_fails_closed() {
+    // Arrange and Act
+    let limits = HarnessLimits::phase2_default_v1();
+    let errors = RigidWorldWitnessFamily::PHASE8_REQUIRED.map(|family| {
+        let mut value = fixture_value();
+        let family = serde_json::to_value(family).expect("family should serialize");
+        value["scenario"]["timelines"]
+            .as_array_mut()
+            .expect("fixture timelines should be an array")
+            .retain(|timeline| timeline["witness_family"] != family);
+        decode_rigid_world_request_jsonl(&encode_value(&value), &limits)
+            .expect_err("missing Phase 8 family must fail")
+    });
+
+    // Assert
+    assert!(errors.iter().all(|error| {
+        error.rigid_world_kind() == Some(RigidWorldErrorKind::MissingWitnessFamily)
+    }));
+}
+
+#[test]
+fn rigid_world_phase8_accepts_every_closed_joint_mutation() {
+    // Arrange
+    let limits = HarnessLimits::phase2_default_v1();
+    let vector = json!({ "x_bits": 1.0_f32.to_bits(), "y_bits": 0.0_f32.to_bits() });
+    let mutations = [
+        (
+            "joint-def-revolute",
+            json!({ "kind": "limit_enabled", "enabled": true }),
+        ),
+        (
+            "joint-def-prismatic",
+            json!({ "kind": "limits", "lower_bits": 0.0_f32.to_bits(), "upper_bits": 1.0_f32.to_bits() }),
+        ),
+        (
+            "joint-def-wheel",
+            json!({ "kind": "motor_enabled", "enabled": true }),
+        ),
+        (
+            "joint-def-revolute",
+            json!({ "kind": "motor_speed", "speed_bits": 1.0_f32.to_bits() }),
+        ),
+        (
+            "joint-def-prismatic",
+            json!({ "kind": "max_motor_force", "force_bits": 1.0_f32.to_bits() }),
+        ),
+        (
+            "joint-def-wheel",
+            json!({ "kind": "max_motor_torque", "torque_bits": 1.0_f32.to_bits() }),
+        ),
+        (
+            "joint-def-distance",
+            json!({ "kind": "length", "length_bits": 1.0_f32.to_bits() }),
+        ),
+        (
+            "joint-def-weld",
+            json!({ "kind": "frequency", "frequency_bits": 1.0_f32.to_bits() }),
+        ),
+        (
+            "joint-def-mouse",
+            json!({ "kind": "damping_ratio", "damping_ratio_bits": 0.5_f32.to_bits() }),
+        ),
+        (
+            "joint-def-mouse",
+            json!({ "kind": "mouse_target", "target": vector }),
+        ),
+        (
+            "joint-def-friction",
+            json!({ "kind": "max_force", "force_bits": 1.0_f32.to_bits() }),
+        ),
+        (
+            "joint-def-motor",
+            json!({ "kind": "max_torque", "torque_bits": 1.0_f32.to_bits() }),
+        ),
+        (
+            "joint-def-gear",
+            json!({ "kind": "gear_ratio", "ratio_bits": (-1.0_f32).to_bits() }),
+        ),
+        (
+            "joint-def-rope-joint",
+            json!({ "kind": "rope_max_length", "max_length_bits": 1.0_f32.to_bits() }),
+        ),
+        (
+            "joint-def-motor",
+            json!({ "kind": "linear_offset", "offset": vector }),
+        ),
+        (
+            "joint-def-motor",
+            json!({ "kind": "angular_offset", "offset_bits": 1.0_f32.to_bits() }),
+        ),
+        (
+            "joint-def-motor",
+            json!({ "kind": "correction_factor", "factor_bits": 0.5_f32.to_bits() }),
+        ),
+    ];
+
+    // Act
+    let results = mutations.map(|(joint_id, mutation)| {
+        let mut value = fixture_value();
+        let action = action_mut(&mut value, "joint-def-mutate");
+        action["action"]["joint_id"] = json!(joint_id);
+        action["action"]["mutation"] = mutation;
+        decode_rigid_world_request_jsonl(&encode_value(&value), &limits)
+    });
+
+    // Assert
+    assert!(results.iter().all(Result::is_ok));
+}
+
+#[test]
+fn rigid_world_phase8_rejects_mutation_for_wrong_joint_kind() {
+    // Arrange
+    let limits = HarnessLimits::phase2_default_v1();
+    let mut value = fixture_value();
+    let action = action_mut(&mut value, "joint-def-mutate");
+    action["action"]["joint_id"] = json!("joint-def-pulley");
+    action["action"]["mutation"] =
+        json!({ "kind": "motor_speed", "speed_bits": 1.0_f32.to_bits() });
+
+    // Act
+    let error = decode_rigid_world_request_jsonl(&encode_value(&value), &limits)
+        .expect_err("unsupported joint mutations must fail closed");
+
+    // Assert
+    assert_eq!(
+        error.rigid_world_kind(),
+        Some(RigidWorldErrorKind::InvalidJointDefinition)
+    );
+}
+
+#[test]
+fn rigid_world_phase8_rejects_unknown_kind_and_n_plus_one_bounds() {
+    // Arrange
+    let limits = HarnessLimits::phase2_default_v1();
+    let mut unknown = fixture_value();
+    timeline_mut(&mut unknown, "joint_definitions_and_mutations")["joints"][0]["definition"]["kind"] =
+        json!("unknown_joint");
+    let mut joints = fixture_value();
+    let declarations = timeline_mut(&mut joints, "joint_definitions_and_mutations")["joints"]
+        .as_array_mut()
+        .expect("joint declarations should be an array");
+    while declarations.len() <= RIGID_WORLD_MAXIMUM_JOINTS {
+        let mut declaration = declarations[0].clone();
+        declaration["joint_id"] = json!(format!("extra-joint-{}", declarations.len()));
+        declarations.push(declaration);
+    }
+    let mut rope = fixture_value();
+    let declaration = &mut timeline_mut(&mut rope, "standalone_rope_evolution")["ropes"][0];
+    while declaration["vertices"]
+        .as_array()
+        .expect("vertices should be an array")
+        .len()
+        <= RIGID_WORLD_MAXIMUM_ROPE_VERTICES
+    {
+        declaration["vertices"]
+            .as_array_mut()
+            .expect("vertices should be an array")
+            .push(json!({ "x_bits": 0, "y_bits": 0 }));
+        declaration["masses_bits"]
+            .as_array_mut()
+            .expect("masses should be an array")
+            .push(json!(0));
+    }
+
+    // Act
+    let errors = [unknown, joints, rope].map(|value| {
+        decode_rigid_world_request_jsonl(&encode_value(&value), &limits)
+            .expect_err("unknown or N+1 Phase 8 input must fail")
+    });
+
+    // Assert
+    assert!(
+        errors
+            .iter()
+            .all(|error| matches!(error, RigidWorldDecodeError::Codec(_)))
+    );
+}

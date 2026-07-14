@@ -120,11 +120,130 @@ pub struct RigidRayObservation {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum RigidWorldObservation {
-    BodyState { state: RigidBodyControlSnapshot },
-    Step { outcome: RigidStepOutcome },
-    Query { observation: RigidQueryObservation },
-    RayCast { observation: RigidRayObservation },
-    OriginShift { shift: Vec2Bits },
+    BodyState {
+        state: RigidBodyControlSnapshot,
+    },
+    Step {
+        outcome: RigidStepOutcome,
+    },
+    Query {
+        observation: RigidQueryObservation,
+    },
+    RayCast {
+        observation: RigidRayObservation,
+    },
+    OriginShift {
+        shift: Vec2Bits,
+    },
+    Joint {
+        snapshot: RigidJointSnapshot,
+    },
+    Rope {
+        snapshot: RigidRopeSnapshot,
+    },
+    Lifecycle {
+        event: RigidLifecycleObservation,
+    },
+    Reconstruction {
+        record: RigidReconstructionObservation,
+    },
+    Diagnostics {
+        snapshot: RigidDiagnosticsObservation,
+    },
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum RigidJointBranchState {
+    Inactive,
+    AtLower,
+    AtUpper,
+    Equal,
+    Active,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RigidJointSnapshot {
+    pub joint_id: ScenarioId,
+    pub joint_kind: super::RigidJointKind,
+    pub body_a_id: ScenarioId,
+    pub body_b_id: ScenarioId,
+    pub collide_connected: bool,
+    pub dependencies: Box<[ScenarioId]>,
+    pub branch_state: RigidJointBranchState,
+    pub coordinate_bits: FloatBits,
+    pub speed_bits: FloatBits,
+    pub reaction_force: Vec2Bits,
+    pub reaction_torque_bits: FloatBits,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RigidRopeSnapshot {
+    pub rope_id: ScenarioId,
+    pub vertices: Box<[Vec2Bits]>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum RigidLifecycleObservationKind {
+    FilterDecision,
+    ContactCreated,
+    BeginContact,
+    PreSolve,
+    PostSolve,
+    EndContact,
+    ContactDestroyed,
+    JointGoodbye,
+    FixtureGoodbye,
+    BodyDestroyed,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RigidLifecycleObservation {
+    pub ordinal: u32,
+    pub kind: RigidLifecycleObservationKind,
+    pub maybe_contact: Option<RigidContactIdentity>,
+    pub maybe_entity_id: Option<ScenarioId>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum RigidReconstructionKind {
+    Body,
+    Fixture,
+    Joint,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum RigidReconstructionSupport {
+    Supported,
+    UnsupportedMouseJoint,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RigidReconstructionObservation {
+    pub ordinal: u32,
+    pub kind: RigidReconstructionKind,
+    pub entity_id: ScenarioId,
+    pub support: RigidReconstructionSupport,
+    pub dependency_ids: Box<[ScenarioId]>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RigidDiagnosticsObservation {
+    pub body_count: u32,
+    pub fixture_count: u32,
+    pub joint_count: u32,
+    pub contact_count: u32,
+    pub tree_height: u32,
+    pub tree_max_balance: u32,
+    pub tree_quality_bits: FloatBits,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -232,6 +351,7 @@ pub enum RigidDestructionRecord {
     Contact { contact: RigidContactIdentity },
     Fixture { fixture_id: ScenarioId },
     Body { body_id: ScenarioId },
+    Joint { joint_id: ScenarioId },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -466,6 +586,10 @@ enum ExpectedObservation<'a> {
     Query(&'a [super::RigidQueryDirectiveRule]),
     RayCast(&'a [super::RigidRayDirectiveRule]),
     OriginShift(Vec2Bits),
+    Joint(&'a ScenarioId),
+    Rope(&'a ScenarioId),
+    Reconstruction,
+    Diagnostics,
 }
 
 impl ExpectedObservation<'_> {
@@ -488,6 +612,14 @@ impl ExpectedObservation<'_> {
             (Self::OriginShift(expected), RigidWorldObservation::OriginShift { shift }) => {
                 expected == *shift
             }
+            (Self::Joint(expected), RigidWorldObservation::Joint { snapshot }) => {
+                expected == &snapshot.joint_id
+            }
+            (Self::Rope(expected), RigidWorldObservation::Rope { snapshot }) => {
+                expected == &snapshot.rope_id
+            }
+            (Self::Reconstruction, RigidWorldObservation::Reconstruction { .. })
+            | (Self::Diagnostics, RigidWorldObservation::Diagnostics { .. }) => true,
             _ => false,
         }
     }
@@ -626,6 +758,15 @@ fn expected_observation(action: &RigidWorldAction) -> Option<ExpectedObservation
             directive_rules, ..
         } => Some(ExpectedObservation::RayCast(directive_rules)),
         RigidWorldAction::ShiftOrigin { shift } => Some(ExpectedObservation::OriginShift(*shift)),
+        RigidWorldAction::InspectJoint { joint_id, .. }
+        | RigidWorldAction::MutateJoint { joint_id, .. } => {
+            Some(ExpectedObservation::Joint(joint_id))
+        }
+        RigidWorldAction::InspectRope { rope_id, .. }
+        | RigidWorldAction::SetRopeAngle { rope_id, .. }
+        | RigidWorldAction::StepRope { rope_id, .. } => Some(ExpectedObservation::Rope(rope_id)),
+        RigidWorldAction::RequestReconstruction => Some(ExpectedObservation::Reconstruction),
+        RigidWorldAction::RequestDiagnostics => Some(ExpectedObservation::Diagnostics),
         _ => None,
     }
 }
@@ -790,6 +931,9 @@ fn validate_result_bounds(result: &RigidWorldResultRecord) -> Result<(), RigidWo
                     }
                     RigidWorldObservation::RayCast { observation } => {
                         observation.hits.len() > MAXIMUM_RAY_HITS
+                    }
+                    RigidWorldObservation::Rope { snapshot } => {
+                        snapshot.vertices.len() > super::RIGID_WORLD_MAXIMUM_ROPE_VERTICES
                     }
                     _ => false,
                 })

@@ -10,14 +10,17 @@ use geometry::{
 
 use super::{
     RIGID_WORLD_MAXIMUM_ACTIONS, RIGID_WORLD_MAXIMUM_CONTINUOUS_WORK,
-    RIGID_WORLD_MAXIMUM_DIRECTIVES, RIGID_WORLD_MAXIMUM_ITERATIONS,
-    RIGID_WORLD_POSITION_ITERATIONS, RIGID_WORLD_TIMESTEP_BITS, RIGID_WORLD_VELOCITY_ITERATIONS,
-    RigidAabbBits, RigidBodyDeclaration, RigidBodyKind, RigidContactIdentity,
+    RIGID_WORLD_MAXIMUM_DIRECTIVES, RIGID_WORLD_MAXIMUM_ITERATIONS, RIGID_WORLD_MAXIMUM_JOINTS,
+    RIGID_WORLD_MAXIMUM_ROPE_VERTICES, RIGID_WORLD_MAXIMUM_ROPES, RIGID_WORLD_POSITION_ITERATIONS,
+    RIGID_WORLD_TIMESTEP_BITS, RIGID_WORLD_VELOCITY_ITERATIONS, RigidAabbBits,
+    RigidBodyDeclaration, RigidBodyKind, RigidContactDirectiveTarget, RigidContactIdentity,
     RigidExpectedCheckpoint, RigidExpectedCounts, RigidExpectedTransition, RigidFilterBits,
-    RigidFixtureChildSelector, RigidFixtureDeclaration, RigidFixtureShape, RigidQueryDirectiveRule,
-    RigidRayDirective, RigidRayDirectiveRule, RigidWorldAction, RigidWorldActionRecord,
-    RigidWorldDecodeError, RigidWorldErrorKind, RigidWorldRequestKind, RigidWorldRequestRecord,
-    RigidWorldScenario, RigidWorldTimeline, RigidWorldWitness, RigidWorldWitnessFamily, validation,
+    RigidFixtureChildSelector, RigidFixtureDeclaration, RigidFixtureShape, RigidJointDeclaration,
+    RigidJointDefinition, RigidJointKind, RigidJointMutation, RigidPreSolveDirective,
+    RigidQueryDirectiveRule, RigidRayDirective, RigidRayDirectiveRule, RigidRopeDeclaration,
+    RigidWorldAction, RigidWorldActionRecord, RigidWorldDecodeError, RigidWorldErrorKind,
+    RigidWorldRequestKind, RigidWorldRequestRecord, RigidWorldScenario, RigidWorldTimeline,
+    RigidWorldWitness, RigidWorldWitnessFamily, validation,
 };
 use crate::{
     FloatBits, HarnessLimits, ProtocolVersion, RecordLimit, RequestId, ScenarioId,
@@ -28,7 +31,7 @@ use crate::{
 
 const MAXIMUM_ID_BYTES: usize = 128;
 const MAXIMUM_STRING_BYTES: usize = 4 * 1024;
-const MAXIMUM_TIMELINES: usize = 9;
+const MAXIMUM_TIMELINES: usize = 19;
 const MAXIMUM_BODIES: usize = 64;
 const MAXIMUM_FIXTURES: usize = 128;
 const MAXIMUM_CHECKPOINTS: usize = 64;
@@ -76,6 +79,8 @@ struct RawTimeline {
     witness_family: RigidWorldWitnessFamily,
     bodies: BoundedVec<RawBodyDeclaration, MAXIMUM_BODIES>,
     fixtures: BoundedVec<RawFixtureDeclaration, MAXIMUM_FIXTURES>,
+    joints: Option<BoundedVec<RigidJointDeclaration, RIGID_WORLD_MAXIMUM_JOINTS>>,
+    ropes: Option<BoundedVec<RawRopeDeclaration, RIGID_WORLD_MAXIMUM_ROPES>>,
     actions: BoundedVec<RawActionRecord, RIGID_WORLD_MAXIMUM_ACTIONS>,
     checkpoints: BoundedVec<RawCheckpoint, MAXIMUM_CHECKPOINTS>,
 }
@@ -100,6 +105,18 @@ struct RawFixtureDeclaration {
     restitution_bits: FloatBits,
     sensor: bool,
     filter: RigidFilterBits,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct RawRopeDeclaration {
+    rope_id: ScenarioId,
+    vertices: BoundedVec<crate::Vec2Bits, RIGID_WORLD_MAXIMUM_ROPE_VERTICES>,
+    masses_bits: BoundedVec<FloatBits, RIGID_WORLD_MAXIMUM_ROPE_VERTICES>,
+    gravity: crate::Vec2Bits,
+    damping_bits: FloatBits,
+    stretch_stiffness_bits: FloatBits,
+    bend_stiffness_bits: FloatBits,
 }
 
 #[derive(Debug, Deserialize)]
@@ -160,7 +177,7 @@ fn validate_request(raw: RawRequest) -> Result<RigidWorldRequestRecord, RigidWor
         }
         timelines.push(validate_timeline(raw_timeline)?);
     }
-    if RigidWorldWitnessFamily::REQUIRED
+    if RigidWorldWitnessFamily::ALL
         .iter()
         .any(|family| !families.contains(family))
     {
@@ -198,12 +215,32 @@ fn validate_timeline(raw: RawTimeline) -> Result<RigidWorldTimeline, RigidWorldD
         .iter()
         .map(|fixture| (fixture.fixture_id.clone(), fixture.shape.clone()))
         .collect::<HashMap<_, _>>();
+    let joints = validate_joints(
+        raw.joints.map_or_else(Vec::new, BoundedVec::into_vec),
+        &body_ids,
+    )?;
+    let ropes = validate_ropes(raw.ropes.map_or_else(Vec::new, BoundedVec::into_vec))?;
+    let joint_ids = joints
+        .iter()
+        .map(|joint| joint.joint_id.clone())
+        .collect::<HashSet<_>>();
+    let joint_kinds = joints
+        .iter()
+        .map(|joint| (joint.joint_id.clone(), joint.definition.joint_kind()))
+        .collect::<HashMap<_, _>>();
+    let rope_ids = ropes
+        .iter()
+        .map(|rope| rope.rope_id.clone())
+        .collect::<HashSet<_>>();
     let actions = validate_actions(
         raw.actions.into_vec(),
         raw.witness_family,
         &body_ids,
         &fixture_owners,
         &fixture_shapes,
+        &joint_ids,
+        &joint_kinds,
+        &rope_ids,
     )?;
     let checkpoints = validate_checkpoints(
         raw.checkpoints.into_vec(),
@@ -212,7 +249,12 @@ fn validate_timeline(raw: RawTimeline) -> Result<RigidWorldTimeline, RigidWorldD
         &body_ids,
         &fixture_owners,
     )?;
-    let aggregate = bodies.len() + fixtures.len() + actions.len() + checkpoints.len();
+    let aggregate = bodies.len()
+        + fixtures.len()
+        + joints.len()
+        + ropes.len()
+        + actions.len()
+        + checkpoints.len();
     if aggregate > MAXIMUM_AGGREGATE_ITEMS {
         return Err(validation(RigidWorldErrorKind::AggregateLimitExceeded));
     }
@@ -220,6 +262,8 @@ fn validate_timeline(raw: RawTimeline) -> Result<RigidWorldTimeline, RigidWorldD
         witness_family: raw.witness_family,
         bodies: bodies.into_boxed_slice(),
         fixtures: fixtures.into_boxed_slice(),
+        joints: joints.into_boxed_slice(),
+        ropes: ropes.into_boxed_slice(),
         actions: actions.into_boxed_slice(),
         checkpoints: checkpoints.into_boxed_slice(),
     })
@@ -290,6 +334,9 @@ fn validate_actions(
     body_ids: &HashSet<ScenarioId>,
     fixture_owners: &HashMap<ScenarioId, ScenarioId>,
     fixture_shapes: &HashMap<ScenarioId, RigidFixtureShape>,
+    joint_ids: &HashSet<ScenarioId>,
+    joint_kinds: &HashMap<ScenarioId, RigidJointKind>,
+    rope_ids: &HashSet<ScenarioId>,
 ) -> Result<Vec<RigidWorldActionRecord>, RigidWorldDecodeError> {
     if raw_actions.is_empty() {
         return Err(validation(RigidWorldErrorKind::InvalidActionOrder));
@@ -300,6 +347,10 @@ fn validate_actions(
     let mut live_fixtures = HashSet::new();
     let mut created_bodies = HashSet::new();
     let mut created_fixtures = HashSet::new();
+    let mut live_joints = HashSet::new();
+    let mut live_ropes = HashSet::new();
+    let mut created_joints = HashSet::new();
+    let mut created_ropes = HashSet::new();
     let mut actions = Vec::with_capacity(raw_actions.len());
 
     for raw in raw_actions {
@@ -319,6 +370,13 @@ fn validate_actions(
             &mut live_fixtures,
             &mut created_bodies,
             &mut created_fixtures,
+            joint_ids,
+            joint_kinds,
+            rope_ids,
+            &mut live_joints,
+            &mut live_ropes,
+            &mut created_joints,
+            &mut created_ropes,
         )?;
         action_kinds.insert(raw.action.action_kind());
         actions.push(RigidWorldActionRecord {
@@ -332,6 +390,10 @@ fn validate_actions(
         || !live_fixtures.is_empty()
         || created_bodies.len() != body_ids.len()
         || created_fixtures.len() != fixture_owners.len()
+        || !live_joints.is_empty()
+        || !live_ropes.is_empty()
+        || created_joints.len() != joint_ids.len()
+        || created_ropes.len() != rope_ids.len()
         || family
             .required_action_kinds()
             .iter()
@@ -356,6 +418,13 @@ fn validate_action(
     live_fixtures: &mut HashSet<ScenarioId>,
     created_bodies: &mut HashSet<ScenarioId>,
     created_fixtures: &mut HashSet<ScenarioId>,
+    joint_ids: &HashSet<ScenarioId>,
+    joint_kinds: &HashMap<ScenarioId, RigidJointKind>,
+    rope_ids: &HashSet<ScenarioId>,
+    live_joints: &mut HashSet<ScenarioId>,
+    live_ropes: &mut HashSet<ScenarioId>,
+    created_joints: &mut HashSet<ScenarioId>,
+    created_ropes: &mut HashSet<ScenarioId>,
 ) -> Result<(), RigidWorldDecodeError> {
     match action {
         RigidWorldAction::CreateBody { body_id } => {
@@ -540,6 +609,74 @@ fn validate_action(
             validate_ray_geometry(*start, *end)?;
             validate_ray_rules(directive_rules, live_fixtures, fixture_shapes)?;
         }
+        RigidWorldAction::CreateJoint { joint_id } => {
+            if !joint_ids.contains(joint_id)
+                || !created_joints.insert(joint_id.clone())
+                || !live_joints.insert(joint_id.clone())
+            {
+                return Err(validation(RigidWorldErrorKind::InvalidActionOrder));
+            }
+        }
+        RigidWorldAction::InspectJoint { joint_id } => {
+            require_live(joint_id, live_joints, RigidWorldErrorKind::UnknownJoint)?;
+        }
+        RigidWorldAction::MutateJoint { joint_id, mutation } => {
+            require_live(joint_id, live_joints, RigidWorldErrorKind::UnknownJoint)?;
+            let Some(joint_kind) = joint_kinds.get(joint_id) else {
+                return Err(validation(RigidWorldErrorKind::UnknownJoint));
+            };
+            validate_joint_mutation(*joint_kind, *mutation)?;
+        }
+        RigidWorldAction::DestroyJoint { joint_id } => {
+            if !live_joints.remove(joint_id) {
+                return Err(validation(RigidWorldErrorKind::InvalidActionOrder));
+            }
+        }
+        RigidWorldAction::CreateRope { rope_id } => {
+            if !rope_ids.contains(rope_id)
+                || !created_ropes.insert(rope_id.clone())
+                || !live_ropes.insert(rope_id.clone())
+            {
+                return Err(validation(RigidWorldErrorKind::InvalidActionOrder));
+            }
+        }
+        RigidWorldAction::SetRopeAngle {
+            rope_id,
+            angle_bits,
+        } => {
+            require_live(rope_id, live_ropes, RigidWorldErrorKind::UnknownRope)?;
+            validate_finite(*angle_bits, RigidWorldErrorKind::InvalidRopeDefinition)?;
+        }
+        RigidWorldAction::StepRope {
+            rope_id,
+            timestep_bits,
+            iterations,
+        } => {
+            require_live(rope_id, live_ropes, RigidWorldErrorKind::UnknownRope)?;
+            let timestep = timestep_bits.to_f32();
+            if !timestep.is_finite()
+                || timestep < 0.0
+                || !(1..=RIGID_WORLD_MAXIMUM_ITERATIONS).contains(iterations)
+            {
+                return Err(validation(RigidWorldErrorKind::InvalidRopeDefinition));
+            }
+        }
+        RigidWorldAction::InspectRope { rope_id } => {
+            require_live(rope_id, live_ropes, RigidWorldErrorKind::UnknownRope)?;
+        }
+        RigidWorldAction::DestroyRope { rope_id } => {
+            if !live_ropes.remove(rope_id) {
+                return Err(validation(RigidWorldErrorKind::InvalidActionOrder));
+            }
+        }
+        RigidWorldAction::SetContactFilterDirective { target, .. }
+        | RigidWorldAction::SetPreSolveDirective { target, .. } => {
+            validate_contact_directive_target(target, live_fixtures)?;
+            if let RigidWorldAction::SetPreSolveDirective { directive, .. } = action {
+                validate_pre_solve_directive(*directive)?;
+            }
+        }
+        RigidWorldAction::RequestReconstruction | RigidWorldAction::RequestDiagnostics => {}
         RigidWorldAction::DestroyFixture { fixture_id } => {
             if !live_fixtures.remove(fixture_id) {
                 return Err(validation(RigidWorldErrorKind::InvalidActionOrder));
@@ -551,6 +688,443 @@ fn validate_action(
             }
             live_fixtures.retain(|fixture_id| fixture_owners.get(fixture_id) != Some(body_id));
         }
+    }
+    Ok(())
+}
+
+fn validate_joints(
+    joints: Vec<RigidJointDeclaration>,
+    body_ids: &HashSet<ScenarioId>,
+) -> Result<Vec<RigidJointDeclaration>, RigidWorldDecodeError> {
+    let mut ids = HashSet::with_capacity(joints.len());
+    let mut kinds = HashMap::with_capacity(joints.len());
+    for joint in &joints {
+        if ids.contains(&joint.joint_id) {
+            return Err(validation(RigidWorldErrorKind::DuplicateJointId));
+        }
+        if joint.body_a_id == joint.body_b_id
+            || !body_ids.contains(&joint.body_a_id)
+            || !body_ids.contains(&joint.body_b_id)
+        {
+            return Err(validation(RigidWorldErrorKind::InvalidOwner));
+        }
+        validate_joint_definition(&joint.definition)?;
+        if let RigidJointDefinition::Gear {
+            joint_a_id,
+            joint_b_id,
+            ..
+        } = &joint.definition
+            && (joint_a_id == joint_b_id
+                || !matches!(
+                    kinds.get(joint_a_id),
+                    Some(RigidJointKind::Revolute | RigidJointKind::Prismatic)
+                )
+                || !matches!(
+                    kinds.get(joint_b_id),
+                    Some(RigidJointKind::Revolute | RigidJointKind::Prismatic)
+                ))
+        {
+            return Err(validation(RigidWorldErrorKind::InvalidJointDependency));
+        }
+        ids.insert(joint.joint_id.clone());
+        kinds.insert(joint.joint_id.clone(), joint.definition.joint_kind());
+    }
+    Ok(joints)
+}
+
+#[allow(
+    clippy::too_many_lines,
+    reason = "closed joint definitions are audited exhaustively"
+)]
+fn validate_joint_definition(
+    definition: &RigidJointDefinition,
+) -> Result<(), RigidWorldDecodeError> {
+    let invalid = || validation(RigidWorldErrorKind::InvalidJointDefinition);
+    match definition {
+        RigidJointDefinition::Revolute {
+            local_anchor_a,
+            local_anchor_b,
+            reference_angle_bits,
+            lower_angle_bits,
+            upper_angle_bits,
+            motor_speed_bits,
+            max_motor_torque_bits,
+            ..
+        } => {
+            validate_vec2(*local_anchor_a)?;
+            validate_vec2(*local_anchor_b)?;
+            for bits in [
+                *reference_angle_bits,
+                *lower_angle_bits,
+                *upper_angle_bits,
+                *motor_speed_bits,
+            ] {
+                validate_finite(bits, RigidWorldErrorKind::InvalidJointDefinition)?;
+            }
+            validate_nonnegative(*max_motor_torque_bits).map_err(|_| invalid())?;
+            if lower_angle_bits.to_f32() > upper_angle_bits.to_f32() {
+                return Err(invalid());
+            }
+        }
+        RigidJointDefinition::Prismatic {
+            local_anchor_a,
+            local_anchor_b,
+            local_axis_a,
+            reference_angle_bits,
+            lower_translation_bits,
+            upper_translation_bits,
+            motor_speed_bits,
+            max_motor_force_bits,
+            ..
+        } => {
+            for vector in [*local_anchor_a, *local_anchor_b, *local_axis_a] {
+                validate_vec2(vector)?;
+            }
+            validate_nonzero_vector(*local_axis_a, RigidWorldErrorKind::InvalidJointDefinition)?;
+            for bits in [
+                *reference_angle_bits,
+                *lower_translation_bits,
+                *upper_translation_bits,
+                *motor_speed_bits,
+            ] {
+                validate_finite(bits, RigidWorldErrorKind::InvalidJointDefinition)?;
+            }
+            validate_nonnegative(*max_motor_force_bits).map_err(|_| invalid())?;
+            if lower_translation_bits.to_f32() > upper_translation_bits.to_f32() {
+                return Err(invalid());
+            }
+        }
+        RigidJointDefinition::Distance {
+            local_anchor_a,
+            local_anchor_b,
+            length_bits,
+            frequency_bits,
+            damping_ratio_bits,
+        } => {
+            validate_vec2(*local_anchor_a)?;
+            validate_vec2(*local_anchor_b)?;
+            validate_positive(*length_bits).map_err(|_| invalid())?;
+            validate_nonnegative(*frequency_bits).map_err(|_| invalid())?;
+            validate_unit_interval(*damping_ratio_bits)?;
+        }
+        RigidJointDefinition::Pulley {
+            ground_anchor_a,
+            ground_anchor_b,
+            local_anchor_a,
+            local_anchor_b,
+            length_a_bits,
+            length_b_bits,
+            ratio_bits,
+        } => {
+            for vector in [
+                *ground_anchor_a,
+                *ground_anchor_b,
+                *local_anchor_a,
+                *local_anchor_b,
+            ] {
+                validate_vec2(vector)?;
+            }
+            for bits in [*length_a_bits, *length_b_bits, *ratio_bits] {
+                validate_positive(bits).map_err(|_| invalid())?;
+            }
+        }
+        RigidJointDefinition::Mouse {
+            target,
+            max_force_bits,
+            frequency_bits,
+            damping_ratio_bits,
+        } => {
+            validate_vec2(*target)?;
+            validate_nonnegative(*max_force_bits).map_err(|_| invalid())?;
+            validate_nonnegative(*frequency_bits).map_err(|_| invalid())?;
+            validate_unit_interval(*damping_ratio_bits)?;
+        }
+        RigidJointDefinition::Gear { ratio_bits, .. } => {
+            validate_finite(*ratio_bits, RigidWorldErrorKind::InvalidJointDefinition)?;
+        }
+        RigidJointDefinition::Wheel {
+            local_anchor_a,
+            local_anchor_b,
+            local_axis_a,
+            motor_speed_bits,
+            max_motor_torque_bits,
+            frequency_bits,
+            damping_ratio_bits,
+            ..
+        } => {
+            for vector in [*local_anchor_a, *local_anchor_b, *local_axis_a] {
+                validate_vec2(vector)?;
+            }
+            validate_nonzero_vector(*local_axis_a, RigidWorldErrorKind::InvalidJointDefinition)?;
+            validate_finite(
+                *motor_speed_bits,
+                RigidWorldErrorKind::InvalidJointDefinition,
+            )?;
+            validate_nonnegative(*max_motor_torque_bits).map_err(|_| invalid())?;
+            validate_nonnegative(*frequency_bits).map_err(|_| invalid())?;
+            validate_unit_interval(*damping_ratio_bits)?;
+        }
+        RigidJointDefinition::Weld {
+            local_anchor_a,
+            local_anchor_b,
+            reference_angle_bits,
+            frequency_bits,
+            damping_ratio_bits,
+        } => {
+            validate_vec2(*local_anchor_a)?;
+            validate_vec2(*local_anchor_b)?;
+            validate_finite(
+                *reference_angle_bits,
+                RigidWorldErrorKind::InvalidJointDefinition,
+            )?;
+            validate_nonnegative(*frequency_bits).map_err(|_| invalid())?;
+            validate_unit_interval(*damping_ratio_bits)?;
+        }
+        RigidJointDefinition::Friction {
+            local_anchor_a,
+            local_anchor_b,
+            max_force_bits,
+            max_torque_bits,
+        } => {
+            validate_vec2(*local_anchor_a)?;
+            validate_vec2(*local_anchor_b)?;
+            validate_nonnegative(*max_force_bits).map_err(|_| invalid())?;
+            validate_nonnegative(*max_torque_bits).map_err(|_| invalid())?;
+        }
+        RigidJointDefinition::Rope {
+            local_anchor_a,
+            local_anchor_b,
+            max_length_bits,
+        } => {
+            validate_vec2(*local_anchor_a)?;
+            validate_vec2(*local_anchor_b)?;
+            validate_positive(*max_length_bits).map_err(|_| invalid())?;
+        }
+        RigidJointDefinition::Motor {
+            linear_offset,
+            angular_offset_bits,
+            max_force_bits,
+            max_torque_bits,
+            correction_factor_bits,
+        } => {
+            validate_vec2(*linear_offset)?;
+            validate_finite(
+                *angular_offset_bits,
+                RigidWorldErrorKind::InvalidJointDefinition,
+            )?;
+            validate_nonnegative(*max_force_bits).map_err(|_| invalid())?;
+            validate_nonnegative(*max_torque_bits).map_err(|_| invalid())?;
+            validate_unit_interval(*correction_factor_bits)?;
+        }
+    }
+    Ok(())
+}
+
+fn validate_ropes(
+    raw_ropes: Vec<RawRopeDeclaration>,
+) -> Result<Vec<RigidRopeDeclaration>, RigidWorldDecodeError> {
+    let ropes = raw_ropes
+        .into_iter()
+        .map(|raw| RigidRopeDeclaration {
+            rope_id: raw.rope_id,
+            vertices: raw.vertices.into_vec().into_boxed_slice(),
+            masses_bits: raw.masses_bits.into_vec().into_boxed_slice(),
+            gravity: raw.gravity,
+            damping_bits: raw.damping_bits,
+            stretch_stiffness_bits: raw.stretch_stiffness_bits,
+            bend_stiffness_bits: raw.bend_stiffness_bits,
+        })
+        .collect::<Vec<_>>();
+    let mut ids = HashSet::with_capacity(ropes.len());
+    for rope in &ropes {
+        if !ids.insert(rope.rope_id.clone()) {
+            return Err(validation(RigidWorldErrorKind::DuplicateRopeId));
+        }
+        if rope.vertices.len() < 2
+            || rope.vertices.len() > RIGID_WORLD_MAXIMUM_ROPE_VERTICES
+            || rope.vertices.len() != rope.masses_bits.len()
+        {
+            return Err(validation(RigidWorldErrorKind::InvalidRopeDefinition));
+        }
+        for vertex in &rope.vertices {
+            validate_vec2(*vertex)?;
+        }
+        for mass in &rope.masses_bits {
+            validate_nonnegative(*mass)
+                .map_err(|_| validation(RigidWorldErrorKind::InvalidRopeDefinition))?;
+        }
+        validate_vec2(rope.gravity)?;
+        validate_nonnegative(rope.damping_bits)
+            .map_err(|_| validation(RigidWorldErrorKind::InvalidRopeDefinition))?;
+        validate_unit_interval(rope.stretch_stiffness_bits)?;
+        validate_unit_interval(rope.bend_stiffness_bits)?;
+    }
+    Ok(ropes)
+}
+
+fn validate_joint_mutation(
+    joint_kind: RigidJointKind,
+    mutation: RigidJointMutation,
+) -> Result<(), RigidWorldDecodeError> {
+    let supported = match joint_kind {
+        RigidJointKind::Revolute => matches!(
+            mutation,
+            RigidJointMutation::LimitEnabled { .. }
+                | RigidJointMutation::Limits { .. }
+                | RigidJointMutation::MotorEnabled { .. }
+                | RigidJointMutation::MotorSpeed { .. }
+                | RigidJointMutation::MaxMotorTorque { .. }
+        ),
+        RigidJointKind::Prismatic => matches!(
+            mutation,
+            RigidJointMutation::LimitEnabled { .. }
+                | RigidJointMutation::Limits { .. }
+                | RigidJointMutation::MotorEnabled { .. }
+                | RigidJointMutation::MotorSpeed { .. }
+                | RigidJointMutation::MaxMotorForce { .. }
+        ),
+        RigidJointKind::Distance => matches!(
+            mutation,
+            RigidJointMutation::Length { .. }
+                | RigidJointMutation::Frequency { .. }
+                | RigidJointMutation::DampingRatio { .. }
+        ),
+        RigidJointKind::Pulley => false,
+        RigidJointKind::Mouse => matches!(
+            mutation,
+            RigidJointMutation::MouseTarget { .. }
+                | RigidJointMutation::MaxForce { .. }
+                | RigidJointMutation::Frequency { .. }
+                | RigidJointMutation::DampingRatio { .. }
+        ),
+        RigidJointKind::Gear => matches!(mutation, RigidJointMutation::GearRatio { .. }),
+        RigidJointKind::Wheel => matches!(
+            mutation,
+            RigidJointMutation::MotorEnabled { .. }
+                | RigidJointMutation::MotorSpeed { .. }
+                | RigidJointMutation::MaxMotorTorque { .. }
+                | RigidJointMutation::Frequency { .. }
+                | RigidJointMutation::DampingRatio { .. }
+        ),
+        RigidJointKind::Weld => matches!(
+            mutation,
+            RigidJointMutation::Frequency { .. } | RigidJointMutation::DampingRatio { .. }
+        ),
+        RigidJointKind::Friction => matches!(
+            mutation,
+            RigidJointMutation::MaxForce { .. } | RigidJointMutation::MaxTorque { .. }
+        ),
+        RigidJointKind::Rope => {
+            matches!(mutation, RigidJointMutation::RopeMaxLength { .. })
+        }
+        RigidJointKind::Motor => matches!(
+            mutation,
+            RigidJointMutation::LinearOffset { .. }
+                | RigidJointMutation::AngularOffset { .. }
+                | RigidJointMutation::MaxForce { .. }
+                | RigidJointMutation::MaxTorque { .. }
+                | RigidJointMutation::CorrectionFactor { .. }
+        ),
+    };
+    if !supported {
+        return Err(validation(RigidWorldErrorKind::InvalidJointDefinition));
+    }
+
+    match mutation {
+        RigidJointMutation::LimitEnabled { .. } | RigidJointMutation::MotorEnabled { .. } => {}
+        RigidJointMutation::Limits {
+            lower_bits,
+            upper_bits,
+        } => {
+            validate_finite(lower_bits, RigidWorldErrorKind::InvalidJointDefinition)?;
+            validate_finite(upper_bits, RigidWorldErrorKind::InvalidJointDefinition)?;
+            if lower_bits.to_f32() > upper_bits.to_f32() {
+                return Err(validation(RigidWorldErrorKind::InvalidJointDefinition));
+            }
+        }
+        RigidJointMutation::MotorSpeed { speed_bits }
+        | RigidJointMutation::AngularOffset {
+            offset_bits: speed_bits,
+        }
+        | RigidJointMutation::GearRatio {
+            ratio_bits: speed_bits,
+        } => validate_finite(speed_bits, RigidWorldErrorKind::InvalidJointDefinition)?,
+        RigidJointMutation::MaxMotorForce { force_bits }
+        | RigidJointMutation::MaxForce { force_bits }
+        | RigidJointMutation::MaxMotorTorque {
+            torque_bits: force_bits,
+        }
+        | RigidJointMutation::MaxTorque {
+            torque_bits: force_bits,
+        }
+        | RigidJointMutation::Frequency {
+            frequency_bits: force_bits,
+        } => validate_nonnegative(force_bits)
+            .map_err(|_| validation(RigidWorldErrorKind::InvalidJointDefinition))?,
+        RigidJointMutation::Length { length_bits }
+        | RigidJointMutation::RopeMaxLength {
+            max_length_bits: length_bits,
+        } => validate_positive(length_bits)
+            .map_err(|_| validation(RigidWorldErrorKind::InvalidJointDefinition))?,
+        RigidJointMutation::DampingRatio { damping_ratio_bits } => {
+            validate_unit_interval(damping_ratio_bits)?;
+        }
+        RigidJointMutation::MouseTarget { target }
+        | RigidJointMutation::LinearOffset { offset: target } => validate_vec2(target)?,
+        RigidJointMutation::CorrectionFactor { factor_bits } => {
+            validate_unit_interval(factor_bits)?;
+        }
+    }
+    Ok(())
+}
+
+fn validate_unit_interval(bits: FloatBits) -> Result<(), RigidWorldDecodeError> {
+    let value = bits.to_f32();
+    if !value.is_finite() || !(0.0..=1.0).contains(&value) {
+        return Err(validation(RigidWorldErrorKind::InvalidJointDefinition));
+    }
+    Ok(())
+}
+
+fn validate_nonzero_vector(
+    vector: crate::Vec2Bits,
+    kind: RigidWorldErrorKind,
+) -> Result<(), RigidWorldDecodeError> {
+    let x = vector.x_bits.to_f32();
+    let y = vector.y_bits.to_f32();
+    if x == 0.0 && y == 0.0 {
+        return Err(validation(kind));
+    }
+    Ok(())
+}
+
+fn validate_contact_directive_target(
+    target: &RigidContactDirectiveTarget,
+    live_fixtures: &HashSet<ScenarioId>,
+) -> Result<(), RigidWorldDecodeError> {
+    if target.fixture_a_id == target.fixture_b_id
+        || !live_fixtures.contains(&target.fixture_a_id)
+        || !live_fixtures.contains(&target.fixture_b_id)
+    {
+        return Err(validation(RigidWorldErrorKind::InvalidContactDirective));
+    }
+    Ok(())
+}
+
+fn validate_pre_solve_directive(
+    directive: RigidPreSolveDirective,
+) -> Result<(), RigidWorldDecodeError> {
+    for maybe_bits in [
+        directive.maybe_friction_bits,
+        directive.maybe_restitution_bits,
+    ] {
+        if let Some(bits) = maybe_bits {
+            validate_nonnegative(bits)
+                .map_err(|_| validation(RigidWorldErrorKind::InvalidContactDirective))?;
+        }
+    }
+    if let Some(bits) = directive.maybe_tangent_speed_bits {
+        validate_finite(bits, RigidWorldErrorKind::InvalidContactDirective)?;
     }
     Ok(())
 }
