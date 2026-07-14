@@ -132,6 +132,7 @@ pub(super) struct Contact {
     pub(super) points: Vec<ContactPoint>,
     pub(super) friction: f32,
     pub(super) restitution: f32,
+    pub(super) tangent_speed: f32,
     toi: ContactToiState,
 }
 
@@ -157,6 +158,7 @@ impl Contact {
             points: Vec::new(),
             friction: (friction_a * friction_b).sqrt(),
             restitution: max(restitution_a, restitution_b),
+            tangent_speed: 0.0,
             toi: ContactToiState::default(),
         }
     }
@@ -211,6 +213,25 @@ impl Contact {
 
     pub(super) fn set_enabled(&mut self, enabled: bool) {
         self.set_flag(Self::ENABLED, enabled);
+    }
+
+    pub(super) fn apply_pre_solve_controls(
+        &mut self,
+        enabled: bool,
+        maybe_friction: Option<f32>,
+        maybe_restitution: Option<f32>,
+        maybe_tangent_speed: Option<f32>,
+    ) {
+        self.set_enabled(enabled);
+        if let Some(friction) = maybe_friction {
+            self.friction = friction;
+        }
+        if let Some(restitution) = maybe_restitution {
+            self.restitution = restitution;
+        }
+        if let Some(tangent_speed) = maybe_tangent_speed {
+            self.tangent_speed = tangent_speed;
+        }
     }
 
     pub(super) const fn needs_filtering(&self) -> bool {
@@ -278,6 +299,7 @@ impl Contact {
         ManagedContactSnapshot {
             occurrence: self.ordinal,
             fixtures: [self.key.first.fixture, self.key.second.fixture],
+            bodies: [self.key.first.body, self.key.second.body],
             child_indices: [self.key.first.child_index, self.key.second.child_index],
             touching: self.is_touching(),
             enabled: self.is_enabled(),
@@ -291,6 +313,7 @@ impl Contact {
                 .collect(),
             friction: self.friction,
             restitution: self.restitution,
+            tangent_speed: self.tangent_speed,
         }
     }
 
@@ -385,6 +408,7 @@ impl ContactPointSnapshot {
 pub struct ManagedContactSnapshot {
     occurrence: u64,
     fixtures: [FixtureId; 2],
+    bodies: [BodyId; 2],
     child_indices: [ChildIndex; 2],
     touching: bool,
     enabled: bool,
@@ -393,6 +417,7 @@ pub struct ManagedContactSnapshot {
     points: Vec<ContactPointSnapshot>,
     friction: f32,
     restitution: f32,
+    tangent_speed: f32,
 }
 
 impl ManagedContactSnapshot {
@@ -407,6 +432,12 @@ impl ManagedContactSnapshot {
     #[must_use]
     pub const fn fixtures(&self) -> [FixtureId; 2] {
         self.fixtures
+    }
+
+    /// Returns body identities in the manager's oriented occurrence order.
+    #[must_use]
+    pub const fn bodies(&self) -> [BodyId; 2] {
+        self.bodies
     }
 
     /// Returns shape-child coordinates in oriented occurrence order.
@@ -455,6 +486,12 @@ impl ManagedContactSnapshot {
     #[must_use]
     pub const fn restitution(&self) -> f32 {
         self.restitution
+    }
+
+    /// Returns the contact's configured surface tangent speed.
+    #[must_use]
+    pub const fn tangent_speed(&self) -> f32 {
+        self.tangent_speed
     }
 }
 

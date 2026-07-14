@@ -1,8 +1,9 @@
 use super::{
     BodyId, ContactSolveFailure, ContinuousCandidate, ContinuousEvent, ContinuousEventError,
-    ContinuousWorldBackup, IslandBuildError, PreparedSynchronization, StepConfiguration, ToiIsland,
-    ToiIslandLimits, ToiIslandSolution, World, solve_toi_island,
+    ContinuousScanControl, ContinuousWorldBackup, IslandBuildError, PreparedSynchronization,
+    StepConfiguration, ToiIsland, ToiIslandLimits, ToiIslandSolution, World, solve_toi_island,
 };
+use crate::world::step::{CollisionDecisionHook, ContactHookRun, NoDecisionHook, StepLimits};
 
 impl World {
     pub(in crate::world) fn solve_next_continuous_event(
@@ -11,9 +12,30 @@ impl World {
         limits: ToiIslandLimits,
         inject_after_solve: bool,
     ) -> Result<Option<ContinuousEvent>, ContinuousEventError> {
+        let mut hook = NoDecisionHook;
+        let mut hook_run = ContactHookRun::new(&mut hook, StepLimits::default());
+        self.solve_next_continuous_event_with_hook(
+            configuration,
+            limits,
+            inject_after_solve,
+            &mut hook_run,
+        )
+    }
+
+    pub(in crate::world) fn solve_next_continuous_event_with_hook<H: CollisionDecisionHook>(
+        &mut self,
+        configuration: StepConfiguration,
+        limits: ToiIslandLimits,
+        inject_after_solve: bool,
+        hook_run: &mut ContactHookRun<'_, H>,
+    ) -> Result<Option<ContinuousEvent>, ContinuousEventError> {
         let backup = self.backup_continuous_world()?;
-        let result =
-            self.prepare_and_commit_continuous_event(configuration, limits, inject_after_solve);
+        let result = self.prepare_and_commit_continuous_event(
+            configuration,
+            limits,
+            inject_after_solve,
+            hook_run,
+        );
         if result.is_err() {
             self.restore_continuous_world(backup);
         }
@@ -65,16 +87,19 @@ impl World {
         self.contact_manager = backup.contact_manager;
     }
 
-    fn prepare_and_commit_continuous_event(
+    fn prepare_and_commit_continuous_event<H: CollisionDecisionHook>(
         &mut self,
         configuration: StepConfiguration,
         limits: ToiIslandLimits,
         inject_after_solve: bool,
+        hook_run: &mut ContactHookRun<'_, H>,
     ) -> Result<Option<ContinuousEvent>, ContinuousEventError> {
-        let Some(candidate) = self.select_continuous_candidate()? else {
+        let Some(candidate) =
+            self.select_continuous_candidate_with_hook(ContinuousScanControl::default(), hook_run)?
+        else {
             return Ok(None);
         };
-        let island = self.build_toi_island(candidate, limits)?;
+        let island = self.build_toi_island(candidate, limits, hook_run)?;
         let solution = solve_toi_island(
             &island,
             &self.contact_manager,
@@ -149,7 +174,7 @@ impl World {
                 self.contact_manager.invalidate_toi_for_body(body_id);
             }
         }
-        self.find_new_contacts();
+        self.find_new_contacts_with_hook(hook_run);
 
         Ok(Some(ContinuousEvent {
             body_ids: solution.body_ids,
@@ -159,10 +184,11 @@ impl World {
         }))
     }
 
-    fn build_toi_island(
+    fn build_toi_island<H: CollisionDecisionHook>(
         &mut self,
         candidate: ContinuousCandidate,
         limits: ToiIslandLimits,
+        hook_run: &mut ContactHookRun<'_, H>,
     ) -> Result<ToiIsland, ContinuousEventError> {
         let [body_a, body_b] = candidate.bodies();
         let state_a = self
@@ -195,19 +221,27 @@ impl World {
                 if !island.has_body_capacity() || !island.has_contact_capacity() {
                     break;
                 }
-                self.try_add_toi_contact(&mut island, candidate, body_id, body_is_bullet, ordinal)?;
+                self.try_add_toi_contact(
+                    &mut island,
+                    candidate,
+                    body_id,
+                    body_is_bullet,
+                    ordinal,
+                    hook_run,
+                )?;
             }
         }
         Ok(island)
     }
 
-    fn try_add_toi_contact(
+    fn try_add_toi_contact<H: CollisionDecisionHook>(
         &mut self,
         island: &mut ToiIsland,
         candidate: ContinuousCandidate,
         body_id: BodyId,
         body_is_bullet: bool,
         ordinal: u64,
+        hook_run: &mut ContactHookRun<'_, H>,
     ) -> Result<(), ContinuousEventError> {
         let contact_index = self
             .contact_manager
@@ -255,7 +289,13 @@ impl World {
                 .state = backup.candidate_advance_to(candidate.alpha())?;
         }
         self.contact_manager
-            .refresh_continuous_contact(contact_index, &mut self.bodies, &self.fixtures)
+            .refresh_continuous_contact_with_hook(
+                contact_index,
+                &mut self.bodies,
+                &self.fixtures,
+                hook_run,
+            )
+            .map_err(|error| ContinuousEventError::Scan(super::ContinuousScanError::Hook(error)))?
             .ok_or(ContinuousEventError::Island(IslandBuildError::InvalidGraph))?;
         let refreshed = self
             .contact_manager

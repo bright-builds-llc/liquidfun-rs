@@ -7,7 +7,7 @@ use crate::{BodyId, FixtureId, JointId};
 use super::body::BodyType;
 use super::contact::{
     Contact, ContactEndpoint, ContactKey, ContactTransition, ContactTransitionKind,
-    ManagedContactSnapshot, canonical_contact_key,
+    canonical_contact_key,
 };
 #[cfg(test)]
 use super::contact::{ToiAlpha, ToiCountLimitReached};
@@ -15,18 +15,13 @@ use super::contact_solver::ContactSolve;
 use super::joint::JointRecord;
 use super::object::{Body, Fixture};
 use super::proxy::FixtureProxy;
+use super::step::{CollisionDecisionHook, ContactHookRun, FixturePairSnapshot, StepError};
 
 #[derive(Debug, Clone, Default)]
 pub(super) struct ContactManager {
     contacts: Vec<Contact>,
     next_ordinal: u64,
     transitions: Vec<ContactTransition>,
-}
-
-#[derive(Debug, Clone)]
-pub(super) struct HookContactOccurrence {
-    pub(super) ordinal: u64,
-    pub(super) snapshot: ManagedContactSnapshot,
 }
 
 impl ContactManager {
@@ -70,18 +65,26 @@ impl ContactManager {
         }
     }
 
-    pub(super) fn refresh_continuous_contact(
+    pub(super) fn refresh_continuous_contact_with_hook<H: CollisionDecisionHook>(
         &mut self,
         index: usize,
         bodies: &mut Arena<Body, BodyId>,
         fixtures: &Arena<Fixture, FixtureId>,
-    ) -> Option<()> {
-        let contact = self.contacts.get_mut(index)?;
-        let maybe_transition = update_contact(contact, bodies, fixtures);
-        if let Some(transition) = maybe_transition {
+        hook_run: &mut ContactHookRun<'_, H>,
+    ) -> Result<Option<()>, StepError> {
+        let Some(contact) = self.contacts.get_mut(index) else {
+            return Ok(None);
+        };
+        let update = update_contact(contact, bodies, fixtures);
+        if let Some(transition) = update.maybe_transition {
             self.transitions.push(transition);
         }
-        Some(())
+        let contact = self
+            .contacts
+            .get_mut(index)
+            .expect("refreshed continuous contact remains live");
+        apply_contact_hook(contact, update.maybe_previous_manifold.as_ref(), hook_run)?;
+        Ok(Some(()))
     }
 
     #[cfg(feature = "differential-internals")]
@@ -141,12 +144,13 @@ impl ContactManager {
         contact.increment_toi_count()
     }
 
-    pub(super) fn find_new_contacts(
+    pub(super) fn find_new_contacts<H: CollisionDecisionHook>(
         &mut self,
         broad_phase: &mut BroadPhase<FixtureProxy>,
         bodies: &mut Arena<Body, BodyId>,
         fixtures: &mut Arena<Fixture, FixtureId>,
         joints: &Arena<JointRecord, JointId>,
+        hook_run: &mut ContactHookRun<'_, H>,
     ) {
         let mut pairs = Vec::new();
         broad_phase
@@ -154,25 +158,28 @@ impl ContactManager {
             .expect("world-owned broad-phase entries must remain coherent");
 
         for (first, second) in pairs {
-            self.add_pair(first, second, bodies, fixtures, joints);
+            self.add_pair(first, second, bodies, fixtures, joints, hook_run);
         }
     }
 
-    pub(super) fn update_contacts(
+    pub(super) fn update_contacts<H: CollisionDecisionHook>(
         &mut self,
         broad_phase: &BroadPhase<FixtureProxy>,
         bodies: &mut Arena<Body, BodyId>,
         fixtures: &mut Arena<Fixture, FixtureId>,
         joints: &Arena<JointRecord, JointId>,
-    ) {
+        hook_run: &mut ContactHookRun<'_, H>,
+    ) -> Result<(), StepError> {
         let mut index = 0;
         while index < self.contacts.len() {
             let key = self.contacts[index].key;
-            if self.contacts[index].needs_filtering()
-                && !pair_is_eligible(key, bodies, fixtures, joints)
-            {
-                self.destroy_contact(index, bodies, fixtures);
-                continue;
+            if self.contacts[index].needs_filtering() {
+                let eligible = pair_is_eligible(key, bodies, fixtures, joints)
+                    && hook_run.should_collide(&fixture_pair_snapshot(key));
+                if !eligible {
+                    self.destroy_contact(index, bodies, fixtures);
+                    continue;
+                }
             }
             self.contacts[index].set_needs_filtering(false);
 
@@ -181,10 +188,15 @@ impl ContactManager {
                 continue;
             }
 
-            let maybe_transition = update_contact(&mut self.contacts[index], bodies, fixtures);
-            if let Some(transition) = maybe_transition {
+            let update = update_contact(&mut self.contacts[index], bodies, fixtures);
+            if let Some(transition) = update.maybe_transition {
                 self.transitions.push(transition);
             }
+            apply_contact_hook(
+                &mut self.contacts[index],
+                update.maybe_previous_manifold.as_ref(),
+                hook_run,
+            )?;
             fixtures
                 .get_mut(key.first.fixture)
                 .expect("contact fixture A remains live")
@@ -195,6 +207,7 @@ impl ContactManager {
                 .pending_refilter = false;
             index += 1;
         }
+        Ok(())
     }
 
     pub(super) fn flag_fixture_for_filtering(&mut self, fixture: FixtureId) {
@@ -203,6 +216,16 @@ impl ContactManager {
                 contact.set_needs_filtering(true);
             }
         }
+    }
+
+    #[cfg(test)]
+    pub(super) fn set_hook_enabled(&mut self, ordinal: u64, enabled: bool) {
+        let contact = self
+            .contacts
+            .iter_mut()
+            .find(|contact| contact.ordinal == ordinal)
+            .expect("test hook occurrence must remain live");
+        contact.set_enabled(enabled);
     }
 
     pub(super) fn destroy_for_body(
@@ -258,26 +281,6 @@ impl ContactManager {
             .collect()
     }
 
-    pub(super) fn hook_contacts(&self) -> Vec<HookContactOccurrence> {
-        self.contacts
-            .iter()
-            .filter(|contact| contact.is_touching())
-            .map(|contact| HookContactOccurrence {
-                ordinal: contact.ordinal,
-                snapshot: contact.snapshot(),
-            })
-            .collect()
-    }
-
-    pub(super) fn set_hook_enabled(&mut self, ordinal: u64, enabled: bool) {
-        let contact = self
-            .contacts
-            .iter_mut()
-            .find(|contact| contact.ordinal == ordinal)
-            .expect("hook occurrence must remain live while the world is locked");
-        contact.set_enabled(enabled);
-    }
-
     #[cfg(test)]
     pub(super) fn seed_first_impulses_for_test(&mut self, normal: f32, tangent: f32) {
         let contact = self
@@ -311,13 +314,14 @@ impl ContactManager {
             .map(|contact| ContactSolve::new(contact.staged_snapshot(impulses)))
     }
 
-    fn add_pair(
+    fn add_pair<H: CollisionDecisionHook>(
         &mut self,
         first_proxy: FixtureProxy,
         second_proxy: FixtureProxy,
         bodies: &mut Arena<Body, BodyId>,
         fixtures: &mut Arena<Fixture, FixtureId>,
         joints: &Arena<JointRecord, JointId>,
+        hook_run: &mut ContactHookRun<'_, H>,
     ) {
         let first_fixture = fixtures
             .get(first_proxy.fixture)
@@ -343,12 +347,17 @@ impl ContactManager {
         ) else {
             return;
         };
-        if !pair_is_eligible(key, bodies, fixtures, joints)
-            || self
-                .contacts
-                .iter()
-                .any(|contact| contact.key.matches_unordered(key))
+        if !pair_is_eligible(key, bodies, fixtures, joints) {
+            return;
+        }
+        if self
+            .contacts
+            .iter()
+            .any(|contact| contact.key.matches_unordered(key))
         {
+            return;
+        }
+        if !hook_run.should_collide(&fixture_pair_snapshot(key)) {
             return;
         }
 
@@ -470,11 +479,16 @@ fn broad_phase_overlap(
     aabb_a.overlaps(aabb_b)
 }
 
+struct ContactUpdate {
+    maybe_transition: Option<ContactTransition>,
+    maybe_previous_manifold: Option<crate::collision::Manifold>,
+}
+
 fn update_contact(
     contact: &mut Contact,
     bodies: &mut Arena<Body, BodyId>,
     fixtures: &Arena<Fixture, FixtureId>,
-) -> Option<ContactTransition> {
+) -> ContactUpdate {
     let fixture_a = fixtures
         .get(contact.key.first.fixture)
         .expect("contact fixture A remains live");
@@ -492,6 +506,7 @@ fn update_contact(
         .state
         .transform();
     let was_touching = contact.is_touching();
+    let maybe_previous_manifold = contact.maybe_manifold.clone();
     contact.set_enabled(true);
     contact.set_sensor(fixture_a.definition.is_sensor() || fixture_b.definition.is_sensor());
     let touching = if contact.is_sensor() {
@@ -537,7 +552,39 @@ fn update_contact(
         (true, false) => Some(ContactTransitionKind::End),
         (false, false) => None,
     };
-    kind.map(|kind| ContactTransition::new(kind, contact.snapshot()))
+    ContactUpdate {
+        maybe_transition: kind.map(|kind| ContactTransition::new(kind, contact.snapshot())),
+        maybe_previous_manifold,
+    }
+}
+
+fn fixture_pair_snapshot(key: ContactKey) -> FixturePairSnapshot {
+    FixturePairSnapshot::new(
+        [key.first.fixture, key.second.fixture],
+        [key.first.body, key.second.body],
+        [key.first.child_index, key.second.child_index],
+    )
+}
+
+fn apply_contact_hook<H: CollisionDecisionHook>(
+    contact: &mut Contact,
+    maybe_previous_manifold: Option<&crate::collision::Manifold>,
+    hook_run: &mut ContactHookRun<'_, H>,
+) -> Result<(), StepError> {
+    if !contact.is_touching() {
+        return Ok(());
+    }
+    let snapshot = contact.snapshot();
+    let directive =
+        hook_run.contact_updated(&snapshot, maybe_previous_manifold, !snapshot.is_sensor())?;
+    let (maybe_friction, maybe_restitution, maybe_tangent_speed) = directive.material_controls();
+    contact.apply_pre_solve_controls(
+        directive.enabled(),
+        maybe_friction,
+        maybe_restitution,
+        maybe_tangent_speed,
+    );
+    Ok(())
 }
 
 fn wake_contact_bodies(key: ContactKey, bodies: &mut Arena<Body, BodyId>) {

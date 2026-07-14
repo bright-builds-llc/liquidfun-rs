@@ -1,4 +1,7 @@
-use super::{ContactTransition, StepCompletion, StepConfiguration, StepError};
+use super::{
+    CollisionDecisionHook, ContactHookRun, ContactTransition, StepCompletion, StepConfiguration,
+    StepError,
+};
 use crate::World;
 
 use crate::world::contact_solver::{ContactSolve, ContactSolveFailure};
@@ -49,12 +52,13 @@ pub(super) struct ContinuousStageResult {
 }
 
 impl World {
-    pub(super) fn run_continuous_stage(
+    pub(super) fn run_continuous_stage<H: CollisionDecisionHook>(
         &mut self,
         configuration: StepConfiguration,
         key: ContinuousStepKey,
         work_limit: usize,
         contact_transitions: &[ContactTransition],
+        hook_run: &mut ContactHookRun<'_, H>,
     ) -> Result<ContinuousStageResult, StepError> {
         let mut completed_events = 0;
         let mut contact_solves = Vec::new();
@@ -67,7 +71,12 @@ impl World {
                 });
             }
             let maybe_event = self
-                .solve_next_continuous_event(configuration, ToiIslandLimits::REVIEWED, false)
+                .solve_next_continuous_event_with_hook(
+                    configuration,
+                    ToiIslandLimits::REVIEWED,
+                    false,
+                    hook_run,
+                )
                 .map_err(|error| {
                     self.continuous_step_state.mark_pending(key);
                     continuous_step_error(error, contact_transitions)
@@ -97,6 +106,7 @@ fn continuous_step_error(
     contact_transitions: &[ContactTransition],
 ) -> StepError {
     match error {
+        ContinuousEventError::Scan(ContinuousScanError::Hook(error)) => error,
         ContinuousEventError::Scan(ContinuousScanError::CapacityExceeded { resource, limit })
         | ContinuousEventError::Island(IslandBuildError::CapacityExceeded { resource, limit })
         | ContinuousEventError::Solve(ContactSolveFailure::CapacityExceeded { resource, limit }) => {

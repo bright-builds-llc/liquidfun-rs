@@ -13,6 +13,7 @@ use super::island::{
 };
 use super::object::World;
 use super::proxy::PreparedSynchronization;
+use super::step::{CollisionDecisionHook, ContactHookRun, StepError};
 
 const REVIEWED_MAX_CCD_SCAN_CONTACTS: usize = 8_192;
 
@@ -60,7 +61,7 @@ struct ContinuousScanControl {
     maybe_reject_ordinal: Option<u64>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub(super) enum ContinuousScanError {
     CapacityExceeded {
         resource: &'static str,
@@ -70,9 +71,10 @@ pub(super) enum ContinuousScanError {
     Collision(CollisionError),
     Sweep(SweepError),
     ToiCountLimit,
+    Hook(StepError),
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub(super) enum ContinuousEventError {
     Scan(ContinuousScanError),
     Island(IslandBuildError),
@@ -143,15 +145,19 @@ impl From<ToiCountLimitReached> for ContinuousScanError {
 }
 
 impl World {
-    pub(super) fn select_continuous_candidate(
-        &mut self,
-    ) -> Result<Option<ContinuousCandidate>, ContinuousScanError> {
-        self.select_continuous_candidate_with_control(ContinuousScanControl::default())
-    }
-
     fn select_continuous_candidate_with_control(
         &mut self,
         control: ContinuousScanControl,
+    ) -> Result<Option<ContinuousCandidate>, ContinuousScanError> {
+        let mut hook = super::step::NoDecisionHook;
+        let mut hook_run = ContactHookRun::new(&mut hook, super::step::StepLimits::default());
+        self.select_continuous_candidate_with_hook(control, &mut hook_run)
+    }
+
+    fn select_continuous_candidate_with_hook<H: CollisionDecisionHook>(
+        &mut self,
+        control: ContinuousScanControl,
+        hook_run: &mut ContactHookRun<'_, H>,
     ) -> Result<Option<ContinuousCandidate>, ContinuousScanError> {
         let contact_count = self.contact_manager.len();
         if contact_count > REVIEWED_MAX_CCD_SCAN_CONTACTS {
@@ -166,7 +172,7 @@ impl World {
             let Some(candidate) = self.scan_earliest_continuous_contact()? else {
                 return Ok(None);
             };
-            if self.validate_continuous_candidate(candidate, control)? {
+            if self.validate_continuous_candidate(candidate, control, hook_run)? {
                 return Ok(Some(candidate));
             }
             rejection_count =
@@ -342,10 +348,11 @@ impl World {
         Ok((state_a.sweep(), state_b.sweep(), alpha0))
     }
 
-    fn validate_continuous_candidate(
+    fn validate_continuous_candidate<H: CollisionDecisionHook>(
         &mut self,
         candidate: ContinuousCandidate,
         control: ContinuousScanControl,
+        hook_run: &mut ContactHookRun<'_, H>,
     ) -> Result<bool, ContinuousScanError> {
         let index = candidate.contact_index();
         let contact = self
@@ -380,7 +387,8 @@ impl World {
             .state = advanced_b;
 
         self.contact_manager
-            .refresh_continuous_contact(index, &mut self.bodies, &self.fixtures)
+            .refresh_continuous_contact_with_hook(index, &mut self.bodies, &self.fixtures, hook_run)
+            .map_err(ContinuousScanError::Hook)?
             .ok_or(ContinuousScanError::InvalidGraph)?;
         let contact = self
             .contact_manager
@@ -458,7 +466,7 @@ impl World {
                 )
             })
         })
-        .map_err(rigid_toi_solve_error)
+        .map_err(|error| rigid_toi_solve_error(&error))
     }
 
     #[cfg(feature = "differential-internals")]
@@ -511,7 +519,8 @@ impl World {
                 ContinuousScanError::InvalidGraph
                 | ContinuousScanError::Collision(_)
                 | ContinuousScanError::Sweep(_)
-                | ContinuousScanError::ToiCountLimit => {
+                | ContinuousScanError::ToiCountLimit
+                | ContinuousScanError::Hook(_) => {
                     crate::rigid_differential::RigidCcdScanError::InvalidState
                 }
             })?;
@@ -534,7 +543,7 @@ impl World {
 
 #[cfg(feature = "differential-internals")]
 fn rigid_toi_solve_error(
-    error: ContinuousEventError,
+    error: &ContinuousEventError,
 ) -> crate::rigid_differential::RigidToiSolveError {
     use crate::rigid_differential::RigidToiSolveError;
 
@@ -542,14 +551,18 @@ fn rigid_toi_solve_error(
         ContinuousEventError::Island(IslandBuildError::CapacityExceeded { resource, limit })
         | ContinuousEventError::Solve(ContactSolveFailure::CapacityExceeded { resource, limit })
         | ContinuousEventError::Scan(ContinuousScanError::CapacityExceeded { resource, limit }) => {
-            RigidToiSolveError::CapacityExceeded { resource, limit }
+            RigidToiSolveError::CapacityExceeded {
+                resource,
+                limit: *limit,
+            }
         }
         ContinuousEventError::InjectedFailure => RigidToiSolveError::InjectedFailure,
         ContinuousEventError::Scan(
             ContinuousScanError::InvalidGraph
             | ContinuousScanError::Collision(_)
             | ContinuousScanError::Sweep(_)
-            | ContinuousScanError::ToiCountLimit,
+            | ContinuousScanError::ToiCountLimit
+            | ContinuousScanError::Hook(_),
         )
         | ContinuousEventError::Island(IslandBuildError::InvalidGraph)
         | ContinuousEventError::Solve(

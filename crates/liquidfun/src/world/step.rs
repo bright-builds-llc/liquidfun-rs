@@ -12,7 +12,6 @@ use super::fixture::FixtureDestructionError;
 
 use super::config::{StepCompletion, StepConfiguration};
 use super::contact::{ContactPointSnapshot, ContactTransition, ManagedContactSnapshot};
-use super::contact_manager::HookContactOccurrence;
 use super::contact_solver::{ContactSolve, ContactSolveFailure};
 use super::continuous::{ContinuousStepKey, ContinuousStepKind};
 
@@ -196,6 +195,12 @@ impl<'step> ContactView<'step> {
         self.contact.fixtures()
     }
 
+    /// Returns typed body identities in oriented manager order.
+    #[must_use]
+    pub const fn bodies(self) -> [BodyId; 2] {
+        self.contact.bodies()
+    }
+
     /// Returns shape-child coordinates in oriented manager order.
     #[must_use]
     pub const fn child_indices(self) -> [crate::collision::ChildIndex; 2] {
@@ -238,8 +243,10 @@ impl<'step> ContactView<'step> {
         self.contact.restitution()
     }
 
-    fn snapshot(self) -> ManagedContactSnapshot {
-        self.contact.clone()
+    /// Returns the configured surface tangent speed.
+    #[must_use]
+    pub const fn tangent_speed(self) -> f32 {
+        self.contact.tangent_speed()
     }
 }
 
@@ -264,13 +271,275 @@ pub enum CollisionDirective {
     Ignore,
 }
 
-/// Narrow pre-solve result returned by a hook.
+#[derive(Debug, Clone, Copy)]
+pub(super) struct FixturePairSnapshot {
+    fixtures: [FixtureId; 2],
+    bodies: [BodyId; 2],
+    child_indices: [crate::collision::ChildIndex; 2],
+}
+
+impl FixturePairSnapshot {
+    pub(super) const fn new(
+        fixtures: [FixtureId; 2],
+        bodies: [BodyId; 2],
+        child_indices: [crate::collision::ChildIndex; 2],
+    ) -> Self {
+        Self {
+            fixtures,
+            bodies,
+            child_indices,
+        }
+    }
+}
+
+/// Borrow-scoped semantic fixture pair evaluated before contact admission.
+///
+/// The view deliberately contains no reusable contact identity because a
+/// rejected admission does not create a contact.
+///
+/// ```compile_fail
+/// use liquidfun::ContactId;
+/// ```
+#[derive(Clone, Copy)]
+pub struct FixturePairView<'hook> {
+    pair: &'hook FixturePairSnapshot,
+}
+
+impl<'hook> FixturePairView<'hook> {
+    pub(super) const fn new(pair: &'hook FixturePairSnapshot) -> Self {
+        Self { pair }
+    }
+
+    /// Returns fixture identities in canonical pair order.
+    #[must_use]
+    pub const fn fixtures(self) -> [FixtureId; 2] {
+        self.pair.fixtures
+    }
+
+    /// Returns body identities in canonical pair order.
+    #[must_use]
+    pub const fn bodies(self) -> [BodyId; 2] {
+        self.pair.bodies
+    }
+
+    /// Returns shape-child coordinates in canonical pair order.
+    #[must_use]
+    pub const fn child_indices(self) -> [crate::collision::ChildIndex; 2] {
+        self.pair.child_indices
+    }
+}
+
+impl fmt::Debug for FixturePairView<'_> {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter
+            .debug_struct("FixturePairView")
+            .field("fixtures", &self.fixtures())
+            .field("bodies", &self.bodies())
+            .field("child_indices", &self.child_indices())
+            .finish()
+    }
+}
+
+/// A validated contact-control value was rejected before hook application.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum ContactControlError {
+    /// The value was NaN or infinite.
+    NonFinite,
+    /// Friction or restitution was negative.
+    Negative,
+}
+
+impl fmt::Display for ContactControlError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::NonFinite => formatter.write_str("contact control must be finite"),
+            Self::Negative => formatter.write_str("contact material control must be non-negative"),
+        }
+    }
+}
+
+impl Error for ContactControlError {}
+
+/// Opaque validated material controls carried by [`PreSolveDirective`].
+#[derive(Debug, Clone, Copy, Default, PartialEq)]
+#[allow(
+    clippy::struct_field_names,
+    reason = "maybe_ prefixes make the three optional source controls explicit"
+)]
+pub struct PreSolveControls {
+    maybe_friction: Option<f32>,
+    maybe_restitution: Option<f32>,
+    maybe_tangent_speed: Option<f32>,
+}
+
+impl PreSolveControls {
+    const EMPTY: Self = Self {
+        maybe_friction: None,
+        maybe_restitution: None,
+        maybe_tangent_speed: None,
+    };
+}
+
+/// Narrow pre-solve result returned by a hook.
+#[derive(Debug, Clone, Copy, Default, PartialEq)]
+#[non_exhaustive]
 pub enum PreSolveDirective {
     /// Keep the occurrence enabled.
+    #[default]
     Enable,
     /// Disable the occurrence for this step.
     Disable,
+    /// Keep the occurrence enabled and apply validated source-supported controls.
+    Configure {
+        /// Whether this occurrence remains enabled for the current update.
+        enabled: bool,
+        /// Validated source-supported material controls.
+        controls: PreSolveControls,
+    },
+}
+
+impl PreSolveDirective {
+    /// Returns this directive with a finite non-negative friction override.
+    ///
+    /// # Errors
+    ///
+    /// Rejects non-finite or negative values.
+    pub fn with_friction(self, friction: f32) -> Result<Self, ContactControlError> {
+        validate_material_control(friction)?;
+        let (enabled, mut controls) = self.parts();
+        controls.maybe_friction = Some(friction);
+        Ok(Self::Configure { enabled, controls })
+    }
+
+    /// Returns this directive with a finite non-negative restitution override.
+    ///
+    /// # Errors
+    ///
+    /// Rejects non-finite or negative values.
+    pub fn with_restitution(self, restitution: f32) -> Result<Self, ContactControlError> {
+        validate_material_control(restitution)?;
+        let (enabled, mut controls) = self.parts();
+        controls.maybe_restitution = Some(restitution);
+        Ok(Self::Configure { enabled, controls })
+    }
+
+    /// Returns this directive with a finite tangent-speed override.
+    ///
+    /// # Errors
+    ///
+    /// Rejects NaN and infinity.
+    pub fn with_tangent_speed(self, tangent_speed: f32) -> Result<Self, ContactControlError> {
+        if !tangent_speed.is_finite() {
+            return Err(ContactControlError::NonFinite);
+        }
+        let (enabled, mut controls) = self.parts();
+        controls.maybe_tangent_speed = Some(tangent_speed);
+        Ok(Self::Configure { enabled, controls })
+    }
+
+    const fn parts(self) -> (bool, PreSolveControls) {
+        match self {
+            Self::Enable => (true, PreSolveControls::EMPTY),
+            Self::Disable => (false, PreSolveControls::EMPTY),
+            Self::Configure { enabled, controls } => (enabled, controls),
+        }
+    }
+
+    pub(super) const fn enabled(self) -> bool {
+        self.parts().0
+    }
+
+    pub(super) const fn material_controls(self) -> (Option<f32>, Option<f32>, Option<f32>) {
+        let controls = self.parts().1;
+        (
+            controls.maybe_friction,
+            controls.maybe_restitution,
+            controls.maybe_tangent_speed,
+        )
+    }
+}
+
+fn validate_material_control(value: f32) -> Result<(), ContactControlError> {
+    if !value.is_finite() {
+        return Err(ContactControlError::NonFinite);
+    }
+    if value < 0.0 {
+        return Err(ContactControlError::Negative);
+    }
+    Ok(())
+}
+
+/// Borrow-scoped semantic state available at the pinned pre-solve point.
+#[derive(Clone, Copy)]
+pub struct PreSolveView<'hook> {
+    current: &'hook ManagedContactSnapshot,
+    current_manifold: &'hook crate::collision::Manifold,
+    maybe_previous_manifold: Option<&'hook crate::collision::Manifold>,
+}
+
+impl<'hook> PreSolveView<'hook> {
+    pub(super) const fn new(
+        current: &'hook ManagedContactSnapshot,
+        maybe_previous_manifold: Option<&'hook crate::collision::Manifold>,
+    ) -> Self {
+        Self {
+            current,
+            current_manifold: current
+                .maybe_manifold()
+                .expect("pre-solve construction requires a touching solid manifold"),
+            maybe_previous_manifold,
+        }
+    }
+
+    /// Returns fixture identities in oriented manager order.
+    #[must_use]
+    pub const fn fixtures(self) -> [FixtureId; 2] {
+        self.current.fixtures()
+    }
+
+    /// Returns body identities in oriented manager order.
+    #[must_use]
+    pub const fn bodies(self) -> [BodyId; 2] {
+        self.current.bodies()
+    }
+
+    /// Returns child indices in oriented manager order.
+    #[must_use]
+    pub const fn child_indices(self) -> [crate::collision::ChildIndex; 2] {
+        self.current.child_indices()
+    }
+
+    /// Returns the current touching manifold.
+    #[must_use]
+    pub fn current_manifold(self) -> &'hook crate::collision::Manifold {
+        self.current_manifold
+    }
+
+    /// Returns the owned semantic manifold captured before this update.
+    #[must_use]
+    pub const fn maybe_previous_manifold(self) -> Option<&'hook crate::collision::Manifold> {
+        self.maybe_previous_manifold
+    }
+
+    /// Returns the current semantic contact through the legacy read-only view.
+    #[must_use]
+    pub const fn contact(self) -> ContactView<'hook> {
+        ContactView {
+            contact: self.current,
+        }
+    }
+}
+
+impl fmt::Debug for PreSolveView<'_> {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter
+            .debug_struct("PreSolveView")
+            .field("fixtures", &self.fixtures())
+            .field("bodies", &self.bodies())
+            .field("child_indices", &self.child_indices())
+            .finish_non_exhaustive()
+    }
 }
 
 /// Restricted synchronous step hooks.
@@ -279,20 +548,52 @@ pub enum PreSolveDirective {
 /// decisions. They do not receive mutable world access:
 ///
 /// ```compile_fail
-/// use liquidfun::{ContactView, StepHook, World};
+/// use liquidfun::{CollisionDecisionHook, PreSolveDirective, PreSolveView, World};
 ///
 /// struct MutatingHook;
 ///
-/// impl StepHook for MutatingHook {
-///     fn observe(&mut self, _world: &mut World, _contact: ContactView<'_>) {}
+/// impl CollisionDecisionHook for MutatingHook {
+///     fn pre_solve(
+///         &mut self,
+///         _world: &mut World,
+///         _contact: PreSolveView<'_>,
+///     ) -> PreSolveDirective {
+///         PreSolveDirective::Enable
+///     }
 /// }
 /// ```
-pub trait StepHook {
-    /// Decides whether one contact occurrence should proceed.
-    fn filter(&mut self, _contact: ContactView<'_>) -> CollisionDirective {
+pub trait CollisionDecisionHook {
+    /// Decides whether a broad-phase pair may create or retain a contact.
+    fn should_collide(&mut self, _pair: FixturePairView<'_>) -> CollisionDirective {
         CollisionDirective::Collide
     }
 
+    /// Decides source-supported controls immediately after one solid update.
+    fn pre_solve(&mut self, _contact: PreSolveView<'_>) -> PreSolveDirective {
+        PreSolveDirective::Enable
+    }
+
+    /// Observes one non-filtered occurrence without mutable world access.
+    fn observe(&mut self, _contact: ContactView<'_>) {}
+
+    /// Optionally requests one owned mutation after observing an occurrence.
+    fn command(&mut self, _contact: ContactView<'_>) -> Option<WorldCommand> {
+        None
+    }
+}
+
+/// Explicit no-op decision maker used to replace or unregister prior behavior.
+#[derive(Debug, Default, Clone, Copy)]
+pub struct NoDecisionHook;
+
+impl CollisionDecisionHook for NoDecisionHook {}
+
+/// Legacy observation and deferred-command hook contract.
+///
+/// Implementations receive the new source-timed behavior through the blanket
+/// [`CollisionDecisionHook`] adapter. New filtering code should implement
+/// `CollisionDecisionHook` directly so it can inspect [`FixturePairView`].
+pub trait StepHook {
     /// Decides whether one supported solid occurrence remains enabled.
     fn pre_solve(&mut self, _contact: ContactView<'_>) -> PreSolveDirective {
         PreSolveDirective::Enable
@@ -304,6 +605,73 @@ pub trait StepHook {
     /// Optionally requests one owned mutation after observing an occurrence.
     fn command(&mut self, _contact: ContactView<'_>) -> Option<WorldCommand> {
         None
+    }
+}
+
+impl<H: StepHook + ?Sized> CollisionDecisionHook for H {
+    fn pre_solve(&mut self, contact: PreSolveView<'_>) -> PreSolveDirective {
+        StepHook::pre_solve(self, contact.contact())
+    }
+
+    fn observe(&mut self, contact: ContactView<'_>) {
+        StepHook::observe(self, contact);
+    }
+
+    fn command(&mut self, contact: ContactView<'_>) -> Option<WorldCommand> {
+        StepHook::command(self, contact)
+    }
+}
+
+pub(super) struct ContactHookRun<'hook, H> {
+    hook: &'hook mut H,
+    limits: StepLimits,
+    events: Vec<ContactEvent>,
+    commands: Vec<WorldCommand>,
+}
+
+impl<'hook, H: CollisionDecisionHook> ContactHookRun<'hook, H> {
+    pub(super) fn new(hook: &'hook mut H, limits: StepLimits) -> Self {
+        Self {
+            hook,
+            limits,
+            events: Vec::new(),
+            commands: Vec::new(),
+        }
+    }
+
+    pub(super) fn should_collide(&mut self, pair: &FixturePairSnapshot) -> bool {
+        self.hook.should_collide(FixturePairView::new(pair)) == CollisionDirective::Collide
+    }
+
+    pub(super) fn contact_updated(
+        &mut self,
+        current: &ManagedContactSnapshot,
+        maybe_previous_manifold: Option<&crate::collision::Manifold>,
+        allow_pre_solve: bool,
+    ) -> Result<PreSolveDirective, StepError> {
+        check_capacity(self.events.len(), self.limits.max_events, "event")?;
+        let contact = ContactView { contact: current };
+        let directive = if allow_pre_solve {
+            self.hook
+                .pre_solve(PreSolveView::new(current, maybe_previous_manifold))
+        } else {
+            PreSolveDirective::Enable
+        };
+        self.hook.observe(contact);
+        if let Some(command) = self.hook.command(contact) {
+            check_capacity(self.commands.len(), self.limits.max_commands, "command")?;
+            self.commands.push(command);
+        }
+        self.events.push(ContactEvent {
+            contact: current.clone(),
+            collision: CollisionDirective::Collide,
+            maybe_pre_solve: allow_pre_solve.then_some(directive),
+        });
+        Ok(directive)
+    }
+
+    fn finish(self) -> (Vec<ContactEvent>, Vec<WorldCommand>) {
+        (self.events, self.commands)
     }
 }
 
@@ -640,7 +1008,11 @@ impl World {
     ///
     /// Returns an error for poisoned or nested stepping, exhausted limits,
     /// unsupported topology, or non-finite solver state.
-    pub fn step<H: StepHook>(
+    #[allow(
+        clippy::too_many_lines,
+        reason = "the locked source-ordered step lifecycle is kept visible as one transaction"
+    )]
+    pub fn step<H: CollisionDecisionHook>(
         &mut self,
         configuration: StepConfiguration,
         hook: &mut H,
@@ -662,17 +1034,25 @@ impl World {
             self.continuous_step_state.invalidate();
             ContinuousStepKind::Fresh
         };
+        let mut hook_run = ContactHookRun::new(hook, limits);
         let mut contact_transitions;
-        let events;
-        let commands;
         let mut contact_solves = Vec::new();
         let mut continuous_contact_solves = Vec::new();
         let completion = {
             let _lock = step_lock;
             phases.push(StepPhase::FindPairs);
-            self.find_pairs();
-            phases.push(StepPhase::UpdateContacts);
-            self.update_contacts_for_step();
+            let hook_result = catch_unwind(AssertUnwindSafe(|| {
+                self.find_pairs_with_hook(&mut hook_run);
+                phases.push(StepPhase::UpdateContacts);
+                self.update_contacts_for_step(&mut hook_run)
+            }));
+            match hook_result {
+                Ok(result) => result?,
+                Err(payload) => {
+                    self.step_state.poison();
+                    resume_unwind(payload);
+                }
+            }
             contact_transitions = self.contact_manager.drain_transitions();
             if step_kind == ContinuousStepKind::Fresh && configuration.time_step() > 0.0 {
                 self.preflight_contact_solver()
@@ -680,8 +1060,6 @@ impl World {
             }
 
             phases.push(StepPhase::Hook);
-            let occurrences = self.contact_manager.hook_contacts();
-            (events, commands) = self.run_contact_hooks(&occurrences, hook, limits)?;
             if step_kind == ContinuousStepKind::Fresh && configuration.time_step() > 0.0 {
                 phases.push(StepPhase::Solve);
                 contact_solves = self
@@ -694,12 +1072,22 @@ impl World {
             }
 
             if continuous_enabled {
-                let continuous = self.run_continuous_stage(
-                    configuration,
-                    continuous_key,
-                    limits.max_continuous_work,
-                    &contact_transitions,
-                )?;
+                let hook_result = catch_unwind(AssertUnwindSafe(|| {
+                    self.run_continuous_stage(
+                        configuration,
+                        continuous_key,
+                        limits.max_continuous_work,
+                        &contact_transitions,
+                        &mut hook_run,
+                    )
+                }));
+                let continuous = match hook_result {
+                    Ok(result) => result?,
+                    Err(payload) => {
+                        self.step_state.poison();
+                        resume_unwind(payload);
+                    }
+                };
                 continuous_contact_solves = continuous.contact_solves;
                 contact_transitions.extend(self.contact_manager.drain_transitions());
                 continuous.completion
@@ -707,6 +1095,7 @@ impl World {
                 StepCompletion::Complete
             }
         };
+        let (events, commands) = hook_run.finish();
         phases.push(StepPhase::Unlock);
 
         let mut lifecycle = contact_transitions
@@ -750,8 +1139,11 @@ impl World {
         })
     }
 
-    fn find_pairs(&mut self) {
-        self.find_new_contacts();
+    fn find_pairs_with_hook<H: CollisionDecisionHook>(
+        &mut self,
+        hook_run: &mut ContactHookRun<'_, H>,
+    ) {
+        self.find_new_contacts_with_hook(hook_run);
     }
 
     fn finish_successful_step(
@@ -766,8 +1158,11 @@ impl World {
         completion
     }
 
-    fn update_contacts_for_step(&mut self) {
-        self.update_contacts();
+    fn update_contacts_for_step<H: CollisionDecisionHook>(
+        &mut self,
+        hook_run: &mut ContactHookRun<'_, H>,
+    ) -> Result<(), StepError> {
+        self.update_contacts_with_hook(hook_run)
     }
 
     fn solve_contact_constraints(
@@ -777,46 +1172,6 @@ impl World {
         maybe_failure_injection: Option<super::island::SolveFailureInjection>,
     ) -> Result<Vec<ContactSolve>, ContactSolveFailure> {
         self.solve_contacts(configuration, timing, maybe_failure_injection)
-    }
-
-    fn run_contact_hooks<H: StepHook>(
-        &mut self,
-        occurrences: &[HookContactOccurrence],
-        hook: &mut H,
-        limits: StepLimits,
-    ) -> Result<(Vec<ContactEvent>, Vec<WorldCommand>), StepError> {
-        let mut events = Vec::with_capacity(occurrences.len().min(limits.max_events));
-        let mut commands = Vec::with_capacity(occurrences.len().min(limits.max_commands));
-        for occurrence in occurrences {
-            check_capacity(events.len(), limits.max_events, "event")?;
-            let view = ContactView {
-                contact: &occurrence.snapshot,
-            };
-            let callback = catch_unwind(AssertUnwindSafe(|| {
-                invoke_hook(hook, view, !view.is_sensor())
-            }));
-            let (collision, maybe_pre_solve, maybe_command) = match callback {
-                Ok(output) => output,
-                Err(payload) => {
-                    self.step_state.poison();
-                    resume_unwind(payload);
-                }
-            };
-            let enabled = collision == CollisionDirective::Collide
-                && maybe_pre_solve != Some(PreSolveDirective::Disable);
-            self.contact_manager
-                .set_hook_enabled(occurrence.ordinal, enabled);
-            if let Some(command) = maybe_command {
-                check_capacity(commands.len(), limits.max_commands, "command")?;
-                commands.push(command);
-            }
-            events.push(ContactEvent {
-                contact: view.snapshot(),
-                collision,
-                maybe_pre_solve,
-            });
-        }
-        Ok((events, commands))
     }
 
     fn apply_commands(
@@ -884,25 +1239,6 @@ impl World {
     pub fn is_poisoned(&self) -> bool {
         self.step_state.is_poisoned()
     }
-}
-
-fn invoke_hook<H: StepHook>(
-    hook: &mut H,
-    view: ContactView<'_>,
-    allow_pre_solve: bool,
-) -> (
-    CollisionDirective,
-    Option<PreSolveDirective>,
-    Option<WorldCommand>,
-) {
-    let collision = hook.filter(view);
-    if collision == CollisionDirective::Ignore {
-        return (collision, None, None);
-    }
-    let maybe_directive = allow_pre_solve.then(|| hook.pre_solve(view));
-    hook.observe(view);
-    let maybe_command = hook.command(view);
-    (collision, maybe_directive, maybe_command)
 }
 
 fn solver_step_error(

@@ -41,7 +41,8 @@ pub use query::{
     RayCastFractionError, WorldRayCastError, WorldRayHit,
 };
 pub use step::{
-    CollisionDirective, CommandApplication, CommandError, ContactEvent, ContactView,
-    ContinuousProgress, PreSolveDirective, StepError, StepHook, StepLifecycleEvent, StepLimits,
-    StepPhase, StepReport, WorldCommand,
+    CollisionDecisionHook, CollisionDirective, CommandApplication, CommandError,
+    ContactControlError, ContactEvent, ContactView, ContinuousProgress, FixturePairView,
+    NoDecisionHook, PreSolveDirective, PreSolveView, StepError, StepHook, StepLifecycleEvent,
+    StepLimits, StepPhase, StepReport, WorldCommand,
 };

@@ -148,6 +148,7 @@ struct VelocityConstraint {
     point_count: usize,
     normal: Vec2,
     friction: f32,
+    tangent_speed: f32,
     k: [[f32; 2]; 2],
     normal_mass: [[f32; 2]; 2],
 }
@@ -468,6 +469,7 @@ fn build_constraint(
         point_count: contact.points.len(),
         normal: world.normal(),
         friction: contact.friction,
+        tangent_speed: contact.tangent_speed,
         k: [[0.0; 2]; 2],
         normal_mass: [[0.0; 2]; 2],
     };
@@ -490,6 +492,7 @@ fn build_constraint(
     prepare_two_point_block(&mut constraint, first, second);
     if !constraint.normal.is_valid()
         || !constraint.friction.is_finite()
+        || !constraint.tangent_speed.is_finite()
         || constraint.friction < 0.0
         || constraint.points[..constraint.point_count]
             .iter()
@@ -644,7 +647,7 @@ fn solve_tangent_constraints(
             + Vec2::scalar_cross(second.angular_velocity, point.r_b)
             - first.linear_velocity
             - Vec2::scalar_cross(first.angular_velocity, point.r_a);
-        let lambda = point.tangent_mass * -relative.dot(tangent);
+        let lambda = point.tangent_mass * (constraint.tangent_speed - relative.dot(tangent));
         let maximum_friction = constraint.friction * point.normal_impulse;
         let new_impulse =
             (point.tangent_impulse + lambda).clamp(-maximum_friction, maximum_friction);

@@ -31,7 +31,9 @@ use super::island::{
 };
 use super::joint::solver::JointImpulseSolution;
 use super::proxy::{FixtureProxies, FixtureProxy, PreparedFixtureBounds, PreparedSynchronization};
-use super::step::StepState;
+use super::step::{
+    CollisionDecisionHook, ContactHookRun, NoDecisionHook, StepError, StepLimits, StepState,
+};
 use crate::collision::{
     BroadPhase, ChildIndex, CollisionError, FilterData, MassData, RayCastHit, RayCastInput,
 };
@@ -1788,12 +1790,22 @@ impl World {
     }
 
     pub(super) fn find_new_contacts(&mut self) {
+        let mut hook = NoDecisionHook;
+        let mut hook_run = ContactHookRun::new(&mut hook, StepLimits::default());
+        self.find_new_contacts_with_hook(&mut hook_run);
+    }
+
+    pub(super) fn find_new_contacts_with_hook<H: CollisionDecisionHook>(
+        &mut self,
+        hook_run: &mut ContactHookRun<'_, H>,
+    ) {
         self.resolve_pending_body_wakes();
         self.contact_manager.find_new_contacts(
             &mut self.broad_phase,
             &mut self.bodies,
             &mut self.fixtures,
             &self.joints,
+            hook_run,
         );
     }
 
@@ -1811,13 +1823,25 @@ impl World {
         }
     }
 
+    #[cfg(test)]
     pub(super) fn update_contacts(&mut self) {
+        let mut hook = NoDecisionHook;
+        let mut hook_run = ContactHookRun::new(&mut hook, StepLimits::default());
+        self.update_contacts_with_hook(&mut hook_run)
+            .expect("default contact hook remains within reviewed limits");
+    }
+
+    pub(super) fn update_contacts_with_hook<H: CollisionDecisionHook>(
+        &mut self,
+        hook_run: &mut ContactHookRun<'_, H>,
+    ) -> Result<(), StepError> {
         self.contact_manager.update_contacts(
             &self.broad_phase,
             &mut self.bodies,
             &mut self.fixtures,
             &self.joints,
-        );
+            hook_run,
+        )
     }
 
     pub(super) fn solve_contacts(
