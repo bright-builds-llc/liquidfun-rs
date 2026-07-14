@@ -287,7 +287,7 @@ fn native_executes_closed_phase7_actions_and_emits_semantic_observations() {
 }
 
 #[test]
-fn oracle_executes_closed_phase7_actions_and_emits_semantic_observations() {
+fn oracle_fails_closed_for_phase8_until_the_plan_08_13_adapter() {
     // Arrange
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let Ok(executable) = OracleExecutable::resolve(&root, OraclePreset::Debug) else {
@@ -296,31 +296,20 @@ fn oracle_executes_closed_phase7_actions_and_emits_semantic_observations() {
     let request = support::phase7_request();
 
     // Act
-    let captured = execute_rigid_world_process(&executable, &request, REVISION)
-        .expect("validated Phase 7 actions should execute through the pinned oracle adapter");
+    let error = execute_rigid_world_process(&executable, &request, REVISION)
+        .expect_err("Phase 8 must not enter the pre-08-13 C++ adapter");
 
     // Assert
-    let observations = &captured.result().timelines()[0].checkpoints[6].observations;
-    assert!(
-        observations
-            .iter()
-            .any(|observation| matches!(observation, RigidWorldObservation::Step { .. }))
+    assert_eq!(
+        error.kind(),
+        liquidfun_test_protocol::HarnessFailureKind::CppAdapterFailure
     );
-    assert!(
-        observations
-            .iter()
-            .any(|observation| matches!(observation, RigidWorldObservation::Query { .. }))
+    assert_eq!(
+        error.retained_stderr(),
+        b"phase8_cpp_adapter_pending_plan_08_13"
     );
-    assert!(
-        observations
-            .iter()
-            .any(|observation| matches!(observation, RigidWorldObservation::RayCast { .. }))
-    );
-    assert!(
-        observations
-            .iter()
-            .any(|observation| matches!(observation, RigidWorldObservation::OriginShift { .. }))
-    );
+    assert!(!error.child_killed());
+    assert!(!error.child_reaped());
 }
 
 #[test]
@@ -927,7 +916,7 @@ fn comparison_never_canonicalizes_manager_report_or_destruction_order() {
 }
 
 #[test]
-fn supervisor_captures_rigid_result_identity_terminal_and_reset() {
+fn supervisor_rejects_phase8_before_spawning_the_pre_08_13_oracle() {
     // Arrange
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let Ok(executable) = OracleExecutable::resolve(&root, OraclePreset::Debug) else {
@@ -936,15 +925,20 @@ fn supervisor_captures_rigid_result_identity_terminal_and_reset() {
     let request = request();
 
     // Act
-    let captured = execute_rigid_world_process(&executable, &request, REVISION)
-        .expect("reviewed rigid oracle should complete under bounded supervision");
+    let error = execute_rigid_world_process(&executable, &request, REVISION)
+        .expect_err("Phase 8 must fail closed before the pre-08-13 oracle is spawned");
 
     // Assert
-    assert_eq!(captured.result().request_id(), request.request_id());
-    assert_eq!(captured.reset_epoch(), 1);
-    assert!(captured.reset_verified());
-    assert!(!captured.response_bytes().is_empty());
-    assert_eq!(captured.identity().oracle_revision(), REVISION);
+    assert_eq!(
+        error.kind(),
+        liquidfun_test_protocol::HarnessFailureKind::CppAdapterFailure
+    );
+    assert_eq!(
+        error.retained_stderr(),
+        b"phase8_cpp_adapter_pending_plan_08_13"
+    );
+    assert!(!error.child_killed());
+    assert!(!error.child_reaped());
 }
 
 #[test]

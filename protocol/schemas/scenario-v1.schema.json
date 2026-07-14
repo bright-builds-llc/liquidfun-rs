@@ -5177,7 +5177,7 @@
                         "type": "integer"
                       },
                       "maxItems": 64,
-                      "minItems": 2,
+                      "minItems": 3,
                       "type": "array"
                     },
                     "rope_id": {
@@ -5195,7 +5195,7 @@
                         "$ref": "#/$defs/vec2_bits"
                       },
                       "maxItems": 64,
-                      "minItems": 2,
+                      "minItems": 3,
                       "type": "array"
                     }
                   },

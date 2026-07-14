@@ -12,7 +12,7 @@ use crate::{
     TraceSchemaVersion, TransformBits, Vec2Bits, decode_jsonl,
 };
 
-const MAXIMUM_RESULT_TIMELINES: usize = 9;
+const MAXIMUM_RESULT_TIMELINES: usize = RigidWorldWitnessFamily::ALL.len();
 const MAXIMUM_RESULT_CHECKPOINTS: usize = 64;
 const MAXIMUM_RESULT_BODIES: usize = 64;
 const MAXIMUM_RESULT_FIXTURES: usize = 128;
@@ -554,7 +554,7 @@ fn validate_checkpoint_observations(
         );
     }
 
-    let mut actual_observations = observations.iter();
+    let mut actual_observations = observations.iter().peekable();
     for action in actions {
         super::types::apply_lifecycle_action(
             action.action(),
@@ -566,6 +566,30 @@ fn validate_checkpoint_observations(
             continue;
         };
         let live_identities = rigid_world_live_identities(timeline, &live_bodies, &live_fixtures);
+        while matches!(
+            actual_observations.peek(),
+            Some(RigidWorldObservation::Lifecycle { .. })
+        ) {
+            actual_observations.next();
+        }
+        if matches!(expected, ExpectedObservation::Reconstruction) {
+            let mut ordinal = 0_u32;
+            while let Some(RigidWorldObservation::Reconstruction { record }) =
+                actual_observations.peek()
+            {
+                if record.ordinal != ordinal {
+                    return Err(validation(RigidWorldErrorKind::ResultObservationMismatch));
+                }
+                ordinal = ordinal
+                    .checked_add(1)
+                    .ok_or_else(|| validation(RigidWorldErrorKind::AggregateLimitExceeded))?;
+                actual_observations.next();
+            }
+            if ordinal == 0 {
+                return Err(validation(RigidWorldErrorKind::ResultObservationMismatch));
+            }
+            continue;
+        }
         let Some(actual) = actual_observations.next() else {
             return Err(validation(RigidWorldErrorKind::ResultObservationMismatch));
         };
@@ -573,7 +597,9 @@ fn validate_checkpoint_observations(
             return Err(validation(RigidWorldErrorKind::ResultObservationMismatch));
         }
     }
-    if actual_observations.next().is_some() {
+    if actual_observations
+        .any(|observation| !matches!(observation, RigidWorldObservation::Lifecycle { .. }))
+    {
         return Err(validation(RigidWorldErrorKind::ResultObservationMismatch));
     }
     Ok(())
@@ -758,7 +784,8 @@ fn expected_observation(action: &RigidWorldAction) -> Option<ExpectedObservation
             directive_rules, ..
         } => Some(ExpectedObservation::RayCast(directive_rules)),
         RigidWorldAction::ShiftOrigin { shift } => Some(ExpectedObservation::OriginShift(*shift)),
-        RigidWorldAction::InspectJoint { joint_id, .. }
+        RigidWorldAction::CreateJoint { joint_id, .. }
+        | RigidWorldAction::InspectJoint { joint_id, .. }
         | RigidWorldAction::MutateJoint { joint_id, .. } => {
             Some(ExpectedObservation::Joint(joint_id))
         }

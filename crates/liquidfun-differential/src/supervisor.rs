@@ -33,7 +33,10 @@ use failure::{
 };
 pub use math_probe::{CapturedMathProbe, MathProbeProcessError, execute_math_probe_process};
 pub use profile::SessionProfile;
-pub use rigid_world::{CapturedRigidWorld, RigidWorldProcessError, execute_rigid_world_process};
+pub use rigid_world::{
+    CapturedRigidWorld, RigidWorldProcessError, execute_rigid_world_process,
+    rigid_world_cpp_adapter_gate_reason,
+};
 use stdio::{IoEvent, IoWorkers, StderrSnapshot};
 
 impl OracleExecutable {

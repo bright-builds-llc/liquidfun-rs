@@ -15,7 +15,7 @@ use liquidfun_test_protocol::{
 };
 
 use super::{
-    NativeHook, NativeRigidWorldError, TimelineExecutor, action_error, collect_direct_transitions,
+    NativeRigidWorldError, TimelineExecutor, action_error, collect_direct_transitions,
     collect_step_report, observe_step, vec2, vec2_bits,
 };
 
@@ -285,7 +285,7 @@ fn execute_configured_step(
     let limits = StepLimits::default()
         .with_continuous_work_limit(work_limit)
         .map_err(|error| action_error(action, error))?;
-    match executor.world.step(configuration, &mut NativeHook, limits) {
+    match super::phase8::step(executor, configuration, limits) {
         Ok(report) => {
             collect_step_report(executor, &report)?;
             observe_step(executor, action.phase());
@@ -298,10 +298,11 @@ fn execute_configured_step(
                 .push(RigidWorldObservation::Step {
                     outcome: RigidStepOutcome::Completed { completion },
                 });
+            super::phase8::collect_step_lifecycle(executor, &report)?;
         }
         Err(StepError::ContinuousWorkLimitExceeded { progress, .. }) => {
             collect_direct_transitions(executor)?;
-            super::evidence::collect_continuous_solves(executor, progress.contact_solves())?;
+            super::evidence::collect_continuous_solves(executor, progress.contact_solves(), true)?;
             executor
                 .semantic_observations
                 .push(RigidWorldObservation::Step {

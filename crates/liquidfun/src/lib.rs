@@ -196,3 +196,5 @@ pub use world::{
     StepPhase, StepReport, WakePolicy, World, WorldCommand, WorldConfigurationError,
     WorldFixtureSnapshot, WorldRayCastError, WorldRayHit,
 };
+#[cfg(feature = "differential-internals")]
+pub use world::{ReconstructionSupport, ReconstructionUnsupported};

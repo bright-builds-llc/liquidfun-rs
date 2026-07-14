@@ -332,8 +332,8 @@ fn rope_declaration_schema() -> Value {
     closed_record(
         &json!({
             "rope_id": semantic_id_schema(),
-            "vertices": { "items": schema_ref("vec2_bits"), "maxItems": RIGID_WORLD_MAXIMUM_ROPE_VERTICES, "minItems": 2, "type": "array" },
-            "masses_bits": { "items": float_bits_schema(), "maxItems": RIGID_WORLD_MAXIMUM_ROPE_VERTICES, "minItems": 2, "type": "array" },
+            "vertices": { "items": schema_ref("vec2_bits"), "maxItems": RIGID_WORLD_MAXIMUM_ROPE_VERTICES, "minItems": 3, "type": "array" },
+            "masses_bits": { "items": float_bits_schema(), "maxItems": RIGID_WORLD_MAXIMUM_ROPE_VERTICES, "minItems": 3, "type": "array" },
             "gravity": schema_ref("vec2_bits"),
             "damping_bits": float_bits_schema(),
             "stretch_stiffness_bits": float_bits_schema(),
@@ -794,7 +794,7 @@ fn rope_snapshot_schema() -> Value {
     closed_record(
         &json!({
             "rope_id": semantic_id_schema(),
-            "vertices": { "items": schema_ref("rigid_vec2_bits"), "maxItems": RIGID_WORLD_MAXIMUM_ROPE_VERTICES, "minItems": 2, "type": "array" }
+            "vertices": { "items": schema_ref("rigid_vec2_bits"), "maxItems": RIGID_WORLD_MAXIMUM_ROPE_VERTICES, "minItems": 3, "type": "array" }
         }),
         &["rope_id", "vertices"],
     )

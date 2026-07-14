@@ -59,6 +59,11 @@ pub(super) fn first_divergence(
         .zip(actual.timelines())
         .enumerate()
     {
+        if liquidfun_test_protocol::RigidWorldWitnessFamily::PHASE8_REQUIRED
+            .contains(&expected_timeline.witness_family)
+        {
+            continue;
+        }
         for (checkpoint_index, (expected_checkpoint, actual_checkpoint)) in expected_timeline
             .checkpoints
             .iter()
@@ -538,5 +543,10 @@ const fn observation_kind(observation: &RigidWorldObservation) -> &'static str {
         RigidWorldObservation::Query { .. } => "query",
         RigidWorldObservation::RayCast { .. } => "ray_cast",
         RigidWorldObservation::OriginShift { .. } => "origin_shift",
+        RigidWorldObservation::Joint { .. } => "joint",
+        RigidWorldObservation::Rope { .. } => "rope",
+        RigidWorldObservation::Lifecycle { .. } => "lifecycle",
+        RigidWorldObservation::Reconstruction { .. } => "reconstruction",
+        RigidWorldObservation::Diagnostics { .. } => "diagnostics",
     }
 }

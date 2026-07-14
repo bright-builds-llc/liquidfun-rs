@@ -5,7 +5,8 @@ use std::{io::Write, process::Stdio, time::Instant};
 use liquidfun_test_protocol::{
     BuildIdentity, HarnessFailureKind, HarnessLimits, LastValidRecord, ProtocolVersion,
     RecordLimit, RequestId, RigidWorldRequestRecord, RigidWorldResultRecord,
-    decode_rigid_world_result_jsonl, encode_jsonl, validate_rigid_world_result_against_request,
+    RigidWorldWitnessFamily, decode_rigid_world_result_jsonl, encode_jsonl,
+    validate_rigid_world_result_against_request,
 };
 use serde::Deserialize;
 
@@ -14,6 +15,24 @@ use super::{
     complete_handshake, enforce_total_output, receive_with_output_precedence,
     reconcile_request_output,
 };
+
+const PHASE8_CPP_ADAPTER_GATE_REASON: &str = "phase8_cpp_adapter_pending_plan_08_13";
+
+/// Returns the fail-closed reason while Phase 8 C++ execution remains owned by Plan 08-13.
+#[doc(hidden)]
+#[must_use]
+pub fn rigid_world_cpp_adapter_gate_reason(
+    request: &RigidWorldRequestRecord,
+) -> Option<&'static str> {
+    request
+        .scenario()
+        .timelines()
+        .iter()
+        .any(|timeline| {
+            RigidWorldWitnessFamily::PHASE8_REQUIRED.contains(&timeline.witness_family())
+        })
+        .then_some(PHASE8_CPP_ADAPTER_GATE_REASON)
+}
 
 /// Fully validated bounded one-shot rigid-world oracle output.
 #[derive(Debug)]
@@ -111,6 +130,15 @@ pub fn execute_rigid_world_process(
     request: &RigidWorldRequestRecord,
     expected_oracle_revision: &str,
 ) -> Result<CapturedRigidWorld, RigidWorldProcessError> {
+    if let Some(reason) = rigid_world_cpp_adapter_gate_reason(request) {
+        return Err(RigidWorldProcessError {
+            kind: HarnessFailureKind::CppAdapterFailure,
+            retained_stderr: reason.as_bytes().to_vec().into_boxed_slice(),
+            stderr_bytes: reason.len(),
+            child_killed: false,
+            child_reaped: false,
+        });
+    }
     let limits = HarnessLimits::phase2_default_v1();
     let mut command = executable.command();
     command

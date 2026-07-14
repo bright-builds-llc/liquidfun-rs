@@ -1671,7 +1671,7 @@
                                       "$ref": "#/$defs/rigid_vec2_bits"
                                     },
                                     "maxItems": 64,
-                                    "minItems": 2,
+                                    "minItems": 3,
                                     "type": "array"
                                   }
                                 },

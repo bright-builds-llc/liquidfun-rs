@@ -1083,6 +1083,52 @@ fn rigid_world_phase8_rejects_mutation_for_wrong_joint_kind() {
 }
 
 #[test]
+fn rigid_world_phase8_rejects_rope_with_fewer_than_three_vertices() {
+    // Arrange
+    let limits = HarnessLimits::phase2_default_v1();
+    let mut value = fixture_value();
+    let declaration = &mut timeline_mut(&mut value, "standalone_rope_evolution")["ropes"][0];
+    declaration["vertices"]
+        .as_array_mut()
+        .expect("vertices should be an array")
+        .truncate(2);
+    declaration["masses_bits"]
+        .as_array_mut()
+        .expect("masses should be an array")
+        .truncate(2);
+
+    // Act
+    let error = decode_rigid_world_request_jsonl(&encode_value(&value), &limits)
+        .expect_err("a two-vertex rope cannot map to the native RopeDef contract");
+
+    // Assert
+    assert_eq!(
+        error.rigid_world_kind(),
+        Some(RigidWorldErrorKind::InvalidRopeDefinition)
+    );
+}
+
+#[test]
+fn rigid_world_phase8_rejects_gear_sources_with_same_moving_body() {
+    // Arrange
+    let limits = HarnessLimits::phase2_default_v1();
+    let mut value = fixture_value();
+    let timeline = timeline_mut(&mut value, "gear_dependencies_and_four_body_solver");
+    timeline["joints"][1]["body_a_id"] = json!("joint-gear-a");
+    timeline["joints"][1]["body_b_id"] = json!("joint-gear-b");
+
+    // Act
+    let error = decode_rigid_world_request_jsonl(&encode_value(&value), &limits)
+        .expect_err("gear sources must expose distinct moving endpoints");
+
+    // Assert
+    assert_eq!(
+        error.rigid_world_kind(),
+        Some(RigidWorldErrorKind::InvalidJointDependency)
+    );
+}
+
+#[test]
 fn rigid_world_phase8_rejects_unknown_kind_and_n_plus_one_bounds() {
     // Arrange
     let limits = HarnessLimits::phase2_default_v1();

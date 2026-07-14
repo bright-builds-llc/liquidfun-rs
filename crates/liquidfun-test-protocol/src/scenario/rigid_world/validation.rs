@@ -698,6 +698,7 @@ fn validate_joints(
 ) -> Result<Vec<RigidJointDeclaration>, RigidWorldDecodeError> {
     let mut ids = HashSet::with_capacity(joints.len());
     let mut kinds = HashMap::with_capacity(joints.len());
+    let mut endpoints: HashMap<ScenarioId, [ScenarioId; 2]> = HashMap::with_capacity(joints.len());
     for joint in &joints {
         if ids.contains(&joint.joint_id) {
             return Err(validation(RigidWorldErrorKind::DuplicateJointId));
@@ -714,7 +715,10 @@ fn validate_joints(
             joint_b_id,
             ..
         } = &joint.definition
-            && (joint_a_id == joint_b_id
+        {
+            let maybe_source_a = endpoints.get(joint_a_id);
+            let maybe_source_b = endpoints.get(joint_b_id);
+            if joint_a_id == joint_b_id
                 || !matches!(
                     kinds.get(joint_a_id),
                     Some(RigidJointKind::Revolute | RigidJointKind::Prismatic)
@@ -722,12 +726,24 @@ fn validate_joints(
                 || !matches!(
                     kinds.get(joint_b_id),
                     Some(RigidJointKind::Revolute | RigidJointKind::Prismatic)
-                ))
-        {
-            return Err(validation(RigidWorldErrorKind::InvalidJointDependency));
+                )
+                || !matches!(
+                    (maybe_source_a, maybe_source_b),
+                    (Some([_, moving_a]), Some([_, moving_b]))
+                        if moving_a != moving_b
+                            && moving_a == &joint.body_a_id
+                            && moving_b == &joint.body_b_id
+                )
+            {
+                return Err(validation(RigidWorldErrorKind::InvalidJointDependency));
+            }
         }
         ids.insert(joint.joint_id.clone());
         kinds.insert(joint.joint_id.clone(), joint.definition.joint_kind());
+        endpoints.insert(
+            joint.joint_id.clone(),
+            [joint.body_a_id.clone(), joint.body_b_id.clone()],
+        );
     }
     Ok(joints)
 }
@@ -940,7 +956,7 @@ fn validate_ropes(
         if !ids.insert(rope.rope_id.clone()) {
             return Err(validation(RigidWorldErrorKind::DuplicateRopeId));
         }
-        if rope.vertices.len() < 2
+        if rope.vertices.len() < 3
             || rope.vertices.len() > RIGID_WORLD_MAXIMUM_ROPE_VERTICES
             || rope.vertices.len() != rope.masses_bits.len()
         {

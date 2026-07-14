@@ -3,6 +3,7 @@
 mod base;
 mod declaration;
 mod phase7;
+pub(crate) mod phase8;
 
 use base::{compare_checkpoint_inherited, first_rigid_divergence};
 use declaration::validate_rigid_declarations_with_identity;

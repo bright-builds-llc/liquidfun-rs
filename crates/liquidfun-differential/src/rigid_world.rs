@@ -3,10 +3,11 @@
 mod evidence;
 mod model;
 mod phase7;
+mod phase8;
 
 use evidence::{
-    capture_checkpoint, collect_direct_transitions, collect_step_report, observe_step,
-    push_object_destruction, remove_destroyed_mapping,
+    capture_checkpoint, collect_direct_transitions, collect_mutation_report, collect_step_report,
+    observe_step, remove_destroyed_mapping,
 };
 use model::{
     action_error, body_created_witness, body_declaration, body_type, checked_u32,
@@ -19,7 +20,7 @@ use liquidfun::collision::{FeatureKind, FilterData, ManifoldKind, Shape};
 use liquidfun::math::Vec2;
 use liquidfun::{
     BodyDef, BodyId, BodyMassData, BodyType, DestroyedId, DestructionCause, DestructionRecord,
-    FixtureDef, FixtureId, ManagedContactSnapshot, StepConfiguration, StepHook, StepLimits,
+    FixtureDef, FixtureId, JointId, ManagedContactSnapshot, StepConfiguration, StepLimits,
     StepReport, World,
 };
 use liquidfun_test_protocol::{
@@ -118,13 +119,20 @@ struct Observation {
     maybe_contact: Option<RigidContactIdentity>,
 }
 
-struct TimelineExecutor {
-    family: RigidWorldWitnessFamily,
-    world: World,
-    bodies: Vec<(ScenarioId, BodyId)>,
-    fixtures: Vec<(ScenarioId, FixtureId)>,
+pub(crate) struct TimelineExecutor {
+    pub(crate) family: RigidWorldWitnessFamily,
+    pub(crate) world: World,
+    pub(crate) bodies: Vec<(ScenarioId, BodyId)>,
+    pub(crate) fixtures: Vec<(ScenarioId, FixtureId)>,
+    fixture_owners: Vec<(FixtureId, BodyId)>,
+    pub(crate) joints: Vec<(ScenarioId, JointId)>,
+    ropes: Vec<(ScenarioId, liquidfun::rope::Rope)>,
+    filter_directives: Vec<(FixtureId, FixtureId, bool)>,
+    pre_solve_directives: Vec<(FixtureId, FixtureId, liquidfun::PreSolveDirective)>,
     contact_identities: Vec<(u64, RigidContactIdentity)>,
     seen_manager_occurrences: Vec<u64>,
+    seen_lifecycle_occurrences: Vec<u64>,
+    next_lifecycle_ordinal: u32,
     maybe_last_contact: Option<RigidContactIdentity>,
     events: Vec<RigidContactEvent>,
     destructions: Vec<RigidDestructionRecord>,
@@ -155,8 +163,15 @@ impl TimelineExecutor {
             world,
             bodies: Vec::new(),
             fixtures: Vec::new(),
+            fixture_owners: Vec::new(),
+            joints: Vec::new(),
+            ropes: Vec::new(),
+            filter_directives: Vec::new(),
+            pre_solve_directives: Vec::new(),
             contact_identities: Vec::new(),
             seen_manager_occurrences: Vec::new(),
+            seen_lifecycle_occurrences: Vec::new(),
+            next_lifecycle_ordinal: 0,
             maybe_last_contact: None,
             events: Vec::new(),
             destructions: Vec::new(),
@@ -187,7 +202,44 @@ impl TimelineExecutor {
             .ok_or_else(|| action_error(action, format!("unknown fixture `{id}`")))
     }
 
-    fn semantic_fixture(&self, fixture: FixtureId) -> Result<ScenarioId, NativeRigidWorldError> {
+    pub(crate) fn joint(
+        &self,
+        id: &ScenarioId,
+        action: &RigidWorldActionRecord,
+    ) -> Result<JointId, NativeRigidWorldError> {
+        self.joints
+            .iter()
+            .find_map(|(candidate, joint)| (candidate == id).then_some(*joint))
+            .ok_or_else(|| action_error(action, format!("unknown joint `{id}`")))
+    }
+
+    pub(crate) fn semantic_body(&self, body: BodyId) -> Result<ScenarioId, NativeRigidWorldError> {
+        self.bodies
+            .iter()
+            .find_map(|(id, candidate)| (*candidate == body).then(|| id.clone()))
+            .ok_or_else(|| NativeRigidWorldError::Declaration {
+                checkpoint_id: "body-map".into(),
+                message: "native body was not mapped to a semantic identity".into(),
+            })
+    }
+
+    pub(crate) fn semantic_joint(
+        &self,
+        joint: JointId,
+    ) -> Result<ScenarioId, NativeRigidWorldError> {
+        self.joints
+            .iter()
+            .find_map(|(id, candidate)| (*candidate == joint).then(|| id.clone()))
+            .ok_or_else(|| NativeRigidWorldError::Declaration {
+                checkpoint_id: "joint-map".into(),
+                message: "native joint was not mapped to a semantic identity".into(),
+            })
+    }
+
+    pub(crate) fn semantic_fixture(
+        &self,
+        fixture: FixtureId,
+    ) -> Result<ScenarioId, NativeRigidWorldError> {
         self.fixtures
             .iter()
             .find_map(|(id, candidate)| (*candidate == fixture).then(|| id.clone()))
@@ -276,6 +328,9 @@ fn execute_timeline(
     }
     if !executor.bodies.is_empty()
         || !executor.fixtures.is_empty()
+        || !executor.joints.is_empty()
+        || !executor.ropes.is_empty()
+        || executor.world.joint_count() != 0
         || executor.world.contact_count() != 0
     {
         return Err(NativeRigidWorldError::Reset {
@@ -297,6 +352,9 @@ fn execute_action(
     timeline: &RigidWorldTimeline,
     record: &RigidWorldActionRecord,
 ) -> Result<(), NativeRigidWorldError> {
+    if phase8::execute_action(executor, timeline, record)? {
+        return Ok(());
+    }
     if phase7::execute_action(executor, record)? {
         return Ok(());
     }
@@ -327,6 +385,7 @@ fn execute_action(
                 .create_fixture(owner, &definition)
                 .map_err(|error| action_error(record, error))?;
             executor.fixtures.push((fixture_id.clone(), fixture));
+            executor.fixture_owners.push((fixture, owner));
             executor.push_observation(RigidWorldWitness::FixturesCreated, None);
         }
         RigidWorldAction::InspectBody { body_id } => {
@@ -477,12 +536,11 @@ fn execute_action(
                 *position_iterations,
             )
             .map_err(|error| action_error(record, error))?;
-            let report = executor
-                .world
-                .step(configuration, &mut NativeHook, StepLimits::default())
+            let report = phase8::step(executor, configuration, StepLimits::default())
                 .map_err(|error| action_error(record, error))?;
             collect_step_report(executor, &report)?;
             observe_step(executor, record.phase());
+            phase8::collect_step_lifecycle(executor, &report)?;
         }
         RigidWorldAction::DestroyFixture { fixture_id } => {
             let fixture = executor.fixture(fixture_id, record)?;
@@ -490,11 +548,14 @@ fn execute_action(
                 .world
                 .destroy_fixture(fixture)
                 .map_err(|error| action_error(record, error))?;
-            collect_direct_transitions(executor)?;
-            push_object_destruction(executor, &record_result)?;
+            collect_mutation_report(executor, &record_result)?;
+            phase8::collect_mutation_lifecycle(executor, record_result.lifecycle())?;
             executor
                 .fixtures
                 .retain(|(_, candidate)| *candidate != fixture);
+            executor
+                .fixture_owners
+                .retain(|(candidate, _owner)| *candidate != fixture);
             let witness = if executor.family == RigidWorldWitnessFamily::SingleContactLifecycle {
                 RigidWorldWitness::FixtureDestroyedContact
             } else {
@@ -508,12 +569,11 @@ fn execute_action(
                 .world
                 .destroy_body(body)
                 .map_err(|error| action_error(record, error))?;
-            collect_direct_transitions(executor)?;
+            collect_mutation_report(executor, &records)?;
+            phase8::collect_mutation_lifecycle(executor, records.lifecycle())?;
             for destruction in &records {
-                if matches!(destruction.destroyed(), DestroyedId::Body(_)) {
-                    push_object_destruction(executor, destruction)?;
-                }
                 remove_destroyed_mapping(executor, destruction.destroyed());
+                phase8::remove_destroyed_mapping(executor, destruction.destroyed());
             }
             let witness = if executor.family == RigidWorldWitnessFamily::SingleContactLifecycle {
                 RigidWorldWitness::BodyCascadeEndOrdered
@@ -531,10 +591,6 @@ fn execute_action(
     }
     Ok(())
 }
-
-struct NativeHook;
-
-impl StepHook for NativeHook {}
 
 #[cfg(test)]
 mod tests {

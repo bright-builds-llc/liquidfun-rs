@@ -1,5 +1,7 @@
 //! Checkpoint capture and source-ordered semantic evidence.
 
+use liquidfun::{DestructionReport, LifecycleEvent};
+
 use super::{
     BodyId, DestroyedId, DestructionCause, DestructionRecord, FixtureId, FloatBits,
     ManagedContactSnapshot, ManifoldKind, NativeRigidWorldError, Observation, RigidBodyDeclaration,
@@ -109,20 +111,23 @@ pub(super) fn collect_step_report(
             contact,
         });
     }
-    collect_continuous_solves(executor, report.continuous_contact_solves())?;
+    collect_continuous_solves(executor, report.continuous_contact_solves(), false)?;
     Ok(())
 }
 
 pub(super) fn collect_continuous_solves(
     executor: &mut TimelineExecutor,
     solves: &[liquidfun::ContactSolve],
+    include_pre_solve: bool,
 ) -> Result<(), NativeRigidWorldError> {
     for solve in solves {
         let contact = executor.contact_identity(solve.contact())?;
-        executor.events.push(RigidContactEvent {
-            kind: RigidContactEventKind::PreSolve,
-            contact: contact.clone(),
-        });
+        if include_pre_solve {
+            executor.events.push(RigidContactEvent {
+                kind: RigidContactEventKind::PreSolve,
+                contact: contact.clone(),
+            });
+        }
         executor.events.push(RigidContactEvent {
             kind: RigidContactEventKind::PostSolve,
             contact,
@@ -136,6 +141,30 @@ pub(super) fn collect_direct_transitions(
 ) -> Result<(), NativeRigidWorldError> {
     let transitions = executor.world.rigid_drain_contact_transitions();
     collect_transitions(executor, &transitions)
+}
+
+pub(super) fn collect_mutation_report(
+    executor: &mut TimelineExecutor,
+    report: &DestructionReport,
+) -> Result<(), NativeRigidWorldError> {
+    for event in report.lifecycle() {
+        match event {
+            LifecycleEvent::Contact(transition)
+            | LifecycleEvent::ContactDestruction(transition) => {
+                collect_transitions(executor, std::slice::from_ref(transition))?;
+            }
+            LifecycleEvent::Destruction(record) => push_object_destruction(executor, record)?,
+            LifecycleEvent::Filter(_)
+            | LifecycleEvent::Hook(_)
+            | LifecycleEvent::Solve(_)
+            | LifecycleEvent::ContinuousSolve(_)
+            | LifecycleEvent::JointGoodbye(_)
+            | LifecycleEvent::FixtureGoodbye(_)
+            | LifecycleEvent::Command(_) => {}
+            _ => {}
+        }
+    }
+    Ok(())
 }
 
 fn collect_transitions(
@@ -384,6 +413,9 @@ pub(super) fn remove_destroyed_mapping(executor: &mut TimelineExecutor, destroye
             executor
                 .fixtures
                 .retain(|(_, candidate)| *candidate != fixture);
+            executor
+                .fixture_owners
+                .retain(|(candidate, _owner)| *candidate != fixture);
         }
         _ => {}
     }
