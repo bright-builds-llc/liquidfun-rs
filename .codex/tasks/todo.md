@@ -69,3 +69,14 @@ Completion review: The Phase 4 public math, numerical-policy, command, and evide
 Completion review: The rigid-promotion regression now uses an explicit D2 identity instead of host-dependent build metadata, and the canonical oracle requires only Clang's supported general IEEE denormal option. The exact Rust format, lint, build, and test sequence passed; workspace-wide CI-equivalent lint, build, and tests passed; local oracle configure/build, provenance, inventory, and diff checks passed. Exact Ubuntu Clang 22.1.8 reproduction confirmed the removed `fp32` spelling was the sole failed capability probe. Residual risk is limited to end-to-end confirmation on the GitHub-hosted canonical runner after push.
 
 Follow-up review: The first pushes proved the original configure and differential-library fixes, then exposed assumptions in later steps. The xtask CLI suite's second host-dependent promotion test was removed because the explicit D2 regression already covers that library behavior. The Oracle option set now expresses precise behavior through non-overlapping explicit controls, avoiding Clang 22's `-Woverriding-option` failure while keeping contraction disabled and IEEE special-value behavior. A release-only warning caused by assertion bookkeeping in the read-only 2014 upstream tree remains visible but no longer fails that upstream target; repository-authored C++ keeps strict `-Werror`. The docs parity test now uses a ledger-backed report check that works in Cargo-only checkouts, while full inventory validation still requires and rescans the pinned source tree. Exact Ubuntu Clang 22.1.8 probes, local debug/release Oracle builds, and all 39 math probes pass. Remote end-to-end confirmation remains pending for the final corrective push.
+
+## task-phase-08-joints-rope-rigid-signoff | 2026-07-13 16:26 CDT | Execute Phase 8
+
+- [x] Capture lifecycle-bound yolo context for joints, rope, callbacks, diagnostics, and rigid sign-off.
+- [x] Research and create executable Phase 8 plans with verification coverage.
+- [ ] Execute every Phase 8 plan and record atomic summaries.
+- [ ] Complete code review, gap repair, and phase verification.
+- [ ] Run the required ordered Rust gate and affected repository verification.
+- [ ] Review the complete diff, record residual risks, and push only after lifecycle validation passes.
+
+Progress review: Plans 01 through 22 are committed and locally verified. The initial code review's generic two-body dispatcher and non-stepping corpus findings were repaired with typed live solver staging, four-body gear integration, and a validator-backed step-bearing corpus. Plans 23 and 24 remain gated on exact-commit canonical CI evidence and post-evidence documentation.
