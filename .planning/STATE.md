@@ -3,15 +3,15 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 08-21-PLAN.md
-last_updated: "2026-07-14T05:57:11.396Z"
+stopped_at: Completed 08-22-PLAN.md
+last_updated: "2026-07-14T06:29:34.521Z"
 last_activity: "2026-07-14"
 progress:
   total_phases: 12
   completed_phases: 7
   total_plans: 98
-  completed_plans: 95
-  percent: 97
+  completed_plans: 96
+  percent: 98
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 ## Current Position
 
 Phase: 8
-Plan: 21 of 24
+Plan: 22 of 24
 Status: Ready to execute
 Last activity: 2026-07-14
 
@@ -122,6 +122,7 @@ Progress: [█░░░░░░░░░] 6%
 | Phase 08 P19 | 60min | 1 tasks | 12 files |
 | Phase 08 P20 | 40min | 1 tasks | 9 files |
 | Phase 08 P21 | 20min | 1 tasks | 5 files |
+| Phase 08 P22 | 30min | 3 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -279,6 +280,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 08]: Capture Phase 8 C++ lifecycle evidence only from live pinned contacts and listener invocations. — Keeps callback order causal while solver-only timelines reject incidental fixture pairs.
 - [Phase 08]: Touch fixture proxies after removing a collision-suppressing joint. — The strengthened mixed-joint witness must deterministically reconsider a pair that had no preexisting contact.
 - [Phase 08]: Derive C++ Phase 8 checkpoint counts from actual pinned state before emission. — Declaration-only counts could otherwise conceal malformed contact evidence.
+- [Phase 08]: Lock near-zero iterative joint residuals with field-specific Phase 8 absolute/relative bounds while retaining signed-zero and structural strictness. — Source audit and complete-corpus comparison showed overconstrained iterative residuals rather than divergent equations; exact parser-locked bits prevent silent widening.
+- [Phase 08]: Compare lifecycle multiplicity before ordered Phase 8 observations. — Missing or duplicate callback and destruction events must fail at a stable semantic path before ordinal comparison.
+- [Phase 08]: Emit one exact identity per successful Phase 8 Oracle job and defer D1 claims to the exact-ref checkpoint. — Local D2 completion cannot substitute for canonical Clang 22 and CMake 4.3 evidence tied to one GitHub SHA.
 
 ### Pending Todos
 
@@ -292,6 +296,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-14T05:56:36.864Z
-Stopped at: Completed 08-21-PLAN.md
+Last session: 2026-07-14T06:29:34.518Z
+Stopped at: Completed 08-22-PLAN.md
 Resume file: None
