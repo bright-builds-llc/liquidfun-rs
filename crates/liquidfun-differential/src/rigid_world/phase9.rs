@@ -290,6 +290,24 @@ pub(super) fn execute_action(
             }
         }
     }
+    executor
+        .semantic_observations
+        .push(liquidfun_test_protocol::RigidWorldObservation::Particle {
+            observation: Phase9ParticleObservation::MixedState {
+                body_ids: executor
+                    .bodies
+                    .iter()
+                    .map(|(id, _)| id.clone())
+                    .collect::<Vec<_>>()
+                    .into_boxed_slice(),
+                particle_ids: executor
+                    .particles
+                    .iter()
+                    .map(|(id, _, _)| id.clone())
+                    .collect::<Vec<_>>()
+                    .into_boxed_slice(),
+            },
+        });
     Ok(true)
 }
 

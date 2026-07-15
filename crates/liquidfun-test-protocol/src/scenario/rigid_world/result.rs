@@ -570,6 +570,12 @@ fn validate_checkpoint_observations(
             &mut live_bodies,
             &mut live_fixtures,
         );
+        if matches!(action.action(), RigidWorldAction::Particle { .. }) {
+            let Some(RigidWorldObservation::Particle { .. }) = actual_observations.next() else {
+                return Err(validation(RigidWorldErrorKind::ResultObservationMismatch));
+            };
+            continue;
+        }
         let Some(expected) = expected_observation(action.action()) else {
             continue;
         };

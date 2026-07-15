@@ -164,16 +164,34 @@ fn native_dispatch_executes_phase9_particle_actions() {
             "action": { "kind": "particle", "action": action }
         }));
     }
+    let checkpoint = timeline["checkpoints"]
+        .as_array_mut()
+        .expect("fixture checkpoints should be an array")
+        .last_mut()
+        .expect("fixture should contain a checkpoint");
+    checkpoint["after_action_id"] = json!("phase9-destroy-system");
+    checkpoint["phase"] = json!("phase9");
     let request = decode_value(&value).expect("bounded Phase 9 request should decode");
 
     // Act
     let result = NativeRigidWorldExecutor::execute(&request);
 
     // Assert
-    assert!(
-        result.is_ok(),
-        "native Phase 9 actions should execute: {result:?}"
-    );
+    let result = result.expect("native Phase 9 actions should execute");
+    let particle_observation_count = result.timelines()[0]
+        .checkpoints
+        .last()
+        .expect("timeline should retain its final checkpoint")
+        .observations
+        .iter()
+        .filter(|observation| {
+            matches!(
+                observation,
+                liquidfun_test_protocol::RigidWorldObservation::Particle { .. }
+            )
+        })
+        .count();
+    assert_eq!(particle_observation_count, 9);
 }
 
 #[test]
