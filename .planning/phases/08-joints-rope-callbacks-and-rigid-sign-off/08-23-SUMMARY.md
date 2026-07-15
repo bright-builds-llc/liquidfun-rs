@@ -7,7 +7,7 @@ requires:
   - phase: 08-22
     provides: reviewed Phase 8 implementation, closed comparator policy, and exact-identity Oracle workflow readiness
 provides:
-  - exact successful canonical and sanitizer evidence for commit 533c2ccf97b3921079baf7c339ddb4dad1a4038b
+  - exact successful canonical and sanitizer evidence for commit e0b5106559b3c0c37beb44e4ade45c3b7919b59d
   - cross-platform-stable evidence checkout and upstream Clang compatibility policy
   - two unique unexpired SHA-scoped artifacts with validated toolchain, upstream, and phase8-v1 identities
 affects: [08-24, canonical-evidence, windows-portability, rigid-sign-off]
@@ -26,7 +26,7 @@ key-files:
 key-decisions:
   - "Reject the first dispatch despite successful canonical and sanitizer jobs because the overall workflow conclusion was failure."
   - "Fix Windows evidence checkout and the read-only upstream warning at their platform boundaries instead of weakening provenance, inventory, or warning policy."
-  - "Consume only run 29374708477 and its two exact SHA-scoped artifacts after every run, job, artifact, and identity check passed."
+  - "Consume only refreshed run 29379350740 and its two exact SHA-scoped artifacts after every run, job, artifact, and identity check passed."
 requirements-completed: [RIGD-11, JOIN-05]
 generated_by: gsd-execute-plan
 lifecycle_mode: yolo
@@ -55,7 +55,7 @@ completed: 2026-07-14
 - Reproduced the Windows provenance mismatch byte-for-byte as LF-to-CRLF conversion, added LF checkout policy, and locked it with a cross-platform evidence contract.
 - Scoped the modern Clang deprecated-copy exemption only to the read-only 2014 upstream target while retaining warning denial for repository-authored C++.
 - Made the Windows PowerShell step fail immediately on native command errors and added a workflow contract for command ordering.
-- Validated successful workflow-dispatch run `29374708477`, exact head `533c2ccf97b3921079baf7c339ddb4dad1a4038b`, both required jobs, exactly two unexpired artifacts, and both identity JSON records.
+- Validated refreshed successful workflow-dispatch run `29379350740`, exact head `e0b5106559b3c0c37beb44e4ade45c3b7919b59d`, all four required jobs, exactly two unexpired artifacts, and both identity JSON records after the Phase 8 review fixes.
 
 ## Task Commits
 
@@ -113,9 +113,10 @@ completed: 2026-07-14
 
 ## Validation Evidence
 
-- Successful run: `https://github.com/bright-builds-llc/liquidfun-rs/actions/runs/29374708477`, event `workflow_dispatch`, conclusion `success`, exact head `533c2ccf97b3921079baf7c339ddb4dad1a4038b`.
+- Successful run: `https://github.com/bright-builds-llc/liquidfun-rs/actions/runs/29379350740`, event `workflow_dispatch`, conclusion `success`, exact head `e0b5106559b3c0c37beb44e4ade45c3b7919b59d`.
 - Unique required jobs: `Canonical Linux oracle` and `Scheduled fail-fast sanitizer and reset corpus`, both successful; Windows and macOS portability also passed.
-- Exact artifacts: `phase8-canonical-29374708477-533c2ccf97b3921079baf7c339ddb4dad1a4038b` and `phase8-sanitizer-29374708477-533c2ccf97b3921079baf7c339ddb4dad1a4038b`, both unexpired and unique.
+- Exact artifacts: `phase8-canonical-29379350740-e0b5106559b3c0c37beb44e4ade45c3b7919b59d` and `phase8-sanitizer-29379350740-e0b5106559b3c0c37beb44e4ade45c3b7919b59d`, both unexpired and unique.
+- Earlier run `29374708477` at `533c2ccf97b3921079baf7c339ddb4dad1a4038b` is superseded because it predates the transactional hook-limit and observable joint-mutation review fixes.
 - Both identity records match run ID, head SHA, Rust 1.97.0, CMake 4.3.3, Ninja 1.13.2, Clang 22.1.8, upstream `7f20402173fd143a3988c921bc384459c6a858f2`, and policy `phase8-v1`.
 - Regression tests observed red before the fix and green afterward for LF checkout, upstream warning compatibility, and Windows native-command fail-fast behavior.
 - Local provenance, inventory, Oracle debug configure/build, Markdown, ordered Rust, and diff checks passed before publication.
@@ -126,7 +127,7 @@ None.
 
 ## Next Phase Readiness
 
-- Plan 08-24 may consume only run `29374708477` and its exact validated canonical and sanitizer identities.
+- Plan 08-24 may consume only refreshed run `29379350740` and its exact validated canonical and sanitizer identities.
 - The evidence remains scoped to the closed Phase 8 scalar rigid-body and joint corpus; broader parity and release claims remain pending.
 
 ## Self-Check: PASSED

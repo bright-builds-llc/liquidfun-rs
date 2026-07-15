@@ -108,9 +108,9 @@ are exact no-ops.
 - `cargo build --all-targets --all-features` passed.
 - `cargo test --all-features` passed: 185 library tests, every integration
   target, and 13 doctests.
-- GitHub Actions run `29374708477` completed successfully for exact commit
-  `533c2ccf97b3921079baf7c339ddb4dad1a4038b`; canonical Linux and sanitizer
-  Linux jobs succeeded.
+- Refreshed GitHub Actions run `29379350740` completed successfully for exact
+  commit `e0b5106559b3c0c37beb44e4ade45c3b7919b59d`; canonical Linux, sanitizer
+  Linux, macOS, and Windows jobs succeeded after the review fixes.
 - Both published identity records bind the documented run, commit, upstream
   revision, Rust 1.97.0, CMake 4.3.3, Ninja 1.13.2, Clang 22.1.8, and
   `phase8-v1` policy.

@@ -632,7 +632,7 @@ fn phase8_contract_rejects_missing_evidence_identity_in_each_document() -> TestR
         ),
         (
             "ARCHITECTURE.md",
-            "phase8-canonical-29374708477-533c2ccf97b3921079baf7c339ddb4dad1a4038b",
+            "phase8-canonical-29379350740-e0b5106559b3c0c37beb44e4ade45c3b7919b59d",
         ),
         ("TESTING.md", "## Phase 8 canonical rigid-world sign-off"),
         ("README.md", "Phase 8 checked joint and rope slice"),

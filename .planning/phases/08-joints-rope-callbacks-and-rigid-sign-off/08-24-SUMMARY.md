@@ -5,7 +5,7 @@ subsystem: compatibility-documentation
 tags: [joints, rope, callbacks, differential, canonical-evidence]
 requires:
   - phase: 08-23
-    provides: exact successful canonical and sanitizer evidence identities for commit 533c2ccf97b3921079baf7c339ddb4dad1a4038b
+    provides: exact successful canonical and sanitizer evidence identities for commit e0b5106559b3c0c37beb44e4ade45c3b7919b59d
 provides:
   - canonical scalar rigid-body and joint differential sign-off for the closed Phase 8 corpus
   - exact platform evidence for 16 accumulated rigid rows and 17 Phase 8 joint and rope rows
@@ -90,7 +90,9 @@ None. The implementation followed the planned external-evidence gate, red/green 
 
 ## Validation Evidence
 
-- Exact external gate: run `29374708477`, head `533c2ccf97b3921079baf7c339ddb4dad1a4038b`, one successful `canonical-linux`, one successful `sanitizer-linux`, and exactly two expected unexpired artifacts validated.
+- Exact external gate: refreshed run `29379350740`, head `e0b5106559b3c0c37beb44e4ade45c3b7919b59d`, successful `canonical-linux`, `sanitizer-linux`, macOS, and Windows jobs, and exactly two expected unexpired artifacts validated.
+- Exact artifacts: `phase8-canonical-29379350740-e0b5106559b3c0c37beb44e4ade45c3b7919b59d` and `phase8-sanitizer-29379350740-e0b5106559b3c0c37beb44e4ade45c3b7919b59d`.
+- The earlier evidence binding to run `29374708477` and commit `533c2ccf97b3921079baf7c339ddb4dad1a4038b` is superseded because it predates the Phase 8 code-review fixes and updated request fixture.
 - Identity records: Rust 1.97.0, CMake 4.3.3, Ninja 1.13.2, Clang 22.1.8, upstream `7f20402173fd143a3988c921bc384459c6a858f2`, and policy `phase8-v1` matched exactly.
 - Documentation TDD: the new acceptance contract failed against the pre-promotion ledger, then all four focused Phase 8 tests passed after implementation.
 - `cargo xtask inventory generate`, `cargo xtask inventory check`, and `cargo xtask docs check`: passed.
