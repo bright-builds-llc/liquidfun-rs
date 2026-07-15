@@ -4,6 +4,11 @@ mod evidence;
 mod model;
 mod phase7;
 mod phase8;
+mod phase9;
+pub use phase9::{
+    PHASE9_REGISTRY_ID, PHASE9_REQUIRED_POLICY_PATHS, Phase9PolicyKind,
+    phase9_observation_is_declared, phase9_policy_for_path,
+};
 
 use evidence::{
     capture_checkpoint, collect_direct_transitions, collect_mutation_report, collect_step_report,
@@ -126,6 +131,12 @@ pub(crate) struct TimelineExecutor {
     pub(crate) fixtures: Vec<(ScenarioId, FixtureId)>,
     fixture_owners: Vec<(FixtureId, BodyId)>,
     pub(crate) joints: Vec<(ScenarioId, JointId)>,
+    pub(crate) particle_systems: Vec<(ScenarioId, liquidfun::ParticleSystemId)>,
+    pub(crate) particles: Vec<(
+        ScenarioId,
+        liquidfun::ParticleSystemId,
+        liquidfun::ParticleId,
+    )>,
     ropes: Vec<(ScenarioId, liquidfun::rope::Rope)>,
     filter_directives: Vec<(FixtureId, FixtureId, bool)>,
     pre_solve_directives: Vec<(FixtureId, FixtureId, liquidfun::PreSolveDirective)>,
@@ -165,6 +176,8 @@ impl TimelineExecutor {
             fixtures: Vec::new(),
             fixture_owners: Vec::new(),
             joints: Vec::new(),
+            particle_systems: Vec::new(),
+            particles: Vec::new(),
             ropes: Vec::new(),
             filter_directives: Vec::new(),
             pre_solve_directives: Vec::new(),
@@ -330,6 +343,8 @@ fn execute_timeline(
         || !executor.fixtures.is_empty()
         || !executor.joints.is_empty()
         || !executor.ropes.is_empty()
+        || !executor.particle_systems.is_empty()
+        || !executor.particles.is_empty()
         || executor.world.joint_count() != 0
         || executor.world.contact_count() != 0
     {
@@ -352,6 +367,9 @@ fn execute_action(
     timeline: &RigidWorldTimeline,
     record: &RigidWorldActionRecord,
 ) -> Result<(), NativeRigidWorldError> {
+    if phase9::execute_action(executor, timeline, record)? {
+        return Ok(());
+    }
     if phase8::execute_action(executor, timeline, record)? {
         return Ok(());
     }
