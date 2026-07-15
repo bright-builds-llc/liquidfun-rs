@@ -277,6 +277,8 @@ fn fixed_maximum_conflict_returns_bundle_without_world_mutation() {
 fn teardown_returns_survivor_lanes_after_transactional_compaction() {
     // Arrange
     let lanes = lanes_with_capacities(3, 4, 5, Some(6));
+    let original_positions = lanes.positions().as_ptr();
+    let original_colors = lanes.maybe_colors().expect("test supplies colors").as_ptr();
     let buffers = ParticleBufferBundle::fixed(3, lanes).expect("fixed lanes are complete");
     let mut world = World::new().expect("world key remains available");
     let system = world
@@ -314,6 +316,7 @@ fn teardown_returns_survivor_lanes_after_transactional_compaction() {
         lanes.positions(),
         &[Vec2::new(1.0, -1.0), Vec2::new(3.0, -3.0)]
     );
+    assert_eq!(lanes.positions().as_ptr(), original_positions);
     assert_eq!(
         lanes.maybe_colors(),
         Some(
@@ -322,6 +325,13 @@ fn teardown_returns_survivor_lanes_after_transactional_compaction() {
                 ParticleColor::new(3, 0, 0, 3),
             ][..]
         )
+    );
+    assert_eq!(
+        lanes
+            .maybe_colors()
+            .expect("colors remain allocated")
+            .as_ptr(),
+        original_colors
     );
 }
 

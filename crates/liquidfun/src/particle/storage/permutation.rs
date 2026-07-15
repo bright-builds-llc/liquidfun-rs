@@ -241,19 +241,24 @@ fn commit(storage: &mut ParticleStorage, candidate: PermutationCandidate) -> Vec
         .iter()
         .filter(|entry| entry.state == IdentityState::Retired)
         .count();
-    storage.dense_to_id = candidate
-        .dense_to_id
-        .into_iter()
-        .map(|maybe_id| maybe_id.expect("validated permutations fill every destination"))
-        .collect();
-    storage.positions = candidate.positions;
-    storage.velocities = candidate.velocities;
-    storage.flags = candidate.flags;
-    storage.groups = candidate.groups;
-    storage.weights = candidate.weights;
-    storage.forces = candidate.forces;
-    storage.maybe_colors = candidate.maybe_colors;
-    storage.maybe_user_associations = candidate.maybe_user_associations;
+    replace_contents(
+        &mut storage.dense_to_id,
+        candidate
+            .dense_to_id
+            .into_iter()
+            .map(|maybe_id| maybe_id.expect("validated permutations fill every destination")),
+    );
+    replace_contents(&mut storage.positions, candidate.positions);
+    replace_contents(&mut storage.velocities, candidate.velocities);
+    replace_contents(&mut storage.flags, candidate.flags);
+    replace_contents(&mut storage.groups, candidate.groups);
+    replace_contents(&mut storage.weights, candidate.weights);
+    replace_contents(&mut storage.forces, candidate.forces);
+    replace_optional_contents(&mut storage.maybe_colors, candidate.maybe_colors);
+    replace_optional_contents(
+        &mut storage.maybe_user_associations,
+        candidate.maybe_user_associations,
+    );
     storage.maybe_stuck = candidate.maybe_stuck;
     storage.maybe_expiration_times = candidate.maybe_expiration_times;
     storage.maybe_expiration_order = candidate.maybe_expiration_order;
@@ -265,6 +270,20 @@ fn commit(storage: &mut ParticleStorage, candidate: PermutationCandidate) -> Vec
     storage.group_ranges = candidate.group_ranges;
     debug_assert_eq!(storage.check_invariants(), Ok(()));
     candidate.destroyed
+}
+
+fn replace_contents<T>(target: &mut Vec<T>, source: impl IntoIterator<Item = T>) {
+    target.clear();
+    target.extend(source);
+}
+
+fn replace_optional_contents<T>(target: &mut Option<Vec<T>>, source: Option<Vec<T>>) {
+    match (target.as_mut(), source) {
+        (Some(target), Some(source)) => replace_contents(target, source),
+        (None, Some(source)) => *target = Some(source),
+        (Some(_), None) => *target = None,
+        (None, None) => {}
+    }
 }
 
 fn copy_optional<T: Copy>(
