@@ -9,6 +9,7 @@ mod buffer;
 mod contact;
 mod definition;
 mod editor;
+pub(crate) mod force;
 pub(crate) mod lifetime;
 mod proxy;
 mod view;
@@ -28,6 +29,7 @@ pub use definition::{
     ParticleSystemDef, ParticleSystemDefError,
 };
 pub use editor::{ParticleEditError, ParticleEditor};
+pub use force::ParticleForceError;
 pub use lifetime::{
     ParticleDestructionOccurrence, ParticleLifetimeClock, ParticleLifetimeError,
     ParticleLifetimeOrder,

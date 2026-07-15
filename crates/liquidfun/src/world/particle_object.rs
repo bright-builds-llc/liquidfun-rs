@@ -2,6 +2,7 @@
 
 use crate::identity::HandleIdentity;
 use crate::math::Vec2;
+use crate::particle::force;
 use crate::particle::lifetime::{ParticleLifecycleError, ParticleLifetimeState};
 use crate::particle::storage::{
     ParticleInput, ParticleSnapshot as StorageParticleSnapshot, ParticleStorage,
@@ -346,6 +347,90 @@ impl World {
         velocity: Vec2,
     ) -> Result<(), ParticleEditError> {
         self.edit_particle(particle, |editor| editor.set_velocity(velocity))
+    }
+
+    /// Accumulates one checked world-space force for a stable particle.
+    ///
+    /// # Errors
+    ///
+    /// Returns a scoped handle, non-finite vector, wall-particle, or derived
+    /// distribution error without mutation.
+    pub fn apply_particle_force(
+        &mut self,
+        particle: ParticleId,
+        force: Vec2,
+    ) -> Result<(), crate::ParticleForceError> {
+        let system = self.particle_system_id_for_particle(particle)?;
+        self.apply_particle_force_range(system, &[particle], force)
+    }
+
+    /// Distributes one checked force over contiguous stable identities.
+    ///
+    /// The identities must name every particle in one current source-ordered
+    /// contiguous range. Validation completes before any force lane changes.
+    ///
+    /// # Errors
+    ///
+    /// Returns a scoped handle, empty/non-contiguous range, non-finite vector,
+    /// wall-particle, or derived distribution error without mutation.
+    pub fn apply_particle_force_range(
+        &mut self,
+        system: ParticleSystemId,
+        particles: &[ParticleId],
+        force: Vec2,
+    ) -> Result<(), crate::ParticleForceError> {
+        self.ensure_not_poisoned_for_handle()?;
+        let prepared = {
+            let record = self.particle_systems.get(system)?;
+            force::prepare_force(&record.storage, particles, force)?
+        };
+        force::apply_force(
+            &mut self.system_mut_after_validation(system).storage,
+            prepared,
+        );
+        Ok(())
+    }
+
+    /// Applies one checked world-space linear impulse to a stable particle.
+    ///
+    /// # Errors
+    ///
+    /// Returns a scoped handle, non-finite vector, wall-particle, or derived
+    /// mass/distribution error without mutation.
+    pub fn apply_particle_linear_impulse(
+        &mut self,
+        particle: ParticleId,
+        impulse: Vec2,
+    ) -> Result<(), crate::ParticleForceError> {
+        let system = self.particle_system_id_for_particle(particle)?;
+        self.apply_particle_linear_impulse_range(system, &[particle], impulse)
+    }
+
+    /// Distributes one checked linear impulse over contiguous stable identities.
+    ///
+    /// The impulse targets the selected particles' total source-derived mass,
+    /// so each selected velocity receives the same delta.
+    ///
+    /// # Errors
+    ///
+    /// Returns a scoped handle, empty/non-contiguous range, non-finite vector,
+    /// wall-particle, or derived mass/distribution error without mutation.
+    pub fn apply_particle_linear_impulse_range(
+        &mut self,
+        system: ParticleSystemId,
+        particles: &[ParticleId],
+        impulse: Vec2,
+    ) -> Result<(), crate::ParticleForceError> {
+        self.ensure_not_poisoned_for_handle()?;
+        let prepared = {
+            let record = self.particle_systems.get(system)?;
+            force::prepare_impulse(&record.storage, record.definition, particles, impulse)?
+        };
+        force::apply_impulse(
+            &mut self.system_mut_after_validation(system).storage,
+            prepared,
+        );
+        Ok(())
     }
 
     /// Changes only the paused state of a live system.

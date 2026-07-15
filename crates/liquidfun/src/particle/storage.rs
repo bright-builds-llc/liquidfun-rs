@@ -11,6 +11,7 @@ use crate::particle::{
     ParticleBodyContact as SemanticBodyContact, ParticleBufferBundle, ParticleBufferLanes,
     ParticleBufferMode, ParticleColor, ParticleContact as SemanticParticleContact, ParticleFlags,
 };
+use std::ops::Range;
 
 use lanes::{
     GroupRange, OwnedLaneBundle, ParticleBodyContact, ParticleContact, ParticlePair, ParticleProxy,
@@ -458,6 +459,10 @@ impl ParticleStorage {
         &self.weights
     }
 
+    pub(in crate::particle) fn forces(&self) -> &[Vec2] {
+        &self.forces
+    }
+
     pub(in crate::particle) fn maybe_colors(&self) -> Option<&[ParticleColor]> {
         self.maybe_colors.as_deref()
     }
@@ -606,6 +611,54 @@ impl ParticleStorage {
         let index = self.resolve_live(particle)?;
         self.velocities[index.0] = velocity;
         Ok(())
+    }
+
+    pub(in crate::particle) fn resolve_contiguous_live_range(
+        &self,
+        particles: &[ParticleId],
+    ) -> Result<Range<usize>, ParticleStorageError> {
+        let indices = particles
+            .iter()
+            .copied()
+            .map(|particle| self.resolve_live(particle))
+            .collect::<Result<Vec<_>, _>>()?;
+        let Some(first) = indices.first().copied() else {
+            return Err(ParticleStorageError::InvalidGroupRange);
+        };
+        if indices.windows(2).any(|pair| pair[1].0 != pair[0].0 + 1) {
+            return Err(ParticleStorageError::InvalidGroupRange);
+        }
+        Ok(first.0..first.0 + indices.len())
+    }
+
+    pub(in crate::particle) fn range_contains_wall(&self, range: Range<usize>) -> bool {
+        self.flags[range]
+            .iter()
+            .any(|flags| flags.contains(ParticleFlags::WALL))
+    }
+
+    pub(in crate::particle) fn force_range(&self, range: Range<usize>) -> &[Vec2] {
+        &self.forces[range]
+    }
+
+    pub(in crate::particle) fn velocity_range(&self, range: Range<usize>) -> &[Vec2] {
+        &self.velocities[range]
+    }
+
+    pub(in crate::particle) fn replace_force_range(
+        &mut self,
+        range: Range<usize>,
+        forces: &[Vec2],
+    ) {
+        self.forces[range].copy_from_slice(forces);
+    }
+
+    pub(in crate::particle) fn replace_velocity_range(
+        &mut self,
+        range: Range<usize>,
+        velocities: &[Vec2],
+    ) {
+        self.velocities[range].copy_from_slice(velocities);
     }
 
     pub(in crate::particle) fn stuck_candidates(

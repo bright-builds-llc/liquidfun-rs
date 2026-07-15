@@ -76,6 +76,12 @@ impl<'a> ParticleSystemView<'a> {
         self.storage.weights()
     }
 
+    /// Returns accumulated forces in newtons, aligned with particle identities.
+    #[must_use]
+    pub fn forces(&self) -> &[Vec2] {
+        self.storage.forces()
+    }
+
     /// Iterates possible stuck particles from the latest contact sub-iteration.
     #[must_use]
     pub fn stuck_candidates(&self) -> impl ExactSizeIterator<Item = ParticleId> + '_ {
