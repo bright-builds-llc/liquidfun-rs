@@ -10,6 +10,18 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use serde_json::{Value, json};
 
 const REVISION: &str = "7f20402173fd143a3988c921bc384459c6a858f2";
+const PHASE9_AUTHORITY_REFERENCES: [&str; 10] = [
+    "https://github.com/bright-builds-llc/liquidfun-rs/actions/runs/29439515367",
+    "https://api.github.com/repos/bright-builds-llc/liquidfun-rs/actions/artifacts/8352859391/zip#sha256=f237d6f1ebe0e59f65a5ae0609140eecdd8b32247e9d2064c83748be1ab9f5ea",
+    "phase9-canonical-29439515367-a87f84bbdbfe55fb732d74c481c4a4bda9eec958/identity.json#trace-sha256=3a339387b4c4acccc15b5fc4944d6bec9c7e1d315f4753034ae52a5ff97f2e64",
+    "phase9-canonical-29439515367-a87f84bbdbfe55fb732d74c481c4a4bda9eec958/identity.json#manifest-sha256=36cfaad1f56505f8427408733e2231ad613984a4cb3eb3b8d757e7a14b2c38e0",
+    "https://api.github.com/repos/bright-builds-llc/liquidfun-rs/actions/artifacts/8352881868/zip#sha256=95ad57e5d5711ae6aa93847ad1efd4a04025bd2956b4996535fa0e5f45a5893f",
+    "phase9-sanitizer-29439515367-a87f84bbdbfe55fb732d74c481c4a4bda9eec958/identity.json#trace-sha256=ee75462d49275c5b7d02b8677eb6f9bf82c241c6b993c16d6df08a2ae231a070",
+    "phase9-sanitizer-29439515367-a87f84bbdbfe55fb732d74c481c4a4bda9eec958/identity.json#manifest-sha256=0c89f0136eda6689118d3eaa909defb1d182d5723e7a64ea1e958396066dce15",
+    "https://github.com/bright-builds-llc/liquidfun-rs/commit/a87f84bbdbfe55fb732d74c481c4a4bda9eec958",
+    ".planning/phases/09-particle-storage-lifecycle-and-coupling/09-16-SUMMARY.md",
+    "TESTING.md#phase-9-canonical-evidence-2026-07-15",
+];
 static FIXTURE_ID: AtomicU64 = AtomicU64::new(0);
 
 type TestResult = Result<(), Box<dyn Error>>;
@@ -217,6 +229,73 @@ fn check_rejects_differential_evidence_without_dependencies() -> TestResult {
 }
 
 #[test]
+fn check_rejects_incomplete_phase9_promotion() -> TestResult {
+    // Arrange
+    let fixture = InventoryFixture::new()?;
+    assert_success(&fixture.discover()?);
+    let mut entries = promoted_phase9_entries();
+    phase9_entry_mut(&mut entries)["evidence"]["platform_validated"] = not_evidenced();
+    fixture.write_compatibility(&entries)?;
+
+    // Act
+    let output = fixture.generate()?;
+
+    // Assert
+    assert_failure_category(&output, "inventory/evidence");
+    assert!(stderr(&output).contains("incomplete Phase 9 promotion"));
+    fixture.cleanup()?;
+    Ok(())
+}
+
+#[test]
+fn check_rejects_noncanonical_phase9_promotion() -> TestResult {
+    // Arrange
+    let fixture = InventoryFixture::new()?;
+    assert_success(&fixture.discover()?);
+    let mut entries = promoted_phase9_entries();
+    phase9_entry_mut(&mut entries)["evidence"]["platform_validated"]["references"][1] =
+        json!("sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+    fixture.write_compatibility(&entries)?;
+
+    // Act
+    let output = fixture.generate()?;
+
+    // Assert
+    assert_failure_category(&output, "inventory/evidence");
+    assert!(stderr(&output).contains("noncanonical Phase 9 authority"));
+    fixture.cleanup()?;
+    Ok(())
+}
+
+#[test]
+fn check_rejects_phase10_claim_during_phase9_promotion() -> TestResult {
+    // Arrange
+    let fixture = InventoryFixture::new()?;
+    assert_success(&fixture.discover()?);
+    let mut entries = promoted_phase9_entries();
+    let mut deferred_evidence = valid_evidence();
+    deferred_evidence["implemented"] = evidenced();
+    entries.push(compatibility_entry(
+        "subsystem.particle-solver-behaviors",
+        "subsystem",
+        "phase10-fixture",
+        "liquidfun::particle",
+        &deferred_evidence,
+    ));
+    entries.sort_by(|left, right| left["id"].as_str().cmp(&right["id"].as_str()));
+    fixture.write_compatibility(&entries)?;
+
+    // Act
+    let output = fixture.generate()?;
+
+    // Assert
+    assert_failure_category(&output, "inventory/evidence");
+    assert!(stderr(&output).contains("deferred Phase 10 row"));
+    fixture.cleanup()?;
+    Ok(())
+}
+
+#[test]
 fn discover_and_generate_are_byte_deterministic() -> TestResult {
     // Arrange
     let fixture = InventoryFixture::new()?;
@@ -292,6 +371,53 @@ fn valid_evidence() -> Value {
         "documented_difference": not_evidenced(),
         "intentionally_unsupported": not_evidenced()
     })
+}
+
+fn promoted_phase9_entries() -> Vec<Value> {
+    let evidence = json!({
+        "investigated": evidenced(),
+        "planned": evidenced(),
+        "implemented": evidenced(),
+        "unit_tested": evidenced(),
+        "differentially_validated": evidenced(),
+        "platform_validated": {
+            "status": "evidenced",
+            "references": PHASE9_AUTHORITY_REFERENCES
+        },
+        "documented_difference": not_evidenced(),
+        "intentionally_unsupported": not_evidenced()
+    });
+    let mut entries = InventoryFixture::valid_entries();
+    entries.extend(
+        [
+            "public-api.liquidfun-box2d-box2d-particle-b2particle-h",
+            "public-api.liquidfun-box2d-box2d-particle-b2particlesystem-h",
+            "subsystem.particle-contacts-and-coupling",
+            "subsystem.particle-storage-and-lifecycle",
+        ]
+        .into_iter()
+        .map(|id| {
+            compatibility_entry(
+                id,
+                "subsystem",
+                "phase9-fixture",
+                "liquidfun::particle",
+                &evidence,
+            )
+        }),
+    );
+    entries.sort_by(|left, right| left["id"].as_str().cmp(&right["id"].as_str()));
+    entries
+}
+
+fn phase9_entry_mut(entries: &mut [Value]) -> &mut Value {
+    let maybe_entry = entries
+        .iter_mut()
+        .find(|entry| entry["id"] == "public-api.liquidfun-box2d-box2d-particle-b2particle-h");
+    let Some(entry) = maybe_entry else {
+        panic!("promoted Phase 9 fixture must include the particle API row");
+    };
+    entry
 }
 
 fn evidenced() -> Value {

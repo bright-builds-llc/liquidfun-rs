@@ -6,6 +6,32 @@ use super::{
     discovery as scanner, require_schema_and_revision, validate_relative_path,
 };
 
+const PHASE9_PROMOTION_IDS: [&str; 4] = [
+    "public-api.liquidfun-box2d-box2d-particle-b2particle-h",
+    "public-api.liquidfun-box2d-box2d-particle-b2particlesystem-h",
+    "subsystem.particle-contacts-and-coupling",
+    "subsystem.particle-storage-and-lifecycle",
+];
+const PHASE9_DEFERRED_IDS: [&str; 5] = [
+    "public-api.liquidfun-box2d-box2d-particle-b2particleassembly-h",
+    "public-api.liquidfun-box2d-box2d-particle-b2particlegroup-h",
+    "source-area.liquidfun-box2d-box2d-particle",
+    "subsystem.particle-groups-pairs-and-triads",
+    "subsystem.particle-solver-behaviors",
+];
+const PHASE9_AUTHORITY_REFERENCES: [&str; 10] = [
+    "https://github.com/bright-builds-llc/liquidfun-rs/actions/runs/29439515367",
+    "https://api.github.com/repos/bright-builds-llc/liquidfun-rs/actions/artifacts/8352859391/zip#sha256=f237d6f1ebe0e59f65a5ae0609140eecdd8b32247e9d2064c83748be1ab9f5ea",
+    "phase9-canonical-29439515367-a87f84bbdbfe55fb732d74c481c4a4bda9eec958/identity.json#trace-sha256=3a339387b4c4acccc15b5fc4944d6bec9c7e1d315f4753034ae52a5ff97f2e64",
+    "phase9-canonical-29439515367-a87f84bbdbfe55fb732d74c481c4a4bda9eec958/identity.json#manifest-sha256=36cfaad1f56505f8427408733e2231ad613984a4cb3eb3b8d757e7a14b2c38e0",
+    "https://api.github.com/repos/bright-builds-llc/liquidfun-rs/actions/artifacts/8352881868/zip#sha256=95ad57e5d5711ae6aa93847ad1efd4a04025bd2956b4996535fa0e5f45a5893f",
+    "phase9-sanitizer-29439515367-a87f84bbdbfe55fb732d74c481c4a4bda9eec958/identity.json#trace-sha256=ee75462d49275c5b7d02b8677eb6f9bf82c241c6b993c16d6df08a2ae231a070",
+    "phase9-sanitizer-29439515367-a87f84bbdbfe55fb732d74c481c4a4bda9eec958/identity.json#manifest-sha256=0c89f0136eda6689118d3eaa909defb1d182d5723e7a64ea1e958396066dce15",
+    "https://github.com/bright-builds-llc/liquidfun-rs/commit/a87f84bbdbfe55fb732d74c481c4a4bda9eec958",
+    ".planning/phases/09-particle-storage-lifecycle-and-coupling/09-16-SUMMARY.md",
+    "TESTING.md#phase-9-canonical-evidence-2026-07-15",
+];
+
 pub(super) fn compatibility(
     ledger: &CompatibilityLedger,
     oracle_revision: &str,
@@ -75,6 +101,75 @@ pub(super) fn compatibility(
             }
         }
     }
+    phase9_promotion(ledger)
+}
+
+fn phase9_promotion(ledger: &CompatibilityLedger) -> Result<(), InventoryError> {
+    let promotion_started = ledger.entries.iter().any(|entry| {
+        PHASE9_PROMOTION_IDS.contains(&entry.id.as_str())
+            && entry.evidence.platform_validated.status == EvidenceStatus::Evidenced
+    });
+    if !promotion_started {
+        return Ok(());
+    }
+
+    for id in PHASE9_PROMOTION_IDS {
+        let maybe_entry = ledger.entries.iter().find(|entry| entry.id == id);
+        let Some(entry) = maybe_entry else {
+            return Err(InventoryError::new(
+                "evidence",
+                format!("incomplete Phase 9 promotion: missing scoped row `{id}`"),
+            ));
+        };
+        let complete = [
+            &entry.evidence.implemented,
+            &entry.evidence.unit_tested,
+            &entry.evidence.differentially_validated,
+            &entry.evidence.platform_validated,
+        ]
+        .into_iter()
+        .all(|record| record.status == EvidenceStatus::Evidenced);
+        if !complete {
+            return Err(InventoryError::new(
+                "evidence",
+                format!("incomplete Phase 9 promotion for scoped row `{id}`"),
+            ));
+        }
+        if !entry
+            .evidence
+            .platform_validated
+            .references
+            .iter()
+            .map(String::as_str)
+            .eq(PHASE9_AUTHORITY_REFERENCES)
+        {
+            return Err(InventoryError::new(
+                "evidence",
+                format!("noncanonical Phase 9 authority for scoped row `{id}`"),
+            ));
+        }
+    }
+
+    for id in PHASE9_DEFERRED_IDS {
+        let Some(entry) = ledger.entries.iter().find(|entry| entry.id == id) else {
+            continue;
+        };
+        let deferred = [
+            &entry.evidence.implemented,
+            &entry.evidence.unit_tested,
+            &entry.evidence.differentially_validated,
+            &entry.evidence.platform_validated,
+        ]
+        .into_iter()
+        .all(|record| record.status == EvidenceStatus::NotEvidenced);
+        if !deferred {
+            return Err(InventoryError::new(
+                "evidence",
+                format!("Phase 9 promotion cannot claim deferred Phase 10 row `{id}`"),
+            ));
+        }
+    }
+
     Ok(())
 }
 
