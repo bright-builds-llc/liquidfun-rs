@@ -2,6 +2,8 @@ use proptest::prelude::*;
 
 use super::*;
 
+mod permutation_model;
+
 const DECLARED_CAPACITY: usize = 6;
 
 #[derive(Debug, Clone)]

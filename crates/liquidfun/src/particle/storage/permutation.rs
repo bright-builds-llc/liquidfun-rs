@@ -1,230 +1,433 @@
-use super::*;
+use super::{
+    GroupRange, IdentityEntry, IdentityState, ParticleBodyContact, ParticleColor, ParticleContact,
+    ParticleFlags, ParticleGroupId, ParticleId, ParticleIndex, ParticlePair, ParticleProxy,
+    ParticleSnapshot, ParticleStorage, ParticleStorageError, ParticleTriad, StuckLanes,
+    UserAssociationKey, Vec2, build_group_ranges,
+};
 
-fn input(value: i16, maybe_group: Option<ParticleGroupId>, optional: bool) -> ParticleInput {
-    let scalar = f32::from(value);
-    let component = u8::try_from(value).expect("test values fit in a color component");
-    ParticleInput {
-        position: Vec2::new(scalar, -scalar),
-        velocity: Vec2::new(scalar + 10.0, scalar + 20.0),
-        flags: ParticleFlags::from_bits_retain(
-            u32::try_from(value).expect("test values are non-negative"),
-        ),
-        maybe_group,
-        maybe_color: optional.then_some(ParticleColor::new(
-            component, component, component, component,
-        )),
-        maybe_user_association: optional.then_some(UserAssociationKey::new(
-            u64::try_from(value).expect("test values are non-negative"),
-        )),
-        maybe_expiration_time: optional.then_some(i32::from(value) + 100),
+struct PermutationCandidate {
+    identities: Vec<IdentityEntry>,
+    freed_slots: Vec<usize>,
+    dense_to_id: Vec<Option<ParticleId>>,
+    positions: Vec<Vec2>,
+    velocities: Vec<Vec2>,
+    flags: Vec<ParticleFlags>,
+    groups: Vec<Option<ParticleGroupId>>,
+    weights: Vec<f32>,
+    forces: Vec<Vec2>,
+    maybe_colors: Option<Vec<ParticleColor>>,
+    maybe_user_associations: Option<Vec<Option<UserAssociationKey>>>,
+    maybe_stuck: Option<StuckLanes>,
+    maybe_expiration_times: Option<Vec<i32>>,
+    maybe_expiration_order: Option<Vec<ParticleIndex>>,
+    proxies: Vec<ParticleProxy>,
+    particle_contacts: Vec<ParticleContact>,
+    body_contacts: Vec<ParticleBodyContact>,
+    pairs: Vec<ParticlePair>,
+    triads: Vec<ParticleTriad>,
+    group_ranges: Vec<GroupRange>,
+    destroyed: Vec<ParticleSnapshot>,
+}
+
+struct DerivedPermutation {
+    proxies: Vec<ParticleProxy>,
+    particle_contacts: Vec<ParticleContact>,
+    body_contacts: Vec<ParticleBodyContact>,
+    pairs: Vec<ParticlePair>,
+    triads: Vec<ParticleTriad>,
+    maybe_expiration_order: Option<Vec<ParticleIndex>>,
+}
+
+struct RowPermutationCandidate {
+    identities: Vec<IdentityEntry>,
+    freed_slots: Vec<usize>,
+    dense_to_id: Vec<Option<ParticleId>>,
+    positions: Vec<Vec2>,
+    velocities: Vec<Vec2>,
+    flags: Vec<ParticleFlags>,
+    groups: Vec<Option<ParticleGroupId>>,
+    weights: Vec<f32>,
+    forces: Vec<Vec2>,
+    maybe_colors: Option<Vec<ParticleColor>>,
+    maybe_user_associations: Option<Vec<Option<UserAssociationKey>>>,
+    maybe_stuck: Option<StuckLanes>,
+    maybe_expiration_times: Option<Vec<i32>>,
+    destroyed: Vec<ParticleSnapshot>,
+}
+
+pub(super) fn apply_permutation(
+    storage: &mut ParticleStorage,
+    old_to_new: &[Option<usize>],
+) -> Result<Vec<ParticleSnapshot>, ParticleStorageError> {
+    storage.check_invariants()?;
+    let new_count = validate_basic_permutation(old_to_new, storage.dense_to_id.len())?;
+    let candidate = prepare_candidate(storage, old_to_new, new_count)?;
+    Ok(commit(storage, candidate))
+}
+
+fn prepare_candidate(
+    storage: &ParticleStorage,
+    old_to_new: &[Option<usize>],
+    new_count: usize,
+) -> Result<PermutationCandidate, ParticleStorageError> {
+    let rows = prepare_rows(storage, old_to_new, new_count)?;
+    let derived = remap_derived(storage, old_to_new)?;
+    let group_ranges = build_group_ranges(&rows.groups)?;
+    Ok(PermutationCandidate {
+        identities: rows.identities,
+        freed_slots: rows.freed_slots,
+        dense_to_id: rows.dense_to_id,
+        positions: rows.positions,
+        velocities: rows.velocities,
+        flags: rows.flags,
+        groups: rows.groups,
+        weights: rows.weights,
+        forces: rows.forces,
+        maybe_colors: rows.maybe_colors,
+        maybe_user_associations: rows.maybe_user_associations,
+        maybe_stuck: rows.maybe_stuck,
+        maybe_expiration_times: rows.maybe_expiration_times,
+        maybe_expiration_order: derived.maybe_expiration_order,
+        proxies: derived.proxies,
+        particle_contacts: derived.particle_contacts,
+        body_contacts: derived.body_contacts,
+        pairs: derived.pairs,
+        triads: derived.triads,
+        group_ranges,
+        destroyed: rows.destroyed,
+    })
+}
+
+fn prepare_rows(
+    storage: &ParticleStorage,
+    old_to_new: &[Option<usize>],
+    new_count: usize,
+) -> Result<RowPermutationCandidate, ParticleStorageError> {
+    let mut rows = empty_rows(storage, new_count);
+    for (old, maybe_new) in old_to_new.iter().copied().enumerate() {
+        let id = storage.dense_to_id[old];
+        let local_slot = storage.local_slot(id)?;
+        let Some(new) = maybe_new else {
+            remove_pending(local_slot, &mut rows)?;
+            continue;
+        };
+        let entry = &mut rows.identities[local_slot];
+        rows.dense_to_id[new] = Some(id);
+        rows.positions[new] = storage.positions[old];
+        rows.velocities[new] = storage.velocities[old];
+        rows.flags[new] = storage.flags[old];
+        rows.groups[new] = storage.groups[old];
+        rows.forces[new] = storage.forces[old];
+        copy_optional(
+            storage.maybe_colors.as_deref(),
+            rows.maybe_colors.as_deref_mut(),
+            old,
+            new,
+        );
+        copy_optional(
+            storage.maybe_user_associations.as_deref(),
+            rows.maybe_user_associations.as_deref_mut(),
+            old,
+            new,
+        );
+        copy_stuck(
+            storage.maybe_stuck.as_ref(),
+            rows.maybe_stuck.as_mut(),
+            old,
+            new,
+        );
+        copy_optional(
+            storage.maybe_expiration_times.as_deref(),
+            rows.maybe_expiration_times.as_deref_mut(),
+            old,
+            new,
+        );
+        entry.state = remap_identity_state(entry.state, new)?;
+    }
+    Ok(rows)
+}
+
+fn remove_pending(
+    local_slot: usize,
+    rows: &mut RowPermutationCandidate,
+) -> Result<(), ParticleStorageError> {
+    let entry = &mut rows.identities[local_slot];
+    let IdentityState::PendingDelete { snapshot, .. } = entry.state else {
+        return Err(ParticleStorageError::InvalidPermutation);
+    };
+    rows.destroyed.push(snapshot);
+    let Some(next_generation) = entry.generation.checked_add(1) else {
+        entry.state = IdentityState::Retired;
+        return Ok(());
+    };
+    entry.generation = next_generation;
+    entry.state = IdentityState::Vacant;
+    rows.freed_slots.push(local_slot);
+    Ok(())
+}
+
+fn remap_identity_state(
+    state: IdentityState,
+    new: usize,
+) -> Result<IdentityState, ParticleStorageError> {
+    match state {
+        IdentityState::Live(_) => Ok(IdentityState::Live(ParticleIndex(new))),
+        IdentityState::PendingDelete { snapshot, .. } => Ok(IdentityState::PendingDelete {
+            dense: ParticleIndex(new),
+            snapshot,
+        }),
+        IdentityState::Vacant | IdentityState::Retired => {
+            Err(ParticleStorageError::InvalidPermutation)
+        }
     }
 }
 
-fn storage() -> ParticleStorage {
-    let world = WorldKey::fresh().expect("test world key remains available");
-    let system = ParticleSystemId::from_identity(Identity::new(world, 0, 0));
-    ParticleStorage::new(world, system, 0, 8, 8).expect("test storage contract is valid")
+fn empty_rows(storage: &ParticleStorage, new_count: usize) -> RowPermutationCandidate {
+    RowPermutationCandidate {
+        identities: storage.identities.clone(),
+        freed_slots: Vec::new(),
+        dense_to_id: vec![None; new_count],
+        positions: vec![Vec2::ZERO; new_count],
+        velocities: vec![Vec2::ZERO; new_count],
+        flags: vec![ParticleFlags::WATER; new_count],
+        groups: vec![None; new_count],
+        weights: vec![0.0; new_count],
+        forces: vec![Vec2::ZERO; new_count],
+        maybe_colors: storage
+            .maybe_colors
+            .as_ref()
+            .map(|_| vec![ParticleColor::ZERO; new_count]),
+        maybe_user_associations: storage
+            .maybe_user_associations
+            .as_ref()
+            .map(|_| vec![None; new_count]),
+        maybe_stuck: storage.maybe_stuck.as_ref().map(|_| StuckLanes {
+            last_body_contact_steps: vec![0; new_count],
+            body_contact_counts: vec![0; new_count],
+            consecutive_contact_steps: vec![0; new_count],
+            candidates: Vec::new(),
+        }),
+        maybe_expiration_times: storage
+            .maybe_expiration_times
+            .as_ref()
+            .map(|_| vec![0; new_count]),
+        destroyed: Vec::new(),
+    }
 }
 
-fn input_with_optional_defaults(value: i16, maybe_group: Option<ParticleGroupId>) -> ParticleInput {
-    let mut value = input(value, maybe_group, false);
-    value.maybe_color = Some(ParticleColor::ZERO);
-    value.maybe_expiration_time = Some(0);
-    value
+fn remap_derived(
+    storage: &ParticleStorage,
+    old_to_new: &[Option<usize>],
+) -> Result<DerivedPermutation, ParticleStorageError> {
+    Ok(DerivedPermutation {
+        proxies: remap_proxies(&storage.proxies, old_to_new)?,
+        particle_contacts: remap_particle_contacts(&storage.particle_contacts, old_to_new)?,
+        body_contacts: remap_body_contacts(&storage.body_contacts, old_to_new)?,
+        pairs: remap_pairs(&storage.pairs, old_to_new)?,
+        triads: remap_triads(&storage.triads, old_to_new)?,
+        maybe_expiration_order: storage
+            .maybe_expiration_order
+            .as_ref()
+            .map(|order| remap_references(order, old_to_new))
+            .transpose()?,
+    })
 }
 
-fn populated_storage() -> (ParticleStorage, [ParticleId; 4]) {
-    let mut storage = storage();
-    let first_group = ParticleGroupId::from_identity(Identity::new(storage.world, 10, 0));
-    let second_group = ParticleGroupId::from_identity(Identity::new(storage.world, 11, 0));
-    let ids = [
-        storage
-            .create(input(1, Some(first_group), true))
-            .expect("particle fits"),
-        storage
-            .create(input(2, Some(first_group), false))
-            .expect("particle fits"),
-        storage
-            .create(input(3, Some(second_group), true))
-            .expect("particle fits"),
-        storage
-            .create(input(4, Some(second_group), false))
-            .expect("particle fits"),
-    ];
-    storage.particle_contacts = vec![ParticleContact {
-        indices: [ParticleIndex(0), ParticleIndex(2)],
-        flags: ParticleFlags::WATER,
-        weight: 0.5,
-        normal: Vec2::new(1.0, 0.0),
-    }];
-    storage.pairs = vec![ParticlePair {
-        indices: [ParticleIndex(1), ParticleIndex(3)],
-        flags: ParticleFlags::SPRING,
-        strength: 0.75,
-        distance: 2.0,
-    }];
-    storage.triads = vec![ParticleTriad {
-        indices: [ParticleIndex(0), ParticleIndex(1), ParticleIndex(3)],
-        flags: ParticleFlags::ELASTIC,
-        strength: 0.25,
-    }];
-    (storage, ids)
+fn commit(storage: &mut ParticleStorage, candidate: PermutationCandidate) -> Vec<ParticleSnapshot> {
+    storage.identities = candidate.identities;
+    storage.free_identity_slots.extend(candidate.freed_slots);
+    storage.retired_identity_slots = storage
+        .identities
+        .iter()
+        .filter(|entry| entry.state == IdentityState::Retired)
+        .count();
+    storage.dense_to_id = candidate
+        .dense_to_id
+        .into_iter()
+        .map(|maybe_id| maybe_id.expect("validated permutations fill every destination"))
+        .collect();
+    storage.positions = candidate.positions;
+    storage.velocities = candidate.velocities;
+    storage.flags = candidate.flags;
+    storage.groups = candidate.groups;
+    storage.weights = candidate.weights;
+    storage.forces = candidate.forces;
+    storage.maybe_colors = candidate.maybe_colors;
+    storage.maybe_user_associations = candidate.maybe_user_associations;
+    storage.maybe_stuck = candidate.maybe_stuck;
+    storage.maybe_expiration_times = candidate.maybe_expiration_times;
+    storage.maybe_expiration_order = candidate.maybe_expiration_order;
+    storage.proxies = candidate.proxies;
+    storage.particle_contacts = candidate.particle_contacts;
+    storage.body_contacts = candidate.body_contacts;
+    storage.pairs = candidate.pairs;
+    storage.triads = candidate.triads;
+    storage.group_ranges = candidate.group_ranges;
+    debug_assert_eq!(storage.check_invariants(), Ok(()));
+    candidate.destroyed
 }
 
-#[test]
-fn one_transaction_remaps_all_lanes_indices_and_group_ranges() {
-    // Arrange
-    let (mut storage, ids) = populated_storage();
-
-    // Act
-    storage
-        .rotate_rows(0, 2, 4)
-        .expect("whole-group rotation is valid");
-
-    // Assert
-    let first_group = storage.groups[2];
-    let second_group = storage.groups[0];
-    assert_eq!(storage.input(ids[0]), Ok(input(1, first_group, true)));
-    assert_eq!(
-        storage.input(ids[1]),
-        Ok(input_with_optional_defaults(2, first_group))
-    );
-    assert_eq!(storage.input(ids[2]), Ok(input(3, second_group, true)));
-    assert_eq!(
-        storage.input(ids[3]),
-        Ok(input_with_optional_defaults(4, second_group))
-    );
-    assert_eq!(
-        storage
-            .proxies
-            .iter()
-            .map(|proxy| proxy.index)
-            .collect::<Vec<_>>(),
-        vec![
-            ParticleIndex(2),
-            ParticleIndex(3),
-            ParticleIndex(0),
-            ParticleIndex(1)
-        ]
-    );
-    assert_eq!(
-        storage.particle_contacts[0].indices,
-        [ParticleIndex(2), ParticleIndex(0)]
-    );
-    assert_eq!(
-        storage.pairs[0].indices,
-        [ParticleIndex(3), ParticleIndex(1)]
-    );
-    assert_eq!(
-        storage.triads[0].indices,
-        [ParticleIndex(2), ParticleIndex(3), ParticleIndex(1)]
-    );
-    assert_eq!(
-        storage.maybe_expiration_order,
-        Some(vec![
-            ParticleIndex(2),
-            ParticleIndex(3),
-            ParticleIndex(0),
-            ParticleIndex(1)
-        ])
-    );
-    assert_eq!(
-        storage.group_ranges,
-        vec![
-            GroupRange {
-                maybe_group: second_group,
-                start: ParticleIndex(0),
-                end: ParticleIndex(2)
-            },
-            GroupRange {
-                maybe_group: first_group,
-                start: ParticleIndex(2),
-                end: ParticleIndex(4)
-            },
-        ]
-    );
-    assert_eq!(storage.check_invariants(), Ok(()));
+fn copy_optional<T: Copy>(
+    source: Option<&[T]>,
+    destination: Option<&mut [T]>,
+    old: usize,
+    new: usize,
+) {
+    if let (Some(source), Some(destination)) = (source, destination) {
+        destination[new] = source[old];
+    }
 }
 
-#[test]
-fn invalid_duplicate_permutation_leaves_state_unchanged() {
-    // Arrange
-    let (mut storage, _ids) = populated_storage();
-    let before = storage.clone();
-
-    // Act
-    let result = storage.apply_permutation(&[Some(0), Some(0), Some(1), Some(2)]);
-
-    // Assert
-    assert_eq!(result, Err(ParticleStorageError::InvalidPermutation));
-    assert!(storage == before);
+fn copy_stuck(
+    source: Option<&StuckLanes>,
+    destination: Option<&mut StuckLanes>,
+    old: usize,
+    new: usize,
+) {
+    let (Some(source), Some(destination)) = (source, destination) else {
+        return;
+    };
+    destination.last_body_contact_steps[new] = source.last_body_contact_steps[old];
+    destination.body_contact_counts[new] = source.body_contact_counts[old];
+    destination.consecutive_contact_steps[new] = source.consecutive_contact_steps[old];
 }
 
-#[test]
-fn out_of_range_derived_reference_leaves_state_unchanged() {
-    // Arrange
-    let (mut storage, _ids) = populated_storage();
-    storage.particle_contacts.push(ParticleContact {
-        indices: [ParticleIndex(0), ParticleIndex(99)],
-        flags: ParticleFlags::WATER,
-        weight: 0.0,
-        normal: Vec2::ZERO,
-    });
-    let before = storage.clone();
-
-    // Act
-    let result = storage.rotate_rows(0, 2, 4);
-
-    // Assert
-    assert_eq!(result, Err(ParticleStorageError::InvalidDerivedReference));
-    assert!(storage == before);
+fn validate_basic_permutation(
+    old_to_new: &[Option<usize>],
+    old_count: usize,
+) -> Result<usize, ParticleStorageError> {
+    if old_to_new.len() != old_count {
+        return Err(ParticleStorageError::InvalidPermutation);
+    }
+    let new_count = old_to_new.iter().filter(|value| value.is_some()).count();
+    let mut seen = vec![false; new_count];
+    for destination in old_to_new.iter().flatten().copied() {
+        let Some(was_seen) = seen.get_mut(destination) else {
+            return Err(ParticleStorageError::InvalidPermutation);
+        };
+        if *was_seen {
+            return Err(ParticleStorageError::InvalidPermutation);
+        }
+        *was_seen = true;
+    }
+    if seen.iter().any(|was_seen| !was_seen) {
+        return Err(ParticleStorageError::InvalidPermutation);
+    }
+    Ok(new_count)
 }
 
-#[test]
-fn mismatched_optional_lane_leaves_state_unchanged() {
-    // Arrange
-    let (mut storage, _ids) = populated_storage();
-    storage
-        .maybe_colors
-        .as_mut()
-        .expect("fixture enables the optional color lane")
-        .pop();
-    let before = storage.clone();
-
-    // Act
-    let result = storage.rotate_rows(0, 2, 4);
-
-    // Assert
-    assert_eq!(result, Err(ParticleStorageError::LaneLengthMismatch));
-    assert!(storage == before);
+fn remap_references(
+    references: &[ParticleIndex],
+    old_to_new: &[Option<usize>],
+) -> Result<Vec<ParticleIndex>, ParticleStorageError> {
+    references
+        .iter()
+        .filter_map(|index| match old_to_new.get(index.0) {
+            Some(Some(destination)) => Some(Ok(ParticleIndex(*destination))),
+            Some(None) => None,
+            None => Some(Err(ParticleStorageError::InvalidDerivedReference)),
+        })
+        .collect()
 }
 
-#[test]
-fn compaction_drops_removed_references_and_remaps_survivors() {
-    // Arrange
-    let (mut storage, ids) = populated_storage();
-    storage.mark_delete(ids[0]).expect("particle is live");
-    storage.mark_delete(ids[3]).expect("particle is live");
-
-    // Act
-    let destroyed = storage.compact_pending().expect("compaction is valid");
-
-    // Assert
-    assert_eq!(destroyed.len(), 2);
-    assert!(storage.particle_contacts.is_empty());
-    assert!(storage.pairs.is_empty());
-    assert!(storage.triads.is_empty());
-    assert_eq!(
-        storage
-            .proxies
-            .iter()
-            .map(|proxy| proxy.index)
-            .collect::<Vec<_>>(),
-        vec![ParticleIndex(0), ParticleIndex(1)]
-    );
-    assert_eq!(
-        storage.maybe_expiration_order,
-        Some(vec![ParticleIndex(0), ParticleIndex(1)])
-    );
-    assert_eq!(storage.check_invariants(), Ok(()));
+fn remap_proxies(
+    proxies: &[ParticleProxy],
+    old_to_new: &[Option<usize>],
+) -> Result<Vec<ParticleProxy>, ParticleStorageError> {
+    proxies
+        .iter()
+        .filter_map(|proxy| match remap_index(proxy.index, old_to_new) {
+            Ok(Some(index)) => Some(Ok(ParticleProxy { index, ..*proxy })),
+            Ok(None) => None,
+            Err(error) => Some(Err(error)),
+        })
+        .collect()
 }
+
+fn remap_particle_contacts(
+    contacts: &[ParticleContact],
+    old_to_new: &[Option<usize>],
+) -> Result<Vec<ParticleContact>, ParticleStorageError> {
+    remap_records(
+        contacts,
+        old_to_new,
+        |contact| contact.indices,
+        |contact, indices| ParticleContact { indices, ..contact },
+    )
+}
+
+fn remap_body_contacts(
+    contacts: &[ParticleBodyContact],
+    old_to_new: &[Option<usize>],
+) -> Result<Vec<ParticleBodyContact>, ParticleStorageError> {
+    contacts
+        .iter()
+        .filter_map(|contact| match remap_index(contact.index, old_to_new) {
+            Ok(Some(index)) => Some(Ok(ParticleBodyContact { index, ..*contact })),
+            Ok(None) => None,
+            Err(error) => Some(Err(error)),
+        })
+        .collect()
+}
+
+fn remap_pairs(
+    pairs: &[ParticlePair],
+    old_to_new: &[Option<usize>],
+) -> Result<Vec<ParticlePair>, ParticleStorageError> {
+    remap_records(
+        pairs,
+        old_to_new,
+        |pair| pair.indices,
+        |pair, indices| ParticlePair { indices, ..pair },
+    )
+}
+
+fn remap_triads(
+    triads: &[ParticleTriad],
+    old_to_new: &[Option<usize>],
+) -> Result<Vec<ParticleTriad>, ParticleStorageError> {
+    remap_records(
+        triads,
+        old_to_new,
+        |triad| triad.indices,
+        |triad, indices| ParticleTriad { indices, ..triad },
+    )
+}
+
+fn remap_records<T: Copy, const N: usize>(
+    records: &[T],
+    old_to_new: &[Option<usize>],
+    indices: impl Fn(T) -> [ParticleIndex; N],
+    rebuild: impl Fn(T, [ParticleIndex; N]) -> T,
+) -> Result<Vec<T>, ParticleStorageError> {
+    let mut remapped = Vec::with_capacity(records.len());
+    for record in records.iter().copied() {
+        let old_indices = indices(record);
+        let mut new_indices = [ParticleIndex(0); N];
+        let mut removed = false;
+        for (destination, old) in new_indices.iter_mut().zip(old_indices) {
+            match remap_index(old, old_to_new)? {
+                Some(new) => *destination = new,
+                None => removed = true,
+            }
+        }
+        if !removed {
+            remapped.push(rebuild(record, new_indices));
+        }
+    }
+    Ok(remapped)
+}
+
+fn remap_index(
+    old: ParticleIndex,
+    old_to_new: &[Option<usize>],
+) -> Result<Option<ParticleIndex>, ParticleStorageError> {
+    old_to_new
+        .get(old.0)
+        .copied()
+        .map(|maybe_new| maybe_new.map(ParticleIndex))
+        .ok_or(ParticleStorageError::InvalidDerivedReference)
+}
+
+#[cfg(test)]
+mod tests;
