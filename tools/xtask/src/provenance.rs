@@ -12,6 +12,7 @@ use serde::Deserialize;
 use sha2::{Digest, Sha256};
 
 mod artifact;
+mod phase9_witness;
 
 const USAGE: &str = "Usage: cargo xtask provenance check";
 const SCHEMA_VERSION: u64 = 1;
@@ -172,6 +173,7 @@ pub(crate) fn check_artifacts(repository_root: &Path) -> Result<(), ProvenanceEr
         &source_map,
         &upstream_lock.revision,
     )?;
+    phase9_witness::validate(repository_root, &upstream_lock.revision)?;
     println!(
         "artifact provenance verified: oracle {} with {} artifact records",
         upstream_lock.revision, artifact_count
@@ -205,6 +207,7 @@ fn check(repository_root: &Path) -> Result<(), ProvenanceError> {
         &source_map,
         &upstream_lock.revision,
     )?;
+    phase9_witness::validate(repository_root, &upstream_lock.revision)?;
     println!(
         "provenance verified: oracle {} with {} artifact records",
         upstream_lock.revision, artifact_count

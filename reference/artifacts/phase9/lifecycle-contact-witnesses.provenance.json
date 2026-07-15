@@ -1,0 +1,20 @@
+{
+  "adapter_content_sha256": "b5db778c2a1f7750e81fe02ba4d3abf962f3e1455334ea987f8fa4d24113f021",
+  "cmake_preset": "oracle-debug",
+  "cmake_target": "phase9-lifecycle-contact-witness",
+  "compiler_id": "AppleClang",
+  "compiler_version": "21.0.0.21000101",
+  "exact_argv": [
+    "target/reference/oracle-debug/phase9-lifecycle-contact-witness",
+    "--output",
+    "reference/artifacts/phase9/lifecycle-contact-witnesses.json",
+    "--provenance",
+    "reference/artifacts/phase9/lifecycle-contact-witnesses.provenance.json"
+  ],
+  "generation_timestamp": "2026-07-15T04:31:17Z",
+  "oracle_revision": "7f20402173fd143a3988c921bc384459c6a858f2",
+  "probe_source_sha256": "acc0c18df5c724c3c9186f1d141e296d982a6ecd004bd5219c29cefa67db681f",
+  "schema_version": 1,
+  "target": "arm64-apple-darwin25.5.0",
+  "witness_sha256": "08d41d25f3766b9bf4bef51fb10713b7f925c074399b9642ad5cb4ce933fc8e3"
+}

@@ -1,0 +1,86 @@
+{
+  "oracle_revision": "7f20402173fd143a3988c921bc384459c6a858f2",
+  "schema_version": 1,
+  "witnesses": [
+    {
+      "creation_order": [
+        "particle-0",
+        "particle-1",
+        "particle-2",
+        "particle-3",
+        "particle-4",
+        "particle-5",
+        "particle-6",
+        "particle-7"
+      ],
+      "expiration_order": [
+        "particle-0",
+        "particle-1",
+        "particle-2",
+        "particle-3",
+        "particle-4",
+        "particle-5",
+        "particle-6",
+        "particle-7"
+      ],
+      "oldest_selection_order": [
+        "particle-7",
+        "particle-6",
+        "particle-5",
+        "particle-4",
+        "particle-3",
+        "particle-2",
+        "particle-1",
+        "particle-0"
+      ],
+      "particle_count": 8,
+      "quantized_expiration": 2,
+      "scenario_id": "equal_quantized_expiration"
+    },
+    {
+      "candidate_order": [
+        "fixture-5",
+        "fixture-4",
+        "fixture-3",
+        "fixture-2",
+        "fixture-1",
+        "fixture-0"
+      ],
+      "equal_weight_bits": "0x3f400000",
+      "fixture_count": 6,
+      "outcomes": [
+        {
+          "fixture_id": "fixture-0",
+          "result": "removed"
+        },
+        {
+          "fixture_id": "fixture-1",
+          "result": "removed"
+        },
+        {
+          "fixture_id": "fixture-2",
+          "result": "kept"
+        },
+        {
+          "fixture_id": "fixture-3",
+          "result": "kept"
+        },
+        {
+          "fixture_id": "fixture-4",
+          "result": "kept"
+        },
+        {
+          "fixture_id": "fixture-5",
+          "result": "kept"
+        }
+      ],
+      "scenario_id": "strict_contact_pruning",
+      "strict_order": [
+        "fixture-5",
+        "fixture-4",
+        "fixture-3",
+        "fixture-2"
+      ]
+    }
+  ]
+}
