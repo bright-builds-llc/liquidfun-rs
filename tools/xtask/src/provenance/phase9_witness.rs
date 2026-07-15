@@ -341,3 +341,104 @@ fn valid_utc_timestamp(value: &str) -> bool {
             .filter(|(index, _)| ![4, 7, 10, 13, 16, 19].contains(index))
             .all(|(_, byte)| byte.is_ascii_digit())
 }
+
+#[cfg(test)]
+mod tests {
+    use std::error::Error;
+    use std::fs;
+    use std::sync::atomic::{AtomicU64, Ordering};
+
+    use serde_json::json;
+
+    use super::{PROBE_SOURCE_PATH, PROVENANCE_PATH, WITNESS_PATH, sha256, validate};
+
+    const REVISION: &str = "7f20402173fd143a3988c921bc384459c6a858f2";
+    const ADAPTER_PATH: &str = "tools/reference/src/adapter.cpp";
+    static FIXTURE_ID: AtomicU64 = AtomicU64::new(0);
+
+    #[test]
+    fn adapter_input_change_requires_refreshed_witness_provenance() -> Result<(), Box<dyn Error>> {
+        // Arrange
+        let id = FIXTURE_ID.fetch_add(1, Ordering::Relaxed);
+        let root = std::env::temp_dir().join(format!(
+            "liquidfun-phase9-witness-provenance-{}-{id}",
+            std::process::id()
+        ));
+        if root.exists() {
+            fs::remove_dir_all(&root)?;
+        }
+        fs::create_dir_all(root.join("reference/artifacts/phase9"))?;
+        fs::create_dir_all(root.join("tools/reference/src"))?;
+        fs::write(
+            root.join("tools/reference/adapter-inputs.txt"),
+            format!("{ADAPTER_PATH}\n"),
+        )?;
+        fs::write(root.join(ADAPTER_PATH), "adapter-v1\n")?;
+        fs::write(root.join(PROBE_SOURCE_PATH), "probe-v1\n")?;
+        fs::write(
+            root.join(WITNESS_PATH),
+            serde_json::to_string_pretty(&json!({
+                "schema_version": 1,
+                "oracle_revision": REVISION,
+                "witnesses": [
+                    {
+                        "scenario_id": "equal_quantized_expiration",
+                        "particle_count": 1,
+                        "quantized_expiration": 1,
+                        "creation_order": ["particle-0"],
+                        "expiration_order": ["particle-0"],
+                        "oldest_selection_order": ["particle-0"]
+                    },
+                    {
+                        "scenario_id": "strict_contact_pruning",
+                        "fixture_count": 2,
+                        "equal_weight_bits": "0x3f800000",
+                        "candidate_order": ["fixture-0", "fixture-1"],
+                        "strict_order": ["fixture-0"],
+                        "outcomes": [
+                            {"fixture_id": "fixture-0", "result": "kept"},
+                            {"fixture_id": "fixture-1", "result": "removed"}
+                        ]
+                    }
+                ]
+            }))? + "\n",
+        )?;
+        let witness_sha256 = sha256(&root.join(WITNESS_PATH))?;
+        let probe_source_sha256 = sha256(&root.join(PROBE_SOURCE_PATH))?;
+        let adapter_content_sha256 = liquidfun_differential::adapter_source_digest(&root)?;
+        fs::write(
+            root.join(PROVENANCE_PATH),
+            serde_json::to_string_pretty(&json!({
+                "schema_version": 1,
+                "oracle_revision": REVISION,
+                "adapter_content_sha256": adapter_content_sha256,
+                "probe_source_sha256": probe_source_sha256,
+                "compiler_id": "fixture-compiler",
+                "compiler_version": "1.0.0",
+                "target": "fixture-target",
+                "cmake_preset": "oracle-debug",
+                "cmake_target": "phase9-lifecycle-contact-witness",
+                "exact_argv": [
+                    "target/reference/oracle-debug/phase9-lifecycle-contact-witness",
+                    "--output",
+                    WITNESS_PATH,
+                    "--provenance",
+                    PROVENANCE_PATH
+                ],
+                "generation_timestamp": "2026-07-15T00:00:00Z",
+                "witness_sha256": witness_sha256
+            }))? + "\n",
+        )?;
+        validate(&root, REVISION)?;
+
+        // Act
+        fs::write(root.join(ADAPTER_PATH), "adapter-v2\n")?;
+        let error = validate(&root, REVISION).expect_err("stale provenance must fail closed");
+
+        // Assert
+        assert_eq!(error.category, "hash");
+        assert!(error.message.contains("adapter content SHA-256 mismatch"));
+        fs::remove_dir_all(root)?;
+        Ok(())
+    }
+}
