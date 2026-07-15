@@ -2,10 +2,10 @@
 gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
-status: verifying
+status: planning
 stopped_at: Completed 08-24-PLAN.md
-last_updated: "2026-07-14T23:34:05.280Z"
-last_activity: "2026-07-14"
+last_updated: "2026-07-15T01:15:22.369Z"
+last_activity: "2026-07-15"
 progress:
   total_phases: 12
   completed_phases: 8
@@ -21,22 +21,22 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-07-12)
 
 **Core value:** Deliver an independent, maintainable Rust physics engine whose LiquidFun behavior is demonstrated against a pinned upstream oracle through explicit inventory, tests, differential evidence, and documented tolerances.
-**Current focus:** Phase 8 — Joints, Rope, Callbacks, and Rigid Sign-Off
+**Current focus:** Phase 9 — Particle Storage, Lifecycle, and Coupling
 
 ## Current Position
 
-Phase: 8
-Plan: 24 of 24
-Status: Phase complete — ready for verification
-Last activity: 2026-07-14
+Phase: 9
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-07-15
 
-Progress: [█░░░░░░░░░] 6%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 74
+- Total plans completed: 98
 - Average duration: Not available
 - Total execution time: 0 hours
 
@@ -51,6 +51,7 @@ Progress: [█░░░░░░░░░] 6%
 | 5 | 8 | - | - |
 | 6 | 22 | - | - |
 | 7 | 13 | - | - |
+| 8 | 24 | - | - |
 
 *Updated after each plan completion*
 | Phase 02 P01 | 5 min | 1 tasks | 6 files |

@@ -74,9 +74,9 @@ Follow-up review: The first pushes proved the original configure and differentia
 
 - [x] Capture lifecycle-bound yolo context for joints, rope, callbacks, diagnostics, and rigid sign-off.
 - [x] Research and create executable Phase 8 plans with verification coverage.
-- [ ] Execute every Phase 8 plan and record atomic summaries.
-- [ ] Complete code review, gap repair, and phase verification.
-- [ ] Run the required ordered Rust gate and affected repository verification.
-- [ ] Review the complete diff, record residual risks, and push only after lifecycle validation passes.
+- [x] Execute every Phase 8 plan and record atomic summaries.
+- [x] Complete code review, gap repair, and phase verification.
+- [x] Run the required ordered Rust gate and affected repository verification.
+- [x] Review the complete diff, record residual risks, and push only after lifecycle validation passes.
 
-Progress review: Plans 01 through 22 are committed and locally verified. The initial code review's generic two-body dispatcher and non-stepping corpus findings were repaired with typed live solver staging, four-body gear integration, and a validator-backed step-bearing corpus. Plans 23 and 24 remain gated on exact-commit canonical CI evidence and post-evidence documentation.
+Completion review: All 24 plans are committed with lifecycle-bound summaries. Review fixes made ordinary hook-limit failures transactional and every accepted joint mutation observable, including live C++ gear-ratio evidence. Exact workflow-dispatch run `29379350740` passed canonical Linux, fail-fast sanitizer/reset Linux, macOS, and Windows at code commit `e0b5106559b3c0c37beb44e4ade45c3b7919b59d`; both exact artifacts and all 33 platform-validation ledger rows bind that evidence. Independent code review is clean, Phase 8 verification passes 75/75 must-haves, lifecycle validation passes, and the ordered Rust, inventory, documentation, Markdown, and diff gates pass. Residual scope remains explicit: hook-owned external side effects are outside world rollback, transactional snapshots add unbenchmarked cost, and RIGD-10, particles, D3/cross-platform numerical parity, performance, testbed, and release readiness remain pending future phases.
