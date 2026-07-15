@@ -6,6 +6,7 @@ tools/reference/src/collision_probe_shapes.hpp
 tools/reference/src/collision_probe_spatial.hpp
 tools/reference/src/math_probe.cpp
 tools/reference/src/math_probe.hpp
+tools/reference/src/phase9_lifecycle_contact_witness.cpp
 tools/reference/src/protocol.cpp
 tools/reference/src/protocol_bits.cpp
 tools/reference/src/protocol.hpp

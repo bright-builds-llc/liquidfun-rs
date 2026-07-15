@@ -348,6 +348,63 @@ fn build_targets_only_the_registered_reference_executable() -> TestResult {
 }
 
 #[test]
+fn build_accepts_the_registered_phase9_lifecycle_contact_witness() -> TestResult {
+    // Arrange
+    let fixture = RepositoryFixture::new()?;
+    let mut command = fixture.command()?;
+    command.args([
+        "upstream",
+        "build",
+        "--preset",
+        "oracle-debug",
+        "--target",
+        "phase9-lifecycle-contact-witness",
+    ]);
+
+    // Act
+    let output = command.output()?;
+
+    // Assert
+    assert!(output.status.success(), "{}", stderr(&output));
+    assert_eq!(
+        fixture.cmake_arguments()?,
+        [
+            "--build",
+            "--preset",
+            "oracle-debug",
+            "--target",
+            "phase9-lifecycle-contact-witness",
+        ]
+    );
+    fixture.cleanup()?;
+    Ok(())
+}
+
+#[test]
+fn build_rejects_unregistered_target_before_cmake() -> TestResult {
+    // Arrange
+    let fixture = RepositoryFixture::new()?;
+    let mut command = fixture.command()?;
+    command.args([
+        "upstream",
+        "build",
+        "--preset",
+        "oracle-debug",
+        "--target",
+        "untrusted-target",
+    ]);
+
+    // Act
+    let output = command.output()?;
+
+    // Assert
+    assert_failure_category(&output, "upstream/target");
+    assert!(!fixture.cmake_marker.exists());
+    fixture.cleanup()?;
+    Ok(())
+}
+
+#[test]
 fn repository_text_is_forced_to_lf_for_cross_platform_evidence() -> TestResult {
     // Arrange
     let attributes_path = workspace_root().join(".gitattributes");
