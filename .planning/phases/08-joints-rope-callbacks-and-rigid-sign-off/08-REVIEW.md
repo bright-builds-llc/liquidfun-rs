@@ -11,7 +11,7 @@ counts:
 generated_by: gsd-code-review
 lifecycle_mode: yolo
 phase_lifecycle_id: 8-2026-07-13T21-26-30
-generated_at: 2026-07-15T00:52:36Z
+generated_at: 2026-07-15T01:10:40Z
 ---
 
 # Phase 8 Code Review
@@ -24,7 +24,8 @@ typed joint solvers and four-body gear scatter, hook and lifecycle ownership,
 protocol validation and result bounds, native and pinned C++ adapters,
 comparison policy, accepted fixtures, oracle CI, and canonical-evidence
 claims. The review included fixes `53a0b02` and `e0b5106` and the evidence and
-documentation refresh at `e8daec8`.
+documentation refresh at `e8daec8`. It was reopened for the post-verification
+compatibility-ledger fix at `a109440`.
 
 The Phase 8 surface is clean at standard review depth. Both prior warnings are
 resolved, the exact replacement canonical run and artifacts are internally
@@ -61,6 +62,23 @@ observer reads `b2GearJoint::GetRatio()` rather than reconstructing the live
 coordinate from the declaration ratio. Focused fixture regressions reject each
 of the three former no-ops.
 
+### GAP-08-01 — Resolved — Compatibility ledger is bound to current evidence
+
+All 33 existing `platform_validated: evidenced` rows now name run
+`29379350740`, its exact canonical and sanitizer identity records, and the
+Phase 8 testing-policy anchor. A semantic before/after comparison confirms
+that `a109440` changed only these reference arrays: no evidence status,
+applicability, implementation claim, or maturity claim was promoted. The
+superseded run and commit identifiers are absent from the authoritative
+ledger.
+
+The documentation checker now parses the ledger directly and enforces one
+central exact-reference contract across every platform-validated row, together
+with the expected count of 33. The command-level fixture copies the real ledger,
+injects a stale canonical identity, and proves the check fails through the
+dedicated `docs/phase8-evidence` category. This closes the verification gap
+without weakening inventory generation or broadening the Phase 8 sign-off.
+
 ## Findings
 
 None.
@@ -78,8 +96,9 @@ None.
 - Both downloaded identity records bind the same run and commit, upstream
   revision `7f20402173fd143a3988c921bc384459c6a858f2`, Rust 1.97.0,
   CMake 4.3.3, Ninja 1.13.2, Clang 22.1.8, and `phase8-v1` policy.
-- Repository documentation consistently names the replacement run and marks
-  the previous evidence as superseded only in historical completion records.
+- Repository documentation and the compatibility ledger consistently name the
+  replacement run. The previous identity remains only in historical records
+  and as a deliberate negative-test mutation.
 
 ## Verification evidence
 
@@ -96,6 +115,10 @@ None.
   phase8_comparator --quiet` passed: 6 tests.
 - `cargo xtask docs check` passed with all five Phase 8 document contracts.
 - `cargo xtask inventory check` passed with 177 compatibility rows.
+- `cargo test -p xtask --test docs_contract phase8_contract -- --nocapture`
+  passed: 5 tests, including exact ledger evidence drift rejection.
+- The ledger contains exactly 33 platform-validated rows, every row has the
+  same four current evidence references, and no stale run or artifact identity.
 - `cargo fmt --all` passed.
 - `cargo clippy --all-targets --all-features -- -D warnings` passed.
 - `cargo build --all-targets --all-features` passed.
