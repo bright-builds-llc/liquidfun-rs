@@ -11,9 +11,11 @@ const USAGE: &str = r"Usage: cargo xtask upstream <command> [arguments]
 Commands:
   verify
   configure --preset <oracle-debug|oracle-release|oracle-asan-ubsan>
-  build --preset <oracle-debug|oracle-release|oracle-asan-ubsan>";
+  build --preset <oracle-debug|oracle-release|oracle-asan-ubsan> [--target <liquidfun-reference|phase9-lifecycle-contact-witness>]";
 
 const ALLOWED_PRESETS: [&str; 3] = ["oracle-debug", "oracle-release", "oracle-asan-ubsan"];
+const ALLOWED_BUILD_TARGETS: [&str; 2] =
+    ["liquidfun-reference", "phase9-lifecycle-contact-witness"];
 const CMAKE_CANONICAL: Version = Version::new(4, 3, 3);
 const CMAKE_FLOOR: Version = Version::new(3, 25, 0);
 const NINJA_CANONICAL: Version = Version::new(1, 13, 2);
@@ -132,7 +134,7 @@ pub(crate) fn run(args: &[String]) -> Result<(), UpstreamError> {
             )
         }
         "build" => {
-            let preset = parse_preset(command_args)?;
+            let (preset, target) = parse_build(command_args)?;
             verify(&repository_root)?;
             run_cmake(
                 &repository_root,
@@ -141,7 +143,7 @@ pub(crate) fn run(args: &[String]) -> Result<(), UpstreamError> {
                     OsString::from("--preset"),
                     OsString::from(preset),
                     OsString::from("--target"),
-                    OsString::from("liquidfun-reference"),
+                    OsString::from(target),
                 ],
                 "build",
             )
@@ -149,6 +151,41 @@ pub(crate) fn run(args: &[String]) -> Result<(), UpstreamError> {
         unknown => Err(UpstreamError::usage(format!(
             "unknown upstream command `{unknown}`"
         ))),
+    }
+}
+
+fn parse_build(args: &[String]) -> Result<(&str, &str), UpstreamError> {
+    match args {
+        [preset_flag, preset] => {
+            if preset_flag != "--preset" {
+                return Err(UpstreamError::usage(
+                    "expected `--preset <name>` followed by optional `--target <name>`",
+                ));
+            }
+            let preset = validate_preset(preset)?;
+            Ok((preset, ALLOWED_BUILD_TARGETS[0]))
+        }
+        [preset_flag, preset, target_flag, target] => {
+            if preset_flag != "--preset" || target_flag != "--target" {
+                return Err(UpstreamError::usage(
+                    "expected `--preset <name>` followed by optional `--target <name>`",
+                ));
+            }
+            let preset = validate_preset(preset)?;
+            if !ALLOWED_BUILD_TARGETS.contains(&target.as_str()) {
+                return Err(UpstreamError::new(
+                    "target",
+                    format!(
+                        "unknown build target `{target}`; allowed targets: {}",
+                        ALLOWED_BUILD_TARGETS.join(", ")
+                    ),
+                ));
+            }
+            Ok((preset, target))
+        }
+        _ => Err(UpstreamError::usage(
+            "expected `--preset <name>` followed by optional `--target <name>`",
+        )),
     }
 }
 
@@ -175,17 +212,20 @@ fn parse_preset(args: &[String]) -> Result<&str, UpstreamError> {
         )));
     }
 
-    if ALLOWED_PRESETS.contains(&preset.as_str()) {
-        return Ok(preset);
-    }
+    validate_preset(preset)
+}
 
-    Err(UpstreamError::new(
-        "preset",
-        format!(
-            "unknown preset `{preset}`; allowed presets: {}",
-            ALLOWED_PRESETS.join(", ")
-        ),
-    ))
+fn validate_preset(preset: &str) -> Result<&str, UpstreamError> {
+    if !ALLOWED_PRESETS.contains(&preset) {
+        return Err(UpstreamError::new(
+            "preset",
+            format!(
+                "unknown preset `{preset}`; allowed presets: {}",
+                ALLOWED_PRESETS.join(", ")
+            ),
+        ));
+    }
+    Ok(preset)
 }
 
 fn repository_root() -> Result<PathBuf, UpstreamError> {

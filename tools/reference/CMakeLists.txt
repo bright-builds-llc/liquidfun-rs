@@ -478,6 +478,38 @@ target_link_libraries(
   PRIVATE liquidfun-reference-protocol Box2D
 )
 
+file(
+  SHA256
+  "${CMAKE_CURRENT_LIST_DIR}/src/phase9_lifecycle_contact_witness.cpp"
+  PHASE9_PROBE_SOURCE_SHA256
+)
+add_executable(
+  phase9-lifecycle-contact-witness
+  src/phase9_lifecycle_contact_witness.cpp
+  "${REFERENCE_BUILD_IDENTITY_HEADER}"
+)
+target_compile_features(phase9-lifecycle-contact-witness PRIVATE cxx_std_17)
+target_compile_definitions(
+  phase9-lifecycle-contact-witness
+  PRIVATE PHASE9_PROBE_SOURCE_SHA256="${PHASE9_PROBE_SOURCE_SHA256}"
+)
+target_include_directories(
+  phase9-lifecycle-contact-witness
+  PRIVATE
+    "${CMAKE_CURRENT_BINARY_DIR}/generated"
+    "${CMAKE_CURRENT_LIST_DIR}/src"
+    "${CMAKE_CURRENT_LIST_DIR}/vendor"
+)
+target_include_directories(
+  phase9-lifecycle-contact-witness
+  SYSTEM PRIVATE
+  "${CMAKE_CURRENT_LIST_DIR}/../../third_party/liquidfun/liquidfun/Box2D"
+)
+target_link_libraries(
+  phase9-lifecycle-contact-witness
+  PRIVATE liquidfun-reference-protocol Box2D
+)
+
 add_executable(
   liquidfun-reference-protocol-tests
   tests/protocol_tests.cpp
@@ -502,6 +534,10 @@ target_compile_options(
 )
 target_compile_options(
   liquidfun-reference-protocol-tests
+  PRIVATE ${REFERENCE_WARNING_OPTIONS} ${REFERENCE_SUPPORTED_FP_OPTIONS}
+)
+target_compile_options(
+  phase9-lifecycle-contact-witness
   PRIVATE ${REFERENCE_WARNING_OPTIONS} ${REFERENCE_SUPPORTED_FP_OPTIONS}
 )
 
