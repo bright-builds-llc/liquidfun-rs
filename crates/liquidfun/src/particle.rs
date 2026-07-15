@@ -12,6 +12,7 @@ mod editor;
 pub(crate) mod force;
 pub(crate) mod lifetime;
 mod proxy;
+pub(crate) mod query;
 mod statistics;
 mod view;
 
@@ -36,6 +37,9 @@ pub use lifetime::{
     ParticleLifetimeOrder,
 };
 pub use proxy::{ParticleNeighborPair, ParticleNeighborhood, ParticleProxyError};
+pub use query::{
+    ParticleQueryError, ParticleQueryOccurrence, ParticleRayCastError, ParticleRayHit,
+};
 pub use statistics::{ParticleSystemStatistics, ParticleWorldStatistics};
 pub use view::{
     ParticleBodyContactView, ParticleContactView, ParticlePairView, ParticleSystemView,

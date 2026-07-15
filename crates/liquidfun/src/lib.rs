@@ -204,7 +204,8 @@ pub use particle::{
     ParticleDef, ParticleDefError, ParticleDestructionOccurrence, ParticleEditError,
     ParticleEditor, ParticleFlags, ParticleForceError, ParticleLifetimeClock,
     ParticleLifetimeError, ParticleLifetimeOrder, ParticleNeighborPair, ParticleNeighborhood,
-    ParticlePairView, ParticleProxyError, ParticleSnapshot, ParticleSystemDef,
+    ParticlePairView, ParticleProxyError, ParticleQueryError, ParticleQueryOccurrence,
+    ParticleRayCastError, ParticleRayHit, ParticleSnapshot, ParticleSystemDef,
     ParticleSystemDefError, ParticleSystemSnapshot, ParticleSystemStatistics, ParticleSystemView,
     ParticleTriadView, ParticleWorldStatistics,
 };
