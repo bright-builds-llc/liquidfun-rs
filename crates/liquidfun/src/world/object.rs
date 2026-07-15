@@ -68,11 +68,13 @@ pub(super) struct Fixture {
     pub(super) pending_refilter: bool,
 }
 
+#[derive(Clone)]
 pub(super) struct ParticleSystem {
     pub(super) diagnostic_id: u64,
     pub(super) definition: ParticleSystemDef,
     pub(super) groups: Vec<ParticleGroupId>,
     pub(super) storage: ParticleStorage,
+    pub(super) lifetime: crate::particle::lifetime::ParticleLifetimeState,
 }
 
 #[derive(Debug)]
@@ -133,6 +135,8 @@ pub enum CreateObjectError {
     InvalidFixtureMass,
     /// The complete prospective fixture aggregate is invalid.
     InvalidAggregateMass(AggregateMassError),
+    /// Particle lifetime quantization cannot represent the requested value.
+    InvalidParticleLifetime(crate::ParticleLifetimeError),
 }
 
 impl fmt::Display for CreateObjectError {
@@ -148,6 +152,9 @@ impl fmt::Display for CreateObjectError {
             }
             Self::InvalidAggregateMass(error) => {
                 write!(formatter, "invalid aggregate body mass: {error}")
+            }
+            Self::InvalidParticleLifetime(error) => {
+                write!(formatter, "invalid particle lifetime: {error}")
             }
         }
     }
@@ -176,6 +183,12 @@ impl From<FixtureBoundsError> for CreateObjectError {
 impl From<AggregateMassError> for CreateObjectError {
     fn from(error: AggregateMassError) -> Self {
         Self::InvalidAggregateMass(error)
+    }
+}
+
+impl From<crate::ParticleLifetimeError> for CreateObjectError {
+    fn from(error: crate::ParticleLifetimeError) -> Self {
+        Self::InvalidParticleLifetime(error)
     }
 }
 
@@ -218,6 +231,8 @@ impl DestroyedId {
 pub enum DestructionCause {
     /// The object was the root passed to a public destruction method.
     Explicit,
+    /// A finite particle lifetime reached its quantized expiration.
+    ParticleExpiration,
     /// A body destruction invalidated an attached object.
     BodyCascade {
         /// Body whose destruction caused this invalidation.
@@ -1332,7 +1347,7 @@ impl World {
     pub fn destroy_particle_system(
         &mut self,
         system: ParticleSystemId,
-    ) -> Result<Vec<DestructionRecord>, HandleError> {
+    ) -> Result<DestructionReport, HandleError> {
         self.destroy_particle_system_owned(system)
             .map(|(records, _removed)| records)
     }
@@ -1346,7 +1361,8 @@ impl World {
         &mut self,
         system: ParticleSystemId,
     ) -> Result<ParticleBufferTeardown, HandleError> {
-        let (records, removed) = self.destroy_particle_system_owned(system)?;
+        let (report, removed) = self.destroy_particle_system_owned(system)?;
+        let records = report.into_value();
         let capacity = removed.definition.capacity();
         let mode = if capacity.is_fixed() {
             ParticleBufferMode::Fixed {
@@ -1364,11 +1380,12 @@ impl World {
     fn destroy_particle_system_owned(
         &mut self,
         system: ParticleSystemId,
-    ) -> Result<(Vec<DestructionRecord>, ParticleSystem), HandleError> {
+    ) -> Result<(DestructionReport, ParticleSystem), HandleError> {
         self.ensure_not_poisoned_for_handle()?;
         let transaction = self.capture_particle_system_destruction(system)?;
         let mut records =
             Vec::with_capacity(transaction.groups.len() + transaction.particles.len() + 1);
+        let mut lifecycle = Vec::new();
 
         for group in transaction.groups {
             records.push(
@@ -1379,18 +1396,27 @@ impl World {
             );
         }
         for snapshot in transaction.particles {
-            records.push(Self::particle_destruction_record(
+            let requested = snapshot
+                .input
+                .flags
+                .contains(crate::ParticleFlags::DESTRUCTION_LISTENER);
+            let record = Self::particle_destruction_record(
                 snapshot,
                 DestructionCause::ParticleSystemCascade { system },
-            ));
+            );
+            if requested {
+                lifecycle.push(LifecycleEvent::ParticleDestruction(record.clone()));
+            }
+            records.push(record);
         }
         let (root_record, removed) = self.remove_particle_system(
             system,
             DestructionCause::Explicit,
             transaction.root_snapshot,
         );
+        lifecycle.push(LifecycleEvent::Destruction(root_record.clone()));
         records.push(root_record);
-        Ok((records, removed))
+        Ok((MutationReport::new(records, lifecycle), removed))
     }
 
     /// Destroys a particle group without destroying its particles.

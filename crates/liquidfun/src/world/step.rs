@@ -731,6 +731,13 @@ impl<'hook, H: CollisionDecisionHook> ContactHookRun<'hook, H> {
         self.push_lifecycle(LifecycleEvent::ContactDestruction(transition))
     }
 
+    pub(super) fn record_particle_destruction(
+        &mut self,
+        record: DestructionRecord,
+    ) -> Result<(), StepError> {
+        self.push_lifecycle(LifecycleEvent::ParticleDestruction(record))
+    }
+
     pub(super) fn record_discrete_solve(&mut self, solve: ContactSolve) -> Result<(), StepError> {
         self.push_lifecycle(LifecycleEvent::Solve(solve))
     }
@@ -897,6 +904,8 @@ pub enum StepLifecycleEvent {
     JointGoodbye(DestructionRecord),
     /// An implicitly destroyed fixture emitted source-compatible goodbye evidence.
     FixtureGoodbye(DestructionRecord),
+    /// A requested particle listener occurrence was journaled before invalidation.
+    ParticleDestruction(DestructionRecord),
     /// One requested mutation completed after unlock.
     Command(CommandApplication),
     /// A world object was invalidated after dependent contact evidence.
@@ -992,6 +1001,10 @@ impl StepReport {
 pub enum StepError {
     /// A prior hook panic left coherent world operations poisoned.
     Poisoned,
+    /// Particle lifetime advancement could not represent the requested step.
+    ParticleLifetime(crate::ParticleLifetimeError),
+    /// Authoritative particle storage violated an internal lifecycle invariant.
+    ParticleLifecycleInvariant,
     /// Contact lifecycle completed, but its active solver topology is deferred.
     UnsupportedSolverTopology {
         /// Owned lifecycle evidence committed before fail-closed preflight.
@@ -1043,6 +1056,10 @@ impl fmt::Display for StepError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Poisoned => formatter.write_str("world is poisoned by a prior hook panic"),
+            Self::ParticleLifetime(error) => write!(formatter, "particle lifetime failed: {error}"),
+            Self::ParticleLifecycleInvariant => {
+                formatter.write_str("particle lifecycle invariant was violated")
+            }
             Self::UnsupportedSolverTopology { .. } => {
                 formatter.write_str("contact solver topology is deferred beyond Phase 6")
             }
@@ -1086,6 +1103,7 @@ struct StepLimitBackup {
     bodies: crate::arena::Arena<super::object::Body, BodyId>,
     fixtures: crate::arena::Arena<super::object::Fixture, FixtureId>,
     joints: crate::arena::Arena<super::joint::JointRecord, crate::JointId>,
+    particle_systems: crate::arena::Arena<super::object::ParticleSystem, crate::ParticleSystemId>,
     broad_phase: crate::collision::BroadPhase<super::proxy::FixtureProxy>,
     contact_manager: super::contact_manager::ContactManager,
     continuous_step_state: super::continuous::ContinuousStepState,
@@ -1115,6 +1133,7 @@ impl World {
             bodies: self.bodies.clone(),
             fixtures: self.fixtures.clone(),
             joints: self.joints.clone(),
+            particle_systems: self.particle_systems.clone(),
             broad_phase: self.broad_phase.clone(),
             contact_manager: self.contact_manager.clone(),
             continuous_step_state: self.continuous_step_state,
@@ -1126,6 +1145,7 @@ impl World {
         self.bodies = backup.bodies;
         self.fixtures = backup.fixtures;
         self.joints = backup.joints;
+        self.particle_systems = backup.particle_systems;
         self.broad_phase = backup.broad_phase;
         self.contact_manager = backup.contact_manager;
         self.continuous_step_state = backup.continuous_step_state;
@@ -1199,6 +1219,7 @@ impl World {
             })();
             contact_lifecycle_result?;
             contact_transitions.extend(self.contact_manager.drain_transitions());
+            self.run_particle_lifecycle_step(configuration.time_step(), &mut hook_run)?;
             if step_kind == ContinuousStepKind::Fresh && configuration.time_step() > 0.0 {
                 self.preflight_contact_solver()
                     .map_err(|error| solver_step_error(error, &contact_transitions))?;
@@ -1290,6 +1311,7 @@ impl World {
             .filter_map(|event| match event {
                 LifecycleEvent::JointGoodbye(record)
                 | LifecycleEvent::FixtureGoodbye(record)
+                | LifecycleEvent::ParticleDestruction(record)
                 | LifecycleEvent::Destruction(record) => Some(record.clone()),
                 _ => None,
             })

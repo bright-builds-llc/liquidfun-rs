@@ -2,6 +2,7 @@
 
 use crate::identity::HandleIdentity;
 use crate::math::Vec2;
+use crate::particle::lifetime::{ParticleLifecycleError, ParticleLifetimeState};
 use crate::particle::storage::{
     ParticleInput, ParticleSnapshot as StorageParticleSnapshot, ParticleStorage,
     ParticleStorageError,
@@ -156,7 +157,7 @@ impl World {
         } else {
             definition.maximum_count().unwrap_or(MAX_PARTICLE_COUNT)
         };
-        let storage = ParticleStorage::from_buffer_bundle(
+        let mut storage = ParticleStorage::from_buffer_bundle(
             self.scope_key,
             system,
             0,
@@ -164,6 +165,7 @@ impl World {
             declared_capacity,
             bundle,
         );
+        let lifetime = ParticleLifetimeState::new(definition, &mut storage);
         let diagnostic_id = match self.allocate_diagnostic_id() {
             Ok(diagnostic_id) => diagnostic_id,
             Err(error) => {
@@ -180,6 +182,7 @@ impl World {
                 definition,
                 groups: Vec::new(),
                 storage,
+                lifetime,
             },
         );
         self.particle_system_order.insert(0, system);
@@ -217,7 +220,7 @@ impl World {
         } else {
             definition.maximum_count().unwrap_or(MAX_PARTICLE_COUNT)
         };
-        let storage = ParticleStorage::with_initial_capacity(
+        let mut storage = ParticleStorage::with_initial_capacity(
             self.scope_key,
             system,
             0,
@@ -226,12 +229,14 @@ impl World {
             declared_capacity,
         )
         .map_err(storage_creation_error)?;
+        let lifetime = ParticleLifetimeState::new(*definition, &mut storage);
         let diagnostic_id = self.allocate_diagnostic_id()?;
         let inserted = self.particle_systems.insert(ParticleSystem {
             diagnostic_id,
             definition: *definition,
             groups: Vec::new(),
             storage,
+            lifetime,
         })?;
         debug_assert_eq!(inserted, system);
         self.particle_system_order.insert(0, system);
@@ -386,18 +391,43 @@ impl World {
             }
         }
         let input = particle_input(definition, maybe_group);
-        self.particle_systems
-            .get(system)?
+        let mut preflight = self.particle_systems.get(system)?.clone();
+        preflight
+            .lifetime
+            .prepare_capacity_for_creation(&mut preflight.storage)
+            .map_err(particle_lifecycle_creation_error)?;
+        preflight
             .storage
             .validate_create(input)
             .map_err(storage_object_creation_error)?;
+        preflight
+            .lifetime
+            .validate_created_lifetime(&preflight.storage, definition.lifetime())?;
         let diagnostic_id = self.allocate_diagnostic_id()?;
-        self.system_mut_after_validation(system)
+        Ok(self.commit_preflighted_particle(system, input, definition.lifetime(), diagnostic_id))
+    }
+
+    fn commit_preflighted_particle(
+        &mut self,
+        system: ParticleSystemId,
+        input: ParticleInput,
+        lifetime: f32,
+        diagnostic_id: u64,
+    ) -> ParticleId {
+        let record = self.system_mut_after_validation(system);
+        record
+            .lifetime
+            .prepare_capacity_for_creation(&mut record.storage)
+            .expect("preflighted capacity decision remains valid until immediate commit");
+        let particle = record
             .storage
             .create_with_diagnostic(input, diagnostic_id)
-            .map_err(|_error| {
-                unreachable!("validated particle candidate remains valid until immediate commit")
-            })
+            .expect("preflighted particle candidate remains valid until immediate commit");
+        record
+            .lifetime
+            .initialize_created_particle(&mut record.storage, particle, lifetime)
+            .expect("preflighted lifetime remains valid until immediate commit");
+        particle
     }
 
     /// Returns owned semantic state after validating a particle's embedded owner.
@@ -624,6 +654,21 @@ fn storage_object_creation_error(error: ParticleStorageError) -> CreateObjectErr
         | ParticleStorageError::InvalidDerivedReference
         | ParticleStorageError::InvalidLaneBundle => {
             unreachable!("checked creation cannot invalidate authoritative storage")
+        }
+    }
+}
+
+fn particle_lifecycle_creation_error(error: ParticleLifecycleError) -> CreateObjectError {
+    match error {
+        ParticleLifecycleError::Lifetime(error) => {
+            CreateObjectError::InvalidParticleLifetime(error)
+        }
+        ParticleLifecycleError::CapacityExceeded { limit } => {
+            CreateObjectError::Arena(ArenaInsertError::CapacityExceeded { limit })
+        }
+        ParticleLifecycleError::Storage(error) => storage_object_creation_error(error),
+        ParticleLifecycleError::OldestRankOutOfRange => {
+            unreachable!("a full non-empty system always has an oldest particle")
         }
     }
 }

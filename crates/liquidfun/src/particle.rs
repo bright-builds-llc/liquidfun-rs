@@ -7,7 +7,7 @@
 mod buffer;
 mod definition;
 mod editor;
-mod lifetime;
+pub(crate) mod lifetime;
 mod view;
 
 pub use crate::world::particle_object::{ParticleSnapshot, ParticleSystemSnapshot};

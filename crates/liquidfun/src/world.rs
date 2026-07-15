@@ -13,6 +13,7 @@ mod island;
 mod joint;
 pub(crate) mod object;
 mod origin;
+mod particle_lifecycle;
 pub(crate) mod particle_object;
 mod proxy;
 mod query;

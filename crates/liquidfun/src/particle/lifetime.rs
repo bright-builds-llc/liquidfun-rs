@@ -327,7 +327,7 @@ pub(crate) struct ParticleCompactionOutcome {
 )]
 impl ParticleLifetimeState {
     pub(crate) fn new(definition: ParticleSystemDef, storage: &mut ParticleStorage) -> Self {
-        if definition.destroys_by_age() {
+        if definition.destroys_by_age() && definition.maximum_count().is_some() {
             storage.enable_lifetime_tracking();
         }
         Self {
@@ -351,6 +351,16 @@ impl ParticleLifetimeState {
             return Ok(());
         };
         self.set_expiration(storage, particle, expiration)
+    }
+
+    pub(crate) fn validate_created_lifetime(
+        &self,
+        storage: &ParticleStorage,
+        lifetime: f32,
+    ) -> Result<(), ParticleLifetimeError> {
+        self.clock
+            .creation_expiration_time(lifetime, storage.lifetime_tracking_enabled())
+            .map(|_maybe_expiration| ())
     }
 
     pub(crate) fn set_particle_lifetime(
