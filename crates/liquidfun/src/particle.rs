@@ -8,6 +8,7 @@ mod buffer;
 mod definition;
 mod editor;
 mod lifetime;
+mod proxy;
 mod view;
 
 pub use crate::world::particle_object::{ParticleSnapshot, ParticleSystemSnapshot};
@@ -25,6 +26,7 @@ pub use lifetime::{
     ParticleDestructionOccurrence, ParticleLifetimeClock, ParticleLifetimeError,
     ParticleLifetimeOrder,
 };
+pub use proxy::{ParticleNeighborPair, ParticleNeighborhood, ParticleProxyError};
 pub use view::{
     ParticleBodyContactView, ParticleContactView, ParticlePairView, ParticleSystemView,
     ParticleTriadView,
