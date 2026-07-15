@@ -481,6 +481,88 @@ impl ParticleStorage {
         self.maybe_expiration_order.as_deref()
     }
 
+    pub(in crate::particle) fn lifetime_tracking_enabled(&self) -> bool {
+        self.maybe_expiration_times.is_some()
+    }
+
+    pub(in crate::particle) fn enable_lifetime_tracking(&mut self) {
+        if self.maybe_expiration_times.is_none() {
+            self.maybe_expiration_times = Some(vec![0; self.len()]);
+            self.maybe_expiration_order = Some((0..self.len()).map(ParticleIndex).collect());
+        }
+    }
+
+    pub(in crate::particle) fn expiration_time(
+        &self,
+        id: ParticleId,
+    ) -> Result<i32, ParticleStorageError> {
+        let dense = self.resolve_live(id)?;
+        self.maybe_expiration_times
+            .as_ref()
+            .map(|times| times[dense.0])
+            .ok_or(ParticleStorageError::InvalidLaneBundle)
+    }
+
+    pub(in crate::particle) fn set_expiration_time(
+        &mut self,
+        id: ParticleId,
+        expiration: i32,
+    ) -> Result<bool, ParticleStorageError> {
+        let dense = self.resolve_live(id)?;
+        self.enable_lifetime_tracking();
+        let times = self
+            .maybe_expiration_times
+            .as_mut()
+            .expect("lifetime tracking was enabled before mutation");
+        let changed = times[dense.0] != expiration;
+        times[dense.0] = expiration;
+        Ok(changed)
+    }
+
+    pub(in crate::particle) fn expiration_entries(&self) -> Vec<(ParticleId, i32)> {
+        let Some(times) = self.maybe_expiration_times.as_ref() else {
+            return Vec::new();
+        };
+        let order = self
+            .maybe_expiration_order
+            .as_ref()
+            .expect("expiration times and order are allocated together");
+        order
+            .iter()
+            .map(|index| (self.particle_id_at(*index), times[index.0]))
+            .collect()
+    }
+
+    pub(in crate::particle) fn replace_expiration_order(
+        &mut self,
+        ordered_ids: &[ParticleId],
+    ) -> Result<(), ParticleStorageError> {
+        let order = ordered_ids
+            .iter()
+            .map(|id| self.resolve_live(*id))
+            .collect::<Result<Vec<_>, _>>()?;
+        if order.len() != self.len() {
+            return Err(ParticleStorageError::InvalidDerivedReference);
+        }
+        self.maybe_expiration_order = Some(order);
+        Ok(())
+    }
+
+    pub(in crate::particle) fn is_pending(
+        &self,
+        id: ParticleId,
+    ) -> Result<bool, ParticleStorageError> {
+        let local_slot = self.local_slot(id)?;
+        let entry = self
+            .identities
+            .get(local_slot)
+            .ok_or(ParticleStorageError::StaleOrDestroyed)?;
+        if entry.generation != id.identity().generation() {
+            return Err(ParticleStorageError::StaleOrDestroyed);
+        }
+        Ok(matches!(entry.state, IdentityState::PendingDelete { .. }))
+    }
+
     pub(in crate::particle) fn particle_id_at(&self, index: ParticleIndex) -> ParticleId {
         self.dense_to_id[index.0]
     }
@@ -636,6 +718,19 @@ impl ParticleStorage {
         };
         self.identities[local_slot].state = IdentityState::PendingDelete { dense, snapshot };
         Ok(snapshot)
+    }
+
+    pub(in crate::particle) fn mark_delete_for_lifecycle(
+        &mut self,
+        id: ParticleId,
+        request_listener: bool,
+    ) -> Result<ParticleSnapshot, ParticleStorageError> {
+        let dense = self.resolve_live(id)?;
+        self.flags[dense.0].insert(ParticleFlags::ZOMBIE);
+        if request_listener {
+            self.flags[dense.0].insert(ParticleFlags::DESTRUCTION_LISTENER);
+        }
+        self.mark_delete(id)
     }
 
     pub(crate) fn compact_pending(

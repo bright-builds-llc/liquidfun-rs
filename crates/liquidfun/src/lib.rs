@@ -200,7 +200,8 @@ pub use particle::{
     ParticleBufferBundle, ParticleBufferError, ParticleBufferErrorKind, ParticleBufferLanes,
     ParticleBufferMode, ParticleBufferTeardown, ParticleCapacity, ParticleColor,
     ParticleContactView, ParticleDef, ParticleDefError, ParticleEditError, ParticleEditor,
-    ParticleFlags, ParticlePairView, ParticleSnapshot, ParticleSystemDef, ParticleSystemDefError,
+    ParticleFlags, ParticleLifetimeClock, ParticleLifetimeError, ParticleLifetimeOrder,
+    ParticlePairView, ParticleSnapshot, ParticleSystemDef, ParticleSystemDefError,
     ParticleSystemSnapshot, ParticleSystemView, ParticleTriadView,
 };
 pub use world::{
