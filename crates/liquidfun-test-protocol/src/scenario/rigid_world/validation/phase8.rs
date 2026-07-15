@@ -49,14 +49,14 @@ pub(super) fn validate_phase8_behavior(
         Family::DestructionListenerAndDependencyCascades => {
             validate_destruction_timeline(bodies, fixtures, joints, actions)?;
         }
-        Family::DiagnosticReconstructionAndDumpOrder => {
+        Family::DiagnosticReconstructionAndDumpOrder
             if !action_ordered_pair(
                 actions,
                 |action| matches!(action, RigidWorldAction::RequestReconstruction),
                 |action| matches!(action, RigidWorldAction::RequestDiagnostics),
-            ) {
-                return Err(validation(RigidWorldErrorKind::InvalidActionOrder));
-            }
+            ) =>
+        {
+            return Err(validation(RigidWorldErrorKind::InvalidActionOrder));
         }
         _ => {}
     }
@@ -68,6 +68,8 @@ fn validate_step_bearing_joint_timeline(
     joints: &[RigidJointDeclaration],
     actions: &[RigidWorldActionRecord],
 ) -> Result<(), RigidWorldDecodeError> {
+    use RigidWorldWitnessFamily as Family;
+
     let step_positions = actions
         .iter()
         .enumerate()
@@ -104,7 +106,6 @@ fn validate_step_bearing_joint_timeline(
         return Err(validation(RigidWorldErrorKind::InvalidActionOrder));
     }
 
-    use RigidWorldWitnessFamily as Family;
     let valid_family_shape = match family {
         Family::JointDefinitionsAndMutations => {
             let kinds = joints

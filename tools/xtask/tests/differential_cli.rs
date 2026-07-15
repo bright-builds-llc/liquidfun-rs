@@ -973,8 +973,7 @@ fn workspace_root() -> PathBuf {
 
 fn debug_binary(name: &str) -> PathBuf {
     let target_directory = env::var_os("CARGO_TARGET_DIR")
-        .map(PathBuf::from)
-        .unwrap_or_else(|| workspace_root().join("target"));
+        .map_or_else(|| workspace_root().join("target"), PathBuf::from);
     target_directory.join("debug").join(executable_name(name))
 }
 

@@ -52,8 +52,8 @@ pub(crate) fn joint_observation(
     })?;
     let [body_a, body_b] = snapshot.bodies();
     let inverse_timestep = 1.0 / f32::from_bits(liquidfun_test_protocol::RIGID_WORLD_TIMESTEP_BITS);
-    let dependencies = dependencies(executor, snapshot)?;
-    let (branch_state, coordinate, speed) = joint_state(snapshot);
+    let dependencies = dependencies(executor, &snapshot)?;
+    let (branch_state, coordinate, speed) = joint_state(&snapshot);
     Ok(RigidJointSnapshot {
         joint_id: joint_id.clone(),
         joint_kind: joint_kind(snapshot.kind()),
@@ -85,7 +85,7 @@ pub(crate) fn joint_observation(
 
 fn dependencies(
     executor: &TimelineExecutor,
-    snapshot: JointSnapshot,
+    snapshot: &JointSnapshot,
 ) -> Result<Vec<ScenarioId>, NativeRigidWorldError> {
     let JointSpecificSnapshot::Gear(gear) = snapshot.specific() else {
         return Ok(Vec::new());
@@ -96,7 +96,7 @@ fn dependencies(
         .collect()
 }
 
-fn joint_state(snapshot: JointSnapshot) -> (RigidJointBranchState, f32, f32) {
+fn joint_state(snapshot: &JointSnapshot) -> (RigidJointBranchState, f32, f32) {
     match snapshot.specific() {
         JointSpecificSnapshot::Revolute(state) => (
             branch_state(state.limit_state()),

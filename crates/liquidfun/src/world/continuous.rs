@@ -115,8 +115,11 @@ impl From<SweepError> for ContinuousEventError {
 
 #[derive(Debug)]
 pub(super) struct ContinuousEvent {
+    #[cfg(feature = "differential-internals")]
     pub(super) body_ids: Vec<BodyId>,
+    #[cfg(feature = "differential-internals")]
     pub(super) contact_occurrences: Vec<u64>,
+    #[cfg(feature = "differential-internals")]
     pub(super) transient_normal_impulse_sum: f32,
     pub(super) contact_solves: Vec<ContactSolve>,
 }
@@ -145,6 +148,7 @@ impl From<ToiCountLimitReached> for ContinuousScanError {
 }
 
 impl World {
+    #[cfg(any(test, feature = "differential-internals"))]
     fn select_continuous_candidate_with_control(
         &mut self,
         control: ContinuousScanControl,

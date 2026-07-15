@@ -162,13 +162,6 @@ pub(super) fn collect_mutation_report(
                 collect_transitions(executor, std::slice::from_ref(transition))?;
             }
             LifecycleEvent::Destruction(record) => push_object_destruction(executor, record)?,
-            LifecycleEvent::Filter(_)
-            | LifecycleEvent::Hook(_)
-            | LifecycleEvent::Solve(_)
-            | LifecycleEvent::ContinuousSolve(_)
-            | LifecycleEvent::JointGoodbye(_)
-            | LifecycleEvent::FixtureGoodbye(_)
-            | LifecycleEvent::Command(_) => {}
             _ => {}
         }
     }

@@ -59,7 +59,9 @@ pub(super) enum IslandBuildError {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum SolveFailureInjection {
+    #[cfg(feature = "differential-internals")]
     LateIsland { solved_islands: usize },
+    #[cfg(feature = "differential-internals")]
     ProxyBounds { fixture: FixtureId },
 }
 
@@ -69,6 +71,7 @@ pub(super) struct IslandSolveParameters {
     configuration: StepConfiguration,
     time_step_ratio: f32,
     warm_starting: bool,
+    #[cfg(feature = "differential-internals")]
     maybe_failure_injection: Option<SolveFailureInjection>,
 }
 
@@ -80,11 +83,14 @@ impl IslandSolveParameters {
         warm_starting: bool,
         maybe_failure_injection: Option<SolveFailureInjection>,
     ) -> Self {
+        #[cfg(not(feature = "differential-internals"))]
+        let _ = maybe_failure_injection;
         Self {
             gravity,
             configuration,
             time_step_ratio,
             warm_starting,
+            #[cfg(feature = "differential-internals")]
             maybe_failure_injection,
         }
     }
@@ -472,6 +478,7 @@ pub(super) fn solve_islands(
             contact_impulses: solved.contact_impulses,
             joint_impulses: solved.joint_impulses,
         });
+        #[cfg(feature = "differential-internals")]
         if matches!(
             parameters.maybe_failure_injection,
             Some(SolveFailureInjection::LateIsland { solved_islands })

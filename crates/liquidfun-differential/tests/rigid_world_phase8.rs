@@ -159,18 +159,18 @@ fn native_phase8_gear_records_pin_all_four_live_topologies() {
 
     // Assert
     for (index, expected_kinds) in combinations.into_iter().enumerate() {
-        let source_a_id = scenario_id(&format!("gear-{index}-source-a"));
-        let source_b_id = scenario_id(&format!("gear-{index}-source-b"));
+        let primary_source_id = scenario_id(&format!("gear-{index}-source-a"));
+        let secondary_source_id = scenario_id(&format!("gear-{index}-source-b"));
         let gear_id = scenario_id(&format!("gear-{index}-joint"));
-        let source_a = observations
+        let primary_source = observations
             .iter()
             .rev()
-            .find(|snapshot| snapshot.joint_id == source_a_id)
+            .find(|snapshot| snapshot.joint_id == primary_source_id)
             .expect("gear source A should be observed after the live step");
-        let source_b = observations
+        let secondary_source = observations
             .iter()
             .rev()
-            .find(|snapshot| snapshot.joint_id == source_b_id)
+            .find(|snapshot| snapshot.joint_id == secondary_source_id)
             .expect("gear source B should be observed after the live step");
         let gear = observations
             .iter()
@@ -178,8 +178,14 @@ fn native_phase8_gear_records_pin_all_four_live_topologies() {
             .find(|snapshot| snapshot.joint_id == gear_id)
             .expect("gear should be observed after the live step");
 
-        assert_eq!((source_a.joint_kind, source_b.joint_kind), expected_kinds);
-        assert_eq!(gear.dependencies.as_ref(), [source_a_id, source_b_id]);
+        assert_eq!(
+            (primary_source.joint_kind, secondary_source.joint_kind),
+            expected_kinds
+        );
+        assert_eq!(
+            gear.dependencies.as_ref(),
+            [primary_source_id, secondary_source_id]
+        );
         assert_eq!(
             (&gear.body_a_id, &gear.body_b_id),
             (
@@ -338,38 +344,40 @@ fn native_phase8_executes_every_closed_joint_mutation() {
     ];
 
     // Act
-    let results = mutations.map(|(joint_id, mutation)| {
-        let mut value = request_value();
-        if matches!(
-            mutation["kind"].as_str(),
-            Some("limit_enabled" | "motor_enabled")
-        ) {
-            let declaration = timeline_mut(&mut value, "joint_definitions_and_mutations")["joints"]
-                .as_array_mut()
-                .expect("fixture joints should be an array")
-                .iter_mut()
-                .find(|joint| joint["joint_id"] == joint_id)
-                .expect("mutation target declaration should exist");
-            let field = if mutation["kind"] == "limit_enabled" {
-                "limit_enabled"
-            } else {
-                "motor_enabled"
-            };
-            declaration["definition"][field] = json!(false);
-        }
-        let action = timeline_mut(&mut value, "joint_definitions_and_mutations")["actions"]
-            .as_array_mut()
-            .expect("timeline actions should be an array")
-            .iter_mut()
-            .find(|action| action["action_id"] == "joint-def-mutate")
-            .expect("mutation action should exist");
-        action["action"]["joint_id"] = json!(joint_id);
-        action["action"]["mutation"] = mutation;
-        NativeRigidWorldExecutor::execute(&decode_value(&value))
-    });
+    let results = mutations.map(|(joint_id, mutation)| joint_mutation_executes(joint_id, mutation));
 
     // Assert
-    assert!(results.iter().all(Result::is_ok));
+    assert!(results.iter().all(|result| *result));
+}
+
+fn joint_mutation_executes(joint_id: &str, mutation: Value) -> bool {
+    let mut value = request_value();
+    if matches!(
+        mutation["kind"].as_str(),
+        Some("limit_enabled" | "motor_enabled")
+    ) {
+        let declaration = timeline_mut(&mut value, "joint_definitions_and_mutations")["joints"]
+            .as_array_mut()
+            .expect("fixture joints should be an array")
+            .iter_mut()
+            .find(|joint| joint["joint_id"] == joint_id)
+            .expect("mutation target declaration should exist");
+        let field = if mutation["kind"] == "limit_enabled" {
+            "limit_enabled"
+        } else {
+            "motor_enabled"
+        };
+        declaration["definition"][field] = json!(false);
+    }
+    let action = timeline_mut(&mut value, "joint_definitions_and_mutations")["actions"]
+        .as_array_mut()
+        .expect("timeline actions should be an array")
+        .iter_mut()
+        .find(|action| action["action_id"] == "joint-def-mutate")
+        .expect("mutation action should exist");
+    action["action"]["joint_id"] = json!(joint_id);
+    action["action"]["mutation"] = mutation;
+    NativeRigidWorldExecutor::execute(&decode_value(&value)).is_ok()
 }
 
 fn lifecycle_for(
@@ -395,11 +403,11 @@ fn scenario_id(value: &str) -> ScenarioId {
     ScenarioId::new(value).expect("test identity should validate")
 }
 
-fn contact(fixture_a_id: &str, fixture_b_id: &str) -> RigidContactIdentity {
+fn contact(first_fixture_id: &str, second_fixture_id: &str) -> RigidContactIdentity {
     RigidContactIdentity::new(
-        scenario_id(fixture_a_id),
+        scenario_id(first_fixture_id),
         0,
-        scenario_id(fixture_b_id),
+        scenario_id(second_fixture_id),
         0,
         1,
     )

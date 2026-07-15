@@ -4,9 +4,12 @@ use super::{
     PreparedSynchronization, StepConfiguration, ToiIsland, ToiIslandLimits, ToiIslandSolution,
     World, solve_toi_island,
 };
-use crate::world::step::{CollisionDecisionHook, ContactHookRun, NoDecisionHook, StepLimits};
+use crate::world::step::{CollisionDecisionHook, ContactHookRun};
+#[cfg(feature = "differential-internals")]
+use crate::world::step::{NoDecisionHook, StepLimits};
 
 impl World {
+    #[cfg(feature = "differential-internals")]
     pub(in crate::world) fn solve_next_continuous_event(
         &mut self,
         configuration: StepConfiguration,
@@ -113,6 +116,7 @@ impl World {
             return Err(ContinuousEventError::InjectedFailure);
         }
 
+        #[cfg(feature = "differential-internals")]
         let contact_occurrences = island
             .contact_indices
             .iter()
@@ -187,8 +191,11 @@ impl World {
             .map_err(ContinuousScanError::Hook)?;
 
         Ok(Some(ContinuousEvent {
+            #[cfg(feature = "differential-internals")]
             body_ids: solution.body_ids,
+            #[cfg(feature = "differential-internals")]
             contact_occurrences,
+            #[cfg(feature = "differential-internals")]
             transient_normal_impulse_sum,
             contact_solves,
         }))

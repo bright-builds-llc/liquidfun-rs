@@ -14,6 +14,8 @@ const PHASE6: &str = include_str!("../../../protocol/tolerances/phase6-v1.toml")
 const PHASE7: &str = include_str!("../../../protocol/tolerances/phase7-v1.toml");
 const PHASE8: &str = include_str!("../../../protocol/tolerances/phase8-v1.toml");
 
+type JsonMutation = Box<dyn Fn(&mut serde_json::Value)>;
+
 fn fixtures() -> (
     liquidfun_test_protocol::RigidWorldRequestRecord,
     liquidfun_test_protocol::RigidWorldResultRecord,
@@ -115,7 +117,7 @@ fn complete_phase8_result_matches_itself() {
 fn every_phase8_observation_family_reports_a_first_divergence() {
     // Arrange
     let (request, native, phase6, phase7, phase8) = fixtures();
-    let mutations: Vec<(&str, &str, Box<dyn Fn(&mut serde_json::Value)>)> = vec![
+    let mutations: Vec<(&str, &str, JsonMutation)> = vec![
         (
             "joint-kind",
             "rigid_world.phase8.joint.kind",
@@ -178,7 +180,7 @@ fn every_phase8_observation_family_reports_a_first_divergence() {
 fn joint_topology_branch_speed_reactions_and_every_gear_lane_have_stable_paths() {
     // Arrange
     let (request, native, phase6, phase7, phase8) = fixtures();
-    let mutations: Vec<(&str, Box<dyn Fn(&mut serde_json::Value)>)> = vec![
+    let mutations: Vec<(&str, JsonMutation)> = vec![
         (
             "rigid_world.phase8.joint.body_ids",
             Box::new(|value| {
@@ -292,7 +294,8 @@ fn lifecycle_multiplicity_kind_identity_and_destruction_identity_have_stable_pat
             .filter(|observation| observation["kind"] == "lifecycle")
             .enumerate()
         {
-            observation["event"]["ordinal"] = serde_json::Value::from(ordinal as u32);
+            let ordinal = u32::try_from(ordinal).expect("fixture ordinal should fit in u32");
+            observation["event"]["ordinal"] = serde_json::Value::from(ordinal);
         }
     });
     assert_physics_path(

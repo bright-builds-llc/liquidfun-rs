@@ -19,6 +19,14 @@ pub(super) fn validate_phase8_observation_contract(
     if !RigidWorldWitnessFamily::PHASE8_REQUIRED.contains(&family) {
         return Ok(());
     }
+    let lifecycle = validate_lifecycle_observations(observations)?;
+    validate_finite_observations(observations)?;
+    validate_family_observations(family, actions, observations, &lifecycle)
+}
+
+fn validate_lifecycle_observations(
+    observations: &[RigidWorldObservation],
+) -> Result<Vec<&RigidLifecycleObservation>, RigidWorldDecodeError> {
     let lifecycle = observations
         .iter()
         .filter_map(|observation| match observation {
@@ -27,10 +35,16 @@ pub(super) fn validate_phase8_observation_contract(
         })
         .collect::<Vec<_>>();
     if lifecycle.iter().enumerate().any(|(ordinal, event)| {
-        event.ordinal != ordinal as u32 || !lifecycle_identity_shape_is_valid(event)
+        u32::try_from(ordinal) != Ok(event.ordinal) || !lifecycle_identity_shape_is_valid(event)
     }) {
         return Err(validation(RigidWorldErrorKind::ResultObservationMismatch));
     }
+    Ok(lifecycle)
+}
+
+fn validate_finite_observations(
+    observations: &[RigidWorldObservation],
+) -> Result<(), RigidWorldDecodeError> {
     if observations.iter().any(|observation| match observation {
         RigidWorldObservation::Joint { snapshot } => !joint_snapshot_is_finite(snapshot),
         RigidWorldObservation::Rope { snapshot } => snapshot.vertices.iter().any(|vertex| {
@@ -43,7 +57,15 @@ pub(super) fn validate_phase8_observation_contract(
     }) {
         return Err(validation(RigidWorldErrorKind::ResultObservationMismatch));
     }
+    Ok(())
+}
 
+fn validate_family_observations(
+    family: RigidWorldWitnessFamily,
+    actions: &[RigidWorldActionRecord],
+    observations: &[RigidWorldObservation],
+    lifecycle: &[&RigidLifecycleObservation],
+) -> Result<(), RigidWorldDecodeError> {
     match family {
         RigidWorldWitnessFamily::ContactFilterListenerAndPreSolveTiming => {
             let kinds = lifecycle.iter().map(|event| event.kind).collect::<Vec<_>>();
@@ -205,7 +227,9 @@ impl ExpectedObservation<'_> {
             (Self::BodyState(expected), RigidWorldObservation::BodyState { state }) => {
                 expected == &state.body_id
             }
-            (Self::Step, RigidWorldObservation::Step { .. }) => true,
+            (Self::Step, RigidWorldObservation::Step { .. })
+            | (Self::Reconstruction, RigidWorldObservation::Reconstruction { .. })
+            | (Self::Diagnostics, RigidWorldObservation::Diagnostics { .. }) => true,
             (Self::Query(rules), RigidWorldObservation::Query { observation }) => {
                 query_observation_matches(live_identities, rules, observation)
             }
@@ -221,8 +245,6 @@ impl ExpectedObservation<'_> {
             (Self::Rope(expected), RigidWorldObservation::Rope { snapshot }) => {
                 expected == &snapshot.rope_id
             }
-            (Self::Reconstruction, RigidWorldObservation::Reconstruction { .. })
-            | (Self::Diagnostics, RigidWorldObservation::Diagnostics { .. }) => true,
             _ => false,
         }
     }

@@ -28,7 +28,7 @@ pub(super) fn execute_action(
 ) -> Result<bool, NativeRigidWorldError> {
     match action.action() {
         RigidWorldAction::CreateJoint { joint_id } => {
-            create_joint(executor, timeline, joint_id, action)?
+            create_joint(executor, timeline, joint_id, action)?;
         }
         RigidWorldAction::InspectJoint { joint_id } => observe_joint(executor, joint_id, action)?,
         RigidWorldAction::MutateJoint { joint_id, mutation } => {
@@ -37,7 +37,7 @@ pub(super) fn execute_action(
         }
         RigidWorldAction::DestroyJoint { joint_id } => destroy_joint(executor, joint_id, action)?,
         RigidWorldAction::CreateRope { rope_id } => {
-            create_rope(executor, timeline, rope_id, action)?
+            create_rope(executor, timeline, rope_id, action)?;
         }
         RigidWorldAction::SetRopeAngle {
             rope_id,
@@ -438,198 +438,287 @@ fn mutate_joint(
     action: &RigidWorldActionRecord,
 ) -> Result<(), NativeRigidWorldError> {
     let joint = executor.joint(joint_id, action)?;
-    let result = match mutation {
-        RigidJointMutation::LimitEnabled { enabled } => match executor
-            .world
-            .joint_snapshot(joint)
-            .map(|value| value.kind())
-        {
-            Ok(liquidfun::JointKind::Revolute) => {
-                executor.world.set_revolute_limit_enabled(joint, enabled)
-            }
-            Ok(liquidfun::JointKind::Prismatic) => {
-                executor.world.set_prismatic_limit_enabled(joint, enabled)
-            }
-            _ => {
-                return Err(action_error(
-                    action,
-                    "unsupported limit-enabled mutation kind",
-                ));
-            }
-        },
+    match mutation {
+        RigidJointMutation::LimitEnabled { enabled } => {
+            set_limit_enabled(executor, joint, enabled, action)
+        }
         RigidJointMutation::Limits {
             lower_bits,
             upper_bits,
-        } => match executor
-            .world
-            .joint_snapshot(joint)
-            .map(|value| value.kind())
-        {
-            Ok(liquidfun::JointKind::Revolute) => {
-                executor
-                    .world
-                    .set_revolute_limits(joint, lower_bits.to_f32(), upper_bits.to_f32())
-            }
-            Ok(liquidfun::JointKind::Prismatic) => {
-                executor
-                    .world
-                    .set_prismatic_limits(joint, lower_bits.to_f32(), upper_bits.to_f32())
-            }
-            _ => return Err(action_error(action, "unsupported limits mutation kind")),
-        },
-        RigidJointMutation::MotorEnabled { enabled } => match executor
-            .world
-            .joint_snapshot(joint)
-            .map(|value| value.kind())
-        {
-            Ok(liquidfun::JointKind::Revolute) => {
-                executor.world.set_revolute_motor_enabled(joint, enabled)
-            }
-            Ok(liquidfun::JointKind::Prismatic) => {
-                executor.world.set_prismatic_motor_enabled(joint, enabled)
-            }
-            Ok(liquidfun::JointKind::Wheel) => {
-                executor.world.set_wheel_motor_enabled(joint, enabled)
-            }
-            _ => {
-                return Err(action_error(
-                    action,
-                    "unsupported motor-enabled mutation kind",
-                ));
-            }
-        },
-        RigidJointMutation::MotorSpeed { speed_bits } => match executor
-            .world
-            .joint_snapshot(joint)
-            .map(|value| value.kind())
-        {
-            Ok(liquidfun::JointKind::Revolute) => executor
+        } => set_limits(
+            executor,
+            joint,
+            lower_bits.to_f32(),
+            upper_bits.to_f32(),
+            action,
+        ),
+        RigidJointMutation::MotorEnabled { enabled } => {
+            set_motor_enabled(executor, joint, enabled, action)
+        }
+        RigidJointMutation::MotorSpeed { speed_bits } => {
+            set_motor_speed(executor, joint, speed_bits.to_f32(), action)
+        }
+        RigidJointMutation::MaxMotorForce { force_bits } => apply_mutation(
+            executor
                 .world
-                .set_revolute_motor_speed(joint, speed_bits.to_f32()),
-            Ok(liquidfun::JointKind::Prismatic) => executor
+                .set_prismatic_max_motor_force(joint, force_bits.to_f32()),
+            action,
+        ),
+        RigidJointMutation::MaxMotorTorque { torque_bits } => {
+            set_max_motor_torque(executor, joint, torque_bits.to_f32(), action)
+        }
+        RigidJointMutation::Length { length_bits } => apply_mutation(
+            executor
                 .world
-                .set_prismatic_motor_speed(joint, speed_bits.to_f32()),
-            Ok(liquidfun::JointKind::Wheel) => executor
-                .world
-                .set_wheel_motor_speed(joint, speed_bits.to_f32()),
-            _ => {
-                return Err(action_error(
-                    action,
-                    "unsupported motor-speed mutation kind",
-                ));
-            }
-        },
-        RigidJointMutation::MaxMotorForce { force_bits } => executor
-            .world
-            .set_prismatic_max_motor_force(joint, force_bits.to_f32()),
-        RigidJointMutation::MaxMotorTorque { torque_bits } => match executor
-            .world
-            .joint_snapshot(joint)
-            .map(|value| value.kind())
-        {
-            Ok(liquidfun::JointKind::Revolute) => executor
-                .world
-                .set_revolute_max_motor_torque(joint, torque_bits.to_f32()),
-            Ok(liquidfun::JointKind::Wheel) => executor
-                .world
-                .set_wheel_max_motor_torque(joint, torque_bits.to_f32()),
-            _ => {
-                return Err(action_error(
-                    action,
-                    "unsupported motor-torque mutation kind",
-                ));
-            }
-        },
-        RigidJointMutation::Length { length_bits } => executor
-            .world
-            .set_distance_length(joint, length_bits.to_f32()),
-        RigidJointMutation::Frequency { frequency_bits } => match executor
-            .world
-            .joint_snapshot(joint)
-            .map(|value| value.kind())
-        {
-            Ok(liquidfun::JointKind::Distance) => executor
-                .world
-                .set_distance_frequency(joint, frequency_bits.to_f32()),
-            Ok(liquidfun::JointKind::Mouse) => executor
-                .world
-                .set_mouse_frequency(joint, frequency_bits.to_f32()),
-            Ok(liquidfun::JointKind::Wheel) => executor
-                .world
-                .set_wheel_frequency(joint, frequency_bits.to_f32()),
-            Ok(liquidfun::JointKind::Weld) => executor
-                .world
-                .set_weld_frequency(joint, frequency_bits.to_f32()),
-            _ => return Err(action_error(action, "unsupported frequency mutation kind")),
-        },
-        RigidJointMutation::DampingRatio { damping_ratio_bits } => match executor
-            .world
-            .joint_snapshot(joint)
-            .map(|value| value.kind())
-        {
-            Ok(liquidfun::JointKind::Distance) => executor
-                .world
-                .set_distance_damping_ratio(joint, damping_ratio_bits.to_f32()),
-            Ok(liquidfun::JointKind::Mouse) => executor
-                .world
-                .set_mouse_damping_ratio(joint, damping_ratio_bits.to_f32()),
-            Ok(liquidfun::JointKind::Wheel) => executor
-                .world
-                .set_wheel_damping_ratio(joint, damping_ratio_bits.to_f32()),
-            Ok(liquidfun::JointKind::Weld) => executor
-                .world
-                .set_weld_damping_ratio(joint, damping_ratio_bits.to_f32()),
-            _ => return Err(action_error(action, "unsupported damping mutation kind")),
-        },
+                .set_distance_length(joint, length_bits.to_f32()),
+            action,
+        ),
+        RigidJointMutation::Frequency { frequency_bits } => {
+            set_frequency(executor, joint, frequency_bits.to_f32(), action)
+        }
+        RigidJointMutation::DampingRatio { damping_ratio_bits } => {
+            set_damping_ratio(executor, joint, damping_ratio_bits.to_f32(), action)
+        }
         RigidJointMutation::MouseTarget { target } => {
-            executor.world.set_mouse_target(joint, vec2(target))
+            apply_mutation(executor.world.set_mouse_target(joint, vec2(target)), action)
         }
-        RigidJointMutation::MaxForce { force_bits } => match executor
-            .world
-            .joint_snapshot(joint)
-            .map(|value| value.kind())
-        {
-            Ok(liquidfun::JointKind::Mouse) => executor
-                .world
-                .set_mouse_max_force(joint, force_bits.to_f32()),
-            Ok(liquidfun::JointKind::Friction) => executor
-                .world
-                .set_friction_max_force(joint, force_bits.to_f32()),
-            Ok(liquidfun::JointKind::Motor) => executor
-                .world
-                .set_motor_max_force(joint, force_bits.to_f32()),
-            _ => return Err(action_error(action, "unsupported force mutation kind")),
-        },
-        RigidJointMutation::MaxTorque { torque_bits } => match executor
-            .world
-            .joint_snapshot(joint)
-            .map(|value| value.kind())
-        {
-            Ok(liquidfun::JointKind::Friction) => executor
-                .world
-                .set_friction_max_torque(joint, torque_bits.to_f32()),
-            Ok(liquidfun::JointKind::Motor) => executor
-                .world
-                .set_motor_max_torque(joint, torque_bits.to_f32()),
-            _ => return Err(action_error(action, "unsupported torque mutation kind")),
-        },
-        RigidJointMutation::GearRatio { ratio_bits } => {
-            executor.world.set_gear_ratio(joint, ratio_bits.to_f32())
+        RigidJointMutation::MaxForce { force_bits } => {
+            set_max_force(executor, joint, force_bits.to_f32(), action)
         }
-        RigidJointMutation::RopeMaxLength { max_length_bits } => executor
-            .world
-            .set_rope_joint_max_length(joint, max_length_bits.to_f32()),
-        RigidJointMutation::LinearOffset { offset } => {
-            executor.world.set_motor_linear_offset(joint, vec2(offset))
+        RigidJointMutation::MaxTorque { torque_bits } => {
+            set_max_torque(executor, joint, torque_bits.to_f32(), action)
         }
-        RigidJointMutation::AngularOffset { offset_bits } => executor
-            .world
-            .set_motor_angular_offset(joint, offset_bits.to_f32()),
-        RigidJointMutation::CorrectionFactor { factor_bits } => executor
-            .world
-            .set_motor_correction_factor(joint, factor_bits.to_f32()),
-    };
+        RigidJointMutation::GearRatio { ratio_bits } => apply_mutation(
+            executor.world.set_gear_ratio(joint, ratio_bits.to_f32()),
+            action,
+        ),
+        RigidJointMutation::RopeMaxLength { max_length_bits } => apply_mutation(
+            executor
+                .world
+                .set_rope_joint_max_length(joint, max_length_bits.to_f32()),
+            action,
+        ),
+        RigidJointMutation::LinearOffset { offset } => apply_mutation(
+            executor.world.set_motor_linear_offset(joint, vec2(offset)),
+            action,
+        ),
+        RigidJointMutation::AngularOffset { offset_bits } => apply_mutation(
+            executor
+                .world
+                .set_motor_angular_offset(joint, offset_bits.to_f32()),
+            action,
+        ),
+        RigidJointMutation::CorrectionFactor { factor_bits } => apply_mutation(
+            executor
+                .world
+                .set_motor_correction_factor(joint, factor_bits.to_f32()),
+            action,
+        ),
+    }
+}
+
+fn joint_kind(
+    executor: &TimelineExecutor,
+    joint: liquidfun::JointId,
+) -> Option<liquidfun::JointKind> {
+    executor
+        .world
+        .joint_snapshot(joint)
+        .ok()
+        .map(liquidfun::JointSnapshot::kind)
+}
+
+fn apply_mutation(
+    result: Result<(), liquidfun::JointMutationError>,
+    action: &RigidWorldActionRecord,
+) -> Result<(), NativeRigidWorldError> {
     result.map_err(|error| action_error(action, error))
+}
+
+fn set_limit_enabled(
+    executor: &mut TimelineExecutor,
+    joint: liquidfun::JointId,
+    enabled: bool,
+    action: &RigidWorldActionRecord,
+) -> Result<(), NativeRigidWorldError> {
+    let result = match joint_kind(executor, joint) {
+        Some(liquidfun::JointKind::Revolute) => {
+            executor.world.set_revolute_limit_enabled(joint, enabled)
+        }
+        Some(liquidfun::JointKind::Prismatic) => {
+            executor.world.set_prismatic_limit_enabled(joint, enabled)
+        }
+        _ => {
+            return Err(action_error(
+                action,
+                "unsupported limit-enabled mutation kind",
+            ));
+        }
+    };
+    apply_mutation(result, action)
+}
+
+fn set_limits(
+    executor: &mut TimelineExecutor,
+    joint: liquidfun::JointId,
+    lower: f32,
+    upper: f32,
+    action: &RigidWorldActionRecord,
+) -> Result<(), NativeRigidWorldError> {
+    let result = match joint_kind(executor, joint) {
+        Some(liquidfun::JointKind::Revolute) => {
+            executor.world.set_revolute_limits(joint, lower, upper)
+        }
+        Some(liquidfun::JointKind::Prismatic) => {
+            executor.world.set_prismatic_limits(joint, lower, upper)
+        }
+        _ => return Err(action_error(action, "unsupported limits mutation kind")),
+    };
+    apply_mutation(result, action)
+}
+
+fn set_motor_enabled(
+    executor: &mut TimelineExecutor,
+    joint: liquidfun::JointId,
+    enabled: bool,
+    action: &RigidWorldActionRecord,
+) -> Result<(), NativeRigidWorldError> {
+    let result = match joint_kind(executor, joint) {
+        Some(liquidfun::JointKind::Revolute) => {
+            executor.world.set_revolute_motor_enabled(joint, enabled)
+        }
+        Some(liquidfun::JointKind::Prismatic) => {
+            executor.world.set_prismatic_motor_enabled(joint, enabled)
+        }
+        Some(liquidfun::JointKind::Wheel) => executor.world.set_wheel_motor_enabled(joint, enabled),
+        _ => {
+            return Err(action_error(
+                action,
+                "unsupported motor-enabled mutation kind",
+            ));
+        }
+    };
+    apply_mutation(result, action)
+}
+
+fn set_motor_speed(
+    executor: &mut TimelineExecutor,
+    joint: liquidfun::JointId,
+    speed: f32,
+    action: &RigidWorldActionRecord,
+) -> Result<(), NativeRigidWorldError> {
+    let result = match joint_kind(executor, joint) {
+        Some(liquidfun::JointKind::Revolute) => {
+            executor.world.set_revolute_motor_speed(joint, speed)
+        }
+        Some(liquidfun::JointKind::Prismatic) => {
+            executor.world.set_prismatic_motor_speed(joint, speed)
+        }
+        Some(liquidfun::JointKind::Wheel) => executor.world.set_wheel_motor_speed(joint, speed),
+        _ => {
+            return Err(action_error(
+                action,
+                "unsupported motor-speed mutation kind",
+            ));
+        }
+    };
+    apply_mutation(result, action)
+}
+
+fn set_max_motor_torque(
+    executor: &mut TimelineExecutor,
+    joint: liquidfun::JointId,
+    torque: f32,
+    action: &RigidWorldActionRecord,
+) -> Result<(), NativeRigidWorldError> {
+    let result = match joint_kind(executor, joint) {
+        Some(liquidfun::JointKind::Revolute) => {
+            executor.world.set_revolute_max_motor_torque(joint, torque)
+        }
+        Some(liquidfun::JointKind::Wheel) => {
+            executor.world.set_wheel_max_motor_torque(joint, torque)
+        }
+        _ => {
+            return Err(action_error(
+                action,
+                "unsupported motor-torque mutation kind",
+            ));
+        }
+    };
+    apply_mutation(result, action)
+}
+
+fn set_frequency(
+    executor: &mut TimelineExecutor,
+    joint: liquidfun::JointId,
+    frequency: f32,
+    action: &RigidWorldActionRecord,
+) -> Result<(), NativeRigidWorldError> {
+    let result = match joint_kind(executor, joint) {
+        Some(liquidfun::JointKind::Distance) => {
+            executor.world.set_distance_frequency(joint, frequency)
+        }
+        Some(liquidfun::JointKind::Mouse) => executor.world.set_mouse_frequency(joint, frequency),
+        Some(liquidfun::JointKind::Wheel) => executor.world.set_wheel_frequency(joint, frequency),
+        Some(liquidfun::JointKind::Weld) => executor.world.set_weld_frequency(joint, frequency),
+        _ => return Err(action_error(action, "unsupported frequency mutation kind")),
+    };
+    apply_mutation(result, action)
+}
+
+fn set_damping_ratio(
+    executor: &mut TimelineExecutor,
+    joint: liquidfun::JointId,
+    damping_ratio: f32,
+    action: &RigidWorldActionRecord,
+) -> Result<(), NativeRigidWorldError> {
+    let result = match joint_kind(executor, joint) {
+        Some(liquidfun::JointKind::Distance) => executor
+            .world
+            .set_distance_damping_ratio(joint, damping_ratio),
+        Some(liquidfun::JointKind::Mouse) => {
+            executor.world.set_mouse_damping_ratio(joint, damping_ratio)
+        }
+        Some(liquidfun::JointKind::Wheel) => {
+            executor.world.set_wheel_damping_ratio(joint, damping_ratio)
+        }
+        Some(liquidfun::JointKind::Weld) => {
+            executor.world.set_weld_damping_ratio(joint, damping_ratio)
+        }
+        _ => return Err(action_error(action, "unsupported damping mutation kind")),
+    };
+    apply_mutation(result, action)
+}
+
+fn set_max_force(
+    executor: &mut TimelineExecutor,
+    joint: liquidfun::JointId,
+    force: f32,
+    action: &RigidWorldActionRecord,
+) -> Result<(), NativeRigidWorldError> {
+    let result = match joint_kind(executor, joint) {
+        Some(liquidfun::JointKind::Mouse) => executor.world.set_mouse_max_force(joint, force),
+        Some(liquidfun::JointKind::Friction) => executor.world.set_friction_max_force(joint, force),
+        Some(liquidfun::JointKind::Motor) => executor.world.set_motor_max_force(joint, force),
+        _ => return Err(action_error(action, "unsupported force mutation kind")),
+    };
+    apply_mutation(result, action)
+}
+
+fn set_max_torque(
+    executor: &mut TimelineExecutor,
+    joint: liquidfun::JointId,
+    torque: f32,
+    action: &RigidWorldActionRecord,
+) -> Result<(), NativeRigidWorldError> {
+    let result = match joint_kind(executor, joint) {
+        Some(liquidfun::JointKind::Friction) => {
+            executor.world.set_friction_max_torque(joint, torque)
+        }
+        Some(liquidfun::JointKind::Motor) => executor.world.set_motor_max_torque(joint, torque),
+        _ => return Err(action_error(action, "unsupported torque mutation kind")),
+    };
+    apply_mutation(result, action)
 }
 
 fn destroy_joint(
@@ -908,31 +997,7 @@ pub(super) fn collect_mutation_lifecycle(
                 )?;
             }
             StepLifecycleEvent::Contact(transition) => {
-                let kind = match transition.kind() {
-                    liquidfun::ContactTransitionKind::Begin => {
-                        Some(RigidLifecycleObservationKind::BeginContact)
-                    }
-                    liquidfun::ContactTransitionKind::End => {
-                        Some(RigidLifecycleObservationKind::EndContact)
-                    }
-                    _ => None,
-                };
-                if let Some(kind) = kind {
-                    let occurrence = transition.contact().differential_occurrence();
-                    let contact = executor.contact_identity(transition.contact())?;
-                    if kind == RigidLifecycleObservationKind::BeginContact
-                        && !executor.seen_lifecycle_occurrences.contains(&occurrence)
-                    {
-                        executor.seen_lifecycle_occurrences.push(occurrence);
-                        push_lifecycle(
-                            executor,
-                            RigidLifecycleObservationKind::ContactCreated,
-                            Some(contact.clone()),
-                            None,
-                        )?;
-                    }
-                    push_lifecycle(executor, kind, Some(contact), None)?;
-                }
+                collect_contact_lifecycle(executor, transition)?;
             }
             StepLifecycleEvent::ContactDestruction(transition) => {
                 let contact = executor.contact_identity(transition.contact())?;
@@ -996,13 +1061,40 @@ pub(super) fn collect_mutation_lifecycle(
                     Some(entity),
                 )?;
             }
-            StepLifecycleEvent::Hook(_)
-            | StepLifecycleEvent::Command(_)
-            | StepLifecycleEvent::Destruction(_) => {}
             _ => {}
         }
     }
     Ok(())
+}
+
+fn collect_contact_lifecycle(
+    executor: &mut TimelineExecutor,
+    transition: &liquidfun::ContactTransition,
+) -> Result<(), NativeRigidWorldError> {
+    let maybe_kind = match transition.kind() {
+        liquidfun::ContactTransitionKind::Begin => {
+            Some(RigidLifecycleObservationKind::BeginContact)
+        }
+        liquidfun::ContactTransitionKind::End => Some(RigidLifecycleObservationKind::EndContact),
+        _ => None,
+    };
+    let Some(kind) = maybe_kind else {
+        return Ok(());
+    };
+    let occurrence = transition.contact().differential_occurrence();
+    let contact = executor.contact_identity(transition.contact())?;
+    if kind == RigidLifecycleObservationKind::BeginContact
+        && !executor.seen_lifecycle_occurrences.contains(&occurrence)
+    {
+        executor.seen_lifecycle_occurrences.push(occurrence);
+        push_lifecycle(
+            executor,
+            RigidLifecycleObservationKind::ContactCreated,
+            Some(contact.clone()),
+            None,
+        )?;
+    }
+    push_lifecycle(executor, kind, Some(contact), None)
 }
 
 fn captures_lifecycle_evidence(family: RigidWorldWitnessFamily) -> bool {

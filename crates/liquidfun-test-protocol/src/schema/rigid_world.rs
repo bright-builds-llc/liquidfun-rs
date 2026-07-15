@@ -239,7 +239,7 @@ fn joint_definition_schema() -> Value {
     let mut revolute = anchors();
     extend_properties(
         &mut revolute,
-        json!({
+        &json!({
             "reference_angle_bits": float_bits_schema(),
             "lower_angle_bits": float_bits_schema(),
             "upper_angle_bits": float_bits_schema(),
@@ -252,7 +252,7 @@ fn joint_definition_schema() -> Value {
     let mut prismatic = anchors();
     extend_properties(
         &mut prismatic,
-        json!({
+        &json!({
             "local_axis_a": schema_ref("vec2_bits"),
             "reference_angle_bits": float_bits_schema(),
             "lower_translation_bits": float_bits_schema(),
@@ -266,7 +266,7 @@ fn joint_definition_schema() -> Value {
     let mut distance = anchors();
     extend_properties(
         &mut distance,
-        json!({
+        &json!({
             "length_bits": float_bits_schema(),
             "frequency_bits": float_bits_schema(),
             "damping_ratio_bits": float_bits_schema()
@@ -275,7 +275,7 @@ fn joint_definition_schema() -> Value {
     let mut wheel = anchors();
     extend_properties(
         &mut wheel,
-        json!({
+        &json!({
             "local_axis_a": schema_ref("vec2_bits"),
             "motor_speed_bits": float_bits_schema(),
             "max_motor_torque_bits": float_bits_schema(),
@@ -287,7 +287,7 @@ fn joint_definition_schema() -> Value {
     let mut weld = anchors();
     extend_properties(
         &mut weld,
-        json!({
+        &json!({
             "reference_angle_bits": float_bits_schema(),
             "frequency_bits": float_bits_schema(),
             "damping_ratio_bits": float_bits_schema()
@@ -296,13 +296,16 @@ fn joint_definition_schema() -> Value {
     let mut friction = anchors();
     extend_properties(
         &mut friction,
-        json!({
+        &json!({
             "max_force_bits": float_bits_schema(),
             "max_torque_bits": float_bits_schema()
         }),
     );
     let mut rope = anchors();
-    extend_properties(&mut rope, json!({ "max_length_bits": float_bits_schema() }));
+    extend_properties(
+        &mut rope,
+        &json!({ "max_length_bits": float_bits_schema() }),
+    );
     json!({ "oneOf": [
         tagged_probe_input("revolute", &revolute, &["local_anchor_a", "local_anchor_b", "reference_angle_bits", "lower_angle_bits", "upper_angle_bits", "motor_speed_bits", "max_motor_torque_bits", "limit_enabled", "motor_enabled"]),
         tagged_probe_input("prismatic", &prismatic, &["local_anchor_a", "local_anchor_b", "local_axis_a", "reference_angle_bits", "lower_translation_bits", "upper_translation_bits", "motor_speed_bits", "max_motor_force_bits", "limit_enabled", "motor_enabled"]),
@@ -318,7 +321,7 @@ fn joint_definition_schema() -> Value {
     ] })
 }
 
-fn extend_properties(target: &mut Value, additions: Value) {
+fn extend_properties(target: &mut Value, additions: &Value) {
     let Some(target) = target.as_object_mut() else {
         unreachable!("schema properties are always objects");
     };

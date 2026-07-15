@@ -1971,6 +1971,7 @@ impl World {
             if state.snapshot().body_type() == BodyType::Static || !state.snapshot().is_active() {
                 continue;
             }
+            #[cfg(feature = "differential-internals")]
             if let Some(SolveFailureInjection::ProxyBounds { fixture }) = maybe_failure_injection
                 && body.fixtures.contains(&fixture)
             {
