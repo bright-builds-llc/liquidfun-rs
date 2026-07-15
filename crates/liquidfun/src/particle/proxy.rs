@@ -129,6 +129,10 @@ impl ParticleNeighborhood {
         &self.pairs
     }
 
+    pub(crate) const fn diameter(&self) -> f32 {
+        self.diameter
+    }
+
     /// Returns the source-expanded proxy candidates for an AABB.
     ///
     /// This is deliberately the broad candidate set: callers that need exact

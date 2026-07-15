@@ -5,6 +5,7 @@
 //! world. Dense particle rows and allocation details remain private.
 
 mod buffer;
+mod contact;
 mod definition;
 mod editor;
 mod lifetime;
@@ -16,6 +17,9 @@ pub use buffer::{
     ParticleBufferAdoptionError, ParticleBufferAdoptionErrorKind, ParticleBufferBundle,
     ParticleBufferError, ParticleBufferErrorKind, ParticleBufferLanes, ParticleBufferMode,
     ParticleBufferTeardown,
+};
+pub use contact::{
+    ParticleContact, ParticleContactEffect, ParticleContactError, ParticleContactUpdate,
 };
 pub use definition::{
     ParticleCapacity, ParticleColor, ParticleDef, ParticleDefError, ParticleFlags,
