@@ -228,7 +228,7 @@ fn apply_lifecycle_operation(
                 listener,
             });
             model.order.push(id);
-            model.dirty |= expiration != 0;
+            model.dirty = true;
         }
         LifecycleOperation::Tick(raw) => {
             if !model.tracking {
