@@ -38,8 +38,8 @@ use crate::collision::{
     BroadPhase, ChildIndex, CollisionError, FilterData, MassData, RayCastHit, RayCastInput,
 };
 use crate::math::Vec2;
-use crate::particle::ParticleSystemDef;
 use crate::particle::storage::{ParticleSnapshot as StorageParticleSnapshot, ParticleStorage};
+use crate::particle::{ParticleBufferMode, ParticleBufferTeardown, ParticleSystemDef};
 
 mod report;
 pub use report::{DestructionReport, MutationReport};
@@ -1333,6 +1333,38 @@ impl World {
         &mut self,
         system: ParticleSystemId,
     ) -> Result<Vec<DestructionRecord>, HandleError> {
+        self.destroy_particle_system_owned(system)
+            .map(|(records, _removed)| records)
+    }
+
+    /// Destroys a particle system and returns its complete owned lane bundle.
+    ///
+    /// # Errors
+    ///
+    /// Returns a handle error without mutation when `system` is foreign, stale, or destroyed.
+    pub fn destroy_particle_system_with_buffers(
+        &mut self,
+        system: ParticleSystemId,
+    ) -> Result<ParticleBufferTeardown, HandleError> {
+        let (records, removed) = self.destroy_particle_system_owned(system)?;
+        let capacity = removed.definition.capacity();
+        let mode = if capacity.is_fixed() {
+            ParticleBufferMode::Fixed {
+                capacity: capacity.count(),
+            }
+        } else {
+            ParticleBufferMode::Growable {
+                initial_capacity: capacity.count(),
+            }
+        };
+        let bundle = removed.storage.into_buffer_bundle(mode);
+        Ok(ParticleBufferTeardown::new(records, bundle))
+    }
+
+    fn destroy_particle_system_owned(
+        &mut self,
+        system: ParticleSystemId,
+    ) -> Result<(Vec<DestructionRecord>, ParticleSystem), HandleError> {
         self.ensure_not_poisoned_for_handle()?;
         let transaction = self.capture_particle_system_destruction(system)?;
         let mut records =
@@ -1352,12 +1384,13 @@ impl World {
                 DestructionCause::ParticleSystemCascade { system },
             ));
         }
-        records.push(self.remove_particle_system(
+        let (root_record, removed) = self.remove_particle_system(
             system,
             DestructionCause::Explicit,
             transaction.root_snapshot,
-        ));
-        Ok(records)
+        );
+        records.push(root_record);
+        Ok((records, removed))
     }
 
     /// Destroys a particle group without destroying its particles.
@@ -1576,18 +1609,21 @@ impl World {
         system: ParticleSystemId,
         cause: DestructionCause,
         snapshot: ObjectSnapshot,
-    ) -> DestructionRecord {
+    ) -> (DestructionRecord, ParticleSystem) {
         let removed = self
             .particle_systems
             .remove(system)
             .expect("validated destruction root and adjacency remain live");
         remove_occurrence(&mut self.particle_system_order, &system);
-        DestructionRecord {
-            destroyed: DestroyedId::ParticleSystem(system),
-            diagnostic_id: removed.diagnostic_id,
-            cause,
-            snapshot,
-        }
+        (
+            DestructionRecord {
+                destroyed: DestroyedId::ParticleSystem(system),
+                diagnostic_id: removed.diagnostic_id,
+                cause,
+                snapshot,
+            },
+            removed,
+        )
     }
 
     fn remove_particle_group(

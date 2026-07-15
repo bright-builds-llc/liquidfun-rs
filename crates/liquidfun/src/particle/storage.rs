@@ -7,7 +7,9 @@ use crate::identity::{
     HandleIdentity, Identity, ParticleGroupId, ParticleId, ParticleSystemId, WorldKey,
 };
 use crate::math::Vec2;
-use crate::particle::{ParticleColor, ParticleFlags};
+use crate::particle::{
+    ParticleBufferBundle, ParticleBufferLanes, ParticleBufferMode, ParticleColor, ParticleFlags,
+};
 
 use lanes::{
     GroupRange, OwnedLaneBundle, ParticleBodyContact, ParticleContact, ParticlePair, ParticleProxy,
@@ -154,6 +156,41 @@ impl ParticleStorage {
             lanes,
             initial_capacity,
         )
+    }
+
+    pub(crate) fn from_buffer_bundle(
+        world: WorldKey,
+        system: ParticleSystemId,
+        identity_slot_base: usize,
+        identity_capacity: usize,
+        declared_capacity: usize,
+        bundle: ParticleBufferBundle,
+    ) -> Self {
+        let (mode, supplied) = bundle.into_parts();
+        let initial_capacity = mode.declared_count();
+        let lanes = OwnedLaneBundle {
+            positions: supplied.positions,
+            velocities: supplied.velocities,
+            flags: supplied.flags,
+            groups: Vec::with_capacity(initial_capacity),
+            weights: Vec::with_capacity(initial_capacity),
+            forces: Vec::with_capacity(initial_capacity),
+            maybe_colors: supplied.maybe_colors,
+            maybe_user_associations: None,
+            maybe_stuck: None,
+            maybe_expiration_times: None,
+            maybe_expiration_order: None,
+        };
+        Self::from_validated_lanes(
+            world,
+            system,
+            identity_slot_base,
+            identity_capacity,
+            declared_capacity,
+            lanes,
+            initial_capacity,
+        )
+        .expect("validated owned lanes and world-scoped system form valid storage")
     }
 
     fn from_validated_lanes(
@@ -418,6 +455,18 @@ impl ParticleStorage {
             maybe_expiration_times: self.maybe_expiration_times,
             maybe_expiration_order: self.maybe_expiration_order,
         }
+    }
+
+    pub(crate) fn into_buffer_bundle(self, mode: ParticleBufferMode) -> ParticleBufferBundle {
+        ParticleBufferBundle::from_storage(
+            mode,
+            ParticleBufferLanes::new(
+                self.positions,
+                self.velocities,
+                self.flags,
+                self.maybe_colors,
+            ),
+        )
     }
 
     fn identity_slot_candidate(&self) -> Result<(usize, u64, bool), ParticleStorageError> {

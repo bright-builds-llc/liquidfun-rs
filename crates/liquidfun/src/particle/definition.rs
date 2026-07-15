@@ -106,6 +106,19 @@ pub struct ParticleCapacity {
 }
 
 impl ParticleCapacity {
+    pub(crate) const fn from_buffer_mode(mode: super::buffer::ParticleBufferMode) -> Self {
+        match mode {
+            super::buffer::ParticleBufferMode::Fixed { capacity } => Self {
+                mode: ParticleCapacityMode::Fixed,
+                count: capacity,
+            },
+            super::buffer::ParticleBufferMode::Growable { initial_capacity } => Self {
+                mode: ParticleCapacityMode::Growable,
+                count: initial_capacity,
+            },
+        }
+    }
+
     /// Creates a growable policy with a checked initial allocation target.
     ///
     /// # Errors

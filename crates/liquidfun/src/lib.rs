@@ -196,8 +196,11 @@ pub use joint::{
     WeldJointSnapshot, WheelJointDef, WheelJointSnapshot,
 };
 pub use particle::{
-    ParticleCapacity, ParticleColor, ParticleDef, ParticleDefError, ParticleFlags,
-    ParticleSnapshot, ParticleSystemDef, ParticleSystemDefError, ParticleSystemSnapshot,
+    ParticleBufferAdoptionError, ParticleBufferAdoptionErrorKind, ParticleBufferBundle,
+    ParticleBufferError, ParticleBufferErrorKind, ParticleBufferLanes, ParticleBufferMode,
+    ParticleBufferTeardown, ParticleCapacity, ParticleColor, ParticleDef, ParticleDefError,
+    ParticleFlags, ParticleSnapshot, ParticleSystemDef, ParticleSystemDefError,
+    ParticleSystemSnapshot,
 };
 pub use world::{
     AggregateMassError, BodyActivationError, BodyControlError, BodyDef, BodyDefError, BodyMassData,

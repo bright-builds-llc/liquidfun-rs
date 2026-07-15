@@ -6,7 +6,10 @@ use crate::particle::storage::{
     ParticleInput, ParticleSnapshot as StorageParticleSnapshot, ParticleStorage,
     ParticleStorageError,
 };
-use crate::particle::{ParticleColor, ParticleDef, ParticleFlags, ParticleSystemDef};
+use crate::particle::{
+    ParticleBufferAdoptionError, ParticleBufferAdoptionErrorKind, ParticleBufferBundle,
+    ParticleCapacity, ParticleColor, ParticleDef, ParticleFlags, ParticleSystemDef,
+};
 use crate::{
     ArenaInsertError, CreateObjectError, DestroyedId, DestructionCause, DestructionRecord,
     HandleError, ObjectSnapshot, ParticleGroupId, ParticleId, ParticleSystemId,
@@ -107,6 +110,94 @@ impl ParticleSnapshot {
 }
 
 impl World {
+    /// Creates a particle system that uniquely owns a validated consumer lane bundle.
+    ///
+    /// The bundle's fixed or growable mode replaces the definition's ordinary
+    /// capacity policy. A configured maximum must still fit a fixed bundle.
+    ///
+    /// # Errors
+    ///
+    /// Returns the complete bundle with a typed definition or world allocation
+    /// failure. No system, diagnostic identity, or lane ownership is committed.
+    pub fn create_particle_system_with_buffers(
+        &mut self,
+        definition: &ParticleSystemDef,
+        bundle: ParticleBufferBundle,
+    ) -> Result<ParticleSystemId, ParticleBufferAdoptionError> {
+        let mode = bundle.mode();
+        let capacity = ParticleCapacity::from_buffer_mode(mode);
+        let definition = match definition.with_capacity(capacity) {
+            Ok(definition) => definition,
+            Err(error) => {
+                return Err(ParticleBufferAdoptionError::new(
+                    ParticleBufferAdoptionErrorKind::Definition(error),
+                    bundle,
+                ));
+            }
+        };
+        if let Err(error) = self.ensure_not_poisoned_for_insert() {
+            return Err(ParticleBufferAdoptionError::new(
+                ParticleBufferAdoptionErrorKind::World(error),
+                bundle,
+            ));
+        }
+        let system = match self.particle_systems.next_handle() {
+            Ok(system) => system,
+            Err(error) => {
+                return Err(ParticleBufferAdoptionError::new(
+                    ParticleBufferAdoptionErrorKind::World(error),
+                    bundle,
+                ));
+            }
+        };
+        let declared_capacity = if capacity.is_fixed() {
+            capacity.count()
+        } else {
+            definition.maximum_count().unwrap_or(MAX_PARTICLE_COUNT)
+        };
+        let storage = ParticleStorage::from_buffer_bundle(
+            self.scope_key,
+            system,
+            0,
+            declared_capacity,
+            declared_capacity,
+            bundle,
+        );
+        let diagnostic_id = match self.allocate_diagnostic_id() {
+            Ok(diagnostic_id) => diagnostic_id,
+            Err(error) => {
+                return Err(ParticleBufferAdoptionError::new(
+                    ParticleBufferAdoptionErrorKind::World(error),
+                    storage.into_buffer_bundle(mode),
+                ));
+            }
+        };
+        self.insert_particle_system_after_preflight(
+            system,
+            ParticleSystem {
+                diagnostic_id,
+                definition,
+                groups: Vec::new(),
+                storage,
+            },
+        );
+        self.particle_system_order.insert(0, system);
+        self.debug_assert_particle_system_order_invariant();
+        Ok(system)
+    }
+
+    fn insert_particle_system_after_preflight(
+        &mut self,
+        expected: ParticleSystemId,
+        record: ParticleSystem,
+    ) {
+        let inserted = self
+            .particle_systems
+            .insert(record)
+            .expect("preflighted particle-system slot remains available until insertion");
+        debug_assert_eq!(inserted, expected);
+    }
+
     /// Creates a particle system from a checked reusable definition.
     ///
     /// # Errors
