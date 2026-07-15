@@ -1,10 +1,12 @@
 //! Streaming particle-query contract evidence.
 
-use liquidfun::collision::{Aabb, RayCastInput};
+use liquidfun::collision::shape::{CircleShape, Shape};
+use liquidfun::collision::{Aabb, FilterData, RayCastInput};
 use liquidfun::math::Vec2;
 use liquidfun::{
-    ParticleDef, ParticleId, ParticleQueryOccurrence, ParticleRayCastError, ParticleRayHit,
-    ParticleSystemDef, ParticleSystemId, QueryDirective, RayCastDirective, RayCastFraction, World,
+    BodyDef, BodyType, FixtureDef, ParticleDef, ParticleId, ParticleQueryOccurrence,
+    ParticleRayCastError, ParticleRayHit, ParticleSystemDef, ParticleSystemId, QueryDirective,
+    RayCastDirective, RayCastFraction, World, WorldQueryOccurrence, WorldRayCastOccurrence,
 };
 
 fn bounds(lower: Vec2, upper: Vec2) -> Aabb {
@@ -31,6 +33,21 @@ fn create_particle(world: &mut World, system: ParticleSystemId, position: Vec2) 
     world
         .create_particle_with_def(system, None, &definition)
         .expect("test particle should fit")
+}
+
+fn create_fixture(world: &mut World, position: Vec2) {
+    let body_definition =
+        BodyDef::new(BodyType::Static, position, 0.0, true).expect("test body should be valid");
+    let body = world
+        .create_body(&body_definition)
+        .expect("test body should fit");
+    let shape =
+        Shape::from(CircleShape::new(Vec2::ZERO, 0.25).expect("test circle should be valid"));
+    let fixture_definition = FixtureDef::new(shape, 0.0, 0.2, 0.0, false, FilterData::default())
+        .expect("test fixture should be valid");
+    world
+        .create_fixture(body, &fixture_definition)
+        .expect("test fixture should fit");
 }
 
 fn assert_public_particle_query(_query: &ParticleQueryOccurrence) {}
@@ -264,4 +281,277 @@ fn per_system_ray_clip_rejects_widening_without_world_mutation() {
     );
     assert_eq!(callbacks, 1);
     assert_eq!(positions_after, positions_before);
+}
+
+#[test]
+fn mixed_world_aabb_visits_fixtures_before_newest_first_particle_systems() {
+    // Arrange
+    let mut world = World::new().expect("world key should remain available");
+    create_fixture(&mut world, Vec2::ZERO);
+    let older = create_system(&mut world);
+    create_particle(&mut world, older, Vec2::new(-0.5, 0.0));
+    let newer = create_system(&mut world);
+    create_particle(&mut world, newer, Vec2::new(0.5, 0.0));
+    let query = bounds(Vec2::new(-1.0, -1.0), Vec2::new(1.0, 1.0));
+    let mut domains = Vec::new();
+
+    // Act
+    world
+        .query_aabb_with_particles(query, |occurrence| {
+            domains.push(match occurrence {
+                WorldQueryOccurrence::Fixture(_fixture) => None,
+                WorldQueryOccurrence::Particle(particle) => Some(particle.system()),
+            });
+            QueryDirective::Continue
+        })
+        .expect("mixed query should succeed");
+
+    // Assert
+    assert_eq!(domains, [None, Some(newer), Some(older)]);
+}
+
+#[test]
+fn mixed_world_aabb_culls_nonoverlapping_invalid_proxy_system() {
+    // Arrange
+    let mut world = World::new().expect("world key should remain available");
+    let far_system = create_system(&mut world);
+    create_particle(&mut world, far_system, Vec2::new(3_000.0, 0.0));
+    let near_system = create_system(&mut world);
+    let near = create_particle(&mut world, near_system, Vec2::ZERO);
+    let query = bounds(Vec2::new(-1.0, -1.0), Vec2::new(1.0, 1.0));
+    let mut particles = Vec::new();
+
+    // Act
+    world
+        .query_aabb_with_particles(query, |occurrence| {
+            if let WorldQueryOccurrence::Particle(particle) = occurrence {
+                particles.push(particle.particle());
+            }
+            QueryDirective::Continue
+        })
+        .expect("culled invalid proxy system must not affect the query");
+
+    // Assert
+    assert_eq!(particles, [near]);
+}
+
+#[test]
+fn mixed_world_aabb_fixture_termination_skips_particles() {
+    // Arrange
+    let mut world = World::new().expect("world key should remain available");
+    create_fixture(&mut world, Vec2::ZERO);
+    let system = create_system(&mut world);
+    create_particle(&mut world, system, Vec2::ZERO);
+    let query = bounds(Vec2::new(-1.0, -1.0), Vec2::new(1.0, 1.0));
+    let mut occurrences = 0;
+
+    // Act
+    world
+        .query_aabb_with_particles(query, |_occurrence| {
+            occurrences += 1;
+            QueryDirective::Terminate
+        })
+        .expect("termination should be successful");
+
+    // Assert
+    assert_eq!(occurrences, 1);
+}
+
+#[test]
+fn mixed_world_aabb_particle_termination_skips_older_systems() {
+    // Arrange
+    let mut world = World::new().expect("world key should remain available");
+    let older = create_system(&mut world);
+    create_particle(&mut world, older, Vec2::new(-0.5, 0.0));
+    let newer = create_system(&mut world);
+    let first = create_particle(&mut world, newer, Vec2::new(0.5, 0.0));
+    let query = bounds(Vec2::new(-1.0, -1.0), Vec2::new(1.0, 1.0));
+    let mut particles = Vec::new();
+
+    // Act
+    world
+        .query_aabb_with_particles(query, |occurrence| {
+            if let WorldQueryOccurrence::Particle(particle) = occurrence {
+                particles.push(particle.particle());
+                return QueryDirective::Terminate;
+            }
+            QueryDirective::Continue
+        })
+        .expect("particle termination should be successful");
+
+    // Assert
+    assert_eq!(particles, [first]);
+}
+
+#[test]
+fn mixed_world_ray_visits_fixtures_before_particles() {
+    // Arrange
+    let mut world = World::new().expect("world key should remain available");
+    create_fixture(&mut world, Vec2::new(-1.0, 0.0));
+    let system = create_system(&mut world);
+    create_particle(&mut world, system, Vec2::new(2.0, 0.0));
+    let input = ray(Vec2::new(-4.0, 0.0), Vec2::new(4.0, 0.0));
+    let mut domains = Vec::new();
+
+    // Act
+    world
+        .ray_cast_with_particles(input, |occurrence| {
+            domains.push(matches!(occurrence, WorldRayCastOccurrence::Particle(_hit)));
+            RayCastDirective::Continue
+        })
+        .expect("mixed ray should succeed");
+
+    // Assert
+    assert_eq!(domains, [false, true]);
+}
+
+#[test]
+fn mixed_world_ray_fixture_clip_propagates_to_particle_systems() {
+    // Arrange
+    let mut world = World::new().expect("world key should remain available");
+    create_fixture(&mut world, Vec2::new(-1.0, 0.0));
+    let system = create_system(&mut world);
+    create_particle(&mut world, system, Vec2::new(2.0, 0.0));
+    let input = ray(Vec2::new(-4.0, 0.0), Vec2::new(4.0, 0.0));
+    let mut domains = Vec::new();
+
+    // Act
+    world
+        .ray_cast_with_particles(input, |occurrence| match occurrence {
+            WorldRayCastOccurrence::Fixture(hit) => {
+                domains.push("fixture");
+                RayCastDirective::Clip(hit.fraction())
+            }
+            WorldRayCastOccurrence::Particle(_hit) => {
+                domains.push("particle");
+                RayCastDirective::Continue
+            }
+        })
+        .expect("fixture clip should remain valid across particle systems");
+
+    // Assert
+    assert_eq!(domains, ["fixture"]);
+}
+
+#[test]
+fn mixed_world_ray_newest_particle_clip_propagates_to_older_system() {
+    // Arrange
+    let mut world = World::new().expect("world key should remain available");
+    let older = create_system(&mut world);
+    create_particle(&mut world, older, Vec2::new(2.0, 0.0));
+    let newer = create_system(&mut world);
+    let nearest = create_particle(&mut world, newer, Vec2::new(-1.0, 0.0));
+    let input = ray(Vec2::new(-4.0, 0.0), Vec2::new(4.0, 0.0));
+    let mut particles = Vec::new();
+
+    // Act
+    world
+        .ray_cast_with_particles(input, |occurrence| match occurrence {
+            WorldRayCastOccurrence::Fixture(_hit) => RayCastDirective::Continue,
+            WorldRayCastOccurrence::Particle(hit) => {
+                particles.push(hit.particle());
+                RayCastDirective::Clip(hit.fraction())
+            }
+        })
+        .expect("particle clip should remain valid across systems");
+
+    // Assert
+    assert_eq!(particles, [nearest]);
+}
+
+#[test]
+fn mixed_world_ray_particle_termination_skips_older_systems() {
+    // Arrange
+    let mut world = World::new().expect("world key should remain available");
+    let older = create_system(&mut world);
+    create_particle(&mut world, older, Vec2::new(2.0, 0.0));
+    let newer = create_system(&mut world);
+    let first = create_particle(&mut world, newer, Vec2::new(-1.0, 0.0));
+    let input = ray(Vec2::new(-4.0, 0.0), Vec2::new(4.0, 0.0));
+    let mut particles = Vec::new();
+
+    // Act
+    world
+        .ray_cast_with_particles(input, |occurrence| match occurrence {
+            WorldRayCastOccurrence::Fixture(_hit) => RayCastDirective::Continue,
+            WorldRayCastOccurrence::Particle(hit) => {
+                particles.push(hit.particle());
+                RayCastDirective::Terminate
+            }
+        })
+        .expect("particle termination should be successful");
+
+    // Assert
+    assert_eq!(particles, [first]);
+}
+
+#[test]
+fn mixed_world_ray_culls_nonoverlapping_invalid_proxy_system() {
+    // Arrange
+    let mut world = World::new().expect("world key should remain available");
+    let far_system = create_system(&mut world);
+    create_particle(&mut world, far_system, Vec2::new(3_000.0, 0.0));
+    let near_system = create_system(&mut world);
+    let near = create_particle(&mut world, near_system, Vec2::ZERO);
+    let input = ray(Vec2::new(-2.0, 0.0), Vec2::new(2.0, 0.0));
+    let mut particles = Vec::new();
+
+    // Act
+    world
+        .ray_cast_with_particles(input, |occurrence| {
+            if let WorldRayCastOccurrence::Particle(hit) = occurrence {
+                particles.push(hit.particle());
+            }
+            RayCastDirective::Continue
+        })
+        .expect("culled invalid proxy system must not affect the ray");
+
+    // Assert
+    assert_eq!(particles, [near]);
+}
+
+#[test]
+fn mixed_world_rigid_only_results_equal_existing_rigid_apis() {
+    // Arrange
+    let mut world = World::new().expect("world key should remain available");
+    create_fixture(&mut world, Vec2::new(-1.0, 0.0));
+    create_fixture(&mut world, Vec2::new(1.0, 0.0));
+    let query = bounds(Vec2::new(-2.0, -1.0), Vec2::new(2.0, 1.0));
+    let input = ray(Vec2::new(-3.0, 0.0), Vec2::new(3.0, 0.0));
+    let mut rigid_query = Vec::new();
+    let mut mixed_query = Vec::new();
+    let mut rigid_ray = Vec::new();
+    let mut mixed_ray = Vec::new();
+
+    // Act
+    world.query_aabb(query, |hit| {
+        rigid_query.push((hit.fixture(), hit.child_index()));
+        QueryDirective::Continue
+    });
+    world
+        .query_aabb_with_particles(query, |hit| {
+            if let WorldQueryOccurrence::Fixture(hit) = hit {
+                mixed_query.push((hit.fixture(), hit.child_index()));
+            }
+            QueryDirective::Continue
+        })
+        .expect("rigid-only mixed query should succeed");
+    world
+        .ray_cast(input, |hit| {
+            rigid_ray.push((hit.fixture(), hit.fraction().get().to_bits()));
+            RayCastDirective::Continue
+        })
+        .expect("rigid ray should succeed");
+    world
+        .ray_cast_with_particles(input, |hit| {
+            if let WorldRayCastOccurrence::Fixture(hit) = hit {
+                mixed_ray.push((hit.fixture(), hit.fraction().get().to_bits()));
+            }
+            RayCastDirective::Continue
+        })
+        .expect("rigid-only mixed ray should succeed");
+
+    // Assert
+    assert_eq!(mixed_query, rigid_query);
+    assert_eq!(mixed_ray, rigid_ray);
 }

@@ -83,6 +83,8 @@ pub enum ParticleQueryError {
     InvalidHandle(HandleError),
     /// Spatial proxy construction or checked bound expansion failed.
     InvalidProxyGeometry(ParticleProxyError),
+    /// Checked system-bound arithmetic produced non-finite geometry.
+    NonFiniteDerivedGeometry,
 }
 
 impl fmt::Display for ParticleQueryError {
@@ -91,6 +93,9 @@ impl fmt::Display for ParticleQueryError {
             Self::InvalidHandle(error) => write!(formatter, "invalid particle system: {error}"),
             Self::InvalidProxyGeometry(_error) => {
                 formatter.write_str("particle query geometry is outside the checked proxy domain")
+            }
+            Self::NonFiniteDerivedGeometry => {
+                formatter.write_str("particle query arithmetic produced non-finite geometry")
             }
         }
     }
@@ -165,6 +170,26 @@ impl From<ParticleProxyError> for ParticleRayCastError {
 pub(crate) struct ParticleRayTraversal {
     pub(crate) current_fraction: f32,
     pub(crate) terminated: bool,
+}
+
+pub(crate) fn system_aabb(
+    view: &ParticleSystemView<'_>,
+    diameter: f32,
+) -> Result<Option<Aabb>, ()> {
+    let Some(first) = view.positions().first().copied() else {
+        return Ok(None);
+    };
+    let mut lower = first;
+    let mut upper = first;
+    for position in &view.positions()[1..] {
+        lower.x = lower.x.min(position.x);
+        lower.y = lower.y.min(position.y);
+        upper.x = upper.x.max(position.x);
+        upper.y = upper.y.max(position.y);
+    }
+    lower -= Vec2::new(diameter, diameter);
+    upper += Vec2::new(diameter, diameter);
+    Aabb::new(lower, upper).map(Some).map_err(|_error| ())
 }
 
 impl World {

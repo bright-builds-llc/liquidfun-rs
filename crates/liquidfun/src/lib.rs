@@ -224,7 +224,8 @@ pub use world::{
     RayCastFraction, RayCastFractionError, StepCompletion, StepConfiguration,
     StepConfigurationError, StepError, StepHook, StepLifecycleEvent, StepLimits, StepPhase,
     StepReport, WakePolicy, World, WorldCommand, WorldConfigurationError, WorldFixtureSnapshot,
-    WorldRayCastError, WorldRayHit,
+    WorldQueryOccurrence, WorldRayCastError, WorldRayCastOccurrence,
+    WorldRayCastWithParticlesError, WorldRayHit,
 };
 #[cfg(feature = "differential-internals")]
 pub use world::{ReconstructionSupport, ReconstructionUnsupported};

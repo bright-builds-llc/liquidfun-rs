@@ -50,7 +50,8 @@ pub use object::{
 pub use origin::OriginShiftError;
 pub use query::{
     FixtureQueryOccurrence, QueryDirective, RayCastDirective, RayCastFraction,
-    RayCastFractionError, WorldRayCastError, WorldRayHit,
+    RayCastFractionError, WorldQueryOccurrence, WorldRayCastError, WorldRayCastOccurrence,
+    WorldRayCastWithParticlesError, WorldRayHit,
 };
 pub use step::{
     CollisionDecisionHook, CollisionDirective, CollisionFilterEvent, CommandApplication,
