@@ -1,9 +1,13 @@
 //! Transactional particle lifecycle integration with the World step journal.
 
-use liquidfun::particle::{ParticleDef, ParticleFlags, ParticleSystemDef};
+use std::panic::{AssertUnwindSafe, catch_unwind};
+
+use liquidfun::collision::{CircleShape, FilterData, Shape};
+use liquidfun::math::Vec2;
+use liquidfun::particle::{ParticleCapacity, ParticleDef, ParticleFlags, ParticleSystemDef};
 use liquidfun::{
-    DestroyedId, HandleError, NoDecisionHook, StepConfiguration, StepError, StepLifecycleEvent,
-    StepLimits, World,
+    BodyDef, BodyType, DestroyedId, FixtureDef, HandleError, NoDecisionHook, StepConfiguration,
+    StepError, StepHook, StepLifecycleEvent, StepLimits, World,
 };
 
 fn step_configuration(time_step: f32) -> StepConfiguration {
@@ -205,4 +209,235 @@ fn particle_system_teardown_uses_the_shared_lifecycle_vocabulary() {
         ] if particle.destroyed() == DestroyedId::Particle(requested)
             && root.destroyed() == DestroyedId::ParticleSystem(system)
     ));
+}
+
+#[test]
+fn paused_step_compacts_an_explicit_zombie_and_journals_only_requested_occurrences() {
+    // Arrange
+    let mut world = World::new().expect("world key remains available");
+    let system = world
+        .create_particle_system_with_def(&ParticleSystemDef::default().with_paused(true))
+        .expect("particle system fits");
+    let requested = world
+        .create_particle_with_def(
+            system,
+            None,
+            &ParticleDef::default()
+                .with_flags(ParticleFlags::WATER | ParticleFlags::DESTRUCTION_LISTENER),
+        )
+        .expect("requested particle fits");
+    let unrequested = world
+        .create_particle(system, None)
+        .expect("unrequested particle fits");
+    world
+        .mark_particle_for_destruction(requested)
+        .expect("requested particle becomes pending");
+    world
+        .mark_particle_for_destruction(unrequested)
+        .expect("unrequested particle becomes pending");
+    let mut hook = NoDecisionHook;
+
+    // Act
+    let report = world
+        .step(step_configuration(0.0), &mut hook, StepLimits::default())
+        .expect("paused zombie maintenance succeeds");
+
+    // Assert
+    assert_eq!(
+        world.particle_snapshot(requested),
+        Err(HandleError::StaleOrDestroyed)
+    );
+    assert_eq!(
+        world.particle_snapshot(unrequested),
+        Err(HandleError::StaleOrDestroyed)
+    );
+    assert_eq!(report.destructions().len(), 1);
+    assert_eq!(
+        report.destructions()[0].destroyed(),
+        DestroyedId::Particle(requested)
+    );
+}
+
+#[test]
+fn direct_compaction_returns_the_same_source_timed_listener_projection() {
+    // Arrange
+    let mut world = World::new().expect("world key remains available");
+    let system = world
+        .create_particle_system()
+        .expect("particle system fits");
+    let requested = world
+        .create_particle_with_def(
+            system,
+            None,
+            &ParticleDef::default()
+                .with_flags(ParticleFlags::WATER | ParticleFlags::DESTRUCTION_LISTENER),
+        )
+        .expect("requested particle fits");
+    let unrequested = world
+        .create_particle(system, None)
+        .expect("unrequested particle fits");
+    world
+        .mark_particle_for_destruction(requested)
+        .expect("requested particle becomes pending");
+    world
+        .mark_particle_for_destruction(unrequested)
+        .expect("unrequested particle becomes pending");
+
+    // Act
+    let report = world
+        .compact_pending_particles(system)
+        .expect("direct compaction succeeds");
+
+    // Assert
+    assert_eq!(report.len(), 2);
+    assert!(matches!(
+        report.lifecycle(),
+        [StepLifecycleEvent::ParticleDestruction(record)]
+            if record.destroyed() == DestroyedId::Particle(requested)
+    ));
+}
+
+#[test]
+fn maximum_count_creation_compacts_immediately_and_preserves_the_replacement() {
+    // Arrange
+    let mut world = World::new().expect("world key remains available");
+    let definition = ParticleSystemDef::default()
+        .with_capacity(ParticleCapacity::growable(1).expect("capacity is representable"))
+        .expect("capacity is valid")
+        .with_maximum_count(1)
+        .expect("maximum matches capacity")
+        .with_destruction_by_age(true);
+    let system = world
+        .create_particle_system_with_def(&definition)
+        .expect("particle system fits");
+    let evicted = world
+        .create_particle(system, None)
+        .expect("first particle fits");
+
+    // Act
+    let replacement = world
+        .create_particle(system, None)
+        .expect("oldest particle is compacted before replacement creation");
+
+    // Assert
+    assert_eq!(
+        world.particle_snapshot(evicted),
+        Err(HandleError::StaleOrDestroyed)
+    );
+    assert_eq!(
+        world
+            .particle_snapshot(replacement)
+            .expect("replacement remains live")
+            .id(),
+        replacement
+    );
+}
+
+#[test]
+fn rigid_contact_effects_precede_particle_destruction_in_the_shared_journal() {
+    // Arrange
+    let mut world = touching_world();
+    let definition = ParticleSystemDef::default()
+        .with_lifetime_granularity(1.0)
+        .expect("granularity is positive");
+    let system = world
+        .create_particle_system_with_def(&definition)
+        .expect("particle system fits");
+    let particle = world
+        .create_particle_with_def(
+            system,
+            None,
+            &finite_particle(ParticleFlags::WATER | ParticleFlags::DESTRUCTION_LISTENER),
+        )
+        .expect("particle fits");
+    let mut hook = NoDecisionHook;
+
+    // Act
+    let report = world
+        .step(step_configuration(1.0), &mut hook, StepLimits::default())
+        .expect("mixed step succeeds");
+    let contact_index = report
+        .lifecycle()
+        .iter()
+        .position(|event| matches!(event, StepLifecycleEvent::Contact(_)))
+        .expect("rigid contact begins");
+    let particle_index = report
+        .lifecycle()
+        .iter()
+        .position(|event| matches!(event, StepLifecycleEvent::ParticleDestruction(record) if record.destroyed() == DestroyedId::Particle(particle)))
+        .expect("particle listener occurrence is journaled");
+
+    // Assert
+    assert!(contact_index < particle_index);
+}
+
+struct PanickingHook;
+
+impl StepHook for PanickingHook {
+    fn observe(&mut self, _contact: liquidfun::ContactView<'_>) {
+        panic!("intentional particle lifecycle poison witness");
+    }
+}
+
+#[test]
+fn hook_panic_restores_the_lock_discards_particle_maintenance_and_poisons_access() {
+    // Arrange
+    let mut world = touching_world();
+    let system = world
+        .create_particle_system()
+        .expect("particle system fits");
+    let particle = world.create_particle(system, None).expect("particle fits");
+    world
+        .mark_particle_for_destruction(particle)
+        .expect("particle becomes pending");
+    let mut hook = PanickingHook;
+
+    // Act
+    let panic = catch_unwind(AssertUnwindSafe(|| {
+        let _report = world.step(step_configuration(0.0), &mut hook, StepLimits::default());
+    }));
+    let nested = world.step(
+        step_configuration(0.0),
+        &mut NoDecisionHook,
+        StepLimits::default(),
+    );
+
+    // Assert
+    assert!(panic.is_err());
+    assert!(world.is_poisoned());
+    assert_eq!(nested, Err(StepError::Poisoned));
+    assert_eq!(
+        world.particle_snapshot(particle),
+        Err(HandleError::WorldPoisoned)
+    );
+}
+
+fn touching_world() -> World {
+    let mut world = World::new().expect("world key remains available");
+    world
+        .set_continuous_physics_enabled(false)
+        .expect("world configuration remains mutable");
+    let static_body = world
+        .create_body(
+            &BodyDef::new(BodyType::Static, Vec2::ZERO, 0.0, true)
+                .expect("static body definition is valid"),
+        )
+        .expect("static body fits");
+    let dynamic_body = world
+        .create_body(
+            &BodyDef::new(BodyType::Dynamic, Vec2::new(1.5, 0.0), 0.0, true)
+                .expect("dynamic body definition is valid"),
+        )
+        .expect("dynamic body fits");
+    let shape =
+        Shape::from(CircleShape::new(Vec2::ZERO, 1.0).expect("test circle geometry is valid"));
+    let fixture = FixtureDef::new(shape, 1.0, 0.2, 0.0, false, FilterData::default())
+        .expect("fixture definition is valid");
+    world
+        .create_fixture(static_body, &fixture)
+        .expect("static fixture fits");
+    world
+        .create_fixture(dynamic_body, &fixture)
+        .expect("dynamic fixture fits");
+    world
 }
