@@ -9,6 +9,7 @@ use crate::particle::storage::{
 use crate::particle::{
     ParticleBufferAdoptionError, ParticleBufferAdoptionErrorKind, ParticleBufferBundle,
     ParticleCapacity, ParticleColor, ParticleDef, ParticleFlags, ParticleSystemDef,
+    ParticleSystemView,
 };
 use crate::{
     ArenaInsertError, CreateObjectError, DestroyedId, DestructionCause, DestructionRecord,
@@ -262,6 +263,24 @@ impl World {
             particle_count: record.storage.len(),
             pending_particle_count: record.storage.pending_count(),
         })
+    }
+
+    /// Borrows every supported semantic lane for one live particle system.
+    ///
+    /// The returned view keeps this world immutably borrowed, preventing
+    /// structural particle mutation while any lane or derived record is in use.
+    /// Dense rows, capacities, scratch state, and mutable slices remain private.
+    ///
+    /// # Errors
+    ///
+    /// Returns a scoped handle error when `system` is foreign or stale.
+    pub fn particle_system_view(
+        &self,
+        system: ParticleSystemId,
+    ) -> Result<ParticleSystemView<'_>, HandleError> {
+        self.ensure_not_poisoned_for_handle()?;
+        let record = self.particle_systems.get(system)?;
+        Ok(ParticleSystemView::new(&record.storage))
     }
 
     /// Changes only the paused state of a live system.

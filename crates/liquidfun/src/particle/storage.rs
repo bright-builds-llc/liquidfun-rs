@@ -18,7 +18,7 @@ use lanes::{
 use validation::{build_group_ranges, validate_reference_sets, validate_references};
 
 mod lane_inventory;
-mod lanes;
+pub(in crate::particle) mod lanes;
 mod permutation;
 mod validation;
 
@@ -56,7 +56,7 @@ pub(crate) enum ParticleStorageError {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct ParticleIndex(usize);
+pub(in crate::particle) struct ParticleIndex(pub(in crate::particle) usize);
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum IdentityState {
@@ -439,6 +439,50 @@ impl ParticleStorage {
 
     pub(crate) fn positions(&self) -> &[Vec2] {
         &self.positions
+    }
+
+    pub(in crate::particle) fn velocities(&self) -> &[Vec2] {
+        &self.velocities
+    }
+
+    pub(in crate::particle) fn flags(&self) -> &[ParticleFlags] {
+        &self.flags
+    }
+
+    pub(in crate::particle) fn groups(&self) -> &[Option<ParticleGroupId>] {
+        &self.groups
+    }
+
+    pub(in crate::particle) fn weights(&self) -> &[f32] {
+        &self.weights
+    }
+
+    pub(in crate::particle) fn maybe_colors(&self) -> Option<&[ParticleColor]> {
+        self.maybe_colors.as_deref()
+    }
+
+    pub(in crate::particle) fn particle_contacts(&self) -> &[ParticleContact] {
+        &self.particle_contacts
+    }
+
+    pub(in crate::particle) fn body_contacts(&self) -> &[ParticleBodyContact] {
+        &self.body_contacts
+    }
+
+    pub(in crate::particle) fn pairs(&self) -> &[ParticlePair] {
+        &self.pairs
+    }
+
+    pub(in crate::particle) fn triads(&self) -> &[ParticleTriad] {
+        &self.triads
+    }
+
+    pub(in crate::particle) fn maybe_expiration_order(&self) -> Option<&[ParticleIndex]> {
+        self.maybe_expiration_order.as_deref()
+    }
+
+    pub(in crate::particle) fn particle_id_at(&self, index: ParticleIndex) -> ParticleId {
+        self.dense_to_id[index.0]
     }
 
     pub(crate) fn into_owned_lanes(self) -> OwnedLaneBundle {

@@ -33,36 +33,36 @@ impl ParticleProxy {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub(super) struct ParticleContact {
-    pub(super) indices: [ParticleIndex; 2],
-    pub(super) flags: ParticleFlags,
-    pub(super) weight: f32,
-    pub(super) normal: Vec2,
+pub(in crate::particle) struct ParticleContact {
+    pub(in crate::particle) indices: [ParticleIndex; 2],
+    pub(in crate::particle) flags: ParticleFlags,
+    pub(in crate::particle) weight: f32,
+    pub(in crate::particle) normal: Vec2,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub(super) struct ParticleBodyContact {
-    pub(super) index: ParticleIndex,
-    pub(super) body: BodyId,
-    pub(super) fixture: FixtureId,
-    pub(super) weight: f32,
-    pub(super) normal: Vec2,
-    pub(super) mass: f32,
+pub(in crate::particle) struct ParticleBodyContact {
+    pub(in crate::particle) index: ParticleIndex,
+    pub(in crate::particle) body: BodyId,
+    pub(in crate::particle) fixture: FixtureId,
+    pub(in crate::particle) weight: f32,
+    pub(in crate::particle) normal: Vec2,
+    pub(in crate::particle) mass: f32,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub(super) struct ParticlePair {
-    pub(super) indices: [ParticleIndex; 2],
-    pub(super) flags: ParticleFlags,
-    pub(super) strength: f32,
-    pub(super) distance: f32,
+pub(in crate::particle) struct ParticlePair {
+    pub(in crate::particle) indices: [ParticleIndex; 2],
+    pub(in crate::particle) flags: ParticleFlags,
+    pub(in crate::particle) strength: f32,
+    pub(in crate::particle) distance: f32,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub(super) struct ParticleTriad {
-    pub(super) indices: [ParticleIndex; 3],
-    pub(super) flags: ParticleFlags,
-    pub(super) strength: f32,
+pub(in crate::particle) struct ParticleTriad {
+    pub(in crate::particle) indices: [ParticleIndex; 3],
+    pub(in crate::particle) flags: ParticleFlags,
+    pub(in crate::particle) strength: f32,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
