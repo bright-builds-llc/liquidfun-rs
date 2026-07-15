@@ -211,6 +211,7 @@ fn apply_operation(
                     actual,
                     Ok(ParticleSnapshot {
                         id,
+                        diagnostic_id: 0,
                         input: row.input
                     })
                 );
@@ -224,6 +225,7 @@ fn apply_operation(
                 .filter(|row| row.pending)
                 .map(|row| ParticleSnapshot {
                     id: row.id,
+                    diagnostic_id: 0,
                     input: row.input,
                 })
                 .collect();

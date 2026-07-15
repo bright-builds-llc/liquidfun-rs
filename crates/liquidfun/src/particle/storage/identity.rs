@@ -88,6 +88,7 @@ fn pending_delete_rejects_mutation_but_preserves_snapshot() {
         snapshot,
         ParticleSnapshot {
             id,
+            diagnostic_id: 0,
             input: input(7)
         }
     );
@@ -112,6 +113,7 @@ fn compacted_id_is_stale_and_snapshot_remains_owned() {
         destroyed,
         vec![ParticleSnapshot {
             id,
+            diagnostic_id: 0,
             input: input(4)
         }]
     );
@@ -148,6 +150,7 @@ fn retired_identity_reports_exhaustion_without_resurrection() {
         .expect("test storage contract is valid");
     storage.identities.push(IdentityEntry {
         generation: u64::MAX,
+        diagnostic_id: None,
         state: IdentityState::Vacant,
     });
     storage.free_identity_slots.push(0);

@@ -47,6 +47,28 @@ impl<T, H: HandleIdentity> Arena<T, H> {
         self.insert_with_scope(value, None)
     }
 
+    pub(crate) fn next_handle(&self) -> Result<H, ArenaInsertError> {
+        let (slot_index, generation) = if let Some(slot_index) = self.free_slots.last().copied() {
+            let slot = self
+                .slots
+                .get(slot_index)
+                .expect("a free-slot index always refers to an existing slot");
+            let Slot::Vacant { generation } = slot else {
+                unreachable!("only vacant slots are placed on the free list")
+            };
+            (slot_index, *generation)
+        } else {
+            if self.slots.len() >= self.max_slots {
+                return Err(self.exhaustion_error());
+            }
+            (self.slots.len(), 0)
+        };
+
+        Ok(H::from_identity(Identity::new(
+            self.world, slot_index, generation,
+        )))
+    }
+
     pub(crate) fn insert_particle(
         &mut self,
         value: T,
@@ -339,6 +361,20 @@ mod tests {
         // Assert
         assert_eq!(result, Err(ArenaInsertError::CapacityExceeded { limit: 1 }));
         assert_eq!(arena.get(existing), Ok(&7));
+    }
+
+    #[test]
+    fn prepared_handle_matches_the_next_atomic_insertion() {
+        // Arrange
+        let mut arena = Arena::<_, BodyId>::new(test_world(), 1);
+        let prepared = arena.next_handle().expect("one slot remains available");
+
+        // Act
+        let inserted = arena.insert(7).expect("prepared slot remains available");
+
+        // Assert
+        assert_eq!(inserted, prepared);
+        assert_eq!(arena.get(prepared), Ok(&7));
     }
 
     #[test]

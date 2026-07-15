@@ -15,6 +15,8 @@ pub enum HandleError {
     WrongParticleSystem,
     /// The referenced object was destroyed or its slot has since been reused.
     StaleOrDestroyed,
+    /// A particle is marked for destruction and no longer accepts ordinary access.
+    PendingDelete,
     /// An internal heterogeneous lookup received a different handle kind.
     ///
     /// Public typed lookup APIs cannot produce this variant.
@@ -35,6 +37,7 @@ impl fmt::Display for HandleError {
                 formatter.write_str("handle belongs to a different particle system")
             }
             Self::StaleOrDestroyed => formatter.write_str("handle is stale or destroyed"),
+            Self::PendingDelete => formatter.write_str("particle is pending destruction"),
             Self::WrongKind { expected, actual } => {
                 write!(
                     formatter,

@@ -3,7 +3,7 @@ use std::fmt;
 
 use super::joint::JointRecord;
 use crate::arena::Arena;
-use crate::identity::{HandleIdentity, WorldKey};
+use crate::identity::WorldKey;
 use crate::{
     ArenaInsertError, BodyId, FixtureId, HandleError, JointId, ObjectKind, ParticleGroupId,
     ParticleId, ParticleSystemId, WorldKeyError,
@@ -38,6 +38,8 @@ use crate::collision::{
     BroadPhase, ChildIndex, CollisionError, FilterData, MassData, RayCastHit, RayCastInput,
 };
 use crate::math::Vec2;
+use crate::particle::ParticleSystemDef;
+use crate::particle::storage::{ParticleSnapshot as StorageParticleSnapshot, ParticleStorage};
 
 mod report;
 pub use report::{DestructionReport, MutationReport};
@@ -66,25 +68,17 @@ pub(super) struct Fixture {
     pub(super) pending_refilter: bool,
 }
 
-#[derive(Debug)]
-struct ParticleSystem {
-    diagnostic_id: u64,
-    groups: Vec<ParticleGroupId>,
-    particles: Vec<ParticleId>,
+pub(super) struct ParticleSystem {
+    pub(super) diagnostic_id: u64,
+    pub(super) definition: ParticleSystemDef,
+    pub(super) groups: Vec<ParticleGroupId>,
+    pub(super) storage: ParticleStorage,
 }
 
 #[derive(Debug)]
-struct ParticleGroup {
-    diagnostic_id: u64,
-    system: ParticleSystemId,
-    particles: Vec<ParticleId>,
-}
-
-#[derive(Debug)]
-struct Particle {
-    diagnostic_id: u64,
-    system: ParticleSystemId,
-    maybe_group: Option<ParticleGroupId>,
+pub(super) struct ParticleGroup {
+    pub(super) diagnostic_id: u64,
+    pub(super) system: ParticleSystemId,
 }
 
 struct WorldStepCandidate {
@@ -118,32 +112,10 @@ fn maybe_solution_body_state(solutions: &[IslandSolution], body_id: BodyId) -> O
     None
 }
 
-#[derive(Debug, Clone, Copy)]
-struct ParticleDestructionSnapshot {
-    system: ParticleSystemId,
-    maybe_group: Option<ParticleGroupId>,
-}
-
-impl ParticleDestructionSnapshot {
-    fn capture(particle: &Particle) -> Self {
-        Self {
-            system: particle.system,
-            maybe_group: particle.maybe_group,
-        }
-    }
-
-    fn into_object_snapshot(self) -> ObjectSnapshot {
-        ObjectSnapshot::Particle {
-            system: self.system,
-            maybe_group: self.maybe_group,
-        }
-    }
-}
-
 #[derive(Debug)]
 struct ParticleSystemDestructionTransaction {
     groups: Vec<ParticleGroupId>,
-    particles: Vec<(ParticleId, ParticleDestructionSnapshot)>,
+    particles: Vec<StorageParticleSnapshot>,
     root_snapshot: ObjectSnapshot,
 }
 
@@ -316,10 +288,10 @@ pub enum ObjectSnapshot {
 /// Owned evidence describing one invalidated world object.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DestructionRecord {
-    destroyed: DestroyedId,
-    diagnostic_id: u64,
-    cause: DestructionCause,
-    snapshot: ObjectSnapshot,
+    pub(super) destroyed: DestroyedId,
+    pub(super) diagnostic_id: u64,
+    pub(super) cause: DestructionCause,
+    pub(super) snapshot: ObjectSnapshot,
 }
 
 impl DestructionRecord {
@@ -356,13 +328,14 @@ impl DestructionRecord {
 /// then particles, then the system. Body fixture and joint categories use the pinned upstream
 /// newest-first list order; particle-system categories preserve creation/occurrence order.
 pub struct World {
+    pub(super) scope_key: WorldKey,
     pub(super) bodies: Arena<Body, BodyId>,
     body_order: Vec<BodyId>,
     pub(super) fixtures: Arena<Fixture, FixtureId>,
     pub(super) joints: Arena<JointRecord, JointId>,
-    particle_systems: Arena<ParticleSystem, ParticleSystemId>,
-    particle_groups: Arena<ParticleGroup, ParticleGroupId>,
-    particles: Arena<Particle, ParticleId>,
+    pub(super) particle_systems: Arena<ParticleSystem, ParticleSystemId>,
+    pub(super) particle_system_order: Vec<ParticleSystemId>,
+    pub(super) particle_groups: Arena<ParticleGroup, ParticleGroupId>,
     pub(super) broad_phase: BroadPhase<FixtureProxy>,
     pub(super) contact_manager: ContactManager,
     pub(super) continuous_step_state: ContinuousStepState,
@@ -380,13 +353,14 @@ impl World {
     pub fn new() -> Result<Self, WorldKeyError> {
         let world = WorldKey::fresh()?;
         Ok(Self {
+            scope_key: world,
             bodies: Arena::new(world, usize::MAX),
             body_order: Vec::new(),
             fixtures: Arena::new(world, usize::MAX),
             joints: Arena::new(world, usize::MAX),
             particle_systems: Arena::new(world, usize::MAX),
+            particle_system_order: Vec::new(),
             particle_groups: Arena::new(world, usize::MAX),
-            particles: Arena::new(world, usize::MAX),
             broad_phase: new_world_broad_phase(),
             contact_manager: ContactManager::new(),
             continuous_step_state: ContinuousStepState::new(),
@@ -1182,13 +1156,7 @@ impl World {
     ///
     /// Returns an arena error if particle-system storage is exhausted.
     pub fn create_particle_system(&mut self) -> Result<ParticleSystemId, ArenaInsertError> {
-        self.ensure_not_poisoned_for_insert()?;
-        let diagnostic_id = self.allocate_diagnostic_id()?;
-        self.particle_systems.insert(ParticleSystem {
-            diagnostic_id,
-            groups: Vec::new(),
-            particles: Vec::new(),
-        })
+        self.create_particle_system_with_def(&ParticleSystemDef::default())
     }
 
     /// Creates a particle group in `system`.
@@ -1206,7 +1174,6 @@ impl World {
         let group = self.particle_groups.insert(ParticleGroup {
             diagnostic_id,
             system,
-            particles: Vec::new(),
         })?;
         self.system_mut_after_validation(system).groups.push(group);
         Ok(group)
@@ -1223,34 +1190,7 @@ impl World {
         system: ParticleSystemId,
         maybe_group: Option<ParticleGroupId>,
     ) -> Result<ParticleId, CreateObjectError> {
-        self.ensure_not_poisoned_for_handle()?;
-        self.particle_systems.get(system)?;
-        if let Some(group) = maybe_group {
-            let group_record = self.particle_groups.get(group)?;
-            if group_record.system != system {
-                return Err(CreateObjectError::InvalidHandle(
-                    HandleError::WrongParticleSystem,
-                ));
-            }
-        }
-        let diagnostic_id = self.allocate_diagnostic_id()?;
-        let particle = self.particles.insert_particle(
-            Particle {
-                diagnostic_id,
-                system,
-                maybe_group,
-            },
-            system.identity(),
-        )?;
-        self.system_mut_after_validation(system)
-            .particles
-            .push(particle);
-        if let Some(group) = maybe_group {
-            self.group_mut_after_validation(group)
-                .particles
-                .push(particle);
-        }
-        Ok(particle)
+        self.create_particle_with_def(system, maybe_group, &crate::ParticleDef::default())
     }
 
     /// Returns whether a body handle resolves in this world.
@@ -1292,7 +1232,7 @@ impl World {
     /// Returns whether a particle handle resolves in this world.
     #[must_use]
     pub fn contains_particle(&self, particle: ParticleId) -> bool {
-        self.particles.get(particle).is_ok()
+        self.particle_snapshot(particle).is_ok()
     }
 
     /// Destroys a body and all attached joints and fixtures.
@@ -1406,11 +1346,10 @@ impl World {
                 ),
             );
         }
-        for (particle, snapshot) in transaction.particles {
-            records.push(self.remove_particle(
-                particle,
-                DestructionCause::ParticleSystemCascade { system },
+        for snapshot in transaction.particles {
+            records.push(Self::particle_destruction_record(
                 snapshot,
+                DestructionCause::ParticleSystemCascade { system },
             ));
         }
         records.push(self.remove_particle_system(
@@ -1444,9 +1383,7 @@ impl World {
         &mut self,
         particle: ParticleId,
     ) -> Result<DestructionRecord, HandleError> {
-        self.ensure_not_poisoned_for_handle()?;
-        let snapshot = ParticleDestructionSnapshot::capture(self.particles.get(particle)?);
-        Ok(self.remove_particle(particle, DestructionCause::Explicit, snapshot))
+        self.destroy_particle_now(particle)
     }
 
     fn capture_particle_system_destruction(
@@ -1455,17 +1392,8 @@ impl World {
     ) -> Result<ParticleSystemDestructionTransaction, HandleError> {
         let root = self.particle_systems.get(system)?;
         let groups = root.groups.clone();
-        let particle_ids = root.particles.clone();
-        let particles = particle_ids
-            .iter()
-            .map(|particle| {
-                let record = self
-                    .particles
-                    .get(*particle)
-                    .expect("particle-system membership contains live particles");
-                (*particle, ParticleDestructionSnapshot::capture(record))
-            })
-            .collect();
+        let particles = root.storage.snapshots();
+        let particle_ids = particles.iter().map(|snapshot| snapshot.id).collect();
         let root_snapshot = ObjectSnapshot::ParticleSystem {
             groups: groups.clone(),
             particles: particle_ids,
@@ -1478,7 +1406,7 @@ impl World {
         })
     }
 
-    fn ensure_not_poisoned_for_handle(&self) -> Result<(), HandleError> {
+    pub(super) fn ensure_not_poisoned_for_handle(&self) -> Result<(), HandleError> {
         if self.step_state.is_poisoned() {
             return Err(HandleError::WorldPoisoned);
         }
@@ -1509,7 +1437,7 @@ impl World {
         }
     }
 
-    fn ensure_not_poisoned_for_insert(&self) -> Result<(), ArenaInsertError> {
+    pub(super) fn ensure_not_poisoned_for_insert(&self) -> Result<(), ArenaInsertError> {
         if self.step_state.is_poisoned() {
             return Err(ArenaInsertError::WorldPoisoned);
         }
@@ -1653,6 +1581,7 @@ impl World {
             .particle_systems
             .remove(system)
             .expect("validated destruction root and adjacency remain live");
+        remove_occurrence(&mut self.particle_system_order, &system);
         DestructionRecord {
             destroyed: DestroyedId::ParticleSystem(system),
             diagnostic_id: removed.diagnostic_id,
@@ -1666,6 +1595,16 @@ impl World {
         group: ParticleGroupId,
         cause: DestructionCause,
     ) -> DestructionRecord {
+        let system = self
+            .particle_groups
+            .get(group)
+            .expect("validated particle-group adjacency remains live")
+            .system;
+        let particles = self
+            .system_mut_after_validation(system)
+            .storage
+            .clear_group(group)
+            .expect("validated particle storage remains coherent during group removal");
         let removed = self
             .particle_groups
             .remove(group)
@@ -1674,53 +1613,14 @@ impl World {
             &mut self.system_mut_after_validation(removed.system).groups,
             &group,
         );
-        for particle in &removed.particles {
-            let particle_record = self
-                .particles
-                .get(*particle)
-                .expect("group membership contains live particles");
-            debug_assert_eq!(particle_record.maybe_group, Some(group));
-        }
-        for particle in &removed.particles {
-            self.particle_mut_after_validation(*particle).maybe_group = None;
-        }
         DestructionRecord {
             destroyed: DestroyedId::ParticleGroup(group),
             diagnostic_id: removed.diagnostic_id,
             cause,
             snapshot: ObjectSnapshot::ParticleGroup {
                 system: removed.system,
-                particles: removed.particles,
+                particles,
             },
-        }
-    }
-
-    fn remove_particle(
-        &mut self,
-        particle: ParticleId,
-        cause: DestructionCause,
-        snapshot: ParticleDestructionSnapshot,
-    ) -> DestructionRecord {
-        let removed = self
-            .particles
-            .remove(particle)
-            .expect("validated particle adjacency remains live");
-        debug_assert_eq!(removed.system, snapshot.system);
-        remove_occurrence(
-            &mut self.system_mut_after_validation(removed.system).particles,
-            &particle,
-        );
-        if let Some(group) = removed.maybe_group {
-            remove_occurrence(
-                &mut self.group_mut_after_validation(group).particles,
-                &particle,
-            );
-        }
-        DestructionRecord {
-            destroyed: DestroyedId::Particle(particle),
-            diagnostic_id: removed.diagnostic_id,
-            cause,
-            snapshot: snapshot.into_object_snapshot(),
         }
     }
 
@@ -2201,22 +2101,13 @@ impl World {
         }));
     }
 
-    fn system_mut_after_validation(&mut self, system: ParticleSystemId) -> &mut ParticleSystem {
+    pub(super) fn system_mut_after_validation(
+        &mut self,
+        system: ParticleSystemId,
+    ) -> &mut ParticleSystem {
         self.particle_systems
             .get_mut(system)
             .expect("validated particle system remains live during one operation")
-    }
-
-    fn group_mut_after_validation(&mut self, group: ParticleGroupId) -> &mut ParticleGroup {
-        self.particle_groups
-            .get_mut(group)
-            .expect("validated particle group remains live during one operation")
-    }
-
-    fn particle_mut_after_validation(&mut self, particle: ParticleId) -> &mut Particle {
-        self.particles
-            .get_mut(particle)
-            .expect("validated particle remains live during one operation")
     }
 }
 
@@ -2449,7 +2340,15 @@ mod tests {
         assert!(world.contains_particle_system(system));
         assert!(world.contains_particle(particle));
         assert_eq!(world.particle_systems.iter().count(), 1);
-        assert_eq!(world.particles.iter().count(), 1);
+        assert_eq!(
+            world
+                .particle_systems
+                .get(system)
+                .expect("system remains live")
+                .storage
+                .len(),
+            1
+        );
     }
 
     #[test]
@@ -2524,7 +2423,7 @@ mod tests {
             .get(system)
             .expect("system remains live");
         assert!(system.groups.is_empty());
-        assert!(system.particles.is_empty());
+        assert_eq!(system.storage.len(), 0);
     }
 
     #[test]

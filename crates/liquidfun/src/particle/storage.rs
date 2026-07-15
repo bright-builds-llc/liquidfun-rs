@@ -34,6 +34,7 @@ pub(crate) struct ParticleInput {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) struct ParticleSnapshot {
     pub(crate) id: ParticleId,
+    pub(crate) diagnostic_id: u64,
     pub(crate) input: ParticleInput,
 }
 
@@ -69,6 +70,7 @@ enum IdentityState {
 #[derive(Debug, Clone, Copy, PartialEq)]
 struct IdentityEntry {
     generation: u64,
+    diagnostic_id: Option<u64>,
     state: IdentityState,
 }
 
@@ -104,6 +106,7 @@ pub(crate) struct ParticleStorage {
 
 struct CreateCandidate {
     input: ParticleInput,
+    diagnostic_id: u64,
     id: ParticleId,
     local_slot: usize,
     generation: u64,
@@ -120,23 +123,47 @@ impl ParticleStorage {
         identity_capacity: usize,
         declared_capacity: usize,
     ) -> Result<Self, ParticleStorageError> {
-        Self::from_owned_lanes(
+        Self::with_initial_capacity(
             world,
             system,
             identity_slot_base,
             identity_capacity,
             declared_capacity,
-            OwnedLaneBundle::with_capacity(declared_capacity, false),
+            declared_capacity,
         )
     }
 
-    pub(crate) fn from_owned_lanes(
+    pub(crate) fn with_initial_capacity(
+        world: WorldKey,
+        system: ParticleSystemId,
+        identity_slot_base: usize,
+        identity_capacity: usize,
+        initial_capacity: usize,
+        declared_capacity: usize,
+    ) -> Result<Self, ParticleStorageError> {
+        if initial_capacity > declared_capacity {
+            return Err(ParticleStorageError::InvalidLaneBundle);
+        }
+        let lanes = OwnedLaneBundle::with_capacity(initial_capacity, false);
+        Self::from_validated_lanes(
+            world,
+            system,
+            identity_slot_base,
+            identity_capacity,
+            declared_capacity,
+            lanes,
+            initial_capacity,
+        )
+    }
+
+    fn from_validated_lanes(
         world: WorldKey,
         system: ParticleSystemId,
         identity_slot_base: usize,
         identity_capacity: usize,
         declared_capacity: usize,
         lanes: OwnedLaneBundle,
+        minimum_lane_capacity: usize,
     ) -> Result<Self, ParticleStorageError> {
         if system.identity().world() != world {
             return Err(ParticleStorageError::WrongWorld);
@@ -144,7 +171,7 @@ impl ParticleStorage {
         if identity_slot_base.checked_add(identity_capacity).is_none() {
             return Err(ParticleStorageError::IdentityExhausted);
         }
-        lanes.validate_empty(declared_capacity)?;
+        lanes.validate_empty(minimum_lane_capacity)?;
 
         Ok(Self {
             world,
@@ -155,7 +182,7 @@ impl ParticleStorage {
             identities: Vec::new(),
             free_identity_slots: Vec::new(),
             retired_identity_slots: 0,
-            dense_to_id: Vec::with_capacity(declared_capacity),
+            dense_to_id: Vec::with_capacity(minimum_lane_capacity),
             positions: lanes.positions,
             velocities: lanes.velocities,
             flags: lanes.flags,
@@ -167,7 +194,7 @@ impl ParticleStorage {
             maybe_stuck: lanes.maybe_stuck,
             maybe_expiration_times: lanes.maybe_expiration_times,
             maybe_expiration_order: lanes.maybe_expiration_order,
-            proxies: Vec::with_capacity(declared_capacity),
+            proxies: Vec::with_capacity(minimum_lane_capacity),
             particle_contacts: Vec::new(),
             body_contacts: Vec::new(),
             pairs: Vec::new(),
@@ -176,37 +203,117 @@ impl ParticleStorage {
         })
     }
 
-    pub(crate) fn positions(&self) -> &[Vec2] {
-        &self.positions
+    pub(crate) fn system(&self) -> ParticleSystemId {
+        self.system
     }
 
-    pub(crate) fn into_owned_lanes(self) -> OwnedLaneBundle {
-        OwnedLaneBundle {
-            positions: self.positions,
-            velocities: self.velocities,
-            flags: self.flags,
-            groups: self.groups,
-            weights: self.weights,
-            forces: self.forces,
-            maybe_colors: self.maybe_colors,
-            maybe_user_associations: self.maybe_user_associations,
-            maybe_stuck: self.maybe_stuck,
-            maybe_expiration_times: self.maybe_expiration_times,
-            maybe_expiration_order: self.maybe_expiration_order,
+    pub(crate) fn len(&self) -> usize {
+        self.dense_to_id.len()
+    }
+
+    pub(crate) fn pending_count(&self) -> usize {
+        self.identities
+            .iter()
+            .filter(|entry| matches!(entry.state, IdentityState::PendingDelete { .. }))
+            .count()
+    }
+
+    pub(crate) fn snapshots(&self) -> Vec<ParticleSnapshot> {
+        self.dense_to_id
+            .iter()
+            .copied()
+            .map(|id| self.snapshot_for_teardown(id))
+            .collect()
+    }
+
+    pub(crate) fn particle_ids(&self) -> &[ParticleId] {
+        &self.dense_to_id
+    }
+
+    pub(crate) fn clear_group(
+        &mut self,
+        group: ParticleGroupId,
+    ) -> Result<Vec<ParticleId>, ParticleStorageError> {
+        self.check_invariants()?;
+        let particles = self
+            .dense_to_id
+            .iter()
+            .copied()
+            .zip(self.groups.iter().copied())
+            .filter_map(|(id, maybe_group)| (maybe_group == Some(group)).then_some(id))
+            .collect::<Vec<_>>();
+        let mut groups = self.groups.clone();
+        for maybe_group in &mut groups {
+            if *maybe_group == Some(group) {
+                *maybe_group = None;
+            }
         }
+        let ranges = build_group_ranges(&groups)?;
+        self.groups = groups;
+        self.group_ranges = ranges;
+        debug_assert_eq!(self.check_invariants(), Ok(()));
+        Ok(particles)
+    }
+
+    pub(crate) fn snapshot(
+        &self,
+        id: ParticleId,
+    ) -> Result<ParticleSnapshot, ParticleStorageError> {
+        let dense = self.resolve_live(id)?;
+        let local_slot = self.local_slot(id)?;
+        Ok(ParticleSnapshot {
+            id,
+            diagnostic_id: self.identities[local_slot]
+                .diagnostic_id
+                .expect("live particles always retain a diagnostic identity"),
+            input: self.input_at(dense),
+        })
+    }
+
+    fn snapshot_for_teardown(&self, id: ParticleId) -> ParticleSnapshot {
+        let local_slot = self
+            .local_slot(id)
+            .expect("dense identities remain scoped to their owning storage");
+        let entry = &self.identities[local_slot];
+        match entry.state {
+            IdentityState::Live(dense) => ParticleSnapshot {
+                id,
+                diagnostic_id: entry
+                    .diagnostic_id
+                    .expect("live particles always retain a diagnostic identity"),
+                input: self.input_at(dense),
+            },
+            IdentityState::PendingDelete { snapshot, .. } => snapshot,
+            IdentityState::Vacant | IdentityState::Retired => {
+                unreachable!("dense rows cannot refer to vacant or retired identities")
+            }
+        }
+    }
+
+    pub(crate) fn create_with_diagnostic(
+        &mut self,
+        input: ParticleInput,
+        diagnostic_id: u64,
+    ) -> Result<ParticleId, ParticleStorageError> {
+        let candidate = self.prepare_create(input, diagnostic_id)?;
+        Ok(self.commit_create(candidate))
+    }
+
+    pub(crate) fn validate_create(&self, input: ParticleInput) -> Result<(), ParticleStorageError> {
+        self.prepare_create(input, 0).map(|_candidate| ())
     }
 
     pub(crate) fn create(
         &mut self,
         input: ParticleInput,
     ) -> Result<ParticleId, ParticleStorageError> {
-        let candidate = self.prepare_create(input)?;
-        Ok(self.commit_create(candidate))
+        self.create_with_diagnostic(input, 0)
     }
 
     fn prepare_create(
         &self,
         input: ParticleInput,
+        diagnostic_id: u64,
     ) -> Result<CreateCandidate, ParticleStorageError> {
         if self.dense_to_id.len() >= self.declared_capacity {
             return Err(ParticleStorageError::CapacityExceeded {
@@ -231,6 +338,7 @@ impl ParticleStorage {
         let group_ranges = build_group_ranges(&groups)?;
         Ok(CreateCandidate {
             input,
+            diagnostic_id,
             id,
             local_slot,
             generation,
@@ -244,6 +352,7 @@ impl ParticleStorage {
         if candidate.append_identity {
             self.identities.push(IdentityEntry {
                 generation: candidate.generation,
+                diagnostic_id: None,
                 state: IdentityState::Vacant,
             });
         } else {
@@ -253,11 +362,62 @@ impl ParticleStorage {
                 .expect("prepared reused identity remains available until commit");
             debug_assert_eq!(reused, candidate.local_slot);
         }
+        self.identities[candidate.local_slot].diagnostic_id = Some(candidate.diagnostic_id);
         self.identities[candidate.local_slot].state = IdentityState::Live(candidate.dense);
         self.push_row(candidate.id, candidate.input);
         self.group_ranges = candidate.group_ranges;
         debug_assert_eq!(self.check_invariants(), Ok(()));
         candidate.id
+    }
+
+    /*
+        Self::from_owned_lanes(
+            world,
+            system,
+            identity_slot_base,
+            identity_capacity,
+            declared_capacity,
+            OwnedLaneBundle::with_capacity(declared_capacity, false),
+        )
+    */
+
+    pub(crate) fn from_owned_lanes(
+        world: WorldKey,
+        system: ParticleSystemId,
+        identity_slot_base: usize,
+        identity_capacity: usize,
+        declared_capacity: usize,
+        lanes: OwnedLaneBundle,
+    ) -> Result<Self, ParticleStorageError> {
+        Self::from_validated_lanes(
+            world,
+            system,
+            identity_slot_base,
+            identity_capacity,
+            declared_capacity,
+            lanes,
+            declared_capacity,
+        )
+    }
+
+    pub(crate) fn positions(&self) -> &[Vec2] {
+        &self.positions
+    }
+
+    pub(crate) fn into_owned_lanes(self) -> OwnedLaneBundle {
+        OwnedLaneBundle {
+            positions: self.positions,
+            velocities: self.velocities,
+            flags: self.flags,
+            groups: self.groups,
+            weights: self.weights,
+            forces: self.forces,
+            maybe_colors: self.maybe_colors,
+            maybe_user_associations: self.maybe_user_associations,
+            maybe_stuck: self.maybe_stuck,
+            maybe_expiration_times: self.maybe_expiration_times,
+            maybe_expiration_order: self.maybe_expiration_order,
+        }
     }
 
     fn identity_slot_candidate(&self) -> Result<(usize, u64, bool), ParticleStorageError> {
@@ -339,11 +499,14 @@ impl ParticleStorage {
         id: ParticleId,
     ) -> Result<ParticleSnapshot, ParticleStorageError> {
         let dense = self.resolve_live(id)?;
+        let local_slot = self.local_slot(id)?;
         let snapshot = ParticleSnapshot {
             id,
+            diagnostic_id: self.identities[local_slot]
+                .diagnostic_id
+                .expect("live particles always retain a diagnostic identity"),
             input: self.input_at(dense),
         };
-        let local_slot = self.local_slot(id)?;
         self.identities[local_slot].state = IdentityState::PendingDelete { dense, snapshot };
         Ok(snapshot)
     }
@@ -368,6 +531,43 @@ impl ParticleStorage {
             })
             .collect();
         permutation::apply_permutation(self, &old_to_new)
+    }
+
+    pub(crate) fn compact_particle(
+        &mut self,
+        id: ParticleId,
+    ) -> Result<ParticleSnapshot, ParticleStorageError> {
+        let local_slot = self.local_slot(id)?;
+        let entry = self
+            .identities
+            .get(local_slot)
+            .ok_or(ParticleStorageError::StaleOrDestroyed)?;
+        if entry.generation != id.identity().generation() {
+            return Err(ParticleStorageError::StaleOrDestroyed);
+        }
+        if !matches!(entry.state, IdentityState::PendingDelete { .. }) {
+            return Err(ParticleStorageError::InvalidPermutation);
+        }
+
+        let mut next = 0;
+        let old_to_new = self
+            .dense_to_id
+            .iter()
+            .map(|candidate| {
+                if *candidate == id {
+                    return None;
+                }
+                let destination = next;
+                next += 1;
+                Some(destination)
+            })
+            .collect::<Vec<_>>();
+        let mut destroyed = permutation::apply_permutation(self, &old_to_new)?;
+        let Some(snapshot) = destroyed.pop() else {
+            return Err(ParticleStorageError::InvalidPermutation);
+        };
+        debug_assert!(destroyed.is_empty());
+        Ok(snapshot)
     }
 
     pub(crate) fn rotate_rows(

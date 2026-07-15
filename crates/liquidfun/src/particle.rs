@@ -6,6 +6,7 @@
 
 mod definition;
 
+pub use crate::world::particle_object::{ParticleSnapshot, ParticleSystemSnapshot};
 pub use definition::{
     ParticleCapacity, ParticleColor, ParticleDef, ParticleDefError, ParticleFlags,
     ParticleSystemDef, ParticleSystemDefError,

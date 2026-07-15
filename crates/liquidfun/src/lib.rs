@@ -197,7 +197,7 @@ pub use joint::{
 };
 pub use particle::{
     ParticleCapacity, ParticleColor, ParticleDef, ParticleDefError, ParticleFlags,
-    ParticleSystemDef, ParticleSystemDefError,
+    ParticleSnapshot, ParticleSystemDef, ParticleSystemDefError, ParticleSystemSnapshot,
 };
 pub use world::{
     AggregateMassError, BodyActivationError, BodyControlError, BodyDef, BodyDefError, BodyMassData,
