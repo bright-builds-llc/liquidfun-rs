@@ -76,6 +76,12 @@ impl<'a> ParticleSystemView<'a> {
         self.storage.weights()
     }
 
+    /// Iterates possible stuck particles from the latest contact sub-iteration.
+    #[must_use]
+    pub fn stuck_candidates(&self) -> impl ExactSizeIterator<Item = ParticleId> + '_ {
+        self.storage.stuck_candidates()
+    }
+
     /// Returns the lazily allocated color lane when any particle requires it.
     #[must_use]
     pub fn maybe_colors(&self) -> Option<&[ParticleColor]> {

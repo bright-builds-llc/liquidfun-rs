@@ -6,7 +6,10 @@ use std::panic::{AssertUnwindSafe, catch_unwind, resume_unwind};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use crate::{AggregateMassError, BodyId, DestructionRecord, FixtureId, HandleError, World};
+use crate::{
+    AggregateMassError, BodyId, DestructionRecord, FixtureId, HandleError, ParticleBodyContact,
+    ParticleBodyContactEffect, ParticleId, World,
+};
 
 use super::fixture::FixtureDestructionError;
 
@@ -269,6 +272,44 @@ pub enum CollisionDirective {
     Collide,
     /// Ignore this occurrence before pre-solve processing.
     Ignore,
+}
+
+/// Borrow-scoped fixture-particle contact view for one synchronous decision.
+#[derive(Clone, Copy)]
+pub struct FixtureParticleView<'step> {
+    contact: &'step ParticleBodyContact,
+}
+
+impl FixtureParticleView<'_> {
+    /// Returns the stable particle identity.
+    #[must_use]
+    pub const fn particle(self) -> ParticleId {
+        self.contact.particle()
+    }
+
+    /// Returns the stable fixture identity.
+    #[must_use]
+    pub const fn fixture(self) -> FixtureId {
+        self.contact.fixture()
+    }
+
+    /// Returns the stable body identity.
+    #[must_use]
+    pub const fn body(self) -> BodyId {
+        self.contact.body()
+    }
+
+    /// Returns the proposed contact weight.
+    #[must_use]
+    pub const fn weight(self) -> f32 {
+        self.contact.weight()
+    }
+
+    /// Returns the proposed contact normal.
+    #[must_use]
+    pub const fn normal(self) -> crate::math::Vec2 {
+        self.contact.normal()
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -612,6 +653,14 @@ pub trait CollisionDecisionHook {
         CollisionDirective::Collide
     }
 
+    /// Decides whether one flag-gated fixture-particle candidate is retained.
+    fn should_collide_fixture_particle(
+        &mut self,
+        _contact: FixtureParticleView<'_>,
+    ) -> CollisionDirective {
+        CollisionDirective::Collide
+    }
+
     /// Decides source-supported controls immediately after one solid update.
     fn pre_solve(&mut self, _contact: PreSolveView<'_>) -> PreSolveDirective {
         PreSolveDirective::Enable
@@ -691,6 +740,15 @@ impl<'hook, H: CollisionDecisionHook> ContactHookRun<'hook, H> {
         Ok(decision == CollisionDirective::Collide)
     }
 
+    pub(super) fn should_collide_fixture_particle(
+        &mut self,
+        contact: &ParticleBodyContact,
+    ) -> bool {
+        self.hook
+            .should_collide_fixture_particle(FixtureParticleView { contact })
+            == CollisionDirective::Collide
+    }
+
     pub(super) fn contact_updated(
         &mut self,
         current: &ManagedContactSnapshot,
@@ -736,6 +794,13 @@ impl<'hook, H: CollisionDecisionHook> ContactHookRun<'hook, H> {
         record: DestructionRecord,
     ) -> Result<(), StepError> {
         self.push_lifecycle(LifecycleEvent::ParticleDestruction(record))
+    }
+
+    pub(super) fn record_particle_body_contact(
+        &mut self,
+        effect: ParticleBodyContactEffect,
+    ) -> Result<(), StepError> {
+        self.push_lifecycle(LifecycleEvent::ParticleBodyContact(effect))
     }
 
     pub(super) fn record_discrete_solve(&mut self, solve: ContactSolve) -> Result<(), StepError> {
@@ -906,6 +971,8 @@ pub enum StepLifecycleEvent {
     FixtureGoodbye(DestructionRecord),
     /// A requested particle listener occurrence was journaled before invalidation.
     ParticleDestruction(DestructionRecord),
+    /// One flag-gated fixture-particle contact began or ended in source order.
+    ParticleBodyContact(ParticleBodyContactEffect),
     /// One requested mutation completed after unlock.
     Command(CommandApplication),
     /// A world object was invalidated after dependent contact evidence.
@@ -1220,6 +1287,16 @@ impl World {
             contact_lifecycle_result?;
             contact_transitions.extend(self.contact_manager.drain_transitions());
             self.run_particle_lifecycle_step(configuration.time_step(), &mut hook_run)?;
+            let particle_contact_result = catch_unwind(AssertUnwindSafe(|| {
+                self.refresh_particle_body_contacts(&mut hook_run)
+            }));
+            match particle_contact_result {
+                Ok(result) => result?,
+                Err(payload) => {
+                    self.step_state.poison();
+                    resume_unwind(payload);
+                }
+            }
             if step_kind == ContinuousStepKind::Fresh && configuration.time_step() > 0.0 {
                 self.preflight_contact_solver()
                     .map_err(|error| solver_step_error(error, &contact_transitions))?;

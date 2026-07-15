@@ -75,6 +75,7 @@ pub(super) struct ParticleSystem {
     pub(super) groups: Vec<ParticleGroupId>,
     pub(super) storage: ParticleStorage,
     pub(super) lifetime: crate::particle::lifetime::ParticleLifetimeState,
+    pub(super) timestamp: u32,
 }
 
 #[derive(Debug)]
@@ -345,7 +346,7 @@ impl DestructionRecord {
 pub struct World {
     pub(super) scope_key: WorldKey,
     pub(super) bodies: Arena<Body, BodyId>,
-    body_order: Vec<BodyId>,
+    pub(super) body_order: Vec<BodyId>,
     pub(super) fixtures: Arena<Fixture, FixtureId>,
     pub(super) joints: Arena<JointRecord, JointId>,
     pub(super) particle_systems: Arena<ParticleSystem, ParticleSystemId>,

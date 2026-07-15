@@ -13,6 +13,7 @@ mod island;
 mod joint;
 pub(crate) mod object;
 mod origin;
+mod particle_coupling;
 mod particle_lifecycle;
 pub(crate) mod particle_object;
 mod proxy;
@@ -54,6 +55,7 @@ pub use query::{
 pub use step::{
     CollisionDecisionHook, CollisionDirective, CollisionFilterEvent, CommandApplication,
     CommandError, ContactControlError, ContactEvent, ContactView, ContinuousProgress,
-    FixturePairView, LifecycleEvent, NoDecisionHook, PreSolveDirective, PreSolveView, StepError,
-    StepHook, StepLifecycleEvent, StepLimits, StepPhase, StepReport, WorldCommand,
+    FixturePairView, FixtureParticleView, LifecycleEvent, NoDecisionHook, PreSolveDirective,
+    PreSolveView, StepError, StepHook, StepLifecycleEvent, StepLimits, StepPhase, StepReport,
+    WorldCommand,
 };

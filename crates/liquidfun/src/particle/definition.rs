@@ -247,6 +247,7 @@ impl Error for ParticleSystemDefError {}
 pub struct ParticleSystemDef {
     paused: bool,
     strict_contact_check: bool,
+    stuck_threshold: u32,
     density: f32,
     gravity_scale: f32,
     radius: f32,
@@ -270,6 +271,16 @@ impl ParticleSystemDef {
     #[must_use]
     pub const fn with_strict_contact_check(mut self, enabled: bool) -> Self {
         self.strict_contact_check = enabled;
+        self
+    }
+
+    /// Returns a copy with the consecutive multi-fixture contact threshold.
+    ///
+    /// Zero disables stuck-particle tracking. A particle becomes a candidate
+    /// only after its consecutive count is strictly greater than this value.
+    #[must_use]
+    pub const fn with_stuck_threshold(mut self, threshold: u32) -> Self {
+        self.stuck_threshold = threshold;
         self
     }
 
@@ -423,6 +434,12 @@ impl ParticleSystemDef {
         self.strict_contact_check
     }
 
+    /// Returns the consecutive multi-fixture contact threshold.
+    #[must_use]
+    pub const fn stuck_threshold(self) -> u32 {
+        self.stuck_threshold
+    }
+
     /// Returns density in kilograms per square meter.
     #[must_use]
     pub const fn density(self) -> f32 {
@@ -483,6 +500,7 @@ impl Default for ParticleSystemDef {
         Self {
             paused: false,
             strict_contact_check: false,
+            stuck_threshold: 0,
             density: 1.0,
             gravity_scale: 1.0,
             radius: 1.0,

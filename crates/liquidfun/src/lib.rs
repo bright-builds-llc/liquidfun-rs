@@ -196,6 +196,7 @@ pub use joint::{
     WeldJointSnapshot, WheelJointDef, WheelJointSnapshot,
 };
 pub use particle::{
+    ParticleBodyContact, ParticleBodyContactEffect, ParticleBodyContactUpdate,
     ParticleBodyContactView, ParticleBufferAdoptionError, ParticleBufferAdoptionErrorKind,
     ParticleBufferBundle, ParticleBufferError, ParticleBufferErrorKind, ParticleBufferLanes,
     ParticleBufferMode, ParticleBufferTeardown, ParticleCapacity, ParticleColor, ParticleContact,
@@ -214,13 +215,13 @@ pub use world::{
     ContactSolve, ContactTransition, ContactTransitionKind, ContactView, ContinuousProgress,
     CreateObjectError, DestroyedId, DestructionCause, DestructionRecord, DestructionReport,
     FixtureBoundsError, FixtureDef, FixtureDefError, FixtureDestructionError, FixtureMutationError,
-    FixturePairView, FixtureQueryOccurrence, FixtureSnapshot, JointCreationError,
-    JointMutationError, JointQueryError, LifecycleEvent, ManagedContactSnapshot, MutationReport,
-    NoDecisionHook, ObjectSnapshot, OriginShiftError, PreSolveDirective, PreSolveView,
-    QueryDirective, RayCastDirective, RayCastFraction, RayCastFractionError, StepCompletion,
-    StepConfiguration, StepConfigurationError, StepError, StepHook, StepLifecycleEvent, StepLimits,
-    StepPhase, StepReport, WakePolicy, World, WorldCommand, WorldConfigurationError,
-    WorldFixtureSnapshot, WorldRayCastError, WorldRayHit,
+    FixturePairView, FixtureParticleView, FixtureQueryOccurrence, FixtureSnapshot,
+    JointCreationError, JointMutationError, JointQueryError, LifecycleEvent,
+    ManagedContactSnapshot, MutationReport, NoDecisionHook, ObjectSnapshot, OriginShiftError,
+    PreSolveDirective, PreSolveView, QueryDirective, RayCastDirective, RayCastFraction,
+    RayCastFractionError, StepCompletion, StepConfiguration, StepConfigurationError, StepError,
+    StepHook, StepLifecycleEvent, StepLimits, StepPhase, StepReport, WakePolicy, World,
+    WorldCommand, WorldConfigurationError, WorldFixtureSnapshot, WorldRayCastError, WorldRayHit,
 };
 #[cfg(feature = "differential-internals")]
 pub use world::{ReconstructionSupport, ReconstructionUnsupported};

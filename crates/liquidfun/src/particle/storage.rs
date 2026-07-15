@@ -8,7 +8,8 @@ use crate::identity::{
 };
 use crate::math::Vec2;
 use crate::particle::{
-    ParticleBufferBundle, ParticleBufferLanes, ParticleBufferMode, ParticleColor, ParticleFlags,
+    ParticleBodyContact as SemanticBodyContact, ParticleBufferBundle, ParticleBufferLanes,
+    ParticleBufferMode, ParticleColor, ParticleFlags,
 };
 
 use lanes::{
@@ -467,6 +468,105 @@ impl ParticleStorage {
 
     pub(in crate::particle) fn body_contacts(&self) -> &[ParticleBodyContact] {
         &self.body_contacts
+    }
+
+    pub(crate) fn semantic_body_contacts(&self) -> Vec<SemanticBodyContact> {
+        self.body_contacts
+            .iter()
+            .map(|contact| {
+                SemanticBodyContact::new_internal(
+                    self.particle_id_at(contact.index),
+                    contact.body,
+                    contact.fixture,
+                    contact.weight,
+                    contact.normal,
+                    contact.mass,
+                )
+            })
+            .collect()
+    }
+
+    pub(crate) fn replace_body_contacts(
+        &mut self,
+        contacts: &[SemanticBodyContact],
+    ) -> Result<(), ParticleStorageError> {
+        let body_contacts = contacts
+            .iter()
+            .map(|contact| {
+                Ok(ParticleBodyContact {
+                    index: self.resolve_live(contact.particle())?,
+                    body: contact.body(),
+                    fixture: contact.fixture(),
+                    weight: contact.weight(),
+                    normal: contact.normal(),
+                    mass: contact.mass(),
+                })
+            })
+            .collect::<Result<Vec<_>, ParticleStorageError>>()?;
+        self.body_contacts = body_contacts;
+        self.recompute_weights();
+        debug_assert_eq!(self.check_invariants(), Ok(()));
+        Ok(())
+    }
+
+    pub(crate) fn update_stuck_candidates(&mut self, timestamp: u32, threshold: u32) {
+        if threshold == 0 {
+            return;
+        }
+        let particle_count = self.len();
+        if self.maybe_stuck.is_none() {
+            self.maybe_stuck = Some(StuckLanes {
+                last_body_contact_steps: vec![0; particle_count],
+                body_contact_counts: vec![0; particle_count],
+                consecutive_contact_steps: vec![0; particle_count],
+                candidates: Vec::new(),
+            });
+        }
+        let stuck = self
+            .maybe_stuck
+            .as_mut()
+            .expect("stuck lanes were allocated before update");
+        stuck.body_contact_counts.fill(0);
+        stuck.candidates.clear();
+        for row in 0..particle_count {
+            if timestamp > stuck.last_body_contact_steps[row].saturating_add(1) {
+                stuck.consecutive_contact_steps[row] = 0;
+            }
+        }
+        for contact in &self.body_contacts {
+            let row = contact.index.0;
+            stuck.body_contact_counts[row] += 1;
+            if stuck.body_contact_counts[row] == 2 {
+                stuck.consecutive_contact_steps[row] += 1;
+                if stuck.consecutive_contact_steps[row] > threshold {
+                    stuck.candidates.push(contact.index);
+                }
+            }
+            stuck.last_body_contact_steps[row] = timestamp;
+        }
+    }
+
+    pub(in crate::particle) fn stuck_candidates(
+        &self,
+    ) -> impl ExactSizeIterator<Item = ParticleId> + '_ {
+        self.maybe_stuck
+            .as_ref()
+            .map_or(&[] as &[ParticleIndex], |stuck| stuck.candidates.as_slice())
+            .iter()
+            .copied()
+            .map(|index| self.particle_id_at(index))
+    }
+
+    fn recompute_weights(&mut self) {
+        self.weights.fill(0.0);
+        for contact in &self.body_contacts {
+            self.weights[contact.index.0] += contact.weight;
+        }
+        for contact in &self.particle_contacts {
+            for index in contact.indices {
+                self.weights[index.0] += contact.weight;
+            }
+        }
     }
 
     pub(in crate::particle) fn pairs(&self) -> &[ParticlePair] {

@@ -184,6 +184,7 @@ impl World {
                 groups: Vec::new(),
                 storage,
                 lifetime,
+                timestamp: 0,
             },
         );
         self.particle_system_order.insert(0, system);
@@ -238,6 +239,7 @@ impl World {
             groups: Vec::new(),
             storage,
             lifetime,
+            timestamp: 0,
         })?;
         debug_assert_eq!(inserted, system);
         self.particle_system_order.insert(0, system);
