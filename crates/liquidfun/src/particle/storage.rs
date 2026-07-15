@@ -257,6 +257,10 @@ impl ParticleStorage {
             .count()
     }
 
+    pub(in crate::particle) const fn declared_capacity(&self) -> usize {
+        self.declared_capacity
+    }
+
     pub(crate) fn snapshots(&self) -> Vec<ParticleSnapshot> {
         self.dense_to_id
             .iter()

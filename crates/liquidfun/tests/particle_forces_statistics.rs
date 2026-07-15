@@ -1,8 +1,10 @@
 //! Black-box particle force, impulse, and statistics regressions.
 
+use liquidfun::collision::{CircleShape, FilterData, Shape};
 use liquidfun::math::{Vec2, settings};
 use liquidfun::{
-    HandleError, ParticleDef, ParticleFlags, ParticleForceError, ParticleSystemDef, World,
+    BodyDef, FixtureDef, HandleError, NoDecisionHook, ParticleCapacity, ParticleDef, ParticleFlags,
+    ParticleForceError, ParticleSystemDef, StepConfiguration, StepLimits, World,
 };
 
 fn particles(
@@ -24,6 +26,90 @@ fn particle_state(world: &World, system: liquidfun::ParticleSystemId) -> (Vec<Ve
         .particle_system_view(system)
         .expect("system remains live");
     (view.forces().to_vec(), view.velocities().to_vec())
+}
+
+fn circle_fixture(world: &mut World, body: liquidfun::BodyId) {
+    let shape =
+        Shape::from(CircleShape::new(Vec2::ZERO, 1.0).expect("test fixture geometry is valid"));
+    world
+        .create_fixture(
+            body,
+            &FixtureDef::new(shape, 0.0, 0.2, 0.0, false, FilterData::default())
+                .expect("test fixture is valid"),
+        )
+        .expect("fixture fits");
+}
+
+fn colliding_particles_world(
+    definition: &ParticleSystemDef,
+) -> (
+    World,
+    liquidfun::ParticleSystemId,
+    [liquidfun::ParticleId; 2],
+) {
+    let mut world = World::new().expect("world key remains available");
+    let system = world
+        .create_particle_system_with_def(definition)
+        .expect("particle system fits");
+    let first = ParticleDef::default()
+        .with_position(Vec2::new(-0.5, 0.0))
+        .expect("position is finite")
+        .with_velocity(Vec2::new(1.0, 0.0))
+        .expect("velocity is finite");
+    let second = ParticleDef::default()
+        .with_position(Vec2::new(0.5, 0.0))
+        .expect("position is finite")
+        .with_velocity(Vec2::new(-1.0, 0.0))
+        .expect("velocity is finite");
+    let first = world
+        .create_particle_with_def(system, None, &first)
+        .expect("first particle fits");
+    let second = world
+        .create_particle_with_def(system, None, &second)
+        .expect("second particle fits");
+    (world, system, [first, second])
+}
+
+fn refresh_contacts(world: &mut World) {
+    world
+        .step(
+            StepConfiguration::new(1.0 / 60.0, 8, 3).expect("test step is valid"),
+            &mut NoDecisionHook,
+            StepLimits::default(),
+        )
+        .expect("contact refresh succeeds");
+}
+
+fn expected_collision_energy(
+    world: &World,
+    system: liquidfun::ParticleSystemId,
+    definition: ParticleSystemDef,
+) -> f32 {
+    let view = world
+        .particle_system_view(system)
+        .expect("system remains live");
+    let contact = view
+        .particle_contacts()
+        .next()
+        .expect("contact refresh produced one contact");
+    let [first_id, second_id] = contact.particles();
+    let first_index = view
+        .particle_ids()
+        .iter()
+        .position(|particle| *particle == first_id)
+        .expect("first contact particle remains present");
+    let second_index = view
+        .particle_ids()
+        .iter()
+        .position(|particle| *particle == second_id)
+        .expect("second contact particle remains present");
+    let relative_velocity = view.velocities()[second_index] - view.velocities()[first_index];
+    let normal_velocity = relative_velocity.dot(contact.normal());
+    let diameter = 2.0 * definition.radius();
+    let stride = settings::PARTICLE_STRIDE * diameter;
+    let particle_mass = definition.density() * stride * stride;
+    let sum_velocity_squared = normal_velocity * normal_velocity;
+    0.5 * particle_mass * sum_velocity_squared
 }
 
 #[test]
@@ -291,4 +377,128 @@ fn forces_invalid_derived_mass_has_no_effect() {
     // Assert
     assert_eq!(result, Err(ParticleForceError::InvalidDistribution));
     assert_eq!(particle_state(&world, system), before);
+}
+
+#[test]
+fn statistics_follow_contact_refresh_and_explicit_capacity() {
+    // Arrange
+    let definition = ParticleSystemDef::default()
+        .with_capacity(ParticleCapacity::fixed(4).expect("test capacity is valid"))
+        .expect("capacity and maximum are compatible")
+        .with_maximum_count(3)
+        .expect("test maximum is valid");
+    let (mut world, system, _particles) = colliding_particles_world(&definition);
+
+    // Act
+    let before = world
+        .particle_system_statistics(system)
+        .expect("system remains live");
+    refresh_contacts(&mut world);
+    let contacted = world
+        .particle_system_statistics(system)
+        .expect("system remains live");
+    let world_contacted = world.particle_world_statistics();
+    let expected_collision_energy = expected_collision_energy(&world, system, definition);
+
+    // Assert
+    assert_eq!(before.particle_count(), 2);
+    assert_eq!(before.particle_contact_count(), 0);
+    assert_eq!(before.declared_capacity(), 4);
+    assert_eq!(before.effective_capacity(), 3);
+    assert_eq!(before.configured_maximum(), Some(3));
+    assert_eq!(contacted.particle_contact_count(), 1);
+    assert_eq!(contacted.body_contact_count(), 0);
+    assert_eq!(
+        contacted.collision_energy().to_bits(),
+        expected_collision_energy.to_bits()
+    );
+    assert_eq!(contacted.stuck_candidates(), &[]);
+    assert_eq!(world_contacted.system_count(), 1);
+    assert_eq!(world_contacted.particle_count(), 2);
+    assert_eq!(world_contacted.particle_contact_count(), 1);
+    assert_eq!(
+        world_contacted.collision_energy().to_bits(),
+        contacted.collision_energy().to_bits()
+    );
+}
+
+#[test]
+fn statistics_follow_pause_compaction_and_teardown() {
+    // Arrange
+    let definition = ParticleSystemDef::default();
+    let (mut world, system, [first, second]) = colliding_particles_world(&definition);
+    refresh_contacts(&mut world);
+
+    // Act
+    world
+        .set_particle_system_paused(system, true)
+        .expect("pause succeeds");
+    world
+        .mark_particle_for_destruction(second)
+        .expect("particle becomes pending");
+    let pending = world
+        .particle_system_statistics(system)
+        .expect("system remains live");
+    world
+        .compact_pending_particles(system)
+        .expect("compaction succeeds");
+    let compacted = world
+        .particle_system_statistics(system)
+        .expect("system remains live");
+    world
+        .destroy_particle_system(system)
+        .expect("teardown succeeds");
+    let destroyed = world.particle_system_statistics(system);
+
+    // Assert
+    assert!(pending.is_paused());
+    assert_eq!(pending.particle_count(), 2);
+    assert_eq!(pending.pending_particle_count(), 1);
+    assert_eq!(compacted.particle_count(), 1);
+    assert_eq!(compacted.pending_particle_count(), 0);
+    assert_eq!(compacted.particle_contact_count(), 0);
+    assert_eq!(compacted.stuck_candidates(), &[]);
+    assert_eq!(world.particle_world_statistics().system_count(), 0);
+    assert_eq!(destroyed, Err(HandleError::StaleOrDestroyed));
+    assert_eq!(first, compacted.particle_ids()[0]);
+}
+
+#[test]
+fn statistics_expose_stuck_candidates_as_stable_ids() {
+    // Arrange
+    let mut world = World::new().expect("world key remains available");
+    let body = world
+        .create_body(&BodyDef::default())
+        .expect("static body fits");
+    circle_fixture(&mut world, body);
+    circle_fixture(&mut world, body);
+    let system = world
+        .create_particle_system_with_def(&ParticleSystemDef::default().with_stuck_threshold(1))
+        .expect("particle system fits");
+    let particle = world
+        .create_particle_with_def(
+            system,
+            None,
+            &ParticleDef::default()
+                .with_position(Vec2::new(1.5, 0.0))
+                .expect("position is finite"),
+        )
+        .expect("particle fits");
+    let configuration = StepConfiguration::new(1.0 / 60.0, 8, 3).expect("test step is valid");
+
+    // Act
+    world
+        .step(configuration, &mut NoDecisionHook, StepLimits::default())
+        .expect("first contact refresh succeeds");
+    world
+        .step(configuration, &mut NoDecisionHook, StepLimits::default())
+        .expect("second contact refresh succeeds");
+    let statistics = world
+        .particle_system_statistics(system)
+        .expect("system remains live");
+
+    // Assert
+    assert_eq!(statistics.body_contact_count(), 2);
+    assert_eq!(statistics.stuck_candidates(), &[particle]);
+    assert_eq!(world.particle_world_statistics().stuck_candidate_count(), 1);
 }

@@ -12,6 +12,7 @@ mod editor;
 pub(crate) mod force;
 pub(crate) mod lifetime;
 mod proxy;
+mod statistics;
 mod view;
 
 pub use crate::world::particle_object::{ParticleSnapshot, ParticleSystemSnapshot};
@@ -35,6 +36,7 @@ pub use lifetime::{
     ParticleLifetimeOrder,
 };
 pub use proxy::{ParticleNeighborPair, ParticleNeighborhood, ParticleProxyError};
+pub use statistics::{ParticleSystemStatistics, ParticleWorldStatistics};
 pub use view::{
     ParticleBodyContactView, ParticleContactView, ParticlePairView, ParticleSystemView,
     ParticleTriadView,

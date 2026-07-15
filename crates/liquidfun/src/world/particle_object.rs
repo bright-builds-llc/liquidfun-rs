@@ -11,7 +11,7 @@ use crate::particle::storage::{
 use crate::particle::{
     ParticleBufferAdoptionError, ParticleBufferAdoptionErrorKind, ParticleBufferBundle,
     ParticleCapacity, ParticleColor, ParticleDef, ParticleEditError, ParticleEditor, ParticleFlags,
-    ParticleSystemDef, ParticleSystemView,
+    ParticleSystemDef, ParticleSystemStatistics, ParticleSystemView, ParticleWorldStatistics,
 };
 use crate::{
     ArenaInsertError, CreateObjectError, DestroyedId, DestructionCause, DestructionRecord,
@@ -272,6 +272,50 @@ impl World {
             particle_count: record.storage.len(),
             pending_particle_count: record.storage.pending_count(),
         })
+    }
+
+    /// Returns an owned semantic statistics snapshot for one live system.
+    ///
+    /// Stable identities replace dense rows, and capacity values come only
+    /// from explicit contracts rather than allocator internals.
+    ///
+    /// # Errors
+    ///
+    /// Returns a scoped handle error when `system` is foreign or stale.
+    pub fn particle_system_statistics(
+        &self,
+        system: ParticleSystemId,
+    ) -> Result<ParticleSystemStatistics, HandleError> {
+        self.ensure_not_poisoned_for_handle()?;
+        let record = self.particle_systems.get(system)?;
+        Ok(ParticleSystemStatistics::from_storage(
+            &record.storage,
+            record.definition,
+            record.groups.len(),
+        ))
+    }
+
+    /// Returns owned aggregate semantic counts in system traversal order.
+    ///
+    /// # Panics
+    ///
+    /// Panics only if an internal particle-system order invariant was already
+    /// violated; public operations maintain the bidirectional owner list.
+    #[must_use]
+    pub fn particle_world_statistics(&self) -> ParticleWorldStatistics {
+        let mut statistics = ParticleWorldStatistics::default();
+        for system in &self.particle_system_order {
+            let record = self
+                .particle_systems
+                .get(*system)
+                .expect("particle-system order contains only live systems");
+            statistics.include(&ParticleSystemStatistics::from_storage(
+                &record.storage,
+                record.definition,
+                record.groups.len(),
+            ));
+        }
+        statistics
     }
 
     /// Borrows every supported semantic lane for one live particle system.
