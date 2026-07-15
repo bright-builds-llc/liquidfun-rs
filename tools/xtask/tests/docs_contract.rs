@@ -27,9 +27,10 @@ const CONTRACT_DOCUMENTS: [&str; 4] = [
     "COMPATIBILITY.md",
     "README.md",
 ];
-const CONTRACT_SUPPORT_FILES: [&str; 2] = [
+const CONTRACT_SUPPORT_FILES: [&str; 3] = [
     "crates/liquidfun/src/lib.rs",
     "protocol/fixtures/accepted/rigid-world-request.jsonl",
+    "reference/compatibility.json",
 ];
 static FIXTURE_ID: AtomicU64 = AtomicU64::new(0);
 
@@ -662,6 +663,25 @@ fn phase8_contract_rejects_platform_demotion() -> TestResult {
 
     // Assert
     assert_failure(&output, "docs/phase8-contract");
+    fixture.cleanup()?;
+    Ok(())
+}
+
+#[test]
+fn phase8_contract_rejects_platform_evidence_drift() -> TestResult {
+    // Arrange
+    let fixture = DocsFixture::new()?;
+    fixture.replace_document_text(
+        "reference/compatibility.json",
+        "phase8-canonical-29379350740-e0b5106559b3c0c37beb44e4ade45c3b7919b59d/identity.json",
+        "phase8-canonical-29374708477-533c2ccf97b3921079baf7c339ddb4dad1a4038b/identity.json",
+    )?;
+
+    // Act
+    let output = fixture.command()?;
+
+    // Assert
+    assert_failure(&output, "docs/phase8-evidence");
     fixture.cleanup()?;
     Ok(())
 }

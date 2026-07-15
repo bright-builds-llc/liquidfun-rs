@@ -5,6 +5,8 @@ use std::fmt::{self, Display, Formatter};
 use std::fs;
 use std::path::PathBuf;
 
+use serde::Deserialize;
+
 const USAGE: &str = "Usage: cargo xtask docs check";
 const TABLE_HEADING: &str = "## Testing layer contract";
 const COLUMNS: [&str; 9] = [
@@ -315,6 +317,15 @@ const PHASE7_DOCUMENT_CONTRACTS: [(&str, &[&str]); 5] = [
 ];
 const PHASE8_SIGNOFF: &str =
     "canonical scalar rigid-body and joint differential sign-off for the closed Phase 8 corpus";
+const PHASE8_PLATFORM_VALIDATED_ROWS: usize = 33;
+const PHASE8_RUN: &str = "29379350740";
+const PHASE8_HEAD: &str = "e0b5106559b3c0c37beb44e4ade45c3b7919b59d";
+const PHASE8_RUN_URL: &str =
+    "https://github.com/bright-builds-llc/liquidfun-rs/actions/runs/29379350740";
+const PHASE8_CANONICAL_IDENTITY: &str =
+    "phase8-canonical-29379350740-e0b5106559b3c0c37beb44e4ade45c3b7919b59d/identity.json";
+const PHASE8_SANITIZER_IDENTITY: &str =
+    "phase8-sanitizer-29379350740-e0b5106559b3c0c37beb44e4ade45c3b7919b59d/identity.json";
 const PHASE8_DOCUMENT_CONTRACTS: [(&str, &[&str]); 5] = [
     (
         "crates/liquidfun/src/lib.rs",
@@ -333,8 +344,8 @@ const PHASE8_DOCUMENT_CONTRACTS: [(&str, &[&str]); 5] = [
             "## Phase 8 joints, rope, callbacks, and rigid sign-off boundaries",
             PHASE8_SIGNOFF,
             "19 required witness families",
-            "29379350740",
-            "e0b5106559b3c0c37beb44e4ade45c3b7919b59d",
+            PHASE8_RUN,
+            PHASE8_HEAD,
             "phase8-canonical-29379350740-e0b5106559b3c0c37beb44e4ade45c3b7919b59d",
             "phase8-sanitizer-29379350740-e0b5106559b3c0c37beb44e4ade45c3b7919b59d",
             "Rust 1.97.0, CMake 4.3.3, Ninja 1.13.2, and Clang 22.1.8",
@@ -348,8 +359,8 @@ const PHASE8_DOCUMENT_CONTRACTS: [(&str, &[&str]); 5] = [
             "## Phase 8 canonical rigid-world sign-off",
             PHASE8_SIGNOFF,
             "19 required witness families",
-            "29379350740",
-            "e0b5106559b3c0c37beb44e4ade45c3b7919b59d",
+            PHASE8_RUN,
+            PHASE8_HEAD,
             "canonical-linux",
             "sanitizer-linux",
             "RIGD-10",
@@ -362,7 +373,7 @@ const PHASE8_DOCUMENT_CONTRACTS: [(&str, &[&str]); 5] = [
             "Phase 8 checked joint and rope slice",
             PHASE8_SIGNOFF,
             "19-family",
-            "29379350740",
+            PHASE8_RUN,
             "RIGD-10",
             "release readiness remain pending",
         ],
@@ -439,6 +450,28 @@ struct LayerRule {
     artifact: &'static str,
     retry: &'static str,
     semantics: &'static str,
+}
+
+#[derive(Deserialize)]
+struct CompatibilityEvidenceLedger {
+    entries: Vec<CompatibilityEvidenceEntry>,
+}
+
+#[derive(Deserialize)]
+struct CompatibilityEvidenceEntry {
+    id: String,
+    evidence: CompatibilityEvidence,
+}
+
+#[derive(Deserialize)]
+struct CompatibilityEvidence {
+    platform_validated: PlatformEvidence,
+}
+
+#[derive(Deserialize)]
+struct PlatformEvidence {
+    status: String,
+    references: Vec<String>,
 }
 
 const LAYER_RULES: [LayerRule; 12] = [
@@ -615,6 +648,7 @@ fn check_document_contracts(repository_root: &std::path::Path) -> Result<(), Doc
         PHASE8_DOCUMENT_CONTRACTS,
         "phase8-contract",
     )?;
+    check_phase8_platform_evidence(repository_root)?;
 
     for relative_path in [
         "ARCHITECTURE.md",
@@ -670,6 +704,54 @@ fn check_document_contracts(repository_root: &std::path::Path) -> Result<(), Doc
             return Err(DocsError::new(
                 "phase8-overclaim",
                 format!("{relative_path} contains forbidden claim `{claim}`"),
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn check_phase8_platform_evidence(repository_root: &std::path::Path) -> Result<(), DocsError> {
+    let path = repository_root.join("reference/compatibility.json");
+    let contents = fs::read_to_string(&path).map_err(|error| {
+        DocsError::new(
+            "filesystem",
+            format!("failed to read {}: {error}", path.display()),
+        )
+    })?;
+    let ledger: CompatibilityEvidenceLedger = serde_json::from_str(&contents).map_err(|error| {
+        DocsError::new(
+            "phase8-evidence",
+            format!("failed to parse {}: {error}", path.display()),
+        )
+    })?;
+    let expected_references = [
+        PHASE8_RUN_URL,
+        PHASE8_CANONICAL_IDENTITY,
+        PHASE8_SANITIZER_IDENTITY,
+        "TESTING.md#phase-8-canonical-rigid-world-sign-off",
+    ];
+    let platform_entries = ledger
+        .entries
+        .iter()
+        .filter(|entry| entry.evidence.platform_validated.status == "evidenced")
+        .collect::<Vec<_>>();
+    if platform_entries.len() != PHASE8_PLATFORM_VALIDATED_ROWS {
+        return Err(DocsError::new(
+            "phase8-evidence",
+            format!(
+                "expected {PHASE8_PLATFORM_VALIDATED_ROWS} platform-validated rows bound to Phase 8 evidence, actual {}",
+                platform_entries.len()
+            ),
+        ));
+    }
+    for entry in platform_entries {
+        if entry.evidence.platform_validated.references != expected_references {
+            return Err(DocsError::new(
+                "phase8-evidence",
+                format!(
+                    "platform-validated row `{}` must reference only the current Phase 8 run and exact artifact identities",
+                    entry.id
+                ),
             ));
         }
     }
