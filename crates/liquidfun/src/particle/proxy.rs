@@ -29,6 +29,8 @@ pub enum ParticleProxyError {
     NonFiniteDiameter,
     /// The particle diameter is zero or negative.
     NonPositiveDiameter,
+    /// Derived diameter scaling cannot remain finite and nonzero.
+    DiameterOutOfRange,
     /// A scaled particle position cannot be represented by the pinned tag layout.
     PositionOutOfTagRange,
 }
@@ -96,6 +98,14 @@ impl ParticleNeighborhood {
         }
 
         let inverse_diameter = 1.0 / diameter;
+        let squared_diameter = diameter * diameter;
+        if !inverse_diameter.is_finite()
+            || inverse_diameter <= 0.0
+            || !squared_diameter.is_finite()
+            || squared_diameter <= 0.0
+        {
+            return Err(ParticleProxyError::DiameterOutOfRange);
+        }
         let mut proxies = view
             .particle_ids()
             .iter()

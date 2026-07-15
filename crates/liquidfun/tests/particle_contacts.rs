@@ -141,11 +141,15 @@ fn proxy_construction_rejects_invalid_scale_or_unrepresentable_positions() {
     // Act
     let zero = ParticleNeighborhood::from_view(&view, 0.0);
     let infinite = ParticleNeighborhood::from_view(&view, f32::INFINITY);
+    let too_small = ParticleNeighborhood::from_view(&view, f32::MIN_POSITIVE);
+    let too_large = ParticleNeighborhood::from_view(&view, f32::MAX);
     let out_of_range = ParticleNeighborhood::from_view(&view, 1.0);
 
     // Assert
     assert_eq!(zero, Err(ParticleProxyError::NonPositiveDiameter));
     assert_eq!(infinite, Err(ParticleProxyError::NonFiniteDiameter));
+    assert_eq!(too_small, Err(ParticleProxyError::DiameterOutOfRange));
+    assert_eq!(too_large, Err(ParticleProxyError::DiameterOutOfRange));
     assert_eq!(out_of_range, Err(ParticleProxyError::PositionOutOfTagRange));
 }
 
