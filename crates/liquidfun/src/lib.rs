@@ -175,7 +175,7 @@ mod error;
 mod identity;
 pub mod joint;
 pub mod math;
-mod particle;
+pub mod particle;
 #[cfg(feature = "differential-internals")]
 #[doc(hidden)]
 pub mod rigid_differential;
@@ -194,6 +194,10 @@ pub use joint::{
     PrismaticJointDef, PrismaticJointSnapshot, PulleyJointDef, PulleyJointSnapshot,
     RevoluteJointDef, RevoluteJointSnapshot, RopeJointDef, RopeJointSnapshot, WeldJointDef,
     WeldJointSnapshot, WheelJointDef, WheelJointSnapshot,
+};
+pub use particle::{
+    ParticleCapacity, ParticleColor, ParticleDef, ParticleDefError, ParticleFlags,
+    ParticleSystemDef, ParticleSystemDefError,
 };
 pub use world::{
     AggregateMassError, BodyActivationError, BodyControlError, BodyDef, BodyDefError, BodyMassData,

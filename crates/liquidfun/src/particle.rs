@@ -1,5 +1,14 @@
-//! Private representative particle-storage architecture.
+//! Checked particle contracts and private identity-preserving storage.
 //!
-//! Full particle solving and bulk buffer APIs remain deferred to Phase 9.
+//! The public definitions preserve the pinned `LiquidFun` flag values, defaults,
+//! and physical units while rejecting invalid candidates before they reach a
+//! world. Dense particle rows and allocation details remain private.
+
+mod definition;
+
+pub use definition::{
+    ParticleCapacity, ParticleColor, ParticleDef, ParticleDefError, ParticleFlags,
+    ParticleSystemDef, ParticleSystemDefError,
+};
 
 pub(crate) mod storage;

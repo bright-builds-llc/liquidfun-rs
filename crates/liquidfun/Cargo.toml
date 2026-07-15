@@ -16,5 +16,8 @@ differential-internals = []
 [lints]
 workspace = true
 
+[dependencies]
+bitflags = { workspace = true }
+
 [dev-dependencies]
 proptest = { workspace = true }
