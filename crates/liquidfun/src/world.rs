@@ -55,7 +55,7 @@ pub use query::{
 pub use step::{
     CollisionDecisionHook, CollisionDirective, CollisionFilterEvent, CommandApplication,
     CommandError, ContactControlError, ContactEvent, ContactView, ContinuousProgress,
-    FixturePairView, FixtureParticleView, LifecycleEvent, NoDecisionHook, PreSolveDirective,
-    PreSolveView, StepError, StepHook, StepLifecycleEvent, StepLimits, StepPhase, StepReport,
-    WorldCommand,
+    FixturePairView, FixtureParticleView, LifecycleEvent, NoDecisionHook, ParticlePairContactView,
+    PreSolveDirective, PreSolveView, StepError, StepHook, StepLifecycleEvent, StepLimits,
+    StepPhase, StepReport, WorldCommand,
 };

@@ -8,7 +8,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 
 use crate::{
     AggregateMassError, BodyId, DestructionRecord, FixtureId, HandleError, ParticleBodyContact,
-    ParticleBodyContactEffect, ParticleId, World,
+    ParticleBodyContactEffect, ParticleContact, ParticleContactEffect, ParticleId, World,
 };
 
 use super::fixture::FixtureDestructionError;
@@ -306,6 +306,32 @@ impl FixtureParticleView<'_> {
     }
 
     /// Returns the proposed contact normal.
+    #[must_use]
+    pub const fn normal(self) -> crate::math::Vec2 {
+        self.contact.normal()
+    }
+}
+
+/// Borrow-scoped particle-pair contact view for one synchronous decision.
+#[derive(Clone, Copy)]
+pub struct ParticlePairContactView<'step> {
+    contact: &'step ParticleContact,
+}
+
+impl ParticlePairContactView<'_> {
+    /// Returns both stable particle identities in source contact order.
+    #[must_use]
+    pub const fn particles(self) -> [ParticleId; 2] {
+        self.contact.particles()
+    }
+
+    /// Returns the proposed pair-contact weight.
+    #[must_use]
+    pub const fn weight(self) -> f32 {
+        self.contact.weight()
+    }
+
+    /// Returns the proposed pair-contact normal.
     #[must_use]
     pub const fn normal(self) -> crate::math::Vec2 {
         self.contact.normal()
@@ -661,6 +687,14 @@ pub trait CollisionDecisionHook {
         CollisionDirective::Collide
     }
 
+    /// Decides whether one flag-gated particle-pair candidate is retained.
+    fn should_collide_particle_pair(
+        &mut self,
+        _contact: ParticlePairContactView<'_>,
+    ) -> CollisionDirective {
+        CollisionDirective::Collide
+    }
+
     /// Decides source-supported controls immediately after one solid update.
     fn pre_solve(&mut self, _contact: PreSolveView<'_>) -> PreSolveDirective {
         PreSolveDirective::Enable
@@ -749,6 +783,12 @@ impl<'hook, H: CollisionDecisionHook> ContactHookRun<'hook, H> {
             == CollisionDirective::Collide
     }
 
+    pub(super) fn should_collide_particle_pair(&mut self, contact: &ParticleContact) -> bool {
+        self.hook
+            .should_collide_particle_pair(ParticlePairContactView { contact })
+            == CollisionDirective::Collide
+    }
+
     pub(super) fn contact_updated(
         &mut self,
         current: &ManagedContactSnapshot,
@@ -801,6 +841,13 @@ impl<'hook, H: CollisionDecisionHook> ContactHookRun<'hook, H> {
         effect: ParticleBodyContactEffect,
     ) -> Result<(), StepError> {
         self.push_lifecycle(LifecycleEvent::ParticleBodyContact(effect))
+    }
+
+    pub(super) fn record_particle_contact(
+        &mut self,
+        effect: ParticleContactEffect,
+    ) -> Result<(), StepError> {
+        self.push_lifecycle(LifecycleEvent::ParticleContact(effect))
     }
 
     pub(super) fn record_discrete_solve(&mut self, solve: ContactSolve) -> Result<(), StepError> {
@@ -973,6 +1020,8 @@ pub enum StepLifecycleEvent {
     ParticleDestruction(DestructionRecord),
     /// One flag-gated fixture-particle contact began or ended in source order.
     ParticleBodyContact(ParticleBodyContactEffect),
+    /// One flag-gated particle-pair contact began or ended in source order.
+    ParticleContact(ParticleContactEffect),
     /// One requested mutation completed after unlock.
     Command(CommandApplication),
     /// A world object was invalidated after dependent contact evidence.
@@ -1072,6 +1121,12 @@ pub enum StepError {
     ParticleLifetime(crate::ParticleLifetimeError),
     /// Authoritative particle storage violated an internal lifecycle invariant.
     ParticleLifecycleInvariant,
+    /// Particle proxy preparation rejected a spatial state.
+    ParticleProxy(crate::ParticleProxyError),
+    /// Particle-pair contact preparation rejected inconsistent semantic input.
+    ParticleContact(crate::ParticleContactError),
+    /// Phase 9 rigid reaction produced an invalid body candidate.
+    ParticleCoupling(crate::BodyControlError),
     /// Contact lifecycle completed, but its active solver topology is deferred.
     UnsupportedSolverTopology {
         /// Owned lifecycle evidence committed before fail-closed preflight.
@@ -1127,6 +1182,13 @@ impl fmt::Display for StepError {
             Self::ParticleLifecycleInvariant => {
                 formatter.write_str("particle lifecycle invariant was violated")
             }
+            Self::ParticleProxy(error) => {
+                write!(formatter, "particle proxy preparation failed: {error:?}")
+            }
+            Self::ParticleContact(error) => {
+                write!(formatter, "particle contact preparation failed: {error:?}")
+            }
+            Self::ParticleCoupling(error) => write!(formatter, "particle coupling failed: {error}"),
             Self::UnsupportedSolverTopology { .. } => {
                 formatter.write_str("contact solver topology is deferred beyond Phase 6")
             }
@@ -1288,7 +1350,7 @@ impl World {
             contact_transitions.extend(self.contact_manager.drain_transitions());
             self.run_particle_lifecycle_step(configuration.time_step(), &mut hook_run)?;
             let particle_contact_result = catch_unwind(AssertUnwindSafe(|| {
-                self.refresh_particle_body_contacts(&mut hook_run)
+                self.run_particle_contact_prefix(configuration, &mut hook_run)
             }));
             match particle_contact_result {
                 Ok(result) => result?,

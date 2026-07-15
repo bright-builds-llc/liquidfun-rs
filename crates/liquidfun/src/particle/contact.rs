@@ -25,6 +25,20 @@ pub struct ParticleContact {
 }
 
 impl ParticleContact {
+    pub(crate) const fn new_internal(
+        particles: [ParticleId; 2],
+        flags: ParticleFlags,
+        weight: f32,
+        normal: Vec2,
+    ) -> Self {
+        Self {
+            particles,
+            flags,
+            weight,
+            normal,
+        }
+    }
+
     /// Returns the stable particles in source contact order.
     #[must_use]
     pub const fn particles(self) -> [ParticleId; 2] {

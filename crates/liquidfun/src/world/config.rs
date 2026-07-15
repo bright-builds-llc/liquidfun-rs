@@ -13,6 +13,7 @@ pub struct StepConfiguration {
     time_step: f32,
     velocity_iterations: u32,
     position_iterations: u32,
+    particle_iterations: u32,
 }
 
 impl StepConfiguration {
@@ -58,7 +59,28 @@ impl StepConfiguration {
             time_step,
             velocity_iterations,
             position_iterations,
+            particle_iterations: 1,
         })
+    }
+
+    /// Returns this step with a checked particle sub-iteration count.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`StepConfigurationError::ParticleIterationsOutOfRange`] when
+    /// the count is zero or exceeds the reviewed solver maximum.
+    pub const fn with_particle_iterations(
+        mut self,
+        particle_iterations: u32,
+    ) -> Result<Self, StepConfigurationError> {
+        if particle_iterations == 0 || particle_iterations > MAXIMUM_SOLVER_ITERATIONS {
+            return Err(StepConfigurationError::ParticleIterationsOutOfRange {
+                requested: particle_iterations,
+                maximum: MAXIMUM_SOLVER_ITERATIONS,
+            });
+        }
+        self.particle_iterations = particle_iterations;
+        Ok(self)
     }
 
     /// Returns the accepted timestep in seconds.
@@ -77,6 +99,12 @@ impl StepConfiguration {
     #[must_use]
     pub const fn position_iterations(self) -> u32 {
         self.position_iterations
+    }
+
+    /// Returns the particle sub-iteration count.
+    #[must_use]
+    pub const fn particle_iterations(self) -> u32 {
+        self.particle_iterations
     }
 
     pub(super) fn timing(self, previous_inverse_time_step: f32) -> StepTiming {
@@ -114,6 +142,13 @@ pub enum StepConfigurationError {
         /// Largest accepted iteration count.
         maximum: u32,
     },
+    /// Particle sub-iterations are zero or exceed the reviewed maximum.
+    ParticleIterationsOutOfRange {
+        /// Rejected iteration count.
+        requested: u32,
+        /// Largest accepted iteration count.
+        maximum: u32,
+    },
 }
 
 impl fmt::Display for StepConfigurationError {
@@ -128,6 +163,10 @@ impl fmt::Display for StepConfigurationError {
             Self::PositionIterationsOutOfRange { requested, maximum } => write!(
                 formatter,
                 "position iterations must be within 1..={maximum}, got {requested}"
+            ),
+            Self::ParticleIterationsOutOfRange { requested, maximum } => write!(
+                formatter,
+                "particle iterations must be within 1..={maximum}, got {requested}"
             ),
         }
     }

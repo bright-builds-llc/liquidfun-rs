@@ -218,10 +218,11 @@ pub use world::{
     FixturePairView, FixtureParticleView, FixtureQueryOccurrence, FixtureSnapshot,
     JointCreationError, JointMutationError, JointQueryError, LifecycleEvent,
     ManagedContactSnapshot, MutationReport, NoDecisionHook, ObjectSnapshot, OriginShiftError,
-    PreSolveDirective, PreSolveView, QueryDirective, RayCastDirective, RayCastFraction,
-    RayCastFractionError, StepCompletion, StepConfiguration, StepConfigurationError, StepError,
-    StepHook, StepLifecycleEvent, StepLimits, StepPhase, StepReport, WakePolicy, World,
-    WorldCommand, WorldConfigurationError, WorldFixtureSnapshot, WorldRayCastError, WorldRayHit,
+    ParticlePairContactView, PreSolveDirective, PreSolveView, QueryDirective, RayCastDirective,
+    RayCastFraction, RayCastFractionError, StepCompletion, StepConfiguration,
+    StepConfigurationError, StepError, StepHook, StepLifecycleEvent, StepLimits, StepPhase,
+    StepReport, WakePolicy, World, WorldCommand, WorldConfigurationError, WorldFixtureSnapshot,
+    WorldRayCastError, WorldRayHit,
 };
 #[cfg(feature = "differential-internals")]
 pub use world::{ReconstructionSupport, ReconstructionUnsupported};

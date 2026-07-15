@@ -9,7 +9,7 @@ use crate::identity::{
 use crate::math::Vec2;
 use crate::particle::{
     ParticleBodyContact as SemanticBodyContact, ParticleBufferBundle, ParticleBufferLanes,
-    ParticleBufferMode, ParticleColor, ParticleFlags,
+    ParticleBufferMode, ParticleColor, ParticleContact as SemanticParticleContact, ParticleFlags,
 };
 
 use lanes::{
@@ -466,6 +466,42 @@ impl ParticleStorage {
         &self.particle_contacts
     }
 
+    pub(crate) fn semantic_particle_contacts(&self) -> Vec<SemanticParticleContact> {
+        self.particle_contacts
+            .iter()
+            .map(|contact| {
+                SemanticParticleContact::new_internal(
+                    contact.indices.map(|index| self.particle_id_at(index)),
+                    contact.flags,
+                    contact.weight,
+                    contact.normal,
+                )
+            })
+            .collect()
+    }
+
+    pub(crate) fn replace_particle_contacts(
+        &mut self,
+        contacts: &[SemanticParticleContact],
+    ) -> Result<(), ParticleStorageError> {
+        let particle_contacts = contacts
+            .iter()
+            .map(|contact| {
+                let [first, second] = contact.particles();
+                Ok(ParticleContact {
+                    indices: [self.resolve_live(first)?, self.resolve_live(second)?],
+                    flags: contact.flags(),
+                    weight: contact.weight(),
+                    normal: contact.normal(),
+                })
+            })
+            .collect::<Result<Vec<_>, ParticleStorageError>>()?;
+        self.particle_contacts = particle_contacts;
+        self.recompute_weights();
+        debug_assert_eq!(self.check_invariants(), Ok(()));
+        Ok(())
+    }
+
     pub(in crate::particle) fn body_contacts(&self) -> &[ParticleBodyContact] {
         &self.body_contacts
     }
@@ -544,6 +580,32 @@ impl ParticleStorage {
             }
             stuck.last_body_contact_steps[row] = timestamp;
         }
+    }
+
+    pub(crate) fn particle_velocity(
+        &self,
+        particle: ParticleId,
+    ) -> Result<Vec2, ParticleStorageError> {
+        let index = self.resolve_live(particle)?;
+        Ok(self.velocities[index.0])
+    }
+
+    pub(crate) fn particle_weight(
+        &self,
+        particle: ParticleId,
+    ) -> Result<f32, ParticleStorageError> {
+        let index = self.resolve_live(particle)?;
+        Ok(self.weights[index.0])
+    }
+
+    pub(crate) fn set_particle_velocity_internal(
+        &mut self,
+        particle: ParticleId,
+        velocity: Vec2,
+    ) -> Result<(), ParticleStorageError> {
+        let index = self.resolve_live(particle)?;
+        self.velocities[index.0] = velocity;
+        Ok(())
     }
 
     pub(in crate::particle) fn stuck_candidates(
