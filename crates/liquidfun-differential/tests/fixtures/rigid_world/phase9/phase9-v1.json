@@ -1,0 +1,115 @@
+{
+  "profile": "phase9-v1",
+  "retained_request_sha256": "a7f921abac1cbb488cce86a8ecfdb8faab4145f0784dbbce99b7fb89e65f43a8",
+  "pinned_upstream_revision": "7f20402173fd143a3988c921bc384459c6a858f2",
+  "pinned_witness_sha256": "08d41d25f3766b9bf4bef51fb10713b7f925c074399b9642ad5cb4ce933fc8e3",
+  "forbidden_phase10_members": [
+    "particle_groups",
+    "particle_pairs",
+    "particle_triads",
+    "particle_solver"
+  ],
+  "cases": [
+    {
+      "case_id": "storage-systems-and-permutations",
+      "authority": "independent",
+      "branches": [
+        "multiple_systems",
+        "newest_first",
+        "paused_system",
+        "stable_ids_sort",
+        "stable_ids_rotate",
+        "stable_ids_compact",
+        "optional_lanes",
+        "fixed_buffer",
+        "growable_buffer",
+        "fixed_full",
+        "teardown"
+      ]
+    },
+    {
+      "case_id": "lifetime-zombie-and-eviction",
+      "authority": "pinned_oracle",
+      "branches": [
+        "finite_lifetime",
+        "infinite_lifetime",
+        "equal_lifetime",
+        "oldest_lifetime",
+        "maximum_lifetime",
+        "requested_destruction_callback",
+        "unrequested_destruction_callback",
+        "zombie_pending",
+        "capacity_eviction"
+      ]
+    },
+    {
+      "case_id": "contacts-listeners-filters-and-coupling",
+      "authority": "pinned_oracle",
+      "branches": [
+        "particle_contact",
+        "body_contact",
+        "strict_contact_enabled",
+        "strict_contact_disabled",
+        "listener_flag_enabled",
+        "listener_flag_disabled",
+        "filter_flag_enabled",
+        "filter_flag_disabled",
+        "contact_order",
+        "contact_multiplicity",
+        "coupling_fields",
+        "dynamic_body_reaction",
+        "static_body_no_reaction"
+      ]
+    },
+    {
+      "case_id": "forces-impulses-and-statistics",
+      "authority": "independent",
+      "branches": [
+        "force_range",
+        "impulse_range",
+        "statistics_counts",
+        "collision_energy",
+        "stuck_candidates"
+      ]
+    },
+    {
+      "case_id": "aabb-query-control-and-culling",
+      "authority": "independent",
+      "branches": [
+        "system_aabb",
+        "world_aabb",
+        "system_culling",
+        "query_continue",
+        "query_terminate"
+      ]
+    },
+    {
+      "case_id": "ray-control-and-culling",
+      "authority": "independent",
+      "branches": [
+        "system_ray",
+        "world_ray",
+        "ray_culling",
+        "ray_start_inside_exclusion",
+        "ray_ignore",
+        "ray_continue",
+        "ray_clip",
+        "ray_terminate"
+      ]
+    },
+    {
+      "case_id": "closed-evidence-contract",
+      "authority": "independent",
+      "branches": [
+        "retained_phase6_through_phase8",
+        "phase10_rejection",
+        "closed_policy_registry",
+        "replay_identity",
+        "minimization_identity",
+        "first_divergence_stability",
+        "d0_byte_identity",
+        "debug_release_agreement"
+      ]
+    }
+  ]
+}
