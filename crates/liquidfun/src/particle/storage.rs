@@ -5,6 +5,8 @@
 
 use crate::identity::{HandleIdentity, Identity, ParticleId, ParticleSystemId, WorldKey};
 
+mod lane_inventory;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct ParticleInput {
     pub(crate) position: [i32; 2],
