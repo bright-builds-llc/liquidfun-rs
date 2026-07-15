@@ -1,15 +1,22 @@
 use super::*;
 
-fn input(value: i32, group: u16, optional: bool) -> ParticleInput {
+fn input(value: i16, maybe_group: Option<ParticleGroupId>, optional: bool) -> ParticleInput {
+    let scalar = f32::from(value);
+    let component = u8::try_from(value).expect("test values fit in a color component");
     ParticleInput {
-        position: [value, -value],
-        velocity: [value + 10, value + 20],
-        flags: u32::try_from(value).expect("test values are non-negative"),
-        group,
-        maybe_color: optional
-            .then_some([u8::try_from(value).expect("test values fit in a color component"); 4]),
-        maybe_lifetime: optional
-            .then_some(u32::try_from(value).expect("test values are non-negative") + 100),
+        position: Vec2::new(scalar, -scalar),
+        velocity: Vec2::new(scalar + 10.0, scalar + 20.0),
+        flags: ParticleFlags::from_bits_retain(
+            u32::try_from(value).expect("test values are non-negative"),
+        ),
+        maybe_group,
+        maybe_color: optional.then_some(ParticleColor::new(
+            component, component, component, component,
+        )),
+        maybe_user_association: optional.then_some(UserAssociationKey::new(
+            u64::try_from(value).expect("test values are non-negative"),
+        )),
+        maybe_expiration_time: optional.then_some(i32::from(value) + 100),
     }
 }
 
@@ -19,24 +26,48 @@ fn storage() -> ParticleStorage {
     ParticleStorage::new(world, system, 0, 8, 8).expect("test storage contract is valid")
 }
 
-fn input_with_optional_defaults(value: i32, group: u16) -> ParticleInput {
-    let mut value = input(value, group, false);
-    value.maybe_color = Some([0; 4]);
-    value.maybe_lifetime = Some(0);
+fn input_with_optional_defaults(value: i16, maybe_group: Option<ParticleGroupId>) -> ParticleInput {
+    let mut value = input(value, maybe_group, false);
+    value.maybe_color = Some(ParticleColor::ZERO);
+    value.maybe_expiration_time = Some(0);
     value
 }
 
 fn populated_storage() -> (ParticleStorage, [ParticleId; 4]) {
     let mut storage = storage();
+    let first_group = ParticleGroupId::from_identity(Identity::new(storage.world, 10, 0));
+    let second_group = ParticleGroupId::from_identity(Identity::new(storage.world, 11, 0));
     let ids = [
-        storage.create(input(1, 0, true)).expect("particle fits"),
-        storage.create(input(2, 0, false)).expect("particle fits"),
-        storage.create(input(3, 1, true)).expect("particle fits"),
-        storage.create(input(4, 1, false)).expect("particle fits"),
+        storage
+            .create(input(1, Some(first_group), true))
+            .expect("particle fits"),
+        storage
+            .create(input(2, Some(first_group), false))
+            .expect("particle fits"),
+        storage
+            .create(input(3, Some(second_group), true))
+            .expect("particle fits"),
+        storage
+            .create(input(4, Some(second_group), false))
+            .expect("particle fits"),
     ];
-    storage.contacts = vec![[ParticleIndex(0), ParticleIndex(2)]];
-    storage.pairs = vec![[ParticleIndex(1), ParticleIndex(3)]];
-    storage.triads = vec![[ParticleIndex(0), ParticleIndex(1), ParticleIndex(3)]];
+    storage.particle_contacts = vec![ParticleContact {
+        indices: [ParticleIndex(0), ParticleIndex(2)],
+        flags: ParticleFlags::WATER,
+        weight: 0.5,
+        normal: Vec2::new(1.0, 0.0),
+    }];
+    storage.pairs = vec![ParticlePair {
+        indices: [ParticleIndex(1), ParticleIndex(3)],
+        flags: ParticleFlags::SPRING,
+        strength: 0.75,
+        distance: 2.0,
+    }];
+    storage.triads = vec![ParticleTriad {
+        indices: [ParticleIndex(0), ParticleIndex(1), ParticleIndex(3)],
+        flags: ParticleFlags::ELASTIC,
+        strength: 0.25,
+    }];
     (storage, ids)
 }
 
@@ -51,18 +82,24 @@ fn one_transaction_remaps_all_lanes_indices_and_group_ranges() {
         .expect("whole-group rotation is valid");
 
     // Assert
-    assert_eq!(storage.input(ids[0]), Ok(input(1, 0, true)));
+    let first_group = storage.groups[2];
+    let second_group = storage.groups[0];
+    assert_eq!(storage.input(ids[0]), Ok(input(1, first_group, true)));
     assert_eq!(
         storage.input(ids[1]),
-        Ok(input_with_optional_defaults(2, 0))
+        Ok(input_with_optional_defaults(2, first_group))
     );
-    assert_eq!(storage.input(ids[2]), Ok(input(3, 1, true)));
+    assert_eq!(storage.input(ids[2]), Ok(input(3, second_group, true)));
     assert_eq!(
         storage.input(ids[3]),
-        Ok(input_with_optional_defaults(4, 1))
+        Ok(input_with_optional_defaults(4, second_group))
     );
     assert_eq!(
-        storage.proxies,
+        storage
+            .proxies
+            .iter()
+            .map(|proxy| proxy.index)
+            .collect::<Vec<_>>(),
         vec![
             ParticleIndex(2),
             ParticleIndex(3),
@@ -70,31 +107,37 @@ fn one_transaction_remaps_all_lanes_indices_and_group_ranges() {
             ParticleIndex(1)
         ]
     );
-    assert_eq!(storage.contacts, vec![[ParticleIndex(2), ParticleIndex(0)]]);
-    assert_eq!(storage.pairs, vec![[ParticleIndex(3), ParticleIndex(1)]]);
     assert_eq!(
-        storage.triads,
-        vec![[ParticleIndex(2), ParticleIndex(3), ParticleIndex(1)]]
+        storage.particle_contacts[0].indices,
+        [ParticleIndex(2), ParticleIndex(0)]
     );
     assert_eq!(
-        storage.lifetime_order,
-        vec![
+        storage.pairs[0].indices,
+        [ParticleIndex(3), ParticleIndex(1)]
+    );
+    assert_eq!(
+        storage.triads[0].indices,
+        [ParticleIndex(2), ParticleIndex(3), ParticleIndex(1)]
+    );
+    assert_eq!(
+        storage.maybe_expiration_order,
+        Some(vec![
             ParticleIndex(2),
             ParticleIndex(3),
             ParticleIndex(0),
             ParticleIndex(1)
-        ]
+        ])
     );
     assert_eq!(
         storage.group_ranges,
         vec![
             GroupRange {
-                group: 1,
+                maybe_group: second_group,
                 start: ParticleIndex(0),
                 end: ParticleIndex(2)
             },
             GroupRange {
-                group: 0,
+                maybe_group: first_group,
                 start: ParticleIndex(2),
                 end: ParticleIndex(4)
             },
@@ -121,7 +164,12 @@ fn invalid_duplicate_permutation_leaves_state_unchanged() {
 fn out_of_range_derived_reference_leaves_state_unchanged() {
     // Arrange
     let (mut storage, _ids) = populated_storage();
-    storage.contacts.push([ParticleIndex(0), ParticleIndex(99)]);
+    storage.particle_contacts.push(ParticleContact {
+        indices: [ParticleIndex(0), ParticleIndex(99)],
+        flags: ParticleFlags::WATER,
+        weight: 0.0,
+        normal: Vec2::ZERO,
+    });
     let before = storage.clone();
 
     // Act
@@ -163,13 +211,20 @@ fn compaction_drops_removed_references_and_remaps_survivors() {
 
     // Assert
     assert_eq!(destroyed.len(), 2);
-    assert!(storage.contacts.is_empty());
+    assert!(storage.particle_contacts.is_empty());
     assert!(storage.pairs.is_empty());
     assert!(storage.triads.is_empty());
-    assert_eq!(storage.proxies, vec![ParticleIndex(0), ParticleIndex(1)]);
     assert_eq!(
-        storage.lifetime_order,
+        storage
+            .proxies
+            .iter()
+            .map(|proxy| proxy.index)
+            .collect::<Vec<_>>(),
         vec![ParticleIndex(0), ParticleIndex(1)]
+    );
+    assert_eq!(
+        storage.maybe_expiration_order,
+        Some(vec![ParticleIndex(0), ParticleIndex(1)])
     );
     assert_eq!(storage.check_invariants(), Ok(()));
 }

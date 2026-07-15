@@ -1,13 +1,20 @@
 use super::*;
 
-fn input(value: i32) -> ParticleInput {
+fn input(value: i16) -> ParticleInput {
+    let scalar = f32::from(value);
+    let component = u8::try_from(value).expect("test values fit u8");
     ParticleInput {
-        position: [value, -value],
-        velocity: [value + 1, value + 2],
-        flags: u32::try_from(value).expect("test values are non-negative"),
-        group: 0,
-        maybe_color: Some([u8::try_from(value).expect("test values fit u8"); 4]),
-        maybe_lifetime: Some(u32::try_from(value).expect("test values fit u32") + 10),
+        position: Vec2::new(scalar, -scalar),
+        velocity: Vec2::new(scalar + 1.0, scalar + 2.0),
+        flags: ParticleFlags::from_bits_retain(
+            u32::try_from(value).expect("test values are non-negative"),
+        ),
+        maybe_group: None,
+        maybe_color: Some(ParticleColor::new(
+            component, component, component, component,
+        )),
+        maybe_user_association: None,
+        maybe_expiration_time: Some(i32::from(value) + 10),
     }
 }
 
@@ -74,7 +81,7 @@ fn pending_delete_rejects_mutation_but_preserves_snapshot() {
     let snapshot = storage
         .mark_delete(id)
         .expect("live particle can be marked");
-    let mutation = storage.set_position(id, [99, 99]);
+    let mutation = storage.set_position(id, Vec2::new(99.0, 99.0));
 
     // Assert
     assert_eq!(

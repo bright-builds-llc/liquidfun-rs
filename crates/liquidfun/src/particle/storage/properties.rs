@@ -30,14 +30,22 @@ fn operation_strategy() -> impl Strategy<Value = Operation> {
 }
 
 fn input(value: i16, optional: bool) -> ParticleInput {
-    let value = i32::from(value);
+    let integer = i32::from(value);
+    let value = f32::from(value);
     ParticleInput {
-        position: [value, value.saturating_neg()],
-        velocity: [value.saturating_add(1), value.saturating_sub(1)],
-        flags: value.unsigned_abs(),
-        group: 0,
-        maybe_color: optional.then_some(value.to_le_bytes()),
-        maybe_lifetime: optional.then_some(value.unsigned_abs()),
+        position: Vec2::new(value, -value),
+        velocity: Vec2::new(value + 1.0, value - 1.0),
+        flags: ParticleFlags::from_bits_retain(integer.unsigned_abs()),
+        maybe_group: None,
+        maybe_color: optional.then_some(ParticleColor::new(
+            integer.to_le_bytes()[0],
+            integer.to_le_bytes()[1],
+            integer.to_le_bytes()[2],
+            integer.to_le_bytes()[3],
+        )),
+        maybe_user_association: optional
+            .then_some(UserAssociationKey::new(u64::from(integer.unsigned_abs()))),
+        maybe_expiration_time: optional.then_some(integer.saturating_abs()),
     }
 }
 
@@ -62,7 +70,7 @@ fn ordinary_storage(declared_capacity: usize) -> ParticleStorage {
         .expect("ordinary test storage is valid")
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 struct ModelRow {
     id: ParticleId,
     input: ParticleInput,
@@ -89,14 +97,15 @@ impl Model {
     fn normalize_for_create(&mut self, mut input: ParticleInput) -> ParticleInput {
         if !self.optional_lanes && input.maybe_color.is_some() {
             for row in &mut self.rows {
-                row.input.maybe_color = Some([0; 4]);
-                row.input.maybe_lifetime = Some(0);
+                row.input.maybe_color = Some(ParticleColor::ZERO);
+                row.input.maybe_user_association = None;
+                row.input.maybe_expiration_time = Some(0);
             }
             self.optional_lanes = true;
         }
         if self.optional_lanes {
-            input.maybe_color.get_or_insert([0; 4]);
-            input.maybe_lifetime.get_or_insert(0);
+            input.maybe_color.get_or_insert(ParticleColor::ZERO);
+            input.maybe_expiration_time.get_or_insert(0);
         }
         input
     }
@@ -237,7 +246,7 @@ fn apply_operation(
             let Some(id) = model.selected_id(selector) else {
                 return Ok(());
             };
-            let position = [i32::from(value), i32::from(value).saturating_neg()];
+            let position = Vec2::new(f32::from(value), -f32::from(value));
             let actual = storage.set_position(id, position);
             let expected = match model.maybe_row_mut(id) {
                 Some(row) if row.pending => Err(ParticleStorageError::PendingDelete),
@@ -312,13 +321,18 @@ fn declared_capacity_controls_growth_and_teardown_returns_owned_buffers() {
         overflow,
         Err(ParticleStorageError::CapacityExceeded { limit: 1 })
     );
-    assert_eq!(visible_positions, vec![[1, -1]]);
+    assert_eq!(visible_positions, vec![Vec2::new(1.0, -1.0)]);
     assert_eq!(lanes.positions, visible_positions);
-    assert_eq!(lanes.velocities, vec![[2, 0]]);
-    assert_eq!(lanes.flags, vec![1]);
-    assert_eq!(lanes.groups, vec![0]);
-    assert_eq!(lanes.maybe_colors, Some(vec![[1, 0, 0, 0]]));
-    assert_eq!(lanes.maybe_lifetimes, Some(vec![1]));
+    assert_eq!(lanes.velocities, vec![Vec2::new(2.0, 0.0)]);
+    assert_eq!(lanes.flags, vec![ParticleFlags::from_bits_retain(1)]);
+    assert_eq!(lanes.groups, vec![None]);
+    assert_eq!(
+        lanes.maybe_colors,
+        Some(vec![ParticleColor::new(1, 0, 0, 0)])
+    );
+    assert_eq!(lanes.weights, vec![0.0]);
+    assert_eq!(lanes.forces, vec![Vec2::ZERO]);
+    assert_eq!(lanes.maybe_expiration_times, Some(vec![1]));
 }
 
 #[test]
