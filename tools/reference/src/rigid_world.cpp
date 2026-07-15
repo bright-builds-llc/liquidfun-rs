@@ -4,6 +4,7 @@
 #include "rigid_world_decode.hpp"
 #include "rigid_world_trace.hpp"
 #include "rigid_world_phase8_execute.hpp"
+#include "rigid_world_phase9_execute.hpp"
 
 #include <Box2D/Box2D.h>
 
@@ -775,6 +776,17 @@ RigidWorldTrace RigidWorldAdapter::execute(std::string_view record) {
       }
     }
     world_active = false;
+  }
+  if (!request.phase9_timelines.empty()) {
+    if (request.phase9_timelines.size() != timeline_results.size()) {
+      throw std::runtime_error("Phase 9 timeline alignment failed");
+    }
+    for (std::size_t index = 0; index < request.phase9_timelines.size(); ++index) {
+      if (!request.phase9_timelines.at(index).empty()) {
+        apply_phase9_timeline(
+            timeline_results.at(index), request.phase9_timelines.at(index));
+      }
+    }
   }
   if (world_active) throw std::runtime_error("rigid world reset proof failed");
   if (reset_epoch_ == std::numeric_limits<std::uint64_t>::max()) {
