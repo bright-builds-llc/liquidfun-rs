@@ -11,7 +11,7 @@ counts:
 generated_by: gsd-code-review
 lifecycle_mode: yolo
 phase_lifecycle_id: 8-2026-07-13T21-26-30
-generated_at: 2026-07-15T01:57:00Z
+generated_at: 2026-07-15T02:14:17Z
 ---
 
 # Phase 8 Code Review
@@ -25,8 +25,8 @@ protocol validation and result bounds, native and pinned C++ adapters,
 comparison policy, accepted fixtures, oracle CI, and canonical-evidence
 claims. The review included fixes `53a0b02` and `e0b5106` and the evidence and
 documentation refresh at `e8daec8`. It was reopened for the post-verification
-compatibility-ledger fix at `a109440` and the 14-file workspace-Clippy cleanup
-at `c809a21`.
+compatibility-ledger fix at `a109440`, the 14-file workspace-Clippy cleanup at
+`c809a21`, and the independent cleanup review at `beb98bd`.
 
 The Phase 8 surface is clean at standard review depth. Both prior warnings are
 resolved, the exact replacement canonical run and artifacts are internally
@@ -66,7 +66,7 @@ of the three former no-ops.
 ### GAP-08-01 — Resolved — Compatibility ledger is bound to current evidence
 
 All 33 existing `platform_validated: evidenced` rows now name run
-`29379350740`, its exact canonical and sanitizer identity records, and the
+`29383445374`, its exact canonical and sanitizer identity records, and the
 Phase 8 testing-policy anchor. A semantic before/after comparison confirms
 that `a109440` changed only these reference arrays: no evidence status,
 applicability, implementation claim, or maturity claim was promoted. The
@@ -110,23 +110,24 @@ None.
 
 ## Canonical evidence
 
-- GitHub Actions run `29379350740` completed successfully for exact commit
-  `e0b5106559b3c0c37beb44e4ade45c3b7919b59d`.
+- GitHub Actions workflow-dispatch run `29383445374` completed successfully for
+  exact code commit `beb98bd74b1d26ab0a96c6be33ce1926d349abf0`.
 - Canonical Linux, fail-fast sanitizer/reset-corpus Linux, macOS portability,
   and Windows portability jobs all succeeded.
 - The run published exactly two unexpired artifacts:
-  `phase8-canonical-29379350740-e0b5106559b3c0c37beb44e4ade45c3b7919b59d`
+  `phase8-canonical-29383445374-beb98bd74b1d26ab0a96c6be33ce1926d349abf0`
   and
-  `phase8-sanitizer-29379350740-e0b5106559b3c0c37beb44e4ade45c3b7919b59d`.
+  `phase8-sanitizer-29383445374-beb98bd74b1d26ab0a96c6be33ce1926d349abf0`.
 - Both downloaded identity records bind the same run and commit, upstream
   revision `7f20402173fd143a3988c921bc384459c6a858f2`, Rust 1.97.0,
   CMake 4.3.3, Ninja 1.13.2, Clang 22.1.8, and `phase8-v1` policy.
+- Push-triggered Cargo CI run `29382964877` and Oracle CI run `29382964854`
+  passed at the same exact head before the full dispatch.
 - Repository documentation and the compatibility ledger consistently name the
   replacement run. The previous identity remains only in historical records
   and as a deliberate negative-test mutation.
-- This run does not bind final cleanup commit `c809a21`. That is expected at
-  this review checkpoint; exact-commit canonical and sanitizer evidence must be
-  refreshed after this clean review before the updated code is signed off.
+- The final dispatch closes the prior evidence gap: it binds the cleanup and
+  its clean independent review to the exact code commit used by all four jobs.
 
 ## Verification evidence
 

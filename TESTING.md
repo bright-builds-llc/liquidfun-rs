@@ -507,13 +507,13 @@ absolute, or absolute-relative policies. There is no wildcard, repository-wide e
 or automatic widening.
 
 GitHub Actions
-[run 29379350740](https://github.com/bright-builds-llc/liquidfun-rs/actions/runs/29379350740)
+[run 29383445374](https://github.com/bright-builds-llc/liquidfun-rs/actions/runs/29383445374)
 was a successful `workflow_dispatch` for exact head
-`e0b5106559b3c0c37beb44e4ade45c3b7919b59d`. The unique successful
+`beb98bd74b1d26ab0a96c6be33ce1926d349abf0`. The unique successful
 `canonical-linux` and `sanitizer-linux` identities were downloaded from:
 
-- `phase8-canonical-29379350740-e0b5106559b3c0c37beb44e4ade45c3b7919b59d`
-- `phase8-sanitizer-29379350740-e0b5106559b3c0c37beb44e4ade45c3b7919b59d`
+- `phase8-canonical-29383445374-beb98bd74b1d26ab0a96c6be33ce1926d349abf0`
+- `phase8-sanitizer-29383445374-beb98bd74b1d26ab0a96c6be33ce1926d349abf0`
 
 Both identities record Rust 1.97.0, CMake 4.3.3, Ninja 1.13.2, Clang 22.1.8,
 upstream revision `7f20402173fd143a3988c921bc384459c6a858f2`, and policy profile

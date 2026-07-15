@@ -5,7 +5,7 @@ subsystem: compatibility-documentation
 tags: [joints, rope, callbacks, differential, canonical-evidence]
 requires:
   - phase: 08-23
-    provides: exact successful canonical and sanitizer evidence identities for commit e0b5106559b3c0c37beb44e4ade45c3b7919b59d
+    provides: exact successful canonical and sanitizer evidence identities for final reviewed code commit beb98bd74b1d26ab0a96c6be33ce1926d349abf0
 provides:
   - canonical scalar rigid-body and joint differential sign-off for the closed Phase 8 corpus
   - exact platform evidence for 16 accumulated rigid rows and 17 Phase 8 joint and rope rows
@@ -34,7 +34,7 @@ requirements-completed: [RIGD-11, JOIN-01, JOIN-02, JOIN-03, JOIN-04, JOIN-05]
 generated_by: gsd-execute-plan
 lifecycle_mode: yolo
 phase_lifecycle_id: 8-2026-07-13T21-26-30
-generated_at: 2026-07-14T23:30:14Z
+generated_at: 2026-07-15T02:14:17Z
 duration: 50min
 completed: 2026-07-14
 ---
@@ -90,9 +90,11 @@ None. The implementation followed the planned external-evidence gate, red/green 
 
 ## Validation Evidence
 
-- Exact external gate: refreshed run `29379350740`, head `e0b5106559b3c0c37beb44e4ade45c3b7919b59d`, successful `canonical-linux`, `sanitizer-linux`, macOS, and Windows jobs, and exactly two expected unexpired artifacts validated.
-- Exact artifacts: `phase8-canonical-29379350740-e0b5106559b3c0c37beb44e4ade45c3b7919b59d` and `phase8-sanitizer-29379350740-e0b5106559b3c0c37beb44e4ade45c3b7919b59d`.
+- Exact external gate: final refreshed run `29383445374`, head `beb98bd74b1d26ab0a96c6be33ce1926d349abf0`, successful `canonical-linux`, `sanitizer-linux`, macOS, and Windows jobs, and exactly two expected unexpired artifacts validated.
+- Exact artifacts: `phase8-canonical-29383445374-beb98bd74b1d26ab0a96c6be33ce1926d349abf0` and `phase8-sanitizer-29383445374-beb98bd74b1d26ab0a96c6be33ce1926d349abf0`.
+- Push-triggered Cargo CI run `29382964877` and Oracle CI run `29382964854` passed at the same exact head before the full dispatch.
 - The earlier evidence binding to run `29374708477` and commit `533c2ccf97b3921079baf7c339ddb4dad1a4038b` is superseded because it predates the Phase 8 code-review fixes and updated request fixture.
+- The intermediate evidence binding to run `29379350740` and commit `e0b5106559b3c0c37beb44e4ade45c3b7919b59d` is superseded because it predates the reviewed workspace-Clippy cleanup.
 - Identity records: Rust 1.97.0, CMake 4.3.3, Ninja 1.13.2, Clang 22.1.8, upstream `7f20402173fd143a3988c921bc384459c6a858f2`, and policy `phase8-v1` matched exactly.
 - Documentation TDD: the new acceptance contract failed against the pre-promotion ledger, then all four focused Phase 8 tests passed after implementation.
 - `cargo xtask inventory generate`, `cargo xtask inventory check`, and `cargo xtask docs check`: passed.

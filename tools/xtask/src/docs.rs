@@ -318,14 +318,14 @@ const PHASE7_DOCUMENT_CONTRACTS: [(&str, &[&str]); 5] = [
 const PHASE8_SIGNOFF: &str =
     "canonical scalar rigid-body and joint differential sign-off for the closed Phase 8 corpus";
 const PHASE8_PLATFORM_VALIDATED_ROWS: usize = 33;
-const PHASE8_RUN: &str = "29379350740";
-const PHASE8_HEAD: &str = "e0b5106559b3c0c37beb44e4ade45c3b7919b59d";
+const PHASE8_RUN: &str = "29383445374";
+const PHASE8_HEAD: &str = "beb98bd74b1d26ab0a96c6be33ce1926d349abf0";
 const PHASE8_RUN_URL: &str =
-    "https://github.com/bright-builds-llc/liquidfun-rs/actions/runs/29379350740";
+    "https://github.com/bright-builds-llc/liquidfun-rs/actions/runs/29383445374";
 const PHASE8_CANONICAL_IDENTITY: &str =
-    "phase8-canonical-29379350740-e0b5106559b3c0c37beb44e4ade45c3b7919b59d/identity.json";
+    "phase8-canonical-29383445374-beb98bd74b1d26ab0a96c6be33ce1926d349abf0/identity.json";
 const PHASE8_SANITIZER_IDENTITY: &str =
-    "phase8-sanitizer-29379350740-e0b5106559b3c0c37beb44e4ade45c3b7919b59d/identity.json";
+    "phase8-sanitizer-29383445374-beb98bd74b1d26ab0a96c6be33ce1926d349abf0/identity.json";
 const PHASE8_DOCUMENT_CONTRACTS: [(&str, &[&str]); 5] = [
     (
         "crates/liquidfun/src/lib.rs",
@@ -346,8 +346,8 @@ const PHASE8_DOCUMENT_CONTRACTS: [(&str, &[&str]); 5] = [
             "19 required witness families",
             PHASE8_RUN,
             PHASE8_HEAD,
-            "phase8-canonical-29379350740-e0b5106559b3c0c37beb44e4ade45c3b7919b59d",
-            "phase8-sanitizer-29379350740-e0b5106559b3c0c37beb44e4ade45c3b7919b59d",
+            "phase8-canonical-29383445374-beb98bd74b1d26ab0a96c6be33ce1926d349abf0",
+            "phase8-sanitizer-29383445374-beb98bd74b1d26ab0a96c6be33ce1926d349abf0",
             "Rust 1.97.0, CMake 4.3.3, Ninja 1.13.2, and Clang 22.1.8",
             "7f20402173fd143a3988c921bc384459c6a858f2",
             "`phase8-v1`",
