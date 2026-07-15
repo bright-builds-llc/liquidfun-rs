@@ -567,6 +567,45 @@ the repository's reviewed stage, review, and promotion workflow. A local pass,
 a mismatched SHA, one artifact, or an unverified digest cannot promote the Phase
 9 claim.
 
+### Phase 9 canonical evidence (2026-07-15)
+
+GitHub Actions run
+[`29439515367`](https://github.com/bright-builds-llc/liquidfun-rs/actions/runs/29439515367)
+completed successfully for the human-approved commit
+[`a87f84bbdbfe55fb732d74c481c4a4bda9eec958`](https://github.com/bright-builds-llc/liquidfun-rs/commit/a87f84bbdbfe55fb732d74c481c4a4bda9eec958).
+The run was dispatched manually through `Oracle CI`; exactly one canonical job
+and one sanitizer job succeeded for that head SHA.
+
+The exact, unexpired artifacts were independently downloaded again before any
+compatibility-ledger edit:
+
+- [`phase9-canonical-29439515367-a87f84bbdbfe55fb732d74c481c4a4bda9eec958`](https://api.github.com/repos/bright-builds-llc/liquidfun-rs/actions/artifacts/8352859391/zip)
+  has GitHub archive digest
+  `sha256:f237d6f1ebe0e59f65a5ae0609140eecdd8b32247e9d2064c83748be1ab9f5ea`.
+  Its identity binds `canonical-linux` and `phase9-v1`; the recomputed trace and
+  manifest SHA-256 values are
+  `3a339387b4c4acccc15b5fc4944d6bec9c7e1d315f4753034ae52a5ff97f2e64`
+  and
+  `36cfaad1f56505f8427408733e2231ad613984a4cb3eb3b8d757e7a14b2c38e0`.
+- [`phase9-sanitizer-29439515367-a87f84bbdbfe55fb732d74c481c4a4bda9eec958`](https://api.github.com/repos/bright-builds-llc/liquidfun-rs/actions/artifacts/8352881868/zip)
+  has GitHub archive digest
+  `sha256:95ad57e5d5711ae6aa93847ad1efd4a04025bd2956b4996535fa0e5f45a5893f`.
+  Its identity binds `sanitizer-linux` and `phase9-v1`; the recomputed trace and
+  manifest SHA-256 values are
+  `ee75462d49275c5b7d02b8677eb6f9bf82c241c6b993c16d6df08a2ae231a070`
+  and
+  `0c89f0136eda6689118d3eaa909defb1d182d5723e7a64ea1e958396066dce15`.
+
+Independent revalidation required the approved SHA to remain an ancestor of the
+reviewing checkout and the exact remote `main`, inspected the workflow at that
+commit, and re-queried the run, jobs, and artifacts APIs. Both downloaded
+identities matched run, head, job, upstream revision, canonical target, pinned
+tool versions, and policy. Their trace and manifest paths passed the safe
+artifact-relative path contract, all four payload hashes were recomputed with
+`shasum -a 256 -c`, and `cargo xtask provenance check` passed. These artifacts
+therefore provide D1 evidence only for the closed `phase9-v1` corpus; they make
+no Phase 10, complete particle-solver, or full-project parity claim.
+
 ## Differential commands
 
 Initialize, verify, configure, and build the oracle first:
