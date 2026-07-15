@@ -54,6 +54,23 @@ impl ParticleBufferMode {
 /// the same lazy meaning as the pinned implementation. Group membership,
 /// application values, identities, and derived solver state are intentionally
 /// not consumer-owned lanes.
+///
+/// Ownership transfer prevents a lane alias from surviving adoption:
+///
+/// ```compile_fail
+/// use liquidfun::math::Vec2;
+/// use liquidfun::{ParticleBufferBundle, ParticleBufferLanes, ParticleFlags};
+///
+/// let lanes = ParticleBufferLanes::new(
+///     Vec::<Vec2>::with_capacity(1),
+///     Vec::<Vec2>::with_capacity(1),
+///     Vec::<ParticleFlags>::with_capacity(1),
+///     None,
+/// );
+/// let positions = lanes.positions();
+/// let _bundle = ParticleBufferBundle::fixed(1, lanes).expect("complete fixed lanes");
+/// assert!(positions.is_empty());
+/// ```
 #[derive(Debug, PartialEq)]
 pub struct ParticleBufferLanes {
     pub(crate) positions: Vec<Vec2>,
@@ -101,6 +118,19 @@ impl ParticleBufferLanes {
     #[must_use]
     pub fn maybe_colors(&self) -> Option<&[ParticleColor]> {
         self.maybe_colors.as_deref()
+    }
+
+    /// Clears every required and allocated optional semantic row while retaining allocations.
+    ///
+    /// This prepares returned lanes for a later adoption cycle without changing
+    /// which optional lanes were supplied.
+    pub fn clear(&mut self) {
+        self.positions.clear();
+        self.velocities.clear();
+        self.flags.clear();
+        if let Some(colors) = &mut self.maybe_colors {
+            colors.clear();
+        }
     }
 
     fn row_count(&self) -> Result<usize, ParticleBufferErrorKind> {
