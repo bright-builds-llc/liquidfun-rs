@@ -6,6 +6,7 @@
 
 mod buffer;
 mod definition;
+mod editor;
 mod view;
 
 pub use crate::world::particle_object::{ParticleSnapshot, ParticleSystemSnapshot};
@@ -18,6 +19,7 @@ pub use definition::{
     ParticleCapacity, ParticleColor, ParticleDef, ParticleDefError, ParticleFlags,
     ParticleSystemDef, ParticleSystemDefError,
 };
+pub use editor::{ParticleEditError, ParticleEditor};
 pub use view::{
     ParticleBodyContactView, ParticleContactView, ParticlePairView, ParticleSystemView,
     ParticleTriadView,

@@ -8,8 +8,8 @@ use crate::particle::storage::{
 };
 use crate::particle::{
     ParticleBufferAdoptionError, ParticleBufferAdoptionErrorKind, ParticleBufferBundle,
-    ParticleCapacity, ParticleColor, ParticleDef, ParticleFlags, ParticleSystemDef,
-    ParticleSystemView,
+    ParticleCapacity, ParticleColor, ParticleDef, ParticleEditError, ParticleEditor, ParticleFlags,
+    ParticleSystemDef, ParticleSystemView,
 };
 use crate::{
     ArenaInsertError, CreateObjectError, DestroyedId, DestructionCause, DestructionRecord,
@@ -281,6 +281,63 @@ impl World {
         self.ensure_not_poisoned_for_handle()?;
         let record = self.particle_systems.get(system)?;
         Ok(ParticleSystemView::new(&record.storage))
+    }
+
+    /// Applies one closure-scoped edit after validating the complete candidate.
+    ///
+    /// Position changes synchronously rebuild proxies and clear contact- and
+    /// spatially-derived records. A closure panic occurs before storage mutation.
+    ///
+    /// # Errors
+    ///
+    /// Returns a scoped handle or non-finite candidate error without mutation.
+    pub fn edit_particle<R>(
+        &mut self,
+        particle: ParticleId,
+        edit: impl for<'edit> FnOnce(&mut ParticleEditor<'edit>) -> Result<R, ParticleEditError>,
+    ) -> Result<R, ParticleEditError> {
+        self.ensure_not_poisoned_for_handle()?;
+        let system = self.particle_system_id_for_particle(particle)?;
+        let input = self
+            .particle_systems
+            .get(system)?
+            .storage
+            .input(particle)
+            .map_err(storage_handle_error)?;
+        let mut editor = ParticleEditor::new(input.position, input.velocity);
+        let output = edit(&mut editor)?;
+        let (position, velocity) = editor.into_parts();
+        self.system_mut_after_validation(system)
+            .storage
+            .commit_kinematic_edit(particle, position, velocity)
+            .map_err(storage_handle_error)?;
+        Ok(output)
+    }
+
+    /// Sets a stable particle position and repairs spatially derived state.
+    ///
+    /// # Errors
+    ///
+    /// Returns a scoped handle or non-finite position error without mutation.
+    pub fn set_particle_position(
+        &mut self,
+        particle: ParticleId,
+        position: Vec2,
+    ) -> Result<(), ParticleEditError> {
+        self.edit_particle(particle, |editor| editor.set_position(position))
+    }
+
+    /// Sets a stable particle velocity without exposing a mutable lane.
+    ///
+    /// # Errors
+    ///
+    /// Returns a scoped handle or non-finite velocity error without mutation.
+    pub fn set_particle_velocity(
+        &mut self,
+        particle: ParticleId,
+        velocity: Vec2,
+    ) -> Result<(), ParticleEditError> {
+        self.edit_particle(particle, |editor| editor.set_velocity(velocity))
     }
 
     /// Changes only the paused state of a live system.

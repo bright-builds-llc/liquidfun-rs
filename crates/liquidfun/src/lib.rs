@@ -199,9 +199,9 @@ pub use particle::{
     ParticleBodyContactView, ParticleBufferAdoptionError, ParticleBufferAdoptionErrorKind,
     ParticleBufferBundle, ParticleBufferError, ParticleBufferErrorKind, ParticleBufferLanes,
     ParticleBufferMode, ParticleBufferTeardown, ParticleCapacity, ParticleColor,
-    ParticleContactView, ParticleDef, ParticleDefError, ParticleFlags, ParticlePairView,
-    ParticleSnapshot, ParticleSystemDef, ParticleSystemDefError, ParticleSystemSnapshot,
-    ParticleSystemView, ParticleTriadView,
+    ParticleContactView, ParticleDef, ParticleDefError, ParticleEditError, ParticleEditor,
+    ParticleFlags, ParticlePairView, ParticleSnapshot, ParticleSystemDef, ParticleSystemDefError,
+    ParticleSystemSnapshot, ParticleSystemView, ParticleTriadView,
 };
 pub use world::{
     AggregateMassError, BodyActivationError, BodyControlError, BodyDef, BodyDefError, BodyMassData,

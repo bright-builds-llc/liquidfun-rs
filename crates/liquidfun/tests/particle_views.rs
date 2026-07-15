@@ -1,7 +1,9 @@
 //! Black-box coverage for borrow-scoped particle views and editors.
 
 use liquidfun::math::Vec2;
-use liquidfun::{AssociationMap, ParticleColor, ParticleDef, ParticleFlags, ParticleId, World};
+use liquidfun::{
+    AssociationMap, ParticleColor, ParticleDef, ParticleEditError, ParticleFlags, ParticleId, World,
+};
 
 fn particle_definition(
     position: Vec2,
@@ -151,4 +153,118 @@ fn aggregate_view_preserves_stable_semantics_after_compaction() {
         &[Vec2::new(1.0, 0.0), Vec2::new(3.0, 0.0)]
     );
     assert!(view.maybe_colors().is_none());
+}
+
+#[test]
+fn scoped_editor_commits_validated_kinematics_and_returns_coherent_view() {
+    // Arrange
+    let mut world = World::new().expect("test world key remains available");
+    let system = world
+        .create_particle_system()
+        .expect("particle system should fit");
+    let particle = world
+        .create_particle_with_def(
+            system,
+            None,
+            &particle_definition(
+                Vec2::new(1.0, 2.0),
+                Vec2::new(3.0, 4.0),
+                ParticleColor::ZERO,
+                ParticleFlags::WATER,
+            ),
+        )
+        .expect("particle should fit");
+
+    // Act
+    let returned = world
+        .edit_particle(particle, |editor| {
+            editor.set_position(Vec2::new(5.0, 6.0))?;
+            editor.set_velocity(Vec2::new(7.0, 8.0))?;
+            Ok("edited")
+        })
+        .expect("finite edit should commit");
+    let view = world
+        .particle_system_view(system)
+        .expect("particle system should remain live");
+
+    // Assert
+    assert_eq!(returned, "edited");
+    assert_eq!(view.positions(), &[Vec2::new(5.0, 6.0)]);
+    assert_eq!(view.velocities(), &[Vec2::new(7.0, 8.0)]);
+    assert_eq!(view.particle_contacts().len(), 0);
+    assert_eq!(view.body_contacts().len(), 0);
+    assert_eq!(view.pairs().len(), 0);
+    assert_eq!(view.triads().len(), 0);
+}
+
+#[test]
+fn rejected_editor_candidate_leaves_particle_state_unchanged() {
+    // Arrange
+    let mut world = World::new().expect("test world key remains available");
+    let system = world
+        .create_particle_system()
+        .expect("particle system should fit");
+    let particle = world
+        .create_particle_with_def(
+            system,
+            None,
+            &particle_definition(
+                Vec2::new(1.0, 2.0),
+                Vec2::new(3.0, 4.0),
+                ParticleColor::ZERO,
+                ParticleFlags::WATER,
+            ),
+        )
+        .expect("particle should fit");
+
+    // Act
+    let result = world.edit_particle(particle, |editor| {
+        editor.set_position(Vec2::new(f32::NAN, 6.0))?;
+        Ok(())
+    });
+    let snapshot = world
+        .particle_snapshot(particle)
+        .expect("rejected edit preserves the particle");
+
+    // Assert
+    assert_eq!(result, Err(ParticleEditError::NonFinitePositionX));
+    assert_eq!(snapshot.position(), Vec2::new(1.0, 2.0));
+    assert_eq!(snapshot.velocity(), Vec2::new(3.0, 4.0));
+}
+
+#[test]
+fn panicking_editor_closure_leaves_particle_state_unchanged() {
+    // Arrange
+    let mut world = World::new().expect("test world key remains available");
+    let system = world
+        .create_particle_system()
+        .expect("particle system should fit");
+    let particle = world
+        .create_particle_with_def(
+            system,
+            None,
+            &particle_definition(
+                Vec2::new(1.0, 2.0),
+                Vec2::new(3.0, 4.0),
+                ParticleColor::ZERO,
+                ParticleFlags::WATER,
+            ),
+        )
+        .expect("particle should fit");
+
+    // Act
+    let panic = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        let _result: Result<(), ParticleEditError> = world.edit_particle(particle, |editor| {
+            editor.set_position(Vec2::new(5.0, 6.0))?;
+            panic!("intentional editor panic");
+        });
+    }));
+    let snapshot = world
+        .particle_snapshot(particle)
+        .expect("panicking edit preserves the particle");
+
+    // Assert
+    assert!(panic.is_err());
+    assert_eq!(snapshot.position(), Vec2::new(1.0, 2.0));
+    assert_eq!(snapshot.velocity(), Vec2::new(3.0, 4.0));
 }

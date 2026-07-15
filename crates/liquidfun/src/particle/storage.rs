@@ -587,6 +587,40 @@ impl ParticleStorage {
         Ok(())
     }
 
+    pub(crate) fn commit_kinematic_edit(
+        &mut self,
+        id: ParticleId,
+        position: Vec2,
+        velocity: Vec2,
+    ) -> Result<(), ParticleStorageError> {
+        let dense = self.resolve_live(id)?;
+        let position_changed = self.positions[dense.0] != position;
+        self.positions[dense.0] = position;
+        self.velocities[dense.0] = velocity;
+        if position_changed {
+            self.repair_spatial_state();
+        }
+        debug_assert_eq!(self.check_invariants(), Ok(()));
+        Ok(())
+    }
+
+    fn repair_spatial_state(&mut self) {
+        self.weights.fill(0.0);
+        if let Some(stuck) = &mut self.maybe_stuck {
+            stuck.last_body_contact_steps.fill(0);
+            stuck.body_contact_counts.fill(0);
+            stuck.consecutive_contact_steps.fill(0);
+            stuck.candidates.clear();
+        }
+        self.proxies = (0..self.len())
+            .map(|index| ParticleProxy::new(ParticleIndex(index)))
+            .collect();
+        self.particle_contacts.clear();
+        self.body_contacts.clear();
+        self.pairs.clear();
+        self.triads.clear();
+    }
+
     pub(crate) fn mark_delete(
         &mut self,
         id: ParticleId,
@@ -919,3 +953,6 @@ pub(crate) mod identity;
 
 #[cfg(test)]
 pub(crate) mod properties;
+
+#[cfg(test)]
+mod editor_tests;
