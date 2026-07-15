@@ -7,7 +7,7 @@ use std::fmt;
 use crate::ParticleId;
 
 use super::ParticleSystemDef;
-use super::storage::{ParticleSnapshot, ParticleStorage, ParticleStorageError};
+use super::storage::{ParticleSnapshot, ParticleStorage, ParticleStorageError, permutation};
 
 const FIXED_POINT_SCALE: f32 = 4_294_967_296.0;
 
@@ -200,6 +200,23 @@ pub struct ParticleLifetimeOrder {
     entries: Vec<ExpirationEntry>,
 }
 
+/// One source-timed request to notify a particle destruction listener.
+///
+/// The occurrence owns stable semantic identity and is produced before row
+/// compaction invalidates that identity.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ParticleDestructionOccurrence {
+    particle: ParticleId,
+}
+
+impl ParticleDestructionOccurrence {
+    /// Returns the stable particle identity observed at the source point.
+    #[must_use]
+    pub const fn particle(self) -> ParticleId {
+        self.particle
+    }
+}
+
 impl ParticleLifetimeOrder {
     /// Inserts one stable identity and quantized expiration value.
     ///
@@ -298,12 +315,21 @@ pub(crate) struct ParticleLifetimeState {
     maybe_maximum_count: Option<usize>,
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub(crate) struct ParticleCompactionOutcome {
+    pub(crate) destroyed: Vec<ParticleSnapshot>,
+    pub(crate) requested_listener_occurrences: Vec<ParticleDestructionOccurrence>,
+}
+
 #[allow(
     dead_code,
     reason = "the lifecycle kernel is integrated into World stepping by the next Phase 9 plan"
 )]
 impl ParticleLifetimeState {
-    pub(crate) const fn new(definition: ParticleSystemDef) -> Self {
+    pub(crate) fn new(definition: ParticleSystemDef, storage: &mut ParticleStorage) -> Self {
+        if definition.destroys_by_age() {
+            storage.enable_lifetime_tracking();
+        }
         Self {
             clock: ParticleLifetimeClock::from_system_definition(definition),
             expiration_order_dirty: false,
@@ -381,6 +407,9 @@ impl ParticleLifetimeState {
         let particle = ordering
             .oldest_particle(rank)
             .ok_or(ParticleLifecycleError::OldestRankOutOfRange)?;
+        if storage.is_pending(particle)? {
+            return storage.pending_snapshot(particle).map_err(Into::into);
+        }
         storage
             .mark_delete_for_lifecycle(particle, request_listener)
             .map_err(Into::into)
@@ -389,7 +418,7 @@ impl ParticleLifetimeState {
     pub(crate) fn prepare_capacity_for_creation(
         &mut self,
         storage: &mut ParticleStorage,
-    ) -> Result<Option<ParticleSnapshot>, ParticleLifecycleError> {
+    ) -> Result<Option<ParticleCompactionOutcome>, ParticleLifecycleError> {
         let Some(maximum) = self.maybe_maximum_count else {
             return Ok(None);
         };
@@ -399,9 +428,10 @@ impl ParticleLifetimeState {
         if !self.destroy_by_age {
             return Err(ParticleLifecycleError::CapacityExceeded { limit: maximum });
         }
-        let evicted = self.destroy_oldest_particle(storage, 0, false)?;
-        let compacted = storage.compact_particle(evicted.id)?;
-        Ok(Some(compacted))
+        self.destroy_oldest_particle(storage, 0, false)?;
+        compact_pending_with_occurrences(storage)
+            .map(Some)
+            .map_err(Into::into)
     }
 
     fn sort_if_dirty(
@@ -424,6 +454,40 @@ impl ParticleLifetimeState {
     }
 }
 
+pub(crate) fn compact_pending_with_occurrences(
+    storage: &mut ParticleStorage,
+) -> Result<ParticleCompactionOutcome, ParticleStorageError> {
+    let particle_ids = storage.particle_ids().to_vec();
+    let mut next = 0_usize;
+    let mut requested_listener_occurrences = Vec::new();
+    let old_to_new = particle_ids
+        .iter()
+        .map(|particle| {
+            if storage.is_pending(*particle)? {
+                let snapshot = storage.pending_snapshot(*particle)?;
+                if snapshot
+                    .input
+                    .flags
+                    .contains(super::ParticleFlags::DESTRUCTION_LISTENER)
+                {
+                    requested_listener_occurrences.push(ParticleDestructionOccurrence {
+                        particle: *particle,
+                    });
+                }
+                return Ok(None);
+            }
+            let destination = next;
+            next += 1;
+            Ok(Some(destination))
+        })
+        .collect::<Result<Vec<_>, ParticleStorageError>>()?;
+    let destroyed = permutation::apply_permutation(storage, &old_to_new)?;
+    Ok(ParticleCompactionOutcome {
+        destroyed,
+        requested_listener_occurrences,
+    })
+}
+
 #[allow(
     dead_code,
     reason = "the lifecycle kernel is integrated into World stepping by the next Phase 9 plan"
@@ -442,114 +506,4 @@ fn compare_source_order(left: i32, right: i32) -> Ordering {
 }
 
 #[cfg(test)]
-mod tests {
-    use crate::identity::{HandleIdentity, Identity, ParticleSystemId, WorldKey};
-    use crate::math::Vec2;
-    use crate::particle::ParticleFlags;
-    use crate::particle::storage::{ParticleInput, ParticleStorage};
-
-    use super::*;
-
-    fn system_definition(maximum: usize) -> ParticleSystemDef {
-        ParticleSystemDef::default()
-            .with_lifetime_granularity(1.0)
-            .expect("test granularity is positive")
-            .with_maximum_count(maximum)
-            .expect("test maximum fits")
-    }
-
-    fn storage(capacity: usize) -> ParticleStorage {
-        let world = WorldKey::fresh().expect("test world key remains available");
-        let system = ParticleSystemId::from_identity(Identity::new(world, 0, 0));
-        ParticleStorage::new(world, system, 0, capacity, capacity).expect("test storage is valid")
-    }
-
-    fn input() -> ParticleInput {
-        ParticleInput {
-            position: Vec2::ZERO,
-            velocity: Vec2::ZERO,
-            flags: ParticleFlags::WATER,
-            maybe_group: None,
-            maybe_color: None,
-            maybe_user_association: None,
-            maybe_expiration_time: None,
-        }
-    }
-
-    #[test]
-    fn solve_marks_only_expired_finite_particles() {
-        // Arrange
-        let definition = system_definition(3);
-        let mut storage = storage(3);
-        let first = storage.create(input()).expect("first particle fits");
-        let second = storage.create(input()).expect("second particle fits");
-        let third = storage.create(input()).expect("third particle fits");
-        let mut state = ParticleLifetimeState::new(definition);
-        state
-            .initialize_created_particle(&mut storage, first, 2.0)
-            .expect("finite lifetime is valid");
-        state
-            .initialize_created_particle(&mut storage, second, 0.0)
-            .expect("infinite lifetime is valid");
-        state
-            .initialize_created_particle(&mut storage, third, 4.0)
-            .expect("finite lifetime is valid");
-
-        // Act
-        let marked = state
-            .solve_lifetimes(&mut storage, 2.0)
-            .expect("clock and storage remain valid");
-
-        // Assert
-        assert_eq!(
-            marked
-                .into_iter()
-                .map(|snapshot| snapshot.id)
-                .collect::<Vec<_>>(),
-            vec![first]
-        );
-        assert_eq!(
-            storage.input(first),
-            Err(ParticleStorageError::PendingDelete)
-        );
-        assert!(storage.input(second).is_ok());
-        assert!(storage.input(third).is_ok());
-    }
-
-    #[test]
-    fn full_capacity_evicts_canonical_tie_without_listener_request() {
-        // Arrange
-        let definition = system_definition(2);
-        let mut storage = storage(2);
-        let first = storage.create(input()).expect("first particle fits");
-        let second = storage.create(input()).expect("second particle fits");
-        let mut state = ParticleLifetimeState::new(definition);
-        state
-            .initialize_created_particle(&mut storage, first, 2.5)
-            .expect("finite lifetime is valid");
-        state
-            .initialize_created_particle(&mut storage, second, 2.5)
-            .expect("finite lifetime is valid");
-
-        // Act
-        let evicted = state
-            .prepare_capacity_for_creation(&mut storage)
-            .expect("destroy-by-age frees capacity")
-            .expect("full capacity evicts one particle");
-
-        // Assert
-        assert_eq!(evicted.id, second);
-        assert!(evicted.input.flags.contains(ParticleFlags::ZOMBIE));
-        assert!(
-            !evicted
-                .input
-                .flags
-                .contains(ParticleFlags::DESTRUCTION_LISTENER)
-        );
-        assert_eq!(storage.particle_ids(), &[first]);
-        assert_eq!(
-            storage.input(second),
-            Err(ParticleStorageError::StaleOrDestroyed)
-        );
-    }
-}
+mod tests;

@@ -1,7 +1,11 @@
 use proptest::prelude::*;
 
+use crate::particle::lifetime::{ParticleLifetimeState, compact_pending_with_occurrences};
+use crate::particle::{ParticleCapacity, ParticleSystemDef};
+
 use super::*;
 
+mod lifecycle_model;
 mod permutation_model;
 
 const DECLARED_CAPACITY: usize = 6;

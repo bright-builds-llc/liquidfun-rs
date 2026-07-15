@@ -55,7 +55,7 @@ struct RowPermutationCandidate {
     destroyed: Vec<ParticleSnapshot>,
 }
 
-pub(super) fn apply_permutation(
+pub(in crate::particle) fn apply_permutation(
     storage: &mut ParticleStorage,
     old_to_new: &[Option<usize>],
 ) -> Result<Vec<ParticleSnapshot>, ParticleStorageError> {

@@ -1,7 +1,30 @@
 //! Source-compatible particle lifetime clock and ordering behavior.
 
-use liquidfun::particle::{ParticleLifetimeClock, ParticleLifetimeError, ParticleSystemDef};
-use liquidfun::{ParticleLifetimeClock as RootParticleLifetimeClock, World};
+use liquidfun::particle::{
+    ParticleDestructionOccurrence, ParticleLifetimeClock, ParticleLifetimeError, ParticleSystemDef,
+};
+use liquidfun::{
+    ParticleDestructionOccurrence as RootParticleDestructionOccurrence, ParticleId,
+    ParticleLifetimeClock as RootParticleLifetimeClock, World,
+};
+
+#[test]
+fn destruction_occurrence_is_reachable_from_curated_exports() {
+    // Arrange
+    let module_projection: fn(ParticleDestructionOccurrence) -> ParticleId =
+        ParticleDestructionOccurrence::particle;
+    let root_projection: fn(RootParticleDestructionOccurrence) -> ParticleId =
+        RootParticleDestructionOccurrence::particle;
+
+    // Act
+    let projection_sizes = (
+        std::mem::size_of_val(&module_projection),
+        std::mem::size_of_val(&root_projection),
+    );
+
+    // Assert
+    assert_eq!(projection_sizes.0, projection_sizes.1);
+}
 
 #[test]
 fn lifetime_clock_is_public_and_preserves_source_quantization() {

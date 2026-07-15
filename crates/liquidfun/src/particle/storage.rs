@@ -19,7 +19,7 @@ use validation::{build_group_ranges, validate_reference_sets, validate_reference
 
 mod lane_inventory;
 pub(in crate::particle) mod lanes;
-mod permutation;
+pub(in crate::particle) mod permutation;
 mod validation;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -539,7 +539,7 @@ impl ParticleStorage {
     ) -> Result<(), ParticleStorageError> {
         let order = ordered_ids
             .iter()
-            .map(|id| self.resolve_live(*id))
+            .map(|id| self.resolve_present(*id))
             .collect::<Result<Vec<_>, _>>()?;
         if order.len() != self.len() {
             return Err(ParticleStorageError::InvalidDerivedReference);
@@ -561,6 +561,26 @@ impl ParticleStorage {
             return Err(ParticleStorageError::StaleOrDestroyed);
         }
         Ok(matches!(entry.state, IdentityState::PendingDelete { .. }))
+    }
+
+    pub(in crate::particle) fn pending_snapshot(
+        &self,
+        id: ParticleId,
+    ) -> Result<ParticleSnapshot, ParticleStorageError> {
+        let local_slot = self.local_slot(id)?;
+        let entry = self
+            .identities
+            .get(local_slot)
+            .ok_or(ParticleStorageError::StaleOrDestroyed)?;
+        if entry.generation != id.identity().generation() {
+            return Err(ParticleStorageError::StaleOrDestroyed);
+        }
+        match entry.state {
+            IdentityState::PendingDelete { snapshot, .. } => Ok(snapshot),
+            IdentityState::Live(_) | IdentityState::Vacant | IdentityState::Retired => {
+                Err(ParticleStorageError::InvalidPermutation)
+            }
+        }
     }
 
     pub(in crate::particle) fn particle_id_at(&self, index: ParticleIndex) -> ParticleId {
@@ -736,23 +756,8 @@ impl ParticleStorage {
     pub(crate) fn compact_pending(
         &mut self,
     ) -> Result<Vec<ParticleSnapshot>, ParticleStorageError> {
-        let old_to_new: Vec<Option<usize>> = self
-            .dense_to_id
-            .iter()
-            .scan(0_usize, |next, id| {
-                let local_slot = self
-                    .local_slot(*id)
-                    .expect("dense identities are always locally scoped");
-                let keep = matches!(self.identities[local_slot].state, IdentityState::Live(_));
-                let mapped = keep.then(|| {
-                    let destination = *next;
-                    *next += 1;
-                    destination
-                });
-                Some(mapped)
-            })
-            .collect();
-        permutation::apply_permutation(self, &old_to_new)
+        crate::particle::lifetime::compact_pending_with_occurrences(self)
+            .map(|outcome| outcome.destroyed)
     }
 
     pub(crate) fn compact_particle(
@@ -823,6 +828,23 @@ impl ParticleStorage {
         match entry.state {
             IdentityState::Live(dense) => Ok(dense),
             IdentityState::PendingDelete { .. } => Err(ParticleStorageError::PendingDelete),
+            IdentityState::Vacant | IdentityState::Retired => {
+                Err(ParticleStorageError::StaleOrDestroyed)
+            }
+        }
+    }
+
+    fn resolve_present(&self, id: ParticleId) -> Result<ParticleIndex, ParticleStorageError> {
+        let local_slot = self.local_slot(id)?;
+        let entry = self
+            .identities
+            .get(local_slot)
+            .ok_or(ParticleStorageError::StaleOrDestroyed)?;
+        if entry.generation != id.identity().generation() {
+            return Err(ParticleStorageError::StaleOrDestroyed);
+        }
+        match entry.state {
+            IdentityState::Live(dense) | IdentityState::PendingDelete { dense, .. } => Ok(dense),
             IdentityState::Vacant | IdentityState::Retired => {
                 Err(ParticleStorageError::StaleOrDestroyed)
             }

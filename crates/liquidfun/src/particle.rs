@@ -21,7 +21,10 @@ pub use definition::{
     ParticleSystemDef, ParticleSystemDefError,
 };
 pub use editor::{ParticleEditError, ParticleEditor};
-pub use lifetime::{ParticleLifetimeClock, ParticleLifetimeError, ParticleLifetimeOrder};
+pub use lifetime::{
+    ParticleDestructionOccurrence, ParticleLifetimeClock, ParticleLifetimeError,
+    ParticleLifetimeOrder,
+};
 pub use view::{
     ParticleBodyContactView, ParticleContactView, ParticlePairView, ParticleSystemView,
     ParticleTriadView,
