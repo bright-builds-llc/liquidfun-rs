@@ -350,7 +350,9 @@ impl ParticleLifetimeState {
         let Some(expiration) = maybe_expiration else {
             return Ok(());
         };
-        self.set_expiration(storage, particle, expiration)
+        self.set_expiration(storage, particle, expiration)?;
+        self.expiration_order_dirty = true;
+        Ok(())
     }
 
     pub(crate) fn set_particle_lifetime(
