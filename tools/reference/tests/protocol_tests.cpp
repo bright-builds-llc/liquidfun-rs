@@ -924,7 +924,15 @@ void rigid_world_phase8_decode_fails_closed_at_reviewed_boundaries() {
   auto missing_post_step_observation = nlohmann::json::parse(fixture);
   auto& observation_actions =
       missing_post_step_observation["scenario"]["timelines"][10]["actions"];
-  observation_actions.erase(observation_actions.begin() + 11);
+  const auto missing_observation = std::find_if(
+      observation_actions.begin(), observation_actions.end(), [](const auto& record) {
+        return record.at("action_id") ==
+               "joint-rp-inspect-joint-rp-revolute-cold";
+      });
+  expect(
+      missing_observation != observation_actions.end(),
+      "reviewed Phase 8 observation action is missing from the fixture");
+  observation_actions.erase(missing_observation);
   auto duplicate_id = nlohmann::json::parse(fixture);
   duplicate_id["scenario"]["timelines"][9]["bodies"][1]["body_id"] =
       duplicate_id["scenario"]["timelines"][9]["bodies"][0]["body_id"];
@@ -967,7 +975,8 @@ void rigid_world_phase8_decode_fails_closed_at_reviewed_boundaries() {
     } catch (const std::exception& error) {
       expect(
           std::string(error.what()).find(expected) != std::string::npos,
-          "Phase 8 boundary produced an unstable diagnostic");
+          "Phase 8 boundary expected diagnostic containing '" +
+              std::string(expected) + "' but received '" + error.what() + "'");
       continue;
     }
     throw std::runtime_error("invalid Phase 8 request was accepted");
