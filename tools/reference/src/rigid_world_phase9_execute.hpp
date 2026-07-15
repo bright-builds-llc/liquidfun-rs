@@ -109,6 +109,13 @@ class TimelineExecution {
  public:
   TimelineExecution(b2World& world, Json timeline)
       : world_(world), timeline_(std::move(timeline)) {
+    for (const auto& body : timeline_.at("bodies")) {
+      body_declarations_.emplace(body.at("body_id").get<std::string>(), body);
+    }
+    for (const auto& fixture : timeline_.at("fixtures")) {
+      fixture_declarations_.emplace(
+          fixture.at("fixture_id").get<std::string>(), fixture);
+    }
     for (const auto& system : timeline_.at("particle_systems")) {
       system_declarations_.emplace(system.at("system_id").get<std::string>(), system);
     }
@@ -123,24 +130,24 @@ class TimelineExecution {
     std::size_t next_checkpoint = 0;
     for (const auto& record : timeline_.at("actions")) {
       const auto& action = record.at("action");
-      if (action.at("kind") == "particle") execute(action.at("action"));
-      if (action.at("kind") == "step" && !systems_.empty()) {
-        world_.Step(
-            float_from_bits(action.at("timestep_bits").get<std::uint32_t>()),
-            static_cast<int32>(action.at("velocity_iterations").get<std::uint32_t>()),
-            static_cast<int32>(action.at("position_iterations").get<std::uint32_t>()),
-            1);
-        discard_dead_particles();
+      if (action.at("kind") == "particle") {
+        execute(action.at("action"));
+        phase9_since_checkpoint_ = true;
+      } else {
+        execute_rigid(action);
       }
       while (next_checkpoint < timeline_.at("checkpoints").size() &&
              timeline_.at("checkpoints").at(next_checkpoint).at("after_action_id") ==
                  record.at("action_id")) {
-        checkpoints.push_back(
-            {{"checkpoint_id",
-              timeline_.at("checkpoints").at(next_checkpoint).at("checkpoint_id")},
-             {"phase", timeline_.at("checkpoints").at(next_checkpoint).at("phase")},
-             {"observations", std::move(observations_)}});
+        Json patch{
+            {"checkpoint_id",
+             timeline_.at("checkpoints").at(next_checkpoint).at("checkpoint_id")},
+            {"phase", timeline_.at("checkpoints").at(next_checkpoint).at("phase")},
+            {"observations", std::move(observations_)}};
+        if (phase9_since_checkpoint_) patch["bodies"] = body_snapshots();
+        checkpoints.push_back(std::move(patch));
         observations_ = Json::array();
+        phase9_since_checkpoint_ = false;
         ++next_checkpoint;
       }
     }
@@ -150,6 +157,12 @@ class TimelineExecution {
     }
     systems_.clear();
     particles_.clear();
+    for (auto& [id, body] : bodies_) {
+      static_cast<void>(id);
+      world_.DestroyBody(body);
+    }
+    bodies_.clear();
+    fixtures_.clear();
     return checkpoints;
   }
 
@@ -182,6 +195,138 @@ class TimelineExecution {
       }
     }
     return ids;
+  }
+
+  static b2BodyType body_type(std::string_view kind) {
+    if (kind == "static") return b2_staticBody;
+    if (kind == "kinematic") return b2_kinematicBody;
+    if (kind == "dynamic") return b2_dynamicBody;
+    throw std::runtime_error("unsupported Phase 9 coupling body kind");
+  }
+
+  b2Body& body(const Json& raw_id) {
+    const auto found = bodies_.find(raw_id.get<std::string>());
+    if (found == bodies_.end()) {
+      throw std::runtime_error("Phase 9 coupling body is not live");
+    }
+    return *found->second;
+  }
+
+  void create_body(const Json& raw_id) {
+    const auto id = raw_id.get<std::string>();
+    const auto& raw = body_declarations_.at(id);
+    b2BodyDef definition;
+    definition.type = body_type(raw.at("body_kind").get<std::string>());
+    definition.position = phase9_vector(raw.at("transform").at("position"));
+    definition.angle = float_from_bits(
+        raw.at("transform").at("angle_bits").get<std::uint32_t>());
+    definition.active = raw.at("active").get<bool>();
+    auto* created = world_.CreateBody(&definition);
+    if (created == nullptr || !bodies_.emplace(id, created).second) {
+      throw std::runtime_error("pinned world failed to create Phase 9 coupling body");
+    }
+  }
+
+  void create_fixture(const Json& raw_id) {
+    const auto id = raw_id.get<std::string>();
+    const auto& raw = fixture_declarations_.at(id);
+    b2FixtureDef definition;
+    b2CircleShape circle;
+    b2PolygonShape polygon;
+    const auto& shape = raw.at("shape");
+    if (shape.at("kind") == "circle") {
+      circle.m_p = phase9_vector(shape.at("center"));
+      circle.m_radius =
+          float_from_bits(shape.at("radius_bits").get<std::uint32_t>());
+      definition.shape = &circle;
+    } else {
+      std::vector<b2Vec2> vertices;
+      for (const auto& vertex : shape.at("vertices")) {
+        vertices.push_back(phase9_vector(vertex));
+      }
+      polygon.Set(vertices.data(), static_cast<int32>(vertices.size()));
+      definition.shape = &polygon;
+    }
+    definition.density =
+        float_from_bits(raw.at("density_bits").get<std::uint32_t>());
+    definition.friction =
+        float_from_bits(raw.at("friction_bits").get<std::uint32_t>());
+    definition.restitution =
+        float_from_bits(raw.at("restitution_bits").get<std::uint32_t>());
+    definition.isSensor = raw.at("sensor").get<bool>();
+    const auto& filter = raw.at("filter");
+    definition.filter.categoryBits = filter.at("category_bits").get<std::uint16_t>();
+    definition.filter.maskBits = filter.at("mask_bits").get<std::uint16_t>();
+    definition.filter.groupIndex = filter.at("group_index").get<std::int16_t>();
+    auto* created = body(raw.at("owner_body_id")).CreateFixture(&definition);
+    if (created == nullptr || !fixtures_.emplace(id, created).second) {
+      throw std::runtime_error("pinned body failed to create Phase 9 coupling fixture");
+    }
+  }
+
+  void execute_rigid(const Json& action) {
+    const auto kind = action.at("kind").get<std::string>();
+    if (kind == "create_body") return create_body(action.at("body_id"));
+    if (kind == "create_fixture") return create_fixture(action.at("fixture_id"));
+    if (kind == "set_linear_velocity") {
+      body(action.at("body_id")).SetLinearVelocity(phase9_vector(action.at("velocity")));
+      return;
+    }
+    if (kind == "set_angular_velocity") {
+      body(action.at("body_id")).SetAngularVelocity(float_from_bits(
+          action.at("angular_velocity_bits").get<std::uint32_t>()));
+      return;
+    }
+    if (kind == "step") {
+      world_.Step(
+          float_from_bits(action.at("timestep_bits").get<std::uint32_t>()),
+          static_cast<int32>(action.at("velocity_iterations").get<std::uint32_t>()),
+          static_cast<int32>(action.at("position_iterations").get<std::uint32_t>()),
+          1);
+      return discard_dead_particles();
+    }
+    if (kind == "destroy_fixture") {
+      const auto id = action.at("fixture_id").get<std::string>();
+      const auto found = fixtures_.find(id);
+      if (found != fixtures_.end()) {
+        found->second->GetBody()->DestroyFixture(found->second);
+        fixtures_.erase(found);
+      }
+      return;
+    }
+    if (kind == "destroy_body") {
+      const auto id = action.at("body_id").get<std::string>();
+      const auto found = bodies_.find(id);
+      if (found != bodies_.end()) {
+        auto* doomed = found->second;
+        for (auto it = fixtures_.begin(); it != fixtures_.end();) {
+          it = it->second->GetBody() == doomed ? fixtures_.erase(it) : std::next(it);
+        }
+        world_.DestroyBody(doomed);
+        bodies_.erase(found);
+      }
+    }
+  }
+
+  Json body_snapshots() const {
+    Json result = Json::array();
+    for (const auto& declaration : timeline_.at("bodies")) {
+      const auto id = declaration.at("body_id").get<std::string>();
+      const auto found = bodies_.find(id);
+      if (found == bodies_.end()) continue;
+      const auto& value = *found->second;
+      result.push_back(
+          {{"body_id", id},
+           {"body_kind", rigid_body_kind_name(value.GetType())},
+           {"transform", encode_rigid_transform(value)},
+           {"active", value.IsActive()},
+           {"linear_velocity", encode_rigid_vector(value.GetLinearVelocity())},
+           {"angular_velocity_bits", bits_from_float(value.GetAngularVelocity())},
+           {"mass_bits", bits_from_float(value.GetMass())},
+           {"local_center", encode_rigid_vector(value.GetLocalCenter())},
+           {"inertia_bits", bits_from_float(value.GetInertia())}});
+    }
+    return result;
   }
 
   void observe_mixed_state() {
@@ -396,11 +541,16 @@ class TimelineExecution {
 
   b2World& world_;
   Json timeline_;
+  std::unordered_map<std::string, Json> body_declarations_;
+  std::unordered_map<std::string, Json> fixture_declarations_;
   std::unordered_map<std::string, Json> system_declarations_;
   std::unordered_map<std::string, Json> particle_declarations_;
   std::unordered_map<std::string, std::unique_ptr<SystemState>> systems_;
   std::unordered_map<std::string, ParticleState> particles_;
+  std::unordered_map<std::string, b2Body*> bodies_;
+  std::unordered_map<std::string, b2Fixture*> fixtures_;
   Json observations_ = Json::array();
+  bool phase9_since_checkpoint_ = false;
 };
 
 }  // namespace phase9_detail
@@ -425,6 +575,7 @@ inline void apply_phase9_timeline(
       throw std::runtime_error("Phase 9 checkpoint patch is unmapped");
     }
     (*found)["phase"] = patch.at("phase");
+    if (patch.contains("bodies")) (*found)["bodies"] = patch.at("bodies");
     auto& observations = (*found)["observations"];
     if (observations.is_null()) observations = nlohmann::json::array();
     for (const auto& observation : patch.at("observations")) {
