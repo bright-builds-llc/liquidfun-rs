@@ -198,11 +198,13 @@ pub use joint::{
 pub use particle::{
     ParticleBodyContactView, ParticleBufferAdoptionError, ParticleBufferAdoptionErrorKind,
     ParticleBufferBundle, ParticleBufferError, ParticleBufferErrorKind, ParticleBufferLanes,
-    ParticleBufferMode, ParticleBufferTeardown, ParticleCapacity, ParticleColor,
-    ParticleContactView, ParticleDef, ParticleDefError, ParticleDestructionOccurrence,
-    ParticleEditError, ParticleEditor, ParticleFlags, ParticleLifetimeClock, ParticleLifetimeError,
-    ParticleLifetimeOrder, ParticlePairView, ParticleSnapshot, ParticleSystemDef,
-    ParticleSystemDefError, ParticleSystemSnapshot, ParticleSystemView, ParticleTriadView,
+    ParticleBufferMode, ParticleBufferTeardown, ParticleCapacity, ParticleColor, ParticleContact,
+    ParticleContactEffect, ParticleContactError, ParticleContactUpdate, ParticleContactView,
+    ParticleDef, ParticleDefError, ParticleDestructionOccurrence, ParticleEditError,
+    ParticleEditor, ParticleFlags, ParticleLifetimeClock, ParticleLifetimeError,
+    ParticleLifetimeOrder, ParticleNeighborPair, ParticleNeighborhood, ParticlePairView,
+    ParticleProxyError, ParticleSnapshot, ParticleSystemDef, ParticleSystemDefError,
+    ParticleSystemSnapshot, ParticleSystemView, ParticleTriadView,
 };
 pub use world::{
     AggregateMassError, BodyActivationError, BodyControlError, BodyDef, BodyDefError, BodyMassData,

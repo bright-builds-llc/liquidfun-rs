@@ -72,6 +72,41 @@ fn solve_marks_only_expired_finite_particles() {
 }
 
 #[test]
+fn tracked_infinite_insertion_dirties_a_previously_sorted_finite_order() {
+    // Arrange
+    let definition = system_definition(2);
+    let mut storage = storage(2);
+    let mut state = ParticleLifetimeState::new(definition, &mut storage);
+    let finite = storage.create(input()).expect("finite particle fits");
+    state
+        .initialize_created_particle(&mut storage, finite, 1.0)
+        .expect("finite lifetime is valid");
+    state
+        .solve_lifetimes(&mut storage, 0.0)
+        .expect("zero tick sorts the initial order");
+    let infinite = storage.create(input()).expect("infinite particle fits");
+    state
+        .initialize_created_particle(&mut storage, infinite, -2.0)
+        .expect("infinite lifetime is valid");
+
+    // Act
+    let marked = state
+        .solve_lifetimes(&mut storage, 1.0)
+        .expect("finite particle should expire past the new infinite row");
+
+    // Assert
+    assert_eq!(
+        marked
+            .into_iter()
+            .map(|snapshot| snapshot.id)
+            .collect::<Vec<_>>(),
+        vec![finite]
+    );
+    assert_eq!(storage.is_pending(finite), Ok(true));
+    assert_eq!(storage.is_pending(infinite), Ok(false));
+}
+
+#[test]
 fn full_capacity_evicts_canonical_tie_without_listener_request() {
     // Arrange
     let definition = system_definition(2);
