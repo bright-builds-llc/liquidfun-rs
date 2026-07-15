@@ -265,7 +265,7 @@ fn native_phase8_solver_only_families_reject_incidental_contacts() {
 #[test]
 fn native_phase8_executes_every_closed_joint_mutation() {
     // Arrange
-    let vector = json!({ "x_bits": 1.0_f32.to_bits(), "y_bits": 0.0_f32.to_bits() });
+    let vector = json!({ "x_bits": 2.0_f32.to_bits(), "y_bits": 0.0_f32.to_bits() });
     let mutations = [
         (
             "joint-def-revolute",
@@ -281,11 +281,11 @@ fn native_phase8_executes_every_closed_joint_mutation() {
         ),
         (
             "joint-def-revolute",
-            json!({ "kind": "motor_speed", "speed_bits": 1.0_f32.to_bits() }),
+            json!({ "kind": "motor_speed", "speed_bits": 2.0_f32.to_bits() }),
         ),
         (
             "joint-def-prismatic",
-            json!({ "kind": "max_motor_force", "force_bits": 1.0_f32.to_bits() }),
+            json!({ "kind": "max_motor_force", "force_bits": 2.0_f32.to_bits() }),
         ),
         (
             "joint-def-wheel",
@@ -293,15 +293,15 @@ fn native_phase8_executes_every_closed_joint_mutation() {
         ),
         (
             "joint-def-distance",
-            json!({ "kind": "length", "length_bits": 1.0_f32.to_bits() }),
+            json!({ "kind": "length", "length_bits": 2.0_f32.to_bits() }),
         ),
         (
             "joint-def-weld",
-            json!({ "kind": "frequency", "frequency_bits": 1.0_f32.to_bits() }),
+            json!({ "kind": "frequency", "frequency_bits": 2.0_f32.to_bits() }),
         ),
         (
             "joint-def-mouse",
-            json!({ "kind": "damping_ratio", "damping_ratio_bits": 0.5_f32.to_bits() }),
+            json!({ "kind": "damping_ratio", "damping_ratio_bits": 0.25_f32.to_bits() }),
         ),
         (
             "joint-def-mouse",
@@ -313,7 +313,7 @@ fn native_phase8_executes_every_closed_joint_mutation() {
         ),
         (
             "joint-def-motor",
-            json!({ "kind": "max_torque", "torque_bits": 1.0_f32.to_bits() }),
+            json!({ "kind": "max_torque", "torque_bits": 2.0_f32.to_bits() }),
         ),
         (
             "joint-def-gear",
@@ -333,13 +333,30 @@ fn native_phase8_executes_every_closed_joint_mutation() {
         ),
         (
             "joint-def-motor",
-            json!({ "kind": "correction_factor", "factor_bits": 0.5_f32.to_bits() }),
+            json!({ "kind": "correction_factor", "factor_bits": 0.75_f32.to_bits() }),
         ),
     ];
 
     // Act
     let results = mutations.map(|(joint_id, mutation)| {
         let mut value = request_value();
+        if matches!(
+            mutation["kind"].as_str(),
+            Some("limit_enabled" | "motor_enabled")
+        ) {
+            let declaration = timeline_mut(&mut value, "joint_definitions_and_mutations")["joints"]
+                .as_array_mut()
+                .expect("fixture joints should be an array")
+                .iter_mut()
+                .find(|joint| joint["joint_id"] == joint_id)
+                .expect("mutation target declaration should exist");
+            let field = if mutation["kind"] == "limit_enabled" {
+                "limit_enabled"
+            } else {
+                "motor_enabled"
+            };
+            declaration["definition"][field] = json!(false);
+        }
         let action = timeline_mut(&mut value, "joint_definitions_and_mutations")["actions"]
             .as_array_mut()
             .expect("timeline actions should be an array")

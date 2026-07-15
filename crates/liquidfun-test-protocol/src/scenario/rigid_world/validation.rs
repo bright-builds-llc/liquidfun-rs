@@ -226,9 +226,9 @@ fn validate_timeline(raw: RawTimeline) -> Result<RigidWorldTimeline, RigidWorldD
         .iter()
         .map(|joint| joint.joint_id.clone())
         .collect::<HashSet<_>>();
-    let joint_kinds = joints
+    let joint_definitions = joints
         .iter()
-        .map(|joint| (joint.joint_id.clone(), joint.definition.joint_kind()))
+        .map(|joint| (joint.joint_id.clone(), joint.definition.clone()))
         .collect::<HashMap<_, _>>();
     let joint_bodies = joints
         .iter()
@@ -268,7 +268,7 @@ fn validate_timeline(raw: RawTimeline) -> Result<RigidWorldTimeline, RigidWorldD
         &fixture_owners,
         &fixture_shapes,
         &joint_ids,
-        &joint_kinds,
+        &joint_definitions,
         &joint_bodies,
         &gear_dependents,
         &rope_ids,
@@ -374,7 +374,7 @@ fn validate_actions(
     fixture_owners: &HashMap<ScenarioId, ScenarioId>,
     fixture_shapes: &HashMap<ScenarioId, RigidFixtureShape>,
     joint_ids: &HashSet<ScenarioId>,
-    joint_kinds: &HashMap<ScenarioId, RigidJointKind>,
+    joint_definitions: &HashMap<ScenarioId, RigidJointDefinition>,
     joint_bodies: &HashMap<ScenarioId, [ScenarioId; 2]>,
     gear_dependents: &HashMap<ScenarioId, Vec<ScenarioId>>,
     rope_ids: &HashSet<ScenarioId>,
@@ -412,7 +412,7 @@ fn validate_actions(
             &mut created_bodies,
             &mut created_fixtures,
             joint_ids,
-            joint_kinds,
+            joint_definitions,
             joint_bodies,
             gear_dependents,
             rope_ids,
@@ -462,7 +462,7 @@ fn validate_action(
     created_bodies: &mut HashSet<ScenarioId>,
     created_fixtures: &mut HashSet<ScenarioId>,
     joint_ids: &HashSet<ScenarioId>,
-    joint_kinds: &HashMap<ScenarioId, RigidJointKind>,
+    joint_definitions: &HashMap<ScenarioId, RigidJointDefinition>,
     joint_bodies: &HashMap<ScenarioId, [ScenarioId; 2]>,
     gear_dependents: &HashMap<ScenarioId, Vec<ScenarioId>>,
     rope_ids: &HashSet<ScenarioId>,
@@ -667,10 +667,13 @@ fn validate_action(
         }
         RigidWorldAction::MutateJoint { joint_id, mutation } => {
             require_live(joint_id, live_joints, RigidWorldErrorKind::UnknownJoint)?;
-            let Some(joint_kind) = joint_kinds.get(joint_id) else {
+            let Some(joint_definition) = joint_definitions.get(joint_id) else {
                 return Err(validation(RigidWorldErrorKind::UnknownJoint));
             };
-            validate_joint_mutation(*joint_kind, *mutation)?;
+            validate_joint_mutation(joint_definition.joint_kind(), *mutation)?;
+            if !joint_mutation_changes_definition(joint_definition, *mutation) {
+                return Err(validation(RigidWorldErrorKind::InvalidJointDefinition));
+            }
         }
         RigidWorldAction::DestroyJoint { joint_id } => {
             if !live_joints.contains(joint_id) {
@@ -1047,6 +1050,163 @@ fn validate_ropes(
         validate_unit_interval(rope.bend_stiffness_bits)?;
     }
     Ok(ropes)
+}
+
+fn joint_mutation_changes_definition(
+    definition: &RigidJointDefinition,
+    mutation: RigidJointMutation,
+) -> bool {
+    match (definition, mutation) {
+        (
+            RigidJointDefinition::Revolute { limit_enabled, .. }
+            | RigidJointDefinition::Prismatic { limit_enabled, .. },
+            RigidJointMutation::LimitEnabled { enabled },
+        ) => enabled != *limit_enabled,
+        (
+            RigidJointDefinition::Revolute {
+                lower_angle_bits,
+                upper_angle_bits,
+                ..
+            },
+            RigidJointMutation::Limits {
+                lower_bits,
+                upper_bits,
+            },
+        ) => lower_bits != *lower_angle_bits || upper_bits != *upper_angle_bits,
+        (
+            RigidJointDefinition::Prismatic {
+                lower_translation_bits,
+                upper_translation_bits,
+                ..
+            },
+            RigidJointMutation::Limits {
+                lower_bits,
+                upper_bits,
+            },
+        ) => lower_bits != *lower_translation_bits || upper_bits != *upper_translation_bits,
+        (
+            RigidJointDefinition::Revolute { motor_enabled, .. }
+            | RigidJointDefinition::Prismatic { motor_enabled, .. }
+            | RigidJointDefinition::Wheel { motor_enabled, .. },
+            RigidJointMutation::MotorEnabled { enabled },
+        ) => enabled != *motor_enabled,
+        (
+            RigidJointDefinition::Revolute {
+                motor_speed_bits, ..
+            }
+            | RigidJointDefinition::Prismatic {
+                motor_speed_bits, ..
+            }
+            | RigidJointDefinition::Wheel {
+                motor_speed_bits, ..
+            },
+            RigidJointMutation::MotorSpeed { speed_bits },
+        ) => speed_bits != *motor_speed_bits,
+        (
+            RigidJointDefinition::Prismatic {
+                max_motor_force_bits,
+                ..
+            },
+            RigidJointMutation::MaxMotorForce { force_bits },
+        ) => force_bits != *max_motor_force_bits,
+        (
+            RigidJointDefinition::Revolute {
+                max_motor_torque_bits,
+                ..
+            }
+            | RigidJointDefinition::Wheel {
+                max_motor_torque_bits,
+                ..
+            },
+            RigidJointMutation::MaxMotorTorque { torque_bits },
+        ) => torque_bits != *max_motor_torque_bits,
+        (
+            RigidJointDefinition::Distance { length_bits, .. },
+            RigidJointMutation::Length {
+                length_bits: mutation_bits,
+            },
+        ) => mutation_bits != *length_bits,
+        (
+            RigidJointDefinition::Distance { frequency_bits, .. }
+            | RigidJointDefinition::Mouse { frequency_bits, .. }
+            | RigidJointDefinition::Wheel { frequency_bits, .. }
+            | RigidJointDefinition::Weld { frequency_bits, .. },
+            RigidJointMutation::Frequency {
+                frequency_bits: mutation_bits,
+            },
+        ) => mutation_bits != *frequency_bits,
+        (
+            RigidJointDefinition::Distance {
+                damping_ratio_bits, ..
+            }
+            | RigidJointDefinition::Mouse {
+                damping_ratio_bits, ..
+            }
+            | RigidJointDefinition::Wheel {
+                damping_ratio_bits, ..
+            }
+            | RigidJointDefinition::Weld {
+                damping_ratio_bits, ..
+            },
+            RigidJointMutation::DampingRatio {
+                damping_ratio_bits: mutation_bits,
+            },
+        ) => mutation_bits != *damping_ratio_bits,
+        (
+            RigidJointDefinition::Mouse { target, .. },
+            RigidJointMutation::MouseTarget {
+                target: mutation_target,
+            },
+        ) => mutation_target != *target,
+        (
+            RigidJointDefinition::Mouse { max_force_bits, .. }
+            | RigidJointDefinition::Friction { max_force_bits, .. }
+            | RigidJointDefinition::Motor { max_force_bits, .. },
+            RigidJointMutation::MaxForce { force_bits },
+        ) => force_bits != *max_force_bits,
+        (
+            RigidJointDefinition::Friction {
+                max_torque_bits, ..
+            }
+            | RigidJointDefinition::Motor {
+                max_torque_bits, ..
+            },
+            RigidJointMutation::MaxTorque { torque_bits },
+        ) => torque_bits != *max_torque_bits,
+        (
+            RigidJointDefinition::Gear { ratio_bits, .. },
+            RigidJointMutation::GearRatio {
+                ratio_bits: mutation_bits,
+            },
+        ) => mutation_bits != *ratio_bits,
+        (
+            RigidJointDefinition::Rope {
+                max_length_bits, ..
+            },
+            RigidJointMutation::RopeMaxLength {
+                max_length_bits: mutation_bits,
+            },
+        ) => mutation_bits != *max_length_bits,
+        (
+            RigidJointDefinition::Motor { linear_offset, .. },
+            RigidJointMutation::LinearOffset { offset },
+        ) => offset != *linear_offset,
+        (
+            RigidJointDefinition::Motor {
+                angular_offset_bits,
+                ..
+            },
+            RigidJointMutation::AngularOffset { offset_bits },
+        ) => offset_bits != *angular_offset_bits,
+        (
+            RigidJointDefinition::Motor {
+                correction_factor_bits,
+                ..
+            },
+            RigidJointMutation::CorrectionFactor { factor_bits },
+        ) => factor_bits != *correction_factor_bits,
+        _ => false,
+    }
 }
 
 fn validate_joint_mutation(

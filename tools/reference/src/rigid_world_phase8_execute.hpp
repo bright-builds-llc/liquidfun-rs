@@ -600,10 +600,10 @@ class TimelineExecution final : public b2ContactFilter,
       return joint.GetCurrentLengthA() + joint.GetRatio() * joint.GetCurrentLengthB();
     }
     if (value.GetType() == e_gearJoint) {
-      const auto& declaration = joint_declarations_.at(semantic_joint(&value));
-      const auto& definition = declaration.at("definition");
+      const auto& gear = static_cast<const b2GearJoint&>(value);
+      const auto& definition = joint_declarations_.at(semantic_joint(&value)).at("definition");
       return coordinate(joint_json(definition.at("joint_a_id"))) +
-             float_bits(definition, "ratio_bits") *
+             gear.GetRatio() *
                  coordinate(joint_json(definition.at("joint_b_id")));
     }
     if (value.GetType() == e_wheelJoint) return static_cast<const b2WheelJoint&>(value).GetJointTranslation();

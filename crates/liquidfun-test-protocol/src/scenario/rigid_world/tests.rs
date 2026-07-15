@@ -1242,7 +1242,7 @@ fn rigid_world_phase8_family_deletion_fails_closed() {
 fn rigid_world_phase8_accepts_every_closed_joint_mutation() {
     // Arrange
     let limits = HarnessLimits::phase2_default_v1();
-    let vector = json!({ "x_bits": 1.0_f32.to_bits(), "y_bits": 0.0_f32.to_bits() });
+    let vector = json!({ "x_bits": 2.0_f32.to_bits(), "y_bits": 0.0_f32.to_bits() });
     let mutations = [
         (
             "joint-def-revolute",
@@ -1258,11 +1258,11 @@ fn rigid_world_phase8_accepts_every_closed_joint_mutation() {
         ),
         (
             "joint-def-revolute",
-            json!({ "kind": "motor_speed", "speed_bits": 1.0_f32.to_bits() }),
+            json!({ "kind": "motor_speed", "speed_bits": 2.0_f32.to_bits() }),
         ),
         (
             "joint-def-prismatic",
-            json!({ "kind": "max_motor_force", "force_bits": 1.0_f32.to_bits() }),
+            json!({ "kind": "max_motor_force", "force_bits": 2.0_f32.to_bits() }),
         ),
         (
             "joint-def-wheel",
@@ -1270,15 +1270,15 @@ fn rigid_world_phase8_accepts_every_closed_joint_mutation() {
         ),
         (
             "joint-def-distance",
-            json!({ "kind": "length", "length_bits": 1.0_f32.to_bits() }),
+            json!({ "kind": "length", "length_bits": 2.0_f32.to_bits() }),
         ),
         (
             "joint-def-weld",
-            json!({ "kind": "frequency", "frequency_bits": 1.0_f32.to_bits() }),
+            json!({ "kind": "frequency", "frequency_bits": 2.0_f32.to_bits() }),
         ),
         (
             "joint-def-mouse",
-            json!({ "kind": "damping_ratio", "damping_ratio_bits": 0.5_f32.to_bits() }),
+            json!({ "kind": "damping_ratio", "damping_ratio_bits": 0.25_f32.to_bits() }),
         ),
         (
             "joint-def-mouse",
@@ -1290,7 +1290,7 @@ fn rigid_world_phase8_accepts_every_closed_joint_mutation() {
         ),
         (
             "joint-def-motor",
-            json!({ "kind": "max_torque", "torque_bits": 1.0_f32.to_bits() }),
+            json!({ "kind": "max_torque", "torque_bits": 2.0_f32.to_bits() }),
         ),
         (
             "joint-def-gear",
@@ -1310,13 +1310,30 @@ fn rigid_world_phase8_accepts_every_closed_joint_mutation() {
         ),
         (
             "joint-def-motor",
-            json!({ "kind": "correction_factor", "factor_bits": 0.5_f32.to_bits() }),
+            json!({ "kind": "correction_factor", "factor_bits": 0.75_f32.to_bits() }),
         ),
     ];
 
     // Act
     let results = mutations.map(|(joint_id, mutation)| {
         let mut value = fixture_value();
+        if matches!(
+            mutation["kind"].as_str(),
+            Some("limit_enabled" | "motor_enabled")
+        ) {
+            let declaration = timeline_mut(&mut value, "joint_definitions_and_mutations")["joints"]
+                .as_array_mut()
+                .expect("fixture joints should be an array")
+                .iter_mut()
+                .find(|joint| joint["joint_id"] == joint_id)
+                .expect("mutation target declaration should exist");
+            let field = if mutation["kind"] == "limit_enabled" {
+                "limit_enabled"
+            } else {
+                "motor_enabled"
+            };
+            declaration["definition"][field] = json!(false);
+        }
         let action = action_mut(&mut value, "joint-def-mutate");
         action["action"]["joint_id"] = json!(joint_id);
         action["action"]["mutation"] = mutation;
@@ -1324,7 +1341,10 @@ fn rigid_world_phase8_accepts_every_closed_joint_mutation() {
     });
 
     // Assert
-    assert!(results.iter().all(Result::is_ok));
+    assert!(
+        results.iter().all(Result::is_ok),
+        "each mutation should differ from its declaration: {results:?}"
+    );
 }
 
 #[test]
@@ -1340,6 +1360,64 @@ fn rigid_world_phase8_rejects_mutation_for_wrong_joint_kind() {
     // Act
     let error = decode_rigid_world_request_jsonl(&encode_value(&value), &limits)
         .expect_err("unsupported joint mutations must fail closed");
+
+    // Assert
+    assert_eq!(
+        error.rigid_world_kind(),
+        Some(RigidWorldErrorKind::InvalidJointDefinition)
+    );
+}
+
+#[test]
+fn rigid_world_phase8_rejects_noop_mouse_target_mutation() {
+    // Arrange
+    let limits = HarnessLimits::phase2_default_v1();
+    let mut value = fixture_value();
+    let action = action_mut(&mut value, "joint-dpm-mutate");
+    action["action"]["mutation"]["target"] =
+        json!({ "x_bits": 2.0_f32.to_bits(), "y_bits": 1.0_f32.to_bits() });
+
+    // Act
+    let error = decode_rigid_world_request_jsonl(&encode_value(&value), &limits)
+        .expect_err("a mouse-target mutation must differ from its declaration");
+
+    // Assert
+    assert_eq!(
+        error.rigid_world_kind(),
+        Some(RigidWorldErrorKind::InvalidJointDefinition)
+    );
+}
+
+#[test]
+fn rigid_world_phase8_rejects_noop_motor_correction_mutation() {
+    // Arrange
+    let limits = HarnessLimits::phase2_default_v1();
+    let mut value = fixture_value();
+    let action = action_mut(&mut value, "joint-coupled-mutate");
+    action["action"]["mutation"]["factor_bits"] = json!(0.5_f32.to_bits());
+
+    // Act
+    let error = decode_rigid_world_request_jsonl(&encode_value(&value), &limits)
+        .expect_err("a motor-correction mutation must differ from its declaration");
+
+    // Assert
+    assert_eq!(
+        error.rigid_world_kind(),
+        Some(RigidWorldErrorKind::InvalidJointDefinition)
+    );
+}
+
+#[test]
+fn rigid_world_phase8_rejects_noop_gear_ratio_mutation() {
+    // Arrange
+    let limits = HarnessLimits::phase2_default_v1();
+    let mut value = fixture_value();
+    let action = action_mut(&mut value, "gear-mutate");
+    action["action"]["mutation"]["ratio_bits"] = json!((-1.0_f32).to_bits());
+
+    // Act
+    let error = decode_rigid_world_request_jsonl(&encode_value(&value), &limits)
+        .expect_err("a gear-ratio mutation must differ from its declaration");
 
     // Assert
     assert_eq!(
