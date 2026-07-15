@@ -11,7 +11,7 @@ counts:
 generated_by: gsd-code-review
 lifecycle_mode: yolo
 phase_lifecycle_id: 8-2026-07-13T21-26-30
-generated_at: 2026-07-15T01:10:40Z
+generated_at: 2026-07-15T01:57:00Z
 ---
 
 # Phase 8 Code Review
@@ -25,7 +25,8 @@ protocol validation and result bounds, native and pinned C++ adapters,
 comparison policy, accepted fixtures, oracle CI, and canonical-evidence
 claims. The review included fixes `53a0b02` and `e0b5106` and the evidence and
 documentation refresh at `e8daec8`. It was reopened for the post-verification
-compatibility-ledger fix at `a109440`.
+compatibility-ledger fix at `a109440` and the 14-file workspace-Clippy cleanup
+at `c809a21`.
 
 The Phase 8 surface is clean at standard review depth. Both prior warnings are
 resolved, the exact replacement canonical run and artifacts are internally
@@ -79,6 +80,30 @@ injects a stale canonical identity, and proves the check fails through the
 dedicated `docs/phase8-evidence` category. This closes the verification gap
 without weakening inventory generation or broadening the Phase 8 sign-off.
 
+### Workspace-Clippy cleanup — Semantically equivalent
+
+The `c809a21` structural refactor preserves all 17 joint mutation branches.
+Each supported joint-kind set, public setter, `FloatBits` or vector conversion,
+unsupported-kind action error, and setter-error mapping is unchanged. Gear
+sources remain dependency-ordered, and coordinate observation still consumes
+the live configured ratio.
+
+`ActionReferences` forwards the same eight reference collections, while the
+extracted gear-dependent collector preserves declaration order and both source
+edges. Joint support, value validation, declaration-distinct mutation checks,
+and dependency rules remain exhaustive and fail closed. Lifecycle validation
+still runs before finite-value and family checks; checked ordinal conversion
+now rejects impossible `usize` to `u32` overflow instead of truncating it.
+
+Borrowed joint and schema snapshots are read-only and clone the same values
+into results. Consolidated match arms preserve their prior cases. The
+continuous-event diagnostic payload, diagnostic wrapper, and solver-failure
+injections remain compiled for `differential-internals`; test-only continuous
+candidate control remains available under `cfg(test)`. Only fields and branches
+with no non-diagnostic consumer are absent from the ordinary library build.
+The associated test refactors retain every mutation, topology, lifecycle,
+schema, and first-divergence assertion.
+
 ## Findings
 
 None.
@@ -99,6 +124,9 @@ None.
 - Repository documentation and the compatibility ledger consistently name the
   replacement run. The previous identity remains only in historical records
   and as a deliberate negative-test mutation.
+- This run does not bind final cleanup commit `c809a21`. That is expected at
+  this review checkpoint; exact-commit canonical and sanitizer evidence must be
+  refreshed after this clean review before the updated code is signed off.
 
 ## Verification evidence
 
@@ -119,6 +147,19 @@ None.
   passed: 5 tests, including exact ledger evidence drift rejection.
 - The ledger contains exactly 33 platform-validated rows, every row has the
   same four current evidence references, and no stale run or artifact identity.
+- `cargo test -p liquidfun-test-protocol --all-features` passed: 122 unit and
+  11 integration tests.
+- Phase 8 differential executor and comparator targets passed: 16 tests.
+- Joint-island, rigid-island, sleeping, and CCD focused targets passed: 38
+  tests with `differential-internals` enabled.
+- `cargo test -p liquidfun --lib --no-default-features --quiet` passed: 184
+  tests, confirming the test-only control surface compiles without the
+  differential feature.
+- `cargo test -p xtask --test differential_cli --quiet` passed: 27 tests.
+- `cargo clippy -p liquidfun --lib --no-default-features -- -D warnings`
+  passed.
+- `cargo clippy --workspace --all-targets --all-features -- -D warnings`
+  passed.
 - `cargo fmt --all` passed.
 - `cargo clippy --all-targets --all-features -- -D warnings` passed.
 - `cargo build --all-targets --all-features` passed.
