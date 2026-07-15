@@ -73,7 +73,7 @@ impl JointRuntime {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(super) struct JointRecord {
     pub(super) diagnostic_id: u64,
     pub(super) bodies: [BodyId; 2],

@@ -1082,6 +1082,16 @@ struct StepLockGuard {
     state: StepState,
 }
 
+struct StepLimitBackup {
+    bodies: crate::arena::Arena<super::object::Body, BodyId>,
+    fixtures: crate::arena::Arena<super::object::Fixture, FixtureId>,
+    joints: crate::arena::Arena<super::joint::JointRecord, crate::JointId>,
+    broad_phase: crate::collision::BroadPhase<super::proxy::FixtureProxy>,
+    contact_manager: super::contact_manager::ContactManager,
+    continuous_step_state: super::continuous::ContinuousStepState,
+    configuration: super::config::WorldConfiguration,
+}
+
 impl StepLockGuard {
     fn acquire(state: &StepState) -> Result<Self, StepError> {
         if state.inner.locked.swap(true, Ordering::Relaxed) {
@@ -1100,6 +1110,28 @@ impl Drop for StepLockGuard {
 }
 
 impl World {
+    fn backup_step_limit_state(&self) -> StepLimitBackup {
+        StepLimitBackup {
+            bodies: self.bodies.clone(),
+            fixtures: self.fixtures.clone(),
+            joints: self.joints.clone(),
+            broad_phase: self.broad_phase.clone(),
+            contact_manager: self.contact_manager.clone(),
+            continuous_step_state: self.continuous_step_state,
+            configuration: self.configuration,
+        }
+    }
+
+    fn restore_step_limit_state(&mut self, backup: StepLimitBackup) {
+        self.bodies = backup.bodies;
+        self.fixtures = backup.fixtures;
+        self.joints = backup.joints;
+        self.broad_phase = backup.broad_phase;
+        self.contact_manager = backup.contact_manager;
+        self.continuous_step_state = backup.continuous_step_state;
+        self.configuration = backup.configuration;
+    }
+
     /// Runs one automatic bounded rigid-world lifecycle and solve.
     ///
     /// Checked configuration is supplied by [`StepConfiguration`]. Discrete
@@ -1107,6 +1139,8 @@ impl World {
     /// order. Continuous work remains private and resumable: sub-stepping uses
     /// [`StepCompletion::ContinuousPending`], while budget exhaustion returns
     /// [`StepError::ContinuousWorkLimitExceeded`] with [`ContinuousProgress`].
+    /// Ordinary event and command limit failures restore the exact pre-call
+    /// rigid-world state so the caller may retry with larger limits.
     /// Accumulated forces clear only after a successful call when automatic
     /// clearing is enabled.
     ///
@@ -1133,6 +1167,7 @@ impl World {
             self.is_continuous_physics_enabled() && configuration.time_step() > 0.0;
         let continuous_key = ContinuousStepKey::from_configuration(configuration);
         let step_lock = StepLockGuard::acquire(&self.step_state)?;
+        let step_limit_backup = self.backup_step_limit_state();
         let step_kind = if continuous_enabled {
             self.continuous_step_state
                 .begin_step(continuous_key, &mut self.contact_manager)
@@ -1142,24 +1177,27 @@ impl World {
         };
         let mut hook_run = ContactHookRun::new(hook, limits);
         let mut contact_transitions = self.contact_manager.drain_transitions();
-        for transition in contact_transitions.iter().cloned() {
-            hook_run.record_contact_destruction(transition)?;
-        }
-        let completion = {
+        let locked_result = (|| -> Result<StepCompletion, StepError> {
             let _lock = step_lock;
-            phases.push(StepPhase::FindPairs);
-            let hook_result = catch_unwind(AssertUnwindSafe(|| {
-                self.find_pairs_with_hook(&mut hook_run)?;
-                phases.push(StepPhase::UpdateContacts);
-                self.update_contacts_for_step(&mut hook_run)
-            }));
-            match hook_result {
-                Ok(result) => result?,
-                Err(payload) => {
-                    self.step_state.poison();
-                    resume_unwind(payload);
+            let contact_lifecycle_result = (|| {
+                for transition in contact_transitions.iter().cloned() {
+                    hook_run.record_contact_destruction(transition)?;
                 }
-            }
+                phases.push(StepPhase::FindPairs);
+                let hook_result = catch_unwind(AssertUnwindSafe(|| {
+                    self.find_pairs_with_hook(&mut hook_run)?;
+                    phases.push(StepPhase::UpdateContacts);
+                    self.update_contacts_for_step(&mut hook_run)
+                }));
+                match hook_result {
+                    Ok(result) => result,
+                    Err(payload) => {
+                        self.step_state.poison();
+                        resume_unwind(payload);
+                    }
+                }
+            })();
+            contact_lifecycle_result?;
             contact_transitions.extend(self.contact_manager.drain_transitions());
             if step_kind == ContinuousStepKind::Fresh && configuration.time_step() > 0.0 {
                 self.preflight_contact_solver()
@@ -1178,7 +1216,7 @@ impl World {
                 )?;
             }
 
-            if continuous_enabled {
+            let completion = if continuous_enabled {
                 let hook_result = catch_unwind(AssertUnwindSafe(|| {
                     self.run_continuous_stage(
                         configuration,
@@ -1200,7 +1238,16 @@ impl World {
                 continuous.completion
             } else {
                 StepCompletion::Complete
+            };
+            Ok(completion)
+        })();
+        let completion = match locked_result {
+            Ok(completion) => completion,
+            Err(error @ StepError::LimitExceeded { .. }) => {
+                self.restore_step_limit_state(step_limit_backup);
+                return Err(error);
             }
+            Err(error) => return Err(error),
         };
         let (mut lifecycle, commands) = hook_run.finish();
         phases.push(StepPhase::Unlock);

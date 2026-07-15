@@ -45,7 +45,7 @@ pub use report::{DestructionReport, MutationReport};
 #[cfg(test)]
 use super::fixture::test_fixture_definition;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(super) struct Body {
     pub(super) diagnostic_id: u64,
     pub(super) state: BodyState,
@@ -56,7 +56,7 @@ pub(super) struct Body {
     pub(super) pending_wake: bool,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(super) struct Fixture {
     pub(super) diagnostic_id: u64,
     pub(super) body: BodyId,

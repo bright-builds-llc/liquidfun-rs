@@ -61,6 +61,7 @@ impl Default for FilterData {
     }
 }
 
+#[derive(Clone)]
 struct BroadProxy<T> {
     payload: T,
     filter: FilterData,
@@ -74,6 +75,7 @@ struct CandidatePair {
 }
 
 /// Dynamic-tree broad phase with source-ordered move and pair buffers.
+#[derive(Clone)]
 pub struct BroadPhase<T> {
     tree: DynamicTree<BroadProxy<T>>,
     move_buffer: Vec<Option<ProxyId>>,

@@ -19,7 +19,7 @@ struct FixtureProxyEntry {
     aabb: Aabb,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Clone, Default)]
 pub(super) struct FixtureProxies {
     entries: Vec<FixtureProxyEntry>,
 }

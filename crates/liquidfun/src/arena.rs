@@ -8,6 +8,7 @@ use std::marker::PhantomData;
 use crate::error::{ArenaInsertError, HandleError};
 use crate::identity::{ErasedHandle, HandleIdentity, Identity, IdentityScope, WorldKey};
 
+#[derive(Clone)]
 enum Slot<T> {
     Occupied {
         generation: u64,
@@ -20,6 +21,7 @@ enum Slot<T> {
     Retired,
 }
 
+#[derive(Clone)]
 pub(crate) struct Arena<T, H> {
     world: WorldKey,
     slots: Vec<Slot<T>>,

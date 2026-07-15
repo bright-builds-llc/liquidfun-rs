@@ -597,7 +597,7 @@ pub(super) enum ContinuousStepKind {
     Resumed,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Clone, Copy, Default)]
 pub(super) struct ContinuousStepState {
     maybe_pending: Option<ContinuousStepKey>,
 }

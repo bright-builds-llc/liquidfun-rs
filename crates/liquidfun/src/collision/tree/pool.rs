@@ -13,6 +13,7 @@ pub(super) struct Allocation {
     pub(super) generation: u64,
 }
 
+#[derive(Clone)]
 pub(super) struct Node<T> {
     pub(super) generation: u64,
     pub(super) maybe_next: Option<NodeIndex>,
@@ -47,6 +48,7 @@ impl<T> Node<T> {
     }
 }
 
+#[derive(Clone)]
 pub(super) struct NodePool<T> {
     nodes: Vec<Node<T>>,
     maybe_free_head: Option<NodeIndex>,

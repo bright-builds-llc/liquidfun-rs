@@ -76,6 +76,7 @@ impl fmt::Display for TreeError {
 impl std::error::Error for TreeError {}
 
 /// Generic source-ordered dynamic AABB tree.
+#[derive(Clone)]
 pub struct DynamicTree<T> {
     tree_key: u64,
     maybe_root: Option<NodeIndex>,
