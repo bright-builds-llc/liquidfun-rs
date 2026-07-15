@@ -529,6 +529,44 @@ the testbed, or release readiness. Local runs remain D2/D0 and cannot substitute
 for the exact run, SHA, artifact, job, toolchain, upstream, and policy identities
 above.
 
+## Phase 9 evidence dispatch and artifact contract
+
+Phase 9 evidence is opt-in. Dispatch `.github/workflows/oracle.yml` with the
+`evidence_phase` input set to `phase9` only after the intended commit is pushed.
+The workflow runs the closed
+`crates/liquidfun-differential/tests/fixtures/rigid_world/phase9/phase9-v1.json`
+corpus against already-committed code. It does not stage, review, promote, or
+modify compatibility claims.
+
+The `canonical-linux` job uses Linux x86_64, Rust 1.97.0, Clang 22.1.8, CMake
+4.3.3, Ninja 1.13.2, target `x86_64-unknown-linux-gnu`, and upstream revision
+`7f20402173fd143a3988c921bc384459c6a858f2`. It validates debug/release
+agreement, exact replay, two-run D0 byte identity, the `phase9-v1` corpus,
+provenance, inventory, and the read-only evidence boundary. The
+`sanitizer-linux` job runs the same corpus with ASan abort/halt and UBSan
+halt/stacktrace behavior.
+
+The jobs upload exactly named artifacts:
+
+- `phase9-canonical-${run_id}-${sha}`
+- `phase9-sanitizer-${run_id}-${sha}`
+
+Each artifact contains its logs, `phase9-trace.log`, `phase9-manifest.json`, and
+`identity.json`. The identity record contains numeric `run_id` plus `job`,
+`head_sha`, `upstream_revision`, `rust`, `cmake`, `ninja`, `clang`, `target`, and
+`policy` fields. The job values are `canonical-linux` and `sanitizer-linux`, the
+target is `x86_64-unknown-linux-gnu`, and the policy is `phase9-v1`. Its `trace`
+and `manifest` objects each contain an artifact-relative `path` and a lowercase
+64-hex `sha256`; both named files are present beside the identity so a reviewer
+can recompute the digests.
+
+Promotion is a later, explicit sequence: download both artifacts for the same
+successful run and exact head SHA, verify the two identities and both embedded
+digests, confirm the unique successful canonical and sanitizer jobs, then use
+the repository's reviewed stage, review, and promotion workflow. A local pass,
+a mismatched SHA, one artifact, or an unverified digest cannot promote the Phase
+9 claim.
+
 ## Differential commands
 
 Initialize, verify, configure, and build the oracle first:

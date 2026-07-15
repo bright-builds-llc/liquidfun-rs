@@ -3,8 +3,8 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use liquidfun_differential::{
-    NativeRigidWorldExecutor, PHASE9_REGISTRY_ID, PHASE9_REQUIRED_POLICY_PATHS,
-    phase9_policy_for_path,
+    NativeRigidWorldExecutor, OracleExecutable, OraclePreset, PHASE9_REGISTRY_ID,
+    PHASE9_REQUIRED_POLICY_PATHS, execute_rigid_world_process, phase9_policy_for_path,
 };
 use liquidfun_test_protocol::{
     HarnessLimits, RigidWorldWitnessFamily, decode_rigid_world_request_jsonl,
@@ -347,4 +347,39 @@ fn corpus_rejects_missing_declarations_and_phase10_members() {
     assert_eq!(phase9_policy_for_path("particle.*"), None);
     assert_eq!(phase9_policy_for_path("particle.group.topology"), None);
     assert_eq!(phase9_policy_for_path("particle.solver.baseline"), None);
+}
+
+#[test]
+fn required_oracle_mode_proves_replay_and_profile_agreement() {
+    // Arrange
+    let Ok(mode) = std::env::var("LIQUIDFUN_PHASE9_ORACLE_MODE") else {
+        return;
+    };
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let request = bounded_phase9_request();
+    let revision = manifest().pinned_upstream_revision;
+    let primary_preset = match mode.as_str() {
+        "canonical" => OraclePreset::Debug,
+        "sanitizer" => OraclePreset::AsanUbsan,
+        _ => panic!("LIQUIDFUN_PHASE9_ORACLE_MODE must be canonical or sanitizer"),
+    };
+    let primary = OracleExecutable::resolve(&root, primary_preset)
+        .expect("the required primary Phase 9 oracle must exist");
+
+    // Act
+    let first = execute_rigid_world_process(&primary, &request, &revision)
+        .expect("the primary Phase 9 oracle run should pass");
+    let replay = execute_rigid_world_process(&primary, &request, &revision)
+        .expect("the Phase 9 oracle replay should pass");
+
+    // Assert
+    assert_eq!(first.response_bytes(), replay.response_bytes());
+    assert_eq!(first.result(), replay.result());
+    if mode == "canonical" {
+        let release = OracleExecutable::resolve(&root, OraclePreset::Release)
+            .expect("the required release Phase 9 oracle must exist");
+        let optimized = execute_rigid_world_process(&release, &request, &revision)
+            .expect("the release Phase 9 oracle run should pass");
+        assert_eq!(first.result(), optimized.result());
+    }
 }
