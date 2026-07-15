@@ -3,6 +3,7 @@
     reason = "closed private-harness wire variants are self-describing"
 )]
 
+mod phase9;
 mod result;
 mod types;
 mod validation;
@@ -29,6 +30,7 @@ pub const RIGID_WORLD_MAXIMUM_ROPES: usize = 16;
 /// Maximum vertices declared by one standalone rope.
 pub const RIGID_WORLD_MAXIMUM_ROPE_VERTICES: usize = 64;
 
+pub use phase9::*;
 pub use result::*;
 pub use types::*;
 pub use validation::decode_rigid_world_request_jsonl;

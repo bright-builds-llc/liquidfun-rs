@@ -11,6 +11,8 @@ use geometry::{
 use phase8::validate_phase8_behavior;
 
 use super::{
+    PHASE9_MAXIMUM_IDENTITIES, PHASE9_MAXIMUM_PARTICLE_SYSTEMS, PHASE9_MAXIMUM_PARTICLES,
+    Phase9ParticleAction, Phase9ParticleDeclaration, Phase9ParticleSystemDeclaration,
     RIGID_WORLD_MAXIMUM_ACTIONS, RIGID_WORLD_MAXIMUM_CONTINUOUS_WORK,
     RIGID_WORLD_MAXIMUM_DIRECTIVES, RIGID_WORLD_MAXIMUM_ITERATIONS, RIGID_WORLD_MAXIMUM_JOINTS,
     RIGID_WORLD_MAXIMUM_ROPE_VERTICES, RIGID_WORLD_MAXIMUM_ROPES, RIGID_WORLD_POSITION_ITERATIONS,
@@ -83,6 +85,9 @@ struct RawTimeline {
     fixtures: BoundedVec<RawFixtureDeclaration, MAXIMUM_FIXTURES>,
     joints: Option<BoundedVec<RigidJointDeclaration, RIGID_WORLD_MAXIMUM_JOINTS>>,
     ropes: Option<BoundedVec<RawRopeDeclaration, RIGID_WORLD_MAXIMUM_ROPES>>,
+    particle_systems:
+        Option<BoundedVec<Phase9ParticleSystemDeclaration, PHASE9_MAXIMUM_PARTICLE_SYSTEMS>>,
+    particles: Option<BoundedVec<Phase9ParticleDeclaration, PHASE9_MAXIMUM_PARTICLES>>,
     actions: BoundedVec<RawActionRecord, RIGID_WORLD_MAXIMUM_ACTIONS>,
     checkpoints: BoundedVec<RawCheckpoint, MAXIMUM_CHECKPOINTS>,
 }
@@ -233,6 +238,11 @@ fn validate_timeline(raw: RawTimeline) -> Result<RigidWorldTimeline, RigidWorldD
         &body_ids,
     )?;
     let ropes = validate_ropes(raw.ropes.map_or_else(Vec::new, BoundedVec::into_vec))?;
+    let particle_systems = raw
+        .particle_systems
+        .map_or_else(Vec::new, BoundedVec::into_vec);
+    let particles = raw.particles.map_or_else(Vec::new, BoundedVec::into_vec);
+    validate_phase9_declarations(&particle_systems, &particles)?;
     let joint_ids = joints
         .iter()
         .map(|joint| joint.joint_id.clone())
@@ -296,6 +306,8 @@ fn validate_timeline(raw: RawTimeline) -> Result<RigidWorldTimeline, RigidWorldD
         fixtures: fixtures.into_boxed_slice(),
         joints: joints.into_boxed_slice(),
         ropes: ropes.into_boxed_slice(),
+        particle_systems: particle_systems.into_boxed_slice(),
+        particles: particles.into_boxed_slice(),
         actions: actions.into_boxed_slice(),
         checkpoints: checkpoints.into_boxed_slice(),
     })
@@ -480,6 +492,9 @@ fn validate_action(
     created_ropes: &mut HashSet<ScenarioId>,
 ) -> Result<(), RigidWorldDecodeError> {
     match action {
+        RigidWorldAction::Particle { action } => {
+            validate_phase9_action(action)?;
+        }
         RigidWorldAction::CreateBody { body_id } => {
             if !body_ids.contains(body_id)
                 || !created_bodies.insert(body_id.clone())
@@ -758,6 +773,91 @@ fn validate_action(
                 remove_joint_cascade(&joint_id, live_joints, gear_dependents);
             }
         }
+    }
+    Ok(())
+}
+
+fn validate_phase9_declarations(
+    systems: &[Phase9ParticleSystemDeclaration],
+    particles: &[Phase9ParticleDeclaration],
+) -> Result<(), RigidWorldDecodeError> {
+    let mut system_ids = HashSet::with_capacity(systems.len());
+    for system in systems {
+        let capacity = system.buffer_mode.capacity();
+        if !system_ids.insert(system.system_id.clone())
+            || capacity == 0
+            || capacity > PHASE9_MAXIMUM_PARTICLES
+            || system
+                .maximum_count
+                .is_some_and(|maximum| maximum == 0 || maximum > PHASE9_MAXIMUM_PARTICLES)
+        {
+            return Err(validation(RigidWorldErrorKind::InvalidParticleDefinition));
+        }
+        validate_positive(system.density_bits)?;
+        validate_finite(
+            system.gravity_scale_bits,
+            RigidWorldErrorKind::InvalidParticleDefinition,
+        )?;
+        validate_positive(system.radius_bits)?;
+        validate_nonnegative(system.damping_bits)?;
+        validate_positive(system.lifetime_granularity_bits)?;
+    }
+
+    let mut particle_ids = HashSet::with_capacity(particles.len());
+    for particle in particles {
+        if !particle_ids.insert(particle.particle_id.clone())
+            || !system_ids.contains(&particle.system_id)
+        {
+            return Err(validation(RigidWorldErrorKind::InvalidParticleDefinition));
+        }
+        validate_vec2(particle.position)?;
+        validate_vec2(particle.velocity)?;
+        validate_nonnegative(particle.lifetime_bits)?;
+    }
+    Ok(())
+}
+
+fn validate_phase9_action(action: &Phase9ParticleAction) -> Result<(), RigidWorldDecodeError> {
+    match action {
+        Phase9ParticleAction::SetPosition { position, .. }
+        | Phase9ParticleAction::SetVelocity {
+            velocity: position, ..
+        } => validate_vec2(*position)?,
+        Phase9ParticleAction::ApplyForce {
+            particle_ids,
+            force,
+        }
+        | Phase9ParticleAction::ApplyImpulse {
+            particle_ids,
+            impulse: force,
+        } => {
+            if particle_ids.is_empty() || particle_ids.len() > PHASE9_MAXIMUM_IDENTITIES {
+                return Err(validation(RigidWorldErrorKind::InvalidParticleAction));
+            }
+            let mut ids = HashSet::with_capacity(particle_ids.len());
+            if particle_ids.iter().any(|id| !ids.insert(id)) {
+                return Err(validation(RigidWorldErrorKind::InvalidParticleAction));
+            }
+            validate_vec2(*force)?;
+        }
+        Phase9ParticleAction::QueryAabb { lower, upper, .. } => {
+            validate_aabb(RigidAabbBits {
+                lower: *lower,
+                upper: *upper,
+            })?;
+        }
+        Phase9ParticleAction::RayCast { start, end, .. } => {
+            validate_ray_geometry(*start, *end)?;
+        }
+        Phase9ParticleAction::CreateSystem { .. }
+        | Phase9ParticleAction::DestroySystem { .. }
+        | Phase9ParticleAction::CreateParticle { .. }
+        | Phase9ParticleAction::InspectSystem { .. }
+        | Phase9ParticleAction::InspectParticle { .. }
+        | Phase9ParticleAction::SetPaused { .. }
+        | Phase9ParticleAction::MarkForDestruction { .. }
+        | Phase9ParticleAction::Compact { .. }
+        | Phase9ParticleAction::RequestStatistics { .. } => {}
     }
     Ok(())
 }

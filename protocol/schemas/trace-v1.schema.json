@@ -1909,6 +1909,513 @@
                               "snapshot"
                             ],
                             "type": "object"
+                          },
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "const": "particle"
+                              },
+                              "observation": {
+                                "oneOf": [
+                                  {
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "const": "system"
+                                      },
+                                      "particle_ids": {
+                                        "items": {
+                                          "maxLength": 128,
+                                          "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                          "type": "string"
+                                        },
+                                        "maxItems": 256,
+                                        "type": "array"
+                                      },
+                                      "paused": {
+                                        "type": "boolean"
+                                      },
+                                      "system_id": {
+                                        "maxLength": 128,
+                                        "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "system_id",
+                                      "paused",
+                                      "particle_ids"
+                                    ],
+                                    "type": "object"
+                                  },
+                                  {
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "const": "particle"
+                                      },
+                                      "snapshot": {
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "color": {
+                                            "items": {
+                                              "maximum": 255,
+                                              "minimum": 0,
+                                              "type": "integer"
+                                            },
+                                            "maxItems": 4,
+                                            "minItems": 4,
+                                            "type": "array"
+                                          },
+                                          "flags_bits": {
+                                            "maximum": 4294967295,
+                                            "minimum": 0,
+                                            "type": "integer"
+                                          },
+                                          "force": {
+                                            "$ref": "#/$defs/rigid_vec2_bits"
+                                          },
+                                          "particle_id": {
+                                            "maxLength": 128,
+                                            "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                            "type": "string"
+                                          },
+                                          "pending_destruction": {
+                                            "type": "boolean"
+                                          },
+                                          "position": {
+                                            "$ref": "#/$defs/rigid_vec2_bits"
+                                          },
+                                          "system_id": {
+                                            "maxLength": 128,
+                                            "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                            "type": "string"
+                                          },
+                                          "velocity": {
+                                            "$ref": "#/$defs/rigid_vec2_bits"
+                                          },
+                                          "weight_bits": {
+                                            "maximum": 4294967295,
+                                            "minimum": 0,
+                                            "type": "integer"
+                                          }
+                                        },
+                                        "required": [
+                                          "particle_id",
+                                          "system_id",
+                                          "position",
+                                          "velocity",
+                                          "flags_bits",
+                                          "color",
+                                          "weight_bits",
+                                          "force",
+                                          "pending_destruction"
+                                        ],
+                                        "type": "object"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "snapshot"
+                                    ],
+                                    "type": "object"
+                                  },
+                                  {
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "const": "lifecycle"
+                                      },
+                                      "occurrence": {
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "kind": {
+                                            "enum": [
+                                              "filter_decision",
+                                              "contact_created",
+                                              "contact_destroyed",
+                                              "particle_destroyed",
+                                              "system_destroyed",
+                                              "query_visited",
+                                              "ray_visited"
+                                            ]
+                                          },
+                                          "maybe_fixture_id": {
+                                            "oneOf": [
+                                              {
+                                                "maxLength": 128,
+                                                "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                                "type": "string"
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          },
+                                          "maybe_other_particle_id": {
+                                            "oneOf": [
+                                              {
+                                                "maxLength": 128,
+                                                "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                                "type": "string"
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          },
+                                          "maybe_particle_id": {
+                                            "oneOf": [
+                                              {
+                                                "maxLength": 128,
+                                                "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                                "type": "string"
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          },
+                                          "ordinal": {
+                                            "maximum": 4294967295,
+                                            "minimum": 0,
+                                            "type": "integer"
+                                          },
+                                          "system_id": {
+                                            "maxLength": 128,
+                                            "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "ordinal",
+                                          "kind",
+                                          "system_id",
+                                          "maybe_particle_id",
+                                          "maybe_other_particle_id",
+                                          "maybe_fixture_id"
+                                        ],
+                                        "type": "object"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "occurrence"
+                                    ],
+                                    "type": "object"
+                                  },
+                                  {
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "contact": {
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "flags_bits": {
+                                            "maximum": 4294967295,
+                                            "minimum": 0,
+                                            "type": "integer"
+                                          },
+                                          "normal": {
+                                            "$ref": "#/$defs/rigid_vec2_bits"
+                                          },
+                                          "particle_a_id": {
+                                            "maxLength": 128,
+                                            "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                            "type": "string"
+                                          },
+                                          "particle_b_id": {
+                                            "maxLength": 128,
+                                            "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                            "type": "string"
+                                          },
+                                          "system_id": {
+                                            "maxLength": 128,
+                                            "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                            "type": "string"
+                                          },
+                                          "weight_bits": {
+                                            "maximum": 4294967295,
+                                            "minimum": 0,
+                                            "type": "integer"
+                                          }
+                                        },
+                                        "required": [
+                                          "system_id",
+                                          "particle_a_id",
+                                          "particle_b_id",
+                                          "flags_bits",
+                                          "weight_bits",
+                                          "normal"
+                                        ],
+                                        "type": "object"
+                                      },
+                                      "kind": {
+                                        "const": "particle_contact"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "contact"
+                                    ],
+                                    "type": "object"
+                                  },
+                                  {
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "contact": {
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "body_id": {
+                                            "maxLength": 128,
+                                            "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                            "type": "string"
+                                          },
+                                          "fixture_id": {
+                                            "maxLength": 128,
+                                            "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                            "type": "string"
+                                          },
+                                          "mass_bits": {
+                                            "maximum": 4294967295,
+                                            "minimum": 0,
+                                            "type": "integer"
+                                          },
+                                          "normal": {
+                                            "$ref": "#/$defs/rigid_vec2_bits"
+                                          },
+                                          "particle_id": {
+                                            "maxLength": 128,
+                                            "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                            "type": "string"
+                                          },
+                                          "system_id": {
+                                            "maxLength": 128,
+                                            "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                            "type": "string"
+                                          },
+                                          "weight_bits": {
+                                            "maximum": 4294967295,
+                                            "minimum": 0,
+                                            "type": "integer"
+                                          }
+                                        },
+                                        "required": [
+                                          "system_id",
+                                          "particle_id",
+                                          "body_id",
+                                          "fixture_id",
+                                          "weight_bits",
+                                          "normal",
+                                          "mass_bits"
+                                        ],
+                                        "type": "object"
+                                      },
+                                      "kind": {
+                                        "const": "body_contact"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "contact"
+                                    ],
+                                    "type": "object"
+                                  },
+                                  {
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "const": "statistics"
+                                      },
+                                      "statistics": {
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "body_contact_count": {
+                                            "maximum": 4294967295,
+                                            "minimum": 0,
+                                            "type": "integer"
+                                          },
+                                          "collision_energy_bits": {
+                                            "maximum": 4294967295,
+                                            "minimum": 0,
+                                            "type": "integer"
+                                          },
+                                          "declared_capacity": {
+                                            "maximum": 4294967295,
+                                            "minimum": 0,
+                                            "type": "integer"
+                                          },
+                                          "effective_capacity": {
+                                            "maximum": 4294967295,
+                                            "minimum": 0,
+                                            "type": "integer"
+                                          },
+                                          "maybe_system_id": {
+                                            "oneOf": [
+                                              {
+                                                "maxLength": 128,
+                                                "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                                "type": "string"
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          },
+                                          "particle_contact_count": {
+                                            "maximum": 4294967295,
+                                            "minimum": 0,
+                                            "type": "integer"
+                                          },
+                                          "particle_count": {
+                                            "maximum": 4294967295,
+                                            "minimum": 0,
+                                            "type": "integer"
+                                          },
+                                          "pending_particle_count": {
+                                            "maximum": 4294967295,
+                                            "minimum": 0,
+                                            "type": "integer"
+                                          },
+                                          "stuck_particle_ids": {
+                                            "items": {
+                                              "maxLength": 128,
+                                              "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                              "type": "string"
+                                            },
+                                            "maxItems": 256,
+                                            "type": "array"
+                                          },
+                                          "system_count": {
+                                            "maximum": 4294967295,
+                                            "minimum": 0,
+                                            "type": "integer"
+                                          }
+                                        },
+                                        "required": [
+                                          "maybe_system_id",
+                                          "system_count",
+                                          "particle_count",
+                                          "pending_particle_count",
+                                          "particle_contact_count",
+                                          "body_contact_count",
+                                          "stuck_particle_ids",
+                                          "collision_energy_bits",
+                                          "declared_capacity",
+                                          "effective_capacity"
+                                        ],
+                                        "type": "object"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "statistics"
+                                    ],
+                                    "type": "object"
+                                  },
+                                  {
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "const": "query"
+                                      },
+                                      "particle_ids": {
+                                        "items": {
+                                          "maxLength": 128,
+                                          "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                          "type": "string"
+                                        },
+                                        "maxItems": 256,
+                                        "type": "array"
+                                      },
+                                      "terminated": {
+                                        "type": "boolean"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "terminated",
+                                      "particle_ids"
+                                    ],
+                                    "type": "object"
+                                  },
+                                  {
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "fractions_bits": {
+                                        "items": {
+                                          "maximum": 4294967295,
+                                          "minimum": 0,
+                                          "type": "integer"
+                                        },
+                                        "maxItems": 256,
+                                        "type": "array"
+                                      },
+                                      "kind": {
+                                        "const": "ray_cast"
+                                      },
+                                      "particle_ids": {
+                                        "items": {
+                                          "maxLength": 128,
+                                          "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                          "type": "string"
+                                        },
+                                        "maxItems": 256,
+                                        "type": "array"
+                                      },
+                                      "terminated": {
+                                        "type": "boolean"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "terminated",
+                                      "particle_ids",
+                                      "fractions_bits"
+                                    ],
+                                    "type": "object"
+                                  },
+                                  {
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "body_ids": {
+                                        "items": {
+                                          "maxLength": 128,
+                                          "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                          "type": "string"
+                                        },
+                                        "maxItems": 256,
+                                        "type": "array"
+                                      },
+                                      "kind": {
+                                        "const": "mixed_state"
+                                      },
+                                      "particle_ids": {
+                                        "items": {
+                                          "maxLength": 128,
+                                          "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                          "type": "string"
+                                        },
+                                        "maxItems": 256,
+                                        "type": "array"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "body_ids",
+                                      "particle_ids"
+                                    ],
+                                    "type": "object"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "observation"
+                            ],
+                            "type": "object"
                           }
                         ]
                       },

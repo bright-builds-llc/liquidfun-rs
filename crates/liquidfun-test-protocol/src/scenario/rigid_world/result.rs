@@ -7,9 +7,9 @@ mod phase8;
 use phase8::{ExpectedObservation, expected_observation, validate_phase8_observation_contract};
 
 use super::{
-    RigidBodyKind, RigidContactIdentity, RigidExpectedCounts, RigidFilterBits, RigidWorldAction,
-    RigidWorldDecodeError, RigidWorldErrorKind, RigidWorldRequestRecord, RigidWorldWitnessFamily,
-    validation,
+    PHASE9_MAXIMUM_IDENTITIES, Phase9ParticleObservation, RigidBodyKind, RigidContactIdentity,
+    RigidExpectedCounts, RigidFilterBits, RigidWorldAction, RigidWorldDecodeError,
+    RigidWorldErrorKind, RigidWorldRequestRecord, RigidWorldWitnessFamily, validation,
 };
 use crate::{
     FloatBits, HarnessLimits, ProtocolVersion, RecordLimit, RequestId, ScenarioId,
@@ -153,6 +153,9 @@ pub enum RigidWorldObservation {
     },
     Diagnostics {
         snapshot: RigidDiagnosticsObservation,
+    },
+    Particle {
+        observation: Phase9ParticleObservation,
     },
 }
 
@@ -774,6 +777,9 @@ fn validate_result_bounds(result: &RigidWorldResultRecord) -> Result<(), RigidWo
                     RigidWorldObservation::Rope { snapshot } => {
                         snapshot.vertices.len() > super::RIGID_WORLD_MAXIMUM_ROPE_VERTICES
                     }
+                    RigidWorldObservation::Particle { observation } => {
+                        phase9_observation_exceeds_bounds(observation)
+                    }
                     _ => false,
                 })
             {
@@ -816,6 +822,31 @@ fn validate_result_bounds(result: &RigidWorldResultRecord) -> Result<(), RigidWo
         }
     }
     Ok(())
+}
+
+fn phase9_observation_exceeds_bounds(observation: &Phase9ParticleObservation) -> bool {
+    match observation {
+        Phase9ParticleObservation::System { particle_ids, .. }
+        | Phase9ParticleObservation::Query { particle_ids, .. }
+        | Phase9ParticleObservation::MixedState { particle_ids, .. } => {
+            particle_ids.len() > PHASE9_MAXIMUM_IDENTITIES
+        }
+        Phase9ParticleObservation::RayCast {
+            particle_ids,
+            fractions_bits,
+            ..
+        } => {
+            particle_ids.len() > PHASE9_MAXIMUM_IDENTITIES
+                || fractions_bits.len() != particle_ids.len()
+        }
+        Phase9ParticleObservation::Statistics { statistics } => {
+            statistics.stuck_particle_ids.len() > PHASE9_MAXIMUM_IDENTITIES
+        }
+        Phase9ParticleObservation::Particle { .. }
+        | Phase9ParticleObservation::Lifecycle { .. }
+        | Phase9ParticleObservation::ParticleContact { .. }
+        | Phase9ParticleObservation::BodyContact { .. } => false,
+    }
 }
 
 fn observations_are_empty(observations: &[RigidWorldObservation]) -> bool {

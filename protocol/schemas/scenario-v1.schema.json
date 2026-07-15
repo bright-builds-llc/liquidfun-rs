@@ -4212,6 +4212,353 @@
                         {
                           "additionalProperties": false,
                           "properties": {
+                            "action": {
+                              "oneOf": [
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "kind": {
+                                      "const": "create_system"
+                                    },
+                                    "system_id": {
+                                      "maxLength": 128,
+                                      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "system_id"
+                                  ],
+                                  "type": "object"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "kind": {
+                                      "const": "destroy_system"
+                                    },
+                                    "system_id": {
+                                      "maxLength": 128,
+                                      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "system_id"
+                                  ],
+                                  "type": "object"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "kind": {
+                                      "const": "create_particle"
+                                    },
+                                    "particle_id": {
+                                      "maxLength": 128,
+                                      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "particle_id"
+                                  ],
+                                  "type": "object"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "kind": {
+                                      "const": "inspect_system"
+                                    },
+                                    "system_id": {
+                                      "maxLength": 128,
+                                      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "system_id"
+                                  ],
+                                  "type": "object"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "kind": {
+                                      "const": "inspect_particle"
+                                    },
+                                    "particle_id": {
+                                      "maxLength": 128,
+                                      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "particle_id"
+                                  ],
+                                  "type": "object"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "kind": {
+                                      "const": "set_paused"
+                                    },
+                                    "paused": {
+                                      "type": "boolean"
+                                    },
+                                    "system_id": {
+                                      "maxLength": 128,
+                                      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "system_id",
+                                    "paused"
+                                  ],
+                                  "type": "object"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "kind": {
+                                      "const": "set_position"
+                                    },
+                                    "particle_id": {
+                                      "maxLength": 128,
+                                      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                      "type": "string"
+                                    },
+                                    "position": {
+                                      "$ref": "#/$defs/vec2_bits"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "particle_id",
+                                    "position"
+                                  ],
+                                  "type": "object"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "kind": {
+                                      "const": "set_velocity"
+                                    },
+                                    "particle_id": {
+                                      "maxLength": 128,
+                                      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                      "type": "string"
+                                    },
+                                    "velocity": {
+                                      "$ref": "#/$defs/vec2_bits"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "particle_id",
+                                    "velocity"
+                                  ],
+                                  "type": "object"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "kind": {
+                                      "const": "mark_for_destruction"
+                                    },
+                                    "particle_id": {
+                                      "maxLength": 128,
+                                      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "particle_id"
+                                  ],
+                                  "type": "object"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "kind": {
+                                      "const": "compact"
+                                    },
+                                    "system_id": {
+                                      "maxLength": 128,
+                                      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "system_id"
+                                  ],
+                                  "type": "object"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "force": {
+                                      "$ref": "#/$defs/vec2_bits"
+                                    },
+                                    "kind": {
+                                      "const": "apply_force"
+                                    },
+                                    "particle_ids": {
+                                      "items": {
+                                        "maxLength": 128,
+                                        "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                        "type": "string"
+                                      },
+                                      "maxItems": 256,
+                                      "minItems": 1,
+                                      "type": "array"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "particle_ids",
+                                    "force"
+                                  ],
+                                  "type": "object"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "impulse": {
+                                      "$ref": "#/$defs/vec2_bits"
+                                    },
+                                    "kind": {
+                                      "const": "apply_impulse"
+                                    },
+                                    "particle_ids": {
+                                      "items": {
+                                        "maxLength": 128,
+                                        "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                        "type": "string"
+                                      },
+                                      "maxItems": 256,
+                                      "minItems": 1,
+                                      "type": "array"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "particle_ids",
+                                    "impulse"
+                                  ],
+                                  "type": "object"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "kind": {
+                                      "const": "request_statistics"
+                                    },
+                                    "system_id": {
+                                      "maxLength": 128,
+                                      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "system_id"
+                                  ],
+                                  "type": "object"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "kind": {
+                                      "const": "query_aabb"
+                                    },
+                                    "lower": {
+                                      "$ref": "#/$defs/vec2_bits"
+                                    },
+                                    "system_id": {
+                                      "oneOf": [
+                                        {
+                                          "maxLength": 128,
+                                          "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                          "type": "string"
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    },
+                                    "upper": {
+                                      "$ref": "#/$defs/vec2_bits"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "system_id",
+                                    "lower",
+                                    "upper"
+                                  ],
+                                  "type": "object"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "end": {
+                                      "$ref": "#/$defs/vec2_bits"
+                                    },
+                                    "kind": {
+                                      "const": "ray_cast"
+                                    },
+                                    "start": {
+                                      "$ref": "#/$defs/vec2_bits"
+                                    },
+                                    "system_id": {
+                                      "oneOf": [
+                                        {
+                                          "maxLength": 128,
+                                          "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                          "type": "string"
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "system_id",
+                                    "start",
+                                    "end"
+                                  ],
+                                  "type": "object"
+                                }
+                              ]
+                            },
+                            "kind": {
+                              "const": "particle"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "action"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
                             "fixture_id": {
                               "maxLength": 128,
                               "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
@@ -5194,6 +5541,181 @@
                   "type": "object"
                 },
                 "maxItems": 64,
+                "type": "array"
+              },
+              "particle_systems": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "buffer_mode": {
+                      "oneOf": [
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "initial_capacity": {
+                              "maximum": 256,
+                              "minimum": 1,
+                              "type": "integer"
+                            },
+                            "kind": {
+                              "const": "growable"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "initial_capacity"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "capacity": {
+                              "maximum": 256,
+                              "minimum": 1,
+                              "type": "integer"
+                            },
+                            "kind": {
+                              "const": "fixed"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "capacity"
+                          ],
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    "damping_bits": {
+                      "maximum": 4294967295,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "density_bits": {
+                      "maximum": 4294967295,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "destruction_by_age": {
+                      "type": "boolean"
+                    },
+                    "gravity_scale_bits": {
+                      "maximum": 4294967295,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "lifetime_granularity_bits": {
+                      "maximum": 4294967295,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "maximum_count": {
+                      "oneOf": [
+                        {
+                          "maximum": 256,
+                          "minimum": 1,
+                          "type": "integer"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "paused": {
+                      "type": "boolean"
+                    },
+                    "radius_bits": {
+                      "maximum": 4294967295,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "strict_contact_check": {
+                      "type": "boolean"
+                    },
+                    "stuck_threshold": {
+                      "maximum": 4294967295,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "system_id": {
+                      "maxLength": 128,
+                      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "system_id",
+                    "buffer_mode",
+                    "paused",
+                    "strict_contact_check",
+                    "stuck_threshold",
+                    "density_bits",
+                    "gravity_scale_bits",
+                    "radius_bits",
+                    "damping_bits",
+                    "destruction_by_age",
+                    "lifetime_granularity_bits",
+                    "maximum_count"
+                  ],
+                  "type": "object"
+                },
+                "maxItems": 16,
+                "type": "array"
+              },
+              "particles": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "color": {
+                      "items": {
+                        "maximum": 255,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "maxItems": 4,
+                      "minItems": 4,
+                      "type": "array"
+                    },
+                    "flags_bits": {
+                      "maximum": 4294967295,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "lifetime_bits": {
+                      "maximum": 4294967295,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "particle_id": {
+                      "maxLength": 128,
+                      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                      "type": "string"
+                    },
+                    "position": {
+                      "$ref": "#/$defs/vec2_bits"
+                    },
+                    "system_id": {
+                      "maxLength": 128,
+                      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                      "type": "string"
+                    },
+                    "velocity": {
+                      "$ref": "#/$defs/vec2_bits"
+                    }
+                  },
+                  "required": [
+                    "particle_id",
+                    "system_id",
+                    "position",
+                    "velocity",
+                    "flags_bits",
+                    "color",
+                    "lifetime_bits"
+                  ],
+                  "type": "object"
+                },
+                "maxItems": 256,
                 "type": "array"
               },
               "ropes": {

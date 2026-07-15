@@ -548,5 +548,6 @@ const fn observation_kind(observation: &RigidWorldObservation) -> &'static str {
         RigidWorldObservation::Lifecycle { .. } => "lifecycle",
         RigidWorldObservation::Reconstruction { .. } => "reconstruction",
         RigidWorldObservation::Diagnostics { .. } => "diagnostics",
+        RigidWorldObservation::Particle { .. } => "particle",
     }
 }

@@ -3,6 +3,7 @@ use std::collections::{HashMap, HashSet};
 use serde::{Deserialize, Serialize};
 
 use super::witness_registry::{RigidWorldWitness, RigidWorldWitnessFamily};
+use super::{Phase9ParticleAction, Phase9ParticleDeclaration, Phase9ParticleSystemDeclaration};
 use crate::{
     CodecError, FloatBits, ProtocolVersion, RequestId, ScenarioId, ScenarioSchemaVersion,
     ScenarioSource, Sha256Hex, ToleranceProfileVersion, TraceSchemaVersion, TransformBits,
@@ -50,6 +51,8 @@ pub enum RigidWorldErrorKind {
     InvalidJointDependency,
     InvalidRopeDefinition,
     InvalidContactDirective,
+    InvalidParticleDefinition,
+    InvalidParticleAction,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -683,6 +686,9 @@ pub enum RigidWorldAction {
     },
     RequestReconstruction,
     RequestDiagnostics,
+    Particle {
+        action: Phase9ParticleAction,
+    },
     DestroyFixture {
         fixture_id: ScenarioId,
     },
@@ -742,6 +748,7 @@ pub(super) enum RigidWorldActionKind {
     SetPreSolveDirective,
     RequestReconstruction,
     RequestDiagnostics,
+    Particle,
     DestroyFixture,
     DestroyBody,
 }
@@ -802,6 +809,7 @@ impl RigidWorldAction {
             Self::SetPreSolveDirective { .. } => RigidWorldActionKind::SetPreSolveDirective,
             Self::RequestReconstruction => RigidWorldActionKind::RequestReconstruction,
             Self::RequestDiagnostics => RigidWorldActionKind::RequestDiagnostics,
+            Self::Particle { .. } => RigidWorldActionKind::Particle,
             Self::DestroyFixture { .. } => RigidWorldActionKind::DestroyFixture,
             Self::DestroyBody { .. } => RigidWorldActionKind::DestroyBody,
         }
@@ -972,6 +980,10 @@ pub struct RigidWorldTimeline {
     pub(super) joints: Box<[RigidJointDeclaration]>,
     #[serde(default, skip_serializing_if = "ropes_are_empty")]
     pub(super) ropes: Box<[RigidRopeDeclaration]>,
+    #[serde(default, skip_serializing_if = "particle_systems_are_empty")]
+    pub(super) particle_systems: Box<[Phase9ParticleSystemDeclaration]>,
+    #[serde(default, skip_serializing_if = "particles_are_empty")]
+    pub(super) particles: Box<[Phase9ParticleDeclaration]>,
     pub(super) actions: Box<[RigidWorldActionRecord]>,
     pub(super) checkpoints: Box<[RigidExpectedCheckpoint]>,
 }
@@ -1000,6 +1012,16 @@ impl RigidWorldTimeline {
     #[must_use]
     pub fn ropes(&self) -> &[RigidRopeDeclaration] {
         &self.ropes
+    }
+
+    #[must_use]
+    pub fn particle_systems(&self) -> &[Phase9ParticleSystemDeclaration] {
+        &self.particle_systems
+    }
+
+    #[must_use]
+    pub fn particles(&self) -> &[Phase9ParticleDeclaration] {
+        &self.particles
     }
 
     #[must_use]
@@ -1096,6 +1118,7 @@ pub(super) fn apply_lifecycle_action(
             live_bodies.remove(body_id);
             live_fixtures.retain(|fixture_id| fixture_owners.get(fixture_id) != Some(body_id));
         }
+        RigidWorldAction::Particle { .. } => {}
         _ => {}
     }
 }
@@ -1106,4 +1129,12 @@ fn joints_are_empty(joints: &[RigidJointDeclaration]) -> bool {
 
 fn ropes_are_empty(ropes: &[RigidRopeDeclaration]) -> bool {
     ropes.is_empty()
+}
+
+fn particle_systems_are_empty(systems: &[Phase9ParticleSystemDeclaration]) -> bool {
+    systems.is_empty()
+}
+
+fn particles_are_empty(particles: &[Phase9ParticleDeclaration]) -> bool {
+    particles.is_empty()
 }

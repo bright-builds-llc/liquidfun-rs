@@ -1,6 +1,8 @@
 use serde::Serialize;
 use serde_json::{Value, json};
 
+mod phase9;
+
 use super::{
     bounded_string_schema, closed_record, float_bits_schema, scenario_source_schema, schema_ref,
     semantic_id_schema, sha256_schema, tagged_probe_input, transform_bits_schema, uint32_schema,
@@ -16,6 +18,10 @@ use crate::{
     RigidQueryCompletion, RigidQueryDirective, RigidRayCompletion, RigidReconstructionKind,
     RigidReconstructionSupport, RigidStepCompletion, RigidWakePolicy, RigidWorldWitness,
     RigidWorldWitnessFamily,
+};
+use phase9::{
+    particle_action_schema, particle_declaration_schema, particle_observation_schema,
+    particle_system_declaration_schema,
 };
 
 pub(super) fn rigid_world_request_schema() -> Value {
@@ -117,6 +123,16 @@ fn rigid_world_timeline_schema() -> Value {
             "ropes": {
                 "items": rope_declaration_schema(),
                 "maxItems": RIGID_WORLD_MAXIMUM_ROPES,
+                "type": "array"
+            },
+            "particle_systems": {
+                "items": particle_system_declaration_schema(),
+                "maxItems": crate::PHASE9_MAXIMUM_PARTICLE_SYSTEMS,
+                "type": "array"
+            },
+            "particles": {
+                "items": particle_declaration_schema(),
+                "maxItems": crate::PHASE9_MAXIMUM_PARTICLES,
                 "type": "array"
             },
             "actions": {
@@ -488,6 +504,7 @@ fn rigid_world_action_schema() -> Value {
             tagged_probe_input("set_pre_solve_directive", &json!({ "target": contact_directive_target_schema(), "directive": pre_solve_directive_schema() }), &["target", "directive"]),
             tagged_probe_input("request_reconstruction", &json!({}), &[]),
             tagged_probe_input("request_diagnostics", &json!({}), &[]),
+            tagged_probe_input("particle", &json!({ "action": particle_action_schema() }), &["action"]),
             tagged_probe_input("destroy_fixture", &fixture_id(), &["fixture_id"]),
             tagged_probe_input("destroy_body", &body_id(), &["body_id"])
         ]
@@ -670,6 +687,7 @@ fn world_observation_schema() -> Value {
             tagged_probe_input("lifecycle", &json!({ "event": lifecycle_observation_schema() }), &["event"]),
             tagged_probe_input("reconstruction", &json!({ "record": reconstruction_observation_schema() }), &["record"]),
             tagged_probe_input("diagnostics", &json!({ "snapshot": diagnostics_observation_schema() }), &["snapshot"])
+            ,tagged_probe_input("particle", &json!({ "observation": particle_observation_schema() }), &["observation"])
         ]
     })
 }
