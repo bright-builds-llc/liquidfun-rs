@@ -3,15 +3,15 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 09-19-PLAN.md
-last_updated: "2026-07-16T04:58:43.873Z"
-last_activity: 2026-07-16 -- Completed Phase 09 Plan 19 eviction receipts and permutation weights
+stopped_at: Completed 09-20-PLAN.md
+last_updated: "2026-07-16T06:26:19.801Z"
+last_activity: 2026-07-16 -- Completed Phase 09 Plan 20 lifecycle-aware particle protocol validation
 progress:
   total_phases: 12
   completed_phases: 8
   total_plans: 122
-  completed_plans: 117
-  percent: 96
+  completed_plans: 118
+  percent: 97
 ---
 
 # Project State
@@ -26,17 +26,17 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 ## Current Position
 
 Phase: 09 (particle-storage-lifecycle-and-coupling) — EXECUTING
-Plan: 20 of 24
-Status: Ready to execute gap plan 09-20
-Last activity: 2026-07-16 -- Completed Phase 09 Plan 19 eviction receipts and permutation weights
+Plan: 21 of 24
+Status: Ready to execute
+Last activity: 2026-07-16 -- Completed Phase 09 Plan 20 lifecycle-aware particle protocol validation
 
-Progress: [██████████] 96%
+Progress: [██████████] 97%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 98
+- Total plans completed: 118
 - Average duration: Not available
 - Total execution time: 0 hours
 
@@ -128,6 +128,7 @@ Progress: [██████████] 96%
 | Phase 08 P23 | 20min | 1 tasks | 5 files |
 | Phase 09 P18 | 33 min | 2 tasks | 8 files |
 | Phase 09 P19 | 3h 37m | 2 tasks | 27 files |
+| Phase 09 P20 | 1h 3m | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -292,6 +293,8 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 09]: Establish ZOMBIE before capturing a pending snapshot and synchronize flag-originated zombies in ascending dense order. — One storage transition now drives public flags, pending identity, listener occurrences, and compaction.
 - [Phase 09]: Return committed capacity-eviction occurrences only through one owned must-use ParticleCreationReceipt; never reconstruct, queue, or redeliver them. — The public creation result must carry synchronous source-ordered lifecycle evidence exactly once without adding a second world authority.
 - [Phase 09]: Recompute permutation candidate weights from remapped body contacts followed by remapped particle contacts before the no-fail commit. — Contacts and weights must become visible as one coherent candidate while preserving the source accumulation order.
+- [Phase 09]: Replay Phase 9 lifecycle and ownership at both request and result boundaries; require action-specific observations and declaration-ordered mixed identities.
+- [Phase 09]: Report growable particle statistics capacity from the configured maximum, or i32::MAX for the pinned unlimited convention.
 
 ### Pending Todos
 
@@ -305,6 +308,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-16T04:58:43.870Z
-Stopped at: Completed 09-19-PLAN.md
+Last session: 2026-07-16T06:26:19.798Z
+Stopped at: Completed 09-20-PLAN.md
 Resume file: None
