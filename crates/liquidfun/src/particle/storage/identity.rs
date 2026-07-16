@@ -82,6 +82,8 @@ fn pending_delete_rejects_mutation_but_preserves_snapshot() {
         .mark_delete(id)
         .expect("live particle can be marked");
     let mutation = storage.set_position(id, Vec2::new(99.0, 99.0));
+    let mut expected_input = input(7);
+    expected_input.flags.insert(ParticleFlags::ZOMBIE);
 
     // Assert
     assert_eq!(
@@ -89,7 +91,7 @@ fn pending_delete_rejects_mutation_but_preserves_snapshot() {
         ParticleSnapshot {
             id,
             diagnostic_id: 0,
-            input: input(7)
+            input: expected_input
         }
     );
     assert_eq!(mutation, Err(ParticleStorageError::PendingDelete));
@@ -104,6 +106,8 @@ fn compacted_id_is_stale_and_snapshot_remains_owned() {
     storage
         .mark_delete(id)
         .expect("live particle can be marked");
+    let mut expected_input = input(4);
+    expected_input.flags.insert(ParticleFlags::ZOMBIE);
 
     // Act
     let destroyed = storage.compact_pending().expect("compaction is valid");
@@ -114,7 +118,7 @@ fn compacted_id_is_stale_and_snapshot_remains_owned() {
         vec![ParticleSnapshot {
             id,
             diagnostic_id: 0,
-            input: input(4)
+            input: expected_input
         }]
     );
     assert_eq!(

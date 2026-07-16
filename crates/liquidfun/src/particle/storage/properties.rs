@@ -211,6 +211,7 @@ fn apply_operation(
             if row.pending {
                 prop_assert_eq!(actual, Err(ParticleStorageError::PendingDelete));
             } else {
+                row.input.flags.insert(ParticleFlags::ZOMBIE);
                 prop_assert_eq!(
                     actual,
                     Ok(ParticleSnapshot {

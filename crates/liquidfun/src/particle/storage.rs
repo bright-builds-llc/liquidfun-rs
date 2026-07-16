@@ -946,8 +946,20 @@ impl ParticleStorage {
         &mut self,
         id: ParticleId,
     ) -> Result<ParticleSnapshot, ParticleStorageError> {
+        self.transition_to_pending(id, false)
+    }
+
+    fn transition_to_pending(
+        &mut self,
+        id: ParticleId,
+        request_listener: bool,
+    ) -> Result<ParticleSnapshot, ParticleStorageError> {
         let dense = self.resolve_live(id)?;
         let local_slot = self.local_slot(id)?;
+        self.flags[dense.0].insert(ParticleFlags::ZOMBIE);
+        if request_listener {
+            self.flags[dense.0].insert(ParticleFlags::DESTRUCTION_LISTENER);
+        }
         let snapshot = ParticleSnapshot {
             id,
             diagnostic_id: self.identities[local_slot]
@@ -964,12 +976,21 @@ impl ParticleStorage {
         id: ParticleId,
         request_listener: bool,
     ) -> Result<ParticleSnapshot, ParticleStorageError> {
-        let dense = self.resolve_live(id)?;
-        self.flags[dense.0].insert(ParticleFlags::ZOMBIE);
-        if request_listener {
-            self.flags[dense.0].insert(ParticleFlags::DESTRUCTION_LISTENER);
+        self.transition_to_pending(id, request_listener)
+    }
+
+    pub(crate) fn synchronize_zombie_flags(&mut self) -> Result<(), ParticleStorageError> {
+        for row in 0..self.len() {
+            let particle = self.dense_to_id[row];
+            if self.is_pending(particle)? {
+                self.flags[row].insert(ParticleFlags::ZOMBIE);
+                continue;
+            }
+            if self.flags[row].contains(ParticleFlags::ZOMBIE) {
+                self.transition_to_pending(particle, false)?;
+            }
         }
-        self.mark_delete(id)
+        Ok(())
     }
 
     pub(crate) fn compact_pending(

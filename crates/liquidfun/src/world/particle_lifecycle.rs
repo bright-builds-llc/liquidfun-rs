@@ -22,6 +22,10 @@ impl World {
             let system = candidate
                 .get_mut(system_id)
                 .expect("world particle-system order contains only live systems");
+            system
+                .storage
+                .synchronize_zombie_flags()
+                .map_err(|_error| StepError::ParticleLifecycleInvariant)?;
             let expired = system
                 .lifetime
                 .solve_lifetimes(&mut system.storage, time_step)
