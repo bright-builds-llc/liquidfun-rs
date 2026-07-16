@@ -81,21 +81,21 @@ Requirements for the first release permitted to claim complete parity with the s
 
 ### Particle Systems
 
-- [ ] **PART-01**: Consumers can create, configure, pause, inspect, and destroy multiple particle systems with upstream-equivalent density, radius, damping, gravity scale, strict-contact, capacity, and iteration controls.
-- [ ] **PART-02**: Consumers can create and destroy individual particles with positions, velocities, colors, flags, lifetimes, user data, and stable public identities.
+- [x] **PART-01**: Consumers can create, configure, pause, inspect, and destroy multiple particle systems with upstream-equivalent density, radius, damping, gravity scale, strict-contact, capacity, and iteration controls.
+- [x] **PART-02**: Consumers can create and destroy individual particles with positions, velocities, colors, flags, lifetimes, user data, and stable public identities.
 - [ ] **PART-03**: Dense particle indices may change during sorting, rotation, and compaction while stable public particle IDs continue to resolve correctly until destruction.
 - [ ] **PART-04**: Every particle storage permutation updates required and optional SoA lanes, ID maps, proxies, contacts, pairs, triads, lifetimes, and group ranges atomically.
 - [ ] **PART-05**: Consumers can inspect positions, velocities, colors, weights, flags, groups, user data, contacts, body contacts, pairs, triads, and expiration ordering through safe bulk APIs.
 - [ ] **PART-06**: Consumers can supply supported particle buffers with upstream-equivalent capacity constraints and receive explicit failure rather than silent reallocation or aliasing violations.
-- [ ] **PART-07**: Particle proxies, sorting, neighborhood generation, particle contacts, fixture/body contacts, and strict-contact behavior match the selected upstream behavior.
-- [ ] **PART-08**: Finite/infinite lifetimes, quantized expiration order, destroy-by-age, oldest-particle destruction, maximum counts, zombie marking, and deferred compaction match upstream behavior.
+- [x] **PART-07**: Particle proxies, sorting, neighborhood generation, particle contacts, fixture/body contacts, and strict-contact behavior match the selected upstream behavior.
+- [x] **PART-08**: Finite/infinite lifetimes, quantized expiration order, destroy-by-age, oldest-particle destruction, maximum counts, zombie marking, and deferred compaction match upstream behavior.
 - [ ] **PART-09**: Consumers can create particle groups from shapes, strokes, explicit positions, or existing groups and can inspect their ranges, flags, transforms, velocities, mass, and inertia.
 - [ ] **PART-10**: Group creation, destruction, joining, splitting, connectivity, can-be-empty behavior, solid depth updates, rigid motion, and contiguous membership preserve upstream semantics.
 - [ ] **PART-11**: Voronoi-based topology, pair generation, triad generation, and reactive regeneration produce upstream-equivalent constraints and membership.
 - [ ] **PART-12**: Baseline particle passes for collision, gravity, pressure, damping, rigid damping, extra damping, force application, velocity limiting, and lifetime solving run in the pinned upstream order.
 - [ ] **PART-13**: Water, wall, spring, elastic, viscous, powder, tensile, barrier, static-pressure, reactive, repulsive, and color-mixing particle behaviors match the selected upstream behavior.
-- [ ] **PART-14**: Zombie and destruction-listener particle behavior produces upstream-equivalent removal, callback, identity, and compaction outcomes.
-- [ ] **PART-15**: Fixture-contact and particle-contact listener/filter particle flags gate callbacks and collision decisions with upstream-equivalent timing and ordering.
+- [x] **PART-14**: Zombie and destruction-listener particle behavior produces upstream-equivalent removal, callback, identity, and compaction outcomes.
+- [x] **PART-15**: Fixture-contact and particle-contact listener/filter particle flags gate callbacks and collision decisions with upstream-equivalent timing and ordering.
 - [ ] **PART-16**: Consumers can apply per-particle and range forces/impulses and inspect collision energy, stuck-particle candidates, contact counts, and system statistics.
 - [ ] **PART-17**: Consumers can query particles by AABB and ray-cast particle systems with upstream-equivalent clipping, early termination, filtering, and culling.
 - [ ] **PART-18**: Each particle flag, unflagged solver pass, group behavior, lifecycle path, buffer path, contact path, query, and callback is individually represented in the compatibility matrix and differentially signed off.
@@ -248,21 +248,21 @@ Roadmap creation maps every v1 requirement to exactly one phase.
 | JOIN-03 | Phase 8 | Complete |
 | JOIN-04 | Phase 8 | Complete |
 | JOIN-05 | Phase 8 | Complete |
-| PART-01 | Phase 9 | Pending |
-| PART-02 | Phase 9 | Pending |
+| PART-01 | Phase 9 | Complete |
+| PART-02 | Phase 9 | Complete |
 | PART-03 | Phase 9 | Pending |
 | PART-04 | Phase 9 | Pending |
 | PART-05 | Phase 9 | Pending |
 | PART-06 | Phase 9 | Pending |
-| PART-07 | Phase 9 | Pending |
-| PART-08 | Phase 9 | Pending |
+| PART-07 | Phase 9 | Complete |
+| PART-08 | Phase 9 | Complete |
 | PART-09 | Phase 10 | Pending |
 | PART-10 | Phase 10 | Pending |
 | PART-11 | Phase 10 | Pending |
 | PART-12 | Phase 10 | Pending |
 | PART-13 | Phase 10 | Pending |
-| PART-14 | Phase 9 | Pending |
-| PART-15 | Phase 9 | Pending |
+| PART-14 | Phase 9 | Complete |
+| PART-15 | Phase 9 | Complete |
 | PART-16 | Phase 9 | Pending |
 | PART-17 | Phase 9 | Pending |
 | PART-18 | Phase 10 | Pending |

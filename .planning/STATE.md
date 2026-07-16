@@ -3,15 +3,15 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 9 context gathered
-last_updated: "2026-07-16T00:23:32.662Z"
-last_activity: 2026-07-16 -- Phase 09 planning complete
+stopped_at: Completed 09-18-PLAN.md
+last_updated: "2026-07-16T01:53:10.976Z"
+last_activity: 2026-07-16 -- Completed Phase 09 Plan 18 step guard and zombie authority
 progress:
   total_phases: 12
   completed_phases: 8
   total_plans: 122
-  completed_plans: 115
-  percent: 94
+  completed_plans: 116
+  percent: 95
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 ## Current Position
 
 Phase: 09 (particle-storage-lifecycle-and-coupling) — EXECUTING
-Plan: 18 of 24
-Status: Ready to execute
-Last activity: 2026-07-16 -- Phase 09 planning complete
+Plan: 19 of 24
+Status: Ready to execute gap plan 09-19
+Last activity: 2026-07-16 -- Completed Phase 09 Plan 18 step guard and zombie authority
 
-Progress: [███████░░░] 71%
+Progress: [██████████] 95%
 
 ## Performance Metrics
 
@@ -126,6 +126,7 @@ Progress: [███████░░░] 71%
 | Phase 08 P22 | 30min | 3 tasks | 10 files |
 | Phase 08 P24 | 50min | 1 tasks | 8 files |
 | Phase 08 P23 | 20min | 1 tasks | 5 files |
+| Phase 09 P18 | 33 min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -286,6 +287,8 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 08]: Lock near-zero iterative joint residuals with field-specific Phase 8 absolute/relative bounds while retaining signed-zero and structural strictness. — Source audit and complete-corpus comparison showed overconstrained iterative residuals rather than divergent equations; exact parser-locked bits prevent silent widening.
 - [Phase 08]: Compare lifecycle multiplicity before ordered Phase 8 observations. — Missing or duplicate callback and destruction events must fail at a stable semantic path before ordinal comparison.
 - [Phase 08]: Emit one exact identity per successful Phase 8 Oracle job and defer D1 claims to the exact-ref checkpoint. — Local D2 completion cannot substitute for canonical Clang 22 and CMake 4.3 evidence tied to one GitHub SHA.
+- [Phase 09]: Gate lifecycle, particle contacts, rigid reaction, and discrete solving with one fresh-positive-dt predicate. — Zero-duration and continuous-resume calls must not repeat particle work.
+- [Phase 09]: Establish ZOMBIE before capturing a pending snapshot and synchronize flag-originated zombies in ascending dense order. — One storage transition now drives public flags, pending identity, listener occurrences, and compaction.
 
 ### Pending Todos
 
@@ -299,6 +302,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-15T03:02:00.875Z
-Stopped at: Phase 9 context gathered
-Resume file: .planning/phases/09-particle-storage-lifecycle-and-coupling/09-CONTEXT.md
+Last session: 2026-07-16T01:53:10.973Z
+Stopped at: Completed 09-18-PLAN.md
+Resume file: None
