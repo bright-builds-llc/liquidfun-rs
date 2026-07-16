@@ -3,15 +3,15 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 09-20-PLAN.md
-last_updated: "2026-07-16T06:26:19.801Z"
-last_activity: 2026-07-16 -- Completed Phase 09 Plan 20 lifecycle-aware particle protocol validation
+stopped_at: Completed 09-21-PLAN.md
+last_updated: "2026-07-16T07:00:11.093Z"
+last_activity: "2026-07-16"
 progress:
   total_phases: 12
   completed_phases: 8
   total_plans: 122
-  completed_plans: 118
-  percent: 97
+  completed_plans: 119
+  percent: 98
 ---
 
 # Project State
@@ -26,9 +26,9 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 ## Current Position
 
 Phase: 09 (particle-storage-lifecycle-and-coupling) — EXECUTING
-Plan: 21 of 24
+Plan: 22 of 24
 Status: Ready to execute
-Last activity: 2026-07-16 -- Completed Phase 09 Plan 20 lifecycle-aware particle protocol validation
+Last activity: 2026-07-16
 
 Progress: [██████████] 97%
 
@@ -129,6 +129,7 @@ Progress: [██████████] 97%
 | Phase 09 P18 | 33 min | 2 tasks | 8 files |
 | Phase 09 P19 | 3h 37m | 2 tasks | 27 files |
 | Phase 09 P20 | 1h 3m | 3 tasks | 8 files |
+| Phase 09 P21 | 34m | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -295,6 +296,8 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 09]: Recompute permutation candidate weights from remapped body contacts followed by remapped particle contacts before the no-fail commit. — Contacts and weights must become visible as one coherent candidate while preserving the source accumulation order.
 - [Phase 09]: Replay Phase 9 lifecycle and ownership at both request and result boundaries; require action-specific observations and declaration-ordered mixed identities.
 - [Phase 09]: Report growable particle statistics capacity from the configured maximum, or i32::MAX for the pinned unlimited convention.
+- [Phase 09]: Treat unaligned Phase 9 observation structure as harness failure. — Only corresponding typed semantic fields can produce physics mismatch evidence.
+- [Phase 09]: Bind both engine roles to one canonical request digest. — One serialized and revalidated request prevents scenario substitution before comparison.
 
 ### Pending Todos
 
@@ -308,6 +311,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-16T06:26:19.798Z
-Stopped at: Completed 09-20-PLAN.md
+Last session: 2026-07-16T06:59:37.480Z
+Stopped at: Completed 09-21-PLAN.md
 Resume file: None

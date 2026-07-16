@@ -42,7 +42,7 @@ Requirements for the first release permitted to claim complete parity with the s
 - [x] **API-07**: Consumers can obtain owned step events with documented timing, multiplicity, ordering, and lifetime without retaining internal references.
 - [x] **API-08**: Consumers can associate user data through a documented safe model that preserves identity and destruction semantics without public raw pointers.
 - [x] **API-09**: Consumers can inspect particle properties through borrow-scoped bulk views and perform supported mutations without violating aliasing or leaving derived state stale.
-- [ ] **API-10**: Safe external-particle-buffer equivalents preserve documented ownership, capacity, growth, and teardown behavior without requiring arbitrary lifetime raw pointers.
+- [x] **API-10**: Safe external-particle-buffer equivalents preserve documented ownership, capacity, growth, and teardown behavior without requiring arbitrary lifetime raw pointers.
 - [ ] **API-11**: Every public API has succinct rustdoc covering units, invariants, invalidation, callback restrictions, failure behavior, and upstream concept mapping where relevant.
 - [ ] **API-12**: Every production `unsafe` block is narrowly scoped, justified by measured need, documents its invariant with a `SAFETY:` comment, and has focused verification where practical.
 
@@ -86,7 +86,7 @@ Requirements for the first release permitted to claim complete parity with the s
 - [x] **PART-03**: Dense particle indices may change during sorting, rotation, and compaction while stable public particle IDs continue to resolve correctly until destruction.
 - [x] **PART-04**: Every particle storage permutation updates required and optional SoA lanes, ID maps, proxies, contacts, pairs, triads, lifetimes, and group ranges atomically.
 - [x] **PART-05**: Consumers can inspect positions, velocities, colors, weights, flags, groups, user data, contacts, body contacts, pairs, triads, and expiration ordering through safe bulk APIs.
-- [ ] **PART-06**: Consumers can supply supported particle buffers with upstream-equivalent capacity constraints and receive explicit failure rather than silent reallocation or aliasing violations.
+- [x] **PART-06**: Consumers can supply supported particle buffers with upstream-equivalent capacity constraints and receive explicit failure rather than silent reallocation or aliasing violations.
 - [x] **PART-07**: Particle proxies, sorting, neighborhood generation, particle contacts, fixture/body contacts, and strict-contact behavior match the selected upstream behavior.
 - [x] **PART-08**: Finite/infinite lifetimes, quantized expiration order, destroy-by-age, oldest-particle destruction, maximum counts, zombie marking, and deferred compaction match upstream behavior.
 - [ ] **PART-09**: Consumers can create particle groups from shapes, strokes, explicit positions, or existing groups and can inspect their ranges, flags, transforms, velocities, mass, and inertia.
@@ -96,7 +96,7 @@ Requirements for the first release permitted to claim complete parity with the s
 - [ ] **PART-13**: Water, wall, spring, elastic, viscous, powder, tensile, barrier, static-pressure, reactive, repulsive, and color-mixing particle behaviors match the selected upstream behavior.
 - [x] **PART-14**: Zombie and destruction-listener particle behavior produces upstream-equivalent removal, callback, identity, and compaction outcomes.
 - [x] **PART-15**: Fixture-contact and particle-contact listener/filter particle flags gate callbacks and collision decisions with upstream-equivalent timing and ordering.
-- [ ] **PART-16**: Consumers can apply per-particle and range forces/impulses and inspect collision energy, stuck-particle candidates, contact counts, and system statistics.
+- [x] **PART-16**: Consumers can apply per-particle and range forces/impulses and inspect collision energy, stuck-particle candidates, contact counts, and system statistics.
 - [x] **PART-17**: Consumers can query particles by AABB and ray-cast particle systems with upstream-equivalent clipping, early termination, filtering, and culling.
 - [ ] **PART-18**: Each particle flag, unflagged solver pass, group behavior, lifecycle path, buffer path, contact path, query, and callback is individually represented in the compatibility matrix and differentially signed off.
 
@@ -221,7 +221,7 @@ Roadmap creation maps every v1 requirement to exactly one phase.
 | API-07 | Phase 3 | Complete |
 | API-08 | Phase 3 | Complete |
 | API-09 | Phase 9 | Complete |
-| API-10 | Phase 9 | Pending |
+| API-10 | Phase 9 | Complete |
 | API-11 | Phase 12 | Pending |
 | API-12 | Phase 12 | Pending |
 | COLL-01 | Phase 4 | Complete |
@@ -253,7 +253,7 @@ Roadmap creation maps every v1 requirement to exactly one phase.
 | PART-03 | Phase 9 | Complete |
 | PART-04 | Phase 9 | Complete |
 | PART-05 | Phase 9 | Complete |
-| PART-06 | Phase 9 | Pending |
+| PART-06 | Phase 9 | Complete |
 | PART-07 | Phase 9 | Complete |
 | PART-08 | Phase 9 | Complete |
 | PART-09 | Phase 10 | Pending |
@@ -263,7 +263,7 @@ Roadmap creation maps every v1 requirement to exactly one phase.
 | PART-13 | Phase 10 | Pending |
 | PART-14 | Phase 9 | Complete |
 | PART-15 | Phase 9 | Complete |
-| PART-16 | Phase 9 | Pending |
+| PART-16 | Phase 9 | Complete |
 | PART-17 | Phase 9 | Complete |
 | PART-18 | Phase 10 | Pending |
 | TEST-01 | Phase 10 | Pending |
