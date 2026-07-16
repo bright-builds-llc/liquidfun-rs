@@ -27,7 +27,7 @@ fn populated_storage() -> (ParticleStorage, [ParticleId; ROW_COUNT]) {
     let body = BodyId::from_identity(Identity::new(storage.world, 30, 0));
     let fixture = FixtureId::from_identity(Identity::new(storage.world, 31, 0));
     let row_count = u16::try_from(ROW_COUNT).expect("fixture row count fits in u16");
-    storage.weights = (1..=row_count).map(f32::from).collect();
+    storage.weights = vec![0.25, 0.25, 0.75, 0.5, 0.75, 0.0];
     storage.forces = (1..=row_count)
         .map(|value| {
             let scalar = f32::from(value);
@@ -129,10 +129,20 @@ proptest! {
             .iter()
             .map(|contact| mapped_ids(&storage, contact.indices))
             .collect();
+        let particle_contact_weights: Vec<_> = storage
+            .particle_contacts
+            .iter()
+            .map(|contact| (mapped_ids(&storage, contact.indices), contact.weight))
+            .collect();
         let body_contact_ids: Vec<_> = storage
             .body_contacts
             .iter()
             .map(|contact| storage.dense_to_id[contact.index.0])
+            .collect();
+        let body_contact_weights: Vec<_> = storage
+            .body_contacts
+            .iter()
+            .map(|contact| (storage.dense_to_id[contact.index.0], contact.weight))
             .collect();
         let pair_ids: Vec<_> = storage
             .pairs
@@ -184,7 +194,24 @@ proptest! {
             })
             .collect();
         prop_assert_eq!(&storage.forces, &expected_forces);
-        prop_assert_eq!(&storage.weights, &vec![0.0; expected_ids.len()]);
+        let mut expected_weights = vec![0.0; expected_ids.len()];
+        for (id, weight) in body_contact_weights {
+            if let Some(index) = expected_ids.iter().position(|candidate| *candidate == id) {
+                expected_weights[index] += weight;
+            }
+        }
+        for (contact, weight) in particle_contact_weights {
+            if survives(contact, &removed_ids) {
+                for id in contact {
+                    let index = expected_ids
+                        .iter()
+                        .position(|candidate| *candidate == id)
+                        .expect("retained contact particle survives");
+                    expected_weights[index] += weight;
+                }
+            }
+        }
+        prop_assert_eq!(&storage.weights, &expected_weights);
         prop_assert_eq!(
             storage
                 .particle_contacts

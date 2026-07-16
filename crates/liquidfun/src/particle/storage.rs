@@ -677,13 +677,25 @@ impl ParticleStorage {
     }
 
     fn recompute_weights(&mut self) {
-        self.weights.fill(0.0);
-        for contact in &self.body_contacts {
-            self.weights[contact.index.0] += contact.weight;
+        Self::recompute_contact_weights(
+            &mut self.weights,
+            &self.body_contacts,
+            &self.particle_contacts,
+        );
+    }
+
+    pub(super) fn recompute_contact_weights(
+        weights: &mut [f32],
+        body_contacts: &[ParticleBodyContact],
+        particle_contacts: &[ParticleContact],
+    ) {
+        weights.fill(0.0);
+        for contact in body_contacts {
+            weights[contact.index.0] += contact.weight;
         }
-        for contact in &self.particle_contacts {
+        for contact in particle_contacts {
             for index in contact.indices {
-                self.weights[index.0] += contact.weight;
+                weights[index.0] += contact.weight;
             }
         }
     }

@@ -46,7 +46,6 @@ struct RowPermutationCandidate {
     velocities: Vec<Vec2>,
     flags: Vec<ParticleFlags>,
     groups: Vec<Option<ParticleGroupId>>,
-    weights: Vec<f32>,
     forces: Vec<Vec2>,
     maybe_colors: Option<Vec<ParticleColor>>,
     maybe_user_associations: Option<Vec<Option<UserAssociationKey>>>,
@@ -73,6 +72,11 @@ fn prepare_candidate(
     let rows = prepare_rows(storage, old_to_new, new_count)?;
     let derived = remap_derived(storage, old_to_new)?;
     let group_ranges = build_group_ranges(&rows.groups)?;
+    let weights = recompute_weights(
+        new_count,
+        &derived.body_contacts,
+        &derived.particle_contacts,
+    );
     Ok(PermutationCandidate {
         identities: rows.identities,
         freed_slots: rows.freed_slots,
@@ -81,7 +85,7 @@ fn prepare_candidate(
         velocities: rows.velocities,
         flags: rows.flags,
         groups: rows.groups,
-        weights: rows.weights,
+        weights,
         forces: rows.forces,
         maybe_colors: rows.maybe_colors,
         maybe_user_associations: rows.maybe_user_associations,
@@ -191,7 +195,6 @@ fn empty_rows(storage: &ParticleStorage, new_count: usize) -> RowPermutationCand
         velocities: vec![Vec2::ZERO; new_count],
         flags: vec![ParticleFlags::WATER; new_count],
         groups: vec![None; new_count],
-        weights: vec![0.0; new_count],
         forces: vec![Vec2::ZERO; new_count],
         maybe_colors: storage
             .maybe_colors
@@ -213,6 +216,16 @@ fn empty_rows(storage: &ParticleStorage, new_count: usize) -> RowPermutationCand
             .map(|_| vec![0; new_count]),
         destroyed: Vec::new(),
     }
+}
+
+fn recompute_weights(
+    particle_count: usize,
+    body_contacts: &[ParticleBodyContact],
+    particle_contacts: &[ParticleContact],
+) -> Vec<f32> {
+    let mut weights = vec![0.0; particle_count];
+    ParticleStorage::recompute_contact_weights(&mut weights, body_contacts, particle_contacts);
+    weights
 }
 
 fn remap_derived(

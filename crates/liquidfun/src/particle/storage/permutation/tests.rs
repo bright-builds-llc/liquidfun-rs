@@ -61,6 +61,7 @@ fn populated_storage() -> (ParticleStorage, [ParticleId; 4]) {
         weight: 0.5,
         normal: Vec2::new(1.0, 0.0),
     }];
+    storage.weights = vec![0.5, 0.0, 0.5, 0.0];
     storage.pairs = vec![ParticlePair {
         indices: [ParticleIndex(1), ParticleIndex(3)],
         flags: ParticleFlags::SPRING,
@@ -151,7 +152,7 @@ fn one_transaction_remaps_all_lanes_indices_and_group_ranges() {
 }
 
 #[test]
-fn invalid_duplicate_permutation_leaves_state_unchanged() {
+fn invalid_duplicate_permutation_leaves_contacts_and_weights_unchanged() {
     // Arrange
     let (mut storage, _ids) = populated_storage();
     let before = storage.clone();
@@ -248,12 +249,12 @@ fn incomplete_mapping_cannot_remove_a_live_row() {
 }
 
 #[test]
-fn production_payload_and_stuck_lanes_follow_the_same_total_permutation() {
+fn rotation_recomputes_weights_from_remapped_contacts() {
     // Arrange
     let (mut storage, ids) = populated_storage();
     let body = BodyId::from_identity(Identity::new(storage.world, 20, 0));
     let fixture = FixtureId::from_identity(Identity::new(storage.world, 21, 0));
-    storage.weights = vec![1.0, 2.0, 3.0, 4.0];
+    storage.weights = vec![0.5, 0.75, 0.5, 0.25];
     storage.forces = vec![
         Vec2::new(1.0, 10.0),
         Vec2::new(2.0, 20.0),
@@ -266,14 +267,32 @@ fn production_payload_and_stuck_lanes_follow_the_same_total_permutation() {
         consecutive_contact_steps: vec![5, 6, 7, 8],
         candidates: vec![ParticleIndex(1)],
     });
-    storage.body_contacts = vec![ParticleBodyContact {
-        index: ParticleIndex(1),
-        body,
-        fixture,
-        weight: 0.75,
-        normal: Vec2::new(0.0, 1.0),
-        mass: 2.5,
-    }];
+    storage.body_contacts = vec![
+        ParticleBodyContact {
+            index: ParticleIndex(1),
+            body,
+            fixture,
+            weight: 0.75,
+            normal: Vec2::new(0.0, 1.0),
+            mass: 2.5,
+        },
+        ParticleBodyContact {
+            index: ParticleIndex(3),
+            body,
+            fixture,
+            weight: 0.25,
+            normal: Vec2::new(0.0, -1.0),
+            mass: 1.5,
+        },
+    ];
+    let before_particle_contact = storage.particle_contacts[0]
+        .indices
+        .map(|index| storage.dense_to_id[index.0]);
+    let before_body_contacts = storage
+        .body_contacts
+        .iter()
+        .map(|contact| (storage.dense_to_id[contact.index.0], contact.weight))
+        .collect::<Vec<_>>();
 
     // Act
     storage
@@ -291,7 +310,21 @@ fn production_payload_and_stuck_lanes_follow_the_same_total_permutation() {
             Vec2::new(2.0, 20.0),
         ]
     );
-    assert_eq!(storage.weights, vec![0.0; 4]);
+    assert_eq!(storage.weights, vec![0.5, 0.25, 0.5, 0.75]);
+    assert_eq!(
+        storage.particle_contacts[0]
+            .indices
+            .map(|index| storage.dense_to_id[index.0]),
+        before_particle_contact
+    );
+    assert_eq!(
+        storage
+            .body_contacts
+            .iter()
+            .map(|contact| (storage.dense_to_id[contact.index.0], contact.weight))
+            .collect::<Vec<_>>(),
+        before_body_contacts
+    );
     let stuck = storage
         .maybe_stuck
         .expect("stuck lanes remain allocated after permutation");
@@ -302,6 +335,46 @@ fn production_payload_and_stuck_lanes_follow_the_same_total_permutation() {
     assert_eq!(storage.body_contacts[0].index, ParticleIndex(3));
     assert_eq!(storage.body_contacts[0].body, body);
     assert_eq!(storage.body_contacts[0].fixture, fixture);
+    assert_eq!(storage.body_contacts[1].index, ParticleIndex(1));
+}
+
+#[test]
+fn compaction_recomputes_weights_after_removing_a_contacted_middle_row() {
+    // Arrange
+    let (mut storage, ids) = populated_storage();
+    let body = BodyId::from_identity(Identity::new(storage.world, 20, 0));
+    let fixture = FixtureId::from_identity(Identity::new(storage.world, 21, 0));
+    storage.body_contacts = vec![ParticleBodyContact {
+        index: ParticleIndex(1),
+        body,
+        fixture,
+        weight: 0.75,
+        normal: Vec2::new(0.0, 1.0),
+        mass: 2.5,
+    }];
+    storage.weights = vec![0.5, 0.75, 0.5, 0.0];
+    let before_particle_contact = storage.particle_contacts[0]
+        .indices
+        .map(|index| storage.dense_to_id[index.0]);
+    storage
+        .mark_delete(ids[1])
+        .expect("middle particle is live");
+
+    // Act
+    storage
+        .compact_pending()
+        .expect("contacted middle particle compacts");
+
+    // Assert
+    assert_eq!(storage.weights, vec![0.5, 0.5, 0.0]);
+    assert!(storage.body_contacts.is_empty());
+    assert_eq!(
+        storage.particle_contacts[0]
+            .indices
+            .map(|index| storage.dense_to_id[index.0]),
+        before_particle_contact
+    );
+    assert_eq!(storage.check_invariants(), Ok(()));
 }
 
 #[test]
