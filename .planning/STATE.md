@@ -4,14 +4,14 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Phase 9 context gathered
-last_updated: "2026-07-15T04:08:27.919Z"
-last_activity: 2026-07-15 -- Phase 9 planning complete
+last_updated: "2026-07-16T00:23:32.662Z"
+last_activity: 2026-07-16 -- Phase 09 planning complete
 progress:
   total_phases: 12
   completed_phases: 8
-  total_plans: 115
-  completed_plans: 98
-  percent: 85
+  total_plans: 122
+  completed_plans: 115
+  percent: 94
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-07-12)
 
 **Core value:** Deliver an independent, maintainable Rust physics engine whose LiquidFun behavior is demonstrated against a pinned upstream oracle through explicit inventory, tests, differential evidence, and documented tolerances.
-**Current focus:** Phase 9 — Particle Storage, Lifecycle, and Coupling
+**Current focus:** Phase 09 — particle-storage-lifecycle-and-coupling
 
 ## Current Position
 
-Phase: 9
-Plan: Not started
+Phase: 09 (particle-storage-lifecycle-and-coupling) — EXECUTING
+Plan: 18 of 24
 Status: Ready to execute
-Last activity: 2026-07-15 -- Phase 9 planning complete
+Last activity: 2026-07-16 -- Phase 09 planning complete
 
-Progress: [██████████] 100%
+Progress: [███████░░░] 71%
 
 ## Performance Metrics
 
