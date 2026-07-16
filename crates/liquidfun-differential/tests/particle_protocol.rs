@@ -17,6 +17,350 @@ fn decode_value(value: &Value) -> Result<liquidfun_test_protocol::RigidWorldRequ
         .map_err(|error| error.to_string())
 }
 
+fn phase9_lifecycle_value() -> Value {
+    let mut value: Value =
+        serde_json::from_slice(PHASE8_REQUEST).expect("checked-in Phase 8 request should be JSON");
+    let timeline = value["scenario"]["timelines"]
+        .as_array_mut()
+        .expect("fixture timelines should be an array")
+        .first_mut()
+        .expect("fixture should contain a timeline");
+    timeline["particle_systems"] = json!([
+        {
+            "system_id": "phase9-system-a",
+            "buffer_mode": { "kind": "growable", "initial_capacity": 4 },
+            "paused": false, "strict_contact_check": true, "stuck_threshold": 2,
+            "density_bits": 1065353216, "gravity_scale_bits": 1065353216,
+            "radius_bits": 1036831949, "damping_bits": 0, "destruction_by_age": true,
+            "lifetime_granularity_bits": 1008981770, "maximum_count": 8
+        },
+        {
+            "system_id": "phase9-system-b",
+            "buffer_mode": { "kind": "growable", "initial_capacity": 4 },
+            "paused": false, "strict_contact_check": false, "stuck_threshold": 0,
+            "density_bits": 1065353216, "gravity_scale_bits": 1065353216,
+            "radius_bits": 1036831949, "damping_bits": 0, "destruction_by_age": false,
+            "lifetime_granularity_bits": 1008981770, "maximum_count": 8
+        }
+    ]);
+    timeline["particles"] = json!([
+        {
+            "particle_id": "phase9-particle-a", "system_id": "phase9-system-a",
+            "position": { "x_bits": 0, "y_bits": 0 },
+            "velocity": { "x_bits": 0, "y_bits": 0 },
+            "flags_bits": 0, "color": [255, 255, 255, 255],
+            "lifetime_bits": (-1.0_f32).to_bits()
+        },
+        {
+            "particle_id": "phase9-particle-b", "system_id": "phase9-system-b",
+            "position": { "x_bits": 0, "y_bits": 0 },
+            "velocity": { "x_bits": 0, "y_bits": 0 },
+            "flags_bits": 0, "color": [255, 255, 255, 255],
+            "lifetime_bits": 0
+        }
+    ]);
+    let actions = timeline["actions"]
+        .as_array_mut()
+        .expect("fixture actions should be an array");
+    for (action_id, action) in [
+        (
+            "phase9-create-system-a",
+            json!({ "kind": "create_system", "system_id": "phase9-system-a" }),
+        ),
+        (
+            "phase9-create-system-b",
+            json!({ "kind": "create_system", "system_id": "phase9-system-b" }),
+        ),
+        (
+            "phase9-create-particle-a",
+            json!({ "kind": "create_particle", "particle_id": "phase9-particle-a" }),
+        ),
+        (
+            "phase9-create-particle-b",
+            json!({ "kind": "create_particle", "particle_id": "phase9-particle-b" }),
+        ),
+        (
+            "phase9-inspect-particle-a",
+            json!({ "kind": "inspect_particle", "particle_id": "phase9-particle-a" }),
+        ),
+        (
+            "phase9-force-a",
+            json!({ "kind": "apply_force", "particle_ids": ["phase9-particle-a"], "force": { "x_bits": 0, "y_bits": 0 } }),
+        ),
+        (
+            "phase9-mark-a",
+            json!({ "kind": "mark_for_destruction", "particle_id": "phase9-particle-a" }),
+        ),
+        (
+            "phase9-compact-a",
+            json!({ "kind": "compact", "system_id": "phase9-system-a" }),
+        ),
+        (
+            "phase9-destroy-system-a",
+            json!({ "kind": "destroy_system", "system_id": "phase9-system-a" }),
+        ),
+        (
+            "phase9-query-b",
+            json!({ "kind": "query_aabb", "system_id": "phase9-system-b", "lower": { "x_bits": 0, "y_bits": 0 }, "upper": { "x_bits": 1065353216, "y_bits": 1065353216 } }),
+        ),
+        (
+            "phase9-mark-b",
+            json!({ "kind": "mark_for_destruction", "particle_id": "phase9-particle-b" }),
+        ),
+        (
+            "phase9-compact-b",
+            json!({ "kind": "compact", "system_id": "phase9-system-b" }),
+        ),
+        (
+            "phase9-destroy-system-b",
+            json!({ "kind": "destroy_system", "system_id": "phase9-system-b" }),
+        ),
+    ] {
+        actions.push(json!({
+            "action_id": action_id,
+            "phase": "phase9",
+            "action": { "kind": "particle", "action": action }
+        }));
+    }
+    let checkpoint = timeline["checkpoints"]
+        .as_array_mut()
+        .expect("fixture checkpoints should be an array")
+        .last_mut()
+        .expect("fixture should contain a checkpoint");
+    checkpoint["after_action_id"] = json!("phase9-destroy-system-b");
+    checkpoint["phase"] = json!("phase9");
+    value
+}
+
+fn phase9_action_mut<'a>(value: &'a mut Value, action_id: &str) -> &'a mut Value {
+    value["scenario"]["timelines"]
+        .as_array_mut()
+        .expect("fixture timelines should be an array")
+        .first_mut()
+        .expect("fixture should contain a timeline")["actions"]
+        .as_array_mut()
+        .expect("fixture actions should be an array")
+        .iter_mut()
+        .find(|record| record["action_id"] == action_id)
+        .expect("fixture should contain requested Phase 9 action")
+}
+
+fn insert_phase9_action_after(value: &mut Value, after_id: &str, action_id: &str, action: Value) {
+    let actions = value["scenario"]["timelines"]
+        .as_array_mut()
+        .expect("fixture timelines should be an array")
+        .first_mut()
+        .expect("fixture should contain a timeline")["actions"]
+        .as_array_mut()
+        .expect("fixture actions should be an array");
+    let index = actions
+        .iter()
+        .position(|record| record["action_id"] == after_id)
+        .expect("fixture should contain insertion anchor");
+    actions.insert(
+        index + 1,
+        json!({
+            "action_id": action_id,
+            "phase": "phase9",
+            "action": { "kind": "particle", "action": action }
+        }),
+    );
+}
+
+fn assert_invalid_particle_action(value: &Value) {
+    let error =
+        decode_value(value).expect_err("invalid Phase 9 lifecycle must fail before execution");
+    assert!(
+        error.contains("InvalidParticleAction"),
+        "unexpected decode error: {error}"
+    );
+}
+
+#[test]
+fn request_accepts_every_finite_infinite_lifetime_bit_pattern() {
+    // Arrange
+    let finite_infinite_bits = [
+        (-1.0_f32).to_bits(),
+        (-0.0_f32).to_bits(),
+        0.0_f32.to_bits(),
+    ];
+
+    // Act
+    let decoded = finite_infinite_bits.map(|lifetime_bits| {
+        let mut value = phase9_lifecycle_value();
+        value["scenario"]["timelines"][0]["particles"][0]["lifetime_bits"] = json!(lifetime_bits);
+        decode_value(&value).map(|request| {
+            request.scenario().timelines()[0].particles()[0]
+                .lifetime_bits
+                .bits()
+        })
+    });
+
+    // Assert
+    assert_eq!(decoded, finite_infinite_bits.map(Ok));
+}
+
+#[test]
+fn request_rejects_nonfinite_particle_lifetimes() {
+    // Arrange
+    let nonfinite_bits = [
+        f32::NAN.to_bits(),
+        f32::INFINITY.to_bits(),
+        f32::NEG_INFINITY.to_bits(),
+    ];
+
+    // Act
+    let results = nonfinite_bits.map(|lifetime_bits| {
+        let mut value = phase9_lifecycle_value();
+        value["scenario"]["timelines"][0]["particles"][0]["lifetime_bits"] = json!(lifetime_bits);
+        decode_value(&value)
+    });
+
+    // Assert
+    assert!(results.iter().all(Result::is_err));
+}
+
+#[test]
+fn request_rejects_duplicate_particle_system_creation() {
+    // Arrange
+    let mut value = phase9_lifecycle_value();
+    insert_phase9_action_after(
+        &mut value,
+        "phase9-create-system-a",
+        "phase9-create-system-a-again",
+        json!({ "kind": "create_system", "system_id": "phase9-system-a" }),
+    );
+
+    // Act / Assert
+    assert_invalid_particle_action(&value);
+}
+
+#[test]
+fn request_rejects_particle_creation_before_owner_system() {
+    // Arrange
+    let mut value = phase9_lifecycle_value();
+    let actions = value["scenario"]["timelines"][0]["actions"]
+        .as_array_mut()
+        .expect("fixture actions should be an array");
+    let system_index = actions
+        .iter()
+        .position(|record| record["action_id"] == "phase9-create-system-a")
+        .expect("system creation should exist");
+    let particle_index = actions
+        .iter()
+        .position(|record| record["action_id"] == "phase9-create-particle-a")
+        .expect("particle creation should exist");
+    actions.swap(system_index, particle_index);
+
+    // Act / Assert
+    assert_invalid_particle_action(&value);
+}
+
+#[test]
+fn request_rejects_duplicate_particle_creation() {
+    // Arrange
+    let mut value = phase9_lifecycle_value();
+    insert_phase9_action_after(
+        &mut value,
+        "phase9-create-particle-a",
+        "phase9-create-particle-a-again",
+        json!({ "kind": "create_particle", "particle_id": "phase9-particle-a" }),
+    );
+
+    // Act / Assert
+    assert_invalid_particle_action(&value);
+}
+
+#[test]
+fn request_rejects_unknown_particle_use() {
+    // Arrange
+    let mut value = phase9_lifecycle_value();
+    phase9_action_mut(&mut value, "phase9-inspect-particle-a")["action"]["action"]["particle_id"] =
+        json!("unknown-particle");
+
+    // Act / Assert
+    assert_invalid_particle_action(&value);
+}
+
+#[test]
+fn request_rejects_pending_particle_use_and_repeated_mark() {
+    // Arrange
+    let mut pending_use = phase9_lifecycle_value();
+    insert_phase9_action_after(
+        &mut pending_use,
+        "phase9-mark-a",
+        "phase9-inspect-pending-a",
+        json!({ "kind": "inspect_particle", "particle_id": "phase9-particle-a" }),
+    );
+    let mut repeated_mark = phase9_lifecycle_value();
+    insert_phase9_action_after(
+        &mut repeated_mark,
+        "phase9-mark-a",
+        "phase9-mark-a-again",
+        json!({ "kind": "mark_for_destruction", "particle_id": "phase9-particle-a" }),
+    );
+
+    // Act / Assert
+    assert_invalid_particle_action(&pending_use);
+    assert_invalid_particle_action(&repeated_mark);
+}
+
+#[test]
+fn request_rejects_particle_recreation_after_compaction() {
+    // Arrange
+    let mut value = phase9_lifecycle_value();
+    insert_phase9_action_after(
+        &mut value,
+        "phase9-compact-a",
+        "phase9-recreate-particle-a",
+        json!({ "kind": "create_particle", "particle_id": "phase9-particle-a" }),
+    );
+
+    // Act / Assert
+    assert_invalid_particle_action(&value);
+}
+
+#[test]
+fn request_rejects_particle_use_after_owner_system_destruction() {
+    // Arrange
+    let mut value = phase9_lifecycle_value();
+    insert_phase9_action_after(
+        &mut value,
+        "phase9-destroy-system-a",
+        "phase9-inspect-destroyed-a",
+        json!({ "kind": "inspect_particle", "particle_id": "phase9-particle-a" }),
+    );
+
+    // Act / Assert
+    assert_invalid_particle_action(&value);
+}
+
+#[test]
+fn request_rejects_cross_system_particle_range() {
+    // Arrange
+    let mut value = phase9_lifecycle_value();
+    phase9_action_mut(&mut value, "phase9-force-a")["action"]["action"]["particle_ids"] =
+        json!(["phase9-particle-a", "phase9-particle-b"]);
+
+    // Act / Assert
+    assert_invalid_particle_action(&value);
+}
+
+#[test]
+fn request_rejects_destroyed_or_unknown_query_owner() {
+    // Arrange
+    let mut destroyed = phase9_lifecycle_value();
+    phase9_action_mut(&mut destroyed, "phase9-query-b")["action"]["action"]["system_id"] =
+        json!("phase9-system-a");
+    let mut unknown = phase9_lifecycle_value();
+    phase9_action_mut(&mut unknown, "phase9-query-b")["action"]["action"]["system_id"] =
+        json!("unknown-system");
+
+    // Act / Assert
+    assert_invalid_particle_action(&destroyed);
+    assert_invalid_particle_action(&unknown);
+}
+
 #[test]
 fn codec_accepts_bounded_additive_phase9_declarations() {
     // Arrange

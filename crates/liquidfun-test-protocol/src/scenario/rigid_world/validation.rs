@@ -160,6 +160,17 @@ struct ActionReferences<'a> {
     joint_bodies: &'a HashMap<ScenarioId, [ScenarioId; 2]>,
     gear_dependents: &'a HashMap<ScenarioId, Vec<ScenarioId>>,
     rope_ids: &'a HashSet<ScenarioId>,
+    particle_system_ids: &'a HashSet<ScenarioId>,
+    particle_owners: &'a HashMap<ScenarioId, ScenarioId>,
+}
+
+#[derive(Default)]
+struct Phase9ActionState {
+    created_systems: HashSet<ScenarioId>,
+    live_systems: HashSet<ScenarioId>,
+    created_particles: HashSet<ScenarioId>,
+    live_particles: HashSet<ScenarioId>,
+    pending_particles: HashSet<ScenarioId>,
 }
 
 /// Decodes one newline-complete bounded rigid-world request record.
@@ -243,6 +254,14 @@ fn validate_timeline(raw: RawTimeline) -> Result<RigidWorldTimeline, RigidWorldD
         .map_or_else(Vec::new, BoundedVec::into_vec);
     let particles = raw.particles.map_or_else(Vec::new, BoundedVec::into_vec);
     validate_phase9_declarations(&particle_systems, &particles)?;
+    let particle_system_ids = particle_systems
+        .iter()
+        .map(|system| system.system_id.clone())
+        .collect::<HashSet<_>>();
+    let particle_owners = particles
+        .iter()
+        .map(|particle| (particle.particle_id.clone(), particle.system_id.clone()))
+        .collect::<HashMap<_, _>>();
     let joint_ids = joints
         .iter()
         .map(|joint| joint.joint_id.clone())
@@ -274,6 +293,8 @@ fn validate_timeline(raw: RawTimeline) -> Result<RigidWorldTimeline, RigidWorldD
         joint_bodies: &joint_bodies,
         gear_dependents: &gear_dependents,
         rope_ids: &rope_ids,
+        particle_system_ids: &particle_system_ids,
+        particle_owners: &particle_owners,
     };
     let actions = validate_actions(raw.actions.into_vec(), raw.witness_family, &references)?;
     validate_phase8_behavior(
@@ -412,6 +433,7 @@ fn validate_actions(
     let mut live_ropes = HashSet::new();
     let mut created_joints = HashSet::new();
     let mut created_ropes = HashSet::new();
+    let mut phase9_state = Phase9ActionState::default();
     let mut actions = Vec::with_capacity(raw_actions.len());
 
     for raw in raw_actions {
@@ -440,6 +462,9 @@ fn validate_actions(
             &mut live_ropes,
             &mut created_joints,
             &mut created_ropes,
+            references.particle_system_ids,
+            references.particle_owners,
+            &mut phase9_state,
         )?;
         action_kinds.insert(raw.action.action_kind());
         actions.push(RigidWorldActionRecord {
@@ -457,6 +482,9 @@ fn validate_actions(
         || !live_ropes.is_empty()
         || created_joints.len() != references.joint_ids.len()
         || created_ropes.len() != references.rope_ids.len()
+        || !phase9_state.live_systems.is_empty()
+        || !phase9_state.live_particles.is_empty()
+        || !phase9_state.pending_particles.is_empty()
         || family
             .required_action_kinds()
             .iter()
@@ -490,10 +518,13 @@ fn validate_action(
     live_ropes: &mut HashSet<ScenarioId>,
     created_joints: &mut HashSet<ScenarioId>,
     created_ropes: &mut HashSet<ScenarioId>,
+    particle_system_ids: &HashSet<ScenarioId>,
+    particle_owners: &HashMap<ScenarioId, ScenarioId>,
+    phase9_state: &mut Phase9ActionState,
 ) -> Result<(), RigidWorldDecodeError> {
     match action {
         RigidWorldAction::Particle { action } => {
-            validate_phase9_action(action)?;
+            validate_phase9_action(action, particle_system_ids, particle_owners, phase9_state)?;
         }
         RigidWorldAction::CreateBody { body_id } => {
             if !body_ids.contains(body_id)
@@ -812,12 +843,97 @@ fn validate_phase9_declarations(
         }
         validate_vec2(particle.position)?;
         validate_vec2(particle.velocity)?;
-        validate_nonnegative(particle.lifetime_bits)?;
+        validate_finite(
+            particle.lifetime_bits,
+            RigidWorldErrorKind::InvalidParticleDefinition,
+        )?;
     }
     Ok(())
 }
 
-fn validate_phase9_action(action: &Phase9ParticleAction) -> Result<(), RigidWorldDecodeError> {
+fn validate_phase9_action(
+    action: &Phase9ParticleAction,
+    system_ids: &HashSet<ScenarioId>,
+    particle_owners: &HashMap<ScenarioId, ScenarioId>,
+    state: &mut Phase9ActionState,
+) -> Result<(), RigidWorldDecodeError> {
+    validate_phase9_action_shape(action)?;
+    match action {
+        Phase9ParticleAction::CreateSystem { system_id } => {
+            if !system_ids.contains(system_id)
+                || !state.created_systems.insert(system_id.clone())
+                || !state.live_systems.insert(system_id.clone())
+            {
+                return Err(validation(RigidWorldErrorKind::InvalidParticleAction));
+            }
+        }
+        Phase9ParticleAction::DestroySystem { system_id } => {
+            if !state.live_systems.remove(system_id) {
+                return Err(validation(RigidWorldErrorKind::InvalidParticleAction));
+            }
+            state
+                .live_particles
+                .retain(|particle_id| particle_owners.get(particle_id) != Some(system_id));
+            state
+                .pending_particles
+                .retain(|particle_id| particle_owners.get(particle_id) != Some(system_id));
+        }
+        Phase9ParticleAction::CreateParticle { particle_id } => {
+            let Some(owner) = particle_owners.get(particle_id) else {
+                return Err(validation(RigidWorldErrorKind::InvalidParticleAction));
+            };
+            if !state.live_systems.contains(owner)
+                || !state.created_particles.insert(particle_id.clone())
+                || !state.live_particles.insert(particle_id.clone())
+            {
+                return Err(validation(RigidWorldErrorKind::InvalidParticleAction));
+            }
+        }
+        Phase9ParticleAction::InspectSystem { system_id }
+        | Phase9ParticleAction::SetPaused { system_id, .. }
+        | Phase9ParticleAction::Compact { system_id }
+        | Phase9ParticleAction::RequestStatistics { system_id } => {
+            require_live_phase9_system(system_id, state)?;
+            if matches!(action, Phase9ParticleAction::Compact { .. }) {
+                state
+                    .pending_particles
+                    .retain(|particle_id| particle_owners.get(particle_id) != Some(system_id));
+            }
+        }
+        Phase9ParticleAction::InspectParticle { particle_id }
+        | Phase9ParticleAction::SetPosition { particle_id, .. }
+        | Phase9ParticleAction::SetVelocity { particle_id, .. } => {
+            require_live_phase9_particle(particle_id, particle_owners, state)?;
+        }
+        Phase9ParticleAction::MarkForDestruction { particle_id } => {
+            require_live_phase9_particle(particle_id, particle_owners, state)?;
+            state.live_particles.remove(particle_id);
+            state.pending_particles.insert(particle_id.clone());
+        }
+        Phase9ParticleAction::ApplyForce { particle_ids, .. }
+        | Phase9ParticleAction::ApplyImpulse { particle_ids, .. } => {
+            let mut maybe_owner: Option<&ScenarioId> = None;
+            for particle_id in particle_ids {
+                let owner = require_live_phase9_particle(particle_id, particle_owners, state)?;
+                if maybe_owner.is_some_and(|expected| expected != owner) {
+                    return Err(validation(RigidWorldErrorKind::InvalidParticleAction));
+                }
+                maybe_owner = Some(owner);
+            }
+        }
+        Phase9ParticleAction::QueryAabb { system_id, .. }
+        | Phase9ParticleAction::RayCast { system_id, .. } => {
+            if let Some(system_id) = system_id {
+                require_live_phase9_system(system_id, state)?;
+            }
+        }
+    }
+    Ok(())
+}
+
+fn validate_phase9_action_shape(
+    action: &Phase9ParticleAction,
+) -> Result<(), RigidWorldDecodeError> {
     match action {
         Phase9ParticleAction::SetPosition { position, .. }
         | Phase9ParticleAction::SetVelocity {
@@ -860,6 +976,30 @@ fn validate_phase9_action(action: &Phase9ParticleAction) -> Result<(), RigidWorl
         | Phase9ParticleAction::RequestStatistics { .. } => {}
     }
     Ok(())
+}
+
+fn require_live_phase9_system(
+    system_id: &ScenarioId,
+    state: &Phase9ActionState,
+) -> Result<(), RigidWorldDecodeError> {
+    if !state.live_systems.contains(system_id) {
+        return Err(validation(RigidWorldErrorKind::InvalidParticleAction));
+    }
+    Ok(())
+}
+
+fn require_live_phase9_particle<'a>(
+    particle_id: &ScenarioId,
+    particle_owners: &'a HashMap<ScenarioId, ScenarioId>,
+    state: &Phase9ActionState,
+) -> Result<&'a ScenarioId, RigidWorldDecodeError> {
+    let Some(owner) = particle_owners.get(particle_id) else {
+        return Err(validation(RigidWorldErrorKind::InvalidParticleAction));
+    };
+    if !state.live_systems.contains(owner) || !state.live_particles.contains(particle_id) {
+        return Err(validation(RigidWorldErrorKind::InvalidParticleAction));
+    }
+    Ok(owner)
 }
 
 fn validate_joints(
@@ -1809,4 +1949,59 @@ fn require_live(
 
 fn checked_u32(value: usize) -> Result<u32, RigidWorldDecodeError> {
     u32::try_from(value).map_err(|_| validation(RigidWorldErrorKind::AggregateLimitExceeded))
+}
+
+#[cfg(test)]
+mod phase9_tests {
+    use super::*;
+
+    fn id(value: &str) -> ScenarioId {
+        ScenarioId::new(value).expect("test scenario identity should be valid")
+    }
+
+    fn system_declaration() -> Phase9ParticleSystemDeclaration {
+        Phase9ParticleSystemDeclaration {
+            system_id: id("system"),
+            buffer_mode: super::super::Phase9ParticleBufferMode::Growable {
+                initial_capacity: 1,
+            },
+            paused: false,
+            strict_contact_check: false,
+            stuck_threshold: 0,
+            density_bits: FloatBits::from_f32(1.0),
+            gravity_scale_bits: FloatBits::from_f32(1.0),
+            radius_bits: FloatBits::from_f32(0.1),
+            damping_bits: FloatBits::from_f32(0.0),
+            destruction_by_age: false,
+            lifetime_granularity_bits: FloatBits::from_f32(1.0 / 60.0),
+            maximum_count: None,
+        }
+    }
+
+    #[test]
+    fn phase9_declaration_accepts_negative_finite_lifetime_bits() {
+        // Arrange
+        let systems = [system_declaration()];
+        let particles = [Phase9ParticleDeclaration {
+            particle_id: id("particle"),
+            system_id: id("system"),
+            position: crate::Vec2Bits {
+                x_bits: FloatBits::from_f32(0.0),
+                y_bits: FloatBits::from_f32(0.0),
+            },
+            velocity: crate::Vec2Bits {
+                x_bits: FloatBits::from_f32(0.0),
+                y_bits: FloatBits::from_f32(0.0),
+            },
+            flags_bits: 0,
+            color: [0; 4],
+            lifetime_bits: FloatBits::from_f32(-1.0),
+        }];
+
+        // Act
+        let result = validate_phase9_declarations(&systems, &particles);
+
+        // Assert
+        assert!(result.is_ok());
+    }
 }
