@@ -31,17 +31,21 @@ use liquidfun::{
     StepReport, World,
 };
 use liquidfun_test_protocol::{
-    FloatBits, RIGID_WORLD_POSITION_ITERATIONS, RIGID_WORLD_TIMESTEP_BITS,
-    RIGID_WORLD_VELOCITY_ITERATIONS, RigidBodyDeclaration, RigidBodyKind, RigidBodySnapshot,
-    RigidContactEvent, RigidContactEventKind, RigidContactFeature, RigidContactIdentity,
-    RigidContactResult, RigidDestructionRecord, RigidExpectedCheckpoint, RigidExpectedCounts,
-    RigidFeatureKind, RigidFilterBits, RigidFixtureDeclaration, RigidFixtureShape,
-    RigidFixtureSnapshot, RigidManifoldKind, RigidManifoldPoint, RigidManifoldResult,
-    RigidWorldAction, RigidWorldActionRecord, RigidWorldDecodeError, RigidWorldObservation,
-    RigidWorldRequestRecord, RigidWorldResultRecord, RigidWorldTimeline, RigidWorldTimelineResult,
-    RigidWorldWitness, RigidWorldWitnessFamily, ScenarioId, TransformBits, Vec2Bits,
+    FloatBits, HarnessLimits, RIGID_WORLD_POSITION_ITERATIONS, RIGID_WORLD_TIMESTEP_BITS,
+    RIGID_WORLD_VELOCITY_ITERATIONS, RecordLimit, RigidBodyDeclaration, RigidBodyKind,
+    RigidBodySnapshot, RigidContactEvent, RigidContactEventKind, RigidContactFeature,
+    RigidContactIdentity, RigidContactResult, RigidDestructionRecord, RigidExpectedCheckpoint,
+    RigidExpectedCounts, RigidFeatureKind, RigidFilterBits, RigidFixtureDeclaration,
+    RigidFixtureShape, RigidFixtureSnapshot, RigidManifoldKind, RigidManifoldPoint,
+    RigidManifoldResult, RigidWorldAction, RigidWorldActionRecord, RigidWorldDecodeError,
+    RigidWorldObservation, RigidWorldRequestRecord, RigidWorldResultRecord, RigidWorldTimeline,
+    RigidWorldTimelineResult, RigidWorldWitness, RigidWorldWitnessFamily, ScenarioId, Sha256Hex,
+    TransformBits, Vec2Bits, decode_rigid_world_request_jsonl, encode_jsonl,
     validate_rigid_world_result_against_request,
 };
+use sha2::{Digest, Sha256};
+
+use crate::supervisor::{OracleExecutable, RigidWorldProcessError, execute_rigid_world_process};
 
 /// Typed failure while mapping a validated rigid timeline onto native world APIs.
 #[derive(Debug, thiserror::Error)]
@@ -100,6 +104,112 @@ impl NativeRigidWorldExecutor {
         validate_native_rigid_world_result(request, &result)?;
         Ok(result)
     }
+}
+
+/// Non-physics failure while running one exact Phase 9 request through both engines.
+#[derive(Debug, thiserror::Error)]
+pub enum Phase9DifferentialError {
+    /// Canonical request serialization or revalidation failed before execution.
+    #[error("Phase 9 canonical request failed: {message}")]
+    Request {
+        /// Bounded protocol diagnostic.
+        message: Box<str>,
+    },
+    /// Native Rust execution failed before a comparison outcome existed.
+    #[error(transparent)]
+    Native(#[from] NativeRigidWorldError),
+    /// The process-isolated C++ role failed at the harness boundary.
+    #[error(transparent)]
+    Oracle(#[from] RigidWorldProcessError),
+    /// The closed comparator rejected policy, structure, or numeric validity.
+    #[error(transparent)]
+    Comparator(#[from] Phase9ComparatorError),
+}
+
+/// One-request/two-engine Phase 9 differential result.
+#[derive(Debug)]
+pub struct Phase9DifferentialRun {
+    request_sha256: Sha256Hex,
+    native_request_sha256: Sha256Hex,
+    oracle_request_sha256: Sha256Hex,
+    consumed_paths: Box<[&'static str]>,
+    outcome: Phase9ComparisonOutcome,
+}
+
+impl Phase9DifferentialRun {
+    /// Returns the digest of the one canonical JSONL request.
+    #[must_use]
+    pub const fn request_sha256(&self) -> &Sha256Hex {
+        &self.request_sha256
+    }
+
+    /// Returns the exact request digest consumed by the native role.
+    #[must_use]
+    pub const fn native_request_sha256(&self) -> &Sha256Hex {
+        &self.native_request_sha256
+    }
+
+    /// Returns the exact request digest consumed by the C++ role.
+    #[must_use]
+    pub const fn oracle_request_sha256(&self) -> &Sha256Hex {
+        &self.oracle_request_sha256
+    }
+
+    /// Returns every closed policy path in reviewed source order.
+    #[must_use]
+    pub fn consumed_paths(&self) -> &[&'static str] {
+        &self.consumed_paths
+    }
+
+    /// Returns match or first physics-mismatch evidence.
+    #[must_use]
+    pub const fn outcome(&self) -> &Phase9ComparisonOutcome {
+        &self.outcome
+    }
+}
+
+/// Executes one canonical request through native Rust and the selected pinned process oracle.
+///
+/// The request is serialized and hashed once, decoded back through the bounded protocol, and
+/// that one validated value is supplied to both roles. Physics disagreement is returned as a
+/// normal comparison outcome; process, validation, and comparator failures remain typed harness
+/// errors.
+///
+/// # Errors
+///
+/// Returns [`Phase9DifferentialError`] before a physics outcome exists when canonical request
+/// preparation, either engine, or the fail-closed comparator boundary fails.
+pub fn run_phase9_differential(
+    executable: &OracleExecutable,
+    request: &RigidWorldRequestRecord,
+    expected_oracle_revision: &str,
+) -> Result<Phase9DifferentialRun, Phase9DifferentialError> {
+    let limits = HarnessLimits::phase2_default_v1();
+    let request_bytes = encode_jsonl(request, &limits, RecordLimit::Input).map_err(|error| {
+        Phase9DifferentialError::Request {
+            message: error.to_string().into(),
+        }
+    })?;
+    let canonical_request =
+        decode_rigid_world_request_jsonl(&request_bytes, &limits).map_err(|error| {
+            Phase9DifferentialError::Request {
+                message: error.to_string().into(),
+            }
+        })?;
+    let request_sha256 = Sha256Hex::from_digest(Sha256::digest(&request_bytes).into());
+    let native = NativeRigidWorldExecutor::execute(&canonical_request)?;
+    let captured =
+        execute_rigid_world_process(executable, &canonical_request, expected_oracle_revision)?;
+    let outcome =
+        compare_phase9_rigid_world_results(&canonical_request, &native, captured.result())?;
+    let consumed_paths = validate_phase9_policy_registry(PHASE9_REQUIRED_POLICY_PATHS)?;
+    Ok(Phase9DifferentialRun {
+        native_request_sha256: request_sha256.clone(),
+        oracle_request_sha256: request_sha256.clone(),
+        request_sha256,
+        consumed_paths,
+        outcome,
+    })
 }
 
 /// Revalidates a native result against its complete request declaration.
