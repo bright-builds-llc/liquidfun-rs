@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <iterator>
+#include <limits>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -374,7 +375,10 @@ class TimelineExecution {
     state->fixed = buffer.at("kind") == "fixed";
     state->declared_capacity = state->fixed
                                    ? buffer.at("capacity").get<std::size_t>()
-                                   : buffer.at("initial_capacity").get<std::size_t>();
+                                   : raw.at("maximum_count").is_null()
+                                         ? static_cast<std::size_t>(
+                                               std::numeric_limits<int32>::max())
+                                         : raw.at("maximum_count").get<std::size_t>();
     if (state->fixed) {
       const auto capacity = state->declared_capacity;
       state->flags.resize(capacity);
@@ -464,7 +468,7 @@ class TimelineExecution {
       value.system->DestroyParticle(value.handle->GetIndex(), true);
     } else if (kind == "compact") {
       static_cast<void>(system(action.at("system_id")));
-      world_.Step(0.0F, 0, 0, 1);
+      world_.Step(std::numeric_limits<float32>::denorm_min(), 0, 0, 1);
       discard_dead_particles();
     } else if (kind == "apply_force") apply_range(action, false);
     else if (kind == "apply_impulse") apply_range(action, true);
@@ -502,7 +506,7 @@ class TimelineExecution {
              {"stuck_particle_ids", std::move(stuck)},
              {"collision_energy_bits", bits_from_float(state.system->ComputeCollisionEnergy())},
              {"declared_capacity", static_cast<std::uint32_t>(state.declared_capacity)},
-             {"effective_capacity", static_cast<std::uint32_t>(std::max<std::size_t>(state.declared_capacity, static_cast<std::size_t>(count)))}}}}}});
+             {"effective_capacity", static_cast<std::uint32_t>(state.declared_capacity)}}}}}});
   }
 
   void observe_query(const Json& action) {

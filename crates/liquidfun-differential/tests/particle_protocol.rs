@@ -4,7 +4,11 @@ use liquidfun_differential::{
     NativeRigidWorldExecutor, PHASE9_REGISTRY_ID, PHASE9_REQUIRED_POLICY_PATHS, Phase9PolicyKind,
     phase9_policy_for_path,
 };
-use liquidfun_test_protocol::{HarnessLimits, decode_rigid_world_request_jsonl};
+use liquidfun_test_protocol::{
+    HarnessLimits, RigidWorldErrorKind, RigidWorldRequestRecord, RigidWorldResultRecord,
+    decode_rigid_world_request_jsonl, decode_rigid_world_result_jsonl,
+    validate_rigid_world_result_against_request,
+};
 use serde_json::{Value, json};
 
 const PHASE8_REQUEST: &[u8] =
@@ -174,6 +178,193 @@ fn assert_invalid_particle_action(value: &Value) {
         error.contains("InvalidParticleAction"),
         "unexpected decode error: {error}"
     );
+}
+
+fn phase9_result_request() -> RigidWorldRequestRecord {
+    let mut value = phase9_lifecycle_value();
+    value["scenario"]["timelines"][0]["particles"][0]["position"] =
+        json!({ "x_bits": 1048576000, "y_bits": 1056964608 });
+    value["scenario"]["timelines"][0]["particles"][1]["position"] =
+        json!({ "x_bits": 1056964608, "y_bits": 1056964608 });
+    insert_phase9_action_after(
+        &mut value,
+        "phase9-query-b",
+        "phase9-statistics-b",
+        json!({ "kind": "request_statistics", "system_id": "phase9-system-b" }),
+    );
+    insert_phase9_action_after(
+        &mut value,
+        "phase9-statistics-b",
+        "phase9-ray-all",
+        json!({
+            "kind": "ray_cast",
+            "system_id": null,
+            "start": { "x_bits": 3212836864_u32, "y_bits": 1056964608 },
+            "end": { "x_bits": 1065353216, "y_bits": 1056964608 }
+        }),
+    );
+    decode_value(&value).expect("bounded Phase 9 result request should decode")
+}
+
+fn result_value(result: &RigidWorldResultRecord) -> Value {
+    serde_json::to_value(result).expect("Phase 9 result should serialize")
+}
+
+fn decode_result_value(value: &Value) -> Result<RigidWorldResultRecord, String> {
+    let mut bytes = serde_json::to_vec(value).map_err(|error| error.to_string())?;
+    bytes.push(b'\n');
+    decode_rigid_world_result_jsonl(&bytes, &HarnessLimits::phase2_default_v1())
+        .map_err(|error| error.to_string())
+}
+
+fn phase9_observations_mut(value: &mut Value) -> &mut Vec<Value> {
+    value["timelines"][0]["checkpoints"]
+        .as_array_mut()
+        .expect("timeline checkpoints should be an array")
+        .last_mut()
+        .expect("timeline should contain a final checkpoint")["observations"]
+        .as_array_mut()
+        .expect("checkpoint observations should be an array")
+}
+
+fn particle_observation_mut<'a>(observations: &'a mut [Value], kind: &str) -> &'a mut Value {
+    observations
+        .iter_mut()
+        .find(|observation| {
+            observation["kind"] == "particle" && observation["observation"]["kind"] == kind
+        })
+        .expect("requested Phase 9 observation should exist")
+}
+
+fn mixed_observation_with_particles_mut<'a>(
+    observations: &'a mut [Value],
+    particle_ids: &[&str],
+) -> &'a mut Value {
+    observations
+        .iter_mut()
+        .find(|observation| {
+            observation["kind"] == "particle"
+                && observation["observation"]["kind"] == "mixed_state"
+                && observation["observation"]["particle_ids"] == json!(particle_ids)
+        })
+        .expect("requested mixed-state observation should exist")
+}
+
+fn assert_result_observation_mismatch(request: &RigidWorldRequestRecord, value: &Value) {
+    let result = decode_result_value(value).expect("mutation should remain a bounded result");
+    let error = validate_rigid_world_result_against_request(request, &result)
+        .expect_err("fabricated Phase 9 observation must fail request-bound validation");
+    assert_eq!(
+        error.rigid_world_kind(),
+        Some(RigidWorldErrorKind::ResultObservationMismatch)
+    );
+}
+
+#[test]
+fn result_accepts_unmodified_native_phase9_action_contracts() {
+    // Arrange
+    let request = phase9_result_request();
+
+    // Act
+    let result = NativeRigidWorldExecutor::execute(&request);
+
+    // Assert
+    let result = result.expect("native Phase 9 result should satisfy its exact action contract");
+    validate_rigid_world_result_against_request(&request, &result)
+        .expect("unmodified native result should remain request-bound valid");
+}
+
+#[test]
+fn result_rejects_wrong_phase9_nested_variant_and_statistics_owner() {
+    // Arrange
+    let request = phase9_result_request();
+    let result = NativeRigidWorldExecutor::execute(&request)
+        .expect("baseline Phase 9 result should execute");
+    let mut wrong_variant = result_value(&result);
+    let statistics =
+        particle_observation_mut(phase9_observations_mut(&mut wrong_variant), "statistics");
+    statistics["observation"] = json!({ "kind": "query", "terminated": false, "particle_ids": [] });
+    let mut wrong_owner = result_value(&result);
+    particle_observation_mut(phase9_observations_mut(&mut wrong_owner), "statistics")["observation"]
+        ["statistics"]["maybe_system_id"] = json!("phase9-system-a");
+
+    // Act / Assert
+    assert_result_observation_mismatch(&request, &wrong_variant);
+    assert_result_observation_mismatch(&request, &wrong_owner);
+}
+
+#[test]
+fn result_rejects_unknown_wrong_owner_and_duplicate_query_particles() {
+    // Arrange
+    let request = phase9_result_request();
+    let result = NativeRigidWorldExecutor::execute(&request)
+        .expect("baseline Phase 9 result should execute");
+    let mut unknown = result_value(&result);
+    particle_observation_mut(phase9_observations_mut(&mut unknown), "query")["observation"]["particle_ids"] =
+        json!(["unknown-particle"]);
+    let mut wrong_owner = result_value(&result);
+    particle_observation_mut(phase9_observations_mut(&mut wrong_owner), "query")["observation"]["particle_ids"] =
+        json!(["phase9-particle-a"]);
+    let mut duplicate = result_value(&result);
+    particle_observation_mut(phase9_observations_mut(&mut duplicate), "query")["observation"]["particle_ids"] =
+        json!(["phase9-particle-b", "phase9-particle-b"]);
+
+    // Act / Assert
+    assert_result_observation_mismatch(&request, &unknown);
+    assert_result_observation_mismatch(&request, &wrong_owner);
+    assert_result_observation_mismatch(&request, &duplicate);
+}
+
+#[test]
+fn result_rejects_reordered_future_and_stale_mixed_particle_identities() {
+    // Arrange
+    let request = phase9_result_request();
+    let result = NativeRigidWorldExecutor::execute(&request)
+        .expect("baseline Phase 9 result should execute");
+    let mut reordered = result_value(&result);
+    mixed_observation_with_particles_mut(
+        phase9_observations_mut(&mut reordered),
+        &["phase9-particle-a", "phase9-particle-b"],
+    )["observation"]["particle_ids"] = json!(["phase9-particle-b", "phase9-particle-a"]);
+    let mut future = result_value(&result);
+    mixed_observation_with_particles_mut(phase9_observations_mut(&mut future), &[])["observation"]
+        ["particle_ids"] = json!(["phase9-particle-b"]);
+    let mut stale = result_value(&result);
+    mixed_observation_with_particles_mut(
+        phase9_observations_mut(&mut stale),
+        &["phase9-particle-b"],
+    )["observation"]["particle_ids"] = json!(["phase9-particle-a", "phase9-particle-b"]);
+
+    // Act / Assert
+    assert_result_observation_mismatch(&request, &reordered);
+    assert_result_observation_mismatch(&request, &future);
+    assert_result_observation_mismatch(&request, &stale);
+}
+
+#[test]
+fn result_rejects_ray_parallel_length_and_extra_particle_observation() {
+    // Arrange
+    let request = phase9_result_request();
+    let result = NativeRigidWorldExecutor::execute(&request)
+        .expect("baseline Phase 9 result should execute");
+    let mut wrong_length = result_value(&result);
+    particle_observation_mut(phase9_observations_mut(&mut wrong_length), "ray_cast")["observation"]
+        ["fractions_bits"] = json!([]);
+    let mut extra = result_value(&result);
+    let observations = phase9_observations_mut(&mut extra);
+    let duplicate = observations
+        .iter()
+        .find(|observation| observation["kind"] == "particle")
+        .cloned()
+        .expect("baseline should contain a particle observation");
+    observations.push(duplicate);
+
+    // Act / Assert
+    assert!(
+        decode_result_value(&wrong_length).is_err(),
+        "parallel ray arrays must fail bounded result decoding"
+    );
+    assert_result_observation_mismatch(&request, &extra);
 }
 
 #[test]

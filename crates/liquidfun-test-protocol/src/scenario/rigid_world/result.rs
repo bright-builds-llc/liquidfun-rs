@@ -3,8 +3,10 @@ use std::collections::{HashMap, HashSet};
 use serde::{Deserialize, Serialize};
 
 mod phase8;
+mod phase9;
 
 use phase8::{ExpectedObservation, expected_observation, validate_phase8_observation_contract};
+use phase9::Phase9ResultState;
 
 use super::{
     PHASE9_MAXIMUM_IDENTITIES, Phase9ParticleObservation, RigidBodyKind, RigidContactIdentity,
@@ -553,6 +555,7 @@ fn validate_checkpoint_observations(
     let fixture_owners = rigid_fixture_owners(timeline);
     let mut live_bodies = HashSet::new();
     let mut live_fixtures = HashSet::new();
+    let mut phase9_state = Phase9ResultState::new(timeline);
     for action in &timeline.actions()[..action_start] {
         super::types::apply_lifecycle_action(
             action.action(),
@@ -560,6 +563,9 @@ fn validate_checkpoint_observations(
             &mut live_bodies,
             &mut live_fixtures,
         );
+        if let RigidWorldAction::Particle { action } = action.action() {
+            phase9_state.apply(action);
+        }
     }
 
     let mut actual_observations = observations.iter().peekable();
@@ -570,10 +576,17 @@ fn validate_checkpoint_observations(
             &mut live_bodies,
             &mut live_fixtures,
         );
-        if matches!(action.action(), RigidWorldAction::Particle { .. }) {
-            let Some(RigidWorldObservation::Particle { .. }) = actual_observations.next() else {
+        if let RigidWorldAction::Particle {
+            action: particle_action,
+        } = action.action()
+        {
+            phase9_state.apply(particle_action);
+            let Some(actual) = actual_observations.next() else {
                 return Err(validation(RigidWorldErrorKind::ResultObservationMismatch));
             };
+            let live_identities =
+                rigid_world_live_identities(timeline, &live_bodies, &live_fixtures);
+            phase9_state.validate(particle_action, &live_identities, actual)?;
             continue;
         }
         let Some(expected) = expected_observation(action.action()) else {
