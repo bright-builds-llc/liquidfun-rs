@@ -3,15 +3,15 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 09-18-PLAN.md
-last_updated: "2026-07-16T01:53:10.976Z"
-last_activity: 2026-07-16 -- Completed Phase 09 Plan 18 step guard and zombie authority
+stopped_at: Completed 09-19-PLAN.md
+last_updated: "2026-07-16T04:58:43.873Z"
+last_activity: 2026-07-16 -- Completed Phase 09 Plan 19 eviction receipts and permutation weights
 progress:
   total_phases: 12
   completed_phases: 8
   total_plans: 122
-  completed_plans: 116
-  percent: 95
+  completed_plans: 117
+  percent: 96
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 ## Current Position
 
 Phase: 09 (particle-storage-lifecycle-and-coupling) — EXECUTING
-Plan: 19 of 24
-Status: Ready to execute gap plan 09-19
-Last activity: 2026-07-16 -- Completed Phase 09 Plan 18 step guard and zombie authority
+Plan: 20 of 24
+Status: Ready to execute gap plan 09-20
+Last activity: 2026-07-16 -- Completed Phase 09 Plan 19 eviction receipts and permutation weights
 
-Progress: [██████████] 95%
+Progress: [██████████] 96%
 
 ## Performance Metrics
 
@@ -127,6 +127,7 @@ Progress: [██████████] 95%
 | Phase 08 P24 | 50min | 1 tasks | 8 files |
 | Phase 08 P23 | 20min | 1 tasks | 5 files |
 | Phase 09 P18 | 33 min | 2 tasks | 8 files |
+| Phase 09 P19 | 3h 37m | 2 tasks | 27 files |
 
 ## Accumulated Context
 
@@ -289,6 +290,8 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 08]: Emit one exact identity per successful Phase 8 Oracle job and defer D1 claims to the exact-ref checkpoint. — Local D2 completion cannot substitute for canonical Clang 22 and CMake 4.3 evidence tied to one GitHub SHA.
 - [Phase 09]: Gate lifecycle, particle contacts, rigid reaction, and discrete solving with one fresh-positive-dt predicate. — Zero-duration and continuous-resume calls must not repeat particle work.
 - [Phase 09]: Establish ZOMBIE before capturing a pending snapshot and synchronize flag-originated zombies in ascending dense order. — One storage transition now drives public flags, pending identity, listener occurrences, and compaction.
+- [Phase 09]: Return committed capacity-eviction occurrences only through one owned must-use ParticleCreationReceipt; never reconstruct, queue, or redeliver them. — The public creation result must carry synchronous source-ordered lifecycle evidence exactly once without adding a second world authority.
+- [Phase 09]: Recompute permutation candidate weights from remapped body contacts followed by remapped particle contacts before the no-fail commit. — Contacts and weights must become visible as one coherent candidate while preserving the source accumulation order.
 
 ### Pending Todos
 
@@ -302,6 +305,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-16T01:53:10.973Z
-Stopped at: Completed 09-18-PLAN.md
+Last session: 2026-07-16T04:58:43.870Z
+Stopped at: Completed 09-19-PLAN.md
 Resume file: None

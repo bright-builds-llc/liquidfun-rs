@@ -41,7 +41,7 @@ Requirements for the first release permitted to claim complete parity with the s
 - [x] **API-06**: Application mutations requested during callbacks are represented as commands and applied only at documented unlocked phase boundaries.
 - [x] **API-07**: Consumers can obtain owned step events with documented timing, multiplicity, ordering, and lifetime without retaining internal references.
 - [x] **API-08**: Consumers can associate user data through a documented safe model that preserves identity and destruction semantics without public raw pointers.
-- [ ] **API-09**: Consumers can inspect particle properties through borrow-scoped bulk views and perform supported mutations without violating aliasing or leaving derived state stale.
+- [x] **API-09**: Consumers can inspect particle properties through borrow-scoped bulk views and perform supported mutations without violating aliasing or leaving derived state stale.
 - [ ] **API-10**: Safe external-particle-buffer equivalents preserve documented ownership, capacity, growth, and teardown behavior without requiring arbitrary lifetime raw pointers.
 - [ ] **API-11**: Every public API has succinct rustdoc covering units, invariants, invalidation, callback restrictions, failure behavior, and upstream concept mapping where relevant.
 - [ ] **API-12**: Every production `unsafe` block is narrowly scoped, justified by measured need, documents its invariant with a `SAFETY:` comment, and has focused verification where practical.
@@ -84,8 +84,8 @@ Requirements for the first release permitted to claim complete parity with the s
 - [x] **PART-01**: Consumers can create, configure, pause, inspect, and destroy multiple particle systems with upstream-equivalent density, radius, damping, gravity scale, strict-contact, capacity, and iteration controls.
 - [x] **PART-02**: Consumers can create and destroy individual particles with positions, velocities, colors, flags, lifetimes, user data, and stable public identities.
 - [ ] **PART-03**: Dense particle indices may change during sorting, rotation, and compaction while stable public particle IDs continue to resolve correctly until destruction.
-- [ ] **PART-04**: Every particle storage permutation updates required and optional SoA lanes, ID maps, proxies, contacts, pairs, triads, lifetimes, and group ranges atomically.
-- [ ] **PART-05**: Consumers can inspect positions, velocities, colors, weights, flags, groups, user data, contacts, body contacts, pairs, triads, and expiration ordering through safe bulk APIs.
+- [x] **PART-04**: Every particle storage permutation updates required and optional SoA lanes, ID maps, proxies, contacts, pairs, triads, lifetimes, and group ranges atomically.
+- [x] **PART-05**: Consumers can inspect positions, velocities, colors, weights, flags, groups, user data, contacts, body contacts, pairs, triads, and expiration ordering through safe bulk APIs.
 - [ ] **PART-06**: Consumers can supply supported particle buffers with upstream-equivalent capacity constraints and receive explicit failure rather than silent reallocation or aliasing violations.
 - [x] **PART-07**: Particle proxies, sorting, neighborhood generation, particle contacts, fixture/body contacts, and strict-contact behavior match the selected upstream behavior.
 - [x] **PART-08**: Finite/infinite lifetimes, quantized expiration order, destroy-by-age, oldest-particle destruction, maximum counts, zombie marking, and deferred compaction match upstream behavior.
@@ -220,7 +220,7 @@ Roadmap creation maps every v1 requirement to exactly one phase.
 | API-06 | Phase 3 | Complete |
 | API-07 | Phase 3 | Complete |
 | API-08 | Phase 3 | Complete |
-| API-09 | Phase 9 | Pending |
+| API-09 | Phase 9 | Complete |
 | API-10 | Phase 9 | Pending |
 | API-11 | Phase 12 | Pending |
 | API-12 | Phase 12 | Pending |
@@ -251,8 +251,8 @@ Roadmap creation maps every v1 requirement to exactly one phase.
 | PART-01 | Phase 9 | Complete |
 | PART-02 | Phase 9 | Complete |
 | PART-03 | Phase 9 | Pending |
-| PART-04 | Phase 9 | Pending |
-| PART-05 | Phase 9 | Pending |
+| PART-04 | Phase 9 | Complete |
+| PART-05 | Phase 9 | Complete |
 | PART-06 | Phase 9 | Pending |
 | PART-07 | Phase 9 | Complete |
 | PART-08 | Phase 9 | Complete |
