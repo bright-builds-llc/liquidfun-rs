@@ -1,5 +1,12 @@
 //! Native Phase 9 particle adapter and closed policy declarations.
 
+mod comparator;
+pub use comparator::{
+    Phase9ComparatorError, Phase9ComparisonOutcome, Phase9Mismatch, Phase9ObservationComparison,
+    compare_phase9_particle_observations, compare_phase9_rigid_world_results,
+    validate_phase9_policy_registry,
+};
+
 use liquidfun::collision::{Aabb, RayCastInput};
 use liquidfun::{
     ParticleCapacity, ParticleColor, ParticleDef, ParticleFlags, ParticleId, ParticleSystemDef,

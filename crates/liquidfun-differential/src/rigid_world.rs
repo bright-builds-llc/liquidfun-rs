@@ -6,8 +6,10 @@ mod phase7;
 mod phase8;
 mod phase9;
 pub use phase9::{
-    PHASE9_REGISTRY_ID, PHASE9_REQUIRED_POLICY_PATHS, Phase9PolicyKind,
-    phase9_observation_is_declared, phase9_policy_for_path,
+    PHASE9_REGISTRY_ID, PHASE9_REQUIRED_POLICY_PATHS, Phase9ComparatorError,
+    Phase9ComparisonOutcome, Phase9Mismatch, Phase9ObservationComparison, Phase9PolicyKind,
+    compare_phase9_particle_observations, compare_phase9_rigid_world_results,
+    phase9_observation_is_declared, phase9_policy_for_path, validate_phase9_policy_registry,
 };
 
 use evidence::{
