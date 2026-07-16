@@ -16,7 +16,9 @@ pub(crate) mod query;
 mod statistics;
 mod view;
 
-pub use crate::world::particle_object::{ParticleSnapshot, ParticleSystemSnapshot};
+pub use crate::world::particle_object::{
+    ParticleCreationReceipt, ParticleSnapshot, ParticleSystemSnapshot,
+};
 pub use body_contact::{ParticleBodyContact, ParticleBodyContactEffect, ParticleBodyContactUpdate};
 pub use buffer::{
     ParticleBufferAdoptionError, ParticleBufferAdoptionErrorKind, ParticleBufferBundle,

@@ -51,7 +51,8 @@ fn system_configuration_and_particle_state_share_one_public_lifecycle() {
         .expect("particle system should fit");
     let particle = world
         .create_particle_with_def(system, None, &particle_definition)
-        .expect("particle should fit");
+        .expect("particle should fit")
+        .created_particle();
     world
         .set_particle_system_paused(system, false)
         .expect("system should remain live");
@@ -110,7 +111,8 @@ fn pending_and_stale_particle_states_are_distinct() {
         .expect("particle system should fit");
     let particle = world
         .create_particle(system, None)
-        .expect("particle should fit");
+        .expect("particle should fit")
+        .created_particle();
 
     // Act
     let marked = world
@@ -143,7 +145,8 @@ fn particle_snapshot_distinguishes_wrong_world_and_wrong_system() {
         .expect("other system should fit");
     let particle = first_world
         .create_particle(owner, None)
-        .expect("particle should fit");
+        .expect("particle should fit")
+        .created_particle();
 
     // Act
     let wrong_system = first_world.particle_snapshot_in_system(other_system, particle);
@@ -169,7 +172,8 @@ fn survivor_identity_and_state_remain_stable_after_pending_compaction() {
                 .with_position(Vec2::new(-3.0, 2.0))
                 .expect("position is valid"),
         )
-        .expect("particle should fit");
+        .expect("particle should fit")
+        .created_particle();
     let survivor = world
         .create_particle_with_def(
             system,
@@ -180,7 +184,8 @@ fn survivor_identity_and_state_remain_stable_after_pending_compaction() {
                 .with_velocity(Vec2::new(2.0, -1.0))
                 .expect("velocity is valid"),
         )
-        .expect("particle should fit");
+        .expect("particle should fit")
+        .created_particle();
     let before = world
         .particle_snapshot(survivor)
         .expect("survivor should be live");
@@ -216,7 +221,8 @@ fn destroyed_slot_reuse_does_not_resurrect_stale_particle_identity() {
         .expect("particle system should fit");
     let stale = world
         .create_particle(system, None)
-        .expect("particle should fit");
+        .expect("particle should fit")
+        .created_particle();
     world
         .destroy_particle(stale)
         .expect("particle should be live");
@@ -224,7 +230,8 @@ fn destroyed_slot_reuse_does_not_resurrect_stale_particle_identity() {
     // Act
     let replacement = world
         .create_particle(system, None)
-        .expect("vacated slot should be reusable");
+        .expect("vacated slot should be reusable")
+        .created_particle();
 
     // Assert
     assert_ne!(replacement, stale);
@@ -254,7 +261,8 @@ fn rejected_capacity_growth_preserves_diagnostic_identity_sequence() {
         .expect("particle system should fit");
     let particle = world
         .create_particle(system, None)
-        .expect("first particle should fit");
+        .expect("first particle should fit")
+        .created_particle();
 
     // Act
     let rejected = world.create_particle(system, None);
@@ -289,7 +297,8 @@ fn pending_particle_association_cleanup_waits_for_compaction_record() {
         .expect("particle system should fit");
     let particle = world
         .create_particle(system, None)
-        .expect("particle should fit");
+        .expect("particle should fit")
+        .created_particle();
     let mut labels = AssociationMap::<ParticleId, _>::new();
     labels.insert(particle, "pending");
 
@@ -318,7 +327,8 @@ fn system_teardown_captures_authoritative_membership_and_preserves_other_systems
         .expect("survivor system should fit");
     let survivor = world
         .create_particle(survivor_system, None)
-        .expect("survivor particle should fit");
+        .expect("survivor particle should fit")
+        .created_particle();
     let removed_system = world
         .create_particle_system()
         .expect("removed system should fit");
@@ -327,13 +337,16 @@ fn system_teardown_captures_authoritative_membership_and_preserves_other_systems
         .expect("particle group should fit");
     let grouped = world
         .create_particle(removed_system, Some(group))
-        .expect("grouped particle should fit");
+        .expect("grouped particle should fit")
+        .created_particle();
     let ungrouped = world
         .create_particle(removed_system, None)
-        .expect("ungrouped particle should fit");
+        .expect("ungrouped particle should fit")
+        .created_particle();
     let pending = world
         .create_particle(removed_system, None)
-        .expect("pending particle should fit");
+        .expect("pending particle should fit")
+        .created_particle();
     world
         .mark_particle_for_destruction(pending)
         .expect("particle should become pending");
@@ -395,7 +408,8 @@ fn group_teardown_clears_particle_membership_before_system_teardown() {
         .expect("particle group should fit");
     let particle = world
         .create_particle(system, Some(group))
-        .expect("particle should fit");
+        .expect("particle should fit")
+        .created_particle();
 
     // Act
     let group_record = world

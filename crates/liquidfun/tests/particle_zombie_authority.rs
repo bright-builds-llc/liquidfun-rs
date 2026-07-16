@@ -18,7 +18,8 @@ fn public_destruction_mark_sets_zombie_and_preserves_listener_flags_atomically()
             None,
             &ParticleDef::default().with_flags(ParticleFlags::DESTRUCTION_LISTENER),
         )
-        .expect("particle fits");
+        .expect("particle fits")
+        .created_particle();
 
     // Act
     let pending = world
@@ -60,7 +61,8 @@ fn particle_created_with_zombie_compacts_on_next_fresh_positive_step() {
             None,
             &ParticleDef::default().with_flags(ParticleFlags::ZOMBIE),
         )
-        .expect("zombie particle fits");
+        .expect("zombie particle fits")
+        .created_particle();
 
     // Act
     let report = world
@@ -83,15 +85,20 @@ fn zombie_listener_occurrences_follow_ascending_old_rows_exactly_once() {
     let flags = ParticleFlags::ZOMBIE | ParticleFlags::DESTRUCTION_LISTENER;
     let flagged = world
         .create_particle_with_def(system, None, &ParticleDef::default().with_flags(flags))
-        .expect("flagged zombie fits");
-    let survivor = world.create_particle(system, None).expect("survivor fits");
+        .expect("flagged zombie fits")
+        .created_particle();
+    let survivor = world
+        .create_particle(system, None)
+        .expect("survivor fits")
+        .created_particle();
     let explicitly_marked = world
         .create_particle_with_def(
             system,
             None,
             &ParticleDef::default().with_flags(ParticleFlags::DESTRUCTION_LISTENER),
         )
-        .expect("explicit particle fits");
+        .expect("explicit particle fits")
+        .created_particle();
     world
         .mark_particle_for_destruction(explicitly_marked)
         .expect("explicit particle becomes pending");

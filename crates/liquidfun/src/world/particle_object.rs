@@ -3,7 +3,9 @@
 use crate::identity::HandleIdentity;
 use crate::math::Vec2;
 use crate::particle::force;
-use crate::particle::lifetime::{ParticleLifecycleError, ParticleLifetimeState};
+use crate::particle::lifetime::{
+    ParticleDestructionOccurrence, ParticleLifecycleError, ParticleLifetimeState,
+};
 use crate::particle::storage::{
     ParticleInput, ParticleSnapshot as StorageParticleSnapshot, ParticleStorage,
     ParticleStorageError,
@@ -67,6 +69,32 @@ pub struct ParticleSnapshot {
     velocity: Vec2,
     flags: ParticleFlags,
     color: ParticleColor,
+}
+
+/// Owned result of one committed particle-creation transaction.
+///
+/// Capacity eviction is synchronous. Any requested destruction-listener
+/// occurrences therefore belong to this call and are returned before the
+/// evicted identities become stale.
+#[must_use = "particle creation can synchronously evict particles; inspect destruction_occurrences"]
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ParticleCreationReceipt {
+    created_particle: ParticleId,
+    destruction_occurrences: Vec<ParticleDestructionOccurrence>,
+}
+
+impl ParticleCreationReceipt {
+    /// Returns the stable identity created by the committed transaction.
+    #[must_use]
+    pub const fn created_particle(&self) -> ParticleId {
+        self.created_particle
+    }
+
+    /// Returns requested capacity-eviction occurrences in source order.
+    #[must_use]
+    pub fn destruction_occurrences(&self) -> &[ParticleDestructionOccurrence] {
+        &self.destruction_occurrences
+    }
 }
 
 impl ParticleSnapshot {
@@ -511,7 +539,7 @@ impl World {
         system: ParticleSystemId,
         maybe_group: Option<ParticleGroupId>,
         definition: &ParticleDef<UserAssociation>,
-    ) -> Result<ParticleId, CreateObjectError> {
+    ) -> Result<ParticleCreationReceipt, CreateObjectError> {
         self.ensure_not_poisoned_for_handle()?;
         self.particle_systems.get(system)?;
         if let Some(group) = maybe_group {
@@ -545,9 +573,9 @@ impl World {
         input: ParticleInput,
         lifetime: f32,
         diagnostic_id: u64,
-    ) -> ParticleId {
+    ) -> ParticleCreationReceipt {
         let record = self.system_mut_after_validation(system);
-        record
+        let maybe_compaction = record
             .lifetime
             .prepare_capacity_for_creation(&mut record.storage)
             .expect("preflighted capacity decision remains valid until immediate commit");
@@ -559,7 +587,11 @@ impl World {
             .lifetime
             .initialize_created_particle(&mut record.storage, particle, lifetime)
             .expect("preflighted lifetime remains valid until immediate commit");
-        particle
+        ParticleCreationReceipt {
+            created_particle: particle,
+            destruction_occurrences: maybe_compaction
+                .map_or_else(Vec::new, |outcome| outcome.requested_listener_occurrences),
+        }
     }
 
     /// Returns owned semantic state after validating a particle's embedded owner.

@@ -17,6 +17,7 @@ fn particles(
             world
                 .create_particle_with_def(system, None, &ParticleDef::default())
                 .expect("particle fits")
+                .created_particle()
         })
         .collect()
 }
@@ -63,10 +64,12 @@ fn colliding_particles_world(
         .expect("velocity is finite");
     let first = world
         .create_particle_with_def(system, None, &first)
-        .expect("first particle fits");
+        .expect("first particle fits")
+        .created_particle();
     let second = world
         .create_particle_with_def(system, None, &second)
-        .expect("second particle fits");
+        .expect("second particle fits")
+        .created_particle();
     (world, system, [first, second])
 }
 
@@ -334,14 +337,16 @@ fn forces_wall_and_non_finite_inputs_have_no_effect() {
         .expect("particle system fits");
     let movable = world
         .create_particle_with_def(system, None, &ParticleDef::default())
-        .expect("movable particle fits");
+        .expect("movable particle fits")
+        .created_particle();
     let wall = world
         .create_particle_with_def(
             system,
             None,
             &ParticleDef::default().with_flags(ParticleFlags::WALL),
         )
-        .expect("wall particle fits");
+        .expect("wall particle fits")
+        .created_particle();
     let before = particle_state(&world, system);
 
     // Act
@@ -483,7 +488,8 @@ fn statistics_expose_stuck_candidates_as_stable_ids() {
                 .with_position(Vec2::new(1.5, 0.0))
                 .expect("position is finite"),
         )
-        .expect("particle fits");
+        .expect("particle fits")
+        .created_particle();
     let configuration = StepConfiguration::new(1.0 / 60.0, 8, 3).expect("test step is valid");
 
     // Act

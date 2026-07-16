@@ -52,7 +52,10 @@ impl From<HandleError> for ParticleEditError {
 /// use liquidfun::World;
 /// let mut world = World::new().expect("world key should remain available");
 /// let system = world.create_particle_system().expect("system should fit");
-/// let particle = world.create_particle(system, None).expect("particle should fit");
+/// let particle = world
+///     .create_particle(system, None)
+///     .expect("particle should fit")
+///     .created_particle();
 /// let _escaped = world.edit_particle(particle, |editor| Ok(editor));
 /// ```
 pub struct ParticleEditor<'edit> {

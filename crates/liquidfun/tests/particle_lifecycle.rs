@@ -38,7 +38,8 @@ fn world_step_compacts_expired_particles_even_when_the_system_is_paused() {
             None,
             &finite_particle(ParticleFlags::WATER | ParticleFlags::DESTRUCTION_LISTENER),
         )
-        .expect("particle fits");
+        .expect("particle fits")
+        .created_particle();
     let mut hook = NoDecisionHook;
 
     // Act
@@ -75,7 +76,8 @@ fn requested_particle_destructions_follow_newest_system_first_order() {
             None,
             &finite_particle(ParticleFlags::WATER | ParticleFlags::DESTRUCTION_LISTENER),
         )
-        .expect("older particle fits");
+        .expect("older particle fits")
+        .created_particle();
     let newer_system = world
         .create_particle_system_with_def(&definition)
         .expect("newer system fits");
@@ -85,7 +87,8 @@ fn requested_particle_destructions_follow_newest_system_first_order() {
             None,
             &finite_particle(ParticleFlags::WATER | ParticleFlags::DESTRUCTION_LISTENER),
         )
-        .expect("newer particle fits");
+        .expect("newer particle fits")
+        .created_particle();
     let mut hook = NoDecisionHook;
 
     // Act
@@ -117,7 +120,8 @@ fn unrequested_particle_destruction_compacts_without_fabricating_a_callback() {
         .expect("particle system fits");
     let particle = world
         .create_particle_with_def(system, None, &finite_particle(ParticleFlags::WATER))
-        .expect("particle fits");
+        .expect("particle fits")
+        .created_particle();
     let mut hook = NoDecisionHook;
 
     // Act
@@ -150,7 +154,8 @@ fn particle_event_limit_failure_restores_lifetime_and_storage_for_retry() {
             None,
             &finite_particle(ParticleFlags::WATER | ParticleFlags::DESTRUCTION_LISTENER),
         )
-        .expect("particle fits");
+        .expect("particle fits")
+        .created_particle();
     let mut hook = NoDecisionHook;
     let zero_events = StepLimits::new(0, StepLimits::default().max_commands())
         .expect("zero is a valid event limit");
@@ -192,7 +197,8 @@ fn particle_system_teardown_uses_the_shared_lifecycle_vocabulary() {
             &ParticleDef::default()
                 .with_flags(ParticleFlags::WATER | ParticleFlags::DESTRUCTION_LISTENER),
         )
-        .expect("particle fits");
+        .expect("particle fits")
+        .created_particle();
 
     // Act
     let report = world
@@ -225,10 +231,12 @@ fn paused_step_compacts_an_explicit_zombie_and_journals_only_requested_occurrenc
             &ParticleDef::default()
                 .with_flags(ParticleFlags::WATER | ParticleFlags::DESTRUCTION_LISTENER),
         )
-        .expect("requested particle fits");
+        .expect("requested particle fits")
+        .created_particle();
     let unrequested = world
         .create_particle(system, None)
-        .expect("unrequested particle fits");
+        .expect("unrequested particle fits")
+        .created_particle();
     world
         .mark_particle_for_destruction(requested)
         .expect("requested particle becomes pending");
@@ -272,10 +280,12 @@ fn direct_compaction_returns_the_same_source_timed_listener_projection() {
             &ParticleDef::default()
                 .with_flags(ParticleFlags::WATER | ParticleFlags::DESTRUCTION_LISTENER),
         )
-        .expect("requested particle fits");
+        .expect("requested particle fits")
+        .created_particle();
     let unrequested = world
         .create_particle(system, None)
-        .expect("unrequested particle fits");
+        .expect("unrequested particle fits")
+        .created_particle();
     world
         .mark_particle_for_destruction(requested)
         .expect("requested particle becomes pending");
@@ -312,12 +322,14 @@ fn maximum_count_creation_compacts_immediately_and_preserves_the_replacement() {
         .expect("particle system fits");
     let evicted = world
         .create_particle(system, None)
-        .expect("first particle fits");
+        .expect("first particle fits")
+        .created_particle();
 
     // Act
     let replacement = world
         .create_particle(system, None)
-        .expect("oldest particle is compacted before replacement creation");
+        .expect("oldest particle is compacted before replacement creation")
+        .created_particle();
 
     // Assert
     assert_eq!(
@@ -349,7 +361,8 @@ fn rigid_contact_effects_precede_particle_destruction_in_the_shared_journal() {
             None,
             &finite_particle(ParticleFlags::WATER | ParticleFlags::DESTRUCTION_LISTENER),
         )
-        .expect("particle fits");
+        .expect("particle fits")
+        .created_particle();
     let mut hook = NoDecisionHook;
 
     // Act
@@ -386,7 +399,10 @@ fn hook_panic_restores_the_lock_discards_particle_maintenance_and_poisons_access
     let system = world
         .create_particle_system()
         .expect("particle system fits");
-    let particle = world.create_particle(system, None).expect("particle fits");
+    let particle = world
+        .create_particle(system, None)
+        .expect("particle fits")
+        .created_particle();
     world
         .mark_particle_for_destruction(particle)
         .expect("particle becomes pending");

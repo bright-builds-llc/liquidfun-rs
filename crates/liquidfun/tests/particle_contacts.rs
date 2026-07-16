@@ -19,6 +19,7 @@ fn create_particle(
     world
         .create_particle_with_def(system, None, &definition)
         .expect("particle should fit")
+        .created_particle()
 }
 
 fn create_flagged_particle(
@@ -34,6 +35,7 @@ fn create_flagged_particle(
     world
         .create_particle_with_def(system, None, &definition)
         .expect("particle should fit")
+        .created_particle()
 }
 
 #[test]

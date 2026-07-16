@@ -153,10 +153,11 @@ pub(super) fn execute_action(
                     declaration.color[2],
                     declaration.color[3],
                 ));
-            let particle = executor
+            let receipt = executor
                 .world
                 .create_particle_with_def(system, None, &definition)
                 .map_err(|error| action_error(record, error))?;
+            let particle = receipt.created_particle();
             executor
                 .particles
                 .push((particle_id.clone(), system, particle));

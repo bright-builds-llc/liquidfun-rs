@@ -18,7 +18,8 @@ fn particle_identity_survives_supported_group_removal() {
         .expect("particle group should fit");
     let particle = world
         .create_particle(system, Some(group))
-        .expect("particle should fit");
+        .expect("particle should fit")
+        .created_particle();
 
     // Act
     let record = world
@@ -46,10 +47,12 @@ fn particle_system_cascade_invalidates_stable_ids_in_occurrence_order() {
         .expect("particle group should fit");
     let first = world
         .create_particle(system, Some(group))
-        .expect("particle should fit");
+        .expect("particle should fit")
+        .created_particle();
     let second = world
         .create_particle(system, None)
-        .expect("particle should fit");
+        .expect("particle should fit")
+        .created_particle();
 
     // Act
     let records = world
@@ -88,10 +91,12 @@ fn particle_associations_cleanup_by_stable_identity() {
         .expect("particle system should fit");
     let first = world
         .create_particle(system, None)
-        .expect("particle should fit");
+        .expect("particle should fit")
+        .created_particle();
     let second = world
         .create_particle(system, None)
-        .expect("particle should fit");
+        .expect("particle should fit")
+        .created_particle();
     let mut labels = AssociationMap::<ParticleId, _>::new();
     labels.insert(first, "first");
     labels.insert(second, "second");

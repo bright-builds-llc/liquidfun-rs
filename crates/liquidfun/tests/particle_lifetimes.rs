@@ -81,7 +81,12 @@ fn canonical_equal_expiration_oldest_order_is_not_rust_sort_accidental() {
         .create_particle_system()
         .expect("particle system fits");
     let particles = (0..8)
-        .map(|_| world.create_particle(system, None).expect("particle fits"))
+        .map(|_| {
+            world
+                .create_particle(system, None)
+                .expect("particle fits")
+                .created_particle()
+        })
         .collect::<Vec<_>>();
     let definition = ParticleSystemDef::default()
         .with_lifetime_granularity(1.0)

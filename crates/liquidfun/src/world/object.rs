@@ -1205,7 +1205,7 @@ impl World {
         &mut self,
         system: ParticleSystemId,
         maybe_group: Option<ParticleGroupId>,
-    ) -> Result<ParticleId, CreateObjectError> {
+    ) -> Result<super::particle_object::ParticleCreationReceipt, CreateObjectError> {
         self.create_particle_with_def(system, maybe_group, &crate::ParticleDef::default())
     }
 
@@ -2325,10 +2325,12 @@ mod tests {
             .expect("particle group should fit");
         let grouped = world
             .create_particle(system, Some(group))
-            .expect("particle should fit");
+            .expect("particle should fit")
+            .created_particle();
         let ungrouped = world
             .create_particle(system, None)
-            .expect("particle should fit");
+            .expect("particle should fit")
+            .created_particle();
 
         // Act
         let records = world
@@ -2389,7 +2391,8 @@ mod tests {
             .expect("particle system should fit");
         let particle = world
             .create_particle(system, None)
-            .expect("particle should fit");
+            .expect("particle should fit")
+            .created_particle();
         let mut other = test_world();
         let foreign = other
             .create_particle_system()
@@ -2442,7 +2445,8 @@ mod tests {
             .expect("particle group should fit");
         let particle = world
             .create_particle(system, Some(group))
-            .expect("particle should fit");
+            .expect("particle should fit")
+            .created_particle();
 
         // Act
         world
@@ -2545,6 +2549,54 @@ mod tests {
                 .collect::<Vec<_>>(),
             vec![u64::MAX - 1, u64::MAX]
         );
+    }
+
+    #[test]
+    fn failed_particle_replacement_preserves_the_eviction_candidate() {
+        // Arrange
+        let mut world = test_world();
+        let definition = ParticleSystemDef::default()
+            .with_maximum_count(1)
+            .expect("one particle is a valid maximum")
+            .with_destruction_by_age(true);
+        let system = world
+            .create_particle_system_with_def(&definition)
+            .expect("particle system should fit");
+        let victim = world
+            .create_particle_with_def(
+                system,
+                None,
+                &crate::ParticleDef::default()
+                    .with_flags(crate::ParticleFlags::DESTRUCTION_LISTENER),
+            )
+            .expect("first particle should fit")
+            .created_particle();
+        world.set_next_diagnostic_id_for_test(u64::MAX);
+        world
+            .create_body(&BodyDef::default())
+            .expect("maximum diagnostic ID should remain valid");
+        let before_particle = world
+            .particle_snapshot(victim)
+            .expect("eviction candidate should be live");
+        let before_system = world
+            .particle_system_snapshot(system)
+            .expect("particle system should be live");
+        let before_body_count = world.bodies.iter().count();
+
+        // Act
+        let result = world.create_particle(system, None);
+
+        // Assert
+        assert_eq!(
+            result,
+            Err(CreateObjectError::Arena(
+                ArenaInsertError::DiagnosticIdExhausted
+            ))
+        );
+        assert_eq!(world.particle_snapshot(victim), Ok(before_particle));
+        assert_eq!(world.particle_system_snapshot(system), Ok(before_system));
+        assert_eq!(world.bodies.iter().count(), before_body_count);
+        assert_eq!(world.next_diagnostic_id, None);
     }
 
     #[test]

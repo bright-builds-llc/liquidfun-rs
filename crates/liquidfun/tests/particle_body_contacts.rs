@@ -45,7 +45,8 @@ fn contacts_include_fixture_body_particle_and_source_fields() {
                 .with_position(Vec2::new(1.5, 0.0))
                 .expect("particle position is valid"),
         )
-        .expect("particle fits");
+        .expect("particle fits")
+        .created_particle();
 
     // Act
     world
@@ -88,7 +89,7 @@ fn contacts_strict_pruning_matches_the_independent_equal_weight_witness() {
             &ParticleSystemDef::default().with_strict_contact_check(true),
         )
         .expect("particle system fits");
-    world
+    let _particle = world
         .create_particle_with_def(
             system,
             None,
@@ -96,7 +97,8 @@ fn contacts_strict_pruning_matches_the_independent_equal_weight_witness() {
                 .with_position(Vec2::new(1.5, 0.0))
                 .expect("particle position is valid"),
         )
-        .expect("particle fits");
+        .expect("particle fits")
+        .created_particle();
 
     // Act
     world
@@ -154,7 +156,8 @@ fn contacts_fixture_filter_is_borrowed_and_flag_gated() {
                 .with_position(Vec2::new(1.5, 0.0))
                 .expect("particle position is valid"),
         )
-        .expect("particle fits");
+        .expect("particle fits")
+        .created_particle();
     let flagged = world
         .create_particle_with_def(
             system,
@@ -164,7 +167,8 @@ fn contacts_fixture_filter_is_borrowed_and_flag_gated() {
                 .expect("particle position is valid")
                 .with_flags(ParticleFlags::FIXTURE_CONTACT_FILTER),
         )
-        .expect("particle fits");
+        .expect("particle fits")
+        .created_particle();
     let mut hook = RejectFlaggedFixtureContact::default();
 
     // Act
@@ -203,7 +207,8 @@ fn contacts_fixture_listener_begins_and_ends_in_the_shared_journal() {
                 .expect("particle position is valid")
                 .with_flags(ParticleFlags::FIXTURE_CONTACT_LISTENER),
         )
-        .expect("particle fits");
+        .expect("particle fits")
+        .created_particle();
 
     // Act
     let begin = world
@@ -259,7 +264,8 @@ fn contacts_stuck_candidates_require_more_than_the_configured_threshold() {
                 .with_position(Vec2::new(1.5, 0.0))
                 .expect("particle position is valid"),
         )
-        .expect("particle fits");
+        .expect("particle fits")
+        .created_particle();
 
     // Act
     world
@@ -324,7 +330,8 @@ fn step_pressure_reacts_on_dynamic_body_without_integrating_particle_position() 
                 .with_position(Vec2::new(1.5, 0.0))
                 .expect("particle position is valid"),
         )
-        .expect("particle fits");
+        .expect("particle fits")
+        .created_particle();
     let step = StepConfiguration::new(1.0 / 60.0, 8, 3)
         .expect("step is valid")
         .with_particle_iterations(2)
@@ -364,7 +371,8 @@ fn step_static_pressure_preserves_the_pinned_equation_grouping() {
                 .with_position(Vec2::new(1.5, 0.0))
                 .expect("particle position is valid"),
         )
-        .expect("particle fits");
+        .expect("particle fits")
+        .created_particle();
     let diameter = 2.0_f32;
     let inverse_stride = (1.0 / diameter) * (1.0 / settings::PARTICLE_STRIDE);
     let particle_inverse_mass = inverse_stride * inverse_stride;
@@ -414,7 +422,8 @@ fn step_zero_weight_boundary_is_excluded_from_body_contacts() {
                 .with_position(Vec2::new(3.0, 0.0))
                 .expect("boundary position is valid"),
         )
-        .expect("particle fits");
+        .expect("particle fits")
+        .created_particle();
 
     // Act
     world
@@ -461,7 +470,8 @@ fn separating_particle_velocity(damping: f32) -> Vec2 {
                 .with_velocity(Vec2::new(10.0, 0.0))
                 .expect("particle velocity is valid"),
         )
-        .expect("particle fits");
+        .expect("particle fits")
+        .created_particle();
     world
         .step(
             step_configuration(),
@@ -509,7 +519,7 @@ fn step_fixture_particle_hook_panic_poisoning_is_sticky() {
     let system = world
         .create_particle_system_with_def(&ParticleSystemDef::default())
         .expect("particle system fits");
-    world
+    let _particle = world
         .create_particle_with_def(
             system,
             None,
@@ -518,7 +528,8 @@ fn step_fixture_particle_hook_panic_poisoning_is_sticky() {
                 .expect("particle position is valid")
                 .with_flags(ParticleFlags::FIXTURE_CONTACT_FILTER),
         )
-        .expect("particle fits");
+        .expect("particle fits")
+        .created_particle();
 
     // Act
     let panic = catch_unwind(AssertUnwindSafe(|| {
@@ -585,7 +596,8 @@ fn step_runs_all_subiterations_newest_system_first_and_skips_paused_systems() {
                 .expect("particle position is valid")
                 .with_flags(ParticleFlags::FIXTURE_CONTACT_FILTER),
         )
-        .expect("old particle fits");
+        .expect("old particle fits")
+        .created_particle();
     let paused_system = world
         .create_particle_system_with_def(&ParticleSystemDef::default().with_paused(true))
         .expect("paused system fits");
@@ -598,7 +610,8 @@ fn step_runs_all_subiterations_newest_system_first_and_skips_paused_systems() {
                 .expect("particle position is valid")
                 .with_flags(ParticleFlags::FIXTURE_CONTACT_FILTER),
         )
-        .expect("paused particle fits");
+        .expect("paused particle fits")
+        .created_particle();
     let new_system = world
         .create_particle_system_with_def(&ParticleSystemDef::default())
         .expect("new system fits");
@@ -611,7 +624,8 @@ fn step_runs_all_subiterations_newest_system_first_and_skips_paused_systems() {
                 .expect("particle position is valid")
                 .with_flags(ParticleFlags::FIXTURE_CONTACT_FILTER),
         )
-        .expect("new particle fits");
+        .expect("new particle fits")
+        .created_particle();
     let step = step_configuration()
         .with_particle_iterations(3)
         .expect("particle iterations are valid");
@@ -655,7 +669,8 @@ fn step_particle_pair_filter_and_listener_share_the_source_timed_journal() {
     let flags = ParticleFlags::PARTICLE_CONTACT_FILTER | ParticleFlags::PARTICLE_CONTACT_LISTENER;
     let first = world
         .create_particle_with_def(system, None, &ParticleDef::default().with_flags(flags))
-        .expect("first particle fits");
+        .expect("first particle fits")
+        .created_particle();
     let second = world
         .create_particle_with_def(
             system,
@@ -664,7 +679,8 @@ fn step_particle_pair_filter_and_listener_share_the_source_timed_journal() {
                 .with_position(Vec2::new(1.0, 0.0))
                 .expect("particle position is valid"),
         )
-        .expect("second particle fits");
+        .expect("second particle fits")
+        .created_particle();
     let mut hook = ParticlePrefixOrderHook::default();
 
     // Act
@@ -706,7 +722,7 @@ fn step_off_center_body_impulse_updates_angular_velocity() {
     let system = world
         .create_particle_system_with_def(&ParticleSystemDef::default())
         .expect("particle system fits");
-    world
+    let _particle = world
         .create_particle_with_def(
             system,
             None,
@@ -714,7 +730,8 @@ fn step_off_center_body_impulse_updates_angular_velocity() {
                 .with_position(Vec2::new(1.5, 0.0))
                 .expect("particle position is valid"),
         )
-        .expect("particle fits");
+        .expect("particle fits")
+        .created_particle();
 
     // Act
     world
@@ -756,7 +773,8 @@ fn step_listener_limit_rolls_back_particle_contacts_and_rigid_reaction() {
                 .expect("particle position is valid")
                 .with_flags(ParticleFlags::FIXTURE_CONTACT_LISTENER),
         )
-        .expect("particle fits");
+        .expect("particle fits")
+        .created_particle();
     let zero_events = StepLimits::new(0, StepLimits::default().max_commands())
         .expect("zero event limit is valid");
 

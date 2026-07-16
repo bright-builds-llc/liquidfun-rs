@@ -45,9 +45,10 @@ fn adoption_returns_owned_lanes_with_final_semantic_contents() {
         .with_velocity(Vec2::new(3.0, 4.0))
         .expect("velocity is valid")
         .with_color(ParticleColor::new(5, 6, 7, 8));
-    world
+    let _particle = world
         .create_particle_with_def(system, None, &first)
-        .expect("particle fits the declared fixed capacity");
+        .expect("particle fits the declared fixed capacity")
+        .created_particle();
 
     // Act
     let receipt = world
@@ -102,10 +103,12 @@ fn fixed_capacity_uses_declared_limit_and_preserves_original_allocations_on_fail
         .expect("fixed buffers can be adopted");
     let first = world
         .create_particle_with_def(system, None, &particle(1.0, ParticleColor::ZERO))
-        .expect("first row fits");
+        .expect("first row fits")
+        .created_particle();
     let second = world
         .create_particle_with_def(system, None, &particle(2.0, ParticleColor::ZERO))
-        .expect("second row exactly fills the declared limit");
+        .expect("second row exactly fills the declared limit")
+        .created_particle();
     let before = [
         world.particle_snapshot(first).expect("first row is live"),
         world.particle_snapshot(second).expect("second row is live"),
@@ -186,9 +189,10 @@ fn absent_optional_color_lane_stays_lazy_for_zero_color_rows() {
         .expect("buffers can be adopted");
 
     // Act
-    world
+    let _particle = world
         .create_particle_with_def(system, None, &particle(1.0, ParticleColor::ZERO))
-        .expect("zero-color row fits");
+        .expect("zero-color row fits")
+        .created_particle();
     let lanes = world
         .destroy_particle_system_with_buffers(system)
         .expect("buffers return")
@@ -214,9 +218,10 @@ fn growable_buffers_expand_until_the_explicit_system_maximum() {
 
     // Act
     for value in [1.0, 2.0, 3.0] {
-        world
+        let _particle = world
             .create_particle_with_def(system, None, &particle(value, ParticleColor::ZERO))
-            .expect("growth below the maximum succeeds");
+            .expect("growth below the maximum succeeds")
+            .created_particle();
     }
     let rejected =
         world.create_particle_with_def(system, None, &particle(4.0, ParticleColor::ZERO));
@@ -286,13 +291,16 @@ fn teardown_returns_survivor_lanes_after_transactional_compaction() {
         .expect("buffers can be adopted");
     let first = world
         .create_particle_with_def(system, None, &particle(1.0, ParticleColor::new(1, 0, 0, 1)))
-        .expect("first particle fits");
+        .expect("first particle fits")
+        .created_particle();
     let removed = world
         .create_particle_with_def(system, None, &particle(2.0, ParticleColor::new(2, 0, 0, 2)))
-        .expect("middle particle fits");
+        .expect("middle particle fits")
+        .created_particle();
     let third = world
         .create_particle_with_def(system, None, &particle(3.0, ParticleColor::new(3, 0, 0, 3)))
-        .expect("third particle fits");
+        .expect("third particle fits")
+        .created_particle();
     world
         .mark_particle_for_destruction(removed)
         .expect("middle particle becomes pending");
@@ -351,9 +359,10 @@ fn returned_lanes_can_be_cleared_and_adopted_repeatedly() {
         let system = world
             .create_particle_system_with_buffers(&ParticleSystemDef::default(), buffers)
             .expect("same owned lanes can be adopted again");
-        world
+        let _particle = world
             .create_particle_with_def(system, None, &particle(value, ParticleColor::ZERO))
-            .expect("one particle fits");
+            .expect("one particle fits")
+            .created_particle();
         returned = world
             .destroy_particle_system_with_buffers(system)
             .expect("same lanes return after each cycle")

@@ -33,6 +33,7 @@ fn create_particle(world: &mut World, system: ParticleSystemId, position: Vec2) 
     world
         .create_particle_with_def(system, None, &definition)
         .expect("test particle should fit")
+        .created_particle()
 }
 
 fn create_fixture(world: &mut World, position: Vec2) {

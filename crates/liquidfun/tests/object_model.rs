@@ -214,10 +214,12 @@ fn particle_system_cascade_preserves_owned_snapshots_and_cleanup_order() {
         .expect("particle group should fit");
     let grouped = world
         .create_particle(system, Some(group))
-        .expect("particle should fit");
+        .expect("particle should fit")
+        .created_particle();
     let ungrouped = world
         .create_particle(system, None)
-        .expect("particle should fit");
+        .expect("particle should fit")
+        .created_particle();
     let mut system_names = AssociationMap::new();
     let mut group_names = AssociationMap::new();
     let mut particle_names = AssociationMap::new();

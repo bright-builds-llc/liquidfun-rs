@@ -222,13 +222,16 @@ mod tests {
             .expect("particle system should fit");
         let first = world
             .create_particle(destroyed_system, None)
-            .expect("particle should fit");
+            .expect("particle should fit")
+            .created_particle();
         let second = world
             .create_particle(destroyed_system, None)
-            .expect("particle should fit");
+            .expect("particle should fit")
+            .created_particle();
         let survivor = world
             .create_particle(surviving_system, None)
-            .expect("particle should fit");
+            .expect("particle should fit")
+            .created_particle();
         let mut particles = AssociationMap::new();
         particles.insert(first, "first");
         particles.insert(second, "second");

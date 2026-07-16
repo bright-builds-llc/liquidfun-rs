@@ -22,7 +22,10 @@ use crate::{
 /// let mut world = World::new().expect("world key should remain available");
 /// let system = world.create_particle_system().expect("system should fit");
 /// let view = world.particle_system_view(system).expect("system should be live");
-/// world.create_particle(system, None).expect("particle should fit");
+/// world
+///     .create_particle(system, None)
+///     .expect("particle should fit")
+///     .created_particle();
 /// let _positions = view.positions();
 /// ```
 pub struct ParticleSystemView<'a> {

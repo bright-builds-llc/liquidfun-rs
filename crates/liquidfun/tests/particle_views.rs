@@ -46,10 +46,12 @@ fn aggregate_view_exposes_semantic_lanes_and_associations() {
     );
     let first = world
         .create_particle_with_def(system, Some(group), &first_definition)
-        .expect("first particle should fit");
+        .expect("first particle should fit")
+        .created_particle();
     let second = world
         .create_particle_with_def(system, Some(group), &second_definition)
-        .expect("second particle should fit");
+        .expect("second particle should fit")
+        .created_particle();
     let mut associations = AssociationMap::<ParticleId, _>::new();
     associations.insert(second, "second");
 
@@ -109,7 +111,8 @@ fn aggregate_view_preserves_stable_semantics_after_compaction() {
                 ParticleFlags::WATER,
             ),
         )
-        .expect("first particle should fit");
+        .expect("first particle should fit")
+        .created_particle();
     let removed = world
         .create_particle_with_def(
             system,
@@ -121,7 +124,8 @@ fn aggregate_view_preserves_stable_semantics_after_compaction() {
                 ParticleFlags::WATER,
             ),
         )
-        .expect("middle particle should fit");
+        .expect("middle particle should fit")
+        .created_particle();
     let last = world
         .create_particle_with_def(
             system,
@@ -133,7 +137,8 @@ fn aggregate_view_preserves_stable_semantics_after_compaction() {
                 ParticleFlags::WATER,
             ),
         )
-        .expect("last particle should fit");
+        .expect("last particle should fit")
+        .created_particle();
     world
         .mark_particle_for_destruction(removed)
         .expect("middle particle should be live");
@@ -173,7 +178,8 @@ fn scoped_editor_commits_validated_kinematics_and_returns_coherent_view() {
                 ParticleFlags::WATER,
             ),
         )
-        .expect("particle should fit");
+        .expect("particle should fit")
+        .created_particle();
 
     // Act
     let returned = world
@@ -215,7 +221,8 @@ fn rejected_editor_candidate_leaves_particle_state_unchanged() {
                 ParticleFlags::WATER,
             ),
         )
-        .expect("particle should fit");
+        .expect("particle should fit")
+        .created_particle();
 
     // Act
     let result = world.edit_particle(particle, |editor| {
@@ -250,7 +257,8 @@ fn panicking_editor_closure_leaves_particle_state_unchanged() {
                 ParticleFlags::WATER,
             ),
         )
-        .expect("particle should fit");
+        .expect("particle should fit")
+        .created_particle();
 
     // Act
     let panic = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {

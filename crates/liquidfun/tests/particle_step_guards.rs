@@ -56,7 +56,8 @@ fn zero_dt_preserves_particle_lifecycle_contacts_and_rigid_reaction() {
                 .with_lifetime(2.0)
                 .expect("finite lifetime is valid"),
         )
-        .expect("finite particle fits");
+        .expect("finite particle fits")
+        .created_particle();
     let pending = world
         .create_particle_with_def(
             system,
@@ -66,7 +67,8 @@ fn zero_dt_preserves_particle_lifecycle_contacts_and_rigid_reaction() {
                 .expect("pending position is valid")
                 .with_flags(ParticleFlags::DESTRUCTION_LISTENER),
         )
-        .expect("pending particle fits");
+        .expect("pending particle fits")
+        .created_particle();
     world
         .step(
             configuration(1.0),
@@ -145,7 +147,8 @@ fn continuous_resume_does_not_repeat_particle_stages() {
                 .with_lifetime(2.0)
                 .expect("finite lifetime is valid"),
         )
-        .expect("finite particle fits");
+        .expect("finite particle fits")
+        .created_particle();
     let exhausted_limits = StepLimits::default()
         .with_continuous_work_limit(0)
         .expect("zero is a coherent continuous boundary");
@@ -199,7 +202,8 @@ fn fresh_positive_dt_still_runs_particle_lifecycle() {
                 .with_lifetime(1.0)
                 .expect("finite lifetime is valid"),
         )
-        .expect("particle fits");
+        .expect("particle fits")
+        .created_particle();
 
     // Act
     world
