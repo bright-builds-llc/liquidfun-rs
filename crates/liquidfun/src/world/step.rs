@@ -1324,6 +1324,8 @@ impl World {
             self.continuous_step_state.invalidate();
             ContinuousStepKind::Fresh
         };
+        let runs_particle_stages =
+            step_kind == ContinuousStepKind::Fresh && configuration.time_step() > 0.0;
         let mut hook_run = ContactHookRun::new(hook, limits);
         let mut contact_transitions = self.contact_manager.drain_transitions();
         let locked_result = (|| -> Result<StepCompletion, StepError> {
@@ -1348,24 +1350,24 @@ impl World {
             })();
             contact_lifecycle_result?;
             contact_transitions.extend(self.contact_manager.drain_transitions());
-            self.run_particle_lifecycle_step(configuration.time_step(), &mut hook_run)?;
-            let particle_contact_result = catch_unwind(AssertUnwindSafe(|| {
-                self.run_particle_contact_prefix(configuration, &mut hook_run)
-            }));
-            match particle_contact_result {
-                Ok(result) => result?,
-                Err(payload) => {
-                    self.step_state.poison();
-                    resume_unwind(payload);
+            if runs_particle_stages {
+                self.run_particle_lifecycle_step(configuration.time_step(), &mut hook_run)?;
+                let particle_contact_result = catch_unwind(AssertUnwindSafe(|| {
+                    self.run_particle_contact_prefix(configuration, &mut hook_run)
+                }));
+                match particle_contact_result {
+                    Ok(result) => result?,
+                    Err(payload) => {
+                        self.step_state.poison();
+                        resume_unwind(payload);
+                    }
                 }
-            }
-            if step_kind == ContinuousStepKind::Fresh && configuration.time_step() > 0.0 {
                 self.preflight_contact_solver()
                     .map_err(|error| solver_step_error(error, &contact_transitions))?;
             }
 
             phases.push(StepPhase::Hook);
-            if step_kind == ContinuousStepKind::Fresh && configuration.time_step() > 0.0 {
+            if runs_particle_stages {
                 phases.push(StepPhase::Solve);
                 self.solve_contact_constraints(
                     configuration,

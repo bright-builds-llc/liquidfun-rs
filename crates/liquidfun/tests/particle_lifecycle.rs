@@ -239,7 +239,7 @@ fn paused_step_compacts_an_explicit_zombie_and_journals_only_requested_occurrenc
 
     // Act
     let report = world
-        .step(step_configuration(0.0), &mut hook, StepLimits::default())
+        .step(step_configuration(1.0), &mut hook, StepLimits::default())
         .expect("paused zombie maintenance succeeds");
 
     // Assert
