@@ -109,8 +109,16 @@ inline void validate_phase9_particle(
   }
   const auto lifetime =
       u32(member(particle, "lifetime_bits", "particle"), "lifetime bits");
-  require_nonnegative(lifetime, "lifetime bits");
+  require_finite(lifetime, "lifetime bits");
 }
+
+struct Phase9ValidationState {
+  std::set<std::string> created_systems;
+  std::set<std::string> live_systems;
+  std::set<std::string> created_particles;
+  std::set<std::string> live_particles;
+  std::set<std::string> pending_particles;
+};
 
 inline std::vector<std::string> phase9_id_list(
     const Json& value,
@@ -212,6 +220,112 @@ inline void validate_phase9_action(
   throw std::runtime_error("unsupported Phase 9 or Phase 10 particle action");
 }
 
+inline void validate_phase9_action_lifecycle(
+    const Json& action,
+    const std::set<std::string>& system_ids,
+    const std::unordered_map<std::string, std::string>& particle_owners,
+    Phase9ValidationState& state) {
+  const auto kind = action.at("kind").get<std::string>();
+  const auto system_id = [&]() {
+    const auto value = action.at("system_id").get<std::string>();
+    if (!system_ids.count(value)) {
+      throw std::runtime_error("Phase 9 action references unknown system");
+    }
+    return value;
+  };
+  const auto particle_id = [&]() {
+    const auto value = action.at("particle_id").get<std::string>();
+    if (!particle_owners.count(value)) {
+      throw std::runtime_error("Phase 9 action references unknown particle");
+    }
+    return value;
+  };
+  const auto require_live_system = [&](const std::string& value) {
+    if (!state.live_systems.count(value)) {
+      throw std::runtime_error("Phase 9 particle system is not live");
+    }
+  };
+  const auto require_live_particle = [&](const std::string& value) {
+    const auto& owner = particle_owners.at(value);
+    if (!state.live_systems.count(owner) || !state.live_particles.count(value)) {
+      throw std::runtime_error("Phase 9 particle is not live");
+    }
+    return owner;
+  };
+
+  if (kind == "create_system") {
+    const auto value = system_id();
+    if (!state.created_systems.insert(value).second ||
+        !state.live_systems.insert(value).second) {
+      throw std::runtime_error("duplicate Phase 9 system creation");
+    }
+    return;
+  }
+  if (kind == "destroy_system") {
+    const auto value = system_id();
+    require_live_system(value);
+    state.live_systems.erase(value);
+    for (const auto& [particle, owner] : particle_owners) {
+      if (owner == value) {
+        state.live_particles.erase(particle);
+        state.pending_particles.erase(particle);
+      }
+    }
+    return;
+  }
+  if (kind == "create_particle") {
+    const auto value = particle_id();
+    require_live_system(particle_owners.at(value));
+    if (!state.created_particles.insert(value).second ||
+        !state.live_particles.insert(value).second) {
+      throw std::runtime_error("duplicate Phase 9 particle creation");
+    }
+    return;
+  }
+  if (kind == "inspect_system" || kind == "set_paused" ||
+      kind == "request_statistics") {
+    require_live_system(system_id());
+    return;
+  }
+  if (kind == "compact") {
+    const auto value = system_id();
+    require_live_system(value);
+    for (const auto& [particle, owner] : particle_owners) {
+      if (owner == value) state.pending_particles.erase(particle);
+    }
+    return;
+  }
+  if (kind == "inspect_particle" || kind == "set_position" ||
+      kind == "set_velocity") {
+    static_cast<void>(require_live_particle(particle_id()));
+    return;
+  }
+  if (kind == "mark_for_destruction") {
+    const auto value = particle_id();
+    static_cast<void>(require_live_particle(value));
+    state.live_particles.erase(value);
+    state.pending_particles.insert(value);
+    return;
+  }
+  if (kind == "apply_force" || kind == "apply_impulse") {
+    std::string owner;
+    for (const auto& raw : action.at("particle_ids")) {
+      const auto value = raw.get<std::string>();
+      const auto& candidate_owner = require_live_particle(value);
+      if (!owner.empty() && owner != candidate_owner) {
+        throw std::runtime_error("Phase 9 range crosses particle systems");
+      }
+      owner = candidate_owner;
+    }
+    return;
+  }
+  if (kind == "query_aabb" || kind == "ray_cast") {
+    if (!action.at("system_id").is_null()) require_live_system(system_id());
+    return;
+  }
+  throw std::runtime_error("unsupported Phase 9 lifecycle action");
+}
+
 inline bool validate_phase9_timeline(const Json& timeline) {
   const auto systems_it = timeline.find("particle_systems");
   const auto particles_it = timeline.find("particles");
@@ -237,12 +351,17 @@ inline bool validate_phase9_timeline(const Json& timeline) {
     }
   }
   std::set<std::string> particle_ids;
+  std::unordered_map<std::string, std::string> particle_owners;
   for (const auto& particle : *particles_it) {
     validate_phase9_particle(particle, system_ids);
     if (!particle_ids.insert(particle.at("particle_id").get<std::string>()).second) {
       throw std::runtime_error("duplicate Phase 9 particle ID");
     }
+    particle_owners.emplace(
+        particle.at("particle_id").get<std::string>(),
+        particle.at("system_id").get<std::string>());
   }
+  Phase9ValidationState state;
   for (const auto& record : timeline.at("actions")) {
     if (!phase9_particle_action(record)) continue;
     require_members(record, {"action_id", "phase", "action"}, "Phase 9 action record");
@@ -252,6 +371,12 @@ inline bool validate_phase9_timeline(const Json& timeline) {
       throw std::runtime_error("invalid Phase 9 action declaration family");
     }
     validate_phase9_action(wrapper.at("action"), system_ids, particle_ids);
+    validate_phase9_action_lifecycle(
+        wrapper.at("action"), system_ids, particle_owners, state);
+  }
+  if (!state.live_systems.empty() || !state.live_particles.empty() ||
+      !state.pending_particles.empty()) {
+    throw std::runtime_error("Phase 9 timeline leaves particle state live");
   }
   return true;
 }

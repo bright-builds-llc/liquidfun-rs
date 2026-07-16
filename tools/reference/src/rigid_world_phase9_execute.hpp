@@ -197,6 +197,15 @@ class TimelineExecution {
     return ids;
   }
 
+  Json semantic_body_ids() const {
+    Json ids = Json::array();
+    for (const auto& declaration : timeline_.at("bodies")) {
+      const auto id = declaration.at("body_id").get<std::string>();
+      if (bodies_.count(id)) ids.push_back(id);
+    }
+    return ids;
+  }
+
   static b2BodyType body_type(std::string_view kind) {
     if (kind == "static") return b2_staticBody;
     if (kind == "kinematic") return b2_kinematicBody;
@@ -334,7 +343,7 @@ class TimelineExecution {
         {{"kind", "particle"},
          {"observation",
           {{"kind", "mixed_state"},
-           {"body_ids", Json::array()},
+           {"body_ids", semantic_body_ids()},
            {"particle_ids", semantic_particle_ids()}}}});
   }
 

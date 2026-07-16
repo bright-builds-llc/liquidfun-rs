@@ -5,7 +5,9 @@ use std::{
     process::{Command, Stdio},
 };
 
-use liquidfun_differential::{OracleExecutable, OraclePreset, execute_rigid_world_process};
+use liquidfun_differential::{
+    NativeRigidWorldExecutor, OracleExecutable, OraclePreset, execute_rigid_world_process,
+};
 use liquidfun_test_protocol::{HarnessLimits, decode_rigid_world_request_jsonl};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
@@ -272,6 +274,49 @@ fn static_coupling_request() -> liquidfun_test_protocol::RigidWorldRequestRecord
         .expect("static coupling request should decode")
 }
 
+fn phase9_action_index(value: &Value, action_id: &str) -> usize {
+    value["scenario"]["timelines"][0]["actions"]
+        .as_array()
+        .expect("actions should be an array")
+        .iter()
+        .position(|record| record["action_id"] == action_id)
+        .expect("requested Phase 9 action should exist")
+}
+
+fn raw_oracle_failure(executable: &std::path::Path, value: &Value) -> String {
+    let mut bytes = serde_json::to_vec(value).expect("invalid request should encode");
+    bytes.push(b'\n');
+    let mut child = Command::new(executable)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("oracle should spawn");
+    let mut stdout = BufReader::new(child.stdout.take().expect("stdout should be captured"));
+    let mut handshake = String::new();
+    stdout
+        .read_line(&mut handshake)
+        .expect("handshake should be readable");
+    let mut stdin = child.stdin.take().expect("stdin should be captured");
+    stdin
+        .write_all(&bytes)
+        .and_then(|()| stdin.flush())
+        .expect("invalid request should reach the decoder");
+    drop(stdin);
+    let mut unexpected_stdout = String::new();
+    stdout
+        .read_to_string(&mut unexpected_stdout)
+        .expect("remaining stdout should be readable");
+    let output = child.wait_with_output().expect("oracle should be reaped");
+    assert!(serde_json::from_str::<Value>(&handshake).is_ok());
+    assert!(
+        unexpected_stdout.is_empty(),
+        "stdout must remain JSONL-only"
+    );
+    assert!(!output.status.success(), "invalid request must fail hard");
+    String::from_utf8(output.stderr).expect("oracle diagnostics should be UTF-8")
+}
+
 #[test]
 fn decode_accepts_bounded_phase9_request_in_existing_cpp_process() {
     // Arrange
@@ -287,6 +332,86 @@ fn decode_accepts_bounded_phase9_request_in_existing_cpp_process() {
 
     // Assert
     assert!(result.is_ok(), "bounded Phase 9 request failed: {result:?}");
+}
+
+#[test]
+fn decode_accepts_negative_finite_lifetime_as_infinite_in_cpp() {
+    // Arrange
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let Ok(executable) = OracleExecutable::resolve(&root, OraclePreset::Debug) else {
+        eprintln!("SKIP: build oracle-debug to exercise the pinned C++ decoder");
+        return;
+    };
+    let mut value = serde_json::to_value(phase9_request()).expect("request should serialize");
+    value["scenario"]["timelines"][0]["particles"][0]["lifetime_bits"] =
+        json!((-1.0_f32).to_bits());
+    let mut bytes = serde_json::to_vec(&value).expect("negative lifetime request should encode");
+    bytes.push(b'\n');
+    let request = decode_rigid_world_request_jsonl(&bytes, &HarnessLimits::phase2_default_v1())
+        .expect("finite negative lifetime should cross the Rust boundary");
+
+    // Act
+    let result = execute_rigid_world_process(&executable, &request, REVISION);
+
+    // Assert
+    assert!(
+        result.is_ok(),
+        "negative lifetime must remain infinite: {result:?}"
+    );
+    assert_eq!(
+        request.scenario().timelines()[0].particles()[0]
+            .lifetime_bits
+            .bits(),
+        (-1.0_f32).to_bits()
+    );
+}
+
+#[test]
+fn mixed_identity_matches_native_declaration_order() {
+    // Arrange
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let Ok(executable) = OracleExecutable::resolve(&root, OraclePreset::Debug) else {
+        eprintln!("SKIP: build oracle-debug to exercise mixed identity");
+        return;
+    };
+    let request = coupling_request();
+
+    // Act
+    let native = NativeRigidWorldExecutor::execute(&request)
+        .expect("native mixed identity request should execute");
+    let oracle = execute_rigid_world_process(&executable, &request, REVISION)
+        .expect("oracle mixed identity request should execute");
+    let native_value = serde_json::to_value(native).expect("native result should serialize");
+    let oracle_value =
+        serde_json::to_value(oracle.result()).expect("oracle result should serialize");
+    let find_live_mixed = |value: &Value| {
+        value["timelines"][0]["checkpoints"]
+            .as_array()
+            .expect("checkpoints should be an array")
+            .iter()
+            .filter_map(|checkpoint| checkpoint["observations"].as_array())
+            .flatten()
+            .find(|observation| {
+                observation["observation"]["kind"] == "mixed_state"
+                    && observation["observation"]["particle_ids"]
+                        .as_array()
+                        .is_some_and(|ids| !ids.is_empty())
+            })
+            .expect("a live mixed-state observation should exist")
+            .clone()
+    };
+
+    // Assert
+    let native_mixed = find_live_mixed(&native_value);
+    let oracle_mixed = find_live_mixed(&oracle_value);
+    assert_eq!(
+        oracle_mixed["observation"]["body_ids"],
+        native_mixed["observation"]["body_ids"]
+    );
+    assert_eq!(
+        oracle_mixed["observation"]["particle_ids"],
+        native_mixed["observation"]["particle_ids"]
+    );
 }
 
 #[test]
@@ -381,6 +506,121 @@ fn decode_rejects_phase10_group_topology_as_hard_cpp_harness_failure() {
         String::from_utf8_lossy(&output.stderr).contains("unknown member particle_groups"),
         "stderr should classify the undeclared Phase 10 family: {}",
         String::from_utf8_lossy(&output.stderr)
+    );
+}
+
+#[test]
+fn decode_rejects_invalid_phase9_lifecycle_matrix_before_execution() {
+    // Arrange
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let executable = root.join("target/reference/oracle-debug/liquidfun-reference");
+    if !executable.is_file() {
+        eprintln!("SKIP: build oracle-debug to exercise lifecycle rejection");
+        return;
+    }
+    let base = serde_json::to_value(full_phase9_request()).expect("request should serialize");
+    let mut duplicate_system = base.clone();
+    let index = phase9_action_index(&duplicate_system, "oracle-create-newest-system");
+    let duplicate = duplicate_system["scenario"]["timelines"][0]["actions"][index].clone();
+    duplicate_system["scenario"]["timelines"][0]["actions"]
+        .as_array_mut()
+        .expect("actions should be an array")
+        .insert(index + 1, duplicate);
+
+    let mut use_before_create = base.clone();
+    let system_index = phase9_action_index(&use_before_create, "oracle-create-newest-system");
+    let particle_index = phase9_action_index(&use_before_create, "oracle-create-newest-particle");
+    use_before_create["scenario"]["timelines"][0]["actions"]
+        .as_array_mut()
+        .expect("actions should be an array")
+        .swap(system_index, particle_index);
+
+    let mut duplicate_particle = base.clone();
+    let index = phase9_action_index(&duplicate_particle, "oracle-create-newest-particle");
+    let duplicate = duplicate_particle["scenario"]["timelines"][0]["actions"][index].clone();
+    duplicate_particle["scenario"]["timelines"][0]["actions"]
+        .as_array_mut()
+        .expect("actions should be an array")
+        .insert(index + 1, duplicate);
+
+    let mut unknown_particle = base.clone();
+    let index = phase9_action_index(&unknown_particle, "oracle-inspect-particle");
+    unknown_particle["scenario"]["timelines"][0]["actions"][index]["action"]["action"]["particle_id"] =
+        json!("unknown-particle");
+
+    let mut pending_use = base.clone();
+    let index = phase9_action_index(&pending_use, "oracle-mark");
+    pending_use["scenario"]["timelines"][0]["actions"]
+        .as_array_mut()
+        .expect("actions should be an array")
+        .insert(
+            index + 1,
+            json!({ "action_id": "oracle-inspect-pending", "phase": "phase9", "action": {
+                "kind": "particle", "action": { "kind": "inspect_particle", "particle_id": "oracle-particle-newest" }
+            }}),
+        );
+
+    let mut repeated_mark = base.clone();
+    let index = phase9_action_index(&repeated_mark, "oracle-mark");
+    repeated_mark["scenario"]["timelines"][0]["actions"]
+        .as_array_mut()
+        .expect("actions should be an array")
+        .insert(
+            index + 1,
+            json!({ "action_id": "oracle-mark-again", "phase": "phase9", "action": {
+                "kind": "particle", "action": { "kind": "mark_for_destruction", "particle_id": "oracle-particle-newest" }
+            }}),
+        );
+
+    let mut cross_system_range = base.clone();
+    let index = phase9_action_index(&cross_system_range, "oracle-force");
+    cross_system_range["scenario"]["timelines"][0]["actions"][index]["action"]["action"]["particle_ids"] =
+        json!(["oracle-particle-newest", "oracle-particle"]);
+
+    let mut destroyed_owner = base.clone();
+    let index = phase9_action_index(&destroyed_owner, "oracle-destroy-newest-system");
+    destroyed_owner["scenario"]["timelines"][0]["actions"]
+        .as_array_mut()
+        .expect("actions should be an array")
+        .insert(
+            index + 1,
+            json!({ "action_id": "oracle-query-destroyed", "phase": "phase9", "action": {
+                "kind": "particle", "action": { "kind": "query_aabb", "system_id": "oracle-system-newest",
+                    "lower": { "x_bits": 0, "y_bits": 0 }, "upper": { "x_bits": 1065353216, "y_bits": 1065353216 } }
+            }}),
+        );
+
+    let mut recreate_after_compaction = base.clone();
+    let index = phase9_action_index(&recreate_after_compaction, "oracle-compact");
+    recreate_after_compaction["scenario"]["timelines"][0]["actions"]
+        .as_array_mut()
+        .expect("actions should be an array")
+        .insert(
+            index + 1,
+            json!({ "action_id": "oracle-recreate", "phase": "phase9", "action": {
+                "kind": "particle", "action": { "kind": "create_particle", "particle_id": "oracle-particle-newest" }
+            }}),
+        );
+    let mutations = [
+        duplicate_system,
+        use_before_create,
+        duplicate_particle,
+        unknown_particle,
+        pending_use,
+        repeated_mark,
+        cross_system_range,
+        destroyed_owner,
+        recreate_after_compaction,
+    ];
+
+    // Act
+    let diagnostics = mutations.map(|value| raw_oracle_failure(&executable, &value));
+
+    // Assert
+    assert!(
+        diagnostics
+            .iter()
+            .all(|message| message.contains("Phase 9"))
     );
 }
 
