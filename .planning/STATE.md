@@ -2,16 +2,16 @@
 gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 09-23-PLAN.md
-last_updated: "2026-07-17T13:38:03.408Z"
+status: verifying
+stopped_at: Completed 09-24-PLAN.md
+last_updated: "2026-07-17T14:06:03.635Z"
 last_activity: "2026-07-17"
 progress:
   total_phases: 12
-  completed_phases: 8
+  completed_phases: 9
   total_plans: 122
-  completed_plans: 121
-  percent: 99
+  completed_plans: 122
+  percent: 100
 ---
 
 # Project State
@@ -27,10 +27,10 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 
 Phase: 09 (particle-storage-lifecycle-and-coupling) — EXECUTING
 Plan: 24 of 24
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-07-17
 
-Progress: [██████████] 99%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -132,6 +132,7 @@ Progress: [██████████] 99%
 | Phase 09 P21 | 34m | 2 tasks | 5 files |
 | Phase 09 P22 | 9h 10m | 3 tasks | 24 files |
 | Phase 09 P23 | 22 min | 3 tasks | 3 files |
+| Phase 09 P24 | 22 min | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -305,6 +306,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 09]: Write Phase 9 evidence identity only after passing logs, complete branch/policy/digest validation, provenance, inventory, and read-only checks.
 - [Phase 09]: Accept only run 29583793056 for approved full SHA b27fc14f6b29fb82ca815fa1effba71bae09d424; rejected run 29439515367 remains superseded. — Literal approval, clean local and remote equality, one later matching dispatch, unique successful authority jobs, and live artifact digests all bind the accepted evidence to one immutable ref.
 - [Phase 09]: Treat Plan 09-23 artifacts as evidence inputs only; Plan 09-24 retains sole compatibility-promotion authority. — Exact-ref validation must not silently mutate compatibility or inventory ledgers before the explicit review and promotion transaction.
+- [Phase 09]: Promote only the four scoped Phase 9 rows using run 29583793056, full SHA b27fc14f6b29fb82ca815fa1effba71bae09d424, and its exact canonical/sanitizer artifact pair.
+- [Phase 09]: Reject superseded run 29439515367 and preserve every Phase 10 group, topology, pair, triad, source-area, and solver row as not_evidenced.
+- [Phase 09]: Make cargo-deny meaningful with an explicit permissive-license allowlist and deny unknown registry or git sources.
 
 ### Pending Todos
 
@@ -318,6 +322,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-17T13:37:23.102Z
-Stopped at: Completed 09-23-PLAN.md
+Last session: 2026-07-17T14:06:03.632Z
+Stopped at: Completed 09-24-PLAN.md
 Resume file: None
