@@ -614,6 +614,54 @@ the repository's reviewed stage, review, and promotion workflow. A local pass,
 a mismatched SHA, one artifact, or an unverified digest cannot promote the Phase
 9 claim.
 
+### Approved Phase 9 evidence run (2026-07-17)
+
+GitHub Actions run
+[`29583793056`](https://github.com/bright-builds-llc/liquidfun-rs/actions/runs/29583793056)
+is the approved `Oracle CI` `workflow_dispatch` authority for exact commit
+[`b27fc14f6b29fb82ca815fa1effba71bae09d424`](https://github.com/bright-builds-llc/liquidfun-rs/commit/b27fc14f6b29fb82ca815fa1effba71bae09d424).
+That commit remained an ancestor of the reviewed repository state and the exact
+`main` branch head when the evidence was independently revalidated. The run
+contains exactly one successful
+[`Canonical Linux oracle`](https://github.com/bright-builds-llc/liquidfun-rs/actions/runs/29583793056/job/87895618287)
+job and one successful
+[`Scheduled fail-fast sanitizer and reset corpus`](https://github.com/bright-builds-llc/liquidfun-rs/actions/runs/29583793056/job/87895618338)
+job.
+
+Before any compatibility-ledger mutation, delete only the two fixed download
+directories, re-query the live run, jobs, and artifact API, and download these
+exact unexpired artifacts:
+
+- [`phase9-canonical-29583793056-b27fc14f6b29fb82ca815fa1effba71bae09d424`](https://api.github.com/repos/bright-builds-llc/liquidfun-rs/actions/artifacts/8408156562/zip)
+  has GitHub archive digest
+  `sha256:faaf24c870826251f0dd1d507ba9c335269b78433ba1ce2ee0e1995336f0139a`.
+  Its recomputed trace and manifest SHA-256 values are
+  `5c6805e0e998394947439bf6eb295526130cb4db81a67e0f560c6d6bc3f33545`
+  and
+  `b7bb43a6ce083fe543bf6eb3f92b1b4f663d4bd6520dbb83c3a00072a3010a8b`.
+- [`phase9-sanitizer-29583793056-b27fc14f6b29fb82ca815fa1effba71bae09d424`](https://api.github.com/repos/bright-builds-llc/liquidfun-rs/actions/artifacts/8408174081/zip)
+  has GitHub archive digest
+  `sha256:f4b30cebed7b81a41282a33d45b81231485a2fa0c3a958c7b68a3ecbad086e7c`.
+  Its recomputed trace and manifest SHA-256 values are
+  `4261dbe8993155dd7ab9e7992f90bef60e57762c36a66ea97b3bc9131804508a`
+  and
+  `b7bb43a6ce083fe543bf6eb3f92b1b4f663d4bd6520dbb83c3a00072a3010a8b`.
+
+The independent review requires both identities to bind run `29583793056`, the
+approved head, their distinct expected jobs, the pinned upstream and toolchain,
+target `x86_64-unknown-linux-gnu`, policy `phase9-v1`, and confined relative
+payload paths. Recompute both embedded hashes, require both logs to contain
+`test result: ok. 7 passed; 0 failed; 1 ignored` with no `FAILED` marker, and
+require byte-identical manifests. Each manifest must contain seven unique
+executed cases, 58 unique reached branches, all 22 unique policy paths per case,
+and lowercase SHA-256 fields for the common request, native result, C++ oracle
+result, and comparison. Run `cargo xtask provenance check` after the content
+checks.
+
+Run `29439515367` is not this authority. Its artifacts remain rejected below,
+and any substituted run, head, job, artifact, digest, path, log, case, branch,
+policy, or result value blocks promotion.
+
 ### Rejected Phase 9 evidence run (2026-07-15)
 
 GitHub Actions run
