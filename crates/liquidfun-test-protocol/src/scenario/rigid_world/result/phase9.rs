@@ -179,10 +179,7 @@ impl<'a> Phase9ResultState<'a> {
                     terminated,
                     particle_ids,
                 },
-            ) => {
-                control.termination_matches(*terminated, particle_ids)
-                    && self.selection_matches(system_id.as_ref(), particle_ids)
-            }
+            ) => self.query_matches(system_id.as_ref(), *control, *terminated, particle_ids),
             (
                 Phase9ParticleAction::RayCast {
                     system_id, control, ..
@@ -192,15 +189,13 @@ impl<'a> Phase9ResultState<'a> {
                     particle_ids,
                     fractions_bits,
                 },
-            ) => {
-                control.termination_matches(*terminated, particle_ids)
-                    && particle_ids.len() == fractions_bits.len()
-                    && self.selection_matches(system_id.as_ref(), particle_ids)
-                    && fractions_bits.iter().all(|bits| {
-                        let fraction = bits.to_f32();
-                        fraction.is_finite() && (0.0..=1.0).contains(&fraction)
-                    })
-            }
+            ) => self.ray_cast_matches(
+                system_id.as_ref(),
+                *control,
+                *terminated,
+                particle_ids,
+                fractions_bits,
+            ),
             (
                 Phase9ParticleAction::DestroySystem { .. }
                 | Phase9ParticleAction::CreateParticle { .. }
@@ -222,18 +217,55 @@ impl<'a> Phase9ResultState<'a> {
                     particle_ids,
                 },
             ) if self.maybe_expected_occurrence.is_none() => {
-                body_ids.as_ref()
-                    == live_rigid
-                        .body_ids
-                        .iter()
-                        .map(|id| (*id).clone())
-                        .collect::<Vec<_>>()
-                        .as_slice()
-                    && particle_ids.as_ref() == self.visible_particle_ids().as_slice()
+                self.mixed_state_matches(live_rigid, body_ids, particle_ids)
             }
             _ => false,
         };
         if matches { Ok(()) } else { Err(mismatch()) }
+    }
+
+    fn ray_cast_matches(
+        &self,
+        maybe_system_id: Option<&ScenarioId>,
+        control: Phase9RayControl,
+        terminated: bool,
+        particle_ids: &[ScenarioId],
+        fractions_bits: &[crate::FloatBits],
+    ) -> bool {
+        control.termination_matches(terminated, particle_ids)
+            && particle_ids.len() == fractions_bits.len()
+            && self.selection_matches(maybe_system_id, particle_ids)
+            && fractions_bits.iter().all(|bits| {
+                let fraction = bits.to_f32();
+                fraction.is_finite() && (0.0..=1.0).contains(&fraction)
+            })
+    }
+
+    fn query_matches(
+        &self,
+        maybe_system_id: Option<&ScenarioId>,
+        control: Phase9QueryControl,
+        terminated: bool,
+        particle_ids: &[ScenarioId],
+    ) -> bool {
+        control.termination_matches(terminated, particle_ids)
+            && self.selection_matches(maybe_system_id, particle_ids)
+    }
+
+    fn mixed_state_matches(
+        &self,
+        live_rigid: &RigidCheckpointLiveIdentities<'_>,
+        body_ids: &[ScenarioId],
+        particle_ids: &[ScenarioId],
+    ) -> bool {
+        body_ids
+            == live_rigid
+                .body_ids
+                .iter()
+                .map(|id| (*id).clone())
+                .collect::<Vec<_>>()
+                .as_slice()
+            && particle_ids == self.visible_particle_ids().as_slice()
     }
 
     fn set_expected_occurrence(
@@ -412,7 +444,7 @@ impl Phase9TerminationControl for Phase9QueryControl {
     fn termination_matches(&self, terminated: bool, particle_ids: &[ScenarioId]) -> bool {
         match self {
             Self::Continue => !terminated,
-            Self::Terminate => terminated == !particle_ids.is_empty(),
+            Self::Terminate => terminated != particle_ids.is_empty(),
         }
     }
 }
@@ -421,7 +453,7 @@ impl Phase9TerminationControl for Phase9RayControl {
     fn termination_matches(&self, terminated: bool, particle_ids: &[ScenarioId]) -> bool {
         match self {
             Self::Ignore | Self::Continue | Self::Clip => !terminated,
-            Self::Terminate => terminated == !particle_ids.is_empty(),
+            Self::Terminate => terminated != particle_ids.is_empty(),
         }
     }
 }

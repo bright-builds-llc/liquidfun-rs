@@ -156,8 +156,9 @@ fn coupling_request() -> liquidfun_test_protocol::RigidWorldRequestRecord {
         .iter()
         .position(|record| record["action_id"] == "nc-step-static-kinematic")
         .expect("first configured step should remain present");
+    let after_step_index = step_index + 1;
     actions.splice(
-        step_index + 1..step_index + 1,
+        after_step_index..after_step_index,
         [
             json!({
                 "action_id": "coupling-statistics", "phase": "phase9",
@@ -591,7 +592,7 @@ fn decode_rejects_invalid_phase9_lifecycle_matrix_before_execution() {
             index + 1,
             json!({ "action_id": "oracle-query-destroyed", "phase": "phase9", "action": {
                 "kind": "particle", "action": { "kind": "query_aabb", "system_id": "oracle-system-newest",
-                    "lower": { "x_bits": 0, "y_bits": 0 }, "upper": { "x_bits": 1065353216, "y_bits": 1065353216 } }
+                    "lower": { "x_bits": 0, "y_bits": 0 }, "upper": { "x_bits": 1_065_353_216, "y_bits": 1_065_353_216 } }
             }}),
         );
 
@@ -841,7 +842,7 @@ fn differential_comparison_rejects_a_deterministic_semantic_mutation() {
         .as_array_mut()
         .expect("checkpoints should be an array")
         .iter_mut()
-        .flat_map(|checkpoint| {
+        .filter_map(|checkpoint| {
             checkpoint
                 .get_mut("observations")
                 .and_then(Value::as_array_mut)

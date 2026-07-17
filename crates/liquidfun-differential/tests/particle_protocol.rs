@@ -31,22 +31,44 @@ fn phase9_lifecycle_value() -> Value {
         .expect("fixture timelines should be an array")
         .first_mut()
         .expect("fixture should contain a timeline");
+    set_phase9_declarations(timeline);
+    let actions = timeline["actions"]
+        .as_array_mut()
+        .expect("fixture actions should be an array");
+    for (action_id, action) in phase9_lifecycle_actions() {
+        actions.push(json!({
+            "action_id": action_id,
+            "phase": "phase9",
+            "action": { "kind": "particle", "action": action }
+        }));
+    }
+    let checkpoint = timeline["checkpoints"]
+        .as_array_mut()
+        .expect("fixture checkpoints should be an array")
+        .last_mut()
+        .expect("fixture should contain a checkpoint");
+    checkpoint["after_action_id"] = json!("phase9-destroy-system-b");
+    checkpoint["phase"] = json!("phase9");
+    value
+}
+
+fn set_phase9_declarations(timeline: &mut Value) {
     timeline["particle_systems"] = json!([
         {
             "system_id": "phase9-system-a",
             "buffer_mode": { "kind": "growable", "initial_capacity": 4 },
             "paused": false, "strict_contact_check": true, "stuck_threshold": 2,
-            "density_bits": 1065353216, "gravity_scale_bits": 1065353216,
-            "radius_bits": 1036831949, "damping_bits": 0, "destruction_by_age": true,
-            "lifetime_granularity_bits": 1008981770, "maximum_count": 8
+            "density_bits": 1_065_353_216, "gravity_scale_bits": 1_065_353_216,
+            "radius_bits": 1_036_831_949, "damping_bits": 0, "destruction_by_age": true,
+            "lifetime_granularity_bits": 1_008_981_770, "maximum_count": 8
         },
         {
             "system_id": "phase9-system-b",
             "buffer_mode": { "kind": "growable", "initial_capacity": 4 },
             "paused": false, "strict_contact_check": false, "stuck_threshold": 0,
-            "density_bits": 1065353216, "gravity_scale_bits": 1065353216,
-            "radius_bits": 1036831949, "damping_bits": 0, "destruction_by_age": false,
-            "lifetime_granularity_bits": 1008981770, "maximum_count": 8
+            "density_bits": 1_065_353_216, "gravity_scale_bits": 1_065_353_216,
+            "radius_bits": 1_036_831_949, "damping_bits": 0, "destruction_by_age": false,
+            "lifetime_granularity_bits": 1_008_981_770, "maximum_count": 8
         }
     ]);
     timeline["particles"] = json!([
@@ -65,10 +87,10 @@ fn phase9_lifecycle_value() -> Value {
             "lifetime_bits": 0
         }
     ]);
-    let actions = timeline["actions"]
-        .as_array_mut()
-        .expect("fixture actions should be an array");
-    for (action_id, action) in [
+}
+
+fn phase9_lifecycle_actions() -> Vec<(&'static str, Value)> {
+    vec![
         (
             "phase9-create-system-a",
             json!({ "kind": "create_system", "system_id": "phase9-system-a" }),
@@ -107,7 +129,7 @@ fn phase9_lifecycle_value() -> Value {
         ),
         (
             "phase9-query-b",
-            json!({ "kind": "query_aabb", "system_id": "phase9-system-b", "lower": { "x_bits": 0, "y_bits": 0 }, "upper": { "x_bits": 1065353216, "y_bits": 1065353216 } }),
+            json!({ "kind": "query_aabb", "system_id": "phase9-system-b", "lower": { "x_bits": 0, "y_bits": 0 }, "upper": { "x_bits": 1_065_353_216, "y_bits": 1_065_353_216 } }),
         ),
         (
             "phase9-mark-b",
@@ -121,21 +143,7 @@ fn phase9_lifecycle_value() -> Value {
             "phase9-destroy-system-b",
             json!({ "kind": "destroy_system", "system_id": "phase9-system-b" }),
         ),
-    ] {
-        actions.push(json!({
-            "action_id": action_id,
-            "phase": "phase9",
-            "action": { "kind": "particle", "action": action }
-        }));
-    }
-    let checkpoint = timeline["checkpoints"]
-        .as_array_mut()
-        .expect("fixture checkpoints should be an array")
-        .last_mut()
-        .expect("fixture should contain a checkpoint");
-    checkpoint["after_action_id"] = json!("phase9-destroy-system-b");
-    checkpoint["phase"] = json!("phase9");
-    value
+    ]
 }
 
 fn phase9_action_mut<'a>(value: &'a mut Value, action_id: &str) -> &'a mut Value {
@@ -163,14 +171,13 @@ fn insert_phase9_action_after(value: &mut Value, after_id: &str, action_id: &str
         .iter()
         .position(|record| record["action_id"] == after_id)
         .expect("fixture should contain insertion anchor");
-    actions.insert(
-        index + 1,
-        json!({
-            "action_id": action_id,
-            "phase": "phase9",
-            "action": { "kind": "particle", "action": action }
-        }),
-    );
+    let mut record = json!({
+        "action_id": action_id,
+        "phase": "phase9",
+        "action": { "kind": "particle" }
+    });
+    record["action"]["action"] = action;
+    actions.insert(index + 1, record);
 }
 
 fn assert_invalid_particle_action(value: &Value) {
@@ -185,9 +192,9 @@ fn assert_invalid_particle_action(value: &Value) {
 fn phase9_result_request() -> RigidWorldRequestRecord {
     let mut value = phase9_lifecycle_value();
     value["scenario"]["timelines"][0]["particles"][0]["position"] =
-        json!({ "x_bits": 1048576000, "y_bits": 1056964608 });
+        json!({ "x_bits": 1_048_576_000, "y_bits": 1_056_964_608 });
     value["scenario"]["timelines"][0]["particles"][1]["position"] =
-        json!({ "x_bits": 1056964608, "y_bits": 1056964608 });
+        json!({ "x_bits": 1_056_964_608, "y_bits": 1_056_964_608 });
     insert_phase9_action_after(
         &mut value,
         "phase9-query-b",
@@ -201,8 +208,8 @@ fn phase9_result_request() -> RigidWorldRequestRecord {
         json!({
             "kind": "ray_cast",
             "system_id": null,
-            "start": { "x_bits": 3212836864_u32, "y_bits": 1056964608 },
-            "end": { "x_bits": 1065353216, "y_bits": 1056964608 }
+            "start": { "x_bits": 3_212_836_864_u32, "y_bits": 1_056_964_608 },
+            "end": { "x_bits": 1_065_353_216, "y_bits": 1_056_964_608 }
         }),
     );
     decode_value(&value).expect("bounded Phase 9 result request should decode")
@@ -570,12 +577,12 @@ fn codec_accepts_bounded_additive_phase9_declarations() {
         "paused": false,
         "strict_contact_check": true,
         "stuck_threshold": 2,
-        "density_bits": 1065353216,
-        "gravity_scale_bits": 1065353216,
-        "radius_bits": 1036831949,
+        "density_bits": 1_065_353_216,
+        "gravity_scale_bits": 1_065_353_216,
+        "radius_bits": 1_036_831_949,
         "damping_bits": 0,
         "destruction_by_age": true,
-        "lifetime_granularity_bits": 1008981770,
+        "lifetime_granularity_bits": 1_008_981_770,
         "maximum_count": 8
     }]);
     timeline["particles"] = json!([{
@@ -585,7 +592,7 @@ fn codec_accepts_bounded_additive_phase9_declarations() {
         "velocity": { "x_bits": 0, "y_bits": 0 },
         "flags_bits": 0,
         "color": [255, 255, 255, 255],
-        "lifetime_bits": 1065353216
+        "lifetime_bits": 1_065_353_216
     }]);
 
     // Act
@@ -645,14 +652,14 @@ fn native_dispatch_executes_phase9_particle_actions() {
     timeline["particle_systems"] = json!([{
         "system_id": "phase9-system", "buffer_mode": { "kind": "growable", "initial_capacity": 4 },
         "paused": false, "strict_contact_check": true, "stuck_threshold": 2,
-        "density_bits": 1065353216, "gravity_scale_bits": 1065353216,
-        "radius_bits": 1036831949, "damping_bits": 0, "destruction_by_age": true,
-        "lifetime_granularity_bits": 1008981770, "maximum_count": 8
+        "density_bits": 1_065_353_216, "gravity_scale_bits": 1_065_353_216,
+        "radius_bits": 1_036_831_949, "damping_bits": 0, "destruction_by_age": true,
+        "lifetime_granularity_bits": 1_008_981_770, "maximum_count": 8
     }]);
     timeline["particles"] = json!([{
         "particle_id": "phase9-particle", "system_id": "phase9-system",
         "position": { "x_bits": 0, "y_bits": 0 }, "velocity": { "x_bits": 0, "y_bits": 0 },
-        "flags_bits": 0, "color": [255, 255, 255, 255], "lifetime_bits": 1065353216
+        "flags_bits": 0, "color": [255, 255, 255, 255], "lifetime_bits": 1_065_353_216
     }]);
     let actions = timeline["actions"]
         .as_array_mut()
@@ -672,11 +679,11 @@ fn native_dispatch_executes_phase9_particle_actions() {
         ),
         (
             "phase9-force",
-            json!({ "kind": "apply_force", "particle_ids": ["phase9-particle"], "force": { "x_bits": 1065353216, "y_bits": 0 } }),
+            json!({ "kind": "apply_force", "particle_ids": ["phase9-particle"], "force": { "x_bits": 1_065_353_216, "y_bits": 0 } }),
         ),
         (
             "phase9-impulse",
-            json!({ "kind": "apply_impulse", "particle_ids": ["phase9-particle"], "impulse": { "x_bits": 0, "y_bits": 1065353216 } }),
+            json!({ "kind": "apply_impulse", "particle_ids": ["phase9-particle"], "impulse": { "x_bits": 0, "y_bits": 1_065_353_216 } }),
         ),
         (
             "phase9-statistics",

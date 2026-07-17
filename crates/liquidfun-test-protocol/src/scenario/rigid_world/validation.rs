@@ -253,15 +253,8 @@ fn validate_timeline(raw: RawTimeline) -> Result<RigidWorldTimeline, RigidWorldD
         .particle_systems
         .map_or_else(Vec::new, BoundedVec::into_vec);
     let particles = raw.particles.map_or_else(Vec::new, BoundedVec::into_vec);
-    validate_phase9_declarations(&particle_systems, &particles)?;
-    let particle_system_ids = particle_systems
-        .iter()
-        .map(|system| system.system_id.clone())
-        .collect::<HashSet<_>>();
-    let particle_owners = particles
-        .iter()
-        .map(|particle| (particle.particle_id.clone(), particle.system_id.clone()))
-        .collect::<HashMap<_, _>>();
+    let (particle_system_ids, particle_owners) =
+        validate_phase9_timeline_declarations(&particle_systems, &particles)?;
     let joint_ids = joints
         .iter()
         .map(|joint| joint.joint_id.clone())
@@ -312,15 +305,14 @@ fn validate_timeline(raw: RawTimeline) -> Result<RigidWorldTimeline, RigidWorldD
         &body_ids,
         &fixture_owners,
     )?;
-    let aggregate = bodies.len()
-        + fixtures.len()
-        + joints.len()
-        + ropes.len()
-        + actions.len()
-        + checkpoints.len();
-    if aggregate > MAXIMUM_AGGREGATE_ITEMS {
-        return Err(validation(RigidWorldErrorKind::AggregateLimitExceeded));
-    }
+    validate_timeline_aggregate_limit([
+        bodies.len(),
+        fixtures.len(),
+        joints.len(),
+        ropes.len(),
+        actions.len(),
+        checkpoints.len(),
+    ])?;
     Ok(RigidWorldTimeline {
         witness_family: raw.witness_family,
         bodies: bodies.into_boxed_slice(),
@@ -332,6 +324,29 @@ fn validate_timeline(raw: RawTimeline) -> Result<RigidWorldTimeline, RigidWorldD
         actions: actions.into_boxed_slice(),
         checkpoints: checkpoints.into_boxed_slice(),
     })
+}
+
+fn validate_timeline_aggregate_limit(item_counts: [usize; 6]) -> Result<(), RigidWorldDecodeError> {
+    if item_counts.into_iter().sum::<usize>() > MAXIMUM_AGGREGATE_ITEMS {
+        return Err(validation(RigidWorldErrorKind::AggregateLimitExceeded));
+    }
+    Ok(())
+}
+
+fn validate_phase9_timeline_declarations(
+    particle_systems: &[Phase9ParticleSystemDeclaration],
+    particles: &[Phase9ParticleDeclaration],
+) -> Result<(HashSet<ScenarioId>, HashMap<ScenarioId, ScenarioId>), RigidWorldDecodeError> {
+    validate_phase9_declarations(particle_systems, particles)?;
+    let system_ids = particle_systems
+        .iter()
+        .map(|system| system.system_id.clone())
+        .collect();
+    let particle_owners = particles
+        .iter()
+        .map(|particle| (particle.particle_id.clone(), particle.system_id.clone()))
+        .collect();
+    Ok((system_ids, particle_owners))
 }
 
 fn collect_gear_dependents(

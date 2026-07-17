@@ -10,33 +10,23 @@ pub const PHASE9_MAXIMUM_PARTICLES: usize = 256;
 pub const PHASE9_MAXIMUM_IDENTITIES: usize = 256;
 
 /// Closed query callback control used by executable Phase 9 witnesses.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Phase9QueryControl {
+    #[default]
     Continue,
     Terminate,
-}
-
-impl Default for Phase9QueryControl {
-    fn default() -> Self {
-        Self::Continue
-    }
 }
 
 /// Closed ray callback control used by executable Phase 9 witnesses.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Phase9RayControl {
     Ignore,
+    #[default]
     Continue,
     Clip,
     Terminate,
-}
-
-impl Default for Phase9RayControl {
-    fn default() -> Self {
-        Self::Continue
-    }
 }
 
 /// Caller-owned buffer capacity contract used by a Phase 9 particle system.

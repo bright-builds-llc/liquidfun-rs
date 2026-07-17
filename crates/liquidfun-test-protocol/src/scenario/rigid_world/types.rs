@@ -1118,7 +1118,6 @@ pub(super) fn apply_lifecycle_action(
             live_bodies.remove(body_id);
             live_fixtures.retain(|fixture_id| fixture_owners.get(fixture_id) != Some(body_id));
         }
-        RigidWorldAction::Particle { .. } => {}
         _ => {}
     }
 }

@@ -23,6 +23,32 @@ const RETAINED_REQUEST: &[u8] =
 const MANIFEST: &str = include_str!("fixtures/rigid_world/phase9/phase9-v1.json");
 const PINNED_WITNESS: &[u8] =
     include_bytes!("../../../reference/artifacts/phase9/lifecycle-contact-witnesses.json");
+const COMMON_ACTIONS: &[&str] = &[
+    "create-growable",
+    "create-fixed",
+    "create-phase9-a",
+    "create-phase9-b",
+    "create-phase9-coupling",
+    "create-phase9-capacity",
+    "create-phase9-c",
+    "create-phase9-d",
+    "inspect-system",
+    "inspect-particle",
+    "resume",
+    "statistics",
+    "statistics-fixed",
+    "phase9-step",
+    "destroy-fixed",
+    "destroy-growable",
+];
+const FORCE_ACTIONS: &[&str] = &[
+    "position",
+    "velocity",
+    "force",
+    "inspect-after-force",
+    "impulse",
+    "inspect-after-impulse",
+];
 
 const REQUIRED_BRANCHES: &[&str] = &[
     "multiple_systems",
@@ -143,6 +169,28 @@ fn bounded_phase9_request(case_id: &str) -> liquidfun_test_protocol::RigidWorldR
     let mut value = request_value();
     value["request_id"] = json!(format!("phase-09-{case_id}"));
     let timeline = &mut value["scenario"]["timelines"][0];
+    configure_phase9_declarations(timeline);
+    let mut phase9_actions = phase9_actions();
+    order_phase9_actions(&mut phase9_actions, case_id);
+    retain_relevant_actions(&mut phase9_actions, case_id);
+    let final_action = phase9_actions
+        .last()
+        .expect("Phase 9 corpus should have a final action")["action_id"]
+        .clone();
+    let insertion_index = if case_id == "contacts-listeners-filters-and-coupling" {
+        6
+    } else {
+        0
+    };
+    timeline["actions"]
+        .as_array_mut()
+        .expect("retained actions should be an array")
+        .splice(insertion_index..insertion_index, phase9_actions);
+    insert_phase9_checkpoints(timeline, case_id, &final_action);
+    decode_value(&value).expect("the bounded Phase 9 corpus should decode")
+}
+
+fn configure_phase9_declarations(timeline: &mut Value) {
     timeline["particle_systems"] = json!([
         {
             "system_id": "phase9-growable", "buffer_mode": { "kind": "growable", "initial_capacity": 4 },
@@ -193,9 +241,9 @@ fn bounded_phase9_request(case_id: &str) -> liquidfun_test_protocol::RigidWorldR
         particle("phase9-c", "phase9-fixed-paused", 1.0, 2.0, 2),
         particle("phase9-d", "phase9-fixed-paused", 1.5, 2.0, 3)
     ]);
-    let actions = timeline["actions"]
-        .as_array_mut()
-        .expect("retained actions should be an array");
+}
+
+fn phase9_actions() -> Vec<Value> {
     let mut phase9_actions = vec![
         action(
             "create-growable",
@@ -257,6 +305,10 @@ fn bounded_phase9_request(case_id: &str) -> liquidfun_test_protocol::RigidWorldR
         action("destroy-fixed", json!({ "kind": "destroy_system", "system_id": "phase9-fixed-paused" })),
         action("destroy-growable", json!({ "kind": "destroy_system", "system_id": "phase9-growable" })),
     ]);
+    phase9_actions
+}
+
+fn order_phase9_actions(phase9_actions: &mut Vec<Value>, case_id: &str) {
     let statistics = ["statistics", "statistics-fixed"]
         .into_iter()
         .map(|action_id| {
@@ -293,16 +345,8 @@ fn bounded_phase9_request(case_id: &str) -> liquidfun_test_protocol::RigidWorldR
         );
     }
     if case_id == "forces-impulses-and-statistics" {
-        const PRE_STEP: &[&str] = &[
-            "position",
-            "velocity",
-            "force",
-            "inspect-after-force",
-            "impulse",
-            "inspect-after-impulse",
-        ];
         let mut moved = Vec::new();
-        for action_id in PRE_STEP {
+        for action_id in FORCE_ACTIONS {
             let index = phase9_actions
                 .iter()
                 .position(|record| record["action_id"] == *action_id)
@@ -315,24 +359,9 @@ fn bounded_phase9_request(case_id: &str) -> liquidfun_test_protocol::RigidWorldR
             .expect("the force case retains its particle step");
         phase9_actions.splice(step_index..step_index, moved);
     }
-    const COMMON_ACTIONS: &[&str] = &[
-        "create-growable",
-        "create-fixed",
-        "create-phase9-a",
-        "create-phase9-b",
-        "create-phase9-coupling",
-        "create-phase9-capacity",
-        "create-phase9-c",
-        "create-phase9-d",
-        "inspect-system",
-        "inspect-particle",
-        "resume",
-        "statistics",
-        "statistics-fixed",
-        "phase9-step",
-        "destroy-fixed",
-        "destroy-growable",
-    ];
+}
+
+fn retain_relevant_actions(phase9_actions: &mut Vec<Value>, case_id: &str) {
     let relevant: &[&str] = match case_id {
         "storage-systems-and-permutations" | "lifetime-zombie-and-eviction" => &[
             "create-evicting",
@@ -367,24 +396,13 @@ fn bounded_phase9_request(case_id: &str) -> liquidfun_test_protocol::RigidWorldR
         let action_id = record["action_id"].as_str().expect("action ID");
         COMMON_ACTIONS.contains(&action_id) || relevant.contains(&action_id)
     });
-    let final_action = phase9_actions
-        .last()
-        .expect("Phase 9 corpus should have a final action")["action_id"]
-        .clone();
-    let insertion_index = if case_id == "contacts-listeners-filters-and-coupling" {
-        6
-    } else {
-        0
-    };
-    actions.splice(insertion_index..insertion_index, phase9_actions);
+}
+
+fn insert_phase9_checkpoints(timeline: &mut Value, case_id: &str, final_action: &Value) {
     let checkpoints = timeline["checkpoints"]
         .as_array_mut()
         .expect("retained checkpoints should be an array");
-    let checkpoint_index = if case_id == "contacts-listeners-filters-and-coupling" {
-        1
-    } else {
-        0
-    };
+    let checkpoint_index = usize::from(case_id == "contacts-listeners-filters-and-coupling");
     let rigid_counts = if case_id == "contacts-listeners-filters-and-coupling" {
         json!({
             "bodies": 3, "fixtures": 3, "contacts": 0,
@@ -416,7 +434,6 @@ fn bounded_phase9_request(case_id: &str) -> liquidfun_test_protocol::RigidWorldR
             "transitions": []
         }),
     );
-    decode_value(&value).expect("the bounded Phase 9 corpus should decode")
 }
 
 fn particle(id: &str, system: &str, x: f32, lifetime: f32, color: u8) -> Value {
@@ -461,10 +478,12 @@ fn bits(x: f32, y: f32) -> Value {
 }
 
 fn action(id: &str, action: Value) -> Value {
-    json!({
+    let mut record = json!({
         "action_id": id, "phase": "phase9",
-        "action": { "kind": "particle", "action": action }
-    })
+        "action": { "kind": "particle" }
+    });
+    record["action"]["action"] = action;
+    record
 }
 
 fn sha256(bytes: &[u8]) -> String {
@@ -594,15 +613,25 @@ fn assert_no_particle_lifecycle(result: &Value, particle_id: &str) {
 }
 
 fn assert_semantic_witness(request: &Value, result: &Value, witness: &CorpusWitness) {
+    let branch = witness.branch.as_str();
+    let asserted = assert_system_witness(request, result, branch)
+        || assert_lifecycle_witness(request, result, branch)
+        || assert_contact_witness(request, result, branch)
+        || assert_query_witness(request, result, branch)
+        || assert_contract_witness(request, result, branch);
+    assert!(
+        asserted,
+        "missing semantic assertion for Phase 9 branch {branch}"
+    );
+}
+
+fn assert_system_witness(request: &Value, result: &Value, branch: &str) -> bool {
     let observe = |action_id| phase9_observation(request, result, action_id);
     let timeline = &request["scenario"]["timelines"][0];
     let growable = system_declaration(request, "phase9-growable");
     let fixed = system_declaration(request, "phase9-fixed-paused");
-    let a = particle_declaration(request, "phase9-a");
-    let b = particle_declaration(request, "phase9-b");
     let statistics = observe("statistics");
-
-    match witness.branch.as_str() {
+    match branch {
         "multiple_systems" | "newest_first" => {
             assert_eq!(statistics["statistics"]["system_count"], 2);
             assert_eq!(
@@ -662,6 +691,38 @@ fn assert_semantic_witness(request: &Value, result: &Value, witness: &CorpusWitn
                 "phase9-growable"
             );
         }
+        "retained_phase6_through_phase8" => assert_eq!(
+            request["scenario"]["timelines"]
+                .as_array()
+                .expect("timelines")
+                .len(),
+            RigidWorldWitnessFamily::ALL.len()
+        ),
+        "phase10_rejection" => {
+            for member in [
+                "particle_groups",
+                "particle_pairs",
+                "particle_triads",
+                "particle_solver",
+            ] {
+                assert!(
+                    timeline.get(member).is_none(),
+                    "{member} must remain absent"
+                );
+            }
+        }
+        _ => return false,
+    }
+    true
+}
+
+fn assert_lifecycle_witness(request: &Value, result: &Value, branch: &str) -> bool {
+    let observe = |action_id| phase9_observation(request, result, action_id);
+    let growable = system_declaration(request, "phase9-growable");
+    let a = particle_declaration(request, "phase9-a");
+    let b = particle_declaration(request, "phase9-b");
+    let statistics = observe("statistics");
+    match branch {
         "finite_lifetime" => assert_eq!(a["lifetime_bits"], 0.1_f32.to_bits()),
         "infinite_lifetime" => assert_eq!(b["lifetime_bits"], (-1.0_f32).to_bits()),
         "equal_lifetime" => assert_eq!(
@@ -700,6 +761,18 @@ fn assert_semantic_witness(request: &Value, result: &Value, witness: &CorpusWitn
                 "phase9-b"
             );
         }
+        _ => return false,
+    }
+    true
+}
+
+fn assert_contact_witness(request: &Value, result: &Value, branch: &str) -> bool {
+    let observe = |action_id| phase9_observation(request, result, action_id);
+    let growable = system_declaration(request, "phase9-growable");
+    let fixed = system_declaration(request, "phase9-fixed-paused");
+    let a = particle_declaration(request, "phase9-a");
+    let b = particle_declaration(request, "phase9-b");
+    match branch {
         "particle_contact" => assert_eq!(
             observe("inspect-particle-contact")["contact"]["system_id"],
             "phase9-growable"
@@ -711,14 +784,14 @@ fn assert_semantic_witness(request: &Value, result: &Value, witness: &CorpusWitn
         "strict_contact_enabled" => assert_eq!(fixed["strict_contact_check"], true),
         "strict_contact_disabled" => assert_eq!(growable["strict_contact_check"], false),
         "listener_flag_enabled" => {
-            assert_ne!(b["flags_bits"].as_u64().expect("flags") & (1 << 15), 0)
+            assert_ne!(b["flags_bits"].as_u64().expect("flags") & (1 << 15), 0);
         }
         "listener_flag_disabled" => assert_eq!(
             particle_declaration(request, "phase9-capacity")["flags_bits"],
             0
         ),
         "filter_flag_enabled" => {
-            assert_ne!(a["flags_bits"].as_u64().expect("flags") & (1 << 16), 0)
+            assert_ne!(a["flags_bits"].as_u64().expect("flags") & (1 << 16), 0);
         }
         "filter_flag_disabled" => assert_eq!(
             particle_declaration(request, "phase9-coupling")["flags_bits"],
@@ -771,6 +844,15 @@ fn assert_semantic_witness(request: &Value, result: &Value, witness: &CorpusWitn
                 .expect("static body");
             assert_eq!(body["linear_velocity"], bits(0.0, 0.0));
         }
+        _ => return false,
+    }
+    true
+}
+
+fn assert_query_witness(request: &Value, result: &Value, branch: &str) -> bool {
+    let observe = |action_id| phase9_observation(request, result, action_id);
+    let statistics = observe("statistics");
+    match branch {
         "force_range" => assert_ne!(
             observe("inspect-after-force")["snapshot"]["force"]["x_bits"],
             0
@@ -823,26 +905,13 @@ fn assert_semantic_witness(request: &Value, result: &Value, witness: &CorpusWitn
         "ray_ignore" => assert_eq!(observe("ray-ignore")["terminated"], false),
         "ray_clip" => assert_eq!(observe("ray-clip")["particle_ids"], json!(["phase9-a"])),
         "ray_terminate" => assert_eq!(observe("ray-terminate")["terminated"], true),
-        "retained_phase6_through_phase8" => assert_eq!(
-            request["scenario"]["timelines"]
-                .as_array()
-                .expect("timelines")
-                .len(),
-            RigidWorldWitnessFamily::ALL.len()
-        ),
-        "phase10_rejection" => {
-            for member in [
-                "particle_groups",
-                "particle_pairs",
-                "particle_triads",
-                "particle_solver",
-            ] {
-                assert!(
-                    timeline.get(member).is_none(),
-                    "{member} must remain absent"
-                );
-            }
-        }
+        _ => return false,
+    }
+    true
+}
+
+fn assert_contract_witness(request: &Value, result: &Value, branch: &str) -> bool {
+    match branch {
         "closed_policy_registry" => assert_eq!(PHASE9_REQUIRED_POLICY_PATHS.len(), 22),
         "replay_identity"
         | "minimization_identity"
@@ -852,8 +921,9 @@ fn assert_semantic_witness(request: &Value, result: &Value, witness: &CorpusWitn
             assert_eq!(result["request_id"], request["request_id"]);
             assert_eq!(result["scenario_id"], request["scenario"]["scenario_id"]);
         }
-        branch => panic!("missing semantic assertion for Phase 9 branch {branch}"),
+        _ => return false,
     }
+    true
 }
 
 fn assert_witness(request: &Value, result: &Value, witness: &CorpusWitness) {
@@ -973,7 +1043,7 @@ fn executable_cases() {
 }
 
 #[test]
-#[ignore]
+#[ignore = "explicit fixture regeneration tool"]
 fn regenerate_case_fixture() {
     for case in manifest().cases {
         let request = bounded_phase9_request(&case.case_id);
