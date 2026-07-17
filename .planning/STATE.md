@@ -3,15 +3,15 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 09 gap-closure plans 25-29 ready for execution
-last_updated: "2026-07-17T18:07:04.873Z"
-last_activity: 2026-07-17 -- Phase 09 planning complete
+stopped_at: Completed 09-25-PLAN.md
+last_updated: "2026-07-17T21:27:43.604Z"
+last_activity: "2026-07-17"
 progress:
   total_phases: 12
   completed_phases: 8
   total_plans: 127
-  completed_plans: 122
-  percent: 96
+  completed_plans: 123
+  percent: 97
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 ## Current Position
 
 Phase: 09 (particle-storage-lifecycle-and-coupling) — EXECUTING
-Plan: 24 of 29
+Plan: 25 of 29
 Status: Ready to execute
-Last activity: 2026-07-17 -- Phase 09 planning complete
+Last activity: 2026-07-17
 
-Progress: [█████████░] 96%
+Progress: [██████████] 97%
 
 ## Performance Metrics
 
@@ -133,6 +133,7 @@ Progress: [█████████░] 96%
 | Phase 09 P22 | 9h 10m | 3 tasks | 24 files |
 | Phase 09 P23 | 22 min | 3 tasks | 3 files |
 | Phase 09 P24 | 22 min | 3 tasks | 6 files |
+| Phase 09 P25 | 71 min | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -309,6 +310,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 09]: Promote only the four scoped Phase 9 rows using run 29583793056, full SHA b27fc14f6b29fb82ca815fa1effba71bae09d424, and its exact canonical/sanitizer artifact pair.
 - [Phase 09]: Reject superseded run 29439515367 and preserve every Phase 10 group, topology, pair, triad, source-area, and solver row as not_evidenced.
 - [Phase 09]: Make cargo-deny meaningful with an explicit permissive-license allowlist and deny unknown registry or git sources.
+- [Phase 09]: Expose one public Phase 9 complete-comparison seam with digest-checked embedded Phase 6-8 policies and no caller injection.
+- [Phase 09]: Evaluate particle policies only after retained Phase 6-8 comparison returns Match.
+- [Phase 09]: Keep particle-coupled rigid state authoritative at every downstream oracle checkpoint and reject unsupported retained actions.
 
 ### Pending Todos
 
@@ -322,6 +326,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-17T14:41:30Z
-Stopped at: Phase 09 verification found 2 gaps
+Last session: 2026-07-17T21:27:43.600Z
+Stopped at: Completed 09-25-PLAN.md
 Resume file: None
