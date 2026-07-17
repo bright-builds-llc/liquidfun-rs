@@ -20,16 +20,26 @@ const PHASE9_DEFERRED_IDS: [&str; 5] = [
     "subsystem.particle-solver-behaviors",
 ];
 const PHASE9_AUTHORITY_REFERENCES: [&str; 10] = [
-    "https://github.com/bright-builds-llc/liquidfun-rs/actions/runs/29439515367",
-    "https://api.github.com/repos/bright-builds-llc/liquidfun-rs/actions/artifacts/8352859391/zip#sha256=f237d6f1ebe0e59f65a5ae0609140eecdd8b32247e9d2064c83748be1ab9f5ea",
-    "phase9-canonical-29439515367-a87f84bbdbfe55fb732d74c481c4a4bda9eec958/identity.json#trace-sha256=3a339387b4c4acccc15b5fc4944d6bec9c7e1d315f4753034ae52a5ff97f2e64",
-    "phase9-canonical-29439515367-a87f84bbdbfe55fb732d74c481c4a4bda9eec958/identity.json#manifest-sha256=36cfaad1f56505f8427408733e2231ad613984a4cb3eb3b8d757e7a14b2c38e0",
-    "https://api.github.com/repos/bright-builds-llc/liquidfun-rs/actions/artifacts/8352881868/zip#sha256=95ad57e5d5711ae6aa93847ad1efd4a04025bd2956b4996535fa0e5f45a5893f",
-    "phase9-sanitizer-29439515367-a87f84bbdbfe55fb732d74c481c4a4bda9eec958/identity.json#trace-sha256=ee75462d49275c5b7d02b8677eb6f9bf82c241c6b993c16d6df08a2ae231a070",
-    "phase9-sanitizer-29439515367-a87f84bbdbfe55fb732d74c481c4a4bda9eec958/identity.json#manifest-sha256=0c89f0136eda6689118d3eaa909defb1d182d5723e7a64ea1e958396066dce15",
-    "https://github.com/bright-builds-llc/liquidfun-rs/commit/a87f84bbdbfe55fb732d74c481c4a4bda9eec958",
-    ".planning/phases/09-particle-storage-lifecycle-and-coupling/09-16-SUMMARY.md",
-    "TESTING.md#phase-9-canonical-evidence-2026-07-15",
+    "https://github.com/bright-builds-llc/liquidfun-rs/actions/runs/29583793056",
+    "https://api.github.com/repos/bright-builds-llc/liquidfun-rs/actions/artifacts/8408156562/zip#sha256=faaf24c870826251f0dd1d507ba9c335269b78433ba1ce2ee0e1995336f0139a",
+    "phase9-canonical-29583793056-b27fc14f6b29fb82ca815fa1effba71bae09d424/identity.json#trace-sha256=5c6805e0e998394947439bf6eb295526130cb4db81a67e0f560c6d6bc3f33545",
+    "phase9-canonical-29583793056-b27fc14f6b29fb82ca815fa1effba71bae09d424/identity.json#manifest-sha256=b7bb43a6ce083fe543bf6eb3f92b1b4f663d4bd6520dbb83c3a00072a3010a8b",
+    "https://api.github.com/repos/bright-builds-llc/liquidfun-rs/actions/artifacts/8408174081/zip#sha256=f4b30cebed7b81a41282a33d45b81231485a2fa0c3a958c7b68a3ecbad086e7c",
+    "phase9-sanitizer-29583793056-b27fc14f6b29fb82ca815fa1effba71bae09d424/identity.json#trace-sha256=4261dbe8993155dd7ab9e7992f90bef60e57762c36a66ea97b3bc9131804508a",
+    "phase9-sanitizer-29583793056-b27fc14f6b29fb82ca815fa1effba71bae09d424/identity.json#manifest-sha256=b7bb43a6ce083fe543bf6eb3f92b1b4f663d4bd6520dbb83c3a00072a3010a8b",
+    "https://github.com/bright-builds-llc/liquidfun-rs/commit/b27fc14f6b29fb82ca815fa1effba71bae09d424",
+    ".planning/phases/09-particle-storage-lifecycle-and-coupling/09-23-SUMMARY.md",
+    "TESTING.md#approved-phase-9-evidence-run-2026-07-17",
+];
+const PHASE9_REJECTED_AUTHORITY_MARKERS: [&str; 8] = [
+    "29439515367",
+    "8352859391",
+    "8352881868",
+    "a87f84bbdbfe55fb732d74c481c4a4bda9eec958",
+    "3a339387b4c4acccc15b5fc4944d6bec9c7e1d315f4753034ae52a5ff97f2e64",
+    "ee75462d49275c5b7d02b8677eb6f9bf82c241c6b993c16d6df08a2ae231a070",
+    "09-16-SUMMARY.md",
+    "phase-9-canonical-evidence-2026-07-15",
 ];
 
 pub(super) fn compatibility(
@@ -147,6 +157,23 @@ fn phase9_promotion(ledger: &CompatibilityLedger) -> Result<(), InventoryError> 
                 "evidence",
                 format!("noncanonical Phase 9 authority for scoped row `{id}`"),
             ));
+        }
+        for record in [
+            &entry.evidence.implemented,
+            &entry.evidence.unit_tested,
+            &entry.evidence.differentially_validated,
+            &entry.evidence.platform_validated,
+        ] {
+            if record.references.iter().any(|reference| {
+                PHASE9_REJECTED_AUTHORITY_MARKERS
+                    .iter()
+                    .any(|marker| reference.contains(marker))
+            }) {
+                return Err(InventoryError::new(
+                    "evidence",
+                    format!("superseded Phase 9 authority for scoped row `{id}`"),
+                ));
+            }
         }
     }
 

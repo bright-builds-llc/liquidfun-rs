@@ -662,6 +662,14 @@ Run `29439515367` is not this authority. Its artifacts remain rejected below,
 and any substituted run, head, job, artifact, digest, path, log, case, branch,
 policy, or result value blocks promotion.
 
+The compatibility validator admits this authority only for the scoped
+`b2Particle.h`, `b2ParticleSystem.h`, particle storage/lifecycle, and particle
+contacts/coupling rows. It requires the complete ordered canonical and sanitizer
+reference set above and rejects any superseded reference in the implementation,
+unit, differential, or platform evidence for those rows. Particle assembly,
+particle groups, the full particle source area, group/pair/triad behavior, and
+particle solver behavior remain `Not evidenced` as Phase 10 work.
+
 ### Rejected Phase 9 evidence run (2026-07-15)
 
 GitHub Actions run
