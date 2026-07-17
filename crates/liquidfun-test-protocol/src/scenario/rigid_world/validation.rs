@@ -890,6 +890,8 @@ fn validate_phase9_action(
             }
         }
         Phase9ParticleAction::InspectSystem { system_id }
+        | Phase9ParticleAction::InspectParticleContact { system_id, .. }
+        | Phase9ParticleAction::InspectBodyContact { system_id, .. }
         | Phase9ParticleAction::SetPaused { system_id, .. }
         | Phase9ParticleAction::Compact { system_id }
         | Phase9ParticleAction::RequestStatistics { system_id } => {
@@ -964,6 +966,12 @@ fn validate_phase9_action_shape(
         }
         Phase9ParticleAction::RayCast { start, end, .. } => {
             validate_ray_geometry(*start, *end)?;
+        }
+        Phase9ParticleAction::InspectParticleContact { contact_index, .. }
+        | Phase9ParticleAction::InspectBodyContact { contact_index, .. } => {
+            if *contact_index >= PHASE9_MAXIMUM_IDENTITIES {
+                return Err(validation(RigidWorldErrorKind::InvalidParticleAction));
+            }
         }
         Phase9ParticleAction::CreateSystem { .. }
         | Phase9ParticleAction::DestroySystem { .. }

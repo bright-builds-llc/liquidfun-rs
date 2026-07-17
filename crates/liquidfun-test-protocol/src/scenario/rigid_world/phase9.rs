@@ -9,6 +9,36 @@ pub const PHASE9_MAXIMUM_PARTICLES: usize = 256;
 /// Maximum stable identities carried by one Phase 9 range or observation.
 pub const PHASE9_MAXIMUM_IDENTITIES: usize = 256;
 
+/// Closed query callback control used by executable Phase 9 witnesses.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Phase9QueryControl {
+    Continue,
+    Terminate,
+}
+
+impl Default for Phase9QueryControl {
+    fn default() -> Self {
+        Self::Continue
+    }
+}
+
+/// Closed ray callback control used by executable Phase 9 witnesses.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Phase9RayControl {
+    Ignore,
+    Continue,
+    Clip,
+    Terminate,
+}
+
+impl Default for Phase9RayControl {
+    fn default() -> Self {
+        Self::Continue
+    }
+}
+
 /// Caller-owned buffer capacity contract used by a Phase 9 particle system.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
@@ -77,6 +107,14 @@ pub enum Phase9ParticleAction {
     InspectParticle {
         particle_id: ScenarioId,
     },
+    InspectParticleContact {
+        system_id: ScenarioId,
+        contact_index: usize,
+    },
+    InspectBodyContact {
+        system_id: ScenarioId,
+        contact_index: usize,
+    },
     SetPaused {
         system_id: ScenarioId,
         paused: bool,
@@ -110,11 +148,15 @@ pub enum Phase9ParticleAction {
         system_id: Option<ScenarioId>,
         lower: Vec2Bits,
         upper: Vec2Bits,
+        #[serde(default)]
+        control: Phase9QueryControl,
     },
     RayCast {
         system_id: Option<ScenarioId>,
         start: Vec2Bits,
         end: Vec2Bits,
+        #[serde(default)]
+        control: Phase9RayControl,
     },
 }
 

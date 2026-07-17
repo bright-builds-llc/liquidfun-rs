@@ -163,6 +163,18 @@ inline void validate_phase9_action(
     require_members(action, {"kind", "system_id"}, "Phase 9 system action");
     return require_system("Phase 9 system action");
   }
+  if (kind == "inspect_particle_contact" || kind == "inspect_body_contact") {
+    require_members(
+        action, {"kind", "system_id", "contact_index"},
+        "Phase 9 contact-inspection action");
+    require_system("Phase 9 contact-inspection action");
+    if (unsigned_value(
+            member(action, "contact_index", "Phase 9 contact-inspection action"),
+            "contact index") >= kPhase9MaximumIdentities) {
+      throw std::runtime_error("Phase 9 contact index exceeds reviewed bounds");
+    }
+    return;
+  }
   if (kind == "create_particle" || kind == "inspect_particle" ||
       kind == "mark_for_destruction") {
     require_members(action, {"kind", "particle_id"}, "Phase 9 particle action");
@@ -195,7 +207,7 @@ inline void validate_phase9_action(
     return;
   }
   if (kind == "query_aabb") {
-    require_members(action, {"kind", "system_id", "lower", "upper"}, "particle query");
+    require_members(action, {"kind", "system_id", "lower", "upper", "control"}, "particle query");
     const auto& maybe_system = member(action, "system_id", "particle query");
     if (!maybe_system.is_null()) require_system("particle query");
     const auto lower = vec2(member(action, "lower", "particle query"), "query lower");
@@ -204,16 +216,25 @@ inline void validate_phase9_action(
         float_from_bits(lower.y) > float_from_bits(upper.y)) {
       throw std::runtime_error("Phase 9 query AABB is invalid");
     }
+    const auto control = action.value("control", std::string{"continue"});
+    if (control != "continue" && control != "terminate") {
+      throw std::runtime_error("unsupported Phase 9 query control");
+    }
     return;
   }
   if (kind == "ray_cast") {
-    require_members(action, {"kind", "system_id", "start", "end"}, "particle ray");
+    require_members(action, {"kind", "system_id", "start", "end", "control"}, "particle ray");
     const auto& maybe_system = member(action, "system_id", "particle ray");
     if (!maybe_system.is_null()) require_system("particle ray");
     const auto start = vec2(member(action, "start", "particle ray"), "ray start");
     const auto end = vec2(member(action, "end", "particle ray"), "ray end");
     if (start.x == end.x && start.y == end.y) {
       throw std::runtime_error("Phase 9 ray must be nondegenerate");
+    }
+    const auto control = action.value("control", std::string{"continue"});
+    if (control != "ignore" && control != "continue" && control != "clip" &&
+        control != "terminate") {
+      throw std::runtime_error("unsupported Phase 9 ray control");
     }
     return;
   }
@@ -283,7 +304,8 @@ inline void validate_phase9_action_lifecycle(
     return;
   }
   if (kind == "inspect_system" || kind == "set_paused" ||
-      kind == "request_statistics") {
+      kind == "request_statistics" || kind == "inspect_particle_contact" ||
+      kind == "inspect_body_contact") {
     require_live_system(system_id());
     return;
   }
@@ -411,16 +433,20 @@ inline Json strip_phase9_for_legacy_decode(Json root) {
       checkpoint_predecessors.emplace(action_id, maybe_previous);
       predecessor_phases.emplace(action_id, maybe_previous_phase);
     }
-    for (auto& checkpoint : timeline.at("checkpoints")) {
+    Json retained_checkpoints = Json::array();
+    for (auto checkpoint : timeline.at("checkpoints")) {
+      if (checkpoint.at("phase") == "phase9") continue;
       const auto after = checkpoint.at("after_action_id").get<std::string>();
       const auto found = checkpoint_predecessors.find(after);
       if (found == checkpoint_predecessors.end() || found->second.empty()) {
-        throw std::runtime_error("Phase 9 checkpoint has no legacy predecessor");
+        continue;
       }
       checkpoint["after_action_id"] = found->second;
       checkpoint["phase"] = predecessor_phases.at(after);
+      retained_checkpoints.push_back(std::move(checkpoint));
     }
     timeline["actions"] = std::move(retained_actions);
+    timeline["checkpoints"] = std::move(retained_checkpoints);
   }
   return root;
 }

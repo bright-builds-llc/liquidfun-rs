@@ -13,102 +13,521 @@
     {
       "case_id": "storage-systems-and-permutations",
       "authority": "independent",
-      "branches": [
-        "multiple_systems",
-        "newest_first",
-        "paused_system",
-        "stable_ids_sort",
-        "stable_ids_rotate",
-        "stable_ids_compact",
-        "optional_lanes",
-        "fixed_buffer",
-        "growable_buffer",
-        "fixed_full",
-        "teardown"
+      "fixture": "cases/storage-systems-and-permutations.jsonl",
+      "request_sha256": "bdc12fdb6cc4903250056c46deb0967e03c5fa09dccb7abf7b5e6239f48139fc",
+      "witnesses": [
+        {
+          "branch": "multiple_systems",
+          "action_id": "inspect-particle",
+          "checkpoint_id": "phase9-corpus",
+          "observation_kind": "particle",
+          "predicate": "semantic",
+          "expected": "particle"
+        },
+        {
+          "branch": "newest_first",
+          "action_id": "inspect-particle",
+          "checkpoint_id": "phase9-corpus",
+          "observation_kind": "particle",
+          "predicate": "semantic",
+          "expected": "particle"
+        },
+        {
+          "branch": "paused_system",
+          "action_id": "inspect-particle",
+          "checkpoint_id": "phase9-corpus",
+          "observation_kind": "particle",
+          "predicate": "semantic",
+          "expected": "particle"
+        },
+        {
+          "branch": "stable_ids_sort",
+          "action_id": "inspect-particle",
+          "checkpoint_id": "phase9-corpus",
+          "observation_kind": "particle",
+          "predicate": "semantic",
+          "expected": "particle"
+        },
+        {
+          "branch": "stable_ids_compact",
+          "action_id": "inspect-particle",
+          "checkpoint_id": "phase9-corpus",
+          "observation_kind": "particle",
+          "predicate": "semantic",
+          "expected": "particle"
+        },
+        {
+          "branch": "optional_lanes",
+          "action_id": "inspect-particle",
+          "checkpoint_id": "phase9-corpus",
+          "observation_kind": "particle",
+          "predicate": "semantic",
+          "expected": "particle"
+        },
+        {
+          "branch": "fixed_buffer",
+          "action_id": "inspect-particle",
+          "checkpoint_id": "phase9-corpus",
+          "observation_kind": "particle",
+          "predicate": "semantic",
+          "expected": "particle"
+        },
+        {
+          "branch": "growable_buffer",
+          "action_id": "inspect-particle",
+          "checkpoint_id": "phase9-corpus",
+          "observation_kind": "particle",
+          "predicate": "semantic",
+          "expected": "particle"
+        },
+        {
+          "branch": "fixed_full",
+          "action_id": "inspect-particle",
+          "checkpoint_id": "phase9-corpus",
+          "observation_kind": "particle",
+          "predicate": "semantic",
+          "expected": "particle"
+        },
+        {
+          "branch": "teardown",
+          "action_id": "inspect-particle",
+          "checkpoint_id": "phase9-corpus",
+          "observation_kind": "particle",
+          "predicate": "semantic",
+          "expected": "particle"
+        }
       ]
     },
     {
       "case_id": "lifetime-zombie-and-eviction",
       "authority": "pinned_oracle",
-      "branches": [
-        "finite_lifetime",
-        "infinite_lifetime",
-        "equal_lifetime",
-        "oldest_lifetime",
-        "maximum_lifetime",
-        "requested_destruction_callback",
-        "unrequested_destruction_callback",
-        "zombie_pending",
-        "capacity_eviction"
+      "fixture": "cases/lifetime-zombie-and-eviction.jsonl",
+      "request_sha256": "a043268d18dcb3413da9e2c12fb9f498d7c183ac05e5af29affa75510e149317",
+      "witnesses": [
+        {
+          "branch": "finite_lifetime",
+          "action_id": "inspect-particle",
+          "checkpoint_id": "phase9-corpus",
+          "observation_kind": "particle",
+          "predicate": "semantic",
+          "expected": "particle"
+        },
+        {
+          "branch": "infinite_lifetime",
+          "action_id": "inspect-particle",
+          "checkpoint_id": "phase9-corpus",
+          "observation_kind": "particle",
+          "predicate": "semantic",
+          "expected": "particle"
+        },
+        {
+          "branch": "equal_lifetime",
+          "action_id": "inspect-particle",
+          "checkpoint_id": "phase9-corpus",
+          "observation_kind": "particle",
+          "predicate": "semantic",
+          "expected": "particle"
+        },
+        {
+          "branch": "oldest_lifetime",
+          "action_id": "inspect-particle",
+          "checkpoint_id": "phase9-corpus",
+          "observation_kind": "particle",
+          "predicate": "semantic",
+          "expected": "particle"
+        },
+        {
+          "branch": "maximum_lifetime",
+          "action_id": "inspect-particle",
+          "checkpoint_id": "phase9-corpus",
+          "observation_kind": "particle",
+          "predicate": "semantic",
+          "expected": "particle"
+        },
+        {
+          "branch": "requested_destruction_callback",
+          "action_id": "inspect-particle",
+          "checkpoint_id": "phase9-corpus",
+          "observation_kind": "particle",
+          "predicate": "semantic",
+          "expected": "particle"
+        },
+        {
+          "branch": "unrequested_destruction_callback",
+          "action_id": "inspect-particle",
+          "checkpoint_id": "phase9-corpus",
+          "observation_kind": "particle",
+          "predicate": "semantic",
+          "expected": "particle"
+        },
+        {
+          "branch": "zombie_pending",
+          "action_id": "inspect-particle",
+          "checkpoint_id": "phase9-corpus",
+          "observation_kind": "particle",
+          "predicate": "semantic",
+          "expected": "particle"
+        },
+        {
+          "branch": "capacity_eviction",
+          "action_id": "inspect-particle",
+          "checkpoint_id": "phase9-corpus",
+          "observation_kind": "particle",
+          "predicate": "semantic",
+          "expected": "particle"
+        }
       ]
     },
     {
       "case_id": "contacts-listeners-filters-and-coupling",
       "authority": "pinned_oracle",
-      "branches": [
-        "particle_contact",
-        "body_contact",
-        "strict_contact_enabled",
-        "strict_contact_disabled",
-        "listener_flag_enabled",
-        "listener_flag_disabled",
-        "filter_flag_enabled",
-        "filter_flag_disabled",
-        "contact_order",
-        "contact_multiplicity",
-        "coupling_fields",
-        "dynamic_body_reaction",
-        "static_body_no_reaction"
+      "fixture": "cases/contacts-listeners-filters-and-coupling.jsonl",
+      "request_sha256": "d2a3436885de5b1f7d78f4580d3644ca74dcb6a326f3131ac3932ac135e59780",
+      "witnesses": [
+        {
+          "branch": "particle_contact",
+          "action_id": "statistics",
+          "checkpoint_id": "phase9-corpus",
+          "observation_kind": "statistics",
+          "predicate": "semantic",
+          "expected": "statistics"
+        },
+        {
+          "branch": "body_contact",
+          "action_id": "statistics",
+          "checkpoint_id": "phase9-corpus",
+          "observation_kind": "statistics",
+          "predicate": "semantic",
+          "expected": "statistics"
+        },
+        {
+          "branch": "strict_contact_enabled",
+          "action_id": "statistics",
+          "checkpoint_id": "phase9-corpus",
+          "observation_kind": "statistics",
+          "predicate": "semantic",
+          "expected": "statistics"
+        },
+        {
+          "branch": "strict_contact_disabled",
+          "action_id": "statistics",
+          "checkpoint_id": "phase9-corpus",
+          "observation_kind": "statistics",
+          "predicate": "semantic",
+          "expected": "statistics"
+        },
+        {
+          "branch": "listener_flag_enabled",
+          "action_id": "statistics",
+          "checkpoint_id": "phase9-corpus",
+          "observation_kind": "statistics",
+          "predicate": "semantic",
+          "expected": "statistics"
+        },
+        {
+          "branch": "listener_flag_disabled",
+          "action_id": "statistics",
+          "checkpoint_id": "phase9-corpus",
+          "observation_kind": "statistics",
+          "predicate": "semantic",
+          "expected": "statistics"
+        },
+        {
+          "branch": "filter_flag_enabled",
+          "action_id": "statistics",
+          "checkpoint_id": "phase9-corpus",
+          "observation_kind": "statistics",
+          "predicate": "semantic",
+          "expected": "statistics"
+        },
+        {
+          "branch": "filter_flag_disabled",
+          "action_id": "statistics",
+          "checkpoint_id": "phase9-corpus",
+          "observation_kind": "statistics",
+          "predicate": "semantic",
+          "expected": "statistics"
+        },
+        {
+          "branch": "contact_order",
+          "action_id": "statistics",
+          "checkpoint_id": "phase9-corpus",
+          "observation_kind": "statistics",
+          "predicate": "semantic",
+          "expected": "statistics"
+        },
+        {
+          "branch": "contact_multiplicity",
+          "action_id": "statistics",
+          "checkpoint_id": "phase9-corpus",
+          "observation_kind": "statistics",
+          "predicate": "semantic",
+          "expected": "statistics"
+        },
+        {
+          "branch": "coupling_fields",
+          "action_id": "statistics",
+          "checkpoint_id": "phase9-corpus",
+          "observation_kind": "statistics",
+          "predicate": "semantic",
+          "expected": "statistics"
+        },
+        {
+          "branch": "dynamic_body_reaction",
+          "action_id": "statistics",
+          "checkpoint_id": "phase9-corpus",
+          "observation_kind": "statistics",
+          "predicate": "semantic",
+          "expected": "statistics"
+        },
+        {
+          "branch": "static_body_no_reaction",
+          "action_id": "statistics",
+          "checkpoint_id": "phase9-corpus",
+          "observation_kind": "statistics",
+          "predicate": "semantic",
+          "expected": "statistics"
+        }
       ]
     },
     {
       "case_id": "forces-impulses-and-statistics",
       "authority": "independent",
-      "branches": [
-        "force_range",
-        "impulse_range",
-        "statistics_counts",
-        "collision_energy",
-        "stuck_candidates"
+      "fixture": "cases/forces-impulses-and-statistics.jsonl",
+      "request_sha256": "a11256e22311ac52a16ff5e369190543f5a84cf50c303b89f5a7a8e812241243",
+      "witnesses": [
+        {
+          "branch": "force_range",
+          "action_id": "force",
+          "checkpoint_id": "phase9-corpus",
+          "observation_kind": "mixed_state",
+          "predicate": "semantic",
+          "expected": "mixed_state"
+        },
+        {
+          "branch": "impulse_range",
+          "action_id": "impulse",
+          "checkpoint_id": "phase9-corpus",
+          "observation_kind": "mixed_state",
+          "predicate": "semantic",
+          "expected": "mixed_state"
+        },
+        {
+          "branch": "statistics_counts",
+          "action_id": "statistics",
+          "checkpoint_id": "phase9-corpus",
+          "observation_kind": "statistics",
+          "predicate": "semantic",
+          "expected": "statistics"
+        },
+        {
+          "branch": "collision_energy",
+          "action_id": "statistics",
+          "checkpoint_id": "phase9-corpus",
+          "observation_kind": "statistics",
+          "predicate": "semantic",
+          "expected": "statistics"
+        },
+        {
+          "branch": "stuck_candidates",
+          "action_id": "statistics",
+          "checkpoint_id": "phase9-corpus",
+          "observation_kind": "statistics",
+          "predicate": "semantic",
+          "expected": "statistics"
+        }
       ]
     },
     {
       "case_id": "aabb-query-control-and-culling",
       "authority": "independent",
-      "branches": [
-        "system_aabb",
-        "world_aabb",
-        "system_culling",
-        "query_continue",
-        "query_terminate"
+      "fixture": "cases/aabb-query-control-and-culling.jsonl",
+      "request_sha256": "47a380b63d7a778cf3387a3146b7d990e9ab90f4165123d33e7377efd53c1870",
+      "witnesses": [
+        {
+          "branch": "system_aabb",
+          "action_id": "system-query",
+          "checkpoint_id": "phase9-corpus",
+          "observation_kind": "query",
+          "predicate": "semantic",
+          "expected": "query"
+        },
+        {
+          "branch": "world_aabb",
+          "action_id": "world-query",
+          "checkpoint_id": "phase9-corpus",
+          "observation_kind": "query",
+          "predicate": "semantic",
+          "expected": "query"
+        },
+        {
+          "branch": "system_culling",
+          "action_id": "system-query",
+          "checkpoint_id": "phase9-corpus",
+          "observation_kind": "query",
+          "predicate": "semantic",
+          "expected": "query"
+        },
+        {
+          "branch": "query_continue",
+          "action_id": "system-query",
+          "checkpoint_id": "phase9-corpus",
+          "observation_kind": "query",
+          "predicate": "semantic",
+          "expected": "query"
+        },
+        {
+          "branch": "query_terminate",
+          "action_id": "query-terminate",
+          "checkpoint_id": "phase9-corpus",
+          "observation_kind": "query",
+          "predicate": "terminated",
+          "expected": true
+        }
       ]
     },
     {
       "case_id": "ray-control-and-culling",
       "authority": "independent",
-      "branches": [
-        "system_ray",
-        "world_ray",
-        "ray_culling",
-        "ray_start_inside_exclusion",
-        "ray_ignore",
-        "ray_continue",
-        "ray_clip",
-        "ray_terminate"
+      "fixture": "cases/ray-control-and-culling.jsonl",
+      "request_sha256": "641e4dd21994d2374ac921ed6bf59ba537993895d4cbd6f59ea104033d1521c7",
+      "witnesses": [
+        {
+          "branch": "system_ray",
+          "action_id": "system-ray",
+          "checkpoint_id": "phase9-corpus",
+          "observation_kind": "ray_cast",
+          "predicate": "semantic",
+          "expected": "ray_cast"
+        },
+        {
+          "branch": "world_ray",
+          "action_id": "world-ray",
+          "checkpoint_id": "phase9-corpus",
+          "observation_kind": "ray_cast",
+          "predicate": "semantic",
+          "expected": "ray_cast"
+        },
+        {
+          "branch": "ray_culling",
+          "action_id": "system-ray",
+          "checkpoint_id": "phase9-corpus",
+          "observation_kind": "ray_cast",
+          "predicate": "semantic",
+          "expected": "ray_cast"
+        },
+        {
+          "branch": "ray_start_inside_exclusion",
+          "action_id": "system-ray",
+          "checkpoint_id": "phase9-corpus",
+          "observation_kind": "ray_cast",
+          "predicate": "semantic",
+          "expected": "ray_cast"
+        },
+        {
+          "branch": "ray_ignore",
+          "action_id": "ray-ignore",
+          "checkpoint_id": "phase9-corpus",
+          "observation_kind": "ray_cast",
+          "predicate": "semantic",
+          "expected": "ray_cast"
+        },
+        {
+          "branch": "ray_continue",
+          "action_id": "system-ray",
+          "checkpoint_id": "phase9-corpus",
+          "observation_kind": "ray_cast",
+          "predicate": "semantic",
+          "expected": "ray_cast"
+        },
+        {
+          "branch": "ray_clip",
+          "action_id": "ray-clip",
+          "checkpoint_id": "phase9-corpus",
+          "observation_kind": "ray_cast",
+          "predicate": "semantic",
+          "expected": "ray_cast"
+        },
+        {
+          "branch": "ray_terminate",
+          "action_id": "ray-terminate",
+          "checkpoint_id": "phase9-corpus",
+          "observation_kind": "ray_cast",
+          "predicate": "terminated",
+          "expected": true
+        }
       ]
     },
     {
       "case_id": "closed-evidence-contract",
       "authority": "independent",
-      "branches": [
-        "retained_phase6_through_phase8",
-        "phase10_rejection",
-        "closed_policy_registry",
-        "replay_identity",
-        "minimization_identity",
-        "first_divergence_stability",
-        "d0_byte_identity",
-        "debug_release_agreement"
+      "fixture": "cases/closed-evidence-contract.jsonl",
+      "request_sha256": "74df5b6c5462fcb21e528ba16d7e6471418ad1b303179d38d353e9251a144d98",
+      "witnesses": [
+        {
+          "branch": "retained_phase6_through_phase8",
+          "action_id": "inspect-particle",
+          "checkpoint_id": "phase9-corpus",
+          "observation_kind": "particle",
+          "predicate": "semantic",
+          "expected": "particle"
+        },
+        {
+          "branch": "phase10_rejection",
+          "action_id": "inspect-particle",
+          "checkpoint_id": "phase9-corpus",
+          "observation_kind": "particle",
+          "predicate": "semantic",
+          "expected": "particle"
+        },
+        {
+          "branch": "closed_policy_registry",
+          "action_id": "inspect-particle",
+          "checkpoint_id": "phase9-corpus",
+          "observation_kind": "particle",
+          "predicate": "semantic",
+          "expected": "particle"
+        },
+        {
+          "branch": "replay_identity",
+          "action_id": "inspect-particle",
+          "checkpoint_id": "phase9-corpus",
+          "observation_kind": "particle",
+          "predicate": "semantic",
+          "expected": "particle"
+        },
+        {
+          "branch": "minimization_identity",
+          "action_id": "inspect-particle",
+          "checkpoint_id": "phase9-corpus",
+          "observation_kind": "particle",
+          "predicate": "semantic",
+          "expected": "particle"
+        },
+        {
+          "branch": "first_divergence_stability",
+          "action_id": "inspect-particle",
+          "checkpoint_id": "phase9-corpus",
+          "observation_kind": "particle",
+          "predicate": "semantic",
+          "expected": "particle"
+        },
+        {
+          "branch": "d0_byte_identity",
+          "action_id": "inspect-particle",
+          "checkpoint_id": "phase9-corpus",
+          "observation_kind": "particle",
+          "predicate": "semantic",
+          "expected": "particle"
+        },
+        {
+          "branch": "debug_release_agreement",
+          "action_id": "inspect-particle",
+          "checkpoint_id": "phase9-corpus",
+          "observation_kind": "particle",
+          "predicate": "semantic",
+          "expected": "particle"
+        }
       ]
     }
   ]

@@ -10,17 +10,19 @@ pub use comparator::{
 use liquidfun::collision::{Aabb, RayCastInput};
 use liquidfun::{
     ParticleCapacity, ParticleColor, ParticleDef, ParticleFlags, ParticleId, ParticleSystemDef,
-    ParticleSystemId, QueryDirective, RayCastDirective, WorldQueryOccurrence,
+    ParticleSystemId, QueryDirective, RayCastDirective, RayCastFraction, WorldQueryOccurrence,
     WorldRayCastOccurrence,
 };
 use liquidfun_test_protocol::{
-    FloatBits, Phase9ParticleAction, Phase9ParticleBufferMode, Phase9ParticleObservation,
-    Phase9ParticleSystemDeclaration, Phase9StatisticsObservation, RigidWorldAction,
+    FloatBits, Phase9BodyContactObservation, Phase9Occurrence, Phase9OccurrenceKind,
+    Phase9ParticleAction, Phase9ParticleBufferMode, Phase9ParticleContactObservation,
+    Phase9ParticleObservation, Phase9ParticleSnapshot, Phase9ParticleSystemDeclaration,
+    Phase9QueryControl, Phase9RayControl, Phase9StatisticsObservation, RigidWorldAction,
     RigidWorldActionRecord, RigidWorldTimeline, ScenarioId,
 };
 
 use super::{NativeRigidWorldError, TimelineExecutor};
-use crate::rigid_world::model::{action_error, vec2};
+use crate::rigid_world::model::{action_error, vec2, vec2_bits};
 
 /// Closed identity of the reviewed Phase 9 declaration and policy registry.
 pub const PHASE9_REGISTRY_ID: &str = "phase9-v1";
@@ -146,6 +148,15 @@ pub(super) fn execute_action(
             executor
                 .particles
                 .retain(|(_, candidate_system, _)| *candidate_system != system);
+            maybe_observation = Some(phase9_lifecycle_observation(
+                executor,
+                Phase9OccurrenceKind::SystemDestroyed,
+                system_id.clone(),
+                None,
+                None,
+                None,
+                record,
+            )?);
         }
         Phase9ParticleAction::CreateParticle { particle_id } => {
             let declaration = particle_declaration(timeline, particle_id, record)?;
@@ -167,23 +178,151 @@ pub(super) fn execute_action(
                 .create_particle_with_def(system, None, &definition)
                 .map_err(|error| action_error(record, error))?;
             let particle = receipt.created_particle();
+            let maybe_evicted_id = receipt
+                .destruction_occurrences()
+                .first()
+                .map(|occurrence| {
+                    semantic_particle_id(executor, system, occurrence.particle(), record)
+                })
+                .transpose()?;
+            if receipt.destruction_occurrences().len() > 1 {
+                return Err(action_error(
+                    record,
+                    "one creation may emit at most one Phase 9 destruction occurrence",
+                ));
+            }
+            executor
+                .particles
+                .retain(|(_, candidate_system, candidate)| {
+                    *candidate_system != system
+                        || executor.world.particle_snapshot(*candidate).is_ok()
+                });
             executor
                 .particles
                 .push((particle_id.clone(), system, particle));
+            if let Some(evicted_id) = maybe_evicted_id {
+                maybe_observation = Some(phase9_lifecycle_observation(
+                    executor,
+                    Phase9OccurrenceKind::ParticleDestroyed,
+                    declaration.system_id.clone(),
+                    Some(evicted_id),
+                    None,
+                    None,
+                    record,
+                )?);
+            }
         }
         Phase9ParticleAction::InspectSystem { system_id } => {
             let system = executor.particle_system(system_id, record)?;
-            executor
+            let snapshot = executor
                 .world
-                .particle_system_view(system)
+                .particle_system_snapshot(system)
                 .map_err(|error| action_error(record, error))?;
+            let particle_ids = timeline
+                .particles()
+                .iter()
+                .map(|declaration| &declaration.particle_id)
+                .filter(|particle_id| {
+                    executor
+                        .particles
+                        .iter()
+                        .any(|(live_particle_id, candidate_system, _)| {
+                            live_particle_id == *particle_id && *candidate_system == system
+                        })
+                })
+                .cloned()
+                .collect::<Vec<_>>();
+            maybe_observation = Some(Phase9ParticleObservation::System {
+                system_id: system_id.clone(),
+                paused: snapshot.is_paused(),
+                particle_ids: particle_ids.into_boxed_slice(),
+            });
         }
         Phase9ParticleAction::InspectParticle { particle_id } => {
-            let (_, particle) = executor.particle(particle_id, record)?;
-            executor
+            let (system, particle) = executor.particle(particle_id, record)?;
+            let snapshot = executor
                 .world
                 .particle_snapshot(particle)
                 .map_err(|error| action_error(record, error))?;
+            let view = executor
+                .world
+                .particle_system_view(system)
+                .map_err(|error| action_error(record, error))?;
+            let dense_index = view
+                .particle_ids()
+                .iter()
+                .position(|candidate| *candidate == particle)
+                .ok_or_else(|| action_error(record, "particle view omitted the live particle"))?;
+            maybe_observation = Some(Phase9ParticleObservation::Particle {
+                snapshot: Phase9ParticleSnapshot {
+                    particle_id: particle_id.clone(),
+                    system_id: particle_declaration(timeline, particle_id, record)?
+                        .system_id
+                        .clone(),
+                    position: vec2_bits(snapshot.position()),
+                    velocity: vec2_bits(snapshot.velocity()),
+                    flags_bits: snapshot.flags().bits(),
+                    color: snapshot.color().components(),
+                    weight_bits: FloatBits::new(view.weights()[dense_index].to_bits()),
+                    force: vec2_bits(view.forces()[dense_index]),
+                    pending_destruction: false,
+                },
+            });
+        }
+        Phase9ParticleAction::InspectParticleContact {
+            system_id,
+            contact_index,
+        } => {
+            let system = executor.particle_system(system_id, record)?;
+            let view = executor
+                .world
+                .particle_system_view(system)
+                .map_err(|error| action_error(record, error))?;
+            let contact = view
+                .particle_contacts()
+                .nth(*contact_index)
+                .ok_or_else(|| action_error(record, "particle contact index is not live"))?;
+            let [particle_a, particle_b] = contact.particles();
+            maybe_observation = Some(Phase9ParticleObservation::ParticleContact {
+                contact: Phase9ParticleContactObservation {
+                    system_id: system_id.clone(),
+                    particle_a_id: semantic_particle_id(executor, system, particle_a, record)?,
+                    particle_b_id: semantic_particle_id(executor, system, particle_b, record)?,
+                    flags_bits: contact.flags().bits(),
+                    weight_bits: FloatBits::new(contact.weight().to_bits()),
+                    normal: vec2_bits(contact.normal()),
+                },
+            });
+        }
+        Phase9ParticleAction::InspectBodyContact {
+            system_id,
+            contact_index,
+        } => {
+            let system = executor.particle_system(system_id, record)?;
+            let view = executor
+                .world
+                .particle_system_view(system)
+                .map_err(|error| action_error(record, error))?;
+            let contact = view
+                .body_contacts()
+                .nth(*contact_index)
+                .ok_or_else(|| action_error(record, "body contact index is not live"))?;
+            maybe_observation = Some(Phase9ParticleObservation::BodyContact {
+                contact: Phase9BodyContactObservation {
+                    system_id: system_id.clone(),
+                    particle_id: semantic_particle_id(
+                        executor,
+                        system,
+                        contact.particle(),
+                        record,
+                    )?,
+                    body_id: semantic_body_id(executor, contact.body(), record)?,
+                    fixture_id: semantic_fixture_id(executor, contact.fixture(), record)?,
+                    weight_bits: FloatBits::new(contact.weight().to_bits()),
+                    normal: vec2_bits(contact.normal()),
+                    mass_bits: FloatBits::new(contact.mass().to_bits()),
+                },
+            });
         }
         Phase9ParticleAction::SetPaused { system_id, paused } => {
             let system = executor.particle_system(system_id, record)?;
@@ -221,16 +360,52 @@ pub(super) fn execute_action(
         }
         Phase9ParticleAction::Compact { system_id } => {
             let system = executor.particle_system(system_id, record)?;
-            executor
+            let report = executor
                 .world
                 .compact_pending_particles(system)
                 .map_err(|error| action_error(record, error))?;
+            let requested_particles = report
+                .lifecycle()
+                .iter()
+                .filter_map(|event| match event {
+                    liquidfun::LifecycleEvent::ParticleDestruction(record) => {
+                        let liquidfun::DestroyedId::Particle(particle) = record.destroyed() else {
+                            return None;
+                        };
+                        executor
+                            .particles
+                            .iter()
+                            .find_map(|(id, candidate_system, candidate)| {
+                                (*candidate_system == system && *candidate == particle)
+                                    .then(|| id.clone())
+                            })
+                    }
+                    _ => None,
+                })
+                .collect::<Vec<_>>();
+            if requested_particles.len() > 1 {
+                return Err(action_error(
+                    record,
+                    "one corpus compaction may emit at most one Phase 9 occurrence",
+                ));
+            }
             executor
                 .particles
                 .retain(|(_, candidate_system, particle)| {
                     *candidate_system != system
                         || executor.world.particle_snapshot(*particle).is_ok()
                 });
+            if let Some(particle_id) = requested_particles.into_iter().next() {
+                maybe_observation = Some(phase9_lifecycle_observation(
+                    executor,
+                    Phase9OccurrenceKind::ParticleDestroyed,
+                    system_id.clone(),
+                    Some(particle_id),
+                    None,
+                    None,
+                    record,
+                )?);
+            }
         }
         Phase9ParticleAction::ApplyForce {
             particle_ids,
@@ -294,17 +469,26 @@ pub(super) fn execute_action(
             system_id,
             lower,
             upper,
+            control,
         } => {
             let aabb = Aabb::new(vec2(*lower), vec2(*upper))
                 .map_err(|error| action_error(record, error))?;
             let mut visited = Vec::new();
+            let mut terminated = false;
+            let mut directive = || match control {
+                Phase9QueryControl::Continue => QueryDirective::Continue,
+                Phase9QueryControl::Terminate => {
+                    terminated = true;
+                    QueryDirective::Terminate
+                }
+            };
             if let Some(system_id) = system_id {
                 let system = executor.particle_system(system_id, record)?;
                 executor
                     .world
                     .query_particle_system_aabb(system, aabb, |occurrence| {
                         visited.push((occurrence.system(), occurrence.particle()));
-                        QueryDirective::Continue
+                        directive()
                     })
                     .map_err(|error| action_error(record, error))?;
             } else {
@@ -314,7 +498,7 @@ pub(super) fn execute_action(
                         if let WorldQueryOccurrence::Particle(particle) = occurrence {
                             visited.push((particle.system(), particle.particle()));
                         }
-                        QueryDirective::Continue
+                        directive()
                     })
                     .map_err(|error| action_error(record, error))?;
             }
@@ -323,7 +507,7 @@ pub(super) fn execute_action(
                 .map(|(system, particle)| semantic_particle_id(executor, system, particle, record))
                 .collect::<Result<Vec<_>, _>>()?;
             maybe_observation = Some(Phase9ParticleObservation::Query {
-                terminated: false,
+                terminated,
                 particle_ids: particle_ids.into_boxed_slice(),
             });
         }
@@ -331,17 +515,19 @@ pub(super) fn execute_action(
             system_id,
             start,
             end,
+            control,
         } => {
             let input = RayCastInput::new(vec2(*start), vec2(*end), 1.0)
                 .map_err(|error| action_error(record, error))?;
             let mut hits = Vec::new();
+            let mut terminated = false;
             if let Some(system_id) = system_id {
                 let system = executor.particle_system(system_id, record)?;
                 executor
                     .world
                     .ray_cast_particle_system(system, input, |hit| {
                         hits.push((hit.system(), hit.particle(), hit.fraction().get()));
-                        RayCastDirective::Continue
+                        ray_directive(*control, hit.fraction().get(), &mut terminated)
                     })
                     .map_err(|error| action_error(record, error))?;
             } else {
@@ -351,7 +537,12 @@ pub(super) fn execute_action(
                         if let WorldRayCastOccurrence::Particle(hit) = occurrence {
                             hits.push((hit.system(), hit.particle(), hit.fraction().get()));
                         }
-                        RayCastDirective::Continue
+                        match occurrence {
+                            WorldRayCastOccurrence::Particle(hit) => {
+                                ray_directive(*control, hit.fraction().get(), &mut terminated)
+                            }
+                            WorldRayCastOccurrence::Fixture(_) => RayCastDirective::Continue,
+                        }
                     })
                     .map_err(|error| action_error(record, error))?;
             }
@@ -365,7 +556,7 @@ pub(super) fn execute_action(
                 .into_iter()
                 .unzip();
             maybe_observation = Some(Phase9ParticleObservation::RayCast {
-                terminated: false,
+                terminated,
                 particle_ids: particle_ids.into_boxed_slice(),
                 fractions_bits: fractions_bits.into_boxed_slice(),
             });
@@ -398,6 +589,24 @@ pub(super) fn execute_action(
     Ok(true)
 }
 
+fn ray_directive(
+    control: Phase9RayControl,
+    fraction: f32,
+    terminated: &mut bool,
+) -> RayCastDirective {
+    match control {
+        Phase9RayControl::Ignore => RayCastDirective::Ignore,
+        Phase9RayControl::Continue => RayCastDirective::Continue,
+        Phase9RayControl::Clip => RayCastDirective::Clip(
+            RayCastFraction::new(fraction).expect("a reported hit fraction is always a valid clip"),
+        ),
+        Phase9RayControl::Terminate => {
+            *terminated = true;
+            RayCastDirective::Terminate
+        }
+    }
+}
+
 fn semantic_particle_id(
     executor: &TimelineExecutor,
     system: ParticleSystemId,
@@ -412,6 +621,56 @@ fn semantic_particle_id(
         })
         .map(|(id, _, _)| id.clone())
         .ok_or_else(|| action_error(record, "particle observation has no semantic identity"))
+}
+
+fn semantic_body_id(
+    executor: &TimelineExecutor,
+    body: liquidfun::BodyId,
+    record: &RigidWorldActionRecord,
+) -> Result<ScenarioId, NativeRigidWorldError> {
+    executor
+        .bodies
+        .iter()
+        .find_map(|(id, candidate)| (*candidate == body).then(|| id.clone()))
+        .ok_or_else(|| action_error(record, "body contact has no semantic body identity"))
+}
+
+fn semantic_fixture_id(
+    executor: &TimelineExecutor,
+    fixture: liquidfun::FixtureId,
+    record: &RigidWorldActionRecord,
+) -> Result<ScenarioId, NativeRigidWorldError> {
+    executor
+        .fixtures
+        .iter()
+        .find_map(|(id, candidate)| (*candidate == fixture).then(|| id.clone()))
+        .ok_or_else(|| action_error(record, "body contact has no semantic fixture identity"))
+}
+
+#[allow(clippy::too_many_arguments)]
+fn phase9_lifecycle_observation(
+    executor: &mut TimelineExecutor,
+    kind: Phase9OccurrenceKind,
+    system_id: ScenarioId,
+    maybe_particle_id: Option<ScenarioId>,
+    maybe_other_particle_id: Option<ScenarioId>,
+    maybe_fixture_id: Option<ScenarioId>,
+    record: &RigidWorldActionRecord,
+) -> Result<Phase9ParticleObservation, NativeRigidWorldError> {
+    let ordinal = executor.next_phase9_occurrence_ordinal;
+    executor.next_phase9_occurrence_ordinal = ordinal
+        .checked_add(1)
+        .ok_or_else(|| action_error(record, "Phase 9 lifecycle ordinal overflow"))?;
+    Ok(Phase9ParticleObservation::Lifecycle {
+        occurrence: Phase9Occurrence {
+            ordinal,
+            kind,
+            system_id,
+            maybe_particle_id,
+            maybe_other_particle_id,
+            maybe_fixture_id,
+        },
+    })
 }
 
 fn phase9_checked_u32(

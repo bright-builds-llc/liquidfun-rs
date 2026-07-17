@@ -5,7 +5,9 @@ use super::{
     RigidWorldErrorKind, RigidWorldObservation, validation,
 };
 use crate::{
-    Phase9ParticleAction, Phase9ParticleSystemDeclaration, RigidWorldTimeline, ScenarioId,
+    Phase9BodyContactObservation, Phase9Occurrence, Phase9OccurrenceKind, Phase9ParticleAction,
+    Phase9ParticleContactObservation, Phase9ParticleSystemDeclaration, Phase9QueryControl,
+    Phase9RayControl, RigidWorldTimeline, ScenarioId,
 };
 
 pub(super) struct Phase9ResultState<'a> {
@@ -14,6 +16,8 @@ pub(super) struct Phase9ResultState<'a> {
     live_systems: HashSet<ScenarioId>,
     live_particles: HashSet<ScenarioId>,
     pending_particles: HashSet<ScenarioId>,
+    maybe_expected_occurrence: Option<Phase9Occurrence>,
+    next_occurrence_ordinal: u32,
 }
 
 impl<'a> Phase9ResultState<'a> {
@@ -28,10 +32,13 @@ impl<'a> Phase9ResultState<'a> {
             live_systems: HashSet::new(),
             live_particles: HashSet::new(),
             pending_particles: HashSet::new(),
+            maybe_expected_occurrence: None,
+            next_occurrence_ordinal: 0,
         }
     }
 
     pub(super) fn apply(&mut self, action: &Phase9ParticleAction) {
+        self.maybe_expected_occurrence = None;
         match action {
             Phase9ParticleAction::CreateSystem { system_id } => {
                 self.live_systems.insert(system_id.clone());
@@ -43,8 +50,31 @@ impl<'a> Phase9ResultState<'a> {
                     .retain(|particle_id| owners.get(particle_id) != Some(system_id));
                 self.pending_particles
                     .retain(|particle_id| owners.get(particle_id) != Some(system_id));
+                self.set_expected_occurrence(
+                    Phase9OccurrenceKind::SystemDestroyed,
+                    system_id.clone(),
+                    None,
+                );
             }
             Phase9ParticleAction::CreateParticle { particle_id } => {
+                if let Some(system_id) = self.particle_owners.get(particle_id).cloned()
+                    && self.visible_particle_ids_for_system(&system_id).len()
+                        >= self.system_capacity(&system_id)
+                    && let Some(victim) = self.capacity_victim(&system_id)
+                {
+                    if self
+                        .particle_declaration(&victim)
+                        .is_some_and(|declaration| declaration.flags_bits & (1 << 9) != 0)
+                    {
+                        self.set_expected_occurrence(
+                            Phase9OccurrenceKind::ParticleDestroyed,
+                            system_id,
+                            Some(victim.clone()),
+                        );
+                    }
+                    self.live_particles.remove(&victim);
+                    self.pending_particles.remove(&victim);
+                }
                 self.live_particles.insert(particle_id.clone());
             }
             Phase9ParticleAction::MarkForDestruction { particle_id } => {
@@ -52,12 +82,31 @@ impl<'a> Phase9ResultState<'a> {
                 self.pending_particles.insert(particle_id.clone());
             }
             Phase9ParticleAction::Compact { system_id } => {
+                let maybe_requested = self
+                    .timeline
+                    .particles()
+                    .iter()
+                    .find(|declaration| {
+                        &declaration.system_id == system_id
+                            && self.pending_particles.contains(&declaration.particle_id)
+                            && declaration.flags_bits & (1 << 9) != 0
+                    })
+                    .map(|declaration| declaration.particle_id.clone());
+                if let Some(particle_id) = maybe_requested {
+                    self.set_expected_occurrence(
+                        Phase9OccurrenceKind::ParticleDestroyed,
+                        system_id.clone(),
+                        Some(particle_id),
+                    );
+                }
                 let owners = &self.particle_owners;
                 self.pending_particles
                     .retain(|particle_id| owners.get(particle_id) != Some(system_id));
             }
             Phase9ParticleAction::InspectSystem { .. }
             | Phase9ParticleAction::InspectParticle { .. }
+            | Phase9ParticleAction::InspectParticleContact { .. }
+            | Phase9ParticleAction::InspectBodyContact { .. }
             | Phase9ParticleAction::SetPaused { .. }
             | Phase9ParticleAction::SetPosition { .. }
             | Phase9ParticleAction::SetVelocity { .. }
@@ -80,25 +129,71 @@ impl<'a> Phase9ResultState<'a> {
         };
         let matches = match (action, observation) {
             (
+                Phase9ParticleAction::InspectSystem { system_id },
+                Phase9ParticleObservation::System {
+                    system_id: observed_system_id,
+                    paused,
+                    particle_ids,
+                },
+            ) => {
+                observed_system_id == system_id
+                    && self
+                        .system_declaration(system_id)
+                        .is_some_and(|declaration| declaration.paused == *paused)
+                    && particle_ids.as_ref()
+                        == self.visible_particle_ids_for_system(system_id).as_slice()
+            }
+            (
+                Phase9ParticleAction::InspectParticle { particle_id },
+                Phase9ParticleObservation::Particle { snapshot },
+            ) => {
+                snapshot.particle_id == *particle_id
+                    && self.owner(particle_id) == Some(&snapshot.system_id)
+                    && self.live_particles.contains(particle_id)
+                    && !snapshot.pending_destruction
+                    && snapshot.position.x_bits.to_f32().is_finite()
+                    && snapshot.position.y_bits.to_f32().is_finite()
+                    && snapshot.velocity.x_bits.to_f32().is_finite()
+                    && snapshot.velocity.y_bits.to_f32().is_finite()
+                    && snapshot.weight_bits.to_f32().is_finite()
+                    && snapshot.force.x_bits.to_f32().is_finite()
+                    && snapshot.force.y_bits.to_f32().is_finite()
+            }
+            (
+                Phase9ParticleAction::InspectParticleContact { system_id, .. },
+                Phase9ParticleObservation::ParticleContact { contact },
+            ) => self.particle_contact_matches(system_id, contact),
+            (
+                Phase9ParticleAction::InspectBodyContact { system_id, .. },
+                Phase9ParticleObservation::BodyContact { contact },
+            ) => self.body_contact_matches(system_id, live_rigid, contact),
+            (
                 Phase9ParticleAction::RequestStatistics { system_id },
                 Phase9ParticleObservation::Statistics { statistics },
             ) => self.statistics_match(system_id, statistics),
             (
-                Phase9ParticleAction::QueryAabb { system_id, .. },
+                Phase9ParticleAction::QueryAabb {
+                    system_id, control, ..
+                },
                 Phase9ParticleObservation::Query {
                     terminated,
                     particle_ids,
                 },
-            ) => !terminated && self.selection_matches(system_id.as_ref(), particle_ids),
+            ) => {
+                control.termination_matches(*terminated, particle_ids)
+                    && self.selection_matches(system_id.as_ref(), particle_ids)
+            }
             (
-                Phase9ParticleAction::RayCast { system_id, .. },
+                Phase9ParticleAction::RayCast {
+                    system_id, control, ..
+                },
                 Phase9ParticleObservation::RayCast {
                     terminated,
                     particle_ids,
                     fractions_bits,
                 },
             ) => {
-                !terminated
+                control.termination_matches(*terminated, particle_ids)
                     && particle_ids.len() == fractions_bits.len()
                     && self.selection_matches(system_id.as_ref(), particle_ids)
                     && fractions_bits.iter().all(|bits| {
@@ -107,11 +202,14 @@ impl<'a> Phase9ResultState<'a> {
                     })
             }
             (
-                Phase9ParticleAction::CreateSystem { .. }
-                | Phase9ParticleAction::DestroySystem { .. }
+                Phase9ParticleAction::DestroySystem { .. }
                 | Phase9ParticleAction::CreateParticle { .. }
-                | Phase9ParticleAction::InspectSystem { .. }
-                | Phase9ParticleAction::InspectParticle { .. }
+                | Phase9ParticleAction::Compact { .. },
+                Phase9ParticleObservation::Lifecycle { occurrence },
+            ) if self.maybe_expected_occurrence.as_ref() == Some(occurrence) => true,
+            (
+                Phase9ParticleAction::CreateSystem { .. }
+                | Phase9ParticleAction::CreateParticle { .. }
                 | Phase9ParticleAction::SetPaused { .. }
                 | Phase9ParticleAction::SetPosition { .. }
                 | Phase9ParticleAction::SetVelocity { .. }
@@ -123,7 +221,7 @@ impl<'a> Phase9ResultState<'a> {
                     body_ids,
                     particle_ids,
                 },
-            ) => {
+            ) if self.maybe_expected_occurrence.is_none() => {
                 body_ids.as_ref()
                     == live_rigid
                         .body_ids
@@ -136,6 +234,69 @@ impl<'a> Phase9ResultState<'a> {
             _ => false,
         };
         if matches { Ok(()) } else { Err(mismatch()) }
+    }
+
+    fn set_expected_occurrence(
+        &mut self,
+        kind: Phase9OccurrenceKind,
+        system_id: ScenarioId,
+        maybe_particle_id: Option<ScenarioId>,
+    ) {
+        let ordinal = self.next_occurrence_ordinal;
+        self.next_occurrence_ordinal = self
+            .next_occurrence_ordinal
+            .checked_add(1)
+            .expect("bounded Phase 9 action count cannot overflow u32");
+        self.maybe_expected_occurrence = Some(Phase9Occurrence {
+            ordinal,
+            kind,
+            system_id,
+            maybe_particle_id,
+            maybe_other_particle_id: None,
+            maybe_fixture_id: None,
+        });
+    }
+
+    fn particle_contact_matches(
+        &self,
+        system_id: &ScenarioId,
+        contact: &Phase9ParticleContactObservation,
+    ) -> bool {
+        contact.system_id == *system_id
+            && self.owner(&contact.particle_a_id) == Some(system_id)
+            && self.owner(&contact.particle_b_id) == Some(system_id)
+            && self.live_particles.contains(&contact.particle_a_id)
+            && self.live_particles.contains(&contact.particle_b_id)
+            && contact.weight_bits.to_f32().is_finite()
+            && contact.normal.x_bits.to_f32().is_finite()
+            && contact.normal.y_bits.to_f32().is_finite()
+    }
+
+    fn body_contact_matches(
+        &self,
+        system_id: &ScenarioId,
+        live_rigid: &RigidCheckpointLiveIdentities<'_>,
+        contact: &Phase9BodyContactObservation,
+    ) -> bool {
+        contact.system_id == *system_id
+            && self.owner(&contact.particle_id) == Some(system_id)
+            && self.live_particles.contains(&contact.particle_id)
+            && live_rigid.body_ids.contains(&&contact.body_id)
+            && live_rigid.fixture_ids.contains(&&contact.fixture_id)
+            && contact.weight_bits.to_f32().is_finite()
+            && contact.normal.x_bits.to_f32().is_finite()
+            && contact.normal.y_bits.to_f32().is_finite()
+            && contact.mass_bits.to_f32().is_finite()
+    }
+
+    fn particle_declaration(
+        &self,
+        particle_id: &ScenarioId,
+    ) -> Option<&crate::Phase9ParticleDeclaration> {
+        self.timeline
+            .particles()
+            .iter()
+            .find(|declaration| &declaration.particle_id == particle_id)
     }
 
     fn owner(&self, particle_id: &ScenarioId) -> Option<&ScenarioId> {
@@ -153,6 +314,37 @@ impl<'a> Phase9ResultState<'a> {
             })
             .cloned()
             .collect()
+    }
+
+    fn visible_particle_ids_for_system(&self, system_id: &ScenarioId) -> Vec<ScenarioId> {
+        self.visible_particle_ids()
+            .into_iter()
+            .filter(|particle_id| self.owner(particle_id) == Some(system_id))
+            .collect()
+    }
+
+    fn system_capacity(&self, system_id: &ScenarioId) -> usize {
+        self.system_declaration(system_id)
+            .map_or(usize::MAX, |declaration| {
+                declaration.maximum_count.map_or_else(
+                    || declared_capacity(declaration),
+                    |maximum| maximum.min(declared_capacity(declaration)),
+                )
+            })
+    }
+
+    fn capacity_victim(&self, system_id: &ScenarioId) -> Option<ScenarioId> {
+        self.timeline
+            .particles()
+            .iter()
+            .filter(|declaration| {
+                &declaration.system_id == system_id
+                    && (self.live_particles.contains(&declaration.particle_id)
+                        || self.pending_particles.contains(&declaration.particle_id))
+                    && declaration.lifetime_bits.to_f32() > 0.0
+            })
+            .min_by_key(|declaration| declaration.lifetime_bits.bits())
+            .map(|declaration| declaration.particle_id.clone())
     }
 
     fn selection_matches(
@@ -209,6 +401,28 @@ impl<'a> Phase9ResultState<'a> {
             .particle_systems()
             .iter()
             .find(|declaration| &declaration.system_id == system_id)
+    }
+}
+
+trait Phase9TerminationControl {
+    fn termination_matches(&self, terminated: bool, particle_ids: &[ScenarioId]) -> bool;
+}
+
+impl Phase9TerminationControl for Phase9QueryControl {
+    fn termination_matches(&self, terminated: bool, particle_ids: &[ScenarioId]) -> bool {
+        match self {
+            Self::Continue => !terminated,
+            Self::Terminate => terminated == !particle_ids.is_empty(),
+        }
+    }
+}
+
+impl Phase9TerminationControl for Phase9RayControl {
+    fn termination_matches(&self, terminated: bool, particle_ids: &[ScenarioId]) -> bool {
+        match self {
+            Self::Ignore | Self::Continue | Self::Clip => !terminated,
+            Self::Terminate => terminated == !particle_ids.is_empty(),
+        }
     }
 }
 

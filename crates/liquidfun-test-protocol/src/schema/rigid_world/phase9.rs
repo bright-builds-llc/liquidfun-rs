@@ -83,8 +83,8 @@ pub(super) fn particle_action_schema() -> Value {
         tagged_probe_input("apply_force", &json!({ "particle_ids": identities(), "force": schema_ref("vec2_bits") }), &["particle_ids", "force"]),
         tagged_probe_input("apply_impulse", &json!({ "particle_ids": identities(), "impulse": schema_ref("vec2_bits") }), &["particle_ids", "impulse"]),
         tagged_probe_input("request_statistics", &system(), &["system_id"]),
-        tagged_probe_input("query_aabb", &json!({ "system_id": { "oneOf": [semantic_id_schema(), { "type": "null" }] }, "lower": schema_ref("vec2_bits"), "upper": schema_ref("vec2_bits") }), &["system_id", "lower", "upper"]),
-        tagged_probe_input("ray_cast", &json!({ "system_id": { "oneOf": [semantic_id_schema(), { "type": "null" }] }, "start": schema_ref("vec2_bits"), "end": schema_ref("vec2_bits") }), &["system_id", "start", "end"])
+        tagged_probe_input("query_aabb", &json!({ "system_id": { "oneOf": [semantic_id_schema(), { "type": "null" }] }, "lower": schema_ref("vec2_bits"), "upper": schema_ref("vec2_bits"), "control": { "enum": ["continue", "terminate"] } }), &["system_id", "lower", "upper"]),
+        tagged_probe_input("ray_cast", &json!({ "system_id": { "oneOf": [semantic_id_schema(), { "type": "null" }] }, "start": schema_ref("vec2_bits"), "end": schema_ref("vec2_bits"), "control": { "enum": ["ignore", "continue", "clip", "terminate"] } }), &["system_id", "start", "end"])
     ] })
 }
 
