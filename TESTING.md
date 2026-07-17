@@ -546,6 +546,20 @@ provenance, inventory, and the read-only evidence boundary. The
 `sanitizer-linux` job runs the same corpus with ASan abort/halt and UBSan
 halt/stacktrace behavior.
 
+The sanitizer preset has one approved pinned-upstream exception. In
+`third_party/liquidfun/liquidfun/Box2D/Box2D/Particle/b2ParticleSystem.cpp`,
+`computeRelativeTag` shifts the unavoidable neighbor offset `x = -1` at line
+352 (called from the contact-neighbor traversal at line 1841), which modern
+UBSan diagnoses before any stepped particle corpus can execute. Only that
+translation unit receives `-fno-sanitize=shift-base`, and only in
+`oracle-asan-ubsan`. The source remains byte-for-byte read-only; shift-exponent
+checks, ASan, all other UBSan categories, and fail-fast recovery settings remain
+enabled. `liquidfun-reference-sanitizer-scope` inspects the effective compile
+database and rejects the exception in debug/release, on another vendored file,
+or on repository-authored adapter/protocol/test code. The residual risk is that
+other shift-base defects in this one legacy translation unit are not diagnosed;
+the exception cannot authorize compatibility promotion by itself.
+
 Both jobs invoke `scripts/phase9-evidence.sh` with a repository-owned output
 directory. The runner enables `set -euo pipefail`, so `cargo test` retains its
 exit status through `tee`; it then requires an explicit `test result: ok.`
@@ -574,6 +588,7 @@ bash scripts/phase9-evidence.sh canonical target/phase9-evidence-local/canonical
 cargo xtask upstream configure --preset oracle-asan-ubsan
 cargo xtask upstream build --preset oracle-asan-ubsan
 cmake --build target/reference/oracle-asan-ubsan --target liquidfun-reference-protocol-tests
+ctest --test-dir target/reference/oracle-asan-ubsan --output-on-failure --no-tests=error -R '^liquidfun-reference-sanitizer-scope$'
 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 ASAN_OPTIONS=abort_on_error=1:halt_on_error=1 ctest --test-dir target/reference/oracle-asan-ubsan --output-on-failure --no-tests=error -R '^liquidfun-reference-protocol$'
 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 ASAN_OPTIONS=abort_on_error=1:halt_on_error=1 bash scripts/phase9-evidence.sh sanitizer target/phase9-evidence-local/sanitizer
 ```

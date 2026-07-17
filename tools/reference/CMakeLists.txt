@@ -89,11 +89,37 @@ else()
   set(REFERENCE_EVIDENCE_TIER "d2_supported")
 endif()
 
+if(CMAKE_PRESET_NAME)
+  set(REFERENCE_PRESET "${CMAKE_PRESET_NAME}")
+else()
+  cmake_path(GET CMAKE_BINARY_DIR FILENAME REFERENCE_PRESET)
+endif()
+
 add_subdirectory(
   "${CMAKE_CURRENT_LIST_DIR}/../../third_party/liquidfun/liquidfun/Box2D"
   "${CMAKE_BINARY_DIR}/upstream"
 )
 target_compile_options(Box2D PRIVATE ${REFERENCE_SUPPORTED_FP_OPTIONS})
+
+file(
+  REAL_PATH
+  "${CMAKE_CURRENT_LIST_DIR}/../../third_party/liquidfun/liquidfun/Box2D/Box2D/Particle/b2ParticleSystem.cpp"
+  REFERENCE_PARTICLE_SYSTEM_SOURCE
+)
+set(REFERENCE_EXPECT_PARTICLE_SHIFT_BASE_EXCEPTION FALSE)
+if(REFERENCE_PRESET STREQUAL "oracle-asan-ubsan")
+  # Pinned upstream computeRelativeTag intentionally shifts the x=-1 neighbor
+  # offset. Keep the approved legacy exception on that translation unit only;
+  # every repository-owned source and every other sanitizer category remains
+  # fully instrumented.
+  set_property(
+    SOURCE "${REFERENCE_PARTICLE_SYSTEM_SOURCE}"
+    TARGET_DIRECTORY Box2D
+    APPEND
+    PROPERTY COMPILE_OPTIONS -fno-sanitize=shift-base
+  )
+  set(REFERENCE_EXPECT_PARTICLE_SHIFT_BASE_EXCEPTION TRUE)
+endif()
 
 set(REFERENCE_UPSTREAM_COMPATIBILITY_OPTIONS "")
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -236,11 +262,6 @@ set_property(
   PROPERTY CMAKE_CONFIGURE_DEPENDS
            ${REFERENCE_ADAPTER_DEPENDS}
 )
-if(CMAKE_PRESET_NAME)
-  set(REFERENCE_PRESET "${CMAKE_PRESET_NAME}")
-else()
-  cmake_path(GET CMAKE_BINARY_DIR FILENAME REFERENCE_PRESET)
-endif()
 string(TOUPPER "${CMAKE_BUILD_TYPE}" REFERENCE_BUILD_TYPE_UPPER)
 set(REFERENCE_CONFIG_COMPILE_FLAGS_VARIABLE "CMAKE_CXX_FLAGS_${REFERENCE_BUILD_TYPE_UPPER}")
 set(REFERENCE_CONFIG_LINK_FLAGS_VARIABLE "CMAKE_EXE_LINKER_FLAGS_${REFERENCE_BUILD_TYPE_UPPER}")
@@ -544,4 +565,14 @@ target_compile_options(
 add_test(
   NAME liquidfun-reference-protocol
   COMMAND liquidfun-reference-protocol-tests
+)
+add_test(
+  NAME liquidfun-reference-sanitizer-scope
+  COMMAND
+    "${CMAKE_COMMAND}"
+    "-DCOMPILE_DATABASE=${CMAKE_BINARY_DIR}/compile_commands.json"
+    "-DEXPECT_EXCEPTION=${REFERENCE_EXPECT_PARTICLE_SHIFT_BASE_EXCEPTION}"
+    "-DEXPECTED_SOURCE=${REFERENCE_PARTICLE_SYSTEM_SOURCE}"
+    -P
+    "${CMAKE_CURRENT_LIST_DIR}/tests/sanitizer_scope.cmake"
 )

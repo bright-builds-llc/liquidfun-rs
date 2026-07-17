@@ -216,6 +216,8 @@ jobs:
         run: cargo xtask upstream build --preset oracle-asan-ubsan
       - name: Build rigid reference protocol tests
         run: cmake --build target/reference/oracle-asan-ubsan --target liquidfun-reference-protocol-tests
+      - name: Assert the pinned upstream sanitizer exception is exactly scoped
+        run: ctest --test-dir target/reference/oracle-asan-ubsan --output-on-failure --no-tests=error -R '^liquidfun-reference-sanitizer-scope$'
       - name: Run rigid reference protocol tests under fail-fast sanitizers
         run: UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 ASAN_OPTIONS=abort_on_error=1:halt_on_error=1 ctest --test-dir target/reference/oracle-asan-ubsan --output-on-failure --no-tests=error -R '^liquidfun-reference-protocol$'
       - name: Prepare Phase 8 sanitizer evidence logs
