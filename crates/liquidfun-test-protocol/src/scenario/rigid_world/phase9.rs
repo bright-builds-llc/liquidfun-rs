@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 
-use crate::{FloatBits, ScenarioId, Vec2Bits};
+use crate::{FloatBits, RIGID_WORLD_MAXIMUM_ACTIONS, ScenarioId, Vec2Bits};
 
 /// Maximum particle systems declared by one bounded Phase 9 timeline.
 pub const PHASE9_MAXIMUM_PARTICLE_SYSTEMS: usize = 16;
@@ -8,6 +9,335 @@ pub const PHASE9_MAXIMUM_PARTICLE_SYSTEMS: usize = 16;
 pub const PHASE9_MAXIMUM_PARTICLES: usize = 256;
 /// Maximum stable identities carried by one Phase 9 range or observation.
 pub const PHASE9_MAXIMUM_IDENTITIES: usize = 256;
+/// Exact number of reviewed semantic branches in the Phase 9 evidence corpus.
+pub const PHASE9_MAXIMUM_WITNESS_BINDINGS: usize = 58;
+/// Maximum checkpoints addressable by one Phase 9 witness binding.
+pub const PHASE9_MAXIMUM_WITNESS_CHECKPOINTS: usize = 64;
+
+/// Exact reviewed Phase 9 semantic branch registry, one identifier per line.
+pub const PHASE9_REQUIRED_BRANCH_IDS: &str = "multiple_systems\nnewest_first\npaused_system\nstable_ids_sort\nstable_ids_compact\noptional_lanes\nfixed_buffer\ngrowable_buffer\nfixed_full\nteardown\nfinite_lifetime\ninfinite_lifetime\nequal_lifetime\noldest_lifetime\nmaximum_lifetime\nrequested_destruction_callback\nunrequested_destruction_callback\nzombie_pending\ncapacity_eviction\nparticle_contact\nbody_contact\nstrict_contact_enabled\nstrict_contact_disabled\nlistener_flag_enabled\nlistener_flag_disabled\nfilter_flag_enabled\nfilter_flag_disabled\ncontact_order\ncontact_multiplicity\ncoupling_fields\ndynamic_body_reaction\nstatic_body_no_reaction\nforce_range\nimpulse_range\nstatistics_counts\ncollision_energy\nstuck_candidates\nsystem_aabb\nworld_aabb\nsystem_culling\nquery_continue\nquery_terminate\nsystem_ray\nworld_ray\nray_culling\nray_start_inside_exclusion\nray_ignore\nray_continue\nray_clip\nray_terminate\nretained_phase6_through_phase8\nphase10_rejection\nclosed_policy_registry\nreplay_identity\nminimization_identity\nfirst_divergence_stability\nd0_byte_identity\ndebug_release_agreement";
+
+/// Closed Phase 9 observation kind used by semantic witness bindings.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Phase9ObservationKind {
+    System,
+    Particle,
+    Lifecycle,
+    ParticleContact,
+    BodyContact,
+    Statistics,
+    Query,
+    RayCast,
+    MixedState,
+}
+
+/// Closed semantic assertion surface for the Phase 9 evidence corpus.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+pub enum Phase9SemanticAssertion {
+    ObservedSemantic { branch_id: ScenarioId },
+    FiniteLifetimeExpired { particle_id: ScenarioId },
+    InfiniteLifetimeSurvives { particle_id: ScenarioId },
+    EqualExpirationOrder { particle_ids: Box<[ScenarioId]> },
+    StrictContactCardinality { enabled: bool, contact_count: u32 },
+    ListenerEventEffect { enabled: bool, event_count: u32 },
+    FilterContactEffect { enabled: bool, contact_count: u32 },
+    CollisionEnergyPositiveFinite { minimum_bits: FloatBits },
+    StuckCandidatesNonempty { particle_ids: Box<[ScenarioId]> },
+    ReplayResultDigestEquality,
+    MinimizedFailureSignaturePreservation,
+    DeliberateFirstDivergence,
+    D0RepeatedResultDigestEquality,
+    DebugReleaseResultDigestEquality,
+}
+
+impl Phase9SemanticAssertion {
+    /// Returns the exact observation kind required by this assertion.
+    #[must_use]
+    pub fn expected_observation_kind(&self) -> Phase9ObservationKind {
+        match self {
+            Self::ObservedSemantic { branch_id } => {
+                observed_branch_kind(branch_id.as_str()).unwrap_or(Phase9ObservationKind::Particle)
+            }
+            Self::FiniteLifetimeExpired { .. } | Self::ListenerEventEffect { .. } => {
+                Phase9ObservationKind::Lifecycle
+            }
+            Self::InfiniteLifetimeSurvives { .. } => Phase9ObservationKind::System,
+            Self::EqualExpirationOrder { .. } => Phase9ObservationKind::Lifecycle,
+            Self::StrictContactCardinality { .. }
+            | Self::FilterContactEffect { .. }
+            | Self::CollisionEnergyPositiveFinite { .. }
+            | Self::StuckCandidatesNonempty { .. } => Phase9ObservationKind::Statistics,
+            Self::ReplayResultDigestEquality
+            | Self::MinimizedFailureSignaturePreservation
+            | Self::DeliberateFirstDivergence
+            | Self::D0RepeatedResultDigestEquality
+            | Self::DebugReleaseResultDigestEquality => Phase9ObservationKind::Particle,
+        }
+    }
+
+    fn branch_id(&self) -> &str {
+        match self {
+            Self::ObservedSemantic { branch_id } => branch_id.as_str(),
+            Self::FiniteLifetimeExpired { .. } => "finite_lifetime",
+            Self::InfiniteLifetimeSurvives { .. } => "infinite_lifetime",
+            Self::EqualExpirationOrder { .. } => "equal_lifetime",
+            Self::StrictContactCardinality { enabled, .. } => {
+                if *enabled {
+                    "strict_contact_enabled"
+                } else {
+                    "strict_contact_disabled"
+                }
+            }
+            Self::ListenerEventEffect { enabled, .. } => {
+                if *enabled {
+                    "listener_flag_enabled"
+                } else {
+                    "listener_flag_disabled"
+                }
+            }
+            Self::FilterContactEffect { enabled, .. } => {
+                if *enabled {
+                    "filter_flag_enabled"
+                } else {
+                    "filter_flag_disabled"
+                }
+            }
+            Self::CollisionEnergyPositiveFinite { .. } => "collision_energy",
+            Self::StuckCandidatesNonempty { .. } => "stuck_candidates",
+            Self::ReplayResultDigestEquality => "replay_identity",
+            Self::MinimizedFailureSignaturePreservation => "minimization_identity",
+            Self::DeliberateFirstDivergence => "first_divergence_stability",
+            Self::D0RepeatedResultDigestEquality => "d0_byte_identity",
+            Self::DebugReleaseResultDigestEquality => "debug_release_agreement",
+        }
+    }
+
+    fn is_valid(&self) -> bool {
+        match self {
+            Self::ObservedSemantic { branch_id } => {
+                observed_branch_kind(branch_id.as_str()).is_some()
+                    && !requires_specific_assertion(branch_id.as_str())
+            }
+            Self::EqualExpirationOrder { particle_ids } => {
+                particle_ids.len() >= 2
+                    && particle_ids.len() <= PHASE9_MAXIMUM_IDENTITIES
+                    && particle_ids.iter().collect::<HashSet<_>>().len() == particle_ids.len()
+            }
+            Self::StrictContactCardinality {
+                enabled,
+                contact_count,
+            } => !*enabled || *contact_count > 0,
+            Self::ListenerEventEffect {
+                enabled,
+                event_count,
+            } => !*enabled || *event_count > 0,
+            Self::CollisionEnergyPositiveFinite { minimum_bits } => {
+                let minimum = minimum_bits.to_f32();
+                minimum.is_finite() && minimum > 0.0
+            }
+            Self::StuckCandidatesNonempty { particle_ids } => {
+                !particle_ids.is_empty()
+                    && particle_ids.len() <= PHASE9_MAXIMUM_IDENTITIES
+                    && particle_ids.iter().collect::<HashSet<_>>().len() == particle_ids.len()
+            }
+            Self::FiniteLifetimeExpired { .. }
+            | Self::InfiniteLifetimeSurvives { .. }
+            | Self::FilterContactEffect { .. }
+            | Self::ReplayResultDigestEquality
+            | Self::MinimizedFailureSignaturePreservation
+            | Self::DeliberateFirstDivergence
+            | Self::D0RepeatedResultDigestEquality
+            | Self::DebugReleaseResultDigestEquality => true,
+        }
+    }
+}
+
+/// Exact action/checkpoint/observation/assertion binding for one Phase 9 branch.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase9WitnessBinding {
+    pub branch_id: ScenarioId,
+    pub action_index: usize,
+    pub checkpoint_index: usize,
+    pub observation_kind: Phase9ObservationKind,
+    pub semantic_assertion: Phase9SemanticAssertion,
+}
+
+/// Stable validation category for an invalid Phase 9 witness binding registry.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Phase9WitnessBindingErrorKind {
+    TooManyBindings,
+    DuplicateBranch,
+    MissingBranch,
+    ExtraBranch,
+    BranchAssertionMismatch,
+    ActionIndexOutOfRange,
+    CheckpointIndexOutOfRange,
+    ObservationKindMismatch,
+    InvalidSemanticAssertion,
+}
+
+/// Error returned when a Phase 9 witness registry is not closed and semantic.
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+#[error("invalid Phase 9 witness binding: {kind:?}")]
+pub struct Phase9WitnessBindingError {
+    kind: Phase9WitnessBindingErrorKind,
+}
+
+impl Phase9WitnessBindingError {
+    /// Returns the stable witness-validation failure category.
+    #[must_use]
+    pub const fn kind(&self) -> Phase9WitnessBindingErrorKind {
+        self.kind
+    }
+}
+
+/// Validates a complete Phase 9 witness registry before any indexed evaluation.
+///
+/// # Errors
+///
+/// Returns [`Phase9WitnessBindingError`] when the registry is oversized,
+/// incomplete, duplicated, out of range, or not bound to a typed semantic
+/// assertion and its exact observation kind.
+pub fn validate_phase9_witness_bindings(
+    bindings: &[Phase9WitnessBinding],
+    action_count: usize,
+    checkpoint_count: usize,
+) -> Result<(), Phase9WitnessBindingError> {
+    if bindings.len() > PHASE9_MAXIMUM_WITNESS_BINDINGS {
+        return Err(witness_error(
+            Phase9WitnessBindingErrorKind::TooManyBindings,
+        ));
+    }
+    let mut branches = HashSet::with_capacity(bindings.len());
+    for binding in bindings {
+        let branch_id = binding.branch_id.as_str();
+        if !PHASE9_REQUIRED_BRANCH_IDS
+            .lines()
+            .any(|required| required == branch_id)
+        {
+            return Err(witness_error(Phase9WitnessBindingErrorKind::ExtraBranch));
+        }
+        if !branches.insert(branch_id) {
+            return Err(witness_error(
+                Phase9WitnessBindingErrorKind::DuplicateBranch,
+            ));
+        }
+        if binding.semantic_assertion.branch_id() != branch_id {
+            return Err(witness_error(
+                Phase9WitnessBindingErrorKind::BranchAssertionMismatch,
+            ));
+        }
+        if requires_specific_assertion(branch_id)
+            && matches!(
+                binding.semantic_assertion,
+                Phase9SemanticAssertion::ObservedSemantic { .. }
+            )
+        {
+            return Err(witness_error(
+                Phase9WitnessBindingErrorKind::BranchAssertionMismatch,
+            ));
+        }
+        if !binding.semantic_assertion.is_valid() {
+            return Err(witness_error(
+                Phase9WitnessBindingErrorKind::InvalidSemanticAssertion,
+            ));
+        }
+        if binding.action_index >= action_count
+            || binding.action_index >= RIGID_WORLD_MAXIMUM_ACTIONS
+        {
+            return Err(witness_error(
+                Phase9WitnessBindingErrorKind::ActionIndexOutOfRange,
+            ));
+        }
+        if binding.checkpoint_index >= checkpoint_count
+            || binding.checkpoint_index >= PHASE9_MAXIMUM_WITNESS_CHECKPOINTS
+        {
+            return Err(witness_error(
+                Phase9WitnessBindingErrorKind::CheckpointIndexOutOfRange,
+            ));
+        }
+        if binding.observation_kind != binding.semantic_assertion.expected_observation_kind() {
+            return Err(witness_error(
+                Phase9WitnessBindingErrorKind::ObservationKindMismatch,
+            ));
+        }
+    }
+    if PHASE9_REQUIRED_BRANCH_IDS
+        .lines()
+        .any(|branch_id| !branches.contains(branch_id))
+    {
+        return Err(witness_error(Phase9WitnessBindingErrorKind::MissingBranch));
+    }
+    Ok(())
+}
+
+fn requires_specific_assertion(branch_id: &str) -> bool {
+    matches!(
+        branch_id,
+        "finite_lifetime"
+            | "infinite_lifetime"
+            | "equal_lifetime"
+            | "strict_contact_enabled"
+            | "strict_contact_disabled"
+            | "listener_flag_enabled"
+            | "listener_flag_disabled"
+            | "filter_flag_enabled"
+            | "filter_flag_disabled"
+            | "collision_energy"
+            | "stuck_candidates"
+            | "replay_identity"
+            | "minimization_identity"
+            | "first_divergence_stability"
+            | "d0_byte_identity"
+            | "debug_release_agreement"
+    )
+}
+
+fn observed_branch_kind(branch_id: &str) -> Option<Phase9ObservationKind> {
+    match branch_id {
+        "multiple_systems" | "newest_first" | "paused_system" | "stable_ids_sort"
+        | "stable_ids_compact" | "fixed_buffer" | "growable_buffer" | "fixed_full" => {
+            Some(Phase9ObservationKind::System)
+        }
+        "optional_lanes" => Some(Phase9ObservationKind::Particle),
+        "teardown" | "oldest_lifetime" | "requested_destruction_callback" | "capacity_eviction" => {
+            Some(Phase9ObservationKind::Lifecycle)
+        }
+        "maximum_lifetime" | "unrequested_destruction_callback" | "zombie_pending" => {
+            Some(Phase9ObservationKind::MixedState)
+        }
+        "particle_contact" | "contact_order" | "contact_multiplicity" => {
+            Some(Phase9ObservationKind::ParticleContact)
+        }
+        "body_contact" | "coupling_fields" => Some(Phase9ObservationKind::BodyContact),
+        "dynamic_body_reaction" | "static_body_no_reaction" | "statistics_counts" => {
+            Some(Phase9ObservationKind::Statistics)
+        }
+        "force_range" | "impulse_range" => Some(Phase9ObservationKind::Particle),
+        "system_aabb" | "world_aabb" | "system_culling" | "query_continue" | "query_terminate" => {
+            Some(Phase9ObservationKind::Query)
+        }
+        "system_ray"
+        | "world_ray"
+        | "ray_culling"
+        | "ray_start_inside_exclusion"
+        | "ray_ignore"
+        | "ray_continue"
+        | "ray_clip"
+        | "ray_terminate" => Some(Phase9ObservationKind::RayCast),
+        "retained_phase6_through_phase8" | "phase10_rejection" | "closed_policy_registry" => {
+            Some(Phase9ObservationKind::Particle)
+        }
+        _ => None,
+    }
+}
+
+const fn witness_error(kind: Phase9WitnessBindingErrorKind) -> Phase9WitnessBindingError {
+    Phase9WitnessBindingError { kind }
+}
 
 /// Closed query callback control used by executable Phase 9 witnesses.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -268,4 +598,22 @@ pub enum Phase9ParticleObservation {
         body_ids: Box<[ScenarioId]>,
         particle_ids: Box<[ScenarioId]>,
     },
+}
+
+impl Phase9ParticleObservation {
+    /// Returns the closed witness kind for this semantic observation.
+    #[must_use]
+    pub const fn witness_kind(&self) -> Phase9ObservationKind {
+        match self {
+            Self::System { .. } => Phase9ObservationKind::System,
+            Self::Particle { .. } => Phase9ObservationKind::Particle,
+            Self::Lifecycle { .. } => Phase9ObservationKind::Lifecycle,
+            Self::ParticleContact { .. } => Phase9ObservationKind::ParticleContact,
+            Self::BodyContact { .. } => Phase9ObservationKind::BodyContact,
+            Self::Statistics { .. } => Phase9ObservationKind::Statistics,
+            Self::Query { .. } => Phase9ObservationKind::Query,
+            Self::RayCast { .. } => Phase9ObservationKind::RayCast,
+            Self::MixedState { .. } => Phase9ObservationKind::MixedState,
+        }
+    }
 }
