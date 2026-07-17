@@ -546,6 +546,38 @@ provenance, inventory, and the read-only evidence boundary. The
 `sanitizer-linux` job runs the same corpus with ASan abort/halt and UBSan
 halt/stacktrace behavior.
 
+Both jobs invoke `scripts/phase9-evidence.sh` with a repository-owned output
+directory. The runner enables `set -euo pipefail`, so `cargo test` retains its
+exit status through `tee`; it then requires an explicit `test result: ok.`
+marker and rejects every `FAILED` marker before creating `identity.json`. The
+generated manifest contains seven executed case records and exactly 58 unique
+branch witnesses. Every record binds the identical native/C++ request digest,
+both validated result digests, the comparison digest, and the complete 22-path
+`phase9-v1` policy ledger. Provenance, inventory, and read-only checks also run
+inside the same fail-closed runner before identity creation.
+
+The 58-branch Phase 9 closure deliberately excludes cross-engine stable-ID
+rotation. Native rotation remains covered by unit/property evidence; the first
+truthful cross-engine rotation witness is deferred to Phase 10, where group
+operations expose the required public behavior without a test-only seam.
+
+Local non-promotable dry runs use the same entrypoint after building the named
+oracle presets:
+
+```bash
+cargo xtask upstream configure --preset oracle-debug
+cargo xtask upstream build --preset oracle-debug
+cargo xtask upstream configure --preset oracle-release
+cargo xtask upstream build --preset oracle-release
+bash scripts/phase9-evidence.sh canonical target/phase9-evidence-local/canonical
+
+cargo xtask upstream configure --preset oracle-asan-ubsan
+cargo xtask upstream build --preset oracle-asan-ubsan
+cmake --build target/reference/oracle-asan-ubsan --target liquidfun-reference-protocol-tests
+UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 ASAN_OPTIONS=abort_on_error=1:halt_on_error=1 ctest --test-dir target/reference/oracle-asan-ubsan --output-on-failure --no-tests=error -R '^liquidfun-reference-protocol$'
+UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 ASAN_OPTIONS=abort_on_error=1:halt_on_error=1 bash scripts/phase9-evidence.sh sanitizer target/phase9-evidence-local/sanitizer
+```
+
 The jobs upload exactly named artifacts:
 
 - `phase9-canonical-${run_id}-${sha}`
@@ -567,7 +599,7 @@ the repository's reviewed stage, review, and promotion workflow. A local pass,
 a mismatched SHA, one artifact, or an unverified digest cannot promote the Phase
 9 claim.
 
-### Phase 9 canonical evidence (2026-07-15)
+### Rejected Phase 9 evidence run (2026-07-15)
 
 GitHub Actions run
 [`29439515367`](https://github.com/bright-builds-llc/liquidfun-rs/actions/runs/29439515367)
@@ -596,15 +628,14 @@ compatibility-ledger edit:
   and
   `0c89f0136eda6689118d3eaa909defb1d182d5723e7a64ea1e958396066dce15`.
 
-Independent revalidation required the approved SHA to remain an ancestor of the
-reviewing checkout and the exact remote `main`, inspected the workflow at that
-commit, and re-queried the run, jobs, and artifacts APIs. Both downloaded
-identities matched run, head, job, upstream revision, canonical target, pinned
-tool versions, and policy. Their trace and manifest paths passed the safe
-artifact-relative path contract, all four payload hashes were recomputed with
-`shasum -a 256 -c`, and `cargo xtask provenance check` passed. These artifacts
-therefore provide D1 evidence only for the closed `phase9-v1` corpus; they make
-no Phase 10, complete particle-solver, or full-project parity claim.
+Independent revalidation proved the identities and hashes are internally
+consistent, but both bound trace logs contain `test result: FAILED. 4 passed; 1 failed` and `Phase 9 checkpoint has no legacy predecessor`. The workflow's
+unchecked `cargo test | tee` pipeline masked those failures. Run `29439515367`
+and both artifacts listed above are therefore rejected as compatibility
+authority and must not be used for D1 promotion. A new exact-SHA run is required
+after the fail-closed runner and executable native/C++ corpus are committed and
+human-approved. No local run or Plan 09-22 change directly promotes a
+compatibility claim.
 
 ## Differential commands
 

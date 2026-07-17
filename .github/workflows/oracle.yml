@@ -140,46 +140,9 @@ jobs:
           path: target/oracle-evidence/phase8-canonical
           if-no-files-found: error
           retention-days: 30
-      - name: Prepare Phase 9 canonical evidence
+      - name: Run fail-closed Phase 9 canonical evidence
         if: github.event_name == 'workflow_dispatch' && inputs.evidence_phase == 'phase9'
-        run: mkdir -p target/oracle-evidence/phase9-canonical
-      - name: Run the closed Phase 9 canonical corpus, replay, and D0 checks
-        if: github.event_name == 'workflow_dispatch' && inputs.evidence_phase == 'phase9'
-        env:
-          LIQUIDFUN_PHASE9_ORACLE_MODE: canonical
-        run: cargo test -p liquidfun-differential --test phase9_corpus -- --nocapture 2>&1 | tee target/oracle-evidence/phase9-canonical/phase9-trace.log
-      - name: Recheck Phase 9 provenance, inventory, and read-only boundaries
-        if: github.event_name == 'workflow_dispatch' && inputs.evidence_phase == 'phase9'
-        run: |
-          cargo xtask provenance check 2>&1 | tee target/oracle-evidence/phase9-canonical/provenance.log
-          cargo xtask inventory check 2>&1 | tee target/oracle-evidence/phase9-canonical/inventory.log
-          git diff --exit-code -- protocol scenarios reference COMPATIBILITY.md 2>&1 | tee target/oracle-evidence/phase9-canonical/read-only.log
-      - name: Write exact Phase 9 canonical artifact identity
-        if: github.event_name == 'workflow_dispatch' && inputs.evidence_phase == 'phase9'
-        run: |
-          jq -n \
-            --arg policy phase9-v1 \
-            --arg corpus crates/liquidfun-differential/tests/fixtures/rigid_world/phase9/phase9-v1.json \
-            --argjson d0_runs 2 \
-            '{policy: $policy, corpus: $corpus, profiles: ["oracle-debug", "oracle-release"], replay: true, d0_runs: $d0_runs}' \
-            > target/oracle-evidence/phase9-canonical/phase9-manifest.json
-          trace_sha=$(sha256sum target/oracle-evidence/phase9-canonical/phase9-trace.log | cut -d ' ' -f 1)
-          manifest_sha=$(sha256sum target/oracle-evidence/phase9-canonical/phase9-manifest.json | cut -d ' ' -f 1)
-          jq -n \
-            --argjson run_id "${{ github.run_id }}" \
-            --arg job canonical-linux \
-            --arg head_sha "${{ github.sha }}" \
-            --arg upstream_revision 7f20402173fd143a3988c921bc384459c6a858f2 \
-            --arg rust 1.97.0 \
-            --arg cmake 4.3.3 \
-            --arg ninja 1.13.2 \
-            --arg clang 22.1.8 \
-            --arg target x86_64-unknown-linux-gnu \
-            --arg policy phase9-v1 \
-            --arg trace_sha "$trace_sha" \
-            --arg manifest_sha "$manifest_sha" \
-            '{run_id: $run_id, job: $job, head_sha: $head_sha, upstream_revision: $upstream_revision, rust: $rust, cmake: $cmake, ninja: $ninja, clang: $clang, target: $target, policy: $policy, trace: {path: "phase9-trace.log", sha256: $trace_sha}, manifest: {path: "phase9-manifest.json", sha256: $manifest_sha}}' \
-            > target/oracle-evidence/phase9-canonical/identity.json
+        run: bash scripts/phase9-evidence.sh canonical target/oracle-evidence/phase9-canonical
       - name: Upload Phase 9 canonical evidence
         if: github.event_name == 'workflow_dispatch' && inputs.evidence_phase == 'phase9'
         # actions/upload-artifact v7
@@ -276,47 +239,12 @@ jobs:
           path: target/oracle-evidence/phase8-sanitizer
           if-no-files-found: error
           retention-days: 30
-      - name: Prepare Phase 9 sanitizer evidence
-        if: github.event_name == 'workflow_dispatch' && inputs.evidence_phase == 'phase9'
-        run: mkdir -p target/oracle-evidence/phase9-sanitizer
-      - name: Run the closed Phase 9 corpus under fail-fast sanitizers
+      - name: Run fail-closed Phase 9 sanitizer evidence
         if: github.event_name == 'workflow_dispatch' && inputs.evidence_phase == 'phase9'
         env:
           ASAN_OPTIONS: abort_on_error=1:halt_on_error=1
           UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
-          LIQUIDFUN_PHASE9_ORACLE_MODE: sanitizer
-        run: cargo test -p liquidfun-differential --test phase9_corpus -- --nocapture 2>&1 | tee target/oracle-evidence/phase9-sanitizer/phase9-trace.log
-      - name: Recheck Phase 9 sanitizer inventory and read-only boundaries
-        if: github.event_name == 'workflow_dispatch' && inputs.evidence_phase == 'phase9'
-        run: |
-          cargo xtask provenance check 2>&1 | tee target/oracle-evidence/phase9-sanitizer/provenance.log
-          cargo xtask inventory check 2>&1 | tee target/oracle-evidence/phase9-sanitizer/inventory.log
-          git diff --exit-code -- protocol scenarios reference COMPATIBILITY.md 2>&1 | tee target/oracle-evidence/phase9-sanitizer/read-only.log
-      - name: Write exact Phase 9 sanitizer artifact identity
-        if: github.event_name == 'workflow_dispatch' && inputs.evidence_phase == 'phase9'
-        run: |
-          jq -n \
-            --arg policy phase9-v1 \
-            --arg corpus crates/liquidfun-differential/tests/fixtures/rigid_world/phase9/phase9-v1.json \
-            '{policy: $policy, corpus: $corpus, profile: "oracle-asan-ubsan", fail_fast: true}' \
-            > target/oracle-evidence/phase9-sanitizer/phase9-manifest.json
-          trace_sha=$(sha256sum target/oracle-evidence/phase9-sanitizer/phase9-trace.log | cut -d ' ' -f 1)
-          manifest_sha=$(sha256sum target/oracle-evidence/phase9-sanitizer/phase9-manifest.json | cut -d ' ' -f 1)
-          jq -n \
-            --argjson run_id "${{ github.run_id }}" \
-            --arg job sanitizer-linux \
-            --arg head_sha "${{ github.sha }}" \
-            --arg upstream_revision 7f20402173fd143a3988c921bc384459c6a858f2 \
-            --arg rust 1.97.0 \
-            --arg cmake 4.3.3 \
-            --arg ninja 1.13.2 \
-            --arg clang 22.1.8 \
-            --arg target x86_64-unknown-linux-gnu \
-            --arg policy phase9-v1 \
-            --arg trace_sha "$trace_sha" \
-            --arg manifest_sha "$manifest_sha" \
-            '{run_id: $run_id, job: $job, head_sha: $head_sha, upstream_revision: $upstream_revision, rust: $rust, cmake: $cmake, ninja: $ninja, clang: $clang, target: $target, policy: $policy, trace: {path: "phase9-trace.log", sha256: $trace_sha}, manifest: {path: "phase9-manifest.json", sha256: $manifest_sha}}' \
-            > target/oracle-evidence/phase9-sanitizer/identity.json
+        run: bash scripts/phase9-evidence.sh sanitizer target/oracle-evidence/phase9-sanitizer
       - name: Upload Phase 9 sanitizer evidence
         if: github.event_name == 'workflow_dispatch' && inputs.evidence_phase == 'phase9'
         # actions/upload-artifact v7
