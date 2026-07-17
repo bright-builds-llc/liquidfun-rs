@@ -3,15 +3,15 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 09-22-PLAN.md
-last_updated: "2026-07-17T12:27:40.980Z"
+stopped_at: Completed 09-23-PLAN.md
+last_updated: "2026-07-17T13:38:03.408Z"
 last_activity: "2026-07-17"
 progress:
   total_phases: 12
   completed_phases: 8
   total_plans: 122
-  completed_plans: 120
-  percent: 98
+  completed_plans: 121
+  percent: 99
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 ## Current Position
 
 Phase: 09 (particle-storage-lifecycle-and-coupling) — EXECUTING
-Plan: 23 of 24
+Plan: 24 of 24
 Status: Ready to execute
 Last activity: 2026-07-17
 
-Progress: [██████████] 98%
+Progress: [██████████] 99%
 
 ## Performance Metrics
 
@@ -131,6 +131,7 @@ Progress: [██████████] 98%
 | Phase 09 P20 | 1h 3m | 3 tasks | 8 files |
 | Phase 09 P21 | 34m | 2 tasks | 5 files |
 | Phase 09 P22 | 9h 10m | 3 tasks | 24 files |
+| Phase 09 P23 | 22 min | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -302,6 +303,8 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 09]: Retain 58 executable branches and defer cross-engine stable-ID rotation to Phase 10. — Public group behavior can expose truthful rotation without a Phase 9 test-only seam.
 - [Phase 09]: Exempt shift-base instrumentation only for pinned upstream b2ParticleSystem.cpp in oracle-asan-ubsan. — Effective compile-command tests keep ASan, other UBSan categories, fail-fast behavior, debug/release, and repository-owned code fully covered.
 - [Phase 09]: Write Phase 9 evidence identity only after passing logs, complete branch/policy/digest validation, provenance, inventory, and read-only checks.
+- [Phase 09]: Accept only run 29583793056 for approved full SHA b27fc14f6b29fb82ca815fa1effba71bae09d424; rejected run 29439515367 remains superseded. — Literal approval, clean local and remote equality, one later matching dispatch, unique successful authority jobs, and live artifact digests all bind the accepted evidence to one immutable ref.
+- [Phase 09]: Treat Plan 09-23 artifacts as evidence inputs only; Plan 09-24 retains sole compatibility-promotion authority. — Exact-ref validation must not silently mutate compatibility or inventory ledgers before the explicit review and promotion transaction.
 
 ### Pending Todos
 
@@ -315,6 +318,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-17T12:27:40.973Z
-Stopped at: Completed 09-22-PLAN.md
+Last session: 2026-07-17T13:37:23.102Z
+Stopped at: Completed 09-23-PLAN.md
 Resume file: None
