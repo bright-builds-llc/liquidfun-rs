@@ -3,14 +3,14 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 09-21-PLAN.md
-last_updated: "2026-07-16T07:00:11.093Z"
-last_activity: "2026-07-16"
+stopped_at: Completed 09-22-PLAN.md
+last_updated: "2026-07-17T12:27:40.980Z"
+last_activity: "2026-07-17"
 progress:
   total_phases: 12
   completed_phases: 8
   total_plans: 122
-  completed_plans: 119
+  completed_plans: 120
   percent: 98
 ---
 
@@ -26,11 +26,11 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 ## Current Position
 
 Phase: 09 (particle-storage-lifecycle-and-coupling) — EXECUTING
-Plan: 22 of 24
+Plan: 23 of 24
 Status: Ready to execute
-Last activity: 2026-07-16
+Last activity: 2026-07-17
 
-Progress: [██████████] 97%
+Progress: [██████████] 98%
 
 ## Performance Metrics
 
@@ -130,6 +130,7 @@ Progress: [██████████] 97%
 | Phase 09 P19 | 3h 37m | 2 tasks | 27 files |
 | Phase 09 P20 | 1h 3m | 3 tasks | 8 files |
 | Phase 09 P21 | 34m | 2 tasks | 5 files |
+| Phase 09 P22 | 9h 10m | 3 tasks | 24 files |
 
 ## Accumulated Context
 
@@ -298,6 +299,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 09]: Report growable particle statistics capacity from the configured maximum, or i32::MAX for the pinned unlimited convention.
 - [Phase 09]: Treat unaligned Phase 9 observation structure as harness failure. — Only corresponding typed semantic fields can produce physics mismatch evidence.
 - [Phase 09]: Bind both engine roles to one canonical request digest. — One serialized and revalidated request prevents scenario substitution before comparison.
+- [Phase 09]: Retain 58 executable branches and defer cross-engine stable-ID rotation to Phase 10. — Public group behavior can expose truthful rotation without a Phase 9 test-only seam.
+- [Phase 09]: Exempt shift-base instrumentation only for pinned upstream b2ParticleSystem.cpp in oracle-asan-ubsan. — Effective compile-command tests keep ASan, other UBSan categories, fail-fast behavior, debug/release, and repository-owned code fully covered.
+- [Phase 09]: Write Phase 9 evidence identity only after passing logs, complete branch/policy/digest validation, provenance, inventory, and read-only checks.
 
 ### Pending Todos
 
@@ -311,6 +315,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-16T06:59:37.480Z
-Stopped at: Completed 09-21-PLAN.md
+Last session: 2026-07-17T12:27:40.973Z
+Stopped at: Completed 09-22-PLAN.md
 Resume file: None
