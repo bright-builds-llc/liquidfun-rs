@@ -10,6 +10,8 @@ use liquidfun_test_protocol::{
 };
 use sha2::{Digest, Sha256};
 
+use crate::rigid_evidence::{RigidComparisonFailure, RigidMismatchReport};
+
 use super::{
     PHASE9_REGISTRY_ID, PHASE9_REQUIRED_POLICY_PATHS, Phase9PolicyKind, phase9_policy_for_path,
 };
@@ -23,6 +25,9 @@ const PHASE9_BODY_MASS_ABSOLUTE: f32 = 1.0e-5;
 /// Fail-closed comparator error that is not physics mismatch evidence.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum Phase9ComparatorError {
+    /// The inherited Phase 6 through Phase 8 boundary rejected the comparison.
+    #[error("retained rigid comparison failed: {0:?}")]
+    RetainedRigid(RigidComparisonFailure),
     /// The exact policy registry was missing, duplicated, wildcarded, or unknown.
     #[error("invalid Phase 9 policy registry: {reason}")]
     PolicyRegistry {
@@ -123,6 +128,8 @@ impl Phase9Mismatch {
 /// Complete Phase 9 request/result comparison outcome.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Phase9ComparisonOutcome {
+    /// First source-ordered retained Phase 6 through Phase 8 disagreement.
+    RetainedRigidMismatch(Box<RigidMismatchReport>),
     /// All particle semantics matched and the complete policy registry was consumed.
     Match {
         /// Every required path in reviewed source order.

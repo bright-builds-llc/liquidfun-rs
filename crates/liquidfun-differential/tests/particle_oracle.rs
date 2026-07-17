@@ -83,13 +83,11 @@ fn phase9_request() -> liquidfun_test_protocol::RigidWorldRequestRecord {
             "action": { "kind": "destroy_system", "system_id": "oracle-system" }
         }
     }));
-    let checkpoint = timeline["checkpoints"]
-        .as_array_mut()
-        .expect("fixture checkpoints should be an array")
-        .last_mut()
-        .expect("fixture should contain a checkpoint");
-    checkpoint["after_action_id"] = json!("oracle-destroy-system");
-    checkpoint["phase"] = json!("phase9");
+    preserve_retained_checkpoint_before_phase9(
+        timeline,
+        "nc-bodies-destroyed",
+        "oracle-destroy-system",
+    );
 
     let mut bytes = serde_json::to_vec(&value).expect("Phase 9 request should encode");
     bytes.push(b'\n');
@@ -174,19 +172,38 @@ fn coupling_request() -> liquidfun_test_protocol::RigidWorldRequestRecord {
             }),
         ],
     );
-    let checkpoint = timeline["checkpoints"]
-        .as_array_mut()
-        .expect("fixture checkpoints should be an array")
-        .iter_mut()
-        .find(|checkpoint| checkpoint["checkpoint_id"] == "nc-static-kinematic-rejected")
-        .expect("first step checkpoint should exist");
-    checkpoint["after_action_id"] = json!("coupling-destroy-system");
-    checkpoint["phase"] = json!("phase9");
+    preserve_retained_checkpoint_before_phase9(
+        timeline,
+        "nc-static-kinematic-rejected",
+        "coupling-destroy-system",
+    );
 
     let mut bytes = serde_json::to_vec(&value).expect("coupling request should encode");
     bytes.push(b'\n');
     decode_rigid_world_request_jsonl(&bytes, &HarnessLimits::phase2_default_v1())
         .expect("bounded coupling request should decode")
+}
+
+fn preserve_retained_checkpoint_before_phase9(
+    timeline: &mut Value,
+    checkpoint_id: &str,
+    phase9_after_action_id: &str,
+) {
+    let checkpoints = timeline["checkpoints"]
+        .as_array_mut()
+        .expect("fixture checkpoints should be an array");
+    let checkpoint_index = checkpoints
+        .iter()
+        .position(|checkpoint| checkpoint["checkpoint_id"] == checkpoint_id)
+        .expect("retargeted checkpoint should exist");
+    let mut retained = checkpoints[checkpoint_index].clone();
+    retained["checkpoint_id"] = json!(format!("{checkpoint_id}-retained"));
+    checkpoints.insert(checkpoint_index, retained);
+    let phase9 = &mut checkpoints[checkpoint_index + 1];
+    phase9["after_action_id"] = json!(phase9_after_action_id);
+    phase9["phase"] = json!("phase9");
+    phase9["counts"]["destructions"] = json!(0);
+    phase9["transitions"] = json!([]);
 }
 
 fn full_phase9_request() -> liquidfun_test_protocol::RigidWorldRequestRecord {

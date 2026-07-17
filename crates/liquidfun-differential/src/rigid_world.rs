@@ -31,21 +31,38 @@ use liquidfun::{
     StepReport, World,
 };
 use liquidfun_test_protocol::{
-    FloatBits, HarnessLimits, RIGID_WORLD_POSITION_ITERATIONS, RIGID_WORLD_TIMESTEP_BITS,
-    RIGID_WORLD_VELOCITY_ITERATIONS, RecordLimit, RigidBodyDeclaration, RigidBodyKind,
-    RigidBodySnapshot, RigidContactEvent, RigidContactEventKind, RigidContactFeature,
-    RigidContactIdentity, RigidContactResult, RigidDestructionRecord, RigidExpectedCheckpoint,
-    RigidExpectedCounts, RigidFeatureKind, RigidFilterBits, RigidFixtureDeclaration,
-    RigidFixtureShape, RigidFixtureSnapshot, RigidManifoldKind, RigidManifoldPoint,
-    RigidManifoldResult, RigidWorldAction, RigidWorldActionRecord, RigidWorldDecodeError,
-    RigidWorldObservation, RigidWorldRequestRecord, RigidWorldResultRecord, RigidWorldTimeline,
-    RigidWorldTimelineResult, RigidWorldWitness, RigidWorldWitnessFamily, ScenarioId, Sha256Hex,
-    TransformBits, Vec2Bits, decode_rigid_world_request_jsonl, encode_jsonl,
-    validate_rigid_world_result_against_request,
+    FloatBits, HarnessLimits, Phase6PolicyProfile, Phase7PolicyProfile, Phase8PolicyProfile,
+    RIGID_WORLD_POSITION_ITERATIONS, RIGID_WORLD_TIMESTEP_BITS, RIGID_WORLD_VELOCITY_ITERATIONS,
+    RecordLimit, RigidBodyDeclaration, RigidBodyKind, RigidBodySnapshot, RigidContactEvent,
+    RigidContactEventKind, RigidContactFeature, RigidContactIdentity, RigidContactResult,
+    RigidDestructionRecord, RigidExpectedCheckpoint, RigidExpectedCounts, RigidFeatureKind,
+    RigidFilterBits, RigidFixtureDeclaration, RigidFixtureShape, RigidFixtureSnapshot,
+    RigidManifoldKind, RigidManifoldPoint, RigidManifoldResult, RigidWorldAction,
+    RigidWorldActionRecord, RigidWorldDecodeError, RigidWorldObservation, RigidWorldRequestRecord,
+    RigidWorldResultRecord, RigidWorldTimeline, RigidWorldTimelineResult, RigidWorldWitness,
+    RigidWorldWitnessFamily, ScenarioId, Sha256Hex, TransformBits, Vec2Bits,
+    decode_rigid_world_request_jsonl, encode_jsonl, validate_rigid_world_result_against_request,
 };
 use sha2::{Digest, Sha256};
 
+use crate::rigid_evidence::{RigidComparisonOutcome, compare_phase8_rigid_world_results};
 use crate::supervisor::{OracleExecutable, RigidWorldProcessError, execute_rigid_world_process};
+
+const PHASE6_POLICY: &str = include_str!("../../../protocol/tolerances/phase6-v1.toml");
+const PHASE7_POLICY: &str = include_str!("../../../protocol/tolerances/phase7-v1.toml");
+const PHASE8_POLICY: &str = include_str!("../../../protocol/tolerances/phase8-v1.toml");
+const PHASE6_POLICY_CONTENT_SHA256: &str =
+    "7f10df148852866fd20d11b8d27adcddc0ad463ac3d3d716a8946ca5c8f1c63a";
+const PHASE7_POLICY_CONTENT_SHA256: &str =
+    "fd772b2cf523a6d40bf978bc4d0da18a4564181a93e6b2bdeb8e4d40d5613311";
+const PHASE8_POLICY_CONTENT_SHA256: &str =
+    "2843ca40bec5b1c680135664c58c12a8388a7a9e86ad77f8ef5a268f3f15a6bf";
+
+struct RetainedPolicyProfiles {
+    phase6: Phase6PolicyProfile,
+    phase7: Phase7PolicyProfile,
+    phase8: Phase8PolicyProfile,
+}
 
 /// Typed failure while mapping a validated rigid timeline onto native world APIs.
 #[derive(Debug, thiserror::Error)]
@@ -200,8 +217,11 @@ pub fn run_phase9_differential(
     let native = NativeRigidWorldExecutor::execute(&canonical_request)?;
     let captured =
         execute_rigid_world_process(executable, &canonical_request, expected_oracle_revision)?;
-    let outcome =
-        compare_phase9_rigid_world_results(&canonical_request, &native, captured.result())?;
+    let outcome = compare_complete_phase9_rigid_world_results(
+        &canonical_request,
+        &native,
+        captured.result(),
+    )?;
     let consumed_paths = validate_phase9_policy_registry(PHASE9_REQUIRED_POLICY_PATHS)?;
     Ok(Phase9DifferentialRun {
         native_request_sha256: request_sha256.clone(),
@@ -210,6 +230,91 @@ pub fn run_phase9_differential(
         consumed_paths,
         outcome,
     })
+}
+
+/// Compares the complete retained Phase 6 through Phase 8 surface before Phase 9 particles.
+///
+/// The retained profiles are embedded from the checked-in canonical policy files and verified
+/// against their reviewed content digests before parsing. Callers cannot inject substitute
+/// policies or bypass retained first-divergence ordering.
+///
+/// # Errors
+///
+/// Returns [`Phase9ComparatorError`] when an embedded policy fails its digest or parser contract,
+/// the retained comparator rejects the request/result boundary, or the particle comparator finds
+/// invalid structure or numeric state.
+pub fn compare_complete_phase9_rigid_world_results(
+    request: &RigidWorldRequestRecord,
+    native: &RigidWorldResultRecord,
+    oracle: &RigidWorldResultRecord,
+) -> Result<Phase9ComparisonOutcome, Phase9ComparatorError> {
+    let profiles = canonical_retained_profiles()?;
+    compare_complete_phase9_rigid_world_results_with_profiles(request, native, oracle, &profiles)
+}
+
+fn compare_complete_phase9_rigid_world_results_with_profiles(
+    request: &RigidWorldRequestRecord,
+    native: &RigidWorldResultRecord,
+    oracle: &RigidWorldResultRecord,
+    profiles: &RetainedPolicyProfiles,
+) -> Result<Phase9ComparisonOutcome, Phase9ComparatorError> {
+    match compare_phase8_rigid_world_results(
+        request,
+        native,
+        oracle,
+        &profiles.phase6,
+        &profiles.phase7,
+        &profiles.phase8,
+    ) {
+        Err(failure) => Err(Phase9ComparatorError::RetainedRigid(failure)),
+        Ok(RigidComparisonOutcome::PhysicsMismatch(report)) => {
+            Ok(Phase9ComparisonOutcome::RetainedRigidMismatch(report))
+        }
+        Ok(RigidComparisonOutcome::Match) => {
+            compare_phase9_rigid_world_results(request, native, oracle)
+        }
+    }
+}
+
+fn canonical_retained_profiles() -> Result<RetainedPolicyProfiles, Phase9ComparatorError> {
+    verify_policy_content_digest("phase6-v1", PHASE6_POLICY, PHASE6_POLICY_CONTENT_SHA256)?;
+    verify_policy_content_digest("phase7-v1", PHASE7_POLICY, PHASE7_POLICY_CONTENT_SHA256)?;
+    verify_policy_content_digest("phase8-v1", PHASE8_POLICY, PHASE8_POLICY_CONTENT_SHA256)?;
+    let phase6 = Phase6PolicyProfile::parse_toml(PHASE6_POLICY)
+        .map_err(|error| retained_policy_error("phase6-v1", error))?;
+    let phase7 = Phase7PolicyProfile::parse_toml(PHASE7_POLICY)
+        .map_err(|error| retained_policy_error("phase7-v1", error))?;
+    let phase8 = Phase8PolicyProfile::parse_toml(PHASE8_POLICY)
+        .map_err(|error| retained_policy_error("phase8-v1", error))?;
+    Ok(RetainedPolicyProfiles {
+        phase6,
+        phase7,
+        phase8,
+    })
+}
+
+fn verify_policy_content_digest(
+    profile_id: &str,
+    contents: &str,
+    expected: &str,
+) -> Result<(), Phase9ComparatorError> {
+    let actual = Sha256Hex::from_digest(Sha256::digest(contents.as_bytes()).into());
+    if actual.as_str() == expected {
+        return Ok(());
+    }
+    Err(Phase9ComparatorError::PolicyRegistry {
+        reason: format!(
+            "embedded {profile_id} content digest mismatch: expected {expected}, found {}",
+            actual.as_str()
+        )
+        .into(),
+    })
+}
+
+fn retained_policy_error(profile_id: &str, error: impl std::fmt::Display) -> Phase9ComparatorError {
+    Phase9ComparatorError::PolicyRegistry {
+        reason: format!("embedded {profile_id} failed to parse: {error}").into(),
+    }
 }
 
 /// Revalidates a native result against its complete request declaration.

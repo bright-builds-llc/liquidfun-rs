@@ -309,12 +309,14 @@ fn compare_observations(
     expected: &[RigidWorldObservation],
     actual: &[RigidWorldObservation],
 ) -> Result<Option<RigidMismatchReport>, RigidComparisonFailure> {
+    let expected = retained_phase7_observations(expected);
+    let actual = retained_phase7_observations(actual);
     let mut maybe_completion = None;
     let length = expected.len().min(actual.len());
     for index in 0..length {
-        let expected_observation = &expected[index];
-        let actual_observation = &actual[index];
-        let (action_id, stage) = observation_action(request, location, index)
+        let (expected_index, expected_observation) = expected[index];
+        let (_, actual_observation) = actual[index];
+        let (action_id, stage) = observation_action(request, location, expected_index)
             .unwrap_or_else(|| checkpoint_action(request, location));
         let context = EvidenceContext {
             location,
@@ -374,6 +376,16 @@ fn compare_observations(
         &expected.len(),
         &actual.len(),
     )
+}
+
+fn retained_phase7_observations(
+    observations: &[RigidWorldObservation],
+) -> Vec<(usize, &RigidWorldObservation)> {
+    observations
+        .iter()
+        .enumerate()
+        .filter(|(_, observation)| !matches!(observation, RigidWorldObservation::Particle { .. }))
+        .collect()
 }
 
 fn compare_observation(

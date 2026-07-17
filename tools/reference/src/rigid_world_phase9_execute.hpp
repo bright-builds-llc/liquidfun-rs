@@ -152,7 +152,7 @@ class TimelineExecution {
       const auto& action = record.at("action");
       if (action.at("kind") == "particle") {
         execute(action.at("action"));
-        phase9_since_checkpoint_ = true;
+        phase9_affected_rigid_state_ = true;
       } else {
         execute_rigid(action);
       }
@@ -166,13 +166,14 @@ class TimelineExecution {
             {"checkpoint_index", next_checkpoint},
             {"counts", timeline_.at("checkpoints").at(next_checkpoint).at("counts")},
             {"observations", std::move(observations_)}};
-        if (phase9_since_checkpoint_) {
+        // Particle impulses can outlive their systems, so every downstream
+        // checkpoint must come from this combined execution.
+        if (phase9_affected_rigid_state_) {
           patch["bodies"] = body_snapshots();
           patch["fixtures"] = fixture_snapshots();
         }
         checkpoints.push_back(std::move(patch));
         observations_ = Json::array();
-        phase9_since_checkpoint_ = false;
         ++next_checkpoint;
       }
     }
@@ -298,6 +299,14 @@ class TimelineExecution {
     return *found->second;
   }
 
+  b2Fixture& fixture(const Json& raw_id) {
+    const auto found = fixtures_.find(raw_id.get<std::string>());
+    if (found == fixtures_.end()) {
+      throw std::runtime_error("Phase 9 coupling fixture is not live");
+    }
+    return *found->second;
+  }
+
   void create_body(const Json& raw_id) {
     const auto id = raw_id.get<std::string>();
     const auto& raw = body_declarations_.at(id);
@@ -363,6 +372,65 @@ class TimelineExecution {
           action.at("angular_velocity_bits").get<std::uint32_t>()));
       return;
     }
+    if (kind == "set_body_type") {
+      body(action.at("body_id"))
+          .SetType(body_type(action.at("body_kind").get<std::string>()));
+      return;
+    }
+    if (kind == "set_body_transform") {
+      body(action.at("body_id"))
+          .SetTransform(
+              phase9_vector(action.at("transform").at("position")),
+              float_from_bits(
+                  action.at("transform").at("angle_bits").get<std::uint32_t>()));
+      return;
+    }
+    if (kind == "set_body_active") {
+      body(action.at("body_id")).SetActive(action.at("active").get<bool>());
+      return;
+    }
+    if (kind == "set_fixture_sensor") {
+      fixture(action.at("fixture_id")).SetSensor(action.at("sensor").get<bool>());
+      return;
+    }
+    if (kind == "set_fixture_material") {
+      auto& target = fixture(action.at("fixture_id"));
+      target.SetFriction(
+          float_from_bits(action.at("friction_bits").get<std::uint32_t>()));
+      target.SetRestitution(
+          float_from_bits(action.at("restitution_bits").get<std::uint32_t>()));
+      return;
+    }
+    if (kind == "set_fixture_filter") {
+      const auto& raw = action.at("filter");
+      b2Filter filter;
+      filter.categoryBits = raw.at("category_bits").get<std::uint16_t>();
+      filter.maskBits = raw.at("mask_bits").get<std::uint16_t>();
+      filter.groupIndex = raw.at("group_index").get<std::int16_t>();
+      fixture(action.at("fixture_id")).SetFilterData(filter);
+      return;
+    }
+    if (kind == "set_fixture_density") {
+      fixture(action.at("fixture_id"))
+          .SetDensity(
+              float_from_bits(action.at("density_bits").get<std::uint32_t>()));
+      return;
+    }
+    if (kind == "reset_mass_data") {
+      body(action.at("body_id")).ResetMassData();
+      return;
+    }
+    if (kind == "set_custom_mass_data") {
+      b2MassData data;
+      data.mass = float_from_bits(action.at("mass_bits").get<std::uint32_t>());
+      data.center = phase9_vector(action.at("center"));
+      data.I = float_from_bits(action.at("inertia_bits").get<std::uint32_t>());
+      body(action.at("body_id")).SetMassData(&data);
+      return;
+    }
+    if (kind == "inspect_body" || kind == "inspect_fixture") {
+      return;
+    }
     if (kind == "step") {
       world_.Step(
           float_from_bits(action.at("timestep_bits").get<std::uint32_t>()),
@@ -391,7 +459,9 @@ class TimelineExecution {
         world_.DestroyBody(doomed);
         bodies_.erase(found);
       }
+      return;
     }
+    throw std::runtime_error("unsupported retained rigid action in Phase 9 execution");
   }
 
   Json body_snapshots() const {
@@ -831,7 +901,7 @@ class TimelineExecution {
   std::unordered_map<std::string, b2Fixture*> fixtures_;
   Json observations_ = Json::array();
   std::uint32_t next_occurrence_ordinal_ = 0;
-  bool phase9_since_checkpoint_ = false;
+  bool phase9_affected_rigid_state_ = false;
 };
 
 }  // namespace phase9_detail

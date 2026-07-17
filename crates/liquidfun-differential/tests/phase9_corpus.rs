@@ -2,17 +2,23 @@
 
 use std::{
     collections::{BTreeMap, BTreeSet},
-    path::{Component, Path},
+    fs,
+    path::{Component, Path, PathBuf},
     process::Command,
+    time::{SystemTime, UNIX_EPOCH},
 };
 
 use liquidfun_differential::{
     NativeRigidWorldExecutor, OracleExecutable, OraclePreset, PHASE9_REGISTRY_ID,
-    PHASE9_REQUIRED_POLICY_PATHS, Phase9ComparisonOutcome, execute_rigid_world_process,
-    phase9_policy_for_path, run_phase9_differential,
+    PHASE9_REQUIRED_POLICY_PATHS, Phase9ComparisonOutcome, RigidComparisonOutcome,
+    RigidMismatchReport, compare_complete_phase9_rigid_world_results,
+    compare_phase8_rigid_world_results, execute_rigid_world_process, phase9_policy_for_path,
+    run_phase9_differential,
 };
 use liquidfun_test_protocol::{
-    HarnessLimits, RigidWorldWitnessFamily, decode_rigid_world_request_jsonl,
+    HarnessLimits, Phase6PolicyProfile, Phase7PolicyProfile, Phase8PolicyProfile,
+    RigidWorldResultRecord, RigidWorldWitnessFamily, decode_rigid_world_request_jsonl,
+    decode_rigid_world_result_jsonl,
 };
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -23,6 +29,9 @@ const RETAINED_REQUEST: &[u8] =
 const MANIFEST: &str = include_str!("fixtures/rigid_world/phase9/phase9-v1.json");
 const PINNED_WITNESS: &[u8] =
     include_bytes!("../../../reference/artifacts/phase9/lifecycle-contact-witnesses.json");
+const PHASE6_POLICY: &str = include_str!("../../../protocol/tolerances/phase6-v1.toml");
+const PHASE7_POLICY: &str = include_str!("../../../protocol/tolerances/phase7-v1.toml");
+const PHASE8_POLICY: &str = include_str!("../../../protocol/tolerances/phase8-v1.toml");
 const COMMON_ACTIONS: &[&str] = &[
     "create-growable",
     "create-fixed",
@@ -1139,6 +1148,294 @@ fn corpus_executes_with_stable_ids_and_d0_bytes() {
             .as_ref(),
         "phase9"
     );
+}
+
+fn retained_profiles() -> (
+    Phase6PolicyProfile,
+    Phase7PolicyProfile,
+    Phase8PolicyProfile,
+) {
+    (
+        Phase6PolicyProfile::parse_toml(PHASE6_POLICY)
+            .expect("checked-in Phase 6 policy should parse"),
+        Phase7PolicyProfile::parse_toml(PHASE7_POLICY)
+            .expect("checked-in Phase 7 policy should parse"),
+        Phase8PolicyProfile::parse_toml(PHASE8_POLICY)
+            .expect("checked-in Phase 8 policy should parse"),
+    )
+}
+
+fn mutated_phase9_result(
+    native: &RigidWorldResultRecord,
+    mutate: impl FnOnce(&mut Value),
+) -> RigidWorldResultRecord {
+    let mut value = serde_json::to_value(native).expect("result should serialize");
+    mutate(&mut value);
+    let mut bytes = serde_json::to_vec(&value).expect("mutation should serialize");
+    bytes.push(b'\n');
+    decode_rigid_world_result_jsonl(&bytes, &HarnessLimits::phase2_default_v1())
+        .expect("request-valid retained mutation should decode")
+}
+
+fn first_checkpoint_member_mut<'a>(value: &'a mut Value, member: &str) -> &'a mut Value {
+    value["timelines"]
+        .as_array_mut()
+        .expect("timelines should be an array")
+        .iter_mut()
+        .flat_map(|timeline| {
+            timeline["checkpoints"]
+                .as_array_mut()
+                .expect("checkpoints should be an array")
+        })
+        .filter(|checkpoint| {
+            checkpoint
+                .get("observations")
+                .and_then(Value::as_array)
+                .is_none_or(|observations| {
+                    observations.iter().all(|observation| {
+                        matches!(
+                            observation["kind"].as_str(),
+                            Some("body_state" | "step" | "query" | "ray_cast" | "origin_shift")
+                        )
+                    })
+                })
+        })
+        .find_map(|checkpoint| {
+            checkpoint
+                .get_mut(member)
+                .expect("checkpoint member should exist")
+                .as_array_mut()
+                .and_then(|values| values.first_mut())
+        })
+        .unwrap_or_else(|| panic!("a checkpoint should contain `{member}`"))
+}
+
+fn first_observation_mut(value: &mut Value, predicate: impl Fn(&Value) -> bool) -> &mut Value {
+    value["timelines"]
+        .as_array_mut()
+        .expect("timelines should be an array")
+        .iter_mut()
+        .flat_map(|timeline| {
+            timeline["checkpoints"]
+                .as_array_mut()
+                .expect("checkpoints should be an array")
+        })
+        .filter_map(|checkpoint| {
+            checkpoint
+                .get_mut("observations")
+                .and_then(Value::as_array_mut)
+        })
+        .flatten()
+        .find(|observation| predicate(observation))
+        .expect("the requested observation should exist")
+}
+
+fn expected_retained_mismatch(
+    request: &liquidfun_test_protocol::RigidWorldRequestRecord,
+    native: &RigidWorldResultRecord,
+    oracle: &RigidWorldResultRecord,
+) -> Box<RigidMismatchReport> {
+    let (phase6, phase7, phase8) = retained_profiles();
+    let outcome =
+        compare_phase8_rigid_world_results(request, native, oracle, &phase6, &phase7, &phase8)
+            .expect("request-valid retained mutation should compare");
+    let RigidComparisonOutcome::PhysicsMismatch(report) = outcome else {
+        panic!("retained mutation must produce a Phase 8 physics mismatch");
+    };
+    report
+}
+
+fn assert_complete_retained_signature(
+    request: &liquidfun_test_protocol::RigidWorldRequestRecord,
+    native: &RigidWorldResultRecord,
+    oracle: &RigidWorldResultRecord,
+    expected_path: &str,
+) {
+    let expected = expected_retained_mismatch(request, native, oracle);
+    let outcome = compare_complete_phase9_rigid_world_results(request, native, oracle)
+        .expect("request-valid retained mutation should compare");
+    let Phase9ComparisonOutcome::RetainedRigidMismatch(actual) = outcome else {
+        panic!("retained mutation must win at {expected_path}");
+    };
+    assert_eq!(expected.semantic_path(), expected_path);
+    assert_eq!(actual.signature(), expected.signature());
+}
+
+#[test]
+fn phase9_comparator_rejects_retained_body_mutation() {
+    // Arrange
+    let request = bounded_phase9_request("closed-evidence-contract");
+    let native =
+        NativeRigidWorldExecutor::execute(&request).expect("Phase 9 corpus should execute");
+    let oracle = mutated_phase9_result(&native, |value| {
+        let body = first_checkpoint_member_mut(value, "bodies");
+        let active = body["active"]
+            .as_bool()
+            .expect("body active state should be boolean");
+        body["active"] = json!(!active);
+    });
+
+    // Act / Assert
+    assert_complete_retained_signature(&request, &native, &oracle, "rigid_world.body.active");
+}
+
+#[test]
+fn phase9_comparator_rejects_retained_fixture_mutation() {
+    // Arrange
+    let request = bounded_phase9_request("closed-evidence-contract");
+    let native =
+        NativeRigidWorldExecutor::execute(&request).expect("Phase 9 corpus should execute");
+    let oracle = mutated_phase9_result(&native, |value| {
+        let fixture = first_checkpoint_member_mut(value, "fixtures");
+        let sensor = fixture["sensor"]
+            .as_bool()
+            .expect("fixture sensor state should be boolean");
+        fixture["sensor"] = json!(!sensor);
+    });
+
+    // Act / Assert
+    assert_complete_retained_signature(&request, &native, &oracle, "rigid_world.fixture.sensor");
+}
+
+#[test]
+fn phase9_comparator_rejects_retained_numeric_mutation() {
+    // Arrange
+    let request = bounded_phase9_request("closed-evidence-contract");
+    let native =
+        NativeRigidWorldExecutor::execute(&request).expect("Phase 9 corpus should execute");
+    let oracle = mutated_phase9_result(&native, |value| {
+        let diagnostics =
+            first_observation_mut(value, |observation| observation["kind"] == "diagnostics");
+        diagnostics["snapshot"]["tree_quality_bits"] = json!(100.0_f32.to_bits());
+    });
+
+    // Act / Assert
+    assert_complete_retained_signature(
+        &request,
+        &native,
+        &oracle,
+        "rigid_world.phase8.diagnostics.tree_quality",
+    );
+}
+
+#[test]
+fn phase9_comparator_rejects_retained_before_particle_mutation() {
+    // Arrange
+    let request = bounded_phase9_request("closed-evidence-contract");
+    let native =
+        NativeRigidWorldExecutor::execute(&request).expect("Phase 9 corpus should execute");
+    let oracle = mutated_phase9_result(&native, |value| {
+        let body = first_checkpoint_member_mut(value, "bodies");
+        let active = body["active"]
+            .as_bool()
+            .expect("body active state should be boolean");
+        body["active"] = json!(!active);
+        let statistics = first_observation_mut(value, |observation| {
+            observation["kind"] == "particle" && observation["observation"]["kind"] == "statistics"
+        });
+        statistics["observation"]["statistics"]["particle_contact_count"] = json!(u32::MAX);
+    });
+
+    // Act / Assert
+    assert_complete_retained_signature(&request, &native, &oracle, "rigid_world.body.active");
+}
+
+#[test]
+fn phase9_comparator_rejects_retained_process_result_through_runner() {
+    // Arrange
+    let fake = FakePhase9OracleRoot::new("rigid_d1_mismatch");
+    let executable = OracleExecutable::resolve(fake.path(), OraclePreset::Debug)
+        .expect("fake oracle should occupy the reviewed preset path");
+    let request =
+        decode_rigid_world_request_jsonl(RETAINED_REQUEST, &HarnessLimits::phase2_default_v1())
+            .expect("retained rigid request should decode");
+    let revision = manifest().pinned_upstream_revision;
+
+    // Act
+    let run = run_phase9_differential(&executable, &request, &revision)
+        .expect("request-valid retained process mutation should compare");
+
+    // Assert
+    let Phase9ComparisonOutcome::RetainedRigidMismatch(report) = run.outcome() else {
+        panic!("runner must report its retained rigid mismatch");
+    };
+    assert_eq!(report.semantic_path(), "rigid_world.body.active");
+}
+
+struct FakePhase9OracleRoot {
+    root: PathBuf,
+}
+
+impl FakePhase9OracleRoot {
+    fn new(behavior: &str) -> Self {
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("system clock should follow the Unix epoch")
+            .as_nanos();
+        let root = std::env::temp_dir().join(format!(
+            "liquidfun-phase9-retained-oracle-{}-{nonce}",
+            std::process::id()
+        ));
+        let preset = root.join("target/reference/oracle-debug");
+        fs::create_dir_all(&preset).expect("fake preset directory should be created");
+        let destination = preset.join(if cfg!(windows) {
+            "liquidfun-reference.exe"
+        } else {
+            "liquidfun-reference"
+        });
+        fs::copy(env!("CARGO_BIN_EXE_liquidfun-fake-oracle"), &destination)
+            .expect("fake oracle should copy into the reviewed path");
+        copy_adapter_inputs(&root);
+        fs::copy(
+            Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../../target/reference/oracle-debug/compile_commands.json"),
+            preset.join("compile_commands.json"),
+        )
+        .expect("reviewed compile commands should copy into the fake root");
+        fs::write(preset.join("behavior.txt"), behavior)
+            .expect("fake oracle behavior should be written");
+        Self { root }
+    }
+
+    fn path(&self) -> &Path {
+        &self.root
+    }
+}
+
+fn copy_adapter_inputs(destination_root: &Path) {
+    let source_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let manifest_path = Path::new("tools/reference/adapter-inputs.txt");
+    let manifest = fs::read_to_string(source_root.join(manifest_path))
+        .expect("reviewed adapter input manifest should be readable");
+    let destination_manifest = destination_root.join(manifest_path);
+    fs::create_dir_all(
+        destination_manifest
+            .parent()
+            .expect("adapter manifest should have a parent"),
+    )
+    .expect("adapter manifest directory should be created");
+    fs::write(&destination_manifest, &manifest).expect("adapter input manifest should be copied");
+    for relative in manifest
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty() && !line.starts_with('#'))
+    {
+        let destination = destination_root.join(relative);
+        fs::create_dir_all(
+            destination
+                .parent()
+                .expect("adapter input should have a parent"),
+        )
+        .expect("adapter input directory should be created");
+        fs::copy(source_root.join(relative), destination)
+            .expect("reviewed adapter input should be copied");
+    }
+}
+
+impl Drop for FakePhase9OracleRoot {
+    fn drop(&mut self) {
+        fs::remove_dir_all(&self.root).expect("fake oracle root should be removable");
+    }
 }
 
 #[test]
