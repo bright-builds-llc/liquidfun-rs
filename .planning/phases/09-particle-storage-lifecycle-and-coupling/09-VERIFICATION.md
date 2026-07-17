@@ -1,224 +1,194 @@
 ---
 phase: 09-particle-storage-lifecycle-and-coupling
-verified: 2026-07-15T19:24:02Z
+verified: 2026-07-17T14:38:33Z
 status: gaps_found
-score: "4/14 requirements verified; phase goal blocked"
+score: "3/5 roadmap success criteria verified; 10/14 requirements satisfied"
 generated_by: gsd-verifier
 lifecycle_mode: yolo
 phase_lifecycle_id: 09-2026-07-15T02-54-51
-generated_at: 2026-07-15T19:24:02Z
+generated_at: 2026-07-17T14:38:33Z
 lifecycle_validated: true
 overrides_applied: 0
-requirements:
-  - id: API-09
-    status: blocked
-  - id: API-10
-    status: verified
-  - id: PART-01
-    status: blocked
-  - id: PART-02
-    status: blocked
-  - id: PART-03
-    status: verified
-  - id: PART-04
-    status: blocked
-  - id: PART-05
-    status: blocked
-  - id: PART-06
-    status: verified
-  - id: PART-07
-    status: blocked
-  - id: PART-08
-    status: blocked
-  - id: PART-14
-    status: blocked
-  - id: PART-15
-    status: blocked
-  - id: PART-16
-    status: verified
-  - id: PART-17
-    status: blocked
-must_haves:
-  roadmap_success_criteria: 1/5
-  plan_truths: blocked_by_implementation_and_evidence_gaps
-  plan_artifacts: 32/32_present
-  plan_key_links: 29/29_present_but_behavior_not_proven
-  repository_completion_gates: 0/1
-evidence:
-  verified_commit: b2391a8d967fa008a1558abc220d9a44fb2c4766
-  approved_evidence_commit: a87f84bbdbfe55fb732d74c481c4a4bda9eec958
-  evidence_run: 29439515367
-  workflow_conclusion: success_but_test_pipeline_failed
-  canonical_trace: hash_bound_failed_4_passed_1_failed
-  sanitizer_trace: hash_bound_failed_4_passed_1_failed
-  rust_vs_cpp_comparison: absent
-  executable_branch_coverage: absent
-  focused_phase9_corpus_local: passed_5_of_5_without_oracle_mode
-  code_review: findings_2_critical_8_warning
+re_verification:
+  previous_status: gaps_found
+  previous_score: "4/14 requirements verified"
+  gaps_closed:
+    - G09-EVIDENCE-PIPELINE
+    - G09-STEP-GUARD
+    - G09-ZOMBIE-AUTHORITY
+    - G09-EVICTION-OCCURRENCE
+    - G09-PERMUTATION-WEIGHTS
+    - G09-PROTOCOL-VALIDATION
+  gaps_remaining:
+    - G09-DIFFERENTIAL-COMPARISON
+    - G09-EXECUTABLE-COVERAGE
+  regressions: []
 gaps:
-  - G09-EVIDENCE-PIPELINE
-  - G09-DIFFERENTIAL-COMPARISON
-  - G09-EXECUTABLE-COVERAGE
-  - G09-STEP-GUARD
-  - G09-ZOMBIE-AUTHORITY
-  - G09-EVICTION-OCCURRENCE
-  - G09-PERMUTATION-WEIGHTS
-  - G09-PROTOCOL-VALIDATION
-human_verification: []
+  - truth: "Phase 9 differential execution preserves retained Phase 6 through Phase 8 rigid semantic comparison while adding particle comparison."
+    status: failed
+    reason: "The runner calls only the Phase 9 comparator, which validates structure and then filters every checkpoint to particle observations. Body and fixture state is discarded, and the retained Phase 8 comparator is never composed, so a valid retained rigid divergence can return Match."
+    artifacts:
+      - path: "crates/liquidfun-differential/src/rigid_world.rs"
+        issue: "run_phase9_differential invokes compare_phase9_rigid_world_results without inherited rigid comparison."
+      - path: "crates/liquidfun-differential/src/rigid_world/phase9/comparator.rs"
+        issue: "particle_observations filters out every non-particle observation before comparison."
+      - path: "crates/liquidfun-differential/tests/phase9_corpus.rs"
+        issue: "Comparator mutation coverage changes particle observations only and does not prove body or fixture divergence detection."
+    missing:
+      - "Compose compare_phase8_rigid_world_results, or an equivalent inherited rigid walker, into the Phase 9 comparison boundary."
+      - "Add a regression that mutates retained body or fixture output and proves Phase 9 reports the first rigid divergence."
+  - truth: "Every claimed Phase 9 lifecycle, contact, statistics, replay, and evidence branch is bound to branch-specific semantic native-versus-oracle output."
+    status: partial
+    reason: "Several of the 58 claimed witnesses assert declarations or configuration bits, accept zero or empty outputs, or reduce replay and divergence claims to request/scenario ID equality. The evidence script checks counts, uniqueness, and digests but not semantic binding between each branch and its declared action/checkpoint/output."
+    artifacts:
+      - path: "crates/liquidfun-differential/tests/phase9_corpus.rs"
+        issue: "Finite/infinite/equal lifetime, strict-contact, listener/filter, collision-energy, stuck-candidate, and evidence-contract branches do not all exercise their named semantic behavior."
+      - path: "crates/liquidfun-differential/tests/fixtures/rigid_world/phase9/phase9-v1.json"
+        issue: "Multiple witnesses point to generic inspect-particle or statistics observations that are unrelated to the semantic assertion."
+      - path: "scripts/phase9-evidence.sh"
+        issue: "Manifest validation proves branch count and uniqueness, not exact witness-to-output binding."
+    missing:
+      - "Bind each branch to the exact action, checkpoint, observation kind, and semantic output it claims."
+      - "Exercise observable finite/infinite/equal lifetime transitions and strict/listener/filter enabled-versus-disabled behavior."
+      - "Use nonzero collision-energy and nonempty stuck-candidate scenarios, or document and test an intentional alternative oracle branch."
+      - "Prove replay, minimization, first-divergence, D0, and debug/release claims through result digests or deliberate mismatch behavior rather than identity fields alone."
 ---
 
 # Phase 9: Particle Storage, Lifecycle, and Coupling Verification Report
 
-**Phase goal:** Implement safe, identity-preserving particle systems and their lifecycle, contact, buffer, query, callback, and rigid-coupling foundations.
+**Phase Goal:** Implement safe, identity-preserving particle systems and their lifecycle, contact, buffer, query, callback, and rigid-coupling foundations.
 
-**Status:** `gaps_found`
+**Verified:** 2026-07-17T14:38:33Z
 
-**Score:** 4/14 mapped requirements are independently verified. The phase completion gate fails.
+**Status:** gaps_found
 
-## Verdict
+**Re-verification:** Yes — after the original eight-gap report and Plans 18–24.
 
-Phase 9 is not complete. The native implementation contains substantial, well-tested particle storage, ownership, buffer, view, force, statistics, query, contact, and lifecycle foundations, but the exact-ref evidence accepted for promotion is invalid and several runtime/protocol defects contradict the phase's observable contracts.
+## Goal Achievement
 
-The strongest disconfirming evidence is inside the two downloaded artifacts for approved run `29439515367`. Both hash-bound `phase9-trace.log` files report:
+### Observable Truths
 
-- `required_oracle_mode_proves_replay_and_profile_agreement ... FAILED`
-- `Phase 9 checkpoint has no legacy predecessor`
-- `test result: FAILED. 4 passed; 1 failed`
+| # | Roadmap success criterion | Status | Evidence |
+| --- | --- | --- | --- |
+| 1 | Consumers can create, configure, pause, inspect, and destroy multiple systems and particles with stable identities, flags, colors, lifetimes, and safe user data. | ✓ VERIFIED | Public APIs are exported from `lib.rs` and `particle.rs`; `World` owns multiple newest-first systems; creation receipts, snapshots, lifecycle tests, and stable-handle tests exercise the behavior. |
+| 2 | Sorting, rotation, and compaction atomically update SoA lanes, identity maps, derived contact/proxy/constraint/lifetime/group state, while borrow-scoped views remain safe. | ✓ VERIFIED | `storage/permutation.rs` builds a complete candidate, remaps every derived lane, recomputes contact weights, and commits only after validation. `ParticleSystemView` and closure-scoped `ParticleEditor` prevent escaped borrows; property and public regression suites cover coherence. |
+| 3 | Safe external-buffer equivalents enforce ownership, capacity, growth, and teardown explicitly. | ✓ VERIFIED | `OwnedLaneBundle` and `ParticleBufferMode` retain Rust ownership, validate lane lengths/capacities, distinguish growable and fixed modes, and return explicit capacity errors. |
+| 4 | Proxies, neighborhoods, particle/body contacts, strict behavior, lifetimes, zombies, callbacks, and deferred compaction match the pinned oracle. | ✗ FAILED | Native behavior is substantive and well unit-tested, but the promoted differential corpus does not semantically exercise several named lifetime, strict-contact, and listener/filter branches. |
+| 5 | Forces, impulses, collision energy, stuck candidates, statistics, AABB/ray queries, and listener/filter flags are exposed and differentially verified through safe APIs. | ✗ FAILED | Safe APIs and native tests exist, and force/query branches have semantic observations. The collision-energy and stuck witnesses accept zero/empty output, listener/filter witnesses inspect declaration bits, and the comparator can miss retained rigid divergence. |
 
-The canonical trace SHA-256 is `3a339387b4c4acccc15b5fc4944d6bec9c7e1d315f4753034ae52a5ff97f2e64`; the sanitizer trace SHA-256 is `ee75462d49275c5b7d02b8677eb6f9bf82c241c6b993c16d6df08a2ae231a070`. Both recompute exactly to the values in their respective `identity.json` files. The workflow nevertheless concluded success because the test command is piped to `tee` without `pipefail`, so the successful `tee` process masked the failing `cargo test` exit status.
+**Score:** 3/5 roadmap success criteria verified
 
-The user's approval correctly binds the run to commit `a87f84bbdbfe55fb732d74c481c4a4bda9eec958`; it does not waive this failed executable result or establish parity. The four promoted compatibility rows must therefore be treated as unsupported until corrected evidence is generated.
+The goal is not yet achieved because “match” and “differentially verified” are explicit parts of criteria 4 and 5. Passing native tests and successful CI execution cannot substitute for a comparator that observes the required state or for branch witnesses that exercise the behavior they name.
 
-This verification applied `AGENTS.md`, `AGENTS.bright-builds.md`, the placeholder-only `standards-overrides.md`, and the local verification, testing, and Rust standards. No override applies.
+### Required Artifacts
 
-## Blocking Gaps
+| Artifact | Expected | Status | Details |
+| --- | --- | --- | --- |
+| `crates/liquidfun/src/particle/definition.rs`, `storage.rs`, `storage/`, `buffer.rs` | Definitions, stable identity, complete SoA storage, owned/fixed buffer behavior | ✓ VERIFIED | Exists, substantive, exported or owned by live world objects, and covered by focused/property tests. |
+| `crates/liquidfun/src/particle/view.rs`, `editor.rs` | Borrow-scoped bulk view and closure-scoped validated edits | ✓ VERIFIED | Lifetimes prevent view/editor escape; edits validate before mutation and synchronously repair spatial state. |
+| `crates/liquidfun/src/particle/lifetime.rs`, `world/particle_lifecycle.rs` | Lifetime ordering, zombie authority, eviction, callbacks, compaction | ✓ VERIFIED | Fresh positive-step guard, ZOMBIE synchronization, synchronous eviction receipts, and ordered callback regressions exist. |
+| `crates/liquidfun/src/particle/proxy.rs`, `contact.rs`, `body_contact.rs`, `force.rs`, `statistics.rs`, `query.rs` | Contact, coupling, force/statistics, and query foundations | ✓ VERIFIED | Real state is produced and consumed by world stepping, views, snapshots, and query results. |
+| `crates/liquidfun/src/world/particle_object.rs`, `particle_coupling.rs`, `step.rs` | Public world integration and source-timed rigid coupling | ✓ VERIFIED | `World::step` runs lifecycle/contact/coupling only on fresh positive steps and commits candidate systems/bodies transactionally. |
+| `crates/liquidfun-differential/src/scenario/rigid_world/result/phase9.rs` | Closed Phase 9 request/result validation | ✓ VERIFIED | Action-specific result schemas, lifecycle occurrence identities, and finite-value validation are substantive and wired into both executors. |
+| `tools/reference/src/phase9_particle.cc` and native executor | Independent native/C++ semantic execution | ✓ VERIFIED | Both roles consume the canonical request; the accepted canonical and sanitizer jobs executed seven cases successfully. |
+| `crates/liquidfun-differential/src/rigid_world/phase9/comparator.rs` | Complete Phase 9 plus retained Phase 6–8 comparison | ✗ INCOMPLETE | Exhaustive over nine particle observation variants and 22 particle policies, but it drops body/fixture observations and never composes the inherited rigid comparator. |
+| `crates/liquidfun-differential/tests/phase9_corpus.rs`, Phase 9 manifest, `scripts/phase9-evidence.sh` | Branch-specific semantic evidence with fail-closed collection | ✗ INCOMPLETE | Pipeline failure propagation is fixed and evidence is digest-bound, but several branch assertions are declarative or trivial rather than semantic. |
+| `reference/compatibility.json`, `COMPATIBILITY.md` | Honest promotion from accepted evidence | ⚠ PARTIAL | Four scoped rows reference the correct approved run/artifacts, but the differential-validation claim is stronger than the comparator and witness semantics support. |
 
-### G09-EVIDENCE-PIPELINE: exact-ref artifacts prove a failed test run
+`gsd-tools verify artifacts` passed all 56/56 declared plan artifacts. Three of 46 declarative key-link regex checks reported pattern misses; manual semantic tracing verified those three links: `ParticleSystem.storage` in `world/object.rs`, `edit_particle` to `commit_kinematic_edit`, and `World::step` to `run_particle_contact_prefix`. These regex false negatives are not gaps.
 
-`.github/workflows/oracle.yml` runs the Phase 9 test through `cargo test ... | tee ...` without enabling pipeline failure propagation. Both approved artifacts contain the same classified oracle failure while the jobs were marked successful. This directly falsifies Plans 09-16 and 09-17's successful-evidence authority and blocks all D1 promotion.
+### Key Link Verification
 
-Required closure:
+| From | To | Via | Status | Details |
+| --- | --- | --- | --- | --- |
+| Public particle API | `World` particle methods | exported IDs, definitions, snapshots, receipts, views, and errors | ✓ WIRED | Consumer-facing calls resolve to live world-owned systems and stable particle identities. |
+| `ParticleSystem` | `ParticleStorage` | sole storage owner | ✓ WIRED | `world/object.rs` stores one `ParticleStorage`; public access routes through validated world handles. |
+| `ParticleEditor` / `ParticleSystemView` | storage lanes and derived state | scoped borrow plus validated commit/repair | ✓ WIRED | Immutable views borrow the world; edits copy, validate, then call `commit_kinematic_edit`. |
+| `World::step` | lifecycle and contact/coupling stages | fresh positive-step guard | ✓ WIRED | `runs_particle_stages` requires `Fresh` and `time_step > 0.0`; lifecycle precedes contact prefix and rigid solve. |
+| storage permutation | all lanes, stable IDs, contacts, weights, groups, lifetimes | candidate/remap/recompute/atomic commit | ✓ WIRED | Remapped contacts feed `recompute_contact_weights`; commit replaces every required/optional lane and derived record. |
+| canonical request | native and pinned C++ executors | one serialized request and exact request digest | ✓ WIRED | `run_phase9_differential` decodes one canonical value and sends it to both roles. |
+| native/C++ results | Phase 9 comparator | typed observation walker | ✗ PARTIAL | Particle observations are compared; retained body and fixture observations are filtered out. |
+| branch manifest | semantic output | witness action/checkpoint/predicate | ✗ PARTIAL | Every label reaches an assertion, but some assertions inspect inputs/configuration or accept non-demonstrative empty output. |
+| accepted evidence artifacts | compatibility ledger | exact run, commit, artifact names, and digests | ✓ WIRED | Run `29583793056` and approved SHA `b27fc14f6b29fb82ca815fa1effba71bae09d424` are cited consistently. |
 
-1. Make the canonical and sanitizer test steps fail on the `cargo test` exit status (`set -o pipefail` or an equivalent status-preserving command).
-1. Fix the `Phase 9 checkpoint has no legacy predecessor` oracle failure.
-1. Regenerate both exact-ref artifacts from a newly reviewed commit and require the hash-bound logs themselves to contain a passing test result.
+### Data-Flow Trace (Level 4)
 
-### G09-DIFFERENTIAL-COMPARISON: no Rust-versus-C++ semantic comparison runs
+| Artifact | Data variable | Source | Produces real data | Status |
+| --- | --- | --- | --- | --- |
+| Particle view/snapshot/creation receipt | stable IDs, lanes, destruction occurrences | world-owned `ParticleStorage` and lifecycle outcomes | Yes | ✓ FLOWING |
+| World particle step | positions, velocities, contacts, weights, body reactions | lifecycle, neighborhood/contact generation, and coupling against live fixtures/bodies | Yes | ✓ FLOWING |
+| Statistics and queries | counts, energy, stuck IDs, AABB/ray hits | current storage/contact/body state | Yes | ✓ FLOWING |
+| Phase 9 differential result | native and C++ checkpoint observations | same canonical request executed by independent engines | Yes | ✓ FLOWING |
+| Phase 9 comparison outcome | mismatch or match | filtered particle observation slices | Partially | ✗ HOLLOW FOR RETAINED RIGID STATE |
+| Branch-evidence manifest | reached branch names and digests | corpus witness assertions and evidence script | Partially | ⚠ STATIC/DECLARATIVE FOR SEVERAL BRANCHES |
 
-`corpus_executes_with_stable_ids_and_d0_bytes` compares two native Rust results. `required_oracle_mode_proves_replay_and_profile_agreement` compares C++ debug/replay and debug/release results. No test compares `NativeRigidWorldExecutor` output with the pinned oracle output for the same request, and the closed `phase9-v1` policy registry is never consumed by such a comparison.
+### Behavioral Spot-Checks
 
-Consequently, even a repaired all-green workflow could accept arbitrarily different Rust and C++ particle results. The promoted `differentially_validated` rows are not supported.
+Fresh independent gates were supplied by the orchestrator; redundant long workspace tests were not rerun.
 
-Required closure: execute identical requests through both engines, compare every declared semantic path under `phase9-v1`, prove complete policy consumption, and fail at the first mismatch before producing promotable artifacts.
+| Behavior | Command or evidence | Result | Status |
+| --- | --- | --- | --- |
+| All-feature native behavior and public docs | `cargo test --all-features` | All tests passed, including 16 doctests | ✓ PASS |
+| Phase 9 native/C++ corpus | canonical and sanitizer Phase 9 gates | 7 passed, 0 failed, 1 deliberately ignored in each authority lane | ✓ PASS |
+| Fail-closed repository/evidence checks | provenance, inventory, cargo-deny, actionlint, Markdown, read-only, ASVS L1 | All passed; schema drift reported false/nonblocking | ✓ PASS |
+| Declared artifacts | `gsd-tools verify artifacts` across Plans 01–24 | 56/56 passed | ✓ PASS |
+| Retained rigid mismatch detection | Static call/data-flow trace | Phase 9 runner has no call to `compare_phase8_rigid_world_results`; comparator filters to particle observations | ✗ FAIL |
+| Branch-specific semantic evidence | Static assertion/manifest trace | Multiple branches prove declarations, empty output, or identity only | ✗ FAIL |
 
-### G09-EXECUTABLE-COVERAGE: branch names are not bound to executed witnesses
+### Requirements Coverage
 
-The manifest lists lifecycle, eviction, listener/filter, contact, strict-contact, coupling, culling, and ray-directive branches, but the only generated request creates four flag-zero particles, performs basic edits/force/statistics/query/ray actions, marks and compacts one particle, then destroys both systems. It does not step live particle systems beside live rigid bodies. The coverage test only set-compares label strings and never connects a case to request bytes, actions, checkpoints, observations, or reached branches.
+| Requirement | Source plans | Status | Evidence |
+| --- | --- | --- | --- |
+| API-09 | 05, 19 | ✓ SATISFIED | Borrow-scoped views and closure-scoped edits prevent aliasing; edits repair derived state and permutations recompute weights. |
+| API-10 | 04 | ✓ SATISFIED | Owned lane bundles and fixed/growable modes define ownership, capacity, growth, failure, and teardown. |
+| PART-01 | 01, 03, 12 | ✓ SATISFIED | Multiple newest-first systems expose configuration, pause, inspection, destruction, capacity, and iteration controls. |
+| PART-02 | 01, 02, 06, 19 | ✓ SATISFIED | Particle creation/destruction supports required fields, stable IDs, safe user associations, lifetimes, and synchronous eviction receipts. |
+| PART-03 | 02 | ✓ SATISFIED | Dense rows can reorder without changing public particle identity. |
+| PART-04 | 01, 02, 05, 19 | ✓ SATISFIED | Candidate permutations update required/optional lanes, identity, proxies, contacts, weights, pairs/triads, lifetimes, and group ranges atomically. |
+| PART-05 | 05 | ✓ SATISFIED | Safe bulk read and checked mutation APIs cover the named particle properties without exposing mutable lane aliases. |
+| PART-06 | 04 | ✓ SATISFIED | Fixed capacity fails explicitly; growable storage remains Rust-owned and expands under checked rules. |
+| PART-07 | 08, 09, 14, 15, 22 | ✗ BLOCKED | Native proxies/neighborhood/contact behavior exists, but strict-contact enabled/disabled evidence checks configuration rather than a semantic contact difference. |
+| PART-08 | 06, 14, 15, 18, 19, 22 | ✗ BLOCKED | Native lifetime/zombie/eviction regressions pass, but finite/infinite/equal lifetime differential branches inspect request declarations instead of lifecycle outcomes. |
+| PART-14 | 06, 07, 18, 19 | ✓ SATISFIED | Storage-authoritative zombies and requested/unrequested destruction outcomes are ordered and emitted exactly once. |
+| PART-15 | 08, 09, 14, 22 | ✗ BLOCKED | Listener/filter APIs and native gates exist, but promoted enabled/disabled witnesses inspect flag bits rather than callback/collision outcomes and ordering. |
+| PART-16 | 10, 14, 22 | ✗ BLOCKED | Force, impulse, counts, and statistics APIs are substantive; collision-energy and stuck-candidate branches accept zero/empty values and therefore do not prove those behaviors. |
+| PART-17 | 11, 14 | ✓ SATISFIED | System/world AABB and ray paths exercise ordering, clipping, ignore/continue/terminate, start-inside exclusion, and culling through semantic outputs. |
 
-Required closure: provide executable branch-specific scenarios and observations, record mechanically which branches each execution reached, and bind all executed requests/results into the evidence artifacts.
+**Requirements score:** 10/14 satisfied
 
-## Independently Confirmed Runtime and Protocol Gaps
+No Phase 9 requirement is orphaned: all 14 IDs mapped to the phase in `REQUIREMENTS.md` appear in at least one Phase 9 plan.
 
-| Gap | Concrete current behavior | Affected contracts |
-| --- | --- | --- |
-| Particle step guard | `run_particle_lifecycle_step` and `run_particle_contact_prefix` execute before the fresh-positive-time guard, so zero-time and continuous-continuation calls can repeat particle work. | PART-01, PART-07, PART-08, PART-14, PART-15 |
-| Zombie authority | Public creation can store `ZOMBIE` without moving identity to pending, while `mark_particle_for_destruction` calls `mark_delete` without setting the zombie bit. | PART-02, PART-08, PART-14 |
-| Capacity occurrence | `prepare_capacity_for_creation` returns compaction occurrences, but both preflight and commit callers discard the outcome. | PART-08, PART-14 |
-| Permutation coherence | Permutation candidates initialize weights to zero while retaining remapped contacts, so aggregate views can expose contacts beside stale zero weights. | API-09, PART-04, PART-05 |
-| Result validation | A particle action accepts any outer `Particle` observation without validating its nested kind, IDs, ordering, lengths, or action relationship. | PART-07, PART-08, PART-15, PART-17 |
-| Request lifecycle validation | Phase 9 action validation checks shapes and vectors but not create/use/destroy order, liveness, ownership, or cross-system references. | PART-01, PART-02, PART-03 |
-| Mixed identity | Rust emits live body IDs in mixed state; C++ emits an empty body-ID array. A real comparison would already fail. | PART-07, PART-15 |
-| Negative infinite lifetime | Production accepts finite lifetimes at or below zero as infinite, while protocol validation rejects negative finite lifetime bits. | PART-08 |
+### Anti-Patterns Found
 
-These findings were validated against the actual implementation and pinned-source integration paths rather than accepted from `09-REVIEW.md` on trust.
+| File | Line | Pattern | Severity | Impact |
+| --- | --- | --- | --- | --- |
+| `crates/liquidfun/src/particle/storage.rs` | 416 | Commented-out obsolete constructor call | ℹ INFO | No runtime effect, but stale code should be removed during cleanup. |
+| `crates/liquidfun-differential/src/rigid_world/phase9/comparator.rs` | 237 | Filters observations before comparison | 🛑 BLOCKER | Allows retained rigid disagreement to escape the Phase 9 authority boundary. |
+| `crates/liquidfun-differential/tests/phase9_corpus.rs` | 726–730, 782–799, 868–869, 916–923 | Input/configuration, zero/empty, or identity-only branch assertions | 🛑 BLOCKER | Inflates the claimed executable semantic branch coverage and blocks parity claims. |
 
-## Roadmap Success Criteria
+The general TODO/FIXME/placeholder/empty-implementation scan found no additional user-visible stubs. Empty match arms found in query/storage code are deliberate exhaustive no-op branches, not hollow implementations.
 
-| # | Criterion | Result |
-| ---: | --- | --- |
-| 1 | Multiple systems and particles expose stable identity, flags, colors, lifetimes, and safe user data. | BLOCKED: the broad API exists, but zombie flags and lifecycle authority disagree and source equivalence is not differentially demonstrated. |
-| 2 | Every permutation updates all state atomically while safe views remain coherent. | BLOCKED: identity/reference transactionality is strong, but retained contacts can be published beside zeroed weights. |
-| 3 | Safe external buffers enforce ownership, capacity, growth, and teardown contracts. | VERIFIED: owned transfer, explicit fixed/growable limits, allocation preservation, teardown return, and compile-time alias exclusion have focused evidence. |
-| 4 | Contacts, strict behavior, lifetimes, zombies, callbacks, and compaction match the pinned oracle. | BLOCKED: runtime defects exist and no valid Rust-versus-C++ evidence executes these branches. |
-| 5 | Forces/statistics/queries/callback flags are exposed and differentially verified. | BLOCKED: the APIs are present, but executable branch coverage and cross-engine comparison are absent. |
+### Human Verification Required
 
-**Roadmap score:** 1/5.
+None. The remaining failures are deterministic code and evidence-boundary defects that can be verified programmatically.
 
-## Requirement Accounting
+### Deferred-Scope Check
 
-| Requirement | Status | Evidence boundary |
-| --- | --- | --- |
-| API-09 | BLOCKED | Borrow-scoped views and editors exist, but a valid permutation can expose stale zero weights beside retained contacts. |
-| API-10 | VERIFIED | Owned lane adoption/return, fixed/growable capacity, no-silent-growth behavior, and alias exclusion are focused-tested. |
-| PART-01 | BLOCKED | Multiple-system APIs exist, but zero-time/continuation stepping and invalid evidence prevent upstream-equivalent completion. |
-| PART-02 | BLOCKED | Stable creation/destruction APIs exist, but the public zombie flag and pending identity state can diverge. |
-| PART-03 | VERIFIED | Independent storage properties and public integration tests preserve scoped stable IDs through reorder and compaction. |
-| PART-04 | BLOCKED | Central permutation remaps references atomically, but does not preserve/recompute the required weight lane coherently with retained contacts. |
-| PART-05 | BLOCKED | All named semantic views exist, but the view can expose the permutation weight/contact inconsistency. |
-| PART-06 | VERIFIED | Fixed and growable owned-buffer behavior is explicit, transactional, and allocation-preserving. |
-| PART-07 | BLOCKED | Contact kernels exist, but step timing, mixed identity, executable coverage, and cross-engine parity remain defective. |
-| PART-08 | BLOCKED | Lifetime kernels and a narrow tie witness exist, but zombie authority, eviction effects, negative lifetime protocol coverage, and canonical execution are incomplete. |
-| PART-14 | BLOCKED | Requested destruction behavior is not authoritative across public marking and capacity eviction. |
-| PART-15 | BLOCKED | Local flag-gating tests exist, but the promoted corpus neither executes nor compares the complete callback/filter branches. |
-| PART-16 | VERIFIED | Checked force/impulse and semantic statistics APIs have focused transactionality and source-arithmetic tests. |
-| PART-17 | BLOCKED | Query/ray APIs exist, but the declared directive/culling branches are not tied to executable differential witnesses. |
+Phase 10 explicitly owns particle groups, pairs/triads, group topology, solver families, and the cross-engine stable-ID rotation witness. Those items were not treated as Phase 9 gaps. Neither remaining gap is deferred: no later roadmap goal explicitly promises to restore retained Phase 6–8 comparison inside the Phase 9 runner or replace weak Phase 9 branch witnesses.
 
-## Automated Verification
+### Gaps Summary
 
-The focused local command `cargo test -p liquidfun-differential --test phase9_corpus -- --nocapture` passed 5/5 because `LIQUIDFUN_PHASE9_ORACLE_MODE` was unset. That pass is useful disconfirmation: the default suite can remain green while the artifact's required oracle-mode test fails.
+Plans 18–24 materially closed six of the eight original gaps:
 
-The exact downloaded identities and payload digests were recomputed successfully. This proves artifact integrity, but in this case integrity faithfully binds the artifacts to failing logs; it does not prove successful physics evidence.
+- particle stages now require a fresh positive step;
+- storage flags and pending-destruction state agree on ZOMBIE authority;
+- capacity eviction returns synchronous exactly-once occurrences;
+- permutation weights are recomputed from remapped contacts;
+- Phase 9 request/result protocol validation is action-specific and fail-closed;
+- the evidence pipeline uses `pipefail`, passing-test markers, exact-ref approval, canonical/sanitizer artifacts, digests, and read-only gates.
 
-### Exact local artifact reproduction
+The original differential-comparison and executable-coverage concerns improved but are not closed. A real native-versus-C++ particle comparator now exists, yet it omits retained rigid state. Seven cases execute under both engines, yet several of the 58 named branches do not semantically demonstrate the behavior they claim. Because the compatibility ledger promotes differential validation from this evidence, these are goal-blocking gaps rather than documentation warnings.
 
-The failing payloads are available at these repository-relative paths:
+_Verified: 2026-07-17T14:38:33Z_
 
-- `target/phase9-evidence/phase9-canonical/phase9-trace.log`
-- `target/phase9-evidence/phase9-canonical/identity.json`
-- `target/phase9-evidence/phase9-sanitizer/phase9-trace.log`
-- `target/phase9-evidence/phase9-sanitizer/identity.json`
-
-The failure can be inspected without executing either engine:
-
-```bash
-rg -n 'required_oracle|FAILED|test result|legacy predecessor' \
-  target/phase9-evidence/phase9-{canonical,sanitizer}/phase9-trace.log
-```
-
-Both logs report the required oracle-mode test failure and `test result: FAILED. 4 passed; 1 failed`.
-
-The exact content identities were recomputed with:
-
-```bash
-for directory in \
-  target/phase9-evidence/phase9-canonical \
-  target/phase9-evidence/phase9-sanitizer
-do
-  (
-    cd "$directory"
-    shasum -a 256 phase9-trace.log phase9-manifest.json
-    jq -r '.trace.sha256,.manifest.sha256' identity.json
-  )
-done
-```
-
-Results:
-
-- Canonical trace: `3a339387b4c4acccc15b5fc4944d6bec9c7e1d315f4753034ae52a5ff97f2e64`; manifest: `36cfaad1f56505f8427408733e2231ad613984a4cb3eb3b8d757e7a14b2c38e0`.
-- Sanitizer trace: `ee75462d49275c5b7d02b8677eb6f9bf82c241c6b993c16d6df08a2ae231a070`; manifest: `0c89f0136eda6689118d3eaa909defb1d182d5723e7a64ea1e958396066dce15`.
-
-Each recomputed value exactly equals the corresponding field in `identity.json`.
-
-The implementation and ordinary Rust suites may otherwise be green, but no repository completion gate can override a failed canonical executable result, absent cross-engine comparison, or the concrete runtime defects above.
-
-## Human Verification
-
-None. The blockers are deterministic code, protocol, workflow, and artifact facts. Additional human approval cannot convert these failed or absent checks into parity evidence.
-
-## Conclusion
-
-Phase 9 must remain open. Repair the evidence pipeline first, close the runtime/protocol gaps, add executable branch witnesses and an actual Rust-versus-pinned-C++ comparator, then publish a new human-approved exact commit and regenerate canonical and sanitizer artifacts. Only after those artifacts contain passing hash-bound logs and the compatibility ledger is regenerated from the new authority should Phase 9 be reverified.
-
-_Verifier: gsd-verifier_
-
-_Result: gaps_found_
+_Verifier: the agent (gsd-verifier)_
