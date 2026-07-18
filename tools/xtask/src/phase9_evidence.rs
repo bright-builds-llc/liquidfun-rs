@@ -10,8 +10,9 @@ use std::{
 };
 
 use liquidfun_differential::{
-    Phase9ComparisonOutcome, compare_complete_phase9_rigid_world_results,
-    validate_phase9_evidence_bindings,
+    Phase9ComparisonOutcome, Phase9CrossRunProof, Phase9CrossRunProofRecord,
+    Phase9EvidencePayloadRef, compare_complete_phase9_rigid_world_results,
+    validate_phase9_cross_run_proofs, validate_phase9_evidence_bindings,
 };
 use liquidfun_test_protocol::{
     HarnessLimits, PHASE9_REQUIRED_BRANCH_IDS, Phase9WitnessBinding, RigidWorldRequestRecord,
@@ -447,6 +448,7 @@ struct EvidenceCaseRecord {
     oracle_result_sha256: String,
     complete_comparison_path: String,
     complete_comparison_sha256: String,
+    cross_run_proofs: Vec<Phase9CrossRunProofRecord>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -477,8 +479,8 @@ struct CompleteComparisonPayload {
 }
 
 fn validate_manifest(root: &Path, manifest: &EvidenceManifest) -> Result<(), Phase9EvidenceError> {
-    if manifest.schema_version != 2
-        || manifest.case_record_schema_version != 1
+    if manifest.schema_version != 3
+        || manifest.case_record_schema_version != 2
         || manifest.profile != "phase9-v1"
         || manifest.upstream_revision != UPSTREAM_REVISION
         || manifest.cases.len() != 7
@@ -607,6 +609,36 @@ fn validate_manifest(root: &Path, manifest: &EvidenceManifest) -> Result<(), Pha
                 format!("case `{}` did not record a complete match", case.case_id),
             ));
         }
+        let mut proof_payloads = BTreeMap::new();
+        for reference in cross_run_payload_refs(&case.cross_run_proofs) {
+            let bytes = read_payload(
+                root,
+                &reference.path,
+                reference.sha256.as_str(),
+                "cross-run proof result",
+            )?;
+            if let Some(existing) = proof_payloads.insert(reference.path.to_string(), bytes.clone())
+                && existing != bytes
+            {
+                return Err(Phase9EvidenceError::new(
+                    "cross-run",
+                    format!("conflicting proof payload reference `{}`", reference.path),
+                ));
+            }
+        }
+        validate_phase9_cross_run_proofs(
+            &request,
+            &native,
+            &oracle,
+            &request_bytes,
+            &native_bytes,
+            &oracle_bytes,
+            &case.witnesses,
+            &case.cross_run_proofs,
+            &proof_payloads,
+            &HarnessLimits::phase2_default_v1(),
+        )
+        .map_err(|error| Phase9EvidenceError::new("cross-run", error.to_string()))?;
         all_bindings.extend(case.witnesses.iter().cloned());
     }
     if all_branches.len() != 58
@@ -619,6 +651,31 @@ fn validate_manifest(root: &Path, manifest: &EvidenceManifest) -> Result<(), Pha
     }
     validate_phase9_witness_bindings(&all_bindings, maximum_actions, maximum_checkpoints)
         .map_err(|error| Phase9EvidenceError::new("bindings", error.to_string()))
+}
+
+fn cross_run_payload_refs(records: &[Phase9CrossRunProofRecord]) -> Vec<&Phase9EvidencePayloadRef> {
+    let mut references = Vec::new();
+    for record in records {
+        match &record.proof {
+            Phase9CrossRunProof::ReplayResultDigestEquality {
+                replay_native,
+                replay_oracle,
+            } => references.extend([replay_native, replay_oracle]),
+            Phase9CrossRunProof::MinimizedFailureSignaturePreservation { minimized, copied }
+            | Phase9CrossRunProof::DeliberateFirstDivergence { minimized, copied } => {
+                references.extend([&minimized.result, &copied.result]);
+            }
+            Phase9CrossRunProof::D0RepeatedResultDigestEquality {
+                repeated_native,
+                repeated_oracle,
+            } => references.extend([repeated_native, repeated_oracle]),
+            Phase9CrossRunProof::DebugReleaseResultDigestEquality {
+                debug_oracle,
+                release_oracle,
+            } => references.extend([debug_oracle, release_oracle]),
+        }
+    }
+    references
 }
 
 fn validate_retained(record: &RetainedRigidRecord) -> Result<(), Phase9EvidenceError> {
@@ -792,6 +849,11 @@ fn validate_exact_file_set(
         expected.insert(case.native_result_path.clone());
         expected.insert(case.oracle_result_path.clone());
         expected.insert(case.complete_comparison_path.clone());
+        expected.extend(
+            cross_run_payload_refs(&case.cross_run_proofs)
+                .into_iter()
+                .map(|reference| reference.path.to_string()),
+        );
     }
     let actual = regular_files(root)?;
     if actual != expected {
@@ -1333,6 +1395,11 @@ fn expected_evidence_files(manifest: &EvidenceManifest) -> BTreeSet<String> {
         files.insert(case.native_result_path.clone());
         files.insert(case.oracle_result_path.clone());
         files.insert(case.complete_comparison_path.clone());
+        files.extend(
+            cross_run_payload_refs(&case.cross_run_proofs)
+                .into_iter()
+                .map(|reference| reference.path.to_string()),
+        );
     }
     files
 }

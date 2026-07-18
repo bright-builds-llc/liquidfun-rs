@@ -609,7 +609,7 @@
           "branch_id": "replay_identity",
           "action_index": 9,
           "checkpoint_index": 1,
-          "observation_kind": "particle",
+          "observation_kind": "case_evidence",
           "semantic_assertion": {
             "kind": "replay_result_digest_equality"
           }
@@ -618,7 +618,7 @@
           "branch_id": "minimization_identity",
           "action_index": 9,
           "checkpoint_index": 1,
-          "observation_kind": "particle",
+          "observation_kind": "case_evidence",
           "semantic_assertion": {
             "kind": "minimized_failure_signature_preservation"
           }
@@ -627,7 +627,7 @@
           "branch_id": "first_divergence_stability",
           "action_index": 9,
           "checkpoint_index": 1,
-          "observation_kind": "particle",
+          "observation_kind": "case_evidence",
           "semantic_assertion": {
             "kind": "deliberate_first_divergence"
           }
@@ -636,7 +636,7 @@
           "branch_id": "d0_byte_identity",
           "action_index": 9,
           "checkpoint_index": 1,
-          "observation_kind": "particle",
+          "observation_kind": "case_evidence",
           "semantic_assertion": {
             "kind": "d0_repeated_result_digest_equality"
           }
@@ -645,7 +645,7 @@
           "branch_id": "debug_release_agreement",
           "action_index": 9,
           "checkpoint_index": 1,
-          "observation_kind": "particle",
+          "observation_kind": "case_evidence",
           "semantic_assertion": {
             "kind": "debug_release_result_digest_equality"
           }

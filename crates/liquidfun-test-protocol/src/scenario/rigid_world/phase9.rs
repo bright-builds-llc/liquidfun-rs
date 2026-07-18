@@ -21,6 +21,8 @@ pub const PHASE9_REQUIRED_BRANCH_IDS: &str = "multiple_systems\nnewest_first\npa
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Phase9ObservationKind {
+    /// Evidence established across complete persisted case results rather than one observation.
+    CaseEvidence,
     System,
     Particle,
     Lifecycle,
@@ -78,8 +80,21 @@ impl Phase9SemanticAssertion {
             | Self::MinimizedFailureSignaturePreservation
             | Self::DeliberateFirstDivergence
             | Self::D0RepeatedResultDigestEquality
-            | Self::DebugReleaseResultDigestEquality => Phase9ObservationKind::Particle,
+            | Self::DebugReleaseResultDigestEquality => Phase9ObservationKind::CaseEvidence,
         }
+    }
+
+    /// Returns whether this assertion is established by a typed persisted case proof.
+    #[must_use]
+    pub const fn requires_case_evidence(&self) -> bool {
+        matches!(
+            self,
+            Self::ReplayResultDigestEquality
+                | Self::MinimizedFailureSignaturePreservation
+                | Self::DeliberateFirstDivergence
+                | Self::D0RepeatedResultDigestEquality
+                | Self::DebugReleaseResultDigestEquality
+        )
     }
 
     fn branch_id(&self) -> &str {

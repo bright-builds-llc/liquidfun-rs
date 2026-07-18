@@ -7,7 +7,11 @@ pub use comparator::{
     compare_phase9_particle_observations, compare_phase9_rigid_world_results,
     validate_phase9_policy_registry,
 };
-pub use evidence::{Phase9EvidenceBindingError, validate_phase9_evidence_bindings};
+pub use evidence::{
+    Phase9CaseEvidenceError, Phase9CrossRunProof, Phase9CrossRunProofRecord,
+    Phase9EvidenceBindingError, Phase9EvidenceMismatch, Phase9EvidencePayloadRef,
+    validate_phase9_cross_run_proofs, validate_phase9_evidence_bindings,
+};
 
 use liquidfun::collision::{Aabb, RayCastInput};
 use liquidfun::{

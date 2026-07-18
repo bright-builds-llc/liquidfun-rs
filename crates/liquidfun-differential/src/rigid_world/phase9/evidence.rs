@@ -1,13 +1,19 @@
 //! Typed resolution and evaluation for the closed Phase 9 evidence bindings.
 
+use std::collections::{BTreeMap, BTreeSet};
+
 use liquidfun_test_protocol::{
-    Phase9OccurrenceKind, Phase9ParticleBufferMode, Phase9ParticleObservation,
+    HarnessLimits, Phase9OccurrenceKind, Phase9ParticleBufferMode, Phase9ParticleObservation,
     Phase9SemanticAssertion, Phase9WitnessBinding, RigidBodyKind, RigidWorldAction,
     RigidWorldObservation, RigidWorldRequestRecord, RigidWorldResultRecord, RigidWorldTimeline,
-    RigidWorldTimelineResult, RigidWorldWitnessFamily, ScenarioId,
+    RigidWorldTimelineResult, RigidWorldWitnessFamily, ScenarioId, Sha256Hex,
+    decode_rigid_world_result_jsonl,
 };
+use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 
-use super::PHASE9_REQUIRED_POLICY_PATHS;
+use super::{PHASE9_REQUIRED_POLICY_PATHS, Phase9ComparisonOutcome};
+use crate::compare_complete_phase9_rigid_world_results;
 
 /// A persisted Phase 9 witness did not resolve to or prove its declared semantic observation.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
@@ -15,6 +21,356 @@ use super::PHASE9_REQUIRED_POLICY_PATHS;
 pub struct Phase9EvidenceBindingError {
     branch_id: Box<str>,
     message: Box<str>,
+}
+
+/// One persisted result payload used by a cross-run Phase 9 proof.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase9EvidencePayloadRef {
+    /// Evidence-root-relative result path.
+    pub path: Box<str>,
+    /// SHA-256 of the exact persisted result bytes.
+    pub sha256: Sha256Hex,
+}
+
+/// Persisted identity of one deliberately divergent result.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase9EvidenceMismatch {
+    /// Persisted mutated result.
+    pub result: Phase9EvidencePayloadRef,
+    /// Recomputed first-mismatch signature digest.
+    pub signature_sha256: Sha256Hex,
+    /// Recomputed first divergent semantic path.
+    pub semantic_path: Box<str>,
+}
+
+/// Closed cross-run proof surface for the five non-observation Phase 9 assertions.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+pub enum Phase9CrossRunProof {
+    /// Independently replayed native and oracle results match the case baselines.
+    ReplayResultDigestEquality {
+        /// Independent native replay.
+        replay_native: Phase9EvidencePayloadRef,
+        /// Independent oracle replay.
+        replay_oracle: Phase9EvidencePayloadRef,
+    },
+    /// Two independently persisted reductions retain the same mismatch signature.
+    MinimizedFailureSignaturePreservation {
+        /// Minimized failing result.
+        minimized: Phase9EvidenceMismatch,
+        /// Independently copied failing result.
+        copied: Phase9EvidenceMismatch,
+    },
+    /// Both persisted reductions first diverge at the reviewed semantic path.
+    DeliberateFirstDivergence {
+        /// Minimized failing result.
+        minimized: Phase9EvidenceMismatch,
+        /// Independently copied failing result.
+        copied: Phase9EvidenceMismatch,
+    },
+    /// Independently repeated D0 results are byte-identical to the case baselines.
+    D0RepeatedResultDigestEquality {
+        /// Repeated native result.
+        repeated_native: Phase9EvidencePayloadRef,
+        /// Repeated oracle result.
+        repeated_oracle: Phase9EvidencePayloadRef,
+    },
+    /// Independent debug and release oracle executions produce identical result bytes.
+    DebugReleaseResultDigestEquality {
+        /// Independently executed debug-oracle result.
+        debug_oracle: Phase9EvidencePayloadRef,
+        /// Independently executed release-oracle result.
+        release_oracle: Phase9EvidencePayloadRef,
+    },
+}
+
+impl Phase9CrossRunProof {
+    fn semantic_assertion(&self) -> Phase9SemanticAssertion {
+        match self {
+            Self::ReplayResultDigestEquality { .. } => {
+                Phase9SemanticAssertion::ReplayResultDigestEquality
+            }
+            Self::MinimizedFailureSignaturePreservation { .. } => {
+                Phase9SemanticAssertion::MinimizedFailureSignaturePreservation
+            }
+            Self::DeliberateFirstDivergence { .. } => {
+                Phase9SemanticAssertion::DeliberateFirstDivergence
+            }
+            Self::D0RepeatedResultDigestEquality { .. } => {
+                Phase9SemanticAssertion::D0RepeatedResultDigestEquality
+            }
+            Self::DebugReleaseResultDigestEquality { .. } => {
+                Phase9SemanticAssertion::DebugReleaseResultDigestEquality
+            }
+        }
+    }
+}
+
+/// One branch-bound proof record persisted in a Phase 9 case manifest.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase9CrossRunProofRecord {
+    /// Closed corpus branch established by this proof.
+    pub branch_id: ScenarioId,
+    /// Digest of the exact case request bytes.
+    pub request_sha256: Sha256Hex,
+    /// Digest of the exact baseline native result bytes.
+    pub native_result_sha256: Sha256Hex,
+    /// Digest of the exact baseline oracle result bytes.
+    pub oracle_result_sha256: Sha256Hex,
+    /// Typed proof payload.
+    pub proof: Phase9CrossRunProof,
+}
+
+/// A typed persisted case proof failed structural or semantic validation.
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+#[error("Phase 9 cross-run evidence is invalid: {0}")]
+pub struct Phase9CaseEvidenceError(Box<str>);
+
+/// Recomputes every non-observation Phase 9 assertion from persisted result payloads.
+///
+/// # Errors
+///
+/// Returns [`Phase9CaseEvidenceError`] unless each case-level witness has exactly one matching
+/// proof, every payload digest and result boundary validates, and all five cross-run predicates
+/// are recomputed successfully.
+#[allow(clippy::too_many_arguments)]
+pub fn validate_phase9_cross_run_proofs(
+    request: &RigidWorldRequestRecord,
+    native: &RigidWorldResultRecord,
+    oracle: &RigidWorldResultRecord,
+    request_bytes: &[u8],
+    native_bytes: &[u8],
+    oracle_bytes: &[u8],
+    bindings: &[Phase9WitnessBinding],
+    records: &[Phase9CrossRunProofRecord],
+    payloads: &BTreeMap<String, Vec<u8>>,
+    limits: &HarnessLimits,
+) -> Result<(), Phase9CaseEvidenceError> {
+    let case_bindings = bindings
+        .iter()
+        .filter(|binding| binding.semantic_assertion.requires_case_evidence())
+        .collect::<Vec<_>>();
+    if case_bindings.len() != records.len() {
+        return Err(case_evidence_error(format!(
+            "expected {} proof records, found {}",
+            case_bindings.len(),
+            records.len()
+        )));
+    }
+    let request_sha256 = digest(request_bytes);
+    let native_sha256 = digest(native_bytes);
+    let oracle_sha256 = digest(oracle_bytes);
+    let mut seen = BTreeSet::new();
+    for binding in case_bindings {
+        let record = records
+            .iter()
+            .find(|record| record.branch_id == binding.branch_id)
+            .ok_or_else(|| {
+                case_evidence_error(format!("missing proof for `{}`", binding.branch_id))
+            })?;
+        if !seen.insert(record.branch_id.as_str()) {
+            return Err(case_evidence_error(format!(
+                "duplicate proof for `{}`",
+                record.branch_id
+            )));
+        }
+        if record.proof.semantic_assertion() != binding.semantic_assertion {
+            return Err(case_evidence_error(format!(
+                "proof kind does not match `{}`",
+                binding.branch_id
+            )));
+        }
+        if record.request_sha256 != request_sha256
+            || record.native_result_sha256 != native_sha256
+            || record.oracle_result_sha256 != oracle_sha256
+        {
+            return Err(case_evidence_error(format!(
+                "baseline digest binding differs for `{}`",
+                binding.branch_id
+            )));
+        }
+        validate_cross_run_proof(
+            request,
+            native,
+            oracle,
+            native_bytes,
+            oracle_bytes,
+            &record.proof,
+            payloads,
+            limits,
+        )?;
+    }
+    Ok(())
+}
+
+#[allow(clippy::too_many_arguments)]
+fn validate_cross_run_proof(
+    request: &RigidWorldRequestRecord,
+    native: &RigidWorldResultRecord,
+    oracle: &RigidWorldResultRecord,
+    native_bytes: &[u8],
+    oracle_bytes: &[u8],
+    proof: &Phase9CrossRunProof,
+    payloads: &BTreeMap<String, Vec<u8>>,
+    limits: &HarnessLimits,
+) -> Result<(), Phase9CaseEvidenceError> {
+    match proof {
+        Phase9CrossRunProof::ReplayResultDigestEquality {
+            replay_native,
+            replay_oracle,
+        } => {
+            let replay_native_bytes = payload(replay_native, payloads)?;
+            let replay_oracle_bytes = payload(replay_oracle, payloads)?;
+            decode_result(request, replay_native_bytes, limits)?;
+            decode_result(request, replay_oracle_bytes, limits)?;
+            require_digest_equality(replay_native_bytes, native_bytes, "native replay")?;
+            require_digest_equality(replay_oracle_bytes, oracle_bytes, "oracle replay")
+        }
+        Phase9CrossRunProof::D0RepeatedResultDigestEquality {
+            repeated_native,
+            repeated_oracle,
+        } => {
+            let repeated_native_bytes = payload(repeated_native, payloads)?;
+            let repeated_oracle_bytes = payload(repeated_oracle, payloads)?;
+            decode_result(request, repeated_native_bytes, limits)?;
+            decode_result(request, repeated_oracle_bytes, limits)?;
+            if repeated_native_bytes != native_bytes || repeated_oracle_bytes != oracle_bytes {
+                return Err(case_evidence_error(
+                    "D0 repeated result bytes differ from the case baselines",
+                ));
+            }
+            Ok(())
+        }
+        Phase9CrossRunProof::DebugReleaseResultDigestEquality {
+            debug_oracle,
+            release_oracle,
+        } => {
+            let debug_bytes = payload(debug_oracle, payloads)?;
+            let release_bytes = payload(release_oracle, payloads)?;
+            decode_result(request, debug_bytes, limits)?;
+            decode_result(request, release_bytes, limits)?;
+            if debug_bytes != release_bytes {
+                return Err(case_evidence_error(
+                    "debug and release oracle result bytes differ",
+                ));
+            }
+            Ok(())
+        }
+        Phase9CrossRunProof::MinimizedFailureSignaturePreservation { minimized, copied } => {
+            let minimized_report =
+                validate_mismatch(request, native, oracle, minimized, payloads, limits)?;
+            let copied_report =
+                validate_mismatch(request, native, oracle, copied, payloads, limits)?;
+            if minimized_report != copied_report {
+                return Err(case_evidence_error(
+                    "minimized and copied mismatch signatures differ",
+                ));
+            }
+            Ok(())
+        }
+        Phase9CrossRunProof::DeliberateFirstDivergence { minimized, copied } => {
+            let minimized_report =
+                validate_mismatch(request, native, oracle, minimized, payloads, limits)?;
+            let copied_report =
+                validate_mismatch(request, native, oracle, copied, payloads, limits)?;
+            if minimized_report != copied_report
+                || minimized_report.1.as_ref() != "rigid_world.body.active"
+            {
+                return Err(case_evidence_error(
+                    "deliberate mutation did not preserve the reviewed first divergence",
+                ));
+            }
+            Ok(())
+        }
+    }
+}
+
+fn validate_mismatch(
+    request: &RigidWorldRequestRecord,
+    native: &RigidWorldResultRecord,
+    _oracle: &RigidWorldResultRecord,
+    mismatch: &Phase9EvidenceMismatch,
+    payloads: &BTreeMap<String, Vec<u8>>,
+    limits: &HarnessLimits,
+) -> Result<(Sha256Hex, Box<str>), Phase9CaseEvidenceError> {
+    let bytes = payload(&mismatch.result, payloads)?;
+    let mutated = decode_result(request, bytes, limits)?;
+    let outcome = compare_complete_phase9_rigid_world_results(request, native, &mutated)
+        .map_err(|error| case_evidence_error(error.to_string()))?;
+    let Phase9ComparisonOutcome::RetainedRigidMismatch(report) = outcome else {
+        return Err(case_evidence_error(
+            "persisted mutation did not produce a retained-rigid mismatch",
+        ));
+    };
+    let actual = (
+        report.signature().signature_sha256().clone(),
+        report.semantic_path().into(),
+    );
+    if actual.0 != mismatch.signature_sha256 || actual.1 != mismatch.semantic_path {
+        return Err(case_evidence_error(
+            "persisted mismatch identity differs from recomputed comparison",
+        ));
+    }
+    Ok(actual)
+}
+
+fn decode_result(
+    request: &RigidWorldRequestRecord,
+    bytes: &[u8],
+    limits: &HarnessLimits,
+) -> Result<RigidWorldResultRecord, Phase9CaseEvidenceError> {
+    let mut jsonl = bytes.to_vec();
+    if !jsonl.ends_with(b"\n") {
+        jsonl.push(b'\n');
+    }
+    let result = decode_rigid_world_result_jsonl(&jsonl, limits)
+        .map_err(|error| case_evidence_error(error.to_string()))?;
+    liquidfun_test_protocol::validate_rigid_world_result_against_request(request, &result)
+        .map_err(|error| case_evidence_error(error.to_string()))?;
+    Ok(result)
+}
+
+fn payload<'a>(
+    reference: &Phase9EvidencePayloadRef,
+    payloads: &'a BTreeMap<String, Vec<u8>>,
+) -> Result<&'a [u8], Phase9CaseEvidenceError> {
+    if reference.path.is_empty() || reference.path.len() > 512 {
+        return Err(case_evidence_error("proof payload path is not bounded"));
+    }
+    let bytes = payloads.get(reference.path.as_ref()).ok_or_else(|| {
+        case_evidence_error(format!("missing proof payload `{}`", reference.path))
+    })?;
+    if digest(bytes) != reference.sha256 {
+        return Err(case_evidence_error(format!(
+            "proof payload digest differs for `{}`",
+            reference.path
+        )));
+    }
+    Ok(bytes)
+}
+
+fn require_digest_equality(
+    left: &[u8],
+    right: &[u8],
+    label: &str,
+) -> Result<(), Phase9CaseEvidenceError> {
+    if digest(left) != digest(right) {
+        return Err(case_evidence_error(format!(
+            "{label} result digest differs from its case baseline"
+        )));
+    }
+    Ok(())
+}
+
+fn digest(bytes: &[u8]) -> Sha256Hex {
+    Sha256Hex::from_digest(Sha256::digest(bytes).into())
+}
+
+fn case_evidence_error(message: impl Into<Box<str>>) -> Phase9CaseEvidenceError {
+    Phase9CaseEvidenceError(message.into())
 }
 
 /// Resolves and evaluates every closed Phase 9 witness against one decoded result.
@@ -51,6 +407,10 @@ pub fn validate_phase9_evidence_bindings(
         .first()
         .ok_or_else(|| unbound_error("missing Phase 9 result timeline"))?;
     for binding in bindings {
+        if binding.semantic_assertion.requires_case_evidence() {
+            validate_action_checkpoint(timeline, binding)?;
+            continue;
+        }
         let observation = resolve_observation(timeline, result_timeline, binding)?;
         if observation.witness_kind() != binding.observation_kind {
             return Err(binding_error(
@@ -72,6 +432,30 @@ fn resolve_observation<'a>(
     result: &'a RigidWorldTimelineResult,
     binding: &Phase9WitnessBinding,
 ) -> Result<&'a Phase9ParticleObservation, Phase9EvidenceBindingError> {
+    let action_start = validate_action_checkpoint(timeline, binding)?;
+    let particle_ordinal = timeline.actions()[action_start..binding.action_index]
+        .iter()
+        .filter(|candidate| matches!(candidate.action(), RigidWorldAction::Particle { .. }))
+        .count();
+    let result_checkpoint = result
+        .checkpoints
+        .get(binding.checkpoint_index)
+        .ok_or_else(|| binding_error(binding, "result checkpoint is absent"))?;
+    result_checkpoint
+        .observations
+        .iter()
+        .filter_map(|candidate| match candidate {
+            RigidWorldObservation::Particle { observation } => Some(observation),
+            _ => None,
+        })
+        .nth(particle_ordinal)
+        .ok_or_else(|| binding_error(binding, "bound particle observation is absent"))
+}
+
+fn validate_action_checkpoint(
+    timeline: &RigidWorldTimeline,
+    binding: &Phase9WitnessBinding,
+) -> Result<usize, Phase9EvidenceBindingError> {
     let action = timeline
         .actions()
         .get(binding.action_index)
@@ -118,23 +502,7 @@ fn resolve_observation<'a>(
             "bound action does not belong to the selected checkpoint",
         ));
     }
-    let particle_ordinal = timeline.actions()[action_start..binding.action_index]
-        .iter()
-        .filter(|candidate| matches!(candidate.action(), RigidWorldAction::Particle { .. }))
-        .count();
-    let result_checkpoint = result
-        .checkpoints
-        .get(binding.checkpoint_index)
-        .ok_or_else(|| binding_error(binding, "result checkpoint is absent"))?;
-    result_checkpoint
-        .observations
-        .iter()
-        .filter_map(|candidate| match candidate {
-            RigidWorldObservation::Particle { observation } => Some(observation),
-            _ => None,
-        })
-        .nth(particle_ordinal)
-        .ok_or_else(|| binding_error(binding, "bound particle observation is absent"))
+    Ok(action_start)
 }
 
 fn evaluate_assertion(
@@ -226,13 +594,7 @@ fn evaluate_assertion(
         | Phase9SemanticAssertion::MinimizedFailureSignaturePreservation
         | Phase9SemanticAssertion::DeliberateFirstDivergence
         | Phase9SemanticAssertion::D0RepeatedResultDigestEquality
-        | Phase9SemanticAssertion::DebugReleaseResultDigestEquality => {
-            matches!(
-                observation,
-                Phase9ParticleObservation::Particle { snapshot }
-                    if snapshot.particle_id.as_str() == "phase9-a"
-            )
-        }
+        | Phase9SemanticAssertion::DebugReleaseResultDigestEquality => false,
     };
     if !satisfied {
         return Err(binding_error(

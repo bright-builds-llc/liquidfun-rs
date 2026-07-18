@@ -10,17 +10,18 @@ use std::{
 
 use liquidfun_differential::{
     NativeRigidWorldExecutor, OracleExecutable, OraclePreset, PHASE9_REGISTRY_ID,
-    PHASE9_REQUIRED_POLICY_PATHS, Phase9ComparisonOutcome, RigidComparisonOutcome,
-    RigidMismatchReport, compare_complete_phase9_rigid_world_results,
+    PHASE9_REQUIRED_POLICY_PATHS, Phase9ComparisonOutcome, Phase9CrossRunProof,
+    Phase9CrossRunProofRecord, Phase9EvidenceMismatch, Phase9EvidencePayloadRef,
+    RigidComparisonOutcome, RigidMismatchReport, compare_complete_phase9_rigid_world_results,
     compare_phase8_rigid_world_results, effective_compile_command_sha256,
     execute_rigid_world_process, phase9_policy_for_path, run_phase9_differential,
-    validate_phase9_evidence_bindings,
+    validate_phase9_cross_run_proofs, validate_phase9_evidence_bindings,
 };
 use liquidfun_test_protocol::{
     HarnessLimits, Phase6PolicyProfile, Phase7PolicyProfile, Phase8PolicyProfile,
     Phase9ObservationKind, Phase9SemanticAssertion, Phase9WitnessBinding,
     Phase9WitnessBindingErrorKind, RigidWorldResultRecord, RigidWorldWitnessFamily, ScenarioId,
-    decode_rigid_world_request_jsonl, decode_rigid_world_result_jsonl,
+    Sha256Hex, decode_rigid_world_request_jsonl, decode_rigid_world_result_jsonl,
     validate_phase9_witness_bindings,
 };
 use serde::{Deserialize, Serialize};
@@ -191,6 +192,7 @@ struct EvidenceCaseRecord {
     oracle_result_sha256: String,
     complete_comparison_path: String,
     complete_comparison_sha256: String,
+    cross_run_proofs: Vec<Phase9CrossRunProofRecord>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -715,6 +717,7 @@ fn evidence_case_record(
     case: &CorpusCase,
     payloads: &EvidenceCasePayloads,
     consumed_policy_paths: &[&str],
+    cross_run_proofs: Vec<Phase9CrossRunProofRecord>,
 ) -> EvidenceCaseRecord {
     let (request_path, native_result_path, oracle_result_path, complete_comparison_path) =
         evidence_payload_paths(&case.case_id);
@@ -740,6 +743,7 @@ fn evidence_case_record(
         oracle_result_sha256: sha256(&payloads.oracle_result),
         complete_comparison_path,
         complete_comparison_sha256: sha256(&payloads.complete_comparison),
+        cross_run_proofs,
     }
 }
 
@@ -814,7 +818,7 @@ fn evidence_case_fixture() -> (Value, EvidenceCasePayloads) {
         oracle_result: b"oracle".to_vec(),
         complete_comparison,
     };
-    let record = evidence_case_record(&case, &payloads, PHASE9_REQUIRED_POLICY_PATHS);
+    let record = evidence_case_record(&case, &payloads, PHASE9_REQUIRED_POLICY_PATHS, Vec::new());
     (
         serde_json::to_value(record).expect("evidence fixture"),
         payloads,
@@ -1280,8 +1284,12 @@ fn assert_contract_witness(request: &Value, result: &Value, branch: &str) -> boo
 }
 
 fn assert_witness(request: &Value, result: &Value, witness: &Phase9WitnessBinding) {
-    let observation = observation_for_witness(request, result, witness);
     let branch = witness.branch_id.as_str();
+    if witness.semantic_assertion.requires_case_evidence() {
+        assert!(assert_contract_witness(request, result, branch));
+        return;
+    }
+    let observation = observation_for_witness(request, result, witness);
     assert_eq!(observation["kind"], "particle", "{branch}");
     assert_eq!(
         observation["observation"]["kind"],
@@ -1406,130 +1414,146 @@ fn assert_witness(request: &Value, result: &Value, witness: &Phase9WitnessBindin
         | Phase9SemanticAssertion::MinimizedFailureSignaturePreservation
         | Phase9SemanticAssertion::DeliberateFirstDivergence
         | Phase9SemanticAssertion::D0RepeatedResultDigestEquality
-        | Phase9SemanticAssertion::DebugReleaseResultDigestEquality => {
-            assert_eq!(
-                observation["observation"]["snapshot"]["particle_id"],
-                "phase9-a"
-            );
-        }
+        | Phase9SemanticAssertion::DebugReleaseResultDigestEquality => {}
     }
 }
 
-fn assert_result_evidence_bindings(
+fn build_cross_run_proofs(
     root: &Path,
-    executable: &OracleExecutable,
+    case_id: &str,
+    selected_oracle: &OracleExecutable,
     revision: &str,
     request: &liquidfun_test_protocol::RigidWorldRequestRecord,
     native: &RigidWorldResultRecord,
-    oracle: &RigidWorldResultRecord,
+    _oracle: &RigidWorldResultRecord,
+    request_bytes: &[u8],
+    native_bytes: &[u8],
+    oracle_bytes: &[u8],
     bindings: &[Phase9WitnessBinding],
-) {
-    let has = |predicate: fn(&Phase9SemanticAssertion) -> bool| {
-        bindings
-            .iter()
-            .any(|binding| predicate(&binding.semantic_assertion))
-    };
-    if !bindings.iter().any(|binding| {
-        matches!(
-            binding.semantic_assertion,
-            Phase9SemanticAssertion::ReplayResultDigestEquality
-                | Phase9SemanticAssertion::MinimizedFailureSignaturePreservation
-                | Phase9SemanticAssertion::DeliberateFirstDivergence
-                | Phase9SemanticAssertion::D0RepeatedResultDigestEquality
-                | Phase9SemanticAssertion::DebugReleaseResultDigestEquality
-        )
-    }) {
-        return;
+) -> (Vec<Phase9CrossRunProofRecord>, BTreeMap<String, Vec<u8>>) {
+    let case_bindings = bindings
+        .iter()
+        .filter(|binding| binding.semantic_assertion.requires_case_evidence())
+        .collect::<Vec<_>>();
+    if case_bindings.is_empty() {
+        return (Vec::new(), BTreeMap::new());
     }
+    let debug =
+        OracleExecutable::resolve(root, OraclePreset::Debug).expect("debug oracle must be built");
+    let release = OracleExecutable::resolve(root, OraclePreset::Release)
+        .expect("release oracle must be built");
     let replay_native =
         NativeRigidWorldExecutor::execute(request).expect("native result replay must execute");
-    let replay_oracle = execute_rigid_world_process(executable, request, revision)
+    let replay_oracle = execute_rigid_world_process(selected_oracle, request, revision)
         .expect("oracle result replay must execute");
-    if has(|assertion| {
-        matches!(
-            assertion,
-            Phase9SemanticAssertion::ReplayResultDigestEquality
-        )
-    }) {
-        assert_eq!(
-            sha256(&serde_json::to_vec(native).expect("native result bytes")),
-            sha256(&serde_json::to_vec(&replay_native).expect("native replay bytes"))
-        );
-        assert_eq!(
-            sha256(&serde_json::to_vec(oracle).expect("oracle result bytes")),
-            sha256(&serde_json::to_vec(replay_oracle.result()).expect("oracle replay bytes"))
-        );
-    }
-    if has(|assertion| {
-        matches!(
-            assertion,
-            Phase9SemanticAssertion::D0RepeatedResultDigestEquality
-        )
-    }) {
-        assert_eq!(
-            serde_json::to_vec(native).expect("native D0 bytes"),
-            serde_json::to_vec(&replay_native).expect("native repeated D0 bytes")
-        );
-        assert_eq!(
-            serde_json::to_vec(oracle).expect("oracle D0 bytes"),
-            serde_json::to_vec(replay_oracle.result()).expect("oracle repeated D0 bytes")
-        );
-    }
-
-    let needs_deliberate_mismatch = bindings.iter().any(|binding| {
-        matches!(
-            binding.semantic_assertion,
-            Phase9SemanticAssertion::MinimizedFailureSignaturePreservation
-                | Phase9SemanticAssertion::DeliberateFirstDivergence
-        )
+    let debug_oracle = execute_rigid_world_process(&debug, request, revision)
+        .expect("independent debug result must execute");
+    let release_oracle = execute_rigid_world_process(&release, request, revision)
+        .expect("independent release result must execute");
+    let minimized = mutated_phase9_result(native, |value| {
+        let body = first_checkpoint_member_mut(value, "bodies");
+        body["active"] = json!(!body["active"].as_bool().expect("body active"));
     });
-    if needs_deliberate_mismatch {
-        let minimized = mutated_phase9_result(native, |value| {
-            let body = first_checkpoint_member_mut(value, "bodies");
-            body["active"] = json!(!body["active"].as_bool().expect("body active"));
-        });
-        let copied = mutated_phase9_result(native, |value| {
-            let body = first_checkpoint_member_mut(value, "bodies");
-            body["active"] = json!(!body["active"].as_bool().expect("body active"));
-            let fixture = first_checkpoint_member_mut(value, "fixtures");
-            fixture["sensor"] = json!(!fixture["sensor"].as_bool().expect("fixture sensor"));
-        });
-        let minimized_report = expected_retained_mismatch(request, native, &minimized);
-        let copied_report = expected_retained_mismatch(request, native, &copied);
-        if has(|assertion| {
-            matches!(
-                assertion,
-                Phase9SemanticAssertion::MinimizedFailureSignaturePreservation
-            )
-        }) {
-            assert_eq!(copied_report.signature(), minimized_report.signature());
-        }
-        if has(|assertion| {
-            matches!(
-                assertion,
-                Phase9SemanticAssertion::DeliberateFirstDivergence
-            )
-        }) {
-            assert_eq!(copied_report.semantic_path(), "rigid_world.body.active");
-        }
-    }
-
-    if has(|assertion| {
-        matches!(
-            assertion,
-            Phase9SemanticAssertion::DebugReleaseResultDigestEquality
-        )
-    }) && std::env::var("LIQUIDFUN_PHASE9_ORACLE_MODE").as_deref() == Ok("canonical")
-    {
-        let release = OracleExecutable::resolve(root, OraclePreset::Release)
-            .expect("canonical evidence requires the release oracle");
-        let optimized = execute_rigid_world_process(&release, request, revision)
-            .expect("release result must execute");
-        assert_eq!(
-            sha256(&serde_json::to_vec(oracle).expect("debug result bytes")),
-            sha256(&serde_json::to_vec(optimized.result()).expect("release result bytes"))
-        );
-    }
+    let copied = mutated_phase9_result(native, |value| {
+        let body = first_checkpoint_member_mut(value, "bodies");
+        body["active"] = json!(!body["active"].as_bool().expect("body active"));
+        let fixture = first_checkpoint_member_mut(value, "fixtures");
+        fixture["sensor"] = json!(!fixture["sensor"].as_bool().expect("fixture sensor"));
+    });
+    let minimized_report = expected_retained_mismatch(request, native, &minimized);
+    let copied_report = expected_retained_mismatch(request, native, &copied);
+    let base = format!("cases/{case_id}/proofs");
+    let replay_native_path = format!("{base}/replay-native-result.json");
+    let replay_oracle_path = format!("{base}/replay-oracle-result.json");
+    let minimized_path = format!("{base}/minimized-result.json");
+    let copied_path = format!("{base}/copied-result.json");
+    let debug_path = format!("{base}/debug-oracle-result.json");
+    let release_path = format!("{base}/release-oracle-result.json");
+    let mut payloads = BTreeMap::from([
+        (
+            replay_native_path.clone(),
+            serde_json::to_vec(&replay_native).expect("native replay bytes"),
+        ),
+        (
+            replay_oracle_path.clone(),
+            serde_json::to_vec(replay_oracle.result()).expect("oracle replay bytes"),
+        ),
+        (
+            minimized_path.clone(),
+            serde_json::to_vec(&minimized).expect("minimized result bytes"),
+        ),
+        (
+            copied_path.clone(),
+            serde_json::to_vec(&copied).expect("copied result bytes"),
+        ),
+        (
+            debug_path.clone(),
+            serde_json::to_vec(debug_oracle.result()).expect("debug result bytes"),
+        ),
+        (
+            release_path.clone(),
+            serde_json::to_vec(release_oracle.result()).expect("release result bytes"),
+        ),
+    ]);
+    let payload_ref = |path: &String| Phase9EvidencePayloadRef {
+        path: path.clone().into(),
+        sha256: Sha256Hex::new(sha256(payloads.get(path).expect("proof payload")))
+            .expect("computed digest"),
+    };
+    let mismatch = |path: &String, report: &RigidMismatchReport| Phase9EvidenceMismatch {
+        result: payload_ref(path),
+        signature_sha256: report.signature().signature_sha256().clone(),
+        semantic_path: report.semantic_path().into(),
+    };
+    let request_sha256 = Sha256Hex::new(sha256(request_bytes)).expect("computed request digest");
+    let native_sha256 = Sha256Hex::new(sha256(native_bytes)).expect("computed native digest");
+    let oracle_sha256 = Sha256Hex::new(sha256(oracle_bytes)).expect("computed oracle digest");
+    let records = case_bindings
+        .into_iter()
+        .map(|binding| {
+            let proof = match &binding.semantic_assertion {
+                Phase9SemanticAssertion::ReplayResultDigestEquality => {
+                    Phase9CrossRunProof::ReplayResultDigestEquality {
+                        replay_native: payload_ref(&replay_native_path),
+                        replay_oracle: payload_ref(&replay_oracle_path),
+                    }
+                }
+                Phase9SemanticAssertion::MinimizedFailureSignaturePreservation => {
+                    Phase9CrossRunProof::MinimizedFailureSignaturePreservation {
+                        minimized: mismatch(&minimized_path, &minimized_report),
+                        copied: mismatch(&copied_path, &copied_report),
+                    }
+                }
+                Phase9SemanticAssertion::DeliberateFirstDivergence => {
+                    Phase9CrossRunProof::DeliberateFirstDivergence {
+                        minimized: mismatch(&minimized_path, &minimized_report),
+                        copied: mismatch(&copied_path, &copied_report),
+                    }
+                }
+                Phase9SemanticAssertion::D0RepeatedResultDigestEquality => {
+                    Phase9CrossRunProof::D0RepeatedResultDigestEquality {
+                        repeated_native: payload_ref(&replay_native_path),
+                        repeated_oracle: payload_ref(&replay_oracle_path),
+                    }
+                }
+                Phase9SemanticAssertion::DebugReleaseResultDigestEquality => {
+                    Phase9CrossRunProof::DebugReleaseResultDigestEquality {
+                        debug_oracle: payload_ref(&debug_path),
+                        release_oracle: payload_ref(&release_path),
+                    }
+                }
+                _ => unreachable!("filtered case evidence binding"),
+            };
+            Phase9CrossRunProofRecord {
+                branch_id: binding.branch_id.clone(),
+                request_sha256: request_sha256.clone(),
+                native_result_sha256: native_sha256.clone(),
+                oracle_result_sha256: oracle_sha256.clone(),
+                proof,
+            }
+        })
+        .collect();
+    (records, std::mem::take(&mut payloads))
 }
 
 #[test]
@@ -1610,15 +1634,6 @@ fn executable_cases() {
             assert_witness(&request_value, &native_value, witness);
             assert_witness(&request_value, &oracle_value, witness);
         }
-        assert_result_evidence_bindings(
-            &root,
-            &executable,
-            &manifest.pinned_upstream_revision,
-            &request,
-            &native,
-            oracle.result(),
-            &case.witnesses,
-        );
         let complete_comparison = CompleteComparisonPayload {
             outcome: "match".to_owned(),
             consumed_policy_paths: run
@@ -1634,7 +1649,33 @@ fn executable_cases() {
             complete_comparison: serde_json::to_vec(&complete_comparison)
                 .expect("complete comparison bytes"),
         };
-        let record = evidence_case_record(case, &payloads, run.consumed_paths());
+        let (cross_run_proofs, proof_payloads) = build_cross_run_proofs(
+            &root,
+            &case.case_id,
+            &executable,
+            &manifest.pinned_upstream_revision,
+            &request,
+            &native,
+            oracle.result(),
+            &payloads.request,
+            &payloads.native_result,
+            &payloads.oracle_result,
+            &case.witnesses,
+        );
+        validate_phase9_cross_run_proofs(
+            &request,
+            &native,
+            oracle.result(),
+            &payloads.request,
+            &payloads.native_result,
+            &payloads.oracle_result,
+            &case.witnesses,
+            &cross_run_proofs,
+            &proof_payloads,
+            &HarnessLimits::phase2_default_v1(),
+        )
+        .expect("generated cross-run evidence must recompute");
+        let record = evidence_case_record(case, &payloads, run.consumed_paths(), cross_run_proofs);
         validate_evidence_case_value(
             &serde_json::to_value(&record).expect("evidence case value"),
             &payloads,
@@ -1657,12 +1698,15 @@ fn executable_cases() {
                 &record.complete_comparison_path,
                 &payloads.complete_comparison,
             );
+            for (path, bytes) in &proof_payloads {
+                write_evidence_payload(evidence_root, path, bytes);
+            }
         }
         evidence_cases.push(record);
     }
     let evidence = EvidenceManifest {
-        schema_version: 2,
-        case_record_schema_version: 1,
+        schema_version: 3,
+        case_record_schema_version: 2,
         profile: manifest.profile,
         upstream_revision: manifest.pinned_upstream_revision,
         semantic_manifest_sha256: canonical_sha256(&evidence_cases),

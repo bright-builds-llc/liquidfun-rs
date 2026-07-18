@@ -241,6 +241,13 @@ jobs:
           path: target/oracle-evidence/phase8-sanitizer
           if-no-files-found: error
           retention-days: 30
+      - name: Build independent debug and release oracles for Phase 9 cross-run evidence
+        if: github.event_name == 'workflow_dispatch' && inputs.evidence_phase == 'phase9'
+        run: |
+          cargo xtask upstream configure --preset oracle-debug
+          cargo xtask upstream build --preset oracle-debug
+          cargo xtask upstream configure --preset oracle-release
+          cargo xtask upstream build --preset oracle-release
       - name: Run fail-closed Phase 9 sanitizer evidence
         if: github.event_name == 'workflow_dispatch' && inputs.evidence_phase == 'phase9'
         env:

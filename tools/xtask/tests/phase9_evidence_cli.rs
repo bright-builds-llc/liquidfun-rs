@@ -8,9 +8,14 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-use liquidfun_differential::{NativeRigidWorldExecutor, PHASE9_REQUIRED_POLICY_PATHS};
+use liquidfun_differential::{
+    NativeRigidWorldExecutor, PHASE9_REQUIRED_POLICY_PATHS, Phase9ComparisonOutcome,
+    Phase9CrossRunProof, Phase9CrossRunProofRecord, Phase9EvidenceMismatch,
+    Phase9EvidencePayloadRef, compare_complete_phase9_rigid_world_results,
+};
 use liquidfun_test_protocol::{
-    HarnessLimits, Phase9WitnessBinding, decode_rigid_world_request_jsonl,
+    HarnessLimits, Phase9SemanticAssertion, Phase9WitnessBinding, Sha256Hex,
+    decode_rigid_world_request_jsonl,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
@@ -246,6 +251,42 @@ impl TestRoot {
         let bytes = serde_json::to_vec(&payload)?;
         fs::write(&payload_path, &bytes)?;
         case[digest_field] = json!(sha256(&bytes));
+        let cases: Vec<EvidenceCase> = serde_json::from_value(manifest["cases"].clone())?;
+        manifest["semantic_manifest_sha256"] = json!(sha256(&serde_json::to_vec(&cases)?));
+        let mut manifest_bytes = serde_json::to_vec_pretty(&manifest)?;
+        manifest_bytes.push(b'\n');
+        fs::write(manifest_path, manifest_bytes)?;
+        refresh_identity(&evidence_root)?;
+        Ok(())
+    }
+
+    fn mutate_cross_run_payload(
+        &self,
+        directory: &str,
+        branch_id: &str,
+        reference_field: &str,
+        mutate: impl FnOnce(&mut Value),
+    ) -> TestResult {
+        let evidence_root = self.path.join(directory);
+        let manifest_path = evidence_root.join("phase9-manifest.json");
+        let mut manifest: Value = serde_json::from_slice(&fs::read(&manifest_path)?)?;
+        let record = manifest["cases"]
+            .as_array()
+            .expect("manifest cases")
+            .iter()
+            .flat_map(|case| case["cross_run_proofs"].as_array().expect("proofs"))
+            .find(|record| record["branch_id"] == branch_id)
+            .expect("reviewed proof");
+        let field = find_object_field(&record["proof"], reference_field);
+        let reference = field.get("result").unwrap_or(field);
+        let relative = reference["path"].as_str().expect("proof path").to_owned();
+        let payload_path = evidence_root.join(&relative);
+        let mut payload: Value = serde_json::from_slice(&fs::read(&payload_path)?)?;
+        mutate(&mut payload);
+        let bytes = serde_json::to_vec(&payload)?;
+        fs::write(payload_path, &bytes)?;
+        let digest = sha256(&bytes);
+        update_payload_reference_digests(&mut manifest, &relative, &digest);
         let cases: Vec<EvidenceCase> = serde_json::from_value(manifest["cases"].clone())?;
         manifest["semantic_manifest_sha256"] = json!(sha256(&serde_json::to_vec(&cases)?));
         let mut manifest_bytes = serde_json::to_vec_pretty(&manifest)?;
@@ -629,6 +670,41 @@ fn local_rejects_digest_recomputed_false_semantic_assertions() -> TestResult {
 }
 
 #[test]
+fn local_rejects_digest_recomputed_cross_run_proof_mutations() -> TestResult {
+    for (label, branch, reference_field) in [
+        ("false-replay", "replay_identity", "replay_native"),
+        ("false-minimization", "minimization_identity", "copied"),
+        (
+            "false-first-divergence",
+            "first_divergence_stability",
+            "minimized",
+        ),
+        ("false-d0", "d0_byte_identity", "repeated_native"),
+        (
+            "false-debug-release",
+            "debug_release_agreement",
+            "release_oracle",
+        ),
+    ] {
+        // Arrange
+        let root = TestRoot::new(label)?;
+        root.write_valid_local_evidence()?;
+        root.mutate_cross_run_payload("canonical", branch, reference_field, |result| {
+            let body = first_result_member_mut(result, "bodies");
+            body["active"] = json!(!body["active"].as_bool().expect("body active"));
+        })?;
+
+        // Act
+        let output = root.run_local()?;
+
+        // Assert
+        assert_failure(&output);
+        assert_output_contains(&output, "cross-run");
+    }
+    Ok(())
+}
+
+#[test]
 fn local_recomputes_comparator_instead_of_trusting_match_payload() -> TestResult {
     // Arrange
     let root = TestRoot::new("divergent-pair")?;
@@ -685,6 +761,7 @@ struct EvidenceCase {
     oracle_result_sha256: String,
     complete_comparison_path: String,
     complete_comparison_sha256: String,
+    cross_run_proofs: Vec<Phase9CrossRunProofRecord>,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -704,6 +781,143 @@ struct RetainedPayload<'a> {
     phase7_policy_sha256: &'a str,
     phase8_policy_sha256: &'a str,
     outcome: &'a str,
+}
+
+#[allow(clippy::too_many_arguments)]
+fn synthetic_cross_run_proofs(
+    root: &Path,
+    base: &str,
+    request_record: &liquidfun_test_protocol::RigidWorldRequestRecord,
+    native_record: &liquidfun_test_protocol::RigidWorldResultRecord,
+    request: &[u8],
+    native: &[u8],
+    oracle: &[u8],
+    witnesses: &[Phase9WitnessBinding],
+) -> TestResult<Vec<Phase9CrossRunProofRecord>> {
+    let case_witnesses = witnesses
+        .iter()
+        .filter(|witness| witness.semantic_assertion.requires_case_evidence())
+        .collect::<Vec<_>>();
+    if case_witnesses.is_empty() {
+        return Ok(Vec::new());
+    }
+    let mut minimized_value = serde_json::to_value(native_record)?;
+    let body = first_result_member_mut(&mut minimized_value, "bodies");
+    body["active"] = json!(!body["active"].as_bool().expect("body active"));
+    let minimized_record = serde_json::from_value(minimized_value)?;
+    let mut copied_value = serde_json::to_value(native_record)?;
+    let body = first_result_member_mut(&mut copied_value, "bodies");
+    body["active"] = json!(!body["active"].as_bool().expect("body active"));
+    let fixture = first_result_member_mut(&mut copied_value, "fixtures");
+    fixture["sensor"] = json!(!fixture["sensor"].as_bool().expect("fixture sensor"));
+    let copied_record = serde_json::from_value(copied_value)?;
+    let minimized_report = retained_mismatch(request_record, native_record, &minimized_record);
+    let copied_report = retained_mismatch(request_record, native_record, &copied_record);
+    let payloads = [
+        ("replay-native-result.json", native.to_vec()),
+        ("replay-oracle-result.json", oracle.to_vec()),
+        (
+            "minimized-result.json",
+            serde_json::to_vec(&minimized_record)?,
+        ),
+        ("copied-result.json", serde_json::to_vec(&copied_record)?),
+        ("debug-oracle-result.json", oracle.to_vec()),
+        ("release-oracle-result.json", oracle.to_vec()),
+    ];
+    let mut references = std::collections::BTreeMap::new();
+    for (name, bytes) in payloads {
+        let path = format!("{base}/proofs/{name}");
+        write_payload(root, &path, &bytes)?;
+        references.insert(
+            name,
+            Phase9EvidencePayloadRef {
+                path: path.into(),
+                sha256: digest(&bytes),
+            },
+        );
+    }
+    let mismatch = |name: &str,
+                    report: &liquidfun_differential::RigidMismatchReport|
+     -> Phase9EvidenceMismatch {
+        Phase9EvidenceMismatch {
+            result: references.get(name).expect("proof reference").clone(),
+            signature_sha256: report.signature().signature_sha256().clone(),
+            semantic_path: report.semantic_path().into(),
+        }
+    };
+    let records = case_witnesses
+        .into_iter()
+        .map(|witness| {
+            let proof = match &witness.semantic_assertion {
+                Phase9SemanticAssertion::ReplayResultDigestEquality => {
+                    Phase9CrossRunProof::ReplayResultDigestEquality {
+                        replay_native: references["replay-native-result.json"].clone(),
+                        replay_oracle: references["replay-oracle-result.json"].clone(),
+                    }
+                }
+                Phase9SemanticAssertion::MinimizedFailureSignaturePreservation => {
+                    Phase9CrossRunProof::MinimizedFailureSignaturePreservation {
+                        minimized: mismatch("minimized-result.json", &minimized_report),
+                        copied: mismatch("copied-result.json", &copied_report),
+                    }
+                }
+                Phase9SemanticAssertion::DeliberateFirstDivergence => {
+                    Phase9CrossRunProof::DeliberateFirstDivergence {
+                        minimized: mismatch("minimized-result.json", &minimized_report),
+                        copied: mismatch("copied-result.json", &copied_report),
+                    }
+                }
+                Phase9SemanticAssertion::D0RepeatedResultDigestEquality => {
+                    Phase9CrossRunProof::D0RepeatedResultDigestEquality {
+                        repeated_native: references["replay-native-result.json"].clone(),
+                        repeated_oracle: references["replay-oracle-result.json"].clone(),
+                    }
+                }
+                Phase9SemanticAssertion::DebugReleaseResultDigestEquality => {
+                    Phase9CrossRunProof::DebugReleaseResultDigestEquality {
+                        debug_oracle: references["debug-oracle-result.json"].clone(),
+                        release_oracle: references["release-oracle-result.json"].clone(),
+                    }
+                }
+                _ => unreachable!("filtered case evidence"),
+            };
+            Phase9CrossRunProofRecord {
+                branch_id: witness.branch_id.clone(),
+                request_sha256: digest(request),
+                native_result_sha256: digest(native),
+                oracle_result_sha256: digest(oracle),
+                proof,
+            }
+        })
+        .collect();
+    Ok(records)
+}
+
+fn first_result_member_mut<'a>(value: &'a mut Value, member: &str) -> &'a mut Value {
+    value["timelines"]
+        .as_array_mut()
+        .expect("timelines")
+        .iter_mut()
+        .flat_map(|timeline| timeline["checkpoints"].as_array_mut().expect("checkpoints"))
+        .find_map(|checkpoint| checkpoint[member].as_array_mut()?.first_mut())
+        .expect("retained result member")
+}
+
+fn retained_mismatch(
+    request: &liquidfun_test_protocol::RigidWorldRequestRecord,
+    native: &liquidfun_test_protocol::RigidWorldResultRecord,
+    mutated: &liquidfun_test_protocol::RigidWorldResultRecord,
+) -> Box<liquidfun_differential::RigidMismatchReport> {
+    let outcome = compare_complete_phase9_rigid_world_results(request, native, mutated)
+        .expect("synthetic mismatch comparison");
+    let Phase9ComparisonOutcome::RetainedRigidMismatch(report) = outcome else {
+        panic!("synthetic result must produce retained mismatch");
+    };
+    report
+}
+
+fn digest(bytes: &[u8]) -> Sha256Hex {
+    Sha256Hex::new(sha256(bytes)).expect("computed digest")
 }
 
 fn build_manifest(root: &Path) -> TestResult<EvidenceManifest> {
@@ -756,6 +970,9 @@ fn build_manifest(root: &Path) -> TestResult<EvidenceManifest> {
             &format!("{base}/complete-comparison.json"),
             &comparison,
         )?;
+        let cross_run_proofs = synthetic_cross_run_proofs(
+            root, &base, &decoded, &result, &request, &native, &oracle, &witnesses,
+        )?;
         cases.push(EvidenceCase {
             case_id,
             reached_branches,
@@ -778,11 +995,12 @@ fn build_manifest(root: &Path) -> TestResult<EvidenceManifest> {
             oracle_result_sha256: sha256(&oracle),
             complete_comparison_path: format!("{base}/complete-comparison.json"),
             complete_comparison_sha256: sha256(&comparison),
+            cross_run_proofs,
         });
     }
     Ok(EvidenceManifest {
-        schema_version: 2,
-        case_record_schema_version: 1,
+        schema_version: 3,
+        case_record_schema_version: 2,
         profile: "phase9-v1".to_owned(),
         upstream_revision: UPSTREAM_REVISION.to_owned(),
         semantic_manifest_sha256: sha256(&serde_json::to_vec(&cases)?),
@@ -936,6 +1154,40 @@ fn find_binding_mut<'a>(manifest: &'a mut Value, branch_id: &str) -> &'a mut Val
         })
         .find(|binding| binding["branch_id"] == branch_id)
         .expect("reviewed branch binding")
+}
+
+fn find_object_field<'a>(value: &'a Value, field: &str) -> &'a Value {
+    find_object_field_maybe(value, field).expect("proof reference field")
+}
+
+fn find_object_field_maybe<'a>(value: &'a Value, field: &str) -> Option<&'a Value> {
+    if let Some(found) = value.get(field) {
+        return Some(found);
+    }
+    value
+        .as_object()
+        .into_iter()
+        .flat_map(|object| object.values())
+        .find_map(|child| find_object_field_maybe(child, field))
+}
+
+fn update_payload_reference_digests(value: &mut Value, path: &str, digest: &str) {
+    match value {
+        Value::Array(values) => {
+            for value in values {
+                update_payload_reference_digests(value, path, digest);
+            }
+        }
+        Value::Object(object) => {
+            if object.get("path").and_then(Value::as_str) == Some(path) {
+                object.insert("sha256".to_owned(), json!(digest));
+            }
+            for value in object.values_mut() {
+                update_payload_reference_digests(value, path, digest);
+            }
+        }
+        _ => {}
+    }
 }
 
 fn sha256(bytes: &[u8]) -> String {
