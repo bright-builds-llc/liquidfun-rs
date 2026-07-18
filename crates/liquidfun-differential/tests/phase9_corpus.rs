@@ -2514,8 +2514,16 @@ fn workflow_contract_blocks_failed_evidence_identity() {
     let script = root.join("scripts/phase9-evidence.sh");
     let script_text = std::fs::read_to_string(&script).expect("evidence script");
     assert!(script_text.contains("set -euo pipefail"));
-    assert!(script_text.contains("test result: ok\\."));
-    assert!(script_text.contains("test result: FAILED|FAILED"));
+    let validation = script_text
+        .find("cargo xtask phase9-evidence validate-content")
+        .expect("shared content validator");
+    let identity = script_text
+        .find("> \"$output_dir/identity.json\"")
+        .expect("identity emission");
+    assert!(
+        validation < identity,
+        "content validation must precede identity"
+    );
 
     for (name, cargo_body) in [
         ("command-failure", "exit 7\n"),
