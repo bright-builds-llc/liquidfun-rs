@@ -4,6 +4,7 @@ mod differential;
 mod docs;
 mod inventory;
 mod package;
+mod phase9_evidence;
 mod provenance;
 mod upstream;
 
@@ -22,6 +23,7 @@ Commands:
   upstream    Manage the pinned upstream oracle
   inventory   Manage the compatibility inventory
   provenance  Validate provenance records
+  phase9-evidence Validate local or exact-ref Phase 9 evidence
   package     Validate the publishable package
   check       Run the aggregate repository checks";
 
@@ -33,6 +35,7 @@ enum XtaskError {
     Docs(docs::DocsError),
     Inventory(inventory::InventoryError),
     Package(package::PackageError),
+    Phase9Evidence(phase9_evidence::Phase9EvidenceError),
     Provenance(provenance::ProvenanceError),
     Upstream(upstream::UpstreamError),
 }
@@ -60,6 +63,7 @@ impl Display for XtaskError {
             Self::Docs(error) => Display::fmt(error, formatter),
             Self::Inventory(error) => Display::fmt(error, formatter),
             Self::Package(error) => Display::fmt(error, formatter),
+            Self::Phase9Evidence(error) => Display::fmt(error, formatter),
             Self::Provenance(error) => Display::fmt(error, formatter),
             Self::Upstream(error) => Display::fmt(error, formatter),
         }
@@ -84,6 +88,7 @@ fn dispatch(args: &[String]) -> Result<(), XtaskError> {
         "inventory" => inventory::run(command_args).map_err(XtaskError::Inventory),
         "provenance" => provenance::run(command_args).map_err(XtaskError::Provenance),
         "package" => package::run(command_args).map_err(XtaskError::Package),
+        "phase9-evidence" => phase9_evidence::run(command_args).map_err(XtaskError::Phase9Evidence),
         "check" => {
             if !command_args.is_empty() {
                 return Err(XtaskError::usage("check does not accept arguments"));

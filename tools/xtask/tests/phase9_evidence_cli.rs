@@ -1,0 +1,794 @@
+//! Command-level coverage for the portable Phase 9 evidence validator.
+
+use std::{
+    collections::BTreeSet,
+    fs,
+    path::{Path, PathBuf},
+    process::{Command, Output},
+    time::{SystemTime, UNIX_EPOCH},
+};
+
+use liquidfun_differential::{NativeRigidWorldExecutor, PHASE9_REQUIRED_POLICY_PATHS};
+use liquidfun_test_protocol::{
+    HarnessLimits, Phase9WitnessBinding, decode_rigid_world_request_jsonl,
+};
+use serde::{Deserialize, Serialize};
+use serde_json::{Value, json};
+use sha2::{Digest, Sha256};
+
+type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+
+const REJECTED_RUN: u64 = 29_439_515_367;
+const SUPERSEDED_RUN: u64 = 29_583_793_056;
+const EXACT_RUN: u64 = 30_000_000_001;
+const APPROVED_SHA: &str = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+const UPSTREAM_REVISION: &str = "7f20402173fd143a3988c921bc384459c6a858f2";
+const PHASE6_POLICY_SHA256: &str =
+    "7f10df148852866fd20d11b8d27adcddc0ad463ac3d3d716a8946ca5c8f1c63a";
+const PHASE7_POLICY_SHA256: &str =
+    "fd772b2cf523a6d40bf978bc4d0da18a4564181a93e6b2bdeb8e4d40d5613311";
+const PHASE8_POLICY_SHA256: &str =
+    "2843ca40bec5b1c680135664c58c12a8388a7a9e86ad77f8ef5a268f3f15a6bf";
+
+struct TestRoot {
+    path: PathBuf,
+}
+
+impl TestRoot {
+    fn new(label: &str) -> Result<Self, Box<dyn std::error::Error>> {
+        let nonce = SystemTime::now().duration_since(UNIX_EPOCH)?.as_nanos();
+        let path = workspace_root()
+            .join("target")
+            .join(format!("phase9-evidence-cli-{label}-{nonce}"));
+        fs::create_dir_all(&path)?;
+        Ok(Self { path })
+    }
+
+    fn relative(&self, child: &str) -> String {
+        self.path
+            .join(child)
+            .strip_prefix(workspace_root())
+            .expect("test fixture remains under the workspace")
+            .to_string_lossy()
+            .into_owned()
+    }
+
+    fn write_valid_local_evidence(&self) -> TestResult {
+        let manifest = build_manifest(&self.path)?;
+        write_evidence_directory(&self.path.join("canonical"), "canonical-local", &manifest)?;
+        write_evidence_directory(&self.path.join("sanitizer"), "sanitizer-local", &manifest)?;
+        Ok(())
+    }
+
+    fn write_valid_exact_ref_evidence(&self) -> TestResult<Value> {
+        let manifest = build_manifest(&self.path)?;
+        write_evidence_directory(&self.path.join("canonical"), "canonical-local", &manifest)?;
+        write_evidence_directory(&self.path.join("sanitizer"), "sanitizer-local", &manifest)?;
+        write_identity_for(
+            &self.path.join("canonical"),
+            "canonical-linux",
+            EXACT_RUN,
+            APPROVED_SHA,
+        )?;
+        write_identity_for(
+            &self.path.join("sanitizer"),
+            "sanitizer-linux",
+            EXACT_RUN,
+            APPROVED_SHA,
+        )?;
+        let canonical_archive = self.path.join("canonical.zip");
+        let sanitizer_archive = self.path.join("sanitizer.zip");
+        write_zip(&self.path.join("canonical"), &canonical_archive)?;
+        write_zip(&self.path.join("sanitizer"), &sanitizer_archive)?;
+        let canonical_bytes = fs::read(&canonical_archive)?;
+        let sanitizer_bytes = fs::read(&sanitizer_archive)?;
+        let canonical_name = format!("phase9-canonical-{EXACT_RUN}-{APPROVED_SHA}");
+        let sanitizer_name = format!("phase9-sanitizer-{EXACT_RUN}-{APPROVED_SHA}");
+        Ok(json!({
+            "repository": "bright-builds-llc/liquidfun-rs",
+            "branch": "main",
+            "approved_sha": APPROVED_SHA,
+            "head_sha": APPROVED_SHA,
+            "dispatched_at": "2026-07-17T00:00:00Z",
+            "run_id": EXACT_RUN,
+            "run_url": "https://example.invalid/run",
+            "workflow_name": "Oracle CI",
+            "event": "workflow_dispatch",
+            "conclusion": "success",
+            "created_at": "2026-07-17T00:00:00Z",
+            "updated_at": "2026-07-17T00:01:00Z",
+            "jobs": {
+                "canonical": {
+                    "id": 101,
+                    "name": "Canonical Linux oracle",
+                    "url": "https://example.invalid/job/101",
+                    "conclusion": "success"
+                },
+                "sanitizer": {
+                    "id": 102,
+                    "name": "Scheduled fail-fast sanitizer and reset corpus",
+                    "url": "https://example.invalid/job/102",
+                    "conclusion": "success"
+                }
+            },
+            "artifacts": {
+                "canonical": exact_artifact(
+                    201,
+                    &canonical_name,
+                    &canonical_archive,
+                    &canonical_bytes,
+                ),
+                "sanitizer": exact_artifact(
+                    202,
+                    &sanitizer_name,
+                    &sanitizer_archive,
+                    &sanitizer_bytes,
+                )
+            },
+            "live_run": {
+                "id": EXACT_RUN,
+                "head_sha": APPROVED_SHA,
+                "name": "Oracle CI",
+                "event": "workflow_dispatch",
+                "conclusion": "success"
+            },
+            "live_jobs": [
+                { "id": 101, "name": "Canonical Linux oracle", "conclusion": "success" },
+                { "id": 102, "name": "Scheduled fail-fast sanitizer and reset corpus", "conclusion": "success" }
+            ],
+            "live_artifacts": [
+                { "id": 201, "name": canonical_name, "digest": format!("sha256:{}", sha256(&canonical_bytes)), "expired": false },
+                { "id": 202, "name": sanitizer_name, "digest": format!("sha256:{}", sha256(&sanitizer_bytes)), "expired": false }
+            ]
+        }))
+    }
+
+    fn write_run_json(&self, run: &Value) -> TestResult {
+        fs::write(self.path.join("run.json"), serde_json::to_vec_pretty(run)?)?;
+        Ok(())
+    }
+
+    fn run_exact_ref(&self) -> std::io::Result<Output> {
+        run_xtask(&[
+            "phase9-evidence",
+            "validate",
+            "--mode",
+            "exact-ref",
+            "--canonical-dir",
+            &self.relative("canonical"),
+            "--sanitizer-dir",
+            &self.relative("sanitizer"),
+            "--run-json",
+            &self.relative("run.json"),
+            "--deny-run-id",
+            &REJECTED_RUN.to_string(),
+            "--deny-run-id",
+            &SUPERSEDED_RUN.to_string(),
+        ])
+    }
+
+    fn run_local(&self) -> std::io::Result<Output> {
+        run_xtask(&[
+            "phase9-evidence",
+            "validate",
+            "--mode",
+            "local",
+            "--canonical-dir",
+            &self.relative("canonical"),
+            "--sanitizer-dir",
+            &self.relative("sanitizer"),
+            "--deny-run-id",
+            &REJECTED_RUN.to_string(),
+            "--deny-run-id",
+            &SUPERSEDED_RUN.to_string(),
+        ])
+    }
+
+    fn mutate_json(
+        &self,
+        directory: &str,
+        relative: &str,
+        mutate: impl FnOnce(&mut Value),
+    ) -> TestResult {
+        let path = self.path.join(directory).join(relative);
+        let mut value: Value = serde_json::from_slice(&fs::read(&path)?)?;
+        mutate(&mut value);
+        let mut bytes = serde_json::to_vec_pretty(&value)?;
+        bytes.push(b'\n');
+        fs::write(&path, bytes)?;
+        refresh_identity(&self.path.join(directory))?;
+        Ok(())
+    }
+
+    fn mutate_manifest_semantics(
+        &self,
+        directory: &str,
+        mutate: impl FnOnce(&mut Value),
+    ) -> TestResult {
+        let path = self.path.join(directory).join("phase9-manifest.json");
+        let mut manifest: Value = serde_json::from_slice(&fs::read(&path)?)?;
+        mutate(&mut manifest);
+        for case in manifest["cases"].as_array_mut().expect("manifest cases") {
+            let witnesses: Vec<Phase9WitnessBinding> =
+                serde_json::from_value(case["witnesses"].clone())?;
+            case["witness_binding_sha256"] = json!(sha256(&serde_json::to_vec(&witnesses)?));
+        }
+        let cases: Vec<EvidenceCase> = serde_json::from_value(manifest["cases"].clone())?;
+        manifest["semantic_manifest_sha256"] = json!(sha256(&serde_json::to_vec(&cases)?));
+        let mut bytes = serde_json::to_vec_pretty(&manifest)?;
+        bytes.push(b'\n');
+        fs::write(path, bytes)?;
+        refresh_identity(&self.path.join(directory))?;
+        Ok(())
+    }
+}
+
+impl Drop for TestRoot {
+    fn drop(&mut self) {
+        let _ = fs::remove_dir_all(&self.path);
+    }
+}
+
+#[test]
+fn exact_ref_rejects_denylisted_historical_run_before_evidence_access() -> TestResult {
+    for run_id in [REJECTED_RUN, SUPERSEDED_RUN] {
+        // Arrange
+        let root = TestRoot::new("deny-run")?;
+        fs::write(
+            root.path.join("run.json"),
+            format!(r#"{{"run_id":{run_id}}}"#),
+        )?;
+
+        // Act
+        let output = run_xtask(&[
+            "phase9-evidence",
+            "validate",
+            "--mode",
+            "exact-ref",
+            "--canonical-dir",
+            &root.relative("missing-canonical"),
+            "--sanitizer-dir",
+            &root.relative("missing-sanitizer"),
+            "--run-json",
+            &root.relative("run.json"),
+            "--deny-run-id",
+            &run_id.to_string(),
+        ])?;
+
+        // Assert
+        assert!(!output.status.success());
+        assert_output_contains(&output, "denylisted");
+    }
+    Ok(())
+}
+
+#[test]
+fn exact_ref_accepts_closed_run_job_artifact_and_archive_metadata() -> TestResult {
+    // Arrange
+    let root = TestRoot::new("valid-exact")?;
+    let run = root.write_valid_exact_ref_evidence()?;
+    root.write_run_json(&run)?;
+
+    // Act
+    let output = root.run_exact_ref()?;
+
+    // Assert
+    assert_success(&output);
+    Ok(())
+}
+
+#[test]
+fn exact_ref_rejects_wrong_duplicate_and_expired_live_metadata() -> TestResult {
+    // Arrange
+    let root = TestRoot::new("invalid-exact-metadata")?;
+    let valid = root.write_valid_exact_ref_evidence()?;
+    let mut wrong_job = valid.clone();
+    wrong_job["jobs"]["canonical"]["name"] = json!("wrong");
+    root.write_run_json(&wrong_job)?;
+    let wrong_job_output = root.run_exact_ref()?;
+    let mut duplicate_job = valid.clone();
+    let duplicate = duplicate_job["live_jobs"][0].clone();
+    duplicate_job["live_jobs"]
+        .as_array_mut()
+        .expect("live jobs")
+        .push(duplicate);
+    root.write_run_json(&duplicate_job)?;
+    let duplicate_job_output = root.run_exact_ref()?;
+    let mut expired = valid;
+    expired["artifacts"]["sanitizer"]["expired"] = json!(true);
+    expired["live_artifacts"][1]["expired"] = json!(true);
+    root.write_run_json(&expired)?;
+
+    // Act
+    let expired_output = root.run_exact_ref()?;
+
+    // Assert
+    assert_failure(&wrong_job_output);
+    assert_failure(&duplicate_job_output);
+    assert_failure(&expired_output);
+    Ok(())
+}
+
+#[test]
+fn local_accepts_complete_canonical_and_sanitizer_evidence() -> TestResult {
+    // Arrange
+    let root = TestRoot::new("valid-local")?;
+    root.write_valid_local_evidence()?;
+
+    // Act
+    let output = root.run_local()?;
+
+    // Assert
+    assert_success(&output);
+    assert!(String::from_utf8_lossy(&output.stdout).contains("58 semantic bindings"));
+    Ok(())
+}
+
+#[test]
+fn local_rejects_extra_missing_and_symlink_entries() -> TestResult {
+    // Arrange
+    let extra = TestRoot::new("extra")?;
+    extra.write_valid_local_evidence()?;
+    fs::write(extra.path.join("canonical/unexpected.txt"), b"unexpected")?;
+    let missing = TestRoot::new("missing")?;
+    missing.write_valid_local_evidence()?;
+    fs::remove_file(missing.path.join("canonical/inventory.log"))?;
+    let symlink = TestRoot::new("symlink")?;
+    symlink.write_valid_local_evidence()?;
+    #[cfg(unix)]
+    std::os::unix::fs::symlink(
+        "provenance.log",
+        symlink.path.join("canonical/forbidden-link"),
+    )?;
+
+    // Act
+    let extra_output = extra.run_local()?;
+    let missing_output = missing.run_local()?;
+    let symlink_output = symlink.run_local()?;
+
+    // Assert
+    assert_failure(&extra_output);
+    assert_failure(&missing_output);
+    assert_failure(&symlink_output);
+    Ok(())
+}
+
+#[test]
+fn local_rejects_failed_logs_and_identity_substitution() -> TestResult {
+    // Arrange
+    let failed = TestRoot::new("failed-log")?;
+    failed.write_valid_local_evidence()?;
+    fs::write(
+        failed.path.join("canonical/phase9-trace.log"),
+        b"test result: FAILED. 0 passed; 1 failed\n",
+    )?;
+    refresh_identity(&failed.path.join("canonical"))?;
+    let substituted = TestRoot::new("substitution")?;
+    substituted.write_valid_local_evidence()?;
+    let canonical_identity = fs::read(substituted.path.join("canonical/identity.json"))?;
+    fs::write(
+        substituted.path.join("sanitizer/identity.json"),
+        canonical_identity,
+    )?;
+
+    // Act
+    let failed_output = failed.run_local()?;
+    let substituted_output = substituted.run_local()?;
+
+    // Assert
+    assert_failure(&failed_output);
+    assert_failure(&substituted_output);
+    Ok(())
+}
+
+#[test]
+fn local_rejects_retained_policy_witness_and_payload_corruption() -> TestResult {
+    // Arrange
+    let retained = TestRoot::new("retained")?;
+    retained.write_valid_local_evidence()?;
+    retained.mutate_json("canonical", "phase9-manifest.json", |manifest| {
+        manifest["cases"][0]["retained_rigid"]["phase8_policy_sha256"] = json!("0".repeat(64));
+    })?;
+    let witness = TestRoot::new("witness")?;
+    witness.write_valid_local_evidence()?;
+    witness.mutate_json("canonical", "phase9-manifest.json", |manifest| {
+        manifest["cases"][0]["witnesses"][0]["action_index"] = json!(usize::MAX);
+    })?;
+    let payload = TestRoot::new("payload")?;
+    payload.write_valid_local_evidence()?;
+    let native_path = payload
+        .path
+        .join("canonical/cases/storage-systems-and-permutations/native-result.json");
+    fs::write(native_path, b"{}")?;
+    refresh_identity(&payload.path.join("canonical"))?;
+
+    // Act
+    let retained_output = retained.run_local()?;
+    let witness_output = witness.run_local()?;
+    let payload_output = payload.run_local()?;
+
+    // Assert
+    assert_failure(&retained_output);
+    assert_failure(&witness_output);
+    assert_failure(&payload_output);
+    Ok(())
+}
+
+#[test]
+fn local_rejects_incomplete_policies_and_semantic_manifest_disagreement() -> TestResult {
+    // Arrange
+    let policies = TestRoot::new("policies")?;
+    policies.write_valid_local_evidence()?;
+    policies.mutate_json("canonical", "phase9-manifest.json", |manifest| {
+        manifest["cases"][0]["consumed_policy_paths"]
+            .as_array_mut()
+            .expect("policy array")
+            .pop();
+    })?;
+    let disagreement = TestRoot::new("disagreement")?;
+    disagreement.write_valid_local_evidence()?;
+    disagreement.mutate_json("sanitizer", "phase9-manifest.json", |manifest| {
+        manifest["cases"].as_array_mut().expect("cases").swap(0, 1);
+        manifest["semantic_manifest_sha256"] = json!(sha256(
+            &serde_json::to_vec(&manifest["cases"]).expect("cases bytes")
+        ));
+    })?;
+
+    // Act
+    let policy_output = policies.run_local()?;
+    let disagreement_output = disagreement.run_local()?;
+
+    // Assert
+    assert_failure(&policy_output);
+    assert_failure(&disagreement_output);
+    Ok(())
+}
+
+#[test]
+fn local_rejects_zero_energy_and_empty_stuck_witnesses() -> TestResult {
+    // Arrange
+    let zero = TestRoot::new("zero-energy")?;
+    zero.write_valid_local_evidence()?;
+    zero.mutate_manifest_semantics("canonical", |manifest| {
+        let binding = find_binding_mut(manifest, "collision_energy");
+        binding["semantic_assertion"]["minimum_bits"] = json!(0);
+    })?;
+    let empty = TestRoot::new("empty-stuck")?;
+    empty.write_valid_local_evidence()?;
+    empty.mutate_manifest_semantics("canonical", |manifest| {
+        let binding = find_binding_mut(manifest, "stuck_candidates");
+        binding["semantic_assertion"]["particle_ids"] = json!([]);
+    })?;
+
+    // Act
+    let zero_output = zero.run_local()?;
+    let empty_output = empty.run_local()?;
+
+    // Assert
+    assert_failure(&zero_output);
+    assert_failure(&empty_output);
+    assert_output_contains(&zero_output, "bindings");
+    assert_output_contains(&empty_output, "bindings");
+    Ok(())
+}
+
+#[derive(Deserialize, Serialize)]
+struct EvidenceManifest {
+    schema_version: u32,
+    case_record_schema_version: u32,
+    profile: String,
+    upstream_revision: String,
+    semantic_manifest_sha256: String,
+    cases: Vec<EvidenceCase>,
+}
+
+#[derive(Deserialize, Serialize)]
+struct EvidenceCase {
+    case_id: String,
+    reached_branches: Vec<String>,
+    witnesses: Vec<Phase9WitnessBinding>,
+    witness_binding_sha256: String,
+    consumed_policy_paths: Vec<String>,
+    retained_rigid: RetainedRigid,
+    request_path: String,
+    request_sha256: String,
+    native_result_path: String,
+    native_result_sha256: String,
+    oracle_result_path: String,
+    oracle_result_sha256: String,
+    complete_comparison_path: String,
+    complete_comparison_sha256: String,
+}
+
+#[derive(Deserialize, Serialize)]
+struct RetainedRigid {
+    comparator: String,
+    phase6_policy_sha256: String,
+    phase7_policy_sha256: String,
+    phase8_policy_sha256: String,
+    outcome: String,
+    comparison_sha256: String,
+}
+
+#[derive(Serialize)]
+struct RetainedPayload<'a> {
+    comparator: &'a str,
+    phase6_policy_sha256: &'a str,
+    phase7_policy_sha256: &'a str,
+    phase8_policy_sha256: &'a str,
+    outcome: &'a str,
+}
+
+fn build_manifest(root: &Path) -> TestResult<EvidenceManifest> {
+    let source: Value = serde_json::from_slice(&fs::read(
+        workspace_root()
+            .join("crates/liquidfun-differential/tests/fixtures/rigid_world/phase9/phase9-v1.json"),
+    )?)?;
+    let source_cases = source["cases"].as_array().expect("source cases");
+    let policies = PHASE9_REQUIRED_POLICY_PATHS
+        .iter()
+        .map(|path| (*path).to_owned())
+        .collect::<Vec<_>>();
+    let retained_payload = RetainedPayload {
+        comparator: "phase8-v1",
+        phase6_policy_sha256: PHASE6_POLICY_SHA256,
+        phase7_policy_sha256: PHASE7_POLICY_SHA256,
+        phase8_policy_sha256: PHASE8_POLICY_SHA256,
+        outcome: "match",
+    };
+    let mut cases = Vec::new();
+    for source_case in source_cases {
+        let case_id = source_case["case_id"].as_str().expect("case ID").to_owned();
+        let fixture = source_case["fixture"].as_str().expect("fixture path");
+        let request = fs::read(
+            workspace_root()
+                .join("crates/liquidfun-differential/tests/fixtures/rigid_world/phase9")
+                .join(fixture),
+        )?;
+        let decoded =
+            decode_rigid_world_request_jsonl(&request, &HarnessLimits::phase2_default_v1())?;
+        let result = NativeRigidWorldExecutor::execute(&decoded)?;
+        let native = serde_json::to_vec(&result)?;
+        let oracle = native.clone();
+        let comparison = serde_json::to_vec(&json!({
+            "outcome": "match",
+            "consumed_policy_paths": policies.clone(),
+        }))?;
+        let witnesses: Vec<Phase9WitnessBinding> =
+            serde_json::from_value(source_case["witnesses"].clone())?;
+        let reached_branches = witnesses
+            .iter()
+            .map(|witness| witness.branch_id.as_str().to_owned())
+            .collect::<Vec<_>>();
+        let base = format!("cases/{case_id}");
+        write_payload(root, &format!("{base}/request.jsonl"), &request)?;
+        write_payload(root, &format!("{base}/native-result.json"), &native)?;
+        write_payload(root, &format!("{base}/oracle-result.json"), &oracle)?;
+        write_payload(
+            root,
+            &format!("{base}/complete-comparison.json"),
+            &comparison,
+        )?;
+        cases.push(EvidenceCase {
+            case_id,
+            reached_branches,
+            witness_binding_sha256: sha256(&serde_json::to_vec(&witnesses)?),
+            witnesses,
+            consumed_policy_paths: policies.clone(),
+            retained_rigid: RetainedRigid {
+                comparator: "phase8-v1".to_owned(),
+                phase6_policy_sha256: PHASE6_POLICY_SHA256.to_owned(),
+                phase7_policy_sha256: PHASE7_POLICY_SHA256.to_owned(),
+                phase8_policy_sha256: PHASE8_POLICY_SHA256.to_owned(),
+                outcome: "match".to_owned(),
+                comparison_sha256: sha256(&serde_json::to_vec(&retained_payload)?),
+            },
+            request_path: format!("{base}/request.jsonl"),
+            request_sha256: sha256(&request),
+            native_result_path: format!("{base}/native-result.json"),
+            native_result_sha256: sha256(&native),
+            oracle_result_path: format!("{base}/oracle-result.json"),
+            oracle_result_sha256: sha256(&oracle),
+            complete_comparison_path: format!("{base}/complete-comparison.json"),
+            complete_comparison_sha256: sha256(&comparison),
+        });
+    }
+    Ok(EvidenceManifest {
+        schema_version: 2,
+        case_record_schema_version: 1,
+        profile: "phase9-v1".to_owned(),
+        upstream_revision: UPSTREAM_REVISION.to_owned(),
+        semantic_manifest_sha256: sha256(&serde_json::to_vec(&cases)?),
+        cases,
+    })
+}
+
+fn write_evidence_directory(root: &Path, job: &str, manifest: &EvidenceManifest) -> TestResult {
+    fs::create_dir_all(root)?;
+    let source_payloads = root.parent().expect("fixture root").join("cases");
+    copy_directory(&source_payloads, &root.join("cases"))?;
+    let mut manifest_bytes = serde_json::to_vec_pretty(manifest)?;
+    manifest_bytes.push(b'\n');
+    fs::write(root.join("phase9-manifest.json"), manifest_bytes)?;
+    fs::write(
+        root.join("phase9-trace.log"),
+        b"test result: ok. 25 passed; 0 failed; 1 ignored\n",
+    )?;
+    fs::write(root.join("provenance.log"), b"provenance verified\n")?;
+    fs::write(root.join("inventory.log"), b"inventory verified\n")?;
+    fs::write(root.join("read-only.log"), b"")?;
+    write_identity(root, job)
+}
+
+fn write_identity(root: &Path, job: &str) -> TestResult {
+    write_identity_for(root, job, 0, "local")
+}
+
+fn write_identity_for(root: &Path, job: &str, run_id: u64, head_sha: &str) -> TestResult {
+    let files = regular_files(root)?
+        .into_iter()
+        .filter(|path| path != "identity.json")
+        .map(|path| {
+            Ok(json!({
+                "path": path,
+                "sha256": sha256(&fs::read(root.join(&path))?),
+            }))
+        })
+        .collect::<TestResult<Vec<_>>>()?;
+    let identity = json!({
+        "run_id": run_id,
+        "job": job,
+        "head_sha": head_sha,
+        "upstream_revision": UPSTREAM_REVISION,
+        "rust": "1.97.0",
+        "cmake": "4.3.3",
+        "ninja": "1.13.2",
+        "clang": "22.1.8",
+        "target": "x86_64-unknown-linux-gnu",
+        "policy": "phase9-v1",
+        "trace": {
+            "path": "phase9-trace.log",
+            "sha256": sha256(&fs::read(root.join("phase9-trace.log"))?),
+        },
+        "manifest": {
+            "path": "phase9-manifest.json",
+            "sha256": sha256(&fs::read(root.join("phase9-manifest.json"))?),
+        },
+        "files": files,
+    });
+    let mut bytes = serde_json::to_vec_pretty(&identity)?;
+    bytes.push(b'\n');
+    fs::write(root.join("identity.json"), bytes)?;
+    Ok(())
+}
+
+fn exact_artifact(id: u64, name: &str, archive: &Path, bytes: &[u8]) -> Value {
+    json!({
+        "id": id,
+        "name": name,
+        "api_url": "https://example.invalid/artifact",
+        "archive_download_url": "https://example.invalid/artifact.zip",
+        "digest": format!("sha256:{}", sha256(bytes)),
+        "size_in_bytes": bytes.len(),
+        "expired": false,
+        "created_at": "2026-07-17T00:00:00Z",
+        "expires_at": "2026-10-15T00:00:00Z",
+        "archive_path": archive
+            .strip_prefix(workspace_root())
+            .expect("archive remains under workspace")
+            .to_string_lossy(),
+    })
+}
+
+fn write_zip(source: &Path, archive: &Path) -> TestResult {
+    let files = regular_files(source)?;
+    let status = Command::new("zip")
+        .arg("-q")
+        .arg(archive)
+        .args(files)
+        .current_dir(source)
+        .status()?;
+    if !status.success() {
+        return Err("zip failed while constructing exact-ref fixture".into());
+    }
+    Ok(())
+}
+
+fn refresh_identity(root: &Path) -> TestResult {
+    let identity: Value = serde_json::from_slice(&fs::read(root.join("identity.json"))?)?;
+    let job = identity["job"].as_str().expect("identity job").to_owned();
+    write_identity(root, &job)
+}
+
+fn regular_files(root: &Path) -> TestResult<BTreeSet<String>> {
+    let mut pending = vec![(root.to_path_buf(), PathBuf::new())];
+    let mut files = BTreeSet::new();
+    while let Some((directory, relative)) = pending.pop() {
+        for entry in fs::read_dir(directory)? {
+            let entry = entry?;
+            let child_relative = relative.join(entry.file_name());
+            if entry.file_type()?.is_dir() {
+                pending.push((entry.path(), child_relative));
+            } else if entry.file_type()?.is_file() {
+                files.insert(child_relative.to_string_lossy().into_owned());
+            }
+        }
+    }
+    Ok(files)
+}
+
+fn copy_directory(source: &Path, destination: &Path) -> TestResult {
+    for (relative, _) in regular_files(source)?
+        .into_iter()
+        .map(|relative| (relative.clone(), source.join(relative)))
+    {
+        let target = destination.join(&relative);
+        fs::create_dir_all(target.parent().expect("payload parent"))?;
+        fs::copy(source.join(relative), target)?;
+    }
+    Ok(())
+}
+
+fn write_payload(root: &Path, relative: &str, bytes: &[u8]) -> TestResult {
+    let path = root.join(relative);
+    fs::create_dir_all(path.parent().expect("payload parent"))?;
+    fs::write(path, bytes)?;
+    Ok(())
+}
+
+fn find_binding_mut<'a>(manifest: &'a mut Value, branch_id: &str) -> &'a mut Value {
+    manifest["cases"]
+        .as_array_mut()
+        .expect("manifest cases")
+        .iter_mut()
+        .flat_map(|case| {
+            case["witnesses"]
+                .as_array_mut()
+                .expect("case witnesses")
+                .iter_mut()
+        })
+        .find(|binding| binding["branch_id"] == branch_id)
+        .expect("reviewed branch binding")
+}
+
+fn sha256(bytes: &[u8]) -> String {
+    format!("{:x}", Sha256::digest(bytes))
+}
+
+fn run_xtask(args: &[&str]) -> std::io::Result<Output> {
+    Command::new(env!("CARGO_BIN_EXE_xtask"))
+        .args(args)
+        .current_dir(workspace_root())
+        .output()
+}
+
+fn assert_output_contains(output: &Output, needle: &str) {
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        stderr.contains(needle),
+        "stderr did not contain `{needle}`:\n{stderr}"
+    );
+}
+
+fn assert_success(output: &Output) {
+    assert!(
+        output.status.success(),
+        "command failed:\n{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
+fn assert_failure(output: &Output) {
+    assert!(
+        !output.status.success(),
+        "command unexpectedly succeeded:\n{}",
+        String::from_utf8_lossy(&output.stdout)
+    );
+}
+
+fn workspace_root() -> &'static Path {
+    Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .and_then(Path::parent)
+        .expect("xtask belongs to the workspace")
+}
