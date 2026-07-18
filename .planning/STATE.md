@@ -3,15 +3,15 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 09-29-PLAN.md
-last_updated: "2026-07-18T20:50:08.637Z"
-last_activity: 2026-07-18 -- Phase 09 planning complete
+stopped_at: Completed 09-30-PLAN.md
+last_updated: "2026-07-18T21:17:29.211Z"
+last_activity: "2026-07-18"
 progress:
   total_phases: 12
   completed_phases: 8
   total_plans: 129
-  completed_plans: 127
-  percent: 98
+  completed_plans: 128
+  percent: 99
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-07-12)
 
 **Core value:** Deliver an independent, maintainable Rust physics engine whose LiquidFun behavior is demonstrated against a pinned upstream oracle through explicit inventory, tests, differential evidence, and documented tolerances.
-**Current focus:** Phase 09 — particle-storage-lifecycle-and-coupling
+**Current focus:** Phase 09 — Particle Storage, Lifecycle, and Coupling
 
 ## Current Position
 
-Phase: 09 (particle-storage-lifecycle-and-coupling) — EXECUTING
-Plan: 29 of 29
+Phase: 09 (Particle Storage, Lifecycle, and Coupling) — EXECUTING
+Plan: 31 of 31
 Status: Ready to execute
-Last activity: 2026-07-18 -- Phase 09 planning complete
+Last activity: 2026-07-18 -- Completed 09-30 proof-role topology closure
 
 Progress: [██████████] 99%
 
@@ -138,6 +138,7 @@ Progress: [██████████] 99%
 | Phase 09 P27 | 37m | 3 tasks | 5 files |
 | Phase 09 P28 | 15h 16m | 3 tasks | 4 files |
 | Phase 09 P29 | 23min | 3 tasks | 5 files |
+| Phase 09 P30 | 23min | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -328,6 +329,8 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 09]: Accept replacement run 29652578231 only after same-run canonical and sanitizer artifacts passed safe-archive and exact-ref validation.
 - [Phase 09]: Only successful replacement run 29652578231 at exact approved SHA 22b31c0e1be8896df622b1decd58ba2853a60b04 authorizes the four scoped Phase 9 rows.
 - [Phase 09]: Historical and failed runs 29439515367, 29583793056, and 29625083184 remain denylisted, and all Phase 10 particle behavior remains not evidenced.
+- [Phase 09]: Phase 9 schema-v4 proof paths are validated before payload collection or exact-file-set deduplication.
+- [Phase 09]: Only replay-to-D0 and minimized/copied-to-first-divergence path reuse is allowed; required proof pairs stay path-distinct.
 
 ### Pending Todos
 
@@ -341,6 +344,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-18T17:23:01.708Z
-Stopped at: Completed 09-29-PLAN.md
+Last session: 2026-07-18T21:17:29.207Z
+Stopped at: Completed 09-30-PLAN.md
 Resume file: None
