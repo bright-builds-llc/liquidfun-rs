@@ -221,6 +221,39 @@ impl TestRoot {
         refresh_identity(&self.path.join(directory))?;
         Ok(())
     }
+
+    fn mutate_case_payload(
+        &self,
+        directory: &str,
+        case_id: &str,
+        path_field: &str,
+        digest_field: &str,
+        mutate: impl FnOnce(&mut Value),
+    ) -> TestResult {
+        let evidence_root = self.path.join(directory);
+        let manifest_path = evidence_root.join("phase9-manifest.json");
+        let mut manifest: Value = serde_json::from_slice(&fs::read(&manifest_path)?)?;
+        let case = manifest["cases"]
+            .as_array_mut()
+            .expect("manifest cases")
+            .iter_mut()
+            .find(|case| case["case_id"] == case_id)
+            .expect("reviewed evidence case");
+        let relative = case[path_field].as_str().expect("payload path").to_owned();
+        let payload_path = evidence_root.join(relative);
+        let mut payload: Value = serde_json::from_slice(&fs::read(&payload_path)?)?;
+        mutate(&mut payload);
+        let bytes = serde_json::to_vec(&payload)?;
+        fs::write(&payload_path, &bytes)?;
+        case[digest_field] = json!(sha256(&bytes));
+        let cases: Vec<EvidenceCase> = serde_json::from_value(manifest["cases"].clone())?;
+        manifest["semantic_manifest_sha256"] = json!(sha256(&serde_json::to_vec(&cases)?));
+        let mut manifest_bytes = serde_json::to_vec_pretty(&manifest)?;
+        manifest_bytes.push(b'\n');
+        fs::write(manifest_path, manifest_bytes)?;
+        refresh_identity(&evidence_root)?;
+        Ok(())
+    }
 }
 
 impl Drop for TestRoot {
@@ -506,6 +539,123 @@ fn local_rejects_zero_energy_and_empty_stuck_witnesses() -> TestResult {
     assert_failure(&empty_output);
     assert_output_contains(&zero_output, "bindings");
     assert_output_contains(&empty_output, "bindings");
+    Ok(())
+}
+
+#[test]
+fn local_rejects_digest_recomputed_in_range_binding_mutations() -> TestResult {
+    // Arrange
+    let wrong_action = TestRoot::new("wrong-action")?;
+    wrong_action.write_valid_local_evidence()?;
+    wrong_action.mutate_manifest_semantics("canonical", |manifest| {
+        find_binding_mut(manifest, "stable_ids_sort")["action_index"] = json!(9);
+    })?;
+    let wrong_checkpoint = TestRoot::new("wrong-checkpoint")?;
+    wrong_checkpoint.write_valid_local_evidence()?;
+    wrong_checkpoint.mutate_manifest_semantics("canonical", |manifest| {
+        find_binding_mut(manifest, "optional_lanes")["checkpoint_index"] = json!(0);
+    })?;
+    let wrong_observation = TestRoot::new("wrong-observation")?;
+    wrong_observation.write_valid_local_evidence()?;
+    wrong_observation.mutate_case_payload(
+        "canonical",
+        "storage-systems-and-permutations",
+        "native_result_path",
+        "native_result_sha256",
+        |result| {
+            let particle =
+                result["timelines"][0]["checkpoints"][1]["observations"][0]["observation"].clone();
+            result["timelines"][0]["checkpoints"][0]["observations"][8]["observation"] = particle;
+        },
+    )?;
+
+    // Act
+    let wrong_action_output = wrong_action.run_local()?;
+    let wrong_checkpoint_output = wrong_checkpoint.run_local()?;
+    let wrong_observation_output = wrong_observation.run_local()?;
+
+    // Assert
+    for output in [
+        &wrong_action_output,
+        &wrong_checkpoint_output,
+        &wrong_observation_output,
+    ] {
+        assert_failure(output);
+    }
+    assert_output_contains(&wrong_action_output, "expected action");
+    assert_output_contains(&wrong_checkpoint_output, "selected checkpoint");
+    Ok(())
+}
+
+#[test]
+fn local_rejects_digest_recomputed_false_semantic_assertions() -> TestResult {
+    for (label, branch, mutate) in [
+        (
+            "false-lifetime",
+            "finite_lifetime",
+            ("particle_id", json!("phase9-b")),
+        ),
+        (
+            "false-contact",
+            "strict_contact_enabled",
+            ("contact_count", json!(3)),
+        ),
+        (
+            "false-listener",
+            "listener_flag_enabled",
+            ("event_count", json!(2)),
+        ),
+        (
+            "false-filter",
+            "filter_flag_disabled",
+            ("contact_count", json!(0)),
+        ),
+    ] {
+        // Arrange
+        let root = TestRoot::new(label)?;
+        root.write_valid_local_evidence()?;
+        root.mutate_manifest_semantics("canonical", |manifest| {
+            find_binding_mut(manifest, branch)["semantic_assertion"][mutate.0] = mutate.1;
+        })?;
+
+        // Act
+        let output = root.run_local()?;
+
+        // Assert
+        assert_failure(&output);
+        assert_output_contains(&output, "semantic assertion");
+    }
+    Ok(())
+}
+
+#[test]
+fn local_recomputes_comparator_instead_of_trusting_match_payload() -> TestResult {
+    // Arrange
+    let root = TestRoot::new("divergent-pair")?;
+    root.write_valid_local_evidence()?;
+    root.mutate_case_payload(
+        "canonical",
+        "closed-evidence-contract",
+        "oracle_result_path",
+        "oracle_result_sha256",
+        |result| {
+            let body = result["timelines"]
+                .as_array_mut()
+                .expect("timelines")
+                .iter_mut()
+                .flat_map(|timeline| timeline["checkpoints"].as_array_mut().expect("checkpoints"))
+                .find_map(|checkpoint| checkpoint["bodies"].as_array_mut()?.first_mut())
+                .expect("retained body");
+            body["active"] = json!(!body["active"].as_bool().expect("body active"));
+        },
+    )?;
+
+    // Act
+    let output = root.run_local()?;
+
+    // Assert
+    assert_failure(&output);
+    assert_output_contains(&output, "persisted divergent native and oracle results");
     Ok(())
 }
 

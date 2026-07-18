@@ -9,10 +9,13 @@ use std::{
     process::Command,
 };
 
+use liquidfun_differential::{
+    Phase9ComparisonOutcome, compare_complete_phase9_rigid_world_results,
+    validate_phase9_evidence_bindings,
+};
 use liquidfun_test_protocol::{
-    HarnessLimits, PHASE9_REQUIRED_BRANCH_IDS, Phase9ParticleObservation, Phase9SemanticAssertion,
-    Phase9WitnessBinding, RigidWorldObservation, RigidWorldRequestRecord, RigidWorldResultRecord,
-    decode_rigid_world_request_jsonl, decode_rigid_world_result_jsonl,
+    HarnessLimits, PHASE9_REQUIRED_BRANCH_IDS, Phase9WitnessBinding, RigidWorldRequestRecord,
+    RigidWorldResultRecord, decode_rigid_world_request_jsonl, decode_rigid_world_result_jsonl,
     validate_phase9_witness_bindings, validate_rigid_world_result_against_request,
 };
 use serde::{Deserialize, Serialize};
@@ -575,8 +578,21 @@ fn validate_manifest(root: &Path, manifest: &EvidenceManifest) -> Result<(), Pha
         )?;
         let native = validate_result(&request, &native_bytes, "native")?;
         let oracle = validate_result(&request, &oracle_bytes, "oracle")?;
-        validate_semantic_outcomes(case, &native, "native")?;
-        validate_semantic_outcomes(case, &oracle, "oracle")?;
+        validate_phase9_evidence_bindings(&request, &native, &case.witnesses)
+            .map_err(|error| Phase9EvidenceError::new("native", error.to_string()))?;
+        validate_phase9_evidence_bindings(&request, &oracle, &case.witnesses)
+            .map_err(|error| Phase9EvidenceError::new("oracle", error.to_string()))?;
+        let recomputed = compare_complete_phase9_rigid_world_results(&request, &native, &oracle)
+            .map_err(|error| Phase9EvidenceError::new("comparison", error.to_string()))?;
+        if !matches!(recomputed, Phase9ComparisonOutcome::Match { .. }) {
+            return Err(Phase9EvidenceError::new(
+                "comparison",
+                format!(
+                    "case `{}` persisted divergent native and oracle results",
+                    case.case_id
+                ),
+            ));
+        }
         let comparison_bytes = read_payload(
             root,
             &case.complete_comparison_path,
@@ -650,77 +666,6 @@ fn validate_result(
     validate_rigid_world_result_against_request(request, &result)
         .map_err(|error| Phase9EvidenceError::new(side, error.to_string()))?;
     Ok(result)
-}
-
-fn validate_semantic_outcomes(
-    case: &EvidenceCaseRecord,
-    result: &RigidWorldResultRecord,
-    side: &'static str,
-) -> Result<(), Phase9EvidenceError> {
-    let timeline = result
-        .timelines()
-        .first()
-        .ok_or_else(|| Phase9EvidenceError::new(side, "missing Phase 9 result timeline"))?;
-    for binding in &case.witnesses {
-        let assertion_requires_statistics = matches!(
-            binding.semantic_assertion,
-            Phase9SemanticAssertion::CollisionEnergyPositiveFinite { .. }
-                | Phase9SemanticAssertion::StuckCandidatesNonempty { .. }
-        );
-        if !assertion_requires_statistics {
-            continue;
-        }
-        let checkpoint = timeline
-            .checkpoints
-            .get(binding.checkpoint_index)
-            .ok_or_else(|| Phase9EvidenceError::new(side, "missing bound checkpoint"))?;
-        let statistics =
-            checkpoint
-                .observations
-                .iter()
-                .filter_map(|observation| match observation {
-                    RigidWorldObservation::Particle {
-                        observation: Phase9ParticleObservation::Statistics { statistics },
-                    } => Some(statistics),
-                    _ => None,
-                });
-        let mut saw_statistics = false;
-        let matches = statistics.into_iter().any(|statistics| {
-            saw_statistics = true;
-            match &binding.semantic_assertion {
-                Phase9SemanticAssertion::CollisionEnergyPositiveFinite { minimum_bits } => {
-                    let energy = statistics.collision_energy_bits.to_f32();
-                    energy.is_finite() && energy >= minimum_bits.to_f32() && energy > 0.0
-                }
-                Phase9SemanticAssertion::StuckCandidatesNonempty { particle_ids } => {
-                    !statistics.stuck_particle_ids.is_empty()
-                        && particle_ids
-                            .iter()
-                            .all(|particle_id| statistics.stuck_particle_ids.contains(particle_id))
-                }
-                _ => true,
-            }
-        });
-        if !saw_statistics {
-            return Err(Phase9EvidenceError::new(
-                side,
-                format!(
-                    "case `{}` lacks bound statistics for `{}`",
-                    case.case_id, binding.branch_id
-                ),
-            ));
-        }
-        if !matches {
-            return Err(Phase9EvidenceError::new(
-                side,
-                format!(
-                    "case `{}` does not satisfy semantic assertion `{}`",
-                    case.case_id, binding.branch_id
-                ),
-            ));
-        }
-    }
-    Ok(())
 }
 
 fn read_payload(

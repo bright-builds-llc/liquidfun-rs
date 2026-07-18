@@ -14,6 +14,7 @@ use liquidfun_differential::{
     RigidMismatchReport, compare_complete_phase9_rigid_world_results,
     compare_phase8_rigid_world_results, effective_compile_command_sha256,
     execute_rigid_world_process, phase9_policy_for_path, run_phase9_differential,
+    validate_phase9_evidence_bindings,
 };
 use liquidfun_test_protocol::{
     HarnessLimits, Phase6PolicyProfile, Phase7PolicyProfile, Phase8PolicyProfile,
@@ -1601,6 +1602,10 @@ fn executable_cases() {
         let request_value = serde_json::to_value(&request).expect("request JSON");
         let native_value = serde_json::to_value(&native).expect("native JSON");
         let oracle_value = serde_json::to_value(oracle.result()).expect("oracle JSON");
+        validate_phase9_evidence_bindings(&request, &native, &case.witnesses)
+            .expect("native witnesses must resolve and satisfy their exact observations");
+        validate_phase9_evidence_bindings(&request, oracle.result(), &case.witnesses)
+            .expect("oracle witnesses must resolve and satisfy their exact observations");
         for witness in &case.witnesses {
             assert_witness(&request_value, &native_value, witness);
             assert_witness(&request_value, &oracle_value, witness);

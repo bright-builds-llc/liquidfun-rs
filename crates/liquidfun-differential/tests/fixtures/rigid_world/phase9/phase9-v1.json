@@ -38,9 +38,9 @@
         },
         {
           "branch_id": "paused_system",
-          "action_index": 8,
-          "checkpoint_index": 0,
-          "observation_kind": "system",
+          "action_index": 13,
+          "checkpoint_index": 1,
+          "observation_kind": "statistics",
           "semantic_assertion": {
             "kind": "observed_semantic",
             "branch_id": "paused_system"
@@ -58,9 +58,9 @@
         },
         {
           "branch_id": "stable_ids_compact",
-          "action_index": 8,
-          "checkpoint_index": 0,
-          "observation_kind": "system",
+          "action_index": 20,
+          "checkpoint_index": 1,
+          "observation_kind": "mixed_state",
           "semantic_assertion": {
             "kind": "observed_semantic",
             "branch_id": "stable_ids_compact"
@@ -78,9 +78,9 @@
         },
         {
           "branch_id": "fixed_buffer",
-          "action_index": 8,
-          "checkpoint_index": 0,
-          "observation_kind": "system",
+          "action_index": 13,
+          "checkpoint_index": 1,
+          "observation_kind": "statistics",
           "semantic_assertion": {
             "kind": "observed_semantic",
             "branch_id": "fixed_buffer"
@@ -88,9 +88,9 @@
         },
         {
           "branch_id": "growable_buffer",
-          "action_index": 8,
-          "checkpoint_index": 0,
-          "observation_kind": "system",
+          "action_index": 12,
+          "checkpoint_index": 1,
+          "observation_kind": "statistics",
           "semantic_assertion": {
             "kind": "observed_semantic",
             "branch_id": "growable_buffer"
@@ -98,9 +98,9 @@
         },
         {
           "branch_id": "fixed_full",
-          "action_index": 8,
-          "checkpoint_index": 0,
-          "observation_kind": "system",
+          "action_index": 13,
+          "checkpoint_index": 1,
+          "observation_kind": "statistics",
           "semantic_assertion": {
             "kind": "observed_semantic",
             "branch_id": "fixed_full"
@@ -179,9 +179,9 @@
         },
         {
           "branch_id": "maximum_lifetime",
-          "action_index": 23,
+          "action_index": 15,
           "checkpoint_index": 1,
-          "observation_kind": "mixed_state",
+          "observation_kind": "statistics",
           "semantic_assertion": {
             "kind": "observed_semantic",
             "branch_id": "maximum_lifetime"
@@ -280,9 +280,9 @@
         },
         {
           "branch_id": "listener_flag_disabled",
-          "action_index": 15,
+          "action_index": 20,
           "checkpoint_index": 2,
-          "observation_kind": "particle",
+          "observation_kind": "statistics",
           "semantic_assertion": {
             "kind": "listener_event_effect",
             "enabled": false,

@@ -65,7 +65,7 @@ impl Phase9SemanticAssertion {
                 if *enabled {
                     Phase9ObservationKind::Lifecycle
                 } else {
-                    Phase9ObservationKind::Particle
+                    Phase9ObservationKind::Statistics
                 }
             }
             Self::InfiniteLifetimeSurvives { .. } => Phase9ObservationKind::System,
@@ -303,15 +303,17 @@ fn requires_specific_assertion(branch_id: &str) -> bool {
 
 fn observed_branch_kind(branch_id: &str) -> Option<Phase9ObservationKind> {
     match branch_id {
-        "multiple_systems" | "newest_first" | "paused_system" | "stable_ids_sort"
-        | "stable_ids_compact" | "fixed_buffer" | "growable_buffer" | "fixed_full" => {
+        "multiple_systems" | "newest_first" | "stable_ids_sort" => {
             Some(Phase9ObservationKind::System)
         }
+        "paused_system" | "fixed_buffer" | "growable_buffer" | "fixed_full"
+        | "maximum_lifetime" => Some(Phase9ObservationKind::Statistics),
+        "stable_ids_compact" => Some(Phase9ObservationKind::MixedState),
         "optional_lanes" => Some(Phase9ObservationKind::Particle),
         "teardown" | "oldest_lifetime" | "requested_destruction_callback" | "capacity_eviction" => {
             Some(Phase9ObservationKind::Lifecycle)
         }
-        "maximum_lifetime" | "unrequested_destruction_callback" | "zombie_pending" => {
+        "unrequested_destruction_callback" | "zombie_pending" => {
             Some(Phase9ObservationKind::MixedState)
         }
         "particle_contact" | "contact_order" | "contact_multiplicity" => {
