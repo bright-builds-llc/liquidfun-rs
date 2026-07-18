@@ -1,6 +1,6 @@
 ---
 phase: 09-particle-storage-lifecycle-and-coupling
-reviewed: 2026-07-18T17:35:51Z
+reviewed: 2026-07-18T19:55:23Z
 depth: standard
 files_reviewed: 100
 files_reviewed_list:
@@ -105,74 +105,54 @@ files_reviewed_list:
   - tools/xtask/tests/phase9_evidence_cli.rs
   - tools/xtask/tests/upstream_cli.rs
 findings:
-  critical: 1
+  critical: 0
   warning: 1
-  info: 1
-  total: 3
+  info: 0
+  total: 1
 status: issues_found
 ---
 
 # Phase 09: Code Review Report
 
-**Reviewed:** 2026-07-18T17:35:51Z
+**Reviewed:** 2026-07-18T19:55:23Z
 **Depth:** standard
 **Files Reviewed:** 100
 **Status:** issues_found
 
 ## Summary
 
-The standard-depth review covered the exact 100-file Tier 2 scope reconstructed from all 29 Phase 09 summary frontmatter blocks. Plans 09-25 through 09-29 materially close the two stale verification gaps: retained Phase 6-8 comparison now runs before particle comparison, the hermetic fake compile database is self-contained, the corpus carries 58 typed semantic bindings, replacement run `29652578231` is pinned while runs `29439515367`, `29583793056`, and `29625083184` plus artifact `8423580554` are denied, generated compatibility claims are deterministic, and all five Phase 10 rows remain `not_evidenced`.
+The iteration-3 standard review covered the same exact 100-file Phase 09 scope and inspected the new shared cross-run evaluator as a direct dependency of the in-scope validator. Commits `1e621f4` and `cb7397c` resolve both prior warnings in their principal behavior. The five cross-run witness families now have typed, branch-bound proof records with persisted payload paths and digests. Validation decodes those payloads, recomputes replay and D0 equality, debug/release equality, retained-mismatch signatures, semantic paths, and deliberate first divergence through the complete Phase 09 comparator. The corpus generator executes a second sanitizer oracle for sanitizer replay and independently resolves debug and release executables.
 
-One critical local path-safety defect remains in the evidence runner: a symlinked output path under `target/` reaches the destructive cleanup before any typed validation. One evidence-integrity warning also remains because the reusable validator does not independently resolve and evaluate most bindings against their exact action/checkpoint observation. The obsolete commented constructor block reported previously is still present.
+The prior authority issue is also resolved. Exactly four affected compatibility rows are demoted to `not_evidenced` with no platform references, the superseded run and artifact identities are explicitly denied and documented only as forensic history, generated `COMPATIBILITY.md` reflects the inventory, and the five deferred Phase 10 rows remain `not_evidenced` across all evidence dimensions.
+
+CR-01 remains resolved: output and archive paths are checked component-by-component for symlinks, and the focused regression passed. IN-01 remains resolved: the obsolete constructor block is absent. One fail-closed evidence-integrity warning remains. The validator proves the contents referenced by each cross-run record, but it does not prove that payloads described as independent runs are distinct from the baseline or from one another.
 
 The review applied the repo-local `AGENTS.md` guidance, `AGENTS.bright-builds.md`, `standards-overrides.md`, and the managed architecture, code-shape, verification, testing, and Rust standards.
 
-## Critical Issues
-
-### CR-01: Evidence cleanup follows symlinked output roots outside `target/`
-
-**Files:** `scripts/phase9-evidence.sh:18-33`; `tools/xtask/src/phase9_evidence.rs:276-288`; `tools/xtask/src/phase9_evidence.rs:951-970`
-
-**Issue:** The shell runner validates `output_dir` lexically, then calls `mkdir -p`, `rm -rf "$output_dir/cases"`, and writes logs before the Rust validator runs. Neither the shell guard nor the Rust `checked_relative_path`/`read_regular_file` helpers reject symlinks in ancestor components. A path such as `target/probe/canonical` may therefore be a symlink to an arbitrary directory; the cleanup resolves through it and recursively deletes that external directory's `cases` child. A safe review probe confirmed the defect: a marker under the symlink target was deleted before a deliberately failing fake `cargo` command ran. The same missing component walk lets exact-ref archive paths read through symlinked ancestors.
-
-**Fix:** Resolve the repository and `target/` roots once, walk every existing path component with `symlink_metadata`, reject all symlink components, and require the canonical parent to remain beneath the canonical `target/` root before any `mkdir`, delete, read, or write. Create a new output directory without following links, then reopen/validate it before cleanup. Add regressions for a symlinked final output directory, a symlinked ancestor, and a symlinked archive ancestor; all must fail before changing the symlink target.
-
 ## Warnings
 
-### WR-01: Exact-ref validation does not prove most witness bindings against their bound observations
+### WR-01: Cross-run proof references can alias the same persisted result
 
-**Files:** `tools/xtask/src/phase9_evidence.rs:488-539`; `tools/xtask/src/phase9_evidence.rs:589-657`; `tools/xtask/tests/phase9_evidence_cli.rs:384-415`
+**Files:** `crates/liquidfun-differential/src/rigid_world/phase9/evidence.rs:140-287`; `tools/xtask/src/phase9_evidence.rs:612-641`; `tools/xtask/src/phase9_evidence.rs:656-679`; `tools/xtask/tests/phase9_evidence_cli.rs:673-703`
 
-**Issue:** `validate_manifest` proves that action/checkpoint indices are in range and that the assertion enum declares the expected observation kind, but it never reconstructs the exact action-to-observation slot used by the corpus. `validate_semantic_outcomes` independently checks only collision energy and stuck candidates, and even those checks accept any statistics observation in the checkpoint rather than the observation bound by `action_index`. Finite/infinite/equal lifetime, strict contact, listener/filter, replay/minimization/first-divergence/D0/debug-release, and ordinary observed-semantic assertions are not evaluated against downloaded result values. The validator also trusts the stored `complete-comparison.json` value instead of rerunning the complete comparator over the decoded native/oracle pair.
+**Issue:** The semantic evaluator verifies every referenced digest and recomputes each declared predicate, but neither it nor the manifest validator constrains the relationship among proof paths. A digest-recomputed manifest can point replay-native and replay-oracle at the baseline result paths, point debug and release at one shared oracle result, or point minimized and copied at one shared mutated result. `cross_run_payload_refs` and the expected-file-set construction deduplicate those aliases, so the artifact still satisfies the exact file set and all content predicates while no longer demonstrating independently executed or independently persisted results. The committed generator currently emits six appropriate proof files, so this is a validation-contract gap rather than evidence that the generated local corpus is wrong. The mutation regression also changes shared proof content; it does not exercise path aliasing or isolate the first-divergence record's path predicate from its shared minimization payload.
 
-An in-range wrong action or checkpoint binding can therefore pass after its witness and semantic-manifest digests are recomputed. The existing corruption test changes an index to `usize::MAX` without recomputing those digests, so it exercises digest/range rejection rather than exact semantic binding.
-
-**Fix:** Move the corpus's action-to-observation resolver and semantic assertion evaluator into production code shared by corpus generation and `phase9-evidence`. Resolve each binding to its exact action, checkpoint, and observation; verify the actual observation variant; evaluate every assertion against both decoded results; and rerun `compare_complete_phase9_rigid_world_results` to derive the comparison outcome. Add digest-recomputed mutations for an in-range wrong action, wrong checkpoint, wrong observation, false lifetime/contact/listener/filter assertion, and divergent native/oracle result pair.
-
-## Info
-
-### IN-01: Obsolete constructor code remains commented out
-
-**File:** `crates/liquidfun/src/particle/storage.rs:416-425`
-
-**Issue:** A block-commented call to `Self::from_owned_lanes` remains between `commit_create` and the active constructor. It has no runtime effect but obscures the live construction path.
-
-**Fix:** Delete the commented block; version control already preserves the prior implementation.
+**Fix:** Define and validate a canonical proof-path topology per case. Require proof payloads below `cases/<case-id>/proofs/`, reject references to baseline request/result/comparison files, require replay-native and replay-oracle to be distinct paths, require debug and release to be distinct paths, and require minimized and copied to be distinct paths. Explicitly encode only intentional reuse, such as replay payloads also serving the D0 proof or minimized/copied payloads serving both mismatch proofs. Add digest- and identity-recomputed regressions that substitute baseline paths, alias each independent pair, and mutate only the first-divergence record's stored semantic path so each branch-specific predicate is reached.
 
 ## Verification
 
-- Reconstructed scope: 29 summaries, 331 extracted entries, 325 after planning exclusions, 131 missing/deleted paths removed, exactly 100 sorted unique existing files.
-- `cargo xtask phase9-evidence validate --mode exact-ref ...` passed with all three historical/failed runs denylisted and reported 7 cases plus 58 semantic bindings.
-- `cargo test -p xtask --test phase9_evidence_cli` passed 9 tests.
-- `cargo test -p xtask --test inventory_cli` passed 21 tests.
-- `cargo test -p liquidfun-differential --test phase9_corpus` passed 25 tests with 1 explicit regeneration test ignored.
-- `cargo test -p liquidfun-differential --test particle_oracle` passed 13 tests.
-- `cargo test -p liquidfun-differential --test particle_protocol` passed 25 tests.
-- The safe symlink probe reproduced CR-01 and left the worktree clean after cleanup.
-- `git diff --check` passed before report creation. No source file was modified and no commit was created.
+- The exact original scope remains 100 files; the new shared evaluator module was inspected only as the direct implementation dependency of the in-scope validator.
+- Local schema-v3 evidence validation passed for the canonical and sanitizer directories with 7 cases, 58 bindings, all five typed proof records, and the complete comparator recomputed.
+- The canonical and sanitizer semantic manifest digests match. Both identities include all six proof payloads. Sanitizer replay matches the sanitizer baseline oracle result, and the independently generated debug and release results match.
+- `cargo test -p xtask --test phase9_evidence_cli` passed all 14 tests, including one digest-recomputed semantic mutation for each of the five cross-run proof families.
+- `cargo test -p xtask --test inventory_cli` passed all 21 tests, including rejection of pre-WR-01 authority and protection of the five deferred Phase 10 rows.
+- `cargo xtask inventory check` passed all 177 rows. Exactly the four reviewed Phase 09 rows are platform `not_evidenced`, their platform reference lists are empty, and generated `COMPATIBILITY.md` is consistent.
+- `cargo xtask provenance check` passed.
+- `cargo test -p liquidfun-differential --test phase9_corpus workflow_contract_rejects_symlinked_output_before_cleanup -- --exact` passed.
+- `bash -n scripts/phase9-evidence.sh` and `git diff --check` passed before report creation. No source file was modified, no commit was created, and untracked `09-REVIEW-FIX.md` was preserved.
 
 ***
 
-_Reviewed: 2026-07-18T17:35:51Z_
+_Reviewed: 2026-07-18T19:55:23Z_
 _Reviewer: the agent (gsd-code-reviewer)_
 _Depth: standard_
