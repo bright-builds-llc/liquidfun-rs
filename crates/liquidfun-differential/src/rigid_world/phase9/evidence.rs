@@ -124,6 +124,231 @@ pub struct Phase9CrossRunProofRecord {
     pub proof: Phase9CrossRunProof,
 }
 
+impl Phase9CrossRunProofRecord {
+    /// Validates the canonical case-local path topology for all cross-run proof roles.
+    ///
+    /// The only permitted path reuse maps replay payloads to their corresponding D0 roles and
+    /// minimized or copied payloads to their corresponding first-divergence roles. Every other
+    /// logical role has one distinct canonical filename below `cases/<case-id>/proofs/`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Phase9CaseEvidenceError`] when a role is missing or duplicated, a path is
+    /// absolute or traversing, a spelling is noncanonical, or a role does not use its exact
+    /// case-local filename.
+    pub fn validate_topology(
+        case_id: &str,
+        records: &[Self],
+    ) -> Result<(), Phase9CaseEvidenceError> {
+        validate_case_id(case_id)?;
+        let mut families = BTreeSet::new();
+        let mut role_paths = BTreeMap::new();
+        for record in records {
+            let family = proof_family(&record.proof);
+            if !families.insert(family) {
+                return Err(case_evidence_error(format!(
+                    "duplicate `{family}` proof family"
+                )));
+            }
+            match &record.proof {
+                Phase9CrossRunProof::ReplayResultDigestEquality {
+                    replay_native,
+                    replay_oracle,
+                } => {
+                    register_role_path(
+                        case_id,
+                        ProofRole::ReplayNative,
+                        replay_native,
+                        &mut role_paths,
+                    )?;
+                    register_role_path(
+                        case_id,
+                        ProofRole::ReplayOracle,
+                        replay_oracle,
+                        &mut role_paths,
+                    )?;
+                }
+                Phase9CrossRunProof::MinimizedFailureSignaturePreservation {
+                    minimized,
+                    copied,
+                }
+                | Phase9CrossRunProof::DeliberateFirstDivergence { minimized, copied } => {
+                    register_role_path(
+                        case_id,
+                        ProofRole::Minimized,
+                        &minimized.result,
+                        &mut role_paths,
+                    )?;
+                    register_role_path(
+                        case_id,
+                        ProofRole::Copied,
+                        &copied.result,
+                        &mut role_paths,
+                    )?;
+                }
+                Phase9CrossRunProof::D0RepeatedResultDigestEquality {
+                    repeated_native,
+                    repeated_oracle,
+                } => {
+                    register_role_path(
+                        case_id,
+                        ProofRole::ReplayNative,
+                        repeated_native,
+                        &mut role_paths,
+                    )?;
+                    register_role_path(
+                        case_id,
+                        ProofRole::ReplayOracle,
+                        repeated_oracle,
+                        &mut role_paths,
+                    )?;
+                }
+                Phase9CrossRunProof::DebugReleaseResultDigestEquality {
+                    debug_oracle,
+                    release_oracle,
+                } => {
+                    register_role_path(case_id, ProofRole::Debug, debug_oracle, &mut role_paths)?;
+                    register_role_path(
+                        case_id,
+                        ProofRole::Release,
+                        release_oracle,
+                        &mut role_paths,
+                    )?;
+                }
+            }
+        }
+        if families.len() != 5 || role_paths.len() != ProofRole::ALL.len() {
+            return Err(case_evidence_error(
+                "proof topology must define all five families and six canonical roles",
+            ));
+        }
+        let mut distinct_paths = BTreeSet::new();
+        for (role, path) in &role_paths {
+            if !distinct_paths.insert(*path) {
+                return Err(case_evidence_error(format!(
+                    "proof role `{}` aliases an independently persisted role",
+                    role.label()
+                )));
+            }
+        }
+        Ok(())
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+enum ProofRole {
+    ReplayNative,
+    ReplayOracle,
+    Debug,
+    Release,
+    Minimized,
+    Copied,
+}
+
+impl ProofRole {
+    const ALL: [Self; 6] = [
+        Self::ReplayNative,
+        Self::ReplayOracle,
+        Self::Debug,
+        Self::Release,
+        Self::Minimized,
+        Self::Copied,
+    ];
+
+    const fn label(self) -> &'static str {
+        match self {
+            Self::ReplayNative => "replay-native",
+            Self::ReplayOracle => "replay-oracle",
+            Self::Debug => "debug",
+            Self::Release => "release",
+            Self::Minimized => "minimized",
+            Self::Copied => "copied",
+        }
+    }
+
+    fn filename(self) -> String {
+        format!("{}.json", self.label())
+    }
+}
+
+fn proof_family(proof: &Phase9CrossRunProof) -> &'static str {
+    match proof {
+        Phase9CrossRunProof::ReplayResultDigestEquality { .. } => "replay",
+        Phase9CrossRunProof::MinimizedFailureSignaturePreservation { .. } => "minimization",
+        Phase9CrossRunProof::DeliberateFirstDivergence { .. } => "first-divergence",
+        Phase9CrossRunProof::D0RepeatedResultDigestEquality { .. } => "d0",
+        Phase9CrossRunProof::DebugReleaseResultDigestEquality { .. } => "debug-release",
+    }
+}
+
+fn validate_case_id(case_id: &str) -> Result<(), Phase9CaseEvidenceError> {
+    if case_id.is_empty()
+        || case_id.len() > 128
+        || !case_id
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_'))
+    {
+        return Err(case_evidence_error(
+            "proof topology case ID is empty, unbounded, or noncanonical",
+        ));
+    }
+    Ok(())
+}
+
+fn register_role_path<'a>(
+    case_id: &str,
+    role: ProofRole,
+    reference: &'a Phase9EvidencePayloadRef,
+    role_paths: &mut BTreeMap<ProofRole, &'a str>,
+) -> Result<(), Phase9CaseEvidenceError> {
+    let normalized = normalize_logical_path(&reference.path)?;
+    let expected = format!("cases/{case_id}/proofs/{}", role.filename());
+    if reference.path.as_ref() != normalized || normalized != expected {
+        return Err(case_evidence_error(format!(
+            "proof role `{}` must use exact canonical path `{expected}`",
+            role.label()
+        )));
+    }
+    if let Some(existing) = role_paths.insert(role, reference.path.as_ref())
+        && existing != reference.path.as_ref()
+    {
+        return Err(case_evidence_error(format!(
+            "proof role `{}` resolves to inconsistent paths",
+            role.label()
+        )));
+    }
+    Ok(())
+}
+
+fn normalize_logical_path(path: &str) -> Result<String, Phase9CaseEvidenceError> {
+    if path.is_empty() || path.len() > 512 {
+        return Err(case_evidence_error("proof payload path is not bounded"));
+    }
+    let separator_normalized = path.replace('\\', "/");
+    let drive_absolute = separator_normalized
+        .as_bytes()
+        .get(1)
+        .is_some_and(|byte| *byte == b':');
+    if separator_normalized.starts_with('/') || drive_absolute {
+        return Err(case_evidence_error(
+            "proof payload path must be evidence-root-relative",
+        ));
+    }
+    let mut components = Vec::new();
+    for component in separator_normalized.split('/') {
+        match component {
+            "" | "." => {}
+            ".." => {
+                return Err(case_evidence_error(
+                    "proof payload path must not contain parent traversal",
+                ));
+            }
+            _ => components.push(component),
+        }
+    }
+    Ok(components.join("/"))
+}
+
 /// A typed persisted case proof failed structural or semantic validation.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 #[error("Phase 9 cross-run evidence is invalid: {0}")]

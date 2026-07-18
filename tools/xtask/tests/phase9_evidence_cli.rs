@@ -814,15 +814,12 @@ fn synthetic_cross_run_proofs(
     let minimized_report = retained_mismatch(request_record, native_record, &minimized_record);
     let copied_report = retained_mismatch(request_record, native_record, &copied_record);
     let payloads = [
-        ("replay-native-result.json", native.to_vec()),
-        ("replay-oracle-result.json", oracle.to_vec()),
-        (
-            "minimized-result.json",
-            serde_json::to_vec(&minimized_record)?,
-        ),
-        ("copied-result.json", serde_json::to_vec(&copied_record)?),
-        ("debug-oracle-result.json", oracle.to_vec()),
-        ("release-oracle-result.json", oracle.to_vec()),
+        ("replay-native.json", native.to_vec()),
+        ("replay-oracle.json", oracle.to_vec()),
+        ("minimized.json", serde_json::to_vec(&minimized_record)?),
+        ("copied.json", serde_json::to_vec(&copied_record)?),
+        ("debug.json", oracle.to_vec()),
+        ("release.json", oracle.to_vec()),
     ];
     let mut references = std::collections::BTreeMap::new();
     for (name, bytes) in payloads {
@@ -851,32 +848,32 @@ fn synthetic_cross_run_proofs(
             let proof = match &witness.semantic_assertion {
                 Phase9SemanticAssertion::ReplayResultDigestEquality => {
                     Phase9CrossRunProof::ReplayResultDigestEquality {
-                        replay_native: references["replay-native-result.json"].clone(),
-                        replay_oracle: references["replay-oracle-result.json"].clone(),
+                        replay_native: references["replay-native.json"].clone(),
+                        replay_oracle: references["replay-oracle.json"].clone(),
                     }
                 }
                 Phase9SemanticAssertion::MinimizedFailureSignaturePreservation => {
                     Phase9CrossRunProof::MinimizedFailureSignaturePreservation {
-                        minimized: mismatch("minimized-result.json", &minimized_report),
-                        copied: mismatch("copied-result.json", &copied_report),
+                        minimized: mismatch("minimized.json", &minimized_report),
+                        copied: mismatch("copied.json", &copied_report),
                     }
                 }
                 Phase9SemanticAssertion::DeliberateFirstDivergence => {
                     Phase9CrossRunProof::DeliberateFirstDivergence {
-                        minimized: mismatch("minimized-result.json", &minimized_report),
-                        copied: mismatch("copied-result.json", &copied_report),
+                        minimized: mismatch("minimized.json", &minimized_report),
+                        copied: mismatch("copied.json", &copied_report),
                     }
                 }
                 Phase9SemanticAssertion::D0RepeatedResultDigestEquality => {
                     Phase9CrossRunProof::D0RepeatedResultDigestEquality {
-                        repeated_native: references["replay-native-result.json"].clone(),
-                        repeated_oracle: references["replay-oracle-result.json"].clone(),
+                        repeated_native: references["replay-native.json"].clone(),
+                        repeated_oracle: references["replay-oracle.json"].clone(),
                     }
                 }
                 Phase9SemanticAssertion::DebugReleaseResultDigestEquality => {
                     Phase9CrossRunProof::DebugReleaseResultDigestEquality {
-                        debug_oracle: references["debug-oracle-result.json"].clone(),
-                        release_oracle: references["release-oracle-result.json"].clone(),
+                        debug_oracle: references["debug.json"].clone(),
+                        release_oracle: references["release.json"].clone(),
                     }
                 }
                 _ => unreachable!("filtered case evidence"),
@@ -891,6 +888,144 @@ fn synthetic_cross_run_proofs(
         })
         .collect();
     Ok(records)
+}
+
+#[test]
+fn proof_topology_accepts_canonical_paths_and_reviewed_reuse() -> TestResult {
+    // Arrange
+    let root = TestRoot::new("proof-topology-valid")?;
+    let manifest = build_manifest(&root.path)?;
+    let case = evidence_case(&manifest, "closed-evidence-contract");
+
+    // Act
+    let result =
+        Phase9CrossRunProofRecord::validate_topology(&case.case_id, &case.cross_run_proofs);
+
+    // Assert
+    assert_eq!(result, Ok(()));
+    Ok(())
+}
+
+#[test]
+fn proof_topology_rejects_baseline_and_required_pair_aliases() -> TestResult {
+    for (label, branch, field, path, expected) in [
+        (
+            "baseline",
+            "replay_identity",
+            "replay_native",
+            "cases/closed-evidence-contract/native-result.json",
+            "replay-native",
+        ),
+        (
+            "replay-alias",
+            "replay_identity",
+            "replay_oracle",
+            "cases/closed-evidence-contract/proofs/replay-native.json",
+            "replay-oracle",
+        ),
+        (
+            "debug-release-alias",
+            "debug_release_agreement",
+            "release_oracle",
+            "cases/closed-evidence-contract/proofs/debug.json",
+            "release",
+        ),
+        (
+            "minimized-copied-alias",
+            "minimization_identity",
+            "copied",
+            "cases/closed-evidence-contract/proofs/minimized.json",
+            "copied",
+        ),
+    ] {
+        // Arrange
+        let root = TestRoot::new(label)?;
+        let manifest = build_manifest(&root.path)?;
+        let case = evidence_case(&manifest, "closed-evidence-contract");
+        let mut records = case.cross_run_proofs.clone();
+        set_proof_path(&mut records, branch, field, path)?;
+
+        // Act
+        let error = Phase9CrossRunProofRecord::validate_topology(&case.case_id, &records)
+            .expect_err("forbidden topology must fail");
+
+        // Assert
+        assert!(
+            error.to_string().contains(expected),
+            "unexpected topology error: {error}"
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn proof_topology_rejects_noncanonical_path_spellings() -> TestResult {
+    for (label, path) in [
+        ("wrong-case", "cases/other-case/proofs/replay-native.json"),
+        (
+            "dot-component",
+            "cases/closed-evidence-contract/./proofs/replay-native.json",
+        ),
+        (
+            "duplicate-separator",
+            "cases/closed-evidence-contract//proofs/replay-native.json",
+        ),
+        (
+            "backslash",
+            r"cases\closed-evidence-contract\proofs\replay-native.json",
+        ),
+        (
+            "parent-traversal",
+            "cases/closed-evidence-contract/proofs/../replay-native.json",
+        ),
+        ("absolute", "/tmp/replay-native.json"),
+        ("drive-absolute", r"C:\tmp\replay-native.json"),
+    ] {
+        // Arrange
+        let root = TestRoot::new(label)?;
+        let manifest = build_manifest(&root.path)?;
+        let case = evidence_case(&manifest, "closed-evidence-contract");
+        let mut records = case.cross_run_proofs.clone();
+        set_proof_path(&mut records, "replay_identity", "replay_native", path)?;
+
+        // Act
+        let result = Phase9CrossRunProofRecord::validate_topology(&case.case_id, &records);
+
+        // Assert
+        assert!(result.is_err(), "{label} unexpectedly passed");
+    }
+    Ok(())
+}
+
+fn evidence_case<'a>(manifest: &'a EvidenceManifest, case_id: &str) -> &'a EvidenceCase {
+    manifest
+        .cases
+        .iter()
+        .find(|case| case.case_id == case_id)
+        .expect("reviewed evidence case")
+}
+
+fn set_proof_path(
+    records: &mut [Phase9CrossRunProofRecord],
+    branch_id: &str,
+    field: &str,
+    path: &str,
+) -> TestResult {
+    let record = records
+        .iter_mut()
+        .find(|record| record.branch_id.as_str() == branch_id)
+        .expect("reviewed proof record");
+    let mut value = serde_json::to_value(&*record)?;
+    let mut reference =
+        find_object_field_mut(&mut value["proof"], field).expect("reviewed proof reference field");
+    if reference.get("result").is_some() {
+        reference = reference
+            .get_mut("result")
+            .expect("mismatch reference result");
+    }
+    reference["path"] = json!(path);
+    *record = serde_json::from_value(value)?;
+    Ok(())
 }
 
 fn first_result_member_mut<'a>(value: &'a mut Value, member: &str) -> &'a mut Value {
@@ -1169,6 +1304,17 @@ fn find_object_field_maybe<'a>(value: &'a Value, field: &str) -> Option<&'a Valu
         .into_iter()
         .flat_map(|object| object.values())
         .find_map(|child| find_object_field_maybe(child, field))
+}
+
+fn find_object_field_mut<'a>(value: &'a mut Value, field: &str) -> Option<&'a mut Value> {
+    if value.get(field).is_some() {
+        return value.get_mut(field);
+    }
+    value
+        .as_object_mut()
+        .into_iter()
+        .flat_map(|object| object.values_mut())
+        .find_map(|child| find_object_field_mut(child, field))
 }
 
 fn update_payload_reference_digests(value: &mut Value, path: &str, digest: &str) {
