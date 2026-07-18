@@ -12,8 +12,8 @@ use liquidfun_differential::{
     NativeRigidWorldExecutor, OracleExecutable, OraclePreset, PHASE9_REGISTRY_ID,
     PHASE9_REQUIRED_POLICY_PATHS, Phase9ComparisonOutcome, RigidComparisonOutcome,
     RigidMismatchReport, compare_complete_phase9_rigid_world_results,
-    compare_phase8_rigid_world_results, execute_rigid_world_process, phase9_policy_for_path,
-    run_phase9_differential,
+    compare_phase8_rigid_world_results, effective_compile_command_sha256,
+    execute_rigid_world_process, phase9_policy_for_path, run_phase9_differential,
 };
 use liquidfun_test_protocol::{
     HarnessLimits, Phase6PolicyProfile, Phase7PolicyProfile, Phase8PolicyProfile,
@@ -40,6 +40,12 @@ const PHASE7_POLICY_SHA256: &str =
     "fd772b2cf523a6d40bf978bc4d0da18a4564181a93e6b2bdeb8e4d40d5613311";
 const PHASE8_POLICY_SHA256: &str =
     "2843ca40bec5b1c680135664c58c12a8388a7a9e86ad77f8ef5a268f3f15a6bf";
+const FAKE_PHASE9_RESULT_UNITS: [&str; 4] = [
+    "collision_probe.cpp",
+    "math_probe.cpp",
+    "protocol_bits.cpp",
+    "rigid_world.cpp",
+];
 const COMMON_ACTIONS: &[&str] = &[
     "create-growable",
     "create-fixed",
@@ -2286,6 +2292,49 @@ fn phase9_comparator_rejects_retained_process_result_through_runner() {
 }
 
 #[test]
+fn fake_phase9_oracle_root_writes_closed_compile_database() {
+    // Arrange
+    let fake = FakePhase9OracleRoot::new("rigid_d1_mismatch");
+    let compile_database = fake
+        .path()
+        .join("target/reference/oracle-debug/compile_commands.json");
+    let entries: Vec<Value> = serde_json::from_slice(
+        &fs::read(compile_database).expect("fake compile database should be readable"),
+    )
+    .expect("fake compile database should decode");
+
+    // Act
+    let units = entries
+        .iter()
+        .map(|entry| {
+            Path::new(
+                entry["file"]
+                    .as_str()
+                    .expect("fake compile database file should be a string"),
+            )
+            .file_name()
+            .and_then(|value| value.to_str())
+            .expect("fake compile database file should have a UTF-8 name")
+            .to_owned()
+        })
+        .collect::<BTreeSet<_>>();
+    let digest = effective_compile_command_sha256(fake.path(), "oracle-debug")
+        .expect("fake compile database should have a reviewed command shape");
+
+    // Assert
+    assert_eq!(entries.len(), FAKE_PHASE9_RESULT_UNITS.len());
+    assert_eq!(
+        units,
+        FAKE_PHASE9_RESULT_UNITS
+            .into_iter()
+            .map(str::to_owned)
+            .collect::<BTreeSet<_>>()
+    );
+    assert_eq!(digest.len(), 64);
+    assert!(digest.bytes().all(|byte| byte.is_ascii_hexdigit()));
+}
+
+#[test]
 fn retained_rigid_record_rejects_missing_or_mutated_proof() {
     // Arrange
     let (valid, payloads) = evidence_case_fixture();
@@ -2364,12 +2413,7 @@ impl FakePhase9OracleRoot {
         fs::copy(env!("CARGO_BIN_EXE_liquidfun-fake-oracle"), &destination)
             .expect("fake oracle should copy into the reviewed path");
         copy_adapter_inputs(&root);
-        fs::copy(
-            Path::new(env!("CARGO_MANIFEST_DIR"))
-                .join("../../target/reference/oracle-debug/compile_commands.json"),
-            preset.join("compile_commands.json"),
-        )
-        .expect("reviewed compile commands should copy into the fake root");
+        write_fake_compile_database(&root);
         fs::write(preset.join("behavior.txt"), behavior)
             .expect("fake oracle behavior should be written");
         Self { root }
@@ -2378,6 +2422,31 @@ impl FakePhase9OracleRoot {
     fn path(&self) -> &Path {
         &self.root
     }
+}
+
+fn write_fake_compile_database(root: &Path) {
+    let build = root.join("target/reference/oracle-debug");
+    let entries = FAKE_PHASE9_RESULT_UNITS
+        .map(|unit| {
+            let source = root.join("tools/reference/src").join(unit);
+            json!({
+                "directory": build,
+                "file": source,
+                "command": format!(
+                    "clang++ -I{}/tools/reference/src -O0 -g -o {}/{unit}.o -c {}",
+                    root.display(),
+                    build.display(),
+                    source.display()
+                ),
+            })
+        })
+        .to_vec();
+    fs::write(
+        build.join("compile_commands.json"),
+        serde_json::to_vec_pretty(&entries)
+            .expect("fake compile database should encode deterministically"),
+    )
+    .expect("fake compile database should be written");
 }
 
 fn copy_adapter_inputs(destination_root: &Path) {
