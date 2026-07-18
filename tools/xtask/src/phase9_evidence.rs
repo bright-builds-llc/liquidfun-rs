@@ -95,8 +95,9 @@ pub(crate) fn run(args: &[String]) -> Result<(), Phase9EvidenceError> {
             .maybe_run_json
             .as_ref()
             .expect("exact-ref parsing requires run-json");
+        let run_path = resolve_existing_target_path(&repository_root, run_path, "run-json")?;
         let run_value: serde_json::Value =
-            read_json(&repository_root, run_path, "run-json", MAXIMUM_JSON_BYTES)?;
+            read_json_absolute(&run_path, "run-json", MAXIMUM_JSON_BYTES)?;
         let run_id = run_value
             .get("run_id")
             .and_then(serde_json::Value::as_u64)
@@ -157,7 +158,8 @@ fn validate_generated_content(args: &[String]) -> Result<(), Phase9EvidenceError
         value => return Err(usage(format!("unsupported evidence kind `{value}`"))),
     };
     let relative_dir = checked_relative_path(directory.clone())?;
-    let root = repository_root()?.join(relative_dir);
+    let repository_root = repository_root()?;
+    let root = resolve_existing_target_path(&repository_root, &relative_dir, "evidence root")?;
     let manifest: EvidenceManifest =
         read_json_absolute(&root.join(MANIFEST_FILE), "manifest", MAXIMUM_JSON_BYTES)?;
     validate_manifest(&root, &manifest)?;
@@ -291,11 +293,75 @@ fn checked_relative_path(value: String) -> Result<PathBuf, Phase9EvidenceError> 
 fn repository_root() -> Result<PathBuf, Phase9EvidenceError> {
     let current = std::env::current_dir()
         .map_err(|error| Phase9EvidenceError::new("root", error.to_string()))?;
-    current
+    let root = current
         .ancestors()
         .find(|candidate| candidate.join("Cargo.toml").is_file())
         .map(Path::to_path_buf)
-        .ok_or_else(|| Phase9EvidenceError::new("root", "workspace root not found"))
+        .ok_or_else(|| Phase9EvidenceError::new("root", "workspace root not found"))?;
+    fs::canonicalize(root).map_err(|error| Phase9EvidenceError::new("root", error.to_string()))
+}
+
+fn resolve_existing_target_path(
+    repository_root: &Path,
+    relative: &Path,
+    label: &'static str,
+) -> Result<PathBuf, Phase9EvidenceError> {
+    let target_relative = relative
+        .strip_prefix("target")
+        .map_err(|_| Phase9EvidenceError::new(label, "path must remain beneath the target root"))?;
+    let target_root = resolve_existing_descendant(repository_root, Path::new("target"), label)?;
+    let path = resolve_existing_descendant(&target_root, target_relative, label)?;
+    if !path.starts_with(&target_root) {
+        return Err(Phase9EvidenceError::new(
+            label,
+            "path escapes the canonical target root",
+        ));
+    }
+    Ok(path)
+}
+
+fn resolve_existing_descendant(
+    root: &Path,
+    relative: &Path,
+    label: &'static str,
+) -> Result<PathBuf, Phase9EvidenceError> {
+    let root_metadata = fs::symlink_metadata(root)
+        .map_err(|error| Phase9EvidenceError::new(label, error.to_string()))?;
+    if root_metadata.file_type().is_symlink() {
+        return Err(Phase9EvidenceError::new(
+            label,
+            format!("symlink component `{}` is forbidden", root.display()),
+        ));
+    }
+    let canonical_root = fs::canonicalize(root)
+        .map_err(|error| Phase9EvidenceError::new(label, error.to_string()))?;
+    let mut current = canonical_root.clone();
+    for component in relative.components() {
+        let Component::Normal(component) = component else {
+            return Err(Phase9EvidenceError::new(
+                label,
+                format!("unsafe path component in `{}`", relative.display()),
+            ));
+        };
+        current.push(component);
+        let metadata = fs::symlink_metadata(&current)
+            .map_err(|error| Phase9EvidenceError::new(label, error.to_string()))?;
+        if metadata.file_type().is_symlink() {
+            return Err(Phase9EvidenceError::new(
+                label,
+                format!("symlink component `{}` is forbidden", current.display()),
+            ));
+        }
+    }
+    let canonical = fs::canonicalize(&current)
+        .map_err(|error| Phase9EvidenceError::new(label, error.to_string()))?;
+    if !canonical.starts_with(&canonical_root) {
+        return Err(Phase9EvidenceError::new(
+            label,
+            format!("path `{}` escapes its canonical root", current.display()),
+        ));
+    }
+    Ok(canonical)
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -335,7 +401,7 @@ fn validate_directory(
     maybe_run: Option<&ExactRun>,
     denied_run_ids: &BTreeSet<u64>,
 ) -> Result<ValidatedDirectory, Phase9EvidenceError> {
-    let root = repository_root.join(relative_dir);
+    let root = resolve_existing_target_path(repository_root, relative_dir, "evidence root")?;
     let manifest: EvidenceManifest =
         read_json_absolute(&root.join(MANIFEST_FILE), "manifest", MAXIMUM_JSON_BYTES)?;
     validate_manifest(&root, &manifest)?;
@@ -682,7 +748,7 @@ fn checked_payload_path(root: &Path, value: &str) -> Result<PathBuf, Phase9Evide
             format!("unsafe evidence payload path `{value}`"),
         ));
     }
-    Ok(root.join(relative))
+    resolve_existing_descendant(root, relative, "path")
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
@@ -887,7 +953,8 @@ fn require_file_digest(root: &Path, file: &IdentityFile) -> Result<(), Phase9Evi
             format!("unsafe identity file path `{}`", file.path),
         ));
     }
-    let bytes = read_regular_file(&root.join(relative), "identity file", MAXIMUM_LOG_BYTES)?;
+    let path = resolve_existing_descendant(root, relative, "identity")?;
+    let bytes = read_regular_file(&path, "identity file", MAXIMUM_LOG_BYTES)?;
     require_digest("identity file", &file.sha256, &sha256(&bytes))
 }
 
@@ -920,15 +987,6 @@ fn canonical_sha256(value: &impl Serialize) -> Result<String, Phase9EvidenceErro
     serde_json::to_vec(value)
         .map(|bytes| sha256(&bytes))
         .map_err(|error| Phase9EvidenceError::new("json", error.to_string()))
-}
-
-fn read_json<T: for<'de> Deserialize<'de>>(
-    root: &Path,
-    relative: &Path,
-    label: &'static str,
-    maximum: u64,
-) -> Result<T, Phase9EvidenceError> {
-    read_json_absolute(&root.join(relative), label, maximum)
 }
 
 fn read_json_absolute<T: for<'de> Deserialize<'de>>(
@@ -1239,7 +1297,7 @@ fn validate_archive(
         EvidenceKind::Sanitizer => &run.artifacts.sanitizer,
     };
     let archive_relative = checked_relative_path(artifact.archive_path.clone())?;
-    let archive = repository_root.join(archive_relative);
+    let archive = resolve_existing_target_path(repository_root, &archive_relative, "archive")?;
     let bytes = read_regular_file(&archive, "archive", MAXIMUM_LOG_BYTES)?;
     if u64::try_from(bytes.len()).ok() != Some(artifact.size_in_bytes) {
         return Err(Phase9EvidenceError::new(

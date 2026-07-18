@@ -2645,3 +2645,74 @@ fn workflow_contract_blocks_failed_evidence_identity() {
         std::fs::remove_dir_all(&contract_root).expect("contract cleanup");
     }
 }
+
+#[test]
+#[cfg(unix)]
+fn workflow_contract_rejects_symlinked_output_before_cleanup() {
+    use std::os::unix::fs::symlink;
+
+    // Arrange
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let script = root.join("scripts/phase9-evidence.sh");
+    let nonce = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("system clock should follow the Unix epoch")
+        .as_nanos();
+    let contract_root = root
+        .join("target")
+        .join(format!("phase9-symlink-contract-{nonce}"));
+    let external_root = std::env::temp_dir().join(format!("liquidfun-phase9-external-{nonce}"));
+    fs::create_dir_all(&contract_root).expect("contract root");
+
+    for shape in ["final", "ancestor"] {
+        let external_output = external_root.join(shape).join("canonical");
+        let marker = external_output.join("cases/external-marker");
+        fs::create_dir_all(marker.parent().expect("marker parent")).expect("external cases");
+        fs::write(&marker, b"must survive").expect("external marker");
+
+        let relative_output = if shape == "final" {
+            let link = contract_root.join("canonical");
+            symlink(&external_output, &link).expect("final output symlink");
+            link.strip_prefix(&root)
+                .expect("contract output remains repository-relative")
+                .to_path_buf()
+        } else {
+            let link = contract_root.join("linked-ancestor");
+            symlink(
+                external_output.parent().expect("external output parent"),
+                &link,
+            )
+            .expect("output ancestor symlink");
+            link.join("canonical")
+                .strip_prefix(&root)
+                .expect("contract output remains repository-relative")
+                .to_path_buf()
+        };
+
+        // Act
+        let output = Command::new("bash")
+            .arg(&script)
+            .arg("canonical")
+            .arg(&relative_output)
+            .current_dir(&root)
+            .output()
+            .expect("evidence script should execute");
+
+        // Assert
+        assert!(!output.status.success(), "{shape} symlink must fail closed");
+        assert_eq!(
+            fs::read(&marker).expect("external marker must remain readable"),
+            b"must survive"
+        );
+
+        let link = if shape == "final" {
+            contract_root.join("canonical")
+        } else {
+            contract_root.join("linked-ancestor")
+        };
+        fs::remove_file(link).expect("contract symlink cleanup");
+    }
+
+    fs::remove_dir_all(&contract_root).expect("contract root cleanup");
+    fs::remove_dir_all(&external_root).expect("external root cleanup");
+}

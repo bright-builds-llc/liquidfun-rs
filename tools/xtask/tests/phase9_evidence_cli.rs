@@ -310,6 +310,43 @@ fn exact_ref_rejects_wrong_duplicate_and_expired_live_metadata() -> TestResult {
 }
 
 #[test]
+#[cfg(unix)]
+fn exact_ref_rejects_symlinked_archive_ancestor_without_touching_target() -> TestResult {
+    use std::os::unix::fs::symlink;
+
+    // Arrange
+    let root = TestRoot::new("archive-symlink")?;
+    let mut run = root.write_valid_exact_ref_evidence()?;
+    let external = root.path.with_extension("external");
+    fs::create_dir_all(&external)?;
+    let external_archive = external.join("canonical.zip");
+    fs::copy(root.path.join("canonical.zip"), &external_archive)?;
+    let marker = external.join("external-marker");
+    fs::write(&marker, b"must survive")?;
+    let archive_link = root.path.join("archive-link");
+    symlink(&external, &archive_link)?;
+    run["artifacts"]["canonical"]["archive_path"] = json!(
+        archive_link
+            .join("canonical.zip")
+            .strip_prefix(workspace_root())?
+            .to_string_lossy()
+    );
+    root.write_run_json(&run)?;
+
+    // Act
+    let output = root.run_exact_ref()?;
+
+    // Assert
+    assert_failure(&output);
+    assert_output_contains(&output, "symlink component");
+    assert_eq!(fs::read(&marker)?, b"must survive");
+
+    fs::remove_file(archive_link)?;
+    fs::remove_dir_all(external)?;
+    Ok(())
+}
+
+#[test]
 fn local_accepts_complete_canonical_and_sanitizer_evidence() -> TestResult {
     // Arrange
     let root = TestRoot::new("valid-local")?;

@@ -8,31 +8,71 @@ usage() {
 
 [[ $# -eq 2 ]] || usage
 mode=$1
-output_dir=$2
+relative_output_dir=$2
 
 case "$mode" in
   canonical | sanitizer) ;;
   *) usage ;;
 esac
 
-case "$output_dir" in
+case "$relative_output_dir" in
   target/*) ;;
   *) echo "Phase 9 evidence output must be under target/" >&2; exit 64 ;;
 esac
-[[ "$output_dir" != *".."* && "$output_dir" != /* ]] || {
+[[ "$relative_output_dir" != *".."* && "$relative_output_dir" != /* ]] || {
   echo "unsafe Phase 9 evidence output path" >&2
   exit 64
 }
-[[ "${output_dir##*/}" == "$mode" || "${output_dir##*/}" == "phase9-$mode" ]] || {
+[[ "${relative_output_dir##*/}" == "$mode" || "${relative_output_dir##*/}" == "phase9-$mode" ]] || {
   echo "Phase 9 evidence output must end in $mode or phase9-$mode" >&2
   exit 64
 }
 
-mkdir -p "$output_dir"
+script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
+repository_root=$(cd -- "$script_dir/.." && pwd -P)
+cd -- "$repository_root"
+
+target_root="$repository_root/target"
+if [[ -L "$target_root" ]]; then
+  echo "Phase 9 evidence target root must not be a symlink" >&2
+  exit 64
+fi
+mkdir -p -- "$target_root"
+target_root=$(cd -- "$target_root" && pwd -P)
+
+output_dir="$repository_root/$relative_output_dir"
+current="$target_root"
+IFS='/' read -r -a output_components <<< "${relative_output_dir#target/}"
+for component in "${output_components[@]}"; do
+  candidate="$current/$component"
+  if [[ -L "$candidate" ]]; then
+    echo "Phase 9 evidence output path contains a symlink: $candidate" >&2
+    exit 64
+  fi
+  if [[ -e "$candidate" && ! -d "$candidate" ]]; then
+    echo "Phase 9 evidence output path contains a non-directory: $candidate" >&2
+    exit 64
+  fi
+  if [[ ! -e "$candidate" ]]; then
+    mkdir -- "$candidate"
+  fi
+  current=$(cd -- "$candidate" && pwd -P)
+  case "$current/" in
+    "$target_root"/*) ;;
+    *) echo "Phase 9 evidence output escapes target/" >&2; exit 64 ;;
+  esac
+done
+output_dir="$current"
+
+if [[ -L "$output_dir/cases" ]]; then
+  echo "Phase 9 evidence cases path must not be a symlink" >&2
+  exit 64
+fi
 rm -rf "$output_dir/cases"
 rm -f "$output_dir/identity.json" "$output_dir/phase9-manifest.json"
 trace="$output_dir/phase9-trace.log"
 manifest="$output_dir/phase9-manifest.json"
+relative_manifest="$relative_output_dir/phase9-manifest.json"
 
 hash_file() {
   if command -v sha256sum >/dev/null 2>&1; then
@@ -43,7 +83,7 @@ hash_file() {
 }
 
 LIQUIDFUN_PHASE9_ORACLE_MODE="$mode" \
-LIQUIDFUN_PHASE9_EVIDENCE_MANIFEST="$manifest" \
+LIQUIDFUN_PHASE9_EVIDENCE_MANIFEST="$relative_manifest" \
   cargo test -p liquidfun-differential --test phase9_corpus -- --nocapture \
   2>&1 | tee "$trace"
 
@@ -51,7 +91,7 @@ cargo xtask provenance check 2>&1 | tee "$output_dir/provenance.log"
 cargo xtask inventory check 2>&1 | tee "$output_dir/inventory.log"
 git diff --exit-code -- protocol scenarios reference COMPATIBILITY.md \
   2>&1 | tee "$output_dir/read-only.log"
-cargo xtask phase9-evidence validate-content "$mode" "$output_dir"
+cargo xtask phase9-evidence validate-content "$mode" "$relative_output_dir"
 
 trace_sha=$(hash_file "$trace")
 manifest_sha=$(hash_file "$manifest")
