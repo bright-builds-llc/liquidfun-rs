@@ -45,7 +45,7 @@ Each dimension is independent. `Evidenced` requires at least one cited reference
 | `implemented` | 55 | 122 |
 | `unit_tested` | 55 | 122 |
 | `differentially_validated` | 54 | 123 |
-| `platform_validated` | 37 | 140 |
+| `platform_validated` | 33 | 144 |
 | `documented_difference` | 51 | 126 |
 | `intentionally_unsupported` | 0 | 177 |
 
@@ -61,10 +61,10 @@ Each dimension is independent. `Evidenced` requires at least one cited reference
 | `subsystem.common-memory-and-utilities` | `liquidfun/Box2D/Box2D/Common` | `liquidfun::internal` | applicable | yes | yes | no | no | no | no | no | no |
 | `subsystem.contacts-and-filtering` | `liquidfun/Box2D/Box2D/Dynamics/Contacts` | `liquidfun::dynamics::contacts` | applicable | yes | yes | yes | yes | yes | yes | yes | no |
 | `subsystem.joints` | `liquidfun/Box2D/Box2D/Dynamics/Joints` | `liquidfun::dynamics::joints` | applicable | yes | yes | yes | yes | yes | yes | yes | no |
-| `subsystem.particle-contacts-and-coupling` | `liquidfun/Box2D/Box2D/Particle` | `liquidfun::particle` | applicable | yes | yes | yes | yes | yes | yes | no | no |
+| `subsystem.particle-contacts-and-coupling` | `liquidfun/Box2D/Box2D/Particle` | `liquidfun::particle` | applicable | yes | yes | yes | yes | yes | no | no | no |
 | `subsystem.particle-groups-pairs-and-triads` | `liquidfun/Box2D/Box2D/Particle` | `liquidfun::particle` | applicable | yes | yes | no | no | no | no | no | no |
 | `subsystem.particle-solver-behaviors` | `liquidfun/Box2D/Box2D/Particle` | `liquidfun::particle` | applicable | yes | yes | no | no | no | no | no | no |
-| `subsystem.particle-storage-and-lifecycle` | `liquidfun/Box2D/Box2D/Particle` | `liquidfun::particle` | applicable | yes | yes | yes | yes | yes | yes | no | no |
+| `subsystem.particle-storage-and-lifecycle` | `liquidfun/Box2D/Box2D/Particle` | `liquidfun::particle` | applicable | yes | yes | yes | yes | yes | no | no | no |
 | `subsystem.rigid-bodies-and-fixtures` | `liquidfun/Box2D/Box2D/Dynamics` | `liquidfun::dynamics` | applicable | yes | yes | yes | yes | yes | yes | yes | no |
 | `subsystem.rigid-islands-and-solver` | `liquidfun/Box2D/Box2D/Dynamics` | `liquidfun::dynamics` | applicable | yes | yes | yes | yes | yes | yes | yes | no |
 | `subsystem.rope` | `liquidfun/Box2D/Box2D/Rope` | `liquidfun::rope` | applicable | yes | yes | yes | yes | yes | yes | yes | no |
@@ -126,10 +126,10 @@ Each dimension is independent. `Evidenced` requires at least one cited reference
 | `public-api.liquidfun-box2d-box2d-dynamics-joints-b2ropejoint-h` | `liquidfun/Box2D/Box2D/Dynamics/Joints/b2RopeJoint.h` | `liquidfun::dynamics::joints` | applicable | yes | yes | yes | yes | yes | yes | yes | no |
 | `public-api.liquidfun-box2d-box2d-dynamics-joints-b2weldjoint-h` | `liquidfun/Box2D/Box2D/Dynamics/Joints/b2WeldJoint.h` | `liquidfun::dynamics::joints` | applicable | yes | yes | yes | yes | yes | yes | yes | no |
 | `public-api.liquidfun-box2d-box2d-dynamics-joints-b2wheeljoint-h` | `liquidfun/Box2D/Box2D/Dynamics/Joints/b2WheelJoint.h` | `liquidfun::dynamics::joints` | applicable | yes | yes | yes | yes | yes | yes | yes | no |
-| `public-api.liquidfun-box2d-box2d-particle-b2particle-h` | `liquidfun/Box2D/Box2D/Particle/b2Particle.h` | `liquidfun::particle` | applicable | yes | yes | yes | yes | yes | yes | no | no |
+| `public-api.liquidfun-box2d-box2d-particle-b2particle-h` | `liquidfun/Box2D/Box2D/Particle/b2Particle.h` | `liquidfun::particle` | applicable | yes | yes | yes | yes | yes | no | no | no |
 | `public-api.liquidfun-box2d-box2d-particle-b2particleassembly-h` | `liquidfun/Box2D/Box2D/Particle/b2ParticleAssembly.h` | `liquidfun::particle` | applicable | yes | yes | no | no | no | no | no | no |
 | `public-api.liquidfun-box2d-box2d-particle-b2particlegroup-h` | `liquidfun/Box2D/Box2D/Particle/b2ParticleGroup.h` | `liquidfun::particle` | applicable | yes | yes | no | no | no | no | no | no |
-| `public-api.liquidfun-box2d-box2d-particle-b2particlesystem-h` | `liquidfun/Box2D/Box2D/Particle/b2ParticleSystem.h` | `liquidfun::particle` | applicable | yes | yes | yes | yes | yes | yes | no | no |
+| `public-api.liquidfun-box2d-box2d-particle-b2particlesystem-h` | `liquidfun/Box2D/Box2D/Particle/b2ParticleSystem.h` | `liquidfun::particle` | applicable | yes | yes | yes | yes | yes | no | no | no |
 | `public-api.liquidfun-box2d-box2d-particle-b2stackqueue-h` | `liquidfun/Box2D/Box2D/Particle/b2StackQueue.h` | `liquidfun::particle` | applicable | yes | yes | no | no | no | no | no | no |
 | `public-api.liquidfun-box2d-box2d-particle-b2voronoidiagram-h` | `liquidfun/Box2D/Box2D/Particle/b2VoronoiDiagram.h` | `liquidfun::particle` | applicable | yes | yes | no | no | no | no | no | no |
 | `public-api.liquidfun-box2d-box2d-rope-b2rope-h` | `liquidfun/Box2D/Box2D/Rope/b2Rope.h` | `liquidfun::rope` | applicable | yes | yes | yes | yes | yes | yes | yes | no |
@@ -394,10 +394,10 @@ Every row below names its currently missing evidence dimensions. Absence is not 
 | `public-api.liquidfun-box2d-box2d-dynamics-joints-b2ropejoint-h` | intentionally_unsupported |
 | `public-api.liquidfun-box2d-box2d-dynamics-joints-b2weldjoint-h` | intentionally_unsupported |
 | `public-api.liquidfun-box2d-box2d-dynamics-joints-b2wheeljoint-h` | intentionally_unsupported |
-| `public-api.liquidfun-box2d-box2d-particle-b2particle-h` | documented_difference, intentionally_unsupported |
+| `public-api.liquidfun-box2d-box2d-particle-b2particle-h` | platform_validated, documented_difference, intentionally_unsupported |
 | `public-api.liquidfun-box2d-box2d-particle-b2particleassembly-h` | implemented, unit_tested, differentially_validated, platform_validated, documented_difference, intentionally_unsupported |
 | `public-api.liquidfun-box2d-box2d-particle-b2particlegroup-h` | implemented, unit_tested, differentially_validated, platform_validated, documented_difference, intentionally_unsupported |
-| `public-api.liquidfun-box2d-box2d-particle-b2particlesystem-h` | documented_difference, intentionally_unsupported |
+| `public-api.liquidfun-box2d-box2d-particle-b2particlesystem-h` | platform_validated, documented_difference, intentionally_unsupported |
 | `public-api.liquidfun-box2d-box2d-particle-b2stackqueue-h` | implemented, unit_tested, differentially_validated, platform_validated, documented_difference, intentionally_unsupported |
 | `public-api.liquidfun-box2d-box2d-particle-b2voronoidiagram-h` | implemented, unit_tested, differentially_validated, platform_validated, documented_difference, intentionally_unsupported |
 | `public-api.liquidfun-box2d-box2d-rope-b2rope-h` | intentionally_unsupported |
@@ -417,10 +417,10 @@ Every row below names its currently missing evidence dimensions. Absence is not 
 | `subsystem.common-memory-and-utilities` | implemented, unit_tested, differentially_validated, platform_validated, documented_difference, intentionally_unsupported |
 | `subsystem.contacts-and-filtering` | intentionally_unsupported |
 | `subsystem.joints` | intentionally_unsupported |
-| `subsystem.particle-contacts-and-coupling` | documented_difference, intentionally_unsupported |
+| `subsystem.particle-contacts-and-coupling` | platform_validated, documented_difference, intentionally_unsupported |
 | `subsystem.particle-groups-pairs-and-triads` | implemented, unit_tested, differentially_validated, platform_validated, documented_difference, intentionally_unsupported |
 | `subsystem.particle-solver-behaviors` | implemented, unit_tested, differentially_validated, platform_validated, documented_difference, intentionally_unsupported |
-| `subsystem.particle-storage-and-lifecycle` | documented_difference, intentionally_unsupported |
+| `subsystem.particle-storage-and-lifecycle` | platform_validated, documented_difference, intentionally_unsupported |
 | `subsystem.rigid-bodies-and-fixtures` | intentionally_unsupported |
 | `subsystem.rigid-islands-and-solver` | intentionally_unsupported |
 | `subsystem.rope` | intentionally_unsupported |

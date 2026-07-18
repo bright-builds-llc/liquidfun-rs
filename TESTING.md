@@ -617,13 +617,17 @@ the repository's reviewed stage, review, and promotion workflow. A local pass,
 a mismatched SHA, one artifact, or an unverified digest cannot promote the Phase
 9 claim.
 
-### Approved Phase 9 evidence run (2026-07-18)
+### Superseded Phase 9 evidence run (2026-07-18)
 
 GitHub Actions run
 [`29652578231`](https://github.com/bright-builds-llc/liquidfun-rs/actions/runs/29652578231)
-is the approved `Oracle CI` `workflow_dispatch` authority for exact commit
+was the approved `Oracle CI` `workflow_dispatch` authority for exact commit
 [`22b31c0e1be8896df622b1decd58ba2853a60b04`](https://github.com/bright-builds-llc/liquidfun-rs/commit/22b31c0e1be8896df622b1decd58ba2853a60b04).
-The approved commit is an ancestor of the reviewed repository state and was the
+WR-01 later established that five cross-run claims in that artifact were bound
+to a single particle marker rather than persisted case-level proof records.
+The run and its digests are therefore historical forensic evidence only, are
+denylisted for promotion, and must not be cited as current platform authority.
+The commit is an ancestor of the reviewed repository state and was the
 exact remote `main` branch head when the evidence was independently
 revalidated. The run contains exactly one successful
 [`Canonical Linux oracle`](https://github.com/bright-builds-llc/liquidfun-rs/actions/runs/29652578231/job/88101300857)
@@ -631,7 +635,7 @@ authority job and one successful
 [`Scheduled fail-fast sanitizer and reset corpus`](https://github.com/bright-builds-llc/liquidfun-rs/actions/runs/29652578231/job/88101300845)
 authority job.
 
-Before compatibility-ledger mutation, preserve existing local evidence below
+For historical inspection, preserve existing local evidence below
 the gitignored `target/phase9-evidence/superseded` directory, delete only the
 two fixed download directories, and re-query the live run, jobs, artifact list,
 and both individual artifact APIs. Download these exact unexpired artifacts:
@@ -651,9 +655,9 @@ and both individual artifact APIs. Download these exact unexpired artifacts:
   and
   `662b9514472c1d6d8186115577f43c5987870a2a24592156b46631f1c28b4a3e`.
 
-Validate each downloaded archive's API size and SHA-256, safe relative entry
-names, bounded manifest-derived file set, regular-file modes, and lack of
-symlinks before extraction. Then validate both fresh extracted directories:
+The old archives may still be checked for their recorded API size, SHA-256,
+safe relative entry names, regular-file modes, and lack of symlinks before
+extraction. The current validator must reject the superseded run:
 
 ```bash
 cargo xtask phase9-evidence validate --mode exact-ref \
@@ -662,33 +666,35 @@ cargo xtask phase9-evidence validate --mode exact-ref \
   --sanitizer-dir target/phase9-evidence/phase9-sanitizer \
   --deny-run-id 29439515367 \
   --deny-run-id 29583793056 \
-  --deny-run-id 29625083184
+  --deny-run-id 29625083184 \
+  --deny-run-id 29652578231
 cargo xtask provenance check
 ```
 
-The exact-ref validator requires both identities to bind run `29652578231`, the
-approved head, their distinct expected jobs, the pinned upstream and toolchain,
-target `x86_64-unknown-linux-gnu`, policy `phase9-v1`, and confined relative
-payload paths. It recomputes all embedded payload, retained-rigid comparison,
-complete-comparison, witness-binding, trace, manifest, and identity hashes;
-requires `test result: ok. 25 passed; 0 failed; 1 ignored` with no `FAILED`
-marker; and requires semantically identical manifests. Each manifest contains
+At the time it was produced, the artifact identities bound run `29652578231`,
+the approved head, their distinct expected jobs, the pinned upstream and
+toolchain, target `x86_64-unknown-linux-gnu`, policy `phase9-v1`, and confined
+relative payload paths. The old manifests contain
 seven unique executed cases, exactly 58 unique semantic witness bindings, all
 22 unique policy paths per case, retained Phase 6 through Phase 8 policy
 digests with a Phase 8 `match`, and shared semantic manifest digest
 `671d16f1c7af0f948760b9cdc62b3ed1fefb7307889a46334230605365aefe80`.
+That digest and the per-artifact manifest digest
+`662b9514472c1d6d8186115577f43c5987870a2a24592156b46631f1c28b4a3e`
+are superseded by the typed cross-run proof schema and cannot support
+promotion.
 
-Runs `29439515367`, `29583793056`, and failed run `29625083184` are not this
-authority. Failed run `29625083184` produced canonical-only artifact
+Runs `29439515367`, `29583793056`, `29652578231`, and failed run
+`29625083184` are not current authority. Failed run `29625083184` produced canonical-only artifact
 `8423580554`; it must never be paired with any sanitizer artifact. Any
 substituted run, head, job, artifact, digest, path, log, case, semantic binding,
 policy, or result value blocks promotion.
 
-The compatibility validator admits this authority only for the scoped
+The compatibility validator rejects this superseded authority for the scoped
 `b2Particle.h`, `b2ParticleSystem.h`, particle storage/lifecycle, and particle
-contacts/coupling rows. It requires the complete ordered canonical and sanitizer
-reference set above and rejects any superseded or failed reference in the
-implementation, unit, differential, or platform evidence for those rows.
+contacts/coupling rows. Their platform status remains `Not evidenced` until a
+fresh exact-ref run proves the typed cross-run schema and is reviewed for
+promotion.
 Particle assembly, particle groups, the full particle source area,
 group/pair/triad behavior, particle solver behavior, and cross-engine stable-ID
 rotation remain `Not evidenced` as Phase 10 work.

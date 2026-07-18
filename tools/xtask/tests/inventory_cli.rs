@@ -246,7 +246,7 @@ fn check_rejects_differential_evidence_without_dependencies() -> TestResult {
 }
 
 #[test]
-fn check_accepts_complete_phase9_authority() -> TestResult {
+fn check_rejects_pre_wr01_phase9_authority() -> TestResult {
     // Arrange
     let fixture = InventoryFixture::new()?;
     assert_success(&fixture.discover()?);
@@ -256,7 +256,8 @@ fn check_accepts_complete_phase9_authority() -> TestResult {
     let output = fixture.generate()?;
 
     // Assert
-    assert_success(&output);
+    assert_failure_category(&output, "inventory/evidence");
+    assert!(stderr(&output).contains("superseded pre-WR-01 Phase 9 authority"));
     fixture.cleanup()?;
     Ok(())
 }

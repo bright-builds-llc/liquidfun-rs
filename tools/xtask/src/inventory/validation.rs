@@ -68,6 +68,16 @@ const PHASE9_REJECTED_AUTHORITY_MARKERS: [&str; 25] = [
     "7ed430c497efbaa8585ee9ef3862be1abda29ef5",
     "f7478565688e7250257bc8c1d066456853604394c61e7cbe38ffcc11e73c5c5b",
 ];
+const PHASE9_SUPERSEDED_WR01_MARKERS: [&str; 8] = [
+    "29652578231",
+    "8431920189",
+    "8431922578",
+    "22b31c0e1be8896df622b1decd58ba2853a60b04",
+    "ea333de6ac32d64c1c5b4e80738275451f0e51994b7f78e70961597d48e77500",
+    "99fa817d3b891a8942709e4b4af2bd4fa0aedbde0fc4c19b398829f02128a6c6",
+    "662b9514472c1d6d8186115577f43c5987870a2a24592156b46631f1c28b4a3e",
+    "671d16f1c7af0f948760b9cdc62b3ed1fefb7307889a46334230605365aefe80",
+];
 
 pub(super) fn compatibility(
     ledger: &CompatibilityLedger,
@@ -233,6 +243,32 @@ fn phase9_promotion(ledger: &CompatibilityLedger) -> Result<(), InventoryError> 
             return Err(InventoryError::new(
                 "evidence",
                 format!("Phase 9 promotion cannot claim deferred Phase 10 row `{id}`"),
+            ));
+        }
+    }
+
+    for id in PHASE9_PROMOTION_IDS {
+        let entry = ledger
+            .entries
+            .iter()
+            .find(|entry| entry.id == id)
+            .expect("promotion rows were validated above");
+        if entry
+            .evidence
+            .platform_validated
+            .references
+            .iter()
+            .any(|reference| {
+                PHASE9_SUPERSEDED_WR01_MARKERS
+                    .iter()
+                    .any(|marker| reference.contains(marker))
+            })
+        {
+            return Err(InventoryError::new(
+                "evidence",
+                format!(
+                    "superseded pre-WR-01 Phase 9 authority for scoped row `{id}`; fresh exact-ref evidence is required"
+                ),
             ));
         }
     }
