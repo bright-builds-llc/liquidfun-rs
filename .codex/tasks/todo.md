@@ -98,5 +98,5 @@ Completion review: All seven evidence cases now bind the retained Phase 8 rigid 
 - [x] Prove the retained process runner works without a workspace oracle-debug database.
 - [x] Record run 29625083184 as rejected authority in incomplete Plans 09-28 and 09-29.
 - [x] Run the complete Rust, canonical, sanitizer, evidence, provenance, policy, workflow, Markdown, schema, and diff gates.
-- [ ] Commit and push one verified recovery SHA, then stop for fresh human approval.
-- [ ] After approval, dispatch exactly once, validate paired artifacts, and complete Phase 09 promotion and verification.
+- [x] Commit and push one verified recovery SHA; record the user's approval and one-time Phase 09 exception.
+- [ ] Publish the plan-only exception SHA, dispatch exactly once under that scoped authority, validate paired artifacts, and complete Phase 09 promotion and verification.
