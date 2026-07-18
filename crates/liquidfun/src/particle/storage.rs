@@ -413,17 +413,6 @@ impl ParticleStorage {
         candidate.id
     }
 
-    /*
-        Self::from_owned_lanes(
-            world,
-            system,
-            identity_slot_base,
-            identity_capacity,
-            declared_capacity,
-            OwnedLaneBundle::with_capacity(declared_capacity, false),
-        )
-    */
-
     pub(crate) fn from_owned_lanes(
         world: WorldKey,
         system: ParticleSystemId,
