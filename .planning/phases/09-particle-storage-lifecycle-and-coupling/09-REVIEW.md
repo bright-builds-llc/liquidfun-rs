@@ -1,24 +1,18 @@
 ---
 phase: 09-particle-storage-lifecycle-and-coupling
-reviewed: 2026-07-17T14:27:52Z
-generated_at: 2026-07-17T14:27:52Z
+reviewed: 2026-07-18T17:35:51Z
 depth: standard
-files_reviewed: 99
+files_reviewed: 100
 files_reviewed_list:
+  - .codex/tasks/todo.md
   - .github/workflows/oracle.yml
   - COMPATIBILITY.md
   - Cargo.toml
   - TESTING.md
+  - crates/liquidfun-differential/src/rigid_evidence/phase7.rs
   - crates/liquidfun-differential/src/rigid_world.rs
   - crates/liquidfun-differential/src/rigid_world/phase9.rs
   - crates/liquidfun-differential/src/rigid_world/phase9/comparator.rs
-  - crates/liquidfun-differential/tests/fixtures/rigid_world/phase9/cases/aabb-query-control-and-culling.jsonl
-  - crates/liquidfun-differential/tests/fixtures/rigid_world/phase9/cases/closed-evidence-contract.jsonl
-  - crates/liquidfun-differential/tests/fixtures/rigid_world/phase9/cases/contacts-listeners-filters-and-coupling.jsonl
-  - crates/liquidfun-differential/tests/fixtures/rigid_world/phase9/cases/forces-impulses-and-statistics.jsonl
-  - crates/liquidfun-differential/tests/fixtures/rigid_world/phase9/cases/lifetime-zombie-and-eviction.jsonl
-  - crates/liquidfun-differential/tests/fixtures/rigid_world/phase9/cases/ray-control-and-culling.jsonl
-  - crates/liquidfun-differential/tests/fixtures/rigid_world/phase9/cases/storage-systems-and-permutations.jsonl
   - crates/liquidfun-differential/tests/fixtures/rigid_world/phase9/phase9-v1.json
   - crates/liquidfun-differential/tests/particle_oracle.rs
   - crates/liquidfun-differential/tests/particle_protocol.rs
@@ -89,6 +83,9 @@ files_reviewed_list:
   - reference/compatibility.json
   - reference/source-map.toml
   - scripts/phase9-evidence.sh
+  - target/phase9-evidence/phase9-canonical/identity.json
+  - target/phase9-evidence/phase9-sanitizer/identity.json
+  - target/phase9-evidence/run.json
   - tools/reference/CMakeLists.txt
   - tools/reference/adapter-inputs.txt
   - tools/reference/src/phase9_lifecycle_contact_witness.cpp
@@ -99,14 +96,17 @@ files_reviewed_list:
   - tools/reference/src/rigid_world_phase9_execute.hpp
   - tools/reference/tests/sanitizer_scope.cmake
   - tools/xtask/src/inventory/validation.rs
+  - tools/xtask/src/main.rs
+  - tools/xtask/src/phase9_evidence.rs
   - tools/xtask/src/provenance.rs
   - tools/xtask/src/provenance/phase9_witness.rs
   - tools/xtask/src/upstream.rs
   - tools/xtask/tests/inventory_cli.rs
+  - tools/xtask/tests/phase9_evidence_cli.rs
   - tools/xtask/tests/upstream_cli.rs
 findings:
-  critical: 0
-  warning: 2
+  critical: 1
+  warning: 1
   info: 1
   total: 3
 status: issues_found
@@ -114,66 +114,65 @@ status: issues_found
 
 # Phase 09: Code Review Report
 
-**Reviewed:** 2026-07-17T14:27:52Z
+**Reviewed:** 2026-07-18T17:35:51Z
 **Depth:** standard
-**Files Reviewed:** 99
+**Files Reviewed:** 100
 **Status:** issues_found
 
 ## Summary
 
-The standard-depth review covered all 99 source, protocol, oracle, evidence, workflow, test, and documentation files declared by the Phase 09 summaries after excluding planning artifacts and generated `target/` outputs. The implementation's particle storage, lifecycle, permutation, contact, coupling, query, and public API paths are well defended by focused tests. No critical security, crash, or data-loss issue was found.
+The standard-depth review covered the exact 100-file Tier 2 scope reconstructed from all 29 Phase 09 summary frontmatter blocks. Plans 09-25 through 09-29 materially close the two stale verification gaps: retained Phase 6-8 comparison now runs before particle comparison, the hermetic fake compile database is self-contained, the corpus carries 58 typed semantic bindings, replacement run `29652578231` is pinned while runs `29439515367`, `29583793056`, and `29625083184` plus artifact `8423580554` are denied, generated compatibility claims are deterministic, and all five Phase 10 rows remain `not_evidenced`.
 
-Two evidence-integrity gaps remain actionable: the Phase 09 differential comparator does not compose the retained Phase 06–08 rigid comparator, and several branches counted as executable coverage are represented only by configuration/input assertions or trivial empty outputs instead of branch-specific semantic observations. One commented-out construction block should also be removed.
+One critical local path-safety defect remains in the evidence runner: a symlinked output path under `target/` reaches the destructive cleanup before any typed validation. One evidence-integrity warning also remains because the reusable validator does not independently resolve and evaluate most bindings against their exact action/checkpoint observation. The obsolete commented constructor block reported previously is still present.
 
-The review applied `AGENTS.md`, `AGENTS.bright-builds.md`, `standards-overrides.md`, and the relevant architecture, code-shape, verification, testing, operability, and Rust standards.
+The review applied the repo-local `AGENTS.md` guidance, `AGENTS.bright-builds.md`, `standards-overrides.md`, and the managed architecture, code-shape, verification, testing, and Rust standards.
+
+## Critical Issues
+
+### CR-01: Evidence cleanup follows symlinked output roots outside `target/`
+
+**Files:** `scripts/phase9-evidence.sh:18-33`; `tools/xtask/src/phase9_evidence.rs:276-288`; `tools/xtask/src/phase9_evidence.rs:951-970`
+
+**Issue:** The shell runner validates `output_dir` lexically, then calls `mkdir -p`, `rm -rf "$output_dir/cases"`, and writes logs before the Rust validator runs. Neither the shell guard nor the Rust `checked_relative_path`/`read_regular_file` helpers reject symlinks in ancestor components. A path such as `target/probe/canonical` may therefore be a symlink to an arbitrary directory; the cleanup resolves through it and recursively deletes that external directory's `cases` child. A safe review probe confirmed the defect: a marker under the symlink target was deleted before a deliberately failing fake `cargo` command ran. The same missing component walk lets exact-ref archive paths read through symlinked ancestors.
+
+**Fix:** Resolve the repository and `target/` roots once, walk every existing path component with `symlink_metadata`, reject all symlink components, and require the canonical parent to remain beneath the canonical `target/` root before any `mkdir`, delete, read, or write. Create a new output directory without following links, then reopen/validate it before cleanup. Add regressions for a symlinked final output directory, a symlinked ancestor, and a symlinked archive ancestor; all must fail before changing the symlink target.
 
 ## Warnings
 
-### WR-01: Phase 09 comparison drops retained Phase 06–08 rigid semantics
+### WR-01: Exact-ref validation does not prove most witness bindings against their bound observations
 
-**Files:** `crates/liquidfun-differential/src/rigid_world/phase9/comparator.rs:225-310`; `crates/liquidfun-differential/src/rigid_world.rs:182-204`; `crates/liquidfun-differential/src/rigid_evidence.rs:421-458`
+**Files:** `tools/xtask/src/phase9_evidence.rs:488-539`; `tools/xtask/src/phase9_evidence.rs:589-657`; `tools/xtask/tests/phase9_evidence_cli.rs:384-415`
 
-**Issue:** After validating each result structurally, `compare_phase9_rigid_world_results` filters every checkpoint through `particle_observations`, which discards all non-particle observations. It also never compares checkpoint body or fixture state. The Phase 09 runner invokes only that particle comparator and does not compose the existing `compare_phase8_rigid_world_results` walker. Consequently, a native/oracle disagreement in a request-valid retained rigid body, fixture, Phase 07, or Phase 08 value can still return `Match`, even though the corpus reports the `retained_phase6_through_phase8` branch and promoted compatibility evidence includes retained behavior.
+**Issue:** `validate_manifest` proves that action/checkpoint indices are in range and that the assertion enum declares the expected observation kind, but it never reconstructs the exact action-to-observation slot used by the corpus. `validate_semantic_outcomes` independently checks only collision energy and stuck candidates, and even those checks accept any statistics observation in the checkpoint rather than the observation bound by `action_index`. Finite/infinite/equal lifetime, strict contact, listener/filter, replay/minimization/first-divergence/D0/debug-release, and ordinary observed-semantic assertions are not evaluated against downloaded result values. The validator also trusts the stored `complete-comparison.json` value instead of rerunning the complete comparator over the decoded native/oracle pair.
 
-Existing mutation tests cover particle observations only, so they do not guard this boundary.
+An in-range wrong action or checkpoint binding can therefore pass after its witness and semantic-manifest digests are recomputed. The existing corruption test changes an index to `usize::MAX` without recomputing those digests, so it exercises digest/range rejection rather than exact semantic binding.
 
-**Fix:** Load the inherited Phase 06, 07, and 08 policy profiles in the Phase 09 runner, execute `compare_phase8_rigid_world_results` before the particle-only comparison, and translate any inherited mismatch without continuing to a Phase 09 match. Add a regression that mutates a structurally valid body or fixture numeric field in one result and asserts a deterministic mismatch.
-
-### WR-02: Several “reached” branches lack branch-specific semantic witnesses
-
-**Files:** `crates/liquidfun-differential/tests/phase9_corpus.rs:615-925`; `crates/liquidfun-differential/tests/fixtures/rigid_world/phase9/phase9-v1.json:102-218`; `scripts/phase9-evidence.sh:48-62`
-
-**Issue:** The seven cases do execute native and pinned-oracle requests, but several of the 58 reported branches are not proven by the named behavior:
-
-- `finite_lifetime`, `infinite_lifetime`, and `equal_lifetime` assert only request declaration bits.
-- Strict-contact and listener/filter enabled/disabled branches assert only configuration or flag bits.
-- `collision_energy` and `stuck_candidates` accept zero and an empty list, so their nontrivial calculation paths need not run.
-- The per-branch replay, minimization, first-divergence, D0, and debug/release assertions reduce to request/scenario ID equality.
-- Multiple manifest witnesses point to the same generic `inspect-particle` observation while their semantic assertions inspect unrelated declarations or outputs.
-
-The evidence script then verifies only the count and uniqueness of branch labels. This permits the manifest to claim complete executable coverage while regressions in the named branches remain unexercised, contrary to the Phase 09 plan's branch-specific semantic witness contract.
-
-**Fix:** Bind every manifest branch to the exact action/checkpoint/output that demonstrates it and validate that binding mechanically. Use scenarios with observable state transitions for finite/infinite/equal lifetime ordering and strict/filter/listener behavior, nonzero collision energy and nonempty stuck candidates, and actual comparison/replay digest or mismatch assertions for the evidence-contract branches. Reject a manifest when a branch is supported only by input configuration or an unrelated observation.
+**Fix:** Move the corpus's action-to-observation resolver and semantic assertion evaluator into production code shared by corpus generation and `phase9-evidence`. Resolve each binding to its exact action, checkpoint, and observation; verify the actual observation variant; evaluate every assertion against both decoded results; and rerun `compare_complete_phase9_rigid_world_results` to derive the comparison outcome. Add digest-recomputed mutations for an in-range wrong action, wrong checkpoint, wrong observation, false lifetime/contact/listener/filter assertion, and divergent native/oracle result pair.
 
 ## Info
 
-### IN-01: Obsolete constructor call remains commented out
+### IN-01: Obsolete constructor code remains commented out
 
 **File:** `crates/liquidfun/src/particle/storage.rs:416-425`
 
-**Issue:** A block-commented call to `Self::from_owned_lanes` remains between `commit_create` and the live constructor implementation. It is dead code and obscures the active construction path.
+**Issue:** A block-commented call to `Self::from_owned_lanes` remains between `commit_create` and the active constructor. It has no runtime effect but obscures the live construction path.
 
-**Fix:** Delete the commented-out block. Version control already preserves the prior implementation.
+**Fix:** Delete the commented block; version control already preserves the prior implementation.
 
 ## Verification
 
-- The required independent Phase 09 gates recorded by the phase artifacts passed, including the canonical and sanitizer evidence jobs, provenance and inventory checks, and the focused Phase 09 native/protocol/oracle suites.
-- A redundant local `cargo test --workspace --all-features` rerun completed the `liquidfun` unit and integration suites and continued without failures through the differential suite before it was interrupted while starting `particle_oracle`; no failure was observed.
-- Review findings were validated by tracing the Phase 09 runner, comparator, inherited Phase 08 comparator, corpus assertions, fixture registry, and evidence-script acceptance checks.
-- No source file was modified and no commit was created.
+- Reconstructed scope: 29 summaries, 331 extracted entries, 325 after planning exclusions, 131 missing/deleted paths removed, exactly 100 sorted unique existing files.
+- `cargo xtask phase9-evidence validate --mode exact-ref ...` passed with all three historical/failed runs denylisted and reported 7 cases plus 58 semantic bindings.
+- `cargo test -p xtask --test phase9_evidence_cli` passed 9 tests.
+- `cargo test -p xtask --test inventory_cli` passed 21 tests.
+- `cargo test -p liquidfun-differential --test phase9_corpus` passed 25 tests with 1 explicit regeneration test ignored.
+- `cargo test -p liquidfun-differential --test particle_oracle` passed 13 tests.
+- `cargo test -p liquidfun-differential --test particle_protocol` passed 25 tests.
+- The safe symlink probe reproduced CR-01 and left the worktree clean after cleanup.
+- `git diff --check` passed before report creation. No source file was modified and no commit was created.
 
 ***
 
-_Reviewed: 2026-07-17T14:27:52Z_
+_Reviewed: 2026-07-18T17:35:51Z_
 _Reviewer: the agent (gsd-code-reviewer)_
 _Depth: standard_
