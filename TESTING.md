@@ -15,9 +15,12 @@ origin shifting through one closed nine-family rigid-world request. Local
 oracle results are D2 supported-toolchain evidence and exact two-run
 determinism is D0. Phase 8 extends that request to 19 families covering joints,
 standalone rope, callback/destruction timing, and reconstruction. Exact
-canonical D1 evidence now supports only that accumulated scalar rigid corpus;
-D3 review, other platforms, particles, performance, and the deferred fuzz,
-Miri, Rust-sanitizer, benchmark, and coverage lanes remain pending.
+canonical D1 evidence supports that accumulated scalar rigid corpus and the
+scoped Phase 9 particle storage/lifecycle and contacts/coupling foundations.
+Particle groups, topology, pairs, triads, remaining solver behaviors,
+cross-engine stable-ID rotation, D3 review, other platforms, performance, and
+the deferred fuzz, Miri, Rust-sanitizer, benchmark, and coverage lanes remain
+pending.
 [COMPATIBILITY.md](COMPATIBILITY.md) remains authoritative for feature and
 evidence maturity.
 

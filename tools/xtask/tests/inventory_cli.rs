@@ -10,17 +10,27 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use serde_json::{Value, json};
 
 const REVISION: &str = "7f20402173fd143a3988c921bc384459c6a858f2";
-const PHASE9_AUTHORITY_REFERENCES: [&str; 10] = [
-    "https://github.com/bright-builds-llc/liquidfun-rs/actions/runs/29583793056",
-    "https://api.github.com/repos/bright-builds-llc/liquidfun-rs/actions/artifacts/8408156562/zip#sha256=faaf24c870826251f0dd1d507ba9c335269b78433ba1ce2ee0e1995336f0139a",
-    "phase9-canonical-29583793056-b27fc14f6b29fb82ca815fa1effba71bae09d424/identity.json#trace-sha256=5c6805e0e998394947439bf6eb295526130cb4db81a67e0f560c6d6bc3f33545",
-    "phase9-canonical-29583793056-b27fc14f6b29fb82ca815fa1effba71bae09d424/identity.json#manifest-sha256=b7bb43a6ce083fe543bf6eb3f92b1b4f663d4bd6520dbb83c3a00072a3010a8b",
-    "https://api.github.com/repos/bright-builds-llc/liquidfun-rs/actions/artifacts/8408174081/zip#sha256=f4b30cebed7b81a41282a33d45b81231485a2fa0c3a958c7b68a3ecbad086e7c",
-    "phase9-sanitizer-29583793056-b27fc14f6b29fb82ca815fa1effba71bae09d424/identity.json#trace-sha256=4261dbe8993155dd7ab9e7992f90bef60e57762c36a66ea97b3bc9131804508a",
-    "phase9-sanitizer-29583793056-b27fc14f6b29fb82ca815fa1effba71bae09d424/identity.json#manifest-sha256=b7bb43a6ce083fe543bf6eb3f92b1b4f663d4bd6520dbb83c3a00072a3010a8b",
-    "https://github.com/bright-builds-llc/liquidfun-rs/commit/b27fc14f6b29fb82ca815fa1effba71bae09d424",
-    ".planning/phases/09-particle-storage-lifecycle-and-coupling/09-23-SUMMARY.md",
-    "TESTING.md#approved-phase-9-evidence-run-2026-07-17",
+const PHASE9_AUTHORITY_REFERENCES: [&str; 11] = [
+    "https://github.com/bright-builds-llc/liquidfun-rs/actions/runs/29652578231",
+    "https://api.github.com/repos/bright-builds-llc/liquidfun-rs/actions/artifacts/8431920189/zip#sha256=ea333de6ac32d64c1c5b4e80738275451f0e51994b7f78e70961597d48e77500",
+    "phase9-canonical-29652578231-22b31c0e1be8896df622b1decd58ba2853a60b04/identity.json#trace-sha256=2400f9b5dc69c9b07510ff934b1f41a455cdac71f3a3d7c5b8a372bf588316a9",
+    "phase9-canonical-29652578231-22b31c0e1be8896df622b1decd58ba2853a60b04/identity.json#manifest-sha256=662b9514472c1d6d8186115577f43c5987870a2a24592156b46631f1c28b4a3e",
+    "https://api.github.com/repos/bright-builds-llc/liquidfun-rs/actions/artifacts/8431922578/zip#sha256=99fa817d3b891a8942709e4b4af2bd4fa0aedbde0fc4c19b398829f02128a6c6",
+    "phase9-sanitizer-29652578231-22b31c0e1be8896df622b1decd58ba2853a60b04/identity.json#trace-sha256=f1f7d6cd2b2d6730fd4548cdfc643e3be7347613fe082f295b90622afe08d6ea",
+    "phase9-sanitizer-29652578231-22b31c0e1be8896df622b1decd58ba2853a60b04/identity.json#manifest-sha256=662b9514472c1d6d8186115577f43c5987870a2a24592156b46631f1c28b4a3e",
+    "phase9-manifest.json#semantic-manifest-sha256=671d16f1c7af0f948760b9cdc62b3ed1fefb7307889a46334230605365aefe80",
+    "https://github.com/bright-builds-llc/liquidfun-rs/commit/22b31c0e1be8896df622b1decd58ba2853a60b04",
+    ".planning/phases/09-particle-storage-lifecycle-and-coupling/09-28-SUMMARY.md",
+    "TESTING.md#approved-phase-9-evidence-run-2026-07-18",
+];
+const PHASE9_DIFFERENTIAL_REFERENCES: [&str; 7] = [
+    "crates/liquidfun-differential/tests/fixtures/rigid_world/phase9/phase9-v1.json",
+    "crates/liquidfun-differential/tests/phase9_corpus.rs",
+    "crates/liquidfun-differential/src/rigid_world/phase9.rs",
+    "crates/liquidfun-differential/src/rigid_world/phase9/comparator.rs",
+    "tools/xtask/src/phase9_evidence.rs",
+    ".planning/phases/09-particle-storage-lifecycle-and-coupling/09-27-SUMMARY.md",
+    ".planning/phases/09-particle-storage-lifecycle-and-coupling/09-28-SUMMARY.md",
 ];
 const PHASE9_DEFERRED_IDS: [&str; 5] = [
     "public-api.liquidfun-box2d-box2d-particle-b2particleassembly-h",
@@ -420,6 +430,132 @@ fn check_rejects_substituted_phase9_artifact() -> TestResult {
 }
 
 #[test]
+fn check_rejects_every_prior_or_failed_phase9_authority_marker() -> TestResult {
+    for marker in [
+        "29439515367",
+        "8352859391",
+        "8352881868",
+        "a87f84bbdbfe55fb732d74c481c4a4bda9eec958",
+        "f237d6f1ebe0e59f65a5ae0609140eecdd8b32247e9d2064c83748be1ab9f5ea",
+        "95ad57e5d5711ae6aa93847ad1efd4a04025bd2956b4996535fa0e5f45a5893f",
+        "29583793056",
+        "8408156562",
+        "8408174081",
+        "b27fc14f6b29fb82ca815fa1effba71bae09d424",
+        "faaf24c870826251f0dd1d507ba9c335269b78433ba1ce2ee0e1995336f0139a",
+        "f4b30cebed7b81a41282a33d45b81231485a2fa0c3a958c7b68a3ecbad086e7c",
+        "29625083184",
+        "8423580554",
+        "7ed430c497efbaa8585ee9ef3862be1abda29ef5",
+        "f7478565688e7250257bc8c1d066456853604394c61e7cbe38ffcc11e73c5c5b",
+    ] {
+        // Arrange
+        let fixture = InventoryFixture::new()?;
+        assert_success(&fixture.discover()?);
+        let mut entries = promoted_phase9_entries();
+        phase9_entry_mut(&mut entries)["evidence"]["differentially_validated"]["references"] =
+            json!([format!("rejected-authority/{marker}")]);
+        fixture.write_compatibility(&entries)?;
+
+        // Act
+        let output = fixture.generate()?;
+
+        // Assert
+        assert_failure_category(&output, "inventory/evidence");
+        fixture.cleanup()?;
+    }
+    Ok(())
+}
+
+#[test]
+fn check_rejects_semantically_incomplete_phase9_differential_claims() -> TestResult {
+    for unsupported_claim in [
+        "missing-retained-rigid-comparator-record",
+        "wrong-retained-rigid-policy-digest",
+        "non-match-retained-rigid-outcome",
+        "particle-only-comparator",
+        "58-label-manifest-without-semantic-binding-digest",
+        "wrong-action-binding",
+        "wrong-checkpoint-binding",
+        "wrong-observation-binding",
+        "zero-positive-energy-witness",
+        "empty-stuck-candidate-witness",
+        "failed-phase9-log",
+        "incomplete-phase9-policy-array",
+    ] {
+        // Arrange
+        let fixture = InventoryFixture::new()?;
+        assert_success(&fixture.discover()?);
+        let mut entries = promoted_phase9_entries();
+        phase9_entry_mut(&mut entries)["evidence"]["differentially_validated"]["references"] =
+            json!([format!("unsupported-phase9-evidence/{unsupported_claim}")]);
+        fixture.write_compatibility(&entries)?;
+
+        // Act
+        let output = fixture.generate()?;
+
+        // Assert
+        assert_failure_category(&output, "inventory/evidence");
+        fixture.cleanup()?;
+    }
+    Ok(())
+}
+
+#[test]
+fn check_rejects_mixed_run_and_canonical_as_sanitizer_artifacts() -> TestResult {
+    for substituted_reference in [
+        "https://api.github.com/repos/bright-builds-llc/liquidfun-rs/actions/artifacts/8423580554/zip#sha256=failed-run-canonical",
+        "phase9-canonical-29652578231-22b31c0e1be8896df622b1decd58ba2853a60b04/identity.json#trace-sha256=canonical-used-as-sanitizer",
+    ] {
+        // Arrange
+        let fixture = InventoryFixture::new()?;
+        assert_success(&fixture.discover()?);
+        let mut entries = promoted_phase9_entries();
+        phase9_entry_mut(&mut entries)["evidence"]["platform_validated"]["references"][4] =
+            json!(substituted_reference);
+        fixture.write_compatibility(&entries)?;
+
+        // Act
+        let output = fixture.generate()?;
+
+        // Assert
+        assert_failure_category(&output, "inventory/evidence");
+        assert!(stderr(&output).contains("noncanonical Phase 9 authority"));
+        fixture.cleanup()?;
+    }
+    Ok(())
+}
+
+#[test]
+fn check_rejects_each_phase10_behavior_claim_during_phase9_promotion() -> TestResult {
+    for deferred_claim in [
+        "particle-group-behavior",
+        "particle-group-topology",
+        "particle-pair-behavior",
+        "particle-triad-behavior",
+        "complete-particle-source-area",
+        "particle-solver-behavior",
+        "cross-engine-stable-id-rotation",
+    ] {
+        // Arrange
+        let fixture = InventoryFixture::new()?;
+        assert_success(&fixture.discover()?);
+        let mut entries = promoted_phase9_entries();
+        phase9_entry_mut(&mut entries)["evidence"]["differentially_validated"]["references"] =
+            json!([format!("deferred-phase10/{deferred_claim}")]);
+        fixture.write_compatibility(&entries)?;
+
+        // Act
+        let output = fixture.generate()?;
+
+        // Assert
+        assert_failure_category(&output, "inventory/evidence");
+        fixture.cleanup()?;
+    }
+    Ok(())
+}
+
+#[test]
 fn check_rejects_each_phase10_claim_during_phase9_promotion() -> TestResult {
     // Arrange
     for id in PHASE9_DEFERRED_IDS {
@@ -539,7 +675,10 @@ fn promoted_phase9_entries() -> Vec<Value> {
         "planned": evidenced(),
         "implemented": evidenced(),
         "unit_tested": evidenced(),
-        "differentially_validated": evidenced(),
+        "differentially_validated": {
+            "status": "evidenced",
+            "references": PHASE9_DIFFERENTIAL_REFERENCES
+        },
         "platform_validated": {
             "status": "evidenced",
             "references": PHASE9_AUTHORITY_REFERENCES
