@@ -125,10 +125,16 @@ class RayCollector final : public b2RayCastCallback {
   std::string control_;
 };
 
-class TimelineExecution {
+class TimelineExecution final
+    : public b2ContactFilter,
+      public b2ContactListener,
+      public b2DestructionListener {
  public:
   TimelineExecution(b2World& world, Json timeline)
       : world_(world), timeline_(std::move(timeline)) {
+    world_.SetContactFilter(this);
+    world_.SetContactListener(this);
+    world_.SetDestructionListener(this);
     for (const auto& body : timeline_.at("bodies")) {
       body_declarations_.emplace(body.at("body_id").get<std::string>(), body);
     }
@@ -143,6 +149,12 @@ class TimelineExecution {
       particle_declarations_.emplace(
           particle.at("particle_id").get<std::string>(), particle);
     }
+  }
+
+  ~TimelineExecution() override {
+    world_.SetContactFilter(nullptr);
+    world_.SetContactListener(nullptr);
+    world_.SetDestructionListener(nullptr);
   }
 
   Json run() {
@@ -193,6 +205,71 @@ class TimelineExecution {
   }
 
  private:
+  bool ShouldCollide(b2Fixture*, b2Fixture*) override { return true; }
+
+  bool ShouldCollide(b2Fixture*, b2ParticleSystem*, int32) override {
+    return false;
+  }
+
+  bool ShouldCollide(b2ParticleSystem*, int32, int32) override {
+    return false;
+  }
+
+  void BeginContact(
+      b2ParticleSystem* system,
+      b2ParticleContact* contact) override {
+    record_occurrence(
+        "contact_created",
+        semantic_system_id(system),
+        semantic_particle_id(system, contact->GetIndexA()),
+        semantic_particle_id(system, contact->GetIndexB()));
+  }
+
+  void EndContact(
+      b2ParticleSystem* system,
+      int32 index_a,
+      int32 index_b) override {
+    record_occurrence(
+        "contact_destroyed",
+        semantic_system_id(system),
+        semantic_particle_id(system, index_a),
+        semantic_particle_id(system, index_b));
+  }
+
+  void BeginContact(
+      b2ParticleSystem* system,
+      b2ParticleBodyContact* contact) override {
+    record_occurrence(
+        "contact_created",
+        semantic_system_id(system),
+        semantic_particle_id(system, contact->index),
+        nullptr,
+        semantic_fixture_id(contact->fixture));
+  }
+
+  void EndContact(
+      b2Fixture* fixture,
+      b2ParticleSystem* system,
+      int32 index) override {
+    record_occurrence(
+        "contact_destroyed",
+        semantic_system_id(system),
+        semantic_particle_id(system, index),
+        nullptr,
+        semantic_fixture_id(fixture));
+  }
+
+  void SayGoodbye(b2ParticleSystem* system, int32 index) override {
+    record_occurrence(
+        "particle_destroyed",
+        semantic_system_id(system),
+        semantic_particle_id(system, index));
+  }
+
+  void SayGoodbye(b2Joint*) override {}
+
+  void SayGoodbye(b2Fixture*) override {}
+
   SystemState& system(const Json& raw_id) {
     const auto found = systems_.find(raw_id.get<std::string>());
     if (found == systems_.end()) {
@@ -246,6 +323,16 @@ class TimelineExecution {
     return found->first;
   }
 
+  std::string semantic_system_id(const b2ParticleSystem* system) const {
+    const auto found = std::find_if(
+        systems_.begin(), systems_.end(),
+        [&](const auto& item) { return item.second->system == system; });
+    if (found == systems_.end()) {
+      throw std::runtime_error("Phase 9 occurrence has no semantic system identity");
+    }
+    return found->first;
+  }
+
   std::string semantic_body_id(const b2Body* body) const {
     const auto found = std::find_if(
         bodies_.begin(), bodies_.end(),
@@ -282,6 +369,32 @@ class TimelineExecution {
          {"observation",
           {{"kind", "lifecycle"},
            {"occurrence", std::move(occurrence)}}}});
+  }
+
+  void record_occurrence(
+      std::string_view kind,
+      const std::string& system_id,
+      Json maybe_particle_id = nullptr,
+      Json maybe_other_particle_id = nullptr,
+      Json maybe_fixture_id = nullptr) {
+    occurrences_.push_back(
+        {{"ordinal", occurrences_.size()},
+         {"kind", std::string(kind)},
+         {"system_id", system_id},
+         {"maybe_particle_id", std::move(maybe_particle_id)},
+         {"maybe_other_particle_id", std::move(maybe_other_particle_id)},
+         {"maybe_fixture_id", std::move(maybe_fixture_id)}});
+  }
+
+  void inspect_occurrence(const Json& raw_index) {
+    const auto index = raw_index.get<std::size_t>();
+    if (index >= occurrences_.size()) {
+      throw std::runtime_error("unknown Phase 9 occurrence index");
+    }
+    observations_.push_back(
+        {{"kind", "particle"},
+         {"observation",
+          {{"kind", "lifecycle"}, {"occurrence", occurrences_.at(index)}}}});
   }
 
   static b2BodyType body_type(std::string_view kind) {
@@ -669,6 +782,9 @@ class TimelineExecution {
     } else if (kind == "inspect_body_contact") {
       observe_body_contact(action);
       observed = true;
+    } else if (kind == "inspect_occurrence") {
+      inspect_occurrence(action.at("occurrence_index"));
+      observed = true;
     } else if (kind == "set_paused") {
       system(action.at("system_id")).system->SetPaused(action.at("paused").get<bool>());
     } else if (kind == "set_position") {
@@ -900,6 +1016,7 @@ class TimelineExecution {
   std::unordered_map<std::string, b2Body*> bodies_;
   std::unordered_map<std::string, b2Fixture*> fixtures_;
   Json observations_ = Json::array();
+  Json occurrences_ = Json::array();
   std::uint32_t next_occurrence_ordinal_ = 0;
   bool phase9_affected_rigid_state_ = false;
 };

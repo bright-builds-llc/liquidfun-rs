@@ -944,6 +944,7 @@ fn validate_phase9_action(
                 require_live_phase9_system(system_id, state)?;
             }
         }
+        Phase9ParticleAction::InspectOccurrence { .. } => {}
     }
     Ok(())
 }
@@ -985,6 +986,11 @@ fn validate_phase9_action_shape(
         Phase9ParticleAction::InspectParticleContact { contact_index, .. }
         | Phase9ParticleAction::InspectBodyContact { contact_index, .. } => {
             if *contact_index >= PHASE9_MAXIMUM_IDENTITIES {
+                return Err(validation(RigidWorldErrorKind::InvalidParticleAction));
+            }
+        }
+        Phase9ParticleAction::InspectOccurrence { occurrence_index } => {
+            if *occurrence_index >= PHASE9_MAXIMUM_IDENTITIES {
                 return Err(validation(RigidWorldErrorKind::InvalidParticleAction));
             }
         }

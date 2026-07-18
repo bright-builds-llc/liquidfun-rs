@@ -362,6 +362,7 @@ pub(crate) struct TimelineExecutor {
     seen_lifecycle_occurrences: Vec<u64>,
     next_lifecycle_ordinal: u32,
     pub(crate) next_phase9_occurrence_ordinal: u32,
+    pub(crate) phase9_occurrences: Vec<liquidfun_test_protocol::Phase9Occurrence>,
     maybe_last_contact: Option<RigidContactIdentity>,
     events: Vec<RigidContactEvent>,
     destructions: Vec<RigidDestructionRecord>,
@@ -404,6 +405,7 @@ impl TimelineExecutor {
             seen_lifecycle_occurrences: Vec::new(),
             next_lifecycle_ordinal: 0,
             next_phase9_occurrence_ordinal: 0,
+            phase9_occurrences: Vec::new(),
             maybe_last_contact: None,
             events: Vec::new(),
             destructions: Vec::new(),
@@ -775,6 +777,7 @@ fn execute_action(
             .map_err(|error| action_error(record, error))?;
             let report = phase8::step(executor, configuration, StepLimits::default())
                 .map_err(|error| action_error(record, error))?;
+            phase9::collect_step_occurrences(executor, &report)?;
             collect_step_report(executor, &report)?;
             observe_step(executor, record.phase());
             phase8::collect_step_lifecycle(executor, &report)?;

@@ -14,87 +14,127 @@
       "case_id": "storage-systems-and-permutations",
       "authority": "independent",
       "fixture": "cases/storage-systems-and-permutations.jsonl",
-      "request_sha256": "bdc12fdb6cc4903250056c46deb0967e03c5fa09dccb7abf7b5e6239f48139fc",
+      "request_sha256": "ca8e2ab097a7978e520deecd1a4481c6f1fa50c60baf8c3220f7c0cda38b5289",
       "witnesses": [
         {
-          "branch": "multiple_systems",
-          "action_id": "inspect-particle",
-          "checkpoint_id": "phase9-corpus",
-          "observation_kind": "particle",
-          "predicate": "semantic",
-          "expected": "particle"
+          "branch_id": "multiple_systems",
+          "action_index": 8,
+          "checkpoint_index": 0,
+          "observation_kind": "system",
+          "semantic_assertion": {
+            "kind": "observed_semantic",
+            "branch_id": "multiple_systems"
+          }
         },
         {
-          "branch": "newest_first",
-          "action_id": "inspect-particle",
-          "checkpoint_id": "phase9-corpus",
-          "observation_kind": "particle",
-          "predicate": "semantic",
-          "expected": "particle"
+          "branch_id": "newest_first",
+          "action_index": 8,
+          "checkpoint_index": 0,
+          "observation_kind": "system",
+          "semantic_assertion": {
+            "kind": "observed_semantic",
+            "branch_id": "newest_first"
+          }
         },
         {
-          "branch": "paused_system",
-          "action_id": "inspect-particle",
-          "checkpoint_id": "phase9-corpus",
-          "observation_kind": "particle",
-          "predicate": "semantic",
-          "expected": "particle"
+          "branch_id": "paused_system",
+          "action_index": 8,
+          "checkpoint_index": 0,
+          "observation_kind": "system",
+          "semantic_assertion": {
+            "kind": "observed_semantic",
+            "branch_id": "paused_system"
+          }
         },
         {
-          "branch": "stable_ids_sort",
-          "action_id": "inspect-particle",
-          "checkpoint_id": "phase9-corpus",
-          "observation_kind": "particle",
-          "predicate": "semantic",
-          "expected": "particle"
+          "branch_id": "stable_ids_sort",
+          "action_index": 8,
+          "checkpoint_index": 0,
+          "observation_kind": "system",
+          "semantic_assertion": {
+            "kind": "observed_semantic",
+            "branch_id": "stable_ids_sort"
+          }
         },
         {
-          "branch": "stable_ids_compact",
-          "action_id": "inspect-particle",
-          "checkpoint_id": "phase9-corpus",
-          "observation_kind": "particle",
-          "predicate": "semantic",
-          "expected": "particle"
+          "branch_id": "stable_ids_compact",
+          "action_index": 8,
+          "checkpoint_index": 0,
+          "observation_kind": "system",
+          "semantic_assertion": {
+            "kind": "observed_semantic",
+            "branch_id": "stable_ids_compact"
+          }
         },
         {
-          "branch": "optional_lanes",
-          "action_id": "inspect-particle",
-          "checkpoint_id": "phase9-corpus",
+          "branch_id": "optional_lanes",
+          "action_index": 9,
+          "checkpoint_index": 1,
           "observation_kind": "particle",
-          "predicate": "semantic",
-          "expected": "particle"
+          "semantic_assertion": {
+            "kind": "observed_semantic",
+            "branch_id": "optional_lanes"
+          }
         },
         {
-          "branch": "fixed_buffer",
-          "action_id": "inspect-particle",
-          "checkpoint_id": "phase9-corpus",
-          "observation_kind": "particle",
-          "predicate": "semantic",
-          "expected": "particle"
+          "branch_id": "fixed_buffer",
+          "action_index": 8,
+          "checkpoint_index": 0,
+          "observation_kind": "system",
+          "semantic_assertion": {
+            "kind": "observed_semantic",
+            "branch_id": "fixed_buffer"
+          }
         },
         {
-          "branch": "growable_buffer",
-          "action_id": "inspect-particle",
-          "checkpoint_id": "phase9-corpus",
-          "observation_kind": "particle",
-          "predicate": "semantic",
-          "expected": "particle"
+          "branch_id": "growable_buffer",
+          "action_index": 8,
+          "checkpoint_index": 0,
+          "observation_kind": "system",
+          "semantic_assertion": {
+            "kind": "observed_semantic",
+            "branch_id": "growable_buffer"
+          }
         },
         {
-          "branch": "fixed_full",
-          "action_id": "inspect-particle",
-          "checkpoint_id": "phase9-corpus",
-          "observation_kind": "particle",
-          "predicate": "semantic",
-          "expected": "particle"
+          "branch_id": "fixed_full",
+          "action_index": 8,
+          "checkpoint_index": 0,
+          "observation_kind": "system",
+          "semantic_assertion": {
+            "kind": "observed_semantic",
+            "branch_id": "fixed_full"
+          }
         },
         {
-          "branch": "teardown",
-          "action_id": "inspect-particle",
-          "checkpoint_id": "phase9-corpus",
-          "observation_kind": "particle",
-          "predicate": "semantic",
-          "expected": "particle"
+          "branch_id": "teardown",
+          "action_index": 21,
+          "checkpoint_index": 1,
+          "observation_kind": "lifecycle",
+          "semantic_assertion": {
+            "kind": "observed_semantic",
+            "branch_id": "teardown"
+          }
+        },
+        {
+          "branch_id": "oldest_lifetime",
+          "action_index": 15,
+          "checkpoint_index": 1,
+          "observation_kind": "lifecycle",
+          "semantic_assertion": {
+            "kind": "observed_semantic",
+            "branch_id": "oldest_lifetime"
+          }
+        },
+        {
+          "branch_id": "capacity_eviction",
+          "action_index": 15,
+          "checkpoint_index": 1,
+          "observation_kind": "lifecycle",
+          "semantic_assertion": {
+            "kind": "observed_semantic",
+            "branch_id": "capacity_eviction"
+          }
         }
       ]
     },
@@ -102,79 +142,80 @@
       "case_id": "lifetime-zombie-and-eviction",
       "authority": "pinned_oracle",
       "fixture": "cases/lifetime-zombie-and-eviction.jsonl",
-      "request_sha256": "a043268d18dcb3413da9e2c12fb9f498d7c183ac05e5af29affa75510e149317",
+      "request_sha256": "937a194bf0c779c5f30ddf16be32b7a2f9719b0ca6f2d2ea2209cd52898db57e",
       "witnesses": [
         {
-          "branch": "finite_lifetime",
-          "action_id": "inspect-particle",
-          "checkpoint_id": "phase9-corpus",
-          "observation_kind": "particle",
-          "predicate": "semantic",
-          "expected": "particle"
+          "branch_id": "finite_lifetime",
+          "action_index": 17,
+          "checkpoint_index": 1,
+          "observation_kind": "system",
+          "semantic_assertion": {
+            "kind": "finite_lifetime_expired",
+            "particle_id": "phase9-a"
+          }
         },
         {
-          "branch": "infinite_lifetime",
-          "action_id": "inspect-particle",
-          "checkpoint_id": "phase9-corpus",
-          "observation_kind": "particle",
-          "predicate": "semantic",
-          "expected": "particle"
+          "branch_id": "infinite_lifetime",
+          "action_index": 17,
+          "checkpoint_index": 1,
+          "observation_kind": "system",
+          "semantic_assertion": {
+            "kind": "infinite_lifetime_survives",
+            "particle_id": "phase9-b"
+          }
         },
         {
-          "branch": "equal_lifetime",
-          "action_id": "inspect-particle",
-          "checkpoint_id": "phase9-corpus",
-          "observation_kind": "particle",
-          "predicate": "semantic",
-          "expected": "particle"
+          "branch_id": "equal_lifetime",
+          "action_index": 19,
+          "checkpoint_index": 1,
+          "observation_kind": "lifecycle",
+          "semantic_assertion": {
+            "kind": "equal_expiration_order",
+            "particle_ids": [
+              "phase9-c",
+              "phase9-d"
+            ]
+          }
         },
         {
-          "branch": "oldest_lifetime",
-          "action_id": "inspect-particle",
-          "checkpoint_id": "phase9-corpus",
-          "observation_kind": "particle",
-          "predicate": "semantic",
-          "expected": "particle"
+          "branch_id": "maximum_lifetime",
+          "action_index": 23,
+          "checkpoint_index": 1,
+          "observation_kind": "mixed_state",
+          "semantic_assertion": {
+            "kind": "observed_semantic",
+            "branch_id": "maximum_lifetime"
+          }
         },
         {
-          "branch": "maximum_lifetime",
-          "action_id": "inspect-particle",
-          "checkpoint_id": "phase9-corpus",
-          "observation_kind": "particle",
-          "predicate": "semantic",
-          "expected": "particle"
+          "branch_id": "requested_destruction_callback",
+          "action_index": 21,
+          "checkpoint_index": 1,
+          "observation_kind": "lifecycle",
+          "semantic_assertion": {
+            "kind": "observed_semantic",
+            "branch_id": "requested_destruction_callback"
+          }
         },
         {
-          "branch": "requested_destruction_callback",
-          "action_id": "inspect-particle",
-          "checkpoint_id": "phase9-corpus",
-          "observation_kind": "particle",
-          "predicate": "semantic",
-          "expected": "particle"
+          "branch_id": "unrequested_destruction_callback",
+          "action_index": 23,
+          "checkpoint_index": 1,
+          "observation_kind": "mixed_state",
+          "semantic_assertion": {
+            "kind": "observed_semantic",
+            "branch_id": "unrequested_destruction_callback"
+          }
         },
         {
-          "branch": "unrequested_destruction_callback",
-          "action_id": "inspect-particle",
-          "checkpoint_id": "phase9-corpus",
-          "observation_kind": "particle",
-          "predicate": "semantic",
-          "expected": "particle"
-        },
-        {
-          "branch": "zombie_pending",
-          "action_id": "inspect-particle",
-          "checkpoint_id": "phase9-corpus",
-          "observation_kind": "particle",
-          "predicate": "semantic",
-          "expected": "particle"
-        },
-        {
-          "branch": "capacity_eviction",
-          "action_id": "inspect-particle",
-          "checkpoint_id": "phase9-corpus",
-          "observation_kind": "particle",
-          "predicate": "semantic",
-          "expected": "particle"
+          "branch_id": "zombie_pending",
+          "action_index": 20,
+          "checkpoint_index": 1,
+          "observation_kind": "mixed_state",
+          "semantic_assertion": {
+            "kind": "observed_semantic",
+            "branch_id": "zombie_pending"
+          }
         }
       ]
     },
@@ -182,111 +223,155 @@
       "case_id": "contacts-listeners-filters-and-coupling",
       "authority": "pinned_oracle",
       "fixture": "cases/contacts-listeners-filters-and-coupling.jsonl",
-      "request_sha256": "d2a3436885de5b1f7d78f4580d3644ca74dcb6a326f3131ac3932ac135e59780",
+      "request_sha256": "77f10b9c1f54ea92eb4682050592e3aa4e20002af64228f0d4517325f132b160",
       "witnesses": [
         {
-          "branch": "particle_contact",
-          "action_id": "statistics",
-          "checkpoint_id": "phase9-corpus",
-          "observation_kind": "statistics",
-          "predicate": "semantic",
-          "expected": "statistics"
+          "branch_id": "particle_contact",
+          "action_index": 18,
+          "checkpoint_index": 2,
+          "observation_kind": "particle_contact",
+          "semantic_assertion": {
+            "kind": "observed_semantic",
+            "branch_id": "particle_contact"
+          }
         },
         {
-          "branch": "body_contact",
-          "action_id": "statistics",
-          "checkpoint_id": "phase9-corpus",
-          "observation_kind": "statistics",
-          "predicate": "semantic",
-          "expected": "statistics"
+          "branch_id": "body_contact",
+          "action_index": 19,
+          "checkpoint_index": 2,
+          "observation_kind": "body_contact",
+          "semantic_assertion": {
+            "kind": "observed_semantic",
+            "branch_id": "body_contact"
+          }
         },
         {
-          "branch": "strict_contact_enabled",
-          "action_id": "statistics",
-          "checkpoint_id": "phase9-corpus",
+          "branch_id": "strict_contact_enabled",
+          "action_index": 25,
+          "checkpoint_index": 2,
           "observation_kind": "statistics",
-          "predicate": "semantic",
-          "expected": "statistics"
+          "semantic_assertion": {
+            "kind": "strict_contact_cardinality",
+            "enabled": true,
+            "contact_count": 2
+          }
         },
         {
-          "branch": "strict_contact_disabled",
-          "action_id": "statistics",
-          "checkpoint_id": "phase9-corpus",
+          "branch_id": "strict_contact_disabled",
+          "action_index": 24,
+          "checkpoint_index": 2,
           "observation_kind": "statistics",
-          "predicate": "semantic",
-          "expected": "statistics"
+          "semantic_assertion": {
+            "kind": "strict_contact_cardinality",
+            "enabled": false,
+            "contact_count": 4
+          }
         },
         {
-          "branch": "listener_flag_enabled",
-          "action_id": "statistics",
-          "checkpoint_id": "phase9-corpus",
-          "observation_kind": "statistics",
-          "predicate": "semantic",
-          "expected": "statistics"
+          "branch_id": "listener_flag_enabled",
+          "action_index": 26,
+          "checkpoint_index": 2,
+          "observation_kind": "lifecycle",
+          "semantic_assertion": {
+            "kind": "listener_event_effect",
+            "enabled": true,
+            "event_count": 1
+          }
         },
         {
-          "branch": "listener_flag_disabled",
-          "action_id": "statistics",
-          "checkpoint_id": "phase9-corpus",
-          "observation_kind": "statistics",
-          "predicate": "semantic",
-          "expected": "statistics"
+          "branch_id": "listener_flag_disabled",
+          "action_index": 15,
+          "checkpoint_index": 2,
+          "observation_kind": "particle",
+          "semantic_assertion": {
+            "kind": "listener_event_effect",
+            "enabled": false,
+            "event_count": 0
+          }
         },
         {
-          "branch": "filter_flag_enabled",
-          "action_id": "statistics",
-          "checkpoint_id": "phase9-corpus",
+          "branch_id": "filter_flag_enabled",
+          "action_index": 20,
+          "checkpoint_index": 2,
           "observation_kind": "statistics",
-          "predicate": "semantic",
-          "expected": "statistics"
+          "semantic_assertion": {
+            "kind": "filter_contact_effect",
+            "enabled": true,
+            "contact_count": 0
+          }
         },
         {
-          "branch": "filter_flag_disabled",
-          "action_id": "statistics",
-          "checkpoint_id": "phase9-corpus",
+          "branch_id": "filter_flag_disabled",
+          "action_index": 21,
+          "checkpoint_index": 2,
           "observation_kind": "statistics",
-          "predicate": "semantic",
-          "expected": "statistics"
+          "semantic_assertion": {
+            "kind": "filter_contact_effect",
+            "enabled": false,
+            "contact_count": 1
+          }
         },
         {
-          "branch": "contact_order",
-          "action_id": "statistics",
-          "checkpoint_id": "phase9-corpus",
-          "observation_kind": "statistics",
-          "predicate": "semantic",
-          "expected": "statistics"
+          "branch_id": "contact_order",
+          "action_index": 18,
+          "checkpoint_index": 2,
+          "observation_kind": "particle_contact",
+          "semantic_assertion": {
+            "kind": "observed_semantic",
+            "branch_id": "contact_order"
+          }
         },
         {
-          "branch": "contact_multiplicity",
-          "action_id": "statistics",
-          "checkpoint_id": "phase9-corpus",
-          "observation_kind": "statistics",
-          "predicate": "semantic",
-          "expected": "statistics"
+          "branch_id": "contact_multiplicity",
+          "action_index": 18,
+          "checkpoint_index": 2,
+          "observation_kind": "particle_contact",
+          "semantic_assertion": {
+            "kind": "observed_semantic",
+            "branch_id": "contact_multiplicity"
+          }
         },
         {
-          "branch": "coupling_fields",
-          "action_id": "statistics",
-          "checkpoint_id": "phase9-corpus",
-          "observation_kind": "statistics",
-          "predicate": "semantic",
-          "expected": "statistics"
+          "branch_id": "coupling_fields",
+          "action_index": 19,
+          "checkpoint_index": 2,
+          "observation_kind": "body_contact",
+          "semantic_assertion": {
+            "kind": "observed_semantic",
+            "branch_id": "coupling_fields"
+          }
         },
         {
-          "branch": "dynamic_body_reaction",
-          "action_id": "statistics",
-          "checkpoint_id": "phase9-corpus",
+          "branch_id": "dynamic_body_reaction",
+          "action_index": 24,
+          "checkpoint_index": 2,
           "observation_kind": "statistics",
-          "predicate": "semantic",
-          "expected": "statistics"
+          "semantic_assertion": {
+            "kind": "observed_semantic",
+            "branch_id": "dynamic_body_reaction"
+          }
         },
         {
-          "branch": "static_body_no_reaction",
-          "action_id": "statistics",
-          "checkpoint_id": "phase9-corpus",
+          "branch_id": "static_body_no_reaction",
+          "action_index": 24,
+          "checkpoint_index": 2,
           "observation_kind": "statistics",
-          "predicate": "semantic",
-          "expected": "statistics"
+          "semantic_assertion": {
+            "kind": "observed_semantic",
+            "branch_id": "static_body_no_reaction"
+          }
+        },
+        {
+          "branch_id": "stuck_candidates",
+          "action_index": 24,
+          "checkpoint_index": 2,
+          "observation_kind": "statistics",
+          "semantic_assertion": {
+            "kind": "stuck_candidates_nonempty",
+            "particle_ids": [
+              "phase9-coupling"
+            ]
+          }
         }
       ]
     },
@@ -294,47 +379,47 @@
       "case_id": "forces-impulses-and-statistics",
       "authority": "independent",
       "fixture": "cases/forces-impulses-and-statistics.jsonl",
-      "request_sha256": "a11256e22311ac52a16ff5e369190543f5a84cf50c303b89f5a7a8e812241243",
+      "request_sha256": "c82b84c9d0119c5f65f1db4d5e499438419cad43bd37a478267bbb0e81e1fe6f",
       "witnesses": [
         {
-          "branch": "force_range",
-          "action_id": "force",
-          "checkpoint_id": "phase9-corpus",
-          "observation_kind": "mixed_state",
-          "predicate": "semantic",
-          "expected": "mixed_state"
+          "branch_id": "force_range",
+          "action_index": 14,
+          "checkpoint_index": 1,
+          "observation_kind": "particle",
+          "semantic_assertion": {
+            "kind": "observed_semantic",
+            "branch_id": "force_range"
+          }
         },
         {
-          "branch": "impulse_range",
-          "action_id": "impulse",
-          "checkpoint_id": "phase9-corpus",
-          "observation_kind": "mixed_state",
-          "predicate": "semantic",
-          "expected": "mixed_state"
+          "branch_id": "impulse_range",
+          "action_index": 16,
+          "checkpoint_index": 1,
+          "observation_kind": "particle",
+          "semantic_assertion": {
+            "kind": "observed_semantic",
+            "branch_id": "impulse_range"
+          }
         },
         {
-          "branch": "statistics_counts",
-          "action_id": "statistics",
-          "checkpoint_id": "phase9-corpus",
+          "branch_id": "statistics_counts",
+          "action_index": 20,
+          "checkpoint_index": 1,
           "observation_kind": "statistics",
-          "predicate": "semantic",
-          "expected": "statistics"
+          "semantic_assertion": {
+            "kind": "observed_semantic",
+            "branch_id": "statistics_counts"
+          }
         },
         {
-          "branch": "collision_energy",
-          "action_id": "statistics",
-          "checkpoint_id": "phase9-corpus",
+          "branch_id": "collision_energy",
+          "action_index": 21,
+          "checkpoint_index": 1,
           "observation_kind": "statistics",
-          "predicate": "semantic",
-          "expected": "statistics"
-        },
-        {
-          "branch": "stuck_candidates",
-          "action_id": "statistics",
-          "checkpoint_id": "phase9-corpus",
-          "observation_kind": "statistics",
-          "predicate": "semantic",
-          "expected": "statistics"
+          "semantic_assertion": {
+            "kind": "collision_energy_positive_finite",
+            "minimum_bits": 1
+          }
         }
       ]
     },
@@ -342,47 +427,57 @@
       "case_id": "aabb-query-control-and-culling",
       "authority": "independent",
       "fixture": "cases/aabb-query-control-and-culling.jsonl",
-      "request_sha256": "47a380b63d7a778cf3387a3146b7d990e9ab90f4165123d33e7377efd53c1870",
+      "request_sha256": "a02293bb65f345d93f2f060bff3cf1436f0edd01f65ba9e18a53a0e7cde432c0",
       "witnesses": [
         {
-          "branch": "system_aabb",
-          "action_id": "system-query",
-          "checkpoint_id": "phase9-corpus",
+          "branch_id": "system_aabb",
+          "action_index": 14,
+          "checkpoint_index": 1,
           "observation_kind": "query",
-          "predicate": "semantic",
-          "expected": "query"
+          "semantic_assertion": {
+            "kind": "observed_semantic",
+            "branch_id": "system_aabb"
+          }
         },
         {
-          "branch": "world_aabb",
-          "action_id": "world-query",
-          "checkpoint_id": "phase9-corpus",
+          "branch_id": "world_aabb",
+          "action_index": 15,
+          "checkpoint_index": 1,
           "observation_kind": "query",
-          "predicate": "semantic",
-          "expected": "query"
+          "semantic_assertion": {
+            "kind": "observed_semantic",
+            "branch_id": "world_aabb"
+          }
         },
         {
-          "branch": "system_culling",
-          "action_id": "system-query",
-          "checkpoint_id": "phase9-corpus",
+          "branch_id": "system_culling",
+          "action_index": 14,
+          "checkpoint_index": 1,
           "observation_kind": "query",
-          "predicate": "semantic",
-          "expected": "query"
+          "semantic_assertion": {
+            "kind": "observed_semantic",
+            "branch_id": "system_culling"
+          }
         },
         {
-          "branch": "query_continue",
-          "action_id": "system-query",
-          "checkpoint_id": "phase9-corpus",
+          "branch_id": "query_continue",
+          "action_index": 14,
+          "checkpoint_index": 1,
           "observation_kind": "query",
-          "predicate": "semantic",
-          "expected": "query"
+          "semantic_assertion": {
+            "kind": "observed_semantic",
+            "branch_id": "query_continue"
+          }
         },
         {
-          "branch": "query_terminate",
-          "action_id": "query-terminate",
-          "checkpoint_id": "phase9-corpus",
+          "branch_id": "query_terminate",
+          "action_index": 16,
+          "checkpoint_index": 1,
           "observation_kind": "query",
-          "predicate": "terminated",
-          "expected": true
+          "semantic_assertion": {
+            "kind": "observed_semantic",
+            "branch_id": "query_terminate"
+          }
         }
       ]
     },
@@ -390,71 +485,87 @@
       "case_id": "ray-control-and-culling",
       "authority": "independent",
       "fixture": "cases/ray-control-and-culling.jsonl",
-      "request_sha256": "641e4dd21994d2374ac921ed6bf59ba537993895d4cbd6f59ea104033d1521c7",
+      "request_sha256": "a68e7089ff8ade932d0104f919b190b10d4f68ff7f932ae07ae0cad2be7cb694",
       "witnesses": [
         {
-          "branch": "system_ray",
-          "action_id": "system-ray",
-          "checkpoint_id": "phase9-corpus",
+          "branch_id": "system_ray",
+          "action_index": 14,
+          "checkpoint_index": 1,
           "observation_kind": "ray_cast",
-          "predicate": "semantic",
-          "expected": "ray_cast"
+          "semantic_assertion": {
+            "kind": "observed_semantic",
+            "branch_id": "system_ray"
+          }
         },
         {
-          "branch": "world_ray",
-          "action_id": "world-ray",
-          "checkpoint_id": "phase9-corpus",
+          "branch_id": "world_ray",
+          "action_index": 15,
+          "checkpoint_index": 1,
           "observation_kind": "ray_cast",
-          "predicate": "semantic",
-          "expected": "ray_cast"
+          "semantic_assertion": {
+            "kind": "observed_semantic",
+            "branch_id": "world_ray"
+          }
         },
         {
-          "branch": "ray_culling",
-          "action_id": "system-ray",
-          "checkpoint_id": "phase9-corpus",
+          "branch_id": "ray_culling",
+          "action_index": 14,
+          "checkpoint_index": 1,
           "observation_kind": "ray_cast",
-          "predicate": "semantic",
-          "expected": "ray_cast"
+          "semantic_assertion": {
+            "kind": "observed_semantic",
+            "branch_id": "ray_culling"
+          }
         },
         {
-          "branch": "ray_start_inside_exclusion",
-          "action_id": "system-ray",
-          "checkpoint_id": "phase9-corpus",
+          "branch_id": "ray_start_inside_exclusion",
+          "action_index": 14,
+          "checkpoint_index": 1,
           "observation_kind": "ray_cast",
-          "predicate": "semantic",
-          "expected": "ray_cast"
+          "semantic_assertion": {
+            "kind": "observed_semantic",
+            "branch_id": "ray_start_inside_exclusion"
+          }
         },
         {
-          "branch": "ray_ignore",
-          "action_id": "ray-ignore",
-          "checkpoint_id": "phase9-corpus",
+          "branch_id": "ray_ignore",
+          "action_index": 16,
+          "checkpoint_index": 1,
           "observation_kind": "ray_cast",
-          "predicate": "semantic",
-          "expected": "ray_cast"
+          "semantic_assertion": {
+            "kind": "observed_semantic",
+            "branch_id": "ray_ignore"
+          }
         },
         {
-          "branch": "ray_continue",
-          "action_id": "system-ray",
-          "checkpoint_id": "phase9-corpus",
+          "branch_id": "ray_continue",
+          "action_index": 14,
+          "checkpoint_index": 1,
           "observation_kind": "ray_cast",
-          "predicate": "semantic",
-          "expected": "ray_cast"
+          "semantic_assertion": {
+            "kind": "observed_semantic",
+            "branch_id": "ray_continue"
+          }
         },
         {
-          "branch": "ray_clip",
-          "action_id": "ray-clip",
-          "checkpoint_id": "phase9-corpus",
+          "branch_id": "ray_clip",
+          "action_index": 17,
+          "checkpoint_index": 1,
           "observation_kind": "ray_cast",
-          "predicate": "semantic",
-          "expected": "ray_cast"
+          "semantic_assertion": {
+            "kind": "observed_semantic",
+            "branch_id": "ray_clip"
+          }
         },
         {
-          "branch": "ray_terminate",
-          "action_id": "ray-terminate",
-          "checkpoint_id": "phase9-corpus",
+          "branch_id": "ray_terminate",
+          "action_index": 18,
+          "checkpoint_index": 1,
           "observation_kind": "ray_cast",
-          "predicate": "terminated",
-          "expected": true
+          "semantic_assertion": {
+            "kind": "observed_semantic",
+            "branch_id": "ray_terminate"
+          }
         }
       ]
     },
@@ -462,71 +573,82 @@
       "case_id": "closed-evidence-contract",
       "authority": "independent",
       "fixture": "cases/closed-evidence-contract.jsonl",
-      "request_sha256": "74df5b6c5462fcb21e528ba16d7e6471418ad1b303179d38d353e9251a144d98",
+      "request_sha256": "737f1b7cda35fc774633de8d04cbb86d07eff34f457b88dfd0d77c856df0bd8a",
       "witnesses": [
         {
-          "branch": "retained_phase6_through_phase8",
-          "action_id": "inspect-particle",
-          "checkpoint_id": "phase9-corpus",
+          "branch_id": "retained_phase6_through_phase8",
+          "action_index": 9,
+          "checkpoint_index": 1,
           "observation_kind": "particle",
-          "predicate": "semantic",
-          "expected": "particle"
+          "semantic_assertion": {
+            "kind": "observed_semantic",
+            "branch_id": "retained_phase6_through_phase8"
+          }
         },
         {
-          "branch": "phase10_rejection",
-          "action_id": "inspect-particle",
-          "checkpoint_id": "phase9-corpus",
+          "branch_id": "phase10_rejection",
+          "action_index": 9,
+          "checkpoint_index": 1,
           "observation_kind": "particle",
-          "predicate": "semantic",
-          "expected": "particle"
+          "semantic_assertion": {
+            "kind": "observed_semantic",
+            "branch_id": "phase10_rejection"
+          }
         },
         {
-          "branch": "closed_policy_registry",
-          "action_id": "inspect-particle",
-          "checkpoint_id": "phase9-corpus",
+          "branch_id": "closed_policy_registry",
+          "action_index": 9,
+          "checkpoint_index": 1,
           "observation_kind": "particle",
-          "predicate": "semantic",
-          "expected": "particle"
+          "semantic_assertion": {
+            "kind": "observed_semantic",
+            "branch_id": "closed_policy_registry"
+          }
         },
         {
-          "branch": "replay_identity",
-          "action_id": "inspect-particle",
-          "checkpoint_id": "phase9-corpus",
+          "branch_id": "replay_identity",
+          "action_index": 9,
+          "checkpoint_index": 1,
           "observation_kind": "particle",
-          "predicate": "semantic",
-          "expected": "particle"
+          "semantic_assertion": {
+            "kind": "replay_result_digest_equality"
+          }
         },
         {
-          "branch": "minimization_identity",
-          "action_id": "inspect-particle",
-          "checkpoint_id": "phase9-corpus",
+          "branch_id": "minimization_identity",
+          "action_index": 9,
+          "checkpoint_index": 1,
           "observation_kind": "particle",
-          "predicate": "semantic",
-          "expected": "particle"
+          "semantic_assertion": {
+            "kind": "minimized_failure_signature_preservation"
+          }
         },
         {
-          "branch": "first_divergence_stability",
-          "action_id": "inspect-particle",
-          "checkpoint_id": "phase9-corpus",
+          "branch_id": "first_divergence_stability",
+          "action_index": 9,
+          "checkpoint_index": 1,
           "observation_kind": "particle",
-          "predicate": "semantic",
-          "expected": "particle"
+          "semantic_assertion": {
+            "kind": "deliberate_first_divergence"
+          }
         },
         {
-          "branch": "d0_byte_identity",
-          "action_id": "inspect-particle",
-          "checkpoint_id": "phase9-corpus",
+          "branch_id": "d0_byte_identity",
+          "action_index": 9,
+          "checkpoint_index": 1,
           "observation_kind": "particle",
-          "predicate": "semantic",
-          "expected": "particle"
+          "semantic_assertion": {
+            "kind": "d0_repeated_result_digest_equality"
+          }
         },
         {
-          "branch": "debug_release_agreement",
-          "action_id": "inspect-particle",
-          "checkpoint_id": "phase9-corpus",
+          "branch_id": "debug_release_agreement",
+          "action_index": 9,
+          "checkpoint_index": 1,
           "observation_kind": "particle",
-          "predicate": "semantic",
-          "expected": "particle"
+          "semantic_assertion": {
+            "kind": "debug_release_result_digest_equality"
+          }
         }
       ]
     }

@@ -140,18 +140,7 @@ struct CorpusCase {
     authority: Authority,
     fixture: String,
     request_sha256: String,
-    witnesses: Vec<CorpusWitness>,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
-struct CorpusWitness {
-    branch: String,
-    action_id: String,
-    checkpoint_id: String,
-    observation_kind: String,
-    predicate: String,
-    expected: Value,
+    witnesses: Vec<Phase9WitnessBinding>,
 }
 
 #[derive(Debug, Deserialize, PartialEq, Eq)]
@@ -180,7 +169,7 @@ fn bounded_phase9_request(case_id: &str) -> liquidfun_test_protocol::RigidWorldR
     let mut value = request_value();
     value["request_id"] = json!(format!("phase-09-{case_id}"));
     let timeline = &mut value["scenario"]["timelines"][0];
-    configure_phase9_declarations(timeline);
+    configure_phase9_declarations(timeline, case_id);
     let mut phase9_actions = phase9_actions();
     order_phase9_actions(&mut phase9_actions, case_id);
     retain_relevant_actions(&mut phase9_actions, case_id);
@@ -201,11 +190,21 @@ fn bounded_phase9_request(case_id: &str) -> liquidfun_test_protocol::RigidWorldR
     decode_value(&value).expect("the bounded Phase 9 corpus should decode")
 }
 
-fn configure_phase9_declarations(timeline: &mut Value) {
+fn configure_phase9_declarations(timeline: &mut Value, case_id: &str) {
+    let contact_case = case_id == "contacts-listeners-filters-and-coupling";
+    let fixed_offset = if contact_case { 18.515 } else { 0.0 };
+    let fixed_d_x = if contact_case { fixed_offset } else { 0.4 };
+    let fixed_c_y = if contact_case { -0.2 } else { 0.0 };
+    let fixed_d_y = if contact_case { 0.2 } else { 0.0 };
+    let (coupling_x, coupling_y) = if contact_case {
+        (0.75, 0.0)
+    } else {
+        (20.0, 0.25)
+    };
     timeline["particle_systems"] = json!([
         {
             "system_id": "phase9-growable", "buffer_mode": { "kind": "growable", "initial_capacity": 4 },
-            "paused": false, "strict_contact_check": false, "stuck_threshold": 0,
+            "paused": false, "strict_contact_check": false, "stuck_threshold": 1,
             "density_bits": 1.0_f32.to_bits(), "gravity_scale_bits": 0.0_f32.to_bits(),
             "radius_bits": 0.25_f32.to_bits(), "damping_bits": 0.0_f32.to_bits(),
             "destruction_by_age": true, "lifetime_granularity_bits": (1.0_f32 / 60.0_f32).to_bits(),
@@ -216,7 +215,7 @@ fn configure_phase9_declarations(timeline: &mut Value) {
             "paused": true, "strict_contact_check": true, "stuck_threshold": 1,
             "density_bits": 1.0_f32.to_bits(), "gravity_scale_bits": 1.0_f32.to_bits(),
             "radius_bits": 0.25_f32.to_bits(), "damping_bits": 0.25_f32.to_bits(),
-            "destruction_by_age": false, "lifetime_granularity_bits": (1.0_f32 / 60.0_f32).to_bits(),
+            "destruction_by_age": true, "lifetime_granularity_bits": (1.0_f32 / 60.0_f32).to_bits(),
             "maximum_count": 2
         }
     ]);
@@ -225,7 +224,7 @@ fn configure_phase9_declarations(timeline: &mut Value) {
             "phase9-a",
             "phase9-growable",
             0.0,
-            0.1,
+            0.05,
             0,
             (1 << 9) | (1 << 14) | (1 << 16)
         ),
@@ -240,17 +239,37 @@ fn configure_phase9_declarations(timeline: &mut Value) {
         particle_with_velocity(
             "phase9-coupling",
             "phase9-growable",
-            20.0,
-            0.25,
+            coupling_x,
+            coupling_y,
             -2.0,
             0.0,
             2.0,
             4
         ),
-        particle("phase9-capacity", "phase9-growable", 3.0, 3.0, 5),
+        particle("phase9-capacity", "phase9-growable", 3.0, 2.0, 5),
         particle("phase9-evicting", "phase9-growable", 4.0, 4.0, 6),
-        particle("phase9-c", "phase9-fixed-paused", 1.0, 2.0, 2),
-        particle("phase9-d", "phase9-fixed-paused", 1.5, 2.0, 3)
+        particle_with_velocity(
+            "phase9-c",
+            "phase9-fixed-paused",
+            fixed_offset,
+            fixed_c_y,
+            0.0,
+            0.0,
+            2.0,
+            2
+        ),
+        particle_with_flags_and_velocity(
+            "phase9-d",
+            "phase9-fixed-paused",
+            fixed_d_x,
+            fixed_d_y,
+            0.0,
+            0.0,
+            2.0,
+            3,
+            (1 << 9) | (1 << 15)
+        ),
+        particle("phase9-e", "phase9-fixed-paused", 0.8, 2.0, 9)
     ]);
 }
 
@@ -292,8 +311,13 @@ fn phase9_actions() -> Vec<Value> {
                 "position_iterations": 3
             }
         }),
+        action("energy-velocity-c", json!({ "kind": "set_velocity", "particle_id": "phase9-c", "velocity": bits(1.0, 0.0) })),
+        action("energy-velocity-d", json!({ "kind": "set_velocity", "particle_id": "phase9-d", "velocity": bits(-1.0, 0.0) })),
         action("statistics", json!({ "kind": "request_statistics", "system_id": "phase9-growable" })),
         action("statistics-fixed", json!({ "kind": "request_statistics", "system_id": "phase9-fixed-paused" })),
+        action("inspect-occurrence-zero", json!({ "kind": "inspect_occurrence", "occurrence_index": 0 })),
+        action("inspect-occurrence-one", json!({ "kind": "inspect_occurrence", "occurrence_index": 1 })),
+        action("inspect-system-after-step", json!({ "kind": "inspect_system", "system_id": "phase9-growable" })),
         action("system-query", json!({ "kind": "query_aabb", "system_id": "phase9-growable", "lower": bits(-1.0, -1.0), "upper": bits(2.0, 2.0), "control": "continue" })),
         action("world-query", json!({ "kind": "query_aabb", "system_id": null, "lower": bits(-1.0, -1.0), "upper": bits(2.0, 2.0), "control": "continue" })),
         action("query-terminate", json!({ "kind": "query_aabb", "system_id": "phase9-growable", "lower": bits(-1.0, -1.0), "upper": bits(2.0, 2.0), "control": "terminate" })),
@@ -309,6 +333,7 @@ fn phase9_actions() -> Vec<Value> {
         action("impulse", json!({ "kind": "apply_impulse", "particle_ids": ["phase9-a", "phase9-b"], "impulse": bits(0.0, 1.0) })),
         action("inspect-after-impulse", json!({ "kind": "inspect_particle", "particle_id": "phase9-a" })),
         action("create-evicting", json!({ "kind": "create_particle", "particle_id": "phase9-evicting" })),
+        action("create-phase9-e", json!({ "kind": "create_particle", "particle_id": "phase9-e" })),
         action("mark", json!({ "kind": "mark_for_destruction", "particle_id": "phase9-b" })),
         action("compact", json!({ "kind": "compact", "system_id": "phase9-growable" })),
         action("mark-unrequested", json!({ "kind": "mark_for_destruction", "particle_id": "phase9-capacity" })),
@@ -334,7 +359,39 @@ fn order_phase9_actions(phase9_actions: &mut Vec<Value>, case_id: &str) {
         .iter()
         .position(|record| record["action_id"] == "phase9-step")
         .expect("the bounded corpus retains its particle step");
-    phase9_actions.splice(step_index..step_index, statistics);
+    let statistics_index = if case_id == "forces-impulses-and-statistics" {
+        phase9_actions
+            .iter()
+            .position(|record| record["action_id"] == "energy-velocity-d")
+            .expect("the force case retains its collision-energy velocity setup")
+            + 1
+    } else {
+        step_index + 1
+    };
+    phase9_actions.splice(statistics_index..statistics_index, statistics);
+    if matches!(
+        case_id,
+        "lifetime-zombie-and-eviction" | "contacts-listeners-filters-and-coupling"
+    ) {
+        let first_step = phase9_actions
+            .iter()
+            .position(|record| record["action_id"] == "phase9-step")
+            .expect("the lifetime case retains its first particle step");
+        let step_template = phase9_actions[first_step].clone();
+        let final_step = if case_id == "lifetime-zombie-and-eviction" {
+            4
+        } else {
+            3
+        };
+        phase9_actions.splice(
+            first_step + 1..first_step + 1,
+            (2..=final_step).map(|ordinal| {
+                let mut step = step_template.clone();
+                step["action_id"] = json!(format!("phase9-step-{ordinal}"));
+                step
+            }),
+        );
+    }
     if case_id == "contacts-listeners-filters-and-coupling" {
         let step_index = phase9_actions
             .iter()
@@ -346,11 +403,19 @@ fn order_phase9_actions(phase9_actions: &mut Vec<Value>, case_id: &str) {
             [
                 action(
                     "inspect-particle-contact",
-                    json!({ "kind": "inspect_particle_contact", "system_id": "phase9-growable", "contact_index": 0 }),
+                    json!({ "kind": "inspect_particle_contact", "system_id": "phase9-fixed-paused", "contact_index": 0 }),
                 ),
                 action(
                     "inspect-body-contact",
-                    json!({ "kind": "inspect_body_contact", "system_id": "phase9-growable", "contact_index": 0 }),
+                    json!({ "kind": "inspect_body_contact", "system_id": "phase9-growable", "contact_index": 1 }),
+                ),
+                action(
+                    "contact-statistics-growable",
+                    json!({ "kind": "request_statistics", "system_id": "phase9-growable" }),
+                ),
+                action(
+                    "contact-statistics-fixed",
+                    json!({ "kind": "request_statistics", "system_id": "phase9-fixed-paused" }),
                 ),
             ],
         );
@@ -376,14 +441,20 @@ fn retain_relevant_actions(phase9_actions: &mut Vec<Value>, case_id: &str) {
     let relevant: &[&str] = match case_id {
         "storage-systems-and-permutations" | "lifetime-zombie-and-eviction" => &[
             "create-evicting",
+            "create-phase9-e",
             "mark",
             "compact",
             "mark-unrequested",
             "compact-unrequested",
+            "inspect-system-after-step",
         ],
-        "contacts-listeners-filters-and-coupling" => {
-            &["inspect-particle-contact", "inspect-body-contact"]
-        }
+        "contacts-listeners-filters-and-coupling" => &[
+            "inspect-particle-contact",
+            "inspect-body-contact",
+            "inspect-occurrence-zero",
+            "contact-statistics-growable",
+            "contact-statistics-fixed",
+        ],
         "forces-impulses-and-statistics" => &[
             "position",
             "velocity",
@@ -391,6 +462,8 @@ fn retain_relevant_actions(phase9_actions: &mut Vec<Value>, case_id: &str) {
             "inspect-after-force",
             "impulse",
             "inspect-after-impulse",
+            "energy-velocity-c",
+            "energy-velocity-d",
         ],
         "aabb-query-control-and-culling" => &["system-query", "world-query", "query-terminate"],
         "ray-control-and-culling" => &[
@@ -405,7 +478,9 @@ fn retain_relevant_actions(phase9_actions: &mut Vec<Value>, case_id: &str) {
     };
     phase9_actions.retain(|record| {
         let action_id = record["action_id"].as_str().expect("action ID");
-        COMMON_ACTIONS.contains(&action_id) || relevant.contains(&action_id)
+        COMMON_ACTIONS.contains(&action_id)
+            || relevant.contains(&action_id)
+            || action_id.starts_with("phase9-step-")
     });
 }
 
@@ -414,7 +489,7 @@ fn insert_phase9_checkpoints(timeline: &mut Value, case_id: &str, final_action: 
         .as_array_mut()
         .expect("retained checkpoints should be an array");
     let checkpoint_index = usize::from(case_id == "contacts-listeners-filters-and-coupling");
-    let rigid_counts = if case_id == "contacts-listeners-filters-and-coupling" {
+    let first_rigid_counts = if case_id == "contacts-listeners-filters-and-coupling" {
         json!({
             "bodies": 3, "fixtures": 3, "contacts": 0,
             "manifold_points": 0, "events": 0, "destructions": 0
@@ -431,7 +506,7 @@ fn insert_phase9_checkpoints(timeline: &mut Value, case_id: &str, final_action: 
             "checkpoint_id": "phase9-only-checkpoint",
             "after_action_id": "inspect-system",
             "phase": "phase9",
-            "counts": rigid_counts,
+            "counts": first_rigid_counts,
             "transitions": []
         }),
     );
@@ -441,7 +516,14 @@ fn insert_phase9_checkpoints(timeline: &mut Value, case_id: &str, final_action: 
             "checkpoint_id": "phase9-corpus",
             "after_action_id": final_action,
             "phase": "phase9",
-            "counts": rigid_counts,
+            "counts": {
+                "bodies": if case_id == "contacts-listeners-filters-and-coupling" { 3 } else { 0 },
+                "fixtures": if case_id == "contacts-listeners-filters-and-coupling" { 3 } else { 0 },
+                "contacts": 0,
+                "manifold_points": 0,
+                "events": 0,
+                "destructions": 0
+            },
             "transitions": []
         }),
     );
@@ -484,6 +566,24 @@ fn particle_with_velocity(
     })
 }
 
+#[allow(clippy::too_many_arguments)]
+fn particle_with_flags_and_velocity(
+    id: &str,
+    system: &str,
+    x: f32,
+    y: f32,
+    velocity_x: f32,
+    velocity_y: f32,
+    lifetime: f32,
+    color: u8,
+    flags_bits: u32,
+) -> Value {
+    let mut particle =
+        particle_with_velocity(id, system, x, y, velocity_x, velocity_y, lifetime, color);
+    particle["flags_bits"] = json!(flags_bits);
+    particle
+}
+
 fn bits(x: f32, y: f32) -> Value {
     json!({ "x_bits": x.to_bits(), "y_bits": y.to_bits() })
 }
@@ -522,9 +622,23 @@ fn fixture_path(case: &CorpusCase) -> std::path::PathBuf {
 fn observation_for_witness<'a>(
     request: &'a Value,
     result: &'a Value,
-    witness: &CorpusWitness,
+    witness: &Phase9WitnessBinding,
 ) -> &'a Value {
-    observation_for_action(request, result, &witness.action_id, &witness.checkpoint_id)
+    let timeline = &request["scenario"]["timelines"][0];
+    let actions = timeline["actions"].as_array().expect("actions");
+    let checkpoints = timeline["checkpoints"].as_array().expect("checkpoints");
+    let action = actions
+        .get(witness.action_index)
+        .expect("typed witness action index must exist");
+    let checkpoint = checkpoints
+        .get(witness.checkpoint_index)
+        .expect("typed witness checkpoint index must exist");
+    observation_for_action(
+        request,
+        result,
+        action["action_id"].as_str().expect("action ID"),
+        checkpoint["checkpoint_id"].as_str().expect("checkpoint ID"),
+    )
 }
 
 fn observation_for_action<'a>(
@@ -623,8 +737,7 @@ fn assert_no_particle_lifecycle(result: &Value, particle_id: &str) {
     );
 }
 
-fn assert_semantic_witness(request: &Value, result: &Value, witness: &CorpusWitness) {
-    let branch = witness.branch.as_str();
+fn assert_observed_semantic(request: &Value, result: &Value, branch: &str) {
     let asserted = assert_system_witness(request, result, branch)
         || assert_lifecycle_witness(request, result, branch)
         || assert_contact_witness(request, result, branch)
@@ -667,7 +780,7 @@ fn assert_system_witness(request: &Value, result: &Value, branch: &str) -> bool 
         ),
         "stable_ids_compact" => assert_eq!(
             observe("compact-unrequested")["particle_ids"],
-            json!(["phase9-coupling", "phase9-evicting", "phase9-c", "phase9-d"])
+            json!(["phase9-coupling", "phase9-evicting", "phase9-c", "phase9-e"])
         ),
         "optional_lanes" => {
             let snapshot = &observe("inspect-particle")["snapshot"];
@@ -734,7 +847,7 @@ fn assert_lifecycle_witness(request: &Value, result: &Value, branch: &str) -> bo
     let b = particle_declaration(request, "phase9-b");
     let statistics = observe("statistics");
     match branch {
-        "finite_lifetime" => assert_eq!(a["lifetime_bits"], 0.1_f32.to_bits()),
+        "finite_lifetime" => assert_eq!(a["lifetime_bits"], 0.05_f32.to_bits()),
         "infinite_lifetime" => assert_eq!(b["lifetime_bits"], (-1.0_f32).to_bits()),
         "equal_lifetime" => assert_eq!(
             particle_declaration(request, "phase9-c")["lifetime_bits"],
@@ -786,11 +899,11 @@ fn assert_contact_witness(request: &Value, result: &Value, branch: &str) -> bool
     match branch {
         "particle_contact" => assert_eq!(
             observe("inspect-particle-contact")["contact"]["system_id"],
-            "phase9-growable"
+            "phase9-fixed-paused"
         ),
         "body_contact" => assert_eq!(
             observe("inspect-body-contact")["contact"]["fixture_id"],
-            "nc-dynamic-fixture"
+            "nc-kinematic-fixture"
         ),
         "strict_contact_enabled" => assert_eq!(fixed["strict_contact_check"], true),
         "strict_contact_disabled" => assert_eq!(growable["strict_contact_check"], false),
@@ -810,8 +923,8 @@ fn assert_contact_witness(request: &Value, result: &Value, branch: &str) -> bool
         ),
         "contact_order" => {
             let particle_contact = observe("inspect-particle-contact");
-            assert_eq!(particle_contact["contact"]["particle_a_id"], "phase9-a");
-            assert_eq!(particle_contact["contact"]["particle_b_id"], "phase9-b");
+            assert_eq!(particle_contact["contact"]["particle_a_id"], "phase9-c");
+            assert_eq!(particle_contact["contact"]["particle_b_id"], "phase9-d");
         }
         "contact_multiplicity" => {
             let particle_contact = observe("inspect-particle-contact");
@@ -844,7 +957,9 @@ fn assert_contact_witness(request: &Value, result: &Value, branch: &str) -> bool
                 .iter()
                 .find(|body| body["body_id"] == "nc-dynamic")
                 .expect("dynamic body");
-            assert_ne!(body["linear_velocity"]["y_bits"], 0);
+            assert!(
+                body["linear_velocity"]["x_bits"] != 0 || body["linear_velocity"]["y_bits"] != 0
+            );
         }
         "static_body_no_reaction" => {
             let body = phase9_checkpoint(result, "phase9-corpus")["bodies"]
@@ -937,37 +1052,256 @@ fn assert_contract_witness(request: &Value, result: &Value, branch: &str) -> boo
     true
 }
 
-fn assert_witness(request: &Value, result: &Value, witness: &CorpusWitness) {
+fn assert_witness(request: &Value, result: &Value, witness: &Phase9WitnessBinding) {
     let observation = observation_for_witness(request, result, witness);
-    assert_eq!(observation["kind"], "particle", "{}", witness.branch);
+    let branch = witness.branch_id.as_str();
+    assert_eq!(observation["kind"], "particle", "{branch}");
     assert_eq!(
-        observation["observation"]["kind"], witness.observation_kind,
-        "{}",
-        witness.branch
+        observation["observation"]["kind"],
+        serde_json::to_value(witness.observation_kind).expect("observation kind should serialize"),
+        "{branch}"
     );
-    match witness.predicate.as_str() {
-        "semantic" => assert_semantic_witness(request, result, witness),
-        "terminated" => assert_eq!(
-            observation["observation"]["terminated"], witness.expected,
-            "{}",
-            witness.branch
-        ),
-        "particle_count_at_least" => {
-            let minimum = witness
-                .expected
-                .as_u64()
-                .expect("minimum must be an integer");
-            let count = observation["observation"]["particle_ids"]
-                .as_array()
-                .expect("particle IDs")
-                .len();
+    match &witness.semantic_assertion {
+        Phase9SemanticAssertion::ObservedSemantic { branch_id } => {
+            assert_observed_semantic(request, result, branch_id.as_str());
+        }
+        Phase9SemanticAssertion::FiniteLifetimeExpired { particle_id } => {
             assert!(
-                u64::try_from(count).expect("count fits") >= minimum,
-                "{}",
-                witness.branch
+                !observation["observation"]["particle_ids"]
+                    .as_array()
+                    .expect("system particle IDs")
+                    .iter()
+                    .any(|id| id == particle_id.as_str()),
+                "{} must have expired",
+                particle_id.as_str()
             );
         }
-        predicate => panic!("unsupported witness predicate {predicate}"),
+        Phase9SemanticAssertion::InfiniteLifetimeSurvives { particle_id } => {
+            assert!(
+                observation["observation"]["particle_ids"]
+                    .as_array()
+                    .expect("system particle IDs")
+                    .iter()
+                    .any(|id| id == particle_id.as_str()),
+                "{} must survive",
+                particle_id.as_str()
+            );
+        }
+        Phase9SemanticAssertion::EqualExpirationOrder { particle_ids } => {
+            assert_eq!(
+                particle_declaration(request, particle_ids[0].as_str())["lifetime_bits"],
+                particle_declaration(request, particle_ids[1].as_str())["lifetime_bits"]
+            );
+            assert_eq!(
+                observation["observation"]["occurrence"]["maybe_particle_id"],
+                particle_ids[1].as_str(),
+                "equal expirations must evict newest-first"
+            );
+        }
+        Phase9SemanticAssertion::StrictContactCardinality {
+            enabled,
+            contact_count,
+        } => {
+            let system_id = observation["observation"]["statistics"]["maybe_system_id"]
+                .as_str()
+                .expect("statistics system ID");
+            assert_eq!(
+                system_declaration(request, system_id)["strict_contact_check"],
+                *enabled
+            );
+            assert_eq!(
+                observation["observation"]["statistics"]["body_contact_count"],
+                *contact_count
+            );
+        }
+        Phase9SemanticAssertion::ListenerEventEffect {
+            enabled,
+            event_count,
+        } => {
+            let occurrences = phase9_checkpoint(result, "phase9-corpus")["observations"]
+                .as_array()
+                .expect("Phase 9 observations")
+                .iter()
+                .filter(|candidate| {
+                    candidate["observation"]["kind"] == "lifecycle"
+                        && candidate["observation"]["occurrence"]["kind"] == "contact_created"
+                        && (*enabled
+                            || candidate["observation"]["occurrence"]["maybe_particle_id"]
+                                == "phase9-capacity"
+                            || candidate["observation"]["occurrence"]["maybe_other_particle_id"]
+                                == "phase9-capacity")
+                })
+                .count();
+            assert_eq!(
+                u32::try_from(occurrences).expect("event count fits"),
+                *event_count
+            );
+        }
+        Phase9SemanticAssertion::FilterContactEffect {
+            enabled,
+            contact_count,
+        } => {
+            let expected_system = if *enabled {
+                "phase9-growable"
+            } else {
+                "phase9-fixed-paused"
+            };
+            assert_eq!(
+                observation["observation"]["statistics"]["maybe_system_id"],
+                expected_system
+            );
+            assert_eq!(
+                observation["observation"]["statistics"]["particle_contact_count"],
+                *contact_count
+            );
+        }
+        Phase9SemanticAssertion::CollisionEnergyPositiveFinite { minimum_bits } => {
+            let bits = u32::try_from(
+                observation["observation"]["statistics"]["collision_energy_bits"]
+                    .as_u64()
+                    .expect("collision-energy bits"),
+            )
+            .expect("collision-energy bits fit");
+            let energy = f32::from_bits(bits);
+            assert!(energy.is_finite());
+            assert!(energy >= minimum_bits.to_f32());
+        }
+        Phase9SemanticAssertion::StuckCandidatesNonempty { particle_ids } => {
+            let stuck = observation["observation"]["statistics"]["stuck_particle_ids"]
+                .as_array()
+                .expect("stuck particle IDs");
+            assert!(!stuck.is_empty());
+            for particle_id in particle_ids {
+                assert!(stuck.iter().any(|id| id == particle_id.as_str()));
+            }
+        }
+        Phase9SemanticAssertion::ReplayResultDigestEquality
+        | Phase9SemanticAssertion::MinimizedFailureSignaturePreservation
+        | Phase9SemanticAssertion::DeliberateFirstDivergence
+        | Phase9SemanticAssertion::D0RepeatedResultDigestEquality
+        | Phase9SemanticAssertion::DebugReleaseResultDigestEquality => {
+            assert_eq!(
+                observation["observation"]["snapshot"]["particle_id"],
+                "phase9-a"
+            );
+        }
+    }
+}
+
+fn assert_result_evidence_bindings(
+    root: &Path,
+    executable: &OracleExecutable,
+    revision: &str,
+    request: &liquidfun_test_protocol::RigidWorldRequestRecord,
+    native: &RigidWorldResultRecord,
+    oracle: &RigidWorldResultRecord,
+    bindings: &[Phase9WitnessBinding],
+) {
+    let has = |predicate: fn(&Phase9SemanticAssertion) -> bool| {
+        bindings
+            .iter()
+            .any(|binding| predicate(&binding.semantic_assertion))
+    };
+    if !bindings.iter().any(|binding| {
+        matches!(
+            binding.semantic_assertion,
+            Phase9SemanticAssertion::ReplayResultDigestEquality
+                | Phase9SemanticAssertion::MinimizedFailureSignaturePreservation
+                | Phase9SemanticAssertion::DeliberateFirstDivergence
+                | Phase9SemanticAssertion::D0RepeatedResultDigestEquality
+                | Phase9SemanticAssertion::DebugReleaseResultDigestEquality
+        )
+    }) {
+        return;
+    }
+    let replay_native =
+        NativeRigidWorldExecutor::execute(request).expect("native result replay must execute");
+    let replay_oracle = execute_rigid_world_process(executable, request, revision)
+        .expect("oracle result replay must execute");
+    if has(|assertion| {
+        matches!(
+            assertion,
+            Phase9SemanticAssertion::ReplayResultDigestEquality
+        )
+    }) {
+        assert_eq!(
+            sha256(&serde_json::to_vec(native).expect("native result bytes")),
+            sha256(&serde_json::to_vec(&replay_native).expect("native replay bytes"))
+        );
+        assert_eq!(
+            sha256(&serde_json::to_vec(oracle).expect("oracle result bytes")),
+            sha256(&serde_json::to_vec(replay_oracle.result()).expect("oracle replay bytes"))
+        );
+    }
+    if has(|assertion| {
+        matches!(
+            assertion,
+            Phase9SemanticAssertion::D0RepeatedResultDigestEquality
+        )
+    }) {
+        assert_eq!(
+            serde_json::to_vec(native).expect("native D0 bytes"),
+            serde_json::to_vec(&replay_native).expect("native repeated D0 bytes")
+        );
+        assert_eq!(
+            serde_json::to_vec(oracle).expect("oracle D0 bytes"),
+            serde_json::to_vec(replay_oracle.result()).expect("oracle repeated D0 bytes")
+        );
+    }
+
+    let needs_deliberate_mismatch = bindings.iter().any(|binding| {
+        matches!(
+            binding.semantic_assertion,
+            Phase9SemanticAssertion::MinimizedFailureSignaturePreservation
+                | Phase9SemanticAssertion::DeliberateFirstDivergence
+        )
+    });
+    if needs_deliberate_mismatch {
+        let minimized = mutated_phase9_result(native, |value| {
+            let body = first_checkpoint_member_mut(value, "bodies");
+            body["active"] = json!(!body["active"].as_bool().expect("body active"));
+        });
+        let copied = mutated_phase9_result(native, |value| {
+            let body = first_checkpoint_member_mut(value, "bodies");
+            body["active"] = json!(!body["active"].as_bool().expect("body active"));
+            let fixture = first_checkpoint_member_mut(value, "fixtures");
+            fixture["sensor"] = json!(!fixture["sensor"].as_bool().expect("fixture sensor"));
+        });
+        let minimized_report = expected_retained_mismatch(request, native, &minimized);
+        let copied_report = expected_retained_mismatch(request, native, &copied);
+        if has(|assertion| {
+            matches!(
+                assertion,
+                Phase9SemanticAssertion::MinimizedFailureSignaturePreservation
+            )
+        }) {
+            assert_eq!(copied_report.signature(), minimized_report.signature());
+        }
+        if has(|assertion| {
+            matches!(
+                assertion,
+                Phase9SemanticAssertion::DeliberateFirstDivergence
+            )
+        }) {
+            assert_eq!(copied_report.semantic_path(), "rigid_world.body.active");
+        }
+    }
+
+    if has(|assertion| {
+        matches!(
+            assertion,
+            Phase9SemanticAssertion::DebugReleaseResultDigestEquality
+        )
+    }) && std::env::var("LIQUIDFUN_PHASE9_ORACLE_MODE").as_deref() == Ok("canonical")
+    {
+        let release = OracleExecutable::resolve(root, OraclePreset::Release)
+            .expect("canonical evidence requires the release oracle");
+        let optimized = execute_rigid_world_process(&release, request, revision)
+            .expect("release result must execute");
+        assert_eq!(
+            sha256(&serde_json::to_vec(oracle).expect("debug result bytes")),
+            sha256(&serde_json::to_vec(optimized.result()).expect("release result bytes"))
+        );
     }
 }
 
@@ -993,7 +1327,8 @@ fn executable_cases() {
         assert_eq!(sha256(&bytes), case.request_sha256, "{}", case.case_id);
         let request = decode_rigid_world_request_jsonl(&bytes, &HarnessLimits::phase2_default_v1())
             .expect("fixture must decode");
-        let native = NativeRigidWorldExecutor::execute(&request).expect("native case must execute");
+        let native = NativeRigidWorldExecutor::execute(&request)
+            .unwrap_or_else(|error| panic!("native case {} must execute: {error}", case.case_id));
         let oracle =
             execute_rigid_world_process(&executable, &request, &manifest.pinned_upstream_revision)
                 .expect("oracle case must execute");
@@ -1017,9 +1352,18 @@ fn executable_cases() {
             assert_witness(&request_value, &native_value, witness);
             assert_witness(&request_value, &oracle_value, witness);
         }
+        assert_result_evidence_bindings(
+            &root,
+            &executable,
+            &manifest.pinned_upstream_revision,
+            &request,
+            &native,
+            oracle.result(),
+            &case.witnesses,
+        );
         evidence_cases.push(json!({
             "case_id": case.case_id,
-            "reached_branches": case.witnesses.iter().map(|witness| &witness.branch).collect::<Vec<_>>(),
+            "reached_branches": case.witnesses.iter().map(|witness| &witness.branch_id).collect::<Vec<_>>(),
             "consumed_policy_paths": run.consumed_paths(),
             "request_sha256": case.request_sha256,
             "native_result_sha256": sha256(&serde_json::to_vec(&native).expect("native bytes")),
@@ -1076,14 +1420,43 @@ fn manifest_declares_every_phase9_branch_exactly_once() {
         .cases
         .iter()
         .flat_map(|case| &case.witnesses)
-        .map(|witness| &witness.branch)
+        .map(|witness| &witness.branch_id)
     {
         *occurrences.entry(branch.as_str()).or_default() += 1;
     }
     let actual = occurrences.keys().copied().collect::<BTreeSet<_>>();
+    let bindings = manifest
+        .cases
+        .iter()
+        .flat_map(|case| case.witnesses.iter().cloned())
+        .collect::<Vec<_>>();
+    let (maximum_actions, maximum_checkpoints) = manifest
+        .cases
+        .iter()
+        .map(|case| {
+            let request: Value =
+                serde_json::from_slice(&fs::read(fixture_path(case)).expect("fixture bytes"))
+                    .expect("fixture JSON");
+            (
+                request["scenario"]["timelines"][0]["actions"]
+                    .as_array()
+                    .expect("actions")
+                    .len(),
+                request["scenario"]["timelines"][0]["checkpoints"]
+                    .as_array()
+                    .expect("checkpoints")
+                    .len(),
+            )
+        })
+        .fold((0, 0), |maximum, count| {
+            (maximum.0.max(count.0), maximum.1.max(count.1))
+        });
 
     // Assert
     assert_eq!(manifest.profile, PHASE9_REGISTRY_ID);
+    validate_phase9_witness_bindings(&bindings, maximum_actions, maximum_checkpoints)
+        .expect("the manifest must be a closed typed witness registry");
+    assert_eq!(bindings.len(), REQUIRED_BRANCHES.len());
     assert_eq!(actual, required);
     assert!(occurrences.values().all(|count| *count == 1));
     assert!(manifest.cases.iter().all(|case| !case.case_id.is_empty()));
@@ -1723,7 +2096,7 @@ fn corpus_rejects_missing_declarations_and_phase10_members() {
         .cases
         .iter()
         .flat_map(|case| &case.witnesses)
-        .map(|witness| witness.branch.as_str())
+        .map(|witness| witness.branch_id.as_str())
         .collect::<BTreeSet<_>>();
     assert_ne!(
         decoded_branches,

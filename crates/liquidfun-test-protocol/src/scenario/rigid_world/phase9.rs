@@ -60,8 +60,13 @@ impl Phase9SemanticAssertion {
             Self::ObservedSemantic { branch_id } => {
                 observed_branch_kind(branch_id.as_str()).unwrap_or(Phase9ObservationKind::Particle)
             }
-            Self::FiniteLifetimeExpired { .. } | Self::ListenerEventEffect { .. } => {
-                Phase9ObservationKind::Lifecycle
+            Self::FiniteLifetimeExpired { .. } => Phase9ObservationKind::System,
+            Self::ListenerEventEffect { enabled, .. } => {
+                if *enabled {
+                    Phase9ObservationKind::Lifecycle
+                } else {
+                    Phase9ObservationKind::Particle
+                }
             }
             Self::InfiniteLifetimeSurvives { .. } => Phase9ObservationKind::System,
             Self::EqualExpirationOrder { .. } => Phase9ObservationKind::Lifecycle,
@@ -132,7 +137,7 @@ impl Phase9SemanticAssertion {
             Self::ListenerEventEffect {
                 enabled,
                 event_count,
-            } => !*enabled || *event_count > 0,
+            } => (*enabled && *event_count > 0) || (!*enabled && *event_count == 0),
             Self::CollisionEnergyPositiveFinite { minimum_bits } => {
                 let minimum = minimum_bits.to_f32();
                 minimum.is_finite() && minimum > 0.0
@@ -434,6 +439,9 @@ pub enum Phase9ParticleAction {
     InspectBodyContact {
         system_id: ScenarioId,
         contact_index: usize,
+    },
+    InspectOccurrence {
+        occurrence_index: usize,
     },
     SetPaused {
         system_id: ScenarioId,

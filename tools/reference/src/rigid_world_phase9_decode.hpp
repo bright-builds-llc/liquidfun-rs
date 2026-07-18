@@ -175,6 +175,17 @@ inline void validate_phase9_action(
     }
     return;
   }
+  if (kind == "inspect_occurrence") {
+    require_members(
+        action, {"kind", "occurrence_index"},
+        "Phase 9 occurrence-inspection action");
+    if (unsigned_value(
+            member(action, "occurrence_index", "Phase 9 occurrence-inspection action"),
+            "occurrence index") >= kPhase9MaximumIdentities) {
+      throw std::runtime_error("Phase 9 occurrence index exceeds reviewed bounds");
+    }
+    return;
+  }
   if (kind == "create_particle" || kind == "inspect_particle" ||
       kind == "mark_for_destruction") {
     require_members(action, {"kind", "particle_id"}, "Phase 9 particle action");
@@ -307,6 +318,9 @@ inline void validate_phase9_action_lifecycle(
       kind == "request_statistics" || kind == "inspect_particle_contact" ||
       kind == "inspect_body_contact") {
     require_live_system(system_id());
+    return;
+  }
+  if (kind == "inspect_occurrence") {
     return;
   }
   if (kind == "compact") {

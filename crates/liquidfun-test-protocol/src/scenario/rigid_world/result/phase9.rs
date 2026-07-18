@@ -16,6 +16,10 @@ pub(super) struct Phase9ResultState<'a> {
     live_systems: HashSet<ScenarioId>,
     live_particles: HashSet<ScenarioId>,
     pending_particles: HashSet<ScenarioId>,
+    creation_steps: HashMap<ScenarioId, u32>,
+    creation_order: HashMap<ScenarioId, u32>,
+    current_step: u32,
+    next_creation_order: u32,
     maybe_expected_occurrence: Option<Phase9Occurrence>,
     next_occurrence_ordinal: u32,
 }
@@ -32,6 +36,10 @@ impl<'a> Phase9ResultState<'a> {
             live_systems: HashSet::new(),
             live_particles: HashSet::new(),
             pending_particles: HashSet::new(),
+            creation_steps: HashMap::new(),
+            creation_order: HashMap::new(),
+            current_step: 0,
+            next_creation_order: 0,
             maybe_expected_occurrence: None,
             next_occurrence_ordinal: 0,
         }
@@ -50,6 +58,10 @@ impl<'a> Phase9ResultState<'a> {
                     .retain(|particle_id| owners.get(particle_id) != Some(system_id));
                 self.pending_particles
                     .retain(|particle_id| owners.get(particle_id) != Some(system_id));
+                self.creation_steps
+                    .retain(|particle_id, _| owners.get(particle_id) != Some(system_id));
+                self.creation_order
+                    .retain(|particle_id, _| owners.get(particle_id) != Some(system_id));
                 self.set_expected_occurrence(
                     Phase9OccurrenceKind::SystemDestroyed,
                     system_id.clone(),
@@ -74,8 +86,15 @@ impl<'a> Phase9ResultState<'a> {
                     }
                     self.live_particles.remove(&victim);
                     self.pending_particles.remove(&victim);
+                    self.creation_steps.remove(&victim);
+                    self.creation_order.remove(&victim);
                 }
                 self.live_particles.insert(particle_id.clone());
+                self.creation_steps
+                    .insert(particle_id.clone(), self.current_step);
+                self.creation_order
+                    .insert(particle_id.clone(), self.next_creation_order);
+                self.next_creation_order = self.next_creation_order.saturating_add(1);
             }
             Phase9ParticleAction::MarkForDestruction { particle_id } => {
                 self.live_particles.remove(particle_id);
@@ -102,11 +121,16 @@ impl<'a> Phase9ResultState<'a> {
                 let owners = &self.particle_owners;
                 self.pending_particles
                     .retain(|particle_id| owners.get(particle_id) != Some(system_id));
+                self.creation_steps
+                    .retain(|particle_id, _| self.live_particles.contains(particle_id));
+                self.creation_order
+                    .retain(|particle_id, _| self.live_particles.contains(particle_id));
             }
             Phase9ParticleAction::InspectSystem { .. }
             | Phase9ParticleAction::InspectParticle { .. }
             | Phase9ParticleAction::InspectParticleContact { .. }
             | Phase9ParticleAction::InspectBodyContact { .. }
+            | Phase9ParticleAction::InspectOccurrence { .. }
             | Phase9ParticleAction::SetPaused { .. }
             | Phase9ParticleAction::SetPosition { .. }
             | Phase9ParticleAction::SetVelocity { .. }
@@ -115,6 +139,34 @@ impl<'a> Phase9ResultState<'a> {
             | Phase9ParticleAction::RequestStatistics { .. }
             | Phase9ParticleAction::QueryAabb { .. }
             | Phase9ParticleAction::RayCast { .. } => {}
+        }
+    }
+
+    pub(super) fn advance_step(&mut self) {
+        self.current_step = self.current_step.saturating_add(1);
+        let expired = self
+            .live_particles
+            .iter()
+            .filter(|particle_id| {
+                let Some(declaration) = self.particle_declaration(particle_id) else {
+                    return false;
+                };
+                let Some(system) = self.system_declaration(&declaration.system_id) else {
+                    return false;
+                };
+                if !system.destruction_by_age || declaration.lifetime_bits.to_f32() <= 0.0 {
+                    return false;
+                }
+                self.expiration_step(declaration)
+                    .is_some_and(|expiration| expiration <= self.current_step)
+            })
+            .cloned()
+            .collect::<Vec<_>>();
+        for particle_id in expired {
+            self.live_particles.remove(&particle_id);
+            self.pending_particles.remove(&particle_id);
+            self.creation_steps.remove(&particle_id);
+            self.creation_order.remove(&particle_id);
         }
     }
 
@@ -167,6 +219,20 @@ impl<'a> Phase9ResultState<'a> {
                 Phase9ParticleAction::InspectBodyContact { system_id, .. },
                 Phase9ParticleObservation::BodyContact { contact },
             ) => self.body_contact_matches(system_id, live_rigid, contact),
+            (
+                Phase9ParticleAction::InspectOccurrence { .. },
+                Phase9ParticleObservation::Lifecycle { occurrence },
+            ) => {
+                self.system_declaration(&occurrence.system_id).is_some()
+                    && occurrence
+                        .maybe_particle_id
+                        .as_ref()
+                        .is_none_or(|particle| self.owner(particle) == Some(&occurrence.system_id))
+                    && occurrence
+                        .maybe_other_particle_id
+                        .as_ref()
+                        .is_none_or(|particle| self.owner(particle) == Some(&occurrence.system_id))
+            }
             (
                 Phase9ParticleAction::RequestStatistics { system_id },
                 Phase9ParticleObservation::Statistics { statistics },
@@ -375,8 +441,25 @@ impl<'a> Phase9ResultState<'a> {
                         || self.pending_particles.contains(&declaration.particle_id))
                     && declaration.lifetime_bits.to_f32() > 0.0
             })
-            .min_by_key(|declaration| declaration.lifetime_bits.bits())
+            .min_by(|left, right| {
+                self.expiration_step(left)
+                    .cmp(&self.expiration_step(right))
+                    .then_with(|| {
+                        self.creation_order
+                            .get(&right.particle_id)
+                            .cmp(&self.creation_order.get(&left.particle_id))
+                    })
+            })
             .map(|declaration| declaration.particle_id.clone())
+    }
+
+    fn expiration_step(&self, declaration: &crate::Phase9ParticleDeclaration) -> Option<u32> {
+        let system = self.system_declaration(&declaration.system_id)?;
+        let lifetime = declaration.lifetime_bits.to_f32();
+        let granularity = system.lifetime_granularity_bits.to_f32();
+        let quantized = (lifetime / granularity) as u32;
+        let created = *self.creation_steps.get(&declaration.particle_id)?;
+        created.checked_add(quantized)
     }
 
     fn selection_matches(

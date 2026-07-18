@@ -565,6 +565,8 @@ fn validate_checkpoint_observations(
         );
         if let RigidWorldAction::Particle { action } = action.action() {
             phase9_state.apply(action);
+        } else if matches!(action.action(), RigidWorldAction::Step { .. }) {
+            phase9_state.advance_step();
         }
     }
 
@@ -588,6 +590,9 @@ fn validate_checkpoint_observations(
                 rigid_world_live_identities(timeline, &live_bodies, &live_fixtures);
             phase9_state.validate(particle_action, &live_identities, actual)?;
             continue;
+        }
+        if matches!(action.action(), RigidWorldAction::Step { .. }) {
+            phase9_state.advance_step();
         }
         let Some(expected) = expected_observation(action.action()) else {
             continue;

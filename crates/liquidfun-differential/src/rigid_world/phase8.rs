@@ -2,9 +2,9 @@
 
 use liquidfun::rope::{Rope, RopeDef, RopeIterations};
 use liquidfun::{
-    CollisionDecisionHook, CollisionDirective, DestroyedId, FixtureId, FixturePairView, JointDef,
-    LifecycleEvent, PreSolveDirective, PreSolveView, StepConfiguration, StepError,
-    StepLifecycleEvent, StepLimits, StepReport,
+    CollisionDecisionHook, CollisionDirective, DestroyedId, FixtureId, FixturePairView,
+    FixtureParticleView, JointDef, LifecycleEvent, ParticlePairContactView, PreSolveDirective,
+    PreSolveView, StepConfiguration, StepError, StepLifecycleEvent, StepLimits, StepReport,
 };
 use liquidfun::{
     DistanceJointDef, FrictionJointDef, GearJointDef, MotorJointDef, MouseJointDef,
@@ -174,6 +174,20 @@ impl CollisionDecisionHook for Phase8Hook {
         pair_value(&self.pre_solve_directives, contact.fixtures())
             .copied()
             .unwrap_or(PreSolveDirective::Enable)
+    }
+
+    fn should_collide_fixture_particle(
+        &mut self,
+        _contact: FixtureParticleView<'_>,
+    ) -> CollisionDirective {
+        CollisionDirective::Ignore
+    }
+
+    fn should_collide_particle_pair(
+        &mut self,
+        _contact: ParticlePairContactView<'_>,
+    ) -> CollisionDirective {
+        CollisionDirective::Ignore
     }
 }
 
