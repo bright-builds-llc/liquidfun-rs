@@ -479,9 +479,16 @@ struct CompleteComparisonPayload {
 }
 
 fn validate_manifest(root: &Path, manifest: &EvidenceManifest) -> Result<(), Phase9EvidenceError> {
-    if manifest.schema_version != 3
-        || manifest.case_record_schema_version != 2
-        || manifest.profile != "phase9-v1"
+    if manifest.schema_version != 4 || manifest.case_record_schema_version != 3 {
+        return Err(Phase9EvidenceError::new(
+            "manifest",
+            format!(
+                "schema-v4 evidence with case-record schema 3 is required; found manifest schema {} and case-record schema {}; regenerate both evidence profiles",
+                manifest.schema_version, manifest.case_record_schema_version
+            ),
+        ));
+    }
+    if manifest.profile != "phase9-v1"
         || manifest.upstream_revision != UPSTREAM_REVISION
         || manifest.cases.len() != 7
     {
@@ -609,6 +616,8 @@ fn validate_manifest(root: &Path, manifest: &EvidenceManifest) -> Result<(), Pha
                 format!("case `{}` did not record a complete match", case.case_id),
             ));
         }
+        Phase9CrossRunProofRecord::validate_topology(&case.case_id, &case.cross_run_proofs)
+            .map_err(|error| Phase9EvidenceError::new("cross-run", error.to_string()))?;
         let mut proof_payloads = BTreeMap::new();
         for reference in cross_run_payload_refs(&case.cross_run_proofs) {
             let bytes = read_payload(
@@ -627,6 +636,7 @@ fn validate_manifest(root: &Path, manifest: &EvidenceManifest) -> Result<(), Pha
             }
         }
         validate_phase9_cross_run_proofs(
+            &case.case_id,
             &request,
             &native,
             &oracle,

@@ -1463,12 +1463,12 @@ fn build_cross_run_proofs(
     let minimized_report = expected_retained_mismatch(request, native, &minimized);
     let copied_report = expected_retained_mismatch(request, native, &copied);
     let base = format!("cases/{case_id}/proofs");
-    let replay_native_path = format!("{base}/replay-native-result.json");
-    let replay_oracle_path = format!("{base}/replay-oracle-result.json");
-    let minimized_path = format!("{base}/minimized-result.json");
-    let copied_path = format!("{base}/copied-result.json");
-    let debug_path = format!("{base}/debug-oracle-result.json");
-    let release_path = format!("{base}/release-oracle-result.json");
+    let replay_native_path = format!("{base}/replay-native.json");
+    let replay_oracle_path = format!("{base}/replay-oracle.json");
+    let minimized_path = format!("{base}/minimized.json");
+    let copied_path = format!("{base}/copied.json");
+    let debug_path = format!("{base}/debug.json");
+    let release_path = format!("{base}/release.json");
     let mut payloads = BTreeMap::from([
         (
             replay_native_path.clone(),
@@ -1663,6 +1663,7 @@ fn executable_cases() {
             &case.witnesses,
         );
         validate_phase9_cross_run_proofs(
+            &case.case_id,
             &request,
             &native,
             oracle.result(),
@@ -1705,8 +1706,8 @@ fn executable_cases() {
         evidence_cases.push(record);
     }
     let evidence = EvidenceManifest {
-        schema_version: 3,
-        case_record_schema_version: 2,
+        schema_version: 4,
+        case_record_schema_version: 3,
         profile: manifest.profile,
         upstream_revision: manifest.pinned_upstream_revision,
         semantic_manifest_sha256: canonical_sha256(&evidence_cases),

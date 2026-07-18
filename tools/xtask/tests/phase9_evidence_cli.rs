@@ -436,6 +436,26 @@ fn local_accepts_complete_canonical_and_sanitizer_evidence() -> TestResult {
 }
 
 #[test]
+fn local_rejects_schema_v3_with_regeneration_guidance() -> TestResult {
+    // Arrange
+    let root = TestRoot::new("schema-v3")?;
+    root.write_valid_local_evidence()?;
+    root.mutate_json("canonical", "phase9-manifest.json", |manifest| {
+        manifest["schema_version"] = json!(3);
+        manifest["case_record_schema_version"] = json!(2);
+    })?;
+
+    // Act
+    let output = root.run_local()?;
+
+    // Assert
+    assert_failure(&output);
+    assert_output_contains(&output, "schema-v4");
+    assert_output_contains(&output, "regenerate");
+    Ok(())
+}
+
+#[test]
 fn local_rejects_extra_missing_and_symlink_entries() -> TestResult {
     // Arrange
     let extra = TestRoot::new("extra")?;
@@ -997,6 +1017,167 @@ fn proof_topology_rejects_noncanonical_path_spellings() -> TestResult {
     Ok(())
 }
 
+#[test]
+fn proof_topology_cli_rejects_recomputed_baseline_and_pair_aliases() -> TestResult {
+    for (label, mutate, expected) in [
+        (
+            "topology-baseline",
+            ProofTopologyMutation::BaselineNativeReplay,
+            "replay-native",
+        ),
+        (
+            "topology-replay-alias",
+            ProofTopologyMutation::ReplayPairAlias,
+            "replay-oracle",
+        ),
+        (
+            "topology-build-alias",
+            ProofTopologyMutation::DebugReleaseAlias,
+            "release",
+        ),
+        (
+            "topology-reduction-alias",
+            ProofTopologyMutation::MinimizedCopiedAlias,
+            "copied",
+        ),
+    ] {
+        // Arrange
+        let root = TestRoot::new(label)?;
+        root.write_valid_local_evidence()?;
+        root.mutate_manifest_semantics("canonical", |manifest| {
+            mutate_proof_topology(manifest, mutate);
+        })?;
+
+        // Act
+        let output = root.run_local()?;
+
+        // Assert
+        assert_failure(&output);
+        assert_output_contains(&output, expected);
+    }
+    Ok(())
+}
+
+#[test]
+fn proof_topology_cli_rejects_recomputed_first_divergence_path_only_mutation() -> TestResult {
+    // Arrange
+    let root = TestRoot::new("topology-first-divergence-path")?;
+    root.write_valid_local_evidence()?;
+    root.mutate_manifest_semantics("canonical", |manifest| {
+        let case = evidence_case_value_mut(manifest);
+        let record = proof_record_value_mut(case, "first_divergence_stability");
+        let mismatch =
+            find_object_field_mut(&mut record["proof"], "minimized").expect("minimized mismatch");
+        mismatch["semantic_path"] = json!("rigid_world.fixture.sensor");
+    })?;
+
+    // Act
+    let output = root.run_local()?;
+
+    // Assert
+    assert_failure(&output);
+    assert_output_contains(&output, "persisted mismatch identity");
+    Ok(())
+}
+
+#[derive(Clone, Copy)]
+enum ProofTopologyMutation {
+    BaselineNativeReplay,
+    ReplayPairAlias,
+    DebugReleaseAlias,
+    MinimizedCopiedAlias,
+}
+
+fn mutate_proof_topology(manifest: &mut Value, mutation: ProofTopologyMutation) {
+    let case = evidence_case_value_mut(manifest);
+    match mutation {
+        ProofTopologyMutation::BaselineNativeReplay => {
+            let path = case["native_result_path"].clone();
+            let sha256 = case["native_result_sha256"].clone();
+            let reference = proof_reference_value_mut(case, "replay_identity", "replay_native");
+            reference["path"] = path;
+            reference["sha256"] = sha256;
+        }
+        ProofTopologyMutation::ReplayPairAlias => replace_proof_reference(
+            case,
+            "replay_identity",
+            "replay_oracle",
+            "replay_identity",
+            "replay_native",
+        ),
+        ProofTopologyMutation::DebugReleaseAlias => replace_proof_reference(
+            case,
+            "debug_release_agreement",
+            "release_oracle",
+            "debug_release_agreement",
+            "debug_oracle",
+        ),
+        ProofTopologyMutation::MinimizedCopiedAlias => replace_proof_reference(
+            case,
+            "minimization_identity",
+            "copied",
+            "minimization_identity",
+            "minimized",
+        ),
+    }
+}
+
+fn replace_proof_reference(
+    case: &mut Value,
+    target_branch: &str,
+    target_field: &str,
+    source_branch: &str,
+    source_field: &str,
+) {
+    let source = proof_reference_value(case, source_branch, source_field).clone();
+    *proof_reference_value_mut(case, target_branch, target_field) = source;
+}
+
+fn evidence_case_value_mut(manifest: &mut Value) -> &mut Value {
+    manifest["cases"]
+        .as_array_mut()
+        .expect("manifest cases")
+        .iter_mut()
+        .find(|case| case["case_id"] == "closed-evidence-contract")
+        .expect("closed evidence case")
+}
+
+fn proof_record_value_mut<'a>(case: &'a mut Value, branch_id: &str) -> &'a mut Value {
+    case["cross_run_proofs"]
+        .as_array_mut()
+        .expect("cross-run proofs")
+        .iter_mut()
+        .find(|record| record["branch_id"] == branch_id)
+        .expect("reviewed proof record")
+}
+
+fn proof_reference_value<'a>(case: &'a Value, branch_id: &str, field: &str) -> &'a Value {
+    let record = case["cross_run_proofs"]
+        .as_array()
+        .expect("cross-run proofs")
+        .iter()
+        .find(|record| record["branch_id"] == branch_id)
+        .expect("reviewed proof record");
+    let reference = find_object_field(&record["proof"], field);
+    reference.get("result").unwrap_or(reference)
+}
+
+fn proof_reference_value_mut<'a>(
+    case: &'a mut Value,
+    branch_id: &str,
+    field: &str,
+) -> &'a mut Value {
+    let record = proof_record_value_mut(case, branch_id);
+    let mut reference =
+        find_object_field_mut(&mut record["proof"], field).expect("reviewed proof field");
+    if reference.get("result").is_some() {
+        reference = reference
+            .get_mut("result")
+            .expect("mismatch result reference");
+    }
+    reference
+}
+
 fn evidence_case<'a>(manifest: &'a EvidenceManifest, case_id: &str) -> &'a EvidenceCase {
     manifest
         .cases
@@ -1134,8 +1315,8 @@ fn build_manifest(root: &Path) -> TestResult<EvidenceManifest> {
         });
     }
     Ok(EvidenceManifest {
-        schema_version: 3,
-        case_record_schema_version: 2,
+        schema_version: 4,
+        case_record_schema_version: 3,
         profile: "phase9-v1".to_owned(),
         upstream_revision: UPSTREAM_REVISION.to_owned(),
         semantic_manifest_sha256: sha256(&serde_json::to_vec(&cases)?),

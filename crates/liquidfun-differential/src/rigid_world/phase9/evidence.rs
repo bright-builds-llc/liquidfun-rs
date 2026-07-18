@@ -141,6 +141,9 @@ impl Phase9CrossRunProofRecord {
         records: &[Self],
     ) -> Result<(), Phase9CaseEvidenceError> {
         validate_case_id(case_id)?;
+        if records.is_empty() {
+            return Ok(());
+        }
         let mut families = BTreeSet::new();
         let mut role_paths = BTreeMap::new();
         for record in records {
@@ -363,6 +366,7 @@ pub struct Phase9CaseEvidenceError(Box<str>);
 /// are recomputed successfully.
 #[allow(clippy::too_many_arguments)]
 pub fn validate_phase9_cross_run_proofs(
+    case_id: &str,
     request: &RigidWorldRequestRecord,
     native: &RigidWorldResultRecord,
     oracle: &RigidWorldResultRecord,
@@ -374,6 +378,7 @@ pub fn validate_phase9_cross_run_proofs(
     payloads: &BTreeMap<String, Vec<u8>>,
     limits: &HarnessLimits,
 ) -> Result<(), Phase9CaseEvidenceError> {
+    Phase9CrossRunProofRecord::validate_topology(case_id, records)?;
     let case_bindings = bindings
         .iter()
         .filter(|binding| binding.semantic_assertion.requires_case_evidence())
