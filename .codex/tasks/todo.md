@@ -91,3 +91,12 @@ Completion review: All 24 plans are committed with lifecycle-bound summaries. Re
 - [x] Create the lifecycle-bound summary and update GSD state, roadmap, and requirements.
 
 Completion review: All seven evidence cases now bind the retained Phase 8 rigid comparison, exact Phase 6/7/8 policy digests, 58 typed semantic witnesses, persisted payload hashes, and the complete semantic manifest. One bounded xtask validator closes local, pre-identity, and exact-ref evidence, including approved run/job/artifact/live metadata and archive safety, while explicitly denying both historical runs. Fresh debug/release canonical and fail-fast ASan/UBSan corpora passed; local canonical/sanitizer evidence validated; the exact ordered Rust gate, provenance, upstream read-only, and diff checks passed. No publication, remote dispatch, compatibility promotion, or upstream mutation occurred. Residual work is limited to later exact-ref publication and promotion plans.
+
+## task-09-28-sanitizer-fixture-recovery | 2026-07-17 20:36 CDT | Repair Phase 9 sanitizer evidence
+
+- [x] Replace the ambient debug compile-database dependency with a hermetic fake-root database.
+- [x] Prove the retained process runner works without a workspace oracle-debug database.
+- [x] Record run 29625083184 as rejected authority in incomplete Plans 09-28 and 09-29.
+- [x] Run the complete Rust, canonical, sanitizer, evidence, provenance, policy, workflow, Markdown, schema, and diff gates.
+- [ ] Commit and push one verified recovery SHA, then stop for fresh human approval.
+- [ ] After approval, dispatch exactly once, validate paired artifacts, and complete Phase 09 promotion and verification.
