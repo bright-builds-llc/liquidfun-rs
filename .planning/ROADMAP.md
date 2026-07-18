@@ -16,7 +16,7 @@ The v1 roadmap moves from an immutable, licensed source of truth to a semantic c
 - [x] **Phase 6: Minimal Rigid World Vertical Slice** - Run bodies, fixtures, and contacts through the complete native Rust and oracle comparison pipeline. (completed 2026-07-12)
 - [x] **Phase 7: Rigid Solver, World Operations, and CCD** - Complete rigid stepping, sleeping, continuous collision, configuration, queries, and ray casts. (completed 2026-07-13)
 - [x] **Phase 8: Joints, Rope, Callbacks, and Rigid Sign-Off** - Complete joints, standalone rope, hook timing, diagnostic dump, and the broad rigid-body compatibility gate. (completed 2026-07-15)
-- [ ] **Phase 9: Particle Storage, Lifecycle, and Coupling** - Implement safe particle systems, storage, lifecycle, contacts, buffers, queries, callbacks, and rigid coupling.
+- [x] **Phase 9: Particle Storage, Lifecycle, and Coupling** - Implement safe particle systems, storage, lifecycle, contacts, buffers, queries, callbacks, and rigid coupling. (completed 2026-07-18)
 - [ ] **Phase 10: Particle Groups, Solvers, and Compatibility Sign-Off** - Complete group topology and every particle behavior in pinned upstream pass order.
 - [ ] **Phase 11: Examples, Headless Tooling, and Testbed** - Account for every upstream test/example and expose shared headless and optional visual scenarios.
 - [ ] **Phase 12: Performance, Portability, and Release Hardening** - Prove performance, safety, platform, documentation, packaging, and zero-gap v1 readiness.
@@ -162,7 +162,7 @@ The v1 roadmap moves from an immutable, licensed source of truth to a semantic c
 1. Forces/impulses, collision energy, stuck candidates, statistics, AABB queries, ray casts, and particle contact listener/filter flags are exposed and differentially verified through safe APIs.
 
 **Research / ADR flags**: Audit every permutation site and optional lane; capacity/full-buffer behavior; lifetime quantization; zombie callback order; strict-contact pruning; particle/body contact order; query culling and canonicalization.
-**Plans**: TBD during phase planning
+**Plans**: 31/31 plans complete
 
 ### Phase 10: Particle Groups, Solvers, and Compatibility Sign-Off
 

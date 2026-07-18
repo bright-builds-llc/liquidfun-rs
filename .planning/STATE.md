@@ -2,16 +2,16 @@
 gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 09-30-PLAN.md
-last_updated: "2026-07-18T21:17:29.211Z"
+status: planning
+stopped_at: Completed 09-31-PLAN.md
+last_updated: "2026-07-18T22:02:51.289Z"
 last_activity: "2026-07-18"
 progress:
   total_phases: 12
-  completed_phases: 8
+  completed_phases: 9
   total_plans: 129
-  completed_plans: 128
-  percent: 99
+  completed_plans: 129
+  percent: 100
 ---
 
 # Project State
@@ -21,22 +21,22 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-07-12)
 
 **Core value:** Deliver an independent, maintainable Rust physics engine whose LiquidFun behavior is demonstrated against a pinned upstream oracle through explicit inventory, tests, differential evidence, and documented tolerances.
-**Current focus:** Phase 09 — Particle Storage, Lifecycle, and Coupling
+**Current focus:** Phase 10 — Particle Groups, Solvers, and Compatibility Sign-Off
 
 ## Current Position
 
-Phase: 09 (Particle Storage, Lifecycle, and Coupling) — EXECUTING
-Plan: 31 of 31
-Status: Ready to execute
-Last activity: 2026-07-18 -- Completed 09-30 proof-role topology closure
+Phase: 10
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-07-18
 
-Progress: [██████████] 99%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 118
+- Total plans completed: 129
 - Average duration: Not available
 - Total execution time: 0 hours
 
@@ -52,6 +52,7 @@ Progress: [██████████] 99%
 | 6 | 22 | - | - |
 | 7 | 13 | - | - |
 | 8 | 24 | - | - |
+| 09 | 31 | - | - |
 
 *Updated after each plan completion*
 | Phase 02 P01 | 5 min | 1 tasks | 6 files |
@@ -139,6 +140,7 @@ Progress: [██████████] 99%
 | Phase 09 P28 | 15h 16m | 3 tasks | 4 files |
 | Phase 09 P29 | 23min | 3 tasks | 5 files |
 | Phase 09 P30 | 23min | 3 tasks | 4 files |
+| Phase 09 P31 | 35min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -331,6 +333,8 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 09]: Historical and failed runs 29439515367, 29583793056, and 29625083184 remain denylisted, and all Phase 10 particle behavior remains not evidenced.
 - [Phase 09]: Phase 9 schema-v4 proof paths are validated before payload collection or exact-file-set deduplication.
 - [Phase 09]: Only replay-to-D0 and minimized/copied-to-first-divergence path reuse is allowed; required proof pairs stay path-distinct.
+- [Phase 09]: Accept only run 29661682074 at sealed SHA 9f2169ad1ad3c72adeae5e4fb1ea188b20ba84ce as Phase 9 platform authority.
+- [Phase 09]: Promote platform evidence for exactly four Phase 9 rows while keeping all five Phase 10 rows wholly not_evidenced.
 
 ### Pending Todos
 
@@ -344,6 +348,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-18T21:17:29.207Z
-Stopped at: Completed 09-30-PLAN.md
+Last session: 2026-07-18T22:00:31.362Z
+Stopped at: Completed 09-31-PLAN.md
 Resume file: None
