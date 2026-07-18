@@ -83,11 +83,11 @@ Completion review: All 24 plans are committed with lifecycle-bound summaries. Re
 
 ## task-09-27-portable-evidence-validator | 2026-07-17 19:20 CDT | Execute Phase 9 Plan 27
 
-- [ ] Bind every generated case to retained Phase 8 comparison, exact policy digests, semantic witnesses, and persisted payload hashes.
-- [ ] Make Phase 9 evidence generation identity-last and fail closed before identity creation.
-- [ ] Add one typed bounded local/exact-ref validator with archive, metadata, substitution, and corruption rejection coverage.
-- [ ] Run focused tests plus canonical debug/release and fail-fast sanitizer evidence production.
-- [ ] Run the exact ordered Rust pre-commit gate, provenance, upstream read-only, and diff verification.
-- [ ] Create the lifecycle-bound summary and update GSD state, roadmap, and requirements.
+- [x] Bind every generated case to retained Phase 8 comparison, exact policy digests, semantic witnesses, and persisted payload hashes.
+- [x] Make Phase 9 evidence generation identity-last and fail closed before identity creation.
+- [x] Add one typed bounded local/exact-ref validator with archive, metadata, substitution, and corruption rejection coverage.
+- [x] Run focused tests plus canonical debug/release and fail-fast sanitizer evidence production.
+- [x] Run the exact ordered Rust pre-commit gate, provenance, upstream read-only, and diff verification.
+- [x] Create the lifecycle-bound summary and update GSD state, roadmap, and requirements.
 
-Completion review: Pending.
+Completion review: All seven evidence cases now bind the retained Phase 8 rigid comparison, exact Phase 6/7/8 policy digests, 58 typed semantic witnesses, persisted payload hashes, and the complete semantic manifest. One bounded xtask validator closes local, pre-identity, and exact-ref evidence, including approved run/job/artifact/live metadata and archive safety, while explicitly denying both historical runs. Fresh debug/release canonical and fail-fast ASan/UBSan corpora passed; local canonical/sanitizer evidence validated; the exact ordered Rust gate, provenance, upstream read-only, and diff checks passed. No publication, remote dispatch, compatibility promotion, or upstream mutation occurred. Residual work is limited to later exact-ref publication and promotion plans.

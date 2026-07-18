@@ -3,14 +3,14 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 09-26-PLAN.md
-last_updated: "2026-07-18T00:17:53.900Z"
+stopped_at: Completed 09-27-PLAN.md
+last_updated: "2026-07-18T00:59:37.569Z"
 last_activity: "2026-07-18"
 progress:
   total_phases: 12
   completed_phases: 8
   total_plans: 127
-  completed_plans: 124
+  completed_plans: 125
   percent: 98
 ---
 
@@ -26,11 +26,11 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 ## Current Position
 
 Phase: 09 (particle-storage-lifecycle-and-coupling) — EXECUTING
-Plan: 26 of 29
+Plan: 27 of 29
 Status: Ready to execute
 Last activity: 2026-07-18
 
-Progress: [██████████] 97%
+Progress: [██████████] 98%
 
 ## Performance Metrics
 
@@ -135,6 +135,7 @@ Progress: [██████████] 97%
 | Phase 09 P24 | 22 min | 3 tasks | 6 files |
 | Phase 09 P25 | 71 min | 3 tasks | 6 files |
 | Phase 09 P26 | 158 min | 3 tasks | 19 files |
+| Phase 09 P27 | 37m | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -317,6 +318,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 09]: Represent every reviewed Phase 9 branch with a closed typed semantic assertion and exact action/checkpoint indices.
 - [Phase 09]: Capture listener occurrences symmetrically in native Rust and the pinned C++ oracle through bounded occurrence inspection.
 - [Phase 09]: Use result digests and deliberate mismatch signatures for replay, minimization, divergence, D0, and debug/release evidence.
+- [Phase 09]: The typed xtask validator owns reusable manifest, payload, trace, identity, exact-ref metadata, and archive validation; the shell runner writes identity last.
+- [Phase 09]: Every case binds retained Phase 6/7/8 policy identities, a phase8-v1 rigid match, exact semantic witnesses, persisted payloads, and the ordered case manifest.
+- [Phase 09]: Exact-ref authority closes run, job, artifact, archive, live snapshot, approved head, and explicit historical-run denial in one validator.
 
 ### Pending Todos
 
@@ -330,6 +334,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-18T00:17:53.896Z
-Stopped at: Completed 09-26-PLAN.md
+Last session: 2026-07-18T00:59:37.566Z
+Stopped at: Completed 09-27-PLAN.md
 Resume file: None
