@@ -667,6 +667,62 @@ archive, API, identity, payload, trace, binding, manifest, and semantic-manifest
 hash is recomputed before the four scoped Phase 9 rows may be promoted. No
 fresh run is current authority at the time this procedure is sealed.
 
+### Approved Phase 9 evidence run (2026-07-18, WR-02)
+
+The recovery procedure sealed exact commit
+[`9f2169ad1ad3c72adeae5e4fb1ea188b20ba84ce`](https://github.com/bright-builds-llc/liquidfun-rs/commit/9f2169ad1ad3c72adeae5e4fb1ea188b20ba84ce),
+pushed it to `origin/main`, fetched the remote, and proved local/remote equality
+before dispatch. A read-only workflow query found zero prior
+`workflow_dispatch` runs at that SHA. The executor then issued the authorized
+command exactly once, did not retry or rerun it, and captured successful
+[`Oracle CI` run 29661682074](https://github.com/bright-builds-llc/liquidfun-rs/actions/runs/29661682074).
+A second exact-SHA query found exactly that one dispatch.
+
+The run contains exactly one successful
+[`Canonical Linux oracle` job 88125511292](https://github.com/bright-builds-llc/liquidfun-rs/actions/runs/29661682074/job/88125511292)
+and exactly one successful
+[`Scheduled fail-fast sanitizer and reset corpus` job 88125511305](https://github.com/bright-builds-llc/liquidfun-rs/actions/runs/29661682074/job/88125511305).
+The artifacts were resolved through the run artifact list and then queried and
+downloaded independently through their individual APIs:
+
+- [`phase9-canonical-29661682074-9f2169ad1ad3c72adeae5e4fb1ea188b20ba84ce`](https://api.github.com/repos/bright-builds-llc/liquidfun-rs/actions/artifacts/8434547024/zip)
+  is artifact `8434547024`, has size 227,108 bytes, and has API and recomputed
+  archive digest
+  `sha256:22a37f91965eaf494b3e1fea041e1c54da9be03c06da5e276a641ee6cf536084`.
+  Its trace and manifest SHA-256 values are
+  `eefec714082fc701fb6ec2cebd15ed9353114a8cc17f975b71c666b33fd3ccf7`
+  and
+  `74998e953e79f5ed04a58097d43abbca3cc814bee4fc86d0fd552d2951b1ae7c`.
+- [`phase9-sanitizer-29661682074-9f2169ad1ad3c72adeae5e4fb1ea188b20ba84ce`](https://api.github.com/repos/bright-builds-llc/liquidfun-rs/actions/artifacts/8434557009/zip)
+  is artifact `8434557009`, has size 227,109 bytes, and has API and recomputed
+  archive digest
+  `sha256:849b8dba5b4c5a0f5e6ea4cddf10bf8243a71bdeec3b75676677358aa34d4316`.
+  Its trace and manifest SHA-256 values are
+  `3c697421472ee087d265cb9a6268ab04ef76dce37c39ed6b4202fa1a36c7dbdd`
+  and
+  `74998e953e79f5ed04a58097d43abbca3cc814bee4fc86d0fd552d2951b1ae7c`.
+
+Both 40-entry archives passed size, digest, ZIP integrity, normalized relative
+path, regular-mode, and symlink checks before extraction into distinct
+directories. The recorded and live artifact ID/digest pairs are byte-equal,
+distinct, current, and outside every artifact denylist. The exact-ref validator
+accepted both profiles with all four denied run IDs supplied.
+
+The shared schema-v4 manifest contains seven cases, exactly 58 unique semantic
+bindings, and the complete 22-policy array for every case. Its manifest semantic
+digest is
+`a319f771c5d9e952b9389160bb3ad19ce487da43271e62568828ce2ae22a33aa`.
+The ordered per-case payload digest set hashes to
+`72797909ebb807c4c7dc591b4fa8987b26f3f26e43b967e080db4363f26b509d`,
+and the ordered witness-binding digest set hashes to
+`2e0e4212a62aec27b371bcd8dc9301966e0f712b0d28736e39f3993cc3ab3134`.
+Validation recomputed every request, native result, oracle result, complete
+comparison, replay proof, minimized/copied proof, trace, manifest, identity,
+and archive hash. It also proved required independent proof-role topology,
+retained rigid `Match`, positive collision-energy witnesses, nonempty stuck
+witnesses, passing logs, and canonical/sanitizer semantic equality. This run is
+the sole current Phase 9 platform authority.
+
 ### Superseded Phase 9 evidence run (2026-07-18)
 
 GitHub Actions run

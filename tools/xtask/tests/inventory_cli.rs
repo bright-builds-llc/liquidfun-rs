@@ -10,18 +10,22 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use serde_json::{Value, json};
 
 const REVISION: &str = "7f20402173fd143a3988c921bc384459c6a858f2";
-const PHASE9_AUTHORITY_REFERENCES: [&str; 11] = [
-    "https://github.com/bright-builds-llc/liquidfun-rs/actions/runs/29652578231",
-    "https://api.github.com/repos/bright-builds-llc/liquidfun-rs/actions/artifacts/8431920189/zip#sha256=ea333de6ac32d64c1c5b4e80738275451f0e51994b7f78e70961597d48e77500",
-    "phase9-canonical-29652578231-22b31c0e1be8896df622b1decd58ba2853a60b04/identity.json#trace-sha256=2400f9b5dc69c9b07510ff934b1f41a455cdac71f3a3d7c5b8a372bf588316a9",
-    "phase9-canonical-29652578231-22b31c0e1be8896df622b1decd58ba2853a60b04/identity.json#manifest-sha256=662b9514472c1d6d8186115577f43c5987870a2a24592156b46631f1c28b4a3e",
-    "https://api.github.com/repos/bright-builds-llc/liquidfun-rs/actions/artifacts/8431922578/zip#sha256=99fa817d3b891a8942709e4b4af2bd4fa0aedbde0fc4c19b398829f02128a6c6",
-    "phase9-sanitizer-29652578231-22b31c0e1be8896df622b1decd58ba2853a60b04/identity.json#trace-sha256=f1f7d6cd2b2d6730fd4548cdfc643e3be7347613fe082f295b90622afe08d6ea",
-    "phase9-sanitizer-29652578231-22b31c0e1be8896df622b1decd58ba2853a60b04/identity.json#manifest-sha256=662b9514472c1d6d8186115577f43c5987870a2a24592156b46631f1c28b4a3e",
-    "phase9-manifest.json#semantic-manifest-sha256=671d16f1c7af0f948760b9cdc62b3ed1fefb7307889a46334230605365aefe80",
-    "https://github.com/bright-builds-llc/liquidfun-rs/commit/22b31c0e1be8896df622b1decd58ba2853a60b04",
-    ".planning/phases/09-particle-storage-lifecycle-and-coupling/09-28-SUMMARY.md",
-    "TESTING.md#approved-phase-9-evidence-run-2026-07-18",
+const PHASE9_AUTHORITY_REFERENCES: [&str; 15] = [
+    "https://github.com/bright-builds-llc/liquidfun-rs/actions/runs/29661682074",
+    "https://api.github.com/repos/bright-builds-llc/liquidfun-rs/actions/artifacts/8434547024/zip#sha256=22a37f91965eaf494b3e1fea041e1c54da9be03c06da5e276a641ee6cf536084",
+    "phase9-canonical-29661682074-9f2169ad1ad3c72adeae5e4fb1ea188b20ba84ce/identity.json#trace-sha256=eefec714082fc701fb6ec2cebd15ed9353114a8cc17f975b71c666b33fd3ccf7",
+    "phase9-canonical-29661682074-9f2169ad1ad3c72adeae5e4fb1ea188b20ba84ce/identity.json#manifest-sha256=74998e953e79f5ed04a58097d43abbca3cc814bee4fc86d0fd552d2951b1ae7c",
+    "https://api.github.com/repos/bright-builds-llc/liquidfun-rs/actions/artifacts/8434557009/zip#sha256=849b8dba5b4c5a0f5e6ea4cddf10bf8243a71bdeec3b75676677358aa34d4316",
+    "phase9-sanitizer-29661682074-9f2169ad1ad3c72adeae5e4fb1ea188b20ba84ce/identity.json#trace-sha256=3c697421472ee087d265cb9a6268ab04ef76dce37c39ed6b4202fa1a36c7dbdd",
+    "phase9-sanitizer-29661682074-9f2169ad1ad3c72adeae5e4fb1ea188b20ba84ce/identity.json#manifest-sha256=74998e953e79f5ed04a58097d43abbca3cc814bee4fc86d0fd552d2951b1ae7c",
+    "phase9-manifest.json#semantic-manifest-sha256=a319f771c5d9e952b9389160bb3ad19ce487da43271e62568828ce2ae22a33aa",
+    "https://github.com/bright-builds-llc/liquidfun-rs/commit/9f2169ad1ad3c72adeae5e4fb1ea188b20ba84ce",
+    ".planning/phases/09-particle-storage-lifecycle-and-coupling/09-31-SUMMARY.md",
+    "TESTING.md#approved-phase-9-evidence-run-2026-07-18-wr-02",
+    "https://github.com/bright-builds-llc/liquidfun-rs/actions/runs/29661682074/job/88125511292",
+    "https://github.com/bright-builds-llc/liquidfun-rs/actions/runs/29661682074/job/88125511305",
+    "phase9-manifest.json#payload-digest-set-sha256=72797909ebb807c4c7dc591b4fa8987b26f3f26e43b967e080db4363f26b509d",
+    "phase9-manifest.json#binding-digest-set-sha256=2e0e4212a62aec27b371bcd8dc9301966e0f712b0d28736e39f3993cc3ab3134",
 ];
 const PHASE9_DIFFERENTIAL_REFERENCES: [&str; 7] = [
     "crates/liquidfun-differential/tests/fixtures/rigid_world/phase9/phase9-v1.json",
@@ -246,7 +250,7 @@ fn check_rejects_differential_evidence_without_dependencies() -> TestResult {
 }
 
 #[test]
-fn check_rejects_pre_wr01_phase9_authority() -> TestResult {
+fn check_accepts_fresh_phase9_authority() -> TestResult {
     // Arrange
     let fixture = InventoryFixture::new()?;
     assert_success(&fixture.discover()?);
@@ -256,8 +260,7 @@ fn check_rejects_pre_wr01_phase9_authority() -> TestResult {
     let output = fixture.generate()?;
 
     // Assert
-    assert_failure_category(&output, "inventory/evidence");
-    assert!(stderr(&output).contains("superseded pre-WR-01 Phase 9 authority"));
+    assert_success(&output);
     fixture.cleanup()?;
     Ok(())
 }
@@ -434,19 +437,22 @@ fn check_rejects_substituted_phase9_artifact() -> TestResult {
 fn check_rejects_every_prior_or_failed_phase9_authority_marker() -> TestResult {
     for marker in [
         "29439515367",
+        "29583793056",
+        "29625083184",
+        "29652578231",
         "8352859391",
         "8352881868",
         "a87f84bbdbfe55fb732d74c481c4a4bda9eec958",
         "f237d6f1ebe0e59f65a5ae0609140eecdd8b32247e9d2064c83748be1ab9f5ea",
         "95ad57e5d5711ae6aa93847ad1efd4a04025bd2956b4996535fa0e5f45a5893f",
-        "29583793056",
         "8408156562",
         "8408174081",
         "b27fc14f6b29fb82ca815fa1effba71bae09d424",
         "faaf24c870826251f0dd1d507ba9c335269b78433ba1ce2ee0e1995336f0139a",
         "f4b30cebed7b81a41282a33d45b81231485a2fa0c3a958c7b68a3ecbad086e7c",
-        "29625083184",
         "8423580554",
+        "8431920189",
+        "8431922578",
         "7ed430c497efbaa8585ee9ef3862be1abda29ef5",
         "f7478565688e7250257bc8c1d066456853604394c61e7cbe38ffcc11e73c5c5b",
     ] {
@@ -471,10 +477,15 @@ fn check_rejects_every_prior_or_failed_phase9_authority_marker() -> TestResult {
 #[test]
 fn check_rejects_semantically_incomplete_phase9_differential_claims() -> TestResult {
     for unsupported_claim in [
+        "missing-schema-v4-proof-topology",
+        "baseline-substituted-for-required-independent-role",
+        "forbidden-cross-run-role-alias",
         "missing-retained-rigid-comparator-record",
         "wrong-retained-rigid-policy-digest",
         "non-match-retained-rigid-outcome",
         "particle-only-comparator",
+        "wrong-seven-case-cardinality",
+        "wrong-58-binding-cardinality",
         "58-label-manifest-without-semantic-binding-digest",
         "wrong-action-binding",
         "wrong-checkpoint-binding",
@@ -483,6 +494,11 @@ fn check_rejects_semantically_incomplete_phase9_differential_claims() -> TestRes
         "empty-stuck-candidate-witness",
         "failed-phase9-log",
         "incomplete-phase9-policy-array",
+        "wrong-22-policy-array",
+        "payload-digest-mismatch",
+        "trace-digest-mismatch",
+        "binding-digest-mismatch",
+        "manifest-digest-mismatch",
     ] {
         // Arrange
         let fixture = InventoryFixture::new()?;
@@ -506,7 +522,10 @@ fn check_rejects_semantically_incomplete_phase9_differential_claims() -> TestRes
 fn check_rejects_mixed_run_and_canonical_as_sanitizer_artifacts() -> TestResult {
     for substituted_reference in [
         "https://api.github.com/repos/bright-builds-llc/liquidfun-rs/actions/artifacts/8423580554/zip#sha256=failed-run-canonical",
-        "phase9-canonical-29652578231-22b31c0e1be8896df622b1decd58ba2853a60b04/identity.json#trace-sha256=canonical-used-as-sanitizer",
+        "phase9-sanitizer-29652578231-22b31c0e1be8896df622b1decd58ba2853a60b04/identity.json#trace-sha256=mixed-run",
+        "phase9-sanitizer-29661682074-22b31c0e1be8896df622b1decd58ba2853a60b04/identity.json#trace-sha256=mixed-sha",
+        "phase9-canonical-29661682074-9f2169ad1ad3c72adeae5e4fb1ea188b20ba84ce/identity.json#trace-sha256=mixed-job",
+        "https://api.github.com/repos/bright-builds-llc/liquidfun-rs/actions/artifacts/8434547024/zip#sha256=canonical-used-as-sanitizer",
     ] {
         // Arrange
         let fixture = InventoryFixture::new()?;
