@@ -99,4 +99,6 @@ Completion review: All seven evidence cases now bind the retained Phase 8 rigid 
 - [x] Record run 29625083184 as rejected authority in incomplete Plans 09-28 and 09-29.
 - [x] Run the complete Rust, canonical, sanitizer, evidence, provenance, policy, workflow, Markdown, schema, and diff gates.
 - [x] Commit and push one verified recovery SHA; record the user's approval and one-time Phase 09 exception.
-- [ ] Publish the plan-only exception SHA, dispatch exactly once under that scoped authority, validate paired artifacts, and complete Phase 09 promotion and verification.
+- [x] Publish the plan-only exception SHA, dispatch exactly once under that scoped authority, and validate the paired exact-ref artifacts.
+
+Completion review: The hermetic retained-process fixture and scoped Phase 09 exception were published at clean remote SHA `22b31c0e1be8896df622b1decd58ba2853a60b04`. `oracle.yml` was dispatched exactly once for that SHA as run `29652578231`; its canonical and fail-fast sanitizer jobs both succeeded. The two exact Phase 9 artifacts passed safe-archive preflight and the reusable exact-ref validator with runs `29439515367`, `29583793056`, and `29625083184` denied. The fresh evidence proves seven cases, 58 semantic bindings, 22 policies per case, retained-rigid equality, and canonical/sanitizer manifest agreement. No compatibility promotion or ledger mutation occurred; Plan 09-29 remains pending.

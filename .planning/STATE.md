@@ -3,15 +3,15 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 09-27-PLAN.md
-last_updated: "2026-07-18T00:59:37.569Z"
+stopped_at: Completed 09-28-PLAN.md
+last_updated: "2026-07-18T16:52:44.494Z"
 last_activity: "2026-07-18"
 progress:
   total_phases: 12
   completed_phases: 8
   total_plans: 127
-  completed_plans: 125
-  percent: 98
+  completed_plans: 126
+  percent: 99
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 ## Current Position
 
 Phase: 09 (particle-storage-lifecycle-and-coupling) — EXECUTING
-Plan: 27 of 29
+Plan: 28 of 29
 Status: Ready to execute
 Last activity: 2026-07-18
 
-Progress: [██████████] 98%
+Progress: [██████████] 99%
 
 ## Performance Metrics
 
@@ -136,6 +136,7 @@ Progress: [██████████] 98%
 | Phase 09 P25 | 71 min | 3 tasks | 6 files |
 | Phase 09 P26 | 158 min | 3 tasks | 19 files |
 | Phase 09 P27 | 37m | 3 tasks | 5 files |
+| Phase 09 P28 | 15h 16m | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -321,6 +322,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 09]: The typed xtask validator owns reusable manifest, payload, trace, identity, exact-ref metadata, and archive validation; the shell runner writes identity last.
 - [Phase 09]: Every case binds retained Phase 6/7/8 policy identities, a phase8-v1 rigid match, exact semantic witnesses, persisted payloads, and the ordered case manifest.
 - [Phase 09]: Exact-ref authority closes run, job, artifact, archive, live snapshot, approved head, and explicit historical-run denial in one validator.
+- [Phase 09]: Bind the one-time recovery authorization only to Phase 09 Plan 28 and immutable SHA 22b31c0e1be8896df622b1decd58ba2853a60b04; global approval policy remains unchanged.
+- [Phase 09]: Reject failed run 29625083184 and canonical artifact 8423580554 as authority; evidence from different runs must never be mixed.
+- [Phase 09]: Accept replacement run 29652578231 only after same-run canonical and sanitizer artifacts passed safe-archive and exact-ref validation.
 
 ### Pending Todos
 
@@ -334,6 +338,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-18T00:59:37.566Z
-Stopped at: Completed 09-27-PLAN.md
+Last session: 2026-07-18T16:52:44.491Z
+Stopped at: Completed 09-28-PLAN.md
 Resume file: None
