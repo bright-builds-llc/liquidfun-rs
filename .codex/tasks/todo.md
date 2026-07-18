@@ -102,3 +102,14 @@ Completion review: All seven evidence cases now bind the retained Phase 8 rigid 
 - [x] Publish the plan-only exception SHA, dispatch exactly once under that scoped authority, and validate the paired exact-ref artifacts.
 
 Completion review: The hermetic retained-process fixture and scoped Phase 09 exception were published at clean remote SHA `22b31c0e1be8896df622b1decd58ba2853a60b04`. `oracle.yml` was dispatched exactly once for that SHA as run `29652578231`; its canonical and fail-fast sanitizer jobs both succeeded. The two exact Phase 9 artifacts passed safe-archive preflight and the reusable exact-ref validator with runs `29439515367`, `29583793056`, and `29625083184` denied. The fresh evidence proves seven cases, 58 semantic bindings, 22 policies per case, retained-rigid equality, and canonical/sanitizer manifest agreement. No compatibility promotion or ledger mutation occurred; Plan 09-29 remains pending.
+
+## task-09-29-replacement-evidence-promotion | 2026-07-18 12:23 CDT | Promote replacement Phase 9 evidence
+
+- [x] Independently re-query, redownload, and exact-ref validate replacement run 29652578231.
+- [x] Promote only the four supported Phase 9 compatibility rows.
+- [x] Reject all historical, failed, mixed-run, incomplete, and Phase 10 authority.
+- [x] Generate the compatibility report twice and prove byte identity.
+- [x] Run the full Rust, oracle, sanitizer, evidence, policy, schema, documentation, diff, and ASVS L1 matrix.
+- [x] Commit the implementation and create the lifecycle-bound plan summary.
+
+Completion review: Fresh canonical and sanitizer archives from run `29652578231` independently proved seven cases, exactly 58 semantic bindings, retained Phase 8 comparison, complete policies, and matching semantic manifests. Only the particle public API, particle-system public API, storage/lifecycle, and contacts/coupling rows cite the replacement authority. Inventory regressions reject runs `29439515367`, `29583793056`, and `29625083184`, failed artifact `8423580554`, mixed artifacts, incomplete semantics, and every deferred Phase 10 behavior. The complete closure matrix and ASVS L1 review passed with no high-severity finding. Residual scope is explicit: Phase 10 groups, topology, pairs, triads, source areas, solver behaviors, and cross-engine stable-ID rotation remain not evidenced.

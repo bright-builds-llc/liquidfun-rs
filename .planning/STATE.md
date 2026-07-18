@@ -3,15 +3,15 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 09-28-PLAN.md
-last_updated: "2026-07-18T16:52:44.494Z"
+stopped_at: Completed 09-29-PLAN.md
+last_updated: "2026-07-18T17:23:01.711Z"
 last_activity: "2026-07-18"
 progress:
   total_phases: 12
-  completed_phases: 8
+  completed_phases: 9
   total_plans: 127
-  completed_plans: 126
-  percent: 99
+  completed_plans: 127
+  percent: 100
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 ## Current Position
 
 Phase: 09 (particle-storage-lifecycle-and-coupling) — EXECUTING
-Plan: 28 of 29
+Plan: 29 of 29
 Status: Ready to execute
 Last activity: 2026-07-18
 
@@ -137,6 +137,7 @@ Progress: [██████████] 99%
 | Phase 09 P26 | 158 min | 3 tasks | 19 files |
 | Phase 09 P27 | 37m | 3 tasks | 5 files |
 | Phase 09 P28 | 15h 16m | 3 tasks | 4 files |
+| Phase 09 P29 | 23min | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -325,6 +326,8 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 09]: Bind the one-time recovery authorization only to Phase 09 Plan 28 and immutable SHA 22b31c0e1be8896df622b1decd58ba2853a60b04; global approval policy remains unchanged.
 - [Phase 09]: Reject failed run 29625083184 and canonical artifact 8423580554 as authority; evidence from different runs must never be mixed.
 - [Phase 09]: Accept replacement run 29652578231 only after same-run canonical and sanitizer artifacts passed safe-archive and exact-ref validation.
+- [Phase 09]: Only successful replacement run 29652578231 at exact approved SHA 22b31c0e1be8896df622b1decd58ba2853a60b04 authorizes the four scoped Phase 9 rows.
+- [Phase 09]: Historical and failed runs 29439515367, 29583793056, and 29625083184 remain denylisted, and all Phase 10 particle behavior remains not evidenced.
 
 ### Pending Todos
 
@@ -338,6 +341,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-18T16:52:44.491Z
-Stopped at: Completed 09-28-PLAN.md
+Last session: 2026-07-18T17:23:01.708Z
+Stopped at: Completed 09-29-PLAN.md
 Resume file: None
