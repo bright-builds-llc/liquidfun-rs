@@ -22,7 +22,7 @@ use liquidfun_test_protocol::{
     decode_rigid_world_request_jsonl, decode_rigid_world_result_jsonl,
     validate_phase9_witness_bindings,
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 
@@ -34,6 +34,12 @@ const PINNED_WITNESS: &[u8] =
 const PHASE6_POLICY: &str = include_str!("../../../protocol/tolerances/phase6-v1.toml");
 const PHASE7_POLICY: &str = include_str!("../../../protocol/tolerances/phase7-v1.toml");
 const PHASE8_POLICY: &str = include_str!("../../../protocol/tolerances/phase8-v1.toml");
+const PHASE6_POLICY_SHA256: &str =
+    "7f10df148852866fd20d11b8d27adcddc0ad463ac3d3d716a8946ca5c8f1c63a";
+const PHASE7_POLICY_SHA256: &str =
+    "fd772b2cf523a6d40bf978bc4d0da18a4564181a93e6b2bdeb8e4d40d5613311";
+const PHASE8_POLICY_SHA256: &str =
+    "2843ca40bec5b1c680135664c58c12a8388a7a9e86ad77f8ef5a268f3f15a6bf";
 const COMMON_ACTIONS: &[&str] = &[
     "create-growable",
     "create-fixed",
@@ -148,6 +154,71 @@ struct CorpusCase {
 enum Authority {
     PinnedOracle,
     Independent,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct EvidenceManifest {
+    schema_version: u32,
+    case_record_schema_version: u32,
+    profile: String,
+    upstream_revision: String,
+    semantic_manifest_sha256: String,
+    cases: Vec<EvidenceCaseRecord>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct EvidenceCaseRecord {
+    case_id: String,
+    reached_branches: Vec<ScenarioId>,
+    witnesses: Vec<Phase9WitnessBinding>,
+    witness_binding_sha256: String,
+    consumed_policy_paths: Vec<String>,
+    retained_rigid: RetainedRigidRecord,
+    request_path: String,
+    request_sha256: String,
+    native_result_path: String,
+    native_result_sha256: String,
+    oracle_result_path: String,
+    oracle_result_sha256: String,
+    complete_comparison_path: String,
+    complete_comparison_sha256: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct RetainedRigidRecord {
+    comparator: String,
+    phase6_policy_sha256: String,
+    phase7_policy_sha256: String,
+    phase8_policy_sha256: String,
+    outcome: String,
+    comparison_sha256: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+struct RetainedRigidPayload<'a> {
+    comparator: &'a str,
+    phase6_policy_sha256: &'a str,
+    phase7_policy_sha256: &'a str,
+    phase8_policy_sha256: &'a str,
+    outcome: &'a str,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct CompleteComparisonPayload {
+    outcome: String,
+    consumed_policy_paths: Vec<String>,
+}
+
+#[derive(Debug, Clone)]
+struct EvidenceCasePayloads {
+    request: Vec<u8>,
+    native_result: Vec<u8>,
+    oracle_result: Vec<u8>,
+    complete_comparison: Vec<u8>,
 }
 
 fn manifest() -> CorpusManifest {
@@ -599,6 +670,155 @@ fn action(id: &str, action: Value) -> Value {
 
 fn sha256(bytes: &[u8]) -> String {
     format!("{:x}", Sha256::digest(bytes))
+}
+
+fn canonical_sha256(value: &impl Serialize) -> String {
+    sha256(&serde_json::to_vec(value).expect("canonical evidence JSON"))
+}
+
+fn retained_rigid_record() -> RetainedRigidRecord {
+    let payload = RetainedRigidPayload {
+        comparator: "phase8-v1",
+        phase6_policy_sha256: PHASE6_POLICY_SHA256,
+        phase7_policy_sha256: PHASE7_POLICY_SHA256,
+        phase8_policy_sha256: PHASE8_POLICY_SHA256,
+        outcome: "match",
+    };
+    RetainedRigidRecord {
+        comparator: payload.comparator.to_owned(),
+        phase6_policy_sha256: payload.phase6_policy_sha256.to_owned(),
+        phase7_policy_sha256: payload.phase7_policy_sha256.to_owned(),
+        phase8_policy_sha256: payload.phase8_policy_sha256.to_owned(),
+        outcome: payload.outcome.to_owned(),
+        comparison_sha256: canonical_sha256(&payload),
+    }
+}
+
+fn evidence_payload_paths(case_id: &str) -> (String, String, String, String) {
+    let base = format!("cases/{case_id}");
+    (
+        format!("{base}/request.jsonl"),
+        format!("{base}/native-result.json"),
+        format!("{base}/oracle-result.json"),
+        format!("{base}/complete-comparison.json"),
+    )
+}
+
+fn evidence_case_record(
+    case: &CorpusCase,
+    payloads: &EvidenceCasePayloads,
+    consumed_policy_paths: &[&str],
+) -> EvidenceCaseRecord {
+    let (request_path, native_result_path, oracle_result_path, complete_comparison_path) =
+        evidence_payload_paths(&case.case_id);
+    EvidenceCaseRecord {
+        case_id: case.case_id.clone(),
+        reached_branches: case
+            .witnesses
+            .iter()
+            .map(|witness| witness.branch_id.clone())
+            .collect(),
+        witness_binding_sha256: canonical_sha256(&case.witnesses),
+        witnesses: case.witnesses.clone(),
+        consumed_policy_paths: consumed_policy_paths
+            .iter()
+            .map(|path| (*path).to_owned())
+            .collect(),
+        retained_rigid: retained_rigid_record(),
+        request_path,
+        request_sha256: sha256(&payloads.request),
+        native_result_path,
+        native_result_sha256: sha256(&payloads.native_result),
+        oracle_result_path,
+        oracle_result_sha256: sha256(&payloads.oracle_result),
+        complete_comparison_path,
+        complete_comparison_sha256: sha256(&payloads.complete_comparison),
+    }
+}
+
+fn validate_evidence_case_value(
+    value: &Value,
+    payloads: &EvidenceCasePayloads,
+) -> Result<(), String> {
+    if value.get("retained_rigid").is_none() {
+        return Err("missing retained-rigid proof".to_owned());
+    }
+    let record: EvidenceCaseRecord =
+        serde_json::from_value(value.clone()).map_err(|error| error.to_string())?;
+    let retained = &record.retained_rigid;
+    if retained.comparator != "phase8-v1"
+        || retained.phase6_policy_sha256 != PHASE6_POLICY_SHA256
+        || retained.phase7_policy_sha256 != PHASE7_POLICY_SHA256
+        || retained.phase8_policy_sha256 != PHASE8_POLICY_SHA256
+    {
+        return Err("retained-rigid policy digest mismatch".to_owned());
+    }
+    if retained.outcome != "match" {
+        return Err("retained-rigid outcome mismatch".to_owned());
+    }
+    let retained_payload = RetainedRigidPayload {
+        comparator: &retained.comparator,
+        phase6_policy_sha256: &retained.phase6_policy_sha256,
+        phase7_policy_sha256: &retained.phase7_policy_sha256,
+        phase8_policy_sha256: &retained.phase8_policy_sha256,
+        outcome: &retained.outcome,
+    };
+    if retained.comparison_sha256 != canonical_sha256(&retained_payload) {
+        return Err("retained-rigid comparison digest mismatch".to_owned());
+    }
+    if record.witness_binding_sha256 != canonical_sha256(&record.witnesses) {
+        return Err("witness binding digest mismatch".to_owned());
+    }
+    if record.request_sha256 != sha256(&payloads.request) {
+        return Err("request payload digest mismatch".to_owned());
+    }
+    if record.native_result_sha256 != sha256(&payloads.native_result) {
+        return Err("native result payload digest mismatch".to_owned());
+    }
+    if record.oracle_result_sha256 != sha256(&payloads.oracle_result) {
+        return Err("oracle result payload digest mismatch".to_owned());
+    }
+    if record.complete_comparison_sha256 != sha256(&payloads.complete_comparison) {
+        return Err("complete comparison payload digest mismatch".to_owned());
+    }
+    Ok(())
+}
+
+fn evidence_case_fixture() -> (Value, EvidenceCasePayloads) {
+    let witness = valid_witness_binding("multiple_systems");
+    let case = CorpusCase {
+        case_id: "test-case".to_owned(),
+        authority: Authority::Independent,
+        fixture: "test-case.jsonl".to_owned(),
+        request_sha256: sha256(b"request"),
+        witnesses: vec![witness],
+    };
+    let complete_comparison = serde_json::to_vec(&CompleteComparisonPayload {
+        outcome: "match".to_owned(),
+        consumed_policy_paths: PHASE9_REQUIRED_POLICY_PATHS
+            .iter()
+            .map(|path| (*path).to_owned())
+            .collect(),
+    })
+    .expect("comparison fixture");
+    let payloads = EvidenceCasePayloads {
+        request: b"request".to_vec(),
+        native_result: b"native".to_vec(),
+        oracle_result: b"oracle".to_vec(),
+        complete_comparison,
+    };
+    let record = evidence_case_record(&case, &payloads, PHASE9_REQUIRED_POLICY_PATHS);
+    (
+        serde_json::to_value(record).expect("evidence fixture"),
+        payloads,
+    )
+}
+
+fn write_evidence_payload(root: &Path, relative: &str, bytes: &[u8]) {
+    let path = root.join(relative);
+    let parent = path.parent().expect("evidence payload parent");
+    fs::create_dir_all(parent).expect("evidence payload directory");
+    fs::write(path, bytes).expect("evidence payload");
 }
 
 fn fixture_path(case: &CorpusCase) -> std::path::PathBuf {
@@ -1319,7 +1539,24 @@ fn executable_cases() {
         eprintln!("SKIP: build the selected Phase 9 oracle to execute the corpus");
         return;
     };
+    let maybe_evidence_root = std::env::var("LIQUIDFUN_PHASE9_EVIDENCE_MANIFEST")
+        .ok()
+        .map(|output| {
+            let relative_output = PathBuf::from(output);
+            assert!(!relative_output.is_absolute() && relative_output.starts_with("target"));
+            assert!(
+                relative_output
+                    .components()
+                    .all(|component| matches!(component, Component::Normal(_)))
+            );
+            root.join(
+                relative_output
+                    .parent()
+                    .expect("evidence manifest must have a parent"),
+            )
+        });
     let mut evidence_cases = Vec::new();
+    let (phase6, phase7, phase8) = retained_profiles();
 
     // Act
     for case in &manifest.cases {
@@ -1339,6 +1576,16 @@ fn executable_cases() {
         assert_eq!(run.native_request_sha256(), run.request_sha256());
         assert_eq!(run.oracle_request_sha256(), run.request_sha256());
         assert_eq!(run.consumed_paths(), PHASE9_REQUIRED_POLICY_PATHS);
+        let retained = compare_phase8_rigid_world_results(
+            &request,
+            &native,
+            oracle.result(),
+            &phase6,
+            &phase7,
+            &phase8,
+        )
+        .expect("retained rigid comparison must execute");
+        assert_eq!(retained, RigidComparisonOutcome::Match);
         assert!(
             matches!(run.outcome(), Phase9ComparisonOutcome::Match { .. }),
             "{} produced an unexpected Phase 9 mismatch: {:?}",
@@ -1361,24 +1608,58 @@ fn executable_cases() {
             oracle.result(),
             &case.witnesses,
         );
-        evidence_cases.push(json!({
-            "case_id": case.case_id,
-            "reached_branches": case.witnesses.iter().map(|witness| &witness.branch_id).collect::<Vec<_>>(),
-            "consumed_policy_paths": run.consumed_paths(),
-            "request_sha256": case.request_sha256,
-            "native_result_sha256": sha256(&serde_json::to_vec(&native).expect("native bytes")),
-            "oracle_result_sha256": sha256(&serde_json::to_vec(oracle.result()).expect("oracle bytes")),
-            "comparison_sha256": sha256(format!("{:?}", run.outcome()).as_bytes()),
-        }));
+        let complete_comparison = CompleteComparisonPayload {
+            outcome: "match".to_owned(),
+            consumed_policy_paths: run
+                .consumed_paths()
+                .iter()
+                .map(|path| (*path).to_owned())
+                .collect(),
+        };
+        let payloads = EvidenceCasePayloads {
+            request: bytes,
+            native_result: serde_json::to_vec(&native).expect("native bytes"),
+            oracle_result: serde_json::to_vec(oracle.result()).expect("oracle bytes"),
+            complete_comparison: serde_json::to_vec(&complete_comparison)
+                .expect("complete comparison bytes"),
+        };
+        let record = evidence_case_record(case, &payloads, run.consumed_paths());
+        validate_evidence_case_value(
+            &serde_json::to_value(&record).expect("evidence case value"),
+            &payloads,
+        )
+        .expect("generated evidence case must validate");
+        if let Some(evidence_root) = &maybe_evidence_root {
+            write_evidence_payload(evidence_root, &record.request_path, &payloads.request);
+            write_evidence_payload(
+                evidence_root,
+                &record.native_result_path,
+                &payloads.native_result,
+            );
+            write_evidence_payload(
+                evidence_root,
+                &record.oracle_result_path,
+                &payloads.oracle_result,
+            );
+            write_evidence_payload(
+                evidence_root,
+                &record.complete_comparison_path,
+                &payloads.complete_comparison,
+            );
+        }
+        evidence_cases.push(record);
     }
-    let evidence = json!({
-        "profile": manifest.profile,
-        "upstream_revision": manifest.pinned_upstream_revision,
-        "cases": evidence_cases,
-    });
+    let evidence = EvidenceManifest {
+        schema_version: 2,
+        case_record_schema_version: 1,
+        profile: manifest.profile,
+        upstream_revision: manifest.pinned_upstream_revision,
+        semantic_manifest_sha256: canonical_sha256(&evidence_cases),
+        cases: evidence_cases,
+    };
 
     // Assert
-    assert!(!evidence["cases"].as_array().expect("cases").is_empty());
+    assert!(!evidence.cases.is_empty());
     if let Ok(output) = std::env::var("LIQUIDFUN_PHASE9_EVIDENCE_MANIFEST") {
         let relative_output = Path::new(&output);
         assert!(!relative_output.is_absolute() && relative_output.starts_with("target"));
@@ -2002,6 +2283,61 @@ fn phase9_comparator_rejects_retained_process_result_through_runner() {
         panic!("runner must report its retained rigid mismatch");
     };
     assert_eq!(report.semantic_path(), "rigid_world.body.active");
+}
+
+#[test]
+fn retained_rigid_record_rejects_missing_or_mutated_proof() {
+    // Arrange
+    let (valid, payloads) = evidence_case_fixture();
+    let mut missing = valid.clone();
+    missing
+        .as_object_mut()
+        .expect("evidence case object")
+        .remove("retained_rigid");
+    let mut mutated = valid.clone();
+    mutated["retained_rigid"]["phase8_policy_sha256"] = json!("0".repeat(64));
+
+    // Act
+    let valid_result = validate_evidence_case_value(&valid, &payloads);
+    let missing_result = validate_evidence_case_value(&missing, &payloads);
+    let mutated_result = validate_evidence_case_value(&mutated, &payloads);
+
+    // Assert
+    assert!(valid_result.is_ok());
+    assert_eq!(
+        missing_result,
+        Err("missing retained-rigid proof".to_owned())
+    );
+    assert_eq!(
+        mutated_result,
+        Err("retained-rigid policy digest mismatch".to_owned())
+    );
+}
+
+#[test]
+fn witness_binding_record_rejects_semantic_or_payload_digest_mutation() {
+    // Arrange
+    let (valid, payloads) = evidence_case_fixture();
+    let mut semantic = valid.clone();
+    semantic["witnesses"][0]["action_index"] = json!(usize::MAX);
+    let mut corrupted_payloads = payloads.clone();
+    corrupted_payloads.native_result.push(b'!');
+
+    // Act
+    let valid_result = validate_evidence_case_value(&valid, &payloads);
+    let semantic_result = validate_evidence_case_value(&semantic, &payloads);
+    let payload_result = validate_evidence_case_value(&valid, &corrupted_payloads);
+
+    // Assert
+    assert!(valid_result.is_ok());
+    assert_eq!(
+        semantic_result,
+        Err("witness binding digest mismatch".to_owned())
+    );
+    assert_eq!(
+        payload_result,
+        Err("native result payload digest mismatch".to_owned())
+    );
 }
 
 struct FakePhase9OracleRoot {

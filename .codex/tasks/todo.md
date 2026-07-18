@@ -80,3 +80,14 @@ Follow-up review: The first pushes proved the original configure and differentia
 - [x] Review the complete diff, record residual risks, and push only after lifecycle validation passes.
 
 Completion review: All 24 plans are committed with lifecycle-bound summaries. Review fixes made ordinary hook-limit failures transactional and every accepted joint mutation observable, including live C++ gear-ratio evidence. Exact workflow-dispatch run `29383445374` passed canonical Linux, fail-fast sanitizer/reset Linux, macOS, and Windows at final reviewed code commit `beb98bd74b1d26ab0a96c6be33ce1926d349abf0`; both exact artifacts and all 33 platform-validation ledger rows bind that evidence. Automatic Cargo CI run `29382964877` and Oracle CI run `29382964854` also passed at the same head. Independent code review is clean, Phase 8 verification passes 75/75 must-haves, lifecycle validation passes, and the ordered Rust, inventory, documentation, Markdown, and diff gates pass. Residual scope remains explicit: hook-owned external side effects are outside world rollback, transactional snapshots add unbenchmarked cost, and RIGD-10, particles, D3/cross-platform numerical parity, performance, testbed, and release readiness remain pending future phases.
+
+## task-09-27-portable-evidence-validator | 2026-07-17 19:20 CDT | Execute Phase 9 Plan 27
+
+- [ ] Bind every generated case to retained Phase 8 comparison, exact policy digests, semantic witnesses, and persisted payload hashes.
+- [ ] Make Phase 9 evidence generation identity-last and fail closed before identity creation.
+- [ ] Add one typed bounded local/exact-ref validator with archive, metadata, substitution, and corruption rejection coverage.
+- [ ] Run focused tests plus canonical debug/release and fail-fast sanitizer evidence production.
+- [ ] Run the exact ordered Rust pre-commit gate, provenance, upstream read-only, and diff verification.
+- [ ] Create the lifecycle-bound summary and update GSD state, roadmap, and requirements.
+
+Completion review: Pending.
