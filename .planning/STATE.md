@@ -3,15 +3,15 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 09-25-PLAN.md
-last_updated: "2026-07-17T21:27:43.604Z"
-last_activity: "2026-07-17"
+stopped_at: Completed 09-26-PLAN.md
+last_updated: "2026-07-18T00:17:53.900Z"
+last_activity: "2026-07-18"
 progress:
   total_phases: 12
   completed_phases: 8
   total_plans: 127
-  completed_plans: 123
-  percent: 97
+  completed_plans: 124
+  percent: 98
 ---
 
 # Project State
@@ -26,9 +26,9 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 ## Current Position
 
 Phase: 09 (particle-storage-lifecycle-and-coupling) — EXECUTING
-Plan: 25 of 29
+Plan: 26 of 29
 Status: Ready to execute
-Last activity: 2026-07-17
+Last activity: 2026-07-18
 
 Progress: [██████████] 97%
 
@@ -134,6 +134,7 @@ Progress: [██████████] 97%
 | Phase 09 P23 | 22 min | 3 tasks | 3 files |
 | Phase 09 P24 | 22 min | 3 tasks | 6 files |
 | Phase 09 P25 | 71 min | 3 tasks | 6 files |
+| Phase 09 P26 | 158 min | 3 tasks | 19 files |
 
 ## Accumulated Context
 
@@ -313,6 +314,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 09]: Expose one public Phase 9 complete-comparison seam with digest-checked embedded Phase 6-8 policies and no caller injection.
 - [Phase 09]: Evaluate particle policies only after retained Phase 6-8 comparison returns Match.
 - [Phase 09]: Keep particle-coupled rigid state authoritative at every downstream oracle checkpoint and reject unsupported retained actions.
+- [Phase 09]: Represent every reviewed Phase 9 branch with a closed typed semantic assertion and exact action/checkpoint indices.
+- [Phase 09]: Capture listener occurrences symmetrically in native Rust and the pinned C++ oracle through bounded occurrence inspection.
+- [Phase 09]: Use result digests and deliberate mismatch signatures for replay, minimization, divergence, D0, and debug/release evidence.
 
 ### Pending Todos
 
@@ -326,6 +330,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-17T21:27:43.600Z
-Stopped at: Completed 09-25-PLAN.md
+Last session: 2026-07-18T00:17:53.896Z
+Stopped at: Completed 09-26-PLAN.md
 Resume file: None
