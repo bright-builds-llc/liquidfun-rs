@@ -15,8 +15,10 @@ origin shifting through one closed nine-family rigid-world request. Local
 oracle results are D2 supported-toolchain evidence and exact two-run
 determinism is D0. Phase 8 extends that request to 19 families covering joints,
 standalone rope, callback/destruction timing, and reconstruction. Exact
-canonical D1 evidence supports that accumulated scalar rigid corpus and the
-scoped Phase 9 particle storage/lifecycle and contacts/coupling foundations.
+canonical D1 evidence supports that accumulated scalar rigid corpus. The scoped
+Phase 9 particle storage/lifecycle and contacts/coupling foundations have
+current local differential evidence but await one fresh schema-v4 exact-ref
+authority run before platform promotion.
 Particle groups, topology, pairs, triads, remaining solver behaviors,
 cross-engine stable-ID rotation, D3 review, other platforms, performance, and
 the deferred fuzz, Miri, Rust-sanitizer, benchmark, and coverage lanes remain
@@ -616,6 +618,54 @@ digests, confirm the unique successful canonical and sanitizer jobs, then use
 the repository's reviewed stage, review, and promotion workflow. A local pass,
 a mismatched SHA, one artifact, or an unverified digest cannot promote the Phase
 9 claim.
+
+### Phase 9 recovery single-dispatch protocol
+
+The Phase-09-only recovery exception authorizes one autonomous
+`workflow_dispatch` without a separate manual SHA approval. It does not change
+the repository workflow, GSD configuration, approval policy, branch rules, or
+any global setting. Before dispatch, the executor must:
+
+1. commit the reviewed schema-v4 procedure only after the required ordered Rust
+   gate passes;
+1. require a clean worktree, record the full 40-character local `main` SHA,
+   push it once, fetch `origin`, and prove local `HEAD` equals `origin/main`;
+1. query GitHub and require zero prior `oracle.yml` `workflow_dispatch` runs for
+   that exact SHA;
+1. invoke exactly
+   `gh workflow run oracle.yml --ref main -f evidence_phase=phase9` once; and
+1. never retry that command after an error, timeout, ambiguous response, or
+   terminal failure. An ambiguous response is investigated only through
+   read-only API queries.
+
+After dispatch, exactly one run must match the immutable SHA. Only that run may
+be watched. A second dispatch or rerun is not authorized. The same successful
+run and SHA must contain exactly one successful canonical authority job and
+exactly one successful sanitizer authority job. Their archives are queried and
+downloaded independently, inspected for bounded regular safe paths before
+extraction, and extracted into separate fixed directories without copying or
+combining files.
+
+The exact-ref validator must receive all four denied run IDs:
+`29439515367`, `29583793056`, `29625083184`, and `29652578231`. Before
+validation, `run.json` must also prove that the canonical and sanitizer
+artifact IDs are distinct, that `.live_artifacts` contains exactly those two
+ID/digest pairs, and that neither artifact ID is `8423580554`, `8431920189`, or
+`8431922578`. Those runs and artifacts remain unusable even if their payloads
+are internally consistent.
+
+Schema v4 requires seven executed cases, exactly 58 unique semantic bindings,
+the same complete 22-policy array in both profiles, retained Phase 6 through 8
+comparison ending in `Match` before particle comparison, positive collision
+energy, nonempty stuck witnesses, passing logs, and canonical/sanitizer byte
+and semantic equality. It binds exact case-local replay-native, replay-oracle,
+debug, release, minimized, and copied proof roles before file-set
+deduplication. Baseline substitution and aliases between required independent
+pairs fail closed; only the reviewed replay-to-D0 and
+minimized/copied-to-first-divergence reuse relationships are allowed. Every
+archive, API, identity, payload, trace, binding, manifest, and semantic-manifest
+hash is recomputed before the four scoped Phase 9 rows may be promoted. No
+fresh run is current authority at the time this procedure is sealed.
 
 ### Superseded Phase 9 evidence run (2026-07-18)
 
