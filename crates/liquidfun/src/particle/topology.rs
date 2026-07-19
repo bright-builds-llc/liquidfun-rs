@@ -1,10 +1,15 @@
 use std::error::Error;
 use std::fmt;
 
+#[allow(
+    dead_code,
+    reason = "consumed by the Phase 10 group join and reactive topology integration"
+)]
+pub(in crate::particle) mod constraints;
 mod voronoi;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct VoronoiLimits {
+pub(in crate::particle) struct VoronoiLimits {
     generators: usize,
     cells: usize,
     queue_tasks: usize,
@@ -31,7 +36,7 @@ impl VoronoiLimits {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum VoronoiError {
+pub(in crate::particle) enum VoronoiError {
     NonFiniteRadius,
     NonPositiveRadius,
     NonFiniteMargin,
