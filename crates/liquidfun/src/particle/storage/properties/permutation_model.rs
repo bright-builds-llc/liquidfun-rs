@@ -173,8 +173,11 @@ proptest! {
         }
 
         // Act
-        let destroyed = super::super::permutation::apply_permutation(&mut storage, &old_to_new)
-            .map_err(|error| TestCaseError::fail(format!("valid mapping failed: {error:?}")))?;
+        let destroyed = super::super::permutation::apply_preserving_historical_order(
+            &mut storage,
+            &old_to_new,
+        )
+        .map_err(|error| TestCaseError::fail(format!("valid mapping failed: {error:?}")))?;
 
         // Assert
         let mut expected_order: Vec<_> = (0..ROW_COUNT)
@@ -300,7 +303,10 @@ proptest! {
         };
 
         // Act
-        let result = super::super::permutation::apply_permutation(&mut storage, &mapping);
+        let result = super::super::permutation::apply_preserving_historical_order(
+            &mut storage,
+            &mapping,
+        );
 
         // Assert
         prop_assert_eq!(result, Err(ParticleStorageError::InvalidPermutation));

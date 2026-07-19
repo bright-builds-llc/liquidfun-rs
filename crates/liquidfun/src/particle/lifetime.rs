@@ -493,7 +493,7 @@ pub(crate) fn compact_pending_with_occurrences(
             Ok(Some(destination))
         })
         .collect::<Result<Vec<_>, ParticleStorageError>>()?;
-    let destroyed = permutation::apply_permutation(storage, &old_to_new)?;
+    let destroyed = permutation::apply_preserving_historical_order(storage, &old_to_new)?;
     Ok(ParticleCompactionOutcome {
         destroyed,
         requested_listener_occurrences,

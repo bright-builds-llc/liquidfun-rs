@@ -5,7 +5,32 @@ use super::{
     StuckLanes, UserAssociationKey, Vec2, rebuild_group_records_for_system,
 };
 
-struct PermutationCandidate {
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum TopologyRemapMode {
+    PreserveHistoricalOrder,
+    AppendStableSortFirstDuplicate,
+}
+
+pub(super) enum TopologyRemapPolicy {
+    PreserveHistoricalOrder,
+    AppendStableSortFirstDuplicate {
+        pairs: Vec<ParticlePair>,
+        triads: Vec<ParticleTriad>,
+    },
+}
+
+impl TopologyRemapPolicy {
+    pub(super) const fn mode(&self) -> TopologyRemapMode {
+        match self {
+            Self::PreserveHistoricalOrder => TopologyRemapMode::PreserveHistoricalOrder,
+            Self::AppendStableSortFirstDuplicate { .. } => {
+                TopologyRemapMode::AppendStableSortFirstDuplicate
+            }
+        }
+    }
+}
+
+pub(super) struct PreparedPermutation {
     identities: Vec<IdentityEntry>,
     freed_slots: Vec<usize>,
     dense_to_id: Vec<Option<ParticleId>>,
@@ -55,23 +80,37 @@ struct RowPermutationCandidate {
     destroyed: Vec<ParticleSnapshot>,
 }
 
-pub(in crate::particle) fn apply_permutation(
+pub(super) fn prepare_permutation(
+    storage: &ParticleStorage,
+    old_to_new: &[Option<usize>],
+    topology_policy: TopologyRemapPolicy,
+) -> Result<PreparedPermutation, ParticleStorageError> {
+    storage.check_invariants()?;
+    let new_count = validate_basic_permutation(old_to_new, storage.dense_to_id.len())?;
+    prepare_candidate(storage, old_to_new, new_count, topology_policy)
+}
+
+pub(in crate::particle) fn apply_preserving_historical_order(
     storage: &mut ParticleStorage,
     old_to_new: &[Option<usize>],
 ) -> Result<Vec<ParticleSnapshot>, ParticleStorageError> {
-    storage.check_invariants()?;
-    let new_count = validate_basic_permutation(old_to_new, storage.dense_to_id.len())?;
-    let candidate = prepare_candidate(storage, old_to_new, new_count)?;
-    Ok(commit(storage, candidate))
+    let candidate = prepare_permutation(
+        storage,
+        old_to_new,
+        TopologyRemapPolicy::PreserveHistoricalOrder,
+    )?;
+    Ok(commit_prepared(storage, candidate))
 }
 
 fn prepare_candidate(
     storage: &ParticleStorage,
     old_to_new: &[Option<usize>],
     new_count: usize,
-) -> Result<PermutationCandidate, ParticleStorageError> {
+    topology_policy: TopologyRemapPolicy,
+) -> Result<PreparedPermutation, ParticleStorageError> {
     let rows = prepare_rows(storage, old_to_new, new_count)?;
-    let derived = remap_derived(storage, old_to_new)?;
+    let mut derived = remap_derived(storage, old_to_new)?;
+    apply_topology_policy(&mut derived, topology_policy, new_count)?;
     let group_records =
         rebuild_group_records_for_system(&storage.group_records, &rows.groups, storage.system)?;
     let solver_state = storage.solver_state.prepare_permutation(
@@ -86,7 +125,7 @@ fn prepare_candidate(
         &derived.body_contacts,
         &derived.particle_contacts,
     );
-    Ok(PermutationCandidate {
+    Ok(PreparedPermutation {
         identities: rows.identities,
         freed_slots: rows.freed_slots,
         dense_to_id: rows.dense_to_id,
@@ -256,7 +295,76 @@ fn remap_derived(
     })
 }
 
-fn commit(storage: &mut ParticleStorage, candidate: PermutationCandidate) -> Vec<ParticleSnapshot> {
+fn apply_topology_policy(
+    derived: &mut DerivedPermutation,
+    topology_policy: TopologyRemapPolicy,
+    particle_count: usize,
+) -> Result<(), ParticleStorageError> {
+    validate_topology(&derived.pairs, &derived.triads, particle_count)?;
+    let TopologyRemapPolicy::AppendStableSortFirstDuplicate { pairs, triads } = topology_policy
+    else {
+        return Ok(());
+    };
+    validate_topology(&pairs, &triads, particle_count)?;
+    derived
+        .pairs
+        .try_reserve_exact(pairs.len())
+        .map_err(|_error| ParticleStorageError::InvalidLaneBundle)?;
+    derived
+        .triads
+        .try_reserve_exact(triads.len())
+        .map_err(|_error| ParticleStorageError::InvalidLaneBundle)?;
+    derived.pairs.extend(pairs);
+    derived.triads.extend(triads);
+    stable_sort_first_pair_duplicate(&mut derived.pairs);
+    stable_sort_first_triad_duplicate(&mut derived.triads);
+    Ok(())
+}
+
+fn validate_topology(
+    pairs: &[ParticlePair],
+    triads: &[ParticleTriad],
+    particle_count: usize,
+) -> Result<(), ParticleStorageError> {
+    for pair in pairs {
+        pair.validate(particle_count)?;
+    }
+    for triad in triads {
+        triad.validate(particle_count)?;
+    }
+    Ok(())
+}
+
+fn stable_sort_first_pair_duplicate(pairs: &mut Vec<ParticlePair>) {
+    pairs.sort_by_key(|pair| pair.indices.map(|index| index.0));
+    retain_first_by_indices(pairs, |pair| pair.indices);
+}
+
+fn stable_sort_first_triad_duplicate(triads: &mut Vec<ParticleTriad>) {
+    triads.sort_by_key(|triad| triad.indices.map(|index| index.0));
+    retain_first_by_indices(triads, |triad| triad.indices);
+}
+
+fn retain_first_by_indices<T: Copy, const N: usize>(
+    records: &mut Vec<T>,
+    indices: impl Fn(T) -> [ParticleIndex; N],
+) {
+    let mut retained = Vec::with_capacity(records.len());
+    for record in records.iter().copied() {
+        let is_duplicate = retained
+            .last()
+            .is_some_and(|previous| indices(*previous) == indices(record));
+        if !is_duplicate {
+            retained.push(record);
+        }
+    }
+    *records = retained;
+}
+
+pub(super) fn commit_prepared(
+    storage: &mut ParticleStorage,
+    candidate: PreparedPermutation,
+) -> Vec<ParticleSnapshot> {
     storage.identities = candidate.identities;
     storage.free_identity_slots.extend(candidate.freed_slots);
     storage.retired_identity_slots = storage
@@ -294,6 +402,12 @@ fn commit(storage: &mut ParticleStorage, candidate: PermutationCandidate) -> Vec
     storage.solver_state = candidate.solver_state;
     debug_assert_eq!(storage.check_invariants(), Ok(()));
     candidate.destroyed
+}
+
+impl PreparedPermutation {
+    pub(super) fn destroyed(&self) -> &[ParticleSnapshot] {
+        &self.destroyed
+    }
 }
 
 fn replace_contents<T>(target: &mut Vec<T>, source: impl IntoIterator<Item = T>) {

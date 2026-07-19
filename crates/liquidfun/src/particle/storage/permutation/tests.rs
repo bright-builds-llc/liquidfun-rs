@@ -170,7 +170,8 @@ fn invalid_duplicate_permutation_leaves_contacts_and_weights_unchanged() {
     let before = storage.clone();
 
     // Act
-    let result = apply_permutation(&mut storage, &[Some(0), Some(0), Some(1), Some(2)]);
+    let result =
+        apply_preserving_historical_order(&mut storage, &[Some(0), Some(0), Some(1), Some(2)]);
 
     // Assert
     assert_eq!(result, Err(ParticleStorageError::InvalidPermutation));
@@ -253,7 +254,8 @@ fn incomplete_mapping_cannot_remove_a_live_row() {
     let before = storage.clone();
 
     // Act
-    let result = apply_permutation(&mut storage, &[Some(0), None, Some(1), Some(2)]);
+    let result =
+        apply_preserving_historical_order(&mut storage, &[Some(0), None, Some(1), Some(2)]);
 
     // Assert
     assert_eq!(result, Err(ParticleStorageError::InvalidPermutation));
@@ -397,7 +399,7 @@ fn production_storage_has_one_permutation_authority() {
 
     // Act / Assert
     assert!(!storage_source.contains("fn apply_permutation"));
-    assert!(storage_source.contains("permutation::apply_permutation"));
+    assert!(storage_source.contains("mutation::MutationCandidate"));
     for forbidden in [
         ".rotate_left(",
         ".rotate_right(",

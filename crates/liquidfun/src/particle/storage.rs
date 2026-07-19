@@ -27,6 +27,7 @@ use validation::{
 pub(in crate::particle) mod group;
 mod lane_inventory;
 pub(in crate::particle) mod lanes;
+mod mutation;
 pub(in crate::particle) mod permutation;
 mod solver_state;
 mod validation;
@@ -1187,7 +1188,8 @@ impl ParticleStorage {
                 Some(destination)
             })
             .collect::<Vec<_>>();
-        let mut destroyed = permutation::apply_permutation(self, &old_to_new)?;
+        let candidate = mutation::MutationCandidate::prepare_zombie_compaction(self, &old_to_new)?;
+        let mut destroyed = candidate.commit(self).destroyed;
         let Some(snapshot) = destroyed.pop() else {
             return Err(ParticleStorageError::InvalidPermutation);
         };
@@ -1201,17 +1203,10 @@ impl ParticleStorage {
         middle: usize,
         end: usize,
     ) -> Result<(), ParticleStorageError> {
-        if start > middle || middle > end || end > self.dense_to_id.len() {
-            return Err(ParticleStorageError::InvalidPermutation);
-        }
-        let mut old_to_new: Vec<_> = (0..self.dense_to_id.len()).map(Some).collect();
-        for (old, destination) in old_to_new.iter_mut().enumerate().take(middle).skip(start) {
-            *destination = Some(old + end - middle);
-        }
-        for (old, destination) in old_to_new.iter_mut().enumerate().take(end).skip(middle) {
-            *destination = Some(old + start - middle);
-        }
-        permutation::apply_permutation(self, &old_to_new).map(|_destroyed| ())
+        let candidate =
+            mutation::MutationCandidate::prepare_ordinary_rotation(self, start, middle, end)?;
+        candidate.commit(self);
+        Ok(())
     }
 
     fn resolve_live(&self, id: ParticleId) -> Result<ParticleIndex, ParticleStorageError> {
