@@ -183,7 +183,7 @@ The v1 roadmap moves from an immutable, licensed source of truth to a semantic c
 Plans:
 
 - [x] 10-01-PLAN.md — Define the cohesive public particle-group contract.
-- [ ] 10-02-PLAN.md — Add exact checked particle-solver coefficients.
+- [x] 10-02-PLAN.md — Add exact checked particle-solver coefficients.
 - [ ] 10-03-PLAN.md — Complete pair/triad storage and semantic views.
 - [ ] 10-04-PLAN.md — Define the exact closed O01-O05/S01-S26 pass manifest.
 - [ ] 10-05-PLAN.md — Establish storage-owned group authority and invariants.
@@ -262,7 +262,7 @@ Plans:
 | 7. Rigid Solver, World Operations, and CCD | 13/13 | Complete    | 2026-07-13 |
 | 8. Joints, Rope, Callbacks, and Rigid Sign-Off | 24/24 | Complete    | 2026-07-15 |
 | 9. Particle Storage, Lifecycle, and Coupling | 31/31 | Complete | 2026-07-18 |
-| 10. Particle Groups, Solvers, and Compatibility Sign-Off | 1/32 | In Progress|  |
+| 10. Particle Groups, Solvers, and Compatibility Sign-Off | 2/32 | In Progress|  |
 | 11. Examples, Headless Tooling, and Testbed | 0/TBD | Not started | - |
 | 12. Performance, Portability, and Release Hardening | 0/TBD | Not started | - |
 

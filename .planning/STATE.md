@@ -3,14 +3,14 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 10-01-PLAN.md
-last_updated: "2026-07-19T10:56:16.049Z"
+stopped_at: Completed 10-02-PLAN.md
+last_updated: "2026-07-19T11:52:35.106Z"
 last_activity: "2026-07-19"
 progress:
   total_phases: 12
   completed_phases: 9
   total_plans: 161
-  completed_plans: 130
+  completed_plans: 131
   percent: 81
 ---
 
@@ -26,9 +26,9 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 ## Current Position
 
 Phase: 10 (Particle Groups, Solvers, and Compatibility Sign-Off) — EXECUTING
-Plan: 2 of 32
+Plan: 3 of 32
 Status: Ready to execute
-Last activity: 2026-07-19 -- Completed Plan 10-01 particle-group public contract
+Last activity: 2026-07-19
 
 Progress: [████████░░] 81%
 
@@ -142,6 +142,7 @@ Progress: [████████░░] 81%
 | Phase 09 P30 | 23min | 3 tasks | 4 files |
 | Phase 09 P31 | 35min | 3 tasks | 9 files |
 | Phase 10 P01 | 2h 18m | 2 tasks | 3 files |
+| Phase 10 P02 | 49m | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -338,6 +339,8 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 09]: Promote platform evidence for exactly four Phase 9 rows while keeping all five Phase 10 rows wholly not_evidenced.
 - [Phase 10]: Retain unknown public particle-group bits while stripping the pinned upstream-private 0x0018 mask at every public construction and bit operation.
 - [Phase 10]: Keep ParticleGroupView construction crate-private, reject depth/member misalignment, and normalize retained-empty aggregate statistics to exact positive zero.
+- [Phase 10]: Use coefficient-specific non-finite and negative ParticleSystemDefError variants so every rejected public input identifies its exact control.
+- [Phase 10]: Accept exact positive zero for each coefficient as the source-compatible disable or no-effect value while rejecting every negative and non-finite input.
 
 ### Pending Todos
 
@@ -351,6 +354,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-19T10:56:16.046Z
-Stopped at: Completed 10-01-PLAN.md
+Last session: 2026-07-19T11:52:35.103Z
+Stopped at: Completed 10-02-PLAN.md
 Resume file: None

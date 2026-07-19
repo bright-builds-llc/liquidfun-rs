@@ -92,8 +92,8 @@ Requirements for the first release permitted to claim complete parity with the s
 - [x] **PART-09**: Consumers can create particle groups from shapes, strokes, explicit positions, or existing groups and can inspect their ranges, flags, transforms, velocities, mass, and inertia.
 - [x] **PART-10**: Group creation, destruction, joining, splitting, connectivity, can-be-empty behavior, solid depth updates, rigid motion, and contiguous membership preserve upstream semantics.
 - [ ] **PART-11**: Voronoi-based topology, pair generation, triad generation, and reactive regeneration produce upstream-equivalent constraints and membership.
-- [ ] **PART-12**: Baseline particle passes for collision, gravity, pressure, damping, rigid damping, extra damping, force application, velocity limiting, and lifetime solving run in the pinned upstream order.
-- [ ] **PART-13**: Water, wall, spring, elastic, viscous, powder, tensile, barrier, static-pressure, reactive, repulsive, and color-mixing particle behaviors match the selected upstream behavior.
+- [x] **PART-12**: Baseline particle passes for collision, gravity, pressure, damping, rigid damping, extra damping, force application, velocity limiting, and lifetime solving run in the pinned upstream order.
+- [x] **PART-13**: Water, wall, spring, elastic, viscous, powder, tensile, barrier, static-pressure, reactive, repulsive, and color-mixing particle behaviors match the selected upstream behavior.
 - [x] **PART-14**: Zombie and destruction-listener particle behavior produces upstream-equivalent removal, callback, identity, and compaction outcomes.
 - [x] **PART-15**: Fixture-contact and particle-contact listener/filter particle flags gate callbacks and collision decisions with upstream-equivalent timing and ordering.
 - [x] **PART-16**: Consumers can apply per-particle and range forces/impulses and inspect collision energy, stuck-particle candidates, contact counts, and system statistics.
@@ -259,8 +259,8 @@ Roadmap creation maps every v1 requirement to exactly one phase.
 | PART-09 | Phase 10 | Complete |
 | PART-10 | Phase 10 | Complete |
 | PART-11 | Phase 10 | Pending |
-| PART-12 | Phase 10 | Pending |
-| PART-13 | Phase 10 | Pending |
+| PART-12 | Phase 10 | Complete |
+| PART-13 | Phase 10 | Complete |
 | PART-14 | Phase 9 | Complete |
 | PART-15 | Phase 9 | Complete |
 | PART-16 | Phase 9 | Complete |
