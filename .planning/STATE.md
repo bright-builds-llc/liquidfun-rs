@@ -3,14 +3,14 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 10-04-PLAN.md
-last_updated: "2026-07-19T13:33:54.052Z"
+stopped_at: Completed 10-05-PLAN.md
+last_updated: "2026-07-19T14:52:12.978Z"
 last_activity: "2026-07-19"
 progress:
   total_phases: 12
   completed_phases: 9
   total_plans: 161
-  completed_plans: 133
+  completed_plans: 134
   percent: 83
 ---
 
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 ## Current Position
 
 Phase: 10 (Particle Groups, Solvers, and Compatibility Sign-Off) — EXECUTING
-Plan: 5 of 32
+Plan: 6 of 32
 Status: Ready to execute
 Last activity: 2026-07-19
 
@@ -145,6 +145,7 @@ Progress: [████████░░] 83%
 | Phase 10 P02 | 49m | 1 tasks | 1 files |
 | Phase 10 P03 | 43m | 1 tasks | 5 files |
 | Phase 10 P04 | 47m | 1 tasks | 3 files |
+| Phase 10 P05 | 73m | 1 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -347,6 +348,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 10]: Accept signed finite topology rest state verbatim and reject out-of-candidate endpoints separately from non-finite numeric lanes.
 - [Phase 10]: Keep PassId closed while validating unknown declarations through a separate private invalid-input wrapper used by mutation tests.
 - [Phase 10]: Represent trace iteration as Option<u32>: outer passes carry None and checked particle sub-iterations carry their exact ordinal.
+- [Phase 10]: Keep all per-group metadata and timestamped statistics in one source-ordered ParticleStorage record table; aggregate group flags remain exclusively Plan 10-06 SolverState state.
+- [Phase 10]: Represent group-statistics invalidation with an absent source timestamp and require retained-empty records to carry exact positive-zero aggregate values.
+- [Phase 10]: Rebuild non-empty group records in particle source order while preserving complete metadata and appending retained or deferred-destroy empty records.
 
 ### Pending Todos
 
@@ -360,6 +364,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-19T13:33:54.049Z
-Stopped at: Completed 10-04-PLAN.md
+Last session: 2026-07-19T14:52:12.975Z
+Stopped at: Completed 10-05-PLAN.md
 Resume file: None
