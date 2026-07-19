@@ -147,6 +147,9 @@ impl StuckLanes {
 
 #[derive(Debug, PartialEq)]
 pub(crate) struct OwnedLaneBundle {
+    // SolverState owns derived static-pressure, tensile, and depth scratch.
+    // Keeping it out of this transfer bundle prevents consumer teardown from
+    // returning state that is rebuilt exclusively by solver gates.
     pub(crate) positions: Vec<Vec2>,
     pub(crate) velocities: Vec<Vec2>,
     pub(crate) flags: Vec<ParticleFlags>,

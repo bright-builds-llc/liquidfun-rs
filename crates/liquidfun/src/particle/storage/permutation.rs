@@ -1,8 +1,8 @@
 use super::{
     GroupRecord, IdentityEntry, IdentityState, ParticleBodyContact, ParticleColor, ParticleContact,
     ParticleFlags, ParticleGroupId, ParticleId, ParticleIndex, ParticlePair, ParticleProxy,
-    ParticleSnapshot, ParticleStorage, ParticleStorageError, ParticleTriad, StuckLanes,
-    UserAssociationKey, Vec2, rebuild_group_records_for_system,
+    ParticleSnapshot, ParticleStorage, ParticleStorageError, ParticleTriad, SolverState,
+    StuckLanes, UserAssociationKey, Vec2, rebuild_group_records_for_system,
 };
 
 struct PermutationCandidate {
@@ -26,6 +26,7 @@ struct PermutationCandidate {
     pairs: Vec<ParticlePair>,
     triads: Vec<ParticleTriad>,
     group_records: Vec<GroupRecord>,
+    solver_state: SolverState,
     destroyed: Vec<ParticleSnapshot>,
 }
 
@@ -73,6 +74,13 @@ fn prepare_candidate(
     let derived = remap_derived(storage, old_to_new)?;
     let group_records =
         rebuild_group_records_for_system(&storage.group_records, &rows.groups, storage.system)?;
+    let solver_state = storage.solver_state.prepare_permutation(
+        old_to_new,
+        new_count,
+        &rows.flags,
+        &group_records,
+        storage.declared_capacity,
+    )?;
     let weights = recompute_weights(
         new_count,
         &derived.body_contacts,
@@ -99,6 +107,7 @@ fn prepare_candidate(
         pairs: derived.pairs,
         triads: derived.triads,
         group_records,
+        solver_state,
         destroyed: rows.destroyed,
     })
 }
@@ -282,6 +291,7 @@ fn commit(storage: &mut ParticleStorage, candidate: PermutationCandidate) -> Vec
     storage.pairs = candidate.pairs;
     storage.triads = candidate.triads;
     storage.group_records = candidate.group_records;
+    storage.solver_state = candidate.solver_state;
     debug_assert_eq!(storage.check_invariants(), Ok(()));
     candidate.destroyed
 }

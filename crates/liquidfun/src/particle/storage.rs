@@ -19,6 +19,7 @@ use lanes::{
     OwnedLaneBundle, ParticleBodyContact, ParticleContact, ParticlePair, ParticleProxy,
     ParticleTriad, StuckLanes, UserAssociationKey,
 };
+use solver_state::{AggregateGroupFlags, SolverState};
 use validation::{
     rebuild_group_records_for_system, validate_groups, validate_reference_sets, validate_references,
 };
@@ -27,6 +28,7 @@ pub(in crate::particle) mod group;
 mod lane_inventory;
 pub(in crate::particle) mod lanes;
 pub(in crate::particle) mod permutation;
+mod solver_state;
 mod validation;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -111,6 +113,7 @@ pub(crate) struct ParticleStorage {
     pairs: Vec<ParticlePair>,
     triads: Vec<ParticleTriad>,
     group_records: Vec<GroupRecord>,
+    solver_state: SolverState,
 }
 
 struct CreateCandidate {
@@ -122,6 +125,7 @@ struct CreateCandidate {
     append_identity: bool,
     dense: ParticleIndex,
     group_records: Vec<GroupRecord>,
+    solver_state: SolverState,
 }
 
 impl ParticleStorage {
@@ -244,6 +248,7 @@ impl ParticleStorage {
             pairs: Vec::new(),
             triads: Vec::new(),
             group_records: Vec::new(),
+            solver_state: SolverState::new(),
         })
     }
 
@@ -312,6 +317,7 @@ impl ParticleStorage {
         validate_groups(self.system, &groups, &group_records)?;
         self.groups = groups;
         self.group_records = group_records;
+        self.solver_state.refresh_group_flags(&self.group_records);
         debug_assert_eq!(self.check_invariants(), Ok(()));
         Ok(particles)
     }
@@ -398,6 +404,12 @@ impl ParticleStorage {
         groups.push(input.maybe_group);
         let group_records =
             rebuild_group_records_for_system(&self.group_records, &groups, self.system)?;
+        let solver_state = self.solver_state.prepare_append(
+            &self.flags,
+            input.flags,
+            &group_records,
+            self.declared_capacity,
+        )?;
         Ok(CreateCandidate {
             input,
             diagnostic_id,
@@ -407,6 +419,7 @@ impl ParticleStorage {
             append_identity,
             dense,
             group_records,
+            solver_state,
         })
     }
 
@@ -428,6 +441,7 @@ impl ParticleStorage {
         self.identities[candidate.local_slot].state = IdentityState::Live(candidate.dense);
         self.push_row(candidate.id, candidate.input);
         self.group_records = candidate.group_records;
+        self.solver_state = candidate.solver_state;
         debug_assert_eq!(self.check_invariants(), Ok(()));
         candidate.id
     }
@@ -471,6 +485,100 @@ impl ParticleStorage {
         &self,
     ) -> impl ExactSizeIterator<Item = ParticleGroupFlags> + '_ {
         self.group_records.iter().map(|record| record.flags)
+    }
+
+    pub(in crate::particle) fn aggregate_particle_flags(&mut self) -> ParticleFlags {
+        self.solver_state.refresh_particle_flags(&self.flags);
+        self.solver_state.aggregate_particle_flags()
+    }
+
+    pub(in crate::particle) fn aggregate_group_flags(&mut self) -> AggregateGroupFlags {
+        self.solver_state.refresh_group_flags(&self.group_records);
+        self.solver_state.aggregate_group_flags()
+    }
+
+    pub(in crate::particle) fn ensure_static_pressures(
+        &mut self,
+    ) -> Result<(), ParticleStorageError> {
+        let aggregate = self.aggregate_particle_flags();
+        if !aggregate.contains(ParticleFlags::STATIC_PRESSURE) {
+            return Err(ParticleStorageError::InvalidLaneBundle);
+        }
+        let particle_count = self.len();
+        self.solver_state
+            .ensure_static_pressures(particle_count, self.declared_capacity)
+    }
+
+    pub(in crate::particle) fn ensure_tensile_accumulations(
+        &mut self,
+    ) -> Result<(), ParticleStorageError> {
+        let aggregate = self.aggregate_particle_flags();
+        if !aggregate.contains(ParticleFlags::TENSILE) {
+            return Err(ParticleStorageError::InvalidLaneBundle);
+        }
+        let particle_count = self.len();
+        self.solver_state
+            .ensure_tensile_accumulations(particle_count, self.declared_capacity)
+    }
+
+    pub(in crate::particle) fn ensure_depths(&mut self) -> Result<(), ParticleStorageError> {
+        let aggregate = self.aggregate_group_flags();
+        let requires_depth = aggregate.public.contains(ParticleGroupFlags::SOLID)
+            || aggregate
+                .internal
+                .contains(group::InternalGroupFlags::NEEDS_UPDATE_DEPTH);
+        if !requires_depth {
+            return Err(ParticleStorageError::InvalidLaneBundle);
+        }
+        let particle_count = self.len();
+        self.solver_state
+            .ensure_depths(particle_count, self.declared_capacity)
+    }
+
+    pub(in crate::particle) fn replace_static_pressures(
+        &mut self,
+        candidate: Vec<f32>,
+    ) -> Result<(), ParticleStorageError> {
+        let particle_count = self.len();
+        self.solver_state
+            .replace_static_pressures(candidate, particle_count)
+    }
+
+    pub(in crate::particle) fn replace_tensile_accumulations(
+        &mut self,
+        candidate: Vec<Vec2>,
+    ) -> Result<(), ParticleStorageError> {
+        let particle_count = self.len();
+        self.solver_state
+            .replace_tensile_accumulations(candidate, particle_count)
+    }
+
+    pub(in crate::particle) fn replace_depths(
+        &mut self,
+        candidate: Vec<f32>,
+    ) -> Result<(), ParticleStorageError> {
+        let particle_count = self.len();
+        self.solver_state.replace_depths(candidate, particle_count)
+    }
+
+    pub(in crate::particle) fn maybe_depths(&self) -> Option<&[f32]> {
+        self.solver_state.maybe_depths()
+    }
+
+    pub(in crate::particle) fn maybe_static_pressures(&self) -> Option<&[f32]> {
+        self.solver_state.maybe_static_pressures()
+    }
+
+    pub(in crate::particle) fn maybe_tensile_accumulations(&self) -> Option<&[Vec2]> {
+        self.solver_state.maybe_tensile_accumulations()
+    }
+
+    pub(in crate::particle) const fn has_pending_system_force(&self) -> bool {
+        self.solver_state.has_pending_system_force()
+    }
+
+    pub(in crate::particle) fn clear_pending_system_force(&mut self) {
+        self.solver_state.clear_pending_system_force();
     }
 
     pub(in crate::particle) fn weights(&self) -> &[f32] {
@@ -670,6 +778,9 @@ impl ParticleStorage {
         forces: &[Vec2],
     ) {
         self.forces[range].copy_from_slice(forces);
+        if forces.iter().any(|force| *force != Vec2::ZERO) {
+            self.solver_state.mark_pending_system_force();
+        }
     }
 
     pub(in crate::particle) fn replace_velocity_range(
@@ -1006,6 +1117,7 @@ impl ParticleStorage {
         if request_listener {
             self.flags[dense.0].insert(ParticleFlags::DESTRUCTION_LISTENER);
         }
+        self.solver_state.mark_particle_flags_dirty();
         let snapshot = ParticleSnapshot {
             id,
             diagnostic_id: self.identities[local_slot]
@@ -1228,6 +1340,8 @@ impl ParticleStorage {
         {
             return Err(ParticleStorageError::LaneLengthMismatch);
         }
+        self.solver_state
+            .validate(count, &self.flags, &self.group_records)?;
         Ok(())
     }
 
