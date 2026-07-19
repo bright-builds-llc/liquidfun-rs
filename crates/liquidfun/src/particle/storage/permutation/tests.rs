@@ -72,6 +72,13 @@ fn populated_storage() -> (ParticleStorage, [ParticleId; 4]) {
         indices: [ParticleIndex(0), ParticleIndex(1), ParticleIndex(3)],
         flags: ParticleFlags::ELASTIC,
         strength: 0.25,
+        pa: Vec2::new(1.0, -2.0),
+        pb: Vec2::new(-3.0, 4.0),
+        pc: Vec2::new(5.0, -6.0),
+        ka: -7.0,
+        kb: 8.0,
+        kc: -9.0,
+        s: -10.0,
     }];
     (storage, ids)
 }
@@ -123,6 +130,18 @@ fn one_transaction_remaps_all_lanes_indices_and_group_ranges() {
     assert_eq!(
         storage.triads[0].indices,
         [ParticleIndex(2), ParticleIndex(3), ParticleIndex(1)]
+    );
+    assert_eq!(storage.triads[0].pa, Vec2::new(1.0, -2.0));
+    assert_eq!(storage.triads[0].pb, Vec2::new(-3.0, 4.0));
+    assert_eq!(storage.triads[0].pc, Vec2::new(5.0, -6.0));
+    assert_eq!(
+        (
+            storage.triads[0].ka,
+            storage.triads[0].kb,
+            storage.triads[0].kc,
+            storage.triads[0].s
+        ),
+        (-7.0, 8.0, -9.0, -10.0)
     );
     assert_eq!(
         storage.maybe_expiration_order,

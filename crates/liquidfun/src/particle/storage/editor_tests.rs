@@ -44,6 +44,13 @@ fn position_edit_rebuilds_or_clears_every_spatially_derived_lane() {
         indices: [ParticleIndex(0), ParticleIndex(1), ParticleIndex(2)],
         flags: ParticleFlags::ELASTIC,
         strength: 1.0,
+        pa: Vec2::new(1.0, 0.0),
+        pb: Vec2::new(0.0, 1.0),
+        pc: Vec2::new(-1.0, -1.0),
+        ka: -1.0,
+        kb: 1.0,
+        kc: -1.0,
+        s: 1.0,
     });
     storage.maybe_stuck = Some(StuckLanes {
         last_body_contact_steps: vec![1; 3],

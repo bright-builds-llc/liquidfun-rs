@@ -195,6 +195,13 @@ impl<'a> ParticleSystemView<'a> {
                 .map(|index| self.storage.particle_id_at(index)),
             flags: triad.flags,
             strength: triad.strength,
+            pa: triad.pa,
+            pb: triad.pb,
+            pc: triad.pc,
+            ka: triad.ka,
+            kb: triad.kb,
+            kc: triad.kc,
+            s: triad.s,
         }
     }
 
@@ -328,6 +335,13 @@ pub struct ParticleTriadView {
     particles: [ParticleId; 3],
     flags: ParticleFlags,
     strength: f32,
+    pa: Vec2,
+    pb: Vec2,
+    pc: Vec2,
+    ka: f32,
+    kb: f32,
+    kc: f32,
+    s: f32,
 }
 
 impl ParticleTriadView {
@@ -347,5 +361,118 @@ impl ParticleTriadView {
     #[must_use]
     pub const fn strength(self) -> f32 {
         self.strength
+    }
+
+    /// Returns the first centroid-relative rest offset in meters.
+    #[must_use]
+    pub const fn pa(self) -> Vec2 {
+        self.pa
+    }
+
+    /// Returns the second centroid-relative rest offset in meters.
+    #[must_use]
+    pub const fn pb(self) -> Vec2 {
+        self.pb
+    }
+
+    /// Returns the third centroid-relative rest offset in meters.
+    #[must_use]
+    pub const fn pc(self) -> Vec2 {
+        self.pc
+    }
+
+    /// Returns the signed rest coefficient opposite the first particle.
+    #[must_use]
+    pub const fn ka(self) -> f32 {
+        self.ka
+    }
+
+    /// Returns the signed rest coefficient opposite the second particle.
+    #[must_use]
+    pub const fn kb(self) -> f32 {
+        self.kb
+    }
+
+    /// Returns the signed rest coefficient opposite the third particle.
+    #[must_use]
+    pub const fn kc(self) -> f32 {
+        self.kc
+    }
+
+    /// Returns the signed doubled rest area.
+    #[must_use]
+    pub const fn s(self) -> f32 {
+        self.s
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::identity::{HandleIdentity, Identity, ParticleSystemId, WorldKey};
+    use crate::particle::storage::{ParticleInput, ParticleStorage};
+
+    use super::*;
+
+    fn input(position: Vec2) -> ParticleInput {
+        ParticleInput {
+            position,
+            velocity: Vec2::ZERO,
+            flags: ParticleFlags::ELASTIC,
+            maybe_group: None,
+            maybe_color: None,
+            maybe_user_association: None,
+            maybe_expiration_time: None,
+        }
+    }
+
+    #[test]
+    fn triad_view_translates_oriented_rest_state_to_stable_particle_ids() {
+        // Arrange
+        let world = WorldKey::fresh().expect("test world key remains available");
+        let system = ParticleSystemId::from_identity(Identity::new(world, 0, 0));
+        let mut storage =
+            ParticleStorage::new(world, system, 0, 3, 3).expect("test storage contract is valid");
+        let particles = [
+            storage
+                .create(input(Vec2::new(1.0, 0.0)))
+                .expect("first particle fits"),
+            storage
+                .create(input(Vec2::new(0.0, 1.0)))
+                .expect("second particle fits"),
+            storage
+                .create(input(Vec2::new(-1.0, -1.0)))
+                .expect("third particle fits"),
+        ];
+        let triad = ParticleTriad {
+            indices: [ParticleIndex(2), ParticleIndex(0), ParticleIndex(1)],
+            flags: ParticleFlags::ELASTIC,
+            strength: -0.5,
+            pa: Vec2::new(1.0, -2.0),
+            pb: Vec2::new(-3.0, 4.0),
+            pc: Vec2::new(5.0, -6.0),
+            ka: -7.0,
+            kb: 8.0,
+            kc: -9.0,
+            s: -10.0,
+        };
+        let view = ParticleSystemView::new(&storage);
+
+        // Act
+        let triad_view = view.triad_view(triad);
+
+        // Assert
+        assert_eq!(
+            triad_view.particles(),
+            [particles[2], particles[0], particles[1]]
+        );
+        assert_eq!(triad_view.flags(), ParticleFlags::ELASTIC);
+        assert_eq!(triad_view.strength().to_bits(), (-0.5_f32).to_bits());
+        assert_eq!(triad_view.pa(), Vec2::new(1.0, -2.0));
+        assert_eq!(triad_view.pb(), Vec2::new(-3.0, 4.0));
+        assert_eq!(triad_view.pc(), Vec2::new(5.0, -6.0));
+        assert_eq!(triad_view.ka().to_bits(), (-7.0_f32).to_bits());
+        assert_eq!(triad_view.kb().to_bits(), 8.0_f32.to_bits());
+        assert_eq!(triad_view.kc().to_bits(), (-9.0_f32).to_bits());
+        assert_eq!(triad_view.s().to_bits(), (-10.0_f32).to_bits());
     }
 }

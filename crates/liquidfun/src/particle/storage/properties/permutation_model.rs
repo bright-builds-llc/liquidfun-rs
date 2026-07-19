@@ -72,6 +72,13 @@ fn populated_storage() -> (ParticleStorage, [ParticleId; ROW_COUNT]) {
         indices: [ParticleIndex(0), ParticleIndex(3), ParticleIndex(5)],
         flags: ParticleFlags::ELASTIC,
         strength: 0.75,
+        pa: Vec2::new(1.0, -2.0),
+        pb: Vec2::new(-3.0, 4.0),
+        pc: Vec2::new(5.0, -6.0),
+        ka: -7.0,
+        kb: 8.0,
+        kc: -9.0,
+        s: -10.0,
     }];
     (storage, ids)
 }

@@ -58,11 +58,62 @@ pub(in crate::particle) struct ParticlePair {
     pub(in crate::particle) distance: f32,
 }
 
+impl ParticlePair {
+    pub(in crate::particle) fn validate(
+        self,
+        particle_count: usize,
+    ) -> Result<(), ParticleStorageError> {
+        validate_topology_indices(self.indices, particle_count)?;
+        if !self.strength.is_finite() || !self.distance.is_finite() {
+            return Err(ParticleStorageError::InvalidLaneBundle);
+        }
+        Ok(())
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(in crate::particle) struct ParticleTriad {
     pub(in crate::particle) indices: [ParticleIndex; 3],
     pub(in crate::particle) flags: ParticleFlags,
     pub(in crate::particle) strength: f32,
+    pub(in crate::particle) pa: Vec2,
+    pub(in crate::particle) pb: Vec2,
+    pub(in crate::particle) pc: Vec2,
+    pub(in crate::particle) ka: f32,
+    pub(in crate::particle) kb: f32,
+    pub(in crate::particle) kc: f32,
+    pub(in crate::particle) s: f32,
+}
+
+impl ParticleTriad {
+    pub(in crate::particle) fn validate(
+        self,
+        particle_count: usize,
+    ) -> Result<(), ParticleStorageError> {
+        validate_topology_indices(self.indices, particle_count)?;
+        if !self.strength.is_finite()
+            || !self.pa.is_valid()
+            || !self.pb.is_valid()
+            || !self.pc.is_valid()
+            || !self.ka.is_finite()
+            || !self.kb.is_finite()
+            || !self.kc.is_finite()
+            || !self.s.is_finite()
+        {
+            return Err(ParticleStorageError::InvalidLaneBundle);
+        }
+        Ok(())
+    }
+}
+
+fn validate_topology_indices<const N: usize>(
+    indices: [ParticleIndex; N],
+    particle_count: usize,
+) -> Result<(), ParticleStorageError> {
+    if indices.iter().any(|index| index.0 >= particle_count) {
+        return Err(ParticleStorageError::InvalidDerivedReference);
+    }
+    Ok(())
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -239,6 +290,126 @@ mod tests {
         assert_eq!(
             storage.maybe_expiration_order,
             Some(vec![ParticleIndex(0), ParticleIndex(1)])
+        );
+    }
+
+    #[test]
+    fn pair_validation_accepts_signed_strength_and_rejects_non_finite_rest_state() {
+        // Arrange
+        let valid = ParticlePair {
+            indices: [ParticleIndex(0), ParticleIndex(1)],
+            flags: ParticleFlags::SPRING,
+            strength: -0.25,
+            distance: 1.5,
+        };
+        let invalid_strength = ParticlePair {
+            strength: f32::NAN,
+            ..valid
+        };
+        let invalid_distance = ParticlePair {
+            distance: f32::INFINITY,
+            ..valid
+        };
+
+        // Act
+        let valid_result = valid.validate(2);
+        let invalid_strength_result = invalid_strength.validate(2);
+        let invalid_distance_result = invalid_distance.validate(2);
+
+        // Assert
+        assert_eq!(valid_result, Ok(()));
+        assert_eq!(
+            invalid_strength_result,
+            Err(ParticleStorageError::InvalidLaneBundle)
+        );
+        assert_eq!(
+            invalid_distance_result,
+            Err(ParticleStorageError::InvalidLaneBundle)
+        );
+    }
+
+    #[test]
+    fn triad_validation_preserves_orientation_and_rejects_non_finite_rest_state() {
+        // Arrange
+        let valid = ParticleTriad {
+            indices: [ParticleIndex(0), ParticleIndex(1), ParticleIndex(2)],
+            flags: ParticleFlags::ELASTIC,
+            strength: -0.5,
+            pa: Vec2::new(1.0, -2.0),
+            pb: Vec2::new(-3.0, 4.0),
+            pc: Vec2::new(5.0, -6.0),
+            ka: -7.0,
+            kb: 8.0,
+            kc: -9.0,
+            s: -10.0,
+        };
+        let invalid_offset = ParticleTriad {
+            pb: Vec2::new(f32::NEG_INFINITY, 4.0),
+            ..valid
+        };
+        let invalid_coefficient = ParticleTriad {
+            kc: f32::NAN,
+            ..valid
+        };
+
+        // Act
+        let valid_result = valid.validate(3);
+        let invalid_offset_result = invalid_offset.validate(3);
+        let invalid_coefficient_result = invalid_coefficient.validate(3);
+
+        // Assert
+        assert_eq!(valid_result, Ok(()));
+        assert_eq!(
+            invalid_offset_result,
+            Err(ParticleStorageError::InvalidLaneBundle)
+        );
+        assert_eq!(
+            invalid_coefficient_result,
+            Err(ParticleStorageError::InvalidLaneBundle)
+        );
+        assert_eq!(valid.pa, Vec2::new(1.0, -2.0));
+        assert_eq!(valid.pb, Vec2::new(-3.0, 4.0));
+        assert_eq!(valid.pc, Vec2::new(5.0, -6.0));
+        assert_eq!(
+            (valid.ka, valid.kb, valid.kc, valid.s),
+            (-7.0, 8.0, -9.0, -10.0)
+        );
+    }
+
+    #[test]
+    fn topology_validation_rejects_dense_endpoints_outside_the_candidate() {
+        // Arrange
+        let pair = ParticlePair {
+            indices: [ParticleIndex(0), ParticleIndex(2)],
+            flags: ParticleFlags::SPRING,
+            strength: 1.0,
+            distance: 1.0,
+        };
+        let triad = ParticleTriad {
+            indices: [ParticleIndex(0), ParticleIndex(1), ParticleIndex(3)],
+            flags: ParticleFlags::ELASTIC,
+            strength: 1.0,
+            pa: Vec2::ZERO,
+            pb: Vec2::ZERO,
+            pc: Vec2::ZERO,
+            ka: 0.0,
+            kb: 0.0,
+            kc: 0.0,
+            s: 0.0,
+        };
+
+        // Act
+        let pair_result = pair.validate(2);
+        let triad_result = triad.validate(3);
+
+        // Assert
+        assert_eq!(
+            pair_result,
+            Err(ParticleStorageError::InvalidDerivedReference)
+        );
+        assert_eq!(
+            triad_result,
+            Err(ParticleStorageError::InvalidDerivedReference)
         );
     }
 
