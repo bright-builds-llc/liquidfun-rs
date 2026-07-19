@@ -14,6 +14,11 @@ mod group;
 pub(crate) mod lifetime;
 mod proxy;
 pub(crate) mod query;
+#[allow(
+    dead_code,
+    reason = "later Phase 10 plans dispatch kernels through this private manifest"
+)]
+mod solver;
 mod statistics;
 mod view;
 
