@@ -5,6 +5,7 @@ use crate::particle::{ParticleCapacity, ParticleSystemDef};
 
 use super::*;
 
+mod group_model;
 mod lifecycle_model;
 mod permutation_model;
 
