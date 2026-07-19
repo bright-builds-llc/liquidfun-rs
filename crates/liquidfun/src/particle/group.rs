@@ -2,30 +2,97 @@
 
 use std::error::Error;
 use std::fmt;
-
-use bitflags::bitflags;
+use std::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign};
 
 use crate::collision::Shape;
 use crate::math::{Transform, Vec2};
-use crate::{ParticleColor, ParticleFlags, ParticleGroupId};
+use crate::{ParticleColor, ParticleFlags, ParticleGroupId, ParticleId};
 
 const MAX_UPSTREAM_COUNT: usize = i32::MAX as usize;
+const PRIVATE_GROUP_FLAG_MASK: u32 = 0x0018;
 
-bitflags! {
-    /// Public particle-group behavior flags with the pinned upstream bit values.
+/// Public particle-group behavior flags with the pinned upstream bit values.
+///
+/// Unknown public bits are retained by [`Self::from_bits_retain`] for the same
+/// forward-compatible round-trip policy as [`ParticleFlags`]. The two
+/// upstream-private lifecycle/cache bits are always removed and cannot cross
+/// this public boundary.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+pub struct ParticleGroupFlags(u32);
+
+impl ParticleGroupFlags {
+    /// Prevent other particles from overlapping or leaking through the group.
+    pub const SOLID: Self = Self(0x0001);
+    /// Preserve the group's shape through rigid particle motion.
+    pub const RIGID: Self = Self(0x0002);
+    /// Retain the group identity when its final particle is removed.
+    pub const CAN_BE_EMPTY: Self = Self(0x0004);
+
+    /// Returns a value with no public group behavior enabled.
+    #[must_use]
+    pub const fn empty() -> Self {
+        Self(0)
+    }
+
+    /// Returns the union of all named public group behaviors.
+    #[must_use]
+    pub const fn all() -> Self {
+        Self(Self::SOLID.0 | Self::RIGID.0 | Self::CAN_BE_EMPTY.0)
+    }
+
+    /// Creates flags while retaining unknown public bits.
     ///
-    /// Unknown bits are retained by [`Self::from_bits_retain`] for the same
-    /// forward-compatible round-trip policy as [`ParticleFlags`]. Upstream
-    /// destruction and depth-cache bits are internal state and deliberately
-    /// have no public constants.
-    #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
-    pub struct ParticleGroupFlags: u32 {
-        /// Prevent other particles from overlapping or leaking through the group.
-        const SOLID = 0x0001;
-        /// Preserve the group's shape through rigid particle motion.
-        const RIGID = 0x0002;
-        /// Retain the group identity when its final particle is removed.
-        const CAN_BE_EMPTY = 0x0004;
+    /// Upstream-private lifecycle/cache bits are stripped even when present in
+    /// the input, so they are neither constructible nor inspectable here.
+    #[must_use]
+    pub const fn from_bits_retain(bits: u32) -> Self {
+        Self(bits & !PRIVATE_GROUP_FLAG_MASK)
+    }
+
+    /// Returns exact known and retained unknown public bits.
+    #[must_use]
+    pub const fn bits(self) -> u32 {
+        self.0
+    }
+
+    /// Returns whether no public or retained unknown bits are set.
+    #[must_use]
+    pub const fn is_empty(self) -> bool {
+        self.0 == 0
+    }
+
+    /// Returns whether every bit in `other` is present.
+    #[must_use]
+    pub const fn contains(self, other: Self) -> bool {
+        self.0 & other.0 == other.0
+    }
+}
+
+impl BitOr for ParticleGroupFlags {
+    type Output = Self;
+
+    fn bitor(self, rhs: Self) -> Self::Output {
+        Self::from_bits_retain(self.0 | rhs.0)
+    }
+}
+
+impl BitOrAssign for ParticleGroupFlags {
+    fn bitor_assign(&mut self, rhs: Self) {
+        *self = *self | rhs;
+    }
+}
+
+impl BitAnd for ParticleGroupFlags {
+    type Output = Self;
+
+    fn bitand(self, rhs: Self) -> Self::Output {
+        Self::from_bits_retain(self.0 & rhs.0)
+    }
+}
+
+impl BitAndAssign for ParticleGroupFlags {
+    fn bitand_assign(&mut self, rhs: Self) {
+        *self = *self & rhs;
     }
 }
 
@@ -382,15 +449,16 @@ impl<UserAssociation> ParticleGroupRecipe<UserAssociation> {
     /// # Errors
     ///
     /// Returns a typed error for a non-finite or negative value.
-    pub fn with_strength(mut self, strength: f32) -> Result<Self, ParticleGroupRecipeError> {
+    pub fn with_strength(self, strength: f32) -> Result<Self, ParticleGroupRecipeError> {
         if !strength.is_finite() {
             return Err(ParticleGroupRecipeError::NonFiniteStrength);
         }
         if strength < 0.0 {
             return Err(ParticleGroupRecipeError::NegativeStrength);
         }
-        self.strength = strength;
-        Ok(self)
+        let mut recipe = self;
+        recipe.strength = strength;
+        Ok(recipe)
     }
 
     /// Returns a copy with checked positive particle sampling stride in meters.
@@ -398,15 +466,16 @@ impl<UserAssociation> ParticleGroupRecipe<UserAssociation> {
     /// # Errors
     ///
     /// Returns a typed error for a non-finite or non-positive value.
-    pub fn with_stride(mut self, stride: f32) -> Result<Self, ParticleGroupRecipeError> {
+    pub fn with_stride(self, stride: f32) -> Result<Self, ParticleGroupRecipeError> {
         if !stride.is_finite() {
             return Err(ParticleGroupRecipeError::NonFiniteStride);
         }
         if stride <= 0.0 {
             return Err(ParticleGroupRecipeError::NonPositiveStride);
         }
-        self.maybe_stride = Some(stride);
-        Ok(self)
+        let mut recipe = self;
+        recipe.maybe_stride = Some(stride);
+        Ok(recipe)
     }
 
     /// Returns a copy using the particle system's pinned default stride.
@@ -424,12 +493,13 @@ impl<UserAssociation> ParticleGroupRecipe<UserAssociation> {
     /// # Errors
     ///
     /// Returns a typed error for a non-finite value.
-    pub fn with_lifetime(mut self, lifetime: f32) -> Result<Self, ParticleGroupRecipeError> {
+    pub fn with_lifetime(self, lifetime: f32) -> Result<Self, ParticleGroupRecipeError> {
         if !lifetime.is_finite() {
             return Err(ParticleGroupRecipeError::NonFiniteLifetime);
         }
-        self.lifetime = lifetime;
-        Ok(self)
+        let mut recipe = self;
+        recipe.lifetime = lifetime;
+        Ok(recipe)
     }
 
     /// Carries an application-owned association input with this recipe.
@@ -524,6 +594,186 @@ impl<UserAssociation> ParticleGroupRecipe<UserAssociation> {
     #[must_use]
     pub const fn maybe_user_association(&self) -> Option<&UserAssociation> {
         self.maybe_user_association.as_ref()
+    }
+}
+
+/// Borrow-scoped semantic inspection of one live particle group.
+///
+/// Member identities remain in source order and optional depth values align
+/// one-to-one with them. Dense rows, mutable storage, internal flags, and
+/// cached statistics do not cross this boundary.
+///
+/// Returned member borrows cannot escape the view's storage borrow:
+///
+/// ```compile_fail
+/// use liquidfun::particle::ParticleGroupView;
+/// use liquidfun::ParticleId;
+///
+/// fn escape(view: &ParticleGroupView<'_>) -> &'static [ParticleId] {
+///     view.member_ids()
+/// }
+/// ```
+///
+/// Dense and mutable storage accessors are deliberately absent:
+///
+/// ```compile_fail
+/// use liquidfun::particle::ParticleGroupView;
+///
+/// fn expose_dense_row(view: &ParticleGroupView<'_>) -> usize {
+///     view.row()
+/// }
+/// ```
+///
+/// ```compile_fail
+/// use liquidfun::particle::ParticleGroupView;
+///
+/// fn mutate_members(view: &mut ParticleGroupView<'_>) {
+///     view.member_ids_mut().clear();
+/// }
+/// ```
+#[derive(Debug)]
+pub struct ParticleGroupView<'a> {
+    state: ParticleGroupViewState,
+    member_ids: &'a [ParticleId],
+    maybe_depths: Option<&'a [f32]>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+#[allow(
+    dead_code,
+    reason = "constructed by the Phase 10 world-facing particle-group integration"
+)]
+pub(crate) struct ParticleGroupViewState {
+    pub(crate) id: ParticleGroupId,
+    pub(crate) flags: ParticleGroupFlags,
+    pub(crate) transform: Transform,
+    pub(crate) center: Vec2,
+    pub(crate) linear_velocity: Vec2,
+    pub(crate) angular_velocity: f32,
+    pub(crate) mass: f32,
+    pub(crate) inertia: f32,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(
+    dead_code,
+    reason = "returned by the Phase 10 world-facing particle-group integration"
+)]
+pub(crate) enum ParticleGroupViewError {
+    MisalignedDepth {
+        member_count: usize,
+        depth_count: usize,
+    },
+}
+
+impl<'a> ParticleGroupView<'a> {
+    #[allow(
+        dead_code,
+        reason = "called by the Phase 10 world-facing particle-group integration"
+    )]
+    pub(crate) fn new(
+        mut state: ParticleGroupViewState,
+        member_ids: &'a [ParticleId],
+        maybe_depths: Option<&'a [f32]>,
+    ) -> Result<Self, ParticleGroupViewError> {
+        if let Some(depths) = maybe_depths
+            && depths.len() != member_ids.len()
+        {
+            return Err(ParticleGroupViewError::MisalignedDepth {
+                member_count: member_ids.len(),
+                depth_count: depths.len(),
+            });
+        }
+        if member_ids.is_empty() {
+            state.center = Vec2::ZERO;
+            state.linear_velocity = Vec2::ZERO;
+            state.angular_velocity = 0.0;
+            state.mass = 0.0;
+            state.inertia = 0.0;
+        }
+        Ok(Self {
+            state,
+            member_ids,
+            maybe_depths,
+        })
+    }
+
+    /// Returns the stable world-scoped group identity.
+    #[must_use]
+    pub const fn id(&self) -> ParticleGroupId {
+        self.state.id
+    }
+
+    /// Returns exact public and retained unknown group flag bits.
+    #[must_use]
+    pub const fn flags(&self) -> ParticleGroupFlags {
+        self.state.flags
+    }
+
+    /// Returns the group's origin transform.
+    #[must_use]
+    pub const fn transform(&self) -> Transform {
+        self.state.transform
+    }
+
+    /// Returns the group's origin position in meters.
+    #[must_use]
+    pub const fn position(&self) -> Vec2 {
+        self.state.transform.position()
+    }
+
+    /// Returns the group's origin angle in radians.
+    #[must_use]
+    pub fn angle(&self) -> f32 {
+        self.state.transform.rotation().angle()
+    }
+
+    /// Returns the current center of mass in meters.
+    #[must_use]
+    pub const fn center(&self) -> Vec2 {
+        self.state.center
+    }
+
+    /// Returns the current center-of-mass velocity in meters per second.
+    #[must_use]
+    pub const fn linear_velocity(&self) -> Vec2 {
+        self.state.linear_velocity
+    }
+
+    /// Returns the current angular velocity in radians per second.
+    #[must_use]
+    pub const fn angular_velocity(&self) -> f32 {
+        self.state.angular_velocity
+    }
+
+    /// Returns total particle mass in kilograms.
+    #[must_use]
+    pub const fn mass(&self) -> f32 {
+        self.state.mass
+    }
+
+    /// Returns moment of inertia about the center of mass.
+    #[must_use]
+    pub const fn inertia(&self) -> f32 {
+        self.state.inertia
+    }
+
+    /// Returns the current member count.
+    #[must_use]
+    pub const fn member_count(&self) -> usize {
+        self.member_ids.len()
+    }
+
+    /// Returns stable particle identities in source member order.
+    #[must_use]
+    pub const fn member_ids(&self) -> &[ParticleId] {
+        self.member_ids
+    }
+
+    /// Returns depth values aligned with members when the depth lane applies.
+    #[must_use]
+    pub const fn maybe_depths(&self) -> Option<&[f32]> {
+        self.maybe_depths
     }
 }
 

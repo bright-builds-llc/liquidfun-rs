@@ -38,7 +38,7 @@ pub use force::ParticleForceError;
 pub use group::{
     FilledParticleGroupShapes, ParticleGroupDestination, ParticleGroupFlags,
     ParticleGroupPositions, ParticleGroupRecipe, ParticleGroupRecipeError, ParticleGroupSource,
-    ParticleGroupStrokeShape,
+    ParticleGroupStrokeShape, ParticleGroupView,
 };
 pub use lifetime::{
     ParticleDestructionOccurrence, ParticleLifetimeClock, ParticleLifetimeError,

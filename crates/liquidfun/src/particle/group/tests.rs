@@ -40,6 +40,27 @@ fn recipe() -> ParticleGroupRecipe {
     ParticleGroupRecipe::new(positions_source(), ParticleGroupDestination::New)
 }
 
+fn particle_id(world: WorldKey, slot: usize) -> ParticleId {
+    ParticleId::from_identity(Identity::new(world, slot, 0))
+}
+
+fn group_id(world: WorldKey) -> ParticleGroupId {
+    ParticleGroupId::from_identity(Identity::new(world, 20, 0))
+}
+
+fn view_state(world: WorldKey) -> ParticleGroupViewState {
+    ParticleGroupViewState {
+        id: group_id(world),
+        flags: ParticleGroupFlags::SOLID,
+        transform: Transform::from_position_angle(Vec2::new(3.0, 4.0), 0.25),
+        center: Vec2::new(5.0, 6.0),
+        linear_velocity: Vec2::new(7.0, 8.0),
+        angular_velocity: 9.0,
+        mass: 10.0,
+        inertia: 11.0,
+    }
+}
+
 #[test]
 fn filled_source_owns_non_empty_circle_polygon_union() {
     // Arrange
@@ -115,6 +136,7 @@ fn public_group_flags_name_only_the_three_pinned_bits() {
     let public =
         ParticleGroupFlags::SOLID | ParticleGroupFlags::RIGID | ParticleGroupFlags::CAN_BE_EMPTY;
     let unknown = ParticleGroupFlags::from_bits_retain(0x8000_0000);
+    let private = ParticleGroupFlags::from_bits_retain(0x0018);
 
     // Act
     let named_bits = ParticleGroupFlags::all().bits();
@@ -125,6 +147,7 @@ fn public_group_flags_name_only_the_three_pinned_bits() {
     assert_eq!(ParticleGroupFlags::CAN_BE_EMPTY.bits(), 0x0004);
     assert_eq!(named_bits, public.bits());
     assert_eq!(unknown.bits(), 0x8000_0000);
+    assert!(private.is_empty());
 }
 
 #[test]
@@ -295,4 +318,106 @@ fn invalid_strength_and_stride_are_rejected() {
         stride_sign_error,
         ParticleGroupRecipeError::NonPositiveStride
     );
+}
+
+#[test]
+fn group_view_exposes_complete_stable_read_only_state() {
+    // Arrange
+    let world = WorldKey::fresh().expect("test world key should remain available");
+    let members = [particle_id(world, 1), particle_id(world, 2)];
+    let depths = [0.25, 0.5];
+    let state = view_state(world);
+
+    // Act
+    let view = ParticleGroupView::new(state, &members, Some(&depths))
+        .expect("aligned group state should form a view");
+
+    // Assert
+    assert_eq!(view.id(), state.id);
+    assert_eq!(view.flags(), state.flags);
+    assert_eq!(view.transform(), state.transform);
+    assert_eq!(view.position(), Vec2::new(3.0, 4.0));
+    assert_eq!(view.angle().to_bits(), 0.25_f32.to_bits());
+    assert_eq!(view.center(), state.center);
+    assert_eq!(view.linear_velocity(), state.linear_velocity);
+    assert_eq!(
+        view.angular_velocity().to_bits(),
+        state.angular_velocity.to_bits()
+    );
+    assert_eq!(view.mass().to_bits(), state.mass.to_bits());
+    assert_eq!(view.inertia().to_bits(), state.inertia.to_bits());
+    assert_eq!(view.member_count(), 2);
+    assert_eq!(view.member_ids(), members);
+    assert_eq!(view.maybe_depths(), Some(depths.as_slice()));
+}
+
+#[test]
+fn group_view_rejects_depth_not_aligned_with_members() {
+    // Arrange
+    let world = WorldKey::fresh().expect("test world key should remain available");
+    let members = [particle_id(world, 1), particle_id(world, 2)];
+    let depths = [0.25];
+
+    // Act
+    let error = ParticleGroupView::new(view_state(world), &members, Some(&depths))
+        .expect_err("misaligned depth must not form a view");
+
+    // Assert
+    assert_eq!(
+        error,
+        ParticleGroupViewError::MisalignedDepth {
+            member_count: 2,
+            depth_count: 1,
+        }
+    );
+}
+
+#[test]
+fn retained_empty_group_reports_exact_zero_aggregate_state() {
+    // Arrange
+    let world = WorldKey::fresh().expect("test world key should remain available");
+    let members = [];
+    let depths = [];
+    let state = view_state(world);
+
+    // Act
+    let view = ParticleGroupView::new(state, &members, Some(&depths))
+        .expect("aligned empty group should form a view");
+
+    // Assert
+    assert_eq!(view.member_count(), 0);
+    assert!(view.member_ids().is_empty());
+    assert_eq!(view.maybe_depths(), Some(depths.as_slice()));
+    assert_eq!(view.center(), Vec2::ZERO);
+    assert_eq!(view.linear_velocity(), Vec2::ZERO);
+    assert_eq!(view.angular_velocity().to_bits(), 0.0_f32.to_bits());
+    assert_eq!(view.mass().to_bits(), 0.0_f32.to_bits());
+    assert_eq!(view.inertia().to_bits(), 0.0_f32.to_bits());
+    assert_eq!(view.transform(), state.transform);
+}
+
+#[test]
+fn member_and_depth_borrows_share_the_view_storage_lifetime() {
+    fn borrow_members<'view>(view: &'view ParticleGroupView<'view>) -> &'view [ParticleId] {
+        view.member_ids()
+    }
+
+    fn borrow_depths<'view>(view: &'view ParticleGroupView<'view>) -> Option<&'view [f32]> {
+        view.maybe_depths()
+    }
+
+    // Arrange
+    let world = WorldKey::fresh().expect("test world key should remain available");
+    let members = [particle_id(world, 1)];
+    let depths = [0.75];
+    let view = ParticleGroupView::new(view_state(world), &members, Some(&depths))
+        .expect("aligned group state should form a view");
+
+    // Act
+    let borrowed_members = borrow_members(&view);
+    let borrowed_depths = borrow_depths(&view);
+
+    // Assert
+    assert_eq!(borrowed_members, members);
+    assert_eq!(borrowed_depths, Some(depths.as_slice()));
 }
