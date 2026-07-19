@@ -10,6 +10,7 @@ mod contact;
 mod definition;
 mod editor;
 pub(crate) mod force;
+mod group;
 pub(crate) mod lifetime;
 mod proxy;
 pub(crate) mod query;
@@ -34,6 +35,11 @@ pub use definition::{
 };
 pub use editor::{ParticleEditError, ParticleEditor};
 pub use force::ParticleForceError;
+pub use group::{
+    FilledParticleGroupShapes, ParticleGroupDestination, ParticleGroupFlags,
+    ParticleGroupPositions, ParticleGroupRecipe, ParticleGroupRecipeError, ParticleGroupSource,
+    ParticleGroupStrokeShape,
+};
 pub use lifetime::{
     ParticleDestructionOccurrence, ParticleLifetimeClock, ParticleLifetimeError,
     ParticleLifetimeOrder,
