@@ -37,7 +37,7 @@ The v1 roadmap moves from an immutable, licensed source of truth to a semantic c
 1. Architecture, build-orchestration, licensing, risk, and milestone decisions are recorded well enough to begin focused subsystem planning without implementing broad physics behavior.
 
 **Research / ADR flags**: Final oracle commit versus tag; exact Box2D ancestry and LiquidFun deltas; required build patches; license, notice, and alteration obligations; canonical C++ compiler/platform; Cargo/CMake orchestration and explicit Bazel deferral; cohesive crate/module boundaries.
-**Plans**: TBD during phase planning
+**Plans**: 5/5 plans complete
 
 ### Phase 2: Semantic Protocol and Oracle Round Trip
 
@@ -178,7 +178,42 @@ The v1 roadmap moves from an immutable, licensed source of truth to a semantic c
 1. The compatibility matrix individually signs off every particle flag, unflagged pass, group behavior, lifecycle, buffer, contact, query, and callback path.
 
 **Research / ADR flags**: Audit the final oracle's complete particle pass graph, flag/group-flag interactions, pair/triad ordering, Voronoi edge cases, solid depth, rigid groups, and join/split rotation semantics before each cluster is signed off.
-**Plans**: TBD during phase planning
+**Plans**: 32 plans
+
+Plans:
+
+- [ ] 10-01-PLAN.md — Define the cohesive public particle-group contract.
+- [ ] 10-02-PLAN.md — Add exact checked particle-solver coefficients.
+- [ ] 10-03-PLAN.md — Complete pair/triad storage and semantic views.
+- [ ] 10-04-PLAN.md — Define the exact closed O01-O05/S01-S26 pass manifest.
+- [ ] 10-05-PLAN.md — Establish storage-owned group authority and invariants.
+- [ ] 10-06-PLAN.md — Add solver scratch lanes and executable lane inventory.
+- [ ] 10-07-PLAN.md — Build operation-specific transactional mutation candidates.
+- [ ] 10-08-PLAN.md — Implement exact fill, stroke, and explicit-position sampling.
+- [ ] 10-09-PLAN.md — Wire public group creation, append, and inspection.
+- [ ] 10-10-PLAN.md — Implement deferred group destruction and retained-empty lifecycle.
+- [ ] 10-11-PLAN.md — Implement source-ordered Voronoi topology generation.
+- [ ] 10-12-PLAN.md — Probe pinned split/degenerate outcomes, then generate exact pair and full-triad constraints.
+- [ ] 10-13-PLAN.md — Implement exact identity-preserving group join.
+- [ ] 10-14-PLAN.md — Implement exact connectivity-based group split.
+- [ ] 10-15-PLAN.md — Implement reactive topology, solid depth, and rigid cache timing.
+- [ ] 10-16-PLAN.md — Expose complete safe public group mutation workflows.
+- [ ] 10-17-PLAN.md — Implement contact, weight, topology, force, and gravity preparation passes.
+- [ ] 10-18-PLAN.md — Implement viscous, repulsive, powder, tensile, solid, and color passes.
+- [ ] 10-19-PLAN.md — Implement static pressure, pressure, and damping passes.
+- [ ] 10-20-PLAN.md — Implement elastic, spring, and velocity-limit constraints.
+- [ ] 10-21-PLAN.md — Implement rigid, barrier, collision, wall, and integration passes.
+- [ ] 10-22-PLAN.md — Replace the Phase 9 prefix with the full transactional solver.
+- [ ] 10-23-PLAN.md — Close native pass, flag, property, and inherited baseline coverage.
+- [ ] 10-24-PLAN.md — Extend the strict rigid-world protocol for Phase 10.
+- [ ] 10-25-PLAN.md — Execute Phase 10 scenarios through the native public API.
+- [ ] 10-26-PLAN.md — Extend the pinned C++ oracle for Phase 10.
+- [ ] 10-27-PLAN.md — Define exhaustive exact and numeric comparison policy.
+- [ ] 10-28-PLAN.md — Seal the closed five-family semantic differential corpus.
+- [ ] 10-29-PLAN.md — Build the shared local and exact-reference evidence validator.
+- [ ] 10-30-PLAN.md — Wire local D2 and same-run canonical D1 evidence production.
+- [ ] 10-31-PLAN.md — Acquire and independently validate one fresh D1 authority set.
+- [ ] 10-32-PLAN.md — Promote proven outcomes and complete the phase audit.
 
 ### Phase 11: Examples, Headless Tooling, and Testbed
 
@@ -226,8 +261,8 @@ The v1 roadmap moves from an immutable, licensed source of truth to a semantic c
 | 6. Minimal Rigid World Vertical Slice | 22/22 | Complete    | 2026-07-12 |
 | 7. Rigid Solver, World Operations, and CCD | 13/13 | Complete    | 2026-07-13 |
 | 8. Joints, Rope, Callbacks, and Rigid Sign-Off | 24/24 | Complete    | 2026-07-15 |
-| 9. Particle Storage, Lifecycle, and Coupling | 28/29 | In Progress | —          |
-| 10. Particle Groups, Solvers, and Compatibility Sign-Off | 0/TBD | Not started | - |
+| 9. Particle Storage, Lifecycle, and Coupling | 31/31 | Complete | 2026-07-18 |
+| 10. Particle Groups, Solvers, and Compatibility Sign-Off | 0/32 | Planned | - |
 | 11. Examples, Headless Tooling, and Testbed | 0/TBD | Not started | - |
 | 12. Performance, Portability, and Release Hardening | 0/TBD | Not started | - |
 

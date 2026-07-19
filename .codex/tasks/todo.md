@@ -113,3 +113,12 @@ Completion review: The hermetic retained-process fixture and scoped Phase 09 exc
 - [x] Commit the implementation and create the lifecycle-bound plan summary.
 
 Completion review: Fresh canonical and sanitizer archives from run `29652578231` independently proved seven cases, exactly 58 semantic bindings, retained Phase 8 comparison, complete policies, and matching semantic manifests. Only the particle public API, particle-system public API, storage/lifecycle, and contacts/coupling rows cite the replacement authority. Inventory regressions reject runs `29439515367`, `29583793056`, and `29625083184`, failed artifact `8423580554`, mixed artifacts, incomplete semantics, and every deferred Phase 10 behavior. The complete closure matrix and ASVS L1 review passed with no high-severity finding. Residual scope is explicit: Phase 10 groups, topology, pairs, triads, source areas, solver behaviors, and cross-engine stable-ID rotation remain not evidenced.
+
+## task-phase-10-groups-solvers-signoff | 2026-07-19 00:19 CDT | Execute Phase 10
+
+- [x] Capture lifecycle-bound yolo context for particle groups, topology, solver passes, and compatibility sign-off.
+- [x] Research and create executable Phase 10 plans with verification coverage.
+- [ ] Execute every Phase 10 plan and record atomic summaries.
+- [ ] Complete code review, gap repair, and phase verification.
+- [ ] Run the required ordered Rust gate and affected repository verification.
+- [ ] Review the complete diff, record residual risks, and push only after lifecycle validation passes.
