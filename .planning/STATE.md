@@ -3,15 +3,15 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 10 context gathered
-last_updated: "2026-07-19T08:34:32.931Z"
-last_activity: 2026-07-19 -- Phase 10 planning complete
+stopped_at: Completed 10-01-PLAN.md
+last_updated: "2026-07-19T10:56:16.049Z"
+last_activity: "2026-07-19"
 progress:
   total_phases: 12
   completed_phases: 9
   total_plans: 161
-  completed_plans: 129
-  percent: 80
+  completed_plans: 130
+  percent: 81
 ---
 
 # Project State
@@ -25,18 +25,18 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 
 ## Current Position
 
-Phase: 10
-Plan: Not started
+Phase: 10 (Particle Groups, Solvers, and Compatibility Sign-Off) — EXECUTING
+Plan: 2 of 32
 Status: Ready to execute
-Last activity: 2026-07-19 -- Phase 10 planning complete
+Last activity: 2026-07-19 -- Completed Plan 10-01 particle-group public contract
 
-Progress: [██████████] 100%
+Progress: [████████░░] 81%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 129
+- Total plans completed: 130
 - Average duration: Not available
 - Total execution time: 0 hours
 
@@ -141,6 +141,7 @@ Progress: [██████████] 100%
 | Phase 09 P29 | 23min | 3 tasks | 5 files |
 | Phase 09 P30 | 23min | 3 tasks | 4 files |
 | Phase 09 P31 | 35min | 3 tasks | 9 files |
+| Phase 10 P01 | 2h 18m | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -335,6 +336,8 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 09]: Only replay-to-D0 and minimized/copied-to-first-divergence path reuse is allowed; required proof pairs stay path-distinct.
 - [Phase 09]: Accept only run 29661682074 at sealed SHA 9f2169ad1ad3c72adeae5e4fb1ea188b20ba84ce as Phase 9 platform authority.
 - [Phase 09]: Promote platform evidence for exactly four Phase 9 rows while keeping all five Phase 10 rows wholly not_evidenced.
+- [Phase 10]: Retain unknown public particle-group bits while stripping the pinned upstream-private 0x0018 mask at every public construction and bit operation.
+- [Phase 10]: Keep ParticleGroupView construction crate-private, reject depth/member misalignment, and normalize retained-empty aggregate statistics to exact positive zero.
 
 ### Pending Todos
 
@@ -348,6 +351,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-19T06:15:13.810Z
-Stopped at: Phase 10 context gathered
-Resume file: .planning/phases/10-particle-groups-solvers-and-compatibility-sign-off/10-CONTEXT.md
+Last session: 2026-07-19T10:56:16.046Z
+Stopped at: Completed 10-01-PLAN.md
+Resume file: None

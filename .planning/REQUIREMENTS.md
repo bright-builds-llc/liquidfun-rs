@@ -89,8 +89,8 @@ Requirements for the first release permitted to claim complete parity with the s
 - [x] **PART-06**: Consumers can supply supported particle buffers with upstream-equivalent capacity constraints and receive explicit failure rather than silent reallocation or aliasing violations.
 - [x] **PART-07**: Particle proxies, sorting, neighborhood generation, particle contacts, fixture/body contacts, and strict-contact behavior match the selected upstream behavior.
 - [x] **PART-08**: Finite/infinite lifetimes, quantized expiration order, destroy-by-age, oldest-particle destruction, maximum counts, zombie marking, and deferred compaction match upstream behavior.
-- [ ] **PART-09**: Consumers can create particle groups from shapes, strokes, explicit positions, or existing groups and can inspect their ranges, flags, transforms, velocities, mass, and inertia.
-- [ ] **PART-10**: Group creation, destruction, joining, splitting, connectivity, can-be-empty behavior, solid depth updates, rigid motion, and contiguous membership preserve upstream semantics.
+- [x] **PART-09**: Consumers can create particle groups from shapes, strokes, explicit positions, or existing groups and can inspect their ranges, flags, transforms, velocities, mass, and inertia.
+- [x] **PART-10**: Group creation, destruction, joining, splitting, connectivity, can-be-empty behavior, solid depth updates, rigid motion, and contiguous membership preserve upstream semantics.
 - [ ] **PART-11**: Voronoi-based topology, pair generation, triad generation, and reactive regeneration produce upstream-equivalent constraints and membership.
 - [ ] **PART-12**: Baseline particle passes for collision, gravity, pressure, damping, rigid damping, extra damping, force application, velocity limiting, and lifetime solving run in the pinned upstream order.
 - [ ] **PART-13**: Water, wall, spring, elastic, viscous, powder, tensile, barrier, static-pressure, reactive, repulsive, and color-mixing particle behaviors match the selected upstream behavior.
@@ -102,7 +102,7 @@ Requirements for the first release permitted to claim complete parity with the s
 
 ### Verification and Regression Protection
 
-- [ ] **TEST-01**: Pure math, geometry, ordering, identity, and solver kernels have focused unit tests with one primary concern and clear Arrange/Act/Assert structure.
+- [x] **TEST-01**: Pure math, geometry, ordering, identity, and solver kernels have focused unit tests with one primary concern and clear Arrange/Act/Assert structure.
 - [ ] **TEST-02**: Public world, rigid-body, joint, particle, callback, query, and destruction workflows have integration tests through supported APIs.
 - [ ] **TEST-03**: Every applicable upstream test is ported, replaced by equivalent evidence, or documented as irrelevant with a reviewed rationale.
 - [ ] **TEST-04**: Property tests cover geometry invariants, broad-phase behavior, handle validity, particle permutation/group invariants, query correctness, and reproducible world operation sequences.
@@ -256,8 +256,8 @@ Roadmap creation maps every v1 requirement to exactly one phase.
 | PART-06 | Phase 9 | Complete |
 | PART-07 | Phase 9 | Complete |
 | PART-08 | Phase 9 | Complete |
-| PART-09 | Phase 10 | Pending |
-| PART-10 | Phase 10 | Pending |
+| PART-09 | Phase 10 | Complete |
+| PART-10 | Phase 10 | Complete |
 | PART-11 | Phase 10 | Pending |
 | PART-12 | Phase 10 | Pending |
 | PART-13 | Phase 10 | Pending |
@@ -266,7 +266,7 @@ Roadmap creation maps every v1 requirement to exactly one phase.
 | PART-16 | Phase 9 | Complete |
 | PART-17 | Phase 9 | Complete |
 | PART-18 | Phase 10 | Pending |
-| TEST-01 | Phase 10 | Pending |
+| TEST-01 | Phase 10 | Complete |
 | TEST-02 | Phase 10 | Pending |
 | TEST-03 | Phase 11 | Pending |
 | TEST-04 | Phase 10 | Pending |
