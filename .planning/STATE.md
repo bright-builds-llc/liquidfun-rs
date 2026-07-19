@@ -3,15 +3,15 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 10-03-PLAN.md
-last_updated: "2026-07-19T12:43:27.401Z"
+stopped_at: Completed 10-04-PLAN.md
+last_updated: "2026-07-19T13:33:54.052Z"
 last_activity: "2026-07-19"
 progress:
   total_phases: 12
   completed_phases: 9
   total_plans: 161
-  completed_plans: 132
-  percent: 82
+  completed_plans: 133
+  percent: 83
 ---
 
 # Project State
@@ -26,17 +26,17 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 ## Current Position
 
 Phase: 10 (Particle Groups, Solvers, and Compatibility Sign-Off) — EXECUTING
-Plan: 4 of 32
+Plan: 5 of 32
 Status: Ready to execute
 Last activity: 2026-07-19
 
-Progress: [████████░░] 81%
+Progress: [████████░░] 83%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 130
+- Total plans completed: 133
 - Average duration: Not available
 - Total execution time: 0 hours
 
@@ -144,6 +144,7 @@ Progress: [████████░░] 81%
 | Phase 10 P01 | 2h 18m | 2 tasks | 3 files |
 | Phase 10 P02 | 49m | 1 tasks | 1 files |
 | Phase 10 P03 | 43m | 1 tasks | 5 files |
+| Phase 10 P04 | 47m | 1 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -344,6 +345,8 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 10]: Accept exact positive zero for each coefficient as the source-compatible disable or no-effect value while rejecting every negative and non-finite input.
 - [Phase 10]: Retain pair and triad endpoints as private dense ParticleIndex values while public views resolve current stable ParticleId values.
 - [Phase 10]: Accept signed finite topology rest state verbatim and reject out-of-candidate endpoints separately from non-finite numeric lanes.
+- [Phase 10]: Keep PassId closed while validating unknown declarations through a separate private invalid-input wrapper used by mutation tests.
+- [Phase 10]: Represent trace iteration as Option<u32>: outer passes carry None and checked particle sub-iterations carry their exact ordinal.
 
 ### Pending Todos
 
@@ -357,6 +360,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-19T12:43:27.397Z
-Stopped at: Completed 10-03-PLAN.md
+Last session: 2026-07-19T13:33:54.049Z
+Stopped at: Completed 10-04-PLAN.md
 Resume file: None
