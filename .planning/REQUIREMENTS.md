@@ -91,7 +91,7 @@ Requirements for the first release permitted to claim complete parity with the s
 - [x] **PART-08**: Finite/infinite lifetimes, quantized expiration order, destroy-by-age, oldest-particle destruction, maximum counts, zombie marking, and deferred compaction match upstream behavior.
 - [x] **PART-09**: Consumers can create particle groups from shapes, strokes, explicit positions, or existing groups and can inspect their ranges, flags, transforms, velocities, mass, and inertia.
 - [x] **PART-10**: Group creation, destruction, joining, splitting, connectivity, can-be-empty behavior, solid depth updates, rigid motion, and contiguous membership preserve upstream semantics.
-- [ ] **PART-11**: Voronoi-based topology, pair generation, triad generation, and reactive regeneration produce upstream-equivalent constraints and membership.
+- [x] **PART-11**: Voronoi-based topology, pair generation, triad generation, and reactive regeneration produce upstream-equivalent constraints and membership.
 - [x] **PART-12**: Baseline particle passes for collision, gravity, pressure, damping, rigid damping, extra damping, force application, velocity limiting, and lifetime solving run in the pinned upstream order.
 - [x] **PART-13**: Water, wall, spring, elastic, viscous, powder, tensile, barrier, static-pressure, reactive, repulsive, and color-mixing particle behaviors match the selected upstream behavior.
 - [x] **PART-14**: Zombie and destruction-listener particle behavior produces upstream-equivalent removal, callback, identity, and compaction outcomes.
@@ -258,7 +258,7 @@ Roadmap creation maps every v1 requirement to exactly one phase.
 | PART-08 | Phase 9 | Complete |
 | PART-09 | Phase 10 | Complete |
 | PART-10 | Phase 10 | Complete |
-| PART-11 | Phase 10 | Pending |
+| PART-11 | Phase 10 | Complete |
 | PART-12 | Phase 10 | Complete |
 | PART-13 | Phase 10 | Complete |
 | PART-14 | Phase 9 | Complete |
