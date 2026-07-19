@@ -189,6 +189,54 @@ pub enum ParticleSystemDefError {
     NonFiniteDamping,
     /// Damping is negative.
     NegativeDamping,
+    /// Pressure strength is not finite.
+    NonFinitePressureStrength,
+    /// Pressure strength is negative.
+    NegativePressureStrength,
+    /// Elastic strength is not finite.
+    NonFiniteElasticStrength,
+    /// Elastic strength is negative.
+    NegativeElasticStrength,
+    /// Spring strength is not finite.
+    NonFiniteSpringStrength,
+    /// Spring strength is negative.
+    NegativeSpringStrength,
+    /// Viscous strength is not finite.
+    NonFiniteViscousStrength,
+    /// Viscous strength is negative.
+    NegativeViscousStrength,
+    /// Surface-tension pressure strength is not finite.
+    NonFiniteSurfaceTensionPressureStrength,
+    /// Surface-tension pressure strength is negative.
+    NegativeSurfaceTensionPressureStrength,
+    /// Surface-tension normal strength is not finite.
+    NonFiniteSurfaceTensionNormalStrength,
+    /// Surface-tension normal strength is negative.
+    NegativeSurfaceTensionNormalStrength,
+    /// Repulsive strength is not finite.
+    NonFiniteRepulsiveStrength,
+    /// Repulsive strength is negative.
+    NegativeRepulsiveStrength,
+    /// Powder strength is not finite.
+    NonFinitePowderStrength,
+    /// Powder strength is negative.
+    NegativePowderStrength,
+    /// Ejection strength is not finite.
+    NonFiniteEjectionStrength,
+    /// Ejection strength is negative.
+    NegativeEjectionStrength,
+    /// Static-pressure strength is not finite.
+    NonFiniteStaticPressureStrength,
+    /// Static-pressure strength is negative.
+    NegativeStaticPressureStrength,
+    /// Static-pressure relaxation is not finite.
+    NonFiniteStaticPressureRelaxation,
+    /// Static-pressure relaxation is negative.
+    NegativeStaticPressureRelaxation,
+    /// Color-mixing strength is not finite.
+    NonFiniteColorMixingStrength,
+    /// Color-mixing strength is negative.
+    NegativeColorMixingStrength,
     /// Lifetime granularity is not finite.
     NonFiniteLifetimeGranularity,
     /// Lifetime granularity is zero or negative.
@@ -218,6 +266,60 @@ impl fmt::Display for ParticleSystemDefError {
             Self::NonPositiveRadius => "particle-system radius must be positive",
             Self::NonFiniteDamping => "particle-system damping must be finite",
             Self::NegativeDamping => "particle-system damping must be non-negative",
+            Self::NonFinitePressureStrength => "particle-system pressure strength must be finite",
+            Self::NegativePressureStrength => {
+                "particle-system pressure strength must be non-negative"
+            }
+            Self::NonFiniteElasticStrength => "particle-system elastic strength must be finite",
+            Self::NegativeElasticStrength => {
+                "particle-system elastic strength must be non-negative"
+            }
+            Self::NonFiniteSpringStrength => "particle-system spring strength must be finite",
+            Self::NegativeSpringStrength => "particle-system spring strength must be non-negative",
+            Self::NonFiniteViscousStrength => "particle-system viscous strength must be finite",
+            Self::NegativeViscousStrength => {
+                "particle-system viscous strength must be non-negative"
+            }
+            Self::NonFiniteSurfaceTensionPressureStrength => {
+                "particle-system surface-tension pressure strength must be finite"
+            }
+            Self::NegativeSurfaceTensionPressureStrength => {
+                "particle-system surface-tension pressure strength must be non-negative"
+            }
+            Self::NonFiniteSurfaceTensionNormalStrength => {
+                "particle-system surface-tension normal strength must be finite"
+            }
+            Self::NegativeSurfaceTensionNormalStrength => {
+                "particle-system surface-tension normal strength must be non-negative"
+            }
+            Self::NonFiniteRepulsiveStrength => "particle-system repulsive strength must be finite",
+            Self::NegativeRepulsiveStrength => {
+                "particle-system repulsive strength must be non-negative"
+            }
+            Self::NonFinitePowderStrength => "particle-system powder strength must be finite",
+            Self::NegativePowderStrength => "particle-system powder strength must be non-negative",
+            Self::NonFiniteEjectionStrength => "particle-system ejection strength must be finite",
+            Self::NegativeEjectionStrength => {
+                "particle-system ejection strength must be non-negative"
+            }
+            Self::NonFiniteStaticPressureStrength => {
+                "particle-system static-pressure strength must be finite"
+            }
+            Self::NegativeStaticPressureStrength => {
+                "particle-system static-pressure strength must be non-negative"
+            }
+            Self::NonFiniteStaticPressureRelaxation => {
+                "particle-system static-pressure relaxation must be finite"
+            }
+            Self::NegativeStaticPressureRelaxation => {
+                "particle-system static-pressure relaxation must be non-negative"
+            }
+            Self::NonFiniteColorMixingStrength => {
+                "particle-system color-mixing strength must be finite"
+            }
+            Self::NegativeColorMixingStrength => {
+                "particle-system color-mixing strength must be non-negative"
+            }
             Self::NonFiniteLifetimeGranularity => {
                 "particle-system lifetime granularity must be finite"
             }
@@ -252,6 +354,18 @@ pub struct ParticleSystemDef {
     gravity_scale: f32,
     radius: f32,
     damping: f32,
+    pressure_strength: f32,
+    elastic_strength: f32,
+    spring_strength: f32,
+    viscous_strength: f32,
+    surface_tension_pressure_strength: f32,
+    surface_tension_normal_strength: f32,
+    repulsive_strength: f32,
+    powder_strength: f32,
+    ejection_strength: f32,
+    static_pressure_strength: f32,
+    static_pressure_relaxation: f32,
+    color_mixing_strength: f32,
     static_pressure_iterations: usize,
     destroy_by_age: bool,
     lifetime_granularity: f32,
@@ -343,6 +457,204 @@ impl ParticleSystemDef {
             ParticleSystemDefError::NegativeDamping,
         )?;
         self.damping = damping;
+        Ok(self)
+    }
+
+    /// Returns a copy with checked non-negative pressure strength.
+    ///
+    /// # Errors
+    ///
+    /// Returns a coefficient-specific error when `strength` is non-finite or negative.
+    pub fn with_pressure_strength(mut self, strength: f32) -> Result<Self, ParticleSystemDefError> {
+        validate_non_negative(
+            strength,
+            ParticleSystemDefError::NonFinitePressureStrength,
+            ParticleSystemDefError::NegativePressureStrength,
+        )?;
+        self.pressure_strength = strength;
+        Ok(self)
+    }
+
+    /// Returns a copy with checked non-negative elastic strength.
+    ///
+    /// # Errors
+    ///
+    /// Returns a coefficient-specific error when `strength` is non-finite or negative.
+    pub fn with_elastic_strength(mut self, strength: f32) -> Result<Self, ParticleSystemDefError> {
+        validate_non_negative(
+            strength,
+            ParticleSystemDefError::NonFiniteElasticStrength,
+            ParticleSystemDefError::NegativeElasticStrength,
+        )?;
+        self.elastic_strength = strength;
+        Ok(self)
+    }
+
+    /// Returns a copy with checked non-negative spring strength.
+    ///
+    /// # Errors
+    ///
+    /// Returns a coefficient-specific error when `strength` is non-finite or negative.
+    pub fn with_spring_strength(mut self, strength: f32) -> Result<Self, ParticleSystemDefError> {
+        validate_non_negative(
+            strength,
+            ParticleSystemDefError::NonFiniteSpringStrength,
+            ParticleSystemDefError::NegativeSpringStrength,
+        )?;
+        self.spring_strength = strength;
+        Ok(self)
+    }
+
+    /// Returns a copy with checked non-negative viscous strength.
+    ///
+    /// # Errors
+    ///
+    /// Returns a coefficient-specific error when `strength` is non-finite or negative.
+    pub fn with_viscous_strength(mut self, strength: f32) -> Result<Self, ParticleSystemDefError> {
+        validate_non_negative(
+            strength,
+            ParticleSystemDefError::NonFiniteViscousStrength,
+            ParticleSystemDefError::NegativeViscousStrength,
+        )?;
+        self.viscous_strength = strength;
+        Ok(self)
+    }
+
+    /// Returns a copy with checked non-negative surface-tension pressure strength.
+    ///
+    /// # Errors
+    ///
+    /// Returns a coefficient-specific error when `strength` is non-finite or negative.
+    pub fn with_surface_tension_pressure_strength(
+        mut self,
+        strength: f32,
+    ) -> Result<Self, ParticleSystemDefError> {
+        validate_non_negative(
+            strength,
+            ParticleSystemDefError::NonFiniteSurfaceTensionPressureStrength,
+            ParticleSystemDefError::NegativeSurfaceTensionPressureStrength,
+        )?;
+        self.surface_tension_pressure_strength = strength;
+        Ok(self)
+    }
+
+    /// Returns a copy with checked non-negative surface-tension normal strength.
+    ///
+    /// # Errors
+    ///
+    /// Returns a coefficient-specific error when `strength` is non-finite or negative.
+    pub fn with_surface_tension_normal_strength(
+        mut self,
+        strength: f32,
+    ) -> Result<Self, ParticleSystemDefError> {
+        validate_non_negative(
+            strength,
+            ParticleSystemDefError::NonFiniteSurfaceTensionNormalStrength,
+            ParticleSystemDefError::NegativeSurfaceTensionNormalStrength,
+        )?;
+        self.surface_tension_normal_strength = strength;
+        Ok(self)
+    }
+
+    /// Returns a copy with checked non-negative repulsive strength.
+    ///
+    /// # Errors
+    ///
+    /// Returns a coefficient-specific error when `strength` is non-finite or negative.
+    pub fn with_repulsive_strength(
+        mut self,
+        strength: f32,
+    ) -> Result<Self, ParticleSystemDefError> {
+        validate_non_negative(
+            strength,
+            ParticleSystemDefError::NonFiniteRepulsiveStrength,
+            ParticleSystemDefError::NegativeRepulsiveStrength,
+        )?;
+        self.repulsive_strength = strength;
+        Ok(self)
+    }
+
+    /// Returns a copy with checked non-negative powder strength.
+    ///
+    /// # Errors
+    ///
+    /// Returns a coefficient-specific error when `strength` is non-finite or negative.
+    pub fn with_powder_strength(mut self, strength: f32) -> Result<Self, ParticleSystemDefError> {
+        validate_non_negative(
+            strength,
+            ParticleSystemDefError::NonFinitePowderStrength,
+            ParticleSystemDefError::NegativePowderStrength,
+        )?;
+        self.powder_strength = strength;
+        Ok(self)
+    }
+
+    /// Returns a copy with checked non-negative ejection strength.
+    ///
+    /// # Errors
+    ///
+    /// Returns a coefficient-specific error when `strength` is non-finite or negative.
+    pub fn with_ejection_strength(mut self, strength: f32) -> Result<Self, ParticleSystemDefError> {
+        validate_non_negative(
+            strength,
+            ParticleSystemDefError::NonFiniteEjectionStrength,
+            ParticleSystemDefError::NegativeEjectionStrength,
+        )?;
+        self.ejection_strength = strength;
+        Ok(self)
+    }
+
+    /// Returns a copy with checked non-negative static-pressure strength.
+    ///
+    /// # Errors
+    ///
+    /// Returns a coefficient-specific error when `strength` is non-finite or negative.
+    pub fn with_static_pressure_strength(
+        mut self,
+        strength: f32,
+    ) -> Result<Self, ParticleSystemDefError> {
+        validate_non_negative(
+            strength,
+            ParticleSystemDefError::NonFiniteStaticPressureStrength,
+            ParticleSystemDefError::NegativeStaticPressureStrength,
+        )?;
+        self.static_pressure_strength = strength;
+        Ok(self)
+    }
+
+    /// Returns a copy with checked non-negative static-pressure relaxation.
+    ///
+    /// # Errors
+    ///
+    /// Returns a coefficient-specific error when `relaxation` is non-finite or negative.
+    pub fn with_static_pressure_relaxation(
+        mut self,
+        relaxation: f32,
+    ) -> Result<Self, ParticleSystemDefError> {
+        validate_non_negative(
+            relaxation,
+            ParticleSystemDefError::NonFiniteStaticPressureRelaxation,
+            ParticleSystemDefError::NegativeStaticPressureRelaxation,
+        )?;
+        self.static_pressure_relaxation = relaxation;
+        Ok(self)
+    }
+
+    /// Returns a copy with checked non-negative color-mixing strength.
+    ///
+    /// # Errors
+    ///
+    /// Returns a coefficient-specific error when `strength` is non-finite or negative.
+    pub fn with_color_mixing_strength(
+        mut self,
+        strength: f32,
+    ) -> Result<Self, ParticleSystemDefError> {
+        validate_non_negative(
+            strength,
+            ParticleSystemDefError::NonFiniteColorMixingStrength,
+            ParticleSystemDefError::NegativeColorMixingStrength,
+        )?;
+        self.color_mixing_strength = strength;
         Ok(self)
     }
 
@@ -464,6 +776,78 @@ impl ParticleSystemDef {
         self.damping
     }
 
+    /// Returns the pressure strength.
+    #[must_use]
+    pub const fn pressure_strength(self) -> f32 {
+        self.pressure_strength
+    }
+
+    /// Returns the elastic strength.
+    #[must_use]
+    pub const fn elastic_strength(self) -> f32 {
+        self.elastic_strength
+    }
+
+    /// Returns the spring strength.
+    #[must_use]
+    pub const fn spring_strength(self) -> f32 {
+        self.spring_strength
+    }
+
+    /// Returns the viscous strength.
+    #[must_use]
+    pub const fn viscous_strength(self) -> f32 {
+        self.viscous_strength
+    }
+
+    /// Returns the surface-tension pressure strength.
+    #[must_use]
+    pub const fn surface_tension_pressure_strength(self) -> f32 {
+        self.surface_tension_pressure_strength
+    }
+
+    /// Returns the surface-tension normal strength.
+    #[must_use]
+    pub const fn surface_tension_normal_strength(self) -> f32 {
+        self.surface_tension_normal_strength
+    }
+
+    /// Returns the repulsive strength.
+    #[must_use]
+    pub const fn repulsive_strength(self) -> f32 {
+        self.repulsive_strength
+    }
+
+    /// Returns the powder strength.
+    #[must_use]
+    pub const fn powder_strength(self) -> f32 {
+        self.powder_strength
+    }
+
+    /// Returns the ejection strength.
+    #[must_use]
+    pub const fn ejection_strength(self) -> f32 {
+        self.ejection_strength
+    }
+
+    /// Returns the static-pressure strength.
+    #[must_use]
+    pub const fn static_pressure_strength(self) -> f32 {
+        self.static_pressure_strength
+    }
+
+    /// Returns the static-pressure relaxation.
+    #[must_use]
+    pub const fn static_pressure_relaxation(self) -> f32 {
+        self.static_pressure_relaxation
+    }
+
+    /// Returns the color-mixing strength.
+    #[must_use]
+    pub const fn color_mixing_strength(self) -> f32 {
+        self.color_mixing_strength
+    }
+
     /// Returns the configured static-pressure iteration count.
     #[must_use]
     pub const fn static_pressure_iterations(self) -> usize {
@@ -505,6 +889,18 @@ impl Default for ParticleSystemDef {
             gravity_scale: 1.0,
             radius: 1.0,
             damping: 1.0,
+            pressure_strength: 0.05,
+            elastic_strength: 0.25,
+            spring_strength: 0.25,
+            viscous_strength: 0.25,
+            surface_tension_pressure_strength: 0.2,
+            surface_tension_normal_strength: 0.2,
+            repulsive_strength: 1.0,
+            powder_strength: 0.5,
+            ejection_strength: 0.5,
+            static_pressure_strength: 0.2,
+            static_pressure_relaxation: 0.2,
+            color_mixing_strength: 0.5,
             static_pressure_iterations: 8,
             destroy_by_age: true,
             lifetime_granularity: 1.0 / 60.0,
@@ -755,4 +1151,217 @@ fn validate_vector(
         return Err(invalid_y);
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{ParticleSystemDef, ParticleSystemDefError};
+
+    type Builder = fn(ParticleSystemDef, f32) -> Result<ParticleSystemDef, ParticleSystemDefError>;
+    type Accessor = fn(ParticleSystemDef) -> f32;
+
+    struct CoefficientCase {
+        name: &'static str,
+        default: f32,
+        builder: Builder,
+        accessor: Accessor,
+        non_finite_error: ParticleSystemDefError,
+        negative_error: ParticleSystemDefError,
+    }
+
+    fn coefficient_cases() -> [CoefficientCase; 12] {
+        [
+            CoefficientCase {
+                name: "pressure strength",
+                default: 0.05,
+                builder: ParticleSystemDef::with_pressure_strength,
+                accessor: ParticleSystemDef::pressure_strength,
+                non_finite_error: ParticleSystemDefError::NonFinitePressureStrength,
+                negative_error: ParticleSystemDefError::NegativePressureStrength,
+            },
+            CoefficientCase {
+                name: "elastic strength",
+                default: 0.25,
+                builder: ParticleSystemDef::with_elastic_strength,
+                accessor: ParticleSystemDef::elastic_strength,
+                non_finite_error: ParticleSystemDefError::NonFiniteElasticStrength,
+                negative_error: ParticleSystemDefError::NegativeElasticStrength,
+            },
+            CoefficientCase {
+                name: "spring strength",
+                default: 0.25,
+                builder: ParticleSystemDef::with_spring_strength,
+                accessor: ParticleSystemDef::spring_strength,
+                non_finite_error: ParticleSystemDefError::NonFiniteSpringStrength,
+                negative_error: ParticleSystemDefError::NegativeSpringStrength,
+            },
+            CoefficientCase {
+                name: "viscous strength",
+                default: 0.25,
+                builder: ParticleSystemDef::with_viscous_strength,
+                accessor: ParticleSystemDef::viscous_strength,
+                non_finite_error: ParticleSystemDefError::NonFiniteViscousStrength,
+                negative_error: ParticleSystemDefError::NegativeViscousStrength,
+            },
+            CoefficientCase {
+                name: "surface-tension pressure strength",
+                default: 0.2,
+                builder: ParticleSystemDef::with_surface_tension_pressure_strength,
+                accessor: ParticleSystemDef::surface_tension_pressure_strength,
+                non_finite_error: ParticleSystemDefError::NonFiniteSurfaceTensionPressureStrength,
+                negative_error: ParticleSystemDefError::NegativeSurfaceTensionPressureStrength,
+            },
+            CoefficientCase {
+                name: "surface-tension normal strength",
+                default: 0.2,
+                builder: ParticleSystemDef::with_surface_tension_normal_strength,
+                accessor: ParticleSystemDef::surface_tension_normal_strength,
+                non_finite_error: ParticleSystemDefError::NonFiniteSurfaceTensionNormalStrength,
+                negative_error: ParticleSystemDefError::NegativeSurfaceTensionNormalStrength,
+            },
+            CoefficientCase {
+                name: "repulsive strength",
+                default: 1.0,
+                builder: ParticleSystemDef::with_repulsive_strength,
+                accessor: ParticleSystemDef::repulsive_strength,
+                non_finite_error: ParticleSystemDefError::NonFiniteRepulsiveStrength,
+                negative_error: ParticleSystemDefError::NegativeRepulsiveStrength,
+            },
+            CoefficientCase {
+                name: "powder strength",
+                default: 0.5,
+                builder: ParticleSystemDef::with_powder_strength,
+                accessor: ParticleSystemDef::powder_strength,
+                non_finite_error: ParticleSystemDefError::NonFinitePowderStrength,
+                negative_error: ParticleSystemDefError::NegativePowderStrength,
+            },
+            CoefficientCase {
+                name: "ejection strength",
+                default: 0.5,
+                builder: ParticleSystemDef::with_ejection_strength,
+                accessor: ParticleSystemDef::ejection_strength,
+                non_finite_error: ParticleSystemDefError::NonFiniteEjectionStrength,
+                negative_error: ParticleSystemDefError::NegativeEjectionStrength,
+            },
+            CoefficientCase {
+                name: "static-pressure strength",
+                default: 0.2,
+                builder: ParticleSystemDef::with_static_pressure_strength,
+                accessor: ParticleSystemDef::static_pressure_strength,
+                non_finite_error: ParticleSystemDefError::NonFiniteStaticPressureStrength,
+                negative_error: ParticleSystemDefError::NegativeStaticPressureStrength,
+            },
+            CoefficientCase {
+                name: "static-pressure relaxation",
+                default: 0.2,
+                builder: ParticleSystemDef::with_static_pressure_relaxation,
+                accessor: ParticleSystemDef::static_pressure_relaxation,
+                non_finite_error: ParticleSystemDefError::NonFiniteStaticPressureRelaxation,
+                negative_error: ParticleSystemDefError::NegativeStaticPressureRelaxation,
+            },
+            CoefficientCase {
+                name: "color-mixing strength",
+                default: 0.5,
+                builder: ParticleSystemDef::with_color_mixing_strength,
+                accessor: ParticleSystemDef::color_mixing_strength,
+                non_finite_error: ParticleSystemDefError::NonFiniteColorMixingStrength,
+                negative_error: ParticleSystemDefError::NegativeColorMixingStrength,
+            },
+        ]
+    }
+
+    #[test]
+    fn solver_coefficient_defaults_match_pinned_bits() {
+        // Arrange / Act
+        let definition = ParticleSystemDef::default();
+
+        // Assert
+        for case in coefficient_cases() {
+            assert_eq!(
+                (case.accessor)(definition).to_bits(),
+                case.default.to_bits(),
+                "{}",
+                case.name
+            );
+        }
+    }
+
+    #[test]
+    fn solver_coefficient_builders_preserve_configured_bits() {
+        // Arrange
+        let definition = ParticleSystemDef::default();
+        let configured = 0.375_f32;
+
+        for case in coefficient_cases() {
+            // Act
+            let result = (case.builder)(definition, configured)
+                .expect("finite non-negative solver coefficient should be valid");
+
+            // Assert
+            assert_eq!(
+                (case.accessor)(result).to_bits(),
+                configured.to_bits(),
+                "{}",
+                case.name
+            );
+        }
+    }
+
+    #[test]
+    fn solver_coefficient_builders_reject_non_finite_values_without_mutation() {
+        // Arrange
+        let definition = ParticleSystemDef::default();
+        let non_finite_values = [f32::NAN, f32::INFINITY, f32::NEG_INFINITY];
+
+        for case in coefficient_cases() {
+            for value in non_finite_values {
+                // Act
+                let result = (case.builder)(definition, value);
+
+                // Assert
+                assert_eq!(result, Err(case.non_finite_error), "{}", case.name);
+                assert_eq!(
+                    (case.accessor)(definition).to_bits(),
+                    case.default.to_bits(),
+                    "{}",
+                    case.name
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn solver_coefficient_builders_reject_negative_values_without_mutation() {
+        // Arrange
+        let definition = ParticleSystemDef::default();
+
+        for case in coefficient_cases() {
+            // Act
+            let result = (case.builder)(definition, -0.25);
+
+            // Assert
+            assert_eq!(result, Err(case.negative_error), "{}", case.name);
+            assert_eq!(
+                (case.accessor)(definition).to_bits(),
+                case.default.to_bits(),
+                "{}",
+                case.name
+            );
+        }
+    }
+
+    #[test]
+    fn solver_coefficient_builders_accept_exact_positive_zero() {
+        // Arrange
+        let definition = ParticleSystemDef::default();
+
+        for case in coefficient_cases() {
+            // Act
+            let result = (case.builder)(definition, 0.0)
+                .expect("zero disables or suppresses the corresponding solver effect");
+
+            // Assert
+            assert_eq!((case.accessor)(result).to_bits(), 0.0_f32.to_bits());
+        }
+    }
 }
