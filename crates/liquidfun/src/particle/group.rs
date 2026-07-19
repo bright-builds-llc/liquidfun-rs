@@ -1,5 +1,11 @@
 //! Safe owned particle-group recipes and borrow-scoped group inspection.
 
+#[allow(
+    dead_code,
+    reason = "consumed by the Phase 10 world-facing particle-group integration"
+)]
+pub(crate) mod sampling;
+
 use std::error::Error;
 use std::fmt;
 use std::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign};
