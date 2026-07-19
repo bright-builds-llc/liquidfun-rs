@@ -105,7 +105,7 @@ Requirements for the first release permitted to claim complete parity with the s
 - [x] **TEST-01**: Pure math, geometry, ordering, identity, and solver kernels have focused unit tests with one primary concern and clear Arrange/Act/Assert structure.
 - [ ] **TEST-02**: Public world, rigid-body, joint, particle, callback, query, and destruction workflows have integration tests through supported APIs.
 - [ ] **TEST-03**: Every applicable upstream test is ported, replaced by equivalent evidence, or documented as irrelevant with a reviewed rationale.
-- [ ] **TEST-04**: Property tests cover geometry invariants, broad-phase behavior, handle validity, particle permutation/group invariants, query correctness, and reproducible world operation sequences.
+- [x] **TEST-04**: Property tests cover geometry invariants, broad-phase behavior, handle validity, particle permutation/group invariants, query correctness, and reproducible world operation sequences.
 - [ ] **TEST-05**: Fuzz targets cover shape/collision inputs, scenario protocol parsing, world mutation sequences, particle operations, and every unsafe boundary appropriate for fuzzing.
 - [ ] **TEST-06**: Miri and Rust sanitizers exercise useful supported subsets, while C++ oracle builds run appropriate sanitizers without crossing failures into the Rust process.
 - [ ] **TEST-07**: Every corrected differential mismatch becomes a minimized named regression that fails before the fix and records its oracle/tolerance provenance.
@@ -269,7 +269,7 @@ Roadmap creation maps every v1 requirement to exactly one phase.
 | TEST-01 | Phase 10 | Complete |
 | TEST-02 | Phase 10 | Pending |
 | TEST-03 | Phase 11 | Pending |
-| TEST-04 | Phase 10 | Pending |
+| TEST-04 | Phase 10 | Complete |
 | TEST-05 | Phase 12 | Pending |
 | TEST-06 | Phase 12 | Pending |
 | TEST-07 | Phase 12 | Pending |

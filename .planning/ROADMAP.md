@@ -189,7 +189,7 @@ Plans:
 - [x] 10-05-PLAN.md — Establish storage-owned group authority and invariants.
 - [x] 10-06-PLAN.md — Add solver scratch lanes and executable lane inventory.
 - [ ] 10-07-PLAN.md — Build operation-specific transactional mutation candidates.
-- [ ] 10-08-PLAN.md — Implement exact fill, stroke, and explicit-position sampling.
+- [x] 10-08-PLAN.md — Implement exact fill, stroke, and explicit-position sampling.
 - [ ] 10-09-PLAN.md — Wire public group creation, append, and inspection.
 - [ ] 10-10-PLAN.md — Implement deferred group destruction and retained-empty lifecycle.
 - [ ] 10-11-PLAN.md — Implement source-ordered Voronoi topology generation.
@@ -262,7 +262,7 @@ Plans:
 | 7. Rigid Solver, World Operations, and CCD | 13/13 | Complete    | 2026-07-13 |
 | 8. Joints, Rope, Callbacks, and Rigid Sign-Off | 24/24 | Complete    | 2026-07-15 |
 | 9. Particle Storage, Lifecycle, and Coupling | 31/31 | Complete | 2026-07-18 |
-| 10. Particle Groups, Solvers, and Compatibility Sign-Off | 6/32 | In Progress|  |
+| 10. Particle Groups, Solvers, and Compatibility Sign-Off | 7/32 | In Progress|  |
 | 11. Examples, Headless Tooling, and Testbed | 0/TBD | Not started | - |
 | 12. Performance, Portability, and Release Hardening | 0/TBD | Not started | - |
 
