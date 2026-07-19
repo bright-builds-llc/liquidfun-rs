@@ -381,6 +381,39 @@ fn build_accepts_the_registered_phase9_lifecycle_contact_witness() -> TestResult
 }
 
 #[test]
+fn build_accepts_the_registered_phase10_group_topology_witness() -> TestResult {
+    // Arrange
+    let fixture = RepositoryFixture::new()?;
+    let mut command = fixture.command()?;
+    command.args([
+        "upstream",
+        "build",
+        "--preset",
+        "oracle-debug",
+        "--target",
+        "phase10-group-topology-witness",
+    ]);
+
+    // Act
+    let output = command.output()?;
+
+    // Assert
+    assert!(output.status.success(), "{}", stderr(&output));
+    assert_eq!(
+        fixture.cmake_arguments()?,
+        [
+            "--build",
+            "--preset",
+            "oracle-debug",
+            "--target",
+            "phase10-group-topology-witness",
+        ]
+    );
+    fixture.cleanup()?;
+    Ok(())
+}
+
+#[test]
 fn build_rejects_unregistered_target_before_cmake() -> TestResult {
     // Arrange
     let fixture = RepositoryFixture::new()?;

@@ -11,11 +11,14 @@ const USAGE: &str = r"Usage: cargo xtask upstream <command> [arguments]
 Commands:
   verify
   configure --preset <oracle-debug|oracle-release|oracle-asan-ubsan>
-  build --preset <oracle-debug|oracle-release|oracle-asan-ubsan> [--target <liquidfun-reference|phase9-lifecycle-contact-witness>]";
+  build --preset <oracle-debug|oracle-release|oracle-asan-ubsan> [--target <liquidfun-reference|phase9-lifecycle-contact-witness|phase10-group-topology-witness>]";
 
 const ALLOWED_PRESETS: [&str; 3] = ["oracle-debug", "oracle-release", "oracle-asan-ubsan"];
-const ALLOWED_BUILD_TARGETS: [&str; 2] =
-    ["liquidfun-reference", "phase9-lifecycle-contact-witness"];
+const ALLOWED_BUILD_TARGETS: [&str; 3] = [
+    "liquidfun-reference",
+    "phase9-lifecycle-contact-witness",
+    "phase10-group-topology-witness",
+];
 const CMAKE_CANONICAL: Version = Version::new(4, 3, 3);
 const CMAKE_FLOOR: Version = Version::new(3, 25, 0);
 const NINJA_CANONICAL: Version = Version::new(1, 13, 2);

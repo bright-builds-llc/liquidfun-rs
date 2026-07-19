@@ -1,0 +1,20 @@
+{
+  "adapter_content_sha256": "767774356ce30bc59cf0b0a60a737e8bf08a1da0723fa093cad95ca393c943a4",
+  "cmake_preset": "oracle-debug",
+  "cmake_target": "phase10-group-topology-witness",
+  "compiler_id": "AppleClang",
+  "compiler_version": "21.0.0.21000101",
+  "exact_argv": [
+    "/Users/peterryszkiewicz/Repos/liquidfun-rs/target/reference/oracle-debug/phase10-group-topology-witness",
+    "--output",
+    "group-topology-witnesses.json",
+    "--provenance",
+    "group-topology-witnesses.provenance.json"
+  ],
+  "generation_timestamp": "2026-07-19T22:26:41Z",
+  "oracle_revision": "7f20402173fd143a3988c921bc384459c6a858f2",
+  "probe_source_sha256": "3aec61bfdcb21974d404a4c1437e17901d5cbe8960e9e8408344b16c4413450a",
+  "schema_version": 1,
+  "target": "arm64-apple-darwin25.5.0",
+  "witness_sha256": "90d212d3380fe9aa645ca9d972e39b962db9f912853850a9deb5943be2395278"
+}

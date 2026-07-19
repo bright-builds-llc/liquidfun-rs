@@ -531,6 +531,55 @@ target_link_libraries(
   PRIVATE liquidfun-reference-protocol Box2D
 )
 
+file(
+  SHA256
+  "${CMAKE_CURRENT_LIST_DIR}/src/phase10_group_topology_witness.cpp"
+  PHASE10_GROUP_TOPOLOGY_MAIN_SHA256
+)
+file(
+  SHA256
+  "${CMAKE_CURRENT_LIST_DIR}/src/phase10_group_topology_cases.cpp"
+  PHASE10_GROUP_TOPOLOGY_CASES_SHA256
+)
+file(
+  SHA256
+  "${CMAKE_CURRENT_LIST_DIR}/src/phase10_group_topology_cases.hpp"
+  PHASE10_GROUP_TOPOLOGY_HEADER_SHA256
+)
+string(
+  SHA256
+  PHASE10_GROUP_TOPOLOGY_PROBE_SOURCE_SHA256
+  "phase10_group_topology_witness.cpp=${PHASE10_GROUP_TOPOLOGY_MAIN_SHA256}\nphase10_group_topology_cases.cpp=${PHASE10_GROUP_TOPOLOGY_CASES_SHA256}\nphase10_group_topology_cases.hpp=${PHASE10_GROUP_TOPOLOGY_HEADER_SHA256}\n"
+)
+add_executable(
+  phase10-group-topology-witness
+  src/phase10_group_topology_witness.cpp
+  src/phase10_group_topology_cases.cpp
+  "${REFERENCE_BUILD_IDENTITY_HEADER}"
+)
+target_compile_features(phase10-group-topology-witness PRIVATE cxx_std_17)
+target_compile_definitions(
+  phase10-group-topology-witness
+  PRIVATE
+    PHASE10_GROUP_TOPOLOGY_PROBE_SOURCE_SHA256="${PHASE10_GROUP_TOPOLOGY_PROBE_SOURCE_SHA256}"
+)
+target_include_directories(
+  phase10-group-topology-witness
+  PRIVATE
+    "${CMAKE_CURRENT_BINARY_DIR}/generated"
+    "${CMAKE_CURRENT_LIST_DIR}/src"
+    "${CMAKE_CURRENT_LIST_DIR}/vendor"
+)
+target_include_directories(
+  phase10-group-topology-witness
+  SYSTEM PRIVATE
+  "${CMAKE_CURRENT_LIST_DIR}/../../third_party/liquidfun/liquidfun/Box2D"
+)
+target_link_libraries(
+  phase10-group-topology-witness
+  PRIVATE liquidfun-reference-protocol Box2D
+)
+
 add_executable(
   liquidfun-reference-protocol-tests
   tests/protocol_tests.cpp
@@ -559,6 +608,10 @@ target_compile_options(
 )
 target_compile_options(
   phase9-lifecycle-contact-witness
+  PRIVATE ${REFERENCE_WARNING_OPTIONS} ${REFERENCE_SUPPORTED_FP_OPTIONS}
+)
+target_compile_options(
+  phase10-group-topology-witness
   PRIVATE ${REFERENCE_WARNING_OPTIONS} ${REFERENCE_SUPPORTED_FP_OPTIONS}
 )
 
