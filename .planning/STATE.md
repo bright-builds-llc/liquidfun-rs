@@ -3,15 +3,15 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 10-08-PLAN.md
-last_updated: "2026-07-19T18:21:51.475Z"
+stopped_at: Completed 10-11-PLAN.md
+last_updated: "2026-07-19T19:59:21.249Z"
 last_activity: "2026-07-19"
 progress:
   total_phases: 12
   completed_phases: 9
   total_plans: 161
-  completed_plans: 136
-  percent: 84
+  completed_plans: 137
+  percent: 85
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 ## Current Position
 
 Phase: 10 (Particle Groups, Solvers, and Compatibility Sign-Off) — EXECUTING
-Plan: 8 of 32
+Plan: 9 of 32
 Status: Ready to execute
 Last activity: 2026-07-19
 
-Progress: [████████░░] 84%
+Progress: [█████████░] 85%
 
 ## Performance Metrics
 
@@ -148,6 +148,7 @@ Progress: [████████░░] 84%
 | Phase 10 P05 | 73m | 1 tasks | 5 files |
 | Phase 10 P06 | 1h 48m | 1 tasks | 6 files |
 | Phase 10 P08 | 1h 32m | 1 tasks | 2 files |
+| Phase 10 P11 | 1h 25m | 1 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -358,6 +359,8 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 10]: Carry solver state through creation and permutation candidates while excluding it from consumer buffer transfer.
 - [Phase 10]: Preflight source-derived work and effective particle capacity before exact two-pass sample materialization.
 - [Phase 10]: Keep private sampler implementation and co-located fixed/property oracle evidence together for exact source-order auditability.
+- [Phase 10]: Use dense generator ordinal as the only Voronoi tie identity and replace ownership only for a strictly smaller squared distance.
+- [Phase 10]: Preflight conservative grid, queue, work, and node limits before allocating bounded Voronoi state.
 
 ### Pending Todos
 
@@ -371,6 +374,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-19T18:21:51.447Z
-Stopped at: Completed 10-08-PLAN.md
+Last session: 2026-07-19T19:59:21.246Z
+Stopped at: Completed 10-11-PLAN.md
 Resume file: None
