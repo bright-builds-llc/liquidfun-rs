@@ -84,7 +84,7 @@ fn populated_storage() -> (ParticleStorage, [ParticleId; 4]) {
 }
 
 #[test]
-fn one_transaction_remaps_all_lanes_indices_and_group_ranges() {
+fn one_transaction_remaps_all_lanes_indices_and_group_records() {
     // Arrange
     let (mut storage, ids) = populated_storage();
 
@@ -153,19 +153,12 @@ fn one_transaction_remaps_all_lanes_indices_and_group_ranges() {
         ])
     );
     assert_eq!(
-        storage.group_ranges,
-        vec![
-            GroupRange {
-                maybe_group: second_group,
-                start: ParticleIndex(0),
-                end: ParticleIndex(2)
-            },
-            GroupRange {
-                maybe_group: first_group,
-                start: ParticleIndex(2),
-                end: ParticleIndex(4)
-            },
-        ]
+        storage
+            .group_records
+            .iter()
+            .map(|record| (Some(record.id), record.first, record.last))
+            .collect::<Vec<_>>(),
+        vec![(second_group, 0, 2), (first_group, 2, 4),]
     );
     assert_eq!(storage.check_invariants(), Ok(()));
 }

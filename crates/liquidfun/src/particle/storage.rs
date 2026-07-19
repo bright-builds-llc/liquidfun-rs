@@ -10,15 +10,20 @@ use crate::math::Vec2;
 use crate::particle::{
     ParticleBodyContact as SemanticBodyContact, ParticleBufferBundle, ParticleBufferLanes,
     ParticleBufferMode, ParticleColor, ParticleContact as SemanticParticleContact, ParticleFlags,
+    ParticleGroupFlags,
 };
 use std::ops::Range;
 
+use group::GroupRecord;
 use lanes::{
-    GroupRange, OwnedLaneBundle, ParticleBodyContact, ParticleContact, ParticlePair, ParticleProxy,
+    OwnedLaneBundle, ParticleBodyContact, ParticleContact, ParticlePair, ParticleProxy,
     ParticleTriad, StuckLanes, UserAssociationKey,
 };
-use validation::{build_group_ranges, validate_reference_sets, validate_references};
+use validation::{
+    rebuild_group_records_for_system, validate_groups, validate_reference_sets, validate_references,
+};
 
+pub(in crate::particle) mod group;
 mod lane_inventory;
 pub(in crate::particle) mod lanes;
 pub(in crate::particle) mod permutation;
@@ -105,7 +110,7 @@ pub(crate) struct ParticleStorage {
     body_contacts: Vec<ParticleBodyContact>,
     pairs: Vec<ParticlePair>,
     triads: Vec<ParticleTriad>,
-    group_ranges: Vec<GroupRange>,
+    group_records: Vec<GroupRecord>,
 }
 
 struct CreateCandidate {
@@ -116,7 +121,7 @@ struct CreateCandidate {
     generation: u64,
     append_identity: bool,
     dense: ParticleIndex,
-    group_ranges: Vec<GroupRange>,
+    group_records: Vec<GroupRecord>,
 }
 
 impl ParticleStorage {
@@ -238,7 +243,7 @@ impl ParticleStorage {
             body_contacts: Vec::new(),
             pairs: Vec::new(),
             triads: Vec::new(),
-            group_ranges: Vec::new(),
+            group_records: Vec::new(),
         })
     }
 
@@ -278,6 +283,13 @@ impl ParticleStorage {
         group: ParticleGroupId,
     ) -> Result<Vec<ParticleId>, ParticleStorageError> {
         self.check_invariants()?;
+        if !self
+            .group_records
+            .iter()
+            .any(|record| record.id == group && record.system == self.system)
+        {
+            return Err(ParticleStorageError::InvalidGroupRange);
+        }
         let particles = self
             .dense_to_id
             .iter()
@@ -291,9 +303,15 @@ impl ParticleStorage {
                 *maybe_group = None;
             }
         }
-        let ranges = build_group_ranges(&groups)?;
+        let group_records = self
+            .group_records
+            .iter()
+            .copied()
+            .filter(|record| record.id != group)
+            .collect::<Vec<_>>();
+        validate_groups(self.system, &groups, &group_records)?;
         self.groups = groups;
-        self.group_ranges = ranges;
+        self.group_records = group_records;
         debug_assert_eq!(self.check_invariants(), Ok(()));
         Ok(particles)
     }
@@ -378,7 +396,8 @@ impl ParticleStorage {
         let dense = ParticleIndex(self.dense_to_id.len());
         let mut groups = self.groups.clone();
         groups.push(input.maybe_group);
-        let group_ranges = build_group_ranges(&groups)?;
+        let group_records =
+            rebuild_group_records_for_system(&self.group_records, &groups, self.system)?;
         Ok(CreateCandidate {
             input,
             diagnostic_id,
@@ -387,7 +406,7 @@ impl ParticleStorage {
             generation,
             append_identity,
             dense,
-            group_ranges,
+            group_records,
         })
     }
 
@@ -408,7 +427,7 @@ impl ParticleStorage {
         self.identities[candidate.local_slot].diagnostic_id = Some(candidate.diagnostic_id);
         self.identities[candidate.local_slot].state = IdentityState::Live(candidate.dense);
         self.push_row(candidate.id, candidate.input);
-        self.group_ranges = candidate.group_ranges;
+        self.group_records = candidate.group_records;
         debug_assert_eq!(self.check_invariants(), Ok(()));
         candidate.id
     }
@@ -446,6 +465,12 @@ impl ParticleStorage {
 
     pub(in crate::particle) fn groups(&self) -> &[Option<ParticleGroupId>] {
         &self.groups
+    }
+
+    pub(in crate::particle) fn group_flags(
+        &self,
+    ) -> impl ExactSizeIterator<Item = ParticleGroupFlags> + '_ {
+        self.group_records.iter().map(|record| record.flags)
     }
 
     pub(in crate::particle) fn weights(&self) -> &[f32] {
@@ -603,6 +628,7 @@ impl ParticleStorage {
     ) -> Result<(), ParticleStorageError> {
         let index = self.resolve_live(particle)?;
         self.velocities[index.0] = velocity;
+        self.invalidate_group_statistics_at(index);
         Ok(())
     }
 
@@ -652,6 +678,9 @@ impl ParticleStorage {
         velocities: &[Vec2],
     ) {
         self.velocities[range].copy_from_slice(velocities);
+        for record in &mut self.group_records {
+            record.invalidate_statistics();
+        }
     }
 
     pub(in crate::particle) fn stuck_candidates(
@@ -906,6 +935,7 @@ impl ParticleStorage {
     ) -> Result<(), ParticleStorageError> {
         let dense = self.resolve_live(id)?;
         self.positions[dense.0] = position;
+        self.invalidate_group_statistics_at(dense);
         Ok(())
     }
 
@@ -919,6 +949,7 @@ impl ParticleStorage {
         let position_changed = self.positions[dense.0] != position;
         self.positions[dense.0] = position;
         self.velocities[dense.0] = velocity;
+        self.invalidate_group_statistics_at(dense);
         if position_changed {
             self.repair_spatial_state();
         }
@@ -941,6 +972,20 @@ impl ParticleStorage {
         self.body_contacts.clear();
         self.pairs.clear();
         self.triads.clear();
+    }
+
+    fn invalidate_group_statistics_at(&mut self, dense: ParticleIndex) {
+        let maybe_group = self.groups[dense.0];
+        let Some(group) = maybe_group else {
+            return;
+        };
+        if let Some(record) = self
+            .group_records
+            .iter_mut()
+            .find(|record| record.id == group)
+        {
+            record.invalidate_statistics();
+        }
     }
 
     pub(crate) fn mark_delete(
@@ -1148,9 +1193,7 @@ impl ParticleStorage {
         self.check_lane_lengths(count)?;
         self.check_identity_map()?;
         self.check_derived_references(count)?;
-        if self.group_ranges != build_group_ranges(&self.groups)? {
-            return Err(ParticleStorageError::InvalidGroupRange);
-        }
+        validate_groups(self.system, &self.groups, &self.group_records)?;
         Ok(())
     }
 

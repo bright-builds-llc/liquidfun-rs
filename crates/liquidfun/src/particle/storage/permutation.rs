@@ -1,8 +1,8 @@
 use super::{
-    GroupRange, IdentityEntry, IdentityState, ParticleBodyContact, ParticleColor, ParticleContact,
+    GroupRecord, IdentityEntry, IdentityState, ParticleBodyContact, ParticleColor, ParticleContact,
     ParticleFlags, ParticleGroupId, ParticleId, ParticleIndex, ParticlePair, ParticleProxy,
     ParticleSnapshot, ParticleStorage, ParticleStorageError, ParticleTriad, StuckLanes,
-    UserAssociationKey, Vec2, build_group_ranges,
+    UserAssociationKey, Vec2, rebuild_group_records_for_system,
 };
 
 struct PermutationCandidate {
@@ -25,7 +25,7 @@ struct PermutationCandidate {
     body_contacts: Vec<ParticleBodyContact>,
     pairs: Vec<ParticlePair>,
     triads: Vec<ParticleTriad>,
-    group_ranges: Vec<GroupRange>,
+    group_records: Vec<GroupRecord>,
     destroyed: Vec<ParticleSnapshot>,
 }
 
@@ -71,7 +71,8 @@ fn prepare_candidate(
 ) -> Result<PermutationCandidate, ParticleStorageError> {
     let rows = prepare_rows(storage, old_to_new, new_count)?;
     let derived = remap_derived(storage, old_to_new)?;
-    let group_ranges = build_group_ranges(&rows.groups)?;
+    let group_records =
+        rebuild_group_records_for_system(&storage.group_records, &rows.groups, storage.system)?;
     let weights = recompute_weights(
         new_count,
         &derived.body_contacts,
@@ -97,7 +98,7 @@ fn prepare_candidate(
         body_contacts: derived.body_contacts,
         pairs: derived.pairs,
         triads: derived.triads,
-        group_ranges,
+        group_records,
         destroyed: rows.destroyed,
     })
 }
@@ -280,7 +281,7 @@ fn commit(storage: &mut ParticleStorage, candidate: PermutationCandidate) -> Vec
     storage.body_contacts = candidate.body_contacts;
     storage.pairs = candidate.pairs;
     storage.triads = candidate.triads;
-    storage.group_ranges = candidate.group_ranges;
+    storage.group_records = candidate.group_records;
     debug_assert_eq!(storage.check_invariants(), Ok(()));
     candidate.destroyed
 }
