@@ -20,6 +20,11 @@ pub(crate) mod query;
 )]
 mod solver;
 mod statistics;
+#[allow(
+    dead_code,
+    reason = "later Phase 10 plans consume the private topology planners"
+)]
+mod topology;
 mod view;
 
 pub use crate::world::particle_object::{
