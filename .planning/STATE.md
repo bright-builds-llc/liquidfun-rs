@@ -3,14 +3,14 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 10-07-PLAN.md
-last_updated: "2026-07-19T22:07:10.626Z"
+stopped_at: Completed 10-12-PLAN.md
+last_updated: "2026-07-19T23:51:07.503Z"
 last_activity: "2026-07-19"
 progress:
   total_phases: 12
   completed_phases: 9
   total_plans: 161
-  completed_plans: 138
+  completed_plans: 139
   percent: 86
 ---
 
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 ## Current Position
 
 Phase: 10 (Particle Groups, Solvers, and Compatibility Sign-Off) — EXECUTING
-Plan: 10 of 32
+Plan: 11 of 32
 Status: Ready to execute
 Last activity: 2026-07-19
 
@@ -150,6 +150,7 @@ Progress: [█████████░] 85%
 | Phase 10 P08 | 1h 32m | 1 tasks | 2 files |
 | Phase 10 P11 | 1h 25m | 1 tasks | 4 files |
 | Phase 10 P07 | 1h 24m | 2 tasks | 8 files |
+| Phase 10 P12 | 1h 36m | 2 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -365,6 +366,10 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 10]: Use a closed seven-kind mutation candidate enum with operation-specific payloads and complete prepared permutations.
 - [Phase 10]: Append-sort-deduplicate topology only for create, join, and reactive operations; preserve historical topology for split, compaction, flag changes, and rotations.
 - [Phase 10]: Verify mutations with fixed-seed bounded stable-ID semantic models and exact complete-storage rollback comparisons.
+- [Phase 10]: Reject exact zero-length pair rest distances and Voronoi generation without any necessary generator through named typed errors from pinned evidence.
+- [Phase 10]: Preserve finite barrier-pair and degenerate-triad source behavior without a global epsilon.
+- [Phase 10]: Keep constraint endpoints private and dense, translating them only through stable semantic views.
+- [Phase 10]: Stable-sort and retain the first exact duplicate only for append operations; preserve operations leave historical order untouched.
 
 ### Pending Todos
 
@@ -378,6 +383,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-19T22:07:10.623Z
-Stopped at: Completed 10-07-PLAN.md
+Last session: 2026-07-19T23:51:07.500Z
+Stopped at: Completed 10-12-PLAN.md
 Resume file: None
