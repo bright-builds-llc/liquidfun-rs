@@ -1,6 +1,7 @@
 //! Private admission, ordering, and tracing contracts for particle solver passes.
 
 mod manifest;
+mod preparation;
 mod pressure;
 
 use super::{ParticleFlags, ParticleGroupFlags};

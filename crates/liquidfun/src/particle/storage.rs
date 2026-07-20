@@ -912,6 +912,10 @@ impl ParticleStorage {
         );
     }
 
+    pub(in crate::particle) fn refresh_solver_weights(&mut self) {
+        self.recompute_weights();
+    }
+
     pub(super) fn recompute_contact_weights(
         weights: &mut [f32],
         body_contacts: &[ParticleBodyContact],
