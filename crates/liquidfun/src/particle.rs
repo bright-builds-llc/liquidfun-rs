@@ -45,6 +45,7 @@ pub use definition::{
 };
 pub use editor::{ParticleEditError, ParticleEditor};
 pub use force::ParticleForceError;
+pub(crate) use group::sampling::{ParticleGroupSamplingError, SamplingLimits, plan_samples};
 pub use group::{
     FilledParticleGroupShapes, ParticleGroupDestination, ParticleGroupFlags,
     ParticleGroupPositions, ParticleGroupRecipe, ParticleGroupRecipeError, ParticleGroupSource,
@@ -59,6 +60,7 @@ pub use query::{
     ParticleQueryError, ParticleQueryOccurrence, ParticleRayCastError, ParticleRayHit,
 };
 pub use statistics::{ParticleSystemStatistics, ParticleWorldStatistics};
+pub(crate) use topology::VoronoiLimits;
 pub use view::{
     ParticleBodyContactView, ParticleContactView, ParticlePairView, ParticleSystemView,
     ParticleTriadView,

@@ -4,16 +4,31 @@ use std::any::TypeId;
 
 use liquidfun::math::Vec2;
 use liquidfun::particle::{
-    ParticleCapacity, ParticleColor, ParticleDef, ParticleFlags, ParticleSnapshot,
-    ParticleSystemDef, ParticleSystemSnapshot,
+    ParticleCapacity, ParticleColor, ParticleDef, ParticleFlags, ParticleGroupDestination,
+    ParticleGroupRecipe, ParticleGroupSource, ParticleSnapshot, ParticleSystemDef,
+    ParticleSystemSnapshot,
 };
 use liquidfun::{
     ArenaInsertError, AssociationMap, BodyDef, CreateObjectError, DestroyedId, HandleError,
-    ObjectSnapshot, ParticleId, World,
+    ObjectSnapshot, ParticleGroupId, ParticleId, ParticleSystemId, World,
 };
 
 fn test_world() -> World {
     World::new().expect("test world key should remain available")
+}
+
+fn create_test_group(world: &mut World, system: ParticleSystemId) -> (ParticleGroupId, ParticleId) {
+    let source =
+        ParticleGroupSource::positions(vec![Vec2::ZERO]).expect("one finite position is valid");
+    let recipe = ParticleGroupRecipe::new(source, ParticleGroupDestination::New);
+    let group = world
+        .create_particle_group(system, &recipe)
+        .expect("particle group should fit");
+    let particle = world
+        .particle_group_view(group)
+        .expect("particle group remains live")
+        .member_ids()[0];
+    (group, particle)
 }
 
 #[test]
@@ -332,13 +347,7 @@ fn system_teardown_captures_authoritative_membership_and_preserves_other_systems
     let removed_system = world
         .create_particle_system()
         .expect("removed system should fit");
-    let group = world
-        .create_particle_group(removed_system)
-        .expect("particle group should fit");
-    let grouped = world
-        .create_particle(removed_system, Some(group))
-        .expect("grouped particle should fit")
-        .created_particle();
+    let (group, grouped) = create_test_group(&mut world, removed_system);
     let ungrouped = world
         .create_particle(removed_system, None)
         .expect("ungrouped particle should fit")
@@ -403,13 +412,7 @@ fn group_teardown_clears_particle_membership_before_system_teardown() {
     let system = world
         .create_particle_system()
         .expect("particle system should fit");
-    let group = world
-        .create_particle_group(system)
-        .expect("particle group should fit");
-    let particle = world
-        .create_particle(system, Some(group))
-        .expect("particle should fit")
-        .created_particle();
+    let (group, particle) = create_test_group(&mut world, system);
 
     // Act
     let group_record = world

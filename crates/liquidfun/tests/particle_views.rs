@@ -1,6 +1,7 @@
 //! Black-box coverage for borrow-scoped particle views and editors.
 
 use liquidfun::math::Vec2;
+use liquidfun::particle::{ParticleGroupDestination, ParticleGroupRecipe, ParticleGroupSource};
 use liquidfun::{
     AssociationMap, ParticleColor, ParticleDef, ParticleEditError, ParticleFlags, ParticleId, World,
 };
@@ -29,9 +30,6 @@ fn aggregate_view_exposes_semantic_lanes_and_associations() {
     let system = world
         .create_particle_system()
         .expect("particle system should fit");
-    let group = world
-        .create_particle_group(system)
-        .expect("particle group should fit");
     let first_definition = particle_definition(
         Vec2::new(1.0, 2.0),
         Vec2::new(3.0, 4.0),
@@ -44,10 +42,20 @@ fn aggregate_view_exposes_semantic_lanes_and_associations() {
         ParticleColor::new(10, 20, 30, 40),
         ParticleFlags::VISCOUS,
     );
+    let first_source = ParticleGroupSource::positions(vec![first_definition.position()])
+        .expect("one finite position is valid");
+    let first_recipe = ParticleGroupRecipe::new(first_source, ParticleGroupDestination::New)
+        .with_particle_flags(first_definition.flags())
+        .with_linear_velocity(first_definition.velocity())
+        .expect("velocity is finite")
+        .with_color(first_definition.color());
+    let group = world
+        .create_particle_group(system, &first_recipe)
+        .expect("particle group should fit");
     let first = world
-        .create_particle_with_def(system, Some(group), &first_definition)
-        .expect("first particle should fit")
-        .created_particle();
+        .particle_group_view(group)
+        .expect("group remains live")
+        .member_ids()[0];
     let second = world
         .create_particle_with_def(system, Some(group), &second_definition)
         .expect("second particle should fit")

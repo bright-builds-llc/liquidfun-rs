@@ -9,7 +9,7 @@ pub(in crate::particle) mod constraints;
 mod voronoi;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(in crate::particle) struct VoronoiLimits {
+pub(crate) struct VoronoiLimits {
     generators: usize,
     cells: usize,
     queue_tasks: usize,
@@ -18,7 +18,7 @@ pub(in crate::particle) struct VoronoiLimits {
 }
 
 impl VoronoiLimits {
-    pub(in crate::particle) const fn new(
+    pub(crate) const fn new(
         maximum_generators: usize,
         maximum_cells: usize,
         maximum_queue_tasks: usize,

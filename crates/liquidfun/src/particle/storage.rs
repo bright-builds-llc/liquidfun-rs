@@ -7,10 +7,11 @@ use crate::identity::{
     HandleIdentity, Identity, ParticleGroupId, ParticleId, ParticleSystemId, WorldKey,
 };
 use crate::math::Vec2;
+use crate::particle::group::ParticleGroupViewState;
 use crate::particle::{
     ParticleBodyContact as SemanticBodyContact, ParticleBufferBundle, ParticleBufferLanes,
     ParticleBufferMode, ParticleColor, ParticleContact as SemanticParticleContact, ParticleFlags,
-    ParticleGroupFlags,
+    ParticleGroupFlags, ParticleGroupView,
 };
 use std::ops::Range;
 
@@ -31,6 +32,8 @@ mod mutation;
 pub(in crate::particle) mod permutation;
 mod solver_state;
 mod validation;
+
+pub(crate) use mutation::{GroupPlan, GroupPlanError, GroupPlanInput};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) struct ParticleInput {
@@ -268,7 +271,7 @@ impl ParticleStorage {
             .count()
     }
 
-    pub(in crate::particle) const fn declared_capacity(&self) -> usize {
+    pub(crate) const fn declared_capacity(&self) -> usize {
         self.declared_capacity
     }
 
@@ -282,6 +285,73 @@ impl ParticleStorage {
 
     pub(crate) fn particle_ids(&self) -> &[ParticleId] {
         &self.dense_to_id
+    }
+
+    pub(crate) fn group_view(
+        &self,
+        group: ParticleGroupId,
+        particle_mass: f32,
+    ) -> Result<ParticleGroupView<'_>, ParticleStorageError> {
+        let record = self
+            .group_records
+            .iter()
+            .find(|record| record.id == group && record.system == self.system)
+            .copied()
+            .ok_or(ParticleStorageError::StaleOrDestroyed)?;
+        let range = record.range();
+        let count = range.len();
+        #[allow(
+            clippy::cast_precision_loss,
+            reason = "the pinned C++ statistics path converts the bounded particle count to float32"
+        )]
+        let mass = particle_mass * count as f32;
+        let inverse_mass = if mass > 0.0 { 1.0 / mass } else { 0.0 };
+        let center = self.positions[range.clone()]
+            .iter()
+            .copied()
+            .fold(Vec2::ZERO, |sum, position| sum + particle_mass * position)
+            * inverse_mass;
+        let linear_velocity = self.velocities[range.clone()]
+            .iter()
+            .copied()
+            .fold(Vec2::ZERO, |sum, velocity| sum + particle_mass * velocity)
+            * inverse_mass;
+        let (inertia, angular_momentum) = self.positions[range.clone()]
+            .iter()
+            .copied()
+            .zip(self.velocities[range.clone()].iter().copied())
+            .fold((0.0, 0.0), |(inertia, angular), (position, velocity)| {
+                let relative_position = position - center;
+                let relative_velocity = velocity - linear_velocity;
+                (
+                    inertia + particle_mass * relative_position.dot(relative_position),
+                    angular + particle_mass * relative_position.cross(relative_velocity),
+                )
+            });
+        let angular_velocity = if inertia > 0.0 {
+            angular_momentum / inertia
+        } else {
+            0.0
+        };
+        let maybe_depths = self
+            .solver_state
+            .maybe_depths()
+            .map(|depths| &depths[range.clone()]);
+        ParticleGroupView::new(
+            ParticleGroupViewState {
+                id: group,
+                flags: record.flags,
+                transform: record.transform,
+                center,
+                linear_velocity,
+                angular_velocity,
+                mass,
+                inertia,
+            },
+            &self.dense_to_id[range],
+            maybe_depths,
+        )
+        .map_err(|_error| ParticleStorageError::LaneLengthMismatch)
     }
 
     pub(crate) fn clear_group(

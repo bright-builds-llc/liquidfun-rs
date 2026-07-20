@@ -1,29 +1,38 @@
 //! Particle-system object lifecycle over one authoritative storage owner.
 
 use crate::identity::HandleIdentity;
-use crate::math::Vec2;
-use crate::particle::force;
+use crate::math::{Vec2, settings};
+use crate::particle::VoronoiLimits;
 use crate::particle::lifetime::{
     ParticleDestructionOccurrence, ParticleLifecycleError, ParticleLifetimeState,
 };
 use crate::particle::storage::{
-    ParticleInput, ParticleSnapshot as StorageParticleSnapshot, ParticleStorage,
-    ParticleStorageError,
+    GroupPlan, GroupPlanError, GroupPlanInput, ParticleInput,
+    ParticleSnapshot as StorageParticleSnapshot, ParticleStorage, ParticleStorageError,
 };
 use crate::particle::{
     ParticleBufferAdoptionError, ParticleBufferAdoptionErrorKind, ParticleBufferBundle,
-    ParticleCapacity, ParticleColor, ParticleDef, ParticleEditError, ParticleEditor, ParticleFlags,
-    ParticleSystemDef, ParticleSystemStatistics, ParticleSystemView, ParticleWorldStatistics,
+    ParticleCapacity, ParticleColor, ParticleContactUpdate, ParticleDef, ParticleEditError,
+    ParticleEditor, ParticleFlags, ParticleGroupDestination, ParticleGroupRecipe,
+    ParticleGroupView, ParticleNeighborhood, ParticleSystemDef, ParticleSystemStatistics,
+    ParticleSystemView, ParticleWorldStatistics,
 };
+use crate::particle::{ParticleGroupSamplingError, SamplingLimits, force, plan_samples};
 use crate::{
-    ArenaInsertError, CreateObjectError, DestroyedId, DestructionCause, DestructionRecord,
-    DestructionReport, HandleError, LifecycleEvent, MutationReport, ObjectSnapshot,
-    ParticleGroupId, ParticleId, ParticleSystemId,
+    ArenaInsertError, AssociationMap, CreateObjectError, DestroyedId, DestructionCause,
+    DestructionRecord, DestructionReport, HandleError, LifecycleEvent, MutationReport,
+    ObjectSnapshot, ParticleGroupId, ParticleId, ParticleSystemId,
 };
 
-use super::object::{ParticleSystem, World};
+use super::object::{ParticleGroup, ParticleSystem, World};
 
 const MAX_PARTICLE_COUNT: usize = i32::MAX as usize;
+const GROUP_SAMPLING_WORK_LIMIT: usize = 2_000_000;
+const GROUP_SAMPLE_LIMIT: usize = 65_536;
+const GROUP_TOPOLOGY_CELL_LIMIT: usize = 4_096;
+const GROUP_TOPOLOGY_QUEUE_LIMIT: usize = 16_384;
+const GROUP_TOPOLOGY_WORK_LIMIT: usize = 2_000_000;
+const GROUP_TOPOLOGY_NODE_LIMIT: usize = 8_192;
 
 /// Owned configuration and membership state for one live particle system.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -81,6 +90,14 @@ pub struct ParticleSnapshot {
 pub struct ParticleCreationReceipt {
     created_particle: ParticleId,
     destruction_occurrences: Vec<ParticleDestructionOccurrence>,
+}
+
+struct ParticleGroupCreationPlan {
+    system: ParticleSystemId,
+    system_candidate: ParticleSystem,
+    result_group: ParticleGroupId,
+    maybe_shell: Option<(ParticleGroupId, u64)>,
+    next_diagnostic_id: Option<u64>,
 }
 
 impl ParticleCreationReceipt {
@@ -525,6 +542,181 @@ impl World {
         Ok(())
     }
 
+    /// Creates a complete particle group from one checked recipe.
+    ///
+    /// Sampling, particle identities, lifecycle capacity, contacts, and topology
+    /// are prepared in owned storage before the world publishes the group shell.
+    ///
+    /// # Errors
+    ///
+    /// Returns a typed no-effect error for a locked or poisoned world, an
+    /// invalid owner or append target, exhausted capacity or identity space,
+    /// invalid sampling output, or invalid topology.
+    pub fn create_particle_group(
+        &mut self,
+        system: ParticleSystemId,
+        recipe: &ParticleGroupRecipe<()>,
+    ) -> Result<ParticleGroupId, CreateObjectError> {
+        let plan = self.plan_particle_group(system, recipe)?;
+        Ok(self.commit_particle_group(plan))
+    }
+
+    /// Creates a complete particle group and atomically installs its application association.
+    ///
+    /// A `New` recipe installs its carried association under the returned group
+    /// identity. In pinned `AppendTo` semantics, the temporary group's
+    /// association is discarded when that hidden group joins the target.
+    ///
+    /// # Errors
+    ///
+    /// Returns the same no-effect errors as [`Self::create_particle_group`],
+    /// plus association-table reservation failure.
+    pub fn create_particle_group_with_association<UserAssociation>(
+        &mut self,
+        system: ParticleSystemId,
+        recipe: ParticleGroupRecipe<UserAssociation>,
+        associations: &mut AssociationMap<ParticleGroupId, UserAssociation>,
+    ) -> Result<ParticleGroupId, CreateObjectError> {
+        let installs_association = matches!(recipe.destination(), ParticleGroupDestination::New)
+            && recipe.maybe_user_association().is_some();
+        if installs_association {
+            associations
+                .try_reserve_one()
+                .map_err(|()| CreateObjectError::AssociationCapacityExceeded)?;
+        }
+        let plan = self.plan_particle_group(system, &recipe)?;
+        let group = self.commit_particle_group(plan);
+        let maybe_association = recipe.into_user_association();
+        if installs_association && let Some(association) = maybe_association {
+            let replaced = associations.insert(group, association);
+            debug_assert!(replaced.is_none());
+        }
+        Ok(group)
+    }
+
+    /// Borrows complete semantic state for one live particle group.
+    ///
+    /// # Errors
+    ///
+    /// Returns a scoped error when the group or its owning system is foreign,
+    /// stale, destroyed, or internally inconsistent.
+    pub fn particle_group_view(
+        &self,
+        group: ParticleGroupId,
+    ) -> Result<ParticleGroupView<'_>, HandleError> {
+        self.ensure_not_poisoned_for_handle()?;
+        let shell = self.particle_groups.get(group)?;
+        let system = self.particle_systems.get(shell.system)?;
+        let diameter = 2.0 * system.definition.radius();
+        let particle_mass =
+            system.definition.density() * (settings::PARTICLE_STRIDE * diameter).powi(2);
+        system
+            .storage
+            .group_view(group, particle_mass)
+            .map_err(storage_handle_error)
+    }
+
+    fn plan_particle_group<UserAssociation>(
+        &self,
+        system: ParticleSystemId,
+        recipe: &ParticleGroupRecipe<UserAssociation>,
+    ) -> Result<ParticleGroupCreationPlan, CreateObjectError> {
+        self.ensure_not_poisoned_for_handle()?;
+        if self.step_state.is_locked() {
+            return Err(CreateObjectError::WorldLocked);
+        }
+        let source_system = self.particle_systems.get(system)?;
+        let maybe_append_target = match recipe.destination() {
+            ParticleGroupDestination::New => None,
+            ParticleGroupDestination::AppendTo(target) => {
+                let target_shell = self.particle_groups.get(target)?;
+                if target_shell.system != system {
+                    return Err(CreateObjectError::InvalidHandle(
+                        HandleError::WrongParticleSystem,
+                    ));
+                }
+                Some(target)
+            }
+        };
+        let temporary_group = self.particle_groups.next_handle()?;
+        let maximum_samples = sampling_capacity(source_system).min(GROUP_SAMPLE_LIMIT);
+        let samples = plan_samples(
+            recipe,
+            settings::PARTICLE_STRIDE * 2.0 * source_system.definition.radius(),
+            SamplingLimits::new(GROUP_SAMPLING_WORK_LIMIT, maximum_samples),
+        )
+        .map_err(group_sampling_creation_error)?
+        .into_samples();
+        let creates_shell = maybe_append_target.is_none();
+        let diagnostic_count = samples
+            .len()
+            .checked_add(usize::from(creates_shell))
+            .ok_or(ArenaInsertError::DiagnosticIdExhausted)?;
+        let (first_diagnostic_id, next_diagnostic_id) =
+            self.preflight_diagnostic_ids(diagnostic_count)?;
+        let particle_diagnostic_start = first_diagnostic_id + u64::from(creates_shell);
+
+        let mut system_candidate = source_system.clone();
+        for (ordinal, sample) in samples.iter().copied().enumerate() {
+            append_group_particle(
+                &mut system_candidate,
+                recipe,
+                temporary_group,
+                sample.position(),
+                sample.velocity(),
+                particle_diagnostic_start
+                    + u64::try_from(ordinal)
+                        .map_err(|_error| ArenaInsertError::DiagnosticIdExhausted)?,
+            )?;
+        }
+        refresh_candidate_contacts(&mut system_candidate)?;
+        let topology: GroupPlan = system_candidate
+            .storage
+            .plan_group(GroupPlanInput {
+                group: temporary_group,
+                maybe_append_target,
+                flags: recipe.group_flags(),
+                strength: recipe.strength(),
+                transform: recipe.transform(),
+                particle_diameter: 2.0 * system_candidate.definition.radius(),
+                voronoi_limits: group_topology_limits(),
+            })
+            .map_err(group_plan_creation_error)?;
+        let result_group = topology.result_group();
+        topology.commit_group(&mut system_candidate.storage);
+        let maybe_shell = creates_shell.then_some((temporary_group, first_diagnostic_id));
+        if creates_shell {
+            system_candidate.groups.push(temporary_group);
+        }
+        Ok(ParticleGroupCreationPlan {
+            system,
+            system_candidate,
+            result_group,
+            maybe_shell,
+            next_diagnostic_id,
+        })
+    }
+
+    fn commit_particle_group(&mut self, plan: ParticleGroupCreationPlan) -> ParticleGroupId {
+        if let Some((group, diagnostic_id)) = plan.maybe_shell {
+            let inserted = self
+                .particle_groups
+                .insert(ParticleGroup {
+                    diagnostic_id,
+                    system: plan.system,
+                })
+                .expect("preflighted particle-group shell remains available until commit");
+            debug_assert_eq!(inserted, group);
+        }
+        *self
+            .particle_systems
+            .get_mut(plan.system)
+            .expect("validated particle system remains live until immediate commit") =
+            plan.system_candidate;
+        self.commit_next_diagnostic_id(plan.next_diagnostic_id);
+        plan.result_group
+    }
+
     /// Creates one stable particle from a checked definition.
     ///
     /// Application association values remain application-owned and can be
@@ -747,6 +939,102 @@ impl World {
                 .iter()
                 .all(|system| self.particle_systems.get(*system).is_ok())
         );
+    }
+}
+
+fn sampling_capacity(system: &ParticleSystem) -> usize {
+    if system.definition.destroys_by_age() {
+        return system.storage.declared_capacity();
+    }
+    system
+        .storage
+        .declared_capacity()
+        .saturating_sub(system.storage.len())
+}
+
+fn append_group_particle<UserAssociation>(
+    system: &mut ParticleSystem,
+    recipe: &ParticleGroupRecipe<UserAssociation>,
+    group: ParticleGroupId,
+    position: Vec2,
+    velocity: Vec2,
+    diagnostic_id: u64,
+) -> Result<(), CreateObjectError> {
+    system
+        .lifetime
+        .prepare_capacity_for_creation(&mut system.storage)
+        .map_err(particle_lifecycle_creation_error)?;
+    let input = ParticleInput {
+        position,
+        velocity,
+        flags: recipe.particle_flags(),
+        maybe_group: Some(group),
+        maybe_color: (!recipe.color().is_zero()).then_some(recipe.color()),
+        maybe_user_association: None,
+        maybe_expiration_time: None,
+    };
+    system
+        .storage
+        .validate_create(input)
+        .map_err(storage_object_creation_error)?;
+    system
+        .lifetime
+        .validate_created_lifetime(&system.storage, recipe.lifetime())?;
+    let particle = system
+        .storage
+        .create_with_diagnostic(input, diagnostic_id)
+        .map_err(storage_object_creation_error)?;
+    system
+        .lifetime
+        .initialize_created_particle(&mut system.storage, particle, recipe.lifetime())
+        .map_err(particle_lifecycle_creation_error)
+}
+
+fn refresh_candidate_contacts(system: &mut ParticleSystem) -> Result<(), CreateObjectError> {
+    let diameter = 2.0 * system.definition.radius();
+    let view = ParticleSystemView::new(&system.storage);
+    let neighborhood = ParticleNeighborhood::from_view(&view, diameter)
+        .map_err(|_error| CreateObjectError::InvalidParticleGroupTopology)?;
+    let previous = system.storage.semantic_particle_contacts();
+    let update = ParticleContactUpdate::generate(&view, &neighborhood, &previous, |_contact| true)
+        .map_err(|_error| CreateObjectError::InvalidParticleGroupTopology)?;
+    system
+        .storage
+        .replace_particle_contacts(update.contacts())
+        .map_err(storage_object_creation_error)
+}
+
+const fn group_topology_limits() -> VoronoiLimits {
+    VoronoiLimits::new(
+        GROUP_SAMPLE_LIMIT,
+        GROUP_TOPOLOGY_CELL_LIMIT,
+        GROUP_TOPOLOGY_QUEUE_LIMIT,
+        GROUP_TOPOLOGY_WORK_LIMIT,
+        GROUP_TOPOLOGY_NODE_LIMIT,
+    )
+}
+
+fn group_sampling_creation_error(error: ParticleGroupSamplingError) -> CreateObjectError {
+    match error {
+        ParticleGroupSamplingError::CapacityExceeded { limit, .. } => {
+            CreateObjectError::Arena(ArenaInsertError::CapacityExceeded { limit })
+        }
+        ParticleGroupSamplingError::WorkLimitExceeded { .. }
+        | ParticleGroupSamplingError::NonFiniteDefaultStride
+        | ParticleGroupSamplingError::NonPositiveDefaultStride
+        | ParticleGroupSamplingError::ArithmeticOverflow
+        | ParticleGroupSamplingError::NonFiniteDerivedGeometry
+        | ParticleGroupSamplingError::NonFiniteDerivedPosition
+        | ParticleGroupSamplingError::NonFiniteDerivedVelocity
+        | ParticleGroupSamplingError::AllocationFailed
+        | ParticleGroupSamplingError::Shape(_) => CreateObjectError::InvalidParticleGroupSampling,
+    }
+}
+
+fn group_plan_creation_error(error: GroupPlanError) -> CreateObjectError {
+    match error {
+        GroupPlanError::Storage(error) => storage_object_creation_error(error),
+        GroupPlanError::Topology => CreateObjectError::InvalidParticleGroupTopology,
     }
 }
 

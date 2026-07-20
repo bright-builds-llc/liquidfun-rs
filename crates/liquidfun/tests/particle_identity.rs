@@ -1,9 +1,28 @@
 //! Black-box consumer evidence for stable particle identities and cleanup.
 
-use liquidfun::{AssociationMap, DestroyedId, HandleError, ObjectSnapshot, ParticleId, World};
+use liquidfun::math::Vec2;
+use liquidfun::particle::{ParticleGroupDestination, ParticleGroupRecipe, ParticleGroupSource};
+use liquidfun::{
+    AssociationMap, DestroyedId, HandleError, ObjectSnapshot, ParticleGroupId, ParticleId,
+    ParticleSystemId, World,
+};
 
 fn test_world() -> World {
     World::new().expect("test world key should remain available")
+}
+
+fn create_test_group(world: &mut World, system: ParticleSystemId) -> (ParticleGroupId, ParticleId) {
+    let source =
+        ParticleGroupSource::positions(vec![Vec2::ZERO]).expect("one finite position is valid");
+    let recipe = ParticleGroupRecipe::new(source, ParticleGroupDestination::New);
+    let group = world
+        .create_particle_group(system, &recipe)
+        .expect("particle group should fit");
+    let particle = world
+        .particle_group_view(group)
+        .expect("particle group remains live")
+        .member_ids()[0];
+    (group, particle)
 }
 
 #[test]
@@ -13,13 +32,7 @@ fn particle_identity_survives_supported_group_removal() {
     let system = world
         .create_particle_system()
         .expect("particle system should fit");
-    let group = world
-        .create_particle_group(system)
-        .expect("particle group should fit");
-    let particle = world
-        .create_particle(system, Some(group))
-        .expect("particle should fit")
-        .created_particle();
+    let (group, particle) = create_test_group(&mut world, system);
 
     // Act
     let record = world
@@ -42,13 +55,7 @@ fn particle_system_cascade_invalidates_stable_ids_in_occurrence_order() {
     let system = world
         .create_particle_system()
         .expect("particle system should fit");
-    let group = world
-        .create_particle_group(system)
-        .expect("particle group should fit");
-    let first = world
-        .create_particle(system, Some(group))
-        .expect("particle should fit")
-        .created_particle();
+    let (group, first) = create_test_group(&mut world, system);
     let second = world
         .create_particle(system, None)
         .expect("particle should fit")

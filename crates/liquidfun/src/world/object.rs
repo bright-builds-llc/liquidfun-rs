@@ -126,6 +126,8 @@ struct ParticleSystemDestructionTransaction {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum CreateObjectError {
+    /// The world is currently inside its locked step transaction.
+    WorldLocked,
     /// A referenced owner or endpoint does not belong to this world or is no longer live.
     InvalidHandle(HandleError),
     /// The arena for the new object cannot accept another entry.
@@ -138,11 +140,18 @@ pub enum CreateObjectError {
     InvalidAggregateMass(AggregateMassError),
     /// Particle lifetime quantization cannot represent the requested value.
     InvalidParticleLifetime(crate::ParticleLifetimeError),
+    /// Bounded source sampling could not produce a valid complete particle set.
+    InvalidParticleGroupSampling,
+    /// Pair or triad generation could not produce a valid complete topology.
+    InvalidParticleGroupTopology,
+    /// The application-owned association table could not reserve its commit slot.
+    AssociationCapacityExceeded,
 }
 
 impl fmt::Display for CreateObjectError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::WorldLocked => formatter.write_str("world is locked by an active step"),
             Self::InvalidHandle(error) => write!(formatter, "invalid related handle: {error}"),
             Self::Arena(error) => write!(formatter, "could not store object: {error}"),
             Self::InvalidFixtureBounds(error) => {
@@ -156,6 +165,15 @@ impl fmt::Display for CreateObjectError {
             }
             Self::InvalidParticleLifetime(error) => {
                 write!(formatter, "invalid particle lifetime: {error}")
+            }
+            Self::InvalidParticleGroupSampling => {
+                formatter.write_str("particle-group sampling failed")
+            }
+            Self::InvalidParticleGroupTopology => {
+                formatter.write_str("particle-group topology generation failed")
+            }
+            Self::AssociationCapacityExceeded => {
+                formatter.write_str("particle-group association capacity is exhausted")
             }
         }
     }
@@ -392,6 +410,27 @@ impl World {
         };
         self.next_diagnostic_id = id.checked_add(1);
         Ok(id)
+    }
+
+    pub(super) fn preflight_diagnostic_ids(
+        &self,
+        count: usize,
+    ) -> Result<(u64, Option<u64>), ArenaInsertError> {
+        let Some(first) = self.next_diagnostic_id else {
+            return Err(ArenaInsertError::DiagnosticIdExhausted);
+        };
+        let last_offset = count
+            .checked_sub(1)
+            .and_then(|offset| u64::try_from(offset).ok())
+            .ok_or(ArenaInsertError::DiagnosticIdExhausted)?;
+        let last = first
+            .checked_add(last_offset)
+            .ok_or(ArenaInsertError::DiagnosticIdExhausted)?;
+        Ok((first, last.checked_add(1)))
+    }
+
+    pub(super) fn commit_next_diagnostic_id(&mut self, next: Option<u64>) {
+        self.next_diagnostic_id = next;
     }
 
     #[cfg(test)]
@@ -1173,26 +1212,6 @@ impl World {
     /// Returns an arena error if particle-system storage is exhausted.
     pub fn create_particle_system(&mut self) -> Result<ParticleSystemId, ArenaInsertError> {
         self.create_particle_system_with_def(&ParticleSystemDef::default())
-    }
-
-    /// Creates a particle group in `system`.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if `system` is invalid or particle-group storage is exhausted.
-    pub fn create_particle_group(
-        &mut self,
-        system: ParticleSystemId,
-    ) -> Result<ParticleGroupId, CreateObjectError> {
-        self.ensure_not_poisoned_for_handle()?;
-        self.particle_systems.get(system)?;
-        let diagnostic_id = self.allocate_diagnostic_id()?;
-        let group = self.particle_groups.insert(ParticleGroup {
-            diagnostic_id,
-            system,
-        })?;
-        self.system_mut_after_validation(system).groups.push(group);
-        Ok(group)
     }
 
     /// Creates a stable particle identity in `system` and optionally associates it with `group`.
@@ -2194,6 +2213,26 @@ mod tests {
         World::new().expect("test world key should remain available")
     }
 
+    fn create_test_group(
+        world: &mut World,
+        system: ParticleSystemId,
+    ) -> (ParticleGroupId, ParticleId) {
+        let source = crate::particle::ParticleGroupSource::positions(vec![Vec2::ZERO])
+            .expect("one finite position is valid");
+        let recipe = crate::particle::ParticleGroupRecipe::new(
+            source,
+            crate::particle::ParticleGroupDestination::New,
+        );
+        let group = world
+            .create_particle_group(system, &recipe)
+            .expect("particle group should fit");
+        let particle = world
+            .particle_group_view(group)
+            .expect("particle group remains live")
+            .member_ids()[0];
+        (group, particle)
+    }
+
     #[test]
     fn body_destruction_cascades_joints_then_fixtures_and_preserves_other_body() {
         // Arrange
@@ -2320,13 +2359,7 @@ mod tests {
         let system = world
             .create_particle_system()
             .expect("particle system should fit");
-        let group = world
-            .create_particle_group(system)
-            .expect("particle group should fit");
-        let grouped = world
-            .create_particle(system, Some(group))
-            .expect("particle should fit")
-            .created_particle();
+        let (group, grouped) = create_test_group(&mut world, system);
         let ungrouped = world
             .create_particle(system, None)
             .expect("particle should fit")
@@ -2440,13 +2473,7 @@ mod tests {
         let system = world
             .create_particle_system()
             .expect("particle system should fit");
-        let group = world
-            .create_particle_group(system)
-            .expect("particle group should fit");
-        let particle = world
-            .create_particle(system, Some(group))
-            .expect("particle should fit")
-            .created_particle();
+        let (group, particle) = create_test_group(&mut world, system);
 
         // Act
         world

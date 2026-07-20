@@ -1,5 +1,14 @@
-use crate::identity::ParticleId;
+use std::ops::Range;
 
+use crate::identity::{ParticleGroupId, ParticleId};
+use crate::math::Transform;
+use crate::particle::ParticleGroupFlags;
+use crate::particle::topology::VoronoiLimits;
+use crate::particle::topology::constraints::{
+    ConnectionFilter, ConstraintError, TopologyGroup, TopologyInput, generate_pairs_and_triads,
+};
+
+use super::ParticleIndex;
 use super::lanes::{ParticlePair, ParticleTriad};
 use super::permutation::{
     PreparedPermutation, TopologyRemapMode, TopologyRemapPolicy, commit_prepared,
@@ -8,6 +17,145 @@ use super::permutation::{
 use super::{ParticleSnapshot, ParticleStorage, ParticleStorageError};
 
 mod join;
+
+use join::{JoinPlanError, JoinTopologyParameters};
+
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct GroupPlanInput {
+    pub(crate) group: ParticleGroupId,
+    pub(crate) maybe_append_target: Option<ParticleGroupId>,
+    pub(crate) flags: ParticleGroupFlags,
+    pub(crate) strength: f32,
+    pub(crate) transform: Transform,
+    pub(crate) particle_diameter: f32,
+    pub(crate) voronoi_limits: VoronoiLimits,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum GroupPlanError {
+    Storage(ParticleStorageError),
+    Topology,
+}
+
+impl From<ParticleStorageError> for GroupPlanError {
+    fn from(error: ParticleStorageError) -> Self {
+        Self::Storage(error)
+    }
+}
+
+impl From<ConstraintError> for GroupPlanError {
+    fn from(_error: ConstraintError) -> Self {
+        Self::Topology
+    }
+}
+
+impl From<JoinPlanError> for GroupPlanError {
+    fn from(error: JoinPlanError) -> Self {
+        match error {
+            JoinPlanError::Storage(error) => Self::Storage(error),
+            JoinPlanError::Constraints(_error) => Self::Topology,
+        }
+    }
+}
+
+pub(crate) struct GroupPlan {
+    candidate: ParticleStorage,
+    result_group: ParticleGroupId,
+}
+
+impl GroupPlan {
+    pub(crate) const fn result_group(&self) -> ParticleGroupId {
+        self.result_group
+    }
+
+    pub(crate) fn commit_group(self, storage: &mut ParticleStorage) {
+        *storage = self.candidate;
+    }
+}
+
+struct CreateGroupFilter {
+    range: Range<usize>,
+}
+
+impl ConnectionFilter for CreateGroupFilter {
+    fn is_necessary(&self, index: ParticleIndex) -> bool {
+        self.range.contains(&index.0)
+    }
+
+    fn should_create_pair(&self, indices: [ParticleIndex; 2]) -> bool {
+        indices.iter().any(|index| self.range.contains(&index.0))
+    }
+
+    fn should_create_triad(&self, indices: [ParticleIndex; 3]) -> bool {
+        indices.iter().any(|index| self.range.contains(&index.0))
+    }
+}
+
+impl ParticleStorage {
+    pub(crate) fn plan_group(&self, input: GroupPlanInput) -> Result<GroupPlan, GroupPlanError> {
+        self.check_invariants()?;
+        let mut candidate = self.clone();
+        let record = candidate
+            .group_records
+            .iter_mut()
+            .find(|record| record.id == input.group)
+            .ok_or(ParticleStorageError::InvalidGroupRange)?;
+        record.flags = input.flags;
+        record.strength = input.strength;
+        record.transform = input.transform;
+        let range = record.range();
+        candidate
+            .solver_state
+            .refresh_group_flags(&candidate.group_records);
+
+        let groups = candidate
+            .groups
+            .iter()
+            .map(|maybe_group| {
+                maybe_group.and_then(|group| {
+                    candidate
+                        .group_records
+                        .iter()
+                        .find(|record| record.id == group)
+                        .copied()
+                        .map(TopologyGroup::from_record)
+                })
+            })
+            .collect::<Vec<_>>();
+        let generated = generate_pairs_and_triads(
+            &TopologyInput {
+                owner: candidate.system,
+                positions: &candidate.positions,
+                flags: &candidate.flags,
+                groups: &groups,
+                contacts: &candidate.particle_contacts,
+                range: range.clone(),
+                particle_diameter: input.particle_diameter,
+                voronoi_limits: input.voronoi_limits,
+            },
+            &CreateGroupFilter { range },
+        )?;
+        MutationCandidate::prepare_create_group(&candidate, generated.pairs, generated.triads)?
+            .commit(&mut candidate);
+
+        let result_group = if let Some(target) = input.maybe_append_target {
+            let join = candidate.plan_join(
+                target,
+                input.group,
+                JoinTopologyParameters::new(input.particle_diameter, input.voronoi_limits),
+            )?;
+            join.commit(&mut candidate);
+            target
+        } else {
+            input.group
+        };
+        candidate.check_invariants()?;
+        Ok(GroupPlan {
+            candidate,
+            result_group,
+        })
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum MutationCandidateKind {

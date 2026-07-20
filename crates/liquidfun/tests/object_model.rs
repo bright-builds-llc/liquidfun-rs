@@ -5,6 +5,7 @@ use std::any::TypeId;
 use liquidfun::collision::FilterData;
 use liquidfun::collision::shape::{CircleShape, Shape};
 use liquidfun::math::Vec2;
+use liquidfun::particle::{ParticleGroupDestination, ParticleGroupRecipe, ParticleGroupSource};
 use liquidfun::{
     AssociationMap, BodyDef, BodyId, CreateObjectError, DestroyedId, DestructionCause, FixtureDef,
     FixtureId, HandleError, JointId, ObjectSnapshot, ParticleGroupId, ParticleId, ParticleSystemId,
@@ -13,6 +14,20 @@ use liquidfun::{
 
 fn test_world() -> World {
     World::new().expect("test world key should remain available")
+}
+
+fn create_test_group(world: &mut World, system: ParticleSystemId) -> (ParticleGroupId, ParticleId) {
+    let source =
+        ParticleGroupSource::positions(vec![Vec2::ZERO]).expect("one finite position is valid");
+    let recipe = ParticleGroupRecipe::new(source, ParticleGroupDestination::New);
+    let group = world
+        .create_particle_group(system, &recipe)
+        .expect("particle group should fit");
+    let particle = world
+        .particle_group_view(group)
+        .expect("particle group remains live")
+        .member_ids()[0];
+    (group, particle)
 }
 
 fn fixture_definition() -> FixtureDef {
@@ -209,13 +224,7 @@ fn particle_system_cascade_preserves_owned_snapshots_and_cleanup_order() {
     let system = world
         .create_particle_system()
         .expect("particle system should fit");
-    let group = world
-        .create_particle_group(system)
-        .expect("particle group should fit");
-    let grouped = world
-        .create_particle(system, Some(group))
-        .expect("particle should fit")
-        .created_particle();
+    let (group, grouped) = create_test_group(&mut world, system);
     let ungrouped = world
         .create_particle(system, None)
         .expect("particle should fit")
@@ -297,9 +306,7 @@ fn particle_group_owner_mismatch_reports_particle_system_scope() {
     let second_system = world
         .create_particle_system()
         .expect("particle system should fit");
-    let first_group = world
-        .create_particle_group(first_system)
-        .expect("particle group should fit");
+    let (first_group, _particle) = create_test_group(&mut world, first_system);
 
     // Act
     let result = world.create_particle(second_system, Some(first_group));

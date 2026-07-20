@@ -601,6 +601,10 @@ impl<UserAssociation> ParticleGroupRecipe<UserAssociation> {
     pub const fn maybe_user_association(&self) -> Option<&UserAssociation> {
         self.maybe_user_association.as_ref()
     }
+
+    pub(crate) fn into_user_association(self) -> Option<UserAssociation> {
+        self.maybe_user_association
+    }
 }
 
 /// Borrow-scoped semantic inspection of one live particle group.
