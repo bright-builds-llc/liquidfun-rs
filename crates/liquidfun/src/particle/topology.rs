@@ -18,7 +18,7 @@ pub(in crate::particle) struct VoronoiLimits {
 }
 
 impl VoronoiLimits {
-    const fn new(
+    pub(in crate::particle) const fn new(
         maximum_generators: usize,
         maximum_cells: usize,
         maximum_queue_tasks: usize,

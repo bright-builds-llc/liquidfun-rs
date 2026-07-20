@@ -7,6 +7,8 @@ use super::permutation::{
 };
 use super::{ParticleSnapshot, ParticleStorage, ParticleStorageError};
 
+mod join;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum MutationCandidateKind {
     CreateGroup,
@@ -127,6 +129,23 @@ impl MutationCandidate {
             storage,
             old_to_new,
             TopologyRemapPolicy::AppendStableSortFirstDuplicate { pairs, triads },
+            MutationInvalidations::AFFECTED_GROUPS,
+            false,
+        )?;
+        Ok(Self::JoinGroups(JoinGroupsCandidate { payload }))
+    }
+
+    pub(super) fn prepare_exact_join_groups(
+        storage: &ParticleStorage,
+        old_to_new: &[Option<usize>],
+        pairs: Vec<ParticlePair>,
+        triads: Vec<ParticleTriad>,
+    ) -> Result<Self, ParticleStorageError> {
+        require_no_removals(old_to_new)?;
+        let payload = prepare_payload(
+            storage,
+            old_to_new,
+            TopologyRemapPolicy::AppendPreservingHistoricalOrder(pairs, triads),
             MutationInvalidations::AFFECTED_GROUPS,
             false,
         )?;

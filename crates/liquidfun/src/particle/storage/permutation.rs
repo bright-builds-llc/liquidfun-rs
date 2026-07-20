@@ -17,12 +17,15 @@ pub(super) enum TopologyRemapPolicy {
         pairs: Vec<ParticlePair>,
         triads: Vec<ParticleTriad>,
     },
+    AppendPreservingHistoricalOrder(Vec<ParticlePair>, Vec<ParticleTriad>),
 }
 
 impl TopologyRemapPolicy {
     pub(super) const fn mode(&self) -> TopologyRemapMode {
         match self {
-            Self::PreserveHistoricalOrder => TopologyRemapMode::PreserveHistoricalOrder,
+            Self::PreserveHistoricalOrder | Self::AppendPreservingHistoricalOrder(..) => {
+                TopologyRemapMode::PreserveHistoricalOrder
+            }
             Self::AppendStableSortFirstDuplicate { .. } => {
                 TopologyRemapMode::AppendStableSortFirstDuplicate
             }
@@ -301,9 +304,14 @@ fn apply_topology_policy(
     particle_count: usize,
 ) -> Result<(), ParticleStorageError> {
     validate_topology(&derived.pairs, &derived.triads, particle_count)?;
-    let TopologyRemapPolicy::AppendStableSortFirstDuplicate { pairs, triads } = topology_policy
-    else {
-        return Ok(());
+    let (pairs, triads, preserve_historical_order) = match topology_policy {
+        TopologyRemapPolicy::PreserveHistoricalOrder => return Ok(()),
+        TopologyRemapPolicy::AppendStableSortFirstDuplicate { pairs, triads } => {
+            (pairs, triads, false)
+        }
+        TopologyRemapPolicy::AppendPreservingHistoricalOrder(pairs, triads) => {
+            (pairs, triads, true)
+        }
     };
     validate_topology(&pairs, &triads, particle_count)?;
     derived
@@ -314,13 +322,38 @@ fn apply_topology_policy(
         .triads
         .try_reserve_exact(triads.len())
         .map_err(|_error| ParticleStorageError::InvalidLaneBundle)?;
-    derived.pairs.extend(pairs);
-    derived.triads.extend(triads);
-    stable_sort_first_pair_duplicate(&mut derived.pairs);
-    stable_sort_first_triad_duplicate(&mut derived.triads);
+    if preserve_historical_order {
+        append_unique_pairs(&mut derived.pairs, pairs);
+        append_unique_triads(&mut derived.triads, triads);
+    } else {
+        derived.pairs.extend(pairs);
+        derived.triads.extend(triads);
+        stable_sort_first_pair_duplicate(&mut derived.pairs);
+        stable_sort_first_triad_duplicate(&mut derived.triads);
+    }
     Ok(())
 }
 
+fn append_unique_pairs(historical: &mut Vec<ParticlePair>, appended: Vec<ParticlePair>) {
+    for pair in appended {
+        if historical
+            .iter()
+            .all(|existing| existing.indices != pair.indices)
+        {
+            historical.push(pair);
+        }
+    }
+}
+fn append_unique_triads(historical: &mut Vec<ParticleTriad>, appended: Vec<ParticleTriad>) {
+    for triad in appended {
+        if historical
+            .iter()
+            .all(|existing| existing.indices != triad.indices)
+        {
+            historical.push(triad);
+        }
+    }
+}
 fn validate_topology(
     pairs: &[ParticlePair],
     triads: &[ParticleTriad],
@@ -334,7 +367,6 @@ fn validate_topology(
     }
     Ok(())
 }
-
 fn stable_sort_first_pair_duplicate(pairs: &mut Vec<ParticlePair>) {
     pairs.sort_by_key(|pair| pair.indices.map(|index| index.0));
     retain_first_by_indices(pairs, |pair| pair.indices);
