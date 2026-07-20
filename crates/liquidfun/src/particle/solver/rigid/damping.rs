@@ -15,7 +15,7 @@ use super::{BodyImpulseCandidate, RigidBodyContact, RigidCandidate, RigidSolverE
     clippy::too_many_arguments,
     reason = "the pure S21 candidate keeps every source lane and bound explicit"
 )]
-pub(in crate::particle::solver) fn rigid_damping_candidate(
+pub(crate) fn rigid_damping_candidate(
     owner: ParticleSystemId,
     particle_ids: &[ParticleId],
     positions: &[Vec2],

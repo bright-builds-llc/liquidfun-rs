@@ -11,7 +11,7 @@ use super::{RigidCandidate, RigidSolverError};
     clippy::too_many_arguments,
     reason = "the pure S24 candidate keeps every source lane explicit"
 )]
-pub(in crate::particle::solver) fn rigid_projection_candidate(
+pub(crate) fn rigid_projection_candidate(
     owner: ParticleSystemId,
     particle_ids: &[ParticleId],
     positions: &[Vec2],

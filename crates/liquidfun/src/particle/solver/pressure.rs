@@ -7,7 +7,7 @@ use crate::particle::definition::ParticleSystemDef;
 use crate::particle::storage::{ParticleStorage, ParticleStorageError};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(super) enum PressureSolverError {
+pub(crate) enum PressureSolverError {
     Storage(ParticleStorageError),
     MissingBody(BodyId),
 }
@@ -18,13 +18,13 @@ impl From<ParticleStorageError> for PressureSolverError {
     }
 }
 
-pub(super) trait BodyCoupling {
+pub(crate) trait BodyCoupling {
     fn contains_body(&self, body: BodyId) -> bool;
     fn velocity_at(&self, body: BodyId, point: Vec2) -> Vec2;
     fn apply_linear_impulse(&mut self, body: BodyId, impulse: Vec2, point: Vec2);
 }
 
-pub(super) fn static_pressure(
+pub(crate) fn static_pressure(
     storage: &mut ParticleStorage,
     definition: ParticleSystemDef,
     inverse_time_step: f32,
@@ -70,7 +70,7 @@ pub(super) fn static_pressure(
     storage.replace_static_pressures(pressures)
 }
 
-pub(super) fn pressure<B: BodyCoupling>(
+pub(crate) fn pressure<B: BodyCoupling>(
     storage: &mut ParticleStorage,
     definition: ParticleSystemDef,
     time_step: f32,
@@ -140,7 +140,7 @@ pub(super) fn pressure<B: BodyCoupling>(
     Ok(())
 }
 
-pub(super) fn damping<B: BodyCoupling>(
+pub(crate) fn damping<B: BodyCoupling>(
     storage: &mut ParticleStorage,
     definition: ParticleSystemDef,
     inverse_time_step: f32,
@@ -188,7 +188,7 @@ pub(super) fn damping<B: BodyCoupling>(
     Ok(())
 }
 
-pub(super) fn extra_damping<B: BodyCoupling>(
+pub(crate) fn extra_damping<B: BodyCoupling>(
     storage: &mut ParticleStorage,
     definition: ParticleSystemDef,
     bodies: &mut B,

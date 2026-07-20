@@ -1,17 +1,17 @@
 //! Private admission, ordering, and tracing contracts for particle solver passes.
 
-mod boundary;
-mod constraints;
+pub(crate) mod boundary;
+pub(crate) mod constraints;
 mod manifest;
-mod material;
-mod preparation;
-mod pressure;
-mod rigid;
+pub(crate) mod material;
+pub(crate) mod preparation;
+pub(crate) mod pressure;
+pub(crate) mod rigid;
 
 use super::{ParticleFlags, ParticleGroupFlags};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-enum PassId {
+pub(crate) enum PassId {
     Lifetime,
     ZombieCompaction,
     RefreshParticleFlags,
@@ -90,7 +90,7 @@ enum PassScope {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum PassGate {
+pub(crate) enum PassGate {
     ExpirationLane,
     AggregateParticleFlags(ParticleFlags),
     DirtyParticleFlags,
@@ -140,6 +140,49 @@ impl PassDescriptor {
 #[cfg(any(test, feature = "differential-internals"))]
 type PassTraceEntry = (PassId, Option<u32>);
 
+pub(crate) trait ParticlePassExecutor {
+    type Error;
+
+    fn is_empty(&self) -> bool;
+    fn is_paused(&self) -> bool;
+    fn admits(&mut self, gate: PassGate) -> bool;
+    fn execute(&mut self, pass: PassId, maybe_iteration: Option<u32>) -> Result<(), Self::Error>;
+}
+
+/// Executes the validated closed graph without a second ordering authority.
+pub(crate) fn run_particle_solver<E: ParticlePassExecutor>(
+    configuration: crate::StepConfiguration,
+    executor: &mut E,
+) -> Result<(), E::Error> {
+    if executor.is_empty() {
+        return Ok(());
+    }
+    let graph = manifest::validated_pass_graph()
+        .expect("the compile-time particle pass graph is validated by construction");
+    for descriptor in graph
+        .iter()
+        .filter(|descriptor| descriptor.scope == PassScope::Outer)
+    {
+        if executor.admits(descriptor.gate) {
+            executor.execute(descriptor.id, None)?;
+        }
+    }
+    if executor.is_paused() {
+        return Ok(());
+    }
+    for iteration in 0..configuration.particle_iterations() {
+        for descriptor in graph
+            .iter()
+            .filter(|descriptor| descriptor.scope == PassScope::ParticleIteration)
+        {
+            if executor.admits(descriptor.gate) {
+                executor.execute(descriptor.id, Some(iteration))?;
+            }
+        }
+    }
+    Ok(())
+}
+
 #[cfg(any(test, feature = "differential-internals"))]
 fn trace_complete_graph(
     configuration: crate::StepConfiguration,
@@ -168,3 +211,7 @@ fn trace_complete_graph(
 
     Ok(trace)
 }
+
+#[cfg(test)]
+#[path = "solver/order_tests.rs"]
+mod tests;

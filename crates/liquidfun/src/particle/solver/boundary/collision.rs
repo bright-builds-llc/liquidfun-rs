@@ -6,7 +6,7 @@ use super::{
     BoundaryCandidate, BoundaryPass, BoundarySolverError, BoundaryStage, FilteredCollisionHit,
 };
 
-pub(in crate::particle::solver) fn collision_start_from_previous_transform(
+pub(crate) fn collision_start_from_previous_transform(
     particle_position: Vec2,
     previous_transform: Transform,
     current_transform: Transform,
@@ -38,7 +38,7 @@ pub(in crate::particle::solver) fn collision_start_from_previous_transform(
     clippy::too_many_arguments,
     reason = "the filtered collision candidate keeps source timing and bounds explicit"
 )]
-pub(in crate::particle::solver) fn collision_candidate(
+pub(crate) fn collision_candidate(
     source: &BoundaryCandidate,
     hits: &[FilteredCollisionHit],
     particle_iteration: u32,
@@ -89,7 +89,7 @@ pub(in crate::particle::solver) fn collision_candidate(
     Ok(candidate)
 }
 
-pub(in crate::particle::solver) fn mark_rigid_projection(
+pub(crate) fn mark_rigid_projection(
     source: &BoundaryCandidate,
 ) -> Result<BoundaryCandidate, BoundarySolverError> {
     let mut candidate = source.begin_pass(BoundaryStage::AfterCollision)?;
@@ -98,7 +98,7 @@ pub(in crate::particle::solver) fn mark_rigid_projection(
     Ok(candidate)
 }
 
-pub(in crate::particle::solver) fn wall_candidate(
+pub(crate) fn wall_candidate(
     source: &BoundaryCandidate,
 ) -> Result<BoundaryCandidate, BoundarySolverError> {
     let mut candidate = source.begin_pass(BoundaryStage::AfterRigidProjection)?;
@@ -118,7 +118,7 @@ pub(in crate::particle::solver) fn wall_candidate(
     Ok(candidate)
 }
 
-pub(in crate::particle::solver) fn integrate_candidate(
+pub(crate) fn integrate_candidate(
     source: &BoundaryCandidate,
     time_step: f32,
 ) -> Result<BoundaryCandidate, BoundarySolverError> {

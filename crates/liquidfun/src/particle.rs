@@ -16,9 +16,9 @@ mod proxy;
 pub(crate) mod query;
 #[allow(
     dead_code,
-    reason = "later Phase 10 plans dispatch kernels through this private manifest"
+    reason = "closed manifest diagnostics are exercised only by native solver-order tests"
 )]
-mod solver;
+pub(crate) mod solver;
 mod statistics;
 #[allow(
     dead_code,

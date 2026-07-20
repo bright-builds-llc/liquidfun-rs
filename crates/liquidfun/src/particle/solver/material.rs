@@ -7,7 +7,7 @@ use crate::particle::storage::{ParticleStorage, ParticleStorageError};
 use crate::particle::{ParticleColor, ParticleFlags, ParticleGroupFlags};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(super) enum MaterialSolverError {
+pub(crate) enum MaterialSolverError {
     Storage(ParticleStorageError),
     MissingBody(BodyId),
 }
@@ -18,14 +18,14 @@ impl From<ParticleStorageError> for MaterialSolverError {
     }
 }
 
-pub(super) trait MaterialBodyCoupling {
+pub(crate) trait MaterialBodyCoupling {
     fn contains_body(&self, body: BodyId) -> bool;
     fn velocity_at(&self, body: BodyId, point: Vec2) -> Vec2;
     fn apply_linear_impulse(&mut self, body: BodyId, impulse: Vec2, point: Vec2);
 }
 
 /// S07 `Viscous`: transfer relative velocity in body-contact then particle-contact order.
-pub(super) fn viscous<B: MaterialBodyCoupling>(
+pub(crate) fn viscous<B: MaterialBodyCoupling>(
     storage: &mut ParticleStorage,
     definition: ParticleSystemDef,
     bodies: &mut B,
@@ -70,7 +70,7 @@ pub(super) fn viscous<B: MaterialBodyCoupling>(
 }
 
 /// S08 `Repulsive`: repel flagged contacts whose particles have distinct memberships.
-pub(super) fn repulsive(
+pub(crate) fn repulsive(
     storage: &mut ParticleStorage,
     definition: ParticleSystemDef,
     inverse_time_step: f32,
@@ -96,7 +96,7 @@ pub(super) fn repulsive(
 }
 
 /// S09 `Powder`: scatter flagged contacts above the pinned stride threshold.
-pub(super) fn powder(
+pub(crate) fn powder(
     storage: &mut ParticleStorage,
     definition: ParticleSystemDef,
     inverse_time_step: f32,
@@ -119,7 +119,7 @@ pub(super) fn powder(
 }
 
 /// S10 `Tensile`: accumulate weighted normals before applying surface tension.
-pub(super) fn tensile(
+pub(crate) fn tensile(
     storage: &mut ParticleStorage,
     definition: ParticleSystemDef,
     inverse_time_step: f32,
@@ -176,7 +176,7 @@ pub(super) fn tensile(
 }
 
 /// S11 `Solid`: eject cross-group contacts using the authoritative depth lane.
-pub(super) fn solid(
+pub(crate) fn solid(
     storage: &mut ParticleStorage,
     definition: ParticleSystemDef,
     inverse_time_step: f32,
@@ -210,7 +210,7 @@ pub(super) fn solid(
 }
 
 /// S12 `ColorMixing`: mix channels only when both particles carry the flag.
-pub(super) fn color_mixing(
+pub(crate) fn color_mixing(
     storage: &mut ParticleStorage,
     definition: ParticleSystemDef,
 ) -> Result<(), ParticleStorageError> {

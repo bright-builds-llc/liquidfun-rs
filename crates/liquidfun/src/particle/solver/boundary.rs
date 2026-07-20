@@ -13,18 +13,18 @@ use crate::{ParticleFlags, ParticleId};
     unused_imports,
     reason = "Plan 10-22 consumes the closed S22 boundary kernel surface"
 )]
-pub(super) use barrier::barrier_candidate;
+pub(crate) use barrier::barrier_candidate;
 #[allow(
     unused_imports,
     reason = "Plan 10-22 consumes the closed S23/S25/S26 boundary kernel surface"
 )]
-pub(super) use collision::{
+pub(crate) use collision::{
     collision_candidate, collision_start_from_previous_transform, integrate_candidate,
     mark_rigid_projection, wall_candidate,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(super) enum BoundarySolverError {
+pub(crate) enum BoundarySolverError {
     InvalidInput,
     ReorderedPass {
         expected: BoundaryStage,
@@ -37,7 +37,7 @@ pub(super) enum BoundarySolverError {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(super) enum BoundaryStage {
+pub(crate) enum BoundaryStage {
     AfterRigidDamping,
     AfterBarrier,
     AfterCollision,
@@ -47,7 +47,7 @@ pub(super) enum BoundaryStage {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(super) enum BoundaryPass {
+pub(crate) enum BoundaryPass {
     Barrier,
     Collision,
     Rigid,
@@ -56,7 +56,7 @@ pub(super) enum BoundaryPass {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub(super) struct BoundaryEffect {
+pub(crate) struct BoundaryEffect {
     pub(super) pass: BoundaryPass,
     pub(super) particle: ParticleId,
     pub(super) maybe_body: Option<BodyId>,
@@ -64,31 +64,31 @@ pub(super) struct BoundaryEffect {
 
 /// One fixture ray hit already admitted by the existing world query and filter.
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub(super) struct FilteredCollisionHit {
-    pub(super) particle: usize,
-    pub(super) body: BodyId,
-    pub(super) previous_transform: Transform,
-    pub(super) current_transform: Transform,
-    pub(super) body_local_center: Vec2,
-    pub(super) is_circle: bool,
-    pub(super) fraction: f32,
-    pub(super) normal: Vec2,
+pub(crate) struct FilteredCollisionHit {
+    pub(crate) particle: usize,
+    pub(crate) body: BodyId,
+    pub(crate) previous_transform: Transform,
+    pub(crate) current_transform: Transform,
+    pub(crate) body_local_center: Vec2,
+    pub(crate) is_circle: bool,
+    pub(crate) fraction: f32,
+    pub(crate) normal: Vec2,
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub(super) struct BoundaryCandidate {
-    pub(super) owner: ParticleSystemId,
-    pub(super) particle_ids: Vec<ParticleId>,
-    pub(super) positions: Vec<Vec2>,
-    pub(super) velocities: Vec<Vec2>,
-    pub(super) forces: Vec<Vec2>,
-    pub(super) flags: Vec<ParticleFlags>,
-    pub(super) memberships: Vec<Option<ParticleGroupId>>,
-    pub(super) groups: Vec<GroupRecord>,
-    pub(super) stage: BoundaryStage,
-    pub(super) has_pending_force: bool,
-    pub(super) pass_trace: Vec<BoundaryPass>,
-    pub(super) effects: Vec<BoundaryEffect>,
+pub(crate) struct BoundaryCandidate {
+    pub(crate) owner: ParticleSystemId,
+    pub(crate) particle_ids: Vec<ParticleId>,
+    pub(crate) positions: Vec<Vec2>,
+    pub(crate) velocities: Vec<Vec2>,
+    pub(crate) forces: Vec<Vec2>,
+    pub(crate) flags: Vec<ParticleFlags>,
+    pub(crate) memberships: Vec<Option<ParticleGroupId>>,
+    pub(crate) groups: Vec<GroupRecord>,
+    pub(crate) stage: BoundaryStage,
+    pub(crate) has_pending_force: bool,
+    pub(crate) pass_trace: Vec<BoundaryPass>,
+    pub(crate) effects: Vec<BoundaryEffect>,
     effect_limit: usize,
 }
 
@@ -97,7 +97,7 @@ impl BoundaryCandidate {
         clippy::too_many_arguments,
         reason = "the solver-tail candidate validates every aligned authoritative lane"
     )]
-    pub(super) fn new(
+    pub(crate) fn new(
         owner: ParticleSystemId,
         particle_ids: &[ParticleId],
         positions: &[Vec2],

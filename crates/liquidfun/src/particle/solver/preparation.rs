@@ -8,7 +8,7 @@ use crate::particle::storage::{ParticleStorage, ParticleStorageError};
 use crate::particle::topology::VoronoiLimits;
 
 /// S01 `ParticleContacts`: commit contacts prepared by the Phase 9 authority.
-pub(super) fn particle_contacts(
+pub(crate) fn particle_contacts(
     storage: &mut ParticleStorage,
     contacts: &[ParticleContact],
 ) -> Result<(), ParticleStorageError> {
@@ -16,7 +16,7 @@ pub(super) fn particle_contacts(
 }
 
 /// S02 `BodyContacts`: commit contacts prepared by the Phase 9 authority.
-pub(super) fn body_contacts(
+pub(crate) fn body_contacts(
     storage: &mut ParticleStorage,
     contacts: &[ParticleBodyContact],
     timestamp: u32,
@@ -28,12 +28,12 @@ pub(super) fn body_contacts(
 }
 
 /// S03 `Weight`: derive density weights in body-then-particle contact order.
-pub(super) fn weight(storage: &mut ParticleStorage) {
+pub(crate) fn weight(storage: &mut ParticleStorage) {
     storage.refresh_solver_weights();
 }
 
 /// S04 `SolidDepth`: run the storage-owned, scheduled depth transaction.
-pub(super) fn solid_depth(
+pub(crate) fn solid_depth(
     storage: &mut ParticleStorage,
     particle_diameter: f32,
 ) -> Result<(), ParticleStorageError> {
@@ -41,7 +41,7 @@ pub(super) fn solid_depth(
 }
 
 /// S05 `ReactiveTopology`: run the storage-owned append-and-clear transaction.
-pub(super) fn reactive_topology(
+pub(crate) fn reactive_topology(
     storage: &mut ParticleStorage,
     particle_diameter: f32,
     voronoi_limits: VoronoiLimits,
@@ -50,7 +50,7 @@ pub(super) fn reactive_topology(
 }
 
 /// S06 `Force`: consume the pending-force marker after one complete update.
-pub(super) fn force(
+pub(crate) fn force(
     storage: &mut ParticleStorage,
     definition: ParticleSystemDef,
     time_step: f32,
@@ -86,7 +86,7 @@ pub(super) fn force(
 }
 
 /// S13 `Gravity`: apply the source-ordered substep gravity increment.
-pub(super) fn gravity(
+pub(crate) fn gravity(
     storage: &mut ParticleStorage,
     definition: ParticleSystemDef,
     time_step: f32,

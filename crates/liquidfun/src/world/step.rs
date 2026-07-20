@@ -1358,9 +1358,8 @@ impl World {
             contact_lifecycle_result?;
             contact_transitions.extend(self.contact_manager.drain_transitions());
             if runs_particle_stages {
-                self.run_particle_lifecycle_step(configuration.time_step(), &mut hook_run)?;
                 let particle_contact_result = catch_unwind(AssertUnwindSafe(|| {
-                    self.run_particle_contact_prefix(configuration, &mut hook_run)
+                    self.run_particle_solver(configuration, &mut hook_run)
                 }));
                 match particle_contact_result {
                     Ok(result) => result?,

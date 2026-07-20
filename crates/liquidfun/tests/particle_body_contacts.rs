@@ -299,7 +299,7 @@ fn contacts_stuck_candidates_require_more_than_the_configured_threshold() {
 }
 
 #[test]
-fn step_pressure_reacts_on_dynamic_body_without_integrating_particle_position() {
+fn step_pressure_reacts_on_dynamic_body_and_integrates_particle_position() {
     // Arrange
     let mut world = World::new().expect("world key remains available");
     world
@@ -347,7 +347,8 @@ fn step_pressure_reacts_on_dynamic_body_without_integrating_particle_position() 
         .particle_snapshot(particle)
         .expect("particle remains live");
     let body_after = world.body_snapshot(body).expect("body remains live");
-    assert_eq!(particle_after.position(), Vec2::new(1.5, 0.0));
+    assert!(particle_after.position().x > 1.5);
+    assert_eq!(particle_after.position().y.to_bits(), 0.0_f32.to_bits());
     assert!(particle_after.velocity().x > 0.0);
     assert!(body_after.linear_velocity().x < 0.0);
 }

@@ -7,7 +7,7 @@ use crate::particle::storage::lanes::{ParticlePair, ParticleTriad};
 use crate::particle::storage::{ParticleStorage, ParticleStorageError};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(super) enum ConstraintSolverError {
+pub(crate) enum ConstraintSolverError {
     Storage(ParticleStorageError),
     ZeroLengthPairDistance,
 }
@@ -19,7 +19,7 @@ impl From<ParticleStorageError> for ConstraintSolverError {
 }
 
 /// S18 `Elastic`: enforce complete stored triad rest state in source order.
-pub(super) fn elastic(
+pub(crate) fn elastic(
     storage: &mut ParticleStorage,
     definition: ParticleSystemDef,
     time_step: f32,
@@ -40,7 +40,7 @@ pub(super) fn elastic(
 }
 
 /// S19 `Spring`: enforce stored pair rest distances in source order.
-pub(super) fn spring(
+pub(crate) fn spring(
     storage: &mut ParticleStorage,
     definition: ParticleSystemDef,
     time_step: f32,
@@ -61,7 +61,7 @@ pub(super) fn spring(
 }
 
 /// S20 `LimitVelocity`: clamp only speeds strictly above the critical threshold.
-pub(super) fn limit_velocity(
+pub(crate) fn limit_velocity(
     storage: &mut ParticleStorage,
     definition: ParticleSystemDef,
     inverse_time_step: f32,

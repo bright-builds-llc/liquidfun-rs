@@ -10,7 +10,7 @@ use super::{BoundaryCandidate, BoundaryPass, BoundarySolverError, BoundaryStage}
 
 const BARRIER_COLLISION_TIME: f32 = 2.5;
 
-pub(in crate::particle::solver) fn barrier_candidate(
+pub(crate) fn barrier_candidate(
     source: &BoundaryCandidate,
     pairs: &[ParticlePair],
     particle_mass: f32,

@@ -16,7 +16,7 @@ const INTERNAL_GROUP_FLAG_MASK: u8 = 0b0000_0011;
 const UPSTREAM_INTERNAL_GROUP_FLAG_MASK: u32 = 0x0018;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-pub(in crate::particle) struct InternalGroupFlags(u8);
+pub(crate) struct InternalGroupFlags(u8);
 
 impl InternalGroupFlags {
     pub(in crate::particle) const WILL_BE_DESTROYED: Self = Self(0b0000_0001);
@@ -44,13 +44,13 @@ impl InternalGroupFlags {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub(in crate::particle) struct GroupStatisticsCache {
-    pub(in crate::particle) maybe_source_timestamp: Option<u32>,
-    pub(in crate::particle) mass: f32,
-    pub(in crate::particle) center: Vec2,
-    pub(in crate::particle) linear_velocity: Vec2,
-    pub(in crate::particle) inertia: f32,
-    pub(in crate::particle) angular_velocity: f32,
+pub(crate) struct GroupStatisticsCache {
+    pub(crate) maybe_source_timestamp: Option<u32>,
+    pub(crate) mass: f32,
+    pub(crate) center: Vec2,
+    pub(crate) linear_velocity: Vec2,
+    pub(crate) inertia: f32,
+    pub(crate) angular_velocity: f32,
 }
 
 impl GroupStatisticsCache {
@@ -91,17 +91,17 @@ impl GroupStatisticsCache {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub(in crate::particle) struct GroupRecord {
-    pub(in crate::particle) id: ParticleGroupId,
-    pub(in crate::particle) system: ParticleSystemId,
-    pub(in crate::particle) flags: ParticleGroupFlags,
-    pub(in crate::particle) internal_flags: InternalGroupFlags,
-    pub(in crate::particle) first: usize,
-    pub(in crate::particle) last: usize,
-    pub(in crate::particle) strength: f32,
-    pub(in crate::particle) transform: Transform,
-    pub(in crate::particle) maybe_user_association: Option<UserAssociationKey>,
-    pub(in crate::particle) statistics: GroupStatisticsCache,
+pub(crate) struct GroupRecord {
+    pub(crate) id: ParticleGroupId,
+    pub(crate) system: ParticleSystemId,
+    pub(crate) flags: ParticleGroupFlags,
+    pub(crate) internal_flags: InternalGroupFlags,
+    pub(crate) first: usize,
+    pub(crate) last: usize,
+    pub(crate) strength: f32,
+    pub(crate) transform: Transform,
+    pub(crate) maybe_user_association: Option<UserAssociationKey>,
+    pub(crate) statistics: GroupStatisticsCache,
 }
 
 impl GroupRecord {

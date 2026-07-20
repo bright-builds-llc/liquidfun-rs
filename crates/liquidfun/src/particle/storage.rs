@@ -540,7 +540,7 @@ impl ParticleStorage {
         &self.positions
     }
 
-    pub(in crate::particle) fn velocities(&self) -> &[Vec2] {
+    pub(crate) fn velocities(&self) -> &[Vec2] {
         &self.velocities
     }
 
@@ -567,11 +567,11 @@ impl ParticleStorage {
         Ok(())
     }
 
-    pub(in crate::particle) fn flags(&self) -> &[ParticleFlags] {
+    pub(crate) fn flags(&self) -> &[ParticleFlags] {
         &self.flags
     }
 
-    pub(in crate::particle) fn groups(&self) -> &[Option<ParticleGroupId>] {
+    pub(crate) fn groups(&self) -> &[Option<ParticleGroupId>] {
         &self.groups
     }
 
@@ -581,12 +581,57 @@ impl ParticleStorage {
         self.group_records.iter().map(|record| record.flags)
     }
 
-    pub(in crate::particle) fn aggregate_particle_flags(&mut self) -> ParticleFlags {
+    pub(crate) fn group_records(&self) -> &[GroupRecord] {
+        &self.group_records
+    }
+
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the solver transaction validates every authoritative candidate lane"
+    )]
+    pub(crate) fn replace_solver_candidate(
+        &mut self,
+        particle_ids: &[ParticleId],
+        positions: Vec<Vec2>,
+        velocities: Vec<Vec2>,
+        forces: Vec<Vec2>,
+        group_records: Vec<GroupRecord>,
+        pending_system_force: bool,
+    ) -> Result<(), ParticleStorageError> {
+        let count = self.len();
+        if particle_ids != self.particle_ids()
+            || positions.len() != count
+            || velocities.len() != count
+            || forces.len() != count
+            || positions.iter().any(|position| !position.is_valid())
+            || velocities.iter().any(|velocity| !velocity.is_valid())
+            || forces.iter().any(|force| !force.is_valid())
+        {
+            return Err(ParticleStorageError::InvalidLaneBundle);
+        }
+        validate_groups(self.system, &self.groups, &group_records)?;
+        let mut candidate = self.clone();
+        candidate.positions = positions;
+        candidate.velocities = velocities;
+        candidate.forces = forces;
+        candidate.group_records = group_records;
+        candidate
+            .solver_state
+            .set_pending_system_force(pending_system_force);
+        candidate
+            .solver_state
+            .refresh_group_flags(&candidate.group_records);
+        candidate.check_invariants()?;
+        *self = candidate;
+        Ok(())
+    }
+
+    pub(crate) fn aggregate_particle_flags(&mut self) -> ParticleFlags {
         self.solver_state.refresh_particle_flags(&self.flags);
         self.solver_state.aggregate_particle_flags()
     }
 
-    pub(in crate::particle) fn aggregate_group_flags(&mut self) -> AggregateGroupFlags {
+    pub(crate) fn aggregate_group_flags(&mut self) -> AggregateGroupFlags {
         self.solver_state.refresh_group_flags(&self.group_records);
         self.solver_state.aggregate_group_flags()
     }
@@ -667,7 +712,7 @@ impl ParticleStorage {
         self.solver_state.maybe_tensile_accumulations()
     }
 
-    pub(in crate::particle) const fn has_pending_system_force(&self) -> bool {
+    pub(crate) const fn has_pending_system_force(&self) -> bool {
         self.solver_state.has_pending_system_force()
     }
 
@@ -679,7 +724,7 @@ impl ParticleStorage {
         &self.weights
     }
 
-    pub(in crate::particle) fn forces(&self) -> &[Vec2] {
+    pub(crate) fn forces(&self) -> &[Vec2] {
         &self.forces
     }
 
@@ -701,7 +746,7 @@ impl ParticleStorage {
         Ok(())
     }
 
-    pub(in crate::particle) fn particle_contacts(&self) -> &[ParticleContact] {
+    pub(crate) fn particle_contacts(&self) -> &[ParticleContact] {
         &self.particle_contacts
     }
 
@@ -941,7 +986,7 @@ impl ParticleStorage {
         }
     }
 
-    pub(in crate::particle) fn pairs(&self) -> &[ParticlePair] {
+    pub(crate) fn pairs(&self) -> &[ParticlePair] {
         &self.pairs
     }
 
@@ -953,7 +998,7 @@ impl ParticleStorage {
         self.maybe_expiration_order.as_deref()
     }
 
-    pub(in crate::particle) fn lifetime_tracking_enabled(&self) -> bool {
+    pub(crate) fn lifetime_tracking_enabled(&self) -> bool {
         self.maybe_expiration_times.is_some()
     }
 

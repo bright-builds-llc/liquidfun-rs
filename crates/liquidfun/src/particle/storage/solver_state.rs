@@ -5,9 +5,9 @@ use super::ParticleStorageError;
 use super::group::{GroupRecord, InternalGroupFlags};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(in crate::particle) struct AggregateGroupFlags {
-    pub(in crate::particle) public: ParticleGroupFlags,
-    pub(in crate::particle) internal: InternalGroupFlags,
+pub(crate) struct AggregateGroupFlags {
+    pub(crate) public: ParticleGroupFlags,
+    pub(crate) internal: InternalGroupFlags,
 }
 
 impl AggregateGroupFlags {
@@ -294,6 +294,10 @@ impl SolverState {
 
     pub(super) fn clear_pending_system_force(&mut self) {
         self.pending_system_force = false;
+    }
+
+    pub(super) fn set_pending_system_force(&mut self, pending: bool) {
+        self.pending_system_force = pending;
     }
 }
 
