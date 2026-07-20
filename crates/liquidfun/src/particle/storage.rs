@@ -1217,6 +1217,7 @@ impl ParticleStorage {
             self.flags[dense.0].insert(ParticleFlags::DESTRUCTION_LISTENER);
         }
         self.solver_state.mark_particle_flags_dirty();
+        self.invalidate_group_statistics_at(dense);
         let snapshot = ParticleSnapshot {
             id,
             diagnostic_id: self.identities[local_slot]
