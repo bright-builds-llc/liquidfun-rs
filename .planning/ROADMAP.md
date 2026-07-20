@@ -196,7 +196,7 @@ Plans:
 - [x] 10-12-PLAN.md — Probe pinned split/degenerate outcomes, then generate exact pair and full-triad constraints.
 - [x] 10-13-PLAN.md — Implement exact identity-preserving group join.
 - [x] 10-14-PLAN.md — Implement exact connectivity-based group split.
-- [ ] 10-15-PLAN.md — Implement reactive topology, solid depth, and rigid cache timing.
+- [x] 10-15-PLAN.md — Implement reactive topology, solid depth, and rigid cache timing.
 - [ ] 10-16-PLAN.md — Expose complete safe public group mutation workflows.
 - [ ] 10-17-PLAN.md — Implement contact, weight, topology, force, and gravity preparation passes.
 - [ ] 10-18-PLAN.md — Implement viscous, repulsive, powder, tensile, solid, and color passes.
@@ -262,7 +262,7 @@ Plans:
 | 7. Rigid Solver, World Operations, and CCD | 13/13 | Complete    | 2026-07-13 |
 | 8. Joints, Rope, Callbacks, and Rigid Sign-Off | 24/24 | Complete    | 2026-07-15 |
 | 9. Particle Storage, Lifecycle, and Coupling | 31/31 | Complete | 2026-07-18 |
-| 10. Particle Groups, Solvers, and Compatibility Sign-Off | 14/32 | In Progress|  |
+| 10. Particle Groups, Solvers, and Compatibility Sign-Off | 15/32 | In Progress|  |
 | 11. Examples, Headless Tooling, and Testbed | 0/TBD | Not started | - |
 | 12. Performance, Portability, and Release Hardening | 0/TBD | Not started | - |
 

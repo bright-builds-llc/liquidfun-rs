@@ -3,14 +3,14 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 10-14-PLAN.md
-last_updated: "2026-07-20T08:07:55.102Z"
+stopped_at: Completed 10-15-PLAN.md
+last_updated: "2026-07-20T10:54:57.747Z"
 last_activity: "2026-07-20"
 progress:
   total_phases: 12
   completed_phases: 9
   total_plans: 161
-  completed_plans: 143
+  completed_plans: 144
   percent: 89
 ---
 
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 ## Current Position
 
 Phase: 10 (Particle Groups, Solvers, and Compatibility Sign-Off) — EXECUTING
-Plan: 15 of 32
+Plan: 16 of 32
 Status: Ready to execute
 Last activity: 2026-07-20
 
@@ -155,6 +155,7 @@ Progress: [█████████░] 89%
 | Phase 10 P19 | 1h | 1 tasks | 5 files |
 | Phase 10 P09 | 2h 2m | 1 tasks | 13 files |
 | Phase 10 P14 | 1h 44m | 1 tasks | 8 files |
+| Phase 10 P15 | 2h 46m | 1 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -384,6 +385,8 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 10]: Migrate placeholder-era tests to recipe-created initial members instead of retaining a second public empty-shell creation API.
 - [Phase 10]: Model split cloning as an equivalent stable-ID row permutation. — The survivor keeps source row order while later components move in source-head and linked-list order, preserving public identities and historical topology.
 - [Phase 10]: Apply split membership during prepared permutation. — Simultaneous membership reassignment and full record rebuilding prevents any invalid intermediate group layout.
+- [Phase 10]: Generate and validate reactive topology before candidate commit; clear REACTIVE only on the validated cloned candidate. — A generation or invariant failure must preserve both topology and particle flags exactly.
+- [Phase 10]: Keep depth and timestamped statistics as private ParticleStorage-owned state in cohesive group child modules. — Storage ownership keeps cache invalidation aligned with membership, position, velocity, and flag mutation sources without leaking arena state.
 
 ### Pending Todos
 
@@ -397,6 +400,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-20T08:07:55.077Z
-Stopped at: Completed 10-14-PLAN.md
+Last session: 2026-07-20T10:54:57.740Z
+Stopped at: Completed 10-15-PLAN.md
 Resume file: None
