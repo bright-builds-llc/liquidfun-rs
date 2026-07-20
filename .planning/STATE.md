@@ -3,15 +3,15 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 10-12-PLAN.md
-last_updated: "2026-07-19T23:51:07.503Z"
-last_activity: "2026-07-19"
+stopped_at: Completed 10-13-PLAN.md
+last_updated: "2026-07-20T01:49:31.873Z"
+last_activity: "2026-07-20"
 progress:
   total_phases: 12
   completed_phases: 9
   total_plans: 161
-  completed_plans: 139
-  percent: 86
+  completed_plans: 140
+  percent: 87
 ---
 
 # Project State
@@ -26,9 +26,9 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 ## Current Position
 
 Phase: 10 (Particle Groups, Solvers, and Compatibility Sign-Off) — EXECUTING
-Plan: 11 of 32
+Plan: 12 of 32
 Status: Ready to execute
-Last activity: 2026-07-19
+Last activity: 2026-07-20
 
 Progress: [█████████░] 85%
 
@@ -151,6 +151,7 @@ Progress: [█████████░] 85%
 | Phase 10 P11 | 1h 25m | 1 tasks | 4 files |
 | Phase 10 P07 | 1h 24m | 2 tasks | 8 files |
 | Phase 10 P12 | 1h 36m | 2 tasks | 12 files |
+| Phase 10 P13 | 1h 53m | 1 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -370,6 +371,8 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 10]: Preserve finite barrier-pair and degenerate-triad source behavior without a global epsilon.
 - [Phase 10]: Keep constraint endpoints private and dense, translating them only through stable semantic views.
 - [Phase 10]: Stable-sort and retain the first exact duplicate only for append operations; preserve operations leave historical order untouched.
+- [Phase 10]: Prepare exact group joins against an owned ParticleStorage candidate and commit through one no-fail replacement.
+- [Phase 10]: Keep generic append sorting intact and use a private exact-join policy that preserves historical topology order and rest bytes.
 
 ### Pending Todos
 
@@ -383,6 +386,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-19T23:51:07.500Z
-Stopped at: Completed 10-12-PLAN.md
+Last session: 2026-07-20T01:49:31.869Z
+Stopped at: Completed 10-13-PLAN.md
 Resume file: None
