@@ -5,6 +5,7 @@ mod manifest;
 mod material;
 mod preparation;
 mod pressure;
+mod rigid;
 
 use super::{ParticleFlags, ParticleGroupFlags};
 
