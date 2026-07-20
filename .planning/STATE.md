@@ -3,15 +3,15 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 10-20-PLAN.md
-last_updated: "2026-07-20T16:49:46.807Z"
+stopped_at: Completed 10-21-PLAN.md
+last_updated: "2026-07-20T19:03:15.756Z"
 last_activity: "2026-07-20"
 progress:
   total_phases: 12
   completed_phases: 9
   total_plans: 161
-  completed_plans: 148
-  percent: 92
+  completed_plans: 149
+  percent: 93
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 ## Current Position
 
 Phase: 10 (Particle Groups, Solvers, and Compatibility Sign-Off) — EXECUTING
-Plan: 20 of 32
+Plan: 21 of 32
 Status: Ready to execute
 Last activity: 2026-07-20
 
@@ -160,6 +160,7 @@ Progress: [█████████░] 90%
 | Phase 10 P17 | 55m | 1 tasks | 3 files |
 | Phase 10 P18 | 58min | 1 tasks | 4 files |
 | Phase 10 P20 | 1h | 1 tasks | 3 files |
+| Phase 10 P21 | 2h 10m | 2 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -403,6 +404,10 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 10]: Resolve complete stable particle-ID order and validate every topology record before one ParticleStorage velocity commit. — Dense topology stays private and cannot silently retarget a solve; failed candidates leave storage unchanged.
 - [Phase 10]: Use stored pa/pb/pc in S18 while validating preserved ka/kb/kc/s as part of the complete triad admission contract. — The pinned SolveElastic formula numerically consumes the offsets, and no current-position rest reconstruction is allowed.
 - [Phase 10]: Apply a named typed error to exact zero-length active springs while preserving barrier-only and degenerate-triad source behavior. — This follows the mandatory Plan 10-12 classifications without a broad epsilon or catch-all suppression.
+- [Phase 10]: Keep S21 body reactions as ordered impulse candidates, never body mutation inside the numerical kernel. — This preserves the functional-core and imperative-shell boundary while retaining stable source-order effects for the world commit step.
+- [Phase 10]: Accept S23 hits only after existing world query and filter authority; use the previous transform only on iteration zero. — This avoids duplicate fixture authority and matches the pinned LiquidFun collision reconstruction semantics.
+- [Phase 10]: Enforce the S22-S26 solver tail with an explicit stage machine. — Typed stage transitions prevent rigid projection, wall enforcement, and final integration from being reordered or repeated.
+- [Phase 10]: Preserve Plan 10-12 retained-empty and one-particle behavior without a global epsilon. — The reviewed provenance cases remain exact and finite without changing ordinary rigid-group numerical behavior.
 
 ### Pending Todos
 
@@ -416,6 +421,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-20T16:49:27.551Z
-Stopped at: Completed 10-20-PLAN.md
+Last session: 2026-07-20T19:03:15.752Z
+Stopped at: Completed 10-21-PLAN.md
 Resume file: None
