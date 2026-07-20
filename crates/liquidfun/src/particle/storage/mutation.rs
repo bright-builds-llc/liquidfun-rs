@@ -102,7 +102,7 @@ impl ParticleStorage {
             .iter_mut()
             .find(|record| record.id == input.group)
             .ok_or(ParticleStorageError::InvalidGroupRange)?;
-        record.flags = input.flags;
+        record.set_public_flags(input.flags);
         record.strength = input.strength;
         record.transform = input.transform;
         let range = record.range();
@@ -151,6 +151,7 @@ impl ParticleStorage {
         } else {
             input.group
         };
+        candidate.compute_solid_depth(input.particle_diameter)?;
         candidate.check_invariants()?;
         Ok(GroupPlan {
             candidate,

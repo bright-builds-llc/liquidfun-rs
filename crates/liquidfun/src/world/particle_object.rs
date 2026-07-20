@@ -20,8 +20,7 @@ use crate::particle::{
 use crate::particle::{ParticleGroupSamplingError, SamplingLimits, force, plan_samples};
 use crate::{
     ArenaInsertError, AssociationMap, CreateObjectError, DestroyedId, DestructionCause,
-    DestructionRecord, DestructionReport, HandleError, LifecycleEvent, MutationReport,
-    ObjectSnapshot, ParticleGroupId, ParticleId, ParticleSystemId,
+    DestructionRecord, HandleError, ObjectSnapshot, ParticleGroupId, ParticleId, ParticleSystemId,
 };
 
 use super::object::{ParticleGroup, ParticleSystem, World};
@@ -835,47 +834,6 @@ impl World {
             .map_err(storage_handle_error)
     }
 
-    /// Invalidates every pending identity in ascending old-row order.
-    ///
-    /// # Errors
-    ///
-    /// Returns a scoped system error without mutation when `system` is invalid.
-    ///
-    /// # Panics
-    ///
-    /// Panics only if an internal storage invariant was violated before this
-    /// call; public operations cannot construct such a state.
-    pub fn compact_pending_particles(
-        &mut self,
-        system: ParticleSystemId,
-    ) -> Result<DestructionReport, HandleError> {
-        self.ensure_not_poisoned_for_handle()?;
-        self.particle_systems.get(system)?;
-        let outcome = crate::particle::lifetime::compact_pending_with_occurrences(
-            &mut self.system_mut_after_validation(system).storage,
-        )
-        .expect("validated authoritative storage compacts transactionally");
-        let records = outcome
-            .destroyed
-            .into_iter()
-            .map(|snapshot| Self::particle_destruction_record(snapshot, DestructionCause::Explicit))
-            .collect::<Vec<_>>();
-        let lifecycle = outcome
-            .requested_listener_occurrences
-            .into_iter()
-            .map(|occurrence| {
-                let particle = occurrence.particle();
-                let record = records
-                    .iter()
-                    .find(|record| record.destroyed() == DestroyedId::Particle(particle))
-                    .cloned()
-                    .expect("a requested occurrence always names one compacted particle");
-                LifecycleEvent::ParticleDestruction(record)
-            })
-            .collect();
-        Ok(MutationReport::new(records, lifecycle))
-    }
-
     pub(super) fn destroy_particle_now(
         &mut self,
         particle: ParticleId,
@@ -1156,3 +1114,9 @@ fn storage_handle_error(error: ParticleStorageError) -> HandleError {
         }
     }
 }
+
+mod group_lifecycle;
+
+#[cfg(test)]
+#[path = "particle_object/group_lifecycle_tests.rs"]
+mod group_lifecycle_tests;

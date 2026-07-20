@@ -204,6 +204,15 @@ fn transform_is_finite(transform: Transform) -> bool {
 }
 
 impl ParticleStorage {
+    pub(crate) fn group_will_be_destroyed(&self, group: ParticleGroupId) -> bool {
+        self.group_records.iter().any(|record| {
+            record.id == group
+                && record
+                    .internal_flags
+                    .contains(InternalGroupFlags::WILL_BE_DESTROYED)
+        })
+    }
+
     pub(in crate::particle) fn regenerate_reactive_topology(
         &mut self,
         particle_diameter: f32,

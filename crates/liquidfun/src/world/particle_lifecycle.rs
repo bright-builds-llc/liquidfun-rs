@@ -17,6 +17,7 @@ impl World {
     ) -> Result<(), StepError> {
         let mut candidate = self.particle_systems.clone();
         let mut requested_records = Vec::new();
+        let mut empty_group_records = Vec::new();
 
         for system_id in self.particle_system_order.iter().copied() {
             let system = candidate
@@ -35,6 +36,10 @@ impl World {
                     .map_err(|_error| StepError::ParticleLifecycleInvariant)?;
 
             append_requested_records(&mut requested_records, outcome, &expired);
+            let records = self
+                .prepare_empty_particle_group_destructions(system_id, system)
+                .map_err(|_error| StepError::ParticleLifecycleInvariant)?;
+            empty_group_records.extend(records);
 
             if system.definition.is_paused() {
                 continue;
@@ -44,11 +49,22 @@ impl World {
             // subsequent Phase 9 plans at this source-timed active-system seam.
         }
 
-        hook_run.ensure_lifecycle_capacity(requested_records.len())?;
+        hook_run.ensure_lifecycle_capacity(
+            requested_records
+                .len()
+                .checked_add(empty_group_records.len())
+                .ok_or(StepError::ParticleLifecycleInvariant)?,
+        )?;
         for record in requested_records {
             hook_run.record_particle_destruction(record)?;
         }
+        for record in &empty_group_records {
+            hook_run.record_destruction(record.clone())?;
+        }
         self.particle_systems = candidate;
+        for record in &empty_group_records {
+            self.remove_particle_group_shell_after_compaction(record);
+        }
         Ok(())
     }
 }

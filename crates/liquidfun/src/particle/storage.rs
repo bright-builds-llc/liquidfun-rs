@@ -1237,6 +1237,34 @@ impl ParticleStorage {
         self.transition_to_pending(id, request_listener)
     }
 
+    pub(crate) fn mark_delete_for_group_lifecycle(
+        &mut self,
+        id: ParticleId,
+        request_listener: bool,
+    ) -> Result<ParticleSnapshot, ParticleStorageError> {
+        match self.transition_to_pending(id, request_listener) {
+            Ok(snapshot) => Ok(snapshot),
+            Err(ParticleStorageError::PendingDelete) => {
+                let dense = self.resolve_present(id)?;
+                let local_slot = self.local_slot(id)?;
+                let IdentityState::PendingDelete { snapshot, .. } =
+                    &mut self.identities[local_slot].state
+                else {
+                    return Err(ParticleStorageError::InvalidPermutation);
+                };
+                if request_listener {
+                    self.flags[dense.0].insert(ParticleFlags::DESTRUCTION_LISTENER);
+                    snapshot
+                        .input
+                        .flags
+                        .insert(ParticleFlags::DESTRUCTION_LISTENER);
+                }
+                Ok(*snapshot)
+            }
+            Err(error) => Err(error),
+        }
+    }
+
     pub(crate) fn synchronize_zombie_flags(&mut self) -> Result<(), ParticleStorageError> {
         for row in 0..self.len() {
             let particle = self.dense_to_id[row];

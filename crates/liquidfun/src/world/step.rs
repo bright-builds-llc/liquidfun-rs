@@ -836,6 +836,13 @@ impl<'hook, H: CollisionDecisionHook> ContactHookRun<'hook, H> {
         self.push_lifecycle(LifecycleEvent::ParticleDestruction(record))
     }
 
+    pub(super) fn record_destruction(
+        &mut self,
+        record: DestructionRecord,
+    ) -> Result<(), StepError> {
+        self.push_lifecycle(LifecycleEvent::Destruction(record))
+    }
+
     pub(super) fn record_particle_body_contact(
         &mut self,
         effect: ParticleBodyContactEffect,
