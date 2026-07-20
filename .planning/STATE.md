@@ -3,14 +3,14 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 10-21-PLAN.md
-last_updated: "2026-07-20T19:03:15.756Z"
+stopped_at: Completed 10-16-PLAN.md
+last_updated: "2026-07-20T21:17:19.093Z"
 last_activity: "2026-07-20"
 progress:
   total_phases: 12
   completed_phases: 9
   total_plans: 161
-  completed_plans: 149
+  completed_plans: 150
   percent: 93
 ---
 
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 ## Current Position
 
 Phase: 10 (Particle Groups, Solvers, and Compatibility Sign-Off) — EXECUTING
-Plan: 21 of 32
+Plan: 22 of 32
 Status: Ready to execute
 Last activity: 2026-07-20
 
@@ -161,6 +161,7 @@ Progress: [█████████░] 90%
 | Phase 10 P18 | 58min | 1 tasks | 4 files |
 | Phase 10 P20 | 1h | 1 tasks | 3 files |
 | Phase 10 P21 | 2h 10m | 2 tasks | 11 files |
+| Phase 10 P16 | 2h 13m | 1 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -408,6 +409,10 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 10]: Accept S23 hits only after existing world query and filter authority; use the previous transform only on iteration zero. — This avoids duplicate fixture authority and matches the pinned LiquidFun collision reconstruction semantics.
 - [Phase 10]: Enforce the S22-S26 solver tail with an explicit stage machine. — Typed stage transitions prevent rigid projection, wall enforcement, and final integration from being reordered or repeated.
 - [Phase 10]: Preserve Plan 10-12 retained-empty and one-particle behavior without a global epsilon. — The reviewed provenance cases remain exact and finite without changing ordinary rigid-group numerical behavior.
+- [Phase 10]: Keep group A as the surviving join identity and return its result with group B lifecycle invalidation evidence. — Stable identity and owned lifecycle reporting let applications clean associations without world-owned user data.
+- [Phase 10]: Allocate split identities only after cloned-arena, owner-list, storage, and diagnostic preflight. — A complete candidate makes every failure effect-free and preserves source-ordered identity results.
+- [Phase 10]: Clone source associations and reserve side-table capacity before publishing split components. — Application association updates then follow the same atomic boundary as the world mutation.
+- [Phase 10]: Destroy through the new shell API only when a particle group is empty. — Populated group membership remains governed by explicit particle lifecycle and join operations.
 
 ### Pending Todos
 
@@ -421,6 +426,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-20T19:03:15.752Z
-Stopped at: Completed 10-21-PLAN.md
+Last session: 2026-07-20T21:16:55.040Z
+Stopped at: Completed 10-16-PLAN.md
 Resume file: None
