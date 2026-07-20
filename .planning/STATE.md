@@ -3,15 +3,15 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 10-18-PLAN.md
-last_updated: "2026-07-20T15:43:52.556Z"
+stopped_at: Completed 10-20-PLAN.md
+last_updated: "2026-07-20T16:49:46.807Z"
 last_activity: "2026-07-20"
 progress:
   total_phases: 12
   completed_phases: 9
   total_plans: 161
-  completed_plans: 147
-  percent: 91
+  completed_plans: 148
+  percent: 92
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 ## Current Position
 
 Phase: 10 (Particle Groups, Solvers, and Compatibility Sign-Off) — EXECUTING
-Plan: 19 of 32
+Plan: 20 of 32
 Status: Ready to execute
 Last activity: 2026-07-20
 
@@ -159,6 +159,7 @@ Progress: [█████████░] 90%
 | Phase 10 P10 | 2h 48m | 1 tasks | 9 files |
 | Phase 10 P17 | 55m | 1 tasks | 3 files |
 | Phase 10 P18 | 58min | 1 tasks | 4 files |
+| Phase 10 P20 | 1h | 1 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -399,6 +400,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 10]: Keep S07-S12 as six distinct material kernels. — Shared contact traversal does not justify merging formulas, gates, or independently testable public flag effects.
 - [Phase 10]: Commit complete material velocity and color candidates through ParticleStorage. — Contact, membership, weight, tensile, depth, velocity, and color lanes retain one authoritative owner.
 - [Phase 10]: Preserve pinned color mixing with explicit signed arithmetic and byte wrapping. — This matches negative channel deltas and source-ordered repeated mixing without unsafe code.
+- [Phase 10]: Resolve complete stable particle-ID order and validate every topology record before one ParticleStorage velocity commit. — Dense topology stays private and cannot silently retarget a solve; failed candidates leave storage unchanged.
+- [Phase 10]: Use stored pa/pb/pc in S18 while validating preserved ka/kb/kc/s as part of the complete triad admission contract. — The pinned SolveElastic formula numerically consumes the offsets, and no current-position rest reconstruction is allowed.
+- [Phase 10]: Apply a named typed error to exact zero-length active springs while preserving barrier-only and degenerate-triad source behavior. — This follows the mandatory Plan 10-12 classifications without a broad epsilon or catch-all suppression.
 
 ### Pending Todos
 
@@ -412,6 +416,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-20T15:43:37.881Z
-Stopped at: Completed 10-18-PLAN.md
+Last session: 2026-07-20T16:49:27.551Z
+Stopped at: Completed 10-20-PLAN.md
 Resume file: None
