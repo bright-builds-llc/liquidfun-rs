@@ -17,8 +17,10 @@ use super::permutation::{
 use super::{ParticleSnapshot, ParticleStorage, ParticleStorageError};
 
 mod join;
+mod split;
 
 use join::{JoinPlanError, JoinTopologyParameters};
+pub(crate) use split::{SplitPlan, SplitPlanError};
 
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct GroupPlanInput {

@@ -34,6 +34,11 @@ mod solver_state;
 mod validation;
 
 pub(crate) use mutation::{GroupPlan, GroupPlanError, GroupPlanInput};
+#[allow(
+    unused_imports,
+    reason = "the Phase 10 public group-mutation shell consumes these private split candidates"
+)]
+pub(crate) use mutation::{SplitPlan, SplitPlanError};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) struct ParticleInput {

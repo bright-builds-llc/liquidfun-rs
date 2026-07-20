@@ -5,6 +5,9 @@ use super::{
     StuckLanes, UserAssociationKey, Vec2, rebuild_group_records_for_system,
 };
 
+mod group_reassignment;
+pub(super) use group_reassignment::prepare_group_reassignment_permutation;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum TopologyRemapMode {
     PreserveHistoricalOrder,
@@ -90,7 +93,14 @@ pub(super) fn prepare_permutation(
 ) -> Result<PreparedPermutation, ParticleStorageError> {
     storage.check_invariants()?;
     let new_count = validate_basic_permutation(old_to_new, storage.dense_to_id.len())?;
-    prepare_candidate(storage, old_to_new, new_count, topology_policy)
+    prepare_candidate(
+        storage,
+        old_to_new,
+        new_count,
+        None,
+        &storage.group_records,
+        topology_policy,
+    )
 }
 
 pub(in crate::particle) fn apply_preserving_historical_order(
@@ -109,13 +119,15 @@ fn prepare_candidate(
     storage: &ParticleStorage,
     old_to_new: &[Option<usize>],
     new_count: usize,
+    maybe_groups_by_old_row: Option<&[Option<ParticleGroupId>]>,
+    source_group_records: &[GroupRecord],
     topology_policy: TopologyRemapPolicy,
 ) -> Result<PreparedPermutation, ParticleStorageError> {
-    let rows = prepare_rows(storage, old_to_new, new_count)?;
+    let rows = prepare_rows(storage, old_to_new, new_count, maybe_groups_by_old_row)?;
     let mut derived = remap_derived(storage, old_to_new)?;
     apply_topology_policy(&mut derived, topology_policy, new_count)?;
     let group_records =
-        rebuild_group_records_for_system(&storage.group_records, &rows.groups, storage.system)?;
+        rebuild_group_records_for_system(source_group_records, &rows.groups, storage.system)?;
     let solver_state = storage.solver_state.prepare_permutation(
         old_to_new,
         new_count,
@@ -158,6 +170,7 @@ fn prepare_rows(
     storage: &ParticleStorage,
     old_to_new: &[Option<usize>],
     new_count: usize,
+    maybe_groups_by_old_row: Option<&[Option<ParticleGroupId>]>,
 ) -> Result<RowPermutationCandidate, ParticleStorageError> {
     let mut rows = empty_rows(storage, new_count);
     for (old, maybe_new) in old_to_new.iter().copied().enumerate() {
@@ -172,7 +185,8 @@ fn prepare_rows(
         rows.positions[new] = storage.positions[old];
         rows.velocities[new] = storage.velocities[old];
         rows.flags[new] = storage.flags[old];
-        rows.groups[new] = storage.groups[old];
+        rows.groups[new] =
+            maybe_groups_by_old_row.map_or(storage.groups[old], |groups| groups[old]);
         rows.forces[new] = storage.forces[old];
         copy_optional(
             storage.maybe_colors.as_deref(),

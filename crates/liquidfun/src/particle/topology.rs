@@ -1,6 +1,7 @@
 use std::error::Error;
 use std::fmt;
 
+pub(in crate::particle) mod connectivity;
 #[allow(
     dead_code,
     reason = "consumed by the Phase 10 group join and reactive topology integration"
