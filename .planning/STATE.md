@@ -3,15 +3,15 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 10-10-PLAN.md
-last_updated: "2026-07-20T13:44:53.507Z"
+stopped_at: Completed 10-17-PLAN.md
+last_updated: "2026-07-20T14:44:41.902Z"
 last_activity: "2026-07-20"
 progress:
   total_phases: 12
   completed_phases: 9
   total_plans: 161
-  completed_plans: 145
-  percent: 90
+  completed_plans: 146
+  percent: 91
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 ## Current Position
 
 Phase: 10 (Particle Groups, Solvers, and Compatibility Sign-Off) — EXECUTING
-Plan: 17 of 32
+Plan: 18 of 32
 Status: Ready to execute
 Last activity: 2026-07-20
 
@@ -157,6 +157,7 @@ Progress: [█████████░] 90%
 | Phase 10 P14 | 1h 44m | 1 tasks | 8 files |
 | Phase 10 P15 | 2h 46m | 1 tasks | 6 files |
 | Phase 10 P10 | 2h 48m | 1 tasks | 9 files |
+| Phase 10 P17 | 55m | 1 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -391,6 +392,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 10]: Repeat group destruction requests upgrade the pending listener bit but never duplicate a lifecycle occurrence.
 - [Phase 10]: Particle compaction decides empty-group teardown; world shells disappear only after storage marks a non-retained group WILL_BE_DESTROYED.
 - [Phase 10]: Direct compaction previews teardown on a clone, then applies the existing in-place permutation so consumer-owned lane allocations remain stable.
+- [Phase 10]: Keep Phase 9 as the sole broad-phase and contact-generation authority; preparation commits already-prepared semantic contacts. — This preserves one query path while letting the locked solver manifest sequence storage commits.
+- [Phase 10]: Delegate solid depth and reactive topology to the Plan 15 storage transactions. — Generation or finite-arithmetic failure must preserve topology, scheduling flags, and every solver lane exactly.
+- [Phase 10]: Treat the pending-force marker as the one-shot force-consumption authority while retaining force-buffer bytes. — This matches the pinned SolveForce behavior and prevents the same accumulated force from applying twice.
 
 ### Pending Todos
 
@@ -404,6 +408,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-20T13:44:53.504Z
-Stopped at: Completed 10-10-PLAN.md
+Last session: 2026-07-20T14:43:57.668Z
+Stopped at: Completed 10-17-PLAN.md
 Resume file: None
