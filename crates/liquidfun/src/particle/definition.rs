@@ -6,6 +6,7 @@ use bitflags::bitflags;
 use crate::math::Vec2;
 
 const MAX_UPSTREAM_COUNT: usize = i32::MAX as usize;
+const MAXIMUM_STATIC_PRESSURE_ITERATIONS: usize = 1_024;
 
 bitflags! {
     /// Particle behavior and callback flags with the pinned upstream bit values.
@@ -243,6 +244,13 @@ pub enum ParticleSystemDefError {
     NonPositiveLifetimeGranularity,
     /// Static-pressure iteration count is zero.
     ZeroIterations,
+    /// Static-pressure iteration count exceeds the reviewed solver bound.
+    StaticPressureIterationsOutOfRange {
+        /// Requested iteration count.
+        requested: usize,
+        /// Maximum reviewed iteration count.
+        maximum: usize,
+    },
     /// A capacity or iteration count exceeds the pinned `int32` range.
     CapacityOutOfRange,
     /// Fixed capacity is zero.
@@ -327,6 +335,9 @@ impl fmt::Display for ParticleSystemDefError {
                 "particle-system lifetime granularity must be positive"
             }
             Self::ZeroIterations => "particle-system iteration count must be positive",
+            Self::StaticPressureIterationsOutOfRange { .. } => {
+                "particle-system static-pressure iterations exceed the reviewed solver bound"
+            }
             Self::CapacityOutOfRange => {
                 "particle-system count must fit the pinned signed 32-bit range"
             }
@@ -374,6 +385,9 @@ pub struct ParticleSystemDef {
 }
 
 impl ParticleSystemDef {
+    /// Maximum reviewed static-pressure iterations accepted per particle step.
+    pub const MAX_STATIC_PRESSURE_ITERATIONS: usize = MAXIMUM_STATIC_PRESSURE_ITERATIONS;
+
     /// Returns a copy configured as initially paused or active.
     #[must_use]
     pub const fn with_paused(mut self, paused: bool) -> Self {
@@ -665,7 +679,8 @@ impl ParticleSystemDef {
     ///
     /// # Errors
     ///
-    /// Returns a typed error when the count is zero or outside `int32` range.
+    /// Returns a typed error when the count is zero or exceeds the reviewed
+    /// solver bound.
     pub fn with_static_pressure_iterations(
         mut self,
         iterations: usize,
@@ -673,7 +688,12 @@ impl ParticleSystemDef {
         if iterations == 0 {
             return Err(ParticleSystemDefError::ZeroIterations);
         }
-        validate_capacity_range(iterations)?;
+        if iterations > Self::MAX_STATIC_PRESSURE_ITERATIONS {
+            return Err(ParticleSystemDefError::StaticPressureIterationsOutOfRange {
+                requested: iterations,
+                maximum: Self::MAX_STATIC_PRESSURE_ITERATIONS,
+            });
+        }
         self.static_pressure_iterations = iterations;
         Ok(self)
     }
