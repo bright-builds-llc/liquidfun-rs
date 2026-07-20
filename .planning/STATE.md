@@ -3,14 +3,14 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 10-19-PLAN.md
-last_updated: "2026-07-20T03:01:05.764Z"
+stopped_at: Completed 10-09-PLAN.md
+last_updated: "2026-07-20T05:32:42.598Z"
 last_activity: "2026-07-20"
 progress:
   total_phases: 12
   completed_phases: 9
   total_plans: 161
-  completed_plans: 141
+  completed_plans: 142
   percent: 88
 ---
 
@@ -26,11 +26,11 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 ## Current Position
 
 Phase: 10 (Particle Groups, Solvers, and Compatibility Sign-Off) — EXECUTING
-Plan: 13 of 32
+Plan: 14 of 32
 Status: Ready to execute
 Last activity: 2026-07-20
 
-Progress: [█████████░] 85%
+Progress: [█████████░] 88%
 
 ## Performance Metrics
 
@@ -153,6 +153,7 @@ Progress: [█████████░] 85%
 | Phase 10 P12 | 1h 36m | 2 tasks | 12 files |
 | Phase 10 P13 | 1h 53m | 1 tasks | 5 files |
 | Phase 10 P19 | 1h | 1 tasks | 5 files |
+| Phase 10 P09 | 2h 2m | 1 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -377,6 +378,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 10]: Keep S14-S17 crate-private behind a sequential BodyCoupling contract so Plan 10-22 can adapt candidate bodies without changing numerical order.
 - [Phase 10]: Commit complete validated velocity candidates through ParticleStorage and invalidate only statistics for groups containing changed particles.
 - [Phase 10]: Cap public static-pressure iterations at the reviewed project solver bound of 1024 before repeated numerical work.
+- [Phase 10]: Preflight the full diagnostic range without advancing the world counter, then publish the group shell, storage candidate, and next diagnostic value only after every fallible stage succeeds.
+- [Phase 10]: Discard an AppendTo recipe association with the hidden temporary group, matching pinned join semantics; a New recipe installs its association in the application-owned table after reservation.
+- [Phase 10]: Migrate placeholder-era tests to recipe-created initial members instead of retaining a second public empty-shell creation API.
 
 ### Pending Todos
 
@@ -390,6 +394,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-20T03:01:05.761Z
-Stopped at: Completed 10-19-PLAN.md
+Last session: 2026-07-20T05:32:42.594Z
+Stopped at: Completed 10-09-PLAN.md
 Resume file: None

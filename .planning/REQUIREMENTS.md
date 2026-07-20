@@ -103,7 +103,7 @@ Requirements for the first release permitted to claim complete parity with the s
 ### Verification and Regression Protection
 
 - [x] **TEST-01**: Pure math, geometry, ordering, identity, and solver kernels have focused unit tests with one primary concern and clear Arrange/Act/Assert structure.
-- [ ] **TEST-02**: Public world, rigid-body, joint, particle, callback, query, and destruction workflows have integration tests through supported APIs.
+- [x] **TEST-02**: Public world, rigid-body, joint, particle, callback, query, and destruction workflows have integration tests through supported APIs.
 - [ ] **TEST-03**: Every applicable upstream test is ported, replaced by equivalent evidence, or documented as irrelevant with a reviewed rationale.
 - [x] **TEST-04**: Property tests cover geometry invariants, broad-phase behavior, handle validity, particle permutation/group invariants, query correctness, and reproducible world operation sequences.
 - [ ] **TEST-05**: Fuzz targets cover shape/collision inputs, scenario protocol parsing, world mutation sequences, particle operations, and every unsafe boundary appropriate for fuzzing.
@@ -267,7 +267,7 @@ Roadmap creation maps every v1 requirement to exactly one phase.
 | PART-17 | Phase 9 | Complete |
 | PART-18 | Phase 10 | Pending |
 | TEST-01 | Phase 10 | Complete |
-| TEST-02 | Phase 10 | Pending |
+| TEST-02 | Phase 10 | Complete |
 | TEST-03 | Phase 11 | Pending |
 | TEST-04 | Phase 10 | Complete |
 | TEST-05 | Phase 12 | Pending |
