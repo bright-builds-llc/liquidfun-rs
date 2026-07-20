@@ -20,10 +20,14 @@ use crate::particle::{
 use crate::particle::{ParticleGroupSamplingError, SamplingLimits, force, plan_samples};
 use crate::{
     ArenaInsertError, AssociationMap, CreateObjectError, DestroyedId, DestructionCause,
-    DestructionRecord, HandleError, ObjectSnapshot, ParticleGroupId, ParticleId, ParticleSystemId,
+    DestructionRecord, HandleError, MutationReport, ObjectSnapshot, ParticleGroupId, ParticleId,
+    ParticleSystemId,
 };
 
 use super::object::{ParticleGroup, ParticleSystem, World};
+
+mod group_mutation;
+pub use group_mutation::ParticleGroupMutationError;
 
 const MAX_PARTICLE_COUNT: usize = i32::MAX as usize;
 const GROUP_SAMPLING_WORK_LIMIT: usize = 2_000_000;
@@ -613,6 +617,93 @@ impl World {
             .storage
             .group_view(group, particle_mass)
             .map_err(storage_handle_error)
+    }
+
+    /// Joins two live groups from the same particle system.
+    ///
+    /// The first identity survives and is returned. The second identity becomes
+    /// stale only after the exact storage candidate and shell removal have both
+    /// been preflighted.
+    ///
+    /// # Errors
+    ///
+    /// Returns a typed no-effect error for locked or poisoned worlds, invalid
+    /// handles, cross-system groups, capacity exhaustion, or invalid topology.
+    pub fn join_particle_groups(
+        &mut self,
+        group_a: ParticleGroupId,
+        group_b: ParticleGroupId,
+    ) -> Result<MutationReport<ParticleGroupId>, ParticleGroupMutationError> {
+        group_mutation::plan_join(self, group_a, group_b)
+    }
+
+    /// Splits one group into its source-ordered connected components.
+    ///
+    /// The original identity is always first. Later component identities are
+    /// allocated and returned in source component order.
+    ///
+    /// # Errors
+    ///
+    /// Returns a typed no-effect error for locked or poisoned worlds, an
+    /// invalid handle, exhausted identity capacity, or invalid connectivity.
+    pub fn split_particle_group(
+        &mut self,
+        group: ParticleGroupId,
+    ) -> Result<Vec<ParticleGroupId>, ParticleGroupMutationError> {
+        group_mutation::plan_split(self, group)
+    }
+
+    /// Splits one group and copies its application association to every new component.
+    ///
+    /// The source association, when present, remains under the original group.
+    /// All value clones and side-table capacity are prepared before the world
+    /// publishes any new group identity.
+    ///
+    /// # Errors
+    ///
+    /// Returns the same no-effect errors as [`Self::split_particle_group`],
+    /// plus [`ParticleGroupMutationError::AssociationCapacityExceeded`] when
+    /// the side table cannot reserve every new entry.
+    pub fn split_particle_group_with_association<UserAssociation: Clone>(
+        &mut self,
+        group: ParticleGroupId,
+        associations: &mut AssociationMap<ParticleGroupId, UserAssociation>,
+    ) -> Result<Vec<ParticleGroupId>, ParticleGroupMutationError> {
+        group_mutation::plan_split_with_association(self, group, associations)
+    }
+
+    /// Replaces the public behavior flags for one live particle group.
+    ///
+    /// [`ParticleGroupFlags`] removes upstream-private bits at construction;
+    /// this operation accepts only that invariant-bearing public value.
+    ///
+    /// # Errors
+    ///
+    /// Returns a typed no-effect error for locked or poisoned worlds, an
+    /// invalid handle, or an invalid storage candidate.
+    pub fn set_particle_group_flags(
+        &mut self,
+        group: ParticleGroupId,
+        flags: crate::particle::ParticleGroupFlags,
+    ) -> Result<(), ParticleGroupMutationError> {
+        group_mutation::set_flags(self, group, flags)
+    }
+
+    /// Explicitly destroys a retained empty particle-group shell.
+    ///
+    /// Groups with members must use the particle lifecycle or an explicit join;
+    /// this method never silently ungroups live particles.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ParticleGroupMutationError::GroupNotEmpty`] without effects
+    /// when the group still owns particles, plus the ordinary locked, poisoned,
+    /// and handle errors.
+    pub fn destroy_empty_particle_group(
+        &mut self,
+        group: ParticleGroupId,
+    ) -> Result<DestructionRecord, ParticleGroupMutationError> {
+        group_mutation::destroy_empty(self, group)
     }
 
     fn plan_particle_group<UserAssociation>(

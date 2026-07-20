@@ -20,7 +20,7 @@ mod join;
 mod split;
 
 use join::{JoinPlanError, JoinTopologyParameters};
-pub(crate) use split::{SplitPlan, SplitPlanError};
+pub(crate) use split::SplitPlanError;
 
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct GroupPlanInput {
@@ -94,6 +94,26 @@ impl ConnectionFilter for CreateGroupFilter {
 }
 
 impl ParticleStorage {
+    pub(crate) fn plan_join_groups(
+        &self,
+        group_a: ParticleGroupId,
+        group_b: ParticleGroupId,
+        particle_diameter: f32,
+        voronoi_limits: VoronoiLimits,
+    ) -> Result<GroupPlan, GroupPlanError> {
+        let mut candidate = self.clone();
+        let join = candidate.plan_join(
+            group_a,
+            group_b,
+            JoinTopologyParameters::new(particle_diameter, voronoi_limits),
+        )?;
+        join.commit(&mut candidate);
+        Ok(GroupPlan {
+            candidate,
+            result_group: group_a,
+        })
+    }
+
     pub(crate) fn plan_group(&self, input: GroupPlanInput) -> Result<GroupPlan, GroupPlanError> {
         self.check_invariants()?;
         let mut candidate = self.clone();

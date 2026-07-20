@@ -78,7 +78,7 @@ pub(super) struct ParticleSystem {
     pub(super) timestamp: u32,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(super) struct ParticleGroup {
     pub(super) diagnostic_id: u64,
     pub(super) system: ParticleSystemId,

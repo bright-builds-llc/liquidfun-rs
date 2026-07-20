@@ -282,7 +282,7 @@ impl ParticleStorage {
         Ok(groups)
     }
 
-    pub(in crate::particle) fn set_group_flags_internal(
+    pub(crate) fn set_group_flags_internal(
         &mut self,
         group: ParticleGroupId,
         flags: ParticleGroupFlags,

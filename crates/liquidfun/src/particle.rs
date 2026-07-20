@@ -28,7 +28,7 @@ mod topology;
 mod view;
 
 pub use crate::world::particle_object::{
-    ParticleCreationReceipt, ParticleSnapshot, ParticleSystemSnapshot,
+    ParticleCreationReceipt, ParticleGroupMutationError, ParticleSnapshot, ParticleSystemSnapshot,
 };
 pub use body_contact::{ParticleBodyContact, ParticleBodyContactEffect, ParticleBodyContactUpdate};
 pub use buffer::{

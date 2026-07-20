@@ -101,8 +101,12 @@ impl<Id: Eq + Hash, T> AssociationMap<Id, T> {
         self.values.insert(id, value)
     }
 
+    pub(crate) fn try_reserve(&mut self, additional: usize) -> Result<(), ()> {
+        self.values.try_reserve(additional).map_err(|_error| ())
+    }
+
     pub(crate) fn try_reserve_one(&mut self) -> Result<(), ()> {
-        self.values.try_reserve(1).map_err(|_error| ())
+        self.try_reserve(1)
     }
 
     /// Looks up an association by its complete typed identity.
