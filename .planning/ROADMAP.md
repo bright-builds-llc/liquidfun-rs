@@ -200,7 +200,7 @@ Plans:
 - [ ] 10-16-PLAN.md — Expose complete safe public group mutation workflows.
 - [ ] 10-17-PLAN.md — Implement contact, weight, topology, force, and gravity preparation passes.
 - [ ] 10-18-PLAN.md — Implement viscous, repulsive, powder, tensile, solid, and color passes.
-- [ ] 10-19-PLAN.md — Implement static pressure, pressure, and damping passes.
+- [x] 10-19-PLAN.md — Implement static pressure, pressure, and damping passes.
 - [ ] 10-20-PLAN.md — Implement elastic, spring, and velocity-limit constraints.
 - [ ] 10-21-PLAN.md — Implement rigid, barrier, collision, wall, and integration passes.
 - [ ] 10-22-PLAN.md — Replace the Phase 9 prefix with the full transactional solver.
@@ -262,7 +262,7 @@ Plans:
 | 7. Rigid Solver, World Operations, and CCD | 13/13 | Complete    | 2026-07-13 |
 | 8. Joints, Rope, Callbacks, and Rigid Sign-Off | 24/24 | Complete    | 2026-07-15 |
 | 9. Particle Storage, Lifecycle, and Coupling | 31/31 | Complete | 2026-07-18 |
-| 10. Particle Groups, Solvers, and Compatibility Sign-Off | 11/32 | In Progress|  |
+| 10. Particle Groups, Solvers, and Compatibility Sign-Off | 12/32 | In Progress|  |
 | 11. Examples, Headless Tooling, and Testbed | 0/TBD | Not started | - |
 | 12. Performance, Portability, and Release Hardening | 0/TBD | Not started | - |
 
