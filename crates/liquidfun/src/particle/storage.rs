@@ -692,6 +692,20 @@ impl ParticleStorage {
         self.maybe_colors.as_deref()
     }
 
+    pub(in crate::particle) fn replace_solver_colors(
+        &mut self,
+        candidate: Vec<ParticleColor>,
+    ) -> Result<(), ParticleStorageError> {
+        if candidate.len() != self.len() {
+            return Err(ParticleStorageError::LaneLengthMismatch);
+        }
+        let Some(colors) = self.maybe_colors.as_mut() else {
+            return Err(ParticleStorageError::InvalidLaneBundle);
+        };
+        *colors = candidate;
+        Ok(())
+    }
+
     pub(in crate::particle) fn particle_contacts(&self) -> &[ParticleContact] {
         &self.particle_contacts
     }
