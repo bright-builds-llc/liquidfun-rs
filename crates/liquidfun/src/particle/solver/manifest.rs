@@ -575,3 +575,7 @@ mod tests {
         );
     }
 }
+
+#[cfg(test)]
+#[path = "manifest/witness_registry.rs"]
+mod witness_registry;
