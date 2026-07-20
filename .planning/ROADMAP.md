@@ -191,7 +191,7 @@ Plans:
 - [x] 10-07-PLAN.md — Build operation-specific transactional mutation candidates.
 - [x] 10-08-PLAN.md — Implement exact fill, stroke, and explicit-position sampling.
 - [x] 10-09-PLAN.md — Wire public group creation, append, and inspection.
-- [ ] 10-10-PLAN.md — Implement deferred group destruction and retained-empty lifecycle.
+- [x] 10-10-PLAN.md — Implement deferred group destruction and retained-empty lifecycle.
 - [x] 10-11-PLAN.md — Implement source-ordered Voronoi topology generation.
 - [x] 10-12-PLAN.md — Probe pinned split/degenerate outcomes, then generate exact pair and full-triad constraints.
 - [x] 10-13-PLAN.md — Implement exact identity-preserving group join.
@@ -262,7 +262,7 @@ Plans:
 | 7. Rigid Solver, World Operations, and CCD | 13/13 | Complete    | 2026-07-13 |
 | 8. Joints, Rope, Callbacks, and Rigid Sign-Off | 24/24 | Complete    | 2026-07-15 |
 | 9. Particle Storage, Lifecycle, and Coupling | 31/31 | Complete | 2026-07-18 |
-| 10. Particle Groups, Solvers, and Compatibility Sign-Off | 15/32 | In Progress|  |
+| 10. Particle Groups, Solvers, and Compatibility Sign-Off | 16/32 | In Progress|  |
 | 11. Examples, Headless Tooling, and Testbed | 0/TBD | Not started | - |
 | 12. Performance, Portability, and Release Hardening | 0/TBD | Not started | - |
 
