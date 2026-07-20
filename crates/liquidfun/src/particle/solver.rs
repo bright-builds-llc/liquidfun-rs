@@ -1,5 +1,6 @@
 //! Private admission, ordering, and tracing contracts for particle solver passes.
 
+mod constraints;
 mod manifest;
 mod material;
 mod preparation;
