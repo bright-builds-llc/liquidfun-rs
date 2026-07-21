@@ -4,6 +4,7 @@ mod differential;
 mod docs;
 mod inventory;
 mod package;
+mod phase10_evidence;
 mod phase9_evidence;
 mod provenance;
 mod upstream;
@@ -24,6 +25,7 @@ Commands:
   inventory   Manage the compatibility inventory
   provenance  Validate provenance records
   phase9-evidence Validate local or exact-ref Phase 9 evidence
+  phase10-evidence Validate local or exact-ref Phase 10 evidence
   package     Validate the publishable package
   check       Run the aggregate repository checks";
 
@@ -36,6 +38,7 @@ enum XtaskError {
     Inventory(inventory::InventoryError),
     Package(package::PackageError),
     Phase9Evidence(phase9_evidence::Phase9EvidenceError),
+    Phase10Evidence(phase10_evidence::Phase10EvidenceError),
     Provenance(provenance::ProvenanceError),
     Upstream(upstream::UpstreamError),
 }
@@ -64,6 +67,7 @@ impl Display for XtaskError {
             Self::Inventory(error) => Display::fmt(error, formatter),
             Self::Package(error) => Display::fmt(error, formatter),
             Self::Phase9Evidence(error) => Display::fmt(error, formatter),
+            Self::Phase10Evidence(error) => Display::fmt(error, formatter),
             Self::Provenance(error) => Display::fmt(error, formatter),
             Self::Upstream(error) => Display::fmt(error, formatter),
         }
@@ -89,6 +93,9 @@ fn dispatch(args: &[String]) -> Result<(), XtaskError> {
         "provenance" => provenance::run(command_args).map_err(XtaskError::Provenance),
         "package" => package::run(command_args).map_err(XtaskError::Package),
         "phase9-evidence" => phase9_evidence::run(command_args).map_err(XtaskError::Phase9Evidence),
+        "phase10-evidence" => {
+            phase10_evidence::run(command_args).map_err(XtaskError::Phase10Evidence)
+        }
         "check" => {
             if !command_args.is_empty() {
                 return Err(XtaskError::usage("check does not accept arguments"));
