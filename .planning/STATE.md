@@ -3,14 +3,14 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 11-03-PLAN.md (11-02 remains pending)
-last_updated: "2026-07-21T23:04:39.525Z"
+stopped_at: Completed 11-08-PLAN.md (11-02 remains pending)
+last_updated: "2026-07-21T23:19:55.973Z"
 last_activity: "2026-07-21"
 progress:
   total_phases: 12
   completed_phases: 10
   total_plans: 190
-  completed_plans: 163
+  completed_plans: 164
   percent: 86
 ---
 
@@ -175,6 +175,7 @@ Progress: [██████████] 99%
 | Phase 10 P32 | 2h 36m | 2 tasks | 13 files |
 | Phase 11 P01 | 14 min | 1 tasks | 6 files |
 | Phase 11 P03 | 14 min | 1 tasks | 10 files |
+| Phase 11 P08 | 12 min | 1 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -463,6 +464,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 11]: Keep display titles outside canonical resolved bytes so presentation changes cannot alter replay identity.
 - [Phase 11]: Use exact-pinned ChaCha8 with explicit seed expansion and generator version 1 for seeded choice resolution.
 - [Phase 11]: Bind checkpoints to stable action and logical-step ordinals, never render frames or wall time.
+- [Phase 11]: Expose tight current fixture-child AABBs with stable body/fixture/child identities while private fat-tree and proxy identities remain private.
+- [Phase 11]: Keep diagnostic profile phase names structural while timing and profile values remain non-comparable, non-hashable, and outside StepReport and checkpoints.
+- [Phase 11]: Preflight every observation collection against reviewed limits before allocating or traversing observable state.
 
 ### Pending Todos
 
@@ -476,6 +480,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-21T23:04:39.522Z
-Stopped at: Completed 11-03-PLAN.md (11-02 remains pending)
+Last session: 2026-07-21T23:19:55.969Z
+Stopped at: Completed 11-08-PLAN.md (11-02 remains pending)
 Resume file: None
