@@ -35,6 +35,10 @@ pub(super) struct ExactRun {
     workflow_name: String,
     event: String,
     conclusion: String,
+    run_url: String,
+    dispatched_at: String,
+    created_at: String,
+    updated_at: String,
     captured_at: String,
     platform: String,
     rust_version: String,
@@ -61,6 +65,7 @@ struct ExactJobs {
 struct ExactJob {
     id: u64,
     name: String,
+    url: String,
     conclusion: String,
 }
 
@@ -76,6 +81,8 @@ struct ExactArtifacts {
 struct ExactArtifact {
     id: u64,
     name: String,
+    api_url: String,
+    archive_download_url: String,
     digest: String,
     size_in_bytes: u64,
     expired: bool,
@@ -132,6 +139,13 @@ pub(super) fn parse_exact_run(
         || run.upstream_revision != UPSTREAM_REVISION
         || run.protocol_version != PROTOCOL_VERSION
         || run.generator_version != GENERATOR_VERSION
+        || !valid_url(&run.run_url)
+        || !valid_timestamp(&run.dispatched_at)
+        || !valid_timestamp(&run.created_at)
+        || !valid_timestamp(&run.updated_at)
+        || !valid_timestamp(&run.captured_at)
+        || run.created_at > run.updated_at
+        || run.updated_at > run.captured_at
     {
         return Err(Phase10EvidenceError::new(
             "run",
@@ -212,7 +226,7 @@ fn validate_job(
                 && live.name == expected
         })
         .count();
-    if job.name != expected || job.conclusion != "success" || matches != 1 {
+    if job.name != expected || job.conclusion != "success" || !valid_url(&job.url) || matches != 1 {
         return Err(Phase10EvidenceError::new(
             "jobs",
             format!("required successful job `{expected}` is absent or mixed"),
@@ -243,6 +257,10 @@ fn validate_artifact_metadata(
         || maybe_digest.is_none_or(|digest| !is_sha256(digest))
         || artifact.created_at > run.captured_at
         || artifact.expires_at <= run.captured_at
+        || !valid_url(&artifact.api_url)
+        || !valid_url(&artifact.archive_download_url)
+        || !valid_timestamp(&artifact.created_at)
+        || !valid_timestamp(&artifact.expires_at)
         || matches != 1
     {
         return Err(Phase10EvidenceError::new(
@@ -268,6 +286,12 @@ fn validate_identity(
         || directory.identity.job_name != job_name(kind)
         || directory.identity.artifact_id != artifact.id
         || directory.identity.artifact_name != artifact.name
+        || directory.identity.platform != PLATFORM
+        || directory.identity.rust_version != RUST_VERSION
+        || directory.identity.clang_version != CLANG_VERSION
+        || directory.identity.upstream_revision != UPSTREAM_REVISION
+        || directory.identity.protocol_version != PROTOCOL_VERSION
+        || directory.identity.generator_version != GENERATOR_VERSION
     {
         return Err(Phase10EvidenceError::new(
             "identity",
@@ -339,12 +363,9 @@ fn validate_archive(
         .arg(path)
         .output()
         .map_err(|error| Phase10EvidenceError::new("archive", error.to_string()))?;
-    if !modes.status.success()
-        || std::str::from_utf8(&modes.stdout)
-            .map_err(|error| Phase10EvidenceError::new("archive", error.to_string()))?
-            .lines()
-            .any(|line| line.starts_with('l'))
-    {
+    let mode_listing = std::str::from_utf8(&modes.stdout)
+        .map_err(|error| Phase10EvidenceError::new("archive", error.to_string()))?;
+    if !modes.status.success() || unsafe_archive_modes(mode_listing)? {
         return Err(Phase10EvidenceError::new(
             "archive",
             "archive contains links or unreadable entry types",
@@ -391,4 +412,44 @@ fn is_full_sha(value: &str) -> bool {
         && value
             .bytes()
             .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+}
+
+fn valid_url(value: &str) -> bool {
+    value.starts_with("https://") && !value.contains(char::is_whitespace)
+}
+
+fn valid_timestamp(value: &str) -> bool {
+    value.len() == 20 && value.ends_with('Z') && value.as_bytes().get(10) == Some(&b'T')
+}
+
+fn unsafe_archive_modes(listing: &str) -> Result<bool, Phase10EvidenceError> {
+    let mut total_uncompressed = 0_u64;
+    for line in listing
+        .lines()
+        .filter(|line| line.starts_with('-') || line.starts_with('d') || line.starts_with('l'))
+    {
+        if line.starts_with('l') || (!line.starts_with('-') && !line.starts_with('d')) {
+            return Ok(true);
+        }
+        let Some(size) = line
+            .split_whitespace()
+            .nth(3)
+            .and_then(|value| value.parse::<u64>().ok())
+        else {
+            return Err(Phase10EvidenceError::new(
+                "archive",
+                "archive mode listing has an unreadable entry size",
+            ));
+        };
+        if size > MAXIMUM_LOG_BYTES {
+            return Ok(true);
+        }
+        total_uncompressed = total_uncompressed
+            .checked_add(size)
+            .ok_or_else(|| Phase10EvidenceError::new("archive", "archive size overflow"))?;
+        if total_uncompressed > MAXIMUM_LOG_BYTES {
+            return Ok(true);
+        }
+    }
+    Ok(false)
 }

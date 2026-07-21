@@ -149,7 +149,7 @@ struct FileReference {
     sha256: String,
 }
 
-fn write_directory(root: &Path, local_name: &str) -> TestResult {
+pub(super) fn write_directory(root: &Path, local_name: &str) -> TestResult {
     fs::create_dir_all(root)?;
     let cases = CASES
         .iter()
@@ -311,7 +311,7 @@ pub(super) fn refresh_identity(root: &Path) -> TestResult {
     write_json(&path, &identity)
 }
 
-fn file_inventory(root: &Path) -> TestResult<Vec<Value>> {
+pub(super) fn file_inventory(root: &Path) -> TestResult<Vec<Value>> {
     let mut files = Vec::new();
     let mut pending = vec![root.to_path_buf()];
     while let Some(directory) = pending.pop() {
@@ -353,11 +353,11 @@ fn canonical_sha256(value: &impl Serialize) -> TestResult<String> {
     Ok(sha256(&serde_json::to_vec(value)?))
 }
 
-fn sha256(bytes: &[u8]) -> String {
+pub(super) fn sha256(bytes: &[u8]) -> String {
     format!("{:x}", Sha256::digest(bytes))
 }
 
-fn workspace_root() -> PathBuf {
+pub(super) fn workspace_root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
         .ancestors()
         .nth(2)
@@ -365,7 +365,7 @@ fn workspace_root() -> PathBuf {
         .to_path_buf()
 }
 
-fn run_xtask(args: &[&str]) -> std::io::Result<Output> {
+pub(super) fn run_xtask(args: &[&str]) -> std::io::Result<Output> {
     Command::new(env!("CARGO_BIN_EXE_xtask"))
         .args(args)
         .current_dir(workspace_root())
