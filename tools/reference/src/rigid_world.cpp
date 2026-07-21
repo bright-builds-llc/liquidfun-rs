@@ -5,6 +5,7 @@
 #include "rigid_world_trace.hpp"
 #include "rigid_world_phase8_execute.hpp"
 #include "rigid_world_phase9_execute.hpp"
+#include "rigid_world_phase10_execute.hpp"
 
 #include <Box2D/Box2D.h>
 
@@ -782,9 +783,23 @@ RigidWorldTrace RigidWorldAdapter::execute(std::string_view record) {
       throw std::runtime_error("Phase 9 timeline alignment failed");
     }
     for (std::size_t index = 0; index < request.phase9_timelines.size(); ++index) {
-      if (!request.phase9_timelines.at(index).empty()) {
+      const auto phase10_owns_timeline =
+          !request.phase10_timelines.empty() &&
+          !request.phase10_timelines.at(index).empty();
+      if (!request.phase9_timelines.at(index).empty() && !phase10_owns_timeline) {
         apply_phase9_timeline(
             timeline_results.at(index), request.phase9_timelines.at(index));
+      }
+    }
+  }
+  if (!request.phase10_timelines.empty()) {
+    if (request.phase10_timelines.size() != timeline_results.size()) {
+      throw std::runtime_error("Phase 10 timeline alignment failed");
+    }
+    for (std::size_t index = 0; index < request.phase10_timelines.size(); ++index) {
+      if (!request.phase10_timelines.at(index).empty()) {
+        apply_phase10_timeline(
+            timeline_results.at(index), request.phase10_timelines.at(index));
       }
     }
   }

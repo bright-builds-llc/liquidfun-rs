@@ -403,7 +403,8 @@ inline bool validate_phase9_timeline(const Json& timeline) {
     require_members(record, {"action_id", "phase", "action"}, "Phase 9 action record");
     const auto& wrapper = record.at("action");
     require_members(wrapper, {"kind", "action"}, "Phase 9 action wrapper");
-    if (wrapper.at("kind") != "particle" || record.at("phase") != "phase9") {
+    if (wrapper.at("kind") != "particle" ||
+        (record.at("phase") != "phase9" && record.at("phase") != "phase10")) {
       throw std::runtime_error("invalid Phase 9 action declaration family");
     }
     validate_phase9_action(wrapper.at("action"), system_ids, particle_ids);

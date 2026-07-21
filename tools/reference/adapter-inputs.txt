@@ -19,6 +19,10 @@ tools/reference/src/rigid_world_phase8_decode.hpp
 tools/reference/src/rigid_world_phase8_execute.hpp
 tools/reference/src/rigid_world_phase9_decode.hpp
 tools/reference/src/rigid_world_phase9_execute.hpp
+tools/reference/src/rigid_world_phase10_decode.hpp
+tools/reference/src/rigid_world_phase10_execute.hpp
+tools/reference/src/rigid_world_phase10_operations.hpp
+tools/reference/src/rigid_world_phase10_capture.hpp
 tools/reference/src/rigid_world_trace.hpp
 tools/reference/src/rigid_world_validate.hpp
 tools/reference/src/oracle_adapter.cpp

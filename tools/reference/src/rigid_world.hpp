@@ -293,6 +293,7 @@ struct RigidWorldRequest {
   std::vector<RigidTimeline> timelines;
   std::vector<std::string> phase8_timelines;
   std::vector<std::string> phase9_timelines;
+  std::vector<std::string> phase10_timelines;
 };
 
 struct RigidWorldTrace {

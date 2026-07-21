@@ -5,8 +5,8 @@
 #include "protocol.hpp"
 #include "rigid_world.hpp"
 
-#include <exception>
 #include <cfenv>
+#include <exception>
 #include <iostream>
 #include <limits>
 #include <stdexcept>
@@ -84,53 +84,64 @@ int run() {
   liquidfun::reference::RigidWorldAdapter rigid_world_adapter;
   std::string line;
   while (liquidfun::reference::read_bounded_record(std::cin, line)) {
-    const auto request_kind = liquidfun::reference::decode_request_kind(line);
-    if (request_kind == liquidfun::reference::RequestKind::scenario) {
-      const auto request = liquidfun::reference::decode_scenario_request(line);
-      const auto trace = adapter.execute(request, identity_sha256);
-      for (const auto& record : trace.records) {
-        liquidfun::reference::write_record(std::cout, record);
+    try {
+      const auto request_kind =
+          liquidfun::reference::decode_request_kind(line);
+      if (request_kind == liquidfun::reference::RequestKind::scenario) {
+        const auto request =
+            liquidfun::reference::decode_scenario_request(line);
+        const auto trace = adapter.execute(request, identity_sha256);
+        for (const auto& record : trace.records) {
+          liquidfun::reference::write_record(std::cout, record);
+        }
+        continue;
       }
-      continue;
-    }
-    if (request_kind == liquidfun::reference::RequestKind::collision_probe) {
-      const auto batch = liquidfun::reference::execute_collision_probe(line);
-      if (collision_probe_reset_epoch ==
-          std::numeric_limits<std::uint64_t>::max()) {
-        throw std::runtime_error("collision probe reset counter overflow");
+      if (request_kind ==
+          liquidfun::reference::RequestKind::collision_probe) {
+        const auto batch = liquidfun::reference::execute_collision_probe(line);
+        if (collision_probe_reset_epoch ==
+            std::numeric_limits<std::uint64_t>::max()) {
+          throw std::runtime_error("collision probe reset counter overflow");
+        }
+        for (const auto& result : batch.result_records) {
+          liquidfun::reference::write_record(std::cout, result);
+        }
+        ++collision_probe_reset_epoch;
+        liquidfun::reference::write_record(
+            std::cout, liquidfun::reference::encode_collision_probe_end(
+                           batch, collision_probe_reset_epoch));
+        continue;
       }
-      for (const auto& result : batch.result_records) {
-        liquidfun::reference::write_record(std::cout, result);
+      if (request_kind == liquidfun::reference::RequestKind::rigid_world) {
+        const auto trace = rigid_world_adapter.execute(line);
+        liquidfun::reference::write_record(std::cout, trace.result_record);
+        liquidfun::reference::write_record(std::cout, trace.end_record);
+        continue;
       }
-      ++collision_probe_reset_epoch;
+      const auto request =
+          liquidfun::reference::decode_math_probe_request(line);
+      const auto results = liquidfun::reference::execute_math_probe(request);
+      if (results.size() > std::numeric_limits<std::uint32_t>::max() ||
+          math_probe_reset_epoch ==
+              std::numeric_limits<std::uint64_t>::max()) {
+        throw std::runtime_error("math probe result or reset counter overflow");
+      }
+      for (const auto& result : results) {
+        liquidfun::reference::write_record(
+            std::cout, liquidfun::reference::encode_math_probe_result(result));
+      }
+      ++math_probe_reset_epoch;
       liquidfun::reference::write_record(
           std::cout,
-          liquidfun::reference::encode_collision_probe_end(
-              batch, collision_probe_reset_epoch));
-      continue;
+          liquidfun::reference::encode_math_probe_end(
+              request, static_cast<std::uint32_t>(results.size()),
+              math_probe_reset_epoch));
+    } catch (const std::exception& error) {
+      // One malformed request must not poison the long-lived oracle. Protocol
+      // data remains stdout-only; bounded process supervision owns stderr.
+      std::cerr << "liquidfun-reference request rejected: " << error.what()
+                << '\n';
     }
-    if (request_kind == liquidfun::reference::RequestKind::rigid_world) {
-      const auto trace = rigid_world_adapter.execute(line);
-      liquidfun::reference::write_record(std::cout, trace.result_record);
-      liquidfun::reference::write_record(std::cout, trace.end_record);
-      continue;
-    }
-    const auto request = liquidfun::reference::decode_math_probe_request(line);
-    const auto results = liquidfun::reference::execute_math_probe(request);
-    if (results.size() > std::numeric_limits<std::uint32_t>::max() ||
-        math_probe_reset_epoch == std::numeric_limits<std::uint64_t>::max()) {
-      throw std::runtime_error("math probe result or reset counter overflow");
-    }
-    for (const auto& result : results) {
-      liquidfun::reference::write_record(
-          std::cout, liquidfun::reference::encode_math_probe_result(result));
-    }
-    ++math_probe_reset_epoch;
-    liquidfun::reference::write_record(
-        std::cout,
-        liquidfun::reference::encode_math_probe_end(
-            request, static_cast<std::uint32_t>(results.size()),
-            math_probe_reset_epoch));
   }
   return 0;
 }
