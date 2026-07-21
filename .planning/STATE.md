@@ -3,15 +3,15 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 11-01-PLAN.md
-last_updated: "2026-07-21T22:46:07.607Z"
+stopped_at: Completed 11-03-PLAN.md (11-02 remains pending)
+last_updated: "2026-07-21T23:04:39.525Z"
 last_activity: "2026-07-21"
 progress:
   total_phases: 12
   completed_phases: 10
   total_plans: 190
-  completed_plans: 162
-  percent: 85
+  completed_plans: 163
+  percent: 86
 ---
 
 # Project State
@@ -174,6 +174,7 @@ Progress: [██████████] 99%
 | Phase 10 P31 | 39m | 2 tasks | 4 files |
 | Phase 10 P32 | 2h 36m | 2 tasks | 13 files |
 | Phase 11 P01 | 14 min | 1 tasks | 6 files |
+| Phase 11 P03 | 14 min | 1 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -459,6 +460,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 11]: Model applicability, terminal disposition, and compatibility impact as independent closed enums with explicit terminal-outcome validation. — Corpus closure must preserve reviewed outcome and compatibility meaning as separate facts.
 - [Phase 11]: Bound corpus input to 4 MiB, JSON depth to 32, items to 2048, and per-item evidence mappings to 32 before downstream joins. — Reviewed limits keep untrusted corpus parsing and validation deterministic and bounded.
 - [Phase 11]: Treat source path plus source symbol as the unique semantic source identity while keeping kind-prefixed item IDs independently unique. — Source identity cannot be spoofed by assigning a second manifest ID to the same upstream semantic declaration.
+- [Phase 11]: Keep display titles outside canonical resolved bytes so presentation changes cannot alter replay identity.
+- [Phase 11]: Use exact-pinned ChaCha8 with explicit seed expansion and generator version 1 for seeded choice resolution.
+- [Phase 11]: Bind checkpoints to stable action and logical-step ordinals, never render frames or wall time.
 
 ### Pending Todos
 
@@ -472,6 +476,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-21T22:46:07.603Z
-Stopped at: Completed 11-01-PLAN.md
+Last session: 2026-07-21T23:04:39.522Z
+Stopped at: Completed 11-03-PLAN.md (11-02 remains pending)
 Resume file: None
