@@ -3,15 +3,15 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 10-24-PLAN.md
-last_updated: "2026-07-21T00:39:11.307Z"
+stopped_at: Completed 10-25-PLAN.md
+last_updated: "2026-07-21T02:02:24.484Z"
 last_activity: "2026-07-21"
 progress:
   total_phases: 12
   completed_phases: 9
   total_plans: 161
-  completed_plans: 153
-  percent: 95
+  completed_plans: 154
+  percent: 96
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 ## Current Position
 
 Phase: 10 (Particle Groups, Solvers, and Compatibility Sign-Off) — EXECUTING
-Plan: 25 of 32
+Plan: 26 of 32
 Status: Ready to execute
 Last activity: 2026-07-21
 
-Progress: [█████████░] 94%
+Progress: [██████████] 96%
 
 ## Performance Metrics
 
@@ -165,6 +165,7 @@ Progress: [█████████░] 94%
 | Phase 10 P22 | 3h 50m | 1 tasks | 24 files |
 | Phase 10 P23 | 1h 8m | 2 tasks | 7 files |
 | Phase 10 P24 | 29m | 2 tasks | 13 files |
+| Phase 10 P25 | 6h 15m | 1 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -426,6 +427,10 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 10]: Nest Phase 10 operations and observations in the existing rigid-world protocol. — One long-lived harness preserves Phase 9 variants and avoids parallel schema drift.
 - [Phase 10]: Keep private particle solver pass identity outside the shared protocol. — Differential evidence carries only public behavior leaves, typed witness roles, and semantic observations.
 - [Phase 10]: Use closed public flag masks and exact extension provenance on the differential boundary. — Cross-engine evidence cannot silently admit unreviewed flags, versions, generators, or toolchains.
+- [Phase 10]: Resolve every Phase 10 semantic identity through typed owner-aware maps before calling curated public APIs. — Prevents cross-kind, cross-world, stale, and wrong-system IDs from reaching engine mutation.
+- [Phase 10]: Capture Phase 10 evidence only through public views in protocol semantic order. — Preserves portable identity and topology without leaking dense storage or private pass data.
+- [Phase 10]: Contain native timeline panics at the rigid-world adapter boundary. — One typed fail-closed error prevents partial results from masquerading as physics evidence.
+- [Phase 10]: Destroy nonempty groups through public deferred particle lifecycle and empty shells immediately. — Matches the public engine lifecycle while preserving requested destruction evidence.
 
 ### Pending Todos
 
@@ -439,6 +444,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-21T00:39:11.303Z
-Stopped at: Completed 10-24-PLAN.md
+Last session: 2026-07-21T02:01:57.625Z
+Stopped at: Completed 10-25-PLAN.md
 Resume file: None
