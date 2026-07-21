@@ -20,22 +20,30 @@
   }
 
   void upsert_witness(
+      Json& witnesses,
       std::string_view leaf,
       std::string_view role,
       Json observation) {
     const auto found = std::find_if(
-        witnesses_.begin(), witnesses_.end(), [&](const auto& witness) {
+        witnesses.begin(), witnesses.end(), [&](const auto& witness) {
           return witness.at("behavior_leaf") == leaf && witness.at("role") == role;
         });
-    if (found != witnesses_.end()) {
+    if (found != witnesses.end()) {
       (*found)["observation"] = std::move(observation);
       return;
     }
-    witnesses_.push_back(
-        {{"ordinal", witnesses_.size()},
+    witnesses.push_back(
+        {{"ordinal", witnesses.size()},
          {"behavior_leaf", std::string(leaf)},
          {"role", std::string(role)},
          {"observation", std::move(observation)}});
+  }
+
+  void upsert_witness(
+      std::string_view leaf,
+      std::string_view role,
+      Json observation) {
+    upsert_witness(witnesses_, leaf, role, std::move(observation));
   }
 
   Json capture_groups() const {
@@ -43,15 +51,40 @@
     for (const auto& binding : groups_) {
       if (binding.group == nullptr) continue;
       Json members = Json::array();
+      std::vector<int32> live_indices;
       const auto first = binding.group->GetBufferIndex();
       const auto end = first + binding.group->GetParticleCount();
       for (int32 index = first; index < end; ++index) {
-        if ((binding.group->GetParticleSystem()->GetFlagsBuffer()[index] &
-             b2_zombieParticle) != 0U) {
-          continue;
-        }
-        members.push_back(semantic_particle_id(binding.group->GetParticleSystem(), index));
+        const auto* particle =
+            particle_binding(binding.group->GetParticleSystem(), index);
+        if (particle == nullptr) continue;
+        live_indices.push_back(index);
+        members.push_back(particle->id);
       }
+      const auto* system = binding.group->GetParticleSystem();
+      const auto particle_stride = b2_particleStride * (2.0F * system->GetRadius());
+      const auto particle_mass = system->GetDensity() * particle_stride * particle_stride;
+      float32 mass = 0.0F;
+      b2Vec2 center(0.0F, 0.0F);
+      b2Vec2 linear_velocity(0.0F, 0.0F);
+      for (const auto index : live_indices) {
+        mass += particle_mass;
+        center += particle_mass * system->GetPositionBuffer()[index];
+        linear_velocity += particle_mass * system->GetVelocityBuffer()[index];
+      }
+      if (mass > 0.0F) {
+        center *= 1.0F / mass;
+        linear_velocity *= 1.0F / mass;
+      }
+      float32 inertia = 0.0F;
+      float32 angular_velocity = 0.0F;
+      for (const auto index : live_indices) {
+        const auto relative_position = system->GetPositionBuffer()[index] - center;
+        const auto relative_velocity = system->GetVelocityBuffer()[index] - linear_velocity;
+        inertia += particle_mass * b2Dot(relative_position, relative_position);
+        angular_velocity += particle_mass * b2Cross(relative_position, relative_velocity);
+      }
+      if (inertia > 0.0F) angular_velocity *= 1.0F / inertia;
       const auto transform = binding.group->GetTransform();
       result.push_back(
           {{"ordinal", result.size()},
@@ -62,14 +95,56 @@
            {"transform",
             {{"position", encode_rigid_vector(transform.p)},
              {"angle_bits", bits_from_float(transform.q.GetAngle())}}},
-           {"center", encode_rigid_vector(binding.group->GetCenter())},
-           {"linear_velocity", encode_rigid_vector(binding.group->GetLinearVelocity())},
-           {"angular_velocity_bits", bits_from_float(binding.group->GetAngularVelocity())},
-           {"mass_bits", bits_from_float(binding.group->GetMass())},
-           {"inertia_bits", bits_from_float(binding.group->GetInertia())},
+           {"center", encode_rigid_vector(center)},
+           {"linear_velocity", encode_rigid_vector(linear_velocity)},
+           {"angular_velocity_bits", bits_from_float(angular_velocity)},
+           {"mass_bits", bits_from_float(mass)},
+           {"inertia_bits", bits_from_float(inertia)},
            {"maybe_depths_bits", nullptr}});
     }
     return result;
+  }
+
+  float32 semantic_particle_weight(
+      const b2ParticleSystem* system,
+      int32 particle_index) const {
+    const auto* cached_weights = system->GetWeightBuffer();
+    if (cached_weights == nullptr) return 0.0F;
+    bool includes_nonsemantic_contact = false;
+    for (int32 index = 0; index < system->GetContactCount(); ++index) {
+      const auto& contact = system->GetContacts()[index];
+      if (contact.GetIndexA() != particle_index &&
+          contact.GetIndexB() != particle_index) {
+        continue;
+      }
+      if (particle_binding(system, contact.GetIndexA()) == nullptr ||
+          particle_binding(system, contact.GetIndexB()) == nullptr) {
+        includes_nonsemantic_contact = true;
+        break;
+      }
+    }
+    if (!includes_nonsemantic_contact) return cached_weights[particle_index];
+
+    float32 weight = 0.0F;
+    for (int32 index = 0; index < system->GetBodyContactCount(); ++index) {
+      const auto& contact = system->GetBodyContacts()[index];
+      if (contact.index == particle_index &&
+          particle_binding(system, contact.index) != nullptr) {
+        weight += contact.weight;
+      }
+    }
+    for (int32 index = 0; index < system->GetContactCount(); ++index) {
+      const auto& contact = system->GetContacts()[index];
+      if (particle_binding(system, contact.GetIndexA()) == nullptr ||
+          particle_binding(system, contact.GetIndexB()) == nullptr) {
+        continue;
+      }
+      if (contact.GetIndexA() == particle_index ||
+          contact.GetIndexB() == particle_index) {
+        weight += contact.GetWeight();
+      }
+    }
+    return weight;
   }
 
   Json capture_particles(const Json& groups) const {
@@ -95,10 +170,7 @@
              {"flags_bits", found->system->GetFlagsBuffer()[index]},
              {"color", Json::array({color.r, color.g, color.b, color.a})},
              {"weight_bits",
-              bits_from_float(
-                  found->system->GetWeightBuffer() == nullptr
-                      ? 0.0F
-                      : found->system->GetWeightBuffer()[index])}});
+              bits_from_float(semantic_particle_weight(found->system, index))}});
       }
     }
     return result;
@@ -199,6 +271,7 @@
   }
 
   void capture_behavior_witnesses(
+      Json& witnesses,
       const Json& particles,
       const Json& pairs,
       const Json& triads,
@@ -218,35 +291,42 @@
         {"barrier", b2_barrierParticle}, {"static_pressure", b2_staticPressureParticle},
         {"reactive", b2_reactiveParticle}, {"repulsive", b2_repulsiveParticle}};
     upsert_witness(
+        witnesses,
         "water", water ? "activation" : "control",
         water ? Json{{"kind", "flag_activated"}, {"flags_bits", 0U}}
               : Json{{"kind", "control_unchanged"}});
     for (const auto& [leaf, bits] : leaves) {
       const auto active = (flags & bits) != 0U;
       upsert_witness(
+          witnesses,
           leaf, active ? "activation" : "control",
           active ? Json{{"kind", "flag_activated"}, {"flags_bits", bits}}
                  : Json{{"kind", "control_unchanged"}});
     }
     std::uint32_t group_flags = 0;
-    for (const auto& binding : groups_) group_flags |= binding.group->GetGroupFlags();
+    for (const auto& binding : groups_) {
+      if (binding.group != nullptr) group_flags |= binding.group->GetGroupFlags();
+    }
     for (const auto& [leaf, bits] :
          std::vector<std::pair<std::string, std::uint32_t>>{
              {"solid_group", b2_solidParticleGroup},
              {"rigid_group", b2_rigidParticleGroup}}) {
       const auto active = (group_flags & bits) != 0U;
       upsert_witness(
+          witnesses,
           leaf, active ? "activation" : "control",
           active ? Json{{"kind", "count"}, {"value", 1U}}
                  : Json{{"kind", "control_unchanged"}});
     }
     const auto body_active = !body_contacts.empty();
     upsert_witness(
+        witnesses,
         "body_interaction", body_active ? "activation" : "control",
         body_active ? Json{{"kind", "count"}, {"value", body_contacts.size()}}
                     : Json{{"kind", "control_unchanged"}});
     for (const auto* leaf : {"spring", "elastic", "reactive"}) {
       upsert_witness(
+          witnesses,
           leaf, "interaction",
           {{"kind", "topology"},
            {"pair_count", pairs.size()},
@@ -262,6 +342,7 @@
     for (const auto& [leaf, bits] : leaves) {
       if ((flags & bits) == 0U) continue;
       upsert_witness(
+          witnesses,
           leaf, "interaction",
           {{"kind", "particle_velocity"},
            {"particle_id", velocity_particle->id},
@@ -279,7 +360,8 @@
     auto triads = capture_triads();
     auto particle_contacts = capture_particle_contacts();
     auto body_contacts = capture_body_contacts();
-    capture_behavior_witnesses(particles, pairs, triads, body_contacts);
+    auto witnesses = witnesses_;
+    capture_behavior_witnesses(witnesses, particles, pairs, triads, body_contacts);
     observations_.push_back(
         {{"kind", "particle_group"},
          {"observation",
@@ -294,5 +376,5 @@
              {"particle_contacts", std::move(particle_contacts)},
              {"body_contacts", std::move(body_contacts)},
              {"events", events_},
-             {"witnesses", witnesses_}}}}}});
+             {"witnesses", std::move(witnesses)}}}}}});
   }

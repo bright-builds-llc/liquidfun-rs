@@ -67,11 +67,16 @@
     const auto kind = action.at("kind").get<std::string>();
     if (kind == "create_system") {
       create_system(action);
+      Json body_ids = Json::array();
+      for (const auto& declaration : timeline_.at("bodies")) {
+        const auto id = declaration.at("body_id").get<std::string>();
+        if (bodies_.count(id) != 0U) body_ids.push_back(id);
+      }
       observations_.push_back(
           {{"kind", "particle"},
            {"observation",
             {{"kind", "mixed_state"},
-             {"body_ids", Json::array()},
+             {"body_ids", std::move(body_ids)},
              {"particle_ids", Json::array()}}}});
       return;
     }
@@ -332,6 +337,17 @@
     if (kind == "destroy_group") {
       auto& target = group(operation.at("group_id"));
       const auto count = target.group->GetParticleCount();
+      if (count == 0) {
+        const auto target_id = target.id;
+        const auto target_system_id = target.system_id;
+        target.group = nullptr;
+        const auto event = add_event(
+            "group_destroyed", target_system_id, target_id, nullptr, nullptr, nullptr);
+        upsert_witness(
+            "group_destroy", "activation",
+            {{"kind", "occurrence"}, {"event_ordinal", event}});
+        return;
+      }
       target.group->DestroyParticles(true);
       upsert_witness(
           "group_destroy", "activation",

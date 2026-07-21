@@ -20,9 +20,9 @@ pub use phase10::{
     Phase10ComparatorError, Phase10ComparisonMode, Phase10ComparisonOutcome,
     Phase10EvidenceBinding, Phase10EvidenceContractError, Phase10EvidenceLeaf,
     Phase10EvidencePayloads, Phase10EvidenceTestRefs, Phase10EvidenceWitnessRef, Phase10Mismatch,
-    Phase10Policy, Phase10PolicyKind, compare_phase10_observations,
-    required_phase10_evidence_leaves, validate_phase10_evidence_contract,
-    validate_phase10_policy_registry,
+    Phase10Policy, Phase10PolicyCalibration, Phase10PolicyKind, compare_phase10_observations,
+    phase10_policy_calibrations, required_phase10_evidence_leaves,
+    validate_phase10_evidence_contract, validate_phase10_policy_registry,
 };
 
 use evidence::{

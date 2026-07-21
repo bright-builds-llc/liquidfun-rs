@@ -71,14 +71,10 @@ fn capture_state(
             angular_velocity_bits: FloatBits::from_f32(view.angular_velocity()),
             mass_bits: FloatBits::from_f32(view.mass()),
             inertia_bits: FloatBits::from_f32(view.inertia()),
-            maybe_depths_bits: view.maybe_depths().map(|depths| {
-                depths
-                    .iter()
-                    .copied()
-                    .map(FloatBits::from_f32)
-                    .collect::<Vec<_>>()
-                    .into_boxed_slice()
-            }),
+            // The pinned C++ oracle exposes no public depth-buffer accessor.
+            // Keep cross-engine observations on that common public surface;
+            // native depth behavior remains covered through curated-view tests.
+            maybe_depths_bits: None,
         });
         let system_view = executor
             .world

@@ -15,6 +15,65 @@ pub use registry::{
     PHASE10_POLICY_REGISTRY, PHASE10_REQUIRED_POLICY_PATHS, Phase10Policy, Phase10PolicyKind,
 };
 
+/// Auditable calibration provenance for one closed Phase 10 policy path.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Phase10PolicyCalibration {
+    /// Closed semantic path governed by the calibration.
+    pub path: &'static str,
+    /// Fixed comparison policy selected before the sealed corpus runs.
+    pub policy: Phase10PolicyKind,
+    /// Source-scale and diagnostic reason for the selected policy class.
+    pub justification: &'static str,
+    /// Repository test that accepts the inclusive boundary and rejects one over.
+    pub boundary_test: &'static str,
+}
+
+/// Returns one immutable calibration record for every policy-registry entry.
+///
+/// Exact fields intentionally have no numeric threshold. Numeric classes are
+/// fixed from the one-step Phase 10 horizon and the pinned upstream `f32`
+/// scale; the corpus may reveal a mismatch but cannot widen these values.
+pub fn phase10_policy_calibrations()
+-> impl ExactSizeIterator<Item = Phase10PolicyCalibration> + Clone {
+    PHASE10_POLICY_REGISTRY.iter().map(|entry| {
+        let (justification, boundary_test) = if entry.path == "phase10.group.depth" {
+            (
+                "optional upstream-private depth is normalized to the common adapter surface; when present, disappearance fails and values use the fixed ULP bound",
+                "crates/liquidfun-differential/tests/phase10_corpus.rs:normalized_optional_depth_still_rejects_required_lane_disappearance",
+            )
+        } else {
+            match entry.kind {
+            Phase10PolicyKind::ExactDiscrete => (
+                "identity, ownership, source order, topology, count, and branch semantics are discrete",
+                "crates/liquidfun-differential/tests/phase10_comparator.rs:comparator_reports_first_contextual_mismatch_across_every_record_family",
+            ),
+            Phase10PolicyKind::ExactBits => (
+                "public masks, colors, strengths, and exact wire values are compatibility identities",
+                "crates/liquidfun-differential/tests/phase10_comparator.rs:comparator_reports_first_contextual_mismatch_across_every_record_family",
+            ),
+            Phase10PolicyKind::Ulps { .. } => (
+                "short-horizon f32 transforms and solver vectors use a four-representation bound",
+                "crates/liquidfun-differential/tests/phase10_comparator.rs:numeric_policies_accept_boundary_and_reject_one_over",
+            ),
+            Phase10PolicyKind::AbsoluteRelative { .. } => (
+                "accumulated scalar state uses a fixed absolute floor plus scale-relative bound",
+                "crates/liquidfun-differential/tests/phase10_comparator.rs:numeric_policies_accept_boundary_and_reject_one_over",
+            ),
+            Phase10PolicyKind::DimensionedAbsolute { .. } => (
+                "body-contact effective mass uses a fixed unit-specific absolute scale",
+                "crates/liquidfun-differential/tests/phase10_comparator.rs:numeric_policies_accept_boundary_and_reject_one_over",
+            ),
+            }
+        };
+        Phase10PolicyCalibration {
+            path: entry.path,
+            policy: entry.kind,
+            justification,
+            boundary_test,
+        }
+    })
+}
+
 /// Comparison authority selected by the caller.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Phase10ComparisonMode {

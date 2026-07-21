@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "profile": "phase10-v1",
+  "upstream_revision": "7f20402173fd143a3988c921bc384459c6a858f2",
+  "policy_count": 50,
+  "policy_sha256": "865ceb414020148dbbbf485b8149f3054844cb6309d2cde8cce9ad1fffdd5a4a",
+  "leaf_sha256": "21df0ccd48bd62d40cf32d655d2f281a526e544282d4a0c05f4841a95d644ed3",
+  "manifest_payload_sha256": "da55a88192d8b17c1f2ca11aeae83b88ee0a723cb72638f09b5e13bed83fdcf2",
+  "retained_phase9_manifest": "../phase9/phase9-v1.json",
+  "retained_phase9_manifest_sha256": "e0936090c8b8453cd464e7e56e1fa09392265ffb1da1f81d8d692667956a3fcc",
+  "cases": [
+    {
+      "case_id": "group-construction-and-mutation",
+      "fixture": "cases/group-construction-and-mutation.jsonl",
+      "fixture_sha256": "ab1e551df93a06848cafb2a205a4c870e506e46b7b7715f7a00709be5f9f7dcf",
+      "request_sha256": "01bf21aac6d515a6253bb8392d8fcd2980662dc5ad423b6d5d18bf778ce5a7a0",
+      "leaves": ["phase10/group_create", "phase10/group_append", "phase10/group_join", "phase10/group_split", "phase10/group_flags", "phase10/group_destroy"]
+    },
+    {
+      "case_id": "topology-join-split-reactive",
+      "fixture": "cases/topology-join-split-reactive.jsonl",
+      "fixture_sha256": "06b61df3626303a3a20957086c8d7d51f4f74bfd7a92e9f2226d33649964372d",
+      "request_sha256": "0cee6c39cb169e3b7e41d1fcf430fe9d17ff7bec07da996395e251fb349f2511",
+      "leaves": ["phase10/spring", "phase10/elastic", "phase10/reactive"]
+    },
+    {
+      "case_id": "solver-material-flags",
+      "fixture": "cases/solver-material-flags.jsonl",
+      "fixture_sha256": "739d603e7cb812b063133a3cdd66403040b1967873f4c430c00be6c87f5a637d",
+      "request_sha256": "9b27988321414f94483922a66af6f83326d1e221a56cf0f6346021f4658f0c36",
+      "leaves": ["phase10/water", "phase10/zombie", "phase10/viscous", "phase10/powder", "phase10/tensile", "phase10/color_mixing", "phase10/static_pressure", "phase10/repulsive"]
+    },
+    {
+      "case_id": "pressure-constraints-and-rigid",
+      "fixture": "cases/pressure-constraints-and-rigid.jsonl",
+      "fixture_sha256": "e7766be53cfee09ec95a5cdfa2c2789ec3f5b79880cc804b5d513ac81d579522",
+      "request_sha256": "07a158821751db146d9c6ed81af0ee1695dd7a28a25c48ed0aba2304208f68e1",
+      "leaves": ["phase10/barrier", "phase10/solid_group", "phase10/rigid_group", "phase10/body_interaction"]
+    },
+    {
+      "case_id": "boundary-order-and-inherited",
+      "fixture": "cases/boundary-order-and-inherited.jsonl",
+      "fixture_sha256": "2beb5c7143e04333340e3089433e5d6574a0756d80a3fe8ee2febec5744638e7",
+      "request_sha256": "c56f00dcee95a1b13fa9dec183d763f21a35765d2f51c21e87a0da5384851cfd",
+      "leaves": [
+        "phase10/wall",
+        "inherited/multiple_systems", "inherited/newest_first", "inherited/paused_system", "inherited/stable_ids_sort", "inherited/stable_ids_compact", "inherited/optional_lanes", "inherited/fixed_buffer", "inherited/growable_buffer", "inherited/fixed_full", "inherited/teardown", "inherited/finite_lifetime", "inherited/infinite_lifetime", "inherited/equal_lifetime", "inherited/oldest_lifetime", "inherited/maximum_lifetime", "inherited/requested_destruction_callback", "inherited/unrequested_destruction_callback", "inherited/zombie_pending", "inherited/capacity_eviction", "inherited/particle_contact", "inherited/body_contact", "inherited/strict_contact_enabled", "inherited/strict_contact_disabled", "inherited/listener_flag_enabled", "inherited/listener_flag_disabled", "inherited/filter_flag_enabled", "inherited/filter_flag_disabled", "inherited/contact_order", "inherited/contact_multiplicity", "inherited/coupling_fields", "inherited/dynamic_body_reaction", "inherited/static_body_no_reaction", "inherited/force_range", "inherited/impulse_range", "inherited/statistics_counts", "inherited/collision_energy", "inherited/stuck_candidates", "inherited/system_aabb", "inherited/world_aabb", "inherited/system_culling", "inherited/query_continue", "inherited/query_terminate", "inherited/system_ray", "inherited/world_ray", "inherited/ray_culling", "inherited/ray_start_inside_exclusion", "inherited/ray_ignore", "inherited/ray_continue", "inherited/ray_clip", "inherited/ray_terminate", "inherited/retained_phase6_through_phase8", "inherited/phase10_rejection", "inherited/closed_policy_registry", "inherited/replay_identity", "inherited/minimization_identity", "inherited/first_divergence_stability", "inherited/d0_byte_identity", "inherited/debug_release_agreement"
+      ]
+    }
+  ]
+}

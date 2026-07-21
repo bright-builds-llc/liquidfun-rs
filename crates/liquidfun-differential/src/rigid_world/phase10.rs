@@ -7,7 +7,8 @@ mod native;
 pub use comparator::{
     PHASE10_POLICY_REGISTRY, PHASE10_REQUIRED_POLICY_PATHS, Phase10ComparatorError,
     Phase10ComparisonMode, Phase10ComparisonOutcome, Phase10Mismatch, Phase10Policy,
-    Phase10PolicyKind, compare_phase10_observations, validate_phase10_policy_registry,
+    Phase10PolicyCalibration, Phase10PolicyKind, compare_phase10_observations,
+    phase10_policy_calibrations, validate_phase10_policy_registry,
 };
 pub use evidence::{
     PHASE10_EVIDENCE_SCHEMA_VERSION, Phase10EvidenceBinding, Phase10EvidenceContractError,
