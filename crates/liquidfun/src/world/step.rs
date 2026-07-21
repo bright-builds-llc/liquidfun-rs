@@ -17,6 +17,7 @@ use super::config::{StepCompletion, StepConfiguration};
 use super::contact::{ContactPointSnapshot, ContactTransition, ManagedContactSnapshot};
 use super::contact_solver::{ContactSolve, ContactSolveFailure};
 use super::continuous::{ContinuousStepKey, ContinuousStepKind};
+use super::observation::{DiagnosticStepPhase, DiagnosticStepProfile, DiagnosticStepProfiler};
 
 mod continuous;
 pub use continuous::ContinuousProgress;
@@ -1304,15 +1305,48 @@ impl World {
     ///
     /// Returns an error for poisoned or nested stepping, exhausted limits,
     /// unsupported topology, or non-finite solver state.
-    #[allow(
-        clippy::too_many_lines,
-        reason = "the locked source-ordered step lifecycle is kept visible as one transaction"
-    )]
     pub fn step<H: CollisionDecisionHook>(
         &mut self,
         configuration: StepConfiguration,
         hook: &mut H,
         limits: StepLimits,
+    ) -> Result<StepReport, StepError> {
+        let mut profiler = DiagnosticStepProfiler::disabled();
+        self.step_internal(configuration, hook, limits, &mut profiler)
+    }
+
+    /// Runs one automatic step and returns separate nondeterministic phase timings.
+    ///
+    /// The returned [`DiagnosticStepProfile`] is diagnostic only. It implements
+    /// neither equality nor hashing, has no deterministic-checkpoint conversion,
+    /// and is never embedded in [`StepReport`]. Calling this method therefore
+    /// does not change ordinary step report semantics.
+    ///
+    /// # Errors
+    ///
+    /// Returns the same typed failures as [`Self::step`]. No partial profile is
+    /// returned for a failed step.
+    pub fn step_profiled<H: CollisionDecisionHook>(
+        &mut self,
+        configuration: StepConfiguration,
+        hook: &mut H,
+        limits: StepLimits,
+    ) -> Result<(StepReport, DiagnosticStepProfile), StepError> {
+        let mut profiler = DiagnosticStepProfiler::enabled();
+        let report = self.step_internal(configuration, hook, limits, &mut profiler)?;
+        Ok((report, profiler.finish()))
+    }
+
+    #[allow(
+        clippy::too_many_lines,
+        reason = "the locked source-ordered step lifecycle is kept visible as one transaction"
+    )]
+    fn step_internal<H: CollisionDecisionHook>(
+        &mut self,
+        configuration: StepConfiguration,
+        hook: &mut H,
+        limits: StepLimits,
+        profiler: &mut DiagnosticStepProfiler,
     ) -> Result<StepReport, StepError> {
         if self.step_state.is_poisoned() {
             return Err(StepError::Poisoned);
@@ -1335,6 +1369,7 @@ impl World {
             step_kind == ContinuousStepKind::Fresh && configuration.time_step() > 0.0;
         let mut hook_run = ContactHookRun::new(hook, limits);
         let mut contact_transitions = self.contact_manager.drain_transitions();
+        let contact_lifecycle_start = profiler.start();
         let locked_result = (|| -> Result<StepCompletion, StepError> {
             let _lock = step_lock;
             let contact_lifecycle_result = (|| {
@@ -1357,7 +1392,12 @@ impl World {
             })();
             contact_lifecycle_result?;
             contact_transitions.extend(self.contact_manager.drain_transitions());
+            profiler.record(
+                DiagnosticStepPhase::ContactLifecycle,
+                contact_lifecycle_start,
+            );
             if runs_particle_stages {
+                let particle_solve_start = profiler.start();
                 let particle_contact_result = catch_unwind(AssertUnwindSafe(|| {
                     self.run_particle_solver(configuration, &mut hook_run)
                 }));
@@ -1370,10 +1410,12 @@ impl World {
                 }
                 self.preflight_contact_solver()
                     .map_err(|error| solver_step_error(error, &contact_transitions))?;
+                profiler.record(DiagnosticStepPhase::ParticleSolve, particle_solve_start);
             }
 
             phases.push(StepPhase::Hook);
             if runs_particle_stages {
+                let rigid_solve_start = profiler.start();
                 phases.push(StepPhase::Solve);
                 self.solve_contact_constraints(
                     configuration,
@@ -1382,9 +1424,11 @@ impl World {
                     &contact_transitions,
                     &mut hook_run,
                 )?;
+                profiler.record(DiagnosticStepPhase::RigidSolve, rigid_solve_start);
             }
 
             let completion = if continuous_enabled {
+                let continuous_solve_start = profiler.start();
                 let hook_result = catch_unwind(AssertUnwindSafe(|| {
                     self.run_continuous_stage(
                         configuration,
@@ -1403,6 +1447,7 @@ impl World {
                 };
                 drop(continuous.contact_solves);
                 drop(self.contact_manager.drain_transitions());
+                profiler.record(DiagnosticStepPhase::ContinuousSolve, continuous_solve_start);
                 continuous.completion
             } else {
                 StepCompletion::Complete
@@ -1419,11 +1464,17 @@ impl World {
         };
         let (mut lifecycle, commands) = hook_run.finish();
         phases.push(StepPhase::Unlock);
+        let apply_commands_start = profiler.start();
         if !commands.is_empty() {
             phases.push(StepPhase::ApplyCommands);
         }
+        let commands_were_present = !commands.is_empty();
         lifecycle.extend(self.apply_commands(commands));
+        if commands_were_present {
+            profiler.record(DiagnosticStepPhase::ApplyCommands, apply_commands_start);
+        }
 
+        let finalize_start = profiler.start();
         let contact_transitions = lifecycle
             .iter()
             .filter_map(|event| match event {
@@ -1472,7 +1523,7 @@ impl World {
             .collect();
 
         let completion = self.finish_successful_step(timing, completion);
-        Ok(StepReport {
+        let report = StepReport {
             completion,
             time_step_ratio: timing.time_step_ratio(),
             phases,
@@ -1483,7 +1534,9 @@ impl World {
             lifecycle,
             destructions,
             command_applications,
-        })
+        };
+        profiler.record(DiagnosticStepPhase::Finalize, finalize_start);
+        Ok(report)
     }
 
     fn find_pairs_with_hook<H: CollisionDecisionHook>(

@@ -1,21 +1,32 @@
 //! Bounded, renderer-neutral semantic diagnostics for rigid differential evidence.
 
+#[cfg(feature = "differential-internals")]
 use std::cmp::Reverse;
+#[cfg(feature = "differential-internals")]
 use std::collections::HashMap;
+#[cfg(feature = "differential-internals")]
 use std::error::Error;
+#[cfg(feature = "differential-internals")]
 use std::fmt;
+#[cfg(feature = "differential-internals")]
 use std::fmt::Write as _;
 
+#[cfg(feature = "differential-internals")]
 use crate::math::Vec2;
+#[cfg(feature = "differential-internals")]
 use crate::{BodyId, BodySnapshot, FixtureSnapshot, JointDef, JointId, JointKind, JointSnapshot};
 
 use super::object::World;
 
+#[cfg(feature = "differential-internals")]
 const REVIEWED_MAX_RECONSTRUCTION_BODIES: usize = 4_096;
+#[cfg(feature = "differential-internals")]
 const REVIEWED_MAX_RECONSTRUCTION_FIXTURES: usize = 8_192;
+#[cfg(feature = "differential-internals")]
 const REVIEWED_MAX_RECONSTRUCTION_JOINTS: usize = 8_192;
 
 /// Reviewed finite capacities for one reconstruction snapshot.
+#[cfg(feature = "differential-internals")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct WorldReconstructionLimits {
     bodies: usize,
@@ -23,6 +34,7 @@ pub struct WorldReconstructionLimits {
     joints: usize,
 }
 
+#[cfg(feature = "differential-internals")]
 impl WorldReconstructionLimits {
     /// Returns the capacities applied to every reconstruction.
     #[must_use]
@@ -57,9 +69,11 @@ impl WorldReconstructionLimits {
 ///
 /// Indices describe only the owned record graph. They are not arena slots,
 /// handles, or reusable world identities.
+#[cfg(feature = "differential-internals")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct ReconstructionIndex(u32);
 
+#[cfg(feature = "differential-internals")]
 impl ReconstructionIndex {
     fn checked(value: usize) -> Result<Self, WorldReconstructionError> {
         let value =
@@ -77,6 +91,7 @@ impl ReconstructionIndex {
 }
 
 /// A pinned upstream limitation that prevents faithful reconstruction.
+#[cfg(feature = "differential-internals")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ReconstructionUnsupported {
     /// The selected upstream mouse joint deliberately has no reconstructable dump.
@@ -84,6 +99,7 @@ pub enum ReconstructionUnsupported {
 }
 
 /// Whether the pinned source exposes enough state to reconstruct one record.
+#[cfg(feature = "differential-internals")]
 #[derive(Debug, Clone, PartialEq)]
 pub enum ReconstructionSupport<T> {
     /// Complete typed semantic state is present.
@@ -93,12 +109,14 @@ pub enum ReconstructionSupport<T> {
 }
 
 /// One fixture nested under its owning body record.
+#[cfg(feature = "differential-internals")]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FixtureReconstruction {
     index: ReconstructionIndex,
     snapshot: FixtureSnapshot,
 }
 
+#[cfg(feature = "differential-internals")]
 impl FixtureReconstruction {
     /// Returns the fixture's output-local coordinate.
     #[must_use]
@@ -114,6 +132,7 @@ impl FixtureReconstruction {
 }
 
 /// One body and its source-ordered fixture records.
+#[cfg(feature = "differential-internals")]
 #[derive(Debug, Clone, PartialEq)]
 pub struct BodyReconstruction {
     index: ReconstructionIndex,
@@ -121,6 +140,7 @@ pub struct BodyReconstruction {
     fixtures: Vec<FixtureReconstruction>,
 }
 
+#[cfg(feature = "differential-internals")]
 impl BodyReconstruction {
     /// Returns the body's output-local coordinate.
     #[must_use]
@@ -142,6 +162,7 @@ impl BodyReconstruction {
 }
 
 /// One joint record with output-local body and gear-dependency coordinates.
+#[cfg(feature = "differential-internals")]
 #[derive(Debug, Clone, PartialEq)]
 pub struct JointReconstruction {
     index: ReconstructionIndex,
@@ -154,6 +175,7 @@ pub struct JointReconstruction {
     support: ReconstructionSupport<JointSnapshot>,
 }
 
+#[cfg(feature = "differential-internals")]
 impl JointReconstruction {
     /// Returns the joint's coordinate from the original newest-first joint pass.
     #[must_use]
@@ -207,6 +229,7 @@ impl JointReconstruction {
 /// An owned, bounded semantic reconstruction of rigid world state.
 ///
 /// This is diagnostic evidence, not a persistence format or round-trip API.
+#[cfg(feature = "differential-internals")]
 #[derive(Debug, Clone, PartialEq)]
 pub struct WorldReconstruction {
     gravity: Vec2,
@@ -214,6 +237,7 @@ pub struct WorldReconstruction {
     joints: Vec<JointReconstruction>,
 }
 
+#[cfg(feature = "differential-internals")]
 impl WorldReconstruction {
     /// Returns the captured world gravity.
     #[must_use]
@@ -303,6 +327,7 @@ impl WorldReconstruction {
 }
 
 /// A bounded failure while collecting one semantic reconstruction.
+#[cfg(feature = "differential-internals")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WorldReconstructionError {
     /// A reviewed record collection exceeded its finite capacity.
@@ -319,6 +344,7 @@ pub enum WorldReconstructionError {
     },
 }
 
+#[cfg(feature = "differential-internals")]
 impl fmt::Display for WorldReconstructionError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -338,6 +364,7 @@ impl fmt::Display for WorldReconstructionError {
     }
 }
 
+#[cfg(feature = "differential-internals")]
 impl Error for WorldReconstructionError {}
 
 /// Exact renderer-neutral world counts and dynamic-tree metrics.
@@ -419,6 +446,7 @@ impl World {
     ///
     /// Returns a typed error when reviewed record bounds are exceeded or the
     /// live semantic graph cannot be resolved without storage coordinates.
+    #[cfg(feature = "differential-internals")]
     #[doc(hidden)]
     pub fn semantic_reconstruction(&self) -> Result<WorldReconstruction, WorldReconstructionError> {
         let limits = WorldReconstructionLimits::reviewed();
@@ -488,6 +516,7 @@ impl World {
         })
     }
 
+    #[cfg(feature = "differential-internals")]
     fn reconstruct_joint(
         &self,
         joint_id: JointId,
@@ -532,8 +561,7 @@ impl World {
         })
     }
 
-    /// Copies exact Phase 8 counts and dynamic-tree metrics.
-    #[doc(hidden)]
+    /// Copies exact renderer-neutral counts and dynamic-tree metrics.
     #[must_use]
     pub fn world_diagnostics(&self) -> WorldDiagnostics {
         let manifold_point_count = self
@@ -556,6 +584,7 @@ impl World {
     }
 }
 
+#[cfg(feature = "differential-internals")]
 fn check_bound(
     resource: &'static str,
     count: usize,
@@ -567,6 +596,7 @@ fn check_bound(
     Ok(())
 }
 
+#[cfg(feature = "differential-internals")]
 fn mapped_index<Id: Copy + Eq + std::hash::Hash>(
     indices: &HashMap<Id, ReconstructionIndex>,
     id: Id,
@@ -578,7 +608,7 @@ fn mapped_index<Id: Copy + Eq + std::hash::Hash>(
         .ok_or(WorldReconstructionError::InvalidState { resource })
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "differential-internals"))]
 mod tests {
     use super::*;
 

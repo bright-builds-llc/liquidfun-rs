@@ -101,8 +101,9 @@
 //! The Phase 8 result has canonical scalar rigid-body and joint differential sign-off for the closed Phase 8 corpus.
 //! That statement is limited to the
 //! reviewed 19-family scalar Linux `x86_64` corpus and its named `phase8-v1`
-//! policies. RIGD-10, particles, D3 evidence, cross-platform parity,
-//! performance, the testbed, and release readiness remain pending.
+//! policies. Phase 11 adds bounded renderer-neutral world observations and
+//! diagnostic-only wall-clock profiles; D3 evidence, cross-platform parity,
+//! performance sign-off, the testbed, and release readiness remain pending.
 //!
 //! These APIs remain a bounded rigid-world slice. Particle solving and
 //! project-wide compatibility remain later work.
@@ -213,18 +214,22 @@ pub use particle::{
 pub use world::{
     AggregateMassError, BodyActivationError, BodyControlError, BodyDef, BodyDefError, BodyMassData,
     BodyMassDataError, BodyMassMutationError, BodyMassResetError, BodySnapshot, BodyTransformError,
-    BodyType, BodyTypeChangeError, CollisionDecisionHook, CollisionDirective, CollisionFilterEvent,
-    CommandApplication, CommandError, ContactControlError, ContactEvent, ContactPointSnapshot,
-    ContactSolve, ContactTransition, ContactTransitionKind, ContactView, ContinuousProgress,
-    CreateObjectError, DestroyedId, DestructionCause, DestructionRecord, DestructionReport,
-    FixtureBoundsError, FixtureDef, FixtureDefError, FixtureDestructionError, FixtureMutationError,
-    FixturePairView, FixtureParticleView, FixtureQueryOccurrence, FixtureSnapshot,
-    JointCreationError, JointMutationError, JointQueryError, LifecycleEvent,
-    ManagedContactSnapshot, MutationReport, NoDecisionHook, ObjectSnapshot, OriginShiftError,
-    ParticlePairContactView, PreSolveDirective, PreSolveView, QueryDirective, RayCastDirective,
-    RayCastFraction, RayCastFractionError, StepCompletion, StepConfiguration,
-    StepConfigurationError, StepError, StepHook, StepLifecycleEvent, StepLimits, StepPhase,
-    StepReport, WakePolicy, World, WorldCommand, WorldConfigurationError, WorldFixtureSnapshot,
+    BodyType, BodyTypeChangeError, BroadPhaseObservation, CollisionDecisionHook,
+    CollisionDirective, CollisionFilterEvent, CommandApplication, CommandError,
+    ContactControlError, ContactEvent, ContactObservation, ContactPointSnapshot, ContactSolve,
+    ContactTransition, ContactTransitionKind, ContactView, ContinuousProgress, CreateObjectError,
+    DestroyedId, DestructionCause, DestructionRecord, DestructionReport, DiagnosticStepPhase,
+    DiagnosticStepPhaseTiming, DiagnosticStepProfile, FixtureBoundsError, FixtureDef,
+    FixtureDefError, FixtureDestructionError, FixtureMutationError, FixturePairView,
+    FixtureParticleView, FixtureQueryOccurrence, FixtureSnapshot, JointCreationError,
+    JointMutationError, JointQueryError, LifecycleEvent, ManagedContactSnapshot, MutationReport,
+    NoDecisionHook, ObjectSnapshot, OriginShiftError, ParticleBodyContactObservation,
+    ParticleContactObservation, ParticlePairContactView, PreSolveDirective, PreSolveView,
+    QueryDirective, RayCastDirective, RayCastFraction, RayCastFractionError, StepCompletion,
+    StepConfiguration, StepConfigurationError, StepError, StepHook, StepLifecycleEvent, StepLimits,
+    StepPhase, StepReport, WakePolicy, World, WorldCommand, WorldConfigurationError,
+    WorldDiagnostics, WorldFixtureSnapshot, WorldObservation, WorldObservationError,
+    WorldObservationLimitError, WorldObservationLimits, WorldObservationResource,
     WorldQueryOccurrence, WorldRayCastError, WorldRayCastOccurrence,
     WorldRayCastWithParticlesError, WorldRayHit,
 };

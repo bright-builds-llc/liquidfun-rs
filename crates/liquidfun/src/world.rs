@@ -6,12 +6,12 @@ mod contact;
 mod contact_manager;
 mod contact_solver;
 mod continuous;
-#[cfg(feature = "differential-internals")]
 mod diagnostics;
 mod fixture;
 mod island;
 mod joint;
 pub(crate) mod object;
+mod observation;
 mod origin;
 mod particle_coupling;
 mod particle_lifecycle;
@@ -32,10 +32,11 @@ pub use contact::{
     ContactPointSnapshot, ContactTransition, ContactTransitionKind, ManagedContactSnapshot,
 };
 pub use contact_solver::ContactSolve;
+pub use diagnostics::WorldDiagnostics;
 #[cfg(feature = "differential-internals")]
 pub use diagnostics::{
     BodyReconstruction, FixtureReconstruction, JointReconstruction, ReconstructionIndex,
-    ReconstructionSupport, ReconstructionUnsupported, WorldDiagnostics, WorldReconstruction,
+    ReconstructionSupport, ReconstructionUnsupported, WorldReconstruction,
     WorldReconstructionError, WorldReconstructionLimits,
 };
 pub use fixture::{
@@ -46,6 +47,12 @@ pub use joint::{JointCreationError, JointMutationError, JointQueryError};
 pub use object::{
     CreateObjectError, DestroyedId, DestructionCause, DestructionRecord, DestructionReport,
     MutationReport, ObjectSnapshot, World,
+};
+pub use observation::{
+    BroadPhaseObservation, ContactObservation, DiagnosticStepPhase, DiagnosticStepPhaseTiming,
+    DiagnosticStepProfile, ParticleBodyContactObservation, ParticleContactObservation,
+    WorldObservation, WorldObservationError, WorldObservationLimitError, WorldObservationLimits,
+    WorldObservationResource,
 };
 pub use origin::OriginShiftError;
 pub use query::{
