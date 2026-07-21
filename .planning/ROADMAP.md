@@ -205,7 +205,7 @@ Plans:
 - [x] 10-21-PLAN.md — Implement rigid, barrier, collision, wall, and integration passes.
 - [x] 10-22-PLAN.md — Replace the Phase 9 prefix with the full transactional solver.
 - [x] 10-23-PLAN.md — Close native pass, flag, property, and inherited baseline coverage.
-- [ ] 10-24-PLAN.md — Extend the strict rigid-world protocol for Phase 10.
+- [x] 10-24-PLAN.md — Extend the strict rigid-world protocol for Phase 10.
 - [ ] 10-25-PLAN.md — Execute Phase 10 scenarios through the native public API.
 - [ ] 10-26-PLAN.md — Extend the pinned C++ oracle for Phase 10.
 - [ ] 10-27-PLAN.md — Define exhaustive exact and numeric comparison policy.
@@ -262,7 +262,7 @@ Plans:
 | 7. Rigid Solver, World Operations, and CCD | 13/13 | Complete    | 2026-07-13 |
 | 8. Joints, Rope, Callbacks, and Rigid Sign-Off | 24/24 | Complete    | 2026-07-15 |
 | 9. Particle Storage, Lifecycle, and Coupling | 31/31 | Complete | 2026-07-18 |
-| 10. Particle Groups, Solvers, and Compatibility Sign-Off | 23/32 | In Progress|  |
+| 10. Particle Groups, Solvers, and Compatibility Sign-Off | 24/32 | In Progress|  |
 | 11. Examples, Headless Tooling, and Testbed | 0/TBD | Not started | - |
 | 12. Performance, Portability, and Release Hardening | 0/TBD | Not started | - |
 

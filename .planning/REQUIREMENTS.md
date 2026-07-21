@@ -98,7 +98,7 @@ Requirements for the first release permitted to claim complete parity with the s
 - [x] **PART-15**: Fixture-contact and particle-contact listener/filter particle flags gate callbacks and collision decisions with upstream-equivalent timing and ordering.
 - [x] **PART-16**: Consumers can apply per-particle and range forces/impulses and inspect collision energy, stuck-particle candidates, contact counts, and system statistics.
 - [x] **PART-17**: Consumers can query particles by AABB and ray-cast particle systems with upstream-equivalent clipping, early termination, filtering, and culling.
-- [ ] **PART-18**: Each particle flag, unflagged solver pass, group behavior, lifecycle path, buffer path, contact path, query, and callback is individually represented in the compatibility matrix and differentially signed off.
+- [x] **PART-18**: Each particle flag, unflagged solver pass, group behavior, lifecycle path, buffer path, contact path, query, and callback is individually represented in the compatibility matrix and differentially signed off.
 
 ### Verification and Regression Protection
 
@@ -265,7 +265,7 @@ Roadmap creation maps every v1 requirement to exactly one phase.
 | PART-15 | Phase 9 | Complete |
 | PART-16 | Phase 9 | Complete |
 | PART-17 | Phase 9 | Complete |
-| PART-18 | Phase 10 | Pending |
+| PART-18 | Phase 10 | Complete |
 | TEST-01 | Phase 10 | Complete |
 | TEST-02 | Phase 10 | Complete |
 | TEST-03 | Phase 11 | Pending |
