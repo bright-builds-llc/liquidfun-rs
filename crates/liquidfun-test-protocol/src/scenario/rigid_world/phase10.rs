@@ -376,6 +376,12 @@ impl Phase10ActionState {
         self.live_group_owners.is_empty()
     }
 
+    pub(crate) fn has_live_group_in_system(&self, system_id: &ScenarioId) -> bool {
+        self.live_group_owners
+            .values()
+            .any(|owner| owner == system_id)
+    }
+
     fn create_group(
         &mut self,
         definition: &Phase10GroupDefinition,

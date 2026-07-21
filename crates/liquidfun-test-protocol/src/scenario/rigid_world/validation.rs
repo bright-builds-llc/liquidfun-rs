@@ -556,6 +556,11 @@ fn validate_action(
 ) -> Result<(), RigidWorldDecodeError> {
     match action {
         RigidWorldAction::Particle { action } => {
+            if let Phase9ParticleAction::DestroySystem { system_id } = action
+                && phase10_state.has_live_group_in_system(system_id)
+            {
+                return Err(validation(RigidWorldErrorKind::InvalidParticleGroupAction));
+            }
             validate_phase9_action(action, particle_system_ids, particle_owners, phase9_state)?;
         }
         RigidWorldAction::ParticleGroup { operation } => {

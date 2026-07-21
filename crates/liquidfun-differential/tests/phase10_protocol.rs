@@ -1,5 +1,8 @@
 //! Strict shared Phase 10 particle-group protocol contracts.
 
+#[path = "phase10_protocol/lifecycle_validation.rs"]
+mod lifecycle_validation;
+
 use liquidfun_differential::NativeRigidWorldExecutor;
 use liquidfun_test_protocol::{
     CodecErrorKind, FloatBits, HarnessLimits, Phase10BehaviorLeaf, Phase10GroupDefinition,
