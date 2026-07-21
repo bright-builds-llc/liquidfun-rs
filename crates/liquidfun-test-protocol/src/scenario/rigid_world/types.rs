@@ -3,7 +3,10 @@ use std::collections::{HashMap, HashSet};
 use serde::{Deserialize, Serialize};
 
 use super::witness_registry::{RigidWorldWitness, RigidWorldWitnessFamily};
-use super::{Phase9ParticleAction, Phase9ParticleDeclaration, Phase9ParticleSystemDeclaration};
+use super::{
+    Phase9ParticleAction, Phase9ParticleDeclaration, Phase9ParticleSystemDeclaration,
+    Phase10Operation,
+};
 use crate::{
     CodecError, FloatBits, ProtocolVersion, RequestId, ScenarioId, ScenarioSchemaVersion,
     ScenarioSource, Sha256Hex, ToleranceProfileVersion, TraceSchemaVersion, TransformBits,
@@ -53,6 +56,9 @@ pub enum RigidWorldErrorKind {
     InvalidContactDirective,
     InvalidParticleDefinition,
     InvalidParticleAction,
+    InvalidParticleGroupDefinition,
+    InvalidParticleGroupAction,
+    InvalidParticleGroupResult,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -689,6 +695,9 @@ pub enum RigidWorldAction {
     Particle {
         action: Phase9ParticleAction,
     },
+    ParticleGroup {
+        operation: Phase10Operation,
+    },
     DestroyFixture {
         fixture_id: ScenarioId,
     },
@@ -749,6 +758,7 @@ pub(super) enum RigidWorldActionKind {
     RequestReconstruction,
     RequestDiagnostics,
     Particle,
+    ParticleGroup,
     DestroyFixture,
     DestroyBody,
 }
@@ -810,6 +820,7 @@ impl RigidWorldAction {
             Self::RequestReconstruction => RigidWorldActionKind::RequestReconstruction,
             Self::RequestDiagnostics => RigidWorldActionKind::RequestDiagnostics,
             Self::Particle { .. } => RigidWorldActionKind::Particle,
+            Self::ParticleGroup { .. } => RigidWorldActionKind::ParticleGroup,
             Self::DestroyFixture { .. } => RigidWorldActionKind::DestroyFixture,
             Self::DestroyBody { .. } => RigidWorldActionKind::DestroyBody,
         }

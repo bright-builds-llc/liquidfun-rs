@@ -13,18 +13,19 @@ use phase8::validate_phase8_behavior;
 use super::{
     PHASE9_MAXIMUM_IDENTITIES, PHASE9_MAXIMUM_PARTICLE_SYSTEMS, PHASE9_MAXIMUM_PARTICLES,
     Phase9ParticleAction, Phase9ParticleDeclaration, Phase9ParticleSystemDeclaration,
-    RIGID_WORLD_MAXIMUM_ACTIONS, RIGID_WORLD_MAXIMUM_CONTINUOUS_WORK,
-    RIGID_WORLD_MAXIMUM_DIRECTIVES, RIGID_WORLD_MAXIMUM_ITERATIONS, RIGID_WORLD_MAXIMUM_JOINTS,
-    RIGID_WORLD_MAXIMUM_ROPE_VERTICES, RIGID_WORLD_MAXIMUM_ROPES, RIGID_WORLD_POSITION_ITERATIONS,
-    RIGID_WORLD_TIMESTEP_BITS, RIGID_WORLD_VELOCITY_ITERATIONS, RigidAabbBits,
-    RigidBodyDeclaration, RigidBodyKind, RigidContactDirectiveTarget, RigidContactIdentity,
-    RigidExpectedCheckpoint, RigidExpectedCounts, RigidExpectedTransition, RigidFilterBits,
-    RigidFixtureChildSelector, RigidFixtureDeclaration, RigidFixtureShape, RigidJointDeclaration,
-    RigidJointDefinition, RigidJointKind, RigidJointMutation, RigidPreSolveDirective,
-    RigidQueryDirectiveRule, RigidRayDirective, RigidRayDirectiveRule, RigidRopeDeclaration,
-    RigidWorldAction, RigidWorldActionRecord, RigidWorldDecodeError, RigidWorldErrorKind,
-    RigidWorldRequestKind, RigidWorldRequestRecord, RigidWorldScenario, RigidWorldTimeline,
-    RigidWorldWitness, RigidWorldWitnessFamily, validation,
+    Phase10ActionState, Phase10Operation, RIGID_WORLD_MAXIMUM_ACTIONS,
+    RIGID_WORLD_MAXIMUM_CONTINUOUS_WORK, RIGID_WORLD_MAXIMUM_DIRECTIVES,
+    RIGID_WORLD_MAXIMUM_ITERATIONS, RIGID_WORLD_MAXIMUM_JOINTS, RIGID_WORLD_MAXIMUM_ROPE_VERTICES,
+    RIGID_WORLD_MAXIMUM_ROPES, RIGID_WORLD_POSITION_ITERATIONS, RIGID_WORLD_TIMESTEP_BITS,
+    RIGID_WORLD_VELOCITY_ITERATIONS, RigidAabbBits, RigidBodyDeclaration, RigidBodyKind,
+    RigidContactDirectiveTarget, RigidContactIdentity, RigidExpectedCheckpoint,
+    RigidExpectedCounts, RigidExpectedTransition, RigidFilterBits, RigidFixtureChildSelector,
+    RigidFixtureDeclaration, RigidFixtureShape, RigidJointDeclaration, RigidJointDefinition,
+    RigidJointKind, RigidJointMutation, RigidPreSolveDirective, RigidQueryDirectiveRule,
+    RigidRayDirective, RigidRayDirectiveRule, RigidRopeDeclaration, RigidWorldAction,
+    RigidWorldActionRecord, RigidWorldDecodeError, RigidWorldErrorKind, RigidWorldRequestKind,
+    RigidWorldRequestRecord, RigidWorldScenario, RigidWorldTimeline, RigidWorldWitness,
+    RigidWorldWitnessFamily, validation,
 };
 use crate::{
     FloatBits, HarnessLimits, ProtocolVersion, RecordLimit, RequestId, ScenarioId,
@@ -449,6 +450,12 @@ fn validate_actions(
     let mut created_joints = HashSet::new();
     let mut created_ropes = HashSet::new();
     let mut phase9_state = Phase9ActionState::default();
+    let mut phase10_state = Phase10ActionState::default();
+    let declared_particle_ids = references
+        .particle_owners
+        .keys()
+        .cloned()
+        .collect::<HashSet<_>>();
     let mut actions = Vec::with_capacity(raw_actions.len());
 
     for raw in raw_actions {
@@ -480,6 +487,8 @@ fn validate_actions(
             references.particle_system_ids,
             references.particle_owners,
             &mut phase9_state,
+            &declared_particle_ids,
+            &mut phase10_state,
         )?;
         action_kinds.insert(raw.action.action_kind());
         actions.push(RigidWorldActionRecord {
@@ -500,6 +509,7 @@ fn validate_actions(
         || !phase9_state.live_systems.is_empty()
         || !phase9_state.live_particles.is_empty()
         || !phase9_state.pending_particles.is_empty()
+        || !phase10_state.is_closed()
         || family
             .required_action_kinds()
             .iter()
@@ -536,10 +546,21 @@ fn validate_action(
     particle_system_ids: &HashSet<ScenarioId>,
     particle_owners: &HashMap<ScenarioId, ScenarioId>,
     phase9_state: &mut Phase9ActionState,
+    declared_particle_ids: &HashSet<ScenarioId>,
+    phase10_state: &mut Phase10ActionState,
 ) -> Result<(), RigidWorldDecodeError> {
     match action {
         RigidWorldAction::Particle { action } => {
             validate_phase9_action(action, particle_system_ids, particle_owners, phase9_state)?;
+        }
+        RigidWorldAction::ParticleGroup { operation } => {
+            validate_phase10_action(
+                operation,
+                particle_system_ids,
+                &phase9_state.live_systems,
+                declared_particle_ids,
+                phase10_state,
+            )?;
         }
         RigidWorldAction::CreateBody { body_id } => {
             if !body_ids.contains(body_id)
@@ -821,6 +842,23 @@ fn validate_action(
         }
     }
     Ok(())
+}
+
+fn validate_phase10_action(
+    operation: &Phase10Operation,
+    particle_system_ids: &HashSet<ScenarioId>,
+    live_system_ids: &HashSet<ScenarioId>,
+    particle_ids: &HashSet<ScenarioId>,
+    state: &mut Phase10ActionState,
+) -> Result<(), RigidWorldDecodeError> {
+    state
+        .apply(
+            operation,
+            particle_system_ids,
+            live_system_ids,
+            particle_ids,
+        )
+        .map_err(|_| validation(RigidWorldErrorKind::InvalidParticleGroupAction))
 }
 
 fn validate_phase9_declarations(

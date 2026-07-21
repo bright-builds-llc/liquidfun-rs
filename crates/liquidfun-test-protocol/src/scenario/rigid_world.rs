@@ -3,6 +3,7 @@
     reason = "closed private-harness wire variants are self-describing"
 )]
 
+mod phase10;
 mod phase9;
 mod result;
 mod types;
@@ -31,6 +32,7 @@ pub const RIGID_WORLD_MAXIMUM_ROPES: usize = 16;
 pub const RIGID_WORLD_MAXIMUM_ROPE_VERTICES: usize = 64;
 
 pub use phase9::*;
+pub use phase10::*;
 pub use result::*;
 pub use types::*;
 pub use validation::decode_rigid_world_request_jsonl;

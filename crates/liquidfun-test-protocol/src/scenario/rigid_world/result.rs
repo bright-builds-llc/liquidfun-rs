@@ -2,11 +2,13 @@ use std::collections::{HashMap, HashSet};
 
 use serde::{Deserialize, Serialize};
 
+mod phase10;
 mod phase8;
 mod phase9;
 
 use phase8::{ExpectedObservation, expected_observation, validate_phase8_observation_contract};
 use phase9::Phase9ResultState;
+pub use phase10::*;
 
 use super::{
     PHASE9_MAXIMUM_IDENTITIES, Phase9ParticleObservation, RigidBodyKind, RigidContactIdentity,
@@ -158,6 +160,9 @@ pub enum RigidWorldObservation {
     },
     Particle {
         observation: Phase9ParticleObservation,
+    },
+    ParticleGroup {
+        observation: Phase10Observation,
     },
 }
 
@@ -803,6 +808,9 @@ fn validate_result_bounds(result: &RigidWorldResultRecord) -> Result<(), RigidWo
                     }
                     RigidWorldObservation::Particle { observation } => {
                         phase9_observation_exceeds_bounds(observation)
+                    }
+                    RigidWorldObservation::ParticleGroup { observation } => {
+                        observation.validate().is_err()
                     }
                     _ => false,
                 })
