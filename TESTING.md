@@ -698,6 +698,70 @@ run, partial pair, stale run, mixed SHA, failed log, or unverified archive may
 change compatibility authority. D3 remains a separate reviewed promotion of a
 validated D1 pair; workflow success alone does not publish or relabel evidence.
 
+### Validated Phase 10 evidence set (2026-07-21)
+
+Exact commit
+[`b20328aec9697353e322e022cd289e65d5a31340`](https://github.com/bright-builds-llc/liquidfun-rs/commit/b20328aec9697353e322e022cd289e65d5a31340)
+has exactly one `Oracle CI` `workflow_dispatch`: successful
+[`run 29832646127`](https://github.com/bright-builds-llc/liquidfun-rs/actions/runs/29832646127).
+The Phase 10 authority pair is successful
+[`canonical job 88641473476`](https://github.com/bright-builds-llc/liquidfun-rs/actions/runs/29832646127/job/88641473476)
+and successful
+[`sanitizer job 88641473497`](https://github.com/bright-builds-llc/liquidfun-rs/actions/runs/29832646127/job/88641473497).
+The same run's
+[`macOS job 88641473484`](https://github.com/bright-builds-llc/liquidfun-rs/actions/runs/29832646127/job/88641473484)
+and
+[`Windows job 88641473543`](https://github.com/bright-builds-llc/liquidfun-rs/actions/runs/29832646127/job/88641473543)
+also succeeded, but they are not members of the D1 artifact pair.
+
+Download and inspect the two artifacts independently before extraction:
+
+- [`phase10-canonical-29832646127-b20328aec9697353e322e022cd289e65d5a31340`](https://api.github.com/repos/bright-builds-llc/liquidfun-rs/actions/artifacts/8496062831/zip)
+  is artifact `8496062831`, 353,179 bytes, with archive/API digest
+  `sha256:7b04bdc6715eef0803b5e4ed84ecc8d755559622134715e2ababab491b7cc493`.
+- [`phase10-sanitizer-29832646127-b20328aec9697353e322e022cd289e65d5a31340`](https://api.github.com/repos/bright-builds-llc/liquidfun-rs/actions/artifacts/8496084932/zip)
+  is artifact `8496084932`, 353,175 bytes, with archive/API digest
+  `sha256:a416aa078d02e743f4a0882947718f5352df9092a3e206a0b2959a6999a966d9`.
+
+Each archive contains the same closed 56-file topology: five cases, ten proof
+roles per case, four passing logs, one trace, one manifest, and the
+identity-last record. Safe-path, regular-mode, duplicate, case-fold collision,
+size, ZIP integrity, API digest, and local archive digest checks must pass
+before extracting each archive into its own fresh directory. Exact-ref
+validation then proves all 80 semantic leaves and the shared semantic manifest
+digest
+`9f9fd558a6897a43c3fc9faecdce4879efebc7c7d706dc6a1d6577655fa9887b`.
+
+Re-query the run, its jobs, its artifact list, and both individual artifact
+APIs when reconstructing `run.json`; never copy files across artifacts. Supply
+the historical Phase 9 denyset and the failed Phase 10 attempt to the validator:
+
+```bash
+cargo xtask phase10-evidence validate --mode exact-ref \
+  --run-json target/phase10-evidence/run.json \
+  --canonical-dir target/phase10-evidence/phase10-canonical \
+  --sanitizer-dir target/phase10-evidence/phase10-sanitizer \
+  --deny-run-id 29439515367 \
+  --deny-run-id 29583793056 \
+  --deny-run-id 29625083184 \
+  --deny-run-id 29652578231 \
+  --deny-run-id 29831597090 \
+  --deny-artifact-id 8423580554 \
+  --deny-artifact-id 8431920189 \
+  --deny-artifact-id 8431922578 \
+  --deny-artifact-id 8495653581 \
+  --deny-artifact-id 8495705068
+cargo xtask provenance check
+```
+
+Failed
+[`run 29831597090`](https://github.com/bright-builds-llc/liquidfun-rs/actions/runs/29831597090)
+and its Phase 10 artifacts
+[`8495653581`](https://api.github.com/repos/bright-builds-llc/liquidfun-rs/actions/artifacts/8495653581/zip)
+and
+[`8495705068`](https://api.github.com/repos/bright-builds-llc/liquidfun-rs/actions/artifacts/8495705068/zip)
+remain forensic evidence only and can never authorize Phase 10 promotion.
+
 ### Phase 9 recovery single-dispatch protocol
 
 The Phase-09-only recovery exception authorizes one autonomous
