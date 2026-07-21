@@ -15,14 +15,14 @@ origin shifting through one closed nine-family rigid-world request. Local
 oracle results are D2 supported-toolchain evidence and exact two-run
 determinism is D0. Phase 8 extends that request to 19 families covering joints,
 standalone rope, callback/destruction timing, and reconstruction. Exact
-canonical D1 evidence supports that accumulated scalar rigid corpus. The scoped
-Phase 9 particle storage/lifecycle and contacts/coupling foundations have
-current local differential evidence but await one fresh schema-v4 exact-ref
-authority run before platform promotion.
-Particle groups, topology, pairs, triads, remaining solver behaviors,
-cross-engine stable-ID rotation, D3 review, other platforms, performance, and
-the deferred fuzz, Miri, Rust-sanitizer, benchmark, and coverage lanes remain
-pending.
+canonical D1 evidence supports that accumulated scalar rigid corpus. Phase 9
+proves particle storage/lifecycle and contacts/coupling, and the validated
+Phase 10 authority now supports the closed particle-group, topology, solver,
+and inherited particle leaf set on the pinned Linux x86_64 toolchain.
+Renderer-neutral examples and testbed work remain Phase 11. Performance,
+broader portability, fuzzing breadth, Miri and Rust-sanitizer expansion,
+benchmarking, coverage policy, packaging, and release readiness remain Phase
+12 and are not implied by the Phase 10 result.
 [COMPATIBILITY.md](COMPATIBILITY.md) remains authoritative for feature and
 evidence maturity.
 
@@ -762,6 +762,111 @@ and
 [`8495705068`](https://api.github.com/repos/bright-builds-llc/liquidfun-rs/actions/artifacts/8495705068/zip)
 remain forensic evidence only and can never authorize Phase 10 promotion.
 
+### Phase 10 closed leaf outcomes
+
+The exact-ref validator admitted one complete 80-leaf manifest. All five
+comparison payloads report `match`, so every closed leaf has the explicit
+`supported` outcome below: 80 supported, zero documented differences, and
+zero intentionally unsupported leaves. The outcome is scoped to the pinned
+Linux x86_64 Rust 1.97.0/Clang 22.1.8 authority. It does not claim Phase 11
+examples/testbed work or Phase 12 performance, broad-platform, packaging, or
+release readiness.
+
+The independently reproduced closed-set digests are
+`3c62c4b9b0aa6940eaad6b8fe073f56861ff90775cfb44c41ffbb553319b7a41`
+for the ordered leaf set,
+`a336f95b245a6aa0bfd9a50fffd64f3b234fd91cf50339b5c637308f2599044c`
+for the closed policy set,
+`fa40b0f32313fc92831f6ae023ebfa857d7743001363d7c25add7e5579156df5`
+for the complete leaf-to-implementation/test/witness/policy/proof bindings,
+and
+`168713a532c04cc06bfbc7f18be8c75db7b2028da260f3444362964afd32a125`
+for the five comparison payload digests. The shared semantic manifest remains
+`9f9fd558a6897a43c3fc9faecdce4879efebc7c7d706dc6a1d6577655fa9887b`.
+
+| Closed leaf                                  | Outcome   |
+| -------------------------------------------- | --------- |
+| `phase10:group_create`                       | supported |
+| `phase10:group_append`                       | supported |
+| `phase10:group_join`                         | supported |
+| `phase10:group_split`                        | supported |
+| `phase10:group_flags`                        | supported |
+| `phase10:group_destroy`                      | supported |
+| `phase10:spring`                             | supported |
+| `phase10:elastic`                            | supported |
+| `phase10:reactive`                           | supported |
+| `phase10:water`                              | supported |
+| `phase10:zombie`                             | supported |
+| `phase10:viscous`                            | supported |
+| `phase10:powder`                             | supported |
+| `phase10:tensile`                            | supported |
+| `phase10:color_mixing`                       | supported |
+| `phase10:static_pressure`                    | supported |
+| `phase10:repulsive`                          | supported |
+| `phase10:barrier`                            | supported |
+| `phase10:solid_group`                        | supported |
+| `phase10:rigid_group`                        | supported |
+| `phase10:body_interaction`                   | supported |
+| `phase10:wall`                               | supported |
+| `inherited:multiple_systems`                 | supported |
+| `inherited:newest_first`                     | supported |
+| `inherited:paused_system`                    | supported |
+| `inherited:stable_ids_sort`                  | supported |
+| `inherited:stable_ids_compact`               | supported |
+| `inherited:optional_lanes`                   | supported |
+| `inherited:fixed_buffer`                     | supported |
+| `inherited:growable_buffer`                  | supported |
+| `inherited:fixed_full`                       | supported |
+| `inherited:teardown`                         | supported |
+| `inherited:finite_lifetime`                  | supported |
+| `inherited:infinite_lifetime`                | supported |
+| `inherited:equal_lifetime`                   | supported |
+| `inherited:oldest_lifetime`                  | supported |
+| `inherited:maximum_lifetime`                 | supported |
+| `inherited:requested_destruction_callback`   | supported |
+| `inherited:unrequested_destruction_callback` | supported |
+| `inherited:zombie_pending`                   | supported |
+| `inherited:capacity_eviction`                | supported |
+| `inherited:particle_contact`                 | supported |
+| `inherited:body_contact`                     | supported |
+| `inherited:strict_contact_enabled`           | supported |
+| `inherited:strict_contact_disabled`          | supported |
+| `inherited:listener_flag_enabled`            | supported |
+| `inherited:listener_flag_disabled`           | supported |
+| `inherited:filter_flag_enabled`              | supported |
+| `inherited:filter_flag_disabled`             | supported |
+| `inherited:contact_order`                    | supported |
+| `inherited:contact_multiplicity`             | supported |
+| `inherited:coupling_fields`                  | supported |
+| `inherited:dynamic_body_reaction`            | supported |
+| `inherited:static_body_no_reaction`          | supported |
+| `inherited:force_range`                      | supported |
+| `inherited:impulse_range`                    | supported |
+| `inherited:statistics_counts`                | supported |
+| `inherited:collision_energy`                 | supported |
+| `inherited:stuck_candidates`                 | supported |
+| `inherited:system_aabb`                      | supported |
+| `inherited:world_aabb`                       | supported |
+| `inherited:system_culling`                   | supported |
+| `inherited:query_continue`                   | supported |
+| `inherited:query_terminate`                  | supported |
+| `inherited:system_ray`                       | supported |
+| `inherited:world_ray`                        | supported |
+| `inherited:ray_culling`                      | supported |
+| `inherited:ray_start_inside_exclusion`       | supported |
+| `inherited:ray_ignore`                       | supported |
+| `inherited:ray_continue`                     | supported |
+| `inherited:ray_clip`                         | supported |
+| `inherited:ray_terminate`                    | supported |
+| `inherited:retained_phase6_through_phase8`   | supported |
+| `inherited:phase10_rejection`                | supported |
+| `inherited:closed_policy_registry`           | supported |
+| `inherited:replay_identity`                  | supported |
+| `inherited:minimization_identity`            | supported |
+| `inherited:first_divergence_stability`       | supported |
+| `inherited:d0_byte_identity`                 | supported |
+| `inherited:debug_release_agreement`          | supported |
+
 ### Phase 9 recovery single-dispatch protocol
 
 The Phase-09-only recovery exception authorizes one autonomous
@@ -944,9 +1049,11 @@ The compatibility validator rejects this superseded authority for the scoped
 contacts/coupling rows. Their platform status remains `Not evidenced` until a
 fresh exact-ref run proves the typed cross-run schema and is reviewed for
 promotion.
-Particle assembly, particle groups, the full particle source area,
-group/pair/triad behavior, particle solver behavior, and cross-engine stable-ID
-rotation remain `Not evidenced` as Phase 10 work.
+That superseded Phase 9 authority did not evidence particle assembly, particle
+groups, the full particle source area, group/pair/triad behavior, particle
+solver behavior, or cross-engine stable-ID rotation. Their current status is
+instead governed by the later validated Phase 10 authority and
+[COMPATIBILITY.md](COMPATIBILITY.md).
 
 ### Rejected Phase 9 evidence run (2026-07-15)
 
