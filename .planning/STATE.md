@@ -3,14 +3,14 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 10-28-PLAN.md
-last_updated: "2026-07-21T11:13:25.314Z"
+stopped_at: Completed 10-29-PLAN.md
+last_updated: "2026-07-21T11:58:55.950Z"
 last_activity: "2026-07-21"
 progress:
   total_phases: 12
   completed_phases: 9
   total_plans: 161
-  completed_plans: 157
+  completed_plans: 158
   percent: 98
 ---
 
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 ## Current Position
 
 Phase: 10 (Particle Groups, Solvers, and Compatibility Sign-Off) — EXECUTING
-Plan: 29 of 32
+Plan: 30 of 32
 Status: Ready to execute
 Last activity: 2026-07-21
 
@@ -169,6 +169,7 @@ Progress: [██████████] 98%
 | Phase 10 P26 | 1h 38m | 1 tasks | 11 files |
 | Phase 10 P27 | 2h 59m | 1 tasks | 17 files |
 | Phase 10 P28 | 2h 56m | 2 tasks | 14 files |
+| Phase 10 P29 | 45m | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -444,6 +445,8 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 10]: Seal exactly five bounded Phase 10 cases with independent fixture, request, policy, leaf, retained-manifest, and manifest-payload digests. — Closed content identities prevent metadata repair or relabeling from impersonating executable parity evidence.
 - [Phase 10]: Keep cross-engine group depth absent on the common public adapter surface. — The pinned C++ public API exposes no depth buffer; native-only depth remains tested and required optional-lane disappearance still fails closed.
 - [Phase 10]: Project C++ caches and lifecycle records through stable semantic identities before strict comparison. — Pointer-independent live-member aggregates, snapshot-local witnesses, declared live bodies, and empty-shell destruction remove adapter artifacts without widening comparator policy.
+- [Phase 10]: Use one exact five-case typed semantic evaluator for local and exact-ref evidence. — D1 adds immutable authority checks but cannot reinterpret or weaken content accepted by the D2 validator.
+- [Phase 10]: Admit D1 only from one successful same-run canonical and sanitizer pair on the locked Linux toolchain. — Live API metadata, extracted identities, full SHA, archive topology, and every recomputed digest must agree before promotion.
 
 ### Pending Todos
 
@@ -457,6 +460,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-21T11:13:25.304Z
-Stopped at: Completed 10-28-PLAN.md
+Last session: 2026-07-21T11:58:55.946Z
+Stopped at: Completed 10-29-PLAN.md
 Resume file: None
