@@ -319,11 +319,6 @@ impl Phase10StateObservation {
             .iter()
             .map(|particle| (particle.particle_id.clone(), particle))
             .collect::<HashMap<_, _>>();
-        let groups = self
-            .groups
-            .iter()
-            .map(|group| (group.group_id.clone(), group))
-            .collect::<HashMap<_, _>>();
         let expected_particle_order = self
             .groups
             .iter()
@@ -337,14 +332,7 @@ impl Phase10StateObservation {
         {
             return Err(Phase10ValidationKind::InvalidOrdering);
         }
-        for particle in &self.particles {
-            let Some(group) = groups.get(&particle.group_id) else {
-                return Err(Phase10ValidationKind::InvalidOwnership);
-            };
-            if particle.system_id != group.system_id {
-                return Err(Phase10ValidationKind::InvalidOwnership);
-            }
-        }
+        let mut member_owners = HashMap::with_capacity(self.particles.len());
         for group in &self.groups {
             if unique_ids(&group.member_ids).is_none()
                 || group
@@ -359,12 +347,31 @@ impl Phase10StateObservation {
             {
                 return Err(Phase10ValidationKind::InvalidTopology);
             }
+            for member_id in &group.member_ids {
+                if member_owners
+                    .insert(
+                        member_id.clone(),
+                        (group.group_id.clone(), group.system_id.clone()),
+                    )
+                    .is_some()
+                {
+                    return Err(Phase10ValidationKind::InvalidTopology);
+                }
+            }
+        }
+        for particle in &self.particles {
+            let Some((group_id, system_id)) = member_owners.get(&particle.particle_id) else {
+                return Err(Phase10ValidationKind::InvalidOwnership);
+            };
+            if &particle.group_id != group_id || &particle.system_id != system_id {
+                return Err(Phase10ValidationKind::InvalidOwnership);
+            }
         }
         for pair in &self.pairs {
-            validate_distinct_known(&particles, [&pair.particle_a_id, &pair.particle_b_id])?;
+            validate_topology_members(&particles, [&pair.particle_a_id, &pair.particle_b_id])?;
         }
         for triad in &self.triads {
-            validate_distinct_known(
+            validate_topology_members(
                 &particles,
                 [
                     &triad.particle_a_id,
@@ -374,7 +381,10 @@ impl Phase10StateObservation {
             )?;
         }
         for contact in &self.particle_contacts {
-            validate_distinct_known(&particles, [&contact.particle_a_id, &contact.particle_b_id])?;
+            validate_topology_members(
+                &particles,
+                [&contact.particle_a_id, &contact.particle_b_id],
+            )?;
             if particles[&contact.particle_a_id].system_id != contact.system_id
                 || particles[&contact.particle_b_id].system_id != contact.system_id
             {
@@ -501,16 +511,23 @@ fn validate_public_particle_flags(flags: u32) -> Result<(), Phase10ValidationKin
     Ok(())
 }
 
-fn validate_distinct_known<const N: usize>(
+fn validate_topology_members<const N: usize>(
     particles: &HashMap<ScenarioId, &Phase10ParticleSnapshot>,
     ids: [&ScenarioId; N],
 ) -> Result<(), Phase10ValidationKind> {
-    if ids.iter().any(|id| !particles.contains_key(*id)) {
-        return Err(Phase10ValidationKind::InvalidTopology);
-    }
-    let unique = ids.into_iter().collect::<HashSet<_>>();
+    let unique = ids.iter().copied().collect::<HashSet<_>>();
     if unique.len() != N {
         return Err(Phase10ValidationKind::InvalidTopology);
+    }
+    let mut maybe_system_id = None;
+    for id in ids {
+        let Some(particle) = particles.get(id) else {
+            return Err(Phase10ValidationKind::InvalidTopology);
+        };
+        if maybe_system_id.is_some_and(|system_id| system_id != &particle.system_id) {
+            return Err(Phase10ValidationKind::InvalidOwnership);
+        }
+        maybe_system_id = Some(&particle.system_id);
     }
     Ok(())
 }
