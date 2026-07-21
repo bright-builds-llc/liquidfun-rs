@@ -355,7 +355,7 @@ fn bounded_step_schema() -> Value {
 }
 
 fn particle_flags_schema() -> Value {
-    json!({ "type": "integer", "minimum": 0, "maximum": PHASE10_PUBLIC_PARTICLE_FLAG_MASK })
+    json!({ "type": "integer", "minimum": 0, "maximum": PHASE10_PUBLIC_PARTICLE_FLAG_MASK, "multipleOf": 2 })
 }
 
 fn group_flags_schema() -> Value {

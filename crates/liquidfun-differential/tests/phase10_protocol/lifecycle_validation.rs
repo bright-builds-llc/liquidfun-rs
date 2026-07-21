@@ -93,6 +93,15 @@ fn first_phase10_event_mut(result: &mut Value) -> &mut Value {
         .expect("group creation should emit an event")
 }
 
+fn phase10_state_mut(result: &mut Value) -> &mut Value {
+    let observation_index = phase10_observation_indices(result)[0];
+    &mut result["timelines"][0]["checkpoints"]
+        .as_array_mut()
+        .expect("checkpoints should be an array")
+        .last_mut()
+        .expect("a checkpoint should exist")["observations"][observation_index]["observation"]["state"]
+}
+
 #[test]
 fn wire_rejects_destroying_a_system_before_its_groups() {
     // Arrange
@@ -346,5 +355,68 @@ fn result_rejects_unknown_body_event_identity() {
             .expect_err("body-contact event identities must exist in the prefix")
             .rigid_world_kind(),
         Some(liquidfun_test_protocol::RigidWorldErrorKind::ResultObservationMismatch)
+    );
+}
+
+#[test]
+fn schemas_and_decoders_share_the_closed_particle_flag_domain() {
+    // Arrange
+    let limits = HarnessLimits::phase2_default_v1();
+    let scenario_schema: Value =
+        serde_json::from_slice(SCENARIO_SCHEMA).expect("scenario schema should be JSON");
+    let trace_schema: Value =
+        serde_json::from_slice(TRACE_SCHEMA).expect("trace schema should be JSON");
+    let scenario_validator =
+        jsonschema::validator_for(&scenario_schema).expect("scenario schema should compile");
+    let trace_validator =
+        jsonschema::validator_for(&trace_schema).expect("trace schema should compile");
+    let request_value = phase10_request_value();
+    let (_request, result_value) = execute_value(&request_value);
+    let mask = liquidfun_test_protocol::PHASE10_PUBLIC_PARTICLE_FLAG_MASK;
+
+    // Act
+    let accepted = [0, 2, mask].map(|flags_bits| {
+        let mut request = request_value.clone();
+        phase10_create_definition_mut(&mut request)["particle_flags_bits"] = json!(flags_bits);
+        let request_schema = scenario_validator.validate(&request["scenario"]);
+        let request_decode = decode_rigid_world_request_jsonl(&encode_value(&request), &limits);
+        let mut result = result_value.clone();
+        phase10_state_mut(&mut result)["particles"][0]["flags_bits"] = json!(flags_bits);
+        let result_schema = trace_validator.validate(&result);
+        let result_decode = decode_rigid_world_result_jsonl(&encode_value(&result), &limits);
+        (
+            request_schema.is_ok(),
+            request_decode.is_ok(),
+            result_schema.is_ok(),
+            result_decode.is_ok(),
+        )
+    });
+    let rejected = [1, mask + 1].map(|flags_bits| {
+        let mut request = request_value.clone();
+        phase10_create_definition_mut(&mut request)["particle_flags_bits"] = json!(flags_bits);
+        let request_schema = scenario_validator.validate(&request["scenario"]);
+        let request_decode = decode_rigid_world_request_jsonl(&encode_value(&request), &limits);
+        let mut result = result_value.clone();
+        phase10_state_mut(&mut result)["particles"][0]["flags_bits"] = json!(flags_bits);
+        let result_schema = trace_validator.validate(&result);
+        let result_decode = decode_rigid_world_result_jsonl(&encode_value(&result), &limits);
+        (
+            request_schema.is_err(),
+            request_decode.is_err(),
+            result_schema.is_err(),
+            result_decode.is_err(),
+        )
+    });
+
+    // Assert
+    assert!(
+        accepted
+            .into_iter()
+            .all(|checks| checks == (true, true, true, true))
+    );
+    assert!(
+        rejected
+            .into_iter()
+            .all(|checks| checks == (true, true, true, true))
     );
 }

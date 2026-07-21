@@ -2727,6 +2727,7 @@
                                                 "flags_bits": {
                                                   "maximum": 262142,
                                                   "minimum": 0,
+                                                  "multipleOf": 2,
                                                   "type": "integer"
                                                 },
                                                 "ordinal": {
@@ -2770,6 +2771,7 @@
                                                 "flags_bits": {
                                                   "maximum": 262142,
                                                   "minimum": 0,
+                                                  "multipleOf": 2,
                                                   "type": "integer"
                                                 },
                                                 "normal": {
@@ -2832,6 +2834,7 @@
                                                 "flags_bits": {
                                                   "maximum": 262142,
                                                   "minimum": 0,
+                                                  "multipleOf": 2,
                                                   "type": "integer"
                                                 },
                                                 "group_id": {
@@ -2925,6 +2928,7 @@
                                                 "flags_bits": {
                                                   "maximum": 262142,
                                                   "minimum": 0,
+                                                  "multipleOf": 2,
                                                   "type": "integer"
                                                 },
                                                 "ka_bits": {
@@ -3052,6 +3056,7 @@
                                                         "flags_bits": {
                                                           "maximum": 262142,
                                                           "minimum": 0,
+                                                          "multipleOf": 2,
                                                           "type": "integer"
                                                         },
                                                         "kind": {

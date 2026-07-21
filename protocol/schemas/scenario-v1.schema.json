@@ -4714,6 +4714,7 @@
                                         "particle_flags_bits": {
                                           "maximum": 262142,
                                           "minimum": 0,
+                                          "multipleOf": 2,
                                           "type": "integer"
                                         },
                                         "provenance": {
