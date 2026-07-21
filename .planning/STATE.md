@@ -3,14 +3,14 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 11 UI-SPEC approved
-last_updated: "2026-07-21T22:17:50.098Z"
-last_activity: 2026-07-21 -- Phase 11 planning complete
+stopped_at: Completed 11-01-PLAN.md
+last_updated: "2026-07-21T22:46:07.607Z"
+last_activity: "2026-07-21"
 progress:
   total_phases: 12
   completed_phases: 10
   total_plans: 190
-  completed_plans: 161
+  completed_plans: 162
   percent: 85
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-07-12)
 
 **Core value:** Deliver an independent, maintainable Rust physics engine whose LiquidFun behavior is demonstrated against a pinned upstream oracle through explicit inventory, tests, differential evidence, and documented tolerances.
-**Current focus:** Phase 10 — Particle Groups, Solvers, and Compatibility Sign-Off
+**Current focus:** Phase 11 — Examples, Headless Tooling, and Testbed
 
 ## Current Position
 
-Phase: 10 (Particle Groups, Solvers, and Compatibility Sign-Off) — EXECUTING
-Plan: 32 of 32
+Phase: 11 (Examples, Headless Tooling, and Testbed) — EXECUTING
+Plan: 2 of 29
 Status: Ready to execute
-Last activity: 2026-07-21 -- Phase 11 planning complete
+Last activity: 2026-07-21
 
 Progress: [██████████] 99%
 
@@ -173,6 +173,7 @@ Progress: [██████████] 99%
 | Phase 10 P30 | 37m | 2 tasks | 17 files |
 | Phase 10 P31 | 39m | 2 tasks | 4 files |
 | Phase 10 P32 | 2h 36m | 2 tasks | 13 files |
+| Phase 11 P01 | 14 min | 1 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -455,6 +456,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 10]: Extend the existing Oracle CI jobs with Phase 10-only authority names and steps while leaving Phase 9 conditions and commands intact. — One workflow and same-run job pair meet the authority contract without duplicating the pinned toolchain setup or changing Phase 9 behavior.
 - [Phase 10]: Accept only repaired run 29832646127 and its same-SHA Phase 10 pair as the D1 authority candidate. — The live API, archive bytes, locked toolchains, and complete 5-case/80-leaf exact-ref content all agree.
 - [Phase 10]: Deny failed run 29831597090 and artifacts 8495653581 and 8495705068 permanently. — Partial failed-run output cannot authorize compatibility promotion or be mixed with the repaired authority.
+- [Phase 11]: Model applicability, terminal disposition, and compatibility impact as independent closed enums with explicit terminal-outcome validation. — Corpus closure must preserve reviewed outcome and compatibility meaning as separate facts.
+- [Phase 11]: Bound corpus input to 4 MiB, JSON depth to 32, items to 2048, and per-item evidence mappings to 32 before downstream joins. — Reviewed limits keep untrusted corpus parsing and validation deterministic and bounded.
+- [Phase 11]: Treat source path plus source symbol as the unique semantic source identity while keeping kind-prefixed item IDs independently unique. — Source identity cannot be spoofed by assigning a second manifest ID to the same upstream semantic declaration.
 
 ### Pending Todos
 
@@ -468,6 +472,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-21T21:45:27.821Z
-Stopped at: Phase 11 UI-SPEC approved
-Resume file: .planning/phases/11-examples-headless-tooling-and-testbed/11-UI-SPEC.md
+Last session: 2026-07-21T22:46:07.603Z
+Stopped at: Completed 11-01-PLAN.md
+Resume file: None
