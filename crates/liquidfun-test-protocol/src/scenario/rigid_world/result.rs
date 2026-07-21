@@ -2,6 +2,9 @@ use std::collections::{HashMap, HashSet};
 
 use serde::{Deserialize, Serialize};
 
+#[cfg(test)]
+#[path = "result/ownership_tests.rs"]
+mod ownership_tests;
 mod phase10;
 mod phase8;
 mod phase9;
@@ -414,6 +417,18 @@ impl<'a> RigidCheckpointLiveIdentities<'a> {
     }
 }
 
+fn fixture_belongs_to_live_body<'a>(
+    live_body_ids: &[&ScenarioId],
+    mut live_fixture_owners: impl Iterator<Item = (&'a ScenarioId, &'a ScenarioId)>,
+    fixture_id: &ScenarioId,
+    body_id: &ScenarioId,
+) -> bool {
+    live_body_ids.contains(&body_id)
+        && live_fixture_owners.any(|(candidate_fixture_id, owner_body_id)| {
+            candidate_fixture_id == fixture_id && owner_body_id == body_id
+        })
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct RigidWorldResultRecord {
@@ -623,6 +638,21 @@ fn validate_checkpoint_observations(
                     return Err(validation(RigidWorldErrorKind::ResultObservationMismatch));
                 };
                 let Phase10Observation::State { state } = observation;
+                let live_identities =
+                    rigid_world_live_identities(timeline, &live_bodies, &live_fixtures);
+                if state.body_contacts.iter().any(|contact| {
+                    !fixture_belongs_to_live_body(
+                        &live_identities.body_ids,
+                        live_identities
+                            .fixtures
+                            .iter()
+                            .map(|fixture| (fixture.fixture_id(), fixture.owner_body_id())),
+                        &contact.fixture_id,
+                        &contact.body_id,
+                    )
+                }) {
+                    return Err(validation(RigidWorldErrorKind::ResultObservationMismatch));
+                }
                 phase10_state
                     .validate(state, &created_body_ids)
                     .map_err(|_| validation(RigidWorldErrorKind::ResultObservationMismatch))?;
