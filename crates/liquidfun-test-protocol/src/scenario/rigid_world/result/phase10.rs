@@ -2,6 +2,10 @@ use std::collections::{HashMap, HashSet};
 
 use serde::{Deserialize, Serialize};
 
+mod prefix;
+
+pub(super) use prefix::Phase10ResultState;
+
 use super::super::{
     PHASE10_MAXIMUM_CONTACTS, PHASE10_MAXIMUM_EVENTS, PHASE10_MAXIMUM_GROUPS,
     PHASE10_MAXIMUM_PAIRS, PHASE10_MAXIMUM_PARTICLES, PHASE10_MAXIMUM_TRIADS,
@@ -279,6 +283,7 @@ impl Phase10StateObservation {
         validate_ordinals(self.events.iter().map(|record| record.ordinal))?;
         validate_ordinals(self.witnesses.iter().map(|record| record.ordinal))?;
         self.validate_identity_and_topology()?;
+        prefix::validate_event_shapes(&self.events)?;
         self.validate_numeric_and_flags()
     }
 

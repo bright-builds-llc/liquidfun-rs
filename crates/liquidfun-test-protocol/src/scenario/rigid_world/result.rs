@@ -8,6 +8,7 @@ mod phase9;
 
 use phase8::{ExpectedObservation, expected_observation, validate_phase8_observation_contract};
 use phase9::Phase9ResultState;
+use phase10::Phase10ResultState;
 pub use phase10::*;
 
 use super::{
@@ -565,7 +566,9 @@ fn validate_checkpoint_observations(
     let fixture_owners = rigid_fixture_owners(timeline);
     let mut live_bodies = HashSet::new();
     let mut live_fixtures = HashSet::new();
+    let mut created_body_ids = HashSet::new();
     let mut phase9_state = Phase9ResultState::new(timeline);
+    let mut phase10_state = Phase10ResultState::default();
     for action in &timeline.actions()[..action_start] {
         super::types::apply_lifecycle_action(
             action.action(),
@@ -573,10 +576,16 @@ fn validate_checkpoint_observations(
             &mut live_bodies,
             &mut live_fixtures,
         );
+        if let RigidWorldAction::CreateBody { body_id } = action.action() {
+            created_body_ids.insert(body_id.clone());
+        }
         if let RigidWorldAction::Particle { action } = action.action() {
             phase9_state.apply(action);
         } else if matches!(action.action(), RigidWorldAction::Step { .. }) {
             phase9_state.advance_step();
+        }
+        if let RigidWorldAction::ParticleGroup { operation } = action.action() {
+            phase10_state.apply(operation);
         }
     }
 
@@ -588,6 +597,9 @@ fn validate_checkpoint_observations(
             &mut live_bodies,
             &mut live_fixtures,
         );
+        if let RigidWorldAction::CreateBody { body_id } = action.action() {
+            created_body_ids.insert(body_id.clone());
+        }
         if let RigidWorldAction::Particle {
             action: particle_action,
         } = action.action()
@@ -602,6 +614,7 @@ fn validate_checkpoint_observations(
             continue;
         }
         if let RigidWorldAction::ParticleGroup { operation } = action.action() {
+            phase10_state.apply(operation);
             if matches!(operation, Phase10Operation::InspectState) {
                 let Some(actual) = actual_observations.next() else {
                     return Err(validation(RigidWorldErrorKind::ResultObservationMismatch));
@@ -609,13 +622,10 @@ fn validate_checkpoint_observations(
                 let RigidWorldObservation::ParticleGroup { observation } = actual else {
                     return Err(validation(RigidWorldErrorKind::ResultObservationMismatch));
                 };
-                let live_identities =
-                    rigid_world_live_identities(timeline, &live_bodies, &live_fixtures);
-                validate_phase10_observation_against_timeline(
-                    timeline,
-                    &live_identities,
-                    observation,
-                )?;
+                let Phase10Observation::State { state } = observation;
+                phase10_state
+                    .validate(state, &created_body_ids)
+                    .map_err(|_| validation(RigidWorldErrorKind::ResultObservationMismatch))?;
             }
             continue;
         }
@@ -660,81 +670,6 @@ fn validate_checkpoint_observations(
     if actual_observations
         .any(|observation| !matches!(observation, RigidWorldObservation::Lifecycle { .. }))
     {
-        return Err(validation(RigidWorldErrorKind::ResultObservationMismatch));
-    }
-    Ok(())
-}
-
-fn validate_phase10_observation_against_timeline(
-    timeline: &super::RigidWorldTimeline,
-    live_rigid: &RigidCheckpointLiveIdentities<'_>,
-    observation: &Phase10Observation,
-) -> Result<(), RigidWorldDecodeError> {
-    let Phase10Observation::State { state } = observation;
-    let definitions = timeline
-        .actions()
-        .iter()
-        .filter_map(|record| {
-            let RigidWorldAction::ParticleGroup {
-                operation: Phase10Operation::CreateGroup { definition },
-            } = record.action()
-            else {
-                return None;
-            };
-            Some(definition)
-        })
-        .collect::<Vec<_>>();
-    let Some(provenance) = definitions.first().map(|definition| &definition.provenance) else {
-        return Err(validation(RigidWorldErrorKind::ResultObservationMismatch));
-    };
-    if &state.provenance != provenance {
-        return Err(validation(RigidWorldErrorKind::ResultObservationMismatch));
-    }
-    let system_ids = timeline
-        .particle_systems()
-        .iter()
-        .map(|system| &system.system_id)
-        .collect::<HashSet<_>>();
-    let group_ids = timeline
-        .actions()
-        .iter()
-        .flat_map(|record| match record.action() {
-            RigidWorldAction::ParticleGroup {
-                operation: Phase10Operation::CreateGroup { definition },
-            } => vec![&definition.group_id],
-            RigidWorldAction::ParticleGroup {
-                operation:
-                    Phase10Operation::SplitGroup {
-                        created_group_ids, ..
-                    },
-            } => created_group_ids.iter().collect(),
-            _ => Vec::new(),
-        })
-        .collect::<HashSet<_>>();
-    let particle_ids = definitions
-        .iter()
-        .flat_map(|definition| definition.member_ids.iter())
-        .collect::<HashSet<_>>();
-    if state
-        .groups
-        .iter()
-        .any(|group| !group_ids.contains(&group.group_id) || !system_ids.contains(&group.system_id))
-        || state.particles.iter().any(|particle| {
-            !particle_ids.contains(&particle.particle_id)
-                || !group_ids.contains(&particle.group_id)
-                || !system_ids.contains(&particle.system_id)
-        })
-        || state
-            .events
-            .iter()
-            .any(|event| !system_ids.contains(&event.system_id))
-    {
-        return Err(validation(RigidWorldErrorKind::ResultObservationMismatch));
-    }
-    if state.body_contacts.iter().any(|contact| {
-        !live_rigid.body_ids.contains(&&contact.body_id)
-            || !live_rigid.fixture_ids.contains(&&contact.fixture_id)
-    }) {
         return Err(validation(RigidWorldErrorKind::ResultObservationMismatch));
     }
     Ok(())
