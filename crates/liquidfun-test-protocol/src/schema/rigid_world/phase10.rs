@@ -103,14 +103,14 @@ fn state_schema() -> Value {
         &json!({
             "provenance": provenance_schema(),
             "outcome": outcome_schema(),
-            "groups": array_schema(group_snapshot_schema(), PHASE10_MAXIMUM_GROUPS),
-            "particles": array_schema(particle_snapshot_schema(), PHASE10_MAXIMUM_PARTICLES),
-            "pairs": array_schema(pair_schema(), PHASE10_MAXIMUM_PAIRS),
-            "triads": array_schema(triad_schema(), PHASE10_MAXIMUM_TRIADS),
-            "particle_contacts": array_schema(particle_contact_schema(), PHASE10_MAXIMUM_CONTACTS),
-            "body_contacts": array_schema(body_contact_schema(), PHASE10_MAXIMUM_CONTACTS),
-            "events": array_schema(event_schema(), PHASE10_MAXIMUM_EVENTS),
-            "witnesses": array_schema(witness_schema(), PHASE10_MAXIMUM_WITNESSES)
+            "groups": array_schema(&group_snapshot_schema(), PHASE10_MAXIMUM_GROUPS),
+            "particles": array_schema(&particle_snapshot_schema(), PHASE10_MAXIMUM_PARTICLES),
+            "pairs": array_schema(&pair_schema(), PHASE10_MAXIMUM_PAIRS),
+            "triads": array_schema(&triad_schema(), PHASE10_MAXIMUM_TRIADS),
+            "particle_contacts": array_schema(&particle_contact_schema(), PHASE10_MAXIMUM_CONTACTS),
+            "body_contacts": array_schema(&body_contact_schema(), PHASE10_MAXIMUM_CONTACTS),
+            "events": array_schema(&event_schema(), PHASE10_MAXIMUM_EVENTS),
+            "witnesses": array_schema(&witness_schema(), PHASE10_MAXIMUM_WITNESSES)
         }),
         &[
             "provenance",
@@ -170,7 +170,7 @@ fn group_snapshot_schema() -> Value {
             "transform": schema_ref("rigid_transform_bits"), "center": schema_ref("rigid_vec2_bits"),
             "linear_velocity": schema_ref("rigid_vec2_bits"), "angular_velocity_bits": float_bits_schema(),
             "mass_bits": float_bits_schema(), "inertia_bits": float_bits_schema(),
-            "maybe_depths_bits": { "oneOf": [array_schema(float_bits_schema(), PHASE10_MAXIMUM_PARTICLES), { "type": "null" }] }
+            "maybe_depths_bits": { "oneOf": [array_schema(&float_bits_schema(), PHASE10_MAXIMUM_PARTICLES), { "type": "null" }] }
         }),
         &[
             "ordinal",
@@ -366,7 +366,7 @@ fn id_array(maximum: usize, minimum: usize) -> Value {
     json!({ "type": "array", "items": semantic_id_schema(), "minItems": minimum, "maxItems": maximum })
 }
 
-fn array_schema(item: Value, maximum: usize) -> Value {
+fn array_schema(item: &Value, maximum: usize) -> Value {
     json!({ "type": "array", "items": item, "maxItems": maximum })
 }
 
