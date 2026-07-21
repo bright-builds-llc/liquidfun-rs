@@ -2416,6 +2416,814 @@
                               "observation"
                             ],
                             "type": "object"
+                          },
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "const": "particle_group"
+                              },
+                              "observation": {
+                                "oneOf": [
+                                  {
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "const": "state"
+                                      },
+                                      "state": {
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "body_contacts": {
+                                            "items": {
+                                              "additionalProperties": false,
+                                              "properties": {
+                                                "body_id": {
+                                                  "maxLength": 128,
+                                                  "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                                  "type": "string"
+                                                },
+                                                "fixture_id": {
+                                                  "maxLength": 128,
+                                                  "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                                  "type": "string"
+                                                },
+                                                "mass_bits": {
+                                                  "maximum": 4294967295,
+                                                  "minimum": 0,
+                                                  "type": "integer"
+                                                },
+                                                "normal": {
+                                                  "$ref": "#/$defs/rigid_vec2_bits"
+                                                },
+                                                "ordinal": {
+                                                  "maximum": 4294967295,
+                                                  "minimum": 0,
+                                                  "type": "integer"
+                                                },
+                                                "particle_id": {
+                                                  "maxLength": 128,
+                                                  "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                                  "type": "string"
+                                                },
+                                                "system_id": {
+                                                  "maxLength": 128,
+                                                  "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                                  "type": "string"
+                                                },
+                                                "weight_bits": {
+                                                  "maximum": 4294967295,
+                                                  "minimum": 0,
+                                                  "type": "integer"
+                                                }
+                                              },
+                                              "required": [
+                                                "ordinal",
+                                                "system_id",
+                                                "particle_id",
+                                                "body_id",
+                                                "fixture_id",
+                                                "weight_bits",
+                                                "normal",
+                                                "mass_bits"
+                                              ],
+                                              "type": "object"
+                                            },
+                                            "maxItems": 1024,
+                                            "type": "array"
+                                          },
+                                          "events": {
+                                            "items": {
+                                              "additionalProperties": false,
+                                              "properties": {
+                                                "kind": {
+                                                  "enum": [
+                                                    "group_created",
+                                                    "groups_joined",
+                                                    "group_split",
+                                                    "group_destroyed",
+                                                    "particle_destroyed",
+                                                    "particle_contact_begin",
+                                                    "particle_contact_end",
+                                                    "body_contact_begin",
+                                                    "body_contact_end"
+                                                  ]
+                                                },
+                                                "maybe_body_id": {
+                                                  "oneOf": [
+                                                    {
+                                                      "maxLength": 128,
+                                                      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                                      "type": "string"
+                                                    },
+                                                    {
+                                                      "type": "null"
+                                                    }
+                                                  ]
+                                                },
+                                                "maybe_group_id": {
+                                                  "oneOf": [
+                                                    {
+                                                      "maxLength": 128,
+                                                      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                                      "type": "string"
+                                                    },
+                                                    {
+                                                      "type": "null"
+                                                    }
+                                                  ]
+                                                },
+                                                "maybe_other_particle_id": {
+                                                  "oneOf": [
+                                                    {
+                                                      "maxLength": 128,
+                                                      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                                      "type": "string"
+                                                    },
+                                                    {
+                                                      "type": "null"
+                                                    }
+                                                  ]
+                                                },
+                                                "maybe_particle_id": {
+                                                  "oneOf": [
+                                                    {
+                                                      "maxLength": 128,
+                                                      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                                      "type": "string"
+                                                    },
+                                                    {
+                                                      "type": "null"
+                                                    }
+                                                  ]
+                                                },
+                                                "ordinal": {
+                                                  "maximum": 4294967295,
+                                                  "minimum": 0,
+                                                  "type": "integer"
+                                                },
+                                                "system_id": {
+                                                  "maxLength": 128,
+                                                  "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                                  "type": "string"
+                                                }
+                                              },
+                                              "required": [
+                                                "ordinal",
+                                                "kind",
+                                                "system_id",
+                                                "maybe_group_id",
+                                                "maybe_particle_id",
+                                                "maybe_other_particle_id",
+                                                "maybe_body_id"
+                                              ],
+                                              "type": "object"
+                                            },
+                                            "maxItems": 1024,
+                                            "type": "array"
+                                          },
+                                          "extension_version": {
+                                            "const": 1
+                                          },
+                                          "groups": {
+                                            "items": {
+                                              "additionalProperties": false,
+                                              "properties": {
+                                                "angular_velocity_bits": {
+                                                  "maximum": 4294967295,
+                                                  "minimum": 0,
+                                                  "type": "integer"
+                                                },
+                                                "center": {
+                                                  "$ref": "#/$defs/rigid_vec2_bits"
+                                                },
+                                                "group_flags_bits": {
+                                                  "maximum": 7,
+                                                  "minimum": 0,
+                                                  "type": "integer"
+                                                },
+                                                "group_id": {
+                                                  "maxLength": 128,
+                                                  "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                                  "type": "string"
+                                                },
+                                                "inertia_bits": {
+                                                  "maximum": 4294967295,
+                                                  "minimum": 0,
+                                                  "type": "integer"
+                                                },
+                                                "linear_velocity": {
+                                                  "$ref": "#/$defs/rigid_vec2_bits"
+                                                },
+                                                "mass_bits": {
+                                                  "maximum": 4294967295,
+                                                  "minimum": 0,
+                                                  "type": "integer"
+                                                },
+                                                "maybe_depths_bits": {
+                                                  "oneOf": [
+                                                    {
+                                                      "items": {
+                                                        "maximum": 4294967295,
+                                                        "minimum": 0,
+                                                        "type": "integer"
+                                                      },
+                                                      "maxItems": 512,
+                                                      "type": "array"
+                                                    },
+                                                    {
+                                                      "type": "null"
+                                                    }
+                                                  ]
+                                                },
+                                                "member_ids": {
+                                                  "items": {
+                                                    "maxLength": 128,
+                                                    "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                                    "type": "string"
+                                                  },
+                                                  "maxItems": 512,
+                                                  "minItems": 0,
+                                                  "type": "array"
+                                                },
+                                                "ordinal": {
+                                                  "maximum": 4294967295,
+                                                  "minimum": 0,
+                                                  "type": "integer"
+                                                },
+                                                "system_id": {
+                                                  "maxLength": 128,
+                                                  "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                                  "type": "string"
+                                                },
+                                                "transform": {
+                                                  "$ref": "#/$defs/rigid_transform_bits"
+                                                }
+                                              },
+                                              "required": [
+                                                "ordinal",
+                                                "group_id",
+                                                "system_id",
+                                                "member_ids",
+                                                "group_flags_bits",
+                                                "transform",
+                                                "center",
+                                                "linear_velocity",
+                                                "angular_velocity_bits",
+                                                "mass_bits",
+                                                "inertia_bits",
+                                                "maybe_depths_bits"
+                                              ],
+                                              "type": "object"
+                                            },
+                                            "maxItems": 64,
+                                            "type": "array"
+                                          },
+                                          "outcome": {
+                                            "oneOf": [
+                                              {
+                                                "additionalProperties": false,
+                                                "properties": {
+                                                  "kind": {
+                                                    "const": "completed"
+                                                  }
+                                                },
+                                                "required": [
+                                                  "kind"
+                                                ],
+                                                "type": "object"
+                                              },
+                                              {
+                                                "additionalProperties": false,
+                                                "properties": {
+                                                  "kind": {
+                                                    "const": "rejected"
+                                                  },
+                                                  "reason": {
+                                                    "enum": [
+                                                      "capacity_exceeded",
+                                                      "invalid_handle",
+                                                      "invalid_recipe",
+                                                      "locked",
+                                                      "poisoned",
+                                                      "numeric_failure"
+                                                    ]
+                                                  }
+                                                },
+                                                "required": [
+                                                  "kind",
+                                                  "reason"
+                                                ],
+                                                "type": "object"
+                                              }
+                                            ]
+                                          },
+                                          "pairs": {
+                                            "items": {
+                                              "additionalProperties": false,
+                                              "properties": {
+                                                "distance_bits": {
+                                                  "maximum": 4294967295,
+                                                  "minimum": 0,
+                                                  "type": "integer"
+                                                },
+                                                "flags_bits": {
+                                                  "maximum": 262142,
+                                                  "minimum": 0,
+                                                  "type": "integer"
+                                                },
+                                                "ordinal": {
+                                                  "maximum": 4294967295,
+                                                  "minimum": 0,
+                                                  "type": "integer"
+                                                },
+                                                "particle_a_id": {
+                                                  "maxLength": 128,
+                                                  "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                                  "type": "string"
+                                                },
+                                                "particle_b_id": {
+                                                  "maxLength": 128,
+                                                  "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                                  "type": "string"
+                                                },
+                                                "strength_bits": {
+                                                  "maximum": 4294967295,
+                                                  "minimum": 0,
+                                                  "type": "integer"
+                                                }
+                                              },
+                                              "required": [
+                                                "ordinal",
+                                                "particle_a_id",
+                                                "particle_b_id",
+                                                "flags_bits",
+                                                "strength_bits",
+                                                "distance_bits"
+                                              ],
+                                              "type": "object"
+                                            },
+                                            "maxItems": 1024,
+                                            "type": "array"
+                                          },
+                                          "particle_contacts": {
+                                            "items": {
+                                              "additionalProperties": false,
+                                              "properties": {
+                                                "flags_bits": {
+                                                  "maximum": 262142,
+                                                  "minimum": 0,
+                                                  "type": "integer"
+                                                },
+                                                "normal": {
+                                                  "$ref": "#/$defs/rigid_vec2_bits"
+                                                },
+                                                "ordinal": {
+                                                  "maximum": 4294967295,
+                                                  "minimum": 0,
+                                                  "type": "integer"
+                                                },
+                                                "particle_a_id": {
+                                                  "maxLength": 128,
+                                                  "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                                  "type": "string"
+                                                },
+                                                "particle_b_id": {
+                                                  "maxLength": 128,
+                                                  "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                                  "type": "string"
+                                                },
+                                                "system_id": {
+                                                  "maxLength": 128,
+                                                  "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                                  "type": "string"
+                                                },
+                                                "weight_bits": {
+                                                  "maximum": 4294967295,
+                                                  "minimum": 0,
+                                                  "type": "integer"
+                                                }
+                                              },
+                                              "required": [
+                                                "ordinal",
+                                                "system_id",
+                                                "particle_a_id",
+                                                "particle_b_id",
+                                                "flags_bits",
+                                                "weight_bits",
+                                                "normal"
+                                              ],
+                                              "type": "object"
+                                            },
+                                            "maxItems": 1024,
+                                            "type": "array"
+                                          },
+                                          "particles": {
+                                            "items": {
+                                              "additionalProperties": false,
+                                              "properties": {
+                                                "color": {
+                                                  "items": {
+                                                    "maximum": 255,
+                                                    "minimum": 0,
+                                                    "type": "integer"
+                                                  },
+                                                  "maxItems": 4,
+                                                  "minItems": 4,
+                                                  "type": "array"
+                                                },
+                                                "flags_bits": {
+                                                  "maximum": 262142,
+                                                  "minimum": 0,
+                                                  "type": "integer"
+                                                },
+                                                "group_id": {
+                                                  "maxLength": 128,
+                                                  "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                                  "type": "string"
+                                                },
+                                                "particle_id": {
+                                                  "maxLength": 128,
+                                                  "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                                  "type": "string"
+                                                },
+                                                "position": {
+                                                  "$ref": "#/$defs/rigid_vec2_bits"
+                                                },
+                                                "system_id": {
+                                                  "maxLength": 128,
+                                                  "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                                  "type": "string"
+                                                },
+                                                "velocity": {
+                                                  "$ref": "#/$defs/rigid_vec2_bits"
+                                                },
+                                                "weight_bits": {
+                                                  "maximum": 4294967295,
+                                                  "minimum": 0,
+                                                  "type": "integer"
+                                                }
+                                              },
+                                              "required": [
+                                                "particle_id",
+                                                "system_id",
+                                                "group_id",
+                                                "position",
+                                                "velocity",
+                                                "flags_bits",
+                                                "color",
+                                                "weight_bits"
+                                              ],
+                                              "type": "object"
+                                            },
+                                            "maxItems": 512,
+                                            "type": "array"
+                                          },
+                                          "provenance": {
+                                            "additionalProperties": false,
+                                            "properties": {
+                                              "generator_id": {
+                                                "maxLength": 128,
+                                                "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                                "type": "string"
+                                              },
+                                              "generator_version": {
+                                                "maxLength": 128,
+                                                "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                                "type": "string"
+                                              },
+                                              "seed": {
+                                                "maximum": 18446744073709551615,
+                                                "minimum": 0,
+                                                "type": "integer"
+                                              },
+                                              "toolchain_id": {
+                                                "maxLength": 128,
+                                                "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                                "type": "string"
+                                              },
+                                              "upstream_revision": {
+                                                "maxLength": 128,
+                                                "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                                "type": "string"
+                                              }
+                                            },
+                                            "required": [
+                                              "extension_version",
+                                              "generator_id",
+                                              "generator_version",
+                                              "upstream_revision",
+                                              "toolchain_id",
+                                              "seed"
+                                            ],
+                                            "type": "object"
+                                          },
+                                          "triads": {
+                                            "items": {
+                                              "additionalProperties": false,
+                                              "properties": {
+                                                "flags_bits": {
+                                                  "maximum": 262142,
+                                                  "minimum": 0,
+                                                  "type": "integer"
+                                                },
+                                                "ka_bits": {
+                                                  "maximum": 4294967295,
+                                                  "minimum": 0,
+                                                  "type": "integer"
+                                                },
+                                                "kb_bits": {
+                                                  "maximum": 4294967295,
+                                                  "minimum": 0,
+                                                  "type": "integer"
+                                                },
+                                                "kc_bits": {
+                                                  "maximum": 4294967295,
+                                                  "minimum": 0,
+                                                  "type": "integer"
+                                                },
+                                                "ordinal": {
+                                                  "maximum": 4294967295,
+                                                  "minimum": 0,
+                                                  "type": "integer"
+                                                },
+                                                "pa": {
+                                                  "$ref": "#/$defs/rigid_vec2_bits"
+                                                },
+                                                "particle_a_id": {
+                                                  "maxLength": 128,
+                                                  "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                                  "type": "string"
+                                                },
+                                                "particle_b_id": {
+                                                  "maxLength": 128,
+                                                  "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                                  "type": "string"
+                                                },
+                                                "particle_c_id": {
+                                                  "maxLength": 128,
+                                                  "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                                  "type": "string"
+                                                },
+                                                "pb": {
+                                                  "$ref": "#/$defs/rigid_vec2_bits"
+                                                },
+                                                "pc": {
+                                                  "$ref": "#/$defs/rigid_vec2_bits"
+                                                },
+                                                "s_bits": {
+                                                  "maximum": 4294967295,
+                                                  "minimum": 0,
+                                                  "type": "integer"
+                                                },
+                                                "strength_bits": {
+                                                  "maximum": 4294967295,
+                                                  "minimum": 0,
+                                                  "type": "integer"
+                                                }
+                                              },
+                                              "required": [
+                                                "ordinal",
+                                                "particle_a_id",
+                                                "particle_b_id",
+                                                "particle_c_id",
+                                                "flags_bits",
+                                                "strength_bits",
+                                                "pa",
+                                                "pb",
+                                                "pc",
+                                                "ka_bits",
+                                                "kb_bits",
+                                                "kc_bits",
+                                                "s_bits"
+                                              ],
+                                              "type": "object"
+                                            },
+                                            "maxItems": 1024,
+                                            "type": "array"
+                                          },
+                                          "witnesses": {
+                                            "items": {
+                                              "additionalProperties": false,
+                                              "properties": {
+                                                "behavior_leaf": {
+                                                  "enum": [
+                                                    "group_create",
+                                                    "group_append",
+                                                    "group_join",
+                                                    "group_split",
+                                                    "group_flags",
+                                                    "group_destroy",
+                                                    "water",
+                                                    "zombie",
+                                                    "wall",
+                                                    "spring",
+                                                    "elastic",
+                                                    "viscous",
+                                                    "powder",
+                                                    "tensile",
+                                                    "color_mixing",
+                                                    "barrier",
+                                                    "static_pressure",
+                                                    "reactive",
+                                                    "repulsive",
+                                                    "solid_group",
+                                                    "rigid_group",
+                                                    "body_interaction"
+                                                  ]
+                                                },
+                                                "observation": {
+                                                  "oneOf": [
+                                                    {
+                                                      "additionalProperties": false,
+                                                      "properties": {
+                                                        "kind": {
+                                                          "const": "control_unchanged"
+                                                        }
+                                                      },
+                                                      "required": [
+                                                        "kind"
+                                                      ],
+                                                      "type": "object"
+                                                    },
+                                                    {
+                                                      "additionalProperties": false,
+                                                      "properties": {
+                                                        "flags_bits": {
+                                                          "maximum": 262142,
+                                                          "minimum": 0,
+                                                          "type": "integer"
+                                                        },
+                                                        "kind": {
+                                                          "const": "flag_activated"
+                                                        }
+                                                      },
+                                                      "required": [
+                                                        "kind",
+                                                        "flags_bits"
+                                                      ],
+                                                      "type": "object"
+                                                    },
+                                                    {
+                                                      "additionalProperties": false,
+                                                      "properties": {
+                                                        "after": {
+                                                          "$ref": "#/$defs/rigid_vec2_bits"
+                                                        },
+                                                        "before": {
+                                                          "$ref": "#/$defs/rigid_vec2_bits"
+                                                        },
+                                                        "kind": {
+                                                          "const": "particle_velocity"
+                                                        },
+                                                        "particle_id": {
+                                                          "maxLength": 128,
+                                                          "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                                          "type": "string"
+                                                        }
+                                                      },
+                                                      "required": [
+                                                        "kind",
+                                                        "particle_id",
+                                                        "before",
+                                                        "after"
+                                                      ],
+                                                      "type": "object"
+                                                    },
+                                                    {
+                                                      "additionalProperties": false,
+                                                      "properties": {
+                                                        "kind": {
+                                                          "const": "scalar"
+                                                        },
+                                                        "value_bits": {
+                                                          "maximum": 4294967295,
+                                                          "minimum": 0,
+                                                          "type": "integer"
+                                                        }
+                                                      },
+                                                      "required": [
+                                                        "kind",
+                                                        "value_bits"
+                                                      ],
+                                                      "type": "object"
+                                                    },
+                                                    {
+                                                      "additionalProperties": false,
+                                                      "properties": {
+                                                        "kind": {
+                                                          "const": "count"
+                                                        },
+                                                        "value": {
+                                                          "maximum": 4294967295,
+                                                          "minimum": 0,
+                                                          "type": "integer"
+                                                        }
+                                                      },
+                                                      "required": [
+                                                        "kind",
+                                                        "value"
+                                                      ],
+                                                      "type": "object"
+                                                    },
+                                                    {
+                                                      "additionalProperties": false,
+                                                      "properties": {
+                                                        "event_ordinal": {
+                                                          "maximum": 4294967295,
+                                                          "minimum": 0,
+                                                          "type": "integer"
+                                                        },
+                                                        "kind": {
+                                                          "const": "occurrence"
+                                                        }
+                                                      },
+                                                      "required": [
+                                                        "kind",
+                                                        "event_ordinal"
+                                                      ],
+                                                      "type": "object"
+                                                    },
+                                                    {
+                                                      "additionalProperties": false,
+                                                      "properties": {
+                                                        "kind": {
+                                                          "const": "topology"
+                                                        },
+                                                        "pair_count": {
+                                                          "maximum": 4294967295,
+                                                          "minimum": 0,
+                                                          "type": "integer"
+                                                        },
+                                                        "triad_count": {
+                                                          "maximum": 4294967295,
+                                                          "minimum": 0,
+                                                          "type": "integer"
+                                                        }
+                                                      },
+                                                      "required": [
+                                                        "kind",
+                                                        "pair_count",
+                                                        "triad_count"
+                                                      ],
+                                                      "type": "object"
+                                                    }
+                                                  ]
+                                                },
+                                                "ordinal": {
+                                                  "maximum": 4294967295,
+                                                  "minimum": 0,
+                                                  "type": "integer"
+                                                },
+                                                "role": {
+                                                  "enum": [
+                                                    "control",
+                                                    "activation",
+                                                    "interaction"
+                                                  ]
+                                                }
+                                              },
+                                              "required": [
+                                                "ordinal",
+                                                "behavior_leaf",
+                                                "role",
+                                                "observation"
+                                              ],
+                                              "type": "object"
+                                            },
+                                            "maxItems": 256,
+                                            "type": "array"
+                                          }
+                                        },
+                                        "required": [
+                                          "provenance",
+                                          "outcome",
+                                          "groups",
+                                          "particles",
+                                          "pairs",
+                                          "triads",
+                                          "particle_contacts",
+                                          "body_contacts",
+                                          "events",
+                                          "witnesses"
+                                        ],
+                                        "type": "object"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "state"
+                                    ],
+                                    "type": "object"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "observation"
+                            ],
+                            "type": "object"
                           }
                         ]
                       },

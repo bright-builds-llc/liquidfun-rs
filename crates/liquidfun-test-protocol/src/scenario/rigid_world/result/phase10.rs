@@ -6,8 +6,8 @@ use super::super::{
     PHASE10_MAXIMUM_CONTACTS, PHASE10_MAXIMUM_EVENTS, PHASE10_MAXIMUM_GROUPS,
     PHASE10_MAXIMUM_PAIRS, PHASE10_MAXIMUM_PARTICLES, PHASE10_MAXIMUM_TRIADS,
     PHASE10_MAXIMUM_WITNESSES, PHASE10_PUBLIC_GROUP_FLAG_MASK, PHASE10_PUBLIC_PARTICLE_FLAG_MASK,
-    Phase10Provenance, Phase10ValidationKind, unique_ids, validate_finite, validate_transform,
-    validate_vec2,
+    PHASE10_RIGID_WORLD_EXTENSION_VERSION, Phase10Provenance, Phase10ValidationError,
+    Phase10ValidationKind, unique_ids, validate_finite, validate_transform, validate_vec2,
 };
 use crate::{FloatBits, ScenarioId, TransformBits, Vec2Bits};
 
@@ -248,6 +248,16 @@ pub enum Phase10Observation {
 }
 
 impl Phase10Observation {
+    /// Validates bounds, identity, ownership, order, topology, flags, witness bindings, and floats.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Phase10ValidationError`] when this observation cannot safely
+    /// cross the adapter/comparator boundary.
+    pub fn validate_semantics(&self) -> Result<(), Phase10ValidationError> {
+        self.validate().map_err(Phase10ValidationError::from_kind)
+    }
+
     pub(crate) fn validate(&self) -> Result<(), Phase10ValidationKind> {
         match self {
             Self::State { state } => state.validate(),
@@ -257,6 +267,9 @@ impl Phase10Observation {
 
 impl Phase10StateObservation {
     fn validate(&self) -> Result<(), Phase10ValidationKind> {
+        if self.provenance.extension_version != PHASE10_RIGID_WORLD_EXTENSION_VERSION {
+            return Err(Phase10ValidationKind::InvalidProvenance);
+        }
         self.validate_bounds()?;
         validate_ordinals(self.groups.iter().map(|record| record.ordinal))?;
         validate_ordinals(self.pairs.iter().map(|record| record.ordinal))?;
@@ -443,6 +456,35 @@ impl Phase10StateObservation {
                 return Err(Phase10ValidationKind::InvalidWitness);
             }
             validate_witness_observation(&witness.observation)?;
+            if !witness_role_matches(witness.role, &witness.observation) {
+                return Err(Phase10ValidationKind::InvalidWitness);
+            }
+            match &witness.observation {
+                Phase10WitnessObservation::ParticleVelocity { particle_id, .. }
+                    if !self
+                        .particles
+                        .iter()
+                        .any(|particle| &particle.particle_id == particle_id) =>
+                {
+                    return Err(Phase10ValidationKind::InvalidWitness);
+                }
+                Phase10WitnessObservation::Occurrence { event_ordinal }
+                    if usize::try_from(*event_ordinal)
+                        .ok()
+                        .is_none_or(|ordinal| ordinal >= self.events.len()) =>
+                {
+                    return Err(Phase10ValidationKind::InvalidWitness);
+                }
+                Phase10WitnessObservation::Topology {
+                    pair_count,
+                    triad_count,
+                } if usize::try_from(*pair_count) != Ok(self.pairs.len())
+                    || usize::try_from(*triad_count) != Ok(self.triads.len()) =>
+                {
+                    return Err(Phase10ValidationKind::InvalidWitness);
+                }
+                _ => {}
+            }
         }
         Ok(())
     }
@@ -494,5 +536,26 @@ fn validate_witness_observation(
         | Phase10WitnessObservation::Count { .. }
         | Phase10WitnessObservation::Occurrence { .. }
         | Phase10WitnessObservation::Topology { .. } => Ok(()),
+    }
+}
+
+fn witness_role_matches(role: WitnessRole, observation: &Phase10WitnessObservation) -> bool {
+    match role {
+        WitnessRole::Control => {
+            matches!(observation, Phase10WitnessObservation::ControlUnchanged)
+        }
+        WitnessRole::Activation => matches!(
+            observation,
+            Phase10WitnessObservation::FlagActivated { .. }
+                | Phase10WitnessObservation::Count { .. }
+                | Phase10WitnessObservation::Occurrence { .. }
+        ),
+        WitnessRole::Interaction => matches!(
+            observation,
+            Phase10WitnessObservation::ParticleVelocity { .. }
+                | Phase10WitnessObservation::Scalar { .. }
+                | Phase10WitnessObservation::Occurrence { .. }
+                | Phase10WitnessObservation::Topology { .. }
+        ),
     }
 }

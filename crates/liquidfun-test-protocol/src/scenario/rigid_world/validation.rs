@@ -451,9 +451,14 @@ fn validate_actions(
     let mut created_ropes = HashSet::new();
     let mut phase9_state = Phase9ActionState::default();
     let mut phase10_state = Phase10ActionState::default();
-    let declared_particle_ids = references
-        .particle_owners
-        .keys()
+    let reserved_semantic_ids = references
+        .body_ids
+        .iter()
+        .chain(references.fixture_owners.keys())
+        .chain(references.joint_ids.iter())
+        .chain(references.rope_ids.iter())
+        .chain(references.particle_system_ids.iter())
+        .chain(references.particle_owners.keys())
         .cloned()
         .collect::<HashSet<_>>();
     let mut actions = Vec::with_capacity(raw_actions.len());
@@ -487,7 +492,7 @@ fn validate_actions(
             references.particle_system_ids,
             references.particle_owners,
             &mut phase9_state,
-            &declared_particle_ids,
+            &reserved_semantic_ids,
             &mut phase10_state,
         )?;
         action_kinds.insert(raw.action.action_kind());
@@ -546,7 +551,7 @@ fn validate_action(
     particle_system_ids: &HashSet<ScenarioId>,
     particle_owners: &HashMap<ScenarioId, ScenarioId>,
     phase9_state: &mut Phase9ActionState,
-    declared_particle_ids: &HashSet<ScenarioId>,
+    reserved_semantic_ids: &HashSet<ScenarioId>,
     phase10_state: &mut Phase10ActionState,
 ) -> Result<(), RigidWorldDecodeError> {
     match action {
@@ -558,7 +563,7 @@ fn validate_action(
                 operation,
                 particle_system_ids,
                 &phase9_state.live_systems,
-                declared_particle_ids,
+                reserved_semantic_ids,
                 phase10_state,
             )?;
         }

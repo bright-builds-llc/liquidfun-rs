@@ -1,12 +1,21 @@
 //! Strict shared Phase 10 particle-group protocol contracts.
 
+use liquidfun_differential::NativeRigidWorldExecutor;
 use liquidfun_test_protocol::{
-    FloatBits, Phase10BehaviorLeaf, Phase10GroupDefinition, Phase10GroupDestination,
-    Phase10GroupSource, Phase10Operation, Phase10PairSnapshot, Phase10Provenance,
-    Phase10SemanticOutcome, Phase10Shape, Phase10StateObservation, Phase10TriadSnapshot,
-    Phase10Witness, Phase10WitnessObservation, ScenarioId, TransformBits, Vec2Bits, WitnessRole,
+    CodecErrorKind, FloatBits, HarnessLimits, Phase10BehaviorLeaf, Phase10GroupDefinition,
+    Phase10GroupDestination, Phase10GroupSource, Phase10Observation, Phase10Operation,
+    Phase10PairSnapshot, Phase10Provenance, Phase10SemanticOutcome, Phase10Shape,
+    Phase10StateObservation, Phase10TriadSnapshot, Phase10ValidationKind, Phase10Witness,
+    Phase10WitnessObservation, RecordLimit, RigidWorldDecodeError, ScenarioId, TransformBits,
+    Vec2Bits, WitnessRole, decode_rigid_world_request_jsonl, decode_rigid_world_result_jsonl,
+    encode_jsonl, validate_phase10_operation,
 };
 use serde_json::{Value, json};
+
+const PHASE8_REQUEST: &[u8] =
+    include_bytes!("../../../protocol/fixtures/accepted/rigid-world-request.jsonl");
+const PHASE9_REQUEST: &[u8] =
+    include_bytes!("fixtures/rigid_world/phase9/cases/storage-systems-and-permutations.jsonl");
 
 fn id(value: &str) -> ScenarioId {
     ScenarioId::new(value).expect("test semantic ID should be valid")
@@ -25,6 +34,14 @@ fn vector(x: f32, y: f32) -> Vec2Bits {
 
 fn definition() -> Phase10GroupDefinition {
     Phase10GroupDefinition {
+        provenance: Phase10Provenance {
+            extension_version: 1,
+            generator_id: id("phase10-test-generator"),
+            generator_version: id("v1"),
+            upstream_revision: id("upstream-revision"),
+            toolchain_id: id("rust-test-toolchain"),
+            seed: 42,
+        },
         system_id: id("system-a"),
         group_id: id("group-a"),
         member_ids: vec![id("particle-a"), id("particle-b")].into_boxed_slice(),
@@ -49,6 +66,136 @@ fn definition() -> Phase10GroupDefinition {
         maybe_stride_bits: Some(bits(0.25)),
         lifetime_bits: bits(8.0),
     }
+}
+
+fn phase10_request_value() -> Value {
+    let mut value: Value =
+        serde_json::from_slice(PHASE8_REQUEST).expect("Phase 8 fixture should be JSON");
+    let timeline = value["scenario"]["timelines"]
+        .as_array_mut()
+        .expect("fixture timelines should be an array")
+        .first_mut()
+        .expect("fixture should contain a timeline");
+    timeline["particle_systems"] = json!([{
+        "system_id": "system-a",
+        "buffer_mode": { "kind": "growable", "initial_capacity": 256 },
+        "paused": false,
+        "strict_contact_check": true,
+        "stuck_threshold": 2,
+        "density_bits": bits(1.0).bits(),
+        "gravity_scale_bits": bits(1.0).bits(),
+        "radius_bits": bits(0.25).bits(),
+        "damping_bits": bits(0.0).bits(),
+        "destruction_by_age": true,
+        "lifetime_granularity_bits": bits(1.0 / 60.0).bits(),
+        "maximum_count": null
+    }]);
+    timeline["particles"] = json!([]);
+    let mut definition_a = serde_json::to_value(definition()).expect("definition should encode");
+    definition_a["source"] = json!({
+        "kind": "explicit",
+        "positions": [
+            { "x_bits": bits(0.0).bits(), "y_bits": bits(0.0).bits() },
+            { "x_bits": bits(0.5).bits(), "y_bits": bits(0.0).bits() }
+        ]
+    });
+    let mut append = definition_a.clone();
+    append["member_ids"] = json!(["particle-c"]);
+    append["source"] = json!({ "kind": "explicit", "positions": [
+        { "x_bits": bits(1.0).bits(), "y_bits": bits(0.0).bits() }
+    ] });
+    append["destination"] = json!({ "kind": "append_to", "target_group_id": "group-a" });
+    let mut definition_b = definition_a.clone();
+    definition_b["group_id"] = json!("group-b");
+    definition_b["member_ids"] = json!(["particle-d"]);
+    definition_b["source"] = json!({ "kind": "explicit", "positions": [
+        { "x_bits": bits(1.5).bits(), "y_bits": bits(0.0).bits() }
+    ] });
+    let actions = timeline["actions"]
+        .as_array_mut()
+        .expect("fixture actions should be an array");
+    let operations = [
+        (
+            "p10-create-system",
+            json!({ "kind": "particle", "action": { "kind": "create_system", "system_id": "system-a" } }),
+        ),
+        (
+            "p10-create-a",
+            json!({ "kind": "particle_group", "operation": { "kind": "create_group", "definition": definition_a } }),
+        ),
+        (
+            "p10-append-a",
+            json!({ "kind": "particle_group", "operation": { "kind": "create_group", "definition": append } }),
+        ),
+        (
+            "p10-create-b",
+            json!({ "kind": "particle_group", "operation": { "kind": "create_group", "definition": definition_b } }),
+        ),
+        (
+            "p10-join",
+            json!({ "kind": "particle_group", "operation": { "kind": "join_groups", "target_group_id": "group-a", "source_group_id": "group-b" } }),
+        ),
+        (
+            "p10-split",
+            json!({ "kind": "particle_group", "operation": { "kind": "split_group", "group_id": "group-a", "created_group_ids": ["group-c", "group-d"] } }),
+        ),
+        (
+            "p10-flags",
+            json!({ "kind": "particle_group", "operation": { "kind": "set_group_flags", "group_id": "group-a", "group_flags_bits": 3 } }),
+        ),
+        (
+            "p10-step",
+            json!({ "kind": "particle_group", "operation": { "kind": "step", "timestep_bits": bits(1.0 / 60.0).bits(), "velocity_iterations": 8, "position_iterations": 3, "particle_iterations": 2 } }),
+        ),
+        (
+            "p10-inspect",
+            json!({ "kind": "particle_group", "operation": { "kind": "inspect_state" } }),
+        ),
+        (
+            "p10-destroy-c",
+            json!({ "kind": "particle_group", "operation": { "kind": "destroy_group", "group_id": "group-c" } }),
+        ),
+        (
+            "p10-destroy-d",
+            json!({ "kind": "particle_group", "operation": { "kind": "destroy_group", "group_id": "group-d" } }),
+        ),
+        (
+            "p10-destroy-a",
+            json!({ "kind": "particle_group", "operation": { "kind": "destroy_group", "group_id": "group-a" } }),
+        ),
+        (
+            "p10-destroy-system",
+            json!({ "kind": "particle", "action": { "kind": "destroy_system", "system_id": "system-a" } }),
+        ),
+    ];
+    for (action_id, action) in operations {
+        actions.push(json!({ "action_id": action_id, "phase": "phase10", "action": action }));
+    }
+    let checkpoint = timeline["checkpoints"]
+        .as_array_mut()
+        .expect("fixture checkpoints should be an array")
+        .last_mut()
+        .expect("fixture should contain a checkpoint");
+    checkpoint["after_action_id"] = json!("p10-destroy-system");
+    checkpoint["phase"] = json!("phase10");
+    value
+}
+
+fn encode_value(value: &Value) -> Vec<u8> {
+    let mut bytes = serde_json::to_vec(value).expect("fixture mutation should encode");
+    bytes.push(b'\n');
+    bytes
+}
+
+fn phase10_create_definition_mut(value: &mut Value) -> &mut Value {
+    value["scenario"]["timelines"][0]["actions"]
+        .as_array_mut()
+        .expect("actions should be an array")
+        .iter_mut()
+        .find(|action| action["action_id"] == "p10-create-a")
+        .expect("create action should exist")
+        .pointer_mut("/action/operation/definition")
+        .expect("definition should exist")
 }
 
 #[test]
@@ -131,6 +278,267 @@ fn semantic_witness_exposes_role_and_behavior_without_private_pass_data() {
     assert!(!object.contains_key("pass_id"));
     assert!(!object.contains_key("pass_trace"));
     assert!(!object.contains_key("pass_inventory"));
+}
+
+#[test]
+fn wire_phase10_request_normalizes_to_byte_identical_canonical_json() {
+    // Arrange
+    let value = phase10_request_value();
+    let limits = HarnessLimits::phase2_default_v1();
+    let request = decode_rigid_world_request_jsonl(&encode_value(&value), &limits)
+        .expect("complete Phase 10 request should decode");
+
+    // Act
+    let canonical = encode_jsonl(&request, &limits, RecordLimit::Input)
+        .expect("validated request should encode");
+    let replay = decode_rigid_world_request_jsonl(&canonical, &limits)
+        .expect("canonical request should decode");
+    let replayed =
+        encode_jsonl(&replay, &limits, RecordLimit::Input).expect("replay should encode");
+
+    // Assert
+    assert_eq!(replayed, canonical);
+}
+
+#[test]
+fn wire_rejects_unknown_duplicate_private_and_unknown_tag_members() {
+    // Arrange
+    let limits = HarnessLimits::phase2_default_v1();
+    let mut private = phase10_request_value();
+    phase10_create_definition_mut(&mut private)["pass_id"] = json!("s19");
+    let mut unknown_tag = phase10_request_value();
+    unknown_tag["scenario"]["timelines"][0]["actions"]
+        .as_array_mut()
+        .expect("actions should be an array")
+        .iter_mut()
+        .find(|action| action["action_id"] == "p10-inspect")
+        .expect("inspect action should exist")["action"]["operation"]["kind"] = json!("pass_trace");
+    let canonical = encode_value(&phase10_request_value());
+    let canonical = String::from_utf8(canonical).expect("fixture should be UTF-8");
+    let duplicate = canonical.replacen(
+        "\"extension_version\":1",
+        "\"extension_version\":1,\"extension_version\":1",
+        1,
+    );
+
+    // Act
+    let private_error = decode_rigid_world_request_jsonl(&encode_value(&private), &limits)
+        .expect_err("private pass identity must be rejected");
+    let tag_error = decode_rigid_world_request_jsonl(&encode_value(&unknown_tag), &limits)
+        .expect_err("unknown operation tag must be rejected");
+    let duplicate_error = decode_rigid_world_request_jsonl(duplicate.as_bytes(), &limits)
+        .expect_err("duplicate member must be rejected");
+
+    // Assert
+    assert_eq!(
+        codec_kind(&private_error),
+        Some(CodecErrorKind::UnknownField)
+    );
+    assert_eq!(
+        codec_kind(&tag_error),
+        Some(CodecErrorKind::UnknownRecordKind)
+    );
+    assert_eq!(
+        codec_kind(&duplicate_error),
+        Some(CodecErrorKind::DuplicateMember)
+    );
+}
+
+#[test]
+fn wire_rejects_duplicate_ids_wrong_ownership_flags_versions_and_nonfinite_values() {
+    // Arrange
+    let limits = HarnessLimits::phase2_default_v1();
+    let mut duplicate = phase10_request_value();
+    phase10_create_definition_mut(&mut duplicate)["member_ids"] =
+        json!(["particle-a", "particle-a"]);
+    let mut wrong_owner = phase10_request_value();
+    let append = wrong_owner["scenario"]["timelines"][0]["actions"]
+        .as_array_mut()
+        .expect("actions should be an array")
+        .iter_mut()
+        .find(|action| action["action_id"] == "p10-append-a")
+        .expect("append action should exist");
+    append["action"]["operation"]["definition"]["group_id"] = json!("group-other");
+    let mut private_flags = phase10_request_value();
+    phase10_create_definition_mut(&mut private_flags)["group_flags_bits"] = json!(0x0018);
+    let mut wrong_version = phase10_request_value();
+    phase10_create_definition_mut(&mut wrong_version)["provenance"]["extension_version"] = json!(2);
+    let mut nonfinite = phase10_request_value();
+    phase10_create_definition_mut(&mut nonfinite)["transform"]["angle_bits"] =
+        json!(f32::NAN.to_bits());
+
+    // Act
+    let results = [
+        duplicate,
+        wrong_owner,
+        private_flags,
+        wrong_version,
+        nonfinite,
+    ]
+    .map(|value| decode_rigid_world_request_jsonl(&encode_value(&value), &limits));
+
+    // Assert
+    assert!(results.into_iter().all(|result| {
+        result
+            .expect_err("malformed Phase 10 semantic input must fail")
+            .rigid_world_kind()
+            == Some(liquidfun_test_protocol::RigidWorldErrorKind::InvalidParticleGroupAction)
+    }));
+}
+
+#[test]
+fn wire_particle_boundary_accepts_limit_and_rejects_one_over() {
+    // Arrange
+    let mut at_limit = definition();
+    at_limit.member_ids = (0..liquidfun_test_protocol::PHASE10_MAXIMUM_PARTICLES)
+        .map(|index| id(&format!("particle-{index}")))
+        .collect::<Vec<_>>()
+        .into_boxed_slice();
+    at_limit.source = Phase10GroupSource::Filled {
+        shapes: vec![Phase10Shape::Circle {
+            center: vector(0.0, 0.0),
+            radius_bits: bits(1.0),
+        }]
+        .into_boxed_slice(),
+    };
+    let at_limit = Phase10Operation::CreateGroup {
+        definition: at_limit.clone(),
+    };
+    let mut over_definition = at_limit_definition(&at_limit);
+    over_definition.member_ids = (0..=liquidfun_test_protocol::PHASE10_MAXIMUM_PARTICLES)
+        .map(|index| id(&format!("over-particle-{index}")))
+        .collect::<Vec<_>>()
+        .into_boxed_slice();
+    let one_over = Phase10Operation::CreateGroup {
+        definition: over_definition,
+    };
+
+    // Act
+    let accepted = validate_phase10_operation(&at_limit);
+    let rejected = validate_phase10_operation(&one_over);
+
+    // Assert
+    assert_eq!(accepted, Ok(()));
+    assert_eq!(
+        rejected.map_err(|error| error.kind()),
+        Err(Phase10ValidationKind::BoundaryLimitExceeded)
+    );
+}
+
+#[test]
+fn wire_phase9_request_and_result_variants_round_trip_unchanged() {
+    // Arrange
+    let limits = HarnessLimits::phase2_default_v1();
+    let request = decode_rigid_world_request_jsonl(PHASE9_REQUEST, &limits)
+        .expect("reviewed Phase 9 request should decode");
+    let result =
+        NativeRigidWorldExecutor::execute(&request).expect("reviewed Phase 9 request should run");
+
+    // Act
+    let request_bytes =
+        encode_jsonl(&request, &limits, RecordLimit::Input).expect("request should encode");
+    let result_bytes =
+        encode_jsonl(&result, &limits, RecordLimit::Output).expect("result should encode");
+    let replay_request = decode_rigid_world_request_jsonl(&request_bytes, &limits)
+        .expect("request replay should decode");
+    let replay_result = decode_rigid_world_result_jsonl(&result_bytes, &limits)
+        .expect("result replay should decode");
+
+    // Assert
+    assert_eq!(
+        encode_jsonl(&replay_request, &limits, RecordLimit::Input),
+        Ok(request_bytes)
+    );
+    assert_eq!(
+        encode_jsonl(&replay_result, &limits, RecordLimit::Output),
+        Ok(result_bytes)
+    );
+}
+
+#[test]
+fn wire_result_rejects_duplicate_witness_binding_order_and_nonfinite_observation() {
+    // Arrange
+    let witness = Phase10Witness {
+        ordinal: 0,
+        behavior_leaf: Phase10BehaviorLeaf::Spring,
+        role: WitnessRole::Interaction,
+        observation: Phase10WitnessObservation::Scalar {
+            value_bits: bits(1.0),
+        },
+    };
+    let mut duplicate = empty_observation();
+    let Phase10Observation::State { state } = &mut duplicate;
+    let mut repeated = witness.clone();
+    repeated.ordinal = 1;
+    state.witnesses = vec![witness.clone(), repeated].into_boxed_slice();
+    let mut wrong_order = empty_observation();
+    let Phase10Observation::State { state } = &mut wrong_order;
+    let mut ordinal_one = witness.clone();
+    ordinal_one.ordinal = 1;
+    state.witnesses = vec![ordinal_one].into_boxed_slice();
+    let mut nonfinite = empty_observation();
+    let Phase10Observation::State { state } = &mut nonfinite;
+    let mut nan_witness = witness;
+    nan_witness.observation = Phase10WitnessObservation::Scalar {
+        value_bits: FloatBits::new(f32::NAN.to_bits()),
+    };
+    state.witnesses = vec![nan_witness].into_boxed_slice();
+
+    // Act
+    let results =
+        [duplicate, wrong_order, nonfinite].map(|observation| observation.validate_semantics());
+
+    // Assert
+    assert_eq!(
+        results[0].map_err(|error| error.kind()),
+        Err(Phase10ValidationKind::InvalidWitness)
+    );
+    assert_eq!(
+        results[1].map_err(|error| error.kind()),
+        Err(Phase10ValidationKind::InvalidOrdering)
+    );
+    assert_eq!(
+        results[2].map_err(|error| error.kind()),
+        Err(Phase10ValidationKind::InvalidFloat)
+    );
+}
+
+fn empty_observation() -> Phase10Observation {
+    Phase10Observation::State {
+        state: Phase10StateObservation {
+            provenance: Phase10Provenance {
+                extension_version: 1,
+                generator_id: id("phase10-test-generator"),
+                generator_version: id("v1"),
+                upstream_revision: id("upstream-revision"),
+                toolchain_id: id("rust-test-toolchain"),
+                seed: 42,
+            },
+            outcome: Phase10SemanticOutcome::Completed,
+            groups: Box::new([]),
+            particles: Box::new([]),
+            pairs: Box::new([]),
+            triads: Box::new([]),
+            particle_contacts: Box::new([]),
+            body_contacts: Box::new([]),
+            events: Box::new([]),
+            witnesses: Box::new([]),
+        },
+    }
+}
+
+fn codec_kind(error: &RigidWorldDecodeError) -> Option<CodecErrorKind> {
+    match error {
+        RigidWorldDecodeError::Codec(error) => Some(error.kind()),
+        RigidWorldDecodeError::Validation(_) => None,
+    }
+}
+
+fn at_limit_definition(operation: &Phase10Operation) -> Phase10GroupDefinition {
+    let Phase10Operation::CreateGroup { definition } = operation else {
+        panic!("test operation should create a group");
+    };
+    definition.clone()
 }
 
 // Keep the complete public result surface linked into this integration target.

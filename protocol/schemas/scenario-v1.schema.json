@@ -4573,6 +4573,588 @@
                         {
                           "additionalProperties": false,
                           "properties": {
+                            "kind": {
+                              "const": "particle_group"
+                            },
+                            "operation": {
+                              "oneOf": [
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "definition": {
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "angular_velocity_bits": {
+                                          "maximum": 4294967295,
+                                          "minimum": 0,
+                                          "type": "integer"
+                                        },
+                                        "color": {
+                                          "items": {
+                                            "maximum": 255,
+                                            "minimum": 0,
+                                            "type": "integer"
+                                          },
+                                          "maxItems": 4,
+                                          "minItems": 4,
+                                          "type": "array"
+                                        },
+                                        "destination": {
+                                          "oneOf": [
+                                            {
+                                              "additionalProperties": false,
+                                              "properties": {
+                                                "kind": {
+                                                  "const": "new"
+                                                }
+                                              },
+                                              "required": [
+                                                "kind"
+                                              ],
+                                              "type": "object"
+                                            },
+                                            {
+                                              "additionalProperties": false,
+                                              "properties": {
+                                                "kind": {
+                                                  "const": "append_to"
+                                                },
+                                                "target_group_id": {
+                                                  "maxLength": 128,
+                                                  "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                                  "type": "string"
+                                                }
+                                              },
+                                              "required": [
+                                                "kind",
+                                                "target_group_id"
+                                              ],
+                                              "type": "object"
+                                            }
+                                          ]
+                                        },
+                                        "group_flags_bits": {
+                                          "maximum": 7,
+                                          "minimum": 0,
+                                          "type": "integer"
+                                        },
+                                        "group_id": {
+                                          "maxLength": 128,
+                                          "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                          "type": "string"
+                                        },
+                                        "lifetime_bits": {
+                                          "maximum": 4294967295,
+                                          "minimum": 0,
+                                          "type": "integer"
+                                        },
+                                        "linear_velocity": {
+                                          "$ref": "#/$defs/rigid_vec2_bits"
+                                        },
+                                        "maybe_stride_bits": {
+                                          "oneOf": [
+                                            {
+                                              "maximum": 4294967295,
+                                              "minimum": 0,
+                                              "type": "integer"
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        },
+                                        "member_ids": {
+                                          "items": {
+                                            "maxLength": 128,
+                                            "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                            "type": "string"
+                                          },
+                                          "maxItems": 512,
+                                          "minItems": 1,
+                                          "type": "array"
+                                        },
+                                        "particle_flags_bits": {
+                                          "maximum": 262142,
+                                          "minimum": 0,
+                                          "type": "integer"
+                                        },
+                                        "provenance": {
+                                          "additionalProperties": false,
+                                          "properties": {
+                                            "generator_id": {
+                                              "maxLength": 128,
+                                              "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                              "type": "string"
+                                            },
+                                            "generator_version": {
+                                              "maxLength": 128,
+                                              "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                              "type": "string"
+                                            },
+                                            "seed": {
+                                              "maximum": 18446744073709551615,
+                                              "minimum": 0,
+                                              "type": "integer"
+                                            },
+                                            "toolchain_id": {
+                                              "maxLength": 128,
+                                              "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                              "type": "string"
+                                            },
+                                            "upstream_revision": {
+                                              "maxLength": 128,
+                                              "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": [
+                                            "extension_version",
+                                            "generator_id",
+                                            "generator_version",
+                                            "upstream_revision",
+                                            "toolchain_id",
+                                            "seed"
+                                          ],
+                                          "type": "object"
+                                        },
+                                        "source": {
+                                          "oneOf": [
+                                            {
+                                              "additionalProperties": false,
+                                              "properties": {
+                                                "kind": {
+                                                  "const": "filled"
+                                                },
+                                                "shapes": {
+                                                  "items": {
+                                                    "oneOf": [
+                                                      {
+                                                        "additionalProperties": false,
+                                                        "properties": {
+                                                          "center": {
+                                                            "$ref": "#/$defs/rigid_vec2_bits"
+                                                          },
+                                                          "kind": {
+                                                            "const": "circle"
+                                                          },
+                                                          "radius_bits": {
+                                                            "maximum": 4294967295,
+                                                            "minimum": 0,
+                                                            "type": "integer"
+                                                          }
+                                                        },
+                                                        "required": [
+                                                          "kind",
+                                                          "center",
+                                                          "radius_bits"
+                                                        ],
+                                                        "type": "object"
+                                                      },
+                                                      {
+                                                        "additionalProperties": false,
+                                                        "properties": {
+                                                          "kind": {
+                                                            "const": "polygon"
+                                                          },
+                                                          "vertices": {
+                                                            "items": {
+                                                              "$ref": "#/$defs/rigid_vec2_bits"
+                                                            },
+                                                            "maxItems": 8,
+                                                            "minItems": 3,
+                                                            "type": "array"
+                                                          }
+                                                        },
+                                                        "required": [
+                                                          "kind",
+                                                          "vertices"
+                                                        ],
+                                                        "type": "object"
+                                                      },
+                                                      {
+                                                        "additionalProperties": false,
+                                                        "properties": {
+                                                          "kind": {
+                                                            "const": "edge"
+                                                          },
+                                                          "vertex_a": {
+                                                            "$ref": "#/$defs/rigid_vec2_bits"
+                                                          },
+                                                          "vertex_b": {
+                                                            "$ref": "#/$defs/rigid_vec2_bits"
+                                                          }
+                                                        },
+                                                        "required": [
+                                                          "kind",
+                                                          "vertex_a",
+                                                          "vertex_b"
+                                                        ],
+                                                        "type": "object"
+                                                      },
+                                                      {
+                                                        "additionalProperties": false,
+                                                        "properties": {
+                                                          "kind": {
+                                                            "const": "chain"
+                                                          },
+                                                          "looped": {
+                                                            "type": "boolean"
+                                                          },
+                                                          "vertices": {
+                                                            "items": {
+                                                              "$ref": "#/$defs/rigid_vec2_bits"
+                                                            },
+                                                            "maxItems": 64,
+                                                            "minItems": 2,
+                                                            "type": "array"
+                                                          }
+                                                        },
+                                                        "required": [
+                                                          "kind",
+                                                          "vertices",
+                                                          "looped"
+                                                        ],
+                                                        "type": "object"
+                                                      }
+                                                    ]
+                                                  },
+                                                  "maxItems": 32,
+                                                  "minItems": 1,
+                                                  "type": "array"
+                                                }
+                                              },
+                                              "required": [
+                                                "kind",
+                                                "shapes"
+                                              ],
+                                              "type": "object"
+                                            },
+                                            {
+                                              "additionalProperties": false,
+                                              "properties": {
+                                                "kind": {
+                                                  "const": "stroke"
+                                                },
+                                                "shape": {
+                                                  "oneOf": [
+                                                    {
+                                                      "additionalProperties": false,
+                                                      "properties": {
+                                                        "center": {
+                                                          "$ref": "#/$defs/rigid_vec2_bits"
+                                                        },
+                                                        "kind": {
+                                                          "const": "circle"
+                                                        },
+                                                        "radius_bits": {
+                                                          "maximum": 4294967295,
+                                                          "minimum": 0,
+                                                          "type": "integer"
+                                                        }
+                                                      },
+                                                      "required": [
+                                                        "kind",
+                                                        "center",
+                                                        "radius_bits"
+                                                      ],
+                                                      "type": "object"
+                                                    },
+                                                    {
+                                                      "additionalProperties": false,
+                                                      "properties": {
+                                                        "kind": {
+                                                          "const": "polygon"
+                                                        },
+                                                        "vertices": {
+                                                          "items": {
+                                                            "$ref": "#/$defs/rigid_vec2_bits"
+                                                          },
+                                                          "maxItems": 8,
+                                                          "minItems": 3,
+                                                          "type": "array"
+                                                        }
+                                                      },
+                                                      "required": [
+                                                        "kind",
+                                                        "vertices"
+                                                      ],
+                                                      "type": "object"
+                                                    },
+                                                    {
+                                                      "additionalProperties": false,
+                                                      "properties": {
+                                                        "kind": {
+                                                          "const": "edge"
+                                                        },
+                                                        "vertex_a": {
+                                                          "$ref": "#/$defs/rigid_vec2_bits"
+                                                        },
+                                                        "vertex_b": {
+                                                          "$ref": "#/$defs/rigid_vec2_bits"
+                                                        }
+                                                      },
+                                                      "required": [
+                                                        "kind",
+                                                        "vertex_a",
+                                                        "vertex_b"
+                                                      ],
+                                                      "type": "object"
+                                                    },
+                                                    {
+                                                      "additionalProperties": false,
+                                                      "properties": {
+                                                        "kind": {
+                                                          "const": "chain"
+                                                        },
+                                                        "looped": {
+                                                          "type": "boolean"
+                                                        },
+                                                        "vertices": {
+                                                          "items": {
+                                                            "$ref": "#/$defs/rigid_vec2_bits"
+                                                          },
+                                                          "maxItems": 64,
+                                                          "minItems": 2,
+                                                          "type": "array"
+                                                        }
+                                                      },
+                                                      "required": [
+                                                        "kind",
+                                                        "vertices",
+                                                        "looped"
+                                                      ],
+                                                      "type": "object"
+                                                    }
+                                                  ]
+                                                }
+                                              },
+                                              "required": [
+                                                "kind",
+                                                "shape"
+                                              ],
+                                              "type": "object"
+                                            },
+                                            {
+                                              "additionalProperties": false,
+                                              "properties": {
+                                                "kind": {
+                                                  "const": "explicit"
+                                                },
+                                                "positions": {
+                                                  "items": {
+                                                    "$ref": "#/$defs/rigid_vec2_bits"
+                                                  },
+                                                  "maxItems": 512,
+                                                  "minItems": 1,
+                                                  "type": "array"
+                                                }
+                                              },
+                                              "required": [
+                                                "kind",
+                                                "positions"
+                                              ],
+                                              "type": "object"
+                                            }
+                                          ]
+                                        },
+                                        "strength_bits": {
+                                          "maximum": 4294967295,
+                                          "minimum": 0,
+                                          "type": "integer"
+                                        },
+                                        "system_id": {
+                                          "maxLength": 128,
+                                          "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                          "type": "string"
+                                        },
+                                        "transform": {
+                                          "$ref": "#/$defs/rigid_transform_bits"
+                                        }
+                                      },
+                                      "required": [
+                                        "provenance",
+                                        "system_id",
+                                        "group_id",
+                                        "member_ids",
+                                        "source",
+                                        "destination",
+                                        "particle_flags_bits",
+                                        "group_flags_bits",
+                                        "transform",
+                                        "linear_velocity",
+                                        "angular_velocity_bits",
+                                        "color",
+                                        "strength_bits",
+                                        "maybe_stride_bits",
+                                        "lifetime_bits"
+                                      ],
+                                      "type": "object"
+                                    },
+                                    "kind": {
+                                      "const": "create_group"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "definition"
+                                  ],
+                                  "type": "object"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "kind": {
+                                      "const": "join_groups"
+                                    },
+                                    "source_group_id": {
+                                      "maxLength": 128,
+                                      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                      "type": "string"
+                                    },
+                                    "target_group_id": {
+                                      "maxLength": 128,
+                                      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "target_group_id",
+                                    "source_group_id"
+                                  ],
+                                  "type": "object"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "created_group_ids": {
+                                      "items": {
+                                        "maxLength": 128,
+                                        "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                        "type": "string"
+                                      },
+                                      "maxItems": 64,
+                                      "minItems": 1,
+                                      "type": "array"
+                                    },
+                                    "group_id": {
+                                      "maxLength": 128,
+                                      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                      "type": "string"
+                                    },
+                                    "kind": {
+                                      "const": "split_group"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "group_id",
+                                    "created_group_ids"
+                                  ],
+                                  "type": "object"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "group_flags_bits": {
+                                      "maximum": 7,
+                                      "minimum": 0,
+                                      "type": "integer"
+                                    },
+                                    "group_id": {
+                                      "maxLength": 128,
+                                      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                      "type": "string"
+                                    },
+                                    "kind": {
+                                      "const": "set_group_flags"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "group_id",
+                                    "group_flags_bits"
+                                  ],
+                                  "type": "object"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "group_id": {
+                                      "maxLength": 128,
+                                      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                                      "type": "string"
+                                    },
+                                    "kind": {
+                                      "const": "destroy_group"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "group_id"
+                                  ],
+                                  "type": "object"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "kind": {
+                                      "const": "step"
+                                    },
+                                    "particle_iterations": {
+                                      "maximum": 1024,
+                                      "minimum": 1,
+                                      "type": "integer"
+                                    },
+                                    "position_iterations": {
+                                      "maximum": 1024,
+                                      "minimum": 1,
+                                      "type": "integer"
+                                    },
+                                    "timestep_bits": {
+                                      "maximum": 4294967295,
+                                      "minimum": 0,
+                                      "type": "integer"
+                                    },
+                                    "velocity_iterations": {
+                                      "maximum": 1024,
+                                      "minimum": 1,
+                                      "type": "integer"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "timestep_bits",
+                                    "velocity_iterations",
+                                    "position_iterations",
+                                    "particle_iterations"
+                                  ],
+                                  "type": "object"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "kind": {
+                                      "const": "inspect_state"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind"
+                                  ],
+                                  "type": "object"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "operation"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
                             "fixture_id": {
                               "maxLength": 128,
                               "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",

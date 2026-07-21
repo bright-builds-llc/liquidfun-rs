@@ -40,6 +40,7 @@ pub const PHASE10_PUBLIC_GROUP_FLAG_MASK: u32 = 0x0000_0007;
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Phase10Provenance {
+    pub extension_version: u32,
     pub generator_id: ScenarioId,
     pub generator_version: ScenarioId,
     pub upstream_revision: ScenarioId,
@@ -89,6 +90,7 @@ pub enum Phase10GroupDestination {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Phase10GroupDefinition {
+    pub provenance: Phase10Provenance,
     pub system_id: ScenarioId,
     /// The new identity, or the append target identity for `append_to`.
     pub group_id: ScenarioId,
@@ -141,6 +143,9 @@ pub enum Phase10Operation {
 impl Phase10GroupDefinition {
     /// Validates finite values, closed flags, source shape, and per-definition bounds.
     pub(crate) fn validate(&self) -> Result<(), Phase10ValidationKind> {
+        if self.provenance.extension_version != PHASE10_RIGID_WORLD_EXTENSION_VERSION {
+            return Err(Phase10ValidationKind::InvalidProvenance);
+        }
         if self.member_ids.is_empty() || self.member_ids.len() > PHASE10_MAXIMUM_PARTICLES {
             return Err(Phase10ValidationKind::BoundaryLimitExceeded);
         }
@@ -158,6 +163,11 @@ impl Phase10GroupDefinition {
             return Err(Phase10ValidationKind::InvalidOwnership);
         }
         validate_source(&self.source)?;
+        if let Phase10GroupSource::Explicit { positions } = &self.source
+            && positions.len() != self.member_ids.len()
+        {
+            return Err(Phase10ValidationKind::InvalidOrdering);
+        }
         validate_transform(self.transform)?;
         validate_vec2(self.linear_velocity)?;
         validate_finite(self.angular_velocity_bits)?;
@@ -183,6 +193,40 @@ pub enum Phase10ValidationKind {
     InvalidFloat,
     InvalidWitness,
     InvalidProvenance,
+}
+
+/// Context-free stable failure returned by Phase 10 semantic constructors and validators.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
+#[error("invalid Phase 10 semantic contract: {kind:?}")]
+pub struct Phase10ValidationError {
+    kind: Phase10ValidationKind,
+}
+
+impl Phase10ValidationError {
+    pub(crate) const fn from_kind(kind: Phase10ValidationKind) -> Self {
+        Self { kind }
+    }
+
+    /// Returns the stable validation category without exposing untrusted record bytes.
+    #[must_use]
+    pub const fn kind(self) -> Phase10ValidationKind {
+        self.kind
+    }
+}
+
+/// Validates one standalone Phase 10 operation before adapter dispatch.
+///
+/// Cross-operation identity and lifecycle checks are additionally enforced by
+/// [`decode_rigid_world_request_jsonl`](super::decode_rigid_world_request_jsonl).
+///
+/// # Errors
+///
+/// Returns [`Phase10ValidationError`] for non-finite values, closed-flag
+/// violations, invalid source topology, or per-operation resource excess.
+pub fn validate_phase10_operation(
+    operation: &Phase10Operation,
+) -> Result<(), Phase10ValidationError> {
+    validate_operation_shape(operation).map_err(Phase10ValidationError::from_kind)
 }
 
 pub(crate) fn validate_operation_shape(
@@ -240,6 +284,7 @@ pub(crate) struct Phase10ActionState {
     created_groups: HashSet<ScenarioId>,
     live_group_owners: HashMap<ScenarioId, ScenarioId>,
     created_particles: HashSet<ScenarioId>,
+    maybe_provenance: Option<Phase10Provenance>,
 }
 
 impl Phase10ActionState {
@@ -248,7 +293,7 @@ impl Phase10ActionState {
         operation: &Phase10Operation,
         declared_systems: &HashSet<ScenarioId>,
         live_systems: &HashSet<ScenarioId>,
-        declared_particles: &HashSet<ScenarioId>,
+        reserved_ids: &HashSet<ScenarioId>,
     ) -> Result<(), Phase10ValidationKind> {
         self.operation_count = self
             .operation_count
@@ -259,12 +304,9 @@ impl Phase10ActionState {
         }
         validate_operation_shape(operation)?;
         match operation {
-            Phase10Operation::CreateGroup { definition } => self.create_group(
-                definition,
-                declared_systems,
-                live_systems,
-                declared_particles,
-            ),
+            Phase10Operation::CreateGroup { definition } => {
+                self.create_group(definition, declared_systems, live_systems, reserved_ids)
+            }
             Phase10Operation::JoinGroups {
                 target_group_id,
                 source_group_id,
@@ -292,8 +334,8 @@ impl Phase10ActionState {
                     return Err(Phase10ValidationKind::UnknownSemanticId);
                 };
                 for created_id in created_group_ids {
-                    if declared_systems.contains(created_id)
-                        || declared_particles.contains(created_id)
+                    if reserved_ids.contains(created_id)
+                        || self.created_particles.contains(created_id)
                         || !self.created_groups.insert(created_id.clone())
                     {
                         return Err(Phase10ValidationKind::DuplicateSemanticId);
@@ -333,16 +375,31 @@ impl Phase10ActionState {
         definition: &Phase10GroupDefinition,
         declared_systems: &HashSet<ScenarioId>,
         live_systems: &HashSet<ScenarioId>,
-        declared_particles: &HashSet<ScenarioId>,
+        reserved_ids: &HashSet<ScenarioId>,
     ) -> Result<(), Phase10ValidationKind> {
         if !declared_systems.contains(&definition.system_id)
             || !live_systems.contains(&definition.system_id)
         {
             return Err(Phase10ValidationKind::InvalidOwnership);
         }
+        if let Some(provenance) = &self.maybe_provenance {
+            if provenance != &definition.provenance {
+                return Err(Phase10ValidationKind::InvalidProvenance);
+            }
+        } else {
+            self.maybe_provenance = Some(definition.provenance.clone());
+        }
+        if self
+            .created_particles
+            .len()
+            .checked_add(definition.member_ids.len())
+            .is_none_or(|count| count > PHASE10_MAXIMUM_PARTICLES)
+        {
+            return Err(Phase10ValidationKind::BoundaryLimitExceeded);
+        }
         for particle_id in &definition.member_ids {
-            if declared_systems.contains(particle_id)
-                || declared_particles.contains(particle_id)
+            if reserved_ids.contains(particle_id)
+                || self.created_groups.contains(particle_id)
                 || !self.created_particles.insert(particle_id.clone())
             {
                 return Err(Phase10ValidationKind::DuplicateSemanticId);
@@ -350,8 +407,8 @@ impl Phase10ActionState {
         }
         match &definition.destination {
             Phase10GroupDestination::New => {
-                if declared_systems.contains(&definition.group_id)
-                    || declared_particles.contains(&definition.group_id)
+                if reserved_ids.contains(&definition.group_id)
+                    || self.created_particles.contains(&definition.group_id)
                     || !self.created_groups.insert(definition.group_id.clone())
                 {
                     return Err(Phase10ValidationKind::DuplicateSemanticId);

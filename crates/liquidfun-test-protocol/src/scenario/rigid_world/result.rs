@@ -11,9 +11,10 @@ use phase9::Phase9ResultState;
 pub use phase10::*;
 
 use super::{
-    PHASE9_MAXIMUM_IDENTITIES, Phase9ParticleObservation, RigidBodyKind, RigidContactIdentity,
-    RigidExpectedCounts, RigidFilterBits, RigidWorldAction, RigidWorldDecodeError,
-    RigidWorldErrorKind, RigidWorldRequestRecord, RigidWorldWitnessFamily, validation,
+    PHASE9_MAXIMUM_IDENTITIES, Phase9ParticleObservation, Phase10Operation, RigidBodyKind,
+    RigidContactIdentity, RigidExpectedCounts, RigidFilterBits, RigidWorldAction,
+    RigidWorldDecodeError, RigidWorldErrorKind, RigidWorldRequestRecord, RigidWorldWitnessFamily,
+    validation,
 };
 use crate::{
     FloatBits, HarnessLimits, ProtocolVersion, RecordLimit, RequestId, ScenarioId,
@@ -596,6 +597,24 @@ fn validate_checkpoint_observations(
             phase9_state.validate(particle_action, &live_identities, actual)?;
             continue;
         }
+        if let RigidWorldAction::ParticleGroup { operation } = action.action() {
+            if matches!(operation, Phase10Operation::InspectState) {
+                let Some(actual) = actual_observations.next() else {
+                    return Err(validation(RigidWorldErrorKind::ResultObservationMismatch));
+                };
+                let RigidWorldObservation::ParticleGroup { observation } = actual else {
+                    return Err(validation(RigidWorldErrorKind::ResultObservationMismatch));
+                };
+                let live_identities =
+                    rigid_world_live_identities(timeline, &live_bodies, &live_fixtures);
+                validate_phase10_observation_against_timeline(
+                    timeline,
+                    &live_identities,
+                    observation,
+                )?;
+            }
+            continue;
+        }
         if matches!(action.action(), RigidWorldAction::Step { .. }) {
             phase9_state.advance_step();
         }
@@ -637,6 +656,81 @@ fn validate_checkpoint_observations(
     if actual_observations
         .any(|observation| !matches!(observation, RigidWorldObservation::Lifecycle { .. }))
     {
+        return Err(validation(RigidWorldErrorKind::ResultObservationMismatch));
+    }
+    Ok(())
+}
+
+fn validate_phase10_observation_against_timeline(
+    timeline: &super::RigidWorldTimeline,
+    live_rigid: &RigidCheckpointLiveIdentities<'_>,
+    observation: &Phase10Observation,
+) -> Result<(), RigidWorldDecodeError> {
+    let Phase10Observation::State { state } = observation;
+    let definitions = timeline
+        .actions()
+        .iter()
+        .filter_map(|record| {
+            let RigidWorldAction::ParticleGroup {
+                operation: Phase10Operation::CreateGroup { definition },
+            } = record.action()
+            else {
+                return None;
+            };
+            Some(definition)
+        })
+        .collect::<Vec<_>>();
+    let Some(provenance) = definitions.first().map(|definition| &definition.provenance) else {
+        return Err(validation(RigidWorldErrorKind::ResultObservationMismatch));
+    };
+    if &state.provenance != provenance {
+        return Err(validation(RigidWorldErrorKind::ResultObservationMismatch));
+    }
+    let system_ids = timeline
+        .particle_systems()
+        .iter()
+        .map(|system| &system.system_id)
+        .collect::<HashSet<_>>();
+    let group_ids = timeline
+        .actions()
+        .iter()
+        .flat_map(|record| match record.action() {
+            RigidWorldAction::ParticleGroup {
+                operation: Phase10Operation::CreateGroup { definition },
+            } => vec![&definition.group_id],
+            RigidWorldAction::ParticleGroup {
+                operation:
+                    Phase10Operation::SplitGroup {
+                        created_group_ids, ..
+                    },
+            } => created_group_ids.iter().collect(),
+            _ => Vec::new(),
+        })
+        .collect::<HashSet<_>>();
+    let particle_ids = definitions
+        .iter()
+        .flat_map(|definition| definition.member_ids.iter())
+        .collect::<HashSet<_>>();
+    if state
+        .groups
+        .iter()
+        .any(|group| !group_ids.contains(&group.group_id) || !system_ids.contains(&group.system_id))
+        || state.particles.iter().any(|particle| {
+            !particle_ids.contains(&particle.particle_id)
+                || !group_ids.contains(&particle.group_id)
+                || !system_ids.contains(&particle.system_id)
+        })
+        || state
+            .events
+            .iter()
+            .any(|event| !system_ids.contains(&event.system_id))
+    {
+        return Err(validation(RigidWorldErrorKind::ResultObservationMismatch));
+    }
+    if state.body_contacts.iter().any(|contact| {
+        !live_rigid.body_ids.contains(&&contact.body_id)
+            || !live_rigid.fixture_ids.contains(&&contact.fixture_id)
+    }) {
         return Err(validation(RigidWorldErrorKind::ResultObservationMismatch));
     }
     Ok(())
@@ -783,6 +877,13 @@ fn validate_result_bounds(result: &RigidWorldResultRecord) -> Result<(), RigidWo
             {
                 return Err(validation(RigidWorldErrorKind::AggregateLimitExceeded));
             }
+            for observation in &checkpoint.observations {
+                if let RigidWorldObservation::ParticleGroup { observation } = observation {
+                    observation
+                        .validate()
+                        .map_err(|_| validation(RigidWorldErrorKind::InvalidParticleGroupResult))?;
+                }
+            }
             let manifold_points = checkpoint
                 .contacts
                 .iter()
@@ -809,9 +910,7 @@ fn validate_result_bounds(result: &RigidWorldResultRecord) -> Result<(), RigidWo
                     RigidWorldObservation::Particle { observation } => {
                         phase9_observation_exceeds_bounds(observation)
                     }
-                    RigidWorldObservation::ParticleGroup { observation } => {
-                        observation.validate().is_err()
-                    }
+                    RigidWorldObservation::ParticleGroup { .. } => false,
                     _ => false,
                 })
             {
