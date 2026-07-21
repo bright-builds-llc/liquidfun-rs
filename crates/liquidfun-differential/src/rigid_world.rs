@@ -2,6 +2,7 @@
 
 mod evidence;
 mod model;
+mod phase10;
 mod phase7;
 mod phase8;
 mod phase9;
@@ -94,6 +95,12 @@ pub enum NativeRigidWorldError {
     Reset {
         /// Timeline family that retained state.
         family: RigidWorldWitnessFamily,
+    },
+    /// Native execution panicked before a complete result could be accepted.
+    #[error("native rigid timeline `{timeline_id}` panicked; no partial result was emitted")]
+    Panic {
+        /// Stable timeline identity used to identify the failed request member.
+        timeline_id: Box<str>,
     },
 }
 
@@ -366,6 +373,7 @@ pub(crate) struct TimelineExecutor {
     next_lifecycle_ordinal: u32,
     pub(crate) next_phase9_occurrence_ordinal: u32,
     pub(crate) phase9_occurrences: Vec<liquidfun_test_protocol::Phase9Occurrence>,
+    phase10: phase10::NativePhase10State,
     maybe_last_contact: Option<RigidContactIdentity>,
     events: Vec<RigidContactEvent>,
     destructions: Vec<RigidDestructionRecord>,
@@ -409,6 +417,7 @@ impl TimelineExecutor {
             next_lifecycle_ordinal: 0,
             next_phase9_occurrence_ordinal: 0,
             phase9_occurrences: Vec::new(),
+            phase10: phase10::NativePhase10State::default(),
             maybe_last_contact: None,
             events: Vec::new(),
             destructions: Vec::new(),
@@ -551,6 +560,24 @@ impl TimelineExecutor {
 fn execute_timeline(
     timeline: &RigidWorldTimeline,
 ) -> Result<RigidWorldTimelineResult, NativeRigidWorldError> {
+    let timeline_id = timeline.actions().first().map_or_else(
+        || "empty-timeline".into(),
+        |action| action.action_id().as_str().into(),
+    );
+    catch_native_timeline_panic(timeline_id, || execute_timeline_inner(timeline))
+}
+
+fn catch_native_timeline_panic<T>(
+    timeline_id: Box<str>,
+    execute: impl FnOnce() -> Result<T, NativeRigidWorldError>,
+) -> Result<T, NativeRigidWorldError> {
+    std::panic::catch_unwind(std::panic::AssertUnwindSafe(execute))
+        .map_err(|_payload| NativeRigidWorldError::Panic { timeline_id })?
+}
+
+fn execute_timeline_inner(
+    timeline: &RigidWorldTimeline,
+) -> Result<RigidWorldTimelineResult, NativeRigidWorldError> {
     let mut executor = TimelineExecutor::new(timeline.witness_family())?;
     let mut checkpoints = Vec::with_capacity(timeline.checkpoints().len());
     for action in timeline.actions() {
@@ -569,6 +596,7 @@ fn execute_timeline(
         || !executor.ropes.is_empty()
         || !executor.particle_systems.is_empty()
         || !executor.particles.is_empty()
+        || !executor.phase10.is_empty()
         || executor.world.joint_count() != 0
         || executor.world.contact_count() != 0
     {
@@ -591,7 +619,11 @@ fn execute_action(
     timeline: &RigidWorldTimeline,
     record: &RigidWorldActionRecord,
 ) -> Result<(), NativeRigidWorldError> {
+    if phase10::execute_action(executor, timeline, record)? {
+        return Ok(());
+    }
     if phase9::execute_action(executor, timeline, record)? {
+        executor.phase10.retain_live(&executor.world);
         return Ok(());
     }
     if phase8::execute_action(executor, timeline, record)? {
@@ -865,5 +897,23 @@ mod tests {
             Err(liquidfun::BodyMassDataError::NonPositiveCenteredRotationalInertia)
         );
         assert_eq!(after, before);
+    }
+
+    #[test]
+    fn native_timeline_panic_is_a_typed_fail_closed_error() {
+        // Arrange
+        let timeline_id: Box<str> = "phase10-panic".into();
+
+        // Act
+        let result = catch_native_timeline_panic::<()>(timeline_id, || {
+            panic!("adapter panic fixture");
+        });
+
+        // Assert
+        assert!(matches!(
+            result,
+            Err(NativeRigidWorldError::Panic { timeline_id })
+                if timeline_id.as_ref() == "phase10-panic"
+        ));
     }
 }

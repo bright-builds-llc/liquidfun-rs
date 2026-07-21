@@ -542,6 +542,10 @@ pub fn validate_rigid_world_result_against_request(
     Ok(())
 }
 
+#[allow(
+    clippy::too_many_lines,
+    reason = "the retained phase observation ordering contract is kept in one explicit walk"
+)]
 fn validate_checkpoint_observations(
     timeline: &super::RigidWorldTimeline,
     checkpoint_index: usize,
@@ -910,7 +914,6 @@ fn validate_result_bounds(result: &RigidWorldResultRecord) -> Result<(), RigidWo
                     RigidWorldObservation::Particle { observation } => {
                         phase9_observation_exceeds_bounds(observation)
                     }
-                    RigidWorldObservation::ParticleGroup { .. } => false,
                     _ => false,
                 })
             {

@@ -170,6 +170,10 @@ impl<'a> Phase9ResultState<'a> {
         }
     }
 
+    #[allow(
+        clippy::too_many_lines,
+        reason = "the closed action-observation matrix remains auditable as one match"
+    )]
     pub(super) fn validate(
         &self,
         action: &Phase9ParticleAction,
@@ -453,6 +457,11 @@ impl<'a> Phase9ResultState<'a> {
             .map(|declaration| declaration.particle_id.clone())
     }
 
+    #[allow(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        reason = "validated positive bounded lifetime fields intentionally use pinned truncation"
+    )]
     fn expiration_step(&self, declaration: &crate::Phase9ParticleDeclaration) -> Option<u32> {
         let system = self.system_declaration(&declaration.system_id)?;
         let lifetime = declaration.lifetime_bits.to_f32();

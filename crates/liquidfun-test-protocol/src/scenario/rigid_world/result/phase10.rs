@@ -384,6 +384,10 @@ impl Phase10StateObservation {
         Ok(())
     }
 
+    #[allow(
+        clippy::too_many_lines,
+        reason = "one closed numeric validation walk keeps the strict result schema auditable"
+    )]
     fn validate_numeric_and_flags(&self) -> Result<(), Phase10ValidationKind> {
         for group in &self.groups {
             if group.group_flags_bits & !PHASE10_PUBLIC_GROUP_FLAG_MASK != 0 {
@@ -497,8 +501,8 @@ fn validate_public_particle_flags(flags: u32) -> Result<(), Phase10ValidationKin
     Ok(())
 }
 
-fn validate_distinct_known<'a, const N: usize>(
-    particles: &HashMap<ScenarioId, &'a Phase10ParticleSnapshot>,
+fn validate_distinct_known<const N: usize>(
+    particles: &HashMap<ScenarioId, &Phase10ParticleSnapshot>,
     ids: [&ScenarioId; N],
 ) -> Result<(), Phase10ValidationKind> {
     if ids.iter().any(|id| !particles.contains_key(*id)) {

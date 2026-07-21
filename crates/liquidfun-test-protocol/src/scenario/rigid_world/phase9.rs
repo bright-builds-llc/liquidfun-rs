@@ -62,7 +62,9 @@ impl Phase9SemanticAssertion {
             Self::ObservedSemantic { branch_id } => {
                 observed_branch_kind(branch_id.as_str()).unwrap_or(Phase9ObservationKind::Particle)
             }
-            Self::FiniteLifetimeExpired { .. } => Phase9ObservationKind::System,
+            Self::FiniteLifetimeExpired { .. } | Self::InfiniteLifetimeSurvives { .. } => {
+                Phase9ObservationKind::System
+            }
             Self::ListenerEventEffect { enabled, .. } => {
                 if *enabled {
                     Phase9ObservationKind::Lifecycle
@@ -70,7 +72,6 @@ impl Phase9SemanticAssertion {
                     Phase9ObservationKind::Statistics
                 }
             }
-            Self::InfiniteLifetimeSurvives { .. } => Phase9ObservationKind::System,
             Self::EqualExpirationOrder { .. } => Phase9ObservationKind::Lifecycle,
             Self::StrictContactCardinality { .. }
             | Self::FilterContactEffect { .. }
@@ -324,7 +325,7 @@ fn observed_branch_kind(branch_id: &str) -> Option<Phase9ObservationKind> {
         "paused_system" | "fixed_buffer" | "growable_buffer" | "fixed_full"
         | "maximum_lifetime" => Some(Phase9ObservationKind::Statistics),
         "stable_ids_compact" => Some(Phase9ObservationKind::MixedState),
-        "optional_lanes" => Some(Phase9ObservationKind::Particle),
+        "optional_lanes" | "force_range" | "impulse_range" => Some(Phase9ObservationKind::Particle),
         "teardown" | "oldest_lifetime" | "requested_destruction_callback" | "capacity_eviction" => {
             Some(Phase9ObservationKind::Lifecycle)
         }
@@ -338,7 +339,6 @@ fn observed_branch_kind(branch_id: &str) -> Option<Phase9ObservationKind> {
         "dynamic_body_reaction" | "static_body_no_reaction" | "statistics_counts" => {
             Some(Phase9ObservationKind::Statistics)
         }
-        "force_range" | "impulse_range" => Some(Phase9ObservationKind::Particle),
         "system_aabb" | "world_aabb" | "system_culling" | "query_continue" | "query_terminate" => {
             Some(Phase9ObservationKind::Query)
         }
