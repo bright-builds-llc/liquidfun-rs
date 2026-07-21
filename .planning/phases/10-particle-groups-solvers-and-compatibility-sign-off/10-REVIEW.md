@@ -1,6 +1,6 @@
 ---
 phase: 10-particle-groups-solvers-and-compatibility-sign-off
-reviewed: 2026-07-21T16:13:44Z
+reviewed: 2026-07-21T19:43:07Z
 depth: standard
 files_reviewed: 151
 files_reviewed_list:
@@ -157,102 +157,37 @@ files_reviewed_list:
   - tools/xtask/tests/upstream_cli.rs
 findings:
   critical: 0
-  warning: 4
+  warning: 0
   info: 0
-  total: 4
-status: issues_found
+  total: 0
+status: clean
 ---
 
 # Phase 10: Code Review Report
 
-**Reviewed:** 2026-07-21T16:13:44Z
+**Reviewed:** 2026-07-21T19:43:07Z
 **Depth:** standard
 **Files Reviewed:** 151
-**Status:** issues_found
+**Status:** clean
 
 ## Summary
 
-The Phase 10 engine, adapters, comparator, evidence tooling, protocol, fixtures, documentation, and CI were reviewed at standard depth. The engine implementation is heavily guarded and its full Rust test suite and Clippy checks pass. Four protocol-boundary validation gaps remain: an unsatisfiable generated JSON Schema record, two request-decoder acceptance mismatches with the C++ oracle, and an incomplete result ownership check. Generated runtime evidence under `target/phase10-evidence/` was excluded from code review as directed.
+The exact 151-file Phase 10 scope was re-reviewed at standard depth after the iteration-2 fixes. Commits `00d8caa`, `cca043b`, `5f63b57`, `e308b11`, and `10970f0` close all six previously reported protocol-boundary warnings: live-group system teardown, exact phase labeling, inspection-prefix identity binding, event shape and identity validation, body-contact fixture ownership, and the closed particle-flag schema domain. No regressions or new correctness, security, or maintainability issues were found in the reviewed scope.
+
+All reviewed files meet quality standards. No issues found.
 
 Verification performed:
 
-- `cargo test --all-features` — passed, including 19 doctests.
-- `cargo clippy --all-targets --all-features -- -D warnings` — passed.
+- `cargo fmt --all --check` — passed.
+- `cargo test -p liquidfun-differential --test phase10_protocol lifecycle_validation:: -- --nocapture` — passed (11 tests).
+- `cargo test -p liquidfun-test-protocol live_fixture_identity_must_match_its_claimed_body_owner -- --nocapture` — passed (1 test).
+- `git diff --check 00d8caa^..10970f0` — passed.
+- The persisted fix report records passing format, Clippy, all-target build, and all-feature test gates for each atomic fix commit.
 
-## Warnings
-
-### WR-01: Phase 10 provenance schema is unsatisfiable
-
-**File:** `crates/liquidfun-test-protocol/src/schema/rigid_world/phase10.rs:131-148`
-
-**Issue:** `provenance_schema` requires `extension_version`, but its closed `properties` object does not define that member. Because `closed_record` sets `additionalProperties: false`, a record can neither omit the required member nor include it. The inverse mistake appears in `state_schema`: it defines a top-level `extension_version` that `Phase10StateObservation` does not serialize and does not require. The checked-in generated schemas preserve the impossible provenance contract, so standards-compliant JSON Schema validation rejects every Phase 10 group definition even though serde decoding accepts it.
-
-**Fix:** Put the version member on the provenance record and remove the unused top-level state member, then regenerate both checked-in schemas and add a regression that validates a complete Phase 10 request/result against them.
-
-```rust
-fn provenance_schema() -> Value {
-    closed_record(
-        &json!({
-            "extension_version": { "const": crate::PHASE10_RIGID_WORLD_EXTENSION_VERSION },
-            "generator_id": semantic_id_schema(),
-            // ...
-        }),
-        &["extension_version", "generator_id", /* ... */],
-    )
-}
-```
-
-### WR-02: Rust request validation omits the cumulative group-identity bound
-
-**Files:** `crates/liquidfun-test-protocol/src/scenario/rigid_world/phase10.rs:329-345`, `crates/liquidfun-test-protocol/src/scenario/rigid_world/phase10.rs:408-418`
-
-**Issue:** `PHASE10_MAXIMUM_GROUPS` is documented as the maximum live or declared groups in a timeline, but Rust only bounds the number of IDs in one split operation. Repeated `CreateGroup`/destroy or split operations can grow `created_groups` beyond 64 and still decode successfully. The C++ decoder rejects the same request once `all_groups.size()` exceeds the bound (`rigid_world_phase10_decode.hpp:288-290` and `323-325`). A request can therefore pass the Rust wire boundary and fail only when sent to the oracle, misclassifying malformed input as an oracle/harness failure.
-
-**Fix:** Preflight the cumulative count before inserting any new group identities in both the new-group and split branches, and add boundary tests for exactly 64 total declared IDs and 65 across multiple operations.
-
-```rust
-let total = self.created_groups.len().checked_add(created_group_ids.len())
-    .ok_or(Phase10ValidationKind::BoundaryLimitExceeded)?;
-if total > PHASE10_MAXIMUM_GROUPS {
-    return Err(Phase10ValidationKind::BoundaryLimitExceeded);
-}
-```
-
-### WR-03: Inspection without provenance passes Rust request decoding
-
-**File:** `crates/liquidfun-test-protocol/src/scenario/rigid_world/phase10.rs:365`
-
-**Issue:** `Phase10ActionState::apply` accepts `InspectState` unconditionally, including before any group definition establishes Phase 10 provenance. The native adapter later fails with “Phase 10 inspection has no provenance,” and the C++ decoder rejects the operation at its validation boundary (`rigid_world_phase10_decode.hpp:365-370`). This again allows a malformed request through the shared Rust decoder and converts an input error into an adapter-specific execution failure.
-
-**Fix:** Require `maybe_provenance` when applying `InspectState`, while leaving timelines with no Phase 10 actions valid, and add an integration test that an inspect-only Phase 10 action fails during request decoding.
-
-```rust
-Phase10Operation::InspectState => self
-    .maybe_provenance
-    .as_ref()
-    .map(|_| ())
-    .ok_or(Phase10ValidationKind::InvalidProvenance),
-```
-
-### WR-04: Result validation admits inconsistent group and topology ownership
-
-**File:** `crates/liquidfun-test-protocol/src/scenario/rigid_world/result/phase10.rs:327-383`
-
-**Issue:** The validator checks that flattened group member IDs match particle order, and separately checks that each particle names an existing group in the same system. It never checks that the particle's `group_id` is the group that actually listed that particle. Two same-system groups can therefore swap the `group_id` fields in their particle snapshots and still validate. Likewise, pair and triad endpoints are checked only for existence/distinctness, so topology can connect particles from different systems even though topology is system-owned. These malformed observations can reach the comparator despite its fail-closed contract.
-
-**Fix:** Build an authoritative member-ID-to-(group-ID, system-ID) map while walking groups, require each particle snapshot to match that exact owner, and require every pair/triad endpoint to share one system. Add negative tests for swapped same-system group ownership and cross-system pair/triad endpoints.
-
-```rust
-let owner = member_owners
-    .get(&particle.particle_id)
-    .ok_or(Phase10ValidationKind::InvalidOwnership)?;
-if owner.group_id != particle.group_id || owner.system_id != particle.system_id {
-    return Err(Phase10ValidationKind::InvalidOwnership);
-}
-```
+Supporting regression modules added by the fix commits were inspected to verify the scoped implementation changes, but they were not added to the original 151-file review scope.
 
 ***
 
-_Reviewed: 2026-07-21T16:13:44Z_
+_Reviewed: 2026-07-21T19:43:07Z_
 _Reviewer: the agent (gsd-code-reviewer)_
 _Depth: standard_
