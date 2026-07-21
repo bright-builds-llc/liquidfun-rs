@@ -204,6 +204,83 @@ fn phase10_create_definition_mut(value: &mut Value) -> &mut Value {
         .expect("definition should exist")
 }
 
+fn insert_phase10_actions_before_destroy(value: &mut Value, inserted: Vec<Value>) {
+    let actions = value["scenario"]["timelines"][0]["actions"]
+        .as_array_mut()
+        .expect("actions should be an array");
+    let insertion_index = actions
+        .iter()
+        .position(|action| action["action_id"] == "p10-destroy-a")
+        .expect("destroy action should exist");
+    actions.splice(insertion_index..insertion_index, inserted);
+}
+
+fn add_transient_created_groups(value: &mut Value, count: usize) {
+    let mut actions = Vec::with_capacity(count * 2);
+    for index in 0..count {
+        let group_id = format!("extra-group-{index}");
+        let particle_id = format!("extra-particle-{index}");
+        let mut group = serde_json::to_value(definition()).expect("definition should encode");
+        group["group_id"] = json!(group_id);
+        group["member_ids"] = json!([particle_id]);
+        group["source"] = json!({
+            "kind": "explicit",
+            "positions": [{ "x_bits": bits(index as f32).bits(), "y_bits": bits(0.0).bits() }]
+        });
+        actions.push(json!({
+            "action_id": format!("p10-extra-create-{index}"),
+            "phase": "phase10",
+            "action": { "kind": "particle_group", "operation": { "kind": "create_group", "definition": group } }
+        }));
+        actions.push(json!({
+            "action_id": format!("p10-extra-destroy-{index}"),
+            "phase": "phase10",
+            "action": { "kind": "particle_group", "operation": { "kind": "destroy_group", "group_id": group_id } }
+        }));
+    }
+    insert_phase10_actions_before_destroy(value, actions);
+}
+
+fn insert_phase10_actions_before_flags(value: &mut Value, inserted: Vec<Value>) {
+    let actions = value["scenario"]["timelines"][0]["actions"]
+        .as_array_mut()
+        .expect("actions should be an array");
+    let insertion_index = actions
+        .iter()
+        .position(|action| action["action_id"] == "p10-flags")
+        .expect("flags action should exist");
+    actions.splice(insertion_index..insertion_index, inserted);
+}
+
+fn add_split_group_identities(value: &mut Value, count: usize) {
+    let created_group_ids = (0..count)
+        .map(|index| format!("split-group-{index}"))
+        .collect::<Vec<_>>();
+    let mut actions = created_group_ids
+        .chunks(30)
+        .enumerate()
+        .map(|(index, ids)| {
+            json!({
+                "action_id": format!("p10-extra-split-{index}"),
+                "phase": "phase10",
+                "action": { "kind": "particle_group", "operation": {
+                    "kind": "split_group",
+                    "group_id": "group-a",
+                    "created_group_ids": ids
+                } }
+            })
+        })
+        .collect::<Vec<_>>();
+    actions.extend(created_group_ids.into_iter().enumerate().map(|(index, group_id)| {
+        json!({
+            "action_id": format!("p10-extra-split-destroy-{index}"),
+            "phase": "phase10",
+            "action": { "kind": "particle_group", "operation": { "kind": "destroy_group", "group_id": group_id } }
+        })
+    }));
+    insert_phase10_actions_before_flags(value, actions);
+}
+
 #[test]
 fn semantic_group_definition_preserves_exact_bits_ids_and_source_order() {
     // Arrange
@@ -462,6 +539,54 @@ fn wire_particle_boundary_accepts_limit_and_rejects_one_over() {
     assert_eq!(
         rejected.map_err(liquidfun_test_protocol::Phase10ValidationError::kind),
         Err(Phase10ValidationKind::BoundaryLimitExceeded)
+    );
+}
+
+#[test]
+fn wire_group_identity_boundary_counts_destroyed_groups_cumulatively() {
+    // Arrange
+    let limits = HarnessLimits::phase2_default_v1();
+    let mut at_limit = phase10_request_value();
+    add_split_group_identities(&mut at_limit, 59);
+    add_transient_created_groups(&mut at_limit, 1);
+    let mut one_over = phase10_request_value();
+    add_split_group_identities(&mut one_over, 60);
+    add_transient_created_groups(&mut one_over, 1);
+
+    // Act
+    let accepted = decode_rigid_world_request_jsonl(&encode_value(&at_limit), &limits);
+    let rejected = decode_rigid_world_request_jsonl(&encode_value(&one_over), &limits);
+
+    // Assert
+    assert!(accepted.is_ok());
+    assert_eq!(
+        rejected
+            .expect_err("the sixty-fifth declared group must be rejected")
+            .rigid_world_kind(),
+        Some(liquidfun_test_protocol::RigidWorldErrorKind::InvalidParticleGroupAction)
+    );
+}
+
+#[test]
+fn wire_group_identity_boundary_counts_multiple_splits_cumulatively() {
+    // Arrange
+    let limits = HarnessLimits::phase2_default_v1();
+    let mut at_limit = phase10_request_value();
+    add_split_group_identities(&mut at_limit, 60);
+    let mut one_over = phase10_request_value();
+    add_split_group_identities(&mut one_over, 61);
+
+    // Act
+    let accepted = decode_rigid_world_request_jsonl(&encode_value(&at_limit), &limits);
+    let rejected = decode_rigid_world_request_jsonl(&encode_value(&one_over), &limits);
+
+    // Assert
+    assert!(accepted.is_ok());
+    assert_eq!(
+        rejected
+            .expect_err("the sixty-fifth split identity must be rejected")
+            .rigid_world_kind(),
+        Some(liquidfun_test_protocol::RigidWorldErrorKind::InvalidParticleGroupAction)
     );
 }
 

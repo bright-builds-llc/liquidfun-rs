@@ -333,6 +333,7 @@ impl Phase10ActionState {
                 let Some(owner) = self.live_group_owners.get(group_id).cloned() else {
                     return Err(Phase10ValidationKind::UnknownSemanticId);
                 };
+                self.ensure_group_identity_capacity(created_group_ids.len())?;
                 for created_id in created_group_ids {
                     if reserved_ids.contains(created_id)
                         || self.created_particles.contains(created_id)
@@ -407,6 +408,7 @@ impl Phase10ActionState {
         }
         match &definition.destination {
             Phase10GroupDestination::New => {
+                self.ensure_group_identity_capacity(1)?;
                 if reserved_ids.contains(&definition.group_id)
                     || self.created_particles.contains(&definition.group_id)
                     || !self.created_groups.insert(definition.group_id.clone())
@@ -431,6 +433,21 @@ impl Phase10ActionState {
     fn require_live_group(&self, group_id: &ScenarioId) -> Result<(), Phase10ValidationKind> {
         if !self.live_group_owners.contains_key(group_id) {
             return Err(Phase10ValidationKind::UnknownSemanticId);
+        }
+        Ok(())
+    }
+
+    fn ensure_group_identity_capacity(
+        &self,
+        additional: usize,
+    ) -> Result<(), Phase10ValidationKind> {
+        if self
+            .created_groups
+            .len()
+            .checked_add(additional)
+            .is_none_or(|count| count > PHASE10_MAXIMUM_GROUPS)
+        {
+            return Err(Phase10ValidationKind::BoundaryLimitExceeded);
         }
         Ok(())
     }
