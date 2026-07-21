@@ -1,6 +1,12 @@
+mod corpus;
 mod discovery;
 mod report;
 mod validation;
+
+// Keep the checked parser in the production inventory graph before a later
+// plan adds the first authoritative corpus manifest.
+const _: fn(&[u8], &str) -> Result<corpus::CorpusManifest, corpus::CorpusError> =
+    corpus::parse_manifest;
 
 use std::env;
 use std::error::Error;

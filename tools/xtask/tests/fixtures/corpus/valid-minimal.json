@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "oracle_revision": "7f20402173fd143a3988c921bc384459c6a858f2",
+  "items": [
+    {
+      "id": "upstream-test.common.vec2-construction",
+      "kind": "upstream_test",
+      "source": {
+        "path": "liquidfun/Box2D/Unittests/Common/CommonTests.cpp",
+        "symbol": "Common.Vec2Construction"
+      },
+      "applicability": "applicable",
+      "disposition": "native_port",
+      "compatibility_impact": "behavioral",
+      "evidence": [
+        {
+          "kind": "native_test",
+          "reference": "crates/liquidfun/tests/math_api.rs#vec2_construction"
+        }
+      ],
+      "review": {
+        "reviewer": "phase-11-plan-01",
+        "reviewed_on": "2026-07-21",
+        "rationale": "The focused native test exercises the same public vector construction behavior."
+      }
+    }
+  ]
+}
