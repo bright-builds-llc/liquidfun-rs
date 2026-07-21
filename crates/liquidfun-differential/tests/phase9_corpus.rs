@@ -270,6 +270,10 @@ fn bounded_phase9_request(case_id: &str) -> liquidfun_test_protocol::RigidWorldR
     decode_value(&value).expect("the bounded Phase 9 corpus should decode")
 }
 
+#[allow(
+    clippy::similar_names,
+    reason = "semantic fixture coordinates deliberately preserve fixed_c/fixed_d labels"
+)]
 fn configure_phase9_declarations(timeline: &mut Value, case_id: &str) {
     let contact_case = case_id == "contacts-listeners-filters-and-coupling";
     let fixed_offset = if contact_case { 18.515 } else { 0.0 };
@@ -463,8 +467,9 @@ fn order_phase9_actions(phase9_actions: &mut Vec<Value>, case_id: &str) {
         } else {
             3
         };
+        let insertion_index = first_step + 1;
         phase9_actions.splice(
-            first_step + 1..first_step + 1,
+            insertion_index..insertion_index,
             (2..=final_step).map(|ordinal| {
                 let mut step = step_template.clone();
                 step["action_id"] = json!(format!("phase9-step-{ordinal}"));
@@ -1283,6 +1288,10 @@ fn assert_contract_witness(request: &Value, result: &Value, branch: &str) -> boo
     true
 }
 
+#[allow(
+    clippy::too_many_lines,
+    reason = "one closed assertion match keeps every inherited witness class auditable"
+)]
 fn assert_witness(request: &Value, result: &Value, witness: &Phase9WitnessBinding) {
     let branch = witness.branch_id.as_str();
     if witness.semantic_assertion.requires_case_evidence() {
@@ -1418,6 +1427,11 @@ fn assert_witness(request: &Value, result: &Value, witness: &Phase9WitnessBindin
     }
 }
 
+#[allow(
+    clippy::too_many_arguments,
+    clippy::too_many_lines,
+    reason = "proof construction binds all independently produced payloads in one audited step"
+)]
 fn build_cross_run_proofs(
     root: &Path,
     case_id: &str,
@@ -1557,6 +1571,10 @@ fn build_cross_run_proofs(
 }
 
 #[test]
+#[allow(
+    clippy::too_many_lines,
+    reason = "one end-to-end test proves every case and cross-run evidence role"
+)]
 fn executable_cases() {
     // Arrange
     let manifest = manifest();

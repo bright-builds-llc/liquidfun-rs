@@ -68,6 +68,10 @@ fn definition() -> Phase10GroupDefinition {
     }
 }
 
+#[allow(
+    clippy::too_many_lines,
+    reason = "one literal fixture keeps the complete strict wire schema visible"
+)]
 fn phase10_request_value() -> Value {
     let mut value: Value =
         serde_json::from_slice(PHASE8_REQUEST).expect("Phase 8 fixture should be JSON");
@@ -420,7 +424,7 @@ fn wire_particle_boundary_accepts_limit_and_rejects_one_over() {
     // Assert
     assert_eq!(accepted, Ok(()));
     assert_eq!(
-        rejected.map_err(|error| error.kind()),
+        rejected.map_err(liquidfun_test_protocol::Phase10ValidationError::kind),
         Err(Phase10ValidationKind::BoundaryLimitExceeded)
     );
 }
@@ -490,15 +494,15 @@ fn wire_result_rejects_duplicate_witness_binding_order_and_nonfinite_observation
 
     // Assert
     assert_eq!(
-        results[0].map_err(|error| error.kind()),
+        results[0].map_err(liquidfun_test_protocol::Phase10ValidationError::kind),
         Err(Phase10ValidationKind::InvalidWitness)
     );
     assert_eq!(
-        results[1].map_err(|error| error.kind()),
+        results[1].map_err(liquidfun_test_protocol::Phase10ValidationError::kind),
         Err(Phase10ValidationKind::InvalidOrdering)
     );
     assert_eq!(
-        results[2].map_err(|error| error.kind()),
+        results[2].map_err(liquidfun_test_protocol::Phase10ValidationError::kind),
         Err(Phase10ValidationKind::InvalidFloat)
     );
 }

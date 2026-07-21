@@ -1,5 +1,10 @@
 //! Canonical capture through curated world views.
 
+#![allow(
+    clippy::similar_names,
+    reason = "protocol endpoint fields deliberately use particle_a/b/c naming"
+)]
+
 use liquidfun_test_protocol::{
     FloatBits, Phase10BodyContact, Phase10GroupSnapshot, Phase10Observation, Phase10PairSnapshot,
     Phase10ParticleContact, Phase10ParticleSnapshot, Phase10Provenance, Phase10SemanticOutcome,

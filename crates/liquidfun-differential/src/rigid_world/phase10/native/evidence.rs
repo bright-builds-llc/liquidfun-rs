@@ -1,5 +1,10 @@
 //! Stable lifecycle-event and witness projection.
 
+#![allow(
+    clippy::similar_names,
+    reason = "protocol endpoint fields deliberately use particle_a/b naming"
+)]
+
 use liquidfun::{
     DestroyedId, ParticleBodyContactEffect, ParticleContactEffect, ParticleFlags,
     StepLifecycleEvent,
@@ -112,6 +117,10 @@ pub(super) fn collect_step_events(
     Ok(())
 }
 
+#[allow(
+    clippy::too_many_lines,
+    reason = "one closed source-ordered match projects every typed witness variant"
+)]
 pub(super) fn capture_witnesses(
     executor: &TimelineExecutor,
     particles: &[Phase10ParticleSnapshot],

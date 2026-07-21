@@ -73,6 +73,10 @@ fn definition(group_id: &str, member_ids: &[&str], positions: &[(f32, f32)]) -> 
     })
 }
 
+#[allow(
+    clippy::needless_pass_by_value,
+    reason = "fixture builder consumes logical ownership into a JSON object"
+)]
 fn record(action_id: &str, action: Value) -> Value {
     json!({ "action_id": action_id, "phase": "phase10", "action": action })
 }
@@ -81,6 +85,10 @@ fn particle_action(kind: &str) -> Value {
     json!({ "kind": "particle", "action": { "kind": kind, "system_id": "system-a" } })
 }
 
+#[allow(
+    clippy::needless_pass_by_value,
+    reason = "fixture builder consumes logical ownership into a JSON object"
+)]
 fn group_action(operation: Value) -> Value {
     json!({ "kind": "particle_group", "operation": operation })
 }
@@ -365,7 +373,7 @@ fn oracle_executes_filled_and_stroke_sources_in_declared_member_order() {
         state.groups[1]
             .member_ids
             .iter()
-            .map(|id| id.as_str())
+            .map(liquidfun_test_protocol::ScenarioId::as_str)
             .collect::<Vec<_>>(),
         ["particle-stroke-a", "particle-stroke-b"]
     );

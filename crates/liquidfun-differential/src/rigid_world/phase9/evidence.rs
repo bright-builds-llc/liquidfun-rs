@@ -835,6 +835,10 @@ fn evaluate_assertion(
     Ok(())
 }
 
+#[allow(
+    clippy::too_many_lines,
+    reason = "one closed branch registry keeps inherited evidence auditable"
+)]
 fn evaluate_observed_semantic(
     timeline: &RigidWorldTimeline,
     result: &RigidWorldTimelineResult,
@@ -1057,8 +1061,12 @@ fn evaluate_observed_semantic(
 fn expected_action_id(branch: &str) -> &'static str {
     match branch {
         "multiple_systems" | "newest_first" | "stable_ids_sort" => "inspect-system",
-        "paused_system" | "fixed_buffer" | "fixed_full" => "statistics-fixed",
-        "stable_ids_compact" => "compact-unrequested",
+        "paused_system"
+        | "fixed_buffer"
+        | "fixed_full"
+        | "strict_contact_enabled"
+        | "collision_energy" => "statistics-fixed",
+        "stable_ids_compact" | "unrequested_destruction_callback" => "compact-unrequested",
         "optional_lanes"
         | "retained_phase6_through_phase8"
         | "phase10_rejection"
@@ -1068,27 +1076,26 @@ fn expected_action_id(branch: &str) -> &'static str {
         | "first_divergence_stability"
         | "d0_byte_identity"
         | "debug_release_agreement" => "inspect-particle",
-        "growable_buffer" | "maximum_lifetime" | "statistics_counts" => "statistics",
+        "growable_buffer"
+        | "maximum_lifetime"
+        | "statistics_counts"
+        | "strict_contact_disabled"
+        | "dynamic_body_reaction"
+        | "static_body_no_reaction"
+        | "stuck_candidates" => "statistics",
         "teardown" => "destroy-fixed",
         "oldest_lifetime" | "capacity_eviction" => "create-evicting",
         "finite_lifetime" | "infinite_lifetime" => "inspect-system-after-step",
         "equal_lifetime" => "create-phase9-e",
         "requested_destruction_callback" => "compact",
-        "unrequested_destruction_callback" => "compact-unrequested",
         "zombie_pending" => "mark",
         "particle_contact" | "contact_order" | "contact_multiplicity" => "inspect-particle-contact",
         "body_contact" | "coupling_fields" => "inspect-body-contact",
-        "strict_contact_enabled" => "statistics-fixed",
-        "strict_contact_disabled"
-        | "dynamic_body_reaction"
-        | "static_body_no_reaction"
-        | "stuck_candidates" => "statistics",
         "listener_flag_enabled" => "inspect-occurrence-zero",
         "listener_flag_disabled" | "filter_flag_enabled" => "contact-statistics-growable",
         "filter_flag_disabled" => "contact-statistics-fixed",
         "force_range" => "inspect-after-force",
         "impulse_range" => "inspect-after-impulse",
-        "collision_energy" => "statistics-fixed",
         "system_aabb" | "system_culling" | "query_continue" => "system-query",
         "world_aabb" => "world-query",
         "query_terminate" => "query-terminate",
