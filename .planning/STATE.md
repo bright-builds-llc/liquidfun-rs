@@ -3,15 +3,15 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 10-27-PLAN.md
-last_updated: "2026-07-21T06:40:00.000Z"
+stopped_at: Completed 10-28-PLAN.md
+last_updated: "2026-07-21T11:13:25.314Z"
 last_activity: "2026-07-21"
 progress:
   total_phases: 12
   completed_phases: 9
   total_plans: 161
-  completed_plans: 156
-  percent: 96
+  completed_plans: 157
+  percent: 98
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 ## Current Position
 
 Phase: 10 (Particle Groups, Solvers, and Compatibility Sign-Off) — EXECUTING
-Plan: 28 of 32
+Plan: 29 of 32
 Status: Ready to execute
 Last activity: 2026-07-21
 
-Progress: [██████████] 96%
+Progress: [██████████] 98%
 
 ## Performance Metrics
 
@@ -168,6 +168,7 @@ Progress: [██████████] 96%
 | Phase 10 P25 | 6h 15m | 1 tasks | 11 files |
 | Phase 10 P26 | 1h 38m | 1 tasks | 11 files |
 | Phase 10 P27 | 2h 59m | 1 tasks | 17 files |
+| Phase 10 P28 | 2h 56m | 2 tasks | 14 files |
 
 ## Accumulated Context
 
@@ -440,6 +441,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 10]: Treat D0 as canonical semantic-byte identity and D1 as an exhaustive source-ordered field walk through one closed named policy registry. — Deterministic replay and cross-engine parity remain distinct, explicit authorities.
 - [Phase 10]: Reject malformed records and unknown, missing, duplicate, wildcard, unbound, or private-pass policy bindings before comparison. — No omitted field or broad tolerance can silently create parity.
 - [Phase 10]: Report only the first stable contextual semantic mismatch with scenario, operation, entity, index, path, policy, and bounded values. — Evidence remains explainable and suitable for deterministic minimization.
+- [Phase 10]: Seal exactly five bounded Phase 10 cases with independent fixture, request, policy, leaf, retained-manifest, and manifest-payload digests. — Closed content identities prevent metadata repair or relabeling from impersonating executable parity evidence.
+- [Phase 10]: Keep cross-engine group depth absent on the common public adapter surface. — The pinned C++ public API exposes no depth buffer; native-only depth remains tested and required optional-lane disappearance still fails closed.
+- [Phase 10]: Project C++ caches and lifecycle records through stable semantic identities before strict comparison. — Pointer-independent live-member aggregates, snapshot-local witnesses, declared live bodies, and empty-shell destruction remove adapter artifacts without widening comparator policy.
 
 ### Pending Todos
 
@@ -453,6 +457,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-21T06:40:00.000Z
-Stopped at: Completed 10-27-PLAN.md
+Last session: 2026-07-21T11:13:25.304Z
+Stopped at: Completed 10-28-PLAN.md
 Resume file: None
