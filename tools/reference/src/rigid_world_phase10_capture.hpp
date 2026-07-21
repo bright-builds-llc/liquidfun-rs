@@ -24,9 +24,14 @@
       std::string_view leaf,
       std::string_view role,
       Json observation) {
+    const Json::string_t leaf_string(leaf);
+    const Json::string_t role_string(role);
     const auto found = std::find_if(
         witnesses.begin(), witnesses.end(), [&](const auto& witness) {
-          return witness.at("behavior_leaf") == leaf && witness.at("role") == role;
+          return witness.at("behavior_leaf")
+                         .template get_ref<const Json::string_t&>() == leaf_string &&
+                 witness.at("role").template get_ref<const Json::string_t&>() ==
+                     role_string;
         });
     if (found != witnesses.end()) {
       (*found)["observation"] = std::move(observation);
