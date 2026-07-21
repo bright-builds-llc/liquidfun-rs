@@ -3,15 +3,15 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 11-08-PLAN.md (11-02 remains pending)
-last_updated: "2026-07-21T23:19:55.973Z"
+stopped_at: Completed 11-02-PLAN.md
+last_updated: "2026-07-21T23:44:26.225Z"
 last_activity: "2026-07-21"
 progress:
   total_phases: 12
   completed_phases: 10
   total_plans: 190
-  completed_plans: 164
-  percent: 86
+  completed_plans: 165
+  percent: 87
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 ## Current Position
 
 Phase: 11 (Examples, Headless Tooling, and Testbed) — EXECUTING
-Plan: 2 of 29
+Plan: 4 of 29
 Status: Ready to execute
 Last activity: 2026-07-21
 
@@ -176,6 +176,7 @@ Progress: [██████████] 99%
 | Phase 11 P01 | 14 min | 1 tasks | 6 files |
 | Phase 11 P03 | 14 min | 1 tasks | 10 files |
 | Phase 11 P08 | 12 min | 1 tasks | 7 files |
+| Phase 11 P02 | 21 min | 1 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -467,6 +468,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 11]: Expose tight current fixture-child AABBs with stable body/fixture/child identities while private fat-tree and proxy identities remain private.
 - [Phase 11]: Keep diagnostic profile phase names structural while timing and profile values remain non-comparable, non-hashable, and outside StepReport and checkpoints.
 - [Phase 11]: Preflight every observation collection against reviewed limits before allocating or traversing observable state.
+- [Phase 11]: Expand parameterized GoogleTest declarations into source-derived semantic cases instead of recording only macro sites.
+- [Phase 11]: Permit pending discovery records only when all five classification fields are absent; partial terminal outcomes remain invalid.
+- [Phase 11]: Recognize source-defined testbed scenarios by bounded class-local Create factories, including indirect scenario inheritance.
 
 ### Pending Todos
 
@@ -480,6 +484,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-21T23:19:55.969Z
-Stopped at: Completed 11-08-PLAN.md (11-02 remains pending)
+Last session: 2026-07-21T23:44:21.169Z
+Stopped at: Completed 11-02-PLAN.md
 Resume file: None
