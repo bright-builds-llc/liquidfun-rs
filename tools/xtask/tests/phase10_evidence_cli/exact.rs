@@ -21,13 +21,11 @@ impl TestRoot {
         write_exact_identity(
             &canonical,
             "Phase 10 canonical Linux oracle",
-            CANONICAL_ARTIFACT,
             &artifact_name("canonical"),
         )?;
         write_exact_identity(
             &sanitizer,
             "Phase 10 fail-fast sanitizer",
-            SANITIZER_ARTIFACT,
             &artifact_name("sanitizer"),
         )?;
         let canonical_archive = self.path.join("canonical.zip");
@@ -123,19 +121,14 @@ impl TestRoot {
     }
 }
 
-fn write_exact_identity(
-    root: &Path,
-    job_name: &str,
-    artifact_id: u64,
-    artifact_name: &str,
-) -> TestResult {
+fn write_exact_identity(root: &Path, job_name: &str, artifact_name: &str) -> TestResult {
     let path = root.join("identity.json");
     let mut identity: Value = serde_json::from_slice(&fs::read(&path)?)?;
     identity["mode"] = json!("exact-ref");
     identity["run_id"] = json!(EXACT_RUN);
     identity["head_sha"] = json!(APPROVED_SHA);
     identity["job_name"] = json!(job_name);
-    identity["artifact_id"] = json!(artifact_id);
+    identity["artifact_id"] = json!(0);
     identity["artifact_name"] = json!(artifact_name);
     identity["platform"] = json!("linux-x86_64");
     identity["rust_version"] = json!("1.97.0");

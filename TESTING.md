@@ -661,14 +661,42 @@ relabeled, copied, or combined into D1.
 Phase 10 D1 requires one successful `Oracle CI` `workflow_dispatch` at one full
 commit SHA. That run must contain one distinct `Phase 10 canonical Linux oracle`
 job and one distinct `Phase 10 fail-fast sanitizer` job on Linux x86_64, Rust
-1.97.0, and Clang 22.1.8. The exact-ref acquisition procedure must re-query the
-live run, jobs, and artifacts; inspect both archives before extraction; and pass
-`cargo xtask phase10-evidence validate --mode exact-ref` against the fresh pair.
+1.97.0, and Clang 22.1.8. Dispatch that pair with the manual `phase10` choice:
+
+```bash
+gh workflow run oracle.yml --ref main -f evidence_phase=phase10
+```
+
+The successful run uploads exactly
+`phase10-canonical-<run-id>-<full-sha>` and
+`phase10-sanitizer-<run-id>-<full-sha>`, each with 30-day retention. GitHub
+assigns an artifact ID only after the identity-last directory is uploaded, so
+the archived identity must retain `artifact_id: 0` as a pre-upload sentinel.
+The independently captured `run.json` supplies each nonzero live artifact ID,
+API digest, archive byte size, URLs, and timestamps. Exact-ref validation
+rejects a nonzero ID asserted inside an archive; authority comes from matching
+the sentinel-bearing archive bytes and exact name to the re-queried live API
+record, not from a circular post-upload claim.
+
+For exact-ref acquisition, record the immutable dispatched SHA and run ID,
+re-query the successful run plus all jobs and artifacts through the GitHub API,
+download both exact named archives without copying files between them, inspect
+their bounded regular path sets before extraction, and record the live and
+archive metadata in `run.json`. Then run:
+
+```bash
+cargo xtask phase10-evidence validate --mode exact-ref \
+  --canonical-dir target/phase10-evidence-exact/canonical \
+  --sanitizer-dir target/phase10-evidence-exact/sanitizer \
+  --run-json target/phase10-evidence-exact/run.json
+```
+
 Only a complete current same-run set with passing debug, release, replay, D0,
 sanitizer, provenance, inventory, read-only, schema, leaf, policy, proof, file,
 identity, and digest checks may reach a later compatibility promotion. No local
 run, partial pair, stale run, mixed SHA, failed log, or unverified archive may
-change compatibility authority.
+change compatibility authority. D3 remains a separate reviewed promotion of a
+validated D1 pair; workflow success alone does not publish or relabel evidence.
 
 ### Phase 9 recovery single-dispatch protocol
 

@@ -10,7 +10,48 @@ use std::fs;
 use serde_json::{Value, json};
 
 use exact::{APPROVED_SHA, CANONICAL_ARTIFACT, EXACT_RUN};
-use support::{TestResult, TestRoot, assert_failure, assert_success, refresh_identity, write_json};
+use support::{
+    TestResult, TestRoot, assert_failure, assert_success, refresh_identity, workspace_root,
+    write_json,
+};
+
+#[test]
+fn workflow_contract_defines_one_same_run_phase10_pair() -> TestResult {
+    // Arrange
+    let workflow = fs::read_to_string(workspace_root().join(".github/workflows/oracle.yml"))?;
+    let canonical_run =
+        "bash scripts/phase10-evidence.sh canonical target/oracle-evidence/phase10-canonical";
+    let sanitizer_run =
+        "bash scripts/phase10-evidence.sh sanitizer target/oracle-evidence/phase10-sanitizer";
+
+    // Act
+    let action_refs = workflow
+        .lines()
+        .filter_map(|line| line.trim().strip_prefix("uses: "))
+        .collect::<Vec<_>>();
+
+    // Assert
+    assert!(workflow.contains("          - phase10\n"));
+    assert!(workflow.contains("'Phase 10 canonical Linux oracle'"));
+    assert!(workflow.contains("'Phase 10 fail-fast sanitizer'"));
+    assert_eq!(workflow.matches(canonical_run).count(), 1);
+    assert_eq!(workflow.matches(sanitizer_run).count(), 1);
+    assert!(workflow.contains("name: phase10-canonical-${{ github.run_id }}-${{ github.sha }}"));
+    assert!(workflow.contains("name: phase10-sanitizer-${{ github.run_id }}-${{ github.sha }}"));
+    assert_eq!(workflow.matches("retention-days: 30").count(), 6);
+    assert!(workflow.contains("permissions:\n  contents: read"));
+    assert!(workflow.contains(
+        "if: github.event_name == 'workflow_dispatch' && inputs.evidence_phase == 'phase10'"
+    ));
+    assert!(!action_refs.is_empty());
+    assert!(action_refs.iter().all(|action_ref| {
+        let Some((_, revision)) = action_ref.rsplit_once('@') else {
+            return false;
+        };
+        revision.len() == 40 && revision.bytes().all(|byte| byte.is_ascii_hexdigit())
+    }));
+    Ok(())
+}
 
 #[test]
 fn content_accepts_one_shared_complete_local_pair() -> TestResult {
@@ -238,14 +279,19 @@ fn exact_ref_rejects_mixed_job_artifact_and_extracted_identity() -> TestResult {
     let mut identity: Value = serde_json::from_slice(&fs::read(&identity_path)?)?;
     identity["head_sha"] = json!(APPROVED_SHA.replace('a', "b"));
     write_json(&identity_path, &identity)?;
+    let identity_output = root.run_exact_ref(&[])?;
+    identity["head_sha"] = json!(APPROVED_SHA);
+    identity["artifact_id"] = json!(CANONICAL_ARTIFACT);
+    write_json(&identity_path, &identity)?;
 
     // Act
-    let identity_output = root.run_exact_ref(&[])?;
+    let post_upload_identity_output = root.run_exact_ref(&[])?;
 
     // Assert
     assert_failure(&job_output);
     assert_failure(&artifact_output);
     assert_failure(&identity_output);
+    assert_failure(&post_upload_identity_output);
     Ok(())
 }
 

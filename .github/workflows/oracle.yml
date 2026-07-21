@@ -16,6 +16,7 @@ on:
         options:
           - phase8
           - phase9
+          - phase10
 
 permissions:
   contents: read
@@ -26,7 +27,7 @@ concurrency:
 
 jobs:
   canonical-linux:
-    name: Canonical Linux oracle
+    name: ${{ github.event_name == 'workflow_dispatch' && inputs.evidence_phase == 'phase10' && 'Phase 10 canonical Linux oracle' || 'Canonical Linux oracle' }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
@@ -152,9 +153,23 @@ jobs:
           path: target/oracle-evidence/phase9-canonical
           if-no-files-found: error
           retention-days: 30
+      - name: Run fail-closed Phase 10 canonical evidence
+        if: github.event_name == 'workflow_dispatch' && inputs.evidence_phase == 'phase10'
+        env:
+          LIQUIDFUN_PHASE10_ORACLE_MODE: canonical
+        run: bash scripts/phase10-evidence.sh canonical target/oracle-evidence/phase10-canonical
+      - name: Upload Phase 10 canonical evidence
+        if: github.event_name == 'workflow_dispatch' && inputs.evidence_phase == 'phase10'
+        # actions/upload-artifact v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: phase10-canonical-${{ github.run_id }}-${{ github.sha }}
+          path: target/oracle-evidence/phase10-canonical
+          if-no-files-found: error
+          retention-days: 30
 
   sanitizer-linux:
-    name: Scheduled fail-fast sanitizer and reset corpus
+    name: ${{ github.event_name == 'workflow_dispatch' && inputs.evidence_phase == 'phase10' && 'Phase 10 fail-fast sanitizer' || 'Scheduled fail-fast sanitizer and reset corpus' }}
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -261,6 +276,29 @@ jobs:
         with:
           name: phase9-sanitizer-${{ github.run_id }}-${{ github.sha }}
           path: target/oracle-evidence/phase9-sanitizer
+          if-no-files-found: error
+          retention-days: 30
+      - name: Build independent debug and release oracles for Phase 10 cross-run evidence
+        if: github.event_name == 'workflow_dispatch' && inputs.evidence_phase == 'phase10'
+        run: |
+          cargo xtask upstream configure --preset oracle-debug
+          cargo xtask upstream build --preset oracle-debug
+          cargo xtask upstream configure --preset oracle-release
+          cargo xtask upstream build --preset oracle-release
+      - name: Run fail-closed Phase 10 sanitizer evidence
+        if: github.event_name == 'workflow_dispatch' && inputs.evidence_phase == 'phase10'
+        env:
+          ASAN_OPTIONS: abort_on_error=1:halt_on_error=1
+          LIQUIDFUN_PHASE10_ORACLE_MODE: sanitizer
+          UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+        run: bash scripts/phase10-evidence.sh sanitizer target/oracle-evidence/phase10-sanitizer
+      - name: Upload Phase 10 sanitizer evidence
+        if: github.event_name == 'workflow_dispatch' && inputs.evidence_phase == 'phase10'
+        # actions/upload-artifact v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: phase10-sanitizer-${{ github.run_id }}-${{ github.sha }}
+          path: target/oracle-evidence/phase10-sanitizer
           if-no-files-found: error
           retention-days: 30
       - name: Upload bounded differential failure evidence

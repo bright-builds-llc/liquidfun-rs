@@ -23,6 +23,8 @@ const CLANG_VERSION: &str = "22.1.8";
 const UPSTREAM_REVISION: &str = "7f20402173fd143a3988c921bc384459c6a858f2";
 const PROTOCOL_VERSION: &str = "rigid-world-phase10-v1";
 const GENERATOR_VERSION: &str = "phase10-corpus-v1";
+// GitHub assigns the live artifact ID only after the identity-last directory is archived.
+const PRE_UPLOAD_ARTIFACT_ID: u64 = 0;
 
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -284,7 +286,7 @@ fn validate_identity(
         || directory.identity.run_id != run.run_id
         || directory.identity.head_sha != run.approved_sha
         || directory.identity.job_name != job_name(kind)
-        || directory.identity.artifact_id != artifact.id
+        || directory.identity.artifact_id != PRE_UPLOAD_ARTIFACT_ID
         || directory.identity.artifact_name != artifact.name
         || directory.identity.platform != PLATFORM
         || directory.identity.rust_version != RUST_VERSION
