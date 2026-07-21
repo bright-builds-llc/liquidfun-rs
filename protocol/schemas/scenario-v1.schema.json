@@ -275,6 +275,44 @@
         }
       ]
     },
+    "rigid_transform_bits": {
+      "additionalProperties": false,
+      "properties": {
+        "angle_bits": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "position": {
+          "$ref": "#/$defs/vec2_bits"
+        }
+      },
+      "required": [
+        "position",
+        "angle_bits"
+      ],
+      "type": "object"
+    },
+    "rigid_vec2_bits": {
+      "additionalProperties": false,
+      "properties": {
+        "x_bits": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "y_bits": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "x_bits",
+        "y_bits"
+      ],
+      "type": "object"
+    },
     "sweep_bits": {
       "additionalProperties": false,
       "properties": {
@@ -4681,6 +4719,9 @@
                                         "provenance": {
                                           "additionalProperties": false,
                                           "properties": {
+                                            "extension_version": {
+                                              "const": 1
+                                            },
                                             "generator_id": {
                                               "maxLength": 128,
                                               "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",

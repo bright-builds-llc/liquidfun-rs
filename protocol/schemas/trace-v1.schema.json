@@ -2582,9 +2582,6 @@
                                             "maxItems": 1024,
                                             "type": "array"
                                           },
-                                          "extension_version": {
-                                            "const": 1
-                                          },
                                           "groups": {
                                             "items": {
                                               "additionalProperties": false,
@@ -2882,6 +2879,9 @@
                                           "provenance": {
                                             "additionalProperties": false,
                                             "properties": {
+                                              "extension_version": {
+                                                "const": 1
+                                              },
                                               "generator_id": {
                                                 "maxLength": 128,
                                                 "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",

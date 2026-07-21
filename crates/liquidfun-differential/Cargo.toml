@@ -24,5 +24,8 @@ toml.workspace = true
 [build-dependencies]
 sha2.workspace = true
 
+[dev-dependencies]
+jsonschema.workspace = true
+
 [lints]
 workspace = true

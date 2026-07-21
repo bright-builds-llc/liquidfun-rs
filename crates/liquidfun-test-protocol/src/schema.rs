@@ -321,7 +321,7 @@ fn render_scenario_schema() -> String {
     render_json_schema(&json!({
         "$id": "https://liquidfun-rs.invalid/protocol/schemas/scenario-v1.schema.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
-        "$defs": math_probe_definitions(),
+        "$defs": scenario_definitions(),
         "description": SCHEMA_DESCRIPTION,
         "oneOf": [
             physics_scenario_schema(),
@@ -935,12 +935,14 @@ fn math_probe_input_schema() -> Value {
     })
 }
 
-fn math_probe_definitions() -> Value {
+fn scenario_definitions() -> Value {
     json!({
         "collision_probe_result": collision_probe_result_schema(),
         "mat22_bits": mat22_bits_schema(),
         "mat33_bits": mat33_bits_schema(),
         "math_probe_horizon": math_probe_horizon_schema(),
+        "rigid_transform_bits": transform_bits_schema(),
+        "rigid_vec2_bits": vec2_bits_schema(),
         "sweep_bits": sweep_bits_schema(),
         "transform_bits": transform_bits_schema(),
         "vec2_bits": vec2_bits_schema(),

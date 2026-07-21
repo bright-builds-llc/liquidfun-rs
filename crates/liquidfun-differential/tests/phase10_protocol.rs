@@ -16,6 +16,8 @@ const PHASE8_REQUEST: &[u8] =
     include_bytes!("../../../protocol/fixtures/accepted/rigid-world-request.jsonl");
 const PHASE9_REQUEST: &[u8] =
     include_bytes!("fixtures/rigid_world/phase9/cases/storage-systems-and-permutations.jsonl");
+const SCENARIO_SCHEMA: &[u8] = include_bytes!("../../../protocol/schemas/scenario-v1.schema.json");
+const TRACE_SCHEMA: &[u8] = include_bytes!("../../../protocol/schemas/trace-v1.schema.json");
 
 fn id(value: &str) -> ScenarioId {
     ScenarioId::new(value).expect("test semantic ID should be valid")
@@ -302,6 +304,40 @@ fn wire_phase10_request_normalizes_to_byte_identical_canonical_json() {
 
     // Assert
     assert_eq!(replayed, canonical);
+}
+
+#[test]
+fn tracked_schemas_accept_complete_phase10_request_and_result() {
+    // Arrange
+    let request_value = phase10_request_value();
+    let limits = HarnessLimits::phase2_default_v1();
+    let request = decode_rigid_world_request_jsonl(&encode_value(&request_value), &limits)
+        .expect("complete Phase 10 request should decode");
+    let result =
+        NativeRigidWorldExecutor::execute(&request).expect("complete Phase 10 request should run");
+    let scenario_schema: Value =
+        serde_json::from_slice(SCENARIO_SCHEMA).expect("scenario schema should be valid JSON");
+    let trace_schema: Value =
+        serde_json::from_slice(TRACE_SCHEMA).expect("trace schema should be valid JSON");
+    let scenario_validator =
+        jsonschema::validator_for(&scenario_schema).expect("scenario schema should compile");
+    let trace_validator =
+        jsonschema::validator_for(&trace_schema).expect("trace schema should compile");
+    let result_value = serde_json::to_value(result).expect("Phase 10 result should encode");
+
+    // Act
+    let scenario_validation = scenario_validator.validate(&request_value["scenario"]);
+    let trace_validation = trace_validator.validate(&result_value);
+
+    // Assert
+    assert!(
+        scenario_validation.is_ok(),
+        "complete Phase 10 request should match the tracked scenario schema: {scenario_validation:?}"
+    );
+    assert!(
+        trace_validation.is_ok(),
+        "complete Phase 10 result should match the tracked trace schema: {trace_validation:?}"
+    );
 }
 
 #[test]

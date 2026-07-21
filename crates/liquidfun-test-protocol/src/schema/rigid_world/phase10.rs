@@ -101,7 +101,6 @@ fn destination_schema() -> Value {
 fn state_schema() -> Value {
     closed_record(
         &json!({
-            "extension_version": { "const": crate::PHASE10_RIGID_WORLD_EXTENSION_VERSION },
             "provenance": provenance_schema(),
             "outcome": outcome_schema(),
             "groups": array_schema(group_snapshot_schema(), PHASE10_MAXIMUM_GROUPS),
@@ -131,6 +130,7 @@ fn state_schema() -> Value {
 fn provenance_schema() -> Value {
     closed_record(
         &json!({
+            "extension_version": { "const": crate::PHASE10_RIGID_WORLD_EXTENSION_VERSION },
             "generator_id": semantic_id_schema(),
             "generator_version": semantic_id_schema(),
             "upstream_revision": semantic_id_schema(),
