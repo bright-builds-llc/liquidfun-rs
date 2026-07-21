@@ -16,9 +16,13 @@ pub use phase9::{
     validate_phase9_policy_registry,
 };
 pub use phase10::{
-    PHASE10_POLICY_REGISTRY, PHASE10_REQUIRED_POLICY_PATHS, Phase10ComparatorError,
-    Phase10ComparisonMode, Phase10ComparisonOutcome, Phase10Mismatch, Phase10Policy,
-    Phase10PolicyKind, compare_phase10_observations, validate_phase10_policy_registry,
+    PHASE10_EVIDENCE_SCHEMA_VERSION, PHASE10_POLICY_REGISTRY, PHASE10_REQUIRED_POLICY_PATHS,
+    Phase10ComparatorError, Phase10ComparisonMode, Phase10ComparisonOutcome,
+    Phase10EvidenceBinding, Phase10EvidenceContractError, Phase10EvidenceLeaf,
+    Phase10EvidencePayloads, Phase10EvidenceTestRefs, Phase10EvidenceWitnessRef, Phase10Mismatch,
+    Phase10Policy, Phase10PolicyKind, compare_phase10_observations,
+    required_phase10_evidence_leaves, validate_phase10_evidence_contract,
+    validate_phase10_policy_registry,
 };
 
 use evidence::{
