@@ -1,4 +1,6 @@
 mod corpus;
+#[path = "inventory/corpus/discovery.rs"]
+mod corpus_discovery;
 mod discovery;
 mod report;
 mod validation;
@@ -23,7 +25,11 @@ Commands:
   generate   Explicitly refresh COMPATIBILITY.md from validated ledgers
   check      Read-only validation of schemas, coverage, discovery, and report
   check-report
-             Read-only validation of schemas, coverage, and generated report";
+             Read-only validation of schemas, coverage, and generated report
+  corpus refresh
+             Refresh reference/upstream-corpus.json from the verified pinned tree
+  corpus check-snapshot
+             Validate canonical corpus snapshot bytes without reading third_party";
 const SCHEMA_VERSION: u64 = 1;
 const EVIDENCE_DIMENSIONS: [&str; 8] = [
     "investigated",
@@ -235,22 +241,32 @@ struct DiscoveryEntry {
 }
 
 pub(crate) fn run(args: &[String]) -> Result<(), InventoryError> {
-    let [command] = args else {
-        return Err(InventoryError::usage(
-            "expected exactly one inventory command",
-        ));
-    };
     let repository_root = repository_root()?;
     let oracle_revision = read_oracle_revision(&repository_root)?;
 
-    match command.as_str() {
-        "discover" => discover(&repository_root, &oracle_revision),
-        "generate" => generate(&repository_root, &oracle_revision),
-        "check" => check(&repository_root, &oracle_revision),
-        "check-report" => check_report(&repository_root, &oracle_revision),
-        unknown => Err(InventoryError::usage(format!(
-            "unknown inventory command `{unknown}`"
-        ))),
+    match args {
+        [namespace, command] if namespace == "corpus" && command == "refresh" => {
+            let count = corpus_discovery::refresh(&repository_root, &oracle_revision)?;
+            println!("semantic corpus refreshed: {count} items");
+            Ok(())
+        }
+        [namespace, command] if namespace == "corpus" && command == "check-snapshot" => {
+            let count = corpus_discovery::check_snapshot(&repository_root, &oracle_revision)?;
+            println!("semantic corpus snapshot verified: {count} items");
+            Ok(())
+        }
+        [command] => match command.as_str() {
+            "discover" => discover(&repository_root, &oracle_revision),
+            "generate" => generate(&repository_root, &oracle_revision),
+            "check" => check(&repository_root, &oracle_revision),
+            "check-report" => check_report(&repository_root, &oracle_revision),
+            unknown => Err(InventoryError::usage(format!(
+                "unknown inventory command `{unknown}`"
+            ))),
+        },
+        _ => Err(InventoryError::usage(
+            "expected a closed inventory command shape",
+        )),
     }
 }
 

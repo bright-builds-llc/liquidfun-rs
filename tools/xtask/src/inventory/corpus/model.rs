@@ -287,33 +287,65 @@ pub(crate) struct CorpusItem {
     id: CorpusItemId,
     kind: CorpusKind,
     source: SourceIdentity,
-    applicability: Applicability,
-    disposition: TerminalDisposition,
-    compatibility_impact: CompatibilityImpact,
-    evidence: Vec<EvidenceMapping>,
-    review: ReviewRecord,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    applicability: Option<Applicability>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    disposition: Option<TerminalDisposition>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    compatibility_impact: Option<CompatibilityImpact>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    evidence: Option<Vec<EvidenceMapping>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    review: Option<ReviewRecord>,
 }
 
 impl CorpusItem {
     fn from_raw(raw: RawCorpusItem) -> Result<Self, CorpusError> {
         let id = CorpusItemId::parse(raw.id, raw.kind)?;
         let source = SourceIdentity::from_raw(raw.source, raw.kind, &id)?;
-        let review = ReviewRecord::from_raw(raw.review, &id)?;
-        let evidence = checked_evidence(raw.evidence, &id)?;
-        validate_terminal_outcome(
+        let (applicability, disposition, compatibility_impact, evidence, review) = match (
             raw.applicability,
             raw.disposition,
             raw.compatibility_impact,
-            &evidence,
-            &id,
-        )?;
+            raw.evidence,
+            raw.review,
+        ) {
+            (None, None, None, None, None) => (None, None, None, None, None),
+            (
+                Some(applicability),
+                Some(disposition),
+                Some(compatibility_impact),
+                Some(raw_evidence),
+                Some(raw_review),
+            ) => {
+                let review = ReviewRecord::from_raw(raw_review, &id)?;
+                let evidence = checked_evidence(raw_evidence, &id)?;
+                validate_terminal_outcome(
+                    applicability,
+                    disposition,
+                    compatibility_impact,
+                    &evidence,
+                    &id,
+                )?;
+                (
+                    Some(applicability),
+                    Some(disposition),
+                    Some(compatibility_impact),
+                    Some(evidence),
+                    Some(review),
+                )
+            }
+            _ => {
+                return Err(CorpusError::for_item(CorpusErrorKind::TerminalOutcome, &id));
+            }
+        };
         Ok(Self {
             id,
             kind: raw.kind,
             source,
-            applicability: raw.applicability,
-            disposition: raw.disposition,
-            compatibility_impact: raw.compatibility_impact,
+            applicability,
+            disposition,
+            compatibility_impact,
             evidence,
             review,
         })
@@ -511,11 +543,16 @@ struct RawCorpusItem {
     id: String,
     kind: CorpusKind,
     source: RawSourceIdentity,
-    applicability: Applicability,
-    disposition: TerminalDisposition,
-    compatibility_impact: CompatibilityImpact,
-    evidence: Vec<RawEvidenceMapping>,
-    review: RawReviewRecord,
+    #[serde(default)]
+    applicability: Option<Applicability>,
+    #[serde(default)]
+    disposition: Option<TerminalDisposition>,
+    #[serde(default)]
+    compatibility_impact: Option<CompatibilityImpact>,
+    #[serde(default)]
+    evidence: Option<Vec<RawEvidenceMapping>>,
+    #[serde(default)]
+    review: Option<RawReviewRecord>,
 }
 
 #[derive(Debug, Deserialize)]

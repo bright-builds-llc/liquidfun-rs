@@ -266,6 +266,48 @@ fn disposition_and_applicability_must_form_a_terminal_outcome() -> TestResult {
     Ok(())
 }
 
+#[test]
+fn unreviewed_discovery_item_is_accepted_without_a_terminal_outcome() -> TestResult {
+    // Arrange
+    let mut manifest = valid_manifest()?;
+    let item = manifest["items"][0]
+        .as_object_mut()
+        .ok_or("item must be an object")?;
+    for field in [
+        "applicability",
+        "disposition",
+        "compatibility_impact",
+        "evidence",
+        "review",
+    ] {
+        item.remove(field);
+    }
+
+    // Act
+    let parsed = parse_value(&manifest);
+
+    // Assert
+    assert!(parsed.is_ok());
+    Ok(())
+}
+
+#[test]
+fn partially_reviewed_discovery_item_is_rejected() -> TestResult {
+    // Arrange
+    let mut manifest = valid_manifest()?;
+    manifest["items"][0]
+        .as_object_mut()
+        .ok_or("item must be an object")?
+        .remove("review");
+
+    // Act
+    let error = parse_value(&manifest).expect_err("partial review must fail closed");
+
+    // Assert
+    assert_eq!(error.category(), "terminal-outcome");
+    Ok(())
+}
+
 fn valid_manifest() -> Result<Value, serde_json::Error> {
     serde_json::from_slice(include_bytes!("fixtures/corpus/valid-minimal.json"))
 }
