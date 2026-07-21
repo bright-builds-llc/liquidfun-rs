@@ -212,7 +212,7 @@ Plans:
 - [x] 10-28-PLAN.md — Seal the closed five-family semantic differential corpus.
 - [x] 10-29-PLAN.md — Build the shared local and exact-reference evidence validator.
 - [x] 10-30-PLAN.md — Wire local D2 and same-run canonical D1 evidence production.
-- [ ] 10-31-PLAN.md — Acquire and independently validate one fresh D1 authority set.
+- [x] 10-31-PLAN.md — Acquire and independently validate one fresh D1 authority set.
 - [ ] 10-32-PLAN.md — Promote proven outcomes and complete the phase audit.
 
 ### Phase 11: Examples, Headless Tooling, and Testbed
@@ -262,7 +262,7 @@ Plans:
 | 7. Rigid Solver, World Operations, and CCD | 13/13 | Complete    | 2026-07-13 |
 | 8. Joints, Rope, Callbacks, and Rigid Sign-Off | 24/24 | Complete    | 2026-07-15 |
 | 9. Particle Storage, Lifecycle, and Coupling | 31/31 | Complete | 2026-07-18 |
-| 10. Particle Groups, Solvers, and Compatibility Sign-Off | 30/32 | In Progress|  |
+| 10. Particle Groups, Solvers, and Compatibility Sign-Off | 31/32 | In Progress|  |
 | 11. Examples, Headless Tooling, and Testbed | 0/TBD | Not started | - |
 | 12. Performance, Portability, and Release Hardening | 0/TBD | Not started | - |
 

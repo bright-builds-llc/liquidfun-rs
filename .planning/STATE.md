@@ -3,14 +3,14 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 10-30-PLAN.md
-last_updated: "2026-07-21T12:38:08.486Z"
+stopped_at: Completed 10-31-PLAN.md
+last_updated: "2026-07-21T13:19:36.380Z"
 last_activity: "2026-07-21"
 progress:
   total_phases: 12
   completed_phases: 9
   total_plans: 161
-  completed_plans: 159
+  completed_plans: 160
   percent: 99
 ---
 
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 ## Current Position
 
 Phase: 10 (Particle Groups, Solvers, and Compatibility Sign-Off) — EXECUTING
-Plan: 31 of 32
+Plan: 32 of 32
 Status: Ready to execute
 Last activity: 2026-07-21
 
@@ -171,6 +171,7 @@ Progress: [██████████] 99%
 | Phase 10 P28 | 2h 56m | 2 tasks | 14 files |
 | Phase 10 P29 | 45m | 2 tasks | 8 files |
 | Phase 10 P30 | 37m | 2 tasks | 17 files |
+| Phase 10 P31 | 39m | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -451,6 +452,8 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 10]: Write Phase 10 evidence identity only after semantic, provenance, inventory, read-only, and digest checks pass. — Identity-last output prevents partial or failed canonical and sanitizer runs from becoming admissible artifacts.
 - [Phase 10]: Use artifact ID zero inside pre-upload archives and bind the assigned live artifact ID externally. — GitHub assigns artifact IDs only after upload, so external live metadata and archive digests avoid a circular immutable identity contract.
 - [Phase 10]: Extend the existing Oracle CI jobs with Phase 10-only authority names and steps while leaving Phase 9 conditions and commands intact. — One workflow and same-run job pair meet the authority contract without duplicating the pinned toolchain setup or changing Phase 9 behavior.
+- [Phase 10]: Accept only repaired run 29832646127 and its same-SHA Phase 10 pair as the D1 authority candidate. — The live API, archive bytes, locked toolchains, and complete 5-case/80-leaf exact-ref content all agree.
+- [Phase 10]: Deny failed run 29831597090 and artifacts 8495653581 and 8495705068 permanently. — Partial failed-run output cannot authorize compatibility promotion or be mixed with the repaired authority.
 
 ### Pending Todos
 
@@ -464,6 +467,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-21T12:37:35.831Z
-Stopped at: Completed 10-30-PLAN.md
+Last session: 2026-07-21T13:19:36.377Z
+Stopped at: Completed 10-31-PLAN.md
 Resume file: None
