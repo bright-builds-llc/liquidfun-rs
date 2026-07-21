@@ -363,7 +363,12 @@ impl Phase10ActionState {
                 }
                 Ok(())
             }
-            Phase10Operation::InspectState => Ok(()),
+            Phase10Operation::InspectState => {
+                if self.maybe_provenance.is_none() {
+                    return Err(Phase10ValidationKind::InvalidProvenance);
+                }
+                Ok(())
+            }
         }
     }
 

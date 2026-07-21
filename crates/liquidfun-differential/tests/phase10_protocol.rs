@@ -591,6 +591,32 @@ fn wire_group_identity_boundary_counts_multiple_splits_cumulatively() {
 }
 
 #[test]
+fn wire_inspection_requires_established_phase10_provenance() {
+    // Arrange
+    let limits = HarnessLimits::phase2_default_v1();
+    let mut inspection_only = phase10_request_value();
+    inspection_only["scenario"]["timelines"][0]["actions"]
+        .as_array_mut()
+        .expect("actions should be an array")
+        .retain(|action| {
+            action["action"]["kind"] != "particle_group" || action["action_id"] == "p10-inspect"
+        });
+
+    // Act
+    let rejected = decode_rigid_world_request_jsonl(&encode_value(&inspection_only), &limits);
+    let phase8_control = decode_rigid_world_request_jsonl(PHASE8_REQUEST, &limits);
+
+    // Assert
+    assert_eq!(
+        rejected
+            .expect_err("inspection without Phase 10 provenance must fail during decoding")
+            .rigid_world_kind(),
+        Some(liquidfun_test_protocol::RigidWorldErrorKind::InvalidParticleGroupAction)
+    );
+    assert!(phase8_control.is_ok());
+}
+
+#[test]
 fn wire_phase9_request_and_result_variants_round_trip_unchanged() {
     // Arrange
     let limits = HarnessLimits::phase2_default_v1();
