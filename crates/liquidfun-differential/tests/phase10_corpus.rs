@@ -1,5 +1,8 @@
 //! Closed corpus and corruption coverage for Phase 10 evidence.
 
+#[path = "phase10_corpus/evidence_output.rs"]
+mod evidence_output;
+
 use std::{
     collections::{BTreeSet, HashMap, HashSet},
     path::{Component, Path, PathBuf},
@@ -723,12 +726,27 @@ fn corpus_executes_d0_replay_and_two_engine_debug_release_comparison() {
     // Arrange
     let manifest = corpus_manifest();
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let Ok(debug) = OracleExecutable::resolve(&root, OraclePreset::Debug) else {
-        eprintln!("SKIP: build the Phase 10 debug oracle");
+    let maybe_mode = std::env::var("LIQUIDFUN_PHASE10_ORACLE_MODE").ok();
+    let primary_preset = match maybe_mode.as_deref() {
+        None | Some("canonical") => OraclePreset::Debug,
+        Some("sanitizer") => OraclePreset::AsanUbsan,
+        Some(mode) => panic!("unsupported Phase 10 oracle mode {mode}"),
+    };
+    let resolve = |preset| match OracleExecutable::resolve(&root, preset) {
+        Ok(executable) => Some(executable),
+        Err(error) if maybe_mode.is_none() => {
+            eprintln!("SKIP: build the Phase 10 {preset:?} oracle: {error}");
+            None
+        }
+        Err(error) => panic!("required Phase 10 {preset:?} oracle is unavailable: {error}"),
+    };
+    let Some(primary) = resolve(primary_preset) else {
         return;
     };
-    let Ok(release) = OracleExecutable::resolve(&root, OraclePreset::Release) else {
-        eprintln!("SKIP: build the Phase 10 release oracle");
+    let Some(debug) = resolve(OraclePreset::Debug) else {
+        return;
+    };
+    let Some(release) = resolve(OraclePreset::Release) else {
         return;
     };
 
@@ -742,6 +760,7 @@ fn corpus_executes_d0_replay_and_two_engine_debug_release_comparison() {
         })
         .collect::<HashSet<_>>();
     let mut witnessed_phase10_leaves = HashSet::new();
+    let mut evidence_cases = Vec::new();
 
     // Act / Assert
     for case in &manifest.cases {
@@ -760,10 +779,12 @@ fn corpus_executes_d0_replay_and_two_engine_debug_release_comparison() {
         let native = NativeRigidWorldExecutor::execute(&request).expect("native case executes");
         let native_replay =
             NativeRigidWorldExecutor::execute(&request).expect("native replay executes");
-        let oracle = execute_rigid_world_process(&debug, &request, UPSTREAM_REVISION)
+        let oracle = execute_rigid_world_process(&primary, &request, UPSTREAM_REVISION)
+            .expect("selected oracle executes");
+        let oracle_replay = execute_rigid_world_process(&primary, &request, UPSTREAM_REVISION)
+            .expect("selected oracle replay executes");
+        let debug_oracle = execute_rigid_world_process(&debug, &request, UPSTREAM_REVISION)
             .expect("debug oracle executes");
-        let oracle_replay = execute_rigid_world_process(&debug, &request, UPSTREAM_REVISION)
-            .expect("debug oracle replay executes");
         let optimized = execute_rigid_world_process(&release, &request, UPSTREAM_REVISION)
             .expect("release oracle executes");
         assert_eq!(
@@ -775,6 +796,12 @@ fn corpus_executes_d0_replay_and_two_engine_debug_release_comparison() {
             oracle.response_bytes(),
             oracle_replay.response_bytes(),
             "oracle D0 differs for {}",
+            case.case_id
+        );
+        assert_eq!(
+            oracle.result(),
+            debug_oracle.result(),
+            "selected and debug modes differ for {}",
             case.case_id
         );
         assert_eq!(
@@ -809,6 +836,17 @@ fn corpus_executes_d0_replay_and_two_engine_debug_release_comparison() {
                     .map(|witness| witness.behavior_leaf),
             );
         }
+        evidence_cases.push(evidence_output::capture_case(
+            case,
+            &request,
+            &native,
+            &native_replay,
+            oracle.result(),
+            oracle_replay.result(),
+            debug_oracle.result(),
+            optimized.result(),
+        ));
     }
     assert_eq!(witnessed_phase10_leaves, expected_phase10_leaves);
+    evidence_output::write_if_requested(&root, &manifest, &evidence_cases);
 }

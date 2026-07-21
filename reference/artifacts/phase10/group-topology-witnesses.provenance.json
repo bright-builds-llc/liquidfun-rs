@@ -1,5 +1,5 @@
 {
-  "adapter_content_sha256": "767774356ce30bc59cf0b0a60a737e8bf08a1da0723fa093cad95ca393c943a4",
+  "adapter_content_sha256": "3da5bfc779f31236cd693f2bbc10a47caa86b7cc7f83c124a3b908a502ac8d95",
   "cmake_preset": "oracle-debug",
   "cmake_target": "phase10-group-topology-witness",
   "compiler_id": "AppleClang",

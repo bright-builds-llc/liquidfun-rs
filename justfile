@@ -78,6 +78,15 @@ rigid-world-replay:
 rigid-world-determinism:
     cargo xtask differential verify-determinism --scenario rigid-world --preset oracle-debug --runs 2
 
+phase10-evidence-canonical output="target/phase10-evidence-local/canonical":
+    LIQUIDFUN_PHASE10_ORACLE_MODE=canonical bash scripts/phase10-evidence.sh canonical {{quote(output)}}
+
+phase10-evidence-sanitizer output="target/phase10-evidence-local/sanitizer":
+    UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 ASAN_OPTIONS=abort_on_error=1:halt_on_error=1 LIQUIDFUN_PHASE10_ORACLE_MODE=sanitizer bash scripts/phase10-evidence.sh sanitizer {{quote(output)}}
+
+phase10-evidence-validate canonical="target/phase10-evidence-local/canonical" sanitizer="target/phase10-evidence-local/sanitizer":
+    cargo xtask phase10-evidence validate --mode local --canonical-dir {{quote(canonical)}} --sanitizer-dir {{quote(sanitizer)}}
+
 rigid-world-minimize:
     cargo xtask differential minimize --scenario rigid-world --preset oracle-debug --session-profile one-shot
 

@@ -4,6 +4,9 @@ end_of_line = "lf"
 validate = true
 exclude = [
   ".planning/**",
+  "AGENTS.md",
+  "CLAUDE.md",
+  "COMPATIBILITY.md",
   "third_party/**",
   "target/**",
   ".git/**",
