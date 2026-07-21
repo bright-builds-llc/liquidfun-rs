@@ -3,14 +3,14 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 10-22-PLAN.md
-last_updated: "2026-07-20T22:56:59.423Z"
-last_activity: "2026-07-20"
+stopped_at: Completed 10-23-PLAN.md
+last_updated: "2026-07-21T00:08:21.493Z"
+last_activity: "2026-07-21"
 progress:
   total_phases: 12
   completed_phases: 9
   total_plans: 161
-  completed_plans: 151
+  completed_plans: 152
   percent: 94
 ---
 
@@ -26,9 +26,9 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 ## Current Position
 
 Phase: 10 (Particle Groups, Solvers, and Compatibility Sign-Off) — EXECUTING
-Plan: 23 of 32
+Plan: 24 of 32
 Status: Ready to execute
-Last activity: 2026-07-20
+Last activity: 2026-07-21
 
 Progress: [█████████░] 94%
 
@@ -163,6 +163,7 @@ Progress: [█████████░] 94%
 | Phase 10 P21 | 2h 10m | 2 tasks | 11 files |
 | Phase 10 P16 | 2h 13m | 1 tasks | 10 files |
 | Phase 10 P22 | 3h 50m | 1 tasks | 24 files |
+| Phase 10 P23 | 1h 8m | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -418,6 +419,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 10]: Restore bodies, particle systems, and group arena together when any particle solver pass or callback journal step fails. — Lifecycle work precedes numerical candidates, so the world transaction must cover every mutated subsystem.
 - [Phase 10]: Collect fixture collision hits in stable source order and invoke fixture-particle filtering only for flagged particles. — The existing filter authority remains source-compatible without duplicating broad-phase or callback policy.
 - [Phase 10]: Separate world integration, manifest dispatch, boundary staging, and body coupling into cohesive private modules. — The split keeps each production file within reviewable code-shape bounds while preserving the closed graph.
+- [Phase 10]: Keep pass and flag completeness in private closed tables bound to named executable witnesses without exporting PassId or private traces. — Coverage claims remain structurally closed while consumer tests exercise only curated public semantics.
+- [Phase 10]: Drive adversarial group coverage through a versioned deterministic public-API model with explicit operation, group, and particle caps. — Every failure stays bounded and exactly reproducible without depending on private storage.
+- [Phase 10]: Compare normalized semantic snapshots after every operation and require exact no-diff outcomes for typed rejected mutations. — Replay and rollback evidence measures stable public meaning instead of incidental dense layout.
 
 ### Pending Todos
 
@@ -431,6 +435,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-20T22:56:25.661Z
-Stopped at: Completed 10-22-PLAN.md
+Last session: 2026-07-21T00:08:21.490Z
+Stopped at: Completed 10-23-PLAN.md
 Resume file: None
