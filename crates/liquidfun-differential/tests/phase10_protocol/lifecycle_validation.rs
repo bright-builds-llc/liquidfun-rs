@@ -39,3 +39,30 @@ fn wire_rejects_destroying_a_system_before_its_groups() {
     );
     assert!(accepted.is_ok());
 }
+
+#[test]
+fn wire_requires_the_exact_phase10_label_for_group_operations() {
+    // Arrange
+    let limits = HarnessLimits::phase2_default_v1();
+    let mut mislabeled = phase10_request_value();
+    mislabeled["scenario"]["timelines"][0]["actions"]
+        .as_array_mut()
+        .expect("actions should be an array")
+        .iter_mut()
+        .find(|action| action["action_id"] == "p10-create-a")
+        .expect("group creation should exist")["phase"] = json!("phase-ten");
+    let canonical = phase10_request_value();
+
+    // Act
+    let rejected = decode_rigid_world_request_jsonl(&encode_value(&mislabeled), &limits);
+    let accepted = decode_rigid_world_request_jsonl(&encode_value(&canonical), &limits);
+
+    // Assert
+    assert_eq!(
+        rejected
+            .expect_err("particle-group operations require the exact phase label")
+            .rigid_world_kind(),
+        Some(liquidfun_test_protocol::RigidWorldErrorKind::CheckpointPhaseMismatch)
+    );
+    assert!(accepted.is_ok());
+}

@@ -468,6 +468,9 @@ fn validate_actions(
         if phase.trim().is_empty() {
             return Err(validation(RigidWorldErrorKind::CheckpointPhaseMismatch));
         }
+        if matches!(&raw.action, RigidWorldAction::ParticleGroup { .. }) && phase != "phase10" {
+            return Err(validation(RigidWorldErrorKind::CheckpointPhaseMismatch));
+        }
         if !ids.insert(raw.action_id.clone()) {
             return Err(validation(RigidWorldErrorKind::DuplicateActionId));
         }
