@@ -1,12 +1,12 @@
 ---
 phase: 10-particle-groups-solvers-and-compatibility-sign-off
-verified: 2026-07-21T15:58:50Z
+verified: 2026-07-21T20:07:29Z
 status: passed
 score: 9/9 must-haves verified
 generated_by: gsd-verifier
 lifecycle_mode: yolo
 phase_lifecycle_id: 10-2026-07-19T05-17-27
-generated_at: 2026-07-21T15:58:50Z
+generated_at: 2026-07-21T20:07:29Z
 lifecycle_validated: true
 overrides_applied: 0
 re_verification:
@@ -20,9 +20,9 @@ re_verification:
 # Phase 10: Particle Groups, Solvers, and Compatibility Sign-Off Verification Report
 
 **Phase Goal:** Complete particle group topology and every baseline and flag-driven solver behavior in the final oracle's exact pass order.
-**Verified:** 2026-07-21T15:58:50Z
+**Verified:** 2026-07-21T20:07:29Z
 **Status:** passed
-**Re-verification:** Yes — post-summary lifecycle and tracking refresh; no gaps or regressions
+**Re-verification:** Yes — post-code-review repair audit; no gaps or regressions
 
 ## Verdict
 
@@ -31,6 +31,23 @@ Phase 10 achieves its goal. All nine assigned requirements are supported by subs
 No verification override was needed. No blocker, missing artifact, hollow data flow, unverified requirement, or unresolved D-01 through D-34 decision was found.
 
 The completed `10-32-SUMMARY.md`, GSD-updated `STATE.md`, and GSD-updated `ROADMAP.md` were reviewed after the initial pass. The summary accurately records the exact five-row/80-leaf authority, full gate and ASVS results, all nine requirements, and D-01 through D-34. ROADMAP marks Phase 10 at 32/32 complete while Phases 11 and 12 remain not started; STATE records the expected post-execution verification handoff. These downstream artifacts introduce no scope expansion or regression.
+
+### Post-Review Repair Audit
+
+The clean second-cycle code review covers 151 Phase 10 files and reports zero critical, warning, or informational findings. This re-verification independently traced both repair cycles to the current code and reran the affected protocol, ownership, evidence, inventory, property, differential, provenance, workflow, and repository-hygiene checks.
+
+| Review concern | Current evidence | Status |
+| --- | --- | --- |
+| Generated provenance schema did not fully model rigid vectors/transforms or keep `extension_version` inside provenance. | Generated schema definitions now close those shapes and a tracked request/result schema test rejects drift. | ✓ VERIFIED |
+| Group identity bounds could reset after destruction or repeated split operations. | Storage preserves cumulative identity history across destroyed groups and multiple splits; regression tests cover both sequences. | ✓ VERIFIED |
+| Inspection could proceed before Phase 10 provenance was established. | Inspection now requires established Phase 10 provenance and the CLI rejection path is tested. | ✓ VERIFIED |
+| Result validation did not fully enforce particle/group and pair/triad ownership topology. | Result validation requires particle membership and same-system topology ownership; focused ownership tests pass. | ✓ VERIFIED |
+| Destroying a particle system with live groups could leave inconsistent lifecycle state. | System teardown now drains live groups through the lifecycle path; the live-group destruction regression passes. | ✓ VERIFIED |
+| Workflow evidence admitted an inexact Phase 10 action label. | Validation requires the exact `phase10` action identity; near-match rejection is tested. | ✓ VERIFIED |
+| Result inspection was not cryptographically bound to the inspected request prefix. | Inspection binds result provenance to the request/inspection prefix and rejects mismatched identity. | ✓ VERIFIED |
+| Event payload validation did not fully close event kind and identity shapes. | Event kinds and identity-bearing payload variants are closed and malformed variants are rejected. | ✓ VERIFIED |
+| Body-contact payloads could name fixtures not owned by the reported bodies. | Fixture/body owner-pair validation is enforced; the focused protocol regression passes. | ✓ VERIFIED |
+| Particle flag schema admitted reserved bit zero. | The schema now rejects bit zero and accepts only the closed public flag domain. | ✓ VERIFIED |
 
 ## Goal Achievement
 
@@ -176,25 +193,25 @@ The validator enforces this set as an all-or-nothing allowlist and rejects the a
 
 | Behavior | Command | Result | Status |
 | --- | --- | --- | --- |
-| Native implementation and public workflows | `cargo test -p liquidfun --all-features` | 409 library unit tests, all integration binaries, and 19 doctests passed | ✓ PASS |
-| Reproducible group operation model | `PROPTEST_CASES=128 cargo test -p liquidfun --all-features --test particle_group_properties` | 2 passed | ✓ PASS |
-| Phase 10 protocol/native/oracle/comparator/corpus | Focused `cargo test -p liquidfun-differential` command across five Phase 10 test targets | 35 passed, 0 failed | ✓ PASS |
-| Evidence and promotion fail-closed tests | `cargo test -p xtask --all-features --test phase10_evidence_cli --test inventory_cli` | 38 passed, including stale/mixed/corrupt/out-of-scope rejection | ✓ PASS |
-| Same-run exact authority | `cargo xtask phase10-evidence validate --mode exact-ref ...` | `5 cases, 80 semantic leaves, mode ExactRef` | ✓ PASS |
+| Native implementation and public workflows | `cargo test -p liquidfun --all-features` | Fresh run re-exercised the 409-test library and particle integration binaries; the recorded post-fix gate also completed all 19 doctests | ✓ PASS |
+| Reproducible group operation model | `PROPTEST_CASES=128 cargo test -p liquidfun --all-features --test particle_group_properties` | Fresh: 2 passed | ✓ PASS |
+| Phase 10 protocol contract and repaired boundaries | `cargo test -p liquidfun-test-protocol --all-features`; focused Phase 10 protocol and result-ownership targets | Fresh: 124 unit plus 11 fixture tests passed; 24 Phase 10 protocol and 3 ownership regressions passed | ✓ PASS |
+| Phase 10 native/oracle/comparator/corpus | Focused `cargo test -p liquidfun-differential` commands across the four semantic targets | Fresh: 6 native, 5 oracle, 7 comparator, and 8 corpus tests passed | ✓ PASS |
+| Evidence and promotion fail-closed tests | `cargo test -p xtask --all-features --test phase10_evidence_cli`; post-fix inventory CLI gate | Fresh evidence CLI: 11 passed; recorded post-fix inventory CLI: 27 passed, including stale/mixed/corrupt/out-of-scope rejection | ✓ PASS |
+| Same-run exact authority | `cargo xtask phase10-evidence validate --mode exact-ref ...` with every historical denyset | Fresh: `5 cases, 80 semantic leaves, mode ExactRef` | ✓ PASS |
 | Ledger and upstream provenance | `cargo xtask inventory check`; `cargo xtask provenance check` | 177 rows verified; pinned oracle provenance verified | ✓ PASS |
-| Rust compile quality | `cargo fmt --all -- --check`; `cargo clippy --all-targets --all-features -- -D warnings`; `cargo build --all-targets --all-features` | All passed | ✓ PASS |
-| Complete workspace regression gate | `cargo test --all-features` | 409 library unit tests, all integration suites, and 19 compile-fail doctests passed | ✓ PASS |
-| Dependency policy | `cargo deny check` | Advisories, bans, licenses, and sources passed; duplicate `winnow` is a non-blocking warning | ✓ PASS |
-| Workflow/schema/docs/read-only oracle | Schema-drift check; `actionlint`; `just markdown-check`; upstream diff; `git diff --check` | All passed | ✓ PASS |
-| Post-summary lifecycle provenance | `verify lifecycle 10 --require-plans --require-verification` | Context, 32 plans, 32 summaries, and refreshed verification share lifecycle `10-2026-07-19T05-17-27`; verification is newer than every upstream artifact | ✓ PASS |
+| Rust compile quality and complete regression gate | Post-fix gate: formatting, clippy with warnings denied, all-target/all-feature build and tests | Recorded after every atomic review repair: 409 library tests, integration suites, and 19 doctests passed | ✓ PASS |
+| Dependency policy | `cargo deny check` | Fresh: advisories, bans, licenses, and sources passed; duplicate `winnow` is a non-blocking warning | ✓ PASS |
+| Workflow/schema/docs/read-only oracle | Schema-drift/post-fix gate; fresh `actionlint`, upstream diff, and `git diff --check`; recorded `just markdown-check` | All passed | ✓ PASS |
+| Post-review lifecycle provenance | `verify lifecycle 10 --require-plans --require-verification` | Context, 32 plans, 32 summaries, and refreshed verification share lifecycle `10-2026-07-19T05-17-27`; verification is newer than every upstream artifact | ✓ PASS |
 
 ## Security and Robustness Review
 
 | Area | Evidence | High finding |
 | --- | --- | --- |
-| Public validation and ownership | Checked stable handles, same-system ownership, finite/range validation, and no-effect error tests | None |
+| Public validation and ownership | Checked stable handles, cumulative group identity, same-system particle/group and pair/triad ownership, fixture/body owner pairs, finite/range validation, live-group teardown, and no-effect error tests | None |
 | Solver resources and rollback | Bounded candidates, typed capacity/resource failures, panic/poison recovery, and transactional storage commits | None |
-| Protocol/parser bounds | Versioned closed schema, duplicate/unknown rejection, finite and capacity checks, canonical JSON, bounded logs/files | None |
+| Protocol/parser bounds | Versioned closed schema, exact action/provenance binding, closed event and particle-flag domains, duplicate/unknown rejection, finite and capacity checks, canonical JSON, bounded logs/files | None |
 | C++ isolation | Oracle remains a private out-of-process test executable; a test confirms no production Cargo/C++ dependency | None |
 | Archive/path safety | Canonicalized target descendants, symlink rejection, closed regular-file set, bounded sizes, entry/mode validation, and digest verification | None |
 | Command injection and secrets | External commands receive path arguments without shell interpolation; workflow uses minimal permissions and `persist-credentials: false`; artifacts contain semantic public evidence | None |
@@ -209,7 +226,9 @@ The validator enforces this set as an all-or-nothing allowlist and rejects the a
 | Production source scan found no `unwrap()` and no TODO/FIXME/HACK/not-implemented behavior in the Phase 10 execution paths. | ℹ️ Info | No action needed. |
 | `cargo deny` reports two transitive `winnow` versions. | ℹ️ Info | The configured duplicate check warns only; advisories, bans, licenses, and sources pass. Dependency consolidation is not a Phase 10 correctness gap. |
 
-The strongest partial-looking concern was that `reference/compatibility.json` promotes five aggregate rows rather than 80 rows. This is intentional and closed: the same five rows all reference the immutable 80-leaf outcome table and manifest digests, and inventory validation rejects incomplete bindings, outcomes, proofs, or evidence dimensions. The most misleading narrow test is `particle_solver_flags.rs` by itself; completeness does not rest on that file, but on the closed witness registries, per-family kernel tests, five-case semantic corpus, and 80-binding manifest. No uncovered Phase 10 error class was found after reviewing ownership, finite/range, capacity/resource, rollback, parser, archive, and authority rejection paths.
+The strongest partial-looking concern is that the approved authority SHA predates the two code-review repair cycles. The reviewed changes harden generated schemas, protocol/result validation, evidence inspection, ownership/lifecycle invariants, and their tests; they do not alter native solver kernels, C++ oracle execution, corpus fixtures, semantic observations, or comparator policies. The current stricter exact-reference validator accepts the unchanged canonical and sanitizer archives with all historical denysets enabled, and the focused repaired-boundary tests pass. A new oracle dispatch is therefore neither required nor authorized for this verification.
+
+The second partial-looking concern is that `reference/compatibility.json` promotes five aggregate rows rather than 80 rows. This is intentional and closed: the same five rows all reference the immutable 80-leaf outcome table and manifest digests, and inventory validation rejects incomplete bindings, outcomes, proofs, or evidence dimensions. The most misleading narrow test is `particle_solver_flags.rs` by itself; completeness does not rest on that file, but on the closed witness registries, per-family kernel tests, five-case semantic corpus, and 80-binding manifest. No uncovered Phase 10 error class was found after reviewing ownership, finite/range, capacity/resource, rollback, parser, archive, and authority rejection paths.
 
 ## Human Verification Required
 
@@ -227,5 +246,5 @@ No gaps. All nine requirements, all five roadmap success criteria, all 34 locked
 
 ***
 
-_Verified: 2026-07-21T15:58:50Z_
+_Verified: 2026-07-21T20:07:29Z_
 _Verifier: the agent (gsd-verifier)_
