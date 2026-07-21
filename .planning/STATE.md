@@ -3,14 +3,14 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 10-25-PLAN.md
-last_updated: "2026-07-21T02:02:24.484Z"
+stopped_at: Completed 10-26-PLAN.md
+last_updated: "2026-07-21T03:41:00.000Z"
 last_activity: "2026-07-21"
 progress:
   total_phases: 12
   completed_phases: 9
   total_plans: 161
-  completed_plans: 154
+  completed_plans: 155
   percent: 96
 ---
 
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 ## Current Position
 
 Phase: 10 (Particle Groups, Solvers, and Compatibility Sign-Off) — EXECUTING
-Plan: 26 of 32
+Plan: 27 of 32
 Status: Ready to execute
 Last activity: 2026-07-21
 
@@ -166,6 +166,7 @@ Progress: [██████████] 96%
 | Phase 10 P23 | 1h 8m | 2 tasks | 7 files |
 | Phase 10 P24 | 29m | 2 tasks | 13 files |
 | Phase 10 P25 | 6h 15m | 1 tasks | 11 files |
+| Phase 10 P26 | 1h 38m | 1 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -431,6 +432,10 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 10]: Capture Phase 10 evidence only through public views in protocol semantic order. — Preserves portable identity and topology without leaking dense storage or private pass data.
 - [Phase 10]: Contain native timeline panics at the rigid-world adapter boundary. — One typed fail-closed error prevents partial results from masquerading as physics evidence.
 - [Phase 10]: Destroy nonempty groups through public deferred particle lifecycle and empty shells immediately. — Matches the public engine lifecycle while preserving requested destruction evidence.
+- [Phase 10]: Execute the Phase 10 extension inside the existing rigid-world lifetime. — Inherited bodies, fixtures, systems, particles, and observations remain one authoritative upstream world.
+- [Phase 10]: Bind C++ oracle identities through declared typed semantic maps. — Upstream pointers and dense rows stay private and never become protocol identity.
+- [Phase 10]: Capture only portable semantic outcomes and typed witness roles from the C++ oracle. — Rust-private solver pass identifiers and traces remain outside the shared boundary.
+- [Phase 10]: Contain foreign exceptions per JSONL request and diagnose them only on stderr. — A rejected record cannot terminate or contaminate the next valid batch.
 
 ### Pending Todos
 
@@ -444,6 +449,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-21T02:01:57.625Z
-Stopped at: Completed 10-25-PLAN.md
+Last session: 2026-07-21T03:41:00.000Z
+Stopped at: Completed 10-26-PLAN.md
 Resume file: None
