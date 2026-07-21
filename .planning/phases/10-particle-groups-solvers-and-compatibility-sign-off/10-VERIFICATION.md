@@ -1,28 +1,36 @@
 ---
 phase: 10-particle-groups-solvers-and-compatibility-sign-off
-verified: 2026-07-21T15:50:57Z
+verified: 2026-07-21T15:58:50Z
 status: passed
 score: 9/9 must-haves verified
 generated_by: gsd-verifier
 lifecycle_mode: yolo
 phase_lifecycle_id: 10-2026-07-19T05-17-27
-generated_at: 2026-07-21T15:50:57Z
+generated_at: 2026-07-21T15:58:50Z
 lifecycle_validated: true
 overrides_applied: 0
+re_verification:
+  previous_status: passed
+  previous_score: 9/9
+  gaps_closed: []
+  gaps_remaining: []
+  regressions: []
 ---
 
 # Phase 10: Particle Groups, Solvers, and Compatibility Sign-Off Verification Report
 
 **Phase Goal:** Complete particle group topology and every baseline and flag-driven solver behavior in the final oracle's exact pass order.
-**Verified:** 2026-07-21T15:50:57Z
+**Verified:** 2026-07-21T15:58:50Z
 **Status:** passed
-**Re-verification:** No — initial verification
+**Re-verification:** Yes — post-summary lifecycle and tracking refresh; no gaps or regressions
 
 ## Verdict
 
 Phase 10 achieves its goal. All nine assigned requirements are supported by substantive, wired implementation and focused tests. The validated exact-reference authority binds five cases and a closed 80-leaf semantic inventory (22 Phase 10 leaves plus 58 inherited leaves) to one successful canonical/sanitizer run at the same approved full SHA. Exactly five compatibility rows were promoted, and the approved Phase 10 run/SHA occurs in no other row. Phase 11 example/testbed claims and Phase 12 performance, broader-platform, hardening, and release claims remain unpromoted.
 
 No verification override was needed. No blocker, missing artifact, hollow data flow, unverified requirement, or unresolved D-01 through D-34 decision was found.
+
+The completed `10-32-SUMMARY.md`, GSD-updated `STATE.md`, and GSD-updated `ROADMAP.md` were reviewed after the initial pass. The summary accurately records the exact five-row/80-leaf authority, full gate and ASVS results, all nine requirements, and D-01 through D-34. ROADMAP marks Phase 10 at 32/32 complete while Phases 11 and 12 remain not started; STATE records the expected post-execution verification handoff. These downstream artifacts introduce no scope expansion or regression.
 
 ## Goal Achievement
 
@@ -178,6 +186,7 @@ The validator enforces this set as an all-or-nothing allowlist and rejects the a
 | Complete workspace regression gate | `cargo test --all-features` | 409 library unit tests, all integration suites, and 19 compile-fail doctests passed | ✓ PASS |
 | Dependency policy | `cargo deny check` | Advisories, bans, licenses, and sources passed; duplicate `winnow` is a non-blocking warning | ✓ PASS |
 | Workflow/schema/docs/read-only oracle | Schema-drift check; `actionlint`; `just markdown-check`; upstream diff; `git diff --check` | All passed | ✓ PASS |
+| Post-summary lifecycle provenance | `verify lifecycle 10 --require-plans --require-verification` | Context, 32 plans, 32 summaries, and refreshed verification share lifecycle `10-2026-07-19T05-17-27`; verification is newer than every upstream artifact | ✓ PASS |
 
 ## Security and Robustness Review
 
@@ -218,5 +227,5 @@ No gaps. All nine requirements, all five roadmap success criteria, all 34 locked
 
 ***
 
-_Verified: 2026-07-21T15:50:57Z_
+_Verified: 2026-07-21T15:58:50Z_
 _Verifier: the agent (gsd-verifier)_

@@ -17,7 +17,7 @@ The v1 roadmap moves from an immutable, licensed source of truth to a semantic c
 - [x] **Phase 7: Rigid Solver, World Operations, and CCD** - Complete rigid stepping, sleeping, continuous collision, configuration, queries, and ray casts. (completed 2026-07-13)
 - [x] **Phase 8: Joints, Rope, Callbacks, and Rigid Sign-Off** - Complete joints, standalone rope, hook timing, diagnostic dump, and the broad rigid-body compatibility gate. (completed 2026-07-15)
 - [x] **Phase 9: Particle Storage, Lifecycle, and Coupling** - Implement safe particle systems, storage, lifecycle, contacts, buffers, queries, callbacks, and rigid coupling. (completed 2026-07-18)
-- [ ] **Phase 10: Particle Groups, Solvers, and Compatibility Sign-Off** - Complete group topology and every particle behavior in pinned upstream pass order.
+- [x] **Phase 10: Particle Groups, Solvers, and Compatibility Sign-Off** - Complete group topology and every particle behavior in pinned upstream pass order. (completed 2026-07-21)
 - [ ] **Phase 11: Examples, Headless Tooling, and Testbed** - Account for every upstream test/example and expose shared headless and optional visual scenarios.
 - [ ] **Phase 12: Performance, Portability, and Release Hardening** - Prove performance, safety, platform, documentation, packaging, and zero-gap v1 readiness.
 
@@ -213,7 +213,7 @@ Plans:
 - [x] 10-29-PLAN.md — Build the shared local and exact-reference evidence validator.
 - [x] 10-30-PLAN.md — Wire local D2 and same-run canonical D1 evidence production.
 - [x] 10-31-PLAN.md — Acquire and independently validate one fresh D1 authority set.
-- [ ] 10-32-PLAN.md — Promote proven outcomes and complete the phase audit.
+- [x] 10-32-PLAN.md — Promote proven outcomes and complete the phase audit.
 
 ### Phase 11: Examples, Headless Tooling, and Testbed
 
@@ -262,7 +262,7 @@ Plans:
 | 7. Rigid Solver, World Operations, and CCD | 13/13 | Complete    | 2026-07-13 |
 | 8. Joints, Rope, Callbacks, and Rigid Sign-Off | 24/24 | Complete    | 2026-07-15 |
 | 9. Particle Storage, Lifecycle, and Coupling | 31/31 | Complete | 2026-07-18 |
-| 10. Particle Groups, Solvers, and Compatibility Sign-Off | 31/32 | In Progress|  |
+| 10. Particle Groups, Solvers, and Compatibility Sign-Off | 32/32 | Complete   | 2026-07-21 |
 | 11. Examples, Headless Tooling, and Testbed | 0/TBD | Not started | - |
 | 12. Performance, Portability, and Release Hardening | 0/TBD | Not started | - |
 
