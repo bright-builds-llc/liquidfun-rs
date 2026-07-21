@@ -3,14 +3,14 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 10-26-PLAN.md
-last_updated: "2026-07-21T03:41:00.000Z"
+stopped_at: Completed 10-27-PLAN.md
+last_updated: "2026-07-21T06:40:00.000Z"
 last_activity: "2026-07-21"
 progress:
   total_phases: 12
   completed_phases: 9
   total_plans: 161
-  completed_plans: 155
+  completed_plans: 156
   percent: 96
 ---
 
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 ## Current Position
 
 Phase: 10 (Particle Groups, Solvers, and Compatibility Sign-Off) — EXECUTING
-Plan: 27 of 32
+Plan: 28 of 32
 Status: Ready to execute
 Last activity: 2026-07-21
 
@@ -36,7 +36,7 @@ Progress: [██████████] 96%
 
 **Velocity:**
 
-- Total plans completed: 133
+- Total plans completed: 134
 - Average duration: Not available
 - Total execution time: 0 hours
 
@@ -167,6 +167,7 @@ Progress: [██████████] 96%
 | Phase 10 P24 | 29m | 2 tasks | 13 files |
 | Phase 10 P25 | 6h 15m | 1 tasks | 11 files |
 | Phase 10 P26 | 1h 38m | 1 tasks | 11 files |
+| Phase 10 P27 | 2h 59m | 1 tasks | 17 files |
 
 ## Accumulated Context
 
@@ -436,6 +437,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 10]: Bind C++ oracle identities through declared typed semantic maps. — Upstream pointers and dense rows stay private and never become protocol identity.
 - [Phase 10]: Capture only portable semantic outcomes and typed witness roles from the C++ oracle. — Rust-private solver pass identifiers and traces remain outside the shared boundary.
 - [Phase 10]: Contain foreign exceptions per JSONL request and diagnose them only on stderr. — A rejected record cannot terminate or contaminate the next valid batch.
+- [Phase 10]: Treat D0 as canonical semantic-byte identity and D1 as an exhaustive source-ordered field walk through one closed named policy registry. — Deterministic replay and cross-engine parity remain distinct, explicit authorities.
+- [Phase 10]: Reject malformed records and unknown, missing, duplicate, wildcard, unbound, or private-pass policy bindings before comparison. — No omitted field or broad tolerance can silently create parity.
+- [Phase 10]: Report only the first stable contextual semantic mismatch with scenario, operation, entity, index, path, policy, and bounded values. — Evidence remains explainable and suitable for deterministic minimization.
 
 ### Pending Todos
 
@@ -449,6 +453,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-21T03:41:00.000Z
-Stopped at: Completed 10-26-PLAN.md
+Last session: 2026-07-21T06:40:00.000Z
+Stopped at: Completed 10-27-PLAN.md
 Resume file: None

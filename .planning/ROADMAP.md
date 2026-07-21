@@ -208,7 +208,7 @@ Plans:
 - [x] 10-24-PLAN.md — Extend the strict rigid-world protocol for Phase 10.
 - [x] 10-25-PLAN.md — Execute Phase 10 scenarios through the native public API.
 - [x] 10-26-PLAN.md — Extend the pinned C++ oracle for Phase 10.
-- [ ] 10-27-PLAN.md — Define exhaustive exact and numeric comparison policy.
+- [x] 10-27-PLAN.md — Define exhaustive exact and numeric comparison policy.
 - [ ] 10-28-PLAN.md — Seal the closed five-family semantic differential corpus.
 - [ ] 10-29-PLAN.md — Build the shared local and exact-reference evidence validator.
 - [ ] 10-30-PLAN.md — Wire local D2 and same-run canonical D1 evidence production.
@@ -262,7 +262,7 @@ Plans:
 | 7. Rigid Solver, World Operations, and CCD | 13/13 | Complete    | 2026-07-13 |
 | 8. Joints, Rope, Callbacks, and Rigid Sign-Off | 24/24 | Complete    | 2026-07-15 |
 | 9. Particle Storage, Lifecycle, and Coupling | 31/31 | Complete | 2026-07-18 |
-| 10. Particle Groups, Solvers, and Compatibility Sign-Off | 26/32 | In Progress|  |
+| 10. Particle Groups, Solvers, and Compatibility Sign-Off | 27/32 | In Progress|  |
 | 11. Examples, Headless Tooling, and Testbed | 0/TBD | Not started | - |
 | 12. Performance, Portability, and Release Hardening | 0/TBD | Not started | - |
 
