@@ -3,15 +3,15 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 10-29-PLAN.md
-last_updated: "2026-07-21T11:58:55.950Z"
+stopped_at: Completed 10-30-PLAN.md
+last_updated: "2026-07-21T12:38:08.486Z"
 last_activity: "2026-07-21"
 progress:
   total_phases: 12
   completed_phases: 9
   total_plans: 161
-  completed_plans: 158
-  percent: 98
+  completed_plans: 159
+  percent: 99
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 ## Current Position
 
 Phase: 10 (Particle Groups, Solvers, and Compatibility Sign-Off) — EXECUTING
-Plan: 30 of 32
+Plan: 31 of 32
 Status: Ready to execute
 Last activity: 2026-07-21
 
-Progress: [██████████] 98%
+Progress: [██████████] 99%
 
 ## Performance Metrics
 
@@ -170,6 +170,7 @@ Progress: [██████████] 98%
 | Phase 10 P27 | 2h 59m | 1 tasks | 17 files |
 | Phase 10 P28 | 2h 56m | 2 tasks | 14 files |
 | Phase 10 P29 | 45m | 2 tasks | 8 files |
+| Phase 10 P30 | 37m | 2 tasks | 17 files |
 
 ## Accumulated Context
 
@@ -447,6 +448,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 10]: Project C++ caches and lifecycle records through stable semantic identities before strict comparison. — Pointer-independent live-member aggregates, snapshot-local witnesses, declared live bodies, and empty-shell destruction remove adapter artifacts without widening comparator policy.
 - [Phase 10]: Use one exact five-case typed semantic evaluator for local and exact-ref evidence. — D1 adds immutable authority checks but cannot reinterpret or weaken content accepted by the D2 validator.
 - [Phase 10]: Admit D1 only from one successful same-run canonical and sanitizer pair on the locked Linux toolchain. — Live API metadata, extracted identities, full SHA, archive topology, and every recomputed digest must agree before promotion.
+- [Phase 10]: Write Phase 10 evidence identity only after semantic, provenance, inventory, read-only, and digest checks pass. — Identity-last output prevents partial or failed canonical and sanitizer runs from becoming admissible artifacts.
+- [Phase 10]: Use artifact ID zero inside pre-upload archives and bind the assigned live artifact ID externally. — GitHub assigns artifact IDs only after upload, so external live metadata and archive digests avoid a circular immutable identity contract.
+- [Phase 10]: Extend the existing Oracle CI jobs with Phase 10-only authority names and steps while leaving Phase 9 conditions and commands intact. — One workflow and same-run job pair meet the authority contract without duplicating the pinned toolchain setup or changing Phase 9 behavior.
 
 ### Pending Todos
 
@@ -460,6 +464,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-21T11:58:55.946Z
-Stopped at: Completed 10-29-PLAN.md
+Last session: 2026-07-21T12:37:35.831Z
+Stopped at: Completed 10-30-PLAN.md
 Resume file: None
