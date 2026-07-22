@@ -29,6 +29,7 @@ concurrency:
 jobs:
   canonical-linux:
     name: ${{ github.event_name == 'workflow_dispatch' && inputs.evidence_phase == 'phase10' && 'Phase 10 canonical Linux oracle' || 'Canonical Linux oracle' }}
+    if: github.event_name == 'pull_request' || github.event_name == 'push' || github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && (inputs.evidence_phase == 'phase8' || inputs.evidence_phase == 'phase9' || inputs.evidence_phase == 'phase10'))
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
@@ -171,7 +172,7 @@ jobs:
 
   sanitizer-linux:
     name: ${{ github.event_name == 'workflow_dispatch' && inputs.evidence_phase == 'phase10' && 'Phase 10 fail-fast sanitizer' || 'Scheduled fail-fast sanitizer and reset corpus' }}
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && (inputs.evidence_phase == 'phase8' || inputs.evidence_phase == 'phase9' || inputs.evidence_phase == 'phase10'))
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
@@ -436,7 +437,7 @@ jobs:
 
   portability-macos:
     name: macOS oracle portability
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' && (inputs.evidence_phase == 'phase8' || inputs.evidence_phase == 'phase9' || inputs.evidence_phase == 'phase10')
     runs-on: macos-latest
     timeout-minutes: 45
     env:
@@ -491,7 +492,7 @@ jobs:
 
   portability-windows:
     name: Windows oracle portability
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' && (inputs.evidence_phase == 'phase8' || inputs.evidence_phase == 'phase9' || inputs.evidence_phase == 'phase10')
     runs-on: windows-latest
     timeout-minutes: 45
     env:

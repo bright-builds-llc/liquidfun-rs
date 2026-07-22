@@ -8,6 +8,68 @@ fn read(relative: &str) -> TestResult<String> {
     Ok(fs::read_to_string(workspace_root().join(relative))?)
 }
 
+fn job_section(workflow: &str, job: &str) -> TestResult<String> {
+    let header = format!("  {job}:");
+    let mut found = false;
+    let mut lines = Vec::new();
+
+    for line in workflow.lines() {
+        if line == header {
+            found = true;
+        } else if found
+            && line.starts_with("  ")
+            && !line.starts_with("    ")
+            && line.ends_with(':')
+        {
+            break;
+        }
+
+        if found {
+            lines.push(line);
+        }
+    }
+
+    if lines.is_empty() {
+        return Err(std::io::Error::other(format!("workflow job `{job}` is missing")).into());
+    }
+    Ok(lines.join("\n"))
+}
+
+fn assert_exact_job_condition(section: &str, expected: &str) {
+    let conditions = section
+        .lines()
+        .filter_map(|line| line.strip_prefix("    if: "))
+        .collect::<Vec<_>>();
+    assert_eq!(conditions, [expected]);
+}
+
+fn assert_actions_are_pinned(workflow: &str) {
+    let mut actions = 0;
+    for usage in workflow
+        .lines()
+        .filter_map(|line| line.trim().strip_prefix("uses: "))
+    {
+        let (action, revision) = usage
+            .split_once('@')
+            .expect("action use carries a revision");
+        assert!(
+            action.starts_with("actions/"),
+            "unexpected action `{action}`"
+        );
+        assert_eq!(
+            revision.len(),
+            40,
+            "action `{action}` is not pinned by full SHA"
+        );
+        assert!(
+            revision.bytes().all(|byte| byte.is_ascii_hexdigit()),
+            "action `{action}` has a non-hex revision"
+        );
+        actions += 1;
+    }
+    assert!(actions > 0, "workflow contains no pinned actions");
+}
+
 #[test]
 fn local_runner_is_fixed_fail_fast_and_identity_last() -> TestResult {
     // Arrange
@@ -34,6 +96,12 @@ fn local_runner_is_fixed_fail_fast_and_identity_last() -> TestResult {
 fn oracle_workflow_produces_one_same_run_phase11_pair() -> TestResult {
     // Arrange
     let workflow = read(".github/workflows/oracle.yml")?;
+    let canonical = job_section(&workflow, "canonical-linux")?;
+    let sanitizer = job_section(&workflow, "sanitizer-linux")?;
+    let phase11_canonical = job_section(&workflow, "phase11-canonical-linux")?;
+    let phase11_sanitizer = job_section(&workflow, "phase11-sanitizer-linux")?;
+    let macos = job_section(&workflow, "portability-macos")?;
+    let windows = job_section(&workflow, "portability-windows")?;
 
     // Act
     let phase11_calls = workflow.matches("scripts/phase11-evidence.sh").count();
@@ -43,10 +111,48 @@ fn oracle_workflow_produces_one_same_run_phase11_pair() -> TestResult {
     assert!(workflow.contains("Phase 11 canonical Linux oracle"));
     assert!(workflow.contains("Phase 11 fail-fast sanitizer"));
     assert_eq!(phase11_calls, 2);
-    assert!(workflow.contains("phase11-canonical-${{ github.run_id }}-${{ github.sha }}"));
-    assert!(workflow.contains("phase11-sanitizer-${{ github.run_id }}-${{ github.sha }}"));
-    assert!(!workflow.contains("uses: actions/checkout@v"));
-    assert!(!workflow.contains("uses: actions/upload-artifact@v"));
+    assert_eq!(
+        phase11_canonical
+            .matches("run: bash scripts/phase11-evidence.sh canonical target/oracle-evidence/phase11-canonical")
+            .count(),
+        1
+    );
+    assert_eq!(
+        phase11_sanitizer
+            .matches("run: bash scripts/phase11-evidence.sh sanitizer target/oracle-evidence/phase11-sanitizer")
+            .count(),
+        1
+    );
+    assert!(
+        phase11_canonical
+            .contains("name: phase11-canonical-${{ github.run_id }}-${{ github.sha }}")
+    );
+    assert!(
+        phase11_sanitizer
+            .contains("name: phase11-sanitizer-${{ github.run_id }}-${{ github.sha }}")
+    );
+
+    let legacy_phases = "(inputs.evidence_phase == 'phase8' || inputs.evidence_phase == 'phase9' || inputs.evidence_phase == 'phase10')";
+    assert_exact_job_condition(
+        &canonical,
+        &format!(
+            "github.event_name == 'pull_request' || github.event_name == 'push' || github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && {legacy_phases})"
+        ),
+    );
+    assert_exact_job_condition(
+        &sanitizer,
+        &format!(
+            "github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && {legacy_phases})"
+        ),
+    );
+    let phase11_route = "github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.evidence_phase == 'phase11')";
+    assert_exact_job_condition(&phase11_canonical, phase11_route);
+    assert_exact_job_condition(&phase11_sanitizer, phase11_route);
+    let portability_route = format!("github.event_name == 'workflow_dispatch' && {legacy_phases}");
+    assert_exact_job_condition(&macos, &portability_route);
+    assert_exact_job_condition(&windows, &portability_route);
+    assert!(!workflow.contains("inputs.evidence_phase != 'phase11'"));
+    assert_actions_are_pinned(&workflow);
     Ok(())
 }
 
