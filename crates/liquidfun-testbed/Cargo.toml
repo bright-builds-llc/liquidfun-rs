@@ -9,6 +9,7 @@ repository.workspace = true
 publish = false
 
 [dependencies]
+liquidfun = { path = "../liquidfun" }
 liquidfun-differential = { path = "../liquidfun-differential" }
 liquidfun-test-protocol = { path = "../liquidfun-test-protocol" }
 macroquad = "=0.4.15"

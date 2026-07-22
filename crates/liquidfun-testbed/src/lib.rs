@@ -2,6 +2,8 @@
 
 pub mod app;
 mod capability;
+pub mod controller_adapter;
+pub mod input;
 pub mod theme;
 pub mod ui;
 

@@ -6,7 +6,11 @@
 )]
 
 mod about;
+pub mod overlays;
+pub mod run_controls;
 mod scenario_browser;
+pub mod settings;
+pub mod viewport;
 
 pub use about::*;
 pub use scenario_browser::*;

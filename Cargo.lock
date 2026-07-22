@@ -822,6 +822,7 @@ dependencies = [
 name = "liquidfun-testbed"
 version = "0.0.0"
 dependencies = [
+ "liquidfun",
  "liquidfun-differential",
  "liquidfun-test-protocol",
  "macroquad",
