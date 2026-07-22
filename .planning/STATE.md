@@ -3,15 +3,15 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 11-07-PLAN.md
-last_updated: "2026-07-22T00:51:59.822Z"
+stopped_at: Completed 11-09-PLAN.md
+last_updated: "2026-07-22T01:14:10.160Z"
 last_activity: "2026-07-22"
 progress:
   total_phases: 12
   completed_phases: 10
   total_plans: 190
-  completed_plans: 168
-  percent: 88
+  completed_plans: 169
+  percent: 89
 ---
 
 # Project State
@@ -30,7 +30,7 @@ Plan: 6 of 29
 Status: Ready to execute
 Last activity: 2026-07-22
 
-Progress: [█████████░] 88%
+Progress: [█████████░] 89%
 
 ## Performance Metrics
 
@@ -180,6 +180,7 @@ Progress: [█████████░] 88%
 | Phase 11 P04 | 22 min | 1 tasks | 9 files |
 | Phase 11 P05 | 14m | 1 tasks | 6 files |
 | Phase 11 P07 | 16m08s | 1 tasks | 4 files |
+| Phase 11 P09 | 18 min | 1 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -481,6 +482,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 11]: Catalog coverage accepts only sealed Phase 9 branches and exact Phase 10 or inherited compatibility leaves.
 - [Phase 11]: Keep render clocks outside SessionController; running advances only through explicit logical-action driver calls.
 - [Phase 11]: Consume admitted command IDs before effect dispatch so stale retries cannot gain authority after failure.
+- [Phase 11]: Extend the owned public observation with body, fixture, joint, and particle snapshots so debug collection never traverses private storage.
+- [Phase 11]: Keep one owned primitive collection authoritative and make the sink a passive replay adapter.
+- [Phase 11]: Key debug primitives by semantic owner, layer, kind, child, and occurrence or canonical ordinal without private storage coordinates.
 
 ### Pending Todos
 
@@ -494,6 +498,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-22T00:51:59.818Z
-Stopped at: Completed 11-07-PLAN.md
+Last session: 2026-07-22T01:14:10.156Z
+Stopped at: Completed 11-09-PLAN.md
 Resume file: None
