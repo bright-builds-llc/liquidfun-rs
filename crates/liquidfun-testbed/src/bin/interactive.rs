@@ -242,6 +242,14 @@ impl DesktopApp {
         if layout.panel_behavior() == PanelBehavior::WindowTooSmall {
             return;
         }
+        if self.open_panel == OpenPanel::Scenario
+            && self.focus_return.current() == Some(FocusId::ScenarioRow)
+            && is_key_pressed(KeyCode::Enter)
+        {
+            self.keyboard_input_consumed_this_frame = true;
+            self.select_focused();
+            return;
+        }
         if self.modal_input_active(layout) {
             self.handle_modal_focus_input();
             return;
@@ -435,6 +443,7 @@ impl DesktopApp {
             .focused_row
             .min(self.testbed.visible_rows().len().saturating_sub(1));
         if submit && !self.testbed.visible_rows().is_empty() {
+            self.focus_return.move_to(FocusId::ScenarioRow);
             self.select_focused();
         }
     }
@@ -632,10 +641,12 @@ impl DesktopApp {
         }
         if is_key_pressed(KeyCode::Down) {
             self.focused_row = (self.focused_row + 1) % self.testbed.visible_rows().len();
+            self.focus_return.move_to(FocusId::ScenarioRow);
         }
         if is_key_pressed(KeyCode::Up) {
             self.focused_row = (self.focused_row + self.testbed.visible_rows().len() - 1)
                 % self.testbed.visible_rows().len();
+            self.focus_return.move_to(FocusId::ScenarioRow);
         }
         if is_key_pressed(KeyCode::Enter) && FOCUS_ORDER[self.focus_index] == ControlFocus::Scenario
         {
@@ -671,6 +682,7 @@ impl DesktopApp {
             && let Some(index) = maybe_clicked
         {
             self.focused_row = index;
+            self.focus_return.move_to(FocusId::ScenarioRow);
             self.select_focused();
         }
     }
@@ -1853,9 +1865,10 @@ fn focus_index(focus: ControlFocus) -> usize {
 
 const fn control_for_focus(focus: FocusId) -> ControlFocus {
     match focus {
-        FocusId::ScenarioButton | FocusId::ScenarioHeading | FocusId::ScenarioSearch => {
-            ControlFocus::Scenario
-        }
+        FocusId::ScenarioButton
+        | FocusId::ScenarioHeading
+        | FocusId::ScenarioSearch
+        | FocusId::ScenarioRow => ControlFocus::Scenario,
         FocusId::InspectorButton | FocusId::InspectorHeading | FocusId::InspectorDifference => {
             ControlFocus::Inspector
         }
@@ -1876,6 +1889,7 @@ const fn focus_is_modal_heading(maybe_focus: Option<FocusId>) -> bool {
         Some(
             FocusId::ScenarioHeading
                 | FocusId::ScenarioSearch
+                | FocusId::ScenarioRow
                 | FocusId::InspectorHeading
                 | FocusId::InspectorDifference
                 | FocusId::SettingsHeading

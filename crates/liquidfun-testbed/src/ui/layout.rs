@@ -178,6 +178,7 @@ pub enum FocusId {
     ScenarioButton,
     ScenarioHeading,
     ScenarioSearch,
+    ScenarioRow,
     InspectorButton,
     InspectorHeading,
     InspectorDifference,

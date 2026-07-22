@@ -249,6 +249,11 @@ fn modal_focus_moves_inside_and_returns_to_invoker() {
     assert_eq!(returned, Some(FocusId::InspectorButton));
     assert_eq!(focus.current(), Some(FocusId::InspectorButton));
 
+    focus.open(FocusId::ScenarioButton, FocusId::ScenarioSearch);
+    focus.move_to(FocusId::ScenarioRow);
+    assert_eq!(focus.current(), Some(FocusId::ScenarioRow));
+    assert_eq!(focus.close(), Some(FocusId::ScenarioButton));
+
     focus.open(FocusId::SettingsButton, FocusId::SettingsHeading);
     focus.move_to(FocusId::SettingsField);
     assert_eq!(focus.current(), Some(FocusId::SettingsField));

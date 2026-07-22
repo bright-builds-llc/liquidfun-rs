@@ -106,6 +106,7 @@ fn production_launcher_wires_accessible_controls_pointer_gestures_and_minimum_wi
         "control_for_focus(returned_focus)",
         "const CONTROL_TARGET: f32 = 44.0;",
         "scenario_search_bounds(",
+        "FocusId::ScenarioRow",
         "clipboard_set(link.url())",
         "focused_about_link",
         "about_link_bounds(",
