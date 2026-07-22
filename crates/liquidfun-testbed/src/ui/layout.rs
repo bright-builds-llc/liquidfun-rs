@@ -184,6 +184,7 @@ pub enum FocusId {
     SettingsButton,
     SettingsHeading,
     SettingsField,
+    SettingsApply,
     AboutButton,
     AboutHeading,
     AboutLink,

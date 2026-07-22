@@ -136,7 +136,7 @@ struct DesktopApp {
     focused_difference: usize,
     focused_about_link: usize,
     maybe_link_status: Option<String>,
-    modal_focus_routed_this_frame: bool,
+    keyboard_input_consumed_this_frame: bool,
 }
 
 impl DesktopApp {
@@ -192,12 +192,12 @@ impl DesktopApp {
             focused_difference: 0,
             focused_about_link: 0,
             maybe_link_status: None,
-            modal_focus_routed_this_frame: false,
+            keyboard_input_consumed_this_frame: false,
         })
     }
 
     fn update(&mut self) {
-        self.modal_focus_routed_this_frame = false;
+        self.keyboard_input_consumed_this_frame = false;
         self.handle_search_input();
         self.handle_focus_input();
         self.handle_panel_input();
@@ -229,7 +229,10 @@ impl DesktopApp {
     }
 
     fn handle_focus_input(&mut self) {
-        if self.editing_query || self.maybe_editing_setting.is_some() {
+        if self.keyboard_input_consumed_this_frame
+            || self.editing_query
+            || self.maybe_editing_setting.is_some()
+        {
             return;
         }
         let layout = ResponsiveLayout::for_window(
@@ -272,7 +275,7 @@ impl DesktopApp {
         if !is_key_pressed(KeyCode::Tab) && !is_key_pressed(KeyCode::Enter) {
             return;
         }
-        self.modal_focus_routed_this_frame = true;
+        self.keyboard_input_consumed_this_frame = true;
         match self.open_panel {
             OpenPanel::Scenario => {
                 self.focus_return.move_to(FocusId::ScenarioSearch);
@@ -287,14 +290,23 @@ impl DesktopApp {
                 }
             }
             OpenPanel::Settings => {
-                self.focus_return.move_to(FocusId::SettingsField);
-                self.maybe_editing_setting = Some(
-                    if is_key_down(KeyCode::LeftShift) || is_key_down(KeyCode::RightShift) {
+                let backwards = is_key_down(KeyCode::LeftShift) || is_key_down(KeyCode::RightShift);
+                if is_key_pressed(KeyCode::Enter)
+                    && self.focus_return.current() == Some(FocusId::SettingsApply)
+                {
+                    self.apply_settings_and_restart();
+                } else if backwards && self.focus_return.current() == Some(FocusId::SettingsHeading)
+                {
+                    self.maybe_editing_setting = None;
+                    self.focus_return.move_to(FocusId::SettingsApply);
+                } else {
+                    self.focus_return.move_to(FocusId::SettingsField);
+                    self.maybe_editing_setting = Some(if backwards {
                         SettingsField::ParticleIterations
                     } else {
                         SettingsField::Timestep
-                    },
-                );
+                    });
+                }
             }
             OpenPanel::About => {
                 let link_count = self.about_panel().links().len();
@@ -411,8 +423,10 @@ impl DesktopApp {
         if is_key_pressed(KeyCode::Backspace) {
             self.query.pop();
         }
-        if is_key_pressed(KeyCode::Enter) || is_key_pressed(KeyCode::Escape) {
+        let submit = is_key_pressed(KeyCode::Enter);
+        if submit || is_key_pressed(KeyCode::Escape) {
             self.editing_query = false;
+            self.keyboard_input_consumed_this_frame = true;
         }
         if let Err(error) = self.testbed.set_query(&self.query) {
             self.set_error(error);
@@ -420,6 +434,9 @@ impl DesktopApp {
         self.focused_row = self
             .focused_row
             .min(self.testbed.visible_rows().len().saturating_sub(1));
+        if submit && !self.testbed.visible_rows().is_empty() {
+            self.select_focused();
+        }
     }
 
     fn handle_panel_input(&mut self) {
@@ -606,7 +623,11 @@ impl DesktopApp {
         if self.modal_input_active(responsive) && self.open_panel != OpenPanel::Scenario {
             return;
         }
-        if !scenario_visible || self.editing_query || self.testbed.visible_rows().is_empty() {
+        if self.keyboard_input_consumed_this_frame
+            || !scenario_visible
+            || self.editing_query
+            || self.testbed.visible_rows().is_empty()
+        {
             return;
         }
         if is_key_pressed(KeyCode::Down) {
@@ -852,7 +873,7 @@ impl DesktopApp {
         if self.open_panel != OpenPanel::Settings {
             return;
         }
-        if self.modal_focus_routed_this_frame {
+        if self.keyboard_input_consumed_this_frame {
             return;
         }
         if is_key_pressed(KeyCode::Escape) {
@@ -874,16 +895,9 @@ impl DesktopApp {
                 if let Some(previous) = self.maybe_editing_setting.take() {
                     self.settings.commit(previous);
                 }
-                if point_in_rect(mouse, settings_apply_bounds()) && self.settings.apply_enabled() {
-                    let accepted = self.settings.accepted();
-                    match self.testbed.apply_settings(accepted) {
-                        Ok(()) => {
-                            self.clear_comparison();
-                            self.settings = SettingsEditor::new(accepted);
-                            self.close_modal();
-                        }
-                        Err(error) => self.set_error(error),
-                    }
+                if point_in_rect(mouse, settings_apply_bounds()) {
+                    self.focus_return.move_to(FocusId::SettingsApply);
+                    self.apply_settings_and_restart();
                 }
             }
         }
@@ -906,17 +920,35 @@ impl DesktopApp {
         self.settings.edit(field, text);
         if is_key_pressed(KeyCode::Enter) {
             self.settings.commit(field);
-            self.maybe_editing_setting = None;
         } else if is_key_pressed(KeyCode::Tab) {
             self.settings.commit(field);
             let index = setting_index(field);
             let backwards = is_key_down(KeyCode::LeftShift) || is_key_down(KeyCode::RightShift);
-            let next = if backwards {
-                (index + SETTINGS_FIELDS.len() - 1) % SETTINGS_FIELDS.len()
+            let moves_to_apply =
+                (backwards && index == 0) || (!backwards && index + 1 == SETTINGS_FIELDS.len());
+            if moves_to_apply {
+                self.maybe_editing_setting = None;
+                self.focus_return.move_to(FocusId::SettingsApply);
             } else {
-                (index + 1) % SETTINGS_FIELDS.len()
-            };
-            self.maybe_editing_setting = Some(SETTINGS_FIELDS[next]);
+                let next = if backwards { index - 1 } else { index + 1 };
+                self.maybe_editing_setting = Some(SETTINGS_FIELDS[next]);
+                self.focus_return.move_to(FocusId::SettingsField);
+            }
+        }
+    }
+
+    fn apply_settings_and_restart(&mut self) {
+        if !self.settings.apply_enabled() {
+            return;
+        }
+        let accepted = self.settings.accepted();
+        match self.testbed.apply_settings(accepted) {
+            Ok(()) => {
+                self.clear_comparison();
+                self.settings = SettingsEditor::new(accepted);
+                self.close_modal();
+            }
+            Err(error) => self.set_error(error),
         }
     }
 
@@ -1639,7 +1671,7 @@ impl DesktopApp {
         draw_accessible_button(
             settings_apply_bounds(),
             "Apply & Restart",
-            false,
+            self.focus_return.current() == Some(FocusId::SettingsApply),
             self.settings.apply_enabled(),
         );
         draw_text(
@@ -1827,9 +1859,10 @@ const fn control_for_focus(focus: FocusId) -> ControlFocus {
         FocusId::InspectorButton | FocusId::InspectorHeading | FocusId::InspectorDifference => {
             ControlFocus::Inspector
         }
-        FocusId::SettingsButton | FocusId::SettingsHeading | FocusId::SettingsField => {
-            ControlFocus::Settings
-        }
+        FocusId::SettingsButton
+        | FocusId::SettingsHeading
+        | FocusId::SettingsField
+        | FocusId::SettingsApply => ControlFocus::Settings,
         FocusId::AboutButton
         | FocusId::AboutHeading
         | FocusId::AboutLink
@@ -1847,6 +1880,7 @@ const fn focus_is_modal_heading(maybe_focus: Option<FocusId>) -> bool {
                 | FocusId::InspectorDifference
                 | FocusId::SettingsHeading
                 | FocusId::SettingsField
+                | FocusId::SettingsApply
                 | FocusId::AboutHeading
                 | FocusId::AboutLink
                 | FocusId::ShortcutHelp

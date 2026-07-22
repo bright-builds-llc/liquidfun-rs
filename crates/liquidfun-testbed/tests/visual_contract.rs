@@ -252,6 +252,8 @@ fn modal_focus_moves_inside_and_returns_to_invoker() {
     focus.open(FocusId::SettingsButton, FocusId::SettingsHeading);
     focus.move_to(FocusId::SettingsField);
     assert_eq!(focus.current(), Some(FocusId::SettingsField));
+    focus.move_to(FocusId::SettingsApply);
+    assert_eq!(focus.current(), Some(FocusId::SettingsApply));
     assert_eq!(focus.close(), Some(FocusId::SettingsButton));
     assert_eq!(focus.current(), Some(FocusId::SettingsButton));
 }
