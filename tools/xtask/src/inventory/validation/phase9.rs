@@ -86,6 +86,12 @@ pub(super) fn promotion(ledger: &CompatibilityLedger) -> Result<(), InventoryErr
         return Ok(());
     }
 
+    validate_promoted_rows(ledger)?;
+    validate_deferred_rows(ledger)?;
+    validate_fresh_authority(ledger)
+}
+
+fn validate_promoted_rows(ledger: &CompatibilityLedger) -> Result<(), InventoryError> {
     for id in PHASE9_PROMOTION_IDS {
         let maybe_entry = ledger.entries.iter().find(|entry| entry.id == id);
         let Some(entry) = maybe_entry else {
@@ -153,6 +159,10 @@ pub(super) fn promotion(ledger: &CompatibilityLedger) -> Result<(), InventoryErr
         }
     }
 
+    Ok(())
+}
+
+fn validate_deferred_rows(ledger: &CompatibilityLedger) -> Result<(), InventoryError> {
     let phase10_promotion_started = ledger.entries.iter().any(|entry| {
         super::phase10::PROMOTION_IDS.contains(&entry.id.as_str())
             && entry.evidence.platform_validated.status == EvidenceStatus::Evidenced
@@ -179,6 +189,10 @@ pub(super) fn promotion(ledger: &CompatibilityLedger) -> Result<(), InventoryErr
         }
     }
 
+    Ok(())
+}
+
+fn validate_fresh_authority(ledger: &CompatibilityLedger) -> Result<(), InventoryError> {
     for id in PHASE9_PROMOTION_IDS {
         let entry = ledger
             .entries

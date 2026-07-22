@@ -161,7 +161,7 @@ fn validate_generated_content(args: &[String]) -> Result<(), Phase9EvidenceError
         "sanitizer" => EvidenceKind::Sanitizer,
         value => return Err(usage(format!("unsupported evidence kind `{value}`"))),
     };
-    let relative_dir = checked_relative_path(directory.clone())?;
+    let relative_dir = checked_relative_path(directory)?;
     let repository_root = repository_root()?;
     let root = resolve_existing_target_path(&repository_root, &relative_dir, "evidence root")?;
     let manifest: EvidenceManifest =
@@ -179,10 +179,7 @@ fn validate_generated_content(args: &[String]) -> Result<(), Phase9EvidenceError
             ),
         ));
     }
-    println!(
-        "Phase 9 generated {:?} content verified before identity",
-        kind
-    );
+    println!("Phase 9 generated {kind:?} content verified before identity");
     Ok(())
 }
 
@@ -226,15 +223,15 @@ fn parse_options(args: &[String]) -> Result<ValidationOptions, Phase9EvidenceErr
         "exact-ref" => ValidationMode::ExactRef,
         value => return Err(usage(format!("unsupported validation mode `{value}`"))),
     };
-    let canonical_dir = checked_relative_path(one(&values, "--canonical-dir")?)?;
-    let sanitizer_dir = checked_relative_path(one(&values, "--sanitizer-dir")?)?;
+    let canonical_dir = checked_relative_path(&one(&values, "--canonical-dir")?)?;
+    let sanitizer_dir = checked_relative_path(&one(&values, "--sanitizer-dir")?)?;
     let maybe_run_json = values
         .get("--run-json")
         .map(|entries| {
             if entries.len() != 1 {
                 return Err(usage("`--run-json` may appear only once"));
             }
-            checked_relative_path(entries[0].clone())
+            checked_relative_path(&entries[0])
         })
         .transpose()?;
     if mode == ValidationMode::Local && maybe_run_json.is_some() {
@@ -279,8 +276,8 @@ fn usage(message: impl Into<String>) -> Phase9EvidenceError {
     Phase9EvidenceError::new("usage", format!("{}\n\n{USAGE}", message.into()))
 }
 
-fn checked_relative_path(value: String) -> Result<PathBuf, Phase9EvidenceError> {
-    let path = PathBuf::from(&value);
+fn checked_relative_path(value: &str) -> Result<PathBuf, Phase9EvidenceError> {
+    let path = PathBuf::from(value);
     if path.is_absolute()
         || !path.starts_with("target")
         || path
@@ -478,6 +475,10 @@ struct CompleteComparisonPayload {
     consumed_policy_paths: Vec<String>,
 }
 
+#[allow(
+    clippy::too_many_lines,
+    reason = "one manifest validator keeps the cross-linked case, digest, policy, and proof checks visible"
+)]
 fn validate_manifest(root: &Path, manifest: &EvidenceManifest) -> Result<(), Phase9EvidenceError> {
     if manifest.schema_version != 4 || manifest.case_record_schema_version != 3 {
         return Err(Phase9EvidenceError::new(
@@ -1151,18 +1152,16 @@ fn parse_exact_run(
         || run.workflow_name != "Oracle CI"
         || run.event != "workflow_dispatch"
         || run.conclusion != "success"
+        || run.dispatched_at.is_empty()
+        || run.run_url.is_empty()
+        || run.created_at.is_empty()
+        || run.updated_at.is_empty()
     {
         return Err(Phase9EvidenceError::new(
             "run",
             "run does not match the approved head or Oracle CI dispatch authority",
         ));
     }
-    let _metadata = (
-        &run.dispatched_at,
-        &run.run_url,
-        &run.created_at,
-        &run.updated_at,
-    );
     validate_exact_job(
         &run.jobs.canonical,
         "Canonical Linux oracle",
@@ -1224,8 +1223,7 @@ fn validate_exact_job(
     expected_name: &str,
     live_jobs: &[LiveJob],
 ) -> Result<(), Phase9EvidenceError> {
-    let _url = &job.url;
-    if job.name != expected_name || job.conclusion != "success" {
+    if job.name != expected_name || job.conclusion != "success" || job.url.is_empty() {
         return Err(Phase9EvidenceError::new(
             "jobs",
             format!("required successful job `{expected_name}` is absent"),
@@ -1260,15 +1258,13 @@ fn validate_exact_artifact(
     live_artifacts: &[LiveArtifact],
 ) -> Result<(), Phase9EvidenceError> {
     let expected_name = format!("{}-{run_id}-{approved_sha}", kind.artifact_prefix());
-    let _metadata = (
-        &artifact.api_url,
-        &artifact.archive_download_url,
-        artifact.size_in_bytes,
-        &artifact.created_at,
-        &artifact.expires_at,
-    );
     if artifact.name != expected_name
         || artifact.expired
+        || artifact.api_url.is_empty()
+        || artifact.archive_download_url.is_empty()
+        || artifact.size_in_bytes == 0
+        || artifact.created_at.is_empty()
+        || artifact.expires_at.is_empty()
         || artifact
             .digest
             .strip_prefix("sha256:")
@@ -1313,7 +1309,7 @@ fn validate_archive(
         EvidenceKind::Canonical => &run.artifacts.canonical,
         EvidenceKind::Sanitizer => &run.artifacts.sanitizer,
     };
-    let archive_relative = checked_relative_path(artifact.archive_path.clone())?;
+    let archive_relative = checked_relative_path(&artifact.archive_path)?;
     let archive = resolve_existing_target_path(repository_root, &archive_relative, "archive")?;
     let bytes = read_regular_file(&archive, "archive", MAXIMUM_LOG_BYTES)?;
     if u64::try_from(bytes.len()).ok() != Some(artifact.size_in_bytes) {

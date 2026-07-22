@@ -8,7 +8,7 @@ use std::{
 };
 
 use liquidfun_test_protocol::{
-    CanonicalCheckpoint, CatalogRunRequest, HarnessLimits, Sha256Hex,
+    CanonicalCheckpoint, CatalogRunRequest, HarnessLimits, Sha256Hex, decode_resolved_scenario,
     encode_canonical_checkpoint_jsonl,
 };
 use serde::{Deserialize, Serialize};
