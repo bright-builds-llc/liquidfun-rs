@@ -3,15 +3,15 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 11-14-PLAN.md
-last_updated: "2026-07-22T03:47:16.809Z"
+stopped_at: Completed 11-15-PLAN.md
+last_updated: "2026-07-22T04:24:59.959Z"
 last_activity: "2026-07-22"
 progress:
   total_phases: 12
   completed_phases: 10
   total_plans: 190
-  completed_plans: 175
-  percent: 92
+  completed_plans: 176
+  percent: 93
 ---
 
 # Project State
@@ -26,17 +26,17 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 ## Current Position
 
 Phase: 11 (Examples, Headless Tooling, and Testbed) — EXECUTING
-Plan: 15 of 29
+Plan: 16 of 29
 Status: Ready to execute
 Last activity: 2026-07-22
 
-Progress: [█████████░] 91%
+Progress: [█████████░] 93%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 134
+- Total plans completed: 135
 - Average duration: Not available
 - Total execution time: 0 hours
 
@@ -187,6 +187,7 @@ Progress: [█████████░] 91%
 | Phase 11 P12 | 21 min | 1 tasks | 14 files |
 | Phase 11 P13 | 20 min | 1 tasks | 12 files |
 | Phase 11 P14 | 29 min | 1 tasks | 16 files |
+| Phase 11 P15 | 35 min | 1 tasks | 19 files |
 
 ## Accumulated Context
 
@@ -508,6 +509,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 11]: Extend the established synchronous supervisor with a dedicated catalog module instead of creating a second subprocess lifecycle. — Catalog execution inherits the existing bounded concurrent drains, deadlines, provenance handshake, reset proof, and poison kill/reap authority without duplicating security-sensitive process code.
 - [Phase 11]: Keep exact resolved bytes, SHA-256 identity, action log, checkpoint schedule, and canonical checkpoint bytes together through every catalog consumer. — Native execution, C++ execution, replay, comparison, minimization evidence, and persistence cannot silently regenerate or reinterpret scenario authority.
 - [Phase 11]: Reject seed-only or structurally incomplete catalog failure bundles and publish complete evidence atomically inside a confined target directory. — Exact replay requires content-addressed bytes and complete semantic evidence; a seed, path escape, symlink, collision, or partial write cannot authorize diagnosis.
+- [Phase 11]: Validate catalog CLI input independently in xtask and the differential binary. — Invalid input is rejected before child startup while direct binary callers retain the same closed domain boundary.
+- [Phase 11]: Forward catalog commands only through structured argv and propagate registered child statuses. — Controller scripts remain a single bounded value without shell interpolation, and automation can distinguish stable outcome categories.
+- [Phase 11]: Separate semantic checkpoint and comparison output from screenshot, profile, and timing diagnostics. — Presentation and performance diagnostics cannot be mistaken for compatibility evidence.
 
 ### Pending Todos
 
@@ -521,6 +525,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-22T03:46:44.770Z
-Stopped at: Completed 11-14-PLAN.md
+Last session: 2026-07-22T04:24:42.780Z
+Stopped at: Completed 11-15-PLAN.md
 Resume file: None
