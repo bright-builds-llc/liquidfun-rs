@@ -3,15 +3,15 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 11-10-PLAN.md
-last_updated: "2026-07-22T02:03:30.390Z"
+stopped_at: Completed 11-11-PLAN.md
+last_updated: "2026-07-22T02:31:44.607Z"
 last_activity: "2026-07-22"
 progress:
   total_phases: 12
   completed_phases: 10
   total_plans: 190
-  completed_plans: 171
-  percent: 90
+  completed_plans: 172
+  percent: 91
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 ## Current Position
 
 Phase: 11 (Examples, Headless Tooling, and Testbed) — EXECUTING
-Plan: 8 of 29
+Plan: 12 of 29
 Status: Ready to execute
 Last activity: 2026-07-22
 
-Progress: [█████████░] 89%
+Progress: [█████████░] 91%
 
 ## Performance Metrics
 
@@ -183,6 +183,7 @@ Progress: [█████████░] 89%
 | Phase 11 P09 | 18 min | 1 tasks | 9 files |
 | Phase 11 P06 | 20min | 1 tasks | 11 files |
 | Phase 11 P10 | 20 min | 1 tasks | 12 files |
+| Phase 11 P11 | 26 min | 1 tasks | 17 files |
 
 ## Accumulated Context
 
@@ -492,6 +493,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 11]: Registry order is canonical slug then scenario version, independent of family declaration order.
 - [Phase 11]: Cross-process execution accepts exact canonical resolved bytes plus SHA-256 and never reruns generators.
 - [Phase 11]: Canonical checkpoints preserve source-significant order, canonicalize only declared unordered sets, and carry profile names without durations.
+- [Phase 11]: Treat decoded canonical resolved bytes, exact action membership, and typed public handle maps as the complete execution authority. — No raw or private identity participates in native catalog execution.
+- [Phase 11]: Make each catalog action transactional by replaying verified setup and committed logical history into a fresh World. — Candidate state becomes authoritative only after successful public-API execution.
+- [Phase 11]: Build catalog checkpoints only from public observations and collected debug primitives, excluding durations. — Canonical semantic replay must remain renderer-neutral and independent of private storage.
 
 ### Pending Todos
 
@@ -505,6 +509,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-22T02:03:30.386Z
-Stopped at: Completed 11-10-PLAN.md
+Last session: 2026-07-22T02:31:44.604Z
+Stopped at: Completed 11-11-PLAN.md
 Resume file: None
