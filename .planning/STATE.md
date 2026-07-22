@@ -3,15 +3,15 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 11-12-PLAN.md
-last_updated: "2026-07-22T02:56:34.037Z"
+stopped_at: Completed 11-13-PLAN.md
+last_updated: "2026-07-22T03:16:49.082Z"
 last_activity: "2026-07-22"
 progress:
   total_phases: 12
   completed_phases: 10
   total_plans: 190
-  completed_plans: 173
-  percent: 91
+  completed_plans: 174
+  percent: 92
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 ## Current Position
 
 Phase: 11 (Examples, Headless Tooling, and Testbed) — EXECUTING
-Plan: 13 of 29
+Plan: 14 of 29
 Status: Ready to execute
 Last activity: 2026-07-22
 
@@ -185,6 +185,7 @@ Progress: [█████████░] 91%
 | Phase 11 P10 | 20 min | 1 tasks | 12 files |
 | Phase 11 P11 | 26 min | 1 tasks | 17 files |
 | Phase 11 P12 | 21 min | 1 tasks | 14 files |
+| Phase 11 P13 | 20 min | 1 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -500,6 +501,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 11]: Extend the existing long-lived oracle with one catalog_run_request dispatch rather than introduce a second executable or protocol loop. — This preserves established framing, bounded input, protocol-only stdout, and process supervision.
 - [Phase 11]: Keep each catalog run inside a fresh request-local world with private semantic maps and advance reset epochs only after bounded checkpoint construction succeeds. — This makes rejection recovery observable while preventing native pointers and particle row compaction from becoming protocol identity.
 - [Phase 11]: Separate strict catalog decoding, effectful upstream execution, and checkpoint encoding into independently digested behavior units. — This keeps trust-boundary concerns cohesive and reviewable without changing the single-process architecture.
+- [Phase 11]: Keep comparison traversal in cohesive modules while one bounded builder owns path validation, value truncation, and stable signatures. — A single entry authority keeps headless and visual consumers consistent without a monolithic field walk.
+- [Phase 11]: Bind simulation time, geometry, angles, and declared numeric observations to explicit closed Phase 4 policies. — Unknown or unbound numeric paths must fail as harness errors instead of silently receiving fallback tolerance.
+- [Phase 11]: Treat schema and run identity disagreement as a harness error, while missing semantic records become Rust-only or oracle-only entries. — Identity incompatibility cannot be physics evidence, but side-only observations must remain inspectable and never masquerade as matches.
 
 ### Pending Todos
 
@@ -513,6 +517,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-22T02:55:30.862Z
-Stopped at: Completed 11-12-PLAN.md
+Last session: 2026-07-22T03:16:32.760Z
+Stopped at: Completed 11-13-PLAN.md
 Resume file: None
