@@ -14,6 +14,7 @@ use liquidfun_test_protocol::{
 };
 
 mod capture;
+mod catalog;
 mod collision_probe;
 mod executable;
 mod failure;
@@ -23,6 +24,7 @@ mod rigid_world;
 mod stdio;
 
 pub use capture::CapturedOracleTrace;
+pub use catalog::{CapturedCatalogRun, CatalogOracleSupervisor, CatalogProcessError};
 pub use collision_probe::{
     CapturedCollisionProbe, CollisionProbeProcessError, execute_collision_probe_process,
 };

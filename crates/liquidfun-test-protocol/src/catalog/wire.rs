@@ -42,6 +42,18 @@ impl RunProvenanceRequirements {
     pub const fn evidence_tier(&self) -> EvidenceTier {
         self.evidence_tier
     }
+
+    /// Returns the exact reviewed child build identity required by this run.
+    #[must_use]
+    pub const fn required_identity_sha256(&self) -> &Sha256Hex {
+        &self.required_identity_sha256
+    }
+
+    /// Returns the exact immutable resource-profile identity required by this run.
+    #[must_use]
+    pub const fn limits_profile_sha256(&self) -> &Sha256Hex {
+        &self.limits_profile_sha256
+    }
 }
 
 /// Strict request carrying the exact canonical resolved scenario bytes.
@@ -79,6 +91,12 @@ impl CatalogRunRequest {
     #[must_use]
     pub const fn resolved(&self) -> &ResolvedScenario {
         &self.resolved
+    }
+
+    /// Returns the stable request identity shared by both engine captures.
+    #[must_use]
+    pub const fn request_id(&self) -> &RequestId {
+        &self.request_id
     }
 
     /// Returns the pinned provenance requirements.

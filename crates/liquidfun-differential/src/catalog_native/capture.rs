@@ -11,6 +11,7 @@ use crate::{SessionBackendError, SessionBackendErrorCategory};
 use super::executor::NativeSession;
 
 pub(super) fn capture_checkpoint(
+    maybe_request_id: Option<&RequestId>,
     resolved: &ResolvedScenario,
     session: &NativeSession,
     checkpoint: &SessionCheckpointIdentity,
@@ -34,7 +35,9 @@ pub(super) fn capture_checkpoint(
     ];
     observations.sort_unstable_by(|left, right| left.observation_id().cmp(right.observation_id()));
     let checkpoint = CanonicalCheckpoint::new(
-        RequestId::new("catalog-native-request").map_err(|_error| capture_failure())?,
+        maybe_request_id.cloned().unwrap_or(
+            RequestId::new("catalog-native-request").map_err(|_error| capture_failure())?,
+        ),
         resolved.identity().content_sha256().clone(),
         checkpoint.checkpoint_id().clone(),
         CheckpointPosition::LogicalStep {

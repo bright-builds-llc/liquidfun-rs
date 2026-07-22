@@ -15,6 +15,9 @@ use crate::{
     compare,
 };
 
+mod catalog;
+pub use catalog::*;
+
 /// Error before two validated engine traces can produce a classified outcome.
 #[derive(Debug, thiserror::Error)]
 pub enum DifferentialRunnerError {

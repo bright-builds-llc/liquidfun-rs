@@ -11,6 +11,9 @@ use liquidfun_test_protocol::{HarnessLimits, RequestId};
 use serde::Serialize;
 use sha2::{Digest, Sha256};
 
+mod catalog;
+pub use catalog::*;
+
 const MAXIMUM_REPORT_BYTES: usize = 1024 * 1024;
 const MAXIMUM_IDENTITY_BYTES: usize = 64 * 1024;
 const MAXIMUM_BUNDLE_ATTEMPTS: usize = 100;

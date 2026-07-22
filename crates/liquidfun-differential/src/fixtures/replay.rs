@@ -10,6 +10,20 @@ use liquidfun_test_protocol::{
 
 use crate::{DifferentialOutcome, EmptyWorldAdapter, FailureSignature, compare};
 
+use crate::failure_bundle::{CatalogBundleReplay, replay_catalog_bundle};
+
+/// Replays one exact Phase 11 failure bundle after confined manifest/hash validation.
+///
+/// # Errors
+///
+/// Returns [`crate::FailureBundleError`] for path, hash, bound, or resolved-byte failures.
+pub fn replay_catalog_failure_bundle(
+    repository_root: &Path,
+    directory: &Path,
+) -> Result<CatalogBundleReplay, crate::FailureBundleError> {
+    replay_catalog_bundle(repository_root, directory)
+}
+
 use super::{
     domain::{
         ArtifactKind, CANDIDATE_SCHEMA_VERSION, CandidateMetadata, FixtureError, MAX_REPLAY_EPOCH,

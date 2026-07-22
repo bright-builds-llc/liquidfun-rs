@@ -14,7 +14,7 @@ use liquidfun::{
     StepConfiguration, StepLimits, World,
 };
 use liquidfun_test_protocol::{
-    ResolvedScenario, RigidWorldAction, ScenarioId, ScheduledAction, Sha256Hex,
+    RequestId, ResolvedScenario, RigidWorldAction, ScenarioId, ScheduledAction, Sha256Hex,
     decode_resolved_scenario,
 };
 
@@ -28,6 +28,7 @@ const MAXIMUM_REPLAY_ACTIONS: usize = 128;
 /// Transactional native executor for one exact resolved catalog plan.
 #[derive(Default)]
 pub struct NativeCatalogBackend {
+    maybe_request_id: Option<RequestId>,
     maybe_resolved: Option<ResolvedScenario>,
     completed_logical_actions: Vec<ScheduledAction>,
     maybe_session: Option<NativeSession>,
@@ -38,6 +39,7 @@ impl NativeCatalogBackend {
     #[must_use]
     pub const fn new() -> Self {
         Self {
+            maybe_request_id: None,
             maybe_resolved: None,
             completed_logical_actions: Vec::new(),
             maybe_session: None,
@@ -48,6 +50,11 @@ impl NativeCatalogBackend {
     #[must_use]
     pub const fn is_session_active(&self) -> bool {
         self.maybe_session.is_some()
+    }
+
+    /// Binds the exact differential request identity before session creation.
+    pub fn set_request_id(&mut self, request_id: RequestId) {
+        self.maybe_request_id = Some(request_id);
     }
 
     /// Strictly decodes asserted canonical bytes and constructs a session only after validation.
@@ -132,7 +139,12 @@ impl NativeCatalogBackend {
             return Err(harness(SessionBackendErrorCategory::Capture));
         };
         let captured = catch_unwind(AssertUnwindSafe(|| {
-            capture_checkpoint(resolved, session, checkpoint)
+            capture_checkpoint(
+                self.maybe_request_id.as_ref(),
+                resolved,
+                session,
+                checkpoint,
+            )
         }));
         match captured {
             Ok(result) => result,

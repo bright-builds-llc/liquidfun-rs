@@ -9,12 +9,14 @@ use std::{
 
 use liquidfun_differential::{
     NativeRigidWorldExecutor, adapter_source_digest, effective_compile_command_sha256,
+    execute_catalog_native,
 };
 use liquidfun_test_protocol::{
     BuildIdentity, BuildIdentityFields, CheckpointRecord, EngineKind, FloatBits, HarnessLimits,
     Phase4BuildIdentityFields, RecordLimit, ScenarioRequestRecord, TraceBegin, TraceEnd,
-    TraceRecord, WorldCounts, decode_handshake_jsonl, decode_rigid_world_request_jsonl,
-    decode_scenario_request_jsonl, encode_jsonl, trace_payload_sha256,
+    TraceRecord, WorldCounts, decode_catalog_run_request_jsonl, decode_handshake_jsonl,
+    decode_rigid_world_request_jsonl, decode_scenario_request_jsonl,
+    encode_canonical_checkpoint_jsonl, encode_jsonl, trace_payload_sha256,
 };
 
 const TRACE_BYTES: &[u8] =
@@ -88,6 +90,9 @@ fn handle_request(
     request_bytes: &[u8],
     reset_epoch: u64,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    if behavior.starts_with("catalog_") {
+        return emit_catalog_behavior(behavior, request_bytes, reset_epoch);
+    }
     match behavior {
         "request_timeout" => thread::sleep(Duration::from_secs(12)),
         "nonzero" => {
@@ -129,6 +134,57 @@ fn handle_request(
         "second_malformed" if reset_epoch == 2 => write_then_exit(b"{}\n")?,
         _ => emit_trace_behavior(behavior, request_bytes, reset_epoch)?,
     }
+    Ok(())
+}
+
+fn emit_catalog_behavior(
+    behavior: &str,
+    request_bytes: &[u8],
+    reset_epoch: u64,
+) -> Result<(), Box<dyn std::error::Error>> {
+    match behavior {
+        "catalog_timeout" => {
+            thread::sleep(Duration::from_secs(12));
+            return Ok(());
+        }
+        "catalog_crash" => {
+            eprintln!("catalog child failed");
+            std::process::exit(7);
+        }
+        "catalog_malformed" => {
+            write_then_sleep(b"{}\n")?;
+            return Ok(());
+        }
+        "catalog_large_stderr_malformed" => {
+            write_stderr(1024 * 1024)?;
+            write_then_sleep(b"{}\n")?;
+            return Ok(());
+        }
+        _ => {}
+    }
+
+    let limits = HarnessLimits::phase2_default_v1();
+    let mut framed = request_bytes.to_vec();
+    framed.push(b'\n');
+    let request = decode_catalog_run_request_jsonl(&framed, &limits)?;
+    let capture = execute_catalog_native(&request)?;
+    let mut stdout = io::stdout().lock();
+    for checkpoint in capture.checkpoints() {
+        stdout.write_all(&encode_canonical_checkpoint_jsonl(checkpoint, &limits)?)?;
+    }
+    let end = serde_json::json!({
+        "protocol_version": 1,
+        "record_kind": "catalog_run_end",
+        "request_id": request.request_id(),
+        "resolved_sha256": request.resolved().identity().content_sha256(),
+        "checkpoint_count": capture.checkpoints().len(),
+        "reset_epoch": reset_epoch,
+        "reset_verified": behavior != "catalog_reset",
+    });
+    let mut end_bytes = serde_json::to_vec(&end)?;
+    end_bytes.push(b'\n');
+    stdout.write_all(&end_bytes)?;
+    stdout.flush()?;
     Ok(())
 }
 
