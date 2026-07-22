@@ -1,0 +1,140 @@
+{
+  "schema_version": 1,
+  "upstream_revision": "7f20402173fd143a3988c921bc384459c6a858f2",
+  "authority": "native-d0-reviewed",
+  "entries": [
+    {
+      "fixture_id": "rigid-stack-v1",
+      "path": "scenarios/catalog/rigid-stack-v1.json",
+      "resolved_sha256": "6d22b12e5abc8e7f06dac08dda38c9001a5b31c8f98f81938129a66334c6c052",
+      "run_identity": {
+        "catalog_schema_version": 1,
+        "slug": "rigid-stack-stability",
+        "scenario_version": 1,
+        "generator_id": "native-rigid-v1",
+        "generator_version": 1,
+        "maybe_seed": null,
+        "settings": {
+          "timestep_bits": 1015580809,
+          "velocity_iterations": 8,
+          "position_iterations": 3,
+          "particle_iterations": 1
+        }
+      },
+      "action_ids": [
+        "action-0000",
+        "action-0001",
+        "action-0002",
+        "action-0003",
+        "action-0004",
+        "action-0005",
+        "action-0006",
+        "action-0007",
+        "action-0008",
+        "action-0009",
+        "action-0010",
+        "action-0011",
+        "action-0012",
+        "action-0013",
+        "action-0014",
+        "action-0015"
+      ],
+      "checkpoint_ids": [
+        "checkpoint-0001",
+        "checkpoint-0002",
+        "checkpoint-0003",
+        "checkpoint-0004",
+        "checkpoint-0005",
+        "checkpoint-0006",
+        "checkpoint-0007",
+        "checkpoint-0008"
+      ],
+      "provenance": {
+        "source": "typed-catalog-resolved-bytes",
+        "authority": "native-d0",
+        "upstream_revision": "7f20402173fd143a3988c921bc384459c6a858f2",
+        "review_status": "reviewed"
+      },
+      "expected_native_d0_sha256": "3105d34f1d7437bba4936c96150770895db4292668a5793765fd5df88e6a938b"
+    },
+    {
+      "fixture_id": "joint-rope-v1",
+      "path": "scenarios/catalog/joint-rope-v1.json",
+      "resolved_sha256": "f7407741563b445f40effc6ef67f3a31906e6e6fcf65db7c835b5c692bddf85a",
+      "run_identity": {
+        "catalog_schema_version": 1,
+        "slug": "joint-rope-behavior",
+        "scenario_version": 1,
+        "generator_id": "native-joint-v1",
+        "generator_version": 1,
+        "maybe_seed": null,
+        "settings": {
+          "timestep_bits": 1015580809,
+          "velocity_iterations": 8,
+          "position_iterations": 3,
+          "particle_iterations": 1
+        }
+      },
+      "action_ids": [
+        "action-0000",
+        "action-0001",
+        "action-0002",
+        "action-0003",
+        "action-0004",
+        "action-0005",
+        "action-0006"
+      ],
+      "checkpoint_ids": [
+        "checkpoint-0001",
+        "checkpoint-0002"
+      ],
+      "provenance": {
+        "source": "typed-catalog-resolved-bytes",
+        "authority": "native-d0",
+        "upstream_revision": "7f20402173fd143a3988c921bc384459c6a858f2",
+        "review_status": "reviewed"
+      },
+      "expected_native_d0_sha256": "55cab91288224010636d82640cf7ed17026abca2d6743dbc28839785a2a3a52b"
+    },
+    {
+      "fixture_id": "particle-group-v1",
+      "path": "scenarios/catalog/particle-group-v1.json",
+      "resolved_sha256": "93a0f8c793f213b3dda6911e62830d0f02a3b14324193244d0cd6e1693512cda",
+      "run_identity": {
+        "catalog_schema_version": 1,
+        "slug": "particle-group-construction-append",
+        "scenario_version": 1,
+        "generator_id": "native-particle-group-v1",
+        "generator_version": 1,
+        "maybe_seed": null,
+        "settings": {
+          "timestep_bits": 1015580809,
+          "velocity_iterations": 8,
+          "position_iterations": 3,
+          "particle_iterations": 2
+        }
+      },
+      "action_ids": [
+        "action-0000",
+        "action-0001",
+        "action-0002",
+        "action-0003",
+        "action-0004",
+        "action-0005"
+      ],
+      "checkpoint_ids": [
+        "checkpoint-0001",
+        "checkpoint-0002",
+        "checkpoint-0003",
+        "checkpoint-0004"
+      ],
+      "provenance": {
+        "source": "typed-catalog-resolved-bytes",
+        "authority": "native-d0",
+        "upstream_revision": "7f20402173fd143a3988c921bc384459c6a858f2",
+        "review_status": "reviewed"
+      },
+      "expected_native_d0_sha256": "420b74c891786deb301e06cf8df959d5fd188fc6d5e25c1bd9ab53ad0c8a7ea2"
+    }
+  ]
+}

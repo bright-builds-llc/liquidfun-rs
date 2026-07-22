@@ -1,5 +1,8 @@
 //! Purely classified candidate replay and protocol validation.
 
+mod catalog;
+pub use catalog::*;
+
 use std::{fs, io, path::Path};
 
 use liquidfun_test_protocol::{
