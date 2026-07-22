@@ -6,6 +6,10 @@
 )]
 
 mod about;
+pub mod accessibility;
+pub mod differences;
+pub mod inspector;
+pub mod layout;
 pub mod overlays;
 pub mod run_controls;
 mod scenario_browser;
