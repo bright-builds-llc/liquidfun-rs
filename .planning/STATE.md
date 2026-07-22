@@ -3,14 +3,14 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 11-09-PLAN.md
-last_updated: "2026-07-22T01:14:10.160Z"
+stopped_at: Completed 11-06-PLAN.md
+last_updated: "2026-07-22T01:39:32.530Z"
 last_activity: "2026-07-22"
 progress:
   total_phases: 12
   completed_phases: 10
   total_plans: 190
-  completed_plans: 169
+  completed_plans: 170
   percent: 89
 ---
 
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 ## Current Position
 
 Phase: 11 (Examples, Headless Tooling, and Testbed) — EXECUTING
-Plan: 6 of 29
+Plan: 7 of 29
 Status: Ready to execute
 Last activity: 2026-07-22
 
@@ -181,6 +181,7 @@ Progress: [█████████░] 89%
 | Phase 11 P05 | 14m | 1 tasks | 6 files |
 | Phase 11 P07 | 16m08s | 1 tasks | 4 files |
 | Phase 11 P09 | 18 min | 1 tasks | 9 files |
+| Phase 11 P06 | 20min | 1 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -485,6 +486,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 11]: Extend the owned public observation with body, fixture, joint, and particle snapshots so debug collection never traverses private storage.
 - [Phase 11]: Keep one owned primitive collection authoritative and make the sink a passive replay adapter.
 - [Phase 11]: Key debug primitives by semantic owner, layer, kind, child, and occurrence or canonical ordinal without private storage coordinates.
+- [Phase 11]: The typed Rust registry is the sole runtime authority; scenario-catalog.json is an exact read-only checked projection.
+- [Phase 11]: Every scenario mapping resolves against checked test, evidence, upstream-corpus, and compatibility authorities before eligibility is accepted.
+- [Phase 11]: Registry order is canonical slug then scenario version, independent of family declaration order.
 
 ### Pending Todos
 
@@ -498,6 +502,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-22T01:14:10.156Z
-Stopped at: Completed 11-09-PLAN.md
+Last session: 2026-07-22T01:39:32.527Z
+Stopped at: Completed 11-06-PLAN.md
 Resume file: None
