@@ -3,14 +3,14 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 11-25-PLAN.md
-last_updated: "2026-07-22T07:06:31.931Z"
+stopped_at: Completed 11-22-PLAN.md
+last_updated: "2026-07-22T14:29:13.506Z"
 last_activity: "2026-07-22"
 progress:
   total_phases: 12
   completed_phases: 10
   total_plans: 190
-  completed_plans: 184
+  completed_plans: 185
   percent: 97
 ---
 
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 ## Current Position
 
 Phase: 11 (Examples, Headless Tooling, and Testbed) — EXECUTING
-Plan: 22 of 29
+Plan: 23 of 29
 Status: Ready to execute
 Last activity: 2026-07-22
 
@@ -196,6 +196,7 @@ Progress: [█████████░] 93%
 | Phase 11 P24 | 32 min | 1 tasks | 13 files |
 | Phase 11 P21 | 35 min | 1 tasks | 9 files |
 | Phase 11 P25 | 19 min | 1 tasks | 8 files |
+| Phase 11 P22 | 25 min | 1 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -533,6 +534,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 11]: Keep visual shell state presentation-only and emit effects solely as typed SessionCommand values. — Immutable session, comparison, and run identity inputs preserve renderer authority boundaries.
 - [Phase 11]: Select catalog rows by stable slug, version, and seed rather than display title. — Canonical typed catalog identity remains consistent across headless and visual consumers.
 - [Phase 11]: Allow only fixed HTTPS disclosures and validated repository commit links in provenance chrome. — Bounded sanitized text and copyable URLs prevent untrusted provenance from becoming an effectful link.
+- [Phase 11]: Bind Phase 11 D1 authority only to run 29927362730 at repair SHA 4ea1e1e65919619d8cd1155a5461c2cda16ab7b6.
+- [Phase 11]: Permanently deny failed run 29899265024 and artifact IDs 8521315244 and 8521345417 from Phase 11 authority.
+- [Phase 11]: Keep all six Oracle jobs mutually exclusive for an explicit evidence-phase dispatch.
 
 ### Pending Todos
 
@@ -546,6 +550,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-22T07:06:31.927Z
-Stopped at: Completed 11-25-PLAN.md
+Last session: 2026-07-22T14:29:13.501Z
+Stopped at: Completed 11-22-PLAN.md
 Resume file: None
