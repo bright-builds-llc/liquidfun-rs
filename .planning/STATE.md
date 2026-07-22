@@ -3,14 +3,14 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 11-02-PLAN.md
-last_updated: "2026-07-21T23:44:26.225Z"
-last_activity: "2026-07-21"
+stopped_at: Completed 11-04-PLAN.md
+last_updated: "2026-07-22T00:11:42.306Z"
+last_activity: "2026-07-22"
 progress:
   total_phases: 12
   completed_phases: 10
   total_plans: 190
-  completed_plans: 165
+  completed_plans: 166
   percent: 87
 ---
 
@@ -26,11 +26,11 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 ## Current Position
 
 Phase: 11 (Examples, Headless Tooling, and Testbed) — EXECUTING
-Plan: 4 of 29
+Plan: 5 of 29
 Status: Ready to execute
-Last activity: 2026-07-21
+Last activity: 2026-07-22
 
-Progress: [██████████] 99%
+Progress: [█████████░] 87%
 
 ## Performance Metrics
 
@@ -177,6 +177,7 @@ Progress: [██████████] 99%
 | Phase 11 P03 | 14 min | 1 tasks | 10 files |
 | Phase 11 P08 | 12 min | 1 tasks | 7 files |
 | Phase 11 P02 | 21 min | 1 tasks | 7 files |
+| Phase 11 P04 | 22 min | 1 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -471,6 +472,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 11]: Expand parameterized GoogleTest declarations into source-derived semantic cases instead of recording only macro sites.
 - [Phase 11]: Permit pending discovery records only when all five classification fields are absent; partial terminal outcomes remain invalid.
 - [Phase 11]: Recognize source-defined testbed scenarios by bounded class-local Create factories, including indirect scenario inheritance.
+- [Phase 11]: Reuse the closed RigidWorldAction vocabulary for native catalog schedules instead of creating a parallel backend model.
+- [Phase 11]: Keep exact-action construction crate-private and validate persisted catalog actions and semantic references fail-closed.
+- [Phase 11]: Materialize configured world and rope steps from ResolveRequest settings so custom settings remain replay-consistent.
 
 ### Pending Todos
 
@@ -484,6 +488,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-21T23:44:21.169Z
-Stopped at: Completed 11-02-PLAN.md
+Last session: 2026-07-22T00:11:42.302Z
+Stopped at: Completed 11-04-PLAN.md
 Resume file: None
