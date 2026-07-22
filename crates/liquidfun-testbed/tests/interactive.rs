@@ -98,6 +98,9 @@ fn production_launcher_wires_accessible_controls_pointer_gestures_and_minimum_wi
     let required_links = [
         "KeyCode::Tab",
         "focus_return.open(",
+        "self.modal_input_active(layout)",
+        "self.handle_modal_focus_input()",
+        "focus_return.move_to(",
         "if let Some(returned_focus) = self.focus_return.close()",
         "control_for_focus(returned_focus)",
         "const CONTROL_TARGET: f32 = 44.0;",

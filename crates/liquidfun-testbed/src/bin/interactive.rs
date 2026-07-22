@@ -230,6 +230,10 @@ impl DesktopApp {
         if layout.panel_behavior() == PanelBehavior::WindowTooSmall {
             return;
         }
+        if self.modal_input_active(layout) {
+            self.handle_modal_focus_input();
+            return;
+        }
         if is_mouse_button_pressed(MouseButton::Left) {
             let mouse = mouse_position();
             if let Some((index, _)) = FOCUS_ORDER
@@ -252,6 +256,56 @@ impl DesktopApp {
         }
         if is_key_pressed(KeyCode::Enter) {
             self.activate_focus();
+        }
+    }
+
+    fn handle_modal_focus_input(&mut self) {
+        if !is_key_pressed(KeyCode::Tab) && !is_key_pressed(KeyCode::Enter) {
+            return;
+        }
+        match self.open_panel {
+            OpenPanel::Scenario => {
+                self.focus_return.move_to(FocusId::ScenarioSearch);
+                self.editing_query = true;
+            }
+            OpenPanel::Inspector => {
+                self.focus_return.move_to(FocusId::InspectorDifference);
+                if is_key_pressed(KeyCode::Tab) {
+                    let backwards =
+                        is_key_down(KeyCode::LeftShift) || is_key_down(KeyCode::RightShift);
+                    self.move_difference(if backwards { -1 } else { 1 });
+                }
+            }
+            OpenPanel::Settings => {
+                self.focus_return.move_to(FocusId::SettingsField);
+                self.maybe_editing_setting = Some(
+                    if is_key_down(KeyCode::LeftShift) || is_key_down(KeyCode::RightShift) {
+                        SettingsField::ParticleIterations
+                    } else {
+                        SettingsField::Timestep
+                    },
+                );
+            }
+            OpenPanel::About => self.focus_return.move_to(FocusId::AboutLink),
+            OpenPanel::ShortcutHelp => self.focus_return.move_to(FocusId::ShortcutHelp),
+            OpenPanel::None => {}
+        }
+    }
+
+    fn modal_input_active(&self, layout: ResponsiveLayout) -> bool {
+        match self.open_panel {
+            OpenPanel::Settings | OpenPanel::About | OpenPanel::ShortcutHelp => true,
+            OpenPanel::Scenario => matches!(
+                layout.panel_behavior(),
+                PanelBehavior::MutuallyExclusiveDrawers | PanelBehavior::FullWindowSheets
+            ),
+            OpenPanel::Inspector => matches!(
+                layout.panel_behavior(),
+                PanelBehavior::InspectorDrawer
+                    | PanelBehavior::MutuallyExclusiveDrawers
+                    | PanelBehavior::FullWindowSheets
+            ),
+            OpenPanel::None => false,
         }
     }
 
@@ -332,6 +386,16 @@ impl DesktopApp {
 
     fn handle_panel_input(&mut self) {
         if self.editing_query || self.maybe_editing_setting.is_some() {
+            return;
+        }
+        let layout = ResponsiveLayout::for_window(
+            bounded_screen_dimension(screen_width()),
+            bounded_screen_dimension(screen_height()),
+        );
+        if self.modal_input_active(layout) {
+            if is_key_pressed(KeyCode::Escape) {
+                self.close_modal();
+            }
             return;
         }
         if is_key_pressed(KeyCode::B) {
@@ -437,6 +501,9 @@ impl DesktopApp {
             }
             PanelBehavior::WindowTooSmall => false,
         };
+        if self.modal_input_active(responsive) && self.open_panel != OpenPanel::Scenario {
+            return;
+        }
         if !scenario_visible || self.editing_query || self.testbed.visible_rows().is_empty() {
             return;
         }
@@ -492,6 +559,13 @@ impl DesktopApp {
 
     fn handle_controller_input(&mut self) {
         if self.editing_query || self.maybe_editing_setting.is_some() {
+            return;
+        }
+        let layout = ResponsiveLayout::for_window(
+            bounded_screen_dimension(screen_width()),
+            bounded_screen_dimension(screen_height()),
+        );
+        if self.modal_input_active(layout) {
             return;
         }
         let scenario_shortcuts = self.scenario_shortcuts();
@@ -679,6 +753,7 @@ impl DesktopApp {
                 if let Some(previous) = self.maybe_editing_setting.replace(field) {
                     self.settings.commit(previous);
                 }
+                self.focus_return.move_to(FocusId::SettingsField);
             } else {
                 if let Some(previous) = self.maybe_editing_setting.take() {
                     self.settings.commit(previous);
@@ -735,6 +810,10 @@ impl DesktopApp {
             bounded_screen_dimension(screen_height()),
         );
         if layout.panel_behavior() == PanelBehavior::WindowTooSmall {
+            return;
+        }
+        if self.modal_input_active(layout) {
+            self.maybe_drag_origin = None;
             return;
         }
         let viewport = rect(layout.shell().region(ShellRegion::Viewport));
@@ -953,8 +1032,10 @@ impl DesktopApp {
         fill_region(region, PANEL);
         let (x, y, width, _) = rect(region);
         let search_color = if self.editing_query
-            || self.focus_return.current() == Some(FocusId::ScenarioHeading)
-        {
+            || matches!(
+                self.focus_return.current(),
+                Some(FocusId::ScenarioHeading | FocusId::ScenarioSearch)
+            ) {
             ACCENT
         } else {
             BORDER
@@ -1127,7 +1208,10 @@ impl DesktopApp {
     fn draw_inspector(&self, region: (u32, u32, u32, u32)) {
         fill_region(region, PANEL);
         let (x, y, width, _) = rect(region);
-        if self.focus_return.current() == Some(FocusId::InspectorHeading) {
+        if matches!(
+            self.focus_return.current(),
+            Some(FocusId::InspectorHeading | FocusId::InspectorDifference)
+        ) {
             draw_rectangle_lines(x + 4.0, y + 2.0, width - 8.0, CONTROL_TARGET, 2.0, ACCENT);
         }
         draw_text("Inspect", x + 16.0, y + 28.0, 24.0, TEXT);
@@ -1481,7 +1565,10 @@ impl DesktopApp {
             panel.1,
             panel.2,
             panel.3,
-            if self.focus_return.current() == Some(FocusId::AboutHeading) {
+            if matches!(
+                self.focus_return.current(),
+                Some(FocusId::AboutHeading | FocusId::AboutLink)
+            ) {
                 2.0
             } else {
                 1.0
@@ -1622,10 +1709,19 @@ fn focus_index(focus: ControlFocus) -> usize {
 
 const fn control_for_focus(focus: FocusId) -> ControlFocus {
     match focus {
-        FocusId::ScenarioButton | FocusId::ScenarioHeading => ControlFocus::Scenario,
-        FocusId::InspectorButton | FocusId::InspectorHeading => ControlFocus::Inspector,
-        FocusId::SettingsButton | FocusId::SettingsHeading => ControlFocus::Settings,
-        FocusId::AboutButton | FocusId::AboutHeading => ControlFocus::About,
+        FocusId::ScenarioButton | FocusId::ScenarioHeading | FocusId::ScenarioSearch => {
+            ControlFocus::Scenario
+        }
+        FocusId::InspectorButton | FocusId::InspectorHeading | FocusId::InspectorDifference => {
+            ControlFocus::Inspector
+        }
+        FocusId::SettingsButton | FocusId::SettingsHeading | FocusId::SettingsField => {
+            ControlFocus::Settings
+        }
+        FocusId::AboutButton
+        | FocusId::AboutHeading
+        | FocusId::AboutLink
+        | FocusId::ShortcutHelp => ControlFocus::About,
     }
 }
 
@@ -1634,9 +1730,14 @@ const fn focus_is_modal_heading(maybe_focus: Option<FocusId>) -> bool {
         maybe_focus,
         Some(
             FocusId::ScenarioHeading
+                | FocusId::ScenarioSearch
                 | FocusId::InspectorHeading
+                | FocusId::InspectorDifference
                 | FocusId::SettingsHeading
+                | FocusId::SettingsField
                 | FocusId::AboutHeading
+                | FocusId::AboutLink
+                | FocusId::ShortcutHelp
         )
     )
 }

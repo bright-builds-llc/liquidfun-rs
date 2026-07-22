@@ -177,12 +177,17 @@ fn validate_identity(value: &str) -> Result<(), LayoutError> {
 pub enum FocusId {
     ScenarioButton,
     ScenarioHeading,
+    ScenarioSearch,
     InspectorButton,
     InspectorHeading,
+    InspectorDifference,
     SettingsButton,
     SettingsHeading,
+    SettingsField,
     AboutButton,
     AboutHeading,
+    AboutLink,
+    ShortcutHelp,
 }
 
 /// Focus state that returns to the modal invoker on close.
@@ -197,6 +202,11 @@ impl FocusReturn {
     pub const fn open(&mut self, invoker: FocusId, first_control: FocusId) {
         self.maybe_invoker = Some(invoker);
         self.maybe_current = Some(first_control);
+    }
+
+    /// Moves focus within the currently open modal surface without changing its invoker.
+    pub const fn move_to(&mut self, control: FocusId) {
+        self.maybe_current = Some(control);
     }
 
     /// Closes the top surface and returns focus to its invoker.
