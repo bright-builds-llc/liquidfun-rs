@@ -3,15 +3,15 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 11-06-PLAN.md
-last_updated: "2026-07-22T01:39:32.530Z"
+stopped_at: Completed 11-10-PLAN.md
+last_updated: "2026-07-22T02:03:30.390Z"
 last_activity: "2026-07-22"
 progress:
   total_phases: 12
   completed_phases: 10
   total_plans: 190
-  completed_plans: 170
-  percent: 89
+  completed_plans: 171
+  percent: 90
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 ## Current Position
 
 Phase: 11 (Examples, Headless Tooling, and Testbed) — EXECUTING
-Plan: 7 of 29
+Plan: 8 of 29
 Status: Ready to execute
 Last activity: 2026-07-22
 
@@ -182,6 +182,7 @@ Progress: [█████████░] 89%
 | Phase 11 P07 | 16m08s | 1 tasks | 4 files |
 | Phase 11 P09 | 18 min | 1 tasks | 9 files |
 | Phase 11 P06 | 20min | 1 tasks | 11 files |
+| Phase 11 P10 | 20 min | 1 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -489,6 +490,8 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 11]: The typed Rust registry is the sole runtime authority; scenario-catalog.json is an exact read-only checked projection.
 - [Phase 11]: Every scenario mapping resolves against checked test, evidence, upstream-corpus, and compatibility authorities before eligibility is accepted.
 - [Phase 11]: Registry order is canonical slug then scenario version, independent of family declaration order.
+- [Phase 11]: Cross-process execution accepts exact canonical resolved bytes plus SHA-256 and never reruns generators.
+- [Phase 11]: Canonical checkpoints preserve source-significant order, canonicalize only declared unordered sets, and carry profile names without durations.
 
 ### Pending Todos
 
@@ -502,6 +505,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-22T01:39:32.527Z
-Stopped at: Completed 11-06-PLAN.md
+Last session: 2026-07-22T02:03:30.386Z
+Stopped at: Completed 11-10-PLAN.md
 Resume file: None
