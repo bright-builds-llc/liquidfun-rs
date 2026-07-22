@@ -57,10 +57,12 @@ fn witness(role: WitnessRole, index: usize) -> Phase10EvidenceWitnessRef {
     }
 }
 
-fn complete_contract() -> (
+type CompleteContract = (
     Vec<Phase10EvidenceBinding>,
     HashMap<ScenarioId, (usize, usize, usize)>,
-) {
+);
+
+fn complete_contract() -> CompleteContract {
     let case_id = scenario_id("group-construction-and-mutation");
     let bindings = required_phase10_evidence_leaves()
         .into_iter()
@@ -284,11 +286,15 @@ fn particle_action(kind: &str) -> Value {
 }
 
 fn group_action(operation: Value) -> Value {
-    json!({ "kind": "particle_group", "operation": operation })
+    let value = json!({ "kind": "particle_group", "operation": operation });
+    drop(operation);
+    value
 }
 
 fn action(action_id: &str, action: Value) -> Value {
-    json!({ "action_id": action_id, "phase": "phase10", "action": action })
+    let value = json!({ "action_id": action_id, "phase": "phase10", "action": action });
+    drop(action);
+    value
 }
 
 fn group_construction_actions(recipe: &CaseRecipe) -> Vec<Value> {
@@ -722,6 +728,10 @@ fn normalized_optional_depth_still_rejects_required_lane_disappearance() {
 }
 
 #[test]
+#[allow(
+    clippy::too_many_lines,
+    reason = "the end-to-end evidence fixture keeps the two-engine comparison sequence visible"
+)]
 fn corpus_executes_d0_replay_and_two_engine_debug_release_comparison() {
     // Arrange
     let manifest = corpus_manifest();

@@ -221,6 +221,7 @@ fn insert_phase10_actions_before_destroy(value: &mut Value, inserted: Vec<Value>
 fn add_transient_created_groups(value: &mut Value, count: usize) {
     let mut actions = Vec::with_capacity(count * 2);
     for index in 0..count {
+        let index_u16 = u16::try_from(index).expect("test group count fits in u16");
         let group_id = format!("extra-group-{index}");
         let particle_id = format!("extra-particle-{index}");
         let mut group = serde_json::to_value(definition()).expect("definition should encode");
@@ -228,7 +229,7 @@ fn add_transient_created_groups(value: &mut Value, count: usize) {
         group["member_ids"] = json!([particle_id]);
         group["source"] = json!({
             "kind": "explicit",
-            "positions": [{ "x_bits": bits(index as f32).bits(), "y_bits": bits(0.0).bits() }]
+            "positions": [{ "x_bits": bits(f32::from(index_u16)).bits(), "y_bits": bits(0.0).bits() }]
         });
         actions.push(json!({
             "action_id": format!("p10-extra-create-{index}"),

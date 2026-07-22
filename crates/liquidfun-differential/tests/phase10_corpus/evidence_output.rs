@@ -61,6 +61,10 @@ struct FileReference {
     sha256: String,
 }
 
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the evidence fixture keeps each independently compared run explicit"
+)]
 pub(super) fn capture_case(
     case: &CorpusCase,
     request: &RigidWorldRequestRecord,
