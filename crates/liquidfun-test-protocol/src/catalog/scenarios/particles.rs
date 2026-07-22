@@ -29,7 +29,13 @@ const PARTICLE_CONTACT_FILTER: u32 = 1 << 17;
 ///
 /// Returns [`CatalogError`] if a stable ID, exact action, evidence mapping, or bound is invalid.
 pub fn definitions() -> Result<Vec<CatalogDefinition>, CatalogError> {
-    let mut definitions = vec![
+    let mut definitions = lifecycle_definitions()?;
+    definitions.extend(flag_definitions()?);
+    Ok(definitions)
+}
+
+fn lifecycle_definitions() -> Result<Vec<CatalogDefinition>, CatalogError> {
+    Ok(vec![
         phase9_definition(
             "particle-storage-lifecycle",
             "Particle Storage and Lifecycle",
@@ -132,8 +138,10 @@ pub fn definitions() -> Result<Vec<CatalogDefinition>, CatalogError> {
                 },
             ],
         )?,
-    ];
+    ])
+}
 
+fn flag_definitions() -> Result<Vec<CatalogDefinition>, CatalogError> {
     let flag_families = [
         (
             "particle-flags-water-zombie",
@@ -190,10 +198,10 @@ pub fn definitions() -> Result<Vec<CatalogDefinition>, CatalogError> {
             ],
         ),
     ];
-    for (slug, title, flags, evidence) in flag_families {
-        definitions.push(flag_definition(slug, title, flags, evidence)?);
-    }
-    Ok(definitions)
+    flag_families
+        .into_iter()
+        .map(|(slug, title, flags, evidence)| flag_definition(slug, title, flags, evidence))
+        .collect()
 }
 
 fn phase9_definition(
@@ -301,8 +309,9 @@ pub(super) fn group_definition(
     particle_flags_bits: u32,
     group_flags_bits: u32,
 ) -> Result<Phase10GroupDefinition, CatalogError> {
-    let positions = (0..member_ids.len())
-        .map(|index| vec2(index as f32 * 0.5, 0.0))
+    let positions = std::iter::successors(Some(0.0_f32), |position| Some(*position + 0.5))
+        .take(member_ids.len())
+        .map(|position| vec2(position, 0.0))
         .collect::<Vec<_>>();
     Ok(Phase10GroupDefinition {
         provenance: Phase10Provenance {

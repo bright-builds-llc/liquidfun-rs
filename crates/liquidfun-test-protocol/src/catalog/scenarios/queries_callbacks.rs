@@ -72,11 +72,12 @@ fn ray_callbacks() -> Result<CatalogDefinition, CatalogError> {
             Phase9RayControl::Terminate,
         ]
         .into_iter()
+        .zip([0.0, 0.25, 0.5, 0.75])
         .enumerate()
-        .map(|(index, control)| Phase9ParticleAction::RayCast {
+        .map(|(index, (control, height))| Phase9ParticleAction::RayCast {
             system_id: (index != 1).then(|| system_id.clone()),
-            start: vec2(-3.0, index as f32 * 0.25),
-            end: vec2(3.0, index as f32 * 0.25),
+            start: vec2(-3.0, height),
+            end: vec2(3.0, height),
             control,
         })
         .collect(),
