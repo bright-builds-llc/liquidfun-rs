@@ -1489,7 +1489,30 @@ Its PNGs and timing values are diagnostics only:
 DISPLAY= WAYLAND_DISPLAY= MIR_SOCKET= XDG_RUNTIME_DIR= cargo test -p liquidfun-testbed --all-features
 cargo run -p liquidfun-testbed -- --capability-check --fixture crates/liquidfun-differential/tests/fixtures/catalog/phase11-v1.json --output target/testbed-capability
 cargo run -p liquidfun-testbed -- --visual-contract-check --fixture crates/liquidfun-differential/tests/fixtures/catalog/phase11-v1.json --output target/testbed-visual-contract
+cargo run -p liquidfun-testbed --bin interactive
 ```
+
+The interactive launcher resolves the same reviewed catalog, drives a real
+`SessionController<NativeCatalogBackend>` through typed actions, captures
+canonical semantic checkpoints, and projects their protocol debug primitives
+through the private Macroquad adapter. Run/pause uses a fixed-time accumulator
+bounded to eight logical actions per UI update; render frames never become
+simulation or checkpoint authority. Use Up/Down and Enter to select, Space to
+run or pause, Right to step, R to restart, C to capture, `/` to search, `+`/`-`
+to change timestep and restart, 1-4 to toggle semantic layers, the wheel to
+zoom, and middle-drag to pan.
+
+An already validated canonical oracle checkpoint can be supplied for semantic
+comparison with the current matching native checkpoint:
+
+```bash
+cargo run -p liquidfun-testbed --bin interactive -- --oracle-checkpoint target/catalog-oracle/checkpoint.jsonl
+```
+
+The launcher decodes that file under the reviewed harness byte limit and shows
+an explicit Oracle unavailable state when no matching checkpoint is supplied.
+Pixels, screenshots, frame timing, and native-only display remain diagnostics,
+not compatibility authority.
 
 Macroquad 0.4.15 currently brings `RUSTSEC-2025-0035` and
 `RUSTSEC-2026-0192`, neither of which has a safe upgrade. `deny.toml` ignores

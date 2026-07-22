@@ -818,7 +818,7 @@ fn parse_contract_table(contents: &str) -> Result<Vec<Vec<String>>, DocsError> {
             format!("missing `{TABLE_HEADING}` heading"),
         ));
     };
-    let Some(header) = lines.find(|line| line.trim_start().starts_with("| Layer |")) else {
+    let Some(header) = lines.find(|line| line.trim_start().starts_with('|')) else {
         return Err(DocsError::new("schema", "missing testing table header"));
     };
     let header_cells = parse_row(header)?;

@@ -1,6 +1,6 @@
 use liquidfun_test_protocol::{
     CatalogSlug, FloatBits, Phase9ParticleAction, ResolveRequest, RigidWorldAction, RunSettings,
-    resolve_catalog,
+    resolve_catalog, reviewed_scenario_catalog,
     scenarios::{particles, rigid},
 };
 
@@ -200,6 +200,108 @@ fn invalid_settings_are_rejected_before_backend_effects() {
     assert_eq!(error.kind(), SessionControllerErrorKind::InvalidRunSettings);
     assert_eq!(controller.backend().events.len(), event_count);
     assert_eq!(controller.state(), SessionState::ReadyPaused);
+}
+
+#[test]
+fn valid_settings_restart_accepts_only_resolver_materialized_step_changes() {
+    // Arrange
+    let mut controller = selected_controller();
+    let replacement_settings = RunSettings::new(FloatBits::from_f32(1.0 / 120.0), 10, 4, 2)
+        .expect("replacement settings should validate");
+    let replacement = resolved_rigid(replacement_settings);
+
+    // Act
+    let outcome = submit(
+        &mut controller,
+        SessionCommand::ApplySettingsAndRestart {
+            settings: RunSettingsInput::new(
+                replacement_settings.timestep_bits(),
+                replacement_settings.velocity_iterations(),
+                replacement_settings.position_iterations(),
+                replacement_settings.particle_iterations(),
+            ),
+            resolved: replacement,
+        },
+    )
+    .expect("resolver-materialized settings replacement should succeed");
+
+    // Assert
+    assert_eq!(outcome.state(), SessionState::ReadyPaused);
+    assert_eq!(
+        controller
+            .selected()
+            .expect("replacement should remain selected")
+            .identity()
+            .settings(),
+        replacement_settings
+    );
+    assert_eq!(controller.completed_logical_steps(), 0);
+}
+
+#[test]
+fn valid_settings_restart_covers_every_reviewed_catalog_action_family() {
+    // Arrange
+    let catalog = reviewed_scenario_catalog().expect("reviewed catalog should validate");
+    let original_settings = settings();
+    let replacement_settings = RunSettings::new(FloatBits::from_f32(1.0 / 120.0), 10, 4, 2)
+        .expect("replacement settings should validate");
+
+    for definition in catalog.definitions() {
+        let original =
+            resolve_with_optional_seed(catalog.definitions(), definition.slug(), original_settings);
+        let replacement = resolve_with_optional_seed(
+            catalog.definitions(),
+            definition.slug(),
+            replacement_settings,
+        );
+        let mut controller = SessionController::new(RecordingBackend::default());
+        submit(
+            &mut controller,
+            SessionCommand::Select { resolved: original },
+        )
+        .expect("reviewed scenario should select");
+
+        // Act
+        let outcome = submit(
+            &mut controller,
+            SessionCommand::ApplySettingsAndRestart {
+                settings: RunSettingsInput::new(
+                    replacement_settings.timestep_bits(),
+                    replacement_settings.velocity_iterations(),
+                    replacement_settings.position_iterations(),
+                    replacement_settings.particle_iterations(),
+                ),
+                resolved: replacement,
+            },
+        )
+        .unwrap_or_else(|error| {
+            panic!(
+                "settings replacement failed for {}: {error}",
+                definition.slug().as_str()
+            )
+        });
+
+        // Assert
+        assert_eq!(outcome.state(), SessionState::ReadyPaused);
+        assert_eq!(controller.completed_logical_steps(), 0);
+    }
+}
+
+fn resolve_with_optional_seed(
+    definitions: &[liquidfun_test_protocol::CatalogDefinition],
+    slug: &CatalogSlug,
+    settings: RunSettings,
+) -> liquidfun_test_protocol::ResolvedScenario {
+    let named = ResolveRequest::new(slug.clone(), None, settings);
+    resolve_catalog(definitions, &named).unwrap_or_else(|_error| {
+        let seeded = ResolveRequest::new(slug.clone(), Some(0), settings);
+        resolve_catalog(definitions, &seeded).unwrap_or_else(|error| {
+            panic!(
+                "reviewed scenario {} did not resolve: {error}",
+                slug.as_str()
+            )
+        })
+    })
 }
 
 #[test]

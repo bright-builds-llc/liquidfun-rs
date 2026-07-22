@@ -11,6 +11,7 @@ pub mod differences;
 pub mod inspector;
 pub mod layout;
 pub mod overlays;
+pub mod protocol_viewport;
 pub mod run_controls;
 mod scenario_browser;
 pub mod settings;

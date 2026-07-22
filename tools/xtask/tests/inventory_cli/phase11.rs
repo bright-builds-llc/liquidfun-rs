@@ -85,13 +85,13 @@ fn check_rejects_incomplete_phase11_rows_and_dimensions() -> TestResult {
 fn check_rejects_every_phase11_authority_identity_mismatch() -> TestResult {
     for (pointer, replacement) in [
         ("/approved_sha", json!("mixed-sha")),
-        ("/run/id", json!(29899265024_u64)),
+        ("/run/id", json!(29_899_265_024_u64)),
         ("/run/jobs/canonical/id", json!(0)),
         ("/run/jobs/sanitizer/id", json!(0)),
         ("/toolchains/platform", json!("broad-platform")),
         ("/toolchains/clang", json!("unlocked")),
-        ("/artifacts/canonical/id", json!(8521315244_u64)),
-        ("/artifacts/sanitizer/id", json!(8521345417_u64)),
+        ("/artifacts/canonical/id", json!(8_521_315_244_u64)),
+        ("/artifacts/sanitizer/id", json!(8_521_345_417_u64)),
         ("/artifacts/canonical/live_sha256", json!("mixed-live")),
         (
             "/artifacts/sanitizer/archive_sha256",

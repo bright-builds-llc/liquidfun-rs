@@ -147,6 +147,29 @@ X-ADVISORY.
 
 None.
 
+## Interactive Gap-Closure Re-audit — 2026-07-22
+
+**SECURED: 174/174 closed, 0 open, 0 unregistered flags.** The uncommitted
+interactive launcher and settings-restart repair do not change any registered
+disposition or add an unregistered threat surface.
+
+| Control | Re-audit evidence | Threats preserved closed |
+| --- | --- | --- |
+| Bounded oracle input | `crates/liquidfun-testbed/src/bin/interactive.rs` rejects links and non-regular files, checks the opened handle's length, reads through `take(limit + 1)`, and then uses the strict bounded checkpoint decoder. Errors expose only fixed categories. | T-11-10-01, T-11-10-03, T-11-10-04, T-11-24-01, T-11-24-03, T-11-24-04 |
+| Typed command authority and cadence | `crates/liquidfun-testbed/src/interactive.rs` submits only closed `ControllerAction` values through single-flight admission. Its fixed-time accumulator executes at most eight logical actions per update and discards excess catch-up time; render frames never directly tick or capture. | T-11-07-01 through T-11-07-04, T-11-24-02, T-11-26-01, T-11-26-03 |
+| Renderer isolation | `crates/liquidfun-testbed/src/ui/protocol_viewport.rs` projects immutable canonical primitives through finite world, viewport, screen, stroke, and vertex bounds before the Macroquad drawing shell. Camera, layers, layout, pixels, and frame timing remain presentation-only. | T-11-09-01 through T-11-09-04, T-11-24-02, T-11-26-02, T-11-27-02 |
+| Truthful semantic comparison | The launcher keys comparison attempts by resolved hash and checkpoint ID, caches failed attempts to prevent per-frame work, clears stale comparison state on selection/restart/settings changes, and renders distinct copy for every `ComparisonState`. Missing or invalid oracle input remains explicitly unavailable; pixels and timing remain labeled non-authoritative. | T-11-13-01 through T-11-13-04, T-11-27-01 through T-11-27-04 |
+| Settings replacement authority | `crates/liquidfun-differential/src/session.rs` preserves scenario identity, entities, schedules, checkpoints, configured work budgets, and rope owners while permitting differences only in resolver-materialized step settings. Focused tests cover every reviewed catalog action family. | T-11-07-01, T-11-07-02, T-11-07-06, T-11-13-01 |
+| Package boundary | Cargo metadata still resolves only `liquidfun` as a default member. `liquidfun-testbed` remains `publish = false`; Macroquad, protocol, differential, and renderer code do not enter the published `liquidfun` dependency graph. | T-11-07-05, T-11-09-05, T-11-10-05, T-11-13-05, T-11-24-05 through T-11-27-05, T-11-29-01, T-11-29-05 |
+
+Read-only verification found no whitespace errors with `git diff --check`,
+confirmed the default-member and unpublished-testbed boundary through
+`cargo metadata --no-deps`, and passed the focused all-target/all-feature Cargo
+check for `liquidfun-testbed` and `liquidfun-differential`. The final
+`cargo test -p liquidfun-testbed --all-features` run also passed: 6 library, 0
+main-binary, 8 app-shell, 2 capability, 15 controller-UI, 6 interactive, 13
+visual-contract, and 0 doctests.
+
 ## Audit Conclusion
 
 Phase 11 satisfies the configured `block_on: open` policy: `threats_open` is

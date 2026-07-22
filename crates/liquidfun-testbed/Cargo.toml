@@ -7,6 +7,13 @@ rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 publish = false
+default-run = "liquidfun-testbed"
+
+[[bin]]
+name = "interactive"
+path = "src/bin/interactive.rs"
+test = false
+bench = false
 
 [dependencies]
 liquidfun = { path = "../liquidfun" }

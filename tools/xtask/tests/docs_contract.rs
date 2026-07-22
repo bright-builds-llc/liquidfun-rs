@@ -73,14 +73,12 @@ impl DocsFixture {
     }
 
     fn remove_layer(&self, layer: &str) -> io::Result<()> {
-        let prefix = format!("| {layer} |");
-        self.rewrite(|line| (!line.starts_with(&prefix)).then(|| line.to_owned()))
+        self.rewrite(|line| (!table_row_has_layer(line, layer)).then(|| line.to_owned()))
     }
 
     fn duplicate_layer(&self, layer: &str) -> io::Result<()> {
-        let prefix = format!("| {layer} |");
         self.rewrite(|line| {
-            if line.starts_with(&prefix) {
+            if table_row_has_layer(line, layer) {
                 Some(format!("{line}\n{line}"))
             } else {
                 Some(line.to_owned())
@@ -89,10 +87,9 @@ impl DocsFixture {
     }
 
     fn replace_cell(&self, layer: &str, index: usize, value: &str) -> io::Result<()> {
-        let prefix = format!("| {layer} |");
         let mut found = false;
         self.rewrite(|line| {
-            if !line.starts_with(&prefix) {
+            if !table_row_has_layer(line, layer) {
                 return Some(line.to_owned());
             }
             found = true;
@@ -862,6 +859,13 @@ fn parse_row(line: &str) -> io::Result<Vec<String>> {
         .split('|')
         .map(|cell| cell.trim().to_owned())
         .collect())
+}
+
+fn table_row_has_layer(line: &str, layer: &str) -> bool {
+    parse_row(line)
+        .ok()
+        .and_then(|cells| cells.into_iter().next())
+        .is_some_and(|first| first == layer)
 }
 
 fn assert_success(output: &Output) {

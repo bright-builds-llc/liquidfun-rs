@@ -1,8 +1,8 @@
 //! Renderer-neutral command and backend boundary for one resolved run session.
 
 use liquidfun_test_protocol::{
-    ActionSchedule, CheckpointDeclaration, CheckpointId, FloatBits, ResolvedScenario, RunSettings,
-    ScenarioActionId, ScheduledAction,
+    ActionSchedule, CheckpointDeclaration, CheckpointId, FloatBits, Phase10Operation,
+    ResolvedScenario, RigidWorldAction, RunSettings, ScenarioActionId, ScheduledAction,
 };
 
 mod backend;
@@ -765,8 +765,54 @@ fn same_run_except_settings(
         && current.generator_version() == replacement.generator_version()
         && current.maybe_seed() == replacement.maybe_seed()
         && current_scenario.entities() == replacement_scenario.entities()
-        && current_scenario.actions() == replacement_scenario.actions()
+        && same_schedule_except_settings(current_scenario.actions(), replacement_scenario.actions())
         && current_scenario.checkpoints() == replacement_scenario.checkpoints()
+}
+
+fn same_schedule_except_settings(
+    current: &[ScheduledAction],
+    replacement: &[ScheduledAction],
+) -> bool {
+    current.len() == replacement.len()
+        && current.iter().zip(replacement).all(|(left, right)| {
+            left.action_id() == right.action_id()
+                && left.schedule() == right.schedule()
+                && same_action_except_settings(left.action(), right.action())
+        })
+}
+
+fn same_action_except_settings(left: &RigidWorldAction, right: &RigidWorldAction) -> bool {
+    match (left, right) {
+        (RigidWorldAction::Step { .. }, RigidWorldAction::Step { .. })
+        | (
+            RigidWorldAction::ParticleGroup {
+                operation: Phase10Operation::Step { .. },
+            },
+            RigidWorldAction::ParticleGroup {
+                operation: Phase10Operation::Step { .. },
+            },
+        ) => true,
+        (
+            RigidWorldAction::ConfiguredStep {
+                continuous_work_budget: left_budget,
+                ..
+            },
+            RigidWorldAction::ConfiguredStep {
+                continuous_work_budget: right_budget,
+                ..
+            },
+        ) => left_budget == right_budget,
+        (
+            RigidWorldAction::StepRope {
+                rope_id: left_rope, ..
+            },
+            RigidWorldAction::StepRope {
+                rope_id: right_rope,
+                ..
+            },
+        ) => left_rope == right_rope,
+        _ => left == right,
+    }
 }
 
 #[cfg(test)]
