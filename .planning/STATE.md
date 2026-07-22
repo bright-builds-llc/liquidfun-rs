@@ -3,15 +3,15 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 11-04-PLAN.md
-last_updated: "2026-07-22T00:11:42.306Z"
+stopped_at: Completed 11-05-PLAN.md
+last_updated: "2026-07-22T00:32:27.243Z"
 last_activity: "2026-07-22"
 progress:
   total_phases: 12
   completed_phases: 10
   total_plans: 190
-  completed_plans: 166
-  percent: 87
+  completed_plans: 167
+  percent: 88
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 ## Current Position
 
 Phase: 11 (Examples, Headless Tooling, and Testbed) — EXECUTING
-Plan: 5 of 29
+Plan: 6 of 29
 Status: Ready to execute
 Last activity: 2026-07-22
 
-Progress: [█████████░] 87%
+Progress: [█████████░] 88%
 
 ## Performance Metrics
 
@@ -178,6 +178,7 @@ Progress: [█████████░] 87%
 | Phase 11 P08 | 12 min | 1 tasks | 7 files |
 | Phase 11 P02 | 21 min | 1 tasks | 7 files |
 | Phase 11 P04 | 22 min | 1 tasks | 9 files |
+| Phase 11 P05 | 14m | 1 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -475,6 +476,8 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 11]: Reuse the closed RigidWorldAction vocabulary for native catalog schedules instead of creating a parallel backend model.
 - [Phase 11]: Keep exact-action construction crate-private and validate persisted catalog actions and semantic references fail-closed.
 - [Phase 11]: Materialize configured world and rope steps from ResolveRequest settings so custom settings remain replay-consistent.
+- [Phase 11]: Particle-system pause remains a typed Phase 9 physics action; session pause belongs to the later controller layer.
+- [Phase 11]: Catalog coverage accepts only sealed Phase 9 branches and exact Phase 10 or inherited compatibility leaves.
 
 ### Pending Todos
 
@@ -488,6 +491,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-22T00:11:42.302Z
-Stopped at: Completed 11-04-PLAN.md
+Last session: 2026-07-22T00:32:27.240Z
+Stopped at: Completed 11-05-PLAN.md
 Resume file: None
