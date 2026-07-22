@@ -2,6 +2,8 @@
 tools/reference/src/main.cpp
 tools/reference/src/catalog_checkpoint.cpp
 tools/reference/src/catalog_checkpoint.hpp
+tools/reference/src/catalog_joint.cpp
+tools/reference/src/catalog_joint.hpp
 tools/reference/src/catalog_run.cpp
 tools/reference/src/catalog_run.hpp
 tools/reference/src/catalog_run_decode.cpp

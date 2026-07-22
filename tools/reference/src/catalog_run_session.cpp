@@ -1,6 +1,7 @@
 #include "catalog_run_session.hpp"
 
 #include "catalog_checkpoint.hpp"
+#include "catalog_joint.hpp"
 #include "protocol.hpp"
 
 #include "Box2D/Box2D.h"
@@ -68,7 +69,8 @@ const Pointer& lookup(
 
 class CatalogSession {
  public:
-  CatalogSession() : world_({0.0F, -10.0F}) {}
+  explicit CatalogSession(std::string slug)
+      : slug_(std::move(slug)), world_({0.0F, -10.0F}) {}
 
   void execute(const Json& action, const Json& settings) {
     const auto kind = as_id(member(action, "kind", "catalog action"),
@@ -168,14 +170,14 @@ class CatalogSession {
   }
 
   void create_joint(const std::string& id) {
-    if (bodies_.size() < 2U) {
-      throw std::runtime_error("joint requires two bodies");
-    }
-    b2RevoluteJointDef definition;
-    definition.Initialize(
-        bodies_.at(0).second, bodies_.at(1).second,
-        bodies_.at(0).second->GetWorldCenter());
-    joints_.emplace_back(id, world_.CreateJoint(&definition));
+    std::vector<b2Body*> bodies;
+    bodies.reserve(bodies_.size());
+    for (const auto& item : bodies_) bodies.push_back(item.second);
+    std::vector<b2Joint*> joints;
+    joints.reserve(joints_.size());
+    for (const auto& item : joints_) joints.push_back(item.second);
+    joints_.emplace_back(
+        id, create_catalog_joint(slug_, bodies, joints, world_));
   }
 
   void create_rope(const std::string& id) {
@@ -212,6 +214,7 @@ class CatalogSession {
   void execute_particle(const Json& action);
   void execute_group(const Json& operation);
 
+  std::string slug_;
   b2World world_;
   float simulation_time_ = 0.0F;
   std::vector<std::pair<std::string, b2Body*>> bodies_;
@@ -283,27 +286,9 @@ void CatalogSession::execute_mutation(
   } else if (kind == "set_continuous_physics") {
     world_.SetContinuousPhysics(action.at("enabled").get<bool>());
   } else if (kind == "mutate_joint") {
-    auto* joint = dynamic_cast<b2RevoluteJoint*>(lookup(
-        joints_, as_id(action.at("joint_id"), "joint ID"), "joint"));
-    if (joint == nullptr) {
-      throw std::runtime_error("joint mutation requires revolute joint");
-    }
-    const auto& mutation = action.at("mutation");
-    const auto mutation_kind = mutation.at("kind").get<std::string>();
-    if (mutation_kind == "limit_enabled") {
-      joint->EnableLimit(mutation.at("enabled").get<bool>());
-    } else if (mutation_kind == "motor_enabled") {
-      joint->EnableMotor(mutation.at("enabled").get<bool>());
-    } else if (mutation_kind == "motor_speed") {
-      joint->SetMotorSpeed(as_finite_float(mutation.at("speed_bits"), "motor speed"));
-    } else if (mutation_kind == "limits") {
-      joint->SetLimits(as_finite_float(mutation.at("lower_bits"), "lower limit"),
-                       as_finite_float(mutation.at("upper_bits"), "upper limit"));
-    } else if (mutation_kind == "max_motor_torque") {
-      joint->SetMaxMotorTorque(as_finite_float(mutation.at("torque_bits"), "motor torque"));
-    } else {
-      throw std::runtime_error("unknown joint mutation");
-    }
+    mutate_catalog_joint(
+        *lookup(joints_, as_id(action.at("joint_id"), "joint ID"), "joint"),
+        action.at("mutation"));
   } else if (kind == "set_rope_angle") {
     lookup(ropes_, as_id(action.at("rope_id"), "rope ID"), "rope")
         ->SetAngle(as_finite_float(action.at("angle_bits"), "rope angle"));
@@ -504,8 +489,8 @@ void CatalogSession::execute_group(const Json& operation) {
 }
 
 std::vector<std::string> execute_payload(const CatalogRequest& request) {
-  CatalogSession session;
   const auto& payload = request.payload;
+  CatalogSession session(as_id(payload.at("identity").at("slug"), "catalog slug"));
   const auto& settings = payload.at("identity").at("settings");
   const auto& actions = payload.at("actions");
   const auto& checkpoints = payload.at("checkpoints");

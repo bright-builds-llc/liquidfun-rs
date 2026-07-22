@@ -65,6 +65,51 @@ nlohmann::json catalog_payload() {
          {"logical_step", 1U}}}}};
 }
 
+nlohmann::json catalog_distance_joint_payload() {
+  auto payload = catalog_payload();
+  payload["identity"]["slug"] = "joint-distance-behavior";
+  payload["identity"]["generator_id"] = "native-joint-v1";
+  payload["entities"] = {
+      {{"semantic_id", {{"kind", "body"}, {"ordinal", 0U}}},
+       {"scenario_id", "entity-body-0000"}},
+      {{"semantic_id", {{"kind", "body"}, {"ordinal", 1U}}},
+       {"scenario_id", "entity-body-0001"}},
+      {{"semantic_id", {{"kind", "joint"}, {"ordinal", 2U}}},
+       {"scenario_id", "entity-joint-0002"}}};
+  payload["actions"] = {
+      {{"action_id", "action-0000"},
+       {"schedule", {{"kind", "setup"}, {"ordinal", 0U}}},
+       {"action",
+        {{"kind", "create_body"}, {"body_id", "entity-body-0000"}}}},
+      {{"action_id", "action-0001"},
+       {"schedule", {{"kind", "setup"}, {"ordinal", 1U}}},
+       {"action",
+        {{"kind", "create_body"}, {"body_id", "entity-body-0001"}}}},
+      {{"action_id", "action-0002"},
+       {"schedule", {{"kind", "setup"}, {"ordinal", 2U}}},
+       {"action",
+        {{"kind", "create_joint"}, {"joint_id", "entity-joint-0002"}}}},
+      {{"action_id", "action-0003"},
+       {"schedule", {{"kind", "setup"}, {"ordinal", 3U}}},
+       {"action",
+        {{"kind", "mutate_joint"},
+         {"joint_id", "entity-joint-0002"},
+         {"mutation", {{"kind", "length"}, {"length_bits", 0x40000000U}}}}}},
+      {{"action_id", "action-0004"},
+       {"schedule", {{"kind", "logical_step"}, {"ordinal", 1U}}},
+       {"action",
+        {{"kind", "configured_step"},
+         {"timestep_bits", 0x3c888889U},
+         {"velocity_iterations", 8U},
+         {"position_iterations", 3U},
+         {"continuous_work_budget", 1U}}}}};
+  payload["checkpoints"] = {
+      {{"checkpoint_id", "checkpoint-0001"},
+       {"after_action_id", "action-0004"},
+       {"logical_step", 1U}}};
+  return payload;
+}
+
 std::string catalog_request_from_payload(
     const nlohmann::json& payload,
     std::string_view identity_sha256) {
@@ -72,21 +117,18 @@ std::string catalog_request_from_payload(
   const auto bytes = std::vector<std::uint8_t>(
       payload_text.begin(), payload_text.end());
   const auto resolved_sha256 = liquidfun::reference::sha256_hex(payload_text);
+  const auto& identity = payload.at("identity");
   return nlohmann::json{
       {"protocol_version", 1U},
       {"record_kind", "catalog_run_request"},
       {"request_id", "cpp-catalog-request"},
-      {"catalog_schema_version", 1U},
-      {"slug", "cpp-catalog-smoke"},
-      {"scenario_version", 1U},
-      {"generator_id", "cpp-catalog-test"},
-      {"generator_version", 1U},
-      {"maybe_seed", nullptr},
-      {"settings",
-       {{"timestep_bits", 0x3c888889U},
-        {"velocity_iterations", 8U},
-        {"position_iterations", 3U},
-        {"particle_iterations", 2U}}},
+      {"catalog_schema_version", identity.at("catalog_schema_version")},
+      {"slug", identity.at("slug")},
+      {"scenario_version", identity.at("scenario_version")},
+      {"generator_id", identity.at("generator_id")},
+      {"generator_version", identity.at("generator_version")},
+      {"maybe_seed", identity.at("maybe_seed")},
+      {"settings", identity.at("settings")},
       {"resolved_bytes", bytes},
       {"resolved_sha256", resolved_sha256},
       {"provenance_requirements",
@@ -143,6 +185,24 @@ void catalog_run_executes_exact_resolved_bytes_and_reuses_cleanly() {
     expect(text.find(forbidden) == std::string::npos,
            "catalog result leaked private or nondeterministic state");
   }
+}
+
+void catalog_run_preserves_distance_joint_kind_and_mutation() {
+  // Arrange
+  const auto identity_sha256 = std::string(64, 'a');
+  const auto request = catalog_request_from_payload(
+      catalog_distance_joint_payload(), identity_sha256);
+  liquidfun::reference::CatalogRunAdapter adapter;
+
+  // Act
+  const auto result = adapter.execute(request, identity_sha256);
+
+  // Assert
+  expect(result.checkpoint_records.size() == 1U,
+         "distance joint scenario lost its checkpoint");
+  const auto checkpoint = nlohmann::json::parse(result.checkpoint_records.at(0));
+  expect(checkpoint.at("observations")[4]["value"]["value"] == 1U,
+         "distance joint scenario did not create one typed joint");
 }
 
 void catalog_run_rejects_hash_and_nested_shape_tampering() {
@@ -1189,6 +1249,7 @@ void phase8_reactions_guard_uninitialized_solver_scratch() {
 int main() {
   try {
     catalog_run_executes_exact_resolved_bytes_and_reuses_cleanly();
+    catalog_run_preserves_distance_joint_kind_and_mutation();
     catalog_run_rejection_does_not_poison_the_next_request();
     catalog_run_rejects_hash_and_nested_shape_tampering();
     catalog_run_rejects_oversized_input_before_allocation();

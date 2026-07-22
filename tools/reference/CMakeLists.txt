@@ -190,6 +190,7 @@ add_library(
   liquidfun-reference-protocol
   STATIC
   src/catalog_checkpoint.cpp
+  src/catalog_joint.cpp
   src/catalog_run.cpp
   src/catalog_run_decode.cpp
   src/catalog_run_session.cpp
@@ -478,6 +479,7 @@ add_custom_command(
     "${REFERENCE_BUILD_IDENTITY_SCRIPT}"
     "${CMAKE_CURRENT_LIST_DIR}/src/collision_probe.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/src/catalog_checkpoint.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/src/catalog_joint.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/src/catalog_run.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/src/catalog_run_decode.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/src/catalog_run_session.cpp"
