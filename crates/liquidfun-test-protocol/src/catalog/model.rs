@@ -7,6 +7,8 @@ use crate::{
 
 mod identity;
 pub use identity::*;
+mod metadata;
+pub use metadata::*;
 
 /// Maximum catalog definitions accepted by one resolver call.
 pub const CATALOG_MAXIMUM_DEFINITIONS: usize = 256;
@@ -48,6 +50,8 @@ pub enum CatalogErrorKind {
     ResolvedLimitExceeded,
     /// A catalog program has no exact choice to generate from.
     EmptyGeneratorChoices,
+    /// Required catalog metadata is empty or internally inconsistent.
+    InvalidMetadata,
     /// A checkpoint names an action outside the resolved schedule.
     InvalidCheckpointReference,
     /// Canonical JSON encoding or strict decoding failed.
@@ -90,6 +94,10 @@ pub struct CatalogProgram {
 pub(crate) enum CatalogProgramKind {
     ExactGravity(Vec2Bits),
     SeededGravityChoices(Box<[Vec2Bits]>),
+    ExactActions {
+        setup_actions: Box<[RigidWorldAction]>,
+        logical_actions: Box<[RigidWorldAction]>,
+    },
 }
 
 impl CatalogProgram {
@@ -128,6 +136,38 @@ impl CatalogProgram {
         })
     }
 
+    /// Creates a named program from exact closed setup and logical-step actions.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`CatalogError`] when either schedule is empty or the combined schedule exceeds
+    /// the reviewed action or checkpoint bounds.
+    pub(crate) fn exact_actions(
+        setup_actions: Vec<RigidWorldAction>,
+        logical_actions: Vec<RigidWorldAction>,
+    ) -> Result<Self, CatalogError> {
+        if setup_actions.is_empty() || logical_actions.is_empty() {
+            return Err(CatalogError::new(CatalogErrorKind::InvalidRunSettings));
+        }
+        let Some(action_count) = setup_actions.len().checked_add(logical_actions.len()) else {
+            return Err(CatalogError::new(CatalogErrorKind::ResolvedLimitExceeded));
+        };
+        if action_count > CATALOG_MAXIMUM_ACTIONS
+            || logical_actions.len() > CATALOG_MAXIMUM_CHECKPOINTS
+        {
+            return Err(CatalogError::new(CatalogErrorKind::ResolvedLimitExceeded));
+        }
+        let step_count = u32::try_from(logical_actions.len())
+            .map_err(|_| CatalogError::new(CatalogErrorKind::ResolvedLimitExceeded))?;
+        Ok(Self {
+            kind: CatalogProgramKind::ExactActions {
+                setup_actions: setup_actions.into_boxed_slice(),
+                logical_actions: logical_actions.into_boxed_slice(),
+            },
+            step_count,
+        })
+    }
+
     fn validate_step_count(step_count: u32) -> Result<(), CatalogError> {
         let action_count = usize::try_from(step_count)
             .ok()
@@ -160,6 +200,7 @@ pub struct CatalogDefinition {
     eligibility: ScenarioEligibility,
     entity_kinds: Box<[SemanticEntityKind]>,
     program: CatalogProgram,
+    maybe_metadata: Option<CatalogMetadata>,
 }
 
 impl CatalogDefinition {
@@ -193,7 +234,7 @@ impl CatalogDefinition {
             (eligibility, program.kind()),
             (
                 ScenarioEligibility::NamedOnly,
-                CatalogProgramKind::ExactGravity(_)
+                CatalogProgramKind::ExactGravity(_) | CatalogProgramKind::ExactActions { .. }
             ) | (
                 ScenarioEligibility::SeedRequired,
                 CatalogProgramKind::SeededGravityChoices(_)
@@ -211,7 +252,15 @@ impl CatalogDefinition {
             eligibility,
             entity_kinds: entity_kinds.into_boxed_slice(),
             program,
+            maybe_metadata: None,
         })
+    }
+
+    /// Attaches validated discovery, default-setting, coverage, and eligibility metadata.
+    #[must_use]
+    pub fn with_metadata(mut self, metadata: CatalogMetadata) -> Self {
+        self.maybe_metadata = Some(metadata);
+        self
     }
 
     /// Returns the stable lookup slug.
@@ -224,6 +273,12 @@ impl CatalogDefinition {
     #[must_use]
     pub fn display_title(&self) -> &str {
         &self.display_title
+    }
+
+    /// Returns native scenario metadata when this is a discoverable catalog definition.
+    #[must_use]
+    pub const fn metadata(&self) -> Option<&CatalogMetadata> {
+        self.maybe_metadata.as_ref()
     }
 
     pub(crate) const fn scenario_version(&self) -> ScenarioVersion {
@@ -560,6 +615,7 @@ pub(crate) fn deterministic_entity_id(
         SemanticEntityKind::Body => "body",
         SemanticEntityKind::Fixture => "fixture",
         SemanticEntityKind::Joint => "joint",
+        SemanticEntityKind::Rope => "rope",
         SemanticEntityKind::ParticleSystem => "particle-system",
         SemanticEntityKind::ParticleGroup => "particle-group",
         SemanticEntityKind::Particle => "particle",
@@ -584,13 +640,15 @@ pub(crate) fn deterministic_checkpoint_id(logical_step: u32) -> Result<Checkpoin
 pub(crate) fn exact_gravity(program: &CatalogProgram) -> Option<Vec2Bits> {
     match program.kind() {
         CatalogProgramKind::ExactGravity(gravity) => Some(*gravity),
-        CatalogProgramKind::SeededGravityChoices(_) => None,
+        CatalogProgramKind::SeededGravityChoices(_) | CatalogProgramKind::ExactActions { .. } => {
+            None
+        }
     }
 }
 
 pub(crate) fn gravity_choices(program: &CatalogProgram) -> Option<&[Vec2Bits]> {
     match program.kind() {
-        CatalogProgramKind::ExactGravity(_) => None,
         CatalogProgramKind::SeededGravityChoices(choices) => Some(choices),
+        CatalogProgramKind::ExactGravity(_) | CatalogProgramKind::ExactActions { .. } => None,
     }
 }

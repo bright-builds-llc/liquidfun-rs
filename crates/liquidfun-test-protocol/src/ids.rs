@@ -164,6 +164,8 @@ pub enum SemanticEntityKind {
     Fixture,
     /// A joint between rigid bodies.
     Joint,
+    /// A standalone rope simulation.
+    Rope,
     /// A particle system.
     ParticleSystem,
     /// A particle group.
