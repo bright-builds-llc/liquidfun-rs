@@ -1,6 +1,10 @@
 mod corpus;
 #[path = "inventory/corpus/discovery.rs"]
 mod corpus_discovery;
+#[path = "inventory/corpus/report.rs"]
+mod corpus_report;
+#[path = "inventory/corpus/validation.rs"]
+mod corpus_validation;
 mod discovery;
 mod report;
 mod validation;
@@ -29,7 +33,11 @@ Commands:
   corpus refresh
              Refresh reference/upstream-corpus.json from the verified pinned tree
   corpus check-snapshot
-             Validate canonical corpus snapshot bytes without reading third_party";
+             Validate canonical corpus snapshot bytes without reading third_party
+  corpus check-closure
+             Validate terminal corpus outcomes, cross-ledger joins, and report bytes
+  corpus generate-report
+             Generate UPSTREAM-CORPUS.md from validated corpus authority";
 const SCHEMA_VERSION: u64 = 1;
 const EVIDENCE_DIMENSIONS: [&str; 8] = [
     "investigated",
@@ -255,6 +263,12 @@ pub(crate) fn run(args: &[String]) -> Result<(), InventoryError> {
             println!("semantic corpus snapshot verified: {count} items");
             Ok(())
         }
+        [namespace, command] if namespace == "corpus" && command == "check-closure" => {
+            check_corpus_closure(&repository_root, &oracle_revision)
+        }
+        [namespace, command] if namespace == "corpus" && command == "generate-report" => {
+            generate_corpus_report(&repository_root, &oracle_revision)
+        }
         [command] => match command.as_str() {
             "discover" => discover(&repository_root, &oracle_revision),
             "generate" => generate(&repository_root, &oracle_revision),
@@ -268,6 +282,46 @@ pub(crate) fn run(args: &[String]) -> Result<(), InventoryError> {
             "expected a closed inventory command shape",
         )),
     }
+}
+
+fn check_corpus_closure(
+    repository_root: &Path,
+    oracle_revision: &str,
+) -> Result<(), InventoryError> {
+    let manifest = corpus_validation::load_and_validate(repository_root, oracle_revision)?;
+    let expected = corpus_report::render(&manifest);
+    require_exact_file(
+        &repository_root.join("UPSTREAM-CORPUS.md"),
+        &expected,
+        "semantic corpus report",
+        "run `cargo xtask inventory corpus generate-report`",
+    )
+    .map_err(|error| InventoryError::new("corpus-report", error.message))?;
+    println!(
+        "semantic corpus closure verified: {} items, 0 unresolved",
+        manifest.items().len()
+    );
+    Ok(())
+}
+
+fn generate_corpus_report(
+    repository_root: &Path,
+    oracle_revision: &str,
+) -> Result<(), InventoryError> {
+    let manifest = corpus_validation::load_and_validate(repository_root, oracle_revision)?;
+    let contents = corpus_report::render(&manifest);
+    let path = repository_root.join("UPSTREAM-CORPUS.md");
+    fs::write(&path, contents).map_err(|error| {
+        InventoryError::new(
+            "corpus-filesystem",
+            format!("failed to write {}: {error}", path.display()),
+        )
+    })?;
+    println!(
+        "semantic corpus report generated: {} items, 0 unresolved",
+        manifest.items().len()
+    );
+    Ok(())
 }
 
 fn discover(repository_root: &Path, oracle_revision: &str) -> Result<(), InventoryError> {

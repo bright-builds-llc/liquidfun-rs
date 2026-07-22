@@ -80,6 +80,27 @@ impl CorpusError {
     pub(crate) const fn category(&self) -> &'static str {
         self.kind.as_str()
     }
+
+    // The standalone corpus-model test includes this file without inventory consumers.
+    #[allow(dead_code)]
+    pub(crate) const fn inventory_category(&self) -> &'static str {
+        match self.kind {
+            CorpusErrorKind::CollectionLimit => "corpus-collection-limit",
+            CorpusErrorKind::DepthLimit => "corpus-depth-limit",
+            CorpusErrorKind::DuplicateId => "corpus-duplicate-id",
+            CorpusErrorKind::DuplicateSourceIdentity => "corpus-duplicate-source-identity",
+            CorpusErrorKind::Evidence => "corpus-evidence",
+            CorpusErrorKind::InputLimit => "corpus-input-limit",
+            CorpusErrorKind::ItemId => "corpus-item-id",
+            CorpusErrorKind::Path => "corpus-path",
+            CorpusErrorKind::Rationale => "corpus-rationale",
+            CorpusErrorKind::Review => "corpus-review",
+            CorpusErrorKind::Revision => "corpus-revision",
+            CorpusErrorKind::Schema => "corpus-schema",
+            CorpusErrorKind::SourceIdentity => "corpus-source-identity",
+            CorpusErrorKind::TerminalOutcome => "corpus-terminal-outcome",
+        }
+    }
 }
 
 impl Display for CorpusError {
@@ -144,6 +165,15 @@ impl CorpusKind {
             Self::UpstreamTest => "upstream-test.",
         }
     }
+
+    #[allow(dead_code)]
+    pub(crate) const fn as_str(self) -> &'static str {
+        match self {
+            Self::Example => "example",
+            Self::TestbedEntry => "testbed entry",
+            Self::UpstreamTest => "upstream test",
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -151,6 +181,16 @@ impl CorpusKind {
 pub(crate) enum Applicability {
     Applicable,
     ReviewedExclusion,
+}
+
+impl Applicability {
+    #[allow(dead_code)]
+    pub(crate) const fn as_str(self) -> &'static str {
+        match self {
+            Self::Applicable => "applicable",
+            Self::ReviewedExclusion => "reviewed exclusion",
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -174,6 +214,17 @@ impl TerminalDisposition {
             }
         }
     }
+
+    #[allow(dead_code)]
+    pub(crate) const fn as_str(self) -> &'static str {
+        match self {
+            Self::DocumentedDifference => "documented difference",
+            Self::EquivalentEvidence => "equivalent evidence",
+            Self::IntentionalNonSupport => "intentional non-support",
+            Self::NativePort => "native port",
+            Self::ReviewedIrrelevance => "reviewed irrelevance",
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -186,6 +237,19 @@ pub(crate) enum CompatibilityImpact {
     VisualOnly,
 }
 
+impl CompatibilityImpact {
+    #[allow(dead_code)]
+    pub(crate) const fn as_str(self) -> &'static str {
+        match self {
+            Self::Api => "API",
+            Self::Behavioral => "behavioral",
+            Self::None => "none",
+            Self::Tooling => "tooling",
+            Self::VisualOnly => "visual only",
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(rename_all = "snake_case")]
 pub(crate) enum EvidenceKind {
@@ -194,6 +258,19 @@ pub(crate) enum EvidenceKind {
     NativeTest,
     RegressionFixture,
     Review,
+}
+
+impl EvidenceKind {
+    #[allow(dead_code)]
+    pub(crate) const fn as_str(self) -> &'static str {
+        match self {
+            Self::CompatibilityLedger => "compatibility ledger",
+            Self::NativeScenario => "native scenario",
+            Self::NativeTest => "native test",
+            Self::RegressionFixture => "regression fixture",
+            Self::Review => "review",
+        }
+    }
 }
 
 #[derive(Clone, Debug, Serialize, PartialEq, Eq, PartialOrd, Ord)]
@@ -359,6 +436,7 @@ pub(crate) struct CorpusManifest {
     items: Vec<CorpusItem>,
 }
 
+#[allow(dead_code)]
 impl CorpusManifest {
     pub(super) fn from_raw(
         raw: RawCorpusManifest,
@@ -394,6 +472,79 @@ impl CorpusManifest {
             oracle_revision: raw.oracle_revision,
             items,
         })
+    }
+
+    pub(crate) fn oracle_revision(&self) -> &str {
+        &self.oracle_revision
+    }
+
+    pub(crate) fn items(&self) -> &[CorpusItem] {
+        &self.items
+    }
+}
+
+#[allow(dead_code)]
+impl CorpusItem {
+    pub(crate) fn id(&self) -> &str {
+        &self.id.0
+    }
+
+    pub(crate) const fn kind(&self) -> CorpusKind {
+        self.kind
+    }
+
+    pub(crate) fn source_path(&self) -> &str {
+        &self.source.path
+    }
+
+    pub(crate) fn source_symbol(&self) -> &str {
+        &self.source.symbol
+    }
+
+    pub(crate) const fn applicability(&self) -> Option<Applicability> {
+        self.applicability
+    }
+
+    pub(crate) const fn disposition(&self) -> Option<TerminalDisposition> {
+        self.disposition
+    }
+
+    pub(crate) const fn compatibility_impact(&self) -> Option<CompatibilityImpact> {
+        self.compatibility_impact
+    }
+
+    pub(crate) fn evidence(&self) -> Option<&[EvidenceMapping]> {
+        self.evidence.as_deref()
+    }
+
+    pub(crate) fn review(&self) -> Option<&ReviewRecord> {
+        self.review.as_ref()
+    }
+}
+
+#[allow(dead_code)]
+impl EvidenceMapping {
+    pub(crate) const fn kind(&self) -> EvidenceKind {
+        self.kind
+    }
+
+    pub(crate) fn reference(&self) -> &str {
+        &self.reference
+    }
+}
+
+#[allow(dead_code)]
+impl ReviewRecord {
+    pub(crate) fn reviewer(&self) -> &str {
+        &self.reviewer
+    }
+
+    pub(crate) fn reviewed_on(&self) -> &str {
+        &self.reviewed_on
+    }
+
+    pub(crate) fn rationale(&self) -> &str {
+        &self.rationale
     }
 }
 
