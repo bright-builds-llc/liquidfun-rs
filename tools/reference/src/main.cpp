@@ -1,4 +1,5 @@
 #include "build_identity.hpp"
+#include "catalog_run.hpp"
 #include "collision_probe.hpp"
 #include "math_probe.hpp"
 #include "oracle_adapter.hpp"
@@ -82,6 +83,7 @@ int run() {
   std::uint64_t math_probe_reset_epoch = 0;
   std::uint64_t collision_probe_reset_epoch = 0;
   liquidfun::reference::RigidWorldAdapter rigid_world_adapter;
+  liquidfun::reference::CatalogRunAdapter catalog_run_adapter;
   std::string line;
   while (liquidfun::reference::read_bounded_record(std::cin, line)) {
     try {
@@ -115,6 +117,14 @@ int run() {
       if (request_kind == liquidfun::reference::RequestKind::rigid_world) {
         const auto trace = rigid_world_adapter.execute(line);
         liquidfun::reference::write_record(std::cout, trace.result_record);
+        liquidfun::reference::write_record(std::cout, trace.end_record);
+        continue;
+      }
+      if (request_kind == liquidfun::reference::RequestKind::catalog_run) {
+        const auto trace = catalog_run_adapter.execute(line, identity_sha256);
+        for (const auto& checkpoint : trace.checkpoint_records) {
+          liquidfun::reference::write_record(std::cout, checkpoint);
+        }
         liquidfun::reference::write_record(std::cout, trace.end_record);
         continue;
       }

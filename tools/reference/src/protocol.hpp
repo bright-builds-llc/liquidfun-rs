@@ -25,7 +25,13 @@ inline constexpr std::size_t kMaximumIdBytes = 128;
 
 enum class ScenarioSourceKind { named, seeded };
 
-enum class RequestKind { scenario, math_probe, collision_probe, rigid_world };
+enum class RequestKind {
+  scenario,
+  math_probe,
+  collision_probe,
+  rigid_world,
+  catalog_run
+};
 
 struct ScenarioSource {
   ScenarioSourceKind kind = ScenarioSourceKind::named;

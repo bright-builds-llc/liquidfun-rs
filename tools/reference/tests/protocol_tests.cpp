@@ -1,4 +1,5 @@
 #include "collision_probe.hpp"
+#include "catalog_run.hpp"
 #include "oracle_adapter.hpp"
 #include "protocol.hpp"
 #include "rigid_world.hpp"
@@ -19,6 +20,199 @@
 #include <vector>
 
 namespace {
+
+void expect(bool condition, const std::string& message);
+
+nlohmann::json catalog_payload() {
+  return {
+      {"identity",
+       {{"catalog_schema_version", 1U},
+        {"slug", "cpp-catalog-smoke"},
+        {"scenario_version", 1U},
+        {"generator_id", "cpp-catalog-test"},
+        {"generator_version", 1U},
+        {"maybe_seed", nullptr},
+        {"settings",
+         {{"timestep_bits", 0x3c888889U},
+          {"velocity_iterations", 8U},
+          {"position_iterations", 3U},
+          {"particle_iterations", 2U}}}}},
+      {"entities",
+       {{{"semantic_id", {{"kind", "body"}, {"ordinal", 0U}}},
+         {"scenario_id", "entity-body-0000"}},
+        {{"semantic_id", {{"kind", "fixture"}, {"ordinal", 1U}}},
+         {"scenario_id", "entity-fixture-0001"}}}},
+      {"actions",
+       {{{"action_id", "action-0000"},
+         {"schedule", {{"kind", "setup"}, {"ordinal", 0U}}},
+         {"action", {{"kind", "create_body"},
+                     {"body_id", "entity-body-0000"}}}},
+        {{"action_id", "action-0001"},
+         {"schedule", {{"kind", "setup"}, {"ordinal", 1U}}},
+         {"action", {{"kind", "create_fixture"},
+                     {"fixture_id", "entity-fixture-0001"}}}},
+        {{"action_id", "action-0002"},
+         {"schedule", {{"kind", "logical_step"}, {"ordinal", 1U}}},
+         {"action",
+          {{"kind", "configured_step"},
+           {"timestep_bits", 0x3c888889U},
+           {"velocity_iterations", 8U},
+           {"position_iterations", 3U},
+           {"continuous_work_budget", 1U}}}}}},
+      {"checkpoints",
+       {{{"checkpoint_id", "checkpoint-0001"},
+         {"after_action_id", "action-0002"},
+         {"logical_step", 1U}}}}};
+}
+
+std::string catalog_request_from_payload(
+    const nlohmann::json& payload,
+    std::string_view identity_sha256) {
+  const auto payload_text = payload.dump();
+  const auto bytes = std::vector<std::uint8_t>(
+      payload_text.begin(), payload_text.end());
+  const auto resolved_sha256 = liquidfun::reference::sha256_hex(payload_text);
+  return nlohmann::json{
+      {"protocol_version", 1U},
+      {"record_kind", "catalog_run_request"},
+      {"request_id", "cpp-catalog-request"},
+      {"catalog_schema_version", 1U},
+      {"slug", "cpp-catalog-smoke"},
+      {"scenario_version", 1U},
+      {"generator_id", "cpp-catalog-test"},
+      {"generator_version", 1U},
+      {"maybe_seed", nullptr},
+      {"settings",
+       {{"timestep_bits", 0x3c888889U},
+        {"velocity_iterations", 8U},
+        {"position_iterations", 3U},
+        {"particle_iterations", 2U}}},
+      {"resolved_bytes", bytes},
+      {"resolved_sha256", resolved_sha256},
+      {"provenance_requirements",
+       {{"required_identity_sha256", identity_sha256},
+        {"limits_profile_sha256", std::string(64, 'b')},
+        {"evidence_tier", "d2_supported"}}}}
+      .dump() +
+      '\n';
+}
+
+std::string catalog_request(std::string_view identity_sha256) {
+  return catalog_request_from_payload(catalog_payload(), identity_sha256);
+}
+
+void catalog_run_executes_exact_resolved_bytes_and_reuses_cleanly() {
+  // Arrange
+  const auto identity_sha256 = std::string(64, 'a');
+  const auto request = catalog_request(identity_sha256);
+  liquidfun::reference::CatalogRunAdapter adapter;
+
+  // Act
+  const auto first = adapter.execute(request, identity_sha256);
+  const auto second = adapter.execute(request, identity_sha256);
+
+  // Assert
+  expect(first.reset_epoch == 1U, "first catalog reset epoch changed");
+  expect(second.reset_epoch == 2U, "second catalog reset epoch changed");
+  expect(first.checkpoint_records == second.checkpoint_records,
+         "catalog request leaked state across reuse");
+  expect(first.checkpoint_records.size() == 1U,
+         "catalog request emitted an unexpected checkpoint count");
+  const auto checkpoint = nlohmann::json::parse(first.checkpoint_records.at(0));
+  expect(checkpoint.at("record_kind") == "canonical_checkpoint",
+         "catalog checkpoint record kind changed");
+  expect(checkpoint.at("checkpoint_id") == "checkpoint-0001",
+         "catalog checkpoint identity changed");
+  expect(checkpoint.at("resolved_sha256") ==
+             nlohmann::json::parse(request).at("resolved_sha256"),
+         "catalog checkpoint lost exact resolved identity");
+  expect(checkpoint.size() == 14U &&
+             checkpoint.at("observations").size() == 6U &&
+             checkpoint.at("numeric_observations").empty() &&
+             checkpoint.at("ordered_occurrences").empty() &&
+             checkpoint.at("unordered_sets").empty() &&
+             checkpoint.at("debug_primitives").empty() &&
+             checkpoint.at("profile_names").empty(),
+         "catalog checkpoint diverged from the canonical schema");
+  expect(checkpoint.at("observations")[0]["value"]["value"] == 1U &&
+             checkpoint.at("observations")[3]["value"]["value"] == 1U,
+         "catalog rigid semantics lost stable body or fixture counts");
+  const auto text = first.checkpoint_records.at(0) + first.end_record;
+  for (const auto forbidden :
+       {"pointer", "dense_index", "arena_slot", "proxy_id", "duration"}) {
+    expect(text.find(forbidden) == std::string::npos,
+           "catalog result leaked private or nondeterministic state");
+  }
+}
+
+void catalog_run_rejects_hash_and_nested_shape_tampering() {
+  // Arrange
+  const auto identity_sha256 = std::string(64, 'a');
+  auto wrong_hash = nlohmann::json::parse(catalog_request(identity_sha256));
+  wrong_hash["resolved_sha256"] = std::string(64, 'f');
+  auto unknown_member_payload = catalog_payload();
+  unknown_member_payload["actions"][2]["action"]["private_row"] = 7U;
+  const auto unknown_member =
+      catalog_request_from_payload(unknown_member_payload, identity_sha256);
+  liquidfun::reference::CatalogRunAdapter adapter;
+
+  // Act / Assert
+  for (const auto& [record, expected] :
+       std::array<std::pair<std::string, std::string>, 2>{
+           std::pair{wrong_hash.dump() + '\n', "hash mismatch"},
+           std::pair{unknown_member, "invalid members"}}) {
+    try {
+      static_cast<void>(adapter.execute(record, identity_sha256));
+    } catch (const std::exception& error) {
+      expect(std::string(error.what()).find(expected) != std::string::npos,
+             "catalog tampering produced an unstable diagnostic");
+      continue;
+    }
+    throw std::runtime_error("tampered catalog request was accepted");
+  }
+}
+
+void catalog_run_rejection_does_not_poison_the_next_request() {
+  // Arrange
+  const auto identity_sha256 = std::string(64, 'a');
+  auto rejected = catalog_request(identity_sha256);
+  rejected.insert(1, "\"protocol_version\":1,");
+  const auto valid = catalog_request(identity_sha256);
+  liquidfun::reference::CatalogRunAdapter adapter;
+
+  // Act / Assert
+  try {
+    static_cast<void>(adapter.execute(rejected, identity_sha256));
+  } catch (const std::exception& error) {
+    expect(std::string(error.what()).find("duplicate member") !=
+               std::string::npos,
+           "duplicate catalog request produced an unstable diagnostic");
+    const auto recovered = adapter.execute(valid, identity_sha256);
+    expect(recovered.reset_epoch == 1U,
+           "rejected catalog request advanced reset state");
+    return;
+  }
+  throw std::runtime_error("duplicate catalog request was accepted");
+}
+
+void catalog_run_rejects_oversized_input_before_allocation() {
+  // Arrange
+  const auto identity_sha256 = std::string(64, 'a');
+  auto oversized = std::string(liquidfun::reference::kMaximumRecordBytes, 'x');
+  oversized.push_back('\n');
+  liquidfun::reference::CatalogRunAdapter adapter;
+
+  // Act / Assert
+  try {
+    static_cast<void>(adapter.execute(oversized, identity_sha256));
+  } catch (const std::exception& error) {
+    expect(std::string(error.what()).find("reviewed byte limit") !=
+               std::string::npos,
+           "oversized catalog input produced an unstable diagnostic");
+    return;
+  }
+  throw std::runtime_error("oversized catalog input was accepted");
+}
 
 using liquidfun::reference::BuildIdentity;
 using liquidfun::reference::OracleAdapter;
@@ -994,6 +1188,10 @@ void phase8_reactions_guard_uninitialized_solver_scratch() {
 
 int main() {
   try {
+    catalog_run_executes_exact_resolved_bytes_and_reuses_cleanly();
+    catalog_run_rejection_does_not_poison_the_next_request();
+    catalog_run_rejects_hash_and_nested_shape_tampering();
+    catalog_run_rejects_oversized_input_before_allocation();
     accepted_fixture_round_trips_exact_bits();
     framing_and_shape_fail_closed();
     unknown_versions_members_and_kinds_fail_closed();

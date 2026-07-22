@@ -994,6 +994,7 @@ RequestKind decode_request_kind(std::string_view record) {
   if (kind == "math_probe_request") return RequestKind::math_probe;
   if (kind == "collision_probe_request") return RequestKind::collision_probe;
   if (kind == "rigid_world_request") return RequestKind::rigid_world;
+  if (kind == "catalog_run_request") return RequestKind::catalog_run;
   throw std::runtime_error("unsupported record kind");
 }
 
