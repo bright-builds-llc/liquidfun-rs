@@ -45,6 +45,7 @@ fn verify_rejects_native_source_extensions() -> TestResult {
 struct PackageFixture {
     root: PathBuf,
     archive: PathBuf,
+    metadata: PathBuf,
     cargo_marker: PathBuf,
 }
 
@@ -61,12 +62,15 @@ impl PackageFixture {
             "[package]\nname = \"liquidfun\"\nversion = \"0.0.0\"\n",
         )?;
         fs::write(root.join("LICENSE"), "fixture license\n")?;
+        let metadata = root.join("metadata.json");
+        fs::write(&metadata, valid_metadata(&root))?;
         let archive = root.join("fixture.crate");
         write_archive(&archive, case)?;
         Ok(Self {
             cargo_marker: root.join("cargo-called"),
             root,
             archive,
+            metadata,
         })
     }
 
@@ -75,14 +79,82 @@ impl PackageFixture {
             .args(["package", "verify"])
             .env("LIQUIDFUN_XTASK_ROOT", &self.root)
             .env("LIQUIDFUN_XTASK_TEST_PACKAGE_ARCHIVE", &self.archive)
+            .env("LIQUIDFUN_XTASK_TEST_METADATA", &self.metadata)
             .env("LIQUIDFUN_XTASK_CARGO", fake_cargo()?)
             .env("LIQUIDFUN_TEST_CARGO_MARKER", &self.cargo_marker)
+            .env("LIQUIDFUN_TEST_ASSERT_PACKAGE_ISOLATION", "1")
+            .env("DISPLAY", ":99")
+            .env("WAYLAND_DISPLAY", "wayland-test")
             .output()
     }
 
     fn cleanup(self) -> io::Result<()> {
         fs::remove_dir_all(self.root)
     }
+}
+
+#[test]
+fn ci_keeps_the_focused_headless_gate_submodule_free_and_before_visual_work() {
+    // Arrange
+    let workflow = include_str!("../../../.github/workflows/ci.yml");
+
+    // Act
+    let gate = workflow
+        .find("Prove headless workflows and consumer package isolation")
+        .expect("CI should name the focused gate");
+    let package = workflow[gate..]
+        .find("cargo xtask package verify")
+        .expect("focused gate should verify the packaged crate");
+    let maybe_visual = workflow.find("visual");
+
+    // Assert
+    assert!(workflow.matches("submodules: false").count() >= 3);
+    assert!(workflow[gate..].contains("--test phase11_public_observability"));
+    assert!(workflow[gate..].contains("--test headless_catalog"));
+    assert!(workflow[gate..].contains("--test package_cli"));
+    assert!(maybe_visual.is_none_or(|visual| gate + package < visual));
+}
+
+#[test]
+fn verify_rejects_private_or_graphical_dependencies_from_consumer_metadata() -> TestResult {
+    // Arrange
+    let fixture = PackageFixture::new(ArchiveCase::Valid)?;
+    let mut metadata: serde_json::Value = serde_json::from_slice(&fs::read(&fixture.metadata)?)?;
+    metadata["packages"][0]["dependencies"] = serde_json::json!([{
+        "name": "liquidfun-differential",
+        "kind": null
+    }]);
+    fs::write(&fixture.metadata, serde_json::to_vec(&metadata)?)?;
+
+    // Act
+    let output = fixture.command()?;
+
+    // Assert
+    assert_failure_category(&output, "package/dependency-graph");
+    assert!(!fixture.cargo_marker.exists());
+    fixture.cleanup()?;
+    Ok(())
+}
+
+#[test]
+fn verify_rejects_more_than_one_default_publishable_package() -> TestResult {
+    // Arrange
+    let fixture = PackageFixture::new(ArchiveCase::Valid)?;
+    let mut metadata: serde_json::Value = serde_json::from_slice(&fs::read(&fixture.metadata)?)?;
+    metadata["workspace_default_members"] = serde_json::json!([
+        "liquidfun 0.0.0 (path+file:///fixture/liquidfun)",
+        "private 0.0.0"
+    ]);
+    fs::write(&fixture.metadata, serde_json::to_vec(&metadata)?)?;
+
+    // Act
+    let output = fixture.command()?;
+
+    // Assert
+    assert_failure_category(&output, "package/default-members");
+    assert!(!fixture.cargo_marker.exists());
+    fixture.cleanup()?;
+    Ok(())
 }
 
 #[test]
@@ -180,6 +252,23 @@ fn write_archive(path: &Path, case: ArchiveCase) -> io::Result<()> {
     let encoder = archive.into_inner()?;
     let _file = encoder.finish()?;
     Ok(())
+}
+
+fn valid_metadata(root: &Path) -> Vec<u8> {
+    let manifest_path = root.join("crates/liquidfun/Cargo.toml");
+    serde_json::to_vec(&serde_json::json!({
+        "packages": [{
+            "id": "liquidfun 0.0.0 (path+file:///fixture/liquidfun)",
+            "name": "liquidfun",
+            "publish": null,
+            "manifest_path": manifest_path,
+            "dependencies": [{"name": "bitflags", "kind": null}],
+            "features": {"default": [], "differential-internals": []}
+        }],
+        "workspace_members": ["liquidfun 0.0.0 (path+file:///fixture/liquidfun)"],
+        "workspace_default_members": ["liquidfun 0.0.0 (path+file:///fixture/liquidfun)"]
+    }))
+    .expect("fixture metadata should serialize")
 }
 
 fn append_file<W: io::Write>(

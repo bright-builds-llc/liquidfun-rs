@@ -11,12 +11,16 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use flate2::read::GzDecoder;
 
+mod metadata;
+
 const USAGE: &str = "Usage: cargo xtask package verify";
 const FORBIDDEN_PREFIXES: [&str; 3] = ["tools", "third_party", "reference"];
 const FORBIDDEN_EXTENSIONS: [&str; 11] = [
     "c", "cc", "cpp", "cxx", "h", "hh", "hpp", "hxx", "s", "asm", "cmake",
 ];
 static TEMP_ID: AtomicU64 = AtomicU64::new(0);
+const MAXIMUM_ARCHIVE_ENTRIES: usize = 10_000;
+const MAXIMUM_ARCHIVE_UNPACKED_BYTES: u64 = 64 * 1024 * 1024;
 
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) struct PackageError {
@@ -90,6 +94,8 @@ pub(crate) fn run(args: &[String]) -> Result<(), PackageError> {
 }
 
 fn verify(repository_root: &Path) -> Result<(), PackageError> {
+    metadata::verify_workspace(repository_root, &cargo_program())?;
+    verify_packaged_test_evidence(repository_root)?;
     let identity = read_package_identity(repository_root)?;
     let archive_path = package_archive(repository_root, &identity)?;
     let package_prefix = format!("{}-{}", identity.name, identity.version);
@@ -103,6 +109,7 @@ fn verify(repository_root: &Path) -> Result<(), PackageError> {
             format!("archive did not contain {package_prefix}/Cargo.toml"),
         ));
     }
+    metadata::verify_packaged_manifest(&unpacked_crate.join("Cargo.toml"))?;
     verify_license(repository_root, &unpacked_crate)?;
     build_and_test(&unpacked_crate, &temporary_directory.path)?;
     println!(
@@ -132,8 +139,19 @@ fn package_archive(
         None,
         "create Cargo package",
     )?;
-    let path = repository_root.join(format!(
-        "target/package/{}-{}.crate",
+    let target_directory = env::var_os("CARGO_TARGET_DIR").map_or_else(
+        || repository_root.join("target"),
+        |path| {
+            let path = PathBuf::from(path);
+            if path.is_absolute() {
+                path
+            } else {
+                repository_root.join(path)
+            }
+        },
+    );
+    let path = target_directory.join(format!(
+        "package/{}-{}.crate",
         identity.name, identity.version
     ));
     if !path.is_file() {
@@ -164,7 +182,14 @@ fn inspect_archive(
             format!("failed to read {}: {error}", archive_path.display()),
         )
     })?;
-    for maybe_entry in entries {
+    let mut unpacked_bytes = 0_u64;
+    for (index, maybe_entry) in entries.enumerate() {
+        if index >= MAXIMUM_ARCHIVE_ENTRIES {
+            return Err(PackageError::new(
+                "archive-limit",
+                "package archive exceeds the reviewed entry limit",
+            ));
+        }
         let entry = maybe_entry.map_err(|error| {
             PackageError::new("archive", format!("invalid archive entry: {error}"))
         })?;
@@ -173,6 +198,17 @@ fn inspect_archive(
             return Err(PackageError::new(
                 "archive-type",
                 "package archives may contain only regular files and directories",
+            ));
+        }
+        unpacked_bytes = unpacked_bytes
+            .checked_add(entry.header().size().map_err(|error| {
+                PackageError::new("archive", format!("invalid archive entry size: {error}"))
+            })?)
+            .ok_or_else(|| PackageError::new("archive-limit", "archive size overflow"))?;
+        if unpacked_bytes > MAXIMUM_ARCHIVE_UNPACKED_BYTES {
+            return Err(PackageError::new(
+                "archive-limit",
+                "package archive exceeds the reviewed unpacked byte limit",
             ));
         }
         let path = entry
@@ -338,6 +374,42 @@ fn build_and_test(unpacked_crate: &Path, temporary_root: &Path) -> Result<(), Pa
     Ok(())
 }
 
+fn verify_packaged_test_evidence(repository_root: &Path) -> Result<(), PackageError> {
+    if env::var_os("LIQUIDFUN_XTASK_TEST_PACKAGE_ARCHIVE").is_some() {
+        return Ok(());
+    }
+    for file_name in [
+        "group-topology-witnesses.json",
+        "group-topology-witnesses.provenance.json",
+    ] {
+        let canonical = repository_root
+            .join("reference/artifacts/phase10")
+            .join(file_name);
+        let packaged = repository_root
+            .join("crates/liquidfun/src/particle/testdata")
+            .join(file_name);
+        let canonical_bytes = fs::read(&canonical).map_err(|error| {
+            PackageError::new(
+                "test-evidence",
+                format!("failed to read {}: {error}", canonical.display()),
+            )
+        })?;
+        let packaged_bytes = fs::read(&packaged).map_err(|error| {
+            PackageError::new(
+                "test-evidence",
+                format!("failed to read {}: {error}", packaged.display()),
+            )
+        })?;
+        if packaged_bytes != canonical_bytes {
+            return Err(PackageError::new(
+                "test-evidence",
+                format!("packaged test evidence `{file_name}` differs from its reviewed source"),
+            ));
+        }
+    }
+    Ok(())
+}
+
 fn read_package_identity(repository_root: &Path) -> Result<PackageIdentity, PackageError> {
     let path = repository_root.join("crates/liquidfun/Cargo.toml");
     let contents = fs::read_to_string(&path).map_err(|error| {
@@ -377,6 +449,21 @@ fn run_process<'a>(
 ) -> Result<(), PackageError> {
     let mut command = Command::new(program);
     command.args(args).current_dir(current_dir);
+    for variable in [
+        "DISPLAY",
+        "WAYLAND_DISPLAY",
+        "MIR_SOCKET",
+        "XDG_RUNTIME_DIR",
+        "PWD",
+        "OLDPWD",
+        "CARGO_MANIFEST_DIR",
+        "CARGO_WORKSPACE_DIR",
+        "LIQUIDFUN_XTASK_ROOT",
+        "LIQUIDFUN_XTASK_TEST_PACKAGE_ARCHIVE",
+        "LIQUIDFUN_XTASK_TEST_METADATA",
+    ] {
+        command.env_remove(variable);
+    }
     if let Some(target_dir) = maybe_target_dir {
         command.env("CARGO_TARGET_DIR", target_dir);
     }

@@ -214,7 +214,7 @@ fn collapsed_barrier_pair_preserves_probe_backed_finite_noop() {
     );
     let witness = include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
-        "/../../reference/artifacts/phase10/group-topology-witnesses.json"
+        "/src/particle/testdata/group-topology-witnesses.json"
     ));
 
     // Act

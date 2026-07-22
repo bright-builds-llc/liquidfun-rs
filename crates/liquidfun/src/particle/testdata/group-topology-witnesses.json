@@ -1,0 +1,396 @@
+{
+  "cases": [
+    {
+      "decision": "preserve_source_behavior",
+      "id": "split_created_metadata",
+      "input_bits": {
+        "angle": "0x3e800000",
+        "group_flags": 5,
+        "position": {
+          "x": "0x3fa00000",
+          "y": "0xc0200000"
+        },
+        "positions": [
+          {
+            "x": "0x00000000",
+            "y": "0x00000000"
+          },
+          {
+            "x": "0x3f000000",
+            "y": "0x00000000"
+          },
+          {
+            "x": "0x40800000",
+            "y": "0x00000000"
+          },
+          {
+            "x": "0x40900000",
+            "y": "0x00000000"
+          }
+        ],
+        "strength": "0x3ec00000",
+        "user_data_present": true
+      },
+      "outcome": {
+        "cached_statistics": {
+          "angular_velocity_bits": "0x00000000",
+          "center_bits": {
+            "x": "0x00000000",
+            "y": "0x00000000"
+          },
+          "inertia_bits": "0x00000000",
+          "linear_velocity_bits": {
+            "x": "0x00000000",
+            "y": "0x00000000"
+          },
+          "mass_bits": "0x00000000",
+          "timestamp": -1
+        },
+        "cached_statistics_are_exact_zero": true,
+        "group_count": 2,
+        "members": [
+          {
+            "dense_index": 4,
+            "position_bits": {
+              "x": "0x40a40552",
+              "y": "0xbfc15444"
+            }
+          },
+          {
+            "dense_index": 5,
+            "position_bits": {
+              "x": "0x40b385fd",
+              "y": "0xbfb17ecd"
+            }
+          }
+        ],
+        "public_group_flags": 5,
+        "range": {
+          "first": 4,
+          "last": 6
+        },
+        "raw_group_flags": 21,
+        "strength_bits": "0x3f800000",
+        "transform_bits": {
+          "position": {
+            "x": "0x00000000",
+            "y": "0x00000000"
+          },
+          "rotation": {
+            "cos": "0x3f800000",
+            "sin": "0x00000000"
+          }
+        },
+        "user_data_preserved": true
+      }
+    },
+    {
+      "decision": "typed_error",
+      "id": "zero_length_pair",
+      "input_bits": {
+        "position_a": {
+          "x": "0x00000000",
+          "y": "0x00000000"
+        },
+        "position_b": {
+          "x": "0x00000000",
+          "y": "0x00000000"
+        },
+        "step_dt": "0x3c888889",
+        "strength": "0x3f000000",
+        "velocity_a": {
+          "x": "0x00000000",
+          "y": "0x00000000"
+        },
+        "velocity_b": {
+          "x": "0x00000000",
+          "y": "0x00000000"
+        }
+      },
+      "outcome": {
+        "all_finite": false,
+        "distance_bits": "0x00000000",
+        "pair_count": 1,
+        "velocity_a": {
+          "bits": {
+            "x": "0x7fc00000",
+            "y": "0x7fc00000"
+          },
+          "classification": {
+            "x": "nan",
+            "y": "nan"
+          }
+        },
+        "velocity_b": {
+          "bits": {
+            "x": "0x7fc00000",
+            "y": "0x7fc00000"
+          },
+          "classification": {
+            "x": "nan",
+            "y": "nan"
+          }
+        }
+      },
+      "typed_invariant": "zero_length_pair_distance"
+    },
+    {
+      "decision": "preserve_source_behavior",
+      "id": "degenerate_triad",
+      "input_bits": {
+        "ka": "0x00000000",
+        "kb": "0x00000000",
+        "kc": "0x00000000",
+        "pa": {
+          "x": "0x00000000",
+          "y": "0x00000000"
+        },
+        "pb": {
+          "x": "0x00000000",
+          "y": "0x00000000"
+        },
+        "pc": {
+          "x": "0x00000000",
+          "y": "0x00000000"
+        },
+        "position_a": {
+          "x": "0x00000000",
+          "y": "0x00000000"
+        },
+        "position_b": {
+          "x": "0x00000000",
+          "y": "0x00000000"
+        },
+        "position_c": {
+          "x": "0x00000000",
+          "y": "0x00000000"
+        },
+        "s": "0x00000000",
+        "strength": "0x3f400000"
+      },
+      "outcome": {
+        "all_finite": true,
+        "triad_count": 1,
+        "velocity_a": {
+          "bits": {
+            "x": "0x00000000",
+            "y": "0x00000000"
+          },
+          "classification": {
+            "x": "finite",
+            "y": "finite"
+          }
+        },
+        "velocity_b": {
+          "bits": {
+            "x": "0x00000000",
+            "y": "0x00000000"
+          },
+          "classification": {
+            "x": "finite",
+            "y": "finite"
+          }
+        },
+        "velocity_c": {
+          "bits": {
+            "x": "0x00000000",
+            "y": "0x00000000"
+          },
+          "classification": {
+            "x": "finite",
+            "y": "finite"
+          }
+        }
+      },
+      "typed_invariant": null
+    },
+    {
+      "decision": "preserve_source_behavior",
+      "id": "barrier_pair",
+      "input_bits": {
+        "endpoint_a": {
+          "x": "0x00000000",
+          "y": "0x00000000"
+        },
+        "endpoint_b": {
+          "x": "0x00000000",
+          "y": "0x00000000"
+        },
+        "particle_c": {
+          "x": "0x3e800000",
+          "y": "0x00000000"
+        },
+        "step_dt": "0x3c888889",
+        "velocity_a": {
+          "x": "0x00000000",
+          "y": "0x00000000"
+        },
+        "velocity_b": {
+          "x": "0x00000000",
+          "y": "0x00000000"
+        },
+        "velocity_c": {
+          "x": "0x00000000",
+          "y": "0x00000000"
+        }
+      },
+      "outcome": {
+        "all_finite": true,
+        "pair_count": 1,
+        "pending_force": false,
+        "velocity_a": {
+          "bits": {
+            "x": "0x00000000",
+            "y": "0x00000000"
+          },
+          "classification": {
+            "x": "finite",
+            "y": "finite"
+          }
+        },
+        "velocity_b": {
+          "bits": {
+            "x": "0x00000000",
+            "y": "0x00000000"
+          },
+          "classification": {
+            "x": "finite",
+            "y": "finite"
+          }
+        },
+        "velocity_c": {
+          "bits": {
+            "x": "0x00000000",
+            "y": "0x00000000"
+          },
+          "classification": {
+            "x": "finite",
+            "y": "finite"
+          }
+        }
+      },
+      "typed_invariant": null
+    },
+    {
+      "decision": "typed_error",
+      "id": "voronoi_no_necessary_generator",
+      "input_bits": {
+        "generators": [
+          {
+            "center": {
+              "x": "0x00000000",
+              "y": "0x00000000"
+            },
+            "necessary": false
+          },
+          {
+            "center": {
+              "x": "0x3f800000",
+              "y": "0x00000000"
+            },
+            "necessary": false
+          }
+        ],
+        "margin": "0x3f800000",
+        "radius": "0x3f000000"
+      },
+      "outcome": {
+        "all_finite": true,
+        "count_x": -2147483647,
+        "count_y": -2147483647,
+        "node_count": 0,
+        "termination": "returned",
+        "valid_positive_grid": false
+      },
+      "typed_invariant": "voronoi_requires_necessary_generator"
+    },
+    {
+      "decision": "preserve_source_behavior",
+      "id": "rigid_group_empty",
+      "input_bits": {
+        "group_flags": 6,
+        "particle_count": 0,
+        "step_dt": "0x3c888889"
+      },
+      "outcome": {
+        "all_finite": true,
+        "angular_velocity_bits": "0x00000000",
+        "center_bits": {
+          "x": "0x00000000",
+          "y": "0x00000000"
+        },
+        "inertia_bits": "0x00000000",
+        "linear_velocity_bits": {
+          "x": "0x00000000",
+          "y": "0x00000000"
+        },
+        "mass_bits": "0x00000000",
+        "transform_bits": {
+          "position": {
+            "x": "0x00000000",
+            "y": "0x00000000"
+          },
+          "rotation": {
+            "cos": "0x3f800000",
+            "sin": "0x00000000"
+          }
+        }
+      },
+      "typed_invariant": null
+    },
+    {
+      "decision": "preserve_source_behavior",
+      "id": "rigid_group_one_particle",
+      "input_bits": {
+        "angular_velocity": "0x40000000",
+        "group_flags": 2,
+        "linear_velocity": {
+          "x": "0x3fc00000",
+          "y": "0xbe800000"
+        },
+        "position": {
+          "x": "0x40000000",
+          "y": "0xc0400000"
+        },
+        "step_dt": "0x3c888889"
+      },
+      "outcome": {
+        "all_finite": true,
+        "angular_velocity_bits": "0x00000000",
+        "center_bits": {
+          "x": "0x40000000",
+          "y": "0xc0400000"
+        },
+        "inertia_bits": "0x00000000",
+        "linear_velocity_bits": {
+          "x": "0x40f00000",
+          "y": "0x40700000"
+        },
+        "mass_bits": "0x3f100000",
+        "particle_velocity": {
+          "bits": {
+            "x": "0x40f00000",
+            "y": "0x40700000"
+          },
+          "classification": {
+            "x": "finite",
+            "y": "finite"
+          }
+        },
+        "transform_bits": {
+          "position": {
+            "x": "0x3e000000",
+            "y": "0x3d800000"
+          },
+          "rotation": {
+            "cos": "0x3f800000",
+            "sin": "0x00000000"
+          }
+        }
+      },
+      "typed_invariant": null
+    }
+  ],
+  "oracle_revision": "7f20402173fd143a3988c921bc384459c6a858f2",
+  "schema_version": 1
+}

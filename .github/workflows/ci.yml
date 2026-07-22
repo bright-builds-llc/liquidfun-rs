@@ -56,6 +56,12 @@ jobs:
         run: cargo build --workspace --all-targets --all-features
       - name: Test the workspace
         run: cargo test --workspace --all-features
+      - name: Prove headless workflows and consumer package isolation
+        run: |
+          cargo test -p liquidfun --all-features --test phase11_public_observability
+          cargo test -p liquidfun-differential --test headless_catalog
+          cargo test -p xtask --test package_cli
+          cargo xtask package verify
       - name: Test protocol schema and fixture contracts
         run: |
           cargo test -p liquidfun-test-protocol --all-features --lib schema::tests
@@ -78,11 +84,6 @@ jobs:
         run: cargo doc --workspace --all-features --no-deps
       - name: Exercise inventory checks without the native reference tree
         run: cargo test -p xtask --test inventory_cli
-      - name: List the consumer package
-        run: cargo package -p liquidfun --list
-      - name: Verify unpacked package isolation
-        run: cargo xtask package verify
-
   default-features:
     name: Default features (${{ matrix.os }})
     runs-on: ${{ matrix.os }}

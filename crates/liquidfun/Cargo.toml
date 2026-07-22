@@ -7,7 +7,7 @@ rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 readme.workspace = true
-include = ["Cargo.toml", "src/**/*.rs", "LICENSE", "README.md"]
+include = ["Cargo.toml", "src/**/*.rs", "src/**/*.json", "LICENSE", "README.md"]
 
 [features]
 default = []

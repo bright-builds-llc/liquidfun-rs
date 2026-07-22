@@ -182,11 +182,11 @@ fn zero_length_spring_is_probe_backed_typed_error_but_barrier_is_noop() {
     let barrier = pair([0, 1], ParticleFlags::BARRIER, 0.0);
     let witness = include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
-        "/../../reference/artifacts/phase10/group-topology-witnesses.json"
+        "/src/particle/testdata/group-topology-witnesses.json"
     ));
     let provenance = include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
-        "/../../reference/artifacts/phase10/group-topology-witnesses.provenance.json"
+        "/src/particle/testdata/group-topology-witnesses.provenance.json"
     ));
 
     // Act
@@ -232,7 +232,7 @@ fn degenerate_triad_preserves_probe_backed_finite_zero_behavior() {
     let degenerate = triad([0, 1, 2], [Vec2::ZERO; 3]);
     let witness = include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
-        "/../../reference/artifacts/phase10/group-topology-witnesses.json"
+        "/src/particle/testdata/group-topology-witnesses.json"
     ));
 
     // Act

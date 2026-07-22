@@ -369,11 +369,11 @@ fn empty_and_one_particle_probe_classifications_are_preserved() {
     let one = one_fixture.group(0, 0..1, ParticleGroupFlags::RIGID);
     let witness = include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
-        "/../../reference/artifacts/phase10/group-topology-witnesses.json"
+        "/src/particle/testdata/group-topology-witnesses.json"
     ));
     let provenance = include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
-        "/../../reference/artifacts/phase10/group-topology-witnesses.provenance.json"
+        "/src/particle/testdata/group-topology-witnesses.provenance.json"
     ));
 
     // Act
