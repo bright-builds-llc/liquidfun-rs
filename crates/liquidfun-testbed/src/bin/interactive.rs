@@ -32,7 +32,7 @@ use liquidfun_testbed::ui::protocol_viewport::{
 };
 use liquidfun_testbed::ui::settings::{SettingsEditor, SettingsField};
 use liquidfun_testbed::ui::viewport::Camera;
-use liquidfun_testbed::ui::{ProvenanceInput, build_about_panel};
+use liquidfun_testbed::ui::{AboutPanel, ProvenanceInput, build_about_panel};
 use macroquad::prelude::*;
 
 const BACKGROUND: Color = Color::new(0.051, 0.067, 0.090, 1.0);
@@ -134,6 +134,9 @@ struct DesktopApp {
     diagnostics_visible: bool,
     comparison_mode: ComparisonMode,
     focused_difference: usize,
+    focused_about_link: usize,
+    maybe_link_status: Option<String>,
+    modal_focus_routed_this_frame: bool,
 }
 
 impl DesktopApp {
@@ -187,13 +190,19 @@ impl DesktopApp {
             diagnostics_visible: true,
             comparison_mode: ComparisonMode::Overlay,
             focused_difference: 0,
+            focused_about_link: 0,
+            maybe_link_status: None,
+            modal_focus_routed_this_frame: false,
         })
     }
 
     fn update(&mut self) {
+        self.modal_focus_routed_this_frame = false;
         self.handle_search_input();
         self.handle_focus_input();
         self.handle_panel_input();
+        self.handle_about_input();
+        self.handle_shortcut_help_input();
         self.handle_scenario_navigation();
         self.handle_controller_input();
         self.handle_settings_input();
@@ -263,6 +272,7 @@ impl DesktopApp {
         if !is_key_pressed(KeyCode::Tab) && !is_key_pressed(KeyCode::Enter) {
             return;
         }
+        self.modal_focus_routed_this_frame = true;
         match self.open_panel {
             OpenPanel::Scenario => {
                 self.focus_return.move_to(FocusId::ScenarioSearch);
@@ -286,8 +296,36 @@ impl DesktopApp {
                     },
                 );
             }
-            OpenPanel::About => self.focus_return.move_to(FocusId::AboutLink),
-            OpenPanel::ShortcutHelp => self.focus_return.move_to(FocusId::ShortcutHelp),
+            OpenPanel::About => {
+                let link_count = self.about_panel().links().len();
+                if link_count == 0 {
+                    return;
+                }
+                if is_key_pressed(KeyCode::Tab) {
+                    let backwards =
+                        is_key_down(KeyCode::LeftShift) || is_key_down(KeyCode::RightShift);
+                    self.focused_about_link =
+                        if self.focus_return.current() == Some(FocusId::AboutHeading) {
+                            if backwards { link_count - 1 } else { 0 }
+                        } else if backwards {
+                            (self.focused_about_link + link_count - 1) % link_count
+                        } else {
+                            (self.focused_about_link + 1) % link_count
+                        };
+                    self.focus_return.move_to(FocusId::AboutLink);
+                } else if self.focus_return.current() == Some(FocusId::AboutLink) {
+                    self.copy_focused_about_link();
+                } else {
+                    self.focused_about_link = 0;
+                    self.focus_return.move_to(FocusId::AboutLink);
+                }
+            }
+            OpenPanel::ShortcutHelp => {
+                self.focus_return.move_to(FocusId::ShortcutHelp);
+                if is_key_pressed(KeyCode::Enter) {
+                    self.close_modal();
+                }
+            }
             OpenPanel::None => {}
         }
     }
@@ -482,11 +520,75 @@ impl DesktopApp {
     }
 
     fn open_about(&mut self) {
+        self.focused_about_link = 0;
+        self.maybe_link_status = None;
         self.open_modal(
             OpenPanel::About,
             FocusId::AboutButton,
             FocusId::AboutHeading,
         );
+    }
+
+    fn about_panel(&self) -> AboutPanel {
+        let target = format!("{}-{}", env::consts::ARCH, env::consts::OS);
+        let maybe_run_identity = self
+            .testbed
+            .selected()
+            .map(|selected| selected.identity().content_sha256().as_str());
+        let maybe_oracle_identity = self
+            .maybe_oracle
+            .as_ref()
+            .map(|checkpoint| checkpoint.resolved_sha256().as_str());
+        build_about_panel(ProvenanceInput {
+            version: Some(env!("CARGO_PKG_VERSION")),
+            commit: option_env!("LIQUIDFUN_BUILD_COMMIT"),
+            profile: option_env!("PROFILE"),
+            target: Some(&target),
+            rust_toolchain: Some("Rust 1.97.0"),
+            protocol_version: Some("phase11-v1"),
+            adapter_version: Some(env!("CARGO_PKG_VERSION")),
+            run_identity: maybe_run_identity,
+            oracle_revision: maybe_oracle_identity,
+            oracle_compiler: None,
+            oracle_preset: None,
+            evidence_tier: self
+                .maybe_oracle
+                .as_ref()
+                .map(|_| "diagnostic comparison; not compatibility authority"),
+        })
+    }
+
+    fn copy_focused_about_link(&mut self) {
+        let about = self.about_panel();
+        let Some(link) = about.links().get(self.focused_about_link) else {
+            return;
+        };
+        macroquad::miniquad::window::clipboard_set(link.url());
+        self.maybe_link_status = Some(format!("Copied {} URL", link.label()));
+    }
+
+    fn handle_about_input(&mut self) {
+        if self.open_panel != OpenPanel::About || !is_mouse_button_pressed(MouseButton::Left) {
+            return;
+        }
+        let mouse = mouse_position();
+        let link_count = self.about_panel().links().len();
+        let maybe_index =
+            (0..link_count).find(|index| point_in_rect(mouse, about_link_bounds(*index)));
+        if let Some(index) = maybe_index {
+            self.focused_about_link = index;
+            self.focus_return.move_to(FocusId::AboutLink);
+            self.copy_focused_about_link();
+        }
+    }
+
+    fn handle_shortcut_help_input(&mut self) {
+        if self.open_panel == OpenPanel::ShortcutHelp
+            && is_mouse_button_pressed(MouseButton::Left)
+            && point_in_rect(mouse_position(), shortcut_close_bounds())
+        {
+            self.close_modal();
+        }
     }
 
     fn handle_scenario_navigation(&mut self) {
@@ -522,6 +624,13 @@ impl DesktopApp {
         let scenario_region = responsive.shell().region(ShellRegion::ScenarioRail);
         let (region_x, region_y, region_width, _) = rect(scenario_region);
         let (mouse_x, mouse_y) = mouse_position();
+        if is_mouse_button_pressed(MouseButton::Left)
+            && point_in_rect((mouse_x, mouse_y), scenario_search_bounds(scenario_region))
+        {
+            self.editing_query = true;
+            self.focus_return.move_to(FocusId::ScenarioSearch);
+            return;
+        }
         let maybe_clicked = self
             .testbed
             .visible_rows()
@@ -532,7 +641,7 @@ impl DesktopApp {
                 let Ok(row_index) = u16::try_from(*index) else {
                     return false;
                 };
-                let row_y = region_y + 44.0 + f32::from(row_index) * ROW_HEIGHT;
+                let row_y = region_y + 56.0 + f32::from(row_index) * ROW_HEIGHT;
                 (region_x..region_x + region_width).contains(&mouse_x)
                     && (row_y..row_y + ROW_HEIGHT).contains(&mouse_y)
             })
@@ -698,7 +807,11 @@ impl DesktopApp {
             }
             PresentationAction::PreviousDifference => self.move_difference(-1),
             PresentationAction::NextDifference => self.move_difference(1),
-            PresentationAction::OpenShortcutHelp => self.open_panel = OpenPanel::ShortcutHelp,
+            PresentationAction::OpenShortcutHelp => self.open_modal(
+                OpenPanel::ShortcutHelp,
+                FocusId::AboutButton,
+                FocusId::ShortcutHelp,
+            ),
         }
     }
 
@@ -737,6 +850,9 @@ impl DesktopApp {
 
     fn handle_settings_input(&mut self) {
         if self.open_panel != OpenPanel::Settings {
+            return;
+        }
+        if self.modal_focus_routed_this_frame {
             return;
         }
         if is_key_pressed(KeyCode::Escape) {
@@ -1040,18 +1156,26 @@ impl DesktopApp {
         } else {
             BORDER
         };
-        draw_rectangle_lines(x + 8.0, y + 8.0, width - 16.0, 36.0, 2.0, search_color);
+        let search_bounds = scenario_search_bounds(region);
+        draw_rectangle_lines(
+            search_bounds.0,
+            search_bounds.1,
+            search_bounds.2,
+            search_bounds.3,
+            2.0,
+            search_color,
+        );
         let search = if self.query.is_empty() {
             "Search scenarios (/)"
         } else {
             &self.query
         };
-        draw_text(search, x + 16.0, y + 32.0, SMALL_FONT, MUTED);
+        draw_text(search, x + 16.0, y + 36.0, SMALL_FONT, MUTED);
         for (index, row) in self.testbed.visible_rows().iter().take(14).enumerate() {
             let Ok(row_index) = u16::try_from(index) else {
                 continue;
             };
-            let row_y = y + 44.0 + f32::from(row_index) * ROW_HEIGHT;
+            let row_y = y + 56.0 + f32::from(row_index) * ROW_HEIGHT;
             let selected = self
                 .testbed
                 .current_selection()
@@ -1532,32 +1656,7 @@ impl DesktopApp {
         reason = "the About surface intentionally renders one bounded complete provenance record"
     )]
     fn draw_about_panel(&self) {
-        let target = format!("{}-{}", env::consts::ARCH, env::consts::OS);
-        let maybe_run_identity = self
-            .testbed
-            .selected()
-            .map(|selected| selected.identity().content_sha256().as_str());
-        let maybe_oracle_identity = self
-            .maybe_oracle
-            .as_ref()
-            .map(|checkpoint| checkpoint.resolved_sha256().as_str());
-        let about = build_about_panel(ProvenanceInput {
-            version: Some(env!("CARGO_PKG_VERSION")),
-            commit: option_env!("LIQUIDFUN_BUILD_COMMIT"),
-            profile: option_env!("PROFILE"),
-            target: Some(&target),
-            rust_toolchain: Some("Rust 1.97.0"),
-            protocol_version: Some("phase11-v1"),
-            adapter_version: Some(env!("CARGO_PKG_VERSION")),
-            run_identity: maybe_run_identity,
-            oracle_revision: maybe_oracle_identity,
-            oracle_compiler: None,
-            oracle_preset: None,
-            evidence_tier: self
-                .maybe_oracle
-                .as_ref()
-                .map(|_| "diagnostic comparison; not compatibility authority"),
-        });
+        let about = self.about_panel();
         let panel = centered_panel(720.0, 610.0);
         draw_rectangle(panel.0, panel.1, panel.2, panel.3, PANEL);
         draw_rectangle_lines(
@@ -1611,13 +1710,13 @@ impl DesktopApp {
             MUTED,
         );
         line(
-            &format!("Run identity: {}", shorten(about.run_identity(), 48)),
+            &format!("Run identity: {}", shorten(about.run_identity(), 36)),
             panel.0 + 8.0,
             &mut y,
             MUTED,
         );
         line(
-            &format!("Oracle: {}", shorten(about.oracle_identity(), 72)),
+            &format!("Oracle: {}", shorten(about.oracle_identity(), 40)),
             panel.0 + 8.0,
             &mut y,
             MUTED,
@@ -1628,23 +1727,34 @@ impl DesktopApp {
             &mut y,
             MUTED,
         );
-        y += 8.0;
-        for link in about.links() {
-            line(
-                &format!("{} — {}", link.label(), link.url()),
-                panel.0 + 8.0,
-                &mut y,
+        for (index, link) in about.links().iter().enumerate() {
+            let bounds = about_link_bounds(index);
+            draw_accessible_button(
+                bounds,
+                link.label(),
+                self.focus_return.current() == Some(FocusId::AboutLink)
+                    && self.focused_about_link == index,
+                false,
+            );
+            draw_text(
+                shorten(link.url(), 42),
+                bounds.0 + 4.0,
+                bounds.1 + bounds.3 + 16.0,
+                12.0,
                 ACCENT,
             );
         }
-        line(
-            "URLs remain visible and copyable when platform opening is unavailable.",
-            panel.0 + 8.0,
-            &mut y,
-            MUTED,
-        );
+        if let Some(status) = self.maybe_link_status.as_deref() {
+            draw_text(
+                status,
+                panel.0 + panel.2 * 0.5,
+                panel.1 + panel.3 - 18.0,
+                12.0,
+                TEXT,
+            );
+        }
         draw_text(
-            "Escape closes and returns focus",
+            "Tab selects a link; Enter or click copies its visible URL; Escape closes",
             panel.0 + 24.0,
             panel.1 + panel.3 - 18.0,
             12.0,
@@ -1652,13 +1762,9 @@ impl DesktopApp {
         );
     }
 
-    fn draw_shortcut_help(&self, width: u32, height: u32) {
-        let panel_width = 520.0;
-        let panel_height = 380.0;
-        let width = u16::try_from(width).map_or(0.0, f32::from);
-        let height = u16::try_from(height).map_or(0.0, f32::from);
-        let x = (width - panel_width).max(0.0) / 2.0;
-        let y = (height - panel_height).max(0.0) / 2.0;
+    fn draw_shortcut_help(&self, _width: u32, _height: u32) {
+        let panel = shortcut_help_panel();
+        let (x, y, panel_width, panel_height) = panel;
         draw_rectangle(x, y, panel_width, panel_height, PANEL);
         draw_rectangle_lines(x, y, panel_width, panel_height, 2.0, ACCENT);
         draw_text("Keyboard shortcuts", x + 24.0, y + 38.0, 24.0, TEXT);
@@ -1693,9 +1799,15 @@ impl DesktopApp {
         draw_text(
             "Presentation shortcuts never submit simulation commands.",
             x + 24.0,
-            y + panel_height - 22.0,
+            y + panel_height - 82.0,
             12.0,
             MUTED,
+        );
+        draw_accessible_button(
+            shortcut_close_bounds(),
+            "Close",
+            self.focus_return.current() == Some(FocusId::ShortcutHelp),
+            false,
         );
     }
 }
@@ -1769,6 +1881,35 @@ fn centered_panel(width: f32, height: f32) -> (f32, f32, f32, f32) {
         (screen_height() - height).max(0.0) * 0.5,
         width,
         height,
+    )
+}
+
+fn scenario_search_bounds(region: (u32, u32, u32, u32)) -> (f32, f32, f32, f32) {
+    let (x, y, width, _) = rect(region);
+    (x + 8.0, y + 8.0, width - 16.0, CONTROL_TARGET)
+}
+
+fn about_link_bounds(index: usize) -> (f32, f32, f32, f32) {
+    let panel = centered_panel(720.0, 610.0);
+    (
+        panel.0 + panel.2 * 0.5,
+        panel.1 + 52.0 + u16::try_from(index).map_or(0.0, f32::from) * 76.0,
+        panel.2 * 0.5 - 16.0,
+        CONTROL_TARGET,
+    )
+}
+
+fn shortcut_help_panel() -> (f32, f32, f32, f32) {
+    centered_panel(640.0, 500.0)
+}
+
+fn shortcut_close_bounds() -> (f32, f32, f32, f32) {
+    let panel = shortcut_help_panel();
+    (
+        panel.0 + panel.2 - 136.0,
+        panel.1 + panel.3 - 60.0,
+        112.0,
+        CONTROL_TARGET,
     )
 }
 
