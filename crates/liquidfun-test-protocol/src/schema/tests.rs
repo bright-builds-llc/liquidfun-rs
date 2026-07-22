@@ -1,8 +1,8 @@
 use serde_json::Value;
 
 use super::{
-    check_tolerance_profile_presentation, render_protocol_schema, render_scenario_schema,
-    render_tolerance_profile_presentation, render_trace_schema,
+    check_tolerance_profile_presentation, render_checkpoint_schema, render_protocol_schema,
+    render_scenario_schema, render_tolerance_profile_presentation, render_trace_schema,
 };
 
 const TRACKED_TOLERANCE_PROFILE: &str = include_str!(concat!(
@@ -21,6 +21,10 @@ const TRACKED_TRACE_SCHEMA: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/../../protocol/schemas/trace-v1.schema.json"
 ));
+const TRACKED_CHECKPOINT_SCHEMA: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../../protocol/schemas/checkpoint-v1.schema.json"
+));
 
 #[test]
 fn schema_presentations_are_byte_stable_and_newline_terminated() {
@@ -29,6 +33,7 @@ fn schema_presentations_are_byte_stable_and_newline_terminated() {
         (render_protocol_schema(), TRACKED_PROTOCOL_SCHEMA),
         (render_scenario_schema(), TRACKED_SCENARIO_SCHEMA),
         (render_trace_schema(), TRACKED_TRACE_SCHEMA),
+        (render_checkpoint_schema(), TRACKED_CHECKPOINT_SCHEMA),
     ];
 
     // Assert
@@ -54,6 +59,7 @@ fn schema_presentations_keep_records_closed_and_versions_explicit() {
         TRACKED_PROTOCOL_SCHEMA,
         TRACKED_SCENARIO_SCHEMA,
         TRACKED_TRACE_SCHEMA,
+        TRACKED_CHECKPOINT_SCHEMA,
     ];
 
     // Act
@@ -106,6 +112,12 @@ fn schema_presentations_keep_records_closed_and_versions_explicit() {
     assert!(!TRACKED_TRACE_SCHEMA.contains("\"clipping_applied\""));
     assert!(!TRACKED_TRACE_SCHEMA.contains("toi_count"));
     assert!(!TRACKED_TRACE_SCHEMA.contains("cached_toi"));
+    assert!(TRACKED_CHECKPOINT_SCHEMA.contains("\"catalog_run_request\""));
+    assert!(TRACKED_CHECKPOINT_SCHEMA.contains("\"canonical_checkpoint\""));
+    assert!(TRACKED_CHECKPOINT_SCHEMA.contains("\"resolved_bytes\""));
+    assert!(TRACKED_CHECKPOINT_SCHEMA.contains("\"policy_path\""));
+    assert!(TRACKED_CHECKPOINT_SCHEMA.contains("source_significant"));
+    assert!(!TRACKED_CHECKPOINT_SCHEMA.contains("pixel"));
     assert!(schemas.iter().all(|schema| schema.contains(
         "Typed Rust and C++ validation remains authoritative for cross-field references"
     )));

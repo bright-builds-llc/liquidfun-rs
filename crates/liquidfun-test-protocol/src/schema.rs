@@ -8,7 +8,10 @@ use crate::{
     ToleranceProfileVersion,
 };
 
+mod checkpoint;
 mod rigid_world;
+
+use checkpoint::render_checkpoint_schema;
 
 use rigid_world::{
     rigid_world_request_schema, rigid_world_result_schema, rigid_world_scenario_schema,
@@ -1073,7 +1076,7 @@ fn sweep_bits_schema() -> Value {
     )
 }
 
-fn render_json_schema(document: &Value) -> String {
+pub(super) fn render_json_schema(document: &Value) -> String {
     let mut rendered = serde_json::to_string_pretty(&document)
         .expect("schema documents contain only JSON-native values");
     rendered.push('\n');

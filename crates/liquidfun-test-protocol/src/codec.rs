@@ -154,15 +154,16 @@ pub fn encode_jsonl<T: Serialize>(
 
 fn classify_decode_error(error: &serde_json::Error) -> CodecError {
     let message = error.to_string();
-    let kind = if message.contains("duplicate field") {
+    let normalized = message.to_ascii_lowercase();
+    let kind = if normalized.contains("duplicate field") {
         CodecErrorKind::DuplicateMember
-    } else if message.contains("unknown field") {
+    } else if normalized.contains("unknown field") {
         CodecErrorKind::UnknownField
-    } else if message.contains("unknown variant") {
+    } else if normalized.contains("unknown variant") {
         CodecErrorKind::UnknownRecordKind
-    } else if message.contains("unsupported") && message.contains("version") {
+    } else if normalized.contains("unsupported") && normalized.contains("version") {
         CodecErrorKind::UnsupportedVersion
-    } else if message.contains("reviewed limit") {
+    } else if normalized.contains("reviewed limit") {
         CodecErrorKind::BoundaryLimitExceeded
     } else {
         CodecErrorKind::MalformedRecord

@@ -1,0 +1,310 @@
+{
+  "$id": "https://liquidfun-rs.invalid/protocol/schemas/checkpoint-v1.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Deterministic presentation only. Typed Rust and C++ validation remains authoritative for cross-field references, uniqueness, ordering, hashes, and aggregate limits. Checkpoints bind to resolved action or logical-step ordinals, never renderer frames or wall-clock time.",
+  "oneOf": [
+    {
+      "additionalProperties": false,
+      "properties": {
+        "catalog_schema_version": {
+          "const": 1
+        },
+        "generator_id": {
+          "maxLength": 128,
+          "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+          "type": "string"
+        },
+        "generator_version": {
+          "const": 1
+        },
+        "maybe_seed": {
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "protocol_version": {
+          "const": 1
+        },
+        "provenance_requirements": {
+          "additionalProperties": false,
+          "properties": {
+            "evidence_tier": {
+              "enum": [
+                "d0_replay",
+                "d1_canonical",
+                "d2_supported",
+                "d3_exploratory"
+              ]
+            },
+            "limits_profile_sha256": {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            "required_identity_sha256": {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            }
+          },
+          "required": [
+            "required_identity_sha256",
+            "limits_profile_sha256",
+            "evidence_tier"
+          ],
+          "type": "object"
+        },
+        "record_kind": {
+          "const": "catalog_run_request"
+        },
+        "request_id": {
+          "maxLength": 128,
+          "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+          "type": "string"
+        },
+        "resolved_bytes": {
+          "items": {
+            "maximum": 255,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "maxItems": 1048576,
+          "type": "array"
+        },
+        "resolved_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "scenario_version": {
+          "const": 1
+        },
+        "settings": {
+          "additionalProperties": false,
+          "properties": {
+            "particle_iterations": {
+              "maximum": 1024,
+              "minimum": 1,
+              "type": "integer"
+            },
+            "position_iterations": {
+              "maximum": 1024,
+              "minimum": 1,
+              "type": "integer"
+            },
+            "timestep_bits": {
+              "maximum": 4294967295,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "velocity_iterations": {
+              "maximum": 1024,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "timestep_bits",
+            "velocity_iterations",
+            "position_iterations",
+            "particle_iterations"
+          ],
+          "type": "object"
+        },
+        "slug": {
+          "maxLength": 128,
+          "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "protocol_version",
+        "record_kind",
+        "request_id",
+        "catalog_schema_version",
+        "slug",
+        "scenario_version",
+        "generator_id",
+        "generator_version",
+        "maybe_seed",
+        "settings",
+        "resolved_bytes",
+        "resolved_sha256",
+        "provenance_requirements"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "checkpoint_id": {
+          "maxLength": 128,
+          "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+          "type": "string"
+        },
+        "checkpoint_schema_version": {
+          "const": 1
+        },
+        "debug_primitives": {
+          "description": "Closed engine-neutral exact-bit point, segment, polyline, circle, transform_axes, aabb, arrow, and inert label records with stable semantic owner keys and explicit source_significant or canonicalized ordering.",
+          "items": {
+            "additionalProperties": false,
+            "properties": {},
+            "required": [],
+            "type": "object"
+          },
+          "maxItems": 8192,
+          "type": "array"
+        },
+        "numeric_observations": {
+          "description": "Exact float bits paired with a closed Phase 4 policy_path.",
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "observation_id": {
+                "maxLength": 128,
+                "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                "type": "string"
+              },
+              "policy_path": {
+                "maxLength": 128,
+                "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                "type": "string"
+              },
+              "value_bits": {
+                "maximum": 4294967295,
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "observation_id",
+              "value_bits",
+              "policy_path"
+            ],
+            "type": "object"
+          },
+          "maxItems": 128,
+          "type": "array"
+        },
+        "observations": {
+          "description": "Exact structural presence, count, flag_bits, identity, or status values.",
+          "items": {
+            "additionalProperties": false,
+            "properties": {},
+            "required": [],
+            "type": "object"
+          },
+          "maxItems": 128,
+          "type": "array"
+        },
+        "ordered_occurrences": {
+          "description": "Source-significant occurrence order is preserved.",
+          "items": {
+            "additionalProperties": false,
+            "properties": {},
+            "required": [],
+            "type": "object"
+          },
+          "maxItems": 4096,
+          "type": "array"
+        },
+        "position": {
+          "additionalProperties": false,
+          "description": "Closed action or logical_step semantic boundary.",
+          "properties": {},
+          "required": [],
+          "type": "object"
+        },
+        "profile_names": {
+          "description": "Closed profile names only; timing and duration values are forbidden.",
+          "items": {
+            "enum": [
+              "contact_lifecycle",
+              "particle_solve",
+              "rigid_solve",
+              "continuous_solve",
+              "apply_commands",
+              "finalize"
+            ]
+          },
+          "maxItems": 6,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "protocol_version": {
+          "const": 1
+        },
+        "record_kind": {
+          "const": "canonical_checkpoint"
+        },
+        "request_id": {
+          "maxLength": 128,
+          "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+          "type": "string"
+        },
+        "resolved_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "simulation_time_bits": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "unordered_sets": {
+          "description": "Only explicitly unordered semantic sets are canonicalized by stable ID.",
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "members": {
+                "items": {
+                  "maxLength": 128,
+                  "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                  "type": "string"
+                },
+                "maxItems": 4096,
+                "type": "array",
+                "uniqueItems": true
+              },
+              "set_id": {
+                "maxLength": 128,
+                "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "set_id",
+              "members"
+            ],
+            "type": "object"
+          },
+          "maxItems": 128,
+          "type": "array"
+        }
+      },
+      "required": [
+        "protocol_version",
+        "record_kind",
+        "checkpoint_schema_version",
+        "request_id",
+        "resolved_sha256",
+        "checkpoint_id",
+        "position",
+        "simulation_time_bits",
+        "observations",
+        "numeric_observations",
+        "ordered_occurrences",
+        "unordered_sets",
+        "debug_primitives",
+        "profile_names"
+      ],
+      "type": "object"
+    }
+  ],
+  "title": "liquidfun-rs resolved run and checkpoint presentation version 1",
+  "x-version-axes": {
+    "catalog_schema_version": 1,
+    "checkpoint_schema_version": 1,
+    "protocol_version": 1
+  }
+}

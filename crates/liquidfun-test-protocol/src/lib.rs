@@ -3,6 +3,7 @@
 #![forbid(unsafe_code)]
 
 mod catalog;
+mod checkpoint;
 mod codec;
 mod failure;
 mod float_bits;
@@ -16,6 +17,7 @@ mod tolerance;
 mod trace;
 
 pub use catalog::*;
+pub use checkpoint::*;
 pub use codec::*;
 pub use failure::*;
 pub use float_bits::FloatBits;
