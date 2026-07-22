@@ -54,20 +54,20 @@ CI runs `cargo fmt --all --check`, so format verification is read-only.
 This table is machine-audited by `cargo xtask docs check`. It contains exactly
 one row for every required layer; every cell is an enforceable contract.
 
-| Layer                  | Status   | Purpose                                                                                                                                                                   | Command                                                                                                                                                                                                                               | Prerequisites                                                                                                                                  | Reports and failure artifacts                                                                                                             | Retry policy                                                                                      | Placement                                      | Semantic interpretation                                                                                                              |
+| Layer | Status | Purpose | Command | Prerequisites | Reports and failure artifacts | Retry policy | Placement | Semantic interpretation |
 | ---------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| unit                   | current  | Exercise pure protocol/domain, comparator, reducer, and invariant behavior one concern at a time.                                                                         | `cargo test --workspace --lib`                                                                                                                                                                                                        | Rust 1.97.0 and Cargo-only workspace checkout; no submodule or C++.                                                                            | Standard test output; a failure identifies the focused behavior and exact assertion.                                                      | No deterministic retry; fix or classify the failing behavior.                                     | local, pull request                            | Focused behavior evidence supports its tested branch only and is not broad physics parity.                                           |
-| integration/API        | current  | Exercise supported private CLI, fixture lifecycle, supervisor, and crate-boundary workflows.                                                                              | `cargo test --workspace --tests`                                                                                                                                                                                                      | Rust 1.97.0; fake-child suites need only repository files and standard process support.                                                        | Standard test output plus bounded fake-child request, identity, report, and stderr diagnostics.                                           | No deterministic retry; preserve the failing case and investigate it.                             | local, pull request                            | A pass proves the supported API workflow under test, not unimplemented engine behavior.                                              |
-| doctest                | current  | Compile and run public documentation examples independently from nextest-style suites.                                                                                    | `cargo test --workspace --doc`                                                                                                                                                                                                        | Rust 1.97.0 with rustdoc; no oracle or external service.                                                                                       | rustdoc output names the failing crate and documentation example.                                                                         | No deterministic retry; documentation and code must agree.                                        | local, pull request                            | A documentation example proves only the documented API statement it exercises.                                                       |
-| upstream compatibility | current  | Verify immutable oracle identity and build the repository-owned external adapter.                                                                                         | `cargo xtask upstream verify` then `cargo xtask upstream configure --preset oracle-debug` and `cargo xtask upstream build --preset oracle-debug`.                                                                                     | Exact initialized submodule, reviewed CMake and Ninja, and the lane's recorded C++ compiler.                                                   | Tool/upstream identity diagnostics and out-of-tree build evidence under `target/reference`.                                               | No deterministic retry; identity or build failures remain oracle infrastructure results.          | local, pull request, scheduled, manual release | A successful oracle build proves oracle infrastructure, not Rust physics compatibility.                                              |
-| differential           | current  | Run the same validated rigid-world request through Rust and C++ and compare semantic traces.                                                                              | `cargo xtask differential compare --scenario rigid-world --preset oracle-debug --session-profile one-shot`                                                                                                                            | Verified and built `oracle-debug` executable plus matching protocol, tolerance, and upstream identities.                                       | Machine report on stdout; bounded request, identity, report, and stderr evidence belongs under `target/differential/failures` on failure. | No deterministic retry; a stable mismatch or harness failure must be diagnosed.                   | local, pull request, scheduled, manual release | Only validated traces can produce a physics mismatch; process, schema, sanitizer, provenance, and reset errors are harness failures. |
-| property               | deferred | Generate bounded valid values that probe geometry, ordering, handles, mutation, and later physics invariants.                                                             | Planned `cargo test --workspace property -- --nocapture` with persisted seeds and typed shrinkers.                                                                                                                                    | Rust 1.97.0 now; reviewed generator version and deterministic seed model before activation.                                                    | Property test output plus the seed and minimized input promoted to an ordinary regression when confirmed.                                 | No deterministic retry; reproduce the same invariant failure from the persisted value.            | scheduled, manual release                      | A property pass samples an invariant domain and cannot prove exhaustive compatibility.                                               |
-| checked-in regression  | current  | Replay reviewed traces and later minimized scenarios that preserve an accepted first-divergence signature.                                                                | `cargo xtask differential replay --scenario rigid-world --preset oracle-debug --session-profile one-shot`                                                                                                                             | Reviewed trace in the artifact manifest; later cases also require a minimized scenario under `scenarios/regressions`.                          | Replay report, manifest provenance, and any same failure signature evidence stored with the regression under `scenarios/regressions`.     | No deterministic retry; byte-stable replay must be reproducible.                                  | local, pull request, scheduled, manual release | A checked-in case protects one reviewed behavior or same failure signature from recurrence.                                          |
-| fuzz                   | deferred | Exercise bounded protocol decoders, scenario validation, world mutation, and future unsafe boundaries.                                                                    | Planned `cargo fuzz run protocol_decode -- -max_total_time=300`; reproduce with `cargo fuzz run protocol_decode fuzz/artifacts/protocol_decode/<case>`.                                                                               | pinned nightly, `cargo-fuzz`, reviewed target bounds, and no secrets or external service.                                                      | libFuzzer logs, exact crashing input, seed when present, and minimized corpus under `fuzz/artifacts`.                                     | No deterministic retry; retain and minimize the exact input before fixing.                        | scheduled, manual release                      | A crash, timeout, sanitizer finding, or malformed-boundary defect is a harness failure, not a physics mismatch.                      |
-| Miri/UB-aliasing       | deferred | Detect undefined behavior and aliasing defects in the pure Rust subset and any future unsafe modules.                                                                     | Planned `cargo miri test --workspace --all-features` on a date-pinned nightly after `cargo miri setup`.                                                                                                                               | pinned nightly with the Miri component; exclude the external C++ process from interpretation.                                                  | Miri diagnostics with the exact test, stack, flags, and pinned toolchain identity.                                                        | No deterministic retry; preserve the deterministic failing test and environment.                  | scheduled, manual release                      | Miri undefined behavior is a harness failure and safety defect, never a physics mismatch.                                            |
-| native sanitizer       | current  | Run the C++ protocol and oracle fail-fast, including the Phase 8 rigid adapter, and later run supported Rust sanitizer subsets without crossing findings into comparison. | `UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 ASAN_OPTIONS=abort_on_error=1:halt_on_error=1 cargo xtask differential compare --scenario rigid-world --preset oracle-asan-ubsan --session-profile one-shot` after fail-fast CTest. | Exact Clang 22.1.8 lane, configured and built `oracle-asan-ubsan`, ASan/UBSan runtimes; Rust sanitizer work additionally needs pinned nightly. | Bounded request, identity, report, and stderr evidence under `target/differential/failures`; CI uploads only this directory on failure.   | No deterministic retry; sanitizer markers fail even if a child exits zero.                        | scheduled, manual release                      | Any ASan, UBSan, Rust sanitizer, signal, timeout, or reset defect is a harness failure, not a physics mismatch.                      |
-| benchmark              | deferred | Measure equivalent Rust and C++ workloads only after representative native behavior exists.                                                                               | Planned `cargo bench --workspace` plus a paired oracle runner with recorded release identities.                                                                                                                                       | controlled hardware, release builds, equivalent scenarios, warm-up policy, and recorded compiler flags.                                        | Criterion reports under `target/criterion` plus paired environment and oracle identity records.                                           | No deterministic retry; reruns form an explicitly analyzed sample rather than hiding regressions. | scheduled, manual release                      | Benchmark data is performance evidence, not parity or correctness evidence.                                                          |
-| coverage               | deferred | Report exercised Rust lines and branches separately from C++ oracle coverage.                                                                                             | Planned `cargo llvm-cov --workspace --all-features --lcov --output-path target/llvm-cov/rust.lcov`.                                                                                                                                   | `llvm-tools-preview`, reviewed `cargo-llvm-cov` version, and separately compatible Clang tooling for C++.                                      | Rust LCOV under `target/llvm-cov`; C++ coverage remains a separate report until LLVM compatibility is proven.                             | No deterministic retry; investigate deterministic coverage changes from the same suite.           | scheduled, manual release                      | coverage is not parity; percentages do not replace semantic differential evidence.                                                   |
+| unit | current | Exercise pure protocol/domain, comparator, reducer, and invariant behavior one concern at a time. | `cargo test --workspace --lib` | Rust 1.97.0 and Cargo-only workspace checkout; no submodule or C++. | Standard test output; a failure identifies the focused behavior and exact assertion. | No deterministic retry; fix or classify the failing behavior. | local, pull request | Focused behavior evidence supports its tested branch only and is not broad physics parity. |
+| integration/API | current | Exercise supported private CLI, fixture lifecycle, supervisor, and crate-boundary workflows. | `cargo test --workspace --tests` | Rust 1.97.0; fake-child suites need only repository files and standard process support. | Standard test output plus bounded fake-child request, identity, report, and stderr diagnostics. | No deterministic retry; preserve the failing case and investigate it. | local, pull request | A pass proves the supported API workflow under test, not unimplemented engine behavior. |
+| doctest | current | Compile and run public documentation examples independently from nextest-style suites. | `cargo test --workspace --doc` | Rust 1.97.0 with rustdoc; no oracle or external service. | rustdoc output names the failing crate and documentation example. | No deterministic retry; documentation and code must agree. | local, pull request | A documentation example proves only the documented API statement it exercises. |
+| upstream compatibility | current | Verify immutable oracle identity and build the repository-owned external adapter. | `cargo xtask upstream verify` then `cargo xtask upstream configure --preset oracle-debug` and `cargo xtask upstream build --preset oracle-debug`. | Exact initialized submodule, reviewed CMake and Ninja, and the lane's recorded C++ compiler. | Tool/upstream identity diagnostics and out-of-tree build evidence under `target/reference`. | No deterministic retry; identity or build failures remain oracle infrastructure results. | local, pull request, scheduled, manual release | A successful oracle build proves oracle infrastructure, not Rust physics compatibility. |
+| differential | current | Run the same validated rigid-world request through Rust and C++ and compare semantic traces. | `cargo xtask differential compare --scenario rigid-world --preset oracle-debug --session-profile one-shot` | Verified and built `oracle-debug` executable plus matching protocol, tolerance, and upstream identities. | Machine report on stdout; bounded request, identity, report, and stderr evidence belongs under `target/differential/failures` on failure. | No deterministic retry; a stable mismatch or harness failure must be diagnosed. | local, pull request, scheduled, manual release | Only validated traces can produce a physics mismatch; process, schema, sanitizer, provenance, and reset errors are harness failures. |
+| property | deferred | Generate bounded valid values that probe geometry, ordering, handles, mutation, and later physics invariants. | Planned `cargo test --workspace property -- --nocapture` with persisted seeds and typed shrinkers. | Rust 1.97.0 now; reviewed generator version and deterministic seed model before activation. | Property test output plus the seed and minimized input promoted to an ordinary regression when confirmed. | No deterministic retry; reproduce the same invariant failure from the persisted value. | scheduled, manual release | A property pass samples an invariant domain and cannot prove exhaustive compatibility. |
+| checked-in regression | current | Replay reviewed traces and later minimized scenarios that preserve an accepted first-divergence signature. | `cargo xtask differential replay --scenario rigid-world --preset oracle-debug --session-profile one-shot` | Reviewed trace in the artifact manifest; later cases also require a minimized scenario under `scenarios/regressions`. | Replay report, manifest provenance, and any same failure signature evidence stored with the regression under `scenarios/regressions`. | No deterministic retry; byte-stable replay must be reproducible. | local, pull request, scheduled, manual release | A checked-in case protects one reviewed behavior or same failure signature from recurrence. |
+| fuzz | deferred | Exercise bounded protocol decoders, scenario validation, world mutation, and future unsafe boundaries. | Planned `cargo fuzz run protocol_decode -- -max_total_time=300`; reproduce with `cargo fuzz run protocol_decode fuzz/artifacts/protocol_decode/<case>`. | pinned nightly, `cargo-fuzz`, reviewed target bounds, and no secrets or external service. | libFuzzer logs, exact crashing input, seed when present, and minimized corpus under `fuzz/artifacts`. | No deterministic retry; retain and minimize the exact input before fixing. | scheduled, manual release | A crash, timeout, sanitizer finding, or malformed-boundary defect is a harness failure, not a physics mismatch. |
+| Miri/UB-aliasing | deferred | Detect undefined behavior and aliasing defects in the pure Rust subset and any future unsafe modules. | Planned `cargo miri test --workspace --all-features` on a date-pinned nightly after `cargo miri setup`. | pinned nightly with the Miri component; exclude the external C++ process from interpretation. | Miri diagnostics with the exact test, stack, flags, and pinned toolchain identity. | No deterministic retry; preserve the deterministic failing test and environment. | scheduled, manual release | Miri undefined behavior is a harness failure and safety defect, never a physics mismatch. |
+| native sanitizer | current | Run the C++ protocol and oracle fail-fast, including the Phase 8 rigid adapter, and later run supported Rust sanitizer subsets without crossing findings into comparison. | `UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 ASAN_OPTIONS=abort_on_error=1:halt_on_error=1 cargo xtask differential compare --scenario rigid-world --preset oracle-asan-ubsan --session-profile one-shot` after fail-fast CTest. | Exact Clang 22.1.8 lane, configured and built `oracle-asan-ubsan`, ASan/UBSan runtimes; Rust sanitizer work additionally needs pinned nightly. | Bounded request, identity, report, and stderr evidence under `target/differential/failures`; CI uploads only this directory on failure. | No deterministic retry; sanitizer markers fail even if a child exits zero. | scheduled, manual release | Any ASan, UBSan, Rust sanitizer, signal, timeout, or reset defect is a harness failure, not a physics mismatch. |
+| benchmark | deferred | Measure equivalent Rust and C++ workloads only after representative native behavior exists. | Planned `cargo bench --workspace` plus a paired oracle runner with recorded release identities. | controlled hardware, release builds, equivalent scenarios, warm-up policy, and recorded compiler flags. | Criterion reports under `target/criterion` plus paired environment and oracle identity records. | No deterministic retry; reruns form an explicitly analyzed sample rather than hiding regressions. | scheduled, manual release | Benchmark data is performance evidence, not parity or correctness evidence. |
+| coverage | deferred | Report exercised Rust lines and branches separately from C++ oracle coverage. | Planned `cargo llvm-cov --workspace --all-features --lcov --output-path target/llvm-cov/rust.lcov`. | `llvm-tools-preview`, reviewed `cargo-llvm-cov` version, and separately compatible Clang tooling for C++. | Rust LCOV under `target/llvm-cov`; C++ coverage remains a separate report until LLVM compatibility is proven. | No deterministic retry; investigate deterministic coverage changes from the same suite. | scheduled, manual release | coverage is not parity; percentages do not replace semantic differential evidence. |
 
 ## Protocol contract and bounds
 
@@ -272,14 +272,14 @@ performance.
 The Phase 5 sign-off reran the repository-owned commands after the authoritative
 ledger update:
 
-| Check                          | Observed result                                                                                                            | Evidence limit                                                   |
+| Check | Observed result | Evidence limit |
 | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
 | Inventory generation and check | 177 rows; 18 implemented, 18 unit-tested, 17 differentially validated, 0 platform-validated, and 18 documented differences | Dimensions are independent; contact-manager rows remain pending. |
-| Package isolation              | 51 packaged entries built and tested outside the repository                                                                | Proves Cargo consumer isolation, not another platform.           |
-| Oracle debug comparison        | 78 ordered cases matched under `phase5-v1`                                                                                 | Local D2-scoped collision operations only.                       |
-| Oracle release comparison      | 78 ordered cases matched under `phase5-v1`                                                                                 | A second optimization profile, not canonical D1 authority.       |
-| Debug replay                   | 78 ordered cases matched under `phase5-v1`                                                                                 | Protects the reviewed fixed corpus.                              |
-| Debug determinism              | 2 runs were byte-identical                                                                                                 | D0 same-build authority only.                                    |
+| Package isolation | 51 packaged entries built and tested outside the repository | Proves Cargo consumer isolation, not another platform. |
+| Oracle debug comparison | 78 ordered cases matched under `phase5-v1` | Local D2-scoped collision operations only. |
+| Oracle release comparison | 78 ordered cases matched under `phase5-v1` | A second optimization profile, not canonical D1 authority. |
+| Debug replay | 78 ordered cases matched under `phase5-v1` | Protects the reviewed fixed corpus. |
+| Debug determinism | 2 runs were byte-identical | D0 same-build authority only. |
 
 The local reference tools were CMake 3.27.9, Ninja 1.13.2, and Apple Clang
 21.0.0. Because the canonical lane requires CMake 4.3.3 and Clang 22.1.8 on
@@ -376,14 +376,14 @@ Phase 2 lifecycle, but local D2 runs intentionally fail the D1 promotion gate.
 The Phase 6 signoff reran every fixed workflow after the authoritative ledger
 and generated report changed:
 
-| Check                          | Observed result                                                                                                            | Evidence limit                                                                                        |
+| Check | Observed result | Evidence limit |
 | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
 | Inventory generation and check | 177 rows; 30 implemented, 30 unit-tested, 29 differentially validated, 0 platform-validated, and 30 documented differences | Only 12 body, fixture, world, contact-manager, circle-contact, and bounded-solver rows were promoted. |
-| Package isolation              | 58 packaged entries built and tested outside the repository                                                                | Proves Cargo consumer isolation, not another platform.                                                |
-| Oracle debug comparison        | Both required rigid timelines matched under `phase6-v1`                                                                    | Local D2 for the fixed Phase 6 scope.                                                                 |
-| Oracle release comparison      | Both required rigid timelines matched under `phase6-v1`                                                                    | A second optimization profile, not canonical D1 authority.                                            |
-| Debug replay                   | Both required rigid timelines matched under `phase6-v1`                                                                    | Protects the reviewed request and declaration contract.                                               |
-| Debug determinism              | Two complete native/oracle runs were byte-identical                                                                        | D0 same-build authority only.                                                                         |
+| Package isolation | 58 packaged entries built and tested outside the repository | Proves Cargo consumer isolation, not another platform. |
+| Oracle debug comparison | Both required rigid timelines matched under `phase6-v1` | Local D2 for the fixed Phase 6 scope. |
+| Oracle release comparison | Both required rigid timelines matched under `phase6-v1` | A second optimization profile, not canonical D1 authority. |
+| Debug replay | Both required rigid timelines matched under `phase6-v1` | Protects the reviewed request and declaration contract. |
+| Debug determinism | Two complete native/oracle runs were byte-identical | D0 same-build authority only. |
 
 The pinned C++ adapter executes the same declaration-first timeline in
 `tools/reference/src/rigid_world.cpp`. Its content identity includes the decode
@@ -403,18 +403,18 @@ joints, and broad rigid scenarios pending for Phase 7 or Phase 8.
 The original verifier findings remain named so documentation checks can prevent
 a passing happy-path corpus from silently reopening a source or workflow gap:
 
-| Gap ID                              | Direct executable evidence                                                                                                                                                                                                                                                  | Authority limit                                                                                                 |
+| Gap ID | Direct executable evidence | Authority limit |
 | ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `aggregate-mass-atomicity`          | `cargo test -p liquidfun --test fixture_dynamics aggregate_mass --all-features` proves create/reset rejection preserves fixture adjacency, proxies, contacts, and body mass.                                                                                                | Native safe-API atomicity for the Phase 6 fixture surface.                                                      |
-| `non-dynamic-contact-admission`     | `cargo test -p liquidfun --test rigid_contacts non_dynamic --all-features` plus the two declaration-first overlap witnesses prove both no-dynamic branches.                                                                                                                 | Fixed contact-admission scope; not general islands.                                                             |
-| `ignored-step-parameters`           | Rust/schema/C++ boundary tests admit only `0x3c888889`, eight velocity iterations, and three position iterations.                                                                                                                                                           | Fixed Phase 6 tuple; public step configuration remains Phase 7.                                                 |
-| `rigid-action-bound-mismatch`       | Rust and C++ tests accept exactly 128 actions and reject 129 before execution.                                                                                                                                                                                              | One bounded request contract, not unbounded scenario input.                                                     |
-| `invalid-centered-inertia-boundary` | Protocol fixture and C++ tests reject source-ordered negative, zero-after-centering, or non-finite centered inertia when origin inertia is positive, while retaining the zero-origin no-inertia branch.                                                                     | Input-boundary evidence; arbitrary mass/solver behavior is not claimed.                                         |
-| `rigid-staging-not-integrated`      | `cargo test -p liquidfun-differential --test rigid_fixture_workflow --all-features` and the xtask real-child test prove canonical D1 acceptance, D2 no-effect rejection, exact replay, and repeated pre-write authority checks.                                             | Test-owned D1 identity proves the transaction; local real-oracle D2 runs cannot promote.                        |
-| `rigid-sanitizer-not-executed`      | Oracle workflow contracts require fail-fast CTest and `rigid-world` compare under `oracle-asan-ubsan` before read-only assertion.                                                                                                                                           | Executed in scheduled/manual canonical Linux CI; local noncanonical runs do not become D1.                      |
+| `aggregate-mass-atomicity` | `cargo test -p liquidfun --test fixture_dynamics aggregate_mass --all-features` proves create/reset rejection preserves fixture adjacency, proxies, contacts, and body mass. | Native safe-API atomicity for the Phase 6 fixture surface. |
+| `non-dynamic-contact-admission` | `cargo test -p liquidfun --test rigid_contacts non_dynamic --all-features` plus the two declaration-first overlap witnesses prove both no-dynamic branches. | Fixed contact-admission scope; not general islands. |
+| `ignored-step-parameters` | Rust/schema/C++ boundary tests admit only `0x3c888889`, eight velocity iterations, and three position iterations. | Fixed Phase 6 tuple; public step configuration remains Phase 7. |
+| `rigid-action-bound-mismatch` | Rust and C++ tests accept exactly 128 actions and reject 129 before execution. | One bounded request contract, not unbounded scenario input. |
+| `invalid-centered-inertia-boundary` | Protocol fixture and C++ tests reject source-ordered negative, zero-after-centering, or non-finite centered inertia when origin inertia is positive, while retaining the zero-origin no-inertia branch. | Input-boundary evidence; arbitrary mass/solver behavior is not claimed. |
+| `rigid-staging-not-integrated` | `cargo test -p liquidfun-differential --test rigid_fixture_workflow --all-features` and the xtask real-child test prove canonical D1 acceptance, D2 no-effect rejection, exact replay, and repeated pre-write authority checks. | Test-owned D1 identity proves the transaction; local real-oracle D2 runs cannot promote. |
+| `rigid-sanitizer-not-executed` | Oracle workflow contracts require fail-fast CTest and `rigid-world` compare under `oracle-asan-ubsan` before read-only assertion. | Executed in scheduled/manual canonical Linux CI; local noncanonical runs do not become D1. |
 | `implicit-aggregate-mass-atomicity` | `cargo test -p liquidfun --test fixture_dynamics implicit_aggregate_mass --all-features` proves `BodyTypeChangeError` and `FixtureDestructionError` reject invalid prospective aggregates with exact no-effect body, contact, fixture, proxy, adjacency, and mass evidence. | Native safe-API atomicity; body cascades intentionally do not reset mass because the parent is being destroyed. |
-| `zero-centered-inertia-boundary`    | Public, protocol-fixture, native-defense, and C++ protocol tests prove that the zero-origin branch remains no-inertia while positive-origin custom mass requires finite, strictly positive centered inertia.                                                                | Rust/C++ boundary parity for custom mass; broader mass solving remains deferred.                                |
-| `rigid-fixture-checkout-provenance` | Shared identity tests and stale real-binary stage/review/promotion tests recompute current-checkout adapter-source and effective compile-command digests before every mutation and prove exact no-effect rejection.                                                         | Test-owned canonical identities exercise D1 gating; local real-oracle execution does not claim D1.              |
+| `zero-centered-inertia-boundary` | Public, protocol-fixture, native-defense, and C++ protocol tests prove that the zero-origin branch remains no-inertia while positive-origin custom mass requires finite, strictly positive centered inertia. | Rust/C++ boundary parity for custom mass; broader mass solving remains deferred. |
+| `rigid-fixture-checkout-provenance` | Shared identity tests and stale real-binary stage/review/promotion tests recompute current-checkout adapter-source and effective compile-command digests before every mutation and prove exact no-effect rejection. | Test-owned canonical identities exercise D1 gating; local real-oracle execution does not claim D1. |
 
 These closures preserve the existing evidence labels: local debug/release and replay passes are D2, exactly two
 same-build byte-identical runs are D0, and
@@ -784,88 +784,88 @@ and
 for the five comparison payload digests. The shared semantic manifest remains
 `9f9fd558a6897a43c3fc9faecdce4879efebc7c7d706dc6a1d6577655fa9887b`.
 
-| Closed leaf                                  | Outcome   |
+| Closed leaf | Outcome |
 | -------------------------------------------- | --------- |
-| `phase10:group_create`                       | supported |
-| `phase10:group_append`                       | supported |
-| `phase10:group_join`                         | supported |
-| `phase10:group_split`                        | supported |
-| `phase10:group_flags`                        | supported |
-| `phase10:group_destroy`                      | supported |
-| `phase10:spring`                             | supported |
-| `phase10:elastic`                            | supported |
-| `phase10:reactive`                           | supported |
-| `phase10:water`                              | supported |
-| `phase10:zombie`                             | supported |
-| `phase10:viscous`                            | supported |
-| `phase10:powder`                             | supported |
-| `phase10:tensile`                            | supported |
-| `phase10:color_mixing`                       | supported |
-| `phase10:static_pressure`                    | supported |
-| `phase10:repulsive`                          | supported |
-| `phase10:barrier`                            | supported |
-| `phase10:solid_group`                        | supported |
-| `phase10:rigid_group`                        | supported |
-| `phase10:body_interaction`                   | supported |
-| `phase10:wall`                               | supported |
-| `inherited:multiple_systems`                 | supported |
-| `inherited:newest_first`                     | supported |
-| `inherited:paused_system`                    | supported |
-| `inherited:stable_ids_sort`                  | supported |
-| `inherited:stable_ids_compact`               | supported |
-| `inherited:optional_lanes`                   | supported |
-| `inherited:fixed_buffer`                     | supported |
-| `inherited:growable_buffer`                  | supported |
-| `inherited:fixed_full`                       | supported |
-| `inherited:teardown`                         | supported |
-| `inherited:finite_lifetime`                  | supported |
-| `inherited:infinite_lifetime`                | supported |
-| `inherited:equal_lifetime`                   | supported |
-| `inherited:oldest_lifetime`                  | supported |
-| `inherited:maximum_lifetime`                 | supported |
-| `inherited:requested_destruction_callback`   | supported |
+| `phase10:group_create` | supported |
+| `phase10:group_append` | supported |
+| `phase10:group_join` | supported |
+| `phase10:group_split` | supported |
+| `phase10:group_flags` | supported |
+| `phase10:group_destroy` | supported |
+| `phase10:spring` | supported |
+| `phase10:elastic` | supported |
+| `phase10:reactive` | supported |
+| `phase10:water` | supported |
+| `phase10:zombie` | supported |
+| `phase10:viscous` | supported |
+| `phase10:powder` | supported |
+| `phase10:tensile` | supported |
+| `phase10:color_mixing` | supported |
+| `phase10:static_pressure` | supported |
+| `phase10:repulsive` | supported |
+| `phase10:barrier` | supported |
+| `phase10:solid_group` | supported |
+| `phase10:rigid_group` | supported |
+| `phase10:body_interaction` | supported |
+| `phase10:wall` | supported |
+| `inherited:multiple_systems` | supported |
+| `inherited:newest_first` | supported |
+| `inherited:paused_system` | supported |
+| `inherited:stable_ids_sort` | supported |
+| `inherited:stable_ids_compact` | supported |
+| `inherited:optional_lanes` | supported |
+| `inherited:fixed_buffer` | supported |
+| `inherited:growable_buffer` | supported |
+| `inherited:fixed_full` | supported |
+| `inherited:teardown` | supported |
+| `inherited:finite_lifetime` | supported |
+| `inherited:infinite_lifetime` | supported |
+| `inherited:equal_lifetime` | supported |
+| `inherited:oldest_lifetime` | supported |
+| `inherited:maximum_lifetime` | supported |
+| `inherited:requested_destruction_callback` | supported |
 | `inherited:unrequested_destruction_callback` | supported |
-| `inherited:zombie_pending`                   | supported |
-| `inherited:capacity_eviction`                | supported |
-| `inherited:particle_contact`                 | supported |
-| `inherited:body_contact`                     | supported |
-| `inherited:strict_contact_enabled`           | supported |
-| `inherited:strict_contact_disabled`          | supported |
-| `inherited:listener_flag_enabled`            | supported |
-| `inherited:listener_flag_disabled`           | supported |
-| `inherited:filter_flag_enabled`              | supported |
-| `inherited:filter_flag_disabled`             | supported |
-| `inherited:contact_order`                    | supported |
-| `inherited:contact_multiplicity`             | supported |
-| `inherited:coupling_fields`                  | supported |
-| `inherited:dynamic_body_reaction`            | supported |
-| `inherited:static_body_no_reaction`          | supported |
-| `inherited:force_range`                      | supported |
-| `inherited:impulse_range`                    | supported |
-| `inherited:statistics_counts`                | supported |
-| `inherited:collision_energy`                 | supported |
-| `inherited:stuck_candidates`                 | supported |
-| `inherited:system_aabb`                      | supported |
-| `inherited:world_aabb`                       | supported |
-| `inherited:system_culling`                   | supported |
-| `inherited:query_continue`                   | supported |
-| `inherited:query_terminate`                  | supported |
-| `inherited:system_ray`                       | supported |
-| `inherited:world_ray`                        | supported |
-| `inherited:ray_culling`                      | supported |
-| `inherited:ray_start_inside_exclusion`       | supported |
-| `inherited:ray_ignore`                       | supported |
-| `inherited:ray_continue`                     | supported |
-| `inherited:ray_clip`                         | supported |
-| `inherited:ray_terminate`                    | supported |
-| `inherited:retained_phase6_through_phase8`   | supported |
-| `inherited:phase10_rejection`                | supported |
-| `inherited:closed_policy_registry`           | supported |
-| `inherited:replay_identity`                  | supported |
-| `inherited:minimization_identity`            | supported |
-| `inherited:first_divergence_stability`       | supported |
-| `inherited:d0_byte_identity`                 | supported |
-| `inherited:debug_release_agreement`          | supported |
+| `inherited:zombie_pending` | supported |
+| `inherited:capacity_eviction` | supported |
+| `inherited:particle_contact` | supported |
+| `inherited:body_contact` | supported |
+| `inherited:strict_contact_enabled` | supported |
+| `inherited:strict_contact_disabled` | supported |
+| `inherited:listener_flag_enabled` | supported |
+| `inherited:listener_flag_disabled` | supported |
+| `inherited:filter_flag_enabled` | supported |
+| `inherited:filter_flag_disabled` | supported |
+| `inherited:contact_order` | supported |
+| `inherited:contact_multiplicity` | supported |
+| `inherited:coupling_fields` | supported |
+| `inherited:dynamic_body_reaction` | supported |
+| `inherited:static_body_no_reaction` | supported |
+| `inherited:force_range` | supported |
+| `inherited:impulse_range` | supported |
+| `inherited:statistics_counts` | supported |
+| `inherited:collision_energy` | supported |
+| `inherited:stuck_candidates` | supported |
+| `inherited:system_aabb` | supported |
+| `inherited:world_aabb` | supported |
+| `inherited:system_culling` | supported |
+| `inherited:query_continue` | supported |
+| `inherited:query_terminate` | supported |
+| `inherited:system_ray` | supported |
+| `inherited:world_ray` | supported |
+| `inherited:ray_culling` | supported |
+| `inherited:ray_start_inside_exclusion` | supported |
+| `inherited:ray_ignore` | supported |
+| `inherited:ray_continue` | supported |
+| `inherited:ray_clip` | supported |
+| `inherited:ray_terminate` | supported |
+| `inherited:retained_phase6_through_phase8` | supported |
+| `inherited:phase10_rejection` | supported |
+| `inherited:closed_policy_registry` | supported |
+| `inherited:replay_identity` | supported |
+| `inherited:minimization_identity` | supported |
+| `inherited:first_divergence_stability` | supported |
+| `inherited:d0_byte_identity` | supported |
+| `inherited:debug_release_agreement` | supported |
 
 ## Phase 11 local evidence generation
 
@@ -930,6 +930,72 @@ still requires the repository's explicit stage, review, and no-clobber
 promotion process; a workflow pass does not promote evidence. Local, scheduled,
 partial, stale, mixed-SHA, relabeled, digest-unverified, or copied artifacts
 cannot change compatibility authority.
+
+### Approved Phase 11 evidence run (2026-07-22)
+
+The first forensic attempt, [run 29899265024](https://github.com/bright-builds-llc/liquidfun-rs/actions/runs/29899265024),
+used base SHA `f2ec4a03abb852518fdbd52e9efd7c3cde43b03e`. Its four legacy
+jobs failed because the Phase 9 and Phase 10 provenance records still named the
+superseded adapter content digest. That failed run is not authority. Its
+canonical artifact ID `8521315244` and sanitizer artifact ID `8521345417` were
+inspected through metadata only, were never downloaded or promoted, and are
+permanently denied during validation.
+
+[Repair commit `4ea1e1e65919619d8cd1155a5461c2cda16ab7b6`](https://github.com/bright-builds-llc/liquidfun-rs/commit/4ea1e1e65919619d8cd1155a5461c2cda16ab7b6)
+updated those two provenance bindings and closed the workflow dispatch matrix.
+The automatic [push run 29926988101](https://github.com/bright-builds-llc/liquidfun-rs/actions/runs/29926988101)
+proved the repair on that exact SHA: [canonical job 88946587737](https://github.com/bright-builds-llc/liquidfun-rs/actions/runs/29926988101/job/88946587737)
+succeeded and the other five jobs were skipped.
+
+Exactly one Phase 11 dispatch was then made for the repair SHA. [Run
+29927362730](https://github.com/bright-builds-llc/liquidfun-rs/actions/runs/29927362730)
+completed successfully with [canonical job 88947879161](https://github.com/bright-builds-llc/liquidfun-rs/actions/runs/29927362730/job/88947879161)
+and [sanitizer job 88947879108](https://github.com/bright-builds-llc/liquidfun-rs/actions/runs/29927362730/job/88947879108)
+successful on Linux x86_64 with Rust 1.97.0, CMake 4.3.3, Ninja 1.13.2, and
+Clang 22.1.8. All four legacy jobs were skipped, so the run produced only the
+requested same-run Phase 11 pair.
+
+The accepted live artifacts are:
+
+- [canonical artifact 8532642627](https://api.github.com/repos/bright-builds-llc/liquidfun-rs/actions/artifacts/8532642627/zip),
+  named
+  `phase11-canonical-29927362730-4ea1e1e65919619d8cd1155a5461c2cda16ab7b6`,
+  size 12,974 bytes, archive SHA-256
+  `2bbf2dd14fdb3a8fbae119a150e0e2292dc36f6752c54ae3be466a23415c81e0`;
+- [sanitizer artifact 8532662842](https://api.github.com/repos/bright-builds-llc/liquidfun-rs/actions/artifacts/8532662842/zip),
+  named
+  `phase11-sanitizer-29927362730-4ea1e1e65919619d8cd1155a5461c2cda16ab7b6`,
+  size 12,968 bytes, archive SHA-256
+  `745b2e7fdeb730f8b40f68aea7f0f776b93465ed39a30e7832dcdeeaaa46ac3d`.
+
+Both identities report semantic SHA-256
+`248b19ecdfa6f5cd202a5d6b07783c82e097927d78e4ad87f5a4fe4c772687eb`.
+The canonical `identity.json` SHA-256 is
+`3a2fe2c222103ca60501e448d0256821a1b3c21301773649a79a51f92f776303`;
+the sanitizer identity SHA-256 is
+`4beb3be3c802b7360adff2d90df20f51c8d74719bacb523ebfad0f84b5fd7437`.
+
+Acquisition re-queried the run, all six jobs, the artifact list, and both
+individual artifacts after completion. Each downloaded archive matched its
+live size and digest. Before extraction, both archives passed the closed
+nine-entry topology, normalized-relative-path, traversal, duplicate,
+case-fold-collision, regular-file, depth, count, and uncompressed-size checks.
+They were then extracted independently into the fixed directories below; no
+file was copied between artifacts. Re-run the exact-reference validator with
+the failed-run identities explicitly denied:
+
+```bash
+cargo xtask phase11-evidence validate --mode exact-ref \
+  --run-json target/phase11-evidence/run.json \
+  --canonical-dir target/phase11-evidence/phase11-canonical \
+  --sanitizer-dir target/phase11-evidence/phase11-sanitizer \
+  --deny-run-id 29899265024 \
+  --deny-artifact-id 8521315244 \
+  --deny-artifact-id 8521345417
+```
+
+This fresh pair is the approved same-run D1 authority input. It remains
+unpromoted until the separate reviewed D3 promotion process is executed.
 
 ### Phase 9 recovery single-dispatch protocol
 
