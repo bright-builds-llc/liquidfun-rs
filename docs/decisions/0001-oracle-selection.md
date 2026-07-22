@@ -12,15 +12,15 @@ official repository contains material fixes after that release.
 
 The tag and commit identities are deliberately recorded separately:
 
-| Identity | Value |
+| Identity                 | Value                                      |
 | ------------------------ | ------------------------------------------ |
-| Repository | `https://github.com/google/liquidfun.git` |
-| Release tag | `v1.1.0` |
-| Annotated tag object | `d15bcf1879144bf2a4c8ebcc73f6418186756fb2` |
-| Release commit | `f38db7c627c3dc5ec879d726e16fa5a12ad6e478` |
+| Repository               | `https://github.com/google/liquidfun.git`  |
+| Release tag              | `v1.1.0`                                   |
+| Annotated tag object     | `d15bcf1879144bf2a4c8ebcc73f6418186756fb2` |
+| Release commit           | `f38db7c627c3dc5ec879d726e16fa5a12ad6e478` |
 | Selected official commit | `7f20402173fd143a3988c921bc384459c6a858f2` |
-| Release commit date | 2014-07-16 |
-| Selected commit date | 2018-01-10 |
+| Release commit date      | 2014-07-16                                 |
+| Selected commit date     | 2018-01-10                                 |
 
 The pinned release notes identify LiquidFun 1.1.0 as based on Box2D 2.3.0,
 revision 280. That historical lineage, rather than current Box2D behavior,
