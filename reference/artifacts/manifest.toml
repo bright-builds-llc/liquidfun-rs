@@ -31,6 +31,14 @@ record_fields = [
     "review_status",
 ]
 
+[artifact_schemas.phase11_evidence]
+schema_version = 1
+manifest_file = "phase11-v1.json"
+identity_file = "identity.json"
+protocol_version = "catalog-phase11-v1"
+generator_version = "phase11-evidence-v1"
+promotion = "exact-ref-same-run-only"
+
 [[artifacts]]
 artifact_kind = "trace"
 path = "reference/artifacts/traces/empty-world-v1.jsonl"

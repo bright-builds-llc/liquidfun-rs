@@ -53,7 +53,25 @@ struct ArtifactManifest {
     record_schema_version: u64,
     oracle_revision: String,
     record_fields: Vec<String>,
+    artifact_schemas: ArtifactSchemas,
     artifacts: Vec<RawArtifactRecord>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ArtifactSchemas {
+    phase11_evidence: Phase11EvidenceSchema,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Phase11EvidenceSchema {
+    schema_version: u64,
+    manifest_file: String,
+    identity_file: String,
+    protocol_version: String,
+    generator_version: String,
+    promotion: String,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq)]
@@ -180,6 +198,12 @@ pub(super) fn validate_manifest(
     if manifest.schema_version != MANIFEST_SCHEMA_VERSION
         || manifest.record_schema_version != RECORD_SCHEMA_VERSION
         || manifest.record_fields != RECORD_FIELDS
+        || manifest.artifact_schemas.phase11_evidence.schema_version != 1
+        || manifest.artifact_schemas.phase11_evidence.manifest_file != "phase11-v1.json"
+        || manifest.artifact_schemas.phase11_evidence.identity_file != "identity.json"
+        || manifest.artifact_schemas.phase11_evidence.protocol_version != "catalog-phase11-v1"
+        || manifest.artifact_schemas.phase11_evidence.generator_version != "phase11-evidence-v1"
+        || manifest.artifact_schemas.phase11_evidence.promotion != "exact-ref-same-run-only"
     {
         return Err(ProvenanceError::new(
             "schema",
