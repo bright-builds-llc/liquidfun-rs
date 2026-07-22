@@ -137,7 +137,10 @@ fn validate_manifest(root: &Path, loaded: &LoadedCorpus) -> Result<(), String> {
     )?;
     exact_directory_files(
         &root.join("reference/artifacts/phase11"),
-        &BTreeSet::from(["scenario-mappings.json".to_owned()]),
+        &BTreeSet::from([
+            "exact-ref.json".to_owned(),
+            "scenario-mappings.json".to_owned(),
+        ]),
     )?;
 
     let proof_ids = manifest

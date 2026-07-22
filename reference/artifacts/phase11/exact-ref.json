@@ -1,0 +1,248 @@
+{
+  "schema_version": 1,
+  "authority_kind": "phase11-exact-ref-promotion",
+  "repository": "bright-builds-llc/liquidfun-rs",
+  "upstream_revision": "7f20402173fd143a3988c921bc384459c6a858f2",
+  "approved_sha": "4ea1e1e65919619d8cd1155a5461c2cda16ab7b6",
+  "run": {
+    "id": 29927362730,
+    "workflow": "Oracle CI",
+    "event": "workflow_dispatch",
+    "conclusion": "success",
+    "url": "https://github.com/bright-builds-llc/liquidfun-rs/actions/runs/29927362730",
+    "created_at": "2026-07-22T14:11:14Z",
+    "updated_at": "2026-07-22T14:16:04Z",
+    "jobs": {
+      "canonical": {
+        "id": 88947879161,
+        "name": "Phase 11 canonical Linux oracle",
+        "conclusion": "success",
+        "url": "https://github.com/bright-builds-llc/liquidfun-rs/actions/runs/29927362730/job/88947879161"
+      },
+      "sanitizer": {
+        "id": 88947879108,
+        "name": "Phase 11 fail-fast sanitizer",
+        "conclusion": "success",
+        "url": "https://github.com/bright-builds-llc/liquidfun-rs/actions/runs/29927362730/job/88947879108"
+      }
+    }
+  },
+  "toolchains": {
+    "platform": "linux-x86_64",
+    "rust": "1.97.0",
+    "cmake": "4.3.3",
+    "ninja": "1.13.2",
+    "clang": "22.1.8"
+  },
+  "artifacts": {
+    "canonical": {
+      "id": 8532642627,
+      "name": "phase11-canonical-29927362730-4ea1e1e65919619d8cd1155a5461c2cda16ab7b6",
+      "api_url": "https://api.github.com/repos/bright-builds-llc/liquidfun-rs/actions/artifacts/8532642627",
+      "archive_download_url": "https://api.github.com/repos/bright-builds-llc/liquidfun-rs/actions/artifacts/8532642627/zip",
+      "live_sha256": "2bbf2dd14fdb3a8fbae119a150e0e2292dc36f6752c54ae3be466a23415c81e0",
+      "archive_sha256": "2bbf2dd14fdb3a8fbae119a150e0e2292dc36f6752c54ae3be466a23415c81e0",
+      "identity_sha256": "3a2fe2c222103ca60501e448d0256821a1b3c21301773649a79a51f92f776303",
+      "size_in_bytes": 12974
+    },
+    "sanitizer": {
+      "id": 8532662842,
+      "name": "phase11-sanitizer-29927362730-4ea1e1e65919619d8cd1155a5461c2cda16ab7b6",
+      "api_url": "https://api.github.com/repos/bright-builds-llc/liquidfun-rs/actions/artifacts/8532662842",
+      "archive_download_url": "https://api.github.com/repos/bright-builds-llc/liquidfun-rs/actions/artifacts/8532662842/zip",
+      "live_sha256": "745b2e7fdeb730f8b40f68aea7f0f776b93465ed39a30e7832dcdeeaaa46ac3d",
+      "archive_sha256": "745b2e7fdeb730f8b40f68aea7f0f776b93465ed39a30e7832dcdeeaaa46ac3d",
+      "identity_sha256": "4beb3be3c802b7360adff2d90df20f51c8d74719bacb523ebfad0f84b5fd7437",
+      "size_in_bytes": 12968
+    }
+  },
+  "semantic": {
+    "protocol_version": "catalog-phase11-v1",
+    "generator_version": "phase11-evidence-v1",
+    "semantic_sha256": "248b19ecdfa6f5cd202a5d6b07783c82e097927d78e4ad87f5a4fe4c772687eb",
+    "catalog": {
+      "path": "reference/scenario-catalog.json",
+      "sha256": "e0b09f385c4df9ce2245ae35c37bd4a1b9ba5dc3e083e7bd793e98bc6cccf5d9"
+    },
+    "mapping": {
+      "path": "reference/artifacts/phase11/scenario-mappings.json",
+      "sha256": "66d6d4ef4a671a3213e936cdd5d5afd94add9f5d81e0ec1cf6e7b0487902222a"
+    },
+    "payloads": [
+      {
+        "case_id": "particle-groups",
+        "path": "crates/liquidfun-differential/tests/fixtures/catalog/cases/particle-groups.jsonl",
+        "sha256": "1e5cfeefc0d5b8dcc34682703a971ee3b2b705fef943a48815e38a48a87a801e"
+      },
+      {
+        "case_id": "queries-callbacks-mutations",
+        "path": "crates/liquidfun-differential/tests/fixtures/catalog/cases/queries-callbacks-mutations.jsonl",
+        "sha256": "b647a4d9aa7722b10b3b38090083e8917a8cf0593d9533bdefdf73d41c6d1f23"
+      },
+      {
+        "case_id": "rigid-joint-rope",
+        "path": "crates/liquidfun-differential/tests/fixtures/catalog/cases/rigid-joint-rope.jsonl",
+        "sha256": "c98dad94a3071d756cb721fea9b8013cacef5a176f14c71c8e723b29ae2d3bb5"
+      }
+    ],
+    "inherited_proofs": [
+      {
+        "proof_id": "phase6",
+        "path": "protocol/tolerances/phase6-v1.toml",
+        "sha256": "7f10df148852866fd20d11b8d27adcddc0ad463ac3d3d716a8946ca5c8f1c63a"
+      },
+      {
+        "proof_id": "phase7",
+        "path": "protocol/tolerances/phase7-v1.toml",
+        "sha256": "fd772b2cf523a6d40bf978bc4d0da18a4564181a93e6b2bdeb8e4d40d5613311"
+      },
+      {
+        "proof_id": "phase8",
+        "path": "protocol/tolerances/phase8-v1.toml",
+        "sha256": "2843ca40bec5b1c680135664c58c12a8388a7a9e86ad77f8ef5a268f3f15a6bf"
+      },
+      {
+        "proof_id": "phase9",
+        "path": "crates/liquidfun-differential/tests/fixtures/rigid_world/phase9/phase9-v1.json",
+        "sha256": "e0936090c8b8453cd464e7e56e1fa09392265ffb1da1f81d8d692667956a3fcc"
+      },
+      {
+        "proof_id": "phase10",
+        "path": "crates/liquidfun-differential/tests/fixtures/rigid_world/phase10/phase10-v1.json",
+        "sha256": "49271756565607cfc391ccfd29ca1b38d6176bcf32490fdf5e3636c0db861b7f"
+      }
+    ],
+    "roles": [
+      "debug",
+      "release",
+      "replay",
+      "sanitizer"
+    ],
+    "cases": [
+      {
+        "case_id": "particle-groups",
+        "outcomes": {
+          "debug": "match",
+          "release": "match",
+          "replay": "match",
+          "sanitizer": "match"
+        },
+        "resolved_sha256": "1feb7181de5575fc6aa522cbdd9f8cdedc69c570d44f665addd3fb50b7252115",
+        "request_sha256": "4e6e6a384e9213a24537911068813169a0a09052fe865c927ade4d1221568fc3",
+        "checkpoint_sha256": "5c528170c37f882237656f5328fada34a21934e76620b596e2c147a58909ec14",
+        "comparison_sha256": "d472542ed8b4a82a856f22b775a5eded56b9f9804024c2daef301b9ff7965643",
+        "mapping_sha256": "32eda9c18a065283847d377ff2c303085a76f57c5acfd6b0ca7ce298d8e4a325",
+        "policy_sha256": "3ffb800fbf8802fd8fa62ad7f6759b9cc06c51fbec3199134742fccb98beff0b",
+        "inherited_evidence_sha256": "5ac7a8cbd8899f6b559652521bec35cab5a340669ac2ab37302b873ebf124554",
+        "semantic_sha256": "710d9976ded493764e985a1a9e08d42fc02c2bc8e54b0262e6c2085d8b64a5fb",
+        "observation_leaves": [
+          "particle.count",
+          "particle.group.count",
+          "particle.group.membership"
+        ],
+        "primitive_leaves": [
+          "debug.particles",
+          "debug.particle_contacts"
+        ],
+        "numeric_policies": [
+          "math.vector.length",
+          "math.operation.abs"
+        ]
+      },
+      {
+        "case_id": "queries-callbacks-mutations",
+        "outcomes": {
+          "debug": "match",
+          "release": "match",
+          "replay": "match",
+          "sanitizer": "match"
+        },
+        "resolved_sha256": "6af9595f0ab58a55e84a08e7ebd750b860025f4aa99b5403744512742ca676bf",
+        "request_sha256": "d2cf5e5c783d194b0e4ddcd5165c6bef27224cc8a59e06c0b4676a5bd075850e",
+        "checkpoint_sha256": "64228dae4b1d74a103b0ddf6fd319960a5e2ade6d29266c637667bff903873c0",
+        "comparison_sha256": "710f5795d54261fea4d434306a5c40f4f9de54bbda4087bffc664935f2d2c7ad",
+        "mapping_sha256": "39300bd3fabd91976f6dff6c68cb997c562486f24640f66383e5f0b69b064884",
+        "policy_sha256": "eb17678ed6a28d83107382d067b97d2f913a5d02a89755657c9537d20a849079",
+        "inherited_evidence_sha256": "5ac7a8cbd8899f6b559652521bec35cab5a340669ac2ab37302b873ebf124554",
+        "semantic_sha256": "d2a1520d1cb9f0b8b2a42d895ca76894baa4099c7f4c7574731ce92e3bcc39db",
+        "observation_leaves": [
+          "query.hit.count",
+          "callback.occurrence.count",
+          "mutation.status"
+        ],
+        "primitive_leaves": [
+          "debug.broad_phase",
+          "debug.contacts"
+        ],
+        "numeric_policies": [
+          "math.operation.clamp",
+          "math.vector.dot"
+        ]
+      },
+      {
+        "case_id": "rigid-joint-rope",
+        "outcomes": {
+          "debug": "match",
+          "release": "match",
+          "replay": "match",
+          "sanitizer": "match"
+        },
+        "resolved_sha256": "a87d24749ce20e01384c47ddef902badfd9b785dbbc15eca60ed71e72f785382",
+        "request_sha256": "b386d05bd7a01f0affecc3449e287125f107badcfad452df49c43d6a7290990a",
+        "checkpoint_sha256": "648bcf1427bf021c3a9074f83be4fd58238336e2b325f3c7903feca13bf4aea9",
+        "comparison_sha256": "1ce2389f3bea90c47fbbf6e0dae5518d3b606604e2ac2d33069b667d01c52627",
+        "mapping_sha256": "4737735181f18e5527f6bdae049aa8f3e9d87ba4c0f9c3d406c570db28810ff2",
+        "policy_sha256": "33582b6076dae7204a37bac7e968f19d66ab7f790e64b3df77f588de61cd7129",
+        "inherited_evidence_sha256": "5ac7a8cbd8899f6b559652521bec35cab5a340669ac2ab37302b873ebf124554",
+        "semantic_sha256": "9873911a2a21e1fcecf813c2d6e083fbc26d28c87b3400db4de42ddbb0f41b4e",
+        "observation_leaves": [
+          "rigid.body.count",
+          "joint.constraint.count",
+          "rope.vertex.count"
+        ],
+        "primitive_leaves": [
+          "debug.shapes",
+          "debug.joints"
+        ],
+        "numeric_policies": [
+          "math.vector.length",
+          "math.rotation"
+        ]
+      }
+    ]
+  },
+  "promotion": {
+    "scoped_rows": [
+      "subsystem.headless-catalog-execution",
+      "subsystem.headless-public-observation-and-debug-draw",
+      "subsystem.headless-reviewed-upstream-equivalence",
+      "subsystem.headless-semantic-checkpoints-and-comparison"
+    ],
+    "supported_outcome": "match",
+    "excluded_claims": [
+      "broad-platform-portability",
+      "frame-rate",
+      "packaging-readiness",
+      "performance",
+      "release-readiness",
+      "visualization-pixels",
+      "wall-duration"
+    ]
+  },
+  "denied_candidates": [
+    {
+      "run_id": 29899265024,
+      "artifact_ids": [
+        8521315244,
+        8521345417
+      ],
+      "reason": "failed forensic run; artifacts were not accepted or downloaded"
+    }
+  ],
+  "review": {
+    "review_id": "phase11-plan23-authority-review",
+    "reviewed_by": "GSD Plan 11-23 executor",
+    "reviewed_on": "2026-07-22",
+    "source": ".planning/phases/11-examples-headless-tooling-and-testbed/11-22-SUMMARY.md"
+  }
+}

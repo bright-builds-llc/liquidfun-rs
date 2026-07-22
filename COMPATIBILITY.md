@@ -8,7 +8,7 @@ The machine-readable source of truth is `reference/compatibility.json`. This rep
 
 - Revision: `7f20402173fd143a3988c921bc384459c6a858f2`
 - Schema: 1
-- Compatibility rows: 177
+- Compatibility rows: 181
 
 ## Evidence-state legend
 
@@ -29,7 +29,7 @@ Each dimension is independent. `Evidenced` requires at least one cited reference
 
 | Kind | Rows | Applicable | Reviewed exclusions |
 | --- | ---: | ---: | ---: |
-| `subsystem` | 16 | 16 | 0 |
+| `subsystem` | 20 | 20 | 0 |
 | `public_api` | 59 | 59 | 0 |
 | `source_area` | 8 | 8 | 0 |
 | `test` | 14 | 14 | 0 |
@@ -40,14 +40,14 @@ Each dimension is independent. `Evidenced` requires at least one cited reference
 
 | Dimension | Evidenced | Not evidenced |
 | --- | ---: | ---: |
-| `investigated` | 177 | 0 |
-| `planned` | 177 | 0 |
-| `implemented` | 60 | 117 |
-| `unit_tested` | 60 | 117 |
-| `differentially_validated` | 59 | 118 |
-| `platform_validated` | 42 | 135 |
-| `documented_difference` | 51 | 126 |
-| `intentionally_unsupported` | 0 | 177 |
+| `investigated` | 181 | 0 |
+| `planned` | 181 | 0 |
+| `implemented` | 64 | 117 |
+| `unit_tested` | 64 | 117 |
+| `differentially_validated` | 63 | 118 |
+| `platform_validated` | 46 | 135 |
+| `documented_difference` | 51 | 130 |
+| `intentionally_unsupported` | 0 | 181 |
 
 ## Subsystem
 
@@ -60,6 +60,10 @@ Each dimension is independent. `Evidenced` requires at least one cited reference
 | `subsystem.common-math-and-settings` | `liquidfun/Box2D/Box2D/Common` | `liquidfun::math` | applicable | yes | yes | yes | yes | yes | no | yes | no |
 | `subsystem.common-memory-and-utilities` | `liquidfun/Box2D/Box2D/Common` | `liquidfun::internal` | applicable | yes | yes | no | no | no | no | no | no |
 | `subsystem.contacts-and-filtering` | `liquidfun/Box2D/Box2D/Dynamics/Contacts` | `liquidfun::dynamics::contacts` | applicable | yes | yes | yes | yes | yes | yes | yes | no |
+| `subsystem.headless-catalog-execution` | `liquidfun/Box2D/Testbed/Tests` | `liquidfun_test_protocol::catalog + liquidfun_differential::catalog_native` | applicable | yes | yes | yes | yes | yes | yes | no | no |
+| `subsystem.headless-public-observation-and-debug-draw` | `liquidfun/Box2D/Box2D/Dynamics` | `liquidfun::{world,debug_draw}` | applicable | yes | yes | yes | yes | yes | yes | no | no |
+| `subsystem.headless-reviewed-upstream-equivalence` | `liquidfun/Box2D` | `liquidfun_test_protocol::catalog::mapping` | applicable | yes | yes | yes | yes | yes | yes | no | no |
+| `subsystem.headless-semantic-checkpoints-and-comparison` | `liquidfun/Box2D/Testbed` | `liquidfun_test_protocol::checkpoint + liquidfun_differential::comparison_model` | applicable | yes | yes | yes | yes | yes | yes | no | no |
 | `subsystem.joints` | `liquidfun/Box2D/Box2D/Dynamics/Joints` | `liquidfun::dynamics::joints` | applicable | yes | yes | yes | yes | yes | yes | yes | no |
 | `subsystem.particle-contacts-and-coupling` | `liquidfun/Box2D/Box2D/Particle` | `liquidfun::particle` | applicable | yes | yes | yes | yes | yes | yes | no | no |
 | `subsystem.particle-groups-pairs-and-triads` | `liquidfun/Box2D/Box2D/Particle` | `liquidfun::particle` | applicable | yes | yes | yes | yes | yes | yes | no | no |
@@ -416,6 +420,10 @@ Every row below names its currently missing evidence dimensions. Absence is not 
 | `subsystem.common-math-and-settings` | platform_validated, intentionally_unsupported |
 | `subsystem.common-memory-and-utilities` | implemented, unit_tested, differentially_validated, platform_validated, documented_difference, intentionally_unsupported |
 | `subsystem.contacts-and-filtering` | intentionally_unsupported |
+| `subsystem.headless-catalog-execution` | documented_difference, intentionally_unsupported |
+| `subsystem.headless-public-observation-and-debug-draw` | documented_difference, intentionally_unsupported |
+| `subsystem.headless-reviewed-upstream-equivalence` | documented_difference, intentionally_unsupported |
+| `subsystem.headless-semantic-checkpoints-and-comparison` | documented_difference, intentionally_unsupported |
 | `subsystem.joints` | intentionally_unsupported |
 | `subsystem.particle-contacts-and-coupling` | documented_difference, intentionally_unsupported |
 | `subsystem.particle-groups-pairs-and-triads` | documented_difference, intentionally_unsupported |

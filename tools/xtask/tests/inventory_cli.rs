@@ -11,6 +11,8 @@ use serde_json::{Value, json};
 
 #[path = "inventory_cli/phase10.rs"]
 mod phase10;
+#[path = "inventory_cli/phase11.rs"]
+mod phase11;
 #[path = "inventory_cli/phase9.rs"]
 mod phase9;
 

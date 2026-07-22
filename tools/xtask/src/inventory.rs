@@ -351,7 +351,7 @@ fn validated_ledgers(
         &repository_root.join("reference/discovery.json"),
         "discovery schema",
     )?;
-    validation::compatibility(&compatibility, oracle_revision)?;
+    validation::compatibility(&compatibility, oracle_revision, repository_root)?;
     validation::discovery(&discovery, oracle_revision)?;
     validation::coverage(&compatibility, &discovery)?;
     Ok((compatibility, discovery))

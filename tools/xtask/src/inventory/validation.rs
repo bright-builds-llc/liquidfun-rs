@@ -1,6 +1,8 @@
 use std::collections::{BTreeMap, BTreeSet};
+use std::path::Path;
 
 mod phase10;
+mod phase11;
 mod phase9;
 
 use super::{
@@ -12,6 +14,7 @@ use super::{
 pub(super) fn compatibility(
     ledger: &CompatibilityLedger,
     oracle_revision: &str,
+    repository_root: &Path,
 ) -> Result<(), InventoryError> {
     require_schema_and_revision(
         ledger.schema_version,
@@ -79,7 +82,8 @@ pub(super) fn compatibility(
         }
     }
     phase9::promotion(ledger)?;
-    phase10::promotion(ledger)
+    phase10::promotion(ledger)?;
+    phase11::promotion(ledger, repository_root)
 }
 
 fn compatibility_entry(entry: &CompatibilityEntry) -> Result<(), InventoryError> {
