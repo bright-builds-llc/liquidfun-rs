@@ -17,6 +17,7 @@ on:
           - phase8
           - phase9
           - phase10
+          - phase11
 
 permissions:
   contents: read
@@ -310,6 +311,128 @@ jobs:
           path: target/differential/failures
           if-no-files-found: error
           retention-days: 7
+
+  phase11-canonical-linux:
+    name: Phase 11 canonical Linux oracle
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.evidence_phase == 'phase11')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      CC: clang-22
+      CXX: clang++-22
+      LIQUIDFUN_XTASK_CMAKE: cmake
+      LIQUIDFUN_XTASK_NINJA: ninja
+      LIQUIDFUN_XTASK_CXX: clang++-22
+    steps:
+      - name: Check out sources and the pinned oracle
+        # actions/checkout v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          submodules: recursive
+      - name: Install pinned Rust
+        run: rustup toolchain install 1.97.0 --profile minimal
+      - name: Install canonical LLVM 22
+        run: |
+          curl --fail --location --silent --show-error --output "$RUNNER_TEMP/llvm.sh" https://apt.llvm.org/llvm.sh
+          echo "9474ecd78b52aba6e923976b1e9773f5613027cc7e237b9956986cb536e02a36  $RUNNER_TEMP/llvm.sh" | sha256sum --check
+          chmod 755 "$RUNNER_TEMP/llvm.sh"
+          sudo "$RUNNER_TEMP/llvm.sh" 22
+          echo "/usr/lib/llvm-22/bin" >> "$GITHUB_PATH"
+      - name: Install exact CMake and Ninja
+        run: |
+          curl --fail --location --silent --show-error --output "$RUNNER_TEMP/cmake.tar.gz" https://github.com/Kitware/CMake/releases/download/v4.3.3/cmake-4.3.3-linux-x86_64.tar.gz
+          echo "927b2368a946c37269c3a66225ab00544e756459cdd0b5d0da438694fb9ff802  $RUNNER_TEMP/cmake.tar.gz" | sha256sum --check
+          tar -xzf "$RUNNER_TEMP/cmake.tar.gz" -C "$RUNNER_TEMP"
+          mkdir -p "$RUNNER_TEMP/ninja-1.13.2"
+          curl --fail --location --silent --show-error --output "$RUNNER_TEMP/ninja.zip" https://github.com/ninja-build/ninja/releases/download/v1.13.2/ninja-linux.zip
+          echo "5749cbc4e668273514150a80e387a957f933c6ed3f5f11e03fb30955e2bbead6  $RUNNER_TEMP/ninja.zip" | sha256sum --check
+          unzip -q "$RUNNER_TEMP/ninja.zip" -d "$RUNNER_TEMP/ninja-1.13.2"
+          {
+            echo "$RUNNER_TEMP/cmake-4.3.3-linux-x86_64/bin"
+            echo "$RUNNER_TEMP/ninja-1.13.2"
+          } >> "$GITHUB_PATH"
+      - name: Assert the canonical toolchain
+        run: |
+          rustc --version | grep --fixed-strings "rustc 1.97.0"
+          cmake --version | grep --fixed-strings "cmake version 4.3.3"
+          test "$(ninja --version)" = "1.13.2"
+          clang++-22 --version | grep --extended-regexp 'clang version 22\.1\.8'
+      - name: Generate and validate Phase 11 canonical evidence
+        env:
+          LIQUIDFUN_PHASE11_ORACLE_MODE: canonical
+        run: bash scripts/phase11-evidence.sh canonical target/oracle-evidence/phase11-canonical
+      - name: Upload Phase 11 canonical evidence
+        # actions/upload-artifact v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: phase11-canonical-${{ github.run_id }}-${{ github.sha }}
+          path: target/oracle-evidence/phase11-canonical
+          if-no-files-found: error
+          retention-days: 30
+
+  phase11-sanitizer-linux:
+    name: Phase 11 fail-fast sanitizer
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.evidence_phase == 'phase11')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      CC: clang-22
+      CXX: clang++-22
+      LIQUIDFUN_XTASK_CMAKE: cmake
+      LIQUIDFUN_XTASK_NINJA: ninja
+      LIQUIDFUN_XTASK_CXX: clang++-22
+    steps:
+      - name: Check out sources and the pinned oracle
+        # actions/checkout v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          submodules: recursive
+      - name: Install pinned Rust
+        run: rustup toolchain install 1.97.0 --profile minimal
+      - name: Install canonical LLVM 22
+        run: |
+          curl --fail --location --silent --show-error --output "$RUNNER_TEMP/llvm.sh" https://apt.llvm.org/llvm.sh
+          echo "9474ecd78b52aba6e923976b1e9773f5613027cc7e237b9956986cb536e02a36  $RUNNER_TEMP/llvm.sh" | sha256sum --check
+          chmod 755 "$RUNNER_TEMP/llvm.sh"
+          sudo "$RUNNER_TEMP/llvm.sh" 22
+          echo "/usr/lib/llvm-22/bin" >> "$GITHUB_PATH"
+      - name: Install exact CMake and Ninja
+        run: |
+          curl --fail --location --silent --show-error --output "$RUNNER_TEMP/cmake.tar.gz" https://github.com/Kitware/CMake/releases/download/v4.3.3/cmake-4.3.3-linux-x86_64.tar.gz
+          echo "927b2368a946c37269c3a66225ab00544e756459cdd0b5d0da438694fb9ff802  $RUNNER_TEMP/cmake.tar.gz" | sha256sum --check
+          tar -xzf "$RUNNER_TEMP/cmake.tar.gz" -C "$RUNNER_TEMP"
+          mkdir -p "$RUNNER_TEMP/ninja-1.13.2"
+          curl --fail --location --silent --show-error --output "$RUNNER_TEMP/ninja.zip" https://github.com/ninja-build/ninja/releases/download/v1.13.2/ninja-linux.zip
+          echo "5749cbc4e668273514150a80e387a957f933c6ed3f5f11e03fb30955e2bbead6  $RUNNER_TEMP/ninja.zip" | sha256sum --check
+          unzip -q "$RUNNER_TEMP/ninja.zip" -d "$RUNNER_TEMP/ninja-1.13.2"
+          {
+            echo "$RUNNER_TEMP/cmake-4.3.3-linux-x86_64/bin"
+            echo "$RUNNER_TEMP/ninja-1.13.2"
+          } >> "$GITHUB_PATH"
+      - name: Assert the canonical toolchain
+        run: |
+          rustc --version | grep --fixed-strings "rustc 1.97.0"
+          cmake --version | grep --fixed-strings "cmake version 4.3.3"
+          test "$(ninja --version)" = "1.13.2"
+          clang++-22 --version | grep --extended-regexp 'clang version 22\.1\.8'
+      - name: Generate and validate Phase 11 sanitizer evidence
+        env:
+          ASAN_OPTIONS: abort_on_error=1:halt_on_error=1
+          LIQUIDFUN_PHASE11_ORACLE_MODE: sanitizer
+          UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+        run: bash scripts/phase11-evidence.sh sanitizer target/oracle-evidence/phase11-sanitizer
+      - name: Upload Phase 11 sanitizer evidence
+        # actions/upload-artifact v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: phase11-sanitizer-${{ github.run_id }}-${{ github.sha }}
+          path: target/oracle-evidence/phase11-sanitizer
+          if-no-files-found: error
+          retention-days: 30
 
   portability-macos:
     name: macOS oracle portability

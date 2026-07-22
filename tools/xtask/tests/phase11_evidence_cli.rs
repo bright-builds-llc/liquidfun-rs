@@ -6,6 +6,8 @@ use std::{path::Path, process::Command};
 mod exact;
 #[path = "phase11_evidence_cli/support.rs"]
 mod support;
+#[path = "phase11_evidence_cli/workflow.rs"]
+mod workflow;
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 

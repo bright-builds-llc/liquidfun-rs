@@ -867,6 +867,70 @@ for the five comparison payload digests. The shared semantic manifest remains
 | `inherited:d0_byte_identity`                 | supported |
 | `inherited:debug_release_agreement`          | supported |
 
+## Phase 11 local evidence generation
+
+Phase 11 seals three representative semantic cases spanning rigid bodies,
+joints, standalone rope, particle groups, queries, callbacks, and mutations.
+The runner validates the tracked corpus and pinned upstream source, builds only
+the reviewed oracle presets, executes the fixed native debug/release and exact
+replay commands, and performs process-isolated comparisons. Sanitizer mode also
+runs the protocol tests and every representative comparison with fail-fast ASan
+and UBSan settings. Command failures retain only bounded first/last diagnostic
+bytes under `target/phase11-evidence-failures`; raw unbounded logs never enter an
+authority artifact.
+
+Generate and validate the local pair from the repository root:
+
+```bash
+just phase11-evidence-canonical
+just phase11-evidence-sanitizer
+just phase11-evidence-validate
+```
+
+Each output has one closed topology: `phase11-v1.json`, three payloads under
+`cases/`, and the `debug.jsonl`, `release.jsonl`, `replay.jsonl`, and
+`sanitizer.jsonl` semantic proofs. The runner recomputes every file digest,
+validates that complete set, and atomically publishes `identity.json` last. A
+local identity uses run and artifact ID zero plus local toolchain labels, so
+local output is D2 and non-promotable. Byte-exact replay within the same build
+is D0 only. Screenshots, rendered pixels, frame rate, frame timing, and
+wall-clock profiles are excluded from semantic evidence and cannot establish
+compatibility.
+
+The scheduled Phase 11 pair is a read-only D2 health check. Phase 11 same-run D1
+authority requires one successful manual `Oracle CI` dispatch at one immutable
+40-character `main` SHA:
+
+```bash
+gh workflow run oracle.yml --ref main -f evidence_phase=phase11
+```
+
+That one run must contain the distinct successful `Phase 11 canonical Linux oracle` and `Phase 11 fail-fast sanitizer` jobs on Linux x86_64 with Rust
+1.97.0, CMake 4.3.3, Ninja 1.13.2, and Clang 22.1.8. It uploads exactly
+`phase11-canonical-<run-id>-<full-sha>` and
+`phase11-sanitizer-<run-id>-<full-sha>` with finite retention. Both archived
+identities keep `artifact_id: 0` because GitHub assigns the live IDs only after
+upload.
+
+Exact-reference acquisition must re-query the run, both jobs, the artifact
+list, and each individual artifact through the GitHub API. Record their live
+nonzero IDs, digests, sizes, timestamps, URLs, exact names, and separately
+downloaded archive paths in `run.json`; inspect both bounded archives before
+extracting either, and never copy files between them. Validate the fresh pair:
+
+```bash
+cargo xtask phase11-evidence validate --mode exact-ref \
+  --canonical-dir target/phase11-evidence-exact/canonical \
+  --sanitizer-dir target/phase11-evidence-exact/sanitizer \
+  --run-json target/phase11-evidence-exact/run.json
+```
+
+Only this fresh same-run D1 pair is eligible for later reviewed promotion. D3
+still requires the repository's explicit stage, review, and no-clobber
+promotion process; a workflow pass does not promote evidence. Local, scheduled,
+partial, stale, mixed-SHA, relabeled, digest-unverified, or copied artifacts
+cannot change compatibility authority.
+
 ### Phase 9 recovery single-dispatch protocol
 
 The Phase-09-only recovery exception authorizes one autonomous

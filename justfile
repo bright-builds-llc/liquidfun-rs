@@ -102,6 +102,15 @@ phase10-evidence-sanitizer output="target/phase10-evidence-local/sanitizer":
 phase10-evidence-validate canonical="target/phase10-evidence-local/canonical" sanitizer="target/phase10-evidence-local/sanitizer":
     cargo xtask phase10-evidence validate --mode local --canonical-dir {{quote(canonical)}} --sanitizer-dir {{quote(sanitizer)}}
 
+phase11-evidence-canonical output="target/phase11-evidence-local/canonical":
+    LIQUIDFUN_PHASE11_ORACLE_MODE=canonical bash scripts/phase11-evidence.sh canonical {{quote(output)}}
+
+phase11-evidence-sanitizer output="target/phase11-evidence-local/sanitizer":
+    UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 ASAN_OPTIONS=abort_on_error=1:halt_on_error=1 LIQUIDFUN_PHASE11_ORACLE_MODE=sanitizer bash scripts/phase11-evidence.sh sanitizer {{quote(output)}}
+
+phase11-evidence-validate canonical="target/phase11-evidence-local/canonical" sanitizer="target/phase11-evidence-local/sanitizer":
+    cargo xtask phase11-evidence validate --mode local --canonical-dir {{quote(canonical)}} --sanitizer-dir {{quote(sanitizer)}}
+
 rigid-world-minimize:
     cargo xtask differential minimize --scenario rigid-world --preset oracle-debug --session-profile one-shot
 
