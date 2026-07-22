@@ -98,12 +98,14 @@ fn production_launcher_wires_accessible_controls_pointer_gestures_and_minimum_wi
     let required_links = [
         "KeyCode::Tab",
         "focus_return.open(",
-        "focus_return.close(",
+        "if let Some(returned_focus) = self.focus_return.close()",
+        "control_for_focus(returned_focus)",
         "const CONTROL_TARGET: f32 = 44.0;",
         "MouseButton::Middle",
         "shift && is_mouse_button_down(MouseButton::Left)",
         "maybe_last_click",
         "if double_click {",
+        "hit_test_frame(",
         "self.center_x = 0.0;",
         "self.center_y = 0.0;",
         "minimum_close_bounds()",
@@ -132,6 +134,14 @@ fn production_launcher_wires_accessible_controls_pointer_gestures_and_minimum_wi
     assert!(
         pointer_centered_zoom,
         "interactive production pointer gestures do not preserve the world point under zoom"
+    );
+    assert!(
+        !LAUNCHER_SOURCE.contains("debug_primitives().first()"),
+        "semantic pointer selection must hit-test the clicked primitive"
+    );
+    assert!(
+        !LAUNCHER_SOURCE.contains("22.0, TEXT") && !LAUNCHER_SOURCE.contains("28.0, TEXT"),
+        "production launcher uses typography outside the approved 12/14/18/24 scale"
     );
 }
 

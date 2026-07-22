@@ -27,8 +27,8 @@ use liquidfun_testbed::ui::layout::{
     CompactWindowNotice, FocusId, FocusReturn, PanelBehavior, ResponsiveLayout,
 };
 use liquidfun_testbed::ui::protocol_viewport::{
-    ProtocolComparisonBackend, ProtocolLayerVisibility, ProtocolViewport,
-    draw_protocol_comparison_frame, draw_protocol_frame, project_checkpoint,
+    ProtocolComparisonBackend, ProtocolLayerVisibility, ProtocolScreenPoint, ProtocolViewport,
+    draw_protocol_comparison_frame, draw_protocol_frame, hit_test_frame, project_checkpoint,
 };
 use liquidfun_testbed::ui::settings::{SettingsEditor, SettingsField};
 use liquidfun_testbed::ui::viewport::Camera;
@@ -395,12 +395,15 @@ impl DesktopApp {
     fn open_modal(&mut self, panel: OpenPanel, invoker: FocusId, first: FocusId) {
         self.open_panel = panel;
         self.focus_return.open(invoker, first);
+        self.focus_index = focus_index(control_for_focus(first));
     }
 
     fn close_modal(&mut self) {
         self.open_panel = OpenPanel::None;
         self.maybe_editing_setting = None;
-        let _returned_focus = self.focus_return.close();
+        if let Some(returned_focus) = self.focus_return.close() {
+            self.focus_index = focus_index(control_for_focus(returned_focus));
+        }
     }
 
     fn open_settings(&mut self) {
@@ -409,8 +412,8 @@ impl DesktopApp {
         }
         self.open_modal(
             OpenPanel::Settings,
-            FocusId::InspectorButton,
-            FocusId::InspectorHeading,
+            FocusId::SettingsButton,
+            FocusId::SettingsHeading,
         );
     }
 
@@ -783,11 +786,29 @@ impl DesktopApp {
                 self.pixels_per_meter = 42.0;
                 self.maybe_selected_primitive = None;
             } else {
-                self.maybe_selected_primitive = self
-                    .testbed
-                    .latest_checkpoint()
-                    .and_then(|checkpoint| checkpoint.debug_primitives().first())
-                    .map(|record| format!("{:?}", record.key()));
+                let maybe_key = self.testbed.latest_checkpoint().and_then(|checkpoint| {
+                    let projected_viewport = ProtocolViewport::new(
+                        viewport.0,
+                        viewport.1,
+                        viewport.2,
+                        viewport.3,
+                        self.center_x,
+                        self.center_y,
+                        self.pixels_per_meter,
+                    )?;
+                    let frame =
+                        project_checkpoint(checkpoint, projected_viewport, self.layers).ok()?;
+                    hit_test_frame(
+                        &frame,
+                        ProtocolScreenPoint {
+                            x: mouse.0,
+                            y: mouse.1,
+                        },
+                        6.0,
+                    )
+                    .cloned()
+                });
+                self.maybe_selected_primitive = maybe_key.map(|key| format!("{key:?}"));
             }
         }
     }
@@ -921,7 +942,8 @@ impl DesktopApp {
         draw_accessible_button(
             about,
             "About & provenance",
-            FOCUS_ORDER[self.focus_index] == ControlFocus::About,
+            FOCUS_ORDER[self.focus_index] == ControlFocus::About
+                && !focus_is_modal_heading(self.focus_return.current()),
             self.open_panel == OpenPanel::About,
         );
         let _presentation_state = self.shell.state();
@@ -930,7 +952,13 @@ impl DesktopApp {
     fn draw_scenarios(&self, region: (u32, u32, u32, u32)) {
         fill_region(region, PANEL);
         let (x, y, width, _) = rect(region);
-        let search_color = if self.editing_query { ACCENT } else { BORDER };
+        let search_color = if self.editing_query
+            || self.focus_return.current() == Some(FocusId::ScenarioHeading)
+        {
+            ACCENT
+        } else {
+            BORDER
+        };
         draw_rectangle_lines(x + 8.0, y + 8.0, width - 16.0, 36.0, 2.0, search_color);
         let search = if self.query.is_empty() {
             "Search scenarios (/)"
@@ -1098,8 +1126,11 @@ impl DesktopApp {
     )]
     fn draw_inspector(&self, region: (u32, u32, u32, u32)) {
         fill_region(region, PANEL);
-        let (x, y, _, _) = rect(region);
-        draw_text("Inspect", x + 16.0, y + 28.0, 22.0, TEXT);
+        let (x, y, width, _) = rect(region);
+        if self.focus_return.current() == Some(FocusId::InspectorHeading) {
+            draw_rectangle_lines(x + 4.0, y + 2.0, width - 8.0, CONTROL_TARGET, 2.0, ACCENT);
+        }
+        draw_text("Inspect", x + 16.0, y + 28.0, 24.0, TEXT);
         let (heading, body) = comparison_copy(self.maybe_comparison.as_ref());
         draw_text(heading, x + 16.0, y + 58.0, FONT, TEXT);
         draw_text(body, x + 16.0, y + 79.0, 12.0, MUTED);
@@ -1332,7 +1363,7 @@ impl DesktopApp {
             draw_accessible_button(
                 control_bounds(focus, layout),
                 label,
-                index == self.focus_index,
+                index == self.focus_index && !focus_is_modal_heading(self.focus_return.current()),
                 active,
             );
         }
@@ -1341,7 +1372,18 @@ impl DesktopApp {
     fn draw_settings_panel(&self) {
         let panel = centered_panel(560.0, 430.0);
         draw_rectangle(panel.0, panel.1, panel.2, panel.3, PANEL);
-        draw_rectangle_lines(panel.0, panel.1, panel.2, panel.3, 2.0, ACCENT);
+        draw_rectangle_lines(
+            panel.0,
+            panel.1,
+            panel.2,
+            panel.3,
+            if self.focus_return.current() == Some(FocusId::SettingsHeading) {
+                2.0
+            } else {
+                1.0
+            },
+            ACCENT,
+        );
         draw_text("Run settings", panel.0 + 24.0, panel.1 + 34.0, 24.0, TEXT);
         draw_text(
             "Validated values apply only through Apply & Restart",
@@ -1434,7 +1476,18 @@ impl DesktopApp {
         });
         let panel = centered_panel(720.0, 610.0);
         draw_rectangle(panel.0, panel.1, panel.2, panel.3, PANEL);
-        draw_rectangle_lines(panel.0, panel.1, panel.2, panel.3, 2.0, ACCENT);
+        draw_rectangle_lines(
+            panel.0,
+            panel.1,
+            panel.2,
+            panel.3,
+            if self.focus_return.current() == Some(FocusId::AboutHeading) {
+                2.0
+            } else {
+                1.0
+            },
+            ACCENT,
+        );
         let mut y = panel.1 + 36.0;
         line(about.project_name(), panel.0 + 8.0, &mut y, TEXT);
         line(about.maintainer(), panel.0 + 8.0, &mut y, TEXT);
@@ -1565,6 +1618,27 @@ fn focus_index(focus: ControlFocus) -> usize {
         .iter()
         .position(|candidate| *candidate == focus)
         .unwrap_or(0)
+}
+
+const fn control_for_focus(focus: FocusId) -> ControlFocus {
+    match focus {
+        FocusId::ScenarioButton | FocusId::ScenarioHeading => ControlFocus::Scenario,
+        FocusId::InspectorButton | FocusId::InspectorHeading => ControlFocus::Inspector,
+        FocusId::SettingsButton | FocusId::SettingsHeading => ControlFocus::Settings,
+        FocusId::AboutButton | FocusId::AboutHeading => ControlFocus::About,
+    }
+}
+
+const fn focus_is_modal_heading(maybe_focus: Option<FocusId>) -> bool {
+    matches!(
+        maybe_focus,
+        Some(
+            FocusId::ScenarioHeading
+                | FocusId::InspectorHeading
+                | FocusId::SettingsHeading
+                | FocusId::AboutHeading
+        )
+    )
 }
 
 fn control_bounds(focus: ControlFocus, layout: ResponsiveLayout) -> (f32, f32, f32, f32) {
@@ -1856,7 +1930,7 @@ async fn main() {
                     "Interactive testbed could not start",
                     24.0,
                     48.0,
-                    28.0,
+                    24.0,
                     ERROR,
                 );
                 draw_text(error, 24.0, 80.0, FONT, TEXT);

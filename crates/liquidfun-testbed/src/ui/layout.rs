@@ -179,6 +179,8 @@ pub enum FocusId {
     ScenarioHeading,
     InspectorButton,
     InspectorHeading,
+    SettingsButton,
+    SettingsHeading,
     AboutButton,
     AboutHeading,
 }

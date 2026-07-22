@@ -320,6 +320,123 @@ pub fn project_checkpoint(
     })
 }
 
+/// Returns the topmost semantic primitive under one finite screen point.
+///
+/// Hit testing consumes only the immutable projected frame and never submits a simulation
+/// command. Records are inspected in reverse draw order so overlapping geometry selects the
+/// visible topmost semantic key.
+#[must_use]
+pub fn hit_test_frame(
+    frame: &ProtocolFrame,
+    point: ProtocolScreenPoint,
+    tolerance: f32,
+) -> Option<&DebugPrimitiveKey> {
+    if !point.x.is_finite() || !point.y.is_finite() || !tolerance.is_finite() || tolerance < 0.0 {
+        return None;
+    }
+    frame
+        .primitives()
+        .iter()
+        .rev()
+        .find(|record| hit_primitive(record.primitive(), point, tolerance))
+        .map(ProtocolDisplayRecord::key)
+}
+
+fn hit_primitive(
+    primitive: &ProtocolDisplayPrimitive,
+    point: ProtocolScreenPoint,
+    tolerance: f32,
+) -> bool {
+    match primitive {
+        ProtocolDisplayPrimitive::Point { position, radius }
+        | ProtocolDisplayPrimitive::Circle {
+            center: position,
+            radius,
+        } => distance(*position, point) <= radius + tolerance,
+        ProtocolDisplayPrimitive::Segment { start, end }
+        | ProtocolDisplayPrimitive::Arrow { start, end } => {
+            segment_distance(point, *start, *end) <= tolerance
+        }
+        ProtocolDisplayPrimitive::Polyline { vertices, closed } => {
+            (*closed && point_in_polygon(point, vertices))
+                || vertices
+                    .windows(2)
+                    .any(|edge| segment_distance(point, edge[0], edge[1]) <= tolerance)
+                || (*closed
+                    && vertices
+                        .first()
+                        .zip(vertices.last())
+                        .is_some_and(|(first, last)| {
+                            segment_distance(point, *last, *first) <= tolerance
+                        }))
+        }
+        ProtocolDisplayPrimitive::TransformAxes {
+            origin,
+            x_end,
+            y_end,
+        } => {
+            segment_distance(point, *origin, *x_end) <= tolerance
+                || segment_distance(point, *origin, *y_end) <= tolerance
+        }
+        ProtocolDisplayPrimitive::Aabb {
+            left,
+            top,
+            right,
+            bottom,
+        } => {
+            (left - tolerance..=right + tolerance).contains(&point.x)
+                && (top - tolerance..=bottom + tolerance).contains(&point.y)
+        }
+        ProtocolDisplayPrimitive::Label { position, .. } => {
+            distance(*position, point) <= tolerance.max(8.0)
+        }
+    }
+}
+
+fn distance(left: ProtocolScreenPoint, right: ProtocolScreenPoint) -> f32 {
+    (left.x - right.x).hypot(left.y - right.y)
+}
+
+fn segment_distance(
+    point: ProtocolScreenPoint,
+    start: ProtocolScreenPoint,
+    end: ProtocolScreenPoint,
+) -> f32 {
+    let delta_x = end.x - start.x;
+    let delta_y = end.y - start.y;
+    let length_squared = delta_x.mul_add(delta_x, delta_y * delta_y);
+    if length_squared <= f32::EPSILON {
+        return distance(point, start);
+    }
+    let projection = ((point.x - start.x).mul_add(delta_x, (point.y - start.y) * delta_y)
+        / length_squared)
+        .clamp(0.0, 1.0);
+    let closest = ProtocolScreenPoint {
+        x: delta_x.mul_add(projection, start.x),
+        y: delta_y.mul_add(projection, start.y),
+    };
+    distance(point, closest)
+}
+
+fn point_in_polygon(point: ProtocolScreenPoint, vertices: &[ProtocolScreenPoint]) -> bool {
+    if vertices.len() < 3 {
+        return false;
+    }
+    let mut inside = false;
+    let mut previous = *vertices.last().unwrap_or(&vertices[0]);
+    for current in vertices {
+        let crosses = (current.y > point.y) != (previous.y > point.y)
+            && point.x
+                < (previous.x - current.x) * (point.y - current.y) / (previous.y - current.y)
+                    + current.x;
+        if crosses {
+            inside = !inside;
+        }
+        previous = *current;
+    }
+    inside
+}
+
 fn project_style(
     metadata: &PrimitiveMetadata,
     viewport: ProtocolViewport,
@@ -842,8 +959,9 @@ mod tests {
 
     use super::{
         ORACLE_COMPARISON_COLOR, ProtocolComparisonBackend, ProtocolDisplayPrimitive,
-        ProtocolLayerVisibility, ProtocolScreenStyle, ProtocolViewport, ProtocolViewportError,
-        RUST_COMPARISON_COLOR, comparison_style, project_checkpoint,
+        ProtocolLayerVisibility, ProtocolScreenPoint, ProtocolScreenStyle, ProtocolViewport,
+        ProtocolViewportError, RUST_COMPARISON_COLOR, comparison_style, hit_test_frame,
+        project_checkpoint,
     };
 
     fn bits(value: f32) -> u32 {
@@ -1029,6 +1147,28 @@ mod tests {
         assert_eq!(oracle_difference.stroke, ORACLE_COMPARISON_COLOR);
         assert!(rust_difference.stroke_width >= 2.0);
         assert!(oracle_difference.maybe_fill.is_none());
+    }
+
+    #[test]
+    fn hit_testing_selects_the_clicked_semantic_key_instead_of_the_first_record() {
+        // Arrange
+        let records = all_primitive_records().into_iter().take(2).collect();
+        let frame = project_checkpoint(
+            &checkpoint(records),
+            viewport(),
+            ProtocolLayerVisibility::all(),
+        )
+        .expect("static projected frame should be valid");
+        let clicked_segment = ProtocolScreenPoint { x: 300.0, y: 150.0 };
+
+        // Act
+        let selected =
+            hit_test_frame(&frame, clicked_segment, 3.0).expect("the segment should be hit tested");
+
+        // Assert
+        assert_eq!(selected, frame.primitives()[1].key());
+        assert_ne!(selected, frame.primitives()[0].key());
+        assert!(hit_test_frame(&frame, ProtocolScreenPoint { x: 700.0, y: 700.0 }, 3.0).is_none());
     }
 
     #[test]
