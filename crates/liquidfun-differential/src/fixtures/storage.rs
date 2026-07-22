@@ -224,6 +224,7 @@ pub(super) fn read_manifest(repository_root: &Path) -> Result<ArtifactManifest, 
     if manifest.schema_version != 2
         || manifest.record_schema_version != 2
         || manifest.record_fields != MANIFEST_FIELDS
+        || !manifest.artifact_schemas.is_current()
         || !is_revision(&manifest.oracle_revision)
     {
         return Err(FixtureError::Manifest(
@@ -557,10 +558,40 @@ mod tests {
     use std::sync::atomic::{AtomicU64, Ordering};
 
     use super::*;
-    use crate::fixtures::domain::{CANDIDATE_SCHEMA_VERSION, ReviewStatus};
+    use crate::fixtures::domain::{ArtifactSchemas, CANDIDATE_SCHEMA_VERSION, ReviewStatus};
 
     static NEXT_TEMP: AtomicU64 = AtomicU64::new(0);
     const REVISION: &str = "7f20402173fd143a3988c921bc384459c6a858f2";
+
+    #[test]
+    fn manifest_accepts_the_registered_phase11_evidence_schema() {
+        // Arrange
+        let (repository_root, _, _, _) = manifest_fixture("phase11-schema");
+
+        // Act
+        let manifest = read_manifest(&repository_root);
+
+        // Assert
+        assert!(manifest.is_ok());
+        fs::remove_dir_all(repository_root).expect("fixture should be removed");
+    }
+
+    #[test]
+    fn manifest_rejects_an_unregistered_artifact_schema() {
+        // Arrange
+        let (repository_root, _, _, _) = manifest_fixture("unknown-schema");
+        let path = repository_root.join("reference/artifacts/manifest.toml");
+        let mut contents = fs::read_to_string(&path).expect("manifest should be readable");
+        contents.push_str("\n[artifact_schemas.unregistered]\nschema_version = 1\n");
+        fs::write(&path, contents).expect("manifest should be writable");
+
+        // Act
+        let error = read_manifest(&repository_root).expect_err("unknown schemas must fail closed");
+
+        // Assert
+        assert!(error.to_string().contains("unknown field `unregistered`"));
+        fs::remove_dir_all(repository_root).expect("fixture should be removed");
+    }
 
     #[test]
     fn committed_manifest_survives_lock_cleanup_failure() {
@@ -655,6 +686,7 @@ mod tests {
             record_schema_version: 2,
             oracle_revision: REVISION.to_owned(),
             record_fields: MANIFEST_FIELDS.into_iter().map(str::to_owned).collect(),
+            artifact_schemas: ArtifactSchemas::current(),
             artifacts: Vec::new(),
         };
         fs::write(

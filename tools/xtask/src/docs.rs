@@ -62,11 +62,11 @@ const DOCUMENT_CONTRACTS: [(&str, &[&str]); 4] = [
     (
         "COMPATIBILITY.md",
         &[
-            "| `implemented` | 51 | 126 |",
-            "| `unit_tested` | 51 | 126 |",
-            "| `differentially_validated` | 50 | 127 |",
-            "| `platform_validated` | 33 | 144 |",
-            "| `documented_difference` | 51 | 126 |",
+            "| `implemented` | 64 | 117 |",
+            "| `unit_tested` | 64 | 117 |",
+            "| `differentially_validated` | 63 | 118 |",
+            "| `platform_validated` | 46 | 135 |",
+            "| `documented_difference` | 51 | 130 |",
             "`subsystem.common-math-and-settings`",
             "`public-api.liquidfun-box2d-box2d-common-b2math-h`",
             "`public-api.liquidfun-box2d-box2d-common-b2settings-h`",
@@ -303,11 +303,11 @@ const PHASE7_DOCUMENT_CONTRACTS: [(&str, &[&str]); 5] = [
     (
         "COMPATIBILITY.md",
         &[
-            "| `implemented` | 51 | 126 |",
-            "| `unit_tested` | 51 | 126 |",
-            "| `differentially_validated` | 50 | 127 |",
-            "| `platform_validated` | 33 | 144 |",
-            "| `documented_difference` | 51 | 126 |",
+            "| `implemented` | 64 | 117 |",
+            "| `unit_tested` | 64 | 117 |",
+            "| `differentially_validated` | 63 | 118 |",
+            "| `platform_validated` | 46 | 135 |",
+            "| `documented_difference` | 51 | 130 |",
             "| `subsystem.rigid-islands-and-solver` | `liquidfun/Box2D/Box2D/Dynamics` | `liquidfun::dynamics` | applicable | yes | yes | yes | yes | yes | yes | yes | no |",
             "| `subsystem.world-operations-and-observation` | `liquidfun/Box2D/Box2D/Dynamics` | `liquidfun::world` | applicable | yes | yes | yes | yes | yes | yes | yes | no |",
             "| `public-api.liquidfun-box2d-box2d-dynamics-b2island-h` | `liquidfun/Box2D/Box2D/Dynamics/b2Island.h` | `liquidfun::dynamics` | applicable | yes | yes | yes | yes | yes | yes | yes | no |",
@@ -334,7 +334,6 @@ const PHASE8_DOCUMENT_CONTRACTS: [(&str, &[&str]); 5] = [
             PHASE8_SIGNOFF,
             "all eleven joint kinds",
             "standalone [`rope::Rope`]",
-            "RIGD-10",
             "release readiness remain pending",
         ],
     ),
@@ -381,11 +380,11 @@ const PHASE8_DOCUMENT_CONTRACTS: [(&str, &[&str]); 5] = [
     (
         "COMPATIBILITY.md",
         &[
-            "| `implemented` | 51 | 126 |",
-            "| `unit_tested` | 51 | 126 |",
-            "| `differentially_validated` | 50 | 127 |",
-            "| `platform_validated` | 33 | 144 |",
-            "| `documented_difference` | 51 | 126 |",
+            "| `implemented` | 64 | 117 |",
+            "| `unit_tested` | 64 | 117 |",
+            "| `differentially_validated` | 63 | 118 |",
+            "| `platform_validated` | 46 | 135 |",
+            "| `documented_difference` | 51 | 130 |",
             "| `subsystem.joints` | `liquidfun/Box2D/Box2D/Dynamics/Joints` | `liquidfun::dynamics::joints` | applicable | yes | yes | yes | yes | yes | yes | yes | no |",
             "| `subsystem.rope` | `liquidfun/Box2D/Box2D/Rope` | `liquidfun::rope` | applicable | yes | yes | yes | yes | yes | yes | yes | no |",
             "| `public-api.liquidfun-box2d-box2d-dynamics-joints-b2joint-h` | `liquidfun/Box2D/Box2D/Dynamics/Joints/b2Joint.h` | `liquidfun::dynamics::joints` | applicable | yes | yes | yes | yes | yes | yes | yes | no |",
@@ -459,7 +458,6 @@ struct CompatibilityEvidenceLedger {
 
 #[derive(Deserialize)]
 struct CompatibilityEvidenceEntry {
-    id: String,
     evidence: CompatibilityEvidence,
 }
 
@@ -733,7 +731,10 @@ fn check_phase8_platform_evidence(repository_root: &std::path::Path) -> Result<(
     let platform_entries = ledger
         .entries
         .iter()
-        .filter(|entry| entry.evidence.platform_validated.status == "evidenced")
+        .filter(|entry| {
+            entry.evidence.platform_validated.status == "evidenced"
+                && entry.evidence.platform_validated.references == expected_references
+        })
         .collect::<Vec<_>>();
     if platform_entries.len() != PHASE8_PLATFORM_VALIDATED_ROWS {
         return Err(DocsError::new(
@@ -743,17 +744,6 @@ fn check_phase8_platform_evidence(repository_root: &std::path::Path) -> Result<(
                 platform_entries.len()
             ),
         ));
-    }
-    for entry in platform_entries {
-        if entry.evidence.platform_validated.references != expected_references {
-            return Err(DocsError::new(
-                "phase8-evidence",
-                format!(
-                    "platform-validated row `{}` must reference only the current Phase 8 run and exact artifact identities",
-                    entry.id
-                ),
-            ));
-        }
     }
     Ok(())
 }

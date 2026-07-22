@@ -22,7 +22,9 @@ type TestResult = Result<(), Box<dyn Error>>;
 enum ArchiveCase {
     Valid,
     ForbiddenContent,
+    ForbiddenGraphics,
     ForbiddenNativeSource,
+    ForbiddenTestbed,
     ParentTraversal,
     AbsolutePath,
 }
@@ -31,6 +33,36 @@ enum ArchiveCase {
 fn verify_rejects_native_source_extensions() -> TestResult {
     // Arrange
     let fixture = PackageFixture::new(ArchiveCase::ForbiddenNativeSource)?;
+
+    // Act
+    let output = fixture.command()?;
+
+    // Assert
+    assert_failure_category(&output, "package/forbidden-content");
+    assert!(!fixture.cargo_marker.exists());
+    fixture.cleanup()?;
+    Ok(())
+}
+
+#[test]
+fn verify_rejects_graphics_assets() -> TestResult {
+    // Arrange
+    let fixture = PackageFixture::new(ArchiveCase::ForbiddenGraphics)?;
+
+    // Act
+    let output = fixture.command()?;
+
+    // Assert
+    assert_failure_category(&output, "package/forbidden-content");
+    assert!(!fixture.cargo_marker.exists());
+    fixture.cleanup()?;
+    Ok(())
+}
+
+#[test]
+fn verify_rejects_testbed_content() -> TestResult {
+    // Arrange
+    let fixture = PackageFixture::new(ArchiveCase::ForbiddenTestbed)?;
 
     // Act
     let output = fixture.command()?;
@@ -112,7 +144,71 @@ fn ci_keeps_the_focused_headless_gate_submodule_free_and_before_visual_work() {
     assert!(workflow[gate..].contains("--test phase11_public_observability"));
     assert!(workflow[gate..].contains("--test headless_catalog"));
     assert!(workflow[gate..].contains("--test package_cli"));
+    assert!(workflow.contains("cargo xtask inventory corpus check-snapshot"));
+    assert!(workflow.contains("cargo xtask inventory corpus check-closure"));
+    assert!(workflow.contains("cargo xtask inventory corpus generate-report"));
+    assert!(workflow.contains("git diff --exit-code -- UPSTREAM-CORPUS.md"));
+    assert!(workflow.contains("cargo build -p liquidfun-testbed --all-targets --all-features"));
+    assert!(workflow.contains("cargo test -p liquidfun-testbed --all-features"));
+    assert!(workflow.contains("DISPLAY: \"\""));
+    assert!(workflow.contains("WAYLAND_DISPLAY: \"\""));
     assert!(maybe_visual.is_none_or(|visual| gate + package < visual));
+}
+
+#[test]
+fn phase11_decisions_and_requirements_have_audited_evidence() {
+    // Arrange
+    let testing = include_str!("../../../TESTING.md");
+
+    // Act
+    let maybe_audit = testing
+        .split("## Phase 11 decision and requirement audit")
+        .nth(1);
+
+    // Assert
+    let audit = maybe_audit.expect("TESTING.md should contain the final Phase 11 audit");
+    for decision in 1..=26 {
+        let id = format!("`D-{decision:02}`");
+        assert!(audit.contains(&id), "missing {id} from the Phase 11 audit");
+    }
+    for requirement in [
+        "RIGD-10", "TEST-03", "EXMP-01", "EXMP-02", "EXMP-03", "EXMP-04", "EXMP-05", "EXMP-06",
+    ] {
+        let id = format!("`{requirement}`");
+        assert!(audit.contains(&id), "missing {id} from the Phase 11 audit");
+    }
+}
+
+#[test]
+fn advisory_waiver_is_bounded_to_the_private_testbed() -> TestResult {
+    // Arrange
+    let repository_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let deny: toml::Value =
+        toml::from_str(&fs::read_to_string(repository_root.join("deny.toml"))?)?;
+    let liquidfun: toml::Value = toml::from_str(&fs::read_to_string(
+        repository_root.join("crates/liquidfun/Cargo.toml"),
+    )?)?;
+    let testbed: toml::Value = toml::from_str(&fs::read_to_string(
+        repository_root.join("crates/liquidfun-testbed/Cargo.toml"),
+    )?)?;
+
+    // Act
+    let ignored = deny["advisories"]["ignore"]
+        .as_array()
+        .expect("advisory ignores should be an array")
+        .iter()
+        .map(|value| value.as_str().expect("advisory IDs should be strings"))
+        .collect::<Vec<_>>();
+    let liquidfun_dependencies = liquidfun["dependencies"]
+        .as_table()
+        .expect("liquidfun dependencies should be a table");
+
+    // Assert
+    assert_eq!(ignored, ["RUSTSEC-2025-0035", "RUSTSEC-2026-0192"]);
+    assert!(!liquidfun_dependencies.contains_key("macroquad"));
+    assert_eq!(testbed["package"]["publish"].as_bool(), Some(false));
+    assert!(testbed["dependencies"]["macroquad"].is_str());
+    Ok(())
 }
 
 #[test]
@@ -152,6 +248,38 @@ fn verify_rejects_more_than_one_default_publishable_package() -> TestResult {
 
     // Assert
     assert_failure_category(&output, "package/default-members");
+    assert!(!fixture.cargo_marker.exists());
+    fixture.cleanup()?;
+    Ok(())
+}
+
+#[test]
+fn verify_rejects_a_second_publishable_workspace_package() -> TestResult {
+    // Arrange
+    let fixture = PackageFixture::new(ArchiveCase::Valid)?;
+    let mut metadata: serde_json::Value = serde_json::from_slice(&fs::read(&fixture.metadata)?)?;
+    metadata["packages"]
+        .as_array_mut()
+        .expect("fixture packages should be an array")
+        .push(serde_json::json!({
+            "id": "private 0.0.0 (path+file:///fixture/private)",
+            "name": "private",
+            "publish": null,
+            "manifest_path": fixture.root.join("crates/private/Cargo.toml"),
+            "dependencies": [],
+            "features": {"default": []}
+        }));
+    metadata["workspace_members"] = serde_json::json!([
+        "liquidfun 0.0.0 (path+file:///fixture/liquidfun)",
+        "private 0.0.0 (path+file:///fixture/private)"
+    ]);
+    fs::write(&fixture.metadata, serde_json::to_vec(&metadata)?)?;
+
+    // Act
+    let output = fixture.command()?;
+
+    // Assert
+    assert_failure_category(&output, "package/publish-policy");
     assert!(!fixture.cargo_marker.exists());
     fixture.cleanup()?;
     Ok(())
@@ -238,9 +366,21 @@ fn write_archive(path: &Path, case: ArchiveCase) -> io::Result<()> {
             "liquidfun-0.0.0/tools/oracle.cpp",
             b"forbidden",
         )?,
+        ArchiveCase::ForbiddenGraphics => {
+            append_file(
+                &mut archive,
+                "liquidfun-0.0.0/assets/frame.png",
+                b"forbidden",
+            )?;
+        }
         ArchiveCase::ForbiddenNativeSource => {
             append_file(&mut archive, "liquidfun-0.0.0/src/oracle.cpp", b"forbidden")?;
         }
+        ArchiveCase::ForbiddenTestbed => append_file(
+            &mut archive,
+            "liquidfun-0.0.0/crates/liquidfun-testbed/src/lib.rs",
+            b"forbidden",
+        )?,
         ArchiveCase::ParentTraversal => {
             append_raw_file(&mut archive, "../escape", b"traversal")?;
         }

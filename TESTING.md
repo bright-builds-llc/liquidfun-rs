@@ -17,12 +17,16 @@ determinism is D0. Phase 8 extends that request to 19 families covering joints,
 standalone rope, callback/destruction timing, and reconstruction. Exact
 canonical D1 evidence supports that accumulated scalar rigid corpus. Phase 9
 proves particle storage/lifecycle and contacts/coupling, and the validated
-Phase 10 authority now supports the closed particle-group, topology, solver,
-and inherited particle leaf set on the pinned Linux x86_64 toolchain.
-Renderer-neutral examples and testbed work remain Phase 11. Performance,
-broader portability, fuzzing breadth, Miri and Rust-sanitizer expansion,
-benchmarking, coverage policy, packaging, and release readiness remain Phase
-12 and are not implied by the Phase 10 result.
+Phase 10 authority supports the closed particle-group, topology, solver, and
+inherited particle leaf set on the pinned Linux x86_64 toolchain. Phase 11 adds
+one typed renderer-neutral catalog, logical controller, canonical observation,
+checkpoint and comparison model, a private benchmark consumer, and an optional
+passive testbed. Its reviewed D1 authority promotes only four semantic headless
+rows. The upstream semantic corpus closes all 388 items with zero unresolved
+rows, but its reviewed exclusions do not become parity claims. Screenshots,
+pixels, frame rate, wall-clock timing, broad portability, performance sign-off,
+coverage expansion, packaging readiness, and release readiness remain Phase 12
+and are not implied by the Phase 11 result.
 [COMPATIBILITY.md](COMPATIBILITY.md) remains authoritative for feature and
 evidence maturity.
 
@@ -994,8 +998,19 @@ cargo xtask phase11-evidence validate --mode exact-ref \
   --deny-artifact-id 8521345417
 ```
 
-This fresh pair is the approved same-run D1 authority input. It remains
-unpromoted until the separate reviewed D3 promotion process is executed.
+This fresh pair is the sole approved same-run D1 authority. The separate Plan
+11-23 review bound it in `reference/artifacts/phase11/exact-ref.json`,
+recomputed the catalog, mapping, payload, and inherited Phase 6 through Phase
+10 proof digests, and promoted only these four rows in
+`reference/compatibility.json`:
+
+- `subsystem.headless-catalog-execution`
+- `subsystem.headless-public-observation-and-debug-draw`
+- `subsystem.headless-reviewed-upstream-equivalence`
+- `subsystem.headless-semantic-checkpoints-and-comparison`
+
+The review does not promote UI pixels, frame timing, wall duration, broad
+platforms, general performance, packaging readiness, or release readiness.
 
 ### Phase 9 recovery single-dispatch protocol
 
@@ -1409,24 +1424,176 @@ Rust entrypoint is `cargo bench --workspace`; paired C++ runs must record the
 same scenario, optimization mode, compiler, flags, target, hardware, warm-up,
 and measurement method. Performance data cannot substitute for compatibility.
 
+## Phase 11 headless, corpus, testbed, and evidence commands
+
+The checked semantic corpus has three distinct operations. Snapshot checking is
+Cargo-only and never reads `third_party`; closure joins the checked snapshot to
+catalog, test, regression, compatibility, and review authority; report
+generation is explicit and must reproduce the tracked bytes:
+
+```bash
+cargo xtask inventory corpus check-snapshot
+cargo xtask inventory corpus check-closure
+cargo xtask inventory corpus generate-report
+git diff --exit-code -- UPSTREAM-CORPUS.md
+```
+
+`check-closure` requires exactly 388 terminal rows: 221 `equivalent_evidence`,
+127 `reviewed_irrelevance`, 40 `intentional_non_support`, and zero unresolved.
+It rejects unknown, duplicate, unregistered, unmapped, stale, vague, or
+self-referential records. The generated `UPSTREAM-CORPUS.md` is a projection;
+`reference/upstream-corpus.json` remains authority. Live discovery is separate,
+requires the verified pinned checkout, and belongs only in an oracle-capable
+maintainer job:
+
+```bash
+cargo xtask inventory corpus refresh
+git diff --exit-code -- third_party/liquidfun
+```
+
+The renderer-neutral catalog can be inspected and executed without a display:
+
+```bash
+cargo xtask catalog list
+cargo xtask catalog inspect --scenario rigid-stack-stability --output human
+cargo xtask catalog run --scenario rigid-stack-stability --timestep 0.016666668 --velocity-iterations 8 --position-iterations 3 --particle-iterations 1 --oracle-preset oracle-debug --session-profile one-shot --output human --commands auto
+cargo xtask catalog replay --scenario rigid-stack-stability --timestep 0.016666668 --velocity-iterations 8 --position-iterations 3 --particle-iterations 1 --oracle-preset oracle-debug --session-profile one-shot --output human --commands auto
+```
+
+`run` uses native Rust. `replay` executes the exact canonical resolved bytes,
+not the seed or current generator output. A C++ comparison additionally requires
+the initialized pinned checkout and reviewed oracle build:
+
+```bash
+cargo xtask upstream configure --preset oracle-debug
+cargo xtask upstream build --preset oracle-debug
+cargo xtask catalog compare --scenario rigid-stack-stability --timestep 0.016666668 --velocity-iterations 8 --position-iterations 3 --particle-iterations 1 --oracle-preset oracle-debug --session-profile one-shot --output human --commands auto
+```
+
+Physics mismatches, harness failures, and missing-side observations remain
+distinct. Complete failure bundles are atomically confined below
+`target/differential/catalog-failures`; they contain exact resolved bytes and
+hash, action log, checkpoint schedule, both semantic streams, comparison,
+bounded diagnostics, and provenance. A seed-only record is never replay
+authority. Reproduce the bundle contract with:
+
+```bash
+cargo test -p liquidfun-differential --test catalog_failures
+cargo test -p liquidfun-differential --test catalog_round_trip
+```
+
+The selected Macroquad package is private, non-default, and headless-testable.
+Its PNGs and timing values are diagnostics only:
+
+```bash
+DISPLAY= WAYLAND_DISPLAY= MIR_SOCKET= XDG_RUNTIME_DIR= cargo test -p liquidfun-testbed --all-features
+cargo run -p liquidfun-testbed -- --capability-check --fixture crates/liquidfun-differential/tests/fixtures/catalog/phase11-v1.json --output target/testbed-capability
+cargo run -p liquidfun-testbed -- --visual-contract-check --fixture crates/liquidfun-differential/tests/fixtures/catalog/phase11-v1.json --output target/testbed-visual-contract
+```
+
+Macroquad 0.4.15 currently brings `RUSTSEC-2025-0035` and
+`RUSTSEC-2026-0192`, neither of which has a safe upgrade. `deny.toml` ignores
+exactly those two advisories only for the private, non-default, unpublished
+diagnostic testbed graph. The published `liquidfun` crate remains isolated from
+Macroquad and every renderer dependency. Phase 12 must replace this renderer
+before any release-readiness claim;
+`package_cli::advisory_waiver_is_bounded_to_the_private_testbed` fails if
+another advisory is ignored or the renderer enters the published package
+graph.
+
+Evidence tiers remain separate:
+
+- D0: `cargo test -p liquidfun-differential --test catalog_round_trip native_replay_is_d0_byte_identical`
+  proves same-build byte identity only.
+- D1: run the exact-reference validation command in the approved Phase 11 run
+  section against one same-run canonical/sanitizer pair. Only run
+  `29927362730` at SHA
+  `4ea1e1e65919619d8cd1155a5461c2cda16ab7b6` is current authority.
+- D2: `just phase11-evidence-canonical`,
+  `just phase11-evidence-sanitizer`, and `just phase11-evidence-validate` create
+  local non-promotable health evidence.
+- D3: reviewed promotion is a repository change, not a runner mode. The checked
+  `reference/artifacts/phase11/exact-ref.json` plus
+  `cargo xtask inventory check` prove the current four-row scope. No command may
+  relabel a local or workflow artifact as reviewed authority.
+
+Acquisition re-queries the GitHub run, all jobs, the artifact list, and each
+artifact, then independently downloads, bounds-checks, hashes, and extracts the
+canonical and sanitizer archives. The exact-reference validator receives the
+denied run and artifact IDs shown above. Do not retry an ambiguous dispatch,
+mix archives, copy files between them, or treat a workflow success as promotion.
+
+## Phase 11 decision and requirement audit
+
+This matrix is executable documentation: `package_cli::phase11_decisions_and_requirements_have_audited_evidence`
+requires every locked decision and requirement ID below to remain present. The
+named tests and artifacts are the concrete green evidence; a row is not a claim
+beyond that surface.
+
+| Decision | Enforced contract | Exact test or artifact |
+| --- | --- | --- |
+| `D-01` | One machine-authoritative semantic corpus joins every checked authority. | `tools/xtask/tests/corpus_closure.rs::complete_corpus_closure_and_report_are_byte_stable`; `reference/upstream-corpus.json` |
+| `D-02` | Live discovery enumerates semantic cases while snapshot checking stays submodule-free. | `tools/xtask/tests/corpus_discovery.rs::repeated_refresh_is_byte_identical_and_discovers_semantic_items`; `check_snapshot_never_reads_the_upstream_checkout` |
+| `D-03` | Source identity, applicability, disposition, impact, rationale, and evidence are typed and bounded. | `tools/xtask/tests/corpus_model.rs::valid_manifest_round_trips_through_checked_types`; `distinct_ids_cannot_claim_the_same_source_identity` |
+| `D-04` | Every terminal outcome is complete and non-vague. | `tools/xtask/tests/corpus_model.rs::disposition_and_applicability_must_form_a_terminal_outcome`; `vague_and_self_referential_rationales_are_rejected` |
+| `D-05` | Closure rejects every missing, duplicate, stale, or report-drift row. | `tools/xtask/tests/corpus_closure.rs::closure_rejects_unresolved_unknown_duplicate_and_unmapped_items`; `closure_rejects_stale_mapping_vague_review_and_report_drift` |
+| `D-06` | Typed catalog definitions resolve one-way into bounded immutable plans. | `crates/liquidfun-test-protocol/tests/catalog_resolution.rs::canonical_bytes_decode_to_the_identical_domain_value_and_hash` |
+| `D-07` | Slug/version/generator/seed/settings/content hash form replay identity. | `crates/liquidfun-test-protocol/tests/catalog_resolution.rs::resolved_identity_records_versions_generator_seed_and_exact_settings`; `replay_rejects_hash_tampering_and_noncanonical_bytes` |
+| `D-08` | Setup and behavior use closed typed actions and exact transport. | `crates/liquidfun-test-protocol/tests/catalog_resolution.rs::replay_rejects_actions_that_disagree_with_run_identity` |
+| `D-09` | Controller pause, step, restart, settings, and particle pause remain distinct. | `crates/liquidfun-differential/tests/headless_catalog.rs::controller_pause_step_restart_settings_and_scenario_actions_are_headless`; `crates/liquidfun-testbed/tests/controller_ui.rs::scenario_shortcut_routes_a_stable_typed_action_and_pause_labels_stay_distinct` |
+| `D-10` | Checkpoints bind to logical action/step identity, never render time. | `crates/liquidfun-testbed/tests/controller_ui.rs::pause_camera_screenshot_and_panel_actions_execute_no_tick_or_capture` |
+| `D-11` | Benchmarks reuse exact plans and time only declared logical horizons. | `crates/liquidfun-benchmarks/tests/catalog_equivalence.rs::one_sample_runs_only_the_declared_logical_horizon`; `semantic_mismatch_is_rejected_instead_of_becoming_a_timing_sample` |
+| `D-12` | Public semantic observations are complete, bounded, and storage-neutral. | `crates/liquidfun/tests/phase11_public_observability.rs::public_default_features_expose_complete_headless_observability` |
+| `D-13` | Debug primitives use stable semantic keys and one owned collection. | `crates/liquidfun-testbed/tests/controller_ui.rs::viewport_projects_every_semantic_layer_and_preserves_stable_selection` |
+| `D-14` | Only declared unordered fields canonicalize; numeric leaves require named policy. | `crates/liquidfun-differential/tests/comparison_model.rs::only_declared_unordered_sets_are_canonicalized`; `absent_phase4_policy_is_a_harness_error` |
+| `D-15` | Profile names are structural while durations remain diagnostic. | `crates/liquidfun-differential/tests/comparison_model.rs::profiles_compare_names_but_expose_no_duration_values` |
+| `D-16` | One bounded semantic-path comparison model serves all consumers. | `crates/liquidfun-differential/tests/comparison_model.rs::identical_checkpoints_produce_only_exact_entries`; `missing_observations_are_rust_only_or_oracle_only_never_matches` |
+| `D-17` | Macroquad is retained only after the executable capability gate passes. | `crates/liquidfun-testbed/tests/capability.rs::macroquad_adapter_passes_every_required_capability_without_session_effects`; `crates/liquidfun-testbed/CAPABILITY.md` |
+| `D-18` | The heavier renderer fallback remains unselected because no trigger fired. | `crates/liquidfun-testbed/CAPABILITY.md` capability matrix and retained-decision section |
+| `D-19` | The testbed is private, non-default, and presentation-only. | `crates/liquidfun-testbed/tests/app_shell.rs::app_state_is_presentation_only_and_effects_are_typed_commands`; `tools/xtask/tests/package_cli.rs` |
+| `D-20` | Required controls, observations, diffs, focus, and diagnostic capture are covered. | `crates/liquidfun-testbed/tests/controller_ui.rs`; `crates/liquidfun-testbed/tests/visual_contract.rs` |
+| `D-21` | Dark accessible UI and bounded truthful provenance follow the approved contract. | `crates/liquidfun-testbed/tests/app_shell.rs::dark_theme_matches_the_approved_visual_and_accessibility_tokens`; `provenance_uses_safe_allowlisted_links_and_literal_fallbacks`; `crates/liquidfun-testbed/tests/visual_contract.rs::accessibility_contract_has_targets_focus_contrast_and_reduced_motion` |
+| `D-22` | `liquidfun` is the sole publishable default package and packages without private or graphical capabilities. | `tools/xtask/tests/package_cli.rs`; `cargo xtask package verify` |
+| `D-23` | Catalog execution extends the established protocol, supervisor, comparison, replay, and failure path. | `crates/liquidfun-differential/tests/catalog_round_trip.rs`; `catalog_failures.rs` |
+| `D-24` | Pure logic and public workflows have focused unit/integration coverage. | `crates/liquidfun-test-protocol/tests/catalog_resolution.rs`; `crates/liquidfun-differential/tests/headless_catalog.rs`; `crates/liquidfun-testbed/tests/*.rs` |
+| `D-25` | Every corpus row and native scenario has one closed reviewed mapping. | `tools/xtask/tests/corpus_closure.rs`; `crates/liquidfun-test-protocol/tests/catalog_registry.rs::every_scenario_has_one_complete_closed_consumer_mapping`; `UPSTREAM-CORPUS.md` |
+| `D-26` | D0-D3, provenance, sanitizer, replay, and diagnostic exclusions remain separate. | `tools/xtask/tests/phase11_evidence_cli.rs`; `tools/xtask/tests/inventory_cli/phase11.rs`; `reference/artifacts/phase11/exact-ref.json` |
+
+| Requirement | Exact passing evidence |
+| --- | --- |
+| `RIGD-10` | `phase11_public_observability::public_default_features_expose_complete_headless_observability` and renderer-neutral viewport projection tests |
+| `TEST-03` | `corpus_closure` 388-row terminal audit and byte-stable `UPSTREAM-CORPUS.md` |
+| `EXMP-01` | `catalog_registry` complete mapping and Plan 11-23 four-row reviewed authority |
+| `EXMP-02` | `headless_catalog` named/seeded resolution plus controller pause/step/restart/settings tests |
+| `EXMP-03` | `catalog_round_trip`, `catalog_failures`, benchmark equivalence, and exact resolved-byte replay evidence |
+| `EXMP-04` | Testbed app shell, controller adapter, responsive difference, and diagnostic-capture tests |
+| `EXMP-05` | Semantic comparison model plus synchronized overlay/side-by-side and mismatch-focus tests |
+| `EXMP-06` | `package_cli`, extracted `cargo xtask package verify`, and submodule-free Cargo CI gates |
+
 ## Aggregate and CI placement
 
 `cargo xtask check` and `just check` are read-only. In Cargo-only mode they run
 package isolation, protocol schema/fixture checks, documentation contracts, and
-artifact provenance without an initialized submodule or C++. With the submodule
-initialized they additionally run inventory, upstream identity, and full
-provenance.
+artifact provenance without an initialized submodule or C++. The Cargo CI job
+separately runs checked corpus snapshot, closure, and generated-report validation
+because those commands are intentionally isolated from live discovery. With the
+submodule initialized, `cargo xtask check` additionally runs inventory, upstream
+identity, and full provenance.
 
 Cargo pull-request jobs stay submodule-free and exercise every private Rust
 crate, comparator/minimizer behavior, supervisor failure injection, protocol and
-provenance-schema fixtures, rustdoc, docs contracts, and consumer package
-isolation. Oracle jobs alone initialize the submodule and use CMake/C++.
+provenance-schema fixtures, rustdoc, docs contracts, checked corpus closure,
+the selected testbed with display variables unset, and extracted consumer
+package isolation. Oracle jobs alone initialize the submodule, perform live
+semantic discovery, and use CMake/C++ or sanitizers.
 
-Canonical Linux oracle CI verifies exact tool and source identity, builds
-`oracle-debug` and `oracle-release`, compares the closed Phase 8 rigid corpus,
-replays it, and asserts exactly two runs remain byte-identical. The
-scheduled/manual sanitizer lane runs the exact fail-fast protocol, rigid,
-one-shot, and reuse commands above.
+Canonical Linux oracle CI verifies exact tool and source identity and executes
+only the explicitly selected evidence phase. For Phase 11 it builds the reviewed
+presets, compares the three sealed semantic catalog cases, replays exact bytes,
+and asserts the D0 pair before producing the bounded canonical artifact. The
+same-run sanitizer job executes the matching fail-fast protocol and catalog
+corpus. Legacy evidence-phase jobs remain mutually exclusive for an explicit
+dispatch.
 Portability builds are non-canonical,
 read-only, and cannot publish or promote evidence. All workflows use
 `contents: read`, full-SHA external actions, bounded job timeouts, and no secrets.

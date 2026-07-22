@@ -43,6 +43,19 @@ const FORBIDDEN_FEATURE_TERMS: &[&str] = &[
     "visual",
     "window",
 ];
+const FORBIDDEN_DEPENDENCY_TERMS: &[&str] = &[
+    "benchmark",
+    "cpp",
+    "cxx",
+    "game-engine",
+    "oracle",
+    "protocol",
+    "reference",
+    "renderer",
+    "testbed",
+    "visual",
+    "window",
+];
 
 #[derive(Deserialize)]
 struct CargoMetadata {
@@ -127,6 +140,23 @@ fn verify_metadata(repository_root: &Path, metadata: &CargoMetadata) -> Result<(
             "liquidfun must be the sole workspace default member",
         ));
     }
+    for workspace_package in metadata.packages.iter().filter(|candidate| {
+        candidate.id != package.id && metadata.workspace_members.contains(&candidate.id)
+    }) {
+        if !workspace_package
+            .publish
+            .as_ref()
+            .is_some_and(Vec::is_empty)
+        {
+            return Err(PackageError::new(
+                "publish-policy",
+                format!(
+                    "workspace package `{}` must remain unpublished",
+                    workspace_package.name
+                ),
+            ));
+        }
+    }
     if package
         .dependencies
         .iter()
@@ -206,7 +236,11 @@ fn verify_dependencies<'a>(
 ) -> Result<(), PackageError> {
     for dependency in dependencies {
         let normalized = dependency.replace('_', "-");
-        if FORBIDDEN_DEPENDENCIES.contains(&normalized.as_str()) {
+        if FORBIDDEN_DEPENDENCIES.contains(&normalized.as_str())
+            || FORBIDDEN_DEPENDENCY_TERMS
+                .iter()
+                .any(|term| normalized.contains(term))
+        {
             return Err(PackageError::new(
                 "dependency-graph",
                 format!("consumer package has forbidden dependency `{dependency}`"),

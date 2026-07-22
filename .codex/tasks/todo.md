@@ -124,3 +124,13 @@ Completion review: Fresh canonical and sanitizer archives from run `29652578231`
 - [x] Review the complete diff, record residual risks, and push only after lifecycle validation passes.
 
 Completion review: All 32 Phase 10 plans are complete. Exact-reference authority run `29832646127` proves five cases and 80 semantic leaves across the canonical and sanitizer jobs, and the five scoped compatibility rows are promoted without expanding later-phase claims. Two repair cycles fixed all 10 code-review warnings; the third exact-scope review is clean. Protocol, ownership, property, corpus, oracle, comparator, evidence, provenance, inventory, dependency, schema-drift, workflow, Markdown, Rust, and lifecycle gates pass. Remaining work is intentionally deferred: Phase 11 owns examples, shared headless tooling, and the optional testbed; Phase 12 owns performance, broader platforms, packaging, safety/release documentation, and zero-gap v1 readiness.
+
+## task-phase-12-replace-macroquad-renderer | 2026-07-22 12:00 CDT | Replace the advisory-bound diagnostic renderer
+
+- [ ] Replace Macroquad before any release-readiness claim.
+- [ ] Remove the `RUSTSEC-2025-0035` and `RUSTSEC-2026-0192` advisory ignores.
+- [ ] Preserve the passive renderer boundary and headless catalog/controller tests.
+- [ ] Prove the published `liquidfun` package remains free of renderer dependencies.
+- [ ] Run dependency, package-isolation, headless testbed, and full release gates.
+
+Follow-up context: Phase 11 permits the affected Macroquad graph only in the private, non-default, unpublished diagnostic testbed because neither advisory has a safe upgrade. Phase 12 must remove that bounded waiver by replacing the renderer before packaging or release maturity can advance.

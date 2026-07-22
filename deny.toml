@@ -2,7 +2,11 @@
 all-features = true
 
 [advisories]
-ignore = []
+# Neither advisory has a safe upgrade in Macroquad 0.4.15's graph. That graph
+# is confined to the private, non-default, unpublished diagnostic testbed; the
+# published liquidfun package is isolated from it. Phase 12 must replace the
+# renderer before any release-readiness claim.
+ignore = ["RUSTSEC-2025-0035", "RUSTSEC-2026-0192"]
 
 [licenses]
 allow = [

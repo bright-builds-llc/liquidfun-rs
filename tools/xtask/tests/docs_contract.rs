@@ -774,7 +774,7 @@ fn oracle_workflow_bounds_sanitizer_failure_artifacts() -> TestResult {
     let upload_step = workflow
         .split("      - name: Upload bounded differential failure evidence")
         .nth(1)
-        .and_then(|suffix| suffix.split("\n  portability-macos:").next())
+        .and_then(|suffix| suffix.split("\n      - name: ").next())
         .expect("sanitizer failure upload step must remain present");
 
     // Act

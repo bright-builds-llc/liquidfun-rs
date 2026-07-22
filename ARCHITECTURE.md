@@ -12,12 +12,16 @@ translation. One nine-family request executes through the native adapter and
 pinned process-isolated C++ oracle. Local compare, replay, sanitizer, and
 same-build determinism evidence remains D2/D0. Phase 8 adds all eleven joint
 kinds, standalone rope, source-timed callback controls, destruction timing, and
-semantic reconstruction. The accumulated 19-family rigid corpus has exact
-canonical scalar Linux x86_64 evidence, but particles, RIGD-10, broader
-platforms, performance, testbed work, and release readiness remain pending.
-The publishable `liquidfun` crate therefore remains version `0.0.0`, and the
-generated [compatibility inventory](COMPATIBILITY.md) remains the authority for
-maturity.
+semantic reconstruction. The accumulated 19-family rigid corpus and the later
+particle corpus have exact canonical scalar Linux x86_64 evidence. Phase 11
+adds one renderer-neutral scenario catalog, deterministic controller, canonical
+checkpoint and comparison model, complete semantic upstream-corpus accounting,
+private benchmark consumer, and optional passive Macroquad testbed. The reviewed
+Phase 11 authority covers only the four semantic headless rows in the generated
+[compatibility inventory](COMPATIBILITY.md); rendered pixels, wall-clock timing,
+broad platforms, performance, packaging readiness, and release readiness remain
+Phase 12 work. The publishable `liquidfun` crate therefore remains version
+`0.0.0`.
 
 ## Dependency direction
 
@@ -30,15 +34,25 @@ crates/liquidfun-differential -> crates/liquidfun-test-protocol
                               -> crates/liquidfun
                               -> subprocess: liquidfun-reference
 
+crates/liquidfun-benchmarks -> crates/liquidfun-differential
+                            -> crates/liquidfun-test-protocol
+
+crates/liquidfun-testbed -> crates/liquidfun-differential
+                         -> crates/liquidfun-test-protocol
+                         -> crates/liquidfun
+                         -> private Macroquad adapter
+
 liquidfun-reference -> repository CMake wrapper -> read-only LiquidFun C++
 
 maintainer -> just -> cargo xtask -> Cargo, differential runner, evidence checks
 ```
 
-`crates/liquidfun` is the only default member. Neither unpublished harness crate,
-`tools/xtask`, CMake, the submodule, nor reference evidence is a dependency or
-feature of the published crate. Plain `cargo build`, `cargo test`, and
-`cargo doc` therefore remain Cargo-only consumer operations.
+`crates/liquidfun` is the only default member and the only publishable workspace
+package. The unpublished protocol, differential, benchmark, testbed, and xtask
+packages all depend outward from it. No renderer, window, game engine, protocol,
+differential harness, benchmark harness, CMake surface, submodule, or reference
+evidence is a dependency or feature of the published crate. Plain `cargo build`,
+`cargo test`, and `cargo doc` therefore remain Cargo-only consumer operations.
 
 Production behavior must be native Rust. C++ is a development oracle, not a
 runtime implementation. There is no FFI boundary in Phase 2: the supported
@@ -406,6 +420,75 @@ The sign-off is intentionally narrow. It does not complete RIGD-10, particles,
 D3 evidence, cross-platform parity, performance validation, the testbed, or
 release readiness. Those remain owned by later roadmap phases.
 
+## Phase 11 catalog, headless, and passive-renderer boundaries
+
+The typed private catalog is the sole runtime scenario authority. A stable slug,
+scenario version, generator identity and version, optional seed, exact settings,
+and canonical resolved bytes form one immutable run identity. Resolution moves
+one way from a checked catalog definition to a bounded engine-neutral plan; the
+native runner, C++ oracle, regression replay, benchmark harness, and testbed all
+consume those exact bytes. None may regenerate a run from a seed, use a display
+title as identity, or translate a scenario into a second backend-specific model.
+
+`SessionController` owns logical time. Run, pause, one-step, restart, settings,
+scenario actions, and checkpoint capture enter as closed typed commands. Render
+frames and wall time never advance the controller. Pause performs no logical
+tick, one-step executes exactly one tick and remains paused, and restart rebuilds
+step zero from the same resolved bytes. Particle-system pause remains a distinct
+physics action rather than presentation state. Checkpoint identities bind to
+stable action and logical-step ordinals, never frame counts or UI timestamps.
+
+The public observation boundary exposes owned body, fixture, joint, contact,
+particle, broad-phase, statistics, and named profile records without arenas,
+tree nodes, dense rows, proxies, pointers, or private pass identity. One bounded
+collection produces the renderer-neutral debug primitives. Stable semantic
+owner, layer, kind, child, and canonical occurrence keys identify primitives;
+render visitation and screen position never do. Profile names and presence may
+be structural, but duration values stay in a separate diagnostic channel.
+
+Canonical checkpoints preserve source-significant order and sort only fields
+declared unordered by stable semantic keys. The comparison model traverses two
+validated checkpoints once, binds every numeric leaf to a closed Phase 4 policy,
+and emits exact match, within-policy, Rust-only, oracle-only, or mismatch entries
+in canonical semantic-path order. Unknown schemas, actions, observations,
+primitive kinds, policies, or identities are harness failures. The visual
+overlay and side-by-side views consume this immutable model and cannot reread
+engine state or reinterpret policy.
+
+Catalog oracle execution extends the existing long-lived JSON Lines process and
+bounded supervisor. Each request uses a fresh upstream world, typed semantic
+maps, protocol-only stdout, bounded stderr, deadlines, reset proof, poison
+handling, and unconditional kill/wait/reap on failure. C++ pointers and storage
+coordinates never cross the process boundary. Live source discovery, native
+builds, comparisons, and sanitizers remain confined to oracle jobs; Cargo-only
+checks validate checked snapshots, reports, package contents, and Rust tooling.
+
+Regression replay and benchmarking converge on the same exact resolved bytes,
+action log, checkpoint schedule, and semantic validator. Regressions execute the
+persisted content rather than current generator output. Benchmarks reconstruct
+outside the measured interval, time only a declared logical-action horizon, and
+reject a semantic mismatch instead of returning a timing sample. Benchmark
+durations are performance diagnostics, not compatibility evidence.
+
+The Macroquad testbed is an unpublished, non-default adapter. It translates
+typed input into controller commands and immutable semantic records into pixels;
+it owns camera, layout, focus, frame pacing, GPU resources, and confined PNG
+output only. Screenshots, rendered pixels, frame rate, DPI, resize, and measured
+durations are explicitly diagnostic. The testbed cannot own physics rules,
+scenario definitions, simulation scheduling, stable semantic identity, or
+checkpoint authority, and no dependency may point from `liquidfun` toward it.
+
+Package verification enforces this direction from Cargo metadata, normalized
+packaged manifests, a bounded regular-file archive allowlist, and an extracted
+external build and test with repository tooling, native source, reference data,
+testbed content, graphics assets, and display variables absent. The checked
+semantic corpus separately closes all 388 discovered upstream items with 221
+equivalent-evidence outcomes, 127 reviewed irrelevance outcomes, 40 intentional
+visual-only non-support outcomes, and zero unresolved rows. Those corpus
+dispositions do not widen the four Plan 11-23 semantic headless compatibility
+rows or imply Phase 12 performance, broad-platform, coverage, packaging, or
+release readiness.
+
 ## Private protocol and domain core
 
 `crates/liquidfun-test-protocol` is an unpublished functional core. It owns:
@@ -608,32 +691,35 @@ performance sign-off remain Phase 9 or later.
 ## Renderer independence
 
 The simulation and object/storage modules are headless and expose no renderer,
-window, input, UI, GPU, or framework dependency. Future debug-draw data and
-traits must remain renderer-neutral. A private testbed may translate those
-values into a renderer, but testbed scheduling, frame pacing, and storage may
-not dictate `World`, handle, callback, or particle layout.
+window, input, UI, GPU, or framework dependency. Debug-draw primitives and
+semantic observations are renderer-neutral owned values with stable keys. The
+private testbed translates those values into pixels, but its scheduling, frame
+pacing, camera, focus, screenshots, and storage cannot dictate `World`, handle,
+callback, checkpoint, comparison, or particle layout. Package verification
+rejects any renderer, window, game-engine, protocol, differential, benchmark,
+testbed, native-source, or graphics capability in the published crate.
 
 ## Phase 3 decision sign-off
 
-| Decision | Disposition                                                                                                                                                                                         | Executable evidence                                                                                                                                                                                 |
+| Decision | Disposition | Executable evidence |
 | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| D-01     | Implemented: six opaque typed identities use private world/slot/generation coordinates and custom arenas.                                                                                           | `identity.rs`; `arena.rs`; `tests/object_model.rs::public_handle_kinds_are_distinct_types`                                                                                                          |
-| D-02     | Implemented: checked generation advance permanently retires exhausted slots, checked diagnostic allocation rejects insertion after `u64::MAX`, and finite-space failures remain explicit.           | `arena.rs::tests::maximum_generation_retires_permanently`; `world/object.rs::tests::diagnostic_identity_exhaustion_rejects_insertion`; seeded arena model test                                      |
-| D-03     | Implemented: typed signatures reject wrong kinds; runtime lookup distinguishes foreign from stale identities.                                                                                       | crate compile-fail doctest; `tests/object_model.rs` stale/reuse and cross-world tests                                                                                                               |
-| D-04     | Implemented: complete identity, including particle-system scope for `ParticleId`, controls equality/hash while constructors, coordinates, serialization, and ordering stay private.                 | `identity.rs` equality/scope/debug tests; crate raw-parts compile-fail doctest                                                                                                                      |
-| D-05     | Implemented: handles use auto traits only and production forbids unsafe code.                                                                                                                       | `identity.rs::tests::handles_are_send_and_sync_through_auto_traits`; `lib.rs` crate lint                                                                                                            |
-| D-06     | Implemented for the Phase-3 object graph: centralized cascades preserve pinned upstream newest-first body adjacency order and owned snapshots.                                                      | `world/object.rs`; `tests/object_model.rs::body_destruction_returns_owned_ordered_cascade_evidence`; `tests/object_model.rs::typed_association_cleanup_follows_destruction_records`                 |
-| D-07     | Implemented: contacts are borrow-scoped views or owned snapshots/events with no durable handle.                                                                                                     | `world/step.rs` contact-view compile-fail doctest; `tests/hook_contract.rs`                                                                                                                         |
-| D-08     | Implemented for representative hooks: read-only views return narrow filter/pre-solve directives and optional typed commands.                                                                        | `world/step.rs` hook-signature compile-fail doctest; owned-directive integration test                                                                                                               |
-| D-09     | Implemented: owned reports preserve event occurrence order and multiplicity without deduplication.                                                                                                  | `tests/hook_contract.rs::owned_events_preserve_hook_order_multiplicity_and_directives`                                                                                                              |
-| D-10     | Implemented: bounded commands apply sequentially after unlock with explicit per-command stale/foreign results.                                                                                      | `tests/hook_contract.rs` deferred and stale-command tests                                                                                                                                           |
-| D-11     | Implemented: RAII unlock, command discard, persistent poison, and resumed unwind are consumer-visible.                                                                                              | `tests/hook_contract.rs::hook_panic_restores_lock_and_poison_gates_later_operations`                                                                                                                |
-| D-12     | Implemented privately and exposed only as stable system-scoped identity: overlapping system-local slot/generation ranges cannot alias, while dense positions remain ephemeral and group-contiguous. | `particle/storage/identity.rs::cross_system_id_is_rejected_before_dense_lookup`; `tests/object_model.rs::particle_group_owner_mismatch_reports_particle_system_scope`; `tests/particle_identity.rs` |
-| D-13     | Implemented privately: live, pending-delete, vacant, and retired mappings preserve snapshots then invalidate on compaction.                                                                         | `particle/storage/identity.rs` pending, compaction, and retirement tests                                                                                                                            |
-| D-14     | Implemented privately: one validate-then-commit permutation updates every representative lane, map, derived index, and group range.                                                                 | `particle/storage/permutation.rs` remapping and unchanged-on-error tests                                                                                                                            |
-| D-15     | Implemented as a bounded architecture spike only; no particle solver pass is present.                                                                                                               | `particle/storage/properties.rs::bounded_state_machine_matches_independent_model`                                                                                                                   |
-| D-16     | Implemented: sealed application-owned typed side tables clean up explicitly from owned destruction records.                                                                                         | `association.rs` compile-fail/unit tests; `tests/object_model.rs` cleanup test                                                                                                                      |
-| D-17     | Direction locked and proved privately, deferred publicly: owned validated lanes, fixed declared capacity, and owned teardown.                                                                       | `particle/storage/properties.rs` capacity/teardown tests; public API completion deferred to Phase 9                                                                                                 |
+| D-01 | Implemented: six opaque typed identities use private world/slot/generation coordinates and custom arenas. | `identity.rs`; `arena.rs`; `tests/object_model.rs::public_handle_kinds_are_distinct_types` |
+| D-02 | Implemented: checked generation advance permanently retires exhausted slots, checked diagnostic allocation rejects insertion after `u64::MAX`, and finite-space failures remain explicit. | `arena.rs::tests::maximum_generation_retires_permanently`; `world/object.rs::tests::diagnostic_identity_exhaustion_rejects_insertion`; seeded arena model test |
+| D-03 | Implemented: typed signatures reject wrong kinds; runtime lookup distinguishes foreign from stale identities. | crate compile-fail doctest; `tests/object_model.rs` stale/reuse and cross-world tests |
+| D-04 | Implemented: complete identity, including particle-system scope for `ParticleId`, controls equality/hash while constructors, coordinates, serialization, and ordering stay private. | `identity.rs` equality/scope/debug tests; crate raw-parts compile-fail doctest |
+| D-05 | Implemented: handles use auto traits only and production forbids unsafe code. | `identity.rs::tests::handles_are_send_and_sync_through_auto_traits`; `lib.rs` crate lint |
+| D-06 | Implemented for the Phase-3 object graph: centralized cascades preserve pinned upstream newest-first body adjacency order and owned snapshots. | `world/object.rs`; `tests/object_model.rs::body_destruction_returns_owned_ordered_cascade_evidence`; `tests/object_model.rs::typed_association_cleanup_follows_destruction_records` |
+| D-07 | Implemented: contacts are borrow-scoped views or owned snapshots/events with no durable handle. | `world/step.rs` contact-view compile-fail doctest; `tests/hook_contract.rs` |
+| D-08 | Implemented for representative hooks: read-only views return narrow filter/pre-solve directives and optional typed commands. | `world/step.rs` hook-signature compile-fail doctest; owned-directive integration test |
+| D-09 | Implemented: owned reports preserve event occurrence order and multiplicity without deduplication. | `tests/hook_contract.rs::owned_events_preserve_hook_order_multiplicity_and_directives` |
+| D-10 | Implemented: bounded commands apply sequentially after unlock with explicit per-command stale/foreign results. | `tests/hook_contract.rs` deferred and stale-command tests |
+| D-11 | Implemented: RAII unlock, command discard, persistent poison, and resumed unwind are consumer-visible. | `tests/hook_contract.rs::hook_panic_restores_lock_and_poison_gates_later_operations` |
+| D-12 | Implemented privately and exposed only as stable system-scoped identity: overlapping system-local slot/generation ranges cannot alias, while dense positions remain ephemeral and group-contiguous. | `particle/storage/identity.rs::cross_system_id_is_rejected_before_dense_lookup`; `tests/object_model.rs::particle_group_owner_mismatch_reports_particle_system_scope`; `tests/particle_identity.rs` |
+| D-13 | Implemented privately: live, pending-delete, vacant, and retired mappings preserve snapshots then invalidate on compaction. | `particle/storage/identity.rs` pending, compaction, and retirement tests |
+| D-14 | Implemented privately: one validate-then-commit permutation updates every representative lane, map, derived index, and group range. | `particle/storage/permutation.rs` remapping and unchanged-on-error tests |
+| D-15 | Implemented as a bounded architecture spike only; no particle solver pass is present. | `particle/storage/properties.rs::bounded_state_machine_matches_independent_model` |
+| D-16 | Implemented: sealed application-owned typed side tables clean up explicitly from owned destruction records. | `association.rs` compile-fail/unit tests; `tests/object_model.rs` cleanup test |
+| D-17 | Direction locked and proved privately, deferred publicly: owned validated lanes, fixed declared capacity, and owned teardown. | `particle/storage/properties.rs` capacity/teardown tests; public API completion deferred to Phase 9 |
 
 ## Process-isolated C++ oracle
 

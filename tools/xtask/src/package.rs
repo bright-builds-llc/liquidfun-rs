@@ -15,8 +15,19 @@ mod metadata;
 
 const USAGE: &str = "Usage: cargo xtask package verify";
 const FORBIDDEN_PREFIXES: [&str; 3] = ["tools", "third_party", "reference"];
-const FORBIDDEN_EXTENSIONS: [&str; 11] = [
-    "c", "cc", "cpp", "cxx", "h", "hh", "hpp", "hxx", "s", "asm", "cmake",
+const FORBIDDEN_EXTENSIONS: [&str; 24] = [
+    "asm", "bmp", "c", "cc", "cmake", "cpp", "cxx", "frag", "gif", "glsl", "h", "hh", "hpp", "hxx",
+    "ico", "jpg", "jpeg", "obj", "png", "s", "shader", "svg", "vert", "webp",
+];
+const FORBIDDEN_PATH_TERMS: [&str; 8] = [
+    "benchmark",
+    "oracle",
+    "protocol",
+    "renderer",
+    "testbed",
+    "visual",
+    "window",
+    "graphics",
 ];
 static TEMP_ID: AtomicU64 = AtomicU64::new(0);
 const MAXIMUM_ARCHIVE_ENTRIES: usize = 10_000;
@@ -304,6 +315,23 @@ fn validate_package_content(relative: &Path) -> Result<(), PackageError> {
         return Err(PackageError::new(
             "forbidden-content",
             format!("forbidden package prefix `{}`", relative.display()),
+        ));
+    }
+    if relative.components().any(|component| {
+        let Component::Normal(value) = component else {
+            return false;
+        };
+        let normalized = value
+            .to_string_lossy()
+            .replace('_', "-")
+            .to_ascii_lowercase();
+        FORBIDDEN_PATH_TERMS
+            .iter()
+            .any(|term| normalized.contains(term))
+    }) {
+        return Err(PackageError::new(
+            "forbidden-content",
+            format!("forbidden private capability path `{}`", relative.display()),
         ));
     }
     let maybe_file_name = relative.file_name().and_then(OsStr::to_str);

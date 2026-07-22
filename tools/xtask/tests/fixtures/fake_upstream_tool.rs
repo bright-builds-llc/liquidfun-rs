@@ -17,10 +17,19 @@ fn main() -> ExitCode {
     if tool.contains("cargo") {
         if env::var_os("LIQUIDFUN_TEST_ASSERT_PACKAGE_ISOLATION").is_some() {
             let current = env::current_dir().unwrap_or_default();
-            let has_forbidden_directory =
-                current.join("third_party").exists() || current.join("reference").exists();
+            let has_forbidden_directory = [
+                "third_party",
+                "reference",
+                "tools",
+                "testbed",
+                "crates/liquidfun-testbed",
+            ]
+            .iter()
+            .any(|relative| current.join(relative).exists());
             let has_display = env::var_os("DISPLAY").is_some()
                 || env::var_os("WAYLAND_DISPLAY").is_some()
+                || env::var_os("MIR_SOCKET").is_some()
+                || env::var_os("XDG_RUNTIME_DIR").is_some()
                 || env::var_os("LIQUIDFUN_XTASK_ROOT").is_some()
                 || env::var_os("LIQUIDFUN_XTASK_TEST_PACKAGE_ARCHIVE").is_some();
             if has_forbidden_directory || has_display {
