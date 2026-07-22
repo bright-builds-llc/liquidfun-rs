@@ -3,14 +3,14 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 11-11-PLAN.md
-last_updated: "2026-07-22T02:31:44.607Z"
+stopped_at: Completed 11-12-PLAN.md
+last_updated: "2026-07-22T02:56:34.037Z"
 last_activity: "2026-07-22"
 progress:
   total_phases: 12
   completed_phases: 10
   total_plans: 190
-  completed_plans: 172
+  completed_plans: 173
   percent: 91
 ---
 
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 ## Current Position
 
 Phase: 11 (Examples, Headless Tooling, and Testbed) — EXECUTING
-Plan: 12 of 29
+Plan: 13 of 29
 Status: Ready to execute
 Last activity: 2026-07-22
 
@@ -184,6 +184,7 @@ Progress: [█████████░] 91%
 | Phase 11 P06 | 20min | 1 tasks | 11 files |
 | Phase 11 P10 | 20 min | 1 tasks | 12 files |
 | Phase 11 P11 | 26 min | 1 tasks | 17 files |
+| Phase 11 P12 | 21 min | 1 tasks | 14 files |
 
 ## Accumulated Context
 
@@ -496,6 +497,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 11]: Treat decoded canonical resolved bytes, exact action membership, and typed public handle maps as the complete execution authority. — No raw or private identity participates in native catalog execution.
 - [Phase 11]: Make each catalog action transactional by replaying verified setup and committed logical history into a fresh World. — Candidate state becomes authoritative only after successful public-API execution.
 - [Phase 11]: Build catalog checkpoints only from public observations and collected debug primitives, excluding durations. — Canonical semantic replay must remain renderer-neutral and independent of private storage.
+- [Phase 11]: Extend the existing long-lived oracle with one catalog_run_request dispatch rather than introduce a second executable or protocol loop. — This preserves established framing, bounded input, protocol-only stdout, and process supervision.
+- [Phase 11]: Keep each catalog run inside a fresh request-local world with private semantic maps and advance reset epochs only after bounded checkpoint construction succeeds. — This makes rejection recovery observable while preventing native pointers and particle row compaction from becoming protocol identity.
+- [Phase 11]: Separate strict catalog decoding, effectful upstream execution, and checkpoint encoding into independently digested behavior units. — This keeps trust-boundary concerns cohesive and reviewable without changing the single-process architecture.
 
 ### Pending Todos
 
@@ -509,6 +513,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-22T02:31:44.604Z
-Stopped at: Completed 11-11-PLAN.md
+Last session: 2026-07-22T02:55:30.862Z
+Stopped at: Completed 11-12-PLAN.md
 Resume file: None
