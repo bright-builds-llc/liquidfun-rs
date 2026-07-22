@@ -3,15 +3,15 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 11-20-PLAN.md
-last_updated: "2026-07-22T05:51:50.655Z"
+stopped_at: Completed 11-24-PLAN.md
+last_updated: "2026-07-22T06:14:57.822Z"
 last_activity: "2026-07-22"
 progress:
   total_phases: 12
   completed_phases: 10
   total_plans: 190
-  completed_plans: 181
-  percent: 95
+  completed_plans: 182
+  percent: 96
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 ## Current Position
 
 Phase: 11 (Examples, Headless Tooling, and Testbed) — EXECUTING
-Plan: 21 of 29
+Plan: 22 of 29
 Status: Ready to execute
 Last activity: 2026-07-22
 
@@ -193,6 +193,7 @@ Progress: [█████████░] 93%
 | Phase 11 P18 | 48 min | 1 tasks | 14 files |
 | Phase 11 P19 | 15 min | 1 tasks | 9 files |
 | Phase 11 P20 | 28 min | 1 tasks | 14 files |
+| Phase 11 P24 | 32 min | 1 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -525,6 +526,8 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 11]: Bind Phase 11 representative runs to exact resolved, request, run-contract, action, and checkpoint identities without self-blessing physics results. — Contract hashes are independently reproducible while semantic parity remains grounded in inherited reviewed evidence.
 - [Phase 11]: Exclude UI pixels, frame rate, durations, private pass IDs, and render order from Phase 11 semantic evidence leaves. — Renderer and wall-clock diagnostics cannot become compatibility authority.
 - [Phase 11]: Require every sealed Phase 11 case to retain exact tracked Phase 6 through Phase 10 proof digests. — Missing, stale, or circular inherited authority fails before a case can support maturity claims.
+- [Phase 11]: Retain exact Macroquad 0.4.15 after the private capability matrix passed. — The real Image and Color adapter passed every required renderer, accessibility, resize, capture, and isolation capability, so no allowed heavier-stack fallback trigger occurred.
+- [Phase 11]: Keep visual rendering passive over shared controller and comparison references. — Frames, DPI, screenshots, and keyboard presentation cannot advance a logical step, create a checkpoint, reinterpret comparison policy, or become compatibility authority.
 
 ### Pending Todos
 
@@ -538,6 +541,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-22T05:50:18.415Z
-Stopped at: Completed 11-20-PLAN.md
+Last session: 2026-07-22T06:13:18.809Z
+Stopped at: Completed 11-24-PLAN.md
 Resume file: None
