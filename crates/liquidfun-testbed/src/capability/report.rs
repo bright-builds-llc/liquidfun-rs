@@ -128,6 +128,8 @@ pub struct CapabilityMeasurements {
     profile_names: usize,
     overlay_pairs: usize,
     side_by_side_panels: usize,
+    semantic_capture_acknowledgements: usize,
+    diagnostic_disclaimer_lines: usize,
 }
 
 /// Complete deterministic capability result.
@@ -198,6 +200,8 @@ impl CapabilityReport {
             profile_names: rendered.profile_names,
             overlay_pairs: rendered.overlay_pairs,
             side_by_side_panels: rendered.side_by_side_panels,
+            semantic_capture_acknowledgements: rendered.semantic_capture_acknowledgements,
+            diagnostic_disclaimer_lines: rendered.diagnostic_disclaimer_lines,
         };
         let capabilities = vec![
             CapabilityDisposition::measured(
@@ -242,12 +246,12 @@ impl CapabilityReport {
             ),
             CapabilityDisposition::measured(
                 "semantic_capture_acknowledgement",
-                true,
+                rendered.semantic_capture_acknowledgements >= 1,
                 "checkpoint acknowledgement rendered",
             ),
             CapabilityDisposition::measured(
                 "diagnostic_screenshot_disclaimer",
-                true,
+                rendered.diagnostic_disclaimer_lines >= 2,
                 "diagnostic-only screenshot copy rendered",
             ),
             CapabilityDisposition::measured(
@@ -383,5 +387,59 @@ impl CapabilityReport {
     #[must_use]
     pub const fn session_captures_after(&self) -> usize {
         self.session_after.captures
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::capability::render::rendered_evidence_with_contact_normals;
+
+    fn fixture() -> FixtureSnapshot {
+        FixtureSnapshot {
+            sha256: "0".repeat(64),
+            profile: "phase11-v1".to_owned(),
+            upstream_revision: "0".repeat(40),
+            case_ids: vec!["test-case".to_owned()],
+            families: vec!["rigid".to_owned()],
+            verified_artifacts: 1,
+        }
+    }
+
+    fn passive_snapshot() -> PassiveInputSnapshot {
+        PassiveInputSnapshot {
+            session_state: "ready_paused",
+            logical_steps: 0,
+            captures: 0,
+            comparison_state: "exact_match",
+            comparison_entries: 1,
+        }
+    }
+
+    #[test]
+    fn suppressing_required_contact_normals_fails_the_capability_matrix() {
+        // Arrange
+        let fixture = fixture();
+        let before = passive_snapshot();
+        let mut complete = CapabilityReport::from_evidence(
+            &fixture,
+            before.clone(),
+            before.clone(),
+            rendered_evidence_with_contact_normals(true),
+        );
+        complete.validate_required_capabilities();
+
+        // Act
+        let mut suppressed = CapabilityReport::from_evidence(
+            &fixture,
+            before.clone(),
+            before,
+            rendered_evidence_with_contact_normals(false),
+        );
+        suppressed.validate_required_capabilities();
+
+        // Assert
+        assert!(complete.all_passed());
+        assert!(!suppressed.all_passed());
     }
 }

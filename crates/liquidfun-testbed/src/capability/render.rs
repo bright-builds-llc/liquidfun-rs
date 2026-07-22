@@ -47,6 +47,60 @@ pub(super) struct RenderedEvidence {
     pub(super) profile_names: usize,
     pub(super) overlay_pairs: usize,
     pub(super) side_by_side_panels: usize,
+    pub(super) semantic_capture_acknowledgements: usize,
+    pub(super) diagnostic_disclaimer_lines: usize,
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+struct SemanticDrawEvidence {
+    particle_colors: [bool; 4],
+    dense_text_rows: usize,
+    focus_ring_pixels: usize,
+    minimum_control_target_pixels: u16,
+    contact_points: usize,
+    contact_normals: usize,
+    particle_contacts: usize,
+    broad_phase_aabbs: usize,
+    profile_names: usize,
+    overlay_pairs: usize,
+    side_by_side_panels: usize,
+    semantic_capture_acknowledgements: usize,
+    diagnostic_disclaimer_lines: usize,
+}
+
+impl SemanticDrawEvidence {
+    fn minimum(self, other: Self) -> Self {
+        Self {
+            particle_colors: std::array::from_fn(|index| {
+                self.particle_colors[index] && other.particle_colors[index]
+            }),
+            dense_text_rows: self.dense_text_rows.min(other.dense_text_rows),
+            focus_ring_pixels: self.focus_ring_pixels.min(other.focus_ring_pixels),
+            minimum_control_target_pixels: self
+                .minimum_control_target_pixels
+                .min(other.minimum_control_target_pixels),
+            contact_points: self.contact_points.min(other.contact_points),
+            contact_normals: self.contact_normals.min(other.contact_normals),
+            particle_contacts: self.particle_contacts.min(other.particle_contacts),
+            broad_phase_aabbs: self.broad_phase_aabbs.min(other.broad_phase_aabbs),
+            profile_names: self.profile_names.min(other.profile_names),
+            overlay_pairs: self.overlay_pairs.min(other.overlay_pairs),
+            side_by_side_panels: self.side_by_side_panels.min(other.side_by_side_panels),
+            semantic_capture_acknowledgements: self
+                .semantic_capture_acknowledgements
+                .min(other.semantic_capture_acknowledgements),
+            diagnostic_disclaimer_lines: self
+                .diagnostic_disclaimer_lines
+                .min(other.diagnostic_disclaimer_lines),
+        }
+    }
+
+    fn distinct_particle_colors(self) -> usize {
+        self.particle_colors
+            .into_iter()
+            .filter(|seen| *seen)
+            .count()
+    }
 }
 
 pub(super) fn render_capability_frames(
@@ -60,34 +114,62 @@ pub(super) fn render_capability_frames(
     let comparison_state = format!("COMPARE {:?}", comparison.state()).to_ascii_uppercase();
     let mut artifacts = Vec::with_capacity(FRAME_SIZES.len());
     let mut non_background_pixels_minimum = usize::MAX;
+    let mut minimum_width = u16::MAX;
+    let mut minimum_height = u16::MAX;
+    let mut maximum_dpi_scale = 0_u16;
+    let mut resize_width = 0_u16;
+    let mut resize_height = 0_u16;
+    let mut maybe_semantic_evidence: Option<SemanticDrawEvidence> = None;
     for (width, height, name) in FRAME_SIZES {
         let mut raster = MacroquadRaster::new(width, height);
-        draw_capability_scene(&mut raster, fixture, &session_state, &comparison_state);
+        let semantic_evidence = draw_capability_scene(
+            &mut raster,
+            fixture,
+            &session_state,
+            &comparison_state,
+            true,
+        );
+        maybe_semantic_evidence = Some(match maybe_semantic_evidence {
+            Some(evidence) => evidence.minimum(semantic_evidence),
+            None => semantic_evidence,
+        });
         non_background_pixels_minimum =
             non_background_pixels_minimum.min(raster.non_background_pixels());
+        minimum_width = minimum_width.min(raster.image.width);
+        minimum_height = minimum_height.min(raster.image.height);
+        maximum_dpi_scale = maximum_dpi_scale.max(u16::try_from(raster.scale).unwrap_or(0));
+        if width == 800 && height == 600 {
+            resize_width = raster.image.width;
+            resize_height = raster.image.height;
+        }
         artifacts.push(export_image(&raster.image, output, name)?);
     }
+    let Some(semantic_evidence) = maybe_semantic_evidence else {
+        return Err(CapabilityError::CapabilityFailed);
+    };
     Ok(RenderedEvidence {
         artifacts,
-        minimum_width: 640,
-        minimum_height: 480,
-        maximum_dpi_scale: 2,
-        resize_width: 800,
-        resize_height: 600,
+        minimum_width,
+        minimum_height,
+        maximum_dpi_scale,
+        resize_width,
+        resize_height,
         non_background_pixels_minimum,
-        distinct_particle_colors: 4,
-        dense_text_rows: 16,
-        focus_ring_pixels: 2,
+        distinct_particle_colors: semantic_evidence.distinct_particle_colors(),
+        dense_text_rows: semantic_evidence.dense_text_rows,
+        focus_ring_pixels: semantic_evidence.focus_ring_pixels,
         minimum_text_contrast_ratio: contrast_ratio(TEXT, BACKGROUND),
-        minimum_control_target_pixels: 44,
+        minimum_control_target_pixels: semantic_evidence.minimum_control_target_pixels,
         keyboard_bindings,
-        contact_points: 3,
-        contact_normals: 3,
-        particle_contacts: 6,
-        broad_phase_aabbs: 4,
-        profile_names: 5,
-        overlay_pairs: 3,
-        side_by_side_panels: 2,
+        contact_points: semantic_evidence.contact_points,
+        contact_normals: semantic_evidence.contact_normals,
+        particle_contacts: semantic_evidence.particle_contacts,
+        broad_phase_aabbs: semantic_evidence.broad_phase_aabbs,
+        profile_names: semantic_evidence.profile_names,
+        overlay_pairs: semantic_evidence.overlay_pairs,
+        side_by_side_panels: semantic_evidence.side_by_side_panels,
+        semantic_capture_acknowledgements: semantic_evidence.semantic_capture_acknowledgements,
+        diagnostic_disclaimer_lines: semantic_evidence.diagnostic_disclaimer_lines,
     })
 }
 
@@ -262,7 +344,9 @@ fn draw_capability_scene(
     fixture: &FixtureSnapshot,
     session_state: &str,
     comparison_state: &str,
-) {
+    emit_contact_normals: bool,
+) -> SemanticDrawEvidence {
+    let mut evidence = SemanticDrawEvidence::default();
     raster.rect(0, 0, 640, 40, PANEL);
     raster.text(12, 10, "LIQUIDFUN TESTBED CAPABILITY", TEXT, 2);
     raster.outline(390, 3, 94, 34, ACCENT, 2);
@@ -271,43 +355,66 @@ fn draw_capability_scene(
 
     raster.rect(12, 48, 394, 290, PANEL);
     raster.text(20, 56, "DIAGNOSTIC CAPABILITY FRAME", MUTED, 1);
-    draw_contacts(raster);
-    draw_particles(raster);
-    draw_aabbs(raster);
-    draw_differences(raster);
+    draw_contacts(raster, &mut evidence, emit_contact_normals);
+    draw_particles(raster, &mut evidence);
+    draw_aabbs(raster, &mut evidence);
+    draw_differences(raster, &mut evidence);
 
     raster.rect(414, 48, 214, 416, PANEL);
     raster.text(424, 58, "INSPECTOR", TEXT, 2);
-    draw_profiles(raster, fixture, session_state, comparison_state);
+    draw_profiles(
+        raster,
+        fixture,
+        session_state,
+        comparison_state,
+        &mut evidence,
+    );
     raster.outline(424, 342, 190, 44, ACCENT, 2);
+    evidence.focus_ring_pixels = 2;
+    evidence.minimum_control_target_pixels = 44;
     raster.text(434, 358, "FOCUS CONTACT.NORMAL.2", TEXT, 1);
     raster.text(424, 400, "CHECKPOINT CAPTURED AT STEP 16", RUST, 1);
+    evidence.semantic_capture_acknowledgements += 1;
     raster.text(424, 416, "SCREENSHOT SAVED. DIAGNOSTIC ONLY", WARNING, 1);
+    evidence.diagnostic_disclaimer_lines += 1;
     raster.text(424, 432, "PIXELS DO NOT PROVE COMPATIBILITY", WARNING, 1);
+    evidence.diagnostic_disclaimer_lines += 1;
 
     raster.rect(12, 346, 394, 118, PANEL);
     raster.text(20, 354, "SIDE BY SIDE DIFFERENCE", TEXT, 1);
     raster.outline(22, 370, 174, 80, RUST, 1);
+    evidence.side_by_side_panels += 1;
     raster.outline(214, 370, 174, 80, ORACLE, 1);
+    evidence.side_by_side_panels += 1;
     raster.text(30, 378, "R RUST", RUST, 1);
     raster.text(222, 378, "O ORACLE", ORACLE, 1);
     for offset in [0, 22, 44] {
         raster.line((40 + offset, 420), (68 + offset, 394), RUST, 1);
         raster.dashed_line((232 + offset, 420), (262 + offset, 392), ORACLE);
     }
+    evidence
 }
 
-fn draw_contacts(raster: &mut MacroquadRaster) {
+fn draw_contacts(
+    raster: &mut MacroquadRaster,
+    evidence: &mut SemanticDrawEvidence,
+    emit_normals: bool,
+) {
     raster.text(24, 78, "CONTACTS AND NORMALS", TEXT, 1);
     for (x, y) in [(52, 116), (86, 126), (120, 112)] {
         raster.circle((x, y), 4, RUST);
+        evidence.contact_points += 1;
+        if !emit_normals {
+            continue;
+        }
         raster.line((x, y), (x + 10, y - 18), ACCENT, 1);
         raster.line((x + 10, y - 18), (x + 4, y - 15), ACCENT, 1);
         raster.line((x + 10, y - 18), (x + 9, y - 11), ACCENT, 1);
+        evidence.contact_normals += 1;
     }
 }
 
-fn draw_particles(raster: &mut MacroquadRaster) {
+fn draw_particles(raster: &mut MacroquadRaster, evidence: &mut SemanticDrawEvidence) {
     raster.text(24, 150, "PARTICLES COLORS CONTACTS", TEXT, 1);
     let colors = [RUST, ACCENT, WARNING, ORACLE];
     let mut centers = Vec::with_capacity(12);
@@ -315,15 +422,18 @@ fn draw_particles(raster: &mut MacroquadRaster) {
         for (column, x) in [40, 64, 88, 112].into_iter().enumerate() {
             let center = (x, y);
             centers.push(center);
-            raster.circle(center, 6, colors[(row * 4 + column) % colors.len()]);
+            let color_index = (row * 4 + column) % colors.len();
+            raster.circle(center, 6, colors[color_index]);
+            evidence.particle_colors[color_index] = true;
         }
     }
     for (left, right) in [(0, 1), (1, 5), (5, 6), (6, 10), (10, 11), (3, 7)] {
         raster.line(centers[left], centers[right], MUTED, 1);
+        evidence.particle_contacts += 1;
     }
 }
 
-fn draw_aabbs(raster: &mut MacroquadRaster) {
+fn draw_aabbs(raster: &mut MacroquadRaster, evidence: &mut SemanticDrawEvidence) {
     raster.text(164, 78, "BROAD PHASE AABBS", TEXT, 1);
     for (x, y, width, height) in [
         (166, 96, 42, 30),
@@ -332,14 +442,16 @@ fn draw_aabbs(raster: &mut MacroquadRaster) {
         (266, 148, 50, 58),
     ] {
         raster.outline(x, y, width, height, WARNING, 1);
+        evidence.broad_phase_aabbs += 1;
     }
 }
 
-fn draw_differences(raster: &mut MacroquadRaster) {
+fn draw_differences(raster: &mut MacroquadRaster, evidence: &mut SemanticDrawEvidence) {
     raster.text(164, 224, "SYNCHRONIZED OVERLAY R O", TEXT, 1);
     for offset in [0, 48, 96] {
         raster.line((176 + offset, 282), (204 + offset, 248), RUST, 1);
         raster.dashed_line((178 + offset, 282), (208 + offset, 246), ORACLE);
+        evidence.overlay_pairs += 1;
     }
     raster.circle((304, 268), 14, ACCENT);
     raster.circle((304, 268), 10, PANEL);
@@ -351,6 +463,7 @@ fn draw_profiles(
     fixture: &FixtureSnapshot,
     session_state: &str,
     comparison_state: &str,
+    evidence: &mut SemanticDrawEvidence,
 ) {
     let rows = [
         "PROFILE NAMES",
@@ -373,6 +486,10 @@ fn draw_profiles(
     for (index, row) in rows.iter().enumerate() {
         let y = 88 + i32::try_from(index).unwrap_or(0) * 14;
         raster.text(424, y, row, if index < 6 { TEXT } else { MUTED }, 1);
+        evidence.dense_text_rows += 1;
+        if (1..=5).contains(&index) {
+            evidence.profile_names += 1;
+        }
     }
     let cases = format!("FIXTURE {} CASES", fixture.case_ids.len());
     raster.text(424, 316, &cases, MUTED, 1);
@@ -402,6 +519,65 @@ fn channel_luminance(value: f32) -> f32 {
         value / 12.92
     } else {
         ((value + 0.055) / 1.055).powf(2.4)
+    }
+}
+
+#[cfg(test)]
+pub(super) fn rendered_evidence_with_contact_normals(
+    emit_contact_normals: bool,
+) -> RenderedEvidence {
+    let fixture = FixtureSnapshot {
+        sha256: "0".repeat(64),
+        profile: "phase11-v1".to_owned(),
+        upstream_revision: "0".repeat(40),
+        case_ids: vec!["test-case".to_owned()],
+        families: vec!["rigid".to_owned()],
+        verified_artifacts: 1,
+    };
+    let mut raster = MacroquadRaster::new(640, 480);
+    let semantic_evidence = draw_capability_scene(
+        &mut raster,
+        &fixture,
+        "SESSION READY",
+        "COMPARE EXACT",
+        emit_contact_normals,
+    );
+    let artifacts = FRAME_SIZES
+        .iter()
+        .map(|(width, height, name)| {
+            CapabilityArtifact::new(
+                (*name).to_owned(),
+                "0".repeat(64),
+                1_024,
+                *width,
+                *height,
+                true,
+            )
+        })
+        .collect();
+    RenderedEvidence {
+        artifacts,
+        minimum_width: 640,
+        minimum_height: 480,
+        maximum_dpi_scale: 2,
+        resize_width: 800,
+        resize_height: 600,
+        non_background_pixels_minimum: raster.non_background_pixels(),
+        distinct_particle_colors: semantic_evidence.distinct_particle_colors(),
+        dense_text_rows: semantic_evidence.dense_text_rows,
+        focus_ring_pixels: semantic_evidence.focus_ring_pixels,
+        minimum_text_contrast_ratio: contrast_ratio(TEXT, BACKGROUND),
+        minimum_control_target_pixels: semantic_evidence.minimum_control_target_pixels,
+        keyboard_bindings: 6,
+        contact_points: semantic_evidence.contact_points,
+        contact_normals: semantic_evidence.contact_normals,
+        particle_contacts: semantic_evidence.particle_contacts,
+        broad_phase_aabbs: semantic_evidence.broad_phase_aabbs,
+        profile_names: semantic_evidence.profile_names,
+        overlay_pairs: semantic_evidence.overlay_pairs,
+        side_by_side_panels: semantic_evidence.side_by_side_panels,
+        semantic_capture_acknowledgements: semantic_evidence.semantic_capture_acknowledgements,
+        diagnostic_disclaimer_lines: semantic_evidence.diagnostic_disclaimer_lines,
     }
 }
 
