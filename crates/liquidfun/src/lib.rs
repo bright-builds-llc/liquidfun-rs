@@ -172,6 +172,7 @@
 mod arena;
 mod association;
 pub mod collision;
+pub mod debug_draw;
 mod error;
 mod identity;
 pub mod joint;
@@ -184,6 +185,11 @@ pub mod rope;
 mod world;
 
 pub use association::{AssociationId, AssociationMap};
+pub use debug_draw::{
+    DebugCollectionError, DebugCollectionResource, DebugColor, DebugDrawLimits, DebugDrawOptions,
+    DebugFill, DebugLayer, DebugOwnerKey, DebugPrimitive, DebugPrimitiveCollection,
+    DebugPrimitiveKey, DebugPrimitiveKind, DebugPrimitiveMetadata, DebugPrimitiveSink, DebugStroke,
+};
 pub use error::{ArenaInsertError, HandleError, WorldKeyError};
 pub use identity::{
     BodyId, FixtureId, JointId, ObjectKind, ParticleGroupId, ParticleId, ParticleSystemId,
@@ -213,25 +219,25 @@ pub use particle::{
 };
 pub use world::{
     AggregateMassError, BodyActivationError, BodyControlError, BodyDef, BodyDefError, BodyMassData,
-    BodyMassDataError, BodyMassMutationError, BodyMassResetError, BodySnapshot, BodyTransformError,
-    BodyType, BodyTypeChangeError, BroadPhaseObservation, CollisionDecisionHook,
-    CollisionDirective, CollisionFilterEvent, CommandApplication, CommandError,
-    ContactControlError, ContactEvent, ContactObservation, ContactPointSnapshot, ContactSolve,
-    ContactTransition, ContactTransitionKind, ContactView, ContinuousProgress, CreateObjectError,
-    DestroyedId, DestructionCause, DestructionRecord, DestructionReport, DiagnosticStepPhase,
-    DiagnosticStepPhaseTiming, DiagnosticStepProfile, FixtureBoundsError, FixtureDef,
-    FixtureDefError, FixtureDestructionError, FixtureMutationError, FixturePairView,
-    FixtureParticleView, FixtureQueryOccurrence, FixtureSnapshot, JointCreationError,
-    JointMutationError, JointQueryError, LifecycleEvent, ManagedContactSnapshot, MutationReport,
-    NoDecisionHook, ObjectSnapshot, OriginShiftError, ParticleBodyContactObservation,
-    ParticleContactObservation, ParticlePairContactView, PreSolveDirective, PreSolveView,
-    QueryDirective, RayCastDirective, RayCastFraction, RayCastFractionError, StepCompletion,
-    StepConfiguration, StepConfigurationError, StepError, StepHook, StepLifecycleEvent, StepLimits,
-    StepPhase, StepReport, WakePolicy, World, WorldCommand, WorldConfigurationError,
-    WorldDiagnostics, WorldFixtureSnapshot, WorldObservation, WorldObservationError,
-    WorldObservationLimitError, WorldObservationLimits, WorldObservationResource,
-    WorldQueryOccurrence, WorldRayCastError, WorldRayCastOccurrence,
-    WorldRayCastWithParticlesError, WorldRayHit,
+    BodyMassDataError, BodyMassMutationError, BodyMassResetError, BodyObservation, BodySnapshot,
+    BodyTransformError, BodyType, BodyTypeChangeError, BroadPhaseObservation,
+    CollisionDecisionHook, CollisionDirective, CollisionFilterEvent, CommandApplication,
+    CommandError, ContactControlError, ContactEvent, ContactObservation, ContactPointSnapshot,
+    ContactSolve, ContactTransition, ContactTransitionKind, ContactView, ContinuousProgress,
+    CreateObjectError, DestroyedId, DestructionCause, DestructionRecord, DestructionReport,
+    DiagnosticStepPhase, DiagnosticStepPhaseTiming, DiagnosticStepProfile, FixtureBoundsError,
+    FixtureDef, FixtureDefError, FixtureDestructionError, FixtureMutationError, FixtureObservation,
+    FixturePairView, FixtureParticleView, FixtureQueryOccurrence, FixtureSnapshot,
+    JointCreationError, JointMutationError, JointObservation, JointQueryError, LifecycleEvent,
+    ManagedContactSnapshot, MutationReport, NoDecisionHook, ObjectSnapshot, OriginShiftError,
+    ParticleBodyContactObservation, ParticleContactObservation, ParticleObservation,
+    ParticlePairContactView, PreSolveDirective, PreSolveView, QueryDirective, RayCastDirective,
+    RayCastFraction, RayCastFractionError, StepCompletion, StepConfiguration,
+    StepConfigurationError, StepError, StepHook, StepLifecycleEvent, StepLimits, StepPhase,
+    StepReport, WakePolicy, World, WorldCommand, WorldConfigurationError, WorldDiagnostics,
+    WorldFixtureSnapshot, WorldObservation, WorldObservationError, WorldObservationLimitError,
+    WorldObservationLimits, WorldObservationResource, WorldQueryOccurrence, WorldRayCastError,
+    WorldRayCastOccurrence, WorldRayCastWithParticlesError, WorldRayHit,
 };
 #[cfg(feature = "differential-internals")]
 pub use world::{ReconstructionSupport, ReconstructionUnsupported};

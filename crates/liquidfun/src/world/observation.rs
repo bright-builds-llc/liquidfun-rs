@@ -4,10 +4,12 @@ use std::error::Error;
 use std::fmt;
 
 use crate::collision::{Aabb, ChildIndex, Manifold};
-use crate::particle::{ParticleSystemStatistics, ParticleSystemView, ParticleWorldStatistics};
+use crate::particle::{
+    ParticleColor, ParticleSystemStatistics, ParticleSystemView, ParticleWorldStatistics,
+};
 use crate::{
-    BodyId, ContactPointSnapshot, FixtureId, ManagedContactSnapshot, ParticleFlags, ParticleId,
-    ParticleSystemId,
+    BodyId, BodySnapshot, ContactPointSnapshot, FixtureId, FixtureSnapshot, JointId, JointSnapshot,
+    ManagedContactSnapshot, ParticleFlags, ParticleId, ParticleSystemId,
 };
 
 use super::WorldDiagnostics;
@@ -23,11 +25,18 @@ const REVIEWED_MAX_PARTICLE_BODY_CONTACTS: usize = 65_536;
 const REVIEWED_MAX_BROAD_PHASE_OBSERVATIONS: usize = 32_768;
 const REVIEWED_MAX_PARTICLE_SYSTEMS: usize = 1_024;
 const REVIEWED_MAX_PARTICLES: usize = 1_048_576;
+const REVIEWED_MAX_BODIES: usize = 4_096;
+const REVIEWED_MAX_FIXTURES: usize = 8_192;
+const REVIEWED_MAX_JOINTS: usize = 8_192;
 
 /// A bounded observation collection whose order follows the engine's semantic traversal order.
 #[derive(Debug, Clone, PartialEq)]
 pub struct WorldObservation {
     diagnostics: WorldDiagnostics,
+    bodies: Vec<BodyObservation>,
+    fixtures: Vec<FixtureObservation>,
+    joints: Vec<JointObservation>,
+    particles: Vec<ParticleObservation>,
     contacts: Vec<ContactObservation>,
     particle_contacts: Vec<ParticleContactObservation>,
     particle_body_contacts: Vec<ParticleBodyContactObservation>,
@@ -41,6 +50,30 @@ impl WorldObservation {
     #[must_use]
     pub const fn diagnostics(&self) -> WorldDiagnostics {
         self.diagnostics
+    }
+
+    /// Returns live bodies in newest-first world order.
+    #[must_use]
+    pub fn bodies(&self) -> &[BodyObservation] {
+        &self.bodies
+    }
+
+    /// Returns live fixtures in newest-first body and fixture order.
+    #[must_use]
+    pub fn fixtures(&self) -> &[FixtureObservation] {
+        &self.fixtures
+    }
+
+    /// Returns live joints in newest-first world order.
+    #[must_use]
+    pub fn joints(&self) -> &[JointObservation] {
+        &self.joints
+    }
+
+    /// Returns live particles in newest-first system and stored particle order.
+    #[must_use]
+    pub fn particles(&self) -> &[ParticleObservation] {
+        &self.particles
     }
 
     /// Returns current rigid contacts in source-significant manager order.
@@ -77,6 +110,118 @@ impl WorldObservation {
     #[must_use]
     pub const fn particle_world_statistics(&self) -> ParticleWorldStatistics {
         self.particle_world_statistics
+    }
+}
+
+/// One owned body observation identified by its stable public handle.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct BodyObservation {
+    id: BodyId,
+    snapshot: BodySnapshot,
+}
+
+impl BodyObservation {
+    /// Returns the stable body identity.
+    #[must_use]
+    pub const fn id(self) -> BodyId {
+        self.id
+    }
+
+    /// Returns the owned semantic body state.
+    #[must_use]
+    pub const fn snapshot(self) -> BodySnapshot {
+        self.snapshot
+    }
+}
+
+/// One owned fixture observation with semantic owner and immutable geometry.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FixtureObservation {
+    id: FixtureId,
+    body: BodyId,
+    snapshot: FixtureSnapshot,
+}
+
+impl FixtureObservation {
+    /// Returns the stable fixture identity.
+    #[must_use]
+    pub const fn id(&self) -> FixtureId {
+        self.id
+    }
+
+    /// Returns the stable owning body identity.
+    #[must_use]
+    pub const fn body(&self) -> BodyId {
+        self.body
+    }
+
+    /// Returns the owned immutable fixture state.
+    #[must_use]
+    pub const fn snapshot(&self) -> &FixtureSnapshot {
+        &self.snapshot
+    }
+}
+
+/// One owned joint observation identified by its stable public handle.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct JointObservation {
+    id: JointId,
+    snapshot: JointSnapshot,
+}
+
+impl JointObservation {
+    /// Returns the stable joint identity.
+    #[must_use]
+    pub const fn id(self) -> JointId {
+        self.id
+    }
+
+    /// Returns the owned semantic joint state.
+    #[must_use]
+    pub const fn snapshot(self) -> JointSnapshot {
+        self.snapshot
+    }
+}
+
+/// One owned particle observation with no dense row coordinate.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct ParticleObservation {
+    system: ParticleSystemId,
+    particle: ParticleId,
+    position: crate::math::Vec2,
+    radius: f32,
+    color: ParticleColor,
+}
+
+impl ParticleObservation {
+    /// Returns the stable owning system identity.
+    #[must_use]
+    pub const fn system(self) -> ParticleSystemId {
+        self.system
+    }
+
+    /// Returns the stable particle identity.
+    #[must_use]
+    pub const fn particle(self) -> ParticleId {
+        self.particle
+    }
+
+    /// Returns the current world-space position in meters.
+    #[must_use]
+    pub const fn position(self) -> crate::math::Vec2 {
+        self.position
+    }
+
+    /// Returns the owning system's particle radius in meters.
+    #[must_use]
+    pub const fn radius(self) -> f32 {
+        self.radius
+    }
+
+    /// Returns the exact particle color.
+    #[must_use]
+    pub const fn color(self) -> ParticleColor {
+        self.color
     }
 }
 
@@ -440,6 +585,12 @@ impl WorldObservationLimits {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum WorldObservationResource {
+    /// Current live bodies.
+    Bodies,
+    /// Current live fixtures.
+    Fixtures,
+    /// Current live joints.
+    Joints,
     /// Current rigid contacts.
     Contacts,
     /// Current particle-pair contacts.
@@ -457,6 +608,9 @@ pub enum WorldObservationResource {
 impl fmt::Display for WorldObservationResource {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         let name = match self {
+            Self::Bodies => "bodies",
+            Self::Fixtures => "fixtures",
+            Self::Joints => "joints",
             Self::Contacts => "contacts",
             Self::ParticleContacts => "particle contacts",
             Self::ParticleBodyContacts => "particle body contacts",
@@ -548,6 +702,7 @@ struct ObservationCounts {
 }
 
 struct CollectedParticleObservations {
+    particles: Vec<ParticleObservation>,
     contacts: Vec<ParticleContactObservation>,
     body_contacts: Vec<ParticleBodyContactObservation>,
     statistics: Vec<ParticleSystemStatistics>,
@@ -574,6 +729,8 @@ impl World {
     ) -> Result<WorldObservation, WorldObservationError> {
         let diagnostics = self.world_diagnostics();
         let counts = self.preflight_observation(diagnostics, limits)?;
+        let (bodies, fixtures) = self.collect_body_fixture_observations()?;
+        let joints = self.collect_joint_observations()?;
         let contacts = self
             .contact_manager
             .contacts()
@@ -586,6 +743,10 @@ impl World {
 
         Ok(WorldObservation {
             diagnostics,
+            bodies,
+            fixtures,
+            joints,
+            particles: particles.particles,
             contacts,
             particle_contacts: particles.contacts,
             particle_body_contacts: particles.body_contacts,
@@ -600,6 +761,21 @@ impl World {
         diagnostics: WorldDiagnostics,
         limits: WorldObservationLimits,
     ) -> Result<ObservationCounts, WorldObservationError> {
+        check_collection_bound(
+            WorldObservationResource::Bodies,
+            diagnostics.body_count(),
+            REVIEWED_MAX_BODIES,
+        )?;
+        check_collection_bound(
+            WorldObservationResource::Fixtures,
+            diagnostics.fixture_count(),
+            REVIEWED_MAX_FIXTURES,
+        )?;
+        check_collection_bound(
+            WorldObservationResource::Joints,
+            diagnostics.joint_count(),
+            REVIEWED_MAX_JOINTS,
+        )?;
         check_collection_bound(
             WorldObservationResource::Contacts,
             diagnostics.contact_count(),
@@ -671,6 +847,7 @@ impl World {
     ) -> Result<CollectedParticleObservations, WorldObservationError> {
         let mut contacts = Vec::with_capacity(counts.particle_contacts);
         let mut body_contacts = Vec::with_capacity(counts.particle_body_contacts);
+        let mut particles = Vec::new();
         let mut particle_statistics = Vec::with_capacity(self.particle_system_order.len());
         let mut particle_world_statistics = ParticleWorldStatistics::default();
         for system in &self.particle_system_order {
@@ -680,6 +857,20 @@ impl World {
                 }
             })?;
             let view = ParticleSystemView::new(&record.storage);
+            let maybe_colors = view.maybe_colors();
+            particles.extend(
+                view.particle_ids()
+                    .iter()
+                    .enumerate()
+                    .map(|(index, particle)| ParticleObservation {
+                        system: *system,
+                        particle: *particle,
+                        position: view.positions()[index],
+                        radius: record.definition.radius(),
+                        color: maybe_colors
+                            .map_or_else(ParticleColor::default, |colors| colors[index]),
+                    }),
+            );
             contacts.extend(
                 view.particle_contacts()
                     .map(|contact| ParticleContactObservation {
@@ -711,11 +902,58 @@ impl World {
         }
 
         Ok(CollectedParticleObservations {
+            particles,
             contacts,
             body_contacts,
             statistics: particle_statistics,
             world_statistics: particle_world_statistics,
         })
+    }
+
+    fn collect_body_fixture_observations(
+        &self,
+    ) -> Result<(Vec<BodyObservation>, Vec<FixtureObservation>), WorldObservationError> {
+        let mut bodies = Vec::with_capacity(self.body_order.len());
+        let mut fixtures = Vec::new();
+        for body_id in &self.body_order {
+            let body = self.bodies.get(*body_id).map_err(|_error| {
+                WorldObservationError::InvalidState {
+                    resource: WorldObservationResource::Bodies,
+                }
+            })?;
+            bodies.push(BodyObservation {
+                id: *body_id,
+                snapshot: body.state.snapshot(),
+            });
+            for fixture_id in &body.fixtures {
+                let fixture = self.fixtures.get(*fixture_id).map_err(|_error| {
+                    WorldObservationError::InvalidState {
+                        resource: WorldObservationResource::Fixtures,
+                    }
+                })?;
+                fixtures.push(FixtureObservation {
+                    id: *fixture_id,
+                    body: *body_id,
+                    snapshot: fixture.definition.snapshot(),
+                });
+            }
+        }
+        Ok((bodies, fixtures))
+    }
+
+    fn collect_joint_observations(&self) -> Result<Vec<JointObservation>, WorldObservationError> {
+        let mut ordered = self.joints.iter().collect::<Vec<_>>();
+        ordered.sort_by_key(|(_id, joint)| std::cmp::Reverse(joint.diagnostic_id));
+        ordered
+            .into_iter()
+            .map(|(id, _record)| {
+                self.joint_snapshot(id)
+                    .map(|snapshot| JointObservation { id, snapshot })
+                    .map_err(|_error| WorldObservationError::InvalidState {
+                        resource: WorldObservationResource::Joints,
+                    })
+            })
+            .collect()
     }
 
     fn collect_broad_phase_observations(

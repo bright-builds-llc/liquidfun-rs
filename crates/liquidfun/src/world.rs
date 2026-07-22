@@ -49,8 +49,9 @@ pub use object::{
     MutationReport, ObjectSnapshot, World,
 };
 pub use observation::{
-    BroadPhaseObservation, ContactObservation, DiagnosticStepPhase, DiagnosticStepPhaseTiming,
-    DiagnosticStepProfile, ParticleBodyContactObservation, ParticleContactObservation,
+    BodyObservation, BroadPhaseObservation, ContactObservation, DiagnosticStepPhase,
+    DiagnosticStepPhaseTiming, DiagnosticStepProfile, FixtureObservation, JointObservation,
+    ParticleBodyContactObservation, ParticleContactObservation, ParticleObservation,
     WorldObservation, WorldObservationError, WorldObservationLimitError, WorldObservationLimits,
     WorldObservationResource,
 };
