@@ -3,15 +3,15 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 11-18-PLAN.md
-last_updated: "2026-07-22T05:09:27.709Z"
+stopped_at: Completed 11-19-PLAN.md
+last_updated: "2026-07-22T05:26:16.883Z"
 last_activity: "2026-07-22"
 progress:
   total_phases: 12
   completed_phases: 10
   total_plans: 190
-  completed_plans: 179
-  percent: 94
+  completed_plans: 180
+  percent: 95
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 ## Current Position
 
 Phase: 11 (Examples, Headless Tooling, and Testbed) — EXECUTING
-Plan: 19 of 29
+Plan: 20 of 29
 Status: Ready to execute
 Last activity: 2026-07-22
 
@@ -191,6 +191,7 @@ Progress: [█████████░] 93%
 | Phase 11 P16 | 15 min | 1 tasks | 8 files |
 | Phase 11 P17 | 18 min | 1 tasks | 6 files |
 | Phase 11 P18 | 48 min | 1 tasks | 14 files |
+| Phase 11 P19 | 15 min | 1 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -520,6 +521,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 11]: Review D0 through repeated canonical replay and an independent direct semantic-checkpoint serialization path. — Tracked expected identities cannot self-bless through one implementation path.
 - [Phase 11]: Confine Criterion 0.8.2 to one unpublished non-default benchmark package. — The publishable liquidfun normal dependency graph and package archive remain Cargo-only and free of private benchmark tooling.
 - [Phase 11]: Time only declared logical actions with a sealed manual timer. — Resolution, native restart, checkpoint capture, and semantic validation occur outside the returned Criterion duration, and mismatches reject the sample.
+- [Phase 11]: Bind Phase 11 representative runs to exact resolved, request, run-contract, action, and checkpoint identities without self-blessing physics results. — Contract hashes are independently reproducible while semantic parity remains grounded in inherited reviewed evidence.
+- [Phase 11]: Exclude UI pixels, frame rate, durations, private pass IDs, and render order from Phase 11 semantic evidence leaves. — Renderer and wall-clock diagnostics cannot become compatibility authority.
+- [Phase 11]: Require every sealed Phase 11 case to retain exact tracked Phase 6 through Phase 10 proof digests. — Missing, stale, or circular inherited authority fails before a case can support maturity claims.
 
 ### Pending Todos
 
@@ -533,6 +537,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-22T05:09:27.670Z
-Stopped at: Completed 11-18-PLAN.md
+Last session: 2026-07-22T05:24:39.572Z
+Stopped at: Completed 11-19-PLAN.md
 Resume file: None
