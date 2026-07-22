@@ -43,6 +43,99 @@ fn production_launcher_wires_the_live_catalog_controller_and_renderer() {
 }
 
 #[test]
+fn production_launcher_wires_reachable_about_and_provenance_chrome() {
+    // Arrange
+    let required_links = [
+        "OpenPanel::About",
+        "About & provenance",
+        "build_about_panel(",
+        "ProvenanceInput {",
+    ];
+
+    // Act / Assert
+    assert_launcher_contract("About and provenance", &required_links);
+    assert_launcher_symbol_is_used("About and provenance", "build_about_panel");
+    assert_launcher_symbol_is_used("About and provenance", "ProvenanceInput");
+}
+
+#[test]
+fn production_launcher_wires_staged_settings_scenario_shortcuts_and_pause_labels() {
+    // Arrange
+    let required_links = [
+        "SettingsEditor::new(",
+        "SettingsField::Timestep",
+        "SettingsField::VelocityIterations",
+        "SettingsField::PositionIterations",
+        "SettingsField::ParticleIterations",
+        ".edit(",
+        ".commit(",
+        "ScenarioShortcut::new(",
+        "KeyboardKey::Scenario(",
+        "self.scenario_shortcuts().first()",
+        "shortcut.label()",
+        "SESSION_PAUSED_LABEL",
+        "PARTICLE_PAUSE_ACTION_LABEL",
+    ];
+
+    // Act / Assert
+    assert_launcher_contract("settings and scenario actions", &required_links);
+    assert_launcher_symbol_is_used("settings and scenario actions", "SettingsEditor");
+    assert_launcher_symbol_is_used("settings and scenario actions", "ScenarioShortcut");
+    assert_launcher_symbol_is_used("settings and scenario actions", "SESSION_PAUSED_LABEL");
+    assert_launcher_symbol_is_used(
+        "settings and scenario actions",
+        "PARTICLE_PAUSE_ACTION_LABEL",
+    );
+    assert!(
+        !LAUNCHER_SOURCE.contains("scenario_shortcuts: &[]"),
+        "settings and scenario actions contract still passes an empty scenario shortcut map"
+    );
+}
+
+#[test]
+fn production_launcher_wires_accessible_controls_pointer_gestures_and_minimum_window_actions() {
+    // Arrange
+    let required_links = [
+        "KeyCode::Tab",
+        "focus_return.open(",
+        "focus_return.close(",
+        "const CONTROL_TARGET: f32 = 44.0;",
+        "MouseButton::Middle",
+        "shift && is_mouse_button_down(MouseButton::Left)",
+        "maybe_last_click",
+        "if double_click {",
+        "self.center_x = 0.0;",
+        "self.center_y = 0.0;",
+        "minimum_close_bounds()",
+        "minimum_about_bounds()",
+        "Close",
+        "About & provenance",
+    ];
+
+    // Act / Assert
+    assert_launcher_contract(
+        "focus, controls, pointer gestures, and minimum-window actions",
+        &required_links,
+    );
+    assert_launcher_symbol_is_used(
+        "focus, controls, pointer gestures, and minimum-window actions",
+        "FocusReturn",
+    );
+    assert_launcher_symbol_is_used(
+        "focus, controls, pointer gestures, and minimum-window actions",
+        "CONTROL_TARGET",
+    );
+    let pointer_centered_zoom = LAUNCHER_SOURCE.contains("zoom_about_pointer(")
+        || ["old_scale", "new_scale", "world_x", "world_y"]
+            .into_iter()
+            .all(|link| LAUNCHER_SOURCE.contains(link));
+    assert!(
+        pointer_centered_zoom,
+        "interactive production pointer gestures do not preserve the world point under zoom"
+    );
+}
+
+#[test]
 fn selects_a_real_shared_catalog_definition_with_its_exact_defaults() {
     // Arrange
     let catalog = reviewed_scenario_catalog().expect("reviewed catalog should remain valid");
@@ -227,4 +320,26 @@ fn timestep(testbed: &InteractiveTestbed) -> Duration {
         .selected_settings()
         .expect("selected scenario should have settings");
     Duration::from_secs_f64(f64::from(settings.timestep_bits().to_f32()))
+}
+
+fn assert_launcher_contract(contract: &str, required_links: &[&str]) {
+    let missing = required_links
+        .iter()
+        .copied()
+        .filter(|link| !LAUNCHER_SOURCE.contains(link))
+        .collect::<Vec<_>>();
+
+    assert!(
+        missing.is_empty(),
+        "interactive production {contract} wiring is incomplete: {missing:?}"
+    );
+}
+
+fn assert_launcher_symbol_is_used(contract: &str, symbol: &str) {
+    let occurrences = LAUNCHER_SOURCE.match_indices(symbol).count();
+
+    assert!(
+        occurrences >= 2,
+        "interactive production {contract} imports or declares {symbol} without using it"
+    );
 }

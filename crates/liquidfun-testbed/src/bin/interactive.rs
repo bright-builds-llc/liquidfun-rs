@@ -10,22 +10,29 @@ use liquidfun_differential::{
     ComparisonLimits, ComparisonModel, ComparisonState, compare_canonical_checkpoints,
 };
 use liquidfun_test_protocol::{
-    CanonicalCheckpoint, CheckpointId, DebugLayerName, FloatBits, HarnessLimits,
-    Phase4PolicyProfile, RunSettings, Sha256Hex, decode_canonical_checkpoint_jsonl,
+    ActionSchedule, CanonicalCheckpoint, CheckpointId, DebugLayerName, HarnessLimits,
+    Phase4PolicyProfile, RigidWorldAction, Sha256Hex, decode_canonical_checkpoint_jsonl,
 };
 use liquidfun_testbed::app::{AppShell, ShellRegion, status_copy, status_marker};
+use liquidfun_testbed::controller_adapter::{
+    ControllerAction, PARTICLE_PAUSE_ACTION_LABEL, SESSION_PAUSED_LABEL,
+};
 use liquidfun_testbed::input::{
-    InputContext, InputEffect, KeyboardKey, PresentationAction, resolve_key,
+    InputContext, InputEffect, KeyboardKey, PresentationAction, ScenarioShortcut, resolve_key,
 };
 use liquidfun_testbed::interactive::InteractiveTestbed;
 use liquidfun_testbed::ui::differences::{BackendAvailability, ComparisonMode, DifferenceList};
 use liquidfun_testbed::ui::inspector::{InspectorState, operational_copy};
-use liquidfun_testbed::ui::layout::{PanelBehavior, ResponsiveLayout};
+use liquidfun_testbed::ui::layout::{
+    CompactWindowNotice, FocusId, FocusReturn, PanelBehavior, ResponsiveLayout,
+};
 use liquidfun_testbed::ui::protocol_viewport::{
     ProtocolComparisonBackend, ProtocolLayerVisibility, ProtocolViewport,
     draw_protocol_comparison_frame, draw_protocol_frame, project_checkpoint,
 };
+use liquidfun_testbed::ui::settings::{SettingsEditor, SettingsField};
 use liquidfun_testbed::ui::viewport::Camera;
+use liquidfun_testbed::ui::{ProvenanceInput, build_about_panel};
 use macroquad::prelude::*;
 
 const BACKGROUND: Color = Color::new(0.051, 0.067, 0.090, 1.0);
@@ -39,14 +46,53 @@ const ERROR: Color = Color::from_rgba(248, 81, 73, 255);
 const ROW_HEIGHT: f32 = 44.0;
 const FONT: f32 = 18.0;
 const SMALL_FONT: f32 = 14.0;
+const SMALL_FONT_SIZE: u16 = 14;
+const CONTROL_TARGET: f32 = 44.0;
+const SETTINGS_FIELDS: [SettingsField; 4] = [
+    SettingsField::Timestep,
+    SettingsField::VelocityIterations,
+    SettingsField::PositionIterations,
+    SettingsField::ParticleIterations,
+];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum OpenPanel {
     None,
     Scenario,
     Inspector,
+    Settings,
+    About,
     ShortcutHelp,
 }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ControlFocus {
+    Scenario,
+    Inspector,
+    RunPause,
+    Step,
+    Restart,
+    Capture,
+    Settings,
+    Overlay,
+    PreviousDifference,
+    NextDifference,
+    About,
+}
+
+const FOCUS_ORDER: [ControlFocus; 11] = [
+    ControlFocus::Scenario,
+    ControlFocus::Inspector,
+    ControlFocus::RunPause,
+    ControlFocus::Step,
+    ControlFocus::Restart,
+    ControlFocus::Capture,
+    ControlFocus::Settings,
+    ControlFocus::Overlay,
+    ControlFocus::PreviousDifference,
+    ControlFocus::NextDifference,
+    ControlFocus::About,
+];
 
 fn window_conf() -> Conf {
     Conf {
@@ -76,6 +122,15 @@ struct DesktopApp {
     maybe_compared_identity: Option<(Sha256Hex, CheckpointId)>,
     maybe_error: Option<String>,
     open_panel: OpenPanel,
+    focus_index: usize,
+    focus_return: FocusReturn,
+    compact_notice: CompactWindowNotice,
+    maybe_compact_notice: Option<&'static str>,
+    settings: SettingsEditor,
+    maybe_editing_setting: Option<SettingsField>,
+    maybe_last_click: Option<(f64, f32, f32)>,
+    maybe_selected_primitive: Option<String>,
+    maybe_last_scenario_action_label: Option<&'static str>,
     diagnostics_visible: bool,
     comparison_mode: ComparisonMode,
     focused_difference: usize,
@@ -97,6 +152,11 @@ impl DesktopApp {
         testbed
             .capture_reachable_checkpoint()
             .map_err(bounded_error)?;
+        let settings = SettingsEditor::new(
+            testbed
+                .selected_settings()
+                .ok_or_else(|| "selected scenario has no settings".to_owned())?,
+        );
 
         Ok(Self {
             shell: AppShell::default(),
@@ -115,6 +175,15 @@ impl DesktopApp {
             maybe_compared_identity: None,
             maybe_error: None,
             open_panel: OpenPanel::None,
+            focus_index: 0,
+            focus_return: FocusReturn::default(),
+            compact_notice: CompactWindowNotice::default(),
+            maybe_compact_notice: None,
+            settings,
+            maybe_editing_setting: None,
+            maybe_last_click: None,
+            maybe_selected_primitive: None,
+            maybe_last_scenario_action_label: None,
             diagnostics_visible: true,
             comparison_mode: ComparisonMode::Overlay,
             focused_difference: 0,
@@ -123,6 +192,7 @@ impl DesktopApp {
 
     fn update(&mut self) {
         self.handle_search_input();
+        self.handle_focus_input();
         self.handle_panel_input();
         self.handle_scenario_navigation();
         self.handle_controller_input();
@@ -140,6 +210,95 @@ impl DesktopApp {
             Err(error) => self.set_error(error),
         }
         self.refresh_comparison();
+        let layout = ResponsiveLayout::for_window(
+            bounded_screen_dimension(screen_width()),
+            bounded_screen_dimension(screen_height()),
+        );
+        if let Some(notice) = self.compact_notice.take(layout) {
+            self.maybe_compact_notice = Some(notice);
+        }
+    }
+
+    fn handle_focus_input(&mut self) {
+        if self.editing_query || self.maybe_editing_setting.is_some() {
+            return;
+        }
+        let layout = ResponsiveLayout::for_window(
+            bounded_screen_dimension(screen_width()),
+            bounded_screen_dimension(screen_height()),
+        );
+        if layout.panel_behavior() == PanelBehavior::WindowTooSmall {
+            return;
+        }
+        if is_mouse_button_pressed(MouseButton::Left) {
+            let mouse = mouse_position();
+            if let Some((index, _)) = FOCUS_ORDER
+                .iter()
+                .enumerate()
+                .find(|(_, focus)| point_in_rect(mouse, control_bounds(**focus, layout)))
+            {
+                self.focus_index = index;
+                self.activate_focus();
+                return;
+            }
+        }
+        if is_key_pressed(KeyCode::Tab) {
+            let backwards = is_key_down(KeyCode::LeftShift) || is_key_down(KeyCode::RightShift);
+            self.focus_index = if backwards {
+                (self.focus_index + FOCUS_ORDER.len() - 1) % FOCUS_ORDER.len()
+            } else {
+                (self.focus_index + 1) % FOCUS_ORDER.len()
+            };
+        }
+        if is_key_pressed(KeyCode::Enter) {
+            self.activate_focus();
+        }
+    }
+
+    fn activate_focus(&mut self) {
+        match FOCUS_ORDER[self.focus_index] {
+            ControlFocus::Scenario => self.open_modal(
+                OpenPanel::Scenario,
+                FocusId::ScenarioButton,
+                FocusId::ScenarioHeading,
+            ),
+            ControlFocus::Inspector => self.open_modal(
+                OpenPanel::Inspector,
+                FocusId::InspectorButton,
+                FocusId::InspectorHeading,
+            ),
+            ControlFocus::RunPause => {
+                let action = if self.testbed.session_state()
+                    == liquidfun_differential::SessionState::Running
+                {
+                    ControllerAction::Pause
+                } else {
+                    ControllerAction::Run
+                };
+                self.perform_controller(action);
+            }
+            ControlFocus::Step => self.perform_controller(ControllerAction::StepOnce),
+            ControlFocus::Restart => self.perform_controller(ControllerAction::Restart),
+            ControlFocus::Capture => {
+                if let Some(checkpoint_id) = self.testbed.reachable_checkpoint_id().cloned() {
+                    self.perform_controller(ControllerAction::CaptureCheckpoint(checkpoint_id));
+                }
+            }
+            ControlFocus::Settings => self.open_settings(),
+            ControlFocus::Overlay => {
+                if self.maybe_comparison.is_some() {
+                    self.comparison_mode = match self.comparison_mode {
+                        ComparisonMode::Overlay => ComparisonMode::SideBySide,
+                        ComparisonMode::SideBySide | ComparisonMode::SingleBackend => {
+                            ComparisonMode::Overlay
+                        }
+                    };
+                }
+            }
+            ControlFocus::PreviousDifference => self.move_difference(-1),
+            ControlFocus::NextDifference => self.move_difference(1),
+            ControlFocus::About => self.open_about(),
+        }
     }
 
     fn handle_search_input(&mut self) {
@@ -172,22 +331,33 @@ impl DesktopApp {
     }
 
     fn handle_panel_input(&mut self) {
-        if self.editing_query {
+        if self.editing_query || self.maybe_editing_setting.is_some() {
             return;
         }
         if is_key_pressed(KeyCode::B) {
-            self.open_panel = if self.open_panel == OpenPanel::Scenario {
-                OpenPanel::None
+            if self.open_panel == OpenPanel::Scenario {
+                self.close_modal();
             } else {
-                OpenPanel::Scenario
-            };
+                self.open_modal(
+                    OpenPanel::Scenario,
+                    FocusId::ScenarioButton,
+                    FocusId::ScenarioHeading,
+                );
+            }
         }
         if is_key_pressed(KeyCode::I) {
-            self.open_panel = if self.open_panel == OpenPanel::Inspector {
-                OpenPanel::None
+            if self.open_panel == OpenPanel::Inspector {
+                self.close_modal();
             } else {
-                OpenPanel::Inspector
-            };
+                self.open_modal(
+                    OpenPanel::Inspector,
+                    FocusId::InspectorButton,
+                    FocusId::InspectorHeading,
+                );
+            }
+        }
+        if is_key_pressed(KeyCode::S) {
+            self.open_settings();
         }
         if is_key_pressed(KeyCode::O) && self.maybe_comparison.is_some() {
             self.comparison_mode = match self.comparison_mode {
@@ -198,8 +368,58 @@ impl DesktopApp {
             };
         }
         if is_key_pressed(KeyCode::Escape) {
-            self.open_panel = OpenPanel::None;
+            self.close_modal();
         }
+
+        if is_mouse_button_pressed(MouseButton::Left) {
+            let width = screen_width();
+            let (mouse_x, mouse_y) = mouse_position();
+            if mouse_y <= 48.0 && mouse_x >= width - 196.0 {
+                self.open_about();
+                self.focus_index = focus_index(ControlFocus::About);
+            }
+            let layout = ResponsiveLayout::for_window(
+                bounded_screen_dimension(screen_width()),
+                bounded_screen_dimension(screen_height()),
+            );
+            if layout.panel_behavior() == PanelBehavior::WindowTooSmall {
+                if point_in_rect((mouse_x, mouse_y), minimum_close_bounds()) {
+                    macroquad::miniquad::window::request_quit();
+                } else if point_in_rect((mouse_x, mouse_y), minimum_about_bounds()) {
+                    self.open_about();
+                }
+            }
+        }
+    }
+
+    fn open_modal(&mut self, panel: OpenPanel, invoker: FocusId, first: FocusId) {
+        self.open_panel = panel;
+        self.focus_return.open(invoker, first);
+    }
+
+    fn close_modal(&mut self) {
+        self.open_panel = OpenPanel::None;
+        self.maybe_editing_setting = None;
+        let _returned_focus = self.focus_return.close();
+    }
+
+    fn open_settings(&mut self) {
+        if let Some(settings) = self.testbed.selected_settings() {
+            self.settings = SettingsEditor::new(settings);
+        }
+        self.open_modal(
+            OpenPanel::Settings,
+            FocusId::InspectorButton,
+            FocusId::InspectorHeading,
+        );
+    }
+
+    fn open_about(&mut self) {
+        self.open_modal(
+            OpenPanel::About,
+            FocusId::AboutButton,
+            FocusId::AboutHeading,
+        );
     }
 
     fn handle_scenario_navigation(&mut self) {
@@ -256,15 +476,21 @@ impl DesktopApp {
 
     fn select_focused(&mut self) {
         match self.testbed.select_visible(self.focused_row) {
-            Ok(()) => self.clear_comparison(),
+            Ok(()) => {
+                self.clear_comparison();
+                if let Some(settings) = self.testbed.selected_settings() {
+                    self.settings = SettingsEditor::new(settings);
+                }
+            }
             Err(error) => self.set_error(error),
         }
     }
 
     fn handle_controller_input(&mut self) {
-        if self.editing_query {
+        if self.editing_query || self.maybe_editing_setting.is_some() {
             return;
         }
+        let scenario_shortcuts = self.scenario_shortcuts();
         let shifted = is_key_down(KeyCode::LeftShift) || is_key_down(KeyCode::RightShift);
         let maybe_key = (is_key_pressed(KeyCode::Slash) && shifted)
             .then_some(KeyboardKey::QuestionMark)
@@ -282,6 +508,7 @@ impl DesktopApp {
                     (KeyCode::LeftBracket, KeyboardKey::LeftBracket),
                     (KeyCode::RightBracket, KeyboardKey::RightBracket),
                     (KeyCode::Home, KeyboardKey::Home),
+                    (KeyCode::A, KeyboardKey::Scenario('a')),
                 ]
                 .into_iter()
                 .find_map(|(macroquad_key, semantic_key)| {
@@ -298,27 +525,76 @@ impl DesktopApp {
                 session_state: self.testbed.session_state(),
                 editing_field: false,
                 maybe_checkpoint_id: checkpoint_id.as_ref(),
-                scenario_shortcuts: &[],
+                scenario_shortcuts: &scenario_shortcuts,
             },
         );
         let Some(effect) = effect else {
             return;
         };
         match effect {
-            InputEffect::Controller(action) => {
-                let clears_comparison = matches!(
-                    &action,
-                    liquidfun_testbed::controller_adapter::ControllerAction::Select(_)
-                        | liquidfun_testbed::controller_adapter::ControllerAction::Restart
-                        | liquidfun_testbed::controller_adapter::ControllerAction::ApplySettingsAndRestart { .. }
-                );
-                match self.testbed.perform(action) {
-                    Ok(()) if clears_comparison => self.clear_comparison(),
-                    Ok(()) => {}
-                    Err(error) => self.set_error(error),
-                }
-            }
+            InputEffect::Controller(action) => self.perform_controller(action),
             InputEffect::Presentation(action) => self.apply_presentation(action),
+        }
+    }
+
+    fn scenario_shortcuts(&self) -> Vec<ScenarioShortcut> {
+        let next_ordinal = self.testbed.completed_logical_steps().saturating_add(1);
+        self.testbed
+            .selected()
+            .and_then(|resolved| {
+                resolved.actions().iter().find(|action| {
+                    action.schedule()
+                        == ActionSchedule::LogicalStep {
+                            ordinal: next_ordinal,
+                        }
+                })
+            })
+            .and_then(|action| {
+                let label = if matches!(
+                    action.action(),
+                    RigidWorldAction::Particle {
+                        action: liquidfun_test_protocol::Phase9ParticleAction::SetPaused { .. }
+                    }
+                ) {
+                    PARTICLE_PAUSE_ACTION_LABEL
+                } else {
+                    "Apply next typed scenario action"
+                };
+                ScenarioShortcut::new('a', action.action_id().clone(), label)
+            })
+            .into_iter()
+            .collect()
+    }
+
+    fn perform_controller(&mut self, action: ControllerAction) {
+        let clears_comparison = matches!(
+            &action,
+            ControllerAction::Select(_)
+                | ControllerAction::Restart
+                | ControllerAction::ApplySettingsAndRestart { .. }
+        );
+        let maybe_action_label = match &action {
+            ControllerAction::ApplyScenarioAction(action_id) => self
+                .scenario_shortcuts()
+                .into_iter()
+                .find(|shortcut| shortcut.action_id() == action_id)
+                .map(|shortcut| {
+                    if shortcut.label() == PARTICLE_PAUSE_ACTION_LABEL {
+                        PARTICLE_PAUSE_ACTION_LABEL
+                    } else {
+                        "Scenario action applied"
+                    }
+                }),
+            _ => None,
+        };
+        match self.testbed.perform(action) {
+            Ok(()) => {
+                if clears_comparison {
+                    self.clear_comparison();
+                }
+                self.maybe_last_scenario_action_label = maybe_action_label;
+            }
+            Err(error) => self.set_error(error),
         }
     }
 
@@ -382,54 +658,136 @@ impl DesktopApp {
     }
 
     fn handle_settings_input(&mut self) {
-        if self.editing_query {
+        if self.open_panel != OpenPanel::Settings {
             return;
         }
-        let factor = if is_key_pressed(KeyCode::Minus) {
-            Some(2.0)
-        } else if is_key_pressed(KeyCode::Equal) {
-            Some(0.5)
-        } else {
-            None
-        };
-        let Some(factor) = factor else {
+        if is_key_pressed(KeyCode::Escape) {
+            self.close_modal();
+            return;
+        }
+
+        if is_mouse_button_pressed(MouseButton::Left) {
+            let mouse = mouse_position();
+            let maybe_field = SETTINGS_FIELDS
+                .into_iter()
+                .find(|field| point_in_rect(mouse, settings_field_bounds(*field)));
+            if let Some(field) = maybe_field {
+                if let Some(previous) = self.maybe_editing_setting.replace(field) {
+                    self.settings.commit(previous);
+                }
+            } else {
+                if let Some(previous) = self.maybe_editing_setting.take() {
+                    self.settings.commit(previous);
+                }
+                if point_in_rect(mouse, settings_apply_bounds()) && self.settings.apply_enabled() {
+                    let accepted = self.settings.accepted();
+                    match self.testbed.apply_settings(accepted) {
+                        Ok(()) => {
+                            self.clear_comparison();
+                            self.settings = SettingsEditor::new(accepted);
+                            self.close_modal();
+                        }
+                        Err(error) => self.set_error(error),
+                    }
+                }
+            }
+        }
+
+        let Some(field) = self.maybe_editing_setting else {
             return;
         };
-        let Some(settings) = self.testbed.selected_settings() else {
-            return;
-        };
-        let candidate = RunSettings::new(
-            FloatBits::from_f32(settings.timestep_bits().to_f32() * factor),
-            settings.velocity_iterations(),
-            settings.position_iterations(),
-            settings.particle_iterations(),
-        );
-        match candidate {
-            Ok(settings) => match self.testbed.apply_settings(settings) {
-                Ok(()) => self.clear_comparison(),
-                Err(error) => self.set_error(error),
-            },
-            Err(error) => self.set_error(error),
+        let mut text = self.settings.text(field).to_owned();
+        while let Some(character) = get_char_pressed() {
+            let valid = character.is_ascii_digit()
+                || (field == SettingsField::Timestep
+                    && matches!(character, '.' | '-' | '+' | 'e' | 'E'));
+            if valid && text.len() < 32 {
+                text.push(character);
+            }
+        }
+        if is_key_pressed(KeyCode::Backspace) {
+            text.pop();
+        }
+        self.settings.edit(field, text);
+        if is_key_pressed(KeyCode::Enter) {
+            self.settings.commit(field);
+            self.maybe_editing_setting = None;
+        } else if is_key_pressed(KeyCode::Tab) {
+            self.settings.commit(field);
+            let index = setting_index(field);
+            let backwards = is_key_down(KeyCode::LeftShift) || is_key_down(KeyCode::RightShift);
+            let next = if backwards {
+                (index + SETTINGS_FIELDS.len() - 1) % SETTINGS_FIELDS.len()
+            } else {
+                (index + 1) % SETTINGS_FIELDS.len()
+            };
+            self.maybe_editing_setting = Some(SETTINGS_FIELDS[next]);
         }
     }
 
     fn handle_viewport_input(&mut self) {
+        let layout = ResponsiveLayout::for_window(
+            bounded_screen_dimension(screen_width()),
+            bounded_screen_dimension(screen_height()),
+        );
+        if layout.panel_behavior() == PanelBehavior::WindowTooSmall {
+            return;
+        }
+        let viewport = rect(layout.shell().region(ShellRegion::Viewport));
+        let mouse = mouse_position();
+        if !point_in_rect(mouse, viewport) {
+            self.maybe_drag_origin = None;
+            return;
+        }
         let (_, wheel_y) = mouse_wheel();
         if wheel_y != 0.0 {
-            self.pixels_per_meter =
-                (self.pixels_per_meter * 1.1_f32.powf(wheel_y)).clamp(5.0, 400.0);
+            let old_scale = self.pixels_per_meter;
+            let new_scale = (old_scale * 1.1_f32.powf(wheel_y)).clamp(5.0, 400.0);
+            let screen_center_x = viewport.0 + viewport.2 * 0.5;
+            let screen_center_y = viewport.1 + viewport.3 * 0.5;
+            let offset_x = mouse.0 - screen_center_x;
+            let offset_y = mouse.1 - screen_center_y;
+            let world_x = self.center_x + offset_x / old_scale;
+            let world_y = self.center_y - offset_y / old_scale;
+            self.center_x = world_x - offset_x / new_scale;
+            self.center_y = world_y + offset_y / new_scale;
+            self.pixels_per_meter = new_scale;
         }
-        let mouse = mouse_position();
-        if is_mouse_button_pressed(MouseButton::Middle) {
+        let shift = is_key_down(KeyCode::LeftShift) || is_key_down(KeyCode::RightShift);
+        let pan_pressed = is_mouse_button_pressed(MouseButton::Middle)
+            || (shift && is_mouse_button_pressed(MouseButton::Left));
+        let pan_down = is_mouse_button_down(MouseButton::Middle)
+            || (shift && is_mouse_button_down(MouseButton::Left));
+        if pan_pressed {
             self.maybe_drag_origin = Some(mouse);
         }
-        if is_mouse_button_down(MouseButton::Middle) {
+        if pan_down {
             if let Some(previous) = self.maybe_drag_origin.replace(mouse) {
                 self.center_x -= (mouse.0 - previous.0) / self.pixels_per_meter;
                 self.center_y += (mouse.1 - previous.1) / self.pixels_per_meter;
             }
         } else {
             self.maybe_drag_origin = None;
+        }
+
+        if is_mouse_button_pressed(MouseButton::Left) && !shift {
+            let now = get_time();
+            let double_click = self.maybe_last_click.is_some_and(|(last, x, y)| {
+                now - last <= 0.35 && (mouse.0 - x).abs() <= 6.0 && (mouse.1 - y).abs() <= 6.0
+            });
+            self.maybe_last_click = Some((now, mouse.0, mouse.1));
+            if double_click {
+                self.center_x = 0.0;
+                self.center_y = 0.0;
+                self.pixels_per_meter = 42.0;
+                self.maybe_selected_primitive = None;
+            } else {
+                self.maybe_selected_primitive = self
+                    .testbed
+                    .latest_checkpoint()
+                    .and_then(|checkpoint| checkpoint.debug_primitives().first())
+                    .map(|record| format!("{:?}", record.key()));
+            }
         }
     }
 
@@ -491,8 +849,14 @@ impl DesktopApp {
         let height = bounded_screen_dimension(screen_height());
         let responsive = ResponsiveLayout::for_window(width, height);
         if let Some((heading, body)) = responsive.minimum_window_copy() {
-            draw_text(heading, 24.0, 52.0, 28.0, TEXT);
+            if self.open_panel == OpenPanel::About {
+                self.draw_about_panel();
+                return;
+            }
+            draw_text(heading, 24.0, 52.0, 24.0, TEXT);
             draw_text(body, 24.0, 82.0, FONT, MUTED);
+            draw_accessible_button(minimum_close_bounds(), "Close", false, true);
+            draw_accessible_button(minimum_about_bounds(), "About & provenance", false, true);
             return;
         }
         let layout = responsive.shell();
@@ -520,9 +884,17 @@ impl DesktopApp {
             }
             PanelBehavior::WindowTooSmall => {}
         }
-        Self::draw_controls(layout.region(ShellRegion::Controls));
-        if self.open_panel == OpenPanel::ShortcutHelp {
-            Self::draw_shortcut_help(width, height);
+        self.draw_controls(responsive);
+        match self.open_panel {
+            OpenPanel::Settings => self.draw_settings_panel(),
+            OpenPanel::About => self.draw_about_panel(),
+            OpenPanel::ShortcutHelp => self.draw_shortcut_help(width, height),
+            OpenPanel::None | OpenPanel::Scenario | OpenPanel::Inspector => {}
+        }
+        if let Some(notice) = self.maybe_compact_notice {
+            let notice_width = measure_text(notice, None, SMALL_FONT_SIZE, 1.0).width;
+            draw_rectangle(12.0, 54.0, notice_width + 24.0, 36.0, PANEL_ALT);
+            draw_text(notice, 24.0, 78.0, SMALL_FONT, TEXT);
         }
     }
 
@@ -543,6 +915,13 @@ impl DesktopApp {
             29.0,
             SMALL_FONT,
             MUTED,
+        );
+        let about = (screen_width() - 196.0, 2.0, 194.0, CONTROL_TARGET);
+        draw_accessible_button(
+            about,
+            "About & provenance",
+            FOCUS_ORDER[self.focus_index] == ControlFocus::About,
+            self.open_panel == OpenPanel::About,
         );
         let _presentation_state = self.shell.state();
     }
@@ -747,10 +1126,35 @@ impl DesktopApp {
             );
         }
         line(
-            &format!("State: {:?}", self.testbed.session_state()),
+            &format!(
+                "State: {}",
+                if self.testbed.session_state() == liquidfun_differential::SessionState::ReadyPaused
+                {
+                    SESSION_PAUSED_LABEL.to_owned()
+                } else {
+                    format!("{:?}", self.testbed.session_state())
+                }
+            ),
             x,
             &mut line_y,
             TEXT,
+        );
+        if let Some(label) = self.maybe_last_scenario_action_label {
+            line(label, x, &mut line_y, ACCENT);
+        }
+        if let Some(key) = self.maybe_selected_primitive.as_deref() {
+            line(
+                &format!("Selected semantic primitive: {}", shorten(key, 42)),
+                x,
+                &mut line_y,
+                ACCENT,
+            );
+        }
+        line(
+            &format!("Zoom: {:.0}%", self.pixels_per_meter / 42.0 * 100.0),
+            x,
+            &mut line_y,
+            MUTED,
         );
         line(
             &format!("Logical steps: {}", self.testbed.completed_logical_steps()),
@@ -885,35 +1289,231 @@ impl DesktopApp {
         }
     }
 
-    fn draw_controls(region: (u32, u32, u32, u32)) {
-        fill_region(region, PANEL_ALT);
-        let (x, y, _, _) = rect(region);
+    fn draw_controls(&self, layout: ResponsiveLayout) {
+        fill_region(layout.shell().region(ShellRegion::Controls), PANEL_ALT);
+        let state = self.testbed.session_state();
+        for (index, focus) in FOCUS_ORDER.iter().copied().enumerate() {
+            let label = match focus {
+                ControlFocus::Scenario => "Scenarios",
+                ControlFocus::Inspector => "Inspect",
+                ControlFocus::RunPause
+                    if state == liquidfun_differential::SessionState::Running =>
+                {
+                    "Pause"
+                }
+                ControlFocus::RunPause => "Run",
+                ControlFocus::Step => "Step",
+                ControlFocus::Restart => "Restart",
+                ControlFocus::Capture => "Capture",
+                ControlFocus::Settings => "Settings",
+                ControlFocus::Overlay => match self.comparison_mode {
+                    ComparisonMode::Overlay => "Overlay",
+                    ComparisonMode::SideBySide => "Side by side",
+                    ComparisonMode::SingleBackend => "Rust view",
+                },
+                ControlFocus::PreviousDifference => "Prev diff",
+                ControlFocus::NextDifference => "Next diff",
+                ControlFocus::About => "About",
+            };
+            let active = match focus {
+                ControlFocus::Scenario => self.open_panel == OpenPanel::Scenario,
+                ControlFocus::Inspector => self.open_panel == OpenPanel::Inspector,
+                ControlFocus::Settings => self.open_panel == OpenPanel::Settings,
+                ControlFocus::About => self.open_panel == OpenPanel::About,
+                ControlFocus::Overlay => self.maybe_comparison.is_some(),
+                ControlFocus::RunPause
+                | ControlFocus::Step
+                | ControlFocus::Restart
+                | ControlFocus::Capture
+                | ControlFocus::PreviousDifference
+                | ControlFocus::NextDifference => false,
+            };
+            draw_accessible_button(
+                control_bounds(focus, layout),
+                label,
+                index == self.focus_index,
+                active,
+            );
+        }
+    }
+
+    fn draw_settings_panel(&self) {
+        let panel = centered_panel(560.0, 430.0);
+        draw_rectangle(panel.0, panel.1, panel.2, panel.3, PANEL);
+        draw_rectangle_lines(panel.0, panel.1, panel.2, panel.3, 2.0, ACCENT);
+        draw_text("Run settings", panel.0 + 24.0, panel.1 + 34.0, 24.0, TEXT);
         draw_text(
-            "Space Run/Pause   Right Step   R Restart   C Capture   +/- Timestep",
-            x + 16.0,
-            y + 24.0,
-            SMALL_FONT,
-            TEXT,
-        );
-        draw_text(
-            "B Scenarios   I Inspect   / Search   ? Help   1-3 Layers   4 Diagnostics   O View Mode",
-            x + 16.0,
-            y + 47.0,
+            "Validated values apply only through Apply & Restart",
+            panel.0 + 24.0,
+            panel.1 + 58.0,
             12.0,
             MUTED,
         );
+        for field in SETTINGS_FIELDS {
+            let bounds = settings_field_bounds(field);
+            draw_text(
+                setting_label(field),
+                bounds.0,
+                bounds.1 - 6.0,
+                SMALL_FONT,
+                TEXT,
+            );
+            draw_rectangle(bounds.0, bounds.1, bounds.2, bounds.3, PANEL_ALT);
+            let focused = self.maybe_editing_setting == Some(field);
+            draw_rectangle_lines(
+                bounds.0,
+                bounds.1,
+                bounds.2,
+                bounds.3,
+                if focused { 2.0 } else { 1.0 },
+                if focused { ACCENT } else { BORDER },
+            );
+            draw_text(
+                self.settings.text(field),
+                bounds.0 + 12.0,
+                bounds.1 + 28.0,
+                FONT,
+                TEXT,
+            );
+            if let Some(error) = self.settings.maybe_error(field) {
+                draw_text(
+                    error,
+                    bounds.0 + bounds.2 + 12.0,
+                    bounds.1 + 28.0,
+                    12.0,
+                    ERROR,
+                );
+            }
+        }
+        draw_accessible_button(
+            settings_apply_bounds(),
+            "Apply & Restart",
+            false,
+            self.settings.apply_enabled(),
+        );
         draw_text(
-            "F Focus difference   [ / ] Navigate   Wheel Zoom   Middle-drag Pan",
-            x + 620.0,
-            y + 47.0,
+            "Escape closes without applying",
+            panel.0 + 24.0,
+            panel.1 + panel.3 - 18.0,
             12.0,
             MUTED,
         );
     }
 
-    fn draw_shortcut_help(width: u32, height: u32) {
+    #[allow(
+        clippy::too_many_lines,
+        reason = "the About surface intentionally renders one bounded complete provenance record"
+    )]
+    fn draw_about_panel(&self) {
+        let target = format!("{}-{}", env::consts::ARCH, env::consts::OS);
+        let maybe_run_identity = self
+            .testbed
+            .selected()
+            .map(|selected| selected.identity().content_sha256().as_str());
+        let maybe_oracle_identity = self
+            .maybe_oracle
+            .as_ref()
+            .map(|checkpoint| checkpoint.resolved_sha256().as_str());
+        let about = build_about_panel(ProvenanceInput {
+            version: Some(env!("CARGO_PKG_VERSION")),
+            commit: option_env!("LIQUIDFUN_BUILD_COMMIT"),
+            profile: option_env!("PROFILE"),
+            target: Some(&target),
+            rust_toolchain: Some("Rust 1.97.0"),
+            protocol_version: Some("phase11-v1"),
+            adapter_version: Some(env!("CARGO_PKG_VERSION")),
+            run_identity: maybe_run_identity,
+            oracle_revision: maybe_oracle_identity,
+            oracle_compiler: None,
+            oracle_preset: None,
+            evidence_tier: self
+                .maybe_oracle
+                .as_ref()
+                .map(|_| "diagnostic comparison; not compatibility authority"),
+        });
+        let panel = centered_panel(720.0, 610.0);
+        draw_rectangle(panel.0, panel.1, panel.2, panel.3, PANEL);
+        draw_rectangle_lines(panel.0, panel.1, panel.2, panel.3, 2.0, ACCENT);
+        let mut y = panel.1 + 36.0;
+        line(about.project_name(), panel.0 + 8.0, &mut y, TEXT);
+        line(about.maintainer(), panel.0 + 8.0, &mut y, TEXT);
+        line(about.license_summary(), panel.0 + 8.0, &mut y, TEXT);
+        line(about.upstream_summary(), panel.0 + 8.0, &mut y, MUTED);
+        line(about.version_label(), panel.0 + 8.0, &mut y, TEXT);
+        line(about.commit_label(), panel.0 + 8.0, &mut y, TEXT);
+        line(
+            &format!("Profile: {}", about.profile()),
+            panel.0 + 8.0,
+            &mut y,
+            MUTED,
+        );
+        line(
+            &format!("Target: {}", about.target()),
+            panel.0 + 8.0,
+            &mut y,
+            MUTED,
+        );
+        line(
+            &format!("Toolchain: {}", about.rust_toolchain()),
+            panel.0 + 8.0,
+            &mut y,
+            MUTED,
+        );
+        line(
+            &format!(
+                "Protocol: {}; adapter: {}",
+                about.protocol_version(),
+                about.adapter_version()
+            ),
+            panel.0 + 8.0,
+            &mut y,
+            MUTED,
+        );
+        line(
+            &format!("Run identity: {}", shorten(about.run_identity(), 48)),
+            panel.0 + 8.0,
+            &mut y,
+            MUTED,
+        );
+        line(
+            &format!("Oracle: {}", shorten(about.oracle_identity(), 72)),
+            panel.0 + 8.0,
+            &mut y,
+            MUTED,
+        );
+        line(
+            &format!("Evidence tier: {}", about.evidence_tier()),
+            panel.0 + 8.0,
+            &mut y,
+            MUTED,
+        );
+        y += 8.0;
+        for link in about.links() {
+            line(
+                &format!("{} — {}", link.label(), link.url()),
+                panel.0 + 8.0,
+                &mut y,
+                ACCENT,
+            );
+        }
+        line(
+            "URLs remain visible and copyable when platform opening is unavailable.",
+            panel.0 + 8.0,
+            &mut y,
+            MUTED,
+        );
+        draw_text(
+            "Escape closes and returns focus",
+            panel.0 + 24.0,
+            panel.1 + panel.3 - 18.0,
+            12.0,
+            MUTED,
+        );
+    }
+
+    fn draw_shortcut_help(&self, width: u32, height: u32) {
         let panel_width = 520.0;
-        let panel_height = 300.0;
+        let panel_height = 380.0;
         let width = u16::try_from(width).map_or(0.0, f32::from);
         let height = u16::try_from(height).map_or(0.0, f32::from);
         let x = (width - panel_width).max(0.0) / 2.0;
@@ -923,15 +1523,31 @@ impl DesktopApp {
         draw_text("Keyboard shortcuts", x + 24.0, y + 38.0, 24.0, TEXT);
         let shortcuts = [
             "Space  Run/Pause    Right  Step once    R  Restart    C  Capture",
-            "/  Search scenarios    B  Scenario panel    I  Inspector",
+            "/  Search    B  Scenarios    I  Inspector    S  Validated settings",
             "1  Contacts    2  Particle contacts    3  Broad phase",
             "4  Profiles/statistics    O  Overlay/Side by side",
             "F  Focus difference    [ / ]  Previous/Next difference",
-            "Home  Reset camera    Escape  Close this help",
+            "A  Apply next typed scenario action (shown when available)",
+            "Home / double-click  Reset camera    Escape  Close this help",
+            "Wheel  Zoom about pointer    Middle or Shift+primary drag  Pan",
         ];
         for (index, shortcut) in shortcuts.iter().enumerate() {
             let row = u16::try_from(index).map_or(0.0, f32::from);
             draw_text(shortcut, x + 24.0, y + 78.0 + row * 32.0, SMALL_FONT, TEXT);
+        }
+        if let Some(shortcut) = self.scenario_shortcuts().first() {
+            draw_text(
+                format!(
+                    "Scenario {} — {} ({})",
+                    shortcut.key().to_ascii_uppercase(),
+                    shortcut.label(),
+                    shortcut.action_id().as_str()
+                ),
+                x + 24.0,
+                y + panel_height - 46.0,
+                12.0,
+                ACCENT,
+            );
         }
         draw_text(
             "Presentation shortcuts never submit simulation commands.",
@@ -941,6 +1557,130 @@ impl DesktopApp {
             MUTED,
         );
     }
+}
+
+fn focus_index(focus: ControlFocus) -> usize {
+    FOCUS_ORDER
+        .iter()
+        .position(|candidate| *candidate == focus)
+        .unwrap_or(0)
+}
+
+fn control_bounds(focus: ControlFocus, layout: ResponsiveLayout) -> (f32, f32, f32, f32) {
+    let index = focus_index(focus);
+    let rows = usize::from(layout.control_rows().max(1));
+    let columns = FOCUS_ORDER.len().div_ceil(rows);
+    let row = index / columns;
+    let column = index % columns;
+    let region = rect(layout.shell().region(ShellRegion::Controls));
+    let cell_width = region.2 / u16::try_from(columns).map_or(1.0, f32::from);
+    let cell_height = region.3 / u16::try_from(rows).map_or(1.0, f32::from);
+    (
+        region.0 + u16::try_from(column).map_or(0.0, f32::from) * cell_width + 2.0,
+        region.1 + u16::try_from(row).map_or(0.0, f32::from) * cell_height + 2.0,
+        (cell_width - 4.0).max(CONTROL_TARGET),
+        (cell_height - 4.0).max(CONTROL_TARGET),
+    )
+}
+
+fn centered_panel(width: f32, height: f32) -> (f32, f32, f32, f32) {
+    let available_width = (screen_width() - 32.0).max(CONTROL_TARGET);
+    let available_height = (screen_height() - 32.0).max(CONTROL_TARGET);
+    let width = width.min(available_width);
+    let height = height.min(available_height);
+    (
+        (screen_width() - width).max(0.0) * 0.5,
+        (screen_height() - height).max(0.0) * 0.5,
+        width,
+        height,
+    )
+}
+
+fn settings_field_bounds(field: SettingsField) -> (f32, f32, f32, f32) {
+    let panel = centered_panel(560.0, 430.0);
+    let index = setting_index(field);
+    (
+        panel.0 + 24.0,
+        panel.1 + 88.0 + u16::try_from(index).map_or(0.0, f32::from) * 68.0,
+        220.0,
+        CONTROL_TARGET,
+    )
+}
+
+fn settings_apply_bounds() -> (f32, f32, f32, f32) {
+    let panel = centered_panel(560.0, 430.0);
+    (
+        panel.0 + panel.2 - 204.0,
+        panel.1 + panel.3 - 68.0,
+        180.0,
+        CONTROL_TARGET,
+    )
+}
+
+fn setting_index(field: SettingsField) -> usize {
+    SETTINGS_FIELDS
+        .iter()
+        .position(|candidate| *candidate == field)
+        .unwrap_or(0)
+}
+
+const fn setting_label(field: SettingsField) -> &'static str {
+    match field {
+        SettingsField::Timestep => "Timestep seconds",
+        SettingsField::VelocityIterations => "Velocity iterations",
+        SettingsField::PositionIterations => "Position iterations",
+        SettingsField::ParticleIterations => "Particle iterations",
+    }
+}
+
+fn minimum_close_bounds() -> (f32, f32, f32, f32) {
+    (
+        24.0,
+        (screen_height() - 68.0).max(104.0),
+        96.0,
+        CONTROL_TARGET,
+    )
+}
+
+fn minimum_about_bounds() -> (f32, f32, f32, f32) {
+    (
+        136.0,
+        (screen_height() - 68.0).max(104.0),
+        220.0,
+        CONTROL_TARGET,
+    )
+}
+
+fn point_in_rect(point: (f32, f32), bounds: (f32, f32, f32, f32)) -> bool {
+    (bounds.0..=bounds.0 + bounds.2).contains(&point.0)
+        && (bounds.1..=bounds.1 + bounds.3).contains(&point.1)
+}
+
+fn draw_accessible_button(
+    bounds: (f32, f32, f32, f32),
+    label: &str,
+    focused: bool,
+    selected: bool,
+) {
+    draw_rectangle(
+        bounds.0,
+        bounds.1,
+        bounds.2,
+        bounds.3,
+        if selected { PANEL_ALT } else { PANEL },
+    );
+    draw_rectangle_lines(
+        bounds.0,
+        bounds.1,
+        bounds.2,
+        bounds.3,
+        if focused { 2.0 } else { 1.0 },
+        if focused { ACCENT } else { BORDER },
+    );
+    let measured = measure_text(label, None, SMALL_FONT_SIZE, 1.0);
+    let text_x = bounds.0 + ((bounds.2 - measured.width) * 0.5).max(6.0);
+    let text_y = bounds.1 + (bounds.3 + measured.height) * 0.5 - 2.0;
+    draw_text(label, text_x, text_y, SMALL_FONT, TEXT);
 }
 
 fn debug_layer_counts(checkpoint: &CanonicalCheckpoint) -> [usize; 9] {
