@@ -3,15 +3,15 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 11-21-PLAN.md
-last_updated: "2026-07-22T06:51:41.706Z"
+stopped_at: Completed 11-25-PLAN.md
+last_updated: "2026-07-22T07:06:31.931Z"
 last_activity: "2026-07-22"
 progress:
   total_phases: 12
   completed_phases: 10
   total_plans: 190
-  completed_plans: 183
-  percent: 96
+  completed_plans: 184
+  percent: 97
 ---
 
 # Project State
@@ -195,6 +195,7 @@ Progress: [█████████░] 93%
 | Phase 11 P20 | 28 min | 1 tasks | 14 files |
 | Phase 11 P24 | 32 min | 1 tasks | 13 files |
 | Phase 11 P21 | 35 min | 1 tasks | 9 files |
+| Phase 11 P25 | 19 min | 1 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -529,6 +530,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 11]: Require every sealed Phase 11 case to retain exact tracked Phase 6 through Phase 10 proof digests. — Missing, stale, or circular inherited authority fails before a case can support maturity claims.
 - [Phase 11]: Retain exact Macroquad 0.4.15 after the private capability matrix passed. — The real Image and Color adapter passed every required renderer, accessibility, resize, capture, and isolation capability, so no allowed heavier-stack fallback trigger occurred.
 - [Phase 11]: Keep visual rendering passive over shared controller and comparison references. — Frames, DPI, screenshots, and keyboard presentation cannot advance a logical step, create a checkpoint, reinterpret comparison policy, or become compatibility authority.
+- [Phase 11]: Keep visual shell state presentation-only and emit effects solely as typed SessionCommand values. — Immutable session, comparison, and run identity inputs preserve renderer authority boundaries.
+- [Phase 11]: Select catalog rows by stable slug, version, and seed rather than display title. — Canonical typed catalog identity remains consistent across headless and visual consumers.
+- [Phase 11]: Allow only fixed HTTPS disclosures and validated repository commit links in provenance chrome. — Bounded sanitized text and copyable URLs prevent untrusted provenance from becoming an effectful link.
 
 ### Pending Todos
 
@@ -542,6 +546,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-22T06:51:41.702Z
-Stopped at: Completed 11-21-PLAN.md
+Last session: 2026-07-22T07:06:31.927Z
+Stopped at: Completed 11-25-PLAN.md
 Resume file: None
