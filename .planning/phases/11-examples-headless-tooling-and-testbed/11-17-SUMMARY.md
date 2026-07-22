@@ -76,6 +76,7 @@ The intentionally failing RED state was not committed because repository policy 
 ## Task Commits
 
 1. **Task 1: Create the private benchmark bridge with measured-region discipline** - `84b913f` (feat)
+2. **Task 1 refinement: Keep benchmark smoke threshold-free** - `eeecc4e` (test)
 
 **Plan metadata:** committed separately with this summary.
 
@@ -127,7 +128,7 @@ None - no external service configuration required.
 
 ## Self-Check: PASSED
 
-- Confirmed all four created benchmark-package files exist and implementation commit `84b913f` is present.
+- Confirmed all four created benchmark-package files exist and implementation commits `84b913f` and `eeecc4e` are present.
 - Confirmed the focused equivalence tests pass 5/5, focused deny-warnings Clippy passes, and the Criterion benchmark target compiles with `--no-run`.
 - Confirmed the exact ordered `cargo fmt --all`, full-workspace deny-warnings Clippy, all-targets build, and all-features test gate passes with `CARGO_TARGET_DIR=/tmp/liquidfun-rs-phase11-11-17`.
 - Confirmed `cargo tree -p liquidfun --edges normal` contains no Criterion or private harness package and the publishable package listing contains no private benchmark paths.
