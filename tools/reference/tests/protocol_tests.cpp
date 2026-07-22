@@ -110,6 +110,43 @@ nlohmann::json catalog_distance_joint_payload() {
   return payload;
 }
 
+nlohmann::json catalog_large_resolved_payload() {
+  auto payload = catalog_payload();
+  payload["identity"]["slug"] = "rigid-stack-stability";
+  payload["identity"]["generator_id"] = "native-rigid-v1";
+  payload["entities"] = nlohmann::json::array();
+  payload["actions"] = nlohmann::json::array();
+  for (std::uint32_t ordinal = 0; ordinal < 32U; ++ordinal) {
+    std::ostringstream entity_id;
+    entity_id << "entity-body-" << std::setw(4) << std::setfill('0')
+              << ordinal;
+    std::ostringstream action_id;
+    action_id << "action-" << std::setw(4) << std::setfill('0') << ordinal;
+    payload["entities"].push_back(
+        {{"semantic_id", {{"kind", "body"}, {"ordinal", ordinal}}},
+         {"scenario_id", entity_id.str()}});
+    payload["actions"].push_back(
+        {{"action_id", action_id.str()},
+         {"schedule", {{"kind", "setup"}, {"ordinal", ordinal}}},
+         {"action", {{"kind", "create_body"},
+                     {"body_id", entity_id.str()}}}});
+  }
+  payload["actions"].push_back(
+      {{"action_id", "action-0032"},
+       {"schedule", {{"kind", "logical_step"}, {"ordinal", 1U}}},
+       {"action",
+        {{"kind", "configured_step"},
+         {"timestep_bits", 0x3c888889U},
+         {"velocity_iterations", 8U},
+         {"position_iterations", 3U},
+         {"continuous_work_budget", 1U}}}});
+  payload["checkpoints"] = {
+      {{"checkpoint_id", "checkpoint-0001"},
+       {"after_action_id", "action-0032"},
+       {"logical_step", 1U}}};
+  return payload;
+}
+
 std::string catalog_request_from_payload(
     const nlohmann::json& payload,
     std::string_view identity_sha256) {
@@ -203,6 +240,27 @@ void catalog_run_preserves_distance_joint_kind_and_mutation() {
   const auto checkpoint = nlohmann::json::parse(result.checkpoint_records.at(0));
   expect(checkpoint.at("observations")[4]["value"]["value"] == 1U,
          "distance joint scenario did not create one typed joint");
+}
+
+void catalog_run_accepts_large_bounded_resolved_bytes() {
+  // Arrange
+  const auto identity_sha256 = std::string(64, 'a');
+  const auto request = catalog_request_from_payload(
+      catalog_large_resolved_payload(), identity_sha256);
+  const auto resolved_size =
+      nlohmann::json::parse(request).at("resolved_bytes").size();
+  liquidfun::reference::CatalogRunAdapter adapter;
+
+  // Act
+  const auto result = adapter.execute(request, identity_sha256);
+
+  // Assert
+  expect(resolved_size > liquidfun::reference::kMaximumCollectionItems,
+         "large catalog regression did not cross the generic bound");
+  expect(resolved_size < liquidfun::reference::kMaximumRecordBytes,
+         "large catalog regression crossed the record bound");
+  expect(result.checkpoint_records.size() == 1U,
+         "large bounded catalog request lost its checkpoint");
 }
 
 void catalog_run_rejects_hash_and_nested_shape_tampering() {
@@ -1250,6 +1308,7 @@ int main() {
   try {
     catalog_run_executes_exact_resolved_bytes_and_reuses_cleanly();
     catalog_run_preserves_distance_joint_kind_and_mutation();
+    catalog_run_accepts_large_bounded_resolved_bytes();
     catalog_run_rejection_does_not_poison_the_next_request();
     catalog_run_rejects_hash_and_nested_shape_tampering();
     catalog_run_rejects_oversized_input_before_allocation();

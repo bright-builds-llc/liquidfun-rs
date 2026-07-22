@@ -106,6 +106,7 @@ class BoundedSax final : public nlohmann::json_sax<Json> {
     Node node;
     std::unordered_set<std::string> keys;
     std::optional<std::string> maybe_key;
+    std::size_t maximum_items;
   };
 
   bool fail(std::string message) {
@@ -119,7 +120,13 @@ class BoundedSax final : public nlohmann::json_sax<Json> {
     if (frames_.size() >= kMaximumDepth) {
       return fail("JSON nesting depth exceeds reviewed limit");
     }
-    frames_.push_back(Frame{std::move(node), {}, std::nullopt});
+    const auto resolved_bytes = std::holds_alternative<Node::Array>(node.value) &&
+                                !frames_.empty() &&
+                                frames_.back().maybe_key == "resolved_bytes";
+    const auto maximum_items =
+        resolved_bytes ? kMaximumRecordBytes : kMaximumCollectionItems;
+    frames_.push_back(
+        Frame{std::move(node), {}, std::nullopt, maximum_items});
     return true;
   }
 
@@ -147,7 +154,7 @@ class BoundedSax final : public nlohmann::json_sax<Json> {
     }
     auto& frame = frames_.back();
     if (auto* array = std::get_if<Node::Array>(&frame.node.value)) {
-      if (array->size() >= kMaximumCollectionItems) {
+      if (array->size() >= frame.maximum_items) {
         return fail("collection exceeds reviewed limit");
       }
       array->push_back(std::move(node));
@@ -157,7 +164,7 @@ class BoundedSax final : public nlohmann::json_sax<Json> {
     if (object == nullptr || !frame.maybe_key.has_value()) {
       return fail("object value appeared without a member name");
     }
-    if (object->size() >= kMaximumCollectionItems) {
+    if (object->size() >= frame.maximum_items) {
       return fail("collection exceeds reviewed limit");
     }
     object->emplace_back(std::move(*frame.maybe_key), std::move(node));

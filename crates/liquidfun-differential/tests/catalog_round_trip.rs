@@ -86,6 +86,44 @@ fn cpp_catalog_accepts_a_reviewed_joint_scenario() {
     );
 }
 
+#[test]
+fn cpp_catalog_accepts_phase11_rigid_stack() {
+    // Arrange
+    const REVISION: &str = "7f20402173fd143a3988c921bc384459c6a858f2";
+    let root = repository_root();
+    let Ok(executable) = OracleExecutable::resolve(&root, OraclePreset::Debug) else {
+        eprintln!("SKIP: configure and build oracle-debug for catalog integration");
+        return;
+    };
+    let mut supervisor =
+        CatalogOracleSupervisor::new(executable, SessionProfile::OneShot, REVISION);
+    let identity = supervisor
+        .discover_identity()
+        .expect("oracle handshake should validate");
+    let request = request_for_provenance(
+        "rigid-stack-stability",
+        1,
+        identity.identity_sha256().clone(),
+        supervisor.limits_profile_sha256(),
+    );
+
+    // Act
+    let result = supervisor.execute(&request);
+
+    // Assert
+    let capture = result.unwrap_or_else(|error| {
+        panic!(
+            "rigid stack failed as {:?}: {}",
+            error.kind(),
+            String::from_utf8_lossy(error.retained_stderr())
+        )
+    });
+    assert_eq!(
+        capture.capture().checkpoints().len(),
+        request.resolved().checkpoints().len()
+    );
+}
+
 fn repository_root() -> std::path::PathBuf {
     std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..")
 }
