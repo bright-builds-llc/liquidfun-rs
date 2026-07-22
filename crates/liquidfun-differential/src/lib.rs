@@ -6,6 +6,7 @@
 #![forbid(unsafe_code)]
 
 mod canonical;
+mod catalog_native;
 mod collision_evidence;
 mod collision_probe;
 mod comparator;
@@ -24,6 +25,7 @@ mod session;
 mod supervisor;
 
 pub use canonical::*;
+pub use catalog_native::*;
 pub use collision_evidence::*;
 pub use collision_probe::*;
 pub use comparator::*;

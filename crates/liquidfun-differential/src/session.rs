@@ -5,6 +5,7 @@ use liquidfun_test_protocol::{
     ScenarioActionId, ScheduledAction,
 };
 
+mod backend;
 mod state;
 pub use state::*;
 

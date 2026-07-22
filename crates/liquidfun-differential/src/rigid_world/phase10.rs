@@ -16,4 +16,5 @@ pub use evidence::{
     Phase10EvidenceWitnessRef, required_phase10_evidence_leaves,
     validate_phase10_evidence_contract,
 };
+pub(crate) use native::catalog_recipe;
 pub(super) use native::{NativePhase10State, execute_action};

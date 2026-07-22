@@ -2,7 +2,7 @@
 
 mod evidence;
 mod model;
-mod phase10;
+pub(crate) mod phase10;
 mod phase7;
 mod phase8;
 mod phase9;

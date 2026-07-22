@@ -18,6 +18,13 @@ use liquidfun_test_protocol::{
 use super::super::{NativeRigidWorldError, TimelineExecutor};
 use crate::rigid_world::model::{action_error, vec2_bits};
 
+pub(crate) fn catalog_recipe(
+    definition: &Phase10GroupDefinition,
+    destination: liquidfun::particle::ParticleGroupDestination,
+) -> Result<liquidfun::particle::ParticleGroupRecipe<()>, String> {
+    recipe::recipe(definition, destination)
+}
+
 #[derive(Debug, Clone)]
 struct GroupBinding {
     semantic_id: ScenarioId,
