@@ -1,11 +1,18 @@
 use crate::{
-    CatalogCoverage, CatalogDefinition, CatalogError, CatalogMetadata, CatalogProgram, CatalogSlug,
-    FloatBits, GeneratorId, GeneratorVersion, RigidJointKind, RigidWorldAction, RigidWorldWitness,
-    RunSettings, ScenarioEligibility, ScenarioId, ScenarioVersion, SemanticEntityKind, Vec2Bits,
+    CatalogCoverage, CatalogDefinition, CatalogError, CatalogEvidence, CatalogMetadata,
+    CatalogProgram, CatalogSlug, FloatBits, GeneratorId, GeneratorVersion, RigidJointKind,
+    RigidWorldAction, RigidWorldWitness, RunSettings, ScenarioEligibility, ScenarioId,
+    ScenarioVersion, SemanticEntityKind, Vec2Bits,
 };
 
+/// Native scenarios covering particle-group topology and mutation behavior.
+pub mod groups;
 /// Native scenarios covering all eleven supported joint kinds.
 pub mod joints;
+/// Native scenarios covering particle storage, lifecycle, and solver behavior.
+pub mod particles;
+/// Native scenarios covering particle queries, callbacks, and rejected mutations.
+pub mod queries_callbacks;
 /// Native scenarios covering representative rigid-world behaviors.
 pub mod rigid;
 /// Native standalone-rope scenarios.
@@ -57,10 +64,46 @@ fn definition(
     logical_actions: Vec<RigidWorldAction>,
     particle_iterations: u32,
 ) -> Result<CatalogDefinition, CatalogError> {
+    definition_with_evidence(
+        slug,
+        title,
+        generator_id,
+        tags,
+        test_id,
+        evidence_leaves
+            .iter()
+            .copied()
+            .map(CatalogEvidence::Rigid)
+            .collect(),
+        maybe_joint_kind,
+        entity_kinds,
+        setup_actions,
+        logical_actions,
+        particle_iterations,
+    )
+}
+
+#[allow(
+    clippy::too_many_arguments,
+    reason = "native definitions carry explicit identity, schedule, and coverage"
+)]
+fn definition_with_evidence(
+    slug: &str,
+    title: &str,
+    generator_id: &str,
+    tags: &[&str],
+    test_id: &str,
+    evidence_leaves: Vec<CatalogEvidence>,
+    maybe_joint_kind: Option<RigidJointKind>,
+    entity_kinds: Vec<SemanticEntityKind>,
+    setup_actions: Vec<RigidWorldAction>,
+    logical_actions: Vec<RigidWorldAction>,
+    particle_iterations: u32,
+) -> Result<CatalogDefinition, CatalogError> {
     let settings = default_settings(particle_iterations)?;
     let coverage = CatalogCoverage::new(
         vec![CatalogSlug::new(test_id)?],
-        evidence_leaves.to_vec(),
+        evidence_leaves,
         true,
         true,
         true,
