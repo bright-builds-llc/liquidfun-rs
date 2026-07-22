@@ -276,6 +276,14 @@ macro_rules! primitive_record {
             pub const fn metadata(&self) -> &PrimitiveMetadata {
                 &self.metadata
             }
+
+            $(
+                #[doc = concat!("Returns exact semantic field `", stringify!($field), "`.")]
+                #[must_use]
+                pub const fn $field(&self) -> $type {
+                    self.$field
+                }
+            )*
         }
     };
 }
@@ -343,6 +351,12 @@ impl PrimitivePolyline {
     pub fn vertices(&self) -> &[Vec2Bits] {
         &self.vertices
     }
+
+    /// Returns whether the source-ordered polyline is closed.
+    #[must_use]
+    pub const fn closed(&self) -> bool {
+        self.closed
+    }
 }
 
 impl<'de> Deserialize<'de> for PrimitivePolyline {
@@ -379,6 +393,18 @@ impl PrimitiveLabel {
     #[must_use]
     pub const fn metadata(&self) -> &PrimitiveMetadata {
         &self.metadata
+    }
+
+    /// Returns the exact-bit label anchor.
+    #[must_use]
+    pub const fn position(&self) -> Vec2Bits {
+        self.position
+    }
+
+    /// Returns the bounded inert label text.
+    #[must_use]
+    pub fn text(&self) -> &str {
+        &self.text
     }
 }
 

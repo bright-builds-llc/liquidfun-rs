@@ -975,6 +975,18 @@ fn update_hash_field(hasher: &mut Sha256, bytes: &[u8]) {
     hasher.update(bytes);
 }
 
+pub(crate) fn checkpoint_mismatch_signature_sha256(
+    checkpoint_id: &CheckpointId,
+    semantic_path: &str,
+    kind: MismatchKind,
+) -> Sha256Hex {
+    let mut hasher = Sha256::new();
+    update_hash_field(&mut hasher, checkpoint_id.as_str().as_bytes());
+    update_hash_field(&mut hasher, semantic_path.as_bytes());
+    update_hash_field(&mut hasher, format!("{kind:?}").as_bytes());
+    Sha256Hex::from_digest(hasher.finalize().into())
+}
+
 fn numeric_distances(expected: f32, actual: f32) -> (f32, f32) {
     if !expected.is_finite() || !actual.is_finite() {
         return (f32::INFINITY, f32::INFINITY);

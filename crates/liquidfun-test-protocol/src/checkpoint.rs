@@ -250,10 +250,76 @@ impl CanonicalCheckpoint {
         self.checkpoint_schema_version
     }
 
+    /// Returns the enclosing protocol version.
+    #[must_use]
+    pub const fn protocol_version(&self) -> ProtocolVersion {
+        self.protocol_version
+    }
+
+    /// Returns the closed wire record kind.
+    #[must_use]
+    pub const fn record_kind(&self) -> &'static str {
+        self.record_kind
+    }
+
+    /// Returns the stable request identity.
+    #[must_use]
+    pub const fn request_id(&self) -> &RequestId {
+        &self.request_id
+    }
+
+    /// Returns the exact resolved-scenario content identity.
+    #[must_use]
+    pub const fn resolved_sha256(&self) -> &Sha256Hex {
+        &self.resolved_sha256
+    }
+
+    /// Returns the stable checkpoint identity.
+    #[must_use]
+    pub const fn checkpoint_id(&self) -> &CheckpointId {
+        &self.checkpoint_id
+    }
+
+    /// Returns the semantic action or logical-step boundary.
+    #[must_use]
+    pub const fn position(&self) -> &CheckpointPosition {
+        &self.position
+    }
+
+    /// Returns exact accumulated simulation-time bits.
+    #[must_use]
+    pub const fn simulation_time_bits(&self) -> FloatBits {
+        self.simulation_time_bits
+    }
+
+    /// Returns exact structural observations in canonical path order.
+    #[must_use]
+    pub fn observations(&self) -> &[StructuralObservation] {
+        &self.observations
+    }
+
+    /// Returns numeric observations in canonical path order.
+    #[must_use]
+    pub fn numeric_observations(&self) -> &[NumericObservation] {
+        &self.numeric_observations
+    }
+
+    /// Returns source-significant occurrences in emission order.
+    #[must_use]
+    pub fn ordered_occurrences(&self) -> &[OrderedOccurrence] {
+        &self.ordered_occurrences
+    }
+
     /// Returns explicitly unordered sets in stable set-ID order.
     #[must_use]
     pub fn unordered_sets(&self) -> &[CheckpointSet] {
         &self.unordered_sets
+    }
+
+    /// Returns renderer-neutral primitives with explicit ordering declarations.
+    #[must_use]
+    pub fn debug_primitives(&self) -> &[DebugPrimitiveRecord] {
+        &self.debug_primitives
     }
 
     /// Returns enabled profile names without timing values.
