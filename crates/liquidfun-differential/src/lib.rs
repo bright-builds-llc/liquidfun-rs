@@ -20,6 +20,7 @@ mod rigid_evidence;
 mod rigid_world;
 mod runner;
 mod rust_adapter;
+mod session;
 mod supervisor;
 
 pub use canonical::*;
@@ -37,4 +38,5 @@ pub use rigid_evidence::*;
 pub use rigid_world::*;
 pub use runner::*;
 pub use rust_adapter::*;
+pub use session::*;
 pub use supervisor::*;
