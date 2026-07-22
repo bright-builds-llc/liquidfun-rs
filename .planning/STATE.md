@@ -3,14 +3,14 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 11-13-PLAN.md
-last_updated: "2026-07-22T03:16:49.082Z"
+stopped_at: Completed 11-14-PLAN.md
+last_updated: "2026-07-22T03:47:16.809Z"
 last_activity: "2026-07-22"
 progress:
   total_phases: 12
   completed_phases: 10
   total_plans: 190
-  completed_plans: 174
+  completed_plans: 175
   percent: 92
 ---
 
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-12)
 ## Current Position
 
 Phase: 11 (Examples, Headless Tooling, and Testbed) — EXECUTING
-Plan: 14 of 29
+Plan: 15 of 29
 Status: Ready to execute
 Last activity: 2026-07-22
 
@@ -186,6 +186,7 @@ Progress: [█████████░] 91%
 | Phase 11 P11 | 26 min | 1 tasks | 17 files |
 | Phase 11 P12 | 21 min | 1 tasks | 14 files |
 | Phase 11 P13 | 20 min | 1 tasks | 12 files |
+| Phase 11 P14 | 29 min | 1 tasks | 16 files |
 
 ## Accumulated Context
 
@@ -504,6 +505,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 11]: Keep comparison traversal in cohesive modules while one bounded builder owns path validation, value truncation, and stable signatures. — A single entry authority keeps headless and visual consumers consistent without a monolithic field walk.
 - [Phase 11]: Bind simulation time, geometry, angles, and declared numeric observations to explicit closed Phase 4 policies. — Unknown or unbound numeric paths must fail as harness errors instead of silently receiving fallback tolerance.
 - [Phase 11]: Treat schema and run identity disagreement as a harness error, while missing semantic records become Rust-only or oracle-only entries. — Identity incompatibility cannot be physics evidence, but side-only observations must remain inspectable and never masquerade as matches.
+- [Phase 11]: Extend the established synchronous supervisor with a dedicated catalog module instead of creating a second subprocess lifecycle. — Catalog execution inherits the existing bounded concurrent drains, deadlines, provenance handshake, reset proof, and poison kill/reap authority without duplicating security-sensitive process code.
+- [Phase 11]: Keep exact resolved bytes, SHA-256 identity, action log, checkpoint schedule, and canonical checkpoint bytes together through every catalog consumer. — Native execution, C++ execution, replay, comparison, minimization evidence, and persistence cannot silently regenerate or reinterpret scenario authority.
+- [Phase 11]: Reject seed-only or structurally incomplete catalog failure bundles and publish complete evidence atomically inside a confined target directory. — Exact replay requires content-addressed bytes and complete semantic evidence; a seed, path escape, symlink, collision, or partial write cannot authorize diagnosis.
 
 ### Pending Todos
 
@@ -517,6 +521,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-22T03:16:32.760Z
-Stopped at: Completed 11-13-PLAN.md
+Last session: 2026-07-22T03:46:44.770Z
+Stopped at: Completed 11-14-PLAN.md
 Resume file: None

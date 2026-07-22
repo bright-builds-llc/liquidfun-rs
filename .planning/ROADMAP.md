@@ -263,7 +263,7 @@ Plans:
 | 8. Joints, Rope, Callbacks, and Rigid Sign-Off | 24/24 | Complete    | 2026-07-15 |
 | 9. Particle Storage, Lifecycle, and Coupling | 31/31 | Complete | 2026-07-18 |
 | 10. Particle Groups, Solvers, and Compatibility Sign-Off | 32/32 | Complete   | 2026-07-21 |
-| 11. Examples, Headless Tooling, and Testbed | 13/29 | In Progress|  |
+| 11. Examples, Headless Tooling, and Testbed | 14/29 | In Progress|  |
 | 12. Performance, Portability, and Release Hardening | 0/TBD | Not started | - |
 
 *Roadmap created: 2026-07-09*
