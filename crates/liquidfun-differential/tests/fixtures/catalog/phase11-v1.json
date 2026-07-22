@@ -1,0 +1,129 @@
+{
+  "schema_version": 1,
+  "profile": "phase11-v1",
+  "upstream_revision": "7f20402173fd143a3988c921bc384459c6a858f2",
+  "catalog": {
+    "path": "reference/scenario-catalog.json",
+    "sha256": "e0b09f385c4df9ce2245ae35c37bd4a1b9ba5dc3e083e7bd793e98bc6cccf5d9"
+  },
+  "mapping": {
+    "path": "reference/artifacts/phase11/scenario-mappings.json",
+    "sha256": "66d6d4ef4a671a3213e936cdd5d5afd94add9f5d81e0ec1cf6e7b0487902222a"
+  },
+  "payloads": [
+    {
+      "case_id": "rigid-joint-rope",
+      "path": "crates/liquidfun-differential/tests/fixtures/catalog/cases/rigid-joint-rope.jsonl",
+      "sha256": "c98dad94a3071d756cb721fea9b8013cacef5a176f14c71c8e723b29ae2d3bb5"
+    },
+    {
+      "case_id": "particle-groups",
+      "path": "crates/liquidfun-differential/tests/fixtures/catalog/cases/particle-groups.jsonl",
+      "sha256": "1e5cfeefc0d5b8dcc34682703a971ee3b2b705fef943a48815e38a48a87a801e"
+    },
+    {
+      "case_id": "queries-callbacks-mutations",
+      "path": "crates/liquidfun-differential/tests/fixtures/catalog/cases/queries-callbacks-mutations.jsonl",
+      "sha256": "b647a4d9aa7722b10b3b38090083e8917a8cf0593d9533bdefdf73d41c6d1f23"
+    }
+  ],
+  "inherited_proofs": [
+    {
+      "proof_id": "phase6",
+      "phase": 6,
+      "path": "protocol/tolerances/phase6-v1.toml",
+      "sha256": "7f10df148852866fd20d11b8d27adcddc0ad463ac3d3d716a8946ca5c8f1c63a"
+    },
+    {
+      "proof_id": "phase7",
+      "phase": 7,
+      "path": "protocol/tolerances/phase7-v1.toml",
+      "sha256": "fd772b2cf523a6d40bf978bc4d0da18a4564181a93e6b2bdeb8e4d40d5613311"
+    },
+    {
+      "proof_id": "phase8",
+      "phase": 8,
+      "path": "protocol/tolerances/phase8-v1.toml",
+      "sha256": "2843ca40bec5b1c680135664c58c12a8388a7a9e86ad77f8ef5a268f3f15a6bf"
+    },
+    {
+      "proof_id": "phase9",
+      "phase": 9,
+      "path": "crates/liquidfun-differential/tests/fixtures/rigid_world/phase9/phase9-v1.json",
+      "sha256": "e0936090c8b8453cd464e7e56e1fa09392265ffb1da1f81d8d692667956a3fcc"
+    },
+    {
+      "proof_id": "phase10",
+      "phase": 10,
+      "path": "crates/liquidfun-differential/tests/fixtures/rigid_world/phase10/phase10-v1.json",
+      "sha256": "49271756565607cfc391ccfd29ca1b38d6176bcf32490fdf5e3636c0db861b7f"
+    }
+  ],
+  "cases": [
+    {
+      "case_id": "rigid-joint-rope",
+      "families": [
+        "joint",
+        "rigid",
+        "rope"
+      ],
+      "payload_path": "crates/liquidfun-differential/tests/fixtures/catalog/cases/rigid-joint-rope.jsonl",
+      "payload_sha256": "c98dad94a3071d756cb721fea9b8013cacef5a176f14c71c8e723b29ae2d3bb5",
+      "inherited_proof_ids": [
+        "phase6",
+        "phase7",
+        "phase8",
+        "phase9",
+        "phase10"
+      ],
+      "eligibility": {
+        "regression": true,
+        "benchmark": true,
+        "visual": true
+      }
+    },
+    {
+      "case_id": "particle-groups",
+      "families": [
+        "group",
+        "particle"
+      ],
+      "payload_path": "crates/liquidfun-differential/tests/fixtures/catalog/cases/particle-groups.jsonl",
+      "payload_sha256": "1e5cfeefc0d5b8dcc34682703a971ee3b2b705fef943a48815e38a48a87a801e",
+      "inherited_proof_ids": [
+        "phase6",
+        "phase7",
+        "phase8",
+        "phase9",
+        "phase10"
+      ],
+      "eligibility": {
+        "regression": true,
+        "benchmark": true,
+        "visual": true
+      }
+    },
+    {
+      "case_id": "queries-callbacks-mutations",
+      "families": [
+        "callback",
+        "mutation",
+        "query"
+      ],
+      "payload_path": "crates/liquidfun-differential/tests/fixtures/catalog/cases/queries-callbacks-mutations.jsonl",
+      "payload_sha256": "b647a4d9aa7722b10b3b38090083e8917a8cf0593d9533bdefdf73d41c6d1f23",
+      "inherited_proof_ids": [
+        "phase6",
+        "phase7",
+        "phase8",
+        "phase9",
+        "phase10"
+      ],
+      "eligibility": {
+        "regression": true,
+        "benchmark": true,
+        "visual": true
+      }
+    }
+  ]
+}

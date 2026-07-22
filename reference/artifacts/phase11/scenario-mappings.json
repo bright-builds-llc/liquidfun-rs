@@ -1,0 +1,1189 @@
+{
+  "schema_version": 1,
+  "catalog_schema_version": 1,
+  "catalog_sha256": "e0b09f385c4df9ce2245ae35c37bd4a1b9ba5dc3e083e7bd793e98bc6cccf5d9",
+  "record_count": 43,
+  "records": [
+    {
+      "slug": "joint-distance-behavior",
+      "scenario_version": 1,
+      "scenario_sha256": "2eaf8f031603887a6807d185404c839d366905a88c75f4076140c5ece6cf1af4",
+      "test_ids": [
+        "joint-distance-test"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "rigid/rigid_distance_stepped",
+          "rigid/soft_distance_stepped"
+        ]
+      },
+      "regression": {
+        "eligible": true,
+        "mapping_id": "regression/joint-distance-behavior"
+      },
+      "benchmark": {
+        "eligible": true,
+        "mapping_id": "benchmark/joint-distance-behavior"
+      },
+      "visual": {
+        "eligible": true,
+        "mapping_id": "visual/joint-distance-behavior"
+      }
+    },
+    {
+      "slug": "joint-friction-behavior",
+      "scenario_version": 1,
+      "scenario_sha256": "3fe67deeb1565975675ecfc236bbcfdc0038066146550d562e026af7a32978b1",
+      "test_ids": [
+        "joint-friction-test"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "rigid/friction_caps_stepped"
+        ]
+      },
+      "regression": {
+        "eligible": true,
+        "mapping_id": "regression/joint-friction-behavior"
+      },
+      "benchmark": {
+        "eligible": true,
+        "mapping_id": "benchmark/joint-friction-behavior"
+      },
+      "visual": {
+        "eligible": true,
+        "mapping_id": "visual/joint-friction-behavior"
+      }
+    },
+    {
+      "slug": "joint-gear-behavior",
+      "scenario_version": 1,
+      "scenario_sha256": "41a40dd99c679b6ab0a503ada1257dc4af72b882fc6515f35e8c56cf73cc7550",
+      "test_ids": [
+        "joint-gear-test"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "rigid/gear_four_body_topology_observed",
+          "rigid/gear_dependency_order_observed"
+        ]
+      },
+      "regression": {
+        "eligible": true,
+        "mapping_id": "regression/joint-gear-behavior"
+      },
+      "benchmark": {
+        "eligible": true,
+        "mapping_id": "benchmark/joint-gear-behavior"
+      },
+      "visual": {
+        "eligible": true,
+        "mapping_id": "visual/joint-gear-behavior"
+      }
+    },
+    {
+      "slug": "joint-motor-behavior",
+      "scenario_version": 1,
+      "scenario_sha256": "41125d1d7a57e0f73e1716c18ac3a4fe9f3c1202d19ad04c41d109b4ce69c55e",
+      "test_ids": [
+        "joint-motor-test"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "rigid/motor_correction_stepped"
+        ]
+      },
+      "regression": {
+        "eligible": true,
+        "mapping_id": "regression/joint-motor-behavior"
+      },
+      "benchmark": {
+        "eligible": true,
+        "mapping_id": "benchmark/joint-motor-behavior"
+      },
+      "visual": {
+        "eligible": true,
+        "mapping_id": "visual/joint-motor-behavior"
+      }
+    },
+    {
+      "slug": "joint-mouse-behavior",
+      "scenario_version": 1,
+      "scenario_sha256": "3366228ab8b4d880115db7783fc86ec3c2c529700bfe2fbdb91773c99ca6ce80",
+      "test_ids": [
+        "joint-mouse-test"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "rigid/mouse_target_and_force_stepped"
+        ]
+      },
+      "regression": {
+        "eligible": true,
+        "mapping_id": "regression/joint-mouse-behavior"
+      },
+      "benchmark": {
+        "eligible": true,
+        "mapping_id": "benchmark/joint-mouse-behavior"
+      },
+      "visual": {
+        "eligible": true,
+        "mapping_id": "visual/joint-mouse-behavior"
+      }
+    },
+    {
+      "slug": "joint-prismatic-behavior",
+      "scenario_version": 1,
+      "scenario_sha256": "c7f4c9ef00ce9e5ef0ba2cbb9e40859ce2280e5e438d295c9bf4a32d5ccce8f6",
+      "test_ids": [
+        "joint-prismatic-test"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "rigid/prismatic_limits_and_motor_stepped",
+          "rigid/joint_lower_limit_observed"
+        ]
+      },
+      "regression": {
+        "eligible": true,
+        "mapping_id": "regression/joint-prismatic-behavior"
+      },
+      "benchmark": {
+        "eligible": true,
+        "mapping_id": "benchmark/joint-prismatic-behavior"
+      },
+      "visual": {
+        "eligible": true,
+        "mapping_id": "visual/joint-prismatic-behavior"
+      }
+    },
+    {
+      "slug": "joint-pulley-behavior",
+      "scenario_version": 1,
+      "scenario_sha256": "3705d84e1f1d6b874157c12d2e995d2ce2a0a4fb1876362301c84a4a671a0ce2",
+      "test_ids": [
+        "joint-pulley-test"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "rigid/pulley_ratio_stepped"
+        ]
+      },
+      "regression": {
+        "eligible": true,
+        "mapping_id": "regression/joint-pulley-behavior"
+      },
+      "benchmark": {
+        "eligible": true,
+        "mapping_id": "benchmark/joint-pulley-behavior"
+      },
+      "visual": {
+        "eligible": true,
+        "mapping_id": "visual/joint-pulley-behavior"
+      }
+    },
+    {
+      "slug": "joint-revolute-behavior",
+      "scenario_version": 1,
+      "scenario_sha256": "d4cf9aa1798965291151f0bfe501a887b448f54706c28a8e8eba82cb821b82e0",
+      "test_ids": [
+        "joint-revolute-test"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "rigid/revolute_limits_and_motor_stepped",
+          "rigid/revolute_prismatic_reaction_observed"
+        ]
+      },
+      "regression": {
+        "eligible": true,
+        "mapping_id": "regression/joint-revolute-behavior"
+      },
+      "benchmark": {
+        "eligible": true,
+        "mapping_id": "benchmark/joint-revolute-behavior"
+      },
+      "visual": {
+        "eligible": true,
+        "mapping_id": "visual/joint-revolute-behavior"
+      }
+    },
+    {
+      "slug": "joint-rope-behavior",
+      "scenario_version": 1,
+      "scenario_sha256": "f7407741563b445f40effc6ef67f3a31906e6e6fcf65db7c835b5c692bddf85a",
+      "test_ids": [
+        "joint-rope-test"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "rigid/rope_joint_inactive_stepped",
+          "rigid/rope_joint_upper_limit_stepped"
+        ]
+      },
+      "regression": {
+        "eligible": true,
+        "mapping_id": "regression/joint-rope-behavior"
+      },
+      "benchmark": {
+        "eligible": true,
+        "mapping_id": "benchmark/joint-rope-behavior"
+      },
+      "visual": {
+        "eligible": true,
+        "mapping_id": "visual/joint-rope-behavior"
+      }
+    },
+    {
+      "slug": "joint-weld-behavior",
+      "scenario_version": 1,
+      "scenario_sha256": "a803c7f2e10f4941a3cbcd31aec5025f8b23d195bdebef19e1700f97f965b9c0",
+      "test_ids": [
+        "joint-weld-test"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "rigid/rigid_weld_stepped",
+          "rigid/soft_weld_stepped"
+        ]
+      },
+      "regression": {
+        "eligible": true,
+        "mapping_id": "regression/joint-weld-behavior"
+      },
+      "benchmark": {
+        "eligible": true,
+        "mapping_id": "benchmark/joint-weld-behavior"
+      },
+      "visual": {
+        "eligible": true,
+        "mapping_id": "visual/joint-weld-behavior"
+      }
+    },
+    {
+      "slug": "joint-wheel-behavior",
+      "scenario_version": 1,
+      "scenario_sha256": "4d1e5b31addab3af1e965e004f436b223a48461d7171a5e0a21ac015f0eea7e5",
+      "test_ids": [
+        "joint-wheel-test"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "rigid/wheel_spring_and_motor_stepped"
+        ]
+      },
+      "regression": {
+        "eligible": true,
+        "mapping_id": "regression/joint-wheel-behavior"
+      },
+      "benchmark": {
+        "eligible": true,
+        "mapping_id": "benchmark/joint-wheel-behavior"
+      },
+      "visual": {
+        "eligible": true,
+        "mapping_id": "visual/joint-wheel-behavior"
+      }
+    },
+    {
+      "slug": "particle-aabb-query-controls",
+      "scenario_version": 1,
+      "scenario_sha256": "1ac03e065afbec5e90770d28578acfcc7b94909704298b2f9d03c50bba561467",
+      "test_ids": [
+        "particle-queries"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "phase9/system_aabb",
+          "phase9/world_aabb",
+          "phase9/system_culling",
+          "phase9/query_continue",
+          "phase9/query_terminate"
+        ]
+      },
+      "regression": {
+        "eligible": true,
+        "mapping_id": "regression/particle-aabb-query-controls"
+      },
+      "benchmark": {
+        "eligible": true,
+        "mapping_id": "benchmark/particle-aabb-query-controls"
+      },
+      "visual": {
+        "eligible": true,
+        "mapping_id": "visual/particle-aabb-query-controls"
+      }
+    },
+    {
+      "slug": "particle-contacts-and-coupling",
+      "scenario_version": 1,
+      "scenario_sha256": "4f0c0f2279f0360c24c4ea10504b36ce8f506fd8b5a4415dcfd00819ea5de122",
+      "test_ids": [
+        "particle-body-contacts"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "phase9/particle_contact",
+          "phase9/body_contact",
+          "phase9/contact_order",
+          "phase9/coupling_fields",
+          "phase9/dynamic_body_reaction",
+          "phase9/static_body_no_reaction"
+        ]
+      },
+      "regression": {
+        "eligible": true,
+        "mapping_id": "regression/particle-contacts-and-coupling"
+      },
+      "benchmark": {
+        "eligible": true,
+        "mapping_id": "benchmark/particle-contacts-and-coupling"
+      },
+      "visual": {
+        "eligible": true,
+        "mapping_id": "visual/particle-contacts-and-coupling"
+      }
+    },
+    {
+      "slug": "particle-flags-contact-filters",
+      "scenario_version": 1,
+      "scenario_sha256": "00128b27182904bb12370df92882b00f12633df0af0a70848acfb82c72134387",
+      "test_ids": [
+        "particle-solver-flags"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "inherited/filter_flag_enabled",
+          "inherited/filter_flag_disabled"
+        ]
+      },
+      "regression": {
+        "eligible": true,
+        "mapping_id": "regression/particle-flags-contact-filters"
+      },
+      "benchmark": {
+        "eligible": true,
+        "mapping_id": "benchmark/particle-flags-contact-filters"
+      },
+      "visual": {
+        "eligible": true,
+        "mapping_id": "visual/particle-flags-contact-filters"
+      }
+    },
+    {
+      "slug": "particle-flags-contact-listeners",
+      "scenario_version": 1,
+      "scenario_sha256": "816e0296470246910a6d1a71f042d123437accd0c7da2e3edd4a88ed37beb1d5",
+      "test_ids": [
+        "particle-solver-flags"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "inherited/listener_flag_enabled",
+          "inherited/listener_flag_disabled"
+        ]
+      },
+      "regression": {
+        "eligible": true,
+        "mapping_id": "regression/particle-flags-contact-listeners"
+      },
+      "benchmark": {
+        "eligible": true,
+        "mapping_id": "benchmark/particle-flags-contact-listeners"
+      },
+      "visual": {
+        "eligible": true,
+        "mapping_id": "visual/particle-flags-contact-listeners"
+      }
+    },
+    {
+      "slug": "particle-flags-pressure-repulsive",
+      "scenario_version": 1,
+      "scenario_sha256": "18df5f83ee254426235f8c6effc1cf75b8f72a76bffa20621f54f429612ae8b5",
+      "test_ids": [
+        "particle-solver-flags"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "phase10/static_pressure",
+          "phase10/repulsive"
+        ]
+      },
+      "regression": {
+        "eligible": true,
+        "mapping_id": "regression/particle-flags-pressure-repulsive"
+      },
+      "benchmark": {
+        "eligible": true,
+        "mapping_id": "benchmark/particle-flags-pressure-repulsive"
+      },
+      "visual": {
+        "eligible": true,
+        "mapping_id": "visual/particle-flags-pressure-repulsive"
+      }
+    },
+    {
+      "slug": "particle-flags-spring-elastic-reactive",
+      "scenario_version": 1,
+      "scenario_sha256": "e02a658ead2eba63ded70ceb7b6b38880fa4b7ffabecbf1d06b0ba7fa858c819",
+      "test_ids": [
+        "particle-solver-flags"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "phase10/spring",
+          "phase10/elastic",
+          "phase10/reactive"
+        ]
+      },
+      "regression": {
+        "eligible": true,
+        "mapping_id": "regression/particle-flags-spring-elastic-reactive"
+      },
+      "benchmark": {
+        "eligible": true,
+        "mapping_id": "benchmark/particle-flags-spring-elastic-reactive"
+      },
+      "visual": {
+        "eligible": true,
+        "mapping_id": "visual/particle-flags-spring-elastic-reactive"
+      }
+    },
+    {
+      "slug": "particle-flags-tensile-color",
+      "scenario_version": 1,
+      "scenario_sha256": "bb2d4594873ffd66915c7653c5178787a0379b950fc12c47765e5f639d418283",
+      "test_ids": [
+        "particle-solver-flags"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "phase10/tensile",
+          "phase10/color_mixing"
+        ]
+      },
+      "regression": {
+        "eligible": true,
+        "mapping_id": "regression/particle-flags-tensile-color"
+      },
+      "benchmark": {
+        "eligible": true,
+        "mapping_id": "benchmark/particle-flags-tensile-color"
+      },
+      "visual": {
+        "eligible": true,
+        "mapping_id": "visual/particle-flags-tensile-color"
+      }
+    },
+    {
+      "slug": "particle-flags-viscous-powder",
+      "scenario_version": 1,
+      "scenario_sha256": "f3b47b52099e3441ac7389060edad71697f3d1e37649a762c42176dd553cec5b",
+      "test_ids": [
+        "particle-solver-flags"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "phase10/viscous",
+          "phase10/powder"
+        ]
+      },
+      "regression": {
+        "eligible": true,
+        "mapping_id": "regression/particle-flags-viscous-powder"
+      },
+      "benchmark": {
+        "eligible": true,
+        "mapping_id": "benchmark/particle-flags-viscous-powder"
+      },
+      "visual": {
+        "eligible": true,
+        "mapping_id": "visual/particle-flags-viscous-powder"
+      }
+    },
+    {
+      "slug": "particle-flags-wall-barrier",
+      "scenario_version": 1,
+      "scenario_sha256": "5f7e27f7fd307d5c1497ce7dc4bb159ea0a69127d04ddd99ead7bc2b38df5ee9",
+      "test_ids": [
+        "particle-solver-flags"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "phase10/wall",
+          "phase10/barrier"
+        ]
+      },
+      "regression": {
+        "eligible": true,
+        "mapping_id": "regression/particle-flags-wall-barrier"
+      },
+      "benchmark": {
+        "eligible": true,
+        "mapping_id": "benchmark/particle-flags-wall-barrier"
+      },
+      "visual": {
+        "eligible": true,
+        "mapping_id": "visual/particle-flags-wall-barrier"
+      }
+    },
+    {
+      "slug": "particle-flags-water-zombie",
+      "scenario_version": 1,
+      "scenario_sha256": "13a9c8d659137d8d1a78bc532ee20023901e852eabaf3596ec03ab37f02b501f",
+      "test_ids": [
+        "particle-solver-flags"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "phase10/water",
+          "phase10/zombie"
+        ]
+      },
+      "regression": {
+        "eligible": true,
+        "mapping_id": "regression/particle-flags-water-zombie"
+      },
+      "benchmark": {
+        "eligible": true,
+        "mapping_id": "benchmark/particle-flags-water-zombie"
+      },
+      "visual": {
+        "eligible": true,
+        "mapping_id": "visual/particle-flags-water-zombie"
+      }
+    },
+    {
+      "slug": "particle-forces-and-statistics",
+      "scenario_version": 1,
+      "scenario_sha256": "10790fc07d280c30b29965d717bdaf8b594218f257d5d18a991621647aabb145",
+      "test_ids": [
+        "particle-forces-statistics"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "phase9/force_range",
+          "phase9/impulse_range",
+          "phase9/statistics_counts",
+          "phase9/collision_energy",
+          "phase9/stuck_candidates"
+        ]
+      },
+      "regression": {
+        "eligible": true,
+        "mapping_id": "regression/particle-forces-and-statistics"
+      },
+      "benchmark": {
+        "eligible": true,
+        "mapping_id": "benchmark/particle-forces-and-statistics"
+      },
+      "visual": {
+        "eligible": true,
+        "mapping_id": "visual/particle-forces-and-statistics"
+      }
+    },
+    {
+      "slug": "particle-group-construction-append",
+      "scenario_version": 1,
+      "scenario_sha256": "93a0f8c793f213b3dda6911e62830d0f02a3b14324193244d0cd6e1693512cda",
+      "test_ids": [
+        "particle-group-mutation"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "phase10/group_create",
+          "phase10/group_append",
+          "phase10/group_flags"
+        ]
+      },
+      "regression": {
+        "eligible": true,
+        "mapping_id": "regression/particle-group-construction-append"
+      },
+      "benchmark": {
+        "eligible": true,
+        "mapping_id": "benchmark/particle-group-construction-append"
+      },
+      "visual": {
+        "eligible": true,
+        "mapping_id": "visual/particle-group-construction-append"
+      }
+    },
+    {
+      "slug": "particle-group-destruction",
+      "scenario_version": 1,
+      "scenario_sha256": "a5550c5d9b98277080c112c93ba6a9d9ca39760aef036990ea8219d58610e40f",
+      "test_ids": [
+        "particle-group-mutation"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "phase10/group_destroy"
+        ]
+      },
+      "regression": {
+        "eligible": true,
+        "mapping_id": "regression/particle-group-destruction"
+      },
+      "benchmark": {
+        "eligible": true,
+        "mapping_id": "benchmark/particle-group-destruction"
+      },
+      "visual": {
+        "eligible": true,
+        "mapping_id": "visual/particle-group-destruction"
+      }
+    },
+    {
+      "slug": "particle-group-join",
+      "scenario_version": 1,
+      "scenario_sha256": "105f38854059db9a13187e4c3a345787a2fa4ae0e31d9c9fa078cfdf0bb1b848",
+      "test_ids": [
+        "particle-group-mutation"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "phase10/group_join"
+        ]
+      },
+      "regression": {
+        "eligible": true,
+        "mapping_id": "regression/particle-group-join"
+      },
+      "benchmark": {
+        "eligible": true,
+        "mapping_id": "benchmark/particle-group-join"
+      },
+      "visual": {
+        "eligible": true,
+        "mapping_id": "visual/particle-group-join"
+      }
+    },
+    {
+      "slug": "particle-group-solid-rigid",
+      "scenario_version": 1,
+      "scenario_sha256": "55d09eb9488bc1bf0595fdfb28b8c55fb28ecd14fc4cb65e5ad45b2d2bdbc54a",
+      "test_ids": [
+        "particle-group-mutation"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "phase10/solid_group",
+          "phase10/rigid_group"
+        ]
+      },
+      "regression": {
+        "eligible": true,
+        "mapping_id": "regression/particle-group-solid-rigid"
+      },
+      "benchmark": {
+        "eligible": true,
+        "mapping_id": "benchmark/particle-group-solid-rigid"
+      },
+      "visual": {
+        "eligible": true,
+        "mapping_id": "visual/particle-group-solid-rigid"
+      }
+    },
+    {
+      "slug": "particle-group-split-reactive",
+      "scenario_version": 1,
+      "scenario_sha256": "a01ee77939951f8d76a152dc705d85484f9c46f9c6034be014b784d748209bba",
+      "test_ids": [
+        "particle-group-mutation"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "phase10/group_split",
+          "phase10/reactive"
+        ]
+      },
+      "regression": {
+        "eligible": true,
+        "mapping_id": "regression/particle-group-split-reactive"
+      },
+      "benchmark": {
+        "eligible": true,
+        "mapping_id": "benchmark/particle-group-split-reactive"
+      },
+      "visual": {
+        "eligible": true,
+        "mapping_id": "visual/particle-group-split-reactive"
+      }
+    },
+    {
+      "slug": "particle-lifecycle-callbacks",
+      "scenario_version": 1,
+      "scenario_sha256": "87db2fb865138d4d334b764033f1d7fb028b6f8f7d4acdae2af25cbad6a7864b",
+      "test_ids": [
+        "particle-queries"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "phase9/requested_destruction_callback",
+          "phase9/unrequested_destruction_callback",
+          "phase9/contact_order",
+          "phase9/contact_multiplicity"
+        ]
+      },
+      "regression": {
+        "eligible": true,
+        "mapping_id": "regression/particle-lifecycle-callbacks"
+      },
+      "benchmark": {
+        "eligible": true,
+        "mapping_id": "benchmark/particle-lifecycle-callbacks"
+      },
+      "visual": {
+        "eligible": true,
+        "mapping_id": "visual/particle-lifecycle-callbacks"
+      }
+    },
+    {
+      "slug": "particle-mutations",
+      "scenario_version": 1,
+      "scenario_sha256": "40571a04188197f1ba8c145ac932bfb2c68c9aa74859ab2fa4b277438d331a43",
+      "test_ids": [
+        "particle-queries"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "phase9/stable_ids_sort",
+          "phase9/closed_policy_registry",
+          "phase9/phase10_rejection"
+        ]
+      },
+      "regression": {
+        "eligible": true,
+        "mapping_id": "regression/particle-mutations"
+      },
+      "benchmark": {
+        "eligible": true,
+        "mapping_id": "benchmark/particle-mutations"
+      },
+      "visual": {
+        "eligible": true,
+        "mapping_id": "visual/particle-mutations"
+      }
+    },
+    {
+      "slug": "particle-ray-callback-controls",
+      "scenario_version": 1,
+      "scenario_sha256": "d1e22656861f3906fbccd3ba033f952467758cd0620ab29a18e4a638b872279e",
+      "test_ids": [
+        "particle-queries"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "phase9/system_ray",
+          "phase9/world_ray",
+          "phase9/ray_culling",
+          "phase9/ray_start_inside_exclusion",
+          "phase9/ray_ignore",
+          "phase9/ray_continue",
+          "phase9/ray_clip",
+          "phase9/ray_terminate"
+        ]
+      },
+      "regression": {
+        "eligible": true,
+        "mapping_id": "regression/particle-ray-callback-controls"
+      },
+      "benchmark": {
+        "eligible": true,
+        "mapping_id": "benchmark/particle-ray-callback-controls"
+      },
+      "visual": {
+        "eligible": true,
+        "mapping_id": "visual/particle-ray-callback-controls"
+      }
+    },
+    {
+      "slug": "particle-storage-lifecycle",
+      "scenario_version": 1,
+      "scenario_sha256": "efce709f677dbe6bd95d63010ecb2719afadbfa07df07389bada732a173426cd",
+      "test_ids": [
+        "particle-lifecycle"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "phase9/stable_ids_compact",
+          "phase9/optional_lanes",
+          "phase9/capacity_eviction",
+          "phase9/teardown"
+        ]
+      },
+      "regression": {
+        "eligible": true,
+        "mapping_id": "regression/particle-storage-lifecycle"
+      },
+      "benchmark": {
+        "eligible": true,
+        "mapping_id": "benchmark/particle-storage-lifecycle"
+      },
+      "visual": {
+        "eligible": true,
+        "mapping_id": "visual/particle-storage-lifecycle"
+      }
+    },
+    {
+      "slug": "particle-system-pause-action",
+      "scenario_version": 1,
+      "scenario_sha256": "1a1f8e68f0a05f8cc16c589a7db6c4fb05e93b165fa5da13fb8cf241aaba3826",
+      "test_ids": [
+        "particle-lifecycle"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "phase9/paused_system"
+        ]
+      },
+      "regression": {
+        "eligible": true,
+        "mapping_id": "regression/particle-system-pause-action"
+      },
+      "benchmark": {
+        "eligible": true,
+        "mapping_id": "benchmark/particle-system-pause-action"
+      },
+      "visual": {
+        "eligible": true,
+        "mapping_id": "visual/particle-system-pause-action"
+      }
+    },
+    {
+      "slug": "rigid-callback-timing",
+      "scenario_version": 1,
+      "scenario_sha256": "96694d8cd83b12d889e3c1e1655c8a945ee66418875de8781af27b0a529d7528",
+      "test_ids": [
+        "rigid-world-callback-test"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "rigid/callback_lifecycle_order_observed",
+          "rigid/pre_solve_material_observed"
+        ]
+      },
+      "regression": {
+        "eligible": true,
+        "mapping_id": "regression/rigid-callback-timing"
+      },
+      "benchmark": {
+        "eligible": true,
+        "mapping_id": "benchmark/rigid-callback-timing"
+      },
+      "visual": {
+        "eligible": true,
+        "mapping_id": "visual/rigid-callback-timing"
+      }
+    },
+    {
+      "slug": "rigid-collision-filtering",
+      "scenario_version": 1,
+      "scenario_sha256": "1e5bb08ad882f5ea8423737f2e8b9e22be4de378a925c8a213e0e0439560a5f0",
+      "test_ids": [
+        "rigid-world-filter-test"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "rigid/filter_removed_contact",
+          "rigid/filter_recreated_contact"
+        ]
+      },
+      "regression": {
+        "eligible": true,
+        "mapping_id": "regression/rigid-collision-filtering"
+      },
+      "benchmark": {
+        "eligible": true,
+        "mapping_id": "benchmark/rigid-collision-filtering"
+      },
+      "visual": {
+        "eligible": true,
+        "mapping_id": "visual/rigid-collision-filtering"
+      }
+    },
+    {
+      "slug": "rigid-contact-lifecycle",
+      "scenario_version": 1,
+      "scenario_sha256": "e869d034770c9cf70c06c66f0f608e41aeb410d435c2a54c3c4649802a4c4482",
+      "test_ids": [
+        "rigid-world-contact-test"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "rigid/contact_created",
+          "rigid/contact_persisted",
+          "rigid/contact_solved"
+        ]
+      },
+      "regression": {
+        "eligible": true,
+        "mapping_id": "regression/rigid-contact-lifecycle"
+      },
+      "benchmark": {
+        "eligible": true,
+        "mapping_id": "benchmark/rigid-contact-lifecycle"
+      },
+      "visual": {
+        "eligible": true,
+        "mapping_id": "visual/rigid-contact-lifecycle"
+      }
+    },
+    {
+      "slug": "rigid-continuous-collision",
+      "scenario_version": 1,
+      "scenario_sha256": "1774ae4c992cbd4082c0a88e053bf0763eabfb9478a9a06343fe399fef84d671",
+      "test_ids": [
+        "rigid-world-continuous-test"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "rigid/continuous_physics_prevented_tunneling",
+          "rigid/bullet_state_selected_continuous_contact"
+        ]
+      },
+      "regression": {
+        "eligible": true,
+        "mapping_id": "regression/rigid-continuous-collision"
+      },
+      "benchmark": {
+        "eligible": true,
+        "mapping_id": "benchmark/rigid-continuous-collision"
+      },
+      "visual": {
+        "eligible": true,
+        "mapping_id": "visual/rigid-continuous-collision"
+      }
+    },
+    {
+      "slug": "rigid-destruction-order",
+      "scenario_version": 1,
+      "scenario_sha256": "ce456697f7e9b21cf005150ba26fa8ed4e2133e06d71b556eea45597798fcef8",
+      "test_ids": [
+        "rigid-world-destruction-test"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "rigid/fixture_destroyed",
+          "rigid/body_destroyed",
+          "rigid/destruction_lifecycle_order_observed"
+        ]
+      },
+      "regression": {
+        "eligible": true,
+        "mapping_id": "regression/rigid-destruction-order"
+      },
+      "benchmark": {
+        "eligible": true,
+        "mapping_id": "benchmark/rigid-destruction-order"
+      },
+      "visual": {
+        "eligible": true,
+        "mapping_id": "visual/rigid-destruction-order"
+      }
+    },
+    {
+      "slug": "rigid-non-colliding-lifecycle",
+      "scenario_version": 1,
+      "scenario_sha256": "3816393c97b77ae96830b88cba68a7a5ec8cb10b5add9f0e0cfd8438f24636a6",
+      "test_ids": [
+        "rigid-world-lifecycle-test"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "rigid/static_kinematic_overlap_rejected",
+          "rigid/zero_contact_step"
+        ]
+      },
+      "regression": {
+        "eligible": true,
+        "mapping_id": "regression/rigid-non-colliding-lifecycle"
+      },
+      "benchmark": {
+        "eligible": true,
+        "mapping_id": "benchmark/rigid-non-colliding-lifecycle"
+      },
+      "visual": {
+        "eligible": true,
+        "mapping_id": "visual/rigid-non-colliding-lifecycle"
+      }
+    },
+    {
+      "slug": "rigid-runtime-mutation",
+      "scenario_version": 1,
+      "scenario_sha256": "38acf7adfcfeb510cd3254614934d44604bcbd32c12cf15cd5861ae466252dae",
+      "test_ids": [
+        "rigid-world-mutation-test"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "rigid/body_type_changed",
+          "rigid/sensor_enabled",
+          "rigid/material_changed"
+        ]
+      },
+      "regression": {
+        "eligible": true,
+        "mapping_id": "regression/rigid-runtime-mutation"
+      },
+      "benchmark": {
+        "eligible": true,
+        "mapping_id": "benchmark/rigid-runtime-mutation"
+      },
+      "visual": {
+        "eligible": true,
+        "mapping_id": "visual/rigid-runtime-mutation"
+      }
+    },
+    {
+      "slug": "rigid-sleep-and-wake",
+      "scenario_version": 1,
+      "scenario_sha256": "bc94d3f04ba47acd7562a48fbeb6a6d06deb612423dcb92c22cb18af4ffda478",
+      "test_ids": [
+        "rigid-world-sleep-test"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "rigid/whole_island_slept",
+          "rigid/mutation_woke_body"
+        ]
+      },
+      "regression": {
+        "eligible": true,
+        "mapping_id": "regression/rigid-sleep-and-wake"
+      },
+      "benchmark": {
+        "eligible": true,
+        "mapping_id": "benchmark/rigid-sleep-and-wake"
+      },
+      "visual": {
+        "eligible": true,
+        "mapping_id": "visual/rigid-sleep-and-wake"
+      }
+    },
+    {
+      "slug": "rigid-stack-stability",
+      "scenario_version": 1,
+      "scenario_sha256": "6d22b12e5abc8e7f06dac08dda38c9001a5b31c8f98f81938129a66334c6c052",
+      "test_ids": [
+        "rigid-world-stack-test"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "rigid/multi_contact_island_solved",
+          "rigid/island_traversal_ordered",
+          "rigid/warm_start_applied"
+        ]
+      },
+      "regression": {
+        "eligible": true,
+        "mapping_id": "regression/rigid-stack-stability"
+      },
+      "benchmark": {
+        "eligible": true,
+        "mapping_id": "benchmark/rigid-stack-stability"
+      },
+      "visual": {
+        "eligible": true,
+        "mapping_id": "visual/rigid-stack-stability"
+      }
+    },
+    {
+      "slug": "rigid-world-queries",
+      "scenario_version": 1,
+      "scenario_sha256": "3ee1d5758e4217b2bb852c48fcbcf5411ad0a83d1b77b9d9572794f7e4a84b31",
+      "test_ids": [
+        "rigid-world-query-test"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "rigid/query_preserved_duplicate_occurrences",
+          "rigid/ray_nearest_hit_selected"
+        ]
+      },
+      "regression": {
+        "eligible": true,
+        "mapping_id": "regression/rigid-world-queries"
+      },
+      "benchmark": {
+        "eligible": true,
+        "mapping_id": "benchmark/rigid-world-queries"
+      },
+      "visual": {
+        "eligible": true,
+        "mapping_id": "visual/rigid-world-queries"
+      }
+    },
+    {
+      "slug": "standalone-rope-evolution",
+      "scenario_version": 1,
+      "scenario_sha256": "1c1e55520c234d992914ca505713b047b8ec002c6b4888a7f4fefa2fb787f068",
+      "test_ids": [
+        "standalone-rope-test"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "rigid/standalone_rope_positive_step",
+          "rigid/standalone_rope_angle_observed",
+          "rigid/standalone_rope_vertices_observed"
+        ]
+      },
+      "regression": {
+        "eligible": true,
+        "mapping_id": "regression/standalone-rope-evolution"
+      },
+      "benchmark": {
+        "eligible": true,
+        "mapping_id": "benchmark/standalone-rope-evolution"
+      },
+      "visual": {
+        "eligible": true,
+        "mapping_id": "visual/standalone-rope-evolution"
+      }
+    }
+  ]
+}
