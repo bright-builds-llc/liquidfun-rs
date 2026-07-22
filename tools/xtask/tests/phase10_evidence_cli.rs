@@ -15,10 +15,39 @@ use support::{
     write_json,
 };
 
+fn workflow_job_section(workflow: &str, job: &str) -> TestResult<String> {
+    let header = format!("  {job}:");
+    let mut found = false;
+    let mut lines = Vec::new();
+
+    for line in workflow.lines() {
+        if line == header {
+            found = true;
+        } else if found
+            && line.starts_with("  ")
+            && !line.starts_with("    ")
+            && line.ends_with(':')
+        {
+            break;
+        }
+
+        if found {
+            lines.push(line);
+        }
+    }
+
+    if lines.is_empty() {
+        return Err(std::io::Error::other(format!("workflow job `{job}` is missing")).into());
+    }
+    Ok(lines.join("\n"))
+}
+
 #[test]
 fn workflow_contract_defines_one_same_run_phase10_pair() -> TestResult {
     // Arrange
     let workflow = fs::read_to_string(workspace_root().join(".github/workflows/oracle.yml"))?;
+    let canonical_job = workflow_job_section(&workflow, "canonical-linux")?;
+    let sanitizer_job = workflow_job_section(&workflow, "sanitizer-linux")?;
     let canonical_run =
         "bash scripts/phase10-evidence.sh canonical target/oracle-evidence/phase10-canonical";
     let sanitizer_run =
@@ -38,7 +67,8 @@ fn workflow_contract_defines_one_same_run_phase10_pair() -> TestResult {
     assert_eq!(workflow.matches(sanitizer_run).count(), 1);
     assert!(workflow.contains("name: phase10-canonical-${{ github.run_id }}-${{ github.sha }}"));
     assert!(workflow.contains("name: phase10-sanitizer-${{ github.run_id }}-${{ github.sha }}"));
-    assert_eq!(workflow.matches("retention-days: 30").count(), 6);
+    assert_eq!(canonical_job.matches("retention-days: 30").count(), 3);
+    assert_eq!(sanitizer_job.matches("retention-days: 30").count(), 3);
     assert!(workflow.contains("permissions:\n  contents: read"));
     assert!(workflow.contains(
         "if: github.event_name == 'workflow_dispatch' && inputs.evidence_phase == 'phase10'"
