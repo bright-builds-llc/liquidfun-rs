@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "crates/liquidfun",
+    "crates/liquidfun-benchmarks",
     "crates/liquidfun-differential",
     "crates/liquidfun-test-protocol",
     "tools/xtask",
