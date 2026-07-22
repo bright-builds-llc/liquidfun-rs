@@ -4,6 +4,7 @@ use std::error::Error;
 use std::ffi::{OsStr, OsString};
 use std::fmt::{self, Display, Formatter};
 use std::fs::{self, File};
+use std::io::{Cursor, Read};
 use std::path::{Component, Path, PathBuf};
 use std::process::Command;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -12,6 +13,8 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use flate2::read::GzDecoder;
 
 mod metadata;
+#[cfg(test)]
+mod tests;
 
 const USAGE: &str = "Usage: cargo xtask package verify";
 const FORBIDDEN_PREFIXES: [&str; 3] = ["tools", "third_party", "reference"];
@@ -31,6 +34,7 @@ const FORBIDDEN_PATH_TERMS: [&str; 8] = [
 ];
 static TEMP_ID: AtomicU64 = AtomicU64::new(0);
 const MAXIMUM_ARCHIVE_ENTRIES: usize = 10_000;
+const MAXIMUM_ARCHIVE_BYTES: u64 = 64 * 1024 * 1024;
 const MAXIMUM_ARCHIVE_UNPACKED_BYTES: u64 = 64 * 1024 * 1024;
 
 #[derive(Debug, PartialEq, Eq)]
@@ -110,9 +114,10 @@ fn verify(repository_root: &Path) -> Result<(), PackageError> {
     let identity = read_package_identity(repository_root)?;
     let archive_path = package_archive(repository_root, &identity)?;
     let package_prefix = format!("{}-{}", identity.name, identity.version);
-    let entries = inspect_archive(&archive_path, &package_prefix)?;
+    let archive_bytes = read_archive(&archive_path)?;
+    let entries = inspect_archive(&archive_bytes, &archive_path, &package_prefix)?;
     let temporary_directory = TemporaryDirectory::create()?;
-    extract_archive(&archive_path, &temporary_directory.path)?;
+    extract_archive(&archive_bytes, &archive_path, &temporary_directory.path)?;
     let unpacked_crate = temporary_directory.path.join(&package_prefix);
     if !unpacked_crate.join("Cargo.toml").is_file() {
         return Err(PackageError::new(
@@ -175,16 +180,11 @@ fn package_archive(
 }
 
 fn inspect_archive(
+    archive_bytes: &[u8],
     archive_path: &Path,
     package_prefix: &str,
 ) -> Result<Vec<PathBuf>, PackageError> {
-    let file = File::open(archive_path).map_err(|error| {
-        PackageError::new(
-            "archive",
-            format!("failed to open {}: {error}", archive_path.display()),
-        )
-    })?;
-    let mut archive = tar::Archive::new(GzDecoder::new(file));
+    let mut archive = tar::Archive::new(GzDecoder::new(Cursor::new(archive_bytes)));
     let mut paths = Vec::new();
     let mut unique_paths = BTreeSet::new();
     let entries = archive.entries().map_err(|error| {
@@ -247,6 +247,45 @@ fn inspect_archive(
         ));
     }
     Ok(paths)
+}
+
+fn read_archive(archive_path: &Path) -> Result<Vec<u8>, PackageError> {
+    let file = File::open(archive_path).map_err(|error| {
+        PackageError::new(
+            "archive",
+            format!("failed to open {}: {error}", archive_path.display()),
+        )
+    })?;
+    let metadata = file.metadata().map_err(|error| {
+        PackageError::new(
+            "archive",
+            format!("failed to inspect {}: {error}", archive_path.display()),
+        )
+    })?;
+    if !metadata.is_file() || metadata.len() > MAXIMUM_ARCHIVE_BYTES {
+        return Err(PackageError::new(
+            "archive-limit",
+            "package archive exceeds the reviewed compressed byte limit",
+        ));
+    }
+    let capacity = usize::try_from(metadata.len())
+        .map_err(|_| PackageError::new("archive-limit", "archive size is not representable"))?;
+    let mut bytes = Vec::with_capacity(capacity);
+    file.take(MAXIMUM_ARCHIVE_BYTES + 1)
+        .read_to_end(&mut bytes)
+        .map_err(|error| {
+            PackageError::new(
+                "archive",
+                format!("failed to read {}: {error}", archive_path.display()),
+            )
+        })?;
+    if bytes.len() as u64 != metadata.len() || bytes.len() as u64 > MAXIMUM_ARCHIVE_BYTES {
+        return Err(PackageError::new(
+            "archive-limit",
+            "package archive changed while it was being read",
+        ));
+    }
+    Ok(bytes)
 }
 
 fn verify_license(repository_root: &Path, unpacked_crate: &Path) -> Result<(), PackageError> {
@@ -357,14 +396,12 @@ fn validate_package_content(relative: &Path) -> Result<(), PackageError> {
     Ok(())
 }
 
-fn extract_archive(archive_path: &Path, destination: &Path) -> Result<(), PackageError> {
-    let file = File::open(archive_path).map_err(|error| {
-        PackageError::new(
-            "extract",
-            format!("failed to reopen {}: {error}", archive_path.display()),
-        )
-    })?;
-    let mut archive = tar::Archive::new(GzDecoder::new(file));
+fn extract_archive(
+    archive_bytes: &[u8],
+    archive_path: &Path,
+    destination: &Path,
+) -> Result<(), PackageError> {
+    let mut archive = tar::Archive::new(GzDecoder::new(Cursor::new(archive_bytes)));
     archive.unpack(destination).map_err(|error| {
         PackageError::new(
             "extract",
