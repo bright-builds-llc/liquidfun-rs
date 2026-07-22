@@ -341,7 +341,7 @@ fn real_oracle_rejects_oversized_stdin_before_waiting_for_a_newline() {
 }
 
 #[test]
-fn real_oracle_rejects_invalid_query_child_without_result_records() {
+fn real_oracle_rejects_invalid_query_child_without_poisoning_process() {
     // Arrange
     let Some(executable) = real_oracle_path(OraclePreset::Debug) else {
         eprintln!(
@@ -399,7 +399,10 @@ fn real_oracle_rejects_invalid_query_child_without_result_records() {
     let output = child.wait_with_output().expect("oracle should be reaped");
 
     // Assert
-    assert!(!output.status.success());
+    assert!(
+        output.status.success(),
+        "a rejected request must not poison the reusable oracle process"
+    );
     assert!(result_records.is_empty());
     assert!(
         String::from_utf8_lossy(&output.stderr)

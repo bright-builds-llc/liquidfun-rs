@@ -306,7 +306,7 @@ fn phase9_action_index(value: &Value, action_id: &str) -> usize {
         .expect("requested Phase 9 action should exist")
 }
 
-fn raw_oracle_failure(executable: &std::path::Path, value: &Value) -> String {
+fn raw_oracle_rejection(executable: &std::path::Path, value: &Value) -> String {
     let mut bytes = serde_json::to_vec(value).expect("invalid request should encode");
     bytes.push(b'\n');
     let mut child = Command::new(executable)
@@ -336,7 +336,10 @@ fn raw_oracle_failure(executable: &std::path::Path, value: &Value) -> String {
         unexpected_stdout.is_empty(),
         "stdout must remain JSONL-only"
     );
-    assert!(!output.status.success(), "invalid request must fail hard");
+    assert!(
+        output.status.success(),
+        "a rejected request must not poison the reusable oracle process"
+    );
     String::from_utf8(output.stderr).expect("oracle diagnostics should be UTF-8")
 }
 
@@ -481,7 +484,7 @@ fn pinned_witness_is_consumed_before_generalized_oracle_execution() {
 }
 
 #[test]
-fn decode_rejects_phase10_group_topology_as_hard_cpp_harness_failure() {
+fn decode_rejects_phase10_group_topology_without_poisoning_cpp_process() {
     // Arrange
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let executable = root.join("target/reference/oracle-debug/liquidfun-reference");
@@ -524,7 +527,10 @@ fn decode_rejects_phase10_group_topology_as_hard_cpp_harness_failure() {
         unexpected_stdout.is_empty(),
         "stdout must remain JSONL-only"
     );
-    assert!(!output.status.success(), "Phase 10 request must fail hard");
+    assert!(
+        output.status.success(),
+        "a rejected Phase 10 request must not poison the reusable oracle process"
+    );
     assert!(
         String::from_utf8_lossy(&output.stderr).contains("unknown member particle_groups"),
         "stderr should classify the undeclared Phase 10 family: {}",
@@ -533,7 +539,7 @@ fn decode_rejects_phase10_group_topology_as_hard_cpp_harness_failure() {
 }
 
 #[test]
-fn decode_rejects_invalid_phase9_lifecycle_matrix_before_execution() {
+fn decode_rejects_invalid_phase9_lifecycle_matrix_without_poisoning_process() {
     // Arrange
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let executable = root.join("target/reference/oracle-debug/liquidfun-reference");
@@ -637,7 +643,7 @@ fn decode_rejects_invalid_phase9_lifecycle_matrix_before_execution() {
     ];
 
     // Act
-    let diagnostics = mutations.map(|value| raw_oracle_failure(&executable, &value));
+    let diagnostics = mutations.map(|value| raw_oracle_rejection(&executable, &value));
 
     // Assert
     assert!(
