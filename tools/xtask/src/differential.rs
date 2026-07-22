@@ -36,6 +36,7 @@ use crate::upstream;
 const USAGE: &str = r"Usage: cargo xtask differential <command> [arguments]
 
 Commands:
+  check-protocol
   compare  --scenario <empty-world|math-probes|collision-probes|rigid-world> --preset <oracle-debug|oracle-release|oracle-asan-ubsan> --session-profile <one-shot|reuse|sanitizer>
   replay   --scenario <empty-world|math-probes|collision-probes|rigid-world> --preset <oracle-debug|oracle-release|oracle-asan-ubsan> --session-profile <one-shot|reuse|sanitizer>
   minimize --scenario <empty-world|rigid-world> --preset <oracle-debug|oracle-release|oracle-asan-ubsan> --session-profile <one-shot|reuse|sanitizer>
@@ -149,6 +150,9 @@ struct MathProbeInvocation {
 }
 
 pub(crate) fn run(args: &[String]) -> Result<(), DifferentialError> {
+    if args == ["check-protocol"] {
+        return check_protocol(&repository_root()?);
+    }
     let invocation = parse_invocation(args)?;
     let repository_root = repository_root()?;
 

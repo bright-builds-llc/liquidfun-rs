@@ -40,6 +40,28 @@ pub enum CatalogErrorKind {
     TooManyDefinitions,
     /// Two definitions use the same stable slug.
     DuplicateSlug,
+    /// Two definitions use the same stable slug and scenario version.
+    DuplicateScenarioIdentity,
+    /// Two consumer mappings target the same stable scenario identity.
+    DuplicateMapping,
+    /// A registered scenario has no consumer mapping.
+    MissingMapping,
+    /// A consumer mapping does not resolve to a registered scenario.
+    UnknownMapping,
+    /// A mapped public test identity is not in the reviewed test registry.
+    StaleTestId,
+    /// A mapped evidence identity is outside its sealed authority.
+    StaleEvidence,
+    /// A mapped upstream corpus identity is absent from the checked authority.
+    StaleUpstreamCorpusId,
+    /// A mapped compatibility reference is absent from the checked ledger.
+    StaleCompatibilityRef,
+    /// Consumer eligibility disagrees with the scenario definition metadata.
+    ContradictoryEligibility,
+    /// Presentation text was supplied where a stable catalog slug was required.
+    TitleAsIdentity,
+    /// A seeded scenario omitted a stable generator identity or version.
+    SeedGeneratorMissing,
     /// No definition has the requested stable slug.
     UnknownSlug,
     /// A named-only definition received a seed.
@@ -62,6 +84,8 @@ pub enum CatalogErrorKind {
     NonCanonicalBytes,
     /// Persisted bytes do not match their asserted SHA-256 identity.
     HashMismatch,
+    /// Tracked presentation bytes differ from the typed in-memory projection.
+    ProjectionMismatch,
 }
 
 /// Bounded semantic catalog error without raw record disclosure.
@@ -281,7 +305,9 @@ impl CatalogDefinition {
         self.maybe_metadata.as_ref()
     }
 
-    pub(crate) const fn scenario_version(&self) -> ScenarioVersion {
+    /// Returns the stable scenario contract version.
+    #[must_use]
+    pub const fn scenario_version(&self) -> ScenarioVersion {
         self.scenario_version
     }
 

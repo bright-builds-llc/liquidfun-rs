@@ -1,0 +1,1189 @@
+{
+  "schema_version": 1,
+  "description": "Deterministic review projection only; typed Rust definitions and mappings remain runtime authority.",
+  "sort_contract": "scenarios are ordered lexicographically by stable slug then scenario_version",
+  "projection_sha256": "b500fa081f71f032287bd65699515736be8f50e2eafc0320b9d7e1fde48a38e6",
+  "scenarios": [
+    {
+      "slug": "joint-distance-behavior",
+      "scenario_version": 1,
+      "display_title": "Distance Joint Behavior",
+      "generator_id": "native-joint-v1",
+      "generator_version": 1,
+      "seed_policy": "named_only",
+      "test_ids": [
+        "joint-distance-test"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "rigid/rigid_distance_stepped",
+          "rigid/soft_distance_stepped"
+        ]
+      },
+      "regression_use": true,
+      "benchmark_eligible": true,
+      "visual_eligible": true,
+      "upstream_corpus_ids": [
+        "testbed.distance-test-distancetest-create"
+      ],
+      "compatibility_refs": [
+        "public-api.liquidfun-box2d-box2d-dynamics-joints-b2distancejoint-h"
+      ]
+    },
+    {
+      "slug": "joint-friction-behavior",
+      "scenario_version": 1,
+      "display_title": "Friction Joint Behavior",
+      "generator_id": "native-joint-v1",
+      "generator_version": 1,
+      "seed_policy": "named_only",
+      "test_ids": [
+        "joint-friction-test"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "rigid/friction_caps_stepped"
+        ]
+      },
+      "regression_use": true,
+      "benchmark_eligible": true,
+      "visual_eligible": true,
+      "upstream_corpus_ids": [
+        "testbed.varying-friction-varyingfriction-create"
+      ],
+      "compatibility_refs": [
+        "public-api.liquidfun-box2d-box2d-dynamics-joints-b2frictionjoint-h"
+      ]
+    },
+    {
+      "slug": "joint-gear-behavior",
+      "scenario_version": 1,
+      "display_title": "Gear Joint Behavior",
+      "generator_id": "native-joint-v1",
+      "generator_version": 1,
+      "seed_policy": "named_only",
+      "test_ids": [
+        "joint-gear-test"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "rigid/gear_four_body_topology_observed",
+          "rigid/gear_dependency_order_observed"
+        ]
+      },
+      "regression_use": true,
+      "benchmark_eligible": true,
+      "visual_eligible": true,
+      "upstream_corpus_ids": [
+        "testbed.gears-gears-create"
+      ],
+      "compatibility_refs": [
+        "public-api.liquidfun-box2d-box2d-dynamics-joints-b2gearjoint-h"
+      ]
+    },
+    {
+      "slug": "joint-motor-behavior",
+      "scenario_version": 1,
+      "display_title": "Motor Joint Behavior",
+      "generator_id": "native-joint-v1",
+      "generator_version": 1,
+      "seed_policy": "named_only",
+      "test_ids": [
+        "joint-motor-test"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "rigid/motor_correction_stepped"
+        ]
+      },
+      "regression_use": true,
+      "benchmark_eligible": true,
+      "visual_eligible": true,
+      "upstream_corpus_ids": [
+        "testbed.motor-joint-motorjoint-create"
+      ],
+      "compatibility_refs": [
+        "public-api.liquidfun-box2d-box2d-dynamics-joints-b2motorjoint-h"
+      ]
+    },
+    {
+      "slug": "joint-mouse-behavior",
+      "scenario_version": 1,
+      "display_title": "Mouse Joint Behavior",
+      "generator_id": "native-joint-v1",
+      "generator_version": 1,
+      "seed_policy": "named_only",
+      "test_ids": [
+        "joint-mouse-test"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "rigid/mouse_target_and_force_stepped"
+        ]
+      },
+      "regression_use": true,
+      "benchmark_eligible": true,
+      "visual_eligible": true,
+      "upstream_corpus_ids": [
+        "testbed.web-web-create"
+      ],
+      "compatibility_refs": [
+        "public-api.liquidfun-box2d-box2d-dynamics-joints-b2mousejoint-h"
+      ]
+    },
+    {
+      "slug": "joint-prismatic-behavior",
+      "scenario_version": 1,
+      "display_title": "Prismatic Joint Behavior",
+      "generator_id": "native-joint-v1",
+      "generator_version": 1,
+      "seed_policy": "named_only",
+      "test_ids": [
+        "joint-prismatic-test"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "rigid/prismatic_limits_and_motor_stepped",
+          "rigid/joint_lower_limit_observed"
+        ]
+      },
+      "regression_use": true,
+      "benchmark_eligible": true,
+      "visual_eligible": true,
+      "upstream_corpus_ids": [
+        "testbed.prismatic-prismatic-create"
+      ],
+      "compatibility_refs": [
+        "public-api.liquidfun-box2d-box2d-dynamics-joints-b2prismaticjoint-h"
+      ]
+    },
+    {
+      "slug": "joint-pulley-behavior",
+      "scenario_version": 1,
+      "display_title": "Pulley Joint Behavior",
+      "generator_id": "native-joint-v1",
+      "generator_version": 1,
+      "seed_policy": "named_only",
+      "test_ids": [
+        "joint-pulley-test"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "rigid/pulley_ratio_stepped"
+        ]
+      },
+      "regression_use": true,
+      "benchmark_eligible": true,
+      "visual_eligible": true,
+      "upstream_corpus_ids": [
+        "testbed.pulleys-pulleys-create"
+      ],
+      "compatibility_refs": [
+        "public-api.liquidfun-box2d-box2d-dynamics-joints-b2pulleyjoint-h"
+      ]
+    },
+    {
+      "slug": "joint-revolute-behavior",
+      "scenario_version": 1,
+      "display_title": "Revolute Joint Behavior",
+      "generator_id": "native-joint-v1",
+      "generator_version": 1,
+      "seed_policy": "named_only",
+      "test_ids": [
+        "joint-revolute-test"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "rigid/revolute_limits_and_motor_stepped",
+          "rigid/revolute_prismatic_reaction_observed"
+        ]
+      },
+      "regression_use": true,
+      "benchmark_eligible": true,
+      "visual_eligible": true,
+      "upstream_corpus_ids": [
+        "testbed.revolute-revolute-create"
+      ],
+      "compatibility_refs": [
+        "public-api.liquidfun-box2d-box2d-dynamics-joints-b2revolutejoint-h"
+      ]
+    },
+    {
+      "slug": "joint-rope-behavior",
+      "scenario_version": 1,
+      "display_title": "Rope Joint Behavior",
+      "generator_id": "native-joint-v1",
+      "generator_version": 1,
+      "seed_policy": "named_only",
+      "test_ids": [
+        "joint-rope-test"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "rigid/rope_joint_inactive_stepped",
+          "rigid/rope_joint_upper_limit_stepped"
+        ]
+      },
+      "regression_use": true,
+      "benchmark_eligible": true,
+      "visual_eligible": true,
+      "upstream_corpus_ids": [
+        "testbed.ropejoint-ropejoint-create"
+      ],
+      "compatibility_refs": [
+        "public-api.liquidfun-box2d-box2d-dynamics-joints-b2ropejoint-h"
+      ]
+    },
+    {
+      "slug": "joint-weld-behavior",
+      "scenario_version": 1,
+      "display_title": "Weld Joint Behavior",
+      "generator_id": "native-joint-v1",
+      "generator_version": 1,
+      "seed_policy": "named_only",
+      "test_ids": [
+        "joint-weld-test"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "rigid/rigid_weld_stepped",
+          "rigid/soft_weld_stepped"
+        ]
+      },
+      "regression_use": true,
+      "benchmark_eligible": true,
+      "visual_eligible": true,
+      "upstream_corpus_ids": [
+        "testbed.cantilever-cantilever-create"
+      ],
+      "compatibility_refs": [
+        "public-api.liquidfun-box2d-box2d-dynamics-joints-b2weldjoint-h"
+      ]
+    },
+    {
+      "slug": "joint-wheel-behavior",
+      "scenario_version": 1,
+      "display_title": "Wheel Joint Behavior",
+      "generator_id": "native-joint-v1",
+      "generator_version": 1,
+      "seed_policy": "named_only",
+      "test_ids": [
+        "joint-wheel-test"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "rigid/wheel_spring_and_motor_stepped"
+        ]
+      },
+      "regression_use": true,
+      "benchmark_eligible": true,
+      "visual_eligible": true,
+      "upstream_corpus_ids": [
+        "testbed.car-car-create"
+      ],
+      "compatibility_refs": [
+        "public-api.liquidfun-box2d-box2d-dynamics-joints-b2wheeljoint-h"
+      ]
+    },
+    {
+      "slug": "particle-aabb-query-controls",
+      "scenario_version": 1,
+      "display_title": "Particle AABB Query Controls",
+      "generator_id": "native-particle-callback-v1",
+      "generator_version": 1,
+      "seed_policy": "named_only",
+      "test_ids": [
+        "particle-queries"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "phase9/system_aabb",
+          "phase9/world_aabb",
+          "phase9/system_culling",
+          "phase9/query_continue",
+          "phase9/query_terminate"
+        ]
+      },
+      "regression_use": true,
+      "benchmark_eligible": true,
+      "visual_eligible": true,
+      "upstream_corpus_ids": [
+        "upstream-test.callbacktests-querycallback"
+      ],
+      "compatibility_refs": [
+        "subsystem.world-operations-and-observation"
+      ]
+    },
+    {
+      "slug": "particle-contacts-and-coupling",
+      "scenario_version": 1,
+      "display_title": "Particle Contacts and Body Coupling",
+      "generator_id": "native-particle-v1",
+      "generator_version": 1,
+      "seed_policy": "named_only",
+      "test_ids": [
+        "particle-body-contacts"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "phase9/particle_contact",
+          "phase9/body_contact",
+          "phase9/contact_order",
+          "phase9/coupling_fields",
+          "phase9/dynamic_body_reaction",
+          "phase9/static_body_no_reaction"
+        ]
+      },
+      "regression_use": true,
+      "benchmark_eligible": true,
+      "visual_eligible": true,
+      "upstream_corpus_ids": [
+        "upstream-test.bodycontacttests-particlefixturecontactlistener"
+      ],
+      "compatibility_refs": [
+        "subsystem.particle-contacts-and-coupling"
+      ]
+    },
+    {
+      "slug": "particle-flags-contact-filters",
+      "scenario_version": 1,
+      "display_title": "Particle Contact Filter Flags",
+      "generator_id": "native-particle-flags-v1",
+      "generator_version": 1,
+      "seed_policy": "named_only",
+      "test_ids": [
+        "particle-solver-flags"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "inherited/filter_flag_enabled",
+          "inherited/filter_flag_disabled"
+        ]
+      },
+      "regression_use": true,
+      "benchmark_eligible": true,
+      "visual_eligible": true,
+      "upstream_corpus_ids": [
+        "upstream-test.bodycontacttests-enabledisableparticlecontactswithcontactfilter"
+      ],
+      "compatibility_refs": [
+        "subsystem.particle-contacts-and-coupling"
+      ]
+    },
+    {
+      "slug": "particle-flags-contact-listeners",
+      "scenario_version": 1,
+      "display_title": "Particle Contact Listener Flags",
+      "generator_id": "native-particle-flags-v1",
+      "generator_version": 1,
+      "seed_policy": "named_only",
+      "test_ids": [
+        "particle-solver-flags"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "inherited/listener_flag_enabled",
+          "inherited/listener_flag_disabled"
+        ]
+      },
+      "regression_use": true,
+      "benchmark_eligible": true,
+      "visual_eligible": true,
+      "upstream_corpus_ids": [
+        "upstream-test.bodycontacttests-particlecontactlistener"
+      ],
+      "compatibility_refs": [
+        "subsystem.particle-contacts-and-coupling"
+      ]
+    },
+    {
+      "slug": "particle-flags-pressure-repulsive",
+      "scenario_version": 1,
+      "display_title": "Static Pressure and Repulsive Particle Flags",
+      "generator_id": "native-particle-flags-v1",
+      "generator_version": 1,
+      "seed_policy": "named_only",
+      "test_ids": [
+        "particle-solver-flags"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "phase10/static_pressure",
+          "phase10/repulsive"
+        ]
+      },
+      "regression_use": true,
+      "benchmark_eligible": true,
+      "visual_eligible": true,
+      "upstream_corpus_ids": [
+        "testbed.dambreak-dambreak-create"
+      ],
+      "compatibility_refs": [
+        "subsystem.particle-solver-behaviors"
+      ]
+    },
+    {
+      "slug": "particle-flags-spring-elastic-reactive",
+      "scenario_version": 1,
+      "display_title": "Spring, Elastic, and Reactive Particle Flags",
+      "generator_id": "native-particle-flags-v1",
+      "generator_version": 1,
+      "seed_policy": "named_only",
+      "test_ids": [
+        "particle-solver-flags"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "phase10/spring",
+          "phase10/elastic",
+          "phase10/reactive"
+        ]
+      },
+      "regression_use": true,
+      "benchmark_eligible": true,
+      "visual_eligible": true,
+      "upstream_corpus_ids": [
+        "testbed.elastic-particles-elasticparticles-create"
+      ],
+      "compatibility_refs": [
+        "subsystem.particle-solver-behaviors"
+      ]
+    },
+    {
+      "slug": "particle-flags-tensile-color",
+      "scenario_version": 1,
+      "display_title": "Tensile and Color Mixing Particle Flags",
+      "generator_id": "native-particle-flags-v1",
+      "generator_version": 1,
+      "seed_policy": "named_only",
+      "test_ids": [
+        "particle-solver-flags"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "phase10/tensile",
+          "phase10/color_mixing"
+        ]
+      },
+      "regression_use": true,
+      "benchmark_eligible": true,
+      "visual_eligible": true,
+      "upstream_corpus_ids": [
+        "testbed.surface-tension-particlessurfacetension-create"
+      ],
+      "compatibility_refs": [
+        "subsystem.particle-solver-behaviors"
+      ]
+    },
+    {
+      "slug": "particle-flags-viscous-powder",
+      "scenario_version": 1,
+      "display_title": "Viscous and Powder Particle Flags",
+      "generator_id": "native-particle-flags-v1",
+      "generator_version": 1,
+      "seed_policy": "named_only",
+      "test_ids": [
+        "particle-solver-flags"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "phase10/viscous",
+          "phase10/powder"
+        ]
+      },
+      "regression_use": true,
+      "benchmark_eligible": true,
+      "visual_eligible": true,
+      "upstream_corpus_ids": [
+        "testbed.faucet-faucet-create"
+      ],
+      "compatibility_refs": [
+        "subsystem.particle-solver-behaviors"
+      ]
+    },
+    {
+      "slug": "particle-flags-wall-barrier",
+      "scenario_version": 1,
+      "display_title": "Wall and Barrier Particle Flags",
+      "generator_id": "native-particle-flags-v1",
+      "generator_version": 1,
+      "seed_policy": "named_only",
+      "test_ids": [
+        "particle-solver-flags"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "phase10/wall",
+          "phase10/barrier"
+        ]
+      },
+      "regression_use": true,
+      "benchmark_eligible": true,
+      "visual_eligible": true,
+      "upstream_corpus_ids": [
+        "testbed.wave-machine-wavemachine-create"
+      ],
+      "compatibility_refs": [
+        "subsystem.particle-solver-behaviors"
+      ]
+    },
+    {
+      "slug": "particle-flags-water-zombie",
+      "scenario_version": 1,
+      "display_title": "Water and Zombie Particle Flags",
+      "generator_id": "native-particle-flags-v1",
+      "generator_version": 1,
+      "seed_policy": "named_only",
+      "test_ids": [
+        "particle-solver-flags"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "phase10/water",
+          "phase10/zombie"
+        ]
+      },
+      "regression_use": true,
+      "benchmark_eligible": true,
+      "visual_eligible": true,
+      "upstream_corpus_ids": [
+        "testbed.particles-particles-create"
+      ],
+      "compatibility_refs": [
+        "subsystem.particle-solver-behaviors"
+      ]
+    },
+    {
+      "slug": "particle-forces-and-statistics",
+      "scenario_version": 1,
+      "display_title": "Particle Forces, Impulses, and Statistics",
+      "generator_id": "native-particle-v1",
+      "generator_version": 1,
+      "seed_policy": "named_only",
+      "test_ids": [
+        "particle-forces-statistics"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "phase9/force_range",
+          "phase9/impulse_range",
+          "phase9/statistics_counts",
+          "phase9/collision_energy",
+          "phase9/stuck_candidates"
+        ]
+      },
+      "regression_use": true,
+      "benchmark_eligible": true,
+      "visual_eligible": true,
+      "upstream_corpus_ids": [
+        "testbed.impulse-impulse-create"
+      ],
+      "compatibility_refs": [
+        "subsystem.particle-solver-behaviors"
+      ]
+    },
+    {
+      "slug": "particle-group-construction-append",
+      "scenario_version": 1,
+      "display_title": "Particle Group Construction and Append",
+      "generator_id": "native-particle-group-v1",
+      "generator_version": 1,
+      "seed_policy": "named_only",
+      "test_ids": [
+        "particle-group-mutation"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "phase10/group_create",
+          "phase10/group_append",
+          "phase10/group_flags"
+        ]
+      },
+      "regression_use": true,
+      "benchmark_eligible": true,
+      "visual_eligible": true,
+      "upstream_corpus_ids": [
+        "testbed.particle-drawing-drawingparticles-create"
+      ],
+      "compatibility_refs": [
+        "subsystem.particle-groups-pairs-and-triads"
+      ]
+    },
+    {
+      "slug": "particle-group-destruction",
+      "scenario_version": 1,
+      "display_title": "Particle Group Destruction Lifecycle",
+      "generator_id": "native-particle-group-v1",
+      "generator_version": 1,
+      "seed_policy": "named_only",
+      "test_ids": [
+        "particle-group-mutation"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "phase10/group_destroy"
+        ]
+      },
+      "regression_use": true,
+      "benchmark_eligible": true,
+      "visual_eligible": true,
+      "upstream_corpus_ids": [
+        "upstream-test.callbacktests-destroyparticlegroupwithcallback"
+      ],
+      "compatibility_refs": [
+        "subsystem.particle-groups-pairs-and-triads"
+      ]
+    },
+    {
+      "slug": "particle-group-join",
+      "scenario_version": 1,
+      "display_title": "Particle Group Join Topology",
+      "generator_id": "native-particle-group-v1",
+      "generator_version": 1,
+      "seed_policy": "named_only",
+      "test_ids": [
+        "particle-group-mutation"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "phase10/group_join"
+        ]
+      },
+      "regression_use": true,
+      "benchmark_eligible": true,
+      "visual_eligible": true,
+      "upstream_corpus_ids": [
+        "testbed.soup-stirrer-soupstirrer-create"
+      ],
+      "compatibility_refs": [
+        "subsystem.particle-groups-pairs-and-triads"
+      ]
+    },
+    {
+      "slug": "particle-group-solid-rigid",
+      "scenario_version": 1,
+      "display_title": "Solid and Rigid Particle Group Flags",
+      "generator_id": "native-particle-group-v1",
+      "generator_version": 1,
+      "seed_policy": "named_only",
+      "test_ids": [
+        "particle-group-mutation"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "phase10/solid_group",
+          "phase10/rigid_group"
+        ]
+      },
+      "regression_use": true,
+      "benchmark_eligible": true,
+      "visual_eligible": true,
+      "upstream_corpus_ids": [
+        "testbed.rigid-particles-rigidparticles-create"
+      ],
+      "compatibility_refs": [
+        "subsystem.particle-groups-pairs-and-triads"
+      ]
+    },
+    {
+      "slug": "particle-group-split-reactive",
+      "scenario_version": 1,
+      "display_title": "Reactive Particle Group Split",
+      "generator_id": "native-particle-group-v1",
+      "generator_version": 1,
+      "seed_policy": "named_only",
+      "test_ids": [
+        "particle-group-mutation"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "phase10/group_split",
+          "phase10/reactive"
+        ]
+      },
+      "regression_use": true,
+      "benchmark_eligible": true,
+      "visual_eligible": true,
+      "upstream_corpus_ids": [
+        "testbed.surface-tension-particlessurfacetension-create"
+      ],
+      "compatibility_refs": [
+        "subsystem.particle-groups-pairs-and-triads"
+      ]
+    },
+    {
+      "slug": "particle-lifecycle-callbacks",
+      "scenario_version": 1,
+      "display_title": "Particle Lifecycle Callback Ordering",
+      "generator_id": "native-particle-callback-v1",
+      "generator_version": 1,
+      "seed_policy": "named_only",
+      "test_ids": [
+        "particle-queries"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "phase9/requested_destruction_callback",
+          "phase9/unrequested_destruction_callback",
+          "phase9/contact_order",
+          "phase9/contact_multiplicity"
+        ]
+      },
+      "regression_use": true,
+      "benchmark_eligible": true,
+      "visual_eligible": true,
+      "upstream_corpus_ids": [
+        "upstream-test.callbacktests-destroyparticlewithcallback"
+      ],
+      "compatibility_refs": [
+        "subsystem.particle-storage-and-lifecycle"
+      ]
+    },
+    {
+      "slug": "particle-mutations",
+      "scenario_version": 1,
+      "display_title": "Particle Position and Velocity Mutations",
+      "generator_id": "native-particle-callback-v1",
+      "generator_version": 1,
+      "seed_policy": "named_only",
+      "test_ids": [
+        "particle-queries"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "phase9/stable_ids_sort",
+          "phase9/closed_policy_registry",
+          "phase9/phase10_rejection"
+        ]
+      },
+      "regression_use": true,
+      "benchmark_eligible": true,
+      "visual_eligible": true,
+      "upstream_corpus_ids": [
+        "upstream-test.functiontests-particlesystemsetparticlevelocity"
+      ],
+      "compatibility_refs": [
+        "subsystem.particle-storage-and-lifecycle"
+      ]
+    },
+    {
+      "slug": "particle-ray-callback-controls",
+      "scenario_version": 1,
+      "display_title": "Particle Ray Callback Controls",
+      "generator_id": "native-particle-callback-v1",
+      "generator_version": 1,
+      "seed_policy": "named_only",
+      "test_ids": [
+        "particle-queries"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "phase9/system_ray",
+          "phase9/world_ray",
+          "phase9/ray_culling",
+          "phase9/ray_start_inside_exclusion",
+          "phase9/ray_ignore",
+          "phase9/ray_continue",
+          "phase9/ray_clip",
+          "phase9/ray_terminate"
+        ]
+      },
+      "regression_use": true,
+      "benchmark_eligible": true,
+      "visual_eligible": true,
+      "upstream_corpus_ids": [
+        "upstream-test.callbacktests-raycastcallback"
+      ],
+      "compatibility_refs": [
+        "subsystem.world-operations-and-observation"
+      ]
+    },
+    {
+      "slug": "particle-storage-lifecycle",
+      "scenario_version": 1,
+      "display_title": "Particle Storage and Lifecycle",
+      "generator_id": "native-particle-v1",
+      "generator_version": 1,
+      "seed_policy": "named_only",
+      "test_ids": [
+        "particle-lifecycle"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "phase9/stable_ids_compact",
+          "phase9/optional_lanes",
+          "phase9/capacity_eviction",
+          "phase9/teardown"
+        ]
+      },
+      "regression_use": true,
+      "benchmark_eligible": true,
+      "visual_eligible": true,
+      "upstream_corpus_ids": [
+        "upstream-test.functiontests-particlehandletrackcompactparticles"
+      ],
+      "compatibility_refs": [
+        "subsystem.particle-storage-and-lifecycle"
+      ]
+    },
+    {
+      "slug": "particle-system-pause-action",
+      "scenario_version": 1,
+      "display_title": "Particle System Pause Action",
+      "generator_id": "native-particle-v1",
+      "generator_version": 1,
+      "seed_policy": "named_only",
+      "test_ids": [
+        "particle-lifecycle"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "phase9/paused_system"
+        ]
+      },
+      "regression_use": true,
+      "benchmark_eligible": true,
+      "visual_eligible": true,
+      "upstream_corpus_ids": [
+        "testbed.multiple-systems-multipleparticlesystems-create"
+      ],
+      "compatibility_refs": [
+        "subsystem.particle-storage-and-lifecycle"
+      ]
+    },
+    {
+      "slug": "rigid-callback-timing",
+      "scenario_version": 1,
+      "display_title": "Rigid Callback Timing",
+      "generator_id": "native-rigid-v1",
+      "generator_version": 1,
+      "seed_policy": "named_only",
+      "test_ids": [
+        "rigid-world-callback-test"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "rigid/callback_lifecycle_order_observed",
+          "rigid/pre_solve_material_observed"
+        ]
+      },
+      "regression_use": true,
+      "benchmark_eligible": true,
+      "visual_eligible": true,
+      "upstream_corpus_ids": [
+        "testbed.sensor-test-sensortest-create"
+      ],
+      "compatibility_refs": [
+        "subsystem.contacts-and-filtering"
+      ]
+    },
+    {
+      "slug": "rigid-collision-filtering",
+      "scenario_version": 1,
+      "display_title": "Rigid Collision Filtering",
+      "generator_id": "native-rigid-v1",
+      "generator_version": 1,
+      "seed_policy": "named_only",
+      "test_ids": [
+        "rigid-world-filter-test"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "rigid/filter_removed_contact",
+          "rigid/filter_recreated_contact"
+        ]
+      },
+      "regression_use": true,
+      "benchmark_eligible": true,
+      "visual_eligible": true,
+      "upstream_corpus_ids": [
+        "testbed.collision-filtering-collisionfiltering-create"
+      ],
+      "compatibility_refs": [
+        "subsystem.contacts-and-filtering"
+      ]
+    },
+    {
+      "slug": "rigid-contact-lifecycle",
+      "scenario_version": 1,
+      "display_title": "Rigid Contact Lifecycle",
+      "generator_id": "native-rigid-v1",
+      "generator_version": 1,
+      "seed_policy": "named_only",
+      "test_ids": [
+        "rigid-world-contact-test"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "rigid/contact_created",
+          "rigid/contact_persisted",
+          "rigid/contact_solved"
+        ]
+      },
+      "regression_use": true,
+      "benchmark_eligible": true,
+      "visual_eligible": true,
+      "upstream_corpus_ids": [
+        "testbed.breakable-breakable-create"
+      ],
+      "compatibility_refs": [
+        "subsystem.contacts-and-filtering"
+      ]
+    },
+    {
+      "slug": "rigid-continuous-collision",
+      "scenario_version": 1,
+      "display_title": "Rigid Continuous Collision",
+      "generator_id": "native-rigid-v1",
+      "generator_version": 1,
+      "seed_policy": "named_only",
+      "test_ids": [
+        "rigid-world-continuous-test"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "rigid/continuous_physics_prevented_tunneling",
+          "rigid/bullet_state_selected_continuous_contact"
+        ]
+      },
+      "regression_use": true,
+      "benchmark_eligible": true,
+      "visual_eligible": true,
+      "upstream_corpus_ids": [
+        "testbed.continuous-test-continuoustest-create"
+      ],
+      "compatibility_refs": [
+        "subsystem.world-operations-and-observation"
+      ]
+    },
+    {
+      "slug": "rigid-destruction-order",
+      "scenario_version": 1,
+      "display_title": "Rigid Destruction Order",
+      "generator_id": "native-rigid-v1",
+      "generator_version": 1,
+      "seed_policy": "named_only",
+      "test_ids": [
+        "rigid-world-destruction-test"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "rigid/fixture_destroyed",
+          "rigid/body_destroyed",
+          "rigid/destruction_lifecycle_order_observed"
+        ]
+      },
+      "regression_use": true,
+      "benchmark_eligible": true,
+      "visual_eligible": true,
+      "upstream_corpus_ids": [
+        "testbed.collision-processing-collisionprocessing-create"
+      ],
+      "compatibility_refs": [
+        "subsystem.world-operations-and-observation"
+      ]
+    },
+    {
+      "slug": "rigid-non-colliding-lifecycle",
+      "scenario_version": 1,
+      "display_title": "Rigid Non-Colliding Lifecycle",
+      "generator_id": "native-rigid-v1",
+      "generator_version": 1,
+      "seed_policy": "named_only",
+      "test_ids": [
+        "rigid-world-lifecycle-test"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "rigid/static_kinematic_overlap_rejected",
+          "rigid/zero_contact_step"
+        ]
+      },
+      "regression_use": true,
+      "benchmark_eligible": true,
+      "visual_eligible": true,
+      "upstream_corpus_ids": [
+        "testbed.body-types-bodytypes-create"
+      ],
+      "compatibility_refs": [
+        "subsystem.rigid-bodies-and-fixtures"
+      ]
+    },
+    {
+      "slug": "rigid-runtime-mutation",
+      "scenario_version": 1,
+      "display_title": "Rigid Runtime Mutation",
+      "generator_id": "native-rigid-v1",
+      "generator_version": 1,
+      "seed_policy": "named_only",
+      "test_ids": [
+        "rigid-world-mutation-test"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "rigid/body_type_changed",
+          "rigid/sensor_enabled",
+          "rigid/material_changed"
+        ]
+      },
+      "regression_use": true,
+      "benchmark_eligible": true,
+      "visual_eligible": true,
+      "upstream_corpus_ids": [
+        "testbed.shape-editing-shapeediting-create"
+      ],
+      "compatibility_refs": [
+        "subsystem.rigid-bodies-and-fixtures"
+      ]
+    },
+    {
+      "slug": "rigid-sleep-and-wake",
+      "scenario_version": 1,
+      "display_title": "Rigid Sleep and Wake",
+      "generator_id": "native-rigid-v1",
+      "generator_version": 1,
+      "seed_policy": "named_only",
+      "test_ids": [
+        "rigid-world-sleep-test"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "rigid/whole_island_slept",
+          "rigid/mutation_woke_body"
+        ]
+      },
+      "regression_use": true,
+      "benchmark_eligible": true,
+      "visual_eligible": true,
+      "upstream_corpus_ids": [
+        "testbed.body-types-bodytypes-create"
+      ],
+      "compatibility_refs": [
+        "subsystem.rigid-islands-and-solver"
+      ]
+    },
+    {
+      "slug": "rigid-stack-stability",
+      "scenario_version": 1,
+      "display_title": "Rigid Stack Stability",
+      "generator_id": "native-rigid-v1",
+      "generator_version": 1,
+      "seed_policy": "named_only",
+      "test_ids": [
+        "rigid-world-stack-test"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "rigid/multi_contact_island_solved",
+          "rigid/island_traversal_ordered",
+          "rigid/warm_start_applied"
+        ]
+      },
+      "regression_use": true,
+      "benchmark_eligible": true,
+      "visual_eligible": true,
+      "upstream_corpus_ids": [
+        "testbed.vertical-stack-verticalstack-create"
+      ],
+      "compatibility_refs": [
+        "subsystem.rigid-islands-and-solver"
+      ]
+    },
+    {
+      "slug": "rigid-world-queries",
+      "scenario_version": 1,
+      "display_title": "Rigid World Queries",
+      "generator_id": "native-rigid-v1",
+      "generator_version": 1,
+      "seed_policy": "named_only",
+      "test_ids": [
+        "rigid-world-query-test"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "rigid/query_preserved_duplicate_occurrences",
+          "rigid/ray_nearest_hit_selected"
+        ]
+      },
+      "regression_use": true,
+      "benchmark_eligible": true,
+      "visual_eligible": true,
+      "upstream_corpus_ids": [
+        "testbed.ray-cast-raycast-create"
+      ],
+      "compatibility_refs": [
+        "subsystem.world-operations-and-observation"
+      ]
+    },
+    {
+      "slug": "standalone-rope-evolution",
+      "scenario_version": 1,
+      "display_title": "Standalone Rope Evolution",
+      "generator_id": "native-rope-v1",
+      "generator_version": 1,
+      "seed_policy": "named_only",
+      "test_ids": [
+        "standalone-rope-test"
+      ],
+      "evidence": {
+        "disposition": "reviewed_equivalent",
+        "references": [
+          "rigid/standalone_rope_positive_step",
+          "rigid/standalone_rope_angle_observed",
+          "rigid/standalone_rope_vertices_observed"
+        ]
+      },
+      "regression_use": true,
+      "benchmark_eligible": true,
+      "visual_eligible": true,
+      "upstream_corpus_ids": [
+        "example.rope-create"
+      ],
+      "compatibility_refs": [
+        "subsystem.rope"
+      ]
+    }
+  ]
+}

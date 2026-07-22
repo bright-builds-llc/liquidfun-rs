@@ -34,6 +34,10 @@ pub fn definitions() -> Result<Vec<CatalogDefinition>, CatalogError> {
     Ok(definitions)
 }
 
+#[allow(
+    clippy::too_many_lines,
+    reason = "the four reviewed lifecycle definitions are clearest as one ordered inventory"
+)]
 fn lifecycle_definitions() -> Result<Vec<CatalogDefinition>, CatalogError> {
     Ok(vec![
         phase9_definition(

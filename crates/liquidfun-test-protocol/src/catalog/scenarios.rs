@@ -18,6 +18,24 @@ pub mod rigid;
 /// Native standalone-rope scenarios.
 pub mod rope;
 
+/// Composes every reviewed native family into stable slug/version order.
+///
+/// # Errors
+///
+/// Returns [`CatalogError`] if any family definition violates its typed invariants.
+pub fn scenario_definitions() -> Result<Vec<CatalogDefinition>, CatalogError> {
+    let mut definitions = rigid::definitions()?;
+    definitions.extend(joints::definitions()?);
+    definitions.extend(rope::definitions()?);
+    definitions.extend(particles::definitions()?);
+    definitions.extend(groups::definitions()?);
+    definitions.extend(queries_callbacks::definitions()?);
+    definitions.sort_unstable_by(|left, right| {
+        (left.slug(), left.scenario_version()).cmp(&(right.slug(), right.scenario_version()))
+    });
+    Ok(definitions)
+}
+
 fn bits(value: f32) -> FloatBits {
     FloatBits::from_f32(value)
 }

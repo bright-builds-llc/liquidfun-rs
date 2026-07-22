@@ -325,7 +325,7 @@ mod tests {
             .collect::<Vec<_>>();
         let operations = operations
             .iter()
-            .flat_map(|resolved| resolved.actions())
+            .flat_map(crate::ResolvedScenario::actions)
             .filter_map(|action| match action.action() {
                 RigidWorldAction::ParticleGroup { operation } => Some(operation),
                 _ => None,

@@ -406,7 +406,10 @@ impl<B: SessionBackend> SessionController<B> {
     /// Returns the number of successfully completed logical actions.
     #[must_use]
     pub const fn completed_logical_steps(&self) -> u32 {
-        self.next_logical_step.checked_sub(1).unwrap_or_default()
+        match self.next_logical_step.checked_sub(1) {
+            Some(completed) => completed,
+            None => 0,
+        }
     }
 
     /// Returns successful captures in command order.
