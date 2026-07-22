@@ -444,7 +444,8 @@ impl DesktopApp {
             self.focused_row = (self.focused_row + self.testbed.visible_rows().len() - 1)
                 % self.testbed.visible_rows().len();
         }
-        if is_key_pressed(KeyCode::Enter) {
+        if is_key_pressed(KeyCode::Enter) && FOCUS_ORDER[self.focus_index] == ControlFocus::Scenario
+        {
             self.select_focused();
         }
 
