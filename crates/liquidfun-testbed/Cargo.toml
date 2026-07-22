@@ -1,0 +1,21 @@
+[package]
+name = "liquidfun-testbed"
+version = "0.0.0"
+description = "Private visual testbed and renderer capability gate for liquidfun-rs"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[dependencies]
+liquidfun-differential = { path = "../liquidfun-differential" }
+liquidfun-test-protocol = { path = "../liquidfun-test-protocol" }
+macroquad = "=0.4.15"
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+thiserror.workspace = true
+
+[lints]
+workspace = true
