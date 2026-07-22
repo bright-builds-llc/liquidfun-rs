@@ -38,6 +38,10 @@ patterns-established:
   - "Every native definition carries stable tags, exact defaults, typed evidence leaves, public-test IDs, and explicit regression/benchmark/visual eligibility."
   - "Catalog actions reference only declared deterministic semantic entities of the expected kind."
 requirements-completed: []
+generated_by: gsd-execute-plan
+lifecycle_mode: yolo
+phase_lifecycle_id: 11-2026-07-21T21-10-55
+generated_at: 2026-07-22T00:12:33Z
 metrics:
   duration: 22m25s
   completed: 2026-07-21
