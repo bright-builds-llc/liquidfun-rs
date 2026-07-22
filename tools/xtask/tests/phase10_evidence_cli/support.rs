@@ -125,17 +125,17 @@ struct Manifest {
     fixture_manifest_sha256: String,
     semantic_manifest_sha256: String,
     bindings: Vec<Phase10EvidenceBinding>,
-    cases: Vec<Case>,
+    cases: Vec<EvidenceCase>,
 }
 
 #[derive(Serialize)]
 struct Semantic<'a> {
     bindings: &'a [Phase10EvidenceBinding],
-    cases: &'a [Case],
+    cases: &'a [EvidenceCase],
 }
 
 #[derive(Serialize)]
-struct Case {
+struct EvidenceCase {
     case_id: String,
     action_count: usize,
     checkpoint_count: usize,
@@ -185,7 +185,7 @@ pub(super) fn write_directory(root: &Path, local_name: &str) -> TestResult {
     write_local_identity(root, local_name)
 }
 
-fn write_case(root: &Path, case_id: &str) -> TestResult<Case> {
+fn write_case(root: &Path, case_id: &str) -> TestResult<EvidenceCase> {
     let mut proofs = BTreeMap::new();
     for role in ROLES {
         let payload_role = match role {
@@ -216,7 +216,7 @@ fn write_case(root: &Path, case_id: &str) -> TestResult<Case> {
             },
         );
     }
-    Ok(Case {
+    Ok(EvidenceCase {
         case_id: case_id.to_owned(),
         action_count: 8,
         checkpoint_count: 8,

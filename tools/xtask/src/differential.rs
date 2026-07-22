@@ -112,10 +112,7 @@ impl DifferentialError {
             "catalog-scenario" => 65,
             "catalog-settings" => 66,
             "catalog-script" => 67,
-            _ => match self.maybe_exit_code {
-                Some(code) => code,
-                None => 1,
-            },
+            _ => self.maybe_exit_code.unwrap_or(1),
         }
     }
 
