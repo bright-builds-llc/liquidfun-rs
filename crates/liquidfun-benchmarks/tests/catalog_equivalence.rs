@@ -60,12 +60,12 @@ fn one_sample_runs_only_the_declared_logical_horizon() {
     let case = &cases[0];
 
     // Act
-    let duration = case
+    let _duration = case
         .measure_iterations(1)
         .expect("one validated sample should execute");
 
     // Assert
-    assert!(!duration.is_zero());
+    assert_eq!(case.measured_horizon(), 1);
 }
 
 #[test]
