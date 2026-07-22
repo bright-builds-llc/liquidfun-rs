@@ -33,6 +33,8 @@ use sha2::{Digest, Sha256};
 
 use crate::upstream;
 
+mod catalog;
+
 const USAGE: &str = r"Usage: cargo xtask differential <command> [arguments]
 
 Commands:
@@ -74,6 +76,7 @@ pub(crate) struct DifferentialError {
     category: &'static str,
     message: String,
     maybe_phase4_evidence: Option<Box<Phase4ComparisonEvidence>>,
+    maybe_exit_code: Option<u8>,
 }
 
 impl DifferentialError {
@@ -82,6 +85,7 @@ impl DifferentialError {
             category,
             message: message.into(),
             maybe_phase4_evidence: None,
+            maybe_exit_code: None,
         }
     }
 
@@ -93,11 +97,34 @@ impl DifferentialError {
         Self::new("process", message)
     }
 
+    fn process_exit(message: impl Into<String>, exit_code: u8) -> Self {
+        Self {
+            category: "process",
+            message: message.into(),
+            maybe_phase4_evidence: None,
+            maybe_exit_code: Some(exit_code),
+        }
+    }
+
+    pub(crate) fn exit_code(&self) -> u8 {
+        match self.category {
+            "catalog-usage" => 64,
+            "catalog-scenario" => 65,
+            "catalog-settings" => 66,
+            "catalog-script" => 67,
+            _ => match self.maybe_exit_code {
+                Some(code) => code,
+                None => 1,
+            },
+        }
+    }
+
     fn phase4_evidence(category: &'static str, evidence: Phase4ComparisonEvidence) -> Self {
         Self {
             category,
             message: evidence.render_human(),
             maybe_phase4_evidence: Some(Box::new(evidence)),
+            maybe_exit_code: None,
         }
     }
 }
@@ -153,6 +180,9 @@ pub(crate) fn run(args: &[String]) -> Result<(), DifferentialError> {
     if args == ["check-protocol"] {
         return check_protocol(&repository_root()?);
     }
+    if let Some(command_args) = args.strip_prefix(&["catalog".to_owned()]) {
+        return catalog::run(command_args);
+    }
     let invocation = parse_invocation(args)?;
     let repository_root = repository_root()?;
 
@@ -173,6 +203,10 @@ pub(crate) fn run(args: &[String]) -> Result<(), DifferentialError> {
         };
     }
     run_differential(&repository_root, &invocation.arguments)
+}
+
+pub(crate) fn run_catalog(args: &[String]) -> Result<(), DifferentialError> {
+    catalog::run(args)
 }
 
 pub(crate) fn check_protocol(repository_root: &Path) -> Result<(), DifferentialError> {
@@ -1549,14 +1583,19 @@ fn run_process<S: AsRef<std::ffi::OsStr>>(
         return Ok(());
     }
 
+    let exit_code = status.code().and_then(|code| u8::try_from(code).ok());
     let status = status.code().map_or_else(
         || "terminated by signal".to_owned(),
         |code| code.to_string(),
     );
-    Err(DifferentialError::process(format!(
+    let message = format!(
         "`{}` failed while attempting to {operation} (status {status})",
         program.to_string_lossy()
-    )))
+    );
+    match exit_code {
+        Some(code) => Err(DifferentialError::process_exit(message, code)),
+        None => Err(DifferentialError::process(message)),
+    }
 }
 
 fn repository_root() -> Result<PathBuf, DifferentialError> {

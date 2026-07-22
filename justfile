@@ -33,6 +33,21 @@ oracle-debug:
     cargo xtask upstream configure --preset oracle-debug
     cargo xtask upstream build --preset oracle-debug
 
+catalog-list:
+    cargo xtask catalog list
+
+catalog-inspect scenario:
+    cargo xtask catalog inspect --scenario {{quote(scenario)}} --output human
+
+catalog-run scenario commands="auto":
+    cargo xtask catalog run --scenario {{quote(scenario)}} --timestep 0.016666668 --velocity-iterations 8 --position-iterations 3 --particle-iterations 1 --oracle-preset oracle-debug --session-profile one-shot --output human --commands {{quote(commands)}}
+
+catalog-replay scenario:
+    cargo xtask catalog replay --scenario {{quote(scenario)}} --timestep 0.016666668 --velocity-iterations 8 --position-iterations 3 --particle-iterations 1 --oracle-preset oracle-debug --session-profile one-shot --output human --commands auto
+
+catalog-compare scenario:
+    cargo xtask catalog compare --scenario {{quote(scenario)}} --timestep 0.016666668 --velocity-iterations 8 --position-iterations 3 --particle-iterations 1 --oracle-preset oracle-debug --session-profile one-shot --output human --commands auto
+
 differential-compare:
     cargo xtask differential compare --scenario empty-world --preset oracle-debug --session-profile one-shot
 

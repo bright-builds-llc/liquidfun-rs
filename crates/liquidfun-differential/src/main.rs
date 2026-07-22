@@ -20,6 +20,7 @@ use liquidfun_test_protocol::{
 };
 use serde::Serialize;
 
+mod catalog_command;
 mod minimize_command;
 
 const ORACLE_REVISION: &str = "7f20402173fd143a3988c921bc384459c6a858f2";
@@ -28,7 +29,14 @@ const EXIT_HARNESS_FAILURE: u8 = 3;
 const EXIT_USAGE: u8 = 64;
 
 fn main() -> ExitCode {
-    match run() {
+    let arguments = env::args().skip(1).collect::<Vec<_>>();
+    if arguments
+        .first()
+        .is_some_and(|argument| argument == "catalog")
+    {
+        return catalog_command::run(&arguments[1..]);
+    }
+    match run(arguments) {
         Ok(code) => code,
         Err(error) => {
             eprintln!("differential command failed: {error}");
@@ -37,8 +45,7 @@ fn main() -> ExitCode {
     }
 }
 
-fn run() -> Result<ExitCode, CliError> {
-    let arguments = env::args().skip(1).collect::<Vec<_>>();
+fn run(arguments: Vec<String>) -> Result<ExitCode, CliError> {
     if arguments
         .first()
         .is_some_and(|argument| argument == "fixture")

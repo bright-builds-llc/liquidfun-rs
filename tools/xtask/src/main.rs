@@ -19,6 +19,7 @@ use std::process::ExitCode;
 const USAGE: &str = r"Usage: cargo xtask <command> [arguments]
 
 Commands:
+  catalog     Run renderer-free reviewed catalog scenarios
   differential Manage semantic Rust/C++ comparison workflows
   docs        Validate documentation contracts
   upstream    Manage the pinned upstream oracle
@@ -55,6 +56,13 @@ impl XtaskError {
             message: message.into(),
         }
     }
+
+    fn exit_code(&self) -> u8 {
+        match self {
+            Self::Differential(error) => error.exit_code(),
+            _ => 1,
+        }
+    }
 }
 
 impl Display for XtaskError {
@@ -87,6 +95,7 @@ fn dispatch(args: &[String]) -> Result<(), XtaskError> {
             Ok(())
         }
         "upstream" => upstream::run(command_args).map_err(XtaskError::Upstream),
+        "catalog" => differential::run_catalog(command_args).map_err(XtaskError::Differential),
         "differential" => differential::run(command_args).map_err(XtaskError::Differential),
         "docs" => docs::run(command_args).map_err(XtaskError::Docs),
         "inventory" => inventory::run(command_args).map_err(XtaskError::Inventory),
@@ -196,8 +205,9 @@ fn main() -> ExitCode {
     match dispatch(&args) {
         Ok(()) => ExitCode::SUCCESS,
         Err(error) => {
+            let exit_code = error.exit_code();
             eprintln!("error: {error}");
-            ExitCode::FAILURE
+            ExitCode::from(exit_code)
         }
     }
 }
