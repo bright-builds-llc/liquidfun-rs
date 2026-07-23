@@ -5,6 +5,11 @@ mod capability;
 pub mod controller_adapter;
 pub mod input;
 pub mod interactive;
+#[allow(
+    dead_code,
+    reason = "the replacement contract is consumed incrementally through Phase 12"
+)]
+mod renderer;
 pub mod screenshot;
 pub mod theme;
 pub mod ui;
