@@ -257,7 +257,7 @@ Plans:
 - [x] 12-06-PLAN.md — Execute the complete Rust benchmark matrix.
 - [ ] 12-07-PLAN.md — Define the strict paired benchmark wire contract.
 - [ ] 12-08-PLAN.md — Enforce calibration, optimization admission, and local evidence execution.
-- [ ] 12-09-PLAN.md — Add bounded fuzz targets and regression handoff.
+- [x] 12-09-PLAN.md — Add bounded fuzz targets and regression handoff.
 - [ ] 12-10-PLAN.md — Define reusable safety, regression, and coverage validators plus closed CLI paths.
 - [x] 12-11-PLAN.md — Verify one reusable crate artifact and platform policy.
 - [ ] 12-12-PLAN.md — Fan the artifact across MSRV and native platform lanes.
@@ -292,6 +292,6 @@ Plans:
 | 9. Particle Storage, Lifecycle, and Coupling | 31/31 | Complete | 2026-07-18 |
 | 10. Particle Groups, Solvers, and Compatibility Sign-Off | 32/32 | Complete   | 2026-07-21 |
 | 11. Examples, Headless Tooling, and Testbed | 30/30 | Complete    | 2026-07-23 |
-| 12. Performance, Portability, and Release Hardening | 7/25 | In Progress|  |
+| 12. Performance, Portability, and Release Hardening | 8/25 | In Progress|  |
 
 *Roadmap created: 2026-07-09*
