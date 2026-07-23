@@ -16,7 +16,7 @@ concurrency:
 jobs:
   quality:
     name: Linux quality and isolation
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - name: Check out sources without the native reference checkout
@@ -38,7 +38,6 @@ jobs:
       - name: Install pinned Rust toolchains
         run: |
           rustup toolchain install 1.97.0 --profile minimal --component clippy --component rustfmt
-          rustup toolchain install 1.92.0 --profile minimal
       - name: Cache Cargo inputs and outputs
         # actions/cache v6
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
@@ -105,10 +104,11 @@ jobs:
     name: Default features (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
+    # Every matrix expansion preserves the checkout's submodules: false isolation.
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-24.04, macos-15, windows-2025]
     steps:
       - name: Check out sources without the native reference checkout
         # actions/checkout v7
@@ -135,28 +135,3 @@ jobs:
         run: |
           cargo test -p liquidfun --all-features math
           cargo test -p liquidfun-test-protocol --all-features phase4
-
-  msrv:
-    name: Rust 1.92 MSRV
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - name: Check out sources without the native reference checkout
-        # actions/checkout v7
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
-        with:
-          persist-credentials: false
-          submodules: false
-      - name: Install the provisional MSRV
-        run: rustup toolchain install 1.92.0 --profile minimal
-      - name: Cache Cargo inputs and outputs
-        # actions/cache v6
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-msrv-1.92.0-${{ hashFiles('Cargo.lock') }}
-      - name: Check liquidfun at the MSRV
-        run: cargo +1.92.0 check -p liquidfun --all-targets --all-features

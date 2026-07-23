@@ -1,0 +1,283 @@
+name: Platform release candidate
+
+on:
+  schedule:
+    - cron: "41 6 * * 2"
+  workflow_dispatch:
+    inputs:
+      candidate_sha:
+        description: Exact lowercase 40-character commit SHA to validate
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: platform-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CANDIDATE_SHA: ${{ github.event_name == 'workflow_dispatch' && inputs.candidate_sha || github.sha }}
+  PACKAGE_ARTIFACT_NAME: phase12-package-${{ github.run_id }}-${{ github.event_name == 'workflow_dispatch' && inputs.candidate_sha || github.sha }}
+
+jobs:
+  package:
+    name: Create one reviewed package artifact
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out the exact candidate without submodules
+        # actions/checkout v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+          ref: ${{ env.CANDIDATE_SHA }}
+          submodules: false
+      - name: Validate the exact candidate identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$CANDIDATE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+      - name: Install the package producer toolchain
+        run: rustup toolchain install 1.97.0 --profile minimal
+      - name: Create the only package archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p target/phase12-platform-artifact
+          cargo xtask package create-artifact \
+            --archive target/phase12-platform-artifact/liquidfun.crate \
+            --identity target/phase12-platform-artifact/package-identity.json \
+            --candidate-commit "$CANDIDATE_SHA"
+      - name: Upload the exact package bytes and identity
+        # actions/upload-artifact v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: ${{ env.PACKAGE_ARTIFACT_NAME }}
+          path: target/phase12-platform-artifact
+          if-no-files-found: error
+          retention-days: 90
+
+  msrv:
+    name: Verify exact artifact on canonical Rust 1.92 Linux
+    needs: package
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      LIQUIDFUN_PLATFORM_RUNNER: ubuntu-24.04
+      RUSTUP_TOOLCHAIN: 1.92.0
+    steps:
+      - name: Check out the exact candidate without submodules
+        # actions/checkout v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+          ref: ${{ env.CANDIDATE_SHA }}
+          submodules: false
+      - name: Install the exact MSRV
+        run: rustup toolchain install 1.92.0 --profile minimal
+      - name: Download the producer artifact
+        # actions/download-artifact v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: ${{ env.PACKAGE_ARTIFACT_NAME }}
+          path: target/phase12-platform-artifact
+      - name: Verify exact bytes, package isolation, rustdoc, and smoke tests
+        shell: bash
+        run: bash scripts/phase12-platform.sh x86_64-unknown-linux-gnu d2_supported target/phase12-platform-artifact/liquidfun.crate target/phase12-platform-artifact/package-identity.json
+      - name: Upload canonical MSRV package evidence
+        # actions/upload-artifact v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: phase12-platform-msrv-${{ github.run_id }}-${{ env.CANDIDATE_SHA }}
+          path: target/phase12-platform-evidence
+          if-no-files-found: error
+          retention-days: 90
+
+  native:
+    name: Verify exact artifact on ${{ matrix.target }}
+    needs: package
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            target: x86_64-unknown-linux-gnu
+          - runner: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-gnu
+          - runner: macos-15
+            target: aarch64-apple-darwin
+          - runner: windows-2025
+            target: x86_64-pc-windows-msvc
+    env:
+      LIQUIDFUN_PLATFORM_RUNNER: ${{ matrix.runner }}
+      RUSTUP_TOOLCHAIN: 1.97.0
+    steps:
+      - name: Check out the exact candidate without submodules
+        # actions/checkout v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+          ref: ${{ env.CANDIDATE_SHA }}
+          submodules: false
+      - name: Install pinned native Rust
+        run: rustup toolchain install 1.97.0 --profile minimal
+      - name: Download the producer artifact
+        # actions/download-artifact v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: ${{ env.PACKAGE_ARTIFACT_NAME }}
+          path: target/phase12-platform-artifact
+      - name: Verify exact bytes, package isolation, rustdoc, and smoke tests
+        shell: bash
+        run: bash scripts/phase12-platform.sh "${{ matrix.target }}" d2_supported target/phase12-platform-artifact/liquidfun.crate target/phase12-platform-artifact/package-identity.json
+      - name: Upload native D2 evidence
+        # actions/upload-artifact v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: phase12-platform-${{ matrix.target }}-${{ github.run_id }}-${{ env.CANDIDATE_SHA }}
+          path: target/phase12-platform-evidence
+          if-no-files-found: error
+          retention-days: 90
+
+  conditional-policy:
+    name: Resolve Intel macOS native evidence freshness
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      available: ${{ steps.policy.outputs.available }}
+      reason: ${{ steps.policy.outputs.reason }}
+    steps:
+      - name: Check out the exact candidate without submodules
+        # actions/checkout v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+          ref: ${{ env.CANDIDATE_SHA }}
+          submodules: false
+      - name: Evaluate the 90-day conditional policy
+        id: policy
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$CANDIDATE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          support=reference/platform/support.json
+          available=false
+          reason=missing_or_expired_native_evidence
+          now=$(date +%s)
+          if jq -e '
+            .schema_version == 1 and
+            .conditional_evidence_policy.max_age_days == 90 and
+            .conditional_evidence_policy.missing_or_expired_outcome == "unsupported" and
+            (.conditional_targets | length) == 1 and
+            .conditional_targets[0].target == "x86_64-apple-darwin" and
+            .conditional_targets[0].tier == "conditional_supported" and
+            .conditional_targets[0].native_evidence.runner == "macos-15-intel" and
+            .conditional_targets[0].native_evidence.recorded_at_unix > 0 and
+            .conditional_targets[0].native_evidence.expires_at_unix ==
+              (.conditional_targets[0].native_evidence.recorded_at_unix + (.conditional_evidence_policy.max_age_days * 86400))
+          ' "$support" >/dev/null; then
+            recorded_at_unix=$(jq -er '.conditional_targets[0].native_evidence.recorded_at_unix' "$support")
+            expires_at_unix=$(jq -er '.conditional_targets[0].native_evidence.expires_at_unix' "$support")
+            if ((recorded_at_unix <= now && expires_at_unix >= now)); then
+              available=true
+              reason=available
+            fi
+          fi
+          printf 'available=%s\n' "$available" >> "$GITHUB_OUTPUT"
+          printf 'reason=%s\n' "$reason" >> "$GITHUB_OUTPUT"
+
+  conditional-macos-intel:
+    name: Verify exact artifact on conditional Intel macOS
+    needs: [package, conditional-policy]
+    if: needs.conditional-policy.outputs.available == 'true'
+    runs-on: macos-15-intel
+    timeout-minutes: 30
+    env:
+      LIQUIDFUN_PLATFORM_RUNNER: macos-15-intel
+      RUSTUP_TOOLCHAIN: 1.97.0
+    steps:
+      - name: Check out the exact candidate without submodules
+        # actions/checkout v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+          ref: ${{ env.CANDIDATE_SHA }}
+          submodules: false
+      - name: Install pinned native Rust
+        run: rustup toolchain install 1.97.0 --profile minimal
+      - name: Download the producer artifact
+        # actions/download-artifact v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: ${{ env.PACKAGE_ARTIFACT_NAME }}
+          path: target/phase12-platform-artifact
+      - name: Verify exact bytes and fresh conditional support
+        shell: bash
+        run: bash scripts/phase12-platform.sh x86_64-apple-darwin d2_supported target/phase12-platform-artifact/liquidfun.crate target/phase12-platform-artifact/package-identity.json
+      - name: Upload conditional native D2 evidence
+        # actions/upload-artifact v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: phase12-platform-x86_64-apple-darwin-${{ github.run_id }}-${{ env.CANDIDATE_SHA }}
+          path: target/phase12-platform-evidence
+          if-no-files-found: error
+          retention-days: 90
+
+  conditional-downgrade:
+    name: Record unavailable Intel macOS support
+    needs: conditional-policy
+    if: needs.conditional-policy.outputs.available != 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Check out the exact candidate without submodules
+        # actions/checkout v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+          ref: ${{ env.CANDIDATE_SHA }}
+          submodules: false
+      - name: Record the fail-closed 90-day downgrade
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(jq -er '.conditional_evidence_policy.max_age_days' reference/platform/support.json)" = 90
+          test "$(jq -er '.conditional_evidence_policy.missing_or_expired_outcome' reference/platform/support.json)" = unsupported
+          mkdir -p target/phase12-platform-downgrade
+          recorded_at_unix=$(date +%s)
+          support_sha256=$(sha256sum reference/platform/support.json | awk '{print $1}')
+          jq -n \
+            --arg candidate_sha "$CANDIDATE_SHA" \
+            --arg support_sha256 "$support_sha256" \
+            --argjson recorded_at_unix "$recorded_at_unix" \
+            '{
+              schema_version: 1,
+              target: "x86_64-apple-darwin",
+              runner: "macos-15-intel",
+              tier: "unsupported",
+              reason: "missing_or_expired_native_evidence",
+              max_age_days: 90,
+              candidate_sha: $candidate_sha,
+              recorded_at_unix: $recorded_at_unix,
+              support_sha256: $support_sha256
+            }' > target/phase12-platform-downgrade/identity.json
+      - name: Upload conditional downgrade evidence
+        # actions/upload-artifact v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: phase12-platform-x86_64-apple-darwin-downgrade-${{ github.run_id }}-${{ env.CANDIDATE_SHA }}
+          path: target/phase12-platform-downgrade
+          if-no-files-found: error
+          retention-days: 90
