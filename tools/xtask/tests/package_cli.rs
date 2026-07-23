@@ -440,7 +440,7 @@ fn phase11_decisions_and_requirements_have_audited_evidence() {
 }
 
 #[test]
-fn advisory_waiver_is_bounded_to_the_private_testbed() -> TestResult {
+fn advisory_policy_has_no_waiver_after_renderer_replacement() -> TestResult {
     // Arrange
     let repository_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let deny: toml::Value =
@@ -464,10 +464,16 @@ fn advisory_waiver_is_bounded_to_the_private_testbed() -> TestResult {
         .expect("liquidfun dependencies should be a table");
 
     // Assert
-    assert_eq!(ignored, ["RUSTSEC-2025-0035", "RUSTSEC-2026-0192"]);
+    assert!(ignored.is_empty());
     assert!(!liquidfun_dependencies.contains_key("macroquad"));
     assert_eq!(testbed["package"]["publish"].as_bool(), Some(false));
-    assert!(testbed["dependencies"]["macroquad"].is_str());
+    let testbed_dependencies = testbed["dependencies"]
+        .as_table()
+        .expect("testbed dependencies should be a table");
+    assert!(testbed_dependencies["eframe"].is_str());
+    assert!(testbed_dependencies["egui"].is_str());
+    assert!(testbed_dependencies["tiny-skia"].is_str());
+    assert!(!testbed_dependencies.contains_key("macroquad"));
     Ok(())
 }
 
