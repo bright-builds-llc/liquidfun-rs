@@ -601,3 +601,23 @@ fn all_closed_controller_states_have_an_explicit_enabledness_projection() {
             && projections[8].enabled(ControlCapability::ApplySettings)
     );
 }
+
+#[test]
+fn completed_projection_rejects_actions_that_would_surface_invalid_transition_errors() {
+    // Arrange
+    let projection = ControllerProjection::from_state(SessionState::Completed);
+    let action_id = ScenarioActionId::new("action-0001").expect("fixture ID is valid");
+
+    // Act
+    let run_enabled = projection.admits(&ControllerAction::Run);
+    let step_enabled = projection.admits(&ControllerAction::StepOnce);
+    let scenario_action_enabled =
+        projection.admits(&ControllerAction::ApplyScenarioAction(action_id));
+    let restart_enabled = projection.admits(&ControllerAction::Restart);
+
+    // Assert
+    assert!(!run_enabled);
+    assert!(!step_enabled);
+    assert!(!scenario_action_enabled);
+    assert!(restart_enabled);
+}

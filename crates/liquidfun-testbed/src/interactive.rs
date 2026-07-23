@@ -193,6 +193,27 @@ impl InteractiveTestbed {
             .map(liquidfun_differential::SessionCapture::value)
     }
 
+    /// Returns the most recent drawable capture, falling back to the latest empty capture.
+    ///
+    /// This is a diagnostic presentation choice only. The controller state and
+    /// [`Self::latest_checkpoint`] continue to describe the current logical boundary.
+    #[must_use]
+    pub fn presentation_checkpoint(&self) -> Option<&CanonicalCheckpoint> {
+        self.controller
+            .captures()
+            .iter()
+            .rev()
+            .map(liquidfun_differential::SessionCapture::value)
+            .find(|checkpoint| !checkpoint.debug_primitives().is_empty())
+            .or_else(|| self.latest_checkpoint())
+    }
+
+    /// Returns the number of canonical checkpoints retained by the current session.
+    #[must_use]
+    pub fn captured_checkpoint_count(&self) -> usize {
+        self.controller.captures().len()
+    }
+
     /// Submits one typed controller action through single-flight adapter admission.
     ///
     /// # Errors

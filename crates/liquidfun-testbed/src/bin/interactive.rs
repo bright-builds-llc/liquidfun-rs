@@ -7,22 +7,24 @@ use std::path::PathBuf;
 use std::time::Duration;
 
 use liquidfun_differential::{
-    ComparisonLimits, ComparisonModel, ComparisonState, compare_canonical_checkpoints,
+    ComparisonLimits, ComparisonModel, ComparisonState, SessionState, compare_canonical_checkpoints,
 };
 use liquidfun_test_protocol::{
-    ActionSchedule, CanonicalCheckpoint, CheckpointId, DebugLayerName, HarnessLimits,
-    Phase4PolicyProfile, RigidWorldAction, Sha256Hex, decode_canonical_checkpoint_jsonl,
+    ActionSchedule, CanonicalCheckpoint, CheckpointId, CheckpointPosition, DebugLayerName,
+    HarnessLimits, Phase4PolicyProfile, RigidWorldAction, Sha256Hex,
+    decode_canonical_checkpoint_jsonl,
 };
 use liquidfun_testbed::app::{AppShell, ShellRegion, status_copy, status_marker};
 use liquidfun_testbed::controller_adapter::{
-    ControllerAction, PARTICLE_PAUSE_ACTION_LABEL, SESSION_PAUSED_LABEL,
+    ControlCapability, ControllerAction, ControllerProjection, PARTICLE_PAUSE_ACTION_LABEL,
+    SESSION_PAUSED_LABEL,
 };
 use liquidfun_testbed::input::{
     InputContext, InputEffect, KeyboardKey, PresentationAction, ScenarioShortcut, resolve_key,
 };
 use liquidfun_testbed::interactive::InteractiveTestbed;
 use liquidfun_testbed::ui::differences::{BackendAvailability, ComparisonMode, DifferenceList};
-use liquidfun_testbed::ui::inspector::{InspectorState, operational_copy};
+use liquidfun_testbed::ui::inspector::{CheckpointDiagnostics, InspectorState, operational_copy};
 use liquidfun_testbed::ui::layout::{
     CompactWindowNotice, FocusId, FocusReturn, PanelBehavior, ResponsiveLayout,
 };
@@ -429,8 +431,35 @@ impl DesktopApp {
         }
     }
 
+    fn control_enabled(&self, focus: ControlFocus) -> bool {
+        let state = self.testbed.session_state();
+        let projection = ControllerProjection::from_state(state);
+        match focus {
+            ControlFocus::Scenario => projection.enabled(ControlCapability::SelectScenario),
+            ControlFocus::Inspector | ControlFocus::About => true,
+            ControlFocus::RunPause if state == SessionState::Running => {
+                projection.enabled(ControlCapability::Pause)
+            }
+            ControlFocus::RunPause => projection.enabled(ControlCapability::Run),
+            ControlFocus::Step => projection.enabled(ControlCapability::StepOnce),
+            ControlFocus::Restart => projection.enabled(ControlCapability::Restart),
+            ControlFocus::Capture => {
+                projection.enabled(ControlCapability::Capture)
+                    && self.testbed.reachable_checkpoint_id().is_some()
+            }
+            ControlFocus::Settings => projection.enabled(ControlCapability::ApplySettings),
+            ControlFocus::Overlay
+            | ControlFocus::PreviousDifference
+            | ControlFocus::NextDifference => self.diagnostics.maybe_comparison().is_some(),
+        }
+    }
+
     fn activate_focus(&mut self) {
-        match FOCUS_ORDER[self.focus_index] {
+        let focus = FOCUS_ORDER[self.focus_index];
+        if !self.control_enabled(focus) {
+            return;
+        }
+        match focus {
             ControlFocus::Scenario => self.open_modal(
                 OpenPanel::Scenario,
                 FocusId::ScenarioButton,
@@ -750,6 +779,10 @@ impl DesktopApp {
     }
 
     fn select_focused(&mut self) {
+        let projection = ControllerProjection::from_state(self.testbed.session_state());
+        if !projection.enabled(ControlCapability::SelectScenario) {
+            return;
+        }
         match self.testbed.select_visible(self.focused_row) {
             Ok(()) => {
                 self.clear_comparison();
@@ -849,6 +882,10 @@ impl DesktopApp {
     }
 
     fn perform_controller(&mut self, action: ControllerAction) {
+        let projection = ControllerProjection::from_state(self.testbed.session_state());
+        if !projection.admits(&action) {
+            return;
+        }
         let clears_comparison = matches!(
             &action,
             ControllerAction::Select(_)
@@ -1087,7 +1124,7 @@ impl DesktopApp {
                 self.pixels_per_meter = 42.0;
                 self.maybe_selected_primitive = None;
             } else {
-                let maybe_key = self.testbed.latest_checkpoint().and_then(|checkpoint| {
+                let maybe_key = self.maybe_display_checkpoint().and_then(|checkpoint| {
                     let projected_viewport = ProtocolViewport::new(
                         viewport.0,
                         viewport.1,
@@ -1114,8 +1151,15 @@ impl DesktopApp {
         }
     }
 
+    fn maybe_display_checkpoint(&self) -> Option<&CanonicalCheckpoint> {
+        if self.maybe_oracle.is_some() {
+            return self.testbed.latest_checkpoint();
+        }
+        self.testbed.presentation_checkpoint()
+    }
+
     fn refresh_comparison(&mut self) {
-        let Some(native) = self.testbed.latest_checkpoint() else {
+        let Some(native) = self.maybe_display_checkpoint() else {
             return;
         };
         let native_identity = (
@@ -1171,8 +1215,14 @@ impl DesktopApp {
             }
             draw_text(heading, 24.0, 52.0, 24.0, TEXT);
             draw_text(body, 24.0, 82.0, FONT, MUTED);
-            draw_accessible_button(minimum_close_bounds(), "Close", false, true);
-            draw_accessible_button(minimum_about_bounds(), "About & provenance", false, true);
+            draw_accessible_button(minimum_close_bounds(), "Close", false, false, true);
+            draw_accessible_button(
+                minimum_about_bounds(),
+                "About & provenance",
+                false,
+                false,
+                true,
+            );
             return;
         }
         let layout = responsive.shell();
@@ -1242,6 +1292,7 @@ impl DesktopApp {
             FOCUS_ORDER[self.focus_index] == ControlFocus::About
                 && !focus_is_modal_heading(self.focus_return.current()),
             self.open_panel == OpenPanel::About,
+            true,
         );
         let _presentation_state = self.shell.state();
     }
@@ -1312,7 +1363,7 @@ impl DesktopApp {
         fill_region(region, BACKGROUND);
         let (x, y, width, height) = rect(region);
         draw_rectangle_lines(x, y, width, height, 1.0, BORDER);
-        let Some(checkpoint) = self.testbed.latest_checkpoint() else {
+        let Some(checkpoint) = self.maybe_display_checkpoint() else {
             draw_text(
                 "Step the scenario to render a semantic checkpoint",
                 x + 20.0,
@@ -1373,6 +1424,19 @@ impl DesktopApp {
                 );
             }
         }
+        if self
+            .testbed
+            .latest_checkpoint()
+            .is_some_and(|latest| latest.checkpoint_id() != checkpoint.checkpoint_id())
+        {
+            draw_text(
+                "Showing the last drawable checkpoint; the latest capture is empty after teardown",
+                x + 12.0,
+                y + 42.0,
+                12.0,
+                ACCENT,
+            );
+        }
     }
 
     fn draw_checkpoint_viewport(
@@ -1407,6 +1471,16 @@ impl DesktopApp {
                     draw_protocol_frame(&frame);
                 }
                 draw_text(label, x + 12.0, y + 20.0, 12.0, MUTED);
+                let maybe_empty_message = if checkpoint.debug_primitives().is_empty() {
+                    Some("Checkpoint has no drawable primitives")
+                } else if frame.primitives().is_empty() {
+                    Some("No primitives in enabled debug layers")
+                } else {
+                    None
+                };
+                if let Some(message) = maybe_empty_message {
+                    draw_text(message, x + 20.0, y + 48.0, FONT, MUTED);
+                }
             }
             Err(_) => {
                 draw_text(
@@ -1504,61 +1578,7 @@ impl DesktopApp {
             &mut line_y,
             TEXT,
         );
-        if let Some(checkpoint) = self.testbed.latest_checkpoint() {
-            line(
-                &format!("Checkpoint: {}", checkpoint.checkpoint_id().as_str()),
-                x,
-                &mut line_y,
-                TEXT,
-            );
-            line(
-                &format!("Primitives: {}", checkpoint.debug_primitives().len()),
-                x,
-                &mut line_y,
-                TEXT,
-            );
-            line(
-                &format!("Observations: {}", checkpoint.observations().len()),
-                x,
-                &mut line_y,
-                TEXT,
-            );
-            line(
-                &format!(
-                    "Profiles: {} (names only)",
-                    checkpoint.profile_names().len()
-                ),
-                x,
-                &mut line_y,
-                MUTED,
-            );
-            if self.diagnostics_visible {
-                let layer_counts = debug_layer_counts(checkpoint);
-                line(
-                    &format!("Render FPS: {} (non-authority)", get_fps()),
-                    x,
-                    &mut line_y,
-                    MUTED,
-                );
-                line(
-                    &format!(
-                        "Layer counts C:{} P:{} B:{}",
-                        layer_counts[2], layer_counts[5], layer_counts[6]
-                    ),
-                    x,
-                    &mut line_y,
-                    MUTED,
-                );
-                for profile in checkpoint.profile_names().iter().take(3) {
-                    line(
-                        &format!("Profile name: {profile:?} (diagnostic)"),
-                        x,
-                        &mut line_y,
-                        MUTED,
-                    );
-                }
-            }
-        }
+        self.draw_checkpoint_diagnostics(x, &mut line_y);
         if let Some(settings) = self.testbed.selected_settings() {
             line(
                 &format!("Timestep: {:.8}", settings.timestep_bits().to_f32()),
@@ -1636,6 +1656,168 @@ impl DesktopApp {
         }
     }
 
+    fn draw_checkpoint_diagnostics(&self, x: f32, line_y: &mut f32) {
+        let Some(displayed) = self.maybe_display_checkpoint() else {
+            line("Captured checkpoints: 0", x, line_y, MUTED);
+            return;
+        };
+        let latest = self
+            .testbed
+            .latest_checkpoint()
+            .expect("a displayed checkpoint must have a latest capture");
+        let showing_history = latest.checkpoint_id() != displayed.checkpoint_id();
+        self.draw_checkpoint_identity(displayed, latest, showing_history, x, line_y);
+        let diagnostics = CheckpointDiagnostics::from_checkpoint(displayed);
+        Self::draw_semantic_counts(diagnostics, x, line_y);
+        if self.diagnostics_visible {
+            self.draw_render_diagnostics(diagnostics, x, line_y);
+        }
+    }
+
+    fn draw_checkpoint_identity(
+        &self,
+        displayed: &CanonicalCheckpoint,
+        latest: &CanonicalCheckpoint,
+        showing_history: bool,
+        x: f32,
+        line_y: &mut f32,
+    ) {
+        line(
+            &format!(
+                "Captured checkpoints: {}",
+                self.testbed.captured_checkpoint_count()
+            ),
+            x,
+            line_y,
+            TEXT,
+        );
+        line(
+            &format!(
+                "Displayed: {}{}",
+                displayed.checkpoint_id().as_str(),
+                if showing_history {
+                    " (last drawable)"
+                } else {
+                    ""
+                }
+            ),
+            x,
+            line_y,
+            if showing_history { ACCENT } else { TEXT },
+        );
+        if showing_history {
+            line(
+                &format!(
+                    "Latest: {} (empty after teardown)",
+                    latest.checkpoint_id().as_str()
+                ),
+                x,
+                line_y,
+                MUTED,
+            );
+        }
+        let boundary = match displayed.position() {
+            CheckpointPosition::Action { ordinal, .. } => format!("action {ordinal}"),
+            CheckpointPosition::LogicalStep { ordinal } => format!("logical step {ordinal}"),
+        };
+        line(
+            &format!(
+                "Boundary: {boundary} | sim {:.5}s",
+                displayed.simulation_time_bits().to_f32()
+            ),
+            x,
+            line_y,
+            MUTED,
+        );
+    }
+
+    fn draw_semantic_counts(diagnostics: CheckpointDiagnostics, x: f32, line_y: &mut f32) {
+        line(
+            &format!(
+                "World B:{} F:{} J:{} C:{} P:{}",
+                count_text(diagnostics.maybe_body_count()),
+                count_text(diagnostics.maybe_fixture_count()),
+                count_text(diagnostics.maybe_joint_count()),
+                count_text(diagnostics.maybe_contact_count()),
+                count_text(diagnostics.maybe_particle_count()),
+            ),
+            x,
+            line_y,
+            TEXT,
+        );
+        line(
+            &format!(
+                "Primitives retained:{} collected:{}",
+                diagnostics.total_primitive_count(),
+                count_text(diagnostics.maybe_observed_primitive_count()),
+            ),
+            x,
+            line_y,
+            TEXT,
+        );
+    }
+
+    fn draw_render_diagnostics(
+        &self,
+        diagnostics: CheckpointDiagnostics,
+        x: f32,
+        line_y: &mut f32,
+    ) {
+        line(
+            &format!(
+                "Draw shapes:{} joints:{} particles:{}",
+                diagnostics.layer_count(DebugLayerName::Shapes),
+                diagnostics.layer_count(DebugLayerName::Joints),
+                diagnostics.layer_count(DebugLayerName::Particles),
+            ),
+            x,
+            line_y,
+            MUTED,
+        );
+        line(
+            &format!(
+                "Draw contacts:{} normals:{} p-contacts:{}",
+                diagnostics.layer_count(DebugLayerName::Contacts),
+                diagnostics.layer_count(DebugLayerName::ContactNormals),
+                diagnostics.layer_count(DebugLayerName::ParticleContacts),
+            ),
+            x,
+            line_y,
+            MUTED,
+        );
+        line(
+            &format!(
+                "Draw AABBs:{} centers:{} labels:{}",
+                diagnostics.layer_count(DebugLayerName::BroadPhase),
+                diagnostics.layer_count(DebugLayerName::CentersOfMass),
+                diagnostics.layer_count(DebugLayerName::Labels),
+            ),
+            x,
+            line_y,
+            MUTED,
+        );
+        let visible_layers = self
+            .layer_enabled
+            .iter()
+            .filter(|enabled| **enabled)
+            .count();
+        line(
+            &format!(
+                "Camera ({:.2}, {:.2}) {:.1}px/m | layers {visible_layers}/9",
+                self.center_x, self.center_y, self.pixels_per_meter
+            ),
+            x,
+            line_y,
+            MUTED,
+        );
+        line(
+            &format!("Render FPS: {} (diagnostic only)", get_fps()),
+            x,
+            line_y,
+            MUTED,
+        );
+    }
+
     fn draw_controls(&self, layout: ResponsiveLayout) {
         fill_region(layout.shell().region(ShellRegion::Controls), PANEL_ALT);
         let state = self.testbed.session_state();
@@ -1680,6 +1862,7 @@ impl DesktopApp {
                 label,
                 index == self.focus_index && !focus_is_modal_heading(self.focus_return.current()),
                 active,
+                self.control_enabled(focus),
             );
         }
     }
@@ -1747,6 +1930,7 @@ impl DesktopApp {
             settings_apply_bounds(),
             "Apply & Restart",
             self.focus_return.current() == Some(FocusId::SettingsApply),
+            false,
             self.settings.apply_enabled(),
         );
         draw_text(
@@ -1842,6 +2026,7 @@ impl DesktopApp {
                 self.focus_return.current() == Some(FocusId::AboutLink)
                     && self.focused_about_link == index,
                 false,
+                true,
             );
             draw_text(
                 shorten(link.url(), 42),
@@ -1915,6 +2100,7 @@ impl DesktopApp {
             "Close",
             self.focus_return.current() == Some(FocusId::ShortcutHelp),
             false,
+            true,
         );
     }
 }
@@ -2089,6 +2275,7 @@ fn draw_accessible_button(
     label: &str,
     focused: bool,
     selected: bool,
+    enabled: bool,
 ) {
     draw_rectangle(
         bounds.0,
@@ -2108,15 +2295,17 @@ fn draw_accessible_button(
     let measured = measure_text(label, None, SMALL_FONT_SIZE, 1.0);
     let text_x = bounds.0 + ((bounds.2 - measured.width) * 0.5).max(6.0);
     let text_y = bounds.1 + (bounds.3 + measured.height) * 0.5 - 2.0;
-    draw_text(label, text_x, text_y, SMALL_FONT, TEXT);
+    draw_text(
+        label,
+        text_x,
+        text_y,
+        SMALL_FONT,
+        if enabled { TEXT } else { MUTED },
+    );
 }
 
-fn debug_layer_counts(checkpoint: &CanonicalCheckpoint) -> [usize; 9] {
-    let mut counts = [0; 9];
-    for record in checkpoint.debug_primitives() {
-        counts[layer_index(record.key().layer())] += 1;
-    }
-    counts
+fn count_text(maybe_count: Option<u64>) -> String {
+    maybe_count.map_or_else(|| "—".to_owned(), |count| count.to_string())
 }
 
 fn load_oracle_checkpoint(path: PathBuf) -> Result<CanonicalCheckpoint, String> {
