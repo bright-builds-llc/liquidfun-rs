@@ -18,11 +18,16 @@ const LAUNCHER_SOURCE: &str = include_str!("../src/bin/interactive.rs");
 fn production_launcher_wires_the_live_catalog_controller_and_renderer() {
     // Arrange
     let required_links = [
-        "#[macroquad::main(window_conf)]",
+        "impl eframe::App for DesktopApp",
+        "eframe::run_native(",
+        "fn logic(",
+        "fn ui(",
+        "SessionCommand",
+        "drive_logical_time(",
         "InteractiveTestbed::new()",
         "resolve_key(",
         "ResponsiveLayout::for_window",
-        "PanelBehavior::MutuallyExclusiveDrawers",
+        "PanelBehavior::WindowTooSmall",
         "project_checkpoint(",
         "draw_protocol_frame(",
         "draw_protocol_comparison_frame(",
@@ -31,13 +36,13 @@ fn production_launcher_wires_the_live_catalog_controller_and_renderer() {
         "presentation_checkpoint()",
         "CheckpointDiagnostics::from_checkpoint(",
         "(last drawable)",
-        "(empty after teardown)",
+        "empty after teardown",
         "Draw shapes:",
         "ProtocolComparisonBackend::Oracle",
         "DifferenceList::new(",
-        "focused_difference_entry(",
+        "focused_difference",
         "KeyboardKey::QuestionMark",
-        "draw_shortcut_help(",
+        "render_shortcuts(",
     ];
 
     // Act
@@ -107,32 +112,24 @@ fn production_launcher_wires_staged_settings_scenario_shortcuts_and_pause_labels
 fn production_launcher_wires_accessible_controls_pointer_gestures_and_minimum_window_actions() {
     // Arrange
     let required_links = [
-        "KeyCode::Tab",
-        "focus_return.open(",
-        "self.modal_input_active(layout)",
-        "self.handle_modal_focus_input()",
-        "keyboard_input_consumed_this_frame",
-        "focus_return.move_to(",
-        "if let Some(returned_focus) = self.focus_return.close()",
-        "control_for_focus(returned_focus)",
-        "const CONTROL_TARGET: f32 = 44.0;",
-        "scenario_search_bounds(",
-        "FocusId::ScenarioRow",
-        "clipboard_set(link.url())",
-        "focused_about_link",
-        "about_link_bounds(",
-        "shortcut_close_bounds()",
-        "FocusId::SettingsApply",
-        "apply_settings_and_restart()",
-        "MouseButton::Middle",
-        "shift && is_mouse_button_down(MouseButton::Left)",
-        "maybe_last_click",
-        "if double_click {",
+        "egui::TextEdit::singleline",
+        "ctx.egui_wants_keyboard_input()",
+        "InputContext {",
+        "AppEffect::Submit(command)",
+        "begin_select_visible(",
+        "begin_settings(",
+        "submit_command(command)",
+        "ctx.copy_text(link.url().to_owned())",
+        "egui::OpenUrl::new_tab(link.url())",
+        "DiagnosticScreenshotPath::new(",
+        "PointerButton::Middle",
+        "shift && response.dragged_by(PointerButton::Primary)",
+        "response.double_clicked()",
         "hit_test_frame(",
         "self.center_x = 0.0;",
         "self.center_y = 0.0;",
-        "minimum_close_bounds()",
-        "minimum_about_bounds()",
+        "PanelBehavior::WindowTooSmall",
+        "egui::ViewportCommand::Close",
         "Close",
         "About & provenance",
     ];
@@ -141,14 +138,6 @@ fn production_launcher_wires_accessible_controls_pointer_gestures_and_minimum_wi
     assert_launcher_contract(
         "focus, controls, pointer gestures, and minimum-window actions",
         &required_links,
-    );
-    assert_launcher_symbol_is_used(
-        "focus, controls, pointer gestures, and minimum-window actions",
-        "FocusReturn",
-    );
-    assert_launcher_symbol_is_used(
-        "focus, controls, pointer gestures, and minimum-window actions",
-        "CONTROL_TARGET",
     );
     let pointer_centered_zoom = LAUNCHER_SOURCE.contains("zoom_about_pointer(")
         || ["old_scale", "new_scale", "world_x", "world_y"]

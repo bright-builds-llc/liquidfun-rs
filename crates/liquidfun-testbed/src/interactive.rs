@@ -3,7 +3,8 @@
 use std::time::Duration;
 
 use liquidfun_differential::{
-    NativeCatalogBackend, RunSettingsInput, SessionController, SessionControllerError, SessionState,
+    NativeCatalogBackend, RunSettingsInput, SessionCommand, SessionController,
+    SessionControllerError, SessionState,
 };
 use liquidfun_test_protocol::{
     CanonicalCheckpoint, CatalogErrorKind, CatalogSlug, CheckpointId, ResolveRequest,
@@ -124,6 +125,19 @@ impl InteractiveTestbed {
     ///
     /// Returns a bounded row, catalog, adapter, or controller failure.
     pub fn select_visible(&mut self, index: usize) -> Result<(), InteractiveTestbedError> {
+        let command = self.begin_select_visible(index)?;
+        self.submit_command(command)
+    }
+
+    /// Resolves one visible row and emits its typed command without mutating the session.
+    ///
+    /// # Errors
+    ///
+    /// Returns a bounded row, catalog, adapter, or command-admission failure.
+    pub fn begin_select_visible(
+        &mut self,
+        index: usize,
+    ) -> Result<SessionCommand, InteractiveTestbedError> {
         let selection = self
             .browser
             .visible_rows()
@@ -132,7 +146,7 @@ impl InteractiveTestbed {
             .selection()
             .clone();
         let resolved = self.resolve_default_selection(&selection)?;
-        self.perform(ControllerAction::Select(resolved))
+        self.begin_action(ControllerAction::Select(resolved))
     }
 
     /// Returns the exact selected slug, version, and resolved seed.
@@ -220,9 +234,38 @@ impl InteractiveTestbed {
     ///
     /// Returns a bounded adapter, command-counter, or controller failure.
     pub fn perform(&mut self, action: ControllerAction) -> Result<(), InteractiveTestbedError> {
-        let maybe_replacement_selection = replacement_selection(&action);
-        let resets_cadence = resets_cadence(&action);
+        let command = self.begin_action(action)?;
+        self.submit_command(command)
+    }
+
+    /// Validates one UI-owned action and emits the closed controller command without executing it.
+    ///
+    /// A successful command must be passed to [`Self::submit_command`] before another action is
+    /// admitted. This split keeps immediate-mode rendering passive until its typed effect leaves
+    /// the shell.
+    ///
+    /// # Errors
+    ///
+    /// Returns a bounded adapter rejection.
+    pub fn begin_action(
+        &mut self,
+        action: ControllerAction,
+    ) -> Result<SessionCommand, InteractiveTestbedError> {
         let command = self.adapter.begin(self.controller.state(), action)?;
+        Ok(command)
+    }
+
+    /// Executes one previously admitted closed command under the controller's monotonic identity.
+    ///
+    /// # Errors
+    ///
+    /// Returns a bounded command-counter or controller failure.
+    pub fn submit_command(
+        &mut self,
+        command: SessionCommand,
+    ) -> Result<(), InteractiveTestbedError> {
+        let maybe_replacement_selection = replacement_selection(&command);
+        let resets_cadence = resets_cadence(&command);
         let Some(command_id) = self.controller.next_command_id() else {
             self.adapter.complete();
             return Err(InteractiveTestbedError::CommandCounterExhausted);
@@ -294,6 +337,19 @@ impl InteractiveTestbed {
     ///
     /// Returns a bounded missing-selection, catalog, adapter, or controller failure.
     pub fn apply_settings(&mut self, settings: RunSettings) -> Result<(), InteractiveTestbedError> {
+        let command = self.begin_settings(settings)?;
+        self.submit_command(command)
+    }
+
+    /// Resolves staged settings and emits the typed restart command without executing it.
+    ///
+    /// # Errors
+    ///
+    /// Returns a bounded missing-selection, catalog, or adapter failure.
+    pub fn begin_settings(
+        &mut self,
+        settings: RunSettings,
+    ) -> Result<SessionCommand, InteractiveTestbedError> {
         let current = self
             .controller
             .selected()
@@ -308,7 +364,7 @@ impl InteractiveTestbed {
             settings.position_iterations(),
             settings.particle_iterations(),
         );
-        self.perform(ControllerAction::ApplySettingsAndRestart {
+        self.begin_action(ControllerAction::ApplySettingsAndRestart {
             settings: input,
             resolved,
         })
@@ -322,7 +378,10 @@ impl InteractiveTestbed {
     /// # Errors
     ///
     /// Returns a bounded controller failure from a logical action.
-    pub fn update(&mut self, elapsed: Duration) -> Result<u32, InteractiveTestbedError> {
+    pub fn drive_logical_time(
+        &mut self,
+        elapsed: Duration,
+    ) -> Result<u32, InteractiveTestbedError> {
         if self.controller.state() != SessionState::Running {
             self.accumulated_time = Duration::ZERO;
             return Ok(0);
@@ -354,6 +413,15 @@ impl InteractiveTestbed {
             self.accumulated_time = Duration::ZERO;
         }
         Ok(completed)
+    }
+
+    /// Compatibility alias for the explicit fixed-time logical driver.
+    ///
+    /// # Errors
+    ///
+    /// Returns the same bounded failure as [`Self::drive_logical_time`].
+    pub fn update(&mut self, elapsed: Duration) -> Result<u32, InteractiveTestbedError> {
+        self.drive_logical_time(elapsed)
     }
 
     fn resolve_default_selection(
@@ -395,16 +463,16 @@ impl InteractiveTestbed {
     }
 }
 
-fn replacement_selection(action: &ControllerAction) -> Option<CatalogSelection> {
-    let resolved = match action {
-        ControllerAction::Select(resolved)
-        | ControllerAction::ApplySettingsAndRestart { resolved, .. } => resolved,
-        ControllerAction::Run
-        | ControllerAction::Pause
-        | ControllerAction::StepOnce
-        | ControllerAction::Restart
-        | ControllerAction::CaptureCheckpoint(_)
-        | ControllerAction::ApplyScenarioAction(_) => return None,
+fn replacement_selection(command: &SessionCommand) -> Option<CatalogSelection> {
+    let resolved = match command {
+        SessionCommand::Select { resolved }
+        | SessionCommand::ApplySettingsAndRestart { resolved, .. } => resolved,
+        SessionCommand::Run
+        | SessionCommand::Pause
+        | SessionCommand::StepOnce
+        | SessionCommand::Restart
+        | SessionCommand::CaptureCheckpoint { .. }
+        | SessionCommand::ApplyScenarioAction { .. } => return None,
     };
     let identity = resolved.identity();
     Some(CatalogSelection::new(
@@ -414,6 +482,6 @@ fn replacement_selection(action: &ControllerAction) -> Option<CatalogSelection> 
     ))
 }
 
-const fn resets_cadence(action: &ControllerAction) -> bool {
-    !matches!(action, ControllerAction::CaptureCheckpoint(_))
+const fn resets_cadence(command: &SessionCommand) -> bool {
+    !matches!(command, SessionCommand::CaptureCheckpoint { .. })
 }

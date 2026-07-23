@@ -810,17 +810,17 @@ fn aabb_commands(
     let mut commands = Vec::new();
     let width = right - left;
     let height = bottom - top;
-    if let Some(fill) = style.maybe_fill {
-        if let (Ok(origin), Ok(size)) = (
+    if let Some(fill) = style.maybe_fill
+        && let (Ok(origin), Ok(size)) = (
             LogicalPoint::new(left, top),
             LogicalSize::new(width, height),
-        ) {
-            commands.push(DrawCommand::FillRectangle(Rectangle::new(
-                origin,
-                size,
-                color(fill),
-            )));
-        }
+        )
+    {
+        commands.push(DrawCommand::FillRectangle(Rectangle::new(
+            origin,
+            size,
+            color(fill),
+        )));
     }
     if style.stroke_width > 0.0 {
         let corners = [

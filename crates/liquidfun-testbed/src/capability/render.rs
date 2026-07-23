@@ -329,7 +329,7 @@ fn renderer_command(command: RasterCommand) -> Result<DrawCommand, CapabilityErr
             color,
         } => {
             let origin = renderer_point((x, y))?;
-            let size = LogicalSize::new(width as f32, height as f32)
+            let size = LogicalSize::new(i32_to_f32(width), i32_to_f32(height))
                 .map_err(|_| CapabilityError::CapabilityFailed)?;
             Ok(DrawCommand::FillRectangle(Rectangle::new(
                 origin, size, color,
@@ -341,8 +341,8 @@ fn renderer_command(command: RasterCommand) -> Result<DrawCommand, CapabilityErr
             color,
             width,
         } => {
-            let stroke =
-                Stroke::new(color, width as f32).map_err(|_| CapabilityError::CapabilityFailed)?;
+            let stroke = Stroke::new(color, i32_to_f32(width))
+                .map_err(|_| CapabilityError::CapabilityFailed)?;
             Ok(DrawCommand::StrokeLine(Line::new(
                 renderer_point(start)?,
                 renderer_point(end)?,
@@ -354,14 +354,23 @@ fn renderer_command(command: RasterCommand) -> Result<DrawCommand, CapabilityErr
             radius,
             color,
         } => Ok(DrawCommand::FillCircle(
-            Circle::new(renderer_point(center)?, radius as f32, color)
+            Circle::new(renderer_point(center)?, i32_to_f32(radius), color)
                 .map_err(|_| CapabilityError::CapabilityFailed)?,
         )),
     }
 }
 
 fn renderer_point(point: (i32, i32)) -> Result<LogicalPoint, CapabilityError> {
-    LogicalPoint::new(point.0 as f32, point.1 as f32).map_err(|_| CapabilityError::CapabilityFailed)
+    LogicalPoint::new(i32_to_f32(point.0), i32_to_f32(point.1))
+        .map_err(|_| CapabilityError::CapabilityFailed)
+}
+
+#[allow(
+    clippy::cast_precision_loss,
+    reason = "bounded fixture coordinates intentionally project into the renderer's f32 space"
+)]
+fn i32_to_f32(value: i32) -> f32 {
+    value as f32
 }
 
 fn non_background_pixels(pixels: &RenderedPixels) -> usize {

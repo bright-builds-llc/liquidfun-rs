@@ -13,6 +13,7 @@ use liquidfun_testbed::{
     input::{
         InputContext, InputEffect, KeyboardKey, PresentationAction, ScenarioShortcut, resolve_key,
     },
+    interactive::InteractiveTestbed,
     ui::{
         SCREENSHOT_CLARIFICATION,
         overlays::{DiagnosticProfile, OverlayKind, OverlayState},
@@ -140,6 +141,63 @@ fn controller_adapter_rejects_duplicate_and_invalid_submission() {
         invalid.expect_err("invalid transition must fail"),
         ControllerAdapterError::InvalidTransition
     );
+}
+
+#[test]
+fn desktop_command_emission_is_passive_until_explicit_submission() {
+    // Arrange
+    let mut testbed = InteractiveTestbed::new().expect("reviewed catalog should load");
+    let visual_index = testbed
+        .visible_rows()
+        .iter()
+        .position(|row| row.eligibility().visual())
+        .expect("reviewed catalog should retain a visual scenario");
+
+    // Act
+    let command = testbed
+        .begin_select_visible(visual_index)
+        .expect("selection should emit a typed command");
+    let state_before_submission = testbed.session_state();
+    testbed
+        .submit_command(command.clone())
+        .expect("emitted selection should submit");
+
+    // Assert
+    assert!(matches!(command, SessionCommand::Select { .. }));
+    assert_eq!(state_before_submission, SessionState::NoSelection);
+    assert_eq!(testbed.session_state(), SessionState::ReadyPaused);
+}
+
+#[test]
+fn running_session_advances_only_when_the_logical_driver_is_called() {
+    // Arrange
+    let mut testbed = InteractiveTestbed::new().expect("reviewed catalog should load");
+    let visual_index = testbed
+        .visible_rows()
+        .iter()
+        .position(|row| row.eligibility().visual())
+        .expect("reviewed catalog should retain a visual scenario");
+    testbed
+        .select_visible(visual_index)
+        .expect("visual scenario should select");
+    testbed.run().expect("selected session should enter Run");
+    let timestep = testbed
+        .selected_settings()
+        .expect("selected scenario should expose settings")
+        .timestep_bits()
+        .to_f32();
+    let before = testbed.completed_logical_steps();
+
+    // Act
+    let after_repaint_only = testbed.completed_logical_steps();
+    let driven = testbed
+        .drive_logical_time(std::time::Duration::from_secs_f32(timestep))
+        .expect("explicit logical driver should advance");
+
+    // Assert
+    assert_eq!(after_repaint_only, before);
+    assert_eq!(driven, 1);
+    assert_eq!(testbed.completed_logical_steps(), before + 1);
 }
 
 #[test]

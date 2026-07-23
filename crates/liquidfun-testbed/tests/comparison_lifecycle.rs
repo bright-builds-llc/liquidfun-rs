@@ -6,6 +6,45 @@ mod interactive;
 
 use interactive::DesktopDiagnostics;
 
+const LAUNCHER_SOURCE: &str = include_str!("../src/bin/interactive.rs");
+
+#[test]
+fn desktop_shell_uses_eframe_without_render_frame_time_as_physics_time() {
+    // Arrange
+    let required_links = [
+        "impl eframe::App for DesktopApp",
+        "eframe::run_native(",
+        "fn logic(",
+        "fn ui(",
+        "drive_logical_time(",
+        "SessionCommand",
+    ];
+    let forbidden_links = [
+        concat!("macro", "quad"),
+        "get_frame_time(",
+        "next_frame(",
+        ".testbed.update(",
+        "World::step",
+    ];
+
+    // Act
+    let missing = required_links
+        .into_iter()
+        .filter(|link| !LAUNCHER_SOURCE.contains(link))
+        .collect::<Vec<_>>();
+    let present = forbidden_links
+        .into_iter()
+        .filter(|link| LAUNCHER_SOURCE.contains(link))
+        .collect::<Vec<_>>();
+
+    // Assert
+    assert!(missing.is_empty(), "missing eframe wiring: {missing:?}");
+    assert!(
+        present.is_empty(),
+        "render-time or legacy authority leaked into the shell: {present:?}"
+    );
+}
+
 #[test]
 fn comparison_failure_then_success_retires_the_stale_identity_error() {
     // Arrange
