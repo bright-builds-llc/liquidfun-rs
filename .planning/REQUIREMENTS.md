@@ -149,7 +149,7 @@ Requirements for the first release permitted to claim complete parity with the s
 - [ ] **DOCS-06**: `BENCHMARKING.md` documents comparable workloads, environment capture, profiling workflow, result interpretation, and rules for performance claims.
 - [x] **DOCS-07**: `SAFETY.md` documents the public safety model, identity/invalidation, callback mutation, buffer ownership, user data, and every remaining unsafe invariant.
 - [ ] **DOCS-08**: `CONTRIBUTING.md` and release documentation explain bootstrap, quality gates, compatibility sign-off, provenance rules, generated artifacts, SemVer, MSRV, and publication checks.
-- [ ] **DOCS-09**: The final v1 release audit verifies complete docs, required notices, packaged crate contents, upstream test/example accounting, supported platforms, benchmarks, safety evidence, and zero unexplained compatibility gaps.
+- [x] **DOCS-09**: The final v1 release audit verifies complete docs, required notices, packaged crate contents, upstream test/example accounting, supported platforms, benchmarks, safety evidence, and zero unexplained compatibility gaps.
 
 ## v2 Requirements
 
@@ -301,7 +301,7 @@ Roadmap creation maps every v1 requirement to exactly one phase.
 | DOCS-06 | Phase 12 | Pending |
 | DOCS-07 | Phase 12 | Complete |
 | DOCS-08 | Phase 12 | Pending |
-| DOCS-09 | Phase 12 | Pending |
+| DOCS-09 | Phase 12 | Complete |
 
 **Coverage:**
 

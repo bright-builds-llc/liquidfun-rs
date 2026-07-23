@@ -3,15 +3,15 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 12-12-PLAN.md out of order; next sequential plan remains 12-03
-last_updated: "2026-07-23T21:47:45.336Z"
+stopped_at: Completed 12-03-PLAN.md
+last_updated: "2026-07-23T22:19:56.157Z"
 last_activity: "2026-07-23"
 progress:
   total_phases: 12
   completed_phases: 11
   total_plans: 216
-  completed_plans: 201
-  percent: 93
+  completed_plans: 202
+  percent: 94
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-23)
 ## Current Position
 
 Phase: 12 (Performance, Portability, and Release Hardening) — EXECUTING
-Plan: 3 of 25
+Plan: 4 of 25
 Status: Ready to execute
 Last activity: 2026-07-23
 
@@ -208,6 +208,7 @@ Progress: [█████████░] 93%
 | Phase 12 P09 | 35m | 2 tasks | 9 files |
 | Phase 12 P10 | 15m | 1 tasks | 6 files |
 | Phase 12 P12 | 18m | 1 tasks | 4 files |
+| Phase 12 P03 | 29m | 1 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -577,6 +578,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 12]: Fan one Rust 1.97 package artifact across exact MSRV and native runners; consumers never repackage.
 - [Phase 12]: Publish platform success only as workflow-bound identity-last D2 evidence after package isolation, rustdoc, and smoke verification.
 - [Phase 12]: Run Intel macOS only on macos-15-intel with fresh 90-day native evidence; otherwise publish a distinct unsupported downgrade.
+- [Phase 12]: Render one immutable egui frame, then submit at most one validated SessionCommand after rendering.
+- [Phase 12]: Drive Running sessions only through the fixed-time logical driver in eframe's non-paint logic callback.
+- [Phase 12]: Preserve exact 35 percent matching-primitive opacity while reusing protocol projection and comparison authority.
 
 ### Pending Todos
 
@@ -590,6 +594,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-23T21:47:45.290Z
-Stopped at: Completed 12-12-PLAN.md out of order; next sequential plan remains 12-03
+Last session: 2026-07-23T22:19:56.152Z
+Stopped at: Completed 12-03-PLAN.md
 Resume file: None
