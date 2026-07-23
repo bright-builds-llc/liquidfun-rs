@@ -1,5 +1,5 @@
 ---
-status: complete
+status: diagnosed
 phase: 11-examples-headless-tooling-and-testbed
 source:
   - 11-01-SUMMARY.md
@@ -32,7 +32,7 @@ source:
   - 11-28-SUMMARY.md
   - 11-29-SUMMARY.md
 started: 2026-07-23T03:12:51Z
-updated: 2026-07-23T03:38:08Z
+updated: 2026-07-23T03:45:13Z
 ---
 
 # Phase 11 User Acceptance Testing
@@ -83,7 +83,11 @@ blocked: 0
   reason: "Agent-controlled UAT observed that a stale `checkpoint comparison identity mismatch: resolved_sha256` error remained visible after a later comparison succeeded."
   severity: major
   test: 4
-  root_cause: ""
-  artifacts: []
-  missing: []
-  debug_session: ""
+  root_cause: "`DesktopApp::refresh_comparison` stores an identity failure in `maybe_error`, but a later success only replaces `maybe_comparison`; `clear_comparison` also leaves the error intact. Inspect renders both fields independently, so a valid live comparison can coexist with the stale failure."
+  artifacts:
+    - path: "crates/liquidfun-testbed/src/bin/interactive.rs"
+      issue: "`refresh_comparison` and `clear_comparison` leave `maybe_error` populated while a successful comparison renders."
+  missing:
+    - "Replace or clear the comparison-scoped error when a comparison succeeds or is reset."
+    - "Add a desktop lifecycle regression covering identity failure followed by successful comparison."
+  debug_session: ".planning/debug/stale-comparison-error.md"
