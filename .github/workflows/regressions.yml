@@ -1,0 +1,91 @@
+name: Phase 12 named regression evidence
+
+on:
+  schedule:
+    - cron: "11 6 * * 1"
+  workflow_dispatch:
+    inputs:
+      candidate_sha:
+        description: Full lowercase commit SHA to replay
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: phase12-regressions-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CANDIDATE_SHA: ${{ github.event_name == 'workflow_dispatch' && inputs.candidate_sha || github.sha }}
+
+jobs:
+  regressions:
+    name: Replay every reviewed named regression
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Check out the exact detached candidate
+        # actions/checkout v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          ref: ${{ env.CANDIDATE_SHA }}
+          fetch-depth: 1
+          persist-credentials: false
+          submodules: false
+      - name: Validate full detached candidate identity
+        run: |
+          [[ "$CANDIDATE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          if git symbolic-ref --quiet HEAD >/dev/null; then
+            exit 1
+          fi
+      - name: Install pinned Rust
+        run: rustup toolchain install 1.97.0 --profile minimal
+      - name: Produce the complete named-regression artifact
+        run: scripts/phase12-regressions.sh run "$CANDIDATE_SHA"
+      - name: Verify typed identity-last regression evidence
+        run: |
+          evidence="target/phase12-regressions/$CANDIDATE_SHA"
+          test -s "$evidence/completion.json"
+          test -s "$evidence/identity.json"
+          test -s "$evidence/producer-identity.json"
+          test "$evidence/identity.json" -nt "$evidence/completion.json"
+          test "$evidence/producer-identity.json" -nt "$evidence/identity.json"
+
+          # shellcheck disable=SC2016
+          completion_pattern='mv -- "$completion_staging" "$output_directory/completion.json"'
+          completion_line=$(rg -n --fixed-strings "$completion_pattern" \
+            scripts/phase12-regressions.sh | cut -d: -f1)
+          # shellcheck disable=SC2016
+          validator_command='cargo xtask safety-evidence validate-regression-results --candidate "$candidate_sha" --results "target/phase12-regressions/$candidate_sha"'
+          test "$(rg -c --fixed-strings "$validator_command" scripts/phase12-regressions.sh)" = 1
+          validator_line=$(rg -n --fixed-strings "$validator_command" \
+            scripts/phase12-regressions.sh | cut -d: -f1)
+          # shellcheck disable=SC2016
+          identity_pattern='write_producer_identity_last "$output_directory" "$candidate_sha"'
+          identity_line=$(rg -n --fixed-strings "$identity_pattern" \
+            scripts/phase12-regressions.sh | cut -d: -f1)
+          test "$completion_line" -lt "$validator_line"
+          test "$validator_line" -lt "$identity_line"
+
+          test "$(jq -r '.candidate_sha' "$evidence/producer-identity.json")" = "$CANDIDATE_SHA"
+          test "$(jq -r '.evidence_kind' "$evidence/producer-identity.json")" = "named_regressions"
+          test "$(jq -r '.producer_workflow' "$evidence/producer-identity.json")" = "${{ github.workflow }}"
+          test "$(jq -r '.producer_job' "$evidence/producer-identity.json")" = "${{ github.job }}"
+          test "$(jq -r '.run_id' "$evidence/producer-identity.json")" = "${{ github.run_id }}"
+          manifest_sha256=$(jq -r '.regression_manifest_sha256' "$evidence/identity.json")
+          test "$(jq -r '.regression_manifest_sha256' "$evidence/producer-identity.json")" = "$manifest_sha256"
+          named_test_count=$(jq -r '.results | length' "$evidence/completion.json")
+          test "$(jq -r '.named_test_count' "$evidence/producer-identity.json")" = "$named_test_count"
+          payload_sha256=$(jq -r '.payload_sha256' "$evidence/producer-identity.json")
+          test "$(sha256sum "$evidence/identity.json" | awk '{print $1}')" = "$payload_sha256"
+      - name: Upload one candidate-scoped regression artifact
+        # actions/upload-artifact v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: phase12-regressions-${{ env.CANDIDATE_SHA }}
+          path: target/phase12-regressions/${{ env.CANDIDATE_SHA }}
+          if-no-files-found: error
+          retention-days: 14

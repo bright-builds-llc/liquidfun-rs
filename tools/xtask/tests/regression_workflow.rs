@@ -19,6 +19,62 @@ fn producer_source() -> TestResult<String> {
     )?)
 }
 
+fn workflow_source() -> TestResult<String> {
+    Ok(fs::read_to_string(
+        workspace_root().join(".github/workflows/regressions.yml"),
+    )?)
+}
+
+fn actions_are_fully_pinned(source: &str) -> bool {
+    let action_references = source
+        .lines()
+        .map(str::trim)
+        .filter_map(|line| line.strip_prefix("uses: "))
+        .collect::<Vec<_>>();
+    action_references.len() == 2
+        && action_references.iter().all(|reference| {
+            reference
+                .rsplit_once('@')
+                .is_some_and(|(_action, revision)| {
+                    revision.len() == 40 && revision.bytes().all(|byte| byte.is_ascii_hexdigit())
+                })
+        })
+}
+
+fn workflow_contract_is_valid(source: &str) -> bool {
+    const PRODUCER: &str = "run: scripts/phase12-regressions.sh run \"$CANDIDATE_SHA\"";
+    const VERIFY: &str = "- name: Verify typed identity-last regression evidence";
+    const UPLOAD: &str = "uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a";
+    let Some((producer, verify, upload)) = source
+        .find(PRODUCER)
+        .zip(source.find(VERIFY))
+        .zip(source.find(UPLOAD))
+        .map(|((producer, verify), upload)| (producer, verify, upload))
+    else {
+        return false;
+    };
+
+    producer < verify
+        && verify < upload
+        && source.matches(PRODUCER).count() == 1
+        && source.matches("uses: actions/upload-artifact@").count() == 1
+        && source.matches("timeout-minutes:").count() == 1
+        && source.contains("candidate_sha:")
+        && source.contains("required: true")
+        && source.contains("^[0-9a-f]{40}$")
+        && source.contains("${{ github.run_id }}")
+        && source.contains("persist-credentials: false")
+        && source.contains("submodules: false")
+        && source.contains(VALIDATOR_COMMAND)
+        && source.contains("name: phase12-regressions-${{ env.CANDIDATE_SHA }}")
+        && source.contains("path: target/phase12-regressions/${{ env.CANDIDATE_SHA }}")
+        && !source.contains("target/fuzz")
+        && !source.contains("phase12-sanitizer")
+        && !source.contains("phase12-coverage")
+        && !source.contains("retry")
+        && actions_are_fully_pinned(source)
+}
+
 fn script_contract_is_valid(source: &str) -> bool {
     let maybe_completion =
         source.find("mv -- \"$completion_staging\" \"$output_directory/completion.json\"");
@@ -45,6 +101,59 @@ fn script_contract_is_valid(source: &str) -> bool {
         && source.contains("target/phase12-regressions/$candidate_sha")
         && !source.contains("retry")
         && !source.contains("--results \"$")
+}
+
+#[test]
+fn workflow_projection_accepts_one_candidate_scoped_upload_after_identity() -> TestResult {
+    // Arrange
+    let source = workflow_source()?;
+
+    // Act
+    let valid = workflow_contract_is_valid(&source);
+
+    // Assert
+    assert!(valid);
+    Ok(())
+}
+
+#[test]
+fn workflow_projection_rejects_candidate_pin_order_and_cardinality_mutations() -> TestResult {
+    // Arrange
+    let source = workflow_source()?;
+    let short_candidate = source.replace("^[0-9a-f]{40}$", "^[0-9a-f]{7,40}$");
+    let floating_action = source.replace(
+        "actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0",
+        "actions/checkout@v7",
+    );
+    let missing_timeout = source.replace("timeout-minutes:", "removed-timeout:");
+    let missing_run_id = source.replace("${{ github.run_id }}", "missing-run-id");
+    let duplicate_producer =
+        format!("{source}\nrun: scripts/phase12-regressions.sh run \"$CANDIDATE_SHA\"\n");
+    let upload_before_identity =
+        format!("uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a\n{source}");
+    let merged_upload = source.replace(
+        "path: target/phase12-regressions/${{ env.CANDIDATE_SHA }}",
+        "path: |\n            target/phase12-regressions/${{ env.CANDIDATE_SHA }}\n            target/fuzz-evidence",
+    );
+    let unscoped_name = source.replace(
+        "name: phase12-regressions-${{ env.CANDIDATE_SHA }}",
+        "name: phase12-regressions",
+    );
+
+    // Act / Assert
+    for invalid in [
+        short_candidate,
+        floating_action,
+        missing_timeout,
+        missing_run_id,
+        duplicate_producer,
+        upload_before_identity,
+        merged_upload,
+        unscoped_name,
+    ] {
+        assert!(!workflow_contract_is_valid(&invalid));
+    }
+    Ok(())
 }
 
 #[test]
@@ -114,6 +223,40 @@ mod unix {
         command_log: PathBuf,
         event_log: PathBuf,
         candidate: String,
+    }
+
+    struct ConfinedResults {
+        candidate: String,
+        path: PathBuf,
+    }
+
+    impl ConfinedResults {
+        fn new() -> TestResult<Self> {
+            let candidate = format!("{:040x}", NEXT_ID.fetch_add(1, Ordering::Relaxed) + 0x9000);
+            let path = workspace_root()
+                .join("target/phase12-regressions")
+                .join(&candidate);
+            fs::create_dir_all(&path)?;
+            fs::write(
+                path.join("completion.json"),
+                serde_json::to_vec_pretty(&json!({
+                    "schema_version": 1,
+                    "candidate_sha": candidate,
+                    "complete": true,
+                    "results": [],
+                }))?,
+            )?;
+            Ok(Self { candidate, path })
+        }
+    }
+
+    impl Drop for ConfinedResults {
+        fn drop(&mut self) {
+            if self.path.exists() {
+                fs::remove_dir_all(&self.path)
+                    .expect("test-owned confined results should be removable");
+            }
+        }
     }
 
     impl Fixture {
@@ -341,6 +484,44 @@ esac
         assert_eq!(producer["producer_job"], "fixture-job");
         assert_eq!(producer["run_id"], 42);
         assert_eq!(producer["named_test_count"], 1);
+        assert_eq!(producer["regression_manifest_sha256"], "a".repeat(64));
+        assert_eq!(producer["payload_path"], "identity.json");
+        assert_eq!(
+            producer["payload_sha256"],
+            format!(
+                "{:x}",
+                Sha256::digest(fs::read(output_directory.join("identity.json"))?)
+            )
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn real_typed_cli_validates_the_exact_confined_results_path() -> TestResult {
+        // Arrange
+        let results = ConfinedResults::new()?;
+        let relative = format!("target/phase12-regressions/{}", results.candidate);
+
+        // Act
+        let output = Command::new(env!("CARGO_BIN_EXE_xtask"))
+            .args([
+                "safety-evidence",
+                "validate-regression-results",
+                "--candidate",
+                &results.candidate,
+                "--results",
+                &relative,
+            ])
+            .current_dir(workspace_root())
+            .output()?;
+
+        // Assert
+        assert!(
+            output.status.success(),
+            "stderr:\n{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        assert!(results.path.join("identity.json").is_file());
         Ok(())
     }
 
