@@ -3,14 +3,14 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 12-05-PLAN.md (out-of-order; next sequential plan remains 12-02)
-last_updated: "2026-07-23T19:23:53.080Z"
+stopped_at: Completed 12-11-PLAN.md (out-of-order; next sequential plan remains 12-02)
+last_updated: "2026-07-23T19:45:10.995Z"
 last_activity: "2026-07-23"
 progress:
   total_phases: 12
   completed_phases: 11
   total_plans: 216
-  completed_plans: 194
+  completed_plans: 195
   percent: 90
 ---
 
@@ -201,6 +201,7 @@ Progress: [█████████░] 90%
 | Phase 12 P01 | 1h 34m | 1 tasks | 6 files |
 | Phase 12 P04 | 14m | 1 tasks | 8 files |
 | Phase 12 P05 | 12m | 1 tasks | 7 files |
+| Phase 12 P11 | 18m | 1 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -550,6 +551,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 12]: Represent common profile parents and optional Rust-only children as separate closed enums joined by explicit parent mappings.
 - [Phase 12]: Keep Duration values outside equality, hashing, serialization, checkpoints, and StepReport while exposing versioned structural names.
 - [Phase 12]: Use a fixed 32-slot diagnostic buffer so disabled profiling allocates nothing and overflow cannot grow memory or alter semantic success.
+- [Phase 12]: Create one Rust 1.97 crate artifact and bind its exact bytes, source inventory, consumer metadata, and candidate commit in a SHA-256 identity.
+- [Phase 12]: Reserve Rust 1.92 full artifact verification for canonical x86_64 Linux while native target lanes use Rust 1.97 and D2 evidence.
+- [Phase 12]: Downgrade x86_64 macOS when named native-runner evidence is missing, malformed, future-dated, or older than 90 days.
 
 ### Pending Todos
 
@@ -563,6 +567,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-23T19:23:53.075Z
-Stopped at: Completed 12-05-PLAN.md (out-of-order; next sequential plan remains 12-02)
+Last session: 2026-07-23T19:45:10.984Z
+Stopped at: Completed 12-11-PLAN.md (out-of-order; next sequential plan remains 12-02)
 Resume file: None

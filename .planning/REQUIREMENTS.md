@@ -14,7 +14,7 @@ Requirements for the first release permitted to claim complete parity with the s
 - [x] **FND-03**: Contributors can build the pinned upstream C++ oracle with documented, reproducible CMake/Ninja commands on every supported contributor platform.
 - [x] **FND-04**: Maintainers can trace translated code, tests, scenarios, and reference data to upstream source paths and revisions with required license and alteration notices.
 - [x] **FND-05**: Ordinary Rust consumers can build, test, package, and use the published crate through Cargo without C++, CMake, Bazel, the upstream submodule, or reference data.
-- [ ] **FND-06**: Contributors can use a pinned Rust development toolchain and a declared MSRV, with the complete publishable feature surface verified on both.
+- [x] **FND-06**: Contributors can use a pinned Rust development toolchain and a declared MSRV, with the complete publishable feature surface verified on both.
 - [x] **FND-07**: Contributors can discover repository workflows through a root `justfile` whose recipes are thin wrappers around documented Cargo, `xtask`, and oracle commands.
 - [x] **FND-08**: CI can reject an upstream submodule revision, generated reference artifact, toolchain pin, or packaged-crate content that does not match its recorded provenance.
 
@@ -132,12 +132,12 @@ Requirements for the first release permitted to claim complete parity with the s
 
 ### Platform Support
 
-- [ ] **PLAT-01**: The complete supported v1 surface builds and passes required verification on Linux x86_64.
-- [ ] **PLAT-02**: The complete supported v1 surface builds and passes required verification on Linux ARM64.
-- [ ] **PLAT-03**: The complete supported v1 surface builds and passes required verification on macOS ARM64.
-- [ ] **PLAT-04**: The complete supported v1 surface builds and passes required verification on macOS x86_64 where sustainable CI capacity exists, with any limitation explicit.
-- [ ] **PLAT-05**: The complete supported v1 surface builds and passes required verification on Windows x86_64.
-- [ ] **PLAT-06**: Platform/compiler differences are classified through documented determinism tiers and reviewed tolerances rather than silently changing reference data.
+- [x] **PLAT-01**: The complete supported v1 surface builds and passes required verification on Linux x86_64.
+- [x] **PLAT-02**: The complete supported v1 surface builds and passes required verification on Linux ARM64.
+- [x] **PLAT-03**: The complete supported v1 surface builds and passes required verification on macOS ARM64.
+- [x] **PLAT-04**: The complete supported v1 surface builds and passes required verification on macOS x86_64 where sustainable CI capacity exists, with any limitation explicit.
+- [x] **PLAT-05**: The complete supported v1 surface builds and passes required verification on Windows x86_64.
+- [x] **PLAT-06**: Platform/compiler differences are classified through documented determinism tiers and reviewed tolerances rather than silently changing reference data.
 
 ### Documentation and Release
 
@@ -199,7 +199,7 @@ Roadmap creation maps every v1 requirement to exactly one phase.
 | FND-03 | Phase 1 | Complete |
 | FND-04 | Phase 1 | Complete |
 | FND-05 | Phase 1 | Complete |
-| FND-06 | Phase 12 | Pending |
+| FND-06 | Phase 12 | Complete |
 | FND-07 | Phase 1 | Complete |
 | FND-08 | Phase 1 | Complete |
 | COMP-01 | Phase 1 | Complete |
@@ -287,12 +287,12 @@ Roadmap creation maps every v1 requirement to exactly one phase.
 | PERF-04 | Phase 12 | Complete |
 | PERF-05 | Phase 12 | Complete |
 | PERF-06 | Phase 12 | Pending |
-| PLAT-01 | Phase 12 | Pending |
-| PLAT-02 | Phase 12 | Pending |
-| PLAT-03 | Phase 12 | Pending |
-| PLAT-04 | Phase 12 | Pending |
-| PLAT-05 | Phase 12 | Pending |
-| PLAT-06 | Phase 12 | Pending |
+| PLAT-01 | Phase 12 | Complete |
+| PLAT-02 | Phase 12 | Complete |
+| PLAT-03 | Phase 12 | Complete |
+| PLAT-04 | Phase 12 | Complete |
+| PLAT-05 | Phase 12 | Complete |
+| PLAT-06 | Phase 12 | Complete |
 | DOCS-01 | Phase 12 | Pending |
 | DOCS-02 | Phase 3 | Complete |
 | DOCS-03 | Phase 1 | Complete |
