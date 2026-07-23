@@ -3,15 +3,15 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 12-09-PLAN.md out of order; next sequential plan remains 12-03
-last_updated: "2026-07-23T21:06:29.907Z"
+stopped_at: Completed 12-10-PLAN.md out of order; next sequential plan remains 12-03
+last_updated: "2026-07-23T21:24:40.648Z"
 last_activity: "2026-07-23"
 progress:
   total_phases: 12
   completed_phases: 11
   total_plans: 216
-  completed_plans: 199
-  percent: 92
+  completed_plans: 200
+  percent: 93
 ---
 
 # Project State
@@ -206,6 +206,7 @@ Progress: [█████████░] 92%
 | Phase 12 P02 | 11min | 1 tasks | 7 files |
 | Phase 12 P06 | 20m | 1 tasks | 12 files |
 | Phase 12 P09 | 35m | 2 tasks | 9 files |
+| Phase 12 P10 | 15m | 1 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -569,6 +570,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 12]: Keep fuzz-only dependencies in an isolated nested workspace outside ordinary Cargo and package builds.
 - [Phase 12]: Validate complete bounded mutation programs before applying any physics effects.
 - [Phase 12]: Use build-only pull requests and exact-candidate bounded scheduled/manual fuzz campaigns with confined minimized evidence.
+- [Phase 12]: Keep the reviewed regression registry empty until a real minimized finding exists; never invent parity evidence.
+- [Phase 12]: Validate exact candidate result directories completely and publish identity.json last with create-new semantics.
+- [Phase 12]: Keep Rust sanitizer, C++ ASan/UBSan, Rust coverage, C++ coverage, and differential coverage as distinct non-parity evidence kinds.
 
 ### Pending Todos
 
@@ -582,6 +586,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-23T21:06:29.902Z
-Stopped at: Completed 12-09-PLAN.md out of order; next sequential plan remains 12-03
+Last session: 2026-07-23T21:24:40.641Z
+Stopped at: Completed 12-10-PLAN.md out of order; next sequential plan remains 12-03
 Resume file: None

@@ -107,9 +107,9 @@ Requirements for the first release permitted to claim complete parity with the s
 - [ ] **TEST-03**: Every applicable upstream test is ported, replaced by equivalent evidence, or documented as irrelevant with a reviewed rationale.
 - [x] **TEST-04**: Property tests cover geometry invariants, broad-phase behavior, handle validity, particle permutation/group invariants, query correctness, and reproducible world operation sequences.
 - [x] **TEST-05**: Fuzz targets cover shape/collision inputs, scenario protocol parsing, world mutation sequences, particle operations, and every unsafe boundary appropriate for fuzzing.
-- [ ] **TEST-06**: Miri and Rust sanitizers exercise useful supported subsets, while C++ oracle builds run appropriate sanitizers without crossing failures into the Rust process.
+- [x] **TEST-06**: Miri and Rust sanitizers exercise useful supported subsets, while C++ oracle builds run appropriate sanitizers without crossing failures into the Rust process.
 - [x] **TEST-07**: Every corrected differential mismatch becomes a minimized named regression that fails before the fix and records its oracle/tolerance provenance.
-- [ ] **TEST-08**: CI reports Rust coverage and keeps C++ coverage separate unless compatible LLVM tooling is explicitly proven; coverage gaps are visible by subsystem.
+- [x] **TEST-08**: CI reports Rust coverage and keeps C++ coverage separate unless compatible LLVM tooling is explicitly proven; coverage gaps are visible by subsystem.
 - [x] **TEST-09**: Verification entrypoints can run fast affected checks locally and reserve expensive randomized, differential, sanitizer, coverage, and benchmark suites for appropriate scheduled/manual lanes.
 
 ### Examples and Testbed
@@ -271,9 +271,9 @@ Roadmap creation maps every v1 requirement to exactly one phase.
 | TEST-03 | Phase 11 | Pending |
 | TEST-04 | Phase 10 | Complete |
 | TEST-05 | Phase 12 | Complete |
-| TEST-06 | Phase 12 | Pending |
+| TEST-06 | Phase 12 | Complete |
 | TEST-07 | Phase 12 | Complete |
-| TEST-08 | Phase 12 | Pending |
+| TEST-08 | Phase 12 | Complete |
 | TEST-09 | Phase 1 | Complete |
 | EXMP-01 | Phase 11 | Pending |
 | EXMP-02 | Phase 11 | Pending |
