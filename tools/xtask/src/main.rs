@@ -8,6 +8,7 @@ mod phase10_evidence;
 mod phase11_evidence;
 mod phase9_evidence;
 mod provenance;
+mod safety_evidence;
 mod upstream;
 
 use std::error::Error;
@@ -29,6 +30,7 @@ Commands:
   phase9-evidence Validate local or exact-ref Phase 9 evidence
   phase10-evidence Validate local or exact-ref Phase 10 evidence
   phase11-evidence Validate local or exact-ref Phase 11 evidence
+  safety-evidence Validate typed regression, safety, and coverage evidence
   package     Validate the publishable package
   check       Run the aggregate repository checks";
 
@@ -44,6 +46,7 @@ enum XtaskError {
     Phase10Evidence(phase10_evidence::Phase10EvidenceError),
     Phase11Evidence(phase11_evidence::Phase11EvidenceError),
     Provenance(provenance::ProvenanceError),
+    SafetyEvidence(safety_evidence::SafetyEvidenceError),
     Upstream(upstream::UpstreamError),
 }
 
@@ -81,6 +84,7 @@ impl Display for XtaskError {
             Self::Phase10Evidence(error) => Display::fmt(error, formatter),
             Self::Phase11Evidence(error) => Display::fmt(error, formatter),
             Self::Provenance(error) => Display::fmt(error, formatter),
+            Self::SafetyEvidence(error) => Display::fmt(error, formatter),
             Self::Upstream(error) => Display::fmt(error, formatter),
         }
     }
@@ -105,6 +109,7 @@ fn dispatch(args: &[String]) -> Result<(), XtaskError> {
         "inventory" => inventory::run(command_args).map_err(XtaskError::Inventory),
         "provenance" => provenance::run(command_args).map_err(XtaskError::Provenance),
         "package" => package::run(command_args).map_err(XtaskError::Package),
+        "safety-evidence" => safety_evidence::run(command_args).map_err(XtaskError::SafetyEvidence),
         "phase9-evidence" => phase9_evidence::run(command_args).map_err(XtaskError::Phase9Evidence),
         "phase10-evidence" => {
             phase10_evidence::run(command_args).map_err(XtaskError::Phase10Evidence)

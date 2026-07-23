@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "parity_authority": false,
+  "identity_fields": [
+    "candidate_commit",
+    "toolchain_identity",
+    "artifact_path",
+    "artifact_sha256"
+  ],
+  "subsystem_fields": [
+    "name",
+    "exercised_files_or_leaves",
+    "missed_files_or_leaves"
+  ],
+  "rust": {
+    "evidence_kinds": [
+      "rust_sanitizer",
+      "rust_coverage"
+    ],
+    "toolchain_identities": [
+      "nightly-2026-07-15"
+    ],
+    "leaf_kind": "files"
+  },
+  "cpp": {
+    "evidence_kinds": [
+      "cpp_asan_ubsan",
+      "cpp_coverage"
+    ],
+    "toolchain_identities": [
+      "clang-22.1.8"
+    ],
+    "leaf_kind": "files"
+  },
+  "differential": {
+    "evidence_kinds": [
+      "differential_coverage"
+    ],
+    "toolchain_identities": [
+      "semantic-leaf-v1"
+    ],
+    "leaf_kind": "differential_leaves"
+  }
+}

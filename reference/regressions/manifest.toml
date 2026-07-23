@@ -1,0 +1,18 @@
+schema_version = 1
+record_fields = [
+  "id",
+  "minimized_path",
+  "minimized_sha256",
+  "target",
+  "generator",
+  "toolchain",
+  "candidate_commit",
+  "fix_commit",
+  "oracle_identity",
+  "tolerance_identity",
+  "first_divergence_signature",
+  "failure_class",
+  "review_status",
+  "named_test_path",
+]
+regressions = []
