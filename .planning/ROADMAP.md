@@ -18,7 +18,7 @@ The v1 roadmap moves from an immutable, licensed source of truth to a semantic c
 - [x] **Phase 8: Joints, Rope, Callbacks, and Rigid Sign-Off** - Complete joints, standalone rope, hook timing, diagnostic dump, and the broad rigid-body compatibility gate. (completed 2026-07-15)
 - [x] **Phase 9: Particle Storage, Lifecycle, and Coupling** - Implement safe particle systems, storage, lifecycle, contacts, buffers, queries, callbacks, and rigid coupling. (completed 2026-07-18)
 - [x] **Phase 10: Particle Groups, Solvers, and Compatibility Sign-Off** - Complete group topology and every particle behavior in pinned upstream pass order. (completed 2026-07-21)
-- [ ] **Phase 11: Examples, Headless Tooling, and Testbed** - Account for every upstream test/example and expose shared headless and optional visual scenarios.
+- [x] **Phase 11: Examples, Headless Tooling, and Testbed** - Account for every upstream test/example and expose shared headless and optional visual scenarios. (completed 2026-07-23)
 - [ ] **Phase 12: Performance, Portability, and Release Hardening** - Prove performance, safety, platform, documentation, packaging, and zero-gap v1 readiness.
 
 ## Phase Details
@@ -263,7 +263,7 @@ Plans:
 | 8. Joints, Rope, Callbacks, and Rigid Sign-Off | 24/24 | Complete    | 2026-07-15 |
 | 9. Particle Storage, Lifecycle, and Coupling | 31/31 | Complete | 2026-07-18 |
 | 10. Particle Groups, Solvers, and Compatibility Sign-Off | 32/32 | Complete   | 2026-07-21 |
-| 11. Examples, Headless Tooling, and Testbed | 24/29 | In Progress|  |
+| 11. Examples, Headless Tooling, and Testbed | 30/30 | Complete   | 2026-07-23 |
 | 12. Performance, Portability, and Release Hardening | 0/TBD | Not started | - |
 
 *Roadmap created: 2026-07-09*

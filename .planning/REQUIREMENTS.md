@@ -118,7 +118,7 @@ Requirements for the first release permitted to claim complete parity with the s
 - [ ] **EXMP-02**: Contributors can run renderer-neutral scenarios headlessly by name or seed, pause/restart them, single-step them, and capture deterministic semantic checkpoints.
 - [ ] **EXMP-03**: The same scenario definitions drive Rust execution, C++ oracle execution, regression fixtures, benchmarks, and the optional visual testbed.
 - [ ] **EXMP-04**: An optional interactive testbed can select scenarios, pause, step, restart, alter timestep settings, and display contacts, particle contacts, broad-phase data, and performance statistics.
-- [ ] **EXMP-05**: The visual testbed can capture comparison state and display Rust/oracle differences without owning simulation logic or accessing private engine storage.
+- [x] **EXMP-05**: The visual testbed can capture comparison state and display Rust/oracle differences without owning simulation logic or accessing private engine storage.
 - [ ] **EXMP-06**: Core and published physics crates build and run in headless environments without renderer, windowing, or game-engine dependencies.
 
 ### Performance
@@ -279,7 +279,7 @@ Roadmap creation maps every v1 requirement to exactly one phase.
 | EXMP-02 | Phase 11 | Pending |
 | EXMP-03 | Phase 11 | Pending |
 | EXMP-04 | Phase 11 | Pending |
-| EXMP-05 | Phase 11 | Pending |
+| EXMP-05 | Phase 11 | Complete |
 | EXMP-06 | Phase 11 | Pending |
 | PERF-01 | Phase 12 | Pending |
 | PERF-02 | Phase 12 | Pending |
