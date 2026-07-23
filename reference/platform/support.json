@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "evidence_tier": "d2_supported",
+  "durable_targets": [
+    "x86_64-unknown-linux-gnu",
+    "aarch64-unknown-linux-gnu",
+    "aarch64-apple-darwin",
+    "x86_64-pc-windows-msvc"
+  ],
+  "conditional_targets": [
+    {
+      "target": "x86_64-apple-darwin",
+      "tier": "conditional_supported",
+      "native_evidence": null
+    }
+  ],
+  "conditional_evidence_policy": {
+    "max_age_days": 90,
+    "missing_or_expired_outcome": "unsupported"
+  },
+  "scalar_mode": "strict_f32",
+  "compiler_class": "rustc-platform-native",
+  "tolerance_profile": "phase4-v1"
+}

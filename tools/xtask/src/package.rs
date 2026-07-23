@@ -12,11 +12,16 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use flate2::read::GzDecoder;
 
+mod artifact;
 mod metadata;
 #[cfg(test)]
 mod tests;
 
-const USAGE: &str = "Usage: cargo xtask package verify";
+const USAGE: &str = "\
+Usage:
+  cargo xtask package verify
+  cargo xtask package create-artifact --archive <path> --identity <path> --candidate-commit <sha>
+  cargo xtask package verify-artifact --archive <path> --identity <path> --toolchain <version> --target <triple>";
 const FORBIDDEN_PREFIXES: [&str; 3] = ["tools", "third_party", "reference"];
 const FORBIDDEN_EXTENSIONS: [&str; 24] = [
     "asm", "bmp", "c", "cc", "cmake", "cpp", "cxx", "frag", "gif", "glsl", "h", "hh", "hpp", "hxx",
@@ -101,11 +106,18 @@ impl Drop for TemporaryDirectory {
 }
 
 pub(crate) fn run(args: &[String]) -> Result<(), PackageError> {
-    if args != ["verify"] {
-        return Err(PackageError::usage("expected `verify`"));
-    }
+    let Some((command, command_args)) = args.split_first() else {
+        return Err(PackageError::usage("expected a package command"));
+    };
     let repository_root = repository_root()?;
-    verify(&repository_root)
+    match command.as_str() {
+        "verify" if command_args.is_empty() => verify(&repository_root),
+        "create-artifact" => artifact::create(&repository_root, command_args),
+        "verify-artifact" => artifact::verify(&repository_root, command_args),
+        _ => Err(PackageError::usage(format!(
+            "unknown or malformed package command `{command}`"
+        ))),
+    }
 }
 
 fn verify(repository_root: &Path) -> Result<(), PackageError> {
@@ -412,8 +424,11 @@ fn extract_archive(
 
 fn build_and_test(unpacked_crate: &Path, temporary_root: &Path) -> Result<(), PackageError> {
     let cargo = cargo_program();
-    let toolchain =
-        env::var("LIQUIDFUN_XTASK_PACKAGE_TOOLCHAIN").unwrap_or_else(|_| "1.92.0".to_owned());
+    let toolchain = if env::consts::OS == "linux" && env::consts::ARCH == "x86_64" {
+        "1.92.0"
+    } else {
+        "1.97.0"
+    };
     let toolchain_argument = format!("+{toolchain}");
     let target_dir = temporary_root.join("target");
     for (action, arguments) in [

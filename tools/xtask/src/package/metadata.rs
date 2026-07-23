@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::env;
 use std::ffi::OsStr;
 use std::fs;
@@ -70,6 +70,7 @@ struct MetadataPackage {
     name: String,
     publish: Option<Vec<String>>,
     manifest_path: String,
+    rust_version: Option<String>,
     dependencies: Vec<MetadataDependency>,
     features: BTreeMap<String, Vec<String>>,
 }
@@ -78,6 +79,16 @@ struct MetadataPackage {
 struct MetadataDependency {
     name: String,
     path: Option<String>,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub(super) struct ConsumerManifest {
+    pub(super) name: String,
+    pub(super) version: String,
+    pub(super) rust_version: String,
+    pub(super) features: Vec<String>,
+    pub(super) normal_dependencies: Vec<String>,
+    pub(super) license: String,
 }
 
 pub(super) fn verify_workspace(repository_root: &Path, cargo: &OsStr) -> Result<(), PackageError> {
@@ -132,6 +143,12 @@ fn verify_metadata(repository_root: &Path, metadata: &CargoMetadata) -> Result<(
             "liquidfun must remain publishable",
         ));
     }
+    if package.rust_version.as_deref() != Some("1.92") {
+        return Err(PackageError::new(
+            "rust-version",
+            "liquidfun package rust-version must be exactly 1.92",
+        ));
+    }
     if metadata.workspace_default_members != [package.id.clone()]
         || !metadata.workspace_members.contains(&package.id)
     {
@@ -176,7 +193,7 @@ fn verify_metadata(repository_root: &Path, metadata: &CargoMetadata) -> Result<(
     verify_features(&package.features)
 }
 
-pub(super) fn verify_packaged_manifest(path: &Path) -> Result<(), PackageError> {
+pub(super) fn verify_packaged_manifest(path: &Path) -> Result<ConsumerManifest, PackageError> {
     let contents = fs::read_to_string(path).map_err(|error| {
         PackageError::new(
             "manifest",
@@ -228,7 +245,50 @@ pub(super) fn verify_packaged_manifest(path: &Path) -> Result<(), PackageError> 
                 .collect::<BTreeMap<_, _>>()
         })
         .unwrap_or_default();
-    verify_features(&features)
+    verify_features(&features)?;
+    let package = manifest
+        .get("package")
+        .and_then(toml::Value::as_table)
+        .ok_or_else(|| PackageError::new("manifest", "packaged package table is missing"))?;
+    let required_string = |field: &str| {
+        package
+            .get(field)
+            .and_then(toml::Value::as_str)
+            .map(str::to_owned)
+            .ok_or_else(|| {
+                PackageError::new(
+                    "manifest",
+                    format!("packaged package.{field} must be a string"),
+                )
+            })
+    };
+    let rust_version = required_string("rust-version")?;
+    if rust_version != "1.92" {
+        return Err(PackageError::new(
+            "rust-version",
+            "packaged package rust-version must be exactly 1.92",
+        ));
+    }
+    let license = required_string("license")?;
+    if license != "MIT" {
+        return Err(PackageError::new(
+            "license",
+            "packaged package license must be exactly MIT",
+        ));
+    }
+    let normal_dependencies = manifest
+        .get("dependencies")
+        .and_then(toml::Value::as_table)
+        .map(|dependencies| dependencies.keys().cloned().collect())
+        .unwrap_or_default();
+    Ok(ConsumerManifest {
+        name: required_string("name")?,
+        version: required_string("version")?,
+        rust_version,
+        features: features.keys().cloned().collect(),
+        normal_dependencies,
+        license,
+    })
 }
 
 fn verify_dependencies<'a>(
@@ -251,6 +311,16 @@ fn verify_dependencies<'a>(
 }
 
 fn verify_features(features: &BTreeMap<String, Vec<String>>) -> Result<(), PackageError> {
+    let actual = features.keys().map(String::as_str).collect::<BTreeSet<_>>();
+    let expected = ["default", "differential-internals"]
+        .into_iter()
+        .collect::<BTreeSet<_>>();
+    if actual != expected {
+        return Err(PackageError::new(
+            "feature-graph",
+            "consumer features must be exactly `default` and `differential-internals`",
+        ));
+    }
     if features
         .get("default")
         .is_some_and(|members| !members.is_empty())

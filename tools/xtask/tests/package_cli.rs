@@ -9,9 +9,11 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 use std::sync::OnceLock;
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use flate2::Compression;
 use flate2::write::GzEncoder;
+use sha2::{Digest, Sha256};
 
 static FIXTURE_ID: AtomicU64 = AtomicU64::new(0);
 static FAKE_CARGO: OnceLock<Result<PathBuf, String>> = OnceLock::new();
@@ -89,10 +91,7 @@ impl PackageFixture {
             std::process::id()
         ));
         fs::create_dir_all(root.join("crates/liquidfun"))?;
-        fs::write(
-            root.join("crates/liquidfun/Cargo.toml"),
-            "[package]\nname = \"liquidfun\"\nversion = \"0.0.0\"\n",
-        )?;
+        fs::write(root.join("crates/liquidfun/Cargo.toml"), valid_manifest())?;
         fs::write(root.join("LICENSE"), "fixture license\n")?;
         let metadata = root.join("metadata.json");
         fs::write(&metadata, valid_metadata(&root))?;
@@ -120,9 +119,270 @@ impl PackageFixture {
             .output()
     }
 
+    fn artifact_command(
+        &self,
+        identity: &Path,
+        toolchain: &str,
+        target: &str,
+    ) -> io::Result<Output> {
+        Command::new(env!("CARGO_BIN_EXE_xtask"))
+            .args([
+                "package",
+                "verify-artifact",
+                "--archive",
+                path_argument(&self.archive)?,
+                "--identity",
+                path_argument(identity)?,
+                "--toolchain",
+                toolchain,
+                "--target",
+                target,
+            ])
+            .env("LIQUIDFUN_XTASK_ROOT", &self.root)
+            .env("LIQUIDFUN_XTASK_CARGO", fake_cargo()?)
+            .env("LIQUIDFUN_TEST_CARGO_MARKER", &self.cargo_marker)
+            .env("LIQUIDFUN_TEST_ASSERT_PACKAGE_ISOLATION", "1")
+            .output()
+    }
+
+    fn write_artifact_identity(&self) -> TestResult {
+        let archive_bytes = fs::read(&self.archive)?;
+        let identity = serde_json::json!({
+            "schema_version": 1,
+            "archive_sha256": format!("{:x}", Sha256::digest(&archive_bytes)),
+            "archive_bytes": archive_bytes.len(),
+            "package": "liquidfun",
+            "version": "0.0.0",
+            "rust_version": "1.92",
+            "features": ["default", "differential-internals"],
+            "normal_dependencies": ["bitflags"],
+            "source_files": ["Cargo.toml", "LICENSE"],
+            "license_files": ["LICENSE"],
+            "notice_files": [],
+            "candidate_commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "created_with_toolchain": "1.97.0",
+            "scalar_mode": "strict_f32",
+            "compiler_class": "rustc-platform-native",
+            "tolerance_profile": "phase4-v1"
+        });
+        fs::write(
+            self.root.join("artifact-identity.json"),
+            serde_json::to_vec_pretty(&identity)?,
+        )?;
+        Ok(())
+    }
+
+    fn write_platform_policy(&self, support: &serde_json::Value) -> TestResult {
+        fs::create_dir_all(self.root.join("reference/platform"))?;
+        fs::write(
+            self.root.join("reference/platform/support.json"),
+            serde_json::to_vec_pretty(&support)?,
+        )?;
+        fs::write(
+            self.root.join("reference/platform/schema.json"),
+            fs::read(workspace_root().join("reference/platform/schema.json"))?,
+        )?;
+        Ok(())
+    }
+
     fn cleanup(self) -> io::Result<()> {
         fs::remove_dir_all(self.root)
     }
+}
+
+#[test]
+fn verify_artifact_rejects_archive_hash_substitution() -> TestResult {
+    // Arrange
+    let fixture = PackageFixture::new(ArchiveCase::Valid)?;
+    fixture.write_artifact_identity()?;
+    fixture.write_platform_policy(&valid_platform_policy(None))?;
+    fs::write(&fixture.archive, b"substituted archive bytes")?;
+
+    // Act
+    let output = fixture.artifact_command(
+        &fixture.root.join("artifact-identity.json"),
+        "1.97.0",
+        "aarch64-apple-darwin",
+    )?;
+
+    // Assert
+    assert_failure_category(&output, "package/artifact-hash");
+    assert!(!fixture.cargo_marker.exists());
+    fixture.cleanup()?;
+    Ok(())
+}
+
+#[test]
+fn verify_artifact_rejects_wrong_rust_version() -> TestResult {
+    // Arrange
+    let fixture = PackageFixture::new(ArchiveCase::Valid)?;
+    fixture.write_artifact_identity()?;
+    fixture.write_platform_policy(&valid_platform_policy(None))?;
+    let identity_path = fixture.root.join("artifact-identity.json");
+    let mut identity: serde_json::Value = serde_json::from_slice(&fs::read(&identity_path)?)?;
+    identity["rust_version"] = serde_json::json!("1.93");
+    fs::write(&identity_path, serde_json::to_vec_pretty(&identity)?)?;
+
+    // Act
+    let output = fixture.artifact_command(&identity_path, "1.97.0", "aarch64-apple-darwin")?;
+
+    // Assert
+    assert_failure_category(&output, "package/artifact-identity");
+    assert!(!fixture.cargo_marker.exists());
+    fixture.cleanup()?;
+    Ok(())
+}
+
+#[test]
+fn verify_artifact_rejects_missing_feature() -> TestResult {
+    // Arrange
+    let fixture = PackageFixture::new(ArchiveCase::Valid)?;
+    fixture.write_artifact_identity()?;
+    fixture.write_platform_policy(&valid_platform_policy(None))?;
+    let identity_path = fixture.root.join("artifact-identity.json");
+    let mut identity: serde_json::Value = serde_json::from_slice(&fs::read(&identity_path)?)?;
+    identity["features"] = serde_json::json!(["default"]);
+    fs::write(&identity_path, serde_json::to_vec_pretty(&identity)?)?;
+
+    // Act
+    let output = fixture.artifact_command(&identity_path, "1.97.0", "aarch64-apple-darwin")?;
+
+    // Assert
+    assert_failure_category(&output, "package/artifact-identity");
+    assert!(!fixture.cargo_marker.exists());
+    fixture.cleanup()?;
+    Ok(())
+}
+
+#[test]
+fn verify_artifact_rejects_d1_platform_promotion() -> TestResult {
+    // Arrange
+    let fixture = PackageFixture::new(ArchiveCase::Valid)?;
+    fixture.write_artifact_identity()?;
+    let mut support = valid_platform_policy(None);
+    support["evidence_tier"] = serde_json::json!("d1_canonical");
+    fixture.write_platform_policy(&support)?;
+
+    // Act
+    let output = fixture.artifact_command(
+        &fixture.root.join("artifact-identity.json"),
+        "1.97.0",
+        "aarch64-apple-darwin",
+    )?;
+
+    // Assert
+    assert_failure_category(&output, "package/platform-policy");
+    assert!(!fixture.cargo_marker.exists());
+    fixture.cleanup()?;
+    Ok(())
+}
+
+#[test]
+fn verify_artifact_rejects_fixture_promotion_capability() -> TestResult {
+    // Arrange
+    let fixture = PackageFixture::new(ArchiveCase::Valid)?;
+    fixture.write_artifact_identity()?;
+    let mut support = valid_platform_policy(None);
+    support["fixture_promotion"] = serde_json::json!("d1_canonical");
+    fixture.write_platform_policy(&support)?;
+
+    // Act
+    let output = fixture.artifact_command(
+        &fixture.root.join("artifact-identity.json"),
+        "1.97.0",
+        "aarch64-apple-darwin",
+    )?;
+
+    // Assert
+    assert_failure_category(&output, "package/platform-policy");
+    assert!(!fixture.cargo_marker.exists());
+    fixture.cleanup()?;
+    Ok(())
+}
+
+#[test]
+fn verify_artifact_builds_exact_bytes_on_a_durable_native_target() -> TestResult {
+    // Arrange
+    let fixture = PackageFixture::new(ArchiveCase::Valid)?;
+    fixture.write_artifact_identity()?;
+    fixture.write_platform_policy(&valid_platform_policy(None))?;
+
+    // Act
+    let output = fixture.artifact_command(
+        &fixture.root.join("artifact-identity.json"),
+        "1.97.0",
+        "aarch64-apple-darwin",
+    )?;
+
+    // Assert
+    assert_success(&output);
+    assert!(fixture.cargo_marker.exists());
+    fixture.cleanup()?;
+    Ok(())
+}
+
+#[test]
+fn verify_artifact_accepts_fresh_conditional_native_evidence() -> TestResult {
+    // Arrange
+    let fixture = PackageFixture::new(ArchiveCase::Valid)?;
+    fixture.write_artifact_identity()?;
+    let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
+    fixture.write_platform_policy(&valid_platform_policy(Some((now, now + 7_776_000))))?;
+
+    // Act
+    let output = fixture.artifact_command(
+        &fixture.root.join("artifact-identity.json"),
+        "1.97.0",
+        "x86_64-apple-darwin",
+    )?;
+
+    // Assert
+    assert_success(&output);
+    assert!(fixture.cargo_marker.exists());
+    fixture.cleanup()?;
+    Ok(())
+}
+
+#[test]
+fn verify_artifact_rejects_stale_conditional_native_evidence() -> TestResult {
+    // Arrange
+    let fixture = PackageFixture::new(ArchiveCase::Valid)?;
+    fixture.write_artifact_identity()?;
+    fixture.write_platform_policy(&valid_platform_policy(Some((1, 7_776_001))))?;
+
+    // Act
+    let output = fixture.artifact_command(
+        &fixture.root.join("artifact-identity.json"),
+        "1.97.0",
+        "x86_64-apple-darwin",
+    )?;
+
+    // Assert
+    assert_failure_category(&output, "package/platform-evidence");
+    assert!(!fixture.cargo_marker.exists());
+    fixture.cleanup()?;
+    Ok(())
+}
+
+#[test]
+fn verify_artifact_rejects_missing_conditional_native_evidence() -> TestResult {
+    // Arrange
+    let fixture = PackageFixture::new(ArchiveCase::Valid)?;
+    fixture.write_artifact_identity()?;
+    fixture.write_platform_policy(&valid_platform_policy(None))?;
+
+    // Act
+    let output = fixture.artifact_command(
+        &fixture.root.join("artifact-identity.json"),
+        "1.97.0",
+        "x86_64-apple-darwin",
+    )?;
+
+    // Assert
+    assert_failure_category(&output, "package/platform-evidence");
+    assert!(!fixture.cargo_marker.exists());
+    fixture.cleanup()?;
+    Ok(())
 }
 
 #[test]
@@ -352,7 +612,7 @@ fn write_archive(path: &Path, case: ArchiveCase) -> io::Result<()> {
     append_file(
         &mut archive,
         "liquidfun-0.0.0/Cargo.toml",
-        b"[package]\nname = \"liquidfun\"\nversion = \"0.0.0\"\n",
+        valid_manifest().as_bytes(),
     )?;
     append_file(
         &mut archive,
@@ -402,6 +662,7 @@ fn valid_metadata(root: &Path) -> Vec<u8> {
             "name": "liquidfun",
             "publish": null,
             "manifest_path": manifest_path,
+            "rust_version": "1.92",
             "dependencies": [{"name": "bitflags", "kind": null}],
             "features": {"default": [], "differential-internals": []}
         }],
@@ -409,6 +670,22 @@ fn valid_metadata(root: &Path) -> Vec<u8> {
         "workspace_default_members": ["liquidfun 0.0.0 (path+file:///fixture/liquidfun)"]
     }))
     .expect("fixture metadata should serialize")
+}
+
+fn valid_manifest() -> &'static str {
+    "[package]\n\
+name = \"liquidfun\"\n\
+version = \"0.0.0\"\n\
+edition = \"2024\"\n\
+rust-version = \"1.92\"\n\
+license = \"MIT\"\n\
+\n\
+[features]\n\
+default = []\n\
+differential-internals = []\n\
+\n\
+[dependencies]\n\
+bitflags = \"2.13.0\"\n"
 }
 
 fn append_file<W: io::Write>(
@@ -504,4 +781,41 @@ fn workspace_root() -> PathBuf {
         .join("../..")
         .components()
         .collect()
+}
+
+fn path_argument(path: &Path) -> io::Result<&str> {
+    path.to_str()
+        .ok_or_else(|| io::Error::other("fixture path must be UTF-8"))
+}
+
+fn valid_platform_policy(maybe_native_evidence: Option<(u64, u64)>) -> serde_json::Value {
+    let native_evidence = maybe_native_evidence.map(|(recorded_at_unix, expires_at_unix)| {
+        serde_json::json!({
+            "runner": "macos-13-x86_64",
+            "recorded_at_unix": recorded_at_unix,
+            "expires_at_unix": expires_at_unix
+        })
+    });
+    serde_json::json!({
+        "schema_version": 1,
+        "evidence_tier": "d2_supported",
+        "durable_targets": [
+            "x86_64-unknown-linux-gnu",
+            "aarch64-unknown-linux-gnu",
+            "aarch64-apple-darwin",
+            "x86_64-pc-windows-msvc"
+        ],
+        "conditional_targets": [{
+            "target": "x86_64-apple-darwin",
+            "tier": "conditional_supported",
+            "native_evidence": native_evidence
+        }],
+        "conditional_evidence_policy": {
+            "max_age_days": 90,
+            "missing_or_expired_outcome": "unsupported"
+        },
+        "scalar_mode": "strict_f32",
+        "compiler_class": "rustc-platform-native",
+        "tolerance_profile": "phase4-v1"
+    })
 }

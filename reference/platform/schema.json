@@ -1,0 +1,128 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bright-builds.dev/liquidfun-rs/platform-support-v1.schema.json",
+  "title": "liquidfun-rs platform support policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "evidence_tier",
+    "durable_targets",
+    "conditional_targets",
+    "conditional_evidence_policy",
+    "scalar_mode",
+    "compiler_class",
+    "tolerance_profile"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "evidence_tier": {
+      "const": "d2_supported"
+    },
+    "durable_targets": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "const": "x86_64-unknown-linux-gnu"
+        },
+        {
+          "const": "aarch64-unknown-linux-gnu"
+        },
+        {
+          "const": "aarch64-apple-darwin"
+        },
+        {
+          "const": "x86_64-pc-windows-msvc"
+        }
+      ],
+      "minItems": 4,
+      "maxItems": 4
+    },
+    "conditional_targets": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "target",
+            "tier",
+            "native_evidence"
+          ],
+          "properties": {
+            "target": {
+              "const": "x86_64-apple-darwin"
+            },
+            "tier": {
+              "const": "conditional_supported"
+            },
+            "native_evidence": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "$ref": "#/$defs/native_evidence"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "minItems": 1,
+      "maxItems": 1
+    },
+    "conditional_evidence_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "max_age_days",
+        "missing_or_expired_outcome"
+      ],
+      "properties": {
+        "max_age_days": {
+          "const": 90
+        },
+        "missing_or_expired_outcome": {
+          "const": "unsupported"
+        }
+      }
+    },
+    "scalar_mode": {
+      "const": "strict_f32"
+    },
+    "compiler_class": {
+      "const": "rustc-platform-native"
+    },
+    "tolerance_profile": {
+      "const": "phase4-v1"
+    }
+  },
+  "$defs": {
+    "native_evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "runner",
+        "recorded_at_unix",
+        "expires_at_unix"
+      ],
+      "properties": {
+        "runner": {
+          "type": "string",
+          "minLength": 1
+        },
+        "recorded_at_unix": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "expires_at_unix": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    }
+  }
+}
