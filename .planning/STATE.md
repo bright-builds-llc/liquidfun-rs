@@ -3,14 +3,14 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 12-25-PLAN.md
-last_updated: "2026-07-23T23:11:18.945Z"
+stopped_at: Completed 12-18-PLAN.md
+last_updated: "2026-07-23T23:38:46.739Z"
 last_activity: "2026-07-23"
 progress:
   total_phases: 12
   completed_phases: 11
   total_plans: 216
-  completed_plans: 205
+  completed_plans: 206
   percent: 95
 ---
 
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-23)
 ## Current Position
 
 Phase: 12 (Performance, Portability, and Release Hardening) — EXECUTING
-Plan: 7 of 25
+Plan: 8 of 25
 Status: Ready to execute
 Last activity: 2026-07-23
 
@@ -212,6 +212,7 @@ Progress: [██████████] 95%
 | Phase 12 P07 | 10min | 1 tasks | 4 files |
 | Phase 12 P24 | 19min | 2 tasks | 5 files |
 | Phase 12 P25 | 13min | 2 tasks | 3 files |
+| Phase 12 P18 | 24m | 1 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -590,6 +591,8 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 12]: Keep Rust, C++, and semantic differential coverage as separate non-authoritative identity-last artifacts.
 - [Phase 12]: Consume only the typed regression execution projection and keep bounded per-test logs temporary before confined result validation.
 - [Phase 12]: Reject zero registrations during production while allowing check mode to report the truthful empty reviewed registry.
+- [Phase 12]: Disable only eframe's inherited winit/default feature while retaining accessibility, default fonts, Wayland, web screen reader, wgpu, and X11 so optional Adwaita CSD cannot reintroduce ttf-parser.
+- [Phase 12]: Allow only the reviewed permissive licenses required by the exact replacement graph while keeping the advisory ignore list empty.
 
 ### Pending Todos
 
@@ -603,6 +606,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-23T23:11:18.940Z
-Stopped at: Completed 12-25-PLAN.md
+Last session: 2026-07-23T23:38:46.732Z
+Stopped at: Completed 12-18-PLAN.md
 Resume file: None

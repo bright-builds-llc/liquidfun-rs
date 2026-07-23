@@ -266,7 +266,7 @@ Plans:
 - [ ] 12-15-PLAN.md — Build the typed commit-bound release audit.
 - [ ] 12-16-PLAN.md — Construct and aggregate source-candidate evidence.
 - [x] 12-17-PLAN.md — Pin the shared dated nightly toolchain.
-- [ ] 12-18-PLAN.md — Remove Macroquad and temporary advisory waivers.
+- [x] 12-18-PLAN.md — Remove Macroquad and temporary advisory waivers.
 - [ ] 12-19-PLAN.md — Implement the bounded C++ benchmark endpoint.
 - [ ] 12-20-PLAN.md — Interleave paired samples and build raw reports.
 - [ ] 12-21-PLAN.md — Validate and attest the frozen source candidate in a later commit.
@@ -292,6 +292,6 @@ Plans:
 | 9. Particle Storage, Lifecycle, and Coupling | 31/31 | Complete | 2026-07-18 |
 | 10. Particle Groups, Solvers, and Compatibility Sign-Off | 32/32 | Complete   | 2026-07-21 |
 | 11. Examples, Headless Tooling, and Testbed | 30/30 | Complete    | 2026-07-23 |
-| 12. Performance, Portability, and Release Hardening | 14/25 | In Progress|  |
+| 12. Performance, Portability, and Release Hardening | 15/25 | In Progress|  |
 
 *Roadmap created: 2026-07-09*
