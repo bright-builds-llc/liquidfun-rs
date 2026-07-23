@@ -3,14 +3,14 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 12-10-PLAN.md out of order; next sequential plan remains 12-03
-last_updated: "2026-07-23T21:24:40.648Z"
+stopped_at: Completed 12-12-PLAN.md out of order; next sequential plan remains 12-03
+last_updated: "2026-07-23T21:47:45.336Z"
 last_activity: "2026-07-23"
 progress:
   total_phases: 12
   completed_phases: 11
   total_plans: 216
-  completed_plans: 200
+  completed_plans: 201
   percent: 93
 ---
 
@@ -30,13 +30,13 @@ Plan: 3 of 25
 Status: Ready to execute
 Last activity: 2026-07-23
 
-Progress: [█████████░] 92%
+Progress: [█████████░] 93%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 195
+- Total plans completed: 201
 - Average duration: Not available
 - Total execution time: 0 hours
 
@@ -207,6 +207,7 @@ Progress: [█████████░] 92%
 | Phase 12 P06 | 20m | 1 tasks | 12 files |
 | Phase 12 P09 | 35m | 2 tasks | 9 files |
 | Phase 12 P10 | 15m | 1 tasks | 6 files |
+| Phase 12 P12 | 18m | 1 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -573,6 +574,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 12]: Keep the reviewed regression registry empty until a real minimized finding exists; never invent parity evidence.
 - [Phase 12]: Validate exact candidate result directories completely and publish identity.json last with create-new semantics.
 - [Phase 12]: Keep Rust sanitizer, C++ ASan/UBSan, Rust coverage, C++ coverage, and differential coverage as distinct non-parity evidence kinds.
+- [Phase 12]: Fan one Rust 1.97 package artifact across exact MSRV and native runners; consumers never repackage.
+- [Phase 12]: Publish platform success only as workflow-bound identity-last D2 evidence after package isolation, rustdoc, and smoke verification.
+- [Phase 12]: Run Intel macOS only on macos-15-intel with fresh 90-day native evidence; otherwise publish a distinct unsupported downgrade.
 
 ### Pending Todos
 
@@ -586,6 +590,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-23T21:24:40.641Z
-Stopped at: Completed 12-10-PLAN.md out of order; next sequential plan remains 12-03
+Last session: 2026-07-23T21:47:45.290Z
+Stopped at: Completed 12-12-PLAN.md out of order; next sequential plan remains 12-03
 Resume file: None
