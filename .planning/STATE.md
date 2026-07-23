@@ -3,14 +3,14 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 12-01-PLAN.md
-last_updated: "2026-07-23T18:49:09.926Z"
+stopped_at: Completed 12-04-PLAN.md (out-of-order; next sequential plan remains 12-02)
+last_updated: "2026-07-23T19:08:21.376Z"
 last_activity: "2026-07-23"
 progress:
   total_phases: 12
   completed_phases: 11
   total_plans: 216
-  completed_plans: 192
+  completed_plans: 193
   percent: 89
 ---
 
@@ -30,7 +30,7 @@ Plan: 2 of 25
 Status: Ready to execute
 Last activity: 2026-07-23
 
-Progress: [██████████] 100%
+Progress: [█████████░] 89%
 
 ## Performance Metrics
 
@@ -199,6 +199,7 @@ Progress: [██████████] 100%
 | Phase 11 P25 | 19 min | 1 tasks | 8 files |
 | Phase 11 P22 | 25 min | 1 tasks | 5 files |
 | Phase 12 P01 | 1h 34m | 1 tasks | 6 files |
+| Phase 12 P04 | 14m | 1 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -542,6 +543,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 12]: Keep the replacement renderer crate-private and accept only owned semantic presentation values so it cannot mutate simulation or comparison authority.
 - [Phase 12]: Validate physical dimensions and checked RGBA byte counts before tiny-skia allocation, with a closed 4096x4096 maximum.
 - [Phase 12]: Return encoded PNG bytes without filesystem access so output-path validation and persistence remain caller-owned effects.
+- [Phase 12]: Use reviewed catalog projection and resolved-scenario hashes as the sealed performance-case input identity.
+- [Phase 12]: Only interleaved unprofiled wall-clock samples under the five-run 95% max(3%, noise-floor) policy carry regression authority.
+- [Phase 12]: Performance status forbids D1 fixture promotion and semantic checkpoints remain duration-free.
 
 ### Pending Todos
 
@@ -555,6 +559,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-23T18:49:09.923Z
-Stopped at: Completed 12-01-PLAN.md
+Last session: 2026-07-23T19:08:21.372Z
+Stopped at: Completed 12-04-PLAN.md (out-of-order; next sequential plan remains 12-02)
 Resume file: None

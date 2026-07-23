@@ -123,11 +123,11 @@ Requirements for the first release permitted to claim complete parity with the s
 
 ### Performance
 
-- [ ] **PERF-01**: Benchmarks cover world stepping, broad phase, narrow phase, contact solving, CCD, joints, particle lifecycle, contact generation, sorting, pressure, large particle systems, mixed worlds, queries, and ray casts.
-- [ ] **PERF-02**: Rust and C++ comparisons use equivalent scenarios, optimization modes, compiler/toolchain records, hardware, warm-up, and measurement methodology.
+- [x] **PERF-01**: Benchmarks cover world stepping, broad phase, narrow phase, contact solving, CCD, joints, particle lifecycle, contact generation, sorting, pressure, large particle systems, mixed worlds, queries, and ray casts.
+- [x] **PERF-02**: Rust and C++ comparisons use equivalent scenarios, optimization modes, compiler/toolchain records, hardware, warm-up, and measurement methodology.
 - [ ] **PERF-03**: Consumers and benchmark tooling can inspect phase-level profiles without exposing or coupling to private storage.
-- [ ] **PERF-04**: Structural performance changes are justified by profiles and retain or improve differential, safety, determinism, and API evidence.
-- [ ] **PERF-05**: A scalar deterministic implementation remains the compatibility baseline even if later opt-in SIMD or parallel experiments exist.
+- [x] **PERF-04**: Structural performance changes are justified by profiles and retain or improve differential, safety, determinism, and API evidence.
+- [x] **PERF-05**: A scalar deterministic implementation remains the compatibility baseline even if later opt-in SIMD or parallel experiments exist.
 - [ ] **PERF-06**: Public performance claims link to reproducible methodology and identify workloads, versions, flags, hardware, results, and compatibility status.
 
 ### Platform Support
@@ -281,11 +281,11 @@ Roadmap creation maps every v1 requirement to exactly one phase.
 | EXMP-04 | Phase 11 | Pending |
 | EXMP-05 | Phase 11 | Complete |
 | EXMP-06 | Phase 11 | Pending |
-| PERF-01 | Phase 12 | Pending |
-| PERF-02 | Phase 12 | Pending |
+| PERF-01 | Phase 12 | Complete |
+| PERF-02 | Phase 12 | Complete |
 | PERF-03 | Phase 12 | Pending |
-| PERF-04 | Phase 12 | Pending |
-| PERF-05 | Phase 12 | Pending |
+| PERF-04 | Phase 12 | Complete |
+| PERF-05 | Phase 12 | Complete |
 | PERF-06 | Phase 12 | Pending |
 | PLAT-01 | Phase 12 | Pending |
 | PLAT-02 | Phase 12 | Pending |
