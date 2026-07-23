@@ -249,7 +249,7 @@ Plans:
 
 Plans:
 
-- [ ] 12-01-PLAN.md — Define the passive replacement renderer contract.
+- [x] 12-01-PLAN.md — Define the passive replacement renderer contract.
 - [ ] 12-02-PLAN.md — Port capability capture and viewport drawing.
 - [ ] 12-03-PLAN.md — Complete the renderer migration and remove advisory waivers.
 - [ ] 12-04-PLAN.md — Seal the performance matrix and measurement policy.
@@ -292,6 +292,6 @@ Plans:
 | 9. Particle Storage, Lifecycle, and Coupling | 31/31 | Complete | 2026-07-18 |
 | 10. Particle Groups, Solvers, and Compatibility Sign-Off | 32/32 | Complete   | 2026-07-21 |
 | 11. Examples, Headless Tooling, and Testbed | 30/30 | Complete    | 2026-07-23 |
-| 12. Performance, Portability, and Release Hardening | 0/25 | Not started | - |
+| 12. Performance, Portability, and Release Hardening | 1/25 | In Progress|  |
 
 *Roadmap created: 2026-07-09*
