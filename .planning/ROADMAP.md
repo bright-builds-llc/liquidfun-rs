@@ -273,7 +273,7 @@ Plans:
 - [ ] 12-22-PLAN.md — Project attested readiness into public status.
 - [ ] 12-23-PLAN.md — Produce commit-bound controlled-host performance artifacts.
 - [x] 12-24-PLAN.md — Execute isolated Miri, sanitizer, and coverage evidence lanes.
-- [ ] 12-25-PLAN.md — Produce candidate-bound named regression evidence.
+- [x] 12-25-PLAN.md — Produce candidate-bound named regression evidence.
 
 ## Progress
 
@@ -292,6 +292,6 @@ Plans:
 | 9. Particle Storage, Lifecycle, and Coupling | 31/31 | Complete | 2026-07-18 |
 | 10. Particle Groups, Solvers, and Compatibility Sign-Off | 32/32 | Complete   | 2026-07-21 |
 | 11. Examples, Headless Tooling, and Testbed | 30/30 | Complete    | 2026-07-23 |
-| 12. Performance, Portability, and Release Hardening | 13/25 | In Progress|  |
+| 12. Performance, Portability, and Release Hardening | 14/25 | In Progress|  |
 
 *Roadmap created: 2026-07-09*
