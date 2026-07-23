@@ -1,0 +1,126 @@
+name: Phase 12 safety evidence
+
+on:
+  schedule:
+    - cron: "17 4 * * 1"
+  workflow_dispatch:
+    inputs:
+      candidate_sha:
+        description: Full lowercase commit SHA to evaluate
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: phase12-safety-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CANDIDATE_SHA: ${{ github.event_name == 'workflow_dispatch' && inputs.candidate_sha || github.sha }}
+
+jobs:
+  miri:
+    name: Miri pure-Rust subsets
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: Check out the exact candidate without C++ sources
+        # actions/checkout v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          ref: ${{ env.CANDIDATE_SHA }}
+          fetch-depth: 1
+          persist-credentials: false
+          submodules: false
+      - name: Validate candidate identity
+        run: |
+          [[ "$CANDIDATE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+      - name: Install the exact Miri toolchain
+        run: |
+          rustup toolchain install nightly-2026-07-15 \
+            --profile minimal \
+            --component miri \
+            --component rust-src \
+            --component llvm-tools-preview
+          cargo +nightly-2026-07-15 miri setup
+      - name: Check the Miri evidence contract
+        run: |
+          scripts/phase12-miri.sh check
+          if rg --ignore-case 'cmake|oracle|third_party|submodule' scripts/phase12-miri.sh; then
+            exit 1
+          fi
+      - name: Produce Miri evidence
+        run: scripts/phase12-miri.sh run "$CANDIDATE_SHA"
+      - name: Verify identity-last Miri output
+        run: |
+          evidence="target/phase12-miri/$CANDIDATE_SHA"
+          test -s "$evidence/summary.json"
+          test -s "$evidence/identity.json"
+          test "$evidence/identity.json" -nt "$evidence/summary.json"
+          test "$(jq -r '.candidate_commit' "$evidence/identity.json")" = "$CANDIDATE_SHA"
+          test "$(jq -r '.toolchain_identity' "$evidence/identity.json")" = "nightly-2026-07-15"
+          test "$(jq -r '.evidence_kind' "$evidence/identity.json")" = "miri"
+          test "$(jq -r '.parity_authority' "$evidence/identity.json")" = "false"
+          expected="$(jq -r '.payload_sha256' "$evidence/identity.json")"
+          test "$(sha256sum "$evidence/summary.json" | awk '{print $1}')" = "$expected"
+      - name: Upload candidate-scoped Miri evidence
+        # actions/upload-artifact v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: phase12-miri-${{ github.run_id }}-${{ env.CANDIDATE_SHA }}
+          path: target/phase12-miri/${{ env.CANDIDATE_SHA }}
+          if-no-files-found: error
+          retention-days: 14
+
+  rust-sanitizer:
+    name: Rust address sanitizer subsets
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: Check out the exact candidate without C++ sources
+        # actions/checkout v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          ref: ${{ env.CANDIDATE_SHA }}
+          fetch-depth: 1
+          persist-credentials: false
+          submodules: false
+      - name: Validate candidate identity
+        run: |
+          [[ "$CANDIDATE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+      - name: Install the exact sanitizer toolchain
+        run: |
+          rustup toolchain install nightly-2026-07-15 \
+            --profile minimal \
+            --component rust-src
+          rustup target add \
+            --toolchain nightly-2026-07-15 \
+            x86_64-unknown-linux-gnu
+      - name: Check the Rust sanitizer evidence contract
+        run: scripts/phase12-rust-sanitizers.sh check
+      - name: Produce Rust sanitizer evidence
+        run: scripts/phase12-rust-sanitizers.sh run "$CANDIDATE_SHA"
+      - name: Verify identity-last Rust sanitizer output
+        run: |
+          evidence="target/phase12-rust-sanitizers/$CANDIDATE_SHA"
+          test -s "$evidence/summary.json"
+          test -s "$evidence/identity.json"
+          test "$evidence/identity.json" -nt "$evidence/summary.json"
+          test "$(jq -r '.candidate_commit' "$evidence/identity.json")" = "$CANDIDATE_SHA"
+          test "$(jq -r '.toolchain_identity' "$evidence/identity.json")" = "nightly-2026-07-15"
+          test "$(jq -r '.evidence_kind' "$evidence/identity.json")" = "rust_sanitizer"
+          test "$(jq -r '.parity_authority' "$evidence/identity.json")" = "false"
+          expected="$(jq -r '.payload_sha256' "$evidence/identity.json")"
+          test "$(sha256sum "$evidence/summary.json" | awk '{print $1}')" = "$expected"
+      - name: Upload candidate-scoped Rust sanitizer evidence
+        # actions/upload-artifact v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: phase12-rust-sanitizer-${{ github.run_id }}-${{ env.CANDIDATE_SHA }}
+          path: target/phase12-rust-sanitizers/${{ env.CANDIDATE_SHA }}
+          if-no-files-found: error
+          retention-days: 14
