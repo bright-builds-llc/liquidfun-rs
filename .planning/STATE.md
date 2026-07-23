@@ -3,15 +3,15 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 12-02-PLAN.md
-last_updated: "2026-07-23T20:07:29.496Z"
+stopped_at: Completed 12-06-PLAN.md (out-of-order; next sequential plan remains 12-03)
+last_updated: "2026-07-23T20:31:52.921Z"
 last_activity: "2026-07-23"
 progress:
   total_phases: 12
   completed_phases: 11
   total_plans: 216
-  completed_plans: 197
-  percent: 91
+  completed_plans: 198
+  percent: 92
 ---
 
 # Project State
@@ -30,7 +30,7 @@ Plan: 3 of 25
 Status: Ready to execute
 Last activity: 2026-07-23
 
-Progress: [█████████░] 91%
+Progress: [█████████░] 92%
 
 ## Performance Metrics
 
@@ -204,6 +204,7 @@ Progress: [█████████░] 91%
 | Phase 12 P11 | 18m | 1 tasks | 6 files |
 | Phase 12 P17 | 5m | 1 tasks | 2 files |
 | Phase 12 P02 | 11min | 1 tasks | 7 files |
+| Phase 12 P06 | 20m | 1 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -561,6 +562,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 12]: Keep the Phase 11 fixture profile immutable while recording replacement capability evidence under phase12-v1.
 - [Phase 12]: Project viewport presentation in stable semantic order through passive renderer commands with comparison opacity preserved.
 - [Phase 12]: Prove replacement capture hashes across independent runs instead of rewriting the Phase 11 capability report.
+- [Phase 12]: Keep Criterion Rust-only and diagnostic while the paired caller contract alternates native/oracle order independently.
+- [Phase 12]: Accept benchmark samples only when authoritative non-visual checkpoint lanes match; renderer debug primitives remain diagnostic.
+- [Phase 12]: Resolve and validate exact catalog bytes before timing, with only the declared logical action loop inside the clock interval.
 
 ### Pending Todos
 
@@ -574,6 +578,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-23T20:07:29.492Z
-Stopped at: Completed 12-02-PLAN.md
+Last session: 2026-07-23T20:31:52.918Z
+Stopped at: Completed 12-06-PLAN.md (out-of-order; next sequential plan remains 12-03)
 Resume file: None

@@ -254,7 +254,7 @@ Plans:
 - [ ] 12-03-PLAN.md — Complete the renderer migration and remove advisory waivers.
 - [x] 12-04-PLAN.md — Seal the performance matrix and measurement policy.
 - [x] 12-05-PLAN.md — Version comparable diagnostic profile phases.
-- [ ] 12-06-PLAN.md — Execute the complete Rust benchmark matrix.
+- [x] 12-06-PLAN.md — Execute the complete Rust benchmark matrix.
 - [ ] 12-07-PLAN.md — Define the strict paired benchmark wire contract.
 - [ ] 12-08-PLAN.md — Enforce calibration, optimization admission, and local evidence execution.
 - [ ] 12-09-PLAN.md — Add bounded fuzz targets and regression handoff.
@@ -292,6 +292,6 @@ Plans:
 | 9. Particle Storage, Lifecycle, and Coupling | 31/31 | Complete | 2026-07-18 |
 | 10. Particle Groups, Solvers, and Compatibility Sign-Off | 32/32 | Complete   | 2026-07-21 |
 | 11. Examples, Headless Tooling, and Testbed | 30/30 | Complete    | 2026-07-23 |
-| 12. Performance, Portability, and Release Hardening | 6/25 | In Progress|  |
+| 12. Performance, Portability, and Release Hardening | 7/25 | In Progress|  |
 
 *Roadmap created: 2026-07-09*
