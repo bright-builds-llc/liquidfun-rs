@@ -55,6 +55,72 @@ const SETTINGS_FIELDS: [SettingsField; 4] = [
     SettingsField::ParticleIterations,
 ];
 
+struct ComparisonLifecycle<Model, Identity> {
+    maybe_model: Option<Model>,
+    maybe_identity: Option<Identity>,
+    maybe_error: Option<String>,
+}
+
+pub(crate) struct DesktopDiagnostics<Model, Identity> {
+    comparison: ComparisonLifecycle<Model, Identity>,
+    maybe_error: Option<String>,
+}
+
+impl<Model, Identity> Default for DesktopDiagnostics<Model, Identity> {
+    fn default() -> Self {
+        Self {
+            comparison: ComparisonLifecycle {
+                maybe_model: None,
+                maybe_identity: None,
+                maybe_error: None,
+            },
+            maybe_error: None,
+        }
+    }
+}
+
+impl<Model, Identity> DesktopDiagnostics<Model, Identity> {
+    pub(crate) fn apply_comparison(&mut self, identity: Identity, result: Result<Model, String>) {
+        self.comparison.maybe_identity = Some(identity);
+        match result {
+            Ok(model) => {
+                self.comparison.maybe_model = Some(model);
+                self.comparison.maybe_error = None;
+            }
+            Err(error) => {
+                self.comparison.maybe_model = None;
+                self.comparison.maybe_error = Some(bound_message(&error));
+            }
+        }
+    }
+
+    pub(crate) fn reset_comparison(&mut self) {
+        self.comparison.maybe_model = None;
+        self.comparison.maybe_identity = None;
+        self.comparison.maybe_error = None;
+    }
+
+    pub(crate) fn set_error(&mut self, error: impl std::fmt::Display) {
+        self.maybe_error = Some(bound_message(&error.to_string()));
+    }
+
+    pub(crate) fn maybe_comparison(&self) -> Option<&Model> {
+        self.comparison.maybe_model.as_ref()
+    }
+
+    pub(crate) fn maybe_compared_identity(&self) -> Option<&Identity> {
+        self.comparison.maybe_identity.as_ref()
+    }
+
+    pub(crate) fn maybe_comparison_error(&self) -> Option<&str> {
+        self.comparison.maybe_error.as_deref()
+    }
+
+    pub(crate) fn maybe_error(&self) -> Option<&str> {
+        self.maybe_error.as_deref()
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum OpenPanel {
     None,
@@ -118,9 +184,7 @@ struct DesktopApp {
     center_y: f32,
     maybe_drag_origin: Option<(f32, f32)>,
     maybe_oracle: Option<CanonicalCheckpoint>,
-    maybe_comparison: Option<ComparisonModel>,
-    maybe_compared_identity: Option<(Sha256Hex, CheckpointId)>,
-    maybe_error: Option<String>,
+    diagnostics: DesktopDiagnostics<ComparisonModel, (Sha256Hex, CheckpointId)>,
     open_panel: OpenPanel,
     focus_index: usize,
     focus_return: FocusReturn,
@@ -174,9 +238,7 @@ impl DesktopApp {
             center_y: 0.0,
             maybe_drag_origin: None,
             maybe_oracle,
-            maybe_comparison: None,
-            maybe_compared_identity: None,
-            maybe_error: None,
+            diagnostics: DesktopDiagnostics::default(),
             open_panel: OpenPanel::None,
             focus_index: 0,
             focus_return: FocusReturn::default(),
@@ -398,7 +460,7 @@ impl DesktopApp {
             }
             ControlFocus::Settings => self.open_settings(),
             ControlFocus::Overlay => {
-                if self.maybe_comparison.is_some() {
+                if self.diagnostics.maybe_comparison().is_some() {
                     self.comparison_mode = match self.comparison_mode {
                         ComparisonMode::Overlay => ComparisonMode::SideBySide,
                         ComparisonMode::SideBySide | ComparisonMode::SingleBackend => {
@@ -487,7 +549,7 @@ impl DesktopApp {
         if is_key_pressed(KeyCode::S) {
             self.open_settings();
         }
-        if is_key_pressed(KeyCode::O) && self.maybe_comparison.is_some() {
+        if is_key_pressed(KeyCode::O) && self.diagnostics.maybe_comparison().is_some() {
             self.comparison_mode = match self.comparison_mode {
                 ComparisonMode::Overlay => ComparisonMode::SideBySide,
                 ComparisonMode::SideBySide | ComparisonMode::SingleBackend => {
@@ -867,7 +929,7 @@ impl DesktopApp {
     }
 
     fn move_difference(&mut self, direction: i8) {
-        let count = self.maybe_comparison.as_ref().map_or(0, |model| {
+        let count = self.diagnostics.maybe_comparison().map_or(0, |model| {
             DifferenceList::new(model, Camera::default(), BackendAvailability::Both)
                 .entries()
                 .len()
@@ -1060,11 +1122,11 @@ impl DesktopApp {
             native.resolved_sha256().clone(),
             native.checkpoint_id().clone(),
         );
-        if self.maybe_compared_identity.as_ref() == Some(&native_identity) {
+        if self.diagnostics.maybe_compared_identity() == Some(&native_identity) {
             return;
         }
         let Some(oracle) = self.maybe_oracle.as_ref() else {
-            self.maybe_comparison = None;
+            self.diagnostics.reset_comparison();
             return;
         };
         let policy = Phase4PolicyProfile::parse_toml(include_str!(concat!(
@@ -1082,26 +1144,19 @@ impl DesktopApp {
                 )
                 .map_err(|error| error.to_string())
             });
-        self.maybe_compared_identity = Some(native_identity);
-        match comparison {
-            Ok(model) => {
-                self.maybe_comparison = Some(model);
-                self.focused_difference = 0;
-            }
-            Err(error) => {
-                self.maybe_comparison = None;
-                self.maybe_error = Some(bound_message(&error));
-            }
+        self.diagnostics
+            .apply_comparison(native_identity, comparison);
+        if self.diagnostics.maybe_comparison().is_some() {
+            self.focused_difference = 0;
         }
     }
 
     fn set_error(&mut self, error: impl std::fmt::Display) {
-        self.maybe_error = Some(bound_message(&error.to_string()));
+        self.diagnostics.set_error(error);
     }
 
     fn clear_comparison(&mut self) {
-        self.maybe_comparison = None;
-        self.maybe_compared_identity = None;
+        self.diagnostics.reset_comparison();
     }
 
     fn draw(&self) {
@@ -1163,7 +1218,10 @@ impl DesktopApp {
         fill_region(region, PANEL);
         draw_text("liquidfun-rs", 16.0, 31.0, 24.0, TEXT);
         let state = self.testbed.session_state();
-        let comparison = self.maybe_comparison.as_ref().map(ComparisonModel::state);
+        let comparison = self
+            .diagnostics
+            .maybe_comparison()
+            .map(ComparisonModel::state);
         let status = format!(
             "{} {}",
             status_marker(state, comparison),
@@ -1265,8 +1323,8 @@ impl DesktopApp {
             return;
         };
         let maybe_comparison_pair = self
-            .maybe_comparison
-            .as_ref()
+            .diagnostics
+            .maybe_comparison()
             .zip(self.maybe_oracle.as_ref());
         match (self.comparison_mode, maybe_comparison_pair) {
             (ComparisonMode::SideBySide, Some((comparison, oracle))) => {
@@ -1363,7 +1421,7 @@ impl DesktopApp {
     }
 
     fn focused_difference_entry(&self) -> Option<&liquidfun_differential::ComparisonEntry> {
-        let comparison = self.maybe_comparison.as_ref()?;
+        let comparison = self.diagnostics.maybe_comparison()?;
         let differences =
             DifferenceList::new(comparison, Camera::default(), BackendAvailability::Both);
         differences.entries().get(self.focused_difference).copied()
@@ -1383,7 +1441,7 @@ impl DesktopApp {
             draw_rectangle_lines(x + 4.0, y + 2.0, width - 8.0, CONTROL_TARGET, 2.0, ACCENT);
         }
         draw_text("Inspect", x + 16.0, y + 28.0, 24.0, TEXT);
-        let (heading, body) = comparison_copy(self.maybe_comparison.as_ref());
+        let (heading, body) = comparison_copy(self.diagnostics.maybe_comparison());
         draw_text(heading, x + 16.0, y + 58.0, FONT, TEXT);
         draw_text(body, x + 16.0, y + 79.0, 12.0, MUTED);
         let mut line_y = y + 112.0;
@@ -1520,7 +1578,7 @@ impl DesktopApp {
                 TEXT,
             );
         }
-        if let Some(comparison) = self.maybe_comparison.as_ref() {
+        if let Some(comparison) = self.diagnostics.maybe_comparison() {
             let differences =
                 DifferenceList::new(comparison, Camera::default(), BackendAvailability::Both);
             let entries = differences.entries();
@@ -1566,7 +1624,12 @@ impl DesktopApp {
                 );
             }
         }
-        if let Some(error) = self.maybe_error.as_deref() {
+        if let Some(error) = self.diagnostics.maybe_comparison_error() {
+            line_y += 8.0;
+            line("Comparison error:", x, &mut line_y, ERROR);
+            line(error, x, &mut line_y, ERROR);
+        }
+        if let Some(error) = self.diagnostics.maybe_error() {
             line_y += 8.0;
             line("Last bounded error:", x, &mut line_y, ERROR);
             line(error, x, &mut line_y, ERROR);
@@ -1604,7 +1667,7 @@ impl DesktopApp {
                 ControlFocus::Inspector => self.open_panel == OpenPanel::Inspector,
                 ControlFocus::Settings => self.open_panel == OpenPanel::Settings,
                 ControlFocus::About => self.open_panel == OpenPanel::About,
-                ControlFocus::Overlay => self.maybe_comparison.is_some(),
+                ControlFocus::Overlay => self.diagnostics.maybe_comparison().is_some(),
                 ControlFocus::RunPause
                 | ControlFocus::Step
                 | ControlFocus::Restart
@@ -2205,6 +2268,7 @@ fn bounded_error(error: impl std::fmt::Display) -> String {
     bound_message(&error.to_string())
 }
 
+#[cfg(not(test))]
 #[macroquad::main(window_conf)]
 async fn main() {
     let mut maybe_app = parse_args().and_then(DesktopApp::new);
