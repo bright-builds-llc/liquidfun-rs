@@ -3,10 +3,20 @@
 mod matrix;
 mod policy;
 mod report;
+pub mod wire;
 
 pub use matrix::*;
 pub use policy::*;
 pub use report::*;
+pub use wire::{
+    BenchmarkCommonParentDiagnostic, BenchmarkCommonParentPhase, BenchmarkHarnessFailure,
+    BenchmarkHarnessFailureKind, BenchmarkPerformanceResult, BenchmarkPhysicsMismatch,
+    BenchmarkRunIdentity, BenchmarkRunOutcome, BenchmarkRunRequest, BenchmarkRunResult,
+    BenchmarkWireError, BenchmarkWireErrorKind, SemanticCheckpointIdentity,
+    benchmark_policy_sha256, decode_benchmark_run_request_jsonl, decode_benchmark_run_result_jsonl,
+    encode_benchmark_run_request_jsonl, encode_benchmark_run_result_jsonl,
+    validate_benchmark_run_pair,
+};
 
 /// Stable validation categories for the performance evidence contract.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

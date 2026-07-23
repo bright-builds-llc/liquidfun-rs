@@ -9,7 +9,7 @@ mod failure;
 mod float_bits;
 mod ids;
 mod limits;
-mod performance;
+pub mod performance;
 mod provenance;
 mod scenario;
 #[cfg(test)]
