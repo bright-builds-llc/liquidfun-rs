@@ -53,7 +53,7 @@ The v1 roadmap moves from an immutable, licensed source of truth to a semantic c
 1. `TESTING.md` documents protocol versions, diagnosis, reference-data review, regression/minimization workflow, and the local versus scheduled verification tiers.
 
 **Research / ADR flags**: Schema evolution; float-bit encoding; input/output bounds; streaming and process reuse; timeout/crash semantics; canonical forms; reference-data review; first-divergence probes; minimization strategy.
-**Plans**: TBD during phase planning
+**Plans**: 14/14 plans complete
 
 ### Phase 3: Rust Object Model and Storage Architecture
 
@@ -69,7 +69,7 @@ The v1 roadmap moves from an immutable, licensed source of truth to a semantic c
 1. `ARCHITECTURE.md` records dependency direction, handles, callbacks, storage, step order, oracle isolation, and renderer independence as enforceable boundaries.
 
 **Research / ADR flags**: Handle bit layout and generation-wrap policy; world identity; `Send`/`Sync`; user-data ownership; callback panic policy; destruction timing; stable particle-ID cost; authoritative lane permutation; safe external-buffer semantics.
-**Plans**: TBD during phase planning
+**Plans**: 5/5 plans complete
 
 ### Phase 4: Math, Settings, and Numerical Policy
 
@@ -245,7 +245,35 @@ Plans:
 1. The final release audit finds no unexplained compatibility gap or unaccounted upstream test/example and verifies notices, crate contents, supported platforms, benchmarks, safety evidence, and publication checks.
 
 **Research / ADR flags**: Set performance budgets and evidence thresholds; confirm the release/MSRV policy and sustainable CI matrix; require an ADR for any unsafe, SIMD, parallel, or structural optimization; review license and package contents immediately before release.
-**Plans**: TBD during phase planning
+**Plans**: 25 plans
+
+Plans:
+
+- [ ] 12-01-PLAN.md — Define the passive replacement renderer contract.
+- [ ] 12-02-PLAN.md — Port capability capture and viewport drawing.
+- [ ] 12-03-PLAN.md — Complete the renderer migration and remove advisory waivers.
+- [ ] 12-04-PLAN.md — Seal the performance matrix and measurement policy.
+- [ ] 12-05-PLAN.md — Version comparable diagnostic profile phases.
+- [ ] 12-06-PLAN.md — Execute the complete Rust benchmark matrix.
+- [ ] 12-07-PLAN.md — Define the strict paired benchmark wire contract.
+- [ ] 12-08-PLAN.md — Enforce calibration, optimization admission, and local evidence execution.
+- [ ] 12-09-PLAN.md — Add bounded fuzz targets and regression handoff.
+- [ ] 12-10-PLAN.md — Define reusable safety, regression, and coverage validators plus closed CLI paths.
+- [ ] 12-11-PLAN.md — Verify one reusable crate artifact and platform policy.
+- [ ] 12-12-PLAN.md — Fan the artifact across MSRV and native platform lanes.
+- [ ] 12-13-PLAN.md — Complete rustdoc, safety, contribution, and release docs.
+- [ ] 12-14-PLAN.md — Generate zero-gap compatibility and benchmarking reports.
+- [ ] 12-15-PLAN.md — Build the typed commit-bound release audit.
+- [ ] 12-16-PLAN.md — Construct and aggregate source-candidate evidence.
+- [ ] 12-17-PLAN.md — Pin the shared dated nightly toolchain.
+- [ ] 12-18-PLAN.md — Remove Macroquad and temporary advisory waivers.
+- [ ] 12-19-PLAN.md — Implement the bounded C++ benchmark endpoint.
+- [ ] 12-20-PLAN.md — Interleave paired samples and build raw reports.
+- [ ] 12-21-PLAN.md — Validate and attest the frozen source candidate in a later commit.
+- [ ] 12-22-PLAN.md — Project attested readiness into public status.
+- [ ] 12-23-PLAN.md — Produce commit-bound controlled-host performance artifacts.
+- [ ] 12-24-PLAN.md — Execute isolated Miri, sanitizer, and coverage evidence lanes.
+- [ ] 12-25-PLAN.md — Produce candidate-bound named regression evidence.
 
 ## Progress
 
@@ -264,6 +292,6 @@ Plans:
 | 9. Particle Storage, Lifecycle, and Coupling | 31/31 | Complete | 2026-07-18 |
 | 10. Particle Groups, Solvers, and Compatibility Sign-Off | 32/32 | Complete   | 2026-07-21 |
 | 11. Examples, Headless Tooling, and Testbed | 30/30 | Complete    | 2026-07-23 |
-| 12. Performance, Portability, and Release Hardening | 0/TBD | Not started | - |
+| 12. Performance, Portability, and Release Hardening | 0/25 | Not started | - |
 
 *Roadmap created: 2026-07-09*
