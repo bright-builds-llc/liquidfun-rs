@@ -3,15 +3,15 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 12-11-PLAN.md (out-of-order; next sequential plan remains 12-02)
-last_updated: "2026-07-23T19:45:10.995Z"
+stopped_at: Completed 12-17-PLAN.md (out-of-order; next sequential plan remains 12-02)
+last_updated: "2026-07-23T19:53:07.028Z"
 last_activity: "2026-07-23"
 progress:
   total_phases: 12
   completed_phases: 11
   total_plans: 216
-  completed_plans: 195
-  percent: 90
+  completed_plans: 196
+  percent: 91
 ---
 
 # Project State
@@ -30,7 +30,7 @@ Plan: 2 of 25
 Status: Ready to execute
 Last activity: 2026-07-23
 
-Progress: [█████████░] 90%
+Progress: [█████████░] 91%
 
 ## Performance Metrics
 
@@ -202,6 +202,7 @@ Progress: [█████████░] 90%
 | Phase 12 P04 | 14m | 1 tasks | 8 files |
 | Phase 12 P05 | 12m | 1 tasks | 7 files |
 | Phase 12 P11 | 18m | 1 tasks | 6 files |
+| Phase 12 P17 | 5m | 1 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -554,6 +555,8 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 12]: Create one Rust 1.97 crate artifact and bind its exact bytes, source inventory, consumer metadata, and candidate commit in a SHA-256 identity.
 - [Phase 12]: Reserve Rust 1.92 full artifact verification for canonical x86_64 Linux while native target lanes use Rust 1.97 and D2 evidence.
 - [Phase 12]: Downgrade x86_64 macOS when named native-runner evidence is missing, malformed, future-dated, or older than 90 days.
+- [Phase 12]: Use one exact nightly-2026-07-15 predecessor with minimal profile and exactly miri, rust-src, and llvm-tools-preview.
+- [Phase 12]: Reject floating Cargo, rustup, YAML toolchain, environment, and TOML channel selectors while accepting exact dated equivalents.
 
 ### Pending Todos
 
@@ -567,6 +570,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-23T19:45:10.984Z
-Stopped at: Completed 12-11-PLAN.md (out-of-order; next sequential plan remains 12-02)
+Last session: 2026-07-23T19:53:07.017Z
+Stopped at: Completed 12-17-PLAN.md (out-of-order; next sequential plan remains 12-02)
 Resume file: None
