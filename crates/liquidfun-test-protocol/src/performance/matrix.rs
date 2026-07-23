@@ -459,13 +459,13 @@ const fn scenario_binding(workload: PerformanceWorkloadKind) -> ScenarioBinding 
     match workload {
         PerformanceWorkloadKind::Joints => binding(
             "joint-distance-behavior",
-            "2eaf8f5c99d56c4f44b38d53087d2466540a165f782e4849ae025ac0092c1af4",
+            "2eaf8f031603887a6807d185404c839d366905a88c75f4076140c5ece6cf1af4",
             2,
             1,
         ),
         PerformanceWorkloadKind::ParticleContacts => binding(
             "particle-contacts-and-coupling",
-            "4f0c7d0b15c4dd8545f140327e085e7dd20a1afee7ac9cc13720203df446e122",
+            "4f0c0f2279f0360c24c4ea10504b36ce8f506fd8b5a4415dcfd00819ea5de122",
             4,
             2,
         ),
@@ -473,25 +473,25 @@ const fn scenario_binding(workload: PerformanceWorkloadKind) -> ScenarioBinding 
         | PerformanceWorkloadKind::ParticlePressure
         | PerformanceWorkloadKind::LargeParticleSystem => binding(
             "particle-group-construction-append",
-            "93a09531c77318b9d5baf40db65721640f4b14fd6a15fc050e892a0e16cc2cda",
+            "93a0f8c793f213b3dda6911e62830d0f02a3b14324193244d0cd6e1693512cda",
             4,
             2,
         ),
         PerformanceWorkloadKind::ParticleLifecycle => binding(
             "particle-system-pause-action",
-            "1a1f446b10b0e833e89fe2529f81d0c2e74b67474ba3cc934b36943ec5243826",
+            "1a1f8e68f0a05f8cc16c589a7db6c4fb05e93b165fa5da13fb8cf241aaba3826",
             4,
             2,
         ),
         PerformanceWorkloadKind::AabbQuery => binding(
             "particle-aabb-query-controls",
-            "1ac03ed5b4c5f45fb1856180f85f208707956710504cb70692409600b46a1467",
+            "1ac03e065afbec5e90770d28578acfcc7b94909704298b2f9d03c50bba561467",
             3,
             2,
         ),
         PerformanceWorkloadKind::RayCast => binding(
             "particle-ray-callback-controls",
-            "d1e22643c020beea4f1a249bc26e5c05451f04c1162688443356af524f2e279e",
+            "d1e22656861f3906fbccd3ba033f952467758cd0620ab29a18e4a638b872279e",
             5,
             2,
         ),
@@ -502,7 +502,7 @@ const fn scenario_binding(workload: PerformanceWorkloadKind) -> ScenarioBinding 
         | PerformanceWorkloadKind::Ccd
         | PerformanceWorkloadKind::MixedWorld => binding(
             "rigid-runtime-mutation",
-            "38acf75645951532a331ad9e6c78272e801836031044c66ae84e3eaaca252dae",
+            "38acf7adfcfeb510cd3254614934d44604bcbd32c12cf15cd5861ae466252dae",
             1,
             1,
         ),

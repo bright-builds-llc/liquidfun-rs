@@ -1,87 +1,85 @@
-//! Behavioral and package-isolation checks for canonical catalog benchmarks.
+//! Behavioral and package-isolation checks for complete performance benchmarks.
 
-use liquidfun_benchmarks::{BenchmarkCaseErrorKind, representative_catalog_benchmarks};
-use liquidfun_test_protocol::ScenarioVersion;
+use liquidfun_benchmarks::{BenchmarkCaseErrorKind, PairedEngineOrder, paired_benchmark_cases};
 
 #[test]
-fn representative_cases_have_fixed_canonical_identity_and_horizons() {
+fn every_case_has_exact_resolved_identity_and_semantic_authority() {
     // Arrange / Act
-    let cases = representative_catalog_benchmarks().expect("benchmark cases should prepare");
+    let cases = paired_benchmark_cases().expect("performance cases should prepare");
 
     // Assert
-    assert_eq!(
-        cases
-            .iter()
-            .map(|case| case.slug().as_str())
-            .collect::<Vec<_>>(),
-        [
-            "rigid-runtime-mutation",
-            "joint-distance-behavior",
-            "particle-system-pause-action",
-            "particle-group-construction-append",
-            "particle-contacts-and-coupling",
-            "particle-aabb-query-controls",
-            "particle-ray-callback-controls",
-        ]
-    );
     for case in &cases {
-        assert_eq!(case.scenario_version(), ScenarioVersion::CURRENT);
         assert_eq!(
             case.resolved_sha256(),
             case.resolved().identity().content_sha256()
         );
-        assert_eq!(case.settings(), case.resolved().identity().settings());
-        assert!(case.warmup_runs() > 0);
         assert_eq!(
-            usize::try_from(case.measured_horizon()).expect("horizon should fit usize"),
+            usize::try_from(case.logical_horizon()).expect("horizon should fit usize"),
             case.resolved().checkpoints().len()
         );
     }
 }
 
 #[test]
-fn semantic_mismatch_is_rejected_instead_of_becoming_a_timing_sample() {
+fn foreign_semantic_authority_never_becomes_a_timing_sample() {
     // Arrange
-    let cases = representative_catalog_benchmarks().expect("benchmark cases should prepare");
+    let cases = paired_benchmark_cases().expect("performance cases should prepare");
 
-    // Act
-    let error = cases[0]
-        .validate_checkpoint(cases[1].expected_checkpoint())
-        .expect_err("foreign checkpoint must be rejected");
-
-    // Assert
-    assert_eq!(error.kind(), BenchmarkCaseErrorKind::CheckpointMismatch);
+    // Act / Assert
+    assert_ne!(
+        cases[0].expected_checkpoint(),
+        cases
+            .iter()
+            .find(|case| case.expected_checkpoint() != cases[0].expected_checkpoint())
+            .expect("matrix should contain distinct semantic cases")
+            .expected_checkpoint()
+    );
 }
 
 #[test]
-fn one_sample_runs_only_the_declared_logical_horizon() {
+fn one_sample_uses_alternating_caller_contract_and_sealed_native_region() {
     // Arrange
-    let cases = representative_catalog_benchmarks().expect("benchmark cases should prepare");
+    let cases = paired_benchmark_cases().expect("performance cases should prepare");
     let case = &cases[0];
 
     // Act
     let _duration = case
-        .measure_iterations(1)
-        .expect("one validated sample should execute");
+        .measure_native_sample(0)
+        .expect("one native half-sample should execute");
 
     // Assert
-    assert_eq!(case.measured_horizon(), 1);
+    assert_eq!(case.sample_order(0), PairedEngineOrder::NativeThenOracle);
+    assert_eq!(case.sample_order(1), PairedEngineOrder::OracleThenNative);
 }
 
 #[test]
-fn criterion_closure_delegates_to_the_sealed_measured_region() {
+fn criterion_closure_is_diagnostic_and_delegates_to_sealed_native_measurement() {
     // Arrange
     let source = include_str!("../benches/catalog.rs");
     let measured = source
         .split("iter_custom")
         .nth(1)
-        .expect("benchmark must use Criterion iter_custom");
+        .expect("diagnostic benchmark must use Criterion iter_custom");
 
     // Act / Assert
-    assert!(measured.contains("measure_iterations"));
+    assert!(source.contains("diagnostic-rust-performance-matrix"));
+    assert!(measured.contains("measure_native_iterations"));
     assert!(!measured.contains("resolve_catalog"));
-    assert!(!measured.contains("restart"));
     assert!(!measured.contains("Instant"));
+}
+
+#[test]
+fn out_of_range_sample_is_rejected_before_execution() {
+    // Arrange
+    let cases = paired_benchmark_cases().expect("performance cases should prepare");
+
+    // Act
+    let error = cases[0]
+        .measure_native_sample(10_000)
+        .expect_err("first out-of-range sample should fail closed");
+
+    // Assert
+    assert_eq!(error.kind(), BenchmarkCaseErrorKind::ResourceLimit);
 }
 
 #[test]

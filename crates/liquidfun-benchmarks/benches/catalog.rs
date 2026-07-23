@@ -1,24 +1,17 @@
-//! Criterion bridge over prevalidated canonical catalog cases.
+//! Rust-only diagnostic Criterion bridge over the complete performance matrix.
 
 use criterion::{Criterion, criterion_group, criterion_main};
-use liquidfun_benchmarks::representative_catalog_benchmarks;
+use liquidfun_benchmarks::paired_benchmark_cases;
 
 fn benchmark_catalog(c: &mut Criterion) {
-    let cases = representative_catalog_benchmarks()
-        .unwrap_or_else(|error| panic!("catalog benchmark preparation failed: {error}"));
-    let mut group = c.benchmark_group("canonical-catalog");
+    let cases = paired_benchmark_cases()
+        .unwrap_or_else(|error| panic!("performance matrix preparation failed: {error}"));
+    let mut group = c.benchmark_group("diagnostic-rust-performance-matrix");
     for case in &cases {
-        let benchmark_id = format!(
-            "{}-v{}-{}-ticks-{}",
-            case.slug().as_str(),
-            case.scenario_version().get(),
-            case.resolved_sha256().as_str(),
-            case.measured_horizon()
-        );
-        group.bench_function(benchmark_id, |b| {
+        group.bench_function(case.diagnostic_id(), |b| {
             b.iter_custom(|iterations| {
-                case.measure_iterations(iterations)
-                    .unwrap_or_else(|error| panic!("catalog timing sample rejected: {error}"))
+                case.measure_native_iterations(iterations)
+                    .unwrap_or_else(|error| panic!("diagnostic native sample rejected: {error}"))
             });
         });
     }
