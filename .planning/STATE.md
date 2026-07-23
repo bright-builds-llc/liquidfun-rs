@@ -3,15 +3,15 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 12-04-PLAN.md (out-of-order; next sequential plan remains 12-02)
-last_updated: "2026-07-23T19:08:21.376Z"
+stopped_at: Completed 12-05-PLAN.md (out-of-order; next sequential plan remains 12-02)
+last_updated: "2026-07-23T19:23:53.080Z"
 last_activity: "2026-07-23"
 progress:
   total_phases: 12
   completed_phases: 11
   total_plans: 216
-  completed_plans: 193
-  percent: 89
+  completed_plans: 194
+  percent: 90
 ---
 
 # Project State
@@ -30,7 +30,7 @@ Plan: 2 of 25
 Status: Ready to execute
 Last activity: 2026-07-23
 
-Progress: [█████████░] 89%
+Progress: [█████████░] 90%
 
 ## Performance Metrics
 
@@ -200,6 +200,7 @@ Progress: [█████████░] 89%
 | Phase 11 P22 | 25 min | 1 tasks | 5 files |
 | Phase 12 P01 | 1h 34m | 1 tasks | 6 files |
 | Phase 12 P04 | 14m | 1 tasks | 8 files |
+| Phase 12 P05 | 12m | 1 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -546,6 +547,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 12]: Use reviewed catalog projection and resolved-scenario hashes as the sealed performance-case input identity.
 - [Phase 12]: Only interleaved unprofiled wall-clock samples under the five-run 95% max(3%, noise-floor) policy carry regression authority.
 - [Phase 12]: Performance status forbids D1 fixture promotion and semantic checkpoints remain duration-free.
+- [Phase 12]: Represent common profile parents and optional Rust-only children as separate closed enums joined by explicit parent mappings.
+- [Phase 12]: Keep Duration values outside equality, hashing, serialization, checkpoints, and StepReport while exposing versioned structural names.
+- [Phase 12]: Use a fixed 32-slot diagnostic buffer so disabled profiling allocates nothing and overflow cannot grow memory or alter semantic success.
 
 ### Pending Todos
 
@@ -559,6 +563,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-23T19:08:21.372Z
-Stopped at: Completed 12-04-PLAN.md (out-of-order; next sequential plan remains 12-02)
+Last session: 2026-07-23T19:23:53.075Z
+Stopped at: Completed 12-05-PLAN.md (out-of-order; next sequential plan remains 12-02)
 Resume file: None

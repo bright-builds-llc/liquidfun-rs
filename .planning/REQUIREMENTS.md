@@ -43,7 +43,7 @@ Requirements for the first release permitted to claim complete parity with the s
 - [x] **API-08**: Consumers can associate user data through a documented safe model that preserves identity and destruction semantics without public raw pointers.
 - [x] **API-09**: Consumers can inspect particle properties through borrow-scoped bulk views and perform supported mutations without violating aliasing or leaving derived state stale.
 - [x] **API-10**: Safe external-particle-buffer equivalents preserve documented ownership, capacity, growth, and teardown behavior without requiring arbitrary lifetime raw pointers.
-- [ ] **API-11**: Every public API has succinct rustdoc covering units, invariants, invalidation, callback restrictions, failure behavior, and upstream concept mapping where relevant.
+- [x] **API-11**: Every public API has succinct rustdoc covering units, invariants, invalidation, callback restrictions, failure behavior, and upstream concept mapping where relevant.
 - [x] **API-12**: Every production `unsafe` block is narrowly scoped, justified by measured need, documents its invariant with a `SAFETY:` comment, and has focused verification where practical.
 
 ### Math and Collision
@@ -125,7 +125,7 @@ Requirements for the first release permitted to claim complete parity with the s
 
 - [x] **PERF-01**: Benchmarks cover world stepping, broad phase, narrow phase, contact solving, CCD, joints, particle lifecycle, contact generation, sorting, pressure, large particle systems, mixed worlds, queries, and ray casts.
 - [x] **PERF-02**: Rust and C++ comparisons use equivalent scenarios, optimization modes, compiler/toolchain records, hardware, warm-up, and measurement methodology.
-- [ ] **PERF-03**: Consumers and benchmark tooling can inspect phase-level profiles without exposing or coupling to private storage.
+- [x] **PERF-03**: Consumers and benchmark tooling can inspect phase-level profiles without exposing or coupling to private storage.
 - [x] **PERF-04**: Structural performance changes are justified by profiles and retain or improve differential, safety, determinism, and API evidence.
 - [x] **PERF-05**: A scalar deterministic implementation remains the compatibility baseline even if later opt-in SIMD or parallel experiments exist.
 - [ ] **PERF-06**: Public performance claims link to reproducible methodology and identify workloads, versions, flags, hardware, results, and compatibility status.
@@ -222,7 +222,7 @@ Roadmap creation maps every v1 requirement to exactly one phase.
 | API-08 | Phase 3 | Complete |
 | API-09 | Phase 9 | Complete |
 | API-10 | Phase 9 | Complete |
-| API-11 | Phase 12 | Pending |
+| API-11 | Phase 12 | Complete |
 | API-12 | Phase 12 | Complete |
 | COLL-01 | Phase 4 | Complete |
 | COLL-02 | Phase 5 | Complete |
@@ -283,7 +283,7 @@ Roadmap creation maps every v1 requirement to exactly one phase.
 | EXMP-06 | Phase 11 | Pending |
 | PERF-01 | Phase 12 | Complete |
 | PERF-02 | Phase 12 | Complete |
-| PERF-03 | Phase 12 | Pending |
+| PERF-03 | Phase 12 | Complete |
 | PERF-04 | Phase 12 | Complete |
 | PERF-05 | Phase 12 | Complete |
 | PERF-06 | Phase 12 | Pending |
