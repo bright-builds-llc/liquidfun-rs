@@ -3,15 +3,15 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 12-18-PLAN.md
-last_updated: "2026-07-23T23:38:46.739Z"
+stopped_at: Completed 12-19-PLAN.md
+last_updated: "2026-07-23T23:55:21.645Z"
 last_activity: "2026-07-23"
 progress:
   total_phases: 12
   completed_phases: 11
   total_plans: 216
-  completed_plans: 206
-  percent: 95
+  completed_plans: 207
+  percent: 96
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: `.planning/PROJECT.md` (updated 2026-07-23)
 ## Current Position
 
 Phase: 12 (Performance, Portability, and Release Hardening) — EXECUTING
-Plan: 8 of 25
+Plan: 9 of 25
 Status: Ready to execute
 Last activity: 2026-07-23
 
-Progress: [██████████] 95%
+Progress: [██████████] 96%
 
 ## Performance Metrics
 
@@ -213,6 +213,7 @@ Progress: [██████████] 95%
 | Phase 12 P24 | 19min | 2 tasks | 5 files |
 | Phase 12 P25 | 13min | 2 tasks | 3 files |
 | Phase 12 P18 | 24m | 1 tasks | 5 files |
+| Phase 12 P19 | 15m | 1 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -593,6 +594,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 12]: Reject zero registrations during production while allowing check mode to report the truthful empty reviewed registry.
 - [Phase 12]: Disable only eframe's inherited winit/default feature while retaining accessibility, default fonts, Wayland, web screen reader, wgpu, and X11 so optional Adwaita CSD cannot reintroduce ttf-parser.
 - [Phase 12]: Allow only the reviewed permissive licenses required by the exact replacement graph while keeping the advisory ignore list empty.
+- [Phase 12]: Reuse one narrow catalog session seam for ordinary catalog execution and benchmark timing instead of duplicating native action semantics.
+- [Phase 12]: Advance the benchmark reset epoch before strict decoding so every adapter-level rejection and completion consumes one request-local identity.
+- [Phase 12]: Collect optional common-parent diagnostics in a separate post-authority sample so profiled durations never become regression authority.
 
 ### Pending Todos
 
@@ -606,6 +610,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-23T23:38:46.732Z
-Stopped at: Completed 12-18-PLAN.md
+Last session: 2026-07-23T23:55:21.639Z
+Stopped at: Completed 12-19-PLAN.md
 Resume file: None
