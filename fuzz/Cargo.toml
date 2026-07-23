@@ -1,0 +1,64 @@
+[package]
+name = "liquidfun-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2024"
+rust-version = "1.92"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+arbitrary = { version = "=1.4.2", features = ["derive"] }
+libfuzzer-sys = "=0.4.13"
+liquidfun = { path = "../crates/liquidfun" }
+liquidfun-test-protocol = { path = "../crates/liquidfun-test-protocol" }
+sha2 = "=0.10.9"
+
+[[bin]]
+name = "protocol"
+path = "fuzz_targets/protocol.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "shapes_collision"
+path = "fuzz_targets/shapes_collision.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "world_mutation"
+path = "fuzz_targets/world_mutation.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "particles"
+path = "fuzz_targets/particles.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "groups_ownership"
+path = "fuzz_targets/groups_ownership.rs"
+test = false
+doc = false
+bench = false
+
+[workspace]
+members = ["."]
+resolver = "3"
+
+[lints.rust]
+missing_docs = "warn"
+unsafe_code = "forbid"
+unused_must_use = "deny"
+
+[lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
