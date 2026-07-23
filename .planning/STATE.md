@@ -3,14 +3,14 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 12-07-PLAN.md
-last_updated: "2026-07-23T22:33:04.920Z"
+stopped_at: Completed 12-24-PLAN.md
+last_updated: "2026-07-23T22:54:52.480Z"
 last_activity: "2026-07-23"
 progress:
   total_phases: 12
   completed_phases: 11
   total_plans: 216
-  completed_plans: 203
+  completed_plans: 204
   percent: 94
 ---
 
@@ -26,11 +26,11 @@ See: `.planning/PROJECT.md` (updated 2026-07-23)
 ## Current Position
 
 Phase: 12 (Performance, Portability, and Release Hardening) — EXECUTING
-Plan: 5 of 25
+Plan: 6 of 25
 Status: Ready to execute
 Last activity: 2026-07-23
 
-Progress: [█████████░] 93%
+Progress: [█████████░] 94%
 
 ## Performance Metrics
 
@@ -210,6 +210,7 @@ Progress: [█████████░] 93%
 | Phase 12 P12 | 18m | 1 tasks | 4 files |
 | Phase 12 P03 | 29m | 1 tasks | 7 files |
 | Phase 12 P07 | 10min | 1 tasks | 4 files |
+| Phase 12 P24 | 19min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -584,6 +585,8 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 12]: Preserve exact 35 percent matching-primitive opacity while reusing protocol projection and comparison authority.
 - [Phase 12]: Echo one validated BenchmarkRunIdentity in request and result records, then validate the pair before accepting evidence.
 - [Phase 12]: Keep performance, physics mismatch, and harness failure as mutually exclusive outcomes; only performance carries authoritative unprofiled nanoseconds.
+- [Phase 12]: Keep Miri and Rust ASan on explicit pure-Rust allowlists with bounded execution and logs.
+- [Phase 12]: Keep Rust, C++, and semantic differential coverage as separate non-authoritative identity-last artifacts.
 
 ### Pending Todos
 
@@ -597,6 +600,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-23T22:33:04.915Z
-Stopped at: Completed 12-07-PLAN.md
+Last session: 2026-07-23T22:54:52.474Z
+Stopped at: Completed 12-24-PLAN.md
 Resume file: None
