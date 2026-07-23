@@ -3,11 +3,15 @@
 use std::time::Duration;
 
 use liquidfun_differential::SessionState;
-use liquidfun_test_protocol::{RunSettings, reviewed_scenario_catalog};
+use liquidfun_test_protocol::{
+    DebugLayerName, RunSettings, StructuralValue, reviewed_scenario_catalog,
+};
 use liquidfun_testbed::interactive::{InteractiveTestbed, InteractiveTestbedError};
+use liquidfun_testbed::ui::inspector::CheckpointDiagnostics;
 
 const CHECKPOINT_SCENARIO: &str = "rigid-non-colliding-lifecycle";
 const CADENCE_SCENARIO: &str = "rigid-stack-stability";
+const PARTICLE_SCENARIO: &str = "particle-contacts-and-coupling";
 const LAUNCHER_SOURCE: &str = include_str!("../src/bin/interactive.rs");
 
 #[test]
@@ -22,6 +26,13 @@ fn production_launcher_wires_the_live_catalog_controller_and_renderer() {
         "project_checkpoint(",
         "draw_protocol_frame(",
         "draw_protocol_comparison_frame(",
+        "Checkpoint has no drawable primitives",
+        "No primitives in enabled debug layers",
+        "presentation_checkpoint()",
+        "CheckpointDiagnostics::from_checkpoint(",
+        "(last drawable)",
+        "(empty after teardown)",
+        "Draw shapes:",
         "ProtocolComparisonBackend::Oracle",
         "DifferenceList::new(",
         "focused_difference_entry(",
@@ -220,6 +231,99 @@ fn captures_a_nonempty_canonical_checkpoint_after_one_logical_step() {
             || !checkpoint.debug_primitives().is_empty(),
         "a real native capture should contain semantic checkpoint data"
     );
+}
+
+#[test]
+fn captured_checkpoint_retains_renderable_native_debug_primitives() {
+    // Arrange
+    let mut testbed = selected_testbed(CHECKPOINT_SCENARIO);
+
+    // Act
+    testbed
+        .step_once()
+        .expect("one logical step should succeed");
+    testbed
+        .capture_reachable_checkpoint()
+        .expect("reachable checkpoint should capture");
+    let checkpoint = testbed
+        .latest_checkpoint()
+        .expect("canonical capture should be retained");
+
+    // Assert
+    let collected_count = checkpoint
+        .observations()
+        .iter()
+        .find(|observation| observation.observation_id().as_str() == "world-debug-primitive-count")
+        .and_then(|observation| match observation.value() {
+            StructuralValue::Count(count) => usize::try_from(*count).ok(),
+            _ => None,
+        })
+        .expect("native capture should report its debug primitive count");
+    assert!(
+        collected_count > 0,
+        "fixture should produce debug primitives"
+    );
+    assert_eq!(
+        checkpoint.debug_primitives().len(),
+        collected_count,
+        "the interactive checkpoint must retain every native debug primitive for rendering"
+    );
+}
+
+#[test]
+fn run_presents_particle_geometry_for_a_particle_scenario() {
+    // Arrange
+    let mut testbed = selected_testbed(PARTICLE_SCENARIO);
+    let timestep = timestep(&testbed);
+    testbed.run().expect("particle scenario should run");
+
+    // Act
+    while testbed.session_state() == SessionState::Running {
+        testbed
+            .update(timestep)
+            .expect("fixed-time update should advance");
+        if testbed.reachable_checkpoint_id().is_some() {
+            testbed
+                .capture_reachable_checkpoint()
+                .expect("reachable checkpoint should capture");
+        }
+    }
+    let checkpoint = testbed
+        .presentation_checkpoint()
+        .expect("run should retain a presentation checkpoint");
+
+    // Assert
+    assert!(
+        checkpoint
+            .debug_primitives()
+            .iter()
+            .any(|record| record.key().layer() == DebugLayerName::Particles),
+        "running a particle scenario should leave particle geometry visible"
+    );
+}
+
+#[test]
+fn inspector_diagnostics_explain_particle_checkpoint_contents() {
+    // Arrange
+    let mut testbed = selected_testbed(PARTICLE_SCENARIO);
+    testbed
+        .step_once()
+        .expect("particle scenario should advance once");
+    testbed
+        .capture_reachable_checkpoint()
+        .expect("particle checkpoint should capture");
+    let checkpoint = testbed
+        .latest_checkpoint()
+        .expect("particle checkpoint should be retained");
+
+    // Act
+    let diagnostics = CheckpointDiagnostics::from_checkpoint(checkpoint);
+
+    // Assert
+    assert_eq!(diagnostics.maybe_particle_count(), Some(2));
+    assert_eq!(diagnostics.total_primitive_count(), 2);
+    assert_eq!(diagnostics.maybe_observed_primitive_count(), Some(2));
+    assert_eq!(diagnostics.layer_count(DebugLayerName::Particles), 2);
 }
 
 #[test]
