@@ -674,7 +674,7 @@ impl World {
 
     /// Replaces the public behavior flags for one live particle group.
     ///
-    /// [`ParticleGroupFlags`] removes upstream-private bits at construction;
+    /// [`crate::particle::ParticleGroupFlags`] removes upstream-private bits at construction;
     /// this operation accepts only that invariant-bearing public value.
     ///
     /// # Errors

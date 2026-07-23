@@ -17,7 +17,10 @@ use super::object::World;
 
 mod profile;
 pub(in crate::world) use profile::DiagnosticStepProfiler;
-pub use profile::{DiagnosticStepPhase, DiagnosticStepPhaseTiming, DiagnosticStepProfile};
+pub use profile::{
+    DiagnosticProfileChild, DiagnosticProfileParent, DiagnosticProfileSchema, DiagnosticStepPhase,
+    DiagnosticStepPhaseTiming, DiagnosticStepProfile,
+};
 
 const REVIEWED_MAX_CONTACTS: usize = 4_096;
 const REVIEWED_MAX_PARTICLE_CONTACTS: usize = 65_536;

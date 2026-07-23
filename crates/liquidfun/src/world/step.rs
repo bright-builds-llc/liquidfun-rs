@@ -17,7 +17,9 @@ use super::config::{StepCompletion, StepConfiguration};
 use super::contact::{ContactPointSnapshot, ContactTransition, ManagedContactSnapshot};
 use super::contact_solver::{ContactSolve, ContactSolveFailure};
 use super::continuous::{ContinuousStepKey, ContinuousStepKind};
-use super::observation::{DiagnosticStepPhase, DiagnosticStepProfile, DiagnosticStepProfiler};
+use super::observation::{
+    DiagnosticProfileParent, DiagnosticStepPhase, DiagnosticStepProfile, DiagnosticStepProfiler,
+};
 
 mod continuous;
 pub use continuous::ContinuousProgress;
@@ -1393,10 +1395,15 @@ impl World {
             contact_lifecycle_result?;
             contact_transitions.extend(self.contact_manager.drain_transitions());
             profiler.record(
-                DiagnosticStepPhase::ContactLifecycle,
+                DiagnosticStepPhase::Common(DiagnosticProfileParent::ContactUpdate),
                 contact_lifecycle_start,
             );
             if runs_particle_stages {
+                let maybe_particle_prepare_start = if self.particle_system_order.is_empty() {
+                    None
+                } else {
+                    profiler.start()
+                };
                 let particle_solve_start = profiler.start();
                 let particle_contact_result = catch_unwind(AssertUnwindSafe(|| {
                     self.run_particle_solver(configuration, &mut hook_run)
@@ -1410,7 +1417,14 @@ impl World {
                 }
                 self.preflight_contact_solver()
                     .map_err(|error| solver_step_error(error, &contact_transitions))?;
-                profiler.record(DiagnosticStepPhase::ParticleSolve, particle_solve_start);
+                profiler.record(
+                    DiagnosticStepPhase::Common(DiagnosticProfileParent::ParticlePrepare),
+                    maybe_particle_prepare_start,
+                );
+                profiler.record(
+                    DiagnosticStepPhase::Common(DiagnosticProfileParent::ParticleSolve),
+                    particle_solve_start,
+                );
             }
 
             phases.push(StepPhase::Hook);
@@ -1424,7 +1438,10 @@ impl World {
                     &contact_transitions,
                     &mut hook_run,
                 )?;
-                profiler.record(DiagnosticStepPhase::RigidSolve, rigid_solve_start);
+                profiler.record(
+                    DiagnosticStepPhase::Common(DiagnosticProfileParent::RigidSolve),
+                    rigid_solve_start,
+                );
             }
 
             let completion = if continuous_enabled {
@@ -1447,7 +1464,10 @@ impl World {
                 };
                 drop(continuous.contact_solves);
                 drop(self.contact_manager.drain_transitions());
-                profiler.record(DiagnosticStepPhase::ContinuousSolve, continuous_solve_start);
+                profiler.record(
+                    DiagnosticStepPhase::Common(DiagnosticProfileParent::ContinuousSolve),
+                    continuous_solve_start,
+                );
                 continuous.completion
             } else {
                 StepCompletion::Complete
@@ -1464,6 +1484,7 @@ impl World {
         };
         let (mut lifecycle, commands) = hook_run.finish();
         phases.push(StepPhase::Unlock);
+        let finalize_start = profiler.start();
         let apply_commands_start = profiler.start();
         if !commands.is_empty() {
             phases.push(StepPhase::ApplyCommands);
@@ -1474,7 +1495,6 @@ impl World {
             profiler.record(DiagnosticStepPhase::ApplyCommands, apply_commands_start);
         }
 
-        let finalize_start = profiler.start();
         let contact_transitions = lifecycle
             .iter()
             .filter_map(|event| match event {
@@ -1535,7 +1555,10 @@ impl World {
             destructions,
             command_applications,
         };
-        profiler.record(DiagnosticStepPhase::Finalize, finalize_start);
+        profiler.record(
+            DiagnosticStepPhase::Common(DiagnosticProfileParent::Finalize),
+            finalize_start,
+        );
         Ok(report)
     }
 
