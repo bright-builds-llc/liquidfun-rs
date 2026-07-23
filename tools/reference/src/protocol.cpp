@@ -3,6 +3,8 @@
 #include "nlohmann/json.hpp"
 
 #include <algorithm>
+#include <array>
+#include <cmath>
 #include <iomanip>
 #include <istream>
 #include <limits>
@@ -218,6 +220,14 @@ std::uint32_t as_u32(const Node& node, std::string_view context) {
     throw std::runtime_error(std::string(context) + " exceeds u32");
   }
   return static_cast<std::uint32_t>(value);
+}
+
+bool as_bool(const Node& node, std::string_view context) {
+  const auto* value = std::get_if<bool>(&node.value);
+  if (value == nullptr) {
+    throw std::runtime_error(std::string(context) + " must be boolean");
+  }
+  return *value;
 }
 
 const Node& member(
@@ -1002,7 +1012,164 @@ RequestKind decode_request_kind(std::string_view record) {
   if (kind == "collision_probe_request") return RequestKind::collision_probe;
   if (kind == "rigid_world_request") return RequestKind::rigid_world;
   if (kind == "catalog_run_request") return RequestKind::catalog_run;
+  if (kind == "benchmark_run_request") return RequestKind::benchmark_run;
   throw std::runtime_error("unsupported record kind");
+}
+
+BenchmarkRunRequest decode_benchmark_run_request(std::string_view record) {
+  constexpr std::string_view reviewed_policy_sha256 =
+      "75c0253d9f1eaa0b4cd6097031ed85f3c530fe47606049b5ac060a5267a3f05f";
+  constexpr std::array<std::string_view, 14> workloads{
+      "world_step",          "broad_phase",       "narrow_phase",
+      "contact_solve",       "ccd",               "joints",
+      "particle_lifecycle",  "particle_contacts", "particle_sort",
+      "particle_pressure",   "large_particle_system",
+      "mixed_world",         "aabb_query",        "ray_cast"};
+  constexpr std::array<std::string_view, 4> size_points{
+      "fixed", "entities128", "entities1024", "entities8192"};
+
+  const auto root = decode_record_node(record);
+  const auto& object = as_object(root, "benchmark run request");
+  require_members(
+      object,
+      {"protocol_version", "record_kind", "identity", "resolved_bytes"},
+      "benchmark run request");
+  if (as_u32(
+          member(object, "protocol_version", "benchmark run request"),
+          "protocol version") != kProtocolVersion ||
+      as_string(
+          member(object, "record_kind", "benchmark run request"),
+          "record kind") != "benchmark_run_request") {
+    throw std::runtime_error("unsupported benchmark protocol version or kind");
+  }
+
+  const auto& identity_node =
+      as_object(member(object, "identity", "benchmark run request"),
+                "benchmark run identity");
+  require_members(
+      identity_node,
+      {"request_id", "resolved_sha256", "settings", "workload",
+       "size_point", "optimization_mode", "warmup_count",
+       "measured_horizon", "sample_ordinal", "policy_sha256",
+       "profile_enabled"},
+      "benchmark run identity");
+  BenchmarkRunIdentity identity;
+  identity.request_id = as_string(
+      member(identity_node, "request_id", "benchmark run identity"),
+      "benchmark request ID");
+  require_id(identity.request_id, "benchmark request ID");
+  identity.resolved_sha256 = as_string(
+      member(identity_node, "resolved_sha256", "benchmark run identity"),
+      "benchmark resolved SHA-256");
+  require_sha256(
+      identity.resolved_sha256, "benchmark resolved SHA-256");
+
+  const auto& settings =
+      as_object(member(identity_node, "settings", "benchmark run identity"),
+                "benchmark settings");
+  require_members(
+      settings,
+      {"timestep_bits", "velocity_iterations", "position_iterations",
+       "particle_iterations"},
+      "benchmark settings");
+  identity.settings = {
+      as_u32(member(settings, "timestep_bits", "benchmark settings"),
+             "benchmark timestep"),
+      as_u32(
+          member(settings, "velocity_iterations", "benchmark settings"),
+          "benchmark velocity iterations"),
+      as_u32(
+          member(settings, "position_iterations", "benchmark settings"),
+          "benchmark position iterations"),
+      as_u32(
+          member(settings, "particle_iterations", "benchmark settings"),
+          "benchmark particle iterations")};
+  const auto timestep = float_from_bits(identity.settings.timestep_bits);
+  if (!std::isfinite(timestep) || timestep <= 0.0F) {
+    throw std::runtime_error("benchmark timestep must be finite and positive");
+  }
+  for (const auto iterations :
+       {identity.settings.velocity_iterations,
+        identity.settings.position_iterations,
+        identity.settings.particle_iterations}) {
+    if (iterations == 0U || iterations > 1024U) {
+      throw std::runtime_error(
+          "benchmark iteration count is outside reviewed bounds");
+    }
+  }
+
+  identity.workload = as_string(
+      member(identity_node, "workload", "benchmark run identity"),
+      "benchmark workload");
+  if (std::find(workloads.begin(), workloads.end(), identity.workload) ==
+      workloads.end()) {
+    throw std::runtime_error("unknown benchmark workload");
+  }
+  identity.size_point = as_string(
+      member(identity_node, "size_point", "benchmark run identity"),
+      "benchmark size point");
+  if (std::find(size_points.begin(), size_points.end(), identity.size_point) ==
+      size_points.end()) {
+    throw std::runtime_error("unknown benchmark size point");
+  }
+  identity.optimization_mode = as_string(
+      member(identity_node, "optimization_mode", "benchmark run identity"),
+      "benchmark optimization mode");
+  if (identity.optimization_mode != "release_scalar") {
+    throw std::runtime_error("unsupported benchmark optimization mode");
+  }
+  identity.warmup_count = as_u32(
+      member(identity_node, "warmup_count", "benchmark run identity"),
+      "benchmark warmup count");
+  if (identity.warmup_count != 1U) {
+    throw std::runtime_error("benchmark warmup count violates policy");
+  }
+  identity.measured_horizon = as_u32(
+      member(identity_node, "measured_horizon", "benchmark run identity"),
+      "benchmark measured horizon");
+  if (identity.measured_horizon == 0U ||
+      identity.measured_horizon > 4096U) {
+    throw std::runtime_error(
+        "benchmark measured horizon is outside reviewed bounds");
+  }
+  identity.sample_ordinal = as_u32(
+      member(identity_node, "sample_ordinal", "benchmark run identity"),
+      "benchmark sample ordinal");
+  if (identity.sample_ordinal == 0U || identity.sample_ordinal > 30U) {
+    throw std::runtime_error(
+        "benchmark sample ordinal is outside reviewed bounds");
+  }
+  identity.policy_sha256 = as_string(
+      member(identity_node, "policy_sha256", "benchmark run identity"),
+      "benchmark policy SHA-256");
+  require_sha256(identity.policy_sha256, "benchmark policy SHA-256");
+  if (identity.policy_sha256 != reviewed_policy_sha256) {
+    throw std::runtime_error("benchmark policy hash mismatch");
+  }
+  identity.profile_enabled = as_bool(
+      member(identity_node, "profile_enabled", "benchmark run identity"),
+      "benchmark profile flag");
+
+  const auto& bytes = as_array(
+      member(object, "resolved_bytes", "benchmark run request"),
+      "benchmark resolved bytes");
+  if (bytes.size() > kMaximumRecordBytes) {
+    throw std::runtime_error(
+        "benchmark resolved bytes exceed reviewed bound");
+  }
+  std::string resolved_bytes;
+  resolved_bytes.reserve(bytes.size());
+  for (const auto& byte : bytes) {
+    const auto value = as_u32(byte, "benchmark resolved byte");
+    if (value > 255U) {
+      throw std::runtime_error("benchmark resolved byte exceeds u8");
+    }
+    resolved_bytes.push_back(static_cast<char>(value));
+  }
+  if (sha256_hex(resolved_bytes) != identity.resolved_sha256) {
+    throw std::runtime_error("benchmark resolved bytes hash mismatch");
+  }
+  return {std::move(identity), std::move(resolved_bytes)};
 }
 
 MathProbeRequest decode_math_probe_request(std::string_view record) {

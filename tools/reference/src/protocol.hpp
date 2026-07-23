@@ -30,7 +30,8 @@ enum class RequestKind {
   math_probe,
   collision_probe,
   rigid_world,
-  catalog_run
+  catalog_run,
+  benchmark_run
 };
 
 struct ScenarioSource {
@@ -112,9 +113,36 @@ struct WorldCounts {
   std::uint32_t particles = 0;
 };
 
+struct BenchmarkRunSettings {
+  std::uint32_t timestep_bits = 0;
+  std::uint32_t velocity_iterations = 0;
+  std::uint32_t position_iterations = 0;
+  std::uint32_t particle_iterations = 0;
+};
+
+struct BenchmarkRunIdentity {
+  std::string request_id;
+  std::string resolved_sha256;
+  BenchmarkRunSettings settings;
+  std::string workload;
+  std::string size_point;
+  std::string optimization_mode;
+  std::uint32_t warmup_count = 0;
+  std::uint32_t measured_horizon = 0;
+  std::uint32_t sample_ordinal = 0;
+  std::string policy_sha256;
+  bool profile_enabled = false;
+};
+
+struct BenchmarkRunRequest {
+  BenchmarkRunIdentity identity;
+  std::string resolved_bytes;
+};
+
 ScenarioRequest decode_scenario_request(std::string_view record);
 RequestKind decode_request_kind(std::string_view record);
 MathProbeRequest decode_math_probe_request(std::string_view record);
+BenchmarkRunRequest decode_benchmark_run_request(std::string_view record);
 std::string encode_scenario_request(const ScenarioRequest& request);
 std::string encode_scenario(const ScenarioV1& scenario);
 std::string encode_handshake(const BuildIdentity& identity);

@@ -226,6 +226,128 @@ class CatalogSession {
   std::vector<std::pair<std::string, b2ParticleGroup*>> groups_;
 };
 
+void validate_schedule(const CatalogRequest& request) {
+  const auto& payload = request.payload;
+  const auto& actions = payload.at("actions");
+  const auto& checkpoints = payload.at("checkpoints");
+  std::size_t checkpoint_index = 0;
+  bool saw_logical = false;
+  for (std::size_t index = 0; index < actions.size(); ++index) {
+    const auto& scheduled = actions.at(index);
+    require_members(
+        scheduled, {"action_id", "schedule", "action"}, "scheduled action");
+    const auto digits = std::to_string(index);
+    const auto padding = 4U - std::min<std::size_t>(4U, digits.size());
+    const auto expected_id = "action-" + std::string(padding, '0') + digits;
+    if (as_id(scheduled.at("action_id"), "action ID") != expected_id) {
+      throw std::runtime_error("catalog action order is invalid");
+    }
+    const auto& schedule = scheduled.at("schedule");
+    const auto schedule_kind = as_id(schedule.at("kind"), "schedule kind");
+    if (schedule_kind == "setup") {
+      if (saw_logical ||
+          as_u32(schedule.at("ordinal"), "setup ordinal") != index) {
+        throw std::runtime_error("catalog setup order is invalid");
+      }
+      continue;
+    }
+    if (schedule_kind != "logical_step") {
+      throw std::runtime_error("unknown catalog schedule kind");
+    }
+    saw_logical = true;
+    const auto logical_step =
+        as_u32(schedule.at("ordinal"), "logical step");
+    if (logical_step != checkpoint_index + 1U ||
+        checkpoint_index >= checkpoints.size()) {
+      throw std::runtime_error("catalog logical step order is invalid");
+    }
+    const auto& declaration = checkpoints.at(checkpoint_index);
+    require_members(
+        declaration,
+        {"checkpoint_id", "after_action_id", "logical_step"},
+        "checkpoint declaration");
+    if (declaration.at("after_action_id") != scheduled.at("action_id") ||
+        as_u32(
+            declaration.at("logical_step"), "checkpoint logical step") !=
+            logical_step) {
+      throw std::runtime_error("catalog checkpoint reference is invalid");
+    }
+    ++checkpoint_index;
+  }
+  if (!saw_logical || checkpoint_index != checkpoints.size()) {
+    throw std::runtime_error("catalog checkpoint schedule is incomplete");
+  }
+}
+
+class CatalogExecutionSession::Impl {
+ public:
+  explicit Impl(const CatalogRequest& source)
+      : request(source),
+        session(as_id(
+            request.payload.at("identity").at("slug"), "catalog slug")) {
+    validate_schedule(request);
+    const auto& actions = request.payload.at("actions");
+    const auto& settings = request.payload.at("identity").at("settings");
+    while (next_action < actions.size() &&
+           actions.at(next_action).at("schedule").at("kind") == "setup") {
+      session.execute(actions.at(next_action).at("action"), settings);
+      ++next_action;
+    }
+  }
+
+  CatalogRequest request;
+  CatalogSession session;
+  std::size_t next_action = 0;
+  std::size_t completed_logical_actions = 0;
+};
+
+CatalogExecutionSession::CatalogExecutionSession(
+    const CatalogRequest& request)
+    : impl_(std::make_unique<Impl>(request)) {}
+
+CatalogExecutionSession::~CatalogExecutionSession() = default;
+
+CatalogExecutionSession::CatalogExecutionSession(
+    CatalogExecutionSession&&) noexcept = default;
+
+CatalogExecutionSession& CatalogExecutionSession::operator=(
+    CatalogExecutionSession&&) noexcept = default;
+
+std::size_t CatalogExecutionSession::logical_action_count() const {
+  return impl_->request.payload.at("checkpoints").size();
+}
+
+bool CatalogExecutionSession::finished() const {
+  return impl_->next_action == impl_->request.payload.at("actions").size();
+}
+
+void CatalogExecutionSession::execute_next_logical_action() {
+  if (finished()) {
+    throw std::runtime_error("catalog logical action stream is exhausted");
+  }
+  const auto& scheduled =
+      impl_->request.payload.at("actions").at(impl_->next_action);
+  if (scheduled.at("schedule").at("kind") != "logical_step") {
+    throw std::runtime_error("catalog logical action stream is invalid");
+  }
+  impl_->session.execute(
+      scheduled.at("action"),
+      impl_->request.payload.at("identity").at("settings"));
+  ++impl_->next_action;
+  ++impl_->completed_logical_actions;
+}
+
+std::string CatalogExecutionSession::capture_current_checkpoint() const {
+  if (impl_->completed_logical_actions == 0U) {
+    throw std::runtime_error(
+        "catalog checkpoint capture requires a logical action");
+  }
+  const auto checkpoint_index = impl_->completed_logical_actions - 1U;
+  return encode_catalog_checkpoint(impl_->session.checkpoint(
+      impl_->request,
+      impl_->request.payload.at("checkpoints").at(checkpoint_index)));
+}
+
 void CatalogSession::execute_mutation(
     const std::string& kind,
     const Json& action) {
@@ -489,58 +611,12 @@ void CatalogSession::execute_group(const Json& operation) {
 }
 
 std::vector<std::string> execute_payload(const CatalogRequest& request) {
-  const auto& payload = request.payload;
-  CatalogSession session(as_id(payload.at("identity").at("slug"), "catalog slug"));
-  const auto& settings = payload.at("identity").at("settings");
-  const auto& actions = payload.at("actions");
-  const auto& checkpoints = payload.at("checkpoints");
+  CatalogExecutionSession session(request);
   std::vector<std::string> records;
-  records.reserve(checkpoints.size());
-  std::size_t checkpoint_index = 0;
-  bool saw_logical = false;
-  for (std::size_t index = 0; index < actions.size(); ++index) {
-    const auto& scheduled = actions.at(index);
-    require_members(scheduled, {"action_id", "schedule", "action"}, "scheduled action");
-    const auto digits = std::to_string(index);
-    const auto padding = 4U - std::min<std::size_t>(4U, digits.size());
-    const auto expected_id =
-        "action-" + std::string(padding, '0') + digits;
-    if (as_id(scheduled.at("action_id"), "action ID") != expected_id) {
-      throw std::runtime_error("catalog action order is invalid");
-    }
-    const auto& schedule = scheduled.at("schedule");
-    const auto schedule_kind = as_id(schedule.at("kind"), "schedule kind");
-    if (schedule_kind == "setup") {
-      if (saw_logical || as_u32(schedule.at("ordinal"), "setup ordinal") != index) {
-        throw std::runtime_error("catalog setup order is invalid");
-      }
-    } else if (schedule_kind == "logical_step") {
-      saw_logical = true;
-      const auto logical_step = as_u32(schedule.at("ordinal"), "logical step");
-      if (logical_step != checkpoint_index + 1U || checkpoint_index >= checkpoints.size()) {
-        throw std::runtime_error("catalog logical step order is invalid");
-      }
-      const auto& declaration = checkpoints.at(checkpoint_index);
-      require_members(
-          declaration,
-          {"checkpoint_id", "after_action_id", "logical_step"},
-          "checkpoint declaration");
-      if (declaration.at("after_action_id") != scheduled.at("action_id") ||
-          as_u32(declaration.at("logical_step"), "checkpoint logical step") != logical_step) {
-        throw std::runtime_error("catalog checkpoint reference is invalid");
-      }
-    } else {
-      throw std::runtime_error("unknown catalog schedule kind");
-    }
-    session.execute(scheduled.at("action"), settings);
-    if (schedule_kind == "logical_step") {
-      records.push_back(encode_catalog_checkpoint(
-          session.checkpoint(request, checkpoints.at(checkpoint_index))));
-      ++checkpoint_index;
-    }
-  }
-  if (!saw_logical || checkpoint_index != checkpoints.size()) {
-    throw std::runtime_error("catalog checkpoint schedule is incomplete");
+  records.reserve(session.logical_action_count());
+  while (!session.finished()) {
+    session.execute_next_logical_action();
+    records.push_back(session.capture_current_checkpoint());
   }
   return records;
 }

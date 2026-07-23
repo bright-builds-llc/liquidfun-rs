@@ -1,4 +1,5 @@
 #include "build_identity.hpp"
+#include "benchmark_run.hpp"
 #include "catalog_run.hpp"
 #include "collision_probe.hpp"
 #include "math_probe.hpp"
@@ -84,6 +85,7 @@ int run() {
   std::uint64_t collision_probe_reset_epoch = 0;
   liquidfun::reference::RigidWorldAdapter rigid_world_adapter;
   liquidfun::reference::CatalogRunAdapter catalog_run_adapter;
+  liquidfun::reference::BenchmarkRunAdapter benchmark_run_adapter;
   std::string line;
   while (liquidfun::reference::read_bounded_record(std::cin, line)) {
     try {
@@ -126,6 +128,12 @@ int run() {
           liquidfun::reference::write_record(std::cout, checkpoint);
         }
         liquidfun::reference::write_record(std::cout, trace.end_record);
+        continue;
+      }
+      if (request_kind == liquidfun::reference::RequestKind::benchmark_run) {
+        const auto trace = benchmark_run_adapter.execute(line);
+        liquidfun::reference::write_record(
+            std::cout, trace.result_record);
         continue;
       }
       const auto request =
