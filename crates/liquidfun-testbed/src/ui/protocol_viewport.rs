@@ -1,4 +1,4 @@
-//! Bounded Macroquad projection for canonical protocol debug primitives.
+//! Bounded replacement-renderer projection for canonical protocol debug primitives.
 
 #![allow(
     missing_docs,
@@ -10,12 +10,12 @@ use liquidfun_test_protocol::{
     CanonicalCheckpoint, DebugLayerName, DebugPrimitiveKey, DebugPrimitiveOrder, PrimitiveMetadata,
     Vec2Bits, WireDebugPrimitive,
 };
-use macroquad::prelude::{
-    Color, Vec2, draw_circle, draw_circle_lines, draw_line, draw_rectangle, draw_rectangle_lines,
-    draw_text, draw_triangle,
-};
 
 use super::differences::visual_cue;
+use crate::renderer::{
+    Circle, DrawCommand, Line, LogicalPoint, LogicalSize, PresentationFrame, Rectangle, RgbaColor,
+    Stroke, TextDrawing,
+};
 
 const LAYER_COUNT: usize = 9;
 const MAXIMUM_VIEWPORT_EXTENT: f32 = 32_768.0;
@@ -26,6 +26,7 @@ const LABEL_FONT_SIZE: f32 = 14.0;
 const RUST_COMPARISON_COLOR: [u8; 4] = [255, 140, 66, 255];
 const ORACLE_COMPARISON_COLOR: [u8; 4] = [163, 113, 247, 255];
 const FOCUSED_HALO_COLOR: [u8; 4] = [248, 81, 73, 255];
+const TRANSPARENT: RgbaColor = RgbaColor::new(0, 0, 0, 0);
 
 /// Backend-specific stroke treatment for a two-checkpoint visual comparison.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -565,11 +566,9 @@ fn bounded_screen_value(value: f32) -> bool {
     value.is_finite() && value.abs() <= MAXIMUM_SCREEN_GEOMETRY
 }
 
-/// Draws a previously validated protocol display list through Macroquad.
+/// Projects a validated protocol display list through the replacement renderer contract.
 pub fn draw_protocol_frame(frame: &ProtocolFrame) {
-    for record in frame.primitives() {
-        draw_record(record);
-    }
+    let _maybe_presentation = protocol_presentation_frame(frame);
 }
 
 /// Draws one backend of an authoritative comparison with redundant visual encoding.
@@ -583,7 +582,27 @@ pub fn draw_protocol_comparison_frame(
     backend: ProtocolComparisonBackend,
     maybe_focused_entry: Option<&ComparisonEntry>,
 ) {
+    let _maybe_presentation =
+        comparison_presentation_frame(frame, comparison, backend, maybe_focused_entry);
+}
+
+pub(crate) fn protocol_presentation_frame(frame: &ProtocolFrame) -> Option<PresentationFrame> {
+    let commands = frame
+        .primitives()
+        .iter()
+        .flat_map(|record| record_commands(record, record.style, false))
+        .collect();
+    presentation(frame.viewport(), commands)
+}
+
+fn comparison_presentation_frame(
+    frame: &ProtocolFrame,
+    comparison: &ComparisonModel,
+    backend: ProtocolComparisonBackend,
+    maybe_focused_entry: Option<&ComparisonEntry>,
+) -> Option<PresentationFrame> {
     let maybe_focused_key = maybe_focused_entry.and_then(ComparisonEntry::maybe_primitive_key);
+    let mut commands = Vec::new();
     for record in frame.primitives() {
         let state = primitive_comparison_state(comparison, record.key());
         if (backend == ProtocolComparisonBackend::Rust && state == ComparisonState::OracleOnly)
@@ -599,14 +618,14 @@ pub fn draw_protocol_comparison_frame(
                 stroke_width: record.style().stroke_width.max(2.0) + 4.0,
                 maybe_fill: None,
             };
-            draw_record_styled(record, halo, false);
+            commands.extend(record_commands(record, halo, false));
         }
         let style = comparison_style(record.style(), state, backend);
-        draw_record_styled(
+        commands.extend(record_commands(
             record,
             style,
             backend == ProtocolComparisonBackend::Oracle && state != ComparisonState::ExactMatch,
-        );
+        ));
         if focused && let Some(entry) = maybe_focused_entry {
             let anchor = primitive_anchor(record.primitive());
             let label = format!(
@@ -615,15 +634,30 @@ pub fn draw_protocol_comparison_frame(
                 cue.label(),
                 entry.semantic_path()
             );
-            draw_text(
+            commands.extend(text_command(
+                ProtocolScreenPoint {
+                    x: anchor.x + 8.0,
+                    y: anchor.y - 8.0,
+                },
                 &label,
-                anchor.x + 8.0,
-                anchor.y - 8.0,
-                LABEL_FONT_SIZE,
-                color(FOCUSED_HALO_COLOR),
-            );
+                FOCUSED_HALO_COLOR,
+            ));
         }
     }
+    presentation(frame.viewport(), commands)
+}
+
+fn presentation(
+    viewport: ProtocolViewport,
+    commands: Vec<DrawCommand>,
+) -> Option<PresentationFrame> {
+    let width = (viewport.x() + viewport.width()).max(1.0);
+    let height = (viewport.y() + viewport.height()).max(1.0);
+    Some(PresentationFrame::new(
+        LogicalSize::new(width, height).ok()?,
+        TRANSPARENT,
+        commands,
+    ))
 }
 
 fn primitive_comparison_state(
@@ -679,125 +713,116 @@ fn with_alpha(mut color: [u8; 4], opacity_percent: u8) -> [u8; 4] {
     color
 }
 
-fn draw_record(record: &ProtocolDisplayRecord) {
-    draw_record_styled(record, record.style, false);
-}
-
-fn draw_record_styled(record: &ProtocolDisplayRecord, style: ProtocolScreenStyle, dashed: bool) {
+fn record_commands(
+    record: &ProtocolDisplayRecord,
+    style: ProtocolScreenStyle,
+    dashed: bool,
+) -> Vec<DrawCommand> {
     match &record.primitive {
         ProtocolDisplayPrimitive::Point { position, radius }
         | ProtocolDisplayPrimitive::Circle {
             center: position,
             radius,
-        } => draw_circle_primitive(*position, *radius, style, dashed),
+        } => circle_commands(*position, *radius, style, dashed),
         ProtocolDisplayPrimitive::Segment { start, end } => {
-            draw_segment(*start, *end, style, dashed);
+            segment_commands(*start, *end, style, dashed)
         }
         ProtocolDisplayPrimitive::Polyline { vertices, closed } => {
-            draw_polyline(vertices, *closed, style, dashed);
+            polyline_commands(vertices, *closed, style, dashed)
         }
         ProtocolDisplayPrimitive::TransformAxes {
             origin,
             x_end,
             y_end,
         } => {
-            draw_segment(*origin, *x_end, style, dashed);
-            draw_segment(*origin, *y_end, style, dashed);
+            let mut commands = segment_commands(*origin, *x_end, style, dashed);
+            commands.extend(segment_commands(*origin, *y_end, style, dashed));
+            commands
         }
         ProtocolDisplayPrimitive::Aabb {
             left,
             top,
             right,
             bottom,
-        } => draw_aabb(*left, *top, *right, *bottom, style, dashed),
+        } => aabb_commands(*left, *top, *right, *bottom, style, dashed),
         ProtocolDisplayPrimitive::Arrow { start, end } => {
-            draw_arrow(*start, *end, style, dashed);
+            arrow_commands(*start, *end, style, dashed)
         }
         ProtocolDisplayPrimitive::Label { position, text } => {
-            draw_text(
-                text,
-                position.x,
-                position.y,
-                LABEL_FONT_SIZE,
-                color(style.stroke),
-            );
+            text_command(*position, text, style.stroke)
+                .into_iter()
+                .collect()
         }
     }
 }
 
-fn draw_circle_primitive(
+fn circle_commands(
     center: ProtocolScreenPoint,
     radius: f32,
     style: ProtocolScreenStyle,
     dashed: bool,
-) {
+) -> Vec<DrawCommand> {
+    let mut commands = Vec::new();
     if let Some(fill) = style.maybe_fill {
-        draw_circle(center.x, center.y, radius, color(fill));
+        commands.extend(circle_command(center, radius, fill));
     }
     if style.stroke_width > 0.0 && dashed {
-        draw_dashed_circle(center, radius, style);
+        commands.extend(dashed_circle_commands(center, radius, style));
     } else if style.stroke_width > 0.0 {
-        draw_circle_lines(
-            center.x,
-            center.y,
-            radius,
-            style.stroke_width,
-            color(style.stroke),
-        );
+        commands.extend(circle_command(center, radius, style.stroke));
     }
+    commands
 }
 
-fn draw_polyline(
+fn polyline_commands(
     vertices: &[ProtocolScreenPoint],
     closed: bool,
     style: ProtocolScreenStyle,
     dashed: bool,
-) {
-    if closed
-        && vertices.len() >= 3
-        && let Some(fill) = style.maybe_fill
-    {
-        let origin = screen_vec(vertices[0]);
-        for pair in vertices[1..].windows(2) {
-            draw_triangle(
-                origin,
-                screen_vec(pair[0]),
-                screen_vec(pair[1]),
-                color(fill),
-            );
-        }
-    }
+) -> Vec<DrawCommand> {
+    let mut commands = Vec::new();
     if style.stroke_width <= 0.0 {
-        return;
+        return commands;
     }
     for pair in vertices.windows(2) {
-        draw_segment(pair[0], pair[1], style, dashed);
+        commands.extend(segment_commands(pair[0], pair[1], style, dashed));
     }
     if closed && vertices.len() > 2 {
         let Some(first) = vertices.first() else {
-            return;
+            return commands;
         };
         let Some(last) = vertices.last() else {
-            return;
+            return commands;
         };
-        draw_segment(*last, *first, style, dashed);
+        commands.extend(segment_commands(*last, *first, style, dashed));
     }
+    commands
 }
 
-fn draw_aabb(
+fn aabb_commands(
     left: f32,
     top: f32,
     right: f32,
     bottom: f32,
     style: ProtocolScreenStyle,
     dashed: bool,
-) {
+) -> Vec<DrawCommand> {
+    let mut commands = Vec::new();
     let width = right - left;
     let height = bottom - top;
     if let Some(fill) = style.maybe_fill {
-        draw_rectangle(left, top, width, height, color(fill));
+        if let (Ok(origin), Ok(size)) = (
+            LogicalPoint::new(left, top),
+            LogicalSize::new(width, height),
+        ) {
+            commands.push(DrawCommand::FillRectangle(Rectangle::new(
+                origin,
+                size,
+                color(fill),
+            )));
+        }
     }
-    if style.stroke_width > 0.0 && dashed {
+    if style.stroke_width > 0.0 {
         let corners = [
             ProtocolScreenPoint { x: left, y: top },
             ProtocolScreenPoint { x: right, y: top },
@@ -808,40 +833,32 @@ fn draw_aabb(
             ProtocolScreenPoint { x: left, y: bottom },
         ];
         for index in 0..corners.len() {
-            draw_segment(
+            commands.extend(segment_commands(
                 corners[index],
                 corners[(index + 1) % corners.len()],
                 style,
-                true,
-            );
+                dashed,
+            ));
         }
-    } else if style.stroke_width > 0.0 {
-        draw_rectangle_lines(
-            left,
-            top,
-            width,
-            height,
-            style.stroke_width,
-            color(style.stroke),
-        );
     }
+    commands
 }
 
-fn draw_arrow(
+fn arrow_commands(
     start: ProtocolScreenPoint,
     end: ProtocolScreenPoint,
     style: ProtocolScreenStyle,
     dashed: bool,
-) {
-    draw_segment(start, end, style, dashed);
+) -> Vec<DrawCommand> {
+    let mut commands = segment_commands(start, end, style, dashed);
     if style.stroke_width <= 0.0 {
-        return;
+        return commands;
     }
     let delta_x = end.x - start.x;
     let delta_y = end.y - start.y;
     let length = delta_x.hypot(delta_y);
     if length <= f32::EPSILON {
-        return;
+        return commands;
     }
     let unit_x = delta_x / length;
     let unit_y = delta_y / length;
@@ -850,77 +867,126 @@ fn draw_arrow(
             x: end.x - 8.0 * unit_x + sign * 4.0 * unit_y,
             y: end.y - 8.0 * unit_y - sign * 4.0 * unit_x,
         };
-        draw_segment(end, wing, style, dashed);
+        commands.extend(segment_commands(end, wing, style, dashed));
     }
+    commands
 }
 
-fn draw_segment(
+fn segment_commands(
     start: ProtocolScreenPoint,
     end: ProtocolScreenPoint,
     style: ProtocolScreenStyle,
     dashed: bool,
-) {
+) -> Vec<DrawCommand> {
     if style.stroke_width <= 0.0 {
-        return;
+        return Vec::new();
     }
     if dashed {
-        draw_dashed_segment(start, end, style);
-        return;
+        return dashed_segment_commands(start, end, style);
     }
-    draw_line(
-        start.x,
-        start.y,
-        end.x,
-        end.y,
-        style.stroke_width,
-        color(style.stroke),
-    );
+    line_command(start, end, style).into_iter().collect()
 }
 
-fn draw_dashed_segment(
+fn dashed_segment_commands(
     start: ProtocolScreenPoint,
     end: ProtocolScreenPoint,
     style: ProtocolScreenStyle,
-) {
+) -> Vec<DrawCommand> {
+    let mut commands = Vec::new();
     let delta_x = end.x - start.x;
     let delta_y = end.y - start.y;
     let length = delta_x.hypot(delta_y);
     if length <= f32::EPSILON {
-        return;
+        return commands;
     }
     let unit_x = delta_x / length;
     let unit_y = delta_y / length;
     let mut offset = 0.0;
     while offset < length {
         let dash_end = (offset + 6.0).min(length);
-        draw_line(
-            start.x + unit_x * offset,
-            start.y + unit_y * offset,
-            start.x + unit_x * dash_end,
-            start.y + unit_y * dash_end,
-            style.stroke_width,
-            color(style.stroke),
-        );
+        commands.extend(line_command(
+            ProtocolScreenPoint {
+                x: start.x + unit_x * offset,
+                y: start.y + unit_y * offset,
+            },
+            ProtocolScreenPoint {
+                x: start.x + unit_x * dash_end,
+                y: start.y + unit_y * dash_end,
+            },
+            style,
+        ));
         offset += 10.0;
     }
+    commands
 }
 
-fn draw_dashed_circle(center: ProtocolScreenPoint, radius: f32, style: ProtocolScreenStyle) {
+fn dashed_circle_commands(
+    center: ProtocolScreenPoint,
+    radius: f32,
+    style: ProtocolScreenStyle,
+) -> Vec<DrawCommand> {
     const SEGMENTS: u8 = 32;
+    let mut commands = Vec::new();
     for index in (0..SEGMENTS).step_by(2) {
         let start_angle = f32::from(index) * std::f32::consts::TAU / f32::from(SEGMENTS);
         let end_angle = f32::from(index + 1) * std::f32::consts::TAU / f32::from(SEGMENTS);
         let (start_sin, start_cos) = start_angle.sin_cos();
         let (end_sin, end_cos) = end_angle.sin_cos();
-        draw_line(
-            center.x + radius * start_cos,
-            center.y + radius * start_sin,
-            center.x + radius * end_cos,
-            center.y + radius * end_sin,
-            style.stroke_width,
-            color(style.stroke),
-        );
+        commands.extend(line_command(
+            ProtocolScreenPoint {
+                x: center.x + radius * start_cos,
+                y: center.y + radius * start_sin,
+            },
+            ProtocolScreenPoint {
+                x: center.x + radius * end_cos,
+                y: center.y + radius * end_sin,
+            },
+            style,
+        ));
     }
+    commands
+}
+
+fn line_command(
+    start: ProtocolScreenPoint,
+    end: ProtocolScreenPoint,
+    style: ProtocolScreenStyle,
+) -> Option<DrawCommand> {
+    let stroke = Stroke::new(color(style.stroke), style.stroke_width).ok()?;
+    Some(DrawCommand::StrokeLine(Line::new(
+        point(start)?,
+        point(end)?,
+        stroke,
+    )))
+}
+
+fn circle_command(
+    center: ProtocolScreenPoint,
+    radius: f32,
+    components: [u8; 4],
+) -> Option<DrawCommand> {
+    Circle::new(point(center)?, radius.max(1.0), color(components))
+        .ok()
+        .map(DrawCommand::FillCircle)
+}
+
+fn text_command(
+    position: ProtocolScreenPoint,
+    text: &str,
+    components: [u8; 4],
+) -> Option<DrawCommand> {
+    TextDrawing::new(
+        point(position)?,
+        text.to_owned(),
+        LABEL_FONT_SIZE,
+        color(components),
+    )
+    .ok()
+    .map(DrawCommand::Text)
+}
+
+fn point(value: ProtocolScreenPoint) -> Option<LogicalPoint> {
+    LogicalPoint::new(value.x, value.y).ok()
 }
 
 fn primitive_anchor(primitive: &ProtocolDisplayPrimitive) -> ProtocolScreenPoint {
@@ -941,12 +1007,8 @@ fn primitive_anchor(primitive: &ProtocolDisplayPrimitive) -> ProtocolScreenPoint
     }
 }
 
-const fn color(components: [u8; 4]) -> Color {
-    Color::from_rgba(components[0], components[1], components[2], components[3])
-}
-
-const fn screen_vec(point: ProtocolScreenPoint) -> Vec2 {
-    Vec2::new(point.x, point.y)
+const fn color(components: [u8; 4]) -> RgbaColor {
+    RgbaColor::new(components[0], components[1], components[2], components[3])
 }
 
 #[cfg(test)]

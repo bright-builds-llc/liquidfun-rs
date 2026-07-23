@@ -1,4 +1,4 @@
-//! Executable Macroquad-first renderer capability matrix.
+//! Executable replacement-renderer capability matrix.
 
 mod fixture;
 mod input;
@@ -82,7 +82,7 @@ impl CapabilityError {
     }
 }
 
-/// Runs the deterministic offscreen Macroquad capability matrix.
+/// Runs the deterministic offscreen replacement-renderer capability matrix.
 ///
 /// The adapter consumes only shared controller and comparison references. Rendering cannot submit
 /// commands, advance a logical step, or create a semantic checkpoint.

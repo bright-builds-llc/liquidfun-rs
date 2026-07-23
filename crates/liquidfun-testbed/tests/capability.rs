@@ -1,4 +1,4 @@
-//! Executable contract for the private Macroquad-first renderer gate.
+//! Executable contract for the private replacement-renderer gate.
 
 use std::fs;
 use std::path::PathBuf;
@@ -6,7 +6,6 @@ use std::path::PathBuf;
 use liquidfun_testbed::{
     CapabilityArtifact, CapabilityOptions, REQUIRED_CAPABILITY_NAMES, run_capability_check,
 };
-use sha2::{Digest, Sha256};
 
 fn repository_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -16,28 +15,8 @@ fn repository_root() -> PathBuf {
         .to_path_buf()
 }
 
-fn documented_report_identity(root: &std::path::Path) -> (usize, String) {
-    let decision = fs::read_to_string(root.join("crates/liquidfun-testbed/CAPABILITY.md"))
-        .expect("capability decision should be readable");
-    let row = decision
-        .lines()
-        .find(|line| line.split('|').nth(1).map(str::trim) == Some("`capability-report.json`"))
-        .expect("capability decision should record the report identity");
-    let columns = row.split('|').map(str::trim).collect::<Vec<_>>();
-    let bytes = columns[2]
-        .replace(',', "")
-        .parse()
-        .expect("documented report bytes should be numeric");
-    let sha256 = columns[3]
-        .strip_prefix('`')
-        .and_then(|value| value.strip_suffix('`'))
-        .expect("documented report digest should be code-formatted")
-        .to_owned();
-    (bytes, sha256)
-}
-
 #[test]
-fn macroquad_adapter_passes_every_required_capability_without_session_effects() {
+fn replacement_adapter_passes_every_required_capability_without_session_effects() {
     // Arrange
     let root = repository_root();
     let output = PathBuf::from("target/testbed-capability-tests/matrix");
@@ -50,7 +29,7 @@ fn macroquad_adapter_passes_every_required_capability_without_session_effects() 
     let report = run_capability_check(&options).expect("capability matrix should pass");
 
     // Assert
-    assert_eq!(report.adapter(), "macroquad-image-0.4.15");
+    assert_eq!(report.adapter(), "eframe-egui-0.35.0+tiny-skia-0.12.0");
     assert!(report.all_passed());
     assert_eq!(report.capability_names(), REQUIRED_CAPABILITY_NAMES);
     assert_eq!(report.session_logical_steps_before(), 0);
@@ -63,14 +42,86 @@ fn macroquad_adapter_passes_every_required_capability_without_session_effects() 
             .iter()
             .all(CapabilityArtifact::is_regular)
     );
+    assert_eq!(
+        report
+            .artifacts()
+            .iter()
+            .map(CapabilityArtifact::path)
+            .collect::<Vec<_>>(),
+        [
+            "replacement-capability-640x480.png",
+            "replacement-capability-800x600.png",
+            "replacement-capability-1280x960.png",
+        ]
+    );
     let report_bytes =
         fs::read(root.join("target/testbed-capability-tests/matrix/capability-report.json"))
             .expect("machine report should be readable");
-    let (documented_bytes, documented_sha256) = documented_report_identity(&root);
-    assert_eq!(report_bytes.len(), documented_bytes);
-    assert_eq!(
-        format!("{:x}", Sha256::digest(&report_bytes)),
-        documented_sha256
+    let machine_report: serde_json::Value =
+        serde_json::from_slice(&report_bytes).expect("machine report should be valid JSON");
+    assert_eq!(machine_report["capability_profile"], "phase12-v1");
+    assert_eq!(machine_report["fixture_profile"], "phase11-v1");
+}
+
+#[test]
+fn replacement_capture_hashes_are_stable_across_independent_runs() {
+    // Arrange
+    let root = repository_root();
+    let fixture = root.join("crates/liquidfun-differential/tests/fixtures/catalog/phase11-v1.json");
+    let first = CapabilityOptions::new(
+        fixture.clone(),
+        PathBuf::from("target/testbed-capability-tests/determinism-a"),
+    );
+    let second = CapabilityOptions::new(
+        fixture,
+        PathBuf::from("target/testbed-capability-tests/determinism-b"),
+    );
+
+    // Act
+    let first_report = run_capability_check(&first).expect("first capability run should pass");
+    let second_report = run_capability_check(&second).expect("second capability run should pass");
+
+    // Assert
+    let first_hashes = first_report
+        .artifacts()
+        .iter()
+        .map(CapabilityArtifact::sha256)
+        .collect::<Vec<_>>();
+    let second_hashes = second_report
+        .artifacts()
+        .iter()
+        .map(CapabilityArtifact::sha256)
+        .collect::<Vec<_>>();
+    assert_eq!(first_hashes, second_hashes);
+}
+
+#[test]
+fn migrated_capability_and_viewport_sources_exclude_the_legacy_renderer() {
+    // Arrange
+    let root = repository_root();
+    let sources = [
+        "crates/liquidfun-testbed/src/capability.rs",
+        "crates/liquidfun-testbed/src/capability/input.rs",
+        "crates/liquidfun-testbed/src/capability/render.rs",
+        "crates/liquidfun-testbed/src/capability/report.rs",
+        "crates/liquidfun-testbed/src/ui/viewport/draw.rs",
+        "crates/liquidfun-testbed/src/ui/protocol_viewport.rs",
+    ];
+
+    // Act
+    let offenders = sources
+        .into_iter()
+        .filter(|relative| {
+            fs::read_to_string(root.join(relative))
+                .expect("migrated source should be readable")
+                .contains("macroquad")
+        })
+        .collect::<Vec<_>>();
+
+    // Assert
+    assert!(
+        offenders.is_empty(),
+        "legacy renderer remains in migrated sources: {offenders:?}"
     );
 }
 

@@ -1,29 +1,35 @@
-//! Deterministic offscreen renderer backed by Macroquad's actual CPU image adapter.
+//! Deterministic offscreen capability capture through the replacement renderer contract.
 
 use std::fs;
 use std::path::Path;
 
 use liquidfun_differential::{ComparisonModel, SessionController};
-use macroquad::prelude::{Color, Image};
 
 use super::fixture::FixtureSnapshot;
 use super::passive::CapabilityBackend;
 use super::report::CapabilityArtifact;
 use super::{CapabilityError, hex_sha256, reject_link_file};
+use crate::renderer::image::TinySkiaImageRenderer;
+use crate::renderer::{
+    Circle, DrawCommand, ImageRenderer, Line, LogicalPoint, LogicalSize, PhysicalSize,
+    PresentationFrame, Rectangle, RenderedPixels, RgbaColor, Stroke,
+};
 
-const BACKGROUND: Color = Color::new(0.051, 0.067, 0.090, 1.0);
-const PANEL: Color = Color::new(0.086, 0.106, 0.133, 1.0);
-const TEXT: Color = Color::new(0.788, 0.820, 0.851, 1.0);
-const MUTED: Color = Color::new(0.545, 0.596, 0.651, 1.0);
-const ACCENT: Color = Color::new(0.345, 0.651, 1.0, 1.0);
-const RUST: Color = Color::new(0.22, 0.82, 0.62, 1.0);
-const ORACLE: Color = Color::new(0.75, 0.45, 1.0, 1.0);
-const WARNING: Color = Color::new(0.95, 0.72, 0.25, 1.0);
+const BACKGROUND: RgbaColor = RgbaColor::new(13, 17, 23, 255);
+const PANEL: RgbaColor = RgbaColor::new(22, 27, 34, 255);
+const TEXT: RgbaColor = RgbaColor::new(201, 209, 217, 255);
+const MUTED: RgbaColor = RgbaColor::new(139, 152, 166, 255);
+const ACCENT: RgbaColor = RgbaColor::new(88, 166, 255, 255);
+const RUST: RgbaColor = RgbaColor::new(56, 209, 158, 255);
+const ORACLE: RgbaColor = RgbaColor::new(191, 115, 255, 89);
+const WARNING: RgbaColor = RgbaColor::new(242, 184, 64, 255);
+const LOGICAL_WIDTH: u16 = 640;
+const LOGICAL_HEIGHT: u16 = 480;
 
 const FRAME_SIZES: [(u16, u16, &str); 3] = [
-    (640, 480, "macroquad-capability-640x480.png"),
-    (800, 600, "macroquad-capability-800x600.png"),
-    (1280, 960, "macroquad-capability-1280x960.png"),
+    (640, 480, "replacement-capability-640x480.png"),
+    (800, 600, "replacement-capability-800x600.png"),
+    (1280, 960, "replacement-capability-1280x960.png"),
 ];
 
 pub(super) struct RenderedEvidence {
@@ -121,7 +127,7 @@ pub(super) fn render_capability_frames(
     let mut resize_height = 0_u16;
     let mut maybe_semantic_evidence: Option<SemanticDrawEvidence> = None;
     for (width, height, name) in FRAME_SIZES {
-        let mut raster = MacroquadRaster::new(width, height);
+        let mut raster = RendererRaster::default();
         let semantic_evidence = draw_capability_scene(
             &mut raster,
             fixture,
@@ -133,16 +139,22 @@ pub(super) fn render_capability_frames(
             Some(evidence) => evidence.minimum(semantic_evidence),
             None => semantic_evidence,
         });
+        let pixels = raster.capture(width, height)?;
         non_background_pixels_minimum =
-            non_background_pixels_minimum.min(raster.non_background_pixels());
-        minimum_width = minimum_width.min(raster.image.width);
-        minimum_height = minimum_height.min(raster.image.height);
-        maximum_dpi_scale = maximum_dpi_scale.max(u16::try_from(raster.scale).unwrap_or(0));
+            non_background_pixels_minimum.min(non_background_pixels(&pixels));
+        let physical_size = pixels.size();
+        let physical_width =
+            u16::try_from(physical_size.width()).map_err(|_| CapabilityError::CapabilityFailed)?;
+        let physical_height =
+            u16::try_from(physical_size.height()).map_err(|_| CapabilityError::CapabilityFailed)?;
+        minimum_width = minimum_width.min(physical_width);
+        minimum_height = minimum_height.min(physical_height);
+        maximum_dpi_scale = maximum_dpi_scale.max(physical_width / LOGICAL_WIDTH);
         if width == 800 && height == 600 {
-            resize_width = raster.image.width;
-            resize_height = raster.image.height;
+            resize_width = physical_width;
+            resize_height = physical_height;
         }
-        artifacts.push(export_image(&raster.image, output, name)?);
+        artifacts.push(export_image(&pixels, output, name)?);
     }
     let Some(semantic_evidence) = maybe_semantic_evidence else {
         return Err(CapabilityError::CapabilityFailed);
@@ -174,16 +186,13 @@ pub(super) fn render_capability_frames(
 }
 
 fn export_image(
-    image: &Image,
+    pixels: &RenderedPixels,
     output: &Path,
     name: &str,
 ) -> Result<CapabilityArtifact, CapabilityError> {
     let path = output.join(name);
     reject_link_file(&path)?;
-    let Some(path_text) = path.to_str() else {
-        return Err(CapabilityError::InvalidOutputPath);
-    };
-    image.export_png(path_text);
+    fs::write(&path, pixels.png_bytes()).map_err(|_| CapabilityError::Filesystem)?;
     let metadata = fs::symlink_metadata(&path).map_err(|_| CapabilityError::Filesystem)?;
     if metadata.file_type().is_symlink() || !metadata.is_file() {
         return Err(CapabilityError::InvalidOutputPath);
@@ -196,94 +205,67 @@ fn export_image(
         name.to_owned(),
         hex_sha256(&bytes),
         metadata.len(),
-        image.width,
-        image.height,
+        u16::try_from(pixels.size().width()).map_err(|_| CapabilityError::CapabilityFailed)?,
+        u16::try_from(pixels.size().height()).map_err(|_| CapabilityError::CapabilityFailed)?,
         true,
     ))
 }
 
-struct MacroquadRaster {
-    image: Image,
-    scale: i32,
-    offset_x: i32,
-    offset_y: i32,
+#[derive(Debug, Clone, Copy)]
+enum RasterCommand {
+    Rectangle {
+        x: i32,
+        y: i32,
+        width: i32,
+        height: i32,
+        color: RgbaColor,
+    },
+    Line {
+        start: (i32, i32),
+        end: (i32, i32),
+        color: RgbaColor,
+        width: i32,
+    },
+    Circle {
+        center: (i32, i32),
+        radius: i32,
+        color: RgbaColor,
+    },
 }
 
-impl MacroquadRaster {
-    fn new(width: u16, height: u16) -> Self {
-        let scale = i32::from((width / 640).min(height / 480).max(1));
-        Self {
-            image: Image::gen_image_color(width, height, BACKGROUND),
-            scale,
-            offset_x: (i32::from(width) - 640 * scale) / 2,
-            offset_y: (i32::from(height) - 480 * scale) / 2,
-        }
+#[derive(Debug, Default)]
+struct RendererRaster {
+    commands: Vec<RasterCommand>,
+}
+
+impl RendererRaster {
+    fn rect(&mut self, x: i32, y: i32, width: i32, height: i32, color: RgbaColor) {
+        self.commands.push(RasterCommand::Rectangle {
+            x,
+            y,
+            width,
+            height,
+            color,
+        });
     }
 
-    fn pixel(&mut self, x: i32, y: i32, color: Color) {
-        let physical_x = x + self.offset_x;
-        let physical_y = y + self.offset_y;
-        if physical_x >= 0
-            && physical_y >= 0
-            && physical_x < i32::from(self.image.width)
-            && physical_y < i32::from(self.image.height)
-        {
-            let macroquad_y = i32::from(self.image.height) - physical_y - 1;
-            self.image.set_pixel(
-                physical_x.cast_unsigned(),
-                macroquad_y.cast_unsigned(),
-                color,
-            );
-        }
-    }
-
-    fn rect(&mut self, x: i32, y: i32, width: i32, height: i32, color: Color) {
-        let scale = self.scale;
-        for row in (y * scale)..((y + height) * scale) {
-            for column in (x * scale)..((x + width) * scale) {
-                self.pixel(column, row, color);
-            }
-        }
-    }
-
-    fn outline(&mut self, x: i32, y: i32, width: i32, height: i32, color: Color, line: i32) {
+    fn outline(&mut self, x: i32, y: i32, width: i32, height: i32, color: RgbaColor, line: i32) {
         self.rect(x, y, width, line, color);
         self.rect(x, y + height - line, width, line, color);
         self.rect(x, y, line, height, color);
         self.rect(x + width - line, y, line, height, color);
     }
 
-    fn line(&mut self, start: (i32, i32), end: (i32, i32), color: Color, width: i32) {
-        let (mut x0, mut y0) = (start.0 * self.scale, start.1 * self.scale);
-        let (x1, y1) = (end.0 * self.scale, end.1 * self.scale);
-        let dx = (x1 - x0).abs();
-        let sx = if x0 < x1 { 1 } else { -1 };
-        let dy = -(y1 - y0).abs();
-        let sy = if y0 < y1 { 1 } else { -1 };
-        let mut error = dx + dy;
-        loop {
-            let radius = width * self.scale;
-            for y in -radius..=radius {
-                for x in -radius..=radius {
-                    self.pixel(x0 + x, y0 + y, color);
-                }
-            }
-            if x0 == x1 && y0 == y1 {
-                break;
-            }
-            let doubled = error * 2;
-            if doubled >= dy {
-                error += dy;
-                x0 += sx;
-            }
-            if doubled <= dx {
-                error += dx;
-                y0 += sy;
-            }
-        }
+    fn line(&mut self, start: (i32, i32), end: (i32, i32), color: RgbaColor, width: i32) {
+        self.commands.push(RasterCommand::Line {
+            start,
+            end,
+            color,
+            width,
+        });
     }
 
-    fn dashed_line(&mut self, start: (i32, i32), end: (i32, i32), color: Color) {
+    fn dashed_line(&mut self, start: (i32, i32), end: (i32, i32), color: RgbaColor) {
         let segments = 8;
         for index in 0..segments {
             if index % 2 == 0 {
@@ -294,34 +276,25 @@ impl MacroquadRaster {
         }
     }
 
-    fn circle(&mut self, center: (i32, i32), radius: i32, color: Color) {
-        let scale = self.scale;
-        let cx = center.0 * scale;
-        let cy = center.1 * scale;
-        let radius = radius * scale;
-        for y in -radius..=radius {
-            for x in -radius..=radius {
-                if x * x + y * y <= radius * radius {
-                    self.pixel(cx + x, cy + y, color);
-                }
-            }
-        }
+    fn circle(&mut self, center: (i32, i32), radius: i32, color: RgbaColor) {
+        self.commands.push(RasterCommand::Circle {
+            center,
+            radius,
+            color,
+        });
     }
 
-    fn text(&mut self, x: i32, y: i32, value: &str, color: Color, size: i32) {
+    fn text(&mut self, x: i32, y: i32, value: &str, color: RgbaColor, size: i32) {
         let mut cursor = x;
         for character in value.chars() {
             let rows = glyph(character.to_ascii_uppercase());
             for (row, bits) in rows.iter().enumerate() {
                 for column in 0..5 {
                     if bits & (1 << (4 - column)) != 0 {
-                        self.rect(
-                            cursor + column * size,
-                            y + i32::try_from(row).unwrap_or(0) * size,
-                            size,
-                            size,
-                            color,
-                        );
+                        let Ok(row) = i32::try_from(row) else {
+                            continue;
+                        };
+                        self.rect(cursor + column * size, y + row * size, size, size, color);
                     }
                 }
             }
@@ -329,18 +302,79 @@ impl MacroquadRaster {
         }
     }
 
-    fn non_background_pixels(&self) -> usize {
-        let background: [u8; 4] = BACKGROUND.into();
-        self.image
-            .get_image_data()
-            .iter()
-            .filter(|pixel| **pixel != background)
-            .count()
+    fn capture(self, width: u16, height: u16) -> Result<RenderedPixels, CapabilityError> {
+        let commands = self
+            .commands
+            .into_iter()
+            .map(renderer_command)
+            .collect::<Result<Vec<_>, _>>()?;
+        let logical_size = LogicalSize::new(f32::from(LOGICAL_WIDTH), f32::from(LOGICAL_HEIGHT))
+            .map_err(|_| CapabilityError::CapabilityFailed)?;
+        let physical_size = PhysicalSize::new(u32::from(width), u32::from(height))
+            .map_err(|_| CapabilityError::CapabilityFailed)?;
+        let presentation = PresentationFrame::new(logical_size, BACKGROUND, commands);
+        TinySkiaImageRenderer
+            .capture(physical_size, presentation)
+            .map_err(|_| CapabilityError::CapabilityFailed)
     }
 }
 
+fn renderer_command(command: RasterCommand) -> Result<DrawCommand, CapabilityError> {
+    match command {
+        RasterCommand::Rectangle {
+            x,
+            y,
+            width,
+            height,
+            color,
+        } => {
+            let origin = renderer_point((x, y))?;
+            let size = LogicalSize::new(width as f32, height as f32)
+                .map_err(|_| CapabilityError::CapabilityFailed)?;
+            Ok(DrawCommand::FillRectangle(Rectangle::new(
+                origin, size, color,
+            )))
+        }
+        RasterCommand::Line {
+            start,
+            end,
+            color,
+            width,
+        } => {
+            let stroke =
+                Stroke::new(color, width as f32).map_err(|_| CapabilityError::CapabilityFailed)?;
+            Ok(DrawCommand::StrokeLine(Line::new(
+                renderer_point(start)?,
+                renderer_point(end)?,
+                stroke,
+            )))
+        }
+        RasterCommand::Circle {
+            center,
+            radius,
+            color,
+        } => Ok(DrawCommand::FillCircle(
+            Circle::new(renderer_point(center)?, radius as f32, color)
+                .map_err(|_| CapabilityError::CapabilityFailed)?,
+        )),
+    }
+}
+
+fn renderer_point(point: (i32, i32)) -> Result<LogicalPoint, CapabilityError> {
+    LogicalPoint::new(point.0 as f32, point.1 as f32).map_err(|_| CapabilityError::CapabilityFailed)
+}
+
+fn non_background_pixels(pixels: &RenderedPixels) -> usize {
+    let background = BACKGROUND.channels();
+    pixels
+        .rgba_bytes()
+        .chunks_exact(background.len())
+        .filter(|pixel| *pixel != background)
+        .count()
+}
+
 fn draw_capability_scene(
-    raster: &mut MacroquadRaster,
+    raster: &mut RendererRaster,
     fixture: &FixtureSnapshot,
     session_state: &str,
     comparison_state: &str,
@@ -396,7 +430,7 @@ fn draw_capability_scene(
 }
 
 fn draw_contacts(
-    raster: &mut MacroquadRaster,
+    raster: &mut RendererRaster,
     evidence: &mut SemanticDrawEvidence,
     emit_normals: bool,
 ) {
@@ -414,7 +448,7 @@ fn draw_contacts(
     }
 }
 
-fn draw_particles(raster: &mut MacroquadRaster, evidence: &mut SemanticDrawEvidence) {
+fn draw_particles(raster: &mut RendererRaster, evidence: &mut SemanticDrawEvidence) {
     raster.text(24, 150, "PARTICLES COLORS CONTACTS", TEXT, 1);
     let colors = [RUST, ACCENT, WARNING, ORACLE];
     let mut centers = Vec::with_capacity(12);
@@ -433,7 +467,7 @@ fn draw_particles(raster: &mut MacroquadRaster, evidence: &mut SemanticDrawEvide
     }
 }
 
-fn draw_aabbs(raster: &mut MacroquadRaster, evidence: &mut SemanticDrawEvidence) {
+fn draw_aabbs(raster: &mut RendererRaster, evidence: &mut SemanticDrawEvidence) {
     raster.text(164, 78, "BROAD PHASE AABBS", TEXT, 1);
     for (x, y, width, height) in [
         (166, 96, 42, 30),
@@ -446,7 +480,7 @@ fn draw_aabbs(raster: &mut MacroquadRaster, evidence: &mut SemanticDrawEvidence)
     }
 }
 
-fn draw_differences(raster: &mut MacroquadRaster, evidence: &mut SemanticDrawEvidence) {
+fn draw_differences(raster: &mut RendererRaster, evidence: &mut SemanticDrawEvidence) {
     raster.text(164, 224, "SYNCHRONIZED OVERLAY R O", TEXT, 1);
     for offset in [0, 48, 96] {
         raster.line((176 + offset, 282), (204 + offset, 248), RUST, 1);
@@ -459,7 +493,7 @@ fn draw_differences(raster: &mut MacroquadRaster, evidence: &mut SemanticDrawEvi
 }
 
 fn draw_profiles(
-    raster: &mut MacroquadRaster,
+    raster: &mut RendererRaster,
     fixture: &FixtureSnapshot,
     session_state: &str,
     comparison_state: &str,
@@ -502,16 +536,17 @@ fn interpolate(start: (i32, i32), end: (i32, i32), index: i32, count: i32) -> (i
     )
 }
 
-fn contrast_ratio(foreground: Color, background: Color) -> f32 {
+fn contrast_ratio(foreground: RgbaColor, background: RgbaColor) -> f32 {
     let light = relative_luminance(foreground);
     let dark = relative_luminance(background);
     (light.max(dark) + 0.05) / (light.min(dark) + 0.05)
 }
 
-fn relative_luminance(color: Color) -> f32 {
-    0.2126 * channel_luminance(color.r)
-        + 0.7152 * channel_luminance(color.g)
-        + 0.0722 * channel_luminance(color.b)
+fn relative_luminance(color: RgbaColor) -> f32 {
+    let [red, green, blue, _alpha] = color.channels();
+    0.2126 * channel_luminance(f32::from(red) / 255.0)
+        + 0.7152 * channel_luminance(f32::from(green) / 255.0)
+        + 0.0722 * channel_luminance(f32::from(blue) / 255.0)
 }
 
 fn channel_luminance(value: f32) -> f32 {
@@ -534,7 +569,7 @@ pub(super) fn rendered_evidence_with_contact_normals(
         families: vec!["rigid".to_owned()],
         verified_artifacts: 1,
     };
-    let mut raster = MacroquadRaster::new(640, 480);
+    let mut raster = RendererRaster::default();
     let semantic_evidence = draw_capability_scene(
         &mut raster,
         &fixture,
@@ -562,7 +597,7 @@ pub(super) fn rendered_evidence_with_contact_normals(
         maximum_dpi_scale: 2,
         resize_width: 800,
         resize_height: 600,
-        non_background_pixels_minimum: raster.non_background_pixels(),
+        non_background_pixels_minimum: raster.commands.len(),
         distinct_particle_colors: semantic_evidence.distinct_particle_colors(),
         dense_text_rows: semantic_evidence.dense_text_rows,
         focus_ring_pixels: semantic_evidence.focus_ring_pixels,

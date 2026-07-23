@@ -1,6 +1,6 @@
-//! Macroquad keyboard events translated into presentation-only typed intents.
+//! Replacement-renderer keyboard events translated into presentation-only typed intents.
 
-use macroquad::input::KeyCode;
+use crate::renderer::SemanticKey;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum InputIntent {
@@ -12,13 +12,19 @@ enum InputIntent {
     SaveDiagnosticScreenshot,
 }
 
-const EXPECTED_BINDINGS: [(KeyCode, InputIntent); 6] = [
-    (KeyCode::Space, InputIntent::ToggleRunPause),
-    (KeyCode::N, InputIntent::StepOnce),
-    (KeyCode::R, InputIntent::Restart),
-    (KeyCode::Tab, InputIntent::FocusNext),
-    (KeyCode::C, InputIntent::CaptureSemanticCheckpoint),
-    (KeyCode::F12, InputIntent::SaveDiagnosticScreenshot),
+const EXPECTED_BINDINGS: [(SemanticKey, InputIntent); 6] = [
+    (SemanticKey::Space, InputIntent::ToggleRunPause),
+    (SemanticKey::Character('n'), InputIntent::StepOnce),
+    (SemanticKey::Character('r'), InputIntent::Restart),
+    (SemanticKey::Enter, InputIntent::FocusNext),
+    (
+        SemanticKey::Character('c'),
+        InputIntent::CaptureSemanticCheckpoint,
+    ),
+    (
+        SemanticKey::Character('s'),
+        InputIntent::SaveDiagnosticScreenshot,
+    ),
 ];
 
 pub(super) fn verified_keyboard_binding_count() -> usize {
@@ -28,14 +34,14 @@ pub(super) fn verified_keyboard_binding_count() -> usize {
         .count()
 }
 
-const fn map_key(key: KeyCode) -> Option<InputIntent> {
+const fn map_key(key: SemanticKey) -> Option<InputIntent> {
     match key {
-        KeyCode::Space => Some(InputIntent::ToggleRunPause),
-        KeyCode::N => Some(InputIntent::StepOnce),
-        KeyCode::R => Some(InputIntent::Restart),
-        KeyCode::Tab => Some(InputIntent::FocusNext),
-        KeyCode::C => Some(InputIntent::CaptureSemanticCheckpoint),
-        KeyCode::F12 => Some(InputIntent::SaveDiagnosticScreenshot),
+        SemanticKey::Space => Some(InputIntent::ToggleRunPause),
+        SemanticKey::Character('n') => Some(InputIntent::StepOnce),
+        SemanticKey::Character('r') => Some(InputIntent::Restart),
+        SemanticKey::Enter => Some(InputIntent::FocusNext),
+        SemanticKey::Character('c') => Some(InputIntent::CaptureSemanticCheckpoint),
+        SemanticKey::Character('s') => Some(InputIntent::SaveDiagnosticScreenshot),
         _ => None,
     }
 }

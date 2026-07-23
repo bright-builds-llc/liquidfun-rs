@@ -6,7 +6,7 @@ use super::fixture::FixtureSnapshot;
 use super::passive::PassiveInputSnapshot;
 use super::render::RenderedEvidence;
 
-/// Complete named acceptance matrix required before retaining Macroquad.
+/// Complete named acceptance matrix required for the replacement renderer.
 pub const REQUIRED_CAPABILITY_NAMES: [&str; 20] = [
     "rigid_contacts",
     "contact_normals",
@@ -136,6 +136,7 @@ pub struct CapabilityMeasurements {
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct CapabilityReport {
     schema_version: u32,
+    capability_profile: &'static str,
     adapter: &'static str,
     selected_stack: &'static str,
     fixture_profile: String,
@@ -272,7 +273,7 @@ impl CapabilityReport {
             CapabilityDisposition::measured(
                 "dpi_scaling",
                 rendered.maximum_dpi_scale >= 2 && rendered.artifacts.len() >= 3,
-                "1x and 2x Macroquad images rendered",
+                "1x, 1.25x, and 2x replacement images rendered",
             ),
             CapabilityDisposition::measured(
                 "resize",
@@ -307,8 +308,9 @@ impl CapabilityReport {
         ];
         Self {
             schema_version: 1,
-            adapter: "macroquad-image-0.4.15",
-            selected_stack: "macroquad-0.4.15",
+            capability_profile: "phase12-v1",
+            adapter: "eframe-egui-0.35.0+tiny-skia-0.12.0",
+            selected_stack: "eframe-0.35.0+egui-0.35.0+tiny-skia-0.12.0",
             fixture_profile: fixture.profile.clone(),
             upstream_revision: fixture.upstream_revision.clone(),
             fixture_case_ids: fixture.case_ids.clone(),
