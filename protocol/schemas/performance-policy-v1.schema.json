@@ -1,0 +1,62 @@
+{
+  "$id": "https://liquidfun-rs.invalid/schemas/performance-policy-v1.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Closed statistical policy for unprofiled wall-clock performance evidence. Timing never promotes semantic physics fixtures.",
+  "examples": [
+    {
+      "baseline_runs": 5,
+      "confidence_percent": 95,
+      "practical_floor_basis_points": 300,
+      "run_order": "interleaved_rust_cpp",
+      "samples_per_engine": 30,
+      "timing_authority": "unprofiled_wall_clock",
+      "version": "phase12-performance-v1",
+      "warmup_runs": 1
+    }
+  ],
+  "properties": {
+    "baseline_runs": {
+      "maximum": 64,
+      "minimum": 5,
+      "type": "integer"
+    },
+    "confidence_percent": {
+      "maximum": 100,
+      "minimum": 95,
+      "type": "integer"
+    },
+    "practical_floor_basis_points": {
+      "maximum": 10000,
+      "minimum": 300,
+      "type": "integer"
+    },
+    "run_order": {
+      "const": "interleaved_rust_cpp"
+    },
+    "samples_per_engine": {
+      "const": 30
+    },
+    "timing_authority": {
+      "const": "unprofiled_wall_clock"
+    },
+    "version": {
+      "const": "phase12-performance-v1"
+    },
+    "warmup_runs": {
+      "const": 1
+    }
+  },
+  "required": [
+    "version",
+    "baseline_runs",
+    "confidence_percent",
+    "practical_floor_basis_points",
+    "warmup_runs",
+    "samples_per_engine",
+    "run_order",
+    "timing_authority"
+  ],
+  "title": "liquidfun-rs Phase 12 performance policy",
+  "type": "object"
+}

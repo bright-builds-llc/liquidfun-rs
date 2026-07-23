@@ -9,6 +9,7 @@ mod failure;
 mod float_bits;
 mod ids;
 mod limits;
+mod performance;
 mod provenance;
 mod scenario;
 #[cfg(test)]
@@ -23,6 +24,7 @@ pub use failure::*;
 pub use float_bits::FloatBits;
 pub use ids::*;
 pub use limits::HarnessLimits;
+pub use performance::*;
 pub use provenance::*;
 pub use scenario::*;
 pub use tolerance::*;

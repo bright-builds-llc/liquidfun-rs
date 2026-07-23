@@ -1,0 +1,913 @@
+{
+  "cases": [
+    {
+      "case_id": "world_step-fixed",
+      "catalog_sha256": "e0b09f385c4df9ce2245ae35c37bd4a1b9ba5dc3e083e7bd793e98bc6cccf5d9",
+      "engine_roles": [
+        "native_rust",
+        "pinned_cpp_oracle"
+      ],
+      "logical_horizon": 1,
+      "optimization_mode": "release_scalar",
+      "regions": {
+        "ordered": [
+          "setup",
+          "warmup",
+          "measured_actions",
+          "teardown"
+        ]
+      },
+      "resolved_sha256": "38acf75645951532a331ad9e6c78272e801836031044c66ae84e3eaaca252dae",
+      "scenario_id": "rigid-runtime-mutation",
+      "settings": {
+        "particle_iterations": 1,
+        "position_iterations": 3,
+        "timestep_bits": 1015580809,
+        "velocity_iterations": 8
+      },
+      "size_point": "fixed",
+      "workload": "world_step"
+    },
+    {
+      "case_id": "broad_phase-128",
+      "catalog_sha256": "e0b09f385c4df9ce2245ae35c37bd4a1b9ba5dc3e083e7bd793e98bc6cccf5d9",
+      "engine_roles": [
+        "native_rust",
+        "pinned_cpp_oracle"
+      ],
+      "logical_horizon": 1,
+      "optimization_mode": "release_scalar",
+      "regions": {
+        "ordered": [
+          "setup",
+          "warmup",
+          "measured_actions",
+          "teardown"
+        ]
+      },
+      "resolved_sha256": "38acf75645951532a331ad9e6c78272e801836031044c66ae84e3eaaca252dae",
+      "scenario_id": "rigid-runtime-mutation",
+      "settings": {
+        "particle_iterations": 1,
+        "position_iterations": 3,
+        "timestep_bits": 1015580809,
+        "velocity_iterations": 8
+      },
+      "size_point": "entities128",
+      "workload": "broad_phase"
+    },
+    {
+      "case_id": "broad_phase-1024",
+      "catalog_sha256": "e0b09f385c4df9ce2245ae35c37bd4a1b9ba5dc3e083e7bd793e98bc6cccf5d9",
+      "engine_roles": [
+        "native_rust",
+        "pinned_cpp_oracle"
+      ],
+      "logical_horizon": 1,
+      "optimization_mode": "release_scalar",
+      "regions": {
+        "ordered": [
+          "setup",
+          "warmup",
+          "measured_actions",
+          "teardown"
+        ]
+      },
+      "resolved_sha256": "38acf75645951532a331ad9e6c78272e801836031044c66ae84e3eaaca252dae",
+      "scenario_id": "rigid-runtime-mutation",
+      "settings": {
+        "particle_iterations": 1,
+        "position_iterations": 3,
+        "timestep_bits": 1015580809,
+        "velocity_iterations": 8
+      },
+      "size_point": "entities1024",
+      "workload": "broad_phase"
+    },
+    {
+      "case_id": "broad_phase-8192",
+      "catalog_sha256": "e0b09f385c4df9ce2245ae35c37bd4a1b9ba5dc3e083e7bd793e98bc6cccf5d9",
+      "engine_roles": [
+        "native_rust",
+        "pinned_cpp_oracle"
+      ],
+      "logical_horizon": 1,
+      "optimization_mode": "release_scalar",
+      "regions": {
+        "ordered": [
+          "setup",
+          "warmup",
+          "measured_actions",
+          "teardown"
+        ]
+      },
+      "resolved_sha256": "38acf75645951532a331ad9e6c78272e801836031044c66ae84e3eaaca252dae",
+      "scenario_id": "rigid-runtime-mutation",
+      "settings": {
+        "particle_iterations": 1,
+        "position_iterations": 3,
+        "timestep_bits": 1015580809,
+        "velocity_iterations": 8
+      },
+      "size_point": "entities8192",
+      "workload": "broad_phase"
+    },
+    {
+      "case_id": "narrow_phase-fixed",
+      "catalog_sha256": "e0b09f385c4df9ce2245ae35c37bd4a1b9ba5dc3e083e7bd793e98bc6cccf5d9",
+      "engine_roles": [
+        "native_rust",
+        "pinned_cpp_oracle"
+      ],
+      "logical_horizon": 1,
+      "optimization_mode": "release_scalar",
+      "regions": {
+        "ordered": [
+          "setup",
+          "warmup",
+          "measured_actions",
+          "teardown"
+        ]
+      },
+      "resolved_sha256": "38acf75645951532a331ad9e6c78272e801836031044c66ae84e3eaaca252dae",
+      "scenario_id": "rigid-runtime-mutation",
+      "settings": {
+        "particle_iterations": 1,
+        "position_iterations": 3,
+        "timestep_bits": 1015580809,
+        "velocity_iterations": 8
+      },
+      "size_point": "fixed",
+      "workload": "narrow_phase"
+    },
+    {
+      "case_id": "contact_solve-fixed",
+      "catalog_sha256": "e0b09f385c4df9ce2245ae35c37bd4a1b9ba5dc3e083e7bd793e98bc6cccf5d9",
+      "engine_roles": [
+        "native_rust",
+        "pinned_cpp_oracle"
+      ],
+      "logical_horizon": 1,
+      "optimization_mode": "release_scalar",
+      "regions": {
+        "ordered": [
+          "setup",
+          "warmup",
+          "measured_actions",
+          "teardown"
+        ]
+      },
+      "resolved_sha256": "38acf75645951532a331ad9e6c78272e801836031044c66ae84e3eaaca252dae",
+      "scenario_id": "rigid-runtime-mutation",
+      "settings": {
+        "particle_iterations": 1,
+        "position_iterations": 3,
+        "timestep_bits": 1015580809,
+        "velocity_iterations": 8
+      },
+      "size_point": "fixed",
+      "workload": "contact_solve"
+    },
+    {
+      "case_id": "ccd-fixed",
+      "catalog_sha256": "e0b09f385c4df9ce2245ae35c37bd4a1b9ba5dc3e083e7bd793e98bc6cccf5d9",
+      "engine_roles": [
+        "native_rust",
+        "pinned_cpp_oracle"
+      ],
+      "logical_horizon": 1,
+      "optimization_mode": "release_scalar",
+      "regions": {
+        "ordered": [
+          "setup",
+          "warmup",
+          "measured_actions",
+          "teardown"
+        ]
+      },
+      "resolved_sha256": "38acf75645951532a331ad9e6c78272e801836031044c66ae84e3eaaca252dae",
+      "scenario_id": "rigid-runtime-mutation",
+      "settings": {
+        "particle_iterations": 1,
+        "position_iterations": 3,
+        "timestep_bits": 1015580809,
+        "velocity_iterations": 8
+      },
+      "size_point": "fixed",
+      "workload": "ccd"
+    },
+    {
+      "case_id": "joints-fixed",
+      "catalog_sha256": "e0b09f385c4df9ce2245ae35c37bd4a1b9ba5dc3e083e7bd793e98bc6cccf5d9",
+      "engine_roles": [
+        "native_rust",
+        "pinned_cpp_oracle"
+      ],
+      "logical_horizon": 2,
+      "optimization_mode": "release_scalar",
+      "regions": {
+        "ordered": [
+          "setup",
+          "warmup",
+          "measured_actions",
+          "teardown"
+        ]
+      },
+      "resolved_sha256": "2eaf8f5c99d56c4f44b38d53087d2466540a165f782e4849ae025ac0092c1af4",
+      "scenario_id": "joint-distance-behavior",
+      "settings": {
+        "particle_iterations": 1,
+        "position_iterations": 3,
+        "timestep_bits": 1015580809,
+        "velocity_iterations": 8
+      },
+      "size_point": "fixed",
+      "workload": "joints"
+    },
+    {
+      "case_id": "particle_lifecycle-128",
+      "catalog_sha256": "e0b09f385c4df9ce2245ae35c37bd4a1b9ba5dc3e083e7bd793e98bc6cccf5d9",
+      "engine_roles": [
+        "native_rust",
+        "pinned_cpp_oracle"
+      ],
+      "logical_horizon": 4,
+      "optimization_mode": "release_scalar",
+      "regions": {
+        "ordered": [
+          "setup",
+          "warmup",
+          "measured_actions",
+          "teardown"
+        ]
+      },
+      "resolved_sha256": "1a1f446b10b0e833e89fe2529f81d0c2e74b67474ba3cc934b36943ec5243826",
+      "scenario_id": "particle-system-pause-action",
+      "settings": {
+        "particle_iterations": 2,
+        "position_iterations": 3,
+        "timestep_bits": 1015580809,
+        "velocity_iterations": 8
+      },
+      "size_point": "entities128",
+      "workload": "particle_lifecycle"
+    },
+    {
+      "case_id": "particle_lifecycle-1024",
+      "catalog_sha256": "e0b09f385c4df9ce2245ae35c37bd4a1b9ba5dc3e083e7bd793e98bc6cccf5d9",
+      "engine_roles": [
+        "native_rust",
+        "pinned_cpp_oracle"
+      ],
+      "logical_horizon": 4,
+      "optimization_mode": "release_scalar",
+      "regions": {
+        "ordered": [
+          "setup",
+          "warmup",
+          "measured_actions",
+          "teardown"
+        ]
+      },
+      "resolved_sha256": "1a1f446b10b0e833e89fe2529f81d0c2e74b67474ba3cc934b36943ec5243826",
+      "scenario_id": "particle-system-pause-action",
+      "settings": {
+        "particle_iterations": 2,
+        "position_iterations": 3,
+        "timestep_bits": 1015580809,
+        "velocity_iterations": 8
+      },
+      "size_point": "entities1024",
+      "workload": "particle_lifecycle"
+    },
+    {
+      "case_id": "particle_lifecycle-8192",
+      "catalog_sha256": "e0b09f385c4df9ce2245ae35c37bd4a1b9ba5dc3e083e7bd793e98bc6cccf5d9",
+      "engine_roles": [
+        "native_rust",
+        "pinned_cpp_oracle"
+      ],
+      "logical_horizon": 4,
+      "optimization_mode": "release_scalar",
+      "regions": {
+        "ordered": [
+          "setup",
+          "warmup",
+          "measured_actions",
+          "teardown"
+        ]
+      },
+      "resolved_sha256": "1a1f446b10b0e833e89fe2529f81d0c2e74b67474ba3cc934b36943ec5243826",
+      "scenario_id": "particle-system-pause-action",
+      "settings": {
+        "particle_iterations": 2,
+        "position_iterations": 3,
+        "timestep_bits": 1015580809,
+        "velocity_iterations": 8
+      },
+      "size_point": "entities8192",
+      "workload": "particle_lifecycle"
+    },
+    {
+      "case_id": "particle_contacts-128",
+      "catalog_sha256": "e0b09f385c4df9ce2245ae35c37bd4a1b9ba5dc3e083e7bd793e98bc6cccf5d9",
+      "engine_roles": [
+        "native_rust",
+        "pinned_cpp_oracle"
+      ],
+      "logical_horizon": 4,
+      "optimization_mode": "release_scalar",
+      "regions": {
+        "ordered": [
+          "setup",
+          "warmup",
+          "measured_actions",
+          "teardown"
+        ]
+      },
+      "resolved_sha256": "4f0c7d0b15c4dd8545f140327e085e7dd20a1afee7ac9cc13720203df446e122",
+      "scenario_id": "particle-contacts-and-coupling",
+      "settings": {
+        "particle_iterations": 2,
+        "position_iterations": 3,
+        "timestep_bits": 1015580809,
+        "velocity_iterations": 8
+      },
+      "size_point": "entities128",
+      "workload": "particle_contacts"
+    },
+    {
+      "case_id": "particle_contacts-1024",
+      "catalog_sha256": "e0b09f385c4df9ce2245ae35c37bd4a1b9ba5dc3e083e7bd793e98bc6cccf5d9",
+      "engine_roles": [
+        "native_rust",
+        "pinned_cpp_oracle"
+      ],
+      "logical_horizon": 4,
+      "optimization_mode": "release_scalar",
+      "regions": {
+        "ordered": [
+          "setup",
+          "warmup",
+          "measured_actions",
+          "teardown"
+        ]
+      },
+      "resolved_sha256": "4f0c7d0b15c4dd8545f140327e085e7dd20a1afee7ac9cc13720203df446e122",
+      "scenario_id": "particle-contacts-and-coupling",
+      "settings": {
+        "particle_iterations": 2,
+        "position_iterations": 3,
+        "timestep_bits": 1015580809,
+        "velocity_iterations": 8
+      },
+      "size_point": "entities1024",
+      "workload": "particle_contacts"
+    },
+    {
+      "case_id": "particle_contacts-8192",
+      "catalog_sha256": "e0b09f385c4df9ce2245ae35c37bd4a1b9ba5dc3e083e7bd793e98bc6cccf5d9",
+      "engine_roles": [
+        "native_rust",
+        "pinned_cpp_oracle"
+      ],
+      "logical_horizon": 4,
+      "optimization_mode": "release_scalar",
+      "regions": {
+        "ordered": [
+          "setup",
+          "warmup",
+          "measured_actions",
+          "teardown"
+        ]
+      },
+      "resolved_sha256": "4f0c7d0b15c4dd8545f140327e085e7dd20a1afee7ac9cc13720203df446e122",
+      "scenario_id": "particle-contacts-and-coupling",
+      "settings": {
+        "particle_iterations": 2,
+        "position_iterations": 3,
+        "timestep_bits": 1015580809,
+        "velocity_iterations": 8
+      },
+      "size_point": "entities8192",
+      "workload": "particle_contacts"
+    },
+    {
+      "case_id": "particle_sort-128",
+      "catalog_sha256": "e0b09f385c4df9ce2245ae35c37bd4a1b9ba5dc3e083e7bd793e98bc6cccf5d9",
+      "engine_roles": [
+        "native_rust",
+        "pinned_cpp_oracle"
+      ],
+      "logical_horizon": 4,
+      "optimization_mode": "release_scalar",
+      "regions": {
+        "ordered": [
+          "setup",
+          "warmup",
+          "measured_actions",
+          "teardown"
+        ]
+      },
+      "resolved_sha256": "93a09531c77318b9d5baf40db65721640f4b14fd6a15fc050e892a0e16cc2cda",
+      "scenario_id": "particle-group-construction-append",
+      "settings": {
+        "particle_iterations": 2,
+        "position_iterations": 3,
+        "timestep_bits": 1015580809,
+        "velocity_iterations": 8
+      },
+      "size_point": "entities128",
+      "workload": "particle_sort"
+    },
+    {
+      "case_id": "particle_sort-1024",
+      "catalog_sha256": "e0b09f385c4df9ce2245ae35c37bd4a1b9ba5dc3e083e7bd793e98bc6cccf5d9",
+      "engine_roles": [
+        "native_rust",
+        "pinned_cpp_oracle"
+      ],
+      "logical_horizon": 4,
+      "optimization_mode": "release_scalar",
+      "regions": {
+        "ordered": [
+          "setup",
+          "warmup",
+          "measured_actions",
+          "teardown"
+        ]
+      },
+      "resolved_sha256": "93a09531c77318b9d5baf40db65721640f4b14fd6a15fc050e892a0e16cc2cda",
+      "scenario_id": "particle-group-construction-append",
+      "settings": {
+        "particle_iterations": 2,
+        "position_iterations": 3,
+        "timestep_bits": 1015580809,
+        "velocity_iterations": 8
+      },
+      "size_point": "entities1024",
+      "workload": "particle_sort"
+    },
+    {
+      "case_id": "particle_sort-8192",
+      "catalog_sha256": "e0b09f385c4df9ce2245ae35c37bd4a1b9ba5dc3e083e7bd793e98bc6cccf5d9",
+      "engine_roles": [
+        "native_rust",
+        "pinned_cpp_oracle"
+      ],
+      "logical_horizon": 4,
+      "optimization_mode": "release_scalar",
+      "regions": {
+        "ordered": [
+          "setup",
+          "warmup",
+          "measured_actions",
+          "teardown"
+        ]
+      },
+      "resolved_sha256": "93a09531c77318b9d5baf40db65721640f4b14fd6a15fc050e892a0e16cc2cda",
+      "scenario_id": "particle-group-construction-append",
+      "settings": {
+        "particle_iterations": 2,
+        "position_iterations": 3,
+        "timestep_bits": 1015580809,
+        "velocity_iterations": 8
+      },
+      "size_point": "entities8192",
+      "workload": "particle_sort"
+    },
+    {
+      "case_id": "particle_pressure-128",
+      "catalog_sha256": "e0b09f385c4df9ce2245ae35c37bd4a1b9ba5dc3e083e7bd793e98bc6cccf5d9",
+      "engine_roles": [
+        "native_rust",
+        "pinned_cpp_oracle"
+      ],
+      "logical_horizon": 4,
+      "optimization_mode": "release_scalar",
+      "regions": {
+        "ordered": [
+          "setup",
+          "warmup",
+          "measured_actions",
+          "teardown"
+        ]
+      },
+      "resolved_sha256": "93a09531c77318b9d5baf40db65721640f4b14fd6a15fc050e892a0e16cc2cda",
+      "scenario_id": "particle-group-construction-append",
+      "settings": {
+        "particle_iterations": 2,
+        "position_iterations": 3,
+        "timestep_bits": 1015580809,
+        "velocity_iterations": 8
+      },
+      "size_point": "entities128",
+      "workload": "particle_pressure"
+    },
+    {
+      "case_id": "particle_pressure-1024",
+      "catalog_sha256": "e0b09f385c4df9ce2245ae35c37bd4a1b9ba5dc3e083e7bd793e98bc6cccf5d9",
+      "engine_roles": [
+        "native_rust",
+        "pinned_cpp_oracle"
+      ],
+      "logical_horizon": 4,
+      "optimization_mode": "release_scalar",
+      "regions": {
+        "ordered": [
+          "setup",
+          "warmup",
+          "measured_actions",
+          "teardown"
+        ]
+      },
+      "resolved_sha256": "93a09531c77318b9d5baf40db65721640f4b14fd6a15fc050e892a0e16cc2cda",
+      "scenario_id": "particle-group-construction-append",
+      "settings": {
+        "particle_iterations": 2,
+        "position_iterations": 3,
+        "timestep_bits": 1015580809,
+        "velocity_iterations": 8
+      },
+      "size_point": "entities1024",
+      "workload": "particle_pressure"
+    },
+    {
+      "case_id": "particle_pressure-8192",
+      "catalog_sha256": "e0b09f385c4df9ce2245ae35c37bd4a1b9ba5dc3e083e7bd793e98bc6cccf5d9",
+      "engine_roles": [
+        "native_rust",
+        "pinned_cpp_oracle"
+      ],
+      "logical_horizon": 4,
+      "optimization_mode": "release_scalar",
+      "regions": {
+        "ordered": [
+          "setup",
+          "warmup",
+          "measured_actions",
+          "teardown"
+        ]
+      },
+      "resolved_sha256": "93a09531c77318b9d5baf40db65721640f4b14fd6a15fc050e892a0e16cc2cda",
+      "scenario_id": "particle-group-construction-append",
+      "settings": {
+        "particle_iterations": 2,
+        "position_iterations": 3,
+        "timestep_bits": 1015580809,
+        "velocity_iterations": 8
+      },
+      "size_point": "entities8192",
+      "workload": "particle_pressure"
+    },
+    {
+      "case_id": "large_particle_system-128",
+      "catalog_sha256": "e0b09f385c4df9ce2245ae35c37bd4a1b9ba5dc3e083e7bd793e98bc6cccf5d9",
+      "engine_roles": [
+        "native_rust",
+        "pinned_cpp_oracle"
+      ],
+      "logical_horizon": 4,
+      "optimization_mode": "release_scalar",
+      "regions": {
+        "ordered": [
+          "setup",
+          "warmup",
+          "measured_actions",
+          "teardown"
+        ]
+      },
+      "resolved_sha256": "93a09531c77318b9d5baf40db65721640f4b14fd6a15fc050e892a0e16cc2cda",
+      "scenario_id": "particle-group-construction-append",
+      "settings": {
+        "particle_iterations": 2,
+        "position_iterations": 3,
+        "timestep_bits": 1015580809,
+        "velocity_iterations": 8
+      },
+      "size_point": "entities128",
+      "workload": "large_particle_system"
+    },
+    {
+      "case_id": "large_particle_system-1024",
+      "catalog_sha256": "e0b09f385c4df9ce2245ae35c37bd4a1b9ba5dc3e083e7bd793e98bc6cccf5d9",
+      "engine_roles": [
+        "native_rust",
+        "pinned_cpp_oracle"
+      ],
+      "logical_horizon": 4,
+      "optimization_mode": "release_scalar",
+      "regions": {
+        "ordered": [
+          "setup",
+          "warmup",
+          "measured_actions",
+          "teardown"
+        ]
+      },
+      "resolved_sha256": "93a09531c77318b9d5baf40db65721640f4b14fd6a15fc050e892a0e16cc2cda",
+      "scenario_id": "particle-group-construction-append",
+      "settings": {
+        "particle_iterations": 2,
+        "position_iterations": 3,
+        "timestep_bits": 1015580809,
+        "velocity_iterations": 8
+      },
+      "size_point": "entities1024",
+      "workload": "large_particle_system"
+    },
+    {
+      "case_id": "large_particle_system-8192",
+      "catalog_sha256": "e0b09f385c4df9ce2245ae35c37bd4a1b9ba5dc3e083e7bd793e98bc6cccf5d9",
+      "engine_roles": [
+        "native_rust",
+        "pinned_cpp_oracle"
+      ],
+      "logical_horizon": 4,
+      "optimization_mode": "release_scalar",
+      "regions": {
+        "ordered": [
+          "setup",
+          "warmup",
+          "measured_actions",
+          "teardown"
+        ]
+      },
+      "resolved_sha256": "93a09531c77318b9d5baf40db65721640f4b14fd6a15fc050e892a0e16cc2cda",
+      "scenario_id": "particle-group-construction-append",
+      "settings": {
+        "particle_iterations": 2,
+        "position_iterations": 3,
+        "timestep_bits": 1015580809,
+        "velocity_iterations": 8
+      },
+      "size_point": "entities8192",
+      "workload": "large_particle_system"
+    },
+    {
+      "case_id": "mixed_world-128",
+      "catalog_sha256": "e0b09f385c4df9ce2245ae35c37bd4a1b9ba5dc3e083e7bd793e98bc6cccf5d9",
+      "engine_roles": [
+        "native_rust",
+        "pinned_cpp_oracle"
+      ],
+      "logical_horizon": 1,
+      "optimization_mode": "release_scalar",
+      "regions": {
+        "ordered": [
+          "setup",
+          "warmup",
+          "measured_actions",
+          "teardown"
+        ]
+      },
+      "resolved_sha256": "38acf75645951532a331ad9e6c78272e801836031044c66ae84e3eaaca252dae",
+      "scenario_id": "rigid-runtime-mutation",
+      "settings": {
+        "particle_iterations": 1,
+        "position_iterations": 3,
+        "timestep_bits": 1015580809,
+        "velocity_iterations": 8
+      },
+      "size_point": "entities128",
+      "workload": "mixed_world"
+    },
+    {
+      "case_id": "mixed_world-1024",
+      "catalog_sha256": "e0b09f385c4df9ce2245ae35c37bd4a1b9ba5dc3e083e7bd793e98bc6cccf5d9",
+      "engine_roles": [
+        "native_rust",
+        "pinned_cpp_oracle"
+      ],
+      "logical_horizon": 1,
+      "optimization_mode": "release_scalar",
+      "regions": {
+        "ordered": [
+          "setup",
+          "warmup",
+          "measured_actions",
+          "teardown"
+        ]
+      },
+      "resolved_sha256": "38acf75645951532a331ad9e6c78272e801836031044c66ae84e3eaaca252dae",
+      "scenario_id": "rigid-runtime-mutation",
+      "settings": {
+        "particle_iterations": 1,
+        "position_iterations": 3,
+        "timestep_bits": 1015580809,
+        "velocity_iterations": 8
+      },
+      "size_point": "entities1024",
+      "workload": "mixed_world"
+    },
+    {
+      "case_id": "mixed_world-8192",
+      "catalog_sha256": "e0b09f385c4df9ce2245ae35c37bd4a1b9ba5dc3e083e7bd793e98bc6cccf5d9",
+      "engine_roles": [
+        "native_rust",
+        "pinned_cpp_oracle"
+      ],
+      "logical_horizon": 1,
+      "optimization_mode": "release_scalar",
+      "regions": {
+        "ordered": [
+          "setup",
+          "warmup",
+          "measured_actions",
+          "teardown"
+        ]
+      },
+      "resolved_sha256": "38acf75645951532a331ad9e6c78272e801836031044c66ae84e3eaaca252dae",
+      "scenario_id": "rigid-runtime-mutation",
+      "settings": {
+        "particle_iterations": 1,
+        "position_iterations": 3,
+        "timestep_bits": 1015580809,
+        "velocity_iterations": 8
+      },
+      "size_point": "entities8192",
+      "workload": "mixed_world"
+    },
+    {
+      "case_id": "aabb_query-128",
+      "catalog_sha256": "e0b09f385c4df9ce2245ae35c37bd4a1b9ba5dc3e083e7bd793e98bc6cccf5d9",
+      "engine_roles": [
+        "native_rust",
+        "pinned_cpp_oracle"
+      ],
+      "logical_horizon": 3,
+      "optimization_mode": "release_scalar",
+      "regions": {
+        "ordered": [
+          "setup",
+          "warmup",
+          "measured_actions",
+          "teardown"
+        ]
+      },
+      "resolved_sha256": "1ac03ed5b4c5f45fb1856180f85f208707956710504cb70692409600b46a1467",
+      "scenario_id": "particle-aabb-query-controls",
+      "settings": {
+        "particle_iterations": 2,
+        "position_iterations": 3,
+        "timestep_bits": 1015580809,
+        "velocity_iterations": 8
+      },
+      "size_point": "entities128",
+      "workload": "aabb_query"
+    },
+    {
+      "case_id": "aabb_query-1024",
+      "catalog_sha256": "e0b09f385c4df9ce2245ae35c37bd4a1b9ba5dc3e083e7bd793e98bc6cccf5d9",
+      "engine_roles": [
+        "native_rust",
+        "pinned_cpp_oracle"
+      ],
+      "logical_horizon": 3,
+      "optimization_mode": "release_scalar",
+      "regions": {
+        "ordered": [
+          "setup",
+          "warmup",
+          "measured_actions",
+          "teardown"
+        ]
+      },
+      "resolved_sha256": "1ac03ed5b4c5f45fb1856180f85f208707956710504cb70692409600b46a1467",
+      "scenario_id": "particle-aabb-query-controls",
+      "settings": {
+        "particle_iterations": 2,
+        "position_iterations": 3,
+        "timestep_bits": 1015580809,
+        "velocity_iterations": 8
+      },
+      "size_point": "entities1024",
+      "workload": "aabb_query"
+    },
+    {
+      "case_id": "aabb_query-8192",
+      "catalog_sha256": "e0b09f385c4df9ce2245ae35c37bd4a1b9ba5dc3e083e7bd793e98bc6cccf5d9",
+      "engine_roles": [
+        "native_rust",
+        "pinned_cpp_oracle"
+      ],
+      "logical_horizon": 3,
+      "optimization_mode": "release_scalar",
+      "regions": {
+        "ordered": [
+          "setup",
+          "warmup",
+          "measured_actions",
+          "teardown"
+        ]
+      },
+      "resolved_sha256": "1ac03ed5b4c5f45fb1856180f85f208707956710504cb70692409600b46a1467",
+      "scenario_id": "particle-aabb-query-controls",
+      "settings": {
+        "particle_iterations": 2,
+        "position_iterations": 3,
+        "timestep_bits": 1015580809,
+        "velocity_iterations": 8
+      },
+      "size_point": "entities8192",
+      "workload": "aabb_query"
+    },
+    {
+      "case_id": "ray_cast-128",
+      "catalog_sha256": "e0b09f385c4df9ce2245ae35c37bd4a1b9ba5dc3e083e7bd793e98bc6cccf5d9",
+      "engine_roles": [
+        "native_rust",
+        "pinned_cpp_oracle"
+      ],
+      "logical_horizon": 5,
+      "optimization_mode": "release_scalar",
+      "regions": {
+        "ordered": [
+          "setup",
+          "warmup",
+          "measured_actions",
+          "teardown"
+        ]
+      },
+      "resolved_sha256": "d1e22643c020beea4f1a249bc26e5c05451f04c1162688443356af524f2e279e",
+      "scenario_id": "particle-ray-callback-controls",
+      "settings": {
+        "particle_iterations": 2,
+        "position_iterations": 3,
+        "timestep_bits": 1015580809,
+        "velocity_iterations": 8
+      },
+      "size_point": "entities128",
+      "workload": "ray_cast"
+    },
+    {
+      "case_id": "ray_cast-1024",
+      "catalog_sha256": "e0b09f385c4df9ce2245ae35c37bd4a1b9ba5dc3e083e7bd793e98bc6cccf5d9",
+      "engine_roles": [
+        "native_rust",
+        "pinned_cpp_oracle"
+      ],
+      "logical_horizon": 5,
+      "optimization_mode": "release_scalar",
+      "regions": {
+        "ordered": [
+          "setup",
+          "warmup",
+          "measured_actions",
+          "teardown"
+        ]
+      },
+      "resolved_sha256": "d1e22643c020beea4f1a249bc26e5c05451f04c1162688443356af524f2e279e",
+      "scenario_id": "particle-ray-callback-controls",
+      "settings": {
+        "particle_iterations": 2,
+        "position_iterations": 3,
+        "timestep_bits": 1015580809,
+        "velocity_iterations": 8
+      },
+      "size_point": "entities1024",
+      "workload": "ray_cast"
+    },
+    {
+      "case_id": "ray_cast-8192",
+      "catalog_sha256": "e0b09f385c4df9ce2245ae35c37bd4a1b9ba5dc3e083e7bd793e98bc6cccf5d9",
+      "engine_roles": [
+        "native_rust",
+        "pinned_cpp_oracle"
+      ],
+      "logical_horizon": 5,
+      "optimization_mode": "release_scalar",
+      "regions": {
+        "ordered": [
+          "setup",
+          "warmup",
+          "measured_actions",
+          "teardown"
+        ]
+      },
+      "resolved_sha256": "d1e22643c020beea4f1a249bc26e5c05451f04c1162688443356af524f2e279e",
+      "scenario_id": "particle-ray-callback-controls",
+      "settings": {
+        "particle_iterations": 2,
+        "position_iterations": 3,
+        "timestep_bits": 1015580809,
+        "velocity_iterations": 8
+      },
+      "size_point": "entities8192",
+      "workload": "ray_cast"
+    }
+  ],
+  "catalog_sha256": "e0b09f385c4df9ce2245ae35c37bd4a1b9ba5dc3e083e7bd793e98bc6cccf5d9",
+  "policy": {
+    "baseline_runs": 5,
+    "confidence_percent": 95,
+    "practical_floor_basis_points": 300,
+    "run_order": "interleaved_rust_cpp",
+    "samples_per_engine": 30,
+    "timing_authority": "unprofiled_wall_clock",
+    "version": "phase12-performance-v1",
+    "warmup_runs": 1
+  },
+  "policy_sha256": "75c0253d9f1eaa0b4cd6097031ed85f3c530fe47606049b5ac060a5267a3f05f",
+  "version": "phase12-performance-v1"
+}
