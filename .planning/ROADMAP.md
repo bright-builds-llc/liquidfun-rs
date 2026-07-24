@@ -269,7 +269,7 @@ Plans:
 - [x] 12-18-PLAN.md — Remove Macroquad and temporary advisory waivers.
 - [x] 12-19-PLAN.md — Implement the bounded C++ benchmark endpoint.
 - [x] 12-20-PLAN.md — Interleave paired samples and build raw reports.
-- [ ] 12-21-PLAN.md — Validate and attest the frozen source candidate in a later commit.
+- [x] 12-21-PLAN.md — Validate and attest the frozen source candidate in a later commit.
 - [ ] 12-22-PLAN.md — Project attested readiness into public status.
 - [x] 12-23-PLAN.md — Produce commit-bound controlled-host performance artifacts.
 - [x] 12-24-PLAN.md — Execute isolated Miri, sanitizer, and coverage evidence lanes.
@@ -292,6 +292,6 @@ Plans:
 | 9. Particle Storage, Lifecycle, and Coupling | 31/31 | Complete | 2026-07-18 |
 | 10. Particle Groups, Solvers, and Compatibility Sign-Off | 32/32 | Complete   | 2026-07-21 |
 | 11. Examples, Headless Tooling, and Testbed | 30/30 | Complete    | 2026-07-23 |
-| 12. Performance, Portability, and Release Hardening | 23/25 | In Progress|  |
+| 12. Performance, Portability, and Release Hardening | 24/25 | In Progress|  |
 
 *Roadmap created: 2026-07-09*
