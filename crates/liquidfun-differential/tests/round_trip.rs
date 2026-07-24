@@ -182,6 +182,10 @@ fn cpp_math_probe_matches_operation_contract() {
     // Arrange / Act / Assert
     for preset in [OraclePreset::Debug, OraclePreset::Release] {
         let Some((results, ends)) = run_cpp_math_probe_twice(preset) else {
+            assert!(
+                std::env::var_os("LIQUIDFUN_DIFFERENTIAL_LEAF_DIRECTORY").is_none(),
+                "differential coverage requires both exact C++ math-probe oracle presets"
+            );
             return;
         };
         assert_eq!(results.len(), 39);

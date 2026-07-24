@@ -75,6 +75,16 @@ check_observation_omission_guard() {
 	rm -rf -- "$test_root"
 }
 
+require_differential_oracles() {
+	local reference_root=${1:-"$repository_root/target/reference"}
+	local preset
+	for preset in oracle-debug oracle-release; do
+		local executable="$reference_root/$preset/liquidfun-reference"
+		[[ -f "$executable" && -x "$executable" && ! -L "$executable" ]] ||
+			fail "differential coverage requires the exact $preset oracle"
+	done
+}
+
 check_contract() {
 	grep -Fxq 'channel = "nightly-2026-07-15"' rust-toolchain-nightly.toml ||
 		fail "shared nightly toolchain differs"
@@ -263,6 +273,7 @@ run_cpp_coverage() {
 
 run_differential_coverage() {
 	local candidate_sha=$1
+	require_differential_oracles
 	local output_directory
 	output_directory=$(prepare_output "$candidate_sha" differential)
 	local expected="$output_directory/expected-leaves.json"
@@ -302,6 +313,11 @@ run_differential_coverage() {
 		semantic-leaf-v1 \
 		differential-leaves.json
 }
+
+if [[ "${PHASE12_COVERAGE_LIBRARY_ONLY:-0}" == 1 ]]; then
+	# shellcheck disable=SC2317
+	return 0 2>/dev/null || exit 0
+fi
 
 [[ $# -ge 1 ]] || usage
 mode=$1
