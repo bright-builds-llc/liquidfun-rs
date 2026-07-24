@@ -241,7 +241,7 @@ fn prepare_native_case(
     matrix_case: &PerformanceCase,
     warmup_runs: u32,
 ) -> Result<PreparedNativeBenchmark, BenchmarkCaseError> {
-    let slug = CatalogSlug::new(scenario_slug(matrix_case.workload()))
+    let slug = CatalogSlug::new(matrix_case.scenario_id())
         .map_err(|_error| BenchmarkCaseError::new(BenchmarkCaseErrorKind::Catalog))?;
     let mapping = catalog
         .mapping(&slug, liquidfun_test_protocol::ScenarioVersion::CURRENT)
@@ -275,25 +275,6 @@ fn prepare_native_case(
         warmup_runs,
     )
     .map_err(map_execution_error)
-}
-
-const fn scenario_slug(workload: PerformanceWorkloadKind) -> &'static str {
-    match workload {
-        PerformanceWorkloadKind::Joints => "joint-distance-behavior",
-        PerformanceWorkloadKind::ParticleContacts => "particle-contacts-and-coupling",
-        PerformanceWorkloadKind::ParticleSort
-        | PerformanceWorkloadKind::ParticlePressure
-        | PerformanceWorkloadKind::LargeParticleSystem => "particle-group-construction-append",
-        PerformanceWorkloadKind::ParticleLifecycle => "particle-system-pause-action",
-        PerformanceWorkloadKind::AabbQuery => "particle-aabb-query-controls",
-        PerformanceWorkloadKind::RayCast => "particle-ray-callback-controls",
-        PerformanceWorkloadKind::WorldStep
-        | PerformanceWorkloadKind::BroadPhase
-        | PerformanceWorkloadKind::NarrowPhase
-        | PerformanceWorkloadKind::ContactSolve
-        | PerformanceWorkloadKind::Ccd
-        | PerformanceWorkloadKind::MixedWorld => "rigid-runtime-mutation",
-    }
 }
 
 const fn size_point_id(size_point: PerformanceSizePoint) -> &'static str {
