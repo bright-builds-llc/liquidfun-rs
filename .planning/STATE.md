@@ -3,15 +3,15 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 12-13-PLAN.md
-last_updated: "2026-07-24T00:27:11.318Z"
+stopped_at: Completed 12-20-PLAN.md
+last_updated: "2026-07-24T01:06:31.218Z"
 last_activity: "2026-07-24"
 progress:
   total_phases: 12
   completed_phases: 11
   total_plans: 216
-  completed_plans: 208
-  percent: 96
+  completed_plans: 209
+  percent: 97
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-23)
 ## Current Position
 
 Phase: 12 (Performance, Portability, and Release Hardening) — EXECUTING
-Plan: 10 of 25
+Plan: 11 of 25
 Status: Ready to execute
 Last activity: 2026-07-24
 
@@ -215,6 +215,7 @@ Progress: [██████████] 96%
 | Phase 12 P18 | 24m | 1 tasks | 5 files |
 | Phase 12 P19 | 15m | 1 tasks | 10 files |
 | Phase 12 P13 | 50 min | 2 tasks | 15 files |
+| Phase 12 P20 | 28m | 1 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -601,6 +602,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 12]: Treat the compatibility ledger and release audit as the sole authority for broad public claims.
 - [Phase 12]: Scan constructible unsafe syntax after stripping comments and literals while checking the workspace lint separately.
 - [Phase 12]: Represent conditional Intel macOS support as fail-closed when native evidence is absent or stale.
+- [Phase 12]: Keep raw process generation and reset epoch together so reviewed child cycling cannot be mistaken for reset rollback.
+- [Phase 12]: Hash canonical checkpoint JSON without its JSONL newline on the native side to match the pinned C++ checkpoint-record identity.
+- [Phase 12]: Keep unprofiled totals authoritative while common-parent and Rust-child durations remain diagnostic-only.
 
 ### Pending Todos
 
@@ -614,6 +618,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-24T00:27:11.312Z
-Stopped at: Completed 12-13-PLAN.md
+Last session: 2026-07-24T01:06:31.168Z
+Stopped at: Completed 12-20-PLAN.md
 Resume file: None
