@@ -186,6 +186,8 @@ jobs:
             --arg payload_files_sha256 "$payload_files_sha256" \
             --arg policy_sha256 "$(jq -r '.policy_sha256' "$evidence/validation-identity.json")" \
             --arg matrix_sha256 "$(jq -r '.matrix_sha256' "$evidence/validation-identity.json")" \
+            --argjson reviewed_report_count \
+              "$(awk '/^\[\[reviewed_reports\]\]/{count++} END{print count+0}' reference/performance/manifest.toml)" \
             '{
               schema_version: 1,
               evidence_kind: "paired_performance",
@@ -196,6 +198,7 @@ jobs:
               release_reviewed: $release_reviewed,
               workload_count: 14,
               case_count: 32,
+              reviewed_report_count: $reviewed_report_count,
               policy_sha256: $policy_sha256,
               matrix_sha256: $matrix_sha256,
               payload_files_sha256: $payload_files_sha256

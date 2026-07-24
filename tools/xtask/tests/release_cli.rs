@@ -553,6 +553,171 @@ fn release_constructor_names_every_exact_artifact_and_never_writes_tracked_readi
 }
 
 #[test]
+fn release_constructor_rejects_mutated_platform_hash_and_tier() {
+    // Arrange
+    let root = producer_fixture_root("platform-mutation");
+    let identity_path = root.join("identity.json");
+    let verification_path = root.join("verification.json");
+    fs::write(
+        &identity_path,
+        serde_json::to_vec(&json!({
+            "schema_version": 1,
+            "archive_sha256": "a".repeat(64),
+            "target": "x86_64-unknown-linux-gnu",
+            "compiler": "rustc 1.97.0",
+            "scalar_mode": "strict_f32",
+            "tier": "d1_canonical",
+            "candidate_sha": CANDIDATE,
+            "runner": "ubuntu-24.04",
+            "workflow": "Platform release candidate",
+            "job": "native",
+            "run_id": 7,
+            "recorded_at_unix": 1,
+            "native_evidence_recorded_at_unix": null,
+        }))
+        .expect("identity JSON"),
+    )
+    .expect("identity writes");
+    fs::write(
+        &verification_path,
+        br#"{"status":"verified","package_isolation":true,"rustdoc":true,"platform_smoke":true}"#,
+    )
+    .expect("verification writes");
+
+    // Act
+    let output = run_release_validator(
+        "validate_platform_payload",
+        &[
+            identity_path.to_string_lossy().into_owned(),
+            verification_path.to_string_lossy().into_owned(),
+            CANDIDATE.to_owned(),
+            "x86_64-unknown-linux-gnu".to_owned(),
+            "7".to_owned(),
+            "native".to_owned(),
+            "b".repeat(64),
+            "d2_supported".to_owned(),
+        ],
+    );
+
+    // Assert
+    assert!(!output.status.success());
+}
+
+#[test]
+fn release_constructor_rejects_sanitizer_finding() {
+    // Arrange
+    let root = producer_fixture_root("safety-mutation");
+    let summary_path = root.join("sanitizer.jsonl");
+    fs::write(
+        &summary_path,
+        serde_json::to_vec(&json!({ "outcome": "sanitizer_finding" })).expect("sanitizer JSON"),
+    )
+    .expect("summary writes");
+
+    // Act
+    let output = run_release_validator(
+        "validate_sanitizer_records",
+        &[summary_path.to_string_lossy().into_owned()],
+    );
+
+    // Assert
+    assert!(!output.status.success());
+}
+
+#[test]
+fn release_constructor_rejects_differential_coverage_miss() {
+    // Arrange
+    let root = producer_fixture_root("coverage-mutation");
+    let artifact_path = root.join("differential-leaves.json");
+    let artifact = serde_json::to_vec(&json!({
+        "schema_version": 1,
+        "parity_authority": false,
+        "exercised": ["subsystem.world-stepping"],
+        "missed": ["subsystem.particle-contacts"],
+    }))
+    .expect("coverage JSON");
+    fs::write(&artifact_path, &artifact).expect("artifact writes");
+    let summary_path = root.join("summary.json");
+    fs::write(
+        &summary_path,
+        serde_json::to_vec(&json!({
+            "schema_version": 1,
+            "evidence_kind": "differential_coverage",
+            "candidate_commit": CANDIDATE,
+            "toolchain_identity": "semantic-leaf-v1",
+            "artifact_path": "differential-leaves.json",
+            "artifact_sha256": sha256(&artifact),
+            "parity_authority": false,
+        }))
+        .expect("summary JSON"),
+    )
+    .expect("summary writes");
+
+    // Act
+    let output = run_release_validator(
+        "validate_coverage_payload",
+        &[
+            summary_path.to_string_lossy().into_owned(),
+            CANDIDATE.to_owned(),
+            "differential_coverage".to_owned(),
+        ],
+    );
+
+    // Assert
+    assert!(!output.status.success());
+}
+
+#[test]
+fn release_constructor_rejects_failed_regression_result() {
+    // Arrange
+    let root = producer_fixture_root("regression-mutation");
+    let completion = serde_json::to_vec(&json!({
+        "schema_version": 1,
+        "candidate_sha": CANDIDATE,
+        "complete": true,
+        "results": [{
+            "regression_id": "regression-one",
+            "candidate_sha": CANDIDATE,
+            "named_test_path": "suite::regression_one",
+            "minimized_sha256": "a".repeat(64),
+            "outcome": "failed",
+        }],
+    }))
+    .expect("completion JSON");
+    fs::write(root.join("completion.json"), &completion).expect("completion writes");
+    fs::write(
+        root.join("identity.json"),
+        serde_json::to_vec(&json!({ "completion_sha256": sha256(&completion) }))
+            .expect("validation identity JSON"),
+    )
+    .expect("validation identity writes");
+    let producer_identity_path = root.join("producer-identity.json");
+    fs::write(
+        &producer_identity_path,
+        serde_json::to_vec(&json!({
+            "named_test_count": 1,
+            "regression_manifest_sha256":
+                file_sha256(&repository_root(), "reference/regressions/manifest.toml"),
+        }))
+        .expect("producer identity JSON"),
+    )
+    .expect("producer identity writes");
+
+    // Act
+    let output = run_release_validator(
+        "validate_regression_payload",
+        &[
+            root.to_string_lossy().into_owned(),
+            CANDIDATE.to_owned(),
+            producer_identity_path.to_string_lossy().into_owned(),
+        ],
+    );
+
+    // Assert
+    assert!(!output.status.success());
+}
+
+#[test]
 fn audit_sources_have_no_producer_process_or_network_capability() {
     // Arrange
     let repository = repository_root();
@@ -584,6 +749,31 @@ fn audit_sources_have_no_producer_process_or_network_capability() {
     for token in forbidden {
         assert!(!source.contains(token), "forbidden producer token: {token}");
     }
+}
+
+fn producer_fixture_root(name: &str) -> PathBuf {
+    let ordinal = TEST_ORDINAL.fetch_add(1, Ordering::Relaxed);
+    let root = repository_root()
+        .join("target/xtask-release-tests")
+        .join(format!("{name}-{}-{ordinal}", std::process::id()));
+    fs::create_dir_all(&root).expect("producer fixture directory");
+    root
+}
+
+fn run_release_validator(function: &str, arguments: &[String]) -> Output {
+    let repository = repository_root();
+    let mut command = Command::new("bash");
+    command
+        .current_dir(&repository)
+        .env("PHASE12_RELEASE_EVIDENCE_LIBRARY_ONLY", "1")
+        .args([
+            "-c",
+            "source scripts/phase12-release-evidence.sh; validator=$1; shift; \"$validator\" \"$@\"",
+            "phase12-release-validator",
+            function,
+        ])
+        .args(arguments);
+    command.output().expect("release validator process")
 }
 
 #[test]

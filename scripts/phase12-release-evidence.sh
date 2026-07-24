@@ -298,6 +298,124 @@ validate_payload_hash() {
 		fail "producer payload hash differs"
 }
 
+validate_platform_payload() {
+	local identity=$1
+	local verification=$2
+	local candidate_sha=$3
+	local target=$4
+	local platform_run_id=$5
+	local expected_job=$6
+	local package_sha256=$7
+	local expected_tier=$8
+	jq -e \
+		--arg candidate "$candidate_sha" \
+		--arg target "$target" \
+		--argjson run "$platform_run_id" \
+		--arg job "$expected_job" \
+		--arg package "$package_sha256" \
+		--arg tier "$expected_tier" '
+		.schema_version == 1 and
+		.candidate_sha == $candidate and .target == $target and .run_id == $run and
+		.job == $job and .workflow == "Platform release candidate" and
+		(.runner | type == "string" and length > 0) and
+		(.compiler | type == "string" and length > 0) and
+		.archive_sha256 == $package and .scalar_mode == "strict_f32" and .tier == $tier and
+		(.recorded_at_unix | type == "number" and . > 0)
+	' "$identity" >/dev/null || fail "$target platform payload is malformed or substituted"
+	jq -e '
+		. == {
+		  status: "verified",
+		  package_isolation: true,
+		  rustdoc: true,
+		  platform_smoke: true
+		}
+	' "$verification" >/dev/null || fail "$target platform verification is incomplete"
+}
+
+validate_safety_payload() {
+	local summary=$1
+	local candidate_sha=$2
+	local expected_kind=$3
+	jq -e --arg candidate "$candidate_sha" --arg kind "$expected_kind" '
+		.schema_version == 1 and .candidate_commit == $candidate and .complete == true and
+		(.toolchain_identity | type == "string" and length > 0) and
+		(.cases | type == "array" and length > 0) and
+		all(.cases[];
+		  (.name | type == "string" and length > 0) and
+		  (.path | type == "string" and startswith("logs/")) and
+		  (.sha256 | type == "string" and test("^[0-9a-f]{64}$")) and
+		  (.bytes | type == "number" and . >= 0)) and
+		($kind != "rust_sanitizer" or
+		  (.evidence_kind == $kind and .target == "x86_64-unknown-linux-gnu" and
+		   .parity_authority == false))
+	' "$summary" >/dev/null || fail "$expected_kind safety payload is incomplete"
+}
+
+validate_coverage_payload() {
+	local summary=$1
+	local candidate_sha=$2
+	local expected_kind=$3
+	local artifact_directory
+	artifact_directory=$(dirname -- "$summary")
+	jq -e --arg candidate "$candidate_sha" --arg kind "$expected_kind" '
+		.schema_version == 1 and .candidate_commit == $candidate and
+		.evidence_kind == $kind and .parity_authority == false and
+		(.toolchain_identity | type == "string" and length > 0) and
+		(.artifact_path | type == "string" and
+		  test("^[A-Za-z0-9][A-Za-z0-9._-]*$")) and
+		(.artifact_sha256 | type == "string" and test("^[0-9a-f]{64}$"))
+	' "$summary" >/dev/null || fail "$expected_kind coverage summary is malformed"
+	local artifact_path
+	artifact_path=$(jq -er '.artifact_path' "$summary")
+	local artifact="$artifact_directory/$artifact_path"
+	[[ -f "$artifact" && ! -L "$artifact" ]] ||
+		fail "$expected_kind coverage artifact is unavailable"
+	[[ "$(hash_file "$artifact")" == "$(jq -er '.artifact_sha256' "$summary")" ]] ||
+		fail "$expected_kind coverage artifact hash differs"
+	if [[ "$expected_kind" == "differential_coverage" ]]; then
+		jq -e '
+			.schema_version == 1 and .parity_authority == false and
+			([.exercised[], .missed[]] | all(.; type == "string" and length > 0)) and
+			([.exercised[], .missed[]] | length == (unique | length)) and
+			(.missed | length) == 0
+		' "$artifact" >/dev/null || fail "differential coverage payload is malformed"
+	fi
+}
+
+validate_regression_payload() {
+	local artifact_directory=$1
+	local candidate_sha=$2
+	local producer_identity=$3
+	local validation_identity="$artifact_directory/identity.json"
+	local completion="$artifact_directory/completion.json"
+	[[ -f "$validation_identity" && -f "$completion" ]] ||
+		fail "regression payload is incomplete"
+	[[ "$(hash_file "$completion")" == "$(jq -er '.completion_sha256' "$validation_identity")" ]] ||
+		fail "regression completion hash differs"
+	jq -e --arg candidate "$candidate_sha" \
+		--arg manifest "$(hash_file reference/regressions/manifest.toml)" \
+		--argjson expected "$(jq -er '.named_test_count' "$producer_identity")" '
+		.schema_version == 1 and .candidate_sha == $candidate and .complete == true and
+		(.results | length) == $expected and
+		([.results[].regression_id] | length == (unique | length)) and
+		all(.results[];
+		  .candidate_sha == $candidate and .outcome == "passed" and
+		  (.regression_id | type == "string" and length > 0) and
+		  (.named_test_path | type == "string" and length > 0) and
+		  (.minimized_sha256 | type == "string" and test("^[0-9a-f]{64}$")))
+	' "$completion" >/dev/null || fail "regression completion contains missing or unreviewed results"
+	jq -e --arg manifest "$(hash_file reference/regressions/manifest.toml)" \
+		'.regression_manifest_sha256 == $manifest' "$producer_identity" >/dev/null ||
+		fail "regression manifest hash differs"
+}
+
+validate_sanitizer_records() {
+	local sanitizer_records=$1
+	[[ -s "$sanitizer_records" ]] || fail "sanitizer payload is unavailable"
+	jq -se 'length > 0 and all(.[]; .outcome == "match")' "$sanitizer_records" \
+		>/dev/null || fail "sanitizer payload reports a finding"
+}
+
 validate_cheap_evidence() {
 	local candidate_sha=$1
 	local output_directory=$2
@@ -349,6 +467,10 @@ validate_oracle_inventory() {
 		[[ "$(hash_file "$payload")" == "$expected_sha256" ]] ||
 			fail "oracle inventory payload hash differs"
 	done < <(jq -r '.files[] | [.path, .sha256] | @tsv' "$identity")
+	if [[ "${artifact_directory##*/}" == phase11-sanitizer-* ]]; then
+		local sanitizer_records="$artifact_directory/sanitizer.jsonl"
+		validate_sanitizer_records "$sanitizer_records"
+	fi
 }
 
 validate_producer_identities() {
@@ -384,7 +506,10 @@ validate_producer_identities() {
 			fail "$name carries the wrong candidate or run"
 		local payload_path
 		payload_path=$(jq -er '.payload_path' "$identity")
-		validate_payload_hash "$identity" "$(dirname -- "$identity")/$payload_path"
+		local safety_payload
+		safety_payload="$(dirname -- "$identity")/$payload_path"
+		validate_payload_hash "$identity" "$safety_payload"
+		validate_safety_payload "$safety_payload" "$candidate_sha" "${safety_kind//-/_}"
 	done
 	for name in rust cpp differential; do
 		identity=$(find_single_identity \
@@ -397,7 +522,10 @@ validate_producer_identities() {
 			fail "$name coverage carries the wrong candidate or run"
 		local coverage_payload_path
 		coverage_payload_path=$(jq -er '.payload_path' "$identity")
-		validate_payload_hash "$identity" "$(dirname -- "$identity")/$coverage_payload_path"
+		local coverage_payload
+		coverage_payload="$(dirname -- "$identity")/$coverage_payload_path"
+		validate_payload_hash "$identity" "$coverage_payload"
+		validate_coverage_payload "$coverage_payload" "$candidate_sha" "${name}_coverage"
 	done
 	for name in protocol shapes_collision world_mutation particles groups_ownership; do
 		identity=$(find_single_identity \
@@ -420,6 +548,7 @@ validate_producer_identities() {
 	local regression_payload_path
 	regression_payload_path=$(jq -er '.payload_path' "$identity")
 	validate_payload_hash "$identity" "$(dirname -- "$identity")/$regression_payload_path"
+	validate_regression_payload "$(dirname -- "$identity")" "$candidate_sha" "$identity"
 	identity=$(find_single_identity \
 		"$download_directory/phase12-performance-$performance_run_id-$candidate_sha" \
 		producer-identity.json)
@@ -427,7 +556,21 @@ validate_producer_identities() {
 		'.candidate_sha == $candidate and .run_id == $run and
 		 .producer_job == "performance" and .release_reviewed == true' "$identity" >/dev/null ||
 		fail "performance evidence carries the wrong producer identity"
-	validate_payload_hash "$identity" "$(dirname -- "$identity")/manifest-entry.json"
+	local performance_entry
+	performance_entry="$(dirname -- "$identity")/manifest-entry.json"
+	validate_payload_hash "$identity" "$performance_entry"
+	jq -e --arg candidate "$candidate_sha" \
+		--arg policy "$(sed -n 's/^policy_sha256 = \"\\([0-9a-f]*\\)\"/\\1/p' \
+			reference/performance/manifest.toml)" '
+		.schema_version == 1 and .evidence_kind == "paired_performance" and
+		.candidate_sha == $candidate and .release_reviewed == true and
+		.disposition == "reviewed_controlled" and .workload_count == 14 and .case_count == 32 and
+		.reviewed_report_count >= 0 and .policy_sha256 == $policy and
+		(.matrix_sha256 | type == "string" and test("^[0-9a-f]{64}$")) and
+		(.payload_files_sha256 | type == "string" and test("^[0-9a-f]{64}$")) and
+		(.controlled_host_label | type == "string" and length > 0) and
+		(.controlled_host_identity | type == "string" and test("^[0-9a-f]{64}$"))
+	' "$performance_entry" >/dev/null || fail "performance manifest payload is incomplete"
 	validate_platform_identities "$candidate_sha" "$download_directory" "$platform_run_id"
 }
 
@@ -444,6 +587,8 @@ validate_platform_identities() {
 	package_archive=$(find_single_identity "$package_directory" liquidfun.crate)
 	[[ "$(hash_file "$package_archive")" == "$(jq -er '.archive_sha256' "$package_identity")" ]] ||
 		fail "platform package archive hash differs"
+	local package_sha256
+	package_sha256=$(jq -er '.archive_sha256' "$package_identity")
 	local msrv_artifact="phase12-platform-msrv-$platform_run_id-$candidate_sha"
 	local msrv_identity
 	msrv_identity=$(find_single_identity "$download_directory/$msrv_artifact" identity.json)
@@ -452,6 +597,11 @@ validate_platform_identities() {
 		 .run_id == $run and .job == "msrv" and
 		 (.compiler | startswith("rustc 1.92.0"))' "$msrv_identity" >/dev/null ||
 		fail "$msrv_artifact carries the wrong producer identity"
+	local msrv_verification
+	msrv_verification=$(find_single_identity \
+		"$download_directory/$msrv_artifact" verification.json)
+	validate_platform_payload "$msrv_identity" "$msrv_verification" "$candidate_sha" \
+		x86_64-unknown-linux-gnu "$platform_run_id" msrv "$package_sha256" d2_supported
 	local target artifact identity
 	for target in x86_64-unknown-linux-gnu aarch64-unknown-linux-gnu \
 		aarch64-apple-darwin x86_64-pc-windows-msvc; do
@@ -462,12 +612,31 @@ validate_platform_identities() {
 			'.candidate_sha == $candidate and .target == $target and
 			 .run_id == $run and .job == "native"' "$identity" >/dev/null ||
 			fail "$artifact carries the wrong producer identity"
+		local verification
+		verification=$(find_single_identity "$download_directory/$artifact" verification.json)
+		validate_platform_payload "$identity" "$verification" "$candidate_sha" "$target" \
+			"$platform_run_id" native "$package_sha256" d2_supported
 	done
 	artifact=$(conditional_artifact_name "$candidate_sha" "$platform_run_id")
 	identity=$(find_single_identity "$download_directory/$artifact" identity.json)
-	jq -e --arg candidate "$candidate_sha" \
-		'.candidate_sha == $candidate and .target == "x86_64-apple-darwin"' \
-		"$identity" >/dev/null || fail "$artifact carries the wrong candidate"
+	if jq -e '.conditional_targets[0].native_evidence != null' \
+		reference/platform/support.json >/dev/null; then
+		local conditional_verification
+		conditional_verification=$(find_single_identity \
+			"$download_directory/$artifact" verification.json)
+		validate_platform_payload "$identity" "$conditional_verification" "$candidate_sha" \
+			x86_64-apple-darwin "$platform_run_id" conditional-macos-intel \
+			"$package_sha256" d2_supported
+	else
+		jq -e --arg candidate "$candidate_sha" \
+			--arg support "$(hash_file reference/platform/support.json)" '
+			.schema_version == 1 and .candidate_sha == $candidate and
+			.target == "x86_64-apple-darwin" and .runner == "macos-15-intel" and
+			.tier == "unsupported" and .reason == "missing_or_expired_native_evidence" and
+			.max_age_days == 90 and .support_sha256 == $support and
+			(.recorded_at_unix | type == "number" and . > 0)
+		' "$identity" >/dev/null || fail "$artifact downgrade payload is malformed"
+	fi
 }
 
 append_independent_evidence() {
@@ -490,16 +659,27 @@ append_independent_evidence() {
 	[[ "$package_sha256" == \
 		"$(jq -er '.archive_sha256' "$output_directory/package/package-identity.json")" ]] ||
 		fail "independently produced package differs from the release package"
-	local claims
+	local claims msrv_identity
+	msrv_identity=$(find_single_identity \
+		"$download_directory/phase12-platform-msrv-$platform_run_id-$candidate_sha" identity.json)
+	local msrv_version
+	msrv_version=$(jq -er '.compiler | capture("rustc (?<version>[0-9]+\\.[0-9]+)").version' \
+		"$msrv_identity")
 	claims=$(jq -cn --arg package_sha256 "$package_sha256" \
-		'{package_sha256:$package_sha256,package_drift:false,rust_version:"1.92"}')
+		--arg rust_version "$msrv_version" \
+		'{package_sha256:$package_sha256,package_drift:false,rust_version:$rust_version}')
 	emit_evidence "$items_file" "$output_directory" "$candidate_sha" msrv \
 		x86_64-unknown-linux-gnu platform.yml msrv "$platform_run_id" rust-1.92.0 "$claims"
 	local target
 	for target in x86_64-unknown-linux-gnu aarch64-unknown-linux-gnu \
 		aarch64-apple-darwin x86_64-pc-windows-msvc; do
+		local platform_identity
+		platform_identity=$(find_single_identity \
+			"$download_directory/phase12-platform-$target-$platform_run_id-$candidate_sha" \
+			identity.json)
 		claims=$(jq -cn --arg package_sha256 "$package_sha256" \
-			'{package_sha256:$package_sha256,package_drift:false,evidence_tier:"d2_supported"}')
+			--arg tier "$(jq -er '.tier' "$platform_identity")" \
+			'{package_sha256:$package_sha256,package_drift:false,evidence_tier:$tier}')
 		emit_evidence "$items_file" "$output_directory" "$candidate_sha" platform "$target" \
 			platform.yml native "$platform_run_id" "$RUST_TOOLCHAIN" "$claims"
 	done
@@ -524,31 +704,72 @@ append_independent_evidence() {
 	emit_evidence "$items_file" "$output_directory" "$candidate_sha" rust_safety \
 		x86_64-unknown-linux-gnu safety.yml miri "$safety_run_id" "$NIGHTLY_TOOLCHAIN" \
 		'{"unsafe_waivers":0,"advisory_waivers":0,"unsafe_code":"forbid"}'
+	local sanitizer_records sanitizer_findings
+	sanitizer_records=$(find_single_identity \
+		"$download_directory/phase11-sanitizer-$oracle_run_id-$candidate_sha" sanitizer.jsonl)
+	sanitizer_findings=$(jq -s '[.[] | select(.outcome != "match")] | length' \
+		"$sanitizer_records")
+	claims=$(jq -cn --argjson findings "$sanitizer_findings" '{findings:$findings}')
 	emit_evidence "$items_file" "$output_directory" "$candidate_sha" cpp_sanitizer \
 		x86_64-unknown-linux-gnu oracle.yml phase11-sanitizer-linux "$oracle_run_id" \
-		"$CLANG_TOOLCHAIN" '{"findings":0}'
+		"$CLANG_TOOLCHAIN" "$claims"
+	local fuzz_findings=0 fuzz_target_count=0 name classification
+	for name in protocol shapes_collision world_mutation particles groups_ownership; do
+		classification=$(find_single_identity \
+			"$download_directory/fuzz-$name-$fuzz_run_id-$candidate_sha" classification.json)
+		fuzz_target_count=$((fuzz_target_count + 1))
+		if ! jq -e '.outcome == "pass" and .exit_code == 0' "$classification" >/dev/null; then
+			fuzz_findings=$((fuzz_findings + 1))
+		fi
+	done
+	((fuzz_findings == 0)) || fail "fuzz producer payload reports findings"
+	claims=$(jq -cn --argjson findings "$fuzz_findings" --argjson count "$fuzz_target_count" \
+		'{findings:$findings,target_count:$count}')
 	emit_evidence "$items_file" "$output_directory" "$candidate_sha" fuzz \
 		x86_64-unknown-linux-gnu fuzz.yml fuzz "$fuzz_run_id" "$NIGHTLY_TOOLCHAIN" \
-		'{"findings":0,"target_count":5}'
-	claims=$(jq -cn --arg manifest_sha256 "$(hash_file reference/regressions/manifest.toml)" \
-		'{manifest_sha256:$manifest_sha256,missing_results:0,unreviewed_results:0}')
+		"$claims"
+	local regression_directory
+	regression_directory="$download_directory/phase12-regressions-$candidate_sha"
+	local regression_completion
+	regression_completion=$(find_single_identity "$regression_directory" completion.json)
+	local regression_identity
+	regression_identity=$(find_single_identity "$regression_directory" producer-identity.json)
+	local expected_regressions actual_regressions unreviewed_regressions
+	expected_regressions=$(jq -er '.named_test_count' "$regression_identity")
+	actual_regressions=$(jq -er '.results | length' "$regression_completion")
+	unreviewed_regressions=$(jq '[.results[] | select(.outcome != "passed")] | length' \
+		"$regression_completion")
+	claims=$(jq -cn --arg manifest_sha256 "$(jq -er '.regression_manifest_sha256' "$regression_identity")" \
+		--argjson missing "$((expected_regressions - actual_regressions))" \
+		--argjson unreviewed "$unreviewed_regressions" \
+		'{manifest_sha256:$manifest_sha256,missing_results:$missing,
+		  unreviewed_results:$unreviewed}')
 	emit_evidence "$items_file" "$output_directory" "$candidate_sha" regressions \
 		x86_64-unknown-linux-gnu regressions.yml regressions "$regressions_run_id" \
 		"$RUST_TOOLCHAIN" "$claims"
+	local differential_summary differential_artifact differential_misses
+	differential_summary=$(find_single_identity \
+		"$download_directory/phase12-differential-coverage-$coverage_run_id-$candidate_sha" \
+		summary.json)
+	differential_artifact="$(dirname -- "$differential_summary")/$(jq -er '.artifact_path' "$differential_summary")"
+	differential_misses=$(jq -er '.missed | length' "$differential_artifact")
+	((differential_misses == 0)) || fail "differential producer payload reports coverage misses"
 	claims=$(jq -cn --arg contract_sha256 "$(hash_file reference/coverage/contract.json)" \
-		'{contract_sha256:$contract_sha256,parity_authority:false,missing_subsystems:0}')
+		--argjson missing "$differential_misses" \
+		'{contract_sha256:$contract_sha256,parity_authority:false,
+		  missing_subsystems:$missing}')
 	emit_evidence "$items_file" "$output_directory" "$candidate_sha" rust_coverage \
 		x86_64-unknown-linux-gnu coverage.yml rust-coverage "$coverage_run_id" \
 		"$RUST_TOOLCHAIN" "$claims"
 	emit_evidence "$items_file" "$output_directory" "$candidate_sha" cpp_coverage \
 		x86_64-unknown-linux-gnu coverage.yml cpp-coverage "$coverage_run_id" \
 		"$CLANG_TOOLCHAIN" "$claims"
-	local policy_sha256 reviewed_count
-	policy_sha256=$(sed -n 's/^policy_sha256 = "\([0-9a-f]*\)"/\1/p' \
-		reference/performance/manifest.toml)
-	reviewed_count=$(awk '/^\[\[reviewed_reports\]\]/{count++} END{print count+0}' \
-		reference/performance/manifest.toml)
-	claims=$(jq -cn --arg policy_sha256 "$policy_sha256" --argjson count "$reviewed_count" \
+	local performance_entry
+	performance_entry=$(find_single_identity \
+		"$download_directory/phase12-performance-$performance_run_id-$candidate_sha" \
+		manifest-entry.json)
+	claims=$(jq -cn --arg policy_sha256 "$(jq -er '.policy_sha256' "$performance_entry")" \
+		--argjson count "$(jq -er '.reviewed_report_count' "$performance_entry")" \
 		'{policy_sha256:$policy_sha256,timing_authority:"unprofiled_wall_clock",
 		  claim_scope:"workload_only",claim_status:"no_generalized_performance_claim",
 		  profile_authority:false,reviewed_report_count:$count}')
@@ -637,6 +858,11 @@ check_contract() {
 		fail "required release evidence registry cardinality differs"
 	printf 'phase12 release evidence constructor check passed\n'
 }
+
+if [[ "${PHASE12_RELEASE_EVIDENCE_LIBRARY_ONLY:-0}" == 1 ]]; then
+	# shellcheck disable=SC2317
+	return 0 2>/dev/null || exit 0
+fi
 
 [[ $# -ge 1 ]] || usage
 mode=$1
