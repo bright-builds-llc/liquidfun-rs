@@ -4,8 +4,11 @@ use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
 use liquidfun_test_protocol::{
-    CanonicalCheckpoint, ResolvedScenario, Sha256Hex, decode_resolved_scenario,
+    BenchmarkRunRequest, CanonicalCheckpoint, HarnessLimits, RequestId, ResolvedScenario,
+    SemanticCheckpointIdentity, Sha256Hex, decode_resolved_scenario,
+    encode_canonical_checkpoint_jsonl,
 };
+use sha2::{Digest, Sha256};
 
 use crate::{NativeCatalogBackend, SessionCommand, SessionController, SessionControllerError};
 
@@ -116,6 +119,19 @@ where
     D: NativeBenchmarkDriver,
     C: NativeBenchmarkClock,
 {
+    measure_native_actions_with_checkpoint(driver, clock, actions)
+        .map(|(elapsed, _checkpoint)| elapsed)
+}
+
+fn measure_native_actions_with_checkpoint<D, C>(
+    driver: &mut D,
+    clock: &mut C,
+    actions: u32,
+) -> Result<(Duration, D::Checkpoint), PerformanceExecutionError>
+where
+    D: NativeBenchmarkDriver,
+    C: NativeBenchmarkClock,
+{
     if actions == 0 || actions > MAXIMUM_BENCHMARK_ACTIONS {
         return Err(PerformanceExecutionError::new(
             PerformanceExecutionErrorKind::ResourceLimit,
@@ -134,12 +150,35 @@ where
         }
     }
     let elapsed = clock.elapsed(stamp);
-    let validation = driver
-        .capture()
-        .and_then(|checkpoint| driver.validate(&checkpoint));
+    let checkpoint = driver.capture();
+    let validation = checkpoint
+        .as_ref()
+        .map_err(|error| *error)
+        .and_then(|checkpoint| driver.validate(checkpoint));
     driver.teardown();
     validation?;
-    Ok(elapsed)
+    Ok((elapsed, checkpoint?))
+}
+
+/// One authoritative native duration and its canonical semantic checkpoint identity.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NativeBenchmarkMeasurement {
+    elapsed: Duration,
+    semantic_checkpoint_identity: SemanticCheckpointIdentity,
+}
+
+impl NativeBenchmarkMeasurement {
+    /// Returns the authoritative unprofiled duration.
+    #[must_use]
+    pub const fn elapsed(&self) -> Duration {
+        self.elapsed
+    }
+
+    /// Returns the checkpoint identity protecting the duration.
+    #[must_use]
+    pub const fn semantic_checkpoint_identity(&self) -> &SemanticCheckpointIdentity {
+        &self.semantic_checkpoint_identity
+    }
 }
 
 /// One sealed native case prepared before any authoritative timer starts.
@@ -190,9 +229,9 @@ impl PreparedNativeBenchmark {
                 PerformanceExecutionErrorKind::HorizonMismatch,
             ));
         }
-        let expected_checkpoint = run_untimed(&resolved, logical_horizon)?;
+        let expected_checkpoint = run_untimed(&resolved, logical_horizon, None)?;
         for _ in 0..warmup_runs {
-            let candidate = run_untimed(&resolved, logical_horizon)?;
+            let candidate = run_untimed(&resolved, logical_horizon, None)?;
             if !benchmark_semantics_match(&expected_checkpoint, &candidate) {
                 return Err(PerformanceExecutionError::new(
                     PerformanceExecutionErrorKind::CheckpointMismatch,
@@ -227,9 +266,58 @@ impl PreparedNativeBenchmark {
         let _execution_guard = NATIVE_BENCHMARK_LOCK.lock().map_err(|_error| {
             PerformanceExecutionError::new(PerformanceExecutionErrorKind::NativeExecution)
         })?;
-        let mut driver = CatalogNativeDriver::new(self);
+        let mut driver = CatalogNativeDriver::new(&self.resolved, &self.expected_checkpoint, None);
         let mut clock = InstantClock;
         measure_native_actions(&mut driver, &mut clock, self.logical_horizon)
+    }
+
+    /// Measures one exact paired request and returns its canonical checkpoint identity.
+    ///
+    /// Authority setup and warm-ups run before the timer. The returned duration covers only the
+    /// declared logical actions, while capture, semantic validation, hashing, and teardown remain
+    /// outside the measured interval.
+    ///
+    /// # Errors
+    ///
+    /// Returns a bounded identity, execution, resource, horizon, or checkpoint failure before a
+    /// duration can be accepted.
+    pub fn measure_sample_for_request(
+        &self,
+        request: &BenchmarkRunRequest,
+    ) -> Result<NativeBenchmarkMeasurement, PerformanceExecutionError> {
+        let _execution_guard = NATIVE_BENCHMARK_LOCK.lock().map_err(|_error| {
+            PerformanceExecutionError::new(PerformanceExecutionErrorKind::NativeExecution)
+        })?;
+        validate_request(self, request)?;
+        let request_id = request.identity().request_id();
+        let expected_checkpoint =
+            run_untimed(&self.resolved, self.logical_horizon, Some(request_id))?;
+        if !benchmark_semantics_match_except_request_id(
+            &self.expected_checkpoint,
+            &expected_checkpoint,
+        ) {
+            return Err(PerformanceExecutionError::new(
+                PerformanceExecutionErrorKind::CheckpointMismatch,
+            ));
+        }
+        for _ in 0..request.identity().warmup_count() {
+            let candidate = run_untimed(&self.resolved, self.logical_horizon, Some(request_id))?;
+            if !benchmark_semantics_match(&expected_checkpoint, &candidate) {
+                return Err(PerformanceExecutionError::new(
+                    PerformanceExecutionErrorKind::CheckpointMismatch,
+                ));
+            }
+        }
+        let mut driver =
+            CatalogNativeDriver::new(&self.resolved, &expected_checkpoint, Some(request_id));
+        let mut clock = InstantClock;
+        let (elapsed, checkpoint) =
+            measure_native_actions_with_checkpoint(&mut driver, &mut clock, self.logical_horizon)?;
+        let semantic_checkpoint_identity = semantic_checkpoint_identity(&checkpoint)?;
+        Ok(NativeBenchmarkMeasurement {
+            elapsed,
+            semantic_checkpoint_identity,
+        })
     }
 }
 
@@ -248,14 +336,22 @@ impl NativeBenchmarkClock for InstantClock {
 }
 
 struct CatalogNativeDriver<'a> {
-    prepared: &'a PreparedNativeBenchmark,
+    resolved: &'a ResolvedScenario,
+    expected_checkpoint: &'a CanonicalCheckpoint,
+    maybe_request_id: Option<&'a RequestId>,
     maybe_controller: Option<SessionController<NativeCatalogBackend>>,
 }
 
 impl<'a> CatalogNativeDriver<'a> {
-    const fn new(prepared: &'a PreparedNativeBenchmark) -> Self {
+    const fn new(
+        resolved: &'a ResolvedScenario,
+        expected_checkpoint: &'a CanonicalCheckpoint,
+        maybe_request_id: Option<&'a RequestId>,
+    ) -> Self {
         Self {
-            prepared,
+            resolved,
+            expected_checkpoint,
+            maybe_request_id,
             maybe_controller: None,
         }
     }
@@ -273,11 +369,15 @@ impl NativeBenchmarkDriver for CatalogNativeDriver<'_> {
     type Checkpoint = CanonicalCheckpoint;
 
     fn restart(&mut self) -> Result<(), PerformanceExecutionError> {
-        let mut controller = SessionController::new(NativeCatalogBackend::new());
+        let mut backend = NativeCatalogBackend::new();
+        if let Some(request_id) = self.maybe_request_id {
+            backend.set_request_id(request_id.clone());
+        }
+        let mut controller = SessionController::new(backend);
         submit(
             &mut controller,
             SessionCommand::Select {
-                resolved: self.prepared.resolved.clone(),
+                resolved: self.resolved.clone(),
             },
         )?;
         self.maybe_controller = Some(controller);
@@ -290,7 +390,6 @@ impl NativeBenchmarkDriver for CatalogNativeDriver<'_> {
 
     fn capture(&mut self) -> Result<Self::Checkpoint, PerformanceExecutionError> {
         let checkpoint_id = self
-            .prepared
             .resolved
             .checkpoints()
             .last()
@@ -314,7 +413,7 @@ impl NativeBenchmarkDriver for CatalogNativeDriver<'_> {
     }
 
     fn validate(&mut self, checkpoint: &Self::Checkpoint) -> Result<(), PerformanceExecutionError> {
-        if !benchmark_semantics_match(&self.prepared.expected_checkpoint, checkpoint) {
+        if !benchmark_semantics_match(self.expected_checkpoint, checkpoint) {
             return Err(PerformanceExecutionError::new(
                 PerformanceExecutionErrorKind::CheckpointMismatch,
             ));
@@ -330,8 +429,9 @@ impl NativeBenchmarkDriver for CatalogNativeDriver<'_> {
 fn run_untimed(
     resolved: &ResolvedScenario,
     logical_horizon: u32,
+    maybe_request_id: Option<&RequestId>,
 ) -> Result<CanonicalCheckpoint, PerformanceExecutionError> {
-    let mut driver = UntimedCatalogDriver::new(resolved);
+    let mut driver = UntimedCatalogDriver::new(resolved, maybe_request_id);
     driver.restart()?;
     for _ in 0..logical_horizon {
         driver.execute_action()?;
@@ -343,13 +443,15 @@ fn run_untimed(
 
 struct UntimedCatalogDriver<'a> {
     resolved: &'a ResolvedScenario,
+    maybe_request_id: Option<&'a RequestId>,
     maybe_controller: Option<SessionController<NativeCatalogBackend>>,
 }
 
 impl<'a> UntimedCatalogDriver<'a> {
-    const fn new(resolved: &'a ResolvedScenario) -> Self {
+    const fn new(resolved: &'a ResolvedScenario, maybe_request_id: Option<&'a RequestId>) -> Self {
         Self {
             resolved,
+            maybe_request_id,
             maybe_controller: None,
         }
     }
@@ -359,7 +461,11 @@ impl NativeBenchmarkDriver for UntimedCatalogDriver<'_> {
     type Checkpoint = CanonicalCheckpoint;
 
     fn restart(&mut self) -> Result<(), PerformanceExecutionError> {
-        let mut controller = SessionController::new(NativeCatalogBackend::new());
+        let mut backend = NativeCatalogBackend::new();
+        if let Some(request_id) = self.maybe_request_id {
+            backend.set_request_id(request_id.clone());
+        }
+        let mut controller = SessionController::new(backend);
         submit(
             &mut controller,
             SessionCommand::Select {
@@ -432,6 +538,48 @@ const fn map_controller_error(_error: SessionControllerError) -> PerformanceExec
     PerformanceExecutionError::new(PerformanceExecutionErrorKind::NativeExecution)
 }
 
+fn validate_request(
+    prepared: &PreparedNativeBenchmark,
+    request: &BenchmarkRunRequest,
+) -> Result<(), PerformanceExecutionError> {
+    let identity = request.identity();
+    if request.resolved_bytes() != prepared.resolved.canonical_bytes()
+        || identity.resolved_sha256() != prepared.resolved.identity().content_sha256()
+        || identity.settings() != prepared.resolved.identity().settings()
+    {
+        return Err(PerformanceExecutionError::new(
+            PerformanceExecutionErrorKind::ResolvedIdentity,
+        ));
+    }
+    if identity.measured_horizon() != prepared.logical_horizon {
+        return Err(PerformanceExecutionError::new(
+            PerformanceExecutionErrorKind::HorizonMismatch,
+        ));
+    }
+    Ok(())
+}
+
+fn semantic_checkpoint_identity(
+    checkpoint: &CanonicalCheckpoint,
+) -> Result<SemanticCheckpointIdentity, PerformanceExecutionError> {
+    let mut bytes =
+        encode_canonical_checkpoint_jsonl(checkpoint, &HarnessLimits::phase2_default_v1())
+            .map_err(|_error| {
+                PerformanceExecutionError::new(PerformanceExecutionErrorKind::CheckpointMismatch)
+            })?;
+    if bytes.pop() != Some(b'\n') {
+        return Err(PerformanceExecutionError::new(
+            PerformanceExecutionErrorKind::CheckpointMismatch,
+        ));
+    }
+    Ok(SemanticCheckpointIdentity::new(
+        checkpoint.request_id().clone(),
+        checkpoint.resolved_sha256().clone(),
+        checkpoint.checkpoint_id().clone(),
+        Sha256Hex::from_digest(Sha256::digest(bytes).into()),
+    ))
+}
+
 /// Compares only authoritative non-visual checkpoint identity and semantic observation lanes.
 ///
 /// Renderer debug primitives and diagnostic profile names cannot accept or reject a physics timing
@@ -446,6 +594,23 @@ pub fn benchmark_semantics_match(
         && expected.schema_version() == candidate.schema_version()
         && expected.record_kind() == candidate.record_kind()
         && expected.request_id() == candidate.request_id()
+        && expected.resolved_sha256() == candidate.resolved_sha256()
+        && expected.checkpoint_id() == candidate.checkpoint_id()
+        && expected.position() == candidate.position()
+        && expected.simulation_time_bits() == candidate.simulation_time_bits()
+        && expected.observations() == candidate.observations()
+        && expected.numeric_observations() == candidate.numeric_observations()
+        && expected.ordered_occurrences() == candidate.ordered_occurrences()
+        && expected.unordered_sets() == candidate.unordered_sets()
+}
+
+fn benchmark_semantics_match_except_request_id(
+    expected: &CanonicalCheckpoint,
+    candidate: &CanonicalCheckpoint,
+) -> bool {
+    expected.protocol_version() == candidate.protocol_version()
+        && expected.schema_version() == candidate.schema_version()
+        && expected.record_kind() == candidate.record_kind()
         && expected.resolved_sha256() == candidate.resolved_sha256()
         && expected.checkpoint_id() == candidate.checkpoint_id()
         && expected.position() == candidate.position()

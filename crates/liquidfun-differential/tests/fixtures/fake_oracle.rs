@@ -12,12 +12,19 @@ use liquidfun_differential::{
     execute_catalog_native,
 };
 use liquidfun_test_protocol::{
-    BuildIdentity, BuildIdentityFields, CheckpointRecord, EngineKind, FloatBits, HarnessLimits,
-    Phase4BuildIdentityFields, RecordLimit, ScenarioRequestRecord, TraceBegin, TraceEnd,
-    TraceRecord, WorldCounts, decode_catalog_run_request_jsonl, decode_handshake_jsonl,
-    decode_rigid_world_request_jsonl, decode_scenario_request_jsonl,
-    encode_canonical_checkpoint_jsonl, encode_jsonl, trace_payload_sha256,
+    BuildIdentity, BuildIdentityFields, CheckpointId, CheckpointRecord, EngineKind, FloatBits,
+    HarnessLimits, Phase4BuildIdentityFields, RecordLimit, ScenarioRequestRecord, Sha256Hex,
+    TraceBegin, TraceEnd, TraceRecord, WorldCounts, decode_catalog_run_request_jsonl,
+    decode_handshake_jsonl, decode_rigid_world_request_jsonl, decode_scenario_request_jsonl,
+    encode_canonical_checkpoint_jsonl, encode_jsonl,
+    performance::{
+        BenchmarkPerformanceResult, BenchmarkRunOutcome, BenchmarkRunResult, PerformanceEngineRole,
+        SemanticCheckpointIdentity, decode_benchmark_run_request_jsonl,
+        encode_benchmark_run_result_jsonl,
+    },
+    trace_payload_sha256,
 };
+use sha2::{Digest, Sha256};
 
 const TRACE_BYTES: &[u8] =
     include_bytes!("../../../../protocol/fixtures/accepted/empty-world-trace.jsonl");
@@ -93,6 +100,9 @@ fn handle_request(
     if behavior.starts_with("catalog_") {
         return emit_catalog_behavior(behavior, request_bytes, reset_epoch);
     }
+    if behavior.starts_with("benchmark_") {
+        return emit_benchmark_behavior(behavior, request_bytes, reset_epoch);
+    }
     match behavior {
         "request_timeout" => thread::sleep(Duration::from_secs(12)),
         "nonzero" => {
@@ -134,6 +144,63 @@ fn handle_request(
         "second_malformed" if reset_epoch == 2 => write_then_exit(b"{}\n")?,
         _ => emit_trace_behavior(behavior, request_bytes, reset_epoch)?,
     }
+    Ok(())
+}
+
+fn emit_benchmark_behavior(
+    behavior: &str,
+    request_bytes: &[u8],
+    reset_epoch: u64,
+) -> Result<(), Box<dyn std::error::Error>> {
+    match behavior {
+        "benchmark_crash" => {
+            eprintln!("benchmark child failed");
+            std::process::exit(7);
+        }
+        "benchmark_malformed" => {
+            write_then_sleep(b"{}\n")?;
+            return Ok(());
+        }
+        "benchmark_second_malformed" if reset_epoch == 2 => {
+            write_then_sleep(b"{}\n")?;
+            return Ok(());
+        }
+        "benchmark_oversized" => {
+            let mut bytes = vec![b'x'; HarnessLimits::phase2_reuse_v1().output_record_bytes() + 1];
+            bytes.push(b'\n');
+            write_then_sleep(&bytes)?;
+            return Ok(());
+        }
+        "benchmark_sanitizer" => {
+            io::stderr().write_all(b"ERROR: AddressSanitizer: injected\n")?;
+            io::stderr().flush()?;
+            thread::sleep(Duration::from_secs(12));
+            return Ok(());
+        }
+        _ => {}
+    }
+
+    let limits = HarnessLimits::phase2_reuse_v1();
+    let mut framed = request_bytes.to_vec();
+    framed.push(b'\n');
+    let request = decode_benchmark_run_request_jsonl(&framed, &limits)?;
+    let checkpoint = SemanticCheckpointIdentity::new(
+        request.identity().request_id().clone(),
+        request.identity().resolved_sha256().clone(),
+        CheckpointId::new("checkpoint-0001")?,
+        Sha256Hex::from_digest(Sha256::digest(b"paired-checkpoint\0").into()),
+    );
+    let performance = BenchmarkPerformanceResult::new(20_000 + reset_epoch, None, checkpoint)?;
+    let result = BenchmarkRunResult::new(
+        request.identity().clone(),
+        PerformanceEngineRole::PinnedCppOracle,
+        reset_epoch,
+        BenchmarkRunOutcome::Performance(performance),
+    )?;
+    let result_bytes = encode_benchmark_run_result_jsonl(&result, &limits)?;
+    let mut stdout = io::stdout().lock();
+    stdout.write_all(&result_bytes)?;
+    stdout.flush()?;
     Ok(())
 }
 

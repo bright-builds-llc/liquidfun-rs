@@ -2,7 +2,10 @@
 
 use std::time::Duration;
 
-use liquidfun_test_protocol::{BuildIdentity, CatalogRunRequest, HarnessLimits, Sha256Hex};
+use liquidfun_test_protocol::{
+    BuildIdentity, CatalogRunRequest, HarnessLimits, Sha256Hex,
+    performance::{BenchmarkHarnessFailureKind, BenchmarkRunRequest, BenchmarkRunResult},
+};
 
 use crate::{CatalogFailureKind, CatalogRunCapture};
 
@@ -11,7 +14,9 @@ use super::{
     Teardown, complete_handshake, enforce_total_output, successful_teardown_failure,
 };
 
+mod benchmark;
 mod protocol;
+use benchmark::{map_harness_kind, run_benchmark_request};
 use protocol::{run_catalog_request, tier_satisfies};
 
 /// Complete validated C++ catalog capture and child lifecycle evidence.
@@ -117,6 +122,7 @@ pub struct CatalogOracleSupervisor {
     expected_oracle_revision: Box<str>,
     maybe_ready: Option<ReadyChild>,
     process_generation: u64,
+    benchmark_requests: u64,
 }
 
 impl CatalogOracleSupervisor {
@@ -134,6 +140,7 @@ impl CatalogOracleSupervisor {
             expected_oracle_revision: expected_oracle_revision.into(),
             maybe_ready: None,
             process_generation: 0,
+            benchmark_requests: 0,
         }
     }
 
@@ -209,6 +216,57 @@ impl CatalogOracleSupervisor {
         }
     }
 
+    /// Executes one strict benchmark request through the same bounded long-lived child.
+    ///
+    /// This crate-private seam returns only a validated typed result or a closed failure category;
+    /// raw pipes, process handles, and unbounded output never leave the supervisor.
+    pub(crate) fn execute_benchmark(
+        &mut self,
+        request: &BenchmarkRunRequest,
+    ) -> Result<BenchmarkRunResult, BenchmarkHarnessFailureKind> {
+        self.ensure_ready()
+            .map_err(|error| map_catalog_failure(error.kind()))?;
+        let mut ready = self
+            .maybe_ready
+            .take()
+            .ok_or(BenchmarkHarnessFailureKind::AdapterFailure)?;
+        let expected_reset_epoch = self
+            .benchmark_requests
+            .checked_add(1)
+            .ok_or(BenchmarkHarnessFailureKind::AdapterResetFailure)?;
+        let result = run_benchmark_request(&mut ready, request, expected_reset_epoch, &self.limits);
+        match result {
+            Ok(result) => {
+                ready.requests = ready.requests.saturating_add(1);
+                self.benchmark_requests = expected_reset_epoch;
+                if self.profile.keeps_process() {
+                    self.maybe_ready = Some(ready);
+                    return Ok(result);
+                }
+                let baseline = ready.last_request_baseline;
+                let teardown = ready.io.shutdown(self.limits.request_timeout(), false);
+                let maybe_failure =
+                    enforce_total_output(teardown.total_output, baseline, &self.limits)
+                        .err()
+                        .map(map_harness_kind)
+                        .or_else(|| successful_teardown_failure(&teardown).map(map_harness_kind));
+                if let Some(kind) = maybe_failure {
+                    return Err(kind);
+                }
+                Ok(result)
+            }
+            Err(mut kind) => {
+                let teardown = ready.io.shutdown(Duration::ZERO, true);
+                if !teardown.was_killed
+                    && let Some(teardown_kind) = successful_teardown_failure(&teardown)
+                {
+                    kind = map_harness_kind(teardown_kind);
+                }
+                Err(kind)
+            }
+        }
+    }
+
     /// Returns the number of child processes started by this supervisor.
     #[must_use]
     pub const fn process_generation(&self) -> u64 {
@@ -242,6 +300,7 @@ impl CatalogOracleSupervisor {
             return Ok(());
         }
         self.process_generation = self.process_generation.saturating_add(1);
+        self.benchmark_requests = 0;
         let handshaking = spawn_child(&self.executable, self.profile, &self.limits)
             .map_err(|_error| failure_without_child(CatalogFailureKind::ChildProcess))?;
         match complete_handshake(handshaking, &self.expected_oracle_revision, &self.limits) {
@@ -273,6 +332,23 @@ impl CatalogOracleSupervisor {
             return Err(failure_without_child(CatalogFailureKind::Provenance));
         }
         Ok(())
+    }
+}
+
+const fn map_catalog_failure(kind: CatalogFailureKind) -> BenchmarkHarnessFailureKind {
+    match kind {
+        CatalogFailureKind::Provenance => BenchmarkHarnessFailureKind::IdentityMismatch,
+        CatalogFailureKind::Timeout => BenchmarkHarnessFailureKind::RequestTimeout,
+        CatalogFailureKind::ChildProcess => BenchmarkHarnessFailureKind::ChildNonZeroExit,
+        CatalogFailureKind::MalformedRecord | CatalogFailureKind::Protocol => {
+            BenchmarkHarnessFailureKind::MalformedRecord
+        }
+        CatalogFailureKind::ResetFailure => BenchmarkHarnessFailureKind::AdapterResetFailure,
+        CatalogFailureKind::ResourceLimit => BenchmarkHarnessFailureKind::OutputLimitExceeded,
+        CatalogFailureKind::PhysicsMismatch
+        | CatalogFailureKind::HarnessFailure
+        | CatalogFailureKind::NativeExecution
+        | CatalogFailureKind::Evidence => BenchmarkHarnessFailureKind::AdapterFailure,
     }
 }
 
