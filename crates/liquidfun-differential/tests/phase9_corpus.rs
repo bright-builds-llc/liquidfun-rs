@@ -1,5 +1,8 @@
 //! Closed Phase 9 witness-corpus and evidence-boundary tests.
 
+#[path = "support/coverage_observation.rs"]
+mod coverage_observation;
+
 use std::{
     collections::{BTreeMap, BTreeSet},
     fs,
@@ -1734,6 +1737,29 @@ fn executable_cases() {
 
     // Assert
     assert!(!evidence.cases.is_empty());
+    coverage_observation::observe(&[
+        "public-api.liquidfun-box2d-box2d-dynamics-b2body-h",
+        "public-api.liquidfun-box2d-box2d-dynamics-b2contactmanager-h",
+        "public-api.liquidfun-box2d-box2d-dynamics-b2fixture-h",
+        "public-api.liquidfun-box2d-box2d-dynamics-b2island-h",
+        "public-api.liquidfun-box2d-box2d-dynamics-b2timestep-h",
+        "public-api.liquidfun-box2d-box2d-dynamics-b2world-h",
+        "public-api.liquidfun-box2d-box2d-dynamics-b2worldcallbacks-h",
+        "public-api.liquidfun-box2d-box2d-dynamics-contacts-b2circlecontact-h",
+        "public-api.liquidfun-box2d-box2d-dynamics-contacts-b2contact-h",
+        "public-api.liquidfun-box2d-box2d-dynamics-contacts-b2contactsolver-h",
+        "public-api.liquidfun-box2d-box2d-particle-b2particle-h",
+        "public-api.liquidfun-box2d-box2d-particle-b2particlesystem-h",
+        "source-area.liquidfun-box2d-box2d-dynamics",
+        "source-area.liquidfun-box2d-box2d-dynamics-contacts",
+        "subsystem.contacts-and-filtering",
+        "subsystem.particle-contacts-and-coupling",
+        "subsystem.particle-storage-and-lifecycle",
+        "subsystem.rigid-bodies-and-fixtures",
+        "subsystem.rigid-islands-and-solver",
+        "subsystem.world-operations-and-observation",
+    ])
+    .expect("successful Phase 9 comparison should emit its covered leaves");
     if let Ok(output) = std::env::var("LIQUIDFUN_PHASE9_EVIDENCE_MANIFEST") {
         let relative_output = Path::new(&output);
         assert!(!relative_output.is_absolute() && relative_output.starts_with("target"));

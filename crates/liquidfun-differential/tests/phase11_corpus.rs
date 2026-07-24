@@ -1,5 +1,8 @@
 //! Closed Phase 11 scenario, mapping, and inherited-proof corpus tests.
 
+#[path = "support/coverage_observation.rs"]
+mod coverage_observation;
+
 use std::path::{Path, PathBuf};
 
 #[path = "phase11_corpus/io.rs"]
@@ -49,6 +52,13 @@ fn sealed_phase11_corpus_matches_live_registry_and_tracked_proofs() {
         loaded.manifest.mapping.sha256,
         "mapping bytes must stay content-addressed"
     );
+    coverage_observation::observe(&[
+        "subsystem.headless-catalog-execution",
+        "subsystem.headless-public-observation-and-debug-draw",
+        "subsystem.headless-reviewed-upstream-equivalence",
+        "subsystem.headless-semantic-checkpoints-and-comparison",
+    ])
+    .expect("successful Phase 11 validation should emit its covered leaves");
 }
 
 #[test]

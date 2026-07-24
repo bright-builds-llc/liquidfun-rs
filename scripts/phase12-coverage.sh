@@ -25,6 +25,56 @@ validate_contract() {
 	cargo xtask safety-evidence validate-coverage
 }
 
+write_observed_leaves() {
+	local observation_directory=$1
+	local output_path=$2
+	local line_path="$output_path.lines"
+	local marker
+	local leaf
+	: >"$line_path"
+	for marker in "$observation_directory"/*; do
+		[[ -e "$marker" ]] || continue
+		[[ -f "$marker" && ! -L "$marker" ]] ||
+			fail "differential leaf observation is not a regular file"
+		leaf=${marker##*/}
+		[[ "$leaf" =~ ^[a-z0-9][a-z0-9.-]*$ ]] ||
+			fail "differential leaf observation has an invalid ID"
+		printf '%s\n' "$leaf" >>"$line_path"
+	done
+	jq -Rsc 'split("\n") | map(select(length > 0)) | unique | sort' \
+		"$line_path" >"$output_path"
+	rm -f -- "$line_path"
+}
+
+successful_target_without_observation() {
+	return 0
+}
+
+check_observation_omission_guard() {
+	local test_root
+	test_root=$(mktemp -d "${TMPDIR:-/tmp}/liquidfun-phase12-coverage.XXXXXX")
+	local observation_directory="$test_root/observations"
+	local expected="$test_root/expected.json"
+	local observed="$test_root/observed.json"
+	local report="$test_root/report.json"
+	mkdir -p -- "$observation_directory"
+	printf '[]\n' >"$observation_directory/subsystem.observed"
+	printf '["subsystem.missing","subsystem.observed"]\n' >"$expected"
+	successful_target_without_observation
+	write_observed_leaves "$observation_directory" "$observed"
+	if cargo xtask safety-evidence validate-differential-leaves \
+		--expected "$expected" \
+		--observed "$observed" \
+		--output "$report"; then
+		fail "successful target omission was incorrectly accepted"
+	fi
+	jq -e \
+		'.exercised == ["subsystem.observed"] and .missed == ["subsystem.missing"]' \
+		"$report" >/dev/null ||
+		fail "successful target omission did not produce the exact missing leaf"
+	rm -rf -- "$test_root"
+}
+
 check_contract() {
 	grep -Fxq 'channel = "nightly-2026-07-15"' rust-toolchain-nightly.toml ||
 		fail "shared nightly toolchain differs"
@@ -37,6 +87,7 @@ check_contract() {
 	[[ -f tools/reference/CMakeLists.txt && ! -L tools/reference/CMakeLists.txt ]] ||
 		fail "C++ coverage wrapper is unavailable"
 	validate_contract
+	check_observation_omission_guard
 	printf 'phase12-coverage check passed: typed authority and separate evidence kinds\n'
 }
 
@@ -216,40 +267,29 @@ run_differential_coverage() {
 	output_directory=$(prepare_output "$candidate_sha" differential)
 	local expected="$output_directory/expected-leaves.json"
 	local observed="$output_directory/observed-leaves.json"
-	local mapping="$output_directory/leaf-targets.json"
+	local observation_directory="$output_directory/observations"
+	local targets=(
+		collision_probe
+		round_trip
+		phase8_comparator
+		phase9_corpus
+		phase10_corpus
+		phase11_corpus
+	)
+	mkdir -p -- "$observation_directory"
 	jq '[
 	  .entries[]
 	  | select(.evidence.differentially_validated.status == "evidenced")
 	  | .id
 	] | sort' reference/compatibility.json >"$expected"
-	jq '[
-	  .entries[]
-	  | select(.evidence.differentially_validated.status == "evidenced")
-	  | {
-	      leaf: .id,
-	      targets: [
-	        .evidence.differentially_validated.references[]
-	        | if startswith("crates/liquidfun-differential/tests/") and endswith(".rs")
-	          then split("/")[-1] | sub("\\.rs$"; "")
-	          elif startswith("crates/liquidfun-differential/tests/fixtures/catalog/")
-	          then "phase11_corpus"
-	          else empty
-	          end
-	      ] | unique
-	    }
-	] | if any(.targets | length == 0)
-	    then error("differential leaf lacks an executable test target")
-	    else .
-	    end' reference/compatibility.json >"$mapping"
-	printf '[]\n' >"$observed"
-	while IFS= read -r target; do
+	for target in "${targets[@]}"; do
 		timeout --signal=TERM "${COMMAND_TIMEOUT_SECONDS}s" \
-			cargo test -p liquidfun-differential --all-features --test "$target"
-		jq --arg target "$target" --slurpfile observed "$observed" \
-			'[$observed[0][], .[] | select(.targets | index($target)) | .leaf] | unique | sort' \
-			"$mapping" >"$observed.tmp"
-		mv -f -- "$observed.tmp" "$observed"
-	done < <(jq -r '[.[].targets[]] | unique[]' "$mapping")
+			env LIQUIDFUN_DIFFERENTIAL_LEAF_DIRECTORY="$observation_directory" \
+			cargo test -p liquidfun-differential --all-features --test "$target" -- \
+			--test-threads=1
+	done
+	write_observed_leaves "$observation_directory" "$observed"
+	rm -rf -- "$observation_directory"
 	cargo xtask inventory check
 	cargo xtask safety-evidence validate-differential-leaves \
 		--expected "$expected" \

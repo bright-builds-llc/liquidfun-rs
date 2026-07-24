@@ -1,5 +1,8 @@
 //! Closed Phase 8 comparator coverage.
 
+#[path = "support/coverage_observation.rs"]
+mod coverage_observation;
+
 use liquidfun_differential::{
     NativeRigidWorldExecutor, RigidComparisonOutcome, compare_phase8_rigid_world_results,
 };
@@ -111,6 +114,26 @@ fn complete_phase8_result_matches_itself() {
 
     // Assert
     assert!(matches!(outcome, RigidComparisonOutcome::Match));
+    coverage_observation::observe(&[
+        "public-api.liquidfun-box2d-box2d-dynamics-joints-b2distancejoint-h",
+        "public-api.liquidfun-box2d-box2d-dynamics-joints-b2frictionjoint-h",
+        "public-api.liquidfun-box2d-box2d-dynamics-joints-b2gearjoint-h",
+        "public-api.liquidfun-box2d-box2d-dynamics-joints-b2joint-h",
+        "public-api.liquidfun-box2d-box2d-dynamics-joints-b2motorjoint-h",
+        "public-api.liquidfun-box2d-box2d-dynamics-joints-b2mousejoint-h",
+        "public-api.liquidfun-box2d-box2d-dynamics-joints-b2prismaticjoint-h",
+        "public-api.liquidfun-box2d-box2d-dynamics-joints-b2pulleyjoint-h",
+        "public-api.liquidfun-box2d-box2d-dynamics-joints-b2revolutejoint-h",
+        "public-api.liquidfun-box2d-box2d-dynamics-joints-b2ropejoint-h",
+        "public-api.liquidfun-box2d-box2d-dynamics-joints-b2weldjoint-h",
+        "public-api.liquidfun-box2d-box2d-dynamics-joints-b2wheeljoint-h",
+        "public-api.liquidfun-box2d-box2d-rope-b2rope-h",
+        "source-area.liquidfun-box2d-box2d-dynamics-joints",
+        "source-area.liquidfun-box2d-box2d-rope",
+        "subsystem.joints",
+        "subsystem.rope",
+    ])
+    .expect("successful Phase 8 comparison should emit its covered leaves");
 }
 
 #[test]

@@ -1,5 +1,8 @@
 //! End-to-end native/C++ comparison and CLI outcome tests.
 
+#[path = "support/coverage_observation.rs"]
+mod coverage_observation;
+
 use std::{
     fs,
     io::{BufRead, BufReader, Read, Write},
@@ -188,6 +191,11 @@ fn cpp_math_probe_matches_operation_contract() {
         assert_eq!(ends[0]["reset_verified"], true);
         assert_eq!(ends[1]["reset_verified"], true);
     }
+    coverage_observation::observe(&[
+        "public-api.liquidfun-box2d-box2d-common-b2math-h",
+        "subsystem.common-math-and-settings",
+    ])
+    .expect("successful math comparison should emit its covered leaves");
 }
 
 fn fake_repository(behavior: &str) -> PathBuf {

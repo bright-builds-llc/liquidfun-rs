@@ -1,5 +1,8 @@
 //! Phase 5 native execution, first-divergence, and supervisor contract tests.
 
+#[path = "support/coverage_observation.rs"]
+mod coverage_observation;
+
 use liquidfun_differential::{
     CollisionDivergence, NativeCollisionProbeExecutor, compare_collision_probe_results,
 };
@@ -250,6 +253,24 @@ fn comparison_canonicalizes_only_declared_payload_sets() {
         compare_collision_probe_results(&request, &expected, &actual, &profile),
         Err(CollisionDivergence::Order(_) | CollisionDivergence::Harness(_))
     ));
+    coverage_observation::observe(&[
+        "public-api.liquidfun-box2d-box2d-collision-b2broadphase-h",
+        "public-api.liquidfun-box2d-box2d-collision-b2collision-h",
+        "public-api.liquidfun-box2d-box2d-collision-b2distance-h",
+        "public-api.liquidfun-box2d-box2d-collision-b2dynamictree-h",
+        "public-api.liquidfun-box2d-box2d-collision-b2timeofimpact-h",
+        "public-api.liquidfun-box2d-box2d-collision-shapes-b2chainshape-h",
+        "public-api.liquidfun-box2d-box2d-collision-shapes-b2circleshape-h",
+        "public-api.liquidfun-box2d-box2d-collision-shapes-b2edgeshape-h",
+        "public-api.liquidfun-box2d-box2d-collision-shapes-b2polygonshape-h",
+        "public-api.liquidfun-box2d-box2d-collision-shapes-b2shape-h",
+        "source-area.liquidfun-box2d-box2d-collision",
+        "source-area.liquidfun-box2d-box2d-collision-shapes",
+        "subsystem.collision-broad-phase",
+        "subsystem.collision-distance-and-toi",
+        "subsystem.collision-shapes-and-manifolds",
+    ])
+    .expect("successful collision comparison should emit its covered leaves");
 }
 
 #[test]

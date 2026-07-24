@@ -1,5 +1,7 @@
 //! Closed corpus and corruption coverage for Phase 10 evidence.
 
+#[path = "support/coverage_observation.rs"]
+mod coverage_observation;
 #[path = "phase10_corpus/evidence_output.rs"]
 mod evidence_output;
 
@@ -858,5 +860,13 @@ fn corpus_executes_d0_replay_and_two_engine_debug_release_comparison() {
         ));
     }
     assert_eq!(witnessed_phase10_leaves, expected_phase10_leaves);
+    coverage_observation::observe(&[
+        "public-api.liquidfun-box2d-box2d-particle-b2particleassembly-h",
+        "public-api.liquidfun-box2d-box2d-particle-b2particlegroup-h",
+        "source-area.liquidfun-box2d-box2d-particle",
+        "subsystem.particle-groups-pairs-and-triads",
+        "subsystem.particle-solver-behaviors",
+    ])
+    .expect("successful Phase 10 comparison should emit its covered leaves");
     evidence_output::write_if_requested(&root, &manifest, &evidence_cases);
 }
