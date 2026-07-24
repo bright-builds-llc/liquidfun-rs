@@ -204,7 +204,7 @@ fn validate_record_identity(
         || record.toolchain != required.toolchain
         || record.review_status != "reviewed"
         || record.status != "passed"
-        || !is_identifier(&record.producer.run_id)
+        || !is_run_id(&record.producer.run_id)
         || !is_sha256(&record.artifact_sha256)
         || !is_sha256(&record.payload_sha256)
     {
@@ -1020,12 +1020,11 @@ fn require_sha256(value: &str, category: &'static str) -> Result<(), ReleaseErro
     Ok(())
 }
 
-fn is_identifier(value: &str) -> bool {
+fn is_run_id(value: &str) -> bool {
     !value.is_empty()
-        && value.len() <= 128
-        && value
-            .bytes()
-            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_' | b'.' | b'/'))
+        && value.len() <= 20
+        && value.bytes().all(|byte| byte.is_ascii_digit())
+        && !value.starts_with('0')
 }
 
 fn is_full_sha(value: &str) -> bool {

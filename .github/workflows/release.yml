@@ -1,0 +1,187 @@
+name: Release candidate evidence
+
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_sha:
+        description: Frozen lowercase 40-hex source-candidate commit
+        required: true
+        type: string
+      platform_run_id:
+        description: Reviewed platform workflow run
+        required: true
+        type: string
+      oracle_run_id:
+        description: Reviewed Phase 11 oracle workflow run
+        required: true
+        type: string
+      safety_run_id:
+        description: Reviewed Rust safety workflow run
+        required: true
+        type: string
+      fuzz_run_id:
+        description: Reviewed fuzz workflow run
+        required: true
+        type: string
+      regressions_run_id:
+        description: Reviewed named-regressions workflow run
+        required: true
+        type: string
+      coverage_run_id:
+        description: Reviewed coverage workflow run
+        required: true
+        type: string
+      performance_run_id:
+        description: Reviewed controlled performance workflow run
+        required: true
+        type: string
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: release-candidate-${{ inputs.candidate_sha }}
+  cancel-in-progress: false
+
+jobs:
+  release-candidate:
+    name: Construct frozen release-candidate evidence
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+      OUTPUT_DIRECTORY: target/phase12-release/${{ inputs.candidate_sha }}
+      DOWNLOAD_DIRECTORY: target/phase12-release-downloads
+      RELEASE_RUN_ID: ${{ github.run_id }}
+    steps:
+      - name: Check out the exact candidate without submodules
+        # actions/checkout v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+          ref: ${{ inputs.candidate_sha }}
+          submodules: false
+
+      - name: Verify detached frozen source identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$CANDIDATE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          git checkout --detach "$CANDIDATE_SHA"
+          test -z "$(git status --short)"
+
+      - name: Install exact inexpensive audit tooling
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo install cargo-deny --version 0.20.2 --locked
+          cargo deny --version | grep -Fx 'cargo-deny 0.20.2'
+
+      - name: Run inexpensive candidate checks
+        shell: bash
+        run: >-
+          bash scripts/phase12-release-evidence.sh prepare
+          "$CANDIDATE_SHA" "$PWD/$OUTPUT_DIRECTORY" "$RELEASE_RUN_ID"
+
+      - name: Download exact reviewed producer artifacts
+        # actions/download-artifact v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          github-token: ${{ github.token }}
+          run-id: ${{ inputs.platform_run_id }}
+          pattern: '*-${{ inputs.platform_run_id }}-${{ inputs.candidate_sha }}'
+          path: ${{ env.DOWNLOAD_DIRECTORY }}
+
+      - name: Download exact oracle artifacts
+        # actions/download-artifact v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          github-token: ${{ github.token }}
+          run-id: ${{ inputs.oracle_run_id }}
+          pattern: 'phase11-*-${{ inputs.oracle_run_id }}-${{ inputs.candidate_sha }}'
+          path: ${{ env.DOWNLOAD_DIRECTORY }}
+
+      - name: Download exact Rust safety artifacts
+        # actions/download-artifact v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          github-token: ${{ github.token }}
+          run-id: ${{ inputs.safety_run_id }}
+          pattern: 'phase12-*-${{ inputs.safety_run_id }}-${{ inputs.candidate_sha }}'
+          path: ${{ env.DOWNLOAD_DIRECTORY }}
+
+      - name: Download exact fuzz artifacts
+        # actions/download-artifact v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          github-token: ${{ github.token }}
+          run-id: ${{ inputs.fuzz_run_id }}
+          pattern: 'fuzz-*-${{ inputs.fuzz_run_id }}-${{ inputs.candidate_sha }}'
+          path: ${{ env.DOWNLOAD_DIRECTORY }}
+
+      - name: Download the distinct exact regressions artifact
+        # actions/download-artifact v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          github-token: ${{ github.token }}
+          run-id: ${{ inputs.regressions_run_id }}
+          name: phase12-regressions-${{ inputs.candidate_sha }}
+          path: ${{ env.DOWNLOAD_DIRECTORY }}/phase12-regressions-${{ inputs.candidate_sha }}
+
+      - name: Download exact coverage artifacts
+        # actions/download-artifact v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          github-token: ${{ github.token }}
+          run-id: ${{ inputs.coverage_run_id }}
+          pattern: 'phase12-*-coverage-${{ inputs.coverage_run_id }}-${{ inputs.candidate_sha }}'
+          path: ${{ env.DOWNLOAD_DIRECTORY }}
+
+      - name: Download exact performance artifact
+        # actions/download-artifact v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          github-token: ${{ github.token }}
+          run-id: ${{ inputs.performance_run_id }}
+          name: phase12-performance-${{ inputs.performance_run_id }}-${{ inputs.candidate_sha }}
+          path: ${{ env.DOWNLOAD_DIRECTORY }}/phase12-performance-${{ inputs.performance_run_id }}-${{ inputs.candidate_sha }}
+
+      - name: Validate producers and construct the confined manifest
+        shell: bash
+        run: >-
+          bash scripts/phase12-release-evidence.sh aggregate
+          "$CANDIDATE_SHA" "$PWD/$OUTPUT_DIRECTORY" "$PWD/$DOWNLOAD_DIRECTORY"
+          "$RELEASE_RUN_ID" "${{ inputs.platform_run_id }}" "${{ inputs.oracle_run_id }}"
+          "${{ inputs.safety_run_id }}" "${{ inputs.fuzz_run_id }}"
+          "${{ inputs.regressions_run_id }}" "${{ inputs.coverage_run_id }}"
+          "${{ inputs.performance_run_id }}"
+
+      - name: Authorize the frozen evidence set
+        shell: bash
+        run: >-
+          cargo xtask release audit
+          --manifest "$OUTPUT_DIRECTORY/candidate-manifest.json"
+          --candidate "$CANDIDATE_SHA" --output json
+          > "$OUTPUT_DIRECTORY/audit-report.json"
+
+      - name: Publish audit identity last
+        shell: bash
+        run: >-
+          bash scripts/phase12-release-evidence.sh publish-identity-last
+          "$CANDIDATE_SHA" "$PWD/$OUTPUT_DIRECTORY" "$RELEASE_RUN_ID"
+
+      - name: Upload validated release-candidate evidence
+        # actions/upload-artifact v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: phase12-release-${{ github.run_id }}-${{ inputs.candidate_sha }}
+          path: |
+            ${{ env.OUTPUT_DIRECTORY }}/candidate-manifest.json
+            ${{ env.OUTPUT_DIRECTORY }}/audit-report.json
+            ${{ env.OUTPUT_DIRECTORY }}/audit-identity.json
+            ${{ env.OUTPUT_DIRECTORY }}/package/package-identity.json
+          if-no-files-found: error
+          retention-days: 90

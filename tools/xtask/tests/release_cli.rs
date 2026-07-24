@@ -71,7 +71,7 @@ impl Fixture {
                 "producer": {
                     "workflow": evidence.workflow,
                     "job": evidence.job,
-                    "run_id": format!("run-{index}"),
+                    "run_id": (index + 1).to_string(),
                 },
                 "artifact_path": repository_relative(&repository, &artifact_path),
                 "artifact_sha256": sha256(&artifact_bytes),
@@ -209,6 +209,33 @@ fn manifest_rejects_mixed_candidates_bad_hashes_duplicates_and_unreviewed_items(
     for (name, manifest, category) in cases {
         let manifest_path = fixture.write_manifest(name, &manifest);
         assert_failure_contains(&run_audit(&manifest_path, "json"), category, name);
+    }
+}
+
+#[test]
+fn manifest_rejects_wrong_producer_workflow_job_and_run_identity() {
+    // Arrange
+    let fixture = Fixture::complete("producer-negatives");
+    let mut wrong_workflow = fixture.manifest.clone();
+    wrong_workflow["items"][0]["producer"]["workflow"] = json!("substituted.yml");
+    let mut wrong_job = fixture.manifest.clone();
+    wrong_job["items"][0]["producer"]["job"] = json!("substituted");
+    let mut malformed_run = fixture.manifest.clone();
+    malformed_run["items"][0]["producer"]["run_id"] = json!("run-1");
+    let cases = [
+        ("wrong-workflow.json", wrong_workflow),
+        ("wrong-job.json", wrong_job),
+        ("malformed-run.json", malformed_run),
+    ];
+
+    // Act / Assert
+    for (name, manifest) in cases {
+        let manifest_path = fixture.write_manifest(name, &manifest);
+        assert_failure_contains(
+            &run_audit(&manifest_path, "json"),
+            "release/evidence-identity",
+            name,
+        );
     }
 }
 
@@ -359,6 +386,106 @@ fn package_hash_must_join_every_msrv_and_platform_record() {
 
     // Assert
     assert_failure_contains(&output, "release/package-drift", "package drift");
+}
+
+#[test]
+fn release_constructor_is_check_first_aggregate_only_and_identity_last() {
+    // Arrange
+    let repository = repository_root();
+    let workflow = fs::read_to_string(repository.join(".github/workflows/release.yml"))
+        .expect("release workflow");
+    let script = fs::read_to_string(repository.join("scripts/phase12-release-evidence.sh"))
+        .expect("release constructor");
+
+    // Act
+    let cheap = workflow
+        .find("Run inexpensive candidate checks")
+        .expect("cheap checks");
+    let download = workflow
+        .find("Download exact reviewed producer artifacts")
+        .expect("artifact download");
+    let audit = workflow.find("release audit").expect("release audit");
+    let upload = workflow
+        .find("Upload validated release-candidate evidence")
+        .expect("validated upload");
+
+    // Assert
+    assert!(cheap < download && download < audit && audit < upload);
+    assert_eq!(workflow.matches("release audit").count(), 1);
+    assert!(workflow.contains("cancel-in-progress: false"));
+    assert!(script.contains("cargo publish -p liquidfun --dry-run"));
+    assert!(!workflow.contains("cargo publish -p liquidfun\n"));
+    assert!(!script.contains("cargo publish -p liquidfun\n"));
+    assert!(script.contains("set -euo pipefail"));
+    assert!(script.contains("publish_identity_last"));
+    for forbidden in [
+        "cargo fuzz",
+        "cargo bench",
+        "phase12-miri.sh run",
+        "phase12-rust-sanitizers.sh run",
+        "phase12-coverage.sh rust",
+        "phase12-performance.sh paired",
+        "phase12-regressions.sh run",
+    ] {
+        assert!(
+            !workflow.contains(forbidden) && !script.contains(forbidden),
+            "constructor reruns an expensive producer: {forbidden}"
+        );
+    }
+}
+
+#[test]
+fn release_constructor_names_every_exact_artifact_and_never_writes_tracked_readiness() {
+    // Arrange
+    let repository = repository_root();
+    let workflow = fs::read_to_string(repository.join(".github/workflows/release.yml"))
+        .expect("release workflow");
+    let script = fs::read_to_string(repository.join("scripts/phase12-release-evidence.sh"))
+        .expect("release constructor");
+
+    // Act / Assert
+    for artifact_pattern in [
+        "phase12-package-",
+        "phase12-platform-msrv-",
+        "phase12-platform-x86_64-unknown-linux-gnu-",
+        "phase12-platform-aarch64-unknown-linux-gnu-",
+        "phase12-platform-aarch64-apple-darwin-",
+        "phase12-platform-x86_64-pc-windows-msvc-",
+        "phase12-platform-x86_64-apple-darwin",
+        "phase11-canonical-",
+        "phase11-sanitizer-",
+        "phase12-miri-",
+        "phase12-rust-sanitizer-",
+        "fuzz-protocol-",
+        "fuzz-shapes_collision-",
+        "fuzz-world_mutation-",
+        "fuzz-particles-",
+        "fuzz-groups_ownership-",
+        "phase12-regressions-",
+        "phase12-rust-coverage-",
+        "phase12-cpp-coverage-",
+        "phase12-differential-coverage-",
+        "phase12-performance-",
+    ] {
+        assert!(
+            script.contains(artifact_pattern),
+            "missing exact artifact pattern: {artifact_pattern}"
+        );
+    }
+    for tracked_output in [
+        "reference/release/candidate-manifest.json",
+        "reference/release/readiness.json",
+        "reference/release/audit.json",
+    ] {
+        assert!(
+            !workflow.contains(tracked_output) && !script.contains(tracked_output),
+            "constructor writes tracked readiness: {tracked_output}"
+        );
+    }
+    assert!(script.contains("validate_artifact_set"));
+    assert!(script.contains("validate_producer_identities"));
+    assert!(script.contains("candidate-manifest.json"));
+    assert!(script.contains("audit-report.json"));
 }
 
 #[test]

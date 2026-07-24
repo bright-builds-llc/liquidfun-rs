@@ -3,8 +3,8 @@ schema_version = 1
 [[evidence]]
 kind = "package"
 target = "all"
-workflow = "platform.yml"
-job = "package"
+workflow = "release.yml"
+job = "release-candidate"
 toolchain = "rust-1.97.0"
 
 [[evidence]]
@@ -108,27 +108,27 @@ toolchain = "clang-22.1.8+rust-1.97.0"
 [[evidence]]
 kind = "docs"
 target = "all"
-workflow = "ci.yml"
-job = "quality"
+workflow = "release.yml"
+job = "release-candidate"
 toolchain = "rust-1.97.0"
 
 [[evidence]]
 kind = "notices"
 target = "all"
-workflow = "ci.yml"
-job = "quality"
+workflow = "release.yml"
+job = "release-candidate"
 toolchain = "rust-1.97.0"
 
 [[evidence]]
 kind = "corpus_closure"
 target = "all"
-workflow = "ci.yml"
-job = "quality"
+workflow = "release.yml"
+job = "release-candidate"
 toolchain = "rust-1.97.0"
 
 [[evidence]]
 kind = "compatibility_closure"
 target = "all"
-workflow = "ci.yml"
-job = "quality"
+workflow = "release.yml"
+job = "release-candidate"
 toolchain = "rust-1.97.0"
