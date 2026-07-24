@@ -165,12 +165,24 @@ CatalogRequest catalog_request(
       request.identity.request_id, request.identity.resolved_sha256, payload};
 }
 
-std::string run_untimed(const CatalogRequest& request) {
-  CatalogExecutionSession session(request);
+std::uint32_t execution_units(std::string_view size_point) {
+  if (size_point == "fixed") return 1U;
+  if (size_point == "work_units128") return 128U;
+  if (size_point == "work_units1024") return 1024U;
+  if (size_point == "work_units8192") return 8192U;
+  throw std::runtime_error("unknown benchmark work-unit point");
+}
+
+std::string run_untimed(
+    const CatalogRequest& request,
+    std::uint32_t units) {
   std::string final_checkpoint;
-  while (!session.finished()) {
-    session.execute_next_logical_action();
-    final_checkpoint = session.capture_current_checkpoint();
+  for (std::uint32_t unit = 0; unit < units; ++unit) {
+    CatalogExecutionSession session(request);
+    while (!session.finished()) {
+      session.execute_next_logical_action();
+      final_checkpoint = session.capture_current_checkpoint();
+    }
   }
   if (final_checkpoint.empty()) {
     throw std::runtime_error("benchmark produced no semantic checkpoint");
@@ -255,13 +267,18 @@ std::optional<std::pair<std::string, std::uint64_t>> profile_diagnostic(
   if (!request.identity.profile_enabled || !maybe_phase.has_value()) {
     return std::nullopt;
   }
-  CatalogExecutionSession profiled(execution_request);
+  const auto units = execution_units(request.identity.size_point);
   const auto started = std::chrono::steady_clock::now();
-  while (!profiled.finished()) {
-    profiled.execute_next_logical_action();
+  std::string profiled_checkpoint;
+  for (std::uint32_t unit = 0; unit < units; ++unit) {
+    CatalogExecutionSession iteration(execution_request);
+    while (!iteration.finished()) {
+      iteration.execute_next_logical_action();
+    }
+    profiled_checkpoint = iteration.capture_current_checkpoint();
   }
   const auto stopped = std::chrono::steady_clock::now();
-  if (profiled.capture_current_checkpoint() != authority) {
+  if (profiled_checkpoint != authority) {
     throw std::runtime_error(
         "benchmark profile semantic checkpoint mismatch");
   }
@@ -289,12 +306,13 @@ BenchmarkRunTrace BenchmarkRunAdapter::execute(std::string_view record) {
   const auto request = decode_benchmark_run_request(record);
   const auto payload = decode_payload(request);
   const auto execution_request = catalog_request(request, payload);
+  const auto units = execution_units(request.identity.size_point);
 
-  const auto authority = run_untimed(execution_request);
+  const auto authority = run_untimed(execution_request, units);
   observe(BenchmarkRunEvent::authority_prepared);
   for (std::uint32_t index = 0; index < request.identity.warmup_count;
        ++index) {
-    if (run_untimed(execution_request) != authority) {
+    if (run_untimed(execution_request, units) != authority) {
       throw std::runtime_error(
           "benchmark warmup semantic checkpoint mismatch");
     }
@@ -306,8 +324,14 @@ BenchmarkRunTrace BenchmarkRunAdapter::execute(std::string_view record) {
   observe(BenchmarkRunEvent::measured_setup_complete);
   observe(BenchmarkRunEvent::timer_started);
   const auto started = std::chrono::steady_clock::now();
-  while (!measured->finished()) {
-    measured->execute_next_logical_action();
+  for (std::uint32_t unit = 0; unit < units; ++unit) {
+    if (unit > 0U) {
+      measured = std::make_unique<CatalogExecutionSession>(
+          execution_request);
+    }
+    while (!measured->finished()) {
+      measured->execute_next_logical_action();
+    }
   }
   const auto stopped = std::chrono::steady_clock::now();
   observe(BenchmarkRunEvent::timer_stopped);

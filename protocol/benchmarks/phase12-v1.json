@@ -7,6 +7,7 @@
         "native_rust",
         "pinned_cpp_oracle"
       ],
+      "execution_sha256": "b07a79c35c83706ca0f9f2748251cf1de41594660daee9b28e42c15b2f467cf3",
       "logical_horizon": 1,
       "optimization_mode": "release_scalar",
       "regions": {
@@ -35,6 +36,7 @@
         "native_rust",
         "pinned_cpp_oracle"
       ],
+      "execution_sha256": "9435a9ffed1380a231d603ad3e03e4e1ca9b675e7b9cde5f513db04a3f57d85e",
       "logical_horizon": 1,
       "optimization_mode": "release_scalar",
       "regions": {
@@ -45,15 +47,15 @@
           "teardown"
         ]
       },
-      "resolved_sha256": "38acf7adfcfeb510cd3254614934d44604bcbd32c12cf15cd5861ae466252dae",
-      "scenario_id": "rigid-runtime-mutation",
+      "resolved_sha256": "3ee1d5758e4217b2bb852c48fcbcf5411ad0a83d1b77b9d9572794f7e4a84b31",
+      "scenario_id": "rigid-world-queries",
       "settings": {
         "particle_iterations": 1,
         "position_iterations": 3,
         "timestep_bits": 1015580809,
         "velocity_iterations": 8
       },
-      "size_point": "entities128",
+      "size_point": "work_units128",
       "workload": "broad_phase"
     },
     {
@@ -63,6 +65,7 @@
         "native_rust",
         "pinned_cpp_oracle"
       ],
+      "execution_sha256": "d8ce0f641aa58718a044d06d5028dfa4051dfa409bbd867a3bf4b396404c23ae",
       "logical_horizon": 1,
       "optimization_mode": "release_scalar",
       "regions": {
@@ -73,15 +76,15 @@
           "teardown"
         ]
       },
-      "resolved_sha256": "38acf7adfcfeb510cd3254614934d44604bcbd32c12cf15cd5861ae466252dae",
-      "scenario_id": "rigid-runtime-mutation",
+      "resolved_sha256": "3ee1d5758e4217b2bb852c48fcbcf5411ad0a83d1b77b9d9572794f7e4a84b31",
+      "scenario_id": "rigid-world-queries",
       "settings": {
         "particle_iterations": 1,
         "position_iterations": 3,
         "timestep_bits": 1015580809,
         "velocity_iterations": 8
       },
-      "size_point": "entities1024",
+      "size_point": "work_units1024",
       "workload": "broad_phase"
     },
     {
@@ -91,6 +94,7 @@
         "native_rust",
         "pinned_cpp_oracle"
       ],
+      "execution_sha256": "af3cfd653279e23507350621776bebe2a647f54800a92206d037b09195a3a186",
       "logical_horizon": 1,
       "optimization_mode": "release_scalar",
       "regions": {
@@ -101,15 +105,15 @@
           "teardown"
         ]
       },
-      "resolved_sha256": "38acf7adfcfeb510cd3254614934d44604bcbd32c12cf15cd5861ae466252dae",
-      "scenario_id": "rigid-runtime-mutation",
+      "resolved_sha256": "3ee1d5758e4217b2bb852c48fcbcf5411ad0a83d1b77b9d9572794f7e4a84b31",
+      "scenario_id": "rigid-world-queries",
       "settings": {
         "particle_iterations": 1,
         "position_iterations": 3,
         "timestep_bits": 1015580809,
         "velocity_iterations": 8
       },
-      "size_point": "entities8192",
+      "size_point": "work_units8192",
       "workload": "broad_phase"
     },
     {
@@ -119,7 +123,8 @@
         "native_rust",
         "pinned_cpp_oracle"
       ],
-      "logical_horizon": 1,
+      "execution_sha256": "d650581ea77e23cade1ea7f9ff476150d7aaf67edbd3bf33b840c2ef282608c3",
+      "logical_horizon": 3,
       "optimization_mode": "release_scalar",
       "regions": {
         "ordered": [
@@ -129,8 +134,8 @@
           "teardown"
         ]
       },
-      "resolved_sha256": "38acf7adfcfeb510cd3254614934d44604bcbd32c12cf15cd5861ae466252dae",
-      "scenario_id": "rigid-runtime-mutation",
+      "resolved_sha256": "e869d034770c9cf70c06c66f0f608e41aeb410d435c2a54c3c4649802a4c4482",
+      "scenario_id": "rigid-contact-lifecycle",
       "settings": {
         "particle_iterations": 1,
         "position_iterations": 3,
@@ -147,7 +152,8 @@
         "native_rust",
         "pinned_cpp_oracle"
       ],
-      "logical_horizon": 1,
+      "execution_sha256": "b2363316cd19147b032df14c786418a7f1d476358eab21413d097ba19cf04823",
+      "logical_horizon": 8,
       "optimization_mode": "release_scalar",
       "regions": {
         "ordered": [
@@ -157,8 +163,8 @@
           "teardown"
         ]
       },
-      "resolved_sha256": "38acf7adfcfeb510cd3254614934d44604bcbd32c12cf15cd5861ae466252dae",
-      "scenario_id": "rigid-runtime-mutation",
+      "resolved_sha256": "6d22b12e5abc8e7f06dac08dda38c9001a5b31c8f98f81938129a66334c6c052",
+      "scenario_id": "rigid-stack-stability",
       "settings": {
         "particle_iterations": 1,
         "position_iterations": 3,
@@ -175,7 +181,8 @@
         "native_rust",
         "pinned_cpp_oracle"
       ],
-      "logical_horizon": 1,
+      "execution_sha256": "2c91bf5213ea1f13cf97711d20c464fb184c13143fb11270c7f39ca466b7f65b",
+      "logical_horizon": 2,
       "optimization_mode": "release_scalar",
       "regions": {
         "ordered": [
@@ -185,8 +192,8 @@
           "teardown"
         ]
       },
-      "resolved_sha256": "38acf7adfcfeb510cd3254614934d44604bcbd32c12cf15cd5861ae466252dae",
-      "scenario_id": "rigid-runtime-mutation",
+      "resolved_sha256": "1774ae4c992cbd4082c0a88e053bf0763eabfb9478a9a06343fe399fef84d671",
+      "scenario_id": "rigid-continuous-collision",
       "settings": {
         "particle_iterations": 1,
         "position_iterations": 3,
@@ -203,6 +210,7 @@
         "native_rust",
         "pinned_cpp_oracle"
       ],
+      "execution_sha256": "0f63534e674e9e812c57805b9c0a51a255430f6a52b3f06ca3970c52a6caff7b",
       "logical_horizon": 2,
       "optimization_mode": "release_scalar",
       "regions": {
@@ -231,6 +239,7 @@
         "native_rust",
         "pinned_cpp_oracle"
       ],
+      "execution_sha256": "8137edea1353db57d690f054bebac8026d9128e2edf1d1eceda9eb2abf4d6eb7",
       "logical_horizon": 4,
       "optimization_mode": "release_scalar",
       "regions": {
@@ -249,7 +258,7 @@
         "timestep_bits": 1015580809,
         "velocity_iterations": 8
       },
-      "size_point": "entities128",
+      "size_point": "work_units128",
       "workload": "particle_lifecycle"
     },
     {
@@ -259,6 +268,7 @@
         "native_rust",
         "pinned_cpp_oracle"
       ],
+      "execution_sha256": "01845b2396ed18f64a5e30694398d5cec458035dc1044df5136e39e4bcd8a443",
       "logical_horizon": 4,
       "optimization_mode": "release_scalar",
       "regions": {
@@ -277,7 +287,7 @@
         "timestep_bits": 1015580809,
         "velocity_iterations": 8
       },
-      "size_point": "entities1024",
+      "size_point": "work_units1024",
       "workload": "particle_lifecycle"
     },
     {
@@ -287,6 +297,7 @@
         "native_rust",
         "pinned_cpp_oracle"
       ],
+      "execution_sha256": "d8f757f6b17aae613656c279eea8a096b17850336eb1771cccf6199bea89d274",
       "logical_horizon": 4,
       "optimization_mode": "release_scalar",
       "regions": {
@@ -305,7 +316,7 @@
         "timestep_bits": 1015580809,
         "velocity_iterations": 8
       },
-      "size_point": "entities8192",
+      "size_point": "work_units8192",
       "workload": "particle_lifecycle"
     },
     {
@@ -315,6 +326,7 @@
         "native_rust",
         "pinned_cpp_oracle"
       ],
+      "execution_sha256": "542252da24e579d5712f25c962a885ca1fff37a29afd9453986532e8b0714af3",
       "logical_horizon": 4,
       "optimization_mode": "release_scalar",
       "regions": {
@@ -333,7 +345,7 @@
         "timestep_bits": 1015580809,
         "velocity_iterations": 8
       },
-      "size_point": "entities128",
+      "size_point": "work_units128",
       "workload": "particle_contacts"
     },
     {
@@ -343,6 +355,7 @@
         "native_rust",
         "pinned_cpp_oracle"
       ],
+      "execution_sha256": "672afa98045f12541fdd8f75919e6a088b26e094ad8b81af11b40113529734cc",
       "logical_horizon": 4,
       "optimization_mode": "release_scalar",
       "regions": {
@@ -361,7 +374,7 @@
         "timestep_bits": 1015580809,
         "velocity_iterations": 8
       },
-      "size_point": "entities1024",
+      "size_point": "work_units1024",
       "workload": "particle_contacts"
     },
     {
@@ -371,6 +384,7 @@
         "native_rust",
         "pinned_cpp_oracle"
       ],
+      "execution_sha256": "646d2f6fc49e92a3faedfc3b42f00d62aafe06744aef2b33e6998c1f5588eda6",
       "logical_horizon": 4,
       "optimization_mode": "release_scalar",
       "regions": {
@@ -389,7 +403,7 @@
         "timestep_bits": 1015580809,
         "velocity_iterations": 8
       },
-      "size_point": "entities8192",
+      "size_point": "work_units8192",
       "workload": "particle_contacts"
     },
     {
@@ -399,6 +413,7 @@
         "native_rust",
         "pinned_cpp_oracle"
       ],
+      "execution_sha256": "fe0a7d4fd6f385470439a6d3f24850f7423e8b1a6c300f0b8bccd671fa836008",
       "logical_horizon": 4,
       "optimization_mode": "release_scalar",
       "regions": {
@@ -409,15 +424,15 @@
           "teardown"
         ]
       },
-      "resolved_sha256": "93a0f8c793f213b3dda6911e62830d0f02a3b14324193244d0cd6e1693512cda",
-      "scenario_id": "particle-group-construction-append",
+      "resolved_sha256": "40571a04188197f1ba8c145ac932bfb2c68c9aa74859ab2fa4b277438d331a43",
+      "scenario_id": "particle-mutations",
       "settings": {
         "particle_iterations": 2,
         "position_iterations": 3,
         "timestep_bits": 1015580809,
         "velocity_iterations": 8
       },
-      "size_point": "entities128",
+      "size_point": "work_units128",
       "workload": "particle_sort"
     },
     {
@@ -427,6 +442,7 @@
         "native_rust",
         "pinned_cpp_oracle"
       ],
+      "execution_sha256": "21da822816039ba27f3b074cdbe0d4c504e0d0dee19d669a5fc84599ab9cb3f4",
       "logical_horizon": 4,
       "optimization_mode": "release_scalar",
       "regions": {
@@ -437,15 +453,15 @@
           "teardown"
         ]
       },
-      "resolved_sha256": "93a0f8c793f213b3dda6911e62830d0f02a3b14324193244d0cd6e1693512cda",
-      "scenario_id": "particle-group-construction-append",
+      "resolved_sha256": "40571a04188197f1ba8c145ac932bfb2c68c9aa74859ab2fa4b277438d331a43",
+      "scenario_id": "particle-mutations",
       "settings": {
         "particle_iterations": 2,
         "position_iterations": 3,
         "timestep_bits": 1015580809,
         "velocity_iterations": 8
       },
-      "size_point": "entities1024",
+      "size_point": "work_units1024",
       "workload": "particle_sort"
     },
     {
@@ -455,6 +471,7 @@
         "native_rust",
         "pinned_cpp_oracle"
       ],
+      "execution_sha256": "82222e526fda3544e565cabdfc9fdc4f3ebc7cc53164a5dc467ccc83603c5539",
       "logical_horizon": 4,
       "optimization_mode": "release_scalar",
       "regions": {
@@ -465,15 +482,15 @@
           "teardown"
         ]
       },
-      "resolved_sha256": "93a0f8c793f213b3dda6911e62830d0f02a3b14324193244d0cd6e1693512cda",
-      "scenario_id": "particle-group-construction-append",
+      "resolved_sha256": "40571a04188197f1ba8c145ac932bfb2c68c9aa74859ab2fa4b277438d331a43",
+      "scenario_id": "particle-mutations",
       "settings": {
         "particle_iterations": 2,
         "position_iterations": 3,
         "timestep_bits": 1015580809,
         "velocity_iterations": 8
       },
-      "size_point": "entities8192",
+      "size_point": "work_units8192",
       "workload": "particle_sort"
     },
     {
@@ -483,6 +500,7 @@
         "native_rust",
         "pinned_cpp_oracle"
       ],
+      "execution_sha256": "5701a6153610c6b3737e1a745634e946301ee4e1a7e404cdb022df6a80054242",
       "logical_horizon": 4,
       "optimization_mode": "release_scalar",
       "regions": {
@@ -493,15 +511,15 @@
           "teardown"
         ]
       },
-      "resolved_sha256": "93a0f8c793f213b3dda6911e62830d0f02a3b14324193244d0cd6e1693512cda",
-      "scenario_id": "particle-group-construction-append",
+      "resolved_sha256": "18df5f83ee254426235f8c6effc1cf75b8f72a76bffa20621f54f429612ae8b5",
+      "scenario_id": "particle-flags-pressure-repulsive",
       "settings": {
         "particle_iterations": 2,
         "position_iterations": 3,
         "timestep_bits": 1015580809,
         "velocity_iterations": 8
       },
-      "size_point": "entities128",
+      "size_point": "work_units128",
       "workload": "particle_pressure"
     },
     {
@@ -511,6 +529,7 @@
         "native_rust",
         "pinned_cpp_oracle"
       ],
+      "execution_sha256": "14cfe142583799435809cff6bc20643337f68136ff5b8836c4656e3ba3833683",
       "logical_horizon": 4,
       "optimization_mode": "release_scalar",
       "regions": {
@@ -521,15 +540,15 @@
           "teardown"
         ]
       },
-      "resolved_sha256": "93a0f8c793f213b3dda6911e62830d0f02a3b14324193244d0cd6e1693512cda",
-      "scenario_id": "particle-group-construction-append",
+      "resolved_sha256": "18df5f83ee254426235f8c6effc1cf75b8f72a76bffa20621f54f429612ae8b5",
+      "scenario_id": "particle-flags-pressure-repulsive",
       "settings": {
         "particle_iterations": 2,
         "position_iterations": 3,
         "timestep_bits": 1015580809,
         "velocity_iterations": 8
       },
-      "size_point": "entities1024",
+      "size_point": "work_units1024",
       "workload": "particle_pressure"
     },
     {
@@ -539,6 +558,7 @@
         "native_rust",
         "pinned_cpp_oracle"
       ],
+      "execution_sha256": "45ae1c524234c2e0ea47cf74b634663e3011d561b97460571c15f96624722f87",
       "logical_horizon": 4,
       "optimization_mode": "release_scalar",
       "regions": {
@@ -549,15 +569,15 @@
           "teardown"
         ]
       },
-      "resolved_sha256": "93a0f8c793f213b3dda6911e62830d0f02a3b14324193244d0cd6e1693512cda",
-      "scenario_id": "particle-group-construction-append",
+      "resolved_sha256": "18df5f83ee254426235f8c6effc1cf75b8f72a76bffa20621f54f429612ae8b5",
+      "scenario_id": "particle-flags-pressure-repulsive",
       "settings": {
         "particle_iterations": 2,
         "position_iterations": 3,
         "timestep_bits": 1015580809,
         "velocity_iterations": 8
       },
-      "size_point": "entities8192",
+      "size_point": "work_units8192",
       "workload": "particle_pressure"
     },
     {
@@ -567,6 +587,7 @@
         "native_rust",
         "pinned_cpp_oracle"
       ],
+      "execution_sha256": "076204f16dd7beba17d209dca0f91b62bfb0ca6175a38d579e34283feb4c7025",
       "logical_horizon": 4,
       "optimization_mode": "release_scalar",
       "regions": {
@@ -585,7 +606,7 @@
         "timestep_bits": 1015580809,
         "velocity_iterations": 8
       },
-      "size_point": "entities128",
+      "size_point": "work_units128",
       "workload": "large_particle_system"
     },
     {
@@ -595,6 +616,7 @@
         "native_rust",
         "pinned_cpp_oracle"
       ],
+      "execution_sha256": "9a959cbb31d6b66136d654831516f731a404ccf94f4df326ee8fc208b8252a2d",
       "logical_horizon": 4,
       "optimization_mode": "release_scalar",
       "regions": {
@@ -613,7 +635,7 @@
         "timestep_bits": 1015580809,
         "velocity_iterations": 8
       },
-      "size_point": "entities1024",
+      "size_point": "work_units1024",
       "workload": "large_particle_system"
     },
     {
@@ -623,6 +645,7 @@
         "native_rust",
         "pinned_cpp_oracle"
       ],
+      "execution_sha256": "71fcf6a61770f051b7ca82b7cf23128d224efe1c3438cf90fa74530d1f1b9d23",
       "logical_horizon": 4,
       "optimization_mode": "release_scalar",
       "regions": {
@@ -641,7 +664,7 @@
         "timestep_bits": 1015580809,
         "velocity_iterations": 8
       },
-      "size_point": "entities8192",
+      "size_point": "work_units8192",
       "workload": "large_particle_system"
     },
     {
@@ -651,7 +674,8 @@
         "native_rust",
         "pinned_cpp_oracle"
       ],
-      "logical_horizon": 1,
+      "execution_sha256": "d1d15fc7440cc2069d7f87189e908aea94958f58bd8e86b70f41278ad577f502",
+      "logical_horizon": 5,
       "optimization_mode": "release_scalar",
       "regions": {
         "ordered": [
@@ -661,15 +685,15 @@
           "teardown"
         ]
       },
-      "resolved_sha256": "38acf7adfcfeb510cd3254614934d44604bcbd32c12cf15cd5861ae466252dae",
-      "scenario_id": "rigid-runtime-mutation",
+      "resolved_sha256": "55d09eb9488bc1bf0595fdfb28b8c55fb28ecd14fc4cb65e5ad45b2d2bdbc54a",
+      "scenario_id": "particle-group-solid-rigid",
       "settings": {
-        "particle_iterations": 1,
+        "particle_iterations": 2,
         "position_iterations": 3,
         "timestep_bits": 1015580809,
         "velocity_iterations": 8
       },
-      "size_point": "entities128",
+      "size_point": "work_units128",
       "workload": "mixed_world"
     },
     {
@@ -679,7 +703,8 @@
         "native_rust",
         "pinned_cpp_oracle"
       ],
-      "logical_horizon": 1,
+      "execution_sha256": "a9c1fbcf84deea28217d0a2260deb6ea39c4c8784227b27c0370552ac96837f2",
+      "logical_horizon": 5,
       "optimization_mode": "release_scalar",
       "regions": {
         "ordered": [
@@ -689,15 +714,15 @@
           "teardown"
         ]
       },
-      "resolved_sha256": "38acf7adfcfeb510cd3254614934d44604bcbd32c12cf15cd5861ae466252dae",
-      "scenario_id": "rigid-runtime-mutation",
+      "resolved_sha256": "55d09eb9488bc1bf0595fdfb28b8c55fb28ecd14fc4cb65e5ad45b2d2bdbc54a",
+      "scenario_id": "particle-group-solid-rigid",
       "settings": {
-        "particle_iterations": 1,
+        "particle_iterations": 2,
         "position_iterations": 3,
         "timestep_bits": 1015580809,
         "velocity_iterations": 8
       },
-      "size_point": "entities1024",
+      "size_point": "work_units1024",
       "workload": "mixed_world"
     },
     {
@@ -707,7 +732,8 @@
         "native_rust",
         "pinned_cpp_oracle"
       ],
-      "logical_horizon": 1,
+      "execution_sha256": "582818b79883305d877e9fa920b778d034e3f5e070358c842d46fd023f5412ff",
+      "logical_horizon": 5,
       "optimization_mode": "release_scalar",
       "regions": {
         "ordered": [
@@ -717,15 +743,15 @@
           "teardown"
         ]
       },
-      "resolved_sha256": "38acf7adfcfeb510cd3254614934d44604bcbd32c12cf15cd5861ae466252dae",
-      "scenario_id": "rigid-runtime-mutation",
+      "resolved_sha256": "55d09eb9488bc1bf0595fdfb28b8c55fb28ecd14fc4cb65e5ad45b2d2bdbc54a",
+      "scenario_id": "particle-group-solid-rigid",
       "settings": {
-        "particle_iterations": 1,
+        "particle_iterations": 2,
         "position_iterations": 3,
         "timestep_bits": 1015580809,
         "velocity_iterations": 8
       },
-      "size_point": "entities8192",
+      "size_point": "work_units8192",
       "workload": "mixed_world"
     },
     {
@@ -735,6 +761,7 @@
         "native_rust",
         "pinned_cpp_oracle"
       ],
+      "execution_sha256": "cf1a424da4b2db017c2817d7f475723db50af3be4d3f823bb31959301d77b9fc",
       "logical_horizon": 3,
       "optimization_mode": "release_scalar",
       "regions": {
@@ -753,7 +780,7 @@
         "timestep_bits": 1015580809,
         "velocity_iterations": 8
       },
-      "size_point": "entities128",
+      "size_point": "work_units128",
       "workload": "aabb_query"
     },
     {
@@ -763,6 +790,7 @@
         "native_rust",
         "pinned_cpp_oracle"
       ],
+      "execution_sha256": "7c7bb2ad8194123f979d98b0e3a7cd24b7fa2288685a2a824c53f59c9bee6ab8",
       "logical_horizon": 3,
       "optimization_mode": "release_scalar",
       "regions": {
@@ -781,7 +809,7 @@
         "timestep_bits": 1015580809,
         "velocity_iterations": 8
       },
-      "size_point": "entities1024",
+      "size_point": "work_units1024",
       "workload": "aabb_query"
     },
     {
@@ -791,6 +819,7 @@
         "native_rust",
         "pinned_cpp_oracle"
       ],
+      "execution_sha256": "ed452bf8170d9a8acfb9a34b1ade1aef376614ff1ccca59b518f7ad850f104ce",
       "logical_horizon": 3,
       "optimization_mode": "release_scalar",
       "regions": {
@@ -809,7 +838,7 @@
         "timestep_bits": 1015580809,
         "velocity_iterations": 8
       },
-      "size_point": "entities8192",
+      "size_point": "work_units8192",
       "workload": "aabb_query"
     },
     {
@@ -819,6 +848,7 @@
         "native_rust",
         "pinned_cpp_oracle"
       ],
+      "execution_sha256": "da2b8e04ebfb3ca902030cfec50732a9c2d639ffb155786c4471487ec16766c1",
       "logical_horizon": 5,
       "optimization_mode": "release_scalar",
       "regions": {
@@ -837,7 +867,7 @@
         "timestep_bits": 1015580809,
         "velocity_iterations": 8
       },
-      "size_point": "entities128",
+      "size_point": "work_units128",
       "workload": "ray_cast"
     },
     {
@@ -847,6 +877,7 @@
         "native_rust",
         "pinned_cpp_oracle"
       ],
+      "execution_sha256": "237fc64b4527c0a76ea58c8f0f0cf7c9f04a92fc5fe6669318a2c762df7f2d2c",
       "logical_horizon": 5,
       "optimization_mode": "release_scalar",
       "regions": {
@@ -865,7 +896,7 @@
         "timestep_bits": 1015580809,
         "velocity_iterations": 8
       },
-      "size_point": "entities1024",
+      "size_point": "work_units1024",
       "workload": "ray_cast"
     },
     {
@@ -875,6 +906,7 @@
         "native_rust",
         "pinned_cpp_oracle"
       ],
+      "execution_sha256": "5abdfe17e99fe4a56fd8d0848b75e26b468a08eace84c5a97fce0e2eaf5b7aaf",
       "logical_horizon": 5,
       "optimization_mode": "release_scalar",
       "regions": {
@@ -893,7 +925,7 @@
         "timestep_bits": 1015580809,
         "velocity_iterations": 8
       },
-      "size_point": "entities8192",
+      "size_point": "work_units8192",
       "workload": "ray_cast"
     }
   ],

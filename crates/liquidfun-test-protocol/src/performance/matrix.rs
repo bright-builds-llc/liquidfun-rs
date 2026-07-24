@@ -7,6 +7,7 @@ use super::{
     PerformanceError, PerformanceErrorKind, PerformancePolicy, PerformanceVersion,
     policy::render_json,
 };
+use crate::{ResolveRequest, resolve_catalog, reviewed_scenario_catalog};
 use crate::{Sha256Hex, render_scenario_catalog_projection};
 
 const FIXED_TIMESTEP_BITS: u32 = 0x3c88_8889;
@@ -93,29 +94,40 @@ impl PerformanceWorkloadKind {
     }
 }
 
-/// Reviewed workload cardinality point.
+/// Reviewed complete-workload execution count.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum PerformanceSizePoint {
     /// Workload has a fixed semantic cardinality.
     Fixed,
-    /// 128 entities, particles, or query candidates.
-    Entities128,
-    /// 1,024 entities, particles, or query candidates.
-    Entities1024,
-    /// 8,192 entities, particles, or query candidates.
-    Entities8192,
+    /// Repeat the bound workload 128 times per measured sample.
+    WorkUnits128,
+    /// Repeat the bound workload 1,024 times per measured sample.
+    WorkUnits1024,
+    /// Repeat the bound workload 8,192 times per measured sample.
+    WorkUnits8192,
 }
 
 impl PerformanceSizePoint {
-    const SWEEP: [Self; 3] = [Self::Entities128, Self::Entities1024, Self::Entities8192];
+    const SWEEP: [Self; 3] = [Self::WorkUnits128, Self::WorkUnits1024, Self::WorkUnits8192];
 
     const fn as_id(self) -> &'static str {
         match self {
             Self::Fixed => "fixed",
-            Self::Entities128 => "128",
-            Self::Entities1024 => "1024",
-            Self::Entities8192 => "8192",
+            Self::WorkUnits128 => "128",
+            Self::WorkUnits1024 => "1024",
+            Self::WorkUnits8192 => "8192",
+        }
+    }
+
+    /// Returns the exact number of complete workload executions measured per sample.
+    #[must_use]
+    pub const fn execution_units(self) -> u32 {
+        match self {
+            Self::Fixed => 1,
+            Self::WorkUnits128 => 128,
+            Self::WorkUnits1024 => 1_024,
+            Self::WorkUnits8192 => 8_192,
         }
     }
 }
@@ -213,6 +225,7 @@ pub struct PerformanceCase {
     scenario_id: Box<str>,
     catalog_sha256: Sha256Hex,
     resolved_sha256: Sha256Hex,
+    execution_sha256: Sha256Hex,
     settings: PerformanceRunSettings,
     logical_horizon: u32,
     optimization_mode: ScalarOptimizationMode,
@@ -233,6 +246,12 @@ impl PerformanceCase {
         self.size_point
     }
 
+    /// Returns the resolved scenario selected for this measured workload.
+    #[must_use]
+    pub const fn scenario_id(&self) -> &str {
+        &self.scenario_id
+    }
+
     /// Returns the catalog projection hash bound to this case.
     #[must_use]
     pub const fn catalog_sha256(&self) -> &Sha256Hex {
@@ -243,6 +262,12 @@ impl PerformanceCase {
     #[must_use]
     pub const fn resolved_sha256(&self) -> &Sha256Hex {
         &self.resolved_sha256
+    }
+
+    /// Returns the hash of the resolved bytes plus the measured workload driver parameters.
+    #[must_use]
+    pub const fn execution_sha256(&self) -> &Sha256Hex {
+        &self.execution_sha256
     }
 
     /// Returns the fixed logical measurement horizon.
@@ -434,16 +459,44 @@ fn case_for(
     catalog_sha256: Sha256Hex,
 ) -> Result<PerformanceCase, PerformanceError> {
     let binding = scenario_binding(workload);
+    let catalog = reviewed_scenario_catalog()
+        .map_err(|_| PerformanceError::new(PerformanceErrorKind::CatalogProjection))?;
+    let definition = catalog
+        .definitions()
+        .iter()
+        .find(|definition| definition.slug().as_str() == binding.scenario_id)
+        .ok_or_else(|| PerformanceError::new(PerformanceErrorKind::InvalidCaseBinding))?;
+    let metadata = definition
+        .metadata()
+        .ok_or_else(|| PerformanceError::new(PerformanceErrorKind::InvalidCaseBinding))?;
+    let resolved = resolve_catalog(
+        catalog.definitions(),
+        &ResolveRequest::new(definition.slug().clone(), None, metadata.default_settings()),
+    )
+    .map_err(|_| PerformanceError::new(PerformanceErrorKind::InvalidCaseBinding))?;
+    let logical_horizon = u32::try_from(resolved.checkpoints().len())
+        .map_err(|_| PerformanceError::new(PerformanceErrorKind::InvalidCaseBinding))?;
+    let resolved_sha256 = resolved.identity().content_sha256().clone();
+    let mut execution_hasher = Sha256::new();
+    execution_hasher.update(resolved_sha256.as_str().as_bytes());
+    execution_hasher.update([0]);
+    execution_hasher.update(workload.as_str().as_bytes());
+    execution_hasher.update([0]);
+    execution_hasher.update(size_point.as_id().as_bytes());
+    execution_hasher.update([0]);
+    execution_hasher.update(size_point.execution_units().to_le_bytes());
     Ok(PerformanceCase {
         case_id: format!("{}-{}", workload.as_str(), size_point.as_id()).into_boxed_str(),
         workload,
         size_point,
         scenario_id: binding.scenario_id.into(),
         catalog_sha256,
-        resolved_sha256: Sha256Hex::new(binding.resolved_sha256)
-            .map_err(|_| PerformanceError::new(PerformanceErrorKind::InvalidCaseBinding))?,
-        settings: PerformanceRunSettings::reviewed(binding.particle_iterations),
-        logical_horizon: binding.logical_horizon,
+        resolved_sha256,
+        execution_sha256: Sha256Hex::from_digest(execution_hasher.finalize().into()),
+        settings: PerformanceRunSettings::reviewed(
+            metadata.default_settings().particle_iterations(),
+        ),
+        logical_horizon,
         optimization_mode: ScalarOptimizationMode::ReleaseScalar,
         engine_roles: [
             PerformanceEngineRole::NativeRust,
@@ -455,77 +508,31 @@ fn case_for(
 
 struct ScenarioBinding {
     scenario_id: &'static str,
-    resolved_sha256: &'static str,
-    logical_horizon: u32,
-    particle_iterations: u32,
 }
 
 const fn scenario_binding(workload: PerformanceWorkloadKind) -> ScenarioBinding {
     match workload {
-        PerformanceWorkloadKind::Joints => binding(
-            "joint-distance-behavior",
-            "2eaf8f031603887a6807d185404c839d366905a88c75f4076140c5ece6cf1af4",
-            2,
-            1,
-        ),
-        PerformanceWorkloadKind::ParticleContacts => binding(
-            "particle-contacts-and-coupling",
-            "4f0c0f2279f0360c24c4ea10504b36ce8f506fd8b5a4415dcfd00819ea5de122",
-            4,
-            2,
-        ),
-        PerformanceWorkloadKind::ParticleSort
-        | PerformanceWorkloadKind::ParticlePressure
-        | PerformanceWorkloadKind::LargeParticleSystem => binding(
-            "particle-group-construction-append",
-            "93a0f8c793f213b3dda6911e62830d0f02a3b14324193244d0cd6e1693512cda",
-            4,
-            2,
-        ),
-        PerformanceWorkloadKind::ParticleLifecycle => binding(
-            "particle-system-pause-action",
-            "1a1f8e68f0a05f8cc16c589a7db6c4fb05e93b165fa5da13fb8cf241aaba3826",
-            4,
-            2,
-        ),
-        PerformanceWorkloadKind::AabbQuery => binding(
-            "particle-aabb-query-controls",
-            "1ac03e065afbec5e90770d28578acfcc7b94909704298b2f9d03c50bba561467",
-            3,
-            2,
-        ),
-        PerformanceWorkloadKind::RayCast => binding(
-            "particle-ray-callback-controls",
-            "d1e22656861f3906fbccd3ba033f952467758cd0620ab29a18e4a638b872279e",
-            5,
-            2,
-        ),
-        PerformanceWorkloadKind::WorldStep
-        | PerformanceWorkloadKind::BroadPhase
-        | PerformanceWorkloadKind::NarrowPhase
-        | PerformanceWorkloadKind::ContactSolve
-        | PerformanceWorkloadKind::Ccd
-        | PerformanceWorkloadKind::MixedWorld => binding(
-            "rigid-runtime-mutation",
-            "38acf7adfcfeb510cd3254614934d44604bcbd32c12cf15cd5861ae466252dae",
-            1,
-            1,
-        ),
+        PerformanceWorkloadKind::WorldStep => binding("rigid-runtime-mutation"),
+        PerformanceWorkloadKind::BroadPhase => binding("rigid-world-queries"),
+        PerformanceWorkloadKind::NarrowPhase => binding("rigid-contact-lifecycle"),
+        PerformanceWorkloadKind::ContactSolve => binding("rigid-stack-stability"),
+        PerformanceWorkloadKind::Ccd => binding("rigid-continuous-collision"),
+        PerformanceWorkloadKind::Joints => binding("joint-distance-behavior"),
+        PerformanceWorkloadKind::ParticleLifecycle => binding("particle-system-pause-action"),
+        PerformanceWorkloadKind::ParticleContacts => binding("particle-contacts-and-coupling"),
+        PerformanceWorkloadKind::ParticleSort => binding("particle-mutations"),
+        PerformanceWorkloadKind::ParticlePressure => binding("particle-flags-pressure-repulsive"),
+        PerformanceWorkloadKind::LargeParticleSystem => {
+            binding("particle-group-construction-append")
+        }
+        PerformanceWorkloadKind::MixedWorld => binding("particle-group-solid-rigid"),
+        PerformanceWorkloadKind::AabbQuery => binding("particle-aabb-query-controls"),
+        PerformanceWorkloadKind::RayCast => binding("particle-ray-callback-controls"),
     }
 }
 
-const fn binding(
-    scenario_id: &'static str,
-    resolved_sha256: &'static str,
-    logical_horizon: u32,
-    particle_iterations: u32,
-) -> ScenarioBinding {
-    ScenarioBinding {
-        scenario_id,
-        resolved_sha256,
-        logical_horizon,
-        particle_iterations,
-    }
+const fn binding(scenario_id: &'static str) -> ScenarioBinding {
+    ScenarioBinding { scenario_id }
 }
 
 const fn encoding_error() -> PerformanceError {

@@ -1026,7 +1026,7 @@ BenchmarkRunRequest decode_benchmark_run_request(std::string_view record) {
       "particle_pressure",   "large_particle_system",
       "mixed_world",         "aabb_query",        "ray_cast"};
   constexpr std::array<std::string_view, 4> size_points{
-      "fixed", "entities128", "entities1024", "entities8192"};
+      "fixed", "work_units128", "work_units1024", "work_units8192"};
 
   const auto root = decode_record_node(record);
   const auto& object = as_object(root, "benchmark run request");

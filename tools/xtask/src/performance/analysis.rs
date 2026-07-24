@@ -205,9 +205,9 @@ fn expected_case_ids() -> Option<Vec<String>> {
 const fn size_point_id(size: PerformanceSizePoint) -> &'static str {
     match size {
         PerformanceSizePoint::Fixed => "fixed",
-        PerformanceSizePoint::Entities128 => "128",
-        PerformanceSizePoint::Entities1024 => "1024",
-        PerformanceSizePoint::Entities8192 => "8192",
+        PerformanceSizePoint::WorkUnits128 => "128",
+        PerformanceSizePoint::WorkUnits1024 => "1024",
+        PerformanceSizePoint::WorkUnits8192 => "8192",
     }
 }
 

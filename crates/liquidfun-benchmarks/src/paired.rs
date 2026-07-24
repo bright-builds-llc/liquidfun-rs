@@ -299,9 +299,9 @@ const fn scenario_slug(workload: PerformanceWorkloadKind) -> &'static str {
 const fn size_point_id(size_point: PerformanceSizePoint) -> &'static str {
     match size_point {
         PerformanceSizePoint::Fixed => "fixed",
-        PerformanceSizePoint::Entities128 => "128",
-        PerformanceSizePoint::Entities1024 => "1024",
-        PerformanceSizePoint::Entities8192 => "8192",
+        PerformanceSizePoint::WorkUnits128 => "128",
+        PerformanceSizePoint::WorkUnits1024 => "1024",
+        PerformanceSizePoint::WorkUnits8192 => "8192",
     }
 }
 

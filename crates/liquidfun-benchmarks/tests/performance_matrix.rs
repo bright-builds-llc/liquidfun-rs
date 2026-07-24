@@ -41,9 +41,9 @@ fn complete_matrix_registers_every_workload_and_reviewed_size_point() {
             | PerformanceWorkloadKind::Ccd
             | PerformanceWorkloadKind::Joints => vec![PerformanceSizePoint::Fixed],
             _ => vec![
-                PerformanceSizePoint::Entities128,
-                PerformanceSizePoint::Entities1024,
-                PerformanceSizePoint::Entities8192,
+                PerformanceSizePoint::WorkUnits128,
+                PerformanceSizePoint::WorkUnits1024,
+                PerformanceSizePoint::WorkUnits8192,
             ],
         };
         assert_eq!(size_points, expected, "size-point drift for {workload:?}");

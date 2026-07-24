@@ -3,8 +3,8 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use liquidfun_test_protocol::{
-    CompatibilityStatus, EvidenceTier, HardwareSession, HarnessLimits, PerformanceErrorKind,
-    PerformanceMatrix, PerformancePolicy, PerformanceReportIdentity,
+    CompatibilityStatus, EvidenceTier, HardwareSession, HarnessLimits, PerformanceCase,
+    PerformanceErrorKind, PerformanceMatrix, PerformancePolicy, PerformanceReportIdentity,
     PerformanceReportIdentityFields, PerformanceSizePoint, PerformanceWorkloadKind,
     ScalarOptimizationMode, Sha256Hex, TimingAuthority, decode_canonical_checkpoint_jsonl,
     render_performance_matrix, render_performance_policy_schema,
@@ -96,9 +96,9 @@ fn matrix_covers_each_workload_and_every_required_size_sweep() {
         PerformanceWorkloadKind::RayCast,
     ];
     let expected_sizes = BTreeSet::from([
-        PerformanceSizePoint::Entities128,
-        PerformanceSizePoint::Entities1024,
-        PerformanceSizePoint::Entities8192,
+        PerformanceSizePoint::WorkUnits128,
+        PerformanceSizePoint::WorkUnits1024,
+        PerformanceSizePoint::WorkUnits8192,
     ]);
 
     // Act
@@ -122,6 +122,45 @@ fn matrix_covers_each_workload_and_every_required_size_sweep() {
             && case.optimization_mode() == ScalarOptimizationMode::ReleaseScalar
             && case.regions().is_complete()
     }));
+}
+
+#[test]
+fn matrix_dimensions_bind_distinct_work_and_execution_identities() {
+    // Arrange
+    let matrix = PerformanceMatrix::reviewed_v1().expect("reviewed matrix should validate");
+
+    // Act
+    let scenario_by_workload = matrix
+        .cases()
+        .iter()
+        .map(|case| (case.workload(), case.scenario_id()))
+        .collect::<BTreeMap<_, _>>();
+    let execution_hashes = matrix
+        .cases()
+        .iter()
+        .map(PerformanceCase::execution_sha256)
+        .collect::<BTreeSet<_>>();
+    let units = [
+        PerformanceSizePoint::WorkUnits128.execution_units(),
+        PerformanceSizePoint::WorkUnits1024.execution_units(),
+        PerformanceSizePoint::WorkUnits8192.execution_units(),
+    ];
+
+    // Assert
+    assert_eq!(
+        scenario_by_workload.len(),
+        PerformanceWorkloadKind::ALL.len()
+    );
+    assert_eq!(
+        scenario_by_workload
+            .values()
+            .copied()
+            .collect::<BTreeSet<_>>()
+            .len(),
+        PerformanceWorkloadKind::ALL.len()
+    );
+    assert_eq!(execution_hashes.len(), matrix.cases().len());
+    assert_eq!(units, [128, 1_024, 8_192]);
 }
 
 #[test]
@@ -164,6 +203,7 @@ fn matrix_rejects_tampering_with_every_sealed_case_field() {
         ("case_id", Value::from("tampered-case")),
         ("scenario_id", Value::from("tampered-scenario")),
         ("resolved_sha256", Value::from("0".repeat(64))),
+        ("execution_sha256", Value::from("0".repeat(64))),
         ("logical_horizon", Value::from(999)),
         ("optimization_mode", Value::from("tampered_mode")),
     ];
