@@ -292,6 +292,6 @@ Plans:
 | 9. Particle Storage, Lifecycle, and Coupling | 31/31 | Complete | 2026-07-18 |
 | 10. Particle Groups, Solvers, and Compatibility Sign-Off | 32/32 | Complete   | 2026-07-21 |
 | 11. Examples, Headless Tooling, and Testbed | 30/30 | Complete    | 2026-07-23 |
-| 12. Performance, Portability, and Release Hardening | 25/25 | Complete   | 2026-07-24 |
+| 12. Performance, Portability, and Release Hardening | 25/25 | Complete    | 2026-07-24 |
 
 *Roadmap created: 2026-07-09*
