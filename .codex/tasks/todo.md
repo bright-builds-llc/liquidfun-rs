@@ -127,10 +127,12 @@ Completion review: All 32 Phase 10 plans are complete. Exact-reference authority
 
 ## task-phase-12-replace-macroquad-renderer | 2026-07-22 12:00 CDT | Replace the advisory-bound diagnostic renderer
 
-- [ ] Replace Macroquad before any release-readiness claim.
-- [ ] Remove the `RUSTSEC-2025-0035` and `RUSTSEC-2026-0192` advisory ignores.
-- [ ] Preserve the passive renderer boundary and headless catalog/controller tests.
-- [ ] Prove the published `liquidfun` package remains free of renderer dependencies.
-- [ ] Run dependency, package-isolation, headless testbed, and full release gates.
+- [x] Replace Macroquad before any release-readiness claim.
+- [x] Remove the `RUSTSEC-2025-0035` and `RUSTSEC-2026-0192` advisory ignores.
+- [x] Preserve the passive renderer boundary and headless catalog/controller tests.
+- [x] Prove the published `liquidfun` package remains free of renderer dependencies.
+- [x] Run dependency, package-isolation, headless testbed, and applicable local release gates.
 
-Follow-up context: Phase 11 permits the affected Macroquad graph only in the private, non-default, unpublished diagnostic testbed because neither advisory has a safe upgrade. Phase 12 must remove that bounded waiver by replacing the renderer before packaging or release maturity can advance.
+Original context: Phase 11 permitted the affected Macroquad graph only in the private, non-default, unpublished diagnostic testbed because neither advisory had a safe upgrade. Phase 12 has removed that bounded waiver by replacing the renderer. This renderer closure does not confer release readiness.
+
+Completion review: The private testbed now uses the reviewed `eframe`/`egui`/`tiny-skia` replacement, `deny.toml` carries no advisory waiver, and the passive renderer has no simulation authority. `package_cli::advisory_policy_has_no_waiver_after_renderer_replacement`, the testbed capability and renderer-contract suites, package isolation, dependency policy, and the ordered full Rust gate pass. Release readiness remains separately blocked on the missing full-SHA `release-candidate` workflow bundle and accepted frozen-source attestation records.

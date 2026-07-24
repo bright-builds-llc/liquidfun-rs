@@ -27,7 +27,7 @@ Each dimension is independent. `Evidenced` requires at least one cited reference
 
 ## Release readiness closure
 
-Status: **zero unexplained compatibility gaps**. This closure is derived from exact identity joins; local command success never promotes evidence.
+Status: **not release-ready**. The compatibility ledger has zero unexplained gaps, but no completed full-SHA `release-candidate` workflow run and accepted frozen-source attestation exist. This closure is derived from exact identity joins; local command success never promotes evidence or substitutes for run-bound release attestation.
 
 | Closure measure | Count |
 | --- | ---: |

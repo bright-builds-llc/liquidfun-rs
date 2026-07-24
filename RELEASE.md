@@ -5,6 +5,14 @@ release. A checklist item is not evidence: every accepted result must be
 machine-readable, reviewed, hash-bound, and tied to one frozen source candidate.
 If any required step fails or remains unavailable, do not publish.
 
+## Current release status
+
+This checkout is **not release-ready**. It has no completed full-SHA
+`release-candidate` workflow run, no retained complete evidence bundle from that
+run, and no tracked source-candidate, manifest, and report records accepted by
+`cargo xtask release attestation validate`. Local tests, generated compatibility
+closure, or a clean worktree cannot replace those run-bound inputs.
+
 ## Versioning and MSRV
 
 Releases follow Semantic Versioning. Before 1.0, incompatible public API changes
@@ -86,14 +94,43 @@ not independently prove parity.
 ## Attest after the source freeze
 
 Tracked release records may be committed after the frozen source candidate only
-to attest that candidate. The later attestation commit must contain an
-allowlisted documentation and attestation-only diff and must name both the
-frozen source-candidate SHA and the attestation commit.
+to attest that candidate. Complete this sequence without reordering it:
 
-Validate the proposed worktree before committing, then validate the committed
-range. Never relabel the attestation commit itself as the audited source
-candidate. Tag the reviewed attestation commit only after both validations and
-the frozen-candidate audit pass.
+1. Finish phase lifecycle verification before pushing the frozen source
+   candidate.
+
+1. Run every reviewed producer and the full-SHA `release-candidate` workflow
+   against that exact candidate.
+
+1. Download the complete retained bundle, including all evidence envelopes and
+   the exact `.crate` archive referenced by its manifest.
+
+1. Materialize the source-candidate, manifest, and report records, then validate
+   the proposed worktree:
+
+   ```bash
+   cargo xtask release attestation validate-worktree \
+     --source reference/release/source-candidate.json \
+     --manifest reference/release/candidate-manifest.json \
+     --report reference/release/audit-report.json
+   ```
+
+1. Commit only the allowlisted attestation records, then validate the committed
+   frozen-source-to-attestation range:
+
+   ```bash
+   cargo xtask release attestation validate \
+     --source reference/release/source-candidate.json \
+     --manifest reference/release/candidate-manifest.json \
+     --report reference/release/audit-report.json \
+     --attestation-commit <full-attestation-commit-sha>
+   ```
+
+1. Only after both validations pass may public readiness status be projected
+   and the reviewed attestation commit be tagged.
+
+Never relabel the attestation commit itself, current `HEAD`, or a documentation
+projection commit as the audited source candidate.
 
 ## Publication dry run
 

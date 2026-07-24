@@ -31,9 +31,13 @@ a generalized claim about the complete project. Performance claims likewise
 apply only to immutable reports for named workloads.
 
 A parity-bearing release requires a frozen full candidate commit and a complete
-reviewed manifest accepted by fail-closed `cargo xtask release audit`. Until
-that audit exists for and passes the exact candidate, release readiness remain
-pending. See [RELEASE.md](RELEASE.md) for the non-publication rule.
+reviewed manifest accepted by fail-closed `cargo xtask release audit`. This
+checkout is **not release-ready**: it has no completed full-SHA
+`release-candidate` workflow run, retained complete evidence bundle, or tracked
+source/manifest/report records accepted by
+`cargo xtask release attestation validate`. Local green checks do not substitute
+for that run-bound attestation. See [RELEASE.md](RELEASE.md) for the
+non-publication rule and the exact path to a future readiness claim.
 
 ## Cargo-only install and use
 

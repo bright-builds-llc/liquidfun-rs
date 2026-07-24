@@ -333,7 +333,7 @@ const PHASE8_DOCUMENT_CONTRACTS: [(&str, &[&str]); 4] = [
         ],
     ),
 ];
-const PHASE12_PUBLIC_DOCUMENT_CONTRACTS: [(&str, &[&str]); 4] = [
+const PHASE12_PUBLIC_DOCUMENT_CONTRACTS: [(&str, &[&str]); 5] = [
     (
         "README.md",
         &[
@@ -343,6 +343,9 @@ const PHASE12_PUBLIC_DOCUMENT_CONTRACTS: [(&str, &[&str]); 4] = [
             "a parity-bearing v1 release candidate",
             "[compatibility inventory](COMPATIBILITY.md)",
             "`cargo xtask release audit`",
+            "not release-ready",
+            "`release-candidate` workflow run",
+            "`cargo xtask release attestation validate`",
             "## Cargo-only install and use",
             "Rust 1.92.0",
             "Rust 1.97.0",
@@ -392,9 +395,21 @@ const PHASE12_PUBLIC_DOCUMENT_CONTRACTS: [(&str, &[&str]); 4] = [
         ],
     ),
     (
+        "COMPATIBILITY.md",
+        &[
+            "Status: **not release-ready**",
+            "no completed full-SHA `release-candidate` workflow run",
+            "run-bound release attestation",
+        ],
+    ),
+    (
         "RELEASE.md",
         &[
             "# Release process",
+            "## Current release status",
+            "not release-ready",
+            "`release-candidate` workflow run",
+            "`cargo xtask release attestation validate`",
             "## Versioning and MSRV",
             "Semantic Versioning",
             "v1.0.x",
@@ -410,6 +425,8 @@ const PHASE12_PUBLIC_DOCUMENT_CONTRACTS: [(&str, &[&str]); 4] = [
             "rust-version = \"1.92\"",
             "## Review notices and evidence",
             "## Attest after the source freeze",
+            "cargo xtask release attestation validate-worktree",
+            "--attestation-commit <full-attestation-commit-sha>",
             "## Publication dry run",
             "cargo publish -p liquidfun --dry-run",
             "## Publish or do not publish",

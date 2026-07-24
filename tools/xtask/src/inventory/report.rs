@@ -82,7 +82,7 @@ fn render_release_readiness(
     readiness: &ReleaseReadiness,
 ) {
     output.push_str("\n## Release readiness closure\n\n");
-    output.push_str("Status: **zero unexplained compatibility gaps**. This closure is derived from exact identity joins; local command success never promotes evidence.\n\n");
+    output.push_str("Status: **not release-ready**. The compatibility ledger has zero unexplained gaps, but no completed full-SHA `release-candidate` workflow run and accepted frozen-source attestation exist. This closure is derived from exact identity joins; local command success never promotes evidence or substitutes for run-bound release attestation.\n\n");
     output.push_str("| Closure measure | Count |\n| --- | ---: |\n");
     for (label, count) in [
         ("Compatibility identities", ledger.entries.len()),

@@ -722,9 +722,10 @@ fn phase12_publication_contract_accepts_repository_documents() -> TestResult {
 fn phase12_publication_contract_rejects_missing_contract_in_each_document() -> TestResult {
     // Arrange, Act, Assert
     for (document, marker) in [
-        ("README.md", "## Maturity and evidence"),
+        ("README.md", "not release-ready"),
         ("CONTRIBUTING.md", "### Markdown"),
-        ("RELEASE.md", "## Freeze the source candidate"),
+        ("COMPATIBILITY.md", "run-bound release attestation"),
+        ("RELEASE.md", "## Current release status"),
         ("SAFETY.md", "## Renderer and oracle isolation"),
     ] {
         let fixture = DocsFixture::new()?;

@@ -470,7 +470,15 @@ fn advisory_policy_has_no_waiver_after_renderer_replacement() -> TestResult {
     let testbed_dependencies = testbed["dependencies"]
         .as_table()
         .expect("testbed dependencies should be a table");
-    assert!(testbed_dependencies["eframe"].is_str());
+    assert_eq!(
+        testbed_dependencies["eframe"]["version"].as_str(),
+        Some("=0.35.0")
+    );
+    assert_eq!(
+        testbed_dependencies["eframe"]["default-features"].as_bool(),
+        Some(false)
+    );
+    assert!(testbed_dependencies["eframe"]["features"].is_array());
     assert!(testbed_dependencies["egui"].is_str());
     assert!(testbed_dependencies["tiny-skia"].is_str());
     assert!(!testbed_dependencies.contains_key("macroquad"));
