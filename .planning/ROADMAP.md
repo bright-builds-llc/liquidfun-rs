@@ -19,7 +19,7 @@ The v1 roadmap moves from an immutable, licensed source of truth to a semantic c
 - [x] **Phase 9: Particle Storage, Lifecycle, and Coupling** - Implement safe particle systems, storage, lifecycle, contacts, buffers, queries, callbacks, and rigid coupling. (completed 2026-07-18)
 - [x] **Phase 10: Particle Groups, Solvers, and Compatibility Sign-Off** - Complete group topology and every particle behavior in pinned upstream pass order. (completed 2026-07-21)
 - [x] **Phase 11: Examples, Headless Tooling, and Testbed** - Account for every upstream test/example and expose shared headless and optional visual scenarios. (completed 2026-07-23)
-- [ ] **Phase 12: Performance, Portability, and Release Hardening** - Prove performance, safety, platform, documentation, packaging, and zero-gap v1 readiness.
+- [x] **Phase 12: Performance, Portability, and Release Hardening** - Prove performance, safety, platform, documentation, packaging, and zero-gap v1 readiness. (completed 2026-07-24)
 
 ## Phase Details
 
@@ -270,7 +270,7 @@ Plans:
 - [x] 12-19-PLAN.md — Implement the bounded C++ benchmark endpoint.
 - [x] 12-20-PLAN.md — Interleave paired samples and build raw reports.
 - [x] 12-21-PLAN.md — Validate and attest the frozen source candidate in a later commit.
-- [ ] 12-22-PLAN.md — Project attested readiness into public status.
+- [x] 12-22-PLAN.md — Project attested readiness into public status.
 - [x] 12-23-PLAN.md — Produce commit-bound controlled-host performance artifacts.
 - [x] 12-24-PLAN.md — Execute isolated Miri, sanitizer, and coverage evidence lanes.
 - [x] 12-25-PLAN.md — Produce candidate-bound named regression evidence.
@@ -292,6 +292,6 @@ Plans:
 | 9. Particle Storage, Lifecycle, and Coupling | 31/31 | Complete | 2026-07-18 |
 | 10. Particle Groups, Solvers, and Compatibility Sign-Off | 32/32 | Complete   | 2026-07-21 |
 | 11. Examples, Headless Tooling, and Testbed | 30/30 | Complete    | 2026-07-23 |
-| 12. Performance, Portability, and Release Hardening | 24/25 | In Progress|  |
+| 12. Performance, Portability, and Release Hardening | 25/25 | Complete   | 2026-07-24 |
 
 *Roadmap created: 2026-07-09*
