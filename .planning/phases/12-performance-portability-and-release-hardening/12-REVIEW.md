@@ -1,7 +1,8 @@
 ---
 phase: 12-performance-portability-and-release-hardening
-reviewed: 2026-07-24T03:50:07Z
+reviewed: 2026-07-24T05:22:38Z
 depth: standard
+iteration: 3
 files_reviewed: 133
 files_reviewed_list:
   - .codex/tasks/todo.md
@@ -139,174 +140,91 @@ files_reviewed_list:
   - tools/xtask/tests/safety_evidence_contract.rs
 findings:
   critical: 0
-  warning: 5
+  warning: 1
   info: 0
-  total: 5
+  total: 1
 status: issues_found
 ---
 
 # Phase 12: Code Review Report
 
-**Reviewed:** 2026-07-24T03:50:07Z
+**Reviewed:** 2026-07-24T05:22:38Z
 **Depth:** standard
+**Iteration:** 3
 **Files Reviewed:** 133
 **Status:** issues_found
 
 ## Summary
 
-The Phase 12 performance, portability, safety, coverage, and release-hardening
-changes were reviewed under the repository's fail-closed evidence rules. The
-implementation compiles cleanly and its static checks pass, but five
-correctness issues can make performance or release evidence claim more than the
-underlying execution proves. No security-critical issue was found.
+Iteration 3 independently re-reviewed commits `bb73a4a`, `8878440`, `b76801d`,
+`3b12075`, and `fc702ad`. Four iteration-2 warnings are closed. The differential
+leaf implementation now records real run-produced markers and its omission
+guard is correct, but the clean differential-coverage CI job cannot execute the
+only test that emits two required math leaves. Phase 12 therefore still has one
+actionable warning. No critical or security-impacting issue was found.
+
+## Iteration-2 Finding Disposition
+
+| Finding | Disposition | Evidence |
+| --- | --- | --- |
+| WR-01A | Closed | All 32 sealed matrix rows prepare from `PerformanceCase::scenario_id()`; the benchmark matrix target passes 8 tests. |
+| WR-01B | Closed | Rust's 128-unit injected-clock proof and the C++ lifecycle observer place all unit construction before timer start. |
+| WR-02 | Open | Markers are genuine, but the clean CI job omits the C++ prerequisite for the test that emits two of the 63 required leaves. |
+| WR-03 | Closed | Typed canonical and safety payloads are validated; canonical-gap, safety-waiver, and tampered-log mutations fail closed. |
+| WR-05R | Closed | The macOS-hosted scoped Clippy gate passes with `-D warnings`. |
 
 ## Verification
 
 - `cargo fmt --all --check`: passed.
-- `cargo clippy --all-targets --all-features -- -D warnings`: passed.
-- `cargo test --all-features` with an isolated target: all unit and integration
-  suites completed successfully; the final `liquidfun` doctest process remained
-  stuck in the known macOS `dyld` startup condition and was terminated.
-- `actionlint`, `shellcheck`, `cargo deny --locked check`, scoped Markdown,
-  JSON, and shell syntax checks: passed.
-- Phase 12 docs, inventory, safety, release-constructor, Miri, sanitizer,
-  coverage, and regression contract checks: passed.
+- Shell syntax and ShellCheck passed for all modified Phase 11/12 scripts.
+- `git diff --check bb73a4a^..fc702ad`: passed.
+- `cargo test -p liquidfun-benchmarks --test performance_matrix`: passed, 8
+  tests.
+- `ctest --test-dir target/reference/oracle-debug ...`: passed the C++ protocol
+  test, including the 128-unit setup observer.
+- `cargo test -p xtask --test release_cli release_constructor_`: passed, 10
+  tests, including canonical-gap, safety-waiver, and tampered-log negatives.
+- Scoped `cargo clippy` for the four affected Rust packages with all targets,
+  all features, and `-D warnings`: passed.
+- `scripts/phase12-coverage.sh check`: passed; its deliberate successful-target
+  omission case reported the exact missing leaf.
+- `scripts/phase12-coverage.sh differential fc702ad...`: passed with 63 observed
+  leaves in the warm workspace, where both C++ oracle presets already existed.
+  The clean-checkout defect below is masked by those untracked build artifacts
+  and follows directly from the workflow and test control flow.
 
 ## Warnings
 
-### WR-01: Workload and size labels do not change the measured benchmark work
+### WR-02R: Clean differential-coverage CI cannot emit the two required math leaves
 
-**File:** `crates/liquidfun-test-protocol/src/performance/matrix.rs:426-509`
+**Files:** `.github/workflows/coverage.yml:150`,
+`crates/liquidfun-differential/tests/round_trip.rs:180`
 
-**Issue:** `case_for` passes only the workload into `scenario_binding`; the
-`size_point` changes `case_id` but not the resolved scenario, settings, or
-logical horizon. Consequently, every 128/1024/8192 row for a scalable workload
-executes the same resolved bytes. Several different workload kinds also share
-one binding (for example, broad phase, narrow phase, contact solve, CCD, world
-step, and mixed world all use `rigid-runtime-mutation`). The concrete runner
-passes workload and size only as report/request identity while
-`PreparedNativeBenchmark` executes the unchanged resolved scenario. The C++
-adapter likewise records these fields without using them to construct work.
-The matrix therefore reports cardinality scaling and subsystem workloads that
-were not actually measured.
+**Issue:** The differential-coverage job explicitly checks out with
+`submodules: false`, installs only Rust, and immediately runs
+`phase12-coverage.sh differential`; it never configures or builds either C++
+oracle preset. In `cpp_math_probe_matches_operation_contract`,
+`run_cpp_math_probe_twice` returns `None` when an oracle executable is absent,
+and the test returns successfully at line 185 before emitting
+`public-api.liquidfun-box2d-box2d-common-b2math-h` and
+`subsystem.common-math-and-settings`. Those two IDs are part of the 63-leaf
+expected set. A clean CI target therefore succeeds without these markers, after
+which the typed leaf validator correctly reports two misses and prevents the
+differential evidence artifact from being produced. A developer workspace with
+pre-existing `target/reference/oracle-debug` and `oracle-release` binaries
+masks the workflow defect.
 
-**Fix:** Make both dimensions part of the executable input:
-
-```rust
-fn scenario_binding(
-    workload: PerformanceWorkloadKind,
-    size_point: PerformanceSizePoint,
-) -> Result<ScenarioBinding, PerformanceError> {
-    // Generate or select a scenario whose entity/operation count and measured
-    // region are specific to this exact matrix row.
-}
-```
-
-Seal the resulting resolved hash per row, use a workload-specific driver when a
-catalog scenario cannot isolate the requested subsystem, and add tests that
-assert the actual entity count and measured operation differ for each size and
-workload row.
-
-### WR-02: Differential coverage is copied from the compatibility ledger instead of measured
-
-**File:** `scripts/phase12-coverage.sh:213-230`
-
-**Issue:** After running the differential tests, the producer selects every
-already-evidenced entry from `reference/compatibility.json`, writes all of them
-to `exercised`, and hard-codes `missed: []`. No test or harness output is read
-to establish which semantic leaves executed in this run. A skipped,
-misconfigured, or silently narrowed differential suite can therefore still
-publish complete differential coverage.
-
-**Fix:** Instrument the differential harness to emit the stable leaf IDs it
-actually exercised, then compute the set difference against the expected
-ledger:
-
-```bash
-jq -n \
-  --slurpfile expected expected-leaves.json \
-  --slurpfile observed observed-leaves.json \
-  '{exercised: $observed[0],
-    missed: ($expected[0] - $observed[0]),
-    parity_authority: false}'
-```
-
-Fail when required leaves are missed, and add a negative contract test that
-omits one scenario and verifies that its leaf appears in `missed`.
-
-### WR-03: Release aggregation synthesizes clean claims without validating producer results
-
-**File:** `scripts/phase12-release-evidence.sh:434-557`
-
-**Issue:** Producer validation checks candidate/run identity and, for several
-artifacts, only a payload hash. It does not interpret the hashed result before
-`append_independent_evidence` emits clean claims. In particular, platform
-identities are not checked against the package archive hash, tier, scalar mode,
-runner, workflow, or verification payload, yet the aggregator writes
-`package_drift:false` and `evidence_tier:"d2_supported"`. It also hard-codes
-zero differential gaps, zero safety/fuzz findings, zero regression misses, and
-zero coverage misses rather than deriving those values from validated producer
-payloads. The typed release validator can only validate the newly synthesized
-claims, so it cannot detect that an upstream artifact reported a failure or
-different package.
-
-**Fix:** Parse every producer identity and payload against its typed/schema
-contract, validate all provenance fields (including the exact package hash),
-and derive each release claim from the validated producer value. Reject missing
-or contradictory fields before calling `emit_evidence`. Add aggregation tests
-that mutate a platform archive hash/tier, a safety finding count, a coverage
-miss, and a regression result and verify that aggregation fails.
-
-### WR-04: Performance matrix deserialization accepts tampered case bindings
-
-**File:** `crates/liquidfun-test-protocol/src/performance/matrix.rs:288-408`
-
-**Issue:** `PerformanceMatrix::deserialize` reconstructs the outer identity
-through `Self::new`, but `validate_cases` checks only workload/size coverage,
-catalog hash, nonzero horizon, complete regions, and engine roles. It does not
-validate `case_id`, `scenario_id`, `resolved_sha256`, solver settings, or
-`optimization_mode` against the reviewed binding for that workload and size.
-A JSON matrix with one of those fields altered can therefore deserialize as a
-valid reviewed matrix.
-
-**Fix:** Reconstruct the expected row for every identity and require exact
-equality:
-
-```rust
-for case in cases {
-    let expected = case_for(case.workload, case.size_point, catalog_sha256.clone())?;
-    if *case != expected {
-        return Err(PerformanceError::new(
-            PerformanceErrorKind::InvalidCaseBinding,
-        ));
-    }
-}
-```
-
-Add mutation tests for every sealed field, including `case_id`, `scenario_id`,
-resolved hash, each settings value, and optimization mode.
-
-### WR-05: Linux benchmark reports contain placeholder hardware identity
-
-**File:** `tools/xtask/src/performance/runner.rs:141-168`
-
-**Issue:** `collect_hardware_session` uses the macOS-only `sysctl` keys
-`machdep.cpu.brand_string` and `hw.memsize` on every platform. On the canonical
-Linux performance runner both calls fall back, producing a CPU model equal to
-the architecture string and `memory_bytes: 1`. These placeholders are accepted
-as an immutable `HardwareSession` and included in the report identity, so the
-raw report cannot identify or reproduce the hardware on which its timings were
-collected.
-
-**Fix:** Collect platform-specific hardware facts (`/proc/cpuinfo` and
-`/proc/meminfo` or a reviewed portable API on Linux, `sysctl` on macOS), or
-require the workflow to pass a validated controlled-host identity into the
-runner. Fail closed instead of substituting plausible-but-false values. Add a
-Linux test that rejects an architecture-only CPU model and the one-byte memory
-fallback.
+**Fix:** Give the differential-coverage job the pinned upstream checkout and
+exact C++ toolchain, then configure and build both oracle presets before running
+the selected targets. Under
+`LIQUIDFUN_DIFFERENTIAL_LEAF_DIRECTORY`, make the math test fail rather than
+skip when either required oracle is absent. Add a workflow contract test that
+proves every marker-emitting target's external prerequisites are constructed
+inside the same clean job.
 
 ***
 
-_Reviewed: 2026-07-24T03:50:07Z_
+_Reviewed: 2026-07-24T05:22:38Z_
 _Reviewer: the agent (gsd-code-reviewer)_
 _Depth: standard_
+_Iteration: 3_
