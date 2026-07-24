@@ -3,15 +3,15 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 12-14-PLAN.md
-last_updated: "2026-07-24T02:24:59.327Z"
+stopped_at: Completed 12-15-PLAN.md
+last_updated: "2026-07-24T02:45:17.234Z"
 last_activity: "2026-07-24"
 progress:
   total_phases: 12
   completed_phases: 11
   total_plans: 216
-  completed_plans: 212
-  percent: 98
+  completed_plans: 213
+  percent: 99
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-23)
 ## Current Position
 
 Phase: 12 (Performance, Portability, and Release Hardening) — EXECUTING
-Plan: 14 of 25
+Plan: 15 of 25
 Status: Ready to execute
 Last activity: 2026-07-24
 
@@ -219,6 +219,7 @@ Progress: [██████████] 96%
 | Phase 12 P08 | 33min | 2 tasks | 13 files |
 | Phase 12 P23 | 7min | 1 tasks | 2 files |
 | Phase 12 P14 | 29min | 2 tasks | 8 files |
+| Phase 12 P15 | 18min | 1 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -616,6 +617,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 12]: Preserve eight evidence dimensions and use a separate exact-cardinality release disposition join for terminal compatibility closure.
 - [Phase 12]: Keep D2 platform support, coverage, and performance orthogonal to D1 parity.
 - [Phase 12]: Require one reviewed immutable workload report before publishing any bounded performance number.
+- [Phase 12]: Release readiness requires exactly 19 kind/target identities from a closed 16-kind enum, including four separate durable platform records.
+- [Phase 12]: Release audit reads only bounded repository-confined ordinary files and never invokes evidence producers or network clients.
+- [Phase 12]: Coverage and performance remain non-parity authorities; conditional macOS must match the tracked supported-or-unsupported disposition.
 
 ### Pending Todos
 
@@ -629,6 +633,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-24T02:24:59.314Z
-Stopped at: Completed 12-14-PLAN.md
+Last session: 2026-07-24T02:45:17.228Z
+Stopped at: Completed 12-15-PLAN.md
 Resume file: None

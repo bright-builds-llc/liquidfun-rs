@@ -263,7 +263,7 @@ Plans:
 - [x] 12-12-PLAN.md — Fan the artifact across MSRV and native platform lanes.
 - [x] 12-13-PLAN.md — Complete rustdoc, safety, contribution, and release docs.
 - [x] 12-14-PLAN.md — Generate zero-gap compatibility and benchmarking reports.
-- [ ] 12-15-PLAN.md — Build the typed commit-bound release audit.
+- [x] 12-15-PLAN.md — Build the typed commit-bound release audit.
 - [ ] 12-16-PLAN.md — Construct and aggregate source-candidate evidence.
 - [x] 12-17-PLAN.md — Pin the shared dated nightly toolchain.
 - [x] 12-18-PLAN.md — Remove Macroquad and temporary advisory waivers.
@@ -292,6 +292,6 @@ Plans:
 | 9. Particle Storage, Lifecycle, and Coupling | 31/31 | Complete | 2026-07-18 |
 | 10. Particle Groups, Solvers, and Compatibility Sign-Off | 32/32 | Complete   | 2026-07-21 |
 | 11. Examples, Headless Tooling, and Testbed | 30/30 | Complete    | 2026-07-23 |
-| 12. Performance, Portability, and Release Hardening | 21/25 | In Progress|  |
+| 12. Performance, Portability, and Release Hardening | 22/25 | In Progress|  |
 
 *Roadmap created: 2026-07-09*
