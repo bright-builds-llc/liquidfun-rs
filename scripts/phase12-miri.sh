@@ -143,9 +143,16 @@ run_miri() {
 		--arg toolchain "$NIGHTLY_TOOLCHAIN" \
 		'{
 		  schema_version: 1,
+		  evidence_kind: "miri",
 		  candidate_commit: $candidate_commit,
 		  toolchain_identity: $toolchain,
 		  complete: true,
+		  parity_authority: false,
+		  policy: {
+		    unsafe_code: "forbid",
+		    unsafe_waivers: 0,
+		    advisory_waivers: 0
+		  },
 		  cases: .
 		}' "$records_file" >"$output_directory/summary.json"
 	rm -f -- "$records_file"

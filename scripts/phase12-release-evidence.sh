@@ -338,17 +338,56 @@ validate_safety_payload() {
 	local expected_kind=$3
 	jq -e --arg candidate "$candidate_sha" --arg kind "$expected_kind" '
 		.schema_version == 1 and .candidate_commit == $candidate and .complete == true and
+		.evidence_kind == $kind and .parity_authority == false and
 		(.toolchain_identity | type == "string" and length > 0) and
+		.policy == {
+		  unsafe_code: "forbid",
+		  unsafe_waivers: 0,
+		  advisory_waivers: 0
+		} and
 		(.cases | type == "array" and length > 0) and
+		([.cases[].name] | length == (unique | length)) and
+		([.cases[].path] | length == (unique | length)) and
 		all(.cases[];
 		  (.name | type == "string" and length > 0) and
-		  (.path | type == "string" and startswith("logs/")) and
+		  (.path | type == "string" and
+		    test("^logs/[a-z0-9][a-z0-9_-]*[.]log$")) and
 		  (.sha256 | type == "string" and test("^[0-9a-f]{64}$")) and
 		  (.bytes | type == "number" and . >= 0)) and
 		($kind != "rust_sanitizer" or
-		  (.evidence_kind == $kind and .target == "x86_64-unknown-linux-gnu" and
-		   .parity_authority == false))
+		  .target == "x86_64-unknown-linux-gnu")
 	' "$summary" >/dev/null || fail "$expected_kind safety payload is incomplete"
+	local artifact_directory
+	artifact_directory=$(dirname -- "$summary")
+	while IFS=$'\t' read -r relative expected_sha256 expected_bytes; do
+		local log_path="$artifact_directory/$relative"
+		[[ -f "$log_path" && ! -L "$log_path" ]] ||
+			fail "$expected_kind safety log is unavailable"
+		[[ "$(hash_file "$log_path")" == "$expected_sha256" ]] ||
+			fail "$expected_kind safety log hash differs"
+		[[ "$(wc -c <"$log_path")" -eq "$expected_bytes" ]] ||
+			fail "$expected_kind safety log byte count differs"
+	done < <(jq -r '.cases[] | [.path, .sha256, .bytes] | @tsv' "$summary")
+}
+
+validate_canonical_payload() {
+	local result=$1
+	local identity=$2
+	local candidate_sha=$3
+	jq -e --arg candidate "$candidate_sha" \
+		--arg semantic "$(jq -er '.semantic_sha256' "$identity")" '
+		. == {
+		  schema_version: 1,
+		  evidence_kind: "canonical_differential",
+		  candidate_commit: $candidate,
+		  complete: true,
+		  parity_tier: "d1_canonical",
+		  coverage_authority: false,
+		  performance_authority: false,
+		  gap_count: 0,
+		  semantic_sha256: $semantic
+		}
+	' "$result" >/dev/null || fail "canonical differential result is incomplete"
 }
 
 validate_coverage_payload() {
@@ -470,6 +509,12 @@ validate_oracle_inventory() {
 	if [[ "${artifact_directory##*/}" == phase11-sanitizer-* ]]; then
 		local sanitizer_records="$artifact_directory/sanitizer.jsonl"
 		validate_sanitizer_records "$sanitizer_records"
+	elif [[ "${artifact_directory##*/}" == phase11-canonical-* ]]; then
+		local canonical_result="$artifact_directory/semantic-result.json"
+		[[ -f "$canonical_result" && ! -L "$canonical_result" ]] ||
+			fail "canonical differential result is unavailable"
+		validate_canonical_payload \
+			"$canonical_result" "$identity" "$(jq -er '.head_sha' "$identity")"
 	fi
 }
 
@@ -697,13 +742,23 @@ append_independent_evidence() {
 	fi
 	emit_evidence "$items_file" "$output_directory" "$candidate_sha" conditional_platform \
 		x86_64-apple-darwin platform.yml conditional-policy "$platform_run_id" "$RUST_TOOLCHAIN" "$claims"
+	local canonical_result
+	canonical_result=$(find_single_identity \
+		"$download_directory/phase11-canonical-$oracle_run_id-$candidate_sha" \
+		semantic-result.json)
+	claims=$(jq -c \
+		'{parity_tier,coverage_authority,performance_authority,gap_count}' \
+		"$canonical_result")
 	emit_evidence "$items_file" "$output_directory" "$candidate_sha" canonical_differential \
 		x86_64-unknown-linux-gnu oracle.yml phase11-canonical-linux "$oracle_run_id" \
-		"$COMBINED_TOOLCHAIN" \
-		'{"parity_tier":"d1_canonical","coverage_authority":false,"performance_authority":false,"gap_count":0}'
+		"$COMBINED_TOOLCHAIN" "$claims"
+	local safety_summary
+	safety_summary=$(find_single_identity \
+		"$download_directory/phase12-miri-$safety_run_id-$candidate_sha" summary.json)
+	claims=$(jq -c '.policy' "$safety_summary")
 	emit_evidence "$items_file" "$output_directory" "$candidate_sha" rust_safety \
 		x86_64-unknown-linux-gnu safety.yml miri "$safety_run_id" "$NIGHTLY_TOOLCHAIN" \
-		'{"unsafe_waivers":0,"advisory_waivers":0,"unsafe_code":"forbid"}'
+		"$claims"
 	local sanitizer_records sanitizer_findings
 	sanitizer_records=$(find_single_identity \
 		"$download_directory/phase11-sanitizer-$oracle_run_id-$candidate_sha" sanitizer.jsonl)

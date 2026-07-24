@@ -625,6 +625,226 @@ fn release_constructor_rejects_sanitizer_finding() {
 }
 
 #[test]
+fn release_constructor_rejects_canonical_gap_result() {
+    // Arrange
+    let root = producer_fixture_root("canonical-gap-mutation");
+    let identity_path = root.join("identity.json");
+    fs::write(
+        &identity_path,
+        serde_json::to_vec(&json!({ "semantic_sha256": "a".repeat(64) })).expect("identity JSON"),
+    )
+    .expect("identity writes");
+    let result_path = root.join("semantic-result.json");
+    fs::write(
+        &result_path,
+        serde_json::to_vec(&json!({
+            "schema_version": 1,
+            "evidence_kind": "canonical_differential",
+            "candidate_commit": CANDIDATE,
+            "complete": true,
+            "parity_tier": "d1_canonical",
+            "coverage_authority": false,
+            "performance_authority": false,
+            "gap_count": 1,
+            "semantic_sha256": "a".repeat(64),
+        }))
+        .expect("canonical result JSON"),
+    )
+    .expect("canonical result writes");
+
+    // Act
+    let output = run_release_validator(
+        "validate_canonical_payload",
+        &[
+            result_path.to_string_lossy().into_owned(),
+            identity_path.to_string_lossy().into_owned(),
+            CANDIDATE.to_owned(),
+        ],
+    );
+
+    // Assert
+    assert!(!output.status.success());
+}
+
+#[test]
+fn release_constructor_accepts_typed_canonical_and_safety_results() {
+    // Arrange
+    let root = producer_fixture_root("typed-producer-results");
+    let identity_path = root.join("identity.json");
+    fs::write(
+        &identity_path,
+        serde_json::to_vec(&json!({ "semantic_sha256": "a".repeat(64) })).expect("identity JSON"),
+    )
+    .expect("identity writes");
+    let result_path = root.join("semantic-result.json");
+    fs::write(
+        &result_path,
+        serde_json::to_vec(&json!({
+            "schema_version": 1,
+            "evidence_kind": "canonical_differential",
+            "candidate_commit": CANDIDATE,
+            "complete": true,
+            "parity_tier": "d1_canonical",
+            "coverage_authority": false,
+            "performance_authority": false,
+            "gap_count": 0,
+            "semantic_sha256": "a".repeat(64),
+        }))
+        .expect("canonical result JSON"),
+    )
+    .expect("canonical result writes");
+    let logs = root.join("logs");
+    fs::create_dir_all(&logs).expect("log directory");
+    let log = b"clean safety run\n";
+    fs::write(logs.join("math.log"), log).expect("log writes");
+    let summary_path = root.join("summary.json");
+    fs::write(
+        &summary_path,
+        serde_json::to_vec(&json!({
+            "schema_version": 1,
+            "evidence_kind": "miri",
+            "candidate_commit": CANDIDATE,
+            "toolchain_identity": "nightly-2026-07-15",
+            "complete": true,
+            "parity_authority": false,
+            "policy": {
+                "unsafe_code": "forbid",
+                "unsafe_waivers": 0,
+                "advisory_waivers": 0,
+            },
+            "cases": [{
+                "name": "math",
+                "path": "logs/math.log",
+                "sha256": sha256(log),
+                "bytes": log.len(),
+            }],
+        }))
+        .expect("safety summary JSON"),
+    )
+    .expect("safety summary writes");
+
+    // Act
+    let canonical = run_release_validator(
+        "validate_canonical_payload",
+        &[
+            result_path.to_string_lossy().into_owned(),
+            identity_path.to_string_lossy().into_owned(),
+            CANDIDATE.to_owned(),
+        ],
+    );
+    let safety = run_release_validator(
+        "validate_safety_payload",
+        &[
+            summary_path.to_string_lossy().into_owned(),
+            CANDIDATE.to_owned(),
+            "miri".to_owned(),
+        ],
+    );
+
+    // Assert
+    assert!(canonical.status.success());
+    assert!(safety.status.success());
+}
+
+#[test]
+fn release_constructor_rejects_safety_waiver_policy() {
+    // Arrange
+    let root = producer_fixture_root("safety-policy-mutation");
+    let logs = root.join("logs");
+    fs::create_dir_all(&logs).expect("log directory");
+    let log = b"clean safety run\n";
+    fs::write(logs.join("math.log"), log).expect("log writes");
+    let summary_path = root.join("summary.json");
+    fs::write(
+        &summary_path,
+        serde_json::to_vec(&json!({
+            "schema_version": 1,
+            "evidence_kind": "miri",
+            "candidate_commit": CANDIDATE,
+            "toolchain_identity": "nightly-2026-07-15",
+            "complete": true,
+            "parity_authority": false,
+            "policy": {
+                "unsafe_code": "forbid",
+                "unsafe_waivers": 1,
+                "advisory_waivers": 0,
+            },
+            "cases": [{
+                "name": "math",
+                "path": "logs/math.log",
+                "sha256": sha256(log),
+                "bytes": log.len(),
+            }],
+        }))
+        .expect("safety summary JSON"),
+    )
+    .expect("safety summary writes");
+
+    // Act
+    let output = run_release_validator(
+        "validate_safety_payload",
+        &[
+            summary_path.to_string_lossy().into_owned(),
+            CANDIDATE.to_owned(),
+            "miri".to_owned(),
+        ],
+    );
+
+    // Assert
+    assert!(!output.status.success());
+}
+
+#[test]
+fn release_constructor_rejects_tampered_safety_log() {
+    // Arrange
+    let root = producer_fixture_root("safety-log-mutation");
+    let logs = root.join("logs");
+    fs::create_dir_all(&logs).expect("log directory");
+    let original = b"clean safety run\n";
+    let log_path = logs.join("math.log");
+    fs::write(&log_path, original).expect("log writes");
+    let summary_path = root.join("summary.json");
+    fs::write(
+        &summary_path,
+        serde_json::to_vec(&json!({
+            "schema_version": 1,
+            "evidence_kind": "miri",
+            "candidate_commit": CANDIDATE,
+            "toolchain_identity": "nightly-2026-07-15",
+            "complete": true,
+            "parity_authority": false,
+            "policy": {
+                "unsafe_code": "forbid",
+                "unsafe_waivers": 0,
+                "advisory_waivers": 0,
+            },
+            "cases": [{
+                "name": "math",
+                "path": "logs/math.log",
+                "sha256": sha256(original),
+                "bytes": original.len(),
+            }],
+        }))
+        .expect("safety summary JSON"),
+    )
+    .expect("safety summary writes");
+    fs::write(log_path, b"tampered safety run\n").expect("log mutation writes");
+
+    // Act
+    let output = run_release_validator(
+        "validate_safety_payload",
+        &[
+            summary_path.to_string_lossy().into_owned(),
+            CANDIDATE.to_owned(),
+            "miri".to_owned(),
+        ],
+    );
+
+    // Assert
+    assert!(!output.status.success());
+}
+
+#[test]
 fn release_constructor_rejects_differential_coverage_miss() {
     // Arrange
     let root = producer_fixture_root("coverage-mutation");

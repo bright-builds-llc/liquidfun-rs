@@ -78,7 +78,7 @@ for child in "$output_dir"/* "$output_dir"/.[!.]* "$output_dir"/..?*; do
 	[[ -e "$child" || -L "$child" ]] || continue
 	[[ ! -L "$child" ]] || fail "output contains a symlink: $child"
 	case "${child##*/}" in
-	cases | phase11-v1.json | debug.jsonl | release.jsonl | replay.jsonl | sanitizer.jsonl | identity.json) ;;
+	cases | phase11-v1.json | debug.jsonl | release.jsonl | replay.jsonl | sanitizer.jsonl | semantic-result.json | identity.json) ;;
 	*) fail "output contains an unexpected entry: $child" ;;
 	esac
 done
@@ -91,7 +91,8 @@ if [[ -e "$output_dir/cases" ]]; then
 fi
 rm -f -- "$output_dir/phase11-v1.json" "$output_dir/debug.jsonl" \
 	"$output_dir/release.jsonl" "$output_dir/replay.jsonl" \
-	"$output_dir/sanitizer.jsonl" "$output_dir/identity.json"
+	"$output_dir/sanitizer.jsonl" "$output_dir/semantic-result.json" \
+	"$output_dir/identity.json"
 mkdir -p -- "$output_dir/cases"
 chmod 0755 "$output_dir" "$output_dir/cases"
 
@@ -280,6 +281,32 @@ semantic_sha256=$(sed -n 's/.*semantic-sha256=\([0-9a-f]\{64\}\).*/\1/p' "$valid
 rm -f -- "$validator_log"
 validator_log=""
 [[ ${#semantic_sha256} -eq 64 ]] || fail "validator omitted the semantic digest"
+
+if [[ "$mode" == "canonical" ]]; then
+	candidate_commit=$(git rev-parse HEAD)
+	if [[ "${GITHUB_EVENT_NAME:-}" == "workflow_dispatch" ]]; then
+		[[ "${GITHUB_SHA:-}" == "$candidate_commit" ]] ||
+			fail "workflow candidate differs from the checked-out commit"
+	fi
+	gap_count=$(jq -s \
+		'[.[] | select(.outcome != "match")] | length' \
+		"$output_dir/debug.jsonl" "$output_dir/release.jsonl" "$output_dir/replay.jsonl")
+	jq -n \
+		--arg candidate_commit "$candidate_commit" \
+		--arg semantic_sha256 "$semantic_sha256" \
+		--argjson gap_count "$gap_count" \
+		'{
+		  schema_version: 1,
+		  evidence_kind: "canonical_differential",
+		  candidate_commit: $candidate_commit,
+		  complete: true,
+		  parity_tier: "d1_canonical",
+		  coverage_authority: false,
+		  performance_authority: false,
+		  gap_count: $gap_count,
+		  semantic_sha256: $semantic_sha256
+		}' >"$output_dir/semantic-result.json"
+fi
 
 hash_file() {
 	if command -v sha256sum >/dev/null 2>&1; then

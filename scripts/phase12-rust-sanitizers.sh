@@ -149,6 +149,11 @@ run_sanitizers() {
 		  target: "x86_64-unknown-linux-gnu",
 		  complete: true,
 		  parity_authority: false,
+		  policy: {
+		    unsafe_code: "forbid",
+		    unsafe_waivers: 0,
+		    advisory_waivers: 0
+		  },
 		  cases: .
 		}' "$records_file" >"$output_directory/summary.json"
 	rm -f -- "$records_file"
