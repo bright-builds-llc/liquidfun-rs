@@ -11,7 +11,7 @@ use std::{
 };
 
 use contract::{
-    render_execution_list, sha256, validate_coverage_contract_bytes,
+    differential_leaf_coverage, render_execution_list, sha256, validate_coverage_contract_bytes,
     validate_regression_manifest_bytes, validate_regression_result_bytes,
 };
 use serde::Serialize;
@@ -19,7 +19,9 @@ use serde::Serialize;
 const USAGE: &str = "Usage: cargo xtask safety-evidence validate-regressions \
     [--emit-execution-list]\n       cargo xtask safety-evidence \
     validate-regression-results --candidate FULL_SHA --results \
-    target/phase12-regressions/FULL_SHA\n       cargo xtask safety-evidence validate-coverage";
+    target/phase12-regressions/FULL_SHA\n       cargo xtask safety-evidence validate-coverage\n       \
+    cargo xtask safety-evidence validate-differential-leaves \
+    --expected PATH --observed PATH --output PATH";
 const REGRESSION_MANIFEST: &str = "reference/regressions/manifest.toml";
 const COVERAGE_CONTRACT: &str = "reference/coverage/contract.json";
 const COMPLETION_FILE: &str = "completion.json";
@@ -84,10 +86,79 @@ pub(crate) fn run(args: &[String]) -> Result<(), SafetyEvidenceError> {
         "validate-regressions" => validate_regressions(command_args),
         "validate-regression-results" => validate_regression_results(command_args),
         "validate-coverage" => validate_coverage(command_args),
+        "validate-differential-leaves" => validate_differential_leaves(command_args),
         unknown => Err(SafetyEvidenceError::usage(format!(
             "unknown subcommand `{unknown}`"
         ))),
     }
+}
+
+fn validate_differential_leaves(args: &[String]) -> Result<(), SafetyEvidenceError> {
+    let mut values = BTreeMap::<String, String>::new();
+    for pair in args.chunks(2) {
+        let [option, value] = pair else {
+            return Err(SafetyEvidenceError::usage(
+                "every differential-leaf option requires one value",
+            ));
+        };
+        if !matches!(option.as_str(), "--expected" | "--observed" | "--output")
+            || value.starts_with("--")
+            || values.insert(option.clone(), value.clone()).is_some()
+        {
+            return Err(SafetyEvidenceError::usage(format!(
+                "unknown, valueless, or duplicated option `{option}`"
+            )));
+        }
+    }
+    let expected = required_path(&mut values, "--expected")?;
+    let observed = required_path(&mut values, "--observed")?;
+    let output = required_path(&mut values, "--output")?;
+    if !values.is_empty() {
+        return Err(SafetyEvidenceError::usage(
+            "unexpected differential-leaf options",
+        ));
+    }
+    let expected_bytes = read_regular(&expected, "differential leaves")?;
+    let observed_bytes = read_regular(&observed, "differential leaves")?;
+    let report = differential_leaf_coverage(&expected_bytes, &observed_bytes)
+        .map_err(|error| SafetyEvidenceError::new("coverage", error.to_string()))?;
+    let mut bytes = serde_json::to_vec_pretty(&report)
+        .map_err(|error| SafetyEvidenceError::new("coverage", error.to_string()))?;
+    bytes.push(b'\n');
+    let mut file = OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&output)
+        .map_err(|error| SafetyEvidenceError::new("coverage", error.to_string()))?;
+    file.write_all(&bytes)
+        .and_then(|()| file.sync_all())
+        .map_err(|error| SafetyEvidenceError::new("coverage", error.to_string()))?;
+    if !report.missed().is_empty() {
+        return Err(SafetyEvidenceError::new(
+            "coverage",
+            format!(
+                "{} required differential leaves were missed",
+                report.missed().len()
+            ),
+        ));
+    }
+    println!(
+        "safety evidence differential coverage verified: {} leaves",
+        serde_json::from_slice::<Vec<String>>(&observed_bytes)
+            .map_err(|error| SafetyEvidenceError::new("coverage", error.to_string()))?
+            .len()
+    );
+    Ok(())
+}
+
+fn required_path(
+    values: &mut BTreeMap<String, String>,
+    option: &str,
+) -> Result<PathBuf, SafetyEvidenceError> {
+    values
+        .remove(option)
+        .map(PathBuf::from)
+        .ok_or_else(|| SafetyEvidenceError::usage(format!("missing {option}")))
 }
 
 fn validate_regressions(args: &[String]) -> Result<(), SafetyEvidenceError> {

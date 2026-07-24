@@ -241,6 +241,23 @@ fn coverage_contract_rejects_unknown_merged_parity_and_incomplete_leaves() -> Te
 }
 
 #[test]
+fn differential_leaf_coverage_reports_a_missing_scenario_leaf() -> TestResult {
+    // Arrange
+    let expected = serde_json::to_vec(&[
+        "subsystem.collision".to_owned(),
+        "subsystem.particle-contacts".to_owned(),
+    ])?;
+    let observed = serde_json::to_vec(&["subsystem.collision".to_owned()])?;
+
+    // Act
+    let report = contract::differential_leaf_coverage(&expected, &observed)?;
+
+    // Assert
+    assert_eq!(report.missed(), ["subsystem.particle-contacts".to_owned()]);
+    Ok(())
+}
+
+#[test]
 fn coverage_records_require_five_distinct_complete_evidence_kinds() -> TestResult {
     // Arrange
     let root = TestRoot::new("coverage-records")?;

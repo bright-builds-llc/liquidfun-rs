@@ -214,20 +214,47 @@ run_differential_coverage() {
 	local candidate_sha=$1
 	local output_directory
 	output_directory=$(prepare_output "$candidate_sha" differential)
-	timeout --signal=TERM "${COMMAND_TIMEOUT_SECONDS}s" \
-		cargo test -p liquidfun-differential --all-features
-	cargo xtask inventory check
+	local expected="$output_directory/expected-leaves.json"
+	local observed="$output_directory/observed-leaves.json"
+	local mapping="$output_directory/leaf-targets.json"
 	jq '[
 	  .entries[]
 	  | select(.evidence.differentially_validated.status == "evidenced")
 	  | .id
-	] | sort | {
-	  schema_version: 1,
-	  leaf_kind: "differential_leaves",
-	  parity_authority: false,
-	  exercised: .,
-	  missed: []
-	}' reference/compatibility.json >"$output_directory/differential-leaves.json"
+	] | sort' reference/compatibility.json >"$expected"
+	jq '[
+	  .entries[]
+	  | select(.evidence.differentially_validated.status == "evidenced")
+	  | {
+	      leaf: .id,
+	      targets: [
+	        .evidence.differentially_validated.references[]
+	        | if startswith("crates/liquidfun-differential/tests/") and endswith(".rs")
+	          then split("/")[-1] | sub("\\.rs$"; "")
+	          elif startswith("crates/liquidfun-differential/tests/fixtures/catalog/")
+	          then "phase11_corpus"
+	          else empty
+	          end
+	      ] | unique
+	    }
+	] | if any(.targets | length == 0)
+	    then error("differential leaf lacks an executable test target")
+	    else .
+	    end' reference/compatibility.json >"$mapping"
+	printf '[]\n' >"$observed"
+	while IFS= read -r target; do
+		timeout --signal=TERM "${COMMAND_TIMEOUT_SECONDS}s" \
+			cargo test -p liquidfun-differential --all-features --test "$target"
+		jq --arg target "$target" --slurpfile observed "$observed" \
+			'[$observed[0][], .[] | select(.targets | index($target)) | .leaf] | unique | sort' \
+			"$mapping" >"$observed.tmp"
+		mv -f -- "$observed.tmp" "$observed"
+	done < <(jq -r '[.[].targets[]] | unique[]' "$mapping")
+	cargo xtask inventory check
+	cargo xtask safety-evidence validate-differential-leaves \
+		--expected "$expected" \
+		--observed "$observed" \
+		--output "$output_directory/differential-leaves.json"
 	finish_coverage \
 		"$output_directory" \
 		"$candidate_sha" \

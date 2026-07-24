@@ -148,11 +148,71 @@ enum CoverageEvidenceKind {
     DifferentialCoverage,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
 enum CoverageLeafKind {
     Files,
     DifferentialLeaves,
+}
+
+/// Measured differential coverage derived from expected and observed leaf IDs.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub(crate) struct DifferentialLeafCoverage {
+    schema_version: u32,
+    leaf_kind: CoverageLeafKind,
+    parity_authority: bool,
+    exercised: Vec<String>,
+    missed: Vec<String>,
+}
+
+impl DifferentialLeafCoverage {
+    /// Returns leaves that were not observed during the differential run.
+    pub(crate) fn missed(&self) -> &[String] {
+        &self.missed
+    }
+}
+
+/// Builds a deterministic differential-leaf report from measured observations.
+pub(crate) fn differential_leaf_coverage(
+    expected_bytes: &[u8],
+    observed_bytes: &[u8],
+) -> Result<DifferentialLeafCoverage, ContractError> {
+    let expected = decode_leaf_ids(expected_bytes, "expected")?;
+    let observed = decode_leaf_ids(observed_bytes, "observed")?;
+    if !observed.is_subset(&expected) {
+        return Err(ContractError::new(
+            "observed differential coverage contains an unknown leaf",
+        ));
+    }
+    Ok(DifferentialLeafCoverage {
+        schema_version: COVERAGE_SCHEMA_VERSION,
+        leaf_kind: CoverageLeafKind::DifferentialLeaves,
+        parity_authority: false,
+        exercised: observed.iter().cloned().collect(),
+        missed: expected.difference(&observed).cloned().collect(),
+    })
+}
+
+fn decode_leaf_ids(bytes: &[u8], field: &str) -> Result<BTreeSet<String>, ContractError> {
+    if bytes.is_empty() || bytes.len() > MAXIMUM_CONTRACT_BYTES {
+        return Err(ContractError::new(format!(
+            "{field} differential leaf list violates the reviewed byte bound"
+        )));
+    }
+    let values = serde_json::from_slice::<Vec<String>>(bytes)
+        .map_err(|error| ContractError::new(format!("invalid {field} leaf list: {error}")))?;
+    if values.is_empty() || values.iter().any(|value| !is_leaf_id(value)) {
+        return Err(ContractError::new(format!(
+            "{field} differential leaf list contains an invalid ID"
+        )));
+    }
+    let unique = values.iter().cloned().collect::<BTreeSet<_>>();
+    if unique.len() != values.len() {
+        return Err(ContractError::new(format!(
+            "{field} differential leaf list contains a duplicate ID"
+        )));
+    }
+    Ok(unique)
 }
 
 /// One complete produced coverage record set for later release-audit reuse.
@@ -659,6 +719,14 @@ fn is_identifier(value: &str) -> bool {
         && value
             .bytes()
             .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'-')
+}
+
+fn is_leaf_id(value: &str) -> bool {
+    !value.is_empty()
+        && value.len() <= 256
+        && value.bytes().all(|byte| {
+            byte.is_ascii_lowercase() || byte.is_ascii_digit() || matches!(byte, b'-' | b'_' | b'.')
+        })
 }
 
 fn is_full_sha(value: &str) -> bool {
