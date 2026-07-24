@@ -1,0 +1,256 @@
+name: Phase 12 performance evidence
+
+on:
+  schedule:
+    - cron: "19 7 * * 3"
+  workflow_dispatch:
+    inputs:
+      candidate_sha:
+        description: Exact lowercase 40-character candidate commit SHA
+        required: true
+        type: string
+      controlled_host_label:
+        description: Reviewed runner label (performance-controlled-linux-x64)
+        required: true
+        type: string
+      controlled_host_identity:
+        description: Reviewed lowercase 64-character hardware identity SHA-256
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: phase12-performance-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CANDIDATE_SHA: ${{ github.event_name == 'workflow_dispatch' && inputs.candidate_sha || github.sha }}
+  EVIDENCE_DISPOSITION: ${{ github.event_name == 'workflow_dispatch' && 'reviewed_controlled' || 'trend_diagnostic' }}
+  RELEASE_REVIEWED: ${{ github.event_name == 'workflow_dispatch' && 'true' || 'false' }}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  performance:
+    name: Produce candidate-bound paired performance evidence
+    runs-on: ${{ github.event_name == 'workflow_dispatch' && inputs.controlled_host_label || 'ubuntu-24.04' }}
+    timeout-minutes: 360
+    steps:
+      - name: Check out the exact candidate and pinned upstream
+        # actions/checkout v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          ref: ${{ env.CANDIDATE_SHA }}
+          fetch-depth: 1
+          persist-credentials: false
+          submodules: recursive
+
+      - name: Validate candidate and host evidence class before measurement
+        env:
+          INPUT_HOST_IDENTITY: ${{ inputs.controlled_host_identity }}
+          INPUT_HOST_LABEL: ${{ inputs.controlled_host_label }}
+          REVIEWED_HOST_IDENTITY: ${{ secrets.PERFORMANCE_CONTROLLED_HOST_IDENTITY }}
+          RUNNER_ARCH_VALUE: ${{ runner.arch }}
+          RUNNER_NAME_VALUE: ${{ runner.name }}
+          RUNNER_OS_VALUE: ${{ runner.os }}
+        run: |
+          set -euo pipefail
+          [[ "$CANDIDATE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          if git symbolic-ref --quiet HEAD >/dev/null; then
+            exit 1
+          fi
+
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            [[ "$INPUT_HOST_IDENTITY" =~ ^[0-9a-f]{64}$ ]]
+            test "$INPUT_HOST_LABEL" = "performance-controlled-linux-x64"
+            test -n "$REVIEWED_HOST_IDENTITY"
+            test "$INPUT_HOST_IDENTITY" = "$REVIEWED_HOST_IDENTITY"
+            test "$EVIDENCE_DISPOSITION" = "reviewed_controlled"
+            test "$RELEASE_REVIEWED" = "true"
+            printf 'CONTROLLED_HOST_LABEL=%s\n' "$INPUT_HOST_LABEL" >> "$GITHUB_ENV"
+            printf 'CONTROLLED_HOST_IDENTITY=%s\n' "$INPUT_HOST_IDENTITY" >> "$GITHUB_ENV"
+          else
+            test "$EVIDENCE_DISPOSITION" = "trend_diagnostic"
+            test "$RELEASE_REVIEWED" = "false"
+            printf 'CONTROLLED_HOST_LABEL=%s\n' "ubuntu-24.04-shared" >> "$GITHUB_ENV"
+            printf 'CONTROLLED_HOST_IDENTITY=shared:%s:%s:%s\n' \
+              "$RUNNER_NAME_VALUE" "$RUNNER_OS_VALUE" "$RUNNER_ARCH_VALUE" >> "$GITHUB_ENV"
+          fi
+
+      - name: Install pinned Rust
+        run: rustup toolchain install 1.97.0 --profile minimal
+
+      - name: Install exact CMake and Ninja
+        run: |
+          set -euo pipefail
+          curl --fail --location --silent --show-error \
+            --output "$RUNNER_TEMP/cmake.tar.gz" \
+            https://github.com/Kitware/CMake/releases/download/v4.3.3/cmake-4.3.3-linux-x86_64.tar.gz
+          echo "927b2368a946c37269c3a66225ab00544e756459cdd0b5d0da438694fb9ff802  $RUNNER_TEMP/cmake.tar.gz" |
+            sha256sum --check
+          tar -xzf "$RUNNER_TEMP/cmake.tar.gz" -C "$RUNNER_TEMP"
+          mkdir -p "$RUNNER_TEMP/ninja-1.13.2"
+          curl --fail --location --silent --show-error \
+            --output "$RUNNER_TEMP/ninja.zip" \
+            https://github.com/ninja-build/ninja/releases/download/v1.13.2/ninja-linux.zip
+          echo "5749cbc4e668273514150a80e387a957f933c6ed3f5f11e03fb30955e2bbead6  $RUNNER_TEMP/ninja.zip" |
+            sha256sum --check
+          unzip -q "$RUNNER_TEMP/ninja.zip" -d "$RUNNER_TEMP/ninja-1.13.2"
+          {
+            echo "$RUNNER_TEMP/cmake-4.3.3-linux-x86_64/bin"
+            echo "$RUNNER_TEMP/ninja-1.13.2"
+          } >> "$GITHUB_PATH"
+
+      - name: Build the exact release oracle
+        run: |
+          cmake --version | grep --fixed-strings "cmake version 4.3.3"
+          ninja --version | grep --fixed-strings "1.13.2"
+          cargo xtask upstream configure --preset oracle-release
+          cargo xtask upstream build --preset oracle-release
+          cargo xtask performance paired --check
+
+      - name: Acquire complete paired raw measurements
+        run: scripts/phase12-performance.sh paired
+
+      - name: Calibrate the complete paired raw set
+        run: scripts/phase12-performance.sh calibrate
+
+      - name: Validate the calibrated performance evidence
+        run: scripts/phase12-performance.sh validate
+
+      - name: Verify complete fourteen-workload evidence
+        run: |
+          set -euo pipefail
+          evidence="target/phase12-performance"
+          cargo xtask performance validate
+          case_count=$(jq '.cases | length' protocol/benchmarks/phase12-v1.json)
+          workload_count=$(jq '[.cases[].workload] | unique | length' protocol/benchmarks/phase12-v1.json)
+          test "$case_count" = "32"
+          test "$workload_count" = "14"
+          test "$(find "$evidence/raw" -type f -name '*.json' | wc -l | tr -d ' ')" = "32"
+          test "$(jq '.completed_cases | length' "$evidence/paired-summary.json")" = "32"
+          while IFS= read -r report; do
+            jq --exit-status '
+              (.raw_samples | length) == 150 and
+              (.identity.scenario_id | length) > 0 and
+              (.identity.policy_sha256 | length) == 64 and
+              (.identity.matrix_sha256 | length) == 64 and
+              (.identity.rust_compiler | length) > 0 and
+              (.identity.rust_linker | length) > 0 and
+              (.identity.oracle_compiler | length) > 0 and
+              (.identity.oracle_linker | length) > 0 and
+              (.identity.target | length) > 0 and
+              (.identity.rust_compile_flags | length) > 0 and
+              (.identity.rust_link_flags | length) > 0 and
+              (.identity.oracle_compile_flags | length) > 0 and
+              (.identity.oracle_link_flags | length) > 0 and
+              (.identity.hardware_session.session_id | length) > 0
+            ' "$report" >/dev/null
+          done < <(find "$evidence/raw" -type f -name '*.json' | sort)
+
+      - name: Assemble manifest and publish producer identity last
+        env:
+          PRODUCER_JOB: ${{ github.job }}
+          PRODUCER_RUN_ID: ${{ github.run_id }}
+          PRODUCER_WORKFLOW: ${{ github.workflow }}
+        run: |
+          set -euo pipefail
+          evidence="target/phase12-performance"
+          mv -f -- "$evidence/identity.json" "$evidence/validation-identity.json"
+          rm -f -- "$evidence/producer-identity.json"
+          (
+            cd "$evidence"
+            {
+              find raw logs -type f -print
+              printf '%s\n' \
+                calibration.json \
+                paired-summary.json \
+                summary.json \
+                validation-identity.json
+            } | sort | while IFS= read -r relative; do
+              sha256sum "$relative"
+            done
+          ) > "$evidence/payload-files.sha256"
+          payload_files_sha256=$(sha256sum "$evidence/payload-files.sha256" | awk '{print $1}')
+          jq --null-input \
+            --arg candidate_sha "$CANDIDATE_SHA" \
+            --arg controlled_host_identity "$CONTROLLED_HOST_IDENTITY" \
+            --arg controlled_host_label "$CONTROLLED_HOST_LABEL" \
+            --arg disposition "$EVIDENCE_DISPOSITION" \
+            --argjson release_reviewed "$RELEASE_REVIEWED" \
+            --arg payload_files_sha256 "$payload_files_sha256" \
+            --arg policy_sha256 "$(jq -r '.policy_sha256' "$evidence/validation-identity.json")" \
+            --arg matrix_sha256 "$(jq -r '.matrix_sha256' "$evidence/validation-identity.json")" \
+            '{
+              schema_version: 1,
+              evidence_kind: "paired_performance",
+              candidate_sha: $candidate_sha,
+              controlled_host_label: $controlled_host_label,
+              controlled_host_identity: $controlled_host_identity,
+              disposition: $disposition,
+              release_reviewed: $release_reviewed,
+              workload_count: 14,
+              case_count: 32,
+              policy_sha256: $policy_sha256,
+              matrix_sha256: $matrix_sha256,
+              payload_files_sha256: $payload_files_sha256
+            }' > "$evidence/manifest-entry.json"
+          payload_sha256=$(sha256sum "$evidence/manifest-entry.json" | awk '{print $1}')
+          identity_tmp=$(mktemp "$evidence/.producer-identity.XXXXXX")
+          jq --null-input \
+            --arg candidate_sha "$CANDIDATE_SHA" \
+            --arg disposition "$EVIDENCE_DISPOSITION" \
+            --argjson release_reviewed "$RELEASE_REVIEWED" \
+            --arg producer_job "$PRODUCER_JOB" \
+            --arg producer_run_id "$PRODUCER_RUN_ID" \
+            --arg producer_workflow "$PRODUCER_WORKFLOW" \
+            --arg payload_sha256 "$payload_sha256" \
+            '{
+              schema_version: 1,
+              candidate_sha: $candidate_sha,
+              evidence_kind: "paired_performance",
+              disposition: $disposition,
+              release_reviewed: $release_reviewed,
+              producer_workflow: $producer_workflow,
+              producer_job: $producer_job,
+              run_id: $producer_run_id,
+              payload_sha256: $payload_sha256
+            }' > "$identity_tmp"
+          mv -f -- "$identity_tmp" "$evidence/producer-identity.json"
+
+      - name: Verify producer identity and trend isolation
+        env:
+          EXPECTED_JOB: ${{ github.job }}
+          EXPECTED_RUN_ID: ${{ github.run_id }}
+          EXPECTED_WORKFLOW: ${{ github.workflow }}
+        run: |
+          set -euo pipefail
+          evidence="target/phase12-performance"
+          identity="$evidence/producer-identity.json"
+          test -s "$evidence/manifest-entry.json"
+          test -s "$identity"
+          test "$identity" -nt "$evidence/manifest-entry.json"
+          test "$(jq -r '.candidate_sha' "$identity")" = "$CANDIDATE_SHA"
+          test "$(jq -r '.producer_workflow' "$identity")" = "$EXPECTED_WORKFLOW"
+          test "$(jq -r '.producer_job' "$identity")" = "$EXPECTED_JOB"
+          test "$(jq -r '.run_id' "$identity")" = "$EXPECTED_RUN_ID"
+          test "$(jq -r '.payload_sha256' "$identity")" = \
+            "$(sha256sum "$evidence/manifest-entry.json" | awk '{print $1}')"
+          if [[ "${{ github.event_name }}" == "schedule" ]]; then
+            test "$(jq -r '.disposition' "$identity")" = "trend_diagnostic"
+            test "$(jq -r '.release_reviewed' "$identity")" = "false"
+          fi
+
+      - name: Upload one complete candidate-scoped performance artifact
+        # actions/upload-artifact v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: phase12-performance-${{ github.run_id }}-${{ env.CANDIDATE_SHA }}
+          path: target/phase12-performance
+          if-no-files-found: error
+          retention-days: 30
