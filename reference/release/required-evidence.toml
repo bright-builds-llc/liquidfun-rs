@@ -1,0 +1,134 @@
+schema_version = 1
+
+[[evidence]]
+kind = "package"
+target = "all"
+workflow = "platform.yml"
+job = "package"
+toolchain = "rust-1.97.0"
+
+[[evidence]]
+kind = "msrv"
+target = "x86_64-unknown-linux-gnu"
+workflow = "platform.yml"
+job = "msrv"
+toolchain = "rust-1.92.0"
+
+[[evidence]]
+kind = "platform"
+target = "x86_64-unknown-linux-gnu"
+workflow = "platform.yml"
+job = "native"
+toolchain = "rust-1.97.0"
+
+[[evidence]]
+kind = "platform"
+target = "aarch64-unknown-linux-gnu"
+workflow = "platform.yml"
+job = "native"
+toolchain = "rust-1.97.0"
+
+[[evidence]]
+kind = "platform"
+target = "aarch64-apple-darwin"
+workflow = "platform.yml"
+job = "native"
+toolchain = "rust-1.97.0"
+
+[[evidence]]
+kind = "platform"
+target = "x86_64-pc-windows-msvc"
+workflow = "platform.yml"
+job = "native"
+toolchain = "rust-1.97.0"
+
+[[evidence]]
+kind = "conditional_platform"
+target = "x86_64-apple-darwin"
+workflow = "platform.yml"
+job = "conditional-policy"
+toolchain = "rust-1.97.0"
+
+[[evidence]]
+kind = "canonical_differential"
+target = "x86_64-unknown-linux-gnu"
+workflow = "oracle.yml"
+job = "phase11-canonical-linux"
+toolchain = "clang-22.1.8+rust-1.97.0"
+
+[[evidence]]
+kind = "rust_safety"
+target = "x86_64-unknown-linux-gnu"
+workflow = "safety.yml"
+job = "miri"
+toolchain = "nightly-2026-07-15"
+
+[[evidence]]
+kind = "cpp_sanitizer"
+target = "x86_64-unknown-linux-gnu"
+workflow = "oracle.yml"
+job = "phase11-sanitizer-linux"
+toolchain = "clang-22.1.8"
+
+[[evidence]]
+kind = "fuzz"
+target = "x86_64-unknown-linux-gnu"
+workflow = "fuzz.yml"
+job = "fuzz"
+toolchain = "nightly-2026-07-15"
+
+[[evidence]]
+kind = "regressions"
+target = "x86_64-unknown-linux-gnu"
+workflow = "regressions.yml"
+job = "regressions"
+toolchain = "rust-1.97.0"
+
+[[evidence]]
+kind = "rust_coverage"
+target = "x86_64-unknown-linux-gnu"
+workflow = "coverage.yml"
+job = "rust-coverage"
+toolchain = "rust-1.97.0"
+
+[[evidence]]
+kind = "cpp_coverage"
+target = "x86_64-unknown-linux-gnu"
+workflow = "coverage.yml"
+job = "cpp-coverage"
+toolchain = "clang-22.1.8"
+
+[[evidence]]
+kind = "performance"
+target = "x86_64-unknown-linux-gnu"
+workflow = "performance.yml"
+job = "performance"
+toolchain = "clang-22.1.8+rust-1.97.0"
+
+[[evidence]]
+kind = "docs"
+target = "all"
+workflow = "ci.yml"
+job = "quality"
+toolchain = "rust-1.97.0"
+
+[[evidence]]
+kind = "notices"
+target = "all"
+workflow = "ci.yml"
+job = "quality"
+toolchain = "rust-1.97.0"
+
+[[evidence]]
+kind = "corpus_closure"
+target = "all"
+workflow = "ci.yml"
+job = "quality"
+toolchain = "rust-1.97.0"
+
+[[evidence]]
+kind = "compatibility_closure"
+target = "all"
+workflow = "ci.yml"
+job = "quality"
+toolchain = "rust-1.97.0"

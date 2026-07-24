@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://liquidfun-rs.example/reference/release/schema.json",
+  "title": "liquidfun-rs release evidence manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "candidate_commit", "items"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "candidate_commit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "items": {
+      "type": "array",
+      "maxItems": 256,
+      "items": { "$ref": "#/$defs/evidence" }
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["workflow", "job", "run_id"],
+      "properties": {
+        "workflow": { "type": "string", "minLength": 1 },
+        "job": { "type": "string", "minLength": 1 },
+        "run_id": { "type": "string", "minLength": 1, "maxLength": 128 }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "target",
+        "candidate_commit",
+        "producer",
+        "artifact_path",
+        "artifact_sha256",
+        "payload_sha256",
+        "toolchain",
+        "review_status",
+        "status"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "package",
+            "msrv",
+            "platform",
+            "conditional_platform",
+            "canonical_differential",
+            "rust_safety",
+            "cpp_sanitizer",
+            "fuzz",
+            "regressions",
+            "rust_coverage",
+            "cpp_coverage",
+            "performance",
+            "docs",
+            "notices",
+            "corpus_closure",
+            "compatibility_closure"
+          ]
+        },
+        "target": { "type": "string", "minLength": 1 },
+        "candidate_commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "producer": { "$ref": "#/$defs/producer" },
+        "artifact_path": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[^/].*$"
+        },
+        "artifact_sha256": { "$ref": "#/$defs/sha256" },
+        "payload_sha256": { "$ref": "#/$defs/sha256" },
+        "toolchain": { "type": "string", "minLength": 1 },
+        "review_status": { "const": "reviewed" },
+        "status": { "const": "passed" }
+      }
+    }
+  }
+}

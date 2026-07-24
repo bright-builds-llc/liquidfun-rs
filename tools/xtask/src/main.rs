@@ -9,6 +9,7 @@ mod phase10_evidence;
 mod phase11_evidence;
 mod phase9_evidence;
 mod provenance;
+mod release;
 mod safety_evidence;
 mod upstream;
 
@@ -34,6 +35,7 @@ Commands:
   safety-evidence Validate typed regression, safety, and coverage evidence
   package     Validate the publishable package
   performance Run sealed paired performance and analysis workflows
+  release     Audit one complete commit-bound release evidence manifest
   check       Run the aggregate repository checks";
 
 #[derive(Debug, PartialEq, Eq)]
@@ -49,6 +51,7 @@ enum XtaskError {
     Phase10Evidence(phase10_evidence::Phase10EvidenceError),
     Phase11Evidence(phase11_evidence::Phase11EvidenceError),
     Provenance(provenance::ProvenanceError),
+    Release(release::ReleaseError),
     SafetyEvidence(safety_evidence::SafetyEvidenceError),
     Upstream(upstream::UpstreamError),
 }
@@ -88,6 +91,7 @@ impl Display for XtaskError {
             Self::Phase10Evidence(error) => Display::fmt(error, formatter),
             Self::Phase11Evidence(error) => Display::fmt(error, formatter),
             Self::Provenance(error) => Display::fmt(error, formatter),
+            Self::Release(error) => Display::fmt(error, formatter),
             Self::SafetyEvidence(error) => Display::fmt(error, formatter),
             Self::Upstream(error) => Display::fmt(error, formatter),
         }
@@ -114,6 +118,7 @@ fn dispatch(args: &[String]) -> Result<(), XtaskError> {
         "provenance" => provenance::run(command_args).map_err(XtaskError::Provenance),
         "package" => package::run(command_args).map_err(XtaskError::Package),
         "performance" => performance::run(command_args).map_err(XtaskError::Performance),
+        "release" => release::run(command_args).map_err(XtaskError::Release),
         "safety-evidence" => safety_evidence::run(command_args).map_err(XtaskError::SafetyEvidence),
         "phase9-evidence" => phase9_evidence::run(command_args).map_err(XtaskError::Phase9Evidence),
         "phase10-evidence" => {

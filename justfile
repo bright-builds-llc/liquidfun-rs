@@ -23,6 +23,9 @@ test:
 package-verify:
     cargo xtask package verify
 
+release-audit manifest candidate output="human":
+    cargo xtask release audit --manifest {{quote(manifest)}} --candidate {{quote(candidate)}} --output {{quote(output)}}
+
 inventory-check:
     cargo xtask inventory check
 

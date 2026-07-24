@@ -533,7 +533,11 @@ fn validate_tolerance_references(
     repository_root: &Path,
 ) -> Result<(), InventoryError> {
     for reference in &entry.evidence.differentially_validated.references {
-        if !reference.starts_with("protocol/tolerances/") || !reference.ends_with(".toml") {
+        if !reference.starts_with("protocol/tolerances/")
+            || Path::new(reference)
+                .extension()
+                .is_none_or(|extension| extension != "toml")
+        {
             continue;
         }
         let path = repository_root.join(reference);
