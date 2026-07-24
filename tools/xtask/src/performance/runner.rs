@@ -190,7 +190,11 @@ fn collect_platform_hardware() -> Result<PlatformHardware, PerformanceCommandErr
         .parse::<u64>()
         .map_err(|error| PerformanceCommandError::new("hardware", error.to_string()))?;
     let operating_system = command_output(Path::new("."), "sw_vers", &["-productVersion"])?;
-    validate_hardware(cpu_model, memory_bytes, format!("macOS {operating_system}"))
+    validate_hardware(
+        &cpu_model,
+        memory_bytes,
+        &format!("macOS {operating_system}"),
+    )
 }
 
 #[cfg(target_os = "windows")]
@@ -227,7 +231,7 @@ fn collect_platform_hardware() -> Result<PlatformHardware, PerformanceCommandErr
             "(Get-CimInstance Win32_OperatingSystem).Caption",
         ],
     )?;
-    validate_hardware(cpu_model, memory_bytes, operating_system)
+    validate_hardware(&cpu_model, memory_bytes, &operating_system)
 }
 
 #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
@@ -238,6 +242,7 @@ fn collect_platform_hardware() -> Result<PlatformHardware, PerformanceCommandErr
     ))
 }
 
+#[cfg(any(target_os = "linux", test))]
 fn parse_linux_hardware(
     cpuinfo: &str,
     meminfo: &str,
@@ -260,13 +265,13 @@ fn parse_linux_hardware(
     let memory_bytes = memory_kib
         .checked_mul(1024)
         .ok_or_else(|| PerformanceCommandError::new("hardware", "Linux memory total overflow"))?;
-    validate_hardware(cpu_model, memory_bytes, operating_system.to_owned())
+    validate_hardware(&cpu_model, memory_bytes, operating_system)
 }
 
 fn validate_hardware(
-    cpu_model: String,
+    cpu_model: &str,
     memory_bytes: u64,
-    operating_system: String,
+    operating_system: &str,
 ) -> Result<PlatformHardware, PerformanceCommandError> {
     let cpu_model = cpu_model.trim();
     let operating_system = operating_system.trim();
