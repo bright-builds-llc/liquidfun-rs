@@ -3,14 +3,14 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 12-19-PLAN.md
-last_updated: "2026-07-23T23:55:21.645Z"
-last_activity: "2026-07-23"
+stopped_at: Completed 12-13-PLAN.md
+last_updated: "2026-07-24T00:27:11.318Z"
+last_activity: "2026-07-24"
 progress:
   total_phases: 12
   completed_phases: 11
   total_plans: 216
-  completed_plans: 207
+  completed_plans: 208
   percent: 96
 ---
 
@@ -26,9 +26,9 @@ See: `.planning/PROJECT.md` (updated 2026-07-23)
 ## Current Position
 
 Phase: 12 (Performance, Portability, and Release Hardening) — EXECUTING
-Plan: 9 of 25
+Plan: 10 of 25
 Status: Ready to execute
-Last activity: 2026-07-23
+Last activity: 2026-07-24
 
 Progress: [██████████] 96%
 
@@ -214,6 +214,7 @@ Progress: [██████████] 96%
 | Phase 12 P25 | 13min | 2 tasks | 3 files |
 | Phase 12 P18 | 24m | 1 tasks | 5 files |
 | Phase 12 P19 | 15m | 1 tasks | 10 files |
+| Phase 12 P13 | 50 min | 2 tasks | 15 files |
 
 ## Accumulated Context
 
@@ -597,6 +598,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 12]: Reuse one narrow catalog session seam for ordinary catalog execution and benchmark timing instead of duplicating native action semantics.
 - [Phase 12]: Advance the benchmark reset epoch before strict decoding so every adapter-level rejection and completion consumes one request-local identity.
 - [Phase 12]: Collect optional common-parent diagnostics in a separate post-authority sample so profiled durations never become regression authority.
+- [Phase 12]: Treat the compatibility ledger and release audit as the sole authority for broad public claims.
+- [Phase 12]: Scan constructible unsafe syntax after stripping comments and literals while checking the workspace lint separately.
+- [Phase 12]: Represent conditional Intel macOS support as fail-closed when native evidence is absent or stale.
 
 ### Pending Todos
 
@@ -610,6 +614,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-23T23:55:21.639Z
-Stopped at: Completed 12-19-PLAN.md
+Last session: 2026-07-24T00:27:11.312Z
+Stopped at: Completed 12-13-PLAN.md
 Resume file: None
