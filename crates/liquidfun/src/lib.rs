@@ -1,9 +1,61 @@
 //! An independent Rust implementation of the `LiquidFun` physics engine.
 //!
-//! This crate is currently a safe, Cargo-only early vertical slice. Its
-//! collision namespace contains the Phase 5 substrate, while [`World`] owns the
-//! checked Phase 7 body, fixture, contact, multi-contact island, continuous
-//! collision, query, ray-cast, and origin-shift behavior described below.
+//! The published crate is a safe, Cargo-only, renderer-independent native Rust
+//! engine. Its scalar implementation covers rigid bodies, contacts, joints,
+//! rope, particles, queries, observations, and debug-draw data. Compatibility
+//! claims remain evidence-scoped: consult the repository's generated
+//! `COMPATIBILITY.md` instead of inferring whole-project parity from one API.
+//!
+//! Lengths use metres, mass uses kilograms, time uses seconds, and angles use
+//! radians. Public constructors reject invalid or non-finite state with typed
+//! errors. World mutation validates complete opaque handles before effects, and
+//! owned reports preserve semantic event order without exposing storage.
+//!
+//! # API navigation
+//!
+//! - **Math and settings:** [`math`] contains vectors, matrices, transforms,
+//!   sweeps, scalar helpers, and [`math::settings`] constants.
+//! - **Collision and shapes:** [`collision`] contains immutable shapes,
+//!   manifolds, distance and time-of-impact queries, broad phase, and dynamic
+//!   tree APIs.
+//! - **World, bodies, and fixtures:** [`World`], [`BodyDef`], [`FixtureDef`],
+//!   their snapshots, and typed mutation errors form the owned simulation
+//!   boundary.
+//! - **Joints and rope:** [`joint`] contains all eleven world-owned joint
+//!   definitions and snapshots; [`rope`] contains the independent rope model.
+//! - **Particles and groups:** [`particle`] contains systems, stable particle
+//!   and group identities, lifecycle, contacts, queries, editing, and owned
+//!   buffer transfer.
+//! - **Callbacks and events:** [`CollisionDecisionHook`], [`StepHook`],
+//!   borrow-scoped views, typed directives, [`WorldCommand`], and owned
+//!   [`StepReport`] values define the callback boundary.
+//! - **Queries, observations, and profiles:** [`World::query_aabb`],
+//!   [`World::ray_cast`], [`WorldObservation`], debug-draw primitives, and
+//!   [`DiagnosticStepProfile`] expose renderer-neutral semantic state.
+//! - **Handles and invalidation:** [`BodyId`], [`FixtureId`], [`JointId`],
+//!   [`ParticleSystemId`], [`ParticleGroupId`], and [`ParticleId`] are opaque,
+//!   owner-scoped identities; [`HandleError`] distinguishes foreign and stale
+//!   use.
+//! - **Errors and upstream naming:** recoverable failures are typed. Familiar
+//!   `LiquidFun` nouns are retained where they clarify correspondence, while
+//!   Rust APIs use owned values, checked constructors, and explicit mutation.
+//!
+//! A minimal headless world needs no C++ toolchain or renderer:
+//!
+//! ```
+//! use liquidfun::math::Vec2;
+//! use liquidfun::{BodyDef, BodyType, NoDecisionHook, StepConfiguration, StepLimits, World};
+//!
+//! let mut world = World::new()?;
+//! let definition = BodyDef::new(BodyType::Dynamic, Vec2::ZERO, 0.0, true)?;
+//! let body = world.create_body(&definition)?;
+//! let configuration = StepConfiguration::new(1.0 / 60.0, 8, 3)?;
+//! let report = world.step(configuration, &mut NoDecisionHook, StepLimits::default())?;
+//!
+//! assert!(world.contains_body(body));
+//! assert!(!report.phases().is_empty());
+//! # Ok::<(), Box<dyn std::error::Error>>(())
+//! ```
 //!
 //! # Phase 5 collision foundation
 //!
@@ -101,12 +153,13 @@
 //! The Phase 8 result has canonical scalar rigid-body and joint differential sign-off for the closed Phase 8 corpus.
 //! That statement is limited to the
 //! reviewed 19-family scalar Linux `x86_64` corpus and its named `phase8-v1`
-//! policies. Phase 11 adds bounded renderer-neutral world observations and
-//! diagnostic-only wall-clock profiles; D3 evidence, cross-platform parity,
-//! performance sign-off, the testbed, and release readiness remain pending.
+//! policies. Later phases add particles, owned buffer transfer, bounded
+//! renderer-neutral world observations, and diagnostic-only wall-clock
+//! profiles. Broader compatibility, performance, platform, and release claims
+//! require their own reviewed evidence.
 //!
-//! These APIs remain a bounded rigid-world slice. Particle solving and
-//! project-wide compatibility remain later work.
+//! The checked-in compatibility ledger, not this historical milestone summary,
+//! is authoritative for current subsystem evidence and explicit gaps.
 //!
 //! # Phase 3 object model
 //!
@@ -132,10 +185,10 @@
 //! `u64` identity is issued, later creation returns
 //! [`ArenaInsertError::DiagnosticIdExhausted`] before inserting an object.
 //!
-//! This foundation deliberately exposes no durable contact handle, raw object
-//! constructor, particle dense index, arbitrary callback closure command, raw
-//! pointer, or particle bulk/external-buffer API. Full particle solving and the
-//! API-09/API-10 buffer surface remain Phase 9 work.
+//! This crate deliberately exposes no durable contact handle, raw object
+//! constructor, particle dense index, arbitrary callback closure command, or
+//! raw pointer. The safe external-buffer equivalent transfers uniquely owned
+//! [`ParticleBufferBundle`] values into and out of a particle system.
 //!
 //! Handle kinds cannot be substituted for one another:
 //!

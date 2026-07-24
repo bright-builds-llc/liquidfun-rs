@@ -11,15 +11,15 @@ identity authority is [`reference/upstream-lock.toml`](reference/upstream-lock.t
 
 ## Identity
 
-| Field                 | Canonical value                            |
+| Field | Canonical value |
 | --------------------- | ------------------------------------------ |
-| Repository            | `https://github.com/google/liquidfun.git`  |
-| Selected revision     | `7f20402173fd143a3988c921bc384459c6a858f2` |
-| Release tag           | `v1.1.0`                                   |
-| Annotated tag object  | `d15bcf1879144bf2a4c8ebcc73f6418186756fb2` |
+| Repository | `https://github.com/google/liquidfun.git` |
+| Selected revision | `7f20402173fd143a3988c921bc384459c6a858f2` |
+| Release tag | `v1.1.0` |
+| Annotated tag object | `d15bcf1879144bf2a4c8ebcc73f6418186756fb2` |
 | Peeled release commit | `f38db7c627c3dc5ec879d726e16fa5a12ad6e478` |
-| Submodule path        | `third_party/liquidfun`                    |
-| Patch set             | `none`                                     |
+| Submodule path | `third_party/liquidfun` |
+| Patch set | `none` |
 
 The selected revision is an immutable official commit. The tag records release
 context; it is not a substitute for the selected revision.
