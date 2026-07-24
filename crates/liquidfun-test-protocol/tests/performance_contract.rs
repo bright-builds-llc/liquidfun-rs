@@ -156,6 +156,54 @@ fn matrix_rejects_missing_workloads_and_duplicate_case_identities() {
 }
 
 #[test]
+fn matrix_rejects_tampering_with_every_sealed_case_field() {
+    // Arrange
+    let matrix = PerformanceMatrix::reviewed_v1().expect("reviewed matrix should validate");
+    let value = serde_json::to_value(matrix).expect("reviewed matrix should serialize");
+    let mutations = [
+        ("case_id", Value::from("tampered-case")),
+        ("scenario_id", Value::from("tampered-scenario")),
+        ("resolved_sha256", Value::from("0".repeat(64))),
+        ("logical_horizon", Value::from(999)),
+        ("optimization_mode", Value::from("tampered_mode")),
+    ];
+
+    for (field, replacement) in mutations {
+        let mut tampered = value.clone();
+        tampered["cases"][0][field] = replacement;
+
+        // Act
+        let result = serde_json::from_value::<PerformanceMatrix>(tampered);
+
+        // Assert
+        assert!(result.is_err(), "tampered {field} must be rejected");
+    }
+}
+
+#[test]
+fn matrix_rejects_tampering_with_every_sealed_solver_setting() {
+    // Arrange
+    let matrix = PerformanceMatrix::reviewed_v1().expect("reviewed matrix should validate");
+    let value = serde_json::to_value(matrix).expect("reviewed matrix should serialize");
+
+    for field in [
+        "timestep_bits",
+        "velocity_iterations",
+        "position_iterations",
+        "particle_iterations",
+    ] {
+        let mut tampered = value.clone();
+        tampered["cases"][0]["settings"][field] = Value::from(999);
+
+        // Act
+        let result = serde_json::from_value::<PerformanceMatrix>(tampered);
+
+        // Assert
+        assert!(result.is_err(), "tampered setting {field} must be rejected");
+    }
+}
+
+#[test]
 fn d1_fixture_promotion_is_not_a_performance_compatibility_status() {
     // Act
     let error = CompatibilityStatus::try_from(EvidenceTier::D1Canonical)

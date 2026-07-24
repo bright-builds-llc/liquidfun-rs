@@ -391,17 +391,22 @@ fn validate_cases(
             PerformanceErrorKind::IncompleteWorkloadMatrix,
         ));
     }
-    let valid = cases.iter().all(|case| {
-        case.catalog_sha256 == *catalog_sha256
-            && case.logical_horizon > 0
-            && case.regions.is_complete()
-            && case.engine_roles
-                == [
+    for case in cases {
+        let expected = case_for(case.workload, case.size_point, catalog_sha256.clone())?;
+        if *case != expected {
+            return Err(PerformanceError::new(
+                PerformanceErrorKind::InvalidCaseBinding,
+            ));
+        }
+    }
+    if cases.iter().any(|case| {
+        !case.regions.is_complete()
+            || case.engine_roles
+                != [
                     PerformanceEngineRole::NativeRust,
                     PerformanceEngineRole::PinnedCppOracle,
                 ]
-    });
-    if !valid {
+    }) {
         return Err(PerformanceError::new(
             PerformanceErrorKind::InvalidCaseBinding,
         ));
