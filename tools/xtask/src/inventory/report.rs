@@ -3,6 +3,7 @@ use std::fmt::{Arguments, Write as _};
 
 use super::{
     ApplicabilityStatus, CompatibilityKind, CompatibilityLedger, EvidenceRecord, EvidenceStatus,
+    ReleaseReadiness,
 };
 
 const LEGEND: [(&str, &str); 8] = [
@@ -37,12 +38,13 @@ const LEGEND: [(&str, &str); 8] = [
     ),
 ];
 
-pub(super) fn render(ledger: &CompatibilityLedger) -> String {
+pub(super) fn render(ledger: &CompatibilityLedger, readiness: &ReleaseReadiness) -> String {
     let mut output = String::new();
     render_header(&mut output, ledger);
+    render_release_readiness(&mut output, ledger, readiness);
     render_counts(&mut output, ledger);
     render_kind_tables(&mut output, ledger);
-    render_gaps(&mut output, ledger);
+    render_release_outcomes(&mut output, ledger);
     output
 }
 
@@ -72,6 +74,53 @@ fn render_header(output: &mut String, ledger: &CompatibilityLedger) {
     for (dimension, definition) in LEGEND {
         append(output, format_args!("| `{dimension}` | {definition} |\n"));
     }
+}
+
+fn render_release_readiness(
+    output: &mut String,
+    ledger: &CompatibilityLedger,
+    readiness: &ReleaseReadiness,
+) {
+    output.push_str("\n## Release readiness closure\n\n");
+    output.push_str("Status: **zero unexplained compatibility gaps**. This closure is derived from exact identity joins; local command success never promotes evidence.\n\n");
+    output.push_str("| Closure measure | Count |\n| --- | ---: |\n");
+    for (label, count) in [
+        ("Compatibility identities", ledger.entries.len()),
+        (
+            "Release disposition joins",
+            ledger.release_dispositions.len(),
+        ),
+        ("D1 canonical rows", readiness.d1_rows),
+        ("D2 supported rows (orthogonal)", readiness.d2_rows),
+        ("Terminal corpus rows", readiness.corpus_terminal_rows),
+        (
+            "Reviewed difference rows",
+            readiness.reviewed_difference_rows,
+        ),
+        (
+            "Intentional unsupported rows",
+            readiness.intentional_unsupported_rows,
+        ),
+        ("Terminal corpus items", readiness.corpus_items),
+        ("Unexplained rows", 0),
+        ("Nonterminal corpus items", 0),
+        ("Stale or mixed-commit evidence", 0),
+    ] {
+        append(output, format_args!("| {label} | {count} |\n"));
+    }
+    output.push_str("\n### Machine authorities\n\n");
+    output.push_str(
+        "- D1 parity: compatibility evidence joined to pinned tolerance profiles and exact reviewed evidence references.\n",
+    );
+    output.push_str(
+        "- D2 support: `reference/platform/support.json`; D2 never promotes D1 parity.\n",
+    );
+    output.push_str(
+        "- Corpus closure: `reference/upstream-corpus.json`; every item must have one terminal review outcome.\n",
+    );
+    output.push_str(
+        "- Artifact, regression, performance, and coverage contracts are schema-checked. Coverage and performance are explicitly non-parity authorities.\n",
+    );
 }
 
 fn render_counts(output: &mut String, ledger: &CompatibilityLedger) {
@@ -158,26 +207,26 @@ fn render_kind_tables(output: &mut String, ledger: &CompatibilityLedger) {
     }
 }
 
-fn render_gaps(output: &mut String, ledger: &CompatibilityLedger) {
-    output.push_str("\n## Explicit gaps\n\n");
-    output.push_str("Every row below names its currently missing evidence dimensions. Absence is not a compatibility claim.\n\n");
-    output.push_str("| ID | Missing evidence |\n| --- | --- |\n");
-    for entry in &ledger.entries {
-        let missing = entry
-            .evidence
-            .records()
-            .into_iter()
-            .filter_map(|(dimension, record)| {
-                (record.status == EvidenceStatus::NotEvidenced).then_some(dimension)
-            })
-            .collect::<Vec<_>>()
-            .join(", ");
-        if !missing.is_empty() {
-            append(
-                output,
-                format_args!("| `{}` | {} |\n", markdown(&entry.id), missing),
-            );
-        }
+fn render_release_outcomes(output: &mut String, ledger: &CompatibilityLedger) {
+    output.push_str("\n## Release dispositions\n\n");
+    output.push_str("Each compatibility identity has exactly one reviewed release outcome. These outcomes do not erase independent evidence gaps shown above.\n\n");
+    output.push_str("| ID | Outcome | Rationale | Authorities |\n| --- | --- | --- | --- |\n");
+    for disposition in &ledger.release_dispositions {
+        append(
+            output,
+            format_args!(
+                "| `{}` | {} | {} | {} |\n",
+                markdown(&disposition.id),
+                disposition.outcome.as_str(),
+                markdown(&disposition.rationale),
+                disposition
+                    .references
+                    .iter()
+                    .map(|reference| format!("`{}`", markdown(reference)))
+                    .collect::<Vec<_>>()
+                    .join("<br>"),
+            ),
+        );
     }
 }
 

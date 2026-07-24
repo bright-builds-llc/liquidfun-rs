@@ -150,6 +150,46 @@ struct CompatibilityLedger {
     sort_contract: String,
     evidence_dimensions: Vec<String>,
     entries: Vec<CompatibilityEntry>,
+    release_dispositions: Vec<ReleaseDisposition>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ReleaseDisposition {
+    id: String,
+    outcome: ReleaseOutcome,
+    rationale: String,
+    references: Vec<String>,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+enum ReleaseOutcome {
+    D1Canonical,
+    CorpusTerminal,
+    ReviewedDifference,
+    IntentionalUnsupported,
+}
+
+impl ReleaseOutcome {
+    const fn as_str(self) -> &'static str {
+        match self {
+            Self::D1Canonical => "D1 canonical",
+            Self::CorpusTerminal => "corpus terminal",
+            Self::ReviewedDifference => "reviewed difference",
+            Self::IntentionalUnsupported => "intentional unsupported",
+        }
+    }
+}
+
+#[derive(Debug)]
+struct ReleaseReadiness {
+    d1_rows: usize,
+    d2_rows: usize,
+    corpus_terminal_rows: usize,
+    reviewed_difference_rows: usize,
+    intentional_unsupported_rows: usize,
+    corpus_items: usize,
 }
 
 #[derive(Debug, Deserialize)]
@@ -342,9 +382,9 @@ fn discover(repository_root: &Path, oracle_revision: &str) -> Result<(), Invento
 }
 
 fn generate(repository_root: &Path, oracle_revision: &str) -> Result<(), InventoryError> {
-    let (compatibility, _) = validated_ledgers(repository_root, oracle_revision)?;
+    let (compatibility, _, readiness) = validated_ledgers(repository_root, oracle_revision)?;
     require_current_discovery(repository_root, oracle_revision)?;
-    let contents = report::render(&compatibility);
+    let contents = report::render(&compatibility, &readiness);
     let path = repository_root.join("COMPATIBILITY.md");
     fs::write(&path, contents).map_err(|error| {
         InventoryError::new(
@@ -360,9 +400,9 @@ fn generate(repository_root: &Path, oracle_revision: &str) -> Result<(), Invento
 }
 
 fn check(repository_root: &Path, oracle_revision: &str) -> Result<(), InventoryError> {
-    let (compatibility, _) = validated_ledgers(repository_root, oracle_revision)?;
+    let (compatibility, _, readiness) = validated_ledgers(repository_root, oracle_revision)?;
     require_current_discovery(repository_root, oracle_revision)?;
-    require_current_report(repository_root, &compatibility)?;
+    require_current_report(repository_root, &compatibility, &readiness)?;
     println!(
         "inventory verified: {} compatibility rows",
         compatibility.entries.len()
@@ -371,8 +411,8 @@ fn check(repository_root: &Path, oracle_revision: &str) -> Result<(), InventoryE
 }
 
 fn check_report(repository_root: &Path, oracle_revision: &str) -> Result<(), InventoryError> {
-    let (compatibility, _) = validated_ledgers(repository_root, oracle_revision)?;
-    require_current_report(repository_root, &compatibility)?;
+    let (compatibility, _, readiness) = validated_ledgers(repository_root, oracle_revision)?;
+    require_current_report(repository_root, &compatibility, &readiness)?;
     println!(
         "compatibility report verified: {} rows",
         compatibility.entries.len()
@@ -383,8 +423,9 @@ fn check_report(repository_root: &Path, oracle_revision: &str) -> Result<(), Inv
 fn require_current_report(
     repository_root: &Path,
     compatibility: &CompatibilityLedger,
+    readiness: &ReleaseReadiness,
 ) -> Result<(), InventoryError> {
-    let expected_report = report::render(compatibility);
+    let expected_report = report::render(compatibility, readiness);
     require_exact_file(
         &repository_root.join("COMPATIBILITY.md"),
         &expected_report,
@@ -396,7 +437,7 @@ fn require_current_report(
 fn validated_ledgers(
     repository_root: &Path,
     oracle_revision: &str,
-) -> Result<(CompatibilityLedger, DiscoveryLedger), InventoryError> {
+) -> Result<(CompatibilityLedger, DiscoveryLedger, ReleaseReadiness), InventoryError> {
     let compatibility: CompatibilityLedger = read_json(
         &repository_root.join("reference/compatibility.json"),
         "compatibility schema",
@@ -408,7 +449,21 @@ fn validated_ledgers(
     validation::compatibility(&compatibility, oracle_revision, repository_root)?;
     validation::discovery(&discovery, oracle_revision)?;
     validation::coverage(&compatibility, &discovery)?;
-    Ok((compatibility, discovery))
+    let corpus_path = repository_root.join("reference/upstream-corpus.json");
+    let corpus_bytes = fs::read(&corpus_path).map_err(|error| {
+        InventoryError::new(
+            "filesystem",
+            format!("failed to read {}: {error}", corpus_path.display()),
+        )
+    })?;
+    let corpus = corpus::parse_manifest(&corpus_bytes, oracle_revision).map_err(|error| {
+        InventoryError::new(
+            error.inventory_category(),
+            format!("invalid terminal corpus authority: {error}"),
+        )
+    })?;
+    let readiness = validation::release_readiness(&compatibility, &corpus, repository_root)?;
+    Ok((compatibility, discovery, readiness))
 }
 
 fn require_current_discovery(

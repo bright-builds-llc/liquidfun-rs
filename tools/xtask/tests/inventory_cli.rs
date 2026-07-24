@@ -69,7 +69,11 @@ impl InventoryFixture {
         fs::create_dir_all(root.join("third_party/liquidfun/liquidfun/Box2D/Unittests"))?;
         fs::create_dir_all(root.join("third_party/liquidfun/liquidfun/Box2D/Testbed/Tests"))?;
         fs::create_dir_all(root.join("third_party/liquidfun/liquidfun/Box2D/HelloWorld"))?;
-        fs::create_dir_all(root.join("reference"))?;
+        fs::create_dir_all(root.join("reference/artifacts"))?;
+        fs::create_dir_all(root.join("reference/coverage"))?;
+        fs::create_dir_all(root.join("reference/performance"))?;
+        fs::create_dir_all(root.join("reference/platform"))?;
+        fs::create_dir_all(root.join("reference/regressions"))?;
         fs::write(
             root.join("reference/upstream-lock.toml"),
             format!("schema_version = 1\nrevision = \"{REVISION}\"\n"),
@@ -86,7 +90,28 @@ impl InventoryFixture {
             root.join("third_party/liquidfun/liquidfun/Box2D/CMakeLists.txt"),
             "# fixture\n",
         )?;
+        fs::write(
+            root.join("reference/artifacts/manifest.toml"),
+            "schema_version = 2\n",
+        )?;
+        fs::write(
+            root.join("reference/performance/manifest.toml"),
+            "schema_version = 1\n",
+        )?;
+        fs::write(
+            root.join("reference/regressions/manifest.toml"),
+            "schema_version = 1\n",
+        )?;
+        fs::write(
+            root.join("reference/coverage/contract.json"),
+            "{\"schema_version\":1,\"parity_authority\":false}\n",
+        )?;
+        fs::write(
+            root.join("reference/platform/support.json"),
+            "{\"schema_version\":1,\"evidence_tier\":\"d2_supported\"}\n",
+        )?;
         let fixture = Self { root };
+        fixture.write_corpus(&terminal_corpus_item())?;
         fixture.write_compatibility(&Self::valid_entries())?;
         Ok(fixture)
     }
@@ -115,26 +140,29 @@ impl InventoryFixture {
     }
 
     fn valid_entries() -> Vec<Value> {
-        let evidence = valid_evidence();
         vec![
             compatibility_entry(
                 "example.hello-world",
                 "example",
                 "liquidfun/Box2D/HelloWorld/HelloWorld.cpp",
                 "unassigned",
-                &evidence,
+                &valid_evidence(),
             ),
             compatibility_entry(
                 "public-api.fixture",
                 "public_api",
                 "liquidfun/Box2D/Box2D/Common/b2Fixture.h",
                 "liquidfun::internal",
-                &evidence,
+                &d1_evidence(),
             ),
         ]
     }
 
     fn write_compatibility(&self, entries: &[Value]) -> io::Result<()> {
+        self.write_ledger(entries, &release_dispositions(entries))
+    }
+
+    fn write_ledger(&self, entries: &[Value], release_dispositions: &[Value]) -> io::Result<()> {
         let ledger = json!({
             "schema_version": 1,
             "oracle_revision": REVISION,
@@ -149,10 +177,21 @@ impl InventoryFixture {
                 "documented_difference",
                 "intentionally_unsupported"
             ],
-            "entries": entries
+            "entries": entries,
+            "release_dispositions": release_dispositions
         });
         let bytes = serde_json::to_vec_pretty(&ledger).map_err(io::Error::other)?;
         fs::write(self.root.join("reference/compatibility.json"), bytes)
+    }
+
+    fn write_corpus(&self, item: &Value) -> io::Result<()> {
+        let corpus = json!({
+            "schema_version": 1,
+            "oracle_revision": REVISION,
+            "items": [item]
+        });
+        let bytes = serde_json::to_vec_pretty(&corpus).map_err(io::Error::other)?;
+        fs::write(self.root.join("reference/upstream-corpus.json"), bytes)
     }
 
     fn cleanup(self) -> io::Result<()> {
@@ -244,7 +283,8 @@ fn check_rejects_differential_evidence_without_dependencies() -> TestResult {
     let fixture = InventoryFixture::new()?;
     assert_success(&fixture.discover()?);
     let mut entries = InventoryFixture::valid_entries();
-    entries[0]["evidence"]["differentially_validated"] = evidenced();
+    entries[1]["evidence"]["implemented"] = not_evidenced();
+    entries[1]["evidence"]["unit_tested"] = not_evidenced();
     fixture.write_compatibility(&entries)?;
 
     // Act
@@ -252,6 +292,168 @@ fn check_rejects_differential_evidence_without_dependencies() -> TestResult {
 
     // Assert
     assert_failure_category(&output, "inventory/evidence");
+    fixture.cleanup()?;
+    Ok(())
+}
+
+#[test]
+fn check_rejects_omitted_release_identity() -> TestResult {
+    // Arrange
+    let fixture = InventoryFixture::new()?;
+    assert_success(&fixture.discover()?);
+    let entries = InventoryFixture::valid_entries();
+    let mut dispositions = release_dispositions(&entries);
+    let maybe_removed = dispositions.pop();
+    assert!(maybe_removed.is_some());
+    fixture.write_ledger(&entries, &dispositions)?;
+
+    // Act
+    let output = fixture.check()?;
+
+    // Assert
+    assert_failure_category(&output, "inventory/release-join");
+    fixture.cleanup()?;
+    Ok(())
+}
+
+#[test]
+fn check_rejects_duplicate_release_identity() -> TestResult {
+    // Arrange
+    let fixture = InventoryFixture::new()?;
+    assert_success(&fixture.discover()?);
+    let entries = InventoryFixture::valid_entries();
+    let mut dispositions = release_dispositions(&entries);
+    dispositions.insert(1, dispositions[0].clone());
+    fixture.write_ledger(&entries, &dispositions)?;
+
+    // Act
+    let output = fixture.check()?;
+
+    // Assert
+    assert_failure_category(&output, "inventory/release-join");
+    fixture.cleanup()?;
+    Ok(())
+}
+
+#[test]
+fn check_rejects_unexplained_release_row() -> TestResult {
+    // Arrange
+    let fixture = InventoryFixture::new()?;
+    assert_success(&fixture.discover()?);
+    let entries = InventoryFixture::valid_entries();
+    let mut dispositions = release_dispositions(&entries);
+    dispositions[0]["outcome"] = json!("d1_canonical");
+    dispositions[0]["references"] = json!(["fixture"]);
+    fixture.write_ledger(&entries, &dispositions)?;
+
+    // Act
+    let output = fixture.check()?;
+
+    // Assert
+    assert_failure_category(&output, "inventory/release-outcome");
+    fixture.cleanup()?;
+    Ok(())
+}
+
+#[test]
+fn check_rejects_nonterminal_corpus_item() -> TestResult {
+    // Arrange
+    let fixture = InventoryFixture::new()?;
+    assert_success(&fixture.discover()?);
+    let mut item = terminal_corpus_item();
+    let Some(object) = item.as_object_mut() else {
+        panic!("terminal corpus fixture must be a JSON object");
+    };
+    object.remove("applicability");
+    object.remove("disposition");
+    object.remove("compatibility_impact");
+    object.remove("evidence");
+    object.remove("review");
+    fixture.write_corpus(&item)?;
+
+    // Act
+    let output = fixture.check()?;
+
+    // Assert
+    assert_failure_category(&output, "inventory/corpus-terminal-outcome");
+    fixture.cleanup()?;
+    Ok(())
+}
+
+#[test]
+fn check_rejects_mixed_commit_parity_evidence() -> TestResult {
+    // Arrange
+    let fixture = InventoryFixture::new()?;
+    assert_success(&fixture.discover()?);
+    let mut entries = InventoryFixture::valid_entries();
+    entries[1]["evidence"]["implemented"]["references"] =
+        json!(["https://example.test/commit/1111111111111111111111111111111111111111"]);
+    entries[1]["evidence"]["differentially_validated"]["references"] =
+        json!(["https://example.test/commit/2222222222222222222222222222222222222222"]);
+    fixture.write_compatibility(&entries)?;
+
+    // Act
+    let output = fixture.check()?;
+
+    // Assert
+    assert_failure_category(&output, "inventory/release-commit");
+    fixture.cleanup()?;
+    Ok(())
+}
+
+#[test]
+fn check_rejects_empty_release_rationale() -> TestResult {
+    // Arrange
+    let fixture = InventoryFixture::new()?;
+    assert_success(&fixture.discover()?);
+    let entries = InventoryFixture::valid_entries();
+    let mut dispositions = release_dispositions(&entries);
+    dispositions[0]["rationale"] = json!("");
+    fixture.write_ledger(&entries, &dispositions)?;
+
+    // Act
+    let output = fixture.check()?;
+
+    // Assert
+    assert_failure_category(&output, "inventory/release-rationale");
+    fixture.cleanup()?;
+    Ok(())
+}
+
+#[test]
+fn check_rejects_coverage_as_parity_authority() -> TestResult {
+    // Arrange
+    let fixture = InventoryFixture::new()?;
+    assert_success(&fixture.discover()?);
+    let mut entries = InventoryFixture::valid_entries();
+    entries[1]["evidence"]["differentially_validated"]["references"] =
+        json!(["reference/coverage/contract.json"]);
+    fixture.write_compatibility(&entries)?;
+
+    // Act
+    let output = fixture.check()?;
+
+    // Assert
+    assert_failure_category(&output, "inventory/release-authority");
+    fixture.cleanup()?;
+    Ok(())
+}
+
+#[test]
+fn check_rejects_d2_as_parity_authority() -> TestResult {
+    // Arrange
+    let fixture = InventoryFixture::new()?;
+    assert_success(&fixture.discover()?);
+    let mut entries = InventoryFixture::valid_entries();
+    entries[1]["evidence"]["differentially_validated"]["references"] =
+        json!(["reference/platform/support.json"]);
+    fixture.write_compatibility(&entries)?;
+
+    // Act
+    let output = fixture.check()?;
+
+    // Assert
+    assert_failure_category(&output, "inventory/release-authority");
     fixture.cleanup()?;
     Ok(())
 }
@@ -331,6 +533,65 @@ fn valid_evidence() -> Value {
         "platform_validated": not_evidenced(),
         "documented_difference": not_evidenced(),
         "intentionally_unsupported": not_evidenced()
+    })
+}
+
+fn d1_evidence() -> Value {
+    json!({
+        "investigated": evidenced(),
+        "planned": evidenced(),
+        "implemented": evidenced(),
+        "unit_tested": evidenced(),
+        "differentially_validated": evidenced(),
+        "platform_validated": not_evidenced(),
+        "documented_difference": not_evidenced(),
+        "intentionally_unsupported": not_evidenced()
+    })
+}
+
+fn release_dispositions(entries: &[Value]) -> Vec<Value> {
+    entries
+        .iter()
+        .map(|entry| {
+            let id = &entry["id"];
+            if id == "example.hello-world" {
+                return json!({
+                    "id": id,
+                    "outcome": "corpus_terminal",
+                    "rationale": "The terminal semantic corpus review accounts for this upstream example.",
+                    "references": ["reference/upstream-corpus.json#id=example.hello-world"]
+                });
+            }
+            json!({
+                "id": id,
+                "outcome": "d1_canonical",
+                "rationale": "Implementation, unit, and differential records provide canonical parity evidence.",
+                "references": ["fixture"]
+            })
+        })
+        .collect()
+}
+
+fn terminal_corpus_item() -> Value {
+    json!({
+        "id": "example.hello-world",
+        "kind": "example",
+        "source": {
+            "path": "liquidfun/Box2D/HelloWorld/HelloWorld.cpp",
+            "symbol": "main"
+        },
+        "applicability": "applicable",
+        "disposition": "equivalent_evidence",
+        "compatibility_impact": "behavioral",
+        "evidence": [{
+            "kind": "compatibility_ledger",
+            "reference": "reference/compatibility.json#id=example.hello-world"
+        }],
+        "review": {
+            "reviewer": "phase-12-plan-14-test",
+            "reviewed_on": "2026-07-23",
+            "rationale": "The fixture terminal review binds this upstream example to its compatibility identity."
+        }
     })
 }
 
