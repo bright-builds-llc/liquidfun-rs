@@ -1,3 +1,5 @@
+mod primitives;
+
 use liquidfun::{DebugDrawOptions, WorldObservationLimits};
 use liquidfun_test_protocol::{
     CanonicalCheckpoint, CheckpointPosition, FloatBits, HarnessLimits, RequestId, ResolvedScenario,
@@ -9,6 +11,7 @@ use crate::session::SessionCheckpointIdentity;
 use crate::{SessionBackendError, SessionBackendErrorCategory};
 
 use super::executor::NativeSession;
+use primitives::encode_debug_primitives;
 
 pub(super) fn capture_checkpoint(
     maybe_request_id: Option<&RequestId>,
@@ -34,6 +37,7 @@ pub(super) fn capture_checkpoint(
         structural("world-particle-count", observation.particles().len())?,
     ];
     observations.sort_unstable_by(|left, right| left.observation_id().cmp(right.observation_id()));
+    let debug_primitives = encode_debug_primitives(session, &primitives)?;
     let checkpoint = CanonicalCheckpoint::new(
         maybe_request_id.cloned().unwrap_or(
             RequestId::new("catalog-native-request").map_err(|_error| capture_failure())?,
@@ -48,7 +52,7 @@ pub(super) fn capture_checkpoint(
         Vec::new(),
         Vec::new(),
         Vec::new(),
-        Vec::new(),
+        debug_primitives,
         Vec::new(),
     )
     .map_err(|_error| capture_failure())?;

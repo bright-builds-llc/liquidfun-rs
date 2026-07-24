@@ -271,6 +271,20 @@ macro_rules! primitive_record {
         }
 
         impl $name {
+            /// Creates one exact-bit primitive.
+            #[must_use]
+            pub const fn new(
+                key: DebugPrimitiveKey,
+                stroke: DebugStrokeBits,
+                maybe_fill: Option<DebugFillBits>,
+                $($field: $type),*
+            ) -> Self {
+                Self {
+                    metadata: PrimitiveMetadata::new(key, stroke, maybe_fill),
+                    $($field),*
+                }
+            }
+
             /// Returns common stable key and style metadata.
             #[must_use]
             pub const fn metadata(&self) -> &PrimitiveMetadata {
@@ -313,24 +327,6 @@ primitive_record!(PrimitiveArrow, "One exact-bit directed arrow.", {
     end: Vec2Bits,
 });
 
-impl PrimitivePoint {
-    /// Creates one exact-bit point primitive.
-    #[must_use]
-    pub const fn new(
-        key: DebugPrimitiveKey,
-        stroke: DebugStrokeBits,
-        maybe_fill: Option<DebugFillBits>,
-        position: Vec2Bits,
-        radius_bits: FloatBits,
-    ) -> Self {
-        Self {
-            metadata: PrimitiveMetadata::new(key, stroke, maybe_fill),
-            position,
-            radius_bits,
-        }
-    }
-}
-
 /// One source-ordered open or closed polyline.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct PrimitivePolyline {
@@ -340,6 +336,22 @@ pub struct PrimitivePolyline {
 }
 
 impl PrimitivePolyline {
+    /// Creates one source-ordered exact-bit polyline.
+    #[must_use]
+    pub fn new(
+        key: DebugPrimitiveKey,
+        stroke: DebugStrokeBits,
+        maybe_fill: Option<DebugFillBits>,
+        vertices: Vec<Vec2Bits>,
+        closed: bool,
+    ) -> Self {
+        Self {
+            metadata: PrimitiveMetadata::new(key, stroke, maybe_fill),
+            vertices: vertices.into_boxed_slice(),
+            closed,
+        }
+    }
+
     /// Returns common stable key and style metadata.
     #[must_use]
     pub const fn metadata(&self) -> &PrimitiveMetadata {
@@ -389,6 +401,22 @@ pub struct PrimitiveLabel {
 }
 
 impl PrimitiveLabel {
+    /// Creates one inert exact-bit label.
+    #[must_use]
+    pub fn new(
+        key: DebugPrimitiveKey,
+        stroke: DebugStrokeBits,
+        maybe_fill: Option<DebugFillBits>,
+        position: Vec2Bits,
+        text: impl Into<Box<str>>,
+    ) -> Self {
+        Self {
+            metadata: PrimitiveMetadata::new(key, stroke, maybe_fill),
+            position,
+            text: text.into(),
+        }
+    }
+
     /// Returns common stable key and style metadata.
     #[must_use]
     pub const fn metadata(&self) -> &PrimitiveMetadata {

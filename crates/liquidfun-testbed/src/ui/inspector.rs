@@ -1,6 +1,119 @@
 //! Inspector tabs and exact operational/error presentation.
 
+use liquidfun_test_protocol::{CanonicalCheckpoint, DebugLayerName, StructuralValue};
+
 const MAXIMUM_ERROR_FIELD_BYTES: usize = 512;
+const DEBUG_LAYER_COUNT: usize = 9;
+
+/// Read-only semantic counts for one canonical checkpoint.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct CheckpointDiagnostics {
+    layer_counts: [usize; DEBUG_LAYER_COUNT],
+    total_primitive_count: usize,
+    maybe_observed_primitive_count: Option<u64>,
+    maybe_body_count: Option<u64>,
+    maybe_fixture_count: Option<u64>,
+    maybe_joint_count: Option<u64>,
+    maybe_contact_count: Option<u64>,
+    maybe_particle_count: Option<u64>,
+}
+
+impl CheckpointDiagnostics {
+    /// Derives bounded presentation diagnostics from canonical semantic records.
+    #[must_use]
+    pub fn from_checkpoint(checkpoint: &CanonicalCheckpoint) -> Self {
+        let mut layer_counts = [0; DEBUG_LAYER_COUNT];
+        for record in checkpoint.debug_primitives() {
+            layer_counts[layer_index(record.key().layer())] += 1;
+        }
+        Self {
+            layer_counts,
+            total_primitive_count: checkpoint.debug_primitives().len(),
+            maybe_observed_primitive_count: maybe_observation_count(
+                checkpoint,
+                "world-debug-primitive-count",
+            ),
+            maybe_body_count: maybe_observation_count(checkpoint, "world-body-count"),
+            maybe_fixture_count: maybe_observation_count(checkpoint, "world-fixture-count"),
+            maybe_joint_count: maybe_observation_count(checkpoint, "world-joint-count"),
+            maybe_contact_count: maybe_observation_count(checkpoint, "world-contact-count"),
+            maybe_particle_count: maybe_observation_count(checkpoint, "world-particle-count"),
+        }
+    }
+
+    /// Returns retained primitive records across every layer.
+    #[must_use]
+    pub const fn total_primitive_count(self) -> usize {
+        self.total_primitive_count
+    }
+
+    /// Returns the retained record count for one semantic debug layer.
+    #[must_use]
+    pub const fn layer_count(self, layer: DebugLayerName) -> usize {
+        self.layer_counts[layer_index(layer)]
+    }
+
+    /// Returns the collector-reported primitive count when present.
+    #[must_use]
+    pub const fn maybe_observed_primitive_count(self) -> Option<u64> {
+        self.maybe_observed_primitive_count
+    }
+
+    /// Returns the semantic body count when present.
+    #[must_use]
+    pub const fn maybe_body_count(self) -> Option<u64> {
+        self.maybe_body_count
+    }
+
+    /// Returns the semantic fixture count when present.
+    #[must_use]
+    pub const fn maybe_fixture_count(self) -> Option<u64> {
+        self.maybe_fixture_count
+    }
+
+    /// Returns the semantic joint count when present.
+    #[must_use]
+    pub const fn maybe_joint_count(self) -> Option<u64> {
+        self.maybe_joint_count
+    }
+
+    /// Returns the semantic contact count when present.
+    #[must_use]
+    pub const fn maybe_contact_count(self) -> Option<u64> {
+        self.maybe_contact_count
+    }
+
+    /// Returns the semantic particle count when present.
+    #[must_use]
+    pub const fn maybe_particle_count(self) -> Option<u64> {
+        self.maybe_particle_count
+    }
+}
+
+fn maybe_observation_count(checkpoint: &CanonicalCheckpoint, id: &str) -> Option<u64> {
+    checkpoint
+        .observations()
+        .iter()
+        .find(|observation| observation.observation_id().as_str() == id)
+        .and_then(|observation| match observation.value() {
+            StructuralValue::Count(count) => Some(*count),
+            _ => None,
+        })
+}
+
+const fn layer_index(layer: DebugLayerName) -> usize {
+    match layer {
+        DebugLayerName::Shapes => 0,
+        DebugLayerName::Joints => 1,
+        DebugLayerName::Contacts => 2,
+        DebugLayerName::ContactNormals => 3,
+        DebugLayerName::Particles => 4,
+        DebugLayerName::ParticleContacts => 5,
+        DebugLayerName::BroadPhase => 6,
+        DebugLayerName::CentersOfMass => 7,
+        DebugLayerName::Labels => 8,
+    }
+}
 
 /// Four approved inspector tabs in keyboard order.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

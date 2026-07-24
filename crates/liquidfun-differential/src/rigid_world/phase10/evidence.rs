@@ -1,6 +1,7 @@
 //! Closed, typed binding contract for Phase 10 semantic evidence.
 
 use std::collections::{HashMap, HashSet};
+use std::hash::BuildHasher;
 
 use liquidfun_test_protocol::{
     PHASE9_REQUIRED_BRANCH_IDS, Phase10BehaviorLeaf, ScenarioId, WitnessRole,
@@ -54,6 +55,10 @@ pub enum Phase10EvidenceLeaf {
 }
 
 /// Complete expected leaf inventory in reviewed order.
+///
+/// # Panics
+///
+/// Panics only if a compile-time reviewed Phase 9 branch ID is invalid.
 #[must_use]
 pub fn required_phase10_evidence_leaves() -> Vec<Phase10EvidenceLeaf> {
     let mut leaves = PHASE10_BEHAVIOR_LEAVES
@@ -176,9 +181,9 @@ pub struct Phase10EvidenceContractError {
 ///
 /// Fails for unknown, missing, duplicate, declaration-only, out-of-range,
 /// aliased, unsafe, unbound-policy, or private-pass evidence.
-pub fn validate_phase10_evidence_contract(
+pub fn validate_phase10_evidence_contract<S: BuildHasher>(
     bindings: &[Phase10EvidenceBinding],
-    case_bounds: &HashMap<ScenarioId, (usize, usize, usize)>,
+    case_bounds: &HashMap<ScenarioId, (usize, usize, usize), S>,
 ) -> Result<(), Phase10EvidenceContractError> {
     let required = required_phase10_evidence_leaves();
     if bindings.len() != required.len() {
@@ -205,9 +210,9 @@ pub fn validate_phase10_evidence_contract(
     Ok(())
 }
 
-fn validate_binding(
+fn validate_binding<S: BuildHasher>(
     binding: &Phase10EvidenceBinding,
-    case_bounds: &HashMap<ScenarioId, (usize, usize, usize)>,
+    case_bounds: &HashMap<ScenarioId, (usize, usize, usize), S>,
 ) -> Result<(), Phase10EvidenceContractError> {
     let Some(&(actions, checkpoints, observations)) = case_bounds.get(&binding.case_id) else {
         return Err(contract_error("leaf refers to an unknown case"));

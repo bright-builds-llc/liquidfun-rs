@@ -25,3 +25,17 @@
 1. What went wrong: An exact-bit standalone-rope fixture was provisionally updated from the Rust implementation under test after a guessed expectation failed.
 1. Preventive rule: Exact compatibility fixtures must come from the pinned upstream oracle or an independently derived source-faithful calculation, never from the implementation being tested.
 1. Trigger signal to catch it earlier: If an exact expected value is copied from an assertion's actual output, stop and reproduce the case with the pinned oracle before editing the fixture.
+
+## lesson-verify-terminal-presentation-by-scenario-family | 2026-07-22 22:07
+
+1. Date: 2026-07-22 22:07 CDT
+1. What went wrong: The testbed renderer repair was declared complete after proving one joint checkpoint and labeling an empty particle teardown, without verifying that Run still presented useful particle geometry after the full particle lifecycle completed.
+1. Preventive rule: For scenario-driven visual fixes, exercise Run through completion in each affected scenario family and distinguish the latest semantic truth from the checkpoint chosen for diagnostic presentation.
+1. Trigger signal to catch it earlier: A reviewed scenario appends teardown or destruction actions, or a visual verification proves only an intermediate checkpoint while users primarily invoke Run.
+
+## lesson-write-uat-checkpoints-as-concrete-assertions | 2026-07-22 22:16
+
+1. Date: 2026-07-22 22:16 CDT
+1. What went wrong: A UAT checkpoint named broad diagnostic categories but did not tell the tester which scenarios, labels, values, or count relationships constituted a pass.
+1. Preventive rule: Write UAT expectations as a short executable procedure with named fixtures and exact visible assertions wherever the implementation defines deterministic labels or values.
+1. Trigger signal to catch it earlier: A checkpoint asks the tester to confirm that information is “shown,” “helpful,” or “works” without naming the control path and at least one concrete expected output.

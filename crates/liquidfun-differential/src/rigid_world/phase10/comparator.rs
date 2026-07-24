@@ -33,6 +33,7 @@ pub struct Phase10PolicyCalibration {
 /// Exact fields intentionally have no numeric threshold. Numeric classes are
 /// fixed from the one-step Phase 10 horizon and the pinned upstream `f32`
 /// scale; the corpus may reveal a mismatch but cannot widen these values.
+#[must_use]
 pub fn phase10_policy_calibrations()
 -> impl ExactSizeIterator<Item = Phase10PolicyCalibration> + Clone {
     PHASE10_POLICY_REGISTRY.iter().map(|entry| {

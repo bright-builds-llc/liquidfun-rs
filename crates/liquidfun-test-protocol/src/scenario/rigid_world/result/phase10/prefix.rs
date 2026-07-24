@@ -20,7 +20,7 @@ pub(crate) fn validate_event_shapes(events: &[Phase10Event]) -> Result<(), Phase
                     && event.maybe_other_particle_id.is_none()
                     && event.maybe_body_id.is_none()
             }
-            Phase10EventKind::ParticleDestroyed => {
+            Phase10EventKind::ParticleDestroyed | Phase10EventKind::BodyContactEnd => {
                 event.maybe_group_id.is_none()
                     && event.maybe_particle_id.is_some()
                     && event.maybe_other_particle_id.is_none()
@@ -37,12 +37,6 @@ pub(crate) fn validate_event_shapes(events: &[Phase10Event]) -> Result<(), Phase
                     && event.maybe_particle_id.is_some()
                     && event.maybe_other_particle_id.is_none()
                     && event.maybe_body_id.is_some()
-            }
-            Phase10EventKind::BodyContactEnd => {
-                event.maybe_group_id.is_none()
-                    && event.maybe_particle_id.is_some()
-                    && event.maybe_other_particle_id.is_none()
-                    && event.maybe_body_id.is_none()
             }
         };
         if !shape_is_valid {

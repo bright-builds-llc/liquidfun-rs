@@ -136,6 +136,22 @@ impl ControllerProjection {
     pub const fn enabled(self, capability: ControlCapability) -> bool {
         self.enabled[capability.index()]
     }
+
+    /// Reports whether the closed controller state admits this exact UI action.
+    #[must_use]
+    pub const fn admits(self, action: &ControllerAction) -> bool {
+        let capability = match action {
+            ControllerAction::Select(_) => ControlCapability::SelectScenario,
+            ControllerAction::Run => ControlCapability::Run,
+            ControllerAction::Pause => ControlCapability::Pause,
+            ControllerAction::StepOnce => ControlCapability::StepOnce,
+            ControllerAction::Restart => ControlCapability::Restart,
+            ControllerAction::CaptureCheckpoint(_) => ControlCapability::Capture,
+            ControllerAction::ApplySettingsAndRestart { .. } => ControlCapability::ApplySettings,
+            ControllerAction::ApplyScenarioAction(_) => ControlCapability::ApplyScenarioAction,
+        };
+        self.enabled(capability)
+    }
 }
 
 /// Stable adapter rejection categories safe for inline UI diagnostics.
