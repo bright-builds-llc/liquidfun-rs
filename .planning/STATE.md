@@ -3,14 +3,14 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 12-15-PLAN.md
-last_updated: "2026-07-24T02:45:17.234Z"
+stopped_at: Completed 12-16-PLAN.md
+last_updated: "2026-07-24T03:02:55.658Z"
 last_activity: "2026-07-24"
 progress:
   total_phases: 12
   completed_phases: 11
   total_plans: 216
-  completed_plans: 213
+  completed_plans: 214
   percent: 99
 ---
 
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-23)
 ## Current Position
 
 Phase: 12 (Performance, Portability, and Release Hardening) — EXECUTING
-Plan: 15 of 25
+Plan: 16 of 25
 Status: Ready to execute
 Last activity: 2026-07-24
 
@@ -220,6 +220,7 @@ Progress: [██████████] 96%
 | Phase 12 P23 | 7min | 1 tasks | 2 files |
 | Phase 12 P14 | 29min | 2 tasks | 8 files |
 | Phase 12 P15 | 18min | 1 tasks | 10 files |
+| Phase 12 P16 | 15min | 1 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -620,6 +621,8 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 12]: Release readiness requires exactly 19 kind/target identities from a closed 16-kind enum, including four separate durable platform records.
 - [Phase 12]: Release audit reads only bounded repository-confined ordinary files and never invokes evidence producers or network clients.
 - [Phase 12]: Coverage and performance remain non-parity authorities; conditional macOS must match the tracked supported-or-unsupported disposition.
+- [Phase 12]: Fresh package, docs, notices, corpus, and compatibility evidence truthfully names release.yml/release-candidate as producer.
+- [Phase 12]: Release producer run IDs are canonical positive decimal GitHub Actions identifiers.
 
 ### Pending Todos
 
@@ -633,6 +636,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-24T02:45:17.228Z
-Stopped at: Completed 12-15-PLAN.md
+Last session: 2026-07-24T03:02:55.653Z
+Stopped at: Completed 12-16-PLAN.md
 Resume file: None
