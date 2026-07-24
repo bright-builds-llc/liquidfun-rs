@@ -179,9 +179,11 @@ jobs:
         with:
           name: phase12-release-${{ github.run_id }}-${{ inputs.candidate_sha }}
           path: |
+            ${{ env.OUTPUT_DIRECTORY }}/artifacts/*.json
             ${{ env.OUTPUT_DIRECTORY }}/candidate-manifest.json
             ${{ env.OUTPUT_DIRECTORY }}/audit-report.json
             ${{ env.OUTPUT_DIRECTORY }}/audit-identity.json
+            ${{ env.OUTPUT_DIRECTORY }}/package/liquidfun.crate
             ${{ env.OUTPUT_DIRECTORY }}/package/package-identity.json
           if-no-files-found: error
           retention-days: 90

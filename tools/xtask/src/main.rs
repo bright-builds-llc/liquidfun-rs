@@ -35,7 +35,7 @@ Commands:
   safety-evidence Validate typed regression, safety, and coverage evidence
   package     Validate the publishable package
   performance Run sealed paired performance and analysis workflows
-  release     Audit one complete commit-bound release evidence manifest
+  release     Audit and attest one complete commit-bound release evidence set
   check       Run the aggregate repository checks";
 
 #[derive(Debug, PartialEq, Eq)]

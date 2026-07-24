@@ -389,6 +389,57 @@ fn package_hash_must_join_every_msrv_and_platform_record() {
 }
 
 #[test]
+fn artifact_payload_hash_is_independently_recomputed() {
+    // Arrange
+    let repository = repository_root();
+    let mut fixture = Fixture::complete("payload-hash");
+    let item = fixture.manifest["items"]
+        .as_array_mut()
+        .expect("items")
+        .first_mut()
+        .expect("first item");
+    let artifact_path = repository.join(
+        item["artifact_path"]
+            .as_str()
+            .expect("artifact path is text"),
+    );
+    let mut artifact: Value =
+        serde_json::from_slice(&fs::read(&artifact_path).expect("artifact can be read"))
+            .expect("artifact JSON");
+    artifact["payload_sha256"] = json!("0".repeat(64));
+    let artifact_bytes = serde_json::to_vec_pretty(&artifact).expect("artifact serializes");
+    fs::write(&artifact_path, &artifact_bytes).expect("artifact rewrites");
+    item["artifact_sha256"] = json!(sha256(&artifact_bytes));
+    let manifest_path = fixture.write_manifest("manifest.json", &fixture.manifest);
+
+    // Act
+    let output = run_audit(&manifest_path, "json");
+
+    // Assert
+    assert_failure_contains(&output, "release/payload-hash", "payload hash");
+}
+
+#[test]
+fn missing_manifest_referenced_payload_fails_closed() {
+    // Arrange
+    let repository = repository_root();
+    let fixture = Fixture::complete("missing-payload");
+    let artifact_path = repository.join(
+        fixture.manifest["items"][0]["artifact_path"]
+            .as_str()
+            .expect("artifact path is text"),
+    );
+    fs::remove_file(artifact_path).expect("artifact removes");
+    let manifest_path = fixture.write_manifest("manifest.json", &fixture.manifest);
+
+    // Act
+    let output = run_audit(&manifest_path, "json");
+
+    // Assert
+    assert_failure_contains(&output, "release/artifact-path", "missing payload");
+}
+
+#[test]
 fn release_constructor_is_check_first_aggregate_only_and_identity_last() {
     // Arrange
     let repository = repository_root();
@@ -486,6 +537,19 @@ fn release_constructor_names_every_exact_artifact_and_never_writes_tracked_readi
     assert!(script.contains("validate_producer_identities"));
     assert!(script.contains("candidate-manifest.json"));
     assert!(script.contains("audit-report.json"));
+    for retained_path in [
+        "${{ env.OUTPUT_DIRECTORY }}/artifacts/*.json",
+        "${{ env.OUTPUT_DIRECTORY }}/package/liquidfun.crate",
+        "${{ env.OUTPUT_DIRECTORY }}/package/package-identity.json",
+        "${{ env.OUTPUT_DIRECTORY }}/candidate-manifest.json",
+        "${{ env.OUTPUT_DIRECTORY }}/audit-report.json",
+        "${{ env.OUTPUT_DIRECTORY }}/audit-identity.json",
+    ] {
+        assert!(
+            workflow.contains(retained_path),
+            "release upload omits auditable payload: {retained_path}"
+        );
+    }
 }
 
 #[test]

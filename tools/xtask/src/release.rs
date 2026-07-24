@@ -1,5 +1,6 @@
 //! Read-only release readiness audit over existing evidence artifacts.
 
+mod attestation;
 mod domain;
 mod report;
 mod validation;
@@ -8,8 +9,10 @@ use std::collections::BTreeMap;
 use std::fmt::{self, Display, Formatter};
 use std::path::{Path, PathBuf};
 
-const USAGE: &str = "Usage: cargo xtask release audit --manifest PATH \
-    --candidate COMMIT --output human|json";
+const USAGE: &str = r"Usage:
+  cargo xtask release audit --manifest PATH --candidate COMMIT --output human|json
+  cargo xtask release attestation validate-worktree --source PATH --manifest PATH --report PATH
+  cargo xtask release attestation validate --source PATH --manifest PATH --report PATH --attestation-commit COMMIT";
 
 /// Stable categorized release-audit failure.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -61,13 +64,16 @@ pub(crate) fn run(args: &[String]) -> Result<(), ReleaseError> {
     let Some((command, command_args)) = args.split_first() else {
         return Err(ReleaseError::usage("missing release subcommand"));
     };
+    let root = repository_root()?;
+    if command == "attestation" {
+        return attestation::run(&root, command_args);
+    }
     if command != "audit" {
         return Err(ReleaseError::usage(format!(
             "unknown release subcommand `{command}`"
         )));
     }
     let options = parse_options(command_args)?;
-    let root = repository_root()?;
     let readiness = validation::audit(&root, &options.manifest, &options.candidate)?;
     match options.output {
         OutputFormat::Human => print!("{}", report::human(&readiness)),
