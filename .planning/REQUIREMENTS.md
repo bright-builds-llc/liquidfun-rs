@@ -29,7 +29,7 @@ Requirements for the first release permitted to claim complete parity with the s
 - [x] **COMP-07**: The comparator distinguishes unordered queries/collections from solver-significant and callback/destruction sequences whose order must be preserved.
 - [x] **COMP-08**: A differential failure can be reproduced by scenario name or seed, diagnosed at the first divergent checkpoint or phase, and reduced into a focused regression fixture.
 - [x] **COMP-09**: Harness crashes, timeouts, sanitizer failures, schema mismatches, and wrong-oracle provenance are reported as harness failures rather than physics mismatches.
-- [ ] **COMP-10**: No v1 parity claim can pass the release gate while the compatibility matrix contains an unexplained gap or an unaccounted upstream test/example.
+- [x] **COMP-10**: No v1 parity claim can pass the release gate while the compatibility matrix contains an unexplained gap or an unaccounted upstream test/example.
 
 ### Safe Rust API
 
@@ -144,9 +144,9 @@ Requirements for the first release permitted to claim complete parity with the s
 - [x] **DOCS-01**: `README.md` accurately states current maturity, implemented and missing capabilities, build/test/example commands, submodule needs, toolchain needs, contribution path, and license status.
 - [x] **DOCS-02**: `ARCHITECTURE.md` explains crate/module boundaries, dependency direction, handles, callbacks, particle storage, step order, oracle isolation, and renderer independence.
 - [x] **DOCS-03**: `UPSTREAM.md` records canonical source, exact revision, ancestry, patches, build process, licenses/notices, and intentional update procedure.
-- [ ] **DOCS-04**: `COMPATIBILITY.md` exposes the complete traceability matrix, evidence states, known differences, tolerance scope, and no-gap parity status.
+- [x] **DOCS-04**: `COMPATIBILITY.md` exposes the complete traceability matrix, evidence states, known differences, tolerance scope, and no-gap parity status.
 - [x] **DOCS-05**: `TESTING.md` documents test layers, scenario protocol, differential diagnosis, reference-data review, fuzz/Miri/sanitizer/coverage workflows, and CI tiers.
-- [ ] **DOCS-06**: `BENCHMARKING.md` documents comparable workloads, environment capture, profiling workflow, result interpretation, and rules for performance claims.
+- [x] **DOCS-06**: `BENCHMARKING.md` documents comparable workloads, environment capture, profiling workflow, result interpretation, and rules for performance claims.
 - [x] **DOCS-07**: `SAFETY.md` documents the public safety model, identity/invalidation, callback mutation, buffer ownership, user data, and every remaining unsafe invariant.
 - [x] **DOCS-08**: `CONTRIBUTING.md` and release documentation explain bootstrap, quality gates, compatibility sign-off, provenance rules, generated artifacts, SemVer, MSRV, and publication checks.
 - [x] **DOCS-09**: The final v1 release audit verifies complete docs, required notices, packaged crate contents, upstream test/example accounting, supported platforms, benchmarks, safety evidence, and zero unexplained compatibility gaps.
@@ -211,7 +211,7 @@ Roadmap creation maps every v1 requirement to exactly one phase.
 | COMP-07 | Phase 2 | Complete |
 | COMP-08 | Phase 2 | Complete |
 | COMP-09 | Phase 2 | Complete |
-| COMP-10 | Phase 12 | Pending |
+| COMP-10 | Phase 12 | Complete |
 | API-01 | Phase 3 | Complete |
 | API-02 | Phase 3 | Complete |
 | API-03 | Phase 3 | Complete |
@@ -296,9 +296,9 @@ Roadmap creation maps every v1 requirement to exactly one phase.
 | DOCS-01 | Phase 12 | Complete |
 | DOCS-02 | Phase 3 | Complete |
 | DOCS-03 | Phase 1 | Complete |
-| DOCS-04 | Phase 12 | Pending |
+| DOCS-04 | Phase 12 | Complete |
 | DOCS-05 | Phase 2 | Complete |
-| DOCS-06 | Phase 12 | Pending |
+| DOCS-06 | Phase 12 | Complete |
 | DOCS-07 | Phase 12 | Complete |
 | DOCS-08 | Phase 12 | Complete |
 | DOCS-09 | Phase 12 | Complete |
