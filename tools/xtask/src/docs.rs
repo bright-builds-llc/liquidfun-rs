@@ -669,6 +669,10 @@ pub(crate) fn run(args: &[String]) -> Result<(), DocsError> {
     Ok(())
 }
 
+#[allow(
+    clippy::too_many_lines,
+    reason = "the cohesive read-only contract validator is only two lines over the threshold"
+)]
 fn check_document_contracts(repository_root: &std::path::Path) -> Result<(), DocsError> {
     check_required_markers(repository_root, DOCUMENT_CONTRACTS, "phase4-contract")?;
     check_required_markers(

@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "analysis_version": "phase12-performance-analysis-v1",
+  "interval_method": "student_t95",
+  "measurement_policy": {
+    "version": "phase12-performance-v1",
+    "baseline_runs": 5,
+    "confidence_percent": 95,
+    "practical_floor_basis_points": 300,
+    "warmup_runs": 1,
+    "samples_per_engine": 30,
+    "run_order": "interleaved_rust_cpp",
+    "timing_authority": "unprofiled_wall_clock"
+  },
+  "minimum_profile_basis_points": 1000,
+  "bottleneck_kinds": [
+    "allocation",
+    "cache",
+    "scaling"
+  ],
+  "required_correctness_gates": [
+    "differential",
+    "determinism",
+    "safety",
+    "public_api"
+  ],
+  "allowed_optimization_mode": "release_scalar",
+  "timing_authority": "unprofiled_wall_clock",
+  "claim_scope": "workload_only"
+}

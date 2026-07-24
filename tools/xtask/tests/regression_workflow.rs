@@ -260,7 +260,7 @@ mod unix {
     }
 
     impl Fixture {
-        fn new(entry: Value) -> TestResult<Self> {
+        fn new(entry: &Value) -> TestResult<Self> {
             let id = NEXT_ID.fetch_add(1, Ordering::Relaxed);
             let root = env::temp_dir().join(format!(
                 "liquidfun-regression-workflow-{}-{id}",
@@ -297,8 +297,8 @@ mod unix {
             })
         }
 
-        fn with_entries(entries: Value) -> TestResult<Self> {
-            let fixture = Self::new(valid_entry())?;
+        fn with_entries(entries: &Value) -> TestResult<Self> {
+            let fixture = Self::new(&valid_entry())?;
             fs::write(
                 &fixture.execution_list,
                 serde_json::to_vec_pretty(&entries)?,
@@ -311,7 +311,7 @@ mod unix {
             let joined_path = env::join_paths(
                 std::iter::once(self.fake_bin.as_os_str()).chain(
                     env::split_paths(&inherited_path)
-                        .map(|path| path.into_os_string())
+                        .map(std::path::PathBuf::into_os_string)
                         .collect::<Vec<_>>()
                         .iter()
                         .map(std::ffi::OsString::as_os_str),
@@ -459,7 +459,7 @@ esac
     #[test]
     fn valid_fixture_records_exact_execution_validation_and_identity_order() -> TestResult {
         // Arrange
-        let fixture = Fixture::new(valid_entry())?;
+        let fixture = Fixture::new(&valid_entry())?;
 
         // Act
         let output = fixture.run("valid")?;
@@ -548,7 +548,7 @@ esac
 
         // Act / Assert
         for execution_list in fixtures {
-            let fixture = Fixture::with_entries(execution_list)?;
+            let fixture = Fixture::with_entries(&execution_list)?;
             let output = fixture.run("valid")?;
             assert!(!output.status.success());
             assert!(
@@ -565,7 +565,7 @@ esac
     fn omitted_duplicated_and_unregistered_results_fail_typed_validation() -> TestResult {
         // Arrange / Act / Assert
         for mode in ["omitted", "duplicated", "unregistered"] {
-            let fixture = Fixture::new(valid_entry())?;
+            let fixture = Fixture::new(&valid_entry())?;
             let output = fixture.run(mode)?;
             assert!(!output.status.success(), "{mode}");
             assert!(!fixture.output_directory().join("identity.json").exists());
