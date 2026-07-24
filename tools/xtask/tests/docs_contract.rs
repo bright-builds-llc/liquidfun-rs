@@ -21,11 +21,14 @@ const LAYERS: [&str; 12] = [
     "benchmark",
     "coverage",
 ];
-const CONTRACT_DOCUMENTS: [&str; 4] = [
+const CONTRACT_DOCUMENTS: [&str; 7] = [
     "ARCHITECTURE.md",
+    "CONTRIBUTING.md",
     "TESTING.md",
     "COMPATIBILITY.md",
     "README.md",
+    "RELEASE.md",
+    "SAFETY.md",
 ];
 const CONTRACT_SUPPORT_FILES: [&str; 3] = [
     "crates/liquidfun/src/lib.rs",
@@ -49,7 +52,10 @@ impl DocsFixture {
         ));
         fs::create_dir_all(&root)?;
         for document in CONTRACT_DOCUMENTS {
-            fs::copy(workspace_root().join(document), root.join(document))?;
+            let source = workspace_root().join(document);
+            if source.is_file() {
+                fs::copy(source, root.join(document))?;
+            }
         }
         for support_file in CONTRACT_SUPPORT_FILES {
             let destination = root.join(support_file);
@@ -262,7 +268,6 @@ fn check_rejects_missing_phase4_contract_in_each_document() -> TestResult {
         ),
         ("TESTING.md", "The four float policies are"),
         ("COMPATIBILITY.md", "`subsystem.common-math-and-settings`"),
-        ("README.md", "bounded Phase 4 math"),
     ] {
         let fixture = DocsFixture::new()?;
         fixture.replace_document_text(document, marker, "removed-contract-marker")?;
@@ -294,7 +299,6 @@ fn phase5_contract_rejects_missing_contract_in_each_document() -> TestResult {
         ("ARCHITECTURE.md", "## Phase 5 collision boundaries"),
         ("TESTING.md", "## Phase 5 collision comparison policy"),
         ("COMPATIBILITY.md", "`subsystem.collision-broad-phase`"),
-        ("README.md", "Phase 5 immutable shape/collision substrate"),
     ] {
         let fixture = DocsFixture::new()?;
         fixture.replace_document_text(document, marker, "removed-phase5-contract-marker")?;
@@ -389,7 +393,6 @@ fn phase6_contract_rejects_missing_contract_in_each_document() -> TestResult {
             "COMPATIBILITY.md",
             "`public-api.liquidfun-box2d-box2d-dynamics-b2body-h`",
         ),
-        ("README.md", "Phase 6 minimal rigid-world vertical slice"),
     ] {
         let fixture = DocsFixture::new()?;
         fixture.replace_document_text(document, marker, "removed-phase6-contract-marker")?;
@@ -479,10 +482,6 @@ fn phase6_contract_rejects_missing_second_round_boundary_contracts() -> TestResu
         ),
         ("TESTING.md", "local debug/release and replay passes are D2"),
         ("TESTING.md", "same-build byte-identical runs are D0"),
-        (
-            "README.md",
-            "current checkout's adapter-source and effective compile-command digests",
-        ),
     ] {
         let fixture = DocsFixture::new()?;
         fixture.replace_document_text(document, marker, "removed-boundary-contract")?;
@@ -558,7 +557,6 @@ fn phase7_contract_rejects_missing_contract_in_each_document() -> TestResult {
             "## Phase 7 rigid solver, world operations, and CCD boundaries",
         ),
         ("TESTING.md", "## Phase 7 rigid-world comparison policy"),
-        ("README.md", "Phase 7 checked rigid-world slice"),
         (
             "COMPATIBILITY.md",
             "`public-api.liquidfun-box2d-box2d-dynamics-b2island-h`",
@@ -633,7 +631,6 @@ fn phase8_contract_rejects_missing_evidence_identity_in_each_document() -> TestR
             "phase8-canonical-29383445374-beb98bd74b1d26ab0a96c6be33ce1926d349abf0",
         ),
         ("TESTING.md", "## Phase 8 canonical rigid-world sign-off"),
-        ("README.md", "Phase 8 checked joint and rope slice"),
         ("COMPATIBILITY.md", "`subsystem.joints`"),
     ] {
         let fixture = DocsFixture::new()?;
@@ -702,6 +699,62 @@ fn phase8_contract_rejects_broader_maturity_claims() -> TestResult {
         )?;
         let output = fixture.command()?;
         assert_failure(&output, "docs/phase8-overclaim");
+        fixture.cleanup()?;
+    }
+    Ok(())
+}
+
+#[test]
+fn phase12_publication_contract_accepts_repository_documents() -> TestResult {
+    // Arrange
+    let fixture = DocsFixture::new()?;
+
+    // Act
+    let output = fixture.command()?;
+
+    // Assert
+    assert_success(&output);
+    fixture.cleanup()?;
+    Ok(())
+}
+
+#[test]
+fn phase12_publication_contract_rejects_missing_contract_in_each_document() -> TestResult {
+    // Arrange, Act, Assert
+    for (document, marker) in [
+        ("README.md", "## Maturity and evidence"),
+        ("CONTRIBUTING.md", "### Markdown"),
+        ("RELEASE.md", "## Freeze the source candidate"),
+        ("SAFETY.md", "## Renderer and oracle isolation"),
+    ] {
+        let fixture = DocsFixture::new()?;
+        fixture.replace_document_text(document, marker, "removed-phase12-contract-marker")?;
+        let output = fixture.command()?;
+        assert_failure(&output, "docs/phase12-public-contract");
+        fixture.cleanup()?;
+    }
+    Ok(())
+}
+
+#[test]
+fn phase12_publication_contract_rejects_stale_maturity_claims() -> TestResult {
+    // Arrange, Act, Assert
+    for claim in [
+        "early vertical-slice stage",
+        "Do not use this crate for simulation yet",
+        "particles remain pending",
+        "the testbed remains pending",
+        "release audit has passed",
+        "faster than C++",
+    ] {
+        let fixture = DocsFixture::new()?;
+        fixture.replace_document_text(
+            "README.md",
+            "## Architecture and evidence",
+            &format!("Stale claim: {claim}\n\n## Architecture and evidence"),
+        )?;
+        let output = fixture.command()?;
+        assert_failure(&output, "docs/current-overclaim");
         fixture.cleanup()?;
     }
     Ok(())

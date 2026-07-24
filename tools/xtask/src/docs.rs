@@ -23,7 +23,7 @@ const COLUMNS: [&str; 9] = [
 const ALLOWED_STATUSES: [&str; 2] = ["current", "deferred"];
 const ALLOWED_PLACEMENTS: [&str; 4] = ["local", "pull request", "scheduled", "manual release"];
 const PLACEHOLDERS: [&str; 5] = ["TODO", "TBD", "PLACEHOLDER", "REPLACE_ME", "REPLACE WITH"];
-const DOCUMENT_CONTRACTS: [(&str, &[&str]); 4] = [
+const DOCUMENT_CONTRACTS: [(&str, &[&str]); 3] = [
     (
         "ARCHITECTURE.md",
         &[
@@ -73,16 +73,8 @@ const DOCUMENT_CONTRACTS: [(&str, &[&str]); 4] = [
             "| applicable | yes | yes | yes | yes | no | no | yes | no |",
         ],
     ),
-    (
-        "README.md",
-        &[
-            "bounded Phase 4 math",
-            "canonical-platform evidence, performance, and production maturity",
-            "remain pending",
-        ],
-    ),
 ];
-const PHASE5_DOCUMENT_CONTRACTS: [(&str, &[&str]); 4] = [
+const PHASE5_DOCUMENT_CONTRACTS: [(&str, &[&str]); 3] = [
     (
         "ARCHITECTURE.md",
         &[
@@ -126,17 +118,8 @@ const PHASE5_DOCUMENT_CONTRACTS: [(&str, &[&str]); 4] = [
             "| `subsystem.collision-shapes-and-manifolds` | `liquidfun/Box2D/Box2D/Collision/Shapes` | `liquidfun::collision` | applicable | yes | yes | yes | yes | yes | no | yes | no |",
         ],
     ),
-    (
-        "README.md",
-        &[
-            "Phase 5 immutable shape/collision substrate",
-            "78-case Phase 5 collision corpora",
-            "world contact lifecycle",
-            "remain pending",
-        ],
-    ),
 ];
-const PHASE6_DOCUMENT_CONTRACTS: [(&str, &[&str]); 5] = [
+const PHASE6_DOCUMENT_CONTRACTS: [(&str, &[&str]); 4] = [
     (
         "ARCHITECTURE.md",
         &[
@@ -217,24 +200,6 @@ const PHASE6_DOCUMENT_CONTRACTS: [(&str, &[&str]); 5] = [
         ],
     ),
     (
-        "README.md",
-        &[
-            "Phase 6 minimal rigid-world vertical slice",
-            "phase6-v1",
-            "non_colliding_body_fixture_lifecycle",
-            "single_contact_lifecycle",
-            "fixed 128-action step",
-            "canonical D1 authority before every write",
-            "`BodyTypeChangeError` and `FixtureDestructionError`",
-            "positive-origin custom mass requires finite, strictly positive centered inertia",
-            "current checkout's adapter-source and effective compile-command digests",
-            "D2/D0 evidence only",
-            "ASan/UBSan lane executes",
-            "Phase 7",
-            "remain pending",
-        ],
-    ),
-    (
         "protocol/fixtures/accepted/rigid-world-request.jsonl",
         &[
             "static_kinematic_overlap_rejected",
@@ -242,7 +207,7 @@ const PHASE6_DOCUMENT_CONTRACTS: [(&str, &[&str]); 5] = [
         ],
     ),
 ];
-const PHASE7_DOCUMENT_CONTRACTS: [(&str, &[&str]); 5] = [
+const PHASE7_DOCUMENT_CONTRACTS: [(&str, &[&str]); 4] = [
     (
         "crates/liquidfun/src/lib.rs",
         &[
@@ -289,18 +254,6 @@ const PHASE7_DOCUMENT_CONTRACTS: [(&str, &[&str]); 5] = [
         ],
     ),
     (
-        "README.md",
-        &[
-            "Phase 7 checked rigid-world slice",
-            "nine-family",
-            "Cargo-only",
-            "private, optional C++ oracle",
-            "local D2 and same-build D0",
-            "D3 review",
-            "remain pending",
-        ],
-    ),
-    (
         "COMPATIBILITY.md",
         &[
             "| `implemented` | 64 | 117 |",
@@ -326,7 +279,7 @@ const PHASE8_CANONICAL_IDENTITY: &str =
     "phase8-canonical-29383445374-beb98bd74b1d26ab0a96c6be33ce1926d349abf0/identity.json";
 const PHASE8_SANITIZER_IDENTITY: &str =
     "phase8-sanitizer-29383445374-beb98bd74b1d26ab0a96c6be33ce1926d349abf0/identity.json";
-const PHASE8_DOCUMENT_CONTRACTS: [(&str, &[&str]); 5] = [
+const PHASE8_DOCUMENT_CONTRACTS: [(&str, &[&str]); 4] = [
     (
         "crates/liquidfun/src/lib.rs",
         &[
@@ -334,7 +287,6 @@ const PHASE8_DOCUMENT_CONTRACTS: [(&str, &[&str]); 5] = [
             PHASE8_SIGNOFF,
             "all eleven joint kinds",
             "standalone [`rope::Rope`]",
-            "release readiness remain pending",
         ],
     ),
     (
@@ -367,17 +319,6 @@ const PHASE8_DOCUMENT_CONTRACTS: [(&str, &[&str]); 5] = [
         ],
     ),
     (
-        "README.md",
-        &[
-            "Phase 8 checked joint and rope slice",
-            PHASE8_SIGNOFF,
-            "19-family",
-            PHASE8_RUN,
-            "RIGD-10",
-            "release readiness remain pending",
-        ],
-    ),
-    (
         "COMPATIBILITY.md",
         &[
             "| `implemented` | 64 | 117 |",
@@ -389,6 +330,101 @@ const PHASE8_DOCUMENT_CONTRACTS: [(&str, &[&str]); 5] = [
             "| `subsystem.rope` | `liquidfun/Box2D/Box2D/Rope` | `liquidfun::rope` | applicable | yes | yes | yes | yes | yes | yes | yes | no |",
             "| `public-api.liquidfun-box2d-box2d-dynamics-joints-b2joint-h` | `liquidfun/Box2D/Box2D/Dynamics/Joints/b2Joint.h` | `liquidfun::dynamics::joints` | applicable | yes | yes | yes | yes | yes | yes | yes | no |",
             "| `public-api.liquidfun-box2d-box2d-rope-b2rope-h` | `liquidfun/Box2D/Box2D/Rope/b2Rope.h` | `liquidfun::rope` | applicable | yes | yes | yes | yes | yes | yes | yes | no |",
+        ],
+    ),
+];
+const PHASE12_PUBLIC_DOCUMENT_CONTRACTS: [(&str, &[&str]); 4] = [
+    (
+        "README.md",
+        &[
+            "## Maturity and evidence",
+            "version `0.0.0`",
+            "this repository has not declared",
+            "a parity-bearing v1 release candidate",
+            "[compatibility inventory](COMPATIBILITY.md)",
+            "`cargo xtask release audit`",
+            "## Cargo-only install and use",
+            "Rust 1.92.0",
+            "Rust 1.97.0",
+            "cargo build -p liquidfun",
+            "## Platform support",
+            "`x86_64-unknown-linux-gnu`",
+            "`aarch64-unknown-linux-gnu`",
+            "`aarch64-apple-darwin`",
+            "`x86_64-pc-windows-msvc`",
+            "`x86_64-apple-darwin`",
+            "`conditional_supported`",
+            "90 days",
+            "D2 portability evidence",
+            "## Headless, catalog, and testbed workflows",
+            "cargo xtask catalog list",
+            "cargo xtask catalog run --scenario rigid-stack-stability",
+            "cargo run -p liquidfun-testbed -- --capability-check",
+            "cargo run -p liquidfun-testbed --bin interactive",
+            "## Optional C++ oracle",
+            "git submodule update --init --recursive third_party/liquidfun",
+            "CMake 3.25 or newer",
+            "## Contributing and licensing",
+            "[CONTRIBUTING.md](CONTRIBUTING.md)",
+            "MIT-licensed",
+            "[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)",
+        ],
+    ),
+    (
+        "CONTRIBUTING.md",
+        &[
+            "### Bootstrap",
+            "Rust 1.92.0",
+            "Rust 1.97.0",
+            "### Markdown",
+            "mdformat 1.0.0 under Python 3.13",
+            "just markdown-check",
+            "### Ordered local gates",
+            "cargo fmt --all",
+            "cargo clippy --all-targets --all-features -- -D warnings",
+            "cargo build --all-targets --all-features",
+            "cargo test --all-features",
+            "### CI placement",
+            "### Evidence and generated files",
+            "### Regression promotion",
+            "### Compatibility sign-off",
+            "`cargo xtask release audit`",
+        ],
+    ),
+    (
+        "RELEASE.md",
+        &[
+            "# Release process",
+            "## Versioning and MSRV",
+            "Semantic Versioning",
+            "v1.0.x",
+            "Rust 1.92.0",
+            "Rust 1.97.0",
+            "## Freeze the source candidate",
+            "full 40-hex source-candidate SHA",
+            "## Audit the frozen candidate",
+            "zero unexplained applicable gaps",
+            "cargo xtask release audit",
+            "## Reuse the exact package",
+            "SHA-256",
+            "rust-version = \"1.92\"",
+            "## Review notices and evidence",
+            "## Attest after the source freeze",
+            "## Publication dry run",
+            "cargo publish -p liquidfun --dry-run",
+            "## Publish or do not publish",
+            "Publication has no technical rollback",
+        ],
+    ),
+    (
+        "SAFETY.md",
+        &[
+            "## Identity and invalidation",
+            "## Contacts and callbacks",
+            "## Owned particle buffers",
+            "## Renderer and oracle isolation",
+            "## Panic policy",
+            "unsafe_code = \"forbid\"",
         ],
     ),
 ];
@@ -439,6 +475,14 @@ const FORBIDDEN_PHASE8_CLAIMS: [&str; 6] = [
     "performance is validated",
     "the testbed is complete",
     "release ready",
+];
+const FORBIDDEN_CURRENT_CLAIMS: [&str; 6] = [
+    "early vertical-slice stage",
+    "do not use this crate for simulation yet",
+    "particles remain pending",
+    "the testbed remains pending",
+    "release audit has passed",
+    "faster than c++",
 ];
 
 #[derive(Clone, Copy)]
@@ -613,13 +657,14 @@ pub(crate) fn run(args: &[String]) -> Result<(), DocsError> {
     check_testing_contract(&contents)?;
     check_document_contracts(&repository_root)?;
     println!(
-        "docs verified: {} testing layers, {} Phase 4, {} Phase 5, {} Phase 6, {} Phase 7, and {} Phase 8 document contracts",
+        "docs verified: {} testing layers, {} Phase 4, {} Phase 5, {} Phase 6, {} Phase 7, {} Phase 8, and {} Phase 12 public document contracts",
         LAYER_RULES.len(),
         DOCUMENT_CONTRACTS.len(),
         PHASE5_DOCUMENT_CONTRACTS.len(),
         PHASE6_DOCUMENT_CONTRACTS.len(),
         PHASE7_DOCUMENT_CONTRACTS.len(),
-        PHASE8_DOCUMENT_CONTRACTS.len()
+        PHASE8_DOCUMENT_CONTRACTS.len(),
+        PHASE12_PUBLIC_DOCUMENT_CONTRACTS.len()
     );
     Ok(())
 }
@@ -645,6 +690,11 @@ fn check_document_contracts(repository_root: &std::path::Path) -> Result<(), Doc
         repository_root,
         PHASE8_DOCUMENT_CONTRACTS,
         "phase8-contract",
+    )?;
+    check_required_markers(
+        repository_root,
+        PHASE12_PUBLIC_DOCUMENT_CONTRACTS,
+        "phase12-public-contract",
     )?;
     check_phase8_platform_evidence(repository_root)?;
 
@@ -704,6 +754,24 @@ fn check_document_contracts(repository_root: &std::path::Path) -> Result<(), Doc
                 format!("{relative_path} contains forbidden claim `{claim}`"),
             ));
         }
+    }
+
+    let readme_path = repository_root.join("README.md");
+    let readme = fs::read_to_string(&readme_path).map_err(|error| {
+        DocsError::new(
+            "filesystem",
+            format!("failed to read {}: {error}", readme_path.display()),
+        )
+    })?;
+    let lowercase = readme.to_ascii_lowercase();
+    if let Some(claim) = FORBIDDEN_CURRENT_CLAIMS
+        .iter()
+        .find(|claim| lowercase.contains(**claim))
+    {
+        return Err(DocsError::new(
+            "current-overclaim",
+            format!("README.md contains stale or unsupported claim `{claim}`"),
+        ));
     }
     Ok(())
 }

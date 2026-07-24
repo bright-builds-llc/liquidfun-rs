@@ -50,16 +50,23 @@ This managed block is owned upstream by `bright-builds-rules`. If this block nee
 
 ## Repository-specific workflow
 
-The crate is still a foundation scaffold. Contributions must not describe it
-as a working physics engine unless the corresponding implementation and
-validation evidence exists in the compatibility ledger.
+Contributions must keep implementation, compatibility, platform, performance,
+and release claims scoped to their checked evidence. The machine-readable
+authorities and generated projections described below take precedence over
+free-form prose.
 
-### Prerequisites
+### Bootstrap
 
 Cargo-only work uses the Rust 1.97.0 toolchain selected by
-`rust-toolchain.toml`; the publishable crate also has a provisional Rust 1.92.0
-MSRV check. Ordinary Rust users do not need CMake, C++, the submodule, or
+`rust-toolchain.toml`. The publishable crate declares Rust 1.92.0 as the
+v1.0.x MSRV. Ordinary Rust work does not require CMake, C++, the submodule, or
 reference data.
+
+```bash
+rustup show active-toolchain
+cargo fetch --locked
+cargo xtask package verify
+```
 
 Oracle work additionally requires:
 
@@ -77,6 +84,21 @@ cargo xtask upstream verify
 
 Never edit, format, or regenerate files inside `third_party/liquidfun`.
 
+### Markdown
+
+Format repository-owned non-GSD Markdown with mdformat 1.0.0 under Python 3.13.
+The `.mdformat.toml` configuration and its exclusions are authoritative;
+`.planning/**` is parser-owned GSD content and must not be formatted.
+
+```bash
+python3.13 -m venv /tmp/liquidfun-mdformat
+/tmp/liquidfun-mdformat/bin/python -m pip install mdformat==1.0.0
+PATH=/tmp/liquidfun-mdformat/bin:$PATH just markdown-check
+```
+
+Run check mode before a scoped formatting write. Preserve repeated `1.`
+ordered-list markers in task and lesson artifacts.
+
 ### Discover commands
 
 The `justfile` is a thin command menu:
@@ -89,7 +111,7 @@ cargo xtask --help
 Recipes print and invoke their underlying Cargo or `cargo xtask` commands.
 Validation logic belongs in Rust tooling or the CMake wrapper, not in recipes.
 
-### Required Rust checks
+### Ordered local gates
 
 Run these commands in order before every commit:
 
@@ -100,12 +122,24 @@ cargo build --all-targets --all-features
 cargo test --all-features
 ```
 
-When private tooling changes, also run the workspace variants and denied-warning
-documentation build listed in [TESTING.md](TESTING.md). `cargo xtask check`
-adds the applicable inventory, package, upstream, and provenance gates; in a
-Cargo-only checkout it labels the skipped oracle-dependent checks explicitly.
+When private tooling or public documentation changes, also run the applicable
+workspace, warning-denied rustdoc, doctest, documentation-contract, and
+package-isolation checks listed in [TESTING.md](TESTING.md). Run
+`just markdown-check` after Markdown changes.
 
-### Oracle workflow
+### CI placement
+
+Pull requests keep fast deterministic formatting, Clippy, build, unit,
+integration, doctest, package, documentation, inventory, and bounded replay
+checks close to the change.
+
+Randomized differential suites, fuzzing, Miri, Rust and C++ sanitizers,
+coverage, controlled benchmarks, and the broad native-platform matrix run on
+scheduled or explicit release-candidate workflows. Do not retry deterministic
+physics failures. Preserve the exact failing input, candidate commit, toolchain,
+classification, and first-divergence signature.
+
+### Optional oracle workflow
 
 After initialization, run the evidence gates before CMake:
 
@@ -120,7 +154,7 @@ cargo xtask upstream build --preset oracle-debug
 `just oracle-debug` is the visible configure-and-build alias. Build outputs
 belong under `target/reference/`, never in the upstream tree or consumer crate.
 
-### Generated files and evidence ownership
+### Evidence and generated files
 
 - `reference/compatibility.json` is the authoritative curated ledger. Every row
   keeps independent investigated, planned, implemented, unit-test,
@@ -135,6 +169,11 @@ belong under `target/reference/`, never in the upstream tree or consumer crate.
   and generator revisions, compiler/preset/target/flags, and notice references.
 - `reference/upstream-lock.toml` and the submodule gitlink change only through
   the intentional update review described in [UPSTREAM.md](UPSTREAM.md).
+- Platform and release workflows create one reviewed `.crate` and fan its exact
+  SHA-256 bytes across native runners; no platform lane repackages it.
+- Local D0/D2 results cannot promote D1 fixtures or broaden compatibility
+  claims. Producer workflow, job, run, candidate, artifact, toolchain, target,
+  and review identities remain attached to accepted evidence.
 
 ### Provenance and licensing duties
 
@@ -150,6 +189,31 @@ The root MIT license covers original project work; it does not replace
 upstream attribution, provenance, alteration, or notice obligations. An
 unmapped derivation, dirty submodule, stale generated report, or unexplained
 compatibility claim blocks the contribution.
+
+### Regression promotion
+
+Every accepted crash, panic, sanitizer finding, timeout, schema failure, or
+physics mismatch must become a bounded minimized regression when feasible.
+Promotion requires exact input bytes and SHA-256, target, generator and
+toolchain identity, candidate and fix commits, failure classification,
+oracle/tolerance identity where applicable, stable first-divergence signature,
+review status, and a named checked-in test path.
+
+Generate candidates only below the documented staging directory. Replay and
+validate before review, use the no-clobber promotion command for the artifact
+class, and never edit an accepted fixture or manifest by hand.
+
+### Compatibility sign-off
+
+Update each affected compatibility row independently for investigation,
+implementation, unit tests, differential evidence, platform evidence,
+documented differences, and intentional non-support. Regenerate
+`COMPATIBILITY.md` from `reference/compatibility.json`; do not edit the report.
+
+A parity-bearing release requires zero unexplained applicable gaps and a
+complete reviewed evidence manifest accepted for one frozen full commit by
+`cargo xtask release audit`. Missing, mixed-commit, stale, unreviewed, or
+broadened evidence blocks sign-off.
 
 ### Pull request evidence
 

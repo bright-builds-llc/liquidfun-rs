@@ -12,98 +12,122 @@
 
 <!-- bright-builds-rules-readme-badges:end -->
 
-An in-progress effort to build an independent native Rust implementation of
-Google's LiquidFun physics engine against a pinned C++ oracle.
+An independent, renderer-neutral Rust implementation of Google's LiquidFun
+physics engine, developed against an exact pinned C++ oracle.
 
-## Status
+## Maturity and evidence
 
-This repository is at an early vertical-slice stage. The `liquidfun` crate is
-version `0.0.0` and now provides a Phase 8 checked joint and rope slice on top
-of the Phase 7 checked rigid-world slice: all eleven world-owned joint kinds, an independent
-standalone rope, source-timed collision/pre-solve decisions, owned lifecycle
-and destruction evidence, and semantic reconstruction with explicit unsupported
-cases. The generated
-[compatibility inventory](COMPATIBILITY.md) records each row only at its
-demonstrated dimensions.
+The publishable crate is still version `0.0.0`; this repository has not declared
+a parity-bearing v1 release candidate. The native scalar engine includes math,
+collision, rigid bodies, contacts, CCD, all eleven joint kinds, standalone rope,
+particles and groups, queries, semantic observations, debug primitives, and
+safe owned particle-buffer transfer.
 
-The earlier Phase 6 minimal rigid-world vertical slice remains in the locked
-corpus. Its `phase6-v1` timelines,
-`non_colliding_body_fixture_lifecycle` and `single_contact_lifecycle`, cover
-checked body/fixture ownership, automatic proxy/contact lifecycle, and the
-initial bounded contact solve. That boundary retains its fixed 128-action step,
-`BodyTypeChangeError` and `FixtureDestructionError`, and the rule that
-positive-origin custom mass requires finite, strictly positive centered inertia.
-The real rigid fixture lifecycle requires canonical D1 authority before every write
-and independently recomputes the current checkout's adapter-source and effective compile-command digests
-before stage, review, or promotion mutation.
+Capability is not the same as verified parity. The generated
+[compatibility inventory](COMPATIBILITY.md) is authoritative for row-by-row
+implementation, differential, platform, and documented-difference evidence.
+Historical Phase 4 through Phase 8 corpora remain bounded evidence inputs, not
+a generalized claim about the complete project. Performance claims likewise
+apply only to immutable reports for named workloads.
 
-The Phase 7 `phase7-v1` nine-family request retains those two families and adds
-force/configuration, multi-contact/warm-start, sleep/wake, CCD/sub-step,
-continuous-budget, query/ray, and origin-shift witnesses. Local debug, release,
-replay, sanitizer, and two-run determinism remain D2/D0 evidence only: the
-executed signoff is local D2 and same-build D0, without canonical D1 promotion,
-D3 review, or platform coverage. The scheduled Clang ASan/UBSan lane executes
-both the C++ protocol tests and the rigid-world path; that wiring does not widen
-the local claim.
+A parity-bearing release requires a frozen full candidate commit and a complete
+reviewed manifest accepted by fail-closed `cargo xtask release audit`. Until
+that audit exists for and passes the exact candidate, release readiness remain
+pending. See [RELEASE.md](RELEASE.md) for the non-publication rule.
 
-The Phase 8 `phase8-v1` request accumulates 19 required witness families: the
-Phase 6 and Phase 7 families plus all joint types, gear dependencies, standalone
-rope, filter/pre-solve/listener timing, destruction cascades, and semantic
-reconstruction. GitHub Actions
-[run 29383445374](https://github.com/bright-builds-llc/liquidfun-rs/actions/runs/29383445374)
-at commit `beb98bd74b1d26ab0a96c6be33ce1926d349abf0` established
-canonical scalar rigid-body and joint differential sign-off for the closed Phase 8 corpus. Its
-exact artifacts are
-`phase8-canonical-29383445374-beb98bd74b1d26ab0a96c6be33ce1926d349abf0`
-and
-`phase8-sanitizer-29383445374-beb98bd74b1d26ab0a96c6be33ce1926d349abf0`.
-Both bind upstream revision `7f20402173fd143a3988c921bc384459c6a858f2`,
-Rust 1.97.0, CMake 4.3.3, Ninja 1.13.2, Clang 22.1.8, and `phase8-v1`.
+## Cargo-only install and use
 
-This remains a scoped scalar corpus result, not broad project parity. RIGD-10,
-particles, D3 review, cross-platform parity, performance, the testbed, and
-release readiness remain pending.
-
-Phase 5's world contact lifecycle gap is covered by the bounded later slices.
-The Phase 5 immutable shape/collision substrate and its fixed 78-case Phase 5
-collision corpora remain the geometric evidence foundation. The private oracle
-continues to verify bounded Phase 4 math and those 78-case Phase 5 collision corpora.
-The canonical-platform evidence, performance, and production maturity remain pending.
-
-Do not use this crate for simulation yet. Maturity will be reported only as
-evidence is added to the compatibility ledger.
-
-## Cargo-only quick start
-
-Ordinary Rust development is Cargo-only and does not require the upstream
-submodule, CMake, or a C++ compiler:
+The crate declares Rust 1.92.0 as its v1.0.x MSRV contract. Repository
+development is reproducibly pinned to Rust 1.97.0 by `rust-toolchain.toml`.
+Until a public release is published, build the reviewed repository checkout:
 
 ```bash
-cargo build
-cargo test
+cargo build -p liquidfun
+cargo test -p liquidfun --all-features
 ```
 
-The workspace selects only `crates/liquidfun` by default. Repository tooling
-and the private, optional C++ oracle remain maintainer workflows.
+Ordinary use is Cargo-only. It does not initialize the upstream submodule,
+discover CMake, compile C++, start an oracle process, or include the private
+testbed:
 
-## Repository workflows
+```rust
+use liquidfun::math::Vec2;
+use liquidfun::{BodyDef, BodyType, World};
 
-List the transparent contributor commands with `just` or `just --list`. Run
-the applicable foundation checks with `cargo xtask check` or `just check`.
-See [TESTING.md](TESTING.md) for the exact verification tiers and
-[CONTRIBUTING.md](CONTRIBUTING.md) before sending changes.
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mut world = World::new()?;
+    let body = world.create_body(&BodyDef::new(
+        BodyType::Dynamic,
+        Vec2::ZERO,
+        0.0,
+        true,
+    )?)?;
+    assert!(world.contains_body(body));
+    Ok(())
+}
+```
 
-The fixed rigid-world evidence commands are `just rigid-world-debug`,
-`just rigid-world-release`, `just rigid-world-replay`, and
-`just rigid-world-determinism`. They require the initialized pinned C++ oracle,
-exercise the 19-family Phase 8 request, and report local passes as D2 plus
-same-build byte identity as D0. They do not substitute for the exact canonical
-run above, establish D3 evidence, or make another platform claim.
+## Platform support
 
-Maintainers can stage the same typed rigid transaction with
-`just rigid-fixture-stage <artifact-id>`, then use the explicit review and
-promotion recipes. Each mutation repeats the D1 guard; a local D2 run is
-rejected before the staging or accepted-evidence tree changes.
+Every supported lane verifies the same reviewed `.crate` bytes. Platform
+results are D2 portability evidence and cannot create or promote canonical D1
+physics fixtures.
+
+| Target | Policy tier | Current contract |
+| --- | --- | --- |
+| `x86_64-unknown-linux-gnu` | durable supported | Rust 1.97 native verification; canonical Linux also verifies Rust 1.92.0 |
+| `aarch64-unknown-linux-gnu` | durable supported | Rust 1.97 native verification |
+| `aarch64-apple-darwin` | durable supported | Rust 1.97 native verification |
+| `x86_64-pc-windows-msvc` | durable supported | Rust 1.97 native verification |
+| `x86_64-apple-darwin` | `conditional_supported` | Requires native evidence no older than 90 days; missing or expired evidence downgrades the current disposition to unsupported |
+
+Targets outside this table are evidence-only unless a reviewed support decision
+promotes them.
+
+## Headless, catalog, and testbed workflows
+
+The catalog is the shared renderer-independent scenario authority:
+
+```bash
+cargo xtask catalog list
+cargo xtask catalog run --scenario rigid-stack-stability --timestep 0.016666668 --velocity-iterations 8 --position-iterations 3 --particle-iterations 1 --oracle-preset oracle-debug --session-profile one-shot --output human --commands auto
+```
+
+The private testbed consumes the same semantic catalog and cannot confer parity
+or performance authority:
+
+```bash
+cargo run -p liquidfun-testbed -- --capability-check --fixture crates/liquidfun-differential/tests/fixtures/catalog/phase11-v1.json --output target/testbed-capability
+cargo run -p liquidfun-testbed --bin interactive
+```
+
+See [TESTING.md](TESTING.md) for replay, differential, sanitizer, fuzz, Miri,
+coverage, benchmark, and evidence-promotion workflows.
+
+## Optional C++ oracle
+
+Maintainer-only differential work requires the exact recursive upstream
+checkout, CMake 3.25 or newer, Ninja 1.11 or newer, and a compatible C++
+compiler:
+
+```bash
+git submodule update --init --recursive third_party/liquidfun
+cargo xtask upstream verify
+cargo xtask upstream configure --preset oracle-debug
+cargo xtask upstream build --preset oracle-debug
+```
+
+Canonical Linux evidence records the stricter pinned identities documented in
+[UPSTREAM.md](UPSTREAM.md). The C++ oracle is out of process and never enters
+the published crate.
+
+## Contributing and licensing
+
+Read [CONTRIBUTING.md](CONTRIBUTING.md) before changing source, evidence, or
+generated reports. Original project work is MIT-licensed under [LICENSE](LICENSE).
+Pinned upstream and derived materials retain separate attribution, alteration,
+and notice duties recorded in
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 ## Architecture and evidence
 
@@ -115,7 +139,7 @@ rejected before the staging or accepted-evidence tree changes.
   oracle-isolation boundary
 - [TESTING.md](TESTING.md) — local commands, CI lanes, package proof, and
   deterministic verification policy
-
-Original project work is MIT-licensed. Upstream and derived materials retain
-their applicable provenance, alteration, and notice duties; see
-[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+- [SAFETY.md](SAFETY.md) — handle, callback, owned-buffer, panic, and zero-unsafe
+  contracts
+- [RELEASE.md](RELEASE.md) — candidate freeze, audit, package reuse, and
+  non-publication policy
