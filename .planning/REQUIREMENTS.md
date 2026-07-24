@@ -128,7 +128,7 @@ Requirements for the first release permitted to claim complete parity with the s
 - [x] **PERF-03**: Consumers and benchmark tooling can inspect phase-level profiles without exposing or coupling to private storage.
 - [x] **PERF-04**: Structural performance changes are justified by profiles and retain or improve differential, safety, determinism, and API evidence.
 - [x] **PERF-05**: A scalar deterministic implementation remains the compatibility baseline even if later opt-in SIMD or parallel experiments exist.
-- [ ] **PERF-06**: Public performance claims link to reproducible methodology and identify workloads, versions, flags, hardware, results, and compatibility status.
+- [x] **PERF-06**: Public performance claims link to reproducible methodology and identify workloads, versions, flags, hardware, results, and compatibility status.
 
 ### Platform Support
 
@@ -286,7 +286,7 @@ Roadmap creation maps every v1 requirement to exactly one phase.
 | PERF-03 | Phase 12 | Complete |
 | PERF-04 | Phase 12 | Complete |
 | PERF-05 | Phase 12 | Complete |
-| PERF-06 | Phase 12 | Pending |
+| PERF-06 | Phase 12 | Complete |
 | PLAT-01 | Phase 12 | Complete |
 | PLAT-02 | Phase 12 | Complete |
 | PLAT-03 | Phase 12 | Complete |

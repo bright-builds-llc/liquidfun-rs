@@ -3,14 +3,14 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 12-20-PLAN.md
-last_updated: "2026-07-24T01:06:31.218Z"
+stopped_at: Completed 12-08-PLAN.md
+last_updated: "2026-07-24T01:42:47.295Z"
 last_activity: "2026-07-24"
 progress:
   total_phases: 12
   completed_phases: 11
   total_plans: 216
-  completed_plans: 209
+  completed_plans: 210
   percent: 97
 ---
 
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-23)
 ## Current Position
 
 Phase: 12 (Performance, Portability, and Release Hardening) — EXECUTING
-Plan: 11 of 25
+Plan: 12 of 25
 Status: Ready to execute
 Last activity: 2026-07-24
 
@@ -216,6 +216,7 @@ Progress: [██████████] 96%
 | Phase 12 P19 | 15m | 1 tasks | 10 files |
 | Phase 12 P13 | 50 min | 2 tasks | 15 files |
 | Phase 12 P20 | 28m | 1 tasks | 9 files |
+| Phase 12 P08 | 33min | 2 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -605,6 +606,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 12]: Keep raw process generation and reset epoch together so reviewed child cycling cannot be mistaken for reset rollback.
 - [Phase 12]: Hash canonical checkpoint JSON without its JSONL newline on the native side to match the pinned C++ checkpoint-record identity.
 - [Phase 12]: Keep unprofiled totals authoritative while common-parent and Rust-child durations remain diagnostic-only.
+- [Phase 12]: Production performance orchestration reuses the concrete Plan 12-20 adapters behind a test-only provider seam.
+- [Phase 12]: Optimization admission covers all 32 sealed cases with a five-run Student 95% interval and calibrated max(3%, noise) threshold.
+- [Phase 12]: The reviewed performance manifest remains empty until an immutable local report receives explicit review.
 
 ### Pending Todos
 
@@ -618,6 +622,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-24T01:06:31.168Z
-Stopped at: Completed 12-20-PLAN.md
+Last session: 2026-07-24T01:42:47.290Z
+Stopped at: Completed 12-08-PLAN.md
 Resume file: None
