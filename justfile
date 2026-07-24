@@ -111,6 +111,15 @@ phase11-evidence-sanitizer output="target/phase11-evidence-local/sanitizer":
 phase11-evidence-validate canonical="target/phase11-evidence-local/canonical" sanitizer="target/phase11-evidence-local/sanitizer":
     cargo xtask phase11-evidence validate --mode local --canonical-dir {{quote(canonical)}} --sanitizer-dir {{quote(sanitizer)}}
 
+phase12-performance-paired:
+    bash scripts/phase12-performance.sh paired
+
+phase12-performance-calibrate:
+    bash scripts/phase12-performance.sh calibrate
+
+phase12-performance-validate:
+    bash scripts/phase12-performance.sh validate
+
 rigid-world-minimize:
     cargo xtask differential minimize --scenario rigid-world --preset oracle-debug --session-profile one-shot
 
