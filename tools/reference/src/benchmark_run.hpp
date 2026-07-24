@@ -9,6 +9,7 @@ namespace liquidfun::reference {
 enum class BenchmarkRunEvent {
   authority_prepared,
   warmup_complete,
+  measured_unit_setup,
   measured_setup_complete,
   timer_started,
   timer_stopped,

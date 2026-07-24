@@ -73,7 +73,7 @@ pub trait NativeBenchmarkDriver {
     /// Owned semantic checkpoint captured after the timer stops.
     type Checkpoint;
 
-    /// Constructs a fresh session from already validated resolved bytes.
+    /// Constructs every fresh per-unit session from already validated resolved bytes.
     ///
     /// # Errors
     ///
@@ -271,6 +271,7 @@ impl PreparedNativeBenchmark {
             &self.expected_checkpoint,
             None,
             self.logical_horizon,
+            1,
         );
         let mut clock = InstantClock;
         measure_native_actions(&mut driver, &mut clock, self.logical_horizon)
@@ -334,6 +335,7 @@ impl PreparedNativeBenchmark {
             &expected_checkpoint,
             Some(request_id),
             self.logical_horizon,
+            execution_units,
         );
         let mut clock = InstantClock;
         let (elapsed, checkpoint) =
@@ -365,31 +367,38 @@ struct CatalogNativeDriver<'a> {
     expected_checkpoint: &'a CanonicalCheckpoint,
     maybe_request_id: Option<&'a RequestId>,
     logical_horizon: u32,
+    execution_units: u32,
     executed_actions: u32,
-    maybe_controller: Option<SessionController<NativeCatalogBackend>>,
+    controllers: Vec<SessionController<NativeCatalogBackend>>,
 }
 
 impl<'a> CatalogNativeDriver<'a> {
-    const fn new(
+    fn new(
         resolved: &'a ResolvedScenario,
         expected_checkpoint: &'a CanonicalCheckpoint,
         maybe_request_id: Option<&'a RequestId>,
         logical_horizon: u32,
+        execution_units: u32,
     ) -> Self {
         Self {
             resolved,
             expected_checkpoint,
             maybe_request_id,
             logical_horizon,
+            execution_units,
             executed_actions: 0,
-            maybe_controller: None,
+            controllers: Vec::new(),
         }
     }
 
-    fn controller(
+    fn controller_for_next_action(
         &mut self,
     ) -> Result<&mut SessionController<NativeCatalogBackend>, PerformanceExecutionError> {
-        self.maybe_controller.as_mut().ok_or_else(|| {
+        let unit_index =
+            usize::try_from(self.executed_actions / self.logical_horizon).map_err(|_error| {
+                PerformanceExecutionError::new(PerformanceExecutionErrorKind::ResourceLimit)
+            })?;
+        self.controllers.get_mut(unit_index).ok_or_else(|| {
             PerformanceExecutionError::new(PerformanceExecutionErrorKind::NativeExecution)
         })
     }
@@ -399,26 +408,35 @@ impl NativeBenchmarkDriver for CatalogNativeDriver<'_> {
     type Checkpoint = CanonicalCheckpoint;
 
     fn restart(&mut self) -> Result<(), PerformanceExecutionError> {
-        let mut backend = NativeCatalogBackend::new();
-        if let Some(request_id) = self.maybe_request_id {
-            backend.set_request_id(request_id.clone());
+        self.controllers.clear();
+        self.executed_actions = 0;
+        let execution_units = usize::try_from(self.execution_units).map_err(|_error| {
+            PerformanceExecutionError::new(PerformanceExecutionErrorKind::ResourceLimit)
+        })?;
+        self.controllers
+            .try_reserve_exact(execution_units)
+            .map_err(|_error| {
+                PerformanceExecutionError::new(PerformanceExecutionErrorKind::ResourceLimit)
+            })?;
+        for _ in 0..execution_units {
+            let mut backend = NativeCatalogBackend::new();
+            if let Some(request_id) = self.maybe_request_id {
+                backend.set_request_id(request_id.clone());
+            }
+            let mut controller = SessionController::new(backend);
+            submit(
+                &mut controller,
+                SessionCommand::Select {
+                    resolved: self.resolved.clone(),
+                },
+            )?;
+            self.controllers.push(controller);
         }
-        let mut controller = SessionController::new(backend);
-        submit(
-            &mut controller,
-            SessionCommand::Select {
-                resolved: self.resolved.clone(),
-            },
-        )?;
-        self.maybe_controller = Some(controller);
         Ok(())
     }
 
     fn execute_action(&mut self) -> Result<(), PerformanceExecutionError> {
-        if self.executed_actions > 0 && self.executed_actions.is_multiple_of(self.logical_horizon) {
-            self.restart()?;
-        }
-        submit(self.controller()?, SessionCommand::StepOnce)?;
+        submit(self.controller_for_next_action()?, SessionCommand::StepOnce)?;
         self.executed_actions = self.executed_actions.checked_add(1).ok_or_else(|| {
             PerformanceExecutionError::new(PerformanceExecutionErrorKind::ResourceLimit)
         })?;
@@ -435,7 +453,9 @@ impl NativeBenchmarkDriver for CatalogNativeDriver<'_> {
             })?
             .checkpoint_id()
             .clone();
-        let controller = self.controller()?;
+        let controller = self.controllers.last_mut().ok_or_else(|| {
+            PerformanceExecutionError::new(PerformanceExecutionErrorKind::NativeExecution)
+        })?;
         submit(
             controller,
             SessionCommand::CaptureCheckpoint { checkpoint_id },
@@ -459,7 +479,7 @@ impl NativeBenchmarkDriver for CatalogNativeDriver<'_> {
     }
 
     fn teardown(&mut self) {
-        self.maybe_controller = None;
+        self.controllers.clear();
         self.executed_actions = 0;
     }
 }

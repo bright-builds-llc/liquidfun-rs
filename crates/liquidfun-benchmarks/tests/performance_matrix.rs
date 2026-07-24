@@ -111,6 +111,25 @@ fn injected_clock_proves_only_declared_actions_are_timed() {
 }
 
 #[test]
+fn scalable_injected_clock_proves_every_unit_is_prepared_before_timing() {
+    // Arrange
+    let state = Rc::new(RefCell::new(ScalableTimingState::default()));
+    let mut driver = ScalableCountingDriver::new(Rc::clone(&state));
+    let mut clock = ScalableCountingClock::new(Rc::clone(&state));
+
+    // Act
+    let duration = measure_native_actions(&mut driver, &mut clock, 128)
+        .expect("scalable fake sample should succeed");
+
+    // Assert
+    let state = state.borrow();
+    assert_eq!(duration, Duration::from_nanos(23));
+    assert_eq!(state.prepared_units, 128);
+    assert_eq!(state.executed_actions, 128);
+    assert!(!state.setup_during_timer);
+}
+
+#[test]
 fn independent_preparations_have_identical_semantic_authority() {
     // Arrange / Act
     let first = paired_benchmark_cases().expect("first preparation should pass");
@@ -229,4 +248,77 @@ impl NativeBenchmarkDriver for CountingDriver {
     fn teardown(&mut self) {
         self.events.borrow_mut().push("teardown");
     }
+}
+
+#[derive(Default)]
+struct ScalableTimingState {
+    prepared_units: u32,
+    executed_actions: u32,
+    timer_running: bool,
+    setup_during_timer: bool,
+}
+
+struct ScalableCountingClock {
+    state: Rc<RefCell<ScalableTimingState>>,
+}
+
+impl ScalableCountingClock {
+    fn new(state: Rc<RefCell<ScalableTimingState>>) -> Self {
+        Self { state }
+    }
+}
+
+impl NativeBenchmarkClock for ScalableCountingClock {
+    type Stamp = ();
+
+    fn start(&mut self) -> Self::Stamp {
+        let mut state = self.state.borrow_mut();
+        assert_eq!(state.prepared_units, 128);
+        state.timer_running = true;
+    }
+
+    fn elapsed(&mut self, (): Self::Stamp) -> Duration {
+        self.state.borrow_mut().timer_running = false;
+        Duration::from_nanos(23)
+    }
+}
+
+struct ScalableCountingDriver {
+    state: Rc<RefCell<ScalableTimingState>>,
+}
+
+impl ScalableCountingDriver {
+    fn new(state: Rc<RefCell<ScalableTimingState>>) -> Self {
+        Self { state }
+    }
+}
+
+impl NativeBenchmarkDriver for ScalableCountingDriver {
+    type Checkpoint = ();
+
+    fn restart(&mut self) -> Result<(), PerformanceExecutionError> {
+        let mut state = self.state.borrow_mut();
+        state.setup_during_timer |= state.timer_running;
+        state.prepared_units = 128;
+        Ok(())
+    }
+
+    fn execute_action(&mut self) -> Result<(), PerformanceExecutionError> {
+        let mut state = self.state.borrow_mut();
+        assert!(state.timer_running);
+        assert_eq!(state.prepared_units, 128);
+        state.executed_actions += 1;
+        Ok(())
+    }
+
+    fn capture(&mut self) -> Result<Self::Checkpoint, PerformanceExecutionError> {
+        assert!(!self.state.borrow().timer_running);
+        Ok(())
+    }
+
+    fn validate(&mut self, (): &Self::Checkpoint) -> Result<(), PerformanceExecutionError> {
+        Ok(())
+    }
+
+    fn teardown(&mut self) {}
 }

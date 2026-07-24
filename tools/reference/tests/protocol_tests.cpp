@@ -183,7 +183,8 @@ std::string catalog_request(std::string_view identity_sha256) {
 
 std::string benchmark_request(
     bool profile_enabled = false,
-    std::string_view workload = "world_step") {
+    std::string_view workload = "world_step",
+    std::string_view size_point = "fixed") {
   const auto payload_text = catalog_payload().dump();
   const auto bytes = std::vector<std::uint8_t>(
       payload_text.begin(), payload_text.end());
@@ -200,7 +201,7 @@ std::string benchmark_request(
           {"position_iterations", 3U},
           {"particle_iterations", 2U}}},
         {"workload", workload},
-        {"size_point", "fixed"},
+        {"size_point", size_point},
         {"optimization_mode", "release_scalar"},
         {"warmup_count", 1U},
         {"measured_horizon", 1U},
@@ -251,12 +252,46 @@ void benchmark_run_executes_with_strict_timing_boundaries() {
           std::vector<liquidfun::reference::BenchmarkRunEvent>{
               liquidfun::reference::BenchmarkRunEvent::authority_prepared,
               liquidfun::reference::BenchmarkRunEvent::warmup_complete,
+              liquidfun::reference::BenchmarkRunEvent::measured_unit_setup,
               liquidfun::reference::BenchmarkRunEvent::measured_setup_complete,
               liquidfun::reference::BenchmarkRunEvent::timer_started,
               liquidfun::reference::BenchmarkRunEvent::timer_stopped,
               liquidfun::reference::BenchmarkRunEvent::checkpoint_validated,
               liquidfun::reference::BenchmarkRunEvent::teardown_complete},
       "benchmark lifecycle crossed the authoritative timer boundary");
+}
+
+void benchmark_run_prepares_every_scalable_unit_before_timing() {
+  // Arrange
+  BenchmarkEventRecorder recorder;
+  liquidfun::reference::BenchmarkRunAdapter adapter(&recorder);
+
+  // Act
+  static_cast<void>(
+      adapter.execute(benchmark_request(false, "world_step", "work_units128")));
+
+  // Assert
+  const auto timer_started = std::find(
+      recorder.events.begin(), recorder.events.end(),
+      liquidfun::reference::BenchmarkRunEvent::timer_started);
+  const auto timer_stopped = std::find(
+      recorder.events.begin(), recorder.events.end(),
+      liquidfun::reference::BenchmarkRunEvent::timer_stopped);
+  expect(timer_started != recorder.events.end() &&
+             timer_stopped != recorder.events.end(),
+         "scalable benchmark timer boundary was not observed");
+  expect(
+      std::count(
+          recorder.events.begin(), timer_started,
+          liquidfun::reference::BenchmarkRunEvent::measured_unit_setup) ==
+          128,
+      "scalable benchmark did not prepare every unit before timing");
+  expect(
+      std::find(
+          timer_started, timer_stopped,
+          liquidfun::reference::BenchmarkRunEvent::measured_unit_setup) ==
+          timer_stopped,
+      "scalable benchmark constructed a unit inside the timer");
 }
 
 void benchmark_run_rejection_advances_epoch_and_recovers() {
@@ -1463,6 +1498,7 @@ void phase8_reactions_guard_uninitialized_solver_scratch() {
 int main() {
   try {
     benchmark_run_executes_with_strict_timing_boundaries();
+    benchmark_run_prepares_every_scalable_unit_before_timing();
     benchmark_run_rejection_advances_epoch_and_recovers();
     benchmark_run_keeps_profile_diagnostics_non_authoritative();
     benchmark_run_rejects_malformed_and_bounded_inputs();

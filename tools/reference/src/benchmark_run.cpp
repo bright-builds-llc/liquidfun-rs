@@ -15,6 +15,7 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <vector>
 
 namespace liquidfun::reference {
 namespace {
@@ -319,29 +320,31 @@ BenchmarkRunTrace BenchmarkRunAdapter::execute(std::string_view record) {
   }
   observe(BenchmarkRunEvent::warmup_complete);
 
-  auto measured =
-      std::make_unique<CatalogExecutionSession>(execution_request);
+  std::vector<std::unique_ptr<CatalogExecutionSession>> measured;
+  measured.reserve(units);
+  for (std::uint32_t unit = 0; unit < units; ++unit) {
+    measured.push_back(
+        std::make_unique<CatalogExecutionSession>(execution_request));
+    observe(BenchmarkRunEvent::measured_unit_setup);
+  }
   observe(BenchmarkRunEvent::measured_setup_complete);
   observe(BenchmarkRunEvent::timer_started);
   const auto started = std::chrono::steady_clock::now();
-  for (std::uint32_t unit = 0; unit < units; ++unit) {
-    if (unit > 0U) {
-      measured = std::make_unique<CatalogExecutionSession>(
-          execution_request);
-    }
-    while (!measured->finished()) {
-      measured->execute_next_logical_action();
+  for (auto& session : measured) {
+    while (!session->finished()) {
+      session->execute_next_logical_action();
     }
   }
   const auto stopped = std::chrono::steady_clock::now();
   observe(BenchmarkRunEvent::timer_stopped);
-  const auto measured_checkpoint = measured->capture_current_checkpoint();
+  const auto measured_checkpoint =
+      measured.back()->capture_current_checkpoint();
   if (measured_checkpoint != authority) {
     throw std::runtime_error(
         "benchmark measured semantic checkpoint mismatch");
   }
   observe(BenchmarkRunEvent::checkpoint_validated);
-  measured.reset();
+  measured.clear();
   observe(BenchmarkRunEvent::teardown_complete);
 
   const auto raw_elapsed =
