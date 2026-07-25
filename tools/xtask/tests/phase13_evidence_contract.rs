@@ -23,6 +23,14 @@ const DIGEST_B: &str = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
 
 static NEXT_TEMP: AtomicU64 = AtomicU64::new(0);
 
+fn producer_workflow() -> String {
+    fs::read_to_string(
+        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../.github/workflows/phase13-evidence-producer.yml"),
+    )
+    .expect("Phase 13 producer workflow should exist")
+}
+
 fn temporary_directory(label: &str) -> PathBuf {
     let ordinal = NEXT_TEMP.fetch_add(1, Ordering::Relaxed);
     let path = std::env::temp_dir().join(format!(
@@ -344,4 +352,135 @@ fn producer_bundle_rejects_symlinks() {
         error.kind(),
         phase13_evidence::bundle::BundleErrorKind::Symlink
     );
+}
+
+#[test]
+fn workflow_uses_exact_checkout_and_immutable_action_pins() {
+    // Arrange
+    let workflow = producer_workflow();
+
+    // Act
+    let uses = workflow
+        .lines()
+        .filter_map(|line| line.trim().strip_prefix("uses: "))
+        .collect::<Vec<_>>();
+
+    // Assert
+    assert!(workflow.contains("workflow_dispatch:"));
+    assert!(workflow.contains("runs-on: ubuntu-24.04"));
+    assert!(workflow.contains("ref: ${{ github.sha }}"));
+    assert!(workflow.contains("persist-credentials: false"));
+    assert!(workflow.contains("submodules: recursive"));
+    assert_eq!(
+        uses,
+        [
+            "actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0",
+            "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a",
+        ]
+    );
+    for action in uses {
+        let (_, revision) = action
+            .rsplit_once('@')
+            .expect("every workflow action should have a revision");
+        assert_eq!(revision.len(), 40);
+        assert!(revision.bytes().all(|byte| byte.is_ascii_hexdigit()));
+    }
+}
+
+#[test]
+fn workflow_checks_exact_producer_upstream_and_tool_identities() {
+    // Arrange
+    let workflow = producer_workflow();
+
+    // Act
+    let required_contract = [
+        r#"test "$(git rev-parse HEAD)" = "$GITHUB_SHA""#,
+        r#"test -z "$(git status --porcelain --untracked-files=no)""#,
+        r#"test "$(git -C third_party/liquidfun rev-parse HEAD)" = "7f20402173fd143a3988c921bc384459c6a858f2""#,
+        "rustc 1.97.0",
+        "cmake version 4.3.3",
+        r#"test "$(ninja --version)" = "1.13.2""#,
+        r#"clang version 22\.1\.8"#,
+        "oracle-debug",
+    ];
+
+    // Assert
+    for required in required_contract {
+        assert!(
+            workflow.contains(required),
+            "workflow is missing exact identity check: {required}"
+        );
+    }
+}
+
+#[test]
+fn workflow_invokes_one_aggregate_producer_and_rechecks_the_bundle() {
+    // Arrange
+    let workflow = producer_workflow();
+
+    // Act
+    let producer_invocations = workflow
+        .match_indices("cargo xtask phase13 evidence produce")
+        .count();
+
+    // Assert
+    assert_eq!(producer_invocations, 1);
+    assert!(workflow.contains("--staging-root target/phase13/staged"));
+    assert!(workflow.contains(r#"--producer-sha "$GITHUB_SHA""#));
+    assert!(workflow.contains("cargo xtask phase13 evidence check"));
+    assert!(workflow.contains(r#"--bundle-sha256 "$bundle_sha256""#));
+}
+
+#[test]
+fn workflow_uploads_one_unique_bundle_and_publishes_the_acquisition_tuple() {
+    // Arrange
+    let workflow = producer_workflow();
+
+    // Act
+    let acquisition_fields = [
+        "producer-run-id:",
+        "artifact-id:",
+        "artifact-name:",
+        "artifact-url:",
+        "provider-digest:",
+        "producer-sha:",
+        "bundle-sha256:",
+    ];
+
+    // Assert
+    assert!(workflow.contains("phase13-staged-${{ github.run_id }}-${{ github.sha }}"));
+    assert!(workflow.contains("if-no-files-found: error"));
+    assert!(workflow.contains("retention-days: 90"));
+    assert!(workflow.contains("GITHUB_STEP_SUMMARY"));
+    for field in acquisition_fields {
+        assert!(
+            workflow.contains(field),
+            "workflow is missing acquisition field: {field}"
+        );
+    }
+}
+
+#[test]
+fn workflow_cannot_promote_or_mutate_tracked_evidence() {
+    // Arrange
+    let workflow = producer_workflow();
+
+    // Act
+    let forbidden_contract = [
+        "reference/artifacts",
+        "git add",
+        "git commit",
+        "git push",
+        "download-artifact",
+        "workflow_run",
+        "promotion",
+    ];
+
+    // Assert
+    for forbidden in forbidden_contract {
+        assert!(
+            !workflow.contains(forbidden),
+            "producer workflow must not contain mutable operation: {forbidden}"
+        );
+    }
 }

@@ -1,0 +1,128 @@
+name: Phase 13 evidence producer
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: phase13-evidence-${{ github.sha }}
+  cancel-in-progress: false
+
+env:
+  CC: clang-22
+  CXX: clang++-22
+  LIQUIDFUN_XTASK_CMAKE: cmake
+  LIQUIDFUN_XTASK_NINJA: ninja
+  LIQUIDFUN_XTASK_CXX: clang++-22
+  PHASE13_ARTIFACT_NAME: phase13-staged-${{ github.run_id }}-${{ github.sha }}
+  PHASE13_STAGING_ROOT: target/phase13/staged
+
+jobs:
+  produce:
+    name: Produce one immutable canonical Linux bundle
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    outputs:
+      producer-run-id: ${{ github.run_id }}
+      artifact-id: ${{ steps.upload.outputs.artifact-id }}
+      artifact-name: ${{ steps.identity.outputs.artifact-name }}
+      artifact-url: ${{ steps.upload.outputs.artifact-url }}
+      provider-digest: ${{ steps.upload.outputs.artifact-digest }}
+      producer-sha: ${{ steps.identity.outputs.producer-sha }}
+      bundle-sha256: ${{ steps.identity.outputs.bundle-sha256 }}
+    steps:
+      - name: Check out the exact producer and pinned oracle
+        # actions/checkout v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+          ref: ${{ github.sha }}
+          submodules: recursive
+      - name: Validate the exact clean producer identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$GITHUB_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test -z "$(git status --porcelain --untracked-files=no)"
+          test "$(git -C third_party/liquidfun rev-parse HEAD)" = "7f20402173fd143a3988c921bc384459c6a858f2"
+      - name: Install pinned Rust
+        run: rustup toolchain install 1.97.0 --profile minimal
+      - name: Install canonical LLVM 22
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --silent --show-error --output "$RUNNER_TEMP/llvm.sh" https://apt.llvm.org/llvm.sh
+          echo "9474ecd78b52aba6e923976b1e9773f5613027cc7e237b9956986cb536e02a36  $RUNNER_TEMP/llvm.sh" | sha256sum --check
+          chmod 755 "$RUNNER_TEMP/llvm.sh"
+          sudo "$RUNNER_TEMP/llvm.sh" 22
+          echo "/usr/lib/llvm-22/bin" >> "$GITHUB_PATH"
+      - name: Install exact CMake and Ninja
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --silent --show-error --output "$RUNNER_TEMP/cmake.tar.gz" https://github.com/Kitware/CMake/releases/download/v4.3.3/cmake-4.3.3-linux-x86_64.tar.gz
+          echo "927b2368a946c37269c3a66225ab00544e756459cdd0b5d0da438694fb9ff802  $RUNNER_TEMP/cmake.tar.gz" | sha256sum --check
+          tar -xzf "$RUNNER_TEMP/cmake.tar.gz" -C "$RUNNER_TEMP"
+          mkdir -p "$RUNNER_TEMP/ninja-1.13.2"
+          curl --fail --location --silent --show-error --output "$RUNNER_TEMP/ninja.zip" https://github.com/ninja-build/ninja/releases/download/v1.13.2/ninja-linux.zip
+          echo "5749cbc4e668273514150a80e387a957f933c6ed3f5f11e03fb30955e2bbead6  $RUNNER_TEMP/ninja.zip" | sha256sum --check
+          unzip -q "$RUNNER_TEMP/ninja.zip" -d "$RUNNER_TEMP/ninja-1.13.2"
+          {
+            echo "$RUNNER_TEMP/cmake-4.3.3-linux-x86_64/bin"
+            echo "$RUNNER_TEMP/ninja-1.13.2"
+          } >> "$GITHUB_PATH"
+      - name: Assert canonical tool identities
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustc --version | grep --fixed-strings "rustc 1.97.0"
+          cmake --version | grep --fixed-strings "cmake version 4.3.3"
+          test "$(ninja --version)" = "1.13.2"
+          clang++-22 --version | grep --extended-regexp 'clang version 22\.1\.8'
+      - name: Produce and validate the immutable oracle-debug bundle
+        id: identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo xtask phase13 evidence produce \
+            --staging-root target/phase13/staged \
+            --producer-sha "$GITHUB_SHA"
+          bundle_sha256="$(jq -er '.bundle_sha256 | select(type == "string" and test("^[0-9a-f]{64}$"))' target/phase13/staged/phase13-bundle.json)"
+          cargo xtask phase13 evidence check \
+            --bundle-root target/phase13/staged \
+            --producer-sha "$GITHUB_SHA" \
+            --bundle-sha256 "$bundle_sha256"
+          test -z "$(git status --porcelain --untracked-files=no)"
+          {
+            printf 'producer-sha=%s\n' "$GITHUB_SHA"
+            printf 'bundle-sha256=%s\n' "$bundle_sha256"
+            printf 'artifact-name=%s\n' "$PHASE13_ARTIFACT_NAME"
+          } >> "$GITHUB_OUTPUT"
+      - name: Upload the uniquely named immutable bundle
+        id: upload
+        # actions/upload-artifact v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: ${{ env.PHASE13_ARTIFACT_NAME }}
+          path: ${{ env.PHASE13_STAGING_ROOT }}
+          if-no-files-found: error
+          retention-days: 90
+      - name: Publish acquisition tuple
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo "## Phase 13 immutable evidence bundle"
+            echo
+            echo "- producer run ID: \`${GITHUB_RUN_ID}\`"
+            echo "- artifact ID: \`${{ steps.upload.outputs.artifact-id }}\`"
+            echo "- artifact name: \`${PHASE13_ARTIFACT_NAME}\`"
+            echo "- artifact URL: ${{ steps.upload.outputs.artifact-url }}"
+            echo "- provider digest: \`${{ steps.upload.outputs.artifact-digest }}\`"
+            echo "- producer SHA (P): \`${{ steps.identity.outputs.producer-sha }}\`"
+            echo "- bundle SHA-256 (B): \`${{ steps.identity.outputs.bundle-sha256 }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
