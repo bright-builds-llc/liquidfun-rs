@@ -20,8 +20,9 @@ use liquidfun_differential::{
     replay_catalog_regressions,
 };
 use liquidfun_test_protocol::{
-    BuildEvidenceTier, CatalogRunRequest, CatalogSlug, EvidenceTier, RequestId, ResolveRequest,
-    RunProvenanceRequirements, resolve_catalog, reviewed_scenario_catalog,
+    BuildEvidenceTier, CatalogDefinition, CatalogRunRequest, CatalogSlug, EvidenceTier, RequestId,
+    ResolveRequest, RunProvenanceRequirements, ScenarioCatalog, resolve_catalog,
+    reviewed_scenario_catalog,
 };
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -38,6 +39,7 @@ const MATERIALS_MANIFEST: &str = "tools/reference/phase9-lifecycle-contact-witne
 const PROBE_SOURCE: &str = "tools/reference/src/phase9_lifecycle_contact_witness.cpp";
 const TOLERANCE_PROFILE: &str = "protocol/tolerances/phase4-v1.toml";
 const RIGID_STACK_FIXTURE: &str = "scenarios/catalog/rigid-stack-v1.json";
+const RIGID_STACK_CATALOG_SLUG: &str = "rigid-stack-stability";
 const WITNESS_EXECUTABLE: &str = "target/reference/oracle-debug/phase9-lifecycle-contact-witness";
 const ORACLE_PRESET: &str = "oracle-debug";
 const TARGET_TRIPLE: &str = "x86_64-unknown-linux-gnu";
@@ -560,18 +562,10 @@ struct ReplayOutput {
     diagnosis: serde_json::Value,
 }
 
-#[allow(
-    clippy::too_many_lines,
-    reason = "the D0/D1 authority sequence remains linear so no comparison gate can be skipped"
-)]
-fn produce_replay(repository_root: &Path) -> Result<ReplayOutput, Phase13EvidenceError> {
-    let catalog = reviewed_scenario_catalog().map_err(|error| {
-        Phase13EvidenceError::new(
-            Phase13EvidenceErrorKind::Protocol,
-            format!("reviewed catalog is invalid: {error}"),
-        )
-    })?;
-    let slug = CatalogSlug::new("rigid-stack-v1".to_owned()).map_err(|error| {
+pub(crate) fn select_rigid_stack_definition(
+    catalog: &ScenarioCatalog,
+) -> Result<(&CatalogDefinition, CatalogSlug), Phase13EvidenceError> {
+    let slug = CatalogSlug::new(RIGID_STACK_CATALOG_SLUG.to_owned()).map_err(|error| {
         Phase13EvidenceError::new(Phase13EvidenceErrorKind::Protocol, error.to_string())
     })?;
     let definition = catalog
@@ -584,6 +578,21 @@ fn produce_replay(repository_root: &Path) -> Result<ReplayOutput, Phase13Evidenc
                 "rigid-stack-v1 is absent from the reviewed catalog",
             )
         })?;
+    Ok((definition, slug))
+}
+
+#[allow(
+    clippy::too_many_lines,
+    reason = "the D0/D1 authority sequence remains linear so no comparison gate can be skipped"
+)]
+fn produce_replay(repository_root: &Path) -> Result<ReplayOutput, Phase13EvidenceError> {
+    let catalog = reviewed_scenario_catalog().map_err(|error| {
+        Phase13EvidenceError::new(
+            Phase13EvidenceErrorKind::Protocol,
+            format!("reviewed catalog is invalid: {error}"),
+        )
+    })?;
+    let (definition, slug) = select_rigid_stack_definition(&catalog)?;
     let metadata = definition.metadata().ok_or_else(|| {
         Phase13EvidenceError::new(
             Phase13EvidenceErrorKind::Protocol,

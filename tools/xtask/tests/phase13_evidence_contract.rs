@@ -8,12 +8,14 @@ use std::fs;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicU64, Ordering};
 
+use liquidfun_test_protocol::reviewed_scenario_catalog;
 use phase13_evidence::bundle::{
     BundleDraft, BundleFile, ClosureEntry, ClosureIdentity, EvidenceMetadata, check_bundle,
     write_bundle,
 };
 use phase13_evidence::{
-    CanonicalEnvironment, ProductionGate, ProductionGateErrorKind, validate_staging_root,
+    CanonicalEnvironment, ProductionGate, ProductionGateErrorKind, select_rigid_stack_definition,
+    validate_staging_root,
 };
 
 const SHA_A: &str = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
@@ -29,6 +31,20 @@ fn producer_workflow() -> String {
             .join("../../.github/workflows/phase13-evidence-producer.yml"),
     )
     .expect("Phase 13 producer workflow should exist")
+}
+
+#[test]
+fn producer_selects_the_reviewed_rigid_stack_catalog_definition() {
+    // Arrange
+    let catalog = reviewed_scenario_catalog().expect("reviewed catalog should validate");
+
+    // Act
+    let (definition, slug) = select_rigid_stack_definition(&catalog)
+        .expect("rigid-stack fixture should resolve to a reviewed definition");
+
+    // Assert
+    assert_eq!(slug.as_str(), "rigid-stack-stability");
+    assert_eq!(definition.slug(), &slug);
 }
 
 fn temporary_directory(label: &str) -> PathBuf {
