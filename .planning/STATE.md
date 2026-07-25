@@ -4,8 +4,8 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Phase 13 context gathered
-last_updated: "2026-07-25T19:33:41.863Z"
-last_activity: 2026-07-25 -- Phase 13 planning complete
+last_updated: "2026-07-25T19:34:27.284Z"
+last_activity: 2026-07-25 -- Phase 13 execution started
 progress:
   total_phases: 15
   completed_phases: 12
@@ -21,14 +21,14 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-07-23)
 
 **Core value:** Deliver an independent, maintainable Rust physics engine whose LiquidFun behavior is demonstrated against a pinned upstream oracle through explicit inventory, tests, differential evidence, and documented tolerances.
-**Current focus:** Phase 12 — Performance, Portability, and Release Hardening
+**Current focus:** Phase 13 — restore-evidence-and-replay-integrity
 
 ## Current Position
 
-Phase: 12
-Plan: Not started
-Status: Ready to execute
-Last activity: 2026-07-25 -- Phase 13 planning complete
+Phase: 13 (restore-evidence-and-replay-integrity) — EXECUTING
+Plan: 1 of 5
+Status: Executing Phase 13
+Last activity: 2026-07-25 -- Phase 13 execution started
 
 Progress: [██████████] 100%
 
