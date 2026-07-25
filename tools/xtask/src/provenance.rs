@@ -12,6 +12,7 @@ use serde::Deserialize;
 use sha2::{Digest, Sha256};
 
 mod artifact;
+mod evidence_schema;
 mod phase9_witness;
 
 const USAGE: &str = "Usage: cargo xtask provenance check";

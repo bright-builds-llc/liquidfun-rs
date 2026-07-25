@@ -4,6 +4,7 @@ use std::error::Error;
 use std::fmt::{self, Display, Formatter};
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::process::Command;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use serde_json::{Value, json};
@@ -31,11 +32,14 @@ impl Display for ProvenanceError {
 
 impl Error for ProvenanceError {}
 
+#[path = "../src/provenance/evidence_schema.rs"]
+mod evidence_schema;
 #[path = "../src/provenance/phase9_witness/materials.rs"]
 mod materials;
 
 use materials::{
-    MaterialsDerivation, resolve_declared_materials, validate_target_scoped_materials,
+    MATERIALS_PATH, MaterialsDerivation, resolve_declared_materials, validate_repository_binding,
+    validate_target_scoped_materials,
 };
 
 type TestResult<T = ()> = Result<T, Box<dyn Error>>;
@@ -144,7 +148,7 @@ impl MaterialsFixture {
                 build.join("generated/config.hpp").display()
             ),
         )?;
-        let manifest = root.join("tools/reference/phase9.materials.json");
+        let manifest = root.join(MATERIALS_PATH);
         write_manifest(&manifest, &default_materials())?;
         Ok(Self {
             root,
@@ -210,6 +214,31 @@ fn target_scoped_materials() -> TestResult {
     // Assert
     assert_eq!(baseline.digest, unrelated.digest);
     assert_ne!(baseline.digest, scoped.digest);
+
+    // Arrange
+    fs::write(
+        fixture.root.join("tools/reference/src/witness.cpp"),
+        "#include \"used.hpp\"\n",
+    )?;
+    let repository_revision = commit_fixture(&fixture.root)?;
+    fs::write(
+        fixture.root.join("tools/reference/src/witness.cpp"),
+        "#include \"used.hpp\"\n// edited bytes with a matching recomputed digest\n",
+    )?;
+    let edited = fixture.resolve()?;
+
+    // Act
+    let binding_error = validate_repository_binding(&fixture.root, &repository_revision)
+        .expect_err("an edited digest cannot replace repository-bound materials");
+
+    // Assert
+    assert_ne!(baseline.digest, edited.digest);
+    assert_eq!(binding_error.category, "repository");
+    assert!(
+        binding_error
+            .message
+            .contains("tools/reference/src/witness.cpp")
+    );
 
     let cases = [
         (
@@ -295,6 +324,52 @@ fn target_scoped_materials() -> TestResult {
     );
     declared_fixture.cleanup()?;
     fixture.cleanup()
+}
+
+#[test]
+fn phase13_evidence_classes_fail_closed() -> TestResult {
+    // Arrange
+    let manifest = fs::read_to_string(workspace_root().join("reference/artifacts/manifest.toml"))?;
+    evidence_schema::parse_and_validate(&manifest, "7f20402173fd143a3988c921bc384459c6a858f2")?;
+    let cases = [
+        (
+            manifest.replacen(
+                "source_path = \"liquidfun/Box2D/Box2D/Particle/b2ParticleSystem.cpp\"\n",
+                "",
+                1,
+            ),
+            "source_path",
+        ),
+        (
+            manifest.replacen(
+                "alteration_summary = \"Repository-authored semantic observations generated from the pinned upstream oracle without copying source, raw object memory, or Rust-produced expectations.\"",
+                "alteration_summary = \"\"",
+                1,
+            ),
+            "alteration_summary",
+        ),
+        (
+            manifest.replacen(
+                "notice_refs = [\"THIRD_PARTY_NOTICES.md\"]",
+                "notice_refs = []",
+                1,
+            ),
+            "THIRD_PARTY_NOTICES.md",
+        ),
+    ];
+
+    for (candidate, expected) in cases {
+        // Act
+        let error = evidence_schema::parse_and_validate(
+            &candidate,
+            "7f20402173fd143a3988c921bc384459c6a858f2",
+        )
+        .expect_err("missing Phase 13 evidence provenance must fail");
+
+        // Assert
+        assert!(error.message.contains(expected), "{}", error.message);
+    }
+    Ok(())
 }
 
 fn default_materials() -> Vec<Value> {
@@ -395,6 +470,32 @@ fn write_target_json(
         }))?,
     )?;
     Ok(())
+}
+
+fn commit_fixture(root: &Path) -> TestResult<String> {
+    for arguments in [
+        vec!["init", "--quiet"],
+        vec!["config", "user.email", "phase13@example.invalid"],
+        vec!["config", "user.name", "Phase 13 Test"],
+        vec!["add", "."],
+        vec!["commit", "--quiet", "-m", "fixture"],
+    ] {
+        let status = Command::new("git")
+            .args(arguments)
+            .current_dir(root)
+            .status()?;
+        if !status.success() {
+            return Err(format!("fixture git command failed with {status}").into());
+        }
+    }
+    let output = Command::new("git")
+        .args(["rev-parse", "HEAD"])
+        .current_dir(root)
+        .output()?;
+    if !output.status.success() {
+        return Err("failed to read fixture revision".into());
+    }
+    Ok(String::from_utf8(output.stdout)?.trim().to_owned())
 }
 
 fn workspace_root() -> PathBuf {

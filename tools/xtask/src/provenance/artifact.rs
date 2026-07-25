@@ -5,6 +5,7 @@ use std::{collections::BTreeSet, env, ffi::OsStr, path::Path};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
+use super::evidence_schema::{self, Phase13EvidenceSchema};
 use super::{
     ConfinedPaths, ProvenanceError, SourceMap, is_lower_hex, read_json, read_toml,
     require_nonempty, require_revision, require_revision_format, run_git, sha256,
@@ -61,6 +62,7 @@ struct ArtifactManifest {
 #[serde(deny_unknown_fields)]
 struct ArtifactSchemas {
     phase11_evidence: Phase11EvidenceSchema,
+    phase13_evidence: Phase13EvidenceSchema,
 }
 
 #[derive(Debug, Deserialize)]
@@ -210,6 +212,7 @@ pub(super) fn validate_manifest(
             "artifact manifest must use the exact schema version 2 field contract",
         ));
     }
+    evidence_schema::validate(&manifest.artifact_schemas.phase13_evidence, oracle_revision)?;
     require_revision(
         "artifact manifest",
         oracle_revision,
@@ -220,6 +223,15 @@ pub(super) fn validate_manifest(
         .iter()
         .map(|mapping| mapping.local_path.as_str())
         .collect::<BTreeSet<_>>();
+    if !mapped_paths.contains(super::phase9_witness::MATERIALS_PATH) {
+        return Err(ProvenanceError::new(
+            "notice",
+            format!(
+                "Phase 9 scoped materials `{}` has no source-map record",
+                super::phase9_witness::MATERIALS_PATH
+            ),
+        ));
+    }
     let mut artifact_paths = BTreeSet::new();
     for raw in &manifest.artifacts {
         let artifact = ArtifactRecord::parse(raw)?;

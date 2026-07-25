@@ -5,9 +5,10 @@ use std::path::Path;
 
 use serde::Deserialize;
 
-use super::{ProvenanceError, read_json, require_revision, sha256};
+use super::{ProvenanceError, read_json, require_revision, require_revision_format, sha256};
 
 mod materials;
+pub(crate) use materials::MATERIALS_PATH;
 
 const WITNESS_PATH: &str = "reference/artifacts/phase9/lifecycle-contact-witnesses.json";
 const PROVENANCE_PATH: &str =
@@ -70,8 +71,11 @@ enum ContactResult {
 #[serde(deny_unknown_fields)]
 struct WitnessProvenance {
     schema_version: u64,
+    repository_revision: String,
     oracle_revision: String,
-    adapter_content_sha256: String,
+    materials_manifest_sha256: String,
+    materials_sha256: String,
+    materials_count: usize,
     probe_source_sha256: String,
     compiler_id: String,
     compiler_version: String,
@@ -81,6 +85,11 @@ struct WitnessProvenance {
     exact_argv: Vec<String>,
     generation_timestamp: String,
     witness_sha256: String,
+}
+
+#[derive(Deserialize)]
+struct ProvenanceSchemaHeader {
+    schema_version: u64,
 }
 
 pub(super) fn validate(
@@ -114,11 +123,18 @@ pub(super) fn validate(
     )?;
     validate_witnesses(&witnesses.witnesses)?;
 
-    let provenance: WitnessProvenance = read_json(&provenance_path, PROVENANCE_PATH)?;
-    if provenance.schema_version != 1 {
+    let provenance_header: ProvenanceSchemaHeader = read_json(&provenance_path, PROVENANCE_PATH)?;
+    if provenance_header.schema_version != 2 {
         return Err(ProvenanceError::new(
             "phase9-witness",
-            "Phase 9 lifecycle/contact provenance must use schema version 1",
+            "Phase 9 lifecycle/contact provenance must use scoped materials schema version 2; legacy aggregate adapter provenance is not accepted",
+        ));
+    }
+    let provenance: WitnessProvenance = read_json(&provenance_path, PROVENANCE_PATH)?;
+    if provenance.schema_version != 2 {
+        return Err(ProvenanceError::new(
+            "phase9-witness",
+            "Phase 9 lifecycle/contact provenance schema changed while being read",
         ));
     }
     require_revision(
@@ -286,14 +302,30 @@ fn validate_provenance(
             "Phase 9 lifecycle/contact probe source SHA-256 mismatch",
         ));
     }
-    let actual_adapter_sha256 = liquidfun_differential::adapter_source_digest(repository_root)
-        .map_err(|error| ProvenanceError::new("hash", error.to_string()))?;
-    if provenance.adapter_content_sha256 != actual_adapter_sha256 {
+    let actual_manifest_sha256 = sha256(&repository_root.join(materials::MATERIALS_PATH))?;
+    if provenance.materials_manifest_sha256 != actual_manifest_sha256 {
         return Err(ProvenanceError::new(
             "hash",
-            "Phase 9 lifecycle/contact adapter content SHA-256 mismatch",
+            "Phase 9 lifecycle/contact materials manifest SHA-256 mismatch",
         ));
     }
+    let resolved = materials::resolve_declared_materials(repository_root)?;
+    if provenance.materials_sha256 != resolved.digest
+        || provenance.materials_count != resolved.count
+    {
+        return Err(ProvenanceError::new(
+            "materials",
+            format!(
+                "Phase 9 lifecycle/contact scoped materials mismatch: expected `{}:{}`, actual `{}:{}`",
+                provenance.materials_count,
+                provenance.materials_sha256,
+                resolved.count,
+                resolved.digest
+            ),
+        ));
+    }
+    require_revision_format("repository_revision", &provenance.repository_revision)?;
+    materials::validate_repository_binding(repository_root, &provenance.repository_revision)?;
     if provenance.compiler_id.is_empty()
         || provenance.compiler_version.is_empty()
         || provenance.target.is_empty()
@@ -342,105 +374,4 @@ fn valid_utc_timestamp(value: &str) -> bool {
             .enumerate()
             .filter(|(index, _)| ![4, 7, 10, 13, 16, 19].contains(index))
             .all(|(_, byte)| byte.is_ascii_digit())
-}
-
-#[cfg(test)]
-mod tests {
-    use std::error::Error;
-    use std::fs;
-    use std::sync::atomic::{AtomicU64, Ordering};
-
-    use serde_json::json;
-
-    use super::{PROBE_SOURCE_PATH, PROVENANCE_PATH, WITNESS_PATH, sha256, validate};
-
-    const REVISION: &str = "7f20402173fd143a3988c921bc384459c6a858f2";
-    const ADAPTER_PATH: &str = "tools/reference/src/adapter.cpp";
-    static FIXTURE_ID: AtomicU64 = AtomicU64::new(0);
-
-    #[test]
-    fn adapter_input_change_requires_refreshed_witness_provenance() -> Result<(), Box<dyn Error>> {
-        // Arrange
-        let id = FIXTURE_ID.fetch_add(1, Ordering::Relaxed);
-        let root = std::env::temp_dir().join(format!(
-            "liquidfun-phase9-witness-provenance-{}-{id}",
-            std::process::id()
-        ));
-        if root.exists() {
-            fs::remove_dir_all(&root)?;
-        }
-        fs::create_dir_all(root.join("reference/artifacts/phase9"))?;
-        fs::create_dir_all(root.join("tools/reference/src"))?;
-        fs::write(
-            root.join("tools/reference/adapter-inputs.txt"),
-            format!("{ADAPTER_PATH}\n"),
-        )?;
-        fs::write(root.join(ADAPTER_PATH), "adapter-v1\n")?;
-        fs::write(root.join(PROBE_SOURCE_PATH), "probe-v1\n")?;
-        fs::write(
-            root.join(WITNESS_PATH),
-            serde_json::to_string_pretty(&json!({
-                "schema_version": 1,
-                "oracle_revision": REVISION,
-                "witnesses": [
-                    {
-                        "scenario_id": "equal_quantized_expiration",
-                        "particle_count": 1,
-                        "quantized_expiration": 1,
-                        "creation_order": ["particle-0"],
-                        "expiration_order": ["particle-0"],
-                        "oldest_selection_order": ["particle-0"]
-                    },
-                    {
-                        "scenario_id": "strict_contact_pruning",
-                        "fixture_count": 2,
-                        "equal_weight_bits": "0x3f800000",
-                        "candidate_order": ["fixture-0", "fixture-1"],
-                        "strict_order": ["fixture-0"],
-                        "outcomes": [
-                            {"fixture_id": "fixture-0", "result": "kept"},
-                            {"fixture_id": "fixture-1", "result": "removed"}
-                        ]
-                    }
-                ]
-            }))? + "\n",
-        )?;
-        let witness_sha256 = sha256(&root.join(WITNESS_PATH))?;
-        let probe_source_sha256 = sha256(&root.join(PROBE_SOURCE_PATH))?;
-        let adapter_content_sha256 = liquidfun_differential::adapter_source_digest(&root)?;
-        fs::write(
-            root.join(PROVENANCE_PATH),
-            serde_json::to_string_pretty(&json!({
-                "schema_version": 1,
-                "oracle_revision": REVISION,
-                "adapter_content_sha256": adapter_content_sha256,
-                "probe_source_sha256": probe_source_sha256,
-                "compiler_id": "fixture-compiler",
-                "compiler_version": "1.0.0",
-                "target": "fixture-target",
-                "cmake_preset": "oracle-debug",
-                "cmake_target": "phase9-lifecycle-contact-witness",
-                "exact_argv": [
-                    "target/reference/oracle-debug/phase9-lifecycle-contact-witness",
-                    "--output",
-                    WITNESS_PATH,
-                    "--provenance",
-                    PROVENANCE_PATH
-                ],
-                "generation_timestamp": "2026-07-15T00:00:00Z",
-                "witness_sha256": witness_sha256
-            }))? + "\n",
-        )?;
-        validate(&root, REVISION)?;
-
-        // Act
-        fs::write(root.join(ADAPTER_PATH), "adapter-v2\n")?;
-        let error = validate(&root, REVISION).expect_err("stale provenance must fail closed");
-
-        // Assert
-        assert_eq!(error.category, "hash");
-        assert!(error.message.contains("adapter content SHA-256 mismatch"));
-        fs::remove_dir_all(root)?;
-        Ok(())
-    }
 }

@@ -2,15 +2,18 @@
 #![allow(dead_code)]
 
 use std::collections::{BTreeMap, BTreeSet};
+use std::env;
+use std::ffi::OsString;
 use std::fs;
 use std::path::{Component, Path, PathBuf};
+use std::process::Command;
 
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
 
 use super::ProvenanceError;
 
-pub(super) const MATERIALS_PATH: &str =
+pub(crate) const MATERIALS_PATH: &str =
     "tools/reference/phase9-lifecycle-contact-witness.materials.json";
 const MATERIALS_SCHEMA_VERSION: u64 = 1;
 const EXPECTED_TARGET: &str = "phase9-lifecycle-contact-witness";
@@ -326,6 +329,71 @@ pub(super) fn resolve_declared_materials(
         },
         &declared,
     )
+}
+
+pub(super) fn validate_repository_binding(
+    repository_root: &Path,
+    repository_revision: &str,
+) -> Result<(), ProvenanceError> {
+    let manifest = read_manifest(&repository_root.join(MATERIALS_PATH))?;
+    validate_declaration(&manifest)?;
+
+    validate_git_material(repository_root, repository_revision, MATERIALS_PATH)?;
+    for material in &manifest.materials {
+        if !material.kind.is_file()
+            || material.identity.starts_with("<build>/")
+            || material.identity.starts_with("third_party/")
+        {
+            continue;
+        }
+        validate_git_material(repository_root, repository_revision, &material.identity)?;
+    }
+    Ok(())
+}
+
+fn validate_git_material(
+    repository_root: &Path,
+    repository_revision: &str,
+    relative_path: &str,
+) -> Result<(), ProvenanceError> {
+    let git = env::var_os("LIQUIDFUN_XTASK_GIT").unwrap_or_else(|| OsString::from("git"));
+    let object = format!("{repository_revision}:{relative_path}");
+    let output = Command::new(git)
+        .arg("-C")
+        .arg(repository_root)
+        .arg("show")
+        .arg(&object)
+        .output()
+        .map_err(|error| {
+            ProvenanceError::new(
+                "repository",
+                format!("failed to read repository material `{object}`: {error}"),
+            )
+        })?;
+    if !output.status.success() {
+        return Err(ProvenanceError::new(
+            "repository",
+            format!(
+                "repository revision does not contain scoped material `{relative_path}`: {}",
+                String::from_utf8_lossy(&output.stderr).trim()
+            ),
+        ));
+    }
+    let current = fs::read(repository_root.join(relative_path)).map_err(|error| {
+        ProvenanceError::new(
+            "materials",
+            format!("failed to read scoped material `{relative_path}`: {error}"),
+        )
+    })?;
+    if Sha256::digest(&output.stdout) != Sha256::digest(&current) {
+        return Err(ProvenanceError::new(
+            "repository",
+            format!(
+                "scoped material `{relative_path}` differs from repository revision `{repository_revision}`"
+            ),
+        ));
+    }
+    Ok(())
 }
 
 fn read_manifest(path: &Path) -> Result<MaterialsManifest, ProvenanceError> {

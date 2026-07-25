@@ -37,7 +37,15 @@ local_path = "reference/artifacts/manifest.toml"
 upstream_revision = "7f20402173fd143a3988c921bc384459c6a858f2"
 upstream_path = "."
 derivation_kind = "repository-authored-artifact-schema"
-alteration_summary = "Repository-authored empty manifest schema for future reviewed oracle artifacts; no upstream source, test, documentation, or data is copied."
+alteration_summary = "Repository-authored ledger schema for reviewed oracle artifacts and Phase 13 witness, replay-evidence, staged-bundle, and promotion-receipt records; no upstream source, test, documentation, or data is copied."
+notice_class = "provenance-only"
+
+[[mapping]]
+local_path = "tools/reference/phase9-lifecycle-contact-witness.materials.json"
+upstream_revision = "7f20402173fd143a3988c921bc384459c6a858f2"
+upstream_path = "liquidfun/Box2D"
+derivation_kind = "mechanically-derived-target-materials-manifest"
+alteration_summary = "Repository-authored typed inventory of the Phase 9 witness target closure derived from CMake codemodel and compiler dependency evidence; no upstream source, raw object memory, or test implementation is copied."
 notice_class = "provenance-only"
 
 [[mapping]]
