@@ -20,6 +20,9 @@ The v1 roadmap moves from an immutable, licensed source of truth to a semantic c
 - [x] **Phase 10: Particle Groups, Solvers, and Compatibility Sign-Off** - Complete group topology and every particle behavior in pinned upstream pass order. (completed 2026-07-21)
 - [x] **Phase 11: Examples, Headless Tooling, and Testbed** - Account for every upstream test/example and expose shared headless and optional visual scenarios. (completed 2026-07-23)
 - [x] **Phase 12: Performance, Portability, and Release Hardening** - Prove performance, safety, platform, documentation, packaging, and zero-gap v1 readiness. (completed 2026-07-24)
+- [ ] **Phase 13: Restore Evidence and Replay Integrity** - Repair exact-head provenance and reviewed catalog replay before accepting current compatibility evidence.
+- [ ] **Phase 14: Repair Windows Particle-Group Invariants** - Remove the supported-Windows authoritative-storage panic and restore transactional particle-group behavior.
+- [ ] **Phase 15: Re-establish Candidate Evidence** - Produce and attest a green exact-head release-candidate evidence bundle after all implementation and replay gaps close.
 
 ## Phase Details
 
@@ -275,9 +278,54 @@ Plans:
 - [x] 12-24-PLAN.md — Execute isolated Miri, sanitizer, and coverage evidence lanes.
 - [x] 12-25-PLAN.md — Produce candidate-bound named regression evidence.
 
+### Phase 13: Restore Evidence and Replay Integrity
+
+**Goal**: Restore exact-head oracle provenance and reviewed catalog replay so current compatibility evidence is source-bound, reproducible, and independently reviewable.
+**Depends on**: Phase 12
+**Requirements**: FND-04, COMP-04, COMP-05, COMP-08, TEST-07, EXMP-03
+**Gap Closure**: Closes the milestone-audit provenance, contributor-oracle, catalog-regression, and shared-scenario gaps.
+**Success Criteria** (what must be TRUE):
+
+1. The Phase 9 lifecycle/contact adapter source and recorded provenance identity agree at the exact candidate commit, and Oracle CI proceeds beyond provenance validation.
+1. The `rigid-stack-v1` regression either reproduces its independently reviewed D0 identity or a root-cause fix plus independently regenerated evidence establishes the corrected identity without self-blessing implementation output.
+1. Catalog replay, first-divergence diagnosis, and tracked regression tests pass at the exact commit on the required Linux boundary.
+1. Exact-head Oracle CI configures, builds, and executes the current comparison surface after all provenance and replay checks pass.
+
+**Plans**: TBD during phase planning
+
+### Phase 14: Repair Windows Particle-Group Invariants
+
+**Goal**: Restore transactional particle-group creation and mutation on supported Windows without weakening stable identity, authoritative storage, or cross-platform semantics.
+**Depends on**: Phase 13
+**Requirements**: PART-03, PART-04, PART-09, PART-10, TEST-02, TEST-04
+**Gap Closure**: Closes the milestone-audit Windows particle-group invariant, public integration, and persisted property-regression gaps.
+**Success Criteria** (what must be TRUE):
+
+1. The persisted minimized seed `4149329052036581951` reproduces before the fix and passes afterward on the supported Windows toolchain.
+1. Checked particle/group creation cannot invalidate authoritative storage or reach an internal impossible-state panic.
+1. Every failure path remains transactional: stable particle identities, group topology, optional lanes, derived structures, and rollback state remain coherent.
+1. Focused public integration/property regressions and the complete relevant particle suite pass on Windows and the ordinary Linux/macOS verification boundaries.
+
+**Plans**: TBD during phase planning
+
+### Phase 15: Re-establish Candidate Evidence
+
+**Goal**: Establish a green, exact-head v1.0 candidate and produce the complete retained evidence and frozen-source attestation required for milestone acceptance.
+**Depends on**: Phase 14
+**Requirements**: PLAT-01, PLAT-05, DOCS-09
+**Gap Closure**: Closes the milestone-audit Linux/Windows platform and release-candidate flow gaps.
+**Success Criteria** (what must be TRUE):
+
+1. Exact-head Cargo CI and Oracle CI pass without skipped downstream checks caused by prerequisite failures.
+1. Required platform, performance, safety, coverage, regression, and release-candidate producers complete against one frozen full-SHA candidate and retain the expected bounded artifacts.
+1. Release aggregation accepts the complete candidate-bound evidence set, and worktree plus committed-range frozen-source attestation both pass.
+1. Public readiness status is projected only from accepted attestation, and a repeated milestone audit reports no critical requirement, integration, or end-to-end flow gap.
+
+**Plans**: TBD during phase planning
+
 ## Progress
 
-**Execution order:** Phases execute in numeric order from 1 through 12. Decimal insertions, if any, execute between their surrounding integers.
+**Execution order:** Phases execute in numeric order from 1 through 15. Decimal insertions, if any, execute between their surrounding integers.
 
 | Phase | Plans Complete | Status | Completed |
 | --- | --- | --- | --- |
@@ -293,5 +341,8 @@ Plans:
 | 10. Particle Groups, Solvers, and Compatibility Sign-Off | 32/32 | Complete   | 2026-07-21 |
 | 11. Examples, Headless Tooling, and Testbed | 30/30 | Complete    | 2026-07-23 |
 | 12. Performance, Portability, and Release Hardening | 25/25 | Complete    | 2026-07-24 |
+| 13. Restore Evidence and Replay Integrity | 0/TBD | Not started | — |
+| 14. Repair Windows Particle-Group Invariants | 0/TBD | Not started | — |
+| 15. Re-establish Candidate Evidence | 0/TBD | Not started | — |
 
 *Roadmap created: 2026-07-09*
