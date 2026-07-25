@@ -3,8 +3,8 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 13-02-PLAN.md
-last_updated: "2026-07-25T20:36:58.167Z"
+stopped_at: Phase 13 Plan 03 canonical producer dispatch checkpoint
+last_updated: "2026-07-25T21:01:47.700Z"
 last_activity: "2026-07-25"
 progress:
   total_phases: 15
@@ -651,6 +651,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-25T20:36:58.162Z
-Stopped at: Completed 13-02-PLAN.md
-Resume file: None
+Last session: 2026-07-25T21:01:47.687Z
+Stopped at: Phase 13 Plan 03 canonical producer dispatch checkpoint
+Resume file: .planning/phases/13-restore-evidence-and-replay-integrity/13-03-PLAN.md
