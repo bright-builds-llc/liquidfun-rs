@@ -1,7 +1,6 @@
 // Repository-authored semantic probe for pinned LiquidFun behavior.
 // No upstream source or Rust-produced expectation is copied into this file.
 
-#include "build_identity.hpp"
 #include "protocol.hpp"
 
 #include <Box2D/Box2D.h>
@@ -288,14 +287,13 @@ void write_json(const std::string& path, const Json& document) {
 int main(int argc, char** argv) {
   try {
     const CommandLine command_line = parse_command_line(argc, argv);
-    namespace identity = liquidfun::reference::configured_build_identity;
-    if (std::string_view(identity::kOracleRevision) != kExpectedOracleRevision) {
+    if (std::string_view(PHASE9_ORACLE_REVISION) != kExpectedOracleRevision) {
       throw std::runtime_error("configured upstream revision is not the pinned oracle");
     }
 
     const Json witnesses = Json{
         {"schema_version", 1},
-        {"oracle_revision", identity::kOracleRevision},
+        {"oracle_revision", PHASE9_ORACLE_REVISION},
         {"witnesses",
          Json::array({
              capture_equal_expiration_witness(),
@@ -309,13 +307,12 @@ int main(int argc, char** argv) {
 
     const Json provenance = Json{
         {"schema_version", 1},
-        {"oracle_revision", identity::kOracleRevision},
-        {"adapter_content_sha256", identity::kAdapterContentSha256},
+        {"oracle_revision", PHASE9_ORACLE_REVISION},
         {"probe_source_sha256", PHASE9_PROBE_SOURCE_SHA256},
-        {"compiler_id", identity::kCompilerId},
-        {"compiler_version", identity::kCompilerVersion},
-        {"target", identity::kTarget},
-        {"cmake_preset", identity::kCmakePreset},
+        {"compiler_id", PHASE9_COMPILER_ID},
+        {"compiler_version", PHASE9_COMPILER_VERSION},
+        {"target", PHASE9_TARGET},
+        {"cmake_preset", PHASE9_CMAKE_PRESET},
         {"cmake_target", kCmakeTarget},
         {"exact_argv", command_line.exact_argv},
         {"generation_timestamp", utc_timestamp()},

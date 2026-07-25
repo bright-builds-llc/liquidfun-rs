@@ -1,0 +1,711 @@
+{
+  "schema_version": 1,
+  "target": "phase9-lifecycle-contact-witness",
+  "preset": "oracle-debug",
+  "materials": [
+    {
+      "kind": "build_rule",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/CMakeLists.txt"
+    },
+    {
+      "kind": "build_rule",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/CMakeLists.txt"
+    },
+    {
+      "kind": "build_rule",
+      "identity": "tools/reference/CMakeLists.txt"
+    },
+    {
+      "kind": "build_rule",
+      "identity": "tools/reference/CMakePresets.json"
+    },
+    {
+      "kind": "compile_definition",
+      "identity": "Box2D:LIQUIDFUN_EXTERNAL_LANGUAGE_API=1"
+    },
+    {
+      "kind": "compile_definition",
+      "identity": "phase9-lifecycle-contact-witness:PHASE9_CMAKE_PRESET=\"oracle-debug\""
+    },
+    {
+      "kind": "compile_definition",
+      "identity": "phase9-lifecycle-contact-witness:PHASE9_COMPILER_ID=\"Clang\""
+    },
+    {
+      "kind": "compile_definition",
+      "identity": "phase9-lifecycle-contact-witness:PHASE9_COMPILER_VERSION=\"22.1.8\""
+    },
+    {
+      "kind": "compile_definition",
+      "identity": "phase9-lifecycle-contact-witness:PHASE9_ORACLE_REVISION=\"7f20402173fd143a3988c921bc384459c6a858f2\""
+    },
+    {
+      "kind": "compile_definition",
+      "identity": "phase9-lifecycle-contact-witness:PHASE9_PROBE_SOURCE_SHA256=\"7c0430ea9ee919f1331eb1ede7f78807ee3be7bb9137b6b62c0959abb7458ed8\""
+    },
+    {
+      "kind": "compile_definition",
+      "identity": "phase9-lifecycle-contact-witness:PHASE9_TARGET=\"x86_64-pc-linux-gnu\""
+    },
+    {
+      "kind": "compile_fragment",
+      "identity": "Box2D:-Wno-error=deprecated-copy-with-user-provided-copy"
+    },
+    {
+      "kind": "compile_fragment",
+      "identity": "Box2D:-Wno-error=nontrivial-memcall"
+    },
+    {
+      "kind": "compile_fragment",
+      "identity": "Box2D:-Wno-error=unused-result"
+    },
+    {
+      "kind": "compile_fragment",
+      "identity": "Box2D:-fdenormal-fp-math=ieee"
+    },
+    {
+      "kind": "compile_fragment",
+      "identity": "Box2D:-ffp-contract=off"
+    },
+    {
+      "kind": "compile_fragment",
+      "identity": "Box2D:-fhonor-infinities"
+    },
+    {
+      "kind": "compile_fragment",
+      "identity": "Box2D:-fhonor-nans"
+    },
+    {
+      "kind": "compile_fragment",
+      "identity": "Box2D:-fno-fast-math"
+    },
+    {
+      "kind": "compile_fragment",
+      "identity": "Box2D:-fsigned-zeros"
+    },
+    {
+      "kind": "compile_fragment",
+      "identity": "Box2D:-g -DDEBUG=1"
+    },
+    {
+      "kind": "compile_fragment",
+      "identity": "liquidfun-reference-protocol-bits:-Wall"
+    },
+    {
+      "kind": "compile_fragment",
+      "identity": "liquidfun-reference-protocol-bits:-Werror"
+    },
+    {
+      "kind": "compile_fragment",
+      "identity": "liquidfun-reference-protocol-bits:-Wextra"
+    },
+    {
+      "kind": "compile_fragment",
+      "identity": "liquidfun-reference-protocol-bits:-Wno-overriding-option"
+    },
+    {
+      "kind": "compile_fragment",
+      "identity": "liquidfun-reference-protocol-bits:-Wpedantic"
+    },
+    {
+      "kind": "compile_fragment",
+      "identity": "liquidfun-reference-protocol-bits:-fdenormal-fp-math=ieee"
+    },
+    {
+      "kind": "compile_fragment",
+      "identity": "liquidfun-reference-protocol-bits:-ffp-contract=off"
+    },
+    {
+      "kind": "compile_fragment",
+      "identity": "liquidfun-reference-protocol-bits:-fhonor-infinities"
+    },
+    {
+      "kind": "compile_fragment",
+      "identity": "liquidfun-reference-protocol-bits:-fhonor-nans"
+    },
+    {
+      "kind": "compile_fragment",
+      "identity": "liquidfun-reference-protocol-bits:-fno-fast-math"
+    },
+    {
+      "kind": "compile_fragment",
+      "identity": "liquidfun-reference-protocol-bits:-fsigned-zeros"
+    },
+    {
+      "kind": "compile_fragment",
+      "identity": "liquidfun-reference-protocol-bits:-g -std=gnu++17"
+    },
+    {
+      "kind": "compile_fragment",
+      "identity": "phase9-lifecycle-contact-witness:-Wall"
+    },
+    {
+      "kind": "compile_fragment",
+      "identity": "phase9-lifecycle-contact-witness:-Werror"
+    },
+    {
+      "kind": "compile_fragment",
+      "identity": "phase9-lifecycle-contact-witness:-Wextra"
+    },
+    {
+      "kind": "compile_fragment",
+      "identity": "phase9-lifecycle-contact-witness:-Wno-overriding-option"
+    },
+    {
+      "kind": "compile_fragment",
+      "identity": "phase9-lifecycle-contact-witness:-Wpedantic"
+    },
+    {
+      "kind": "compile_fragment",
+      "identity": "phase9-lifecycle-contact-witness:-fdenormal-fp-math=ieee"
+    },
+    {
+      "kind": "compile_fragment",
+      "identity": "phase9-lifecycle-contact-witness:-ffp-contract=off"
+    },
+    {
+      "kind": "compile_fragment",
+      "identity": "phase9-lifecycle-contact-witness:-fhonor-infinities"
+    },
+    {
+      "kind": "compile_fragment",
+      "identity": "phase9-lifecycle-contact-witness:-fhonor-nans"
+    },
+    {
+      "kind": "compile_fragment",
+      "identity": "phase9-lifecycle-contact-witness:-fno-fast-math"
+    },
+    {
+      "kind": "compile_fragment",
+      "identity": "phase9-lifecycle-contact-witness:-fsigned-zeros"
+    },
+    {
+      "kind": "compile_fragment",
+      "identity": "phase9-lifecycle-contact-witness:-g -std=gnu++17"
+    },
+    {
+      "kind": "header",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Box2D.h"
+    },
+    {
+      "kind": "header",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Collision/Shapes/b2ChainShape.h"
+    },
+    {
+      "kind": "header",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Collision/Shapes/b2CircleShape.h"
+    },
+    {
+      "kind": "header",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Collision/Shapes/b2EdgeShape.h"
+    },
+    {
+      "kind": "header",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Collision/Shapes/b2PolygonShape.h"
+    },
+    {
+      "kind": "header",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Collision/Shapes/b2Shape.h"
+    },
+    {
+      "kind": "header",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Collision/b2BroadPhase.h"
+    },
+    {
+      "kind": "header",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Collision/b2Collision.h"
+    },
+    {
+      "kind": "header",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Collision/b2Distance.h"
+    },
+    {
+      "kind": "header",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Collision/b2DynamicTree.h"
+    },
+    {
+      "kind": "header",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Collision/b2TimeOfImpact.h"
+    },
+    {
+      "kind": "header",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Common/b2BlockAllocator.h"
+    },
+    {
+      "kind": "header",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Common/b2Draw.h"
+    },
+    {
+      "kind": "header",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Common/b2FreeList.h"
+    },
+    {
+      "kind": "header",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Common/b2GrowableBuffer.h"
+    },
+    {
+      "kind": "header",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Common/b2GrowableStack.h"
+    },
+    {
+      "kind": "header",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Common/b2IntrusiveList.h"
+    },
+    {
+      "kind": "header",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Common/b2Math.h"
+    },
+    {
+      "kind": "header",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Common/b2Settings.h"
+    },
+    {
+      "kind": "header",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Common/b2SlabAllocator.h"
+    },
+    {
+      "kind": "header",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Common/b2StackAllocator.h"
+    },
+    {
+      "kind": "header",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Common/b2Stat.h"
+    },
+    {
+      "kind": "header",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Common/b2Timer.h"
+    },
+    {
+      "kind": "header",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Common/b2TrackedBlock.h"
+    },
+    {
+      "kind": "header",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Dynamics/Contacts/b2ChainAndCircleContact.h"
+    },
+    {
+      "kind": "header",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Dynamics/Contacts/b2ChainAndPolygonContact.h"
+    },
+    {
+      "kind": "header",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Dynamics/Contacts/b2CircleContact.h"
+    },
+    {
+      "kind": "header",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Dynamics/Contacts/b2Contact.h"
+    },
+    {
+      "kind": "header",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Dynamics/Contacts/b2ContactSolver.h"
+    },
+    {
+      "kind": "header",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Dynamics/Contacts/b2EdgeAndCircleContact.h"
+    },
+    {
+      "kind": "header",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Dynamics/Contacts/b2EdgeAndPolygonContact.h"
+    },
+    {
+      "kind": "header",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Dynamics/Contacts/b2PolygonAndCircleContact.h"
+    },
+    {
+      "kind": "header",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Dynamics/Contacts/b2PolygonContact.h"
+    },
+    {
+      "kind": "header",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Dynamics/Joints/b2DistanceJoint.h"
+    },
+    {
+      "kind": "header",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Dynamics/Joints/b2FrictionJoint.h"
+    },
+    {
+      "kind": "header",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Dynamics/Joints/b2GearJoint.h"
+    },
+    {
+      "kind": "header",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Dynamics/Joints/b2Joint.h"
+    },
+    {
+      "kind": "header",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Dynamics/Joints/b2MotorJoint.h"
+    },
+    {
+      "kind": "header",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Dynamics/Joints/b2MouseJoint.h"
+    },
+    {
+      "kind": "header",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Dynamics/Joints/b2PrismaticJoint.h"
+    },
+    {
+      "kind": "header",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Dynamics/Joints/b2PulleyJoint.h"
+    },
+    {
+      "kind": "header",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Dynamics/Joints/b2RevoluteJoint.h"
+    },
+    {
+      "kind": "header",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Dynamics/Joints/b2RopeJoint.h"
+    },
+    {
+      "kind": "header",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Dynamics/Joints/b2WeldJoint.h"
+    },
+    {
+      "kind": "header",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Dynamics/Joints/b2WheelJoint.h"
+    },
+    {
+      "kind": "header",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Dynamics/b2Body.h"
+    },
+    {
+      "kind": "header",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Dynamics/b2ContactManager.h"
+    },
+    {
+      "kind": "header",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Dynamics/b2Fixture.h"
+    },
+    {
+      "kind": "header",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Dynamics/b2Island.h"
+    },
+    {
+      "kind": "header",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Dynamics/b2TimeStep.h"
+    },
+    {
+      "kind": "header",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Dynamics/b2World.h"
+    },
+    {
+      "kind": "header",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Dynamics/b2WorldCallbacks.h"
+    },
+    {
+      "kind": "header",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Particle/b2Particle.h"
+    },
+    {
+      "kind": "header",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Particle/b2ParticleGroup.h"
+    },
+    {
+      "kind": "header",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Particle/b2ParticleSystem.h"
+    },
+    {
+      "kind": "header",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Particle/b2StackQueue.h"
+    },
+    {
+      "kind": "header",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Particle/b2VoronoiDiagram.h"
+    },
+    {
+      "kind": "header",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Rope/b2Rope.h"
+    },
+    {
+      "kind": "header",
+      "identity": "tools/reference/src/math_probe.hpp"
+    },
+    {
+      "kind": "header",
+      "identity": "tools/reference/src/protocol.hpp"
+    },
+    {
+      "kind": "header",
+      "identity": "tools/reference/vendor/nlohmann/json.hpp"
+    },
+    {
+      "kind": "include_path",
+      "identity": "Box2D:ordinary:<repo>/third_party/liquidfun/liquidfun/Box2D"
+    },
+    {
+      "kind": "include_path",
+      "identity": "liquidfun-reference-protocol-bits:ordinary:<repo>/tools/reference/src"
+    },
+    {
+      "kind": "include_path",
+      "identity": "liquidfun-reference-protocol-bits:ordinary:<repo>/tools/reference/vendor"
+    },
+    {
+      "kind": "include_path",
+      "identity": "liquidfun-reference-protocol-bits:system:<repo>/third_party/liquidfun/liquidfun/Box2D"
+    },
+    {
+      "kind": "include_path",
+      "identity": "phase9-lifecycle-contact-witness:ordinary:<repo>/tools/reference/src"
+    },
+    {
+      "kind": "include_path",
+      "identity": "phase9-lifecycle-contact-witness:ordinary:<repo>/tools/reference/vendor"
+    },
+    {
+      "kind": "include_path",
+      "identity": "phase9-lifecycle-contact-witness:system:<repo>/third_party/liquidfun/liquidfun/Box2D"
+    },
+    {
+      "kind": "link_fragment",
+      "identity": "phase9-lifecycle-contact-witness:flags:-g"
+    },
+    {
+      "kind": "link_fragment",
+      "identity": "phase9-lifecycle-contact-witness:libraries:libliquidfun-reference-protocol-bits.a"
+    },
+    {
+      "kind": "link_fragment",
+      "identity": "phase9-lifecycle-contact-witness:libraries:upstream/Box2D/libliquidfun.a"
+    },
+    {
+      "kind": "link_input",
+      "identity": "phase9-lifecycle-contact-witness->Box2D"
+    },
+    {
+      "kind": "link_input",
+      "identity": "phase9-lifecycle-contact-witness->liquidfun-reference-protocol-bits"
+    },
+    {
+      "kind": "preset_value",
+      "identity": "CMAKE_BUILD_TYPE=Debug"
+    },
+    {
+      "kind": "preset_value",
+      "identity": "CMAKE_EXPORT_COMPILE_COMMANDS=ON"
+    },
+    {
+      "kind": "preset_value",
+      "identity": "preset=oracle-debug"
+    },
+    {
+      "kind": "source",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Collision/Shapes/b2ChainShape.cpp"
+    },
+    {
+      "kind": "source",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Collision/Shapes/b2CircleShape.cpp"
+    },
+    {
+      "kind": "source",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Collision/Shapes/b2EdgeShape.cpp"
+    },
+    {
+      "kind": "source",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Collision/Shapes/b2PolygonShape.cpp"
+    },
+    {
+      "kind": "source",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Collision/b2BroadPhase.cpp"
+    },
+    {
+      "kind": "source",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Collision/b2CollideCircle.cpp"
+    },
+    {
+      "kind": "source",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Collision/b2CollideEdge.cpp"
+    },
+    {
+      "kind": "source",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Collision/b2CollidePolygon.cpp"
+    },
+    {
+      "kind": "source",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Collision/b2Collision.cpp"
+    },
+    {
+      "kind": "source",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Collision/b2Distance.cpp"
+    },
+    {
+      "kind": "source",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Collision/b2DynamicTree.cpp"
+    },
+    {
+      "kind": "source",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Collision/b2TimeOfImpact.cpp"
+    },
+    {
+      "kind": "source",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Common/b2BlockAllocator.cpp"
+    },
+    {
+      "kind": "source",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Common/b2Draw.cpp"
+    },
+    {
+      "kind": "source",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Common/b2FreeList.cpp"
+    },
+    {
+      "kind": "source",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Common/b2Math.cpp"
+    },
+    {
+      "kind": "source",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Common/b2Settings.cpp"
+    },
+    {
+      "kind": "source",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Common/b2StackAllocator.cpp"
+    },
+    {
+      "kind": "source",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Common/b2Stat.cpp"
+    },
+    {
+      "kind": "source",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Common/b2Timer.cpp"
+    },
+    {
+      "kind": "source",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Common/b2TrackedBlock.cpp"
+    },
+    {
+      "kind": "source",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Dynamics/Contacts/b2ChainAndCircleContact.cpp"
+    },
+    {
+      "kind": "source",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Dynamics/Contacts/b2ChainAndPolygonContact.cpp"
+    },
+    {
+      "kind": "source",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Dynamics/Contacts/b2CircleContact.cpp"
+    },
+    {
+      "kind": "source",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Dynamics/Contacts/b2Contact.cpp"
+    },
+    {
+      "kind": "source",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Dynamics/Contacts/b2ContactSolver.cpp"
+    },
+    {
+      "kind": "source",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Dynamics/Contacts/b2EdgeAndCircleContact.cpp"
+    },
+    {
+      "kind": "source",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Dynamics/Contacts/b2EdgeAndPolygonContact.cpp"
+    },
+    {
+      "kind": "source",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Dynamics/Contacts/b2PolygonAndCircleContact.cpp"
+    },
+    {
+      "kind": "source",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Dynamics/Contacts/b2PolygonContact.cpp"
+    },
+    {
+      "kind": "source",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Dynamics/Joints/b2DistanceJoint.cpp"
+    },
+    {
+      "kind": "source",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Dynamics/Joints/b2FrictionJoint.cpp"
+    },
+    {
+      "kind": "source",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Dynamics/Joints/b2GearJoint.cpp"
+    },
+    {
+      "kind": "source",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Dynamics/Joints/b2Joint.cpp"
+    },
+    {
+      "kind": "source",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Dynamics/Joints/b2MotorJoint.cpp"
+    },
+    {
+      "kind": "source",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Dynamics/Joints/b2MouseJoint.cpp"
+    },
+    {
+      "kind": "source",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Dynamics/Joints/b2PrismaticJoint.cpp"
+    },
+    {
+      "kind": "source",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Dynamics/Joints/b2PulleyJoint.cpp"
+    },
+    {
+      "kind": "source",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Dynamics/Joints/b2RevoluteJoint.cpp"
+    },
+    {
+      "kind": "source",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Dynamics/Joints/b2RopeJoint.cpp"
+    },
+    {
+      "kind": "source",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Dynamics/Joints/b2WeldJoint.cpp"
+    },
+    {
+      "kind": "source",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Dynamics/Joints/b2WheelJoint.cpp"
+    },
+    {
+      "kind": "source",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Dynamics/b2Body.cpp"
+    },
+    {
+      "kind": "source",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Dynamics/b2ContactManager.cpp"
+    },
+    {
+      "kind": "source",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Dynamics/b2Fixture.cpp"
+    },
+    {
+      "kind": "source",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Dynamics/b2Island.cpp"
+    },
+    {
+      "kind": "source",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Dynamics/b2World.cpp"
+    },
+    {
+      "kind": "source",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Dynamics/b2WorldCallbacks.cpp"
+    },
+    {
+      "kind": "source",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Particle/b2Particle.cpp"
+    },
+    {
+      "kind": "source",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Particle/b2ParticleGroup.cpp"
+    },
+    {
+      "kind": "source",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Particle/b2ParticleSystem.cpp"
+    },
+    {
+      "kind": "source",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Particle/b2VoronoiDiagram.cpp"
+    },
+    {
+      "kind": "source",
+      "identity": "third_party/liquidfun/liquidfun/Box2D/Box2D/Rope/b2Rope.cpp"
+    },
+    {
+      "kind": "source",
+      "identity": "tools/reference/src/phase9_lifecycle_contact_witness.cpp"
+    },
+    {
+      "kind": "source",
+      "identity": "tools/reference/src/protocol_bits.cpp"
+    }
+  ]
+}

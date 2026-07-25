@@ -67,6 +67,14 @@ if(COMPILE_ENTRY_COUNT GREATER 0)
       NORMALIZED_COMMAND_SIGNATURE
       "${NORMALIZED_COMMAND}"
     )
+    string(
+      REGEX
+      REPLACE
+      "CMakeFiles/[^ /]+\\.dir"
+      "CMakeFiles/<result-target>.dir"
+      NORMALIZED_COMMAND_SIGNATURE
+      "${NORMALIZED_COMMAND_SIGNATURE}"
+    )
     list(APPEND PROBE_COMMAND_SIGNATURES "${NORMALIZED_COMMAND_SIGNATURE}")
   endforeach()
 endif()

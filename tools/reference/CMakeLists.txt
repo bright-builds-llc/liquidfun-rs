@@ -187,6 +187,23 @@ if(
 endif()
 
 add_library(
+  liquidfun-reference-protocol-bits
+  STATIC
+  src/protocol_bits.cpp
+)
+target_compile_features(liquidfun-reference-protocol-bits PUBLIC cxx_std_17)
+target_include_directories(
+  liquidfun-reference-protocol-bits
+  PUBLIC "${CMAKE_CURRENT_LIST_DIR}/src"
+  PRIVATE "${CMAKE_CURRENT_LIST_DIR}/vendor"
+)
+target_include_directories(
+  liquidfun-reference-protocol-bits
+  SYSTEM PRIVATE
+  "${CMAKE_CURRENT_LIST_DIR}/../../third_party/liquidfun/liquidfun/Box2D"
+)
+
+add_library(
   liquidfun-reference-protocol
   STATIC
   src/benchmark_run.cpp
@@ -198,7 +215,6 @@ add_library(
   src/collision_probe.cpp
   src/math_probe.cpp
   src/protocol.cpp
-  src/protocol_bits.cpp
   src/rigid_world.cpp
   src/oracle_adapter.cpp
 )
@@ -213,7 +229,10 @@ target_include_directories(
   SYSTEM PRIVATE
   "${CMAKE_CURRENT_LIST_DIR}/../../third_party/liquidfun/liquidfun/Box2D"
 )
-target_link_libraries(liquidfun-reference-protocol PRIVATE Box2D)
+target_link_libraries(
+  liquidfun-reference-protocol
+  PRIVATE liquidfun-reference-protocol-bits Box2D
+)
 
 set(REFERENCE_ADAPTER_INPUT_MANIFEST "${CMAKE_CURRENT_LIST_DIR}/adapter-inputs.txt")
 file(STRINGS "${REFERENCE_ADAPTER_INPUT_MANIFEST}" REFERENCE_ADAPTER_INPUT_LINES)
@@ -519,17 +538,21 @@ file(
 add_executable(
   phase9-lifecycle-contact-witness
   src/phase9_lifecycle_contact_witness.cpp
-  "${REFERENCE_BUILD_IDENTITY_HEADER}"
 )
 target_compile_features(phase9-lifecycle-contact-witness PRIVATE cxx_std_17)
 target_compile_definitions(
   phase9-lifecycle-contact-witness
-  PRIVATE PHASE9_PROBE_SOURCE_SHA256="${PHASE9_PROBE_SOURCE_SHA256}"
+  PRIVATE
+    PHASE9_CMAKE_PRESET="${REFERENCE_PRESET}"
+    PHASE9_COMPILER_ID="${CMAKE_CXX_COMPILER_ID}"
+    PHASE9_COMPILER_VERSION="${CMAKE_CXX_COMPILER_VERSION}"
+    PHASE9_ORACLE_REVISION="${LIQUIDFUN_EXPECTED_ORACLE_REVISION}"
+    PHASE9_PROBE_SOURCE_SHA256="${PHASE9_PROBE_SOURCE_SHA256}"
+    PHASE9_TARGET="${REFERENCE_TARGET}"
 )
 target_include_directories(
   phase9-lifecycle-contact-witness
   PRIVATE
-    "${CMAKE_CURRENT_BINARY_DIR}/generated"
     "${CMAKE_CURRENT_LIST_DIR}/src"
     "${CMAKE_CURRENT_LIST_DIR}/vendor"
 )
@@ -540,7 +563,7 @@ target_include_directories(
 )
 target_link_libraries(
   phase9-lifecycle-contact-witness
-  PRIVATE liquidfun-reference-protocol Box2D
+  PRIVATE liquidfun-reference-protocol-bits Box2D
 )
 
 file(
@@ -606,6 +629,10 @@ target_link_libraries(
   PRIVATE liquidfun-reference-protocol
 )
 
+target_compile_options(
+  liquidfun-reference-protocol-bits
+  PRIVATE ${REFERENCE_WARNING_OPTIONS} ${REFERENCE_SUPPORTED_FP_OPTIONS}
+)
 target_compile_options(
   liquidfun-reference-protocol
   PRIVATE ${REFERENCE_WARNING_OPTIONS} ${REFERENCE_SUPPORTED_FP_OPTIONS}

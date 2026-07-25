@@ -7,6 +7,8 @@ use serde::Deserialize;
 
 use super::{ProvenanceError, read_json, require_revision, sha256};
 
+mod materials;
+
 const WITNESS_PATH: &str = "reference/artifacts/phase9/lifecycle-contact-witnesses.json";
 const PROVENANCE_PATH: &str =
     "reference/artifacts/phase9/lifecycle-contact-witnesses.provenance.json";
