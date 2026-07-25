@@ -58,6 +58,81 @@ fn tracked_catalog_regressions_replay_byte_identically_without_writes() {
 }
 
 #[test]
+fn rigid_stack_v1_diagnosis() {
+    // Arrange
+    let root = repository_root();
+    let manifest_before = fs::read(root.join(MANIFEST)).expect("manifest should exist");
+    let fixture_before =
+        fs::read(root.join(FIXTURES[0])).expect("rigid-stack fixture should exist");
+
+    // Act
+    let first = replay_catalog_regressions(&root).expect("tracked regressions should replay");
+    let second = replay_catalog_regressions(&root).expect("tracked regressions should repeat");
+    let first_entry = first
+        .entries()
+        .iter()
+        .find(|entry| entry.fixture_id() == "rigid-stack-v1")
+        .expect("rigid-stack replay should be present");
+    let second_entry = second
+        .entries()
+        .iter()
+        .find(|entry| entry.fixture_id() == "rigid-stack-v1")
+        .expect("repeated rigid-stack replay should be present");
+    let diagnosis = first_entry
+        .maybe_diagnosis()
+        .expect("expanded rigid-stack capture should be diagnosed");
+
+    // Assert
+    assert_eq!(first_entry, second_entry);
+    assert_eq!(
+        diagnosis.drift_class(),
+        ReplayDriftClass::CaptureSchemaDrift
+    );
+    assert_eq!(
+        diagnosis.first_divergence().semantic_path(),
+        "$.checkpoints[0].debug_primitives.length"
+    );
+    assert_eq!(
+        diagnosis.first_divergence().reviewed_value(),
+        &ReplaySemanticValue::Json(serde_json::json!(0))
+    );
+    let ReplaySemanticValue::Json(serde_json::Value::Number(current_length)) =
+        diagnosis.first_divergence().current_value()
+    else {
+        panic!("expanded capture should report a numeric primitive count");
+    };
+    assert!(
+        current_length
+            .as_u64()
+            .is_some_and(|primitive_count| primitive_count > 0)
+    );
+    assert_eq!(
+        diagnosis.reviewed_schema().projection_version(),
+        ReplayProjectionVersion::LegacyPhysicsV1
+    );
+    assert_eq!(
+        diagnosis.current_schema().projection_version(),
+        ReplayProjectionVersion::ExpandedCheckpointV1
+    );
+    assert_eq!(
+        diagnosis.reviewed_resolved_sha256(),
+        first_entry.resolved_sha256()
+    );
+    assert_eq!(
+        diagnosis.current_resolved_sha256(),
+        first_entry.resolved_sha256()
+    );
+    assert_eq!(
+        fs::read(root.join(MANIFEST)).expect("manifest should remain readable"),
+        manifest_before
+    );
+    assert_eq!(
+        fs::read(root.join(FIXTURES[0])).expect("rigid-stack fixture should remain readable"),
+        fixture_before
+    );
+}
+
+#[test]
 fn diagnosis_resolved_scenario_drift_precedes_checkpoint_comparison() {
     // Arrange
     let reviewed = semantic_document(
