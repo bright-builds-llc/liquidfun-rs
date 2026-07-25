@@ -18,6 +18,9 @@ pub use domain::{
 pub use lifecycle::{promote_candidate, review_candidate, stage_candidate};
 pub use replay::{
     CatalogRegressionError, CatalogRegressionErrorKind, CatalogRegressionReplay,
-    CatalogRegressionReplayEntry, replay_catalog_failure_bundle, replay_catalog_regressions,
+    CatalogRegressionReplayEntry, ReplayDiagnosis, ReplayDiagnosisError, ReplayDiagnosisErrorKind,
+    ReplayDriftClass, ReplayFirstDivergence, ReplayProjectionVersion, ReplaySchemaIdentity,
+    ReplaySemanticDocument, ReplaySemanticValue, diagnose_replay_drift,
+    replay_catalog_failure_bundle, replay_catalog_regressions,
 };
 pub use rigid::{RIGID_FIXTURE_SCENARIO_ID, stage_rigid_candidate};

@@ -7,11 +7,10 @@ use std::{
 };
 
 use liquidfun_differential::{
-    CatalogRegressionErrorKind, NativeCatalogBackend, SessionCommand, SessionController,
-    replay_catalog_regressions,
+    CatalogRegressionErrorKind, ReplayDiagnosisErrorKind, ReplayDriftClass,
+    ReplayProjectionVersion, ReplaySchemaIdentity, ReplaySemanticDocument, ReplaySemanticValue,
+    diagnose_replay_drift, replay_catalog_regressions,
 };
-use liquidfun_test_protocol::{Sha256Hex, decode_resolved_scenario};
-use sha2::{Digest, Sha256};
 
 const MANIFEST: &str = "scenarios/regressions/catalog-manifest.json";
 const FIXTURES: &[&str] = &[
@@ -59,73 +58,151 @@ fn tracked_catalog_regressions_replay_byte_identically_without_writes() {
 }
 
 #[test]
-fn independently_replayed_checkpoints_match_reviewed_d0_identities() {
+fn diagnosis_resolved_scenario_drift_precedes_checkpoint_comparison() {
     // Arrange
-    let root = repository_root();
-    let reviewed = [
-        (
-            FIXTURES[0],
-            "6d22b12e5abc8e7f06dac08dda38c9001a5b31c8f98f81938129a66334c6c052",
-            "3105d34f1d7437bba4936c96150770895db4292668a5793765fd5df88e6a938b",
-        ),
-        (
-            FIXTURES[1],
-            "f7407741563b445f40effc6ef67f3a31906e6e6fcf65db7c835b5c692bddf85a",
-            "55cab91288224010636d82640cf7ed17026abca2d6743dbc28839785a2a3a52b",
-        ),
-        (
-            FIXTURES[2],
-            "93a0f8c793f213b3dda6911e62830d0f02a3b14324193244d0cd6e1693512cda",
-            "420b74c891786deb301e06cf8df959d5fd188fc6d5e25c1bd9ab53ad0c8a7ea2",
-        ),
-    ];
-
-    // Act / Assert
-    for (path, resolved_sha256, expected_d0) in reviewed {
-        let bytes = fs::read(root.join(path)).expect("reviewed fixture should be readable");
-        let resolved_sha256 = Sha256Hex::new(resolved_sha256).expect("reviewed hash should parse");
-        let resolved = decode_resolved_scenario(&bytes, &resolved_sha256)
-            .expect("reviewed canonical bytes should decode");
-        assert_eq!(independent_native_d0(&resolved), expected_d0, "{path}");
-    }
-}
-
-fn independent_native_d0(resolved: &liquidfun_test_protocol::ResolvedScenario) -> String {
-    let mut controller = SessionController::new(NativeCatalogBackend::new());
-    submit(
-        &mut controller,
-        SessionCommand::Select {
-            resolved: resolved.clone(),
-        },
+    let reviewed = semantic_document(
+        serde_json::json!({"observations": [{"value": 1}]}),
+        serde_json::json!({"observations": [{"value": 1}]}),
     );
-    for checkpoint in resolved.checkpoints() {
-        submit(&mut controller, SessionCommand::StepOnce);
-        submit(
-            &mut controller,
-            SessionCommand::CaptureCheckpoint {
-                checkpoint_id: checkpoint.checkpoint_id().clone(),
-            },
-        );
-    }
-    let mut hasher = Sha256::new();
-    for capture in controller.captures() {
-        let mut bytes = serde_json::to_vec(capture.value())
-            .expect("semantic checkpoint should serialize independently");
-        bytes.push(b'\n');
-        hasher.update(bytes);
-    }
-    Sha256Hex::from_digest(hasher.finalize().into())
-        .as_str()
-        .to_owned()
+    let current = semantic_document(
+        serde_json::json!({"observations": [{"value": 999}]}),
+        serde_json::json!({"observations": [{"value": 999}]}),
+    );
+
+    // Act
+    let diagnosis = diagnose_replay_drift(
+        br#"{"identity":"reviewed"}"#,
+        br#"{"identity":"current"}"#,
+        &reviewed,
+        &current,
+    )
+    .expect("supported schemas should diagnose")
+    .expect("resolved byte drift should produce a diagnosis");
+
+    // Assert
+    assert_eq!(
+        diagnosis.drift_class(),
+        ReplayDriftClass::ResolvedScenarioDrift
+    );
+    assert_eq!(diagnosis.first_divergence().semantic_path(), "$.identity");
+    assert_eq!(
+        diagnosis.first_divergence().reviewed_value(),
+        &ReplaySemanticValue::Json(serde_json::json!("reviewed"))
+    );
+    assert_eq!(
+        diagnosis.first_divergence().current_value(),
+        &ReplaySemanticValue::Json(serde_json::json!("current"))
+    );
 }
 
-fn submit(controller: &mut SessionController<NativeCatalogBackend>, command: SessionCommand) {
-    let command_id = controller
-        .next_command_id()
-        .expect("reviewed command count should fit");
-    controller
-        .submit(command_id, command)
-        .expect("reviewed native action should execute");
+#[test]
+fn diagnosis_physics_drift_uses_first_parity_bearing_path() {
+    // Arrange
+    let reviewed = semantic_document(
+        serde_json::json!({"observations": [{"value": 1}]}),
+        serde_json::json!({"observations": [{"value": 1}]}),
+    );
+    let current = semantic_document(
+        serde_json::json!({"observations": [{"value": 2}]}),
+        serde_json::json!({"observations": [{"value": 2}]}),
+    );
+
+    // Act
+    let diagnosis = diagnose_replay_drift(b"sealed", b"sealed", &reviewed, &current)
+        .expect("supported schemas should diagnose")
+        .expect("physics drift should produce a diagnosis");
+
+    // Assert
+    assert_eq!(diagnosis.drift_class(), ReplayDriftClass::PhysicsDrift);
+    assert_eq!(
+        diagnosis.first_divergence().semantic_path(),
+        "$.observations[0].value"
+    );
+    assert_eq!(diagnosis.reviewed_schema(), reviewed.schema());
+    assert_eq!(diagnosis.current_schema(), current.schema());
+}
+
+#[test]
+fn diagnosis_capture_schema_drift_follows_equal_physics_projection() {
+    // Arrange
+    let physics = serde_json::json!({"observations": [{"value": 1}]});
+    let reviewed = semantic_document(physics.clone(), physics.clone());
+    let current = semantic_document(
+        physics,
+        serde_json::json!({
+            "observations": [{"value": 1}],
+            "debug_primitives": [{"kind": "segment"}]
+        }),
+    );
+
+    // Act
+    let diagnosis = diagnose_replay_drift(b"sealed", b"sealed", &reviewed, &current)
+        .expect("supported schemas should diagnose")
+        .expect("capture expansion should produce a diagnosis");
+
+    // Assert
+    assert_eq!(
+        diagnosis.drift_class(),
+        ReplayDriftClass::CaptureSchemaDrift
+    );
+    assert_eq!(
+        diagnosis.first_divergence().semantic_path(),
+        "$.debug_primitives"
+    );
+    assert_eq!(
+        diagnosis.first_divergence().reviewed_value(),
+        &ReplaySemanticValue::Missing
+    );
+}
+
+#[test]
+fn diagnosis_rejects_unknown_and_incomparable_schema_versions() {
+    // Arrange
+    let unknown = ReplaySemanticDocument::new(
+        ReplaySchemaIdentity::new(99, 1, ReplayProjectionVersion::LegacyPhysicsV1),
+        serde_json::json!({}),
+        serde_json::json!({}),
+    );
+    let current = semantic_document(serde_json::json!({}), serde_json::json!({}));
+
+    // Act
+    let unknown_error = diagnose_replay_drift(b"sealed", b"sealed", &unknown, &current)
+        .expect_err("unknown schema versions must fail closed");
+
+    // Assert
+    assert_eq!(
+        unknown_error.kind(),
+        ReplayDiagnosisErrorKind::UnsupportedSchema
+    );
+
+    // Arrange
+    let reviewed_expanded = ReplaySemanticDocument::new(
+        ReplaySchemaIdentity::new(1, 1, ReplayProjectionVersion::ExpandedCheckpointV1),
+        serde_json::json!({}),
+        serde_json::json!({}),
+    );
+
+    // Act
+    let incomparable_error =
+        diagnose_replay_drift(b"sealed", b"sealed", &reviewed_expanded, &current)
+            .expect_err("schema regression must fail closed");
+
+    // Assert
+    assert_eq!(
+        incomparable_error.kind(),
+        ReplayDiagnosisErrorKind::IncomparableSchema
+    );
+}
+
+fn semantic_document(
+    physics_projection: serde_json::Value,
+    expanded_checkpoint: serde_json::Value,
+) -> ReplaySemanticDocument {
+    ReplaySemanticDocument::new(
+        ReplaySchemaIdentity::new(1, 1, ReplayProjectionVersion::LegacyPhysicsV1),
+        physics_projection,
+        expanded_checkpoint,
+    )
 }
 
 #[test]

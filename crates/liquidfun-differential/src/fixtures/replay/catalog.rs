@@ -8,14 +8,19 @@ use std::{
 
 use liquidfun_test_protocol::{
     CATALOG_MAXIMUM_CANONICAL_BYTES, CatalogSchemaVersion, CatalogSlug, GeneratorVersion,
-    HarnessLimits, ResolveRequest, RunSettings, ScenarioVersion, Sha256Hex,
-    decode_resolved_scenario, encode_canonical_checkpoint_jsonl, resolve_catalog,
-    scenarios::scenario_definitions,
+    RequestId, ResolveRequest, RunSettings, ScenarioVersion, Sha256Hex, decode_resolved_scenario,
+    resolve_catalog, scenarios::scenario_definitions,
 };
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
 
-use crate::{NativeCatalogBackend, SessionCommand, SessionController};
+use crate::execute_resolved_catalog_native;
+
+use super::diagnosis::{
+    CheckpointSemanticDocuments, ReplayDiagnosis, ReplayDriftClass, ReplayProjectionVersion,
+    ReplaySchemaIdentity, ReplaySemanticDocument, checkpoint_semantic_documents,
+    diagnose_replay_drift,
+};
 
 const MANIFEST_PATH: &str = "scenarios/regressions/catalog-manifest.json";
 const MANIFEST_SCHEMA_VERSION: u32 = 1;
@@ -68,6 +73,7 @@ pub struct CatalogRegressionReplayEntry {
     slug: Box<str>,
     resolved_sha256: Sha256Hex,
     native_d0_sha256: Sha256Hex,
+    maybe_diagnosis: Option<ReplayDiagnosis>,
 }
 
 impl CatalogRegressionReplayEntry {
@@ -93,6 +99,12 @@ impl CatalogRegressionReplayEntry {
     #[must_use]
     pub const fn native_d0_sha256(&self) -> &Sha256Hex {
         &self.native_d0_sha256
+    }
+
+    /// Returns structured drift evidence when a legacy projection preserves review.
+    #[must_use]
+    pub const fn maybe_diagnosis(&self) -> Option<&ReplayDiagnosis> {
+        self.maybe_diagnosis.as_ref()
     }
 }
 
@@ -189,9 +201,24 @@ pub fn replay_catalog_regressions(
     let entries = validated
         .into_iter()
         .map(|(entry, resolved)| {
-            let first = native_d0_sha256(&resolved)?;
-            let second = native_d0_sha256(&resolved)?;
-            if first != second || first != entry.expected_native_d0_sha256 {
+            let first = native_replay_capture(&resolved)?;
+            let second = native_replay_capture(&resolved)?;
+            if first.semantic_documents.legacy_physics_sha256
+                != second.semantic_documents.legacy_physics_sha256
+                || first.semantic_documents.physics_projection
+                    != second.semantic_documents.physics_projection
+            {
+                return Err(CatalogRegressionError::new(
+                    CatalogRegressionErrorKind::NativeMismatch,
+                ));
+            }
+            let (native_d0_sha256, maybe_diagnosis) =
+                classify_native_identity(entry, &first, &resolved)?;
+            let (repeated_native_d0_sha256, repeated_diagnosis) =
+                classify_native_identity(entry, &second, &resolved)?;
+            if native_d0_sha256 != repeated_native_d0_sha256
+                || maybe_diagnosis != repeated_diagnosis
+            {
                 return Err(CatalogRegressionError::new(
                     CatalogRegressionErrorKind::NativeMismatch,
                 ));
@@ -200,7 +227,8 @@ pub fn replay_catalog_regressions(
                 fixture_id: entry.fixture_id.clone().into_boxed_str(),
                 slug: entry.run_identity.slug.clone().into_boxed_str(),
                 resolved_sha256: entry.resolved_sha256.clone(),
-                native_d0_sha256: first,
+                native_d0_sha256,
+                maybe_diagnosis,
             })
         })
         .collect::<Result<Vec<_>, _>>()?;
@@ -460,46 +488,81 @@ fn validate_manifest_mapping(
     Ok(())
 }
 
-fn native_d0_sha256(
-    resolved: &liquidfun_test_protocol::ResolvedScenario,
-) -> Result<Sha256Hex, CatalogRegressionError> {
-    let mut controller = SessionController::new(NativeCatalogBackend::new());
-    submit(
-        &mut controller,
-        SessionCommand::Select {
-            resolved: resolved.clone(),
-        },
-    )?;
-    for checkpoint in resolved.checkpoints() {
-        submit(&mut controller, SessionCommand::StepOnce)?;
-        submit(
-            &mut controller,
-            SessionCommand::CaptureCheckpoint {
-                checkpoint_id: checkpoint.checkpoint_id().clone(),
-            },
-        )?;
-    }
-    let limits = HarnessLimits::phase2_default_v1();
-    let mut hasher = Sha256::new();
-    for capture in controller.captures() {
-        let bytes =
-            encode_canonical_checkpoint_jsonl(capture.value(), &limits).map_err(|_error| {
-                CatalogRegressionError::new(CatalogRegressionErrorKind::NativeMismatch)
-            })?;
-        hasher.update(bytes);
-    }
-    Ok(Sha256Hex::from_digest(hasher.finalize().into()))
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct NativeReplayCapture {
+    expanded_sha256: Sha256Hex,
+    semantic_documents: CheckpointSemanticDocuments,
 }
 
-fn submit(
-    controller: &mut SessionController<NativeCatalogBackend>,
-    command: SessionCommand,
-) -> Result<(), CatalogRegressionError> {
-    let command_id = controller
-        .next_command_id()
-        .ok_or_else(|| CatalogRegressionError::new(CatalogRegressionErrorKind::NativeMismatch))?;
-    controller.submit(command_id, command).map_err(|_error| {
+fn native_replay_capture(
+    resolved: &liquidfun_test_protocol::ResolvedScenario,
+) -> Result<NativeReplayCapture, CatalogRegressionError> {
+    let request_id = RequestId::new("catalog-native-request").map_err(|_error| {
         CatalogRegressionError::new(CatalogRegressionErrorKind::NativeMismatch)
     })?;
-    Ok(())
+    let capture = execute_resolved_catalog_native(&request_id, resolved).map_err(|_error| {
+        CatalogRegressionError::new(CatalogRegressionErrorKind::NativeMismatch)
+    })?;
+    let mut hasher = Sha256::new();
+    for bytes in capture.canonical_checkpoint_bytes() {
+        hasher.update(bytes);
+    }
+    let semantic_documents =
+        checkpoint_semantic_documents(capture.checkpoints()).map_err(|_error| {
+            CatalogRegressionError::new(CatalogRegressionErrorKind::NativeMismatch)
+        })?;
+    Ok(NativeReplayCapture {
+        expanded_sha256: Sha256Hex::from_digest(hasher.finalize().into()),
+        semantic_documents,
+    })
+}
+
+fn classify_native_identity(
+    entry: &ManifestEntry,
+    capture: &NativeReplayCapture,
+    resolved: &liquidfun_test_protocol::ResolvedScenario,
+) -> Result<(Sha256Hex, Option<ReplayDiagnosis>), CatalogRegressionError> {
+    if capture.expanded_sha256 == entry.expected_native_d0_sha256 {
+        return Ok((capture.expanded_sha256.clone(), None));
+    }
+    if capture.semantic_documents.legacy_physics_sha256 != entry.expected_native_d0_sha256 {
+        return Err(CatalogRegressionError::new(
+            CatalogRegressionErrorKind::NativeMismatch,
+        ));
+    }
+
+    let catalog_schema_version = resolved.identity().catalog_schema_version().get();
+    let reviewed_schema = ReplaySchemaIdentity::new(
+        catalog_schema_version,
+        1,
+        ReplayProjectionVersion::LegacyPhysicsV1,
+    );
+    let current_schema = ReplaySchemaIdentity::new(
+        catalog_schema_version,
+        1,
+        ReplayProjectionVersion::ExpandedCheckpointV1,
+    );
+    let reviewed = ReplaySemanticDocument::new(
+        reviewed_schema,
+        capture.semantic_documents.physics_projection.clone(),
+        capture.semantic_documents.physics_projection.clone(),
+    );
+    let current = ReplaySemanticDocument::new(
+        current_schema,
+        capture.semantic_documents.physics_projection.clone(),
+        capture.semantic_documents.expanded_checkpoint.clone(),
+    );
+    let diagnosis = diagnose_replay_drift(
+        resolved.canonical_bytes(),
+        resolved.canonical_bytes(),
+        &reviewed,
+        &current,
+    )
+    .map_err(|_error| CatalogRegressionError::new(CatalogRegressionErrorKind::NativeMismatch))?
+    .filter(|diagnosis| diagnosis.drift_class() == ReplayDriftClass::CaptureSchemaDrift)
+    .ok_or_else(|| CatalogRegressionError::new(CatalogRegressionErrorKind::NativeMismatch))?;
+    Ok((
+        capture.semantic_documents.legacy_physics_sha256.clone(),
+        Some(diagnosis),
+    ))
 }

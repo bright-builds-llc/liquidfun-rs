@@ -4,8 +4,8 @@ use std::path::Path;
 
 use liquidfun_test_protocol::{
     CanonicalCheckpoint, CatalogRunRequest, CheckpointDeclaration, HarnessLimits,
-    Phase4PolicyProfile, ScenarioActionId, Sha256Hex, decode_catalog_run_request_jsonl,
-    encode_canonical_checkpoint_jsonl,
+    Phase4PolicyProfile, RequestId, ResolvedScenario, ScenarioActionId, Sha256Hex,
+    decode_catalog_run_request_jsonl, encode_canonical_checkpoint_jsonl,
 };
 
 use crate::{
@@ -141,8 +141,24 @@ impl CatalogRunCapture {
         request: &CatalogRunRequest,
         checkpoints: Vec<CanonicalCheckpoint>,
     ) -> Result<Self, CatalogRunnerError> {
-        if checkpoints.len() != request.resolved().checkpoints().len() {
+        Self::from_resolved_parts(request.request_id(), request.resolved(), checkpoints)
+    }
+
+    fn from_resolved_parts(
+        request_id: &RequestId,
+        resolved: &ResolvedScenario,
+        checkpoints: Vec<CanonicalCheckpoint>,
+    ) -> Result<Self, CatalogRunnerError> {
+        if checkpoints.len() != resolved.checkpoints().len() {
             return Err(CatalogRunnerError::new(CatalogFailureKind::MalformedRecord));
+        }
+        for (declaration, checkpoint) in resolved.checkpoints().iter().zip(&checkpoints) {
+            if checkpoint.request_id() != request_id
+                || checkpoint.resolved_sha256() != resolved.identity().content_sha256()
+                || checkpoint.checkpoint_id() != declaration.checkpoint_id()
+            {
+                return Err(CatalogRunnerError::new(CatalogFailureKind::Protocol));
+            }
         }
         let limits = HarnessLimits::phase2_default_v1();
         let canonical_checkpoint_bytes = checkpoints
@@ -154,16 +170,15 @@ impl CatalogRunCapture {
             })
             .collect::<Result<Vec<_>, _>>()?;
         Ok(Self {
-            resolved_bytes: request.resolved().canonical_bytes().into(),
-            resolved_sha256: request.resolved().identity().content_sha256().clone(),
-            action_log: request
-                .resolved()
+            resolved_bytes: resolved.canonical_bytes().into(),
+            resolved_sha256: resolved.identity().content_sha256().clone(),
+            action_log: resolved
                 .actions()
                 .iter()
                 .map(|action| action.action_id().clone())
                 .collect::<Vec<_>>()
                 .into_boxed_slice(),
-            checkpoint_schedule: request.resolved().checkpoints().into(),
+            checkpoint_schedule: resolved.checkpoints().into(),
             checkpoints: checkpoints.into_boxed_slice(),
             canonical_checkpoint_bytes: canonical_checkpoint_bytes.into_boxed_slice(),
         })
@@ -218,16 +233,28 @@ pub enum CatalogRunOutcome {
 pub fn execute_catalog_native(
     request: &CatalogRunRequest,
 ) -> Result<CatalogRunCapture, CatalogRunnerError> {
+    execute_resolved_catalog_native(request.request_id(), request.resolved())
+}
+
+/// Executes exact sealed resolved bytes natively without constructing a second resolver.
+///
+/// # Errors
+///
+/// Returns [`CatalogRunnerError`] for transactional native controller or capture failures.
+pub fn execute_resolved_catalog_native(
+    request_id: &RequestId,
+    resolved: &ResolvedScenario,
+) -> Result<CatalogRunCapture, CatalogRunnerError> {
     let mut backend = NativeCatalogBackend::new();
-    backend.set_request_id(request.request_id().clone());
+    backend.set_request_id(request_id.clone());
     let mut controller = SessionController::new(backend);
     submit(
         &mut controller,
         SessionCommand::Select {
-            resolved: request.resolved().clone(),
+            resolved: resolved.clone(),
         },
     )?;
-    for declaration in request.resolved().checkpoints() {
+    for declaration in resolved.checkpoints() {
         submit(&mut controller, SessionCommand::StepOnce)?;
         submit(
             &mut controller,
@@ -241,7 +268,7 @@ pub fn execute_catalog_native(
         .iter()
         .map(|capture| capture.value().clone())
         .collect();
-    CatalogRunCapture::from_parts(request, checkpoints)
+    CatalogRunCapture::from_resolved_parts(request_id, resolved, checkpoints)
 }
 
 /// Strictly decodes exact request bytes and executes their embedded resolved bytes natively.

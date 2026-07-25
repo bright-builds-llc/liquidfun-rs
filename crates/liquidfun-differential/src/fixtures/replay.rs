@@ -1,7 +1,9 @@
 //! Purely classified candidate replay and protocol validation.
 
 mod catalog;
+mod diagnosis;
 pub use catalog::*;
+pub use diagnosis::*;
 
 use std::{fs, io, path::Path};
 
