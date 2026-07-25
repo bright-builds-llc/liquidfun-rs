@@ -12,7 +12,7 @@ Requirements for the first release permitted to claim complete parity with the s
 - [x] **FND-01**: Maintainers can identify the canonical upstream LiquidFun repository, exact immutable revision, release context, and Box2D ancestry from `UPSTREAM.md`.
 - [x] **FND-02**: Maintainers can initialize, verify, and intentionally update the read-only upstream submodule through documented commands without silently following a moving branch.
 - [x] **FND-03**: Contributors can build the pinned upstream C++ oracle with documented, reproducible CMake/Ninja commands on every supported contributor platform.
-- [ ] **FND-04**: Maintainers can trace translated code, tests, scenarios, and reference data to upstream source paths and revisions with required license and alteration notices.
+- [x] **FND-04**: Maintainers can trace translated code, tests, scenarios, and reference data to upstream source paths and revisions with required license and alteration notices.
 - [x] **FND-05**: Ordinary Rust consumers can build, test, package, and use the published crate through Cargo without C++, CMake, Bazel, the upstream submodule, or reference data.
 - [x] **FND-06**: Contributors can use a pinned Rust development toolchain and a declared MSRV, with the complete publishable feature surface verified on both.
 - [x] **FND-07**: Contributors can discover repository workflows through a root `justfile` whose recipes are thin wrappers around documented Cargo, `xtask`, and oracle commands.
@@ -24,7 +24,7 @@ Requirements for the first release permitted to claim complete parity with the s
 - [x] **COMP-02**: Every compatibility row uses distinct states for investigated, planned, implemented, unit tested, differentially validated, platform validated, documented difference, and intentionally unsupported.
 - [x] **COMP-03**: Contributors can express a named or seeded simulation as a validated, versioned, engine-neutral scenario with deterministic entity creation and checkpoint requests.
 - [ ] **COMP-04**: Contributors can run the same validated scenario through the Rust engine and a process-isolated C++ oracle without exposing pointers, raw memory, or implementation layouts in the protocol.
-- [ ] **COMP-05**: Every engine trace records scenario/schema versions, upstream revision, adapter revision, compiler/build flags, target/platform, seed, and tolerance profile.
+- [x] **COMP-05**: Every engine trace records scenario/schema versions, upstream revision, adapter revision, compiler/build flags, target/platform, seed, and tolerance profile.
 - [x] **COMP-06**: The comparator checks IDs, flags, counts, membership, and event kinds exactly while applying reviewed field-specific numeric policies to floating-point observables.
 - [x] **COMP-07**: The comparator distinguishes unordered queries/collections from solver-significant and callback/destruction sequences whose order must be preserved.
 - [ ] **COMP-08**: A differential failure can be reproduced by scenario name or seed, diagnosed at the first divergent checkpoint or phase, and reduced into a focused regression fixture.
@@ -197,7 +197,7 @@ Roadmap creation maps every v1 requirement to exactly one phase.
 | FND-01 | Phase 1 | Complete |
 | FND-02 | Phase 1 | Complete |
 | FND-03 | Phase 1 | Complete |
-| FND-04 | Phase 1 → Phase 13 | Pending |
+| FND-04 | Phase 1 → Phase 13 | Complete |
 | FND-05 | Phase 1 | Complete |
 | FND-06 | Phase 12 | Complete |
 | FND-07 | Phase 1 | Complete |
@@ -206,7 +206,7 @@ Roadmap creation maps every v1 requirement to exactly one phase.
 | COMP-02 | Phase 1 | Complete |
 | COMP-03 | Phase 2 | Complete |
 | COMP-04 | Phase 2 → Phase 13 | Pending |
-| COMP-05 | Phase 2 → Phase 13 | Pending |
+| COMP-05 | Phase 2 → Phase 13 | Complete |
 | COMP-06 | Phase 2 | Complete |
 | COMP-07 | Phase 2 | Complete |
 | COMP-08 | Phase 2 → Phase 13 | Pending |

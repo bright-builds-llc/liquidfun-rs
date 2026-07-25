@@ -3,14 +3,14 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 13 context gathered
-last_updated: "2026-07-25T19:34:27.284Z"
-last_activity: 2026-07-25 -- Phase 13 execution started
+stopped_at: Completed 13-01-PLAN.md
+last_updated: "2026-07-25T20:07:47.098Z"
+last_activity: "2026-07-25"
 progress:
   total_phases: 15
   completed_phases: 12
   total_plans: 221
-  completed_plans: 216
+  completed_plans: 217
   percent: 98
 ---
 
@@ -26,9 +26,9 @@ See: `.planning/PROJECT.md` (updated 2026-07-23)
 ## Current Position
 
 Phase: 13 (restore-evidence-and-replay-integrity) — EXECUTING
-Plan: 1 of 5
-Status: Executing Phase 13
-Last activity: 2026-07-25 -- Phase 13 execution started
+Plan: 2 of 5
+Status: Ready to execute
+Last activity: 2026-07-25
 
 Progress: [██████████] 100%
 
@@ -224,6 +224,7 @@ Progress: [██████████] 100%
 | Phase 12 P16 | 15min | 1 tasks | 5 files |
 | Phase 12 P21 | 16min | 1 tasks | 8 files |
 | Phase 12 P22 | 12min | 1 tasks | 9 files |
+| Phase 13 P01 | 30m | 2 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -630,6 +631,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 12]: Frozen-source attestation independently validates the Git tree, manifest, report, audit, and closed diff before readiness projection.
 - [Phase 12]: Compatibility closure remains distinct from release readiness and cannot substitute for a full-SHA release-candidate run.
 - [Phase 12]: Public readiness may change only after the complete bundle passes worktree and committed-range frozen-source attestation.
+- [Phase 13]: Bind scoped materials to recomputed digests and a recorded repository revision so edited current hashes cannot self-bless changed inputs.
+- [Phase 13]: Split protocol bit encoding into a dedicated CMake target so unrelated adapter sources remain outside the Phase 9 witness link closure.
+- [Phase 13]: Keep the reviewed schema-1 pair byte-identical and reject it until Plan 13-04 performs reviewed regeneration.
 
 ### Pending Todos
 
@@ -643,6 +647,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-25T18:30:45.406Z
-Stopped at: Phase 13 context gathered
-Resume file: .planning/phases/13-restore-evidence-and-replay-integrity/13-CONTEXT.md
+Last session: 2026-07-25T20:07:47.092Z
+Stopped at: Completed 13-01-PLAN.md
+Resume file: None
