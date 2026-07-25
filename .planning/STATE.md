@@ -3,15 +3,15 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 13-01-PLAN.md
-last_updated: "2026-07-25T20:07:47.098Z"
+stopped_at: Completed 13-02-PLAN.md
+last_updated: "2026-07-25T20:36:58.167Z"
 last_activity: "2026-07-25"
 progress:
   total_phases: 15
   completed_phases: 12
   total_plans: 221
-  completed_plans: 217
-  percent: 98
+  completed_plans: 218
+  percent: 99
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-23)
 ## Current Position
 
 Phase: 13 (restore-evidence-and-replay-integrity) — EXECUTING
-Plan: 2 of 5
+Plan: 3 of 5
 Status: Ready to execute
 Last activity: 2026-07-25
 
@@ -225,6 +225,7 @@ Progress: [██████████] 100%
 | Phase 12 P21 | 16min | 1 tasks | 8 files |
 | Phase 12 P22 | 12min | 1 tasks | 9 files |
 | Phase 13 P01 | 30m | 2 tasks | 12 files |
+| Phase 13 P02 | 25min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -634,6 +635,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 13]: Bind scoped materials to recomputed digests and a recorded repository revision so edited current hashes cannot self-bless changed inputs.
 - [Phase 13]: Split protocol bit encoding into a dedicated CMake target so unrelated adapter sources remain outside the Phase 9 witness link closure.
 - [Phase 13]: Keep the reviewed schema-1 pair byte-identical and reject it until Plan 13-04 performs reviewed regeneration.
+- [Phase 13]: Preserve reviewed D0 through an explicit legacy checkpoint projection including the historical empty debug-primitives field.
+- [Phase 13]: Classify expanded debug primitives as capture-schema evidence only after sealed bytes and legacy physics semantics match.
+- [Phase 13]: Report unequal diagnostic arrays at their length path so repeated diagnoses remain stable without blessing emitted values.
 
 ### Pending Todos
 
@@ -647,6 +651,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-25T20:07:47.092Z
-Stopped at: Completed 13-01-PLAN.md
+Last session: 2026-07-25T20:36:58.162Z
+Stopped at: Completed 13-02-PLAN.md
 Resume file: None

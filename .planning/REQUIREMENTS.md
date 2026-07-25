@@ -27,7 +27,7 @@ Requirements for the first release permitted to claim complete parity with the s
 - [x] **COMP-05**: Every engine trace records scenario/schema versions, upstream revision, adapter revision, compiler/build flags, target/platform, seed, and tolerance profile.
 - [x] **COMP-06**: The comparator checks IDs, flags, counts, membership, and event kinds exactly while applying reviewed field-specific numeric policies to floating-point observables.
 - [x] **COMP-07**: The comparator distinguishes unordered queries/collections from solver-significant and callback/destruction sequences whose order must be preserved.
-- [ ] **COMP-08**: A differential failure can be reproduced by scenario name or seed, diagnosed at the first divergent checkpoint or phase, and reduced into a focused regression fixture.
+- [x] **COMP-08**: A differential failure can be reproduced by scenario name or seed, diagnosed at the first divergent checkpoint or phase, and reduced into a focused regression fixture.
 - [x] **COMP-09**: Harness crashes, timeouts, sanitizer failures, schema mismatches, and wrong-oracle provenance are reported as harness failures rather than physics mismatches.
 - [x] **COMP-10**: No v1 parity claim can pass the release gate while the compatibility matrix contains an unexplained gap or an unaccounted upstream test/example.
 
@@ -108,7 +108,7 @@ Requirements for the first release permitted to claim complete parity with the s
 - [ ] **TEST-04**: Property tests cover geometry invariants, broad-phase behavior, handle validity, particle permutation/group invariants, query correctness, and reproducible world operation sequences.
 - [x] **TEST-05**: Fuzz targets cover shape/collision inputs, scenario protocol parsing, world mutation sequences, particle operations, and every unsafe boundary appropriate for fuzzing.
 - [x] **TEST-06**: Miri and Rust sanitizers exercise useful supported subsets, while C++ oracle builds run appropriate sanitizers without crossing failures into the Rust process.
-- [ ] **TEST-07**: Every corrected differential mismatch becomes a minimized named regression that fails before the fix and records its oracle/tolerance provenance.
+- [x] **TEST-07**: Every corrected differential mismatch becomes a minimized named regression that fails before the fix and records its oracle/tolerance provenance.
 - [x] **TEST-08**: CI reports Rust coverage and keeps C++ coverage separate unless compatible LLVM tooling is explicitly proven; coverage gaps are visible by subsystem.
 - [x] **TEST-09**: Verification entrypoints can run fast affected checks locally and reserve expensive randomized, differential, sanitizer, coverage, and benchmark suites for appropriate scheduled/manual lanes.
 
@@ -116,7 +116,7 @@ Requirements for the first release permitted to claim complete parity with the s
 
 - [x] **EXMP-01**: Every upstream example and testbed scenario is ported, replaced, or listed with an explicit reason and compatibility impact.
 - [x] **EXMP-02**: Contributors can run renderer-neutral scenarios headlessly by name or seed, pause/restart them, single-step them, and capture deterministic semantic checkpoints.
-- [ ] **EXMP-03**: The same scenario definitions drive Rust execution, C++ oracle execution, regression fixtures, benchmarks, and the optional visual testbed.
+- [x] **EXMP-03**: The same scenario definitions drive Rust execution, C++ oracle execution, regression fixtures, benchmarks, and the optional visual testbed.
 - [x] **EXMP-04**: An optional interactive testbed can select scenarios, pause, step, restart, alter timestep settings, and display contacts, particle contacts, broad-phase data, and performance statistics.
 - [x] **EXMP-05**: The visual testbed can capture comparison state and display Rust/oracle differences without owning simulation logic or accessing private engine storage.
 - [x] **EXMP-06**: Core and published physics crates build and run in headless environments without renderer, windowing, or game-engine dependencies.
@@ -209,7 +209,7 @@ Roadmap creation maps every v1 requirement to exactly one phase.
 | COMP-05 | Phase 2 → Phase 13 | Complete |
 | COMP-06 | Phase 2 | Complete |
 | COMP-07 | Phase 2 | Complete |
-| COMP-08 | Phase 2 → Phase 13 | Pending |
+| COMP-08 | Phase 2 → Phase 13 | Complete |
 | COMP-09 | Phase 2 | Complete |
 | COMP-10 | Phase 12 | Complete |
 | API-01 | Phase 3 | Complete |
@@ -272,12 +272,12 @@ Roadmap creation maps every v1 requirement to exactly one phase.
 | TEST-04 | Phase 10 → Phase 14 | Pending |
 | TEST-05 | Phase 12 | Complete |
 | TEST-06 | Phase 12 | Complete |
-| TEST-07 | Phase 12 → Phase 13 | Pending |
+| TEST-07 | Phase 12 → Phase 13 | Complete |
 | TEST-08 | Phase 12 | Complete |
 | TEST-09 | Phase 1 | Complete |
 | EXMP-01 | Phase 11 | Complete |
 | EXMP-02 | Phase 11 | Complete |
-| EXMP-03 | Phase 11 → Phase 13 | Pending |
+| EXMP-03 | Phase 11 → Phase 13 | Complete |
 | EXMP-04 | Phase 11 | Complete |
 | EXMP-05 | Phase 11 | Complete |
 | EXMP-06 | Phase 11 | Complete |
