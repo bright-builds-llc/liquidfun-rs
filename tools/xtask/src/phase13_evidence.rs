@@ -15,7 +15,7 @@ use bundle::{
     closure_digest, write_bundle,
 };
 use liquidfun_differential::{
-    CatalogOracleSupervisor, CatalogRunOutcome, OracleExecutable, OraclePreset,
+    CatalogOracleSupervisor, CatalogRunOutcome, ComparisonState, OracleExecutable, OraclePreset,
     ReplayProjectionVersion, SessionProfile, compare_catalog, execute_catalog_native,
     replay_catalog_regressions,
 };
@@ -420,7 +420,11 @@ fn produce(
         d1_input_sha256: replay.sealed_input_sha256.clone(),
     };
     gate.validate().map_err(|error| {
-        Phase13EvidenceError::new(Phase13EvidenceErrorKind::Environment, error.to_string())
+        let message = replay.d1_diagnostic.as_ref().map_or_else(
+            || error.to_string(),
+            |diagnostic| format!("{error}; {diagnostic}"),
+        );
+        Phase13EvidenceError::new(Phase13EvidenceErrorKind::Environment, message)
     })?;
 
     let witness_provenance = WitnessProvenance {
@@ -559,6 +563,7 @@ struct ReplayOutput {
     native_repeat_sha256: [String; 2],
     oracle_identity_sha256: String,
     d1_passed: bool,
+    d1_diagnostic: Option<String>,
     diagnosis: serde_json::Value,
 }
 
@@ -678,6 +683,39 @@ fn produce_replay(repository_root: &Path) -> Result<ReplayOutput, Phase13Evidenc
         )
     })?;
     let d1_passed = matches!(outcome, CatalogRunOutcome::Match(_));
+    let d1_diagnostic = match &outcome {
+        CatalogRunOutcome::Match(_) => None,
+        CatalogRunOutcome::PhysicsMismatch(mismatch) => {
+            let comparison = mismatch.first_mismatch();
+            let maybe_entry = comparison.entries().iter().find(|entry| {
+                !matches!(
+                    entry.state(),
+                    ComparisonState::ExactMatch | ComparisonState::WithinPolicy
+                )
+            });
+            Some(maybe_entry.map_or_else(
+                || {
+                    format!(
+                        "D1 physics mismatch at checkpoint {}",
+                        comparison.checkpoint_id().as_str()
+                    )
+                },
+                |entry| {
+                    format!(
+                        "D1 physics mismatch at checkpoint {} path {} ({:?}): Rust={:?}, C++={:?}",
+                        comparison.checkpoint_id().as_str(),
+                        entry.semantic_path(),
+                        entry.state(),
+                        entry.maybe_rust_value(),
+                        entry.maybe_oracle_value()
+                    )
+                },
+            ))
+        }
+        CatalogRunOutcome::HarnessFailure(kind) => {
+            Some(format!("D1 comparison reported harness failure {kind:?}"))
+        }
+    };
     let replay = replay_catalog_regressions(repository_root).map_err(|error| {
         Phase13EvidenceError::new(
             Phase13EvidenceErrorKind::Protocol,
@@ -718,6 +756,7 @@ fn produce_replay(repository_root: &Path) -> Result<ReplayOutput, Phase13Evidenc
         native_repeat_sha256,
         oracle_identity_sha256: oracle_identity.identity_sha256().as_str().to_owned(),
         d1_passed,
+        d1_diagnostic,
         diagnosis: serde_json::to_value(diagnosis).map_err(|error| {
             Phase13EvidenceError::new(
                 Phase13EvidenceErrorKind::Protocol,
