@@ -95,3 +95,19 @@ upstream_path = "."
 derivation_kind = "generated-oracle-witness-provenance"
 alteration_summary = "Repository-authored generation identity for the Phase 9 semantic witness; no upstream source, raw object memory, or Rust output is copied."
 notice_class = "provenance-only"
+
+[[mapping]]
+local_path = "reference/artifacts/catalog/rigid-stack-v1.replay-evidence.json"
+upstream_revision = "7f20402173fd143a3988c921bc384459c6a858f2"
+upstream_path = "."
+derivation_kind = "repository-authored-replay-verification"
+alteration_summary = "Repository-authored canonical D0/D1 replay evidence preserving the reviewed legacy physics projection while validating expanded checkpoint diagnostics separately; no upstream source, raw object memory, or Rust-produced expectation is copied."
+notice_class = "provenance-only"
+
+[[mapping]]
+local_path = "reference/artifacts/phase13/promotion-receipt.json"
+upstream_revision = "7f20402173fd143a3988c921bc384459c6a858f2"
+upstream_path = "."
+derivation_kind = "repository-authored-promotion-receipt"
+alteration_summary = "Repository-authored non-circular P/B/R acquisition and review contract for the exact promoted file set; no upstream source, raw object memory, or Rust-produced expectation is copied."
+notice_class = "provenance-only"

@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "upstream_revision": "7f20402173fd143a3988c921bc384459c6a858f2",
+  "resolved_scenario_path": "scenarios/catalog/rigid-stack-v1.json",
+  "sealed_input_sha256": "6d22b12e5abc8e7f06dac08dda38c9001a5b31c8f98f81938129a66334c6c052",
+  "native_d0_repeat_sha256": [
+    "6189ab70f08f2a5eafd7ecb080dba3046c36b85cc9cdaf44d6fcd73ab869e160",
+    "6189ab70f08f2a5eafd7ecb080dba3046c36b85cc9cdaf44d6fcd73ab869e160"
+  ],
+  "d1_oracle_identity_sha256": "58eb7f4c5b7a0db21d0ca7776450316449c91739695055c402aea3d5bd4e95c8",
+  "d1_result": "match",
+  "diagnosis": {
+    "current_resolved_sha256": "6d22b12e5abc8e7f06dac08dda38c9001a5b31c8f98f81938129a66334c6c052",
+    "current_schema": {
+      "catalog_schema_version": 1,
+      "checkpoint_schema_version": 1,
+      "projection_version": "expanded_checkpoint_v1"
+    },
+    "drift_class": "capture_schema_drift",
+    "first_divergence": {
+      "current_value": {
+        "presence": "json",
+        "value": 22
+      },
+      "reviewed_value": {
+        "presence": "json",
+        "value": 0
+      },
+      "semantic_path": "$.checkpoints[0].debug_primitives.length"
+    },
+    "rationale": "identical sealed inputs and physics projection diverge only in expanded capture fields",
+    "reviewed_resolved_sha256": "6d22b12e5abc8e7f06dac08dda38c9001a5b31c8f98f81938129a66334c6c052",
+    "reviewed_schema": {
+      "catalog_schema_version": 1,
+      "checkpoint_schema_version": 1,
+      "projection_version": "legacy_physics_v1"
+    }
+  }
+}

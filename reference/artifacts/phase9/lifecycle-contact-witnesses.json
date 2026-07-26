@@ -51,7 +51,7 @@
       "outcomes": [
         {
           "fixture_id": "fixture-0",
-          "result": "removed"
+          "result": "kept"
         },
         {
           "fixture_id": "fixture-1",
@@ -79,7 +79,8 @@
         "fixture-5",
         "fixture-4",
         "fixture-3",
-        "fixture-2"
+        "fixture-2",
+        "fixture-0"
       ]
     }
   ]

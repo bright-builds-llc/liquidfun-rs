@@ -115,3 +115,59 @@ review_status = "reviewed"
 [artifacts.source]
 kind = "named"
 name = "empty-world"
+
+[[artifact_schemas.phase13_evidence.records]]
+record_class = "witness"
+path = "reference/artifacts/phase9/lifecycle-contact-witnesses.json"
+sha256 = "9e60ff752c3c2164bbc1589d5db5803f05107d139937d43c0d37cf8e07bdad53"
+generator_revision = "dbf5044ea8750aa3eb7a3c7b95b6a36b326f3d7e"
+producer_sha = "dbf5044ea8750aa3eb7a3c7b95b6a36b326f3d7e"
+bundle_sha256 = "1eba915ed7cb634b54e0f8d89b0d2be4112bae6f3d3adac6e83ffc355217d775"
+source_revision = "7f20402173fd143a3988c921bc384459c6a858f2"
+source_path = "liquidfun/Box2D/Box2D/Particle/b2ParticleSystem.cpp"
+derivation_kind = "generated-semantic-oracle-witness"
+alteration_summary = "Repository-authored semantic observations generated from the pinned upstream oracle without copying source, raw object memory, or Rust-produced expectations."
+notice_refs = ["THIRD_PARTY_NOTICES.md"]
+reviewer = "pRizz"
+
+[[artifact_schemas.phase13_evidence.records]]
+record_class = "witness"
+path = "reference/artifacts/phase9/lifecycle-contact-witnesses.provenance.json"
+sha256 = "7565edbc5593765dea7fb60ed99489ba56a7fe7a36a0b2c2b8a6e70ff203129e"
+generator_revision = "dbf5044ea8750aa3eb7a3c7b95b6a36b326f3d7e"
+producer_sha = "dbf5044ea8750aa3eb7a3c7b95b6a36b326f3d7e"
+bundle_sha256 = "1eba915ed7cb634b54e0f8d89b0d2be4112bae6f3d3adac6e83ffc355217d775"
+source_revision = "7f20402173fd143a3988c921bc384459c6a858f2"
+source_path = "."
+derivation_kind = "generated-semantic-oracle-witness"
+alteration_summary = "Repository-authored semantic observations generated from the pinned upstream oracle without copying source, raw object memory, or Rust-produced expectations."
+notice_refs = ["THIRD_PARTY_NOTICES.md"]
+reviewer = "pRizz"
+
+[[artifact_schemas.phase13_evidence.records]]
+record_class = "replay_evidence"
+path = "reference/artifacts/catalog/rigid-stack-v1.replay-evidence.json"
+sha256 = "4ab54b11bcbdccbf173fe9047f5a917d6bacfd666bcbd3b3b65b19a9013edc96"
+generator_revision = "dbf5044ea8750aa3eb7a3c7b95b6a36b326f3d7e"
+producer_sha = "dbf5044ea8750aa3eb7a3c7b95b6a36b326f3d7e"
+bundle_sha256 = "1eba915ed7cb634b54e0f8d89b0d2be4112bae6f3d3adac6e83ffc355217d775"
+source_revision = "7f20402173fd143a3988c921bc384459c6a858f2"
+source_path = "."
+derivation_kind = "repository-authored-replay-verification"
+alteration_summary = "Repository-authored replay results derived from a canonical oracle bundle; no upstream source, raw object memory, or Rust-produced expectations are copied."
+notice_refs = ["THIRD_PARTY_NOTICES.md"]
+reviewer = "pRizz"
+
+[[artifact_schemas.phase13_evidence.records]]
+record_class = "promotion_receipt"
+path = "reference/artifacts/phase13/promotion-receipt.json"
+sha256 = "cdea145b165d14725d23a384d8b0865689f464db8a9f97c9787c0ed768c427f9"
+generator_revision = "741e9c5000445a385008f81bb701a5bb91d0e5b4"
+producer_sha = "dbf5044ea8750aa3eb7a3c7b95b6a36b326f3d7e"
+bundle_sha256 = "1eba915ed7cb634b54e0f8d89b0d2be4112bae6f3d3adac6e83ffc355217d775"
+source_revision = "7f20402173fd143a3988c921bc384459c6a858f2"
+source_path = "."
+derivation_kind = "repository-authored-promotion-receipt"
+alteration_summary = "Repository-authored review and promotion identity for a byte-exact staged evidence bundle; no upstream source, raw object memory, or Rust-produced expectations are copied."
+notice_refs = ["THIRD_PARTY_NOTICES.md"]
+reviewer = "pRizz"

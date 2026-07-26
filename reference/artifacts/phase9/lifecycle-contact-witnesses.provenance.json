@@ -1,9 +1,8 @@
 {
-  "adapter_content_sha256": "9ea8bd5665a3339a0422f8854bf6e712d93272cd2c2b79fac6cbab20859d336c",
   "cmake_preset": "oracle-debug",
   "cmake_target": "phase9-lifecycle-contact-witness",
-  "compiler_id": "AppleClang",
-  "compiler_version": "21.0.0.21000101",
+  "compiler_id": "Clang",
+  "compiler_version": "22.1.8",
   "exact_argv": [
     "target/reference/oracle-debug/phase9-lifecycle-contact-witness",
     "--output",
@@ -11,10 +10,14 @@
     "--provenance",
     "reference/artifacts/phase9/lifecycle-contact-witnesses.provenance.json"
   ],
-  "generation_timestamp": "2026-07-18T00:13:28Z",
+  "generation_timestamp": "2026-07-26T07:28:37Z",
+  "materials_count": 176,
+  "materials_manifest_sha256": "744ea1ef81974e7bd27e5f443d0c1f125887ee09cec2688ccf554e330d384e3e",
+  "materials_sha256": "5be85c2a28bcc13b9c00c92b92843f9c4e244e700468d7b4f2b394ee6c772594",
   "oracle_revision": "7f20402173fd143a3988c921bc384459c6a858f2",
-  "probe_source_sha256": "acc0c18df5c724c3c9186f1d141e296d982a6ecd004bd5219c29cefa67db681f",
-  "schema_version": 1,
-  "target": "arm64-apple-darwin25.5.0",
-  "witness_sha256": "08d41d25f3766b9bf4bef51fb10713b7f925c074399b9642ad5cb4ce933fc8e3"
+  "probe_source_sha256": "7c0430ea9ee919f1331eb1ede7f78807ee3be7bb9137b6b62c0959abb7458ed8",
+  "repository_revision": "dbf5044ea8750aa3eb7a3c7b95b6a36b326f3d7e",
+  "schema_version": 2,
+  "target": "x86_64-unknown-linux-gnu",
+  "witness_sha256": "9e60ff752c3c2164bbc1589d5db5803f05107d139937d43c0d37cf8e07bdad53"
 }
