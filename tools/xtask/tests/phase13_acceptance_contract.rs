@@ -312,6 +312,11 @@ fn repository_history_satisfies_the_non_circular_identity_contract() {
 fn catalog_acceptance_steps_use_the_required_all_feature_contract() {
     // Arrange
     let commands = required_command_evidence();
+    let tracked_replay = "cargo test -p liquidfun-differential --all-features --test \
+                          catalog_regressions \
+                          tracked_catalog_regressions_replay_byte_identically_without_writes";
+    let diagnosis = "cargo test -p liquidfun-differential --all-features --test \
+                     catalog_regressions diagnosis";
 
     // Act
     let catalog_commands = commands
@@ -324,15 +329,13 @@ fn catalog_acceptance_steps_use_the_required_all_feature_contract() {
                     | AcceptanceStep::Regression
             )
         })
-        .map(|(_step, command)| command)
+        .map(|(_step, command)| command.as_str())
         .collect::<Vec<_>>();
 
     // Assert
-    assert_eq!(catalog_commands.len(), 3);
-    assert!(
-        catalog_commands
-            .iter()
-            .all(|command| command.contains("--all-features"))
+    assert_eq!(
+        catalog_commands,
+        vec![&tracked_replay, &diagnosis, &tracked_replay]
     );
 }
 

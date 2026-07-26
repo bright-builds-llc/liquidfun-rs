@@ -944,6 +944,7 @@ fn effect_steps() -> Vec<(AcceptanceStep, Vec<CommandSpec>)> {
                 "--all-features",
                 "--test",
                 "catalog_regressions",
+                "tracked_catalog_regressions_replay_byte_identically_without_writes",
             ])],
         ),
         (
