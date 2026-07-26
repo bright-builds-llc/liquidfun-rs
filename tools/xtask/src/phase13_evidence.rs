@@ -16,8 +16,8 @@ use bundle::{
 };
 use liquidfun_differential::{
     CatalogOracleSupervisor, CatalogRunOutcome, ComparisonState, OracleExecutable, OraclePreset,
-    ReplayProjectionVersion, SessionProfile, compare_catalog, execute_catalog_native,
-    replay_catalog_regressions,
+    ReplayDriftClass, ReplayProjectionVersion, SessionProfile, compare_catalog_physics_projection,
+    execute_catalog_native, legacy_physics_checkpoint_sha256, replay_catalog_regressions,
 };
 use liquidfun_test_protocol::{
     BuildEvidenceTier, CatalogDefinition, CatalogRunRequest, CatalogSlug, EvidenceTier, RequestId,
@@ -666,9 +666,58 @@ fn produce_replay(repository_root: &Path) -> Result<ReplayOutput, Phase13Evidenc
             format!("second native D0 failed: {error}"),
         )
     })?;
+    let replay = replay_catalog_regressions(repository_root).map_err(|error| {
+        Phase13EvidenceError::new(
+            Phase13EvidenceErrorKind::Protocol,
+            format!("reviewed replay diagnosis failed: {error}"),
+        )
+    })?;
+    let replay_entry = replay
+        .entries()
+        .iter()
+        .find(|entry| entry.fixture_id() == "rigid-stack-v1")
+        .ok_or_else(|| {
+            Phase13EvidenceError::new(
+                Phase13EvidenceErrorKind::Protocol,
+                "rigid-stack-v1 replay result is absent",
+            )
+        })?;
+    let diagnosis = replay_entry.maybe_diagnosis().ok_or_else(|| {
+        Phase13EvidenceError::new(
+            Phase13EvidenceErrorKind::Protocol,
+            "rigid-stack-v1 capture-schema diagnosis is absent",
+        )
+    })?;
+    if diagnosis.drift_class() != ReplayDriftClass::CaptureSchemaDrift
+        || diagnosis.reviewed_schema().projection_version()
+            != ReplayProjectionVersion::LegacyPhysicsV1
+        || diagnosis.current_schema().projection_version()
+            != ReplayProjectionVersion::ExpandedCheckpointV1
+    {
+        return Err(Phase13EvidenceError::new(
+            Phase13EvidenceErrorKind::Protocol,
+            "rigid-stack-v1 did not select the reviewed legacy physics projection",
+        ));
+    }
     let native_repeat_sha256 = [
-        checkpoint_digest(first.canonical_checkpoint_bytes()),
-        checkpoint_digest(second.canonical_checkpoint_bytes()),
+        legacy_physics_checkpoint_sha256(first.checkpoints())
+            .map_err(|error| {
+                Phase13EvidenceError::new(
+                    Phase13EvidenceErrorKind::Protocol,
+                    format!("first legacy D0 projection failed: {error}"),
+                )
+            })?
+            .as_str()
+            .to_owned(),
+        legacy_physics_checkpoint_sha256(second.checkpoints())
+            .map_err(|error| {
+                Phase13EvidenceError::new(
+                    Phase13EvidenceErrorKind::Protocol,
+                    format!("second legacy D0 projection failed: {error}"),
+                )
+            })?
+            .as_str()
+            .to_owned(),
     ];
     let oracle = supervisor.execute(&request).map_err(|error| {
         Phase13EvidenceError::new(
@@ -676,12 +725,13 @@ fn produce_replay(repository_root: &Path) -> Result<ReplayOutput, Phase13Evidenc
             format!("pinned-oracle D1 execution failed: {error}"),
         )
     })?;
-    let outcome = compare_catalog(&first, oracle.capture()).map_err(|error| {
-        Phase13EvidenceError::new(
-            Phase13EvidenceErrorKind::Protocol,
-            format!("D1 comparison failed: {error}"),
-        )
-    })?;
+    let outcome =
+        compare_catalog_physics_projection(&first, oracle.capture()).map_err(|error| {
+            Phase13EvidenceError::new(
+                Phase13EvidenceErrorKind::Protocol,
+                format!("D1 comparison failed: {error}"),
+            )
+        })?;
     let d1_passed = matches!(outcome, CatalogRunOutcome::Match(_));
     let d1_diagnostic = match &outcome {
         CatalogRunOutcome::Match(_) => None,
@@ -716,36 +766,6 @@ fn produce_replay(repository_root: &Path) -> Result<ReplayOutput, Phase13Evidenc
             Some(format!("D1 comparison reported harness failure {kind:?}"))
         }
     };
-    let replay = replay_catalog_regressions(repository_root).map_err(|error| {
-        Phase13EvidenceError::new(
-            Phase13EvidenceErrorKind::Protocol,
-            format!("reviewed replay diagnosis failed: {error}"),
-        )
-    })?;
-    let replay_entry = replay
-        .entries()
-        .iter()
-        .find(|entry| entry.fixture_id() == "rigid-stack-v1")
-        .ok_or_else(|| {
-            Phase13EvidenceError::new(
-                Phase13EvidenceErrorKind::Protocol,
-                "rigid-stack-v1 replay result is absent",
-            )
-        })?;
-    let diagnosis = replay_entry.maybe_diagnosis().ok_or_else(|| {
-        Phase13EvidenceError::new(
-            Phase13EvidenceErrorKind::Protocol,
-            "rigid-stack-v1 capture-schema diagnosis is absent",
-        )
-    })?;
-    if diagnosis.current_schema().projection_version()
-        != ReplayProjectionVersion::ExpandedCheckpointV1
-    {
-        return Err(Phase13EvidenceError::new(
-            Phase13EvidenceErrorKind::Protocol,
-            "rigid-stack-v1 did not select the versioned expanded diagnosis",
-        ));
-    }
     Ok(ReplayOutput {
         sealed_input_sha256: request
             .resolved()
@@ -1250,19 +1270,6 @@ fn file_sha256(path: &Path) -> Result<String, Phase13EvidenceError> {
             format!("failed to hash {}: {error}", path.display()),
         )
     })
-}
-
-fn checkpoint_digest(records: &[Box<[u8]>]) -> String {
-    let mut hasher = Sha256::new();
-    for record in records {
-        hasher.update(
-            u64::try_from(record.len())
-                .unwrap_or(u64::MAX)
-                .to_be_bytes(),
-        );
-        hasher.update(record);
-    }
-    format!("{:x}", hasher.finalize())
 }
 
 fn metadata(record_class: &str, source_path: &str) -> EvidenceMetadata {

@@ -339,20 +339,86 @@ pub fn compare_catalog(
     native: &CatalogRunCapture,
     oracle: &CatalogRunCapture,
 ) -> Result<CatalogRunOutcome, CatalogRunnerError> {
-    if native.resolved_bytes != oracle.resolved_bytes
-        || native.resolved_sha256 != oracle.resolved_sha256
-        || native.action_log != oracle.action_log
-        || native.checkpoint_schedule != oracle.checkpoint_schedule
-        || native.checkpoints.len() != oracle.checkpoints.len()
-    {
+    if !same_capture_authority(native, oracle) {
         return Ok(CatalogRunOutcome::HarnessFailure(
             CatalogFailureKind::Protocol,
         ));
     }
-    let comparisons = native
+    compare_checkpoint_sequences(&native.checkpoints, &oracle.checkpoints)
+}
+
+/// Compares parity-bearing checkpoint fields after a reviewed debug-capture diagnosis.
+///
+/// This projection excludes only renderer-neutral debug primitive records and their aggregate
+/// count. Resolved bytes, action/checkpoint authority, simulation time, world counts, numeric
+/// observations, occurrences, sets, and profiles remain subject to the ordinary comparator.
+///
+/// # Errors
+///
+/// Returns [`CatalogRunnerError`] when projection or comparison validation fails.
+pub fn compare_catalog_physics_projection(
+    native: &CatalogRunCapture,
+    oracle: &CatalogRunCapture,
+) -> Result<CatalogRunOutcome, CatalogRunnerError> {
+    if !same_capture_authority(native, oracle) {
+        return Ok(CatalogRunOutcome::HarnessFailure(
+            CatalogFailureKind::Protocol,
+        ));
+    }
+    let native_checkpoints = native
         .checkpoints
         .iter()
-        .zip(&oracle.checkpoints)
+        .map(physics_projection_checkpoint)
+        .collect::<Result<Vec<_>, _>>()?;
+    let oracle_checkpoints = oracle
+        .checkpoints
+        .iter()
+        .map(physics_projection_checkpoint)
+        .collect::<Result<Vec<_>, _>>()?;
+    compare_checkpoint_sequences(&native_checkpoints, &oracle_checkpoints)
+}
+
+fn same_capture_authority(native: &CatalogRunCapture, oracle: &CatalogRunCapture) -> bool {
+    native.resolved_bytes == oracle.resolved_bytes
+        && native.resolved_sha256 == oracle.resolved_sha256
+        && native.action_log == oracle.action_log
+        && native.checkpoint_schedule == oracle.checkpoint_schedule
+        && native.checkpoints.len() == oracle.checkpoints.len()
+}
+
+fn physics_projection_checkpoint(
+    checkpoint: &CanonicalCheckpoint,
+) -> Result<CanonicalCheckpoint, CatalogRunnerError> {
+    CanonicalCheckpoint::new(
+        checkpoint.request_id().clone(),
+        checkpoint.resolved_sha256().clone(),
+        checkpoint.checkpoint_id().clone(),
+        checkpoint.position().clone(),
+        checkpoint.simulation_time_bits(),
+        checkpoint
+            .observations()
+            .iter()
+            .filter(|observation| {
+                observation.observation_id().as_str() != "world-debug-primitive-count"
+            })
+            .cloned()
+            .collect(),
+        checkpoint.numeric_observations().to_vec(),
+        checkpoint.ordered_occurrences().to_vec(),
+        checkpoint.unordered_sets().to_vec(),
+        Vec::new(),
+        checkpoint.profile_names().to_vec(),
+    )
+    .map_err(|_error| CatalogRunnerError::new(CatalogFailureKind::Protocol))
+}
+
+fn compare_checkpoint_sequences(
+    native: &[CanonicalCheckpoint],
+    oracle: &[CanonicalCheckpoint],
+) -> Result<CatalogRunOutcome, CatalogRunnerError> {
+    let comparisons = native
+        .iter()
+        .zip(oracle)
         .map(|(rust, cpp)| {
             let policies = Phase4PolicyProfile::parse_toml(include_str!(
                 "../../../../protocol/tolerances/phase4-v1.toml"

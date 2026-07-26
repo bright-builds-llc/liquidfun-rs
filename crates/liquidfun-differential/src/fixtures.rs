@@ -21,6 +21,6 @@ pub use replay::{
     CatalogRegressionReplayEntry, ReplayDiagnosis, ReplayDiagnosisError, ReplayDiagnosisErrorKind,
     ReplayDriftClass, ReplayFirstDivergence, ReplayProjectionVersion, ReplaySchemaIdentity,
     ReplaySemanticDocument, ReplaySemanticValue, diagnose_replay_drift,
-    replay_catalog_failure_bundle, replay_catalog_regressions,
+    legacy_physics_checkpoint_sha256, replay_catalog_failure_bundle, replay_catalog_regressions,
 };
 pub use rigid::{RIGID_FIXTURE_SCENARIO_ID, stage_rigid_candidate};

@@ -3,7 +3,8 @@
 use liquidfun_differential::{
     CatalogOracleSupervisor, CatalogRunCapture, CatalogRunOutcome, NativeCatalogBackend,
     OracleExecutable, OraclePreset, SessionCommand, SessionController, SessionProfile,
-    SessionState, compare_catalog, execute_catalog_native, replay_catalog_exact_native,
+    SessionState, compare_catalog, compare_catalog_physics_projection, execute_catalog_native,
+    replay_catalog_exact_native,
 };
 use liquidfun_test_protocol::{
     CatalogRunRequest, CatalogSlug, EvidenceTier, FloatBits, HarnessLimits, RequestId,
@@ -320,6 +321,75 @@ fn completed_semantic_difference_is_a_physics_mismatch() {
 
     // Act
     let outcome = compare_catalog(&native, &oracle).expect("completed runs should compare");
+
+    // Assert
+    assert!(matches!(outcome, CatalogRunOutcome::PhysicsMismatch(_)));
+}
+
+#[test]
+fn physics_projection_excludes_only_debug_capture_fields() {
+    // Arrange
+    let request = request();
+    let native = execute_catalog_native(&request).expect("native run should execute");
+    let mut records = native
+        .canonical_checkpoint_bytes()
+        .iter()
+        .map(|bytes| bytes.to_vec())
+        .collect::<Vec<_>>();
+    let mut changed: serde_json::Value =
+        serde_json::from_slice(&records[0]).expect("checkpoint should be JSON");
+    let primitive_count = changed["observations"]
+        .as_array_mut()
+        .expect("observations should be an array")
+        .iter_mut()
+        .find(|observation| observation["observation_id"] == "world-debug-primitive-count")
+        .expect("debug primitive count should exist");
+    primitive_count["value"]["value"] = serde_json::json!(0);
+    changed["debug_primitives"] = serde_json::json!([]);
+    records[0] = serde_json::to_vec(&changed).expect("changed checkpoint should encode");
+    records[0].push(b'\n');
+    let oracle = CatalogRunCapture::from_checkpoint_jsonl(&request, &records)
+        .expect("debug-only projection should remain structurally valid");
+
+    // Act
+    let expanded =
+        compare_catalog(&native, &oracle).expect("expanded captures should compare normally");
+    let physics = compare_catalog_physics_projection(&native, &oracle)
+        .expect("physics projection should compare");
+
+    // Assert
+    assert!(matches!(expanded, CatalogRunOutcome::PhysicsMismatch(_)));
+    assert!(matches!(physics, CatalogRunOutcome::Match(_)));
+}
+
+#[test]
+fn physics_projection_still_rejects_world_state_divergence() {
+    // Arrange
+    let request = request();
+    let native = execute_catalog_native(&request).expect("native run should execute");
+    let mut records = native
+        .canonical_checkpoint_bytes()
+        .iter()
+        .map(|bytes| bytes.to_vec())
+        .collect::<Vec<_>>();
+    let mut changed: serde_json::Value =
+        serde_json::from_slice(&records[0]).expect("checkpoint should be JSON");
+    let body_count = changed["observations"]
+        .as_array_mut()
+        .expect("observations should be an array")
+        .iter_mut()
+        .find(|observation| observation["observation_id"] == "world-body-count")
+        .expect("body count should exist");
+    body_count["value"]["value"] = serde_json::json!(999);
+    changed["debug_primitives"] = serde_json::json!([]);
+    records[0] = serde_json::to_vec(&changed).expect("changed checkpoint should encode");
+    records[0].push(b'\n');
+    let oracle = CatalogRunCapture::from_checkpoint_jsonl(&request, &records)
+        .expect("changed physics checkpoint should remain structurally valid");
+
+    // Act
+    let outcome = compare_catalog_physics_projection(&native, &oracle)
+        .expect("physics projection should compare");
 
     // Assert
     assert!(matches!(outcome, CatalogRunOutcome::PhysicsMismatch(_)));

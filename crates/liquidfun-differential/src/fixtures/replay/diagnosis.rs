@@ -475,6 +475,21 @@ pub(crate) fn checkpoint_semantic_documents(
     })
 }
 
+/// Returns the reviewed legacy physics identity for canonical checkpoints.
+///
+/// This preserves the historical empty debug-primitive array while retaining every other
+/// checkpoint field exactly.
+///
+/// # Errors
+///
+/// Returns [`ReplayDiagnosisError`] when a checkpoint cannot be encoded into the versioned
+/// legacy projection.
+pub fn legacy_physics_checkpoint_sha256(
+    checkpoints: &[CanonicalCheckpoint],
+) -> Result<Sha256Hex, ReplayDiagnosisError> {
+    checkpoint_semantic_documents(checkpoints).map(|documents| documents.legacy_physics_sha256)
+}
+
 #[derive(Serialize)]
 struct LegacyCheckpointProjection<'a> {
     protocol_version: ProtocolVersion,
