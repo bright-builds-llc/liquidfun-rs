@@ -93,9 +93,9 @@ jobs:
             --producer-sha "$GITHUB_SHA"
           bundle_sha256="$(jq -er '.bundle_sha256 | select(type == "string" and test("^[0-9a-f]{64}$"))' target/phase13/staged/phase13-bundle.json)"
           cargo xtask phase13 evidence check \
-            --bundle-root target/phase13/staged \
-            --producer-sha "$GITHUB_SHA" \
-            --bundle-sha256 "$bundle_sha256"
+            --staging-root target/phase13/staged \
+            --expected-producer-sha "$GITHUB_SHA" \
+            --expected-bundle-sha256 "$bundle_sha256"
           test -z "$(git status --porcelain --untracked-files=no)"
           {
             printf 'producer-sha=%s\n' "$GITHUB_SHA"

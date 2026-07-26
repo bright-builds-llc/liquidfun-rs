@@ -444,7 +444,8 @@ fn workflow_invokes_one_aggregate_producer_and_rechecks_the_bundle() {
     assert!(workflow.contains("--staging-root target/phase13/staged"));
     assert!(workflow.contains(r#"--producer-sha "$GITHUB_SHA""#));
     assert!(workflow.contains("cargo xtask phase13 evidence check"));
-    assert!(workflow.contains(r#"--bundle-sha256 "$bundle_sha256""#));
+    assert!(workflow.contains(r#"--expected-producer-sha "$GITHUB_SHA""#));
+    assert!(workflow.contains(r#"--expected-bundle-sha256 "$bundle_sha256""#));
 }
 
 #[test]
