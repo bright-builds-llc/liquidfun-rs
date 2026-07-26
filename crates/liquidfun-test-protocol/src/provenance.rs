@@ -603,9 +603,16 @@ fn classify_evidence_tier(
     let forbidden = tokens.iter().any(|word| has_unreviewed_codegen_flag(word));
     let canonical_compiler = (fields.compiler_id == "Clang" && fields.compiler_version == "22.1.8")
         || (fields.compiler_id == "rustc" && fields.compiler_version == "1.97.0");
-    let canonical_candidate = canonical_compiler
-        && fields.target_triple == "x86_64-unknown-linux-gnu"
-        && fields.os.eq_ignore_ascii_case("linux");
+    let canonical_target = match fields.compiler_id.as_str() {
+        "Clang" => matches!(
+            fields.target_triple.as_str(),
+            "x86_64-pc-linux-gnu" | "x86_64-unknown-linux-gnu"
+        ),
+        "rustc" => fields.target_triple == "x86_64-unknown-linux-gnu",
+        _ => false,
+    };
+    let canonical_candidate =
+        canonical_compiler && canonical_target && fields.os.eq_ignore_ascii_case("linux");
     let canonical_features = match fields.compiler_id.as_str() {
         "Clang" => fields.target_features == "<none>",
         "rustc" => fields.target_features == "cfg=fxsr,sse,sse2;explicit=<none>",
@@ -873,6 +880,22 @@ mod tests {
 
         // Assert
         assert_eq!(error, BuildIdentityError::CanonicalForbiddenFlags);
+    }
+
+    #[test]
+    fn canonical_clang_identity_accepts_the_pinned_linux_target_triple() {
+        // Arrange
+        let mut phase4 = canonical_phase4();
+        phase4.target_triple = "x86_64-pc-linux-gnu".to_owned();
+        let fields = valid_fields()
+            .with_target("x86_64-pc-linux-gnu")
+            .with_phase4(phase4);
+
+        // Act
+        let identity = BuildIdentity::new(fields).expect("pinned Clang identity should validate");
+
+        // Assert
+        assert_eq!(identity.evidence_tier(), BuildEvidenceTier::D1Canonical);
     }
 
     #[test]
