@@ -39,6 +39,7 @@ Use this routing map when deciding what to load next:
 - Run `just markdown-check` after changing non-GSD Markdown.
 - `.planning/**` is parser-owned GSD content and must never be formatted with mdformat.
 - Use repeated `1.` markers for ordered task and lesson fields.
+- Non-destructive tests, diagnostics, and simple test-driven fix/retry loops are pre-authorized and may run without asking; this does not waive explicit human-review gates or authorize destructive or irreversible actions.
 
 <!-- GSD:project-start source:PROJECT.md -->
 
