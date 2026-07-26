@@ -3,14 +3,14 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 13 Plan 03 canonical producer dispatch checkpoint
-last_updated: "2026-07-25T21:01:47.700Z"
-last_activity: "2026-07-25"
+stopped_at: Phase 13 Plan 04 independent promotion review
+last_updated: "2026-07-26T00:53:00Z"
+last_activity: "2026-07-26"
 progress:
   total_phases: 15
   completed_phases: 12
   total_plans: 221
-  completed_plans: 218
+  completed_plans: 219
   percent: 99
 ---
 
@@ -26,9 +26,9 @@ See: `.planning/PROJECT.md` (updated 2026-07-23)
 ## Current Position
 
 Phase: 13 (restore-evidence-and-replay-integrity) — EXECUTING
-Plan: 3 of 5
-Status: Ready to execute
-Last activity: 2026-07-25
+Plan: 4 of 5
+Status: Awaiting independent promotion review
+Last activity: 2026-07-26
 
 Progress: [██████████] 100%
 
@@ -638,6 +638,7 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 13]: Preserve reviewed D0 through an explicit legacy checkpoint projection including the historical empty debug-primitives field.
 - [Phase 13]: Classify expanded debug primitives as capture-schema evidence only after sealed bytes and legacy physics semantics match.
 - [Phase 13]: Report unequal diagnostic arrays at their length path so repeated diagnoses remain stable without blessing emitted values.
+- [Phase 13]: Select legacy D0/D1 authority only after the reviewed capture-schema diagnosis; exclude debug-capture records and their aggregate count from cross-engine physics parity while retaining expanded capture evidence separately.
 
 ### Pending Todos
 
@@ -651,6 +652,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-25T21:01:47.687Z
-Stopped at: Phase 13 Plan 03 canonical producer dispatch checkpoint
-Resume file: .planning/phases/13-restore-evidence-and-replay-integrity/13-03-PLAN.md
+Last session: 2026-07-26T00:53:00Z
+Stopped at: Phase 13 Plan 04 independent promotion review
+Resume file: .planning/phases/13-restore-evidence-and-replay-integrity/13-04-PLAN.md

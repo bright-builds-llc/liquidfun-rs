@@ -1,19 +1,19 @@
 ---
-status: partial
+status: resolved
 phase: 13-restore-evidence-and-replay-integrity
 source:
   - 13-01-SUMMARY.md
   - 13-02-SUMMARY.md
-  - 13-03-PLAN.md
+  - 13-03-SUMMARY.md
 started: 2026-07-25T21:09:02Z
-updated: 2026-07-25T21:09:02Z
+updated: 2026-07-26T00:53:00Z
 ---
 
 # Phase 13 User Acceptance Testing
 
 ## Current Test
 
-[testing paused — 1 item outstanding]
+[testing complete]
 
 ## Tests
 
@@ -40,19 +40,19 @@ evidence: "`cargo test -p xtask --test phase13_evidence_contract producer_` pass
 
 ### 4. Canonical producer dispatch and immutable bundle acquisition
 
-expected: Publish exact producer SHA `21ef24dbca3f59cba81ac303d187a7cda73a2d39`, dispatch `.github/workflows/phase13-evidence-producer.yml` at that exact ref, and capture the successful run ID, unique artifact ID/name, provider digest, producer SHA P, and canonical bundle digest B.
-result: blocked
-blocked_by: third-party
-reason: "This requires an intermediate push of the currently local producer commit and a GitHub Actions dispatch. The strict discuss-plan-execute-commit-and-push workflow has not authorized a pre-verification push, so no external state was changed."
+expected: Publish the corrected exact producer SHA, dispatch `.github/workflows/phase13-evidence-producer.yml` at that exact ref, and capture the successful run ID, unique artifact ID/name, provider digest, producer SHA P, and canonical bundle digest B.
+result: pass
+verified_by: agent
+evidence: "Canonical workflow run `30181863142` passed at producer SHA `56844ae4e6b9ead030789eb034b5416d3cec8bf6`; artifact `8625804327` (`phase13-staged-30181863142-56844ae4e6b9ead030789eb034b5416d3cec8bf6`) was uploaded with provider digest `sha256:9fc150fe6e7346753f8781b17743f9b963a69e1a8ba3081aaec3bdd2e7d1b606` and bundle digest `3442e362ae69c31a4b144a90ca7b9662463e0f7089da9a81401533548acf9ba8`."
 
 ## Summary
 
 total: 4
-passed: 3
+passed: 4
 issues: 0
 pending: 0
 skipped: 0
-blocked: 1
+blocked: 0
 
 ## Gaps
 
