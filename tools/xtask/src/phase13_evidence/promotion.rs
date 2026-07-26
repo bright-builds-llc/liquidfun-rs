@@ -482,8 +482,13 @@ fn promote(
             ));
         }
     }
-    transaction::replace_all(repository_root, &staging_root, &PROMOTED_PATHS, None)?;
-    validate_promoted_worktree(repository_root, &packet, &staging_root)?;
+    transaction::replace_all_and_validate(
+        repository_root,
+        &staging_root,
+        &PROMOTED_PATHS,
+        None,
+        || validate_promoted_worktree(repository_root, &packet, &staging_root),
+    )?;
     println!(
         "phase13 evidence promoted transactionally at R={} diff_sha256={}",
         packet.promotion_base_sha, packet.review_diff_sha256
@@ -771,6 +776,14 @@ fn validate_promoted_worktree(
     )?
     .lines()
     .map(str::to_owned)
+    .chain(
+        git_text(
+            repository_root,
+            &["ls-files", "--others", "--exclude-standard"],
+        )?
+        .lines()
+        .map(str::to_owned),
+    )
     .collect::<BTreeSet<_>>();
     let expected = PROMOTED_PATHS
         .into_iter()
@@ -1431,6 +1444,23 @@ pub(crate) fn replace_with_injected_failure(
     maybe_fail_after: Option<usize>,
 ) -> Result<(), PromotionError> {
     transaction::replace_all(repository_root, staging_root, paths, maybe_fail_after)
+}
+
+#[allow(
+    dead_code,
+    reason = "integration tests inject a failing post-write validator"
+)]
+pub(crate) fn replace_with_failing_validation(
+    repository_root: &Path,
+    staging_root: &Path,
+    paths: &[&str],
+) -> Result<(), PromotionError> {
+    transaction::replace_all_and_validate(repository_root, staging_root, paths, None, || {
+        Err(PromotionError::new(
+            PromotionErrorKind::Transaction,
+            "injected post-write validation failure",
+        ))
+    })
 }
 
 fn write_replacements(

@@ -13,9 +13,9 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use phase13_promotion::{
-    PromotionErrorKind, ReviewAcknowledgement, replace_with_injected_failure,
-    review_packet_for_test, validate_base_contract, validate_exact_paths, validate_review_ack,
-    validate_staged_ledgers,
+    PromotionErrorKind, ReviewAcknowledgement, replace_with_failing_validation,
+    replace_with_injected_failure, review_packet_for_test, validate_base_contract,
+    validate_exact_paths, validate_review_ack, validate_staged_ledgers,
 };
 
 const SHA_A: &str = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
@@ -191,6 +191,27 @@ fn promotion_rolls_back_every_path_after_partial_failure() {
     // Act
     let _error = replace_with_injected_failure(&repository_root, &staging_root, &paths, Some(1))
         .expect_err("injected partial failure must be reported");
+
+    // Assert
+    assert_eq!(
+        fs::read(repository_root.join("one.txt")).expect("first original should remain"),
+        b"old-one"
+    );
+    assert_eq!(
+        fs::read(repository_root.join("nested/two.txt")).expect("second original should remain"),
+        b"old-two"
+    );
+}
+
+#[test]
+fn promotion_rolls_back_every_path_after_post_write_validation_failure() {
+    // Arrange
+    let (repository_root, staging_root, paths) =
+        transaction_fixture("post-write-validation-rollback");
+
+    // Act
+    let _error = replace_with_failing_validation(&repository_root, &staging_root, &paths)
+        .expect_err("injected post-write validation failure must be reported");
 
     // Assert
     assert_eq!(

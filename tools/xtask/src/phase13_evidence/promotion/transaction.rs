@@ -12,6 +12,22 @@ pub(super) fn replace_all(
     paths: &[&str],
     maybe_fail_after: Option<usize>,
 ) -> Result<(), PromotionError> {
+    replace_all_and_validate(
+        repository_root,
+        staging_root,
+        paths,
+        maybe_fail_after,
+        || Ok(()),
+    )
+}
+
+pub(super) fn replace_all_and_validate(
+    repository_root: &Path,
+    staging_root: &Path,
+    paths: &[&str],
+    maybe_fail_after: Option<usize>,
+    validate: impl FnOnce() -> Result<(), PromotionError>,
+) -> Result<(), PromotionError> {
     let originals = paths
         .iter()
         .map(|path| {
@@ -30,7 +46,8 @@ pub(super) fn replace_all(
         })
         .collect::<Result<Vec<_>, _>>()?;
 
-    let result = replace_forward(repository_root, staging_root, paths, maybe_fail_after);
+    let result = replace_forward(repository_root, staging_root, paths, maybe_fail_after)
+        .and_then(|()| validate());
     if result.is_ok() {
         return Ok(());
     }
