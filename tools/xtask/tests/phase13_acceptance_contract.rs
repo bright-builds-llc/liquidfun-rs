@@ -5,6 +5,7 @@
 mod phase13_acceptance;
 
 use std::collections::BTreeMap;
+use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
 
@@ -22,6 +23,8 @@ const BUNDLE: &str = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 const WITNESS: &str = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
 const REPLAY: &str = "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
 const PATH_SET: &str = "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd";
+const CHECKOUT_ACTION: &str = "actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0";
+const UPLOAD_ACTION: &str = "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a";
 
 fn identity_contract() -> IdentityContract {
     let required_trailers = BTreeMap::from([
@@ -67,6 +70,11 @@ fn complete_state() -> AcceptanceState {
             .expect("ordered successful step should record");
     }
     state
+}
+
+fn repository_file(path: &str) -> String {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+    fs::read_to_string(root.join(path)).expect("repository contract file should be readable")
 }
 
 #[test]
@@ -298,4 +306,127 @@ fn repository_history_satisfies_the_non_circular_identity_contract() {
 
     // Assert
     result.expect("tracked P/B/R/Q and current A should satisfy the identity contract");
+}
+
+#[test]
+fn workflow_uses_only_immutable_action_revisions() {
+    // Arrange
+    let workflow = repository_file(".github/workflows/phase13-acceptance.yml");
+
+    // Act
+    let action_uses = workflow
+        .lines()
+        .filter_map(|line| line.trim().strip_prefix("uses: "))
+        .collect::<Vec<_>>();
+
+    // Assert
+    assert_eq!(
+        action_uses,
+        vec![CHECKOUT_ACTION, UPLOAD_ACTION, UPLOAD_ACTION]
+    );
+}
+
+#[test]
+fn workflow_checks_out_the_exact_full_history_with_the_oracle() {
+    // Arrange
+    let workflow = repository_file(".github/workflows/phase13-acceptance.yml");
+
+    // Act
+    let has_exact_checkout = workflow.contains("ref: ${{ github.sha }}")
+        && workflow.contains("fetch-depth: 0")
+        && workflow.contains("submodules: recursive");
+
+    // Assert
+    assert!(has_exact_checkout);
+    assert!(workflow.contains(r#"test "$(git rev-parse HEAD)" = "${GITHUB_SHA}""#));
+}
+
+#[test]
+fn workflow_pins_the_canonical_phase13_toolchain() {
+    // Arrange
+    let workflow = repository_file(".github/workflows/phase13-acceptance.yml");
+
+    // Act
+    let has_toolchain = workflow.contains("runs-on: ubuntu-24.04")
+        && workflow.contains("rustup toolchain install 1.97.0")
+        && workflow.contains("cmake version 4.3.3")
+        && workflow.contains("test \"$(ninja --version)\" = \"1.13.2\"")
+        && workflow.contains(r"clang version 22\.1\.8");
+
+    // Assert
+    assert!(has_toolchain);
+}
+
+#[test]
+fn workflow_invokes_only_the_aggregate_phase13_acceptance_command() {
+    // Arrange
+    let workflow = repository_file(".github/workflows/phase13-acceptance.yml");
+
+    // Act
+    let aggregate_invocations = workflow.matches("cargo xtask phase13 acceptance").count();
+
+    // Assert
+    assert_eq!(aggregate_invocations, 1);
+    assert!(!workflow.contains("cargo xtask phase14"));
+    assert!(!workflow.contains("cargo xtask phase15"));
+    assert!(!workflow.contains("workflow_run:"));
+}
+
+#[test]
+fn workflow_uploads_differential_failures_only_after_failure() {
+    // Arrange
+    let workflow = repository_file(".github/workflows/phase13-acceptance.yml");
+
+    // Act
+    let failure_step = workflow
+        .split("- name: Upload bounded differential failure evidence")
+        .nth(1)
+        .expect("failure upload step should exist")
+        .split("- name:")
+        .next()
+        .expect("failure upload step should be bounded");
+
+    // Assert
+    assert!(failure_step.contains("if: failure()"));
+    assert!(failure_step.contains(UPLOAD_ACTION));
+    assert!(failure_step.contains("path: target/differential/failures"));
+}
+
+#[test]
+fn workflow_uploads_terminal_identity_only_after_success() {
+    // Arrange
+    let workflow = repository_file(".github/workflows/phase13-acceptance.yml");
+
+    // Act
+    let identity_step = workflow
+        .split("- name: Upload terminal Phase 13 identity")
+        .nth(1)
+        .expect("identity upload step should exist")
+        .split("- name:")
+        .next()
+        .expect("identity upload step should be bounded");
+
+    // Assert
+    assert!(identity_step.contains("if: success()"));
+    assert!(identity_step.contains(UPLOAD_ACTION));
+    assert!(identity_step.contains("path: target/phase13-acceptance/identity.json"));
+    assert!(identity_step.contains("if-no-files-found: error"));
+}
+
+#[test]
+fn workflow_just_recipe_is_a_thin_acceptance_delegation() {
+    // Arrange
+    let justfile = repository_file("justfile");
+
+    // Act
+    let recipe = justfile
+        .split("phase13-acceptance:\n")
+        .nth(1)
+        .expect("Phase 13 acceptance recipe should exist")
+        .split("\n\n")
+        .next()
+        .expect("Phase 13 recipe should be bounded");
+
+    // Assert
+    assert_eq!(recipe, "    cargo xtask phase13 acceptance");
 }

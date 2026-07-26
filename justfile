@@ -123,6 +123,9 @@ phase12-performance-calibrate:
 phase12-performance-validate:
     bash scripts/phase12-performance.sh validate
 
+phase13-acceptance:
+    cargo xtask phase13 acceptance
+
 rigid-world-minimize:
     cargo xtask differential minimize --scenario rigid-world --preset oracle-debug --session-profile one-shot
 
