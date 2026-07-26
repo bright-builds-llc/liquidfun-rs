@@ -29,6 +29,8 @@ pub(super) struct Phase13EvidenceSchema {
     schema_version: u64,
     required_fields: Vec<String>,
     classes: Vec<Phase13EvidenceClass>,
+    #[serde(default)]
+    records: Vec<Phase13EvidenceRecord>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -40,6 +42,23 @@ struct Phase13EvidenceClass {
     derivation_kind: String,
     alteration_summary: String,
     notice_refs: Vec<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Phase13EvidenceRecord {
+    record_class: String,
+    path: String,
+    sha256: String,
+    generator_revision: String,
+    producer_sha: String,
+    bundle_sha256: String,
+    source_revision: String,
+    source_path: String,
+    derivation_kind: String,
+    alteration_summary: String,
+    notice_refs: Vec<String>,
+    reviewer: String,
 }
 
 #[cfg(test)]
@@ -98,7 +117,67 @@ pub(super) fn validate(
             "Phase 13 evidence classes must define witness, replay_evidence, staged_bundle, and promotion_receipt exactly once",
         ));
     }
+    validate_records(&schema.records, oracle_revision)?;
     Ok(())
+}
+
+fn validate_records(
+    records: &[Phase13EvidenceRecord],
+    oracle_revision: &str,
+) -> Result<(), ProvenanceError> {
+    if records.is_empty() {
+        return Ok(());
+    }
+    let expected_paths = [
+        "reference/artifacts/catalog/rigid-stack-v1.replay-evidence.json",
+        "reference/artifacts/phase13/promotion-receipt.json",
+        "reference/artifacts/phase9/lifecycle-contact-witnesses.json",
+        "reference/artifacts/phase9/lifecycle-contact-witnesses.provenance.json",
+    ]
+    .into_iter()
+    .collect::<BTreeSet<_>>();
+    let mut actual_paths = BTreeSet::new();
+    for record in records {
+        if !actual_paths.insert(record.path.as_str())
+            || !EXPECTED_CLASSES.contains(&record.record_class.as_str())
+            || record.record_class == "staged_bundle"
+            || !valid_revision(&record.generator_revision)
+            || !valid_revision(&record.producer_sha)
+            || !valid_digest(&record.bundle_sha256)
+            || !valid_digest(&record.sha256)
+            || record.source_revision != oracle_revision
+            || record.derivation_kind.trim().is_empty()
+            || record.alteration_summary.trim().is_empty()
+            || record.notice_refs != [REQUIRED_NOTICE]
+            || record.reviewer.trim().is_empty()
+        {
+            return Err(ProvenanceError::new(
+                "schema",
+                "Phase 13 promoted evidence record is incomplete or malformed",
+            ));
+        }
+        validate_source_path(&record.path, &record.record_class)?;
+        validate_source_path(&record.source_path, &record.record_class)?;
+    }
+    if actual_paths != expected_paths {
+        return Err(ProvenanceError::new(
+            "schema",
+            "Phase 13 promoted evidence records must cover the exact reviewed artifact set",
+        ));
+    }
+    Ok(())
+}
+
+fn valid_revision(value: &str) -> bool {
+    value.len() == 40 && value.bytes().all(lower_hex)
+}
+
+fn valid_digest(value: &str) -> bool {
+    value.len() == 64 && value.bytes().all(lower_hex)
+}
+
+fn lower_hex(byte: u8) -> bool {
+    byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte)
 }
 
 fn validate_class(

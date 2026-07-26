@@ -8,6 +8,8 @@ mod performance;
 mod phase10_evidence;
 mod phase11_evidence;
 mod phase13_evidence;
+#[path = "phase13_evidence/promotion.rs"]
+mod phase13_promotion;
 mod phase9_evidence;
 mod provenance;
 mod release;
@@ -50,6 +52,7 @@ enum XtaskError {
     Package(package::PackageError),
     Performance(performance::PerformanceCommandError),
     Phase13Evidence(phase13_evidence::Phase13EvidenceError),
+    Phase13Promotion(phase13_promotion::PromotionError),
     Phase9Evidence(phase9_evidence::Phase9EvidenceError),
     Phase10Evidence(phase10_evidence::Phase10EvidenceError),
     Phase11Evidence(phase11_evidence::Phase11EvidenceError),
@@ -91,6 +94,7 @@ impl Display for XtaskError {
             Self::Package(error) => Display::fmt(error, formatter),
             Self::Performance(error) => Display::fmt(error, formatter),
             Self::Phase13Evidence(error) => Display::fmt(error, formatter),
+            Self::Phase13Promotion(error) => Display::fmt(error, formatter),
             Self::Phase9Evidence(error) => Display::fmt(error, formatter),
             Self::Phase10Evidence(error) => Display::fmt(error, formatter),
             Self::Phase11Evidence(error) => Display::fmt(error, formatter),
@@ -122,6 +126,9 @@ fn dispatch(args: &[String]) -> Result<(), XtaskError> {
         "provenance" => provenance::run(command_args).map_err(XtaskError::Provenance),
         "package" => package::run(command_args).map_err(XtaskError::Package),
         "performance" => performance::run(command_args).map_err(XtaskError::Performance),
+        "phase13" if phase13_promotion::handles(command_args) => {
+            phase13_promotion::run(command_args).map_err(XtaskError::Phase13Promotion)
+        }
         "phase13" => phase13_evidence::run(command_args).map_err(XtaskError::Phase13Evidence),
         "release" => release::run(command_args).map_err(XtaskError::Release),
         "safety-evidence" => safety_evidence::run(command_args).map_err(XtaskError::SafetyEvidence),
