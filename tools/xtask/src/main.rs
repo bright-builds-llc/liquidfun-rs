@@ -7,6 +7,7 @@ mod package;
 mod performance;
 mod phase10_evidence;
 mod phase11_evidence;
+mod phase13_acceptance;
 mod phase13_evidence;
 #[path = "phase13_evidence/promotion.rs"]
 mod phase13_promotion;
@@ -51,6 +52,7 @@ enum XtaskError {
     Inventory(inventory::InventoryError),
     Package(package::PackageError),
     Performance(performance::PerformanceCommandError),
+    Phase13Acceptance(phase13_acceptance::AcceptanceError),
     Phase13Evidence(phase13_evidence::Phase13EvidenceError),
     Phase13Promotion(phase13_promotion::PromotionError),
     Phase9Evidence(phase9_evidence::Phase9EvidenceError),
@@ -93,6 +95,7 @@ impl Display for XtaskError {
             Self::Inventory(error) => Display::fmt(error, formatter),
             Self::Package(error) => Display::fmt(error, formatter),
             Self::Performance(error) => Display::fmt(error, formatter),
+            Self::Phase13Acceptance(error) => Display::fmt(error, formatter),
             Self::Phase13Evidence(error) => Display::fmt(error, formatter),
             Self::Phase13Promotion(error) => Display::fmt(error, formatter),
             Self::Phase9Evidence(error) => Display::fmt(error, formatter),
@@ -126,6 +129,9 @@ fn dispatch(args: &[String]) -> Result<(), XtaskError> {
         "provenance" => provenance::run(command_args).map_err(XtaskError::Provenance),
         "package" => package::run(command_args).map_err(XtaskError::Package),
         "performance" => performance::run(command_args).map_err(XtaskError::Performance),
+        "phase13" if matches!(command_args, [command, ..] if command == "acceptance") => {
+            phase13_acceptance::run(command_args).map_err(XtaskError::Phase13Acceptance)
+        }
         "phase13" if phase13_promotion::handles(command_args) => {
             phase13_promotion::run(command_args).map_err(XtaskError::Phase13Promotion)
         }
