@@ -341,7 +341,7 @@ Plans:
 | 10. Particle Groups, Solvers, and Compatibility Sign-Off | 32/32 | Complete   | 2026-07-21 |
 | 11. Examples, Headless Tooling, and Testbed | 30/30 | Complete    | 2026-07-23 |
 | 12. Performance, Portability, and Release Hardening | 25/25 | Complete    | 2026-07-24 |
-| 13. Restore Evidence and Replay Integrity | 3/5 | In Progress|  |
+| 13. Restore Evidence and Replay Integrity | 4/5 | In Progress|  |
 | 14. Repair Windows Particle-Group Invariants | 0/TBD | Not started | — |
 | 15. Re-establish Candidate Evidence | 0/TBD | Not started | — |
 
