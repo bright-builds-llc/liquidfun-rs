@@ -15,7 +15,7 @@ use phase13_evidence::bundle::{
 };
 use phase13_evidence::{
     CanonicalEnvironment, ProductionGate, ProductionGateErrorKind, select_rigid_stack_definition,
-    validate_staging_root,
+    validate_staging_root, witness_materials_identity,
 };
 
 const SHA_A: &str = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
@@ -45,6 +45,27 @@ fn producer_selects_the_reviewed_rigid_stack_catalog_definition() {
     // Assert
     assert_eq!(slug.as_str(), "rigid-stack-stability");
     assert_eq!(definition.slug(), &slug);
+}
+
+#[test]
+fn producer_records_the_full_scoped_materials_identity() {
+    // Arrange
+    let repository_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+
+    // Act
+    let (digest, count) = witness_materials_identity(&repository_root)
+        .expect("scoped witness materials should resolve");
+
+    // Assert
+    assert_eq!(count, 176);
+    assert_eq!(
+        digest,
+        "5be85c2a28bcc13b9c00c92b92843f9c4e244e700468d7b4f2b394ee6c772594"
+    );
+    assert_ne!(
+        digest,
+        "a1029da0460bcf29ff85410527daef11e0fb249130fe0b498681cd699d50fba2"
+    );
 }
 
 fn temporary_directory(label: &str) -> PathBuf {

@@ -3,7 +3,7 @@
 #[path = "phase13_evidence/bundle.rs"]
 pub(crate) mod bundle;
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::env;
 use std::fmt::{self, Display, Formatter};
 use std::fs;
@@ -402,6 +402,7 @@ fn produce(
     let witness = produce_witness(repository_root, &temporary_root)?;
     let replay = produce_replay(repository_root)?;
     let witness_closure = derive_witness_closure(repository_root, &producer_sha)?;
+    let (materials_sha256, materials_count) = witness_materials_identity(repository_root)?;
     let replay_closure = derive_git_closure(
         repository_root,
         &producer_sha,
@@ -432,8 +433,8 @@ fn produce(
         repository_revision: producer_sha,
         oracle_revision: UPSTREAM_REVISION.to_owned(),
         materials_manifest_sha256: file_sha256(&repository_root.join(MATERIALS_MANIFEST))?,
-        materials_sha256: witness_closure.digest.clone(),
-        materials_count: witness_closure.entries.len(),
+        materials_sha256,
+        materials_count,
         probe_source_sha256: file_sha256(&repository_root.join(PROBE_SOURCE))?,
         compiler_id: "Clang".to_owned(),
         compiler_version: "22.1.8".to_owned(),
@@ -784,6 +785,85 @@ fn produce_replay(repository_root: &Path) -> Result<ReplayOutput, Phase13Evidenc
             )
         })?,
     })
+}
+
+pub(crate) fn witness_materials_identity(
+    repository_root: &Path,
+) -> Result<(String, usize), Phase13EvidenceError> {
+    let manifest_bytes = fs::read(repository_root.join(MATERIALS_MANIFEST)).map_err(|error| {
+        Phase13EvidenceError::new(
+            Phase13EvidenceErrorKind::Filesystem,
+            format!("failed to read scoped witness materials: {error}"),
+        )
+    })?;
+    let manifest: MaterialsManifest = serde_json::from_slice(&manifest_bytes).map_err(|error| {
+        Phase13EvidenceError::new(
+            Phase13EvidenceErrorKind::Protocol,
+            format!("invalid scoped witness materials: {error}"),
+        )
+    })?;
+    if manifest.schema_version != 1
+        || manifest.target != "phase9-lifecycle-contact-witness"
+        || manifest.preset != ORACLE_PRESET
+    {
+        return Err(Phase13EvidenceError::new(
+            Phase13EvidenceErrorKind::Protocol,
+            "scoped witness materials have the wrong schema, target, or preset",
+        ));
+    }
+    let materials = manifest
+        .materials
+        .into_iter()
+        .map(|material| (material.kind, material.identity))
+        .collect::<BTreeSet<_>>();
+    let mut digest = Sha256::new();
+    for (kind, identity) in &materials {
+        if !matches!(
+            kind.as_str(),
+            "build_rule"
+                | "compile_definition"
+                | "compile_fragment"
+                | "generated_input"
+                | "header"
+                | "include_path"
+                | "link_fragment"
+                | "link_input"
+                | "preset_value"
+                | "source"
+        ) {
+            return Err(Phase13EvidenceError::new(
+                Phase13EvidenceErrorKind::Protocol,
+                format!("scoped witness material `{identity}` has unknown kind `{kind}`"),
+            ));
+        }
+        update_length_prefixed(&mut digest, kind.as_bytes());
+        update_length_prefixed(&mut digest, identity.as_bytes());
+        if matches!(
+            kind.as_str(),
+            "build_rule" | "generated_input" | "header" | "source"
+        ) {
+            let path = Path::new(identity);
+            if path.is_absolute()
+                || path
+                    .components()
+                    .any(|component| matches!(component, Component::ParentDir))
+                || identity.starts_with("<build>/")
+            {
+                return Err(Phase13EvidenceError::new(
+                    Phase13EvidenceErrorKind::Protocol,
+                    format!("scoped witness material `{identity}` is not repository-confined"),
+                ));
+            }
+            let bytes = fs::read(repository_root.join(path)).map_err(|error| {
+                Phase13EvidenceError::new(
+                    Phase13EvidenceErrorKind::Filesystem,
+                    format!("failed to read scoped witness material `{identity}`: {error}"),
+                )
+            })?;
+            update_length_prefixed(&mut digest, &bytes);
+        }
+    }
+    Ok((format!("{:x}", digest.finalize()), materials.len()))
 }
 
 fn derive_witness_closure(
@@ -1270,6 +1350,11 @@ fn file_sha256(path: &Path) -> Result<String, Phase13EvidenceError> {
             format!("failed to hash {}: {error}", path.display()),
         )
     })
+}
+
+fn update_length_prefixed(digest: &mut Sha256, value: &[u8]) {
+    digest.update((value.len() as u64).to_be_bytes());
+    digest.update(value);
 }
 
 fn metadata(record_class: &str, source_path: &str) -> EvidenceMetadata {
