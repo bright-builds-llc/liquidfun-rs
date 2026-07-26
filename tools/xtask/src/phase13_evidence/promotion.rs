@@ -24,16 +24,16 @@ const USAGE: &str = r"Usage:
   cargo xtask phase13 evidence promotion-ready --review-packet <path> --review-ack <path>
   cargo xtask phase13 evidence check --tracked --require-reviewed";
 
-const PRODUCER_SHA: &str = "56844ae4e6b9ead030789eb034b5416d3cec8bf6";
-const BUNDLE_SHA256: &str = "3442e362ae69c31a4b144a90ca7b9662463e0f7089da9a81401533548acf9ba8";
+const PRODUCER_SHA: &str = "dbf5044ea8750aa3eb7a3c7b95b6a36b326f3d7e";
+const BUNDLE_SHA256: &str = "1eba915ed7cb634b54e0f8d89b0d2be4112bae6f3d3adac6e83ffc355217d775";
 const UPSTREAM_REVISION: &str = "7f20402173fd143a3988c921bc384459c6a858f2";
 const PROVIDER_REPOSITORY: &str = "bright-builds-llc/liquidfun-rs";
-const PROVIDER_RUN_ID: u64 = 30_181_863_142;
-const PROVIDER_ARTIFACT_ID: u64 = 8_625_804_327;
+const PROVIDER_RUN_ID: u64 = 30_192_804_429;
+const PROVIDER_ARTIFACT_ID: u64 = 8_629_151_708;
 const PROVIDER_ARTIFACT_NAME: &str =
-    "phase13-staged-30181863142-56844ae4e6b9ead030789eb034b5416d3cec8bf6";
+    "phase13-staged-30192804429-dbf5044ea8750aa3eb7a3c7b95b6a36b326f3d7e";
 const PROVIDER_DIGEST: &str =
-    "sha256:9fc150fe6e7346753f8781b17743f9b963a69e1a8ba3081aaec3bdd2e7d1b606";
+    "sha256:89870f5ea64842ccdaeb69be65b2f6fc3fff1660c4e1955db587d1ede8e22934";
 const MATERIALS_MANIFEST: &str = "tools/reference/phase9-lifecycle-contact-witness.materials.json";
 const REPLAY_EVIDENCE_PATH: &str =
     "reference/artifacts/catalog/rigid-stack-v1.replay-evidence.json";
