@@ -11,7 +11,7 @@ use std::process::Command;
 
 use phase13_acceptance::{
     AcceptanceErrorKind, AcceptanceState, AcceptanceStep, HeadSnapshot, IdentityContract,
-    StepCompletion, validate_head_snapshot, validate_identity_contract,
+    StepCompletion, required_command_evidence, validate_head_snapshot, validate_identity_contract,
     validate_repository_identity_at,
 };
 
@@ -306,6 +306,34 @@ fn repository_history_satisfies_the_non_circular_identity_contract() {
 
     // Assert
     result.expect("tracked P/B/R/Q and current A should satisfy the identity contract");
+}
+
+#[test]
+fn catalog_acceptance_steps_use_the_required_all_feature_contract() {
+    // Arrange
+    let commands = required_command_evidence();
+
+    // Act
+    let catalog_commands = commands
+        .iter()
+        .filter(|(step, _command)| {
+            matches!(
+                step,
+                AcceptanceStep::ReviewedReplay
+                    | AcceptanceStep::Diagnosis
+                    | AcceptanceStep::Regression
+            )
+        })
+        .map(|(_step, command)| command)
+        .collect::<Vec<_>>();
+
+    // Assert
+    assert_eq!(catalog_commands.len(), 3);
+    assert!(
+        catalog_commands
+            .iter()
+            .all(|command| command.contains("--all-features"))
+    );
 }
 
 #[test]

@@ -350,11 +350,7 @@ pub(crate) fn run(args: &[String]) -> Result<(), AcceptanceError> {
         }
         state.record(StepCompletion {
             step,
-            command: commands
-                .iter()
-                .map(CommandSpec::display)
-                .collect::<Vec<_>>()
-                .join(" && "),
+            command: command_evidence(&commands),
             succeeded: true,
         })?;
     }
@@ -921,6 +917,7 @@ fn effect_steps() -> Vec<(AcceptanceStep, Vec<CommandSpec>)> {
                 "test",
                 "-p",
                 "liquidfun-differential",
+                "--all-features",
                 "--test",
                 "catalog_regressions",
                 "tracked_catalog_regressions_replay_byte_identically_without_writes",
@@ -932,6 +929,7 @@ fn effect_steps() -> Vec<(AcceptanceStep, Vec<CommandSpec>)> {
                 "test",
                 "-p",
                 "liquidfun-differential",
+                "--all-features",
                 "--test",
                 "catalog_regressions",
                 "diagnosis",
@@ -943,6 +941,7 @@ fn effect_steps() -> Vec<(AcceptanceStep, Vec<CommandSpec>)> {
                 "test",
                 "-p",
                 "liquidfun-differential",
+                "--all-features",
                 "--test",
                 "catalog_regressions",
             ])],
@@ -981,6 +980,25 @@ fn effect_steps() -> Vec<(AcceptanceStep, Vec<CommandSpec>)> {
             ])],
         ),
     ]
+}
+
+fn command_evidence(commands: &[CommandSpec]) -> String {
+    commands
+        .iter()
+        .map(CommandSpec::display)
+        .collect::<Vec<_>>()
+        .join(" && ")
+}
+
+#[allow(
+    dead_code,
+    reason = "integration contract tests inspect the locked command evidence"
+)]
+pub(crate) fn required_command_evidence() -> Vec<(AcceptanceStep, String)> {
+    effect_steps()
+        .into_iter()
+        .map(|(step, commands)| (step, command_evidence(&commands)))
+        .collect()
 }
 
 const fn xtask(args: &'static [&'static str]) -> CommandSpec {
@@ -1118,8 +1136,9 @@ fn process_failure(action: &str, output: &Output) -> AcceptanceError {
     AcceptanceError::new(
         AcceptanceErrorKind::Process,
         format!(
-            "`{action}` failed with {}: {}",
+            "`{action}` failed with {}\nstdout:\n{}\nstderr:\n{}",
             output.status,
+            String::from_utf8_lossy(&output.stdout).trim(),
             String::from_utf8_lossy(&output.stderr).trim()
         ),
     )
