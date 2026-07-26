@@ -6,8 +6,8 @@ use crate::{BodySnapshot, JointSpecificSnapshot, WorldObservation};
 
 use super::support::{
     body_color, body_snapshot, check_limit, checked_u32, fixture_observation, metadata,
-    particle_observation, primitive_text_bytes, primitive_vertex_count, segment, semantic_hash,
-    shape_kind, validate_primitive,
+    particle_observation, primitive_text_bytes, primitive_vertex_count, segment, shape_kind,
+    validate_primitive,
 };
 use super::{
     AXIS_LENGTH, CONTACT_POINT_RADIUS, DebugCollectionError, DebugCollectionResource,
@@ -341,18 +341,7 @@ impl Collector {
         if !self.options.includes(DebugLayer::BroadPhase) {
             return Ok(());
         }
-        let mut entries = observation.broad_phase_observations().to_vec();
-        entries.sort_by_key(|entry| {
-            let bounds = entry.aabb();
-            (
-                semantic_hash(&(entry.body(), entry.fixture(), entry.child_index())),
-                bounds.lower_bound().x.to_bits(),
-                bounds.lower_bound().y.to_bits(),
-                bounds.upper_bound().x.to_bits(),
-                bounds.upper_bound().y.to_bits(),
-            )
-        });
-        for (ordinal, entry) in entries.into_iter().enumerate() {
+        for (ordinal, entry) in observation.broad_phase_observations().iter().enumerate() {
             self.push(DebugPrimitive::Aabb {
                 metadata: metadata(
                     DebugPrimitiveKey::new(

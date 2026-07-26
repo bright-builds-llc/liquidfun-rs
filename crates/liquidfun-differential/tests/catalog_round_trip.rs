@@ -176,6 +176,27 @@ fn native_replay_is_d0_byte_identical() {
 }
 
 #[test]
+fn rigid_stack_native_replay_is_d0_byte_identical() {
+    // Arrange
+    let request = request_for_provenance(
+        "rigid-stack-stability",
+        8,
+        Sha256Hex::new("1".repeat(64)).expect("identity should validate"),
+        HarnessLimits::phase2_default_v1().profile_sha256(),
+    );
+
+    // Act
+    let first = execute_catalog_native(&request).expect("first run should execute");
+    let second = execute_catalog_native(&request).expect("second run should execute");
+
+    // Assert
+    assert_eq!(
+        first.canonical_checkpoint_bytes(),
+        second.canonical_checkpoint_bytes()
+    );
+}
+
+#[test]
 fn cpp_catalog_reuses_one_supervised_child_with_reset_proof() {
     // Arrange
     const REVISION: &str = "7f20402173fd143a3988c921bc384459c6a858f2";

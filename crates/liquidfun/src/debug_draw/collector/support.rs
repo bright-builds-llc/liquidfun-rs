@@ -1,7 +1,5 @@
 //! Shared finite-geometry, identity, and style helpers for debug collection.
 
-use std::hash::{Hash, Hasher};
-
 use crate::collision::Shape;
 use crate::math::Vec2;
 use crate::{BodySnapshot, BodyType, FixtureObservation, ParticleObservation, WorldObservation};
@@ -190,25 +188,4 @@ pub(super) fn checked_u32(value: usize) -> Result<u32, DebugCollectionError> {
     u32::try_from(value).map_err(|_error| DebugCollectionError::InvalidGeometry {
         layer: DebugLayer::Labels,
     })
-}
-
-struct StableHasher(u64);
-
-impl Hasher for StableHasher {
-    fn finish(&self) -> u64 {
-        self.0
-    }
-
-    fn write(&mut self, bytes: &[u8]) {
-        for byte in bytes {
-            self.0 ^= u64::from(*byte);
-            self.0 = self.0.wrapping_mul(0x0000_0100_0000_01B3);
-        }
-    }
-}
-
-pub(super) fn semantic_hash(value: &impl Hash) -> u64 {
-    let mut hasher = StableHasher(0xCBF2_9CE4_8422_2325);
-    value.hash(&mut hasher);
-    hasher.finish()
 }
