@@ -1,16 +1,16 @@
 {
-  "schema_version": 1,
-  "producer_sha": "dbf5044ea8750aa3eb7a3c7b95b6a36b326f3d7e",
-  "bundle_sha256": "1eba915ed7cb634b54e0f8d89b0d2be4112bae6f3d3adac6e83ffc355217d775",
-  "promotion_base_sha": "741e9c5000445a385008f81bb701a5bb91d0e5b4",
+  "schema_version": 2,
+  "producer_sha": "6e8261a66a67a05bf3fadb4ad9d818121c395324",
+  "bundle_sha256": "fd7fa1a857c0b8cab3ee02fc1d61a45290b632173a4a1f80a790d4334c7453b2",
+  "promotion_base_sha": "88aba114356cd84c9464d4e6ff62f1d6d3872af7",
   "acquisition": {
     "repository": "bright-builds-llc/liquidfun-rs",
-    "run_id": 30192804429,
-    "artifact_id": 8629151708,
-    "artifact_name": "phase13-staged-30192804429-dbf5044ea8750aa3eb7a3c7b95b6a36b326f3d7e",
-    "provider_digest": "sha256:89870f5ea64842ccdaeb69be65b2f6fc3fff1660c4e1955db587d1ede8e22934",
-    "artifact_created_at": "2026-07-26T07:28:37Z",
-    "artifact_expires_at": "2026-10-24T07:26:22Z"
+    "run_id": 30232297731,
+    "artifact_id": 8640500578,
+    "artifact_name": "phase13-staged-30232297731-6e8261a66a67a05bf3fadb4ad9d818121c395324",
+    "provider_digest": "sha256:040d7f02c32c40ef6b208f3daf63fb1d458c0cb8cc78cc3d8ccd13e21488e0a7",
+    "artifact_created_at": "2026-07-27T02:31:36Z",
+    "artifact_expires_at": "2026-10-25T02:29:30Z"
   },
   "independent_reviewer_id": "pRizz",
   "promoted_paths": [
@@ -22,18 +22,32 @@
     "reference/artifacts/phase9/lifecycle-contact-witnesses.provenance.json",
     "reference/source-map.toml"
   ],
-  "promoted_path_set_sha256": "81aa5e9aee09725a1bc397a998715c78e30d8f35a977b36279d8ede88e7b7509",
+  "promoted_path_set_sha256": "aa090665b7976f82d932915953c9c796a721fb2189325482d3402a072ab4aca5",
+  "promoted_content_sha256": "ca1dd6abeab2977949507aa9ad88e7abf3e9b29f8f4b21570ee725685806a4bb",
+  "changed_paths": [
+    "reference/artifacts/manifest.toml",
+    "reference/artifacts/phase13/promotion-receipt.json",
+    "reference/artifacts/phase9/lifecycle-contact-witnesses.provenance.json"
+  ],
+  "unchanged_paths": [
+    "crates/liquidfun-differential/src/fixtures/replay/catalog.rs",
+    "reference/artifacts/catalog/rigid-stack-v1.replay-evidence.json",
+    "reference/artifacts/phase9/lifecycle-contact-witnesses.json",
+    "reference/source-map.toml"
+  ],
+  "changed_path_set_sha256": "9a204f8a8c85ee2890014616c1525e298658d11f210074c1a460c022e2baf93a",
+  "changed_content_sha256": "6ad850785b64ce948323bc0f8e67d681f6451decae68b94c1c2d5b783b080795",
   "producer_closures": {
-    "witness_sha256": "bd2eb6795e87e306a1840f06b690f2109d626fc02e4622a92ebda34da9694b85",
-    "replay_sha256": "f9c6d6e8b75731ffe4b238f089d353f67a39cfb0a49881bedcd58eeb0883153c",
+    "witness_sha256": "16349cacabb2721e5949f386805c5950de012c0e2e6d6b68ceb3a4ae4cb516f9",
+    "replay_sha256": "589b8d01e3925f01cdd0cbbab7889380023a2750447dffbda1b1048ec4375d51",
     "recomputed_at_r": true
   },
   "q_contract": {
-    "required_first_parent": "741e9c5000445a385008f81bb701a5bb91d0e5b4",
+    "required_first_parent": "88aba114356cd84c9464d4e6ff62f1d6d3872af7",
     "required_trailers": {
-      "Phase13-Bundle-SHA256": "1eba915ed7cb634b54e0f8d89b0d2be4112bae6f3d3adac6e83ffc355217d775",
-      "Phase13-Producer-SHA": "dbf5044ea8750aa3eb7a3c7b95b6a36b326f3d7e",
-      "Phase13-Promotion-Base-SHA": "741e9c5000445a385008f81bb701a5bb91d0e5b4"
+      "Phase13-Bundle-SHA256": "fd7fa1a857c0b8cab3ee02fc1d61a45290b632173a4a1f80a790d4334c7453b2",
+      "Phase13-Producer-SHA": "6e8261a66a67a05bf3fadb4ad9d818121c395324",
+      "Phase13-Promotion-Base-SHA": "88aba114356cd84c9464d4e6ff62f1d6d3872af7"
     },
     "q_sha_recorded": false,
     "acceptance_sha_recorded": false
