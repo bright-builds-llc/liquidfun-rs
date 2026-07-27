@@ -3,8 +3,8 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Phase 13 complete; ready to plan Phase 14
-last_updated: "2026-07-27T15:09:32.208Z"
+stopped_at: Phase 14 context gathered
+last_updated: "2026-07-27T16:21:17.142Z"
 last_activity: "2026-07-27"
 progress:
   total_phases: 15
@@ -658,6 +658,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-27T15:09:32.203Z
-Stopped at: Phase 13 complete; ready to plan Phase 14
-Resume file: None
+Last session: 2026-07-27T16:21:17.131Z
+Stopped at: Phase 14 context gathered
+Resume file: .planning/phases/14-repair-windows-particle-group-invariants/14-CONTEXT.md
