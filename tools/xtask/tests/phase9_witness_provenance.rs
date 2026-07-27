@@ -356,6 +356,26 @@ fn phase13_evidence_classes_fail_closed() -> TestResult {
             ),
             "THIRD_PARTY_NOTICES.md",
         ),
+        (
+            manifest.replacen("digest_mode = \"exact_bytes_sha256\"\n", "", 1),
+            "digest_mode",
+        ),
+        (
+            manifest.replacen(
+                "digest_mode = \"exact_bytes_sha256\"",
+                "digest_mode = \"unknown\"",
+                1,
+            ),
+            "incomplete or malformed",
+        ),
+        (
+            manifest.replacen(
+                "digest_mode = \"phase13_receipt_semantic_v2\"",
+                "digest_mode = \"exact_bytes_sha256\"",
+                1,
+            ),
+            "incomplete or malformed",
+        ),
     ];
 
     for (candidate, expected) in cases {

@@ -179,3 +179,15 @@ The required Rust 1.97 format, Clippy, all-target build, and all-feature test
 sequence passed before the recovery promotion. Final canonical acceptance is
 recorded by Plan 13-05 rather than retroactively replacing the original Plan
 13-04 result.
+
+### Acceptance-only retry
+
+- Exact-head acceptance run `30277369306` at
+  `241e75e56567ee6f6f1b7a12d2db889591235754` failed closed during
+  provenance validation because the strict Phase 13 evidence record parser had
+  not yet declared the new `digest_mode` field.
+- The repair adds fail-closed mode validation to provenance: the receipt row
+  requires `phase13_receipt_semantic_v2`, while every other promoted artifact
+  row requires `exact_bytes_sha256`. The parser and regression test are outside
+  both declared producer-affecting closures, so the retry remains an acceptance
+  descendant of the same reviewed Q without repromotion.

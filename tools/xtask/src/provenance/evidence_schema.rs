@@ -22,6 +22,9 @@ const EXPECTED_FIELDS: [&str; 6] = [
     "notice_refs",
 ];
 const REQUIRED_NOTICE: &str = "THIRD_PARTY_NOTICES.md";
+const EXACT_BYTES_DIGEST_MODE: &str = "exact_bytes_sha256";
+const RECEIPT_SEMANTIC_DIGEST_MODE: &str = "phase13_receipt_semantic_v2";
+const RECEIPT_PATH: &str = "reference/artifacts/phase13/promotion-receipt.json";
 
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -50,6 +53,7 @@ struct Phase13EvidenceRecord {
     record_class: String,
     path: String,
     sha256: String,
+    digest_mode: String,
     generator_revision: String,
     producer_sha: String,
     bundle_sha256: String,
@@ -138,6 +142,11 @@ fn validate_records(
     .collect::<BTreeSet<_>>();
     let mut actual_paths = BTreeSet::new();
     for record in records {
+        let required_digest_mode = if record.path == RECEIPT_PATH {
+            RECEIPT_SEMANTIC_DIGEST_MODE
+        } else {
+            EXACT_BYTES_DIGEST_MODE
+        };
         if !actual_paths.insert(record.path.as_str())
             || !EXPECTED_CLASSES.contains(&record.record_class.as_str())
             || record.record_class == "staged_bundle"
@@ -145,6 +154,7 @@ fn validate_records(
             || !valid_revision(&record.producer_sha)
             || !valid_digest(&record.bundle_sha256)
             || !valid_digest(&record.sha256)
+            || record.digest_mode != required_digest_mode
             || record.source_revision != oracle_revision
             || record.derivation_kind.trim().is_empty()
             || record.alteration_summary.trim().is_empty()
