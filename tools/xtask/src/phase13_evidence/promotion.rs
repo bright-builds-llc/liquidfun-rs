@@ -167,9 +167,12 @@ pub(crate) struct ReviewPacket {
     replay_closure: ClosureReview,
     pub(crate) promoted_paths: Vec<String>,
     pub(crate) promoted_path_set_sha256: String,
+    pub(crate) changed_paths: Vec<String>,
+    pub(crate) unchanged_paths: Vec<String>,
+    pub(crate) changed_path_set_sha256: String,
     pub(crate) replacement_sha256: BTreeMap<String, String>,
     pub(crate) staging_root: String,
-    pub(crate) review_diff_sha256: String,
+    pub(crate) review_sha256: String,
     pub(crate) diff: String,
 }
 
@@ -178,7 +181,7 @@ pub(crate) struct ReviewPacket {
 pub(crate) struct ReviewAcknowledgement {
     pub(crate) schema_version: u32,
     pub(crate) reviewer_id: String,
-    pub(crate) review_diff_sha256: String,
+    pub(crate) review_sha256: String,
     pub(crate) acknowledgement: String,
     pub(crate) reviewed_at: String,
 }
@@ -193,6 +196,9 @@ struct PromotionReceipt {
     independent_reviewer_id: String,
     promoted_paths: Vec<String>,
     promoted_path_set_sha256: String,
+    changed_paths: Vec<String>,
+    unchanged_paths: Vec<String>,
+    changed_path_set_sha256: String,
     producer_closures: ProducerClosures,
     q_contract: PromotionCommitContract,
 }
@@ -399,6 +405,36 @@ fn prepare(
     validate_bundle_files(&bundle_root, &manifest)?;
 
     let staging_root = new_staging_root(repository_root, &promotion_base_sha)?;
+    let baseline_sha256 = baseline_sha256(repository_root, &promotion_base_sha)?;
+    let provisional_changed = promoted_paths();
+    let provisional_receipt = render_receipt(
+        producer_sha,
+        bundle_sha256,
+        &promotion_base_sha,
+        reviewer_id,
+        &acquisition,
+        &manifest,
+        &provisional_changed,
+        &[],
+    )?;
+    let provisional_replacements = render_replacements(
+        repository_root,
+        &bundle_root,
+        &manifest,
+        &provisional_receipt,
+        reviewer_id,
+        &promotion_base_sha,
+        &acquisition.artifact_created_at,
+    )?;
+    let provisional_sha256 = replacement_sha256(&provisional_replacements);
+    let (changed_paths, unchanged_paths) =
+        classify_reviewed_paths(&baseline_sha256, &provisional_sha256)?;
+    if changed_paths.is_empty() {
+        return Err(PromotionError::new(
+            PromotionErrorKind::Diff,
+            "incremental promotion must contain at least one mechanical change",
+        ));
+    }
     let receipt = render_receipt(
         producer_sha,
         bundle_sha256,
@@ -406,6 +442,8 @@ fn prepare(
         reviewer_id,
         &acquisition,
         &manifest,
+        &changed_paths,
+        &unchanged_paths,
     )?;
     let replacements = render_replacements(
         repository_root,
@@ -416,19 +454,34 @@ fn prepare(
         &promotion_base_sha,
         &acquisition.artifact_created_at,
     )?;
+    let final_sha256 = replacement_sha256(&replacements);
+    let final_classification = classify_reviewed_paths(&baseline_sha256, &final_sha256)?;
+    if final_classification != (changed_paths.clone(), unchanged_paths.clone()) {
+        return Err(PromotionError::new(
+            PromotionErrorKind::Diff,
+            "receipt rendering changed the incremental path classification",
+        ));
+    }
     write_replacements(&staging_root, &replacements)?;
     format_staged_catalog(&staging_root)?;
     let replacement_sha256 = validate_staged_tree(&staging_root)?;
+    if classify_reviewed_paths(&baseline_sha256, &replacement_sha256)?
+        != (changed_paths.clone(), unchanged_paths.clone())
+    {
+        return Err(PromotionError::new(
+            PromotionErrorKind::Diff,
+            "staged formatting changed the incremental path classification",
+        ));
+    }
     validate_staged_ledgers(&staging_root, &replacement_sha256)?;
     let diff = canonical_diff(
         repository_root,
         &promotion_base_sha,
         &staging_root,
-        &PROMOTED_PATHS,
+        &changed_paths.iter().map(String::as_str).collect::<Vec<_>>(),
     )?;
-    let review_diff_sha256 = sha256(diff.as_bytes());
-    let packet = ReviewPacket {
-        schema_version: 1,
+    let mut packet = ReviewPacket {
+        schema_version: 2,
         producer_sha: producer_sha.to_owned(),
         bundle_sha256: bundle_sha256.to_owned(),
         promotion_base_sha,
@@ -438,11 +491,15 @@ fn prepare(
         replay_closure: closure_review(&manifest.replay_closure, &replay_at_r),
         promoted_paths: promoted_paths(),
         promoted_path_set_sha256: promoted_path_set_sha256(),
+        changed_path_set_sha256: changed_path_set_sha256(&changed_paths),
+        changed_paths,
+        unchanged_paths,
         replacement_sha256,
         staging_root: relative_path_text(repository_root, &staging_root)?,
-        review_diff_sha256,
+        review_sha256: String::new(),
         diff,
     };
+    packet.review_sha256 = review_sha256(&packet)?;
     let review_packet = absolute_path(repository_root, required(options, "--review-packet")?);
     write_json(&review_packet, &packet, false)?;
     require_clean_worktree(repository_root)?;
@@ -452,7 +509,7 @@ fn prepare(
         packet.bundle_sha256,
         packet.promotion_base_sha,
         packet.reviewer_id,
-        packet.review_diff_sha256,
+        packet.review_sha256,
         review_packet.display()
     );
     Ok(())
@@ -490,8 +547,8 @@ fn promote(
         || validate_promoted_worktree(repository_root, &packet, &staging_root),
     )?;
     println!(
-        "phase13 evidence promoted transactionally at R={} diff_sha256={}",
-        packet.promotion_base_sha, packet.review_diff_sha256
+        "phase13 evidence promoted transactionally at R={} review_sha256={}",
+        packet.promotion_base_sha, packet.review_sha256
     );
     Ok(())
 }
@@ -505,8 +562,8 @@ fn promotion_ready(
     validate_promoted_worktree(repository_root, &packet, &staging_root)?;
     tracked_reviewed_check(repository_root)?;
     println!(
-        "phase13 promotion ready: R={} diff_sha256={}",
-        packet.promotion_base_sha, packet.review_diff_sha256
+        "phase13 promotion ready: R={} review_sha256={}",
+        packet.promotion_base_sha, packet.review_sha256
     );
     Ok(())
 }
@@ -522,10 +579,11 @@ fn review_ack_check(
     ))?;
     let acknowledgement: ReviewAcknowledgement =
         read_json(&absolute_path(repository_root, required(options, "--ack")?))?;
+    validate_packet_identity(&packet)?;
     validate_review_ack(&packet, Some(&acknowledgement))?;
     println!(
-        "phase13 independent review acknowledged: reviewer={} diff_sha256={}",
-        acknowledgement.reviewer_id, acknowledgement.review_diff_sha256
+        "phase13 independent review acknowledged: reviewer={} review_sha256={}",
+        acknowledgement.reviewer_id, acknowledgement.review_sha256
     );
     Ok(())
 }
@@ -553,9 +611,13 @@ fn validate_packet_and_ack(
         repository_root,
         &packet.promotion_base_sha,
         &staging_root,
-        &PROMOTED_PATHS,
+        &packet
+            .changed_paths
+            .iter()
+            .map(String::as_str)
+            .collect::<Vec<_>>(),
     )?;
-    if diff != packet.diff || sha256(diff.as_bytes()) != packet.review_diff_sha256 {
+    if diff != packet.diff || review_sha256(&packet)? != packet.review_sha256 {
         return Err(PromotionError::new(
             PromotionErrorKind::Diff,
             "prepared seven-file diff changed after review",
@@ -565,12 +627,26 @@ fn validate_packet_and_ack(
 }
 
 fn validate_packet_identity(packet: &ReviewPacket) -> Result<(), PromotionError> {
-    if packet.schema_version != 1
+    if packet.schema_version != 2
         || packet.producer_sha != PRODUCER_SHA
         || packet.bundle_sha256 != BUNDLE_SHA256
         || !valid_revision(&packet.promotion_base_sha)
         || packet.promoted_paths != promoted_paths()
         || packet.promoted_path_set_sha256 != promoted_path_set_sha256()
+        || packet.changed_paths.is_empty()
+        || packet.changed_path_set_sha256 != changed_path_set_sha256(&packet.changed_paths)
+        || !valid_path_classification(&packet.changed_paths, &packet.unchanged_paths)
+        || packet
+            .replacement_sha256
+            .keys()
+            .map(String::as_str)
+            .collect::<BTreeSet<_>>()
+            != packet
+                .promoted_paths
+                .iter()
+                .map(String::as_str)
+                .collect::<BTreeSet<_>>()
+        || review_sha256(packet)? != packet.review_sha256
         || packet.witness_closure.recorded_sha256 != packet.witness_closure.recomputed_sha256
         || packet.replay_closure.recorded_sha256 != packet.replay_closure.recomputed_sha256
         || !packet.witness_closure.byte_identical
@@ -584,6 +660,18 @@ fn validate_packet_identity(packet: &ReviewPacket) -> Result<(), PromotionError>
     validate_acquisition(&packet.acquisition)
 }
 
+fn valid_path_classification(changed: &[String], unchanged: &[String]) -> bool {
+    let changed = changed.iter().map(String::as_str).collect::<BTreeSet<_>>();
+    let unchanged = unchanged
+        .iter()
+        .map(String::as_str)
+        .collect::<BTreeSet<_>>();
+    let promoted = PROMOTED_PATHS.into_iter().collect::<BTreeSet<_>>();
+    changed.len() + unchanged.len() == PROMOTED_PATHS.len()
+        && changed.is_disjoint(&unchanged)
+        && changed.union(&unchanged).copied().collect::<BTreeSet<_>>() == promoted
+}
+
 pub(crate) fn validate_review_ack(
     packet: &ReviewPacket,
     maybe_acknowledgement: Option<&ReviewAcknowledgement>,
@@ -594,9 +682,9 @@ pub(crate) fn validate_review_ack(
             "independent review acknowledgement is required",
         ));
     };
-    if acknowledgement.schema_version != 1
+    if acknowledgement.schema_version != 2
         || acknowledgement.reviewer_id != packet.reviewer_id
-        || acknowledgement.review_diff_sha256 != packet.review_diff_sha256
+        || acknowledgement.review_sha256 != packet.review_sha256
         || acknowledgement.acknowledgement.trim().is_empty()
         || !valid_utc_timestamp(&acknowledgement.reviewed_at)
     {
@@ -609,14 +697,14 @@ pub(crate) fn validate_review_ack(
 }
 
 #[cfg(test)]
-pub(crate) fn review_packet_for_test(reviewer_id: &str, review_diff_sha256: &str) -> ReviewPacket {
+pub(crate) fn review_packet_for_test(reviewer_id: &str, review_sha256: &str) -> ReviewPacket {
     let closure = ClosureReview {
         recorded_sha256: "a".repeat(64),
         recomputed_sha256: "a".repeat(64),
         byte_identical: true,
     };
     ReviewPacket {
-        schema_version: 1,
+        schema_version: 2,
         producer_sha: PRODUCER_SHA.to_owned(),
         bundle_sha256: BUNDLE_SHA256.to_owned(),
         promotion_base_sha: "b".repeat(40),
@@ -634,9 +722,12 @@ pub(crate) fn review_packet_for_test(reviewer_id: &str, review_diff_sha256: &str
         replay_closure: closure,
         promoted_paths: promoted_paths(),
         promoted_path_set_sha256: promoted_path_set_sha256(),
+        changed_paths: promoted_paths(),
+        unchanged_paths: Vec::new(),
+        changed_path_set_sha256: changed_path_set_sha256(&promoted_paths()),
         replacement_sha256: BTreeMap::new(),
         staging_root: "target/test-stage".to_owned(),
-        review_diff_sha256: review_diff_sha256.to_owned(),
+        review_sha256: review_sha256.to_owned(),
         diff: "diff".to_owned(),
     }
 }
@@ -785,15 +876,26 @@ fn validate_promoted_worktree(
         .map(str::to_owned),
     )
     .collect::<BTreeSet<_>>();
-    let expected = PROMOTED_PATHS
-        .into_iter()
-        .map(str::to_owned)
+    let expected = packet
+        .changed_paths
+        .iter()
+        .cloned()
         .collect::<BTreeSet<_>>();
     if changed != expected {
         return Err(PromotionError::new(
             PromotionErrorKind::Transaction,
-            "promoted worktree does not contain exactly the seven reviewed paths",
+            "promoted worktree Git diff does not equal the reviewed changed subset",
         ));
+    }
+    for path in &packet.unchanged_paths {
+        let baseline = git_file(repository_root, &packet.promotion_base_sha, path)?;
+        let current = fs::read(repository_root.join(path)).map_err(filesystem_error)?;
+        if current != baseline {
+            return Err(PromotionError::new(
+                PromotionErrorKind::Transaction,
+                format!("unchanged reviewed path `{path}` differs from R"),
+            ));
+        }
     }
     Ok(())
 }
@@ -840,14 +942,21 @@ fn render_replacements(
         )?
         .into_bytes(),
     );
+    let replacement_digest = |path: &'static str| {
+        replacements
+            .get(path)
+            .map(|bytes| sha256(bytes))
+            .ok_or_else(|| {
+                PromotionError::new(
+                    PromotionErrorKind::Schema,
+                    format!("replacement `{path}` is absent"),
+                )
+            })
+    };
     let artifact_hashes = [
         (
             WITNESS_PATH,
-            sha256(
-                replacements
-                    .get(WITNESS_PATH)
-                    .expect("witness replacement is present"),
-            ),
+            replacement_digest(WITNESS_PATH)?,
             "witness",
             manifest
                 .files
@@ -857,11 +966,7 @@ fn render_replacements(
         ),
         (
             WITNESS_PROVENANCE_PATH,
-            sha256(
-                replacements
-                    .get(WITNESS_PROVENANCE_PATH)
-                    .expect("witness provenance replacement is present"),
-            ),
+            replacement_digest(WITNESS_PROVENANCE_PATH)?,
             "witness",
             manifest
                 .files
@@ -871,11 +976,7 @@ fn render_replacements(
         ),
         (
             REPLAY_EVIDENCE_PATH,
-            sha256(
-                replacements
-                    .get(REPLAY_EVIDENCE_PATH)
-                    .expect("replay replacement is present"),
-            ),
+            replacement_digest(REPLAY_EVIDENCE_PATH)?,
             "replay_evidence",
             manifest
                 .files
@@ -911,6 +1012,8 @@ fn render_receipt(
     reviewer_id: &str,
     acquisition: &Acquisition,
     manifest: &BundleManifest,
+    changed_paths: &[String],
+    unchanged_paths: &[String],
 ) -> Result<Vec<u8>, PromotionError> {
     let required_trailers = BTreeMap::from([
         ("Phase13-Producer-SHA".to_owned(), producer_sha.to_owned()),
@@ -921,7 +1024,7 @@ fn render_receipt(
         ),
     ]);
     json_bytes(&PromotionReceipt {
-        schema_version: 1,
+        schema_version: 2,
         producer_sha: producer_sha.to_owned(),
         bundle_sha256: bundle_sha256.to_owned(),
         promotion_base_sha: promotion_base_sha.to_owned(),
@@ -929,6 +1032,9 @@ fn render_receipt(
         independent_reviewer_id: reviewer_id.to_owned(),
         promoted_paths: promoted_paths(),
         promoted_path_set_sha256: promoted_path_set_sha256(),
+        changed_paths: changed_paths.to_vec(),
+        unchanged_paths: unchanged_paths.to_vec(),
+        changed_path_set_sha256: changed_path_set_sha256(changed_paths),
         producer_closures: ProducerClosures {
             witness_sha256: manifest.witness_closure.digest.clone(),
             replay_sha256: manifest.replay_closure.digest.clone(),
@@ -974,9 +1080,15 @@ fn render_witness_provenance(
 
 fn render_catalog(current: &str) -> Result<String, PromotionError> {
     if current.contains("RIGID_STACK_REPLAY_EVIDENCE_PATH") {
+        if current.contains("fn validate_rigid_stack_replay_evidence(")
+            && current
+                .contains("validate_rigid_stack_replay_evidence(&canonical_root, &manifest)?;")
+        {
+            return Ok(current.to_owned());
+        }
         return Err(PromotionError::new(
             PromotionErrorKind::Schema,
-            "catalog already contains a Phase 13 replay-evidence binding",
+            "existing Phase 13 catalog binding is incomplete",
         ));
     }
     let with_constant = current.replacen(
@@ -1084,10 +1196,15 @@ fn validate_rigid_stack_replay_evidence(
 "#;
 
 fn render_source_map(current: &str) -> Result<String, PromotionError> {
-    if current.contains(REPLAY_EVIDENCE_PATH) || current.contains(RECEIPT_PATH) {
+    let replay_count = current.match_indices(REPLAY_EVIDENCE_PATH).count();
+    let receipt_count = current.match_indices(RECEIPT_PATH).count();
+    if replay_count == 1 && receipt_count == 1 {
+        return Ok(current.to_owned());
+    }
+    if replay_count != 0 || receipt_count != 0 {
         return Err(PromotionError::new(
             PromotionErrorKind::Ledger,
-            "source map already contains Phase 13 promoted records",
+            "source map contains an incomplete or duplicate Phase 13 mapping",
         ));
     }
     Ok(format!(
@@ -1113,13 +1230,37 @@ fn render_artifact_manifest(
     artifact_hashes: &[(&str, String, &str, Option<&BundleFileEntry>, &str); 4],
     reviewer_id: &str,
 ) -> Result<String, PromotionError> {
-    if current.contains("[[artifact_schemas.phase13_evidence.records]]") {
-        return Err(PromotionError::new(
+    const MARKER: &str = "[[artifact_schemas.phase13_evidence.records]]";
+    let existing: toml::Value = toml::from_str(current).map_err(|error| {
+        PromotionError::new(
             PromotionErrorKind::Ledger,
-            "artifact manifest already contains promoted Phase 13 records",
-        ));
-    }
-    let mut rendered = current.to_owned();
+            format!("invalid artifact manifest before replacement: {error}"),
+        )
+    })?;
+    let maybe_records = existing
+        .get("artifact_schemas")
+        .and_then(|value| value.get("phase13_evidence"))
+        .and_then(|value| value.get("records"))
+        .and_then(toml::Value::as_array);
+    let mut rendered = match (current.find(MARKER), maybe_records) {
+        (None, None) => current.to_owned(),
+        (Some(index), Some(records)) if records.len() == 4 => {
+            let suffix = &current[index..];
+            if suffix.match_indices(MARKER).count() != 4 {
+                return Err(PromotionError::new(
+                    PromotionErrorKind::Ledger,
+                    "existing Phase 13 artifact rows are not a closed four-record tail",
+                ));
+            }
+            current[..index].trim_end().to_owned()
+        }
+        _ => {
+            return Err(PromotionError::new(
+                PromotionErrorKind::Ledger,
+                "existing Phase 13 artifact rows are incomplete or duplicated",
+            ));
+        }
+    };
     for (path, digest, record_class, maybe_entry, generator_revision) in artifact_hashes {
         let (
             source_revision,
@@ -1365,6 +1506,25 @@ fn validate_staged_tree(staging_root: &Path) -> Result<BTreeMap<String, String>,
             let digest = file_sha256(&staging_root.join(&path))?;
             Ok((path, digest))
         })
+        .collect()
+}
+
+fn baseline_sha256(
+    repository_root: &Path,
+    revision: &str,
+) -> Result<BTreeMap<String, String>, PromotionError> {
+    PROMOTED_PATHS
+        .into_iter()
+        .map(|path| {
+            git_file(repository_root, revision, path).map(|bytes| (path.to_owned(), sha256(&bytes)))
+        })
+        .collect()
+}
+
+fn replacement_sha256(replacements: &BTreeMap<String, Vec<u8>>) -> BTreeMap<String, String> {
+    replacements
+        .iter()
+        .map(|(path, bytes)| (path.clone(), sha256(bytes)))
         .collect()
 }
 
@@ -1655,12 +1815,97 @@ fn promoted_paths() -> Vec<String> {
 }
 
 fn promoted_path_set_sha256() -> String {
+    path_set_sha256("phase13-promoted-path-set-v2", &promoted_paths())
+}
+
+fn changed_path_set_sha256(paths: &[String]) -> String {
+    path_set_sha256("phase13-changed-path-set-v2", paths)
+}
+
+fn path_set_sha256(domain: &str, paths: &[String]) -> String {
     let mut hasher = Sha256::new();
-    update_field(&mut hasher, b"phase13-promoted-path-set-v1");
-    for path in PROMOTED_PATHS {
+    update_field(&mut hasher, domain.as_bytes());
+    for path in paths {
         update_field(&mut hasher, path.as_bytes());
     }
     format!("{:x}", hasher.finalize())
+}
+
+pub(crate) fn classify_reviewed_paths(
+    baseline_sha256: &BTreeMap<String, String>,
+    replacement_sha256: &BTreeMap<String, String>,
+) -> Result<(Vec<String>, Vec<String>), PromotionError> {
+    if baseline_sha256.keys().collect::<Vec<_>>() != replacement_sha256.keys().collect::<Vec<_>>() {
+        return Err(PromotionError::new(
+            PromotionErrorKind::Path,
+            "baseline and replacement path sets differ",
+        ));
+    }
+    let (changed, unchanged): (Vec<_>, Vec<_>) = replacement_sha256
+        .iter()
+        .partition(|(path, replacement)| baseline_sha256.get(*path) != Some(*replacement));
+    let changed = changed
+        .into_iter()
+        .map(|(path, _digest)| path.clone())
+        .collect();
+    let unchanged = unchanged
+        .into_iter()
+        .map(|(path, _digest)| path.clone())
+        .collect();
+    Ok((changed, unchanged))
+}
+
+#[derive(Serialize)]
+struct ReviewSubject<'a> {
+    schema_version: u32,
+    producer_sha: &'a str,
+    bundle_sha256: &'a str,
+    promotion_base_sha: &'a str,
+    acquisition: &'a Acquisition,
+    witness_closure: &'a ClosureReview,
+    replay_closure: &'a ClosureReview,
+    promoted_paths: &'a [String],
+    promoted_path_set_sha256: &'a str,
+    changed_paths: &'a [String],
+    unchanged_paths: &'a [String],
+    changed_path_set_sha256: &'a str,
+    replacement_sha256: &'a BTreeMap<String, String>,
+    diff: &'a str,
+}
+
+fn review_sha256(packet: &ReviewPacket) -> Result<String, PromotionError> {
+    let subject = ReviewSubject {
+        schema_version: 2,
+        producer_sha: &packet.producer_sha,
+        bundle_sha256: &packet.bundle_sha256,
+        promotion_base_sha: &packet.promotion_base_sha,
+        acquisition: &packet.acquisition,
+        witness_closure: &packet.witness_closure,
+        replay_closure: &packet.replay_closure,
+        promoted_paths: &packet.promoted_paths,
+        promoted_path_set_sha256: &packet.promoted_path_set_sha256,
+        changed_paths: &packet.changed_paths,
+        unchanged_paths: &packet.unchanged_paths,
+        changed_path_set_sha256: &packet.changed_path_set_sha256,
+        replacement_sha256: &packet.replacement_sha256,
+        diff: &packet.diff,
+    };
+    serde_json::to_vec(&subject)
+        .map(|bytes| sha256(&bytes))
+        .map_err(|error| {
+            PromotionError::new(
+                PromotionErrorKind::Schema,
+                format!("failed to encode review subject: {error}"),
+            )
+        })
+}
+
+#[allow(
+    dead_code,
+    reason = "integration contract tests hash a packet subject without running promotion"
+)]
+pub(crate) fn review_sha256_for_test(packet: &ReviewPacket) -> Result<String, PromotionError> {
+    review_sha256(packet)
 }
 
 fn collect_regular_files(root: &Path) -> Result<BTreeSet<String>, PromotionError> {

@@ -122,7 +122,7 @@ pub(crate) enum AcceptanceStep {
     Diagnosis,
     Regression,
     OracleBuild,
-    Comparison,
+    LiveReplay,
 }
 
 impl AcceptanceStep {
@@ -133,7 +133,7 @@ impl AcceptanceStep {
         Self::Diagnosis,
         Self::Regression,
         Self::OracleBuild,
-        Self::Comparison,
+        Self::LiveReplay,
     ];
 }
 
@@ -163,6 +163,11 @@ pub(crate) struct IdentityContract {
     pub(crate) actual_trailers: BTreeMap<String, String>,
     pub(crate) expected_promoted_path_set_sha256: String,
     pub(crate) actual_promoted_path_set_sha256: String,
+    pub(crate) expected_changed_path_set_sha256: String,
+    pub(crate) actual_changed_path_set_sha256: String,
+    pub(crate) changed_paths_match: bool,
+    pub(crate) unchanged_paths_equal_base: bool,
+    pub(crate) all_promoted_paths_equal_at_acceptance: bool,
     pub(crate) promotion_is_ancestor_of_acceptance: bool,
 }
 
@@ -225,12 +230,14 @@ impl AcceptanceState {
         }
         validate_identity_contract(&contract)?;
         Ok(TerminalIdentity {
-            schema_version: 1,
+            schema_version: 2,
             producer_sha: contract.producer_sha,
             bundle_sha256: contract.bundle_sha256,
             promotion_base_sha: contract.promotion_base_sha,
             promotion_sha: contract.promotion_sha,
             acceptance_sha: contract.acceptance_sha,
+            promoted_path_set_sha256: contract.expected_promoted_path_set_sha256,
+            changed_path_set_sha256: contract.expected_changed_path_set_sha256,
             upstream_revision: String::new(),
             oracle_build_identity_sha256: String::new(),
             reviewed_evidence_sha256: BTreeMap::new(),
@@ -248,6 +255,8 @@ pub(crate) struct TerminalIdentity {
     pub(crate) promotion_base_sha: String,
     pub(crate) promotion_sha: String,
     pub(crate) acceptance_sha: String,
+    promoted_path_set_sha256: String,
+    changed_path_set_sha256: String,
     upstream_revision: String,
     oracle_build_identity_sha256: String,
     reviewed_evidence_sha256: BTreeMap<String, String>,
@@ -288,6 +297,8 @@ pub(crate) fn validate_identity_contract(
         &contract.expected_replay_closure,
         &contract.expected_promoted_path_set_sha256,
         &contract.actual_promoted_path_set_sha256,
+        &contract.expected_changed_path_set_sha256,
+        &contract.actual_changed_path_set_sha256,
     ];
     if !revisions.into_iter().all(|value| valid_revision(value))
         || !digests.into_iter().all(|value| valid_digest(value))
@@ -295,6 +306,10 @@ pub(crate) fn validate_identity_contract(
         || contract.promotion_first_parent != contract.promotion_base_sha
         || contract.actual_trailers != contract.required_trailers
         || contract.actual_promoted_path_set_sha256 != contract.expected_promoted_path_set_sha256
+        || contract.actual_changed_path_set_sha256 != contract.expected_changed_path_set_sha256
+        || !contract.changed_paths_match
+        || !contract.unchanged_paths_equal_base
+        || !contract.all_promoted_paths_equal_at_acceptance
         || !contract.promotion_is_ancestor_of_acceptance
     {
         return Err(AcceptanceError::new(
@@ -403,6 +418,9 @@ struct Receipt {
     independent_reviewer_id: String,
     promoted_paths: Vec<String>,
     promoted_path_set_sha256: String,
+    changed_paths: Vec<String>,
+    unchanged_paths: Vec<String>,
+    changed_path_set_sha256: String,
     producer_closures: ProducerClosures,
     q_contract: PromotionContract,
 }
@@ -501,11 +519,14 @@ fn load_identity(
     let actual_paths = changed_paths(repository_root, &promotion_sha)?;
     validate_q_paths_and_tree(
         repository_root,
+        &receipt.promotion_base_sha,
         &promotion_sha,
         acceptance_sha,
         &actual_paths,
+        &receipt.changed_paths,
+        &receipt.unchanged_paths,
     )?;
-    let actual_promoted_path_set_sha256 = promoted_path_set_sha256(&actual_paths)?;
+    let actual_changed_path_set_sha256 = changed_path_set_sha256(&actual_paths)?;
 
     Ok(LoadedIdentity {
         contract: IdentityContract {
@@ -525,7 +546,12 @@ fn load_identity(
             required_trailers: receipt.q_contract.required_trailers,
             actual_trailers,
             expected_promoted_path_set_sha256: receipt.promoted_path_set_sha256,
-            actual_promoted_path_set_sha256,
+            actual_promoted_path_set_sha256: promoted_path_set_sha256(&receipt.promoted_paths)?,
+            expected_changed_path_set_sha256: receipt.changed_path_set_sha256,
+            actual_changed_path_set_sha256,
+            changed_paths_match: actual_paths == receipt.changed_paths,
+            unchanged_paths_equal_base: true,
+            all_promoted_paths_equal_at_acceptance: true,
             promotion_is_ancestor_of_acceptance: is_ancestor(
                 repository_root,
                 &promotion_sha,
@@ -540,12 +566,15 @@ fn load_identity(
 
 fn validate_receipt(receipt: &Receipt) -> Result<(), AcceptanceError> {
     let expected_paths = PROMOTED_PATHS.map(str::to_owned).to_vec();
-    if receipt.schema_version != 1
+    if receipt.schema_version != 2
         || !valid_revision(&receipt.producer_sha)
         || !valid_digest(&receipt.bundle_sha256)
         || !valid_revision(&receipt.promotion_base_sha)
         || receipt.promoted_paths != expected_paths
         || receipt.promoted_path_set_sha256 != promoted_path_set_sha256(&receipt.promoted_paths)?
+        || receipt.changed_paths.is_empty()
+        || receipt.changed_path_set_sha256 != changed_path_set_sha256(&receipt.changed_paths)?
+        || !valid_path_classification(&receipt.changed_paths, &receipt.unchanged_paths)
         || !receipt.producer_closures.recomputed_at_r
         || receipt.q_contract.required_first_parent != receipt.promotion_base_sha
         || receipt.q_contract.q_sha_recorded
@@ -706,20 +735,45 @@ fn changed_paths(repository_root: &Path, revision: &str) -> Result<Vec<String>, 
 
 fn validate_q_paths_and_tree(
     repository_root: &Path,
+    promotion_base_sha: &str,
     promotion_sha: &str,
     acceptance_sha: &str,
     actual_paths: &[String],
+    expected_changed_paths: &[String],
+    unchanged_paths: &[String],
 ) -> Result<(), AcceptanceError> {
     let actual = actual_paths
         .iter()
         .map(String::as_str)
         .collect::<BTreeSet<_>>();
-    let expected = PROMOTED_PATHS.into_iter().collect::<BTreeSet<_>>();
+    let expected = expected_changed_paths
+        .iter()
+        .map(String::as_str)
+        .collect::<BTreeSet<_>>();
     if actual != expected {
         return Err(AcceptanceError::new(
             AcceptanceErrorKind::Identity,
-            "Q does not change exactly the promoted seven-path tree",
+            "Q Git diff does not equal the reviewed changed subset",
         ));
+    }
+    for path in unchanged_paths {
+        let output = run_process(
+            Command::new("git").arg("-C").arg(repository_root).args([
+                "diff",
+                "--quiet",
+                promotion_base_sha,
+                promotion_sha,
+                "--",
+                path,
+            ]),
+            "verify unchanged reviewed path against R",
+        )?;
+        if !output.status.success() {
+            return Err(AcceptanceError::new(
+                AcceptanceErrorKind::Identity,
+                format!("unchanged reviewed path `{path}` differs between R and Q"),
+            ));
+        }
     }
     let output = run_process(
         Command::new("git")
@@ -872,12 +926,42 @@ fn promoted_path_set_sha256(paths: &[String]) -> Result<String, AcceptanceError>
             "promoted path set is incomplete or contains extra paths",
         ));
     }
+    Ok(path_set_sha256("phase13-promoted-path-set-v2", paths))
+}
+
+fn changed_path_set_sha256(paths: &[String]) -> Result<String, AcceptanceError> {
+    if paths.is_empty()
+        || paths
+            .iter()
+            .any(|path| !PROMOTED_PATHS.contains(&path.as_str()))
+    {
+        return Err(AcceptanceError::new(
+            AcceptanceErrorKind::Identity,
+            "changed path set is empty or outside the promoted set",
+        ));
+    }
+    Ok(path_set_sha256("phase13-changed-path-set-v2", paths))
+}
+
+fn path_set_sha256(domain: &str, paths: &[String]) -> String {
     let mut hasher = Sha256::new();
-    update_field(&mut hasher, b"phase13-promoted-path-set-v1");
-    for path in PROMOTED_PATHS {
+    update_field(&mut hasher, domain.as_bytes());
+    for path in paths {
         update_field(&mut hasher, path.as_bytes());
     }
-    Ok(format!("{:x}", hasher.finalize()))
+    format!("{:x}", hasher.finalize())
+}
+
+fn valid_path_classification(changed: &[String], unchanged: &[String]) -> bool {
+    let changed = changed.iter().map(String::as_str).collect::<BTreeSet<_>>();
+    let unchanged = unchanged
+        .iter()
+        .map(String::as_str)
+        .collect::<BTreeSet<_>>();
+    let promoted = PROMOTED_PATHS.into_iter().collect::<BTreeSet<_>>();
+    changed.len() + unchanged.len() == PROMOTED_PATHS.len()
+        && changed.is_disjoint(&unchanged)
+        && changed.union(&unchanged).copied().collect::<BTreeSet<_>>() == promoted
 }
 
 #[derive(Debug)]
@@ -956,28 +1040,13 @@ fn effect_steps() -> Vec<(AcceptanceStep, Vec<CommandSpec>)> {
             ],
         ),
         (
-            AcceptanceStep::Comparison,
+            AcceptanceStep::LiveReplay,
             vec![xtask(&[
-                "catalog",
-                "compare",
-                "--scenario",
-                "rigid-stack-stability",
-                "--timestep",
-                "0.016666668",
-                "--velocity-iterations",
-                "8",
-                "--position-iterations",
-                "3",
-                "--particle-iterations",
-                "1",
-                "--oracle-preset",
-                "oracle-debug",
-                "--session-profile",
-                "one-shot",
-                "--output",
-                "human",
-                "--commands",
-                "auto",
+                "phase13",
+                "evidence",
+                "live-check",
+                "--tracked",
+                "--require-reviewed",
             ])],
         ),
     ]

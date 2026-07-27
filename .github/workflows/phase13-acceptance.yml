@@ -61,12 +61,14 @@ jobs:
           clang++-22 --version | grep --extended-regexp 'clang version 22\.1\.8'
       - name: Run the aggregate Phase 13 acceptance gate
         run: cargo xtask phase13 acceptance
-      - name: Upload bounded differential failure evidence
+      - name: Upload bounded Phase 13 failure evidence
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
-          name: phase13-differential-failures-${{ github.run_id }}-${{ github.sha }}
-          path: target/differential/failures
+          name: phase13-failures-${{ github.run_id }}-${{ github.sha }}
+          path: |
+            target/differential/catalog-failures
+            target/phase13-acceptance/failures
           if-no-files-found: ignore
           retention-days: 30
       - name: Upload terminal Phase 13 identity

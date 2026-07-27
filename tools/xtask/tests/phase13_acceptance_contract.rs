@@ -50,6 +50,11 @@ fn identity_contract() -> IdentityContract {
         actual_trailers: required_trailers,
         expected_promoted_path_set_sha256: PATH_SET.to_owned(),
         actual_promoted_path_set_sha256: PATH_SET.to_owned(),
+        expected_changed_path_set_sha256: PATH_SET.to_owned(),
+        actual_changed_path_set_sha256: PATH_SET.to_owned(),
+        changed_paths_match: true,
+        unchanged_paths_equal_base: true,
+        all_promoted_paths_equal_at_acceptance: true,
         promotion_is_ancestor_of_acceptance: true,
     }
 }
@@ -152,6 +157,33 @@ fn identity_rejects_wrong_q_promoted_path_set() {
 
     // Act
     let error = validate_identity_contract(&contract).expect_err("wrong Q tree must fail");
+
+    // Assert
+    assert_eq!(error.kind(), AcceptanceErrorKind::Identity);
+}
+
+#[test]
+fn identity_rejects_wrong_incremental_changed_subset() {
+    // Arrange
+    let mut contract = identity_contract();
+    contract.changed_paths_match = false;
+
+    // Act
+    let error = validate_identity_contract(&contract).expect_err("wrong changed subset must fail");
+
+    // Assert
+    assert_eq!(error.kind(), AcceptanceErrorKind::Identity);
+}
+
+#[test]
+fn identity_rejects_modified_unchanged_reviewed_member() {
+    // Arrange
+    let mut contract = identity_contract();
+    contract.unchanged_paths_equal_base = false;
+
+    // Act
+    let error =
+        validate_identity_contract(&contract).expect_err("modified unchanged member must fail");
 
     // Assert
     assert_eq!(error.kind(), AcceptanceErrorKind::Identity);
@@ -286,7 +318,7 @@ fn publication_records_every_ordered_step_only_after_success() {
 }
 
 #[test]
-fn repository_history_satisfies_the_non_circular_identity_contract() {
+fn repository_history_requires_schema_v2_after_recovery_promotion() {
     // Arrange
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
     let output = Command::new("git")
@@ -303,9 +335,23 @@ fn repository_history_satisfies_the_non_circular_identity_contract() {
 
     // Act
     let result = validate_repository_identity_at(&root, &acceptance_sha);
+    let receipt: serde_json::Value = serde_json::from_slice(
+        &fs::read(root.join("reference/artifacts/phase13/promotion-receipt.json"))
+            .expect("tracked receipt should be readable"),
+    )
+    .expect("tracked receipt should be JSON");
 
     // Assert
-    result.expect("tracked P/B/R/Q and current A should satisfy the identity contract");
+    if receipt["schema_version"] == 1 {
+        assert_eq!(
+            result
+                .expect_err("the audited pre-recovery history must not satisfy schema v2")
+                .kind(),
+            AcceptanceErrorKind::Schema
+        );
+    } else {
+        result.expect("schema-v2 P/B/R/Q and current A should satisfy the identity contract");
+    }
 }
 
 #[test]
@@ -335,7 +381,24 @@ fn catalog_acceptance_steps_use_the_required_all_feature_contract() {
     // Assert
     assert_eq!(
         catalog_commands,
-        vec![&tracked_replay, &diagnosis, &tracked_replay]
+        vec![tracked_replay, diagnosis, tracked_replay]
+    );
+}
+
+#[test]
+fn final_acceptance_step_is_the_exact_reviewed_live_check() {
+    // Arrange
+    let commands = required_command_evidence();
+
+    // Act
+    let maybe_live = commands
+        .iter()
+        .find(|(step, _command)| *step == AcceptanceStep::LiveReplay);
+
+    // Assert
+    assert_eq!(
+        maybe_live.map(|(_step, command)| command.as_str()),
+        Some("xtask phase13 evidence live-check --tracked --require-reviewed")
     );
 }
 
@@ -404,13 +467,13 @@ fn workflow_invokes_only_the_aggregate_phase13_acceptance_command() {
 }
 
 #[test]
-fn workflow_uploads_differential_failures_only_after_failure() {
+fn workflow_uploads_both_phase13_failure_roots_only_after_failure() {
     // Arrange
     let workflow = repository_file(".github/workflows/phase13-acceptance.yml");
 
     // Act
     let failure_step = workflow
-        .split("- name: Upload bounded differential failure evidence")
+        .split("- name: Upload bounded Phase 13 failure evidence")
         .nth(1)
         .expect("failure upload step should exist")
         .split("- name:")
@@ -420,7 +483,8 @@ fn workflow_uploads_differential_failures_only_after_failure() {
     // Assert
     assert!(failure_step.contains("if: failure()"));
     assert!(failure_step.contains(UPLOAD_ACTION));
-    assert!(failure_step.contains("path: target/differential/failures"));
+    assert!(failure_step.contains("target/differential/catalog-failures"));
+    assert!(failure_step.contains("target/phase13-acceptance/failures"));
 }
 
 #[test]

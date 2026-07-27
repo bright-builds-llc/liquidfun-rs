@@ -14,7 +14,10 @@ use liquidfun_test_protocol::{
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
-use crate::{CatalogFailureKind, CatalogRunCapture};
+use crate::{
+    CatalogFailureKind, CatalogRunCapture, ComparisonEntry, ComparisonState,
+    compare_canonical_checkpoints,
+};
 
 use super::FailureBundleError;
 
@@ -23,21 +26,33 @@ mod replay;
 pub use replay::CatalogBundleReplay;
 pub(crate) use replay::replay_catalog_bundle;
 
-pub(super) const SCHEMA_VERSION: u32 = 1;
+pub(super) const SCHEMA_VERSION: u32 = 2;
 pub(super) const MAXIMUM_FIELD_BYTES: usize = 1024 * 1024;
 const MAXIMUM_PUBLICATION_ATTEMPTS: usize = 100;
-pub(super) const REQUIRED_FILES: [&str; 10] = [
+pub(super) const AUTHORITY_FILES: [&str; 7] = [
     "resolved.json",
     "action-log.json",
     "checkpoint-schedule.json",
-    "native-checkpoints.json",
-    "oracle-checkpoints.json",
-    "comparison.json",
     "native-identity.json",
     "oracle-identity.json",
     "stderr.txt",
     "controller-state.json",
 ];
+pub(super) const CAPTURE_FILES: [&str; 3] = [
+    "native-checkpoints.json",
+    "oracle-checkpoints.json",
+    "comparison.json",
+];
+
+/// Closed semantic surface used to compare a persisted capture pair.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum CatalogComparisonSurface {
+    /// The complete expanded checkpoint schema, including renderer-neutral debug capture.
+    ExpandedCheckpointV1,
+    /// Parity-bearing physics fields after the reviewed debug-capture projection.
+    LegacyPhysicsV1,
+}
 
 /// Complete owned catalog failure evidence. Construction rejects incomplete authority.
 pub struct CatalogFailureBundleRequest {
@@ -47,9 +62,10 @@ pub struct CatalogFailureBundleRequest {
     resolved_sha256: Sha256Hex,
     action_log_json: Box<[u8]>,
     checkpoint_schedule_json: Box<[u8]>,
-    native_checkpoints_json: Box<[u8]>,
-    oracle_checkpoints_json: Box<[u8]>,
-    comparison_json: Box<[u8]>,
+    maybe_comparison_surface: Option<CatalogComparisonSurface>,
+    maybe_native_checkpoints_json: Option<Box<[u8]>>,
+    maybe_oracle_checkpoints_json: Option<Box<[u8]>>,
+    maybe_comparison_json: Option<Box<[u8]>>,
     maybe_first_divergence_json: Option<Box<[u8]>>,
     native_identity_json: Box<[u8]>,
     oracle_identity_json: Box<[u8]>,
@@ -71,6 +87,32 @@ impl CatalogFailureBundleRequest {
         stderr: &[u8],
         controller_state_json: &[u8],
     ) -> Result<Self, FailureBundleError> {
+        Self::from_projection_captures(
+            result_kind,
+            CatalogComparisonSurface::ExpandedCheckpointV1,
+            request,
+            native,
+            oracle,
+            stderr,
+            controller_state_json,
+        )
+    }
+
+    /// Builds one complete bundle from two captures and a named comparison surface.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FailureBundleError`] when captures conflict or evidence is incomplete.
+    #[allow(clippy::too_many_arguments)]
+    pub fn from_projection_captures(
+        result_kind: CatalogFailureKind,
+        comparison_surface: CatalogComparisonSurface,
+        request: &CatalogRunRequest,
+        native: &CatalogRunCapture,
+        oracle: &CatalogRunCapture,
+        stderr: &[u8],
+        controller_state_json: &[u8],
+    ) -> Result<Self, FailureBundleError> {
         if !matches!(
             result_kind,
             CatalogFailureKind::HarnessFailure | CatalogFailureKind::PhysicsMismatch
@@ -83,9 +125,9 @@ impl CatalogFailureBundleRequest {
         {
             return Err(evidence_error("catalog capture authority mismatch"));
         }
-        let comparison_json = comparison_json(native, oracle)?;
+        let comparison_json = comparison_json(comparison_surface, native, oracle)?;
         let maybe_first_divergence_json = if result_kind == CatalogFailureKind::PhysicsMismatch {
-            first_divergence_json(native, oracle)?.map(Vec::into_boxed_slice)
+            first_divergence_json(comparison_surface, native, oracle)?.map(Vec::into_boxed_slice)
         } else {
             None
         };
@@ -108,12 +150,63 @@ impl CatalogFailureBundleRequest {
             resolved_sha256: request.resolved().identity().content_sha256().clone(),
             action_log_json: action_log_json.into_boxed_slice(),
             checkpoint_schedule_json: checkpoint_schedule_json.into_boxed_slice(),
-            native_checkpoints_json: native_checkpoints_json.into_boxed_slice(),
-            oracle_checkpoints_json: oracle_checkpoints_json.into_boxed_slice(),
-            comparison_json: comparison_json.into_boxed_slice(),
+            maybe_comparison_surface: Some(comparison_surface),
+            maybe_native_checkpoints_json: Some(native_checkpoints_json.into_boxed_slice()),
+            maybe_oracle_checkpoints_json: Some(oracle_checkpoints_json.into_boxed_slice()),
+            maybe_comparison_json: Some(comparison_json.into_boxed_slice()),
             maybe_first_divergence_json,
             native_identity_json: native_identity_json.into_boxed_slice(),
             oracle_identity_json: oracle_identity_json.into_boxed_slice(),
+            stderr: stderr.into(),
+            controller_state_json: controller_state_json.into(),
+        };
+        request.validate()?;
+        Ok(request)
+    }
+
+    /// Builds exact replay authority for a typed harness failure before comparable captures exist.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FailureBundleError`] when the category, request, or bounded diagnostics are invalid.
+    pub fn from_harness_failure(
+        result_kind: CatalogFailureKind,
+        request: &CatalogRunRequest,
+        stderr: &[u8],
+        controller_state_json: &[u8],
+    ) -> Result<Self, FailureBundleError> {
+        if matches!(
+            result_kind,
+            CatalogFailureKind::PhysicsMismatch | CatalogFailureKind::HarnessFailure
+        ) {
+            return Err(evidence_error(
+                "capture-free failure requires a specific harness category",
+            ));
+        }
+        validate_json(controller_state_json, "controller-state.json")?;
+        let request = Self {
+            result_kind,
+            request_id: request.request_id().as_str().into(),
+            resolved_bytes: request.resolved().canonical_bytes().into(),
+            resolved_sha256: request.resolved().identity().content_sha256().clone(),
+            action_log_json: json_line(
+                &request
+                    .resolved()
+                    .actions()
+                    .iter()
+                    .map(|action| action.action_id().clone())
+                    .collect::<Vec<_>>(),
+            )?
+            .into_boxed_slice(),
+            checkpoint_schedule_json: json_line(request.resolved().checkpoints())?
+                .into_boxed_slice(),
+            maybe_comparison_surface: None,
+            maybe_native_checkpoints_json: None,
+            maybe_oracle_checkpoints_json: None,
+            maybe_comparison_json: None,
+            maybe_first_divergence_json: None,
+            native_identity_json: identity_json("native_rust", request)?.into_boxed_slice(),
+            oracle_identity_json: identity_json("cpp_oracle", request)?.into_boxed_slice(),
             stderr: stderr.into(),
             controller_state_json: controller_state_json.into(),
         };
@@ -157,73 +250,96 @@ impl CatalogFailureBundleRequest {
                 "checkpoint-schedule.json",
                 self.checkpoint_schedule_json.as_ref(),
             ),
-            (
-                "native-checkpoints.json",
-                self.native_checkpoints_json.as_ref(),
-            ),
-            (
-                "oracle-checkpoints.json",
-                self.oracle_checkpoints_json.as_ref(),
-            ),
-            ("comparison.json", self.comparison_json.as_ref()),
             ("native-identity.json", self.native_identity_json.as_ref()),
             ("oracle-identity.json", self.oracle_identity_json.as_ref()),
             ("controller-state.json", self.controller_state_json.as_ref()),
         ] {
             validate_json(bytes, name)?;
         }
+        for (name, maybe_bytes) in [
+            (
+                "native-checkpoints.json",
+                self.maybe_native_checkpoints_json.as_deref(),
+            ),
+            (
+                "oracle-checkpoints.json",
+                self.maybe_oracle_checkpoints_json.as_deref(),
+            ),
+            ("comparison.json", self.maybe_comparison_json.as_deref()),
+        ] {
+            if let Some(bytes) = maybe_bytes {
+                validate_json(bytes, name)?;
+            }
+        }
+        let capture_count = [
+            self.maybe_native_checkpoints_json.is_some(),
+            self.maybe_oracle_checkpoints_json.is_some(),
+            self.maybe_comparison_json.is_some(),
+            self.maybe_comparison_surface.is_some(),
+        ]
+        .into_iter()
+        .filter(|present| *present)
+        .count();
+        if capture_count != 0 && capture_count != 4 {
+            return Err(evidence_error("catalog capture evidence is incomplete"));
+        }
         Ok(())
     }
 
-    fn files_without_signature(&self) -> [(&'static str, &[u8], usize); 10] {
-        [
-            ("resolved.json", &self.resolved_bytes, MAXIMUM_FIELD_BYTES),
+    fn files_without_signature(&self) -> Vec<(&'static str, &[u8], usize)> {
+        let mut files: Vec<(&'static str, &[u8], usize)> = vec![
+            (
+                "resolved.json",
+                self.resolved_bytes.as_ref(),
+                MAXIMUM_FIELD_BYTES,
+            ),
             (
                 "action-log.json",
-                &self.action_log_json,
+                self.action_log_json.as_ref(),
                 MAXIMUM_FIELD_BYTES,
             ),
             (
                 "checkpoint-schedule.json",
-                &self.checkpoint_schedule_json,
-                MAXIMUM_FIELD_BYTES,
-            ),
-            (
-                "native-checkpoints.json",
-                &self.native_checkpoints_json,
-                MAXIMUM_FIELD_BYTES,
-            ),
-            (
-                "oracle-checkpoints.json",
-                &self.oracle_checkpoints_json,
-                MAXIMUM_FIELD_BYTES,
-            ),
-            (
-                "comparison.json",
-                &self.comparison_json,
+                self.checkpoint_schedule_json.as_ref(),
                 MAXIMUM_FIELD_BYTES,
             ),
             (
                 "native-identity.json",
-                &self.native_identity_json,
+                self.native_identity_json.as_ref(),
                 MAXIMUM_FIELD_BYTES,
             ),
             (
                 "oracle-identity.json",
-                &self.oracle_identity_json,
+                self.oracle_identity_json.as_ref(),
                 MAXIMUM_FIELD_BYTES,
             ),
             (
                 "stderr.txt",
-                &self.stderr,
+                self.stderr.as_ref(),
                 HarnessLimits::phase2_default_v1().retained_stderr_bytes(),
             ),
             (
                 "controller-state.json",
-                &self.controller_state_json,
+                self.controller_state_json.as_ref(),
                 MAXIMUM_FIELD_BYTES,
             ),
-        ]
+        ];
+        for (name, maybe_bytes) in [
+            (
+                "native-checkpoints.json",
+                self.maybe_native_checkpoints_json.as_deref(),
+            ),
+            (
+                "oracle-checkpoints.json",
+                self.maybe_oracle_checkpoints_json.as_deref(),
+            ),
+            ("comparison.json", self.maybe_comparison_json.as_deref()),
+        ] {
+            if let Some(bytes) = maybe_bytes {
+                files.push((name, bytes, MAXIMUM_FIELD_BYTES));
+            }
+        }
+        files
     }
 }
 
@@ -245,6 +361,7 @@ impl CatalogFailureBundleReceipt {
 pub(super) struct Manifest {
     pub(super) schema_version: u32,
     pub(super) result_kind: CatalogFailureKind,
+    pub(super) maybe_comparison_surface: Option<CatalogComparisonSurface>,
     pub(super) request_id: String,
     pub(super) resolved_sha256: Sha256Hex,
     pub(super) files: BTreeMap<String, FileEntry>,
@@ -299,6 +416,7 @@ fn write_bundle(
     let manifest = Manifest {
         schema_version: SCHEMA_VERSION,
         result_kind: request.result_kind,
+        maybe_comparison_surface: request.maybe_comparison_surface,
         request_id: request.request_id.to_string(),
         resolved_sha256: request.resolved_sha256.clone(),
         files,
@@ -309,6 +427,7 @@ fn write_bundle(
 }
 
 fn comparison_json(
+    surface: CatalogComparisonSurface,
     native: &CatalogRunCapture,
     oracle: &CatalogRunCapture,
 ) -> Result<Vec<u8>, FailureBundleError> {
@@ -317,34 +436,106 @@ fn comparison_json(
         .iter()
         .zip(oracle.checkpoints())
         .map(|(rust, cpp)| {
+            let model = comparison_model(rust, cpp)?;
+            let entries = projection_entries(surface, &model);
+            let maybe_first = entries.iter().find(|entry| is_divergence(entry.state()));
             Ok(serde_json::json!({
                 "checkpoint_id": rust.checkpoint_id(),
                 "native_sha256": digest(&encode_checkpoint(rust)?),
                 "oracle_sha256": digest(&encode_checkpoint(cpp)?),
-                "equal": rust == cpp,
+                "state": maybe_first.map_or("match", |entry| state_name(entry.state())),
+                "maybe_first_divergence_path": maybe_first.map(|entry| entry.semantic_path()),
             }))
         })
         .collect::<Result<Vec<_>, FailureBundleError>>()?;
-    json_line(&rows)
+    json_line(&serde_json::json!({
+        "surface": surface,
+        "checkpoints": rows,
+    }))
 }
 
 fn first_divergence_json(
+    surface: CatalogComparisonSurface,
     native: &CatalogRunCapture,
     oracle: &CatalogRunCapture,
 ) -> Result<Option<Vec<u8>>, FailureBundleError> {
-    native
-        .checkpoints()
-        .iter()
-        .zip(oracle.checkpoints())
-        .find(|(rust, cpp)| rust != cpp)
-        .map(|(rust, cpp)| {
-            json_line(&serde_json::json!({
+    for (rust, cpp) in native.checkpoints().iter().zip(oracle.checkpoints()) {
+        let model = comparison_model(rust, cpp)?;
+        if let Some(entry) = projection_entries(surface, &model)
+            .into_iter()
+            .find(|entry| is_divergence(entry.state()))
+        {
+            return json_line(&serde_json::json!({
+                "surface": surface,
                 "checkpoint_id": rust.checkpoint_id(),
+                "path": entry.semantic_path(),
+                "comparison_state": state_name(entry.state()),
+                "native": {
+                    "state": if entry.maybe_rust_value().is_some() { "present" } else { "absent" },
+                    "value": entry.maybe_rust_value(),
+                },
+                "oracle": {
+                    "state": if entry.maybe_oracle_value().is_some() { "present" } else { "absent" },
+                    "value": entry.maybe_oracle_value(),
+                },
                 "native_sha256": digest(&encode_checkpoint(rust)?),
                 "oracle_sha256": digest(&encode_checkpoint(cpp)?),
             }))
+            .map(Some);
+        }
+    }
+    Ok(None)
+}
+
+fn comparison_model(
+    native: &CanonicalCheckpoint,
+    oracle: &CanonicalCheckpoint,
+) -> Result<crate::ComparisonModel, FailureBundleError> {
+    let policies = liquidfun_test_protocol::Phase4PolicyProfile::parse_toml(include_str!(
+        "../../../../protocol/tolerances/phase4-v1.toml"
+    ))
+    .map_err(|error| evidence_error(&error.to_string()))?;
+    compare_canonical_checkpoints(
+        native,
+        oracle,
+        &policies,
+        crate::ComparisonLimits::phase11_default(),
+    )
+    .map_err(|error| evidence_error(&error.to_string()))
+}
+
+fn projection_entries(
+    surface: CatalogComparisonSurface,
+    model: &crate::ComparisonModel,
+) -> Vec<&ComparisonEntry> {
+    model
+        .entries()
+        .iter()
+        .filter(|entry| {
+            surface == CatalogComparisonSurface::ExpandedCheckpointV1
+                || (!entry.semantic_path().starts_with("debug_primitives.")
+                    && !entry
+                        .semantic_path()
+                        .starts_with("observations.world-debug-primitive-count."))
         })
-        .transpose()
+        .collect()
+}
+
+const fn is_divergence(state: ComparisonState) -> bool {
+    matches!(
+        state,
+        ComparisonState::PhysicsMismatch | ComparisonState::RustOnly | ComparisonState::OracleOnly
+    )
+}
+
+const fn state_name(state: ComparisonState) -> &'static str {
+    match state {
+        ComparisonState::ExactMatch => "exact_match",
+        ComparisonState::WithinPolicy => "within_policy",
+        ComparisonState::PhysicsMismatch => "physics_mismatch",
+        ComparisonState::RustOnly => "native_only",
+        ComparisonState::OracleOnly => "oracle_only",
+    }
 }
 
 fn identity_json(engine: &str, request: &CatalogRunRequest) -> Result<Vec<u8>, FailureBundleError> {

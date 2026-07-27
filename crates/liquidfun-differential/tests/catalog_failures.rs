@@ -7,9 +7,9 @@ use std::{
 };
 
 use liquidfun_differential::{
-    CatalogFailureBundleRequest, CatalogFailureKind, CatalogOracleSupervisor, OracleExecutable,
-    OraclePreset, SessionProfile, execute_catalog_native, persist_catalog_failure_bundle,
-    replay_catalog_failure_bundle,
+    CatalogComparisonSurface, CatalogFailureBundleRequest, CatalogFailureKind,
+    CatalogOracleSupervisor, OracleExecutable, OraclePreset, SessionProfile,
+    execute_catalog_native, persist_catalog_failure_bundle, replay_catalog_failure_bundle,
 };
 use liquidfun_test_protocol::{
     CatalogRunRequest, CatalogSlug, EvidenceTier, FloatBits, HarnessLimits, RequestId,
@@ -105,6 +105,88 @@ fn catalog_failure_bundle_persists_and_replays_exact_authority() {
         replay.resolved_sha256(),
         request.resolved().identity().content_sha256()
     );
+}
+
+#[test]
+fn catalog_failure_bundle_records_projection_and_first_semantic_divergence() {
+    // Arrange
+    let root = repository();
+    let request = request();
+    let native = execute_catalog_native(&request).expect("native capture should succeed");
+    let mut oracle_records = native
+        .canonical_checkpoint_bytes()
+        .iter()
+        .map(|bytes| bytes.to_vec())
+        .collect::<Vec<_>>();
+    let mut first: serde_json::Value =
+        serde_json::from_slice(&oracle_records[0]).expect("checkpoint should be strict JSON");
+    first["simulation_time_bits"] = serde_json::json!(FloatBits::from_f32(42.0).bits());
+    oracle_records[0] = serde_json::to_vec(&first).expect("changed checkpoint should encode");
+    oracle_records[0].push(b'\n');
+    let oracle =
+        liquidfun_differential::CatalogRunCapture::from_checkpoint_jsonl(&request, &oracle_records)
+            .expect("changed capture should validate");
+    let evidence = CatalogFailureBundleRequest::from_projection_captures(
+        CatalogFailureKind::PhysicsMismatch,
+        CatalogComparisonSurface::LegacyPhysicsV1,
+        &request,
+        &native,
+        &oracle,
+        b"",
+        b"{\"controller_state\":\"physics_mismatch\"}\n",
+    )
+    .expect("projection-aware evidence should validate");
+
+    // Act
+    let receipt =
+        persist_catalog_failure_bundle(&root, &evidence).expect("bounded bundle should persist");
+    let comparison: serde_json::Value = serde_json::from_slice(
+        &fs::read(receipt.directory().join("comparison.json"))
+            .expect("comparison evidence should be readable"),
+    )
+    .expect("comparison evidence should be strict JSON");
+    let first_divergence: serde_json::Value = serde_json::from_slice(
+        &fs::read(receipt.directory().join("first-divergence.json"))
+            .expect("first divergence evidence should be readable"),
+    )
+    .expect("first divergence evidence should be strict JSON");
+
+    // Assert
+    assert_eq!(comparison["surface"], "legacy_physics_v1");
+    assert_eq!(
+        first_divergence["path"], "checkpoint.simulation_time",
+        "the first semantic path must be explicit"
+    );
+    assert!(first_divergence["native"].is_object());
+    assert!(first_divergence["oracle"].is_object());
+}
+
+#[test]
+fn harness_failure_bundle_can_preserve_category_without_comparable_captures() {
+    // Arrange
+    let root = repository();
+    let request = request();
+    let evidence = CatalogFailureBundleRequest::from_harness_failure(
+        CatalogFailureKind::Timeout,
+        &request,
+        b"oracle timed out",
+        b"{\"controller_state\":\"timeout\"}\n",
+    )
+    .expect("typed harness evidence should validate without captures");
+
+    // Act
+    let receipt =
+        persist_catalog_failure_bundle(&root, &evidence).expect("bounded bundle should persist");
+    let replay = replay_catalog_failure_bundle(&root, receipt.directory())
+        .expect("harness-only bundle should replay");
+
+    // Assert
+    assert_eq!(
+        replay.maybe_failure_kind(),
+        Some(CatalogFailureKind::Timeout)
+    );
+    assert!(replay.maybe_native_capture().is_none());
+    assert!(replay.maybe_oracle_capture().is_none());
 }
 
 #[test]

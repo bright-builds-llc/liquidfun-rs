@@ -11,8 +11,8 @@ use serde::Deserialize;
 use crate::CatalogFailureKind;
 
 use super::{
-    MAXIMUM_FIELD_BYTES, Manifest, REQUIRED_FILES, SCHEMA_VERSION, digest, ensure_catalog_root,
-    evidence_error, read_bounded, reject_symlink,
+    AUTHORITY_FILES, CAPTURE_FILES, MAXIMUM_FIELD_BYTES, Manifest, SCHEMA_VERSION, digest,
+    ensure_catalog_root, evidence_error, read_bounded, reject_symlink,
 };
 use crate::failure_bundle::FailureBundleError;
 
@@ -21,6 +21,9 @@ use crate::failure_bundle::FailureBundleError;
 pub struct CatalogBundleReplay {
     resolved_bytes: Box<[u8]>,
     resolved_sha256: Sha256Hex,
+    failure_kind: CatalogFailureKind,
+    maybe_native_checkpoints: Option<Box<[CanonicalCheckpoint]>>,
+    maybe_oracle_checkpoints: Option<Box<[CanonicalCheckpoint]>>,
 }
 
 impl CatalogBundleReplay {
@@ -34,6 +37,24 @@ impl CatalogBundleReplay {
     #[must_use]
     pub const fn resolved_sha256(&self) -> &Sha256Hex {
         &self.resolved_sha256
+    }
+
+    /// Returns the typed terminal category persisted with this evidence.
+    #[must_use]
+    pub const fn maybe_failure_kind(&self) -> Option<CatalogFailureKind> {
+        Some(self.failure_kind)
+    }
+
+    /// Returns native checkpoints when the failure occurred after comparable capture.
+    #[must_use]
+    pub fn maybe_native_capture(&self) -> Option<&[CanonicalCheckpoint]> {
+        self.maybe_native_checkpoints.as_deref()
+    }
+
+    /// Returns oracle checkpoints when the failure occurred after comparable capture.
+    #[must_use]
+    pub fn maybe_oracle_capture(&self) -> Option<&[CanonicalCheckpoint]> {
+        self.maybe_oracle_checkpoints.as_deref()
     }
 }
 
@@ -49,13 +70,7 @@ pub(crate) fn replay_catalog_bundle(
     }
     let manifest_bytes = read_bounded(&canonical.join("manifest.json"), MAXIMUM_FIELD_BYTES)?;
     let manifest: Manifest = serde_json::from_slice(&manifest_bytes)?;
-    if manifest.schema_version != SCHEMA_VERSION
-        || !matches!(
-            manifest.result_kind,
-            CatalogFailureKind::HarnessFailure | CatalogFailureKind::PhysicsMismatch
-        )
-        || !manifest_has_exact_files(&manifest)
-    {
+    if manifest.schema_version != SCHEMA_VERSION || !manifest_has_exact_files(&manifest) {
         return Err(evidence_error("unsupported catalog bundle schema"));
     }
     validate_directory_entries(&canonical, &manifest)?;
@@ -70,10 +85,14 @@ pub(crate) fn replay_catalog_bundle(
     let resolved_bytes = read_bounded(&canonical.join("resolved.json"), MAXIMUM_FIELD_BYTES)?;
     let resolved = decode_resolved_scenario(&resolved_bytes, &manifest.resolved_sha256)
         .map_err(|_error| evidence_error("catalog bundle resolved bytes are invalid"))?;
-    validate_replay_semantics(&canonical, &manifest, &resolved)?;
+    let (maybe_native_checkpoints, maybe_oracle_checkpoints) =
+        validate_replay_semantics(&canonical, &manifest, &resolved)?;
     Ok(CatalogBundleReplay {
         resolved_bytes: resolved_bytes.into_boxed_slice(),
         resolved_sha256: manifest.resolved_sha256,
+        failure_kind: manifest.result_kind,
+        maybe_native_checkpoints,
+        maybe_oracle_checkpoints,
     })
 }
 
@@ -107,15 +126,26 @@ fn validate_directory_entries(
 }
 
 fn manifest_has_exact_files(manifest: &Manifest) -> bool {
-    let mut expected = REQUIRED_FILES
+    let mut expected = AUTHORITY_FILES
         .iter()
         .map(|name| (*name).to_owned())
         .collect::<Vec<_>>();
+    if manifest.maybe_comparison_surface.is_some() {
+        expected.extend(CAPTURE_FILES.iter().map(|name| (*name).to_owned()));
+    }
     if manifest.result_kind == CatalogFailureKind::PhysicsMismatch {
         expected.push("first-divergence.json".to_owned());
     }
     expected.sort_unstable();
-    manifest.files.keys().cloned().collect::<Vec<_>>() == expected
+    let captures_are_valid = if manifest.result_kind == CatalogFailureKind::PhysicsMismatch {
+        manifest.maybe_comparison_surface.is_some()
+    } else if manifest.result_kind == CatalogFailureKind::HarnessFailure {
+        manifest.maybe_comparison_surface.is_some()
+    } else {
+        manifest.maybe_comparison_surface.is_none()
+    };
+    captures_are_valid
+        && manifest.files.keys().cloned().collect::<Vec<_>>() == expected
         && manifest.files.keys().all(|name| {
             !name.is_empty()
                 && !name.contains('/')
@@ -129,7 +159,13 @@ fn validate_replay_semantics(
     directory: &Path,
     manifest: &Manifest,
     resolved: &ResolvedScenario,
-) -> Result<(), FailureBundleError> {
+) -> Result<
+    (
+        Option<Box<[CanonicalCheckpoint]>>,
+        Option<Box<[CanonicalCheckpoint]>>,
+    ),
+    FailureBundleError,
+> {
     let action_log: Vec<ScenarioActionId> = read_json(directory, "action-log.json")?;
     if action_log
         != resolved
@@ -148,29 +184,39 @@ fn validate_replay_semantics(
             "catalog checkpoint schedule disagrees with resolved bytes",
         ));
     }
-    let native = decode_checkpoint_array(directory, "native-checkpoints.json")?;
-    let oracle = decode_checkpoint_array(directory, "oracle-checkpoints.json")?;
-    if native.len() != schedule.len() || oracle.len() != schedule.len() {
-        return Err(evidence_error(
-            "catalog checkpoint count disagrees with schedule",
-        ));
-    }
-    let request_id = liquidfun_test_protocol::RequestId::new(&manifest.request_id)
-        .map_err(|_error| evidence_error("catalog bundle request identity is invalid"))?;
-    for ((declaration, rust), cpp) in schedule.iter().zip(&native).zip(&oracle) {
-        for checkpoint in [rust, cpp] {
-            if checkpoint.request_id() != &request_id
-                || checkpoint.resolved_sha256() != &manifest.resolved_sha256
-                || checkpoint.checkpoint_id() != declaration.checkpoint_id()
-            {
-                return Err(evidence_error("catalog checkpoint identity mismatch"));
+    let (maybe_native, maybe_oracle) = if manifest.maybe_comparison_surface.is_some() {
+        let native = decode_checkpoint_array(directory, "native-checkpoints.json")?;
+        let oracle = decode_checkpoint_array(directory, "oracle-checkpoints.json")?;
+        if native.len() != schedule.len() || oracle.len() != schedule.len() {
+            return Err(evidence_error(
+                "catalog checkpoint count disagrees with schedule",
+            ));
+        }
+        let request_id = liquidfun_test_protocol::RequestId::new(&manifest.request_id)
+            .map_err(|_error| evidence_error("catalog bundle request identity is invalid"))?;
+        for ((declaration, rust), cpp) in schedule.iter().zip(&native).zip(&oracle) {
+            for checkpoint in [rust, cpp] {
+                if checkpoint.request_id() != &request_id
+                    || checkpoint.resolved_sha256() != &manifest.resolved_sha256
+                    || checkpoint.checkpoint_id() != declaration.checkpoint_id()
+                {
+                    return Err(evidence_error("catalog checkpoint identity mismatch"));
+                }
             }
         }
-    }
-    let comparison: serde_json::Value = read_json(directory, "comparison.json")?;
-    if comparison.as_array().map(Vec::len) != Some(schedule.len()) {
-        return Err(evidence_error("catalog comparison evidence is incomplete"));
-    }
+        let comparison: ComparisonEvidence = read_json(directory, "comparison.json")?;
+        if Some(comparison.surface) != manifest.maybe_comparison_surface
+            || comparison.checkpoints.len() != schedule.len()
+        {
+            return Err(evidence_error("catalog comparison evidence is incomplete"));
+        }
+        (
+            Some(native.into_boxed_slice()),
+            Some(oracle.into_boxed_slice()),
+        )
+    } else {
+        (None, None)
+    };
     for name in [
         "native-identity.json",
         "oracle-identity.json",
@@ -183,7 +229,13 @@ fn validate_replay_semantics(
             ));
         }
     }
-    Ok(())
+    Ok((maybe_native, maybe_oracle))
+}
+
+#[derive(Deserialize)]
+struct ComparisonEvidence {
+    surface: super::CatalogComparisonSurface,
+    checkpoints: Vec<serde_json::Value>,
 }
 
 fn read_json<T: for<'de> Deserialize<'de>>(

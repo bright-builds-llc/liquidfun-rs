@@ -14,8 +14,9 @@ use phase13_evidence::bundle::{
     write_bundle,
 };
 use phase13_evidence::{
-    CanonicalEnvironment, ProductionGate, ProductionGateErrorKind, select_rigid_stack_definition,
-    validate_staging_root, witness_materials_identity,
+    CanonicalEnvironment, ProductionGate, ProductionGateErrorKind, compare_live_replay_records,
+    persist_live_check_failure, select_rigid_stack_definition, validate_staging_root,
+    witness_materials_identity,
 };
 
 const SHA_A: &str = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
@@ -66,6 +67,79 @@ fn producer_records_the_full_scoped_materials_identity() {
         digest,
         "a1029da0460bcf29ff85410527daef11e0fb249130fe0b498681cd699d50fba2"
     );
+}
+
+fn tracked_replay_record() -> serde_json::Value {
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../reference/artifacts/catalog/rigid-stack-v1.replay-evidence.json");
+    serde_json::from_slice(&fs::read(path).expect("tracked replay evidence should be readable"))
+        .expect("tracked replay evidence should be strict JSON")
+}
+
+#[test]
+fn live_check_requires_exact_reviewed_replay_identity_and_diagnosis() {
+    // Arrange
+    let reviewed = tracked_replay_record();
+    let mut current = reviewed.clone();
+    current["diagnosis"]["first_divergence"] =
+        serde_json::Value::String("$.checkpoints[1].debug_primitives.length".to_owned());
+
+    // Act
+    let error = compare_live_replay_records(&reviewed, &current)
+        .expect_err("first semantic divergence drift must fail");
+
+    // Assert
+    assert_eq!(
+        error.path(),
+        "$.diagnosis.first_divergence",
+        "live equality must report the first exact semantic path"
+    );
+}
+
+#[test]
+fn live_check_failure_record_is_bounded_and_create_new() {
+    // Arrange
+    let repository_root = temporary_directory("live-check-failure");
+    fs::create_dir_all(repository_root.join("target/phase13-acceptance/failures"))
+        .expect("failure root should be creatable");
+    let reviewed = tracked_replay_record();
+    let mut current = reviewed.clone();
+    current["d1_result"] = serde_json::Value::String("mismatch".to_owned());
+    let mismatch = compare_live_replay_records(&reviewed, &current)
+        .expect_err("D1 mismatch must fail exact equality");
+
+    // Act
+    let path = persist_live_check_failure(&repository_root, &reviewed, &current, &mismatch)
+        .expect("bounded live-check failure should persist");
+    let duplicate = persist_live_check_failure(&repository_root, &reviewed, &current, &mismatch);
+    let bytes = fs::read(&path).expect("failure evidence should be readable");
+
+    // Assert
+    assert!(bytes.len() <= 64 * 1024);
+    assert!(duplicate.is_err(), "failure evidence must use create-new");
+}
+
+#[test]
+fn live_check_rejects_missing_extra_and_reordered_flags() {
+    // Arrange
+    let malformed = [
+        vec!["evidence", "live-check", "--tracked"],
+        vec![
+            "evidence",
+            "live-check",
+            "--tracked",
+            "--require-reviewed",
+            "--extra",
+        ],
+        vec!["evidence", "live-check", "--require-reviewed", "--tracked"],
+    ];
+
+    // Act and Assert
+    for args in malformed {
+        let args = args.into_iter().map(str::to_owned).collect::<Vec<_>>();
+        let error = phase13_evidence::run(&args).expect_err("malformed live-check must fail");
+        assert!(error.to_string().contains("Usage"));
+    }
 }
 
 fn temporary_directory(label: &str) -> PathBuf {

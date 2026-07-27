@@ -13,9 +13,10 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use phase13_promotion::{
-    PromotionErrorKind, ReviewAcknowledgement, replace_with_failing_validation,
-    replace_with_injected_failure, review_packet_for_test, validate_base_contract,
-    validate_exact_paths, validate_review_ack, validate_staged_ledgers,
+    PromotionErrorKind, ReviewAcknowledgement, classify_reviewed_paths,
+    replace_with_failing_validation, replace_with_injected_failure, review_packet_for_test,
+    review_sha256_for_test, validate_base_contract, validate_exact_paths, validate_review_ack,
+    validate_staged_ledgers,
 };
 
 const SHA_A: &str = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
@@ -37,12 +38,49 @@ fn temporary_directory(label: &str) -> PathBuf {
 
 fn acknowledgement(reviewer: &str, digest: &str) -> ReviewAcknowledgement {
     ReviewAcknowledgement {
-        schema_version: 1,
+        schema_version: 2,
         reviewer_id: reviewer.to_owned(),
-        review_diff_sha256: digest.to_owned(),
+        review_sha256: digest.to_owned(),
         acknowledgement: "I reviewed and acknowledge this exact seven-path diff.".to_owned(),
         reviewed_at: "2026-07-26T01:00:00Z".to_owned(),
     }
+}
+
+#[test]
+fn review_subject_changes_when_any_replacement_hash_changes() {
+    // Arrange
+    let mut packet = review_packet_for_test("pRizz", DIGEST_A);
+    let original = review_sha256_for_test(&packet).expect("review subject should hash");
+    packet
+        .replacement_sha256
+        .insert("reference/source-map.toml".to_owned(), DIGEST_B.to_owned());
+
+    // Act
+    let changed = review_sha256_for_test(&packet).expect("changed review subject should hash");
+
+    // Assert
+    assert_ne!(changed, original);
+}
+
+#[test]
+fn incremental_classification_preserves_identical_reviewed_members() {
+    // Arrange
+    let baseline = BTreeMap::from([
+        ("one".to_owned(), DIGEST_A.to_owned()),
+        ("two".to_owned(), DIGEST_A.to_owned()),
+    ]);
+    let replacements = BTreeMap::from([
+        ("one".to_owned(), DIGEST_B.to_owned()),
+        ("two".to_owned(), DIGEST_A.to_owned()),
+    ]);
+
+    // Act
+    let (changed, unchanged) =
+        classify_reviewed_paths(&baseline, &replacements).expect("classification should validate");
+
+    // Assert
+    assert_eq!(changed, vec!["one"]);
+    assert_eq!(unchanged, vec!["two"]);
 }
 
 #[test]
