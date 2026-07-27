@@ -2,15 +2,15 @@
 gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 13-04-PLAN.md
-last_updated: "2026-07-26T16:02:29.405Z"
-last_activity: "2026-07-26"
+status: planning
+stopped_at: Phase 13 complete; ready to plan Phase 14
+last_updated: "2026-07-27T15:09:32.208Z"
+last_activity: "2026-07-27"
 progress:
   total_phases: 15
-  completed_phases: 12
+  completed_phases: 13
   total_plans: 221
-  completed_plans: 220
+  completed_plans: 221
   percent: 100
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-07-23)
 
 **Core value:** Deliver an independent, maintainable Rust physics engine whose LiquidFun behavior is demonstrated against a pinned upstream oracle through explicit inventory, tests, differential evidence, and documented tolerances.
-**Current focus:** Phase 13 — restore-evidence-and-replay-integrity
+**Current focus:** Phase 14 — repair-windows-particle-group-invariants
 
 ## Current Position
 
-Phase: 13 (restore-evidence-and-replay-integrity) — EXECUTING
-Plan: 5 of 5
-Status: Ready to execute
-Last activity: 2026-07-26
+Phase: 14 (repair-windows-particle-group-invariants)
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-07-27
 
 Progress: [██████████] 100%
 
@@ -36,7 +36,7 @@ Progress: [██████████] 100%
 
 **Velocity:**
 
-- Total plans completed: 226
+- Total plans completed: 231
 - Average duration: Not available
 - Total execution time: 0 hours
 
@@ -55,6 +55,7 @@ Progress: [██████████] 100%
 | 09 | 31 | - | - |
 | 11 | 30 | - | - |
 | 12 | 25 | - | - |
+| 13 | 5 | - | - |
 
 *Updated after each plan completion*
 | Phase 02 P01 | 5 min | 1 tasks | 6 files |
@@ -227,6 +228,7 @@ Progress: [██████████] 100%
 | Phase 13 P01 | 30m | 2 tasks | 12 files |
 | Phase 13 P02 | 25min | 2 tasks | 6 files |
 | Phase 13 P04 | 9h 15m | 3 tasks | 14 files |
+| Phase 13 P05 | 13h 25m | 5 tasks | 17 files |
 
 ## Accumulated Context
 
@@ -640,6 +642,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 13]: Classify expanded debug primitives as capture-schema evidence only after sealed bytes and legacy physics semantics match.
 - [Phase 13]: Report unequal diagnostic arrays at their length path so repeated diagnoses remain stable without blessing emitted values.
 - [Phase 13]: Select legacy D0/D1 authority only after the reviewed capture-schema diagnosis; exclude debug-capture records and their aggregate count from cross-engine physics parity while retaining expanded capture evidence separately.
+- [Phase 13]: Phase 13 live acceptance compares the reviewed legacy physics projection while requiring expanded drift to remain exactly capture_schema_drift.
+- [Phase 13]: Phase 13 schema-v2 promotion binds path sets and byte content separately, normalizing only the receipt's two self-referential content-digest fields.
+- [Phase 13]: Explicit provenance digest-mode parsing was an acceptance-only repair because it remained outside both producer-affecting closures.
 
 ### Pending Todos
 
@@ -653,6 +658,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-26T16:02:29.401Z
-Stopped at: Completed 13-04-PLAN.md
+Last session: 2026-07-27T15:09:32.203Z
+Stopped at: Phase 13 complete; ready to plan Phase 14
 Resume file: None

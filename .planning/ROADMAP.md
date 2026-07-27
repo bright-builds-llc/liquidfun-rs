@@ -20,7 +20,7 @@ The v1 roadmap moves from an immutable, licensed source of truth to a semantic c
 - [x] **Phase 10: Particle Groups, Solvers, and Compatibility Sign-Off** - Complete group topology and every particle behavior in pinned upstream pass order. (completed 2026-07-21)
 - [x] **Phase 11: Examples, Headless Tooling, and Testbed** - Account for every upstream test/example and expose shared headless and optional visual scenarios. (completed 2026-07-23)
 - [x] **Phase 12: Performance, Portability, and Release Hardening** - Prove performance, safety, platform, documentation, packaging, and zero-gap v1 readiness. (completed 2026-07-24)
-- [ ] **Phase 13: Restore Evidence and Replay Integrity** - Repair exact-head provenance and reviewed catalog replay before accepting current compatibility evidence.
+- [x] **Phase 13: Restore Evidence and Replay Integrity** - Repair exact-head provenance and reviewed catalog replay before accepting current compatibility evidence. (completed 2026-07-27)
 - [ ] **Phase 14: Repair Windows Particle-Group Invariants** - Remove the supported-Windows authoritative-storage panic and restore transactional particle-group behavior.
 - [ ] **Phase 15: Re-establish Candidate Evidence** - Produce and attest a green exact-head release-candidate evidence bundle after all implementation and replay gaps close.
 
@@ -341,7 +341,7 @@ Plans:
 | 10. Particle Groups, Solvers, and Compatibility Sign-Off | 32/32 | Complete   | 2026-07-21 |
 | 11. Examples, Headless Tooling, and Testbed | 30/30 | Complete    | 2026-07-23 |
 | 12. Performance, Portability, and Release Hardening | 25/25 | Complete    | 2026-07-24 |
-| 13. Restore Evidence and Replay Integrity | 4/5 | In Progress|  |
+| 13. Restore Evidence and Replay Integrity | 5/5 | Complete    | 2026-07-27 |
 | 14. Repair Windows Particle-Group Invariants | 0/TBD | Not started | — |
 | 15. Re-establish Candidate Evidence | 0/TBD | Not started | — |
 
