@@ -96,7 +96,7 @@ Q has R as its sole parent and the exact P/B/R trailers. Its Git diff equals the
 
 ## Files Created/Modified
 
-- `crates/liquidfun-differential/src/failure_bundle/catalog.rs` and `catalog/replay.rs` - Projection-aware replayable catalog failure bundles.
+- `crates/liquidfun-differential/src/failure_bundle/catalog.rs` and `crates/liquidfun-differential/src/failure_bundle/catalog/replay.rs` - Projection-aware replayable catalog failure bundles.
 - `crates/liquidfun-differential/tests/catalog_failures.rs` - Exact authority, harness taxonomy, and projection failure regressions.
 - `tools/xtask/src/phase13_evidence.rs` - Shared acquisition, strict tracked/live equality, RFC 6901 failure evidence, and reviewed live-check command.
 - `tools/xtask/src/phase13_evidence/promotion.rs` - Schema-v2 review packet, content digests, explicit ledger modes, incremental classification, and exact acquisition tuple.

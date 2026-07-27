@@ -3,6 +3,12 @@ phase: 13-restore-evidence-and-replay-integrity
 verified: 2026-07-27T15:03:58Z
 status: passed
 score: 7/7 success criteria verified
+generated_by: gsd-executor
+lifecycle_mode: yolo
+phase_lifecycle_id: 13-2026-07-25T18-25-02
+generated_at: 2026-07-27T15:03:58Z
+lifecycle_validated: true
+overrides_applied: 0
 requirements:
   - FND-04
   - COMP-04
