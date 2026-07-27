@@ -139,3 +139,43 @@ None - no external service configuration required.
 
 *Phase: 13-restore-evidence-and-replay-integrity*
 *Completed: 2026-07-26*
+
+## Plan 13-05 Schema-v2 Recovery
+
+The original Plan 13-04 promotion history above remains the audit record for the
+first reviewed promotion. Plan 13-05 recovered the acceptance chain without
+rewriting or erasing that history:
+
+- Canonical acceptance run `30211470256` exposed replay-closure drift after the
+  original promotion, so its test-only repair could not be accepted as a final
+  descendant.
+- Producer candidate `2f51f7ff878049ed364d8930e9c8524c0625a13c`
+  and successful run `30231510280` were preserved but superseded before
+  acquisition because review found incomplete content-digest, JSON-pointer, and
+  exact request-authority semantics.
+- The authoritative producer is
+  `6e8261a66a67a05bf3fadb4ad9d818121c395324`. Canonical run
+  `30232297731` produced bundle
+  `fd7fa1a857c0b8cab3ee02fc1d61a45290b632173a4a1f80a790d4334c7453b2`
+  as provider artifact `8640500578`.
+- Constants-only review base
+  `88aba114356cd84c9464d4e6ff62f1d6d3872af7` retained byte-identical
+  witness and replay closures from the producer.
+- Reviewer `pRizz` freshly acknowledged schema-v2 review subject
+  `58e41c6d754341f9dba8a9fbfb1a0c2d4dbc485fdf46129a680a62e2af5a5735`.
+  That subject bound every reviewed replacement, separate changed and unchanged
+  classifications, path-set digests, and normalized content-set digests.
+- Recovery promotion `9f3c7c3480a7e371b4d7c39f7050da3ed4a660e5`
+  has the review base as its sole parent and contains the exact P/B/R trailers.
+  It changes only the manifest, schema-v2 receipt, and witness provenance;
+  catalog source, replay evidence, witness data, and source map remain
+  byte-identical to the review base.
+- The receipt artifact row explicitly uses
+  `phase13_receipt_semantic_v2`; every other artifact row uses exact-byte
+  SHA-256. Acceptance separately requires all seven promoted files to remain
+  byte-identical from the promotion through the final acceptance head.
+
+The required Rust 1.97 format, Clippy, all-target build, and all-feature test
+sequence passed before the recovery promotion. Final canonical acceptance is
+recorded by Plan 13-05 rather than retroactively replacing the original Plan
+13-04 result.
