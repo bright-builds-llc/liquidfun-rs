@@ -50,8 +50,12 @@ fn identity_contract() -> IdentityContract {
         actual_trailers: required_trailers,
         expected_promoted_path_set_sha256: PATH_SET.to_owned(),
         actual_promoted_path_set_sha256: PATH_SET.to_owned(),
+        expected_promoted_content_sha256: PATH_SET.to_owned(),
+        actual_promoted_content_sha256: PATH_SET.to_owned(),
         expected_changed_path_set_sha256: PATH_SET.to_owned(),
         actual_changed_path_set_sha256: PATH_SET.to_owned(),
+        expected_changed_content_sha256: PATH_SET.to_owned(),
+        actual_changed_content_sha256: PATH_SET.to_owned(),
         changed_paths_match: true,
         unchanged_paths_equal_base: true,
         all_promoted_paths_equal_at_acceptance: true,
@@ -157,6 +161,33 @@ fn identity_rejects_wrong_q_promoted_path_set() {
 
     // Act
     let error = validate_identity_contract(&contract).expect_err("wrong Q tree must fail");
+
+    // Assert
+    assert_eq!(error.kind(), AcceptanceErrorKind::Identity);
+}
+
+#[test]
+fn identity_rejects_wrong_promoted_content_digest() {
+    // Arrange
+    let mut contract = identity_contract();
+    contract.actual_promoted_content_sha256 = REPLAY.to_owned();
+
+    // Act
+    let error =
+        validate_identity_contract(&contract).expect_err("wrong promoted content must fail");
+
+    // Assert
+    assert_eq!(error.kind(), AcceptanceErrorKind::Identity);
+}
+
+#[test]
+fn identity_rejects_wrong_changed_content_digest() {
+    // Arrange
+    let mut contract = identity_contract();
+    contract.actual_changed_content_sha256 = REPLAY.to_owned();
+
+    // Act
+    let error = validate_identity_contract(&contract).expect_err("wrong changed content must fail");
 
     // Assert
     assert_eq!(error.kind(), AcceptanceErrorKind::Identity);

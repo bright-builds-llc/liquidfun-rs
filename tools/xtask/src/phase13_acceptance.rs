@@ -22,6 +22,8 @@ const REPLAY_EVIDENCE_PATH: &str =
 const MATERIALS_MANIFEST: &str = "tools/reference/phase9-lifecycle-contact-witness.materials.json";
 const IDENTITY_PATH: &str = "target/phase13-acceptance/identity.json";
 const ORACLE_REVISION: &str = "7f20402173fd143a3988c921bc384459c6a858f2";
+const EXACT_BYTES_DIGEST_MODE: &str = "exact_bytes_sha256";
+const RECEIPT_SEMANTIC_DIGEST_MODE: &str = "phase13_receipt_semantic_v2";
 
 const PROMOTED_PATHS: [&str; 7] = [
     "crates/liquidfun-differential/src/fixtures/replay/catalog.rs",
@@ -163,8 +165,12 @@ pub(crate) struct IdentityContract {
     pub(crate) actual_trailers: BTreeMap<String, String>,
     pub(crate) expected_promoted_path_set_sha256: String,
     pub(crate) actual_promoted_path_set_sha256: String,
+    pub(crate) expected_promoted_content_sha256: String,
+    pub(crate) actual_promoted_content_sha256: String,
     pub(crate) expected_changed_path_set_sha256: String,
     pub(crate) actual_changed_path_set_sha256: String,
+    pub(crate) expected_changed_content_sha256: String,
+    pub(crate) actual_changed_content_sha256: String,
     pub(crate) changed_paths_match: bool,
     pub(crate) unchanged_paths_equal_base: bool,
     pub(crate) all_promoted_paths_equal_at_acceptance: bool,
@@ -237,7 +243,9 @@ impl AcceptanceState {
             promotion_sha: contract.promotion_sha,
             acceptance_sha: contract.acceptance_sha,
             promoted_path_set_sha256: contract.expected_promoted_path_set_sha256,
+            promoted_content_sha256: contract.expected_promoted_content_sha256,
             changed_path_set_sha256: contract.expected_changed_path_set_sha256,
+            changed_content_sha256: contract.expected_changed_content_sha256,
             upstream_revision: String::new(),
             oracle_build_identity_sha256: String::new(),
             reviewed_evidence_sha256: BTreeMap::new(),
@@ -256,7 +264,9 @@ pub(crate) struct TerminalIdentity {
     pub(crate) promotion_sha: String,
     pub(crate) acceptance_sha: String,
     promoted_path_set_sha256: String,
+    promoted_content_sha256: String,
     changed_path_set_sha256: String,
+    changed_content_sha256: String,
     upstream_revision: String,
     oracle_build_identity_sha256: String,
     reviewed_evidence_sha256: BTreeMap<String, String>,
@@ -297,8 +307,12 @@ pub(crate) fn validate_identity_contract(
         &contract.expected_replay_closure,
         &contract.expected_promoted_path_set_sha256,
         &contract.actual_promoted_path_set_sha256,
+        &contract.expected_promoted_content_sha256,
+        &contract.actual_promoted_content_sha256,
         &contract.expected_changed_path_set_sha256,
         &contract.actual_changed_path_set_sha256,
+        &contract.expected_changed_content_sha256,
+        &contract.actual_changed_content_sha256,
     ];
     if !revisions.into_iter().all(|value| valid_revision(value))
         || !digests.into_iter().all(|value| valid_digest(value))
@@ -306,7 +320,9 @@ pub(crate) fn validate_identity_contract(
         || contract.promotion_first_parent != contract.promotion_base_sha
         || contract.actual_trailers != contract.required_trailers
         || contract.actual_promoted_path_set_sha256 != contract.expected_promoted_path_set_sha256
+        || contract.actual_promoted_content_sha256 != contract.expected_promoted_content_sha256
         || contract.actual_changed_path_set_sha256 != contract.expected_changed_path_set_sha256
+        || contract.actual_changed_content_sha256 != contract.expected_changed_content_sha256
         || !contract.changed_paths_match
         || !contract.unchanged_paths_equal_base
         || !contract.all_promoted_paths_equal_at_acceptance
@@ -407,25 +423,39 @@ struct LoadedIdentity {
     reviewed_evidence_sha256: BTreeMap<String, String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Receipt {
     schema_version: u32,
     producer_sha: String,
     bundle_sha256: String,
     promotion_base_sha: String,
-    acquisition: serde_json::Value,
+    acquisition: Acquisition,
     independent_reviewer_id: String,
     promoted_paths: Vec<String>,
     promoted_path_set_sha256: String,
+    promoted_content_sha256: String,
     changed_paths: Vec<String>,
     unchanged_paths: Vec<String>,
     changed_path_set_sha256: String,
+    changed_content_sha256: String,
     producer_closures: ProducerClosures,
     q_contract: PromotionContract,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Acquisition {
+    repository: String,
+    run_id: u64,
+    artifact_id: u64,
+    artifact_name: String,
+    provider_digest: String,
+    artifact_created_at: String,
+    artifact_expires_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct ProducerClosures {
     witness_sha256: String,
@@ -433,7 +463,7 @@ struct ProducerClosures {
     recomputed_at_r: bool,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct PromotionContract {
     required_first_parent: String,
@@ -480,6 +510,8 @@ fn load_identity(
 ) -> Result<LoadedIdentity, AcceptanceError> {
     let receipt: Receipt = read_json(&repository_root.join(RECEIPT_PATH))?;
     validate_receipt(&receipt)?;
+    let (actual_promoted_content_sha256, actual_changed_content_sha256) =
+        reviewed_content_digests_from_root(repository_root, &receipt.changed_paths)?;
     let reviewed_evidence_sha256 = validate_ledgers(repository_root, &receipt)?;
     let witness: WitnessProvenance = read_json(&repository_root.join(WITNESS_PROVENANCE_PATH))?;
     let replay: ReplayEvidence = read_json(&repository_root.join(REPLAY_EVIDENCE_PATH))?;
@@ -547,8 +579,12 @@ fn load_identity(
             actual_trailers,
             expected_promoted_path_set_sha256: receipt.promoted_path_set_sha256,
             actual_promoted_path_set_sha256: promoted_path_set_sha256(&receipt.promoted_paths)?,
+            expected_promoted_content_sha256: receipt.promoted_content_sha256,
+            actual_promoted_content_sha256,
             expected_changed_path_set_sha256: receipt.changed_path_set_sha256,
             actual_changed_path_set_sha256,
+            expected_changed_content_sha256: receipt.changed_content_sha256,
+            actual_changed_content_sha256,
             changed_paths_match: actual_paths == receipt.changed_paths,
             unchanged_paths_equal_base: true,
             all_promoted_paths_equal_at_acceptance: true,
@@ -572,14 +608,22 @@ fn validate_receipt(receipt: &Receipt) -> Result<(), AcceptanceError> {
         || !valid_revision(&receipt.promotion_base_sha)
         || receipt.promoted_paths != expected_paths
         || receipt.promoted_path_set_sha256 != promoted_path_set_sha256(&receipt.promoted_paths)?
+        || !valid_digest(&receipt.promoted_content_sha256)
         || receipt.changed_paths.is_empty()
         || receipt.changed_path_set_sha256 != changed_path_set_sha256(&receipt.changed_paths)?
+        || !valid_digest(&receipt.changed_content_sha256)
         || !valid_path_classification(&receipt.changed_paths, &receipt.unchanged_paths)
         || !receipt.producer_closures.recomputed_at_r
         || receipt.q_contract.required_first_parent != receipt.promotion_base_sha
         || receipt.q_contract.q_sha_recorded
         || receipt.q_contract.acceptance_sha_recorded
-        || receipt.acquisition.is_null()
+        || receipt.acquisition.repository.trim().is_empty()
+        || receipt.acquisition.run_id == 0
+        || receipt.acquisition.artifact_id == 0
+        || receipt.acquisition.artifact_name.trim().is_empty()
+        || !receipt.acquisition.provider_digest.starts_with("sha256:")
+        || receipt.acquisition.artifact_created_at.trim().is_empty()
+        || receipt.acquisition.artifact_expires_at.trim().is_empty()
         || receipt.independent_reviewer_id.trim().is_empty()
     {
         return Err(AcceptanceError::new(
@@ -618,11 +662,23 @@ fn validate_ledgers(
     for record in records {
         let path = toml_string(record, "path")?;
         let digest = toml_string(record, "sha256")?;
+        let digest_mode = toml_string(record, "digest_mode")?;
         let producer = toml_string(record, "producer_sha")?;
         let bundle = toml_string(record, "bundle_sha256")?;
+        let required_mode = if path == RECEIPT_PATH {
+            RECEIPT_SEMANTIC_DIGEST_MODE
+        } else {
+            EXACT_BYTES_DIGEST_MODE
+        };
+        let actual_digest = if path == RECEIPT_PATH {
+            receipt_semantic_sha256(&fs::read(repository_root.join(path)).map_err(filesystem)?)?
+        } else {
+            file_sha256(&repository_root.join(path))?
+        };
         if producer != receipt.producer_sha
             || bundle != receipt.bundle_sha256
-            || file_sha256(&repository_root.join(path))? != digest
+            || digest_mode != required_mode
+            || actual_digest != digest
             || digests.insert(path.to_owned(), digest.to_owned()).is_some()
         {
             return Err(AcceptanceError::new(
@@ -647,7 +703,17 @@ fn validate_ledgers(
         .iter()
         .filter_map(|entry| entry.get("local_path").and_then(toml::Value::as_str))
         .collect::<BTreeSet<_>>();
-    if digests.len() != 4 || !digests.keys().all(|path| mapped.contains(path.as_str())) {
+    let expected_records = [
+        "reference/artifacts/phase9/lifecycle-contact-witnesses.json",
+        WITNESS_PROVENANCE_PATH,
+        REPLAY_EVIDENCE_PATH,
+        RECEIPT_PATH,
+    ]
+    .into_iter()
+    .collect::<BTreeSet<_>>();
+    if digests.keys().map(String::as_str).collect::<BTreeSet<_>>() != expected_records
+        || !digests.keys().all(|path| mapped.contains(path.as_str()))
+    {
         return Err(AcceptanceError::new(
             AcceptanceErrorKind::Ledger,
             "reviewed evidence is incomplete in the artifact or FND-04 source ledger",
@@ -915,6 +981,65 @@ fn closure_digest(
         update_field(&mut hasher, digest.as_bytes());
     }
     Ok(format!("{:x}", hasher.finalize()))
+}
+
+fn receipt_semantic_sha256(receipt: &[u8]) -> Result<String, AcceptanceError> {
+    let mut normalized: Receipt = serde_json::from_slice(receipt).map_err(|error| {
+        AcceptanceError::new(
+            AcceptanceErrorKind::Schema,
+            format!("invalid promotion receipt for semantic hashing: {error}"),
+        )
+    })?;
+    normalized.promoted_content_sha256.clear();
+    normalized.changed_content_sha256.clear();
+    let canonical = serde_json::to_vec(&normalized).map_err(|error| {
+        AcceptanceError::new(
+            AcceptanceErrorKind::Schema,
+            format!("failed to normalize promotion receipt: {error}"),
+        )
+    })?;
+    let mut hasher = Sha256::new();
+    update_field(&mut hasher, b"phase13-promotion-receipt-semantic-leaf-v2");
+    update_field(&mut hasher, &canonical);
+    Ok(format!("{:x}", hasher.finalize()))
+}
+
+fn reviewed_content_digest(
+    domain: &str,
+    root: &Path,
+    paths: &[String],
+) -> Result<String, AcceptanceError> {
+    let unique_paths = paths.iter().collect::<BTreeSet<_>>();
+    if unique_paths.len() != paths.len() {
+        return Err(AcceptanceError::new(
+            AcceptanceErrorKind::Identity,
+            "content digest path set contains duplicates",
+        ));
+    }
+    let mut hasher = Sha256::new();
+    update_field(&mut hasher, domain.as_bytes());
+    for path in unique_paths {
+        let bytes = fs::read(root.join(path)).map_err(filesystem)?;
+        let leaf = if path == RECEIPT_PATH {
+            receipt_semantic_sha256(&bytes)?
+        } else {
+            sha256(&bytes)
+        };
+        update_field(&mut hasher, path.as_bytes());
+        update_field(&mut hasher, leaf.as_bytes());
+    }
+    Ok(format!("{:x}", hasher.finalize()))
+}
+
+fn reviewed_content_digests_from_root(
+    root: &Path,
+    changed_paths: &[String],
+) -> Result<(String, String), AcceptanceError> {
+    let promoted_paths = PROMOTED_PATHS.map(str::to_owned).to_vec();
+    Ok((
+        reviewed_content_digest("phase13-promoted-content-set-v2", root, &promoted_paths)?,
+        reviewed_content_digest("phase13-changed-content-set-v2", root, changed_paths)?,
+    ))
 }
 
 fn promoted_path_set_sha256(paths: &[String]) -> Result<String, AcceptanceError> {

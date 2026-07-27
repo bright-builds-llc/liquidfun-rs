@@ -13,9 +13,10 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use phase13_promotion::{
-    PromotionErrorKind, ReviewAcknowledgement, classify_reviewed_paths,
+    PromotionErrorKind, ReviewAcknowledgement, classify_reviewed_paths, promotion_receipt_for_test,
     replace_with_failing_validation, replace_with_injected_failure, review_packet_for_test,
-    review_sha256_for_test, validate_base_contract, validate_exact_paths, validate_review_ack,
+    review_sha256_for_test, reviewed_content_digests_for_test, validate_base_contract,
+    validate_content_digest_claims_for_test, validate_exact_paths, validate_review_ack,
     validate_staged_ledgers,
 };
 
@@ -25,6 +26,39 @@ const DIGEST_A: &str = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 const DIGEST_B: &str = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
 
 static NEXT_TEMP: AtomicU64 = AtomicU64::new(0);
+
+const REVIEWED_PATHS: [&str; 7] = [
+    "crates/liquidfun-differential/src/fixtures/replay/catalog.rs",
+    "reference/artifacts/catalog/rigid-stack-v1.replay-evidence.json",
+    "reference/artifacts/phase13/promotion-receipt.json",
+    "reference/artifacts/manifest.toml",
+    "reference/artifacts/phase9/lifecycle-contact-witnesses.json",
+    "reference/artifacts/phase9/lifecycle-contact-witnesses.provenance.json",
+    "reference/source-map.toml",
+];
+const RECEIPT_PATH: &str = "reference/artifacts/phase13/promotion-receipt.json";
+
+fn reviewed_replacements() -> (BTreeMap<String, Vec<u8>>, Vec<String>) {
+    let changed_paths = REVIEWED_PATHS.map(str::to_owned).to_vec();
+    let mut replacements = REVIEWED_PATHS
+        .into_iter()
+        .map(|path| {
+            (
+                path.to_owned(),
+                format!("reviewed bytes for {path}").into_bytes(),
+            )
+        })
+        .collect::<BTreeMap<_, _>>();
+    replacements.insert(RECEIPT_PATH.to_owned(), promotion_receipt_for_test("", ""));
+    let (promoted_digest, changed_digest) =
+        reviewed_content_digests_for_test(&replacements, &changed_paths)
+            .expect("provisional reviewed content should hash");
+    replacements.insert(
+        RECEIPT_PATH.to_owned(),
+        promotion_receipt_for_test(&promoted_digest, &changed_digest),
+    );
+    (replacements, changed_paths)
+}
 
 fn temporary_directory(label: &str) -> PathBuf {
     let ordinal = NEXT_TEMP.fetch_add(1, Ordering::Relaxed);
@@ -60,6 +94,95 @@ fn review_subject_changes_when_any_replacement_hash_changes() {
 
     // Assert
     assert_ne!(changed, original);
+}
+
+#[test]
+fn normalized_receipt_content_digests_are_stable() {
+    // Arrange
+    let (replacements, changed_paths) = reviewed_replacements();
+
+    // Act
+    let first = reviewed_content_digests_for_test(&replacements, &changed_paths)
+        .expect("reviewed content should hash");
+    let second = reviewed_content_digests_for_test(&replacements, &changed_paths)
+        .expect("reviewed content should rehash");
+
+    // Assert
+    assert_eq!(first, second);
+    assert_eq!(
+        validate_content_digest_claims_for_test(&replacements)
+            .expect("stored content claims should validate"),
+        first
+    );
+}
+
+#[test]
+fn normalized_receipt_binds_every_non_digest_field() {
+    // Arrange
+    let (mut replacements, changed_paths) = reviewed_replacements();
+    let original = reviewed_content_digests_for_test(&replacements, &changed_paths)
+        .expect("reviewed content should hash");
+    let mut receipt: serde_json::Value = serde_json::from_slice(
+        replacements
+            .get(RECEIPT_PATH)
+            .expect("receipt replacement should exist"),
+    )
+    .expect("receipt should parse");
+    receipt["independent_reviewer_id"] = serde_json::Value::String("tampered".to_owned());
+    replacements.insert(
+        RECEIPT_PATH.to_owned(),
+        serde_json::to_vec(&receipt).expect("tampered receipt should encode"),
+    );
+
+    // Act
+    let tampered = reviewed_content_digests_for_test(&replacements, &changed_paths)
+        .expect("tampered content should hash");
+
+    // Assert
+    assert_ne!(tampered, original);
+}
+
+#[test]
+fn reviewed_content_digest_binds_exact_non_receipt_bytes() {
+    // Arrange
+    let (mut replacements, changed_paths) = reviewed_replacements();
+    let original = reviewed_content_digests_for_test(&replacements, &changed_paths)
+        .expect("reviewed content should hash");
+    replacements.insert(
+        "reference/source-map.toml".to_owned(),
+        b"tampered source map".to_vec(),
+    );
+
+    // Act
+    let tampered = reviewed_content_digests_for_test(&replacements, &changed_paths)
+        .expect("tampered content should hash");
+
+    // Assert
+    assert_ne!(tampered, original);
+}
+
+#[test]
+fn tampered_stored_receipt_digest_claim_is_rejected() {
+    // Arrange
+    let (mut replacements, _changed_paths) = reviewed_replacements();
+    let mut receipt: serde_json::Value = serde_json::from_slice(
+        replacements
+            .get(RECEIPT_PATH)
+            .expect("receipt replacement should exist"),
+    )
+    .expect("receipt should parse");
+    receipt["promoted_content_sha256"] = serde_json::Value::String(DIGEST_B.to_owned());
+    replacements.insert(
+        RECEIPT_PATH.to_owned(),
+        serde_json::to_vec(&receipt).expect("tampered receipt should encode"),
+    );
+
+    // Act
+    let error = validate_content_digest_claims_for_test(&replacements)
+        .expect_err("tampered stored claim must fail");
+
+    // Assert
+    assert_eq!(error.kind(), PromotionErrorKind::Schema);
 }
 
 #[test]
@@ -309,8 +432,13 @@ fn ledger_fixture() -> String {
     paths
         .into_iter()
         .map(|path| {
+            let digest_mode = if path == RECEIPT_PATH {
+                "phase13_receipt_semantic_v2"
+            } else {
+                "exact_bytes_sha256"
+            };
             format!(
-                "[[artifact_schemas.phase13_evidence.records]]\npath = \"{path}\"\nsha256 = \"{DIGEST_A}\"\n"
+                "[[artifact_schemas.phase13_evidence.records]]\npath = \"{path}\"\nsha256 = \"{DIGEST_A}\"\ndigest_mode = \"{digest_mode}\"\n"
             )
         })
         .collect::<Vec<_>>()

@@ -91,7 +91,7 @@ fn live_check_requires_exact_reviewed_replay_identity_and_diagnosis() {
     // Assert
     assert_eq!(
         error.path(),
-        "$.diagnosis.first_divergence",
+        "/diagnosis/first_divergence",
         "live equality must report the first exact semantic path"
     );
 }

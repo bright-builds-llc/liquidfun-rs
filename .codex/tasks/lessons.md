@@ -39,3 +39,10 @@
 1. What went wrong: A UAT checkpoint named broad diagnostic categories but did not tell the tester which scenarios, labels, values, or count relationships constituted a pass.
 1. Preventive rule: Write UAT expectations as a short executable procedure with named fixtures and exact visible assertions wherever the implementation defines deterministic labels or values.
 1. Trigger signal to catch it earlier: A checkpoint asks the tester to confirm that information is “shown,” “helpful,” or “works” without naming the control path and at least one concrete expected output.
+
+## lesson-preserve-exact-evidence-semantics | 2026-07-26 21:20
+
+1. Date: 2026-07-26 21:20 CDT
+1. What went wrong: A recovery contract used path-name-only set hashes where content digests were required, labeled JSONPath as a JSON pointer, and represented request authority with a truncated convenience ID.
+1. Preventive rule: Translate evidence-contract nouns literally: content-set digests hash deterministic path-plus-content-hash pairs, JSON pointers use RFC 6901 escaping, and request identity records every full authority field.
+1. Trigger signal to catch it earlier: A field named `content`, `pointer`, `exact`, or `identity` is implemented through a shorter surrogate such as path names, display syntax, or a truncated digest.

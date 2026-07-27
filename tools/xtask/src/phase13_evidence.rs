@@ -1221,7 +1221,7 @@ pub(crate) fn compare_live_replay_records(
     reviewed: &serde_json::Value,
     current: &serde_json::Value,
 ) -> Result<(), LiveReplayMismatch> {
-    let maybe_mismatch = first_json_mismatch("$", reviewed, current);
+    let maybe_mismatch = first_json_mismatch("", reviewed, current);
     let reviewed_record = serde_json::from_value::<ReplayEvidenceRecord>(reviewed.clone())
         .ok()
         .filter(|record| record.validate().is_ok());
@@ -1230,7 +1230,7 @@ pub(crate) fn compare_live_replay_records(
         .filter(|record| record.validate().is_ok());
     if reviewed_record.is_none() || current_record.is_none() {
         return Err(maybe_mismatch.unwrap_or_else(|| LiveReplayMismatch {
-            path: "$".to_owned(),
+            path: String::new(),
             reviewed: reviewed.clone(),
             current: current.clone(),
         }));
@@ -1246,7 +1246,7 @@ fn first_json_mismatch(
     match (reviewed, current) {
         (serde_json::Value::Object(reviewed), serde_json::Value::Object(current)) => {
             for (key, reviewed_value) in reviewed {
-                let child_path = format!("{path}.{key}");
+                let child_path = format!("{path}/{}", json_pointer_token(key));
                 let Some(current_value) = current.get(key) else {
                     return Some(LiveReplayMismatch {
                         path: child_path,
@@ -1264,14 +1264,14 @@ fn first_json_mismatch(
                 .keys()
                 .find(|key| !reviewed.contains_key(*key))
                 .map(|key| LiveReplayMismatch {
-                    path: format!("{path}.{key}"),
+                    path: format!("{path}/{}", json_pointer_token(key)),
                     reviewed: serde_json::Value::Null,
                     current: current[key].clone(),
                 })
         }
         (serde_json::Value::Array(reviewed), serde_json::Value::Array(current)) => {
             for (index, reviewed_value) in reviewed.iter().enumerate() {
-                let child_path = format!("{path}[{index}]");
+                let child_path = format!("{path}/{index}");
                 let Some(current_value) = current.get(index) else {
                     return Some(LiveReplayMismatch {
                         path: child_path,
@@ -1286,7 +1286,7 @@ fn first_json_mismatch(
                 }
             }
             (current.len() > reviewed.len()).then(|| LiveReplayMismatch {
-                path: format!("{path}[{}]", reviewed.len()),
+                path: format!("{path}/{}", reviewed.len()),
                 reviewed: serde_json::Value::Null,
                 current: current[reviewed.len()].clone(),
             })
@@ -1298,6 +1298,10 @@ fn first_json_mismatch(
             current: current.clone(),
         }),
     }
+}
+
+fn json_pointer_token(value: &str) -> String {
+    value.replace('~', "~0").replace('/', "~1")
 }
 
 pub(crate) fn persist_live_check_failure(
@@ -1322,13 +1326,12 @@ pub(crate) fn persist_live_check_failure(
     let record = serde_json::json!({
         "schema_version": 1,
         "failure_kind": "reviewed_live_replay_mismatch",
-        "request_id": current
-            .get("sealed_input_sha256")
-            .and_then(serde_json::Value::as_str)
-            .and_then(|digest| digest.get(..16))
-            .map(|prefix| format!("phase13-{prefix}")),
-        "resolved_sha256": current.get("sealed_input_sha256"),
-        "first_divergence_path": mismatch.path,
+        "request_identity": {
+            "upstream_revision": current.get("upstream_revision"),
+            "resolved_scenario_path": current.get("resolved_scenario_path"),
+            "sealed_input_sha256": current.get("sealed_input_sha256"),
+        },
+        "first_json_pointer": mismatch.path,
         "reviewed_value": bounded_json_value(&mismatch.reviewed),
         "current_value": bounded_json_value(&mismatch.current),
         "expected_record": bounded_json_value(reviewed),
