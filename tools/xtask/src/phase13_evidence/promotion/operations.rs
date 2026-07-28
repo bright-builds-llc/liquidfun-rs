@@ -56,7 +56,7 @@ pub(super) fn write_replacements(
 pub(super) fn format_staged_catalog(staging_root: &Path) -> Result<(), PromotionError> {
     run_process(
         Command::new("rustfmt")
-            .args(["--edition", "2024"])
+            .args(["--edition", "2024", "--config", "skip_children=true"])
             .arg(staging_root.join(CATALOG_PATH)),
         "format staged catalog binding",
     )
