@@ -13,7 +13,14 @@ use sha2::{Digest, Sha256};
 use super::domain::{
     ArtifactKind, ArtifactManifest, ArtifactRecord, CandidateMetadata, FixtureError,
     MANIFEST_FIELDS, ManifestArtifactKind, ManifestFailureSignature, ManifestReviewStatus,
-    ManifestSource, REQUIRED_FILES, ReviewMetadata, StoredReview,
+    ManifestSource, REQUIRED_FILES, StoredReview,
+};
+
+mod validation;
+
+pub(super) use validation::{
+    candidate_sha256, enforce_size, validate_identifier, validate_preset_profile, validate_review,
+    validate_revision,
 };
 
 pub(super) fn destination_path(
@@ -224,7 +231,9 @@ pub(super) fn read_manifest(repository_root: &Path) -> Result<ArtifactManifest, 
     if manifest.schema_version != 2
         || manifest.record_schema_version != 2
         || manifest.record_fields != MANIFEST_FIELDS
-        || !manifest.artifact_schemas.is_current()
+        || !manifest
+            .artifact_schemas
+            .is_current(&manifest.oracle_revision)
         || !is_revision(&manifest.oracle_revision)
     {
         return Err(FixtureError::Manifest(
@@ -388,57 +397,6 @@ pub(super) fn sync_directory(path: &Path) -> Result<(), FixtureError> {
     }
 }
 
-pub(super) fn candidate_sha256(metadata: &CandidateMetadata) -> String {
-    let mut digest = Sha256::new();
-    let artifact_kind = match metadata.artifact_kind {
-        ArtifactKind::ReviewedTrace => "reviewed_trace",
-        ArtifactKind::MinimizedRegression => "minimized_regression",
-    };
-    for value in [
-        metadata.artifact_id.as_str(),
-        artifact_kind,
-        metadata.scenario_id.as_str(),
-        metadata.scenario_sha256.as_str(),
-        metadata.source_json.as_str(),
-        metadata.tolerance_profile_sha256.as_str(),
-        metadata.oracle_revision.as_str(),
-        metadata.adapter_revision.as_str(),
-        metadata.adapter_content_sha256.as_str(),
-        metadata.build_identity_sha256.as_str(),
-        metadata.preset.as_str(),
-        metadata.session_profile.as_str(),
-        metadata.compiler.as_str(),
-        metadata.target.as_str(),
-        metadata.generator_revision.as_str(),
-        metadata.review_status.as_str(),
-        metadata.request_sha256.as_str(),
-        metadata.trace_sha256.as_str(),
-        metadata.report_sha256.as_str(),
-        metadata.identity_sha256.as_str(),
-        metadata.stderr_sha256.as_str(),
-        metadata.scenario_bytes_sha256.as_str(),
-        metadata.trace_payload_sha256.as_str(),
-        metadata.failure_signature_json.as_deref().unwrap_or(""),
-    ] {
-        digest.update(value.len().to_be_bytes());
-        digest.update(value.as_bytes());
-    }
-    for version in [
-        metadata.schema_version,
-        metadata.protocol_version,
-        metadata.scenario_schema_version,
-        metadata.trace_schema_version,
-        metadata.tolerance_profile_version,
-    ] {
-        digest.update(version.to_be_bytes());
-    }
-    for flag in &metadata.flags {
-        digest.update(flag.len().to_be_bytes());
-        digest.update(flag.as_bytes());
-    }
-    format!("{:x}", digest.finalize())
-}
-
 pub(super) fn sha256(bytes: &[u8]) -> String {
     format!("{:x}", Sha256::digest(bytes))
 }
@@ -463,54 +421,6 @@ pub(super) fn deterministic_diff(accepted: &[u8], candidate: &[u8]) -> String {
     diff
 }
 
-pub(super) fn validate_review(review: ReviewMetadata<'_>) -> Result<(), FixtureError> {
-    validate_nonempty(review.reviewer, "reviewer")?;
-    validate_nonempty(review.reviewed_at, "reviewed_at")?;
-    if !review.reviewed_at.contains('T') || !review.reviewed_at.ends_with('Z') {
-        return Err(FixtureError::Replay(
-            "review timestamp must be explicit UTC RFC3339 form".to_owned(),
-        ));
-    }
-    Ok(())
-}
-
-pub(super) fn validate_identifier(value: &str, field: &'static str) -> Result<(), FixtureError> {
-    let valid = !value.is_empty()
-        && value.len() <= 128
-        && value.bytes().enumerate().all(|(index, byte)| {
-            (index > 0 && matches!(byte, b'.' | b'_' | b'-'))
-                || byte.is_ascii_lowercase()
-                || byte.is_ascii_digit()
-        });
-    if valid {
-        return Ok(());
-    }
-    Err(FixtureError::InvalidIdentifier {
-        field,
-        value: value.to_owned(),
-    })
-}
-
-fn validate_nonempty(value: &str, field: &'static str) -> Result<(), FixtureError> {
-    if !value.trim().is_empty() && !value.chars().any(char::is_control) {
-        return Ok(());
-    }
-    Err(FixtureError::InvalidIdentifier {
-        field,
-        value: value.to_owned(),
-    })
-}
-
-pub(super) fn validate_revision(value: &str) -> Result<(), FixtureError> {
-    if is_revision(value) {
-        return Ok(());
-    }
-    Err(FixtureError::InvalidIdentifier {
-        field: "generator revision",
-        value: value.to_owned(),
-    })
-}
-
 fn is_revision(value: &str) -> bool {
     value.len() == 40
         && value
@@ -518,229 +428,6 @@ fn is_revision(value: &str) -> bool {
             .all(|byte| byte.is_ascii_hexdigit() && !byte.is_ascii_uppercase())
 }
 
-pub(super) fn validate_preset_profile(preset: &str, profile: &str) -> Result<(), FixtureError> {
-    if !matches!(
-        preset,
-        "oracle-debug" | "oracle-release" | "oracle-asan-ubsan"
-    ) {
-        return Err(FixtureError::InvalidIdentifier {
-            field: "preset",
-            value: preset.to_owned(),
-        });
-    }
-    if !matches!(profile, "one-shot" | "reuse" | "sanitizer") {
-        return Err(FixtureError::InvalidIdentifier {
-            field: "session profile",
-            value: profile.to_owned(),
-        });
-    }
-    if profile == "sanitizer" && preset != "oracle-asan-ubsan" {
-        return Err(FixtureError::Replay(
-            "sanitizer profile requires the sanitizer preset".to_owned(),
-        ));
-    }
-    Ok(())
-}
-
-pub(super) fn enforce_size(
-    field: &'static str,
-    bytes: &[u8],
-    limit: usize,
-) -> Result<(), FixtureError> {
-    if bytes.len() <= limit {
-        return Ok(());
-    }
-    Err(FixtureError::SizeLimit { field, limit })
-}
-
 #[cfg(test)]
-mod tests {
-    use std::sync::atomic::{AtomicU64, Ordering};
-
-    use super::*;
-    use crate::fixtures::domain::{ArtifactSchemas, CANDIDATE_SCHEMA_VERSION, ReviewStatus};
-
-    static NEXT_TEMP: AtomicU64 = AtomicU64::new(0);
-    const REVISION: &str = "7f20402173fd143a3988c921bc384459c6a858f2";
-
-    #[test]
-    fn manifest_accepts_the_registered_phase11_evidence_schema() {
-        // Arrange
-        let (repository_root, _, _, _) = manifest_fixture("phase11-schema");
-
-        // Act
-        let manifest = read_manifest(&repository_root);
-
-        // Assert
-        assert!(manifest.is_ok());
-        fs::remove_dir_all(repository_root).expect("fixture should be removed");
-    }
-
-    #[test]
-    fn manifest_rejects_an_unregistered_artifact_schema() {
-        // Arrange
-        let (repository_root, _, _, _) = manifest_fixture("unknown-schema");
-        let path = repository_root.join("reference/artifacts/manifest.toml");
-        let mut contents = fs::read_to_string(&path).expect("manifest should be readable");
-        contents.push_str("\n[artifact_schemas.unregistered]\nschema_version = 1\n");
-        fs::write(&path, contents).expect("manifest should be writable");
-
-        // Act
-        let error = read_manifest(&repository_root).expect_err("unknown schemas must fail closed");
-
-        // Assert
-        assert!(error.to_string().contains("unknown field `unregistered`"));
-        fs::remove_dir_all(repository_root).expect("fixture should be removed");
-    }
-
-    #[test]
-    fn committed_manifest_survives_lock_cleanup_failure() {
-        // Arrange
-        let (repository_root, destination, metadata, review) = manifest_fixture("lock-cleanup");
-
-        // Act
-        let commit = update_manifest_atomically_with_operations(
-            &repository_root,
-            &metadata,
-            &review,
-            &destination,
-            &sha256(b"trace\n"),
-            &metadata.artifact_id,
-            ManifestOperations {
-                sync_directory,
-                cleanup_lock: |_path| {
-                    Err(io::Error::new(
-                        io::ErrorKind::PermissionDenied,
-                        "injected lock cleanup failure",
-                    ))
-                },
-            },
-        )
-        .expect("manifest replacement is committed despite cleanup failure");
-
-        // Assert
-        let committed = read_manifest(&repository_root).expect("committed manifest should parse");
-        assert_eq!(committed.artifacts.len(), 1);
-        assert!(destination.is_file());
-        assert_eq!(commit.post_commit_warnings.len(), 1);
-        assert!(commit.post_commit_warnings[0].contains("lock cleanup failed"));
-        assert!(
-            repository_root
-                .join("reference/artifacts/manifest.toml.lock")
-                .is_file()
-        );
-        fs::remove_dir_all(repository_root).expect("fixture should be removed");
-    }
-
-    #[test]
-    fn committed_manifest_survives_directory_sync_failure() {
-        // Arrange
-        let (repository_root, destination, metadata, review) = manifest_fixture("directory-sync");
-
-        // Act
-        let commit = update_manifest_atomically_with_operations(
-            &repository_root,
-            &metadata,
-            &review,
-            &destination,
-            &sha256(b"trace\n"),
-            &metadata.artifact_id,
-            ManifestOperations {
-                sync_directory: |_path| {
-                    Err(FixtureError::Io(io::Error::new(
-                        io::ErrorKind::WriteZero,
-                        "injected post-rename directory sync failure",
-                    )))
-                },
-                cleanup_lock: |path| fs::remove_file(path),
-            },
-        )
-        .expect("manifest replacement is committed despite directory sync failure");
-
-        // Assert
-        let committed = read_manifest(&repository_root).expect("committed manifest should parse");
-        assert_eq!(committed.artifacts.len(), 1);
-        assert!(destination.is_file());
-        assert_eq!(commit.post_commit_warnings.len(), 1);
-        assert!(commit.post_commit_warnings[0].contains("directory sync failed"));
-        assert!(
-            !repository_root
-                .join("reference/artifacts/manifest.toml.lock")
-                .exists()
-        );
-        fs::remove_dir_all(repository_root).expect("fixture should be removed");
-    }
-
-    fn manifest_fixture(test_name: &str) -> (PathBuf, PathBuf, CandidateMetadata, StoredReview) {
-        let sequence = NEXT_TEMP.fetch_add(1, Ordering::Relaxed);
-        let repository_root = std::env::temp_dir().join(format!(
-            "liquidfun-manifest-{test_name}-{}-{sequence}",
-            std::process::id()
-        ));
-        let artifact_directory = repository_root.join("reference/artifacts/traces");
-        fs::create_dir_all(&artifact_directory).expect("artifact directory should be created");
-        let repository_root =
-            fs::canonicalize(repository_root).expect("fixture root should canonicalize");
-        let manifest = ArtifactManifest {
-            schema_version: 2,
-            record_schema_version: 2,
-            oracle_revision: REVISION.to_owned(),
-            record_fields: MANIFEST_FIELDS.into_iter().map(str::to_owned).collect(),
-            artifact_schemas: ArtifactSchemas::current(),
-            artifacts: Vec::new(),
-        };
-        fs::write(
-            repository_root.join("reference/artifacts/manifest.toml"),
-            toml::to_string_pretty(&manifest).expect("manifest should serialize"),
-        )
-        .expect("manifest should be written");
-        let destination = repository_root.join("reference/artifacts/traces/empty-world-v1.jsonl");
-        fs::write(&destination, b"trace\n").expect("destination should be written");
-        let metadata = candidate_metadata();
-        let review = StoredReview {
-            schema_version: CANDIDATE_SCHEMA_VERSION,
-            artifact_id: metadata.artifact_id.clone(),
-            candidate_sha256: metadata.candidate_sha256.clone(),
-            reviewer: "reviewer".to_owned(),
-            reviewed_at: "2026-07-10T12:50:00Z".to_owned(),
-            review_status: ReviewStatus::Approved,
-        };
-        (repository_root, destination, metadata, review)
-    }
-
-    fn candidate_metadata() -> CandidateMetadata {
-        CandidateMetadata {
-            schema_version: CANDIDATE_SCHEMA_VERSION,
-            artifact_id: "cleanup-failure".to_owned(),
-            artifact_kind: ArtifactKind::ReviewedTrace,
-            scenario_id: "empty-world".to_owned(),
-            scenario_sha256: "0".repeat(64),
-            source_json: r#"{"kind":"named","name":"empty-world"}"#.to_owned(),
-            protocol_version: 1,
-            scenario_schema_version: 1,
-            trace_schema_version: 1,
-            tolerance_profile_version: 1,
-            tolerance_profile_sha256: "1".repeat(64),
-            oracle_revision: REVISION.to_owned(),
-            adapter_revision: "fixture-adapter-v1".to_owned(),
-            adapter_content_sha256: "2".repeat(64),
-            build_identity_sha256: "3".repeat(64),
-            preset: "oracle-debug".to_owned(),
-            session_profile: "one-shot".to_owned(),
-            compiler: "fixture compiler".to_owned(),
-            target: "fixture-target".to_owned(),
-            flags: Vec::new(),
-            generator_revision: REVISION.to_owned(),
-            review_status: ReviewStatus::Pending,
-            request_sha256: "4".repeat(64),
-            trace_sha256: "5".repeat(64),
-            report_sha256: "6".repeat(64),
-            identity_sha256: "7".repeat(64),
-            stderr_sha256: "8".repeat(64),
-            scenario_bytes_sha256: "9".repeat(64),
-            trace_payload_sha256: "a".repeat(64),
-            failure_signature_json: None,
-            candidate_sha256: "b".repeat(64),
-        }
-    }
-}
+#[cfg(test)]
+mod tests;

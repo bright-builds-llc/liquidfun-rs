@@ -1,16 +1,13 @@
 //! Public dynamic-tree and broad-phase compatibility tests.
 
-use liquidfun::collision::Aabb;
 use liquidfun::collision::RayCastInput;
 use liquidfun::collision::broad_phase::{BroadPhase, FilterData};
 use liquidfun::collision::tree::{DynamicTree, QueryControl, RayCastControl, TreeError};
 use liquidfun::math::Vec2;
-use std::collections::HashSet;
 
-fn aabb(lower_x: f32, lower_y: f32, upper_x: f32, upper_y: f32) -> Aabb {
-    Aabb::new(Vec2::new(lower_x, lower_y), Vec2::new(upper_x, upper_y))
-        .expect("test bounds should be valid")
-}
+#[path = "collision_broad_phase/support.rs"]
+mod support;
+use support::{HashSet, aabb};
 
 #[test]
 fn dynamic_tree_rejects_foreign_and_destroyed_proxy_ids() {

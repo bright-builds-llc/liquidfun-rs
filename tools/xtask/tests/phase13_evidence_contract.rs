@@ -61,7 +61,7 @@ fn producer_records_the_full_scoped_materials_identity() {
     assert_eq!(count, 176);
     assert_eq!(
         digest,
-        "5be85c2a28bcc13b9c00c92b92843f9c4e244e700468d7b4f2b394ee6c772594"
+        "d30a6879fb37058ce92d179268b28983d4919169bf4dcb8f24e2c2a267017c71"
     );
     assert_ne!(
         digest,
@@ -511,7 +511,7 @@ fn workflow_checks_exact_producer_upstream_and_tool_identities() {
         "rustc 1.97.0",
         "cmake version 4.3.3",
         r#"test "$(ninja --version)" = "1.13.2""#,
-        r#"clang version 22\.1\.8"#,
+        r"clang version 22\.1\.8",
         "oracle-debug",
     ];
 

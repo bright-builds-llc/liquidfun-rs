@@ -4,6 +4,7 @@
 //! controls. `domain` owns `review_status` metadata, while `replay` binds any minimized
 //! regression to its exact [`crate::FailureSignature`].
 
+mod artifact_schema;
 mod domain;
 mod lifecycle;
 mod replay;

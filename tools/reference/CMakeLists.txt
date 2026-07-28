@@ -215,7 +215,20 @@ add_library(
   src/collision_probe.cpp
   src/math_probe.cpp
   src/protocol.cpp
+  src/protocol/json.hpp
+  src/protocol/math.hpp
+  src/protocol/requests.hpp
+  src/protocol/scenario.hpp
   src/rigid_world.cpp
+  src/rigid_world/action_execute.hpp
+  src/rigid_world/timeline.hpp
+  src/rigid_world_phase8_execute/actions.hpp
+  src/rigid_world_phase8_execute/capture.hpp
+  src/rigid_world_phase8_execute/joints.hpp
+  src/rigid_world_phase9_execute/observations.hpp
+  src/rigid_world_phase9_execute/particles.hpp
+  src/rigid_world_phase9_execute/rigid.hpp
+  src/rigid_world_phase9_execute/state.hpp
   src/oracle_adapter.cpp
 )
 target_compile_features(liquidfun-reference-protocol PUBLIC cxx_std_17)
@@ -618,6 +631,10 @@ target_link_libraries(
 add_executable(
   liquidfun-reference-protocol-tests
   tests/protocol_tests.cpp
+  tests/protocol_tests/catalog.hpp
+  tests/protocol_tests/rigid_execution.hpp
+  tests/protocol_tests/rigid_validation.hpp
+  tests/protocol_tests/scenario.hpp
 )
 target_compile_features(liquidfun-reference-protocol-tests PRIVATE cxx_std_17)
 target_compile_definitions(

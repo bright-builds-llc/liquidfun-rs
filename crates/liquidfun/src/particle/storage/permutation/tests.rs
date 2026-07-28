@@ -395,11 +395,13 @@ fn compaction_recomputes_weights_after_removing_a_contacted_middle_row() {
 fn production_storage_has_one_permutation_authority() {
     // Arrange
     let storage_source = include_str!("../../storage.rs");
+    let lifecycle_source = include_str!("../lifecycle.rs");
     let lanes_source = include_str!("../lanes.rs");
 
     // Act / Assert
     assert!(!storage_source.contains("fn apply_permutation"));
-    assert!(storage_source.contains("mutation::MutationCandidate"));
+    assert!(!lifecycle_source.contains("fn apply_permutation"));
+    assert!(lifecycle_source.contains("mutation::MutationCandidate"));
     for forbidden in [
         ".rotate_left(",
         ".rotate_right(",
@@ -407,6 +409,7 @@ fn production_storage_has_one_permutation_authority() {
         ".swap_remove(",
     ] {
         assert!(!storage_source.contains(forbidden));
+        assert!(!lifecycle_source.contains(forbidden));
         assert!(!lanes_source.contains(forbidden));
     }
 }

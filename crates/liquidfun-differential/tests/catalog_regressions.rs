@@ -13,6 +13,8 @@ use liquidfun_differential::{
 };
 
 const MANIFEST: &str = "scenarios/regressions/catalog-manifest.json";
+const RIGID_STACK_REPLAY_EVIDENCE: &str =
+    "reference/artifacts/catalog/rigid-stack-v1.replay-evidence.json";
 const FIXTURES: &[&str] = &[
     "scenarios/catalog/rigid-stack-v1.json",
     "scenarios/catalog/joint-rope-v1.json",
@@ -317,7 +319,7 @@ fn replay_rejects_hash_drift_seed_only_and_path_escape_before_execution() {
     // Act / Assert: traversal
     repository.restore(&source);
     repository.mutate_manifest(|manifest| {
-        manifest["entries"][0]["path"] = serde_json::json!("../outside.json");
+        manifest["entries"][1]["path"] = serde_json::json!("../outside.json");
     });
     assert_eq!(
         replay_catalog_regressions(&repository.root)
@@ -426,7 +428,12 @@ impl TestRepository {
             .expect("catalog fixture directory should be creatable");
         fs::create_dir_all(self.root.join("scenarios/regressions"))
             .expect("regression manifest directory should be creatable");
-        for path in std::iter::once(MANIFEST).chain(FIXTURES.iter().copied()) {
+        fs::create_dir_all(self.root.join("reference/artifacts/catalog"))
+            .expect("replay evidence directory should be creatable");
+        for path in std::iter::once(MANIFEST)
+            .chain(std::iter::once(RIGID_STACK_REPLAY_EVIDENCE))
+            .chain(FIXTURES.iter().copied())
+        {
             fs::copy(source.join(path), self.root.join(path))
                 .expect("tracked regression file should copy");
         }

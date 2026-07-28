@@ -132,843 +132,117 @@ impl Fixture {
 
 #[test]
 fn complete_manifest_has_stable_human_and_json_ready_reports() {
-    // Arrange
-    let fixture = Fixture::complete("ready");
-    let manifest_path = fixture.write_manifest("manifest.json", &fixture.manifest);
-
-    // Act
-    let human = run_audit(&manifest_path, "human");
-    let machine = run_audit(&manifest_path, "json");
-
-    // Assert
-    assert_success(&human);
-    assert_success(&machine);
-    let human = String::from_utf8(human.stdout).expect("human output is UTF-8");
-    assert!(human.starts_with("release audit: READY\n"));
-    assert!(human.contains(&format!("candidate: {CANDIDATE}\nevidence: 19\n")));
-    let machine: Value = serde_json::from_slice(&machine.stdout).expect("machine output is JSON");
-    assert_eq!(machine["decision"], "ready");
-    assert_eq!(machine["candidate_commit"], CANDIDATE);
-    assert_eq!(machine["evidence_count"], 19);
-    assert_eq!(
-        machine["evidence"]
-            .as_array()
-            .expect("evidence array")
-            .len(),
-        19
-    );
+    manifest_cases::complete_manifest_has_stable_human_and_json_ready_reports();
 }
 
 #[test]
 fn every_required_kind_target_identity_is_independently_mandatory() {
-    // Arrange
-    let fixture = Fixture::complete("missing-each");
-    let items = fixture.manifest["items"].as_array().expect("items").clone();
-
-    // Act / Assert
-    for (index, item) in items.iter().enumerate() {
-        let mut manifest = fixture.manifest.clone();
-        manifest["items"]
-            .as_array_mut()
-            .expect("items")
-            .remove(index);
-        let manifest_path = fixture.write_manifest(&format!("missing-{index}.json"), &manifest);
-        let output = run_audit(&manifest_path, "json");
-        assert_failure_contains(
-            &output,
-            "release/evidence-set",
-            &format!("{}/{}", item["kind"], item["target"]),
-        );
-    }
+    manifest_cases::every_required_kind_target_identity_is_independently_mandatory();
 }
 
 #[test]
 fn manifest_rejects_mixed_candidates_bad_hashes_duplicates_and_unreviewed_items() {
-    // Arrange
-    let fixture = Fixture::complete("identity-negatives");
-    let mut mixed = fixture.manifest.clone();
-    mixed["items"][0]["candidate_commit"] = json!(OTHER_CANDIDATE);
-    let mut bad_hash = fixture.manifest.clone();
-    bad_hash["items"][0]["artifact_sha256"] = json!("0".repeat(64));
-    let mut duplicate = fixture.manifest.clone();
-    let duplicate_item = duplicate["items"][0].clone();
-    duplicate["items"]
-        .as_array_mut()
-        .expect("items")
-        .push(duplicate_item);
-    let mut unreviewed = fixture.manifest.clone();
-    unreviewed["items"][0]["review_status"] = json!("pending");
-    let cases = [
-        ("mixed.json", mixed, "release/mixed-candidate"),
-        ("bad-hash.json", bad_hash, "release/artifact-hash"),
-        ("duplicate.json", duplicate, "release/duplicate-evidence"),
-        ("unreviewed.json", unreviewed, "release/evidence-identity"),
-    ];
-
-    // Act / Assert
-    for (name, manifest, category) in cases {
-        let manifest_path = fixture.write_manifest(name, &manifest);
-        assert_failure_contains(&run_audit(&manifest_path, "json"), category, name);
-    }
+    manifest_cases::manifest_rejects_mixed_candidates_bad_hashes_duplicates_and_unreviewed_items();
 }
 
 #[test]
 fn manifest_rejects_wrong_producer_workflow_job_and_run_identity() {
-    // Arrange
-    let fixture = Fixture::complete("producer-negatives");
-    let mut wrong_workflow = fixture.manifest.clone();
-    wrong_workflow["items"][0]["producer"]["workflow"] = json!("substituted.yml");
-    let mut wrong_job = fixture.manifest.clone();
-    wrong_job["items"][0]["producer"]["job"] = json!("substituted");
-    let mut malformed_run = fixture.manifest.clone();
-    malformed_run["items"][0]["producer"]["run_id"] = json!("run-1");
-    let cases = [
-        ("wrong-workflow.json", wrong_workflow),
-        ("wrong-job.json", wrong_job),
-        ("malformed-run.json", malformed_run),
-    ];
-
-    // Act / Assert
-    for (name, manifest) in cases {
-        let manifest_path = fixture.write_manifest(name, &manifest);
-        assert_failure_contains(
-            &run_audit(&manifest_path, "json"),
-            "release/evidence-identity",
-            name,
-        );
-    }
+    manifest_cases::manifest_rejects_wrong_producer_workflow_job_and_run_identity();
 }
 
 #[test]
 fn manifest_rejects_unknown_kinds_and_the_item_bound() {
-    // Arrange
-    let fixture = Fixture::complete("closed-schema");
-    let mut unknown = fixture.manifest.clone();
-    unknown["items"][0]["kind"] = json!("shell_command");
-    let mut oversized = fixture.manifest.clone();
-    let first = oversized["items"][0].clone();
-    let items = oversized["items"].as_array_mut().expect("items");
-    while items.len() <= 256 {
-        items.push(first.clone());
-    }
-    let unknown_path = fixture.write_manifest("unknown.json", &unknown);
-    let oversized_path = fixture.write_manifest("oversized.json", &oversized);
-
-    // Act / Assert
-    assert_failure_contains(
-        &run_audit(&unknown_path, "json"),
-        "release/manifest-schema",
-        "unknown kind",
-    );
-    assert_failure_contains(
-        &run_audit(&oversized_path, "json"),
-        "release/manifest",
-        "item bound",
-    );
+    manifest_cases::manifest_rejects_unknown_kinds_and_the_item_bound();
 }
 
 #[test]
 fn conditional_platform_rejects_stale_or_policy_inconsistent_support() {
-    // Arrange
-    let mut fixture = Fixture::complete("conditional-stale");
-    fixture.mutate_claim("conditional_platform", "x86_64-apple-darwin", |claims| {
-        claims["disposition"] = json!("supported");
-        claims["recorded_at_unix"] = json!(1);
-        claims["expires_at_unix"] = json!(2);
-    });
-    let manifest_path = fixture.write_manifest("manifest.json", &fixture.manifest);
-
-    // Act
-    let output = run_audit(&manifest_path, "json");
-
-    // Assert
-    assert_failure_contains(
-        &output,
-        "release/conditional-platform",
-        "stale conditional target",
-    );
+    manifest_cases::conditional_platform_rejects_stale_or_policy_inconsistent_support();
 }
 
 #[test]
 fn performance_and_coverage_can_never_be_promoted_into_parity_authority() {
-    // Arrange
-    let mut performance = Fixture::complete("performance-authority");
-    performance.mutate_claim("performance", "x86_64-unknown-linux-gnu", |claims| {
-        claims["profile_authority"] = json!(true);
-    });
-    let performance_manifest = performance.write_manifest("manifest.json", &performance.manifest);
-    let mut coverage = Fixture::complete("coverage-authority");
-    coverage.mutate_claim("rust_coverage", "x86_64-unknown-linux-gnu", |claims| {
-        claims["parity_authority"] = json!(true);
-    });
-    let coverage_manifest = coverage.write_manifest("manifest.json", &coverage.manifest);
-
-    // Act / Assert
-    assert_failure_contains(
-        &run_audit(&performance_manifest, "json"),
-        "release/performance",
-        "profile authority",
-    );
-    assert_failure_contains(
-        &run_audit(&coverage_manifest, "json"),
-        "release/coverage",
-        "coverage parity authority",
-    );
+    manifest_cases::performance_and_coverage_can_never_be_promoted_into_parity_authority();
 }
 
 #[test]
 fn unsafe_and_advisory_weakening_fail_closed() {
-    // Arrange
-    let mut unsafe_fixture = Fixture::complete("unsafe-weakening");
-    unsafe_fixture.mutate_claim("rust_safety", "x86_64-unknown-linux-gnu", |claims| {
-        claims["unsafe_waivers"] = json!(1);
-    });
-    let unsafe_manifest = unsafe_fixture.write_manifest("manifest.json", &unsafe_fixture.manifest);
-    let mut advisory_fixture = Fixture::complete("advisory-weakening");
-    advisory_fixture.mutate_claim("notices", "all", |claims| {
-        claims["advisory_waivers"] = json!(1);
-    });
-    let advisory_manifest =
-        advisory_fixture.write_manifest("manifest.json", &advisory_fixture.manifest);
-
-    // Act / Assert
-    assert_failure_contains(
-        &run_audit(&unsafe_manifest, "json"),
-        "release/safety",
-        "unsafe weakening",
-    );
-    assert_failure_contains(
-        &run_audit(&advisory_manifest, "json"),
-        "release/notices",
-        "advisory weakening",
-    );
+    manifest_cases::unsafe_and_advisory_weakening_fail_closed();
 }
 
 #[test]
 fn incomplete_corpus_and_compatibility_gaps_reject_readiness() {
-    // Arrange
-    let mut corpus = Fixture::complete("corpus-gap");
-    corpus.mutate_claim("corpus_closure", "all", |claims| {
-        claims["unresolved_count"] = json!(1);
-    });
-    let corpus_manifest = corpus.write_manifest("manifest.json", &corpus.manifest);
-    let mut compatibility = Fixture::complete("compatibility-gap");
-    compatibility.mutate_claim("compatibility_closure", "all", |claims| {
-        claims["gap_count"] = json!(1);
-    });
-    let compatibility_manifest =
-        compatibility.write_manifest("manifest.json", &compatibility.manifest);
-
-    // Act / Assert
-    assert_failure_contains(
-        &run_audit(&corpus_manifest, "json"),
-        "release/corpus-closure",
-        "incomplete corpus",
-    );
-    assert_failure_contains(
-        &run_audit(&compatibility_manifest, "json"),
-        "release/compatibility-closure",
-        "compatibility gap",
-    );
+    manifest_cases::incomplete_corpus_and_compatibility_gaps_reject_readiness();
 }
 
 #[test]
 fn package_hash_must_join_every_msrv_and_platform_record() {
-    // Arrange
-    let mut fixture = Fixture::complete("package-drift");
-    fixture.mutate_claim("platform", "aarch64-apple-darwin", |claims| {
-        claims["package_sha256"] = json!("3".repeat(64));
-    });
-    let manifest_path = fixture.write_manifest("manifest.json", &fixture.manifest);
-
-    // Act
-    let output = run_audit(&manifest_path, "json");
-
-    // Assert
-    assert_failure_contains(&output, "release/package-drift", "package drift");
+    manifest_cases::package_hash_must_join_every_msrv_and_platform_record();
 }
 
 #[test]
 fn artifact_payload_hash_is_independently_recomputed() {
-    // Arrange
-    let repository = repository_root();
-    let mut fixture = Fixture::complete("payload-hash");
-    let item = fixture.manifest["items"]
-        .as_array_mut()
-        .expect("items")
-        .first_mut()
-        .expect("first item");
-    let artifact_path = repository.join(
-        item["artifact_path"]
-            .as_str()
-            .expect("artifact path is text"),
-    );
-    let mut artifact: Value =
-        serde_json::from_slice(&fs::read(&artifact_path).expect("artifact can be read"))
-            .expect("artifact JSON");
-    artifact["payload_sha256"] = json!("0".repeat(64));
-    let artifact_bytes = serde_json::to_vec_pretty(&artifact).expect("artifact serializes");
-    fs::write(&artifact_path, &artifact_bytes).expect("artifact rewrites");
-    item["artifact_sha256"] = json!(sha256(&artifact_bytes));
-    let manifest_path = fixture.write_manifest("manifest.json", &fixture.manifest);
-
-    // Act
-    let output = run_audit(&manifest_path, "json");
-
-    // Assert
-    assert_failure_contains(&output, "release/payload-hash", "payload hash");
+    manifest_cases::artifact_payload_hash_is_independently_recomputed();
 }
 
 #[test]
 fn missing_manifest_referenced_payload_fails_closed() {
-    // Arrange
-    let repository = repository_root();
-    let fixture = Fixture::complete("missing-payload");
-    let artifact_path = repository.join(
-        fixture.manifest["items"][0]["artifact_path"]
-            .as_str()
-            .expect("artifact path is text"),
-    );
-    fs::remove_file(artifact_path).expect("artifact removes");
-    let manifest_path = fixture.write_manifest("manifest.json", &fixture.manifest);
-
-    // Act
-    let output = run_audit(&manifest_path, "json");
-
-    // Assert
-    assert_failure_contains(&output, "release/artifact-path", "missing payload");
+    manifest_cases::missing_manifest_referenced_payload_fails_closed();
 }
 
 #[test]
 fn release_constructor_is_check_first_aggregate_only_and_identity_last() {
-    // Arrange
-    let repository = repository_root();
-    let workflow = fs::read_to_string(repository.join(".github/workflows/release.yml"))
-        .expect("release workflow");
-    let script = fs::read_to_string(repository.join("scripts/phase12-release-evidence.sh"))
-        .expect("release constructor");
-
-    // Act
-    let cheap = workflow
-        .find("Run inexpensive candidate checks")
-        .expect("cheap checks");
-    let download = workflow
-        .find("Download exact reviewed producer artifacts")
-        .expect("artifact download");
-    let audit = workflow.find("release audit").expect("release audit");
-    let upload = workflow
-        .find("Upload validated release-candidate evidence")
-        .expect("validated upload");
-
-    // Assert
-    assert!(cheap < download && download < audit && audit < upload);
-    assert_eq!(workflow.matches("release audit").count(), 1);
-    assert!(workflow.contains("cancel-in-progress: false"));
-    assert!(script.contains("cargo publish -p liquidfun --dry-run"));
-    assert!(!workflow.contains("cargo publish -p liquidfun\n"));
-    assert!(!script.contains("cargo publish -p liquidfun\n"));
-    assert!(script.contains("set -euo pipefail"));
-    assert!(script.contains("publish_identity_last"));
-    for forbidden in [
-        "cargo fuzz",
-        "cargo bench",
-        "phase12-miri.sh run",
-        "phase12-rust-sanitizers.sh run",
-        "phase12-coverage.sh rust",
-        "phase12-performance.sh paired",
-        "phase12-regressions.sh run",
-    ] {
-        assert!(
-            !workflow.contains(forbidden) && !script.contains(forbidden),
-            "constructor reruns an expensive producer: {forbidden}"
-        );
-    }
+    construction_cases::release_constructor_is_check_first_aggregate_only_and_identity_last();
 }
 
 #[test]
 fn release_constructor_names_every_exact_artifact_and_never_writes_tracked_readiness() {
-    // Arrange
-    let repository = repository_root();
-    let workflow = fs::read_to_string(repository.join(".github/workflows/release.yml"))
-        .expect("release workflow");
-    let script = fs::read_to_string(repository.join("scripts/phase12-release-evidence.sh"))
-        .expect("release constructor");
-
-    // Act / Assert
-    for artifact_pattern in [
-        "phase12-package-",
-        "phase12-platform-msrv-",
-        "phase12-platform-x86_64-unknown-linux-gnu-",
-        "phase12-platform-aarch64-unknown-linux-gnu-",
-        "phase12-platform-aarch64-apple-darwin-",
-        "phase12-platform-x86_64-pc-windows-msvc-",
-        "phase12-platform-x86_64-apple-darwin",
-        "phase11-canonical-",
-        "phase11-sanitizer-",
-        "phase12-miri-",
-        "phase12-rust-sanitizer-",
-        "fuzz-protocol-",
-        "fuzz-shapes_collision-",
-        "fuzz-world_mutation-",
-        "fuzz-particles-",
-        "fuzz-groups_ownership-",
-        "phase12-regressions-",
-        "phase12-rust-coverage-",
-        "phase12-cpp-coverage-",
-        "phase12-differential-coverage-",
-        "phase12-performance-",
-    ] {
-        assert!(
-            script.contains(artifact_pattern),
-            "missing exact artifact pattern: {artifact_pattern}"
-        );
-    }
-    for tracked_output in [
-        "reference/release/candidate-manifest.json",
-        "reference/release/readiness.json",
-        "reference/release/audit.json",
-    ] {
-        assert!(
-            !workflow.contains(tracked_output) && !script.contains(tracked_output),
-            "constructor writes tracked readiness: {tracked_output}"
-        );
-    }
-    assert!(script.contains("validate_artifact_set"));
-    assert!(script.contains("validate_producer_identities"));
-    assert!(script.contains("candidate-manifest.json"));
-    assert!(script.contains("audit-report.json"));
-    for retained_path in [
-        "${{ env.OUTPUT_DIRECTORY }}/artifacts/*.json",
-        "${{ env.OUTPUT_DIRECTORY }}/package/liquidfun.crate",
-        "${{ env.OUTPUT_DIRECTORY }}/package/package-identity.json",
-        "${{ env.OUTPUT_DIRECTORY }}/candidate-manifest.json",
-        "${{ env.OUTPUT_DIRECTORY }}/audit-report.json",
-        "${{ env.OUTPUT_DIRECTORY }}/audit-identity.json",
-    ] {
-        assert!(
-            workflow.contains(retained_path),
-            "release upload omits auditable payload: {retained_path}"
-        );
-    }
+    construction_cases::release_constructor_names_every_exact_artifact_and_never_writes_tracked_readiness();
 }
 
 #[test]
 fn release_constructor_rejects_mutated_platform_hash_and_tier() {
-    // Arrange
-    let root = producer_fixture_root("platform-mutation");
-    let identity_path = root.join("identity.json");
-    let verification_path = root.join("verification.json");
-    fs::write(
-        &identity_path,
-        serde_json::to_vec(&json!({
-            "schema_version": 1,
-            "archive_sha256": "a".repeat(64),
-            "target": "x86_64-unknown-linux-gnu",
-            "compiler": "rustc 1.97.0",
-            "scalar_mode": "strict_f32",
-            "tier": "d1_canonical",
-            "candidate_sha": CANDIDATE,
-            "runner": "ubuntu-24.04",
-            "workflow": "Platform release candidate",
-            "job": "native",
-            "run_id": 7,
-            "recorded_at_unix": 1,
-            "native_evidence_recorded_at_unix": null,
-        }))
-        .expect("identity JSON"),
-    )
-    .expect("identity writes");
-    fs::write(
-        &verification_path,
-        br#"{"status":"verified","package_isolation":true,"rustdoc":true,"platform_smoke":true}"#,
-    )
-    .expect("verification writes");
-
-    // Act
-    let output = run_release_validator(
-        "validate_platform_payload",
-        &[
-            identity_path.to_string_lossy().into_owned(),
-            verification_path.to_string_lossy().into_owned(),
-            CANDIDATE.to_owned(),
-            "x86_64-unknown-linux-gnu".to_owned(),
-            "7".to_owned(),
-            "native".to_owned(),
-            "b".repeat(64),
-            "d2_supported".to_owned(),
-        ],
-    );
-
-    // Assert
-    assert!(!output.status.success());
+    construction_cases::release_constructor_rejects_mutated_platform_hash_and_tier();
 }
 
 #[test]
 fn release_constructor_rejects_sanitizer_finding() {
-    // Arrange
-    let root = producer_fixture_root("safety-mutation");
-    let summary_path = root.join("sanitizer.jsonl");
-    fs::write(
-        &summary_path,
-        serde_json::to_vec(&json!({ "outcome": "sanitizer_finding" })).expect("sanitizer JSON"),
-    )
-    .expect("summary writes");
-
-    // Act
-    let output = run_release_validator(
-        "validate_sanitizer_records",
-        &[summary_path.to_string_lossy().into_owned()],
-    );
-
-    // Assert
-    assert!(!output.status.success());
+    construction_cases::release_constructor_rejects_sanitizer_finding();
 }
 
 #[test]
 fn release_constructor_rejects_canonical_gap_result() {
-    // Arrange
-    let root = producer_fixture_root("canonical-gap-mutation");
-    let identity_path = root.join("identity.json");
-    fs::write(
-        &identity_path,
-        serde_json::to_vec(&json!({ "semantic_sha256": "a".repeat(64) })).expect("identity JSON"),
-    )
-    .expect("identity writes");
-    let result_path = root.join("semantic-result.json");
-    fs::write(
-        &result_path,
-        serde_json::to_vec(&json!({
-            "schema_version": 1,
-            "evidence_kind": "canonical_differential",
-            "candidate_commit": CANDIDATE,
-            "complete": true,
-            "parity_tier": "d1_canonical",
-            "coverage_authority": false,
-            "performance_authority": false,
-            "gap_count": 1,
-            "semantic_sha256": "a".repeat(64),
-        }))
-        .expect("canonical result JSON"),
-    )
-    .expect("canonical result writes");
-
-    // Act
-    let output = run_release_validator(
-        "validate_canonical_payload",
-        &[
-            result_path.to_string_lossy().into_owned(),
-            identity_path.to_string_lossy().into_owned(),
-            CANDIDATE.to_owned(),
-        ],
-    );
-
-    // Assert
-    assert!(!output.status.success());
+    construction_cases::release_constructor_rejects_canonical_gap_result();
 }
 
 #[test]
 fn release_constructor_accepts_typed_canonical_and_safety_results() {
-    // Arrange
-    let root = producer_fixture_root("typed-producer-results");
-    let identity_path = root.join("identity.json");
-    fs::write(
-        &identity_path,
-        serde_json::to_vec(&json!({ "semantic_sha256": "a".repeat(64) })).expect("identity JSON"),
-    )
-    .expect("identity writes");
-    let result_path = root.join("semantic-result.json");
-    fs::write(
-        &result_path,
-        serde_json::to_vec(&json!({
-            "schema_version": 1,
-            "evidence_kind": "canonical_differential",
-            "candidate_commit": CANDIDATE,
-            "complete": true,
-            "parity_tier": "d1_canonical",
-            "coverage_authority": false,
-            "performance_authority": false,
-            "gap_count": 0,
-            "semantic_sha256": "a".repeat(64),
-        }))
-        .expect("canonical result JSON"),
-    )
-    .expect("canonical result writes");
-    let logs = root.join("logs");
-    fs::create_dir_all(&logs).expect("log directory");
-    let log = b"clean safety run\n";
-    fs::write(logs.join("math.log"), log).expect("log writes");
-    let summary_path = root.join("summary.json");
-    fs::write(
-        &summary_path,
-        serde_json::to_vec(&json!({
-            "schema_version": 1,
-            "evidence_kind": "miri",
-            "candidate_commit": CANDIDATE,
-            "toolchain_identity": "nightly-2026-07-15",
-            "complete": true,
-            "parity_authority": false,
-            "policy": {
-                "unsafe_code": "forbid",
-                "unsafe_waivers": 0,
-                "advisory_waivers": 0,
-            },
-            "cases": [{
-                "name": "math",
-                "path": "logs/math.log",
-                "sha256": sha256(log),
-                "bytes": log.len(),
-            }],
-        }))
-        .expect("safety summary JSON"),
-    )
-    .expect("safety summary writes");
-
-    // Act
-    let canonical = run_release_validator(
-        "validate_canonical_payload",
-        &[
-            result_path.to_string_lossy().into_owned(),
-            identity_path.to_string_lossy().into_owned(),
-            CANDIDATE.to_owned(),
-        ],
-    );
-    let safety = run_release_validator(
-        "validate_safety_payload",
-        &[
-            summary_path.to_string_lossy().into_owned(),
-            CANDIDATE.to_owned(),
-            "miri".to_owned(),
-        ],
-    );
-
-    // Assert
-    assert!(canonical.status.success());
-    assert!(safety.status.success());
+    construction_cases::release_constructor_accepts_typed_canonical_and_safety_results();
 }
 
 #[test]
 fn release_constructor_rejects_safety_waiver_policy() {
-    // Arrange
-    let root = producer_fixture_root("safety-policy-mutation");
-    let logs = root.join("logs");
-    fs::create_dir_all(&logs).expect("log directory");
-    let log = b"clean safety run\n";
-    fs::write(logs.join("math.log"), log).expect("log writes");
-    let summary_path = root.join("summary.json");
-    fs::write(
-        &summary_path,
-        serde_json::to_vec(&json!({
-            "schema_version": 1,
-            "evidence_kind": "miri",
-            "candidate_commit": CANDIDATE,
-            "toolchain_identity": "nightly-2026-07-15",
-            "complete": true,
-            "parity_authority": false,
-            "policy": {
-                "unsafe_code": "forbid",
-                "unsafe_waivers": 1,
-                "advisory_waivers": 0,
-            },
-            "cases": [{
-                "name": "math",
-                "path": "logs/math.log",
-                "sha256": sha256(log),
-                "bytes": log.len(),
-            }],
-        }))
-        .expect("safety summary JSON"),
-    )
-    .expect("safety summary writes");
-
-    // Act
-    let output = run_release_validator(
-        "validate_safety_payload",
-        &[
-            summary_path.to_string_lossy().into_owned(),
-            CANDIDATE.to_owned(),
-            "miri".to_owned(),
-        ],
-    );
-
-    // Assert
-    assert!(!output.status.success());
+    construction_cases::release_constructor_rejects_safety_waiver_policy();
 }
 
 #[test]
 fn release_constructor_rejects_tampered_safety_log() {
-    // Arrange
-    let root = producer_fixture_root("safety-log-mutation");
-    let logs = root.join("logs");
-    fs::create_dir_all(&logs).expect("log directory");
-    let original = b"clean safety run\n";
-    let log_path = logs.join("math.log");
-    fs::write(&log_path, original).expect("log writes");
-    let summary_path = root.join("summary.json");
-    fs::write(
-        &summary_path,
-        serde_json::to_vec(&json!({
-            "schema_version": 1,
-            "evidence_kind": "miri",
-            "candidate_commit": CANDIDATE,
-            "toolchain_identity": "nightly-2026-07-15",
-            "complete": true,
-            "parity_authority": false,
-            "policy": {
-                "unsafe_code": "forbid",
-                "unsafe_waivers": 0,
-                "advisory_waivers": 0,
-            },
-            "cases": [{
-                "name": "math",
-                "path": "logs/math.log",
-                "sha256": sha256(original),
-                "bytes": original.len(),
-            }],
-        }))
-        .expect("safety summary JSON"),
-    )
-    .expect("safety summary writes");
-    fs::write(log_path, b"tampered safety run\n").expect("log mutation writes");
-
-    // Act
-    let output = run_release_validator(
-        "validate_safety_payload",
-        &[
-            summary_path.to_string_lossy().into_owned(),
-            CANDIDATE.to_owned(),
-            "miri".to_owned(),
-        ],
-    );
-
-    // Assert
-    assert!(!output.status.success());
+    construction_cases::release_constructor_rejects_tampered_safety_log();
 }
 
 #[test]
 fn release_constructor_rejects_differential_coverage_miss() {
-    // Arrange
-    let root = producer_fixture_root("coverage-mutation");
-    let artifact_path = root.join("differential-leaves.json");
-    let artifact = serde_json::to_vec(&json!({
-        "schema_version": 1,
-        "parity_authority": false,
-        "exercised": ["subsystem.world-stepping"],
-        "missed": ["subsystem.particle-contacts"],
-    }))
-    .expect("coverage JSON");
-    fs::write(&artifact_path, &artifact).expect("artifact writes");
-    let summary_path = root.join("summary.json");
-    fs::write(
-        &summary_path,
-        serde_json::to_vec(&json!({
-            "schema_version": 1,
-            "evidence_kind": "differential_coverage",
-            "candidate_commit": CANDIDATE,
-            "toolchain_identity": "semantic-leaf-v1",
-            "artifact_path": "differential-leaves.json",
-            "artifact_sha256": sha256(&artifact),
-            "parity_authority": false,
-        }))
-        .expect("summary JSON"),
-    )
-    .expect("summary writes");
-
-    // Act
-    let output = run_release_validator(
-        "validate_coverage_payload",
-        &[
-            summary_path.to_string_lossy().into_owned(),
-            CANDIDATE.to_owned(),
-            "differential_coverage".to_owned(),
-        ],
-    );
-
-    // Assert
-    assert!(!output.status.success());
+    audit_cases::release_constructor_rejects_differential_coverage_miss();
 }
 
 #[test]
 fn release_constructor_rejects_failed_regression_result() {
-    // Arrange
-    let root = producer_fixture_root("regression-mutation");
-    let completion = serde_json::to_vec(&json!({
-        "schema_version": 1,
-        "candidate_sha": CANDIDATE,
-        "complete": true,
-        "results": [{
-            "regression_id": "regression-one",
-            "candidate_sha": CANDIDATE,
-            "named_test_path": "suite::regression_one",
-            "minimized_sha256": "a".repeat(64),
-            "outcome": "failed",
-        }],
-    }))
-    .expect("completion JSON");
-    fs::write(root.join("completion.json"), &completion).expect("completion writes");
-    fs::write(
-        root.join("identity.json"),
-        serde_json::to_vec(&json!({ "completion_sha256": sha256(&completion) }))
-            .expect("validation identity JSON"),
-    )
-    .expect("validation identity writes");
-    let producer_identity_path = root.join("producer-identity.json");
-    fs::write(
-        &producer_identity_path,
-        serde_json::to_vec(&json!({
-            "named_test_count": 1,
-            "regression_manifest_sha256":
-                file_sha256(&repository_root(), "reference/regressions/manifest.toml"),
-        }))
-        .expect("producer identity JSON"),
-    )
-    .expect("producer identity writes");
-
-    // Act
-    let output = run_release_validator(
-        "validate_regression_payload",
-        &[
-            root.to_string_lossy().into_owned(),
-            CANDIDATE.to_owned(),
-            producer_identity_path.to_string_lossy().into_owned(),
-        ],
-    );
-
-    // Assert
-    assert!(!output.status.success());
+    audit_cases::release_constructor_rejects_failed_regression_result();
 }
 
 #[test]
 fn audit_sources_have_no_producer_process_or_network_capability() {
-    // Arrange
-    let repository = repository_root();
-    let sources = [
-        "tools/xtask/src/release.rs",
-        "tools/xtask/src/release/domain.rs",
-        "tools/xtask/src/release/validation.rs",
-        "tools/xtask/src/release/report.rs",
-    ];
-    let forbidden = [
-        "Command::new",
-        "std::process",
-        "reqwest",
-        "curl ",
-        "gh workflow",
-        "cargo fuzz",
-        "cargo bench",
-    ];
-
-    // Act
-    let source = sources
-        .iter()
-        .map(|relative| {
-            fs::read_to_string(repository.join(relative)).expect("release source can be read")
-        })
-        .collect::<String>();
-
-    // Assert
-    for token in forbidden {
-        assert!(!source.contains(token), "forbidden producer token: {token}");
-    }
+    audit_cases::audit_sources_have_no_producer_process_or_network_capability();
 }
 
 fn producer_fixture_root(name: &str) -> PathBuf {
@@ -998,33 +272,7 @@ fn run_release_validator(function: &str, arguments: &[String]) -> Output {
 
 #[test]
 fn schema_and_required_registry_are_closed_and_bounded() {
-    // Arrange
-    let repository = repository_root();
-    let schema: Value = serde_json::from_slice(
-        &fs::read(repository.join("reference/release/schema.json")).expect("schema"),
-    )
-    .expect("schema JSON");
-    let required: RequiredRegistry = toml::from_str(
-        &fs::read_to_string(repository.join("reference/release/required-evidence.toml"))
-            .expect("registry"),
-    )
-    .expect("registry TOML");
-
-    // Act
-    let kinds = schema["$defs"]["evidence"]["properties"]["kind"]["enum"]
-        .as_array()
-        .expect("closed kind enum");
-
-    // Assert
-    assert_eq!(schema["additionalProperties"], false);
-    assert_eq!(schema["properties"]["items"]["maxItems"], 256);
-    assert_eq!(schema["$defs"]["evidence"]["additionalProperties"], false);
-    assert_eq!(
-        schema["$defs"]["evidence"]["properties"]["review_status"]["const"],
-        "reviewed"
-    );
-    assert_eq!(required.evidence.len(), 19);
-    assert_eq!(kinds.len(), 16);
+    audit_cases::schema_and_required_registry_are_closed_and_bounded();
 }
 
 fn claims_for(
@@ -1186,3 +434,10 @@ fn file_sha256(repository: &Path, relative: &str) -> String {
 fn sha256(bytes: &[u8]) -> String {
     format!("{:x}", Sha256::digest(bytes))
 }
+
+#[path = "release_cli/audit_cases.rs"]
+mod audit_cases;
+#[path = "release_cli/construction_cases.rs"]
+mod construction_cases;
+#[path = "release_cli/manifest_cases.rs"]
+mod manifest_cases;

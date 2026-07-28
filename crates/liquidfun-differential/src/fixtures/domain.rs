@@ -5,6 +5,7 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 
+use super::artifact_schema::ArtifactSchemas;
 use crate::FailureSignature;
 
 pub(super) const CANDIDATE_SCHEMA_VERSION: u32 = 1;
@@ -347,49 +348,6 @@ pub(super) struct ArtifactManifest {
     pub(super) record_fields: Vec<String>,
     pub(super) artifact_schemas: ArtifactSchemas,
     pub(super) artifacts: Vec<ArtifactRecord>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub(super) struct ArtifactSchemas {
-    pub(super) phase11_evidence: Phase11EvidenceSchema,
-}
-
-impl ArtifactSchemas {
-    #[cfg(test)]
-    pub(super) fn current() -> Self {
-        Self {
-            phase11_evidence: Phase11EvidenceSchema {
-                schema_version: 1,
-                manifest_file: "phase11-v1.json".to_owned(),
-                identity_file: "identity.json".to_owned(),
-                protocol_version: "catalog-phase11-v1".to_owned(),
-                generator_version: "phase11-evidence-v1".to_owned(),
-                promotion: "exact-ref-same-run-only".to_owned(),
-            },
-        }
-    }
-
-    pub(super) fn is_current(&self) -> bool {
-        let schema = &self.phase11_evidence;
-        schema.schema_version == 1
-            && schema.manifest_file == "phase11-v1.json"
-            && schema.identity_file == "identity.json"
-            && schema.protocol_version == "catalog-phase11-v1"
-            && schema.generator_version == "phase11-evidence-v1"
-            && schema.promotion == "exact-ref-same-run-only"
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub(super) struct Phase11EvidenceSchema {
-    schema_version: u32,
-    manifest_file: String,
-    identity_file: String,
-    protocol_version: String,
-    generator_version: String,
-    promotion: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
