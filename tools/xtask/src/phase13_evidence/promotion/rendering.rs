@@ -214,10 +214,12 @@ pub(super) fn render_witness_provenance(
 
 pub(super) fn render_catalog(current: &str) -> Result<String, PromotionError> {
     if current.contains("RIGID_STACK_REPLAY_EVIDENCE_PATH") {
-        if current.contains("fn validate_rigid_stack_replay_evidence(")
-            && current
-                .contains("validate_rigid_stack_replay_evidence(&canonical_root, &manifest)?;")
-        {
+        let local_validator = current.contains("fn validate_rigid_stack_replay_evidence(");
+        let split_validator = current.contains("mod evidence;")
+            && current.contains("use evidence::validate_rigid_stack_replay_evidence;");
+        let validator_is_called =
+            current.contains("validate_rigid_stack_replay_evidence(&canonical_root, &manifest)?;");
+        if (local_validator || split_validator) && validator_is_called {
             return Ok(current.to_owned());
         }
         return Err(PromotionError::new(
@@ -455,4 +457,26 @@ reviewer = \"{reviewer_id}\"\n"
         })?;
     }
     Ok(rendered)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::render_catalog;
+
+    #[test]
+    fn split_catalog_replay_evidence_binding_is_complete() {
+        // Arrange
+        let catalog = "mod evidence;\n\
+use evidence::validate_rigid_stack_replay_evidence;\n\
+const RIGID_STACK_REPLAY_EVIDENCE_PATH: &str = \"evidence.json\";\n\
+fn replay() {\n\
+    validate_rigid_stack_replay_evidence(&canonical_root, &manifest)?;\n\
+}\n";
+
+        // Act
+        let rendered = render_catalog(catalog).expect("split binding should be complete");
+
+        // Assert
+        assert_eq!(rendered, catalog);
+    }
 }
