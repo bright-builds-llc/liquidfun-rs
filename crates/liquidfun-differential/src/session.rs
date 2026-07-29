@@ -1,129 +1,18 @@
 //! Renderer-neutral command and backend boundary for one resolved run session.
 
 use liquidfun_test_protocol::{
-    ActionSchedule, CheckpointDeclaration, CheckpointId, FloatBits, Phase10Operation,
-    ResolvedScenario, RigidWorldAction, RunSettings, ScenarioActionId, ScheduledAction,
+    ActionSchedule, CheckpointId, Phase10Operation, ResolvedScenario, RigidWorldAction,
+    ScenarioActionId, ScheduledAction,
 };
 
 mod backend;
+mod command;
 mod state;
+mod types;
+use command::validate_resolved_settings;
+pub use command::*;
 pub use state::*;
-
-/// Monotonic identity of one frontend-submitted command.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct SessionCommandId(u64);
-
-impl SessionCommandId {
-    /// Creates a nonzero command identity.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`SessionCommandIdError`] for zero, which is reserved as an invalid sentinel.
-    pub const fn new(value: u64) -> Result<Self, SessionCommandIdError> {
-        if value == 0 {
-            return Err(SessionCommandIdError);
-        }
-        Ok(Self(value))
-    }
-
-    /// Returns the validated ordinal.
-    #[must_use]
-    pub const fn get(self) -> u64 {
-        self.0
-    }
-}
-
-/// Rejection of the reserved zero command identity.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
-#[error("session command identity must be nonzero")]
-pub struct SessionCommandIdError;
-
-/// Raw exact-bit settings parsed by a frontend before controller validation.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct RunSettingsInput {
-    timestep_bits: FloatBits,
-    velocity_iterations: u32,
-    position_iterations: u32,
-    particle_iterations: u32,
-}
-
-impl RunSettingsInput {
-    /// Creates an unvalidated settings candidate. Validation happens before backend effects.
-    #[must_use]
-    pub const fn new(
-        timestep_bits: FloatBits,
-        velocity_iterations: u32,
-        position_iterations: u32,
-        particle_iterations: u32,
-    ) -> Self {
-        Self {
-            timestep_bits,
-            velocity_iterations,
-            position_iterations,
-            particle_iterations,
-        }
-    }
-
-    fn validate(self) -> Result<RunSettings, SessionControllerError> {
-        RunSettings::new(
-            self.timestep_bits,
-            self.velocity_iterations,
-            self.position_iterations,
-            self.particle_iterations,
-        )
-        .map_err(|_| SessionControllerError::new(SessionControllerErrorKind::InvalidRunSettings))
-    }
-}
-
-/// Closed commands accepted from headless or visual frontend adapters.
-#[derive(Debug, Clone)]
-pub enum SessionCommand {
-    /// Select one already validated, immutable resolved plan.
-    Select {
-        /// Exact engine-neutral run input.
-        resolved: ResolvedScenario,
-    },
-    /// Enter running state without tying logical work to a render frame.
-    Run,
-    /// Pause the session without a backend tick or checkpoint.
-    Pause,
-    /// Pause if necessary, execute exactly one logical action, and stay paused.
-    StepOnce,
-    /// Destroy and reconstruct the selected session from identical resolved bytes.
-    Restart,
-    /// Validate settings and reconstruct from a matching newly resolved plan.
-    ApplySettingsAndRestart {
-        /// Raw settings candidate that must validate before any backend effect.
-        settings: RunSettingsInput,
-        /// Canonical replacement whose identity must differ only by settings-derived content.
-        resolved: ResolvedScenario,
-    },
-    /// Apply one declared typed scenario action by stable action identity.
-    ApplyScenarioAction {
-        /// Stable action identity from the selected resolved plan.
-        action_id: ScenarioActionId,
-    },
-    /// Capture one currently reachable declared checkpoint.
-    CaptureCheckpoint {
-        /// Stable checkpoint identity from the selected resolved plan.
-        checkpoint_id: CheckpointId,
-    },
-}
-
-impl SessionCommand {
-    const fn kind(&self) -> SessionCommandKind {
-        match self {
-            Self::Select { .. } => SessionCommandKind::Select,
-            Self::Run => SessionCommandKind::Run,
-            Self::Pause => SessionCommandKind::Pause,
-            Self::StepOnce => SessionCommandKind::StepOnce,
-            Self::Restart => SessionCommandKind::Restart,
-            Self::ApplySettingsAndRestart { .. } => SessionCommandKind::ApplySettingsAndRestart,
-            Self::ApplyScenarioAction { .. } => SessionCommandKind::ApplyScenarioAction,
-            Self::CaptureCheckpoint { .. } => SessionCommandKind::CaptureCheckpoint,
-        }
-    }
-}
+pub use types::*;
 
 /// Backend failure severity used to select the controller error state.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -224,63 +113,6 @@ pub trait SessionBackend {
     ) -> Result<Self::Checkpoint, SessionBackendError>;
 }
 
-/// Stable checkpoint identity bound to both action and logical-step ordinals.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct SessionCheckpointIdentity {
-    checkpoint_id: CheckpointId,
-    after_action_id: ScenarioActionId,
-    logical_step: u32,
-}
-
-impl SessionCheckpointIdentity {
-    fn from_declaration(declaration: &CheckpointDeclaration) -> Self {
-        Self {
-            checkpoint_id: declaration.checkpoint_id().clone(),
-            after_action_id: declaration.after_action_id().clone(),
-            logical_step: declaration.logical_step(),
-        }
-    }
-
-    /// Returns the stable checkpoint ID.
-    #[must_use]
-    pub const fn checkpoint_id(&self) -> &CheckpointId {
-        &self.checkpoint_id
-    }
-
-    /// Returns the stable action boundary captured by this checkpoint.
-    #[must_use]
-    pub const fn after_action_id(&self) -> &ScenarioActionId {
-        &self.after_action_id
-    }
-
-    /// Returns the explicit one-based logical-step ordinal.
-    #[must_use]
-    pub const fn logical_step(&self) -> u32 {
-        self.logical_step
-    }
-}
-
-/// One successful owned semantic capture and its controller-bound identity.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct SessionCapture<T> {
-    identity: SessionCheckpointIdentity,
-    value: T,
-}
-
-impl<T> SessionCapture<T> {
-    /// Returns the stable deterministic capture identity.
-    #[must_use]
-    pub const fn identity(&self) -> &SessionCheckpointIdentity {
-        &self.identity
-    }
-
-    /// Returns the backend-owned semantic checkpoint value.
-    #[must_use]
-    pub const fn value(&self) -> &T {
-        &self.value
-    }
-}
-
 /// Stable controller rejection categories.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SessionControllerErrorKind {
@@ -343,20 +175,6 @@ impl SessionControllerError {
     #[must_use]
     pub const fn maybe_backend(self) -> Option<SessionBackendError> {
         self.maybe_backend
-    }
-}
-
-/// State returned after one accepted command settles.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct SessionCommandOutcome {
-    state: SessionState,
-}
-
-impl SessionCommandOutcome {
-    /// Returns the settled controller state.
-    #[must_use]
-    pub const fn state(self) -> SessionState {
-        self.state
     }
 }
 
@@ -734,18 +552,6 @@ impl<B: SessionBackend> SessionController<B> {
         };
         SessionControllerError::backend(error)
     }
-}
-
-fn validate_resolved_settings(resolved: &ResolvedScenario) -> Result<(), SessionControllerError> {
-    let settings = resolved.identity().settings();
-    RunSettings::new(
-        settings.timestep_bits(),
-        settings.velocity_iterations(),
-        settings.position_iterations(),
-        settings.particle_iterations(),
-    )
-    .map(|_| ())
-    .map_err(|_| SessionControllerError::new(SessionControllerErrorKind::InvalidRunSettings))
 }
 
 fn same_run_except_settings(

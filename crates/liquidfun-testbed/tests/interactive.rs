@@ -12,7 +12,12 @@ use liquidfun_testbed::ui::inspector::CheckpointDiagnostics;
 const CHECKPOINT_SCENARIO: &str = "rigid-non-colliding-lifecycle";
 const CADENCE_SCENARIO: &str = "rigid-stack-stability";
 const PARTICLE_SCENARIO: &str = "particle-contacts-and-coupling";
-const LAUNCHER_SOURCE: &str = include_str!("../src/bin/interactive.rs");
+const LAUNCHER_SOURCE: &str = concat!(
+    include_str!("../src/bin/interactive.rs"),
+    include_str!("../src/bin/interactive/session.rs"),
+    include_str!("../src/bin/interactive/presentation.rs"),
+    include_str!("../src/bin/interactive/painting.rs"),
+);
 
 #[test]
 fn production_launcher_wires_the_live_catalog_controller_and_renderer() {

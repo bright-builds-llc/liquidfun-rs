@@ -14,6 +14,8 @@ use super::{
     AUTHORITY_FILES, CAPTURE_FILES, MAXIMUM_FIELD_BYTES, Manifest, SCHEMA_VERSION, digest,
     ensure_catalog_root, evidence_error, read_bounded, reject_symlink,
 };
+
+type MaybeReplayCheckpoints = Option<Box<[CanonicalCheckpoint]>>;
 use crate::failure_bundle::FailureBundleError;
 
 /// Exact replay authority recovered from a verified catalog bundle.
@@ -137,9 +139,10 @@ fn manifest_has_exact_files(manifest: &Manifest) -> bool {
         expected.push("first-divergence.json".to_owned());
     }
     expected.sort_unstable();
-    let captures_are_valid = if manifest.result_kind == CatalogFailureKind::PhysicsMismatch {
-        manifest.maybe_comparison_surface.is_some()
-    } else if manifest.result_kind == CatalogFailureKind::HarnessFailure {
+    let captures_are_valid = if matches!(
+        manifest.result_kind,
+        CatalogFailureKind::PhysicsMismatch | CatalogFailureKind::HarnessFailure
+    ) {
         manifest.maybe_comparison_surface.is_some()
     } else {
         manifest.maybe_comparison_surface.is_none()
@@ -159,13 +162,7 @@ fn validate_replay_semantics(
     directory: &Path,
     manifest: &Manifest,
     resolved: &ResolvedScenario,
-) -> Result<
-    (
-        Option<Box<[CanonicalCheckpoint]>>,
-        Option<Box<[CanonicalCheckpoint]>>,
-    ),
-    FailureBundleError,
-> {
+) -> Result<(MaybeReplayCheckpoints, MaybeReplayCheckpoints), FailureBundleError> {
     let action_log: Vec<ScenarioActionId> = read_json(directory, "action-log.json")?;
     if action_log
         != resolved

@@ -1,7 +1,7 @@
 //! Clean-lane contracts for Phase 12 differential semantic coverage.
 
 use std::fs;
-use std::path::Path;
+use std::path::{Component, Path};
 use std::sync::atomic::{AtomicU64, Ordering};
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
@@ -68,7 +68,7 @@ fn workflow_contract_is_valid(source: &str) -> bool {
         && job.contains("LIQUIDFUN_XTASK_CXX: clang++-22")
 }
 
-fn producer_contract_is_valid(script: &str, round_trip: &str) -> bool {
+fn producer_contract_is_valid(script: &str, round_trip_modules: &[String]) -> bool {
     let Some((_, differential_run)) = script.split_once("run_differential_coverage() {") else {
         return false;
     };
@@ -78,17 +78,51 @@ fn producer_contract_is_valid(script: &str, round_trip: &str) -> bool {
     let Some(target_loop) = differential_run.find("\tfor target in") else {
         return false;
     };
-    let Some(marker_guard) = round_trip.find("LIQUIDFUN_DIFFERENTIAL_LEAF_DIRECTORY\").is_none()")
-    else {
-        return false;
-    };
-    let Some(marker_emission) = round_trip.find("coverage_observation::observe") else {
-        return false;
-    };
+    let oracle_contract = round_trip_modules.iter().any(|module| {
+        let maybe_guard = module.find("LIQUIDFUN_DIFFERENTIAL_LEAF_DIRECTORY\").is_none()");
+        let maybe_emission = module.find("coverage_observation::observe");
+        matches!(
+            (maybe_guard, maybe_emission),
+            (Some(guard), Some(emission)) if guard < emission
+        )
+    });
     prerequisite < target_loop
-        && marker_guard < marker_emission
+        && oracle_contract
         && script.contains("oracle-debug oracle-release")
         && script.contains("differential coverage requires the exact $preset oracle")
+}
+
+fn declared_round_trip_modules(
+    round_trip_path: &Path,
+    round_trip_source: &str,
+) -> TestResult<Vec<String>> {
+    let mut modules = Vec::new();
+    for line in round_trip_source.lines() {
+        let Some(relative) = line
+            .trim()
+            .strip_prefix("include!(\"")
+            .and_then(|line| line.strip_suffix("\");"))
+        else {
+            continue;
+        };
+        let relative_path = Path::new(relative);
+        if !relative_path
+            .components()
+            .all(|component| matches!(component, Component::Normal(_)))
+        {
+            return Err(
+                format!("round-trip include is not a confined relative path: {relative}").into(),
+            );
+        }
+        let parent = round_trip_path
+            .parent()
+            .ok_or("round-trip root must have a parent directory")?;
+        modules.push(fs::read_to_string(parent.join(relative_path))?);
+    }
+    if modules.is_empty() {
+        return Err("round-trip root declares no included contract modules".into());
+    }
+    Ok(modules)
 }
 
 #[test]
@@ -129,12 +163,13 @@ fn clean_differential_job_rejects_missing_upstream_toolchain_or_release_build() 
 fn marker_producer_and_math_test_fail_closed_without_oracles() -> TestResult {
     // Arrange
     let script = fs::read_to_string(workspace_root().join("scripts/phase12-coverage.sh"))?;
-    let round_trip = fs::read_to_string(
-        workspace_root().join("crates/liquidfun-differential/tests/round_trip.rs"),
-    )?;
+    let round_trip_path =
+        workspace_root().join("crates/liquidfun-differential/tests/round_trip.rs");
+    let round_trip = fs::read_to_string(&round_trip_path)?;
+    let round_trip_modules = declared_round_trip_modules(&round_trip_path, &round_trip)?;
 
     // Act
-    let valid = producer_contract_is_valid(&script, &round_trip);
+    let valid = producer_contract_is_valid(&script, &round_trip_modules);
 
     // Assert
     assert!(valid);

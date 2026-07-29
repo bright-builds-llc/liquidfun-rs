@@ -10,7 +10,7 @@ use liquidfun::{
 };
 
 const PROFILE_SOURCE: &str = include_str!("../src/world/observation/profile.rs");
-const STEP_SOURCE: &str = include_str!("../src/world/step.rs");
+const STEP_REPORT_SOURCE: &str = include_str!("../src/world/step/report.rs");
 
 fn configuration() -> StepConfiguration {
     StepConfiguration::new(1.0 / 60.0, 8, 3).expect("fixture step configuration should validate")
@@ -143,14 +143,14 @@ fn duration_types_remain_outside_semantic_and_serializable_contracts() {
         .map(|offset| timing_start + offset)
         .expect("timing implementation should remain present");
     let timing_declaration = &PROFILE_SOURCE[timing_derive_start..timing_end];
-    let report_start = STEP_SOURCE
+    let report_start = STEP_REPORT_SOURCE
         .find("pub struct StepReport")
         .expect("step report should remain present");
-    let report_end = STEP_SOURCE[report_start..]
+    let report_end = STEP_REPORT_SOURCE[report_start..]
         .find("impl StepReport")
         .map(|offset| report_start + offset)
         .expect("step report implementation should remain present");
-    let report_declaration = &STEP_SOURCE[report_start..report_end];
+    let report_declaration = &STEP_REPORT_SOURCE[report_start..report_end];
 
     // Act
     let timing_has_authority_traits = ["PartialEq", "Eq", "Hash", "Serialize", "Deserialize"]

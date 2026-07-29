@@ -15,7 +15,50 @@ use sha2::{Digest, Sha256};
 const REVISION: &str = "7f20402173fd143a3988c921bc384459c6a858f2";
 const WRONG_REVISION: &str = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 const TRACE_PATH: &str = "reference/artifacts/traces/empty-world.jsonl";
-const ARTIFACT_SCHEMAS: &str = "[artifact_schemas.phase11_evidence]\nschema_version = 1\nmanifest_file = \"phase11-v1.json\"\nidentity_file = \"identity.json\"\nprotocol_version = \"catalog-phase11-v1\"\ngenerator_version = \"phase11-evidence-v1\"\npromotion = \"exact-ref-same-run-only\"\n";
+const ARTIFACT_SCHEMAS: &str = r#"[artifact_schemas.phase11_evidence]
+schema_version = 1
+manifest_file = "phase11-v1.json"
+identity_file = "identity.json"
+protocol_version = "catalog-phase11-v1"
+generator_version = "phase11-evidence-v1"
+promotion = "exact-ref-same-run-only"
+
+[artifact_schemas.phase13_evidence]
+schema_version = 1
+required_fields = ["record_class", "source_revision", "source_path", "derivation_kind", "alteration_summary", "notice_refs"]
+
+[[artifact_schemas.phase13_evidence.classes]]
+record_class = "witness"
+source_revision = "7f20402173fd143a3988c921bc384459c6a858f2"
+source_path = "liquidfun/Box2D/Box2D/Particle/b2ParticleSystem.cpp"
+derivation_kind = "generated-semantic-oracle-witness"
+alteration_summary = "Repository-authored semantic observations generated from the pinned upstream oracle without copying source, raw object memory, or Rust-produced expectations."
+notice_refs = ["THIRD_PARTY_NOTICES.md"]
+
+[[artifact_schemas.phase13_evidence.classes]]
+record_class = "replay_evidence"
+source_revision = "7f20402173fd143a3988c921bc384459c6a858f2"
+source_path = "."
+derivation_kind = "repository-authored-replay-verification"
+alteration_summary = "Repository-authored replay results derived from a canonical oracle bundle; no upstream source, raw object memory, or Rust-produced expectations are copied."
+notice_refs = ["THIRD_PARTY_NOTICES.md"]
+
+[[artifact_schemas.phase13_evidence.classes]]
+record_class = "staged_bundle"
+source_revision = "7f20402173fd143a3988c921bc384459c6a858f2"
+source_path = "."
+derivation_kind = "repository-authored-staged-evidence-bundle"
+alteration_summary = "Repository-authored immutable bundle metadata assembling reviewed oracle evidence and provenance records; no upstream source or raw object memory is copied."
+notice_refs = ["THIRD_PARTY_NOTICES.md"]
+
+[[artifact_schemas.phase13_evidence.classes]]
+record_class = "promotion_receipt"
+source_revision = "7f20402173fd143a3988c921bc384459c6a858f2"
+source_path = "."
+derivation_kind = "repository-authored-promotion-receipt"
+alteration_summary = "Repository-authored review and promotion identity for a byte-exact staged evidence bundle; no upstream source, raw object memory, or Rust-produced expectations are copied."
+notice_refs = ["THIRD_PARTY_NOTICES.md"]
+"#;
 const RECORD_FIELDS: [&str; 27] = [
     "artifact_kind",
     "path",
@@ -67,6 +110,7 @@ impl ProvenanceFixture {
         fs::create_dir_all(root.join("scenarios/phase-02"))?;
         fs::create_dir_all(root.join("scenarios/regressions"))?;
         fs::create_dir_all(root.join("third_party/liquidfun"))?;
+        fs::create_dir_all(root.join("tools/reference"))?;
         copy_workspace_file(
             &root,
             "protocol/fixtures/accepted/empty-world-request.jsonl",
@@ -74,6 +118,10 @@ impl ProvenanceFixture {
         copy_workspace_file(&root, "protocol/fixtures/accepted/empty-world-trace.jsonl")?;
         copy_workspace_file(&root, "protocol/tolerances/phase2-v1.toml")?;
         copy_workspace_file(&root, "scenarios/phase-02/empty-world.json")?;
+        copy_workspace_file(
+            &root,
+            "tools/reference/phase9-lifecycle-contact-witness.materials.json",
+        )?;
         fs::copy(
             root.join("protocol/fixtures/accepted/empty-world-trace.jsonl"),
             root.join(TRACE_PATH),
@@ -103,7 +151,7 @@ impl ProvenanceFixture {
         fs::write(
             self.root.join("reference/source-map.toml"),
             format!(
-                "schema_version = 1\n\n[[mapping]]\nlocal_path = \"reference/upstream-lock.toml\"\nupstream_revision = \"{revision}\"\nupstream_path = \".\"\nderivation_kind = \"fixture\"\nalteration_summary = \"Fixture metadata only.\"\nnotice_class = \"provenance-only\"\n\n[[mapping]]\nlocal_path = \"{artifact_path}\"\nupstream_revision = \"{revision}\"\nupstream_path = \"liquidfun/Box2D/Box2D/Dynamics/b2World.cpp\"\nderivation_kind = \"reviewed-semantic-trace\"\nalteration_summary = \"Repository-authored semantic output; no upstream source is copied.\"\nnotice_class = \"provenance-only\"\n"
+                "schema_version = 1\n\n[[mapping]]\nlocal_path = \"reference/upstream-lock.toml\"\nupstream_revision = \"{revision}\"\nupstream_path = \".\"\nderivation_kind = \"fixture\"\nalteration_summary = \"Fixture metadata only.\"\nnotice_class = \"provenance-only\"\n\n[[mapping]]\nlocal_path = \"tools/reference/phase9-lifecycle-contact-witness.materials.json\"\nupstream_revision = \"{revision}\"\nupstream_path = \"liquidfun/Box2D\"\nderivation_kind = \"mechanically-derived-target-materials-manifest\"\nalteration_summary = \"Fixture binding for the required scoped materials inventory; no upstream source is copied.\"\nnotice_class = \"provenance-only\"\n\n[[mapping]]\nlocal_path = \"{artifact_path}\"\nupstream_revision = \"{revision}\"\nupstream_path = \"liquidfun/Box2D/Box2D/Dynamics/b2World.cpp\"\nderivation_kind = \"reviewed-semantic-trace\"\nalteration_summary = \"Repository-authored semantic output; no upstream source is copied.\"\nnotice_class = \"provenance-only\"\n"
             ),
         )
     }

@@ -10,13 +10,13 @@
     "--provenance",
     "reference/artifacts/phase9/lifecycle-contact-witnesses.provenance.json"
   ],
-  "generation_timestamp": "2026-07-27T02:31:36Z",
+  "generation_timestamp": "2026-07-28T15:27:08Z",
   "materials_count": 176,
   "materials_manifest_sha256": "744ea1ef81974e7bd27e5f443d0c1f125887ee09cec2688ccf554e330d384e3e",
-  "materials_sha256": "5be85c2a28bcc13b9c00c92b92843f9c4e244e700468d7b4f2b394ee6c772594",
+  "materials_sha256": "d30a6879fb37058ce92d179268b28983d4919169bf4dcb8f24e2c2a267017c71",
   "oracle_revision": "7f20402173fd143a3988c921bc384459c6a858f2",
   "probe_source_sha256": "7c0430ea9ee919f1331eb1ede7f78807ee3be7bb9137b6b62c0959abb7458ed8",
-  "repository_revision": "6e8261a66a67a05bf3fadb4ad9d818121c395324",
+  "repository_revision": "981908ea87b6789b6b6e9aa136e65a369c5c736d",
   "schema_version": 2,
   "target": "x86_64-unknown-linux-gnu",
   "witness_sha256": "9e60ff752c3c2164bbc1589d5db5803f05107d139937d43c0d37cf8e07bdad53"
