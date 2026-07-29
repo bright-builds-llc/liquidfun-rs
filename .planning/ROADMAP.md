@@ -21,6 +21,7 @@ The v1 roadmap moves from an immutable, licensed source of truth to a semantic c
 - [x] **Phase 11: Examples, Headless Tooling, and Testbed** - Account for every upstream test/example and expose shared headless and optional visual scenarios. (completed 2026-07-23)
 - [x] **Phase 12: Performance, Portability, and Release Hardening** - Prove performance, safety, platform, documentation, packaging, and zero-gap v1 readiness. (completed 2026-07-24)
 - [x] **Phase 13: Restore Evidence and Replay Integrity** - Repair exact-head provenance and reviewed catalog replay before accepting current compatibility evidence. (completed 2026-07-27)
+- [x] **Phase 13.1: Restore Bright Builds Structural Compliance** - Refactor every repository-owned file-length finding without behavioral or evidence drift. (completed 2026-07-29)
 - [ ] **Phase 14: Repair Windows Particle-Group Invariants** - Remove the supported-Windows authoritative-storage panic and restore transactional particle-group behavior.
 - [ ] **Phase 15: Re-establish Candidate Evidence** - Produce and attest a green exact-head release-candidate evidence bundle after all implementation and replay gaps close.
 
@@ -293,10 +294,42 @@ Plans:
 
 **Plans**: TBD during phase planning
 
+### Phase 13.1: Restore Bright Builds structural compliance (INSERTED)
+
+**Goal:** Restore repository-wide structural compliance by refactoring every first-party source above the managed 628-line limit without changing behavior, public contracts, or evidence semantics.
+**Requirements**: TBD — structural prerequisite with no milestone requirement reassignment
+**Depends on:** Phase 13
+**Gap Closure:** Restores the mandatory Bright Builds pre-commit and CI gate introduced after Phase 13.
+**Success Criteria** (what must be TRUE):
+
+1. Every tracked repository-owned source in managed checker scope contains at most 628 physical lines, with cohesive boundaries preferred below roughly 500 lines.
+1. Public Rust paths, protocol/schema bytes, CLI contracts, test-target names, deterministic ordering, C++ adapter interfaces, and evidence semantics remain unchanged.
+1. Genuine external or generated findings use exact-path exceptions only when provenance proves they cannot be refactored; the current audited baseline requires zero exceptions.
+1. Focused subsystem gates, native/reference contracts, the ordered full Rust gate, and `bun scripts/bright-builds-check.ts all` pass before the structural commit.
+
+**Plans:** 15 plans
+
+Plans:
+- [x] 13.1-01-PLAN.md — Preserve the dirty original worktree and create an isolated aggregate worktree.
+- [x] 13.1-02-PLAN.md — Split the first protocol catalog, performance, provenance, math, and scenario roots.
+- [x] 13.1-03-PLAN.md — Split protocol rigid types, validation, schema, tolerance, trace, and tests.
+- [x] 13.1-04-PLAN.md — Split differential fixture, CLI, report, session, and supervisor shells.
+- [x] 13.1-05-PLAN.md — Split differential rigid evidence, fixtures, execution, and comparators.
+- [x] 13.1-06-PLAN.md — Split differential particle, protocol, corpus, rigid, replay, and support tests.
+- [x] 13.1-07-PLAN.md — Split core arena, collision, joint, and particle public-family roots.
+- [x] 13.1-08-PLAN.md — Split authoritative particle storage and body/contact/continuous internals.
+- [x] 13.1-09-PLAN.md — Split diagnostics, islands, joint solvers, lifecycle, observation, and stepping.
+- [x] 13.1-10-PLAN.md — Split the remaining oversized core integration-test targets.
+- [x] 13.1-11-PLAN.md — Split xtask differential, docs, inventory, package, and safety commands.
+- [x] 13.1-12-PLAN.md — Split Phase 13/9 evidence, promotion, provenance, release, and upstream tooling.
+- [x] 13.1-13-PLAN.md — Split the remaining oversized xtask integration-test roots.
+- [x] 13.1-14-PLAN.md — Split native adapter, testbed, fuzz, and release-shell findings.
+- [x] 13.1-15-PLAN.md — Reconcile scope, verify, promote canonical evidence, and integrate.
+
 ### Phase 14: Repair Windows Particle-Group Invariants
 
 **Goal**: Restore transactional particle-group creation and mutation on supported Windows without weakening stable identity, authoritative storage, or cross-platform semantics.
-**Depends on**: Phase 13
+**Depends on**: Phase 13.1
 **Requirements**: PART-03, PART-04, PART-09, PART-10, TEST-02, TEST-04
 **Gap Closure**: Closes the milestone-audit Windows particle-group invariant, public integration, and persisted property-regression gaps.
 **Success Criteria** (what must be TRUE):

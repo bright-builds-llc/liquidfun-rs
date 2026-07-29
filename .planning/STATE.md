@@ -3,14 +3,14 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 14 context gathered
-last_updated: "2026-07-27T16:57:15.129Z"
-last_activity: 2026-07-27 -- Phase 14 planning complete
+stopped_at: Phase 14 ready to execute after Phase 13.1 structural compliance
+last_updated: "2026-07-29T01:56:33Z"
+last_activity: 2026-07-29 -- Phase 13.1 completed with zero exceptions and canonical acceptance
 progress:
-  total_phases: 15
-  completed_phases: 13
-  total_plans: 224
-  completed_plans: 221
+  total_phases: 16
+  completed_phases: 14
+  total_plans: 239
+  completed_plans: 236
   percent: 99
 ---
 
@@ -21,22 +21,22 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-07-23)
 
 **Core value:** Deliver an independent, maintainable Rust physics engine whose LiquidFun behavior is demonstrated against a pinned upstream oracle through explicit inventory, tests, differential evidence, and documented tolerances.
-**Current focus:** Phase 14 — repair-windows-particle-group-invariants
+**Current focus:** Phase 14 — Repair Windows Particle-Group Invariants
 
 ## Current Position
 
-Phase: 14 (repair-windows-particle-group-invariants)
-Plan: Not started
+Phase: 14 (Repair Windows Particle-Group Invariants) — EXECUTING
+Plan: 1 of 3
 Status: Ready to execute
-Last activity: 2026-07-27 -- Phase 14 planning complete
+Last activity: 2026-07-29 -- Phase 13.1 completed with zero exceptions and canonical acceptance
 
-Progress: [██████████] 100%
+Progress: [██████████] 99%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 231
+- Total plans completed: 236
 - Average duration: Not available
 - Total execution time: 0 hours
 
@@ -645,6 +645,8 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 13]: Phase 13 live acceptance compares the reviewed legacy physics projection while requiring expanded drift to remain exactly capture_schema_drift.
 - [Phase 13]: Phase 13 schema-v2 promotion binds path sets and byte content separately, normalizing only the receipt's two self-referential content-digest fields.
 - [Phase 13]: Explicit provenance digest-mode parsing was an acceptance-only repair because it remained outside both producer-affecting closures.
+- [Phase 13.1]: Insert Phase 13.1 before Phase 14 to refactor all 103 first-party Bright Builds file-length findings with zero current exceptions. — The newly installed mandatory checker blocks every commit; ownership audit proved every finding is repository-owned and refactorable while actual third-party and vendored paths are already excluded.
+- [Phase 13.1]: Refactor all 103 repository-owned findings and retain zero exceptions; canonical Phase 13 evidence must be regenerated whenever structural source changes alter producer-affecting closures.
 
 ### Pending Todos
 
@@ -658,6 +660,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-27T16:21:17.131Z
-Stopped at: Phase 14 context gathered
+Last session: 2026-07-29T01:56:33Z
+Stopped at: Phase 14 ready to execute after Phase 13.1 structural compliance
 Resume file: .planning/phases/14-repair-windows-particle-group-invariants/14-CONTEXT.md
