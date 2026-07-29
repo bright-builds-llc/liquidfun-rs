@@ -4,11 +4,13 @@ use liquidfun::particle::{
     ParticleGroupDestination, ParticleGroupFlags, ParticleGroupRecipe, ParticleGroupSource,
 };
 use liquidfun::{
-    HandleError, NoDecisionHook, ParticleFlags, ParticleGroupId, ParticleGroupMutationError,
-    ParticleSystemId, StepConfiguration, StepLimits, World,
+    HandleError, LifecycleEvent, NoDecisionHook, ParticleFlags, ParticleGroupId,
+    ParticleGroupMutationError, ParticleSystemId, StepConfiguration, StepLimits, World,
 };
 
-use super::snapshot::{assert_invariants, semantic_snapshot};
+use super::snapshot::{
+    LifecycleKind, assert_invariants, lifecycle_kind, rollback_snapshot, semantic_snapshot,
+};
 use super::{MAX_GROUPS, MAX_PARTICLES, Operation, OperationKind, Outcome, TraceEntry};
 
 pub(super) struct Model {
@@ -16,6 +18,7 @@ pub(super) struct Model {
     pub(super) system: ParticleSystemId,
     foreign_group: ParticleGroupId,
     pub(super) known_groups: Vec<ParticleGroupId>,
+    pub(super) lifecycle: Vec<LifecycleKind>,
 }
 
 impl Model {
@@ -44,6 +47,7 @@ impl Model {
             system,
             foreign_group,
             known_groups: Vec::new(),
+            lifecycle: Vec::new(),
         }
     }
 
@@ -74,11 +78,15 @@ impl Model {
     }
 
     pub(super) fn apply(&mut self, operation: Operation) -> TraceEntry {
-        let before = semantic_snapshot(self);
+        let before = rollback_snapshot(self);
         let outcome = self.apply_inner(operation);
         let snapshot = semantic_snapshot(self);
         if outcome == Outcome::Rejected {
-            assert_eq!(snapshot, before, "typed rejection must be effect-free");
+            assert_eq!(
+                rollback_snapshot(self),
+                before,
+                "typed rejection must be effect-free"
+            );
         }
         assert_invariants(self);
         TraceEntry {
@@ -202,6 +210,10 @@ impl Model {
         }
     }
 
+    fn record_lifecycle(&mut self, events: &[LifecycleEvent]) {
+        self.lifecycle.extend(events.iter().map(lifecycle_kind));
+    }
+
     fn append(&mut self, selector: usize) -> Outcome {
         if self.at_bound(1) {
             return Outcome::SkippedAtBound;
@@ -253,6 +265,7 @@ impl Model {
         match self.world.join_particle_groups(group_a, group_b) {
             Ok(report) => {
                 assert_eq!(*report.value(), group_a);
+                self.record_lifecycle(report.lifecycle());
                 Outcome::Applied {
                     created: 0,
                     lifecycle: report.lifecycle().len(),
@@ -321,10 +334,13 @@ impl Model {
 
     fn compact(&mut self) -> Outcome {
         match self.world.compact_pending_particles(self.system) {
-            Ok(report) => Outcome::Applied {
-                created: 0,
-                lifecycle: report.lifecycle().len(),
-            },
+            Ok(report) => {
+                self.record_lifecycle(report.lifecycle());
+                Outcome::Applied {
+                    created: 0,
+                    lifecycle: report.lifecycle().len(),
+                }
+            }
             Err(_error) => Outcome::Rejected,
         }
     }
@@ -338,10 +354,13 @@ impl Model {
             .world
             .step(configuration, &mut NoDecisionHook, StepLimits::default())
         {
-            Ok(report) => Outcome::Applied {
-                created: 0,
-                lifecycle: report.lifecycle().len(),
-            },
+            Ok(report) => {
+                self.record_lifecycle(report.lifecycle());
+                Outcome::Applied {
+                    created: 0,
+                    lifecycle: report.lifecycle().len(),
+                }
+            }
             Err(_error) => Outcome::Rejected,
         }
     }

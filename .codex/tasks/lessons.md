@@ -46,3 +46,10 @@
 1. What went wrong: A recovery contract used path-name-only set hashes where content digests were required, labeled JSONPath as a JSON pointer, and represented request authority with a truncated convenience ID.
 1. Preventive rule: Translate evidence-contract nouns literally: content-set digests hash deterministic path-plus-content-hash pairs, JSON pointers use RFC 6901 escaping, and request identity records every full authority field.
 1. Trigger signal to catch it earlier: A field named `content`, `pointer`, `exact`, or `identity` is implemented through a shorter surrogate such as path names, display syntax, or a truncated digest.
+
+## lesson-classify-checker-findings-before-exceptions | 2026-07-27 19:08
+
+1. Date: 2026-07-27 19:08 CDT
+1. What went wrong: I treated a newly introduced repository-wide checker baseline primarily as an exception-ledger authorization problem before classifying which findings were repository-owned and should be remediated.
+1. Preventive rule: When a new standards checker flags pre-existing files, classify ownership and generated status first, plan root-cause refactors for owned sources, and reserve exact-path exceptions for genuinely external or non-refactorable surfaces.
+1. Trigger signal to catch it earlier: A managed checker fails on many untouched paths and the first proposed unblock is a broad allowlist instead of an ownership audit and bounded remediation plan.
