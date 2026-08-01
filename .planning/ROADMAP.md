@@ -307,7 +307,7 @@ Plans:
 1. Genuine external or generated findings use exact-path exceptions only when provenance proves they cannot be refactored; the current audited baseline requires zero exceptions.
 1. Focused subsystem gates, native/reference contracts, the ordered full Rust gate, and `bun scripts/bright-builds-check.ts all` pass before the structural commit.
 
-**Plans:** 20/22 plans executed
+**Plans:** 21/22 plans executed
 
 Plans:
 - [x] 13.1-01-PLAN.md — Preserve the dirty original worktree and create an isolated aggregate worktree.
@@ -331,7 +331,7 @@ Plans:
 - [x] 13.1-19-PLAN.md — Add a fail-closed candidate-bound gap verification producer.
 - [x] 13.1-20-PLAN.md — Obtain a named developer decision on the truthful integration-history override.
 - [ ] 13.1-21-PLAN.md — Authorize and publish the exact candidate, then run the complete matrix and formal re-verification.
-- [ ] 13.1-22-PLAN.md — Format the remaining five Markdown failures and run all aggregate documentation checks.
+- [x] 13.1-22-PLAN.md — Format the remaining five Markdown failures and run all aggregate documentation checks.
 
 ### Phase 14: Repair Windows Particle-Group Invariants
 

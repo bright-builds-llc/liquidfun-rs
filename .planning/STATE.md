@@ -3,14 +3,14 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 13.1-19-PLAN.md
-last_updated: "2026-08-01T16:31:35.502Z"
+stopped_at: Completed 13.1-22-PLAN.md
+last_updated: "2026-08-01T17:23:31.459Z"
 last_activity: "2026-08-01"
 progress:
   total_phases: 16
   completed_phases: 13
   total_plans: 246
-  completed_plans: 241
+  completed_plans: 242
   percent: 98
 ---
 
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-23)
 ## Current Position
 
 Phase: 13.1 (restore-bright-builds-structural-compliance) — EXECUTING
-Plan: 21 of 22
+Plan: 22 of 22
 Status: Ready to execute
 Last activity: 2026-08-01
 
@@ -234,6 +234,7 @@ Progress: [██████████] 98%
 | Phase 13.1 P18 | 16 min | 1 tasks | 6 files |
 | Phase 13.1 P20 | 9 min | 1 tasks | 1 files |
 | Phase 13.1 P19 | 21 min | 3 tasks | 5 files |
+| Phase 13.1 P22 | 32 min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -661,6 +662,7 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 13.1]: Keep every xtask integration target explicit and defer only phase13_acceptance_contract.
 - [Phase 13.1]: Allow test manifests only for temporary repositories while keeping the production manifest and repository root immutable.
 - [Phase 13.1]: Retain bounded partial logs and JSONL on failure, but publish terminal JSON only after independent validation.
+- [Phase 13.1]: Use the user-authorized narrow Option A expansion to correct the corpus renderer and focused regression coverage without weakening closure or aggregate gates.
 
 ### Pending Todos
 
@@ -674,6 +676,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-08-01T16:31:35.498Z
-Stopped at: Completed 13.1-19-PLAN.md
+Last session: 2026-08-01T17:23:31.454Z
+Stopped at: Completed 13.1-22-PLAN.md
 Resume file: None
