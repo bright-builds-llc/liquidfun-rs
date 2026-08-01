@@ -78,7 +78,8 @@ manifest_sha256=$(hash_file "$manifest_path")
 	fail "manifest digest mismatch"
 
 unknown_placeholders=$(jq -r '.allowed_placeholders as $declared
-	| ([.. | strings | scan("\\$\\{[^}]+\\}")] | unique - $declared | length)' "$manifest_path")
+	| ([.. | strings | scan("\\$\\{[^}]+\\}") | ltrimstr("${") | rtrimstr("}")]
+	  | unique - $declared | length)' "$manifest_path")
 [[ "$unknown_placeholders" -eq 0 ]] || fail "manifest contains an undeclared placeholder"
 expected_commands=$(jq -cS \
 	--arg candidate "$candidate_sha" \
