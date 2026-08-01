@@ -1,0 +1,249 @@
+name: Phase 13.1 Canonical Native Validation
+
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_sha:
+        description: Exact full candidate commit to validate
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: phase13-1-canonical-native-${{ inputs.candidate_sha }}
+  cancel-in-progress: false
+
+jobs:
+  canonical-native:
+    name: Candidate-bound Ubuntu Clang native validation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      CC: clang-22
+      CXX: clang++-22
+      LIQUIDFUN_XTASK_CMAKE: cmake
+      LIQUIDFUN_XTASK_NINJA: ninja
+      LIQUIDFUN_XTASK_CXX: clang++-22
+    steps:
+      - name: Validate the exact candidate input
+        env:
+          CANDIDATE_SHA_INPUT: ${{ inputs.candidate_sha }}
+        run: |
+          failure_directory="$RUNNER_TEMP/phase13-1-canonical-native-failure"
+          mkdir -p "$failure_directory/logs"
+          candidate_sha="$CANDIDATE_SHA_INPUT"
+          if ! [[ "$candidate_sha" =~ ^[0-9a-f]{40}$ ]]; then
+            printf '%s\n' 'candidate_sha_format_valid=false' > "$failure_directory/input.log"
+            exit 1
+          fi
+          printf '%s\n' 'candidate_sha_format_valid=true' > "$failure_directory/input.log"
+          {
+            echo "CANDIDATE_SHA=$candidate_sha"
+            echo "EVIDENCE_DIRECTORY=target/phase13-1-canonical-native/$candidate_sha"
+            echo "FAILURE_DIRECTORY=$failure_directory"
+          } >> "$GITHUB_ENV"
+
+      - name: Check out the exact candidate and pinned oracle
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          ref: ${{ inputs.candidate_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+          submodules: recursive
+
+      - name: Assert the checked-out commit and tree
+        run: |
+          actual_head=$(git rev-parse HEAD)
+          test "$actual_head" = "$CANDIDATE_SHA"
+          candidate_tree=$(git rev-parse 'HEAD^{tree}')
+          {
+            printf 'candidate_sha=%s\n' "$actual_head"
+            printf 'candidate_tree=%s\n' "$candidate_tree"
+          } | tee "$FAILURE_DIRECTORY/checkout.log"
+          echo "CANDIDATE_TREE=$candidate_tree" >> "$GITHUB_ENV"
+
+      - name: Install pinned Rust
+        run: |
+          temporary_log="$RUNNER_TEMP/install-rust.log"
+          set +e
+          {
+            rustup toolchain install 1.97.0 --profile minimal
+            rustup override set 1.97.0
+          } 2>&1 | tee "$temporary_log"
+          exit_code=${PIPESTATUS[0]}
+          set -e
+          tail -c 1048576 "$temporary_log" > "$FAILURE_DIRECTORY/logs/install-rust.log"
+          exit "$exit_code"
+
+      - name: Install canonical LLVM 22
+        run: |
+          temporary_log="$RUNNER_TEMP/install-llvm.log"
+          set +e
+          {
+            curl --fail --location --silent --show-error --output "$RUNNER_TEMP/llvm.sh" https://apt.llvm.org/llvm.sh
+            echo "9474ecd78b52aba6e923976b1e9773f5613027cc7e237b9956986cb536e02a36  $RUNNER_TEMP/llvm.sh" | sha256sum --check
+            chmod 755 "$RUNNER_TEMP/llvm.sh"
+            sudo "$RUNNER_TEMP/llvm.sh" 22
+            echo "/usr/lib/llvm-22/bin" >> "$GITHUB_PATH"
+          } 2>&1 | tee "$temporary_log"
+          exit_code=${PIPESTATUS[0]}
+          set -e
+          tail -c 1048576 "$temporary_log" > "$FAILURE_DIRECTORY/logs/install-llvm.log"
+          exit "$exit_code"
+
+      - name: Install exact CMake and Ninja
+        run: |
+          temporary_log="$RUNNER_TEMP/install-build-tools.log"
+          set +e
+          {
+            curl --fail --location --silent --show-error --output "$RUNNER_TEMP/cmake.tar.gz" https://github.com/Kitware/CMake/releases/download/v4.3.3/cmake-4.3.3-linux-x86_64.tar.gz
+            echo "927b2368a946c37269c3a66225ab00544e756459cdd0b5d0da438694fb9ff802  $RUNNER_TEMP/cmake.tar.gz" | sha256sum --check
+            tar -xzf "$RUNNER_TEMP/cmake.tar.gz" -C "$RUNNER_TEMP"
+            mkdir -p "$RUNNER_TEMP/ninja-1.13.2"
+            curl --fail --location --silent --show-error --output "$RUNNER_TEMP/ninja.zip" https://github.com/ninja-build/ninja/releases/download/v1.13.2/ninja-linux.zip
+            echo "5749cbc4e668273514150a80e387a957f933c6ed3f5f11e03fb30955e2bbead6  $RUNNER_TEMP/ninja.zip" | sha256sum --check
+            unzip -q "$RUNNER_TEMP/ninja.zip" -d "$RUNNER_TEMP/ninja-1.13.2"
+            {
+              echo "$RUNNER_TEMP/cmake-4.3.3-linux-x86_64/bin"
+              echo "$RUNNER_TEMP/ninja-1.13.2"
+            } >> "$GITHUB_PATH"
+          } 2>&1 | tee "$temporary_log"
+          exit_code=${PIPESTATUS[0]}
+          set -e
+          tail -c 1048576 "$temporary_log" > "$FAILURE_DIRECTORY/logs/install-build-tools.log"
+          exit "$exit_code"
+
+      - name: Assert the canonical tool identities
+        run: |
+          temporary_log="$RUNNER_TEMP/tool-identities.log"
+          set +e
+          {
+            test "$(uname -s)" = "Linux"
+            test "$(uname -m)" = "x86_64"
+            rustc --version | grep --fixed-strings "rustc 1.97.0"
+            cmake --version | grep --fixed-strings "cmake version 4.3.3"
+            test "$(ninja --version)" = "1.13.2"
+            clang++-22 --version | grep --extended-regexp 'clang version 22\.1\.8'
+          } 2>&1 | tee "$temporary_log"
+          exit_code=${PIPESTATUS[0]}
+          set -e
+          tail -c 1048576 "$temporary_log" > "$FAILURE_DIRECTORY/logs/tool-identities.log"
+          exit "$exit_code"
+
+      - name: Run the canonical native matrix
+        run: |
+          commands_file="$FAILURE_DIRECTORY/commands.tsv"
+          : > "$commands_file"
+          run_logged() {
+            local label="$1"
+            shift
+            local temporary_log="$RUNNER_TEMP/$label.log"
+            set +e
+            "$@" 2>&1 | tee "$temporary_log"
+            local exit_code=${PIPESTATUS[0]}
+            set -e
+            tail -c 1048576 "$temporary_log" > "$FAILURE_DIRECTORY/logs/$label.log"
+            printf '%s\t%s\t%s\n' "$label" "$*" "$exit_code" >> "$commands_file"
+            return "$exit_code"
+          }
+
+          run_logged oracle-identity cargo test -p liquidfun-differential --test oracle_identity --all-features
+          run_logged canonical-identity cargo test -p liquidfun-test-protocol --all-features canonical
+          run_logged configure-debug cargo xtask upstream configure --preset oracle-debug
+          run_logged build-debug cargo xtask upstream build --preset oracle-debug
+          run_logged protocol-build-debug cmake --build target/reference/oracle-debug --target liquidfun-reference-protocol-tests
+          run_logged protocol-ctest-debug ctest --test-dir target/reference/oracle-debug --output-on-failure --no-tests=error -R '^liquidfun-reference-protocol$'
+          run_logged configure-release cargo xtask upstream configure --preset oracle-release
+          run_logged build-release cargo xtask upstream build --preset oracle-release
+          run_logged protocol-build-release cmake --build target/reference/oracle-release --target liquidfun-reference-protocol-tests
+          run_logged protocol-ctest-release ctest --test-dir target/reference/oracle-release --output-on-failure --no-tests=error -R '^liquidfun-reference-protocol$'
+          run_logged compare-debug cargo xtask differential compare --scenario rigid-world --preset oracle-debug --session-profile one-shot
+          run_logged compare-release cargo xtask differential compare --scenario rigid-world --preset oracle-release --session-profile one-shot
+          run_logged replay-debug cargo xtask differential replay --scenario rigid-world --preset oracle-debug --session-profile one-shot
+          run_logged determinism-debug cargo xtask differential verify-determinism --scenario rigid-world --preset oracle-debug --runs 2
+
+      - name: Record normalized compile commands
+        run: |
+          mkdir -p "$EVIDENCE_DIRECTORY/logs"
+          cp "$FAILURE_DIRECTORY"/logs/*.log "$EVIDENCE_DIRECTORY/logs/"
+          cp "$FAILURE_DIRECTORY/commands.tsv" "$EVIDENCE_DIRECTORY/command-exits.tsv"
+          record_compile_commands() {
+            local preset="$1"
+            local build_directory="$GITHUB_WORKSPACE/target/reference/$preset"
+            local output="$EVIDENCE_DIRECTORY/compile-commands-$preset.json"
+            jq \
+              --arg build "$build_directory" \
+              --arg repo "$GITHUB_WORKSPACE" \
+              '[
+                .[]
+                | select(.file | test("/(collision_probe|math_probe|protocol_bits|rigid_world)\\.cpp$"))
+                | (.command // (.arguments | join("\\n"))) as $command
+                | {
+                    file: (.file | gsub($build; "<build>") | gsub($repo; "<repo>")),
+                    command: ($command | gsub($build; "<build>") | gsub($repo; "<repo>"))
+                  }
+              ] | sort_by(.file)' \
+              "target/reference/$preset/compile_commands.json" > "$output"
+            test "$(jq 'length' "$output")" = "4"
+          }
+          record_compile_commands oracle-debug
+          record_compile_commands oracle-release
+          jq -Rn \
+            '[inputs | split("\t") | {name: .[0], command: .[1], exit_code: (.[2] | tonumber)}]' \
+            < "$EVIDENCE_DIRECTORY/command-exits.tsv" \
+            > "$EVIDENCE_DIRECTORY/commands.json"
+          (
+            cd "$EVIDENCE_DIRECTORY"
+            sha256sum compile-commands-oracle-debug.json compile-commands-oracle-release.json \
+              > compile-commands.sha256
+            find logs -type f -print0 | sort -z | xargs -0 sha256sum > logs.sha256
+          )
+
+      - name: Write terminal D1 identity
+        run: |
+          candidate_sha="$CANDIDATE_SHA"
+          candidate_tree="$CANDIDATE_TREE"
+          command_order=$(jq '[.[].name]' "$EVIDENCE_DIRECTORY/commands.json")
+          command_exits=$(jq '[.[] | {name, exit_code}]' "$EVIDENCE_DIRECTORY/commands.json")
+          jq -n \
+            --arg candidate_sha "$candidate_sha" \
+            --arg candidate_tree "$candidate_tree" \
+            --arg workflow_run_id "$GITHUB_RUN_ID" \
+            --arg workflow_job_id "$GITHUB_JOB" \
+            --argjson command_order "$command_order" \
+            --argjson command_exits "$command_exits" \
+            '{
+              schema_version: 1,
+              candidate_sha: $candidate_sha,
+              candidate_tree: $candidate_tree,
+              workflow_run_id: $workflow_run_id,
+              workflow_job_id: $workflow_job_id,
+              runner: {os: "ubuntu-24.04", architecture: "x86_64"},
+              tools: {rust: "1.97.0", clang: "22.1.8", cmake: "4.3.3", ninja: "1.13.2"},
+              presets: ["oracle-debug", "oracle-release"],
+              command_order: $command_order,
+              command_exits: $command_exits,
+              compile_command_digests: "compile-commands.sha256",
+              log_digests: "logs.sha256",
+              evidence_tier: "D1"
+            }' > "$EVIDENCE_DIRECTORY/identity.json"
+
+      - name: Upload bounded failure logs
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: phase13-1-canonical-native-failure-${{ github.run_id }}-${{ github.job }}
+          path: ${{ runner.temp }}/phase13-1-canonical-native-failure
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload successful canonical evidence
+        if: success()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: phase13-1-canonical-native-success-${{ github.run_id }}-${{ inputs.candidate_sha }}
+          path: target/phase13-1-canonical-native/${{ inputs.candidate_sha }}
+          if-no-files-found: error
+          retention-days: 90
