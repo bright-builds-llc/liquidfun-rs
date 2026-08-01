@@ -203,7 +203,11 @@ fn compile_database_sha256(
         let command = compile_database_command(&entry, unit)?;
         let normalized_source = normalize_compile_path(source, repository_root, build_directory);
         let normalized_command = normalize_compile_path(&command, repository_root, build_directory);
-        command_signatures.push(normalized_command.replace(unit, "<result-unit>.cpp"));
+        let normalized_signature = normalized_command.replace(unit, "<result-unit>.cpp");
+        command_signatures.push(normalize_result_target_directories(
+            &normalized_signature,
+            unit,
+        )?);
         commands.push(format!("{normalized_source}\n{normalized_command}"));
     }
     for unit in RESULT_TRANSLATION_UNITS {
@@ -254,4 +258,35 @@ fn normalize_compile_path(value: &str, repository_root: &Path, build_directory: 
     value
         .replace(build.as_ref(), "<build>")
         .replace(repository.as_ref(), "<repo>")
+}
+
+fn normalize_result_target_directories(
+    value: &str,
+    unit: &'static str,
+) -> Result<String, OracleCheckoutIdentityError> {
+    const PREFIX: &str = "CMakeFiles/";
+    const SUFFIX: &str = ".dir";
+
+    let mut normalized = String::with_capacity(value.len());
+    let mut remaining = value;
+    while let Some(prefix_index) = remaining.find(PREFIX) {
+        let target_start = prefix_index + PREFIX.len();
+        normalized.push_str(&remaining[..target_start]);
+        let target_and_remainder = &remaining[target_start..];
+        let Some(suffix_index) = target_and_remainder.find(SUFFIX) else {
+            return Err(OracleCheckoutIdentityError::MalformedCompileCommand { unit });
+        };
+        let target = &target_and_remainder[..suffix_index];
+        if target.is_empty()
+            || target
+                .chars()
+                .any(|character| character == '/' || character.is_whitespace())
+        {
+            return Err(OracleCheckoutIdentityError::MalformedCompileCommand { unit });
+        }
+        normalized.push_str("<result-target>.dir");
+        remaining = &target_and_remainder[suffix_index + SUFFIX.len()..];
+    }
+    normalized.push_str(remaining);
+    Ok(normalized)
 }

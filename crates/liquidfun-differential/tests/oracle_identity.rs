@@ -51,11 +51,16 @@ impl IdentityRepository {
         let entries = UNITS
             .map(|unit| {
                 let source = self.root.join("tools/reference/src").join(unit);
+                let target = if unit == "protocol_bits.cpp" {
+                    "liquidfun-reference-protocol-bits"
+                } else {
+                    "liquidfun-reference-protocol"
+                };
                 serde_json::json!({
                     "directory": build,
                     "file": source,
                     "command": format!(
-                        "clang++ -I{}/tools/reference/src {common_flag} -o {}/{unit}.o -c {}",
+                        "clang++ -I{}/tools/reference/src {common_flag} -o {}/CMakeFiles/{target}.dir/src/{unit}.o -c {}",
                         self.root.display(),
                         build.display(),
                         source.display()
@@ -269,6 +274,25 @@ fn effective_compile_digest_rejects_missing_duplicate_and_divergent_units()
     assert_eq!(
         malformed,
         OracleCheckoutIdentityError::CompileDatabaseMalformed
+    );
+
+    let mut malformed_target_entries = baseline_entries.clone();
+    let command = malformed_target_entries[2]["command"]
+        .as_str()
+        .ok_or("fixture command must be a string")?
+        .replace(
+            "CMakeFiles/liquidfun-reference-protocol-bits.dir",
+            "CMakeFiles/liquidfun-reference-protocol-bits",
+        );
+    malformed_target_entries[2]["command"] = serde_json::Value::String(command);
+    repository.write_compile_value(&serde_json::Value::Array(malformed_target_entries))?;
+    let malformed_target = effective_compile_command_sha256(&repository.root, PRESET)
+        .expect_err("malformed result target directory must fail");
+    assert_eq!(
+        malformed_target,
+        OracleCheckoutIdentityError::MalformedCompileCommand {
+            unit: "protocol_bits.cpp",
+        }
     );
     Ok(())
 }
