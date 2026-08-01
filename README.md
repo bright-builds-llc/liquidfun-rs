@@ -77,13 +77,13 @@ Every supported lane verifies the same reviewed `.crate` bytes. Platform
 results are D2 portability evidence and cannot create or promote canonical D1
 physics fixtures.
 
-| Target | Policy tier | Current contract |
-| --- | --- | --- |
-| `x86_64-unknown-linux-gnu` | durable supported | Rust 1.97 native verification; canonical Linux also verifies Rust 1.92.0 |
-| `aarch64-unknown-linux-gnu` | durable supported | Rust 1.97 native verification |
-| `aarch64-apple-darwin` | durable supported | Rust 1.97 native verification |
-| `x86_64-pc-windows-msvc` | durable supported | Rust 1.97 native verification |
-| `x86_64-apple-darwin` | `conditional_supported` | Requires native evidence no older than 90 days; missing or expired evidence downgrades the current disposition to unsupported |
+| Target                      | Policy tier             | Current contract                                                                                                              |
+| --------------------------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `x86_64-unknown-linux-gnu`  | durable supported       | Rust 1.97 native verification; canonical Linux also verifies Rust 1.92.0                                                      |
+| `aarch64-unknown-linux-gnu` | durable supported       | Rust 1.97 native verification                                                                                                 |
+| `aarch64-apple-darwin`      | durable supported       | Rust 1.97 native verification                                                                                                 |
+| `x86_64-pc-windows-msvc`    | durable supported       | Rust 1.97 native verification                                                                                                 |
+| `x86_64-apple-darwin`       | `conditional_supported` | Requires native evidence no older than 90 days; missing or expired evidence downgrades the current disposition to unsupported |
 
 Targets outside this table are evidence-only unless a reviewed support decision
 promotes them.

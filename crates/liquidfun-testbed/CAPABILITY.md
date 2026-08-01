@@ -35,48 +35,48 @@ artifacts before rendering three reviewed cases across eight families.
 
 ## Required capability matrix
 
-| Capability | Objective result |
+| Capability                       | Objective result                                                         |
 | -------------------------------- | ------------------------------------------------------------------------ |
-| Rigid contacts | PASS — 3 visible contact points |
-| Contact normals | PASS — 3 directed normal arrows |
-| Particle contacts and colors | PASS — 12 particles, 6 contacts, and 4 colors |
-| Broad-phase AABBs | PASS — 4 distinct outlined bounds |
-| Profile names | PASS — 5 structural names with no duration values |
-| Synchronized overlay | PASS — 3 aligned Rust/oracle primitive pairs |
-| Side-by-side difference | PASS — 2 labeled synchronized panels |
-| Focus halo and label | PASS — persistent 2px halo and semantic label |
-| Semantic capture acknowledgement | PASS — deterministic checkpoint acknowledgement shown |
-| Diagnostic screenshot | PASS — PNG saved with diagnostic-only warning |
-| Keyboard controls | PASS — 6 typed shortcuts map to presentation intents |
-| Keyboard focus | PASS — persistent 2px focus ring with contrast above 3:1 |
-| Dense text | PASS — 16 inspector rows at 640x480 |
-| DPI scaling | PASS — complete 1x, 1.25x, and 2x images |
-| Resize | PASS — centered 800x600 resized frame |
-| Minimum desktop size | PASS — complete 640x480 frame |
-| Passive session controller | PASS — 0 logical steps and 0 captures before and after rendering |
-| Immutable comparison model | PASS — the same 10 exact comparison entries before and after rendering |
-| Bounded finite inputs | PASS — strict fixture hashes, finite fixed geometry, and reviewed limits |
-| Confined regular output | PASS — every output is a non-link regular file below `target/` |
+| Rigid contacts                   | PASS — 3 visible contact points                                          |
+| Contact normals                  | PASS — 3 directed normal arrows                                          |
+| Particle contacts and colors     | PASS — 12 particles, 6 contacts, and 4 colors                            |
+| Broad-phase AABBs                | PASS — 4 distinct outlined bounds                                        |
+| Profile names                    | PASS — 5 structural names with no duration values                        |
+| Synchronized overlay             | PASS — 3 aligned Rust/oracle primitive pairs                             |
+| Side-by-side difference          | PASS — 2 labeled synchronized panels                                     |
+| Focus halo and label             | PASS — persistent 2px halo and semantic label                            |
+| Semantic capture acknowledgement | PASS — deterministic checkpoint acknowledgement shown                    |
+| Diagnostic screenshot            | PASS — PNG saved with diagnostic-only warning                            |
+| Keyboard controls                | PASS — 6 typed shortcuts map to presentation intents                     |
+| Keyboard focus                   | PASS — persistent 2px focus ring with contrast above 3:1                 |
+| Dense text                       | PASS — 16 inspector rows at 640x480                                      |
+| DPI scaling                      | PASS — complete 1x, 1.25x, and 2x images                                 |
+| Resize                           | PASS — centered 800x600 resized frame                                    |
+| Minimum desktop size             | PASS — complete 640x480 frame                                            |
+| Passive session controller       | PASS — 0 logical steps and 0 captures before and after rendering         |
+| Immutable comparison model       | PASS — the same 10 exact comparison entries before and after rendering   |
+| Bounded finite inputs            | PASS — strict fixture hashes, finite fixed geometry, and reviewed limits |
+| Confined regular output          | PASS — every output is a non-link regular file below `target/`           |
 
 ## Measurements
 
-| Measurement | Result |
-| ----------------------------------- | -------------: |
-| Minimum complete viewport | 640x480 |
-| Resized viewport | 800x600 |
-| Maximum exercised DPI scale | 2x |
-| Minimum non-background pixels | 275,394 |
-| Minimum text contrast ratio | 12.261033:1 |
-| Minimum control target | 44px |
-| Persistent focus ring | 2px |
-| Dense inspector rows | 16 |
-| Typed keyboard bindings | 6 |
-| Distinct particle colors | 4 |
-| Contact points / normal arrows | 3 / 3 |
-| Particle contacts | 6 |
-| Broad-phase AABBs | 4 |
-| Structural profile names | 5 |
-| Overlay pairs / side-by-side panels | 3 / 2 |
+| Measurement                         |      Result |
+| ----------------------------------- | ----------: |
+| Minimum complete viewport           |     640x480 |
+| Resized viewport                    |     800x600 |
+| Maximum exercised DPI scale         |          2x |
+| Minimum non-background pixels       |     275,394 |
+| Minimum text contrast ratio         | 12.261033:1 |
+| Minimum control target              |        44px |
+| Persistent focus ring               |         2px |
+| Dense inspector rows                |          16 |
+| Typed keyboard bindings             |           6 |
+| Distinct particle colors            |           4 |
+| Contact points / normal arrows      |       3 / 3 |
+| Particle contacts                   |           6 |
+| Broad-phase AABBs                   |           4 |
+| Structural profile names            |           5 |
+| Overlay pairs / side-by-side panels |       3 / 2 |
 
 The adapter received shared `&SessionController` and `&ComparisonModel`
 references. Rendering all three frames, taking screenshots, resizing, changing
@@ -90,11 +90,11 @@ no simulation tick, checkpoint, or comparison authority.
 Artifacts are generated under `target/testbed-capability-phase12-18/` and
 remain untracked diagnostics.
 
-| Artifact | Bytes | SHA-256 |
-| --------------------------------------- | -----: | ------------------------------------------------------------------ |
-| `capability-report.json` | 5,172 | `dc69993192fca7ec3384ccd1f9552ed3f64bd1c6acb2b59d25bc08def9f454d7` |
-| `replacement-capability-640x480.png` | 10,986 | `5c3b804f7f74900f95cc04f36180f068397048402018a82ac9de3479051852c5` |
-| `replacement-capability-800x600.png` | 13,430 | `4459a7ba7924738823e7ea7471b47794cd617ae9363e7b7bb7d66037391da20c` |
+| Artifact                              |  Bytes | SHA-256                                                            |
+| ------------------------------------- | -----: | ------------------------------------------------------------------ |
+| `capability-report.json`              |  5,172 | `dc69993192fca7ec3384ccd1f9552ed3f64bd1c6acb2b59d25bc08def9f454d7` |
+| `replacement-capability-640x480.png`  | 10,986 | `5c3b804f7f74900f95cc04f36180f068397048402018a82ac9de3479051852c5` |
+| `replacement-capability-800x600.png`  | 13,430 | `4459a7ba7924738823e7ea7471b47794cd617ae9363e7b7bb7d66037391da20c` |
 | `replacement-capability-1280x960.png` | 19,205 | `f78323496b8255d3f45288c8a607b9944a48809d8f43c701ee3f78396e27cefa` |
 
 ## Scope and fallback disposition

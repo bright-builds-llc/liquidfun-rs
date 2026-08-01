@@ -5,13 +5,13 @@ targets use exact `cargo-fuzz 0.13.2`, `libfuzzer-sys 0.4.13`, `arbitrary 1.4.2`
 
 ## Reviewed targets and bounds
 
-| Target | Boundary | Hard limit |
-| --- | --- | --- |
-| `protocol` | Production strict protocol decoders | 1 MiB input |
-| `shapes_collision` | Checked shape construction and collision dispatch | 256 operations |
-| `world_mutation` | Body, fixture, handle, and mutation APIs | 256 operations and 128 body/fixture creations |
-| `particles` | Particle creation, invalidation, compaction, and step APIs | 256 operations and 4,096 particle creations |
-| `groups_ownership` | Group handles and owned particle-buffer adoption/teardown | 256 operations and 64 group creations |
+| Target             | Boundary                                                   | Hard limit                                    |
+| ------------------ | ---------------------------------------------------------- | --------------------------------------------- |
+| `protocol`         | Production strict protocol decoders                        | 1 MiB input                                   |
+| `shapes_collision` | Checked shape construction and collision dispatch          | 256 operations                                |
+| `world_mutation`   | Body, fixture, handle, and mutation APIs                   | 256 operations and 128 body/fixture creations |
+| `particles`        | Particle creation, invalidation, compaction, and step APIs | 256 operations and 4,096 particle creations   |
+| `groups_ownership` | Group handles and owned particle-buffer adoption/teardown  | 256 operations and 64 group creations         |
 
 Inputs are fully converted to bounded typed operations before world effects.
 Typed API rejections are ordinary target outcomes. Panics, sanitizer findings,
