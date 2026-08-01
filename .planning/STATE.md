@@ -3,15 +3,15 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 13.1-16-PLAN.md
-last_updated: "2026-08-01T04:50:22.375Z"
+stopped_at: Completed 13.1-17-PLAN.md
+last_updated: "2026-08-01T05:10:13.622Z"
 last_activity: "2026-08-01"
 progress:
   total_phases: 16
   completed_phases: 13
   total_plans: 246
-  completed_plans: 237
-  percent: 96
+  completed_plans: 238
+  percent: 97
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-23)
 ## Current Position
 
 Phase: 13.1 (restore-bright-builds-structural-compliance) — EXECUTING
-Plan: 17 of 22
+Plan: 18 of 22
 Status: Ready to execute
 Last activity: 2026-08-01
 
@@ -230,6 +230,7 @@ Progress: [██████████] 96%
 | Phase 13 P04 | 9h 15m | 3 tasks | 14 files |
 | Phase 13 P05 | 13h 25m | 5 tasks | 17 files |
 | Phase 13.1 P16 | 10 min | 1 tasks | 4 files |
+| Phase 13.1 P17 | 14 min | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -650,6 +651,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 13.1]: Refactor all 103 repository-owned findings and retain zero exceptions; canonical Phase 13 evidence must be regenerated whenever structural source changes alter producer-affecting closures.
 - [Phase 13.1]: Serialize only fake-oracle repository setup and child execution; leave Rust's default package test concurrency unchanged.
 - [Phase 13.1]: Own each PID-plus-atomic repository root through a guard that rejects nonempty reuse and removes only its exact root.
+- [Phase 13.1]: Normalize CMake result-target directories only in comparison signatures; keep full relocated commands authoritative for the digest.
+- [Phase 13.1]: Keep local AppleClang validation at D2 and reserve D1 for the exact candidate-bound Ubuntu/Clang workflow.
+- [Phase 13.1]: Spool bounded failure logs in runner.temp so checkout cleanup cannot erase them, while writing identity.json only in the successful candidate directory.
 
 ### Pending Todos
 
@@ -663,6 +667,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-08-01T04:50:22.370Z
-Stopped at: Completed 13.1-16-PLAN.md
+Last session: 2026-08-01T05:10:13.618Z
+Stopped at: Completed 13.1-17-PLAN.md
 Resume file: None

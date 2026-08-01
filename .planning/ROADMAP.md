@@ -307,7 +307,7 @@ Plans:
 1. Genuine external or generated findings use exact-path exceptions only when provenance proves they cannot be refactored; the current audited baseline requires zero exceptions.
 1. Focused subsystem gates, native/reference contracts, the ordered full Rust gate, and `bun scripts/bright-builds-check.ts all` pass before the structural commit.
 
-**Plans:** 16/22 plans executed
+**Plans:** 17/22 plans executed
 
 Plans:
 - [x] 13.1-01-PLAN.md — Preserve the dirty original worktree and create an isolated aggregate worktree.
@@ -326,7 +326,7 @@ Plans:
 - [x] 13.1-14-PLAN.md — Split native adapter, testbed, fuzz, and release-shell findings.
 - [x] 13.1-15-PLAN.md — Reconcile scope, verify, promote canonical evidence, and integrate.
 - [x] 13.1-16-PLAN.md — Make aggregate differential session identity deterministic under package concurrency.
-- [ ] 13.1-17-PLAN.md — Normalize native result-target compile signatures and prove local rigid gates.
+- [x] 13.1-17-PLAN.md — Normalize native result-target compile signatures and prove local rigid gates.
 - [ ] 13.1-18-PLAN.md — Format and semantically guard the first six repository-owned Markdown failures.
 - [ ] 13.1-19-PLAN.md — Add a fail-closed candidate-bound gap verification producer.
 - [ ] 13.1-20-PLAN.md — Obtain a named developer decision on the truthful integration-history override.
