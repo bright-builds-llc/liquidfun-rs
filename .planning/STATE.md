@@ -3,15 +3,15 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 14 ready to execute after Phase 13.1 structural compliance
-last_updated: "2026-07-29T01:56:33Z"
-last_activity: 2026-07-29 -- Phase 13.1 completed with zero exceptions and canonical acceptance
+stopped_at: Completed 13.1-16-PLAN.md
+last_updated: "2026-08-01T04:50:22.375Z"
+last_activity: "2026-08-01"
 progress:
   total_phases: 16
-  completed_phases: 14
-  total_plans: 239
-  completed_plans: 236
-  percent: 99
+  completed_phases: 13
+  total_plans: 246
+  completed_plans: 237
+  percent: 96
 ---
 
 # Project State
@@ -21,22 +21,22 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-07-23)
 
 **Core value:** Deliver an independent, maintainable Rust physics engine whose LiquidFun behavior is demonstrated against a pinned upstream oracle through explicit inventory, tests, differential evidence, and documented tolerances.
-**Current focus:** Phase 14 — Repair Windows Particle-Group Invariants
+**Current focus:** Phase 13.1 — restore-bright-builds-structural-compliance
 
 ## Current Position
 
-Phase: 14 (Repair Windows Particle-Group Invariants) — EXECUTING
-Plan: 1 of 3
+Phase: 13.1 (restore-bright-builds-structural-compliance) — EXECUTING
+Plan: 17 of 22
 Status: Ready to execute
-Last activity: 2026-07-29 -- Phase 13.1 completed with zero exceptions and canonical acceptance
+Last activity: 2026-08-01
 
-Progress: [██████████] 99%
+Progress: [██████████] 96%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 236
+- Total plans completed: 237
 - Average duration: Not available
 - Total execution time: 0 hours
 
@@ -229,6 +229,7 @@ Progress: [██████████] 99%
 | Phase 13 P02 | 25min | 2 tasks | 6 files |
 | Phase 13 P04 | 9h 15m | 3 tasks | 14 files |
 | Phase 13 P05 | 13h 25m | 5 tasks | 17 files |
+| Phase 13.1 P16 | 10 min | 1 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -647,6 +648,8 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 13]: Explicit provenance digest-mode parsing was an acceptance-only repair because it remained outside both producer-affecting closures.
 - [Phase 13.1]: Insert Phase 13.1 before Phase 14 to refactor all 103 first-party Bright Builds file-length findings with zero current exceptions. — The newly installed mandatory checker blocks every commit; ownership audit proved every finding is repository-owned and refactorable while actual third-party and vendored paths are already excluded.
 - [Phase 13.1]: Refactor all 103 repository-owned findings and retain zero exceptions; canonical Phase 13 evidence must be regenerated whenever structural source changes alter producer-affecting closures.
+- [Phase 13.1]: Serialize only fake-oracle repository setup and child execution; leave Rust's default package test concurrency unchanged.
+- [Phase 13.1]: Own each PID-plus-atomic repository root through a guard that rejects nonempty reuse and removes only its exact root.
 
 ### Pending Todos
 
@@ -660,6 +663,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-29T01:56:33Z
-Stopped at: Phase 14 ready to execute after Phase 13.1 structural compliance
-Resume file: .planning/phases/14-repair-windows-particle-group-invariants/14-CONTEXT.md
+Last session: 2026-08-01T04:50:22.370Z
+Stopped at: Completed 13.1-16-PLAN.md
+Resume file: None
