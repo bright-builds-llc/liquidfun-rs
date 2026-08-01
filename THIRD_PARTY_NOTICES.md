@@ -81,10 +81,10 @@ recorded in `tools/reference/vendor/nlohmann/SHA256SUMS`.
 The pinned upstream tree vendors dependencies used by its tests and visual
 testbed:
 
-| Component | Pinned license file | Scope |
+| Component  | Pinned license file                                                                       | Scope                                              |
 | ---------- | ----------------------------------------------------------------------------------------- | -------------------------------------------------- |
 | GoogleTest | `third_party/liquidfun/googletest/LICENSE` and `third_party/liquidfun/googletest/COPYING` | BSD-3-Clause-style terms; upstream unit tests only |
-| freeglut | `third_party/liquidfun/freeglut/COPYING` | MIT-style terms; upstream visual testbed only |
+| freeglut   | `third_party/liquidfun/freeglut/COPYING`                                                  | MIT-style terms; upstream visual testbed only      |
 
 These trees remain under the development-only submodule. They must not be
 copied into, linked by, or included in the published Cargo package. Package

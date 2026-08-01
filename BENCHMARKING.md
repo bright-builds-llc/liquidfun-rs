@@ -15,22 +15,22 @@ The reviewed-report manifest is currently empty. Therefore, the project currentl
 
 The matrix contains 32 sealed cases across 14 workloads. Scalable workloads use the exact 128, 1,024, and 8,192 entity size points; fixed workloads use their reviewed scenario horizon.
 
-| Workload | Size points |
-| --- | --- |
-| `world_step` | fixed |
-| `broad_phase` | 128, 1,024, 8,192 entities |
-| `narrow_phase` | fixed |
-| `contact_solve` | fixed |
-| `ccd` | fixed |
-| `joints` | fixed |
-| `particle_lifecycle` | 128, 1,024, 8,192 entities |
-| `particle_contacts` | 128, 1,024, 8,192 entities |
-| `particle_sort` | 128, 1,024, 8,192 entities |
-| `particle_pressure` | 128, 1,024, 8,192 entities |
+| Workload                | Size points                |
+| ----------------------- | -------------------------- |
+| `world_step`            | fixed                      |
+| `broad_phase`           | 128, 1,024, 8,192 entities |
+| `narrow_phase`          | fixed                      |
+| `contact_solve`         | fixed                      |
+| `ccd`                   | fixed                      |
+| `joints`                | fixed                      |
+| `particle_lifecycle`    | 128, 1,024, 8,192 entities |
+| `particle_contacts`     | 128, 1,024, 8,192 entities |
+| `particle_sort`         | 128, 1,024, 8,192 entities |
+| `particle_pressure`     | 128, 1,024, 8,192 entities |
 | `large_particle_system` | 128, 1,024, 8,192 entities |
-| `aabb_query` | 128, 1,024, 8,192 entities |
-| `ray_cast` | 128, 1,024, 8,192 entities |
-| `mixed_world` | 128, 1,024, 8,192 entities |
+| `aabb_query`            | 128, 1,024, 8,192 entities |
+| `ray_cast`              | 128, 1,024, 8,192 entities |
+| `mixed_world`           | 128, 1,024, 8,192 entities |
 
 Each case binds its workload and size point to a catalog hash, canonical resolved-scenario hash, timestep bits, solver iteration counts, logical horizon, engine roles, and ordered regions. A benchmark implementation must execute those resolved bytes; semantically similar ad hoc setup is not interchangeable evidence.
 
