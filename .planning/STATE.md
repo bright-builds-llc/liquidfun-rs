@@ -3,14 +3,14 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 13.1-20-PLAN.md
-last_updated: "2026-08-01T16:05:10.435Z"
+stopped_at: Completed 13.1-19-PLAN.md
+last_updated: "2026-08-01T16:31:35.502Z"
 last_activity: "2026-08-01"
 progress:
   total_phases: 16
   completed_phases: 13
   total_plans: 246
-  completed_plans: 240
+  completed_plans: 241
   percent: 98
 ---
 
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-23)
 ## Current Position
 
 Phase: 13.1 (restore-bright-builds-structural-compliance) — EXECUTING
-Plan: 20 of 22
+Plan: 21 of 22
 Status: Ready to execute
 Last activity: 2026-08-01
 
@@ -36,7 +36,7 @@ Progress: [██████████] 98%
 
 **Velocity:**
 
-- Total plans completed: 237
+- Total plans completed: 241
 - Average duration: Not available
 - Total execution time: 0 hours
 
@@ -233,6 +233,7 @@ Progress: [██████████] 98%
 | Phase 13.1 P17 | 14 min | 3 tasks | 4 files |
 | Phase 13.1 P18 | 16 min | 1 tasks | 6 files |
 | Phase 13.1 P20 | 9 min | 1 tasks | 1 files |
+| Phase 13.1 P19 | 21 min | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -657,6 +658,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 13.1]: Keep local AppleClang validation at D2 and reserve D1 for the exact candidate-bound Ubuntu/Clang workflow.
 - [Phase 13.1]: Spool bounded failure logs in runner.temp so checkout cleanup cannot erase them, while writing identity.json only in the successful candidate directory.
 - [Phase 13.1]: pRizz accepted the narrow ff-only verification override after review of the recomputed disjoint-history proof. — The two side path sets are disjoint, the structural commit and recorded merge remain ancestors, and rewriting history would falsify the integration record.
+- [Phase 13.1]: Keep every xtask integration target explicit and defer only phase13_acceptance_contract.
+- [Phase 13.1]: Allow test manifests only for temporary repositories while keeping the production manifest and repository root immutable.
+- [Phase 13.1]: Retain bounded partial logs and JSONL on failure, but publish terminal JSON only after independent validation.
 
 ### Pending Todos
 
@@ -670,6 +674,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-08-01T16:05:10.429Z
-Stopped at: Completed 13.1-20-PLAN.md
+Last session: 2026-08-01T16:31:35.498Z
+Stopped at: Completed 13.1-19-PLAN.md
 Resume file: None
