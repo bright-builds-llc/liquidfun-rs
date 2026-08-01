@@ -94,6 +94,47 @@ fn complete_corpus_closure_and_report_are_byte_stable() -> TestResult {
 }
 
 #[test]
+fn generated_report_uses_formatter_stable_table_padding() -> TestResult {
+    // Arrange
+    let fixture = ClosureFixture::new()?;
+
+    // Act
+    assert_success(&fixture.generate_report()?);
+    let report = fs::read_to_string(fixture.root.join("UPSTREAM-CORPUS.md"))?;
+
+    // Assert
+    assert!(report.contains(
+        "| Kind          | Items |\n\
+         | ------------- | ----: |\n\
+         | example       |    73 |\n\
+         | testbed entry |    71 |\n\
+         | upstream test |   244 |"
+    ));
+    fixture.cleanup()?;
+    Ok(())
+}
+
+#[test]
+fn generated_report_escapes_literal_pipes_in_review_prose() -> TestResult {
+    // Arrange
+    let fixture = ClosureFixture::new()?;
+    let mut corpus = fixture.corpus()?;
+    corpus["items"][0]["review"]["rationale"] =
+        json!("Reviewed source | oracle mapping preserves exact behavior.");
+    fixture.write_corpus(&corpus)?;
+
+    // Act
+    assert_success(&fixture.generate_report()?);
+    let report = fs::read_to_string(fixture.root.join("UPSTREAM-CORPUS.md"))?;
+
+    // Assert
+    assert!(report.contains("Reviewed source \\| oracle mapping preserves exact behavior."));
+    assert!(!report.contains("Reviewed source | oracle mapping preserves exact behavior."));
+    fixture.cleanup()?;
+    Ok(())
+}
+
+#[test]
 fn closure_rejects_unresolved_unknown_duplicate_and_unmapped_items() -> TestResult {
     for mutation in [
         "unresolved",

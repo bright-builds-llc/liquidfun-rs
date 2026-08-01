@@ -7,6 +7,12 @@ use super::corpus::model::{
     Applicability, CompatibilityImpact, CorpusManifest, TerminalDisposition,
 };
 
+#[derive(Clone, Copy)]
+enum Alignment {
+    Left,
+    Right,
+}
+
 pub(super) fn render(manifest: &CorpusManifest) -> String {
     let mut output = String::new();
     output.push_str(
@@ -40,7 +46,6 @@ fn render_identity(output: &mut String, manifest: &CorpusManifest) {
 
 fn render_counts(output: &mut String, manifest: &CorpusManifest) {
     output.push_str("\n## Kind totals\n\n");
-    output.push_str("| Kind | Items |\n| --- | ---: |\n");
     let mut kind_counts = BTreeMap::new();
     let mut disposition_counts = BTreeMap::new();
     let mut impact_counts = BTreeMap::new();
@@ -61,9 +66,7 @@ fn render_counts(output: &mut String, manifest: &CorpusManifest) {
                 .or_insert(0_usize) += 1;
         }
     }
-    for (kind, count) in kind_counts {
-        append(output, format_args!("| {kind} | {count} |\n"));
-    }
+    render_count_rows(output, "Kind", kind_counts);
     render_count_table(output, "Applicability totals", applicability_counts);
     render_count_table(output, "Disposition totals", disposition_counts);
     render_count_table(output, "Compatibility-impact totals", impact_counts);
@@ -71,17 +74,28 @@ fn render_counts(output: &mut String, manifest: &CorpusManifest) {
 
 fn render_count_table(output: &mut String, title: &str, counts: BTreeMap<&'static str, usize>) {
     append(output, format_args!("\n## {title}\n\n"));
-    output.push_str("| Outcome | Items |\n| --- | ---: |\n");
-    for (outcome, count) in counts {
-        append(output, format_args!("| {outcome} | {count} |\n"));
-    }
+    render_count_rows(output, "Outcome", counts);
+}
+
+fn render_count_rows(
+    output: &mut String,
+    first_header: &str,
+    counts: BTreeMap<&'static str, usize>,
+) {
+    let rows = counts
+        .into_iter()
+        .map(|(outcome, count)| [outcome.to_owned(), count.to_string()]);
+    render_table(
+        output,
+        [first_header, "Items"],
+        [Alignment::Left, Alignment::Right],
+        rows,
+    );
 }
 
 fn render_outcomes(output: &mut String, manifest: &CorpusManifest) {
     output.push_str("\n## Item-level outcomes\n\n");
-    output.push_str("| ID | Kind | Source identity | Applicability | Disposition | Impact | Evidence | Review |\n");
-    output.push_str("| --- | --- | --- | --- | --- | --- | --- | --- |\n");
-    for item in manifest.items() {
+    let rows = manifest.items().iter().map(|item| {
         let applicability = item
             .applicability()
             .map_or("unresolved", Applicability::as_str);
@@ -119,22 +133,115 @@ fn render_outcomes(output: &mut String, manifest: &CorpusManifest) {
                 )
             },
         );
-        append(
-            output,
-            format_args!(
-                "| `{}` | {} | `{}` / `{}` | {} | {} | {} | {} | {} |\n",
-                markdown(item.id()),
-                item.kind().as_str(),
+        [
+            format!("`{}`", markdown(item.id())),
+            item.kind().as_str().to_owned(),
+            format!(
+                "`{}` / `{}`",
                 markdown(item.source_path()),
-                markdown(item.source_symbol()),
-                applicability,
-                disposition,
-                impact,
-                evidence,
-                review
+                markdown(item.source_symbol())
             ),
-        );
+            applicability.to_owned(),
+            disposition.to_owned(),
+            impact.to_owned(),
+            evidence,
+            review,
+        ]
+    });
+    render_table(
+        output,
+        [
+            "ID",
+            "Kind",
+            "Source identity",
+            "Applicability",
+            "Disposition",
+            "Impact",
+            "Evidence",
+            "Review",
+        ],
+        [Alignment::Left; 8],
+        rows,
+    );
+}
+
+fn render_table<const COLUMN_COUNT: usize>(
+    output: &mut String,
+    headers: [&str; COLUMN_COUNT],
+    alignments: [Alignment; COLUMN_COUNT],
+    rows: impl IntoIterator<Item = [String; COLUMN_COUNT]>,
+) {
+    let rows = rows.into_iter().collect::<Vec<_>>();
+    let mut widths = std::array::from_fn(|index| display_width(headers[index]));
+    for row in &rows {
+        for (index, cell) in row.iter().enumerate() {
+            widths[index] = widths[index].max(display_width(cell));
+        }
     }
+    for (index, alignment) in alignments.iter().enumerate() {
+        let minimum = match alignment {
+            Alignment::Left => 3,
+            Alignment::Right => 4,
+        };
+        widths[index] = widths[index].max(minimum);
+    }
+
+    let header_cells = headers.map(str::to_owned);
+    render_table_row(output, &header_cells, &widths, &alignments);
+    render_table_separator(output, &widths, &alignments);
+    for row in &rows {
+        render_table_row(output, row, &widths, &alignments);
+    }
+}
+
+fn render_table_row<const COLUMN_COUNT: usize>(
+    output: &mut String,
+    cells: &[String; COLUMN_COUNT],
+    widths: &[usize; COLUMN_COUNT],
+    alignments: &[Alignment; COLUMN_COUNT],
+) {
+    output.push('|');
+    for (index, cell) in cells.iter().enumerate() {
+        output.push(' ');
+        let padding = widths[index] - display_width(cell);
+        if matches!(alignments[index], Alignment::Right) {
+            append_spaces(output, padding);
+        }
+        output.push_str(cell);
+        if matches!(alignments[index], Alignment::Left) {
+            append_spaces(output, padding);
+        }
+        output.push_str(" |");
+    }
+    output.push('\n');
+}
+
+fn render_table_separator<const COLUMN_COUNT: usize>(
+    output: &mut String,
+    widths: &[usize; COLUMN_COUNT],
+    alignments: &[Alignment; COLUMN_COUNT],
+) {
+    output.push('|');
+    for (width, alignment) in widths.iter().zip(alignments) {
+        output.push(' ');
+        match alignment {
+            Alignment::Left => output.extend(std::iter::repeat_n('-', *width)),
+            Alignment::Right => {
+                output.extend(std::iter::repeat_n('-', *width - 1));
+                output.push(':');
+            }
+        }
+        output.push_str(" |");
+    }
+    output.push('\n');
+}
+
+fn append_spaces(output: &mut String, count: usize) {
+    output.extend(std::iter::repeat_n(' ', count));
+}
+
+fn display_width(value: &str) -> usize {
+    value.chars().count()
 }
 
 fn unresolved_count(manifest: &CorpusManifest) -> usize {
@@ -158,7 +265,7 @@ fn append(output: &mut String, arguments: Arguments<'_>) {
 }
 
 fn prose(value: &str) -> String {
-    value.replace('\n', " ")
+    markdown(value)
 }
 
 fn markdown(value: &str) -> String {
