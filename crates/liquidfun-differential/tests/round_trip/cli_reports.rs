@@ -71,6 +71,7 @@ fn cli_sanitizer_profile_reuses_one_process_and_proves_reset() {
 #[test]
 fn exact_request_replay_preserves_serialized_source_metadata() {
     // Arrange
+    let _process_slot = process_slot();
     let root = fake_repository("valid");
     let bytes = fs::read(root.join("protocol/fixtures/accepted/empty-world-request.jsonl"))
         .expect("exact request should be readable");
@@ -95,6 +96,7 @@ fn exact_request_replay_preserves_serialized_source_metadata() {
 #[test]
 fn maximum_length_request_id_runs_in_reuse_and_sanitizer_profiles() {
     // Arrange
+    let _process_slot = process_slot();
     let root = fake_repository("valid");
     let request_id = "r".repeat(128);
     let request =

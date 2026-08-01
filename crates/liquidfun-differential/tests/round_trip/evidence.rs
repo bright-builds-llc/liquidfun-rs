@@ -63,88 +63,129 @@ fn cli_reuse_and_sanitizer_bundles_bind_the_second_request_and_session_identity(
     let root = repository_root();
     let original_request_id = "empty-world-request";
     let expected_request_id = format!("reuse-{:x}", Sha256::digest(original_request_id.as_bytes()));
-    let profiles = [
-        ("oracle-debug", "reuse"),
-        ("oracle-asan-ubsan", "sanitizer"),
-    ];
     let cases = [
-        ("second_malformed", 3, "harness_failure"),
-        ("second_value_mismatch", 2, "physics_mismatch"),
+        (
+            "oracle-debug",
+            "reuse",
+            "second_malformed",
+            3,
+            "harness_failure",
+        ),
+        (
+            "oracle-debug",
+            "reuse",
+            "second_value_mismatch",
+            2,
+            "physics_mismatch",
+        ),
+        (
+            "oracle-asan-ubsan",
+            "sanitizer",
+            "second_malformed",
+            3,
+            "harness_failure",
+        ),
+        (
+            "oracle-asan-ubsan",
+            "sanitizer",
+            "second_value_mismatch",
+            2,
+            "physics_mismatch",
+        ),
     ];
 
-    // Act and Assert
-    for (preset, profile) in profiles {
-        let arguments = [
-            "compare",
-            "--scenario",
-            "empty-world",
-            "--preset",
-            preset,
-            "--session-profile",
-            profile,
-        ];
-        for (behavior, exit_code, result_kind) in cases {
-            let (output, fake_root) = run_cli_with_root(&root, behavior, &arguments);
-            assert_eq!(
-                output.status.code(),
-                Some(exit_code),
-                "{profile}/{behavior}"
-            );
-            let directory = only_failure_directory(&fake_root);
-            let manifest: serde_json::Value = serde_json::from_slice(
-                &fs::read(directory.join("manifest.json")).expect("manifest should be readable"),
-            )
-            .expect("manifest should be JSON");
-            let request_bytes =
-                fs::read(directory.join("request.jsonl")).expect("request should be readable");
-            let request =
-                decode_scenario_request_jsonl(&request_bytes, &HarnessLimits::phase2_default_v1())
-                    .expect("persisted request should validate");
-            let canonical = encode_jsonl(
-                &request,
-                &HarnessLimits::phase2_default_v1(),
-                RecordLimit::Input,
-            )
-            .expect("persisted request should re-encode");
-            let report: serde_json::Value = serde_json::from_slice(
-                &fs::read(directory.join("report.json")).expect("report should be readable"),
-            )
-            .expect("report should be JSON");
-            let identity: serde_json::Value = serde_json::from_slice(
-                &fs::read(directory.join("identity.json")).expect("identity should be readable"),
-            )
-            .expect("identity should be JSON");
-            let session_identity = identity["session_identity_sha256"]
-                .as_str()
-                .expect("validated session identity should be present");
+    // Act
+    let results = std::thread::scope(|scope| {
+        cases
+            .into_iter()
+            .map(|(preset, profile, behavior, exit_code, result_kind)| {
+                let root = &root;
+                scope.spawn(move || {
+                    let arguments = [
+                        "compare",
+                        "--scenario",
+                        "empty-world",
+                        "--preset",
+                        preset,
+                        "--session-profile",
+                        profile,
+                    ];
+                    let (output, fake_root) = run_cli_with_root(&root, behavior, &arguments);
+                    (
+                        preset,
+                        profile,
+                        behavior,
+                        exit_code,
+                        result_kind,
+                        output,
+                        fake_root,
+                    )
+                })
+            })
+            .collect::<Vec<_>>()
+            .into_iter()
+            .map(|handle| handle.join().expect("concurrent CLI case should join"))
+            .collect::<Vec<_>>()
+    });
 
-            assert_eq!(request_bytes, canonical, "{profile}/{behavior}");
+    // Assert
+    for (preset, profile, behavior, exit_code, result_kind, output, fake_root) in results {
+        let directory = only_failure_directory(&fake_root);
+        let manifest: serde_json::Value = serde_json::from_slice(
+            &fs::read(directory.join("manifest.json")).expect("manifest should be readable"),
+        )
+        .expect("manifest should be JSON");
+        let request_bytes =
+            fs::read(directory.join("request.jsonl")).expect("request should be readable");
+        let request =
+            decode_scenario_request_jsonl(&request_bytes, &HarnessLimits::phase2_default_v1())
+                .expect("persisted request should validate");
+        let canonical = encode_jsonl(
+            &request,
+            &HarnessLimits::phase2_default_v1(),
+            RecordLimit::Input,
+        )
+        .expect("persisted request should re-encode");
+        let report: serde_json::Value = serde_json::from_slice(
+            &fs::read(directory.join("report.json")).expect("report should be readable"),
+        )
+        .expect("report should be JSON");
+        let identity: serde_json::Value = serde_json::from_slice(
+            &fs::read(directory.join("identity.json")).expect("identity should be readable"),
+        )
+        .expect("identity should be JSON");
+        let failure_kind = report["failure_kind"].as_str().unwrap_or("not_applicable");
+        let diagnostic = format!(
+            "{preset}/{profile}/{behavior}: exit={:?}, result_kind={}, failure_kind={failure_kind}, stderr={}",
+            output.status.code(),
+            report["result_kind"],
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let session_identity = identity["session_identity_sha256"]
+            .as_str()
+            .unwrap_or_else(|| panic!("validated session identity should be present: {diagnostic}"));
+
+        assert_eq!(output.status.code(), Some(exit_code), "{diagnostic}");
+        assert_eq!(request_bytes, canonical, "{diagnostic}");
+        assert_eq!(request.request_id().as_str(), expected_request_id, "{diagnostic}");
+        assert_eq!(manifest["request_id"], expected_request_id, "{diagnostic}");
+        assert_eq!(manifest["result_kind"], result_kind, "{diagnostic}");
+        assert_eq!(report["request_id"], expected_request_id, "{diagnostic}");
+        assert_eq!(report["result_kind"], result_kind, "{diagnostic}");
+        assert_eq!(
+            report["session_identity_sha256"], session_identity,
+            "{diagnostic}"
+        );
+        assert_eq!(session_identity.len(), 64, "{diagnostic}");
+        assert!(
+            session_identity.bytes().all(|byte| byte.is_ascii_hexdigit()),
+            "{diagnostic}"
+        );
+        if result_kind == "physics_mismatch" {
             assert_eq!(
-                request.request_id().as_str(),
-                expected_request_id,
-                "{profile}/{behavior}"
+                report["mismatch"]["request_id"], expected_request_id,
+                "{diagnostic}"
             );
-            assert_eq!(
-                manifest["request_id"], expected_request_id,
-                "{profile}/{behavior}"
-            );
-            assert_eq!(manifest["result_kind"], result_kind, "{profile}/{behavior}");
-            assert_eq!(
-                report["request_id"], expected_request_id,
-                "{profile}/{behavior}"
-            );
-            assert_eq!(report["result_kind"], result_kind, "{profile}/{behavior}");
-            assert_eq!(
-                report["session_identity_sha256"], session_identity,
-                "{profile}/{behavior}"
-            );
-            assert_eq!(session_identity.len(), 64, "{profile}/{behavior}");
-            if result_kind == "physics_mismatch" {
-                assert_eq!(
-                    report["mismatch"]["request_id"], expected_request_id,
-                    "{profile}/{behavior}"
-                );
-            }
         }
     }
 }

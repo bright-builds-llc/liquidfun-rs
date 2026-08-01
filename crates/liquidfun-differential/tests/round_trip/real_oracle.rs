@@ -1,29 +1,76 @@
-fn fake_repository(behavior: &str) -> PathBuf {
-    let id = TEST_DIRECTORY_ID.fetch_add(1, Ordering::Relaxed);
-    let root = repository_root()
-        .join("target/round-trip-tests")
-        .join(format!("{}-{id}", std::process::id()));
-    for preset in ["oracle-debug", "oracle-asan-ubsan"] {
-        let oracle_output = root.join("target/reference").join(preset);
-        fs::create_dir_all(&oracle_output).expect("fake output should be creatable");
-        let executable = oracle_output.join(if cfg!(windows) {
-            "liquidfun-reference.exe"
-        } else {
-            "liquidfun-reference"
-        });
-        fs::copy(env!("CARGO_BIN_EXE_liquidfun-fake-oracle"), executable)
-            .expect("fake oracle should copy");
-        fs::write(oracle_output.join("behavior.txt"), behavior).expect("behavior should write");
+struct FakeRepository {
+    root: PathBuf,
+}
+
+impl FakeRepository {
+    fn create(behavior: &str) -> Self {
+        let id = TEST_DIRECTORY_ID.fetch_add(1, Ordering::Relaxed);
+        let root = repository_root()
+            .join("target/round-trip-tests")
+            .join(format!("{}-{id}", std::process::id()));
+        if root.exists() {
+            let mut entries = fs::read_dir(&root).expect("pre-existing fake root should be readable");
+            assert!(
+                entries.next().is_none(),
+                "refusing to reuse nonempty fake repository root {}",
+                root.display()
+            );
+            fs::remove_dir(&root).expect("pre-existing empty fake root should be removable");
+        }
+        for preset in ["oracle-debug", "oracle-asan-ubsan"] {
+            let oracle_output = root.join("target/reference").join(preset);
+            fs::create_dir_all(&oracle_output).expect("fake output should be creatable");
+            let executable = oracle_output.join(if cfg!(windows) {
+                "liquidfun-reference.exe"
+            } else {
+                "liquidfun-reference"
+            });
+            fs::copy(env!("CARGO_BIN_EXE_liquidfun-fake-oracle"), executable)
+                .expect("fake oracle should copy");
+            fs::write(oracle_output.join("behavior.txt"), behavior)
+                .expect("behavior should write");
+        }
+
+        let fixture_output = root.join("protocol/fixtures/accepted");
+        fs::create_dir_all(&fixture_output).expect("fixture output should be creatable");
+        fs::copy(
+            repository_root().join("protocol/fixtures/accepted/empty-world-request.jsonl"),
+            fixture_output.join("empty-world-request.jsonl"),
+        )
+        .expect("request fixture should copy");
+        Self { root }
     }
 
-    let fixture_output = root.join("protocol/fixtures/accepted");
-    fs::create_dir_all(&fixture_output).expect("fixture output should be creatable");
-    fs::copy(
-        repository_root().join("protocol/fixtures/accepted/empty-world-request.jsonl"),
-        fixture_output.join("empty-world-request.jsonl"),
-    )
-    .expect("request fixture should copy");
-    root
+    fn path(&self) -> &Path {
+        &self.root
+    }
+}
+
+impl std::ops::Deref for FakeRepository {
+    type Target = Path;
+
+    fn deref(&self) -> &Self::Target {
+        self.path()
+    }
+}
+
+impl Drop for FakeRepository {
+    fn drop(&mut self) {
+        if self.root.exists() {
+            fs::remove_dir_all(&self.root).expect("owned fake repository root should be removable");
+        }
+    }
+}
+
+fn process_slot() -> MutexGuard<'static, ()> {
+    match PROCESS_SLOT.lock() {
+        Ok(slot) => slot,
+        Err(poisoned) => poisoned.into_inner(),
+    }
+}
+
+fn fake_repository(behavior: &str) -> FakeRepository {
+    FakeRepository::create(behavior)
 }
 
 fn run_cli(root: &Path, behavior: &str, arguments: &[&str]) -> std::process::Output {
@@ -34,11 +81,12 @@ fn run_cli_with_root(
     root: &Path,
     behavior: &str,
     arguments: &[&str],
-) -> (std::process::Output, PathBuf) {
+) -> (std::process::Output, FakeRepository) {
+    let _process_slot = process_slot();
     let fake_root = fake_repository(behavior);
-    assert!(root == repository_root() || root == fake_root);
+    assert!(root == repository_root() || root == fake_root.path());
     let output = Command::new(env!("CARGO_BIN_EXE_liquidfun-differential"))
-        .current_dir(&fake_root)
+        .current_dir(fake_root.path())
         .args(arguments)
         .output()
         .expect("differential CLI should run");

@@ -8,7 +8,10 @@ use std::{
     io::{BufRead, BufReader, Read, Write},
     path::{Path, PathBuf},
     process::{Command, Stdio},
-    sync::atomic::{AtomicU64, Ordering},
+    sync::{
+        Mutex, MutexGuard,
+        atomic::{AtomicU64, Ordering},
+    },
     time::{Duration, Instant},
 };
 
@@ -24,6 +27,7 @@ use sha2::{Digest, Sha256};
 
 const REVISION: &str = "7f20402173fd143a3988c921bc384459c6a858f2";
 static TEST_DIRECTORY_ID: AtomicU64 = AtomicU64::new(1);
+static PROCESS_SLOT: Mutex<()> = Mutex::new(());
 include!("round_trip/oracle.rs");
 include!("round_trip/real_oracle.rs");
 include!("round_trip/cli_reports.rs");
