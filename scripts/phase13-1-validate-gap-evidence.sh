@@ -58,6 +58,24 @@ require_relative_regular_file() {
 	printf '%s\n' "$resolved_path"
 }
 
+parsed_dispatch_url=
+parsed_run_id=
+parse_exact_dispatch_url() {
+	local stdout_path=$1
+	local repository_slug=$2
+	jq -Rse 'test("^https://github.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+/actions/runs/[1-9][0-9]*\\n?$")' "$stdout_path" >/dev/null ||
+		fail "dispatch URL run ID is invalid"
+	parsed_dispatch_url=$(jq -Rrs 'rtrimstr("\n")' "$stdout_path")
+	local expected_prefix="https://github.com/$repository_slug/actions/runs/"
+	[[ "$parsed_dispatch_url" == "$expected_prefix"* ]] || fail "dispatch URL repository differs"
+	parsed_run_id=${parsed_dispatch_url#"$expected_prefix"}
+	[[ "$parsed_run_id" =~ ^[1-9][0-9]*$ ]] || fail "dispatch URL run ID is invalid"
+}
+
+record_digest() {
+	jq -cS . <<<"$1" | hash_stream
+}
+
 jq -e '.schema == "phase13-1-gap-verification-manifest-v1"' "$manifest_path" >/dev/null ||
 	fail "manifest schema differs"
 jq -e '.schema == "phase13-1-gap-verification-evidence-v1" and .complete == true' "$evidence_path" >/dev/null ||
@@ -67,10 +85,12 @@ candidate_sha=$(jq -er '.candidate_sha' "$evidence_path")
 candidate_tree=$(jq -er '.candidate_tree' "$evidence_path")
 output_root=$(jq -er '.output_root' "$evidence_path")
 remote_ref=$(jq -er '.remote_ref' "$evidence_path")
+repository_slug=$(jq -er '.repository_slug' "$evidence_path")
 canonical_run_id=$(jq -er '.canonical_run_id' "$evidence_path")
 validate_sha "$candidate_sha"
 [[ "$candidate_tree" =~ ^[0-9a-f]{40}$ ]] || fail "candidate tree must be full lowercase hex"
 [[ "$output_root" == "$retained_root" ]] || fail "evidence output root differs from retained root"
+[[ "$repository_slug" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]] || fail "repository slug is invalid"
 [[ "$canonical_run_id" =~ ^[1-9][0-9]*$ ]] || fail "canonical run ID is invalid"
 
 manifest_sha256=$(hash_file "$manifest_path")
@@ -113,6 +133,72 @@ while IFS= read -r encoded_command; do
 		[[ "$(hash_file "$log_file")" == "$expected_digest" ]] || fail "$command_id $stream digest mismatch"
 	done
 done < <(jq -r '.commands[] | @base64' "$evidence_path")
+
+dispatch_record=$(jq -ce '[.commands[] | select(.id == "canonical-dispatch")]
+	| if length == 1 then .[0] else error("canonical dispatch record count differs") end' "$evidence_path")
+dispatch_stdout_relative=$(jq -er '.stdout_log' <<<"$dispatch_record")
+dispatch_stdout_file=$(require_relative_regular_file "$dispatch_stdout_relative" "canonical dispatch stdout")
+parse_exact_dispatch_url "$dispatch_stdout_file" "$repository_slug"
+[[ "$parsed_run_id" == "$canonical_run_id" ]] || fail "dispatch URL run ID differs from terminal evidence"
+
+validate_run_view() {
+	local command_id=$1
+	local stage=$2
+	local run_record stdout_relative stdout_file expected_url
+	run_record=$(jq -ce --arg id "$command_id" '[.commands[] | select(.id == $id)]
+		| if length == 1 then .[0] else error("run view record count differs") end' "$evidence_path")
+	stdout_relative=$(jq -er '.stdout_log' <<<"$run_record")
+	stdout_file=$(require_relative_regular_file "$stdout_relative" "$command_id stdout")
+	expected_url="https://github.com/$repository_slug/actions/runs/$canonical_run_id"
+	if [[ "$stage" == initial ]]; then
+		jq -e --arg candidate "$candidate_sha" --arg run "$canonical_run_id" --arg url "$expected_url" \
+			'(.databaseId | tostring) == $run and .url == $url and .event == "workflow_dispatch"
+			and .headSha == $candidate and (.status == "queued" or .status == "in_progress" or .status == "completed")
+			and (if .status == "completed" then .conclusion == "success" else .conclusion == null end)' \
+			"$stdout_file" >/dev/null || fail "canonical initial run view differs"
+	else
+		jq -e --arg candidate "$candidate_sha" --arg run "$canonical_run_id" --arg url "$expected_url" \
+			'(.databaseId | tostring) == $run and .url == $url and .event == "workflow_dispatch"
+			and .headSha == $candidate and .status == "completed" and .conclusion == "success"' \
+			"$stdout_file" >/dev/null || fail "canonical terminal run view differs"
+	fi
+}
+
+validate_run_view canonical-initial-view initial
+validate_run_view canonical-inspect terminal
+
+intent_relative=$(jq -er '.dispatch_intent.path' "$evidence_path")
+result_relative=$(jq -er '.dispatch_result.path' "$evidence_path")
+[[ "$intent_relative" == dispatch-intent.json ]] || fail "dispatch intent path differs"
+[[ "$result_relative" == dispatch-result.json ]] || fail "dispatch result path differs"
+intent_file=$(require_relative_regular_file "$intent_relative" "dispatch intent")
+result_file=$(require_relative_regular_file "$result_relative" "dispatch result")
+[[ "$(hash_file "$intent_file")" == "$(jq -er '.dispatch_intent.sha256' "$evidence_path")" ]] ||
+	fail "dispatch intent digest differs"
+[[ "$(hash_file "$result_file")" == "$(jq -er '.dispatch_result.sha256' "$evidence_path")" ]] ||
+	fail "dispatch result digest differs"
+
+dispatch_argv=$(jq -c '.argv' <<<"$dispatch_record")
+expected_intent=$(jq -cnS \
+	--arg candidate "$candidate_sha" --arg tree "$candidate_tree" \
+	--arg repository "$repository_slug" --arg workflow phase13-1-canonical-native.yml \
+	--arg ref "$remote_ref" --arg manifest "$manifest_sha256" --argjson argv "$dispatch_argv" \
+	'{schema:"phase13-1-dispatch-intent-v1",candidate_sha:$candidate,candidate_tree:$tree,
+	repository_slug:$repository,workflow_file:$workflow,remote_ref:$ref,
+	dispatch_argv:$argv,manifest_sha256:$manifest}')
+[[ "$(jq -cS . "$intent_file")" == "$expected_intent" ]] || fail "dispatch intent journal differs"
+
+expected_result=$(jq -cnS \
+	--arg candidate "$candidate_sha" --arg tree "$candidate_tree" \
+	--arg repository "$repository_slug" --arg workflow phase13-1-canonical-native.yml \
+	--arg ref "$remote_ref" --arg intent "$(hash_file "$intent_file")" \
+	--arg url "$parsed_dispatch_url" --arg run "$canonical_run_id" \
+	--arg record "$(record_digest "$dispatch_record")" --arg log "$(hash_file "$dispatch_stdout_file")" \
+	'{schema:"phase13-1-dispatch-result-v1",candidate_sha:$candidate,candidate_tree:$tree,
+	repository_slug:$repository,workflow_file:$workflow,remote_ref:$ref,
+	intent_sha256:$intent,dispatch_url:$url,canonical_run_id:$run,
+	command_id:"canonical-dispatch",command_record_sha256:$record,command_stdout_sha256:$log}')
+[[ "$(jq -cS . "$result_file")" == "$expected_result" ]] || fail "dispatch result journal differs"
 
 for checker_id in managed-checker managed-checker-final; do
 	if jq -e --arg id "$checker_id" '.commands[] | select(.id == $id)' "$evidence_path" >/dev/null; then

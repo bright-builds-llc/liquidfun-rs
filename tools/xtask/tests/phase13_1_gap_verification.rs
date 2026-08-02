@@ -64,12 +64,6 @@ fn manifest() -> TestResult<Value> {
     Ok(serde_json::from_slice(&bytes)?)
 }
 
-fn validator_source() -> TestResult<String> {
-    Ok(fs::read_to_string(
-        workspace_root().join("scripts/phase13-1-validate-gap-evidence.sh"),
-    )?)
-}
-
 fn command_argv(command: &Value) -> TestResult<Vec<&str>> {
     command["argv"]
         .as_array()
@@ -205,25 +199,11 @@ fn verification_report_records_the_same_sole_deferral() -> TestResult {
     Ok(())
 }
 
-#[test]
-fn evidence_validator_is_a_separate_fail_closed_executable() -> TestResult {
-    // Arrange
-    let source = validator_source()?;
-
-    // Act / Assert
-    assert!(source.starts_with("#!/usr/bin/env bash\nset -euo pipefail\n"));
-    assert!(!source.contains("source scripts/phase13-1-gap-verification.sh"));
-    assert!(!source.contains("phase13-1-gap-verification.sh\""));
-    assert!(source.contains("phase13-1-gap-verification-evidence-v1"));
-    assert!(source.contains("evidence_tier"));
-    assert!(source.contains("git merge-base --is-ancestor"));
-    Ok(())
-}
-
 #[cfg(unix)]
 mod evidence_validator {
     use std::{
         env, fs,
+        io::Write,
         os::unix::fs::symlink,
         path::{Path, PathBuf},
         process::{Command, Output},
@@ -277,6 +257,24 @@ mod evidence_validator {
         Ok(format!("{:x}", Sha256::digest(fs::read(path)?)))
     }
 
+    fn hash_canonical_value(value: &Value) -> TestResult<String> {
+        let mut canonical = Command::new("jq")
+            .args(["-cS", "."])
+            .stdin(std::process::Stdio::piped())
+            .stdout(std::process::Stdio::piped())
+            .spawn()?;
+        canonical
+            .stdin
+            .take()
+            .ok_or("jq stdin must be piped")?
+            .write_all(&serde_json::to_vec(value)?)?;
+        let output = canonical.wait_with_output()?;
+        if !output.status.success() {
+            return Err("jq failed to canonicalize fixture JSON".into());
+        }
+        Ok(format!("{:x}", Sha256::digest(output.stdout)))
+    }
+
     fn run_git(repository: &Path, arguments: &[&str]) -> TestResult<String> {
         let output = Command::new("git")
             .args(arguments)
@@ -294,6 +292,9 @@ mod evidence_validator {
     }
 
     impl Fixture {
+        // Keeping the complete trust-chain fixture in one constructor makes each
+        // mutation test start from the same auditable evidence graph.
+        #[allow(clippy::too_many_lines)]
         fn new() -> TestResult<Self> {
             let temporary = TemporaryDirectory::new()?;
             let repository = temporary.path().join("repository");
@@ -321,6 +322,21 @@ mod evidence_validator {
             for name in ["one.stdout", "one.stderr", "two.stdout", "two.stderr"] {
                 fs::write(retained.join("logs").join(name), format!("{name}\n"))?;
             }
+            fs::write(
+                retained.join("logs/dispatch.stdout"),
+                "https://github.com/fixture/repository/actions/runs/7\n",
+            )?;
+            fs::write(retained.join("logs/dispatch.stderr"), "")?;
+            write_json(
+                &retained.join("logs/initial.stdout"),
+                &json!({"databaseId":7,"headSha":candidate,"event":"workflow_dispatch","status":"queued","conclusion":null,"url":"https://github.com/fixture/repository/actions/runs/7"}),
+            )?;
+            fs::write(retained.join("logs/initial.stderr"), "")?;
+            write_json(
+                &retained.join("logs/terminal.stdout"),
+                &json!({"databaseId":7,"headSha":candidate,"event":"workflow_dispatch","status":"completed","conclusion":"success","url":"https://github.com/fixture/repository/actions/runs/7"}),
+            )?;
+            fs::write(retained.join("logs/terminal.stderr"), "")?;
             fs::write(retained.join("canonical/logs/native.log"), "canonical\n")?;
             let native_digest = hash_file(&retained.join("canonical/logs/native.log"))?;
             fs::write(
@@ -344,6 +360,9 @@ mod evidence_validator {
 
             let commands = json!([
                 {"id":"one","argv":["true"],"environment":{},"stdout_log":"logs/one.stdout","stderr_log":"logs/one.stderr","evidence_class":"fixture"},
+                {"id":"canonical-dispatch","argv":["gh","workflow","run","phase13-1-canonical-native.yml","--ref","main","-f",format!("candidate_sha={candidate}")],"environment":{},"stdout_log":"logs/dispatch.stdout","stderr_log":"logs/dispatch.stderr","evidence_class":"canonical-d1"},
+                {"id":"canonical-initial-view","argv":["gh","run","view","7","--json","databaseId,headSha,event,status,conclusion,url"],"environment":{},"stdout_log":"logs/initial.stdout","stderr_log":"logs/initial.stderr","evidence_class":"canonical-d1"},
+                {"id":"canonical-inspect","argv":["gh","run","view","7","--json","databaseId,headSha,event,status,conclusion,url"],"environment":{},"stdout_log":"logs/terminal.stdout","stderr_log":"logs/terminal.stderr","evidence_class":"canonical-d1"},
                 {"id":"two","argv":["true","two"],"environment":{"FIXTURE":"yes"},"stdout_log":"logs/two.stdout","stderr_log":"logs/two.stderr","evidence_class":"fixture"}
             ]);
             let manifest_json = json!({
@@ -379,14 +398,47 @@ mod evidence_validator {
                     Ok(record)
                 })
                 .collect::<TestResult<Vec<_>>>()?;
+            let dispatch_record = evidence_commands
+                .iter()
+                .find(|command| command["id"] == "canonical-dispatch")
+                .ok_or("dispatch record must exist")?;
+            let intent_json = json!({
+                "schema":"phase13-1-dispatch-intent-v1",
+                "candidate_sha":candidate,
+                "candidate_tree":tree,
+                "repository_slug":"fixture/repository",
+                "workflow_file":"phase13-1-canonical-native.yml",
+                "remote_ref":"main",
+                "dispatch_argv":dispatch_record["argv"],
+                "manifest_sha256":hash_file(&manifest)?
+            });
+            write_json(&retained.join("dispatch-intent.json"), &intent_json)?;
+            let result_json = json!({
+                "schema":"phase13-1-dispatch-result-v1",
+                "candidate_sha":candidate,
+                "candidate_tree":tree,
+                "repository_slug":"fixture/repository",
+                "workflow_file":"phase13-1-canonical-native.yml",
+                "remote_ref":"main",
+                "intent_sha256":hash_file(&retained.join("dispatch-intent.json"))?,
+                "dispatch_url":"https://github.com/fixture/repository/actions/runs/7",
+                "canonical_run_id":"7",
+                "command_id":"canonical-dispatch",
+                "command_record_sha256":hash_canonical_value(dispatch_record)?,
+                "command_stdout_sha256":hash_file(&retained.join("logs/dispatch.stdout"))?
+            });
+            write_json(&retained.join("dispatch-result.json"), &result_json)?;
             let evidence_json = json!({
                 "schema": "phase13-1-gap-verification-evidence-v1",
                 "candidate_sha": candidate,
                 "candidate_tree": tree,
                 "output_root": retained.to_string_lossy(),
                 "remote_ref": "main",
+                "repository_slug": "fixture/repository",
                 "canonical_run_id": "7",
                 "manifest_sha256": hash_file(&manifest)?,
+                "dispatch_intent": {"path":"dispatch-intent.json","sha256":hash_file(&retained.join("dispatch-intent.json"))?},
+                "dispatch_result": {"path":"dispatch-result.json","sha256":hash_file(&retained.join("dispatch-result.json"))?},
                 "commands": evidence_commands,
                 "checker": {"findings": 0, "exceptions": 0},
                 "canonical_identity": {"path":"canonical/identity.json","sha256":hash_file(&retained.join("canonical/identity.json"))?},
@@ -478,7 +530,7 @@ mod evidence_validator {
     fn evidence_validator_rejects_environment_drift() -> TestResult {
         let fixture = Fixture::new()?;
         fixture.mutate_evidence(|evidence| {
-            evidence["commands"][0]["environment"] = json!({"DRIFT":"yes"})
+            evidence["commands"][0]["environment"] = json!({"DRIFT":"yes"});
         })?;
         fixture.assert_rejected()
     }
@@ -487,7 +539,7 @@ mod evidence_validator {
     fn evidence_validator_rejects_candidate_tree_drift() -> TestResult {
         let fixture = Fixture::new()?;
         fixture.mutate_evidence(|evidence| {
-            evidence["candidate_tree"] = json!("0000000000000000000000000000000000000000")
+            evidence["candidate_tree"] = json!("0000000000000000000000000000000000000000");
         })?;
         fixture.assert_rejected()
     }
@@ -524,7 +576,7 @@ mod evidence_validator {
     fn evidence_validator_rejects_path_escape() -> TestResult {
         let fixture = Fixture::new()?;
         fixture.mutate_evidence(|evidence| {
-            evidence["commands"][0]["stdout_log"] = json!("../escape.log")
+            evidence["commands"][0]["stdout_log"] = json!("../escape.log");
         })?;
         fixture.assert_rejected()
     }
@@ -545,7 +597,7 @@ mod evidence_validator {
         write_json(&identity_path, &identity)?;
         let identity_digest = hash_file(&identity_path)?;
         fixture.mutate_evidence(|evidence| {
-            evidence["canonical_identity"]["sha256"] = json!(identity_digest)
+            evidence["canonical_identity"]["sha256"] = json!(identity_digest);
         })?;
         fixture.assert_rejected()
     }
@@ -559,6 +611,5 @@ mod evidence_validator {
 }
 
 #[cfg(unix)]
-mod phase13_1_gap_verification {
-    mod producer;
-}
+#[path = "phase13_1_gap_verification/producer.rs"]
+mod producer;

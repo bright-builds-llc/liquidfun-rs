@@ -9,6 +9,9 @@ use std::{
 use crate::{TestResult, workspace_root};
 use serde_json::{Value, json};
 
+#[path = "producer/lifecycle.rs"]
+mod lifecycle;
+
 static NEXT_FIXTURE: AtomicU64 = AtomicU64::new(1);
 
 struct ProducerFixture {
@@ -17,6 +20,9 @@ struct ProducerFixture {
     manifest: PathBuf,
     fake_bin: PathBuf,
     candidate: String,
+    gh_journal: PathBuf,
+    gh_state: PathBuf,
+    command_journal: PathBuf,
 }
 
 fn run_git(repository: &Path, arguments: &[&str]) -> TestResult<String> {
@@ -39,6 +45,9 @@ fn write_executable(path: &Path, source: &str) -> TestResult {
 }
 
 impl ProducerFixture {
+    // The constructor deliberately keeps the fake repository, command manifest,
+    // and fake GitHub boundary together so lifecycle tests share one exact setup.
+    #[allow(clippy::too_many_lines)]
     fn new(include_workflow: bool, helper_mode: &str) -> TestResult<Self> {
         let root = env::temp_dir().join(format!(
             "liquidfun-phase13-1-producer-{}-{}",
@@ -51,6 +60,7 @@ impl ProducerFixture {
         let repository = root.join("repository");
         let remote = root.join("remote.git");
         let fake_bin = root.join("bin");
+        let command_journal = root.join("command-journal.txt");
         fs::create_dir_all(&repository)?;
         fs::create_dir_all(&fake_bin)?;
         run_git(&repository, &["init", "-q", "-b", "main"])?;
@@ -103,9 +113,22 @@ jq -n --arg candidate "$candidate" --arg tree "$tree" --arg run "$run_id" \
             }
         );
         write_executable(&repository.join("fixture-command.sh"), &helper)?;
+        write_executable(
+            &repository.join("fixture-prefix.sh"),
+            r#"#!/usr/bin/env bash
+set -euo pipefail
+printf 'fixture-prefix\n' >> "${PHASE13_1_GAP_FAKE_COMMAND_JOURNAL:?}"
+"#,
+        )?;
         run_git(
             &repository,
-            &["add", ".gitignore", ".github", "fixture-command.sh"],
+            &[
+                "add",
+                ".gitignore",
+                ".github",
+                "fixture-command.sh",
+                "fixture-prefix.sh",
+            ],
         )?;
         run_git(&repository, &["commit", "-q", "-m", "candidate"])?;
         let candidate = run_git(&repository, &["rev-parse", "HEAD"])?;
@@ -129,15 +152,36 @@ jq -n --arg candidate "$candidate" --arg tree "$tree" --arg run "$run_id" \
         )?;
         run_git(&repository, &["push", "-q", "-u", "origin", "main"])?;
 
+        let gh_journal = root.join("gh-journal.txt");
+        let gh_state = root.join("gh-state.txt");
         write_executable(
             &fake_bin.join("gh"),
             r#"#!/usr/bin/env bash
 set -euo pipefail
+printf '%s\n' "$*" >> "${PHASE13_1_GAP_FAKE_GH_JOURNAL:?}"
 case "$*" in
   "repo view --json defaultBranchRef --jq .defaultBranchRef.name") printf 'main\n' ;;
   "repo view --json nameWithOwner --jq .nameWithOwner") printf 'fixture/repository\n' ;;
   "api repos/fixture/repository/actions/workflows/phase13-1-canonical-native.yml --jq .path")
     printf '.github/workflows/phase13-1-canonical-native.yml\n' ;;
+  "workflow run phase13-1-canonical-native.yml --ref main -f candidate_sha="*)
+    printf '%s\n' "${PHASE13_1_GAP_FAKE_DISPATCH_URL:-https://github.com/fixture/repository/actions/runs/7}" ;;
+  "run view 7 --json databaseId,headSha,event,status,conclusion,url")
+    count=0
+    if [[ -f "${PHASE13_1_GAP_FAKE_GH_STATE:?}" ]]; then
+      count=$(cat "${PHASE13_1_GAP_FAKE_GH_STATE}")
+    fi
+    count=$((count + 1))
+    printf '%s\n' "$count" > "${PHASE13_1_GAP_FAKE_GH_STATE}"
+    candidate=$(git rev-parse HEAD)
+    if [[ "$count" -eq 1 ]]; then
+      jq -cn --arg candidate "$candidate" '{databaseId:7,headSha:$candidate,event:"workflow_dispatch",status:"queued",conclusion:null,url:"https://github.com/fixture/repository/actions/runs/7"}'
+    else
+      jq -cn --arg candidate "$candidate" '{databaseId:7,headSha:$candidate,event:"workflow_dispatch",status:"completed",conclusion:"success",url:"https://github.com/fixture/repository/actions/runs/7"}'
+    fi ;;
+  "run watch 7 --exit-status") : ;;
+  "run download 7 --name phase13-1-canonical-native-success-7-"*" --dir "*) : ;;
+  "run list"*) printf '%s\n' "${PHASE13_1_GAP_FAKE_LISTING:-[]}" ;;
   *) printf 'unexpected gh call: %s\n' "$*" >&2; exit 1 ;;
 esac
 "#,
@@ -150,7 +194,15 @@ esac
             "structural_source":{"commit":candidate,"parent":parent},
             "deferred_xtask_targets":["phase13_acceptance_contract"],
             "artifacts":[{"id":"canonical-native","identity":"canonical/identity.json","logs":"canonical/logs","evidence_tier":"D1"}],
-            "commands":[{"id":"fixture","argv":["bash","fixture-command.sh","${OUTPUT_ROOT}","${CANDIDATE}","${CANDIDATE_TREE}","${CANONICAL_RUN_ID}"],"environment":{},"stdout_log":"logs/fixture.stdout","stderr_log":"logs/fixture.stderr","evidence_class":"fixture"}],
+            "commands":[
+                {"id":"fixture-prefix","argv":["bash","fixture-prefix.sh"],"environment":{},"stdout_log":"logs/fixture-prefix.stdout","stderr_log":"logs/fixture-prefix.stderr","evidence_class":"fixture"},
+                {"id":"canonical-dispatch","argv":["gh","workflow","run","phase13-1-canonical-native.yml","--ref","${REMOTE_REF}","-f","candidate_sha=${CANDIDATE}"],"environment":{},"stdout_log":"logs/canonical-dispatch.stdout","stderr_log":"logs/canonical-dispatch.stderr","evidence_class":"canonical-d1"},
+                {"id":"canonical-initial-view","argv":["gh","run","view","${CANONICAL_RUN_ID}","--json","databaseId,headSha,event,status,conclusion,url"],"environment":{},"stdout_log":"logs/canonical-initial-view.stdout","stderr_log":"logs/canonical-initial-view.stderr","evidence_class":"canonical-d1"},
+                {"id":"canonical-watch","argv":["gh","run","watch","${CANONICAL_RUN_ID}","--exit-status"],"environment":{},"stdout_log":"logs/canonical-watch.stdout","stderr_log":"logs/canonical-watch.stderr","evidence_class":"canonical-d1"},
+                {"id":"canonical-inspect","argv":["gh","run","view","${CANONICAL_RUN_ID}","--json","databaseId,headSha,event,status,conclusion,url"],"environment":{},"stdout_log":"logs/canonical-inspect.stdout","stderr_log":"logs/canonical-inspect.stderr","evidence_class":"canonical-d1"},
+                {"id":"canonical-download","argv":["gh","run","download","${CANONICAL_RUN_ID}","--name","phase13-1-canonical-native-success-${CANONICAL_RUN_ID}-${CANDIDATE}","--dir","${OUTPUT_ROOT}/canonical"],"environment":{},"stdout_log":"logs/canonical-download.stdout","stderr_log":"logs/canonical-download.stderr","evidence_class":"canonical-d1"},
+                {"id":"fixture","argv":["bash","fixture-command.sh","${OUTPUT_ROOT}","${CANDIDATE}","${CANDIDATE_TREE}","${CANONICAL_RUN_ID}"],"environment":{},"stdout_log":"logs/fixture.stdout","stderr_log":"logs/fixture.stderr","evidence_class":"fixture"}
+            ],
             "fixture_tree":tree
         });
         let manifest = root.join("manifest.json");
@@ -161,20 +213,37 @@ esac
             manifest,
             fake_bin,
             candidate,
+            gh_journal,
+            gh_state,
+            command_journal,
         })
     }
 
-    fn run_with(&self, candidate: &str, branch: &str) -> TestResult<Output> {
+    fn run_with_settings(
+        &self,
+        candidate: &str,
+        branch: &str,
+        environment: &[(&str, &str)],
+    ) -> TestResult<Output> {
         let path = format!("{}:{}", self.fake_bin.display(), env::var("PATH")?);
-        Ok(
-            Command::new(workspace_root().join("scripts/phase13-1-gap-verification.sh"))
-                .args([candidate, "target/phase13-1-gap-verification", branch])
-                .env("PATH", path)
-                .env("PHASE13_1_GAP_MANIFEST", &self.manifest)
-                .env("PHASE13_1_GAP_REPOSITORY_ROOT", &self.repository)
-                .env("PHASE13_1_GAP_TEST_RUN_ID", "7")
-                .output()?,
-        )
+        let mut command =
+            Command::new(workspace_root().join("scripts/phase13-1-gap-verification.sh"));
+        command
+            .args([candidate, "target/phase13-1-gap-verification", branch])
+            .env("PATH", path)
+            .env("PHASE13_1_GAP_MANIFEST", &self.manifest)
+            .env("PHASE13_1_GAP_REPOSITORY_ROOT", &self.repository)
+            .env("PHASE13_1_GAP_FAKE_GH_JOURNAL", &self.gh_journal)
+            .env("PHASE13_1_GAP_FAKE_GH_STATE", &self.gh_state)
+            .env("PHASE13_1_GAP_FAKE_COMMAND_JOURNAL", &self.command_journal);
+        for (key, value) in environment {
+            command.env(key, value);
+        }
+        Ok(command.output()?)
+    }
+
+    fn run_with(&self, candidate: &str, branch: &str) -> TestResult<Output> {
+        self.run_with_settings(candidate, branch, &[])
     }
 
     fn run(&self) -> TestResult<Output> {
@@ -188,7 +257,7 @@ esac
             .join("final-verification.json")
     }
 
-    fn assert_rejected_without_terminal(&self, output: Output) {
+    fn assert_rejected_without_terminal(&self, output: &Output) {
         assert!(
             !output.status.success(),
             "producer unexpectedly accepted fixture"
@@ -213,6 +282,22 @@ impl Drop for ProducerFixture {
             fs::remove_dir_all(&self.root).expect("owned producer fixture should be removable");
         }
     }
+}
+
+#[test]
+fn evidence_validator_is_a_separate_fail_closed_executable() -> TestResult {
+    // Arrange
+    let source =
+        fs::read_to_string(workspace_root().join("scripts/phase13-1-validate-gap-evidence.sh"))?;
+
+    // Act / Assert
+    assert!(source.starts_with("#!/usr/bin/env bash\nset -euo pipefail\n"));
+    assert!(!source.contains("source scripts/phase13-1-gap-verification.sh"));
+    assert!(!source.contains("phase13-1-gap-verification.sh\""));
+    assert!(source.contains("phase13-1-gap-verification-evidence-v1"));
+    assert!(source.contains("evidence_tier"));
+    assert!(source.contains("git merge-base --is-ancestor"));
+    Ok(())
 }
 
 #[test]
@@ -257,7 +342,7 @@ fn producer_publishes_only_validator_accepted_fixture_evidence() -> TestResult {
 fn producer_rejects_wrong_candidate_without_terminal_evidence() -> TestResult {
     let fixture = ProducerFixture::new(true, "success")?;
     let output = fixture.run_with("0000000000000000000000000000000000000000", "main")?;
-    fixture.assert_rejected_without_terminal(output);
+    fixture.assert_rejected_without_terminal(&output);
     Ok(())
 }
 
@@ -266,7 +351,7 @@ fn producer_rejects_dirty_tree_without_terminal_evidence() -> TestResult {
     let fixture = ProducerFixture::new(true, "success")?;
     fs::write(fixture.repository.join("dirty.txt"), "dirty\n")?;
     let output = fixture.run()?;
-    fixture.assert_rejected_without_terminal(output);
+    fixture.assert_rejected_without_terminal(&output);
     Ok(())
 }
 
@@ -274,7 +359,7 @@ fn producer_rejects_dirty_tree_without_terminal_evidence() -> TestResult {
 fn producer_rejects_non_default_branch_without_terminal_evidence() -> TestResult {
     let fixture = ProducerFixture::new(true, "success")?;
     let output = fixture.run_with(&fixture.candidate, "develop")?;
-    fixture.assert_rejected_without_terminal(output);
+    fixture.assert_rejected_without_terminal(&output);
     Ok(())
 }
 
@@ -282,7 +367,7 @@ fn producer_rejects_non_default_branch_without_terminal_evidence() -> TestResult
 fn producer_rejects_missing_remote_workflow_without_terminal_evidence() -> TestResult {
     let fixture = ProducerFixture::new(false, "success")?;
     let output = fixture.run()?;
-    fixture.assert_rejected_without_terminal(output);
+    fixture.assert_rejected_without_terminal(&output);
     Ok(())
 }
 
@@ -291,7 +376,7 @@ fn producer_rejects_failed_command_without_terminal_evidence() -> TestResult {
     let fixture = ProducerFixture::new(true, "success")?;
     fixture.mutate_manifest(|manifest| manifest["commands"][0]["argv"] = json!(["false"]))?;
     let output = fixture.run()?;
-    fixture.assert_rejected_without_terminal(output);
+    fixture.assert_rejected_without_terminal(&output);
     Ok(())
 }
 
@@ -299,10 +384,10 @@ fn producer_rejects_failed_command_without_terminal_evidence() -> TestResult {
 fn producer_rejects_missing_log_destination_without_terminal_evidence() -> TestResult {
     let fixture = ProducerFixture::new(true, "success")?;
     fixture.mutate_manifest(|manifest| {
-        manifest["commands"][0]["stdout_log"] = json!("missing/fixture.stdout")
+        manifest["commands"][0]["stdout_log"] = json!("missing/fixture.stdout");
     })?;
     let output = fixture.run()?;
-    fixture.assert_rejected_without_terminal(output);
+    fixture.assert_rejected_without_terminal(&output);
     Ok(())
 }
 
@@ -310,7 +395,7 @@ fn producer_rejects_missing_log_destination_without_terminal_evidence() -> TestR
 fn producer_rejects_canonical_identity_drift_without_terminal_evidence() -> TestResult {
     let fixture = ProducerFixture::new(true, "d2")?;
     let output = fixture.run()?;
-    fixture.assert_rejected_without_terminal(output);
+    fixture.assert_rejected_without_terminal(&output);
     Ok(())
 }
 
@@ -318,6 +403,6 @@ fn producer_rejects_canonical_identity_drift_without_terminal_evidence() -> Test
 fn producer_rejects_candidate_drift_without_terminal_evidence() -> TestResult {
     let fixture = ProducerFixture::new(true, "drift")?;
     let output = fixture.run()?;
-    fixture.assert_rejected_without_terminal(output);
+    fixture.assert_rejected_without_terminal(&output);
     Ok(())
 }
