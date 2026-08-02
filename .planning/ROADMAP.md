@@ -21,7 +21,7 @@ The v1 roadmap moves from an immutable, licensed source of truth to a semantic c
 - [x] **Phase 11: Examples, Headless Tooling, and Testbed** - Account for every upstream test/example and expose shared headless and optional visual scenarios. (completed 2026-07-23)
 - [x] **Phase 12: Performance, Portability, and Release Hardening** - Prove performance, safety, platform, documentation, packaging, and zero-gap v1 readiness. (completed 2026-07-24)
 - [x] **Phase 13: Restore Evidence and Replay Integrity** - Repair exact-head provenance and reviewed catalog replay before accepting current compatibility evidence. (completed 2026-07-27)
-- [x] **Phase 13.1: Restore Bright Builds Structural Compliance** - Refactor every repository-owned file-length finding without behavioral or evidence drift. (completed 2026-07-29)
+- [ ] **Phase 13.1: Restore Bright Builds Structural Compliance** - Refactor every repository-owned file-length finding without behavioral or evidence drift; corrected-candidate evidence closure remains in progress.
 - [ ] **Phase 14: Repair Windows Particle-Group Invariants** - Remove the supported-Windows authoritative-storage panic and restore transactional particle-group behavior.
 - [ ] **Phase 15: Re-establish Candidate Evidence** - Produce and attest a green exact-head release-candidate evidence bundle after all implementation and replay gaps close.
 
@@ -307,7 +307,7 @@ Plans:
 1. Genuine external or generated findings use exact-path exceptions only when provenance proves they cannot be refactored; the current audited baseline requires zero exceptions.
 1. Focused subsystem gates, native/reference contracts, the ordered full Rust gate, and `bun scripts/bright-builds-check.ts all` pass before the structural commit.
 
-**Plans:** 21/22 plans executed
+**Plans:** 22/23 plans executed
 
 Plans:
 - [x] 13.1-01-PLAN.md — Preserve the dirty original worktree and create an isolated aggregate worktree.
@@ -330,8 +330,9 @@ Plans:
 - [x] 13.1-18-PLAN.md — Format and semantically guard the first six repository-owned Markdown failures.
 - [x] 13.1-19-PLAN.md — Add a fail-closed candidate-bound gap verification producer.
 - [x] 13.1-20-PLAN.md — Obtain a named developer decision on the truthful integration-history override.
-- [ ] 13.1-21-PLAN.md — Authorize and publish the exact candidate, then run the complete matrix and formal re-verification.
 - [x] 13.1-22-PLAN.md — Format the remaining five Markdown failures and run all aggregate documentation checks.
+- [x] 13.1-23-PLAN.md — Correct the candidate producer, exact-run binding, resumable evidence state, capability command, and fuzz cleanliness. (Wave 3; depends on 13.1-19 and 13.1-22.)
+- [ ] 13.1-21-PLAN.md — Freshly authorize and publish the corrected candidate, then run the complete matrix from scratch and formally re-verify. (Wave 4; depends on 13.1-16, 13.1-17, 13.1-19, 13.1-20, 13.1-22, and 13.1-23.)
 
 ### Phase 14: Repair Windows Particle-Group Invariants
 
@@ -382,6 +383,7 @@ Plans:
 | 11. Examples, Headless Tooling, and Testbed | 30/30 | Complete    | 2026-07-23 |
 | 12. Performance, Portability, and Release Hardening | 25/25 | Complete    | 2026-07-24 |
 | 13. Restore Evidence and Replay Integrity | 5/5 | Complete    | 2026-07-27 |
+| 13.1. Restore Bright Builds Structural Compliance | 22/23 | In Progress|  |
 | 14. Repair Windows Particle-Group Invariants | 0/TBD | Not started | — |
 | 15. Re-establish Candidate Evidence | 0/TBD | Not started | — |
 
