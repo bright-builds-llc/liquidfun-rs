@@ -175,7 +175,11 @@ case "$*" in
     printf '%s\n' "$count" > "${PHASE13_1_GAP_FAKE_GH_STATE}"
     candidate=$(git rev-parse HEAD)
     if [[ "$count" -eq 1 ]]; then
-      jq -cn --arg candidate "$candidate" '{databaseId:7,headSha:$candidate,event:"workflow_dispatch",status:"queued",conclusion:null,url:"https://github.com/fixture/repository/actions/runs/7"}'
+      initial_status=${PHASE13_1_GAP_FAKE_INITIAL_STATUS:-queued}
+      initial_conclusion_json=${PHASE13_1_GAP_FAKE_INITIAL_CONCLUSION_JSON:-null}
+      jq -cn --arg candidate "$candidate" --arg status "$initial_status" \
+        --argjson conclusion "$initial_conclusion_json" \
+        '{databaseId:7,headSha:$candidate,event:"workflow_dispatch",status:$status,conclusion:$conclusion,url:"https://github.com/fixture/repository/actions/runs/7"}'
     else
       jq -cn --arg candidate "$candidate" '{databaseId:7,headSha:$candidate,event:"workflow_dispatch",status:"completed",conclusion:"success",url:"https://github.com/fixture/repository/actions/runs/7"}'
     fi ;;

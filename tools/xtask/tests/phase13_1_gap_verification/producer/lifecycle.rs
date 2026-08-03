@@ -9,6 +9,9 @@ use super::{ProducerFixture, TestResult, workspace_root};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 
+#[path = "lifecycle/conclusion.rs"]
+mod conclusion;
+
 fn manifest() -> TestResult<Value> {
     Ok(serde_json::from_slice(&fs::read(workspace_root().join(
         "scripts/phase13-1-gap-verification-manifest.json",

@@ -258,7 +258,7 @@ validate_run_view() {
 		jq -e --arg candidate "$candidate_sha" --arg run "$canonical_run_id" --arg url "$expected_url" \
 			'(.databaseId | tostring) == $run and .url == $url and .event == "workflow_dispatch"
 			and .headSha == $candidate and (.status == "queued" or .status == "in_progress" or .status == "completed")
-			and (if .status == "completed" then .conclusion == "success" else .conclusion == null end)' \
+			and (if .status == "completed" then .conclusion == "success" else (.conclusion == null or .conclusion == "") end)' \
 			"$stdout_file" >/dev/null || fail "canonical initial run view differs"
 	else
 		jq -e --arg candidate "$candidate_sha" --arg run "$canonical_run_id" --arg url "$expected_url" \
