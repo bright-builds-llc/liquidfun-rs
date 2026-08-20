@@ -3,14 +3,14 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 13.1-24-PLAN.md; Plan 21 awaits fresh authorization
-last_updated: "2026-08-03T21:47:32Z"
-last_activity: "2026-08-03"
+stopped_at: Completed 13.1-25-PLAN.md; Plan 21 awaits fresh fourth-candidate authorization
+last_updated: "2026-08-20T18:32:17Z"
+last_activity: "2026-08-20"
 progress:
   total_phases: 16
   completed_phases: 13
-  total_plans: 248
-  completed_plans: 244
+  total_plans: 249
+  completed_plans: 245
   percent: 98
 ---
 
@@ -26,9 +26,9 @@ See: `.planning/PROJECT.md` (updated 2026-07-23)
 ## Current Position
 
 Phase: 13.1 (restore-bright-builds-structural-compliance) — EXECUTING
-Plan: 21 of 24
-Status: Ready for fresh Plan 21 authorization after Plan 24
-Last activity: 2026-08-03
+Plan: 21 of 25
+Status: Ready for fresh Plan 21 authorization after Plan 25
+Last activity: 2026-08-20
 
 Progress: [██████████] 98%
 
@@ -36,7 +36,7 @@ Progress: [██████████] 98%
 
 **Velocity:**
 
-- Total plans completed: 244
+- Total plans completed: 245
 - Average duration: Not available
 - Total execution time: 0 hours
 
@@ -237,6 +237,7 @@ Progress: [██████████] 98%
 | Phase 13.1 P22 | 32 min | 2 tasks | 7 files |
 | Phase 13.1 P23 | 1h 37m | 2 tasks | 9 files |
 | Phase 13.1 P24 | 1h 26m | 2 tasks | 6 files |
+| Phase 13.1 P25 | 2h 40m | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -670,6 +671,8 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 13.1]: The ab06bfc run and artifact remain supplemental and cannot authorize or seed the next candidate.
 - [Phase 13.1]: Treat GitHub CLI's non-completed run conclusion as a two-form boundary: accept only JSON null or the empty string for queued/in-progress, while completed remains exact success.
 - [Phase 13.1]: The 9cef103 attempt consumed exactly one dispatch and stopped at command 56; its run, records, journals, logs, and any associated artifact remain supplemental and cannot authorize, seed, resume, or satisfy the next candidate.
+- [Phase 13.1]: Candidate b64ce4c was published but its single local producer invocation stopped at differential-package command 7 before any dispatch; its authorization, prefix, records, and logs are supplemental, and Plan 25 must repair the owned supervisor fixture before Plan 21 requests new fourth-candidate authority.
+- [Phase 13.1]: Supervisor failure fixtures use uniquely claimed canonical external temp roots, and TestSupervisor explicitly drops a live child before its owned copied-oracle repository.
 
 ### Pending Todos
 
@@ -683,6 +686,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-08-03T21:47:32Z
-Stopped at: Completed 13.1-24-PLAN.md; Plan 21 awaits fresh authorization
+Last session: 2026-08-20T18:32:17Z
+Stopped at: Completed 13.1-25-PLAN.md; Plan 21 awaits fresh fourth-candidate authorization
 Resume file: None

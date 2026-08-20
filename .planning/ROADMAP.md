@@ -307,7 +307,7 @@ Plans:
 1. Genuine external or generated findings use exact-path exceptions only when provenance proves they cannot be refactored; the current audited baseline requires zero exceptions.
 1. Focused subsystem gates, native/reference contracts, the ordered full Rust gate, and `bun scripts/bright-builds-check.ts all` pass before the structural commit.
 
-**Plans:** 23/24 plans executed
+**Plans:** 24/25 plans executed
 
 Plans:
 - [x] 13.1-01-PLAN.md — Preserve the dirty original worktree and create an isolated aggregate worktree.
@@ -333,7 +333,8 @@ Plans:
 - [x] 13.1-22-PLAN.md — Format the remaining five Markdown failures and run all aggregate documentation checks.
 - [x] 13.1-23-PLAN.md — Correct the candidate producer, exact-run binding, resumable evidence state, capability command, and fuzz cleanliness. (Wave 3; depends on 13.1-19 and 13.1-22.)
 - [x] 13.1-24-PLAN.md — Accept only null/empty non-completed run conclusions, preserve the consumed attempt as supplemental evidence, and preflight locally. (Wave 4; depends on 13.1-23.)
-- [ ] 13.1-21-PLAN.md — Freshly authorize and publish the corrected candidate, then run the complete matrix from scratch and formally re-verify. (Wave 5; depends on 13.1-16, 13.1-17, 13.1-19, 13.1-20, 13.1-22, 13.1-23, and 13.1-24.)
+- [x] 13.1-25-PLAN.md — Move supervisor fake repositories to owned external temporary roots, quarantine the pre-dispatch b64ce4c failure, and preflight a fourth candidate. (Wave 5; depends on 13.1-24.)
+- [ ] 13.1-21-PLAN.md — Freshly authorize and publish a fourth candidate unequal to all three failed attempts, then run the complete matrix from scratch and formally re-verify. (Wave 6; depends on 13.1-16, 13.1-17, 13.1-19, 13.1-20, 13.1-22, 13.1-23, 13.1-24, and 13.1-25.)
 
 ### Phase 14: Repair Windows Particle-Group Invariants
 
@@ -384,7 +385,7 @@ Plans:
 | 11. Examples, Headless Tooling, and Testbed | 30/30 | Complete    | 2026-07-23 |
 | 12. Performance, Portability, and Release Hardening | 25/25 | Complete    | 2026-07-24 |
 | 13. Restore Evidence and Replay Integrity | 5/5 | Complete    | 2026-07-27 |
-| 13.1. Restore Bright Builds Structural Compliance | 23/24 | In Progress|  |
+| 13.1. Restore Bright Builds Structural Compliance | 24/25 | In Progress|  |
 | 14. Repair Windows Particle-Group Invariants | 0/TBD | Not started | — |
 | 15. Re-establish Candidate Evidence | 0/TBD | Not started | — |
 
