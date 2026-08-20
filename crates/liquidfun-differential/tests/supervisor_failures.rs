@@ -1,24 +1,24 @@
 //! Process-supervisor lifecycle, resource-bound, and failure taxonomy tests.
 
-use std::{
-    fs,
-    path::{Path, PathBuf},
-    sync::atomic::{AtomicU64, Ordering},
-};
+use std::{fs, path::Path};
 
 use liquidfun_differential::execute_math_probe_process;
-use liquidfun_differential::{OracleExecutable, OraclePreset, OracleSupervisor, SessionProfile};
+use liquidfun_differential::{OracleExecutable, OraclePreset, SessionProfile};
 use liquidfun_test_protocol::{
     HarnessFailure, HarnessFailureKind, HarnessLimits, MathProbeRequestRecord,
     ScenarioRequestRecord, decode_math_probe_request_jsonl, decode_scenario_request_jsonl,
 };
+
+#[path = "supervisor_failures/fake_repository.rs"]
+mod fake_repository;
+
+use fake_repository::{FakeRepository, TestSupervisor};
 
 const REVISION: &str = "7f20402173fd143a3988c921bc384459c6a858f2";
 const REQUEST_BYTES: &[u8] =
     include_bytes!("../../../protocol/fixtures/accepted/empty-world-request.jsonl");
 const MATH_REQUEST_BYTES: &[u8] =
     include_bytes!("../../../protocol/fixtures/accepted/math-probe-request.jsonl");
-static TEST_DIRECTORY_ID: AtomicU64 = AtomicU64::new(1);
 
 fn fixture_request() -> ScenarioRequestRecord {
     decode_scenario_request_jsonl(REQUEST_BYTES, &HarnessLimits::phase2_default_v1())
@@ -41,29 +41,12 @@ fn fixture_request_with_id(request_id: &str) -> ScenarioRequestRecord {
         .expect("changed request identity should remain valid")
 }
 
-fn fake_repository(behavior: &str) -> PathBuf {
-    let id = TEST_DIRECTORY_ID.fetch_add(1, Ordering::Relaxed);
-    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../../target/supervisor-tests")
-        .join(format!("{}-{id}", std::process::id()));
-    let output = root.join("target/reference/oracle-debug");
-    fs::create_dir_all(&output).expect("fake oracle output should be creatable");
-    let executable = output.join(if cfg!(windows) {
-        "liquidfun-reference.exe"
-    } else {
-        "liquidfun-reference"
-    });
-    fs::copy(env!("CARGO_BIN_EXE_liquidfun-fake-oracle"), &executable)
-        .expect("fake oracle binary should copy into confined output");
-    fs::write(output.join("behavior.txt"), behavior).expect("fake behavior should be writable");
-    root
+fn fake_repository(behavior: &str) -> FakeRepository {
+    FakeRepository::create(behavior).expect("owned fake repository should be creatable")
 }
 
-fn supervisor(behavior: &str, profile: SessionProfile) -> OracleSupervisor {
-    let root = fake_repository(behavior);
-    let executable = OracleExecutable::resolve(&root, OraclePreset::Debug)
-        .expect("confined fake oracle should resolve");
-    OracleSupervisor::new(executable, profile, REVISION)
+fn supervisor(behavior: &str, profile: SessionProfile) -> TestSupervisor {
+    TestSupervisor::create(behavior, profile, REVISION)
 }
 
 fn failure(behavior: &str) -> HarnessFailure {
@@ -324,4 +307,21 @@ fn executable_resolution_rejects_symlinked_or_out_of_tree_candidates() {
     // Assert
     assert!(symlink_result.is_err());
     assert!(outside_result.is_err());
+}
+
+#[test]
+fn reuse_child_is_torn_down_before_repository_cleanup() {
+    // Arrange
+    let request = fixture_request();
+    let mut supervisor = supervisor("valid", SessionProfile::Reuse);
+    supervisor
+        .execute(&request)
+        .expect("reuse request should start a live child");
+    let root = supervisor.repository_path().to_path_buf();
+
+    // Act
+    drop(supervisor);
+
+    // Assert
+    assert!(!root.exists());
 }
