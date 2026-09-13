@@ -53,3 +53,10 @@
 1. What went wrong: I treated a newly introduced repository-wide checker baseline primarily as an exception-ledger authorization problem before classifying which findings were repository-owned and should be remediated.
 1. Preventive rule: When a new standards checker flags pre-existing files, classify ownership and generated status first, plan root-cause refactors for owned sources, and reserve exact-path exceptions for genuinely external or non-refactorable surfaces.
 1. Trigger signal to catch it earlier: A managed checker fails on many untouched paths and the first proposed unblock is a broad allowlist instead of an ownership audit and bounded remediation plan.
+
+## lesson-standing-recovery-authorization | 2026-09-13 17:47 UTC
+
+1. Date: 2026-09-13
+1. What went wrong: Repeated per-candidate approval checkpoints stopped corrective work after failed verification, requiring the user to authorize routine continuation repeatedly.
+1. Preventive rule: Apply standing authorization in AGENTS.md to diagnose, repair, verify, commit, publish, and retry relevant validation autonomously; preserve accurate attempt records and acceptance criteria.
+1. Trigger signal to catch it earlier: A routine failure or changed candidate prompts another approval token despite the user's standing authorization.

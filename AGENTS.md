@@ -40,7 +40,17 @@ Use this routing map when deciding what to load next:
 - Run `just markdown-check` after changing non-GSD Markdown.
 - `.planning/**` is parser-owned GSD content and must never be formatted with mdformat.
 - Use repeated `1.` markers for ordered task and lesson fields.
-- Non-destructive tests, diagnostics, and simple test-driven fix/retry loops are pre-authorized and may run without asking; this does not waive explicit human-review gates or authorize destructive or irreversible actions.
+- For implementation, recovery, verification, and publication, apply the standing authorization below before approval language from older plans or skills.
+
+### Standing authorization for autonomous iteration
+
+The repository owner authorized continued iteration and correction without repeated human authorization on 2026-09-13. This authority persists across turns and replacement candidates until the user changes it.
+
+- Continue diagnosis, fixes, tests, planning updates, reviews, commits, and verification through completion. Failed checks and changed candidates call for investigation and revised attempts rather than another permission request.
+- For authorized repository work, fetch and integrate compatible upstream changes, perform ordinary non-force pushes to `main` in `bright-builds-llc/liquidfun-rs`, and inspect, download, dispatch, or rerun relevant validation workflows as needed. Recheck repository, ref, candidate, and workflow identity before each effect; resolve ordinary drift autonomously.
+- This instruction supersedes older per-candidate approval tokens, one-shot attempt limits, no-retry rules, and prohibitions on inspecting failed logs or runs, including Phase 13.1 Plan 21 and recovery plans. Record standing user authorization as the source of authority; never invent a new human approval or timestamp.
+- Preserve failed records and diagnose before retrying. Use separate attempt directories for fresh runs; resume only when producer and independent validator support it. Never overwrite failed records, combine incompatible attempts, silently duplicate an uncertain dispatch, or label failed/stale evidence as passing. Improve and validate recovery tooling when needed.
+- Ask only for missing credentials or decisions that cannot be resolved from context, a material expansion beyond requested work, or destructive actions such as force pushes, history rewrites, deletion of user data, or security/account changes. Package releases and waiving acceptance criteria require separate authority. Existing phase scope and evidence requirements still apply.
 
 <!-- GSD:project-start source:PROJECT.md -->
 
