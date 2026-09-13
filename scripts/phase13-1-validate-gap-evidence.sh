@@ -242,26 +242,84 @@ expected_canonical_relative=$(jq -er '.artifacts[] | select(.id == "canonical-na
 canonical_file=$(require_relative_regular_file "$canonical_relative" "canonical identity")
 [[ "$(hash_file "$canonical_file")" == "$(jq -er '.canonical_identity.sha256' "$evidence_path")" ]] ||
 	fail "canonical identity digest mismatch"
+canonical_names=(oracle-identity canonical-identity configure-debug build-debug protocol-build-debug protocol-ctest-debug configure-release build-release protocol-build-release protocol-ctest-release compare-debug compare-release replay-debug determinism-debug)
+canonical_commands=(
+	'cargo test -p liquidfun-differential --test oracle_identity --all-features'
+	'cargo test -p liquidfun-test-protocol --all-features canonical'
+	'cargo xtask upstream configure --preset oracle-debug'
+	'cargo xtask upstream build --preset oracle-debug'
+	'cmake --build target/reference/oracle-debug --target liquidfun-reference-protocol-tests'
+	'ctest --test-dir target/reference/oracle-debug --output-on-failure --no-tests=error -R ^liquidfun-reference-protocol$'
+	'cargo xtask upstream configure --preset oracle-release'
+	'cargo xtask upstream build --preset oracle-release'
+	'cmake --build target/reference/oracle-release --target liquidfun-reference-protocol-tests'
+	'ctest --test-dir target/reference/oracle-release --output-on-failure --no-tests=error -R ^liquidfun-reference-protocol$'
+	'cargo xtask differential compare --scenario rigid-world --preset oracle-debug --session-profile one-shot'
+	'cargo xtask differential compare --scenario rigid-world --preset oracle-release --session-profile one-shot'
+	'cargo xtask differential replay --scenario rigid-world --preset oracle-debug --session-profile one-shot'
+	'cargo xtask differential verify-determinism --scenario rigid-world --preset oracle-debug --runs 2'
+)
+expected_order=$(printf '%s\n' "${canonical_names[@]}" | jq -Rsc 'split("\n")[:-1]')
 jq -e \
 	--arg candidate "$candidate_sha" \
 	--arg tree "$candidate_tree" \
 	--arg run "$canonical_run_id" \
-	'.candidate_sha == $candidate
+	--argjson order "$expected_order" \
+	'.schema_version == 1
+	and .candidate_sha == $candidate
 	and .candidate_tree == $tree
 	and .workflow_run_id == $run
+	and .workflow_job_id == "canonical-native"
 	and .runner == {os: "ubuntu-24.04", architecture: "x86_64"}
 	and .tools == {rust: "1.97.0", clang: "22.1.8", cmake: "4.3.3", ninja: "1.13.2"}
+	and .presets == ["oracle-debug", "oracle-release"]
 	and .evidence_tier == "D1"
-	and (.command_exits | length > 0 and all(.exit_code == 0))' "$canonical_file" >/dev/null ||
+	and .command_order == $order
+	and .command_exits == ($order | map({name: ., exit_code: 0}))
+	and .compile_command_digests == "compile-commands.sha256"
+	and .log_digests == "logs.sha256"' "$canonical_file" >/dev/null ||
 	fail "canonical D1 identity differs"
 
 canonical_directory=$(dirname -- "$canonical_relative")
-canonical_digests=$(jq -er '.log_digests' "$canonical_file")
-digest_list=$(require_relative_regular_file "$canonical_directory/$canonical_digests" "canonical log digest list")
-while read -r expected_digest relative_log; do
-	[[ "$expected_digest" =~ ^[0-9a-f]{64}$ && -n "$relative_log" ]] || fail "canonical log digest record is malformed"
-	canonical_log=$(require_relative_regular_file "$canonical_directory/$relative_log" "canonical log")
-	[[ "$(hash_file "$canonical_log")" == "$expected_digest" ]] || fail "canonical retained-log digest mismatch"
-done <"$digest_list"
+commands_json=$(require_relative_regular_file "$canonical_directory/commands.json" "canonical commands")
+commands_tsv=$(require_relative_regular_file "$canonical_directory/command-exits.tsv" "canonical command exits")
+expected_tsv=$(for index in "${!canonical_names[@]}"; do
+	printf '%s\t%s\t0\n' "${canonical_names[$index]}" "${canonical_commands[$index]}"
+done)
+[[ "$(cat "$commands_tsv")" == "$expected_tsv" ]] || fail "canonical command argv or order differs"
+expected_records=$(printf '%s\n' "$expected_tsv" | jq -Rsc 'split("\n")[:-1] | map(split("\t") | {name: .[0], command: .[1], exit_code: 0})')
+[[ "$(jq -cS . "$commands_json")" == "$(jq -cS . <<<"$expected_records")" ]] || fail "canonical command records differ"
+
+validate_canonical_digest_inventory() {
+	local list_name=$1
+	shift
+	local digest_list expected_digest relative_file extra retained_file
+	digest_list=$(require_relative_regular_file "$canonical_directory/$list_name" "canonical digest list")
+	local actual_files=()
+	while read -r expected_digest relative_file extra || [[ -n "$expected_digest$relative_file$extra" ]]; do
+		[[ "$expected_digest" =~ ^[0-9a-f]{64}$ && -n "$relative_file" && -z "$extra" ]] || fail "canonical digest record is malformed"
+		actual_files+=("$relative_file")
+		retained_file=$(require_relative_regular_file "$canonical_directory/$relative_file" "canonical retained file")
+		[[ -s "$retained_file" ]] || fail "canonical retained file is empty"
+		[[ "$(hash_file "$retained_file")" == "$expected_digest" ]] || fail "canonical retained-file digest mismatch"
+	done <"$digest_list"
+	[[ ${#actual_files[@]} -eq $# ]] || fail "canonical digest inventory count differs"
+	[[ "$(printf '%s\n' "${actual_files[@]}")" == "$(printf '%s\n' "$@")" ]] || fail "canonical digest inventory differs"
+}
+
+expected_logs=()
+while IFS= read -r label; do expected_logs+=("logs/$label.log"); done < <(
+	printf '%s\n' "${canonical_names[@]}" install-rust install-llvm install-build-tools tool-identities | LC_ALL=C sort
+)
+validate_canonical_digest_inventory logs.sha256 "${expected_logs[@]}"
+validate_canonical_digest_inventory compile-commands.sha256 compile-commands-oracle-debug.json compile-commands-oracle-release.json
+for preset in oracle-debug oracle-release; do
+	compile_file=$(require_relative_regular_file "$canonical_directory/compile-commands-$preset.json" "canonical compile commands")
+	jq -e '
+	  (map(.file) == (["collision_probe", "math_probe", "protocol_bits", "rigid_world"] | map("<repo>/tools/reference/src/" + . + ".cpp")))
+	  and all(.[]; (.command | type == "string") and (.command | length > 0)
+	    and (. as $record | .command | contains($record.file)))' "$compile_file" >/dev/null ||
+		fail "canonical normalized compile records differ"
+done
 
 printf 'phase13-1 gap evidence valid: %s\n' "$candidate_sha"

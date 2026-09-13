@@ -39,7 +39,7 @@ fn run_producer_initial_view(
 
 fn validator_output_for_initial_view(
     status: &str,
-    conclusion: Value,
+    conclusion: &Value,
 ) -> TestResult<std::process::Output> {
     let fixture = ProducerFixture::new(true, "success")?;
     let producer_output = fixture.run()?;
@@ -121,7 +121,7 @@ fn validator_accepts_null_or_empty_conclusion_for_noncompleted_initial_view() ->
 
     // Act / Assert
     for (status, conclusion) in cases {
-        let output = validator_output_for_initial_view(status, conclusion)?;
+        let output = validator_output_for_initial_view(status, &conclusion)?;
         assert!(
             output.status.success(),
             "validator rejected {status}: {}",
@@ -142,7 +142,7 @@ fn validator_rejects_nonempty_conclusion_for_noncompleted_initial_view() -> Test
 
     // Act / Assert
     for (status, conclusion) in cases {
-        let output = validator_output_for_initial_view(status, conclusion)?;
+        let output = validator_output_for_initial_view(status, &conclusion)?;
         assert!(!output.status.success());
     }
     assert_script_has_narrow_conclusion_contract("scripts/phase13-1-validate-gap-evidence.sh")
@@ -155,10 +155,10 @@ fn validator_rejects_null_or_empty_conclusion_for_completed_initial_view() -> Te
 
     // Act / Assert
     for conclusion in rejected {
-        let output = validator_output_for_initial_view("completed", conclusion)?;
+        let output = validator_output_for_initial_view("completed", &conclusion)?;
         assert!(!output.status.success());
     }
-    let success = validator_output_for_initial_view("completed", json!("success"))?;
+    let success = validator_output_for_initial_view("completed", &json!("success"))?;
     assert!(success.status.success());
     assert_script_has_narrow_conclusion_contract("scripts/phase13-1-validate-gap-evidence.sh")
 }

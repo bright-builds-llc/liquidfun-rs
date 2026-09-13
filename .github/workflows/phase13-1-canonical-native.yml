@@ -68,10 +68,11 @@ jobs:
         run: |
           temporary_log="$RUNNER_TEMP/install-rust.log"
           set +e
-          {
+          (
+            set -e -o pipefail
             rustup toolchain install 1.97.0 --profile minimal
             rustup override set 1.97.0
-          } 2>&1 | tee "$temporary_log"
+          ) 2>&1 | tee "$temporary_log"
           exit_code=${PIPESTATUS[0]}
           set -e
           tail -c 1048576 "$temporary_log" > "$FAILURE_DIRECTORY/logs/install-rust.log"
@@ -81,13 +82,14 @@ jobs:
         run: |
           temporary_log="$RUNNER_TEMP/install-llvm.log"
           set +e
-          {
-            curl --fail --location --silent --show-error --output "$RUNNER_TEMP/llvm.sh" https://apt.llvm.org/llvm.sh
+          (
+            set -e -o pipefail
+            curl --fail --location --silent --show-error --output "$RUNNER_TEMP/llvm.sh" https://raw.githubusercontent.com/opencollab/llvm-jenkins.debian.net/eeed6742908255f0eeb12bb8e314366eff3c0a21/llvm.sh
             echo "9474ecd78b52aba6e923976b1e9773f5613027cc7e237b9956986cb536e02a36  $RUNNER_TEMP/llvm.sh" | sha256sum --check
             chmod 755 "$RUNNER_TEMP/llvm.sh"
             sudo "$RUNNER_TEMP/llvm.sh" 22
             echo "/usr/lib/llvm-22/bin" >> "$GITHUB_PATH"
-          } 2>&1 | tee "$temporary_log"
+          ) 2>&1 | tee "$temporary_log"
           exit_code=${PIPESTATUS[0]}
           set -e
           tail -c 1048576 "$temporary_log" > "$FAILURE_DIRECTORY/logs/install-llvm.log"
@@ -97,7 +99,8 @@ jobs:
         run: |
           temporary_log="$RUNNER_TEMP/install-build-tools.log"
           set +e
-          {
+          (
+            set -e -o pipefail
             curl --fail --location --silent --show-error --output "$RUNNER_TEMP/cmake.tar.gz" https://github.com/Kitware/CMake/releases/download/v4.3.3/cmake-4.3.3-linux-x86_64.tar.gz
             echo "927b2368a946c37269c3a66225ab00544e756459cdd0b5d0da438694fb9ff802  $RUNNER_TEMP/cmake.tar.gz" | sha256sum --check
             tar -xzf "$RUNNER_TEMP/cmake.tar.gz" -C "$RUNNER_TEMP"
@@ -109,7 +112,7 @@ jobs:
               echo "$RUNNER_TEMP/cmake-4.3.3-linux-x86_64/bin"
               echo "$RUNNER_TEMP/ninja-1.13.2"
             } >> "$GITHUB_PATH"
-          } 2>&1 | tee "$temporary_log"
+          ) 2>&1 | tee "$temporary_log"
           exit_code=${PIPESTATUS[0]}
           set -e
           tail -c 1048576 "$temporary_log" > "$FAILURE_DIRECTORY/logs/install-build-tools.log"
@@ -119,14 +122,15 @@ jobs:
         run: |
           temporary_log="$RUNNER_TEMP/tool-identities.log"
           set +e
-          {
+          (
+            set -e -o pipefail
             test "$(uname -s)" = "Linux"
             test "$(uname -m)" = "x86_64"
             rustc --version | grep --fixed-strings "rustc 1.97.0"
             cmake --version | grep --fixed-strings "cmake version 4.3.3"
             test "$(ninja --version)" = "1.13.2"
             clang++-22 --version | grep --extended-regexp 'clang version 22\.1\.8'
-          } 2>&1 | tee "$temporary_log"
+          ) 2>&1 | tee "$temporary_log"
           exit_code=${PIPESTATUS[0]}
           set -e
           tail -c 1048576 "$temporary_log" > "$FAILURE_DIRECTORY/logs/tool-identities.log"

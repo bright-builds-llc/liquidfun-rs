@@ -90,18 +90,10 @@ candidate=$2
 tree=$3
 run_id=$4
 mkdir -p "$output/canonical/logs"
-printf 'canonical fixture\n' > "$output/canonical/logs/native.log"
-if command -v sha256sum >/dev/null 2>&1; then
-  digest=$(sha256sum "$output/canonical/logs/native.log" | awk '{{print $1}}')
-else
-  digest=$(shasum -a 256 "$output/canonical/logs/native.log" | awk '{{print $1}}')
-fi
-printf '%s  logs/native.log\n' "$digest" > "$output/canonical/logs.sha256"
-jq -n --arg candidate "$candidate" --arg tree "$tree" --arg run "$run_id" \
-  --arg tier "{}" '{{candidate_sha:$candidate,candidate_tree:$tree,workflow_run_id:$run,
-  runner:{{os:"ubuntu-24.04",architecture:"x86_64"}},
-  tools:{{rust:"1.97.0",clang:"22.1.8",cmake:"4.3.3",ninja:"1.13.2"}},
-  evidence_tier:$tier,command_exits:[{{name:"native",exit_code:0}}],log_digests:"logs.sha256"}}' \
+cp -R "${{PHASE13_1_GAP_FAKE_BUNDLE:?}}/canonical/." "$output/canonical/"
+jq --arg candidate "$candidate" --arg tree "$tree" --arg run "$run_id" \
+  --arg tier "{}" '.candidate_sha=$candidate | .candidate_tree=$tree | .workflow_run_id=$run | .evidence_tier=$tier' \
+  "${{PHASE13_1_GAP_FAKE_BUNDLE}}/canonical/identity.json" \
   > "$output/canonical/identity.json"
 {}
 "#,
@@ -191,6 +183,11 @@ esac
 "#,
         )?;
         let tree = run_git(&repository, &["rev-parse", "HEAD^{tree}"])?;
+        crate::evidence_validator::canonical::write_bundle(
+            &root.join("bundle"),
+            &candidate,
+            &tree,
+        )?;
         let manifest_json = json!({
             "schema":"phase13-1-gap-verification-manifest-v1",
             "test_fixture":true,
@@ -239,6 +236,7 @@ esac
             .env("PHASE13_1_GAP_REPOSITORY_ROOT", &self.repository)
             .env("PHASE13_1_GAP_FAKE_GH_JOURNAL", &self.gh_journal)
             .env("PHASE13_1_GAP_FAKE_GH_STATE", &self.gh_state)
+            .env("PHASE13_1_GAP_FAKE_BUNDLE", self.root.join("bundle"))
             .env("PHASE13_1_GAP_FAKE_COMMAND_JOURNAL", &self.command_journal);
         for (key, value) in environment {
             command.env(key, value);
