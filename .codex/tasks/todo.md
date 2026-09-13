@@ -141,8 +141,10 @@ Completion review: The private testbed now uses the reviewed `eframe`/`egui`/`ti
 
 - [x] Reproduce and diagnose supervisor startup failures at the producer build boundary.
 - [x] Apply focused repairs with regression coverage while preserving production limits.
-- [ ] Pass ordered Rust and repository gates; publish a checked clean candidate.
-- [ ] Run one complete coherent 72-command producer attempt and independently validate its evidence.
-- [ ] Record durable evidence and summary, then hand off formal verification to the orchestrator.
+- [x] Pass ordered Rust and repository gates; publish a checked clean candidate.
+- [x] Run one complete coherent 72-command producer attempt and independently validate its evidence.
+- [x] Record durable evidence and summary, then hand off formal verification to the orchestrator.
 
 Authority: AGENTS.md standing autonomous iteration authorization dated 2026-09-13. Preserve every failed attempt separately; Phase 15 remains deferred.
+
+Completion review: Candidate `d3e70780a984ba25096f288d7c603ffa8153a748` passed all 72 producer commands and independent clean-checkout validation, with canonical run `34775554238` and artifact `10323945329`. Durable evidence and the Plan 21 summary are ready for the orchestrator's formal review and lifecycle checks; phase completion and Phase 15 acceptance are not claimed here.

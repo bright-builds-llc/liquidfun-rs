@@ -1,0 +1,1524 @@
+{
+  "candidate_sha": "d3e70780a984ba25096f288d7c603ffa8153a748",
+  "candidate_tree": "ae3d1f7930b2c26bd029749789990cc03d2b8cf1",
+  "canonical_identity": {
+    "path": "canonical/identity.json",
+    "sha256": "73962264d87aa7dc4082579b448b398164b18f09831169eb905c570b7a4c352d"
+  },
+  "canonical_run_id": "34775554238",
+  "checker": {
+    "exceptions": 0,
+    "findings": 0
+  },
+  "commands": [
+    {
+      "argv": [
+        "cargo",
+        "fmt",
+        "--all"
+      ],
+      "environment": {},
+      "evidence_class": "rust-gate",
+      "exit_code": 0,
+      "id": "rust-fmt",
+      "stderr_log": "logs/001-rust-fmt.stderr.log",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_log": "logs/001-rust-fmt.stdout.log",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "argv": [
+        "cargo",
+        "clippy",
+        "--all-targets",
+        "--all-features",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "1",
+        "CARGO_TARGET_DIR": "/Users/peterryszkiewicz/Repos/liquidfun-rs/target/phase13-1-gap-verification/d3e70780a984ba25096f288d7c603ffa8153a748/cargo-target"
+      },
+      "evidence_class": "rust-gate",
+      "exit_code": 0,
+      "id": "rust-clippy",
+      "stderr_log": "logs/002-rust-clippy.stderr.log",
+      "stderr_sha256": "3af058c3df3a3890c47e3aa45fe69dad15bcce90c1623f8d7a44c34a5df949eb",
+      "stdout_log": "logs/002-rust-clippy.stdout.log",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "argv": [
+        "cargo",
+        "build",
+        "--all-targets",
+        "--all-features"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "1",
+        "CARGO_TARGET_DIR": "/Users/peterryszkiewicz/Repos/liquidfun-rs/target/phase13-1-gap-verification/d3e70780a984ba25096f288d7c603ffa8153a748/cargo-target"
+      },
+      "evidence_class": "rust-gate",
+      "exit_code": 0,
+      "id": "rust-build",
+      "stderr_log": "logs/003-rust-build.stderr.log",
+      "stderr_sha256": "2439cc282e6deb7a8254132233c233c1b19299f7944cb09b3165ceedb8b99008",
+      "stdout_log": "logs/003-rust-build.stdout.log",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "argv": [
+        "cargo",
+        "test",
+        "--all-features"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "1",
+        "CARGO_TARGET_DIR": "/Users/peterryszkiewicz/Repos/liquidfun-rs/target/phase13-1-gap-verification/d3e70780a984ba25096f288d7c603ffa8153a748/cargo-target"
+      },
+      "evidence_class": "rust-gate",
+      "exit_code": 0,
+      "id": "rust-test",
+      "stderr_log": "logs/004-rust-test.stderr.log",
+      "stderr_sha256": "e60a26174b34795943329b3c439c49478d1d709ac678e74b458ec8ce2f68290e",
+      "stdout_log": "logs/004-rust-test.stdout.log",
+      "stdout_sha256": "ccbbe5f33e40f907470897a964f04a22aed4b59833a68b5967c81fe42644e96f"
+    },
+    {
+      "argv": [
+        "bun",
+        "scripts/bright-builds-check.ts",
+        "all"
+      ],
+      "environment": {},
+      "evidence_class": "structural",
+      "exit_code": 0,
+      "id": "managed-checker",
+      "stderr_log": "logs/005-managed-checker.stderr.log",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_log": "logs/005-managed-checker.stdout.log",
+      "stdout_sha256": "3cf01f9ba748e139a321ba2b8ddf0cd303899a3524ab310e0e213857d3ebe900"
+    },
+    {
+      "argv": [
+        "cargo",
+        "test",
+        "-p",
+        "liquidfun-test-protocol",
+        "--all-features"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "1",
+        "CARGO_TARGET_DIR": "/Users/peterryszkiewicz/Repos/liquidfun-rs/target/phase13-1-gap-verification/d3e70780a984ba25096f288d7c603ffa8153a748/cargo-target"
+      },
+      "evidence_class": "package-contract",
+      "exit_code": 0,
+      "id": "protocol-package",
+      "stderr_log": "logs/006-protocol-package.stderr.log",
+      "stderr_sha256": "d3a085fa47b61012a7da2d486723cdbd0bd144883ea7a34e72d91a05a186375a",
+      "stdout_log": "logs/006-protocol-package.stdout.log",
+      "stdout_sha256": "58e53939a0a4459ec2d5ec5e4cba268e2837baf76a0031f08fde033be1abc000"
+    },
+    {
+      "argv": [
+        "cargo",
+        "test",
+        "-p",
+        "liquidfun-differential",
+        "--all-features"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "1",
+        "CARGO_TARGET_DIR": "/Users/peterryszkiewicz/Repos/liquidfun-rs/target/phase13-1-gap-verification/d3e70780a984ba25096f288d7c603ffa8153a748/cargo-target"
+      },
+      "evidence_class": "package-contract",
+      "exit_code": 0,
+      "id": "differential-package",
+      "stderr_log": "logs/007-differential-package.stderr.log",
+      "stderr_sha256": "46445ff201c02604a841967871fef9df575e32f31e238a7152b2a4bab0e3eaa4",
+      "stdout_log": "logs/007-differential-package.stdout.log",
+      "stdout_sha256": "08b0d08eb791228324d50e224e836df4c0950cb3f51d251e89a45ef24a63af73"
+    },
+    {
+      "argv": [
+        "cargo",
+        "test",
+        "-p",
+        "xtask",
+        "--test",
+        "catalog_cli",
+        "--all-features"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "1",
+        "CARGO_TARGET_DIR": "/Users/peterryszkiewicz/Repos/liquidfun-rs/target/phase13-1-gap-verification/d3e70780a984ba25096f288d7c603ffa8153a748/cargo-target"
+      },
+      "evidence_class": "xtask-integration",
+      "exit_code": 0,
+      "id": "xtask-catalog-cli",
+      "stderr_log": "logs/008-xtask-catalog-cli.stderr.log",
+      "stderr_sha256": "dccc97f1d34b70705da10e1f9463f7f8cd5141bbcbffc1bfd766d137802e3b36",
+      "stdout_log": "logs/008-xtask-catalog-cli.stdout.log",
+      "stdout_sha256": "fe15735200b192c9503ca308ea18603f3c36461706586f9b0f2239248fd7c54a"
+    },
+    {
+      "argv": [
+        "cargo",
+        "test",
+        "-p",
+        "xtask",
+        "--test",
+        "corpus_closure",
+        "--all-features"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "1",
+        "CARGO_TARGET_DIR": "/Users/peterryszkiewicz/Repos/liquidfun-rs/target/phase13-1-gap-verification/d3e70780a984ba25096f288d7c603ffa8153a748/cargo-target"
+      },
+      "evidence_class": "xtask-integration",
+      "exit_code": 0,
+      "id": "xtask-corpus-closure",
+      "stderr_log": "logs/009-xtask-corpus-closure.stderr.log",
+      "stderr_sha256": "91c8f85b87c0f09346caeebd77b40e1b1b414c620adeab048ff2ccb0b33802b8",
+      "stdout_log": "logs/009-xtask-corpus-closure.stdout.log",
+      "stdout_sha256": "56e7c2fb1a2ac117d0e54cd2d0f6ed2a7e81dadf349f5c5e9f69333f3bf45f13"
+    },
+    {
+      "argv": [
+        "cargo",
+        "test",
+        "-p",
+        "xtask",
+        "--test",
+        "corpus_discovery",
+        "--all-features"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "1",
+        "CARGO_TARGET_DIR": "/Users/peterryszkiewicz/Repos/liquidfun-rs/target/phase13-1-gap-verification/d3e70780a984ba25096f288d7c603ffa8153a748/cargo-target"
+      },
+      "evidence_class": "xtask-integration",
+      "exit_code": 0,
+      "id": "xtask-corpus-discovery",
+      "stderr_log": "logs/010-xtask-corpus-discovery.stderr.log",
+      "stderr_sha256": "ee2b7816ed3950bbab59ac93a96b4b3803937c2b1dd5e9276e5cd3137cdb8141",
+      "stdout_log": "logs/010-xtask-corpus-discovery.stdout.log",
+      "stdout_sha256": "a1bace233dbe0bd3ef0f8c0c5e1ac8c13452193a28bee400021fe2aac3d98ef3"
+    },
+    {
+      "argv": [
+        "cargo",
+        "test",
+        "-p",
+        "xtask",
+        "--test",
+        "corpus_model",
+        "--all-features"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "1",
+        "CARGO_TARGET_DIR": "/Users/peterryszkiewicz/Repos/liquidfun-rs/target/phase13-1-gap-verification/d3e70780a984ba25096f288d7c603ffa8153a748/cargo-target"
+      },
+      "evidence_class": "xtask-integration",
+      "exit_code": 0,
+      "id": "xtask-corpus-model",
+      "stderr_log": "logs/011-xtask-corpus-model.stderr.log",
+      "stderr_sha256": "eff10854aa0e99163997584ac66207f60eefa99ae269b5c5016b43b4b07832c6",
+      "stdout_log": "logs/011-xtask-corpus-model.stdout.log",
+      "stdout_sha256": "6af11440de995e4f9e35b7e11644f36e1d48f23952f7b574abd1a57ca2797523"
+    },
+    {
+      "argv": [
+        "cargo",
+        "test",
+        "-p",
+        "xtask",
+        "--test",
+        "coverage_workflow",
+        "--all-features"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "1",
+        "CARGO_TARGET_DIR": "/Users/peterryszkiewicz/Repos/liquidfun-rs/target/phase13-1-gap-verification/d3e70780a984ba25096f288d7c603ffa8153a748/cargo-target"
+      },
+      "evidence_class": "xtask-integration",
+      "exit_code": 0,
+      "id": "xtask-coverage-workflow",
+      "stderr_log": "logs/012-xtask-coverage-workflow.stderr.log",
+      "stderr_sha256": "e9fc2d0647db34f77ae8fda5dea1232b2a9bab97e3189287c31e56c2fd3c8802",
+      "stdout_log": "logs/012-xtask-coverage-workflow.stdout.log",
+      "stdout_sha256": "9b90ed7e4d19a5d81399f55464bce082443ffb6decae90e81691f1e266540945"
+    },
+    {
+      "argv": [
+        "cargo",
+        "test",
+        "-p",
+        "xtask",
+        "--test",
+        "differential_cli",
+        "--all-features"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "1",
+        "CARGO_TARGET_DIR": "/Users/peterryszkiewicz/Repos/liquidfun-rs/target/phase13-1-gap-verification/d3e70780a984ba25096f288d7c603ffa8153a748/cargo-target"
+      },
+      "evidence_class": "xtask-integration",
+      "exit_code": 0,
+      "id": "xtask-differential-cli",
+      "stderr_log": "logs/013-xtask-differential-cli.stderr.log",
+      "stderr_sha256": "bca7b6fc22939da11d10c49d8adf1765c62845bb317e49b996708043b4844d29",
+      "stdout_log": "logs/013-xtask-differential-cli.stdout.log",
+      "stdout_sha256": "30a97a919d2dffceaa1c84fb5d397812859eda59bf34c799459821d48293bec5"
+    },
+    {
+      "argv": [
+        "cargo",
+        "test",
+        "-p",
+        "xtask",
+        "--test",
+        "docs_contract",
+        "--all-features"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "1",
+        "CARGO_TARGET_DIR": "/Users/peterryszkiewicz/Repos/liquidfun-rs/target/phase13-1-gap-verification/d3e70780a984ba25096f288d7c603ffa8153a748/cargo-target"
+      },
+      "evidence_class": "xtask-integration",
+      "exit_code": 0,
+      "id": "xtask-docs-contract",
+      "stderr_log": "logs/014-xtask-docs-contract.stderr.log",
+      "stderr_sha256": "2611f3df515adc0e3c93fb981e5280aea2f8937b1719e8f101635a051f7a37bd",
+      "stdout_log": "logs/014-xtask-docs-contract.stdout.log",
+      "stdout_sha256": "d08a5e960e83060360b6df399d761d5771317ba5b4a7db787f1d4a9e085fb3f6"
+    },
+    {
+      "argv": [
+        "cargo",
+        "test",
+        "-p",
+        "xtask",
+        "--test",
+        "inventory_cli",
+        "--all-features"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "1",
+        "CARGO_TARGET_DIR": "/Users/peterryszkiewicz/Repos/liquidfun-rs/target/phase13-1-gap-verification/d3e70780a984ba25096f288d7c603ffa8153a748/cargo-target"
+      },
+      "evidence_class": "xtask-integration",
+      "exit_code": 0,
+      "id": "xtask-inventory-cli",
+      "stderr_log": "logs/015-xtask-inventory-cli.stderr.log",
+      "stderr_sha256": "6ac06e2154790b0ffc9100d73fb0d66ee4338a676fd0b701d15438ede4e04b88",
+      "stdout_log": "logs/015-xtask-inventory-cli.stdout.log",
+      "stdout_sha256": "53da920629db34beb201423b3408d7a36400cfacac1a61548f0e45c13db3941e"
+    },
+    {
+      "argv": [
+        "cargo",
+        "test",
+        "-p",
+        "xtask",
+        "--test",
+        "nightly_toolchain",
+        "--all-features"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "1",
+        "CARGO_TARGET_DIR": "/Users/peterryszkiewicz/Repos/liquidfun-rs/target/phase13-1-gap-verification/d3e70780a984ba25096f288d7c603ffa8153a748/cargo-target"
+      },
+      "evidence_class": "xtask-integration",
+      "exit_code": 0,
+      "id": "xtask-nightly-toolchain",
+      "stderr_log": "logs/016-xtask-nightly-toolchain.stderr.log",
+      "stderr_sha256": "ad7f4b8f255832d13f932c08e9d7b4a5af4cc5190621c119eef31d8f1b13c7ce",
+      "stdout_log": "logs/016-xtask-nightly-toolchain.stdout.log",
+      "stdout_sha256": "557ce1e9b167e24c2b88c433dac4909f9978d6055c2f84c3c8d7c2a7506070fc"
+    },
+    {
+      "argv": [
+        "cargo",
+        "test",
+        "-p",
+        "xtask",
+        "--test",
+        "package_cli",
+        "--all-features"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "1",
+        "CARGO_TARGET_DIR": "/Users/peterryszkiewicz/Repos/liquidfun-rs/target/phase13-1-gap-verification/d3e70780a984ba25096f288d7c603ffa8153a748/cargo-target"
+      },
+      "evidence_class": "xtask-integration",
+      "exit_code": 0,
+      "id": "xtask-package-cli",
+      "stderr_log": "logs/017-xtask-package-cli.stderr.log",
+      "stderr_sha256": "b2b74bee642077d5b24059074d5e787160fc367d6c75f8fdc70ea7ad1a470a81",
+      "stdout_log": "logs/017-xtask-package-cli.stdout.log",
+      "stdout_sha256": "32706782ebafff1441064a305baa62c50d08d118da61d50009b8f7a4fb9d2d42"
+    },
+    {
+      "argv": [
+        "cargo",
+        "test",
+        "-p",
+        "xtask",
+        "--test",
+        "performance_cli",
+        "--all-features"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "1",
+        "CARGO_TARGET_DIR": "/Users/peterryszkiewicz/Repos/liquidfun-rs/target/phase13-1-gap-verification/d3e70780a984ba25096f288d7c603ffa8153a748/cargo-target"
+      },
+      "evidence_class": "xtask-integration",
+      "exit_code": 0,
+      "id": "xtask-performance-cli",
+      "stderr_log": "logs/018-xtask-performance-cli.stderr.log",
+      "stderr_sha256": "64da56f2eceade6569e14170f3a95fb44d551483b30ba091828750d571f755c9",
+      "stdout_log": "logs/018-xtask-performance-cli.stdout.log",
+      "stdout_sha256": "eea99916661e75c631c513dc415909b115adb18538c99b00bfdc9e9b9af54553"
+    },
+    {
+      "argv": [
+        "cargo",
+        "test",
+        "-p",
+        "xtask",
+        "--test",
+        "performance_workflow",
+        "--all-features"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "1",
+        "CARGO_TARGET_DIR": "/Users/peterryszkiewicz/Repos/liquidfun-rs/target/phase13-1-gap-verification/d3e70780a984ba25096f288d7c603ffa8153a748/cargo-target"
+      },
+      "evidence_class": "xtask-integration",
+      "exit_code": 0,
+      "id": "xtask-performance-workflow",
+      "stderr_log": "logs/019-xtask-performance-workflow.stderr.log",
+      "stderr_sha256": "cdeae6c694a8fee47ae34b21b5c140c68bfa67dd4dfde00d16594552fe8689d0",
+      "stdout_log": "logs/019-xtask-performance-workflow.stdout.log",
+      "stdout_sha256": "4b7d3cee2646704b1588682e4faf28785936d713126ed9114dfd0e55db34114b"
+    },
+    {
+      "argv": [
+        "cargo",
+        "test",
+        "-p",
+        "xtask",
+        "--test",
+        "phase10_evidence_cli",
+        "--all-features"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "1",
+        "CARGO_TARGET_DIR": "/Users/peterryszkiewicz/Repos/liquidfun-rs/target/phase13-1-gap-verification/d3e70780a984ba25096f288d7c603ffa8153a748/cargo-target"
+      },
+      "evidence_class": "xtask-integration",
+      "exit_code": 0,
+      "id": "xtask-phase10-evidence-cli",
+      "stderr_log": "logs/020-xtask-phase10-evidence-cli.stderr.log",
+      "stderr_sha256": "2e4c491a3dfbc39eb5f07fc2b017b4b55c04f7af784b832f9b39a4193069845d",
+      "stdout_log": "logs/020-xtask-phase10-evidence-cli.stdout.log",
+      "stdout_sha256": "81bde182e4343093c5d99f713ed9f29e81bcec124c254480e09932a2b43d9978"
+    },
+    {
+      "argv": [
+        "cargo",
+        "test",
+        "-p",
+        "xtask",
+        "--test",
+        "phase11_evidence_cli",
+        "--all-features"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "1",
+        "CARGO_TARGET_DIR": "/Users/peterryszkiewicz/Repos/liquidfun-rs/target/phase13-1-gap-verification/d3e70780a984ba25096f288d7c603ffa8153a748/cargo-target"
+      },
+      "evidence_class": "xtask-integration",
+      "exit_code": 0,
+      "id": "xtask-phase11-evidence-cli",
+      "stderr_log": "logs/021-xtask-phase11-evidence-cli.stderr.log",
+      "stderr_sha256": "dca6dbd01eb06dd8d4c351474ed81df3e02297dff2fc0fcfaff2eda738d55880",
+      "stdout_log": "logs/021-xtask-phase11-evidence-cli.stdout.log",
+      "stdout_sha256": "ae3accb09cf693d54107d499787b73b9af1331a374f2dff0f4436f83d3ee0565"
+    },
+    {
+      "argv": [
+        "cargo",
+        "test",
+        "-p",
+        "xtask",
+        "--test",
+        "phase13_1_canonical_native_workflow",
+        "--all-features"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "1",
+        "CARGO_TARGET_DIR": "/Users/peterryszkiewicz/Repos/liquidfun-rs/target/phase13-1-gap-verification/d3e70780a984ba25096f288d7c603ffa8153a748/cargo-target"
+      },
+      "evidence_class": "xtask-integration",
+      "exit_code": 0,
+      "id": "xtask-phase13-1-canonical-native-workflow",
+      "stderr_log": "logs/022-xtask-phase13-1-canonical-native-workflow.stderr.log",
+      "stderr_sha256": "70d44731b410b9d3b9c9b12143f420b375f4c5d561e1e3c1bb22fa015eb66ea9",
+      "stdout_log": "logs/022-xtask-phase13-1-canonical-native-workflow.stdout.log",
+      "stdout_sha256": "af2bd9c23e88c68f2f16dc9a15fc76dd2ca775fa661edb631eed9d673611412a"
+    },
+    {
+      "argv": [
+        "cargo",
+        "test",
+        "-p",
+        "xtask",
+        "--test",
+        "phase13_1_gap_verification",
+        "--all-features"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "1",
+        "CARGO_TARGET_DIR": "/Users/peterryszkiewicz/Repos/liquidfun-rs/target/phase13-1-gap-verification/d3e70780a984ba25096f288d7c603ffa8153a748/cargo-target"
+      },
+      "evidence_class": "xtask-integration",
+      "exit_code": 0,
+      "id": "xtask-phase13-1-gap-verification",
+      "stderr_log": "logs/023-xtask-phase13-1-gap-verification.stderr.log",
+      "stderr_sha256": "baf510a5b7789aa309efcc1fd8e7cb450681fc5cf0cbf480565ca0f9d92d4ba7",
+      "stdout_log": "logs/023-xtask-phase13-1-gap-verification.stdout.log",
+      "stdout_sha256": "57ea8dec039d2b8a897a374c7f97cf19638a5c3cf345658987de59dcb1a6da25"
+    },
+    {
+      "argv": [
+        "cargo",
+        "test",
+        "-p",
+        "xtask",
+        "--test",
+        "phase13_evidence_contract",
+        "--all-features"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "1",
+        "CARGO_TARGET_DIR": "/Users/peterryszkiewicz/Repos/liquidfun-rs/target/phase13-1-gap-verification/d3e70780a984ba25096f288d7c603ffa8153a748/cargo-target"
+      },
+      "evidence_class": "xtask-integration",
+      "exit_code": 0,
+      "id": "xtask-phase13-evidence-contract",
+      "stderr_log": "logs/024-xtask-phase13-evidence-contract.stderr.log",
+      "stderr_sha256": "4261caaff7f67296a3549f4d3a03ec2c0f8fb6b0fd008533063ccb2acc0ea4b0",
+      "stdout_log": "logs/024-xtask-phase13-evidence-contract.stdout.log",
+      "stdout_sha256": "2b43cd1813b24b77605f2c1f71b7aa475f51fc3d26d61977cb7b4364c78530b6"
+    },
+    {
+      "argv": [
+        "cargo",
+        "test",
+        "-p",
+        "xtask",
+        "--test",
+        "phase13_promotion_contract",
+        "--all-features"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "1",
+        "CARGO_TARGET_DIR": "/Users/peterryszkiewicz/Repos/liquidfun-rs/target/phase13-1-gap-verification/d3e70780a984ba25096f288d7c603ffa8153a748/cargo-target"
+      },
+      "evidence_class": "xtask-integration",
+      "exit_code": 0,
+      "id": "xtask-phase13-promotion-contract",
+      "stderr_log": "logs/025-xtask-phase13-promotion-contract.stderr.log",
+      "stderr_sha256": "c4831271410920faa22d18d39e925129fb0880f60342ddd579d6e7d183bffd4d",
+      "stdout_log": "logs/025-xtask-phase13-promotion-contract.stdout.log",
+      "stdout_sha256": "1984a40b246dbdd8783a3c81258f5d53489b27c3fb7c8b09fd6c2a9ddce8adb9"
+    },
+    {
+      "argv": [
+        "cargo",
+        "test",
+        "-p",
+        "xtask",
+        "--test",
+        "phase9_evidence_cli",
+        "--all-features"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "1",
+        "CARGO_TARGET_DIR": "/Users/peterryszkiewicz/Repos/liquidfun-rs/target/phase13-1-gap-verification/d3e70780a984ba25096f288d7c603ffa8153a748/cargo-target"
+      },
+      "evidence_class": "xtask-integration",
+      "exit_code": 0,
+      "id": "xtask-phase9-evidence-cli",
+      "stderr_log": "logs/026-xtask-phase9-evidence-cli.stderr.log",
+      "stderr_sha256": "bd19b8547d31f58e71e0c40da99440077dbd08f9d732d77578cfe3341fd7db5d",
+      "stdout_log": "logs/026-xtask-phase9-evidence-cli.stdout.log",
+      "stdout_sha256": "2ccf97873d64b425c12614d8b8edfcb29e58198f60fe795dee0d63ea13dfdf1d"
+    },
+    {
+      "argv": [
+        "cargo",
+        "test",
+        "-p",
+        "xtask",
+        "--test",
+        "phase9_witness_provenance",
+        "--all-features"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "1",
+        "CARGO_TARGET_DIR": "/Users/peterryszkiewicz/Repos/liquidfun-rs/target/phase13-1-gap-verification/d3e70780a984ba25096f288d7c603ffa8153a748/cargo-target"
+      },
+      "evidence_class": "xtask-integration",
+      "exit_code": 0,
+      "id": "xtask-phase9-witness-provenance",
+      "stderr_log": "logs/027-xtask-phase9-witness-provenance.stderr.log",
+      "stderr_sha256": "693b7fc6596c20197939c941e85ae0351505f07473ee02c85c85a6e1f8bc931b",
+      "stdout_log": "logs/027-xtask-phase9-witness-provenance.stdout.log",
+      "stdout_sha256": "2c9479f9787975ec4fde9c4cabdb0f8ed299e101134a0e6126a62743c133b367"
+    },
+    {
+      "argv": [
+        "cargo",
+        "test",
+        "-p",
+        "xtask",
+        "--test",
+        "platform_workflow",
+        "--all-features"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "1",
+        "CARGO_TARGET_DIR": "/Users/peterryszkiewicz/Repos/liquidfun-rs/target/phase13-1-gap-verification/d3e70780a984ba25096f288d7c603ffa8153a748/cargo-target"
+      },
+      "evidence_class": "xtask-integration",
+      "exit_code": 0,
+      "id": "xtask-platform-workflow",
+      "stderr_log": "logs/028-xtask-platform-workflow.stderr.log",
+      "stderr_sha256": "d94048cd11b214a11ecb10091aa4f1c208a612c8ea449c19056fa2cdc08a97c4",
+      "stdout_log": "logs/028-xtask-platform-workflow.stdout.log",
+      "stdout_sha256": "16ffd40b2a3056863c4d8beb8393e2a24b428f566689785050fe6e59dc14e41d"
+    },
+    {
+      "argv": [
+        "cargo",
+        "test",
+        "-p",
+        "xtask",
+        "--test",
+        "provenance_cli",
+        "--all-features"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "1",
+        "CARGO_TARGET_DIR": "/Users/peterryszkiewicz/Repos/liquidfun-rs/target/phase13-1-gap-verification/d3e70780a984ba25096f288d7c603ffa8153a748/cargo-target"
+      },
+      "evidence_class": "xtask-integration",
+      "exit_code": 0,
+      "id": "xtask-provenance-cli",
+      "stderr_log": "logs/029-xtask-provenance-cli.stderr.log",
+      "stderr_sha256": "437bd983dd36c54bb4a8ca1e095d6ebb7b488310c1901735c6f58339dd75314e",
+      "stdout_log": "logs/029-xtask-provenance-cli.stdout.log",
+      "stdout_sha256": "00b20965af0ebcba6dfc14d8028e8b226c2fbab6c0b68d9c57c55188e66e2360"
+    },
+    {
+      "argv": [
+        "cargo",
+        "test",
+        "-p",
+        "xtask",
+        "--test",
+        "regression_workflow",
+        "--all-features"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "1",
+        "CARGO_TARGET_DIR": "/Users/peterryszkiewicz/Repos/liquidfun-rs/target/phase13-1-gap-verification/d3e70780a984ba25096f288d7c603ffa8153a748/cargo-target"
+      },
+      "evidence_class": "xtask-integration",
+      "exit_code": 0,
+      "id": "xtask-regression-workflow",
+      "stderr_log": "logs/030-xtask-regression-workflow.stderr.log",
+      "stderr_sha256": "1ea235642258f08b5770bfffb168595513a8c5da5756fe24f85762a4076ba71d",
+      "stdout_log": "logs/030-xtask-regression-workflow.stdout.log",
+      "stdout_sha256": "2a485ceff855e3cc94dc1bf2a076f643ac97cd87102e8eb0febe174e21eb4fef"
+    },
+    {
+      "argv": [
+        "cargo",
+        "test",
+        "-p",
+        "xtask",
+        "--test",
+        "release_attestation",
+        "--all-features"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "1",
+        "CARGO_TARGET_DIR": "/Users/peterryszkiewicz/Repos/liquidfun-rs/target/phase13-1-gap-verification/d3e70780a984ba25096f288d7c603ffa8153a748/cargo-target"
+      },
+      "evidence_class": "xtask-integration",
+      "exit_code": 0,
+      "id": "xtask-release-attestation",
+      "stderr_log": "logs/031-xtask-release-attestation.stderr.log",
+      "stderr_sha256": "d251c3c45704d894b9046fce26131f2c8f4e29d02a18ca55d2812ca30af9b41c",
+      "stdout_log": "logs/031-xtask-release-attestation.stdout.log",
+      "stdout_sha256": "04b606eca3812c6095e43b54a9929449351f65685cded692588728e2c82b096c"
+    },
+    {
+      "argv": [
+        "cargo",
+        "test",
+        "-p",
+        "xtask",
+        "--test",
+        "release_cli",
+        "--all-features"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "1",
+        "CARGO_TARGET_DIR": "/Users/peterryszkiewicz/Repos/liquidfun-rs/target/phase13-1-gap-verification/d3e70780a984ba25096f288d7c603ffa8153a748/cargo-target"
+      },
+      "evidence_class": "xtask-integration",
+      "exit_code": 0,
+      "id": "xtask-release-cli",
+      "stderr_log": "logs/032-xtask-release-cli.stderr.log",
+      "stderr_sha256": "f41fe49a39731dd32fc6d0c277da4b1aa0a67cbf101ff3a43709964ee2685c01",
+      "stdout_log": "logs/032-xtask-release-cli.stdout.log",
+      "stdout_sha256": "338eebe400aa257ce687aad31455ca5509d6fb41cee399cc5f4b55574b4c6324"
+    },
+    {
+      "argv": [
+        "cargo",
+        "test",
+        "-p",
+        "xtask",
+        "--test",
+        "safety_evidence_contract",
+        "--all-features"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "1",
+        "CARGO_TARGET_DIR": "/Users/peterryszkiewicz/Repos/liquidfun-rs/target/phase13-1-gap-verification/d3e70780a984ba25096f288d7c603ffa8153a748/cargo-target"
+      },
+      "evidence_class": "xtask-integration",
+      "exit_code": 0,
+      "id": "xtask-safety-evidence-contract",
+      "stderr_log": "logs/033-xtask-safety-evidence-contract.stderr.log",
+      "stderr_sha256": "d033e56717fd9a3a8f265e3325bb0585359b8eb018f6f8192edb8c983ee4a14a",
+      "stdout_log": "logs/033-xtask-safety-evidence-contract.stdout.log",
+      "stdout_sha256": "3cc57f866bb360e2eefd891f1e592d673d40bd442e6bcd7f2d2743d704b3b52e"
+    },
+    {
+      "argv": [
+        "cargo",
+        "test",
+        "-p",
+        "xtask",
+        "--test",
+        "upstream_cli",
+        "--all-features"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "1",
+        "CARGO_TARGET_DIR": "/Users/peterryszkiewicz/Repos/liquidfun-rs/target/phase13-1-gap-verification/d3e70780a984ba25096f288d7c603ffa8153a748/cargo-target"
+      },
+      "evidence_class": "xtask-integration",
+      "exit_code": 0,
+      "id": "xtask-upstream-cli",
+      "stderr_log": "logs/034-xtask-upstream-cli.stderr.log",
+      "stderr_sha256": "0c840ea6258701129c1a63183d589237c0a03d93cc3ea0ad388494f0a4ecc634",
+      "stdout_log": "logs/034-xtask-upstream-cli.stdout.log",
+      "stdout_sha256": "1dc32d26e7a6f685d17ccefe5dee372c0ee9a77b7d7f8f6a100309f3ee92d3d8"
+    },
+    {
+      "argv": [
+        "cargo",
+        "xtask",
+        "package",
+        "verify"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "1",
+        "CARGO_TARGET_DIR": "/Users/peterryszkiewicz/Repos/liquidfun-rs/target/phase13-1-gap-verification/d3e70780a984ba25096f288d7c603ffa8153a748/cargo-target"
+      },
+      "evidence_class": "cargo-only",
+      "exit_code": 0,
+      "id": "package-verify",
+      "stderr_log": "logs/035-package-verify.stderr.log",
+      "stderr_sha256": "a8aac44b0b452319f3939b854605841734ccc70b95463828047f4df7c2ed3317",
+      "stdout_log": "logs/035-package-verify.stdout.log",
+      "stdout_sha256": "05db3c5a593dee8366bb817cfee430c4aa3346971bc938080b937caa55749321"
+    },
+    {
+      "argv": [
+        "cargo",
+        "xtask",
+        "docs",
+        "check"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "1",
+        "CARGO_TARGET_DIR": "/Users/peterryszkiewicz/Repos/liquidfun-rs/target/phase13-1-gap-verification/d3e70780a984ba25096f288d7c603ffa8153a748/cargo-target"
+      },
+      "evidence_class": "repository-contract",
+      "exit_code": 0,
+      "id": "docs-check",
+      "stderr_log": "logs/036-docs-check.stderr.log",
+      "stderr_sha256": "de2b2d0bd914bd1f06ecf0d1353adb76426811e9cff87ebad8dbefe2303bc56d",
+      "stdout_log": "logs/036-docs-check.stdout.log",
+      "stdout_sha256": "42198b012b2aa0cd57cabd775a85374bddcaad11bfa2c1ecf045f998348ea226"
+    },
+    {
+      "argv": [
+        "cargo",
+        "xtask",
+        "inventory",
+        "check"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "1",
+        "CARGO_TARGET_DIR": "/Users/peterryszkiewicz/Repos/liquidfun-rs/target/phase13-1-gap-verification/d3e70780a984ba25096f288d7c603ffa8153a748/cargo-target"
+      },
+      "evidence_class": "repository-contract",
+      "exit_code": 0,
+      "id": "inventory-check",
+      "stderr_log": "logs/037-inventory-check.stderr.log",
+      "stderr_sha256": "61ac973adc7de3c04ab60974bf94941db9e5337fb2c719b8a01fc49ddf660afb",
+      "stdout_log": "logs/037-inventory-check.stdout.log",
+      "stdout_sha256": "628275d32b77b1cbde98a1ad2ec1f878322998269aefeedc0ddd25536059d92b"
+    },
+    {
+      "argv": [
+        "cargo",
+        "xtask",
+        "inventory",
+        "corpus",
+        "check-snapshot"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "1",
+        "CARGO_TARGET_DIR": "/Users/peterryszkiewicz/Repos/liquidfun-rs/target/phase13-1-gap-verification/d3e70780a984ba25096f288d7c603ffa8153a748/cargo-target"
+      },
+      "evidence_class": "repository-contract",
+      "exit_code": 0,
+      "id": "corpus-snapshot",
+      "stderr_log": "logs/038-corpus-snapshot.stderr.log",
+      "stderr_sha256": "e2410b611412116bf9f9538f00fafc4ea9d1444fd60668843f556f8b33006dd1",
+      "stdout_log": "logs/038-corpus-snapshot.stdout.log",
+      "stdout_sha256": "38b73f36966cf5d89ad0d202200b062219bf7492c72b10f6244e99cf7e32e889"
+    },
+    {
+      "argv": [
+        "cargo",
+        "xtask",
+        "inventory",
+        "corpus",
+        "check-closure"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "1",
+        "CARGO_TARGET_DIR": "/Users/peterryszkiewicz/Repos/liquidfun-rs/target/phase13-1-gap-verification/d3e70780a984ba25096f288d7c603ffa8153a748/cargo-target"
+      },
+      "evidence_class": "repository-contract",
+      "exit_code": 0,
+      "id": "corpus-closure",
+      "stderr_log": "logs/039-corpus-closure.stderr.log",
+      "stderr_sha256": "f2fec965b039da0409182f677ad3f4e876e20077de1da087d2ae5c72d383d9e9",
+      "stdout_log": "logs/039-corpus-closure.stdout.log",
+      "stdout_sha256": "370739cd00379c89fd453a064d4dd5a6fe2995397ab0a8adf2c3f44551bc1fe0"
+    },
+    {
+      "argv": [
+        "cargo",
+        "xtask",
+        "provenance",
+        "check"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "1",
+        "CARGO_TARGET_DIR": "/Users/peterryszkiewicz/Repos/liquidfun-rs/target/phase13-1-gap-verification/d3e70780a984ba25096f288d7c603ffa8153a748/cargo-target"
+      },
+      "evidence_class": "repository-contract",
+      "exit_code": 0,
+      "id": "provenance-check",
+      "stderr_log": "logs/040-provenance-check.stderr.log",
+      "stderr_sha256": "6857e725556608852a06b49d5f5e7073eafab91ce3e228dd88fb6f8cacd70a0f",
+      "stdout_log": "logs/040-provenance-check.stdout.log",
+      "stdout_sha256": "7b2554ae89122054f2f70260c0baf9dad29cf9f113ff45c6de52edaaaf2fcc11"
+    },
+    {
+      "argv": [
+        "cargo",
+        "xtask",
+        "upstream",
+        "verify"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "1",
+        "CARGO_TARGET_DIR": "/Users/peterryszkiewicz/Repos/liquidfun-rs/target/phase13-1-gap-verification/d3e70780a984ba25096f288d7c603ffa8153a748/cargo-target"
+      },
+      "evidence_class": "repository-contract",
+      "exit_code": 0,
+      "id": "upstream-verify",
+      "stderr_log": "logs/041-upstream-verify.stderr.log",
+      "stderr_sha256": "7ca4a69308de7f53c0f39afd1f91eae953953247b13e33901b6c8bcf23c234ab",
+      "stdout_log": "logs/041-upstream-verify.stdout.log",
+      "stdout_sha256": "8a10d7b5f5d23eeecfe8e13fcd89ddb2147fb027ffe2d0dfd112a3bb055618d9"
+    },
+    {
+      "argv": [
+        "cargo",
+        "xtask",
+        "check"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "1",
+        "CARGO_TARGET_DIR": "/Users/peterryszkiewicz/Repos/liquidfun-rs/target/phase13-1-gap-verification/d3e70780a984ba25096f288d7c603ffa8153a748/cargo-target"
+      },
+      "evidence_class": "cargo-only",
+      "exit_code": 0,
+      "id": "xtask-check",
+      "stderr_log": "logs/042-xtask-check.stderr.log",
+      "stderr_sha256": "39a81ca5226a8de7e1cbc91e24e0c4683079ce94579589092ee3f0daab610d17",
+      "stdout_log": "logs/042-xtask-check.stdout.log",
+      "stdout_sha256": "d1f01b2cdd9b05b2508b9411fa80534476cc80383993a345e61d092417771aa4"
+    },
+    {
+      "argv": [
+        "cargo",
+        "xtask",
+        "upstream",
+        "configure",
+        "--preset",
+        "oracle-debug"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "1",
+        "CARGO_TARGET_DIR": "/Users/peterryszkiewicz/Repos/liquidfun-rs/target/phase13-1-gap-verification/d3e70780a984ba25096f288d7c603ffa8153a748/cargo-target"
+      },
+      "evidence_class": "native-d2",
+      "exit_code": 0,
+      "id": "configure-debug",
+      "stderr_log": "logs/043-configure-debug.stderr.log",
+      "stderr_sha256": "eb3256bbf2dd084e9b5a8591b8e424ae57604c7d9d1b0281763bad04e4fd5256",
+      "stdout_log": "logs/043-configure-debug.stdout.log",
+      "stdout_sha256": "0e97718ecb797ae6a13c3da5a73e15100baff777ac532dd7e30b104cf5b9ef13"
+    },
+    {
+      "argv": [
+        "cargo",
+        "xtask",
+        "upstream",
+        "build",
+        "--preset",
+        "oracle-debug"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "1",
+        "CARGO_TARGET_DIR": "/Users/peterryszkiewicz/Repos/liquidfun-rs/target/phase13-1-gap-verification/d3e70780a984ba25096f288d7c603ffa8153a748/cargo-target"
+      },
+      "evidence_class": "native-d2",
+      "exit_code": 0,
+      "id": "build-debug",
+      "stderr_log": "logs/044-build-debug.stderr.log",
+      "stderr_sha256": "8f623e1134783c9aff9a25847df28534d4cced505385907d84cb8e117abd896a",
+      "stdout_log": "logs/044-build-debug.stdout.log",
+      "stdout_sha256": "814e41b0029a5515200eae2b6783094a0763a05a2f5ad12a84cfc95bdc03e279"
+    },
+    {
+      "argv": [
+        "cmake",
+        "--build",
+        "target/reference/oracle-debug",
+        "--target",
+        "liquidfun-reference-protocol-tests"
+      ],
+      "environment": {},
+      "evidence_class": "native-d2",
+      "exit_code": 0,
+      "id": "protocol-build-debug",
+      "stderr_log": "logs/045-protocol-build-debug.stderr.log",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_log": "logs/045-protocol-build-debug.stdout.log",
+      "stdout_sha256": "8c35b1682f73592d30612d7b0fabdb384fcfff35cb5a076cb48b85b1368aa794"
+    },
+    {
+      "argv": [
+        "ctest",
+        "--test-dir",
+        "target/reference/oracle-debug",
+        "--output-on-failure",
+        "--no-tests=error",
+        "-R",
+        "^liquidfun-reference-protocol$"
+      ],
+      "environment": {},
+      "evidence_class": "native-d2",
+      "exit_code": 0,
+      "id": "protocol-ctest-debug",
+      "stderr_log": "logs/046-protocol-ctest-debug.stderr.log",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_log": "logs/046-protocol-ctest-debug.stdout.log",
+      "stdout_sha256": "524d390bfab2a5bfb904c5e74ad91ae95512ecadd057619514be81aef0a38828"
+    },
+    {
+      "argv": [
+        "cargo",
+        "xtask",
+        "upstream",
+        "configure",
+        "--preset",
+        "oracle-release"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "1",
+        "CARGO_TARGET_DIR": "/Users/peterryszkiewicz/Repos/liquidfun-rs/target/phase13-1-gap-verification/d3e70780a984ba25096f288d7c603ffa8153a748/cargo-target"
+      },
+      "evidence_class": "native-d2",
+      "exit_code": 0,
+      "id": "configure-release",
+      "stderr_log": "logs/047-configure-release.stderr.log",
+      "stderr_sha256": "c429a8372e986c056a7a206666c84d694c4ef7d1e94db8521b4ede446faa4ec5",
+      "stdout_log": "logs/047-configure-release.stdout.log",
+      "stdout_sha256": "d15fe989d5fd5113156cf83f759f5d18e4573fb02bea98009b885fe7abbd4037"
+    },
+    {
+      "argv": [
+        "cargo",
+        "xtask",
+        "upstream",
+        "build",
+        "--preset",
+        "oracle-release"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "1",
+        "CARGO_TARGET_DIR": "/Users/peterryszkiewicz/Repos/liquidfun-rs/target/phase13-1-gap-verification/d3e70780a984ba25096f288d7c603ffa8153a748/cargo-target"
+      },
+      "evidence_class": "native-d2",
+      "exit_code": 0,
+      "id": "build-release",
+      "stderr_log": "logs/048-build-release.stderr.log",
+      "stderr_sha256": "ed4c6c220681860685b6eab4eadbb79743e5d914a95494f72384a1f340f56af4",
+      "stdout_log": "logs/048-build-release.stdout.log",
+      "stdout_sha256": "814e41b0029a5515200eae2b6783094a0763a05a2f5ad12a84cfc95bdc03e279"
+    },
+    {
+      "argv": [
+        "cmake",
+        "--build",
+        "target/reference/oracle-release",
+        "--target",
+        "liquidfun-reference-protocol-tests"
+      ],
+      "environment": {},
+      "evidence_class": "native-d2",
+      "exit_code": 0,
+      "id": "protocol-build-release",
+      "stderr_log": "logs/049-protocol-build-release.stderr.log",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_log": "logs/049-protocol-build-release.stdout.log",
+      "stdout_sha256": "8c35b1682f73592d30612d7b0fabdb384fcfff35cb5a076cb48b85b1368aa794"
+    },
+    {
+      "argv": [
+        "ctest",
+        "--test-dir",
+        "target/reference/oracle-release",
+        "--output-on-failure",
+        "--no-tests=error",
+        "-R",
+        "^liquidfun-reference-protocol$"
+      ],
+      "environment": {},
+      "evidence_class": "native-d2",
+      "exit_code": 0,
+      "id": "protocol-ctest-release",
+      "stderr_log": "logs/050-protocol-ctest-release.stderr.log",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_log": "logs/050-protocol-ctest-release.stdout.log",
+      "stdout_sha256": "45fdc7cb61fcb9e87a2c72cba67d84781f6e171fe70b1a0968b9698d88ca0208"
+    },
+    {
+      "argv": [
+        "cargo",
+        "xtask",
+        "differential",
+        "compare",
+        "--scenario",
+        "rigid-world",
+        "--preset",
+        "oracle-debug",
+        "--session-profile",
+        "one-shot"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "1",
+        "CARGO_TARGET_DIR": "/Users/peterryszkiewicz/Repos/liquidfun-rs/target/phase13-1-gap-verification/d3e70780a984ba25096f288d7c603ffa8153a748/cargo-target"
+      },
+      "evidence_class": "native-d2",
+      "exit_code": 0,
+      "id": "compare-debug",
+      "stderr_log": "logs/051-compare-debug.stderr.log",
+      "stderr_sha256": "fc9f7fa46252b6c55e827dab1a4f4bc06e98b0459a7a332113b2f6e699369feb",
+      "stdout_log": "logs/051-compare-debug.stdout.log",
+      "stdout_sha256": "e1886c30e6578c69c10f6503df7dea2721c43b4b8234736f1be3ee02acffe696"
+    },
+    {
+      "argv": [
+        "cargo",
+        "xtask",
+        "differential",
+        "compare",
+        "--scenario",
+        "rigid-world",
+        "--preset",
+        "oracle-release",
+        "--session-profile",
+        "one-shot"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "1",
+        "CARGO_TARGET_DIR": "/Users/peterryszkiewicz/Repos/liquidfun-rs/target/phase13-1-gap-verification/d3e70780a984ba25096f288d7c603ffa8153a748/cargo-target"
+      },
+      "evidence_class": "native-d2",
+      "exit_code": 0,
+      "id": "compare-release",
+      "stderr_log": "logs/052-compare-release.stderr.log",
+      "stderr_sha256": "e353f687b678ce58ef62d65362167647db977bc663391bb5bdbd7e43809c1b59",
+      "stdout_log": "logs/052-compare-release.stdout.log",
+      "stdout_sha256": "e8e50f38c2aae39a050ee5b8037755043acd4f4592bf9359c14848dc1a54a319"
+    },
+    {
+      "argv": [
+        "cargo",
+        "xtask",
+        "differential",
+        "replay",
+        "--scenario",
+        "rigid-world",
+        "--preset",
+        "oracle-debug",
+        "--session-profile",
+        "one-shot"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "1",
+        "CARGO_TARGET_DIR": "/Users/peterryszkiewicz/Repos/liquidfun-rs/target/phase13-1-gap-verification/d3e70780a984ba25096f288d7c603ffa8153a748/cargo-target"
+      },
+      "evidence_class": "native-d2",
+      "exit_code": 0,
+      "id": "replay-debug",
+      "stderr_log": "logs/053-replay-debug.stderr.log",
+      "stderr_sha256": "024735529a6a72dc571e0105851e1db3e03aa6732f4bbc6cb719271c88e89bb6",
+      "stdout_log": "logs/053-replay-debug.stdout.log",
+      "stdout_sha256": "c098ad65afec235b1426616fb97421db702e2fa5a0a2176471bd4ff0fbc79b35"
+    },
+    {
+      "argv": [
+        "cargo",
+        "xtask",
+        "differential",
+        "verify-determinism",
+        "--scenario",
+        "rigid-world",
+        "--preset",
+        "oracle-debug",
+        "--runs",
+        "2"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "1",
+        "CARGO_TARGET_DIR": "/Users/peterryszkiewicz/Repos/liquidfun-rs/target/phase13-1-gap-verification/d3e70780a984ba25096f288d7c603ffa8153a748/cargo-target"
+      },
+      "evidence_class": "native-d2",
+      "exit_code": 0,
+      "id": "determinism-debug",
+      "stderr_log": "logs/054-determinism-debug.stderr.log",
+      "stderr_sha256": "4d967e7edc09894b7e3c70ca5d6b4c2a7e6532dc21d28b4477a0f583f902af45",
+      "stdout_log": "logs/054-determinism-debug.stdout.log",
+      "stdout_sha256": "9f4616b4e273d7e1d421a99d3de56793c9ff1edcfe13156b4bf140515677f7a9"
+    },
+    {
+      "argv": [
+        "gh",
+        "workflow",
+        "run",
+        "phase13-1-canonical-native.yml",
+        "--ref",
+        "main",
+        "-f",
+        "candidate_sha=d3e70780a984ba25096f288d7c603ffa8153a748"
+      ],
+      "environment": {},
+      "evidence_class": "canonical-d1",
+      "exit_code": 0,
+      "id": "canonical-dispatch",
+      "stderr_log": "logs/055-canonical-dispatch.stderr.log",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_log": "logs/055-canonical-dispatch.stdout.log",
+      "stdout_sha256": "95eaa20fa800b8ec4b2e862276e02fb9458e27103d7dbf79ba169afcc4a6f65c"
+    },
+    {
+      "argv": [
+        "gh",
+        "run",
+        "view",
+        "34775554238",
+        "--json",
+        "databaseId,headSha,event,status,conclusion,url"
+      ],
+      "environment": {},
+      "evidence_class": "canonical-d1",
+      "exit_code": 0,
+      "id": "canonical-initial-view",
+      "stderr_log": "logs/056-canonical-initial-view.stderr.log",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_log": "logs/056-canonical-initial-view.stdout.log",
+      "stdout_sha256": "d9cfa45decc17ebaf9a80cdbdcecb90147505dcbf2e7683a229607fe3d8e5916"
+    },
+    {
+      "argv": [
+        "gh",
+        "run",
+        "watch",
+        "34775554238",
+        "--exit-status"
+      ],
+      "environment": {},
+      "evidence_class": "canonical-d1",
+      "exit_code": 0,
+      "id": "canonical-watch",
+      "stderr_log": "logs/057-canonical-watch.stderr.log",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_log": "logs/057-canonical-watch.stdout.log",
+      "stdout_sha256": "e336b25011b237d5f0df1a3f1f30aff016b08f744f32f0d0d84314a1c8bd5fa6"
+    },
+    {
+      "argv": [
+        "gh",
+        "run",
+        "view",
+        "34775554238",
+        "--json",
+        "databaseId,headSha,event,status,conclusion,url"
+      ],
+      "environment": {},
+      "evidence_class": "canonical-d1",
+      "exit_code": 0,
+      "id": "canonical-inspect",
+      "stderr_log": "logs/058-canonical-inspect.stderr.log",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_log": "logs/058-canonical-inspect.stdout.log",
+      "stdout_sha256": "629eb92254777a99d237494e7c79bf16206adaec44f35c0bff5d6df082caf0ee"
+    },
+    {
+      "argv": [
+        "gh",
+        "run",
+        "download",
+        "34775554238",
+        "--name",
+        "phase13-1-canonical-native-success-34775554238-d3e70780a984ba25096f288d7c603ffa8153a748",
+        "--dir",
+        "/Users/peterryszkiewicz/Repos/liquidfun-rs/target/phase13-1-gap-verification/d3e70780a984ba25096f288d7c603ffa8153a748/canonical"
+      ],
+      "environment": {},
+      "evidence_class": "canonical-d1",
+      "exit_code": 0,
+      "id": "canonical-download",
+      "stderr_log": "logs/059-canonical-download.stderr.log",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_log": "logs/059-canonical-download.stdout.log",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "argv": [
+        "bash",
+        "-n",
+        "scripts/phase12-release-evidence.sh",
+        "scripts/phase12-miri.sh",
+        "scripts/phase13-1-gap-verification.sh",
+        "scripts/phase13-1-validate-gap-evidence.sh"
+      ],
+      "environment": {},
+      "evidence_class": "auxiliary",
+      "exit_code": 0,
+      "id": "shell-syntax",
+      "stderr_log": "logs/060-shell-syntax.stderr.log",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_log": "logs/060-shell-syntax.stdout.log",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "argv": [
+        "shellcheck",
+        "scripts/phase13-1-gap-verification.sh",
+        "scripts/phase13-1-validate-gap-evidence.sh"
+      ],
+      "environment": {},
+      "evidence_class": "auxiliary",
+      "exit_code": 0,
+      "id": "shell-contract",
+      "stderr_log": "logs/061-shell-contract.stderr.log",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_log": "logs/061-shell-contract.stdout.log",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "argv": [
+        "bash",
+        "scripts/phase12-miri.sh",
+        "check"
+      ],
+      "environment": {},
+      "evidence_class": "auxiliary",
+      "exit_code": 0,
+      "id": "miri-contract",
+      "stderr_log": "logs/062-miri-contract.stderr.log",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_log": "logs/062-miri-contract.stdout.log",
+      "stdout_sha256": "51a5f565606953fc0e096fa0dedeba99a73ea29ad2098211db02eb370dae3f1a"
+    },
+    {
+      "argv": [
+        "cargo",
+        "+nightly-2026-07-15",
+        "fuzz",
+        "build"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "1",
+        "CARGO_TARGET_DIR": "/Users/peterryszkiewicz/Repos/liquidfun-rs/target/phase13-1-gap-verification/d3e70780a984ba25096f288d7c603ffa8153a748/cargo-target"
+      },
+      "evidence_class": "auxiliary",
+      "exit_code": 0,
+      "id": "fuzz-build",
+      "stderr_log": "logs/063-fuzz-build.stderr.log",
+      "stderr_sha256": "d382244b452014abb7ffce1c021fa716c4ceb877e7e36fb378432665b10e532e",
+      "stdout_log": "logs/063-fuzz-build.stdout.log",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "argv": [
+        "cargo",
+        "test",
+        "-p",
+        "liquidfun-testbed",
+        "--all-features"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "1",
+        "CARGO_TARGET_DIR": "/Users/peterryszkiewicz/Repos/liquidfun-rs/target/phase13-1-gap-verification/d3e70780a984ba25096f288d7c603ffa8153a748/cargo-target"
+      },
+      "evidence_class": "auxiliary",
+      "exit_code": 0,
+      "id": "testbed-tests",
+      "stderr_log": "logs/064-testbed-tests.stderr.log",
+      "stderr_sha256": "0a6a307c01ca499715fe361bdc5767c49c3bd0ff8eb0439fffc50d4da28ae992",
+      "stdout_log": "logs/064-testbed-tests.stdout.log",
+      "stdout_sha256": "6d4ca5c05892a1b28b166dcf150b77538cb69a951f1956518906c18a263461a0"
+    },
+    {
+      "argv": [
+        "cargo",
+        "build",
+        "-p",
+        "liquidfun-testbed",
+        "--all-targets",
+        "--all-features"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "1",
+        "CARGO_TARGET_DIR": "/Users/peterryszkiewicz/Repos/liquidfun-rs/target/phase13-1-gap-verification/d3e70780a984ba25096f288d7c603ffa8153a748/cargo-target"
+      },
+      "evidence_class": "auxiliary",
+      "exit_code": 0,
+      "id": "testbed-build",
+      "stderr_log": "logs/065-testbed-build.stderr.log",
+      "stderr_sha256": "8b1fd2394f7b6f177ede882431154a419bd9f404f00add314c912e91a7fc0ec0",
+      "stdout_log": "logs/065-testbed-build.stdout.log",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "argv": [
+        "cargo",
+        "run",
+        "-p",
+        "liquidfun-testbed",
+        "--",
+        "--capability-check",
+        "--fixture",
+        "crates/liquidfun-differential/tests/fixtures/catalog/phase11-v1.json",
+        "--output",
+        "target/phase13-1-gap-verification/d3e70780a984ba25096f288d7c603ffa8153a748/testbed-capability"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "1",
+        "CARGO_TARGET_DIR": "/Users/peterryszkiewicz/Repos/liquidfun-rs/target/phase13-1-gap-verification/d3e70780a984ba25096f288d7c603ffa8153a748/cargo-target"
+      },
+      "evidence_class": "auxiliary",
+      "exit_code": 0,
+      "id": "testbed-capability",
+      "stderr_log": "logs/066-testbed-capability.stderr.log",
+      "stderr_sha256": "d02f138f07f6e5cf34e950311799956d784240041126127fc5b1bf37672feba5",
+      "stdout_log": "logs/066-testbed-capability.stdout.log",
+      "stdout_sha256": "2b4b6b9b1416d04b0775b15a48e9e5ff5a8049e6b5a2facef976dd2f0b178912"
+    },
+    {
+      "argv": [
+        "cargo",
+        "test",
+        "--workspace",
+        "--doc"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "1",
+        "CARGO_TARGET_DIR": "/Users/peterryszkiewicz/Repos/liquidfun-rs/target/phase13-1-gap-verification/d3e70780a984ba25096f288d7c603ffa8153a748/cargo-target"
+      },
+      "evidence_class": "auxiliary",
+      "exit_code": 0,
+      "id": "workspace-doctests",
+      "stderr_log": "logs/067-workspace-doctests.stderr.log",
+      "stderr_sha256": "d74a4d25ec791591323684169f577f137aa866d612951e7372cb2b4038d5f6d7",
+      "stdout_log": "logs/067-workspace-doctests.stdout.log",
+      "stdout_sha256": "fdfca95d2e2f9cab149fa7a3fc3eaef6099260f6b09894d85eb31209bd634a77"
+    },
+    {
+      "argv": [
+        "cargo",
+        "doc",
+        "--workspace",
+        "--all-features",
+        "--no-deps"
+      ],
+      "environment": {
+        "CARGO_BUILD_JOBS": "1",
+        "CARGO_TARGET_DIR": "/Users/peterryszkiewicz/Repos/liquidfun-rs/target/phase13-1-gap-verification/d3e70780a984ba25096f288d7c603ffa8153a748/cargo-target",
+        "RUSTDOCFLAGS": "-D warnings"
+      },
+      "evidence_class": "auxiliary",
+      "exit_code": 0,
+      "id": "workspace-rustdoc",
+      "stderr_log": "logs/068-workspace-rustdoc.stderr.log",
+      "stderr_sha256": "b5fa8271694acb7652f42bc9b605faeb1c4d796e1b3d5183c53e0e7898205ae9",
+      "stdout_log": "logs/068-workspace-rustdoc.stdout.log",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "argv": [
+        "just",
+        "markdown-check"
+      ],
+      "environment": {},
+      "evidence_class": "markdown",
+      "exit_code": 0,
+      "id": "markdown-check",
+      "stderr_log": "logs/069-markdown-check.stderr.log",
+      "stderr_sha256": "4a8a653d600b5972ad1cb85ebb120b2f46c2daf444ff8428715f817634b35417",
+      "stdout_log": "logs/069-markdown-check.stdout.log",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "argv": [
+        "git",
+        "diff",
+        "--exit-code",
+        "--",
+        "protocol",
+        "scenarios",
+        "reference",
+        "COMPATIBILITY.md",
+        "UPSTREAM-CORPUS.md"
+      ],
+      "environment": {},
+      "evidence_class": "diff",
+      "exit_code": 0,
+      "id": "authority-diff",
+      "stderr_log": "logs/070-authority-diff.stderr.log",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_log": "logs/070-authority-diff.stdout.log",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "argv": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "environment": {},
+      "evidence_class": "diff",
+      "exit_code": 0,
+      "id": "diff-check",
+      "stderr_log": "logs/071-diff-check.stderr.log",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_log": "logs/071-diff-check.stdout.log",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "argv": [
+        "bun",
+        "scripts/bright-builds-check.ts",
+        "all"
+      ],
+      "environment": {},
+      "evidence_class": "structural",
+      "exit_code": 0,
+      "id": "managed-checker-final",
+      "stderr_log": "logs/072-managed-checker-final.stderr.log",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_log": "logs/072-managed-checker-final.stdout.log",
+      "stdout_sha256": "3cf01f9ba748e139a321ba2b8ddf0cd303899a3524ab310e0e213857d3ebe900"
+    }
+  ],
+  "complete": true,
+  "dispatch_intent": {
+    "path": "dispatch-intent.json",
+    "sha256": "95495514b7c3cf30cdb91471f1e0efad71e77262e5bce328abcd3f7c24ad19cd"
+  },
+  "dispatch_result": {
+    "path": "dispatch-result.json",
+    "sha256": "2184856af2ed0a3bf69fbfffd53c1c558ea30309f3a17fb23bb3d9f5047ae5a5"
+  },
+  "environment": {
+    "architecture": "arm64",
+    "os": "Darwin",
+    "presets": [
+      "oracle-debug",
+      "oracle-release"
+    ],
+    "tools": {
+      "cargo": "cargo 1.97.0 (c980f4866 2026-06-30)",
+      "cmake": "cmake version 3.27.9",
+      "cxx": "Apple clang version 21.0.0 (clang-2100.1.1.101)",
+      "ninja": "1.13.2",
+      "rust": "rustc 1.97.0 (2d8144b78 2026-07-07)"
+    }
+  },
+  "manifest_sha256": "40e74df2b2652ffe69b48f2272d6a27f6fa91c5bfb4ab1e969787955e280d7f7",
+  "merge_facts": {
+    "merge_base": "9bf7abb0540f7cf42ed786be20c0d94a608f474e",
+    "merge_commit": "f4f5ca661cfb8549b115faa054489f24ba888ae9",
+    "override": {
+      "accepted_at": "2026-08-01T15:56:27Z",
+      "accepted_by": "pRizz"
+    },
+    "parents": [
+      "be444a01e8649a4540effc147307a1041c4649ca",
+      "96b24974eee054fd0afec71e6e14b7998ed7df01"
+    ],
+    "side_paths_disjoint": true
+  },
+  "output_root": "/Users/peterryszkiewicz/Repos/liquidfun-rs/target/phase13-1-gap-verification/d3e70780a984ba25096f288d7c603ffa8153a748",
+  "remote_ref": "main",
+  "repository_slug": "bright-builds-llc/liquidfun-rs",
+  "schema": "phase13-1-gap-verification-evidence-v1",
+  "structural_source": {
+    "commit": "981908ea87b6789b6b6e9aa136e65a369c5c736d",
+    "parent": "5394fd92ed036fe4f90358501848a61fa81cfc6d"
+  }
+}
