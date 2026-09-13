@@ -26,6 +26,8 @@ Deliver an independent, maintainable Rust physics engine whose LiquidFun behavio
 - [x] Phase 6 established the native body, fixture, sensor, and contact vertical slice with stable typed identity; atomic mass, proxy, mutation, and destruction behavior; source-ordered contact solving and deferred hooks; checkout-bound oracle provenance; and debug, release, replay, determinism, and sanitizer differential evidence with 77/77 verified must-haves.
 - [x] Phase 11 accounted for all 388 upstream corpus rows, established one 43-scenario renderer-neutral catalog across headless, oracle, regression, benchmark, and private testbed consumers, preserved package isolation, and passed 94/94 must-haves including agent-controlled desktop comparison UAT.
 
+- [x] Phase 13.1 restored structural compliance and closed its verification gaps with a complete 72-command local/canonical matrix, independently validated durable evidence, and formal verification at 36/36 with the accepted integration-history override.
+
 ### Active
 
 <!-- Current scope. Building toward these. -->
@@ -188,4 +190,4 @@ This document evolves at phase transitions and milestone boundaries.
 
 ______________________________________________________________________
 
-*Last updated: 2026-07-12 after Phase 6 completion*
+*Last updated: 2026-09-13 after Phase 13.1 verification; Phase 14 Windows particle-group repairs and Phase 15 candidate acceptance remain outstanding.*

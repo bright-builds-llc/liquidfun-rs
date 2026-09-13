@@ -2,9 +2,9 @@
 gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
-status: verifying
-stopped_at: Plan 21 evidence independently validated; formal verification and lifecycle pending
-last_updated: "2026-09-13T19:01:28.719Z"
+status: ready
+stopped_at: Phase 13.1 verified; Phase 14 execution next
+last_updated: "2026-09-13T19:17:00.825Z"
 last_activity: "2026-09-13"
 progress:
   total_phases: 16
@@ -18,25 +18,25 @@ progress:
 
 ## Project Reference
 
-See: `.planning/PROJECT.md` (updated 2026-07-23)
+See: `.planning/PROJECT.md` (updated 2026-09-13)
 
 **Core value:** Deliver an independent, maintainable Rust physics engine whose LiquidFun behavior is demonstrated against a pinned upstream oracle through explicit inventory, tests, differential evidence, and documented tolerances.
-**Current focus:** Phase 13.1 — restore-bright-builds-structural-compliance
+**Current focus:** Phase 14 — repair-windows-particle-group-invariants
 
 ## Current Position
 
-Phase: 13.1 (restore-bright-builds-structural-compliance) — EXECUTING
-Plan: 21 of 25
-Status: Plan 21 evidence independently validated; formal verification and lifecycle pending
+Phase: 14 (repair-windows-particle-group-invariants)
+Plan: Not started
+Status: Phase 13.1 verified; ready to execute the three Phase 14 plans
 Last activity: 2026-09-13
 
-Progress: [██████████] 98%
+Progress: [██████████] 99%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 245
+- Total plans completed: 246
 - Average duration: Not available
 - Total execution time: 0 hours
 
@@ -56,6 +56,7 @@ Progress: [██████████] 98%
 | 11 | 30 | - | - |
 | 12 | 25 | - | - |
 | 13 | 5 | - | - |
+| 13.1 | 25 | - | - |
 
 *Updated after each plan completion*
 | Phase 02 P01 | 5 min | 1 tasks | 6 files |
@@ -688,5 +689,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-09-13T19:01:28.713Z
-Stopped at: Plan 21 evidence independently validated; formal verification and lifecycle pending
+Stopped at: Phase 13.1 verified; Phase 14 execution next
 Resume file: None
