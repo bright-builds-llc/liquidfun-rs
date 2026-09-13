@@ -6,7 +6,7 @@ check:
     cargo xtask check
 
 markdown-check:
-    mdformat --check .
+    bash scripts/markdown-check.sh
 
 fmt:
     cargo fmt --all --check

@@ -1,6 +1,10 @@
 //! Process-supervisor lifecycle, resource-bound, and failure taxonomy tests.
 
-use std::{fs, path::Path};
+use std::{
+    fs,
+    path::Path,
+    sync::{Mutex, MutexGuard},
+};
 
 use liquidfun_differential::execute_math_probe_process;
 use liquidfun_differential::{OracleExecutable, OraclePreset, SessionProfile};
@@ -15,6 +19,7 @@ mod fake_repository;
 use fake_repository::{FakeRepository, TestSupervisor};
 
 const REVISION: &str = "7f20402173fd143a3988c921bc384459c6a858f2";
+static PROCESS_SLOT: Mutex<()> = Mutex::new(());
 const REQUEST_BYTES: &[u8] =
     include_bytes!("../../../protocol/fixtures/accepted/empty-world-request.jsonl");
 const MATH_REQUEST_BYTES: &[u8] =
@@ -49,6 +54,14 @@ fn supervisor(behavior: &str, profile: SessionProfile) -> TestSupervisor {
     TestSupervisor::create(behavior, profile, REVISION)
 }
 
+fn process_slot() -> MutexGuard<'static, ()> {
+    // Host startup contention can consume the real five-second startup budget.
+    // Serialize test-owned child lifetimes, not production supervision or pipe draining.
+    PROCESS_SLOT
+        .lock()
+        .expect("test process slot should not be poisoned")
+}
+
 fn failure(behavior: &str) -> HarnessFailure {
     supervisor(behavior, SessionProfile::OneShot)
         .execute(&fixture_request())
@@ -58,6 +71,7 @@ fn failure(behavior: &str) -> HarnessFailure {
 #[test]
 fn one_shot_and_reuse_enforce_reset_epochs_and_periodic_cycling() {
     // Arrange
+    let _process_slot = process_slot();
     let first_request = fixture_request();
     let second_request = fixture_request_with_id("empty-world-request-2");
     let mut one_shot = supervisor("valid", SessionProfile::OneShot);
@@ -103,6 +117,7 @@ fn one_shot_and_reuse_enforce_reset_epochs_and_periodic_cycling() {
 #[test]
 fn startup_request_exit_signal_and_sanitizer_failures_are_typed() {
     // Arrange
+    let _process_slot = process_slot();
     let cases = [
         ("startup_timeout", HarnessFailureKind::StartupTimeout),
         (
@@ -135,6 +150,7 @@ fn startup_request_exit_signal_and_sanitizer_failures_are_typed() {
 #[test]
 fn framing_and_output_limit_failures_are_typed() {
     // Arrange
+    let _process_slot = process_slot();
     let cases = [
         ("eof", HarnessFailureKind::UnexpectedEof),
         ("partial", HarnessFailureKind::PartialRecord),
@@ -155,6 +171,7 @@ fn framing_and_output_limit_failures_are_typed() {
 #[test]
 fn observed_output_overflow_takes_precedence_at_request_deadline() {
     // Arrange
+    let _process_slot = process_slot();
     let mut supervisor = supervisor("total_overflow", SessionProfile::OneShot);
 
     // Act
@@ -169,6 +186,7 @@ fn observed_output_overflow_takes_precedence_at_request_deadline() {
 #[test]
 fn request_identity_sequence_and_reset_failures_are_typed() {
     // Arrange
+    let _process_slot = process_slot();
     let cases = [
         ("request_mismatch", HarnessFailureKind::RequestIdMismatch),
         (
@@ -199,6 +217,7 @@ fn request_identity_sequence_and_reset_failures_are_typed() {
 #[test]
 fn poisoned_session_preserves_bounded_stderr_and_kill_reap_evidence() {
     // Arrange
+    let _process_slot = process_slot();
     let limits = HarnessLimits::phase2_default_v1();
 
     // Act
@@ -224,6 +243,7 @@ fn poisoned_session_preserves_bounded_stderr_and_kill_reap_evidence() {
 #[test]
 fn concurrent_stdout_and_large_stderr_drain_without_pipe_deadlock() {
     // Arrange
+    let _process_slot = process_slot();
     let mut supervisor = supervisor("large_stderr_valid", SessionProfile::OneShot);
 
     // Act
@@ -238,6 +258,7 @@ fn concurrent_stdout_and_large_stderr_drain_without_pipe_deadlock() {
 #[test]
 fn math_probe_path_bounds_records_stderr_partial_lines_and_timeouts() {
     // Arrange
+    let _process_slot = process_slot();
     let cases = [
         ("startup_timeout", HarnessFailureKind::StartupTimeout),
         ("oversized", HarnessFailureKind::RecordTooLarge),
@@ -275,6 +296,7 @@ fn math_probe_path_bounds_records_stderr_partial_lines_and_timeouts() {
 #[test]
 fn concurrent_overlimit_stderr_fails_one_shot_and_reuse_requests() {
     // Arrange
+    let _process_slot = process_slot();
     let request = fixture_request();
     let profiles = [SessionProfile::OneShot, SessionProfile::Reuse];
 
@@ -312,6 +334,7 @@ fn executable_resolution_rejects_symlinked_or_out_of_tree_candidates() {
 #[test]
 fn reuse_child_is_torn_down_before_repository_cleanup() {
     // Arrange
+    let _process_slot = process_slot();
     let request = fixture_request();
     let mut supervisor = supervisor("valid", SessionProfile::Reuse);
     supervisor
@@ -324,4 +347,34 @@ fn reuse_child_is_torn_down_before_repository_cleanup() {
 
     // Assert
     assert!(!root.exists());
+}
+
+#[test]
+fn concurrent_callers_preserve_one_shot_and_reuse_startup() {
+    // Arrange
+    let profiles = [SessionProfile::OneShot, SessionProfile::Reuse];
+
+    // Act
+    let results = std::thread::scope(|scope| {
+        let workers = profiles.map(|profile| {
+            scope.spawn(move || {
+                let _process_slot = process_slot();
+                let request = fixture_request();
+                let mut child = supervisor("valid", profile);
+                let first = child.execute(&request).expect("first request should start");
+                let second = child
+                    .execute(&request)
+                    .expect("second request should start");
+                (first.reset_epoch(), second.reset_epoch())
+            })
+        });
+        workers.map(|worker| worker.join().expect("concurrent caller should finish"))
+    });
+
+    // Assert
+    assert_eq!(results, [(1, 1), (1, 2)]);
+    assert_eq!(
+        HarnessLimits::phase2_default_v1().startup_timeout(),
+        std::time::Duration::from_secs(5)
+    );
 }

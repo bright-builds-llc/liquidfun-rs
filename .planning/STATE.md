@@ -3,7 +3,7 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 13.1-25-PLAN.md; Plan 21 awaits fresh fourth-candidate authorization
+stopped_at: Executing Plan 21 corrective verification under standing authorization
 last_updated: "2026-08-20T18:32:17Z"
 last_activity: "2026-08-20"
 progress:
@@ -27,7 +27,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-23)
 
 Phase: 13.1 (restore-bright-builds-structural-compliance) — EXECUTING
 Plan: 21 of 25
-Status: Ready for fresh Plan 21 authorization after Plan 25
+Status: Executing Plan 21 corrective verification under AGENTS.md standing authorization
 Last activity: 2026-08-20
 
 Progress: [██████████] 98%
@@ -671,7 +671,7 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 13.1]: The ab06bfc run and artifact remain supplemental and cannot authorize or seed the next candidate.
 - [Phase 13.1]: Treat GitHub CLI's non-completed run conclusion as a two-form boundary: accept only JSON null or the empty string for queued/in-progress, while completed remains exact success.
 - [Phase 13.1]: The 9cef103 attempt consumed exactly one dispatch and stopped at command 56; its run, records, journals, logs, and any associated artifact remain supplemental and cannot authorize, seed, resume, or satisfy the next candidate.
-- [Phase 13.1]: Candidate b64ce4c was published but its single local producer invocation stopped at differential-package command 7 before any dispatch; its authorization, prefix, records, and logs are supplemental, and Plan 25 must repair the owned supervisor fixture before Plan 21 requests new fourth-candidate authority.
+- [Phase 13.1]: Candidate b64ce4c was published but its local producer stopped at differential-package command 7 before any dispatch; its prefix, records, and logs remain supplemental. Plan 25 completed fixture ownership; Plan 21 continues corrective verification under the 2026-09-13 standing authorization, with separate candidate-bound attempts and no reuse of failed terminal evidence.
 - [Phase 13.1]: Supervisor failure fixtures use uniquely claimed canonical external temp roots, and TestSupervisor explicitly drops a live child before its owned copied-oracle repository.
 
 ### Pending Todos
@@ -687,5 +687,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-08-20T18:32:17Z
-Stopped at: Completed 13.1-25-PLAN.md; Plan 21 awaits fresh fourth-candidate authorization
+Stopped at: Executing Plan 21 corrective verification under standing authorization
 Resume file: None

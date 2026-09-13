@@ -1,5 +1,9 @@
 //! Command-level coverage for the machine-audited testing-layer contract.
 
+#[cfg(unix)]
+#[path = "docs_contract/markdown.rs"]
+mod markdown;
+
 use std::error::Error;
 use std::fs;
 use std::io;

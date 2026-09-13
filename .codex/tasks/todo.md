@@ -136,3 +136,13 @@ Completion review: All 32 Phase 10 plans are complete. Exact-reference authority
 Original context: Phase 11 permitted the affected Macroquad graph only in the private, non-default, unpublished diagnostic testbed because neither advisory had a safe upgrade. Phase 12 has removed that bounded waiver by replacing the renderer. This renderer closure does not confer release readiness.
 
 Completion review: The private testbed now uses the reviewed `eframe`/`egui`/`tiny-skia` replacement, `deny.toml` carries no advisory waiver, and the passive renderer has no simulation authority. `package_cli::advisory_policy_has_no_waiver_after_renderer_replacement`, the testbed capability and renderer-contract suites, package isolation, dependency policy, and the ordered full Rust gate pass. Release readiness remains separately blocked on the missing full-SHA `release-candidate` workflow bundle and accepted frozen-source attestation records.
+
+## task-phase13-1-plan21-recovery | 2026-09-13 | Complete candidate-bound structural verification
+
+- [x] Reproduce and diagnose supervisor startup failures at the producer build boundary.
+- [x] Apply focused repairs with regression coverage while preserving production limits.
+- [ ] Pass ordered Rust and repository gates; publish a checked clean candidate.
+- [ ] Run one complete coherent 72-command producer attempt and independently validate its evidence.
+- [ ] Record durable evidence and summary, then hand off formal verification to the orchestrator.
+
+Authority: AGENTS.md standing autonomous iteration authorization dated 2026-09-13. Preserve every failed attempt separately; Phase 15 remains deferred.

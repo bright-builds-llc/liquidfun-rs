@@ -334,7 +334,7 @@ Plans:
 - [x] 13.1-23-PLAN.md — Correct the candidate producer, exact-run binding, resumable evidence state, capability command, and fuzz cleanliness. (Wave 3; depends on 13.1-19 and 13.1-22.)
 - [x] 13.1-24-PLAN.md — Accept only null/empty non-completed run conclusions, preserve the consumed attempt as supplemental evidence, and preflight locally. (Wave 4; depends on 13.1-23.)
 - [x] 13.1-25-PLAN.md — Move supervisor fake repositories to owned external temporary roots, quarantine the pre-dispatch b64ce4c failure, and preflight a fourth candidate. (Wave 5; depends on 13.1-24.)
-- [ ] 13.1-21-PLAN.md — Freshly authorize and publish a fourth candidate unequal to all three failed attempts, then run the complete matrix from scratch and formally re-verify. (Wave 6; depends on 13.1-16, 13.1-17, 13.1-19, 13.1-20, 13.1-22, 13.1-23, 13.1-24, and 13.1-25.)
+- [ ] 13.1-21-PLAN.md — Under standing authorization, correct and publish a clean candidate, obtain a complete independently validated matrix in a separate attempt, then formally re-verify. Failed attempts remain supplemental; Phase 15 stays deferred. (Wave 6; depends on 13.1-16, 13.1-17, 13.1-19, 13.1-20, 13.1-22, 13.1-23, 13.1-24, and 13.1-25.)
 
 ### Phase 14: Repair Windows Particle-Group Invariants
 
