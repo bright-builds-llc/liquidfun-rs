@@ -130,6 +130,86 @@ const AUDITED_WINDOWS_OPERATIONS: [Operation; 14] = [
     },
 ];
 
+const CURRENT_WINDOWS_SEED: u64 = 190_752_942_043_209_832;
+const CURRENT_WINDOWS_CONTROLS: [u8; 15] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 41, 225];
+const CURRENT_WINDOWS_OPERATIONS: [Operation; 15] = [
+    Operation {
+        kind: OperationKind::CreateExplicit,
+        first: 28_139_653_222_007_705,
+        second: 1_677_254_034,
+    },
+    Operation {
+        kind: OperationKind::Append,
+        first: 67_953_198_315_843_686,
+        second: 4_050_326_246,
+    },
+    Operation {
+        kind: OperationKind::CreateFilled,
+        first: 57_624_694_102_115_465,
+        second: 3_434_699_422,
+    },
+    Operation {
+        kind: OperationKind::CreateStroke,
+        first: 56_058_469_386_270_371,
+        second: 3_341_345_154,
+    },
+    Operation {
+        kind: OperationKind::CreateReactive,
+        first: 35_720_330_941_525_231,
+        second: 2_129_097_637,
+    },
+    Operation {
+        kind: OperationKind::Join,
+        first: 48_367_258_220_285_286,
+        second: 2_882_913_244,
+    },
+    Operation {
+        kind: OperationKind::Split,
+        first: 49_537_496_458_564_977,
+        second: 2_952_664_879,
+    },
+    Operation {
+        kind: OperationKind::SetFlags,
+        first: 61_828_390_193_329_344,
+        second: 3_685_259_234,
+    },
+    Operation {
+        kind: OperationKind::CreateLifetime,
+        first: 56_646_850_988_661_860,
+        second: 3_376_415_430,
+    },
+    Operation {
+        kind: OperationKind::Step,
+        first: 1_651_900_154_810_332,
+        second: 98_460_921,
+    },
+    Operation {
+        kind: OperationKind::DestroyMembers,
+        first: 13_568_787_666_523_991,
+        second: 808_762_768,
+    },
+    Operation {
+        kind: OperationKind::Compact,
+        first: 51_631_641_503_332_339,
+        second: 3_077_485_650,
+    },
+    Operation {
+        kind: OperationKind::InvalidJoin,
+        first: 8_514_166_349_699_835,
+        second: 507_483_860,
+    },
+    Operation {
+        kind: OperationKind::CreateStroke,
+        first: 31_611_878_473_071_265,
+        second: 1_884_214_787,
+    },
+    Operation {
+        kind: OperationKind::Append,
+        first: 59_734_381_729_377_835,
+        second: 3_560_446_603,
+    },
+];
+
 #[derive(Debug, Clone, Copy)]
 struct VersionedGenerator {
     state: u64,
@@ -177,9 +257,18 @@ fn operations(seed: u64, controls: &[u8]) -> Vec<Operation> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Rejection {
+    CreationTopology,
+    MutationTopology,
+    WrongParticleSystem,
+    PendingDelete,
+    StepTopology,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Outcome {
     Applied { created: usize, lifecycle: usize },
-    Rejected,
+    Rejected(Rejection),
     SkippedAtBound,
 }
 
@@ -247,9 +336,24 @@ fn persisted_audited_windows_seed() {
         operations(AUDITED_WINDOWS_SEED, &AUDITED_WINDOWS_CONTROLS),
         AUDITED_WINDOWS_OPERATIONS
     );
+    assert_eq!(
+        run_operations(&AUDITED_WINDOWS_OPERATIONS),
+        run_operations(&AUDITED_WINDOWS_OPERATIONS)
+    );
     let mut model = Model::new();
-    for operation in &AUDITED_WINDOWS_OPERATIONS[..13] {
-        model.apply(*operation);
+    for (index, operation) in AUDITED_WINDOWS_OPERATIONS[..13].iter().enumerate() {
+        let entry = model.apply(*operation);
+        if index == 12 {
+            assert_eq!(
+                entry.outcome,
+                Outcome::Rejected(Rejection::WrongParticleSystem)
+            );
+        } else {
+            assert!(
+                matches!(entry.outcome, Outcome::Applied { .. }),
+                "operation {index}: {entry:?}"
+            );
+        }
     }
     let groups = model.live_groups();
     let target = groups[AUDITED_WINDOWS_OPERATIONS[13].first % groups.len()];
@@ -293,5 +397,100 @@ fn persisted_audited_windows_seed() {
             .expect("system remains live")
             .particle_count(),
         before_count + 1
+    );
+}
+
+#[test]
+fn persisted_current_windows_seed() {
+    // Arrange
+    assert_eq!(
+        operations(CURRENT_WINDOWS_SEED, &CURRENT_WINDOWS_CONTROLS),
+        CURRENT_WINDOWS_OPERATIONS
+    );
+    // Act
+    let trace = run_operations(&CURRENT_WINDOWS_OPERATIONS);
+    // Assert
+    assert_eq!(trace, run_operations(&CURRENT_WINDOWS_OPERATIONS));
+    assert_eq!(trace.len(), 15);
+    for (index, entry) in trace.iter().enumerate() {
+        if index == 12 {
+            assert_eq!(
+                entry.outcome,
+                Outcome::Rejected(Rejection::WrongParticleSystem)
+            );
+        } else {
+            assert!(
+                matches!(entry.outcome, Outcome::Applied { .. }),
+                "operation {index}: {entry:?}"
+            );
+        }
+    }
+    assert_eq!(
+        trace[14].outcome,
+        Outcome::Applied {
+            created: 0,
+            lifecycle: 0
+        }
+    );
+}
+
+fn reactive_groups(second_selector: usize) -> Model {
+    let mut model = Model::new();
+    for first in [1, second_selector] {
+        let entry = model.apply(Operation {
+            kind: OperationKind::CreateReactive,
+            first,
+            second: 0,
+        });
+        assert_eq!(
+            entry.outcome,
+            Outcome::Applied {
+                created: 1,
+                lifecycle: 0
+            }
+        );
+    }
+    model
+}
+
+#[test]
+fn coincident_reactive_springs_reject_step_without_effects() {
+    // Arrange
+    let mut model = reactive_groups(1);
+    let before = snapshot::rollback_snapshot(&model);
+    // Act
+    let entry = model.apply(Operation {
+        kind: OperationKind::Step,
+        first: 0,
+        second: 0,
+    });
+    // Assert
+    assert_eq!(entry.outcome, Outcome::Rejected(Rejection::StepTopology));
+    assert_eq!(snapshot::rollback_snapshot(&model), before);
+    assert!(!model.world.is_locked());
+    assert!(!model.world.is_poisoned());
+    model
+        .world
+        .set_gravity(liquidfun::math::Vec2::ZERO)
+        .expect("rejected world remains mutable and unpoisoned");
+}
+
+#[test]
+fn shifted_reactive_springs_complete_the_same_step() {
+    // Arrange
+    let mut model = reactive_groups(2);
+    // Act
+    let entry = model.apply(Operation {
+        kind: OperationKind::Step,
+        first: 0,
+        second: 0,
+    });
+    // Assert
+    assert_eq!(
+        entry.outcome,
+        Outcome::Applied {
+            created: 0,
+            lifecycle: 0
+        }
     );
 }

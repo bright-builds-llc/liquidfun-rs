@@ -36,6 +36,7 @@ enum GroupState {
         flags: u32,
         position: [u32; 2],
         angle: u32,
+        rotation: [u32; 2],
         center: [u32; 2],
         linear_velocity: [u32; 2],
         angular_velocity: u32,
@@ -155,9 +156,12 @@ struct ParticleSystemState {
     paused: bool,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub(super) struct RollbackSnapshot {
     semantic: SemanticSnapshot,
+    lifecycle: Vec<LifecycleEvent>,
+    system_snapshot: ParticleSystemSnapshot,
+    known_groups: Vec<ParticleGroupId>,
     particle_ids: Vec<ParticleId>,
     groups: Vec<(ParticleGroupId, Vec<ParticleId>)>,
 }
@@ -302,6 +306,10 @@ fn snapshot_groups(model: &Model, particle_ids: &[ParticleId]) -> Vec<GroupState
                 flags: group_view.flags().bits(),
                 position: bits(group_view.position()),
                 angle: group_view.angle().to_bits(),
+                rotation: [
+                    group_view.transform().rotation().sine().to_bits(),
+                    group_view.transform().rotation().cosine().to_bits(),
+                ],
                 center: bits(group_view.center()),
                 linear_velocity: bits(group_view.linear_velocity()),
                 angular_velocity: group_view.angular_velocity().to_bits(),
@@ -344,6 +352,12 @@ pub(super) fn rollback_snapshot(model: &Model) -> RollbackSnapshot {
         .expect("model system remains live");
     RollbackSnapshot {
         semantic: semantic_snapshot(model),
+        lifecycle: model.lifecycle_records.clone(),
+        system_snapshot: model
+            .world
+            .particle_system_snapshot(model.system)
+            .expect("live model system"),
+        known_groups: model.known_groups.clone(),
         particle_ids: view.particle_ids().to_vec(),
         groups: model
             .known_groups

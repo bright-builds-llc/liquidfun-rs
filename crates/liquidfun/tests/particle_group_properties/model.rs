@@ -4,19 +4,22 @@ use liquidfun::particle::{
     ParticleGroupDestination, ParticleGroupFlags, ParticleGroupRecipe, ParticleGroupSource,
 };
 use liquidfun::{
-    HandleError, LifecycleEvent, NoDecisionHook, ParticleFlags, ParticleGroupId,
+    CreateObjectError, HandleError, LifecycleEvent, NoDecisionHook, ParticleFlags, ParticleGroupId,
     ParticleGroupMutationError, ParticleSystemId, StepConfiguration, StepLimits, World,
 };
 
 use super::snapshot::{
     LifecycleKind, assert_invariants, lifecycle_kind, rollback_snapshot, semantic_snapshot,
 };
-use super::{MAX_GROUPS, MAX_PARTICLES, Operation, OperationKind, Outcome, TraceEntry};
+use super::{MAX_GROUPS, MAX_PARTICLES, Operation, OperationKind, Outcome, Rejection, TraceEntry};
 
 pub(super) struct Model {
     pub(super) world: World,
     pub(super) system: ParticleSystemId,
     foreign_group: ParticleGroupId,
+    operation_index: usize,
+    maybe_current_operation: Option<Operation>,
+    pub(super) lifecycle_records: Vec<LifecycleEvent>,
     pub(super) known_groups: Vec<ParticleGroupId>,
     pub(super) lifecycle: Vec<LifecycleKind>,
 }
@@ -46,6 +49,9 @@ impl Model {
             world,
             system,
             foreign_group,
+            operation_index: 0,
+            maybe_current_operation: None,
+            lifecycle_records: Vec::new(),
             known_groups: Vec::new(),
             lifecycle: Vec::new(),
         }
@@ -78,14 +84,17 @@ impl Model {
     }
 
     pub(super) fn apply(&mut self, operation: Operation) -> TraceEntry {
+        self.operation_index += 1;
+        self.maybe_current_operation = Some(operation);
         let before = rollback_snapshot(self);
         let outcome = self.apply_inner(operation);
         let snapshot = semantic_snapshot(self);
-        if outcome == Outcome::Rejected {
+        if matches!(outcome, Outcome::Rejected(_)) {
             assert_eq!(
                 rollback_snapshot(self),
                 before,
-                "typed rejection must be effect-free"
+                "operation {} {operation:?}: typed rejection must be effect-free",
+                self.operation_index
             );
         }
         assert_invariants(self);
@@ -206,12 +215,29 @@ impl Model {
                 created: self.remember([group]),
                 lifecycle: 0,
             },
-            Err(_error) => Outcome::Rejected,
+            Err(CreateObjectError::InvalidHandle(HandleError::PendingDelete)) => {
+                assert!(
+                    self.world
+                        .particle_system_statistics(self.system)
+                        .expect("live system")
+                        .pending_particle_count()
+                        > 0
+                );
+                Outcome::Rejected(Rejection::PendingDelete)
+            }
+            Err(CreateObjectError::InvalidParticleGroupTopology) => {
+                Outcome::Rejected(Rejection::CreationTopology)
+            }
+            Err(error) => panic!(
+                "operation {} create failed unexpectedly: {error:?}; input {:?}",
+                self.operation_index, self.maybe_current_operation
+            ),
         }
     }
 
     fn record_lifecycle(&mut self, events: &[LifecycleEvent]) {
         self.lifecycle.extend(events.iter().map(lifecycle_kind));
+        self.lifecycle_records.extend_from_slice(events);
     }
 
     fn append(&mut self, selector: usize) -> Outcome {
@@ -222,13 +248,24 @@ impl Model {
         let Some(target) = select(&live, selector) else {
             return Outcome::SkippedAtBound;
         };
+        let before_count = self.particle_count();
+        let before_members = self
+            .world
+            .particle_group_view(target)
+            .expect("live target")
+            .member_ids()
+            .to_vec();
         let position = self
             .world
             .particle_group_view(target)
             .expect("selected group remains live")
             .member_ids()
             .last()
-            .and_then(|particle| self.world.particle_snapshot(*particle).ok())
+            .and_then(|particle| match self.world.particle_snapshot(*particle) {
+                Ok(snapshot) => Some(snapshot),
+                Err(HandleError::PendingDelete) => None,
+                Err(error) => panic!("append source identity returned unexpected {error:?}"),
+            })
             .map_or(Vec2::ZERO, |snapshot| {
                 snapshot.position() + Vec2::new(0.3, 0.0)
             });
@@ -241,12 +278,35 @@ impl Model {
         match self.world.create_particle_group(self.system, &recipe) {
             Ok(returned) => {
                 assert_eq!(returned, target);
+                assert_eq!(self.particle_count(), before_count + 1);
+                let view = self
+                    .world
+                    .particle_group_view(returned)
+                    .expect("append retains target");
+                assert_eq!(view.member_count(), before_members.len() + 1);
+                assert_eq!(&view.member_ids()[..before_members.len()], before_members);
                 Outcome::Applied {
                     created: self.remember([returned]),
                     lifecycle: 0,
                 }
             }
-            Err(_error) => Outcome::Rejected,
+            Err(CreateObjectError::InvalidHandle(HandleError::PendingDelete)) => {
+                assert!(
+                    self.world
+                        .particle_system_statistics(self.system)
+                        .expect("live system")
+                        .pending_particle_count()
+                        > 0
+                );
+                Outcome::Rejected(Rejection::PendingDelete)
+            }
+            Err(CreateObjectError::InvalidParticleGroupTopology) => {
+                Outcome::Rejected(Rejection::CreationTopology)
+            }
+            Err(error) => panic!(
+                "operation {} append failed unexpectedly: {error:?}; input {:?}",
+                self.operation_index, self.maybe_current_operation
+            ),
         }
     }
 
@@ -271,7 +331,13 @@ impl Model {
                     lifecycle: report.lifecycle().len(),
                 }
             }
-            Err(_error) => Outcome::Rejected,
+            Err(ParticleGroupMutationError::InvalidTopology) => {
+                Outcome::Rejected(Rejection::MutationTopology)
+            }
+            Err(error) => panic!(
+                "operation {} join failed unexpectedly: {error:?}; input {:?}",
+                self.operation_index, self.maybe_current_operation
+            ),
         }
     }
 
@@ -294,7 +360,13 @@ impl Model {
                 created: self.remember(groups),
                 lifecycle: 0,
             },
-            Err(_error) => Outcome::Rejected,
+            Err(ParticleGroupMutationError::InvalidTopology) => {
+                Outcome::Rejected(Rejection::MutationTopology)
+            }
+            Err(error) => panic!(
+                "operation {} split failed unexpectedly: {error:?}; input {:?}",
+                self.operation_index, self.maybe_current_operation
+            ),
         }
     }
 
@@ -314,7 +386,13 @@ impl Model {
                 created: 0,
                 lifecycle: 0,
             },
-            Err(_error) => Outcome::Rejected,
+            Err(ParticleGroupMutationError::InvalidTopology) => {
+                Outcome::Rejected(Rejection::MutationTopology)
+            }
+            Err(error) => panic!(
+                "operation {} set_flags failed unexpectedly: {error:?}; input {:?}",
+                self.operation_index, self.maybe_current_operation
+            ),
         }
     }
 
@@ -328,7 +406,10 @@ impl Model {
                 created: 0,
                 lifecycle: 0,
             },
-            Err(_error) => Outcome::Rejected,
+            Err(error) => panic!(
+                "operation {} destroy_members failed unexpectedly: {error:?}; input {:?}",
+                self.operation_index, self.maybe_current_operation
+            ),
         }
     }
 
@@ -341,7 +422,10 @@ impl Model {
                     lifecycle: report.lifecycle().len(),
                 }
             }
-            Err(_error) => Outcome::Rejected,
+            Err(error) => panic!(
+                "operation {} compact failed unexpectedly: {error:?}; input {:?}",
+                self.operation_index, self.maybe_current_operation
+            ),
         }
     }
 
@@ -361,7 +445,13 @@ impl Model {
                     lifecycle: report.lifecycle().len(),
                 }
             }
-            Err(_error) => Outcome::Rejected,
+            Err(liquidfun::StepError::InvalidParticleGroupTopology) => {
+                Outcome::Rejected(Rejection::StepTopology)
+            }
+            Err(error) => panic!(
+                "operation {} step failed unexpectedly: {error:?}; input {:?}",
+                self.operation_index, self.maybe_current_operation
+            ),
         }
     }
 
@@ -377,7 +467,7 @@ impl Model {
                 HandleError::WrongParticleSystem
             ))
         );
-        Outcome::Rejected
+        Outcome::Rejected(Rejection::WrongParticleSystem)
     }
 }
 
