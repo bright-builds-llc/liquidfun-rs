@@ -41,9 +41,17 @@ impl Display for DocsError {
 impl Error for DocsError {}
 
 pub(crate) fn run(args: &[String]) -> Result<(), DocsError> {
-    if args != ["check"] {
-        return Err(DocsError::usage("expected `check`"));
-    }
+    let maybe_attestation_commit = match args {
+        [command] if command == "check" => None,
+        [command, flag, commit] if command == "check" && flag == "--attestation-commit" => {
+            Some(commit.as_str())
+        }
+        _ => {
+            return Err(DocsError::usage(
+                "expected `check [--attestation-commit SHA]`",
+            ));
+        }
+    };
     let repository_root = repository_root()?;
     let testing_path = repository_root.join("TESTING.md");
     let contents = fs::read_to_string(&testing_path).map_err(|error| {
@@ -53,7 +61,7 @@ pub(crate) fn run(args: &[String]) -> Result<(), DocsError> {
         )
     })?;
     check_testing_contract(&contents)?;
-    check_document_contracts(&repository_root)?;
+    check_document_contracts(&repository_root, maybe_attestation_commit)?;
     println!(
         "docs verified: {} testing layers, {} Phase 4, {} Phase 5, {} Phase 6, {} Phase 7, {} Phase 8, and {} Phase 12 public document contracts",
         LAYER_RULES.len(),

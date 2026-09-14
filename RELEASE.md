@@ -61,6 +61,77 @@ conditional support, unreviewed records, wrong producer identities, artifact or
 payload hash drift, advisory or unsafe waivers, package drift, incomplete
 corpus outcomes, and nonzero compatibility gaps.
 
+## Retain candidate producer attempts
+
+Check the bounded orchestration before freezing C:
+
+```bash
+scripts/phase15-candidate-evidence.sh check
+```
+
+The command modes require Python 3.11 or newer and can run on macOS. Independent
+semantic validation additionally requires a prepared environment with Bash 4 or
+newer, GNU find, jq, and SHA tools. Use exact repository, candidate, resolved
+branch or tag, run, and run-attempt identities throughout.
+
+Dispatch Oracle with its actual declared input; it does not accept
+`candidate_sha`:
+
+```bash
+scripts/phase15-candidate-evidence.sh dispatch \
+  --candidate <full-source-candidate-sha> \
+  --attempt-root target/release-attempt/dispatch-oracle \
+  --workflow oracle.yml --ref <exact-branch-or-tag> \
+  --input evidence_phase=phase11
+```
+
+Supply all declared inputs explicitly for other workflows, including
+`candidate_sha=C`. Performance requires the reviewed controlled-host parameters.
+If dispatch returns uncertain results, reconcile the same attempt before
+considering another dispatch:
+
+```bash
+scripts/phase15-candidate-evidence.sh reconcile \
+  --candidate <full-source-candidate-sha> \
+  --attempt-root target/release-attempt/dispatch-oracle
+```
+
+Reconciliation requires exactly one authoritative GitHub run URL in the
+persisted `dispatch-response.txt`, then verifies that exact run ID against
+fresh provider metadata. An absent or ambiguous URL remains blocked even when
+a same-SHA run exists; time proximity and a unique search result do not authorize
+redispatch or establish which run this attempt created.
+
+Collect each of the seven producer stems (`platform`, `oracle`, `safety`,
+`fuzz`, `regressions`, `coverage`, and `performance`) with its exact terminal
+run and attempt. For example:
+
+```bash
+scripts/phase15-candidate-evidence.sh collect \
+  --candidate <full-source-candidate-sha> \
+  --attempt-root target/release-attempt/retained \
+  --workflow oracle --ref <exact-branch-or-tag> \
+  --run-id <run-id> --run-attempt <run-attempt>
+```
+
+Each producer gets a new subdirectory that is never overwritten. A failed
+collection requires a new attempt root; preserve the failed records. At a
+checkout of C, independently validate and restore the retained artifacts into
+a fresh destination:
+
+```bash
+scripts/phase15-candidate-evidence.sh validate-retained \
+  --candidate <full-source-candidate-sha> \
+  --attempt-root target/release-attempt/retained \
+  --destination target/release-attempt/fresh-downloads \
+  --validator-bash bash
+```
+
+This checks the provider's current attempt and retained archive SHA-256 values,
+restores the 21 artifact directories, and invokes the existing semantic
+validator. It does not establish release readiness. Continue with the existing
+release aggregation and audit, then the C/A attestation sequence below.
+
 ## Reuse the exact package
 
 Create the `.crate` archive once with Rust 1.97.0 and bind its exact SHA-256,
@@ -93,17 +164,25 @@ not independently prove parity.
 
 ## Attest after the source freeze
 
+Source-readiness verification happens before freezing source commit C: finish
+implementation, tooling, planning, documentation prerequisites, and local gates.
+Final phase verification happens after the producers, retained evidence, and
+both attestation validations pass. It must not be recorded as complete before
+that evidence exists.
+
 Tracked release records may be committed after the frozen source candidate only
 to attest that candidate. Complete this sequence without reordering it:
 
-1. Finish phase lifecycle verification before pushing the frozen source
-   candidate.
+1. Finish source-readiness verification before pushing the frozen source
+   candidate C; keep public readiness non-ready.
 
 1. Run every reviewed producer and the full-SHA `release-candidate` workflow
    against that exact candidate.
 
 1. Download the complete retained bundle, including all evidence envelopes and
-   the exact `.crate` archive referenced by its manifest.
+   the exact `.crate` archive referenced by its manifest. At a fresh checkout
+   of C, restore every payload to its original repository-relative `target/`
+   path; an archive inventory without its payload bytes cannot pass validation.
 
 1. Materialize the source-candidate, manifest, and report records, then validate
    the proposed worktree:
@@ -115,8 +194,8 @@ to attest that candidate. Complete this sequence without reordering it:
      --report reference/release/audit-report.json
    ```
 
-1. Commit only the allowlisted attestation records, then validate the committed
-   frozen-source-to-attestation range:
+1. Commit only the three JSON records as attestation commit A directly after C,
+   then validate the explicit frozen-source-to-attestation range C..A:
 
    ```bash
    cargo xtask release attestation validate \
@@ -127,7 +206,36 @@ to attest that candidate. Complete this sequence without reordering it:
    ```
 
 1. Only after both validations pass may public readiness status be projected
-   and the reviewed attestation commit be tagged.
+   in a later documentation commit D. Each of `README.md`, `COMPATIBILITY.md`,
+   and `RELEASE.md` must carry `Status: **release-ready**`,
+   `Source candidate: <full-source-candidate-sha>`, and
+   `Attestation commit: <full-attestation-commit-sha>`, with the two SHA values
+   individually enclosed in Markdown backticks. Check that projection using
+   `cargo xtask docs check --attestation-commit <full-attestation-commit-sha>`.
+   The default docs check keeps requiring non-ready copy; it never infers A
+   from `HEAD` or a ready boolean. Complete final phase verification and the
+   milestone audit against the accepted C/A evidence. Tags and package
+   publication require separate release authority.
+
+Keep planning, scripts, and ordinary documentation edits outside C..A; the
+nine-path attestation allowlist remains unchanged. Reverted intervening edits
+are still outside that boundary. Later metadata or documentation commits do not
+change C or A: validation from D must still explicitly select A, read records
+byte-identical to those committed at A, and restore the retained payload paths.
+Missing, stale, or tampered records and payloads cannot authorize ready copy.
+
+Cargo CI runs `bash scripts/phase15-docs-check.sh`. With no standalone
+attestation marker in README, this runs the default non-ready docs check.
+After projection, it reads the explicit C/A markers, verifies the three tracked
+records against A before selecting the release run, and downloads the exact
+`phase12-release-<run-id>-<source-candidate-sha>` archive. It restores the 19 audit
+envelopes and exact package at `target/phase12-release/<source-candidate-sha>`
+and runs the full attestation-backed docs check. No source or attestation SHA
+is inferred from HEAD. The original ZIP and command/provider logs remain under
+`target/phase15-docs-ci/`; an existing restoration destination is rejected.
+Run this check in a fresh checkout with `contents: read` and `actions: read`
+access. The release workflow currently retains that artifact for 90 days;
+missing or expired evidence fails closed rather than relying on cached bytes.
 
 Never relabel the attestation commit itself, current `HEAD`, or a documentation
 projection commit as the audited source candidate.

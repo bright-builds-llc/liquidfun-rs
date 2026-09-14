@@ -1,5 +1,21 @@
 use super::*;
 
+#[test]
+fn fixture_maturity_preserves_status_line_contract_prose() {
+    // Arrange
+    for status in ["release-ready", "not release-ready"] {
+        let input = format!("Status: **{status}** with run-bound release attestation\n");
+
+        // Act
+        let pending = maturity::non_ready_copy(&input);
+
+        // Assert
+        assert!(pending.contains("with run-bound release attestation"));
+        assert_eq!(pending.matches("Status: **not release-ready**").count(), 1);
+        assert!(!pending.contains("Status: **release-ready**"));
+    }
+}
+
 pub(super) fn phase7_contract_accepts_repository_documents() -> TestResult {
     // Arrange
     let fixture = DocsFixture::new()?;
@@ -349,5 +365,21 @@ pub(super) fn windows_oracle_step_fails_fast_on_native_command_errors() -> TestR
     // Assert
     assert!(error_preference < first_command);
     assert!(native_preference < first_command);
+    Ok(())
+}
+#[test]
+fn explicit_attestation_must_validate_before_ready_copy_is_allowed() -> TestResult {
+    // Arrange
+    let fixture = DocsFixture::new()?;
+
+    // Act
+    let output = Command::new(env!("CARGO_BIN_EXE_xtask"))
+        .env("LIQUIDFUN_XTASK_ROOT", &fixture.root)
+        .args(["docs", "check", "--attestation-commit", &"1".repeat(40)])
+        .output()?;
+
+    // Assert
+    assert_failure(&output, "docs/readiness");
+    fixture.cleanup()?;
     Ok(())
 }

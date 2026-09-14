@@ -12,7 +12,9 @@ use std::{collections::BTreeMap, fs};
 )]
 pub(in super::super) fn check_document_contracts(
     repository_root: &std::path::Path,
+    maybe_attestation_commit: Option<&str>,
 ) -> Result<(), DocsError> {
+    let readiness = readiness::validate(repository_root, maybe_attestation_commit)?;
     check_required_markers(repository_root, DOCUMENT_CONTRACTS, "phase4-contract")?;
     check_required_markers(
         repository_root,
@@ -90,6 +92,7 @@ pub(in super::super) fn check_document_contracts(
         }
         if let Some(claim) = FORBIDDEN_PHASE8_CLAIMS
             .iter()
+            .filter(|claim| !readiness.permits(claim))
             .find(|claim| lowercase.contains(**claim))
         {
             return Err(DocsError::new(
@@ -109,6 +112,7 @@ pub(in super::super) fn check_document_contracts(
     let lowercase = readme.to_ascii_lowercase();
     if let Some(claim) = FORBIDDEN_CURRENT_CLAIMS
         .iter()
+        .filter(|claim| !readiness.permits(claim))
         .find(|claim| lowercase.contains(**claim))
     {
         return Err(DocsError::new(

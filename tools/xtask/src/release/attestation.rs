@@ -77,6 +77,7 @@ pub(super) fn run(repository_root: &Path, args: &[String]) -> Result<(), Release
                 .as_deref()
                 .ok_or_else(|| ReleaseError::new("usage", "missing `--attestation-commit`"))?;
             validate_committed_paths(repository_root, &verified.source.commit, attestation_commit)?;
+            validate_committed_records(repository_root, &options, attestation_commit)?;
         }
         _ => {
             return Err(ReleaseError::new(
@@ -90,6 +91,76 @@ pub(super) fn run(repository_root: &Path, args: &[String]) -> Result<(), Release
         "release attestation: VALID\nsource candidate: {}",
         verified.source.commit
     );
+    Ok(())
+}
+
+/// Validate the fixed release records against an explicit attestation commit.
+/// Retained evidence must be restored at the manifest's repository-relative paths.
+pub(crate) fn validate_committed(
+    repository_root: &Path,
+    attestation_commit: &str,
+) -> Result<String, ReleaseError> {
+    if !is_full_sha(attestation_commit) {
+        return Err(ReleaseError::new(
+            "attestation-commit",
+            "expected a full lowercase attestation SHA",
+        ));
+    }
+    let options = AttestationOptions {
+        source: PathBuf::from("reference/release/source-candidate.json"),
+        manifest: PathBuf::from("reference/release/candidate-manifest.json"),
+        report: PathBuf::from("reference/release/audit-report.json"),
+        maybe_attestation_commit: Some(attestation_commit.to_owned()),
+    };
+    let verified = validate_inputs(repository_root, &options)?;
+    validate_committed_paths(repository_root, &verified.source.commit, attestation_commit)?;
+    validate_committed_records(repository_root, &options, attestation_commit)?;
+    validate_audit(repository_root, &verified)?;
+    Ok(verified.source.commit)
+}
+
+fn validate_committed_records(
+    repository_root: &Path,
+    options: &AttestationOptions,
+    attestation_commit: &str,
+) -> Result<(), ReleaseError> {
+    let resolved = resolve_commit(repository_root, attestation_commit)?;
+    for path in [&options.source, &options.manifest, &options.report] {
+        let bytes = read_confined(repository_root, path, "attestation-input")?;
+        let object = format!("{resolved}:{}", path.to_string_lossy().replace('\\', "/"));
+        let size = git(
+            repository_root,
+            &["cat-file", "-s", &object],
+            "attestation-record",
+        )?;
+        let size = std::str::from_utf8(&size.stdout)
+            .ok()
+            .and_then(|size| size.trim().parse::<u64>().ok())
+            .filter(|size| *size <= MAXIMUM_RECORD_BYTES)
+            .ok_or_else(|| {
+                ReleaseError::new(
+                    "attestation-record",
+                    "committed record exceeds the byte bound",
+                )
+            })?;
+        if size != bytes.len() as u64 {
+            return Err(ReleaseError::new(
+                "attestation-record",
+                "committed record byte size differs",
+            ));
+        }
+        let committed = git(
+            repository_root,
+            &["cat-file", "blob", &object],
+            "attestation-record",
+        )?;
+        if bytes != committed.stdout {
+            return Err(ReleaseError::new(
+                "attestation-record",
+                "record bytes differ from the explicit attestation commit",
+            ));
+        }
+    }
     Ok(())
 }
 
@@ -243,6 +314,12 @@ fn validate_committed_paths(
     source_candidate: &str,
     attestation_commit: &str,
 ) -> Result<(), ReleaseError> {
+    if !is_full_sha(attestation_commit) {
+        return Err(ReleaseError::new(
+            "attestation-commit",
+            "expected a full lowercase attestation SHA",
+        ));
+    }
     let resolved = resolve_commit(repository_root, attestation_commit)?;
     if resolved == source_candidate {
         return Err(ReleaseError::new(
@@ -254,7 +331,7 @@ fn validate_committed_paths(
     let range = format!("{source_candidate}..{resolved}");
     let output = git(
         repository_root,
-        &["diff", "--name-only", "-z", &range, "--"],
+        &["log", "--format=", "--name-only", "-z", "-m", &range, "--"],
         "attestation-diff",
     )?;
     validate_changed_paths(&parse_nul_paths(&output.stdout)?)

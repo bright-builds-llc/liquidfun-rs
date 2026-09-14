@@ -1,6 +1,6 @@
 //! Read-only release readiness audit over existing evidence artifacts.
 
-mod attestation;
+pub(crate) mod attestation;
 mod domain;
 mod report;
 mod validation;

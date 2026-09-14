@@ -1,5 +1,8 @@
 //! Command-level coverage for the machine-audited testing-layer contract.
 
+#[path = "support/maturity.rs"]
+mod maturity;
+
 #[cfg(unix)]
 #[path = "docs_contract/markdown.rs"]
 mod markdown;
@@ -58,7 +61,14 @@ impl DocsFixture {
         for document in CONTRACT_DOCUMENTS {
             let source = workspace_root().join(document);
             if source.is_file() {
-                fs::copy(source, root.join(document))?;
+                if matches!(document, "README.md" | "COMPATIBILITY.md" | "RELEASE.md") {
+                    fs::write(
+                        root.join(document),
+                        maturity::non_ready_copy(&fs::read_to_string(source)?),
+                    )?;
+                } else {
+                    fs::copy(source, root.join(document))?;
+                }
             }
         }
         for support_file in CONTRACT_SUPPORT_FILES {

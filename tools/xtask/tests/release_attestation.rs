@@ -8,6 +8,14 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 
+#[path = "support/maturity.rs"]
+mod maturity;
+
+#[path = "release_attestation/fixture.rs"]
+mod complete_fixture;
+#[path = "release_attestation/readiness.rs"]
+mod readiness;
+
 static TEST_ORDINAL: AtomicU64 = AtomicU64::new(1);
 
 struct Fixture {
@@ -254,11 +262,7 @@ fn write_json(path: &Path, value: &Value) {
 }
 
 fn git_output(repository: &Path, args: &[&str]) -> String {
-    let output = Command::new("git")
-        .current_dir(repository)
-        .args(args)
-        .output()
-        .expect("git command");
+    let output = complete_fixture::bounded(Command::new("git").current_dir(repository).args(args));
     assert!(output.status.success(), "git command failed");
     String::from_utf8(output.stdout)
         .expect("git output is UTF-8")

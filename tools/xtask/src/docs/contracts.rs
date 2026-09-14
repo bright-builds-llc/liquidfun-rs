@@ -1,5 +1,6 @@
+mod readiness;
 pub(super) mod validation;
-pub(super) const USAGE: &str = "Usage: cargo xtask docs check";
+pub(super) const USAGE: &str = "Usage: cargo xtask docs check [--attestation-commit SHA]";
 const TABLE_HEADING: &str = "## Testing layer contract";
 const COLUMNS: [&str; 9] = [
     "Layer",
@@ -331,11 +332,8 @@ pub(super) const PHASE12_PUBLIC_DOCUMENT_CONTRACTS: [(&str, &[&str]); 5] = [
         &[
             "## Maturity and evidence",
             "version `0.0.0`",
-            "this repository has not declared",
-            "a parity-bearing v1 release candidate",
             "[compatibility inventory](COMPATIBILITY.md)",
             "`cargo xtask release audit`",
-            "not release-ready",
             "`release-candidate` workflow run",
             "`cargo xtask release attestation validate`",
             "## Cargo-only install and use",
@@ -386,20 +384,12 @@ pub(super) const PHASE12_PUBLIC_DOCUMENT_CONTRACTS: [(&str, &[&str]); 5] = [
             "`cargo xtask release audit`",
         ],
     ),
-    (
-        "COMPATIBILITY.md",
-        &[
-            "Status: **not release-ready**",
-            "no completed full-SHA `release-candidate` workflow run",
-            "run-bound release attestation",
-        ],
-    ),
+    ("COMPATIBILITY.md", &["run-bound release attestation"]),
     (
         "RELEASE.md",
         &[
             "# Release process",
             "## Current release status",
-            "not release-ready",
             "`release-candidate` workflow run",
             "`cargo xtask release attestation validate`",
             "## Versioning and MSRV",
