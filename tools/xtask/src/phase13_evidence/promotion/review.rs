@@ -1,19 +1,22 @@
 use super::{
-    ARTIFACT_MANIFEST_PATH, BTreeMap, BTreeSet, BUNDLE_SHA256, EXACT_BYTES_DIGEST_MODE,
-    PRODUCER_SHA, PROMOTED_PATHS, Path, PathBuf, PromotionError, PromotionErrorKind,
-    PromotionReceipt, RECEIPT_PATH, RECEIPT_SEMANTIC_DIGEST_MODE, REPLAY_EVIDENCE_PATH,
-    ReviewAcknowledgement, ReviewPacket, WITNESS_PATH, WITNESS_PROVENANCE_PATH, absolute_path,
-    canonical_diff, changed_path_set_sha256, file_sha256, filesystem_error, fs, git_file,
-    git_maybe_file, git_text, promoted_path_set_sha256, promoted_paths, read_json,
-    receipt_semantic_sha256, require_clean_worktree, require_options, required, review_sha256,
+    ARTIFACT_MANIFEST_PATH, BTreeMap, BTreeSet, EXACT_BYTES_DIGEST_MODE, PROMOTED_PATHS, Path,
+    PathBuf, PromotionError, PromotionErrorKind, PromotionReceipt, RECEIPT_PATH,
+    RECEIPT_SEMANTIC_DIGEST_MODE, REPLAY_EVIDENCE_PATH, ReviewAcknowledgement, ReviewPacket,
+    WITNESS_PATH, WITNESS_PROVENANCE_PATH, absolute_path, canonical_diff, changed_path_set_sha256,
+    file_sha256, filesystem_error, fs, git_file, git_maybe_file, git_text,
+    promoted_path_set_sha256, promoted_paths, read_json, receipt_semantic_sha256,
+    require_clean_worktree, require_options, required, review_sha256,
     reviewed_content_digests_from_root, reviewed_replacements_from_root, transaction, valid_digest,
     valid_revision, valid_utc_timestamp, validate_acquisition, validate_content_digest_claims,
     validate_staged_ledgers, validate_staged_tree,
 };
 #[cfg(test)]
+#[path = "review_tests.rs"]
+mod tests;
+#[cfg(test)]
 use super::{
-    Acquisition, ClosureReview, PROVIDER_ARTIFACT_ID, PROVIDER_ARTIFACT_NAME, PROVIDER_DIGEST,
-    PROVIDER_REPOSITORY, PROVIDER_RUN_ID,
+    Acquisition, BUNDLE_SHA256, ClosureReview, PRODUCER_SHA, PROVIDER_ARTIFACT_ID,
+    PROVIDER_ARTIFACT_NAME, PROVIDER_DIGEST, PROVIDER_REPOSITORY, PROVIDER_RUN_ID,
 };
 
 pub(super) fn promote(
@@ -140,8 +143,8 @@ pub(super) fn validate_packet_and_ack(
 
 pub(super) fn validate_packet_identity(packet: &ReviewPacket) -> Result<(), PromotionError> {
     if packet.schema_version != 2
-        || packet.producer_sha != PRODUCER_SHA
-        || packet.bundle_sha256 != BUNDLE_SHA256
+        || !valid_revision(&packet.producer_sha)
+        || !valid_digest(&packet.bundle_sha256)
         || !valid_revision(&packet.promotion_base_sha)
         || packet.promoted_paths != promoted_paths()
         || packet.promoted_path_set_sha256 != promoted_path_set_sha256()
@@ -171,7 +174,7 @@ pub(super) fn validate_packet_identity(packet: &ReviewPacket) -> Result<(), Prom
             "review packet identity or closure contract is invalid",
         ));
     }
-    validate_acquisition(&packet.acquisition)
+    validate_acquisition(&packet.acquisition, &packet.producer_sha)
 }
 
 pub(super) fn valid_path_classification(changed: &[String], unchanged: &[String]) -> bool {
@@ -371,14 +374,35 @@ pub(super) fn tracked_reviewed_check(repository_root: &Path) -> Result<(), Promo
             "artifact ledger record paths are incomplete or unexpected",
         ));
     }
+    validate_receipt_authority(repository_root, records)?;
+    validate_content_digest_claims(&reviewed_replacements_from_root(repository_root)?)?;
+    Ok(())
+}
+
+fn validate_receipt_authority(
+    repository_root: &Path,
+    records: &[toml::Value],
+) -> Result<(), PromotionError> {
     let receipt: PromotionReceipt = read_json(&repository_root.join(RECEIPT_PATH))?;
-    if receipt.producer_sha != PRODUCER_SHA || receipt.bundle_sha256 != BUNDLE_SHA256 {
+    if !valid_revision(&receipt.producer_sha) || !valid_digest(&receipt.bundle_sha256) {
         return Err(PromotionError::new(
             PromotionErrorKind::Ledger,
             "tracked promotion receipt is circular or has the wrong P/B",
         ));
     }
-    validate_content_digest_claims(&reviewed_replacements_from_root(repository_root)?)?;
+    validate_acquisition(&receipt.acquisition, &receipt.producer_sha)?;
+    for record in records {
+        if record.get("producer_sha").and_then(toml::Value::as_str)
+            != Some(receipt.producer_sha.as_str())
+            || record.get("bundle_sha256").and_then(toml::Value::as_str)
+                != Some(receipt.bundle_sha256.as_str())
+        {
+            return Err(PromotionError::new(
+                PromotionErrorKind::Ledger,
+                "artifact ledger P/B differs from reviewed receipt",
+            ));
+        }
+    }
     Ok(())
 }
 

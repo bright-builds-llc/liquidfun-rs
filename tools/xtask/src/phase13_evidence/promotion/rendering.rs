@@ -1,11 +1,10 @@
 use super::{
-    ARTIFACT_MANIFEST_PATH, Acquisition, BTreeMap, BUNDLE_SHA256, BundleFileEntry, BundleManifest,
-    CATALOG_PATH, EXACT_BYTES_DIGEST_MODE, PRODUCER_SHA, Path, ProducerClosures,
-    PromotionCommitContract, PromotionError, PromotionErrorKind, PromotionReceipt, RECEIPT_PATH,
-    RECEIPT_SEMANTIC_DIGEST_MODE, REPLAY_EVIDENCE_PATH, SOURCE_MAP_PATH, UPSTREAM_REVISION,
-    WITNESS_PATH, WITNESS_PROVENANCE_PATH, changed_path_set_sha256, filesystem_error, fs,
-    json_bytes, promoted_path_set_sha256, promoted_paths, read_json, receipt_semantic_sha256,
-    sha256,
+    ARTIFACT_MANIFEST_PATH, Acquisition, BTreeMap, BundleFileEntry, BundleManifest, CATALOG_PATH,
+    EXACT_BYTES_DIGEST_MODE, Path, ProducerClosures, PromotionCommitContract, PromotionError,
+    PromotionErrorKind, PromotionReceipt, RECEIPT_PATH, RECEIPT_SEMANTIC_DIGEST_MODE,
+    REPLAY_EVIDENCE_PATH, SOURCE_MAP_PATH, UPSTREAM_REVISION, WITNESS_PATH,
+    WITNESS_PROVENANCE_PATH, changed_path_set_sha256, filesystem_error, fs, json_bytes,
+    promoted_path_set_sha256, promoted_paths, read_json, receipt_semantic_sha256, sha256,
 };
 use std::fmt::Write as _;
 
@@ -93,7 +92,7 @@ pub(super) fn render_replacements(
                 .files
                 .iter()
                 .find(|entry| entry.path == "evidence/witness.json"),
-            PRODUCER_SHA,
+            manifest.producer_sha.as_str(),
             EXACT_BYTES_DIGEST_MODE,
         ),
         (
@@ -104,7 +103,7 @@ pub(super) fn render_replacements(
                 .files
                 .iter()
                 .find(|entry| entry.path == "evidence/witness.provenance.json"),
-            PRODUCER_SHA,
+            manifest.producer_sha.as_str(),
             EXACT_BYTES_DIGEST_MODE,
         ),
         (
@@ -115,7 +114,7 @@ pub(super) fn render_replacements(
                 .files
                 .iter()
                 .find(|entry| entry.path == "evidence/replay.json"),
-            PRODUCER_SHA,
+            manifest.producer_sha.as_str(),
             EXACT_BYTES_DIGEST_MODE,
         ),
         (
@@ -134,6 +133,8 @@ pub(super) fn render_replacements(
                 .map_err(filesystem_error)?,
             &artifact_hashes,
             reviewer_id,
+            &manifest.producer_sha,
+            &manifest.bundle_sha256,
         )?
         .into_bytes(),
     );
@@ -365,6 +366,8 @@ pub(super) fn render_artifact_manifest(
     current: &str,
     artifact_hashes: &[ArtifactHash<'_>; 4],
     reviewer_id: &str,
+    producer_sha: &str,
+    bundle_sha256: &str,
 ) -> Result<String, PromotionError> {
     const MARKER: &str = "[[artifact_schemas.phase13_evidence.records]]";
     let existing: toml::Value = toml::from_str(current).map_err(|error| {
@@ -440,8 +443,8 @@ path = \"{path}\"\n\
 sha256 = \"{digest}\"\n\
 digest_mode = \"{digest_mode}\"\n\
 generator_revision = \"{generator_revision}\"\n\
-producer_sha = \"{PRODUCER_SHA}\"\n\
-bundle_sha256 = \"{BUNDLE_SHA256}\"\n\
+producer_sha = \"{producer_sha}\"\n\
+bundle_sha256 = \"{bundle_sha256}\"\n\
 source_revision = \"{source_revision}\"\n\
 source_path = \"{source_path}\"\n\
 derivation_kind = \"{derivation_kind}\"\n\
@@ -462,6 +465,44 @@ reviewer = \"{reviewer_id}\"\n"
 #[cfg(test)]
 mod tests {
     use super::render_catalog;
+
+    #[test]
+    fn artifact_ledger_uses_the_fresh_producer_and_bundle() {
+        // Arrange
+        let producer = "e".repeat(40);
+        let bundle = "f".repeat(64);
+        let rows = std::array::from_fn(|_| {
+            (
+                "reference/test.json",
+                "a".repeat(64),
+                "witness",
+                None,
+                producer.as_str(),
+                super::EXACT_BYTES_DIGEST_MODE,
+            )
+        });
+
+        // Act
+        let rendered = super::render_artifact_manifest(
+            "schema_version = 1\n",
+            &rows,
+            "reviewer",
+            &producer,
+            &bundle,
+        )
+        .expect("fresh ledger renders");
+        let ledger: toml::Value = toml::from_str(&rendered).expect("rendered ledger parses");
+
+        // Assert
+        let records = ledger["artifact_schemas"]["phase13_evidence"]["records"]
+            .as_array()
+            .expect("rendered record set");
+        assert!(records.iter().all(|record| {
+            record["producer_sha"].as_str() == Some(producer.as_str())
+                && record["bundle_sha256"].as_str() == Some(bundle.as_str())
+                && record["generator_revision"].as_str() == Some(producer.as_str())
+        }));
+    }
 
     #[test]
     fn split_catalog_replay_evidence_binding_is_complete() {

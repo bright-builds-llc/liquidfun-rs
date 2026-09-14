@@ -1,10 +1,8 @@
 use super::{
-    Acquisition, BTreeMap, BTreeSet, BundleClosure, BundleManifest, CATALOG_PATH, ClosureReview,
-    Command, Digest, NEXT_STAGE, Ordering, PRODUCER_SHA, PROMOTED_PATHS, PROVIDER_ARTIFACT_ID,
-    PROVIDER_ARTIFACT_NAME, PROVIDER_DIGEST, PROVIDER_REPOSITORY, PROVIDER_RUN_ID, Path,
-    PromotionError, PromotionErrorKind, ProviderArtifact, Sha256, filesystem_error, fs,
-    git_maybe_file, read_json, relative_path_text, run_process, transaction, update_field,
-    valid_utc_timestamp, validate_exact_paths, write_new_file,
+    BTreeMap, BTreeSet, BundleClosure, BundleManifest, CATALOG_PATH, ClosureReview, Command,
+    Digest, NEXT_STAGE, Ordering, PROMOTED_PATHS, Path, PromotionError, PromotionErrorKind, Sha256,
+    filesystem_error, fs, git_maybe_file, read_json, relative_path_text, run_process, transaction,
+    update_field, validate_exact_paths, write_new_file,
 };
 
 #[allow(
@@ -161,54 +159,6 @@ pub(super) fn normalize_diff_headers(
         + "\n"
 }
 
-pub(super) fn acquire_provider_metadata() -> Result<Acquisition, PromotionError> {
-    let endpoint = format!("repos/{PROVIDER_REPOSITORY}/actions/artifacts/{PROVIDER_ARTIFACT_ID}");
-    let output = run_process(
-        Command::new("gh").args(["api", &endpoint]),
-        "read immutable artifact provider metadata",
-    )?;
-    let artifact: ProviderArtifact = serde_json::from_slice(&output.stdout).map_err(|error| {
-        PromotionError::new(
-            PromotionErrorKind::Provider,
-            format!("invalid provider artifact metadata: {error}"),
-        )
-    })?;
-    let acquisition = Acquisition {
-        repository: PROVIDER_REPOSITORY.to_owned(),
-        run_id: artifact.workflow_run.id,
-        artifact_id: artifact.id,
-        artifact_name: artifact.name,
-        provider_digest: artifact.digest,
-        artifact_created_at: artifact.created_at,
-        artifact_expires_at: artifact.expires_at,
-    };
-    if artifact.workflow_run.head_sha != PRODUCER_SHA {
-        return Err(PromotionError::new(
-            PromotionErrorKind::Provider,
-            "provider artifact head SHA does not equal P",
-        ));
-    }
-    validate_acquisition(&acquisition)?;
-    Ok(acquisition)
-}
-
-pub(super) fn validate_acquisition(acquisition: &Acquisition) -> Result<(), PromotionError> {
-    if acquisition.repository != PROVIDER_REPOSITORY
-        || acquisition.run_id != PROVIDER_RUN_ID
-        || acquisition.artifact_id != PROVIDER_ARTIFACT_ID
-        || acquisition.artifact_name != PROVIDER_ARTIFACT_NAME
-        || acquisition.provider_digest != PROVIDER_DIGEST
-        || !valid_utc_timestamp(&acquisition.artifact_created_at)
-        || !valid_utc_timestamp(&acquisition.artifact_expires_at)
-    {
-        return Err(PromotionError::new(
-            PromotionErrorKind::Provider,
-            "artifact provider metadata does not equal the canonical acquisition tuple",
-        ));
-    }
-    Ok(())
-}
-
 pub(super) fn read_bundle_manifest(root: &Path) -> Result<BundleManifest, PromotionError> {
     read_json(&root.join("phase13-bundle.json"))
 }
@@ -270,4 +220,29 @@ pub(crate) fn classify_reviewed_paths(
         .map(|(path, _digest)| path.clone())
         .collect();
     Ok((changed, unchanged))
+}
+
+#[cfg(test)]
+mod acquisition_tests {
+    use super::super::{Acquisition, validate_acquisition};
+
+    #[test]
+    fn accepts_a_fresh_acquisition_instead_of_only_the_historical_tuple() {
+        // Arrange
+        let acquisition = Acquisition {
+            repository: "bright-builds-llc/liquidfun-rs".to_owned(),
+            run_id: 99,
+            artifact_id: 123,
+            artifact_name: format!("phase13-staged-99-{}", "a".repeat(40)),
+            provider_digest: format!("sha256:{}", "b".repeat(64)),
+            artifact_created_at: "2026-09-14T00:00:00Z".to_owned(),
+            artifact_expires_at: "2026-12-14T00:00:00Z".to_owned(),
+        };
+
+        // Act
+        let result = validate_acquisition(&acquisition, &"a".repeat(40));
+
+        // Assert
+        assert!(result.is_ok(), "fresh acquisition rejected: {result:?}");
+    }
 }

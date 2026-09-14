@@ -38,6 +38,27 @@ const REVIEWED_PATHS: [&str; 7] = [
 ];
 const RECEIPT_PATH: &str = "reference/artifacts/phase13/promotion-receipt.json";
 
+#[test]
+fn retained_provider_archive_controls() {
+    // Arrange
+    let script = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("tests/phase13_promotion_contract/archive_controls.py");
+
+    // Act
+    let output = std::process::Command::new("python3")
+        .env("PYTHONDONTWRITEBYTECODE", "1")
+        .arg(script)
+        .output()
+        .expect("Python archive controls launch");
+
+    // Assert
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
 fn reviewed_replacements() -> (BTreeMap<String, Vec<u8>>, Vec<String>) {
     let changed_paths = REVIEWED_PATHS.map(str::to_owned).to_vec();
     let mut replacements = REVIEWED_PATHS

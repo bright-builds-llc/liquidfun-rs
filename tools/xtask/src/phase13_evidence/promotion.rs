@@ -4,6 +4,8 @@
 mod operations;
 #[path = "promotion/preparation.rs"]
 mod preparation;
+#[path = "promotion/provider.rs"]
+mod provider;
 #[path = "promotion/rendering.rs"]
 mod rendering;
 #[path = "promotion/review.rs"]
@@ -30,9 +32,8 @@ use sha2::{Digest, Sha256};
 use crate::phase13_evidence::bundle::{ClosureEntry, check_bundle, closure_digest};
 pub(crate) use operations::classify_reviewed_paths;
 use operations::{
-    acquire_provider_metadata, canonical_diff, changed_path_set_sha256, closure_review,
-    format_staged_catalog, promoted_path_set_sha256, promoted_paths, read_bundle_manifest,
-    validate_acquisition, write_replacements,
+    canonical_diff, changed_path_set_sha256, closure_review, format_staged_catalog,
+    promoted_path_set_sha256, promoted_paths, read_bundle_manifest, write_replacements,
 };
 #[cfg(test)]
 #[allow(
@@ -41,6 +42,7 @@ use operations::{
 )]
 pub(crate) use operations::{replace_with_failing_validation, replace_with_injected_failure};
 use preparation::prepare;
+use provider::{acquire_provider_metadata, validate_acquisition};
 use rendering::{ReceiptFields, render_receipt, render_replacements};
 pub(crate) use review::validate_base_contract;
 use review::{promote, promotion_ready, review_ack_check, tracked_reviewed_check};
@@ -81,20 +83,30 @@ pub(crate) use validation::{
 pub(crate) use validation::{validate_exact_paths, validate_staged_ledgers};
 
 const USAGE: &str = r"Usage:
-  cargo xtask phase13 evidence prepare --bundle <path> --expected-producer-sha <P> --expected-bundle-sha256 <B> --reviewer-id <id> --review-packet <path>
+  cargo xtask phase13 evidence prepare --bundle <path> --expected-producer-sha <P> --expected-bundle-sha256 <B> --reviewer-id <id> --review-packet <path> --acquisition <json>
   cargo xtask phase13 evidence review-ack check --review-packet <path> --ack <path>
   cargo xtask phase13 evidence promote --review-packet <path> --review-ack <path>
   cargo xtask phase13 evidence promotion-ready --review-packet <path> --review-ack <path>
-  cargo xtask phase13 evidence check --tracked --require-reviewed";
+  cargo xtask phase13 evidence check --tracked --require-reviewed
 
+Acquisition JSON: schema_version=1, run_id, run_attempt, artifact_id (positive integers),
+archive_path (retained raw provider ZIP, absolute or repository-relative).
+Prepare independently queries provider metadata and compares the raw archive to the bundle.";
+
+#[cfg(test)]
 const PRODUCER_SHA: &str = "981908ea87b6789b6b6e9aa136e65a369c5c736d";
+#[cfg(test)]
 const BUNDLE_SHA256: &str = "5f3a9db4de81a947c3efc56bac598b0af15fa8da73f8497dfaa096436b27f004";
 const UPSTREAM_REVISION: &str = "7f20402173fd143a3988c921bc384459c6a858f2";
 const PROVIDER_REPOSITORY: &str = "bright-builds-llc/liquidfun-rs";
+#[cfg(test)]
 const PROVIDER_RUN_ID: u64 = 30_373_261_657;
+#[cfg(test)]
 const PROVIDER_ARTIFACT_ID: u64 = 8_693_871_064;
+#[cfg(test)]
 const PROVIDER_ARTIFACT_NAME: &str =
     "phase13-staged-30373261657-981908ea87b6789b6b6e9aa136e65a369c5c736d";
+#[cfg(test)]
 const PROVIDER_DIGEST: &str =
     "sha256:74190a7e5f90df7cc2ee8986e62472f5ac8065addc5cf4d8d36b8e524c4a7f2a";
 const MATERIALS_MANIFEST: &str = "tools/reference/phase9-lifecycle-contact-witness.materials.json";
@@ -324,22 +336,6 @@ struct BundleFileEntry {
     derivation_kind: String,
     alteration_summary: String,
     notice_refs: Vec<String>,
-}
-
-#[derive(Debug, Deserialize)]
-struct ProviderArtifact {
-    id: u64,
-    name: String,
-    digest: String,
-    created_at: String,
-    expires_at: String,
-    workflow_run: ProviderWorkflowRun,
-}
-
-#[derive(Debug, Deserialize)]
-struct ProviderWorkflowRun {
-    id: u64,
-    head_sha: String,
 }
 
 #[derive(Debug, Deserialize)]

@@ -1,15 +1,15 @@
 use super::{
-    Acquisition, BTreeMap, BUNDLE_SHA256, BundleClosure, BundleManifest, PRODUCER_SHA, Path,
-    PathBuf, PromotionError, PromotionErrorKind, REPLAY_REPOSITORY_PREFIXES, ReceiptFields,
-    ReviewPacket, absolute_path, acquire_provider_metadata, baseline_sha256, canonical_diff,
-    changed_path_set_sha256, check_bundle, classify_reviewed_paths, closure_review,
-    derive_git_closure, derive_witness_closure, format_staged_catalog, git_success, git_text,
-    new_staging_root, promoted_path_set_sha256, promoted_paths, read_bundle_manifest,
-    relative_path_text, render_receipt, render_replacements, replacement_sha256,
-    require_clean_worktree, require_options, required, review_sha256, reviewed_content_digests,
-    reviewed_content_digests_from_root, validate_base_contract, validate_bundle_contract,
-    validate_bundle_files, validate_reviewer_id, validate_staged_ledgers, validate_staged_tree,
-    write_json, write_replacements,
+    Acquisition, BTreeMap, BundleClosure, BundleManifest, Path, PathBuf, PromotionError,
+    PromotionErrorKind, REPLAY_REPOSITORY_PREFIXES, ReceiptFields, ReviewPacket, absolute_path,
+    acquire_provider_metadata, baseline_sha256, canonical_diff, changed_path_set_sha256,
+    check_bundle, classify_reviewed_paths, closure_review, derive_git_closure,
+    derive_witness_closure, format_staged_catalog, git_success, git_text, new_staging_root,
+    promoted_path_set_sha256, promoted_paths, read_bundle_manifest, relative_path_text,
+    render_receipt, render_replacements, replacement_sha256, require_clean_worktree,
+    require_options, required, review_sha256, reviewed_content_digests,
+    reviewed_content_digests_from_root, valid_digest, valid_revision, validate_base_contract,
+    validate_bundle_contract, validate_bundle_files, validate_reviewer_id, validate_staged_ledgers,
+    validate_staged_tree, write_json, write_replacements,
 };
 
 struct PreparationContext {
@@ -91,6 +91,7 @@ fn load_context(
         options,
         &[
             "--bundle",
+            "--acquisition",
             "--expected-producer-sha",
             "--expected-bundle-sha256",
             "--reviewer-id",
@@ -99,10 +100,10 @@ fn load_context(
     )?;
     let producer_sha = required(options, "--expected-producer-sha")?.to_owned();
     let bundle_sha256 = required(options, "--expected-bundle-sha256")?.to_owned();
-    if producer_sha != PRODUCER_SHA || bundle_sha256 != BUNDLE_SHA256 {
+    if !valid_revision(&producer_sha) || !valid_digest(&bundle_sha256) {
         return Err(PromotionError::new(
             PromotionErrorKind::Bundle,
-            "prepare must consume the canonical P/B acquisition tuple",
+            "prepare requires full lowercase P and B identities",
         ));
     }
     let reviewer_id = required(options, "--reviewer-id")?.to_owned();
@@ -129,7 +130,12 @@ fn load_context(
         .map_err(|error| PromotionError::new(PromotionErrorKind::Bundle, error.to_string()))?;
     let manifest = read_bundle_manifest(&bundle_root)?;
     validate_bundle_contract(&manifest)?;
-    let acquisition = acquire_provider_metadata()?;
+    let acquisition = acquire_provider_metadata(
+        repository_root,
+        &absolute_path(repository_root, required(options, "--acquisition")?),
+        &bundle_root,
+        &producer_sha,
+    )?;
     let witness_at_r = derive_witness_closure(repository_root, &promotion_base_sha)?;
     let replay_at_r = derive_git_closure(
         repository_root,

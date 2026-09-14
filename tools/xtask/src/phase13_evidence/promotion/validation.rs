@@ -1,21 +1,21 @@
 use super::{
-    ARTIFACT_MANIFEST_PATH, BTreeMap, BTreeSet, BUNDLE_SHA256, BundleClosure, BundleManifest,
-    ClosureEntry, Command, Digest, EXACT_BYTES_DIGEST_MODE, MATERIALS_MANIFEST, MaterialsManifest,
-    PRODUCER_SHA, PROMOTED_PATHS, Path, PromotionError, PromotionErrorKind, PromotionReceipt,
-    RECEIPT_PATH, RECEIPT_SEMANTIC_DIGEST_MODE, REPLAY_EVIDENCE_PATH, Sha256, UPSTREAM_REVISION,
-    WITNESS_PATH, WITNESS_PROVENANCE_PATH, WITNESS_REPOSITORY_PREFIXES, closure_digest,
-    collect_regular_files, file_sha256, filesystem_error, fs, git_file, promoted_paths, read_json,
-    run_process, sha256, update_field, valid_digest, validate_relative_path,
+    ARTIFACT_MANIFEST_PATH, BTreeMap, BTreeSet, BundleClosure, BundleManifest, ClosureEntry,
+    Command, Digest, EXACT_BYTES_DIGEST_MODE, MATERIALS_MANIFEST, MaterialsManifest,
+    PROMOTED_PATHS, Path, PromotionError, PromotionErrorKind, PromotionReceipt, RECEIPT_PATH,
+    RECEIPT_SEMANTIC_DIGEST_MODE, REPLAY_EVIDENCE_PATH, Sha256, UPSTREAM_REVISION, WITNESS_PATH,
+    WITNESS_PROVENANCE_PATH, WITNESS_REPOSITORY_PREFIXES, closure_digest, collect_regular_files,
+    file_sha256, filesystem_error, fs, git_file, promoted_paths, read_json, run_process, sha256,
+    update_field, valid_digest, valid_revision, validate_relative_path,
 };
 #[cfg(test)]
 use super::{
-    Acquisition, PROVIDER_ARTIFACT_ID, PROVIDER_ARTIFACT_NAME, PROVIDER_DIGEST,
-    PROVIDER_REPOSITORY, PROVIDER_RUN_ID, ReceiptFields, render_receipt,
+    Acquisition, BUNDLE_SHA256, PRODUCER_SHA, PROVIDER_ARTIFACT_ID, PROVIDER_ARTIFACT_NAME,
+    PROVIDER_DIGEST, PROVIDER_REPOSITORY, PROVIDER_RUN_ID, ReceiptFields, render_receipt,
 };
 
 pub(super) fn validate_bundle_contract(manifest: &BundleManifest) -> Result<(), PromotionError> {
-    if manifest.producer_sha != PRODUCER_SHA
-        || manifest.bundle_sha256 != BUNDLE_SHA256
+    if !valid_revision(&manifest.producer_sha)
+        || !valid_digest(&manifest.bundle_sha256)
         || manifest.upstream_revision != UPSTREAM_REVISION
         || manifest.sealed_input_sha256 != manifest.d1_input_sha256
         || manifest.native_d0_repeat_sha256[0] != manifest.native_d0_repeat_sha256[1]
