@@ -185,7 +185,7 @@ fn append_group_particle<UserAssociation>(
     system
         .lifetime
         .prepare_capacity_for_creation(&mut system.storage)
-        .map_err(particle_lifecycle_creation_error)?;
+        .map_err(group_candidate_lifecycle_error)?;
     let input = ParticleInput {
         position,
         velocity,
@@ -198,18 +198,18 @@ fn append_group_particle<UserAssociation>(
     system
         .storage
         .validate_create(input)
-        .map_err(storage_object_creation_error)?;
+        .map_err(group_candidate_storage_error)?;
     system
         .lifetime
         .validate_created_lifetime(&system.storage, recipe.lifetime())?;
     let particle = system
         .storage
         .create_with_diagnostic(input, diagnostic_id)
-        .map_err(storage_object_creation_error)?;
+        .map_err(group_candidate_storage_error)?;
     system
         .lifetime
         .initialize_created_particle(&mut system.storage, particle, recipe.lifetime())
-        .map_err(particle_lifecycle_creation_error)
+        .map_err(group_candidate_lifecycle_error)
 }
 
 fn refresh_candidate_contacts(system: &mut ParticleSystem) -> Result<(), CreateObjectError> {
@@ -223,7 +223,7 @@ fn refresh_candidate_contacts(system: &mut ParticleSystem) -> Result<(), CreateO
     system
         .storage
         .replace_particle_contacts(update.contacts())
-        .map_err(storage_object_creation_error)
+        .map_err(group_candidate_storage_error)
 }
 
 const fn group_topology_limits() -> VoronoiLimits {
@@ -255,8 +255,24 @@ fn group_sampling_creation_error(error: ParticleGroupSamplingError) -> CreateObj
 
 fn group_plan_creation_error(error: GroupPlanError) -> CreateObjectError {
     match error {
-        GroupPlanError::Storage(error) => storage_object_creation_error(error),
+        GroupPlanError::Storage(error) => group_candidate_storage_error(error),
         GroupPlanError::Topology => CreateObjectError::InvalidParticleGroupTopology,
+    }
+}
+
+fn group_candidate_storage_error(error: ParticleStorageError) -> CreateObjectError {
+    // Scratch allocation and finite-value validation can fail in the unpublished
+    // candidate; neither proves corruption of authoritative live storage.
+    if error == ParticleStorageError::InvalidLaneBundle {
+        return CreateObjectError::InvalidParticleGroupTopology;
+    }
+    storage_object_creation_error(error)
+}
+
+fn group_candidate_lifecycle_error(error: ParticleLifecycleError) -> CreateObjectError {
+    match error {
+        ParticleLifecycleError::Storage(error) => group_candidate_storage_error(error),
+        error => particle_lifecycle_creation_error(error),
     }
 }
 
@@ -384,3 +400,57 @@ mod group_lifecycle;
 #[cfg(test)]
 #[path = "particle_object/group_lifecycle_tests.rs"]
 mod group_lifecycle_tests;
+
+#[cfg(test)]
+mod group_candidate_error_tests {
+    use super::*;
+
+    #[test]
+    fn candidate_scratch_allocation_failure_is_typed() {
+        // Arrange
+        let error = GroupPlanError::Storage(ParticleStorageError::InvalidLaneBundle);
+
+        // Act
+        let result = group_plan_creation_error(error);
+
+        // Assert
+        assert_eq!(result, CreateObjectError::InvalidParticleGroupTopology);
+    }
+
+    #[test]
+    fn candidate_lifecycle_scratch_failure_is_typed() {
+        // Arrange
+        let error = ParticleLifecycleError::Storage(ParticleStorageError::InvalidLaneBundle);
+
+        // Act
+        let result = group_candidate_lifecycle_error(error);
+
+        // Assert
+        assert_eq!(result, CreateObjectError::InvalidParticleGroupTopology);
+    }
+
+    #[test]
+    fn candidate_capacity_failure_retains_its_category() {
+        // Arrange
+        let error = ParticleStorageError::CapacityExceeded { limit: 3 };
+
+        // Act
+        let result = group_candidate_storage_error(error);
+
+        // Assert
+        assert_eq!(
+            result,
+            CreateObjectError::Arena(ArenaInsertError::CapacityExceeded { limit: 3 })
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "checked creation cannot invalidate authoritative storage")]
+    fn authoritative_lane_corruption_retains_its_assertion() {
+        // Arrange
+        let error = ParticleStorageError::InvalidLaneBundle;
+
+        // Act / Assert
+        let _ = storage_object_creation_error(error);
+    }
+}
