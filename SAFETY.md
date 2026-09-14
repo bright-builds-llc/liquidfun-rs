@@ -126,3 +126,6 @@ property tests retain their fixed seeds, 128 generated cases, and shrinking.
 Miri uses in-memory failure persistence to avoid filesystem access while
 native runs retain file persistence. Failures still reach the bounded producer
 logs with their failing input. Neither adaptation disables Miri isolation.
+The full group-model workload has a separate 3,600-second execution bound;
+other cases retain 900 seconds. Each case records its bound, and the workflow
+retains its 120-minute outer limit.

@@ -5,6 +5,27 @@ use std::process::Command;
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
 #[test]
+fn group_model_has_a_separate_bounded_execution_budget() -> TestResult {
+    // Arrange / Act
+    let output = Command::new("timeout")
+        .args([
+            "10s",
+            "bash",
+            "tools/xtask/tests/safety_evidence_contract/miri-control.sh",
+            "case-budgets",
+        ])
+        .current_dir(concat!(env!("CARGO_MANIFEST_DIR"), "/../.."))
+        .output()?;
+    // Assert
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    Ok(())
+}
+
+#[test]
 fn lost_endpoint_invocation_never_publishes_success_identity() -> TestResult {
     // Arrange / Act
     let output = Command::new("timeout")

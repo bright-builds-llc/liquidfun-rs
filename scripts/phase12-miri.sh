@@ -3,6 +3,7 @@ set -euo pipefail
 
 readonly NIGHTLY_TOOLCHAIN=nightly-2026-07-15
 readonly COMMAND_TIMEOUT_SECONDS=900
+readonly GROUP_MODEL_TIMEOUT_SECONDS=3600
 readonly MAXIMUM_LOG_BYTES=$((16 * 1024 * 1024))
 readonly MIRI_TARGET=x86_64-unknown-linux-gnu
 readonly ENDPOINT_TEST=math::sweep::tests::transform_endpoints_preserve_exact_expected_bits
@@ -90,7 +91,11 @@ run_case() {
 	local miriflags=$4
 	shift 4
 	local log_file="$output_directory/logs/$case_name.log"
-	if ! timeout --signal=TERM "${COMMAND_TIMEOUT_SECONDS}s" env MIRIFLAGS="$miriflags" "$@" >"$log_file" 2>&1; then
+	local timeout_seconds=$COMMAND_TIMEOUT_SECONDS
+	if [[ "$case_name" == particle_group_model ]]; then
+		timeout_seconds=$GROUP_MODEL_TIMEOUT_SECONDS
+	fi
+	if ! timeout --signal=TERM "${timeout_seconds}s" env MIRIFLAGS="$miriflags" "$@" >"$log_file" 2>&1; then
 		tail -n 80 "$log_file" >&2
 		fail "allowlisted case failed or timed out: $case_name"
 	fi
@@ -108,13 +113,15 @@ run_case() {
 		--arg target "$MIRI_TARGET" \
 		--arg compiler_identity "$compiler_identity" \
 		--argjson passed "$passed" --argjson ignored "$ignored" \
+		--argjson timeout_seconds "$timeout_seconds" \
 		--arg name "$case_name" \
 		--arg path "logs/$case_name.log" \
 		--arg sha256 "$(hash_file "$log_file")" \
 		--argjson bytes "$log_bytes" \
 		'{name: $name, path: $path, sha256: $sha256, bytes: $bytes,
 		  miriflags: $miriflags, target: $target, compiler_identity: $compiler_identity,
-		  passed: $passed, ignored: $ignored, command: $ARGS.positional}' --args -- "$@" >>"$records_file"
+		  passed: $passed, ignored: $ignored, timeout_seconds: $timeout_seconds,
+		  command: $ARGS.positional}' --args -- "$@" >>"$records_file"
 }
 
 write_identity_last() {

@@ -6,6 +6,17 @@ export PHASE12_MIRI_LIBRARY_ONLY=1
 source scripts/phase12-miri.sh
 
 case "$mode" in
+case-budgets)
+	fixture=$(mktemp -d)
+	trap 'rm -rf "$fixture"' EXIT
+	mkdir -p "$fixture/logs"
+	compiler_identity='rustc fixture'
+	for case_name in arena_handles particle_group_model; do
+		run_case "$fixture" "$fixture/cases.jsonl" "$case_name" "" \
+			printf '%s\n' 'test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s'
+	done
+	jq -se '.[0].timeout_seconds == 900 and .[1].timeout_seconds == 3600' "$fixture/cases.jsonl" >/dev/null
+	;;
 missing)
 	PATH=/nonexistent scan_source
 	;;
