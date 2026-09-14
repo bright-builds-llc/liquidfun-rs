@@ -164,6 +164,35 @@ fn tracked_coverage() -> TestResult<Vec<u8>> {
 }
 
 #[test]
+fn invariant_violation_requires_real_bytes_without_oracle_authority() -> TestResult {
+    // Arrange
+    let root = TestRoot::new("invariant")?;
+    let manifest = root
+        .manifest()?
+        .replace("PhysicsMismatch", "InvariantViolation")
+        .replace("oracle_identity = \"oracle-debug@7f204021\"\n", "")
+        .replace("tolerance_identity = \"phase12-v1\"\n", "");
+
+    // Act / Assert
+    assert!(contract::validate_regression_manifest_bytes(&root.path, manifest.as_bytes()).is_ok());
+    for invalid in [
+        manifest.replace("InvariantViolation", "UnknownInvariant"),
+        manifest.replace("scenarios/regressions/case.bin", "reference/case.bin"),
+        manifest.replace("InvariantViolation", "PhysicsMismatch"),
+    ] {
+        assert!(
+            contract::validate_regression_manifest_bytes(&root.path, invalid.as_bytes()).is_err()
+        );
+    }
+    fs::write(
+        root.path.join("scenarios/regressions/case.bin"),
+        b"changed input\n",
+    )?;
+    assert!(contract::validate_regression_manifest_bytes(&root.path, manifest.as_bytes()).is_err());
+    Ok(())
+}
+
+#[test]
 fn regression_manifest_validates_exact_bytes_and_renders_stably() -> TestResult {
     // Arrange
     let root = TestRoot::new("manifest")?;
@@ -420,15 +449,15 @@ fn closed_commands_validate_tracked_authorities_and_execution_list_is_stable() -
     }
     assert_eq!(first.stdout, second.stdout);
     assert_eq!(
-        serde_json::from_slice::<serde_json::Value>(&first.stdout)?,
-        serde_json::json!([])
+        serde_json::from_slice::<Vec<serde_json::Value>>(&first.stdout)?.len(),
+        2
     );
     assert!(String::from_utf8_lossy(&help.stdout).contains("--candidate FULL_SHA"));
     Ok(())
 }
 
 #[test]
-fn confined_empty_result_set_validates_then_writes_identity_last() -> TestResult {
+fn confined_empty_result_set_rejects_missing_registered_tests() -> TestResult {
     // Arrange
     let directory = ResultDirectory::new()?;
     directory.write_completion(&empty_completion(&directory.candidate))?;
@@ -437,14 +466,8 @@ fn confined_empty_result_set_validates_then_writes_identity_last() -> TestResult
     let output = run_results(&directory.candidate, &directory.relative())?;
 
     // Assert
-    assert!(
-        output.status.success(),
-        "stderr:\n{}",
-        String::from_utf8_lossy(&output.stderr)
-    );
-    let identity: serde_json::Value =
-        serde_json::from_slice(&fs::read(directory.path.join("identity.json"))?)?;
-    assert_eq!(identity["candidate_sha"], directory.candidate);
+    assert!(!output.status.success());
+    assert!(!directory.path.join("identity.json").exists());
     Ok(())
 }
 

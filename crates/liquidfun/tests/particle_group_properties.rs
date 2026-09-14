@@ -7,6 +7,9 @@ mod model;
 #[path = "particle_group_properties/snapshot.rs"]
 mod snapshot;
 
+#[path = "particle_group_properties/registered.rs"]
+mod registered;
+
 use model::Model;
 use snapshot::SemanticSnapshot;
 
@@ -332,16 +335,17 @@ fn persisted_minimized_regression_covers_the_complete_operation_vocabulary() {
 #[test]
 fn persisted_audited_windows_seed() {
     // Arrange
+    let (seed, controls) = registered::load("audited_windows");
+    assert_eq!(seed, AUDITED_WINDOWS_SEED);
+    assert_eq!(controls, AUDITED_WINDOWS_CONTROLS);
+    let parsed_operations = operations(seed, &controls);
+    assert_eq!(parsed_operations, AUDITED_WINDOWS_OPERATIONS);
     assert_eq!(
-        operations(AUDITED_WINDOWS_SEED, &AUDITED_WINDOWS_CONTROLS),
-        AUDITED_WINDOWS_OPERATIONS
-    );
-    assert_eq!(
-        run_operations(&AUDITED_WINDOWS_OPERATIONS),
-        run_operations(&AUDITED_WINDOWS_OPERATIONS)
+        run_operations(&parsed_operations),
+        run_operations(&parsed_operations)
     );
     let mut model = Model::new();
-    for (index, operation) in AUDITED_WINDOWS_OPERATIONS[..13].iter().enumerate() {
+    for (index, operation) in parsed_operations[..13].iter().enumerate() {
         let entry = model.apply(*operation);
         if index == 12 {
             assert_eq!(
@@ -370,7 +374,7 @@ fn persisted_audited_windows_seed() {
         .particle_count();
 
     // Act
-    let entry = model.apply(AUDITED_WINDOWS_OPERATIONS[13]);
+    let entry = model.apply(parsed_operations[13]);
 
     // Assert
     assert_eq!(entry.operation, AUDITED_WINDOWS_OPERATIONS[13]);
@@ -403,14 +407,15 @@ fn persisted_audited_windows_seed() {
 #[test]
 fn persisted_current_windows_seed() {
     // Arrange
-    assert_eq!(
-        operations(CURRENT_WINDOWS_SEED, &CURRENT_WINDOWS_CONTROLS),
-        CURRENT_WINDOWS_OPERATIONS
-    );
+    let (seed, controls) = registered::load("current_windows");
+    assert_eq!(seed, CURRENT_WINDOWS_SEED);
+    assert_eq!(controls, CURRENT_WINDOWS_CONTROLS);
+    let parsed_operations = operations(seed, &controls);
+    assert_eq!(parsed_operations, CURRENT_WINDOWS_OPERATIONS);
     // Act
-    let trace = run_operations(&CURRENT_WINDOWS_OPERATIONS);
+    let trace = run_operations(&parsed_operations);
     // Assert
-    assert_eq!(trace, run_operations(&CURRENT_WINDOWS_OPERATIONS));
+    assert_eq!(trace, run_operations(&parsed_operations));
     assert_eq!(trace.len(), 15);
     for (index, entry) in trace.iter().enumerate() {
         if index == 12 {

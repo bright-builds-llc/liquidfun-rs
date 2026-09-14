@@ -15,4 +15,31 @@ record_fields = [
   "review_status",
   "named_test_path",
 ]
-regressions = []
+
+[[regressions]]
+id = "phase14-audited-windows"
+minimized_path = "scenarios/regressions/phase14-particle-groups.txt"
+minimized_sha256 = "172eecc6d4522d5cbb449c9147145241f20db995a06cc5435aeceeb734a8a6c0"
+target = "x86_64-pc-windows-msvc"
+generator = "particle-group-versioned-generator-v1"
+toolchain = "rustc-1.97.0-2d8144b7880597b6e6d3dfd63a9a9efae3f533d3"
+candidate_commit = "4b6b15ba562cedcad3f37e379d01be9e9cb2e949"
+fix_commit = "e58e028a31ffe845c5465e8d72dd5d933c9d80f5"
+first_divergence_signature = "operation-14/append/oversized-scratch-allocation/InvalidLaneBundle/checked-creation-impossible-state-panic"
+failure_class = "InvariantViolation"
+review_status = "reviewed"
+named_test_path = "particle_group_properties::persisted_audited_windows_seed"
+
+[[regressions]]
+id = "phase14-current-windows"
+minimized_path = "scenarios/regressions/phase14-particle-groups.txt"
+minimized_sha256 = "172eecc6d4522d5cbb449c9147145241f20db995a06cc5435aeceeb734a8a6c0"
+target = "x86_64-pc-windows-msvc"
+generator = "particle-group-versioned-generator-v1"
+toolchain = "rustc-1.97.0-2d8144b7880597b6e6d3dfd63a9a9efae3f533d3"
+candidate_commit = "5aadb6c105b98ae09443f74e44c57f8ce7eae19d"
+fix_commit = "e58e028a31ffe845c5465e8d72dd5d933c9d80f5"
+first_divergence_signature = "operation-15/append/oversized-scratch-allocation/InvalidLaneBundle/checked-creation-impossible-state-panic"
+failure_class = "InvariantViolation"
+review_status = "reviewed"
+named_test_path = "particle_group_properties::persisted_current_windows_seed"

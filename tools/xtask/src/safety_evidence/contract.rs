@@ -114,6 +114,8 @@ pub(crate) struct RegressionRecord {
 enum FailureClass {
     Harness,
     PhysicsMismatch,
+    /// Native library invariant/assertion failure without an oracle comparison.
+    InvariantViolation,
     Sanitizer,
     Timeout,
     Schema,
@@ -334,15 +336,11 @@ pub(crate) fn validate_regression_manifest_bytes(
 
     let mut ids = BTreeSet::new();
     let mut named_tests = BTreeSet::new();
-    let mut minimized_paths = BTreeSet::new();
     for record in &manifest.regressions {
         validate_regression_record(repository_root, record)?;
-        if !ids.insert(record.id.as_str())
-            || !named_tests.insert(record.named_test_path.as_str())
-            || !minimized_paths.insert(record.minimized_path.as_str())
-        {
+        if !ids.insert(record.id.as_str()) || !named_tests.insert(record.named_test_path.as_str()) {
             return Err(ContractError::new(
-                "regression IDs, named tests, and minimized paths must be unique",
+                "regression IDs and named tests must be unique",
             ));
         }
     }
