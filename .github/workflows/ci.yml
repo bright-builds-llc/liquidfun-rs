@@ -58,6 +58,11 @@ jobs:
       - name: Install pinned cargo-fuzz for the fuzz-build smoke test
         run: cargo install cargo-fuzz --version 0.13.2 --locked
       - name: Test the workspace
+        env:
+          DISPLAY: ""
+          WAYLAND_DISPLAY: ""
+          MIR_SOCKET: ""
+          XDG_RUNTIME_DIR: ""
         run: cargo test --workspace --all-features
       - name: Prove headless workflows and consumer package isolation
         run: |
@@ -71,15 +76,13 @@ jobs:
           cargo xtask inventory corpus check-closure
           cargo xtask inventory corpus generate-report
           git diff --exit-code -- UPSTREAM-CORPUS.md
-      - name: Build and test private tooling and the selected testbed headlessly
+      - name: Build and test the selected testbed headlessly
         env:
           DISPLAY: ""
           WAYLAND_DISPLAY: ""
           MIR_SOCKET: ""
           XDG_RUNTIME_DIR: ""
         run: |
-          cargo build -p xtask -p liquidfun-test-protocol -p liquidfun-differential -p liquidfun-benchmarks --all-targets --all-features
-          cargo test -p xtask -p liquidfun-test-protocol -p liquidfun-differential -p liquidfun-benchmarks --all-features
           cargo build -p liquidfun-testbed --all-targets --all-features
           cargo test -p liquidfun-testbed --all-features
       - name: Test protocol schema and fixture contracts
