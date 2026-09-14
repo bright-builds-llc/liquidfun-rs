@@ -2,16 +2,16 @@
 gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
-status: ready
-stopped_at: Phase 13.1 verified; Phase 14 execution next
-last_updated: "2026-09-13T19:17:00.825Z"
-last_activity: "2026-09-13"
+status: executing
+stopped_at: "Phase 14 Wave 1: Windows diagnosis drafting; baseline tests progressing with macOS cold-launch delays"
+last_updated: "2026-09-14T02:03:25.452Z"
+last_activity: 2026-09-14 -- Phase 14 execution started
 progress:
   total_phases: 16
   completed_phases: 14
-  total_plans: 249
+  total_plans: 250
   completed_plans: 246
-  percent: 99
+  percent: 98
 ---
 
 # Project State
@@ -25,12 +25,13 @@ See: `.planning/PROJECT.md` (updated 2026-09-13)
 
 ## Current Position
 
-Phase: 14 (repair-windows-particle-group-invariants)
-Plan: Not started
-Status: Phase 13.1 verified; ready to execute the three Phase 14 plans
-Last activity: 2026-09-13
+Phase: 14 (repair-windows-particle-group-invariants) — EXECUTING
+Plan: 1 of 4
+Total Plans in Phase: 4
+Status: Executing Phase 14
+Last activity: 2026-09-14 -- Phase 14 execution started
 
-Progress: [██████████] 99%
+Progress: [██████████] 98%
 
 ## Performance Metrics
 
@@ -688,6 +689,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-13T19:01:28.713Z
-Stopped at: Phase 13.1 verified; Phase 14 execution next
+Last session: 2026-09-14T02:03:25.439Z
+Stopped at: Phase 14 Wave 1: Windows diagnosis drafting; baseline tests progressing with macOS cold-launch delays
 Resume file: None

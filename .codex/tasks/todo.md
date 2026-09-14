@@ -148,3 +148,29 @@ Completion review: The private testbed now uses the reviewed `eframe`/`egui`/`ti
 Authority: AGENTS.md standing autonomous iteration authorization dated 2026-09-13. Preserve every failed attempt separately; Phase 15 remains deferred.
 
 Completion review: Candidate `d3e70780a984ba25096f288d7c603ffa8153a748` passed all 72 producer commands and independent clean-checkout validation, with canonical run `34775554238` and artifact `10323945329`. Durable evidence and the Plan 21 summary are ready for the orchestrator's formal review and lifecycle checks; phase completion and Phase 15 acceptance are not claimed here.
+
+## task-phase-14-replan | 2026-09-13 | Replan Windows particle-group invariant repair
+
+- [x] Load active lessons, repository guidance, phase context, and current upstream state.
+- [x] Research post-refactor code paths and exact Windows failure evidence.
+- [x] Replace stale Phase 14 plans while preserving locked decisions and Phase 15 boundaries.
+- [x] Run independent plan checking, requirement coverage, and plan structure validation.
+- [x] Run required pre-commit checks, review the scoped diff, and record planning completion; preserve the blocked test result and leave changes uncommitted.
+
+Guidance: AGENTS.md standing authorization and Markdown exclusions, AGENTS.bright-builds.md, standards-overrides.md, and architecture, code-shape, testing, verification, local-guidance, and Rust standards inform this replan. Active lessons total 11,548 bytes and 3,850 estimated tokens; both files were read completely. The existing July 25 audit baseline has no new trigger.
+
+Completion review: Four sequential plans (eight tasks) replace the stale three-plan set. Research accounts for existing audited input, current failing Windows CI, post-refactor source locations, and standing authorization. Independent checking passed after one targeted revision; all six requirements and D-01 through D-10 are covered. Plan structure, lifecycle, Markdown, managed standards and diff checks pass. Ordered cargo fmt, clippy and build pass; cargo test --all-features stalled for five minutes before Rust startup and was terminated (exit 101/SIGTERM). A process sample showed only \_dyld_start with a 96 KB footprint. Logs: /tmp/liquidfun-phase14-replan-tests.log and /tmp/liquidfun-phase14-replan-startup.sample.txt. No commit or push occurred because the required test gate did not pass. Phase implementation, actual repaired Windows validation and Phase 15 remain future work.
+
+## task-phase-14-execute | 2026-09-13 | Execute Windows particle-group invariant repair
+
+- [x] Validate four-plan lifecycle, dependencies, standing authority and remote synchronization.
+- [x] Recover an executable local verification boundary and finalize pending planning artifacts.
+- [ ] Execute Plan 14-01 and retain actual Windows first-transition diagnosis.
+- [ ] Execute Plan 14-02 root-cause repair and private rollback proof.
+- [ ] Execute Plan 14-03 public fixed-input and property regressions.
+- [ ] Execute Plan 14-04 and retain same-SHA Windows/Linux/macOS D2 results.
+- [ ] Complete code review, regression checks, independent phase verification and publication.
+
+Authority: AGENTS.md standing autonomous iteration authorization dated 2026-09-13. Preserve failed attempts; Phase 15 remains deferred.
+
+Baseline verification: Ordered format, Clippy, all-target build and all-feature tests passed using local Linux ARM64 Docker with exact Rust 1.97.0, immutable image `sha256:5f3d56072c0c734ebb2381c59f0a20db1330b8884134c4e3a9d369de2d810ea8`, and the existing Rust/cache volumes. Full log: `target/phase14-local-verification/attempt-20260914-linux-container-network/gate.log`. The offline attempt lacked workspace dependency metadata and was retained separately; normal index refresh resolved it. Earlier macOS partial runs and startup-inventory attempts remain non-passing diagnostics. No security setting changed. Native macOS and Windows repaired-source proof remains required in Plan 14-04.

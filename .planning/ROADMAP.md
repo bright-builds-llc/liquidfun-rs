@@ -349,7 +349,14 @@ Plans:
 1. Every failure path remains transactional: stable particle identities, group topology, optional lanes, derived structures, and rollback state remain coherent.
 1. Focused public integration/property regressions and the complete relevant particle suite pass on Windows and the ordinary Linux/macOS verification boundaries.
 
-**Plans**: TBD during phase planning
+**Plans**: 4 plans
+
+Plans:
+
+- [ ] 14-01-PLAN.md — Preserve original/current Windows failures and demonstrate the first invalid candidate transition.
+- [ ] 14-02-PLAN.md — Repair the demonstrated transition and prove complete private rollback and valid success.
+- [ ] 14-03-PLAN.md — Complete named public replays, typed outcomes and transactional rejection coverage.
+- [ ] 14-04-PLAN.md — Reuse the supported OS matrix and retain exact-SHA D2 proof through authorized iteration.
 
 ### Phase 15: Re-establish Candidate Evidence
 
@@ -386,7 +393,7 @@ Plans:
 | 12. Performance, Portability, and Release Hardening | 25/25 | Complete    | 2026-07-24 |
 | 13. Restore Evidence and Replay Integrity | 5/5 | Complete    | 2026-07-27 |
 | 13.1. Restore Bright Builds Structural Compliance | 25/25 | Complete    | 2026-09-13 |
-| 14. Repair Windows Particle-Group Invariants | 0/TBD | Not started | — |
+| 14. Repair Windows Particle-Group Invariants | 0/4 | Planned | — |
 | 15. Re-establish Candidate Evidence | 0/TBD | Not started | — |
 
 *Roadmap created: 2026-07-09*
