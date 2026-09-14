@@ -83,6 +83,9 @@ require_differential_oracles() {
 		[[ -f "$executable" && -x "$executable" && ! -L "$executable" ]] ||
 			fail "differential coverage requires the exact $preset oracle"
 	done
+	local protocol_test="$reference_root/oracle-debug/liquidfun-reference-protocol-tests"
+	[[ -f "$protocol_test" && -x "$protocol_test" && ! -L "$protocol_test" ]] ||
+		fail "differential coverage requires the exact debug protocol-test executable"
 }
 
 check_contract() {

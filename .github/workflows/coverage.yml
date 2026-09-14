@@ -196,6 +196,7 @@ jobs:
           cargo xtask upstream verify
           cargo xtask upstream configure --preset oracle-debug
           cargo xtask upstream build --preset oracle-debug
+          cmake --build target/reference/oracle-debug --target liquidfun-reference-protocol-tests --parallel 2
           cargo xtask upstream configure --preset oracle-release
           cargo xtask upstream build --preset oracle-release
       - name: Produce validated differential leaves

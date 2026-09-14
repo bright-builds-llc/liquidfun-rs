@@ -46,6 +46,7 @@ fn workflow_contract_is_valid(source: &str) -> bool {
         "ninja --version",
         "cargo xtask upstream configure --preset oracle-debug",
         "cargo xtask upstream build --preset oracle-debug",
+        "cmake --build target/reference/oracle-debug --target liquidfun-reference-protocol-tests",
         "cargo xtask upstream configure --preset oracle-release",
         "cargo xtask upstream build --preset oracle-release",
         "scripts/phase12-coverage.sh differential",
@@ -156,11 +157,17 @@ fn clean_differential_job_rejects_missing_upstream_toolchain_or_release_build() 
         "cargo xtask upstream build --preset oracle-release",
         "cargo xtask upstream verify",
     );
+    let no_protocol = mutate_differential_job(
+        &source,
+        "cmake --build target/reference/oracle-debug --target liquidfun-reference-protocol-tests",
+        "cmake --build target/reference/oracle-debug --target liquidfun-reference",
+    );
 
     // Act / Assert
     assert!(!workflow_contract_is_valid(&no_upstream));
     assert!(!workflow_contract_is_valid(&no_toolchain));
     assert!(!workflow_contract_is_valid(&no_release));
+    assert!(!workflow_contract_is_valid(&no_protocol));
     Ok(())
 }
 
@@ -192,16 +199,7 @@ fn clean_producer_cannot_skip_a_missing_math_oracle() -> TestResult {
     fs::create_dir_all(&reference_root)?;
 
     // Act
-    let output = std::process::Command::new("bash")
-        .current_dir(workspace_root())
-        .env("PHASE12_COVERAGE_LIBRARY_ONLY", "1")
-        .args([
-            "-c",
-            "source scripts/phase12-coverage.sh; require_differential_oracles \"$1\"",
-            "coverage-prerequisite-test",
-        ])
-        .arg(&reference_root)
-        .output()?;
+    let output = run_prerequisite(&reference_root)?;
     fs::remove_dir_all(&reference_root)?;
 
     // Assert
@@ -211,4 +209,60 @@ fn clean_producer_cannot_skip_a_missing_math_oracle() -> TestResult {
             .contains("differential coverage requires the exact oracle-debug oracle")
     );
     Ok(())
+}
+
+#[test]
+#[cfg(unix)]
+fn clean_producer_requires_the_protocol_test_executable() -> TestResult {
+    use std::os::unix::fs::PermissionsExt;
+
+    // Arrange
+    let ordinal = TEST_ORDINAL.fetch_add(1, Ordering::Relaxed);
+    let reference_root = workspace_root()
+        .join("target/xtask-coverage-workflow")
+        .join(format!("protocol-{}-{ordinal}", std::process::id()));
+    for preset in ["oracle-debug", "oracle-release"] {
+        fs::create_dir_all(reference_root.join(preset))?;
+        let executable = reference_root.join(preset).join("liquidfun-reference");
+        fs::write(&executable, b"fixture executable\n")?;
+        fs::set_permissions(executable, fs::Permissions::from_mode(0o755))?;
+    }
+
+    // Act
+    let output = run_prerequisite(&reference_root)?;
+    fs::remove_dir_all(reference_root)?;
+
+    // Assert
+    assert_eq!(output.status.code(), Some(64));
+    assert!(String::from_utf8_lossy(&output.stderr).contains("protocol-test executable"));
+    Ok(())
+}
+
+#[cfg(unix)]
+fn run_prerequisite(reference_root: &Path) -> TestResult<std::process::Output> {
+    use std::process::Stdio;
+    use std::time::{Duration, Instant};
+
+    let mut child = std::process::Command::new("bash")
+        .current_dir(workspace_root())
+        .env("PHASE12_COVERAGE_LIBRARY_ONLY", "1")
+        .args([
+            "-c",
+            "source scripts/phase12-coverage.sh; require_differential_oracles \"$1\"",
+            "protocol-prerequisite-test",
+        ])
+        .arg(reference_root)
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()?;
+    let started = Instant::now();
+    while child.try_wait()?.is_none() {
+        if started.elapsed() > Duration::from_secs(10) {
+            child.kill()?;
+            child.wait()?;
+            return Err("coverage prerequisite subprocess timed out".into());
+        }
+        std::thread::sleep(Duration::from_millis(10));
+    }
+    Ok(child.wait_with_output()?)
 }
