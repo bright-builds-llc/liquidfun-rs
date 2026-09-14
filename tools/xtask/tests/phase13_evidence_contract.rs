@@ -16,7 +16,6 @@ use phase13_evidence::bundle::{
 use phase13_evidence::{
     CanonicalEnvironment, ProductionGate, ProductionGateErrorKind, compare_live_replay_records,
     persist_live_check_failure, select_rigid_stack_definition, validate_staging_root,
-    witness_materials_identity,
 };
 
 const SHA_A: &str = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
@@ -48,26 +47,8 @@ fn producer_selects_the_reviewed_rigid_stack_catalog_definition() {
     assert_eq!(definition.slug(), &slug);
 }
 
-#[test]
-fn producer_records_the_full_scoped_materials_identity() {
-    // Arrange
-    let repository_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
-
-    // Act
-    let (digest, count) = witness_materials_identity(&repository_root)
-        .expect("scoped witness materials should resolve");
-
-    // Assert
-    assert_eq!(count, 176);
-    assert_eq!(
-        digest,
-        "d30a6879fb37058ce92d179268b28983d4919169bf4dcb8f24e2c2a267017c71"
-    );
-    assert_ne!(
-        digest,
-        "a1029da0460bcf29ff85410527daef11e0fb249130fe0b498681cd699d50fba2"
-    );
-}
+#[path = "phase13_evidence_contract/materials.rs"]
+mod materials;
 
 fn tracked_replay_record() -> serde_json::Value {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))

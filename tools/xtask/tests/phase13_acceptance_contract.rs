@@ -7,7 +7,6 @@ mod phase13_acceptance;
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::PathBuf;
-use std::process::Command;
 
 use phase13_acceptance::{
     AcceptanceErrorKind, AcceptanceState, AcceptanceStep, HeadSnapshot, IdentityContract,
@@ -349,40 +348,59 @@ fn publication_records_every_ordered_step_only_after_success() {
 }
 
 #[test]
-fn repository_history_requires_schema_v2_after_recovery_promotion() {
+fn repository_history_accepts_valid_schema_v2_promotion() -> Result<(), Box<dyn std::error::Error>>
+{
     // Arrange
-    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let output = Command::new("git")
-        .arg("-C")
-        .arg(&root)
-        .args(["rev-parse", "HEAD"])
-        .output()
-        .expect("Git should be available");
-    assert!(output.status.success());
-    let acceptance_sha = String::from_utf8(output.stdout)
-        .expect("HEAD should be UTF-8")
-        .trim()
-        .to_owned();
-
+    let fixture = phase13_acceptance::history_fixture::HistoryFixture::new()?;
     // Act
-    let result = validate_repository_identity_at(&root, &acceptance_sha);
-    let receipt: serde_json::Value = serde_json::from_slice(
-        &fs::read(root.join("reference/artifacts/phase13/promotion-receipt.json"))
-            .expect("tracked receipt should be readable"),
-    )
-    .expect("tracked receipt should be JSON");
-
+    let result = validate_repository_identity_at(fixture.root(), &fixture.head()?);
     // Assert
-    if receipt["schema_version"] == 1 {
-        assert_eq!(
-            result
-                .expect_err("the audited pre-recovery history must not satisfy schema v2")
-                .kind(),
-            AcceptanceErrorKind::Schema
-        );
-    } else {
-        result.expect("schema-v2 P/B/R/Q and current A should satisfy the identity contract");
-    }
+    result?;
+    Ok(())
+}
+
+#[test]
+fn repository_history_rejects_schema_v1_receipt() -> Result<(), Box<dyn std::error::Error>> {
+    // Arrange
+    let fixture = phase13_acceptance::history_fixture::HistoryFixture::new()?;
+    fixture.replace_receipt_schema(1)?;
+    // Act
+    let result = validate_repository_identity_at(fixture.root(), &fixture.head()?);
+    // Assert
+    assert_eq!(
+        result.expect_err("schema v1 must reject").kind(),
+        AcceptanceErrorKind::Schema
+    );
+    Ok(())
+}
+
+#[test]
+fn repository_history_accepts_metadata_only_descendant() -> Result<(), Box<dyn std::error::Error>> {
+    // Arrange
+    let fixture = phase13_acceptance::history_fixture::HistoryFixture::new()?;
+    fixture.commit_change("notes.txt", b"metadata descendant\n")?;
+    // Act
+    let result = validate_repository_identity_at(fixture.root(), &fixture.head()?);
+    // Assert
+    result?;
+    Ok(())
+}
+
+#[test]
+fn repository_history_rejects_changed_replay_closure() -> Result<(), Box<dyn std::error::Error>> {
+    // Arrange
+    let fixture = phase13_acceptance::history_fixture::HistoryFixture::new()?;
+    fixture.commit_change("Cargo.toml", b"changed replay input\n")?;
+    // Act
+    let result = validate_repository_identity_at(fixture.root(), &fixture.head()?);
+    // Assert
+    assert_eq!(
+        result
+            .expect_err("producer closure drift must reject")
+            .kind(),
+        AcceptanceErrorKind::Closure
+    );
+    Ok(())
 }
 
 #[test]

@@ -7,6 +7,14 @@ mod execution;
 #[path = "phase13_acceptance/identity.rs"]
 mod identity;
 
+#[cfg(test)]
+#[allow(
+    dead_code,
+    reason = "the integration contract harness consumes the private Git fixture"
+)]
+#[path = "../tests/phase13_acceptance_contract/history_fixture.rs"]
+pub(crate) mod history_fixture;
+
 use std::collections::{BTreeMap, BTreeSet};
 use std::env;
 use std::fmt::{self, Display, Formatter};

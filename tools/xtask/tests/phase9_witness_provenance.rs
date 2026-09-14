@@ -38,7 +38,7 @@ mod evidence_schema;
 mod materials;
 
 use materials::{
-    MATERIALS_PATH, MaterialsDerivation, resolve_declared_materials, validate_repository_binding,
+    MATERIALS_PATH, MaterialsDerivation, validate_repository_binding,
     validate_target_scoped_materials,
 };
 
@@ -194,12 +194,10 @@ enum TargetMutation {
 #[test]
 fn target_scoped_materials() -> TestResult {
     // Arrange
-    let repository_materials = resolve_declared_materials(&workspace_root())?;
     let fixture = MaterialsFixture::new()?;
     let baseline = fixture.resolve()?;
 
     // Assert
-    assert!(repository_materials.count > 100);
     assert_eq!(baseline.count, default_materials().len());
 
     // Act
