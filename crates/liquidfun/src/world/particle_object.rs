@@ -182,21 +182,10 @@ fn append_group_particle<UserAssociation>(
     velocity: Vec2,
     diagnostic_id: u64,
 ) -> Result<(), CreateObjectError> {
-    #[cfg(test)]
-    crate::particle::storage::diagnostic_record(format_args!(
-        "append.before position_bits={:?} velocity_bits={:?} diagnostic_id={diagnostic_id} lifetime_bits={}",
-        [position.x.to_bits(), position.y.to_bits()],
-        [velocity.x.to_bits(), velocity.y.to_bits()],
-        recipe.lifetime().to_bits()
-    ));
-    #[cfg(test)]
-    system.storage.diagnostic_observe("append.before_capacity");
     system
         .lifetime
         .prepare_capacity_for_creation(&mut system.storage)
         .map_err(particle_lifecycle_creation_error)?;
-    #[cfg(test)]
-    system.storage.diagnostic_observe("append.after_capacity");
     let input = ParticleInput {
         position,
         velocity,
@@ -213,16 +202,10 @@ fn append_group_particle<UserAssociation>(
     system
         .lifetime
         .validate_created_lifetime(&system.storage, recipe.lifetime())?;
-    #[cfg(test)]
-    system.storage.diagnostic_observe("append.before_create");
     let particle = system
         .storage
         .create_with_diagnostic(input, diagnostic_id)
         .map_err(storage_object_creation_error)?;
-    #[cfg(test)]
-    system
-        .storage
-        .diagnostic_observe("append.before_lifetime_initialization");
     system
         .lifetime
         .initialize_created_particle(&mut system.storage, particle, recipe.lifetime())
@@ -230,8 +213,6 @@ fn append_group_particle<UserAssociation>(
 }
 
 fn refresh_candidate_contacts(system: &mut ParticleSystem) -> Result<(), CreateObjectError> {
-    #[cfg(test)]
-    system.storage.diagnostic_observe("contacts.before");
     let diameter = 2.0 * system.definition.radius();
     let view = ParticleSystemView::new(&system.storage);
     let neighborhood = ParticleNeighborhood::from_view(&view, diameter)
@@ -273,10 +254,6 @@ fn group_sampling_creation_error(error: ParticleGroupSamplingError) -> CreateObj
 }
 
 fn group_plan_creation_error(error: GroupPlanError) -> CreateObjectError {
-    #[cfg(test)]
-    crate::particle::storage::diagnostic_record(format_args!(
-        "raw.group_plan_creation_error={error:?}"
-    ));
     match error {
         GroupPlanError::Storage(error) => storage_object_creation_error(error),
         GroupPlanError::Topology => CreateObjectError::InvalidParticleGroupTopology,
@@ -341,10 +318,6 @@ fn storage_creation_error(error: ParticleStorageError) -> ArenaInsertError {
 }
 
 fn storage_object_creation_error(error: ParticleStorageError) -> CreateObjectError {
-    #[cfg(test)]
-    crate::particle::storage::diagnostic_record(format_args!(
-        "raw.storage_object_creation_error={error:?}"
-    ));
     match error {
         ParticleStorageError::WrongWorld => {
             CreateObjectError::InvalidHandle(HandleError::WrongWorld)

@@ -129,17 +129,7 @@ jobs:
           key: ${{ runner.os }}-cargo-defaults-1.97.0-${{ hashFiles('Cargo.lock') }}
       - name: Build default features
         run: cargo build -p liquidfun
-      - name: Trace audited Windows particle-group transition
-        env:
-          RUST_BACKTRACE: "1"
-        run: cargo test -p liquidfun --lib world::object::tests::particle_group_diagnostics::audited_windows_transition_trace -- --exact --nocapture
-      - name: Replay unchanged public audited Windows regression
-        if: ${{ !cancelled() }}
-        env:
-          RUST_BACKTRACE: "1"
-        run: cargo test -p liquidfun --test particle_group_properties persisted_audited_windows_seed -- --exact --nocapture
       - name: Test default features
-        if: ${{ !cancelled() }}
         run: cargo test -p liquidfun
       - name: Test public math contracts and numerical policy
         run: |

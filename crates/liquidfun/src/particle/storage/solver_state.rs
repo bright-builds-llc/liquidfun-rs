@@ -318,26 +318,9 @@ fn zeroed_lane<T: Copy>(
 ) -> Result<Vec<T>, ParticleStorageError> {
     preflight_count(particle_count, declared_capacity)?;
     let mut candidate = Vec::new();
-    #[cfg(test)]
-    super::diagnostic_record(format_args!(
-        "allocation.before count={particle_count} declared_capacity={declared_capacity} element_size={}",
-        std::mem::size_of::<T>()
-    ));
-    let reservation = candidate.try_reserve_exact(declared_capacity);
-    #[cfg(test)]
-    if let Err(error) = &reservation {
-        super::diagnostic_record(format_args!(
-            "allocation.failure count={particle_count} declared_capacity={declared_capacity} element_size={} raw={error:?}",
-            std::mem::size_of::<T>()
-        ));
-    }
-    reservation.map_err(|_error| ParticleStorageError::InvalidLaneBundle)?;
-    #[cfg(test)]
-    super::diagnostic_record(format_args!(
-        "allocation.success count={particle_count} capacity={} element_size={}",
-        candidate.capacity(),
-        std::mem::size_of::<T>()
-    ));
+    candidate
+        .try_reserve_exact(declared_capacity)
+        .map_err(|_error| ParticleStorageError::InvalidLaneBundle)?;
     candidate.resize(particle_count, zero);
     Ok(candidate)
 }

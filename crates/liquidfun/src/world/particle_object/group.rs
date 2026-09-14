@@ -180,8 +180,6 @@ impl World {
             return Err(CreateObjectError::WorldLocked);
         }
         let source_system = self.particle_systems.get(system)?;
-        #[cfg(test)]
-        source_system.storage.diagnostic_observe("world.source");
         let maybe_append_target = match recipe.destination() {
             ParticleGroupDestination::New => None,
             ParticleGroupDestination::AppendTo(target) => {
@@ -213,8 +211,6 @@ impl World {
         let particle_diagnostic_start = first_diagnostic_id + u64::from(creates_shell);
 
         let mut system_candidate = source_system.clone();
-        #[cfg(test)]
-        system_candidate.storage.diagnostic_observe("world.cloned");
         for (ordinal, sample) in samples.iter().copied().enumerate() {
             append_group_particle(
                 &mut system_candidate,
@@ -227,16 +223,7 @@ impl World {
                         .map_err(|_error| ArenaInsertError::DiagnosticIdExhausted)?,
             )?;
         }
-        #[cfg(test)]
-        system_candidate
-            .storage
-            .diagnostic_observe("world.appended");
         refresh_candidate_contacts(&mut system_candidate)?;
-        #[cfg(test)]
-        system_candidate
-            .storage
-            .diagnostic_observe("world.contacts");
-
         let topology: GroupPlan = system_candidate
             .storage
             .plan_group(GroupPlanInput {
@@ -249,24 +236,12 @@ impl World {
                 voronoi_limits: group_topology_limits(),
             })
             .map_err(group_plan_creation_error)?;
-        #[cfg(test)]
-        system_candidate
-            .storage
-            .diagnostic_observe("world.topology_prepared");
         let result_group = topology.result_group();
         topology.commit_group(&mut system_candidate.storage);
-        #[cfg(test)]
-        system_candidate
-            .storage
-            .diagnostic_observe("world.topology_committed_candidate");
         let maybe_shell = creates_shell.then_some((temporary_group, first_diagnostic_id));
         if creates_shell {
             system_candidate.groups.push(temporary_group);
         }
-        #[cfg(test)]
-        system_candidate
-            .storage
-            .diagnostic_observe("world.shell_preflight");
         Ok(ParticleGroupCreationPlan {
             system,
             system_candidate,
@@ -280,10 +255,6 @@ impl World {
         &mut self,
         plan: ParticleGroupCreationPlan,
     ) -> ParticleGroupId {
-        #[cfg(test)]
-        plan.system_candidate
-            .storage
-            .diagnostic_observe("world.commit.before");
         if let Some((group, diagnostic_id)) = plan.maybe_shell {
             let inserted = self
                 .particle_groups

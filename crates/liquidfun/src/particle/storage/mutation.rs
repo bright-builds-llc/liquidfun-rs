@@ -115,9 +115,6 @@ impl ParticleStorage {
     }
 
     pub(crate) fn plan_group(&self, input: GroupPlanInput) -> Result<GroupPlan, GroupPlanError> {
-        #[cfg(test)]
-        self.diagnostic_observe("plan_group.entry");
-
         self.check_invariants()?;
         let mut candidate = self.clone();
         let record = candidate
@@ -133,8 +130,6 @@ impl ParticleStorage {
             .solver_state
             .refresh_group_flags(&candidate.group_records);
 
-        #[cfg(test)]
-        candidate.diagnostic_observe("plan_group.flags");
         let groups = candidate
             .groups
             .iter()
@@ -162,15 +157,9 @@ impl ParticleStorage {
             },
             &CreateGroupFilter { range },
         )?;
-        #[cfg(test)]
-        candidate.diagnostic_topology(&generated.pairs, &generated.triads);
-        #[cfg(test)]
-        candidate.diagnostic_observe("plan_group.before_topology_prepare");
         MutationCandidate::prepare_create_group(&candidate, generated.pairs, generated.triads)?
             .commit(&mut candidate);
 
-        #[cfg(test)]
-        candidate.diagnostic_observe("plan_group.topology_prepared");
         let result_group = if let Some(target) = input.maybe_append_target {
             let join = candidate.plan_join(
                 target,
@@ -182,15 +171,8 @@ impl ParticleStorage {
         } else {
             input.group
         };
-        #[cfg(test)]
-        candidate.diagnostic_observe("plan_group.before_depth");
         candidate.compute_solid_depth(input.particle_diameter)?;
-        #[cfg(test)]
-        candidate.diagnostic_observe("plan_group.after_depth");
-
         candidate.check_invariants()?;
-        #[cfg(test)]
-        candidate.diagnostic_observe("plan_group.final_valid");
         Ok(GroupPlan {
             candidate,
             result_group,

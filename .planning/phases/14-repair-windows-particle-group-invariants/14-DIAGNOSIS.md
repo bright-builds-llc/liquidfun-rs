@@ -1,6 +1,6 @@
 ---
 phase: 14-repair-windows-particle-group-invariants
-status: investigation-in-progress
+status: diagnosed
 generated_by: gsd-execute-plan
 lifecycle_mode: yolo
 phase_lifecycle_id: 14-2026-07-27T16-15-14
@@ -8,7 +8,7 @@ phase_lifecycle_id: 14-2026-07-27T16-15-14
 
 # Phase 14 Windows particle-group diagnosis
 
-The historical and current Windows failures are preserved below. The first invalid transition and raw storage category are **not yet demonstrated**; Plan 02 remains blocked on that evidence. Local or supported-platform results are D2 only.
+The Windows failure is an oversized scratch allocation during operation 14's append join, not an observed invalid live lane or floating-point invariant. A ten-particle candidate requests 8,589,934,588 bytes; Windows returns `TryReserveError::AllocError`, which becomes `InvalidLaneBundle` and reaches the unchanged mapper panic. The historical investigation and exact evidence remain below. Local and supported-platform results are D2 only.
 
 ## Guidance and scope
 
@@ -143,3 +143,67 @@ Task 1 is committed as `a2759db3690d91868afcc74d862146ccc8b1507e`. The probe use
 `trace.log` runs that full exact name with `RUST_BACKTRACE=1`: 1 passed, 409 filtered, 14 operation-before and 14 operation-after labels. Its SHA-256 is `4894d498b0307e728be04d788fbd84e62226047381f2713ee33ec928fa530ab5`. The local trace observes successful reservations with actual count 15, declared capacity 2147483647 and element size 4 (8,589,934,588 requested bytes). Later scratch preparation repeats the same full reservation. These observed local successes confirm the reservation request, but not the hypothesized Windows failure.
 
 `public.log` independently runs the unchanged integration regression: 1 passed, 2 filtered. Its SHA-256 is `428a6cdad9df0f79faee0e21fa1592518d52eaa2ed9b3c3e3cf27da6b7d4e8ee`. `originals.json` retains the seven pre-probe existing source/workflow files; the eighth executable path is the new replay. `baseline.txt` names the exact pre-probe head. The probe patch will be retained before removal. Supported Windows stage/category evidence remains required before Plan 02.
+
+## Probe attempt 20260914-probe01 — observed Windows cause
+
+The pending status above is superseded by this completed remote observation. Diagnostic commit `f4ef73930a62aa884b820ce91ffe35a4608b2b8b` passed ordered local fmt, Clippy, build and tests (`gate.log`) plus the managed checker (933 files, zero findings) before normal publication to verified `bright-builds-llc/liquidfun-rs:main`. No dispatch was necessary: [push run 34799215304](https://github.com/bright-builds-llc/liquidfun-rs/actions/runs/34799215304) identifies that exact source, workflow `.github/workflows/ci.yml`, push event and attempt 1.
+
+### First failed candidate preparation
+
+The isolated Windows lib replay records all initialization and successful completion of operations 1–13, then attempts operation 14 with the original expanded Append selectors. It emits no operation-14 completion. Its preceding source snapshot has 9 particles, invariant `Ok(())`, required lane lengths `[9,9,9,9,9,9,9]`, and optional lengths `[None,None,Some(9),Some(9)]`. The cloned candidate matches those values.
+
+Appending the temporary particle, initializing its lifetime and refreshing contacts complete successfully. The candidate reaches 10 particles with required lengths `[10,10,10,10,10,10,10]` and optional lengths `[None,None,Some(10),Some(10)]`. Entry, flags and generated-topology preparation all report invariant `Ok(())`. `plan_group.topology_prepared` is the last observed candidate stage; the optional append join starts next and `plan_group.before_depth` is not reached for operation 14.
+
+The last reservation inside this join fails at `solver_state.rs::zeroed_lane`, before any replacement lane can be published:
+
+```text
+allocation.failure count=10 declared_capacity=2147483647 element_size=4
+raw=TryReserveError { kind: AllocError { layout: Layout { size: 8589934588, align: 4 (1 << 2) }, non_exhaustive: () } }
+raw.group_plan_creation_error=Storage(InvalidLaneBundle)
+raw.storage_object_creation_error=InvalidLaneBundle
+```
+
+The violated condition is successful reservation for a bounded scratch candidate, **not a failed lane-length, identity, group-range, topology-index or finite-value predicate**. Every observed storage invariant and solver/group validation before the failure is `Ok(())`; no invalid authoritative state is demonstrated. The raw allocation error conclusively distinguishes this from inferred float or topology corruption. The default logical maximum `i32::MAX` was incorrectly reused as physical scratch reservation size instead of the actual ten-element candidate count. Existing finite depth values and candidate positions remain valid; the appended position has bits `[1106750882,1082484421]`, velocity `[0,0]`, and reused identity `(slot 3,generation 1)` in the unpublished candidate.
+
+The preserved backtrace binds the resulting panic to `storage_object_creation_error` at probe-source `particle_object.rs:371`, `group_plan_creation_error`, `World::plan_particle_group`, `World::create_particle_group`, private `Model::append` and the exact named replay. Source inspection localizes the join's scratch construction through `MutationCandidate::prepare_exact_join_groups` / prepared permutation / `SolverState::prepare_permutation` / `zeroed_lane`; the stage trace does not assert which of the join's two prepared permutations owns the last request. Both use the same oversized reservation seam, so the distinction does not affect the minimal repair.
+
+### Platform outcomes and reachability
+
+| Job | Runner and image | Toolchain | Trace / separate original regression / full default suite |
+| --- | --- | --- | --- |
+| [Windows 103838288703](https://github.com/bright-builds-llc/liquidfun-rs/actions/runs/34799215304/job/103838288703) | GitHub Actions 1000004133; windows-2025-vs2026 20260907.229.1 | Rust 1.97.0 x86_64-pc-windows-msvc | Trace fails: 0 passed, 1 failed, 409 filtered. Separate regression passes its existing final-panic and rollback expectations: 1 passed, 2 filtered. Full suite fails its lib target: 409 passed, 1 failed; later integration targets are not reached. |
+| [Linux 103838288742](https://github.com/bright-builds-llc/liquidfun-rs/actions/runs/34799215304/job/103838288742) | GitHub Actions 1000004132; ubuntu-24.04 20260907.300.1 | Rust 1.97.0 x86_64-unknown-linux-gnu | All three steps succeed; trace reaches all 14 operations without allocation failure. |
+| [macOS 103838288721](https://github.com/bright-builds-llc/liquidfun-rs/actions/runs/34799215304/job/103838288721) | GitHub Actions 1000004134; macos-15-arm64 20260907.0337.1 | Rust 1.97.0 aarch64-apple-darwin | All three steps succeed; trace reaches all 14 operations without allocation failure. |
+
+Every toolchain reports compiler revision `2d8144b78 2026-07-07`. Windows records two raw allocation failures across the isolated and full-lib diagnostic runs; Linux/macOS record none. A diagnostic trace completing is not an independent rollback proof. The separate unchanged public Windows regression's pass specifically proves its existing expected panic and public rollback assertions; it does **not** prove the desired successful append. Historical run 34777296141 remains a three-property-test failure, and this isolated run does not retroactively identify its earliest failing operation.
+
+Linux quality job `103838288467` separately fails pre-existing Clippy findings in `liquidfun-differential/tests/round_trip/evidence.rs` (too many lines at 61, needless borrow at 113). These are outside this probe's files, retained in `34799215304-quality-direct.log`, and assigned to the root's separate CI recovery. No phase completion is inferred from the diagnostic run.
+
+### Retained remote evidence digests
+
+All records below are in the probe attempt directory. `probe.patch` contains the actual gated probe change, including the new replay, and has SHA-256 `c988680d24a1ab6ef6f0dce9e88d8382cd6fb1c7a02726cfdc86a2f1a5acbd98`.
+
+| File | SHA-256 |
+| --- | --- |
+| `34799215304-run.json` | `2be8320a75b3f8449b93419911393770a69b078506f130afd041997a41fb2101` |
+| `34799215304-windows-job.json` | `21b1cfe111eba1d2d99fb0e33623db5613b4cf4d132456793f762be24dead732` |
+| `34799215304-windows.log` | `96ec3770b882b31f16d6167bf81fa07d74f479ebc867ca608036f056a1533ea7` |
+| `34799215304-linux-job.json` | `0a2a57239be613d0e6d1813a2de2d4b57226df3ad2254faf81e49993ed7b22ab` |
+| `34799215304-linux.log` | `69f3bd7660a80b4bfbab34fc9e6ec92d5c461049021019b8eb99ef79d9b9e7ed` |
+| `34799215304-macos-job.json` | `299408cb7c2ec5ed3229e0c053de72023e6551147cf1666027566990370c451e` |
+| `34799215304-macos.log` | `6935aec06ee560ee5a8e470560c61d5409a706397aa4b0209d044783b95e3113` |
+
+### Repair contract and D-03 disposition
+
+The existing clone/plan/commit boundary remains sufficient: valid authoritative storage is cloned, candidate-only allocation fails, and no world commit executes. A second mutation payload, authoritative storage replacement, topology reconstruction or wider transaction is not justified. Plan 02 must own the demonstrated `solver_state.rs` scratch sizing seam and relevant tests before implementation.
+
+1. Preserve the original full input and make operation 14 return its existing target successfully, add exactly one particle (9 → 10), report `Applied { created: 0, lifecycle: 0 }`, and produce no panic on supported Windows. `created` counts newly remembered groups, not particles. Returning any typed error for this valid append fails acceptance.
+1. Reserve scratch for the bounded candidate requirement rather than its configured logical maximum, preserving validation, values, permutation order, lazy optional lanes and normal capacity rejection. A focused resource-sizing regression plus the original successful append rejects a mapper-only workaround.
+1. Preserve genuine typed no-effect topology rejection. Existing `topology_failure_preserves_group_and_particle_identity_counts` supplies 64 ELASTIC positions spaced 1,000 units apart and expects exactly `InvalidParticleGroupTopology` with its prior semantic state intact. Do not make all creation succeed or flatten capacity/handle/lifetime errors into that category.
+1. Extend private transaction proof in Plan 02 over all owned storage/lifetime/arena/diagnostic/journal state; the current public snapshot does not replace that proof. No allocation policy change is delivered by this diagnosis plan.
+
+## Cleanup attempt 20260914-cleanup01
+
+The probe-specific source and workflow diff was reversed after retaining its actual patch, baseline and logs. All seven pre-existing Rust/workflow files compare byte-for-byte with `originals.json`; the new replay file and registration are absent. The independent CI Markdown plugin repair remains intact. No diagnostic API, observation, CI step/condition, allocation change, mapper change or production repair remains in this plan's source deliverable.
+
+Retained cleanup directory: `target/phase14-diagnostics/f4ef73930a62aa884b820ce91ffe35a4608b2b8b/attempt-20260914-cleanup01/`. `inventory.log` lists the restored 409 lib tests with no diagnostic name. `public.log` separately runs the unchanged original regression and records 1 passed, 2 filtered. The removed exact test was not invoked or accepted as a zero-test pass. `restored-files.json` records the exact checked source/workflow paths. The cleanup commit and its ordered gate result are recorded in 14-01-SUMMARY.md.
