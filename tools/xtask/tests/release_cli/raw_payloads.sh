@@ -37,6 +37,10 @@ done
 ln -s "$root/payload" "$root/link"
 reject 'symbolic link' validate_payload_hash "$root/payload/identity.json" "$root/link/raw.json"
 reject 'normalized' validate_target_path "$root/"
+reject 'normalized' validate_relative_path /tmp/raw.json
+reject 'normalized' env PHASE12_RELEASE_EVIDENCE_LIBRARY_ONLY=0 bash "$repository/scripts/phase12-release-evidence.sh" aggregate \
+	"$(git rev-parse HEAD)" "$root" "$root/../escape" 1 2 3 4 5 6 7 8
+test ! -e "$root/audit-identity.json"
 
 # Arrange: raw files are bound by an independently bound index.
 rm "$root/payload/identity.json" "$root/payload/raw.json"
@@ -80,4 +84,13 @@ reject 'byte bound' validate_performance_inventory "$root/payload/manifest-entry
 printf '{}\n' >"$raw"
 rm "$root/payload/logs/paired.log"
 reject 'unavailable' validate_performance_inventory "$root/payload/manifest-entry.json"
+printf 'command passed\n' >"$root/payload/logs/paired.log"
+printf '{"completed_cases":[]}\n' >"$root/payload/paired-summary.json"
+(
+	cd "$root/payload"
+	find raw logs -type f -print
+	printf '%s\n' calibration.json paired-summary.json summary.json validation-identity.json
+) | sort | while read -r relative; do printf '%s  %s\n' "$(hash_file "$root/payload/$relative")" "$relative"; done >"$root/payload/payload-files.sha256"
+jq -n --arg hash "$(hash_file "$root/payload/payload-files.sha256")" '{payload_files_sha256:$hash}' >"$root/payload/manifest-entry.json"
+reject 'paired summary is incomplete' validate_performance_inventory "$root/payload/manifest-entry.json"
 printf 'raw payload controls passed\n'

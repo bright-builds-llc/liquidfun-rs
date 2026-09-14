@@ -18,6 +18,7 @@ rustc() {
 	fi
 }
 cargo() {
+	if [[ "$*" == 'xtask safety-evidence validate-coverage' ]]; then return 0; fi
 	[[ "$1" == +1.97.0 ]] || return 2
 	shift
 	[[ "$1" == llvm-cov ]] || return 2
@@ -31,7 +32,7 @@ cargo() {
 	printf 'TN:\nSF:src/lib.rs\nDA:1,1\nend_of_record\n' >"$fixture/rust.lcov"
 }
 timeout() {
-	shift 2
+	shift 3
 	"$@"
 }
 

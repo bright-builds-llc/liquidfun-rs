@@ -4,6 +4,25 @@
 #[path = "coverage_workflow/rust_identity.rs"]
 mod rust_identity;
 
+#[test]
+fn failed_coverage_diagnostics_have_separate_always_uploads() -> TestResult {
+    // Arrange
+    let source = fs::read_to_string(workspace_root().join(".github/workflows/coverage.yml"))?;
+
+    // Act / Assert
+    for kind in ["Rust", "C++", "differential"] {
+        let marker =
+            format!("      - name: Preserve bounded {kind} coverage attempt diagnostics\n");
+        let block = source.split_once(&marker).expect("diagnostic upload").1;
+        let block = block.split("\n\n").next().expect("upload block");
+        assert!(block.contains("if: always()"));
+        assert!(block.contains("github.run_attempt"));
+        assert!(block.contains("/diagnostics"));
+        assert!(block.contains("retention-days: 14"));
+    }
+    Ok(())
+}
+
 use std::fs;
 use std::path::{Component, Path};
 use std::sync::atomic::{AtomicU64, Ordering};

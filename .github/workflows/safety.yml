@@ -72,6 +72,14 @@ jobs:
           path: target/phase12-miri/${{ env.CANDIDATE_SHA }}
           if-no-files-found: error
           retention-days: 14
+      - name: Preserve bounded Miri attempt diagnostics
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: phase12-miri-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}-${{ env.CANDIDATE_SHA }}
+          path: target/phase12-miri/${{ env.CANDIDATE_SHA }}/diagnostics
+          if-no-files-found: warn
+          retention-days: 14
 
   rust-sanitizer:
     name: Rust address sanitizer subsets
@@ -121,4 +129,12 @@ jobs:
           name: phase12-rust-sanitizer-${{ github.run_id }}-${{ env.CANDIDATE_SHA }}
           path: target/phase12-rust-sanitizers/${{ env.CANDIDATE_SHA }}
           if-no-files-found: error
+          retention-days: 14
+      - name: Preserve bounded Rust sanitizer attempt diagnostics
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: phase12-rust-sanitizer-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}-${{ env.CANDIDATE_SHA }}
+          path: target/phase12-rust-sanitizers/${{ env.CANDIDATE_SHA }}/diagnostics
+          if-no-files-found: warn
           retention-days: 14

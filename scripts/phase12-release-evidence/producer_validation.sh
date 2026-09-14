@@ -59,6 +59,10 @@ validate_artifact_set() {
 	[[ -z "$(find "$download_directory" ! -type f ! -type d -print -quit)" ]] || fail "producer artifacts contain a special file"
 	[[ -z "$(find "$download_directory" -type f -size +67108864c -print -quit)" ]] || fail "producer artifact exceeds byte bound"
 	[[ "$(find "$download_directory" -type f | wc -l)" -le 4096 ]] || fail "producer file cardinality exceeds bound"
+	local member
+	while IFS= read -r -d '' member; do
+		validate_target_path "$member"
+	done < <(find "$download_directory" -mindepth 1 -print0)
 	local actual_path
 	actual_path=$(mktemp "${TMPDIR:-/tmp}/liquidfun-release-artifacts.XXXXXX")
 	trap 'rm -f -- "$actual_path"' RETURN

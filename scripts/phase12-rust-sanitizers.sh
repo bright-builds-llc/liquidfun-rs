@@ -19,6 +19,7 @@ fail() {
 script_directory=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
 repository_root=$(cd -- "$script_directory/.." && pwd -P)
 cd -- "$repository_root"
+source "$script_directory/phase12-attempt.sh"
 
 check_contract() {
 	grep -Fxq 'channel = "nightly-2026-07-15"' rust-toolchain-nightly.toml ||
@@ -53,10 +54,7 @@ prepare_output() {
 	[[ ! -L "$repository_root/target" && ! -L "$output_root" && ! -L "$output_directory" ]] ||
 		fail "evidence output contains a symbolic link"
 	mkdir -p -- "$output_root"
-	if [[ -e "$output_directory" ]]; then
-		[[ -d "$output_directory" ]] || fail "evidence destination is not a directory"
-		rm -rf -- "$output_directory"
-	fi
+	[[ ! -e "$output_directory" ]] || fail "evidence destination already exists; preserve the previous attempt"
 	mkdir -p -- "$output_directory/logs"
 	printf '%s\n' "$output_directory"
 }
@@ -71,17 +69,18 @@ run_case() {
 	local case_name=$3
 	shift 3
 	local log_file="$output_directory/logs/$case_name.log"
-	if ! timeout --signal=TERM "${COMMAND_TIMEOUT_SECONDS}s" \
+	run_attempt_command "$case_name" "$COMMAND_TIMEOUT_SECONDS" \
 		env \
 		RUSTFLAGS="-Zsanitizer=address -Cforce-frame-pointers=yes" \
 		ASAN_OPTIONS="abort_on_error=1:halt_on_error=1:detect_leaks=1" \
-		"$@" >"$log_file" 2>&1; then
-		tail -n 80 "$log_file" >&2
-		fail "allowlisted sanitizer case failed or timed out: $case_name"
-	fi
+		"$@"
+	cp "$output_directory/diagnostics/logs/$case_name.log" "$log_file"
 	local log_bytes
 	log_bytes=$(wc -c <"$log_file")
 	((log_bytes <= MAXIMUM_LOG_BYTES)) || fail "sanitizer log exceeds reviewed bound"
+	local counts
+	counts=$(sed -n 's/^test result: ok\. \([0-9]*\) passed; 0 failed; \([0-9]*\) ignored;.*/\1 \2/p' "$log_file")
+	[[ "$counts" =~ ^([1-9][0-9]*)[[:space:]]0$ ]] || fail "missing nonzero sanitizer test count: $case_name"
 	jq -cn \
 		--arg name "$case_name" \
 		--arg path "logs/$case_name.log" \
@@ -93,11 +92,14 @@ run_case() {
 write_identity_last() {
 	local output_directory=$1
 	local candidate_sha=$2
+	seal_attempt 0
 	jq -n \
 		--arg candidate_commit "$candidate_sha" \
 		--arg producer_workflow "${GITHUB_WORKFLOW:-local}" \
 		--arg producer_job "${GITHUB_JOB:-local}" \
 		--argjson run_id "${GITHUB_RUN_ID:-0}" \
+		--argjson run_attempt "${GITHUB_RUN_ATTEMPT:-1}" \
+		--arg diagnostics_sha256 "$(hash_file "$output_directory/diagnostics/checksums.sha256")" \
 		--arg payload_sha256 "$(hash_file "$output_directory/summary.json")" \
 		'{
 		  schema_version: 1,
@@ -108,6 +110,8 @@ write_identity_last() {
 		  producer_workflow: $producer_workflow,
 		  producer_job: $producer_job,
 		  run_id: $run_id,
+		  run_attempt: $run_attempt,
+		  diagnostics_sha256: $diagnostics_sha256,
 		  payload_path: "summary.json",
 		  payload_sha256: $payload_sha256,
 		  parity_authority: false
@@ -122,6 +126,8 @@ run_sanitizers() {
 	command -v jq >/dev/null 2>&1 || fail "jq is required"
 	local output_directory
 	output_directory=$(prepare_output "$candidate_sha")
+	begin_attempt "$output_directory" "$candidate_sha"
+	rustc "+$NIGHTLY_TOOLCHAIN" -vV >"$output_directory/diagnostics/compiler.txt"
 	local records_file="$output_directory/cases.jsonl"
 	: >"$records_file"
 	local cargo_prefix=(cargo "+$NIGHTLY_TOOLCHAIN" test -Zbuild-std --target "$SANITIZER_TARGET")
@@ -157,7 +163,7 @@ run_sanitizers() {
 		  cases: .
 		}' "$records_file" >"$output_directory/summary.json"
 	rm -f -- "$records_file"
-	cargo xtask safety-evidence validate-coverage
+	run_attempt_command validate-coverage 120 cargo xtask safety-evidence validate-coverage
 	write_identity_last "$output_directory" "$candidate_sha"
 	printf 'phase12-rust-sanitizers evidence complete: %s\n' "$output_directory"
 }

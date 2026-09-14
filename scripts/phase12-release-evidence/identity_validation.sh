@@ -38,7 +38,18 @@ validate_producer_identities() {
 		local safety_payload
 		safety_payload="$(dirname -- "$identity")/$payload_path"
 		validate_payload_hash "$identity" "$safety_payload"
+		validate_attempt_inventory "$identity"
 		validate_safety_payload "$safety_payload" "$candidate_sha" "${safety_kind//-/_}"
+		local expected_cases expected_job
+		if [[ "$safety_kind" == miri ]]; then
+			expected_cases='["arena_handles","collision","math","math_endpoint","particle_group_model","particle_permutation","protocol_codec","typed_identity"]'
+			expected_job=miri
+		else
+			expected_cases='["collision_distance","math_contract","object_model","particle_group_model","particle_permutation","protocol_codec"]'
+			expected_job=rust-sanitizer
+		fi
+		jq -e --argjson expected "$expected_cases" '([.cases[].name] | sort) == $expected' "$safety_payload" >/dev/null || fail "safety case inventory is incomplete"
+		jq -e --arg job "$expected_job" '.producer_job == $job and .toolchain_identity == "nightly-2026-07-15"' "$identity" >/dev/null || fail "safety producer job or toolchain differs"
 	done
 	for name in rust cpp differential; do
 		identity=$(find_single_identity \
@@ -55,7 +66,9 @@ validate_producer_identities() {
 		local coverage_payload
 		coverage_payload="$(dirname -- "$identity")/$coverage_payload_path"
 		validate_payload_hash "$identity" "$coverage_payload"
+		validate_attempt_inventory "$identity"
 		validate_coverage_payload "$coverage_payload" "$candidate_sha" "${name}_coverage"
+		jq -e --arg job "$name-coverage" '.producer_job == $job' "$identity" >/dev/null || fail "coverage producer job differs"
 	done
 	for name in protocol shapes_collision world_mutation particles groups_ownership; do
 		identity=$(find_single_identity \

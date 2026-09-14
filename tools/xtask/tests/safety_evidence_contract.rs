@@ -4,6 +4,10 @@
 #[path = "safety_evidence_contract/miri.rs"]
 mod miri;
 
+#[cfg(target_os = "linux")]
+#[path = "safety_evidence_contract/attempts.rs"]
+mod attempts;
+
 use std::{
     fs,
     path::{Path, PathBuf},

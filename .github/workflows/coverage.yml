@@ -73,6 +73,14 @@ jobs:
           path: target/phase12-coverage/${{ env.CANDIDATE_SHA }}/rust
           if-no-files-found: error
           retention-days: 14
+      - name: Preserve bounded Rust coverage attempt diagnostics
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: phase12-rust-coverage-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}-${{ env.CANDIDATE_SHA }}
+          path: target/phase12-coverage/${{ env.CANDIDATE_SHA }}/rust/diagnostics
+          if-no-files-found: warn
+          retention-days: 14
 
   cpp-coverage:
     name: C++ oracle source coverage
@@ -143,6 +151,14 @@ jobs:
           name: phase12-cpp-coverage-${{ github.run_id }}-${{ env.CANDIDATE_SHA }}
           path: target/phase12-coverage/${{ env.CANDIDATE_SHA }}/cpp
           if-no-files-found: error
+          retention-days: 14
+      - name: Preserve bounded C++ coverage attempt diagnostics
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: phase12-cpp-coverage-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}-${{ env.CANDIDATE_SHA }}
+          path: target/phase12-coverage/${{ env.CANDIDATE_SHA }}/cpp/diagnostics
+          if-no-files-found: warn
           retention-days: 14
 
   differential-coverage:
@@ -226,4 +242,12 @@ jobs:
           name: phase12-differential-coverage-${{ github.run_id }}-${{ env.CANDIDATE_SHA }}
           path: target/phase12-coverage/${{ env.CANDIDATE_SHA }}/differential
           if-no-files-found: error
+          retention-days: 14
+      - name: Preserve bounded differential coverage attempt diagnostics
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: phase12-differential-coverage-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}-${{ env.CANDIDATE_SHA }}
+          path: target/phase12-coverage/${{ env.CANDIDATE_SHA }}/differential/diagnostics
+          if-no-files-found: warn
           retention-days: 14

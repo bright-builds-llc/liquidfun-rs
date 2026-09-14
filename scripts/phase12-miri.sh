@@ -21,6 +21,7 @@ fail() {
 script_directory=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
 repository_root=$(cd -- "$script_directory/.." && pwd -P)
 cd -- "$repository_root"
+source "$script_directory/phase12-attempt.sh"
 
 scan_source() {
 	command -v rg >/dev/null 2>&1 || fail "Miri source scan requires rg"
@@ -95,10 +96,8 @@ run_case() {
 	if [[ "$case_name" == particle_group_model ]]; then
 		timeout_seconds=$GROUP_MODEL_TIMEOUT_SECONDS
 	fi
-	if ! timeout --signal=TERM "${timeout_seconds}s" env MIRIFLAGS="$miriflags" "$@" >"$log_file" 2>&1; then
-		tail -n 80 "$log_file" >&2
-		fail "allowlisted case failed or timed out: $case_name"
-	fi
+	run_attempt_command "$case_name" "$timeout_seconds" env MIRIFLAGS="$miriflags" "$@"
+	cp "$output_directory/diagnostics/logs/$case_name.log" "$log_file"
 	local log_bytes
 	log_bytes=$(wc -c <"$log_file")
 	((log_bytes <= MAXIMUM_LOG_BYTES)) || fail "allowlisted case log exceeds reviewed bound"
@@ -128,6 +127,7 @@ write_identity_last() {
 	local output_directory=$1
 	local candidate_sha=$2
 	local summary_sha256
+	seal_attempt 0
 	summary_sha256=$(hash_file "$output_directory/summary.json")
 	jq -n \
 		--arg candidate_commit "$candidate_sha" \
@@ -135,6 +135,8 @@ write_identity_last() {
 		--arg producer_workflow "${GITHUB_WORKFLOW:-local}" \
 		--arg producer_job "${GITHUB_JOB:-local}" \
 		--argjson run_id "${GITHUB_RUN_ID:-0}" \
+		--argjson run_attempt "${GITHUB_RUN_ATTEMPT:-1}" \
+		--arg diagnostics_sha256 "$(hash_file "$output_directory/diagnostics/checksums.sha256")" \
 		--arg payload_path "summary.json" \
 		--arg payload_sha256 "$summary_sha256" \
 		'{
@@ -145,6 +147,8 @@ write_identity_last() {
 		  producer_workflow: $producer_workflow,
 		  producer_job: $producer_job,
 		  run_id: $run_id,
+		  run_attempt: $run_attempt,
+		  diagnostics_sha256: $diagnostics_sha256,
 		  payload_path: $payload_path,
 		  payload_sha256: $payload_sha256,
 		  parity_authority: false
@@ -162,6 +166,8 @@ run_miri() {
 	compiler_identity=$(rustc "+$NIGHTLY_TOOLCHAIN" -vV)
 	local output_directory
 	output_directory=$(prepare_output "$candidate_sha")
+	begin_attempt "$output_directory" "$candidate_sha"
+	printf '%s\n' "$compiler_identity" >"$output_directory/diagnostics/compiler.txt"
 	local records_file="$output_directory/cases.jsonl"
 	: >"$records_file"
 
@@ -203,7 +209,7 @@ run_miri() {
 		}' "$records_file" >"$output_directory/summary.json"
 	validate_math_modes "$output_directory/summary.json"
 	rm -f -- "$records_file"
-	cargo xtask safety-evidence validate-coverage
+	run_attempt_command validate-coverage 120 cargo xtask safety-evidence validate-coverage
 	write_identity_last "$output_directory" "$candidate_sha"
 	printf 'phase12-miri evidence complete: %s\n' "$output_directory"
 }

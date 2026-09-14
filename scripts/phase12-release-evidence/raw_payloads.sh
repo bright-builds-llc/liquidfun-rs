@@ -76,3 +76,52 @@ validate_performance_inventory() {
 		'(.completed_cases | sort) == $cases' "$directory/paired-summary.json" >/dev/null ||
 		fail "performance paired summary is incomplete"
 }
+
+validate_attempt_inventory() {
+	local identity=$1
+	local directory="${identity%/*}/diagnostics"
+	local index="$directory/checksums.sha256"
+	[[ -z "$(find "$directory" -type l -print -quit)" ]] || fail "diagnostics contain a symbolic link"
+	require_bounded_payload "$identity"
+	require_bounded_payload "$index" 1048576
+	[[ "$(hash_file "$index")" == "$(jq -er '.diagnostics_sha256' "$identity")" ]] || fail "diagnostic inventory hash differs"
+	local line relative digest count=0
+	local -a names=()
+	while IFS= read -r line || [[ -n "$line" ]]; do
+		[[ "$line" =~ ^([0-9a-f]{64})\ \ [.]\/([A-Za-z0-9._/-]+)$ ]] || fail "diagnostic inventory is malformed"
+		digest=${BASH_REMATCH[1]} relative=${BASH_REMATCH[2]}
+		validate_relative_path "$relative"
+		local existing
+		for existing in "${names[@]}"; do [[ "$existing" != "$relative" ]] || fail "duplicate diagnostic path"; done
+		names+=("$relative")
+		count=$((count + 1))
+		((count <= 256)) || fail "diagnostic inventory exceeds cardinality bound"
+		require_bounded_payload "$directory/$relative"
+		[[ "$(hash_file "$directory/$relative")" == "$digest" ]] || fail "diagnostic payload hash differs"
+	done <"$index"
+	local -a actual=()
+	local item
+	while IFS= read -r -d '' item; do
+		relative=${item#"$directory/"}
+		validate_relative_path "$relative"
+		[[ "$relative" == checksums.sha256 ]] || actual+=("$relative")
+	done < <(find "$directory" -type f -print0)
+	[[ "$(printf '%s\n' "${names[@]}" | sort)" == "$(printf '%s\n' "${actual[@]}" | sort)" ]] || fail "diagnostic inventory differs"
+	jq -e --slurpfile identity "$identity" '
+	  $identity[0] as $id |
+	  .status == "passed" and .exit_code == 0 and .candidate_commit == $id.candidate_commit and
+	  .run_id == $id.run_id and .run_attempt == $id.run_attempt and
+	  (.run_attempt | type == "number" and . >= 1 and floor == .) and
+	  .producer_job == $id.producer_job and .producer_workflow == $id.producer_workflow
+	' "$directory/terminal.json" >/dev/null || fail "diagnostic terminal identity differs or failed"
+	jq -se 'length > 0 and ([.[].name] | length == (unique | length)) and
+	  all(.[]; .classification == "passed" and .command_exit_code == 0 and .capture_exit_code == 0 and
+	    .retained_bytes < 16777216 and (.command | type == "array" and length > 0) and
+	    (.path | type == "string" and test("^logs/[a-z0-9_-]+[.]log$")))' \
+		"$directory/commands.jsonl" >/dev/null || fail "diagnostic commands are incomplete or failed"
+	local bytes
+	while IFS=$'\t' read -r relative digest bytes; do
+		require_bounded_payload "$directory/$relative"
+		[[ "$(hash_file "$directory/$relative")" == "$digest" && "$(wc -c <"$directory/$relative")" -eq "$bytes" ]] || fail "diagnostic command log differs"
+	done < <(jq -r '[.path,.sha256,.retained_bytes] | @tsv' "$directory/commands.jsonl")
+}

@@ -20,6 +20,7 @@ fail() {
 script_directory=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
 repository_root=$(cd -- "$script_directory/.." && pwd -P)
 cd -- "$repository_root"
+source "$script_directory/phase12-attempt.sh"
 
 validate_contract() {
 	cargo xtask safety-evidence validate-coverage
@@ -171,6 +172,7 @@ write_identity_last() {
 	local candidate_sha=$2
 	local evidence_kind=$3
 	local toolchain_identity=$4
+	seal_attempt 0
 	jq -n \
 		--arg candidate_commit "$candidate_sha" \
 		--arg evidence_kind "$evidence_kind" \
@@ -178,6 +180,8 @@ write_identity_last() {
 		--arg producer_workflow "${GITHUB_WORKFLOW:-local}" \
 		--arg producer_job "${GITHUB_JOB:-local}" \
 		--argjson run_id "${GITHUB_RUN_ID:-0}" \
+		--argjson run_attempt "${GITHUB_RUN_ATTEMPT:-1}" \
+		--arg diagnostics_sha256 "$(hash_file "$output_directory/diagnostics/checksums.sha256")" \
 		--arg payload_sha256 "$(hash_file "$output_directory/summary.json")" \
 		'{
 		  schema_version: 1,
@@ -187,6 +191,8 @@ write_identity_last() {
 		  producer_workflow: $producer_workflow,
 		  producer_job: $producer_job,
 		  run_id: $run_id,
+		  run_attempt: $run_attempt,
+		  diagnostics_sha256: $diagnostics_sha256,
 		  payload_path: "summary.json",
 		  payload_sha256: $payload_sha256,
 		  parity_authority: false
@@ -205,7 +211,7 @@ finish_coverage() {
 		"$evidence_kind" \
 		"$toolchain_identity" \
 		"$artifact_name"
-	validate_contract
+	run_attempt_command validate-coverage 120 cargo xtask safety-evidence validate-coverage
 	write_identity_last "$output_directory" "$candidate_sha" "$evidence_kind" "$toolchain_identity"
 	printf 'phase12-coverage evidence complete: %s\n' "$output_directory"
 }
@@ -224,10 +230,12 @@ run_rust_coverage() {
 		fail "cargo-llvm-cov must be exactly $LLVM_COV_VERSION"
 	local output_directory
 	output_directory=$(prepare_output "$candidate_sha" rust)
-	timeout --signal=TERM "${COMMAND_TIMEOUT_SECONDS}s" \
+	begin_attempt "$output_directory" "$candidate_sha"
+	printf '%s\n' "$rust_compiler_identity" >"$output_directory/diagnostics/compiler.txt"
+	run_attempt_command rust-coverage "$COMMAND_TIMEOUT_SECONDS" \
 		cargo "+$RUST_TOOLCHAIN" llvm-cov \
 		--workspace --all-features --lcov \
-		--output-path "$output_directory/rust.lcov" || fail "Rust coverage failed or timed out"
+		--output-path "$output_directory/rust.lcov"
 	finish_coverage \
 		"$output_directory" \
 		"$candidate_sha" \
@@ -244,10 +252,12 @@ run_cpp_coverage() {
 	command -v llvm-cov-22 >/dev/null 2>&1 || fail "llvm-cov-22 is required"
 	local output_directory
 	output_directory=$(prepare_output "$candidate_sha" cpp)
+	begin_attempt "$output_directory" "$candidate_sha"
+	clang++-22 --version >"$output_directory/diagnostics/compiler.txt"
 	local build_directory="$repository_root/target/reference/oracle-debug"
 	[[ ! -L "$build_directory" ]] || fail "C++ coverage build directory is a symbolic link"
 	rm -rf -- "$build_directory"
-	timeout --signal=TERM "${COMMAND_TIMEOUT_SECONDS}s" \
+	run_attempt_command configure "$COMMAND_TIMEOUT_SECONDS" \
 		env \
 		CC=clang-22 \
 		CXX=clang++-22 \
@@ -256,20 +266,21 @@ run_cpp_coverage() {
 		LDFLAGS="-fprofile-instr-generate" \
 		LIQUIDFUN_XTASK_CXX=clang++-22 \
 		cargo xtask upstream configure --preset oracle-debug
-	timeout --signal=TERM "${COMMAND_TIMEOUT_SECONDS}s" \
+	run_attempt_command build "$COMMAND_TIMEOUT_SECONDS" \
 		cmake --build "$build_directory" --target liquidfun-reference-protocol-tests --parallel 1
-	LLVM_PROFILE_FILE="$output_directory/cpp.profraw" \
-		timeout --signal=TERM "${COMMAND_TIMEOUT_SECONDS}s" \
+	run_attempt_command cpp-tests "$COMMAND_TIMEOUT_SECONDS" \
+		env LLVM_PROFILE_FILE="$output_directory/cpp.profraw" \
 		ctest --test-dir "$build_directory" \
 		--output-on-failure --no-tests=error -R '^liquidfun-reference-protocol$'
-	llvm-profdata-22 merge -sparse \
+	run_attempt_command merge "$COMMAND_TIMEOUT_SECONDS" llvm-profdata-22 merge -sparse \
 		"$output_directory/cpp.profraw" \
 		-o "$output_directory/cpp.profdata"
-	llvm-cov-22 export \
+	ATTEMPT_STDOUT="$output_directory/cpp.lcov" run_attempt_command export "$COMMAND_TIMEOUT_SECONDS" llvm-cov-22 export \
 		-format=lcov \
 		-instr-profile="$output_directory/cpp.profdata" \
-		"$build_directory/liquidfun-reference-protocol-tests" \
-		>"$output_directory/cpp.lcov"
+		"$build_directory/liquidfun-reference-protocol-tests"
+	require_bounded_artifact "$output_directory/cpp.profraw"
+	require_bounded_artifact "$output_directory/cpp.profdata"
 	finish_coverage \
 		"$output_directory" \
 		"$candidate_sha" \
@@ -283,6 +294,7 @@ run_differential_coverage() {
 	require_differential_oracles
 	local output_directory
 	output_directory=$(prepare_output "$candidate_sha" differential)
+	begin_attempt "$output_directory" "$candidate_sha"
 	local expected="$output_directory/expected-leaves.json"
 	local observed="$output_directory/observed-leaves.json"
 	local observation_directory="$output_directory/observations"
@@ -301,15 +313,15 @@ run_differential_coverage() {
 	  | .id
 	] | sort' reference/compatibility.json >"$expected"
 	for target in "${targets[@]}"; do
-		timeout --signal=TERM "${COMMAND_TIMEOUT_SECONDS}s" \
+		run_attempt_command "$target" "$COMMAND_TIMEOUT_SECONDS" \
 			env LIQUIDFUN_DIFFERENTIAL_LEAF_DIRECTORY="$observation_directory" \
 			cargo test -p liquidfun-differential --all-features --test "$target" -- \
 			--test-threads=1
 	done
 	write_observed_leaves "$observation_directory" "$observed"
 	rm -rf -- "$observation_directory"
-	cargo xtask inventory check
-	cargo xtask safety-evidence validate-differential-leaves \
+	run_attempt_command inventory 120 cargo xtask inventory check
+	run_attempt_command differential-leaves 120 cargo xtask safety-evidence validate-differential-leaves \
 		--expected "$expected" \
 		--observed "$observed" \
 		--output "$output_directory/differential-leaves.json"

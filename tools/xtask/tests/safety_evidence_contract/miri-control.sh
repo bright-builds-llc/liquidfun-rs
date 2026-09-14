@@ -10,6 +10,7 @@ case-budgets)
 	fixture=$(mktemp -d)
 	trap 'rm -rf "$fixture"' EXIT
 	mkdir -p "$fixture/logs"
+	begin_attempt "$fixture" 1111111111111111111111111111111111111111
 	compiler_identity='rustc fixture'
 	for case_name in arena_handles particle_group_model; do
 		run_case "$fixture" "$fixture/cases.jsonl" "$case_name" "" \
