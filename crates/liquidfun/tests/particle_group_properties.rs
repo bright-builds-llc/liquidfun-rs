@@ -1,10 +1,5 @@
 //! Versioned, bounded public-API state-machine evidence for particle groups.
 
-use std::panic::{AssertUnwindSafe, catch_unwind};
-
-#[cfg(target_os = "windows")]
-use std::any::Any;
-
 use proptest::prelude::*;
 
 #[path = "particle_group_properties/model.rs"]
@@ -256,44 +251,47 @@ fn persisted_audited_windows_seed() {
     for operation in &AUDITED_WINDOWS_OPERATIONS[..13] {
         model.apply(*operation);
     }
-    #[cfg(target_os = "windows")]
-    let before = snapshot::rollback_snapshot(&model);
+    let groups = model.live_groups();
+    let target = groups[AUDITED_WINDOWS_OPERATIONS[13].first % groups.len()];
+    let before_members = model
+        .world
+        .particle_group_view(target)
+        .expect("append target remains live")
+        .member_ids()
+        .to_vec();
+    let before_count = model
+        .world
+        .particle_system_statistics(model.system)
+        .expect("system remains live")
+        .particle_count();
 
     // Act
-    let result = catch_unwind(AssertUnwindSafe(|| {
-        model.apply(AUDITED_WINDOWS_OPERATIONS[13])
-    }));
+    let entry = model.apply(AUDITED_WINDOWS_OPERATIONS[13]);
 
     // Assert
-    #[cfg(target_os = "windows")]
-    {
-        let panic = result.expect_err(
-            "Plan 14-02 must replace this temporary audited panic expectation with no-panic behavior",
-        );
-        assert_eq!(
-            panic_message(panic.as_ref()),
-            "internal error: entered unreachable code: checked creation cannot invalidate authoritative storage"
-        );
-        assert_eq!(
-            snapshot::rollback_snapshot(&model),
-            before,
-            "the audited candidate panic must not mutate public semantic state"
-        );
-    }
-    #[cfg(not(target_os = "windows"))]
-    {
-        let entry =
-            result.expect("the audited failure is specific to the supported Windows runner");
-        assert_eq!(entry.operation, AUDITED_WINDOWS_OPERATIONS[13]);
-        assert!(matches!(entry.outcome, Outcome::Applied { .. }));
-    }
-}
-
-#[cfg(target_os = "windows")]
-fn panic_message(payload: &(dyn Any + Send)) -> &str {
-    payload
-        .downcast_ref::<&str>()
-        .copied()
-        .or_else(|| payload.downcast_ref::<String>().map(String::as_str))
-        .unwrap_or("<non-string panic payload>")
+    assert_eq!(entry.operation, AUDITED_WINDOWS_OPERATIONS[13]);
+    assert_eq!(
+        entry.outcome,
+        Outcome::Applied {
+            created: 0,
+            lifecycle: 0
+        }
+    );
+    assert_eq!(model.live_groups(), groups);
+    let after_members = model
+        .world
+        .particle_group_view(target)
+        .expect("append retains its target")
+        .member_ids()
+        .to_vec();
+    assert_eq!(after_members.len(), before_members.len() + 1);
+    assert!(before_members.iter().all(|id| after_members.contains(id)));
+    assert_eq!(
+        model
+            .world
+            .particle_system_statistics(model.system)
+            .expect("system remains live")
+            .particle_count(),
+        before_count + 1
+    );
 }

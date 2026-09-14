@@ -319,7 +319,7 @@ fn zeroed_lane<T: Copy>(
     preflight_count(particle_count, declared_capacity)?;
     let mut candidate = Vec::new();
     candidate
-        .try_reserve_exact(declared_capacity)
+        .try_reserve_exact(particle_count)
         .map_err(|_error| ParticleStorageError::InvalidLaneBundle)?;
     candidate.resize(particle_count, zero);
     Ok(candidate)

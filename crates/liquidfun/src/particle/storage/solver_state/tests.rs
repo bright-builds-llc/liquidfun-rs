@@ -4,6 +4,70 @@ use crate::particle::ParticleBufferMode;
 use super::super::{ParticleInput, ParticleStorage};
 use super::*;
 
+#[test]
+fn small_scratch_lane_stays_within_actual_row_budget() {
+    // Arrange
+    let particle_count = 10;
+    let declared_capacity = 4096;
+
+    // Act
+    let lane =
+        zeroed_lane(particle_count, declared_capacity, 0.0_f32).expect("bounded scratch rows fit");
+
+    // Assert
+    assert_eq!(lane, vec![0.0; particle_count]);
+    assert!(lane.capacity() <= 2 * particle_count);
+}
+
+#[test]
+fn scratch_append_preserves_values_and_zeroes_only_new_row() {
+    // Arrange
+    let original = [3.0_f32, 7.0];
+
+    // Act
+    let candidate = clone_and_append(Some(original.as_slice()), 0.0, 4096)
+        .expect("bounded append fits")
+        .expect("present lane remains present");
+
+    // Assert
+    assert_eq!(candidate, [3.0, 7.0, 0.0]);
+}
+
+#[test]
+fn scratch_permutation_preserves_surviving_values() {
+    // Arrange
+    let original = [3.0_f32, 7.0, 11.0];
+
+    // Act
+    let candidate = permute_optional_lane(
+        Some(original.as_slice()),
+        &[Some(1), None, Some(0)],
+        2,
+        4096,
+        0.0,
+    )
+    .expect("bounded permutation fits")
+    .expect("present lane remains present");
+
+    // Assert
+    assert_eq!(candidate, [11.0, 3.0]);
+}
+
+#[test]
+fn scratch_signed_index_limit_rejects_before_allocation() {
+    // Arrange
+    let mut state = SolverState::new();
+    let before = state.clone();
+    let count = i32::MAX as usize + 1;
+
+    // Act
+    let result = state.ensure_static_pressures(count, count);
+
+    // Assert
+    assert_eq!(result, Err(ParticleStorageError::InvalidLaneBundle));
+    assert_eq!(state, before);
+}
+
 fn storage() -> ParticleStorage {
     let world = WorldKey::fresh().expect("test world key remains available");
     let system = ParticleSystemId::from_identity(Identity::new(world, 0, 0));
