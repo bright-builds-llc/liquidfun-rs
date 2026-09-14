@@ -201,6 +201,6 @@ Final completion gate: ordered fmt, Clippy, all-target build and all-feature tes
 - [ ] Validate worktree and committed frozen-source attestation; repeat milestone audit.
 - [ ] Complete review, lifecycle verification and strict commit/push finalization.
 
-Progress: Plans 01–06 are complete with retained canonical, safety, coverage, native regression, same-package handoff, evidence-retention and explicit C/A readiness proof. CI restoration and failure controls pass. Plan 07 requires replacing historical promotion tuple constants with an independently validated acquisition before selecting P.
+Progress: Plans 01–06 are complete with retained canonical, safety, coverage, native regression, same-package handoff, evidence-retention and explicit C/A readiness proof. CI restoration and failure controls pass. Plan 07 promotion prerequisites are repaired and independently reviewed at 84405cc. The first canonical producer passed at its original 00358a5; fresh-source production, native Windows process verification, reviewed promotion and exact-head acceptance remain.
 
 Completion review: Pending. Controlled performance runner/identity availability requires external clarification.
