@@ -97,10 +97,16 @@ fn workflow_contract_blocks_failed_evidence_identity() {
     let script_text = std::fs::read_to_string(&script).expect("evidence script");
     assert!(script_text.contains("set -euo pipefail"));
     let validation = script_text
-        .find("cargo xtask phase9-evidence validate-content")
+        .lines()
+        .position(|line| line.contains("cargo xtask phase9-evidence validate-content"))
         .expect("shared content validator");
     let identity = script_text
-        .find("> \"$output_dir/identity.json\"")
+        .lines()
+        .position(|line| {
+            line.trim_start()
+                .strip_prefix('>')
+                .is_some_and(|path| path.trim() == "\"$output_dir/identity.json\"")
+        })
         .expect("identity emission");
     assert!(
         validation < identity,

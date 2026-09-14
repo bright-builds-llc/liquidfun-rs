@@ -259,6 +259,7 @@ pub(super) fn acquire_provider_metadata(
     let archive = super::absolute_path(repository_root, &request.archive_path);
     let output = run_process(
         Command::new("python3")
+            .arg("-B")
             .arg(repository_root.join("scripts/phase13-evidence-archive.py"))
             .arg(&archive)
             .arg(bundle_root)

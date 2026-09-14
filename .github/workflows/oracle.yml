@@ -537,7 +537,7 @@ jobs:
         with:
           python-version: "3.13"
       - name: Verify native Windows bounded process controls
-        run: python tools/xtask/tests/phase15_candidate_evidence/process_controls.py
+        run: python -B tools/xtask/tests/phase15_candidate_evidence/process_controls.py
       - name: Retain native Windows process-control diagnostics
         if: always()
         # actions/upload-artifact v7
@@ -587,6 +587,6 @@ jobs:
           Enter-VsDevShell -VsInstallPath $installation -SkipAutomaticLocation -DevCmdArguments "-arch=x64 -host_arch=x64"
           cargo xtask upstream verify
           cargo xtask provenance check
-          python scripts/phase15-candidate-evidence/docs_ci.py --native-inventory
+          python -B scripts/phase15-candidate-evidence/docs_ci.py --native-inventory
           cargo xtask upstream configure --preset oracle-debug
           cargo xtask upstream build --preset oracle-debug
