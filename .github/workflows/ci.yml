@@ -53,6 +53,10 @@ jobs:
         run: cargo clippy --workspace --all-targets --all-features -- -D warnings
       - name: Build the workspace
         run: cargo build --workspace --all-targets --all-features
+      - name: Install pinned nightly for the fuzz-build smoke test
+        run: rustup toolchain install nightly-2026-07-15 --profile minimal --component rust-src
+      - name: Install pinned cargo-fuzz for the fuzz-build smoke test
+        run: cargo install cargo-fuzz --version 0.13.2 --locked
       - name: Test the workspace
         run: cargo test --workspace --all-features
       - name: Prove headless workflows and consumer package isolation

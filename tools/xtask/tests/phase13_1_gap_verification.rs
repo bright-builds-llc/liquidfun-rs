@@ -186,15 +186,41 @@ fn verification_report_records_the_same_sole_deferral() -> TestResult {
         ".planning/phases/13.1-restore-bright-builds-structural-compliance/13.1-VERIFICATION.md",
     ))?;
 
-    // Act / Assert
+    // Act
+    let normalized = verification.replace("\r\n", "\n");
+    let frontmatter = normalized
+        .strip_prefix("---\n")
+        .and_then(|content| content.split_once("\n---\n"))
+        .map(|(header, _body)| header)
+        .ok_or("verification frontmatter is required")?;
+    let deferred = frontmatter
+        .split_once("\ndeferred:\n")
+        .ok_or("structured deferral is required")?
+        .1
+        .lines()
+        .take_while(|line| line.starts_with(' ') || line.is_empty())
+        .collect::<Vec<_>>();
+
+    // Assert
     assert_eq!(
-        verification.matches("addressed_in: \"Phase 15\"").count(),
+        deferred
+            .iter()
+            .filter(|line| line.trim_start().starts_with("- truth:"))
+            .count(),
         1
     );
-    assert!(verification.contains("Exact-head Phase 13 acceptance remains green"));
+    assert_eq!(
+        deferred
+            .iter()
+            .map(|line| line.trim())
+            .filter(|line| line.starts_with("addressed_in:"))
+            .collect::<Vec<_>>(),
+        ["addressed_in: \"Phase 15\""]
+    );
     assert!(
-        verification
-            .contains("Current exact-head Phase 13 acceptance drift is deferred to Phase 15")
+        deferred
+            .iter()
+            .any(|line| { line.contains("Exact-head Phase 13 acceptance remains green") })
     );
     Ok(())
 }
