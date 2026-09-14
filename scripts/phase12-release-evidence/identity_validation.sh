@@ -34,6 +34,7 @@ validate_producer_identities() {
 			fail "$name carries the wrong candidate or run"
 		local payload_path
 		payload_path=$(jq -er '.payload_path' "$identity")
+		validate_relative_path "$payload_path"
 		local safety_payload
 		safety_payload="$(dirname -- "$identity")/$payload_path"
 		validate_payload_hash "$identity" "$safety_payload"
@@ -50,6 +51,7 @@ validate_producer_identities() {
 			fail "$name coverage carries the wrong candidate or run"
 		local coverage_payload_path
 		coverage_payload_path=$(jq -er '.payload_path' "$identity")
+		validate_relative_path "$coverage_payload_path"
 		local coverage_payload
 		coverage_payload="$(dirname -- "$identity")/$coverage_payload_path"
 		validate_payload_hash "$identity" "$coverage_payload"
@@ -75,6 +77,7 @@ validate_producer_identities() {
 		fail "regression evidence carries the wrong producer identity"
 	local regression_payload_path
 	regression_payload_path=$(jq -er '.payload_path' "$identity")
+	validate_relative_path "$regression_payload_path"
 	validate_payload_hash "$identity" "$(dirname -- "$identity")/$regression_payload_path"
 	validate_regression_payload "$(dirname -- "$identity")" "$candidate_sha" "$identity"
 	identity=$(find_single_identity \
@@ -99,6 +102,7 @@ validate_producer_identities() {
 		(.controlled_host_label | type == "string" and length > 0) and
 		(.controlled_host_identity | type == "string" and test("^[0-9a-f]{64}$"))
 	' "$performance_entry" >/dev/null || fail "performance manifest payload is incomplete"
+	validate_performance_inventory "$performance_entry"
 	validate_platform_identities "$candidate_sha" "$download_directory" "$platform_run_id"
 }
 

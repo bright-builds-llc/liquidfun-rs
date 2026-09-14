@@ -445,3 +445,7 @@ mod manifest_cases;
 #[cfg(unix)]
 #[path = "release_cli/package_handoff.rs"]
 mod package_handoff;
+
+#[cfg(unix)]
+#[path = "release_cli/raw_payloads.rs"]
+mod raw_payloads;

@@ -52,6 +52,13 @@ validate_artifact_set() {
 	local expected_path=$2
 	[[ -d "$download_directory" && ! -L "$download_directory" ]] ||
 		fail "download directory is unavailable"
+	validate_target_path "$download_directory"
+	[[ -z "$(find "$download_directory" -mindepth 1 -maxdepth 1 ! -type d -print -quit)" ]] ||
+		fail "producer artifacts contain an unexpected root file"
+	[[ -z "$(find "$download_directory" -type l -print -quit)" ]] || fail "producer artifacts contain a symbolic link"
+	[[ -z "$(find "$download_directory" ! -type f ! -type d -print -quit)" ]] || fail "producer artifacts contain a special file"
+	[[ -z "$(find "$download_directory" -type f -size +67108864c -print -quit)" ]] || fail "producer artifact exceeds byte bound"
+	[[ "$(find "$download_directory" -type f | wc -l)" -le 4096 ]] || fail "producer file cardinality exceeds bound"
 	local actual_path
 	actual_path=$(mktemp "${TMPDIR:-/tmp}/liquidfun-release-artifacts.XXXXXX")
 	trap 'rm -f -- "$actual_path"' RETURN
@@ -67,15 +74,19 @@ validate_artifact_set() {
 find_single_identity() {
 	local artifact_directory=$1
 	local filename=$2
+	validate_target_path "$artifact_directory"
 	local -a matches
 	mapfile -t matches < <(find "$artifact_directory" -type f -name "$filename" -print)
 	[[ "${#matches[@]}" -eq 1 && ! -L "${matches[0]}" ]] ||
 		fail "${artifact_directory##*/} has invalid $filename cardinality"
+	require_bounded_payload "${matches[0]}" 67108864
 	printf '%s\n' "${matches[0]}"
 }
 validate_payload_hash() {
 	local identity=$1
 	local payload=$2
+	require_bounded_payload "$identity"
+	require_bounded_payload "$payload"
 	[[ -f "$payload" && ! -L "$payload" ]] ||
 		fail "producer payload is unavailable"
 	[[ "$(jq -er '.payload_sha256' "$identity")" == "$(hash_file "$payload")" ]] ||
@@ -145,6 +156,7 @@ validate_safety_payload() {
 	artifact_directory=$(dirname -- "$summary")
 	while IFS=$'\t' read -r relative expected_sha256 expected_bytes; do
 		local log_path="$artifact_directory/$relative"
+		require_bounded_payload "$log_path"
 		[[ -f "$log_path" && ! -L "$log_path" ]] ||
 			fail "$expected_kind safety log is unavailable"
 		[[ "$(hash_file "$log_path")" == "$expected_sha256" ]] ||
@@ -191,6 +203,7 @@ validate_coverage_payload() {
 	local artifact_path
 	artifact_path=$(jq -er '.artifact_path' "$summary")
 	local artifact="$artifact_directory/$artifact_path"
+	require_bounded_payload "$artifact" 67108864
 	[[ -f "$artifact" && ! -L "$artifact" ]] ||
 		fail "$expected_kind coverage artifact is unavailable"
 	[[ "$(hash_file "$artifact")" == "$(jq -er '.artifact_sha256' "$summary")" ]] ||
@@ -282,9 +295,9 @@ validate_oracle_inventory() {
 	count=$(jq '.files | length' "$identity")
 	((count > 0 && count <= 256)) || fail "oracle file inventory cardinality is invalid"
 	while IFS=$'\t' read -r relative expected_sha256; do
-		[[ "$relative" != /* && "$relative" != *".."* ]] ||
-			fail "oracle inventory path is unsafe"
+		validate_relative_path "$relative"
 		local payload="$artifact_directory/$relative"
+		require_bounded_payload "$payload" 67108864
 		[[ -f "$payload" && ! -L "$payload" ]] ||
 			fail "oracle inventory payload is unavailable"
 		[[ "$(hash_file "$payload")" == "$expected_sha256" ]] ||

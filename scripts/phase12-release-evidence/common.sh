@@ -2,6 +2,7 @@
 set -euo pipefail
 
 source "$(dirname -- "${BASH_SOURCE[0]}")/package_import.sh"
+source "$(dirname -- "${BASH_SOURCE[0]}")/raw_payloads.sh"
 
 hash_file() {
 	if command -v sha256sum >/dev/null 2>&1; then
@@ -28,6 +29,7 @@ validate_target_path() {
 	[[ ! -L "$repository_root/target" ]] || fail "target must not be a symbolic link"
 	local current=$repository_root
 	local relative=${path#"$repository_root/"}
+	validate_relative_path "$relative"
 	local component
 	IFS='/' read -r -a components <<<"$relative"
 	for component in "${components[@]}"; do
