@@ -508,3 +508,5 @@ fn deactivation_records_pending_contact_destruction() {
             .pending_contact_destruction
     );
 }
+
+mod particle_group_diagnostics;

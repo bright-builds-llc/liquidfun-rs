@@ -20,6 +20,7 @@ AGENTS.md standing authorization, its Bright Builds sidecar, standards-overrides
 | --- | --- | --- | --- |
 | 20260914T015720Z-historical | Current baseline `5aadb6c105b98ae09443f74e44c57f8ce7eae19d`; original source separately identified below | `target/phase14-diagnostics/5aadb6c105b98ae09443f74e44c57f8ce7eae19d/attempt-20260914T015720Z-historical/` | Historical read-only collection complete; local execution pending host recovery |
 | 20260914-task1 | `8b4eb5656dc69306225c900e6c44cb56b108f749` | `target/phase14-diagnostics/8b4eb5656dc69306225c900e6c44cb56b108f749/attempt-20260914-task1/` | Exact inventory and original public regression pass locally |
+| 20260914-probe01 | Pre-probe source `a2759db3690d91868afcc74d862146ccc8b1507e` | `target/phase14-diagnostics/a2759db3690d91868afcc74d862146ccc8b1507e/attempt-20260914-probe01/` | Local lib and separate public replay pass; Windows trace pending |
 
 No existing Phase 14 diagnostic attempt directories or diagnosis file existed when this attempt was created. Subsequent attempts must append separate records and directories.
 
@@ -132,3 +133,13 @@ The temporary replay's source is copied from the integration Model; only snapsho
 ## Falsifiable source hypothesis awaiting Windows observation
 
 `particle/storage/solver_state.rs::zeroed_lane` currently calls `try_reserve_exact(declared_capacity)` before resizing to the actual particle count. The default world particle-system capacity is `i32::MAX`. A Windows allocation rejection during SOLID depth preparation or later scratch cloning could therefore map to `InvalidLaneBundle` even for this bounded replay. This is a hypothesis only. A valid source, successful generated topology, failed depth stage and observed allocation error/capacity are needed to establish it. A different raw stage or predicate falsifies this localization. No reserve, capacity, flag, tolerance or mapper change is authorized by this hypothesis alone.
+
+## Probe attempt 20260914-probe01 — local verification
+
+Task 1 is committed as `a2759db3690d91868afcc74d862146ccc8b1507e`. The probe uses the amended ninth file `particle/storage/solver_state.rs` solely to observe the original reservation result before the unchanged error mapping. All hooks are test-only; ordinary production allocations, values, validation, errors and panic behavior are preserved. The temporary replay file has 558 formatted lines. The thread-local collector is enabled only by the named lib replay, bounded to 2,048 records, and emits before possible failures. Source snapshots and generated-topology validation observations are non-mutating.
+
+`compile.log` preserves an initial Clippy rejection of a diagnostic-only no-effect underscore binding. `compile-corrected.log` records its correction, passing Clippy and a 410-test default lib inventory containing exactly one `world::object::tests::particle_group_diagnostics::audited_windows_transition_trace` registration.
+
+`trace.log` runs that full exact name with `RUST_BACKTRACE=1`: 1 passed, 409 filtered, 14 operation-before and 14 operation-after labels. Its SHA-256 is `4894d498b0307e728be04d788fbd84e62226047381f2713ee33ec928fa530ab5`. The local trace observes successful reservations with actual count 15, declared capacity 2147483647 and element size 4 (8,589,934,588 requested bytes). Later scratch preparation repeats the same full reservation. These observed local successes confirm the reservation request, but not the hypothesized Windows failure.
+
+`public.log` independently runs the unchanged integration regression: 1 passed, 2 filtered. Its SHA-256 is `428a6cdad9df0f79faee0e21fa1592518d52eaa2ed9b3c3e3cf27da6b7d4e8ee`. `originals.json` retains the seven pre-probe existing source/workflow files; the eighth executable path is the new replay. `baseline.txt` names the exact pre-probe head. The probe patch will be retained before removal. Supported Windows stage/category evidence remains required before Plan 02.
