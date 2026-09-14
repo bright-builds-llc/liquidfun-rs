@@ -118,6 +118,10 @@ jobs:
           submodules: false
       - name: Install pinned Rust
         run: rustup toolchain install 1.97.0 --profile minimal
+      - name: Record checked-out source identity
+        run: git rev-parse HEAD
+      - name: Record compiler and target identity
+        run: rustc -vV
       - name: Cache Cargo inputs and outputs
         # actions/cache v6
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
@@ -129,6 +133,14 @@ jobs:
           key: ${{ runner.os }}-cargo-defaults-1.97.0-${{ hashFiles('Cargo.lock') }}
       - name: Build default features
         run: cargo build -p liquidfun
+      - name: List particle group regressions
+        run: cargo test -p liquidfun --test particle_group_properties -- --list
+      - name: Replay original audited Windows regression
+        run: cargo test -p liquidfun --test particle_group_properties persisted_audited_windows_seed -- --exact --nocapture
+      - name: Replay current Windows regression
+        run: cargo test -p liquidfun --test particle_group_properties persisted_current_windows_seed -- --exact --nocapture
+      - name: Test focused particle group contracts
+        run: cargo test -p liquidfun --test particle_group_properties --test particle_groups --test particle_group_mutation
       - name: Test default features
         run: cargo test -p liquidfun
       - name: Test public math contracts and numerical policy
