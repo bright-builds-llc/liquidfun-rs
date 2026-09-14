@@ -190,3 +190,15 @@ Final-candidate iteration: 430e0ad passed all three platforms, complete workspac
 Completion review: Phase 14 passes 13/13 must-haves and closes all six assigned requirements. Tested source 417d38dac6951226fb32ea99a97135defe88da7b passes Cargo CI run 34815192937: three supported platforms each run both exact regressions, focused 10/6/12 suites and 957 package tests; all 26 quality steps pass. Code review is clean across 32 files and all 16 registered security mitigations are verified. The Docker restart restored the local Rust 1.97.0 gate, which passes 1,012 tests. Failed attempts remain retained. Later completion commits contain metadata only and do not rebind CI results. Phase 15 canonical evidence and attestation remain pending; no universal whole-step rollback or release-readiness claim is added.
 
 Final completion gate: ordered fmt, Clippy, all-target build and all-feature tests pass (1,012 tests, zero failed/ignored) in target/phase14-finalization/attempt-20260914-0727/gate.log. Managed checks report 939 files and zero findings; Markdown, lifecycle, schema-drift and scoped diff checks pass. All 32 reviewed source files remain byte-identical to tested 417d38d.
+
+## task-phase15-candidate-evidence | 2026-09-14T16:43:10.303691+00:00 | Re-establish candidate evidence
+
+- [x] Review instructions, active lessons, prior decisions and current evidence contracts.
+- [x] Capture yolo context and explicit acceptance/infrastructure boundaries.
+- [ ] Research producer readiness and create independently checked execution plans.
+- [ ] Repair and verify prerequisite/tooling defects before candidate freeze.
+- [ ] Collect complete same-candidate producer evidence and release aggregation.
+- [ ] Validate worktree and committed frozen-source attestation; repeat milestone audit.
+- [ ] Complete review, lifecycle verification and strict commit/push finalization.
+
+Completion review: Pending. Controlled performance runner/identity availability requires external clarification.
