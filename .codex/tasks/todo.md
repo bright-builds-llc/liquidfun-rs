@@ -167,7 +167,7 @@ Completion review: Four sequential plans (eight tasks) replace the stale three-p
 - [x] Recover an executable local verification boundary and finalize pending planning artifacts.
 - [x] Execute Plan 14-01 and retain actual Windows first-transition diagnosis.
 - [x] Execute Plan 14-02 root-cause repair and private rollback proof.
-- [ ] Execute Plan 14-03 public fixed-input and property regressions.
+- [x] Execute Plan 14-03 public fixed-input and property regressions.
 - [ ] Execute Plan 14-04 and retain same-SHA Windows/Linux/macOS D2 results.
 - [ ] Complete code review, regression checks, independent phase verification and publication.
 
@@ -178,3 +178,7 @@ Baseline verification: Ordered format, Clippy, all-target build and all-feature 
 Wave 1 review: `a2759db` retained inputs; diagnostic `f4ef739` proved the Windows operation-14 join reservation failure at 8,589,934,588 bytes for ten particles; `49e382f` removed every probe after passing 987 tests and restored pre-probe source/CI bytes. The trace digest was independently recomputed. Plan 02 now explicitly owns scratch sizing and bounded allocation regressions. Prerequisite CI corrections: `8b4eb56` installs existing formatter plugins; `030c893` preserves all four concurrent CLI evidence cases while restoring workspace Clippy. Neither correction claims repaired Windows physics.
 
 Wave 2 review: `e58e028` bounds scratch reservation and requires valid original replay; `88643e0` adds complete private rollback/allocation evidence; `800a51c` handles candidate-only resource failures with the existing typed boundary; `265598a` records the summary. Final local gate: 998 tests, zero managed findings. The earlier sizing candidate e58e028 passed default-feature Windows, Linux and macOS jobs in run 34800684869; raw logs, source identities and digests are retained separately. This does not label later commits platform-validated or close the full quality lane.
+
+Verification checkpoint: Plan 03 source and public tests are prepared but uncommitted. The precise zero-rest step error preserves the prior rejection contract; the narrowed classifier and negative controls passed independent static amendment review. Latest runtime verification remains outstanding. Docker image/blob and meta.db I/O errors prevent its use. Native formatting, Clippy and build passed for the prior candidate, but test startups stalled and the partial run was stopped for the review correction. A Docker Desktop restart decision is pending because other containers would be interrupted. No reset, user-data deletion, security change, or unverified commit occurred. Full handoff: .planning/phases/14-repair-windows-particle-group-invariants/.continue-here.md.
+
+Recovery and Wave 3 review: The user approved a Docker Desktop restart; image and metadata I/O recovered and Rust 1.97.0 was reverified. The disposable isolated diagnostic build cache was removed after its evidence was preserved. The performance CLI fixture correction passed 13 tests with empty target/native overlays and was committed separately as 82ba701. Plan 03 commits 3953157, 6761b26, 9d826aa and 13e4ef2 passed ordered gates with 1,012 tests and zero managed findings. The explicit zero-rest-only error classifier passed amendment review; other invariant failures remain unexpected. Plan 04 and final review/verification remain pending.
