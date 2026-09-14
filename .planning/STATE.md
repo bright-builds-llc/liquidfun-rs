@@ -3,15 +3,15 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: "Phase 14 Wave 1: Windows diagnosis drafting; baseline tests progressing with macOS cold-launch delays"
-last_updated: "2026-09-14T02:03:25.452Z"
-last_activity: 2026-09-14 -- Phase 14 execution started
+stopped_at: Phase 14 Wave 1 complete; allocation cause proven; Wave 2 repair next
+last_updated: "2026-09-14T02:44:00.503Z"
+last_activity: "2026-09-14"
 progress:
   total_phases: 16
   completed_phases: 14
   total_plans: 250
-  completed_plans: 246
-  percent: 98
+  completed_plans: 247
+  percent: 99
 ---
 
 # Project State
@@ -26,12 +26,12 @@ See: `.planning/PROJECT.md` (updated 2026-09-13)
 ## Current Position
 
 Phase: 14 (repair-windows-particle-group-invariants) — EXECUTING
-Plan: 1 of 4
+Plan: 2 of 4
 Total Plans in Phase: 4
-Status: Executing Phase 14
-Last activity: 2026-09-14 -- Phase 14 execution started
+Status: Executing Phase 14 Plan 02
+Last activity: 2026-09-14
 
-Progress: [██████████] 98%
+Progress: [██████████] 99%
 
 ## Performance Metrics
 
@@ -689,6 +689,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-14T02:03:25.439Z
-Stopped at: Phase 14 Wave 1: Windows diagnosis drafting; baseline tests progressing with macOS cold-launch delays
+Last session: 2026-09-14T02:44:00.498Z
+Stopped at: Phase 14 Wave 1 complete; allocation cause proven; Wave 2 repair next
 Resume file: None
