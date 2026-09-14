@@ -394,6 +394,6 @@ Plans:
 | 13. Restore Evidence and Replay Integrity | 5/5 | Complete    | 2026-07-27 |
 | 13.1. Restore Bright Builds Structural Compliance | 25/25 | Complete    | 2026-09-13 |
 | 14. Repair Windows Particle-Group Invariants | 4/4 | Complete    | 2026-09-14 |
-| 15. Re-establish Candidate Evidence | 0/TBD | Not started | — |
+| 15. Re-establish Candidate Evidence | 4/12 | In Progress|  |
 
 *Roadmap created: 2026-07-09*
