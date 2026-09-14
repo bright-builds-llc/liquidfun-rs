@@ -24,6 +24,10 @@ pub(super) fn validate(
         .map(|commit| attestation::validate_committed(root, commit))
         .transpose()
         .map_err(|error| DocsError::new("readiness", error.to_string()))?;
+    if let Some(attestation) = maybe_attestation_commit {
+        crate::inventory::check_attested_report(root, attestation)
+            .map_err(|error| DocsError::new("readiness", error.to_string()))?;
+    }
     for document in ["README.md", "COMPATIBILITY.md", "RELEASE.md"] {
         let contents = fs::read_to_string(root.join(document))
             .map_err(|error| DocsError::new("filesystem", error.to_string()))?;

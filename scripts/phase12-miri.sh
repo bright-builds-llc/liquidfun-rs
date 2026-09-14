@@ -24,9 +24,9 @@ cd -- "$repository_root"
 source "$script_directory/phase12-attempt.sh"
 
 scan_source() {
-	command -v rg >/dev/null 2>&1 || fail "Miri source scan requires rg"
+	command -v grep >/dev/null 2>&1 || fail "Miri source scan requires grep"
 	local status=0
-	rg --ignore-case 'cm[a]ke|or[a]cle|third[_]party|submod[u]le' "$script_directory/phase12-miri.sh" || status=$?
+	grep -Ei 'cm[a]ke|or[a]cle|third[_]party|submod[u]le' "$script_directory/phase12-miri.sh" || status=$?
 	case "$status" in
 	0) fail "Miri source scan found a forbidden dependency" ;;
 	1) ;;

@@ -158,6 +158,7 @@ impl Fixture {
             .env("GITHUB_WORKFLOW", "fixture-workflow")
             .env("GITHUB_JOB", "fixture-job")
             .env("GITHUB_RUN_ID", "42")
+            .env("GITHUB_RUN_ATTEMPT", "1")
             .output()?)
     }
 
@@ -267,7 +268,9 @@ fn actual_workflow_verification_runs_without_ripgrep() -> TestResult {
     }
     // Act
     let output = Command::new(find_tool("timeout")?)
-        .args(["30s", "/bin/bash", "-euo", "pipefail", "-c"])
+        .arg("30s")
+        .arg(find_tool("bash")?)
+        .args(["-xeuo", "pipefail", "-c"])
         .arg(script)
         .env("PATH", minimal_bin)
         .env("CANDIDATE_SHA", CANDIDATE)

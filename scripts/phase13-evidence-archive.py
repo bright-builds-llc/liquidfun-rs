@@ -9,6 +9,9 @@ import stat
 import sys
 import zipfile
 
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent / "phase15-candidate-evidence"))
+from common import normalized
+
 MAX_ARCHIVE = 128 * 1024 * 1024
 MAX_MEMBER = 64 * 1024 * 1024
 MAX_TOTAL = 512 * 1024 * 1024
@@ -56,10 +59,10 @@ def validate(archive, root, provider_digest, expires_at):
             for item in entries:
                 require(not item.flag_bits & 1, "encrypted archive member")
                 name = item.filename
-                pure = pathlib.PurePosixPath(name.rstrip("/"))
-                require(name and "\\" not in name and "\x00" not in name, "invalid archive path")
-                require(not pure.is_absolute() and all(part not in (".", "..") for part in name.rstrip("/").split("/")), "unsafe archive path")
-                require(str(pure) == name.rstrip("/"), "non-normalized archive path")
+                try:
+                    pure = normalized(name[:-1] if item.is_dir() else name)
+                except ValueError as error:
+                    raise ValueError(f"unsafe archive path: {error}") from error
                 require(str(pure) not in names, "duplicate archive member")
                 names.add(str(pure))
                 mode = stat.S_IFMT(item.external_attr >> 16)

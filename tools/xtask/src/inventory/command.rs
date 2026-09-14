@@ -1,3 +1,4 @@
+use super::projection::Projection;
 #[allow(
     clippy::wildcard_imports,
     reason = "this split module shares its parent private contract"
@@ -9,6 +10,14 @@ pub(super) fn run(args: &[String]) -> Result<(), InventoryError> {
     let oracle_revision = read_oracle_revision(&repository_root)?;
 
     match args {
+        [command, flag, attestation] if flag == "--attestation-commit" => match command.as_str() {
+            "generate" => generate(&repository_root, &oracle_revision, Some(attestation)),
+            "check-report" => check_report(&repository_root, &oracle_revision, Some(attestation)),
+            "check" => check(&repository_root, &oracle_revision, Some(attestation)),
+            _ => Err(InventoryError::usage(
+                "attestation is supported by generate, check and check-report",
+            )),
+        },
         [namespace, command] if namespace == "corpus" && command == "refresh" => {
             let count = corpus_discovery::refresh(&repository_root, &oracle_revision)?;
             println!("semantic corpus refreshed: {count} items");
@@ -27,9 +36,9 @@ pub(super) fn run(args: &[String]) -> Result<(), InventoryError> {
         }
         [command] => match command.as_str() {
             "discover" => discover(&repository_root, &oracle_revision),
-            "generate" => generate(&repository_root, &oracle_revision),
-            "check" => check(&repository_root, &oracle_revision),
-            "check-report" => check_report(&repository_root, &oracle_revision),
+            "generate" => generate(&repository_root, &oracle_revision, None),
+            "check" => check(&repository_root, &oracle_revision, None),
+            "check-report" => check_report(&repository_root, &oracle_revision, None),
             unknown => Err(InventoryError::usage(format!(
                 "unknown inventory command `{unknown}`"
             ))),
@@ -97,10 +106,17 @@ fn discover(repository_root: &Path, oracle_revision: &str) -> Result<(), Invento
     Ok(())
 }
 
-fn generate(repository_root: &Path, oracle_revision: &str) -> Result<(), InventoryError> {
+fn generate(
+    repository_root: &Path,
+    oracle_revision: &str,
+    maybe_attestation: Option<&str>,
+) -> Result<(), InventoryError> {
+    let projection = Projection::validate(repository_root, maybe_attestation)?;
     let (compatibility, _, readiness) = validated_ledgers(repository_root, oracle_revision)?;
-    require_current_discovery(repository_root, oracle_revision)?;
-    let contents = report::render(&compatibility, &readiness);
+    if maybe_attestation.is_none() {
+        require_current_discovery(repository_root, oracle_revision)?;
+    }
+    let contents = report::render(&compatibility, &readiness, &projection);
     let path = repository_root.join("COMPATIBILITY.md");
     fs::write(&path, contents).map_err(|error| {
         InventoryError::new(
@@ -115,10 +131,15 @@ fn generate(repository_root: &Path, oracle_revision: &str) -> Result<(), Invento
     Ok(())
 }
 
-fn check(repository_root: &Path, oracle_revision: &str) -> Result<(), InventoryError> {
+fn check(
+    repository_root: &Path,
+    oracle_revision: &str,
+    maybe_attestation: Option<&str>,
+) -> Result<(), InventoryError> {
+    let projection = Projection::validate(repository_root, maybe_attestation)?;
     let (compatibility, _, readiness) = validated_ledgers(repository_root, oracle_revision)?;
     require_current_discovery(repository_root, oracle_revision)?;
-    require_current_report(repository_root, &compatibility, &readiness)?;
+    require_current_report(repository_root, &compatibility, &readiness, &projection)?;
     println!(
         "inventory verified: {} compatibility rows",
         compatibility.entries.len()
@@ -126,9 +147,14 @@ fn check(repository_root: &Path, oracle_revision: &str) -> Result<(), InventoryE
     Ok(())
 }
 
-fn check_report(repository_root: &Path, oracle_revision: &str) -> Result<(), InventoryError> {
+fn check_report(
+    repository_root: &Path,
+    oracle_revision: &str,
+    maybe_attestation: Option<&str>,
+) -> Result<(), InventoryError> {
+    let projection = Projection::validate(repository_root, maybe_attestation)?;
     let (compatibility, _, readiness) = validated_ledgers(repository_root, oracle_revision)?;
-    require_current_report(repository_root, &compatibility, &readiness)?;
+    require_current_report(repository_root, &compatibility, &readiness, &projection)?;
     println!(
         "compatibility report verified: {} rows",
         compatibility.entries.len()
@@ -136,12 +162,21 @@ fn check_report(repository_root: &Path, oracle_revision: &str) -> Result<(), Inv
     Ok(())
 }
 
+pub(super) fn check_attested_report(
+    repository_root: &Path,
+    attestation_commit: &str,
+) -> Result<(), InventoryError> {
+    let oracle_revision = read_oracle_revision(repository_root)?;
+    check_report(repository_root, &oracle_revision, Some(attestation_commit))
+}
+
 fn require_current_report(
     repository_root: &Path,
     compatibility: &CompatibilityLedger,
     readiness: &ReleaseReadiness,
+    projection: &Projection,
 ) -> Result<(), InventoryError> {
-    let expected_report = report::render(compatibility, readiness);
+    let expected_report = report::render(compatibility, readiness, projection);
     require_exact_file(
         &repository_root.join("COMPATIBILITY.md"),
         &expected_report,

@@ -9,6 +9,9 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 use serde_json::{Value, json};
 
+#[path = "inventory_cli/attestation.rs"]
+mod attestation;
+
 #[path = "inventory_cli/phase10.rs"]
 mod phase10;
 #[path = "inventory_cli/phase11.rs"]

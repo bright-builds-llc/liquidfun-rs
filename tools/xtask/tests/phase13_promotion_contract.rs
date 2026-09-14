@@ -59,6 +59,27 @@ fn retained_provider_archive_controls() {
     );
 }
 
+#[test]
+fn bounded_provider_query_controls() {
+    // Arrange
+    let script = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("tests/phase13_promotion_contract/query_controls.py");
+
+    // Act
+    let output = std::process::Command::new("python3")
+        .env("PYTHONDONTWRITEBYTECODE", "1")
+        .arg(script)
+        .output()
+        .expect("Python query controls launch");
+
+    // Assert
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
 fn reviewed_replacements() -> (BTreeMap<String, Vec<u8>>, Vec<String>) {
     let changed_paths = REVIEWED_PATHS.map(str::to_owned).to_vec();
     let mut replacements = REVIEWED_PATHS

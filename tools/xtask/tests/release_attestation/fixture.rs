@@ -72,6 +72,7 @@ impl Checkout {
             fs::write(path, maturity::non_ready_copy(&contents))
                 .expect("explicit non-ready fixture");
         }
+        inventory_inputs::copy_inputs(&repository_root(), &root).expect("checked inventory inputs");
         fs::write(root.join(".gitignore"), "target/\n").expect("ignore retained evidence");
         git_output(&root, &["init", "--quiet"]);
         git_output(&root, &["config", "user.name", "Attestation Test"]);
@@ -221,6 +222,7 @@ impl Checkout {
                 .join("\n");
             fs::write(path, format!("{contents}\nStatus: **release-ready**\nSource candidate: `{}`\nAttestation commit: `{attestation}`\n", self.candidate)).expect("projection");
         }
+        assert_pass(&self.command(&["inventory", "generate", "--attestation-commit", attestation]));
     }
 }
 

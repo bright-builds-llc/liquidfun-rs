@@ -11,13 +11,16 @@ mode=$1
 relative_output_dir=$2
 
 case "$mode" in
-  canonical | sanitizer) ;;
-  *) usage ;;
+canonical | sanitizer) ;;
+*) usage ;;
 esac
 
 case "$relative_output_dir" in
-  target/*) ;;
-  *) echo "Phase 9 evidence output must be under target/" >&2; exit 64 ;;
+target/*) ;;
+*)
+  echo "Phase 9 evidence output must be under target/" >&2
+  exit 64
+  ;;
 esac
 [[ "$relative_output_dir" != *".."* && "$relative_output_dir" != /* ]] || {
   echo "unsafe Phase 9 evidence output path" >&2
@@ -42,7 +45,7 @@ target_root=$(cd -- "$target_root" && pwd -P)
 
 output_dir="$repository_root/$relative_output_dir"
 current="$target_root"
-IFS='/' read -r -a output_components <<< "${relative_output_dir#target/}"
+IFS='/' read -r -a output_components <<<"${relative_output_dir#target/}"
 for component in "${output_components[@]}"; do
   candidate="$current/$component"
   if [[ -L "$candidate" ]]; then
@@ -58,8 +61,11 @@ for component in "${output_components[@]}"; do
   fi
   current=$(cd -- "$candidate" && pwd -P)
   case "$current/" in
-    "$target_root"/*) ;;
-    *) echo "Phase 9 evidence output escapes target/" >&2; exit 64 ;;
+  "$target_root"/*) ;;
+  *)
+    echo "Phase 9 evidence output escapes target/" >&2
+    exit 64
+    ;;
   esac
 done
 output_dir="$current"
@@ -83,12 +89,12 @@ hash_file() {
 }
 
 LIQUIDFUN_PHASE9_ORACLE_MODE="$mode" \
-LIQUIDFUN_PHASE9_EVIDENCE_MANIFEST="$relative_manifest" \
+  LIQUIDFUN_PHASE9_EVIDENCE_MANIFEST="$relative_manifest" \
   cargo test -p liquidfun-differential --test phase9_corpus -- --nocapture \
   2>&1 | tee "$trace"
 
 cargo xtask provenance check 2>&1 | tee "$output_dir/provenance.log"
-cargo xtask inventory check 2>&1 | tee "$output_dir/inventory.log"
+bash scripts/phase15-inventory-check.sh 2>&1 | tee "$output_dir/inventory.log"
 git diff --exit-code -- protocol scenarios reference COMPATIBILITY.md \
   2>&1 | tee "$output_dir/read-only.log"
 cargo xtask phase9-evidence validate-content "$mode" "$relative_output_dir"
@@ -101,7 +107,7 @@ while IFS= read -r path; do
   relative=${path#"$output_dir/"}
   [[ "$relative" != "$path" && -f "$path" && ! -L "$path" ]]
   jq -cn --arg path "$relative" --arg sha256 "$(hash_file "$path")" \
-    '{path: $path, sha256: $sha256}' >> "$identity_files_tmp"
+    '{path: $path, sha256: $sha256}' >>"$identity_files_tmp"
 done < <(find "$output_dir" -type f ! -name identity.json | LC_ALL=C sort)
 identity_files=$(jq -s '.' "$identity_files_tmp")
 jq -n \
@@ -118,4 +124,4 @@ jq -n \
     trace: {path: "phase9-trace.log", sha256: $trace_sha},
     manifest: {path: "phase9-manifest.json", sha256: $manifest_sha},
     files: $files}' \
-  > "$output_dir/identity.json"
+  >"$output_dir/identity.json"

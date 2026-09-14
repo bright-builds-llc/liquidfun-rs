@@ -162,6 +162,11 @@ jobs:
           retention-days: 14
 
   differential-coverage:
+    permissions:
+      contents: read
+      actions: read
+    env:
+      GH_TOKEN: ${{ github.token }}
     name: Differential semantic leaves
     runs-on: ubuntu-24.04
     timeout-minutes: 120
@@ -171,13 +176,18 @@ jobs:
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
         with:
           ref: ${{ env.CANDIDATE_SHA }}
-          fetch-depth: 1
+          fetch-depth: 0
           persist-credentials: false
           submodules: recursive
       - name: Validate candidate identity
         run: |
           [[ "$CANDIDATE_SHA" =~ ^[0-9a-f]{40}$ ]]
           test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+      - name: Install pinned Python for evidence restoration
+        # actions/setup-python v6
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.13"
       - name: Install pinned Rust
         run: rustup toolchain install 1.97.0 --profile minimal
       - name: Install canonical LLVM 22

@@ -37,7 +37,7 @@ def inventory(root):
         require(not path.is_symlink(), "retained symbolic link")
         if path.is_dir():
             continue
-        relative = str(path.relative_to(root))
+        relative = path.relative_to(root).as_posix()
         normalized(relative)
         require(path.is_file(), "retained special file")
         limit = MAX_ARCHIVE if path.suffix == ".zip" else MAX_FILE

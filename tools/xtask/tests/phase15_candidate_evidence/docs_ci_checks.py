@@ -143,10 +143,39 @@ class RestoreTests(unittest.TestCase):
             bundle.writestr("package/liquidfun.crate", package)
             bundle.writestr("package/package-identity.json", "{}")
 
-    def invoke(self):
+    def invoke(self, native=False):
         self.state_path.write_text(json.dumps(self.state))
-        with patch.object(sys, "argv", ["docs-ci"]), contextlib.redirect_stdout(io.StringIO()):
+        arguments = ["docs-ci", "--native-inventory"] if native else ["docs-ci"]
+        with patch.object(sys, "argv", arguments), contextlib.redirect_stdout(io.StringIO()):
             docs_ci.main()
+
+    def test_native_gate_restores_validates_and_rechecks_existing_exact_bytes(self):
+        # Arrange / Act
+        self.invoke(native=True)
+        self.invoke(native=True)
+        # Assert
+        calls = [json.loads(line) for line in (self.directory / "cargo.jsonl").read_text().splitlines()]
+        expected = [["xtask", "docs", "check", "--attestation-commit", self.attestation],
+                    ["xtask", "inventory", "check", "--attestation-commit", self.attestation]]
+        self.assertEqual(calls, expected * 2)
+        self.assertEqual(len(list((self.root / "target/phase15-docs-ci").glob("*/*.zip"))), 2)
+
+    def test_native_default_preserves_the_original_inventory_gate(self):
+        # Arrange
+        (self.root / "README.md").write_text("Status: **not release-ready**\n")
+        # Act
+        self.invoke(native=True)
+        # Assert
+        self.assertEqual(json.loads((self.directory / "cargo.jsonl").read_text()), ["xtask", "inventory", "check"])
+        self.assertFalse((self.directory / "calls.jsonl").exists())
+
+    def test_native_reuse_rejects_changed_restored_bytes(self):
+        # Arrange
+        self.invoke(native=True)
+        (self.root / self.base / "package/liquidfun.crate").write_bytes(b"tampered")
+        # Act / Assert
+        with self.assertRaisesRegex(ValueError, "existing restored bytes differ"):
+            self.invoke(native=True)
 
     def assert_rejected(self, marker):
         with self.assertRaisesRegex((ValueError, OSError), marker):

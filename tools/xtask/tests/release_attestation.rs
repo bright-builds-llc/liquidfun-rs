@@ -8,11 +8,15 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 
+#[path = "support/inventory.rs"]
+mod inventory_inputs;
 #[path = "support/maturity.rs"]
 mod maturity;
 
 #[path = "release_attestation/fixture.rs"]
 mod complete_fixture;
+#[path = "release_attestation/inventory.rs"]
+mod inventory_projection;
 #[path = "release_attestation/readiness.rs"]
 mod readiness;
 

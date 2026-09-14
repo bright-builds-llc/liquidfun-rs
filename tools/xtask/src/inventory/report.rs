@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 use std::fmt::{Arguments, Write as _};
 
+use super::projection::Projection;
 use super::{
     ApplicabilityStatus, CompatibilityKind, CompatibilityLedger, EvidenceRecord, EvidenceStatus,
     ReleaseReadiness,
@@ -38,10 +39,14 @@ const LEGEND: [(&str, &str); 8] = [
     ),
 ];
 
-pub(super) fn render(ledger: &CompatibilityLedger, readiness: &ReleaseReadiness) -> String {
+pub(super) fn render(
+    ledger: &CompatibilityLedger,
+    readiness: &ReleaseReadiness,
+    projection: &Projection,
+) -> String {
     let mut output = String::new();
     render_header(&mut output, ledger);
-    render_release_readiness(&mut output, ledger, readiness);
+    render_release_readiness(&mut output, ledger, readiness, projection);
     render_counts(&mut output, ledger);
     render_kind_tables(&mut output, ledger);
     render_release_outcomes(&mut output, ledger);
@@ -80,9 +85,16 @@ fn render_release_readiness(
     output: &mut String,
     ledger: &CompatibilityLedger,
     readiness: &ReleaseReadiness,
+    projection: &Projection,
 ) {
     output.push_str("\n## Release readiness closure\n\n");
-    output.push_str("Status: **not release-ready**. The compatibility ledger has zero unexplained gaps, but no completed full-SHA `release-candidate` workflow run and accepted frozen-source attestation exist. This closure is derived from exact identity joins; local command success never promotes evidence or substitutes for run-bound release attestation.\n\n");
+    match projection {
+        Projection::NotReady => output.push_str("Status: **not release-ready**. The compatibility ledger has zero unexplained gaps, but no completed full-SHA `release-candidate` workflow run and accepted frozen-source attestation exist. This closure is derived from exact identity joins; local command success never promotes evidence or substitutes for run-bound release attestation.\n\n"),
+        Projection::Attested { candidate, attestation } => {
+            append(output, format_args!("Status: **release-ready**\n\nSource candidate: `{candidate}`\n\nAttestation commit: `{attestation}`\n\n"));
+            output.push_str("This closure is derived from exact identity joins and validated run-bound release attestation. Local command success does not independently promote evidence.\n\n");
+        }
+    }
     output.push_str("| Closure measure | Count |\n| --- | ---: |\n");
     for (label, count) in [
         ("Compatibility identities", ledger.entries.len()),

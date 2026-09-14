@@ -105,7 +105,7 @@ printf '%s\n' 'phase10 trace status: ok' >>"$trace"
 	printf '%s\n' 'phase10 provenance status: ok'
 } 2>&1 | tee "$output_dir/provenance.log"
 {
-	cargo xtask inventory check
+	bash scripts/phase15-inventory-check.sh
 	printf '%s\n' 'phase10 inventory status: ok'
 } 2>&1 | tee "$output_dir/inventory.log"
 {

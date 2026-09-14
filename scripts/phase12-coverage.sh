@@ -320,7 +320,7 @@ run_differential_coverage() {
 	done
 	write_observed_leaves "$observation_directory" "$observed"
 	rm -rf -- "$observation_directory"
-	run_attempt_command inventory 120 cargo xtask inventory check
+	run_attempt_command inventory 600 bash scripts/phase15-inventory-check.sh
 	run_attempt_command differential-leaves 120 cargo xtask safety-evidence validate-differential-leaves \
 		--expected "$expected" \
 		--observed "$observed" \

@@ -185,14 +185,18 @@ pub(super) fn phase5_contract_rejects_false_surface_and_maturity_claims() -> Tes
 
 pub(super) fn phase5_compatibility_report_matches_authoritative_ledger() -> TestResult {
     // Arrange
+    let fixture = DocsFixture::new()?;
+    inventory_inputs::copy_inputs(workspace_root(), &fixture.root)?;
     let mut command = Command::new(env!("CARGO_BIN_EXE_xtask"));
     command.args(["inventory", "check-report"]);
+    command.env("LIQUIDFUN_XTASK_ROOT", &fixture.root);
 
     // Act
     let output = command.output()?;
 
     // Assert
     assert_success(&output);
+    fixture.cleanup()?;
     Ok(())
 }
 

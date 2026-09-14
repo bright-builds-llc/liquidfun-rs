@@ -9,7 +9,7 @@ import uuid
 from common import (MAX_ARCHIVE, REPOSITORY, ROOT, api, candidate, confined, digest,
                     execute, normalized, positive, read_json, require, verify_repository, write_json)
 from dispatch import validate_ref, validate_run
-from payloads import unpack
+from payloads import inventory as payload_inventory, unpack
 from retention import check_artifact
 
 RECORDS = ("source-candidate.json", "candidate-manifest.json", "audit-report.json")
@@ -98,10 +98,11 @@ def release_run(run_id, sha, logs):
     return run
 
 
-def restore(sha, run_id, records, manifest, attempt):
+def restore(sha, run_id, records, manifest, attempt, allow_existing=False):
     logs = attempt / "logs"
     destination = confined(str(ROOT / "target/phase12-release" / sha))
-    require(not destination.exists(), "release restoration destination already exists")
+    existing = destination.exists()
+    require(not existing or allow_existing, "release restoration destination already exists")
     run = release_run(run_id, sha, logs)
     listing = api(f"repos/{REPOSITORY}/actions/runs/{run_id}/artifacts?per_page=100", logs)
     require(listing["total_count"] == len(listing["artifacts"]) <= 100, "incomplete release artifact listing")
@@ -112,7 +113,7 @@ def restore(sha, run_id, records, manifest, attempt):
     check_artifact(item, run, name)
     require(item["workflow_run"].get("head_branch") == run["head_branch"], "artifact ref metadata differs")
     archive = attempt / (name + ".zip")
-    execute(["gh", "api", f"repos/{REPOSITORY}/actions/artifacts/{item['id']}/zip"], logs, MAX_ARCHIVE, archive)
+    execute(["gh", "api", "--hostname", "github.com", f"repos/{REPOSITORY}/actions/artifacts/{item['id']}/zip"], logs, MAX_ARCHIVE, archive)
     require(archive.stat().st_size == item["size_in_bytes"], "release archive size differs")
     require(item.get("digest") == "sha256:" + digest(archive), "release archive SHA-256 differs")
     latest = release_run(run_id, sha, logs)
@@ -123,7 +124,10 @@ def restore(sha, run_id, records, manifest, attempt):
             and fresh.get("size_in_bytes") == archive.stat().st_size
             and fresh["workflow_run"].get("head_branch") == latest["head_branch"], "release artifact changed during restoration")
     write_json(attempt / "provider.json", {"run": run, "artifact": fresh})
-    unpack(archive, destination)
+    unpacked = attempt / "restored" if existing else destination
+    unpack(archive, unpacked)
+    if existing:
+        require(payload_inventory(unpacked) == payload_inventory(destination), "existing restored bytes differ")
     for name in RECORDS[1:]:
         require((destination / name).read_bytes() == records[name], "downloaded record differs from A")
     identity = read_json(destination / "audit-identity.json")
@@ -140,15 +144,19 @@ def restore(sha, run_id, records, manifest, attempt):
 
 
 def main():
-    require(len(sys.argv) == 1, "docs CI check accepts no arguments")
+    require(sys.argv[1:] in ([], ["--native-inventory"]), "expected optional --native-inventory")
+    native = sys.argv[1:] == ["--native-inventory"]
     attestation = explicit_attestation(tracked_bytes("README.md").decode())
     attempt = confined(str(ROOT / "target/phase15-docs-ci" / uuid.uuid4().hex))
     attempt.mkdir(parents=True, exist_ok=False)
-    command = ["cargo", "xtask", "docs", "check"]
+    command = ["cargo", "xtask", "inventory" if native else "docs", "check"]
     if attestation is not None:
         sha, run_id, records, manifest = preflight(attestation, attempt / "logs")
         write_json(attempt / "intent.json", {"candidate": sha, "attestation": attestation, "release_run_id": run_id})
-        restore(sha, run_id, records, manifest, attempt)
+        restore(sha, run_id, records, manifest, attempt, allow_existing=native)
+        if native:
+            execute(["cargo", "xtask", "docs", "check", "--attestation-commit", attestation],
+                    attempt / "logs", timeout=600)
         command += ["--attestation-commit", attestation]
     output = execute(command, attempt / "logs", timeout=600)
     print(output.read_text(), end="")

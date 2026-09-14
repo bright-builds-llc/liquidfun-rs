@@ -7,6 +7,7 @@ mod corpus_report;
 #[path = "inventory/corpus/validation.rs"]
 mod corpus_validation;
 mod discovery;
+mod projection;
 mod report;
 mod validation;
 
@@ -27,9 +28,11 @@ const USAGE: &str = r"Usage: cargo xtask inventory <command>
 
 Commands:
   discover   Explicitly refresh reference/discovery.json from the pinned tree
-  generate   Explicitly refresh COMPATIBILITY.md from validated ledgers
-  check      Read-only validation of schemas, coverage, discovery, and report
-  check-report
+  generate [--attestation-commit SHA]
+             Refresh COMPATIBILITY.md; explicit A requires accepted retained evidence
+  check [--attestation-commit SHA]
+             Read-only validation including the native discovery scan
+  check-report [--attestation-commit SHA]
              Read-only validation of schemas, coverage, and generated report
   corpus refresh
              Refresh reference/upstream-corpus.json from the verified pinned tree
@@ -291,6 +294,13 @@ struct DiscoveryEntry {
 
 pub(crate) fn run(args: &[String]) -> Result<(), InventoryError> {
     command::run(args)
+}
+
+pub(crate) fn check_attested_report(
+    repository_root: &Path,
+    attestation_commit: &str,
+) -> Result<(), InventoryError> {
+    command::check_attested_report(repository_root, attestation_commit)
 }
 
 fn require_schema_and_revision(

@@ -6,6 +6,15 @@ export PHASE12_MIRI_LIBRARY_ONLY=1
 source scripts/phase12-miri.sh
 
 case "$mode" in
+scan-clean | scan-cmake | scan-oracle | scan-third_party | scan-submodule | scan-read-error)
+	fixture=$(mktemp -d)
+	trap 'rm -rf "$fixture"' EXIT
+	script_directory=$fixture
+	if [[ "$mode" != scan-read-error ]]; then
+		printf '%s\n' "${mode#scan-}" | tr '[:lower:]' '[:upper:]' >"$fixture/phase12-miri.sh"
+	fi
+	scan_source
+	;;
 case-budgets)
 	fixture=$(mktemp -d)
 	trap 'rm -rf "$fixture"' EXIT
@@ -22,7 +31,7 @@ missing)
 	PATH=/nonexistent scan_source
 	;;
 error | finding)
-	rg() {
+	grep() {
 		case "$mode" in
 		error) return 2 ;;
 		finding) return 0 ;;

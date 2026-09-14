@@ -25,7 +25,10 @@ if sys.argv[1:3] == ["workflow", "run"]:
     if state.get("duplicate_dispatch_url"):
         print("https://github.com/bright-builds-llc/liquidfun-rs/actions/runs/43")
     sys.exit(state.get("dispatch_exit", 0))
-endpoint = sys.argv[2]
+if sys.argv[1:4] != ["api", "--hostname", "github.com"]:
+    print("fake gh requires explicit github.com API host", file=sys.stderr)
+    sys.exit(3)
+endpoint = sys.argv[4]
 key = endpoint.split("?", 1)[0]
 if key not in state["responses"]:
     print("unexpected fake gh request: " + endpoint, file=sys.stderr)

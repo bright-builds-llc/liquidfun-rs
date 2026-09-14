@@ -49,7 +49,16 @@ fn lost_endpoint_invocation_never_publishes_success_identity() -> TestResult {
 #[test]
 fn miri_scanner_errors_cannot_become_clean_evidence() -> TestResult {
     // Arrange / Act
-    for mode in ["missing", "error", "finding"] {
+    for mode in [
+        "missing",
+        "error",
+        "finding",
+        "scan-cmake",
+        "scan-oracle",
+        "scan-third_party",
+        "scan-submodule",
+        "scan-read-error",
+    ] {
         let output = Command::new("timeout")
             .args([
                 "10s",
@@ -63,6 +72,27 @@ fn miri_scanner_errors_cannot_become_clean_evidence() -> TestResult {
         assert_eq!(output.status.code(), Some(64));
         assert!(String::from_utf8_lossy(&output.stderr).contains("Miri source scan"));
     }
+    Ok(())
+}
+
+#[test]
+fn miri_scanner_accepts_source_without_forbidden_dependencies() -> TestResult {
+    // Arrange / Act
+    let output = Command::new("timeout")
+        .args([
+            "10s",
+            "bash",
+            "tools/xtask/tests/safety_evidence_contract/miri-control.sh",
+            "scan-clean",
+        ])
+        .current_dir(concat!(env!("CARGO_MANIFEST_DIR"), "/../.."))
+        .output()?;
+    // Assert
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
     Ok(())
 }
 

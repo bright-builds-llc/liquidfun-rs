@@ -88,6 +88,20 @@ class CandidateEvidenceTests(unittest.TestCase):
         self.assertEqual(sum(call[:2] == ["workflow", "run"] for call in calls), 1)
         self.assertEqual(json.loads((self.directory / "attempt/binding.json").read_text())["run_attempt"], 2)
 
+    def test_dispatch_pins_github_com_despite_enterprise_environment(self):
+        # Arrange
+        self.environment["GH_HOST"] = "enterprise.example.invalid"
+        # Act
+        result = self.dispatch()
+        # Assert
+        self.assertEqual(result.returncode, 0, result.stderr)
+        calls = [json.loads(line) for line in (self.directory / "calls.jsonl").read_text().splitlines()]
+        for call in calls:
+            if call[0] == "api":
+                self.assertEqual(call[1:3], ["--hostname", "github.com"])
+            if call[:2] == ["workflow", "run"]:
+                self.assertEqual(call[call.index("--repo") + 1], "github.com/" + REPO)
+
     def test_wrong_repository_prevents_dispatch(self):
         # Arrange
         self.state["responses"][API]["full_name"] = "other/repository"

@@ -88,13 +88,13 @@ def collect(args):
         item = matches[0]
         check_artifact(item, run, name)
         archive = bundle / "archives" / (name + ".zip")
-        execute(["gh", "api", f"repos/{REPOSITORY}/actions/artifacts/{item['id']}/zip"],
+        execute(["gh", "api", "--hostname", "github.com", f"repos/{REPOSITORY}/actions/artifacts/{item['id']}/zip"],
                 logs, MAX_ARCHIVE, archive)
         require(archive.stat().st_size == item["size_in_bytes"], "partial artifact download")
         require(item.get("digest") == "sha256:" + digest(archive), "provider archive SHA-256 differs")
         unpack(archive, bundle / "payloads" / name)
         check_embedded_attempt(bundle / "payloads" / name, attempt)
-    execute(["gh", "api", f"repos/{REPOSITORY}/actions/runs/{run_id}/attempts/{attempt}/logs"],
+    execute(["gh", "api", "--hostname", "github.com", f"repos/{REPOSITORY}/actions/runs/{run_id}/attempts/{attempt}/logs"],
             logs, MAX_ARCHIVE, bundle / "provider-logs.zip")
     latest, _ = current_run(args.workflow, run_id, sha, args.ref, logs)
     require(latest["run_attempt"] == attempt, "provider attempt changed during collection")

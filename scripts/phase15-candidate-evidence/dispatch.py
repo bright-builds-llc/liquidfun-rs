@@ -86,7 +86,7 @@ def dispatch(args):
     intent["workflow_id"] = positive(workflow["id"])
     intent["created_at"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
     write_json(root / "intent.json", intent)
-    command = ["gh", "workflow", "run", args.workflow, "--repo", REPOSITORY, "--ref", args.ref]
+    command = ["gh", "workflow", "run", args.workflow, "--repo", "github.com/" + REPOSITORY, "--ref", args.ref]
     for key, value in sorted(inputs.items()):
         command.extend(["--raw-field", key + "=" + value])
     execute(command, root / "logs", destination=root / "dispatch-response.txt")

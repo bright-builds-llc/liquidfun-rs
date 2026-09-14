@@ -165,47 +165,20 @@ fn validate_provider(
 }
 
 fn query<T: serde::de::DeserializeOwned>(
+    repository_root: &Path,
     endpoint: &str,
     retained: &Path,
 ) -> Result<T, PromotionError> {
-    const MAX_METADATA: u64 = 1024 * 1024;
-    let diagnostics = fs::OpenOptions::new()
-        .create_new(true)
-        .write(true)
-        .open(retained.with_extension("stderr.log"))
-        .map_err(filesystem_error)?;
-    let mut child = Command::new("gh")
-        .args(["api", "--hostname", "github.com", endpoint])
-        .stdout(std::process::Stdio::piped())
-        .stderr(diagnostics)
-        .spawn()
-        .map_err(filesystem_error)?;
-    let Some(stdout) = child.stdout.take() else {
-        return Err(provider_error("provider stdout pipe is absent"));
-    };
-    let mut bytes = Vec::new();
-    let read_result = stdout.take(MAX_METADATA + 1).read_to_end(&mut bytes);
-    if read_result.is_err() || bytes.len() as u64 > MAX_METADATA {
-        write_new_file(retained, &bytes)?;
-        if child.try_wait().map_err(filesystem_error)?.is_none() {
-            child.kill().map_err(filesystem_error)?;
-        }
-        child.wait().map_err(filesystem_error)?;
-        return Err(provider_error(
-            "provider metadata is unreadable or exceeds one MiB",
-        ));
-    }
-    let status = child.wait().map_err(filesystem_error)?;
-    write_new_file(retained, &bytes)?;
-    write_new_file(
-        &retained.with_extension("status.txt"),
-        status.to_string().as_bytes(),
+    run_process(
+        Command::new("python3")
+            .arg("-B")
+            .env("PYTHONDONTWRITEBYTECODE", "1")
+            .arg(repository_root.join("scripts/phase13-evidence-query.py"))
+            .arg(endpoint)
+            .arg(retained),
+        "query provider with bounded output and deadline",
     )?;
-    if !status.success() {
-        return Err(provider_error(
-            "provider query failed; retained output is not authority",
-        ));
-    }
+    let bytes = fs::read(retained).map_err(filesystem_error)?;
     serde_json::from_slice(&bytes)
         .map_err(|error| provider_error(&format!("invalid provider metadata: {error}")))
 }
@@ -260,8 +233,13 @@ pub(super) fn acquire_provider_metadata(
         "repos/{PROVIDER_REPOSITORY}/actions/runs/{}",
         request.run_id
     );
-    let run: ProviderRun = query(&run_endpoint, &retained.join("run-before.json"))?;
+    let run: ProviderRun = query(
+        repository_root,
+        &run_endpoint,
+        &retained.join("run-before.json"),
+    )?;
     let artifact: Artifact = query(
+        repository_root,
         &format!(
             "repos/{PROVIDER_REPOSITORY}/actions/artifacts/{}",
             request.artifact_id
@@ -270,6 +248,7 @@ pub(super) fn acquire_provider_metadata(
     )?;
     let acquisition = validate_provider(&request, &run, &artifact, producer_sha)?;
     let jobs: Jobs = query(
+        repository_root,
         &format!(
             "{run_endpoint}/attempts/{}/jobs?per_page=100",
             request.run_attempt
@@ -288,7 +267,11 @@ pub(super) fn acquire_provider_metadata(
         "validate retained provider archive against extracted bundle",
     )?;
     write_new_file(&retained.join("archive-validation.json"), &output.stdout)?;
-    let current: ProviderRun = query(&run_endpoint, &retained.join("run-after.json"))?;
+    let current: ProviderRun = query(
+        repository_root,
+        &run_endpoint,
+        &retained.join("run-after.json"),
+    )?;
     validate_provider(&request, &current, &artifact, producer_sha)?;
     if current.run_started_at != run.run_started_at {
         return Err(provider_error(

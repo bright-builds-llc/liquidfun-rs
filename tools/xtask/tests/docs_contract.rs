@@ -1,5 +1,7 @@
 //! Command-level coverage for the machine-audited testing-layer contract.
 
+#[path = "support/inventory.rs"]
+mod inventory_inputs;
 #[path = "support/maturity.rs"]
 mod maturity;
 

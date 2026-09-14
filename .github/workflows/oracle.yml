@@ -28,11 +28,15 @@ concurrency:
 
 jobs:
   canonical-linux:
+    permissions:
+      contents: read
+      actions: read
     name: ${{ github.event_name == 'workflow_dispatch' && inputs.evidence_phase == 'phase10' && 'Phase 10 canonical Linux oracle' || 'Canonical Linux oracle' }}
     if: github.event_name == 'pull_request' || github.event_name == 'push' || github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && (inputs.evidence_phase == 'phase8' || inputs.evidence_phase == 'phase9' || inputs.evidence_phase == 'phase10'))
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
+      GH_TOKEN: ${{ github.token }}
       CC: clang-22
       CXX: clang++-22
       LIQUIDFUN_XTASK_CMAKE: cmake
@@ -46,6 +50,11 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
           submodules: recursive
+      - name: Install pinned Python for evidence restoration
+        # actions/setup-python v6
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.13"
       - name: Install pinned Rust
         run: rustup toolchain install 1.97.0 --profile minimal
       - name: Install canonical LLVM 22
@@ -73,14 +82,16 @@ jobs:
         # actions/cache v6
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
-          path: target
-          key: ${{ runner.os }}-oracle-phase8-${{ hashFiles('Cargo.lock', 'reference/upstream-lock.toml', 'protocol/tolerances/phase8-v1.toml', 'protocol/fixtures/accepted/rigid-world-request.jsonl', 'tools/reference/CMakeLists.txt', 'tools/reference/CMakePresets.json') }}
+          path: |
+            target/debug
+            target/reference
+          key: ${{ runner.os }}-oracle-native-attested-v1-phase8-${{ hashFiles('Cargo.lock', 'reference/upstream-lock.toml', 'protocol/tolerances/phase8-v1.toml', 'protocol/fixtures/accepted/rigid-world-request.jsonl', 'tools/reference/CMakeLists.txt', 'tools/reference/CMakePresets.json') }}
       - name: Verify the exact upstream checkout
         run: cargo xtask upstream verify
       - name: Verify provenance records
         run: cargo xtask provenance check
       - name: Verify compatibility inventory
-        run: cargo xtask inventory check
+        run: bash scripts/phase15-inventory-check.sh
       - name: Configure oracle-debug
         run: cargo xtask upstream configure --preset oracle-debug
       - name: Build oracle-debug
@@ -168,11 +179,15 @@ jobs:
           retention-days: 30
 
   sanitizer-linux:
+    permissions:
+      contents: read
+      actions: read
     name: ${{ github.event_name == 'workflow_dispatch' && inputs.evidence_phase == 'phase10' && 'Phase 10 fail-fast sanitizer' || 'Scheduled fail-fast sanitizer and reset corpus' }}
     if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && (inputs.evidence_phase == 'phase8' || inputs.evidence_phase == 'phase9' || inputs.evidence_phase == 'phase10'))
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
+      GH_TOKEN: ${{ github.token }}
       CC: clang-22
       CXX: clang++-22
       LIQUIDFUN_XTASK_CMAKE: cmake
@@ -186,6 +201,11 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
           submodules: recursive
+      - name: Install pinned Python for evidence restoration
+        # actions/setup-python v6
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.13"
       - name: Install pinned Rust
         run: rustup toolchain install 1.97.0 --profile minimal
       - name: Install canonical LLVM 22
@@ -213,8 +233,10 @@ jobs:
         # actions/cache v6
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
-          path: target
-          key: ${{ runner.os }}-oracle-asan-ubsan-${{ hashFiles('Cargo.lock', 'reference/upstream-lock.toml', 'tools/reference/CMakeLists.txt', 'tools/reference/CMakePresets.json') }}
+          path: |
+            target/debug
+            target/reference
+          key: ${{ runner.os }}-oracle-native-attested-v1-asan-ubsan-${{ hashFiles('Cargo.lock', 'reference/upstream-lock.toml', 'tools/reference/CMakeLists.txt', 'tools/reference/CMakePresets.json') }}
       - name: Verify the exact upstream checkout and provenance
         run: |
           cargo xtask upstream verify
@@ -421,11 +443,15 @@ jobs:
           retention-days: 30
 
   portability-macos:
+    permissions:
+      contents: read
+      actions: read
     name: macOS oracle portability
     if: github.event_name == 'workflow_dispatch' && (inputs.evidence_phase == 'phase8' || inputs.evidence_phase == 'phase9' || inputs.evidence_phase == 'phase10')
     runs-on: macos-latest
     timeout-minutes: 45
     env:
+      GH_TOKEN: ${{ github.token }}
       CC: clang
       CXX: clang++
       LIQUIDFUN_XTASK_CMAKE: cmake
@@ -439,6 +465,11 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
           submodules: recursive
+      - name: Install pinned Python for evidence restoration
+        # actions/setup-python v6
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.13"
       - name: Install pinned Rust
         run: rustup toolchain install 1.97.0 --profile minimal
       - name: Install exact CMake and Ninja
@@ -463,24 +494,30 @@ jobs:
         # actions/cache v6
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
-          path: target
-          key: ${{ runner.os }}-oracle-debug-${{ hashFiles('Cargo.lock', 'reference/upstream-lock.toml', 'tools/reference/CMakeLists.txt', 'tools/reference/CMakePresets.json') }}
+          path: |
+            target/debug
+            target/reference
+          key: ${{ runner.os }}-oracle-native-attested-v1-debug-${{ hashFiles('Cargo.lock', 'reference/upstream-lock.toml', 'tools/reference/CMakeLists.txt', 'tools/reference/CMakePresets.json') }}
       - name: Verify oracle evidence
         run: |
           cargo xtask upstream verify
           cargo xtask provenance check
-          cargo xtask inventory check
+          bash scripts/phase15-inventory-check.sh
       - name: Configure oracle-debug
         run: cargo xtask upstream configure --preset oracle-debug
       - name: Build oracle-debug
         run: cargo xtask upstream build --preset oracle-debug
 
   portability-windows:
+    permissions:
+      contents: read
+      actions: read
     name: Windows oracle portability
     if: github.event_name == 'workflow_dispatch' && (inputs.evidence_phase == 'phase8' || inputs.evidence_phase == 'phase9' || inputs.evidence_phase == 'phase10')
     runs-on: windows-latest
     timeout-minutes: 45
     env:
+      GH_TOKEN: ${{ github.token }}
       CC: clang-cl
       CXX: clang-cl
       LIQUIDFUN_XTASK_CMAKE: cmake
@@ -494,6 +531,22 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
           submodules: recursive
+      - name: Install pinned Python for evidence restoration
+        # actions/setup-python v6
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.13"
+      - name: Verify native Windows bounded process controls
+        run: python tools/xtask/tests/phase15_candidate_evidence/process_controls.py
+      - name: Retain native Windows process-control diagnostics
+        if: always()
+        # actions/upload-artifact v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: phase15-windows-process-controls-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.sha }}
+          path: target/phase15-process-controls
+          if-no-files-found: error
+          retention-days: 90
       - name: Install pinned Rust
         run: rustup toolchain install 1.97.0 --profile minimal
       - name: Install exact CMake and Ninja
@@ -518,8 +571,10 @@ jobs:
         # actions/cache v6
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
-          path: target
-          key: ${{ runner.os }}-oracle-debug-${{ hashFiles('Cargo.lock', 'reference/upstream-lock.toml', 'tools/reference/CMakeLists.txt', 'tools/reference/CMakePresets.json') }}
+          path: |
+            target/debug
+            target/reference
+          key: ${{ runner.os }}-oracle-native-attested-v1-debug-${{ hashFiles('Cargo.lock', 'reference/upstream-lock.toml', 'tools/reference/CMakeLists.txt', 'tools/reference/CMakePresets.json') }}
       - name: Verify and build with the native Visual Studio environment
         shell: pwsh
         run: |
@@ -532,6 +587,6 @@ jobs:
           Enter-VsDevShell -VsInstallPath $installation -SkipAutomaticLocation -DevCmdArguments "-arch=x64 -host_arch=x64"
           cargo xtask upstream verify
           cargo xtask provenance check
-          cargo xtask inventory check
+          python scripts/phase15-candidate-evidence/docs_ci.py --native-inventory
           cargo xtask upstream configure --preset oracle-debug
           cargo xtask upstream build --preset oracle-debug

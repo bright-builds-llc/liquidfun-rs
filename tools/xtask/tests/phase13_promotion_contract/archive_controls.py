@@ -72,6 +72,15 @@ class ArchiveControls(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "unsafe archive path"):
             self.validate()
 
+    def test_windows_drive_stream_and_alias_members_fail_before_file_access(self):
+        for name in ["D:escape", "record.json:stream", "NUL.txt", "COM1", "folder./record", "folder /record"]:
+            with self.subTest(name=name):
+                self.write_archive([(name, b"bad")])
+                with mock.patch.object(VALIDATOR, "regular_path", wraps=VALIDATOR.regular_path) as checked:
+                    with self.assertRaisesRegex(ValueError, "unsafe archive path"):
+                        self.validate()
+                self.assertEqual(checked.call_count, 1)
+
     def test_symlink_archive_member_fails(self):
         member = zipfile.ZipInfo("record.json")
         member.external_attr = (stat.S_IFLNK | 0o777) << 16
