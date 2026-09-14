@@ -5,6 +5,27 @@ use std::process::Command;
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
 #[test]
+fn lost_endpoint_invocation_never_publishes_success_identity() -> TestResult {
+    // Arrange / Act
+    let output = Command::new("timeout")
+        .args([
+            "10s",
+            "bash",
+            "tools/xtask/tests/safety_evidence_contract/miri-control.sh",
+            "lost-invocation",
+        ])
+        .current_dir(concat!(env!("CARGO_MANIFEST_DIR"), "/../.."))
+        .output()?;
+    // Assert
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    Ok(())
+}
+
+#[test]
 fn miri_scanner_errors_cannot_become_clean_evidence() -> TestResult {
     // Arrange / Act
     for mode in ["missing", "error", "finding"] {
