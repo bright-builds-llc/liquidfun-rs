@@ -239,6 +239,8 @@ pub enum StepError {
     ParticleLifetime(crate::ParticleLifetimeError),
     /// Authoritative particle storage violated an internal lifecycle invariant.
     ParticleLifecycleInvariant,
+    /// Particle-group topology generation rejected a zero-rest spring or barrier pair.
+    InvalidParticleGroupTopology,
     /// Particle proxy preparation rejected a spatial state.
     ParticleProxy(crate::ParticleProxyError),
     /// Particle-pair contact preparation rejected inconsistent semantic input.
@@ -299,6 +301,9 @@ impl fmt::Display for StepError {
             Self::ParticleLifetime(error) => write!(formatter, "particle lifetime failed: {error}"),
             Self::ParticleLifecycleInvariant => {
                 formatter.write_str("particle lifecycle invariant was violated")
+            }
+            Self::InvalidParticleGroupTopology => {
+                formatter.write_str("particle-group topology generation rejected a zero-rest pair")
             }
             Self::ParticleProxy(error) => {
                 write!(formatter, "particle proxy preparation failed: {error:?}")

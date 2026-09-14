@@ -4,6 +4,7 @@ use crate::math::{Vec2, settings};
 use crate::particle::body_contact::ParticleBodyContact;
 use crate::particle::contact::ParticleContact;
 use crate::particle::definition::ParticleSystemDef;
+pub(crate) use crate::particle::storage::group::ReactiveTopologyError;
 use crate::particle::storage::{ParticleStorage, ParticleStorageError};
 use crate::particle::topology::VoronoiLimits;
 
@@ -45,7 +46,7 @@ pub(crate) fn reactive_topology(
     storage: &mut ParticleStorage,
     particle_diameter: f32,
     voronoi_limits: VoronoiLimits,
-) -> Result<(), ParticleStorageError> {
+) -> Result<(), ReactiveTopologyError> {
     storage.regenerate_reactive_topology(particle_diameter, voronoi_limits)
 }
 

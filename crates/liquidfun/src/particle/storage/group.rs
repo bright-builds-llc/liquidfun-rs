@@ -3,7 +3,7 @@ use std::ops::Range;
 use crate::identity::{HandleIdentity, ParticleGroupId, ParticleSystemId};
 use crate::math::{Transform, Vec2};
 use crate::particle::topology::VoronoiLimits;
-use crate::particle::topology::constraints::{TopologyGroup, TopologyInput};
+use crate::particle::topology::constraints::{ConstraintError, TopologyGroup, TopologyInput};
 use crate::particle::{ParticleFlags, ParticleGroupFlags};
 
 use super::mutation::MutationCandidate;
@@ -11,6 +11,42 @@ use super::{ParticleStorage, ParticleStorageError, UserAssociationKey};
 
 mod depth;
 mod statistics;
+
+#[derive(Debug, Clone, PartialEq)]
+pub(crate) struct ReactiveTopologyError {
+    cause: ReactiveTopologyCause,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+enum ReactiveTopologyCause {
+    Storage(ParticleStorageError),
+    Generation(ConstraintError),
+}
+
+impl ReactiveTopologyError {
+    pub(crate) fn is_zero_rest_pair_rejection(&self) -> bool {
+        matches!(
+            self.cause,
+            ReactiveTopologyCause::Generation(ConstraintError::ZeroLengthPairDistance)
+        )
+    }
+}
+
+impl From<ParticleStorageError> for ReactiveTopologyError {
+    fn from(error: ParticleStorageError) -> Self {
+        Self {
+            cause: ReactiveTopologyCause::Storage(error),
+        }
+    }
+}
+
+impl From<ConstraintError> for ReactiveTopologyError {
+    fn from(error: ConstraintError) -> Self {
+        Self {
+            cause: ReactiveTopologyCause::Generation(error),
+        }
+    }
+}
 
 const INTERNAL_GROUP_FLAG_MASK: u8 = 0b0000_0011;
 const UPSTREAM_INTERNAL_GROUP_FLAG_MASK: u32 = 0x0018;
@@ -217,7 +253,7 @@ impl ParticleStorage {
         &mut self,
         particle_diameter: f32,
         voronoi_limits: VoronoiLimits,
-    ) -> Result<(), ParticleStorageError> {
+    ) -> Result<(), ReactiveTopologyError> {
         self.check_invariants()?;
         if !self
             .flags
@@ -237,8 +273,7 @@ impl ParticleStorage {
                 range: 0..self.len(),
                 particle_diameter,
                 voronoi_limits,
-            })
-            .map_err(|_error| ParticleStorageError::InvalidLaneBundle)?;
+            })?;
         let mut candidate = self.clone();
         let mutation = MutationCandidate::prepare_reactive_regeneration(
             &candidate,

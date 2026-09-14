@@ -261,7 +261,13 @@ impl<H: CollisionDecisionHook> ParticlePassExecutor for SystemPassExecutor<'_, '
                     count.saturating_mul(count).saturating_mul(2).max(1),
                 );
                 preparation::reactive_topology(&mut self.record_mut().storage, diameter, limits)
-                    .map_err(|_error| StepError::ParticleLifecycleInvariant)
+                    .map_err(|error| {
+                        if error.is_zero_rest_pair_rejection() {
+                            StepError::InvalidParticleGroupTopology
+                        } else {
+                            StepError::ParticleLifecycleInvariant
+                        }
+                    })
             }
             PassId::Force => {
                 let definition = self.record().definition;

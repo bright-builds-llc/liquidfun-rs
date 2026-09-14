@@ -392,7 +392,12 @@ fn failed_reactive_generation_preserves_topology_flags_and_cache() {
     let result = storage.regenerate_reactive_topology(1.0, limits());
 
     // Assert
-    assert_eq!(result, Err(ParticleStorageError::InvalidLaneBundle));
+    assert_eq!(
+        result,
+        Err(ReactiveTopologyError::from(
+            ConstraintError::ZeroLengthPairDistance
+        ))
+    );
     assert!(storage == before);
 }
 
@@ -457,4 +462,48 @@ fn empty_statistics_are_exact_zero_and_rigid_state_retains_transform() {
             ..GroupStatisticsCache::INVALIDATED_ZERO
         }
     );
+}
+
+#[test]
+fn reactive_generation_preserves_authoritative_storage_error_category() {
+    // Arrange
+    let (_system, group) = identities();
+    let mut storage = grouped_storage(&[(group, 0.0)], 4);
+    storage.flags.clear();
+    let before = storage.clone();
+
+    // Act
+    let error = storage
+        .regenerate_reactive_topology(1.0, limits())
+        .expect_err("mismatched authoritative lanes must fail");
+
+    // Assert
+    assert!(!error.is_zero_rest_pair_rejection());
+    assert_eq!(
+        error,
+        ReactiveTopologyError::from(ParticleStorageError::LaneLengthMismatch)
+    );
+    assert!(storage == before);
+}
+
+#[test]
+fn reactive_generation_does_not_reclassify_other_failures() {
+    // Arrange
+    let errors = [
+        ConstraintError::MismatchedParticleLanes,
+        ConstraintError::InvalidRange,
+        ConstraintError::InvalidContactEndpoint,
+        ConstraintError::ForeignGroupOwner,
+        ConstraintError::NonFiniteGroupStrength,
+        ConstraintError::NonFinitePosition,
+        ConstraintError::InvalidParticleDiameter,
+        ConstraintError::NonFiniteDerivedGeometry,
+        ConstraintError::VoronoiRequiresNecessaryGenerator,
+        ConstraintError::AllocationFailed,
+    ];
+
+    // Act / Assert
+    for error in errors {
+        assert!(!ReactiveTopologyError::from(error).is_zero_rest_pair_rejection());
+    }
 }
