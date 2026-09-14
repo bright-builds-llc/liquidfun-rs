@@ -1,5 +1,10 @@
 //! Black-box stable-identity and rollback evidence for particle-group mutations.
 
+#[path = "particle_groups/transaction_support.rs"]
+mod transaction_support;
+#[path = "particle_group_mutation/transactional_rejection.rs"]
+mod transactional_rejection;
+
 use std::panic::{AssertUnwindSafe, catch_unwind};
 
 use liquidfun::collision::{CircleShape, FilterData, Shape};
@@ -583,7 +588,13 @@ proptest! {
             };
             match result {
                 Ok(created) => known_groups.extend(created.into_iter().skip(1)),
-                Err(_error) => {
+                Err(error) => {
+                    let legitimate = match kind {
+                        0 => matches!(error, ParticleGroupMutationError::SameGroup | ParticleGroupMutationError::InvalidTopology | ParticleGroupMutationError::InvalidHandle(HandleError::WrongParticleSystem | HandleError::StaleOrDestroyed)),
+                        1 | 2 => matches!(error, ParticleGroupMutationError::InvalidTopology | ParticleGroupMutationError::InvalidHandle(HandleError::StaleOrDestroyed)),
+                        _ => matches!(error, ParticleGroupMutationError::GroupNotEmpty | ParticleGroupMutationError::InvalidHandle(HandleError::StaleOrDestroyed)),
+                    };
+                    prop_assert!(legitimate, "operation kind {kind} returned unexpected {error:?}");
                     let after = semantic_snapshot(&world, system, &known_groups);
                     prop_assert_eq!(after, before);
                 }

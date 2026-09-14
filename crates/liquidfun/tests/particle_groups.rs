@@ -1,5 +1,10 @@
 //! Black-box particle-group creation, append, view, and rollback evidence.
 
+#[path = "particle_groups/transaction_support.rs"]
+mod transaction_support;
+#[path = "particle_groups/transactional_rejection.rs"]
+mod transactional_rejection;
+
 use liquidfun::collision::{CircleShape, EdgeShape, Shape};
 use liquidfun::math::{Transform, Vec2};
 use liquidfun::particle::{
