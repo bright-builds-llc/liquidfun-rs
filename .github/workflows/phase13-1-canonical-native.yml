@@ -84,11 +84,7 @@ jobs:
           set +e
           (
             set -e -o pipefail
-            curl --fail --location --silent --show-error --output "$RUNNER_TEMP/llvm.sh" https://raw.githubusercontent.com/opencollab/llvm-jenkins.debian.net/eeed6742908255f0eeb12bb8e314366eff3c0a21/llvm.sh
-            echo "9474ecd78b52aba6e923976b1e9773f5613027cc7e237b9956986cb536e02a36  $RUNNER_TEMP/llvm.sh" | sha256sum --check
-            chmod 755 "$RUNNER_TEMP/llvm.sh"
-            sudo "$RUNNER_TEMP/llvm.sh" 22
-            echo "/usr/lib/llvm-22/bin" >> "$GITHUB_PATH"
+            bash scripts/install-canonical-clang.sh
           ) 2>&1 | tee "$temporary_log"
           exit_code=${PIPESTATUS[0]}
           set -e
@@ -155,6 +151,7 @@ jobs:
 
           run_logged oracle-identity cargo test -p liquidfun-differential --test oracle_identity --all-features
           run_logged canonical-identity cargo test -p liquidfun-test-protocol --all-features canonical
+          run_logged upstream-verify cargo xtask upstream verify
           run_logged configure-debug cargo xtask upstream configure --preset oracle-debug
           run_logged build-debug cargo xtask upstream build --preset oracle-debug
           run_logged protocol-build-debug cmake --build target/reference/oracle-debug --target liquidfun-reference-protocol-tests
@@ -163,10 +160,16 @@ jobs:
           run_logged build-release cargo xtask upstream build --preset oracle-release
           run_logged protocol-build-release cmake --build target/reference/oracle-release --target liquidfun-reference-protocol-tests
           run_logged protocol-ctest-release ctest --test-dir target/reference/oracle-release --output-on-failure --no-tests=error -R '^liquidfun-reference-protocol$'
+          run_logged configure-asan cargo xtask upstream configure --preset oracle-asan-ubsan
+          run_logged build-asan cargo xtask upstream build --preset oracle-asan-ubsan
+          run_logged configure-upstream-tests cargo xtask upstream configure --preset upstream-tests
+          run_logged build-upstream-tests cargo xtask upstream build --preset upstream-tests
+          run_logged ctest-upstream-tests ctest --test-dir target/reference/upstream-tests --output-on-failure --no-tests=error -R '^upstream-'
           run_logged compare-debug cargo xtask differential compare --scenario rigid-world --preset oracle-debug --session-profile one-shot
           run_logged compare-release cargo xtask differential compare --scenario rigid-world --preset oracle-release --session-profile one-shot
           run_logged replay-debug cargo xtask differential replay --scenario rigid-world --preset oracle-debug --session-profile one-shot
           run_logged determinism-debug cargo xtask differential verify-determinism --scenario rigid-world --preset oracle-debug --runs 2
+          run_logged upstream-read-only cargo xtask upstream verify
 
       - name: Record normalized compile commands
         run: |
@@ -194,13 +197,16 @@ jobs:
           }
           record_compile_commands oracle-debug
           record_compile_commands oracle-release
+          cp target/reference/oracle-asan-ubsan/compile_commands.json "$EVIDENCE_DIRECTORY/compile-commands-oracle-asan-ubsan.json"
+          cp target/reference/upstream-tests/compile_commands.json "$EVIDENCE_DIRECTORY/compile-commands-upstream-tests.json"
+          cp -R target/canonical-clang "$EVIDENCE_DIRECTORY/compiler-acquisition"
           jq -Rn \
             '[inputs | split("\t") | {name: .[0], command: .[1], exit_code: (.[2] | tonumber)}]' \
             < "$EVIDENCE_DIRECTORY/command-exits.tsv" \
             > "$EVIDENCE_DIRECTORY/commands.json"
           (
             cd "$EVIDENCE_DIRECTORY"
-            sha256sum compile-commands-oracle-debug.json compile-commands-oracle-release.json \
+            sha256sum compile-commands-*.json \
               > compile-commands.sha256
             find logs -type f -print0 | sort -z | xargs -0 sha256sum > logs.sha256
           )
@@ -226,7 +232,7 @@ jobs:
               workflow_job_id: $workflow_job_id,
               runner: {os: "ubuntu-24.04", architecture: "x86_64"},
               tools: {rust: "1.97.0", clang: "22.1.8", cmake: "4.3.3", ninja: "1.13.2"},
-              presets: ["oracle-debug", "oracle-release"],
+              presets: ["oracle-debug", "oracle-release", "oracle-asan-ubsan", "upstream-tests"],
               command_order: $command_order,
               command_exits: $command_exits,
               compile_command_digests: "compile-commands.sha256",

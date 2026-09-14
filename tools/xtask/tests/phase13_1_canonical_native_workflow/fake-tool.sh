@@ -24,6 +24,6 @@ rustc) printf '%s\n' "${TEST_RUST:-rustc 1.97.0}" ;;
 cmake) printf '%s\n' "${TEST_CMAKE:-cmake version 4.3.3}" ;;
 ninja) printf '%s\n' "${TEST_NINJA:-1.13.2}" ;;
 clang++-22) printf '%s\n' "${TEST_CLANG:-clang version 22.1.8}" ;;
-curl | chmod | sudo | tar | unzip | rustup) ;;
+curl | chmod | sudo | tar | unzip | rustup | install-canonical-clang.sh) ;;
 *) exit 64 ;;
 esac

@@ -15,10 +15,15 @@ const USAGE: &str = r"Usage: cargo xtask upstream <command> [arguments]
 
 Commands:
   verify
-  configure --preset <oracle-debug|oracle-release|oracle-asan-ubsan>
-  build --preset <oracle-debug|oracle-release|oracle-asan-ubsan> [--target <liquidfun-reference|phase9-lifecycle-contact-witness|phase10-group-topology-witness>]";
+  configure --preset <oracle-debug|oracle-release|oracle-asan-ubsan|upstream-tests>
+  build --preset <oracle-debug|oracle-release|oracle-asan-ubsan|upstream-tests> [--target <liquidfun-reference|phase9-lifecycle-contact-witness|phase10-group-topology-witness>]";
 
-const ALLOWED_PRESETS: [&str; 3] = ["oracle-debug", "oracle-release", "oracle-asan-ubsan"];
+const ALLOWED_PRESETS: [&str; 4] = [
+    "oracle-debug",
+    "oracle-release",
+    "oracle-asan-ubsan",
+    "upstream-tests",
+];
 const ALLOWED_BUILD_TARGETS: [&str; 3] = [
     "liquidfun-reference",
     "phase9-lifecycle-contact-witness",
@@ -171,7 +176,12 @@ fn parse_build(args: &[String]) -> Result<(&str, &str), UpstreamError> {
                 ));
             }
             let preset = validate_preset(preset)?;
-            Ok((preset, ALLOWED_BUILD_TARGETS[0]))
+            let target = if preset == "upstream-tests" {
+                "liquidfun-upstream-tests"
+            } else {
+                ALLOWED_BUILD_TARGETS[0]
+            };
+            Ok((preset, target))
         }
         [preset_flag, preset, target_flag, target] => {
             if preset_flag != "--preset" || target_flag != "--target" {

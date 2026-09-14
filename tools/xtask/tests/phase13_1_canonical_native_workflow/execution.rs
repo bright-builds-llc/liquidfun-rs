@@ -25,8 +25,13 @@ impl Fixture {
         let fixture = Self { root };
         fs::create_dir(fixture.root.join("bin"))?;
         fs::create_dir_all(fixture.root.join("failure/logs"))?;
+        fs::create_dir(fixture.root.join("scripts"))?;
         let tool_source = workspace_root()
             .join("tools/xtask/tests/phase13_1_canonical_native_workflow/fake-tool.sh");
+        fs::copy(
+            &tool_source,
+            fixture.root.join("scripts/install-canonical-clang.sh"),
+        )?;
         for tool in [
             "curl",
             "sha256sum",
@@ -97,12 +102,15 @@ impl Drop for Fixture {
 }
 
 #[test]
-fn llvm_checksum_failure_prevents_installer_execution() -> TestResult {
+fn shared_installer_failure_is_retained_and_propagated() -> TestResult {
     // Arrange
     let fixture = Fixture::new()?;
 
     // Act
-    let output = fixture.run("Install canonical LLVM 22", &[("FAIL_CHECKSUM", "llvm.sh")])?;
+    let output = fixture.run(
+        "Install canonical LLVM 22",
+        &[("FAIL_TOOL", "install-canonical-clang.sh")],
+    )?;
 
     // Assert
     assert!(!output.status.success());

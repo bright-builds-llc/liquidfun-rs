@@ -153,6 +153,10 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 include(CTest)
+option(REFERENCE_BUILD_UPSTREAM_TESTS "Build pinned upstream tests out of tree" OFF)
+if(REFERENCE_BUILD_UPSTREAM_TESTS)
+  include("${CMAKE_CURRENT_LIST_DIR}/upstream_tests.cmake")
+endif()
 
 foreach(
   REQUIRED_IDENTITY_VARIABLE

@@ -322,6 +322,30 @@ fn configure_rejects_extra_path_input_before_cmake() -> TestResult {
 }
 
 #[test]
+fn upstream_tests_build_selects_the_complete_test_suite() -> TestResult {
+    // Arrange
+    let fixture = RepositoryFixture::new()?;
+    let mut command = fixture.command()?;
+    command.args(["upstream", "build", "--preset", "upstream-tests"]);
+    // Act
+    let output = command.output()?;
+    // Assert
+    assert!(output.status.success(), "{}", stderr(&output));
+    assert_eq!(
+        fixture.cmake_arguments()?,
+        [
+            "--build",
+            "--preset",
+            "upstream-tests",
+            "--target",
+            "liquidfun-upstream-tests"
+        ]
+    );
+    fixture.cleanup()?;
+    Ok(())
+}
+
+#[test]
 fn build_targets_only_the_registered_reference_executable() -> TestResult {
     // Arrange
     let fixture = RepositoryFixture::new()?;

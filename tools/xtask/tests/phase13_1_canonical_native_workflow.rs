@@ -61,8 +61,12 @@ fn workflow_requires_the_exact_canonical_tool_identity() -> TestResult {
     assert!(source.contains("test \"$(ninja --version)\" = \"1.13.2\""));
     assert!(source.contains("927b2368a946c37269c3a66225ab00544e756459cdd0b5d0da438694fb9ff802"));
     assert!(source.contains("5749cbc4e668273514150a80e387a957f933c6ed3f5f11e03fb30955e2bbead6"));
-    assert!(source.contains("9474ecd78b52aba6e923976b1e9773f5613027cc7e237b9956986cb536e02a36"));
-    assert!(source.contains("https://raw.githubusercontent.com/opencollab/llvm-jenkins.debian.net/eeed6742908255f0eeb12bb8e314366eff3c0a21/llvm.sh"));
+    assert!(source.contains("bash scripts/install-canonical-clang.sh"));
+    let installer =
+        fs::read_to_string(workspace_root().join("scripts/install-canonical-clang.sh"))?;
+    assert!(installer.contains("9474ecd78b52aba6e923976b1e9773f5613027cc7e237b9956986cb536e02a36"));
+    assert!(installer.contains("https://raw.githubusercontent.com/opencollab/llvm-jenkins.debian.net/eeed6742908255f0eeb12bb8e314366eff3c0a21/llvm.sh"));
+    assert!(installer.contains("sha256sum --check --strict"));
     assert!(!source.contains("AppleClang"));
     assert_eq!(upload_count, 2);
     Ok(())

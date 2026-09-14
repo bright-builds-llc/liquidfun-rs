@@ -59,3 +59,4 @@ tools/reference/tests/protocol_tests/rigid_validation.hpp
 tools/reference/tests/protocol_tests/scenario.hpp
 tools/reference/vendor/nlohmann/json.hpp
 tools/reference/CMakeLists.txt
+tools/reference/upstream_tests.cmake

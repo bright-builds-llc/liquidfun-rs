@@ -34,3 +34,59 @@ fn acquisition_has_one_immutable_reviewed_source() -> TestResult {
     assert!(!source.contains("https://apt.llvm.org/llvm.sh"));
     Ok(())
 }
+
+#[test]
+fn all_five_workflows_delegate_every_canonical_install() -> TestResult {
+    for name in [
+        "oracle",
+        "coverage",
+        "phase13-evidence-producer",
+        "phase13-acceptance",
+        "phase13-1-canonical-native",
+    ] {
+        // Arrange
+        let source = fs::read_to_string(root().join(format!(".github/workflows/{name}.yml")))?;
+        // Act
+        let steps = source.matches("name: Install canonical LLVM 22").count();
+        let invocations = source
+            .matches("bash scripts/install-canonical-clang.sh")
+            .count();
+        // Assert
+        assert!(steps > 0);
+        assert_eq!(steps, invocations, "{name} must delegate every install");
+        assert!(!source.contains("/llvm.sh"));
+        assert!(source.contains("clang version 22\\.1\\.8"));
+    }
+    Ok(())
+}
+
+#[test]
+fn canonical_native_builds_all_four_presets_without_modifying_upstream() -> TestResult {
+    // Arrange
+    let workflow =
+        fs::read_to_string(root().join(".github/workflows/phase13-1-canonical-native.yml"))?;
+    let presets: serde_json::Value =
+        serde_json::from_slice(&fs::read(root().join("tools/reference/CMakePresets.json"))?)?;
+    // Act and Assert
+    for preset in [
+        "oracle-debug",
+        "oracle-release",
+        "oracle-asan-ubsan",
+        "upstream-tests",
+    ] {
+        assert!(workflow.contains(&format!("cargo xtask upstream configure --preset {preset}")));
+        assert!(workflow.contains(&format!("cargo xtask upstream build --preset {preset}")));
+        assert!(
+            presets["configurePresets"]
+                .as_array()
+                .ok_or("configure presets required")?
+                .iter()
+                .any(|value| value["name"] == preset)
+        );
+    }
+    assert!(workflow.contains("cargo xtask upstream verify"));
+    assert!(workflow.contains(
+        "ctest --test-dir target/reference/upstream-tests --output-on-failure --no-tests=error"
+    ));
+    Ok(())
+}
