@@ -195,7 +195,7 @@ Final completion gate: ordered fmt, Clippy, all-target build and all-feature tes
 
 - [x] Review instructions, active lessons, prior decisions and current evidence contracts.
 - [x] Capture yolo context and explicit acceptance/infrastructure boundaries.
-- [ ] Research producer readiness and create independently checked execution plans.
+- [x] Research producer readiness and create independently checked execution plans.
 - [ ] Repair and verify prerequisite/tooling defects before candidate freeze.
 - [ ] Collect complete same-candidate producer evidence and release aggregation.
 - [ ] Validate worktree and committed frozen-source attestation; repeat milestone audit.

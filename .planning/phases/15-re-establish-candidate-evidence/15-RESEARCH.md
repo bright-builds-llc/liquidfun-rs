@@ -253,14 +253,17 @@ This phase advances the repository from implemented evidence contracts to actual
 
 ## Assumptions Log
 
-No unverified external facts are locked here. Remediation steps are recommendations based on inspected contracts; they remain unexecuted. Availability of inherited organization runner/secret access and exact cause of Miri numerical drift are explicitly unresolved, not assumed safe. [VERIFIED: research scope; retained failures; 15-CONTEXT.md]
+No unverified external facts are locked here. Remediation steps are recommendations based on inspected contracts; they remain unexecuted. Availability of inherited organization runner/secret access remains unresolved. Miri numerical drift was subsequently isolated to independent transcendental rounding injection; the diagnosis does not establish final candidate safety evidence. [VERIFIED: research scope; retained failures; 15-CONTEXT.md; target/phase15-miri-diagnosis/diagnosis.md]
 
-## Open Questions
+## Resolved Planning Questions
 
-1. Which existing approved controlled runner and matching identity are available? User question is pending in the parent; independent repairs must continue. [VERIFIED: 15-CONTEXT.md]
-1. What precise numerical operation causes the Miri endpoint-bit difference? Reproduce on pinned Miri and compare policy/oracle before choosing a test repair. [VERIFIED: failure observed; root cause not yet established]
-1. Does a candidate-ready lifecycle snapshot meet existing RELEASE.md prefreeze wording without falsely completing postfreeze evidence? Resolve the documented split before C; never widen attestation allowlist as a convenience. [VERIFIED: RELEASE.md; D-01/D-03]
-1. Are all prefreeze repair workflows fully terminal at final C and are earlier retained artifacts still complete? Parent performs CI inspection; this research authorizes no success claim. [VERIFIED: delegated research scope]
+1. Miri numerical behavior: Pinned Miri injects independent rounding errors into separate transcendental calls. Two identical `cos(0.25)` evaluations reproduce the failure without engine code. Linux-target math passes 44 default-mode tests with the endpoint excluded; the separate exact endpoint passes with only `-Zmiri-no-extra-rounding-error`. Plan 15-02 preserves native production math and exact assertions, records both Miri modes and requires nonzero matching test counts. [VERIFIED: target/phase15-miri-diagnosis/diagnosis.md]
+1. Lifecycle and source freeze: Plan 15-06 documents and tests the prefreeze source-readiness versus postfreeze evidence distinction before C. Plans 15-08 through 15-11 retain execution observations outside the tracked range until the direct C-to-A attestation is committed. Plan 15-12 then records final GSD summaries and independent verification at D, validating explicit A. Neither prefreeze source readiness nor the later metadata claims final verification before evidence exists; the attestation allowlist stays closed. [VERIFIED: Plans 15-06 and 15-08 through 15-12; D-01/D-03]
+
+## Pending Execution Prerequisites
+
+1. Controlled performance access is unresolved: repository APIs list zero runners and no required host-identity secret; organization inventory returns 403. The parent has requested approved existing host details. Plan 15-10 must stop at this actual access boundary if unresolved, while prior independent repairs and producer work proceed. This is not waived, resolved, or proof that no organization runner exists. [VERIFIED: retained API observations; 15-CONTEXT.md D-07]
+1. Final candidate terminal CI and artifact completeness are unproven: Plans 15-08 through 15-11 must collect and independently validate the actual same-C results and retained bytes. Existing failures remain failures; this research makes no prospective success claim. [VERIFIED: retained CI failures; Plans 15-08 through 15-11]
 
 ## Sources
 
@@ -272,6 +275,6 @@ External primary source: [OWASP ASVS](https://owasp.org/www-project-application-
 
 - Standard stack: HIGH, existing repository pins and local tool probes. [VERIFIED: sources above]
 - Architecture: HIGH for existing identities, paths and validators; MEDIUM for proposed unexecuted repair sequence. [VERIFIED: source inspection]
-- Pitfalls: HIGH for actual failure logs and static defects; unresolved Miri root cause is explicitly open. [VERIFIED: retained failures]
+- Pitfalls: HIGH for actual failure logs, static defects and the isolated Miri rounding mechanism; final producer repair results remain unproven. [VERIFIED: retained failures; target/phase15-miri-diagnosis/diagnosis.md]
 - Validity: recheck after any source/workflow change or infrastructure update; availability and run/artifact status are time-sensitive. [VERIFIED: candidate-bound contracts]
 - Validation Architecture omitted because workflow.nyquist_validation is explicitly false. No commit made: parent owns checks and git finalization. [VERIFIED: .planning/config.json; delegated task]
