@@ -1,5 +1,9 @@
 //! Read-only contract tests for the checked-in Phase-2 scenario and protocol fixtures.
 
+#[path = "fixtures/bytes.rs"]
+mod fixture_bytes;
+
+#[cfg(not(miri))]
 use std::{fs, path::PathBuf};
 
 use liquidfun_test_protocol::{
@@ -14,6 +18,7 @@ use serde::Serialize;
 
 const REVISION: &str = "7f20402173fd143a3988c921bc384459c6a858f2";
 
+#[cfg(not(miri))]
 fn repository_path(relative: &str) -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("../..")
@@ -54,7 +59,15 @@ fn rigid_world_zero_centered_inertia_is_rejected_before_execution() {
 }
 
 fn read_fixture(relative: &str) -> Vec<u8> {
-    fs::read(repository_path(relative)).expect("checked-in fixture should be readable")
+    let embedded = fixture_bytes::read(relative);
+    // Native runs retain the filesystem contract; Miri exercises the same bytes in isolation.
+    #[cfg(not(miri))]
+    assert_eq!(
+        embedded,
+        fs::read(repository_path(relative)).expect("checked-in fixture should be readable"),
+        "embedded fixture must match the repository file: {relative}"
+    );
+    embedded.to_vec()
 }
 
 fn accepted_request() -> liquidfun_test_protocol::ScenarioRequestRecord {

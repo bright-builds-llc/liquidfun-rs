@@ -2,8 +2,10 @@ use super::super::mutation::{MutationCandidate, MutationCandidateKind};
 use super::super::*;
 use super::{input, ordinary_storage};
 use proptest::prelude::*;
-use proptest::test_runner::RngSeed;
 use std::panic::{AssertUnwindSafe, catch_unwind};
+
+mod configuration;
+use configuration::property_config;
 const ROW_COUNT: usize = 6;
 const MODEL_SEED: u64 = 0x1007_5eed;
 const ROLLBACK_SEED: u64 = 0x1007_fa17;
@@ -499,14 +501,6 @@ fn retain_first_triad_duplicate(triads: &mut Vec<ModelTriad>) {
         }
     }
     *triads = retained;
-}
-
-fn property_config(seed: u64) -> ProptestConfig {
-    ProptestConfig {
-        cases: 128,
-        rng_seed: RngSeed::Fixed(seed),
-        ..ProptestConfig::default()
-    }
 }
 
 proptest! {

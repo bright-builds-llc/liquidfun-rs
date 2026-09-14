@@ -119,3 +119,10 @@ count, zero ignored count, and bounded hashed log. Both math modes are required
 before publishing the final identity. Scanner absence or failure is an error.
 Existing attempt directories are preserved. This interpreter evidence does not
 establish native numerical parity.
+
+Codec fixtures use compile-time copies of the checked-in files; native runs
+also compare every loaded copy with its filesystem source. Group-model
+property tests retain their fixed seeds, 128 generated cases, and shrinking.
+Miri uses in-memory failure persistence to avoid filesystem access while
+native runs retain file persistence. Failures still reach the bounded producer
+logs with their failing input. Neither adaptation disables Miri isolation.
