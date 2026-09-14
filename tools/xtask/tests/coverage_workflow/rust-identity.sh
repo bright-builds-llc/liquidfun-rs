@@ -35,6 +35,10 @@ timeout() {
 	"$@"
 }
 
+if [[ "$mode" == override ]]; then
+	export RUSTC=fixture-override
+fi
+
 status=0
 (run_rust_coverage 1111111111111111111111111111111111111111) || status=$?
 if [[ "$mode" != stable ]]; then

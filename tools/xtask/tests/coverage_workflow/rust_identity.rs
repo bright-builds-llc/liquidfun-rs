@@ -6,7 +6,7 @@ use std::process::Command;
 fn rust_coverage_envelope_matches_the_executed_compiler() -> Result<(), Box<dyn std::error::Error>>
 {
     // Arrange / Act
-    for mode in ["nightly", "failed", "stable"] {
+    for mode in ["nightly", "failed", "override", "stable"] {
         let output = Command::new("timeout")
             .args([
                 "10s",
@@ -15,6 +15,10 @@ fn rust_coverage_envelope_matches_the_executed_compiler() -> Result<(), Box<dyn 
                 mode,
             ])
             .current_dir(concat!(env!("CARGO_MANIFEST_DIR"), "/../.."))
+            // The fixture supplies its own tools, independently of enclosing coverage wrappers.
+            .env_remove("RUSTC")
+            .env_remove("RUSTC_WRAPPER")
+            .env_remove("RUSTC_WORKSPACE_WRAPPER")
             .output()?;
         // Assert
         assert!(
