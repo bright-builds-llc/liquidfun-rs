@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+source "$(dirname -- "${BASH_SOURCE[0]}")/package_import.sh"
+
 hash_file() {
 	if command -v sha256sum >/dev/null 2>&1; then
 		sha256sum "$1" | awk '{print $1}'
@@ -29,6 +31,8 @@ validate_target_path() {
 	local component
 	IFS='/' read -r -a components <<<"$relative"
 	for component in "${components[@]}"; do
+		[[ -n "$component" && "$component" != . && "$component" != .. ]] ||
+			fail "output path must be normalized"
 		current="$current/$component"
 		[[ ! -L "$current" ]] || fail "output path contains a symbolic link"
 	done
@@ -105,6 +109,9 @@ prepare_output() {
 	local candidate_sha=$1
 	local output_directory=$2
 	local release_run_id=$3
+	local platform_run_id=$4
+	local platform_archive=$5
+	local platform_identity=$6
 	require_candidate_checkout "$candidate_sha"
 	validate_run_id "$release_run_id"
 	validate_target_path "$output_directory"
@@ -112,16 +119,16 @@ prepare_output() {
 	mkdir -p -- "$output_directory/artifacts" "$output_directory/package"
 	local items_file="$output_directory/cheap-items.jsonl"
 
-	cargo xtask package create-artifact \
-		--archive "${output_directory#"$repository_root/"}"/package/liquidfun.crate \
-		--identity "${output_directory#"$repository_root/"}"/package/package-identity.json \
-		--candidate-commit "$candidate_sha"
+	import_platform_package "$candidate_sha" "$output_directory" "$platform_run_id" \
+		"$platform_archive" "$platform_identity"
+	local imported_identity_sha256
+	imported_identity_sha256=$(hash_file "$output_directory/package/package-identity.json")
 	cargo xtask package verify-artifact \
 		--archive "${output_directory#"$repository_root/"}"/package/liquidfun.crate \
 		--identity "${output_directory#"$repository_root/"}"/package/package-identity.json \
 		--toolchain 1.97.0 \
 		--target x86_64-unknown-linux-gnu
-	cargo publish -p liquidfun --dry-run
+	verify_publication_archive "$output_directory"
 	cargo deny check --locked
 	RUSTDOCFLAGS="-D warnings" cargo doc -p liquidfun --all-features --no-deps
 	cargo test -p liquidfun --all-features --doc
@@ -134,6 +141,8 @@ prepare_output() {
 		protocol scenarios reference COMPATIBILITY.md UPSTREAM-CORPUS.md
 
 	local package_identity="$output_directory/package/package-identity.json"
+	[[ "$(hash_file "$package_identity")" == "$imported_identity_sha256" ]] ||
+		fail "imported package identity changed during preparation"
 	local package_sha256
 	package_sha256=$(jq -er '.archive_sha256' "$package_identity")
 	[[ "$(hash_file "$output_directory/package/liquidfun.crate")" == "$package_sha256" ]] ||

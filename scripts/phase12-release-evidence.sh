@@ -47,7 +47,7 @@ check)
 	check_contract
 	;;
 prepare)
-	[[ $# -eq 3 ]] || usage
+	[[ $# -eq 6 ]] || usage
 	prepare_output "$@"
 	;;
 aggregate)

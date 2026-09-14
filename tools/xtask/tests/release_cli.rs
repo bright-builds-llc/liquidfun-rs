@@ -441,3 +441,7 @@ mod audit_cases;
 mod construction_cases;
 #[path = "release_cli/manifest_cases.rs"]
 mod manifest_cases;
+
+#[cfg(unix)]
+#[path = "release_cli/package_handoff.rs"]
+mod package_handoff;

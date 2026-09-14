@@ -4,6 +4,7 @@ fn release_constructor_source(repository: &Path) -> String {
     [
         "scripts/phase12-release-evidence.sh",
         "scripts/phase12-release-evidence/common.sh",
+        "scripts/phase12-release-evidence/package_import.sh",
         "scripts/phase12-release-evidence/producer_validation.sh",
         "scripts/phase12-release-evidence/identity_validation.sh",
         "scripts/phase12-release-evidence/aggregation.sh",
