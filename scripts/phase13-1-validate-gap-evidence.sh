@@ -242,10 +242,11 @@ expected_canonical_relative=$(jq -er '.artifacts[] | select(.id == "canonical-na
 canonical_file=$(require_relative_regular_file "$canonical_relative" "canonical identity")
 [[ "$(hash_file "$canonical_file")" == "$(jq -er '.canonical_identity.sha256' "$evidence_path")" ]] ||
 	fail "canonical identity digest mismatch"
-canonical_names=(oracle-identity canonical-identity configure-debug build-debug protocol-build-debug protocol-ctest-debug configure-release build-release protocol-build-release protocol-ctest-release compare-debug compare-release replay-debug determinism-debug)
+canonical_names=(oracle-identity canonical-identity upstream-verify configure-debug build-debug protocol-build-debug protocol-ctest-debug configure-release build-release protocol-build-release protocol-ctest-release configure-asan build-asan configure-upstream-tests build-upstream-tests ctest-upstream-tests compare-debug compare-release replay-debug determinism-debug upstream-read-only)
 canonical_commands=(
 	'cargo test -p liquidfun-differential --test oracle_identity --all-features'
 	'cargo test -p liquidfun-test-protocol --all-features canonical'
+	'cargo xtask upstream verify'
 	'cargo xtask upstream configure --preset oracle-debug'
 	'cargo xtask upstream build --preset oracle-debug'
 	'cmake --build target/reference/oracle-debug --target liquidfun-reference-protocol-tests'
@@ -254,10 +255,16 @@ canonical_commands=(
 	'cargo xtask upstream build --preset oracle-release'
 	'cmake --build target/reference/oracle-release --target liquidfun-reference-protocol-tests'
 	'ctest --test-dir target/reference/oracle-release --output-on-failure --no-tests=error -R ^liquidfun-reference-protocol$'
+	'cargo xtask upstream configure --preset oracle-asan-ubsan'
+	'cargo xtask upstream build --preset oracle-asan-ubsan'
+	'cargo xtask upstream configure --preset upstream-tests'
+	'cargo xtask upstream build --preset upstream-tests'
+	'ctest --test-dir target/reference/upstream-tests --output-on-failure --no-tests=error -R ^upstream-'
 	'cargo xtask differential compare --scenario rigid-world --preset oracle-debug --session-profile one-shot'
 	'cargo xtask differential compare --scenario rigid-world --preset oracle-release --session-profile one-shot'
 	'cargo xtask differential replay --scenario rigid-world --preset oracle-debug --session-profile one-shot'
 	'cargo xtask differential verify-determinism --scenario rigid-world --preset oracle-debug --runs 2'
+	'cargo xtask upstream verify'
 )
 expected_order=$(printf '%s\n' "${canonical_names[@]}" | jq -Rsc 'split("\n")[:-1]')
 jq -e \
@@ -272,7 +279,7 @@ jq -e \
 	and .workflow_job_id == "canonical-native"
 	and .runner == {os: "ubuntu-24.04", architecture: "x86_64"}
 	and .tools == {rust: "1.97.0", clang: "22.1.8", cmake: "4.3.3", ninja: "1.13.2"}
-	and .presets == ["oracle-debug", "oracle-release"]
+	and .presets == ["oracle-debug", "oracle-release", "oracle-asan-ubsan", "upstream-tests"]
 	and .evidence_tier == "D1"
 	and .command_order == $order
 	and .command_exits == ($order | map({name: ., exit_code: 0}))
@@ -312,7 +319,7 @@ while IFS= read -r label; do expected_logs+=("logs/$label.log"); done < <(
 	printf '%s\n' "${canonical_names[@]}" install-rust install-llvm install-build-tools tool-identities | LC_ALL=C sort
 )
 validate_canonical_digest_inventory logs.sha256 "${expected_logs[@]}"
-validate_canonical_digest_inventory compile-commands.sha256 compile-commands-oracle-debug.json compile-commands-oracle-release.json
+validate_canonical_digest_inventory compile-commands.sha256 compile-commands-oracle-asan-ubsan.json compile-commands-oracle-debug.json compile-commands-oracle-release.json compile-commands-upstream-tests.json
 for preset in oracle-debug oracle-release; do
 	compile_file=$(require_relative_regular_file "$canonical_directory/compile-commands-$preset.json" "canonical compile commands")
 	jq -e '
@@ -321,5 +328,28 @@ for preset in oracle-debug oracle-release; do
 	    and (. as $record | .command | contains($record.file)))' "$compile_file" >/dev/null ||
 		fail "canonical normalized compile records differ"
 done
+
+for preset in oracle-asan-ubsan upstream-tests; do
+	compile_file=$(require_relative_regular_file "$canonical_directory/compile-commands-$preset.json" "canonical raw compile commands")
+	jq -e '
+	  type == "array" and length > 0
+	  and all(.[]; (.file | type == "string" and startswith("/"))
+	    and (.directory | type == "string" and startswith("/"))
+	    and (.command | type == "string" and length > 0)
+	    and (. as $record | .command | contains($record.file)))
+	  and ([.[].file] as $files
+	    | ["collision_probe.cpp", "math_probe.cpp", "protocol_bits.cpp", "rigid_world.cpp"]
+	    | all(.[]; . as $name | any($files[]; endswith("/tools/reference/src/" + $name))))' "$compile_file" >/dev/null ||
+		fail "canonical raw compile records differ"
+done
+upstream_compile=$(require_relative_regular_file "$canonical_directory/compile-commands-upstream-tests.json" "upstream compile commands")
+jq -e '
+  [.[].file] as $files
+  | ["BlockAllocator", "BodyContacts", "Callback", "Color", "Common", "Confinement", "Conservation",
+     "FreeList", "Function", "HelloWorld", "IntrusiveList", "SlabAllocator", "TrackedBlock"]
+  | (map("/third_party/liquidfun/liquidfun/Box2D/Unittests/" + . + "/" + . + "Tests.cpp")
+      + ["/third_party/liquidfun/googletest/src/gtest-all.cc"])
+  | all(.[]; . as $suffix | any($files[]; endswith($suffix)))' "$upstream_compile" >/dev/null ||
+	fail "canonical upstream test compile inventory differs"
 
 printf 'phase13-1 gap evidence valid: %s\n' "$candidate_sha"

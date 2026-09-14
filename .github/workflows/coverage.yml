@@ -45,6 +45,10 @@ jobs:
             --component llvm-tools-preview
           cargo +1.97.0 install cargo-llvm-cov --version 0.8.7 --locked
           test "$(cargo +1.97.0 llvm-cov --version)" = "cargo-llvm-cov 0.8.7"
+      - name: Install pinned tools for the nested fuzz-build smoke test
+        run: |
+          rustup toolchain install nightly-2026-07-15 --profile minimal --component rust-src
+          cargo +1.97.0 install cargo-fuzz --version 0.13.2 --locked
       - name: Produce validated Rust coverage
         run: |
           scripts/phase12-coverage.sh check

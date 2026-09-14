@@ -20,7 +20,7 @@ pub(crate) fn write_bundle(retained: &Path, candidate: &str, tree: &str) -> Test
             Ok(json!({"name":name,"command":command.replace('\'', ""),"exit_code":0}))
         })
         .collect::<TestResult<Vec<_>>>()?;
-    assert_eq!(commands.len(), 14);
+    assert_eq!(commands.len(), 21);
     write_json(&directory.join("commands.json"), &json!(commands))?;
     let mut tsv = String::new();
     let mut logs = Vec::new();
@@ -48,12 +48,42 @@ pub(crate) fn write_bundle(retained: &Path, candidate: &str, tree: &str) -> Test
     }
     fs::write(directory.join("logs.sha256"), digests)?;
     let mut compile_digests = String::new();
-    for preset in ["oracle-debug", "oracle-release"] {
-        let records = ["collision_probe", "math_probe", "protocol_bits", "rigid_world"]
+    for preset in [
+        "oracle-asan-ubsan",
+        "oracle-debug",
+        "oracle-release",
+        "upstream-tests",
+    ] {
+        let mut records = ["collision_probe", "math_probe", "protocol_bits", "rigid_world"]
             .map(|name| {
-                let file = format!("<repo>/tools/reference/src/{name}.cpp");
-                json!({"file":file,"command":format!("/usr/bin/clang++-22 -fno-fast-math -ffp-contract=off -c {file} -o <build>/{name}.o")})
-            });
+                let prefix = if matches!(preset, "oracle-debug" | "oracle-release") { "<repo>" } else { "/fixture/repo" };
+                let file = format!("{prefix}/tools/reference/src/{name}.cpp");
+                json!({"file":file,"directory":"/fixture/build","command":format!("/usr/bin/clang++-22 -fno-fast-math -ffp-contract=off -c {file} -o <build>/{name}.o")})
+            }).to_vec();
+        if preset == "upstream-tests" {
+            for name in [
+                "BlockAllocator",
+                "BodyContacts",
+                "Callback",
+                "Color",
+                "Common",
+                "Confinement",
+                "Conservation",
+                "FreeList",
+                "Function",
+                "HelloWorld",
+                "IntrusiveList",
+                "SlabAllocator",
+                "TrackedBlock",
+            ] {
+                let file = format!(
+                    "/fixture/repo/third_party/liquidfun/liquidfun/Box2D/Unittests/{name}/{name}Tests.cpp"
+                );
+                records.push(json!({"file":file,"directory":"/fixture/build","command":format!("/usr/bin/clang++-22 -c {file} -o {name}.o")}));
+            }
+            let file = "/fixture/repo/third_party/liquidfun/googletest/src/gtest-all.cc";
+            records.push(json!({"file":file,"directory":"/fixture/build","command":format!("/usr/bin/clang++-22 -c {file} -o gtest.o")}));
+        }
         let relative = format!("compile-commands-{preset}.json");
         let compile_file = directory.join(&relative);
         write_json(&compile_file, &json!(records))?;
@@ -67,7 +97,7 @@ pub(crate) fn write_bundle(retained: &Path, candidate: &str, tree: &str) -> Test
             "workflow_run_id":"7","workflow_job_id":"canonical-native",
             "runner":{"os":"ubuntu-24.04","architecture":"x86_64"},
             "tools":{"rust":"1.97.0","clang":"22.1.8","cmake":"4.3.3","ninja":"1.13.2"},
-            "presets":["oracle-debug","oracle-release"],
+            "presets":["oracle-debug","oracle-release","oracle-asan-ubsan","upstream-tests"],
             "command_order":commands.iter().map(|entry| entry["name"].clone()).collect::<Vec<_>>(),
             "command_exits":commands.iter().map(|entry| json!({"name":entry["name"],"exit_code":0})).collect::<Vec<_>>(),
             "compile_command_digests":"compile-commands.sha256","log_digests":"logs.sha256",
@@ -163,7 +193,11 @@ fn rejects_missing_retained_canonical_records() -> TestResult {
         "commands.json",
         "command-exits.tsv",
         "compile-commands-oracle-debug.json",
+        "compile-commands-oracle-asan-ubsan.json",
+        "compile-commands-upstream-tests.json",
         "logs/build-debug.log",
+        "logs/build-asan.log",
+        "logs/ctest-upstream-tests.log",
     ] {
         // Arrange
         let fixture = Fixture::new()?;
@@ -189,6 +223,8 @@ fn rejects_tampered_canonical_contents() -> TestResult {
     for relative in [
         "logs/build-debug.log",
         "compile-commands-oracle-debug.json",
+        "compile-commands-oracle-asan-ubsan.json",
+        "compile-commands-upstream-tests.json",
         "commands.json",
     ] {
         let fixture = Fixture::new()?;
@@ -209,6 +245,71 @@ fn rejects_incomplete_compile_records_even_with_refreshed_digest() -> TestResult
     let compile_file = directory.join("compile-commands-oracle-debug.json");
     let old_digest = hash_file(&compile_file)?;
     fs::write(&compile_file, "[]\n")?;
+    let digest_file = directory.join("compile-commands.sha256");
+    fs::write(
+        &digest_file,
+        fs::read_to_string(&digest_file)?.replace(&old_digest, &hash_file(&compile_file)?),
+    )?;
+    // Act / Assert
+    fixture.assert_rejected()
+}
+
+#[test]
+fn rejects_missing_upstream_test_source_even_with_refreshed_digest() -> TestResult {
+    // Arrange
+    let fixture = Fixture::new()?;
+    let directory = fixture.retained.join("canonical");
+    let compile_file = directory.join("compile-commands-upstream-tests.json");
+    let old_digest = hash_file(&compile_file)?;
+    let mut records: Vec<Value> = serde_json::from_slice(&fs::read(&compile_file)?)?;
+    records.retain(|record| {
+        !record["file"]
+            .as_str()
+            .expect("fixture path")
+            .ends_with("/TrackedBlockTests.cpp")
+    });
+    write_json(&compile_file, &json!(records))?;
+    let digest_file = directory.join("compile-commands.sha256");
+    fs::write(
+        &digest_file,
+        fs::read_to_string(&digest_file)?.replace(&old_digest, &hash_file(&compile_file)?),
+    )?;
+    // Act / Assert
+    fixture.assert_rejected()
+}
+
+#[test]
+fn rejects_malformed_raw_compile_records_even_with_refreshed_digest() -> TestResult {
+    for preset in ["oracle-asan-ubsan", "upstream-tests"] {
+        // Arrange
+        let fixture = Fixture::new()?;
+        let directory = fixture.retained.join("canonical");
+        let compile_file = directory.join(format!("compile-commands-{preset}.json"));
+        let old_digest = hash_file(&compile_file)?;
+        let mut records: Vec<Value> = serde_json::from_slice(&fs::read(&compile_file)?)?;
+        records[0]["directory"] = json!(null);
+        write_json(&compile_file, &json!(records))?;
+        let digest_file = directory.join("compile-commands.sha256");
+        fs::write(
+            &digest_file,
+            fs::read_to_string(&digest_file)?.replace(&old_digest, &hash_file(&compile_file)?),
+        )?;
+        // Act / Assert
+        fixture.assert_rejected()?;
+    }
+    Ok(())
+}
+
+#[test]
+fn rejects_raw_witness_path_substitution_even_with_refreshed_digest() -> TestResult {
+    // Arrange
+    let fixture = Fixture::new()?;
+    let directory = fixture.retained.join("canonical");
+    let compile_file = directory.join("compile-commands-oracle-asan-ubsan.json");
+    let old_digest = hash_file(&compile_file)?;
+    let modified =
+        fs::read_to_string(&compile_file)?.replace("/tools/reference/src/", "/unrelated/");
+    fs::write(&compile_file, modified)?;
     let digest_file = directory.join("compile-commands.sha256");
     fs::write(
         &digest_file,

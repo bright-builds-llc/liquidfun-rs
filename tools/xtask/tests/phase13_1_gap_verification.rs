@@ -7,7 +7,8 @@ use serde_json::Value;
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 const DEFERRED_TARGET: &str = "phase13_acceptance_contract";
-const SELECTED_TARGETS: [&str; 27] = [
+const SELECTED_TARGETS: [&str; 28] = [
+    "canonical_toolchain_workflow",
     "catalog_cli",
     "corpus_closure",
     "corpus_discovery",
@@ -101,7 +102,7 @@ fn manifest_selects_every_non_deferred_xtask_target_exactly_once() -> TestResult
 
     // Assert
     assert_eq!(selected, expected);
-    assert_eq!(selected.len(), 27);
+    assert_eq!(selected.len(), 28);
     assert_eq!(
         manifest["deferred_xtask_targets"],
         serde_json::json!([DEFERRED_TARGET])

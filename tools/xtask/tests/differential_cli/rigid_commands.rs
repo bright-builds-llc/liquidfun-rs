@@ -236,7 +236,7 @@ pub(super) fn rigid_fixture_real_binary_accepts_d1_and_rejects_d2_before_effects
     // Arrange
     let fixture = RepositoryFixture::new()?;
     prepare_real_rigid_repository(&fixture.root, "rigid_d1")?;
-    let real_differential = debug_binary("liquidfun-differential");
+    let real_differential = built_binary("liquidfun-differential");
     let arguments = [
         "differential",
         "fixture",
@@ -315,7 +315,7 @@ pub(super) fn rigid_fixture_stale_identity_real_binary_rejects_before_effects() 
     prepare_real_rigid_repository(&fixture.root, "rigid_d1_stale_adapter")?;
     let manifest_path = fixture.root.join("reference/artifacts/manifest.toml");
     let manifest_before = fs::read(&manifest_path)?;
-    let real_differential = debug_binary("liquidfun-differential");
+    let real_differential = built_binary("liquidfun-differential");
     let mut command = fixture.command()?;
     command
         .env("LIQUIDFUN_XTASK_DIFFERENTIAL", &real_differential)

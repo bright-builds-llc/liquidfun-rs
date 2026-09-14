@@ -264,10 +264,12 @@ fn workspace_root() -> PathBuf {
         .collect()
 }
 
-fn debug_binary(name: &str) -> PathBuf {
-    let target_directory = env::var_os("CARGO_TARGET_DIR")
-        .map_or_else(|| workspace_root().join("target"), PathBuf::from);
-    target_directory.join("debug").join(executable_name(name))
+fn built_binary(name: &str) -> PathBuf {
+    // Cargo's --target-dir can differ from the inherited CARGO_TARGET_DIR under coverage.
+    Path::new(env!("CARGO_BIN_EXE_xtask"))
+        .parent()
+        .expect("Cargo's xtask executable has a build-profile directory")
+        .join(executable_name(name))
 }
 
 fn prepare_real_rigid_repository(root: &Path, behavior: &str) -> io::Result<()> {
@@ -305,7 +307,7 @@ fn prepare_real_rigid_repository(root: &Path, behavior: &str) -> io::Result<()> 
     let oracle_directory = root.join("target/reference/oracle-debug");
     fs::create_dir_all(&oracle_directory)?;
     fs::copy(
-        debug_binary("liquidfun-fake-oracle"),
+        built_binary("liquidfun-fake-oracle"),
         oracle_directory.join(executable_name("liquidfun-reference")),
     )?;
     write_real_compile_database(root)?;

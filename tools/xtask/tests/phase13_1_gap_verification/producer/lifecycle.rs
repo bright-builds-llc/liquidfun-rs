@@ -181,12 +181,19 @@ fn manifest_preserves_exact_auxiliary_argv_and_corrected_capability() -> TestRes
         .ok_or("commands must be an array")?;
 
     // Act
-    let auxiliary = &commands[59..72];
+    let auxiliary = commands
+        .iter()
+        .skip_while(|command| command["id"] != "shell-syntax")
+        .collect::<Vec<_>>();
+    let capability = auxiliary
+        .iter()
+        .find(|command| command["id"] == "testbed-capability")
+        .ok_or("capability command must remain in the auxiliary inventory")?;
 
     // Assert
     assert_eq!(auxiliary.len(), 13);
     assert_eq!(
-        commands[65]["argv"],
+        capability["argv"],
         json!([
             "cargo",
             "run",
