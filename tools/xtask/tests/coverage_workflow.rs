@@ -1,5 +1,9 @@
 //! Clean-lane contracts for Phase 12 differential semantic coverage.
 
+#[cfg(target_os = "linux")]
+#[path = "coverage_workflow/rust_identity.rs"]
+mod rust_identity;
+
 use std::fs;
 use std::path::{Component, Path};
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -37,7 +41,7 @@ fn workflow_contract_is_valid(source: &str) -> bool {
     };
     let required_order = [
         "submodules: recursive",
-        "clang++-22 --version",
+        "bash scripts/install-canonical-clang.sh",
         "cmake --version",
         "ninja --version",
         "cargo xtask upstream configure --preset oracle-debug",
@@ -59,12 +63,10 @@ fn workflow_contract_is_valid(source: &str) -> bool {
     job.contains("timeout-minutes: 120")
         && job.contains("submodules: recursive")
         && !job.contains("submodules: false")
-        && job.contains("9474ecd78b52aba6e923976b1e9773f5613027cc7e237b9956986cb536e02a36")
         && job.contains("927b2368a946c37269c3a66225ab00544e756459cdd0b5d0da438694fb9ff802")
         && job.contains("5749cbc4e668273514150a80e387a957f933c6ed3f5f11e03fb30955e2bbead6")
         && job.contains("cmake version 4.3.3")
         && job.contains("ninja --version | grep --fixed-strings \"1.13.2\"")
-        && job.contains("clang version 22\\.1\\.8")
         && job.contains("LIQUIDFUN_XTASK_CXX: clang++-22")
 }
 
@@ -144,8 +146,11 @@ fn clean_differential_job_rejects_missing_upstream_toolchain_or_release_build() 
     let source = fs::read_to_string(workspace_root().join(".github/workflows/coverage.yml"))?;
     let no_upstream =
         mutate_differential_job(&source, "submodules: recursive", "submodules: false");
-    let no_toolchain =
-        mutate_differential_job(&source, "LIQUIDFUN_XTASK_CXX: clang++-22", "CXX: c++");
+    let no_toolchain = mutate_differential_job(
+        &source,
+        "bash scripts/install-canonical-clang.sh",
+        "clang++ --version",
+    );
     let no_release = mutate_differential_job(
         &source,
         "cargo xtask upstream build --preset oracle-release",

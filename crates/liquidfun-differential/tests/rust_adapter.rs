@@ -113,7 +113,14 @@ fn adapter_binds_native_identity_and_request_hashes() {
     // Assert
     assert_eq!(adapter.build_identity().oracle_revision(), ORACLE_REVISION);
     assert_eq!(adapter.build_identity().cmake_preset(), "native-rust");
-    assert_eq!(adapter.build_identity().compiler_version(), "1.97.0");
+    assert_eq!(
+        adapter.build_identity().compiler_version(),
+        env!("LIQUIDFUN_NATIVE_RUSTC_VERSION")
+    );
+    assert!(env!("LIQUIDFUN_NATIVE_RUSTC_VV").contains(&format!(
+        "release: {}",
+        adapter.build_identity().compiler_version()
+    )));
     assert_eq!(
         adapter.build_identity().target(),
         adapter

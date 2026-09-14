@@ -108,7 +108,13 @@ pub(super) fn validate_coverage_record(
         CoverageEvidenceKind::DifferentialCoverage => &contract.differential.toolchain_identities,
     };
     let relative_artifact = normalized_relative(&record.artifact_path)?;
+    let rust_kind_matches = match record.evidence_kind {
+        CoverageEvidenceKind::RustSanitizer => record.toolchain_identity == "nightly-2026-07-15",
+        CoverageEvidenceKind::RustCoverage => record.toolchain_identity == "rust-1.97.0",
+        _ => true,
+    };
     if record.candidate_commit != candidate_commit
+        || !rust_kind_matches
         || !expected_toolchains.contains(&record.toolchain_identity)
         || !is_sha256(&record.artifact_sha256)
         || !relative_artifact.starts_with("target")

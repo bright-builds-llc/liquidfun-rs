@@ -292,7 +292,7 @@ fn coverage_records_require_five_distinct_complete_evidence_kinds() -> TestResul
         "records": [
             record("rust_sanitizer", "nightly-2026-07-15")?,
             record("cpp_asan_ubsan", "clang-22.1.8")?,
-            record("rust_coverage", "nightly-2026-07-15")?,
+            record("rust_coverage", "rust-1.97.0")?,
             record("cpp_coverage", "clang-22.1.8")?,
             record("differential_coverage", "semantic-leaf-v1")?,
         ],
@@ -308,6 +308,10 @@ fn coverage_records_require_five_distinct_complete_evidence_kinds() -> TestResul
     wrong_hash["records"][0]["artifact_sha256"] = serde_json::json!("0".repeat(64));
     let mut mixed_toolchain = valid.clone();
     mixed_toolchain["records"][0]["toolchain_identity"] = serde_json::json!("clang-22.1.8");
+    let mut stable_sanitizer = valid.clone();
+    stable_sanitizer["records"][0]["toolchain_identity"] = serde_json::json!("rust-1.97.0");
+    let mut nightly_coverage = valid.clone();
+    nightly_coverage["records"][2]["toolchain_identity"] = serde_json::json!("nightly-2026-07-15");
 
     // Act / Assert
     assert!(
@@ -318,7 +322,15 @@ fn coverage_records_require_five_distinct_complete_evidence_kinds() -> TestResul
         )
         .is_ok()
     );
-    for malformed in [duplicate, incomplete, parity, wrong_hash, mixed_toolchain] {
+    for malformed in [
+        duplicate,
+        incomplete,
+        parity,
+        wrong_hash,
+        mixed_toolchain,
+        stable_sanitizer,
+        nightly_coverage,
+    ] {
         assert!(
             contract::validate_coverage_record_bytes(
                 &root.path,

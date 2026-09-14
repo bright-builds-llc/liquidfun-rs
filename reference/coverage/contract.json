@@ -18,7 +18,8 @@
       "rust_coverage"
     ],
     "toolchain_identities": [
-      "nightly-2026-07-15"
+      "nightly-2026-07-15",
+      "rust-1.97.0"
     ],
     "leaf_kind": "files"
   },

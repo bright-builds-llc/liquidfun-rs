@@ -40,11 +40,11 @@ jobs:
           test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
       - name: Install exact Rust coverage tools
         run: |
-          rustup toolchain install nightly-2026-07-15 \
+          rustup toolchain install 1.97.0 \
             --profile minimal \
             --component llvm-tools-preview
-          cargo install cargo-llvm-cov --version 0.8.7 --locked
-          test "$(cargo llvm-cov --version)" = "cargo-llvm-cov 0.8.7"
+          cargo +1.97.0 install cargo-llvm-cov --version 0.8.7 --locked
+          test "$(cargo +1.97.0 llvm-cov --version)" = "cargo-llvm-cov 0.8.7"
       - name: Produce validated Rust coverage
         run: |
           scripts/phase12-coverage.sh check
@@ -57,7 +57,7 @@ jobs:
           test "$evidence/identity.json" -nt "$evidence/summary.json"
           test "$(jq -r '.candidate_commit' "$evidence/identity.json")" = "$CANDIDATE_SHA"
           test "$(jq -r '.evidence_kind' "$evidence/identity.json")" = "rust_coverage"
-          test "$(jq -r '.toolchain_identity' "$evidence/identity.json")" = "nightly-2026-07-15"
+          test "$(jq -r '.toolchain_identity' "$evidence/identity.json")" = "rust-1.97.0"
           test "$(jq -r '.parity_authority' "$evidence/identity.json")" = "false"
           expected="$(jq -r '.payload_sha256' "$evidence/identity.json")"
           test "$(sha256sum "$evidence/summary.json" | awk '{print $1}')" = "$expected"

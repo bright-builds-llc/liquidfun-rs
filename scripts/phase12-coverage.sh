@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-readonly NIGHTLY_TOOLCHAIN=nightly-2026-07-15
+readonly RUST_TOOLCHAIN=1.97.0
 readonly LLVM_COV_VERSION=0.8.7
 readonly CLANG_VERSION=22.1.8
 readonly COMMAND_TIMEOUT_SECONDS=1800
@@ -86,8 +86,8 @@ require_differential_oracles() {
 }
 
 check_contract() {
-	grep -Fxq 'channel = "nightly-2026-07-15"' rust-toolchain-nightly.toml ||
-		fail "shared nightly toolchain differs"
+	grep -Fxq 'channel = "1.97.0"' rust-toolchain.toml ||
+		fail "stable coverage toolchain differs"
 	grep -Fq '"parity_authority": false' reference/coverage/contract.json ||
 		fail "coverage contract must remain non-authoritative for parity"
 	for kind in rust_coverage cpp_coverage differential_coverage; do
@@ -119,10 +119,7 @@ prepare_output() {
 	mkdir -p -- "$output_root"
 	[[ ! -L "$output_root" && ! -L "$output_directory" ]] ||
 		fail "coverage output contains a symbolic link"
-	if [[ -e "$output_directory" ]]; then
-		[[ -d "$output_directory" ]] || fail "coverage destination is not a directory"
-		rm -rf -- "$output_directory"
-	fi
+	[[ ! -e "$output_directory" ]] || fail "coverage destination already exists; preserve the previous attempt"
 	mkdir -p -- "$output_directory"
 	printf '%s\n' "$output_directory"
 }
@@ -154,6 +151,7 @@ write_summary() {
 		--arg toolchain_identity "$toolchain_identity" \
 		--arg artifact_path "$artifact_name" \
 		--arg artifact_sha256 "$(hash_file "$artifact_path")" \
+		--arg compiler_identity "${rust_compiler_identity:-}" \
 		'{
 		  schema_version: 1,
 		  evidence_kind: $evidence_kind,
@@ -162,7 +160,7 @@ write_summary() {
 		  artifact_path: $artifact_path,
 		  artifact_sha256: $artifact_sha256,
 		  parity_authority: false
-		}' >"$output_directory/summary.json"
+		} + (if $compiler_identity == "" then {} else {compiler_identity: $compiler_identity} end)' >"$output_directory/summary.json"
 }
 
 write_identity_last() {
@@ -211,21 +209,27 @@ finish_coverage() {
 
 run_rust_coverage() {
 	local candidate_sha=$1
+	[[ -z "${RUSTC:-}${RUSTC_WRAPPER:-}${RUSTC_WORKSPACE_WRAPPER:-}" ]] ||
+		fail "Rust coverage compiler overrides are not permitted"
+	local rust_compiler_identity
+	rust_compiler_identity=$(rustc "+$RUST_TOOLCHAIN" -vV) || fail "Rust coverage compiler identity failed"
+	grep -Fxq "release: $RUST_TOOLCHAIN" <<<"$rust_compiler_identity" ||
+		fail "Rust coverage compiler differs from rust-$RUST_TOOLCHAIN"
 	local version
-	version=$(cargo llvm-cov --version)
+	version=$(cargo "+$RUST_TOOLCHAIN" llvm-cov --version) || fail "cargo-llvm-cov identity failed"
 	[[ "$version" == "cargo-llvm-cov $LLVM_COV_VERSION" ]] ||
 		fail "cargo-llvm-cov must be exactly $LLVM_COV_VERSION"
 	local output_directory
 	output_directory=$(prepare_output "$candidate_sha" rust)
 	timeout --signal=TERM "${COMMAND_TIMEOUT_SECONDS}s" \
-		cargo "+$NIGHTLY_TOOLCHAIN" llvm-cov \
+		cargo "+$RUST_TOOLCHAIN" llvm-cov \
 		--workspace --all-features --lcov \
-		--output-path "$output_directory/rust.lcov"
+		--output-path "$output_directory/rust.lcov" || fail "Rust coverage failed or timed out"
 	finish_coverage \
 		"$output_directory" \
 		"$candidate_sha" \
 		rust_coverage \
-		"$NIGHTLY_TOOLCHAIN" \
+		"rust-$RUST_TOOLCHAIN" \
 		rust.lcov
 }
 
