@@ -1,13 +1,15 @@
 ---
 phase: 15-re-establish-candidate-evidence
-reviewed: "2026-09-14T22:11:03Z"
+reviewed: "2026-09-14T22:38:32Z"
 depth: standard
-reviewed_head: 84405cc21fa5f7cf70cedc5ad532d37101ade2c0
+reviewed_head: 71c0cb617db2056b9a836d4889c6dfcc06b6a8e0
 original_reviewed_head: 00358a585f8629dbd7b4b4a486da6af0cfe94c7c
 diff_base: d990dc6
 original_scope_count: 115
 repair_scope_count: 43
-files_reviewed: 134
+followup_scope_count: 3
+followup_commit: 71c0cb617db2056b9a836d4889c6dfcc06b6a8e0
+files_reviewed: 135
 files_reviewed_list:
   - .github/workflows/ci.yml
   - .github/workflows/coverage.yml
@@ -20,6 +22,7 @@ files_reviewed_list:
   - .github/workflows/safety.yml
   - RELEASE.md
   - SAFETY.md
+  - crates/liquidfun-differential/tests/phase9_corpus/workflow.rs
   - crates/liquidfun-differential/tests/rust_adapter.rs
   - crates/liquidfun-test-protocol/tests/fixtures.rs
   - crates/liquidfun-test-protocol/tests/fixtures/bytes.rs
@@ -164,18 +167,18 @@ generated_at: "2026-09-14T21:38:34Z"
 
 # Phase 15: Code Review Report
 
-**Reviewed:** 2026-09-14T22:11:03Z
+**Reviewed:** 2026-09-14T22:38:32Z
 **Depth:** standard
-**Files reviewed:** 134 distinct paths across the original review and repair follow-up
+**Files reviewed:** 135 distinct paths across the original review and two repair follow-ups
 **Status:** clean — zero unresolved findings; four historical warnings resolved
-**Final source:** `84405cc21fa5f7cf70cedc5ad532d37101ade2c0`
+**Final source:** `71c0cb617db2056b9a836d4889c6dfcc06b6a8e0`
 **Original review:** `d990dc6..00358a585f8629dbd7b4b4a486da6af0cfe94c7c`
 
 ## Summary
 
 Reviewed the explicit prefreeze source scope covering Plans 01–06 and the implemented Plan 07 promotion prerequisite. Per-file analysis covered workflow inputs, compiler acquisition, Miri and coverage modes, genuine regression registration, package reuse, raw payload checks, dispatch attribution, provider retention, promotion, and C/A/D readiness. A delegated reviewer read all 55 test-related files and reported WR-03; the coordinating reviewer covered the remaining source and integration boundaries.
 
-All four original correctness/recovery warnings were repaired in commit `84405cc21fa5f7cf70cedc5ad532d37101ade2c0` and independently re-reviewed. No unresolved source issue or critical finding remains. The original 115-file standard review was followed by a focused review of 43 changed/new repair files; their union is 134 paths. Unchanged source retained its original review rather than being represented as fully re-reviewed.
+All four original correctness/recovery warnings were repaired in commit `84405cc21fa5f7cf70cedc5ad532d37101ade2c0` and independently re-reviewed. No unresolved source issue or critical finding remains. The original 115-file standard review was followed by reviews of 43 repair files and three later correction files; their union is 135 paths. Unchanged source retained its original review rather than being represented as fully re-reviewed.
 
 AGENTS.md, AGENTS.bright-builds.md, standards-overrides.md, the architecture/code-shape/verification/testing/operability/Rust standards, both active lesson files (11,548 bytes combined), Phase 15 context, Plans 01–07 and Summaries 01–06 informed the review. No scoped file was excluded by Git ignore rules. No repository-specific skill directory or additional ignore policy was found.
 
@@ -190,7 +193,17 @@ The follow-up also reviewed Windows owned-job capture, portable path guards and 
 
 `target/phase15-plan07/combined-repair-gate/passed.json` records exit 0 for ordered fmt/Clippy/build/test, private xtask all-target Clippy, **237 tests across nine focused targets**, Bright Builds, configured Markdown, actionlint and diff checks. The reviewer recomputed all 43 repair hashes and confirmed they equal both the gate inventory and committed blobs at `84405cc21fa5f7cf70cedc5ad532d37101ade2c0`.
 
-**Native Windows runtime proof remains pending.** Source review and local process controls do not replace execution of the new Windows job/capture APIs on the intended runner before accepting C. Final same-C evidence and milestone acceptance remain separate.
+At the `84405cc` review, native Windows runtime proof remained pending. Subsequent limited proof and the latest correction review are recorded below; final same-C evidence and milestone acceptance remain separate.
+
+### Follow-up at 71c0cb
+
+The three-file correction in `71c0cb617db2056b9a836d4889c6dfcc06b6a8e0` was reviewed clean: `tools/xtask/src/phase13_evidence/promotion/provider.rs` and the two direct Windows Python invocations in `.github/workflows/oracle.yml` now pass `-B` before the script, preventing imported bytecode caches from dirtying the checkout. `crates/liquidfun-differential/tests/phase9_corpus/workflow.rs` detects the identity redirection independently of formatting whitespace while preserving validator-before-identity ordering and behavioral failure controls. No new unresolved finding was identified.
+
+`target/phase15-plan07/read-only-and-workflow-repair/passed.json` records exit 0 for the ordered four Rust gates, workspace all-target/all-feature Clippy, full-workspace tests and ancillary checks. Inspection of `05.log` confirmed **2,274 passed, zero failed, one ignored**, with the ignored item explicitly identified as the fixture-regeneration utility.
+
+`target/phase15-native-portability/attempt-01/collection/validation.json` records **nine actual native Windows process controls passed** at source `3f954fe8183b665d4d1fd15dae467cce5e9e4da3`, run `34903184049`, attempt 1, job `104173806565`. The reviewer confirmed the process helper and control-test bytes are unchanged at `71c0cb`. The overall Oracle run and job **failed provenance validation**; this limited successful step is not passing Oracle or candidate acceptance. The new `-B` startup flags were source-reviewed and have not yet been rerun natively.
+
+Independent human promotion review remains required and unwaived. This code review supplies no human acknowledgement or final evidence acceptance.
 
 ## Historical warnings — all resolved in 84405cc
 
@@ -245,7 +258,7 @@ Verify the affected regression test with an enclosing `GITHUB_RUN_ATTEMPT=2`; do
 
 ## Scope and verification limits
 
-- The original primary scope contained 115 paths. The follow-up reviewed 43 repair paths, including 19 additional paths, for the explicit 134-path union in frontmatter. This is cumulative scope, not a claim that all 134 were re-reviewed from scratch at the final commit.
+- The original primary scope contained 115 paths. The first follow-up reviewed 43 repair paths, including 19 additional paths. The latest three-file follow-up added the Phase 9 workflow test, producing the explicit 135-path union in frontmatter. This is cumulative scope, not a claim that all 135 were re-reviewed from scratch at the final commit.
 - Existing assertions and prerequisite evidence were reviewed; this read-only review did not rerun broad Cargo, native, Miri, coverage, or remote suites. It does not certify new producer execution.
 - The nine-path attestation allowlist, seven-path promotion transaction, 21 producer artifacts, and 19-entry release registry were not widened in the reviewed changes.
 - Missing final-C producers, controlled-performance infrastructure, final C/A attestation, and milestone acceptance are known remaining phase work, not source findings by themselves.
