@@ -14,7 +14,7 @@ fn producers_preserve_failures_and_bound_diagnostics() -> TestResult {
 
     // Act
     let output = Command::new("timeout")
-        .args(["120", "bash"])
+        .args(["120", "bash", "-x"])
         .arg(workspace_root().join("tools/xtask/tests/safety_evidence_contract/attempts.sh"))
         .arg(&root)
         .arg(workspace_root())
@@ -25,7 +25,10 @@ fn producers_preserve_failures_and_bound_diagnostics() -> TestResult {
     // Assert
     assert!(
         output.status.success(),
-        "{}",
+        "attempt fixture exited with {}; retained at {}\nstdout:\n{}\nstderr:\n{}",
+        output.status,
+        root.display(),
+        String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
     );
     Ok(())

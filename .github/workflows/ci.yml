@@ -51,6 +51,8 @@ jobs:
             ~/.cargo/git
             target/debug
           key: ${{ runner.os }}-cargo-quality-docs-v1-1.97.0-${{ hashFiles('Cargo.lock') }}
+      - name: Check producer attempt retention before workspace validation
+        run: cargo test -p xtask --test safety_evidence_contract attempts::producers_preserve_failures_and_bound_diagnostics -- --exact --nocapture
       - name: Check formatting
         run: cargo fmt --all --check
       - name: Lint the workspace
@@ -113,6 +115,15 @@ jobs:
         run: cargo doc --workspace --all-features --no-deps
       - name: Exercise inventory checks without the native reference tree
         run: cargo test -p xtask --test inventory_cli
+      - name: Preserve failed producer attempt fixtures
+        if: failure()
+        # actions/upload-artifact v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: cargo-attempt-fixtures-${{ github.run_id }}-${{ github.run_attempt }}
+          path: target/phase15-attempt-tests/
+          if-no-files-found: warn
+          retention-days: 14
   default-features:
     name: Default features (${{ matrix.os }})
     runs-on: ${{ matrix.os }}

@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+PS4='+ attempts.sh:${LINENO}: '
 root=$1
 repository=$2
 export TEST_CANDIDATE=1111111111111111111111111111111111111111
@@ -30,6 +31,10 @@ prepare_fixture() {
 	mkdir -p "$destination/scripts"
 	cp "$repository"/scripts/phase12-{miri,rust-sanitizers,coverage}.sh "$destination/scripts/"
 	if [[ -f "$repository/scripts/phase12-attempt.sh" ]]; then cp "$repository/scripts/phase12-attempt.sh" "$destination/scripts/"; fi
+	cp "$repository/scripts/phase15-inventory-check.sh" "$destination/scripts/"
+	mkdir -p "$destination/scripts/phase15-candidate-evidence"
+	cp "$repository"/scripts/phase15-candidate-evidence/*.py "$destination/scripts/phase15-candidate-evidence/"
+	printf '# Synthetic unpromoted producer fixture\n' >"$destination/README.md"
 	cp "$repository"/rust-toolchain*.toml "$destination/"
 	mkdir -p "$destination/reference"
 	printf '{"entries":[{"id":"fixture.leaf","evidence":{"differentially_validated":{"status":"evidenced"}}}]}' >"$destination/reference/compatibility.json"

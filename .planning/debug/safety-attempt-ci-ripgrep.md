@@ -2,15 +2,15 @@
 status: verifying
 trigger: "Cargo CI producers_preserve_failures_and_bound_diagnostics fails with missing terminal.json"
 created: 2026-09-14T21:56:44Z
-updated: 2026-09-14T21:56:44Z
+updated: 2026-09-14T23:03:53Z
 ---
 
 ## Current Focus
 
-hypothesis: Confirmed incidental ripgrep prerequisite before diagnostic recording.
-test: Same source predicate using portable grep -Ei; no-rg PATH producer controls and real scanner cases.
-expecting: Missing/error/matching scans reject; clean scans and bounded attempt controls pass.
-next_action: Parent runs combined ordered gates and canonical CI; actual Miri evidence remains separately required.
+hypothesis: Subsequent current-source failure includes an uncopied inventory helper; actual Linux retained run lacked enough output to identify its failing step.
+test: Trace real fixture and retain all output; copy current producer's actual inventory helper dependency chain.
+expecting: Full local traced attempt succeeds; next Linux exact preflight independently establishes runner behavior.
+next_action: Parent runs combined gates and publishes; inspect early exact Linux attempt test and its failure artifact if needed.
 
 ## Symptoms
 
@@ -44,6 +44,14 @@ started: Candidate 00358a585f8629dbd7b4b4a486da6af0cfe94c7c Cargo CI.
   found: All five variants passed using modern Bash in target/phase15-safety-ci-repair/green-bash5-no-rg/. Prior preliminary runs using macOS /bin/bash 3 reached an unrelated empty-array failure in release validation and remain retained in green-no-rg/ and green-production-no-rg/; those are failed attempts, not passing evidence.
 - checked: Native Cargo suite and source checks.
   found: 15 native safety contract tests passed; Linux-gated attempt/scanner tests require direct shell controls on macOS, completed above. shfmt, ShellCheck with source paths and diff checks passed.
+- checked: Actual subsequent Linux Cargo CI run 34905390484 at 4e9f1edefba1f0a9a06abdc8fa2c44eaab725c1f.
+  found: Attempt assertion fails with empty stderr after 4.04 seconds; 20 adjacent tests pass. Retained log target/phase15-canonical/attempt-03/cargo-ci-failed.log does not identify the failed shell statement.
+- checked: Current-source traced fixture reproduction.
+  found: target/phase15-safety-ci-repair/traced-preflight-01/coverage-differential-success/outer.log reports missing scripts/phase15-inventory-check.sh and inventory command exit 127. Source had acquired this transitive dependency after the earlier passing fixture.
+- checked: Fixture dependency repair.
+  found: Copying the real inventory shell/Python helpers plus explicit unpromoted fixture README makes all five traced producer variants pass in traced-preflight-02/. No production edit or predicate relaxation. Actual Linux follow-up remains outstanding.
+- checked: Diagnostic CI improvements.
+  found: Rust subprocess uses bash -x with line-number PS4 and reports exit/root/stdout/stderr. Cargo CI runs the exact attempt test after cache restore before workspace validation and uploads failed attempt fixtures. actionlint, rustfmt, shfmt, diff checks and ShellCheck with existing subshell informational exclusions pass.
 
 ## Resolution
 
