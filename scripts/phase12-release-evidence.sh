@@ -9,7 +9,7 @@ readonly CLANG_TOOLCHAIN="clang-22.1.8"
 readonly COMBINED_TOOLCHAIN="clang-22.1.8+rust-1.97.0"
 readonly MAXIMUM_ARTIFACTS=21
 usage() {
-	printf 'usage: %s <check|prepare|aggregate|publish-identity-last> ...\n' "$0" >&2
+	printf 'usage: %s <check|check-platform-run|prepare|aggregate|publish-identity-last> ...\n' "$0" >&2
 	exit 64
 }
 fail() {
@@ -45,6 +45,10 @@ case "$mode" in
 check)
 	[[ $# -eq 0 ]] || usage
 	check_contract
+	;;
+check-platform-run)
+	[[ $# -eq 4 ]] || usage
+	validate_platform_run "$@"
 	;;
 prepare)
 	[[ $# -eq 6 ]] || usage

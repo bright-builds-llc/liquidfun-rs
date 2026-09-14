@@ -54,6 +54,7 @@ jobs:
       OUTPUT_DIRECTORY: target/phase12-release/${{ inputs.candidate_sha }}
       DOWNLOAD_DIRECTORY: target/phase12-release-downloads
       RELEASE_RUN_ID: ${{ github.run_id }}
+      PLATFORM_RUN_ID: ${{ inputs.platform_run_id }}
     steps:
       - name: Check out the exact candidate without submodules
         # actions/checkout v7
@@ -80,11 +81,17 @@ jobs:
           cargo install cargo-deny --version 0.20.2 --locked
           cargo deny --version | grep -Fx 'cargo-deny 0.20.2'
 
-      - name: Run inexpensive candidate checks
+      - name: Validate the selected platform workflow run
         shell: bash
-        run: >-
-          bash scripts/phase12-release-evidence.sh prepare
-          "$CANDIDATE_SHA" "$PWD/$OUTPUT_DIRECTORY" "$RELEASE_RUN_ID"
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          [[ "$PLATFORM_RUN_ID" =~ ^[1-9][0-9]*$ ]]
+          mkdir -p target
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$PLATFORM_RUN_ID" > target/platform-run.json
+          bash scripts/phase12-release-evidence.sh check-platform-run \
+            "$CANDIDATE_SHA" "$PLATFORM_RUN_ID" "$GITHUB_REPOSITORY" target/platform-run.json
 
       - name: Download exact reviewed producer artifacts
         # actions/download-artifact v8
@@ -94,6 +101,15 @@ jobs:
           run-id: ${{ inputs.platform_run_id }}
           pattern: '*-${{ inputs.platform_run_id }}-${{ inputs.candidate_sha }}'
           path: ${{ env.DOWNLOAD_DIRECTORY }}
+
+      - name: Run inexpensive candidate checks
+        shell: bash
+        run: >-
+          bash scripts/phase12-release-evidence.sh prepare
+          "$CANDIDATE_SHA" "$PWD/$OUTPUT_DIRECTORY" "$RELEASE_RUN_ID"
+          "$PLATFORM_RUN_ID"
+          "$PWD/$DOWNLOAD_DIRECTORY/phase12-package-$PLATFORM_RUN_ID-$CANDIDATE_SHA/liquidfun.crate"
+          "$PWD/$DOWNLOAD_DIRECTORY/phase12-package-$PLATFORM_RUN_ID-$CANDIDATE_SHA/package-identity.json"
 
       - name: Download exact oracle artifacts
         # actions/download-artifact v8

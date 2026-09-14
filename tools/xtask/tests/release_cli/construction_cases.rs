@@ -34,7 +34,7 @@ pub(super) fn release_constructor_is_check_first_aggregate_only_and_identity_las
         .expect("validated upload");
 
     // Assert
-    assert!(cheap < download && download < audit && audit < upload);
+    assert!(download < cheap && cheap < audit && audit < upload);
     assert_eq!(workflow.matches("release audit").count(), 1);
     assert!(workflow.contains("cancel-in-progress: false"));
     assert!(script.contains("cargo publish -p liquidfun --dry-run"));

@@ -5,6 +5,29 @@ use std::path::{Path, PathBuf};
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
+#[test]
+fn release_imports_selected_platform_package_before_preparation() -> TestResult {
+    // Arrange
+    let workflow = read(".github/workflows/release.yml")?;
+    let constructor = read("scripts/phase12-release-evidence/common.sh")?;
+
+    // Act
+    let download = workflow.find("Download exact reviewed producer artifacts");
+    let prepare = workflow.find("bash scripts/phase12-release-evidence.sh prepare");
+
+    // Assert
+    assert!(download.is_some_and(|first| prepare.is_some_and(|last| first < last)));
+    assert!(workflow.contains("PLATFORM_RUN_ID: ${{ inputs.platform_run_id }}"));
+    assert!(workflow.contains("run-id: ${{ inputs.platform_run_id }}"));
+    assert!(workflow.contains("phase12-package-$PLATFORM_RUN_ID-$CANDIDATE_SHA/liquidfun.crate"));
+    assert!(
+        workflow.contains("phase12-package-$PLATFORM_RUN_ID-$CANDIDATE_SHA/package-identity.json")
+    );
+    assert!(!constructor.contains("package create-artifact"));
+    assert!(constructor.contains("package verify-artifact"));
+    Ok(())
+}
+
 fn workspace_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .parent()

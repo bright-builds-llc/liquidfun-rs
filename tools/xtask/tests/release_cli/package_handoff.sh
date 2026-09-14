@@ -8,6 +8,18 @@ fail() {
 	exit 64
 }
 candidate=1111111111111111111111111111111111111111
+run_metadata="$root/platform-run.json"
+jq -n --arg candidate "$candidate" '{id:7,head_sha:$candidate,repository:{full_name:"test/repository"},
+ path:".github/workflows/platform.yml",status:"completed",conclusion:"success",event:"workflow_dispatch"}' >"$run_metadata"
+validate_platform_run "$candidate" 7 test/repository "$run_metadata"
+for filter in '.id=8' '.head_sha="2222222222222222222222222222222222222222"' \
+	'.repository.full_name="unrelated/repository"' '.path=".github/workflows/ci.yml"' \
+	'.status="in_progress"' '.conclusion="failure"'; do
+	jq "$filter" "$run_metadata" >"$root/unrelated-run.json"
+	if (validate_platform_run "$candidate" 7 test/repository "$root/unrelated-run.json"); then
+		fail "accepted unrelated producer: $filter"
+	fi
+done
 package="$root/phase12-package-7-$candidate"
 mkdir -p "$package" "$root/output"
 printf 'test-only package bytes\n' >"$package/liquidfun.crate"
@@ -64,9 +76,12 @@ for mutation in same changed missing failed mutable; do
 	import_platform_package "$candidate" "$destination" 7 "$package/liquidfun.crate" "$package/package-identity.json"
 	cargo() {
 		[[ "$*" == 'publish -p liquidfun --dry-run' ]] || fail 'unexpected Cargo operation'
-		[[ "$mutation" != failed ]] || return 1
 		mkdir -p "$CARGO_TARGET_DIR/package/tmp-crate"
 		case "$mutation" in
+		failed)
+			cp "$package/liquidfun.crate" "$CARGO_TARGET_DIR/package/tmp-crate/liquidfun-0.1.0.crate"
+			return 1
+			;;
 		same) cp "$package/liquidfun.crate" "$CARGO_TARGET_DIR/package/tmp-crate/liquidfun-0.1.0.crate" ;;
 		changed) printf 'different' >"$CARGO_TARGET_DIR/package/tmp-crate/liquidfun-0.1.0.crate" ;;
 		mutable)
