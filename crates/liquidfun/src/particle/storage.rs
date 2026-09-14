@@ -34,6 +34,8 @@ mod mutation;
 pub(in crate::particle) mod permutation;
 mod runtime;
 mod solver_state;
+#[cfg(test)]
+mod transaction_test_support;
 mod validation;
 
 pub(crate) use mutation::{GroupPlan, GroupPlanError, GroupPlanInput, SplitPlanError};

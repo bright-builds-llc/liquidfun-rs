@@ -32,6 +32,40 @@ pub(crate) struct Arena<T, H> {
 }
 
 impl<T, H: HandleIdentity> Arena<T, H> {
+    #[cfg(test)]
+    pub(crate) fn assert_same_state_for_test(&self, before: &Self, compare: impl Fn(&T, &T)) {
+        assert!(self.world == before.world);
+        assert_eq!(self.free_slots, before.free_slots);
+        assert_eq!(self.retired_slots, before.retired_slots);
+        assert_eq!(self.max_slots, before.max_slots);
+        assert_eq!(self.slots.len(), before.slots.len());
+        for (after, before) in self.slots.iter().zip(&before.slots) {
+            match (after, before) {
+                (
+                    Slot::Occupied {
+                        generation: a,
+                        maybe_particle_system: sa,
+                        value: va,
+                    },
+                    Slot::Occupied {
+                        generation: b,
+                        maybe_particle_system: sb,
+                        value: vb,
+                    },
+                ) => {
+                    assert_eq!(a, b);
+                    assert!(sa == sb);
+                    compare(va, vb);
+                }
+                (Slot::Vacant { generation: a }, Slot::Vacant { generation: b }) => {
+                    assert_eq!(a, b);
+                }
+                (Slot::Retired, Slot::Retired) => {}
+                _ => panic!("arena slot state changed"),
+            }
+        }
+    }
+
     pub(crate) fn new(world: WorldKey, max_slots: usize) -> Self {
         Self {
             world,

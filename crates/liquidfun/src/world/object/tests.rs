@@ -1,5 +1,7 @@
 use super::*;
 
+mod particle_group_transactions;
+
 fn test_world() -> World {
     World::new().expect("test world key should remain available")
 }
