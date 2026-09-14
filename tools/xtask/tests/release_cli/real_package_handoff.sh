@@ -4,14 +4,16 @@ root=$1
 source_root=$2
 xtask=$3
 repository_root="$root/repository"
-mkdir "$repository_root"
-git -C "$source_root" archive HEAD | tar -x -C "$repository_root"
-git -C "$repository_root" init -q
-git -C "$repository_root" add Cargo.toml Cargo.lock crates LICENSE README.md THIRD_PARTY_NOTICES.md reference/platform .cargo
-git -C "$repository_root" -c user.name=Test -c user.email=test@example.invalid commit -qm 'Isolated package test source'
+candidate=$(git -C "$source_root" rev-parse HEAD)
+git clone --shared --no-checkout "$source_root" "$repository_root"
+git -C "$repository_root" checkout --detach "$candidate"
 cd "$repository_root"
+[[ -z "$(git status --porcelain)" ]] || {
+	printf 'package source is dirty\n' >&2
+	exit 1
+}
 test ! -f third_party/liquidfun/liquidfun/Box2D/CMakeLists.txt
-candidate=$(git rev-parse HEAD)
+[[ "$(git rev-parse HEAD)" == "$candidate" ]]
 package="$repository_root/target/phase12-package-7-$candidate"
 export CARGO_TARGET_DIR="$repository_root/target/build"
 export LIQUIDFUN_XTASK_ROOT="$repository_root"

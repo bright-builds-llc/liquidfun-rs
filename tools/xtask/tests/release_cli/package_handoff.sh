@@ -70,6 +70,14 @@ for mutation in candidate hash bytes missing symlink ancestor run traversal; do
 	printf 'test-only package bytes\n' >"$package/liquidfun.crate"
 done
 
+# A dangling destination link must not redirect the copied archive.
+mkdir -p "$root/destination-link/package"
+ln -s "$root/escaped.crate" "$root/destination-link/package/liquidfun.crate"
+if (import_platform_package "$candidate" "$root/destination-link" 7 "$package/liquidfun.crate" "$package/package-identity.json"); then
+	fail 'accepted a dangling destination symlink'
+fi
+test ! -e "$root/escaped.crate"
+
 # Synthetic Cargo failures test the release shell boundary, not release readiness.
 for mutation in same changed missing failed mutable; do
 	destination="$root/dry-$mutation"

@@ -19,6 +19,8 @@ import_platform_package() {
 	validate_run_id "$platform_run_id"
 	validate_target_path "$output_directory"
 	validate_target_path "$output_directory/package"
+	validate_target_path "$output_directory/package/liquidfun.crate"
+	validate_target_path "$output_directory/package/package-identity.json"
 	validate_target_path "$archive"
 	validate_target_path "$identity"
 	local directory=${archive%/*}
