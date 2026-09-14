@@ -166,7 +166,7 @@ Completion review: Four sequential plans (eight tasks) replace the stale three-p
 - [x] Validate four-plan lifecycle, dependencies, standing authority and remote synchronization.
 - [x] Recover an executable local verification boundary and finalize pending planning artifacts.
 - [x] Execute Plan 14-01 and retain actual Windows first-transition diagnosis.
-- [ ] Execute Plan 14-02 root-cause repair and private rollback proof.
+- [x] Execute Plan 14-02 root-cause repair and private rollback proof.
 - [ ] Execute Plan 14-03 public fixed-input and property regressions.
 - [ ] Execute Plan 14-04 and retain same-SHA Windows/Linux/macOS D2 results.
 - [ ] Complete code review, regression checks, independent phase verification and publication.
@@ -176,3 +176,5 @@ Authority: AGENTS.md standing autonomous iteration authorization dated 2026-09-1
 Baseline verification: Ordered format, Clippy, all-target build and all-feature tests passed using local Linux ARM64 Docker with exact Rust 1.97.0, immutable image `sha256:5f3d56072c0c734ebb2381c59f0a20db1330b8884134c4e3a9d369de2d810ea8`, and the existing Rust/cache volumes. Full log: `target/phase14-local-verification/attempt-20260914-linux-container-network/gate.log`. The offline attempt lacked workspace dependency metadata and was retained separately; normal index refresh resolved it. Earlier macOS partial runs and startup-inventory attempts remain non-passing diagnostics. No security setting changed. Native macOS and Windows repaired-source proof remains required in Plan 14-04.
 
 Wave 1 review: `a2759db` retained inputs; diagnostic `f4ef739` proved the Windows operation-14 join reservation failure at 8,589,934,588 bytes for ten particles; `49e382f` removed every probe after passing 987 tests and restored pre-probe source/CI bytes. The trace digest was independently recomputed. Plan 02 now explicitly owns scratch sizing and bounded allocation regressions. Prerequisite CI corrections: `8b4eb56` installs existing formatter plugins; `030c893` preserves all four concurrent CLI evidence cases while restoring workspace Clippy. Neither correction claims repaired Windows physics.
+
+Wave 2 review: `e58e028` bounds scratch reservation and requires valid original replay; `88643e0` adds complete private rollback/allocation evidence; `800a51c` handles candidate-only resource failures with the existing typed boundary; `265598a` records the summary. Final local gate: 998 tests, zero managed findings. The earlier sizing candidate e58e028 passed default-feature Windows, Linux and macOS jobs in run 34800684869; raw logs, source identities and digests are retained separately. This does not label later commits platform-validated or close the full quality lane.
