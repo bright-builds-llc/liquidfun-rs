@@ -110,7 +110,7 @@ fn cli_reuse_and_sanitizer_bundles_bind_the_second_request_and_session_identity(
                         "--session-profile",
                         profile,
                     ];
-                    let (output, fake_root) = run_cli_with_root(&root, behavior, &arguments);
+                    let (output, fake_root) = run_cli_with_root(root, behavior, &arguments);
                     (
                         preset,
                         profile,
@@ -130,62 +130,77 @@ fn cli_reuse_and_sanitizer_bundles_bind_the_second_request_and_session_identity(
 
     // Assert
     for (preset, profile, behavior, exit_code, result_kind, output, fake_root) in results {
-        let directory = only_failure_directory(&fake_root);
-        let manifest: serde_json::Value = serde_json::from_slice(
-            &fs::read(directory.join("manifest.json")).expect("manifest should be readable"),
-        )
-        .expect("manifest should be JSON");
-        let request_bytes =
-            fs::read(directory.join("request.jsonl")).expect("request should be readable");
-        let request =
-            decode_scenario_request_jsonl(&request_bytes, &HarnessLimits::phase2_default_v1())
-                .expect("persisted request should validate");
-        let canonical = encode_jsonl(
-            &request,
-            &HarnessLimits::phase2_default_v1(),
-            RecordLimit::Input,
-        )
-        .expect("persisted request should re-encode");
-        let report: serde_json::Value = serde_json::from_slice(
-            &fs::read(directory.join("report.json")).expect("report should be readable"),
-        )
-        .expect("report should be JSON");
-        let identity: serde_json::Value = serde_json::from_slice(
-            &fs::read(directory.join("identity.json")).expect("identity should be readable"),
-        )
-        .expect("identity should be JSON");
-        let failure_kind = report["failure_kind"].as_str().unwrap_or("not_applicable");
-        let diagnostic = format!(
-            "{preset}/{profile}/{behavior}: exit={:?}, result_kind={}, failure_kind={failure_kind}, stderr={}",
-            output.status.code(),
-            report["result_kind"],
-            String::from_utf8_lossy(&output.stderr)
+        assert_second_request_bundle(
+            (preset, profile, behavior, exit_code, result_kind),
+            &output,
+            &fake_root,
+            &expected_request_id,
         );
-        let session_identity = identity["session_identity_sha256"]
-            .as_str()
-            .unwrap_or_else(|| panic!("validated session identity should be present: {diagnostic}"));
+    }
+}
 
-        assert_eq!(output.status.code(), Some(exit_code), "{diagnostic}");
-        assert_eq!(request_bytes, canonical, "{diagnostic}");
-        assert_eq!(request.request_id().as_str(), expected_request_id, "{diagnostic}");
-        assert_eq!(manifest["request_id"], expected_request_id, "{diagnostic}");
-        assert_eq!(manifest["result_kind"], result_kind, "{diagnostic}");
-        assert_eq!(report["request_id"], expected_request_id, "{diagnostic}");
-        assert_eq!(report["result_kind"], result_kind, "{diagnostic}");
+fn assert_second_request_bundle(
+    case: (&str, &str, &str, i32, &str),
+    output: &std::process::Output,
+    fake_root: &Path,
+    expected_request_id: &str,
+) {
+    let (preset, profile, behavior, exit_code, result_kind) = case;
+    let directory = only_failure_directory(fake_root);
+    let manifest: serde_json::Value = serde_json::from_slice(
+        &fs::read(directory.join("manifest.json")).expect("manifest should be readable"),
+    )
+    .expect("manifest should be JSON");
+    let request_bytes =
+        fs::read(directory.join("request.jsonl")).expect("request should be readable");
+    let request =
+        decode_scenario_request_jsonl(&request_bytes, &HarnessLimits::phase2_default_v1())
+            .expect("persisted request should validate");
+    let canonical = encode_jsonl(
+        &request,
+        &HarnessLimits::phase2_default_v1(),
+        RecordLimit::Input,
+    )
+    .expect("persisted request should re-encode");
+    let report: serde_json::Value = serde_json::from_slice(
+        &fs::read(directory.join("report.json")).expect("report should be readable"),
+    )
+    .expect("report should be JSON");
+    let identity: serde_json::Value = serde_json::from_slice(
+        &fs::read(directory.join("identity.json")).expect("identity should be readable"),
+    )
+    .expect("identity should be JSON");
+    let failure_kind = report["failure_kind"].as_str().unwrap_or("not_applicable");
+    let diagnostic = format!(
+        "{preset}/{profile}/{behavior}: exit={:?}, result_kind={}, failure_kind={failure_kind}, stderr={}",
+        output.status.code(),
+        report["result_kind"],
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let session_identity = identity["session_identity_sha256"]
+        .as_str()
+        .unwrap_or_else(|| panic!("validated session identity should be present: {diagnostic}"));
+
+    assert_eq!(output.status.code(), Some(exit_code), "{diagnostic}");
+    assert_eq!(request_bytes, canonical, "{diagnostic}");
+    assert_eq!(request.request_id().as_str(), expected_request_id, "{diagnostic}");
+    assert_eq!(manifest["request_id"], expected_request_id, "{diagnostic}");
+    assert_eq!(manifest["result_kind"], result_kind, "{diagnostic}");
+    assert_eq!(report["request_id"], expected_request_id, "{diagnostic}");
+    assert_eq!(report["result_kind"], result_kind, "{diagnostic}");
+    assert_eq!(
+        report["session_identity_sha256"], session_identity,
+        "{diagnostic}"
+    );
+    assert_eq!(session_identity.len(), 64, "{diagnostic}");
+    assert!(
+        session_identity.bytes().all(|byte| byte.is_ascii_hexdigit()),
+        "{diagnostic}"
+    );
+    if result_kind == "physics_mismatch" {
         assert_eq!(
-            report["session_identity_sha256"], session_identity,
+            report["mismatch"]["request_id"], expected_request_id,
             "{diagnostic}"
         );
-        assert_eq!(session_identity.len(), 64, "{diagnostic}");
-        assert!(
-            session_identity.bytes().all(|byte| byte.is_ascii_hexdigit()),
-            "{diagnostic}"
-        );
-        if result_kind == "physics_mismatch" {
-            assert_eq!(
-                report["mismatch"]["request_id"], expected_request_id,
-                "{diagnostic}"
-            );
-        }
     }
 }
