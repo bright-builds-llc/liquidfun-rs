@@ -47,6 +47,7 @@ jobs:
         run: scripts/phase12-regressions.sh run "$CANDIDATE_SHA"
       - name: Verify typed identity-last regression evidence
         run: |
+          set -euo pipefail
           evidence="target/phase12-regressions/$CANDIDATE_SHA"
           test -s "$evidence/completion.json"
           test -s "$evidence/identity.json"
@@ -56,16 +57,16 @@ jobs:
 
           # shellcheck disable=SC2016
           completion_pattern='mv -- "$completion_staging" "$output_directory/completion.json"'
-          completion_line=$(rg -n --fixed-strings "$completion_pattern" \
+          completion_line=$(grep -nF "$completion_pattern" \
             scripts/phase12-regressions.sh | cut -d: -f1)
           # shellcheck disable=SC2016
           validator_command='cargo xtask safety-evidence validate-regression-results --candidate "$candidate_sha" --results "target/phase12-regressions/$candidate_sha"'
-          test "$(rg -c --fixed-strings "$validator_command" scripts/phase12-regressions.sh)" = 1
-          validator_line=$(rg -n --fixed-strings "$validator_command" \
+          test "$(grep -cF "$validator_command" scripts/phase12-regressions.sh)" = 1
+          validator_line=$(grep -nF "$validator_command" \
             scripts/phase12-regressions.sh | cut -d: -f1)
           # shellcheck disable=SC2016
           identity_pattern='write_producer_identity_last "$output_directory" "$candidate_sha"'
-          identity_line=$(rg -n --fixed-strings "$identity_pattern" \
+          identity_line=$(grep -nF "$identity_pattern" \
             scripts/phase12-regressions.sh | cut -d: -f1)
           test "$completion_line" -lt "$validator_line"
           test "$validator_line" -lt "$identity_line"

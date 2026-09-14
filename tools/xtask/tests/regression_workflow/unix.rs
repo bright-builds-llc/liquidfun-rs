@@ -230,6 +230,59 @@ fn fake_cargo() -> &'static str {
 }
 
 #[test]
+fn actual_workflow_verification_runs_without_ripgrep() -> TestResult {
+    // Arrange
+    let fixture = Fixture::new(&valid_entry())?;
+    assert!(fixture.run("valid")?.status.success());
+    let source = super::workflow_source()?;
+    let step = source
+        .split_once("- name: Verify typed identity-last regression evidence")
+        .ok_or("verification step missing")?
+        .1
+        .split_once("run: |\n")
+        .ok_or("verification command missing")?
+        .1
+        .split("\n      - name:")
+        .next()
+        .ok_or("verification body missing")?;
+    let script = step
+        .lines()
+        .map(|line| line.strip_prefix("          ").unwrap_or(line))
+        .collect::<Vec<_>>()
+        .join("\n")
+        .replace("${{ github.workflow }}", "fixture-workflow")
+        .replace("${{ github.job }}", "fixture-job")
+        .replace("${{ github.run_id }}", "42");
+    let minimal_bin = fixture.root.join("verification-bin");
+    fs::create_dir(&minimal_bin)?;
+    let inherited = env::var_os("PATH").ok_or("PATH required")?;
+    let find_tool = |name: &str| {
+        env::split_paths(&inherited)
+            .map(|directory| directory.join(name))
+            .find(|path| path.is_file())
+            .ok_or("required host tool missing")
+    };
+    for name in ["grep", "jq", "cut", "awk", "sha256sum"] {
+        std::os::unix::fs::symlink(find_tool(name)?, minimal_bin.join(name))?;
+    }
+    // Act
+    let output = Command::new(find_tool("timeout")?)
+        .args(["30s", "/bin/bash", "-euo", "pipefail", "-c"])
+        .arg(script)
+        .env("PATH", minimal_bin)
+        .env("CANDIDATE_SHA", CANDIDATE)
+        .current_dir(&fixture.root)
+        .output()?;
+    // Assert
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    Ok(())
+}
+
+#[test]
 fn invariant_class_flows_from_real_typed_projection_to_exact_replay() -> TestResult {
     // Arrange
     let mut entry = valid_entry();
