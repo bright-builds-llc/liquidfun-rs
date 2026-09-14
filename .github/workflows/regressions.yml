@@ -89,3 +89,12 @@ jobs:
           path: target/phase12-regressions/${{ env.CANDIDATE_SHA }}
           if-no-files-found: error
           retention-days: 14
+      - name: Preserve bounded regression diagnostics on every outcome
+        if: always()
+        # actions/upload-artifact v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: phase12-regression-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}-${{ env.CANDIDATE_SHA }}
+          path: target/phase12-regression-diagnostics/${{ env.CANDIDATE_SHA }}
+          if-no-files-found: warn
+          retention-days: 14
