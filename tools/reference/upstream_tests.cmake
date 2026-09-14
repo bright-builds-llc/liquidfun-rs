@@ -13,6 +13,12 @@ target_include_directories(liquidfun-upstream-gtest PRIVATE "${UPSTREAM_GTEST_RO
 target_link_libraries(liquidfun-upstream-gtest PUBLIC Threads::Threads)
 set_target_properties(liquidfun-upstream-gtest PROPERTIES CXX_STANDARD 11 CXX_STANDARD_REQUIRED ON)
 target_compile_options(liquidfun-upstream-gtest PRIVATE -Wall -Werror)
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "22")
+  # Pinned gtest's StackGrowsDown passes an uninitialized local's address only
+  # for stack-address comparison; StackLowerThanAddress never reads its value.
+  # Keep Clang 22's warning visible on this third-party translation unit alone.
+  target_compile_options(liquidfun-upstream-gtest PRIVATE -Wno-error=uninitialized-const-pointer)
+endif()
 
 set(UPSTREAM_TEST_NAMES
   BlockAllocator BodyContacts Callback Color Common Confinement Conservation

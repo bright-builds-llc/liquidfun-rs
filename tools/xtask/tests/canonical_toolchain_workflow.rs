@@ -90,3 +90,21 @@ fn canonical_native_builds_all_four_presets_without_modifying_upstream() -> Test
     ));
     Ok(())
 }
+
+#[test]
+fn legacy_stack_probe_warning_exception_is_confined_to_pinned_gtest() -> TestResult {
+    // Arrange
+    let source = fs::read_to_string(root().join("tools/reference/upstream_tests.cmake"))?;
+    // Act
+    let exception = "-Wno-error=uninitialized-const-pointer";
+    // Assert
+    assert_eq!(source.matches(exception).count(), 1);
+    assert!(source.contains(&format!(
+        "target_compile_options(liquidfun-upstream-gtest PRIVATE {exception})"
+    )));
+    assert!(
+        source.contains("target_compile_options(liquidfun-upstream-gtest PRIVATE -Wall -Werror)")
+    );
+    assert!(source.contains("target_compile_options(${test_target} PRIVATE -Wall -Werror"));
+    Ok(())
+}
