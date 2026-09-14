@@ -10,7 +10,9 @@ mod performance;
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use liquidfun_test_protocol::performance::{
     PerformanceMatrix, PerformanceSizePoint, PerformanceWorkloadKind,
@@ -147,8 +149,7 @@ fn closed_cli_rejects_unknown_modes_and_paths() {
 #[test]
 fn paired_check_validates_sealed_inputs_without_running_measurements() {
     // Arrange
-    let environment = PerformanceEnvironment::production()
-        .expect("workspace and reviewed release oracle are available");
+    let environment = test_environment("paired-check");
     let mut provider = FakeProvider::successful();
     let args = vec!["paired".to_owned(), "--check".to_owned()];
 
@@ -158,6 +159,44 @@ fn paired_check_validates_sealed_inputs_without_running_measurements() {
     // Assert
     assert_eq!(result, Ok(()));
     assert!(provider.calls.is_empty());
+}
+
+#[test]
+fn paired_rejects_missing_oracle_before_provider_or_completion() {
+    assert_missing_oracle_is_rejected(false);
+}
+
+#[test]
+fn paired_check_still_requires_an_oracle() {
+    assert_missing_oracle_is_rejected(true);
+}
+
+fn assert_missing_oracle_is_rejected(check: bool) {
+    // Arrange
+    let environment = test_environment("missing-oracle");
+    let target = environment.output_root().parent().expect("fixture target");
+    fs::remove_file(fixture_oracle(target)).expect("remove this fixture's sentinel");
+    let mut provider = FakeProvider::successful();
+    let mut args = vec!["paired".to_owned()];
+    if check {
+        args.push("--check".to_owned());
+    }
+
+    // Act
+    let result = run_with_provider(&args, &environment, &mut provider);
+
+    // Assert
+    assert_eq!(
+        result.expect_err("oracle is required").kind(),
+        "oracle_release"
+    );
+    assert!(provider.calls.is_empty());
+    assert!(
+        !environment
+            .output_root()
+            .join("paired-summary.json")
+            .exists()
+    );
 }
 
 #[test]
@@ -309,16 +348,39 @@ fn size_point_id(size: PerformanceSizePoint) -> &'static str {
 
 fn test_environment(label: &str) -> PerformanceEnvironment {
     let ordinal = TEST_ORDINAL.fetch_add(1, Ordering::Relaxed);
-    let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+    let workspace = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("../..")
         .canonicalize()
         .expect("workspace root");
-    let output = root
-        .join("target/phase12-performance/tests")
-        .join(format!("{label}-{}-{ordinal}", std::process::id()));
-    if output.exists() {
-        fs::remove_dir_all(&output).expect("remove stale test output");
+    let fixture_parent = workspace.join("target/phase12-performance/tests");
+    fs::create_dir_all(&fixture_parent).expect("fixture parent");
+    let timestamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("clock follows epoch")
+        .as_nanos();
+    let root = fixture_parent.join(format!(
+        "{label}-{}-{ordinal}-{timestamp}",
+        std::process::id()
+    ));
+    fs::create_dir(&root).expect("claim a fresh fixture root");
+    fs::create_dir_all(root.join("reference/performance")).expect("fixture policies");
+    for relative in [
+        "reference/performance/policy.json",
+        "reference/performance/manifest.toml",
+    ] {
+        fs::copy(workspace.join(relative), root.join(relative)).expect("copy reviewed policy");
     }
+    let target = root.join("target");
+    let oracle = fixture_oracle(&target);
+    fs::create_dir_all(oracle.parent().expect("oracle parent")).expect("fixture preset");
+    fs::write(&oracle, b"fixture sentinel: must never execute\n").expect("fixture oracle");
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        fs::set_permissions(&oracle, fs::Permissions::from_mode(0o700))
+            .expect("fixture executable permissions");
+    }
+    let output = target.join("output");
     let environment =
         PerformanceEnvironment::for_test(&root, &output).expect("confined test environment");
     let mut workloads = BTreeSet::new();
@@ -326,4 +388,13 @@ fn test_environment(label: &str) -> PerformanceEnvironment {
         assert!(workloads.insert(workload));
     }
     environment
+}
+
+fn fixture_oracle(target: &Path) -> PathBuf {
+    let name = if cfg!(windows) {
+        "liquidfun-reference.exe"
+    } else {
+        "liquidfun-reference"
+    };
+    target.join("reference/oracle-release").join(name)
 }
