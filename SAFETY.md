@@ -103,3 +103,19 @@ path requires a separate reviewed architecture decision, a safe behavioral
 baseline, a narrow documented invariant, focused tests, measured need, and all
 compatibility gates. The current release contract does not weaken the
 prohibition.
+
+## Miri interpreter modes
+
+The pinned `nightly-2026-07-15` producer interprets the explicit
+`x86_64-unknown-linux-gnu` target. Default Miri runs all 44 other math tests and
+the existing arena, identity, collision, protocol, permutation, and group-model
+subsets. Only `math::sweep::tests::transform_endpoints_preserve_exact_expected_bits`
+runs separately with `--exact` and `-Zmiri-no-extra-rounding-error`: independent
+transcendental calls otherwise receive independent interpreter rounding errors.
+All UB checks remain enabled. Native assertions and production math are unchanged.
+
+Evidence records each command, flags, compiler identity, target, nonzero passed
+count, zero ignored count, and bounded hashed log. Both math modes are required
+before publishing the final identity. Scanner absence or failure is an error.
+Existing attempt directories are preserved. This interpreter evidence does not
+establish native numerical parity.

@@ -1,5 +1,9 @@
 //! Typed safety-evidence contract and closed CLI tests.
 
+#[cfg(target_os = "linux")]
+#[path = "safety_evidence_contract/miri.rs"]
+mod miri;
+
 use std::{
     fs,
     path::{Path, PathBuf},
