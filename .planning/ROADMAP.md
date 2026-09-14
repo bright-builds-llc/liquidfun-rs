@@ -22,7 +22,7 @@ The v1 roadmap moves from an immutable, licensed source of truth to a semantic c
 - [x] **Phase 12: Performance, Portability, and Release Hardening** - Prove performance, safety, platform, documentation, packaging, and zero-gap v1 readiness. (completed 2026-07-24)
 - [x] **Phase 13: Restore Evidence and Replay Integrity** - Repair exact-head provenance and reviewed catalog replay before accepting current compatibility evidence. (completed 2026-07-27)
 - [x] **Phase 13.1: Restore Bright Builds Structural Compliance** - Refactor every repository-owned file-length finding without behavioral or evidence drift; corrected-candidate evidence closure remains in progress. (completed 2026-09-13)
-- [ ] **Phase 14: Repair Windows Particle-Group Invariants** - Remove the supported-Windows authoritative-storage panic and restore transactional particle-group behavior.
+- [x] **Phase 14: Repair Windows Particle-Group Invariants** - Remove the supported-Windows authoritative-storage panic and restore transactional particle-group behavior. (completed 2026-09-14)
 - [ ] **Phase 15: Re-establish Candidate Evidence** - Produce and attest a green exact-head release-candidate evidence bundle after all implementation and replay gaps close.
 
 ## Phase Details
@@ -356,7 +356,7 @@ Plans:
 - [x] 14-01-PLAN.md — Preserve original/current Windows failures and demonstrate the first invalid candidate transition.
 - [x] 14-02-PLAN.md — Repair the demonstrated transition and prove complete private rollback and valid success.
 - [x] 14-03-PLAN.md — Complete named public replays, typed outcomes and transactional rejection coverage.
-- [ ] 14-04-PLAN.md — Reuse the supported OS matrix and retain exact-SHA D2 proof through authorized iteration.
+- [x] 14-04-PLAN.md — Reuse the supported OS matrix and retain exact-SHA D2 proof through authorized iteration.
 
 ### Phase 15: Re-establish Candidate Evidence
 
@@ -393,7 +393,7 @@ Plans:
 | 12. Performance, Portability, and Release Hardening | 25/25 | Complete    | 2026-07-24 |
 | 13. Restore Evidence and Replay Integrity | 5/5 | Complete    | 2026-07-27 |
 | 13.1. Restore Bright Builds Structural Compliance | 25/25 | Complete    | 2026-09-13 |
-| 14. Repair Windows Particle-Group Invariants | 3/4 | In Progress | — |
+| 14. Repair Windows Particle-Group Invariants | 4/4 | Complete    | 2026-09-14 |
 | 15. Re-establish Candidate Evidence | 0/TBD | Not started | — |
 
 *Roadmap created: 2026-07-09*

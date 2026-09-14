@@ -83,14 +83,14 @@ Requirements for the first release permitted to claim complete parity with the s
 
 - [x] **PART-01**: Consumers can create, configure, pause, inspect, and destroy multiple particle systems with upstream-equivalent density, radius, damping, gravity scale, strict-contact, capacity, and iteration controls.
 - [x] **PART-02**: Consumers can create and destroy individual particles with positions, velocities, colors, flags, lifetimes, user data, and stable public identities.
-- [ ] **PART-03**: Dense particle indices may change during sorting, rotation, and compaction while stable public particle IDs continue to resolve correctly until destruction.
-- [ ] **PART-04**: Every particle storage permutation updates required and optional SoA lanes, ID maps, proxies, contacts, pairs, triads, lifetimes, and group ranges atomically.
+- [x] **PART-03**: Dense particle indices may change during sorting, rotation, and compaction while stable public particle IDs continue to resolve correctly until destruction.
+- [x] **PART-04**: Every particle storage permutation updates required and optional SoA lanes, ID maps, proxies, contacts, pairs, triads, lifetimes, and group ranges atomically.
 - [x] **PART-05**: Consumers can inspect positions, velocities, colors, weights, flags, groups, user data, contacts, body contacts, pairs, triads, and expiration ordering through safe bulk APIs.
 - [x] **PART-06**: Consumers can supply supported particle buffers with upstream-equivalent capacity constraints and receive explicit failure rather than silent reallocation or aliasing violations.
 - [x] **PART-07**: Particle proxies, sorting, neighborhood generation, particle contacts, fixture/body contacts, and strict-contact behavior match the selected upstream behavior.
 - [x] **PART-08**: Finite/infinite lifetimes, quantized expiration order, destroy-by-age, oldest-particle destruction, maximum counts, zombie marking, and deferred compaction match upstream behavior.
-- [ ] **PART-09**: Consumers can create particle groups from shapes, strokes, explicit positions, or existing groups and can inspect their ranges, flags, transforms, velocities, mass, and inertia.
-- [ ] **PART-10**: Group creation, destruction, joining, splitting, connectivity, can-be-empty behavior, solid depth updates, rigid motion, and contiguous membership preserve upstream semantics.
+- [x] **PART-09**: Consumers can create particle groups from shapes, strokes, explicit positions, or existing groups and can inspect their ranges, flags, transforms, velocities, mass, and inertia.
+- [x] **PART-10**: Group creation, destruction, joining, splitting, connectivity, can-be-empty behavior, solid depth updates, rigid motion, and contiguous membership preserve upstream semantics.
 - [x] **PART-11**: Voronoi-based topology, pair generation, triad generation, and reactive regeneration produce upstream-equivalent constraints and membership.
 - [x] **PART-12**: Baseline particle passes for collision, gravity, pressure, damping, rigid damping, extra damping, force application, velocity limiting, and lifetime solving run in the pinned upstream order.
 - [x] **PART-13**: Water, wall, spring, elastic, viscous, powder, tensile, barrier, static-pressure, reactive, repulsive, and color-mixing particle behaviors match the selected upstream behavior.
@@ -103,9 +103,9 @@ Requirements for the first release permitted to claim complete parity with the s
 ### Verification and Regression Protection
 
 - [x] **TEST-01**: Pure math, geometry, ordering, identity, and solver kernels have focused unit tests with one primary concern and clear Arrange/Act/Assert structure.
-- [ ] **TEST-02**: Public world, rigid-body, joint, particle, callback, query, and destruction workflows have integration tests through supported APIs.
+- [x] **TEST-02**: Public world, rigid-body, joint, particle, callback, query, and destruction workflows have integration tests through supported APIs.
 - [x] **TEST-03**: Every applicable upstream test is ported, replaced by equivalent evidence, or documented as irrelevant with a reviewed rationale.
-- [ ] **TEST-04**: Property tests cover geometry invariants, broad-phase behavior, handle validity, particle permutation/group invariants, query correctness, and reproducible world operation sequences.
+- [x] **TEST-04**: Property tests cover geometry invariants, broad-phase behavior, handle validity, particle permutation/group invariants, query correctness, and reproducible world operation sequences.
 - [x] **TEST-05**: Fuzz targets cover shape/collision inputs, scenario protocol parsing, world mutation sequences, particle operations, and every unsafe boundary appropriate for fuzzing.
 - [x] **TEST-06**: Miri and Rust sanitizers exercise useful supported subsets, while C++ oracle builds run appropriate sanitizers without crossing failures into the Rust process.
 - [x] **TEST-07**: Every corrected differential mismatch becomes a minimized named regression that fails before the fix and records its oracle/tolerance provenance.
@@ -250,14 +250,14 @@ Roadmap creation maps every v1 requirement to exactly one phase.
 | JOIN-05 | Phase 8 | Complete |
 | PART-01 | Phase 9 | Complete |
 | PART-02 | Phase 9 | Complete |
-| PART-03 | Phase 9 → Phase 14 | Pending |
-| PART-04 | Phase 9 → Phase 14 | Pending |
+| PART-03 | Phase 9 → Phase 14 | Complete |
+| PART-04 | Phase 9 → Phase 14 | Complete |
 | PART-05 | Phase 9 | Complete |
 | PART-06 | Phase 9 | Complete |
 | PART-07 | Phase 9 | Complete |
 | PART-08 | Phase 9 | Complete |
-| PART-09 | Phase 10 → Phase 14 | Pending |
-| PART-10 | Phase 10 → Phase 14 | Pending |
+| PART-09 | Phase 10 → Phase 14 | Complete |
+| PART-10 | Phase 10 → Phase 14 | Complete |
 | PART-11 | Phase 10 | Complete |
 | PART-12 | Phase 10 | Complete |
 | PART-13 | Phase 10 | Complete |
@@ -267,9 +267,9 @@ Roadmap creation maps every v1 requirement to exactly one phase.
 | PART-17 | Phase 9 | Complete |
 | PART-18 | Phase 10 | Complete |
 | TEST-01 | Phase 10 | Complete |
-| TEST-02 | Phase 10 → Phase 14 | Pending |
+| TEST-02 | Phase 10 → Phase 14 | Complete |
 | TEST-03 | Phase 11 | Complete |
-| TEST-04 | Phase 10 → Phase 14 | Pending |
+| TEST-04 | Phase 10 → Phase 14 | Complete |
 | TEST-05 | Phase 12 | Complete |
 | TEST-06 | Phase 12 | Complete |
 | TEST-07 | Phase 12 → Phase 13 | Complete |
@@ -308,7 +308,7 @@ Roadmap creation maps every v1 requirement to exactly one phase.
 - v1 requirements: 108
 - Mapped to phases: 108
 - Unmapped: 0 ✓
-- Pending gap-closure requirements: 15
+- Pending gap-closure requirements: 3
 
 *Requirements defined: 2026-07-09*
-*Last updated: 2026-07-25 after v1.0 milestone gap planning*
+*Last updated: 2026-09-14 after Phase 14 verification; three Phase 15 requirements remain pending.*

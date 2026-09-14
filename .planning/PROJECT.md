@@ -28,6 +28,8 @@ Deliver an independent, maintainable Rust physics engine whose LiquidFun behavio
 
 - [x] Phase 13.1 restored structural compliance and closed its verification gaps with a complete 72-command local/canonical matrix, independently validated durable evidence, and formal verification at 36/36 with the accepted integration-history override.
 
+- [x] Phase 14 repaired Windows particle-group scratch allocation, preserved typed rejection and complete rollback contracts, and passed 13/13 must-haves. Both fixed regressions and 957 package tests pass on Windows, Linux and macOS at one source SHA, with complete Cargo CI success; canonical candidate acceptance remains Phase 15 work.
+
 ### Active
 
 <!-- Current scope. Building toward these. -->
@@ -190,4 +192,4 @@ This document evolves at phase transitions and milestone boundaries.
 
 ______________________________________________________________________
 
-*Last updated: 2026-09-13 after Phase 13.1 verification; Phase 14 Windows particle-group repairs and Phase 15 candidate acceptance remain outstanding.*
+*Last updated: 2026-09-14 after Phase 14 verification; Phase 15 candidate acceptance remains outstanding.*

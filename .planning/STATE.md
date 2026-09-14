@@ -2,42 +2,42 @@
 gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Phase 14 Plan 03 complete; same-SHA platform and quality validation next
-last_updated: "2026-09-14T05:06:21.933Z"
+status: planning
+stopped_at: Phase 14 verified complete; Phase 15 not started
+last_updated: "2026-09-14T07:27:28Z"
 last_activity: "2026-09-14"
 progress:
   total_phases: 16
-  completed_phases: 14
+  completed_phases: 15
   total_plans: 250
-  completed_plans: 249
-  percent: 99
+  completed_plans: 250
+  percent: 100
 ---
 
 # Project State
 
 ## Project Reference
 
-See: `.planning/PROJECT.md` (updated 2026-09-13)
+See: `.planning/PROJECT.md` (updated 2026-09-14)
 
 **Core value:** Deliver an independent, maintainable Rust physics engine whose LiquidFun behavior is demonstrated against a pinned upstream oracle through explicit inventory, tests, differential evidence, and documented tolerances.
-**Current focus:** Phase 14 — repair-windows-particle-group-invariants
+**Current focus:** Phase 15 — re-establish-candidate-evidence (ready to plan; not started)
 
 ## Current Position
 
-Phase: 14 (repair-windows-particle-group-invariants) — EXECUTING
-Plan: 4 of 4
-Total Plans in Phase: 4
-Status: Executing Phase 14 Plan 04
+Phase: 15 (re-establish-candidate-evidence)
+Plan: Not started
+Total Plans in Phase: 0 (not yet planned)
+Status: Ready to plan Phase 15
 Last activity: 2026-09-14
 
-Progress: [██████████] 99%
+Progress: [██████████] 100% of existing plans (250/250); Phase 15 remains unplanned.
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 246
+- Total plans completed: 250
 - Average duration: Not available
 - Total execution time: 0 hours
 
@@ -58,6 +58,7 @@ Progress: [██████████] 99%
 | 12 | 25 | - | - |
 | 13 | 5 | - | - |
 | 13.1 | 25 | - | - |
+| 14 | 4 | - | - |
 
 *Updated after each plan completion*
 | Phase 02 P01 | 5 min | 1 tasks | 6 files |
@@ -677,6 +678,9 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 13.1]: Candidate b64ce4c was published but its local producer stopped at differential-package command 7 before any dispatch; its prefix, records, and logs remain supplemental. Plan 25 completed fixture ownership; Plan 21 continues corrective verification under the 2026-09-13 standing authorization, with separate candidate-bound attempts and no reuse of failed terminal evidence.
 - [Phase 13.1]: Supervisor failure fixtures use uniquely claimed canonical external temp roots, and TestSupervisor explicitly drops a live child before its owned copied-oracle repository.
 
+- [Phase 14]: Reserve scratch by actual rows while preserving logical capacity; isolated group candidate errors remain typed and transactional.
+- [Phase 14]: Accept D2 repair proof only at 417d38dac6951226fb32ea99a97135defe88da7b with complete Cargo CI run 34815192937; Phase 15 canonical candidate acceptance and attestation remain deferred.
+
 ### Pending Todos
 
 None yet.
@@ -689,6 +693,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-14T05:06:21.929Z
-Stopped at: Phase 14 Plan 03 complete; same-SHA platform and quality validation next
+Last session: 2026-09-14T07:27:28Z
+Stopped at: Phase 14 verified complete; Phase 15 not started
 Resume file: None
