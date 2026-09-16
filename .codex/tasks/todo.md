@@ -210,4 +210,6 @@ Completion review: Pending. Controlled performance runner/identity availability 
 - [x] Record the user-authorized review policy and supersession of human-only requirements.
 - [x] Accept honestly identified AI reviewers while preserving identity and digest validation.
 - [x] Run focused regressions, ordered Rust gates, Markdown and standards checks; review the diff.
-- [ ] Commit the policy change, regenerate the canonical packet, and obtain independent AI review before promotion.
+- [x] Commit the policy change, regenerate the canonical packet, and obtain independent AI review before promotion.
+
+Completion review: policy commit `8ff7315` and independently AI-reviewed promotion `7794304` are pushed. All local gates and exact-Q canonical Linux acceptance run `35131323038` passed. Other Phase 15 candidate evidence and approved performance-host access remain outstanding.
