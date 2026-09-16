@@ -3,8 +3,8 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 15 Plan 07 full-workspace verification passed at 71c0cb; fresh producer and concrete human review packet next
-last_updated: "2026-09-14T22:39:34.062Z"
+stopped_at: "Phase 15 Plan 07: independent AI review authorized; reviewer eligibility patch verified; regenerate packet at new clean R before independent acknowledgment"
+last_updated: "2026-09-16T17:51:33.751Z"
 last_activity: "2026-09-14"
 progress:
   total_phases: 16
@@ -680,6 +680,7 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 
 - [Phase 14]: Reserve scratch by actual rows while preserving logical capacity; isolated group candidate errors remain typed and transactional.
 - [Phase 14]: Accept D2 repair proof only at 417d38dac6951226fb32ea99a97135defe88da7b with complete Cargo CI run 34815192937; Phase 15 canonical candidate acceptance and attestation remain deferred.
+- [Phase 15]: D-10: Owner authorized independent AI review on 2026-09-16; human-only reviewer requirements are superseded by AGENTS.md Independent review. — Separate identified reviewer, actual review, exact digest acknowledgment and all other acceptance checks remain required.
 
 ### Pending Todos
 
@@ -693,6 +694,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-14T22:39:34.021Z
-Stopped at: Phase 15 Plan 07 full-workspace verification passed at 71c0cb; fresh producer and concrete human review packet next
-Resume file: None
+Last session: 2026-09-16T17:51:33.747Z
+Stopped at: Phase 15 Plan 07: independent AI review authorized; reviewer eligibility patch verified; regenerate packet at new clean R before independent acknowledgment
+Resume file: target/phase15-preflight/orchestration.json

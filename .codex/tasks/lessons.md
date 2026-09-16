@@ -60,3 +60,10 @@
 1. What went wrong: Repeated per-candidate approval checkpoints stopped corrective work after failed verification, requiring the user to authorize routine continuation repeatedly.
 1. Preventive rule: Apply standing authorization in AGENTS.md to diagnose, repair, verify, commit, publish, and retry relevant validation autonomously; preserve accurate attempt records and acceptance criteria.
 1. Trigger signal to catch it earlier: A routine failure or changed candidate prompts another approval token despite the user's standing authorization.
+
+## lesson-independent-ai-review-authority | 2026-09-16 17:47 UTC
+
+1. Date: 2026-09-16
+1. What went wrong: The inherited human-only review requirement blocked autonomous promotion; the owner explicitly replaced it with permission for independent AI review.
+1. Preventive rule: Apply the current AGENTS.md independent-review policy, use a separate identified reviewer, and retain exact digest acknowledgment without fabricating human approval.
+1. Trigger signal to catch it earlier: An older plan or reviewer validator rejects AI identity or requests a human solely because of the superseded reviewer restriction.

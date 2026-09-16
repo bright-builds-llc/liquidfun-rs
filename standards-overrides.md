@@ -18,3 +18,7 @@ The repository owner's standing authorization is defined in `AGENTS.md` under `S
 - If local verification is intentionally hook-owned or leaves heavy suites to CI, record that explicitly here.
 - Revisit overrides periodically instead of letting them become permanent by accident.
 - If an override becomes common across many repos, move it back upstream into the canonical standards repo.
+
+### Independent AI review — 2026-09-16
+
+Apply the `Independent review` policy in `AGENTS.md` when older plans or records require a human reviewer. The owner permits an identified independent AI reviewer; all other evidence and acknowledgment requirements remain in force.

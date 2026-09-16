@@ -151,6 +151,8 @@ renderer, testbed, and other private tooling.
 
 ## Review notices and evidence
 
+Independent review follows the [repository review policy](AGENTS.md#independent-review): an identified human or independent AI reviewer may review the evidence.
+
 Confirm the archive contains the root MIT `LICENSE` and that repository release
 materials preserve all applicable LiquidFun, Box2D, derived-material, and
 developer-dependency notices in `THIRD_PARTY_NOTICES.md` and the source map.

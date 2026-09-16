@@ -1,5 +1,79 @@
 use super::*;
 
+#[test]
+fn reviewer_id_accepts_human_and_ai_identities() {
+    // Arrange
+    let reviewer_ids = [
+        "pRizz",
+        "codex-independent-reviewer",
+        "CoDeX.review_2@example",
+    ];
+    for reviewer_id in reviewer_ids {
+        // Act
+        let result = super::super::validate_reviewer_id(reviewer_id);
+        // Assert
+        assert!(result.is_ok(), "{reviewer_id}: {result:?}");
+    }
+}
+
+#[test]
+fn reviewer_id_accepts_maximum_length() {
+    // Arrange
+    let reviewer_id = "a".repeat(80);
+    // Act
+    let result = super::super::validate_reviewer_id(&reviewer_id);
+    // Assert
+    assert!(result.is_ok(), "{result:?}");
+}
+
+#[test]
+fn reviewer_id_rejects_empty_oversized_and_unsafe_identities() {
+    // Arrange
+    let oversized = "a".repeat(81);
+    let reviewer_ids = [
+        "",
+        &oversized,
+        "reviewer name",
+        "reviewer\n",
+        "reviewer/agent",
+        "reviewer\\agent",
+        "reviewer\"",
+        "réviewer",
+        "reviewer\0",
+    ];
+    for reviewer_id in reviewer_ids {
+        // Act
+        let result = super::super::validate_reviewer_id(reviewer_id);
+        // Assert
+        assert_eq!(
+            result.expect_err("invalid reviewer ID must fail").kind(),
+            PromotionErrorKind::Acknowledgement,
+            "{reviewer_id:?}"
+        );
+    }
+}
+
+#[test]
+fn ai_reviewer_can_acknowledge_exact_review_subject() {
+    // Arrange
+    let mut packet = fresh_packet();
+    packet.reviewer_id = "codex-independent-reviewer".to_owned();
+    packet.review_sha256 = review_sha256(&packet).expect("AI review packet hashes");
+    let acknowledgement = ReviewAcknowledgement {
+        schema_version: 2,
+        reviewer_id: packet.reviewer_id.clone(),
+        review_sha256: packet.review_sha256.clone(),
+        acknowledgement: "I independently reviewed this exact seven-path diff.".to_owned(),
+        reviewed_at: "2026-09-16T12:00:00Z".to_owned(),
+    };
+    // Act
+    let result = super::super::validate_reviewer_id(&packet.reviewer_id)
+        .and_then(|()| validate_packet_identity(&packet))
+        .and_then(|()| validate_review_ack(&packet, Some(&acknowledgement)));
+    // Assert
+    assert!(result.is_ok(), "{result:?}");
+}
+
 fn fresh_packet() -> ReviewPacket {
     let mut packet = review_packet_for_test("independent-reviewer", "");
     packet.producer_sha = "f".repeat(40);

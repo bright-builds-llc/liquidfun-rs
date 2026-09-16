@@ -35,6 +35,8 @@ Establish a green full-SHA v1.0 candidate, collect all required retained evidenc
 - **D-08:** Standing authorization in AGENTS.md dated 2026-09-13 authorizes routine diagnosis, fixes, checks, commits, ordinary main pushes and relevant workflow recovery. Older per-candidate approval or one-attempt limits do not apply. Missing access, material scope expansion, destructive/security changes, package release and acceptance waivers remain outside that standing scope.
 - **D-09:** Keep public status non-ready until aggregation and both worktree/committed-range attestation pass. Then project accepted source/attestation identities and repeat the milestone audit for all requirements and critical end-to-end flows. Do not mark missing evidence complete.
 
+- **D-10:** On 2026-09-16 the owner explicitly authorized independent AI review and removed the independently identified human reviewer requirement. Apply AGENTS.md Independent review: a separate identified AI reviewer may inspect and acknowledge the exact packet digest; preserve all other evidence and transaction checks. Historical human-only clauses are superseded, not retroactively relabeled.
+
 ### Agent discretion
 - Choose bounded orchestration, attempt-directory names, plan granularity and independent scheduling; preserve the exact acceptance contracts. Correct demonstrably broken producer plumbing before choosing the final frozen candidate.
 </decisions>

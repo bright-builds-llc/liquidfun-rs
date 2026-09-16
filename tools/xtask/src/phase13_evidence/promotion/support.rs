@@ -181,14 +181,13 @@ pub(super) fn validate_reviewer_id(value: &str) -> Result<(), PromotionError> {
         && value.len() <= 80
         && value
             .bytes()
-            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_' | b'.' | b'@'))
-        && !value.to_ascii_lowercase().contains("codex");
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_' | b'.' | b'@'));
     if valid {
         return Ok(());
     }
     Err(PromotionError::new(
         PromotionErrorKind::Acknowledgement,
-        "reviewer ID must identify an independent human",
+        "reviewer ID must contain 1-80 ASCII letters, digits, hyphens, underscores, periods, or @",
     ))
 }
 

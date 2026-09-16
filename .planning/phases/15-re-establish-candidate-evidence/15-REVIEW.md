@@ -267,3 +267,7 @@ Verify the affected regression test with an enclosing `GITHUB_RUN_ATTEMPT=2`; do
 ______________________________________________________________________
 
 _Reviewer: gsd-code-reviewer, with delegated test-scope review._
+
+## Reviewer policy update — 2026-09-16
+
+The earlier human-only promotion requirement above describes the policy at review time. The owner's subsequent authorization, recorded in AGENTS.md Independent review and Phase 15 D-10, permits a separate identified AI reviewer. A fresh acknowledgment must bind the current review packet; prior reviews and evidence retain their original identities and scope.

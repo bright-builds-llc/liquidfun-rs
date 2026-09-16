@@ -204,3 +204,10 @@ Final completion gate: ordered fmt, Clippy, all-target build and all-feature tes
 Progress: Plans 01–06 are complete with retained canonical, safety, coverage, native regression, same-package handoff, evidence-retention and explicit C/A readiness proof. CI restoration and failure controls pass. Plan 07 promotion prerequisites are repaired and independently reviewed at 84405cc. The first canonical producer passed at its original 00358a5; fresh-source production, native Windows process verification, reviewed promotion and exact-head acceptance remain.
 
 Completion review: Pending. Controlled performance runner/identity availability requires external clarification.
+
+## task-independent-ai-review | 2026-09-16 17:47 UTC | Permit independent AI review
+
+- [x] Record the user-authorized review policy and supersession of human-only requirements.
+- [x] Accept honestly identified AI reviewers while preserving identity and digest validation.
+- [x] Run focused regressions, ordered Rust gates, Markdown and standards checks; review the diff.
+- [ ] Commit the policy change, regenerate the canonical packet, and obtain independent AI review before promotion.

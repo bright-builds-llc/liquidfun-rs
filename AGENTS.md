@@ -52,6 +52,14 @@ The repository owner authorized continued iteration and correction without repea
 - Preserve failed records and diagnose before retrying. Use separate attempt directories for fresh runs; resume only when producer and independent validator support it. Never overwrite failed records, combine incompatible attempts, silently duplicate an uncertain dispatch, or label failed/stale evidence as passing. Improve and validate recovery tooling when needed.
 - Ask only for missing credentials or decisions that cannot be resolved from context, a material expansion beyond requested work, or destructive actions such as force pushes, history rewrites, deletion of user data, or security/account changes. Package releases and waiving acceptance criteria require separate authority. Existing phase scope and evidence requirements still apply.
 
+### Independent review
+
+On 2026-09-16, the repository owner authorized independent AI review and removed the requirement for an independently identified human reviewer. This policy supersedes human-only reviewer requirements in older plans and review records.
+
+- An identified human or a separate AI reviewer may perform independent review. The implementing agent must not approve its own work.
+- The reviewer must inspect the complete relevant diff and evidence and record an acknowledgment bound to the exact review digest, actual reviewer identity, and actual review time. Identify AI review honestly; never represent it as human approval. Passing automated checks alone is not a review acknowledgment.
+- Preserve source, provenance, closure, digest, and transaction checks. This changes reviewer eligibility only; it does not waive other acceptance criteria or authorize package releases.
+
 <!-- GSD:project-start source:PROJECT.md -->
 
 ## Project
