@@ -12,7 +12,7 @@ use corpus::{evaluate_cases, payload_filename, validate_manifest, validate_mappi
 use model::{CaseSemantic, CorpusManifest, ProofRecord, ScenarioMappings};
 
 use super::{
-    Phase11EvidenceError,
+    EvidenceIdentity, Phase11EvidenceError,
     paths::{
         MAX_JSON_BYTES, canonical_sha256, read_json, read_regular, regular_files, require_sha256,
         resolve_input,
@@ -22,6 +22,7 @@ use super::{
 pub(super) const CORPUS_DIRECTORY: &str = "crates/liquidfun-differential/tests/fixtures/catalog";
 pub(super) const MANIFEST_FILE: &str = "phase11-v1.json";
 pub(super) const IDENTITY_FILE: &str = "identity.json";
+const SEMANTIC_RESULT_FILE: &str = "semantic-result.json";
 pub(super) const PROTOCOL_VERSION: &str = "catalog-phase11-v1";
 pub(super) const GENERATOR_VERSION: &str = "phase11-evidence-v1";
 pub(super) const UPSTREAM_REVISION: &str = "7f20402173fd143a3988c921bc384459c6a858f2";
@@ -85,18 +86,62 @@ pub(super) struct AcceptedContent {
 pub(super) fn evaluate_directory(
     repository_root: &Path,
     relative: &Path,
+    kind: EvidenceKind,
 ) -> Result<AcceptedContent, Phase11EvidenceError> {
     let root = resolve_input(repository_root, relative, "evidence root")?;
     let source_root = resolve_input(repository_root, Path::new(CORPUS_DIRECTORY), "corpus")?;
     let source_only = root == source_root;
-    let accepted = evaluate_content(repository_root, root, source_only)?;
-    if regular_files(&accepted.root)? != accepted.expected_files {
+    let mut accepted = evaluate_content(repository_root, root, source_only)?;
+    let actual_files = regular_files(&accepted.root)?;
+    // Older generated bundles predate this final, identity-bound canonical record.
+    if !source_only
+        && kind == EvidenceKind::Canonical
+        && actual_files.contains(SEMANTIC_RESULT_FILE)
+    {
+        validate_semantic_result(&accepted)?;
+        accepted
+            .expected_files
+            .insert(SEMANTIC_RESULT_FILE.to_owned());
+    }
+    if actual_files != accepted.expected_files {
         return Err(Phase11EvidenceError::new(
             "files",
             "evidence file set differs from the closed Phase 11 topology",
         ));
     }
     Ok(accepted)
+}
+
+fn validate_semantic_result(content: &AcceptedContent) -> Result<(), Phase11EvidenceError> {
+    let result: serde_json::Value =
+        read_json(&content.root.join(SEMANTIC_RESULT_FILE), "semantic result")?;
+    let identity: EvidenceIdentity = read_json(&content.root.join(IDENTITY_FILE), "identity")?;
+    let candidate = result["candidate_commit"].as_str().unwrap_or_default();
+    let full_sha = candidate.len() == 40
+        && candidate
+            .bytes()
+            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte));
+    let expected = serde_json::json!({
+        "schema_version": 1,
+        "evidence_kind": "canonical_differential",
+        "candidate_commit": candidate,
+        "complete": true,
+        "parity_tier": "d1_canonical",
+        "coverage_authority": false,
+        "performance_authority": false,
+        "gap_count": 0,
+        "semantic_sha256": content.semantic_sha256,
+    });
+    if !full_sha
+        || result != expected
+        || (identity.mode == "exact-ref" && candidate != identity.head_sha)
+    {
+        return Err(Phase11EvidenceError::new(
+            "semantic-result",
+            "canonical semantic result differs from evaluated content or source identity",
+        ));
+    }
+    Ok(())
 }
 
 pub(super) fn evaluate_generated_before_identity(

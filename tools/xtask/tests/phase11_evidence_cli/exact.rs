@@ -8,6 +8,9 @@ use super::support::{
     write_directory, write_json,
 };
 
+#[path = "semantic_result.rs"]
+mod semantic_result;
+
 const RUN_ID: u64 = 32_000_000_001;
 const CANONICAL_ARTIFACT: u64 = 3201;
 const SANITIZER_ARTIFACT: u64 = 3202;

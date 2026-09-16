@@ -234,3 +234,13 @@ The corrected command exposed RUSTSEC-2026-0257 in webbrowser 1.2.1. The 1.2.2 p
 - [ ] Produce fresh canonical evidence and requalify a replacement candidate; preserve original failed runs and ongoing source-bound outputs.
 
 Failure: Phase 11 run `35137245396` failed both lanes for `particle-forces-and-statistics@1` at candidate `dc29747`. No comparison tolerance or acceptance requirement is waived.
+
+## task-phase15-semantic-record-validation | 2026-09-16 19:39 UTC | Align exact-reference validation with canonical output
+
+- [x] Reproduce rejection of the producer's canonical semantic-result record with retained exact-reference archives.
+- [x] Validate the explicit final canonical record strictly, preserve preliminary and historical forms, and reject it in sanitizer payloads.
+- [x] Verify malformed fields, missing fields, source/digest mismatches and local authority boundaries.
+- [x] Independently review and run ordered repository checks.
+- [ ] Commit the repair and regenerate the promotion packet at new R.
+
+The repaired-source producer run `35140576574` passed both lanes. This repair addresses the independent validator's closed topology; it does not rewrite evidence or claim new producer execution.

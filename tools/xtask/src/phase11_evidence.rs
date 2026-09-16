@@ -115,8 +115,8 @@ pub(crate) fn run(args: &[String]) -> Result<(), Phase11EvidenceError> {
     let options = parse_options(args)?;
     let root = repository_root()?;
     let maybe_run = load_exact_run(&root, &options)?;
-    let canonical = evaluate_directory(&root, &options.canonical_dir)?;
-    let sanitizer = evaluate_directory(&root, &options.sanitizer_dir)?;
+    let canonical = evaluate_directory(&root, &options.canonical_dir, EvidenceKind::Canonical)?;
+    let sanitizer = evaluate_directory(&root, &options.sanitizer_dir, EvidenceKind::Sanitizer)?;
     if canonical.semantic_sha256 != sanitizer.semantic_sha256 {
         return Err(Phase11EvidenceError::new(
             "semantic",
