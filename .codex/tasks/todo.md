@@ -213,3 +213,13 @@ Completion review: Pending. Controlled performance runner/identity availability 
 - [x] Commit the policy change, regenerate the canonical packet, and obtain independent AI review before promotion.
 
 Completion review: policy commit `8ff7315` and independently AI-reviewed promotion `7794304` are pushed. All local gates and exact-Q canonical Linux acceptance run `35131323038` passed. Other Phase 15 candidate evidence and approved performance-host access remain outstanding.
+
+## task-phase15-deny-cli | 2026-09-16 18:09 UTC | Repair release dependency-check invocation
+
+- [x] Correct the release script's cargo-deny global flag ordering using installed CLI evidence.
+- [x] Update the private testbed webbrowser dependency to patched 1.2.2 and run the actual dependency check, focused release checks, and ordered repository gates.
+- [ ] Commit the repair and qualify a fresh candidate; preserve the superseded freeze and its run records.
+
+Failure signal: cargo-deny 0.20.2 rejects `cargo deny check --locked`; retained Plan 08 preflight has exit 2 and the argument error.
+
+The corrected command exposed RUSTSEC-2026-0257 in webbrowser 1.2.1. The 1.2.2 patch clears the audit without policy exceptions. Cargo.lock is a recorded replay input, so fresh canonical production, independent review and promotion are required before the replacement candidate.

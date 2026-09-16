@@ -131,7 +131,7 @@ prepare_output() {
 		--toolchain 1.97.0 \
 		--target x86_64-unknown-linux-gnu
 	verify_publication_archive "$output_directory"
-	cargo deny check --locked
+	cargo deny --locked check
 	RUSTDOCFLAGS="-D warnings" cargo doc -p liquidfun --all-features --no-deps
 	cargo test -p liquidfun --all-features --doc
 	cargo xtask docs check
