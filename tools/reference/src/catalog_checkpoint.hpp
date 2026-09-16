@@ -1,6 +1,7 @@
 #pragma once
 
 #include "protocol.hpp"
+#include "nlohmann/json.hpp"
 
 #include <cstdint>
 #include <string>
@@ -16,6 +17,7 @@ struct CatalogCheckpointInput {
   std::uint32_t simulation_time_bits = 0;
   WorldCounts counts;
   std::uint32_t debug_primitive_count = 0;
+  nlohmann::json debug_primitives = nlohmann::json::array();
 };
 
 std::string encode_catalog_checkpoint(const CatalogCheckpointInput& input);

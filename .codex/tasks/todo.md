@@ -223,3 +223,14 @@ Completion review: policy commit `8ff7315` and independently AI-reviewed promoti
 Failure signal: cargo-deny 0.20.2 rejects `cargo deny check --locked`; retained Plan 08 preflight has exit 2 and the argument error.
 
 The corrected command exposed RUSTSEC-2026-0257 in webbrowser 1.2.1. The 1.2.2 patch clears the audit without policy exceptions. Cargo.lock is a recorded replay input, so fresh canonical production, independent review and promotion are required before the replacement candidate.
+
+## task-phase15-particle-statistics-parity | 2026-09-16 19:00 UTC | Resolve Phase 11 particle mismatch
+
+- [x] Reproduce the canonical and sanitizer checkpoint-0001 mismatch and isolate semantic fields.
+- [x] Establish the pinned upstream behavior, correct the responsible implementation or capture boundary, and add a regression.
+- [x] Retain existing bounded Phase 11 failure logs through diagnostic-only CI artifacts.
+- [x] Correct differential-coverage jq entry iteration and verify valid/malformed payload behavior.
+- [x] Run focused parity controls and ordered repository gates; independently review the fix.
+- [ ] Produce fresh canonical evidence and requalify a replacement candidate; preserve original failed runs and ongoing source-bound outputs.
+
+Failure: Phase 11 run `35137245396` failed both lanes for `particle-forces-and-statistics@1` at candidate `dc29747`. No comparison tolerance or acceptance requirement is waived.

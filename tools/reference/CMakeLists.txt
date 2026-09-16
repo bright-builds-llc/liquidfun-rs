@@ -212,6 +212,7 @@ add_library(
   STATIC
   src/benchmark_run.cpp
   src/catalog_checkpoint.cpp
+  src/catalog_particle_draw.hpp
   src/catalog_joint.cpp
   src/catalog_run.cpp
   src/catalog_run_decode.cpp
@@ -636,11 +637,17 @@ add_executable(
   liquidfun-reference-protocol-tests
   tests/protocol_tests.cpp
   tests/protocol_tests/catalog.hpp
+  tests/protocol_tests/catalog_particles.hpp
   tests/protocol_tests/rigid_execution.hpp
   tests/protocol_tests/rigid_validation.hpp
   tests/protocol_tests/scenario.hpp
 )
 target_compile_features(liquidfun-reference-protocol-tests PRIVATE cxx_std_17)
+target_include_directories(
+  liquidfun-reference-protocol-tests SYSTEM PRIVATE
+  "${CMAKE_CURRENT_LIST_DIR}/../../third_party/liquidfun/liquidfun/Box2D"
+  "${CMAKE_CURRENT_LIST_DIR}/vendor"
+)
 target_compile_definitions(
   liquidfun-reference-protocol-tests
   PRIVATE LIQUIDFUN_REPOSITORY_ROOT="${CMAKE_CURRENT_LIST_DIR}/../.."

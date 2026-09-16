@@ -157,6 +157,49 @@ fn oracle_workflow_produces_one_same_run_phase11_pair() -> TestResult {
 }
 
 #[test]
+fn failed_phase11_lanes_retain_only_bounded_diagnostics_separate_from_evidence() -> TestResult {
+    // Arrange
+    let workflow = read(".github/workflows/oracle.yml")?;
+    for mode in ["canonical", "sanitizer"] {
+        let section = job_section(&workflow, &format!("phase11-{mode}-linux"))?;
+
+        // Act
+        let uploads = section
+            .split("      - name: ")
+            .filter(|step| step.contains("uses: actions/upload-artifact@"))
+            .collect::<Vec<_>>();
+
+        // Assert
+        assert_eq!(uploads.len(), 2, "one evidence and one diagnostic upload");
+        let evidence = uploads[0];
+        assert!(evidence.contains(&format!(
+            "name: phase11-{mode}-${{{{ github.run_id }}}}-${{{{ github.sha }}}}"
+        )));
+        assert!(evidence.contains(&format!("path: target/oracle-evidence/phase11-{mode}")));
+        assert!(
+            !evidence.contains("        if:"),
+            "evidence stays success-only"
+        );
+        let diagnostics = uploads[1];
+        let diagnostic_path = format!("target/phase11-evidence-failures/{mode}/*.log");
+        assert!(diagnostics.contains(&format!(
+            "if: failure() && hashFiles('{diagnostic_path}') != ''"
+        )));
+        let paths = diagnostics
+            .lines()
+            .filter_map(|line| line.strip_prefix("          path: "))
+            .collect::<Vec<_>>();
+        assert_eq!(paths, [&diagnostic_path]);
+        assert!(diagnostics.contains(&format!(
+            "name: phase11-diagnostics-{mode}-${{{{ github.run_id }}}}-${{{{ github.run_attempt }}}}-${{{{ github.sha }}}}"
+        )));
+        assert!(diagnostics.contains("if-no-files-found: error"));
+        assert!(diagnostics.contains("retention-days: 30"));
+    }
+    Ok(())
+}
+
+#[test]
 fn testing_guide_preserves_phase11_authority_boundaries() -> TestResult {
     // Arrange
     let guide = read("TESTING.md")?;

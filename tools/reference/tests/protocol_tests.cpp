@@ -1,9 +1,11 @@
 #include "benchmark_run.hpp"
 #include "collision_probe.hpp"
 #include "catalog_run.hpp"
+#include "catalog_particle_draw.hpp"
 #include "oracle_adapter.hpp"
 #include "protocol.hpp"
 #include "rigid_world.hpp"
+#include "Box2D/Box2D.h"
 
 #include "../vendor/nlohmann/json.hpp"
 
@@ -25,6 +27,7 @@ namespace {
 void expect(bool condition, const std::string& message);
 
 #include "protocol_tests/catalog.hpp"
+#include "protocol_tests/catalog_particles.hpp"
 
 std::string read_fixture(const std::string& relative_path) {
   const auto path =
@@ -122,6 +125,14 @@ int main() {
     benchmark_run_keeps_profile_diagnostics_non_authoritative();
     benchmark_run_rejects_malformed_and_bounded_inputs();
     catalog_run_executes_exact_resolved_bytes_and_reuses_cleanly();
+    catalog_particle_range_matches_upstream_after_step(true);
+    catalog_particle_range_matches_upstream_after_step(false);
+    catalog_particle_capture_preserves_geometry_and_color(false);
+    catalog_particle_capture_preserves_geometry_and_color(true);
+    catalog_particle_recreation_retires_destroyed_identity(false, false);
+    catalog_particle_recreation_retires_destroyed_identity(true, false);
+    catalog_particle_recreation_retires_destroyed_identity(false, true);
+    catalog_particle_recreation_retires_destroyed_identity(true, true);
     catalog_run_preserves_distance_joint_kind_and_mutation();
     catalog_run_accepts_large_bounded_resolved_bytes();
     catalog_run_rejection_does_not_poison_the_next_request();

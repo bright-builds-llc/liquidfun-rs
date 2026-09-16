@@ -383,6 +383,15 @@ jobs:
           path: target/oracle-evidence/phase11-canonical
           if-no-files-found: error
           retention-days: 30
+      - name: Upload Phase 11 canonical failure diagnostics
+        if: failure() && hashFiles('target/phase11-evidence-failures/canonical/*.log') != ''
+        # actions/upload-artifact v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: phase11-diagnostics-canonical-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.sha }}
+          path: target/phase11-evidence-failures/canonical/*.log
+          if-no-files-found: error
+          retention-days: 30
 
   phase11-sanitizer-linux:
     name: Phase 11 fail-fast sanitizer
@@ -439,6 +448,15 @@ jobs:
         with:
           name: phase11-sanitizer-${{ github.run_id }}-${{ github.sha }}
           path: target/oracle-evidence/phase11-sanitizer
+          if-no-files-found: error
+          retention-days: 30
+      - name: Upload Phase 11 sanitizer failure diagnostics
+        if: failure() && hashFiles('target/phase11-evidence-failures/sanitizer/*.log') != ''
+        # actions/upload-artifact v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: phase11-diagnostics-sanitizer-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.sha }}
+          path: target/phase11-evidence-failures/sanitizer/*.log
           if-no-files-found: error
           retention-days: 30
 

@@ -129,6 +129,52 @@ fn repository_root() -> std::path::PathBuf {
     std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..")
 }
 
+#[test]
+fn cpp_particle_forces_catalog_matches_native_checkpoints() {
+    // Arrange
+    let root = repository_root();
+    let Ok(executable) = OracleExecutable::resolve(&root, OraclePreset::Debug) else {
+        eprintln!("SKIP: configure and build oracle-debug for catalog integration");
+        return;
+    };
+    let mut supervisor = CatalogOracleSupervisor::new(
+        executable,
+        SessionProfile::OneShot,
+        "7f20402173fd143a3988c921bc384459c6a858f2",
+    );
+    let identity = supervisor
+        .discover_identity()
+        .expect("oracle handshake validates");
+    let request = request_for_provenance(
+        "particle-forces-and-statistics",
+        1,
+        identity.identity_sha256().clone(),
+        supervisor.limits_profile_sha256(),
+    );
+
+    // Act
+    let native = execute_catalog_native(&request).expect("native catalog executes");
+    let oracle = supervisor
+        .execute(&request)
+        .expect("oracle catalog executes");
+    let outcome = compare_catalog(&native, oracle.capture()).expect("captures compare");
+
+    // Assert
+    assert_eq!(
+        oracle.capture().checkpoints()[0].debug_primitives().len(),
+        3
+    );
+    assert!(
+        oracle.capture().checkpoints()[3]
+            .debug_primitives()
+            .is_empty()
+    );
+    assert!(
+        matches!(outcome, CatalogRunOutcome::Match(_)),
+        "{outcome:#?}"
+    );
+}
+
 fn submit(controller: &mut SessionController<NativeCatalogBackend>, command: SessionCommand) {
     let command_id = controller
         .next_command_id()

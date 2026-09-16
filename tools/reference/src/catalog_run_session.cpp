@@ -2,6 +2,7 @@
 
 #include "catalog_checkpoint.hpp"
 #include "catalog_joint.hpp"
+#include "catalog_particle_draw.hpp"
 #include "protocol.hpp"
 
 #include "Box2D/Box2D.h"
@@ -17,40 +18,6 @@
 #include <vector>
 
 namespace liquidfun::reference::catalog_run_detail {
-
-class PrimitiveCounter final : public b2Draw {
- public:
-  PrimitiveCounter() {
-    SetFlags(e_shapeBit | e_jointBit | e_aabbBit | e_pairBit |
-             e_centerOfMassBit | e_particleBit);
-  }
-
-  void DrawPolygon(const b2Vec2*, int32, const b2Color&) override { ++count; }
-  void DrawSolidPolygon(const b2Vec2*, int32, const b2Color&) override {
-    ++count;
-  }
-  void DrawCircle(const b2Vec2&, float32, const b2Color&) override { ++count; }
-  void DrawSolidCircle(
-      const b2Vec2&,
-      float32,
-      const b2Vec2&,
-      const b2Color&) override {
-    ++count;
-  }
-  void DrawParticles(
-      const b2Vec2*,
-      float32,
-      const b2ParticleColor*,
-      int32 particle_count) override {
-    count += static_cast<std::uint32_t>(particle_count);
-  }
-  void DrawSegment(const b2Vec2&, const b2Vec2&, const b2Color&) override {
-    ++count;
-  }
-  void DrawTransform(const b2Transform&) override { ++count; }
-
-  std::uint32_t count = 0;
-};
 
 template <typename Pointer>
 const Pointer& lookup(
@@ -111,9 +78,10 @@ class CatalogSession {
   CatalogCheckpointInput checkpoint(
       const CatalogRequest& request,
       const Json& declaration) {
-    PrimitiveCounter draw;
+    CatalogParticleDraw draw(particles_);
     world_.SetDebugDraw(&draw);
     world_.DrawDebugData();
+    world_.SetDebugDraw(nullptr);
     WorldCounts counts;
     counts.bodies = static_cast<std::uint32_t>(world_.GetBodyCount());
     counts.contacts = static_cast<std::uint32_t>(world_.GetContactCount());
@@ -140,7 +108,8 @@ class CatalogSession {
             as_u32(declaration.at("logical_step"), "logical step"),
             bits_from_float(simulation_time_),
             counts,
-            draw.count};
+            draw.count,
+            std::move(draw.primitives)};
   }
 
  private:
@@ -205,6 +174,7 @@ class CatalogSession {
     if (timestep <= 0.0F || velocity == 0U || position == 0U || particles == 0U) {
       throw std::runtime_error("invalid catalog step");
     }
+    retire_catalog_particle_zombies(particles_);
     world_.Step(timestep, static_cast<int32>(velocity),
                 static_cast<int32>(position), static_cast<int32>(particles));
     simulation_time_ += timestep;
@@ -222,7 +192,7 @@ class CatalogSession {
   std::vector<std::pair<std::string, b2Joint*>> joints_;
   std::vector<std::pair<std::string, std::unique_ptr<b2Rope>>> ropes_;
   std::vector<std::pair<std::string, b2ParticleSystem*>> systems_;
-  std::vector<std::pair<std::string, b2ParticleHandle*>> particles_;
+  std::vector<std::pair<std::string, CatalogParticle>> particles_;
   std::vector<std::pair<std::string, b2ParticleGroup*>> groups_;
 };
 
@@ -468,13 +438,14 @@ void CatalogSession::execute_particle(const Json& action) {
     const auto index = systems_.front().second->CreateParticle(definition);
     particles_.emplace_back(
         as_id(action.at("particle_id"), "particle ID"),
-        const_cast<b2ParticleHandle*>(
-            systems_.front().second->GetParticleHandleFromIndex(index)));
+        CatalogParticle{systems_.front().second,
+                        systems_.front().second->GetParticleHandleFromIndex(index)});
   } else if (kind == "set_paused") {
     lookup(systems_, as_id(action.at("system_id"), "system ID"), "particle system")
         ->SetPaused(action.at("paused").get<bool>());
   } else if (kind == "set_position" || kind == "set_velocity") {
-    auto* handle = lookup(particles_, as_id(action.at("particle_id"), "particle ID"), "particle");
+    auto* handle = lookup(
+        particles_, as_id(action.at("particle_id"), "particle ID"), "particle").handle;
     if (handle->GetIndex() < 0 || systems_.empty()) {
       throw std::runtime_error("stale semantic particle ID");
     }
@@ -483,19 +454,34 @@ void CatalogSession::execute_particle(const Json& action) {
     buffer[handle->GetIndex()] = as_vec2(
         action.at(kind == "set_position" ? "position" : "velocity"), kind);
   } else if (kind == "mark_for_destruction") {
-    auto* handle = lookup(particles_, as_id(action.at("particle_id"), "particle ID"), "particle");
+    auto* handle = lookup(
+        particles_, as_id(action.at("particle_id"), "particle ID"), "particle").handle;
     systems_.front().second->DestroyParticle(handle->GetIndex());
   } else if (kind == "compact") {
     world_.Step(0.0F, 1, 1, 1);
   } else if (kind == "apply_force" || kind == "apply_impulse") {
     const auto force = as_vec2(action.at(kind == "apply_force" ? "force" : "impulse"), kind);
-    for (const auto& id_value : action.at("particle_ids")) {
-      auto* handle = lookup(particles_, as_id(id_value, "particle ID"), "particle");
-      if (kind == "apply_force") {
-        systems_.front().second->ParticleApplyForce(handle->GetIndex(), force);
-      } else {
-        systems_.front().second->ParticleApplyLinearImpulse(handle->GetIndex(), force);
+    const auto& ids = action.at("particle_ids");
+    if (ids.empty()) {
+      throw std::runtime_error("particle force range must not be empty");
+    }
+    const auto& first = lookup(particles_, as_id(ids.front(), "particle ID"), "particle");
+    const auto first_index = first.handle->GetIndex();
+    if (first_index < 0) {
+      throw std::runtime_error("stale semantic particle ID");
+    }
+    auto last_index = first_index;
+    for (const auto& id_value : ids) {
+      const auto& particle = lookup(particles_, as_id(id_value, "particle ID"), "particle");
+      if (particle.system != first.system || particle.handle->GetIndex() != last_index) {
+        throw std::runtime_error("particle force range must be contiguous in one system");
       }
+      ++last_index;
+    }
+    if (kind == "apply_force") {
+      first.system->ApplyForce(first_index, last_index, force);
+    } else {
+      first.system->ApplyLinearImpulse(first_index, last_index, force);
     }
   } else if (kind == "inspect_system" || kind == "request_statistics") {
     static_cast<void>(lookup(
@@ -555,8 +541,8 @@ void CatalogSession::execute_group(const Json& operation) {
     for (std::size_t index = 0; index < member_ids.size(); ++index) {
       particles_.emplace_back(
           as_id(member_ids.at(index), "particle ID"),
-          const_cast<b2ParticleHandle*>(system->GetParticleHandleFromIndex(
-              first_index + static_cast<int32>(index))));
+          CatalogParticle{system, system->GetParticleHandleFromIndex(
+              first_index + static_cast<int32>(index))});
     }
     if (destination.at("kind") == "new") {
       groups_.emplace_back(as_id(definition_json.at("group_id"), "group ID"), group);
@@ -596,6 +582,9 @@ void CatalogSession::execute_group(const Json& operation) {
     group->DestroyParticles(false);
   } else if (kind == "step") {
     const auto timestep = as_finite_float(operation.at("timestep_bits"), "group timestep");
+    if (timestep > 0.0F) {
+      retire_catalog_particle_zombies(particles_);
+    }
     world_.Step(
         timestep,
         static_cast<int32>(as_u32(

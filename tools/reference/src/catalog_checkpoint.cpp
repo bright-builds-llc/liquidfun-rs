@@ -48,7 +48,7 @@ std::string encode_catalog_checkpoint(const CatalogCheckpointInput& input) {
       {"numeric_observations", nlohmann::json::array()},
       {"ordered_occurrences", nlohmann::json::array()},
       {"unordered_sets", nlohmann::json::array()},
-      {"debug_primitives", nlohmann::json::array()},
+      {"debug_primitives", input.debug_primitives},
       {"profile_names", nlohmann::json::array()},
   };
   const auto encoded = checkpoint.dump();

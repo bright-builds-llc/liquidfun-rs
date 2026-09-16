@@ -6,6 +6,7 @@ tools/reference/src/catalog_checkpoint.cpp
 tools/reference/src/catalog_checkpoint.hpp
 tools/reference/src/catalog_joint.cpp
 tools/reference/src/catalog_joint.hpp
+tools/reference/src/catalog_particle_draw.hpp
 tools/reference/src/catalog_run.cpp
 tools/reference/src/catalog_run.hpp
 tools/reference/src/catalog_run_decode.cpp
@@ -54,6 +55,7 @@ tools/reference/src/oracle_adapter.cpp
 tools/reference/src/oracle_adapter.hpp
 tools/reference/src/generate_build_identity.cmake.in
 tools/reference/tests/protocol_tests/catalog.hpp
+tools/reference/tests/protocol_tests/catalog_particles.hpp
 tools/reference/tests/protocol_tests/rigid_execution.hpp
 tools/reference/tests/protocol_tests/rigid_validation.hpp
 tools/reference/tests/protocol_tests/scenario.hpp

@@ -215,7 +215,8 @@ validate_coverage_payload() {
 	if [[ "$expected_kind" == "differential_coverage" ]]; then
 		jq -e '
 			.schema_version == 1 and .parity_authority == false and
-			([.exercised[], .missed[]] | all(.; type == "string" and length > 0)) and
+			(.exercised | type == "array") and (.missed | type == "array") and
+			([.exercised[], .missed[]] | all(.[]; type == "string" and length > 0)) and
 			([.exercised[], .missed[]] | length == (unique | length)) and
 			(.missed | length) == 0
 		' "$artifact" >/dev/null || fail "differential coverage payload is malformed"
