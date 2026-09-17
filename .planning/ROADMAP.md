@@ -48,7 +48,17 @@ Planning should prove target/runtime compatibility with ordinary unprofiled step
   3. Resetting, changing selection and leaving the player release prior worlds and animation resources; only the current session steps, hidden tabs do not accumulate catch-up debt, and stepping/emission stay bounded.
   4. Every push to main triggers the WASM and production-site build from the same checkout without path filters, and successful required build checks precede deployment of that assembled artifact.
   5. Deployment uses Pages configuration and ordinary Actions permissions without a personal token; overlapping pushes cannot leave an older revision as the final site, though superseded queued revisions may coalesce.
-**Plans**: TBD
+**Plans**: 8 plans
+
+Plans:
+- [ ] 17-01-PLAN.md — Lock the six-scene catalog and pure `#/scene/{id}` hash parser
+- [ ] 17-02-PLAN.md — Cap stepping at 4 ticks and forward one 1–4 advance per capture
+- [ ] 17-03-PLAN.md — Bake `/liquidfun-rs/` production assets and safe provenance
+- [ ] 17-04-PLAN.md — Build honest catalog, fallback, footer, and player chrome
+- [ ] 17-05-PLAN.md — Wire the one-session Dam Break player and teardown
+- [ ] 17-06-PLAN.md — Prove production-base Dam Break, fallback, and hidden-tab bounds
+- [ ] 17-07-PLAN.md — Add the SHA-pinned same-checkout Pages workflow
+- [ ] 17-08-PLAN.md — Deploy main, record the live URL/SHA, and obtain independent review
 **UI hint**: yes
 
 Deploy the thin working slice early. Label incomplete catalog entries honestly until Phase 18 supplies all six. Establish source/build chrome, input conventions and responsive structure here; final all-scene interaction acceptance belongs to Phase 19. A website delivery runner does not reintroduce mandatory Linux native qualification.
@@ -87,7 +97,7 @@ Execution order: **16 → 17 → 18 → 19**. Each phase includes focused checks
 | Phase | Plans Complete | Status | Completed |
 | --- | --- | --- | --- |
 | 16. Rust WASM Browser Bridge | 4/4 | Complete    | 2026-09-17 |
-| 17. Shared Player and Early Pages Delivery | 0/TBD | Not started | - |
+| 17. Shared Player and Early Pages Delivery | 0/8 | Not started | - |
 | 18. Six Native Physics Demos | 0/TBD | Not started | - |
 | 19. Interaction Polish and Browser Verification | 0/TBD | Not started | - |
 
