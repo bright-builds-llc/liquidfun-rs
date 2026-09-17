@@ -119,8 +119,6 @@ Each task was committed atomically:
 - **Verification:** `just web-build` exits 0
 - **Committed in:** `94a9eba` (Task 2 commit)
 
----
-
 **Total deviations:** 2 auto-fixed (2 blocking)
 **Impact on plan:** Both fixes were required for typecheck and the named Dam Break constructor. No extra physics scenes were added.
 

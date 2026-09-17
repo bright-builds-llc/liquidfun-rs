@@ -97,8 +97,6 @@ Each task was committed atomically:
 
 None - plan executed exactly as written.
 
----
-
 **Total deviations:** 0 auto-fixed
 **Impact on plan:** None.
 

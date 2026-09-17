@@ -118,8 +118,6 @@ Each task was committed atomically:
 - **Verification:** Hidden-tab test passes; `just web-player-smoke` exits 0
 - **Committed in:** `ed940f7` (Task 2 commit)
 
----
-
 **Total deviations:** 3 auto-fixed (3 bugs)
 **Impact on plan:** Required for production-base smoke to pass. No six-scene WEBTEST-01 scope or Pages workflow was added.
 

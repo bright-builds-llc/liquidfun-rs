@@ -48,6 +48,7 @@ status: clean
 decision: APPROVED
 review_digest: a962555da21e1da79b860c37b003d29fa7f3d6683ef16db1b2beac2a151bf893
 reviewer_identity: bb07ac37-0a71-4930-9eb1-30fe1a0ac188
+reviewer_invocation_id: 376b6b01-b9af-4b29-9b87-257377e254d9
 reviewer_disclosure: AI reviewer, not a human
 implementing_or_fixing_executor: no
 ---

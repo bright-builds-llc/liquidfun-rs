@@ -18,7 +18,9 @@ The owner prioritizes a fun hobby project over production-quality certification.
 
 The v1.0 Experimental Foundation planning milestone is archived (2026-09-17): 16 phases and 252 active plans completed under the revised hobby scope. This is not a crate release or strict parity certification. See `.planning/MILESTONES.md` and `.planning/milestones/v1.0-REQUIREMENTS.md` for outcomes and deferred requirements. Native checks, isolated packaging and macOS CI were verified at the implementation identified in Phase 15's completion record.
 
-Phase 16 is complete: a private native-testable WASM wrapper now runs one persistent particle/rigid scene in package-pinned Chromium, exports five bounded copied frame arrays, renders visibly through the minimal SolidJS/Canvas proof, and disposes explicitly. Source-bound closure attempt 10 passed 16 checks, independent AI review approved its exact digest, and the security audit closed all 20 declared threats. Phase 17 now owns the shared player and first GitHub Pages delivery.
+Phase 16 is complete: a private native-testable WASM wrapper now runs one persistent particle/rigid scene in package-pinned Chromium, exports five bounded copied frame arrays, renders visibly through the minimal SolidJS/Canvas proof, and disposes explicitly. Source-bound closure attempt 10 passed 16 checks, independent AI review approved its exact digest, and the security audit closed all 20 declared threats.
+
+Phase 17 is complete: the shared SolidJS player hosts Dam Break on GitHub Pages at `https://bright-builds-llc.github.io/liquidfun-rs/#/scene/dam-break`, with play/pause/reset, honest not-ready catalog labels, bounded hidden-tab stepping, and same-checkout OIDC Pages delivery. Recorded deploy SHA `50a15562b356ed941266eedddc636df3f76e7e7e`; independent AI review approved digest `a962555da21e1da79b860c37b003d29fa7f3d6683ef16db1b2beac2a151bf893`. Phase 18 now owns the remaining five physics demos.
 
 ## Current Milestone: v1.1 Web Playground
 
@@ -40,11 +42,11 @@ Phase 16 is complete: a private native-testable WASM wrapper now runs one persis
 ### Active — v1.1 Web Playground
 
 - [ ] Browse and play six interactive demos in an accessible, responsive SolidJS gallery.
-- [ ] Build and publish the static site automatically from main, including reliable WASM loading and direct demo links.
 
 
 ### Validated
 
+- [x] Phase 17 completed WASM-04, WEB-02, WEB-03, WEB-06, and HOST-01 through HOST-03: Dam Break runs in the shared player on the live Pages project path, unknown scene hashes fall back usefully, playback/reset and loading/retry work, session teardown and hidden-tab catch-up stay bounded, and every main push builds WASM plus the site from the same checkout then deploys with OIDC. Recorded URL `https://bright-builds-llc.github.io/liquidfun-rs/`; source `50a15562b356ed941266eedddc636df3f76e7e7e`. Independent AI review approved digest `a962555da21e1da79b860c37b003d29fa7f3d6683ef16db1b2beac2a151bf893`. This is not six-scene WEB-01 coverage or package publication.
 - [x] Phase 16 completed WASM-01 through WASM-03: generated Rust WebAssembly visibly advances a real particle/rigid scene in Chromium, the reproducible pinned SolidJS build preserves native Cargo/package isolation, and five bounded copied typed arrays cross the browser boundary without raw pointers or per-particle calls. Explicit disposal, exact-digest independent AI review, and 20/20 closed threats were verified against source-bound closure attempt 10.
 - [x] Phase 15 hobby wrap-up completed HOBBY-01 through HOBBY-03: experimental guidance, a short preparation checklist, native/package verification and exact-source macOS CI. Checked implementation: `75ead0edcbde68d01b804e2c466f2f4b2a4d30da`; later planning-record changes do not claim new runtime verification. Strict certification remains deferred and no package was published.
 

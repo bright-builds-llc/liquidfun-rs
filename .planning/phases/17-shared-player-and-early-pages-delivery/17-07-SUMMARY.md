@@ -93,8 +93,6 @@ Each task was committed atomically:
 - **Verification:** python assert plus `rg -n "D-14|D-15|D-16"`
 - **Committed in:** `7dfafdf` (Task 2 commit)
 
----
-
 **Total deviations:** 1 auto-fixed (1 blocking)
 **Impact on plan:** Comment wording only. HOST-01/02 shape is unchanged.
 
