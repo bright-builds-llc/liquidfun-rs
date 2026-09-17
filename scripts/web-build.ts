@@ -1,6 +1,7 @@
 import {
   mkdir,
   readFile,
+  readdir,
   realpath,
   rename,
   rm,
@@ -163,11 +164,89 @@ async function regenerateWasm(): Promise<void> {
   );
 }
 
+function maybeProcessEnv(name: string): string | undefined {
+  const maybeValue = process.env[name];
+  if (maybeValue === undefined) {
+    return undefined;
+  }
+
+  const trimmed = maybeValue.trim();
+  return trimmed.length === 0 ? undefined : trimmed;
+}
+
+async function collectViteProvenanceEnv(): Promise<Record<string, string>> {
+  const packageJson = JSON.parse(
+    await readFile(resolve(webDirectory, "package.json"), "utf8"),
+  ) as { version?: unknown };
+  if (typeof packageJson.version !== "string" || packageJson.version.length === 0) {
+    throw new Error("web/package.json is missing a version");
+  }
+
+  const gitSha =
+    maybeProcessEnv("GITHUB_SHA") ?? captureCommand(["git", "rev-parse", "HEAD"]);
+  const buildId = maybeProcessEnv("GITHUB_RUN_ID") ?? new Date().toISOString();
+  const maybeServerUrl = maybeProcessEnv("GITHUB_SERVER_URL");
+  const maybeRepository = maybeProcessEnv("GITHUB_REPOSITORY");
+  const maybeRunId = maybeProcessEnv("GITHUB_RUN_ID");
+  const maybeBuildUrl =
+    maybeServerUrl === undefined ||
+    maybeRepository === undefined ||
+    maybeRunId === undefined
+      ? undefined
+      : `${maybeServerUrl}/${maybeRepository}/actions/runs/${maybeRunId}`;
+
+  return {
+    VITE_APP_VERSION: packageJson.version,
+    VITE_GIT_SHA: gitSha,
+    VITE_BUILD_ID: buildId,
+    ...(maybeBuildUrl === undefined ? {} : { VITE_BUILD_URL: maybeBuildUrl }),
+  };
+}
+
+async function assertProductionAssetPaths(): Promise<void> {
+  const validationName = "assert production dist asset paths";
+  const distDirectory = resolve(webDirectory, "dist");
+  try {
+    const indexHtml = await readFile(resolve(distDirectory, "index.html"), "utf8");
+    if (!indexHtml.includes("/liquidfun-rs/assets/")) {
+      throw new Error("production dist is missing /liquidfun-rs/assets/");
+    }
+
+    const entries = await readdir(distDirectory, { recursive: true });
+    const hasWasm = entries.some((entry) => entry.endsWith(".wasm"));
+    if (!hasWasm) {
+      throw new Error("production dist is missing a .wasm asset");
+    }
+
+    commandRecords.push({
+      command: validationName,
+      status: "passed",
+      exitCode: 0,
+    });
+    await breadcrumb(`${validationName} passed`);
+  } catch (error) {
+    commandRecords.push({
+      command: validationName,
+      status: "failed",
+      exitCode: 1,
+    });
+    throw error;
+  }
+}
+
 async function runFrontendBuild(): Promise<void> {
   await runCommand(["bun", "install", "--frozen-lockfile"], webDirectory);
   await runCommand(["bun", "run", "typecheck"], webDirectory);
   await runCommand(["bun", "run", "test:unit"], webDirectory);
-  await runCommand(["bun", "run", "build:app"], webDirectory);
+  const provenanceEnv = await collectViteProvenanceEnv();
+  await breadcrumb(
+    `inject VITE_APP_VERSION=${provenanceEnv.VITE_APP_VERSION} VITE_GIT_SHA=${provenanceEnv.VITE_GIT_SHA} VITE_BUILD_ID=${provenanceEnv.VITE_BUILD_ID}`,
+  );
+  await runCommand(["bun", "run", "build:app"], webDirectory, {
+    ...process.env,
+    ...provenanceEnv,
+  });
+  await assertProductionAssetPaths();
 }
 
 async function runCompleteBuild(): Promise<void> {
