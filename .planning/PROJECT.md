@@ -12,7 +12,7 @@ Deliver an independent, maintainable Rust physics engine whose LiquidFun behavio
 
 ## Current scope decision — 2026-09-16
 
-The owner prioritizes a fun hobby project over production-quality certification. Apply `PROJECT-SCOPE.md`: mandatory Linux x64 qualification and the dedicated performance-host completion gate are removed. Historical evidence remains truthful and source-bound; strict qualification is opt-in. The owner selected local checks plus one macOS CI job and optional manual expensive suites. A simpler release checklist and durable API/MSRV promises remain under discussion.
+The owner prioritizes a fun hobby project over production-quality certification. Apply `PROJECT-SCOPE.md`: mandatory Linux x64 qualification and the dedicated performance-host completion gate are removed. Historical evidence remains truthful and source-bound; strict qualification is opt-in. The owner selected local checks plus one macOS CI job and optional manual expensive suites. The accepted experimental preparation checklist is in RELEASE.md. APIs may evolve with incompatible changes documented before release; durable API/MSRV guarantees are deferred. Preserve Rust 1.97.0 and the declared minimum 1.92, verifying that minimum before publication or deliberately revising manifest and docs together.
 
 ## Requirements
 
@@ -34,9 +34,9 @@ The owner prioritizes a fun hobby project over production-quality certification.
 
 - [x] Phase 14 repaired Windows particle-group scratch allocation, preserved typed rejection and complete rollback contracts, and passed 13/13 must-haves. Both fixed regressions and 957 package tests pass on Windows, Linux and macOS at one source SHA, with complete Cargo CI success; canonical candidate acceptance remains Phase 15 work.
 
-### Active
+### Historical full-parity ambitions
 
-<!-- Current scope. Building toward these. -->
+These retained goals describe the original broad implementation ambition, not active Phase 15 acceptance. Current hobby completion follows PROJECT-SCOPE.md and the bounded experimental preparation checklist; broader parity and platform qualification remain optional.
 
 - [ ] Extend the implemented minimal rigid-world slice with complete force and impulse application, configurable solvers, sleeping, continuous collision detection, world queries, and world ray casts from the selected LiquidFun revision.
 - [ ] Implement all supported joints, standalone rope, remaining callbacks and listeners, diagnostic dump, debug drawing abstractions, and the broad rigid-body compatibility gate.
@@ -46,7 +46,7 @@ The owner prioritizes a fun hobby project over production-quality certification.
 - [ ] Extend the Phase 4-6 numerical-stability, ordering, determinism, and platform-tier policy with broad rigid-solver, joint, and particle observables and tolerances before treating those later differential results as compatibility evidence.
 - [ ] Measure performance against equivalent upstream C++ workloads and optimize only from profiling evidence without silently sacrificing API clarity, safety, determinism, or parity.
 - [ ] Support Linux x86_64, Linux ARM64, macOS ARM64, macOS x86_64 where practical, and Windows x86_64, while investigating WASM, mobile, and realistic smaller `no_std` subsets.
-- [ ] Provide discoverable repository automation through a root `justfile`, CI, pinned toolchains, dependency/license policy, documentation checks, coverage, benchmarks, and scheduled extended verification.
+- [ ] Provide discoverable repository automation through a root `justfile`, CI, pinned toolchains, dependency/license policy, documentation checks, coverage, benchmarks, and optional manual extended verification.
 - [ ] Maintain accurate project, architecture, upstream, compatibility, testing, benchmarking, safety, contribution, release, and roadmap documentation without claiming unverified maturity or parity.
 
 ### Out of Scope
@@ -81,7 +81,7 @@ The previous strict target remains available as an optional ambition. A future e
 - The production Rust library has no runtime dependency on C++ or the upstream source.
 - The compatibility matrix contains no unexplained gaps.
 
-## Delivery Strategy
+## Historical delivery strategy
 
 Development proceeds incrementally and in dependency order:
 
@@ -101,7 +101,7 @@ Development proceeds incrementally and in dependency order:
 
 The ordering is a starting hypothesis. Research may refine phase boundaries, but it must preserve dependency-aware, testable progress and early risk retirement.
 
-## Expected Early Deliverables
+## Historical expected early deliverables
 
 Before substantial physics porting begins, the project should have:
 
@@ -139,16 +139,16 @@ Before substantial physics porting begins, the project should have:
 - **Upstream provenance**: The canonical source and exact revision must be pinned before implementation assumptions harden — moving branches are not acceptable references.
 - **Licensing**: Upstream LiquidFun, Box2D, copied or translated code, tests, data, and all dependencies require explicit license review and attribution — final project licensing follows compatibility analysis.
 - **Safety**: Safe Rust is the default — every `unsafe` block must be narrow, justified by a measurable need, document its invariant with a `SAFETY:` comment, and receive focused tests where practical.
-- **API design**: Public APIs must be idiomatic, recognizable to LiquidFun users, explicit about handles/lifetimes/invalidation/callbacks/mutation, and must not expose raw pointers or unstable storage details.
-- **Behavior**: Compatibility is measured against the selected upstream behavior — differences need documented causes, tolerances, and regression protection.
+- **API design**: APIs are experimental and may evolve; document incompatible changes before release. Preserve safe handles, checked mutation, explicit lifetimes/invalidation, and private storage details. Durable API guarantees are deferred.
+- **Behavior**: Improve parity incrementally against the pinned upstream behavior; document known differences and retain regression protection. Exhaustive closure is an optional strict qualification goal.
 - **Determinism**: Stable ordering and reproducible seeded scenarios take precedence over unproven parallel or SIMD gains — nondeterministic acceleration must be explicit.
 - **Testing**: Meaningful semantic state must be compared — serialized raw memory alone is not an acceptable compatibility oracle.
 - **Quality**: Production code avoids `unwrap()`, propagates errors, uses useful invariant messages for genuinely impossible states, documents public APIs, and follows the repository's Rust and Bright Builds guidance.
 - **Angles and naming**: Full rotations use tau-based expressions, and optional internal values use `maybe_` naming where it improves clarity — project conventions remain consistent with repository standards.
 - **Architecture**: Prefer cohesive deep modules and functional-core/imperative-shell separation — do not over-fragment crates or hide substantial foreign-language logic inside strings.
 - **Rendering**: Simulation stays renderer-independent, optional, and headless — testbed framework choices cannot dictate core architecture.
-- **Platforms**: Initial portability targets mainstream Linux, macOS, and Windows architectures — broader targets remain research-backed extensions.
-- **CI cost**: Pull-request checks should remain useful and reasonably fast — expensive randomized, differential, sanitizer, coverage, and benchmark suites may run on schedules or manual triggers.
+- **Platforms**: One macOS Cargo CI job records tested coverage. Non-macOS platforms are best effort with optional manual testing; retain existing platform fixes and regressions.
+- **CI cost**: Keep local checks and one macOS Cargo CI job. Cross-platform, differential, sanitizer, fuzz, coverage and benchmark suites are optional manual checks.
 - **Transparency**: Documentation and README maturity claims must match verified implementation and compatibility evidence — incomplete parity is never marketed as complete.
 
 ## Key Decisions
@@ -200,4 +200,4 @@ This document evolves at phase transitions and milestone boundaries.
 
 ______________________________________________________________________
 
-*Last updated: 2026-09-14 after Phase 14 verification; Phase 15 candidate acceptance remains outstanding.*
+*Updated for Phase 15 hobby scope on 2026-09-17 UTC. Strict candidate acceptance remains optional and outstanding.*

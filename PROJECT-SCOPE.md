@@ -14,16 +14,20 @@ Existing canonical evidence, benchmark, release-audit, and attestation commands 
 
 The current strict status remains **not release-ready**. That describes the parity-bearing release qualification, not whether the project is useful for experiments. Package publication remains a separate user-authorized action. Preserve licenses, existing evidence, regression tests, and accurate descriptions of compatibility and limitations.
 
-## Further simplifications for discussion
+## Accepted experimental baseline
 
-The CI baseline and manual-only expensive checks above are accepted decisions. The following remaining recommendations are for discussion:
+Phase 15's revised discussion adopted these decisions for ordinary development and package preparation:
 
-| Area                        | Proposed lighter approach                                                                                                     |
+| Area                        | Accepted approach                                                                                                             |
 | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| Cross-platform support      | Best-effort portability; test extra targets when someone needs them.                                                          |
+| Cross-platform support      | Non-macOS targets are best effort; test extra targets when needed. macOS CI records tested coverage, not a platform warranty. |
 | Benchmarks                  | Run useful local comparisons on demand; reserve controlled hardware for serious published performance claims.                 |
 | Feature and behavior parity | Improve incrementally and document differences rather than block on exhaustive closure.                                       |
 | Release paperwork           | A small experimental-release checklist; keep frozen-source attestations available for an explicitly requested strict release. |
-| API and MSRV promises       | Keep the development toolchain pinned; decide durable compatibility promises when preparing a public release.                 |
+| API and MSRV promises       | APIs are experimental and may evolve; document incompatible changes before release. Defer durable API/MSRV guarantees.        |
 
-A new publishing checklist and durable API/MSRV promises remain undecided. Existing optional tools and historical contracts remain available.
+Follow the experimental preparation checklist in [RELEASE.md](RELEASE.md#experimental-package-preparation) before preparing a package. Completion records the checked source, actual local and macOS CI results, limitations, licenses/notices, and independent reviewer identity, time and digest. It does not authorize a version, tag or publication.
+
+Keep Rust 1.97.0 as the development pin and Cargo's declared `rust-version = "1.92"`. That declared minimum still means consumers can build with Rust 1.92: verify it before publication, or deliberately revise the manifest and documentation together with the consumer impact explained. Ordinary hobby work does not require a recurring MSRV matrix.
+
+Preserve safe handles, checked mutation, native Cargo-only consumption and existing regressions as APIs evolve. Known compatibility differences remain visible; local checks do not prove exhaustive parity. Local benchmarks support on-demand diagnosis, and published comparisons identify workload, hardware, compiler and limitations. Existing optional tools and historical contracts remain available.

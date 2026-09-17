@@ -46,7 +46,7 @@ Use this routing map when deciding what to load next:
 
 - Apply [PROJECT-SCOPE.md](PROJECT-SCOPE.md) before older production-quality plans. The owner removed mandatory Linux x64 qualification on 2026-09-16 and chose a fun, experimental project direction.
 - Linux qualification and the dedicated performance host are optional profiles, not completion blockers. Keep normal local checks and truthful evidence; run the strict qualification pipeline only when explicitly requested.
-- The previous frozen-candidate campaign is historical. New work may proceed without completing its C-to-A attestation. The owner selected one macOS Cargo CI job plus local checks, with expensive suites manual-only. Remaining release/API simplifications in PROJECT-SCOPE.md are discussion proposals.
+- The previous frozen-candidate campaign is historical. New work may proceed without completing its C-to-A attestation. Apply the accepted experimental preparation, platform, parity and API policies in PROJECT-SCOPE.md; use RELEASE.md for package preparation. Publication remains separately authorized.
 
 ### Standing authorization for autonomous iteration
 
@@ -86,16 +86,16 @@ The repository will retain upstream C++ LiquidFun as a read-only development ora
 - **Upstream provenance**: The canonical source and exact revision must be pinned before implementation assumptions harden — moving branches are not acceptable references.
 - **Licensing**: Upstream LiquidFun, Box2D, copied or translated code, tests, data, and all dependencies require explicit license review and attribution — final project licensing follows compatibility analysis.
 - **Safety**: Safe Rust is the default — every `unsafe` block must be narrow, justified by a measurable need, document its invariant with a `SAFETY:` comment, and receive focused tests where practical.
-- **API design**: Public APIs must be idiomatic, recognizable to LiquidFun users, explicit about handles/lifetimes/invalidation/callbacks/mutation, and must not expose raw pointers or unstable storage details.
-- **Behavior**: Compatibility is measured against the selected upstream behavior — differences need documented causes, tolerances, and regression protection.
+- **API design**: APIs are experimental and may evolve; document incompatible changes before release. Preserve safe handles, checked mutation, explicit lifetimes/invalidation, and private storage details. Durable API guarantees are deferred.
+- **Behavior**: Improve parity incrementally against the pinned upstream behavior; document known differences and retain regression protection. Exhaustive closure is an optional strict qualification goal.
 - **Determinism**: Stable ordering and reproducible seeded scenarios take precedence over unproven parallel or SIMD gains — nondeterministic acceleration must be explicit.
 - **Testing**: Meaningful semantic state must be compared — serialized raw memory alone is not an acceptable compatibility oracle.
 - **Quality**: Production code avoids `unwrap()`, propagates errors, uses useful invariant messages for genuinely impossible states, documents public APIs, and follows the repository's Rust and Bright Builds guidance.
 - **Angles and naming**: Full rotations use tau-based expressions, and optional internal values use `maybe_` naming where it improves clarity — project conventions remain consistent with repository standards.
 - **Architecture**: Prefer cohesive deep modules and functional-core/imperative-shell separation — do not over-fragment crates or hide substantial foreign-language logic inside strings.
 - **Rendering**: Simulation stays renderer-independent, optional, and headless — testbed framework choices cannot dictate core architecture.
-- **Platforms**: Initial portability targets mainstream Linux, macOS, and Windows architectures — broader targets remain research-backed extensions.
-- **CI cost**: Pull-request checks should remain useful and reasonably fast — expensive randomized, differential, sanitizer, coverage, and benchmark suites may run on schedules or manual triggers.
+- **Platforms**: One macOS Cargo CI job records tested coverage. Non-macOS platforms are best effort with optional manual testing; retain existing platform fixes and regressions.
+- **CI cost**: Keep local checks and one macOS Cargo CI job. Cross-platform, differential, sanitizer, fuzz, coverage and benchmark suites are optional manual checks.
 - **Transparency**: Documentation and README maturity claims must match verified implementation and compatibility evidence — incomplete parity is never marketed as complete.
 
 <!-- GSD:project-end -->
