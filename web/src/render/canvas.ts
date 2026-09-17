@@ -61,6 +61,8 @@ export function resizeCanvasBackingStore(
     throw new Error("Canvas 2D is unavailable");
   }
   maybeContext.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+  maybeContext.fillStyle = CANVAS_COLOR;
+  maybeContext.fillRect(0, 0, cssWidth, cssHeight);
 
   return camera;
 }
