@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Web Playground
 status: executing
-stopped_at: Completed 17-01-PLAN.md
-last_updated: "2026-09-17T11:47:55.240Z"
+stopped_at: Completed 17-02-PLAN.md
+last_updated: "2026-09-17T11:51:00.730Z"
 last_activity: 2026-09-17
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 12
-  completed_plans: 5
-  percent: 42
+  completed_plans: 6
+  percent: 50
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-09-17)
 ## Current Position
 
 Phase: 17 (Shared Player and Early Pages Delivery) — EXECUTING
-Plan: 2 of 8
+Plan: 3 of 8
 Status: Ready to execute
 Last activity: 2026-09-17
 
@@ -46,6 +46,7 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 | Phase 16 P03 | 6 min | 2 tasks | 7 files |
 | Phase 16 P04 | 50min | 3 tasks | 9 files |
 | Phase 17-shared-player-and-early-pages-delivery P01 | 2 min | 2 tasks | 4 files |
+| Phase 17 P02 | 2 min | 2 tasks | 4 files |
 
 ### Decisions
 
@@ -70,6 +71,9 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 - [Phase 17]: Keep #/scene and #/scene/ as empty so later UI can show the empty-hash fallback instead of unknown copy. — D-06 requires empty and unknown hashes to stay distinct useful states.
 - [Phase 17]: Do not lowercase hash tokens; Dam-Break stays unknown with maybeRaw preserved. — Canonical ids are lowercase hyphenated tokens. Coercing case would hide invalid shared URLs.
 - [Phase 17]: Known not-ready ids parse as scene; only dam-break is ready in catalog data. — Readiness is catalog metadata, not parser output, so later player code cannot construct a WASM world from a parsed scene kind alone.
+- [Phase 17]: Keep acceptedStepCount pure: no performance.now, document.hidden, leftover accumulator, or rAF. — D-12 caps accepted wall-clock delta at four 1/60-second steps. Hidden-tab pause and leftover catch-up belong to the later player shell.
+- [Phase 17]: Guard 1..=4 in TypeScript before generated advance; poison invalid counts without calling advance. — Rust already rejects 0 and 5+. TypeScript must not cross the WASM boundary with an illegal count or leak generated exception text.
+- [Phase 17]: Forward one advance(n) plus one capture instead of calling nextFrame four times. — Four nextFrame calls would capture four times. WASM-04 needs one animation callback to step 1-4 ticks and still capture once.
 
 ### Pending Todos
 
@@ -92,6 +96,6 @@ No new milestone todos captured. Phase 17 is ready for discussion and planning.
 
 ## Session Continuity
 
-Last session: 2026-09-17T11:47:51.876Z
-Stopped at: Completed 17-01-PLAN.md
+Last session: 2026-09-17T11:51:00.701Z
+Stopped at: Completed 17-02-PLAN.md
 Resume file: None

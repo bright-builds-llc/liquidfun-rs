@@ -13,7 +13,7 @@ The owner approved six varied demos, our own Rust engine via WASM, a playful gal
 - [x] **WASM-01**: A visitor can run and visibly step a particle/rigid-body scene using this repository's Rust engine compiled to WebAssembly, without a C++ runtime or external JavaScript physics engine.
 - [x] **WASM-02**: A contributor can reproducibly build the local JS/TypeScript WASM package and frontend from a clean checkout with documented commands and pinned tool inputs; ordinary native Cargo consumers remain independent of browser tooling.
 - [x] **WASM-03**: The browser renderer receives bulk owned frame data through a typed interface without per-particle JS/Rust calls or exposed raw engine pointers.
-- [ ] **WASM-04**: Switching/resetting a scene releases its prior world and animation resources; bounded stepping, emission and hidden-tab handling prevent unbounded catch-up or particle accumulation.
+- [x] **WASM-04**: Switching/resetting a scene releases its prior world and animation resources; bounded stepping, emission and hidden-tab handling prevent unbounded catch-up or particle accumulation.
 
 ### Playful catalog and player
 
@@ -63,7 +63,7 @@ Each active requirement maps to exactly one new phase, starting at Phase 16. All
 | WASM-01 | Phase 16 | Complete |
 | WASM-02 | Phase 16 | Complete |
 | WASM-03 | Phase 16 | Complete |
-| WASM-04 | Phase 17 | Pending |
+| WASM-04 | Phase 17 | Complete |
 | WEB-01 | Phase 18 | Pending |
 | WEB-02 | Phase 17 | Pending |
 | WEB-03 | Phase 17 | Pending |
