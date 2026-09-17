@@ -5,9 +5,82 @@
 The project is hobby-oriented; [PROJECT-SCOPE.md](PROJECT-SCOPE.md) defines the
 current goals. Linux x64 qualification and a dedicated performance runner do
 not block ordinary development or project completion. The strict parity-bearing
-process below is optional and runs only when explicitly requested. A simpler
-experimental publishing checklist is still under discussion; package publication
-requires a separate user instruction.
+process below is optional and runs only when explicitly requested. Use the
+experimental checklist for ordinary package preparation. Publication, release
+tags and choosing a release version require a separate user instruction.
+
+## Experimental package preparation
+
+This short checklist closes experimental work using existing tools. It does not
+certify complete parity or authorize publication. Linux, C++ campaigns, a
+controlled benchmark host and frozen C/A attestation are optional strict-profile
+requirements, not prerequisites for this checklist.
+
+1. Identify the implementation commit and run the required local checks in order:
+
+   ```bash
+   cargo fmt --all
+   cargo clippy --all-targets --all-features -- -D warnings
+   cargo build --all-targets --all-features
+   cargo test --all-features
+   ```
+
+1. Retain relevant known-bug regression protection and exercise native headless
+   scenarios. For the current particle-group fixes and representative families:
+
+   ```bash
+   cargo test -p liquidfun --test particle_group_properties --test particle_groups --test particle_group_mutation
+   cargo test -p liquidfun-differential --test headless_catalog every_representative_family_executes_and_captures_without_a_display -- --exact
+   cargo xtask docs check
+   ```
+
+   The headless test covers rigid bodies, joints, rope, particles, groups,
+   queries, callbacks and mutations without a display or C++ oracle. Report the
+   actual local platform; replaying a Windows seed locally is not a Windows run.
+
+1. Run `cargo xtask package verify`. It checks package contents and license,
+   excludes private tooling/C++/renderer inputs, and builds/tests the extracted
+   native consumer package outside the repository. Preserve the applicable
+   notices in `THIRD_PARTY_NOTICES.md` and source-map attribution; review changes
+   to license and dependency obligations.
+
+1. Record one successful ordinary macOS Cargo CI run whose `headSha` equals the
+   implementation commit, with its URL and actual job result. This is tested
+   coverage, not a warranty for all macOS machines or other platforms.
+
+1. Record accurate limitations and change notes, including incompatible API
+   changes. APIs remain experimental, parity improves incrementally, and
+   non-macOS platforms are best effort. Preserve safe handles, checked mutation
+   and native Cargo-only consumption.
+
+1. Obtain independent review under [AGENTS.md](AGENTS.md#independent-review).
+   Record the actual human or separate AI reviewer identity, actual review
+   time, and acknowledgment of an exact digest covering the relevant diff and
+   evidence. The implementing agent cannot approve its own work.
+
+Use a brief Markdown record rather than a new registry:
+
+| Field                      | Record                                                                                             |
+| -------------------------- | -------------------------------------------------------------------------------------------------- |
+| Checked source             | Full implementation commit SHA                                                                     |
+| Local checks               | Exact commands, actual results, platform/compiler and log paths                                    |
+| Hosted check               | Cargo CI URL, `headSha`, macOS job/result                                                          |
+| Scope                      | Known limitations, incompatible changes and license/notices review                                 |
+| Independent review         | Reviewer identity/type, UTC review time, digest algorithm/value, bound file set and acknowledgment |
+| Remaining publication work | Minimum-compiler verification and separate version/tag/publication authority                       |
+
+Later documentation-only evidence records may cite the checked implementation
+commit without a frozen C/A transaction; identify their separate commit and
+never imply an untested code change was covered. `just check` is a distinct
+aggregate and does not replace the ordered checks above.
+
+Rust 1.97.0 remains the development pin. Cargo's `rust-version = "1.92"` still
+declares a consumer minimum: verify Rust 1.92 before publication, or deliberately
+revise manifest and documentation together with the consumer impact explained.
+Durable MSRV and stable 1.x API guarantees are deferred. Checklist completion
+does not select a version, create a tag, or publish a package.
+
+## Optional strict qualification profile
 
 The optional strict qualification described below defines the fail-closed path for a parity-bearing `liquidfun`
 release. A checklist item is not evidence: every accepted result must be
@@ -23,6 +96,9 @@ run, and no tracked source-candidate, manifest, and report records accepted by
 closure, or a clean worktree cannot replace those run-bound inputs.
 
 ## Versioning and MSRV
+
+The following commitments apply to the optional strict v1 profile. The current
+experimental API and compiler policy is described in the preparation checklist above.
 
 Releases follow Semantic Versioning. Before 1.0, incompatible public API changes
 may require a minor-version increment and must still be documented. Beginning
@@ -235,7 +311,7 @@ change C or A: validation from D must still explicitly select A, read records
 byte-identical to those committed at A, and restore the retained payload paths.
 Missing, stale, or tampered records and payloads cannot authorize ready copy.
 
-Cargo CI runs `bash scripts/phase15-docs-check.sh`. With no standalone
+The optional Linux quality job in Cargo CI runs `bash scripts/phase15-docs-check.sh`. With no standalone
 attestation marker in README, this runs the default non-ready docs check.
 After projection, it reads the explicit C/A markers, verifies the three tracked
 records against A before selecting the release run, and downloads the exact
