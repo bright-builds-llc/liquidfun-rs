@@ -1,4 +1,10 @@
-//! Construction of the fixed bounded particle-and-rigid-body proof scene.
+//! Construction of the named Dam Break scene (Phase 16 basin proof).
+//!
+//! Documented reset constants — do not retune without updating tests and copy:
+//! gravity `(0, -10)`, 16×12 = 192 particles, radius `0.2`, spacing `0.32`,
+//! origin `(-4.7, 0.4)`, color `(57, 211, 199, 255)`, basin floor `y=0` from
+//! `x=-5.5..5.5` with walls to `y=8`, dynamic circle `(2.5, 5.5)` radius
+//! `0.75`, particle cap 512, timestep `1/60`.
 
 use liquidfun::collision::{CircleShape, FilterData, PolygonShape, Shape};
 use liquidfun::math::Vec2;

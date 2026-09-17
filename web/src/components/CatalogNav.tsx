@@ -3,7 +3,7 @@ import { For } from "solid-js";
 import { SCENES, type SceneId, type SceneRecord } from "../catalog/scenes";
 
 export type CatalogNavProps = {
-  readonly maybeCurrentSceneId?: SceneId;
+  readonly maybeCurrentSceneId?: SceneId | undefined;
 };
 
 function catalogItemClass(scene: SceneRecord, isCurrent: boolean): string {

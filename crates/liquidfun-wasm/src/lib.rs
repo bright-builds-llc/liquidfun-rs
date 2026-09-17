@@ -20,7 +20,7 @@ pub struct ProofSession {
 
 #[wasm_bindgen]
 impl ProofSession {
-    /// Constructs the fixed private proof scene.
+    /// Constructs the named Dam Break scene from the documented reset constants.
     ///
     /// # Errors
     ///

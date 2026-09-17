@@ -1,66 +1,108 @@
-import { createSignal, onCleanup, onMount, Show } from "solid-js";
+import { createEffect, createSignal, onCleanup, Show } from "solid-js";
 
+import { maybeSceneById } from "./catalog/scenes";
+import { CatalogNav } from "./components/CatalogNav";
+import {
+  FallbackPanel,
+  type FallbackPanelProps,
+} from "./components/FallbackPanel";
+import { PlayerPanel, type PlayerStatus } from "./components/PlayerPanel";
+import { SiteFooter } from "./components/SiteFooter";
+import { acceptedStepCount } from "./physics/clock";
 import type { RenderFrame } from "./physics/frame";
 import { loadProofSession } from "./physics/loader";
 import {
   createSceneSession,
   type SceneSession,
 } from "./physics/session";
+import { isStaleGeneration, nextGeneration } from "./player/generation";
+import { observeFrame, type FrameObservation } from "./player/observe";
 import {
   drawRenderFrame,
   resizeCanvasBackingStore,
 } from "./render/canvas";
 import type { Camera } from "./render/camera";
+import { maybeParseSceneRoute, type SceneRoute } from "./routing/hash";
 
-const LOADING_STATUS = "Loading Rust/WASM session…";
-const RUNNING_STATUS = "Running Rust/WASM session";
-const FAILURE_STATUS = "Rust/WASM session failed";
-const DISPOSED_STATUS = "Rust/WASM session disposed";
-const ERROR_COPY =
-  "The Rust/WASM session could not start or continue. Reload the page; if it still fails, rebuild the browser proof.";
+const PAGE_HEADING = "liquidfun-rs playground";
+const PAGE_SUMMARY =
+  "Play experimental Rust physics scenes in the browser. Dam Break is ready; the other five names are listed honestly until they ship.";
+const DEFAULT_TITLE = "liquidfun-rs playground";
+const DAM_BREAK_TITLE = "Dam Break · liquidfun-rs playground";
+const DAM_BREAK_ID = "dam-break";
 const MAX_ERROR_DETAIL_LENGTH = 240;
+const MILLISECONDS_PER_SECOND = 1000;
 
-type FrameObservation = {
-  readonly particleCount: number;
-  readonly rigidShapeCount: number;
-  readonly stepIndex: number;
-  readonly movedFrameCount: number;
-};
-
-type ProofState =
+type PlayerView =
+  | { readonly kind: "fallback" }
   | { readonly kind: "loading" }
-  | { readonly kind: "running"; readonly frame: FrameObservation }
+  | { readonly kind: "playing"; readonly frame: FrameObservation }
+  | { readonly kind: "paused"; readonly frame: FrameObservation }
   | {
       readonly kind: "failure";
       readonly maybeFrame: FrameObservation | undefined;
       readonly maybeDetails: string | undefined;
-    }
-  | { readonly kind: "disposed"; readonly frame: FrameObservation };
+    };
 
-function maybeObservedFrame(
-  state: ProofState,
-): FrameObservation | undefined {
-  if (state.kind === "running" || state.kind === "disposed") {
-    return state.frame;
+function isDamBreakRoute(route: SceneRoute): boolean {
+  return route.kind === "scene" && route.id === DAM_BREAK_ID;
+}
+
+function titleForRoute(route: SceneRoute): string {
+  if (isDamBreakRoute(route)) {
+    return DAM_BREAK_TITLE;
   }
 
-  if (state.kind === "failure") {
-    return state.maybeFrame;
+  if (route.kind !== "scene") {
+    return DEFAULT_TITLE;
+  }
+
+  const maybeScene = maybeSceneById(route.id);
+  if (maybeScene === undefined) {
+    return DEFAULT_TITLE;
+  }
+
+  return `${maybeScene.title} · liquidfun-rs playground`;
+}
+
+function fallbackProps(route: SceneRoute): FallbackPanelProps {
+  if (route.kind === "empty") {
+    return { kind: "empty" };
+  }
+
+  if (route.kind === "unknown") {
+    return { kind: "unknown" };
+  }
+
+  const maybeScene = maybeSceneById(route.id);
+  return {
+    kind: "not-ready",
+    sceneTitle: maybeScene?.title ?? route.id,
+  };
+}
+
+function maybeObservedFrame(view: PlayerView): FrameObservation | undefined {
+  if (view.kind === "playing" || view.kind === "paused") {
+    return view.frame;
+  }
+
+  if (view.kind === "failure") {
+    return view.maybeFrame;
   }
 
   return undefined;
 }
 
-function statusText(state: ProofState): string {
-  switch (state.kind) {
-    case "loading":
-      return LOADING_STATUS;
-    case "running":
-      return RUNNING_STATUS;
+function playerStatus(view: PlayerView): PlayerStatus {
+  switch (view.kind) {
+    case "playing":
+      return "playing";
+    case "paused":
+      return "paused";
     case "failure":
-      return FAILURE_STATUS;
-    case "disposed":
-      return DISPOSED_STATUS;
+      return "failed";
+    default:
+      return "loading";
   }
 }
 
@@ -70,182 +112,39 @@ function maybeDevelopmentDetails(error: unknown): string | undefined {
   }
 
   const message =
-    error instanceof Error ? error.message : "Unknown browser proof failure";
+    error instanceof Error ? error.message : "Unknown Dam Break failure";
   return `Details: ${message.slice(0, MAX_ERROR_DETAIL_LENGTH)}`;
 }
 
-function maybeFailureDetails(state: ProofState): string | undefined {
-  return state.kind === "failure" ? state.maybeDetails : undefined;
+function prefersReducedMotion(): boolean {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-function valuesDiffer(
-  previousValues: Float32Array,
-  currentValues: Float32Array,
-): boolean {
-  if (previousValues.length !== currentValues.length) {
-    return true;
-  }
-
-  for (let index = 0; index < currentValues.length; index += 1) {
-    if (previousValues[index] !== currentValues[index]) {
-      return true;
-    }
-  }
-
-  return false;
-}
-
-function frameMoved(
-  previousFrame: RenderFrame,
-  currentFrame: RenderFrame,
-): boolean {
-  return (
-    valuesDiffer(
-      previousFrame.particlePositions,
-      currentFrame.particlePositions,
-    ) ||
-    valuesDiffer(previousFrame.rigidCircles, currentFrame.rigidCircles)
-  );
-}
-
-function observeFrame(
-  frame: RenderFrame,
-  maybePreviousFrame: RenderFrame | undefined,
-  previousMovedFrameCount: number,
-): FrameObservation {
-  const movedFrameCount =
-    maybePreviousFrame !== undefined &&
-    frameMoved(maybePreviousFrame, frame)
-      ? previousMovedFrameCount + 1
-      : previousMovedFrameCount;
-
-  return {
-    particleCount: frame.particleCount,
-    rigidShapeCount: frame.rigidShapeCount,
-    stepIndex: frame.stepIndex,
-    movedFrameCount,
-  };
-}
-
-type ProofPageProps = {
-  readonly state: ProofState;
-  readonly assignCanvas: (canvas: HTMLCanvasElement) => void;
-  readonly onDispose: () => void;
-};
-
-function ProofPage(props: ProofPageProps) {
-  const maybeFrame = () => maybeObservedFrame(props.state);
-  const maybeDetails = () => maybeFailureDetails(props.state);
-  const hasFrame = () => maybeFrame() !== undefined;
-
-  return (
-    <main
-      aria-labelledby="proof-title"
-      data-wasm-initialized={hasFrame() ? "true" : undefined}
-      data-step-index={maybeFrame()?.stepIndex}
-      data-moved-frame-count={maybeFrame()?.movedFrameCount}
-    >
-      <header class="page-header">
-        <h1 id="proof-title">LiquidFun Rust/WASM browser proof</h1>
-        <p>
-          Live particle and rigid-body state produced by the Rust engine and
-          drawn with Canvas 2D.
-        </p>
-      </header>
-
-      <section
-        class="proof-panel"
-        aria-labelledby="session-status-title"
-      >
-        <h2 id="session-status-title">Session status</h2>
-
-        <div class="status-row">
-          <output
-            class={`session-status session-status--${props.state.kind}`}
-            aria-live="polite"
-            aria-atomic="true"
-          >
-            <span class="status-dot" aria-hidden="true" />
-            {statusText(props.state)}
-          </output>
-
-          <dl class="session-metadata">
-            <div>
-              <dt>Runtime</dt>
-              <dd>Rust engine · WebAssembly</dd>
-            </div>
-            <div>
-              <dt class="visually-hidden">Particle count</dt>
-              <dd>
-                Particles: {maybeFrame()?.particleCount ?? "—"}
-              </dd>
-            </div>
-            <div>
-              <dt class="visually-hidden">Rigid shape count</dt>
-              <dd>
-                Rigid shapes: {maybeFrame()?.rigidShapeCount ?? "—"}
-              </dd>
-            </div>
-          </dl>
-        </div>
-
-        <Show when={props.state.kind === "failure"}>
-          <div class="error-message" role="alert">
-            <p>{ERROR_COPY}</p>
-            <Show when={maybeDetails()}>
-              {(details) => <p class="error-details">{details()}</p>}
-            </Show>
-          </div>
-        </Show>
-
-        <figure>
-          <div class="viewport-frame">
-            <canvas
-              ref={(canvas) => props.assignCanvas(canvas)}
-              width="960"
-              height="540"
-              role="img"
-              aria-label="Live Rust physics scene: particles moving in a basin around a rigid body."
-            >
-              Canvas is required to display the Rust/WASM physics proof.
-            </canvas>
-            <Show when={!hasFrame()}>
-              <div class="empty-state">
-                <strong>Waiting for first Rust frame</strong>
-                <span>
-                  The viewport will update after the WebAssembly session
-                  starts.
-                </span>
-              </div>
-            </Show>
-          </div>
-          <figcaption>
-            Live frame from owned Rust/WASM particle and rigid geometry.
-          </figcaption>
-        </figure>
-
-        <button
-          type="button"
-          disabled={props.state.kind !== "running"}
-          onClick={props.onDispose}
-        >
-          Dispose session
-        </button>
-      </section>
-    </main>
-  );
-}
-
-/** Minimal semantic shell for the Rust/WASM Canvas proof. */
+/** One-session Dam Break playground shell with hash routing and bounded playback. */
 export function App() {
-  const [state, setState] = createSignal<ProofState>({ kind: "loading" });
+  const [route, setRoute] = createSignal(
+    maybeParseSceneRoute(window.location.hash),
+  );
+  const [view, setView] = createSignal<PlayerView>(
+    isDamBreakRoute(maybeParseSceneRoute(window.location.hash))
+      ? { kind: "loading" }
+      : { kind: "fallback" },
+  );
+
+  let generation = 0;
   let maybeCanvas: HTMLCanvasElement | undefined;
+  let maybeContext: CanvasRenderingContext2D | undefined;
   let maybeSession: SceneSession | undefined;
   let maybeAnimationFrameId: number | undefined;
+  let maybeLastTimestamp: number | undefined;
   let maybePreviousFrame: RenderFrame | undefined;
   let maybeCamera: Camera | undefined;
   let maybeResizeObserver: ResizeObserver | undefined;
-  let stopped = false;
+
+  function incrementGeneration(): number {
+    generation = nextGeneration(generation);
+    return generation;
+  }
 
   function cancelPendingFrame(): void {
     if (maybeAnimationFrameId === undefined) {
@@ -262,17 +161,10 @@ export function App() {
     maybeObserver?.disconnect();
   }
 
-  function stopResources(): void {
-    if (stopped) {
-      return;
-    }
-
-    stopped = true;
-    disconnectResizeObserver();
-    cancelPendingFrame();
-
+  function disposeOwnedSession(): void {
     const maybeOwnedSession = maybeSession;
     maybeSession = undefined;
+    maybeLastTimestamp = undefined;
     if (maybeOwnedSession === undefined) {
       return;
     }
@@ -284,14 +176,23 @@ export function App() {
     }
   }
 
-  function fail(error: unknown): void {
-    if (stopped) {
-      return;
-    }
+  function abandonDamBreak(): void {
+    incrementGeneration();
+    disconnectResizeObserver();
+    cancelPendingFrame();
+    disposeOwnedSession();
+    maybeCanvas = undefined;
+    maybeContext = undefined;
+    maybeCamera = undefined;
+    maybePreviousFrame = undefined;
+    setView({ kind: "fallback" });
+  }
 
-    const maybeFrame = maybeObservedFrame(state());
-    stopResources();
-    setState({
+  function fail(error: unknown): void {
+    const maybeFrame = maybeObservedFrame(view());
+    cancelPendingFrame();
+    disposeOwnedSession();
+    setView({
       kind: "failure",
       maybeFrame,
       maybeDetails: maybeDevelopmentDetails(error),
@@ -299,39 +200,55 @@ export function App() {
   }
 
   function scheduleFrame(context: CanvasRenderingContext2D): void {
-    if (stopped) {
-      return;
-    }
-
-    maybeAnimationFrameId = requestAnimationFrame(() => {
+    maybeAnimationFrameId = requestAnimationFrame((timestamp) => {
       maybeAnimationFrameId = undefined;
-      if (stopped) {
+      if (view().kind !== "playing") {
+        return;
+      }
+
+      if (document.hidden) {
+        maybeLastTimestamp = undefined;
+        scheduleFrame(context);
         return;
       }
 
       const maybeOwnedSession = maybeSession;
       if (maybeOwnedSession === undefined) {
-        fail(new Error("Rust/WASM session owner is unavailable"));
+        fail(new Error("Dam Break session owner is unavailable"));
         return;
       }
+
       const camera = maybeCamera;
       if (camera === undefined) {
         fail(new Error("Canvas camera is unavailable"));
         return;
       }
 
-      try {
-        const frame = maybeOwnedSession.nextFrame();
-        drawRenderFrame(context, frame, camera);
+      const maybePreviousTimestamp = maybeLastTimestamp;
+      maybeLastTimestamp = timestamp;
+      if (maybePreviousTimestamp === undefined) {
+        scheduleFrame(context);
+        return;
+      }
 
-        const previousObservation = maybeObservedFrame(state());
+      const elapsedSeconds =
+        (timestamp - maybePreviousTimestamp) / MILLISECONDS_PER_SECOND;
+      const stepCount = acceptedStepCount(elapsedSeconds);
+      if (stepCount === 0) {
+        scheduleFrame(context);
+        return;
+      }
+
+      try {
+        const frame = maybeOwnedSession.nextFrame(stepCount);
+        drawRenderFrame(context, frame, camera);
         const observation = observeFrame(
           frame,
           maybePreviousFrame,
-          previousObservation?.movedFrameCount ?? 0,
+          maybeObservedFrame(view())?.movedFrameCount ?? 0,
         );
         maybePreviousFrame = frame;
-        setState({ kind: "running", frame: observation });
+        setView({ kind: "playing", frame: observation });
         scheduleFrame(context);
       } catch (error) {
         fail(error);
@@ -339,13 +256,56 @@ export function App() {
     });
   }
 
-  async function startSession(
+  function connectResizeObserver(
+    canvas: HTMLCanvasElement,
     context: CanvasRenderingContext2D,
-  ): Promise<void> {
+  ): void {
+    disconnectResizeObserver();
+    maybeResizeObserver = new ResizeObserver(() => {
+      try {
+        const resizedBounds = canvas.getBoundingClientRect();
+        const resizedCamera = resizeCanvasBackingStore(
+          canvas,
+          resizedBounds.width,
+          resizedBounds.height,
+          window.devicePixelRatio,
+        );
+        maybeCamera = resizedCamera;
+        const maybeFrame = maybePreviousFrame;
+        if (maybeFrame !== undefined) {
+          drawRenderFrame(context, maybeFrame, resizedCamera);
+        }
+      } catch (error) {
+        fail(error);
+      }
+    });
+    maybeResizeObserver.observe(canvas);
+  }
+
+  async function startDamBreak(): Promise<void> {
+    const started = incrementGeneration();
+    cancelPendingFrame();
+    disposeOwnedSession();
+    maybePreviousFrame = undefined;
+    maybeLastTimestamp = undefined;
+    setView({ kind: "loading" });
+
+    const canvas = maybeCanvas;
+    const context = maybeContext;
+    if (canvas === undefined || context === undefined) {
+      fail(new Error("Canvas element is unavailable"));
+      return;
+    }
+
     try {
       const generatedSession = await loadProofSession();
+      if (isStaleGeneration(started, generation)) {
+        createSceneSession(generatedSession).dispose();
+        return;
+      }
+
       const ownedSession = createSceneSession(generatedSession);
-      if (stopped) {
+      if (isStaleGeneration(started, generation)) {
         ownedSession.dispose();
         return;
       }
@@ -356,33 +316,30 @@ export function App() {
         fail(new Error("Canvas camera is unavailable"));
         return;
       }
+
       const frame = ownedSession.nextFrame();
       drawRenderFrame(context, frame, camera);
       const observation = observeFrame(frame, undefined, 0);
       maybePreviousFrame = frame;
-      setState({ kind: "running", frame: observation });
+
+      if (prefersReducedMotion()) {
+        setView({ kind: "paused", frame: observation });
+        return;
+      }
+
+      setView({ kind: "playing", frame: observation });
       scheduleFrame(context);
     } catch (error) {
+      if (isStaleGeneration(started, generation)) {
+        return;
+      }
+
       fail(error);
     }
   }
 
-  function disposeSession(): void {
-    const currentState = state();
-    if (currentState.kind !== "running") {
-      return;
-    }
-
-    stopResources();
-    setState({ kind: "disposed", frame: currentState.frame });
-  }
-
-  onMount(() => {
-    const canvas = maybeCanvas;
-    if (canvas === undefined) {
-      fail(new Error("Canvas element is unavailable"));
-      return;
-    }
+  function assignCanvas(canvas: HTMLCanvasElement): void {
+    maybeCanvas = canvas;
 
     try {
       const bounds = canvas.getBoundingClientRect();
@@ -392,51 +349,132 @@ export function App() {
         bounds.height,
         window.devicePixelRatio,
       );
-      const maybeContext = canvas.getContext("2d");
-      if (maybeContext === null) {
+      const maybeNextContext = canvas.getContext("2d");
+      if (maybeNextContext === null) {
         fail(new Error("Canvas 2D is unavailable"));
         return;
       }
 
-      maybeResizeObserver = new ResizeObserver(() => {
-        if (stopped) {
-          return;
-        }
-
-        try {
-          const resizedBounds = canvas.getBoundingClientRect();
-          const resizedCamera = resizeCanvasBackingStore(
-            canvas,
-            resizedBounds.width,
-            resizedBounds.height,
-            window.devicePixelRatio,
-          );
-          maybeCamera = resizedCamera;
-          const maybeFrame = maybePreviousFrame;
-          if (maybeFrame !== undefined) {
-            drawRenderFrame(maybeContext, maybeFrame, resizedCamera);
-          }
-        } catch (error) {
-          fail(error);
-        }
-      });
-      maybeResizeObserver.observe(canvas);
-
-      void startSession(maybeContext);
+      maybeContext = maybeNextContext;
+      connectResizeObserver(canvas, maybeNextContext);
+      void startDamBreak();
     } catch (error) {
       fail(error);
     }
+  }
+
+  function playScene(): void {
+    const current = view();
+    if (current.kind !== "paused") {
+      return;
+    }
+
+    const context = maybeContext;
+    if (context === undefined) {
+      fail(new Error("Canvas 2D is unavailable"));
+      return;
+    }
+
+    maybeLastTimestamp = undefined;
+    setView({ kind: "playing", frame: current.frame });
+    scheduleFrame(context);
+  }
+
+  function pauseScene(): void {
+    const current = view();
+    if (current.kind !== "playing") {
+      return;
+    }
+
+    cancelPendingFrame();
+    maybeLastTimestamp = undefined;
+    setView({ kind: "paused", frame: current.frame });
+  }
+
+  function recreateScene(): void {
+    if (!isDamBreakRoute(route())) {
+      return;
+    }
+
+    void startDamBreak();
+  }
+
+  function onHashChange(): void {
+    const nextRoute = maybeParseSceneRoute(window.location.hash);
+    if (!isDamBreakRoute(nextRoute)) {
+      abandonDamBreak();
+    }
+
+    setRoute(nextRoute);
+  }
+
+  function onVisibilityChange(): void {
+    maybeLastTimestamp = undefined;
+  }
+
+  window.addEventListener("hashchange", onHashChange);
+  document.addEventListener("visibilitychange", onVisibilityChange);
+
+  createEffect(() => {
+    const currentRoute = route();
+    document.title = titleForRoute(currentRoute);
+    if (isDamBreakRoute(currentRoute)) {
+      return;
+    }
+
+    abandonDamBreak();
   });
 
-  onCleanup(stopResources);
+  onCleanup(() => {
+    window.removeEventListener("hashchange", onHashChange);
+    document.removeEventListener("visibilitychange", onVisibilityChange);
+    abandonDamBreak();
+  });
+
+  const maybeFrame = () => maybeObservedFrame(view());
+  const maybeCurrentSceneId = () => {
+    const currentRoute = route();
+    return isDamBreakRoute(currentRoute) ? DAM_BREAK_ID : undefined;
+  };
+  const maybeFailureDetails = () => {
+    const current = view();
+    return current.kind === "failure" ? current.maybeDetails : undefined;
+  };
+  const maybeSceneAttr = () => {
+    const currentRoute = route();
+    return currentRoute.kind === "scene" ? currentRoute.id : undefined;
+  };
 
   return (
-    <ProofPage
-      state={state()}
-      assignCanvas={(canvas) => {
-        maybeCanvas = canvas;
-      }}
-      onDispose={disposeSession}
-    />
+    <main
+      aria-labelledby="site-title"
+      data-playback={view().kind}
+      data-scene={maybeSceneAttr()}
+      data-step-index={maybeFrame()?.stepIndex}
+    >
+      <header class="page-header">
+        <h1 id="site-title">{PAGE_HEADING}</h1>
+        <p>{PAGE_SUMMARY}</p>
+      </header>
+
+      <CatalogNav maybeCurrentSceneId={maybeCurrentSceneId()} />
+
+      <Show
+        when={isDamBreakRoute(route())}
+        fallback={<FallbackPanel {...fallbackProps(route())} />}
+      >
+        <PlayerPanel
+          status={playerStatus(view())}
+          maybeDetails={maybeFailureDetails()}
+          assignCanvas={assignCanvas}
+          onPlay={playScene}
+          onPause={pauseScene}
+          onReset={recreateScene}
+          onRetry={recreateScene}
+        />
+      </Show>
+
+      <SiteFooter />
+    </main>
   );
 }

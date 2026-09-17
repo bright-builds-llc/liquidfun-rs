@@ -4,7 +4,7 @@ export type PlayerStatus = "loading" | "playing" | "paused" | "failed";
 
 export type PlayerPanelProps = {
   readonly status: PlayerStatus;
-  readonly maybeDetails?: string;
+  readonly maybeDetails?: string | undefined;
   readonly assignCanvas: (canvas: HTMLCanvasElement) => void;
   readonly onPlay: () => void;
   readonly onPause: () => void;
