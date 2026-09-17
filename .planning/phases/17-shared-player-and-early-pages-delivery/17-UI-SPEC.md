@@ -1,7 +1,8 @@
 ---
 phase: 17
 slug: shared-player-and-early-pages-delivery
-status: draft
+status: approved
+reviewed_at: 2026-09-17T11:28:00Z
 shadcn_initialized: false
 preset: none
 created: 2026-09-17
