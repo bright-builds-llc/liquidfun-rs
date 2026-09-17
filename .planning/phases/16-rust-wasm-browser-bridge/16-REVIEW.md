@@ -1,3 +1,49 @@
+---
+phase: 16-rust-wasm-browser-bridge
+reviewed: 2026-09-17T03:57:06Z
+depth: standard
+files_reviewed: 32
+files_reviewed_list:
+  - Cargo.toml
+  - Cargo.lock
+  - crates/liquidfun-wasm/Cargo.toml
+  - crates/liquidfun-wasm/src/lib.rs
+  - crates/liquidfun-wasm/src/frame.rs
+  - crates/liquidfun-wasm/src/scene.rs
+  - crates/liquidfun-wasm/src/session.rs
+  - .gitignore
+  - justfile
+  - scripts/web-build.ts
+  - scripts/phase16-closure.ts
+  - web/package.json
+  - web/bun.lock
+  - web/tsconfig.json
+  - web/vite.config.ts
+  - web/vitest.config.ts
+  - web/playwright.config.ts
+  - web/index.html
+  - web/src/physics/frame.ts
+  - web/src/physics/loader.ts
+  - web/src/physics/session.ts
+  - web/src/render/camera.ts
+  - web/src/render/canvas.ts
+  - web/src/main.tsx
+  - web/src/App.tsx
+  - web/src/app.css
+  - web/tests/frame.test.ts
+  - web/tests/session.test.ts
+  - web/tests/camera.test.ts
+  - web/e2e/rust-wasm-proof.spec.ts
+  - README.md
+  - TESTING.md
+findings:
+  critical: 0
+  warning: 3
+  info: 0
+  total: 3
+status: issues_found
+---
+
 # Phase 16 Independent AI Review
 
 ## Reviewer and scope
@@ -288,3 +334,97 @@ independent review.
 
 This review grants no package publication, tag, release, deployment, or other
 release authority.
+
+## GSD Source Code Review
+
+**Reviewed:** 2026-09-17T03:57:06Z
+**Depth:** standard
+**Files Reviewed:** 32
+**Status:** issues_found
+
+### Summary
+
+The standard-depth source review found three warnings in the Phase 16 closure
+validator. The Rust/WASM ownership boundary, copied frame validation, browser
+session disposal, renderer separation, dependency pins, and native package
+isolation were otherwise consistent with the approved Phase 16 context,
+research, and UI specification.
+
+The reviewed source hashes exactly match the fixed manifest acknowledged above.
+The existing exact-digest independent AI review and acknowledgment remain
+complete and unchanged in meaning; this section records a separate source-code
+review of those same bytes.
+
+Material guidance came from the repo-local hobby scope and evidence-preservation
+rules, the architecture, code-shape, testing, verification, Rust, and
+TypeScript/JavaScript standards, and the approved Phase 16 context, research,
+and UI contract.
+
+### Warnings
+
+#### WR-01: Closure does not bind browser proof to the checked source
+
+**File:** `scripts/phase16-closure.ts:365-409`
+
+**Issue:** `workingTreeIdentity()` hashes only the unstaged diff, while omitting
+staged diff bytes and untracked file bytes. More importantly,
+`validateBrowserEvidence()` does not parse or compare the browser proof's
+source identity with the source identity captured for closure. A smoke can
+therefore be produced from source state A, followed by source changes and a
+passing closure over state B; the resulting summary combines both without
+rejecting the mismatch. The selected attempt was independently shown to use
+the acknowledged source, so this does not alter its historical result, but the
+closure tool does not enforce that property itself.
+
+**Fix:** Use one shared source-identity function for smoke and closure that
+hashes status, unstaged and staged diffs, and sorted untracked path/content
+bytes. Parse the proof/provenance source as runtime data, require it to equal
+the pre-closure identity, recapture after all commands, and require the identity
+to remain unchanged. Add a focused test that changes staged or untracked source
+between smoke and closure and expects fail-closed rejection.
+
+#### WR-02: Malformed proof data can pass validation or escape its directory
+
+**File:** `scripts/phase16-closure.ts:225-264`
+
+**Issue:** The JSON value is asserted to `BrowserProof` without runtime schema
+validation. `Object.values(proof.assertions).every(Boolean)` accepts an empty
+assertion object, and an empty artifact object also passes. Artifact confinement
+uses a raw string prefix, so a path such as
+`target/phase16/closure-attempt-N/browser/../../...` passes the prefix check
+before `resolve()` traverses outside the attempt. The Playwright report check
+only finds attachment names recursively and does not bind those attachment
+bytes to the proof's required artifacts.
+
+**Fix:** Parse an exact bounded proof schema, require the complete named
+assertion and artifact sets, reject unknown/missing entries, resolve each path,
+and verify confinement with `relative(attemptBrowserDirectory, resolvedPath)`
+before reading. Verify the three PNG dimensions and hashes and bind each
+required Playwright attachment to the corresponding retained artifact bytes.
+Add malformed-empty, traversal, missing-artifact, and attachment-mismatch
+tests.
+
+#### WR-03: Early validation failures leave no failure summary
+
+**File:** `scripts/phase16-closure.ts:400-413`
+
+**Issue:** Directory creation, source capture, and browser-evidence validation
+run before the `try` block. If any of them fails after `closure/` is created,
+the catch path never writes `closure-summary.json`. The retained attempt is then
+incomplete, and rerunning against it fails because the closure directories
+already exist. This breaks the repository's failed-record preservation and
+diagnosability contract.
+
+**Fix:** Put all fallible attempt work inside a transaction-like `try` that can
+write an identity-last failure summary with optional partial fields. Preserve
+the original error, do not overwrite an existing record, and add a test proving
+that malformed browser evidence leaves one bounded failed summary in the fresh
+attempt.
+
+---
+
+_Reviewed: 2026-09-17T03:57:06Z_
+_Reviewer: Cursor AI (gsd-code-reviewer)_
+_Depth: standard_
+
+GSD_SOURCE_CODE_REVIEW_COMPLETE
