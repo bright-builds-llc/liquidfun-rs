@@ -1,99 +1,88 @@
 ---
 generated_by: gsd-discuss-phase
 lifecycle_mode: yolo
-phase_lifecycle_id: 15-2026-09-14T16-41-28
-generated_at: 2026-09-14T16:43:10.303691+00:00
+phase_lifecycle_id: 15-hobby-2026-09-17T00-43-37
+generated_at: 2026-09-17T00:43:37.323921+00:00
 ---
 
-# Phase 15: Re-establish Candidate Evidence - Context
+# Phase 15: Hobby-project Wrap-up — Revised Context
 
-**Gathered:** 2026-09-14
-**Status:** Scope revised; Linux qualification optional; further simplifications under discussion
-**Mode:** Yolo
+**Gathered:** 2026-09-16 (local date)
+**Status:** Ready for replanning; previous strict campaign remains deferred
+**Mode:** Yolo — recommended defaults auto-selected, not a claim of individual human answers
 
 <domain>
 ## Phase Boundary
 
-The original boundary below is deferred and applies only to an explicitly requested strict qualification campaign. Current hobby scope follows D-11/D-12 and `PROJECT-SCOPE.md`.
+Capture and implement a small wrap-up for the existing experimental Rust physics library: consistent maturity/support documentation, a short experimental-release checklist, a useful native example check, and an accurate completion record. This applies the owner's explicit hobby scope change and the immediately preceding proposal to re-discuss Phase 15. It does not restart the original strict qualification campaign or add physics features.
 
-Original boundary: establish a green full-SHA v1.0 candidate, collect all required retained evidence, validate frozen-source attestation, and repeat milestone acceptance audit. Address PLAT-01, PLAT-05 and DOCS-09 without expanding physics, platform, or release-publication scope.
+Existing plans 15-01 through 15-12 belong to the earlier lifecycle. Replan before executing; preserve historical completed work and label unexecuted strict work deferred rather than passed. The roadmap still contains the original optional strict goal; reconcile its active routing during replanning. No plan execution or publication is authorized by this discuss-only command.
 </domain>
 
 <decisions>
-## Current owner direction — 2026-09-16
+## Carried-forward owner decisions
 
-- **D-11:** The owner removed Linux x64 testing as a requirement and reframed the project as a fun hobby implementation. `PROJECT-SCOPE.md` supersedes the production-quality completion goal and mandatory Linux/dedicated-runner gate. The old frozen C and its evidence remain historical; new scope work need not finish C-to-A attestation.
-- **D-12:** Linux Cargo verification and oracle workflows are explicit manual options. The owner subsequently selected one macOS CI job plus local checks and optional manual expensive workflows. A lighter publishing checklist remains under discussion. Preserve truthful strict validators and evidence semantics.
+- **D-10:** Independent review may be performed by a separate identified AI reviewer under AGENTS.md; do not represent AI review as human approval.
+- **D-11:** A fun, useful experimental library is the goal. Linux x64 qualification and dedicated benchmark infrastructure are not ordinary completion requirements.
+- **D-12:** Keep local checks plus one macOS Cargo CI job. Cross-platform, C++ comparisons, Miri/sanitizers, fuzz, coverage and benchmarks are optional manual checks. Managed Bright Builds automation remains separate.
 
-## Historical strict-profile implementation decisions
+## Auto-selected decisions for the revised phase
 
-The decisions below describe the original optional certification campaign; they do not override D-11/D-12 or restart it automatically.
+### Experimental completion and release preparation
+- **D-13:** Adopt a short experimental-release checklist: required local Rust checks, relevant known-bug regressions, one representative native/headless example, a passing macOS Cargo CI result for the implementation being closed, accurate limitations/change notes, license/notices, and independent review. Record the checked source and actual results briefly. Do not require a full evidence registry, frozen C/A attestation, Linux, C++ campaigns or controlled benchmarking for this checklist.
+- **D-14:** Reuse `cargo xtask package verify` before preparing a publishable package: it validates contents/notices and builds/tests an extracted consumer package outside the repository. No new release framework. Checklist completion is preparation, not a package publication or release-tag instruction; do not choose a release version in this discussion.
+- **D-15:** Keep strict qualification separate and truthfully non-ready until its original validators pass. Preserve those validators, historical records and source-bound claims. Describe experimental usability independently; do not make strict audit accept a reduced evidence bundle.
 
+### Compatibility promises
+- **D-16:** Treat non-macOS platforms as best effort with optional manual testing. Keep existing Windows fixes and regressions. Describe macOS CI as tested coverage, not a blanket platform warranty. No new platform matrix or long-term platform guarantee.
+- **D-17:** Improve feature/behavior parity incrementally, document known differences and supported scenarios, and retain existing regressions. Exhaustive upstream closure is not a hobby completion gate. Do not claim complete parity from local checks or omit known failures.
+- **D-18:** Public APIs are experimental and may evolve; document incompatible changes before an eventual release. Preserve safe handles, checked mutation and native Cargo-only consumption. No stable 1.x API commitment is introduced.
+- **D-19:** Keep the pinned Rust 1.97.0 development toolchain and existing Cargo `rust-version = "1.92"` metadata. Defer a durable MSRV promise, not the meaning of the declared minimum: verify it before publication, or deliberately revise manifest and docs together with a documented consumer impact. No mandatory recurring MSRV matrix for ordinary hobby work.
 
-### Candidate freeze
-- **D-01:** Finish source, tooling, planning and prerequisite fixes before freezing a clean reviewed full 40-hex candidate SHA. All accepted producers bind that SHA; never substitute later HEAD or Phase 14 D2 repair proof.
-- **D-02:** Reuse existing release/attestation and producer contracts. Audit their actual end-to-end behavior before expensive production; fix demonstrated orchestration defects with negative tests instead of weakening required evidence, hashes, source confinement, or review authority.
-- **D-03:** Preserve the frozen-source/later-attestation separation. Planning, ordinary docs and scripts are outside the current nine-path attestation allowlist. Plan an explicit clean checkout/range strategy so ongoing GSD metadata does not falsify the frozen-source attestation.
+### Bounded handoff
+- **D-20:** Replan this phase as documentation/checklist reconciliation plus focused verification and a completion record. Explicitly supersede incompatible old plan objectives while retaining their provenance. Reconcile PROJECT-SCOPE.md's formerly pending proposals and stale release/support wording during execution. No new solver work, sweeping tooling deletion or new certification framework.
+- **D-21:** Use on-demand local benchmarks for diagnosis; published comparisons identify workload, hardware, compiler and limitations. Controlled-host strict evidence remains optional. Retain local precommit checks required by AGENTS.md; do not advertise `just check` as their equivalent.
 
-### Evidence and recovery
-- **D-04:** Run inexpensive source-bound and exact-candidate Cargo/Oracle prerequisites first, then independent producers where resources permit. Collect all 19 required registry entries through the actual reviewed platform, oracle, safety, fuzz, regression, coverage, performance and release workflows.
-- **D-05:** Retain complete bounded artifacts, raw measurements, metadata, logs, checksums and run/attempt identities promptly in distinct attempt directories. Reuse only independently valid same-candidate complete outputs; diagnose failed runs and reconcile uncertain dispatches before retrying.
-- **D-06:** Preserve one exact package across MSRV/platform verification and release aggregation. Keep canonical D1, portability D2 and diagnostic D3 evidence distinct; never widen tolerances or self-bless expected oracle outputs.
-
-### Infrastructure and acceptance
-- **D-07:** Controlled performance requires the reviewed `performance-controlled-linux-x64` runner and matching `PERFORMANCE_CONTROLLED_HOST_IDENTITY`, complete 32 cases/14 workloads, and existing measurement policy. Shared-host scheduled results remain diagnostic. On 2026-09-14 repository API listed zero runners and repository secret list lacked this secret; organization APIs returned 403. An asynchronous question requests existing approved infrastructure details; independent work continues.
-- **D-08:** Standing authorization in AGENTS.md dated 2026-09-13 authorizes routine diagnosis, fixes, checks, commits, ordinary main pushes and relevant workflow recovery. Older per-candidate approval or one-attempt limits do not apply. Missing access, material scope expansion, destructive/security changes, package release and acceptance waivers remain outside that standing scope.
-- **D-09:** Keep public status non-ready until aggregation and both worktree/committed-range attestation pass. Then project accepted source/attestation identities and repeat the milestone audit for all requirements and critical end-to-end flows. Do not mark missing evidence complete.
-
-- **D-10:** On 2026-09-16 the owner explicitly authorized independent AI review and removed the independently identified human reviewer requirement. Apply AGENTS.md Independent review: a separate identified AI reviewer may inspect and acknowledge the exact packet digest; preserve all other evidence and transaction checks. Historical human-only clauses are superseded, not retroactively relabeled.
+### Historical decisions
+D-01 through D-09 described the original strict campaign and remain historical in git and the earlier discussion log. D-10 through D-21 govern this revised hobby wrap-up; strict evidence and publication boundaries still apply when their specific operations are explicitly selected.
 
 ### Agent discretion
-- Choose bounded orchestration, attempt-directory names, plan granularity and independent scheduling; preserve the exact acceptance contracts. Correct demonstrably broken producer plumbing before choosing the final frozen candidate.
+Choose a concise checklist layout, one existing representative native example, documentation organization and a small plan decomposition. Preserve reusable tooling and known-bug tests. No pending GSD todos matched this phase.
 </decisions>
 
 <canonical-refs>
 ## Canonical References
 
-**Downstream agents MUST read these before planning or implementing.**
+**Downstream agents must read these before planning or implementing.**
 
-### Authority and requirements
-- `AGENTS.md`, `AGENTS.bright-builds.md`, `standards-overrides.md` — local instructions and standing authorization.
-- `.planning/PROJECT.md`, `.planning/REQUIREMENTS.md`, `.planning/ROADMAP.md`, `.planning/v1.0-MILESTONE-AUDIT.md` — scope and gaps; older audit failures must be reassessed using current evidence.
-- `.planning/phases/12-performance-portability-and-release-hardening/12-CONTEXT.md`, `.planning/phases/13-restore-evidence-and-replay-integrity/13-CONTEXT.md`, `.planning/phases/14-repair-windows-particle-group-invariants/14-CONTEXT.md`, `.planning/phases/14-repair-windows-particle-group-invariants/14-VERIFICATION.md` — inherited closed policies and D2 repair limits.
-
-### Release and producers
-- `RELEASE.md`, `BENCHMARKING.md`, `TESTING.md`, `SAFETY.md`, `UPSTREAM.md` — package, evidence and publication boundaries.
-- `reference/release/required-evidence.toml`, `reference/release/schema.json`, `reference/performance/manifest.toml`, `reference/performance/policy.json`, `reference/upstream-lock.toml` — closed evidence and provenance inputs.
-- `.github/workflows/release.yml`, `.github/workflows/performance.yml`, `scripts/phase12-release-evidence.sh`, `scripts/phase12-release-evidence/aggregation.sh` — actual producer handoff.
-- `tools/xtask/src/release.rs`, `tools/xtask/src/release/attestation.rs`, `tools/xtask/src/release/validation.rs`, `tools/xtask/src/phase13_acceptance.rs` — acceptance validators.
+- `AGENTS.md`, `AGENTS.bright-builds.md`, `standards-overrides.md` — standing authority, independent review, local checks and hobby exceptions.
+- `PROJECT-SCOPE.md`, `.planning/PROJECT.md`, `.planning/REQUIREMENTS.md`, `.planning/ROADMAP.md` — current hobby scope and retained strict history; previously pending proposals are resolved by D-13 through D-21 for planning.
+- `README.md`, `CONTRIBUTING.md`, `RELEASE.md`, `TESTING.md`, `BENCHMARKING.md`, `COMPATIBILITY.md` — maturity, contributor commands, release and support wording to reconcile.
+- `Cargo.toml`, `crates/liquidfun/Cargo.toml`, `rust-toolchain.toml`, `justfile` — current package version, minimum compiler, development pin and command facade.
+- `tools/xtask/src/package.rs`, `tools/xtask/src/main.rs` — isolated package verification and the distinct aggregate check command.
+- `.github/workflows/ci.yml`, `reference/compatibility.json` — actual hosted baseline and scoped compatibility facts.
+- `.planning/phases/14-repair-windows-particle-group-invariants/14-CONTEXT.md` — preserve transactional regression protection.
+- `reference/release/required-evidence.toml`, `tools/xtask/src/release/attestation.rs` — optional strict semantics to preserve, not ordinary wrap-up prerequisites.
 </canonical-refs>
 
 <code-context>
 ## Existing Code Insights
 
-### Reusable assets
-- Existing release audit has a closed 19-entry producer registry and typed evidence validation.
-- Existing worktree and committed-range attestation validates candidate/tree/manifest/report hashes and a strict changed-path allowlist.
-- Existing Phase 12 workflows and shell helpers own producer generation and artifact aggregation.
-
-### Established patterns
-- Candidate-scoped immutable outputs, identity published last, independently validated terminal success, Cargo-only consumer isolation.
-- Phase 14 recorded cross-platform repair success without promoting it to canonical candidate acceptance.
-
-### Integration points
-- Producer workflow downloads -> release aggregation -> retained artifact paths -> source candidate record -> worktree/committed attestation -> generated documentation and milestone audit.
+- `just fmt`, `just clippy`, `just build` and `just test` expose existing checks; precommit still requires `cargo fmt --all` followed by Clippy, build and tests in order.
+- `just package-verify` calls `cargo xtask package verify`; reuse its isolated consumer checks and notices inspection.
+- `just check` calls the xtask package/protocol/docs/provenance aggregate and may additionally inspect upstream when the submodule exists. It does not replace the Rust verification sequence.
+- Existing native/headless examples and private testbed supply a representative demonstration without requiring cross-platform GUI certification.
+- Strict release auditing and documentation projections are coupled. Keep strict records unchanged and label experimental preparation separately rather than weakening the projection validator.
 </code-context>
 
 <specifics>
 ## Specific Ideas
 
-Use staged fresh production unless retained exact-candidate outputs independently qualify. Preserve failed evidence. Resolve unavailable controlled infrastructure without fabricating host identities or relaxing the performance requirement.
+The user wants "more of a fun project, not a super high quality implementation" and selected local checks plus one CI job with optional manual expensive checks. Prefer using the engine and fixing concrete bugs over recurring certification work. This pass captures recommended choices automatically under gsd-yolo-discuss.
 </specifics>
 
 <deferred>
 ## Deferred Ideas
 
-Package publication, tags authorizing a release, new platform promises and physics acceleration are outside this phase request. No pending todos matched this phase.
+Package publication and release tags; complete-parity certification; durable API/MSRV or platform guarantees; controlled performance claims; new physics features and broad tooling removal. Inspect older debug records during wrap-up only to distinguish actual current defects from stale historical bookkeeping; do not re-run old campaigns merely to close their records.
 </deferred>
-
-- Current owner selection (2026-09-16): local checks plus one macOS hosted Cargo CI job; cross-platform matrices, C++ comparisons, Miri/sanitizers, fuzz, coverage and benchmarks are optional manual checks. Release checklist and API/MSRV policy remain under discussion.

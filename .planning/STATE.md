@@ -2,9 +2,9 @@
 gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
-status: paused
-stopped_at: "Hobby scope revision: local checks plus one macOS CI job; heavy suites manual-only; release/API simplifications remain discussion topics"
-last_updated: "2026-09-17T00:24:41.520Z"
+status: planning
+stopped_at: "Phase 15 hobby wrap-up yolo discussion complete; ready to replan, no old strict campaign execution"
+last_updated: "2026-09-17T00:44:44.301Z"
 last_activity: "2026-09-16"
 progress:
   total_phases: 16
@@ -21,14 +21,14 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-09-14)
 
 **Core value:** Deliver an independent, maintainable Rust physics engine whose LiquidFun behavior is demonstrated against a pinned upstream oracle through explicit inventory, tests, differential evidence, and documented tolerances.
-**Current focus:** Hobby scope revision; discuss remaining simplifications (PROJECT-SCOPE.md)
+**Current focus:** Phase 15 hobby wrap-up context captured; replan before execution; strict campaign deferred
 
 ## Current Position
 
 Phase: 15 (re-establish-candidate-evidence) — DEFERRED; optional strict qualification
 Plan: 8 of 12
 Total Plans in Phase: 12
-Status: Strict campaign deferred by owner scope change; broader simplifications under discussion
+Status: Ready to plan — hobby wrap-up; strict campaign deferred
 Last activity: 2026-09-16
 
 Progress: Historical implementation and evidence records retained. Phase 15 is optional and must not resume automatically.
@@ -696,8 +696,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-17T00:24:41.516Z
-Stopped at: Hobby scope revision: local checks plus one macOS CI job; heavy suites manual-only; release/API simplifications remain discussion topics
-Resume file: PROJECT-SCOPE.md
+Last session: 2026-09-17T00:44:44.296Z
+Stopped at: Phase 15 hobby wrap-up yolo discussion complete; ready to replan, no old strict campaign execution
+Resume file: .planning/phases/15-re-establish-candidate-evidence/15-CONTEXT.md
 
 - Current owner selection (2026-09-16): local checks plus one macOS hosted Cargo CI job; cross-platform matrices, C++ comparisons, Miri/sanitizers, fuzz, coverage and benchmarks are optional manual checks. Release checklist and API/MSRV policy remain under discussion.

@@ -50,3 +50,67 @@ Two preference questions were presented: local checks plus one hosted CI job ver
 ## Accepted lighter baseline — 2026-09-16
 
 The owner answered both pending questions: "Local checks + one CI job (recommended)" and "Optional manual checks (recommended)". Use one macOS Cargo smoke job and make expensive suites manual-only. This supersedes the earlier pending status for these two questions; release paperwork and compatibility promises remain discussion topics.
+
+## Hobby wrap-up recommendation pass — 2026-09-17T00:43:37.323921+00:00
+
+Mode: Yolo. Lifecycle: `15-hobby-2026-09-17T00-43-37`. Phase 15 was selected from the immediately preceding progress recommendation; its old plans were not restarted. The wrapper reports an already-planned phase, but the current user invocation accepts the just-proposed re-discussion, so no redundant confirmation was requested. Existing context was updated; replanning is required.
+
+Recommendations below are agent-selected defaults under yolo authority, not fabricated individual human answers. Advisor research compared a small release checklist with development-only closure, and experimental compatibility with selected durable guarantees. No approval pause or automatic plan/execute chaining.
+
+### Experimental release checklist
+
+**Question:** What closes the hobby wrap-up?
+
+**Auto-selected recommendation:** Short experimental checklist.
+
+**Alternatives considered:** Development-only wrap-up; original strict certification.
+
+**Rationale:** Useful release preparation without rebuilding the qualification campaign.
+
+**Question:** What checks remain?
+
+**Auto-selected recommendation:** Required local Rust checks, relevant regressions and a representative native example; one macOS CI result; package isolation before publication.
+
+**Alternatives considered:** Full platform/oracle campaign; no package verification.
+
+**Rationale:** Reuse existing tools and retain basic consumer confidence.
+
+**Question:** Does completion publish a package?
+
+**Auto-selected recommendation:** No; publication and release tags need a separate instruction.
+
+**Alternatives considered:** Automatic publication.
+
+**Rationale:** Discussion authorizes decisions, not publication.
+
+
+### Compatibility promises
+
+**Question:** What platform and parity promises apply?
+
+**Auto-selected recommendation:** Best-effort extra platforms and incremental parity with explicit gaps.
+
+**Alternatives considered:** Durable platform matrix; guaranteed supported subset.
+
+**Rationale:** Matches hobby intent without discarding useful implementations or regression tests.
+
+**Question:** What API and MSRV promises apply?
+
+**Auto-selected recommendation:** Experimental API; retain current compiler pin and declared minimum, defer durable guarantees.
+
+**Alternatives considered:** Freeze API/MSRV; immediately change compiler metadata.
+
+**Rationale:** Avoids silently changing consumer requirements while permitting future documented evolution.
+
+
+### Planning handoff
+
+**Question:** What happens to existing Phase 15 plans?
+
+**Auto-selected recommendation:** Replan a bounded hobby wrap-up; preserve historical strict plans and results as deferred.
+
+**Alternatives considered:** Execute old plans; mark missing evidence passed.
+
+**Rationale:** Prevents count-based routing from restarting Linux or controlled-host work.
+
+Advisor inputs: separate AI agents hobby_release_advice and hobby_compat_advice; repository scout hobby_discuss_scout. Source facts include existing package isolation, provisional MSRV, native Cargo-only consumers and retained Windows regressions. No external research was required for these repository policy choices.

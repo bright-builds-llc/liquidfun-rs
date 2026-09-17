@@ -256,3 +256,13 @@ The repaired-source producer run `35140576574` passed both lanes. This repair ad
 - [x] Prepare the verified scope revision for normal commit and push to main.
 
 Completion review: Linux and dedicated hardware no longer block hobby development. Existing strict validators retain their meaning. Final ordered Rust, docs, Markdown, managed standards and workflow checks passed; 43 focused expanded workflow tests passed. Managed Bright Builds automation remains separate. Release/API policy simplifications are still proposals; no package or strict qualification release is claimed.
+
+## task-hobby-wrapup-discuss | 2026-09-17 00:45 UTC | Capture Phase 15 hobby wrap-up decisions
+
+- [x] Synthesize recommended release and compatibility choices from current scope and repository tools.
+- [x] Update Phase 15 context and append the discussion audit trail; retain old evidence and require replanning.
+- [x] Independently review, verify ordered repository checks, and commit the discussion artifacts.
+
+Discussion review: local ordered Rust and documentation/workflow checks passed; context structure checked. Recommendations are captured for replanning only; no implementation or publication. Verification logs: `target/hobby-discuss/gates/`. Independent review acknowledgment is retained in `target/hobby-discuss-review.md`.
+
+Routing correction: `state update Status` matched YAML before the body and regenerated the old value. An exact one-line body correction followed by CLI session normalization restored `status: planning`; the strict campaign remains deferred.
