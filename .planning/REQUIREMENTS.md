@@ -3,6 +3,10 @@
 **Defined:** 2026-07-09
 **Core Value:** Deliver an independent, maintainable Rust physics engine whose LiquidFun behavior is demonstrated against a pinned upstream oracle through explicit inventory, tests, differential evidence, and documented tolerances.
 
+## Current project scope — 2026-09-16
+
+The active project is experimental/hobby-oriented; see `PROJECT-SCOPE.md`. The v1 parity-bearing requirements below describe the optional strict qualification profile and historical implementation tracking. They are not the ordinary hobby completion gate. Linux x64 qualification (PLAT-01) is explicitly deferred, not falsely marked complete. Further verification and release simplifications remain under discussion.
+
 ## v1 Requirements
 
 Requirements for the first release permitted to claim complete parity with the selected upstream LiquidFun revision. Useful 0.x subsystem releases may precede v1 only when their compatibility gaps are explicit.
@@ -132,7 +136,7 @@ Requirements for the first release permitted to claim complete parity with the s
 
 ### Platform Support
 
-- [ ] **PLAT-01**: The complete supported v1 surface builds and passes required verification on Linux x86_64.
+- [ ] **PLAT-01** (deferred; opt-in strict qualification): The complete supported v1 surface builds and passes verification on Linux x86_64. Not a hobby-project completion requirement.
 - [x] **PLAT-02**: The complete supported v1 surface builds and passes required verification on Linux ARM64.
 - [x] **PLAT-03**: The complete supported v1 surface builds and passes required verification on macOS ARM64.
 - [x] **PLAT-04**: The complete supported v1 surface builds and passes required verification on macOS x86_64 where sustainable CI capacity exists, with any limitation explicit.

@@ -1,5 +1,15 @@
 # Testing and Verification
 
+## Current project scope
+
+Use [PROJECT-SCOPE.md](PROJECT-SCOPE.md) for the current hobby-project goals.
+Linux x64 and canonical oracle checks are optional manual profiles, not ordinary
+completion gates. Cargo CI runs one macOS smoke job by default; manually
+set `run_linux_checks` to include the full Linux lane and Linux smoke. The
+oracle workflow runs only by manual dispatch. The detailed evidence layers below
+retain their meaning when used. Cross-platform, comparison, safety, fuzz, coverage,
+regression-campaign and benchmark workflows are optional manual checks.
+
 ## Current scope and maturity
 
 Phase 2 proves a trustworthy empty-world harness seam: versioned and bounded
@@ -55,8 +65,10 @@ CI runs `cargo fmt --all --check`, so format verification is read-only.
 
 ## Testing layer contract
 
-This table is machine-audited by `cargo xtask docs check`. It contains exactly
-one row for every required layer; every cell is an enforceable contract.
+This table preserves the optional strict qualification profile and its historical
+placement contract, audited by `cargo xtask docs check`. Its pull-request and
+scheduled placements do not describe current automatic CI. Current workflow
+routing is described under Aggregate and CI placement below.
 
 | Layer                  | Status   | Purpose                                                                                                                                                                   | Command                                                                                                                                                                                                                               | Prerequisites                                                                                                                                  | Reports and failure artifacts                                                                                                             | Retry policy                                                                                      | Placement                                      | Semantic interpretation                                                                                                              |
 | ---------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
@@ -1603,12 +1615,12 @@ because those commands are intentionally isolated from live discovery. With the
 submodule initialized, `cargo xtask check` additionally runs inventory, upstream
 identity, and full provenance.
 
-Cargo pull-request jobs stay submodule-free and exercise every private Rust
-crate, comparator/minimizer behavior, supervisor failure injection, protocol and
-provenance-schema fixtures, rustdoc, docs contracts, checked corpus closure,
-the selected testbed with display variables unset, and extracted consumer
-package isolation. Oracle jobs alone initialize the submodule, perform live
-semantic discovery, and use CMake/C++ or sanitizers.
+Cargo pull-request CI runs one submodule-free macOS smoke job. The full Linux quality job is available only through a manual
+Cargo CI dispatch with `run_linux_checks: true`; it checks private crates,
+rustdoc, docs contracts, checked corpus closure, the headless testbed, and
+extracted consumer package isolation. Oracle jobs are manual-only and alone
+initialize the submodule, perform live semantic discovery, and use CMake/C++
+or sanitizers.
 
 Canonical Linux oracle CI verifies exact tool and source identity and executes
 only the explicitly selected evidence phase. For Phase 11 it builds the reviewed

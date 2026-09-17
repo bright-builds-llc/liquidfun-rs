@@ -2,9 +2,9 @@
 gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: "Repaired-source Phase11 both lanes passed; strict final semantic-result validator repaired, awaiting final gates and fresh promotion packet at new R"
-last_updated: "2026-09-16T19:39:36.343Z"
+status: paused
+stopped_at: "Hobby scope revision: local checks plus one macOS CI job; heavy suites manual-only; release/API simplifications remain discussion topics"
+last_updated: "2026-09-17T00:24:41.520Z"
 last_activity: "2026-09-16"
 progress:
   total_phases: 16
@@ -21,17 +21,17 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-09-14)
 
 **Core value:** Deliver an independent, maintainable Rust physics engine whose LiquidFun behavior is demonstrated against a pinned upstream oracle through explicit inventory, tests, differential evidence, and documented tolerances.
-**Current focus:** Phase 15 — re-establish-candidate-evidence
+**Current focus:** Hobby scope revision; discuss remaining simplifications (PROJECT-SCOPE.md)
 
 ## Current Position
 
-Phase: 15 (re-establish-candidate-evidence) — EXECUTING
+Phase: 15 (re-establish-candidate-evidence) — DEFERRED; optional strict qualification
 Plan: 8 of 12
 Total Plans in Phase: 12
-Status: Ready to execute
+Status: Strict campaign deferred by owner scope change; broader simplifications under discussion
 Last activity: 2026-09-16
 
-Progress: [██████████] 100% of existing plans (250/250); Phase 15 remains unplanned.
+Progress: Historical implementation and evidence records retained. Phase 15 is optional and must not resume automatically.
 
 ## Performance Metrics
 
@@ -681,6 +681,7 @@ Decisions are logged in the `PROJECT.md` Key Decisions table. Current roadmap co
 - [Phase 14]: Reserve scratch by actual rows while preserving logical capacity; isolated group candidate errors remain typed and transactional.
 - [Phase 14]: Accept D2 repair proof only at 417d38dac6951226fb32ea99a97135defe88da7b with complete Cargo CI run 34815192937; Phase 15 canonical candidate acceptance and attestation remain deferred.
 - [Phase 15]: D-10: Owner authorized independent AI review on 2026-09-16; human-only reviewer requirements are superseded by AGENTS.md Independent review. — Separate identified reviewer, actual review, exact digest acknowledgment and all other acceptance checks remain required.
+- [Phase 15]: D-11/D-12: Owner changed goal to hobby experimentation; Linux x64 and controlled-host qualification are optional, old strict campaign is deferred, broader reductions remain under discussion.
 
 ### Pending Todos
 
@@ -691,9 +692,12 @@ None yet.
 | # | Description | Date | Commit | Directory |
 | --- | --- | --- | --- | --- |
 | 260713-j7f | Adopt mdformat 1.0.0 for non-GSD repository Markdown with config, just check, local guidance, and Cargo CI enforcement | 2026-07-13 | 716e371 | [260713-j7f-adopt-mdformat-1-0-0-for-non-gsd-reposit](./quick/260713-j7f-adopt-mdformat-1-0-0-for-non-gsd-reposit/) |
+| 260916-quk | Adopt hobby scope; one macOS Cargo CI job and manual-only expensive validation | 2026-09-17 | See git history | [260916-quk](./quick/260916-quk-remove-mandatory-linux-x64-qualification/) |
 
 ## Session Continuity
 
-Last session: 2026-09-16T19:39:36.338Z
-Stopped at: Repaired-source Phase11 both lanes passed; strict final semantic-result validator repaired, awaiting final gates and fresh promotion packet at new R
-Resume file: target/phase15-preflight/orchestration.json
+Last session: 2026-09-17T00:24:41.516Z
+Stopped at: Hobby scope revision: local checks plus one macOS CI job; heavy suites manual-only; release/API simplifications remain discussion topics
+Resume file: PROJECT-SCOPE.md
+
+- Current owner selection (2026-09-16): local checks plus one macOS hosted Cargo CI job; cross-platform matrices, C++ comparisons, Miri/sanitizers, fuzz, coverage and benchmarks are optional manual checks. Release checklist and API/MSRV policy remain under discussion.

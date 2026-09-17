@@ -255,7 +255,7 @@ pub(super) fn check_rejects_absolute_user_paths() -> TestResult {
     Ok(())
 }
 
-pub(super) fn oracle_workflow_only_cancels_superseded_code_change_runs() -> TestResult {
+pub(super) fn oracle_workflow_preserves_manual_evidence_runs() -> TestResult {
     // Arrange
     let workflow = fs::read_to_string(workspace_root().join(".github/workflows/oracle.yml"))?;
 
@@ -267,9 +267,7 @@ pub(super) fn oracle_workflow_only_cancels_superseded_code_change_runs() -> Test
     // Assert
     assert_eq!(
         maybe_policy.map(str::trim),
-        Some(
-            "cancel-in-progress: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}"
-        )
+        Some("cancel-in-progress: false")
     );
     Ok(())
 }

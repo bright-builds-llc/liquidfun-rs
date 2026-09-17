@@ -1,6 +1,15 @@
 # Release process
 
-This document defines the fail-closed path for a parity-bearing `liquidfun`
+## Current project scope
+
+The project is hobby-oriented; [PROJECT-SCOPE.md](PROJECT-SCOPE.md) defines the
+current goals. Linux x64 qualification and a dedicated performance runner do
+not block ordinary development or project completion. The strict parity-bearing
+process below is optional and runs only when explicitly requested. A simpler
+experimental publishing checklist is still under discussion; package publication
+requires a separate user instruction.
+
+The optional strict qualification described below defines the fail-closed path for a parity-bearing `liquidfun`
 release. A checklist item is not evidence: every accepted result must be
 machine-readable, reviewed, hash-bound, and tied to one frozen source candidate.
 If any required step fails or remains unavailable, do not publish.

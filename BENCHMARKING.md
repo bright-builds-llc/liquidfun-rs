@@ -1,5 +1,11 @@
 # Benchmarking
 
+Benchmarking is optional for ordinary hobby development; see
+[PROJECT-SCOPE.md](PROJECT-SCOPE.md). A dedicated Linux x64 runner is not a
+project-completion prerequisite. The rigorous method below still applies when
+explicitly seeking its reviewed performance evidence. Simpler exploratory timing
+and a lighter release checklist are discussion proposals.
+
 LiquidFun performance evidence is a paired, same-host comparison between native Rust and the pinned C++ oracle. It is scoped to the exact workload, resolved scenario bytes, build identities, hardware session, and statistical interval in an immutable report. Benchmark data is not compatibility, correctness, coverage, or parity evidence.
 
 The machine authorities are:

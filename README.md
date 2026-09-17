@@ -12,8 +12,18 @@
 
 <!-- bright-builds-rules-readme-badges:end -->
 
-An independent, renderer-neutral Rust implementation of Google's LiquidFun
-physics engine, developed against an exact pinned C++ oracle.
+An experimental, renderer-neutral Rust implementation of Google's LiquidFun
+physics engine for learning and playful simulations, developed with a pinned
+C++ reference available for optional comparisons.
+
+## Hobby development
+
+The goal is an enjoyable, useful experimental physics project. Linux x64
+qualification and a dedicated benchmark machine are optional; they do not block
+ordinary development or completion. Start with the Cargo-only commands below.
+Current Cargo CI runs one macOS smoke job; cross-platform and expensive checks are manual options.
+See [project scope](PROJECT-SCOPE.md) for confirmed decisions and the broader
+simplifications still being discussed.
 
 ## Maturity and evidence
 
@@ -30,7 +40,7 @@ Historical Phase 4 through Phase 8 corpora remain bounded evidence inputs, not
 a generalized claim about the complete project. Performance claims likewise
 apply only to immutable reports for named workloads.
 
-A parity-bearing release requires a frozen full candidate commit and a complete
+The optional strict qualification profile for a parity-bearing release requires a frozen full candidate commit and a complete
 reviewed manifest accepted by fail-closed `cargo xtask release audit`. This
 checkout is **not release-ready**: it has no completed full-SHA
 `release-candidate` workflow run, retained complete evidence bundle, or tracked
@@ -72,6 +82,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 ```
 
 ## Platform support
+
+This table describes the existing optional strict platform profile. Linux x64
+is not a requirement for hobby-project completion; the recorded results remain
+scoped evidence, not a promise about every later revision.
 
 Every supported lane verifies the same reviewed `.crate` bytes. Platform
 results are D2 portability evidence and cannot create or promote canonical D1

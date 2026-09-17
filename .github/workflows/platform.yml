@@ -1,8 +1,6 @@
 name: Platform release candidate
 
 on:
-  schedule:
-    - cron: "41 6 * * 2"
   workflow_dispatch:
     inputs:
       candidate_sha:

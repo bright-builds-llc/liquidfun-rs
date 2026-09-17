@@ -323,8 +323,8 @@ fn check_rejects_absolute_user_paths() -> TestResult {
 }
 
 #[test]
-fn oracle_workflow_only_cancels_superseded_code_change_runs() -> TestResult {
-    promotion_and_workflow::oracle_workflow_only_cancels_superseded_code_change_runs()
+fn oracle_workflow_preserves_manual_evidence_runs() -> TestResult {
+    promotion_and_workflow::oracle_workflow_preserves_manual_evidence_runs()
 }
 
 #[test]

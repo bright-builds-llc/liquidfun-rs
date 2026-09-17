@@ -2,6 +2,8 @@
 
 ## Overview
 
+Current scope follows `PROJECT-SCOPE.md`: fun, experimental development. The original strict qualification goals below are retained as optional ambitions; Phase 15 is deferred and does not block ordinary completion.
+
 The v1 roadmap moves from an immutable, licensed source of truth to a semantic comparison contract, then retires the public-model and numerical risks before implementing collision, rigid dynamics, joints, particles, and renderer-neutral examples in upstream dependency order. Compatibility evidence is added with each subsystem, while performance optimization, broad platform proof, and any full-parity claim wait until the complete scalar implementation can pass a final no-gap audit.
 
 ## Phases
@@ -23,7 +25,7 @@ The v1 roadmap moves from an immutable, licensed source of truth to a semantic c
 - [x] **Phase 13: Restore Evidence and Replay Integrity** - Repair exact-head provenance and reviewed catalog replay before accepting current compatibility evidence. (completed 2026-07-27)
 - [x] **Phase 13.1: Restore Bright Builds Structural Compliance** - Refactor every repository-owned file-length finding without behavioral or evidence drift; corrected-candidate evidence closure remains in progress. (completed 2026-09-13)
 - [x] **Phase 14: Repair Windows Particle-Group Invariants** - Remove the supported-Windows authoritative-storage panic and restore transactional particle-group behavior. (completed 2026-09-14)
-- [ ] **Phase 15: Re-establish Candidate Evidence** - Produce and attest a green exact-head release-candidate evidence bundle after all implementation and replay gaps close.
+- [ ] **Phase 15: Re-establish Candidate Evidence** - Deferred; optional strict qualification only, requiring an explicit future request.
 
 ## Phase Details
 
@@ -360,6 +362,8 @@ Plans:
 
 ### Phase 15: Re-establish Candidate Evidence
 
+**Status**: Deferred by owner scope change on 2026-09-16. The original goal and criteria below apply only to an explicitly requested strict qualification campaign. Linux x64 qualification is not a hobby-project completion requirement.
+
 **Goal**: Establish a green, exact-head v1.0 candidate and produce the complete retained evidence and frozen-source attestation required for milestone acceptance.
 **Depends on**: Phase 14
 **Requirements**: PLAT-01, PLAT-05, DOCS-09
@@ -375,7 +379,7 @@ Plans:
 
 ## Progress
 
-**Execution order:** Phases execute in numeric order from 1 through 15. Decimal insertions, if any, execute between their surrounding integers.
+**Execution order:** Implementation phases execute in numeric order; Phase 15 is deferred and opt-in. Decimal insertions, if any, execute between their surrounding integers.
 
 | Phase | Plans Complete | Status | Completed |
 | --- | --- | --- | --- |
@@ -394,6 +398,6 @@ Plans:
 | 13. Restore Evidence and Replay Integrity | 5/5 | Complete    | 2026-07-27 |
 | 13.1. Restore Bright Builds Structural Compliance | 25/25 | Complete    | 2026-09-13 |
 | 14. Repair Windows Particle-Group Invariants | 4/4 | Complete    | 2026-09-14 |
-| 15. Re-establish Candidate Evidence | 7/12 | In Progress|  |
+| 15. Re-establish Candidate Evidence | 7/12 | Deferred — optional strict qualification |  |
 
 *Roadmap created: 2026-07-09*

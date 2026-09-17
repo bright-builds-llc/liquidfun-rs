@@ -2,13 +2,17 @@
 
 ## What This Is
 
-`liquidfun-rs` is a production-quality, open-source Rust implementation of Google's LiquidFun physics engine for Rust game, simulation, visualization, and research developers. It aims for complete behavioral and feature parity with a deliberately selected and pinned upstream C++ revision while remaining a genuinely independent Rust library rather than bindings around the original implementation.
+`liquidfun-rs` is a fun, experimental, open-source Rust implementation of Google's LiquidFun physics engine for learning, games, simulations, and visualization. It develops useful native Rust behavior incrementally against a pinned upstream reference; complete parity and production certification are optional ambitions.
 
 The repository will retain upstream C++ LiquidFun as a read-only development oracle for research, differential testing, reference data, and benchmark comparison. Ordinary users of the published Rust library must not need the upstream source, a C++ compiler, Bazel, or any cross-language runtime component.
 
 ## Core Value
 
 Deliver an independent, maintainable Rust physics engine whose LiquidFun behavior is demonstrated against a pinned upstream oracle through explicit inventory, tests, differential evidence, and documented tolerances.
+
+## Current scope decision — 2026-09-16
+
+The owner prioritizes a fun hobby project over production-quality certification. Apply `PROJECT-SCOPE.md`: mandatory Linux x64 qualification and the dedicated performance-host completion gate are removed. Historical evidence remains truthful and source-bound; strict qualification is opt-in. The owner selected local checks plus one macOS CI job and optional manual expensive suites. A simpler release checklist and durable API/MSRV promises remain under discussion.
 
 ## Requirements
 
@@ -60,9 +64,13 @@ Deliver an independent, maintainable Rust physics engine whose LiquidFun behavio
 - Promising complete-engine `no_std`, embedded, iOS, Android, or WASM support before feasibility is established — smaller portable subsets may be pursued when evidence supports them.
 - Selecting a final project license before upstream and derivative-work compatibility is reviewed — required notices and provenance come first.
 
-## Success Standard
+## Hobby success standard
 
-Full feature parity requires all of the following:
+Useful simulations and examples work on the development machine, relevant local checks pass, and limitations are described honestly. Work can proceed without Linux x64 qualification or a dedicated performance runner.
+
+## Optional full-parity success standard
+
+The previous strict target remains available as an optional ambition. A future explicit claim of full feature parity requires all of the following:
 
 - Every relevant public upstream feature is implemented or explicitly documented as irrelevant to the Rust library.
 - Every upstream particle behavior, supported shape, supported joint, world operation, callback, and query has a Rust equivalent.

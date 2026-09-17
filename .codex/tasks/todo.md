@@ -193,6 +193,8 @@ Final completion gate: ordered fmt, Clippy, all-target build and all-feature tes
 
 ## task-phase15-candidate-evidence | 2026-09-14T16:43:10.303691+00:00 | Re-establish candidate evidence
 
+Status: Deferred — explicit strict-qualification request only, under the owner's 2026-09-16 hobby-scope revision. Remaining strict items are not hobby-project blockers; preserve their historical check states.
+
 - [x] Review instructions, active lessons, prior decisions and current evidence contracts.
 - [x] Capture yolo context and explicit acceptance/infrastructure boundaries.
 - [x] Research producer readiness and create independently checked execution plans.
@@ -244,3 +246,13 @@ Failure: Phase 11 run `35137245396` failed both lanes for `particle-forces-and-s
 - [ ] Commit the repair and regenerate the promotion packet at new R.
 
 The repaired-source producer run `35140576574` passed both lanes. This repair addresses the independent validator's closed topology; it does not rewrite evidence or claim new producer execution.
+
+## task-hobby-linux-scope | 2026-09-17 00:20 UTC | Remove mandatory Linux qualification
+
+- [x] Record the owner’s hobby-project direction and optional Linux x64 qualification; preserve historical evidence.
+- [x] Use one default macOS Cargo job and make expensive validation suites manual-only, as selected by the owner.
+- [x] Capture remaining release/API reductions as discussion proposals without treating them as accepted.
+- [x] Verify workflow/docs contracts and ordered Rust checks; complete independent review.
+- [x] Prepare the verified scope revision for normal commit and push to main.
+
+Completion review: Linux and dedicated hardware no longer block hobby development. Existing strict validators retain their meaning. Final ordered Rust, docs, Markdown, managed standards and workflow checks passed; 43 focused expanded workflow tests passed. Managed Bright Builds automation remains separate. Release/API policy simplifications are still proposals; no package or strict qualification release is claimed.

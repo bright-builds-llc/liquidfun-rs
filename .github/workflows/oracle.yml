@@ -1,11 +1,6 @@
 name: Oracle CI
 
 on:
-  pull_request:
-  push:
-    branches: [main]
-  schedule:
-    - cron: "17 5 * * 1"
   workflow_dispatch:
     inputs:
       evidence_phase:
@@ -24,7 +19,7 @@ permissions:
 
 concurrency:
   group: oracle-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
+  cancel-in-progress: false
 
 jobs:
   canonical-linux:
@@ -32,7 +27,7 @@ jobs:
       contents: read
       actions: read
     name: ${{ github.event_name == 'workflow_dispatch' && inputs.evidence_phase == 'phase10' && 'Phase 10 canonical Linux oracle' || 'Canonical Linux oracle' }}
-    if: github.event_name == 'pull_request' || github.event_name == 'push' || github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && (inputs.evidence_phase == 'phase8' || inputs.evidence_phase == 'phase9' || inputs.evidence_phase == 'phase10'))
+    if: github.event_name == 'workflow_dispatch' && (inputs.evidence_phase == 'phase8' || inputs.evidence_phase == 'phase9' || inputs.evidence_phase == 'phase10')
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
@@ -182,8 +177,9 @@ jobs:
     permissions:
       contents: read
       actions: read
+    # Retain the historical job name required by the Phase 9 evidence validator.
     name: ${{ github.event_name == 'workflow_dispatch' && inputs.evidence_phase == 'phase10' && 'Phase 10 fail-fast sanitizer' || 'Scheduled fail-fast sanitizer and reset corpus' }}
-    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && (inputs.evidence_phase == 'phase8' || inputs.evidence_phase == 'phase9' || inputs.evidence_phase == 'phase10'))
+    if: github.event_name == 'workflow_dispatch' && (inputs.evidence_phase == 'phase8' || inputs.evidence_phase == 'phase9' || inputs.evidence_phase == 'phase10')
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
@@ -330,7 +326,7 @@ jobs:
 
   phase11-canonical-linux:
     name: Phase 11 canonical Linux oracle
-    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.evidence_phase == 'phase11')
+    if: github.event_name == 'workflow_dispatch' && inputs.evidence_phase == 'phase11'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
@@ -395,7 +391,7 @@ jobs:
 
   phase11-sanitizer-linux:
     name: Phase 11 fail-fast sanitizer
-    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.evidence_phase == 'phase11')
+    if: github.event_name == 'workflow_dispatch' && inputs.evidence_phase == 'phase11'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:

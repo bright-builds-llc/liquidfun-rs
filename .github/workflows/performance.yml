@@ -1,8 +1,6 @@
 name: Phase 12 performance evidence
 
 on:
-  schedule:
-    - cron: "19 7 * * 3"
   workflow_dispatch:
     inputs:
       candidate_sha:

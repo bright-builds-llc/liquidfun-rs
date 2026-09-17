@@ -5,6 +5,11 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      run_linux_checks:
+        description: Run optional Linux quality and default-feature checks
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -16,6 +21,7 @@ concurrency:
 jobs:
   quality:
     name: Linux quality and isolation
+    if: github.event_name == 'workflow_dispatch' && inputs.run_linux_checks
     permissions:
       contents: read
       actions: read
@@ -132,7 +138,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, macos-15, windows-2025]
+        os: ${{ fromJSON(github.event_name == 'workflow_dispatch' && inputs.run_linux_checks && '["ubuntu-24.04","macos-15","windows-2025"]' || '["macos-15"]') }}
     steps:
       - name: Check out sources without the native reference checkout
         # actions/checkout v7

@@ -42,6 +42,12 @@ Use this routing map when deciding what to load next:
 - Use repeated `1.` markers for ordered task and lesson fields.
 - For implementation, recovery, verification, and publication, apply the standing authorization below before approval language from older plans or skills.
 
+### Hobby-project scope
+
+- Apply [PROJECT-SCOPE.md](PROJECT-SCOPE.md) before older production-quality plans. The owner removed mandatory Linux x64 qualification on 2026-09-16 and chose a fun, experimental project direction.
+- Linux qualification and the dedicated performance host are optional profiles, not completion blockers. Keep normal local checks and truthful evidence; run the strict qualification pipeline only when explicitly requested.
+- The previous frozen-candidate campaign is historical. New work may proceed without completing its C-to-A attestation. The owner selected one macOS Cargo CI job plus local checks, with expensive suites manual-only. Remaining release/API simplifications in PROJECT-SCOPE.md are discussion proposals.
+
 ### Standing authorization for autonomous iteration
 
 The repository owner authorized continued iteration and correction without repeated human authorization on 2026-09-13. This authority persists across turns and replacement candidates until the user changes it.
@@ -66,7 +72,7 @@ On 2026-09-16, the repository owner authorized independent AI review and removed
 
 **liquidfun-rs**
 
-`liquidfun-rs` is a production-quality, open-source Rust implementation of Google's LiquidFun physics engine for Rust game, simulation, visualization, and research developers. It aims for complete behavioral and feature parity with a deliberately selected and pinned upstream C++ revision while remaining a genuinely independent Rust library rather than bindings around the original implementation.
+`liquidfun-rs` is a fun, experimental, open-source Rust implementation of Google's LiquidFun physics engine for learning, games, simulations, and visualization. It develops useful native Rust behavior incrementally against a pinned upstream reference; complete parity and production certification are optional ambitions.
 
 The repository will retain upstream C++ LiquidFun as a read-only development oracle for research, differential testing, reference data, and benchmark comparison. Ordinary users of the published Rust library must not need the upstream source, a C++ compiler, Bazel, or any cross-language runtime component.
 

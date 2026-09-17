@@ -225,7 +225,7 @@ fn platform_workflow_is_release_candidate_only_and_submodule_free() -> TestResul
         .ok_or("workflow permissions marker is missing")?;
 
     // Assert
-    assert!(trigger.contains("schedule:"));
+    assert!(!trigger.contains("schedule:"));
     assert!(trigger.contains("workflow_dispatch:"));
     assert!(!trigger.contains("pull_request:"));
     assert!(!trigger.contains("push:"));
@@ -241,9 +241,11 @@ fn platform_workflow_is_release_candidate_only_and_submodule_free() -> TestResul
 }
 
 #[test]
-fn pull_request_ci_is_linux_quality_plus_mainstream_smokes() -> TestResult {
+fn ordinary_ci_runs_one_macos_smoke_and_linux_requires_manual_opt_in() -> TestResult {
     // Arrange
     let workflow = read(".github/workflows/ci.yml")?;
+    let quality = job_section(&workflow, "quality")?;
+    let defaults = job_section(&workflow, "default-features")?;
 
     // Act
     let jobs_section = workflow
@@ -257,11 +259,101 @@ fn pull_request_ci_is_linux_quality_plus_mainstream_smokes() -> TestResult {
 
     // Assert
     assert_eq!(jobs, ["  quality:", "  default-features:"]);
-    assert!(workflow.contains("runs-on: ubuntu-24.04"));
-    assert!(workflow.contains("os: [ubuntu-24.04, macos-15, windows-2025]"));
+    assert!(workflow.contains("  pull_request:\n"));
+    assert!(workflow.contains("  push:\n    branches: [main]\n"));
+    assert!(workflow.contains("  workflow_dispatch:\n    inputs:\n      run_linux_checks:\n"));
+    assert!(workflow.contains("        type: boolean\n        default: false\n"));
+    assert_eq!(
+        quality
+            .lines()
+            .filter_map(|line| line.strip_prefix("    if: "))
+            .collect::<Vec<_>>(),
+        ["github.event_name == 'workflow_dispatch' && inputs.run_linux_checks"]
+    );
+    assert!(quality.contains("runs-on: ubuntu-24.04"));
+    assert!(!defaults.lines().any(|line| line.starts_with("    if:")));
+    assert_eq!(
+        defaults
+            .lines()
+            .filter_map(|line| line.strip_prefix("        os: "))
+            .collect::<Vec<_>>(),
+        [
+            r#"${{ fromJSON(github.event_name == 'workflow_dispatch' && inputs.run_linux_checks && '["ubuntu-24.04","macos-15","windows-2025"]' || '["macos-15"]') }}"#
+        ]
+    );
     assert!(workflow.matches("submodules: false").count() >= 2);
     assert!(!workflow.contains("cargo package"));
     assert!(!workflow.contains("1.92.0"));
     assert_actions_are_pinned(&workflow);
+    Ok(())
+}
+
+#[test]
+fn expensive_evidence_workflows_require_manual_dispatch() -> TestResult {
+    // Arrange
+    let workflows = [
+        "oracle",
+        "platform",
+        "safety",
+        "fuzz",
+        "coverage",
+        "performance",
+        "regressions",
+    ];
+
+    for name in workflows {
+        let workflow = read(&format!(".github/workflows/{name}.yml"))?;
+
+        // Act
+        let triggers = workflow
+            .split_once("on:\n")
+            .and_then(|(_, suffix)| suffix.split_once("\npermissions:"))
+            .map(|(triggers, _)| triggers)
+            .ok_or("workflow trigger section is missing")?;
+        let events = triggers
+            .lines()
+            .filter(|line| line.starts_with("  ") && !line.starts_with("    "))
+            .collect::<Vec<_>>();
+
+        // Assert
+        assert_eq!(
+            events,
+            ["  workflow_dispatch:"],
+            "{name} must be manual-only"
+        );
+        assert!(
+            workflow.contains("cancel-in-progress: false"),
+            "preserve {name} evidence runs"
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn manual_fuzz_dispatch_preserves_build_only_and_campaign_routes() -> TestResult {
+    // Arrange
+    let workflow = read(".github/workflows/fuzz.yml")?;
+    let build = job_section(&workflow, "build")?;
+    let fuzz = job_section(&workflow, "fuzz")?;
+
+    // Act
+    let build_route = build.lines().find(|line| line.starts_with("    if:"));
+    let fuzz_route = fuzz.lines().find(|line| line.starts_with("    if:"));
+
+    // Assert
+    assert!(workflow.contains("      build_only:\n"));
+    assert!(workflow.contains("        type: boolean\n        default: false\n"));
+    assert_eq!(
+        build_route,
+        Some("    if: github.event_name == 'workflow_dispatch' && inputs.build_only")
+    );
+    assert_eq!(
+        fuzz_route,
+        Some("    if: github.event_name == 'workflow_dispatch' && !inputs.build_only")
+    );
+    assert!(build.contains("ref: ${{ inputs.candidate_sha }}"));
+    assert!(build.contains("test \"$(git rev-parse HEAD)\" = \"${CANDIDATE_SHA,,}\""));
+    assert!(build.contains("cargo +nightly-2026-07-15 fuzz build"));
+    assert!(fuzz.contains("ref: ${{ env.CANDIDATE_SHA }}"));
     Ok(())
 }

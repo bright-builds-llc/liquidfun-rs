@@ -67,3 +67,10 @@
 1. What went wrong: The inherited human-only review requirement blocked autonomous promotion; the owner explicitly replaced it with permission for independent AI review.
 1. Preventive rule: Apply the current AGENTS.md independent-review policy, use a separate identified reviewer, and retain exact digest acknowledgment without fabricating human approval.
 1. Trigger signal to catch it earlier: An older plan or reviewer validator rejects AI identity or requests a human solely because of the superseded reviewer restriction.
+
+## lesson-scale-verification-to-current-goal | 2026-09-17 00:20 UTC
+
+1. Date: 2026-09-16
+1. What went wrong: The earlier production-quality qualification campaign no longer matched the owner's revised goal of a fun hobby project.
+1. Preventive rule: Apply the current project scope before inheriting old completion gates; retain useful local checks and honest claims, and keep explicitly optional certification separate from ordinary progress.
+1. Trigger signal to catch it earlier: Development is blocked on controlled hardware, exhaustive matrices, or attestation work after the owner has reduced the project's quality goals.

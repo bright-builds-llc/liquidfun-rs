@@ -22,3 +22,7 @@ The repository owner's standing authorization is defined in `AGENTS.md` under `S
 ### Independent AI review — 2026-09-16
 
 Apply the `Independent review` policy in `AGENTS.md` when older plans or records require a human reviewer. The owner permits an identified independent AI reviewer; all other evidence and acknowledgment requirements remain in force.
+
+### Hobby-project scope — 2026-09-16
+
+`PROJECT-SCOPE.md` records the owner's revised goals and overrides older mandatory Linux x64 and dedicated-runner completion requirements. Strict certification tools keep their existing evidence semantics when explicitly invoked. Ordinary local Rust checks, licensing, honest claims and relevant regressions remain required. Ordinary Cargo CI uses one macOS job; expensive validation is manual-only. Further release/API reductions are discussion proposals.

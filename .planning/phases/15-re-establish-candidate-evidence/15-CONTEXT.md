@@ -8,17 +8,27 @@ generated_at: 2026-09-14T16:43:10.303691+00:00
 # Phase 15: Re-establish Candidate Evidence - Context
 
 **Gathered:** 2026-09-14
-**Status:** Ready for planning
+**Status:** Scope revised; Linux qualification optional; further simplifications under discussion
 **Mode:** Yolo
 
 <domain>
 ## Phase Boundary
 
-Establish a green full-SHA v1.0 candidate, collect all required retained evidence, validate frozen-source attestation, and repeat milestone acceptance audit. Address PLAT-01, PLAT-05 and DOCS-09 without expanding physics, platform, or release-publication scope.
+The original boundary below is deferred and applies only to an explicitly requested strict qualification campaign. Current hobby scope follows D-11/D-12 and `PROJECT-SCOPE.md`.
+
+Original boundary: establish a green full-SHA v1.0 candidate, collect all required retained evidence, validate frozen-source attestation, and repeat milestone acceptance audit. Address PLAT-01, PLAT-05 and DOCS-09 without expanding physics, platform, or release-publication scope.
 </domain>
 
 <decisions>
-## Implementation Decisions
+## Current owner direction — 2026-09-16
+
+- **D-11:** The owner removed Linux x64 testing as a requirement and reframed the project as a fun hobby implementation. `PROJECT-SCOPE.md` supersedes the production-quality completion goal and mandatory Linux/dedicated-runner gate. The old frozen C and its evidence remain historical; new scope work need not finish C-to-A attestation.
+- **D-12:** Linux Cargo verification and oracle workflows are explicit manual options. The owner subsequently selected one macOS CI job plus local checks and optional manual expensive workflows. A lighter publishing checklist remains under discussion. Preserve truthful strict validators and evidence semantics.
+
+## Historical strict-profile implementation decisions
+
+The decisions below describe the original optional certification campaign; they do not override D-11/D-12 or restart it automatically.
+
 
 ### Candidate freeze
 - **D-01:** Finish source, tooling, planning and prerequisite fixes before freezing a clean reviewed full 40-hex candidate SHA. All accepted producers bind that SHA; never substitute later HEAD or Phase 14 D2 repair proof.
@@ -85,3 +95,5 @@ Use staged fresh production unless retained exact-candidate outputs independentl
 
 Package publication, tags authorizing a release, new platform promises and physics acceleration are outside this phase request. No pending todos matched this phase.
 </deferred>
+
+- Current owner selection (2026-09-16): local checks plus one macOS hosted Cargo CI job; cross-platform matrices, C++ comparisons, Miri/sanitizers, fuzz, coverage and benchmarks are optional manual checks. Release checklist and API/MSRV policy remain under discussion.

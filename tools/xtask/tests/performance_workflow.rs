@@ -65,7 +65,7 @@ fn workflow_contract_is_valid(source: &str) -> bool {
     let trigger = source.split("permissions:").next().unwrap_or_default();
 
     ordered
-        && trigger.contains("schedule:")
+        && !trigger.contains("schedule:")
         && trigger.contains("workflow_dispatch:")
         && !trigger.contains("pull_request:")
         && !trigger.contains("push:")

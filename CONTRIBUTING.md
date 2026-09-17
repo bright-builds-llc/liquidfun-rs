@@ -1,3 +1,11 @@
+# Contributing to the hobby project
+
+Start with [PROJECT-SCOPE.md](PROJECT-SCOPE.md). Linux x64 qualification and a
+dedicated benchmark runner are optional; normal contributions can be developed
+and checked locally. The strict evidence workflows remain available when
+explicitly requested. Broader CI and publishing simplifications are being
+discussed.
+
 <!-- bright-builds-rules-contributing:begin -->
 
 # Bright Builds Contribution Defaults

@@ -133,19 +133,11 @@ fn oracle_workflow_produces_one_same_run_phase11_pair() -> TestResult {
     );
 
     let legacy_phases = "(inputs.evidence_phase == 'phase8' || inputs.evidence_phase == 'phase9' || inputs.evidence_phase == 'phase10')";
-    assert_exact_job_condition(
-        &canonical,
-        &format!(
-            "github.event_name == 'pull_request' || github.event_name == 'push' || github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && {legacy_phases})"
-        ),
-    );
-    assert_exact_job_condition(
-        &sanitizer,
-        &format!(
-            "github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && {legacy_phases})"
-        ),
-    );
-    let phase11_route = "github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.evidence_phase == 'phase11')";
+    let legacy_route = format!("github.event_name == 'workflow_dispatch' && {legacy_phases}");
+    assert_exact_job_condition(&canonical, &legacy_route);
+    assert_exact_job_condition(&sanitizer, &legacy_route);
+    let phase11_route =
+        "github.event_name == 'workflow_dispatch' && inputs.evidence_phase == 'phase11'";
     assert_exact_job_condition(&phase11_canonical, phase11_route);
     assert_exact_job_condition(&phase11_sanitizer, phase11_route);
     let portability_route = format!("github.event_name == 'workflow_dispatch' && {legacy_phases}");
@@ -153,6 +145,40 @@ fn oracle_workflow_produces_one_same_run_phase11_pair() -> TestResult {
     assert_exact_job_condition(&windows, &portability_route);
     assert!(!workflow.contains("inputs.evidence_phase != 'phase11'"));
     assert_actions_are_pinned(&workflow);
+    Ok(())
+}
+
+#[test]
+fn oracle_producers_are_manual_only_with_closed_phase_choices() -> TestResult {
+    // Arrange
+    let workflow = read(".github/workflows/oracle.yml")?;
+
+    // Act
+    let triggers = workflow
+        .split_once("on:\n")
+        .and_then(|(_, suffix)| suffix.split_once("\npermissions:"))
+        .map(|(triggers, _)| triggers)
+        .ok_or("oracle trigger section is missing")?;
+
+    // Assert
+    assert_eq!(
+        triggers
+            .lines()
+            .filter(|line| line.starts_with("  ") && !line.starts_with("    "))
+            .collect::<Vec<_>>(),
+        ["  workflow_dispatch:"]
+    );
+    assert!(triggers.contains("        type: choice"));
+    assert!(triggers.contains("        required: true"));
+    assert!(triggers.contains("        default: phase8"));
+    assert_eq!(
+        triggers
+            .lines()
+            .filter_map(|line| line.strip_prefix("          - "))
+            .collect::<Vec<_>>(),
+        ["phase8", "phase9", "phase10", "phase11"]
+    );
+    assert!(workflow.contains("cancel-in-progress: false"));
     Ok(())
 }
 
