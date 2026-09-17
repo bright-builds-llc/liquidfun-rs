@@ -1,4 +1,4 @@
-//! Private WebAssembly bridge for the LiquidFun browser playground.
+//! Private WebAssembly bridge for the `LiquidFun` browser playground.
 
 #![forbid(unsafe_code)]
 
