@@ -7,6 +7,10 @@ import {
 
 const commands: readonly CommandSpec[] = [
   {
+    id: "closure-regressions",
+    argv: ["bun", "test", "scripts/phase16"],
+  },
+  {
     id: "cargo-fmt",
     argv: ["cargo", "fmt", "--all", "--check"],
   },
