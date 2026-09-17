@@ -1,10 +1,5 @@
 //! Validated owned frame data exported as copied JavaScript typed arrays.
 
-#![allow(
-    dead_code,
-    reason = "FrameData is consumed by the session implemented in the next task"
-)]
-
 use wasm_bindgen::prelude::*;
 
 const MAX_PARTICLE_COUNT: usize = 512;
