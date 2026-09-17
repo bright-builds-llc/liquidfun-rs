@@ -5,10 +5,15 @@
 Use [PROJECT-SCOPE.md](PROJECT-SCOPE.md) for the current hobby-project goals.
 Linux x64 and canonical oracle checks are optional manual profiles, not ordinary
 completion gates. Cargo CI runs one macOS smoke job by default; manually
-set `run_linux_checks` to include the full Linux lane and Linux smoke. The
+set `run_linux_checks` to include the full Linux lane and Linux/Windows smoke jobs. The
 oracle workflow runs only by manual dispatch. The detailed evidence layers below
 retain their meaning when used. Cross-platform, comparison, safety, fuzz, coverage,
 regression-campaign and benchmark workflows are optional manual checks.
+
+Non-macOS platforms are best effort. Retain known-bug regressions and describe
+which source, platform and commands actually passed; current checks do not prove
+exhaustive parity. For bounded package preparation, follow
+[RELEASE.md](RELEASE.md#experimental-package-preparation).
 
 ## Current scope and maturity
 
@@ -61,7 +66,8 @@ cargo test --workspace --all-features
 RUSTDOCFLAGS="-D warnings" cargo doc --workspace --all-features --no-deps
 ```
 
-CI runs `cargo fmt --all --check`, so format verification is read-only.
+The optional Linux quality job runs `cargo fmt --all --check`, so its format
+verification is read-only. The ordinary macOS job builds and tests the native crate.
 
 ## Testing layer contract
 
@@ -1494,7 +1500,13 @@ cargo test -p liquidfun-differential --test catalog_failures
 cargo test -p liquidfun-differential --test catalog_round_trip
 ```
 
-The selected Macroquad package is private, non-default, and headless-testable.
+The following Macroquad description records the historical Phase 11 testbed.
+The current private interactive backend uses eframe/egui; the renderer replacement
+and old host/GUI debug records do not establish a current GUI test result.
+Use the native headless check for experimental preparation; interactive verification
+is separate. Retained historical commands and evidence below are not new claims.
+
+The selected Macroquad package was private, non-default, and headless-testable.
 Its PNGs and timing values are diagnostics only:
 
 ```bash
@@ -1609,7 +1621,8 @@ beyond that surface.
 
 `cargo xtask check` and `just check` are read-only. In Cargo-only mode they run
 package isolation, protocol schema/fixture checks, documentation contracts, and
-artifact provenance without an initialized submodule or C++. The Cargo CI job
+artifact provenance without an initialized submodule or C++. They do not replace
+the ordered Rust precommit sequence above. The optional Linux quality CI job
 separately runs checked corpus snapshot, closure, and generated-report validation
 because those commands are intentionally isolated from live discovery. With the
 submodule initialized, `cargo xtask check` additionally runs inventory, upstream

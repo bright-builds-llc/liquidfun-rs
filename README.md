@@ -22,8 +22,10 @@ The goal is an enjoyable, useful experimental physics project. Linux x64
 qualification and a dedicated benchmark machine are optional; they do not block
 ordinary development or completion. Start with the Cargo-only commands below.
 Current Cargo CI runs one macOS smoke job; cross-platform and expensive checks are manual options.
-See [project scope](PROJECT-SCOPE.md) for confirmed decisions and the broader
-simplifications still being discussed.
+See [project scope](PROJECT-SCOPE.md) for accepted decisions and the
+[experimental preparation checklist](RELEASE.md#experimental-package-preparation).
+APIs may evolve; incompatible changes will be documented before release.
+Safe handles, checked mutation and native Cargo-only consumption remain core boundaries.
 
 ## Maturity and evidence
 
@@ -51,7 +53,8 @@ non-publication rule and the exact path to a future readiness claim.
 
 ## Cargo-only install and use
 
-The crate declares Rust 1.92.0 as its v1.0.x MSRV contract. Repository
+The crate declares Rust 1.92.0 as its minimum compiler; verify that minimum
+before publication. A durable MSRV guarantee is deferred. Repository
 development is reproducibly pinned to Rust 1.97.0 by `rust-toolchain.toml`.
 Until a public release is published, build the reviewed repository checkout:
 
@@ -83,6 +86,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ## Platform support
 
+Ordinary CI exercises macOS; this is tested coverage, not a platform warranty.
+Non-macOS platforms are best effort and can be tested manually as needed.
 This table describes the existing optional strict platform profile. Linux x64
 is not a requirement for hobby-project completion; the recorded results remain
 scoped evidence, not a promise about every later revision.

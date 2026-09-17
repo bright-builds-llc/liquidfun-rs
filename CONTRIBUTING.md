@@ -3,8 +3,8 @@
 Start with [PROJECT-SCOPE.md](PROJECT-SCOPE.md). Linux x64 qualification and a
 dedicated benchmark runner are optional; normal contributions can be developed
 and checked locally. The strict evidence workflows remain available when
-explicitly requested. Broader CI and publishing simplifications are being
-discussed.
+explicitly requested. Use the accepted [experimental preparation checklist](RELEASE.md#experimental-package-preparation)
+for package preparation; publication requires separate authority.
 
 <!-- bright-builds-rules-contributing:begin -->
 
@@ -67,8 +67,9 @@ free-form prose.
 ### Bootstrap
 
 Cargo-only work uses the Rust 1.97.0 toolchain selected by
-`rust-toolchain.toml`. The publishable crate declares Rust 1.92.0 as the
-v1.0.x MSRV. Ordinary Rust work does not require CMake, C++, the submodule, or
+`rust-toolchain.toml`. The publishable crate declares Rust 1.92.0 as its
+minimum compiler, to be verified before publication; durable MSRV guarantees are deferred.
+Ordinary Rust work does not require CMake, C++, the submodule, or
 reference data.
 
 ```bash
@@ -136,15 +137,17 @@ workspace, warning-denied rustdoc, doctest, documentation-contract, and
 package-isolation checks listed in [TESTING.md](TESTING.md). Run
 `just markdown-check` after Markdown changes.
 
+`just check` is a separate package/protocol/docs/provenance aggregate and does
+not replace the ordered Rust checks above.
+
 ### CI placement
 
-Pull requests keep fast deterministic formatting, Clippy, build, unit,
-integration, doctest, package, documentation, inventory, and bounded replay
-checks close to the change.
+Pull requests run one macOS Cargo smoke job; run the ordered local checks and
+checks relevant to your change before committing. Other platforms are best effort.
 
 Randomized differential suites, fuzzing, Miri, Rust and C++ sanitizers,
 coverage, controlled benchmarks, and the broad native-platform matrix run on
-scheduled or explicit release-candidate workflows. Do not retry deterministic
+optional manual workflows. Do not retry deterministic
 physics failures. Preserve the exact failing input, candidate commit, toolchain,
 classification, and first-divergence signature.
 
