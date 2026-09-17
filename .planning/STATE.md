@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Web Playground
 status: executing
-stopped_at: Completed 16-02-PLAN.md
-last_updated: "2026-09-17T02:52:21.635Z"
+stopped_at: Completed 16-03-PLAN.md
+last_updated: "2026-09-17T03:00:43.372Z"
 last_activity: 2026-09-17
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 4
-  completed_plans: 2
-  percent: 50
+  completed_plans: 3
+  percent: 75
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: `.planning/PROJECT.md` (updated 2026-09-17)
 ## Current Position
 
 Phase: 16 (Rust WASM Browser Bridge) — EXECUTING
-Plan: 3 of 4
+Plan: 4 of 4
 Status: Ready to execute
 Last activity: 2026-09-17
 
-Progress: [███░░░░░░░] 25% of v1.1 plans complete.
+Progress: [████████░░] 75% of v1.1 plans complete.
 
 The prior 16 phases and 252 plans remain archived history. New work starts at Phase 16. The owner confirmed six interactive demos using our Rust engine via WASM, playful catalog/player controls and automatic GitHub Pages deployment from main.
 
@@ -43,6 +43,7 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 
 | Phase 16 P01 | 13 min | 3 tasks | 7 files |
 | Phase 16 P02 | 7 min | 2 tasks | 14 files |
+| Phase 16 P03 | 6 min | 2 tasks | 7 files |
 
 ### Decisions
 
@@ -57,10 +58,13 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 - [Phase 16]: Regenerate ignored wasm-pack output from the current checkout before frontend verification or build.
 - [Phase 16]: Defer the complete Vite build until Plan 16-03 supplies renderer and application entrypoints.
 - [Phase 16]: Poison the TypeScript session owner after any advance, capture, parse, or frame-cleanup failure.
+- [Phase 16]: Keep world fitting and y-axis inversion in one pure camera module while Canvas effects consume validated bulk arrays.
+- [Phase 16]: Represent loading, running, failure, and disposed as a tagged union carrying only valid frame observations.
+- [Phase 16]: Advance exactly one Rust frame per animation callback and derive browser proof attributes from consecutive Rust frame lanes.
 
 ### Pending Todos
 
-No new milestone todos captured. Plan 16-02 is ready for execution.
+No new milestone todos captured. Plan 16-04 is ready for execution.
 
 ### Blockers/Concerns
 
@@ -79,6 +83,6 @@ No new milestone todos captured. Plan 16-02 is ready for execution.
 
 ## Session Continuity
 
-Last session: 2026-09-17T02:52:21.631Z
-Stopped at: Completed 16-02-PLAN.md
+Last session: 2026-09-17T03:00:43.369Z
+Stopped at: Completed 16-03-PLAN.md
 Resume file: None
