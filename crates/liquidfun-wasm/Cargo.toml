@@ -1,0 +1,19 @@
+[package]
+name = "liquidfun-wasm"
+version = "0.0.0"
+description = "Private WebAssembly bridge for the liquidfun-rs browser playground"
+publish = false
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[lints]
+workspace = true
+
+[dependencies]
+liquidfun = { path = "../liquidfun" }
+wasm-bindgen = "=0.2.128"

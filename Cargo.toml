@@ -5,6 +5,7 @@ members = [
     "crates/liquidfun-differential",
     "crates/liquidfun-testbed",
     "crates/liquidfun-test-protocol",
+    "crates/liquidfun-wasm",
     "tools/xtask",
 ]
 default-members = ["crates/liquidfun"]
