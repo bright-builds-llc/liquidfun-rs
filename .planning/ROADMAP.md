@@ -13,7 +13,7 @@ The 22 approved requirements form four complete delivery boundaries. Although co
 ## Phases
 
 - [x] **Phase 16: Rust WASM Browser Bridge** — Run a real native-engine scene in a browser through a reproducible, typed WASM package. (completed 2026-09-17)
-- [ ] **Phase 17: Shared Player and Early Pages Delivery** — Play one working scene on GitHub Pages with reliable navigation, lifecycle and automatic delivery.
+- [x] **Phase 17: Shared Player and Early Pages Delivery** — Play one working scene on GitHub Pages with reliable navigation, lifecycle and automatic delivery. (completed 2026-09-17)
 - [ ] **Phase 18: Six Native Physics Demos** — Explore the complete approved catalog with real physics, bounded controls and source credits.
 - [ ] **Phase 19: Interaction Polish and Browser Verification** — Use all six demos comfortably across pointer, keyboard and narrow-screen paths, verified in the built and hosted site.
 
@@ -58,7 +58,7 @@ Plans:
 - [x] 17-05-PLAN.md — Wire the one-session Dam Break player and teardown
 - [x] 17-06-PLAN.md — Prove production-base Dam Break, fallback, and hidden-tab bounds
 - [x] 17-07-PLAN.md — Add the SHA-pinned same-checkout Pages workflow
-- [ ] 17-08-PLAN.md — Deploy main, record the live URL/SHA, and obtain independent review
+- [x] 17-08-PLAN.md — Deploy main, record the live URL/SHA, and obtain independent review
 **UI hint**: yes
 
 Deploy the thin working slice early. Label incomplete catalog entries honestly until Phase 18 supplies all six. Establish source/build chrome, input conventions and responsive structure here; final all-scene interaction acceptance belongs to Phase 19. A website delivery runner does not reintroduce mandatory Linux native qualification.
@@ -97,7 +97,7 @@ Execution order: **16 → 17 → 18 → 19**. Each phase includes focused checks
 | Phase | Plans Complete | Status | Completed |
 | --- | --- | --- | --- |
 | 16. Rust WASM Browser Bridge | 4/4 | Complete    | 2026-09-17 |
-| 17. Shared Player and Early Pages Delivery | 7/8 | In Progress|  |
+| 17. Shared Player and Early Pages Delivery | 8/8 | Complete   | 2026-09-17 |
 | 18. Six Native Physics Demos | 0/TBD | Not started | - |
 | 19. Interaction Polish and Browser Verification | 0/TBD | Not started | - |
 
