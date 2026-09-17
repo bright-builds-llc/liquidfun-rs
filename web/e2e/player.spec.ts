@@ -77,6 +77,43 @@ async function setDocumentHidden(page: Page, hidden: boolean): Promise<void> {
   }, hidden);
 }
 
+async function restoreAndReadNextStep(
+  page: Page,
+  previousStep: number,
+): Promise<number> {
+  return page.evaluate((stepBeforeResume) => {
+    const maybeMain = document.querySelector("main");
+    if (maybeMain === null) {
+      throw new Error("main is missing");
+    }
+
+    const nextStep = new Promise<number>((resolve, reject) => {
+      const observer = new MutationObserver(() => {
+        const maybeNext = Number(maybeMain.getAttribute("data-step-index"));
+        if (Number.isFinite(maybeNext) && maybeNext > stepBeforeResume) {
+          observer.disconnect();
+          resolve(maybeNext);
+        }
+      });
+      observer.observe(maybeMain, {
+        attributes: true,
+        attributeFilter: ["data-step-index"],
+      });
+      window.setTimeout(() => {
+        observer.disconnect();
+        reject(new Error("hidden-tab resume did not observe a later step index"));
+      }, 2_000);
+    });
+
+    Object.defineProperty(document, "hidden", {
+      configurable: true,
+      get: () => false,
+    });
+    document.dispatchEvent(new Event("visibilitychange"));
+    return nextStep;
+  }, previousStep);
+}
+
 test("loads Dam Break under the production base and exercises pause, play, and reset", async ({
   page,
 }) => {
@@ -153,21 +190,6 @@ test("clears hidden-tab catch-up so the next frame advances at most four steps",
   await page.waitForTimeout(HIDDEN_TAB_MS);
   expect(await numericAttribute(main, "data-step-index")).toBe(hiddenStep);
 
-  await setDocumentHidden(page, false);
-  let maybeFirstVisibleStep: number | undefined;
-  await expect
-    .poll(async () => {
-      const currentStep = await numericAttribute(main, "data-step-index");
-      if (currentStep > hiddenStep && maybeFirstVisibleStep === undefined) {
-        maybeFirstVisibleStep = currentStep;
-      }
-      return maybeFirstVisibleStep;
-    })
-    .not.toBeUndefined();
-
-  const firstVisibleStep = maybeFirstVisibleStep;
-  if (firstVisibleStep === undefined) {
-    throw new Error("hidden-tab resume did not observe a later step index");
-  }
+  const firstVisibleStep = await restoreAndReadNextStep(page, hiddenStep);
   expect(firstVisibleStep - hiddenStep).toBeLessThanOrEqual(MAX_STEPS_PER_FRAME);
 });

@@ -120,6 +120,10 @@ function prefersReducedMotion(): boolean {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
+function isUsableViewport(width: number, height: number): boolean {
+  return Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0;
+}
+
 /** One-session Dam Break playground shell with hash routing and bounded playback. */
 export function App() {
   const [route, setRoute] = createSignal(
@@ -262,8 +266,12 @@ export function App() {
   ): void {
     disconnectResizeObserver();
     maybeResizeObserver = new ResizeObserver(() => {
+      const resizedBounds = canvas.getBoundingClientRect();
+      if (!isUsableViewport(resizedBounds.width, resizedBounds.height)) {
+        return;
+      }
+
       try {
-        const resizedBounds = canvas.getBoundingClientRect();
         const resizedCamera = resizeCanvasBackingStore(
           canvas,
           resizedBounds.width,
@@ -271,6 +279,11 @@ export function App() {
           window.devicePixelRatio,
         );
         maybeCamera = resizedCamera;
+        if (maybeSession === undefined && isDamBreakRoute(route())) {
+          void startDamBreak();
+          return;
+        }
+
         const maybeFrame = maybePreviousFrame;
         if (maybeFrame !== undefined) {
           drawRenderFrame(context, maybeFrame, resizedCamera);
@@ -341,26 +354,14 @@ export function App() {
   function assignCanvas(canvas: HTMLCanvasElement): void {
     maybeCanvas = canvas;
 
-    try {
-      const bounds = canvas.getBoundingClientRect();
-      maybeCamera = resizeCanvasBackingStore(
-        canvas,
-        bounds.width,
-        bounds.height,
-        window.devicePixelRatio,
-      );
-      const maybeNextContext = canvas.getContext("2d");
-      if (maybeNextContext === null) {
-        fail(new Error("Canvas 2D is unavailable"));
-        return;
-      }
-
-      maybeContext = maybeNextContext;
-      connectResizeObserver(canvas, maybeNextContext);
-      void startDamBreak();
-    } catch (error) {
-      fail(error);
+    const maybeNextContext = canvas.getContext("2d");
+    if (maybeNextContext === null) {
+      fail(new Error("Canvas 2D is unavailable"));
+      return;
     }
+
+    maybeContext = maybeNextContext;
+    connectResizeObserver(canvas, maybeNextContext);
   }
 
   function playScene(): void {
@@ -403,6 +404,8 @@ export function App() {
     const nextRoute = maybeParseSceneRoute(window.location.hash);
     if (!isDamBreakRoute(nextRoute)) {
       abandonDamBreak();
+    } else if (view().kind === "fallback") {
+      setView({ kind: "loading" });
     }
 
     setRoute(nextRoute);
@@ -419,6 +422,9 @@ export function App() {
     const currentRoute = route();
     document.title = titleForRoute(currentRoute);
     if (isDamBreakRoute(currentRoute)) {
+      if (view().kind === "fallback") {
+        setView({ kind: "loading" });
+      }
       return;
     }
 

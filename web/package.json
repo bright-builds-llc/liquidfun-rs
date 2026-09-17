@@ -10,6 +10,7 @@
     "build:app": "vite build",
     "preview": "vite preview --host 127.0.0.1 --port 4173",
     "test:browser": "playwright test",
+    "test:player": "playwright test e2e/player.spec.ts",
     "browser:install": "playwright install chromium"
   },
   "dependencies": {

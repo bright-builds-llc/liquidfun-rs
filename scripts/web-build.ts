@@ -18,7 +18,7 @@ const PLAYWRIGHT_VERSION = "1.63.0";
 const GENERATED_RELATIVE_PATH = "web/src/generated/liquidfun-wasm";
 const CLOSURE_RELATIVE_PATH = "target/phase16";
 
-type BuildMode = "wasm" | "build" | "smoke";
+type BuildMode = "wasm" | "build" | "smoke" | "player-smoke";
 type BuildStatus = "passed" | "failed";
 
 type CommandRecord = {
@@ -42,11 +42,18 @@ let logPath = resolve(summaryDirectory, "web-build.log");
 const commandRecords: CommandRecord[] = [];
 
 function parseMode(value: string | undefined): BuildMode {
-  if (value === "wasm" || value === "build" || value === "smoke") {
+  if (
+    value === "wasm" ||
+    value === "build" ||
+    value === "smoke" ||
+    value === "player-smoke"
+  ) {
     return value;
   }
 
-  throw new Error("usage: bun scripts/web-build.ts <wasm|build|smoke>");
+  throw new Error(
+    "usage: bun scripts/web-build.ts <wasm|build|smoke|player-smoke>",
+  );
 }
 
 function commandText(command: readonly string[]): string {
@@ -507,8 +514,12 @@ async function main(): Promise<void> {
     } else {
       verifyTools();
       await regenerateWasm();
-      if (mode === "build") {
+      if (mode === "build" || mode === "player-smoke") {
         await runFrontendBuild();
+      }
+      if (mode === "player-smoke") {
+        await runCommand(["bun", "run", "browser:install"], webDirectory);
+        await runCommand(["bun", "run", "test:player"], webDirectory);
       }
     }
     await writeSummary(
