@@ -551,17 +551,19 @@ After `vite build`, fail the Pages build job if `web/dist/index.html` lacks `/li
 
 All other factual claims are verified from the repo, `gh api`, npm registry, or cited official docs. A1 is the only first-deploy empirical gap.
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Should the Pages build job run Playwright, or only the unit + dist-path gate?**
    - What we know: D-17 requires production-base loading and player proofs; `just web-smoke` already runs Chromium. HOST-01 says PRs may run the same build/smoke.
    - What's unclear: Ubuntu Playwright install time vs hobby CI cost.
-   - Recommendation: Run `bun scripts/web-build.ts build` (wasm, typecheck, unit, vite) on every Pages workflow. Add a focused production-base Playwright file for player/hash/reset. Keep the heavy Phase 16 forensic closure optional/local unless it stays cheap after selector updates. Live URL/revision recording happens after the first real `main` deploy, not in PR.
+   - Recommendation: Run `bun scripts/web-build.ts build` (wasm, typecheck, unit, vite) on every Pages workflow. Keep the heavy Phase 16 forensic closure optional/local. Live URL/revision recording happens after the first real `main` deploy, not in PR.
+   - RESOLVED: Playwright stays in `just web-player-smoke` (local/default player proof). The Pages job does not run Playwright.
 
 2. **Should branch protection require the new Pages build check?**
    - What we know: `github-pages` environment already restricts deploys to `main`. [VERIFIED: gh api]
    - What's unclear: Current required-check list was not inspected.
    - Recommendation: Workflow `needs` is sufficient for HOST-01. Adding a required status check is optional hardening, not a phase blocker.
+   - RESOLVED: Branch protection is optional because workflow `needs` satisfies HOST-01.
 
 ## Environment Availability
 
