@@ -4,9 +4,9 @@ Use this file to record deliberate deviations from the canonical coding and arch
 
 ## Active overrides
 
-| Standard                | Local decision                | Rationale             | Owner                | Review date         |
-| ----------------------- | ----------------------------- | --------------------- | -------------------- | ------------------- |
-| `REPLACE_WITH_STANDARD` | `REPLACE_WITH_LOCAL_DECISION` | `REPLACE_WITH_REASON` | `REPLACE_WITH_OWNER` | `REPLACE_WITH_DATE` |
+| Standard                                                                         | Local decision                                                        | Rationale                                                                        | Owner            | Review date |
+| -------------------------------------------------------------------------------- | --------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ---------------- | ----------- |
+| `standards/languages/typescript-javascript.md` SolidJS/MysticUI+Tailwind default | Semantic HTML plus one scoped CSS file for Phase 17 playground chrome | D-09 thin-slice so Pages delivery is not blocked by a new design-system adoption | Repository owner | 2026-12-17  |
 
 ## Notes
 
