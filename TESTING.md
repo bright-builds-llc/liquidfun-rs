@@ -69,12 +69,31 @@ RUSTDOCFLAGS="-D warnings" cargo doc --workspace --all-features --no-deps
 The optional Linux quality job runs `cargo fmt --all --check`, so its format
 verification is read-only. The ordinary macOS job builds and tests the native crate.
 
+## Web playground
+
+The hosted playground is GitHub Pages delivery, not Linux native qualification
+and not a six-scene WEBTEST-01 matrix or strict native certification. Visitors
+open `https://bright-builds-llc.github.io/liquidfun-rs/#/scene/dam-break`.
+Production JavaScript and WASM load under `/liquidfun-rs/`.
+
+Local product commands:
+
+```bash
+just web-build
+just web-player-smoke
+```
+
+`just web-player-smoke` exercises hash fixtures `#/scene/dam-break` and
+`#/scene/not-a-scene`. The GitHub Actions workflow name is `Pages`. `just web-smoke` remains the opt-in Phase 16 forensic closure, not the product
+default.
+
 ## Phase 16 browser proof
 
-The Phase 16 proof is a private browser-development surface. It compiles the
-native Rust engine through the unpublished `liquidfun-wasm` wrapper, consumes
-owned typed-array frames, and draws them with Canvas 2D. It does not add a
-browser dependency to the published `liquidfun` crate.
+The Phase 16 proof is an opt-in forensic browser-development surface. It
+compiles the native Rust engine through the unpublished `liquidfun-wasm`
+wrapper, consumes owned typed-array frames, and draws them with Canvas 2D. It
+does not add a browser dependency to the packaged `liquidfun` crate. The
+ordinary playground proof is `just web-player-smoke` above.
 
 Prepare a clean checkout with the exact tool and package inputs:
 
@@ -114,10 +133,10 @@ cargo xtask package verify
 
 Plain Cargo and extracted packaged consumers require no Bun, browser,
 wasm-pack, generated JavaScript or WASM, C++, protocol, differential runner,
-benchmark, or testbed. Phase 17 owns the shared player, retry/reset behavior,
-routing, GitHub Pages paths and delivery, and reusable lifecycle. Optional
-Linux/C++, sanitizer, fuzz, coverage, performance, and release qualification
-remain separate manual profiles.
+benchmark, or testbed. The shared player, hash routing, and GitHub Pages
+delivery are documented in Web playground above. Optional Linux/C++,
+sanitizer, fuzz, coverage, performance, and release qualification remain
+separate manual profiles.
 
 ## Testing layer contract
 
