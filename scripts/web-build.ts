@@ -1,12 +1,22 @@
-import { mkdir, rm, writeFile } from "node:fs/promises";
-import { relative, resolve } from "node:path";
+import { createHash } from "node:crypto";
+import {
+  mkdir,
+  readFile,
+  realpath,
+  rename,
+  rm,
+  writeFile,
+} from "node:fs/promises";
+import { basename, relative, resolve } from "node:path";
 
 const BUN_VERSION = "1.4.2";
 const RUST_VERSION = "1.97.0";
 const WASM_PACK_VERSION = "0.15.0";
+const PLAYWRIGHT_VERSION = "1.63.0";
 const GENERATED_RELATIVE_PATH = "web/src/generated/liquidfun-wasm";
+const CLOSURE_RELATIVE_PATH = "target/phase16";
 
-type BuildMode = "wasm" | "build";
+type BuildMode = "wasm" | "build" | "smoke";
 type BuildStatus = "passed" | "failed";
 
 type CommandRecord = {
@@ -15,19 +25,26 @@ type CommandRecord = {
   readonly exitCode: number;
 };
 
+type PlaywrightIdentity = {
+  readonly packageVersion: string;
+  readonly chromiumRevision: string;
+  readonly chromiumVersion: string;
+};
+
 const repoRoot = resolve(import.meta.dir, "..");
 const webDirectory = resolve(repoRoot, "web");
 const generatedDirectory = resolve(repoRoot, GENERATED_RELATIVE_PATH);
 const summaryDirectory = resolve(repoRoot, "target/web-build");
-const logPath = resolve(summaryDirectory, "web-build.log");
+const closureDirectory = resolve(repoRoot, CLOSURE_RELATIVE_PATH);
+let logPath = resolve(summaryDirectory, "web-build.log");
 const commandRecords: CommandRecord[] = [];
 
 function parseMode(value: string | undefined): BuildMode {
-  if (value === "wasm" || value === "build") {
+  if (value === "wasm" || value === "build" || value === "smoke") {
     return value;
   }
 
-  throw new Error("usage: bun scripts/web-build.ts <wasm|build>");
+  throw new Error("usage: bun scripts/web-build.ts <wasm|build|smoke>");
 }
 
 function commandText(command: readonly string[]): string {
@@ -50,6 +67,7 @@ function commandError(command: string, exitCode: number): Error {
 async function runCommand(
   command: readonly string[],
   cwd: string,
+  environment?: Record<string, string | undefined>,
 ): Promise<void> {
   const displayCommand = commandText(command);
   await breadcrumb(`run ${displayCommand}`);
@@ -57,11 +75,16 @@ async function runCommand(
   const result = Bun.spawnSync({
     cmd: [...command],
     cwd,
+    ...(environment === undefined ? {} : { env: environment }),
     stdout: "inherit",
     stderr: "inherit",
   });
   const status = result.exitCode === 0 ? "passed" : "failed";
-  commandRecords.push({ command: displayCommand, status, exitCode: result.exitCode });
+  commandRecords.push({
+    command: displayCommand,
+    status,
+    exitCode: result.exitCode,
+  });
 
   if (result.exitCode !== 0) {
     throw commandError(displayCommand, result.exitCode);
@@ -77,7 +100,11 @@ function captureCommand(command: readonly string[]): string {
     stderr: "pipe",
   });
   const status = result.exitCode === 0 ? "passed" : "failed";
-  commandRecords.push({ command: displayCommand, status, exitCode: result.exitCode });
+  commandRecords.push({
+    command: displayCommand,
+    status,
+    exitCode: result.exitCode,
+  });
 
   if (result.exitCode !== 0) {
     const diagnostic = result.stderr.toString().trim();
@@ -142,6 +169,242 @@ async function runFrontendBuild(): Promise<void> {
   await runCommand(["bun", "run", "build:app"], webDirectory);
 }
 
+async function runCompleteBuild(): Promise<void> {
+  verifyTools();
+  await regenerateWasm();
+  await runFrontendBuild();
+}
+
+async function allocateClosureAttempt(): Promise<string> {
+  await mkdir(closureDirectory, { recursive: true });
+
+  for (let attemptNumber = 1; ; attemptNumber += 1) {
+    const attemptDirectory = resolve(
+      closureDirectory,
+      `closure-attempt-${attemptNumber}`,
+    );
+    try {
+      await mkdir(attemptDirectory);
+      return await realpath(attemptDirectory);
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        "code" in error &&
+        error.code === "EEXIST"
+      ) {
+        continue;
+      }
+      throw error;
+    }
+  }
+}
+
+async function atomicWriteJson(
+  destination: string,
+  value: unknown,
+): Promise<void> {
+  const temporaryPath = `${destination}.tmp-${process.pid}`;
+  await writeFile(temporaryPath, `${JSON.stringify(value, null, 2)}\n`, {
+    flag: "wx",
+  });
+  await rename(temporaryPath, destination);
+}
+
+async function parsePlaywrightIdentity(): Promise<PlaywrightIdentity> {
+  const packagePath = resolve(
+    webDirectory,
+    "node_modules/@playwright/test/package.json",
+  );
+  const browsersPath = resolve(
+    webDirectory,
+    "node_modules/playwright-core/browsers.json",
+  );
+  const packageJson = JSON.parse(await readFile(packagePath, "utf8")) as {
+    version?: unknown;
+  };
+  const browsersJson = JSON.parse(await readFile(browsersPath, "utf8")) as {
+    browsers?: Array<{
+      name?: unknown;
+      revision?: unknown;
+      browserVersion?: unknown;
+    }>;
+  };
+  if (packageJson.version !== PLAYWRIGHT_VERSION) {
+    throw new Error(
+      `@playwright/test ${PLAYWRIGHT_VERSION} is required; found ${String(packageJson.version)}`,
+    );
+  }
+
+  const chromium = browsersJson.browsers?.find(
+    (browser) => browser.name === "chromium",
+  );
+  if (
+    typeof chromium?.revision !== "string" ||
+    typeof chromium.browserVersion !== "string"
+  ) {
+    throw new Error("package-pinned Chromium identity is unavailable");
+  }
+
+  return {
+    packageVersion: PLAYWRIGHT_VERSION,
+    chromiumRevision: chromium.revision,
+    chromiumVersion: chromium.browserVersion,
+  };
+}
+
+function captureGitBytes(command: readonly string[]): Uint8Array {
+  const result = Bun.spawnSync({
+    cmd: [...command],
+    cwd: repoRoot,
+    stdout: "pipe",
+    stderr: "pipe",
+  });
+  if (result.exitCode !== 0) {
+    throw commandError(commandText(command), result.exitCode);
+  }
+  return result.stdout;
+}
+
+async function sourceIdentity(): Promise<{
+  readonly revision: string;
+  readonly workingTreeSha256: string;
+  readonly status: string;
+}> {
+  const revision = captureCommand(["git", "rev-parse", "HEAD"]);
+  const statusBytes = captureGitBytes([
+    "git",
+    "status",
+    "--porcelain=v1",
+    "-z",
+  ]);
+  const trackedDiff = captureGitBytes(["git", "diff", "--binary", "HEAD"]);
+  const stagedDiff = captureGitBytes([
+    "git",
+    "diff",
+    "--binary",
+    "--cached",
+    "HEAD",
+  ]);
+  const untrackedOutput = captureGitBytes([
+    "git",
+    "ls-files",
+    "--others",
+    "--exclude-standard",
+    "-z",
+  ]);
+  const untrackedPaths = new TextDecoder()
+    .decode(untrackedOutput)
+    .split("\0")
+    .filter((path) => path.length > 0)
+    .sort();
+  const hash = createHash("sha256");
+  hash.update(statusBytes);
+  hash.update(trackedDiff);
+  hash.update(stagedDiff);
+  for (const path of untrackedPaths) {
+    hash.update(path);
+    hash.update("\0");
+    hash.update(await readFile(resolve(repoRoot, path)));
+    hash.update("\n");
+  }
+
+  return {
+    revision,
+    workingTreeSha256: hash.digest("hex"),
+    status: new TextDecoder().decode(statusBytes).replaceAll("\0", "\n"),
+  };
+}
+
+async function runSmoke(attemptDirectory: string): Promise<void> {
+  await runCompleteBuild();
+  const playwright = await parsePlaywrightIdentity();
+  const source = await sourceIdentity();
+  await atomicWriteJson(resolve(attemptDirectory, "provenance.json"), {
+    schemaVersion: 1,
+    attemptIdentity: basename(attemptDirectory),
+    source,
+    tools: {
+      bun: BUN_VERSION,
+      rust: RUST_VERSION,
+      wasmPack: WASM_PACK_VERSION,
+      playwright,
+    },
+  });
+
+  const environment = {
+    ...process.env,
+    PHASE16_CLOSURE_ATTEMPT_DIR: attemptDirectory,
+  };
+  await runCommand(
+    ["bun", "run", "browser:install"],
+    webDirectory,
+    environment,
+  );
+  await runCommand(["bun", "run", "test:browser"], webDirectory, environment);
+  await validatePlaywrightAttachments(attemptDirectory);
+}
+
+function collectAttachmentNames(
+  value: unknown,
+  names: Set<string>,
+): void {
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      collectAttachmentNames(item, names);
+    }
+    return;
+  }
+  if (value === null || typeof value !== "object") {
+    return;
+  }
+
+  const record = value as Record<string, unknown>;
+  if (
+    typeof record.name === "string" &&
+    typeof record.contentType === "string"
+  ) {
+    names.add(record.name);
+  }
+  for (const child of Object.values(record)) {
+    collectAttachmentNames(child, names);
+  }
+}
+
+async function validatePlaywrightAttachments(
+  attemptDirectory: string,
+): Promise<void> {
+  const validationName = "validate Playwright passing attachments";
+  const reportPath = resolve(attemptDirectory, "playwright-report.json");
+  try {
+    const report = JSON.parse(await readFile(reportPath, "utf8")) as unknown;
+    const names = new Set<string>();
+    collectAttachmentNames(report, names);
+    for (const requiredName of [
+      "canvas-initial.png",
+      "canvas-moving.png",
+      "canvas-disposed.png",
+      "browser-proof.json",
+    ]) {
+      if (!names.has(requiredName)) {
+        throw new Error(`missing passing attachment: ${requiredName}`);
+      }
+    }
+    commandRecords.push({
+      command: validationName,
+      status: "passed",
+      exitCode: 0,
+    });
+    await breadcrumb(`${validationName} passed`);
+  } catch (error) {
+    commandRecords.push({
+      command: validationName,
+      status: "failed",
+      exitCode: 1,
+    });
+    throw error;
+  }
+}
+
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "unknown web build failure";
 }
@@ -162,6 +425,7 @@ async function writeSummary(
   mode: BuildMode,
   status: BuildStatus,
   startedAt: string,
+  maybeAttemptDirectory?: string,
   maybeError?: unknown,
 ): Promise<void> {
   const completedAt = new Date().toISOString();
@@ -172,6 +436,11 @@ async function writeSummary(
     completedAt,
     generatedDirectory: GENERATED_RELATIVE_PATH,
     commands: commandRecords,
+    ...(maybeAttemptDirectory === undefined
+      ? {}
+      : {
+          attemptDirectory: relative(repoRoot, maybeAttemptDirectory),
+        }),
     ...(maybeError === undefined ? {} : { error: errorMessage(maybeError) }),
   };
   const text = [
@@ -180,34 +449,66 @@ async function writeSummary(
     `started: ${startedAt}`,
     `completed: ${completedAt}`,
     `generated: ${GENERATED_RELATIVE_PATH}`,
+    ...(maybeAttemptDirectory === undefined
+      ? []
+      : [`attempt: ${relative(repoRoot, maybeAttemptDirectory)}`]),
     ...(maybeError === undefined ? [] : [`error: ${errorMessage(maybeError)}`]),
     "",
   ].join("\n");
 
-  await writeFile(
-    resolve(summaryDirectory, "summary.json"),
-    `${JSON.stringify(summary, null, 2)}\n`,
-  );
+  await atomicWriteJson(resolve(summaryDirectory, "summary.json"), summary);
   await writeFile(resolve(summaryDirectory, "summary.txt"), text);
+
+  if (maybeAttemptDirectory !== undefined) {
+    await atomicWriteJson(
+      resolve(maybeAttemptDirectory, "smoke-summary.json"),
+      summary,
+    );
+  }
 }
 
 async function main(): Promise<void> {
   const mode = parseMode(process.argv[2]);
   const startedAt = new Date().toISOString();
+  let maybeAttemptDirectory: string | undefined;
   await mkdir(summaryDirectory, { recursive: true });
-  await writeFile(logPath, "");
+  if (mode === "smoke") {
+    maybeAttemptDirectory = await allocateClosureAttempt();
+    logPath = resolve(maybeAttemptDirectory, "smoke.log");
+    await writeFile(logPath, "", { flag: "wx" });
+  } else {
+    await writeFile(logPath, "");
+  }
 
   try {
     await breadcrumb(`start ${mode}`);
-    verifyTools();
-    await regenerateWasm();
-    if (mode === "build") {
-      await runFrontendBuild();
+    if (mode === "smoke" && maybeAttemptDirectory !== undefined) {
+      await breadcrumb(
+        `retain ${relative(repoRoot, maybeAttemptDirectory)}`,
+      );
+      await runSmoke(maybeAttemptDirectory);
+    } else {
+      verifyTools();
+      await regenerateWasm();
+      if (mode === "build") {
+        await runFrontendBuild();
+      }
     }
-    await writeSummary(mode, "passed", startedAt);
+    await writeSummary(
+      mode,
+      "passed",
+      startedAt,
+      maybeAttemptDirectory,
+    );
     await breadcrumb(`complete ${mode}`);
   } catch (error) {
-    await writeSummary(mode, "failed", startedAt, error);
+    await writeSummary(
+      mode,
+      "failed",
+      startedAt,
+      maybeAttemptDirectory,
+      error,
+    );
     console.error(`[web-build] ${errorMessage(error)}`);
     process.exitCode = errorExitCode(error);
   }

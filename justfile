@@ -23,6 +23,9 @@ web-wasm:
 web-build:
     bun scripts/web-build.ts build
 
+web-smoke:
+    bun scripts/web-build.ts smoke
+
 test:
     cargo test --all-features
 
