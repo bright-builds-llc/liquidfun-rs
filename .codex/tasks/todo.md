@@ -284,3 +284,10 @@ Planning review: two sequential plans cover HOBBY-01/02/03 and D-10–D-21. Twen
 - [x] Verify phase requirements and prepare final tracking records for the normal main push.
 
 Completion review: both replacement plans passed, HOBBY-01/02/03 verified, independent review clean and lifecycle validation passed. Checked implementation 75ead0e passed macOS Cargo CI35169132504; native/package and regression results are in 15-HOBBY-COMPLETION.md. Generated compatibility report, compiler declarations and strict validators remain unchanged. No GUI, minimum-compiler or publication claim was added. Final tracking commits contain records only.
+
+## task-archive-hobby-milestone | 2026-09-17 01:19 UTC | Archive completed hobby milestone
+
+- [x] Verify current-scope readiness and preserve historical strict gaps.
+- [x] Archive roadmap/requirements/audit, write concise milestone history and retrospective.
+- [ ] Independently review and commit archives before removing active requirements.
+- [ ] Finalize between-milestone state, verify checks, and push without release tags or publication.

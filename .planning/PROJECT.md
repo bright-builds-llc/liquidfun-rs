@@ -8,11 +8,19 @@ The repository will retain upstream C++ LiquidFun as a read-only development ora
 
 ## Core Value
 
-Deliver an independent, maintainable Rust physics engine whose LiquidFun behavior is demonstrated against a pinned upstream oracle through explicit inventory, tests, differential evidence, and documented tolerances.
+Deliver a useful, independent Rust physics library for enjoyable experimentation, with honest limitations and a lightweight native development loop.
 
 ## Current scope decision — 2026-09-16
 
 The owner prioritizes a fun hobby project over production-quality certification. Apply `PROJECT-SCOPE.md`: mandatory Linux x64 qualification and the dedicated performance-host completion gate are removed. Historical evidence remains truthful and source-bound; strict qualification is opt-in. The owner selected local checks plus one macOS CI job and optional manual expensive suites. The accepted experimental preparation checklist is in RELEASE.md. APIs may evolve with incompatible changes documented before release; durable API/MSRV guarantees are deferred. Preserve Rust 1.97.0 and the declared minimum 1.92, verifying that minimum before publication or deliberately revising manifest and docs together.
+
+## Current State
+
+The v1.0 Experimental Foundation planning milestone is archived (2026-09-17): 16 phases and 252 active plans completed under the revised hobby scope. This is not a crate release or strict parity certification. See `.planning/MILESTONES.md` and `.planning/milestones/v1.0-REQUIREMENTS.md` for outcomes and deferred requirements. Native checks, isolated packaging and macOS CI were verified at the implementation identified in Phase 15's completion record.
+
+## Next Milestone Goals
+
+Not selected. Favor a concrete simulation, example improvement or bug that makes the project more useful or enjoyable. Define fresh requirements through `/gsd-new-milestone`; do not automatically revive strict certification, publish a package or promise new platforms.
 
 ## Requirements
 
@@ -34,7 +42,7 @@ The owner prioritizes a fun hobby project over production-quality certification.
 
 - [x] Phase 13.1 restored structural compliance and closed its verification gaps with a complete 72-command local/canonical matrix, independently validated durable evidence, and formal verification at 36/36 with the accepted integration-history override.
 
-- [x] Phase 14 repaired Windows particle-group scratch allocation, preserved typed rejection and complete rollback contracts, and passed 13/13 must-haves. Both fixed regressions and 957 package tests pass on Windows, Linux and macOS at one source SHA, with complete Cargo CI success; canonical candidate acceptance remains Phase 15 work.
+- [x] Phase 14 repaired Windows particle-group scratch allocation, preserved typed rejection and complete rollback contracts, and passed 13/13 must-haves. Both fixed regressions and 957 package tests pass on Windows, Linux and macOS at one source SHA, with complete Cargo CI success; canonical candidate acceptance belongs to the deferred optional strict qualification campaign.
 
 ### Historical full-parity ambitions
 
@@ -114,7 +122,9 @@ Before substantial physics porting begins, the project should have:
 - Initial Cargo workspace scaffolding, a root `justfile`, pinned Rust toolchain, and minimal CI for both the Rust skeleton and upstream reference implementation.
 - A verified subsystem/API inventory and initial compatibility traceability matrix.
 
-## Context
+## Historical phase context
+
+The snapshots below describe their original phases, not current work or next steps. Current State and Next Milestone Goals above supersede their unfinished-target wording. The completed hobby milestone does not claim full parity.
 
 - Phase 1 is complete: the repository now contains a Cargo-first Rust scaffold, private orchestration, an immutable upstream oracle, reproducible CMake/Ninja build commands, compatibility/provenance records, package isolation, and separated CI workflows. Broad physics behavior is not implemented yet.
 - Phase 2 is complete: the repository now has a strict semantic JSONL contract, native Rust and process-isolated C++ adapters, typed comparison and failure taxonomy, replay/minimization and evidence lifecycles, and verified empty-world one-shot, reuse, and sanitizer round trips. This proves the harness seam, not broad physics parity.
@@ -202,4 +212,4 @@ This document evolves at phase transitions and milestone boundaries.
 
 ______________________________________________________________________
 
-*Updated for Phase 15 hobby scope on 2026-09-17 UTC. Strict candidate acceptance remains optional and outstanding.*
+*Last updated: 2026-09-17 after archival of the v1.0 Experimental Foundation planning milestone. Strict certification remains optional and outstanding.*
