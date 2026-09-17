@@ -10,6 +10,11 @@ import { basename, relative, resolve } from "node:path";
 
 import { expect, test, type Locator } from "@playwright/test";
 
+test.skip(
+  process.env.PHASE16_CLOSURE_ATTEMPT_DIR === undefined,
+  "Phase 16 forensic smoke is opt-in and requires PHASE16_CLOSURE_ATTEMPT_DIR",
+);
+
 const LOADING_STATUS = "Loading Rust/WASM session…";
 const RUNNING_STATUS = "Running Rust/WASM session";
 const DISPOSED_STATUS = "Rust/WASM session disposed";
