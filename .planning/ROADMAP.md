@@ -12,7 +12,7 @@ The 22 approved requirements form four complete delivery boundaries. Although co
 
 ## Phases
 
-- [ ] **Phase 16: Rust WASM Browser Bridge** — Run a real native-engine scene in a browser through a reproducible, typed WASM package.
+- [x] **Phase 16: Rust WASM Browser Bridge** — Run a real native-engine scene in a browser through a reproducible, typed WASM package. (completed 2026-09-17)
 - [ ] **Phase 17: Shared Player and Early Pages Delivery** — Play one working scene on GitHub Pages with reliable navigation, lifecycle and automatic delivery.
 - [ ] **Phase 18: Six Native Physics Demos** — Explore the complete approved catalog with real physics, bounded controls and source credits.
 - [ ] **Phase 19: Interaction Polish and Browser Verification** — Use all six demos comfortably across pointer, keyboard and narrow-screen paths, verified in the built and hosted site.
@@ -33,7 +33,7 @@ Plans:
 - [x] 16-01-PLAN.md — Build the native-testable private WASM session, bounded proof scene, copied-frame ABI, and real wasm-pack generation gate.
 - [x] 16-02-PLAN.md — Add exact-pinned Bun/SolidJS generation plus the validated typed frame/session ownership boundary.
 - [x] 16-03-PLAN.md — Implement pure Canvas rendering and the approved SolidJS proof page, then run the first complete frontend build.
-- [ ] 16-04-PLAN.md — Prove and retain visible Rust motion/disposal in Chromium, document isolation, and obtain exact-digest independent review.
+- [x] 16-04-PLAN.md — Prove and retain visible Rust motion/disposal in Chromium, document isolation, and obtain exact-digest independent review.
 **UI hint**: yes
 
 Planning should prove target/runtime compatibility with ordinary unprofiled stepping before relying on native clocks or panic recovery. Do not presume 64-bit atomics are a target blocker without checking. Start with a small private wrapper and a real browser proof; no desktop testbed or differential-runner dependency is needed.
@@ -86,7 +86,7 @@ Execution order: **16 → 17 → 18 → 19**. Each phase includes focused checks
 
 | Phase | Plans Complete | Status | Completed |
 | --- | --- | --- | --- |
-| 16. Rust WASM Browser Bridge | 3/4 | In Progress|  |
+| 16. Rust WASM Browser Bridge | 4/4 | Complete   | 2026-09-17 |
 | 17. Shared Player and Early Pages Delivery | 0/TBD | Not started | - |
 | 18. Six Native Physics Demos | 0/TBD | Not started | - |
 | 19. Interaction Polish and Browser Verification | 0/TBD | Not started | - |

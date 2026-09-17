@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Web Playground
-status: executing
-stopped_at: Completed 16-03-PLAN.md
-last_updated: "2026-09-17T03:00:43.372Z"
+status: verifying
+stopped_at: Completed 16-04-PLAN.md
+last_updated: "2026-09-17T03:53:48.230Z"
 last_activity: 2026-09-17
 progress:
   total_phases: 4
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 4
-  completed_plans: 3
-  percent: 75
+  completed_plans: 4
+  percent: 100
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: `.planning/PROJECT.md` (updated 2026-09-17)
 
 ## Current Position
 
-Phase: 16 (Rust WASM Browser Bridge) — EXECUTING
+Phase: 16 (Rust WASM Browser Bridge) — COMPLETE
 Plan: 4 of 4
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-17
 
-Progress: [████████░░] 75% of v1.1 plans complete.
+Progress: [██████████] 100% of currently planned v1.1 plans complete.
 
 The prior 16 phases and 252 plans remain archived history. New work starts at Phase 16. The owner confirmed six interactive demos using our Rust engine via WASM, playful catalog/player controls and automatic GitHub Pages deployment from main.
 
@@ -44,6 +44,7 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 | Phase 16 P01 | 13 min | 3 tasks | 7 files |
 | Phase 16 P02 | 7 min | 2 tasks | 14 files |
 | Phase 16 P03 | 6 min | 2 tasks | 7 files |
+| Phase 16 P04 | 50min | 3 tasks | 9 files |
 
 ### Decisions
 
@@ -61,14 +62,18 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 - [Phase 16]: Keep world fitting and y-axis inversion in one pure camera module while Canvas effects consume validated bulk arrays.
 - [Phase 16]: Represent loading, running, failure, and disposed as a tagged union carrying only valid frame observations.
 - [Phase 16]: Advance exactly one Rust frame per animation callback and derive browser proof attributes from consecutive Rust frame lanes.
+- [Phase 16]: Allocate every smoke attempt before execution so failures remain immutable forensic records.
+- [Phase 16]: Use Canvas pixel SHA-256 changes and attached PNG bytes alongside Rust movement counters.
+- [Phase 16]: Redraw only the last Rust frame on resize and disconnect resize effects before terminal cleanup.
+- [Phase 16]: Bind implementation, declarations, logs, metadata, and PNG bytes into one independent review digest.
 
 ### Pending Todos
 
-No new milestone todos captured. Plan 16-04 is ready for execution.
+No new milestone todos captured. Phase 17 is ready for discussion and planning.
 
 ### Blockers/Concerns
 
-- Browser runtime compatibility has not been demonstrated; Plan 16-04 closes this uncertainty with actual Chromium stepping, not the completed compile-only gate.
+- Chromium attempt 8 proves current Rust/WASM stepping, visible motion, resize redraw, disposal stability, and package isolation with independent exact-digest review.
 - Pages setup/access and final URL remain unverified; Phase 17 verifies deployment and project-subpath assets early.
 - Floating, elastic and wheel scene stability require modest visual experiments in Phase 18; no fake physics or silently replaced approved scenes.
 
@@ -83,6 +88,6 @@ No new milestone todos captured. Plan 16-04 is ready for execution.
 
 ## Session Continuity
 
-Last session: 2026-09-17T03:00:43.369Z
-Stopped at: Completed 16-03-PLAN.md
+Last session: 2026-09-17T03:53:48.224Z
+Stopped at: Completed 16-04-PLAN.md
 Resume file: None
