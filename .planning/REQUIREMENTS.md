@@ -5,7 +5,21 @@
 
 ## Current project scope — 2026-09-16
 
-The active project is experimental/hobby-oriented; see `PROJECT-SCOPE.md`. The v1 parity-bearing requirements below describe the optional strict qualification profile and historical implementation tracking. They are not the ordinary hobby completion gate. Linux x64 qualification (PLAT-01) is explicitly deferred, not falsely marked complete. Further verification and release simplifications remain under discussion.
+The active project is experimental/hobby-oriented; see `PROJECT-SCOPE.md`. The v1 parity-bearing requirements below describe the optional strict qualification profile and historical implementation tracking. They are not the ordinary hobby completion gate. Linux x64 qualification (PLAT-01) is explicitly deferred, not falsely marked complete. The accepted replacement decisions D-13 through D-21 in Phase 15 CONTEXT.md govern the active hobby wrap-up requirements below.
+
+## Active hobby wrap-up requirements
+
+These requirements implement the owner-approved replacement scope in Phase 15 CONTEXT.md. They do not certify the historical v1 requirements below.
+
+- [ ] **HOBBY-01**: Scope, maturity and contributor guidance describe experimental APIs, best-effort extra platforms, incremental parity and truthful limitations; current compiler metadata remains accurate.
+- [ ] **HOBBY-02**: A short experimental-release checklist identifies local checks, relevant regressions, a native example, macOS CI, package isolation and notices; publication and release tags require a separate instruction.
+- [ ] **HOBBY-03**: A bounded completion record ties actual validation to the checked implementation, records limitations and review, and preserves optional strict qualification as deferred rather than passed.
+
+| Requirement | Phase | Status |
+| --- | --- | --- |
+| HOBBY-01 | Phase 15 | Pending |
+| HOBBY-02 | Phase 15 | Pending |
+| HOBBY-03 | Phase 15 | Pending |
 
 ## v1 Requirements
 
@@ -291,11 +305,11 @@ Roadmap creation maps every v1 requirement to exactly one phase.
 | PERF-04 | Phase 12 | Complete |
 | PERF-05 | Phase 12 | Complete |
 | PERF-06 | Phase 12 | Complete |
-| PLAT-01 | Phase 12 → Phase 15 | Pending |
+| PLAT-01 | Phase 12 → historical Phase 15 strict campaign | Deferred — optional strict qualification |
 | PLAT-02 | Phase 12 | Complete |
 | PLAT-03 | Phase 12 | Complete |
 | PLAT-04 | Phase 12 | Complete |
-| PLAT-05 | Phase 12 → Phase 15 | Pending |
+| PLAT-05 | Phase 12 → historical Phase 15 strict campaign | Deferred — optional strict qualification |
 | PLAT-06 | Phase 12 | Complete |
 | DOCS-01 | Phase 12 | Complete |
 | DOCS-02 | Phase 3 | Complete |
@@ -305,7 +319,7 @@ Roadmap creation maps every v1 requirement to exactly one phase.
 | DOCS-06 | Phase 12 | Complete |
 | DOCS-07 | Phase 12 | Complete |
 | DOCS-08 | Phase 12 | Complete |
-| DOCS-09 | Phase 12 → Phase 15 | Pending |
+| DOCS-09 | Phase 12 → historical Phase 15 strict campaign | Deferred — optional strict qualification |
 
 **Coverage:**
 
@@ -315,4 +329,4 @@ Roadmap creation maps every v1 requirement to exactly one phase.
 - Pending gap-closure requirements: 3
 
 *Requirements defined: 2026-07-09*
-*Last updated: 2026-09-14 after Phase 14 verification; three Phase 15 requirements remain pending.*
+*Scope revised 2026-09-16: HOBBY-01 through HOBBY-03 govern the active Phase 15 wrap-up; the original strict qualification gaps remain deferred, not completed.*

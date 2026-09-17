@@ -2,16 +2,16 @@
 gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
-status: planning
-stopped_at: "Phase 15 hobby wrap-up yolo discussion complete; ready to replan, no old strict campaign execution"
-last_updated: "2026-09-17T00:44:44.301Z"
-last_activity: "2026-09-16"
+status: executing
+stopped_at: Phase 15 hobby wrap-up planned; execute replacement plans 15-13 and 15-14 only
+last_updated: "2026-09-17T00:53:06.199Z"
+last_activity: 2026-09-17 -- Phase 15 planning complete
 progress:
   total_phases: 16
   completed_phases: 15
-  total_plans: 262
-  completed_plans: 257
-  percent: 98
+  total_plans: 252
+  completed_plans: 250
+  percent: 99
 ---
 
 # Project State
@@ -21,15 +21,15 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-09-14)
 
 **Core value:** Deliver an independent, maintainable Rust physics engine whose LiquidFun behavior is demonstrated against a pinned upstream oracle through explicit inventory, tests, differential evidence, and documented tolerances.
-**Current focus:** Phase 15 hobby wrap-up context captured; replan before execution; strict campaign deferred
+**Current focus:** Phase 15 hobby wrap-up ready to execute plans 15-13 and 15-14 only
 
 ## Current Position
 
-Phase: 15 (re-establish-candidate-evidence) — DEFERRED; optional strict qualification
-Plan: 8 of 12
-Total Plans in Phase: 12
-Status: Ready to plan — hobby wrap-up; strict campaign deferred
-Last activity: 2026-09-16
+Phase: 15 (Hobby-project Wrap-up) — PLANNED; historical strict campaign deferred
+Plan: 0 of 2 replacement plans; next 15-13
+Total Plans in Phase: 2
+Status: Ready to execute
+Last activity: 2026-09-17 -- Phase 15 planning complete
 
 Progress: Historical implementation and evidence records retained. Phase 15 is optional and must not resume automatically.
 
@@ -696,8 +696,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-17T00:44:44.296Z
-Stopped at: Phase 15 hobby wrap-up yolo discussion complete; ready to replan, no old strict campaign execution
-Resume file: .planning/phases/15-re-establish-candidate-evidence/15-CONTEXT.md
+Last session: 2026-09-17T00:52:46.313Z
+Stopped at: Phase 15 hobby wrap-up planned; execute replacement plans 15-13 and 15-14 only
+Resume file: .planning/phases/15-re-establish-candidate-evidence/15-13-PLAN.md
 
 - Current owner selection (2026-09-16): local checks plus one macOS hosted Cargo CI job; cross-platform matrices, C++ comparisons, Miri/sanitizers, fuzz, coverage and benchmarks are optional manual checks. Release checklist and API/MSRV policy remain under discussion.

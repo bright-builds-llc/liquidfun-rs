@@ -266,3 +266,12 @@ Completion review: Linux and dedicated hardware no longer block hobby developmen
 Discussion review: local ordered Rust and documentation/workflow checks passed; context structure checked. Recommendations are captured for replanning only; no implementation or publication. Verification logs: `target/hobby-discuss/gates/`. Independent review acknowledgment is retained in `target/hobby-discuss-review.md`.
 
 Routing correction: `state update Status` matched YAML before the body and regenerated the old value. An exact one-line body correction followed by CLI session normalization restored `status: planning`; the strict campaign remains deferred.
+
+## task-plan15-hobby | 2026-09-17 00:50 UTC | Plan the hobby wrap-up
+
+- [x] Load revised context and map explicit hobby requirements; keep strict qualification deferred.
+- [x] Preserve old plan history and create bounded replacement plans with concrete checks.
+- [x] Run independent plan verification and resolve findings.
+- [x] Record executable handoff, verify required checks, commit and push planning artifacts.
+
+Planning review: two sequential plans cover HOBBY-01/02/03 and D-10–D-21. Twenty-two historical artifacts were moved byte-for-byte out of active discovery. Ordered Rust and docs checks passed; Markdown/managed checks passed after staging renames. Final plan-check acknowledgment is in the phase directory. Execution and publication remain separate. The installed roadmap CLI has no goal/scope mutation command, so the owner-authorized scope replacement used a targeted section edit; subsequent progress/state changes used CLI commands.

@@ -2,7 +2,7 @@
 
 ## Overview
 
-Current scope follows `PROJECT-SCOPE.md`: fun, experimental development. The original strict qualification goals below are retained as optional ambitions; Phase 15 is deferred and does not block ordinary completion.
+Current scope follows `PROJECT-SCOPE.md`: fun, experimental development. The original strict qualification goals below are retained as optional ambitions; the original Phase 15 strict campaign is deferred; its replacement is the bounded hobby wrap-up.
 
 The v1 roadmap moves from an immutable, licensed source of truth to a semantic comparison contract, then retires the public-model and numerical risks before implementing collision, rigid dynamics, joints, particles, and renderer-neutral examples in upstream dependency order. Compatibility evidence is added with each subsystem, while performance optimization, broad platform proof, and any full-parity claim wait until the complete scalar implementation can pass a final no-gap audit.
 
@@ -25,7 +25,7 @@ The v1 roadmap moves from an immutable, licensed source of truth to a semantic c
 - [x] **Phase 13: Restore Evidence and Replay Integrity** - Repair exact-head provenance and reviewed catalog replay before accepting current compatibility evidence. (completed 2026-07-27)
 - [x] **Phase 13.1: Restore Bright Builds Structural Compliance** - Refactor every repository-owned file-length finding without behavioral or evidence drift; corrected-candidate evidence closure remains in progress. (completed 2026-09-13)
 - [x] **Phase 14: Repair Windows Particle-Group Invariants** - Remove the supported-Windows authoritative-storage panic and restore transactional particle-group behavior. (completed 2026-09-14)
-- [ ] **Phase 15: Re-establish Candidate Evidence** - Deferred; optional strict qualification only, requiring an explicit future request.
+- [ ] **Phase 15: Hobby-project Wrap-up** - Reconcile experimental guidance and verify a small native workflow; strict qualification stays deferred.
 
 ## Phase Details
 
@@ -360,26 +360,28 @@ Plans:
 - [x] 14-03-PLAN.md — Complete named public replays, typed outcomes and transactional rejection coverage.
 - [x] 14-04-PLAN.md — Reuse the supported OS matrix and retain exact-SHA D2 proof through authorized iteration.
 
-### Phase 15: Re-establish Candidate Evidence
+### Phase 15: Hobby-project Wrap-up
 
-**Status**: Deferred by owner scope change on 2026-09-16. The original goal and criteria below apply only to an explicitly requested strict qualification campaign. Linux x64 qualification is not a hobby-project completion requirement.
-
-**Goal**: Establish a green, exact-head v1.0 candidate and produce the complete retained evidence and frozen-source attestation required for milestone acceptance.
+**Goal**: Make the existing experimental library easy to use and honestly described, with a small release-preparation checklist and a bounded verification/completion record.
+**Status**: Replanning under the owner-approved hobby scope; original strict qualification remains optional and deferred.
 **Depends on**: Phase 14
-**Requirements**: PLAT-01, PLAT-05, DOCS-09
-**Gap Closure**: Closes the milestone-audit Linux/Windows platform and release-candidate flow gaps.
-**Success Criteria** (what must be TRUE):
+**Requirements**: HOBBY-01, HOBBY-02, HOBBY-03
+**Success Criteria**:
 
-1. Exact-head Cargo CI and Oracle CI pass without skipped downstream checks caused by prerequisite failures.
-1. Required platform, performance, safety, coverage, regression, and release-candidate producers complete against one frozen full-SHA candidate and retain the expected bounded artifacts.
-1. Release aggregation accepts the complete candidate-bound evidence set, and worktree plus committed-range frozen-source attestation both pass.
-1. Public readiness status is projected only from accepted attestation, and a repeated milestone audit reports no critical requirement, integration, or end-to-end flow gap.
+1. Current scope, contributor and release guidance consistently describe experimental API, best-effort extra platforms and incremental parity, without changing the Rust development pin or declared compiler minimum.
+1. A short experimental-release checklist reuses local Rust checks, relevant regressions, one native example, macOS Cargo CI and isolated package verification before publication; publication remains separately authorized.
+1. A source-identified completion record reports actual checks and limitations, preserves strict evidence semantics and distinguishes deferred certification from completed hobby work.
 
-**Plans**: TBD during phase planning
+**Plans**: 2 sequential replacement plans (15-13 and 15-14); historical strict plans 15-01 through 15-12 and seven summaries are preserved under the phase archive.
+
+- [ ] 15-13-PLAN.md — Reconcile hobby scope, compatibility guidance and experimental-release checklist.
+- [ ] 15-14-PLAN.md — Verify the bounded native workflow and record experimental completion.
+
+**Historical strict campaign**: The earlier goal required green exact-head candidate evidence, the full producer registry and frozen-source attestation for PLAT-01, PLAT-05 and DOCS-09. It remains deferred, not passed by this replacement scope. See the preserved phase archive and earlier git history for its original plans and results.
 
 ## Progress
 
-**Execution order:** Implementation phases execute in numeric order; Phase 15 is deferred and opt-in. Decimal insertions, if any, execute between their surrounding integers.
+**Execution order:** Implementation phases execute in numeric order; Phase 15 now contains the hobby wrap-up, while historical strict qualification remains opt-in. Decimal insertions, if any, execute between their surrounding integers.
 
 | Phase | Plans Complete | Status | Completed |
 | --- | --- | --- | --- |
@@ -398,6 +400,6 @@ Plans:
 | 13. Restore Evidence and Replay Integrity | 5/5 | Complete    | 2026-07-27 |
 | 13.1. Restore Bright Builds Structural Compliance | 25/25 | Complete    | 2026-09-13 |
 | 14. Repair Windows Particle-Group Invariants | 4/4 | Complete    | 2026-09-14 |
-| 15. Re-establish Candidate Evidence | 7/12 | Deferred — optional strict qualification |  |
+| 15. Hobby-project Wrap-up | 0/2 | Planned    |  |
 
 *Roadmap created: 2026-07-09*
