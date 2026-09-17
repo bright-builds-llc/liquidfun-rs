@@ -40,4 +40,10 @@ The old records are preserved. Non-macOS platforms remain best effort; APIs are 
 
 ## Hosted result and independent review
 
-Pending independent review completion; local results alone are not an acknowledgment. The final record will bind the exact implementation diff and fixed retained result/CI snapshots without hashing this mutable record or its summaries.
+[Cargo CI run 35169132504](https://github.com/bright-builds-llc/liquidfun-rs/actions/runs/35169132504) succeeded for exact `headSha` `75ead0edcbde68d01b804e2c466f2f4b2a4d30da` in `bright-builds-llc/liquidfun-rs`, workflow `.github/workflows/ci.yml`. `Default features (macos-15)` passed; `Linux quality and isolation` was skipped. Retained `ci-final.json` includes every job and step result; `ci-identity.json` records repository and workflow identity. No optional workflow was dispatched.
+
+Separate AI reviewer `/root/review15_hobby_docs` inspected the complete implementation diff and local/CI evidence and independently acknowledged digest `841c63faa79d3e615cdbf949e0c2c5bd4584a4692bd1b1e6558575f18d1c4ea7` at `2026-09-17T01:10:03.370473+00:00`, with zero final findings. See [15-REVIEW.md](15-REVIEW.md) for the actual acknowledgment and all 28 bound path/content-hash pairs. This is AI review, not human approval or publication authority.
+
+The digest is SHA-256 of sorted UTF-8 repo-relative path, NUL, lowercase file SHA-256, LF entries. `review-manifest.json` in the attempt directory binds nine implementation documents, their full diff, source/compiler/initial-status snapshots, command logs and final CI snapshots. This mutable completion record, GSD summaries, review acknowledgment and phase verification are excluded. Later record-only commits cite the tested implementation and do not claim their own HEAD was the CI source.
+
+All six experimental checklist items are evidenced within these limits. Required local precommit checks are repeated for record commits; the historical strict campaign remains deferred rather than passed.
