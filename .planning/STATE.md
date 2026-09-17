@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Web Playground
 status: executing
-stopped_at: Phase 17 UI-SPEC approved
-last_updated: "2026-09-17T11:45:28.821Z"
-last_activity: 2026-09-17 -- Phase 17 execution started
+stopped_at: Completed 17-01-PLAN.md
+last_updated: "2026-09-17T11:47:55.240Z"
+last_activity: 2026-09-17
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 12
-  completed_plans: 4
-  percent: 33
+  completed_plans: 5
+  percent: 42
 ---
 
 # Project State
@@ -26,9 +26,9 @@ See: `.planning/PROJECT.md` (updated 2026-09-17)
 ## Current Position
 
 Phase: 17 (Shared Player and Early Pages Delivery) — EXECUTING
-Plan: 1 of 8
-Status: Executing Phase 17
-Last activity: 2026-09-17 -- Phase 17 execution started
+Plan: 2 of 8
+Status: Ready to execute
+Last activity: 2026-09-17
 
 Progress: [██████████] 100% of currently planned v1.1 plans complete.
 
@@ -45,6 +45,7 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 | Phase 16 P02 | 7 min | 2 tasks | 14 files |
 | Phase 16 P03 | 6 min | 2 tasks | 7 files |
 | Phase 16 P04 | 50min | 3 tasks | 9 files |
+| Phase 17-shared-player-and-early-pages-delivery P01 | 2 min | 2 tasks | 4 files |
 
 ### Decisions
 
@@ -66,6 +67,9 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 - [Phase 16]: Use Canvas pixel SHA-256 changes and attached PNG bytes alongside Rust movement counters.
 - [Phase 16]: Redraw only the last Rust frame on resize and disconnect resize effects before terminal cleanup.
 - [Phase 16]: Bind implementation, declarations, logs, metadata, and PNG bytes into one independent review digest.
+- [Phase 17]: Keep #/scene and #/scene/ as empty so later UI can show the empty-hash fallback instead of unknown copy. — D-06 requires empty and unknown hashes to stay distinct useful states.
+- [Phase 17]: Do not lowercase hash tokens; Dam-Break stays unknown with maybeRaw preserved. — Canonical ids are lowercase hyphenated tokens. Coercing case would hide invalid shared URLs.
+- [Phase 17]: Known not-ready ids parse as scene; only dam-break is ready in catalog data. — Readiness is catalog metadata, not parser output, so later player code cannot construct a WASM world from a parsed scene kind alone.
 
 ### Pending Todos
 
@@ -88,6 +92,6 @@ No new milestone todos captured. Phase 17 is ready for discussion and planning.
 
 ## Session Continuity
 
-Last session: 2026-09-17T11:29:11.410Z
-Stopped at: Phase 17 UI-SPEC approved
-Resume file: .planning/phases/17-shared-player-and-early-pages-delivery/17-UI-SPEC.md
+Last session: 2026-09-17T11:47:51.876Z
+Stopped at: Completed 17-01-PLAN.md
+Resume file: None
