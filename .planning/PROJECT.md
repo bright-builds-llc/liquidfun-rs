@@ -18,6 +18,8 @@ The owner prioritizes a fun hobby project over production-quality certification.
 
 The v1.0 Experimental Foundation planning milestone is archived (2026-09-17): 16 phases and 252 active plans completed under the revised hobby scope. This is not a crate release or strict parity certification. See `.planning/MILESTONES.md` and `.planning/milestones/v1.0-REQUIREMENTS.md` for outcomes and deferred requirements. Native checks, isolated packaging and macOS CI were verified at the implementation identified in Phase 15's completion record.
 
+Phase 16 is complete: a private native-testable WASM wrapper now runs one persistent particle/rigid scene in package-pinned Chromium, exports five bounded copied frame arrays, renders visibly through the minimal SolidJS/Canvas proof, and disposes explicitly. Source-bound closure attempt 10 passed 16 checks, independent AI review approved its exact digest, and the security audit closed all 20 declared threats. Phase 17 now owns the shared player and first GitHub Pages delivery.
+
 ## Current Milestone: v1.1 Web Playground
 
 **Goal:** Build a playful SolidJS website with six interactive physics demos powered by this Rust engine compiled to WebAssembly, automatically deployed to GitHub Pages on every push to main.
@@ -37,13 +39,13 @@ The v1.0 Experimental Foundation planning milestone is archived (2026-09-17): 16
 
 ### Active — v1.1 Web Playground
 
-- [ ] Run the existing native Rust engine in a browser through a bounded WASM interface.
 - [ ] Browse and play six interactive demos in an accessible, responsive SolidJS gallery.
 - [ ] Build and publish the static site automatically from main, including reliable WASM loading and direct demo links.
 
 
 ### Validated
 
+- [x] Phase 16 completed WASM-01 through WASM-03: generated Rust WebAssembly visibly advances a real particle/rigid scene in Chromium, the reproducible pinned SolidJS build preserves native Cargo/package isolation, and five bounded copied typed arrays cross the browser boundary without raw pointers or per-particle calls. Explicit disposal, exact-digest independent AI review, and 20/20 closed threats were verified against source-bound closure attempt 10.
 - [x] Phase 15 hobby wrap-up completed HOBBY-01 through HOBBY-03: experimental guidance, a short preparation checklist, native/package verification and exact-source macOS CI. Checked implementation: `75ead0edcbde68d01b804e2c466f2f4b2a4d30da`; later planning-record changes do not claim new runtime verification. Strict certification remains deferred and no package was published.
 
 <!-- Shipped and confirmed valuable. -->
@@ -230,4 +232,4 @@ This document evolves at phase transitions and milestone boundaries.
 
 ______________________________________________________________________
 
-*Last updated: 2026-09-17 while defining v1.1 Web Playground. Strict native certification remains optional and outstanding.*
+*Last updated: 2026-09-17 after completing Phase 16. Strict native certification remains optional and outstanding.*
