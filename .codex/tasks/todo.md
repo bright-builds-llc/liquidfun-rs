@@ -275,3 +275,12 @@ Routing correction: `state update Status` matched YAML before the body and regen
 - [x] Record executable handoff, verify required checks, commit and push planning artifacts.
 
 Planning review: two sequential plans cover HOBBY-01/02/03 and D-10–D-21. Twenty-two historical artifacts were moved byte-for-byte out of active discovery. Ordered Rust and docs checks passed; Markdown/managed checks passed after staging renames. Final plan-check acknowledgment is in the phase directory. Execution and publication remain separate. The installed roadmap CLI has no goal/scope mutation command, so the owner-authorized scope replacement used a targeted section edit; subsequent progress/state changes used CLI commands.
+
+## task-execute15-hobby | 2026-09-17 00:55 UTC | Execute hobby wrap-up
+
+- [x] Validate current lifecycle and select only replacement plans 15-13 and 15-14.
+- [x] Complete documentation and checklist reconciliation with review and checks.
+- [x] Run bounded native/package verification, bind macOS CI and independent review, record limitations.
+- [x] Verify phase requirements and prepare final tracking records for the normal main push.
+
+Completion review: both replacement plans passed, HOBBY-01/02/03 verified, independent review clean and lifecycle validation passed. Checked implementation 75ead0e passed macOS Cargo CI35169132504; native/package and regression results are in 15-HOBBY-COMPLETION.md. Generated compatibility report, compiler declarations and strict validators remain unchanged. No GUI, minimum-compiler or publication claim was added. Final tracking commits contain records only.

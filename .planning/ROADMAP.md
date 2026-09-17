@@ -25,7 +25,7 @@ The v1 roadmap moves from an immutable, licensed source of truth to a semantic c
 - [x] **Phase 13: Restore Evidence and Replay Integrity** - Repair exact-head provenance and reviewed catalog replay before accepting current compatibility evidence. (completed 2026-07-27)
 - [x] **Phase 13.1: Restore Bright Builds Structural Compliance** - Refactor every repository-owned file-length finding without behavioral or evidence drift; corrected-candidate evidence closure remains in progress. (completed 2026-09-13)
 - [x] **Phase 14: Repair Windows Particle-Group Invariants** - Remove the supported-Windows authoritative-storage panic and restore transactional particle-group behavior. (completed 2026-09-14)
-- [ ] **Phase 15: Hobby-project Wrap-up** - Reconcile experimental guidance and verify a small native workflow; strict qualification stays deferred.
+- [x] **Phase 15: Hobby-project Wrap-up** - Reconcile experimental guidance and verify a small native workflow; strict qualification stays deferred. (completed 2026-09-17)
 
 ## Phase Details
 
@@ -363,7 +363,7 @@ Plans:
 ### Phase 15: Hobby-project Wrap-up
 
 **Goal**: Make the existing experimental library easy to use and honestly described, with a small release-preparation checklist and a bounded verification/completion record.
-**Status**: Replanning under the owner-approved hobby scope; original strict qualification remains optional and deferred.
+**Status**: Complete — hobby wrap-up verified on 2026-09-17; original strict qualification remains optional and deferred.
 **Depends on**: Phase 14
 **Requirements**: HOBBY-01, HOBBY-02, HOBBY-03
 **Success Criteria**:
@@ -374,8 +374,8 @@ Plans:
 
 **Plans**: 2 sequential replacement plans (15-13 and 15-14); historical strict plans 15-01 through 15-12 and seven summaries are preserved under the phase archive.
 
-- [ ] 15-13-PLAN.md — Reconcile hobby scope, compatibility guidance and experimental-release checklist.
-- [ ] 15-14-PLAN.md — Verify the bounded native workflow and record experimental completion.
+- [x] 15-13-PLAN.md — Reconcile hobby scope, compatibility guidance and experimental-release checklist.
+- [x] 15-14-PLAN.md — Verify the bounded native workflow and record experimental completion.
 
 **Historical strict campaign**: The earlier goal required green exact-head candidate evidence, the full producer registry and frozen-source attestation for PLAT-01, PLAT-05 and DOCS-09. It remains deferred, not passed by this replacement scope. See the preserved phase archive and earlier git history for its original plans and results.
 
@@ -400,6 +400,6 @@ Plans:
 | 13. Restore Evidence and Replay Integrity | 5/5 | Complete    | 2026-07-27 |
 | 13.1. Restore Bright Builds Structural Compliance | 25/25 | Complete    | 2026-09-13 |
 | 14. Repair Windows Particle-Group Invariants | 4/4 | Complete    | 2026-09-14 |
-| 15. Hobby-project Wrap-up | 0/2 | Planned    |  |
+| 15. Hobby-project Wrap-up | 2/2 | Complete    | 2026-09-17 |
 
 *Roadmap created: 2026-07-09*

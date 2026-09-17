@@ -18,6 +18,8 @@ The owner prioritizes a fun hobby project over production-quality certification.
 
 ### Validated
 
+- [x] Phase 15 hobby wrap-up completed HOBBY-01 through HOBBY-03: experimental guidance, a short preparation checklist, native/package verification and exact-source macOS CI. Checked implementation: `75ead0edcbde68d01b804e2c466f2f4b2a4d30da`; later planning-record changes do not claim new runtime verification. Strict certification remains deferred and no package was published.
+
 <!-- Shipped and confirmed valuable. -->
 
 - [x] Phase 1 selected and pinned official LiquidFun commit `7f20402173fd143a3988c921bc384459c6a858f2`, with release ancestry, licensing, notices, source-mapping, and intentional update rules recorded.

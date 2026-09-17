@@ -11,15 +11,15 @@ The active project is experimental/hobby-oriented; see `PROJECT-SCOPE.md`. The v
 
 These requirements implement the owner-approved replacement scope in Phase 15 CONTEXT.md. They do not certify the historical v1 requirements below.
 
-- [ ] **HOBBY-01**: Scope, maturity and contributor guidance describe experimental APIs, best-effort extra platforms, incremental parity and truthful limitations; current compiler metadata remains accurate.
-- [ ] **HOBBY-02**: A short experimental-release checklist identifies local checks, relevant regressions, a native example, macOS CI, package isolation and notices; publication and release tags require a separate instruction.
-- [ ] **HOBBY-03**: A bounded completion record ties actual validation to the checked implementation, records limitations and review, and preserves optional strict qualification as deferred rather than passed.
+- [x] **HOBBY-01**: Scope, maturity and contributor guidance describe experimental APIs, best-effort extra platforms, incremental parity and truthful limitations; current compiler metadata remains accurate.
+- [x] **HOBBY-02**: A short experimental-release checklist identifies local checks, relevant regressions, a native example, macOS CI, package isolation and notices; publication and release tags require a separate instruction.
+- [x] **HOBBY-03**: A bounded completion record ties actual validation to the checked implementation, records limitations and review, and preserves optional strict qualification as deferred rather than passed.
 
 | Requirement | Phase | Status |
 | --- | --- | --- |
-| HOBBY-01 | Phase 15 | Pending |
-| HOBBY-02 | Phase 15 | Pending |
-| HOBBY-03 | Phase 15 | Pending |
+| HOBBY-01 | Phase 15 | Complete |
+| HOBBY-02 | Phase 15 | Complete |
+| HOBBY-03 | Phase 15 | Complete |
 
 ## v1 Requirements
 

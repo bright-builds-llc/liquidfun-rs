@@ -2,16 +2,16 @@
 gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Phase 15 hobby wrap-up planned; execute replacement plans 15-13 and 15-14 only
-last_updated: "2026-09-17T00:53:06.199Z"
-last_activity: 2026-09-17 -- Phase 15 planning complete
+status: completed
+stopped_at: "Phase 15 hobby wrap-up verified complete; all active plans complete, optional strict certification deferred"
+last_updated: "2026-09-17T01:14:51.419Z"
+last_activity: "2026-09-17"
 progress:
   total_phases: 16
-  completed_phases: 15
+  completed_phases: 16
   total_plans: 252
-  completed_plans: 250
-  percent: 99
+  completed_plans: 252
+  percent: 100
 ---
 
 # Project State
@@ -21,23 +21,23 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-09-14)
 
 **Core value:** Deliver an independent, maintainable Rust physics engine whose LiquidFun behavior is demonstrated against a pinned upstream oracle through explicit inventory, tests, differential evidence, and documented tolerances.
-**Current focus:** Phase 15 hobby wrap-up ready to execute plans 15-13 and 15-14 only
+**Current focus:** Phase 15 hobby wrap-up complete; strict certification remains deferred; no package publication
 
 ## Current Position
 
-Phase: 15 (Hobby-project Wrap-up) — PLANNED; historical strict campaign deferred
-Plan: 0 of 2 replacement plans; next 15-13
+Phase: 15 (Hobby-project Wrap-up)
+Plan: 2 of 2 replacement plans complete
 Total Plans in Phase: 2
-Status: Ready to execute
-Last activity: 2026-09-17 -- Phase 15 planning complete
+Status: Completed hobby wrap-up; strict qualification deferred
+Last activity: 2026-09-17
 
-Progress: Historical implementation and evidence records retained. Phase 15 is optional and must not resume automatically.
+Progress: 2/2 hobby wrap-up plans complete. Only the historical strict qualification campaign remains deferred.
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 250
+- Total plans completed: 252
 - Average duration: Not available
 - Total execution time: 0 hours
 
@@ -59,6 +59,7 @@ Progress: Historical implementation and evidence records retained. Phase 15 is o
 | 13 | 5 | - | - |
 | 13.1 | 25 | - | - |
 | 14 | 4 | - | - |
+| 15 | 2 | - | - |
 
 *Updated after each plan completion*
 | Phase 02 P01 | 5 min | 1 tasks | 6 files |
@@ -696,8 +697,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-17T00:52:46.313Z
-Stopped at: Phase 15 hobby wrap-up planned; execute replacement plans 15-13 and 15-14 only
-Resume file: .planning/phases/15-re-establish-candidate-evidence/15-13-PLAN.md
+Last session: 2026-09-17T01:14:51.414Z
+Stopped at: Phase 15 hobby wrap-up verified complete; all active plans complete, optional strict certification deferred
+Resume file: .planning/phases/15-re-establish-candidate-evidence/15-HOBBY-COMPLETION.md
 
-- Current owner selection (2026-09-16): local checks plus one macOS hosted Cargo CI job; cross-platform matrices, C++ comparisons, Miri/sanitizers, fuzz, coverage and benchmarks are optional manual checks. Release checklist and API/MSRV policy remain under discussion.
+- Current owner selection (2026-09-16): local checks plus one macOS hosted Cargo CI job; cross-platform matrices, C++ comparisons, Miri/sanitizers, fuzz, coverage and benchmarks are optional manual checks. Experimental release checklist and API/MSRV decisions were captured and implemented in the completed hobby wrap-up.
