@@ -135,6 +135,7 @@ The layout contains one panel only. Do not add a navbar, route shell, sidebar, c
 
 ## Viewport Contract
 
+- The Canvas viewport is the page's primary visual focal point.
 - Use a Canvas 2D viewport with a 16:9 CSS aspect ratio and `width: 100%`.
 - Use an intrinsic design size of 960 by 540 CSS pixels. Scale backing-store dimensions by `min(devicePixelRatio, 2)` and redraw after size changes.
 - Fit the fixed Rust world bounds inside the viewport with a 16px internal inset. Preserve aspect ratio and center the world; do not stretch physics coordinates.
@@ -169,7 +170,7 @@ The status text is an atomic polite live region. The fixed error sentence uses `
 - Enable it only in Running. Loading, Failure, and Disposed use the native `disabled` attribute.
 - Activation cancels the pending animation frame, disposes the TypeScript owner exactly once, then moves to Disposed.
 - Enter and Space use native button activation. Do not add custom keyboard handlers for those keys.
-- Show a 2px solid `#39D3C7` `:focus-visible` outline with a 3px outline offset. Never remove the browser focus indicator without this replacement.
+- Show a 2px solid `#39D3C7` `:focus-visible` outline with a 4px outline offset. Never remove the browser focus indicator without this replacement.
 - Hover may darken the button only when enabled. Disabled treatment must not look clickable.
 - Do not show a confirmation dialog: the operation releases transient local resources and is the proof itself.
 - Do not add retry, recreate, play, pause, reset, or scene-control behavior.
