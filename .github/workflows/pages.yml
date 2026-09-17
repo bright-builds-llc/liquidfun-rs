@@ -9,6 +9,9 @@ on:
 permissions:
   contents: read
 
+# D-14: no path filters; every main/PR run builds WASM + web/ from this checkout.
+# D-16: cancel-in-progress is false on main so an in-flight deploy finishes;
+# queued main revisions coalesce instead of stranding a newer SHA behind a cancelled publish.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
@@ -58,6 +61,8 @@ jobs:
     needs: build-site
     runs-on: ubuntu-24.04
     timeout-minutes: 10
+    # D-15: OIDC deploy only; job-scoped pages: write + id-token: write; no PAT;
+    # official SHA-pinned Pages actions; github-pages environment.
     permissions:
       contents: read
       pages: write
