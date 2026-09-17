@@ -69,6 +69,56 @@ RUSTDOCFLAGS="-D warnings" cargo doc --workspace --all-features --no-deps
 The optional Linux quality job runs `cargo fmt --all --check`, so its format
 verification is read-only. The ordinary macOS job builds and tests the native crate.
 
+## Phase 16 browser proof
+
+The Phase 16 proof is a private browser-development surface. It compiles the
+native Rust engine through the unpublished `liquidfun-wasm` wrapper, consumes
+owned typed-array frames, and draws them with Canvas 2D. It does not add a
+browser dependency to the published `liquidfun` crate.
+
+Prepare a clean checkout with the exact tool and package inputs:
+
+```bash
+rustup target add wasm32-unknown-unknown --toolchain 1.97.0
+cargo install wasm-pack --version 0.15.0 --locked
+curl -fsSL https://bun.com/install | bash -s "bun-v1.4.2"
+cd web && bun install --frozen-lockfile
+cd .. && just web-build
+just web-smoke
+```
+
+`just web-build` regenerates the current checkout's WASM package before strict
+typechecking, unit tests, and the production build. `just web-smoke` repeats
+that build, installs the Chromium revision pinned by `@playwright/test` 1.63.0,
+and runs exactly one Chromium project with no deterministic retry.
+
+Every smoke allocates a fresh
+`target/phase16/closure-attempt-N` directory. Successful attempts retain
+initial, moving, and disposed Canvas PNGs, validated `browser-proof.json`
+metadata, the Playwright result and attachments, package/browser provenance,
+and command status. Failed attempts remain in place; never overwrite, merge, or
+relabel them.
+
+The generated `web/src/generated/liquidfun-wasm`, `web/dist`, Playwright
+output, and `target/web-build` paths are ignored and regenerated.
+`target/phase16` is ignored retained local evidence. Native/default/package
+isolation is checked with:
+
+```bash
+cargo build -p liquidfun
+cargo test -p liquidfun --all-features
+cargo build
+cargo tree -p liquidfun --edges normal
+cargo xtask package verify
+```
+
+Plain Cargo and extracted packaged consumers require no Bun, browser,
+wasm-pack, generated JavaScript or WASM, C++, protocol, differential runner,
+benchmark, or testbed. Phase 17 owns the shared player, retry/reset behavior,
+routing, GitHub Pages paths and delivery, and reusable lifecycle. Optional
+Linux/C++, sanitizer, fuzz, coverage, performance, and release qualification
+remain separate manual profiles.
+
 ## Testing layer contract
 
 This table preserves the optional strict qualification profile and its historical

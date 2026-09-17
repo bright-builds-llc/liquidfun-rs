@@ -84,6 +84,32 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
+## Web browser proof
+
+The private, unpublished `liquidfun-wasm` wrapper and SolidJS proof page show
+192 particles and four rigid shapes produced by the Rust engine and drawn with
+Canvas 2D. From a clean checkout, prepare the exact local tools and build the
+proof:
+
+```bash
+rustup target add wasm32-unknown-unknown --toolchain 1.97.0
+cargo install wasm-pack --version 0.15.0 --locked
+curl -fsSL https://bun.com/install | bash -s "bun-v1.4.2"
+cd web && bun install --frozen-lockfile
+cd .. && just web-build
+just web-smoke
+```
+
+`web/src/generated/liquidfun-wasm`, `web/dist`, Playwright output, and
+`target/web-build` are ignored and regenerated. Each smoke keeps local evidence
+in a fresh, non-overwriting `target/phase16/closure-attempt-N` directory.
+Ordinary native builds and the packaged `liquidfun` crate require none of Bun,
+Chromium, wasm-pack, C++, or the upstream checkout.
+
+The shared player, retry/reset lifecycle, routing, GitHub Pages delivery, and
+reusable scene controls belong to Phase 17. This proof does not publish an npm
+or Rust package and does not make a complete-parity claim.
+
 ## Platform support
 
 Ordinary CI exercises macOS; this is tested coverage, not a platform warranty.
