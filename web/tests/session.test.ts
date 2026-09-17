@@ -195,4 +195,65 @@ describe("createSceneSession", () => {
     expect(generatedSession.captureCalls).toBe(0);
     expect(generatedSession.freeCalls).toBe(1);
   });
+
+  it("forwards an explicit single step without a second advance", () => {
+    // Arrange
+    const generatedSession = new FakeGeneratedProofSession();
+    const session = createSceneSession(generatedSession);
+
+    // Act
+    session.nextFrame(1);
+
+    // Assert
+    expect(generatedSession.advanceCalls).toEqual([1]);
+    expect(generatedSession.captureCalls).toBe(1);
+  });
+
+  it("forwards four steps in one advance and captures once", () => {
+    // Arrange
+    const generatedSession = new FakeGeneratedProofSession();
+    const session = createSceneSession(generatedSession);
+
+    // Act
+    session.nextFrame(4);
+
+    // Assert
+    expect(generatedSession.advanceCalls).toEqual([4]);
+    expect(generatedSession.captureCalls).toBe(1);
+  });
+
+  it("forwards two steps with one advance call, not two", () => {
+    // Arrange
+    const generatedSession = new FakeGeneratedProofSession();
+    const session = createSceneSession(generatedSession);
+
+    // Act
+    session.nextFrame(2);
+
+    // Assert
+    expect(generatedSession.advanceCalls).toEqual([2]);
+    expect(generatedSession.advanceCalls).not.toEqual([1, 1]);
+    expect(generatedSession.captureCalls).toBe(1);
+  });
+
+  it("poisons invalid step counts without calling generated advance", () => {
+    // Arrange
+    const rejectedCounts = [0, 5];
+
+    for (const rejectedCount of rejectedCounts) {
+      const generatedSession = new FakeGeneratedProofSession();
+      const session = createSceneSession(generatedSession);
+
+      // Act
+      const nextFrame = () => session.nextFrame(rejectedCount);
+
+      // Assert
+      expect(nextFrame).toThrow("Rust/WASM session failed");
+      expect(generatedSession.advanceCalls).toEqual([]);
+      expect(generatedSession.captureCalls).toBe(0);
+      expect(generatedSession.freeCalls).toBe(1);
+      expect(nextFrame).toThrow("Rust/WASM session is disposed");
+      expect(generatedSession.freeCalls).toBe(1);
+    }
+  });
 });
