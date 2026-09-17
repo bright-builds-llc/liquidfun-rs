@@ -27,7 +27,12 @@ The 22 approved requirements form four complete delivery boundaries. Although co
   1. A real browser instantiates the generated Rust WASM package and visibly advances a particle/rigid-body scene from Rust-produced frame state; compiling or rendering canned motion is insufficient.
   2. A contributor can follow documented, pinned clean-checkout commands to build the local JS/TypeScript package and minimal frontend, while ordinary native Cargo consumers need no browser tools, C++ runtime or upstream checkout.
   3. The renderer consumes typed bulk owned frame data with no per-particle JS/Rust crossings or exposed raw engine pointers, and the proof can dispose its session explicitly.
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 16-01-PLAN.md — Build the native-testable private WASM session, bounded proof scene, copied-frame ABI, and real wasm-pack generation gate.
+- [ ] 16-02-PLAN.md — Add the exact-pinned Bun/SolidJS build, typed frame/session owner, and pure Canvas projection/rendering core.
+- [ ] 16-03-PLAN.md — Prove visible Rust motion and disposal in Chromium, document isolation, and obtain independent exact-digest review.
 **UI hint**: yes
 
 Planning should prove target/runtime compatibility with ordinary unprofiled stepping before relying on native clocks or panic recovery. Do not presume 64-bit atomics are a target blocker without checking. Start with a small private wrapper and a real browser proof; no desktop testbed or differential-runner dependency is needed.
