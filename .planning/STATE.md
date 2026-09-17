@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Web Playground
 status: executing
-stopped_at: Completed 17-04-PLAN.md
-last_updated: "2026-09-17T11:58:33.182Z"
+stopped_at: Completed 17-05-PLAN.md
+last_updated: "2026-09-17T12:09:04.314Z"
 last_activity: 2026-09-17
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 12
-  completed_plans: 8
-  percent: 67
+  completed_plans: 9
+  percent: 75
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-09-17)
 ## Current Position
 
 Phase: 17 (Shared Player and Early Pages Delivery) — EXECUTING
-Plan: 5 of 8
+Plan: 6 of 8
 Status: Ready to execute
 Last activity: 2026-09-17
 
@@ -49,6 +49,7 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 | Phase 17 P02 | 2 min | 2 tasks | 4 files |
 | Phase 17 P03 | 2 min | 2 tasks | 4 files |
 | Phase 17 P04 | 3min | 2 tasks | 7 files |
+| Phase 17 P05 | 7min | 2 tasks | 9 files |
 
 ### Decisions
 
@@ -83,6 +84,9 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 - [Phase 17]: Record D-09 as a Phase 17 semantic-HTML plus one scoped CSS exception; revisit MysticUI/Tailwind on 2026-12-17. — Pages delivery must not be blocked by adopting MysticUI or Tailwind in this thin slice.
 - [Phase 17]: Keep the Scenes catalog label as a styled paragraph so the player or fallback heading remains the only h2. — 17-UI-SPEC allows only one h2 on a given view; the catalog label is not that heading.
 - [Phase 17]: Leave App.tsx on the Phase 16 proof shell; Plan 17-05 mounts these presentational panels. — This plan owns chrome only and must not wire the WASM session.
+- [Phase 17]: Reuse loadProofSession/ProofSession as named Dam Break instead of renaming the generated class. — wasm-pack output stays ignored; the existing basin constructor already matches the documented Dam Break reset constants.
+- [Phase 17]: Extract observeFrame helpers so App.tsx stays under the 628-line file trigger. — The plan allowed a split; frame observation is not session ownership and can stay a pure helper.
+- [Phase 17]: Allow explicit undefined on optional chrome props for exactOptionalPropertyTypes. — Solid call sites pass absent current-scene and failure-details values; widening the optional type unblocked typecheck without extra JSX branches.
 
 ### Pending Todos
 
@@ -105,6 +109,6 @@ No new milestone todos captured. Phase 17 is ready for discussion and planning.
 
 ## Session Continuity
 
-Last session: 2026-09-17T11:58:27.459Z
-Stopped at: Completed 17-04-PLAN.md
+Last session: 2026-09-17T12:08:46.121Z
+Stopped at: Completed 17-05-PLAN.md
 Resume file: None
