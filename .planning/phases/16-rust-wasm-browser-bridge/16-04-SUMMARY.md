@@ -45,15 +45,17 @@ requirements-completed: [WASM-01, WASM-02, WASM-03]
 generated_by: gsd-execute-plan
 lifecycle_mode: yolo
 phase_lifecycle_id: 16-2026-09-17T01-48-41
-generated_at: 2026-09-17T03:52:47Z
+generated_at: 2026-09-17T04:42:51Z
 
 duration: 50min
 completed: 2026-09-17
+corrective_closure_attempt: target/phase16/closure-attempt-10
+corrective_review_digest: 7b63ca2e7f1580a8a509e8265aca968667bc8443b9055651e285991a0cd3ff38
 ---
 
 # Phase 16 Plan 04: Real Chromium Proof and Isolation Closure Summary
 
-**Package-pinned Chromium now proves visible Rust/WASM motion, resize-safe Canvas rendering, and frozen post-disposal state through three retained PNGs, complete native/package closure logs, and an independently approved exact digest.**
+**Package-pinned Chromium now proves visible Rust/WASM motion, resize-safe Canvas rendering, frozen post-disposal state, and strengthened source/evidence validation through three retained PNGs, 16 source-bound closure commands, and an independently approved exact digest.**
 
 ## Performance
 
@@ -67,9 +69,10 @@ completed: 2026-09-17
 
 - Ran one package-pinned Chromium 153.0.8010.12 project against the generated Rust WASM package and retained passing initial, moving, and disposed Canvas evidence.
 - Validated exact lowercase SHA-256 values, byte lengths, PNG dimensions, Rust step/movement observations, resize behavior, disposal stability, and all four passing Playwright attachments.
-- Retained the complete 15-command native, wrapper, web, browser, package, Markdown, managed-rule, metadata, and isolation closure beneath `target/phase16/closure-attempt-8`.
+- Retained the complete 16-command validator, native, wrapper, web, browser, package, Markdown, managed-rule, metadata, and isolation closure beneath `target/phase16/closure-attempt-10`.
 - Documented the exact clean-checkout Rust 1.97.0, wasm-pack 0.15.0, Bun 1.4.2, frozen install, build, and smoke workflow without adding publication or deployment scope.
-- Obtained independent AI approval of the 77-entry fixed manifest at review digest `c37418b1bc9c331fb915e68a038b255562ab6bebb40a997c1b0fc39abc988917`.
+- Verified strict runtime browser-proof parsing, canonical artifact confinement, exact attachment bytes, complete staged/unstaged/untracked source identity, stable pre/post closure identity, and bounded non-overwriting failure summaries.
+- Obtained independent GPT-5.6 Sol AI approval of the 85-entry fixed manifest at review digest `7b63ca2e7f1580a8a509e8265aca968667bc8443b9055651e285991a0cd3ff38`.
 
 ## Task Commits
 
@@ -83,6 +86,16 @@ Each task was committed atomically:
    - `4a9978b` (`fix`) — independent-review correction for resize-safe Canvas redraw and terminal observer cleanup
    - `207e1bb` (`docs`) — approved separate-AI exact-digest review over final attempt 8
 
+Post-review corrective continuation:
+
+- `97a1146` (`fix`) — complete staged, unstaged, and untracked source identity binding
+- `b33cbb9` (`fix`) — strict browser schema, path, artifact, and attachment validation
+- `47199bf` (`fix`) — bounded non-overwriting closure failure summaries
+- `6e4ebf2` (`docs`) — source-review fix report and required fresh-closure status
+- `80d4d7b` (`fix`) — source-bound focused validator regression evidence
+- `dad8e5f` (`docs`) — independent exact-digest approval for current attempt 10
+- `4bf9692` (`docs`) — completed review-fix follow-up bound to attempt 10
+
 ## Files Created/Modified
 
 - `web/playwright.config.ts` — Defines one zero-retry package-pinned Chromium project and attempt-scoped passing/failure output.
@@ -95,7 +108,7 @@ Each task was committed atomically:
 
 ## Decisions Made
 
-- Selected `target/phase16/closure-attempt-8` as the final passing source-bound evidence set; earlier failed, preliminary, and superseded attempts remain preserved.
+- Selected `target/phase16/closure-attempt-10` as the current passing source-bound evidence set; earlier failed, preliminary, successful, and superseded attempts remain preserved.
 - Used a controlled delay of the real WASM request to make the exact Loading state observable without mocking or substituting the generated package.
 - Required a JSON Playwright report and post-run attachment validation so all four passing attachments remain machine-verifiable.
 - Kept resize handling presentation-only: it redraws the last copied Rust frame and does not add another simulation clock or JavaScript physics path.
@@ -152,13 +165,22 @@ Each task was committed atomically:
 - **Verification:** Attempt 8 records `resizeRedrewLastFrame: true`; the second independent review resolved the finding and approved the new digest.
 - **Committed in:** `4a9978b`
 
-**Total deviations:** 6 auto-fixed (4 bugs, 2 missing critical)
+**7. [Rule 2 - Missing Critical] Retained focused closure-validator regressions**
+- **Found during:** Post-review corrective closure
+- **Issue:** The focused WR-01 through WR-03 regression suite passed before smoke but was not retained in the source-bound closure command manifest.
+- **Fix:** Added `bun test scripts/phase16` as closure command 01, committed it before the current smoke, and regenerated all browser and closure evidence in fresh attempt 10.
+- **Files modified:** `scripts/phase16-closure.ts`
+- **Verification:** Attempt 10 retains 8 passing focused tests and all 15 original Plan 16-04 closure commands, for 16 passing commands total.
+- **Committed in:** `80d4d7b`
+
+**Total deviations:** 7 auto-fixed (4 bugs, 3 missing critical)
 **Impact on plan:** Every correction strengthened evidence preservation, browser determinism, package validation, or the approved UI lifecycle without adding player, deployment, publication, or broader browser scope.
 
 ## Issues Encountered
 
 - Closure attempts 1, 2, and 5 failed and remain preserved with their logs and summaries.
 - The first independent review withheld approval for missing resize redraw. Its rejected record is preserved at `target/phase16/review-attempt-1.md`; the implementation, evidence, manifest, and acknowledgment were regenerated after correction.
+- Successful attempt 8 and its old digest remain historical for source `4a9978b`; passing smoke attempt 9 is preserved but superseded because it predates commit `80d4d7b`. Neither is presented as current.
 
 ## Known Stubs
 
@@ -170,10 +192,10 @@ None - no external service configuration required.
 
 ## Next Phase Readiness
 
-- Phase 16 is complete with real-browser proof, retained source-bound artifacts, reproducible build instructions, native/package isolation, and independent review.
+- Phase 16 is complete with current attempt-10 real-browser proof, strengthened source/evidence validators, bounded failure records, retained source-bound artifacts, reproducible build instructions, native/package isolation, and independent exact-digest review.
 - Phase 17 can deepen the private bridge into the shared player, retry/reset lifecycle, routes, project-subpath assets, and early GitHub Pages delivery.
 - No package was published, no release/tag was selected, and no Pages deployment or complete-parity claim was made.
 
 ## Self-Check: PASSED
 
-All listed source, review, summary, selected browser/closure evidence files, and all four task/deviation commits were verified.
+All listed source, review, summary, selected attempt-10 browser/closure evidence files, original task commits, corrective commits, current digest, and preserved historical records were verified.
