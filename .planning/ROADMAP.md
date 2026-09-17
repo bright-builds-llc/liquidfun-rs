@@ -56,7 +56,7 @@ Plans:
 - [x] 17-03-PLAN.md — Bake `/liquidfun-rs/` production assets and safe provenance
 - [x] 17-04-PLAN.md — Build honest catalog, fallback, footer, and player chrome
 - [x] 17-05-PLAN.md — Wire the one-session Dam Break player and teardown
-- [ ] 17-06-PLAN.md — Prove production-base Dam Break, fallback, and hidden-tab bounds
+- [x] 17-06-PLAN.md — Prove production-base Dam Break, fallback, and hidden-tab bounds
 - [ ] 17-07-PLAN.md — Add the SHA-pinned same-checkout Pages workflow
 - [ ] 17-08-PLAN.md — Deploy main, record the live URL/SHA, and obtain independent review
 **UI hint**: yes
@@ -97,7 +97,7 @@ Execution order: **16 → 17 → 18 → 19**. Each phase includes focused checks
 | Phase | Plans Complete | Status | Completed |
 | --- | --- | --- | --- |
 | 16. Rust WASM Browser Bridge | 4/4 | Complete    | 2026-09-17 |
-| 17. Shared Player and Early Pages Delivery | 5/8 | In Progress|  |
+| 17. Shared Player and Early Pages Delivery | 6/8 | In Progress|  |
 | 18. Six Native Physics Demos | 0/TBD | Not started | - |
 | 19. Interaction Polish and Browser Verification | 0/TBD | Not started | - |
 
