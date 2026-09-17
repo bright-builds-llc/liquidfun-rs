@@ -3,5 +3,7 @@
 #![forbid(unsafe_code)]
 
 mod frame;
+mod scene;
+mod session;
 
 pub use frame::ProofFrame;
