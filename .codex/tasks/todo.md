@@ -289,5 +289,7 @@ Completion review: both replacement plans passed, HOBBY-01/02/03 verified, indep
 
 - [x] Verify current-scope readiness and preserve historical strict gaps.
 - [x] Archive roadmap/requirements/audit, write concise milestone history and retrospective.
-- [ ] Independently review and commit archives before removing active requirements.
-- [ ] Finalize between-milestone state, verify checks, and push without release tags or publication.
+- [x] Independently review and commit archives before removing active requirements.
+- [x] Prepare between-milestone state and verified finalization for normal push without release tags or publication.
+
+Archive review: 16 completed phases/252 active plans archived as planning milestone v1.0, with all three strict deferred IDs still unchecked. Original requirement/roadmap bodies preserved; old failed audit and completion STATE copied byte-for-byte. Independent staged-diff review passed. Archive safety commit 86dcd37 precedes active REQUIREMENTS removal. Phase history remains in place; no release tag, package publication or new milestone scope.
