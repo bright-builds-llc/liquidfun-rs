@@ -243,6 +243,8 @@ export function App() {
   let maybeSession: SceneSession | undefined;
   let maybeAnimationFrameId: number | undefined;
   let maybePreviousFrame: RenderFrame | undefined;
+  let maybeCamera: Camera | undefined;
+  let maybeResizeObserver: ResizeObserver | undefined;
   let stopped = false;
 
   function cancelPendingFrame(): void {
@@ -254,12 +256,19 @@ export function App() {
     maybeAnimationFrameId = undefined;
   }
 
+  function disconnectResizeObserver(): void {
+    const maybeObserver = maybeResizeObserver;
+    maybeResizeObserver = undefined;
+    maybeObserver?.disconnect();
+  }
+
   function stopResources(): void {
     if (stopped) {
       return;
     }
 
     stopped = true;
+    disconnectResizeObserver();
     cancelPendingFrame();
 
     const maybeOwnedSession = maybeSession;
@@ -289,10 +298,7 @@ export function App() {
     });
   }
 
-  function scheduleFrame(
-    context: CanvasRenderingContext2D,
-    camera: Camera,
-  ): void {
+  function scheduleFrame(context: CanvasRenderingContext2D): void {
     if (stopped) {
       return;
     }
@@ -308,6 +314,11 @@ export function App() {
         fail(new Error("Rust/WASM session owner is unavailable"));
         return;
       }
+      const camera = maybeCamera;
+      if (camera === undefined) {
+        fail(new Error("Canvas camera is unavailable"));
+        return;
+      }
 
       try {
         const frame = maybeOwnedSession.nextFrame();
@@ -321,7 +332,7 @@ export function App() {
         );
         maybePreviousFrame = frame;
         setState({ kind: "running", frame: observation });
-        scheduleFrame(context, camera);
+        scheduleFrame(context);
       } catch (error) {
         fail(error);
       }
@@ -330,7 +341,6 @@ export function App() {
 
   async function startSession(
     context: CanvasRenderingContext2D,
-    camera: Camera,
   ): Promise<void> {
     try {
       const generatedSession = await loadProofSession();
@@ -341,12 +351,17 @@ export function App() {
       }
 
       maybeSession = ownedSession;
+      const camera = maybeCamera;
+      if (camera === undefined) {
+        fail(new Error("Canvas camera is unavailable"));
+        return;
+      }
       const frame = ownedSession.nextFrame();
       drawRenderFrame(context, frame, camera);
       const observation = observeFrame(frame, undefined, 0);
       maybePreviousFrame = frame;
       setState({ kind: "running", frame: observation });
-      scheduleFrame(context, camera);
+      scheduleFrame(context);
     } catch (error) {
       fail(error);
     }
@@ -371,7 +386,7 @@ export function App() {
 
     try {
       const bounds = canvas.getBoundingClientRect();
-      const camera = resizeCanvasBackingStore(
+      maybeCamera = resizeCanvasBackingStore(
         canvas,
         bounds.width,
         bounds.height,
@@ -383,7 +398,31 @@ export function App() {
         return;
       }
 
-      void startSession(maybeContext, camera);
+      maybeResizeObserver = new ResizeObserver(() => {
+        if (stopped) {
+          return;
+        }
+
+        try {
+          const resizedBounds = canvas.getBoundingClientRect();
+          const resizedCamera = resizeCanvasBackingStore(
+            canvas,
+            resizedBounds.width,
+            resizedBounds.height,
+            window.devicePixelRatio,
+          );
+          maybeCamera = resizedCamera;
+          const maybeFrame = maybePreviousFrame;
+          if (maybeFrame !== undefined) {
+            drawRenderFrame(maybeContext, maybeFrame, resizedCamera);
+          }
+        } catch (error) {
+          fail(error);
+        }
+      });
+      maybeResizeObserver.observe(canvas);
+
+      void startSession(maybeContext);
     } catch (error) {
       fail(error);
     }

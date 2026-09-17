@@ -94,6 +94,22 @@ async function canvasPixelSha256(canvas: Locator): Promise<string> {
   });
 }
 
+async function canvasSizing(canvas: Locator): Promise<{
+  readonly css: { readonly width: number; readonly height: number };
+  readonly backing: { readonly width: number; readonly height: number };
+}> {
+  return canvas.evaluate((element) => {
+    if (!(element instanceof HTMLCanvasElement)) {
+      throw new Error("proof viewport is not a Canvas");
+    }
+    const bounds = element.getBoundingClientRect();
+    return {
+      css: { width: bounds.width, height: bounds.height },
+      backing: { width: element.width, height: element.height },
+    };
+  });
+}
+
 function pngDimensions(bytes: Buffer): {
   readonly width: number;
   readonly height: number;
@@ -199,6 +215,26 @@ test("runs Rust WASM, visibly moves, and freezes after disposal", async ({
 
   const canvas = page.getByRole("img", { name: CANVAS_NAME });
   await expect(canvas).toBeVisible();
+  const beforeResize = await canvasSizing(canvas);
+  await page.setViewportSize({ width: 900, height: 700 });
+  await expect
+    .poll(async () => (await canvasSizing(canvas)).backing.width)
+    .not.toBe(beforeResize.backing.width);
+  const resizedCanvas = await canvasSizing(canvas);
+  const devicePixelRatio = await page.evaluate(
+    () => window.devicePixelRatio,
+  );
+  expect(resizedCanvas.backing.width).toBe(
+    Math.round(
+      resizedCanvas.css.width * Math.min(devicePixelRatio, 2),
+    ),
+  );
+  expect(resizedCanvas.backing.height).toBe(
+    Math.round(
+      resizedCanvas.css.height * Math.min(devicePixelRatio, 2),
+    ),
+  );
+
   const initialObservation: Observation = {
     stepIndex: await numericAttribute(main, "data-step-index"),
     movedFrameCount: await numericAttribute(
@@ -275,16 +311,7 @@ test("runs Rust WASM, visibly moves, and freezes after disposal", async ({
   const recapturedDisposedBytes = await canvas.screenshot();
   expect(recapturedDisposedBytes.equals(disposedBytes)).toBe(true);
 
-  const canvasSizing = await canvas.evaluate((element) => {
-    if (!(element instanceof HTMLCanvasElement)) {
-      throw new Error("proof viewport is not a Canvas");
-    }
-    const bounds = element.getBoundingClientRect();
-    return {
-      css: { width: bounds.width, height: bounds.height },
-      backing: { width: element.width, height: element.height },
-    };
-  });
+  const finalCanvasSizing = await canvasSizing(canvas);
   const artifacts = {
     initial: await pngArtifact(repoRoot, initialPath),
     moving: await pngArtifact(repoRoot, movingPath),
@@ -312,7 +339,7 @@ test("runs Rust WASM, visibly moves, and freezes after disposal", async ({
       runtimeChromiumVersion: browser.version(),
     },
     pageUrl: page.url(),
-    canvas: canvasSizing,
+    canvas: finalCanvasSizing,
     observations: {
       initial: initialObservation,
       moving: movingObservation,
@@ -327,6 +354,7 @@ test("runs Rust WASM, visibly moves, and freezes after disposal", async ({
       wasmInitialized: true,
       rustFrameAdvanced: true,
       canvasPixelsChanged: true,
+      resizeRedrewLastFrame: true,
       disposalStoppedFrames: true,
       disposalPreservedCanvas: true,
     },
