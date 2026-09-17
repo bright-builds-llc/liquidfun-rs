@@ -8,6 +8,7 @@ import {
 } from "node:fs/promises";
 import { basename, relative, resolve } from "node:path";
 
+import { validateBrowserEvidence } from "./phase16/browser-evidence";
 import {
   captureSourceIdentity,
   parseSourceIdentity,
@@ -27,24 +28,6 @@ type CommandResult = {
   readonly exitCode: number;
   readonly stdoutLog: string;
   readonly stderrLog: string;
-};
-
-type BrowserProof = {
-  readonly attemptIdentity: string;
-  readonly source: SourceIdentity;
-  readonly assertions: Record<string, boolean>;
-  readonly artifacts: Record<
-    string,
-    {
-      readonly path: string;
-      readonly sha256: string;
-      readonly byteLength: number;
-      readonly dimensions: {
-        readonly width: number;
-        readonly height: number;
-      };
-    }
-  >;
 };
 
 const commands: readonly CommandSpec[] = [
@@ -132,12 +115,6 @@ const commands: readonly CommandSpec[] = [
   },
 ];
 
-const requiredAttachments = [
-  "canvas-initial.png",
-  "canvas-moving.png",
-  "canvas-disposed.png",
-  "browser-proof.json",
-] as const;
 const repoRoot = resolve(import.meta.dir, "..");
 
 function sha256(bytes: Uint8Array | string): string {
@@ -205,85 +182,6 @@ async function runCommand(
     stderrLog: relative(repoRoot, stderrPath),
   } satisfies CommandResult;
   return { result, stdout };
-}
-
-function collectAttachmentNames(value: unknown, names: Set<string>): void {
-  if (Array.isArray(value)) {
-    for (const item of value) {
-      collectAttachmentNames(item, names);
-    }
-    return;
-  }
-  if (value === null || typeof value !== "object") {
-    return;
-  }
-
-  const record = value as Record<string, unknown>;
-  if (
-    typeof record.name === "string" &&
-    typeof record.contentType === "string"
-  ) {
-    names.add(record.name);
-  }
-  for (const child of Object.values(record)) {
-    collectAttachmentNames(child, names);
-  }
-}
-
-async function validateBrowserEvidence(
-  attemptDirectory: string,
-): Promise<BrowserProof> {
-  const proofPath = resolve(attemptDirectory, "browser/browser-proof.json");
-  const proofValue = JSON.parse(
-    await readFile(proofPath, "utf8"),
-  ) as unknown;
-  if (
-    proofValue === null ||
-    typeof proofValue !== "object" ||
-    Array.isArray(proofValue)
-  ) {
-    throw new Error("browser proof must be an object");
-  }
-  const proofRecord = proofValue as Record<string, unknown>;
-  const proof = {
-    ...proofRecord,
-    source: parseSourceIdentity(proofRecord.source, "browser proof source"),
-  } as BrowserProof;
-  if (proof.attemptIdentity !== basename(attemptDirectory)) {
-    throw new Error("browser proof attempt identity mismatch");
-  }
-  if (!Object.values(proof.assertions).every(Boolean)) {
-    throw new Error("browser proof contains a failed assertion");
-  }
-
-  for (const artifact of Object.values(proof.artifacts)) {
-    const expectedPrefix = `${relative(repoRoot, attemptDirectory)}/browser/`;
-    if (!artifact.path.startsWith(expectedPrefix)) {
-      throw new Error(`browser artifact escapes attempt: ${artifact.path}`);
-    }
-    const bytes = await readFile(resolve(repoRoot, artifact.path));
-    if (
-      bytes.length !== artifact.byteLength ||
-      sha256(bytes) !== artifact.sha256
-    ) {
-      throw new Error(`browser artifact hash mismatch: ${artifact.path}`);
-    }
-  }
-
-  const report = JSON.parse(
-    await readFile(
-      resolve(attemptDirectory, "playwright-report.json"),
-      "utf8",
-    ),
-  ) as unknown;
-  const attachmentNames = new Set<string>();
-  collectAttachmentNames(report, attachmentNames);
-  for (const requiredName of requiredAttachments) {
-    if (!attachmentNames.has(requiredName)) {
-      throw new Error(`missing Playwright attachment: ${requiredName}`);
-    }
-  }
-  return proof;
 }
 
 async function readProvenanceSource(
@@ -411,7 +309,10 @@ async function main(): Promise<void> {
   await mkdir(logsDirectory);
   const startedAt = new Date().toISOString();
   const source = await captureSourceIdentity(repoRoot);
-  const browserProof = await validateBrowserEvidence(attemptDirectory);
+  const browserProof = await validateBrowserEvidence(
+    repoRoot,
+    attemptDirectory,
+  );
   const provenanceSource = await readProvenanceSource(attemptDirectory);
   requireMatchingSourceIdentity(source, browserProof.source, "browser proof");
   requireMatchingSourceIdentity(source, provenanceSource, "provenance");
