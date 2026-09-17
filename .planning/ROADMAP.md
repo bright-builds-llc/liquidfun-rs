@@ -31,7 +31,7 @@ The 22 approved requirements form four complete delivery boundaries. Although co
 
 Plans:
 - [x] 16-01-PLAN.md — Build the native-testable private WASM session, bounded proof scene, copied-frame ABI, and real wasm-pack generation gate.
-- [ ] 16-02-PLAN.md — Add exact-pinned Bun/SolidJS generation plus the validated typed frame/session ownership boundary.
+- [x] 16-02-PLAN.md — Add exact-pinned Bun/SolidJS generation plus the validated typed frame/session ownership boundary.
 - [ ] 16-03-PLAN.md — Implement pure Canvas rendering and the approved SolidJS proof page, then run the first complete frontend build.
 - [ ] 16-04-PLAN.md — Prove and retain visible Rust motion/disposal in Chromium, document isolation, and obtain exact-digest independent review.
 **UI hint**: yes
@@ -86,7 +86,7 @@ Execution order: **16 → 17 → 18 → 19**. Each phase includes focused checks
 
 | Phase | Plans Complete | Status | Completed |
 | --- | --- | --- | --- |
-| 16. Rust WASM Browser Bridge | 1/4 | In Progress|  |
+| 16. Rust WASM Browser Bridge | 2/4 | In Progress|  |
 | 17. Shared Player and Early Pages Delivery | 0/TBD | Not started | - |
 | 18. Six Native Physics Demos | 0/TBD | Not started | - |
 | 19. Interaction Polish and Browser Verification | 0/TBD | Not started | - |
