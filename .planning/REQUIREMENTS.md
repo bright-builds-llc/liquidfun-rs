@@ -39,7 +39,7 @@ The owner approved six varied demos, our own Rust engine via WASM, a playful gal
 
 - [ ] **HOST-01**: Every push to main triggers a build of the WASM package and SolidJS production site from the same checkout, followed by GitHub Pages deployment only after required build checks succeed.
 - [ ] **HOST-02**: Deployment uses the repository's Pages configuration and normal GitHub Actions permissions without a personal token, and concurrent pushes cannot leave an older completed deployment as the final site; intermediate queued revisions may be superseded by newer main pushes.
-- [ ] **HOST-03**: The live Pages site loads its JS/WASM assets and direct demo URLs under the real project base path, with a recorded deployed URL and source revision.
+- [x] **HOST-03**: The live Pages site loads its JS/WASM assets and direct demo URLs under the real project base path, with a recorded deployed URL and source revision.
 - [ ] **WEBTEST-01**: A focused real-browser smoke suite exercises the built Rust WASM artifact, all six scene selections, visible stepping, playback/reset, representative pointer/control input and repeated scene cleanup; the production subpath build and deployed site receive targeted smoke checks without a broad browser/native qualification matrix.
 
 ## Future Ideas
@@ -80,7 +80,7 @@ Each active requirement maps to exactly one new phase, starting at Phase 16. All
 | DEMO-06 | Phase 18 | Pending |
 | HOST-01 | Phase 17 | Pending |
 | HOST-02 | Phase 17 | Pending |
-| HOST-03 | Phase 17 | Pending |
+| HOST-03 | Phase 17 | Complete |
 | WEBTEST-01 | Phase 19 | Pending |
 
 **Coverage:** 22 requirements; 22 mapped exactly once; 0 unmapped.

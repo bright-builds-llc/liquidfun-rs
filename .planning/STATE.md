@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Web Playground
 status: executing
-stopped_at: Completed 17-02-PLAN.md
-last_updated: "2026-09-17T11:51:00.730Z"
+stopped_at: Completed 17-03-PLAN.md
+last_updated: "2026-09-17T11:54:37.748Z"
 last_activity: 2026-09-17
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 12
-  completed_plans: 6
-  percent: 50
+  completed_plans: 7
+  percent: 58
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-09-17)
 ## Current Position
 
 Phase: 17 (Shared Player and Early Pages Delivery) — EXECUTING
-Plan: 3 of 8
+Plan: 4 of 8
 Status: Ready to execute
 Last activity: 2026-09-17
 
@@ -47,6 +47,7 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 | Phase 16 P04 | 50min | 3 tasks | 9 files |
 | Phase 17-shared-player-and-early-pages-delivery P01 | 2 min | 2 tasks | 4 files |
 | Phase 17 P02 | 2 min | 2 tasks | 4 files |
+| Phase 17 P03 | 2 min | 2 tasks | 4 files |
 
 ### Decisions
 
@@ -74,6 +75,10 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 - [Phase 17]: Keep acceptedStepCount pure: no performance.now, document.hidden, leftover accumulator, or rAF. — D-12 caps accepted wall-clock delta at four 1/60-second steps. Hidden-tab pause and leftover catch-up belong to the later player shell.
 - [Phase 17]: Guard 1..=4 in TypeScript before generated advance; poison invalid counts without calling advance. — Rust already rejects 0 and 5+. TypeScript must not cross the WASM boundary with an illegal count or leak generated exception text.
 - [Phase 17]: Forward one advance(n) plus one capture instead of calling nextFrame four times. — Four nextFrame calls would capture four times. WASM-04 needs one animation callback to step 1-4 ticks and still capture once.
+- [Phase 17]: Production and preview Vite base is /liquidfun-rs/; local serve stays /. — Local vite serve must keep root hrefs; only production and preview-of-production need the GitHub Pages project prefix.
+- [Phase 17]: Short commit labels are the first 12 lowercase hex characters of a full SHA. — Operability and UI-SPEC allow 7-12 characters; 12 stays unique while remaining readable in footer chrome.
+- [Phase 17]: Commit and build URLs are accepted only on https://github.com/bright-builds-llc/liquidfun-rs/. — Footer links must not be built from hash-route input or arbitrary env strings; javascript: and off-host URLs stay undefined.
+- [Phase 17]: just web-build fails unless dist/index.html contains /liquidfun-rs/assets/ and a .wasm file exists. — A root-base Vite build would 404 WASM on GitHub Pages; fail closed before any deploy job.
 
 ### Pending Todos
 
@@ -96,6 +101,6 @@ No new milestone todos captured. Phase 17 is ready for discussion and planning.
 
 ## Session Continuity
 
-Last session: 2026-09-17T11:51:00.701Z
-Stopped at: Completed 17-02-PLAN.md
+Last session: 2026-09-17T11:54:32.887Z
+Stopped at: Completed 17-03-PLAN.md
 Resume file: None
