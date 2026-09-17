@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Web Playground
 status: executing
-stopped_at: Completed 17-06-PLAN.md
-last_updated: "2026-09-17T12:16:57.417Z"
+stopped_at: Completed 17-07-PLAN.md
+last_updated: "2026-09-17T12:19:30.514Z"
 last_activity: 2026-09-17
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 12
-  completed_plans: 10
-  percent: 83
+  completed_plans: 11
+  percent: 92
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-09-17)
 ## Current Position
 
 Phase: 17 (Shared Player and Early Pages Delivery) — EXECUTING
-Plan: 7 of 8
+Plan: 8 of 8
 Status: Ready to execute
 Last activity: 2026-09-17
 
@@ -51,6 +51,7 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 | Phase 17 P04 | 3min | 2 tasks | 7 files |
 | Phase 17 P05 | 7min | 2 tasks | 9 files |
 | Phase 17-shared-player-and-early-pages-delivery P06 | 6min | 2 tasks | 7 files |
+| Phase 17 P07 | 2min | 2 tasks | 1 files |
 
 ### Decisions
 
@@ -90,6 +91,9 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 - [Phase 17]: Allow explicit undefined on optional chrome props for exactOptionalPropertyTypes. — Solid call sites pass absent current-scene and failure-details values; widening the optional type unblocked typecheck without extra JSX branches.
 - [Phase 17]: Player smoke is a web-build player-smoke mode that reuses the existing build and does not allocate a Phase 16 closure attempt. — D-17 local proofs must not run the Phase 16 forensic closure matrix. just web-smoke stays the opt-in forensic path that still sets PHASE16_CLOSURE_ATTEMPT_DIR.
 - [Phase 17]: Hidden-tab proof uses Object.defineProperty plus a MutationObserver so the first resume frame is measured, not a later poll. — document.hidden is read-only. Playwright poll can sample a later animation callback and see a step delta of 5, which is not a catch-up storm. The first data-step-index mutation is the next observed frame.
+- [Phase 17]: Every main and pull_request run builds WASM plus web/dist from the same checkout with no path filters. — HOST-01 requires a same-checkout site+WASM build on every main push so a Rust-only change still ships updated physics.
+- [Phase 17]: Deploy uses job-scoped pages: write plus id-token: write and the github-pages environment; no PAT. — HOST-02 forbids a personal token; write permissions stay on deploy-pages so pull requests keep contents: read only.
+- [Phase 17]: cancel-in-progress is false on main so an in-flight deploy finishes while queued revisions may coalesce. — Cancelling a mid-flight Pages deploy can strand a newer revision; official starter keeps the in-progress run and coalesces queued main SHAs.
 
 ### Pending Todos
 
@@ -112,6 +116,6 @@ No new milestone todos captured. Phase 17 is ready for discussion and planning.
 
 ## Session Continuity
 
-Last session: 2026-09-17T12:16:57.414Z
-Stopped at: Completed 17-06-PLAN.md
+Last session: 2026-09-17T12:19:21.377Z
+Stopped at: Completed 17-07-PLAN.md
 Resume file: None
