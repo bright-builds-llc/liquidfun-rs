@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto";
 import {
   mkdir,
   readFile,
@@ -8,6 +7,8 @@ import {
   writeFile,
 } from "node:fs/promises";
 import { basename, relative, resolve } from "node:path";
+
+import { captureSourceIdentity } from "./phase16/source-identity";
 
 const BUN_VERSION = "1.4.2";
 const RUST_VERSION = "1.97.0";
@@ -252,73 +253,10 @@ async function parsePlaywrightIdentity(): Promise<PlaywrightIdentity> {
   };
 }
 
-function captureGitBytes(command: readonly string[]): Uint8Array {
-  const result = Bun.spawnSync({
-    cmd: [...command],
-    cwd: repoRoot,
-    stdout: "pipe",
-    stderr: "pipe",
-  });
-  if (result.exitCode !== 0) {
-    throw commandError(commandText(command), result.exitCode);
-  }
-  return result.stdout;
-}
-
-async function sourceIdentity(): Promise<{
-  readonly revision: string;
-  readonly workingTreeSha256: string;
-  readonly status: string;
-}> {
-  const revision = captureCommand(["git", "rev-parse", "HEAD"]);
-  const statusBytes = captureGitBytes([
-    "git",
-    "status",
-    "--porcelain=v1",
-    "-z",
-  ]);
-  const trackedDiff = captureGitBytes(["git", "diff", "--binary", "HEAD"]);
-  const stagedDiff = captureGitBytes([
-    "git",
-    "diff",
-    "--binary",
-    "--cached",
-    "HEAD",
-  ]);
-  const untrackedOutput = captureGitBytes([
-    "git",
-    "ls-files",
-    "--others",
-    "--exclude-standard",
-    "-z",
-  ]);
-  const untrackedPaths = new TextDecoder()
-    .decode(untrackedOutput)
-    .split("\0")
-    .filter((path) => path.length > 0)
-    .sort();
-  const hash = createHash("sha256");
-  hash.update(statusBytes);
-  hash.update(trackedDiff);
-  hash.update(stagedDiff);
-  for (const path of untrackedPaths) {
-    hash.update(path);
-    hash.update("\0");
-    hash.update(await readFile(resolve(repoRoot, path)));
-    hash.update("\n");
-  }
-
-  return {
-    revision,
-    workingTreeSha256: hash.digest("hex"),
-    status: new TextDecoder().decode(statusBytes).replaceAll("\0", "\n"),
-  };
-}
-
 async function runSmoke(attemptDirectory: string): Promise<void> {
   await runCompleteBuild();
   const playwright = await parsePlaywrightIdentity();
-  const source = await sourceIdentity();
+  const source = await captureSourceIdentity(repoRoot);
   await atomicWriteJson(resolve(attemptDirectory, "provenance.json"), {
     schemaVersion: 1,
     attemptIdentity: basename(attemptDirectory),

@@ -8,6 +8,13 @@ import {
 } from "node:fs/promises";
 import { basename, relative, resolve } from "node:path";
 
+import {
+  captureSourceIdentity,
+  parseSourceIdentity,
+  requireMatchingSourceIdentity,
+  type SourceIdentity,
+} from "./phase16/source-identity";
+
 type CommandSpec = {
   readonly id: string;
   readonly argv: readonly string[];
@@ -24,6 +31,7 @@ type CommandResult = {
 
 type BrowserProof = {
   readonly attemptIdentity: string;
+  readonly source: SourceIdentity;
   readonly assertions: Record<string, boolean>;
   readonly artifacts: Record<
     string,
@@ -226,9 +234,21 @@ async function validateBrowserEvidence(
   attemptDirectory: string,
 ): Promise<BrowserProof> {
   const proofPath = resolve(attemptDirectory, "browser/browser-proof.json");
-  const proof = JSON.parse(
+  const proofValue = JSON.parse(
     await readFile(proofPath, "utf8"),
-  ) as BrowserProof;
+  ) as unknown;
+  if (
+    proofValue === null ||
+    typeof proofValue !== "object" ||
+    Array.isArray(proofValue)
+  ) {
+    throw new Error("browser proof must be an object");
+  }
+  const proofRecord = proofValue as Record<string, unknown>;
+  const proof = {
+    ...proofRecord,
+    source: parseSourceIdentity(proofRecord.source, "browser proof source"),
+  } as BrowserProof;
   if (proof.attemptIdentity !== basename(attemptDirectory)) {
     throw new Error("browser proof attempt identity mismatch");
   }
@@ -264,6 +284,25 @@ async function validateBrowserEvidence(
     }
   }
   return proof;
+}
+
+async function readProvenanceSource(
+  attemptDirectory: string,
+): Promise<SourceIdentity> {
+  const provenanceValue = JSON.parse(
+    await readFile(resolve(attemptDirectory, "provenance.json"), "utf8"),
+  ) as unknown;
+  if (
+    provenanceValue === null ||
+    typeof provenanceValue !== "object" ||
+    Array.isArray(provenanceValue)
+  ) {
+    throw new Error("provenance must be an object");
+  }
+  return parseSourceIdentity(
+    (provenanceValue as Record<string, unknown>).source,
+    "provenance source",
+  );
 }
 
 function validateIsolation(
@@ -362,40 +401,6 @@ function validateIsolation(
   };
 }
 
-async function workingTreeIdentity(): Promise<{
-  readonly revision: string;
-  readonly diffSha256: string;
-  readonly status: string;
-}> {
-  const revisionProcess = Bun.spawnSync({
-    cmd: ["git", "rev-parse", "HEAD"],
-    cwd: repoRoot,
-    stdout: "pipe",
-  });
-  const statusProcess = Bun.spawnSync({
-    cmd: ["git", "status", "--porcelain=v1"],
-    cwd: repoRoot,
-    stdout: "pipe",
-  });
-  const diffProcess = Bun.spawnSync({
-    cmd: ["git", "diff", "--binary", "HEAD"],
-    cwd: repoRoot,
-    stdout: "pipe",
-  });
-  if (
-    revisionProcess.exitCode !== 0 ||
-    statusProcess.exitCode !== 0 ||
-    diffProcess.exitCode !== 0
-  ) {
-    throw new Error("could not capture closure source identity");
-  }
-  return {
-    revision: revisionProcess.stdout.toString().trim(),
-    diffSha256: sha256(diffProcess.stdout),
-    status: statusProcess.stdout.toString(),
-  };
-}
-
 async function main(): Promise<void> {
   const attemptDirectory = await realpath(
     requireAttemptPath(process.argv[2]),
@@ -405,8 +410,11 @@ async function main(): Promise<void> {
   await mkdir(closureDirectory);
   await mkdir(logsDirectory);
   const startedAt = new Date().toISOString();
-  const source = await workingTreeIdentity();
+  const source = await captureSourceIdentity(repoRoot);
   const browserProof = await validateBrowserEvidence(attemptDirectory);
+  const provenanceSource = await readProvenanceSource(attemptDirectory);
+  requireMatchingSourceIdentity(source, browserProof.source, "browser proof");
+  requireMatchingSourceIdentity(source, provenanceSource, "provenance");
   const results: CommandResult[] = [];
   const outputs = new Map<string, string>();
 
@@ -420,6 +428,12 @@ async function main(): Promise<void> {
       }
     }
     const isolation = validateIsolation(outputs);
+    const completedSource = await captureSourceIdentity(repoRoot);
+    requireMatchingSourceIdentity(
+      source,
+      completedSource,
+      "post-command checkout",
+    );
     await atomicWriteJson(resolve(closureDirectory, "closure-summary.json"), {
       schemaVersion: 1,
       status: "passed",
