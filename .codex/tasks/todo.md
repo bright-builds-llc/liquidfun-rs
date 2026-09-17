@@ -293,3 +293,12 @@ Completion review: both replacement plans passed, HOBBY-01/02/03 verified, indep
 - [x] Prepare between-milestone state and verified finalization for normal push without release tags or publication.
 
 Archive review: 16 completed phases/252 active plans archived as planning milestone v1.0, with all three strict deferred IDs still unchecked. Original requirement/roadmap bodies preserved; old failed audit and completion STATE copied byte-for-byte. Independent staged-diff review passed. Archive safety commit 86dcd37 precedes active REQUIREMENTS removal. Phase history remains in place; no release tag, package publication or new milestone scope.
+
+## task-new-web-milestone | 2026-09-17 01:30 UTC | Define SolidJS WASM playground milestone
+
+- [x] Confirm six demos, own Rust WASM engine and playful gallery direction.
+- [x] Research stack, example features, engine integration and delivery pitfalls.
+- [x] Define testable requirements and a continued-numbering roadmap.
+- [x] Prepare independently reviewed planning artifacts and required checks for commit and push.
+
+Milestone review: owner approved six specific demos and phases 16–19; all 22 requirements mapped once. Four research dimensions and synthesis use current primary sources and inspected Rust capabilities, with browser integration and Pages settings explicitly unverified. Previous phase/research history preserved. No dependencies installed, site deployed or implementation begun.

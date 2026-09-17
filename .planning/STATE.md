@@ -1,10 +1,17 @@
 ---
 gsd_state_version: "1.0"
-milestone: v1.0
-milestone_name: Experimental Foundation
-status: completed
-stopped_at: Hobby milestone archived; ready to choose next milestone
-last_updated: "2026-09-17"
+milestone: v1.1
+milestone_name: Web Playground
+status: planning
+stopped_at: v1.1 Web Playground roadmap approved; begin Phase 16 discussion
+last_updated: "2026-09-17T01:40:52.009Z"
+last_activity: 2026-09-17 — v1.1 research synthesized and 22 requirements mapped across Phases 16–19
+progress:
+  total_phases: 4
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -14,14 +21,43 @@ last_updated: "2026-09-17"
 See: `.planning/PROJECT.md` (updated 2026-09-17)
 
 **Core value:** Deliver a useful, independent Rust physics library for enjoyable experimentation, with honest limitations and a lightweight native development loop.
-**Current focus:** Between milestones — choose the next useful hobby goal.
+**Current focus:** Phase 16 — Rust WASM Browser Bridge.
 
 ## Current Position
 
-Status: Completed v1.0 Experimental Foundation planning milestone
-Last activity: 2026-09-17
+Phase: 16 of 19 (Rust WASM Browser Bridge; 1 of 4 in v1.1)
+Plan: 0 of TBD in current phase
+Status: Ready to plan
+Last activity: 2026-09-17 — v1.1 research synthesized and 22 requirements mapped across Phases 16–19
 
-All 16 phases and 252 active plans are complete. No next milestone is selected. Start `/gsd-new-milestone` to define fresh requirements; preserve phase numbering after 15.
+Progress: [░░░░░░░░░░] 0% of v1.1 phases complete; executable plans not yet defined.
+
+The prior 16 phases and 252 plans remain archived history. New work starts at Phase 16. The owner confirmed six interactive demos using our Rust engine via WASM, playful catalog/player controls and automatic GitHub Pages deployment from main.
+
+## Performance Metrics
+
+- v1.1 plans completed: 0; duration and velocity not available before execution.
+- v1.1 phases completed: 0 of 4.
+- Historical metrics remain in the v1.0 archive; they are not current-milestone progress.
+
+## Accumulated Context
+
+### Decisions
+
+- Prove a real Rust WASM browser step first, then deploy a shared SolidJS player early before expanding the six scenes.
+- Approved scenes: Dam Break, Fountain, Float or Sink, Color Mixer, Jelly Drop and Water Wheel; all physics comes from this Rust engine.
+- Prefer a private typed package, owned bulk frames, one active session and bounded simulation time/resources. Native Cargo consumers remain isolated.
+- Every main push triggers a same-checkout site/WASM build and Pages delivery with latest-main protection. This is web delivery, not Linux native qualification.
+
+### Pending Todos
+
+No new milestone todos captured. Phase 16 planning is the next roadmap action.
+
+### Blockers/Concerns
+
+- WASM target compilation and browser runtime compatibility have not been demonstrated; Phase 16 closes this uncertainty with actual stepping, not a compile-only check.
+- Pages setup/access and final URL remain unverified; Phase 17 verifies deployment and project-subpath assets early.
+- Floating, elastic and wheel scene stability require modest visual experiments in Phase 18; no fake physics or silently replaced approved scenes.
 
 ## Retained Context
 
@@ -34,6 +70,6 @@ All 16 phases and 252 active plans are complete. No next milestone is selected. 
 
 ## Session Continuity
 
-Last session: 2026-09-17
-Stopped at: Hobby milestone archived; next milestone not selected
-Resume file: .planning/MILESTONES.md
+Last session: 2026-09-17T01:40:52.006Z
+Stopped at: v1.1 Web Playground roadmap approved; begin Phase 16 discussion
+Resume file: .planning/ROADMAP.md

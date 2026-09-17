@@ -18,11 +18,29 @@ The owner prioritizes a fun hobby project over production-quality certification.
 
 The v1.0 Experimental Foundation planning milestone is archived (2026-09-17): 16 phases and 252 active plans completed under the revised hobby scope. This is not a crate release or strict parity certification. See `.planning/MILESTONES.md` and `.planning/milestones/v1.0-REQUIREMENTS.md` for outcomes and deferred requirements. Native checks, isolated packaging and macOS CI were verified at the implementation identified in Phase 15's completion record.
 
-## Next Milestone Goals
+## Current Milestone: v1.1 Web Playground
 
-Not selected. Favor a concrete simulation, example improvement or bug that makes the project more useful or enjoyable. Define fresh requirements through `/gsd-new-milestone`; do not automatically revive strict certification, publish a package or promise new platforms.
+**Goal:** Build a playful SolidJS website with six interactive physics demos powered by this Rust engine compiled to WebAssembly, automatically deployed to GitHub Pages on every push to main.
+
+**Target features:**
+- A small local JavaScript/TypeScript package boundary around our Rust LiquidFun engine compiled to WASM; no external physics engine or C++ runtime.
+- A colorful, approachable catalog and player with short explanations, source/inspiration links, play/pause, reset and scene-specific controls.
+- Six confirmed launch demos: Dam Break, Fountain, Float or Sink, Color Mixer, Jelly Drop, and Water Wheel, using existing engine capabilities and credited inspiration.
+- Static GitHub Pages hosting with production JS/WASM asset paths verified and an automatic main-push build/deploy workflow.
+
+**Confirmed preferences:** The owner selected six varied demos, our own Rust engine via WASM, a playful playground, the proposed exact six-scene feature scope, and the four-phase sequence (browser proof, early hosted player, six demos, polish/verification). GitHub sites means GitHub Pages. Milestone v1.1 is a planning label, not a crate/npm release.
+
+**Boundaries:** Keep hobby scope and native Cargo-only consumers. No backend, account system, visual scene editor, npm/crates.io publication, WASM threads, exhaustive parity campaign or browser/platform matrix. Small browser-specific smoke checks and the website build/deploy workflow are new required delivery checks, not a restart of mandatory Linux native qualification. Preserve archived phases and earlier research; begin new phases at 16.
+
 
 ## Requirements
+
+### Active — v1.1 Web Playground
+
+- [ ] Run the existing native Rust engine in a browser through a bounded WASM interface.
+- [ ] Browse and play six interactive demos in an accessible, responsive SolidJS gallery.
+- [ ] Build and publish the static site automatically from main, including reliable WASM loading and direct demo links.
+
 
 ### Validated
 
@@ -212,4 +230,4 @@ This document evolves at phase transitions and milestone boundaries.
 
 ______________________________________________________________________
 
-*Last updated: 2026-09-17 after archival of the v1.0 Experimental Foundation planning milestone. Strict certification remains optional and outstanding.*
+*Last updated: 2026-09-17 while defining v1.1 Web Playground. Strict native certification remains optional and outstanding.*
