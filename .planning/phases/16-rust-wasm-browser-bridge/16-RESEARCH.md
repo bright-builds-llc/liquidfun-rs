@@ -65,9 +65,9 @@ Implement this phase as a thin vertical slice with three boundaries: a native-te
 
 Use one argument-free proof-scene constructor and one bounded fixed-step operation such as `advance(step_count)` where `step_count` is restricted to `1..=4`. Capture one coherent Rust frame after stepping, return five typed arrays, render it on Canvas 2D, and free both the frame wrapper and session explicitly. This gives the planner focused seams for native tests, pure TypeScript tests, and a browser integration test without implementing Phase 17's player lifecycle. [VERIFIED: locked decisions D-01 through D-15; wasm-bindgen exported-type and boxed-slice guides]
 
-The largest unresolved fact is integrated compatibility: the local machine has Rust 1.97.0 but not the WASM target, has wasm-pack 0.13.1 instead of the selected 0.15.0, and has Bun 1.3.14 instead of the selected 1.4.2. The first plan must therefore include environment preparation and an immediate compile/instantiate/step checkpoint before frontend polish. [VERIFIED: local version probes on 2026-09-17]
+The largest execution-time validation risk is integrated compatibility: the local machine has Rust 1.97.0 but not the WASM target, has wasm-pack 0.13.1 instead of the selected 0.15.0, and has Bun 1.3.14 instead of the selected 1.4.2. Plan 16-01 therefore prepares the exact target/tool and proves a real `--target web` build; Plan 16-04 performs the first browser instantiation, step, capture, and visible-Canvas proof after the generated loader, renderer, and app entrypoint exist. [VERIFIED: local version probes on 2026-09-17]
 
-**Primary recommendation:** Plan three ordered slices: (1) private session/frame crate plus native tests and a real WASM build, (2) pinned Bun/Solid/Vite app and reproducible generation command, and (3) Chromium proof, disposal evidence, documentation, and native-isolation gates. [VERIFIED: phase success criteria and repository verification conventions]
+**Primary recommendation:** Plan four ordered slices: (1) private session/frame crate plus native tests and a real WASM build, (2) pinned Bun/Solid/Vite configuration, reproducible generation, and the typed frame/session boundary, (3) pure Canvas rendering plus the approved app entrypoint, and (4) Chromium proof, retained successful Canvas evidence, documentation, native-isolation gates, and independent review. [VERIFIED: phase success criteria and repository verification conventions]
 
 ## Project Constraints
 
@@ -397,21 +397,26 @@ No network input, HTML injection surface, secret, database, or server exists in 
 1. Add focused native tests for checked construction, rejected step bounds, lane alignment/finite data, scene movement, and no full diagnostic dependency. [VERIFIED: D-12]
 1. Install/verify the target and wasm-pack pin, then generate a real `--target web` package as an early compatibility gate. [VERIFIED: environment audit and D-09]
 
-### Plan 16-02: Reproducible SolidJS/Canvas Proof
+### Plan 16-02: Reproducible Frontend Boundary
 
 1. Scaffold `web/` with exact Solid/Vite/TypeScript/Vitest/Playwright pins, `packageManager: "bun@1.4.2"`, and committed `bun.lock`. [VERIFIED: D-09]
-1. Add ignored generated/package/build/test paths and a rerunnable `scripts/web-build.ts` plus thin Just recipes that regenerate before typecheck/test/build. [VERIFIED: D-10 and script standards]
-1. Implement generated-package loading, `RenderFrame` parsing, TS session ownership/disposal, pure camera projection, and imperative Canvas drawing. [VERIFIED: D-02, D-05, D-07]
-1. Add focused Vitest tests for typed-array kind, stride/count/finite validation, coordinate projection, and exactly-once disposal using a fake generated owner. [VERIFIED: D-12]
+1. Add ignored generated/package/build/test paths and a rerunnable `scripts/web-build.ts` plus thin Just recipes that regenerate before typecheck/test/build, but run only the generation mode until app entrypoints exist. [VERIFIED: D-10 and script standards]
+1. Implement generated-package loading, `RenderFrame` parsing, and TS session ownership/disposal. [VERIFIED: D-05 and D-07]
+1. Add focused Vitest tests for typed-array kind, stride/count/finite validation, and exactly-once disposal using a fake generated owner. [VERIFIED: D-12]
 
-### Plan 16-03: Real Browser Proof and Isolation Closure
+### Plan 16-03: Canvas Rendering and Approved Proof Page
 
-1. Add the minimal dark semantic page and RAF proof loop with visible Rust/WASM identity, counts, errors, and diagnostic disposal. [VERIFIED: D-01, D-02, D-13]
-1. Add one Chromium Playwright smoke against the built preview, proving initialization, changed consecutive Rust frames, visible Canvas change, and explicit disposal. [VERIFIED: D-13]
+1. Implement pure camera projection and imperative Canvas drawing with focused projection tests. [VERIFIED: D-02, D-05, D-11, D-12]
+1. Add the approved minimal dark semantic page and RAF proof loop with visible Rust/WASM identity, counts, errors, and diagnostic disposal. [VERIFIED: D-01, D-02, D-13]
+1. Run the first complete frontend typecheck, unit suite, and Vite production build now that tests and app entrypoints exist. [VERIFIED: D-09, D-10, D-12]
+
+### Plan 16-04: Real Browser Proof and Isolation Closure
+
+1. Add one Chromium Playwright smoke against the built preview, proving initialization, changed consecutive Rust frames, visible Canvas change, explicit disposal, and retained successful initial/moving/disposed Canvas PNGs plus machine-readable proof metadata. [VERIFIED: D-13]
 1. Document exact clean-checkout preparation/build/smoke commands and generated-output ownership. [VERIFIED: WASM-02 and D-10]
-1. Run wrapper, web, browser, native-default, package-isolation, aggregate repo, and managed-standard checks; obtain exact-digest independent review. [VERIFIED: D-14; repository review/verification rules]
+1. Run wrapper, web, browser, native-default, package-isolation, aggregate repo, and managed-standard checks; bind the retained successful Canvas artifacts and metadata into the exact-digest independent review. [VERIFIED: D-14; repository review/verification rules]
 
-This decomposition is intentionally sequential: the wrapper build resolves target risk before frontend work, the generated declarations enable app typechecking, and the browser plan validates the assembled artifact rather than isolated mocks. [VERIFIED: phase goal and integration dependencies]
+This decomposition is intentionally sequential: the wrapper build resolves target risk before frontend work, generated declarations enable the typed adapter, the renderer and app entrypoint make the complete build reachable, and the browser closure validates and retains evidence from the assembled artifact rather than isolated mocks. [VERIFIED: phase goal and integration dependencies]
 
 ## Code Examples
 
@@ -539,22 +544,19 @@ The generated class supplies `free()`; the idempotent wrapper and names are reco
 | A2 | The established `1/60`, 8/3/2 step settings produce stable visible movement for this exact proof scene. | Proof Scene Specification | Adjust solver iterations or initial geometry after native/browser observation; document changed constants. |
 | A3 | wasm-pack 0.15.0 `--target web` output and Vite 8.3.0 `?url` loading integrate without additional plugin configuration. | Generated Web Package | The first generated-package/browser checkpoint may require a narrow loader adjustment; do not add a plugin until evidence requires it. |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Does the existing engine compile and execute its first ordinary step on `wasm32-unknown-unknown` unchanged?**
    - What we know: the engine source search found no filesystem, process, thread, or network use; ordinary stepping disables profiling; rustc exposes 64-bit atomics for the target. [VERIFIED: local source and cfg probes]
-   - What is unclear: no target build or browser execution has yet occurred. [VERIFIED: environment audit]
-   - Recommendation: make compile, instantiate, construct, step, and capture the first blocking checkpoint in Plan 16-01.
+   - Resolution: this is an execution validation risk, not an unresolved design choice. Plan 16-01 installs the exact target/tool and requires a real `wasm-pack --target web` build; Plan 16-04 requires Chromium to instantiate the generated package, construct the session, execute ordinary fixed steps, capture frames, and visibly draw them before the phase can pass. No fallback runtime or public-engine widening is authorized.
 
 2. **What exact proof-scene particle count and camera bounds look best?**
    - What we know: the public APIs support bounded counts, explicit radius, colors, rigid fixtures, and particle/body coupling. [VERIFIED: local source]
-   - What is unclear: visual density and browser frame cost for this composition. [ASSUMED]
-   - Recommendation: begin near 192 particles under a 512 hard cap and tune only from real browser evidence.
+   - Resolution: use exactly 192 particles under the 512 hard cap and fixed world bounds `(-6, -1)` through `(6, 8)`, matching the approved UI viewport contract. Visual clarity and finite movement are acceptance checks in the retained Chromium proof; a failure triggers a scoped implementation correction and rerun, not an open planning decision or a substitute scene.
 
 3. **Should `ProofFrame` getters clone or consume their Rust vectors?**
    - What we know: either boxed-slice return becomes a copied JS typed array. [CITED: wasm-bindgen boxed-number-slice guide]
-   - What is unclear: whether avoiding one Rust-side clone materially matters at this modest scale. [ASSUMED]
-   - Recommendation: use immutable cloning getters first for a simple coherent contract; measure before adopting one-shot consuming getters.
+   - Resolution: use immutable cloning getters returning boxed slices. The fixed maximum of 512 particles and five bounded lanes makes the extra Rust-side copy acceptable for this proof, while repeatable getters preserve a simple coherent frame contract. Consuming or zero-copy getters are outside Phase 16 unless measured evidence later justifies a separately planned ownership change.
 
 ## Sources
 
