@@ -1,2 +1,7 @@
 /target/
 /fuzz/target/
+/web/src/generated/liquidfun-wasm/
+/web/dist/
+/web/test-results/
+/web/playwright-report/
+/target/web-build/

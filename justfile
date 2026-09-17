@@ -17,6 +17,12 @@ clippy:
 build:
     cargo build --all-targets --all-features
 
+web-wasm:
+    bun scripts/web-build.ts wasm
+
+web-build:
+    bun scripts/web-build.ts build
+
 test:
     cargo test --all-features
 
