@@ -95,7 +95,7 @@ describe("SCENES", () => {
     expect(titles).toEqual(expectedTitles);
   });
 
-  it("marks only Dam Break as ready", () => {
+  it("marks every approved scene ready", () => {
     // Arrange
     const readyScenes = SCENES.filter((scene) => scene.ready);
 
@@ -106,17 +106,11 @@ describe("SCENES", () => {
     );
 
     // Assert
-    expect(readyIds).toEqual(["dam-break"]);
-    expect(notReadyIds).toEqual([
-      "fountain",
-      "float-or-sink",
-      "color-mixer",
-      "jelly-drop",
-      "water-wheel",
-    ]);
+    expect(readyIds).toEqual([...SCENE_IDS]);
+    expect(notReadyIds).toEqual([]);
   });
 
-  it("keeps stub scenes unready so catalog cards stay static previews", () => {
+  it("keeps static preview ids and locked descriptions after all scenes are ready", () => {
     // Arrange
     const readyCount = SCENES.filter((scene) => scene.ready).length;
 
@@ -125,7 +119,7 @@ describe("SCENES", () => {
     const descriptions = SCENES.map((scene) => scene.description);
 
     // Assert
-    expect(readyCount).toBe(1);
+    expect(readyCount).toBe(6);
     expect(previewIds).toEqual([...SCENE_IDS]);
     expect(descriptions).toEqual(
       SCENE_IDS.map((id) => UI_SPEC_DESCRIPTIONS[id]),
@@ -355,18 +349,14 @@ describe("maybeSceneById", () => {
 });
 
 describe("isReadySceneId", () => {
-  it("is true only for Dam Break", () => {
+  it("is true for all six approved ids", () => {
     // Arrange
-    const readyId = "dam-break";
+    const ids = SCENE_IDS;
 
     // Act
-    const damBreakReady = isReadySceneId(readyId);
-    const laterSceneReady = SCENE_IDS.filter((id) => id !== readyId).map(
-      (id) => isReadySceneId(id),
-    );
+    const readyFlags = ids.map((id) => isReadySceneId(id));
 
     // Assert
-    expect(damBreakReady).toBe(true);
-    expect(laterSceneReady).toEqual([false, false, false, false, false]);
+    expect(readyFlags).toEqual([true, true, true, true, true, true]);
   });
 });

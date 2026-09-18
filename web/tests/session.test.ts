@@ -53,10 +53,16 @@ class FakeRawProofFrame implements RawProofFrame {
 
 class FakeGeneratedProofSession implements GeneratedProofSession {
   readonly advanceCalls: number[] = [];
+  readonly applyControlCalls: { readonly name: string; readonly value: string }[] =
+    [];
+  readonly applyActionCalls: string[] = [];
   captureCalls = 0;
   freeCalls = 0;
+  applyControlResult = true;
   maybeAdvanceError: Error | undefined;
   maybeCaptureError: Error | undefined;
+  maybeApplyControlError: Error | undefined;
+  maybeApplyActionError: Error | undefined;
 
   constructor(readonly frame: RawProofFrame = new FakeRawProofFrame()) {}
 
@@ -74,6 +80,22 @@ class FakeGeneratedProofSession implements GeneratedProofSession {
     }
 
     return this.frame;
+  }
+
+  applyControl(name: string, value: string): boolean {
+    this.applyControlCalls.push({ name, value });
+    if (this.maybeApplyControlError !== undefined) {
+      throw this.maybeApplyControlError;
+    }
+
+    return this.applyControlResult;
+  }
+
+  applyAction(name: string): void {
+    this.applyActionCalls.push(name);
+    if (this.maybeApplyActionError !== undefined) {
+      throw this.maybeApplyActionError;
+    }
   }
 
   free(): void {
@@ -255,5 +277,79 @@ describe("createSceneSession", () => {
       expect(nextFrame).toThrow("Rust/WASM session is disposed");
       expect(generatedSession.freeCalls).toBe(1);
     }
+  });
+
+  it("forwards one applyControl call and returns the boolean", () => {
+    // Arrange
+    const generatedSession = new FakeGeneratedProofSession();
+    generatedSession.applyControlResult = false;
+    const session = createSceneSession(generatedSession);
+
+    // Act
+    const recreated = session.applyControl("emission-rate", "high");
+
+    // Assert
+    expect(recreated).toBe(false);
+    expect(generatedSession.applyControlCalls).toEqual([
+      { name: "emission-rate", value: "high" },
+    ]);
+    expect(generatedSession.advanceCalls).toEqual([]);
+    expect(generatedSession.freeCalls).toBe(0);
+  });
+
+  it("poisons applyControl failures with the fixed message and frees", () => {
+    // Arrange
+    const generatedSession = new FakeGeneratedProofSession();
+    generatedSession.maybeApplyControlError = new Error(
+      "unbounded generated detail",
+    );
+    const session = createSceneSession(generatedSession);
+
+    // Act
+    const applyControl = () => session.applyControl("nope", "x");
+
+    // Assert
+    expect(applyControl).toThrow("Rust/WASM session failed");
+    expect(generatedSession.applyControlCalls).toEqual([
+      { name: "nope", value: "x" },
+    ]);
+    expect(generatedSession.freeCalls).toBe(1);
+    expect(applyControl).toThrow("Rust/WASM session is disposed");
+    expect(generatedSession.freeCalls).toBe(1);
+    expect(generatedSession.applyControlCalls).toHaveLength(1);
+  });
+
+  it("forwards one applyAction call", () => {
+    // Arrange
+    const generatedSession = new FakeGeneratedProofSession();
+    const session = createSceneSession(generatedSession);
+
+    // Act
+    session.applyAction("drop-obstacle");
+
+    // Assert
+    expect(generatedSession.applyActionCalls).toEqual(["drop-obstacle"]);
+    expect(generatedSession.advanceCalls).toEqual([]);
+    expect(generatedSession.freeCalls).toBe(0);
+  });
+
+  it("poisons applyAction failures with the fixed message and frees", () => {
+    // Arrange
+    const generatedSession = new FakeGeneratedProofSession();
+    generatedSession.maybeApplyActionError = new Error(
+      "unbounded generated detail",
+    );
+    const session = createSceneSession(generatedSession);
+
+    // Act
+    const applyAction = () => session.applyAction("nope");
+
+    // Assert
+    expect(applyAction).toThrow("Rust/WASM session failed");
+    expect(generatedSession.applyActionCalls).toEqual(["nope"]);
+    expect(generatedSession.freeCalls).toBe(1);
+    expect(applyAction).toThrow("Rust/WASM session is disposed");
+    expect(generatedSession.freeCalls).toBe(1);
+    expect(generatedSession.applyActionCalls).toHaveLength(1);
   });
 });
