@@ -32,7 +32,7 @@ The owner approved six varied demos, our own Rust engine via WASM, a playful gal
 - [ ] **DEMO-02**: Fountain lets the visitor aim or adjust a continuous stream into a container while particle lifetime/capacity limits keep emission bounded.
 - [x] **DEMO-03**: Float or Sink lets the visitor drop different body/density presets into a pool and observe the Rust engine's particle-body response without fake buoyancy animation.
 - [ ] **DEMO-04**: Color Mixer lets the visitor stir colored particle groups and observe the engine's actual contact-driven color mixing, distinguished from rendering-only blending.
-- [ ] **DEMO-05**: Jelly Drop lets the visitor drop and poke an elastic particle shape against obstacles, with stable bounded presets and a clear reset.
+- [x] **DEMO-05**: Jelly Drop lets the visitor drop and poke an elastic particle shape against obstacles, with stable bounded presets and a clear reset.
 - [ ] **DEMO-06**: Water Wheel lets the visitor vary a jet that interacts with a pinned paddle wheel through native particle-body coupling and a joint; scene feasibility is demonstrated rather than substituted with scripted rotation.
 
 ### Build, hosting and focused verification
@@ -76,7 +76,7 @@ Each active requirement maps to exactly one new phase, starting at Phase 16. All
 | DEMO-02 | Phase 18 | Pending |
 | DEMO-03 | Phase 18 | Complete |
 | DEMO-04 | Phase 18 | Pending |
-| DEMO-05 | Phase 18 | Pending |
+| DEMO-05 | Phase 18 | Complete |
 | DEMO-06 | Phase 18 | Pending |
 | HOST-01 | Phase 17 | Complete |
 | HOST-02 | Phase 17 | Complete |
