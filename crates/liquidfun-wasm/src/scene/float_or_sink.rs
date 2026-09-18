@@ -354,4 +354,88 @@ mod tests {
         // Assert
         assert_eq!(result, Err(SessionError::UnknownControl));
     }
+
+    #[test]
+    fn body_presets_apply_live_without_recreating_the_pool() {
+        // Arrange
+        let mut session = SessionCore::create(SceneId::FloatOrSink)
+            .expect("Float or Sink should construct a native pool");
+        let before_count = session.particle_count();
+
+        // Act
+        let effects = ["cork", "wood", "stone"].map(|preset| {
+            session
+                .apply_control("body", preset)
+                .expect("allowlisted body presets should apply")
+        });
+
+        // Assert
+        assert_eq!(effects, [false, false, false]);
+        assert_eq!(session.particle_count(), before_count);
+    }
+
+    #[test]
+    fn drop_body_after_cork_then_stone_keeps_both_fixture_densities() {
+        // Arrange
+        let super::BuiltScene {
+            mut world,
+            particle_system,
+            mut hooks,
+            ..
+        } = super::build(&[]).expect("pool should construct");
+
+        // Act
+        let cork_effect = hooks
+            .apply_control(&mut world, particle_system, "body", "cork")
+            .expect("cork preset should apply live");
+        hooks
+            .apply_action(&mut world, particle_system, "drop-body")
+            .expect("first drop should create cork");
+        let stone_effect = hooks
+            .apply_control(&mut world, particle_system, "body", "stone")
+            .expect("stone preset should apply live");
+        hooks
+            .apply_action(&mut world, particle_system, "drop-body")
+            .expect("second drop should create stone");
+
+        let observation = world
+            .world_observation(liquidfun::WorldObservationLimits::reviewed())
+            .expect("world observation should stay within reviewed limits");
+        let dynamic_ids: Vec<_> = observation
+            .bodies()
+            .iter()
+            .filter(|body| body.snapshot().body_type() == liquidfun::BodyType::Dynamic)
+            .map(|body| body.id())
+            .collect();
+        let mut densities: Vec<f32> = observation
+            .fixtures()
+            .iter()
+            .filter(|fixture| dynamic_ids.contains(&fixture.body()))
+            .map(|fixture| fixture.snapshot().density())
+            .collect();
+        densities.reverse();
+
+        // Assert
+        assert!(matches!(cork_effect, super::ControlEffect::Live));
+        assert!(matches!(stone_effect, super::ControlEffect::Live));
+        assert_eq!(dynamic_ids.len(), 2);
+        assert_eq!(densities, vec![0.3, 2.0]);
+    }
+
+    #[test]
+    fn construction_controls_remain_unknown_on_the_live_pool() {
+        // Arrange
+        let mut session = SessionCore::create(SceneId::FloatOrSink)
+            .expect("Float or Sink should construct a native pool");
+
+        // Act
+        let water = session.apply_control("water-amount", "medium");
+        let mix = session.apply_control("mix-strength", "strong");
+        let unknown_body = session.apply_control("body", "lead");
+
+        // Assert
+        assert_eq!(water, Err(SessionError::UnknownControl));
+        assert_eq!(mix, Err(SessionError::UnknownControl));
+        assert_eq!(unknown_body, Err(SessionError::UnknownControl));
+    }
 }
