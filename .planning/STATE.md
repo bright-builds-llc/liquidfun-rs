@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Web Playground
 status: executing
-stopped_at: Completed 18-01-PLAN.md
-last_updated: "2026-09-18T04:14:42.929Z"
+stopped_at: Completed 18-02-PLAN.md
+last_updated: "2026-09-18T04:19:07.443Z"
 last_activity: 2026-09-18
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 22
-  completed_plans: 13
-  percent: 59
+  completed_plans: 14
+  percent: 64
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-09-17)
 ## Current Position
 
 Phase: 18 (six-native-physics-demos) — EXECUTING
-Plan: 2 of 10
+Plan: 3 of 10
 Status: Ready to execute
 Last activity: 2026-09-18
 
@@ -53,6 +53,7 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 | Phase 17-shared-player-and-early-pages-delivery P06 | 6min | 2 tasks | 7 files |
 | Phase 17 P07 | 2min | 2 tasks | 1 files |
 | Phase 18 P01 | 10 min | 2 tasks | 10 files |
+| Phase 18 P02 | 2 min | 2 tasks | 4 files |
 
 ### Decisions
 
@@ -99,6 +100,9 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 - [Phase 18]: SessionCore stores a generic preset bag and rebuilds on ControlEffect::Recreated so later scene files do not edit session.rs. — Wave-2 scene plans must own only their scene file. The generic bag has to exist in Plan 01.
 - [Phase 18]: Native ProofSession error-path tests use build_core because wasm-bindgen JsError cannot be constructed on non-wasm targets. — JsError::new panics in cargo test --lib on macOS. The constructor still maps SessionError through js_error for WASM.
 - [Phase 18]: Keep build(presets) on every scene module, including stubs that ignore the bag. — Plan-checker required the presets argument so later files do not change the factory signature.
+- [Phase 18]: Include the UI-SPEC Poke jelly action on jelly-drop even though the machine-id table omitted it. — UI-SPEC and D-05 list the poke action; catalog chrome later needs that control id.
+- [Phase 18]: Throw a fixed allowlist error for traversal or non-scene implementation paths. — D-13 and T-18-02-02 require fail-closed scene paths so google/liquidfun never becomes implementation.
+- [Phase 18]: Copy the 40-hex SHA pattern into links.ts instead of importing Vite env from build-info. — Catalog URLs must stay hash-route independent and must not accept caller-supplied origins.
 
 ### Pending Todos
 
@@ -121,6 +125,6 @@ No new milestone todos captured. Phase 17 is ready for discussion and planning.
 
 ## Session Continuity
 
-Last session: 2026-09-18T04:14:42.926Z
-Stopped at: Completed 18-01-PLAN.md
+Last session: 2026-09-18T04:19:00.753Z
+Stopped at: Completed 18-02-PLAN.md
 Resume file: None
