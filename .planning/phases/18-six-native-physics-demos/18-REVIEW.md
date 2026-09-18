@@ -1,11 +1,11 @@
 ---
 phase: 18-six-native-physics-demos
 plan: "10"
-reviewed: 2026-09-18T05:39:01Z
-independent_reviewed: 2026-09-18T05:39:01Z
+reviewed: 2026-09-18T05:43:25Z
+independent_reviewed: 2026-09-18T05:43:25Z
 depth: deep
 candidate: 1a69ff3bc1b03039818bd621983cfbe394fdd244
-local_head: 1a69ff3bc1b03039818bd621983cfbe394fdd244
+local_head: 4c50519394490d8587eb58efb05568700058e5dc
 origin_main_at_review: dc23318ce4a460d46022d749db5f24386d66c92b
 files_reviewed: 18
 files_reviewed_list:
@@ -29,13 +29,14 @@ files_reviewed_list:
   - TESTING.md
 findings:
   critical: 0
-  warning: 0
+  warning: 1
   info: 1
-  total: 1
+  total: 2
 status: issues_found
 decision: APPROVED
 review_digest: 22635277d29513bb6ffa83a1b51c13f0207ea63b0f402a852d30a660413a618c
-reviewer_identity: eddc4c2f-39ef-460d-99ad-782c4871b074
+reviewer_identity: a8b9e495-ffa1-4be6-875e-fb733345fabc
+reviewer_invocation_id: f2e130f2-c6df-4499-8ec1-9f9c143539f9
 reviewer_disclosure: AI reviewer, not a human
 implementing_or_fixing_executor: no
 ---
@@ -46,55 +47,80 @@ implementing_or_fixing_executor: no
 
 **APPROVED.**
 
-There are no unresolved Critical or Warning findings and zero high-severity
-findings. One Info item records a labeled Float or Sink default mismatch that
-does not fake physics, break the six-id allowlist, or invalidate local smoke
-evidence. This review does not mark requirement completion in planning state
-files.
+There are no Critical findings and zero high-severity findings. One Warning
+records a first-load Float or Sink label mismatch (UI Cork versus constructed
+Wood) that does not fake physics, break the six-id allowlist, or invalidate
+local smoke evidence. One Info records a fail-open construction-token fallback
+in Jelly Drop. This review does not mark requirement completion in planning
+state files.
+
+This document replaces the earlier `18-REVIEW.md` that named reviewer
+`eddc4c2f-39ef-460d-99ad-782c4871b074`. That identity is not this reviewer.
 
 ## Reviewer and exact scope
 
 - `reviewer_identity`: Cursor independent AI review subagent
-  (`gsd-code-reviewer`), agent-store identity
-  `eddc4c2f-39ef-460d-99ad-782c4871b074`
+  (`gsd-code-reviewer`), Task/agent-store identity
+  `a8b9e495-ffa1-4be6-875e-fb733345fabc`
+- `reviewer_invocation_id`: `f2e130f2-c6df-4499-8ec1-9f9c143539f9`
 - `reviewer_disclosure`: AI reviewer, not a human
 - `model`: Cursor Grok 4.6
 - `implementing_or_fixing_executor`: no
-- `reviewed_at_utc`: `2026-09-18T05:39:01Z`
+- `reviewed_at_utc`: `2026-09-18T05:43:25Z`
 - `task_1_commit`: `1a69ff3bc1b03039818bd621983cfbe394fdd244`
-- `local_head_at_review`: `1a69ff3bc1b03039818bd621983cfbe394fdd244`
+- `local_head_at_review`: `4c50519394490d8587eb58efb05568700058e5dc`
 - `origin/main_at_review`: `dc23318ce4a460d46022d749db5f24386d66c92b`
 
-This reviewer is not implementing executor `gsd-executor` on the main working
-tree and did not resume that agent or parent store
+This reviewer is not implementing executor `eddc4c2f-39ef-460d-99ad-782c4871b074`
+and did not resume that agent or parent store
 `69e3a7c4-0536-4c8b-8b83-fd5bb2f407e4`. The implementing agent does not
 acknowledge or approve this digest.
 
 The reviewer independently inspected the complete relevant Phase 18 six-scene
 diff and evidence: the six native scene modules, factory `scene.rs`, catalog,
 controls, credits, `App.tsx` session wiring, `player.spec.ts`, ignored smoke
-log, and README/TESTING honesty. Material guidance was `AGENTS.md` Independent
-review (2026-09-16 owner policy), `PROJECT-SCOPE.md` hobby scope, `18-CONTEXT.md`
-D-16 and D-17, `18-10-PLAN.md`, and `18-UI-SPEC.md`. Passing
-`just web-player-smoke` or other automation is supporting context only and is
-not this acknowledgment.
+log, and README/TESTING honesty. Cross-file support inspected but not hashed
+into the digest includes `web/src/catalog/links.ts`,
+`web/src/catalog/previews.tsx`, `web/src/player/runtime.ts`,
+`crates/liquidfun-wasm/src/session.rs`, and `crates/liquidfun-wasm/src/lib.rs`.
+Material guidance was `AGENTS.md` Independent review (2026-09-16 owner policy),
+`PROJECT-SCOPE.md` hobby scope, `18-CONTEXT.md` D-16 and D-17, `18-10-PLAN.md`,
+and `18-REVIEW-MANIFEST.md`. Passing `just web-player-smoke` or other
+automation is supporting context only and is not this acknowledgment.
 
 ## Findings and resolutions
 
-No Critical or Warning findings.
+No Critical findings.
 
-### IN-01: Float or Sink UI default is cork; constructed world default is wood
+### WR-01: Float or Sink UI default is cork; constructed world default is wood
 
 **File:** `web/src/components/scene-controls.ts:13` and
 `crates/liquidfun-wasm/src/scene/float_or_sink.rs:128`
-**Issue:** `DEFAULT_PRESET_VALUES.body` is `cork`, so the first-load Body
-select shows Cork. `FloatOrSinkHooks` constructs `BodyPreset::Wood`. A first
-`Drop body` without changing the select therefore drops wood (density `0.6`)
-while the labeled value is Cork. Live `apply_control("body", …)` still
-allowlists cork/wood/stone and applies without recreate.
+**Issue:** Independently confirmed from source. `DEFAULT_PRESET_VALUES.body` is
+`cork`, so the first-load Body select shows Cork.
+`FloatOrSinkHooks` constructs `body_preset: BodyPreset::Wood`.
+`constructionEntriesForScene` in `web/src/player/runtime.ts` only reapplies
+`recreates: true` presets, and `body` is a live control, so the labeled Cork
+default is never sent to the engine on first load. The first `Drop body`
+without changing the select therefore drops wood (density `0.6`) while the
+labeled value is Cork. Live `apply_control("body", …)` still allowlists
+cork/wood/stone and applies without recreate. This does not fake buoyancy; it
+is a labeled-control mismatch.
 **Fix:** Align the labeled default with the constructed default, preferably
-`wood` in `DEFAULT_PRESET_VALUES` to match 18-03 discretion, or construct
-`BodyPreset::Cork` if the UI default is intentional.
+`wood` in `DEFAULT_PRESET_VALUES` so the first Drop matches the select, or
+construct `BodyPreset::Cork` if the UI default is intentional.
+
+### IN-01: Jelly Drop construction silently defaults unknown shape/softness tokens
+
+**File:** `crates/liquidfun-wasm/src/scene/jelly_drop.rs:74-80`
+**Issue:** `build` uses `and_then(JellyShape::parse)` /
+`and_then(Softness::parse)` then `unwrap_or(Circle|Medium)`. Dam Break and
+Color Mixer fail closed on unknown construction tokens
+(`SessionError::UnknownControl`). Live `apply_control` for Jelly Drop still
+rejects unknown tokens. The only browser caller sends allowlisted select
+values, so this is not a visitor-facing bug today.
+**Fix:** Mirror Dam Break: map a present-but-unparsed shape or softness token
+to `SessionError::UnknownControl`.
 
 ## Required inspection outcomes
 
@@ -105,8 +131,8 @@ listed paths in the listed order, the reviewer concatenated UTF-8 path bytes,
 one NUL byte, the lowercase SHA-256 of exact file bytes as ASCII hex, and one
 LF byte, then SHA-256 hashed that complete concatenation.
 
-Every per-file hash matched `18-REVIEW-MANIFEST.md`. The independently
-recomputed digest is exactly:
+Every per-file hash matched `18-REVIEW-MANIFEST.md`. Files had not drifted.
+The independently recomputed digest is exactly:
 
 `22635277d29513bb6ffa83a1b51c13f0207ea63b0f402a852d30a660413a618c`
 
@@ -114,7 +140,8 @@ recomputed digest is exactly:
 
 Each of the six modules constructs a real `liquidfun::World` with gravity,
 fixtures or particle groups, and allowlisted controls. There is no scripted
-pose track, fake buoyancy, or motor-driven Water Wheel.
+pose track, fake buoyancy, rendering-only color blend advertised as mixing, or
+motor-driven Water Wheel.
 
 - Dam Break builds the documented basin, water grid, and dynamic circle.
   Water amount and gravity return `ControlEffect::Recreated`. Obstacle
@@ -128,17 +155,21 @@ pose track, fake buoyancy, or motor-driven Water Wheel.
   changes them.
 - Jelly Drop builds an `ELASTIC | SPRING` group on two bars; shape/softness
   recreate; `poke-jelly` applies an in-engine impulse.
-- Water Wheel pins a revolute hub with motor disabled and captures paddle
-  segments from the live body transform. Jet/emission apply live.
+- Water Wheel pins a revolute hub with motor disabled (`is_motor_enabled()`
+  false, motor speed and torque bits `0`) and captures paddle segments from
+  the live body transform. Jet/emission apply live. Emission-off leaves the
+  angle nearly unchanged.
 
 `parse_scene_id` allowlists only the six lowercase ids (`dam-break`,
 `fountain`, `float-or-sink`, `color-mixer`, `jelly-drop`, `water-wheel`) and
 returns `UnknownScene` otherwise. `build_scene` matches that enum exhaustively.
+`ProofSession::new` parses the id before `SessionCore::create`.
 
 ### Catalog, controls, and credits
 
-`SCENES` marks all six `ready: true`. Cards render static SVG previews with
-caption `Static preview` and hash-only `Open` links (`#/scene/{id}`). No
+`SCENES` marks all six `ready: true`. Cards render static SVG previews
+(`web/src/catalog/previews.tsx`, caption `Static preview`) and hash-only
+`Open` links (`#/scene/{id}`). No WASM world is started per card. No
 not-ready chips remain.
 
 Construction presets (`recreates: true`) show the reset sentence and require
@@ -148,22 +179,23 @@ Actions stay live.
 Credits render `Scene source`, `View scene source`, and `Third-party notices`.
 Implementation hrefs are host-locked through
 `https://github.com/bright-builds-llc/liquidfun-rs/blob` and an allowlisted
-`crates/liquidfun-wasm/src/scene/*.rs` path. Inspiration may cite the LiquidFun
-showcase, pinned Faucet, or particle guide; those links are not presented as
-the running implementation. `web/src` has no `innerHTML`. Scene and error
-strings are fixed text nodes. Development diagnostics stay prefixed and
-length-capped in `maybeDevelopmentDetails`.
+`crates/liquidfun-wasm/src/scene/*.rs` path that rejects `..` and absolute
+paths. Inspiration may cite the LiquidFun showcase, pinned Faucet, or particle
+guide; those links are not presented as the running implementation. `web/src`
+has no `innerHTML`. Scene and error strings are fixed text nodes. Development
+diagnostics stay prefixed and length-capped in `maybeDevelopmentDetails`.
 
 ### App session
 
 `App.tsx` owns one session. `startScene` increments generation, cancels the
 pending frame, and disposes the prior world before load. `abandonScene` does
 the same and clears construction presets. Hash changes to another ready id
-clear construction values and call `startScene`. Reset calls `startScene`
-without clearing `constructionValues`, then reapplies last construction
-presets through `constructionEntriesForScene`. Hidden-document callbacks
-clear the accumulated timestamp; `acceptedStepCount` remains the four-step
-cap.
+clear construction values and call `startScene`. Stale generation disposes the
+unused loaded session. Reset calls `startScene` without clearing
+`constructionValues`, then reapplies last construction presets through
+`constructionEntriesForScene`. Hidden-document callbacks clear the accumulated
+timestamp; `acceptedStepCount` remains the four-step cap. Page copy says
+experimental Rust physics through WebAssembly.
 
 ### Player spec and smoke evidence
 
@@ -179,7 +211,8 @@ Break only and asserts a max-4 step jump. The spec contains no
 
 `target/web-build/web-build.log` starts `start player-smoke` and ends
 `complete player-smoke` after `just web-player-smoke`. That log is ignored
-local Chromium evidence, not a Pages deploy.
+local Chromium evidence, not a Pages deploy. Passing that smoke is not this
+acknowledgment.
 
 ### Docs honesty
 
@@ -201,7 +234,7 @@ local proof and truthful docs, not Linux qualification or a new live URL gate.
 
 The 16 manifest entries and hashes in
 `18-REVIEW-MANIFEST.md` were independently rehashed from current file bytes and
-matched exactly.
+matched exactly. No listed file had drifted from the published hashes.
 
 Manifest entry count: `16`.
 
@@ -230,12 +263,13 @@ Manifest entry count: `16`.
 The independent result exactly matched all 16 candidate entries and the
 required digest.
 
-> I, the Cursor independent AI review subagent identified above as agent-store
-> identity `eddc4c2f-39ef-460d-99ad-782c4871b074`, independently inspected the
+> I, the Cursor independent AI review subagent identified above as Task/agent
+> identity `a8b9e495-ffa1-4be6-875e-fb733345fabc`, independently inspected the
 > listed Phase 18 implementation-and-evidence bytes and explicitly acknowledge
 > exact digest
 > `22635277d29513bb6ffa83a1b51c13f0207ea63b0f402a852d30a660413a618c`
-> as the content I inspected and approve.
+> as the content I inspected and approve. I am an AI reviewer, not a human.
+> I am not the implementing or fixing executor.
 
 Any implementation, catalog, player, evidence, or listed-test byte change
 invalidates this acknowledgment and requires a new fixed manifest, digest, and
@@ -247,7 +281,7 @@ acknowledgment.
 
 ## GSD Source Code Review
 
-**Reviewed:** 2026-09-18T05:39:01Z
+**Reviewed:** 2026-09-18T05:43:25Z
 **Depth:** deep
 **Files Reviewed:** 18
 **Status:** issues_found
@@ -256,26 +290,36 @@ acknowledgment.
 
 Deep review of the Phase 18 six native scenes, factory allowlist, catalog
 controls and credits, one-session App wiring, player spec, local smoke log,
-and playground docs found no Critical or Warning issues. The independently
-recomputed digest matches the required value. One Info item notes that Float
-or Sink's labeled Body default is cork while the constructed world default is
-wood.
+and playground docs found no Critical issues. The independently recomputed
+digest matches the required value. WR-01 confirms the prior cork-versus-wood
+default mismatch from source. IN-01 notes Jelly Drop construction token
+fail-open.
 
 The fixed manifest, independent AI review, approval, and exact digest
-acknowledgment above are the review decision.
+acknowledgment above are the review decision. This is not human approval.
 
-### Info
+### Warnings
 
-#### IN-01: Float or Sink labeled default vs constructed default
+#### WR-01: Float or Sink labeled default vs constructed default
 
 **File:** `web/src/components/scene-controls.ts:13`
 **Issue:** UI default `cork` does not match Rust construction default `Wood`.
+First Drop body without changing the select drops wood.
 **Fix:** Use the same default on both sides.
+
+### Info
+
+#### IN-01: Jelly Drop unknown construction tokens default silently
+
+**File:** `crates/liquidfun-wasm/src/scene/jelly_drop.rs:74-80`
+**Issue:** Unknown shape/softness presets fall back to Circle/Medium instead
+of `UnknownControl`.
+**Fix:** Fail closed like Dam Break and Color Mixer.
 
 ---
 
-_Reviewed: 2026-09-18T05:39:01Z_
-_Reviewer: Cursor AI (gsd-code-reviewer), agent-store identity eddc4c2f-39ef-460d-99ad-782c4871b074_
+_Reviewed: 2026-09-18T05:43:25Z_
+_Reviewer: Cursor AI (gsd-code-reviewer), Task/agent identity a8b9e495-ffa1-4be6-875e-fb733345fabc_
 _Depth: deep_
 
 GSD_SOURCE_CODE_REVIEW_COMPLETE
