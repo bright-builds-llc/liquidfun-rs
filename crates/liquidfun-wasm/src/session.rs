@@ -15,6 +15,9 @@ const RIGID_CIRCLE_STRIDE: usize = 3;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum SessionError {
     SceneConstruction,
+    UnknownScene,
+    SceneUnimplemented,
+    UnknownControl,
     StepCountOutOfRange,
     StepIndexExhausted,
     StepFailed,
@@ -25,6 +28,9 @@ impl SessionError {
     pub(crate) const fn message(self) -> &'static str {
         match self {
             Self::SceneConstruction => "Rust/WASM scene construction failed",
+            Self::UnknownScene => "Rust/WASM scene id is not allowlisted",
+            Self::SceneUnimplemented => "Rust/WASM scene is not implemented",
+            Self::UnknownControl => "Rust/WASM control is not allowlisted",
             Self::StepCountOutOfRange => "Rust/WASM step count must be within 1 through 4",
             Self::StepIndexExhausted => "Rust/WASM step index exhausted",
             Self::StepFailed => "Rust/WASM simulation step failed",
@@ -46,6 +52,10 @@ pub(crate) struct SessionCore {
 }
 
 impl SessionCore {
+    pub(crate) fn create(_id: crate::scene::SceneId) -> Result<Self, SessionError> {
+        Err(SessionError::SceneUnimplemented)
+    }
+
     pub(crate) fn new() -> Result<Self, SessionError> {
         let ProofScene {
             world,
@@ -183,11 +193,99 @@ impl SessionCore {
 #[cfg(test)]
 mod tests {
     use crate::ProofFrame;
+    use crate::scene::{SceneId, parse_scene_id};
 
     use super::*;
 
     fn new_session() -> SessionCore {
         SessionCore::new().expect("fixed proof scene should construct")
+    }
+
+    #[test]
+    fn parse_scene_id_maps_allowlisted_tokens() {
+        // Arrange
+        let tokens = [
+            ("dam-break", SceneId::DamBreak),
+            ("fountain", SceneId::Fountain),
+            ("float-or-sink", SceneId::FloatOrSink),
+            ("color-mixer", SceneId::ColorMixer),
+            ("jelly-drop", SceneId::JellyDrop),
+            ("water-wheel", SceneId::WaterWheel),
+        ];
+
+        for (raw, expected) in tokens {
+            // Act
+            let parsed = parse_scene_id(raw);
+
+            // Assert
+            assert_eq!(parsed, Ok(expected));
+        }
+    }
+
+    #[test]
+    fn parse_scene_id_rejects_unknown_tokens() {
+        // Arrange
+        let rejected = ["Dam-Break", "", "not-a-scene"];
+
+        for raw in rejected {
+            // Act
+            let parsed = parse_scene_id(raw);
+
+            // Assert
+            assert_eq!(parsed, Err(SessionError::UnknownScene));
+            assert_eq!(
+                SessionError::UnknownScene.message(),
+                "Rust/WASM scene id is not allowlisted"
+            );
+        }
+    }
+
+    #[test]
+    fn create_dam_break_matches_documented_medium_normal_world() {
+        // Arrange
+        let session = SessionCore::create(SceneId::DamBreak)
+            .expect("allowlisted Dam Break should construct");
+
+        // Act
+        let frame = capture(&session);
+
+        // Assert
+        let diagnostics = session.world.world_diagnostics();
+        assert_eq!(session.world.gravity().x.to_bits(), 0.0_f32.to_bits());
+        assert_eq!(session.world.gravity().y.to_bits(), (-10.0_f32).to_bits());
+        assert_eq!(diagnostics.body_count(), 2);
+        assert_eq!(diagnostics.fixture_count(), 4);
+        assert_eq!(session.particle_count(), 192);
+        assert_eq!(session.rigid_shape_count(), 4);
+        assert_eq!(frame.particle_count(), 192);
+        assert_eq!(
+            frame.particle_colors(),
+            [57, 211, 199, 255].repeat(192).into_boxed_slice()
+        );
+    }
+
+    #[test]
+    fn create_stub_scenes_fail_closed_without_a_live_world() {
+        // Arrange
+        let stub_ids = [
+            SceneId::Fountain,
+            SceneId::FloatOrSink,
+            SceneId::ColorMixer,
+            SceneId::JellyDrop,
+            SceneId::WaterWheel,
+        ];
+
+        for id in stub_ids {
+            // Act
+            let result = SessionCore::create(id);
+
+            // Assert
+            assert_eq!(result.err(), Some(SessionError::SceneUnimplemented));
+            assert_eq!(
+                SessionError::SceneUnimplemented.message(),
+                "Rust/WASM scene is not implemented"
+            );
+        }
     }
 
     fn capture(session: &SessionCore) -> ProofFrame {

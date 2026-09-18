@@ -16,6 +16,20 @@ use liquidfun::{
 pub(crate) const PARTICLE_RADIUS: f32 = 0.2;
 pub(crate) const PARTICLE_COUNT: usize = 16 * 12;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum SceneId {
+    DamBreak,
+    Fountain,
+    FloatOrSink,
+    ColorMixer,
+    JellyDrop,
+    WaterWheel,
+}
+
+pub(crate) fn parse_scene_id(_raw: &str) -> Result<SceneId, crate::session::SessionError> {
+    Err(crate::session::SessionError::UnknownScene)
+}
+
 const PARTICLE_COLUMNS: u8 = 16;
 const PARTICLE_ROWS: u8 = 12;
 const PARTICLE_SPACING: f32 = 0.32;
