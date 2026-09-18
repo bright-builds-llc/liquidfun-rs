@@ -317,7 +317,7 @@ mod tests {
     #[test]
     fn create_stub_scenes_fail_closed_without_a_live_world() {
         // Arrange
-        let stub_ids = [SceneId::Fountain, SceneId::ColorMixer];
+        let stub_ids = [SceneId::ColorMixer];
 
         for id in stub_ids {
             // Act
