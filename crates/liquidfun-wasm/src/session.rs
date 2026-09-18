@@ -319,7 +319,6 @@ mod tests {
         // Arrange
         let stub_ids = [
             SceneId::Fountain,
-            SceneId::FloatOrSink,
             SceneId::ColorMixer,
             SceneId::JellyDrop,
             SceneId::WaterWheel,
