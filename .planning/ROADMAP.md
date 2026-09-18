@@ -77,7 +77,7 @@ Deploy the thin working slice early. Label incomplete catalog entries honestly u
 **UI hint**: yes
 
 Plans:
-- [ ] 18-01-PLAN.md — Checked scene-id factory, extracted Dam Break, apply_control/apply_action
+- [x] 18-01-PLAN.md — Checked scene-id factory, extracted Dam Break, apply_control/apply_action
 - [ ] 18-02-PLAN.md — Catalog control metadata and host-locked credit URLs
 - [ ] 18-03-PLAN.md — Native Float or Sink spike with cork-versus-stone y-separation
 - [ ] 18-04-PLAN.md — Native Jelly Drop spike with elastic group and poke
@@ -110,7 +110,7 @@ Execution order: **16 → 17 → 18 → 19**. Each phase includes focused checks
 | --- | --- | --- | --- |
 | 16. Rust WASM Browser Bridge | 4/4 | Complete    | 2026-09-17 |
 | 17. Shared Player and Early Pages Delivery | 8/8 | Complete    | 2026-09-17 |
-| 18. Six Native Physics Demos | 0/10 | Not started | - |
+| 18. Six Native Physics Demos | 1/10 | In Progress|  |
 | 19. Interaction Polish and Browser Verification | 0/TBD | Not started | - |
 
 ## Coverage and Planning Basis

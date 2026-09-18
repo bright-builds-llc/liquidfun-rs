@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Web Playground
 status: executing
-stopped_at: Phase 18 UI-SPEC approved
-last_updated: "2026-09-18T04:02:31.947Z"
-last_activity: 2026-09-18 -- Phase 18 planning complete
+stopped_at: Completed 18-01-PLAN.md
+last_updated: "2026-09-18T04:14:42.929Z"
+last_activity: 2026-09-18
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 22
-  completed_plans: 12
-  percent: 55
+  completed_plans: 13
+  percent: 59
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-09-17)
 
 **Core value:** Deliver a useful, independent Rust physics library for enjoyable experimentation, with honest limitations and a lightweight native development loop.
-**Current focus:** Phase 17 — Shared Player and Early Pages Delivery
+**Current focus:** Phase 18 — six-native-physics-demos
 
 ## Current Position
 
-Phase: 18
-Plan: Not started
+Phase: 18 (six-native-physics-demos) — EXECUTING
+Plan: 2 of 10
 Status: Ready to execute
-Last activity: 2026-09-18 -- Phase 18 planning complete
+Last activity: 2026-09-18
 
-Progress: [██████████] 100% of currently planned v1.1 plans complete.
+Progress: [██████░░░░] 59% of currently planned v1.1 plans complete.
 
 The prior 16 phases and 252 plans remain archived history. New work starts at Phase 16. The owner confirmed six interactive demos using our Rust engine via WASM, playful catalog/player controls and automatic GitHub Pages deployment from main.
 
@@ -52,6 +52,7 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 | Phase 17 P05 | 7min | 2 tasks | 9 files |
 | Phase 17-shared-player-and-early-pages-delivery P06 | 6min | 2 tasks | 7 files |
 | Phase 17 P07 | 2min | 2 tasks | 1 files |
+| Phase 18 P01 | 10 min | 2 tasks | 10 files |
 
 ### Decisions
 
@@ -94,6 +95,10 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 - [Phase 17]: Every main and pull_request run builds WASM plus web/dist from the same checkout with no path filters. — HOST-01 requires a same-checkout site+WASM build on every main push so a Rust-only change still ships updated physics.
 - [Phase 17]: Deploy uses job-scoped pages: write plus id-token: write and the github-pages environment; no PAT. — HOST-02 forbids a personal token; write permissions stay on deploy-pages so pull requests keep contents: read only.
 - [Phase 17]: cancel-in-progress is false on main so an in-flight deploy finishes while queued revisions may coalesce. — Cancelling a mid-flight Pages deploy can strand a newer revision; official starter keeps the in-progress run and coalesces queued main SHAs.
+- [Phase 18]: parse_scene_id accepts only the six lowercase hyphenated tokens and does not coerce case. — Canonical ids are locked. Coercing case would hide invalid shared URLs and construct the wrong world.
+- [Phase 18]: SessionCore stores a generic preset bag and rebuilds on ControlEffect::Recreated so later scene files do not edit session.rs. — Wave-2 scene plans must own only their scene file. The generic bag has to exist in Plan 01.
+- [Phase 18]: Native ProofSession error-path tests use build_core because wasm-bindgen JsError cannot be constructed on non-wasm targets. — JsError::new panics in cargo test --lib on macOS. The constructor still maps SessionError through js_error for WASM.
+- [Phase 18]: Keep build(presets) on every scene module, including stubs that ignore the bag. — Plan-checker required the presets argument so later files do not change the factory signature.
 
 ### Pending Todos
 
@@ -116,6 +121,6 @@ No new milestone todos captured. Phase 17 is ready for discussion and planning.
 
 ## Session Continuity
 
-Last session: 2026-09-18T03:47:17.965Z
-Stopped at: Phase 18 UI-SPEC approved
-Resume file: .planning/phases/18-six-native-physics-demos/18-UI-SPEC.md
+Last session: 2026-09-18T04:14:42.926Z
+Stopped at: Completed 18-01-PLAN.md
+Resume file: None
