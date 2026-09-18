@@ -109,7 +109,7 @@ _Note: TDD tasks produced test then feat commits._
 - **Verification:** that test passes
 - **Committed in:** `121bb70`
 
----
+***
 
 **Total deviations:** 2 auto-fixed (1 blocking, 1 missing critical)
 **Impact on plan:** Required for full-lib verification and the declared allowlist. No scope creep.
@@ -127,7 +127,7 @@ None - no external service configuration required.
 
 Ready for 18-09 catalog/player wiring of Color Mixer controls. Mix-strength must show recreate copy; stir-speed is live. Do not advertise pigment chemistry.
 
----
+***
 *Phase: 18-six-native-physics-demos*
 *Completed: 2026-09-18*
 

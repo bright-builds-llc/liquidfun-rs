@@ -134,7 +134,7 @@ Each task was committed atomically:
 - **Verification:** `cd web && bun run test:unit && bun run typecheck` exits 0
 - **Committed in:** `3129b90` (Task 2)
 
----
+***
 
 **Total deviations:** 2 auto-fixed (1 blocking, 1 missing critical)
 **Impact on plan:** Needed for testability and correctness. No scope creep. No pointer handlers or Pages deploy.
@@ -151,7 +151,7 @@ None - no external service configuration required.
 
 Ready for 18-10 polish/verification. All six ids construct one world, show locked controls/credits, and dispose on switch. Do not add canvas pointer handlers. Do not change Pages workflow or Vite base.
 
----
+***
 *Phase: 18-six-native-physics-demos*
 *Completed: 2026-09-18*
 

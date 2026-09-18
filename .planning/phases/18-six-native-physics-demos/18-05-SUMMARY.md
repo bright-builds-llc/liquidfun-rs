@@ -109,7 +109,7 @@ _Note: TDD tasks produced test then feat commits._
 - **Verification:** `cargo clippy -p liquidfun-wasm --all-targets -- -D warnings` exits 0
 - **Committed in:** `9e1b6f7`
 
----
+***
 
 **Total deviations:** 2 auto-fixed (1 blocking, 1 bug)
 **Impact on plan:** Required for the full lib suite and clippy. No motor, no D-11 fallback, no `session.rs` factory change.
@@ -126,7 +126,7 @@ None - no external service configuration required.
 
 Ready for 18-06 Dam Break controls or the next incomplete Wave-2 scene. Water Wheel physics honesty is proven natively. Catalog ready-flag and player chrome remain later plans. Fountain and Color Mixer `build(presets)` still return `SceneUnimplemented`.
 
----
+***
 *Phase: 18-six-native-physics-demos*
 *Completed: 2026-09-18*
 

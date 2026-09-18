@@ -105,7 +105,7 @@ None - no external service configuration required.
 
 Ready for 18-09 to flip the five `ready` flags and wire construction. Cards, Open hash links, and fallback copy are in place. Do not start WASM from catalog code. Do not restore Ready / Not ready yet chips.
 
----
+***
 *Phase: 18-six-native-physics-demos*
 *Completed: 2026-09-18*
 

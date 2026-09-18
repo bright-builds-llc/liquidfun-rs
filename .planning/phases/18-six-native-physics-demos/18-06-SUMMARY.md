@@ -111,7 +111,7 @@ _Note: TDD tasks produced test then feat commits._
 - **Verification:** Off-emission test and full `liquidfun-wasm` lib suite exit 0
 - **Committed in:** `5f29e1d`
 
----
+***
 
 **Total deviations:** 2 auto-fixed (2 blocking)
 **Impact on plan:** Required so Fountain can construct and capture without poisoning the session. No unbounded emission and no `session.rs` factory change.
@@ -129,7 +129,7 @@ None - no external service configuration required.
 
 Ready for 18-07 Color Mixer or the next incomplete Wave-2/3 scene. Dam Break Medium/Normal remains the documented basin. Fountain population plateaus at ≤ 320. Do not mark catalog scenes ready until later chrome plans wire them. Color Mixer `build(presets)` still returns `SceneUnimplemented`.
 
----
+***
 *Phase: 18-six-native-physics-demos*
 *Completed: 2026-09-18*
 

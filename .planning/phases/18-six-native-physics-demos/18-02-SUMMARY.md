@@ -110,7 +110,7 @@ None - no external service configuration required.
 
 Ready for 18-03 Float or Sink spike. Catalog metadata and credit URL helpers are in place. Do not flip later `ready` flags or construct stub worlds from this data. Cards, player controls, and credits chrome remain later plans.
 
----
+***
 *Phase: 18-six-native-physics-demos*
 *Completed: 2026-09-18*
 

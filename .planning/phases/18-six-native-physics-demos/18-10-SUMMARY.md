@@ -103,7 +103,7 @@ _Note: TDD tasks may have multiple commits (test → feat → refactor)_
 - **Verification:** `just web-player-smoke` exited 0, 6 passed
 - **Committed in:** `1a69ff3` (Task 1 commit)
 
----
+***
 
 **Total deviations:** 1 auto-fixed (1 bug)
 **Impact on plan:** Test-only correctness fix. No product-code or scope change.
@@ -123,7 +123,7 @@ Phase 18 local proofs and independent review are complete. Phase 19 may own WEBT
 Review digest: `22635277d29513bb6ffa83a1b51c13f0207ea63b0f402a852d30a660413a618c`
 Reviewer: Cursor Grok 4.6, independent AI (`gsd-code-reviewer`), agent-store `eddc4c2f-39ef-460d-99ad-782c4871b074`, Task `b3bfaba5-fd6a-49f6-aca6-3ead05f9a55d`
 
----
+***
 *Phase: 18-six-native-physics-demos*
 *Completed: 2026-09-18*
 

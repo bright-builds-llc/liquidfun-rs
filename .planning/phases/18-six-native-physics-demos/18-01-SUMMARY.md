@@ -138,7 +138,7 @@ _Note: TDD tasks produced test then feat commits._
 - **Verification:** `cargo clippy -p liquidfun-wasm --all-targets -- -D warnings` exits 0
 - **Committed in:** `fc50c1f`
 
----
+***
 
 **Total deviations:** 3 auto-fixed (2 blocking, 1 missing critical)
 **Impact on plan:** Required for native clippy/tests and TypeScript typecheck. No scope creep.
@@ -166,7 +166,7 @@ None - no external service configuration required.
 
 Ready for 18-02 Float or Sink spike. Factory, hooks, preset bag, and loader id passing are in place. Do not mark catalog scenes ready until their native worlds exist. `App.tsx` still special-cases Dam Break via `loadProofSession`.
 
----
+***
 *Phase: 18-six-native-physics-demos*
 *Completed: 2026-09-18*
 

@@ -109,7 +109,7 @@ _Note: TDD tasks produced test then feat commits._
 - **Verification:** `poke_then_sixty_steps_keep_particles_inside_the_camera_box` passes; full `liquidfun-wasm` lib tests exit 0
 - **Committed in:** `1bc6691`
 
----
+***
 
 **Total deviations:** 2 auto-fixed (1 blocking, 1 bug)
 **Impact on plan:** Required so the factory can construct Jelly Drop and the poke honesty test stays inside the documented box. No engine API expansion and no fake deformation.
@@ -126,7 +126,7 @@ None - no external service configuration required.
 
 Ready for 18-05 Water Wheel spike. Jelly Drop is a native world with construction shape/softness and a labeled poke. Do not mark the catalog scene ready until later chrome plans wire it. Do not add pointer input.
 
----
+***
 *Phase: 18-six-native-physics-demos*
 *Completed: 2026-09-18*
 

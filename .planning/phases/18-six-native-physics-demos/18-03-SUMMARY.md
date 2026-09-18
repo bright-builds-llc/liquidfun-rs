@@ -100,7 +100,7 @@ _Note: Task 2 TDD tests were already green because Task 1 needed live drop-body 
 - **Verification:** `cargo test -p liquidfun-wasm --lib -- --test-threads=1` exits 0
 - **Committed in:** `d0a8d50`
 
----
+***
 
 **Total deviations:** 1 auto-fixed (1 blocking)
 **Impact on plan:** Required so the factory can construct Float or Sink without breaking Plan 01 stub tests. No scope creep.
@@ -117,7 +117,7 @@ None - no external service configuration required.
 
 Ready for 18-04 Jelly Drop spike. Float or Sink is a native world with live density/drop controls. Do not mark the catalog scene ready until later chrome plans wire it. Do not add pointer input.
 
----
+***
 *Phase: 18-six-native-physics-demos*
 *Completed: 2026-09-18*
 
