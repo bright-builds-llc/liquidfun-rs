@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Web Playground
 status: executing
-stopped_at: Completed 18-06-PLAN.md
-last_updated: "2026-09-18T05:10:52.561Z"
+stopped_at: Completed 18-six-native-physics-demos-07-PLAN.md
+last_updated: "2026-09-18T05:26:18.083Z"
 last_activity: 2026-09-18
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 22
-  completed_plans: 19
-  percent: 86
+  completed_plans: 20
+  percent: 91
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-09-17)
 ## Current Position
 
 Phase: 18 (six-native-physics-demos) — EXECUTING
-Plan: 8 of 10
+Plan: 9 of 10
 Status: Ready to execute
 Last activity: 2026-09-18
 
@@ -59,6 +59,7 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 | Phase 18-six-native-physics-demos P05 | 8 min | 2 tasks | 2 files |
 | Phase 18 P08 | 2 min | 2 tasks | 5 files |
 | Phase 18-six-native-physics-demos P06 | 12 min | 2 tasks | 3 files |
+| Phase 18-six-native-physics-demos P07 | 13 min | 2 tasks | 2 files |
 
 ### Decisions
 
@@ -123,6 +124,9 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 - [Phase 18-six-native-physics-demos]: Keep Dam Break Medium 16x12=192 and Normal gravity (0,-10) as the documented default; Small is 8x8=64 and Large is 20x14=280. — D-10 says evolve the existing basin. Plan 01 already locked Medium/Normal as the documented 192-particle world.
 - [Phase 18-six-native-physics-demos]: Drop-obstacle raises the existing circle to (2.5, 7.2) and wakes it; reset-obstacle restores (2.5, 5.5); neither recreates the world. — D-05 and D-06 keep obstacle actions live. Recreating would discard the same body identity.
 - [Phase 18-six-native-physics-demos]: Fountain defaults to Medium/Up/Medium, emits in on_advance with lifetime 3s and maximum_count 320, and treats a full system as a no-op. — DEMO-02 and Pitfall 2 require a plateau below the 512 frame cap. A full-system create must not poison the session.
+- [Phase 18-six-native-physics-demos]: Two filled circles of radius 1.15 at (-1.0, 2.2) teal and (1.0, 2.2) red sit in contact so COLOR_MIXING can run. — Groups must overlap or sit in contact for the engine color-mixing pass; separate isolated blobs would never change captured color lanes.
+- [Phase 18-six-native-physics-demos]: Mix-strength Off 0.0 / Gentle 0.25 / Strong 0.5 recreates; default Strong. Stir-speed Off/Slow/Fast is live; default Slow. — There is no live system-def setter for color_mixing_strength. Stir is a per-advance force and must not recreate the world.
+- [Phase 18-six-native-physics-demos]: Replace the leftover Color Mixer stub assertion with a live-world create check; keep SceneUnimplemented for fail-closed vocabulary. — Full liquidfun-wasm lib tests still asserted Color Mixer was unimplemented after the scene constructed.
 
 ### Pending Todos
 
@@ -145,6 +149,6 @@ No new milestone todos captured. Phase 17 is ready for discussion and planning.
 
 ## Session Continuity
 
-Last session: 2026-09-18T05:10:41.219Z
-Stopped at: Completed 18-06-PLAN.md
+Last session: 2026-09-18T05:26:09.004Z
+Stopped at: Completed 18-six-native-physics-demos-07-PLAN.md
 Resume file: None
