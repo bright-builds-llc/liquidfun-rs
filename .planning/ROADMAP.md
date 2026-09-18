@@ -73,8 +73,20 @@ Deploy the thin working slice early. Label incomplete catalog entries honestly u
   3. Float or Sink accepts body/density presets and displays native particle-body response; Color Mixer allows stirring and visibly uses the engine's contact-driven particle color changes rather than rendering-only blending.
   4. Jelly Drop deforms an elastic particle shape through drops/pokes against obstacles with stable bounded presets; Water Wheel responds to a variable jet through native particle-body coupling and a joint, without scripted wheel rotation.
   5. Visitors can reach the repository, every scene's implementation, inspiration and applicable notices from the site; explanations and stable source/provenance chrome truthfully identify the experimental Rust implementation.
-**Plans**: TBD
+**Plans**: 10 plans
 **UI hint**: yes
+
+Plans:
+- [ ] 18-01-PLAN.md — Checked scene-id factory, extracted Dam Break, apply_control/apply_action
+- [ ] 18-02-PLAN.md — Catalog control metadata and host-locked credit URLs
+- [ ] 18-03-PLAN.md — Native Float or Sink spike with cork-versus-stone y-separation
+- [ ] 18-04-PLAN.md — Native Jelly Drop spike with elastic group and poke
+- [ ] 18-05-PLAN.md — Native Water Wheel spike with motor-off jet rotation
+- [ ] 18-06-PLAN.md — Evolve Dam Break controls and build bounded Fountain
+- [ ] 18-07-PLAN.md — Color Mixer contact-driven mixing honesty
+- [ ] 18-08-PLAN.md — Six static SVG catalog cards and fallback copy
+- [ ] 18-09-PLAN.md — Ready flags, player controls, credits, and one-session wiring
+- [ ] 18-10-PLAN.md — Local six-scene Chromium proofs and independent AI review
 
 Prove the less certain floating, elastic and wheel compositions early within this phase. Existing diagnostic recipes are capability references, not finished visual scenes. Keep scene names and behaviors approved by the owner; a failed visual experiment calls for investigation or an explicit scope decision, not fake physics or silent substitution.
 
@@ -98,7 +110,7 @@ Execution order: **16 → 17 → 18 → 19**. Each phase includes focused checks
 | --- | --- | --- | --- |
 | 16. Rust WASM Browser Bridge | 4/4 | Complete    | 2026-09-17 |
 | 17. Shared Player and Early Pages Delivery | 8/8 | Complete    | 2026-09-17 |
-| 18. Six Native Physics Demos | 0/TBD | Not started | - |
+| 18. Six Native Physics Demos | 0/10 | Not started | - |
 | 19. Interaction Polish and Browser Verification | 0/TBD | Not started | - |
 
 ## Coverage and Planning Basis
