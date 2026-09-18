@@ -400,6 +400,74 @@ button:disabled {
   cursor: default;
 }
 
+.scene-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+}
+
+.scene-control {
+  display: grid;
+  gap: var(--space-sm);
+  justify-items: start;
+}
+
+.scene-control-label {
+  display: grid;
+  gap: var(--space-sm);
+  color: #F4F7FA;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.scene-control-select,
+select {
+  min-block-size: 44px;
+  padding: var(--space-sm) var(--space-md);
+  color: #F4F7FA;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.5;
+  background: #151D28;
+  border: 1px solid #2A3441;
+  border-radius: 12px;
+}
+
+.scene-control-select:hover:not(:disabled),
+select:hover:not(:disabled) {
+  background: #1C2734;
+}
+
+.construction-reset-hint {
+  color: #A9B4C0;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+.scene-credits {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.scene-credits-heading {
+  margin: 0;
+  color: #F4F7FA;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.scene-credits-list {
+  display: grid;
+  gap: var(--space-md);
+}
+
+.scene-credits-list a {
+  color: #F4F7FA;
+}
+
 .site-footer-identity {
   display: flex;
   flex-wrap: wrap;
@@ -447,6 +515,8 @@ button:disabled {
 
   .catalog-list,
   .status-row,
+  .scene-controls,
+  .scene-credits-list,
   .site-footer-identity,
   .site-footer-provenance {
     flex-direction: column;
@@ -461,7 +531,9 @@ button:disabled {
 
   .product-control,
   .catalog-open,
-  button {
+  .scene-control-select,
+  button,
+  select {
     justify-self: stretch;
     width: 100%;
   }

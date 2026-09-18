@@ -50,11 +50,13 @@ describe("SceneControls copy", () => {
     const resetHint = CONSTRUCTION_RESET_HINT;
 
     // Act
-    const isNounBearing = applyLabel !== "Apply";
+    const lockedCopy = [applyLabel, resetHint];
 
     // Assert
-    expect(applyLabel).toBe("Apply setting");
-    expect(isNounBearing).toBe(true);
+    expect(lockedCopy).toEqual([
+      "Apply setting",
+      "Changing this setting recreates the scene from its documented initial state.",
+    ]);
     expect(resetHint).toBe(
       "Changing this setting recreates the scene from its documented initial state.",
     );

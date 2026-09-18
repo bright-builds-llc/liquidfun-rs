@@ -1,16 +1,18 @@
 import { createEffect, createSignal, onCleanup, Show } from "solid-js";
 
-import { maybeSceneById } from "./catalog/scenes";
+import { maybeSceneById, type SceneId } from "./catalog/scenes";
 import { CatalogNav } from "./components/CatalogNav";
 import {
   FallbackPanel,
   type FallbackPanelProps,
 } from "./components/FallbackPanel";
 import { PlayerPanel, type PlayerStatus } from "./components/PlayerPanel";
+import { SceneControls } from "./components/SceneControls";
+import { SceneCredits } from "./components/SceneCredits";
 import { SiteFooter } from "./components/SiteFooter";
 import { acceptedStepCount } from "./physics/clock";
 import type { RenderFrame } from "./physics/frame";
-import { loadProofSession } from "./physics/loader";
+import { loadSceneSession } from "./physics/loader";
 import {
   createSceneSession,
   type SceneSession,
@@ -18,20 +20,24 @@ import {
 import { isStaleGeneration, nextGeneration } from "./player/generation";
 import { observeFrame, type FrameObservation } from "./player/observe";
 import {
+  PAGE_HEADING,
+  constructionEntriesForScene,
+  isReadySceneRoute,
+  maybeDevelopmentDetails,
+  maybeReadySceneId,
+  sceneTitleForId,
+  titleForRoute,
+} from "./player/runtime";
+import {
   drawRenderFrame,
   resizeCanvasBackingStore,
 } from "./render/canvas";
 import type { Camera } from "./render/camera";
 import { maybeParseSceneRoute, type SceneRoute } from "./routing/hash";
 
-const PAGE_HEADING = "liquidfun-rs playground";
-const PAGE_SUMMARY =
-  "Play experimental Rust physics scenes in the browser. Dam Break is ready; the other five names are listed honestly until they ship.";
-const DEFAULT_TITLE = "liquidfun-rs playground";
-const DAM_BREAK_TITLE = "Dam Break · liquidfun-rs playground";
-const DAM_BREAK_ID = "dam-break";
-const MAX_ERROR_DETAIL_LENGTH = 240;
 const MILLISECONDS_PER_SECOND = 1000;
+const PAGE_SUMMARY =
+  "Play experimental Rust physics scenes in the browser. All six demos run this repository's engine through WebAssembly.";
 
 type PlayerView =
   | { readonly kind: "fallback" }
@@ -43,27 +49,6 @@ type PlayerView =
       readonly maybeFrame: FrameObservation | undefined;
       readonly maybeDetails: string | undefined;
     };
-
-function isDamBreakRoute(route: SceneRoute): boolean {
-  return route.kind === "scene" && route.id === DAM_BREAK_ID;
-}
-
-function titleForRoute(route: SceneRoute): string {
-  if (isDamBreakRoute(route)) {
-    return DAM_BREAK_TITLE;
-  }
-
-  if (route.kind !== "scene") {
-    return DEFAULT_TITLE;
-  }
-
-  const maybeScene = maybeSceneById(route.id);
-  if (maybeScene === undefined) {
-    return DEFAULT_TITLE;
-  }
-
-  return `${maybeScene.title} · liquidfun-rs playground`;
-}
 
 function fallbackProps(route: SceneRoute): FallbackPanelProps {
   if (route.kind === "empty") {
@@ -106,16 +91,6 @@ function playerStatus(view: PlayerView): PlayerStatus {
   }
 }
 
-function maybeDevelopmentDetails(error: unknown): string | undefined {
-  if (!import.meta.env.DEV) {
-    return undefined;
-  }
-
-  const message =
-    error instanceof Error ? error.message : "Unknown Dam Break failure";
-  return `Details: ${message.slice(0, MAX_ERROR_DETAIL_LENGTH)}`;
-}
-
 function prefersReducedMotion(): boolean {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
@@ -124,18 +99,19 @@ function isUsableViewport(width: number, height: number): boolean {
   return Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0;
 }
 
-/** One-session Dam Break playground shell with hash routing and bounded playback. */
+/** One-session playground shell with hash routing and bounded playback. */
 export function App() {
   const [route, setRoute] = createSignal(
     maybeParseSceneRoute(window.location.hash),
   );
   const [view, setView] = createSignal<PlayerView>(
-    isDamBreakRoute(maybeParseSceneRoute(window.location.hash))
+    isReadySceneRoute(maybeParseSceneRoute(window.location.hash))
       ? { kind: "loading" }
       : { kind: "fallback" },
   );
 
   let generation = 0;
+  let constructionValues: Record<string, string> = {};
   let maybeCanvas: HTMLCanvasElement | undefined;
   let maybeContext: CanvasRenderingContext2D | undefined;
   let maybeSession: SceneSession | undefined;
@@ -180,7 +156,7 @@ export function App() {
     }
   }
 
-  function abandonDamBreak(): void {
+  function abandonScene(): void {
     incrementGeneration();
     disconnectResizeObserver();
     cancelPendingFrame();
@@ -189,6 +165,7 @@ export function App() {
     maybeContext = undefined;
     maybeCamera = undefined;
     maybePreviousFrame = undefined;
+    constructionValues = {};
     setView({ kind: "fallback" });
   }
 
@@ -218,7 +195,7 @@ export function App() {
 
       const maybeOwnedSession = maybeSession;
       if (maybeOwnedSession === undefined) {
-        fail(new Error("Dam Break session owner is unavailable"));
+        fail(new Error("Scene session owner is unavailable"));
         return;
       }
 
@@ -260,6 +237,35 @@ export function App() {
     });
   }
 
+  function presentOwnedFrame(
+    ownedSession: SceneSession,
+    context: CanvasRenderingContext2D,
+    resetObservation: boolean,
+  ): void {
+    const camera = maybeCamera;
+    if (camera === undefined) {
+      fail(new Error("Canvas camera is unavailable"));
+      return;
+    }
+
+    const frame = ownedSession.nextFrame();
+    drawRenderFrame(context, frame, camera);
+    const observation = observeFrame(
+      frame,
+      resetObservation ? undefined : maybePreviousFrame,
+      resetObservation ? 0 : maybeObservedFrame(view())?.movedFrameCount ?? 0,
+    );
+    maybePreviousFrame = frame;
+
+    if (prefersReducedMotion()) {
+      setView({ kind: "paused", frame: observation });
+      return;
+    }
+
+    setView({ kind: "playing", frame: observation });
+    scheduleFrame(context);
+  }
+
   function connectResizeObserver(
     canvas: HTMLCanvasElement,
     context: CanvasRenderingContext2D,
@@ -279,8 +285,9 @@ export function App() {
           window.devicePixelRatio,
         );
         maybeCamera = resizedCamera;
-        if (maybeSession === undefined && isDamBreakRoute(route())) {
-          void startDamBreak();
+        const maybeReadyId = maybeReadySceneId(route());
+        if (maybeSession === undefined && maybeReadyId !== undefined) {
+          void startScene(maybeReadyId);
           return;
         }
 
@@ -295,7 +302,7 @@ export function App() {
     maybeResizeObserver.observe(canvas);
   }
 
-  async function startDamBreak(): Promise<void> {
+  async function startScene(id: SceneId): Promise<void> {
     const started = incrementGeneration();
     cancelPendingFrame();
     disposeOwnedSession();
@@ -311,7 +318,7 @@ export function App() {
     }
 
     try {
-      const generatedSession = await loadProofSession();
+      const generatedSession = await loadSceneSession(id);
       if (isStaleGeneration(started, generation)) {
         createSceneSession(generatedSession).dispose();
         return;
@@ -323,25 +330,18 @@ export function App() {
         return;
       }
 
+      const maybeScene = maybeSceneById(id);
+      if (maybeScene !== undefined) {
+        for (const entry of constructionEntriesForScene(
+          maybeScene,
+          constructionValues,
+        )) {
+          ownedSession.applyControl(entry.name, entry.value);
+        }
+      }
+
       maybeSession = ownedSession;
-      const camera = maybeCamera;
-      if (camera === undefined) {
-        fail(new Error("Canvas camera is unavailable"));
-        return;
-      }
-
-      const frame = ownedSession.nextFrame();
-      drawRenderFrame(context, frame, camera);
-      const observation = observeFrame(frame, undefined, 0);
-      maybePreviousFrame = frame;
-
-      if (prefersReducedMotion()) {
-        setView({ kind: "paused", frame: observation });
-        return;
-      }
-
-      setView({ kind: "playing", frame: observation });
-      scheduleFrame(context);
+      presentOwnedFrame(ownedSession, context, true);
     } catch (error) {
       if (isStaleGeneration(started, generation)) {
         return;
@@ -393,22 +393,100 @@ export function App() {
   }
 
   function recreateScene(): void {
-    if (!isDamBreakRoute(route())) {
+    const maybeReadyId = maybeReadySceneId(route());
+    if (maybeReadyId === undefined) {
       return;
     }
 
-    void startDamBreak();
+    void startScene(maybeReadyId);
+  }
+
+  function applySceneControl(name: string, value: string): void {
+    const maybeOwnedSession = maybeSession;
+    const context = maybeContext;
+    const maybeReadyId = maybeReadySceneId(route());
+    if (
+      maybeOwnedSession === undefined ||
+      context === undefined ||
+      maybeReadyId === undefined
+    ) {
+      fail(new Error("Scene session owner is unavailable"));
+      return;
+    }
+
+    const maybeControl = maybeSceneById(maybeReadyId)?.controls.find(
+      (control) => control.id === name,
+    );
+    const recreates =
+      maybeControl?.kind === "preset" && maybeControl.recreates;
+
+    try {
+      if (recreates) {
+        constructionValues = { ...constructionValues, [name]: value };
+        cancelPendingFrame();
+        setView({ kind: "loading" });
+      }
+
+      const recreated = maybeOwnedSession.applyControl(name, value);
+      if (!recreated) {
+        return;
+      }
+
+      maybePreviousFrame = undefined;
+      maybeLastTimestamp = undefined;
+      presentOwnedFrame(maybeOwnedSession, context, true);
+    } catch (error) {
+      fail(error);
+    }
+  }
+
+  function applySceneAction(name: string): void {
+    const maybeOwnedSession = maybeSession;
+    const context = maybeContext;
+    if (maybeOwnedSession === undefined || context === undefined) {
+      fail(new Error("Scene session owner is unavailable"));
+      return;
+    }
+
+    try {
+      maybeOwnedSession.applyAction(name);
+      if (view().kind !== "paused") {
+        return;
+      }
+
+      presentOwnedFrame(maybeOwnedSession, context, false);
+      const maybeFrame = maybeObservedFrame(view());
+      if (maybeFrame !== undefined && view().kind === "playing") {
+        cancelPendingFrame();
+        setView({ kind: "paused", frame: maybeFrame });
+      }
+    } catch (error) {
+      fail(error);
+    }
   }
 
   function onHashChange(): void {
+    const previousRoute = route();
     const nextRoute = maybeParseSceneRoute(window.location.hash);
-    if (!isDamBreakRoute(nextRoute)) {
-      abandonDamBreak();
-    } else if (view().kind === "fallback") {
-      setView({ kind: "loading" });
+    setRoute(nextRoute);
+
+    const maybeNextId = maybeReadySceneId(nextRoute);
+    if (maybeNextId === undefined) {
+      abandonScene();
+      return;
     }
 
-    setRoute(nextRoute);
+    if (maybeReadySceneId(previousRoute) === maybeNextId) {
+      return;
+    }
+
+    constructionValues = {};
+    if (maybeCanvas !== undefined && maybeContext !== undefined) {
+      void startScene(maybeNextId);
+      return;
+    }
+
+    setView({ kind: "loading" });
   }
 
   function onVisibilityChange(): void {
@@ -421,27 +499,24 @@ export function App() {
   createEffect(() => {
     const currentRoute = route();
     document.title = titleForRoute(currentRoute);
-    if (isDamBreakRoute(currentRoute)) {
+    if (isReadySceneRoute(currentRoute)) {
       if (view().kind === "fallback") {
         setView({ kind: "loading" });
       }
       return;
     }
 
-    abandonDamBreak();
+    abandonScene();
   });
 
   onCleanup(() => {
     window.removeEventListener("hashchange", onHashChange);
     document.removeEventListener("visibilitychange", onVisibilityChange);
-    abandonDamBreak();
+    abandonScene();
   });
 
   const maybeFrame = () => maybeObservedFrame(view());
-  const maybeCurrentSceneId = () => {
-    const currentRoute = route();
-    return isDamBreakRoute(currentRoute) ? DAM_BREAK_ID : undefined;
-  };
+  const maybeCurrentSceneId = () => maybeReadySceneId(route());
   const maybeFailureDetails = () => {
     const current = view();
     return current.kind === "failure" ? current.maybeDetails : undefined;
@@ -449,6 +524,14 @@ export function App() {
   const maybeSceneAttr = () => {
     const currentRoute = route();
     return currentRoute.kind === "scene" ? currentRoute.id : undefined;
+  };
+  const maybeCurrentScene = () => {
+    const maybeId = maybeCurrentSceneId();
+    return maybeId === undefined ? undefined : maybeSceneById(maybeId);
+  };
+  const sceneControlsDisabled = () => {
+    const status = playerStatus(view());
+    return status === "loading" || status === "failed";
   };
 
   return (
@@ -466,18 +549,42 @@ export function App() {
       <CatalogNav maybeCurrentSceneId={maybeCurrentSceneId()} />
 
       <Show
-        when={isDamBreakRoute(route())}
+        when={maybeCurrentSceneId()}
         fallback={<FallbackPanel {...fallbackProps(route())} />}
       >
-        <PlayerPanel
-          status={playerStatus(view())}
-          maybeDetails={maybeFailureDetails()}
-          assignCanvas={assignCanvas}
-          onPlay={playScene}
-          onPause={pauseScene}
-          onReset={recreateScene}
-          onRetry={recreateScene}
-        />
+        {(sceneId) => {
+          const scene = () => maybeCurrentScene();
+          return (
+            <PlayerPanel
+              sceneTitle={sceneTitleForId(sceneId())}
+              status={playerStatus(view())}
+              maybeDetails={maybeFailureDetails()}
+              assignCanvas={assignCanvas}
+              onPlay={playScene}
+              onPause={pauseScene}
+              onReset={recreateScene}
+              onRetry={recreateScene}
+            >
+              <Show when={scene()}>
+                {(currentScene) => (
+                  <>
+                    <SceneControls
+                      controls={currentScene().controls}
+                      disabled={sceneControlsDisabled()}
+                      maybeValues={constructionValues}
+                      onApplyControl={applySceneControl}
+                      onApplyAction={applySceneAction}
+                    />
+                    <SceneCredits
+                      implementationPath={currentScene().credits.implementationPath}
+                      inspiration={currentScene().credits.inspiration}
+                    />
+                  </>
+                )}
+              </Show>
+            </PlayerPanel>
+          );
+        }}
       </Show>
 
       <SiteFooter />

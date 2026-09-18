@@ -1,8 +1,9 @@
-import { Show } from "solid-js";
+import { Show, type JSX } from "solid-js";
 
 export type PlayerStatus = "loading" | "playing" | "paused" | "failed";
 
 export type PlayerPanelProps = {
+  readonly sceneTitle: string;
   readonly status: PlayerStatus;
   readonly maybeDetails?: string | undefined;
   readonly assignCanvas: (canvas: HTMLCanvasElement) => void;
@@ -10,40 +11,32 @@ export type PlayerPanelProps = {
   readonly onPause: () => void;
   readonly onReset: () => void;
   readonly onRetry: () => void;
+  readonly children?: JSX.Element;
 };
 
-const PLAYER_HEADING = "Dam Break";
 const RUNTIME_LABEL = "Runtime";
 const RUNTIME_VALUE = "Rust engine · WebAssembly";
-const LOADING_STATUS = "Loading Dam Break…";
 const PLAYING_STATUS = "Playing";
 const PAUSED_STATUS = "Paused";
-const FAILED_STATUS = "Dam Break failed";
 const CANVAS_CAPTION =
   "Live frame from this repository's Rust engine, drawn with Canvas 2D.";
-const CANVAS_NAME =
-  "Live Dam Break scene: Rust particles and a rigid body in a basin.";
-const CANVAS_FALLBACK = "Canvas is required to display the Dam Break scene.";
 const PLAY_LABEL = "Play scene";
 const PAUSE_LABEL = "Pause scene";
 const RESET_LABEL = "Reset scene";
 const RETRY_LABEL = "Retry scene";
-const FAILURE_COPY =
-  "Dam Break could not start or continue. Use Retry scene to recreate it, or Reset scene to return to the documented initial state.";
-const LOADING_OVERLAY_HEADING = "Loading Dam Break";
 const LOADING_OVERLAY_BODY =
   "Starting the Rust WebAssembly session. The scene appears when the first frame is ready.";
 
-function statusText(status: PlayerStatus): string {
+function statusText(status: PlayerStatus, sceneTitle: string): string {
   switch (status) {
     case "loading":
-      return LOADING_STATUS;
+      return `Loading ${sceneTitle}…`;
     case "playing":
       return PLAYING_STATUS;
     case "paused":
       return PAUSED_STATUS;
     case "failed":
-      return FAILED_STATUS;
+      return `${sceneTitle} failed`;
   }
 }
 
@@ -59,19 +52,19 @@ function resetDisabled(status: PlayerStatus): boolean {
   return status === "loading";
 }
 
-/** Presentational Dam Break player chrome without a WASM session. */
+/** Presentational player chrome for any ready scene. */
 export function PlayerPanel(props: PlayerPanelProps) {
   return (
     <section class="player-panel" aria-labelledby="player-title">
       <div class="status-row">
-        <h2 id="player-title">{PLAYER_HEADING}</h2>
+        <h2 id="player-title">{props.sceneTitle}</h2>
         <output
           class={`session-status session-status--${props.status}`}
           aria-live="polite"
           aria-atomic="true"
         >
           <span class="status-dot" aria-hidden="true" />
-          {statusText(props.status)}
+          {statusText(props.status, props.sceneTitle)}
         </output>
         <dl class="player-identity">
           <dt>{RUNTIME_LABEL}</dt>
@@ -81,7 +74,9 @@ export function PlayerPanel(props: PlayerPanelProps) {
 
       <Show when={props.status === "failed"}>
         <div class="error-message" role="alert">
-          <p>{FAILURE_COPY}</p>
+          <p>
+            {`${props.sceneTitle} could not start or continue. Use Retry scene to recreate it, or Reset scene to return to the documented initial state.`}
+          </p>
           <Show when={props.maybeDetails}>
             {(details) => <p class="error-details">{details()}</p>}
           </Show>
@@ -95,13 +90,13 @@ export function PlayerPanel(props: PlayerPanelProps) {
             width="960"
             height="540"
             role="img"
-            aria-label={CANVAS_NAME}
+            aria-label={`Live ${props.sceneTitle} scene: Rust particles and rigid bodies.`}
           >
-            {CANVAS_FALLBACK}
+            {`Canvas is required to display the ${props.sceneTitle} scene.`}
           </canvas>
           <Show when={props.status === "loading"}>
             <div class="empty-state">
-              <strong>{LOADING_OVERLAY_HEADING}</strong>
+              <strong>{`Loading ${props.sceneTitle}`}</strong>
               <span>{LOADING_OVERLAY_BODY}</span>
             </div>
           </Show>
@@ -144,6 +139,8 @@ export function PlayerPanel(props: PlayerPanelProps) {
           {RESET_LABEL}
         </button>
       </div>
+
+      {props.children}
     </section>
   );
 }
