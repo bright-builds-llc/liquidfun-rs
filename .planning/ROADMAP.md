@@ -85,7 +85,7 @@ Plans:
 - [x] 18-06-PLAN.md — Evolve Dam Break controls and build bounded Fountain
 - [x] 18-07-PLAN.md — Color Mixer contact-driven mixing honesty
 - [x] 18-08-PLAN.md — Six static SVG catalog cards and fallback copy
-- [ ] 18-09-PLAN.md — Ready flags, player controls, credits, and one-session wiring
+- [x] 18-09-PLAN.md — Ready flags, player controls, credits, and one-session wiring
 - [ ] 18-10-PLAN.md — Local six-scene Chromium proofs and independent AI review
 
 Prove the less certain floating, elastic and wheel compositions early within this phase. Existing diagnostic recipes are capability references, not finished visual scenes. Keep scene names and behaviors approved by the owner; a failed visual experiment calls for investigation or an explicit scope decision, not fake physics or silent substitution.
@@ -110,7 +110,7 @@ Execution order: **16 → 17 → 18 → 19**. Each phase includes focused checks
 | --- | --- | --- | --- |
 | 16. Rust WASM Browser Bridge | 4/4 | Complete    | 2026-09-17 |
 | 17. Shared Player and Early Pages Delivery | 8/8 | Complete    | 2026-09-17 |
-| 18. Six Native Physics Demos | 8/10 | In Progress|  |
+| 18. Six Native Physics Demos | 9/10 | In Progress|  |
 | 19. Interaction Polish and Browser Verification | 0/TBD | Not started | - |
 
 ## Coverage and Planning Basis

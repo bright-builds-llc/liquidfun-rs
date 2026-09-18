@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Web Playground
 status: executing
-stopped_at: Completed 18-six-native-physics-demos-07-PLAN.md
-last_updated: "2026-09-18T05:26:18.083Z"
+stopped_at: Completed 18-six-native-physics-demos-09-PLAN.md
+last_updated: "2026-09-18T05:33:27.354Z"
 last_activity: 2026-09-18
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 22
-  completed_plans: 20
-  percent: 91
+  completed_plans: 21
+  percent: 95
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-09-17)
 ## Current Position
 
 Phase: 18 (six-native-physics-demos) — EXECUTING
-Plan: 9 of 10
+Plan: 10 of 10
 Status: Ready to execute
 Last activity: 2026-09-18
 
@@ -60,6 +60,7 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 | Phase 18 P08 | 2 min | 2 tasks | 5 files |
 | Phase 18-six-native-physics-demos P06 | 12 min | 2 tasks | 3 files |
 | Phase 18-six-native-physics-demos P07 | 13 min | 2 tasks | 2 files |
+| Phase 18-six-native-physics-demos P09 | 6 min | 2 tasks | 15 files |
 
 ### Decisions
 
@@ -127,6 +128,9 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 - [Phase 18-six-native-physics-demos]: Two filled circles of radius 1.15 at (-1.0, 2.2) teal and (1.0, 2.2) red sit in contact so COLOR_MIXING can run. — Groups must overlap or sit in contact for the engine color-mixing pass; separate isolated blobs would never change captured color lanes.
 - [Phase 18-six-native-physics-demos]: Mix-strength Off 0.0 / Gentle 0.25 / Strong 0.5 recreates; default Strong. Stir-speed Off/Slow/Fast is live; default Slow. — There is no live system-def setter for color_mixing_strength. Stir is a per-advance force and must not recreate the world.
 - [Phase 18-six-native-physics-demos]: Replace the leftover Color Mixer stub assertion with a live-world create check; keep SceneUnimplemented for fail-closed vocabulary. — Full liquidfun-wasm lib tests still asserted Color Mixer was unimplemented after the scene constructed.
+- [Phase 18]: Construction CTA is Apply setting, not the single word Apply. — UI-SPEC FLAG overrides the one-word Apply so the button names the thing being applied.
+- [Phase 18]: Extract control/credit helpers to .ts so vitest node can test them without Solid JSX. — Vitest include is tests/**/*.test.ts and fails Solid JSX import analysis.
+- [Phase 18]: Reset keeps last applied construction presets and startScene/abandonScene dispose the prior owner. — D-08 one-session teardown plus UI-SPEC Reset that restores documented initial state plus last construction presets.
 
 ### Pending Todos
 
@@ -149,6 +153,6 @@ No new milestone todos captured. Phase 17 is ready for discussion and planning.
 
 ## Session Continuity
 
-Last session: 2026-09-18T05:26:09.004Z
-Stopped at: Completed 18-six-native-physics-demos-07-PLAN.md
+Last session: 2026-09-18T05:33:17.299Z
+Stopped at: Completed 18-six-native-physics-demos-09-PLAN.md
 Resume file: None
