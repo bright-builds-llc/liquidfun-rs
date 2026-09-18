@@ -1,11 +1,11 @@
 ---
 phase: 18-six-native-physics-demos
 plan: "10"
-reviewed: 2026-09-18T05:43:25Z
-independent_reviewed: 2026-09-18T05:43:25Z
+reviewed: 2026-09-18T05:45:27Z
+independent_reviewed: 2026-09-18T05:45:27Z
 depth: deep
 candidate: 1a69ff3bc1b03039818bd621983cfbe394fdd244
-local_head: 4c50519394490d8587eb58efb05568700058e5dc
+local_head: 504d720f9e59ea8331e698c23de043fee60b6590
 origin_main_at_review: dc23318ce4a460d46022d749db5f24386d66c92b
 files_reviewed: 18
 files_reviewed_list:
@@ -29,14 +29,14 @@ files_reviewed_list:
   - TESTING.md
 findings:
   critical: 0
-  warning: 1
+  warning: 0
   info: 1
-  total: 2
+  total: 1
 status: issues_found
 decision: APPROVED
-review_digest: 22635277d29513bb6ffa83a1b51c13f0207ea63b0f402a852d30a660413a618c
-reviewer_identity: a8b9e495-ffa1-4be6-875e-fb733345fabc
-reviewer_invocation_id: f2e130f2-c6df-4499-8ec1-9f9c143539f9
+review_digest: 1f6349eb4a080179aad2dbf9af670e4cf3e95eecf3a0c725449eb3da21acaa94
+reviewer_identity: f5a42aa5-af9e-47d2-93c3-2e2c9312809d
+reviewer_invocation_id: 019d874b-897c-4e37-a0f4-ac39fcd3468f
 reviewer_disclosure: AI reviewer, not a human
 implementing_or_fixing_executor: no
 ---
@@ -47,28 +47,31 @@ implementing_or_fixing_executor: no
 
 **APPROVED.**
 
-There are no Critical findings and zero high-severity findings. One Warning
-records a first-load Float or Sink label mismatch (UI Cork versus constructed
-Wood) that does not fake physics, break the six-id allowlist, or invalidate
-local smoke evidence. One Info records a fail-open construction-token fallback
-in Jelly Drop. This review does not mark requirement completion in planning
-state files.
+There are no Critical findings and zero unresolved Warning findings. Prior
+WR-01 (UI Cork versus constructed Wood) is resolved at commit `504d720`:
+`DEFAULT_PRESET_VALUES.body` is now `"wood"` and `FloatOrSinkHooks` still
+constructs `BodyPreset::Wood`. One leftover Info records a fail-open
+construction-token fallback in Jelly Drop. This review does not mark
+requirement completion in planning state files.
 
 This document replaces the earlier `18-REVIEW.md` that named reviewer
-`eddc4c2f-39ef-460d-99ad-782c4871b074`. That identity is not this reviewer.
+`a8b9e495-ffa1-4be6-875e-fb733345fabc` and digest
+`22635277d29513bb6ffa83a1b51c13f0207ea63b0f402a852d30a660413a618c`. Those
+identities are not this reviewer.
 
 ## Reviewer and exact scope
 
 - `reviewer_identity`: Cursor independent AI review subagent
   (`gsd-code-reviewer`), Task/agent-store identity
-  `a8b9e495-ffa1-4be6-875e-fb733345fabc`
-- `reviewer_invocation_id`: `f2e130f2-c6df-4499-8ec1-9f9c143539f9`
+  `f5a42aa5-af9e-47d2-93c3-2e2c9312809d`
+- `reviewer_invocation_id`: `019d874b-897c-4e37-a0f4-ac39fcd3468f`
 - `reviewer_disclosure`: AI reviewer, not a human
 - `model`: Cursor Grok 4.6
 - `implementing_or_fixing_executor`: no
-- `reviewed_at_utc`: `2026-09-18T05:43:25Z`
+- `reviewed_at_utc`: `2026-09-18T05:45:27Z`
 - `task_1_commit`: `1a69ff3bc1b03039818bd621983cfbe394fdd244`
-- `local_head_at_review`: `4c50519394490d8587eb58efb05568700058e5dc`
+- `wr01_fix_commit`: `504d720f9e59ea8331e698c23de043fee60b6590`
+- `local_head_at_review`: `504d720f9e59ea8331e698c23de043fee60b6590`
 - `origin/main_at_review`: `dc23318ce4a460d46022d749db5f24386d66c92b`
 
 This reviewer is not implementing executor `eddc4c2f-39ef-460d-99ad-782c4871b074`
@@ -90,25 +93,23 @@ automation is supporting context only and is not this acknowledgment.
 
 ## Findings and resolutions
 
-No Critical findings.
+No Critical findings. No unresolved Warning findings.
 
-### WR-01: Float or Sink UI default is cork; constructed world default is wood
+### WR-01 resolved: Float or Sink labeled default now matches Wood construction
 
 **File:** `web/src/components/scene-controls.ts:13` and
 `crates/liquidfun-wasm/src/scene/float_or_sink.rs:128`
-**Issue:** Independently confirmed from source. `DEFAULT_PRESET_VALUES.body` is
-`cork`, so the first-load Body select shows Cork.
-`FloatOrSinkHooks` constructs `body_preset: BodyPreset::Wood`.
+**Issue:** Prior independent review found `DEFAULT_PRESET_VALUES.body` was
+`cork` while `FloatOrSinkHooks` constructed `body_preset: BodyPreset::Wood`.
 `constructionEntriesForScene` in `web/src/player/runtime.ts` only reapplies
-`recreates: true` presets, and `body` is a live control, so the labeled Cork
-default is never sent to the engine on first load. The first `Drop body`
-without changing the select therefore drops wood (density `0.6`) while the
-labeled value is Cork. Live `apply_control("body", …)` still allowlists
-cork/wood/stone and applies without recreate. This does not fake buoyancy; it
-is a labeled-control mismatch.
-**Fix:** Align the labeled default with the constructed default, preferably
-`wood` in `DEFAULT_PRESET_VALUES` so the first Drop matches the select, or
-construct `BodyPreset::Cork` if the UI default is intentional.
+`recreates: true` presets, and catalog `body` is a `runtimePreset` (`recreates:
+false`), so the labeled first-load value was never sent to the engine.
+**Resolution:** Independently confirmed from current source after commit
+`504d720`. `DEFAULT_PRESET_VALUES.body` is `"wood"`.
+`FloatOrSinkHooks` still constructs `BodyPreset::Wood` (density `0.6`). The
+first `Drop body` without changing the select now drops wood while the labeled
+value is Wood. Live `apply_control("body", …)` still allowlists cork/wood/stone
+and applies without recreate.
 
 ### IN-01: Jelly Drop construction silently defaults unknown shape/softness tokens
 
@@ -131,10 +132,12 @@ listed paths in the listed order, the reviewer concatenated UTF-8 path bytes,
 one NUL byte, the lowercase SHA-256 of exact file bytes as ASCII hex, and one
 LF byte, then SHA-256 hashed that complete concatenation.
 
-Every per-file hash matched `18-REVIEW-MANIFEST.md`. Files had not drifted.
+Fifteen per-file hashes still match the prior manifest. Only
+`web/src/components/scene-controls.ts` changed, to
+`ee28e631fa1c4aafad283adb28b49436211400a7b7a69639addfdd9df9630241`.
 The independently recomputed digest is exactly:
 
-`22635277d29513bb6ffa83a1b51c13f0207ea63b0f402a852d30a660413a618c`
+`1f6349eb4a080179aad2dbf9af670e4cf3e95eecf3a0c725449eb3da21acaa94`
 
 ### Native scenes and factory
 
@@ -150,6 +153,7 @@ motor-driven Water Wheel.
   `destruction_by_age`) and applies emission/launch/aim live.
 - Float or Sink builds a 15×12 water pool and drops cork/wood/stone densities
   through engine fixtures. Sequential cork-then-stone densities are tested.
+  Construction default remains Wood; the UI default now matches.
 - Color Mixer creates two `COLOR_MIXING` groups; mix-strength recreates,
   stir-speed applies live. Tests prove Off keeps color lanes and Strong
   changes them.
@@ -226,15 +230,19 @@ LiquidFun parity, pigment chemistry, live card previews, or WEBTEST-01.
 
 `.github/workflows/pages.yml` last changed in Phase 17
 (`7dfafdf9baf90b2bf6a53005ab3f3c978b3c0250`) and is untouched by task-1 commit
-`1a69ff3` and this review. This review grants no package publication, tag,
-release, or Pages deploy authority. Hobby scope in `PROJECT-SCOPE.md` applies:
-local proof and truthful docs, not Linux qualification or a new live URL gate.
+`1a69ff3`, WR-01 fix `504d720`, and this review. This review grants no package
+publication, tag, release, or Pages deploy authority. Hobby scope in
+`PROJECT-SCOPE.md` applies: local proof and truthful docs, not Linux
+qualification or a new live URL gate.
 
 ## Fixed review manifest
 
-The 16 manifest entries and hashes in
-`18-REVIEW-MANIFEST.md` were independently rehashed from current file bytes and
-matched exactly. No listed file had drifted from the published hashes.
+The 16 manifest entries and hashes in `18-REVIEW-MANIFEST.md` were
+independently rehashed from current file bytes. Fifteen hashes are unchanged.
+`web/src/components/scene-controls.ts` is now
+`ee28e631fa1c4aafad283adb28b49436211400a7b7a69639addfdd9df9630241`. The new
+digest is
+`1f6349eb4a080179aad2dbf9af670e4cf3e95eecf3a0c725449eb3da21acaa94`.
 
 Manifest entry count: `16`.
 
@@ -258,16 +266,16 @@ Manifest entry count: `16`.
 ## Digest acknowledgment
 
 `review_digest`:
-`22635277d29513bb6ffa83a1b51c13f0207ea63b0f402a852d30a660413a618c`
+`1f6349eb4a080179aad2dbf9af670e4cf3e95eecf3a0c725449eb3da21acaa94`
 
-The independent result exactly matched all 16 candidate entries and the
-required digest.
+The independent result exactly matched all 16 current file entries and the
+required new digest.
 
 > I, the Cursor independent AI review subagent identified above as Task/agent
-> identity `a8b9e495-ffa1-4be6-875e-fb733345fabc`, independently inspected the
+> identity `f5a42aa5-af9e-47d2-93c3-2e2c9312809d`, independently inspected the
 > listed Phase 18 implementation-and-evidence bytes and explicitly acknowledge
 > exact digest
-> `22635277d29513bb6ffa83a1b51c13f0207ea63b0f402a852d30a660413a618c`
+> `1f6349eb4a080179aad2dbf9af670e4cf3e95eecf3a0c725449eb3da21acaa94`
 > as the content I inspected and approve. I am an AI reviewer, not a human.
 > I am not the implementing or fixing executor.
 
@@ -281,31 +289,22 @@ acknowledgment.
 
 ## GSD Source Code Review
 
-**Reviewed:** 2026-09-18T05:43:25Z
+**Reviewed:** 2026-09-18T05:45:27Z
 **Depth:** deep
 **Files Reviewed:** 18
 **Status:** issues_found
 
 ### Summary
 
-Deep review of the Phase 18 six native scenes, factory allowlist, catalog
-controls and credits, one-session App wiring, player spec, local smoke log,
-and playground docs found no Critical issues. The independently recomputed
-digest matches the required value. WR-01 confirms the prior cork-versus-wood
-default mismatch from source. IN-01 notes Jelly Drop construction token
-fail-open.
+Deep re-review after commit `504d720` confirmed the six native scenes, factory
+allowlist, catalog controls and credits, one-session App wiring, player spec,
+local smoke log, and playground docs. The independently recomputed digest is
+`1f6349eb4a080179aad2dbf9af670e4cf3e95eecf3a0c725449eb3da21acaa94`. Prior
+WR-01 is resolved: UI default `wood` matches constructed `BodyPreset::Wood`.
+IN-01 still notes Jelly Drop construction token fail-open.
 
 The fixed manifest, independent AI review, approval, and exact digest
 acknowledgment above are the review decision. This is not human approval.
-
-### Warnings
-
-#### WR-01: Float or Sink labeled default vs constructed default
-
-**File:** `web/src/components/scene-controls.ts:13`
-**Issue:** UI default `cork` does not match Rust construction default `Wood`.
-First Drop body without changing the select drops wood.
-**Fix:** Use the same default on both sides.
 
 ### Info
 
@@ -318,8 +317,8 @@ of `UnknownControl`.
 
 ---
 
-_Reviewed: 2026-09-18T05:43:25Z_
-_Reviewer: Cursor AI (gsd-code-reviewer), Task/agent identity a8b9e495-ffa1-4be6-875e-fb733345fabc_
+_Reviewed: 2026-09-18T05:45:27Z_
+_Reviewer: Cursor AI (gsd-code-reviewer), Task/agent identity f5a42aa5-af9e-47d2-93c3-2e2c9312809d_
 _Depth: deep_
 
 GSD_SOURCE_CODE_REVIEW_COMPLETE

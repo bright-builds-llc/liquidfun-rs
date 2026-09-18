@@ -1,16 +1,17 @@
 ---
 phase: 18-six-native-physics-demos
 plan: "10"
-generated_by: gsd-execute-plan
+generated_by: gsd-code-reviewer
 lifecycle_mode: yolo
 phase_lifecycle_id: 18-2026-09-18T03-36-16
-generated_at: 2026-09-18T05:37:00Z
+generated_at: 2026-09-18T05:45:27Z
 ---
 
 # Phase 18 review manifest
 
-Fixed ordered manifest for independent AI review. The implementing agent does
-not acknowledge or approve this digest.
+Fixed ordered manifest for independent AI review after WR-01 wood-default
+alignment (commit `504d720`). The implementing agent does not acknowledge or
+approve this digest.
 
 ## Digest method
 
@@ -19,7 +20,7 @@ byte, the lowercase SHA-256 of the exact file bytes as ASCII hex, and one LF
 byte. The review digest is the lowercase SHA-256 of that complete
 concatenation.
 
-review_digest: 22635277d29513bb6ffa83a1b51c13f0207ea63b0f402a852d30a660413a618c
+review_digest: 1f6349eb4a080179aad2dbf9af670e4cf3e95eecf3a0c725449eb3da21acaa94
 
 ## Files
 
@@ -33,7 +34,7 @@ review_digest: 22635277d29513bb6ffa83a1b51c13f0207ea63b0f402a852d30a660413a618c
 - `web/src/catalog/scenes.ts` `3f5aa493ecd19dbb983af83def89e9b4858d03e6cb974be478b5847c034d2e2d`
 - `web/src/components/CatalogNav.tsx` `6fa36d6c51b7cb3dece71960c7bd2e73b45c28d1f63fbe8a08d17e39ca2b25e1`
 - `web/src/components/SceneControls.tsx` `a6db74ec02ef11ce60fc946b2e4fe04c46fccba09e1438e7a66f22aabd65468a`
-- `web/src/components/scene-controls.ts` `1be5afefe06b60965086ddfd1aa56bf82de5f48b52b880bdaaba58baa8382aa1`
+- `web/src/components/scene-controls.ts` `ee28e631fa1c4aafad283adb28b49436211400a7b7a69639addfdd9df9630241`
 - `web/src/components/SceneCredits.tsx` `831de3931faa4874a3b51d58bc204a875b78dc67a4b697bc155ed86101dc7bb4`
 - `web/src/components/scene-credits.ts` `99be6d199f7fde16362c54050fff81aa2d357e27adde803ef5a8732a64a47ed9`
 - `web/src/App.tsx` `15928510bead08587ed45ba1050a4621c0f31a7761ba913de4376f889d5bcb7a`
@@ -45,6 +46,10 @@ Manifest entry count: `16`.
 ## Evidence notes
 
 - Implementing task-1 commit: `1a69ff3bc1b03039818bd621983cfbe394fdd244`
+- WR-01 fix commit: `504d720f9e59ea8331e698c23de043fee60b6590`
+- Only `web/src/components/scene-controls.ts` changed among the 16 hashed
+  files versus digest
+  `22635277d29513bb6ffa83a1b51c13f0207ea63b0f402a852d30a660413a618c`.
 - `just web-player-smoke` exited 0 and wrote ignored
   `target/web-build/web-build.log` ending in `complete player-smoke`.
 - This is local Chromium proof, not a Pages deploy, crate publication, or
