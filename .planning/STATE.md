@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Web Playground
 status: executing
-stopped_at: Completed 18-08-PLAN.md
-last_updated: "2026-09-18T04:58:04.368Z"
+stopped_at: Completed 18-06-PLAN.md
+last_updated: "2026-09-18T05:10:52.561Z"
 last_activity: 2026-09-18
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 22
-  completed_plans: 18
-  percent: 82
+  completed_plans: 19
+  percent: 86
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-09-17)
 ## Current Position
 
 Phase: 18 (six-native-physics-demos) — EXECUTING
-Plan: 7 of 10
+Plan: 8 of 10
 Status: Ready to execute
 Last activity: 2026-09-18
 
@@ -58,6 +58,7 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 | Phase 18-six-native-physics-demos P04 | 13 min | 2 tasks | 2 files |
 | Phase 18-six-native-physics-demos P05 | 8 min | 2 tasks | 2 files |
 | Phase 18 P08 | 2 min | 2 tasks | 5 files |
+| Phase 18-six-native-physics-demos P06 | 12 min | 2 tasks | 3 files |
 
 ### Decisions
 
@@ -119,6 +120,9 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 - [Phase 18]: Mark current only when maybeCurrentSceneId matches a ready id so stub cards never get aria-current. — Plan 08 ships cards before Plan 09 flips ready. Current chrome must not imply a stub scene is playing.
 - [Phase 18]: Use an inset 4px accent bar via box-shadow so the 1px card border stays visible. — 18-UI-SPEC requires both a 1px #2A3441 card border and a 4px current-scene accent on the inline start.
 - [Phase 18]: Keep the not-ready fallback branch as unused defensive copy; do not edit PAGE_SUMMARY. — Plan 09 owns ready flags and the six-demo page summary. Plan 08 only updates empty/unknown fallback strings.
+- [Phase 18-six-native-physics-demos]: Keep Dam Break Medium 16x12=192 and Normal gravity (0,-10) as the documented default; Small is 8x8=64 and Large is 20x14=280. — D-10 says evolve the existing basin. Plan 01 already locked Medium/Normal as the documented 192-particle world.
+- [Phase 18-six-native-physics-demos]: Drop-obstacle raises the existing circle to (2.5, 7.2) and wakes it; reset-obstacle restores (2.5, 5.5); neither recreates the world. — D-05 and D-06 keep obstacle actions live. Recreating would discard the same body identity.
+- [Phase 18-six-native-physics-demos]: Fountain defaults to Medium/Up/Medium, emits in on_advance with lifetime 3s and maximum_count 320, and treats a full system as a no-op. — DEMO-02 and Pitfall 2 require a plateau below the 512 frame cap. A full-system create must not poison the session.
 
 ### Pending Todos
 
@@ -141,6 +145,6 @@ No new milestone todos captured. Phase 17 is ready for discussion and planning.
 
 ## Session Continuity
 
-Last session: 2026-09-18T04:57:56.799Z
-Stopped at: Completed 18-08-PLAN.md
+Last session: 2026-09-18T05:10:41.219Z
+Stopped at: Completed 18-06-PLAN.md
 Resume file: None

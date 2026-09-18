@@ -29,7 +29,7 @@ The owner approved six varied demos, our own Rust engine via WASM, a playful gal
 ### Six launch scenes
 
 - [x] **DEMO-01**: Dam Break lets the visitor release water into a basin and interact with an obstacle, with visibly native particle/rigid behavior and a repeatable reset.
-- [ ] **DEMO-02**: Fountain lets the visitor aim or adjust a continuous stream into a container while particle lifetime/capacity limits keep emission bounded.
+- [x] **DEMO-02**: Fountain lets the visitor aim or adjust a continuous stream into a container while particle lifetime/capacity limits keep emission bounded.
 - [x] **DEMO-03**: Float or Sink lets the visitor drop different body/density presets into a pool and observe the Rust engine's particle-body response without fake buoyancy animation.
 - [ ] **DEMO-04**: Color Mixer lets the visitor stir colored particle groups and observe the engine's actual contact-driven color mixing, distinguished from rendering-only blending.
 - [x] **DEMO-05**: Jelly Drop lets the visitor drop and poke an elastic particle shape against obstacles, with stable bounded presets and a clear reset.
@@ -73,7 +73,7 @@ Each active requirement maps to exactly one new phase, starting at Phase 16. All
 | WEB-07 | Phase 19 | Pending |
 | WEB-08 | Phase 18 | Complete |
 | DEMO-01 | Phase 18 | Complete |
-| DEMO-02 | Phase 18 | Pending |
+| DEMO-02 | Phase 18 | Complete |
 | DEMO-03 | Phase 18 | Complete |
 | DEMO-04 | Phase 18 | Pending |
 | DEMO-05 | Phase 18 | Complete |
