@@ -1,7 +1,8 @@
 ---
 phase: 18
 slug: six-native-physics-demos
-status: draft
+status: approved
+reviewed_at: 2026-09-18T03:50:00Z
 shadcn_initialized: false
 preset: none
 created: 2026-09-18
