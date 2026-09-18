@@ -86,11 +86,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ## Web playground
 
-Visitors can open the hosted Dam Break scene at
+The playground has six native scenes: Dam Break, Fountain, Float or Sink,
+Color Mixer, Jelly Drop, and Water Wheel. Visitors can open the hosted
+playground at
 <https://bright-builds-llc.github.io/liquidfun-rs/#/scene/dam-break>.
 Production JavaScript and WASM load under `/liquidfun-rs/`. GitHub Pages
 delivery is website hosting, not Linux native qualification. This playground
-does not publish an npm or Rust package.
+does not publish an npm or Rust package, claim complete LiquidFun parity, or
+treat catalog cards as live simulations. Color mixing is contact-driven
+particle color, not pigment chemistry. A new Pages URL is not required to
+prove the six scenes locally.
 
 The private, unpublished `liquidfun-wasm` wrapper and SolidJS player rebuild
 from a clean checkout with the exact local tools:
@@ -105,7 +110,8 @@ just web-player-smoke
 ```
 
 `just web-build` regenerates the current checkout's WASM package and the
-production site. `just web-player-smoke` is the local product proof. `just web-smoke` remains the opt-in Phase 16 forensic closure; it is not the
+production site. `just web-player-smoke` is the local product proof that each
+of the six native scenes opens, resets, and switches in Chromium. `just web-smoke` remains the opt-in Phase 16 forensic closure; it is not the
 playground default.
 
 `web/src/generated/liquidfun-wasm`, `web/dist`, Playwright output, and

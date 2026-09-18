@@ -72,9 +72,11 @@ verification is read-only. The ordinary macOS job builds and tests the native cr
 ## Web playground
 
 The hosted playground is GitHub Pages delivery, not Linux native qualification
-and not a six-scene WEBTEST-01 matrix or strict native certification. Visitors
-open `https://bright-builds-llc.github.io/liquidfun-rs/#/scene/dam-break`.
-Production JavaScript and WASM load under `/liquidfun-rs/`.
+and not a six-scene WEBTEST-01 matrix or strict native certification. The
+playground has six native scenes. Visitors can open
+`https://bright-builds-llc.github.io/liquidfun-rs/#/scene/dam-break`; a new
+Pages URL is not required for local proof. Production JavaScript and WASM load
+under `/liquidfun-rs/`.
 
 Local product commands:
 
@@ -83,7 +85,8 @@ just web-build
 just web-player-smoke
 ```
 
-`just web-player-smoke` exercises hash fixtures `#/scene/dam-break` and
+`just web-player-smoke` proves open, reset, and scene-switch locally in
+Chromium for the six native catalog ids, plus hash fixture
 `#/scene/not-a-scene`. The GitHub Actions workflow name is `Pages`. `just web-smoke` remains the opt-in Phase 16 forensic closure, not the product
 default.
 
