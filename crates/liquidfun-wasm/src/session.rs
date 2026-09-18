@@ -1,9 +1,9 @@
-//! Native-testable ownership and stepping for one proof scene.
+//! Native-testable ownership and stepping for one allowlisted scene.
 
-use liquidfun::{BodyId, NoDecisionHook, ParticleSystemId, StepConfiguration, StepLimits, World};
+use liquidfun::{NoDecisionHook, ParticleSystemId, StepConfiguration, StepLimits, World};
 
 use crate::frame::FrameData;
-use crate::scene::{PARTICLE_COUNT, PARTICLE_RADIUS, ProofScene, RigidSegment, build_proof_scene};
+use crate::scene::{BuiltScene, ControlEffect, SceneHooks, SceneId, build_scene, parse_scene_id};
 
 pub(crate) const MAX_ADVANCE_STEPS: u32 = 4;
 const MAX_FRAME_PARTICLES: usize = 512;
@@ -42,9 +42,12 @@ impl SessionError {
 pub(crate) struct SessionCore {
     world: World,
     particle_system: ParticleSystemId,
-    dynamic_circle: BodyId,
-    basin_segments: [RigidSegment; 3],
-    circle_radius: f32,
+    hooks: Box<dyn SceneHooks>,
+    particle_radius: f32,
+    #[cfg_attr(not(test), allow(dead_code))]
+    presets: Vec<(String, String)>,
+    #[cfg_attr(not(test), allow(dead_code))]
+    scene_id: SceneId,
     particle_count: usize,
     step_configuration: StepConfiguration,
     step_limits: StepLimits,
@@ -52,18 +55,25 @@ pub(crate) struct SessionCore {
 }
 
 impl SessionCore {
-    pub(crate) fn create(_id: crate::scene::SceneId) -> Result<Self, SessionError> {
-        Err(SessionError::SceneUnimplemented)
+    pub(crate) fn create(id: SceneId) -> Result<Self, SessionError> {
+        Self::from_built(id, Vec::new())
     }
 
     pub(crate) fn new() -> Result<Self, SessionError> {
-        let ProofScene {
+        Self::create(parse_scene_id("dam-break")?)
+    }
+
+    fn from_built(id: SceneId, presets: Vec<(String, String)>) -> Result<Self, SessionError> {
+        let BuiltScene {
             world,
             particle_system,
-            dynamic_circle,
-            basin_segments,
-            circle_radius,
-        } = build_proof_scene().map_err(|_error| SessionError::SceneConstruction)?;
+            particle_radius,
+            hooks,
+        } = build_scene(id, &presets)?;
+        let particle_count = world
+            .particle_system_snapshot(particle_system)
+            .map_err(|_error| SessionError::SceneConstruction)?
+            .particle_count();
         let step_configuration = StepConfiguration::new(1.0 / 60.0, 8, 3)
             .map_err(|_error| SessionError::SceneConstruction)?
             .with_particle_iterations(2)
@@ -72,10 +82,11 @@ impl SessionCore {
         Ok(Self {
             world,
             particle_system,
-            dynamic_circle,
-            basin_segments,
-            circle_radius,
-            particle_count: PARTICLE_COUNT,
+            hooks,
+            particle_radius,
+            presets,
+            scene_id: id,
+            particle_count,
             step_configuration,
             step_limits: StepLimits::default(),
             step_index: 0,
@@ -92,6 +103,8 @@ impl SessionCore {
             .ok_or(SessionError::StepIndexExhausted)?;
 
         for _ in 0..step_count {
+            self.hooks
+                .on_advance(&mut self.world, self.particle_system)?;
             self.world
                 .step(
                     self.step_configuration,
@@ -103,6 +116,27 @@ impl SessionCore {
 
         self.step_index = next_step_index;
         Ok(())
+    }
+
+    #[cfg_attr(not(test), allow(dead_code))]
+    pub(crate) fn apply_control(&mut self, name: &str, value: &str) -> Result<bool, SessionError> {
+        let effect =
+            self.hooks
+                .apply_control(&mut self.world, self.particle_system, name, value)?;
+        match effect {
+            ControlEffect::Live => Ok(false),
+            ControlEffect::Recreated => {
+                store_preset(&mut self.presets, name, value);
+                *self = Self::from_built(self.scene_id, self.presets.clone())?;
+                Ok(true)
+            }
+        }
+    }
+
+    #[cfg_attr(not(test), allow(dead_code))]
+    pub(crate) fn apply_action(&mut self, name: &str) -> Result<(), SessionError> {
+        self.hooks
+            .apply_action(&mut self.world, self.particle_system, name)
     }
 
     pub(crate) fn capture_frame(&self) -> Result<FrameData, SessionError> {
@@ -140,13 +174,18 @@ impl SessionCore {
             for color in colors {
                 particle_colors.extend_from_slice(&color.components());
             }
-            let particle_radii = vec![PARTICLE_RADIUS; particle_ids.len()];
+            let particle_radii = vec![self.particle_radius; particle_ids.len()];
             (particle_positions, particle_colors, particle_radii)
         };
 
-        let mut rigid_segments =
-            Vec::with_capacity(self.basin_segments.len() * RIGID_SEGMENT_STRIDE);
-        for segment in self.basin_segments {
+        let segments = self.hooks.collect_segments(&self.world)?;
+        let mut rigid_segments = Vec::with_capacity(
+            segments
+                .len()
+                .checked_mul(RIGID_SEGMENT_STRIDE)
+                .ok_or(SessionError::FrameCaptureFailed)?,
+        );
+        for segment in segments {
             rigid_segments.extend_from_slice(&[
                 segment.start.x,
                 segment.start.y,
@@ -154,17 +193,17 @@ impl SessionCore {
                 segment.end.y,
             ]);
         }
-        let circle_position = self
-            .world
-            .body_snapshot(self.dynamic_circle)
-            .map_err(|_error| SessionError::FrameCaptureFailed)?
-            .position();
-        let mut rigid_circles = Vec::with_capacity(RIGID_CIRCLE_STRIDE);
-        rigid_circles.extend_from_slice(&[
-            circle_position.x,
-            circle_position.y,
-            self.circle_radius,
-        ]);
+
+        let circles = self.hooks.collect_circles(&self.world)?;
+        let mut rigid_circles = Vec::with_capacity(
+            circles
+                .len()
+                .checked_mul(RIGID_CIRCLE_STRIDE)
+                .ok_or(SessionError::FrameCaptureFailed)?,
+        );
+        for (position, radius) in circles {
+            rigid_circles.extend_from_slice(&[position.x, position.y, radius]);
+        }
 
         FrameData::new(
             self.step_index,
@@ -185,9 +224,26 @@ impl SessionCore {
         self.particle_count
     }
 
-    pub(crate) const fn rigid_shape_count(&self) -> usize {
-        self.basin_segments.len() + 1
+    pub(crate) fn rigid_shape_count(&self) -> usize {
+        let segment_count = self
+            .hooks
+            .collect_segments(&self.world)
+            .map_or(0, |segments| segments.len());
+        let circle_count = self
+            .hooks
+            .collect_circles(&self.world)
+            .map_or(0, |circles| circles.len());
+        segment_count.saturating_add(circle_count)
     }
+}
+
+#[cfg_attr(not(test), allow(dead_code))]
+fn store_preset(presets: &mut Vec<(String, String)>, name: &str, value: &str) {
+    if let Some(existing) = presets.iter_mut().find(|(key, _value)| key == name) {
+        value.clone_into(&mut existing.1);
+        return;
+    }
+    presets.push((name.to_owned(), value.to_owned()));
 }
 
 #[cfg(test)]
@@ -198,7 +254,7 @@ mod tests {
     use super::*;
 
     fn new_session() -> SessionCore {
-        SessionCore::new().expect("fixed proof scene should construct")
+        SessionCore::create(SceneId::DamBreak).expect("fixed proof scene should construct")
     }
 
     #[test]
@@ -243,8 +299,8 @@ mod tests {
     #[test]
     fn create_dam_break_matches_documented_medium_normal_world() {
         // Arrange
-        let session = SessionCore::create(SceneId::DamBreak)
-            .expect("allowlisted Dam Break should construct");
+        let session =
+            SessionCore::create(SceneId::DamBreak).expect("allowlisted Dam Break should construct");
 
         // Act
         let frame = capture(&session);
@@ -286,6 +342,47 @@ mod tests {
                 "Rust/WASM scene is not implemented"
             );
         }
+    }
+
+    #[test]
+    fn dam_break_unknown_control_and_action_fail_closed() {
+        // Arrange
+        let mut session =
+            SessionCore::create(SceneId::DamBreak).expect("allowlisted Dam Break should construct");
+
+        // Act
+        let control = session.apply_control("nope", "x");
+        let action = session.apply_action("nope");
+
+        // Assert
+        assert_eq!(control, Err(SessionError::UnknownControl));
+        assert_eq!(action, Err(SessionError::UnknownControl));
+        assert_eq!(
+            SessionError::UnknownControl.message(),
+            "Rust/WASM control is not allowlisted"
+        );
+        assert_eq!(session.particle_count(), 192);
+        assert_eq!(session.scene_id, SceneId::DamBreak);
+        assert!(session.presets.is_empty());
+    }
+
+    #[test]
+    fn store_preset_replaces_matching_name() {
+        // Arrange
+        let mut presets = vec![("water".to_owned(), "medium".to_owned())];
+
+        // Act
+        store_preset(&mut presets, "water", "large");
+        store_preset(&mut presets, "gravity", "normal");
+
+        // Assert
+        assert_eq!(
+            presets,
+            vec![
+                ("water".to_owned(), "large".to_owned()),
+                ("gravity".to_owned(), "normal".to_owned()),
+            ]
+        );
     }
 
     fn capture(session: &SessionCore) -> ProofFrame {
