@@ -8,7 +8,7 @@ use liquidfun::{
 };
 
 use super::{
-    BuiltScene, ControlEffect, RigidSegment, SceneError, SceneHooks, attach_basin_fixture,
+    attach_basin_fixture, BuiltScene, ControlEffect, RigidSegment, SceneError, SceneHooks,
 };
 use crate::session::SessionError;
 
@@ -17,11 +17,17 @@ const HUB_RADIUS: f32 = 0.35;
 const PADDLE_INNER: f32 = 0.35;
 const PADDLE_OUTER: f32 = 1.7;
 const PADDLE_HALF_WIDTH: f32 = 0.14;
-const WHEEL_DENSITY: f32 = 0.8;
+const WHEEL_DENSITY: f32 = 0.45;
 const PARTICLE_RADIUS: f32 = 0.16;
 const MAXIMUM_PARTICLE_COUNT: usize = 320;
+const PARTICLE_LIFETIME: f32 = 3.0;
 const PARTICLE_COLOR: ParticleColor = ParticleColor::new(57, 211, 199, 255);
-const SEED_POSITION: Vec2 = Vec2::new(-4.5, 3.0);
+const SEED_POSITION: Vec2 = Vec2::new(-5.0, 0.3);
+const JET_POSITION: Vec2 = Vec2::new(-3.9, 3.15);
+const WEAK_JET_SPEED: f32 = 4.0;
+const MEDIUM_JET_SPEED: f32 = 8.0;
+const STRONG_JET_SPEED: f32 = 12.0;
+const EMIT_PER_STEP: u8 = 2;
 const PADDLE_LOCAL_SEGMENTS: [[Vec2; 2]; 4] = [
     [Vec2::new(PADDLE_INNER, 0.0), Vec2::new(PADDLE_OUTER, 0.0)],
     [Vec2::new(0.0, PADDLE_INNER), Vec2::new(0.0, PADDLE_OUTER)],
@@ -29,10 +35,58 @@ const PADDLE_LOCAL_SEGMENTS: [[Vec2; 2]; 4] = [
     [Vec2::new(0.0, -PADDLE_INNER), Vec2::new(0.0, -PADDLE_OUTER)],
 ];
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum JetStrength {
+    Weak,
+    Medium,
+    Strong,
+}
+
+impl JetStrength {
+    fn parse(value: &str) -> Option<Self> {
+        match value {
+            "weak" => Some(Self::Weak),
+            "medium" => Some(Self::Medium),
+            "strong" => Some(Self::Strong),
+            _ => None,
+        }
+    }
+
+    fn speed(self) -> f32 {
+        match self {
+            Self::Weak => WEAK_JET_SPEED,
+            Self::Medium => MEDIUM_JET_SPEED,
+            Self::Strong => STRONG_JET_SPEED,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Emission {
+    On,
+    Off,
+}
+
+impl Emission {
+    fn parse(value: &str) -> Option<Self> {
+        match value {
+            "on" => Some(Self::On),
+            "off" => Some(Self::Off),
+            _ => None,
+        }
+    }
+
+    fn is_on(self) -> bool {
+        matches!(self, Self::On)
+    }
+}
+
 struct WaterWheelHooks {
     trough_segments: [RigidSegment; 3],
     wheel: BodyId,
     hub_radius: f32,
+    jet_speed: f32,
+    emission: Emission,
 }
 
 pub(crate) fn build(presets: &[(String, String)]) -> Result<BuiltScene, SessionError> {
@@ -105,12 +159,16 @@ fn build_wheel() -> Result<BuiltScene, SceneError> {
             ],
             wheel,
             hub_radius: HUB_RADIUS,
+            jet_speed: MEDIUM_JET_SPEED,
+            emission: Emission::On,
         }),
     })
 }
 
 fn create_wheel(world: &mut World) -> Result<BodyId, SceneError> {
     let body_definition = BodyDef::new(BodyType::Dynamic, HUB_POSITION, 0.0, true)
+        .map_err(|_error| SceneError::Body)?
+        .with_angular_damping(0.05)
         .map_err(|_error| SceneError::Body)?;
     let wheel = world
         .create_body(&body_definition)
@@ -228,7 +286,7 @@ fn create_seed_system(world: &mut World) -> Result<ParticleSystemId, SceneError>
         .with_color(PARTICLE_COLOR)
         .with_position(SEED_POSITION)
         .map_err(|_error| SceneError::Particle)?
-        .with_lifetime(3.0)
+        .with_lifetime(PARTICLE_LIFETIME)
         .map_err(|_error| SceneError::Particle)?;
     let receipt = world
         .create_particle_with_def(system, None, &definition)
@@ -239,12 +297,35 @@ fn create_seed_system(world: &mut World) -> Result<ParticleSystemId, SceneError>
     Ok(system)
 }
 
+fn emit_jet(world: &mut World, system: ParticleSystemId, speed: f32) {
+    for index in 0..EMIT_PER_STEP {
+        let position = Vec2::new(JET_POSITION.x, JET_POSITION.y + f32::from(index) * 0.14);
+        let Ok(definition) = ParticleDef::default()
+            .with_flags(ParticleFlags::WATER)
+            .with_color(PARTICLE_COLOR)
+            .with_position(position)
+            .and_then(|definition| definition.with_velocity(Vec2::new(speed, -0.4)))
+            .and_then(|definition| definition.with_lifetime(PARTICLE_LIFETIME))
+        else {
+            return;
+        };
+        match world.create_particle_with_def(system, None, &definition) {
+            Ok(_receipt) => {}
+            Err(_error) => return,
+        }
+    }
+}
+
 impl SceneHooks for WaterWheelHooks {
     fn on_advance(
         &mut self,
-        _world: &mut World,
-        _system: ParticleSystemId,
+        world: &mut World,
+        system: ParticleSystemId,
     ) -> Result<(), SessionError> {
+        if !self.emission.is_on() {
+            return Ok(());
+        }
+        emit_jet(world, system, self.jet_speed);
         Ok(())
     }
 
@@ -252,10 +333,26 @@ impl SceneHooks for WaterWheelHooks {
         &mut self,
         _world: &mut World,
         _system: ParticleSystemId,
-        _name: &str,
-        _value: &str,
+        name: &str,
+        value: &str,
     ) -> Result<ControlEffect, SessionError> {
-        Err(SessionError::UnknownControl)
+        match name {
+            "jet-strength" => {
+                let Some(strength) = JetStrength::parse(value) else {
+                    return Err(SessionError::UnknownControl);
+                };
+                self.jet_speed = strength.speed();
+                Ok(ControlEffect::Live)
+            }
+            "emission" => {
+                let Some(emission) = Emission::parse(value) else {
+                    return Err(SessionError::UnknownControl);
+                };
+                self.emission = emission;
+                Ok(ControlEffect::Live)
+            }
+            _ => Err(SessionError::UnknownControl),
+        }
     }
 
     fn apply_action(
@@ -298,9 +395,9 @@ mod tests {
     use liquidfun::math::Vec2;
     use liquidfun::{BodyType, JointDef, WorldObservationLimits};
 
-    use crate::ProofFrame;
     use crate::scene::SceneId;
     use crate::session::SessionCore;
+    use crate::ProofFrame;
 
     #[test]
     fn create_water_wheel_builds_hub_circle_and_paddle_segments() {
@@ -352,9 +449,7 @@ mod tests {
     fn collect_segments_follow_a_forced_wheel_transform() {
         // Arrange
         let super::BuiltScene {
-            mut world,
-            hooks,
-            ..
+            mut world, hooks, ..
         } = super::build(&[]).expect("Water Wheel should construct");
         let before = flatten_segments(
             &hooks
@@ -508,9 +603,18 @@ mod tests {
         let unknown_name = session.apply_control("aim-angle", "0");
 
         // Assert
-        assert_eq!(bad_strength, Err(crate::session::SessionError::UnknownControl));
-        assert_eq!(bad_emission, Err(crate::session::SessionError::UnknownControl));
-        assert_eq!(unknown_name, Err(crate::session::SessionError::UnknownControl));
+        assert_eq!(
+            bad_strength,
+            Err(crate::session::SessionError::UnknownControl)
+        );
+        assert_eq!(
+            bad_emission,
+            Err(crate::session::SessionError::UnknownControl)
+        );
+        assert_eq!(
+            unknown_name,
+            Err(crate::session::SessionError::UnknownControl)
+        );
     }
 
     fn captured_paddle_angle(session: &SessionCore) -> f32 {
