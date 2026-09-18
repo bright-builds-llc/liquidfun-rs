@@ -84,7 +84,7 @@ Plans:
 - [x] 18-05-PLAN.md — Native Water Wheel spike with motor-off jet rotation
 - [ ] 18-06-PLAN.md — Evolve Dam Break controls and build bounded Fountain
 - [ ] 18-07-PLAN.md — Color Mixer contact-driven mixing honesty
-- [ ] 18-08-PLAN.md — Six static SVG catalog cards and fallback copy
+- [x] 18-08-PLAN.md — Six static SVG catalog cards and fallback copy
 - [ ] 18-09-PLAN.md — Ready flags, player controls, credits, and one-session wiring
 - [ ] 18-10-PLAN.md — Local six-scene Chromium proofs and independent AI review
 
@@ -110,7 +110,7 @@ Execution order: **16 → 17 → 18 → 19**. Each phase includes focused checks
 | --- | --- | --- | --- |
 | 16. Rust WASM Browser Bridge | 4/4 | Complete    | 2026-09-17 |
 | 17. Shared Player and Early Pages Delivery | 8/8 | Complete    | 2026-09-17 |
-| 18. Six Native Physics Demos | 5/10 | In Progress|  |
+| 18. Six Native Physics Demos | 6/10 | In Progress|  |
 | 19. Interaction Polish and Browser Verification | 0/TBD | Not started | - |
 
 ## Coverage and Planning Basis

@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Web Playground
 status: executing
-stopped_at: Completed 18-05-PLAN.md
-last_updated: "2026-09-18T04:54:43.114Z"
+stopped_at: Completed 18-08-PLAN.md
+last_updated: "2026-09-18T04:58:04.368Z"
 last_activity: 2026-09-18
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 22
-  completed_plans: 17
-  percent: 77
+  completed_plans: 18
+  percent: 82
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-09-17)
 ## Current Position
 
 Phase: 18 (six-native-physics-demos) — EXECUTING
-Plan: 6 of 10
+Plan: 7 of 10
 Status: Ready to execute
 Last activity: 2026-09-18
 
@@ -57,6 +57,7 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 | Phase 18-six-native-physics-demos P03 | 10 min | 2 tasks | 2 files |
 | Phase 18-six-native-physics-demos P04 | 13 min | 2 tasks | 2 files |
 | Phase 18-six-native-physics-demos P05 | 8 min | 2 tasks | 2 files |
+| Phase 18 P08 | 2 min | 2 tasks | 5 files |
 
 ### Decisions
 
@@ -115,6 +116,9 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 - [Phase 18-six-native-physics-demos]: Keep build(presets) and ignore the bag; jet strength and emission are live. — Plan 01 locked the factory signature. Jet and emission are runtime policy, not construction resets.
 - [Phase 18-six-native-physics-demos]: Hub at (0, 3) uses RevoluteJointDef::new without a motor; paddles are local fixtures plus transformed segments. — D-09 and D-11 forbid motor spin. Capture must follow BodySnapshot::transform().apply.
 - [Phase 18-six-native-physics-demos]: Medium jet at 8 m/s from the left plus two WATER particles per step rotates the wheel natively; no D-11 pinwheel fallback. — Assumption A3 held on the first tuned emit. Do not enable the motor or substitute the scene.
+- [Phase 18]: Mark current only when maybeCurrentSceneId matches a ready id so stub cards never get aria-current. — Plan 08 ships cards before Plan 09 flips ready. Current chrome must not imply a stub scene is playing.
+- [Phase 18]: Use an inset 4px accent bar via box-shadow so the 1px card border stays visible. — 18-UI-SPEC requires both a 1px #2A3441 card border and a 4px current-scene accent on the inline start.
+- [Phase 18]: Keep the not-ready fallback branch as unused defensive copy; do not edit PAGE_SUMMARY. — Plan 09 owns ready flags and the six-demo page summary. Plan 08 only updates empty/unknown fallback strings.
 
 ### Pending Todos
 
@@ -137,6 +141,6 @@ No new milestone todos captured. Phase 17 is ready for discussion and planning.
 
 ## Session Continuity
 
-Last session: 2026-09-18T04:54:37.676Z
-Stopped at: Completed 18-05-PLAN.md
+Last session: 2026-09-18T04:57:56.799Z
+Stopped at: Completed 18-08-PLAN.md
 Resume file: None
