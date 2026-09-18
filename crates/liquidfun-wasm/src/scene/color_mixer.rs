@@ -223,8 +223,94 @@ mod tests {
         );
     }
 
+    #[test]
+    fn mix_strength_off_keeps_color_lanes_stable_after_stirred_steps() {
+        // Arrange
+        let mut session = SessionCore::create(SceneId::ColorMixer)
+            .expect("Color Mixer should construct two mixing groups");
+        let recreated = session
+            .apply_control("mix-strength", "off")
+            .expect("mix-strength=off should recreate");
+        let before = capture(&session);
+        let before_colors = before.particle_colors();
+        let before_count = before.particle_count();
+
+        // Act
+        advance_steps(&mut session, 120);
+        let after = capture(&session);
+
+        // Assert
+        assert!(recreated, "mix-strength must return Recreated");
+        assert_eq!(after.particle_count(), before_count);
+        assert_eq!(
+            after.particle_colors().as_ref(),
+            before_colors.as_ref(),
+            "Off mix-strength must skip the engine color-mixing pass"
+        );
+    }
+
+    #[test]
+    fn default_strong_changes_color_lanes_after_contact() {
+        // Arrange
+        let mut session = SessionCore::create(SceneId::ColorMixer)
+            .expect("Color Mixer should construct two mixing groups");
+        let before = capture(&session);
+        let before_colors = before.particle_colors();
+        let before_count = before.particle_count();
+
+        // Act
+        advance_steps(&mut session, 120);
+        let after = capture(&session);
+
+        // Assert
+        assert_eq!(after.particle_count(), before_count);
+        assert_ne!(
+            after.particle_colors().as_ref(),
+            before_colors.as_ref(),
+            "default Strong mix-strength must change captured color-lane bytes"
+        );
+    }
+
+    #[test]
+    fn stir_speed_presets_apply_live() {
+        // Arrange
+        let super::BuiltScene {
+            mut world,
+            particle_system,
+            mut hooks,
+            ..
+        } = super::build(&[]).expect("Color Mixer should construct");
+
+        // Act
+        let off = hooks
+            .apply_control(&mut world, particle_system, "stir-speed", "off")
+            .expect("stir-speed=off should apply");
+        let slow = hooks
+            .apply_control(&mut world, particle_system, "stir-speed", "slow")
+            .expect("stir-speed=slow should apply");
+        let fast = hooks
+            .apply_control(&mut world, particle_system, "stir-speed", "fast")
+            .expect("stir-speed=fast should apply");
+
+        // Assert
+        assert!(matches!(off, crate::scene::ControlEffect::Live));
+        assert!(matches!(slow, crate::scene::ControlEffect::Live));
+        assert!(matches!(fast, crate::scene::ControlEffect::Live));
+    }
+
     fn colors_contain(colors: &[u8], expected: [u8; 4]) -> bool {
         colors.chunks_exact(4).any(|chunk| chunk == expected)
+    }
+
+    fn advance_steps(session: &mut SessionCore, steps: u32) {
+        let mut remaining = steps;
+        while remaining > 0 {
+            let chunk = remaining.min(4);
+            session
+                .advance(chunk)
+                .expect("bounded native steps should succeed");
+            remaining -= chunk;
+        }
     }
 
     fn capture(session: &SessionCore) -> ProofFrame {
