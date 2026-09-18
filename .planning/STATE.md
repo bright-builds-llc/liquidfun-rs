@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Web Playground
 status: executing
-stopped_at: Completed 18-02-PLAN.md
-last_updated: "2026-09-18T04:19:07.443Z"
+stopped_at: Completed 18-03-PLAN.md
+last_updated: "2026-09-18T04:30:57.520Z"
 last_activity: 2026-09-18
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 22
-  completed_plans: 14
-  percent: 64
+  completed_plans: 15
+  percent: 68
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-09-17)
 ## Current Position
 
 Phase: 18 (six-native-physics-demos) — EXECUTING
-Plan: 3 of 10
+Plan: 4 of 10
 Status: Ready to execute
 Last activity: 2026-09-18
 
@@ -54,6 +54,7 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 | Phase 17 P07 | 2min | 2 tasks | 1 files |
 | Phase 18 P01 | 10 min | 2 tasks | 10 files |
 | Phase 18 P02 | 2 min | 2 tasks | 4 files |
+| Phase 18-six-native-physics-demos P03 | 10 min | 2 tasks | 2 files |
 
 ### Decisions
 
@@ -103,6 +104,9 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 - [Phase 18]: Include the UI-SPEC Poke jelly action on jelly-drop even though the machine-id table omitted it. — UI-SPEC and D-05 list the poke action; catalog chrome later needs that control id.
 - [Phase 18]: Throw a fixed allowlist error for traversal or non-scene implementation paths. — D-13 and T-18-02-02 require fail-closed scene paths so google/liquidfun never becomes implementation.
 - [Phase 18]: Copy the 40-hex SHA pattern into links.ts instead of importing Vite env from build-info. — Catalog URLs must stay hash-route independent and must not accept caller-supplied origins.
+- [Phase 18-six-native-physics-demos]: Keep build(presets) on Float or Sink and ignore the bag; density is live on drop-body. — Plan 01 locked the factory signature. Density is a live drop preset, not a construction reset.
+- [Phase 18-six-native-physics-demos]: Drop a dynamic circle at (0, 6) with fixture densities 0.3/0.6/2.0 against particle density 1.0. — Matches the locked research enumerations and the cork-versus-stone honesty test spawn.
+- [Phase 18-six-native-physics-demos]: Cork-versus-stone y-separation is proven by native coupling; no engine API expansion. — D-09 and D-11 forbid fake buoyancy and public liquidfun changes to save the title.
 
 ### Pending Todos
 
@@ -125,6 +129,6 @@ No new milestone todos captured. Phase 17 is ready for discussion and planning.
 
 ## Session Continuity
 
-Last session: 2026-09-18T04:19:00.753Z
-Stopped at: Completed 18-02-PLAN.md
+Last session: 2026-09-18T04:30:46.962Z
+Stopped at: Completed 18-03-PLAN.md
 Resume file: None
