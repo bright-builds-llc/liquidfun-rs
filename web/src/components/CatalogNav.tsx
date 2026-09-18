@@ -1,24 +1,24 @@
 import { For } from "solid-js";
 
-import { SCENES, type SceneId, type SceneRecord } from "../catalog/scenes";
+import { ScenePreview } from "../catalog/previews";
+import { SCENES, isReadySceneId, type SceneId } from "../catalog/scenes";
+
+const PREVIEW_CAPTION = "Static preview";
+const OPEN_LABEL = "Open";
 
 export type CatalogNavProps = {
   readonly maybeCurrentSceneId?: SceneId | undefined;
 };
 
-function catalogItemClass(scene: SceneRecord, isCurrent: boolean): string {
+function catalogCardClass(isCurrent: boolean): string {
   if (isCurrent) {
-    return "catalog-item catalog-item--current";
+    return "catalog-card catalog-card--current";
   }
 
-  if (!scene.ready) {
-    return "catalog-item catalog-item--not-ready";
-  }
-
-  return "catalog-item";
+  return "catalog-card";
 }
 
-/** Honest six-name catalog with a hash-only Dam Break link. */
+/** Six-card catalog with static SVG previews and hash-only Open links. */
 export function CatalogNav(props: CatalogNavProps) {
   return (
     <nav class="catalog-nav" aria-labelledby="scene-nav-title">
@@ -29,23 +29,22 @@ export function CatalogNav(props: CatalogNavProps) {
         <For each={SCENES}>
           {(scene) => {
             const isCurrent =
-              scene.id === "dam-break" &&
-              props.maybeCurrentSceneId === "dam-break";
-            const chip = scene.ready ? "Ready" : "Not ready yet";
+              props.maybeCurrentSceneId === scene.id &&
+              isReadySceneId(scene.id);
 
             return (
-              <li class={catalogItemClass(scene, isCurrent)}>
-                {scene.id === "dam-break" ? (
-                  <a
-                    href="#/scene/dam-break"
-                    aria-current={isCurrent ? "page" : undefined}
-                  >
-                    {scene.title}
-                  </a>
-                ) : (
-                  <a href={`#/scene/${scene.id}`}>{scene.title}</a>
-                )}
-                <span class="scene-chip">{chip}</span>
+              <li class={catalogCardClass(isCurrent)}>
+                <ScenePreview sceneId={scene.previewId} />
+                <p class="catalog-preview-caption">{PREVIEW_CAPTION}</p>
+                <p class="catalog-card-title">{scene.title}</p>
+                <p class="catalog-card-description">{scene.description}</p>
+                <a
+                  class="product-control catalog-open"
+                  href={`#/scene/${scene.id}`}
+                  aria-current={isCurrent ? "page" : undefined}
+                >
+                  {OPEN_LABEL}
+                </a>
               </li>
             );
           }}

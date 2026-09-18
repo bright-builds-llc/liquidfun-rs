@@ -116,6 +116,22 @@ describe("SCENES", () => {
     ]);
   });
 
+  it("keeps stub scenes unready so catalog cards stay static previews", () => {
+    // Arrange
+    const readyCount = SCENES.filter((scene) => scene.ready).length;
+
+    // Act
+    const previewIds = SCENES.map((scene) => scene.previewId);
+    const descriptions = SCENES.map((scene) => scene.description);
+
+    // Assert
+    expect(readyCount).toBe(1);
+    expect(previewIds).toEqual([...SCENE_IDS]);
+    expect(descriptions).toEqual(
+      SCENE_IDS.map((id) => UI_SPEC_DESCRIPTIONS[id]),
+    );
+  });
+
   it("uses the locked UI-SPEC description for each scene", () => {
     // Arrange
     const expected = SCENE_IDS.map((id) => UI_SPEC_DESCRIPTIONS[id]);

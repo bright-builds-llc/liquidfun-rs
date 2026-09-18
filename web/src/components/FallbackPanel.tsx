@@ -1,9 +1,9 @@
 const EMPTY_HEADING = "Choose a scene";
 const EMPTY_BODY =
-  "Dam Break is the only working demo in this early playground. Open it to start, or pick it from the scene list.";
+  "Pick a demo card to open it in the shared player. Each scene is a live Rust simulation, not the static card preview.";
 const UNKNOWN_HEADING = "Scene not found";
 const UNKNOWN_BODY =
-  "This playground link does not match a known scene. Open Dam Break to play the first working demo.";
+  "This playground link does not match a known scene. Open Dam Break, or pick a demo from the scene cards.";
 const NOT_READY_BODY =
   "This demo is listed for the upcoming catalog and has no physics yet. Open Dam Break to play the first working scene.";
 const OPEN_DAM_BREAK = "Open Dam Break";
