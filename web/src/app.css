@@ -103,52 +103,64 @@ h2,
 }
 
 .catalog-list {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-md);
   padding: 0;
   list-style: none;
 }
 
-.catalog-item {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-xs);
+.catalog-card {
+  display: grid;
+  align-content: start;
+  gap: var(--space-sm);
   min-width: 0;
-}
-
-.catalog-item a {
-  overflow-wrap: anywhere;
-  color: #F4F7FA;
-  font-size: 16px;
-  font-weight: 400;
-  line-height: 1.5;
-  text-decoration: none;
-}
-
-.catalog-item--current a {
-  padding-inline-start: var(--space-sm);
-  border-inline-start: 4px solid #39D3C7;
-}
-
-.catalog-item--not-ready a {
-  color: #A9B4C0;
-}
-
-.scene-chip {
-  padding: var(--space-xs);
-  color: #F4F7FA;
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1.4;
+  padding: var(--space-md);
   background: #151D28;
   border: 1px solid #2A3441;
   border-radius: 12px;
 }
 
-.catalog-item--not-ready .scene-chip {
+.catalog-card--current {
+  box-shadow: inset 4px 0 0 #39D3C7;
+}
+
+.catalog-preview {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #071018;
+  border: 1px solid #2A3441;
+  border-radius: 12px;
+}
+
+.catalog-preview-caption {
   color: #A9B4C0;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+.catalog-card-title {
+  overflow-wrap: anywhere;
+  color: #F4F7FA;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.catalog-card-description {
+  overflow-wrap: anywhere;
+  color: #A9B4C0;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.catalog-open {
+  justify-self: start;
+  min-block-size: 44px;
 }
 
 .status-row {
@@ -412,6 +424,12 @@ button:disabled {
   color: #F4F7FA;
 }
 
+@media (max-width: 720px) {
+  .catalog-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 480px) {
   main {
     gap: var(--space-md);
@@ -442,6 +460,7 @@ button:disabled {
   }
 
   .product-control,
+  .catalog-open,
   button {
     justify-self: stretch;
     width: 100%;
