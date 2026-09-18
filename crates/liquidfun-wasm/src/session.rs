@@ -3,7 +3,7 @@
 use liquidfun::{NoDecisionHook, ParticleSystemId, StepConfiguration, StepLimits, World};
 
 use crate::frame::FrameData;
-use crate::scene::{BuiltScene, ControlEffect, SceneHooks, SceneId, build_scene};
+use crate::scene::{build_scene, BuiltScene, ControlEffect, SceneHooks, SceneId};
 
 pub(crate) const MAX_ADVANCE_STEPS: u32 = 4;
 const MAX_FRAME_PARTICLES: usize = 512;
@@ -16,6 +16,7 @@ const RIGID_CIRCLE_STRIDE: usize = 3;
 pub(crate) enum SessionError {
     SceneConstruction,
     UnknownScene,
+    #[allow(dead_code)] // Retained for fail-closed unimplemented scene construction.
     SceneUnimplemented,
     UnknownControl,
     StepCountOutOfRange,
@@ -242,8 +243,8 @@ fn store_preset(presets: &mut Vec<(String, String)>, name: &str, value: &str) {
 
 #[cfg(test)]
 mod tests {
+    use crate::scene::{parse_scene_id, SceneId};
     use crate::ProofFrame;
-    use crate::scene::{SceneId, parse_scene_id};
 
     use super::*;
 
@@ -315,21 +316,13 @@ mod tests {
     }
 
     #[test]
-    fn create_stub_scenes_fail_closed_without_a_live_world() {
-        // Arrange
-        let stub_ids = [SceneId::ColorMixer];
+    fn create_color_mixer_constructs_a_live_world() {
+        // Arrange / Act
+        let session = SessionCore::create(SceneId::ColorMixer)
+            .expect("allowlisted Color Mixer should construct");
 
-        for id in stub_ids {
-            // Act
-            let result = SessionCore::create(id);
-
-            // Assert
-            assert_eq!(result.err(), Some(SessionError::SceneUnimplemented));
-            assert_eq!(
-                SessionError::SceneUnimplemented.message(),
-                "Rust/WASM scene is not implemented"
-            );
-        }
+        // Assert
+        assert!((40..=220).contains(&session.particle_count()));
     }
 
     #[test]
@@ -459,18 +452,14 @@ mod tests {
         assert_eq!(frame.particle_positions().len(), 192 * 2);
         assert_eq!(frame.particle_colors().len(), 192 * 4);
         assert_eq!(frame.particle_radii().len(), 192);
-        assert!(
-            frame
-                .particle_positions()
-                .iter()
-                .all(|value| value.is_finite())
-        );
-        assert!(
-            frame
-                .particle_radii()
-                .iter()
-                .all(|radius| radius.is_finite() && *radius > 0.0)
-        );
+        assert!(frame
+            .particle_positions()
+            .iter()
+            .all(|value| value.is_finite()));
+        assert!(frame
+            .particle_radii()
+            .iter()
+            .all(|radius| radius.is_finite() && *radius > 0.0));
         assert!(frame.rigid_segments().iter().all(|value| value.is_finite()));
         assert!(frame.rigid_circles().iter().all(|value| value.is_finite()));
     }
