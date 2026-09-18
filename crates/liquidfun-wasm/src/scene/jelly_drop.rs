@@ -5,9 +5,11 @@ use liquidfun::math::{Transform, Vec2};
 use liquidfun::particle::{
     ParticleColor, ParticleFlags, ParticleGroupDestination, ParticleGroupRecipe, ParticleGroupSource,
 };
-use liquidfun::{ParticleSystemDef, ParticleSystemId, World};
+use liquidfun::{ParticleGroupId, ParticleSystemDef, ParticleSystemId, World};
 
-use super::{BuiltScene, RigidSegment, SceneError, SceneHooks, attach_basin_fixture};
+use super::{
+    BuiltScene, ControlEffect, RigidSegment, SceneError, SceneHooks, attach_basin_fixture,
+};
 use crate::session::SessionError;
 
 const PARTICLE_RADIUS: f32 = 0.16;
@@ -18,6 +20,8 @@ const JELLY_CENTER: Vec2 = Vec2::new(0.0, 3.6);
 const SOFT_STRENGTH: f32 = 0.4;
 const MEDIUM_STRENGTH: f32 = 1.0;
 const FIRM_STRENGTH: f32 = 2.0;
+/// Downward labeled poke; applied to the contiguous group member range.
+const POKE_IMPULSE: Vec2 = Vec2::new(0.0, -8.0);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum JellyShape {
@@ -63,6 +67,7 @@ impl Softness {
 
 struct JellyDropHooks {
     bar_segments: [RigidSegment; 2],
+    group: ParticleGroupId,
 }
 
 pub(crate) fn build(presets: &[(String, String)]) -> Result<BuiltScene, SessionError> {
@@ -97,8 +102,8 @@ fn build_jelly(shape: JellyShape, softness: Softness) -> Result<BuiltScene, Scen
         ground,
         &[
             Vec2::new(-3.2, 0.85),
-            Vec2::new(-0.4, 0.85),
-            Vec2::new(-0.4, 1.15),
+            Vec2::new(0.6, 0.85),
+            Vec2::new(0.6, 1.15),
             Vec2::new(-3.2, 1.15),
         ],
     )?;
@@ -106,14 +111,14 @@ fn build_jelly(shape: JellyShape, softness: Softness) -> Result<BuiltScene, Scen
         &mut world,
         ground,
         &[
-            Vec2::new(0.4, 0.85),
+            Vec2::new(-0.6, 0.85),
             Vec2::new(3.2, 0.85),
             Vec2::new(3.2, 1.15),
-            Vec2::new(0.4, 1.15),
+            Vec2::new(-0.6, 1.15),
         ],
     )?;
 
-    let particle_system = create_jelly_group(&mut world, shape, softness)?;
+    let (particle_system, group) = create_jelly_group(&mut world, shape, softness)?;
 
     Ok(BuiltScene {
         world,
@@ -123,13 +128,14 @@ fn build_jelly(shape: JellyShape, softness: Softness) -> Result<BuiltScene, Scen
             bar_segments: [
                 RigidSegment {
                     start: Vec2::new(-3.2, 1.0),
-                    end: Vec2::new(-0.4, 1.0),
+                    end: Vec2::new(0.6, 1.0),
                 },
                 RigidSegment {
-                    start: Vec2::new(0.4, 1.0),
+                    start: Vec2::new(-0.6, 1.0),
                     end: Vec2::new(3.2, 1.0),
                 },
             ],
+            group,
         }),
     })
 }
@@ -138,9 +144,15 @@ fn create_jelly_group(
     world: &mut World,
     shape: JellyShape,
     softness: Softness,
-) -> Result<ParticleSystemId, SceneError> {
+) -> Result<(ParticleSystemId, ParticleGroupId), SceneError> {
     let system_definition = ParticleSystemDef::default()
         .with_radius(PARTICLE_RADIUS)
+        .map_err(|_error| SceneError::ParticleSystem)?
+        .with_damping(1.2)
+        .map_err(|_error| SceneError::ParticleSystem)?
+        .with_elastic_strength(0.75)
+        .map_err(|_error| SceneError::ParticleSystem)?
+        .with_spring_strength(0.75)
         .map_err(|_error| SceneError::ParticleSystem)?
         .with_maximum_count(MAXIMUM_PARTICLE_COUNT)
         .map_err(|_error| SceneError::ParticleSystem)?;
@@ -156,10 +168,10 @@ fn create_jelly_group(
         .with_color(JELLY_COLOR)
         .with_transform(Transform::from_position_angle(JELLY_CENTER, 0.0))
         .map_err(|_error| SceneError::Particle)?;
-    world
+    let group = world
         .create_particle_group(system, &recipe)
         .map_err(|_error| SceneError::Particle)?;
-    Ok(system)
+    Ok((system, group))
 }
 
 fn jelly_source(shape: JellyShape) -> Result<ParticleGroupSource, SceneError> {
@@ -180,6 +192,25 @@ fn jelly_source(shape: JellyShape) -> Result<ParticleGroupSource, SceneError> {
     ParticleGroupSource::filled_shapes(vec![filled]).map_err(|_error| SceneError::Particle)
 }
 
+fn poke_jelly(
+    world: &mut World,
+    system: ParticleSystemId,
+    group: ParticleGroupId,
+) -> Result<(), SessionError> {
+    let members = {
+        let view = world
+            .particle_group_view(group)
+            .map_err(|_error| SessionError::SceneConstruction)?;
+        view.member_ids().to_vec()
+    };
+    let poke_len = members.len().div_ceil(3).max(1).min(members.len());
+    let poked = &members[..poke_len];
+    world
+        .apply_particle_linear_impulse_range(system, poked, POKE_IMPULSE)
+        .map_err(|_error| SessionError::SceneConstruction)?;
+    Ok(())
+}
+
 impl SceneHooks for JellyDropHooks {
     fn on_advance(
         &mut self,
@@ -193,19 +224,36 @@ impl SceneHooks for JellyDropHooks {
         &mut self,
         _world: &mut World,
         _system: ParticleSystemId,
-        _name: &str,
-        _value: &str,
-    ) -> Result<super::ControlEffect, SessionError> {
-        Err(SessionError::UnknownControl)
+        name: &str,
+        value: &str,
+    ) -> Result<ControlEffect, SessionError> {
+        match name {
+            "shape" => {
+                let Some(_shape) = JellyShape::parse(value) else {
+                    return Err(SessionError::UnknownControl);
+                };
+                Ok(ControlEffect::Recreated)
+            }
+            "softness" => {
+                let Some(_softness) = Softness::parse(value) else {
+                    return Err(SessionError::UnknownControl);
+                };
+                Ok(ControlEffect::Recreated)
+            }
+            _ => Err(SessionError::UnknownControl),
+        }
     }
 
     fn apply_action(
         &mut self,
-        _world: &mut World,
-        _system: ParticleSystemId,
-        _name: &str,
+        world: &mut World,
+        system: ParticleSystemId,
+        name: &str,
     ) -> Result<(), SessionError> {
-        Err(SessionError::UnknownControl)
+        if name != "poke-jelly" {
+            return Err(SessionError::UnknownControl);
+        }
+        poke_jelly(world, system, self.group)
     }
 
     fn collect_segments(&self, _world: &World) -> Result<Vec<RigidSegment>, SessionError> {
