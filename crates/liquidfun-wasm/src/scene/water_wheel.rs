@@ -388,6 +388,156 @@ mod tests {
         );
     }
 
+    #[test]
+    fn medium_jet_with_emission_on_turns_the_wheel() {
+        // Arrange
+        let mut session = SessionCore::create(SceneId::WaterWheel)
+            .expect("Water Wheel should construct a native pinned wheel");
+        let recreated_strength = session
+            .apply_control("jet-strength", "medium")
+            .expect("medium jet should apply live");
+        let recreated_emission = session
+            .apply_control("emission", "on")
+            .expect("emission on should apply live");
+        let before = captured_paddle_angle(&session);
+
+        // Act
+        advance_steps(&mut session, 180);
+        let after = captured_paddle_angle(&session);
+
+        // Assert
+        assert!(!recreated_strength);
+        assert!(!recreated_emission);
+        assert!(
+            (after - before).abs() > 0.05,
+            "native coupling should rotate the wheel; before={before} after={after}"
+        );
+    }
+
+    #[test]
+    fn emission_off_leaves_the_wheel_angle_nearly_unchanged() {
+        // Arrange
+        let mut session = SessionCore::create(SceneId::WaterWheel)
+            .expect("Water Wheel should construct a native pinned wheel");
+        session
+            .apply_control("emission", "off")
+            .expect("emission off should apply live");
+        let before = captured_paddle_angle(&session);
+
+        // Act
+        advance_steps(&mut session, 180);
+        let after = captured_paddle_angle(&session);
+
+        // Assert
+        assert!(
+            (after - before).abs() < 0.01,
+            "motor-off wheel must not spin without the jet; before={before} after={after}"
+        );
+    }
+
+    #[test]
+    fn two_hundred_forty_on_steps_plateau_at_or_below_the_particle_cap() {
+        // Arrange
+        let mut session = SessionCore::create(SceneId::WaterWheel)
+            .expect("Water Wheel should construct a native pinned wheel");
+        session
+            .apply_control("jet-strength", "medium")
+            .expect("medium jet should apply live");
+        session
+            .apply_control("emission", "on")
+            .expect("emission on should apply live");
+
+        // Act
+        advance_steps(&mut session, 210);
+        let mid_count = capture(&session).particle_count();
+        advance_steps(&mut session, 30);
+        let end_count = capture(&session).particle_count();
+
+        // Assert
+        assert!(end_count <= 320);
+        assert!(
+            end_count <= mid_count,
+            "count should not keep climbing over the last 30 steps: {mid_count} -> {end_count}"
+        );
+    }
+
+    #[test]
+    fn jet_strength_and_emission_apply_live() {
+        // Arrange
+        let super::BuiltScene {
+            mut world,
+            particle_system,
+            mut hooks,
+            ..
+        } = super::build(&[]).expect("Water Wheel should construct");
+
+        // Act
+        let weak = hooks
+            .apply_control(&mut world, particle_system, "jet-strength", "weak")
+            .expect("weak jet should apply");
+        let medium = hooks
+            .apply_control(&mut world, particle_system, "jet-strength", "medium")
+            .expect("medium jet should apply");
+        let strong = hooks
+            .apply_control(&mut world, particle_system, "jet-strength", "strong")
+            .expect("strong jet should apply");
+        let off = hooks
+            .apply_control(&mut world, particle_system, "emission", "off")
+            .expect("emission off should apply");
+        let on = hooks
+            .apply_control(&mut world, particle_system, "emission", "on")
+            .expect("emission on should apply");
+
+        // Assert
+        assert!(matches!(weak, super::ControlEffect::Live));
+        assert!(matches!(medium, super::ControlEffect::Live));
+        assert!(matches!(strong, super::ControlEffect::Live));
+        assert!(matches!(off, super::ControlEffect::Live));
+        assert!(matches!(on, super::ControlEffect::Live));
+    }
+
+    #[test]
+    fn unknown_jet_and_emission_tokens_fail_closed() {
+        // Arrange
+        let mut session = SessionCore::create(SceneId::WaterWheel)
+            .expect("Water Wheel should construct a native pinned wheel");
+
+        // Act
+        let bad_strength = session.apply_control("jet-strength", "max");
+        let bad_emission = session.apply_control("emission", "maybe");
+        let unknown_name = session.apply_control("aim-angle", "0");
+
+        // Assert
+        assert_eq!(bad_strength, Err(crate::session::SessionError::UnknownControl));
+        assert_eq!(bad_emission, Err(crate::session::SessionError::UnknownControl));
+        assert_eq!(unknown_name, Err(crate::session::SessionError::UnknownControl));
+    }
+
+    fn captured_paddle_angle(session: &SessionCore) -> f32 {
+        let segments = capture(session).rigid_segments();
+        assert!(
+            segments.len() >= 16,
+            "captured frame must include at least four paddle segments"
+        );
+        let first_paddle = segments.len().saturating_sub(16);
+        let start_x = segments[first_paddle];
+        let start_y = segments[first_paddle + 1];
+        let end_x = segments[first_paddle + 2];
+        let end_y = segments[first_paddle + 3];
+        (end_y - start_y).atan2(end_x - start_x)
+    }
+
+    fn advance_steps(session: &mut SessionCore, steps: u32) {
+        let mut remaining = steps;
+        while remaining > 0 {
+            let chunk = remaining.min(4);
+            session
+                .advance(chunk)
+                .expect("bounded native steps should succeed");
+            remaining -= chunk;
+        }
+    }
+
     fn flatten_segments(segments: &[crate::scene::RigidSegment]) -> Vec<f32> {
         let mut values = Vec::with_capacity(segments.len().saturating_mul(4));
         for segment in segments {
