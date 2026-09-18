@@ -320,7 +320,6 @@ mod tests {
         let stub_ids = [
             SceneId::Fountain,
             SceneId::ColorMixer,
-            SceneId::JellyDrop,
             SceneId::WaterWheel,
         ];
 
