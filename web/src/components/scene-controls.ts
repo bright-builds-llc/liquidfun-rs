@@ -10,7 +10,7 @@ export const DEFAULT_PRESET_VALUES: Readonly<Record<string, string>> = {
   "emission-rate": "medium",
   "launch-speed": "medium",
   "aim-angle": "up",
-  body: "cork",
+  body: "wood",
   "mix-strength": "strong",
   "stir-speed": "slow",
   shape: "circle",
