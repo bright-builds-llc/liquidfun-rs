@@ -5,7 +5,7 @@ import {
   NOTICES_LINK_LABEL,
   SCENE_SOURCE_HEADING,
   implementationHref,
-} from "../src/components/SceneCredits";
+} from "../src/components/scene-credits";
 
 const VALID_SHA = "0123456789abcdef0123456789abcdef01234567";
 const DAM_BREAK_PATH = "crates/liquidfun-wasm/src/scene/dam_break.rs";

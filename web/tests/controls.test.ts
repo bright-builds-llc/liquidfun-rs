@@ -4,7 +4,7 @@ import {
   APPLY_SETTING_LABEL,
   CONSTRUCTION_RESET_HINT,
   constructionHintVisible,
-} from "../src/components/SceneControls";
+} from "../src/components/scene-controls";
 import type { SceneControl } from "../src/catalog/scenes";
 
 describe("constructionHintVisible", () => {

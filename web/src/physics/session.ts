@@ -13,12 +13,16 @@ const MAX_STEPS_PER_FRAME = 4;
 export interface GeneratedProofSession {
   advance(stepCount: number): void;
   captureFrame(): RawProofFrame;
+  applyControl(name: string, value: string): boolean;
+  applyAction(name: string): void;
   free(): void;
 }
 
 /** Browser-facing owner of one opaque Rust/WASM proof session. */
 export interface SceneSession {
   nextFrame(stepCount?: number): RenderFrame;
+  applyControl(name: string, value: string): boolean;
+  applyAction(name: string): void;
   dispose(): void;
 }
 
@@ -73,6 +77,32 @@ export function createSceneSession(
     }
   }
 
+  function applyControl(name: string, value: string): boolean {
+    if (disposed) {
+      throw new Error(DISPOSED_MESSAGE);
+    }
+
+    try {
+      return generatedSession.applyControl(name, value);
+    } catch {
+      disposeAfterFailure();
+      throw new Error(FAILED_MESSAGE);
+    }
+  }
+
+  function applyAction(name: string): void {
+    if (disposed) {
+      throw new Error(DISPOSED_MESSAGE);
+    }
+
+    try {
+      generatedSession.applyAction(name);
+    } catch {
+      disposeAfterFailure();
+      throw new Error(FAILED_MESSAGE);
+    }
+  }
+
   function dispose(): void {
     if (disposed) {
       return;
@@ -82,5 +112,5 @@ export function createSceneSession(
     generatedSession.free();
   }
 
-  return { nextFrame, dispose };
+  return { nextFrame, applyControl, applyAction, dispose };
 }

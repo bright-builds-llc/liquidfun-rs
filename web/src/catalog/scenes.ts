@@ -118,7 +118,7 @@ export const SCENES: readonly SceneRecord[] = [
   {
     id: "fountain",
     title: "Fountain",
-    ready: false,
+    ready: true,
     description: "Aim a bounded stream into a bowl until particle count plateaus.",
     previewId: "fountain",
     controls: [
@@ -147,7 +147,7 @@ export const SCENES: readonly SceneRecord[] = [
   {
     id: "float-or-sink",
     title: "Float or Sink",
-    ready: false,
+    ready: true,
     description:
       "Drop cork, wood, or stone into a pool and watch native body response.",
     previewId: "float-or-sink",
@@ -167,7 +167,7 @@ export const SCENES: readonly SceneRecord[] = [
   {
     id: "color-mixer",
     title: "Color Mixer",
-    ready: false,
+    ready: true,
     description:
       "Stir two colored groups and watch contact-driven particle-color mixing.",
     previewId: "color-mixer",
@@ -197,7 +197,7 @@ export const SCENES: readonly SceneRecord[] = [
   {
     id: "jelly-drop",
     title: "Jelly Drop",
-    ready: false,
+    ready: true,
     description: "Drop an elastic particle shape onto obstacles, then poke it.",
     previewId: "jelly-drop",
     controls: [
@@ -229,7 +229,7 @@ export const SCENES: readonly SceneRecord[] = [
   {
     id: "water-wheel",
     title: "Water Wheel",
-    ready: false,
+    ready: true,
     description:
       "Vary a jet that turns a pinned paddle wheel through native coupling.",
     previewId: "water-wheel",
