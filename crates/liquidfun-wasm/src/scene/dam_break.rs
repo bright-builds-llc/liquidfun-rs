@@ -197,3 +197,198 @@ impl SceneHooks for DamBreakHooks {
         Ok(vec![(position, self.circle_radius)])
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::ProofFrame;
+    use crate::scene::SceneId;
+    use crate::session::SessionCore;
+
+    #[test]
+    fn default_create_is_still_medium_normal_basin() {
+        // Arrange / Act
+        let session = SessionCore::create(SceneId::DamBreak)
+            .expect("Dam Break should construct the documented basin");
+        let super::BuiltScene { world, .. } =
+            super::build(&[]).expect("default presets should build Medium/Normal");
+
+        // Assert
+        assert_eq!(session.particle_count(), 192);
+        assert_eq!(world.gravity().x.to_bits(), 0.0_f32.to_bits());
+        assert_eq!(world.gravity().y.to_bits(), (-10.0_f32).to_bits());
+    }
+
+    #[test]
+    fn water_amount_presets_recreate_with_locked_counts() {
+        // Arrange
+        let mut session = SessionCore::create(SceneId::DamBreak)
+            .expect("Dam Break should construct the documented basin");
+
+        // Act
+        let small = session
+            .apply_control("water-amount", "small")
+            .expect("water-amount=small should recreate");
+        let small_count = session.particle_count();
+        let large = session
+            .apply_control("water-amount", "large")
+            .expect("water-amount=large should recreate");
+        let large_count = session.particle_count();
+        let medium = session
+            .apply_control("water-amount", "medium")
+            .expect("water-amount=medium should recreate");
+
+        // Assert
+        assert!(small, "water-amount must return Recreated");
+        assert!(large, "water-amount must return Recreated");
+        assert!(medium, "water-amount must return Recreated");
+        assert_eq!(small_count, 64);
+        assert_eq!(large_count, 280);
+        assert_eq!(session.particle_count(), 192);
+    }
+
+    #[test]
+    fn gravity_presets_recreate_with_matching_bits() {
+        // Arrange
+        let mut session = SessionCore::create(SceneId::DamBreak)
+            .expect("Dam Break should construct the documented basin");
+
+        // Act
+        let low = session
+            .apply_control("gravity", "low")
+            .expect("gravity=low should recreate");
+        let high = session
+            .apply_control("gravity", "high")
+            .expect("gravity=high should recreate");
+        let normal = session
+            .apply_control("gravity", "normal")
+            .expect("gravity=normal should recreate");
+        let low_scene = super::build(&[("gravity".to_owned(), "low".to_owned())])
+            .expect("low gravity preset should construct");
+        let high_scene = super::build(&[("gravity".to_owned(), "high".to_owned())])
+            .expect("high gravity preset should construct");
+
+        // Assert
+        assert!(low, "gravity must return Recreated");
+        assert!(high, "gravity must return Recreated");
+        assert!(normal, "gravity must return Recreated");
+        assert_eq!(low_scene.world.gravity().x.to_bits(), 0.0_f32.to_bits());
+        assert_eq!(
+            low_scene.world.gravity().y.to_bits(),
+            (-6.0_f32).to_bits()
+        );
+        assert_eq!(high_scene.world.gravity().x.to_bits(), 0.0_f32.to_bits());
+        assert_eq!(
+            high_scene.world.gravity().y.to_bits(),
+            (-16.0_f32).to_bits()
+        );
+    }
+
+    #[test]
+    fn drop_obstacle_raises_then_falls_without_recreate() {
+        // Arrange
+        let mut session = SessionCore::create(SceneId::DamBreak)
+            .expect("Dam Break should construct the documented basin");
+        let before_count = session.particle_count();
+        let before = circle_pose(&session);
+
+        // Act
+        session
+            .apply_action("drop-obstacle")
+            .expect("drop-obstacle should apply live");
+        let dropped = circle_pose(&session);
+        advance_steps(&mut session, 12);
+        let fallen = circle_pose(&session);
+
+        // Assert
+        assert_eq!(before.0.to_bits(), 2.5_f32.to_bits());
+        assert_eq!(before.1.to_bits(), 5.5_f32.to_bits());
+        assert_eq!(dropped.0.to_bits(), 2.5_f32.to_bits());
+        assert_eq!(dropped.1.to_bits(), 7.2_f32.to_bits());
+        assert!(
+            fallen.1 < dropped.1,
+            "woken obstacle should fall after steps: {} -> {}",
+            dropped.1,
+            fallen.1
+        );
+        assert_eq!(session.particle_count(), before_count);
+    }
+
+    #[test]
+    fn reset_obstacle_restores_documented_bits_without_recreate() {
+        // Arrange
+        let mut session = SessionCore::create(SceneId::DamBreak)
+            .expect("Dam Break should construct the documented basin");
+        let before_count = session.particle_count();
+        session
+            .apply_action("drop-obstacle")
+            .expect("drop-obstacle should apply live");
+        advance_steps(&mut session, 8);
+
+        // Act
+        session
+            .apply_action("reset-obstacle")
+            .expect("reset-obstacle should apply live");
+        let reset = circle_pose(&session);
+
+        // Assert
+        assert_eq!(reset.0.to_bits(), 2.5_f32.to_bits());
+        assert_eq!(reset.1.to_bits(), 5.5_f32.to_bits());
+        assert_eq!(session.particle_count(), before_count);
+    }
+
+    #[test]
+    fn unknown_water_gravity_and_obstacle_tokens_fail_closed() {
+        // Arrange
+        let mut session = SessionCore::create(SceneId::DamBreak)
+            .expect("Dam Break should construct the documented basin");
+
+        // Act
+        let bad_water = session.apply_control("water-amount", "huge");
+        let bad_gravity = session.apply_control("gravity", "zero");
+        let unknown_name = session.apply_control("emission-rate", "medium");
+        let unknown_action = session.apply_action("poke-jelly");
+
+        // Assert
+        assert_eq!(bad_water, Err(crate::session::SessionError::UnknownControl));
+        assert_eq!(
+            bad_gravity,
+            Err(crate::session::SessionError::UnknownControl)
+        );
+        assert_eq!(
+            unknown_name,
+            Err(crate::session::SessionError::UnknownControl)
+        );
+        assert_eq!(
+            unknown_action,
+            Err(crate::session::SessionError::UnknownControl)
+        );
+    }
+
+    fn circle_pose(session: &SessionCore) -> (f32, f32) {
+        let circles = capture(session).rigid_circles();
+        assert!(
+            circles.len() >= 3,
+            "Dam Break should capture the existing circle obstacle"
+        );
+        (circles[0], circles[1])
+    }
+
+    fn advance_steps(session: &mut SessionCore, steps: u32) {
+        let mut remaining = steps;
+        while remaining > 0 {
+            let chunk = remaining.min(4);
+            session
+                .advance(chunk)
+                .expect("bounded native steps should succeed");
+            remaining -= chunk;
+        }
+    }
+
+    fn capture(session: &SessionCore) -> ProofFrame {
+        ProofFrame::from(
+            session
+                .capture_frame()
+                .expect("Dam Break should capture a frame"),
+        )
+    }
+}
