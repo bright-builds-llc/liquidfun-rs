@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Web Playground
 status: executing
-stopped_at: Completed 18-04-PLAN.md
-last_updated: "2026-09-18T04:45:25.484Z"
+stopped_at: Completed 18-05-PLAN.md
+last_updated: "2026-09-18T04:54:43.114Z"
 last_activity: 2026-09-18
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 22
-  completed_plans: 16
-  percent: 73
+  completed_plans: 17
+  percent: 77
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-09-17)
 ## Current Position
 
 Phase: 18 (six-native-physics-demos) — EXECUTING
-Plan: 5 of 10
+Plan: 6 of 10
 Status: Ready to execute
 Last activity: 2026-09-18
 
@@ -56,6 +56,7 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 | Phase 18 P02 | 2 min | 2 tasks | 4 files |
 | Phase 18-six-native-physics-demos P03 | 10 min | 2 tasks | 2 files |
 | Phase 18-six-native-physics-demos P04 | 13 min | 2 tasks | 2 files |
+| Phase 18-six-native-physics-demos P05 | 8 min | 2 tasks | 2 files |
 
 ### Decisions
 
@@ -111,6 +112,9 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 - [Phase 18-six-native-physics-demos]: Keep build(presets) and parse shape/softness from the bag; defaults are circle and medium 1.0. — Plan 01 locked the factory signature. Softness is recipe strength on reset, not a live setter.
 - [Phase 18-six-native-physics-demos]: Poke impulse is (0, -8) on a contiguous first-third of group member ids. — A whole-group poke launched particles past the camera box. A contiguous slice deforms the blob without shredding.
 - [Phase 18-six-native-physics-demos]: Overlapping bars near y=1 plus system elastic/spring 0.75 keep the blob inside the camera box after poke. — Assumption A2: retune count/strength/shelf rather than expand the public engine API.
+- [Phase 18-six-native-physics-demos]: Keep build(presets) and ignore the bag; jet strength and emission are live. — Plan 01 locked the factory signature. Jet and emission are runtime policy, not construction resets.
+- [Phase 18-six-native-physics-demos]: Hub at (0, 3) uses RevoluteJointDef::new without a motor; paddles are local fixtures plus transformed segments. — D-09 and D-11 forbid motor spin. Capture must follow BodySnapshot::transform().apply.
+- [Phase 18-six-native-physics-demos]: Medium jet at 8 m/s from the left plus two WATER particles per step rotates the wheel natively; no D-11 pinwheel fallback. — Assumption A3 held on the first tuned emit. Do not enable the motor or substitute the scene.
 
 ### Pending Todos
 
@@ -133,6 +137,6 @@ No new milestone todos captured. Phase 17 is ready for discussion and planning.
 
 ## Session Continuity
 
-Last session: 2026-09-18T04:45:25.481Z
-Stopped at: Completed 18-04-PLAN.md
+Last session: 2026-09-18T04:54:37.676Z
+Stopped at: Completed 18-05-PLAN.md
 Resume file: None
