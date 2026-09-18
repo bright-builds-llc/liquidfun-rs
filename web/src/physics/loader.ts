@@ -3,8 +3,13 @@ import init, {
 } from "../generated/liquidfun-wasm/liquidfun_wasm.js";
 import wasmUrl from "../generated/liquidfun-wasm/liquidfun_wasm_bg.wasm?url";
 
-/** Initializes the generated package and constructs the named Dam Break scene. */
-export async function loadProofSession(): Promise<ProofSession> {
+/** Initializes the generated package and constructs an allowlisted scene. */
+export async function loadSceneSession(sceneId: string): Promise<ProofSession> {
   await init({ module_or_path: wasmUrl });
-  return new ProofSession();
+  return new ProofSession(sceneId);
+}
+
+/** Dam Break wrapper so the Phase 17 player keeps compiling. */
+export async function loadProofSession(): Promise<ProofSession> {
+  return loadSceneSession("dam-break");
 }

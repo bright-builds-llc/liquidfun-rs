@@ -3,7 +3,7 @@
 use liquidfun::{NoDecisionHook, ParticleSystemId, StepConfiguration, StepLimits, World};
 
 use crate::frame::FrameData;
-use crate::scene::{BuiltScene, ControlEffect, SceneHooks, SceneId, build_scene, parse_scene_id};
+use crate::scene::{BuiltScene, ControlEffect, SceneHooks, SceneId, build_scene};
 
 pub(crate) const MAX_ADVANCE_STEPS: u32 = 4;
 const MAX_FRAME_PARTICLES: usize = 512;
@@ -57,10 +57,6 @@ pub(crate) struct SessionCore {
 impl SessionCore {
     pub(crate) fn create(id: SceneId) -> Result<Self, SessionError> {
         Self::from_built(id, Vec::new())
-    }
-
-    pub(crate) fn new() -> Result<Self, SessionError> {
-        Self::create(parse_scene_id("dam-break")?)
     }
 
     fn from_built(id: SceneId, presets: Vec<(String, String)>) -> Result<Self, SessionError> {
@@ -118,7 +114,6 @@ impl SessionCore {
         Ok(())
     }
 
-    #[cfg_attr(not(test), allow(dead_code))]
     pub(crate) fn apply_control(&mut self, name: &str, value: &str) -> Result<bool, SessionError> {
         let effect =
             self.hooks
@@ -133,7 +128,6 @@ impl SessionCore {
         }
     }
 
-    #[cfg_attr(not(test), allow(dead_code))]
     pub(crate) fn apply_action(&mut self, name: &str) -> Result<(), SessionError> {
         self.hooks
             .apply_action(&mut self.world, self.particle_system, name)

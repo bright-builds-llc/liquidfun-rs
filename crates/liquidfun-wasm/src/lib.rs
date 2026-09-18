@@ -10,6 +10,7 @@ mod session;
 
 pub use frame::ProofFrame;
 
+use scene::parse_scene_id;
 use session::{SessionCore, SessionError};
 
 /// Opaque owner of one persistent bounded Rust physics scene.
@@ -18,6 +19,7 @@ pub struct ProofSession {
     core: SessionCore,
 }
 
+#[allow(clippy::needless_pass_by_value)] // wasm-bindgen JS strings are owned.
 #[wasm_bindgen]
 impl ProofSession {
     /// Constructs an allowlisted scene from a lowercase hyphenated id.
@@ -28,8 +30,7 @@ impl ProofSession {
     /// checked scene construction fails.
     #[wasm_bindgen(constructor)]
     pub fn new(scene_id: String) -> Result<ProofSession, JsError> {
-        let _ = scene_id;
-        SessionCore::new()
+        build_core(&scene_id)
             .map(|core| Self { core })
             .map_err(js_error)
     }
@@ -42,8 +43,7 @@ impl ProofSession {
     /// allowlisted.
     #[wasm_bindgen(js_name = applyControl)]
     pub fn apply_control(&mut self, name: String, value: String) -> Result<bool, JsError> {
-        let _ = (name, value);
-        Ok(false)
+        self.core.apply_control(&name, &value).map_err(js_error)
     }
 
     /// Applies a named action on the live world.
@@ -54,8 +54,7 @@ impl ProofSession {
     /// allowlisted.
     #[wasm_bindgen(js_name = applyAction)]
     pub fn apply_action(&mut self, name: String) -> Result<(), JsError> {
-        let _ = name;
-        Ok(())
+        self.core.apply_action(&name).map_err(js_error)
     }
 
     /// Advances the scene by one through four fixed steps.
@@ -104,6 +103,10 @@ impl ProofSession {
     }
 }
 
+fn build_core(scene_id: &str) -> Result<SessionCore, SessionError> {
+    SessionCore::create(parse_scene_id(scene_id)?)
+}
+
 fn js_error(error: SessionError) -> JsError {
     JsError::new(error.message())
 }
@@ -126,10 +129,10 @@ mod tests {
     #[test]
     fn new_unknown_scene_returns_allowlist_error() {
         // Arrange / Act
-        let result = ProofSession::new(String::from("not-a-scene"));
+        let result = build_core("not-a-scene");
 
         // Assert
-        assert!(result.is_err());
+        assert_eq!(result.err(), Some(SessionError::UnknownScene));
         assert_eq!(
             SessionError::UnknownScene.message(),
             "Rust/WASM scene id is not allowlisted"
@@ -139,20 +142,19 @@ mod tests {
     #[test]
     fn unknown_control_and_action_fail_without_poisoning_dam_break() {
         // Arrange
-        let mut session = ProofSession::new(String::from("dam-break"))
-            .expect("fresh Dam Break should construct");
+        let mut core = build_core("dam-break").expect("fresh Dam Break should construct");
 
         // Act
-        let control = session.apply_control(String::from("nope"), String::from("x"));
-        let action = session.apply_action(String::from("nope"));
+        let control = core.apply_control("nope", "x");
+        let action = core.apply_action("nope");
 
         // Assert
-        assert!(control.is_err());
-        assert!(action.is_err());
+        assert_eq!(control, Err(SessionError::UnknownControl));
+        assert_eq!(action, Err(SessionError::UnknownControl));
         assert_eq!(
             SessionError::UnknownControl.message(),
             "Rust/WASM control is not allowlisted"
         );
-        assert_eq!(session.particle_count(), 192);
+        assert_eq!(core.particle_count(), 192);
     }
 }
