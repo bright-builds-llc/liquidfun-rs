@@ -14,7 +14,7 @@ The 22 approved requirements form four complete delivery boundaries. Although co
 
 - [x] **Phase 16: Rust WASM Browser Bridge** — Run a real native-engine scene in a browser through a reproducible, typed WASM package. (completed 2026-09-17)
 - [x] **Phase 17: Shared Player and Early Pages Delivery** — Play one working scene on GitHub Pages with reliable navigation, lifecycle and automatic delivery. (completed 2026-09-17)
-- [ ] **Phase 18: Six Native Physics Demos** — Explore the complete approved catalog with real physics, bounded controls and source credits.
+- [x] **Phase 18: Six Native Physics Demos** — Explore the complete approved catalog with real physics, bounded controls and source credits. (completed 2026-09-18)
 - [ ] **Phase 19: Interaction Polish and Browser Verification** — Use all six demos comfortably across pointer, keyboard and narrow-screen paths, verified in the built and hosted site.
 
 ## Phase Details
@@ -86,7 +86,7 @@ Plans:
 - [x] 18-07-PLAN.md — Color Mixer contact-driven mixing honesty
 - [x] 18-08-PLAN.md — Six static SVG catalog cards and fallback copy
 - [x] 18-09-PLAN.md — Ready flags, player controls, credits, and one-session wiring
-- [ ] 18-10-PLAN.md — Local six-scene Chromium proofs and independent AI review
+- [x] 18-10-PLAN.md — Local six-scene Chromium proofs and independent AI review
 
 Prove the less certain floating, elastic and wheel compositions early within this phase. Existing diagnostic recipes are capability references, not finished visual scenes. Keep scene names and behaviors approved by the owner; a failed visual experiment calls for investigation or an explicit scope decision, not fake physics or silent substitution.
 
@@ -110,7 +110,7 @@ Execution order: **16 → 17 → 18 → 19**. Each phase includes focused checks
 | --- | --- | --- | --- |
 | 16. Rust WASM Browser Bridge | 4/4 | Complete    | 2026-09-17 |
 | 17. Shared Player and Early Pages Delivery | 8/8 | Complete    | 2026-09-17 |
-| 18. Six Native Physics Demos | 9/10 | In Progress|  |
+| 18. Six Native Physics Demos | 10/10 | Complete   | 2026-09-18 |
 | 19. Interaction Polish and Browser Verification | 0/TBD | Not started | - |
 
 ## Coverage and Planning Basis

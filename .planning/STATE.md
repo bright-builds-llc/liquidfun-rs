@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Web Playground
-status: executing
-stopped_at: Completed 18-six-native-physics-demos-09-PLAN.md
-last_updated: "2026-09-18T05:33:27.354Z"
+status: verifying
+stopped_at: Completed 18-six-native-physics-demos-10-PLAN.md
+last_updated: "2026-09-18T05:40:33.364Z"
 last_activity: 2026-09-18
 progress:
   total_phases: 4
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 22
-  completed_plans: 21
-  percent: 95
+  completed_plans: 22
+  percent: 100
 ---
 
 # Project State
@@ -27,7 +27,7 @@ See: `.planning/PROJECT.md` (updated 2026-09-17)
 
 Phase: 18 (six-native-physics-demos) — EXECUTING
 Plan: 10 of 10
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-18
 
 Progress: [██████░░░░] 59% of currently planned v1.1 plans complete.
@@ -61,6 +61,7 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 | Phase 18-six-native-physics-demos P06 | 12 min | 2 tasks | 3 files |
 | Phase 18-six-native-physics-demos P07 | 13 min | 2 tasks | 2 files |
 | Phase 18-six-native-physics-demos P09 | 6 min | 2 tasks | 15 files |
+| Phase 18 P10 | 6min | 2 tasks | 5 files |
 
 ### Decisions
 
@@ -131,6 +132,9 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 - [Phase 18]: Construction CTA is Apply setting, not the single word Apply. — UI-SPEC FLAG overrides the one-word Apply so the button names the thing being applied.
 - [Phase 18]: Extract control/credit helpers to .ts so vitest node can test them without Solid JSX. — Vitest include is tests/**/*.test.ts and fails Solid JSX import analysis.
 - [Phase 18]: Reset keeps last applied construction presets and startScene/abandonScene dispose the prior owner. — D-08 one-session teardown plus UI-SPEC Reset that restores documented initial state plus last construction presets.
+- [Phase 18]: Local Chromium proofs are the Phase 18 gate; a new Pages URL is not required. — D-16 requires catalog and hash open, reset, credits, and dispose-on-switch locally. Phase 19 owns WEBTEST-01 and any later Pages polish.
+- [Phase 18]: Independent AI review acknowledges digest 22635277d29513bb6ffa83a1b51c13f0207ea63b0f402a852d30a660413a618c; the implementing executor does not approve its own work. — D-17 and the 2026-09-16 owner policy require a separate identified AI reviewer bound to an exact digest. Passing just web-player-smoke is not the acknowledgment.
+- [Phase 18]: Reset proofs wait for data-step-index greater than 4 so restart is distinguishable from the first presented frame. — presentOwnedFrame advances one step before Playing, so a reset from step 1 cannot prove a restarted series.
 
 ### Pending Todos
 
@@ -153,6 +157,6 @@ No new milestone todos captured. Phase 17 is ready for discussion and planning.
 
 ## Session Continuity
 
-Last session: 2026-09-18T05:33:17.299Z
-Stopped at: Completed 18-six-native-physics-demos-09-PLAN.md
+Last session: 2026-09-18T05:40:33.361Z
+Stopped at: Completed 18-six-native-physics-demos-10-PLAN.md
 Resume file: None
