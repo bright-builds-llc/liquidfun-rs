@@ -24,6 +24,7 @@ const MEDIUM_STRENGTH: f32 = 1.0;
 const FIRM_STRENGTH: f32 = 2.0;
 /// Downward labeled poke; applied to the contiguous group member range.
 const POKE_IMPULSE: Vec2 = Vec2::new(0.0, -8.0);
+const POINTER_POKE_RADIUS: f32 = 1.0;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum JellyShape {
@@ -214,6 +215,41 @@ fn poke_jelly(
     Ok(())
 }
 
+fn poke_jelly_at(
+    world: &mut World,
+    system: ParticleSystemId,
+    group: ParticleGroupId,
+    origin: Vec2,
+) -> Result<(), SessionError> {
+    let members = {
+        let view = world
+            .particle_group_view(group)
+            .map_err(|_error| SessionError::SceneConstruction)?;
+        view.member_ids().to_vec()
+    };
+    let (positions, ids) = {
+        let view = world
+            .particle_system_view(system)
+            .map_err(|_error| SessionError::SceneConstruction)?;
+        (view.positions().to_vec(), view.particle_ids().to_vec())
+    };
+    for member in members {
+        let Some(index) = ids.iter().position(|id| *id == member) else {
+            continue;
+        };
+        let Some(position) = positions.get(index).copied() else {
+            continue;
+        };
+        if (position - origin).length() > POINTER_POKE_RADIUS {
+            continue;
+        }
+        world
+            .apply_particle_linear_impulse(member, POKE_IMPULSE)
+            .map_err(|_error| SessionError::SceneConstruction)?;
+    }
+    Ok(())
+}
+
 impl SceneHooks for JellyDropHooks {
     fn on_advance(
         &mut self,
@@ -261,14 +297,17 @@ impl SceneHooks for JellyDropHooks {
 
     fn apply_pointer(
         &mut self,
-        _world: &mut World,
-        _system: ParticleSystemId,
+        world: &mut World,
+        system: ParticleSystemId,
         kind: PointerKind,
-        _world_x: f32,
-        _world_y: f32,
+        world_x: f32,
+        world_y: f32,
     ) -> Result<(), SessionError> {
         match kind {
-            PointerKind::Down | PointerKind::Move | PointerKind::Up | PointerKind::Cancel => Ok(()),
+            PointerKind::Down => {
+                poke_jelly_at(world, system, self.group, Vec2::new(world_x, world_y))
+            }
+            PointerKind::Move | PointerKind::Up | PointerKind::Cancel => Ok(()),
         }
     }
 

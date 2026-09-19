@@ -88,6 +88,7 @@ struct WaterWheelHooks {
     hub_radius: f32,
     jet_speed: f32,
     emission: Emission,
+    maybe_aim_velocity: Option<Vec2>,
 }
 
 pub(crate) fn build(presets: &[(String, String)]) -> Result<BuiltScene, SessionError> {
@@ -162,6 +163,7 @@ fn build_wheel() -> Result<BuiltScene, SceneError> {
             hub_radius: HUB_RADIUS,
             jet_speed: MEDIUM_JET_SPEED,
             emission: Emission::On,
+            maybe_aim_velocity: None,
         }),
     })
 }
@@ -298,14 +300,14 @@ fn create_seed_system(world: &mut World) -> Result<ParticleSystemId, SceneError>
     Ok(system)
 }
 
-fn emit_jet(world: &mut World, system: ParticleSystemId, speed: f32) {
+fn emit_jet(world: &mut World, system: ParticleSystemId, velocity: Vec2) {
     for index in 0..EMIT_PER_STEP {
         let position = Vec2::new(JET_POSITION.x, JET_POSITION.y + f32::from(index) * 0.14);
         let Ok(definition) = ParticleDef::default()
             .with_flags(ParticleFlags::WATER)
             .with_color(PARTICLE_COLOR)
             .with_position(position)
-            .and_then(|definition| definition.with_velocity(Vec2::new(speed, -0.4)))
+            .and_then(|definition| definition.with_velocity(velocity))
             .and_then(|definition| definition.with_lifetime(PARTICLE_LIFETIME))
         else {
             return;
@@ -326,7 +328,9 @@ impl SceneHooks for WaterWheelHooks {
         if !self.emission.is_on() {
             return Ok(());
         }
-        emit_jet(world, system, self.jet_speed);
+        let speed = self.jet_speed;
+        let velocity = self.maybe_aim_velocity.unwrap_or(Vec2::new(speed, -0.4));
+        emit_jet(world, system, velocity);
         Ok(())
     }
 
@@ -370,11 +374,23 @@ impl SceneHooks for WaterWheelHooks {
         _world: &mut World,
         _system: ParticleSystemId,
         kind: PointerKind,
-        _world_x: f32,
-        _world_y: f32,
+        world_x: f32,
+        world_y: f32,
     ) -> Result<(), SessionError> {
         match kind {
-            PointerKind::Down | PointerKind::Move | PointerKind::Up | PointerKind::Cancel => Ok(()),
+            PointerKind::Down | PointerKind::Move => {
+                let delta = Vec2::new(world_x + 3.9, world_y - 3.15);
+                let length = delta.length();
+                if length.is_finite() && length > 1e-4 {
+                    self.maybe_aim_velocity = Some(delta * (self.jet_speed / length));
+                }
+                Ok(())
+            }
+            PointerKind::Up => Ok(()),
+            PointerKind::Cancel => {
+                self.maybe_aim_velocity = None;
+                Ok(())
+            }
         }
     }
 
