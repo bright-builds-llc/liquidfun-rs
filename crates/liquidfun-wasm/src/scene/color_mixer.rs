@@ -29,6 +29,8 @@ const GENTLE_MIX_STRENGTH: f32 = 0.25;
 const STRONG_MIX_STRENGTH: f32 = 0.5;
 const SLOW_STIR_FORCE: Vec2 = Vec2::new(8.0, 0.0);
 const FAST_STIR_FORCE: Vec2 = Vec2::new(18.0, 0.0);
+const POINTER_STIR_RADIUS: f32 = 1.25;
+const POINTER_STIR_FORCE: f32 = 12.0;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum MixStrength {
@@ -85,6 +87,7 @@ impl StirSpeed {
 struct ColorMixerHooks {
     basin_segments: [RigidSegment; 3],
     stir_speed: StirSpeed,
+    maybe_pointer: Option<Vec2>,
 }
 
 pub(crate) fn build(presets: &[(String, String)]) -> Result<BuiltScene, SessionError> {
@@ -152,6 +155,7 @@ fn build_mixer(mix: MixStrength) -> Result<BuiltScene, SceneError> {
         particle_radius: PARTICLE_RADIUS,
         hooks: Box::new(ColorMixerHooks {
             stir_speed: StirSpeed::Slow,
+            maybe_pointer: None,
             basin_segments: [
                 RigidSegment {
                     start: Vec2::new(-5.5, 0.0),
@@ -232,16 +236,47 @@ fn stir_particles(
     Ok(())
 }
 
+fn apply_pointer_stir(
+    world: &mut World,
+    system: ParticleSystemId,
+    origin: Vec2,
+) -> Result<(), SessionError> {
+    let (positions, ids) = {
+        let view = world
+            .particle_system_view(system)
+            .map_err(|_error| SessionError::SceneConstruction)?;
+        (view.positions().to_vec(), view.particle_ids().to_vec())
+    };
+    for (position, id) in positions.into_iter().zip(ids) {
+        if (position - origin).length() > POINTER_STIR_RADIUS {
+            continue;
+        }
+        let tangent = Vec2::new(-(position.y - origin.y), position.x - origin.x);
+        let length = tangent.length();
+        if length < 1e-4 {
+            continue;
+        }
+        let force = tangent * (POINTER_STIR_FORCE / length);
+        world
+            .apply_particle_force(id, force)
+            .map_err(|_error| SessionError::SceneConstruction)?;
+    }
+    Ok(())
+}
+
 impl SceneHooks for ColorMixerHooks {
     fn on_advance(
         &mut self,
         world: &mut World,
         system: ParticleSystemId,
     ) -> Result<(), SessionError> {
-        let Some(force) = self.stir_speed.maybe_force() else {
+        if let Some(force) = self.stir_speed.maybe_force() {
+            stir_particles(world, system, force)?;
+        }
+        let Some(origin) = self.maybe_pointer else {
             return Ok(());
         };
-        stir_particles(world, system, force)
+        apply_pointer_stir(world, system, origin)
     }
 
     fn apply_control(
@@ -283,11 +318,18 @@ impl SceneHooks for ColorMixerHooks {
         _world: &mut World,
         _system: ParticleSystemId,
         kind: PointerKind,
-        _world_x: f32,
-        _world_y: f32,
+        world_x: f32,
+        world_y: f32,
     ) -> Result<(), SessionError> {
         match kind {
-            PointerKind::Down | PointerKind::Move | PointerKind::Up | PointerKind::Cancel => Ok(()),
+            PointerKind::Down | PointerKind::Move => {
+                self.maybe_pointer = Some(Vec2::new(world_x, world_y));
+                Ok(())
+            }
+            PointerKind::Up | PointerKind::Cancel => {
+                self.maybe_pointer = None;
+                Ok(())
+            }
         }
     }
 
