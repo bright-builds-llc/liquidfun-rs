@@ -377,6 +377,74 @@ mod tests {
     }
 
     #[test]
+    fn pointer_aim_emits_positive_x_and_aim_angle_still_works() {
+        // Arrange
+        let super::BuiltScene {
+            mut world,
+            particle_system,
+            mut hooks,
+            ..
+        } = super::build(&[]).expect("Fountain should construct");
+
+        // Act
+        hooks
+            .apply_pointer(
+                &mut world,
+                particle_system,
+                crate::scene::PointerKind::Down,
+                3.0,
+                0.5,
+            )
+            .expect("down should aim from the nozzle");
+        hooks
+            .apply_pointer(
+                &mut world,
+                particle_system,
+                crate::scene::PointerKind::Move,
+                3.0,
+                0.5,
+            )
+            .expect("move should keep the aimed stream");
+        hooks
+            .on_advance(&mut world, particle_system)
+            .expect("aimed emit should succeed");
+        let aimed_positive = {
+            let view = world
+                .particle_system_view(particle_system)
+                .expect("aimed system should stay live");
+            view.velocities().iter().any(|velocity| velocity.x > 1.0)
+        };
+
+        let aim = hooks
+            .apply_control(&mut world, particle_system, "aim-angle", "up")
+            .expect("aim-angle=up should still apply live");
+        hooks
+            .on_advance(&mut world, particle_system)
+            .expect("up emit should succeed");
+        let up_has_rightward = {
+            let view = world
+                .particle_system_view(particle_system)
+                .expect("aimed system should stay live");
+            view.velocities()
+                .iter()
+                .rev()
+                .take(2)
+                .any(|velocity| velocity.x > 1.0)
+        };
+
+        // Assert
+        assert!(
+            aimed_positive,
+            "pointer aim toward (3.0, 0.5) should emit a positive x velocity"
+        );
+        assert!(matches!(aim, ControlEffect::Live));
+        assert!(
+            !up_has_rightward,
+            "aim-angle=up must still override pointer aim for new particles"
+        );
+    }
+
+    #[test]
     fn fountain_controls_apply_live() {
         // Arrange
         let super::BuiltScene {

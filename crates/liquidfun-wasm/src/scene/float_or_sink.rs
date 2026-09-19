@@ -359,6 +359,59 @@ mod tests {
     }
 
     #[test]
+    fn pointer_down_drops_at_world_x_and_caps_at_four_bodies() {
+        // Arrange
+        let mut session = SessionCore::create(SceneId::FloatOrSink)
+            .expect("Float or Sink should construct a native pool");
+
+        // Act
+        session
+            .apply_pointer("down", 2.0, 1.0)
+            .expect("pointer down should drop at world x");
+        let first = capture(&session).rigid_circles();
+        for _ in 0..4 {
+            session
+                .apply_pointer("down", 2.0, 1.0)
+                .expect("later downs should stay within the body cap");
+        }
+        let capped = capture(&session).rigid_circles();
+
+        // Assert
+        assert_eq!(first.len(), 3, "one dropped circle reports x, y, radius");
+        assert!(
+            (first[0] - 2.0).abs() < 0.05,
+            "drop x should follow the click, got {}",
+            first[0]
+        );
+        assert!(
+            (first[1] - 6.0).abs() < 0.05,
+            "drop y should start at 6.0, got {}",
+            first[1]
+        );
+        assert_eq!(capped.len(), 12, "five downs must still cap at four bodies");
+    }
+
+    #[test]
+    fn pointer_cancel_after_down_does_not_add_another_body() {
+        // Arrange
+        let mut session = SessionCore::create(SceneId::FloatOrSink)
+            .expect("Float or Sink should construct a native pool");
+        for _ in 0..4 {
+            session
+                .apply_pointer("down", 1.0, 1.0)
+                .expect("four downs should fill the body cap");
+        }
+
+        // Act
+        let cancel = session.apply_pointer("cancel", 1.0, 1.0);
+        let circles = capture(&session).rigid_circles();
+
+        // Assert
+        assert_eq!(cancel, Ok(()));
+        assert_eq!(circles.len(), 12, "cancel must not add a fifth body");
+    }
+
+    #[test]
     fn unknown_control_names_still_fail_closed() {
         // Arrange
         let mut session = SessionCore::create(SceneId::FloatOrSink)
