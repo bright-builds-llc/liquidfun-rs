@@ -1,3 +1,7 @@
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
 import { describe, expect, it } from "vitest";
 
 import {
@@ -6,6 +10,7 @@ import {
   createCamera,
   projectPoint,
   projectRadius,
+  unprojectPoint,
 } from "../src/render/camera";
 
 describe("createCamera", () => {
@@ -113,5 +118,89 @@ describe("createCamera", () => {
     // Act
     // Assert
     expect(createInvalidCamera).toThrow("Invalid Canvas viewport");
+  });
+});
+
+describe("unprojectPoint", () => {
+  it("inverts projectPoint for the basin min corner on the design camera", () => {
+    // Arrange
+    const camera = createCamera(960, 540);
+    const world = { x: -6, y: -1 };
+
+    // Act
+    const recovered = unprojectPoint(camera, projectPoint(camera, world));
+
+    // Assert
+    expect(recovered.x).toBeCloseTo(world.x);
+    expect(recovered.y).toBeCloseTo(world.y);
+  });
+
+  it("inverts projectPoint for the basin max corner on the design camera", () => {
+    // Arrange
+    const camera = createCamera(960, 540);
+    const world = { x: 6, y: 8 };
+
+    // Act
+    const recovered = unprojectPoint(camera, projectPoint(camera, world));
+
+    // Assert
+    expect(recovered.x).toBeCloseTo(world.x);
+    expect(recovered.y).toBeCloseTo(world.y);
+  });
+
+  it("inverts projectPoint for the basin center on the design camera", () => {
+    // Arrange
+    const camera = createCamera(960, 540);
+    const world = { x: 0, y: 3.5 };
+
+    // Act
+    const recovered = unprojectPoint(camera, projectPoint(camera, world));
+
+    // Assert
+    expect(recovered.x).toBeCloseTo(world.x);
+    expect(recovered.y).toBeCloseTo(world.y);
+  });
+
+  it("inverts projectPoint for the top-left corner on a narrow camera", () => {
+    // Arrange
+    const camera = createCamera(320, 540);
+    const world = { x: -6, y: 8 };
+
+    // Act
+    const recovered = unprojectPoint(camera, projectPoint(camera, world));
+
+    // Assert
+    expect(recovered.x).toBeCloseTo(world.x);
+    expect(recovered.y).toBeCloseTo(world.y);
+  });
+
+  it("inverts projectPoint for the bottom-right corner on a narrow camera", () => {
+    // Arrange
+    const camera = createCamera(320, 540);
+    const world = { x: 6, y: -1 };
+
+    // Act
+    const recovered = unprojectPoint(camera, projectPoint(camera, world));
+
+    // Assert
+    expect(recovered.x).toBeCloseTo(world.x);
+    expect(recovered.y).toBeCloseTo(world.y);
+  });
+
+  it("keeps the inverse in CSS pixels without backing-store terms", () => {
+    // Arrange
+    const cameraSource = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), "../src/render/camera.ts"),
+      "utf8",
+    );
+
+    // Act
+    const mentionsBackingStore =
+      cameraSource.includes("canvas.width") ||
+      cameraSource.includes("devicePixelRatio");
+
+    // Assert
+    expect(mentionsBackingStore).toBe(false);
+    expect(cameraSource).toContain("export function unprojectPoint");
   });
 });
