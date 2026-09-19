@@ -413,10 +413,14 @@ type SyntheticAnimationController = {
 It then advances once at timestamp 0 to establish the application's timing
 anchor and returns the unchanged initial step.
 
-`advanceEngineSteps` advances exactly `count` callbacks, adding
-`1_000 / CAPTURE_PROFILE.simulationHz` to the controller timestamp each time.
-After every callback, require exactly one successor callback and verify the
-DOM step index increased by one. Do not use `waitForTimeout`.
+`advanceEngineSteps` advances exactly `count` callbacks, adding one fixed
+one-ULP-safe 60 Hz interval to the controller timestamp each time. Define that
+interval once by applying `nextUp()` to
+`1_000 / CAPTURE_PROFILE.simulationHz`, compute each callback timestamp as
+`callbackCount * interval`, and fail fast if that single fixed interval ever
+stops producing exactly one engine step per callback across all 480 capture
+callbacks. After every callback, require exactly one successor callback and
+verify the DOM step index increased by one. Do not use `waitForTimeout`.
 
 - [ ] **Step 5: Implement deterministic scene interaction and frame capture**
 

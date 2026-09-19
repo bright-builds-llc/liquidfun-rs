@@ -26,7 +26,12 @@ repository-hosted MP4 files inline.
 A rerunnable TypeScript script uses the repository's pinned Playwright and
 Chromium installation against the production-base preview. It installs a
 synthetic `requestAnimationFrame` queue before application code loads, then
-advances that queue with exact timestamps instead of waiting on wall-clock time.
+advances that queue with a fixed one-ULP-safe 60 Hz timestamp interval instead
+of waiting on wall-clock time. The interval is defined once by applying
+`nextUp()` to `1_000 / CAPTURE_PROFILE.simulationHz`, each callback timestamp
+is computed as `callbackCount * interval`, and capture fails fast if that
+single fixed interval ever stops producing exactly one engine step per callback
+across the full 480-step run.
 The script captures the six canonical scene routes at a fixed desktop viewport
 and device-pixel ratio and performs one scene-specific action:
 

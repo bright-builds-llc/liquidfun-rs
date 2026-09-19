@@ -32,13 +32,17 @@ type SceneSnapshot = {
 };
 
 type SyntheticClockState = {
-  readonly timestampMilliseconds: number;
+  readonly callbackCount: number;
 };
 
-// A fixed delta derived once from 1_000 / simulationHz so repeated timestamp
-// addition still yields one engine step per callback across the full capture run.
-const FIXED_TIMESTAMP_DELTA_MILLISECONDS = deriveFixedTimestampDeltaMilliseconds(
+// A fixed one-ULP-safe 60 Hz interval derived once from 1_000 / simulationHz.
+// Each callback timestamp is computed as callbackCount * interval so the runtime
+// never searches for additional ULPs or changes cadence after initialization.
+const FIXED_TIMESTAMP_DELTA_MILLISECONDS = nextUp(
   1_000 / CAPTURE_PROFILE.simulationHz,
+);
+assertFixedTimestampProgression(
+  FIXED_TIMESTAMP_DELTA_MILLISECONDS,
   CAPTURE_PROFILE.frameCount * CAPTURE_PROFILE.stepsPerFrame,
 );
 
@@ -105,7 +109,7 @@ export async function waitForReadyScene(
   }
 
   anchoredClockStates.set(page, {
-    timestampMilliseconds: 0,
+    callbackCount: 0,
   });
   expect(await numericAttribute(main, "data-step-index")).toBe(initialStep);
   await expect.poll(() => pendingAnimationCallbackCount(page)).toBe(1);
@@ -131,13 +135,11 @@ export async function advanceEngineSteps(
 
   for (let completedSteps = 0; completedSteps < count; completedSteps += 1) {
     currentClockState = {
-      timestampMilliseconds:
-        currentClockState.timestampMilliseconds +
-        FIXED_TIMESTAMP_DELTA_MILLISECONDS,
+      callbackCount: currentClockState.callbackCount + 1,
     };
     const advancedCallbacks = await advanceSyntheticClock(
       page,
-      currentClockState.timestampMilliseconds,
+      currentClockState.callbackCount * FIXED_TIMESTAMP_DELTA_MILLISECONDS,
     );
     if (advancedCallbacks !== 1) {
       throw new Error(
@@ -385,20 +387,22 @@ async function assertCaptureDeviceScaleFactor(page: Page): Promise<void> {
   );
 }
 
-function deriveFixedTimestampDeltaMilliseconds(
-  baseDeltaMilliseconds: number,
+function assertFixedTimestampProgression(
+  fixedDeltaMilliseconds: number,
   requiredStepCount: number,
-): number {
-  let candidateDeltaMilliseconds = baseDeltaMilliseconds;
-  while (
-    !supportsFixedTimestampProgression(
-      candidateDeltaMilliseconds,
+) {
+  if (
+    supportsFixedTimestampProgression(
+      fixedDeltaMilliseconds,
       requiredStepCount,
     )
   ) {
-    candidateDeltaMilliseconds = nextUp(candidateDeltaMilliseconds);
+    return;
   }
-  return candidateDeltaMilliseconds;
+
+  throw new Error(
+    `Fixed timestamp delta ${fixedDeltaMilliseconds} does not advance exactly one step across ${requiredStepCount} callbacks`,
+  );
 }
 
 function supportsFixedTimestampProgression(
@@ -406,11 +410,11 @@ function supportsFixedTimestampProgression(
   stepCount: number,
 ): boolean {
   let previousTimestampMilliseconds = 0;
-  let currentTimestampMilliseconds = 0;
   let remainderSeconds = 0;
 
-  for (let stepIndex = 0; stepIndex < stepCount; stepIndex += 1) {
-    currentTimestampMilliseconds += fixedDeltaMilliseconds;
+  for (let callbackCount = 1; callbackCount <= stepCount; callbackCount += 1) {
+    const currentTimestampMilliseconds =
+      callbackCount * fixedDeltaMilliseconds;
     const stepTime = accumulateStepTime(
       remainderSeconds,
       (currentTimestampMilliseconds - previousTimestampMilliseconds) / 1_000,
