@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Web Playground
 status: executing
-stopped_at: Completed 19-05-PLAN.md
-last_updated: "2026-09-19T02:23:50.718Z"
+stopped_at: Completed 19-06-PLAN.md
+last_updated: "2026-09-19T02:28:44.433Z"
 last_activity: 2026-09-19
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 29
-  completed_plans: 27
-  percent: 93
+  completed_plans: 28
+  percent: 97
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: `.planning/PROJECT.md` (updated 2026-09-17)
 ## Current Position
 
 Phase: 19 (Interaction Polish and Browser Verification) — EXECUTING
-Plan: 6 of 7
+Plan: 7 of 7
 Status: Ready to execute
 Last activity: 2026-09-19
 
-Progress: [█████████░] 90% of currently planned v1.1 plans complete.
+Progress: [██████████] 97% of currently planned v1.1 plans complete.
 
 The prior 16 phases and 252 plans remain archived history. New work starts at Phase 16. The owner confirmed six interactive demos using our Rust engine via WASM, playful catalog/player controls and automatic GitHub Pages deployment from main.
 
@@ -67,6 +67,7 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 | Phase 19 P03 | 4min | 2 tasks | 3 files |
 | Phase 19-interaction-polish-and-browser-verification P04 | 4 min | 2 tasks | 5 files |
 | Phase 19 P05 | 2min | 2 tasks | 5 files |
+| Phase 19-interaction-polish-and-browser-verification P06 | 4min | 2 tasks | 4 files |
 
 ### Decisions
 
@@ -155,6 +156,9 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 - [Phase 19]: Render locked two-sentence interactionHint as figcaption text, never innerHTML or a third Space-to-pause sentence.
 - [Phase 19]: Add select:focus-visible to the existing 2px / 4px #39D3C7 rule instead of a new focus system.
 - [Phase 19]: Keep App.tsx under the 628-line cap by inlining the ready-scene helper when passing the hint.
+- [Phase 19]: Keep a single chromium Playwright project and assert DOM attributes, not PNG hashes.
+- [Phase 19]: Extract player-helpers.ts so player.spec.ts stays under the 400-line split trigger.
+- [Phase 19]: Scroll the canvas into view before pointer gestures so the catalog cannot intercept the hit.
 
 ### Pending Todos
 
@@ -177,6 +181,6 @@ No new milestone todos captured. Phase 17 is ready for discussion and planning.
 
 ## Session Continuity
 
-Last session: 2026-09-19T02:23:50.715Z
-Stopped at: Completed 19-05-PLAN.md
+Last session: 2026-09-19T02:28:41.856Z
+Stopped at: Completed 19-06-PLAN.md
 Resume file: None
