@@ -1,6 +1,10 @@
 import { Show, type JSX } from "solid-js";
 
-export type PlayerStatus = "loading" | "playing" | "paused" | "failed";
+import type { PlayerStatus } from "../player/view";
+import {
+  maybeParseRenderMode,
+  type RenderMode,
+} from "../render/mode";
 
 export type PlayerPanelProps = {
   readonly sceneTitle: string;
@@ -12,6 +16,8 @@ export type PlayerPanelProps = {
   readonly onPause: () => void;
   readonly onReset: () => void;
   readonly onRetry: () => void;
+  readonly renderMode: RenderMode;
+  readonly onRenderModeChange: (mode: RenderMode) => void;
   readonly children?: JSX.Element;
 };
 
@@ -138,6 +144,23 @@ export function PlayerPanel(props: PlayerPanelProps) {
         >
           {RESET_LABEL}
         </button>
+        <label class="render-mode-control">
+          Rendering
+          <select
+            value={props.renderMode}
+            onChange={(event) => {
+              const maybeMode = maybeParseRenderMode(
+                event.currentTarget.value,
+              );
+              if (maybeMode !== undefined) {
+                props.onRenderModeChange(maybeMode);
+              }
+            }}
+          >
+            <option value="wireframe">Wireframe</option>
+            <option value="solid">Solid</option>
+          </select>
+        </label>
       </div>
 
       {props.children}

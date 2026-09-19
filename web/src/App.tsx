@@ -6,7 +6,7 @@ import {
   FallbackPanel,
   type FallbackPanelProps,
 } from "./components/FallbackPanel";
-import { PlayerPanel, type PlayerStatus } from "./components/PlayerPanel";
+import { PlayerPanel } from "./components/PlayerPanel";
 import { SceneControls } from "./components/SceneControls";
 import { SceneCredits } from "./components/SceneCredits";
 import { SiteFooter } from "./components/SiteFooter";
@@ -25,7 +25,7 @@ import {
   type SceneSession,
 } from "./physics/session";
 import { isStaleGeneration, nextGeneration } from "./player/generation";
-import { observeFrame, type FrameObservation } from "./player/observe";
+import { observeFrame } from "./player/observe";
 import {
   PAGE_HEADING,
   constructionEntriesForScene,
@@ -36,26 +36,25 @@ import {
   titleForRoute,
 } from "./player/runtime";
 import {
+  maybeObservedFrame,
+  playerStatus,
+  type PlayerView,
+} from "./player/view";
+import {
   drawRenderFrame,
   resizeCanvasBackingStore,
 } from "./render/canvas";
 import type { Camera } from "./render/camera";
+import {
+  loadRenderMode,
+  persistRenderMode,
+  type RenderMode,
+} from "./render/mode";
 import { maybeParseSceneRoute, type SceneRoute } from "./routing/hash";
 
 const MILLISECONDS_PER_SECOND = 1000;
 const PAGE_SUMMARY =
   "Play experimental Rust physics scenes in the browser. All six demos run this repository's engine through WebAssembly.";
-
-type PlayerView =
-  | { readonly kind: "fallback" }
-  | { readonly kind: "loading" }
-  | { readonly kind: "playing"; readonly frame: FrameObservation }
-  | { readonly kind: "paused"; readonly frame: FrameObservation }
-  | {
-      readonly kind: "failure";
-      readonly maybeFrame: FrameObservation | undefined;
-      readonly maybeDetails: string | undefined;
-    };
 
 function fallbackProps(route: SceneRoute): FallbackPanelProps {
   if (route.kind === "empty") {
@@ -71,31 +70,6 @@ function fallbackProps(route: SceneRoute): FallbackPanelProps {
     kind: "not-ready",
     sceneTitle: maybeScene?.title ?? route.id,
   };
-}
-
-function maybeObservedFrame(view: PlayerView): FrameObservation | undefined {
-  if (view.kind === "playing" || view.kind === "paused") {
-    return view.frame;
-  }
-
-  if (view.kind === "failure") {
-    return view.maybeFrame;
-  }
-
-  return undefined;
-}
-
-function playerStatus(view: PlayerView): PlayerStatus {
-  switch (view.kind) {
-    case "playing":
-      return "playing";
-    case "paused":
-      return "paused";
-    case "failure":
-      return "failed";
-    default:
-      return "loading";
-  }
 }
 
 function prefersReducedMotion(): boolean {
@@ -115,6 +89,9 @@ export function App() {
     isReadySceneRoute(maybeParseSceneRoute(window.location.hash))
       ? { kind: "loading" }
       : { kind: "fallback" },
+  );
+  const [renderMode, setRenderMode] = createSignal<RenderMode>(
+    loadRenderMode(() => window.localStorage),
   );
   const [lastPointerKind, setLastPointerKind] =
     createSignal<PointerKind | undefined>();
@@ -195,6 +172,24 @@ export function App() {
     });
   }
 
+  function changeRenderMode(nextMode: RenderMode): void {
+    setRenderMode(nextMode);
+    persistRenderMode(() => window.localStorage, nextMode);
+
+    const maybeFrame = maybePreviousFrame;
+    const context = maybeContext;
+    const camera = maybeCamera;
+    if (
+      maybeFrame === undefined ||
+      context === undefined ||
+      camera === undefined
+    ) {
+      return;
+    }
+
+    drawRenderFrame(context, maybeFrame, camera, nextMode);
+  }
+
   function scheduleFrame(context: CanvasRenderingContext2D): void {
     maybeAnimationFrameId = requestAnimationFrame((timestamp) => {
       maybeAnimationFrameId = undefined;
@@ -238,7 +233,7 @@ export function App() {
       }
       try {
         const frame = maybeOwnedSession.nextFrame(stepTime.stepCount);
-        drawRenderFrame(context, frame, camera, "wireframe");
+        drawRenderFrame(context, frame, camera, renderMode());
         const observation = observeFrame(
           frame,
           maybePreviousFrame,
@@ -265,7 +260,7 @@ export function App() {
     }
 
     const frame = ownedSession.nextFrame();
-    drawRenderFrame(context, frame, camera, "wireframe");
+    drawRenderFrame(context, frame, camera, renderMode());
     const observation = observeFrame(
       frame,
       resetObservation ? undefined : maybePreviousFrame,
@@ -309,7 +304,7 @@ export function App() {
 
         const maybeFrame = maybePreviousFrame;
         if (maybeFrame !== undefined) {
-          drawRenderFrame(context, maybeFrame, resizedCamera, "wireframe");
+          drawRenderFrame(context, maybeFrame, resizedCamera, renderMode());
         }
       } catch (error) {
         fail(error);
@@ -577,6 +572,7 @@ export function App() {
       data-step-index={maybeFrame()?.stepIndex}
       data-last-pointer-kind={lastPointerKind()}
       data-pointer-accepted={pointerAccepted()}
+      data-render-mode={renderMode()}
     >
       <header class="page-header">
         <h1 id="site-title">{PAGE_HEADING}</h1>
@@ -600,6 +596,8 @@ export function App() {
               onPause={pauseScene}
               onReset={recreateScene}
               onRetry={recreateScene}
+              renderMode={renderMode()}
+              onRenderModeChange={changeRenderMode}
             >
               <Show when={maybeCurrentScene()}>
                 {(currentScene) => (

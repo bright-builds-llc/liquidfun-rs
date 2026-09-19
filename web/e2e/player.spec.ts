@@ -92,6 +92,53 @@ test("loads Dam Break under the production base and exercises pause, play, and r
   expect(resetStep).toBeLessThan(RESET_STEP_CEILING);
 });
 
+test("switches rendering without stepping and persists across scenes and reload", async ({
+  page,
+}) => {
+  // Arrange
+  await openDamBreakPlaying(page);
+  const main = page.locator("main");
+  await expect(main).toHaveAttribute("data-render-mode", "wireframe");
+  await page.getByRole("button", { name: "Pause scene" }).click();
+  const pausedStep = await numericAttribute(main, "data-step-index");
+  const wireframePixels = await canvasPixelSha256(page);
+
+  // Act
+  await page.getByLabel("Rendering").selectOption("solid");
+
+  // Assert
+  await expect(main).toHaveAttribute("data-render-mode", "solid");
+  expect(await numericAttribute(main, "data-step-index")).toBe(pausedStep);
+  expect(await canvasPixelSha256(page)).not.toBe(wireframePixels);
+
+  // Act
+  await page.goto(FOUNTAIN_PATH);
+  await expectReadySceneChrome(page, "Fountain");
+
+  // Assert
+  await expect(main).toHaveAttribute("data-render-mode", "solid");
+
+  // Act
+  await page.reload();
+  await expectReadySceneChrome(page, "Fountain");
+
+  // Assert
+  await expect(main).toHaveAttribute("data-render-mode", "solid");
+
+  // Arrange
+  await page.getByRole("button", { name: "Pause scene" }).click();
+  const solidStep = await numericAttribute(main, "data-step-index");
+  const solidPixels = await canvasPixelSha256(page);
+
+  // Act
+  await page.getByLabel("Rendering").selectOption("wireframe");
+
+  // Assert
+  await expect(main).toHaveAttribute("data-render-mode", "wireframe");
+  expect(await numericAttribute(main, "data-step-index")).toBe(solidStep);
+  expect(await canvasPixelSha256(page)).not.toBe(solidPixels);
+});
+
 test("opens each native scene from the catalog, shows credits, and resets", async ({
   page,
 }) => {
