@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Web Playground
 status: executing
-stopped_at: Completed 19-01-PLAN.md
-last_updated: "2026-09-19T02:03:56.403Z"
+stopped_at: Completed 19-02-PLAN.md
+last_updated: "2026-09-19T02:09:46.279Z"
 last_activity: 2026-09-19
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 29
-  completed_plans: 23
-  percent: 79
+  completed_plans: 24
+  percent: 83
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: `.planning/PROJECT.md` (updated 2026-09-17)
 ## Current Position
 
 Phase: 19 (Interaction Polish and Browser Verification) — EXECUTING
-Plan: 2 of 7
+Plan: 3 of 7
 Status: Ready to execute
 Last activity: 2026-09-19
 
-Progress: [████████░░] 79% of currently planned v1.1 plans complete.
+Progress: [████████░░] 83% of currently planned v1.1 plans complete.
 
 The prior 16 phases and 252 plans remain archived history. New work starts at Phase 16. The owner confirmed six interactive demos using our Rust engine via WASM, playful catalog/player controls and automatic GitHub Pages deployment from main.
 
@@ -63,6 +63,7 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 | Phase 18-six-native-physics-demos P09 | 6 min | 2 tasks | 15 files |
 | Phase 18 P10 | 6min | 2 tasks | 5 files |
 | Phase 19 P01 | 2min | 2 tasks | 4 files |
+| Phase 19 P02 | 5min | 2 tasks | 9 files |
 
 ### Decisions
 
@@ -139,6 +140,9 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 - [Phase 19]: Invert projectPoint with WORLD_BOUNDS on the shared Camera; never use canvas.width or devicePixelRatio.
 - [Phase 19]: cssPointFromClient returns CSS pixels only and rejects non-finite samples and empty rects.
 - [Phase 19]: reducePointerEvent stores one maybePointerId, ignores uncaptured moves, and clears on up, cancel, and lostpointercapture without reading isTrusted.
+- [Phase 19]: Parse down|move|up|cancel and finite f32 values in SessionCore before any World mutation.
+- [Phase 19]: Color Mixer, Jelly Drop, and Water Wheel compile with no-op apply_pointer until 19-03.
+- [Phase 19]: Dam Break captured drag clamps to the basin; Fountain aims from the nozzle; Float or Sink drops at clamped x and y=6.0.
 
 ### Pending Todos
 
@@ -161,6 +165,6 @@ No new milestone todos captured. Phase 17 is ready for discussion and planning.
 
 ## Session Continuity
 
-Last session: 2026-09-19T02:03:56.401Z
-Stopped at: Completed 19-01-PLAN.md
+Last session: 2026-09-19T02:09:46.276Z
+Stopped at: Completed 19-02-PLAN.md
 Resume file: None
