@@ -41,6 +41,24 @@ pub(crate) fn parse_scene_id(raw: &str) -> Result<SceneId, SessionError> {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum PointerKind {
+    Down,
+    Move,
+    Up,
+    Cancel,
+}
+
+pub(crate) fn parse_pointer_kind(raw: &str) -> Result<PointerKind, SessionError> {
+    match raw {
+        "down" => Ok(PointerKind::Down),
+        "move" => Ok(PointerKind::Move),
+        "up" => Ok(PointerKind::Up),
+        "cancel" => Ok(PointerKind::Cancel),
+        _ => Err(SessionError::UnknownControl),
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct RigidSegment {
     pub(crate) start: Vec2,
@@ -80,6 +98,15 @@ pub(crate) trait SceneHooks {
         world: &mut World,
         system: ParticleSystemId,
         name: &str,
+    ) -> Result<(), SessionError>;
+
+    fn apply_pointer(
+        &mut self,
+        world: &mut World,
+        system: ParticleSystemId,
+        kind: PointerKind,
+        world_x: f32,
+        world_y: f32,
     ) -> Result<(), SessionError>;
 
     fn collect_segments(&self, world: &World) -> Result<Vec<RigidSegment>, SessionError>;

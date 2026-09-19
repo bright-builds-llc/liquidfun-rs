@@ -57,6 +57,24 @@ impl ProofSession {
         self.core.apply_action(&name).map_err(js_error)
     }
 
+    /// Applies a captured canvas pointer sample in world coordinates.
+    ///
+    /// # Errors
+    ///
+    /// Returns a bounded JavaScript error when the kind is not allowlisted or
+    /// the coordinates are not finite.
+    #[wasm_bindgen(js_name = pointerAction)]
+    pub fn pointer_action(
+        &mut self,
+        kind: String,
+        world_x: f32,
+        world_y: f32,
+    ) -> Result<(), JsError> {
+        self.core
+            .apply_pointer(&kind, world_x, world_y)
+            .map_err(js_error)
+    }
+
     /// Advances the scene by one through four fixed steps.
     ///
     /// # Errors

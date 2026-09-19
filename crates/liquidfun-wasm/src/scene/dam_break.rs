@@ -8,7 +8,8 @@ use liquidfun::{
 };
 
 use super::{
-    BuiltScene, ControlEffect, RigidSegment, SceneError, SceneHooks, attach_basin_fixture,
+    attach_basin_fixture, BuiltScene, ControlEffect, PointerKind, RigidSegment, SceneError,
+    SceneHooks,
 };
 use crate::session::SessionError;
 
@@ -299,6 +300,21 @@ impl SceneHooks for DamBreakHooks {
             "drop-obstacle" => drop_obstacle(world, self.circle_body),
             "reset-obstacle" => reset_obstacle(world, self.circle_body),
             _ => Err(SessionError::UnknownControl),
+        }
+    }
+
+    fn apply_pointer(
+        &mut self,
+        _world: &mut World,
+        _system: ParticleSystemId,
+        kind: PointerKind,
+        _world_x: f32,
+        _world_y: f32,
+    ) -> Result<(), SessionError> {
+        match kind {
+            PointerKind::Down | PointerKind::Move | PointerKind::Up | PointerKind::Cancel => {
+                Ok(())
+            }
         }
     }
 

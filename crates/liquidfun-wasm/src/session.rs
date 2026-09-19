@@ -3,7 +3,9 @@
 use liquidfun::{NoDecisionHook, ParticleSystemId, StepConfiguration, StepLimits, World};
 
 use crate::frame::FrameData;
-use crate::scene::{build_scene, BuiltScene, ControlEffect, SceneHooks, SceneId};
+use crate::scene::{
+    build_scene, parse_pointer_kind, BuiltScene, ControlEffect, SceneHooks, SceneId,
+};
 
 pub(crate) const MAX_ADVANCE_STEPS: u32 = 4;
 const MAX_FRAME_PARTICLES: usize = 512;
@@ -19,6 +21,7 @@ pub(crate) enum SessionError {
     #[allow(dead_code)] // Retained for fail-closed unimplemented scene construction.
     SceneUnimplemented,
     UnknownControl,
+    InvalidPointer,
     StepCountOutOfRange,
     StepIndexExhausted,
     StepFailed,
@@ -32,6 +35,7 @@ impl SessionError {
             Self::UnknownScene => "Rust/WASM scene id is not allowlisted",
             Self::SceneUnimplemented => "Rust/WASM scene is not implemented",
             Self::UnknownControl => "Rust/WASM control is not allowlisted",
+            Self::InvalidPointer => "Rust/WASM pointer coordinates must be finite",
             Self::StepCountOutOfRange => "Rust/WASM step count must be within 1 through 4",
             Self::StepIndexExhausted => "Rust/WASM step index exhausted",
             Self::StepFailed => "Rust/WASM simulation step failed",
@@ -132,6 +136,25 @@ impl SessionCore {
     pub(crate) fn apply_action(&mut self, name: &str) -> Result<(), SessionError> {
         self.hooks
             .apply_action(&mut self.world, self.particle_system, name)
+    }
+
+    pub(crate) fn apply_pointer(
+        &mut self,
+        kind: &str,
+        world_x: f32,
+        world_y: f32,
+    ) -> Result<(), SessionError> {
+        let parsed = parse_pointer_kind(kind)?;
+        if !world_x.is_finite() || !world_y.is_finite() {
+            return Err(SessionError::InvalidPointer);
+        }
+        self.hooks.apply_pointer(
+            &mut self.world,
+            self.particle_system,
+            parsed,
+            world_x,
+            world_y,
+        )
     }
 
     pub(crate) fn capture_frame(&self) -> Result<FrameData, SessionError> {

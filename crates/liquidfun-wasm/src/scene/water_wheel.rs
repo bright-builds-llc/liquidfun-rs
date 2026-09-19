@@ -8,7 +8,8 @@ use liquidfun::{
 };
 
 use super::{
-    attach_basin_fixture, BuiltScene, ControlEffect, RigidSegment, SceneError, SceneHooks,
+    attach_basin_fixture, BuiltScene, ControlEffect, PointerKind, RigidSegment, SceneError,
+    SceneHooks,
 };
 use crate::session::SessionError;
 
@@ -362,6 +363,21 @@ impl SceneHooks for WaterWheelHooks {
         _name: &str,
     ) -> Result<(), SessionError> {
         Err(SessionError::UnknownControl)
+    }
+
+    fn apply_pointer(
+        &mut self,
+        _world: &mut World,
+        _system: ParticleSystemId,
+        kind: PointerKind,
+        _world_x: f32,
+        _world_y: f32,
+    ) -> Result<(), SessionError> {
+        match kind {
+            PointerKind::Down | PointerKind::Move | PointerKind::Up | PointerKind::Cancel => {
+                Ok(())
+            }
+        }
     }
 
     fn collect_segments(&self, world: &World) -> Result<Vec<RigidSegment>, SessionError> {
