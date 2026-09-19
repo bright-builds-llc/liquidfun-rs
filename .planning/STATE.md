@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Web Playground
 status: executing
-stopped_at: Phase 19 UI-SPEC approved
-last_updated: "2026-09-19T02:01:40.354Z"
-last_activity: 2026-09-19 -- Phase 19 execution started
+stopped_at: Completed 19-01-PLAN.md
+last_updated: "2026-09-19T02:03:56.403Z"
+last_activity: 2026-09-19
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 29
-  completed_plans: 22
-  percent: 76
+  completed_plans: 23
+  percent: 79
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: `.planning/PROJECT.md` (updated 2026-09-17)
 ## Current Position
 
 Phase: 19 (Interaction Polish and Browser Verification) — EXECUTING
-Plan: 1 of 7
-Status: Executing Phase 19
-Last activity: 2026-09-19 -- Phase 19 execution started
+Plan: 2 of 7
+Status: Ready to execute
+Last activity: 2026-09-19
 
-Progress: [██████░░░░] 59% of currently planned v1.1 plans complete.
+Progress: [████████░░] 79% of currently planned v1.1 plans complete.
 
 The prior 16 phases and 252 plans remain archived history. New work starts at Phase 16. The owner confirmed six interactive demos using our Rust engine via WASM, playful catalog/player controls and automatic GitHub Pages deployment from main.
 
@@ -62,6 +62,7 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 | Phase 18-six-native-physics-demos P07 | 13 min | 2 tasks | 2 files |
 | Phase 18-six-native-physics-demos P09 | 6 min | 2 tasks | 15 files |
 | Phase 18 P10 | 6min | 2 tasks | 5 files |
+| Phase 19 P01 | 2min | 2 tasks | 4 files |
 
 ### Decisions
 
@@ -135,6 +136,9 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 - [Phase 18]: Local Chromium proofs are the Phase 18 gate; a new Pages URL is not required. — D-16 requires catalog and hash open, reset, credits, and dispose-on-switch locally. Phase 19 owns WEBTEST-01 and any later Pages polish.
 - [Phase 18]: Independent AI review acknowledges digest 22635277d29513bb6ffa83a1b51c13f0207ea63b0f402a852d30a660413a618c; the implementing executor does not approve its own work. — D-17 and the 2026-09-16 owner policy require a separate identified AI reviewer bound to an exact digest. Passing just web-player-smoke is not the acknowledgment.
 - [Phase 18]: Reset proofs wait for data-step-index greater than 4 so restart is distinguishable from the first presented frame. — presentOwnedFrame advances one step before Playing, so a reset from step 1 cannot prove a restarted series.
+- [Phase 19]: Invert projectPoint with WORLD_BOUNDS on the shared Camera; never use canvas.width or devicePixelRatio.
+- [Phase 19]: cssPointFromClient returns CSS pixels only and rejects non-finite samples and empty rects.
+- [Phase 19]: reducePointerEvent stores one maybePointerId, ignores uncaptured moves, and clears on up, cancel, and lostpointercapture without reading isTrusted.
 
 ### Pending Todos
 
@@ -157,6 +161,6 @@ No new milestone todos captured. Phase 17 is ready for discussion and planning.
 
 ## Session Continuity
 
-Last session: 2026-09-19T01:53:53.227Z
-Stopped at: Phase 19 UI-SPEC approved
-Resume file: .planning/phases/19-interaction-polish-and-browser-verification/19-UI-SPEC.md
+Last session: 2026-09-19T02:03:56.401Z
+Stopped at: Completed 19-01-PLAN.md
+Resume file: None
