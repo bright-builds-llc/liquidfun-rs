@@ -135,6 +135,9 @@ ______________________________________________________________________
 - Create: `web/tests/navigation.test.ts`
 - Modify: `web/src/catalog/scenes.ts`
 - Modify: `web/tests/scenes.test.ts`
+- Modify: `web/src/components/CatalogNav.tsx` — temporary compatibility bridge after
+  `previewId` removal (`ScenePreview sceneId={scene.id}`); Task 3 deletes this
+  component and static previews
 
 **Interfaces:**
 
@@ -259,6 +262,12 @@ Create `web/src/player/navigation.ts` as a pure mapping over `SCENES`. Remove
 assertions in `web/tests/scenes.test.ts`. Keep every title, description,
 control, credit, readiness flag, and scene order unchanged.
 
+Update `web/src/components/CatalogNav.tsx` so legacy catalog previews keep
+compiling: pass `scene.id` to `ScenePreview` instead of the removed
+`previewId` field (behavior-identical because preview ids always matched scene
+ids). This bridge stays until Task 3 removes `CatalogNav` and
+`catalog/previews.tsx`.
+
 - [ ] **Step 6: Run focused/full tests and typecheck**
 
 Run:
@@ -272,11 +281,20 @@ bun run typecheck
 
 Expected: all pass.
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 7: Commit (two commits; seven paths total)**
+
+Primary navigation work:
 
 ```bash
 git add web/src/routing/hash.ts web/tests/hash.test.ts web/src/player/navigation.ts web/tests/navigation.test.ts web/src/catalog/scenes.ts web/tests/scenes.test.ts
 git commit -m "refactor(web): model playground navigation"
+```
+
+Typecheck-safe CatalogNav bridge (required before review/push):
+
+```bash
+git add web/src/components/CatalogNav.tsx
+git commit -m "fix(web): keep CatalogNav typecheck after previewId removal"
 ```
 
 ______________________________________________________________________
