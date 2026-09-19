@@ -1,12 +1,13 @@
 ---
 phase: 19-interaction-polish-and-browser-verification
 plan: "07"
-reviewed: 2026-09-19T02:37:40Z
-independent_reviewed: 2026-09-19T02:37:40Z
+reviewed: 2026-09-19T02:41:54Z
+independent_reviewed: 2026-09-19T02:41:54Z
 depth: deep
-local_head: df7b46c09d4527245795232f7314ca064716055c
-origin_main_at_review: d3d8688dabbacd54a6b0fa5fc6a055082f0bcf9e
 hosted_source_sha: d3d8688dabbacd54a6b0fa5fc6a055082f0bcf9e
+host_evidence_docs_commit: df7b46c09d4527245795232f7314ca064716055c
+local_head: e8ec966ccc02b261cc2818d1e0f759c85c51bc49
+origin_main_at_review: e8ec966ccc02b261cc2818d1e0f759c85c51bc49
 files_reviewed: 16
 files_reviewed_list:
   - web/src/render/camera.ts
@@ -33,7 +34,8 @@ findings:
 status: issues_found
 decision: APPROVED
 review_digest: a297f33179b980d55d4ba64378f93edaf842ed5990b43a6eda6bbbba5f9c6fef
-reviewer_identity: b19fb890-110f-4640-b0f2-a51ae36c2f38
+reviewer_identity: 913947b5-d495-4432-969e-85ce94d31c48
+reviewer_invocation_id: 994f3f64-d31c-4782-9a79-fac49258e7f3
 reviewer_disclosure: AI reviewer, not a human
 implementing_or_fixing_executor: no
 ---
@@ -55,30 +57,36 @@ and grants no package publication, tag, or release authority.
 This is independent AI review, not human approval. Passing
 `just web-player-smoke` is not this acknowledgment.
 
+This document replaces the earlier `19-REVIEW.md` that named reviewer
+`b19fb890-110f-4640-b0f2-a51ae36c2f38`. That identity is the Phase 19-07
+implementing executor Task id and is not a valid independent
+acknowledgment. Those identities are not this reviewer.
+
 ## Reviewer and exact scope
 
 - `reviewer_identity`: Cursor independent AI review subagent
   (`gsd-code-reviewer`), Task/agent-store identity
-  `b19fb890-110f-4640-b0f2-a51ae36c2f38`
+  `913947b5-d495-4432-969e-85ce94d31c48`
+- `reviewer_invocation_id`: `994f3f64-d31c-4782-9a79-fac49258e7f3`
 - `reviewer_disclosure`: AI reviewer, not a human
 - `model`: Cursor Grok 4.6
 - `implementing_or_fixing_executor`: no
-- `reviewed_at_utc`: `2026-09-19T02:37:40Z`
+- `reviewed_at_utc`: `2026-09-19T02:41:54Z`
 - `hosted_source_sha`: `d3d8688dabbacd54a6b0fa5fc6a055082f0bcf9e`
 - `host_evidence_docs_commit`: `df7b46c09d4527245795232f7314ca064716055c`
-- `local_head_at_review`: `df7b46c09d4527245795232f7314ca064716055c`
-- `origin/main_at_review`: `d3d8688dabbacd54a6b0fa5fc6a055082f0bcf9e`
+- `local_head_at_review`: `e8ec966ccc02b261cc2818d1e0f759c85c51bc49`
+- `origin/main_at_review`: `e8ec966ccc02b261cc2818d1e0f759c85c51bc49`
 
 This reviewer is not implementing executor
-`42be9631-eac3-48e3-81be-cadf14d02795` and did not resume that agent or
-parent store. The implementing agent does not acknowledge or approve this
-digest.
+`b19fb890-110f-4640-b0f2-a51ae36c2f38` and did not resume that agent or
+orchestrator store `42be9631-eac3-48e3-81be-cadf14d02795`. The
+implementing agent does not acknowledge or approve this digest.
 
 The reviewer independently inspected the complete relevant Phase 19
 pointer/camera/input/session/six-scene pointer mappings, player spec and
 helpers, ignored smoke log, and `19-HOST-EVIDENCE.md`. Cross-file support
 inspected but not hashed into the digest includes `web/src/App.tsx`,
-`web/src/render/canvas.ts`, `web/src/app.css`,
+`web/src/render/canvas.ts`, `web/src/app.css`, `web/src/catalog/scenes.ts`,
 `crates/liquidfun-wasm/src/lib.rs`, `.github/workflows/pages.yml`,
 `README.md`, and `TESTING.md`. Material guidance was `AGENTS.md`
 Independent review (2026-09-16 owner policy), `PROJECT-SCOPE.md` hobby
@@ -175,10 +183,12 @@ particle writes, no scripted pose track.
 - Dam Break: down/move teleports the obstacle inside the basin clamp;
   up applies a wake impulse; cancel leaves the last pose. Labeled
   `drop-obstacle` still teleports.
-- Fountain: down/move aims from the nozzle with a ±τ/4 clamp; up/cancel
-  leave the last aim. Labeled `aim-angle` still applies live.
-- Float or Sink: down drops the selected preset at world x and y `6.0`;
-  later downs cap at four bodies; move/up/cancel do not add a body.
+- Fountain: down/move aims from the nozzle at `(0.0, 0.5)` with a ±τ/4
+  clamp; up/cancel leave the last aim. Labeled `aim-angle` still applies
+  live.
+- Float or Sink: down drops the selected preset at world x and y `6.0`,
+  clamped in x; later downs cap at four bodies; move/up/cancel do not
+  add a body.
 - Color Mixer: down/move store an origin; `on_advance` applies
   per-particle engine forces inside a radius; up/cancel clear leftover
   stir. Colors are not rewritten by the pointer path.
@@ -230,8 +240,13 @@ This reviewer independently rechecked:
 - `GET` the live origin: HTTP 200 HTML containing
   `liquidfun-rs playground`, `<title>liquidfun-rs playground</title>`,
   `/liquidfun-rs/assets/`, and `index-vHkA7iiG.js`.
+- `GET` `index-vHkA7iiG.js`: contains
+  `/liquidfun-rs/assets/liquidfun_wasm_bg-ILl9My4C.wasm`,
+  `d3d8688dabbacd54a6b0fa5fc6a055082f0bcf9e`, and build `35415816988`.
 - `GET` the recorded WASM URL: HTTP 200, `Content-Type: application/wasm`,
   body length `775572`, magic `\0asm`.
+- No-cache GET of all six `#/scene/{id}` hashes: HTTP 200 app shell
+  containing `liquidfun-rs playground` and `/liquidfun-rs/assets/`.
 - Workflow run `35415816988`: `push` on `main`, `head_sha`
   `d3d8688dabbacd54a6b0fa5fc6a055082f0bcf9e`, `conclusion` success.
 - `.github/workflows/pages.yml` contains no `playwright` job. Deploy
@@ -240,7 +255,8 @@ This reviewer independently rechecked:
 Hash fragments are client-side; the six scene URLs share that app shell.
 Headed Chromium `Playing` checks for Dam Break and Water Wheel remain
 recorded evidence in `19-HOST-EVIDENCE.md`. This reviewer did not treat
-those headed opens as this acknowledgment.
+those headed opens or passing `just web-player-smoke` as this
+acknowledgment.
 
 README and TESTING cite the same Pages origin and source
 `d3d8688dabbacd54a6b0fa5fc6a055082f0bcf9e`. They keep local
@@ -273,7 +289,9 @@ Manifest entry count: `16`.
   unknown hash remains `Scene not found` in the player spec.
 - **T-19-07-04 mitigated:** this separate AI reviewer binds approval to
   the exact digest below. Passing `just web-player-smoke` alone is not
-  this acknowledgment.
+  this acknowledgment. The prior `19-REVIEW.md` that used implementing
+  executor identity `b19fb890-110f-4640-b0f2-a51ae36c2f38` is not this
+  acknowledgment.
 - **T-19-07-05 mitigated:** recorded deploy is an ordinary `push` on
   `main`; existing Pages job permissions; no PAT in `pages.yml`.
 - **T-19-07-06 accepted:** publication remains unauthorized; this review
@@ -288,7 +306,7 @@ The independent result exactly matched all 16 current file entries and
 the required digest.
 
 > I, the Cursor independent AI review subagent identified above as
-> Task/agent identity `b19fb890-110f-4640-b0f2-a51ae36c2f38`,
+> Task/agent identity `913947b5-d495-4432-969e-85ce94d31c48`,
 > independently inspected the listed Phase 19 implementation-and-evidence
 > bytes and explicitly acknowledge exact digest
 > `a297f33179b980d55d4ba64378f93edaf842ed5990b43a6eda6bbbba5f9c6fef`
@@ -305,7 +323,7 @@ acknowledgment.
 
 ## GSD Source Code Review
 
-**Reviewed:** 2026-09-19T02:37:40Z
+**Reviewed:** 2026-09-19T02:41:54Z
 **Depth:** deep
 **Files Reviewed:** 16
 **Status:** issues_found
@@ -354,8 +372,8 @@ emitting `cancel` for the previous id.
 
 ---
 
-_Reviewed: 2026-09-19T02:37:40Z_
-_Reviewer: Cursor AI (gsd-code-reviewer), Task/agent identity b19fb890-110f-4640-b0f2-a51ae36c2f38_
+_Reviewed: 2026-09-19T02:41:54Z_
+_Reviewer: Cursor AI (gsd-code-reviewer), Task/agent identity 913947b5-d495-4432-969e-85ce94d31c48_
 _Depth: deep_
 
 GSD_SOURCE_CODE_REVIEW_COMPLETE
