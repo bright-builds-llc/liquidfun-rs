@@ -22,7 +22,9 @@ Phase 16 is complete: a private native-testable WASM wrapper now runs one persis
 
 Phase 17 is complete: the shared SolidJS player hosts Dam Break on GitHub Pages at `https://bright-builds-llc.github.io/liquidfun-rs/#/scene/dam-break`, with play/pause/reset, honest not-ready catalog labels, bounded hidden-tab stepping, and same-checkout OIDC Pages delivery. Recorded deploy SHA `50a15562b356ed941266eedddc636df3f76e7e7e`; independent AI review approved digest `a962555da21e1da79b860c37b003d29fa7f3d6683ef16db1b2beac2a151bf893`.
 
-Phase 18 is complete: all six native scenes (Dam Break, Fountain, Float or Sink, Color Mixer, Jelly Drop, Water Wheel) are ready in the shared player with static catalog cards, labeled bounded controls, host-locked credits, and local Chromium open/reset/switch proofs. Independent AI review approved digest `1f6349eb4a080179aad2dbf9af670e4cf3e95eecf3a0c725449eb3da21acaa94`. Pointer polish, accessibility acceptance, and WEBTEST-01 belong to Phase 19.
+Phase 18 is complete: all six native scenes (Dam Break, Fountain, Float or Sink, Color Mixer, Jelly Drop, Water Wheel) are ready in the shared player with static catalog cards, labeled bounded controls, host-locked credits, and local Chromium open/reset/switch proofs. Independent AI review approved digest `1f6349eb4a080179aad2dbf9af670e4cf3e95eecf3a0c725449eb3da21acaa94`.
+
+Phase 19 is complete: all six hosted demos have one CSS-bound Pointer Events gesture each, labeled keyboard controls, per-scene interaction instructions, and focused Chromium plus live Pages evidence at `https://bright-builds-llc.github.io/liquidfun-rs/` source `d3d8688dabbacd54a6b0fa5fc6a055082f0bcf9e`. Independent AI review approved digest `a297f33179b980d55d4ba64378f93edaf842ed5990b43a6eda6bbbba5f9c6fef`. This is not crate publication.
 
 ## Current Milestone: v1.1 Web Playground
 
@@ -43,11 +45,12 @@ Phase 18 is complete: all six native scenes (Dam Break, Fountain, Float or Sink,
 
 ### Active — v1.1 Web Playground
 
-- [ ] Browse and play six interactive demos in an accessible, responsive SolidJS gallery.
+None. Milestone v1.1 Web Playground phases 16–19 are complete. Package publication remains separately authorized.
 
 
 ### Validated
 
+- [x] Phase 19 completed WEB-05, WEB-07, and WEBTEST-01: each of the six scenes has one documented canvas Pointer Events gesture through a shared CSS-bound camera unproject and WASM `pointer_action`, labeled keyboard controls remain, per-scene figcaption instructions and `select:focus-visible` are in place, Chromium `just web-player-smoke` covers pointer/cancel/resize/375px/hidden-tab, and live Pages at `https://bright-builds-llc.github.io/liquidfun-rs/` source `d3d8688dabbacd54a6b0fa5fc6a055082f0bcf9e` serves WASM as `application/wasm`. Independent AI review approved digest `a297f33179b980d55d4ba64378f93edaf842ed5990b43a6eda6bbbba5f9c6fef`. This is not crate publication.
 - [x] Phase 18 completed WEB-01, WEB-04, WEB-08, and DEMO-01 through DEMO-06: six ready native scenes run in the shared player with static catalog cards, labeled bounded controls, explicit reset-on-change, and per-scene implementation/inspiration/notice links. Local Chromium `just web-player-smoke` proves open/reset/switch. Independent AI review approved digest `1f6349eb4a080179aad2dbf9af670e4cf3e95eecf3a0c725449eb3da21acaa94`. This is not WEB-05/WEB-07/WEBTEST-01 coverage or package publication.
 - [x] Phase 17 completed WASM-04, WEB-02, WEB-03, WEB-06, and HOST-01 through HOST-03: Dam Break runs in the shared player on the live Pages project path, unknown scene hashes fall back usefully, playback/reset and loading/retry work, session teardown and hidden-tab catch-up stay bounded, and every main push builds WASM plus the site from the same checkout then deploys with OIDC. Recorded URL `https://bright-builds-llc.github.io/liquidfun-rs/`; source `50a15562b356ed941266eedddc636df3f76e7e7e`. Independent AI review approved digest `a962555da21e1da79b860c37b003d29fa7f3d6683ef16db1b2beac2a151bf893`. This is not six-scene WEB-01 coverage or package publication.
 - [x] Phase 16 completed WASM-01 through WASM-03: generated Rust WebAssembly visibly advances a real particle/rigid scene in Chromium, the reproducible pinned SolidJS build preserves native Cargo/package isolation, and five bounded copied typed arrays cross the browser boundary without raw pointers or per-particle calls. Explicit disposal, exact-digest independent AI review, and 20/20 closed threats were verified against source-bound closure attempt 10.
@@ -237,4 +240,4 @@ This document evolves at phase transitions and milestone boundaries.
 
 ______________________________________________________________________
 
-*Last updated: 2026-09-17 after completing Phase 16. Strict native certification remains optional and outstanding.*
+*Last updated: 2026-09-19 after completing Phase 19. Strict native certification remains optional and outstanding. Package publication remains separately authorized.*
