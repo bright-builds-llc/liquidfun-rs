@@ -437,6 +437,87 @@ mod tests {
     }
 
     #[test]
+    fn pointer_down_pokes_nearby_jelly_without_changing_count() {
+        // Arrange
+        let mut control = SessionCore::create(SceneId::JellyDrop)
+            .expect("Jelly Drop should construct a native elastic group");
+        let mut poked = SessionCore::create(SceneId::JellyDrop)
+            .expect("Jelly Drop should construct a native elastic group");
+        let before_count = poked.particle_count();
+
+        // Act
+        poked
+            .apply_pointer("down", 0.0, 2.0)
+            .expect("down should poke particles near the click");
+        advance_steps(&mut control, 4);
+        advance_steps(&mut poked, 4);
+        let control_frame = capture(&control);
+        let poked_frame = capture(&poked);
+
+        // Assert
+        assert_eq!(poked_frame.particle_count(), before_count);
+        assert_eq!(control_frame.particle_count(), before_count);
+        assert_ne!(
+            poked_frame.particle_positions().as_ref(),
+            control_frame.particle_positions().as_ref(),
+            "pointer poke should move nearby jelly particles versus a no-pointer world"
+        );
+    }
+
+    #[test]
+    fn pointer_cancel_after_down_does_not_apply_a_second_impulse() {
+        // Arrange
+        let mut down_only = SessionCore::create(SceneId::JellyDrop)
+            .expect("Jelly Drop should construct a native elastic group");
+        let mut canceled = SessionCore::create(SceneId::JellyDrop)
+            .expect("Jelly Drop should construct a native elastic group");
+
+        // Act
+        down_only
+            .apply_pointer("down", 0.0, 2.0)
+            .expect("down should poke once");
+        canceled
+            .apply_pointer("down", 0.0, 2.0)
+            .expect("down should poke once");
+        canceled
+            .apply_pointer("cancel", 0.0, 0.0)
+            .expect("cancel after down must not poke again");
+        advance_steps(&mut down_only, 4);
+        advance_steps(&mut canceled, 4);
+
+        // Assert
+        assert_eq!(
+            capture(&canceled).particle_positions().as_ref(),
+            capture(&down_only).particle_positions().as_ref(),
+            "cancel after down must not apply a second impulse"
+        );
+    }
+
+    #[test]
+    fn labeled_poke_still_uses_contiguous_first_third_range() {
+        // Arrange
+        let source = include_str!("jelly_drop.rs");
+        let impl_source = source
+            .split("#[cfg(test)]")
+            .next()
+            .expect("implementation precedes tests");
+
+        // Assert
+        assert!(
+            impl_source.contains("apply_particle_linear_impulse("),
+            "localized poke must call apply_particle_linear_impulse per nearby id"
+        );
+        assert!(
+            impl_source.contains("apply_particle_linear_impulse_range"),
+            "labeled poke-jelly must keep the contiguous range API"
+        );
+        assert!(
+            impl_source.contains("members[..poke_len]"),
+            "labeled poke must stay on the first-third contiguous slice"
+        );
+    }
+
+    #[test]
     fn unknown_shape_softness_and_actions_fail_closed() {
         // Arrange
         let mut session = SessionCore::create(SceneId::JellyDrop)

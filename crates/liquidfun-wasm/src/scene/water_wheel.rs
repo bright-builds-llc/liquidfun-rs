@@ -571,6 +571,122 @@ mod tests {
     }
 
     #[test]
+    fn pointer_aim_emits_positive_x_and_cancel_restores_default() {
+        // Arrange
+        let super::BuiltScene {
+            mut world,
+            particle_system,
+            mut hooks,
+            ..
+        } = super::build(&[]).expect("Water Wheel should construct");
+
+        // Act
+        hooks
+            .apply_pointer(
+                &mut world,
+                particle_system,
+                crate::scene::PointerKind::Down,
+                0.0,
+                3.15,
+            )
+            .expect("down should aim the jet toward the pointer");
+        hooks
+            .on_advance(&mut world, particle_system)
+            .expect("aimed emit should succeed");
+        let aimed_horizontal = {
+            let view = world
+                .particle_system_view(particle_system)
+                .expect("aimed system should stay live");
+            view.velocities()
+                .iter()
+                .any(|velocity| velocity.x > 1.0 && velocity.y.abs() < 0.15)
+        };
+
+        hooks
+            .apply_pointer(
+                &mut world,
+                particle_system,
+                crate::scene::PointerKind::Cancel,
+                0.0,
+                0.0,
+            )
+            .expect("cancel should clear the aim override");
+        hooks
+            .on_advance(&mut world, particle_system)
+            .expect("default emit should succeed");
+        let restored_default = {
+            let view = world
+                .particle_system_view(particle_system)
+                .expect("restored system should stay live");
+            view.velocities()
+                .iter()
+                .any(|velocity| velocity.x > 1.0 && (velocity.y + 0.4).abs() < 0.05)
+        };
+
+        // Assert
+        assert!(
+            aimed_horizontal,
+            "pointer toward x=0 at nozzle height should emit a positive x velocity"
+        );
+        assert!(
+            restored_default,
+            "cancel must restore Vec2::new(speed, -0.4)"
+        );
+    }
+
+    #[test]
+    fn jet_strength_strong_sets_speed_without_a_motor_write() {
+        // Arrange
+        let super::BuiltScene {
+            mut world,
+            particle_system,
+            mut hooks,
+            ..
+        } = super::build(&[]).expect("Water Wheel should construct");
+        let source = include_str!("water_wheel.rs");
+        let impl_source = source
+            .split("#[cfg(test)]")
+            .next()
+            .expect("implementation precedes tests");
+
+        // Act
+        let strong = hooks
+            .apply_control(&mut world, particle_system, "jet-strength", "strong")
+            .expect("jet-strength=strong should apply live");
+        hooks
+            .on_advance(&mut world, particle_system)
+            .expect("strong emit should succeed");
+        let strong_speed = {
+            let view = world
+                .particle_system_view(particle_system)
+                .expect("strong system should stay live");
+            view.velocities()
+                .iter()
+                .any(|velocity| (velocity.x - 12.0).abs() < 0.05 && (velocity.y + 0.4).abs() < 0.05)
+        };
+
+        // Assert
+        assert!(matches!(strong, super::ControlEffect::Live));
+        assert!(
+            strong_speed,
+            "jet-strength=strong must still emit at speed 12.0"
+        );
+        assert!(
+            impl_source.contains("maybe_aim_velocity"),
+            "Water Wheel must store maybe_aim_velocity for pointer aim"
+        );
+        assert!(
+            impl_source.contains("Vec2::new(speed, -0.4)")
+                || impl_source.contains("Vec2::new(self.jet_speed, -0.4)"),
+            "cancel default must remain Vec2::new(speed, -0.4)"
+        );
+        assert!(
+            !impl_source.contains("enable_motor") && !impl_source.contains(".motor_speed"),
+            "pointer aim must not write a revolute motor"
+        );
+    }
+
+    #[test]
     fn jet_strength_and_emission_apply_live() {
         // Arrange
         let super::BuiltScene {
