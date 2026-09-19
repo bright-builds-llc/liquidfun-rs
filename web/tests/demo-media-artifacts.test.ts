@@ -18,6 +18,7 @@ import {
   compareOutputDirectories,
   mp4Arguments,
   parseMediaProbeJson,
+  parseWebpMuxInfo,
   replaceOutputDirectory,
   validateMp4Probe,
   validateWebpProbe,
@@ -295,6 +296,32 @@ describe("demo media artifacts", () => {
     });
   });
 
+  it("parses webpmux info for an animated webp preview", () => {
+    // Arrange
+    const infoText = `Canvas size: 640 x 896
+Features present: animation transparency
+Background color : 0xFFFFFFFF  Loop Count : 0
+Number of frames: 240
+No.: width height alpha x_offset y_offset duration   dispose blend image_size  compression
+  1:   640   896    no        0        0       33       none   yes      19336       lossy
+  2:   640   896    no        0        0       34       none   yes      18064       lossy
+240:   640   896    no        0        0       33       none   yes      17464       lossy
+`;
+
+    // Act
+    const actual = parseWebpMuxInfo("dam-break.webp", infoText);
+
+    // Assert
+    expect(actual).toEqual({
+      codecName: "webp",
+      width: 640,
+      height: 896,
+      averageFrameRate: "30/1",
+      maybeFrameCount: 240,
+      durationSeconds: 8,
+    });
+  });
+
   it("rejects invalid ffprobe JSON and validation mismatches", () => {
     // Arrange
     const invalidJsonText = JSON.stringify({
@@ -369,6 +396,9 @@ describe("demo media artifacts", () => {
     // Act / Assert
     expect(() => parseMediaProbeJson("bad.webp", invalidJsonText)).toThrow(
       "ffprobe avg_frame_rate is invalid for bad.webp",
+    );
+    expect(() => parseWebpMuxInfo("broken.webp", "Canvas size: nope")).toThrow(
+      "webpmux canvas size is invalid for broken.webp",
     );
     expect(() => parseMediaProbeJson("flat.mp4", invalidDimensionsJsonText)).toThrow(
       "ffprobe width is invalid for flat.mp4",

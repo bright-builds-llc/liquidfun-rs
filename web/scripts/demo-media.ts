@@ -14,6 +14,7 @@ import {
   ensureRegularFile,
   mp4Arguments,
   probeMedia,
+  probeWebp,
   replaceOutputDirectory,
   validateMp4Probe,
   validateWebpProbe,
@@ -283,7 +284,7 @@ async function encodeSceneMedia(
 
   const [mp4Probe, webpProbe] = await Promise.all([
     probeMedia(mp4Path),
-    probeMedia(webpPath),
+    probeWebp(webpPath),
   ]);
   validateMp4Probe(mp4Path, mp4Probe);
   validateWebpProbe(webpPath, webpProbe);
