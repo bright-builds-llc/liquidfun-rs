@@ -5,6 +5,28 @@ export type SceneRoute =
   | { readonly kind: "empty" }
   | { readonly kind: "unknown"; readonly maybeRaw: string };
 
+export const DEFAULT_SCENE_HASH = "#/scene/dam-break";
+
+export type NormalizedSceneRoute = {
+  readonly route: SceneRoute;
+  readonly maybeReplacementHash: string | undefined;
+};
+
+export function normalizeSceneRoute(hash: string): NormalizedSceneRoute {
+  const route = maybeParseSceneRoute(hash);
+  if (route.kind === "empty") {
+    return {
+      route: { kind: "scene", id: "dam-break" },
+      maybeReplacementHash: DEFAULT_SCENE_HASH,
+    };
+  }
+
+  return {
+    route,
+    maybeReplacementHash: undefined,
+  };
+}
+
 export function maybeParseSceneRoute(hash: string): SceneRoute {
   const parts = hash
     .replace(/^#/, "")

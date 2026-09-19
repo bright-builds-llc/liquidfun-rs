@@ -140,17 +140,15 @@ describe("SCENES", () => {
     expect(notReadyIds).toEqual([]);
   });
 
-  it("keeps static preview ids and locked descriptions after all scenes are ready", () => {
+  it("keeps locked descriptions after all scenes are ready", () => {
     // Arrange
     const readyCount = SCENES.filter((scene) => scene.ready).length;
 
     // Act
-    const previewIds = SCENES.map((scene) => scene.previewId);
     const descriptions = SCENES.map((scene) => scene.description);
 
     // Assert
     expect(readyCount).toBe(6);
-    expect(previewIds).toEqual([...SCENE_IDS]);
     expect(descriptions).toEqual(
       SCENE_IDS.map((id) => UI_SPEC_DESCRIPTIONS[id]),
     );
@@ -327,17 +325,6 @@ describe("SCENES", () => {
     expect(recreatingIds).toEqual([...RECREATING_CONTROL_IDS]);
   });
 
-  it("uses each scene id as its preview id", () => {
-    // Arrange
-    const expected = [...SCENE_IDS];
-
-    // Act
-    const previewIds = SCENES.map((scene) => scene.previewId);
-
-    // Assert
-    expect(previewIds).toEqual(expected);
-  });
-
   it("credits this repo's scene modules and host-locked inspiration", () => {
     // Arrange
     const expectedPaths: Readonly<Record<SceneId, string>> = {
@@ -399,7 +386,6 @@ describe("maybeSceneById", () => {
       title: "Dam Break",
       ready: true,
       description: UI_SPEC_DESCRIPTIONS["dam-break"],
-      previewId: "dam-break",
     });
     expect(maybeScene?.controls).toHaveLength(4);
     expect(maybeScene?.credits.implementationPath).toBe(

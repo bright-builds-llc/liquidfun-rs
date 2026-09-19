@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { maybeParseSceneRoute } from "../src/routing/hash";
+import { maybeParseSceneRoute, normalizeSceneRoute } from "../src/routing/hash";
 
 describe("maybeParseSceneRoute", () => {
   it("parses the canonical Dam Break hash as a scene", () => {
@@ -88,5 +88,39 @@ describe("maybeParseSceneRoute", () => {
     expect(extraRoute.kind).toBe("unknown");
     expect(otherRoute.kind).toBe("unknown");
     expect(fullUrlRoute.kind).toBe("unknown");
+  });
+});
+
+describe("normalizeSceneRoute", () => {
+  it("normalizes every empty hash to Dam Break with replacement", () => {
+    // Arrange
+    const emptyHashes = ["", "#", "#/", "#/scene", "#/scene/"];
+
+    // Act
+    const normalized = emptyHashes.map(normalizeSceneRoute);
+
+    // Assert
+    expect(normalized).toEqual(
+      emptyHashes.map(() => ({
+        route: { kind: "scene", id: "dam-break" },
+        maybeReplacementHash: "#/scene/dam-break",
+      })),
+    );
+  });
+
+  it("preserves known and unknown routes without replacement", () => {
+    // Arrange / Act
+    const known = normalizeSceneRoute("#/scene/fountain");
+    const unknown = normalizeSceneRoute("#/scene/nope");
+
+    // Assert
+    expect(known).toEqual({
+      route: { kind: "scene", id: "fountain" },
+      maybeReplacementHash: undefined,
+    });
+    expect(unknown).toEqual({
+      route: { kind: "unknown", maybeRaw: "nope" },
+      maybeReplacementHash: undefined,
+    });
   });
 });
