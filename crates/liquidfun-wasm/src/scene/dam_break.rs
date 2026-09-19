@@ -8,8 +8,8 @@ use liquidfun::{
 };
 
 use super::{
-    attach_basin_fixture, BuiltScene, ControlEffect, PointerKind, RigidSegment, SceneError,
-    SceneHooks,
+    BuiltScene, ControlEffect, PointerKind, RigidSegment, SceneError, SceneHooks,
+    attach_basin_fixture,
 };
 use crate::session::SessionError;
 
@@ -90,6 +90,7 @@ struct DamBreakHooks {
     basin_segments: [RigidSegment; 3],
     circle_body: BodyId,
     circle_radius: f32,
+    dragging: bool,
 }
 
 pub(crate) fn build(presets: &[(String, String)]) -> Result<BuiltScene, SessionError> {
@@ -103,7 +104,10 @@ pub(crate) fn build(presets: &[(String, String)]) -> Result<BuiltScene, SessionE
         .map_or(Ok(GravityPreset::Normal), |maybe_gravity| {
             maybe_gravity.ok_or(SessionError::UnknownControl)
         })?;
-    debug_assert_eq!(PARTICLE_COUNT, usize::from(PARTICLE_COLUMNS) * usize::from(PARTICLE_ROWS));
+    debug_assert_eq!(
+        PARTICLE_COUNT,
+        usize::from(PARTICLE_COLUMNS) * usize::from(PARTICLE_ROWS)
+    );
     build_basin(water, gravity).map_err(|_error| SessionError::SceneConstruction)
 }
 
@@ -179,6 +183,7 @@ fn build_basin(water: WaterAmount, gravity: GravityPreset) -> Result<BuiltScene,
             ],
             circle_body,
             circle_radius: DYNAMIC_CIRCLE_RADIUS,
+            dragging: false,
         }),
     })
 }
@@ -305,14 +310,34 @@ impl SceneHooks for DamBreakHooks {
 
     fn apply_pointer(
         &mut self,
-        _world: &mut World,
+        world: &mut World,
         _system: ParticleSystemId,
         kind: PointerKind,
-        _world_x: f32,
-        _world_y: f32,
+        world_x: f32,
+        world_y: f32,
     ) -> Result<(), SessionError> {
         match kind {
-            PointerKind::Down | PointerKind::Move | PointerKind::Up | PointerKind::Cancel => {
+            PointerKind::Down | PointerKind::Move => {
+                self.dragging = true;
+                let position = Vec2::new(world_x.clamp(-5.5, 5.5), world_y.clamp(0.75, 7.25));
+                world
+                    .set_body_transform(self.circle_body, position, 0.0)
+                    .map_err(|_error| SessionError::SceneConstruction)?;
+                Ok(())
+            }
+            PointerKind::Up => {
+                self.dragging = false;
+                world
+                    .apply_body_linear_impulse_to_center(
+                        self.circle_body,
+                        DROP_WAKE_IMPULSE,
+                        WakePolicy::Wake,
+                    )
+                    .map_err(|_error| SessionError::SceneConstruction)?;
+                Ok(())
+            }
+            PointerKind::Cancel => {
+                self.dragging = false;
                 Ok(())
             }
         }
@@ -405,10 +430,7 @@ mod tests {
         assert!(high, "gravity must return Recreated");
         assert!(normal, "gravity must return Recreated");
         assert_eq!(low_scene.world.gravity().x.to_bits(), 0.0_f32.to_bits());
-        assert_eq!(
-            low_scene.world.gravity().y.to_bits(),
-            (-6.0_f32).to_bits()
-        );
+        assert_eq!(low_scene.world.gravity().y.to_bits(), (-6.0_f32).to_bits());
         assert_eq!(high_scene.world.gravity().x.to_bits(), 0.0_f32.to_bits());
         assert_eq!(
             high_scene.world.gravity().y.to_bits(),

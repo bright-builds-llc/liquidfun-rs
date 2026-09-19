@@ -8,8 +8,8 @@ use liquidfun::{
 };
 
 use super::{
-    attach_basin_fixture, BuiltScene, ControlEffect, PointerKind, RigidSegment, SceneError,
-    SceneHooks,
+    BuiltScene, ControlEffect, PointerKind, RigidSegment, SceneError, SceneHooks,
+    attach_basin_fixture,
 };
 use crate::session::SessionError;
 
@@ -216,7 +216,13 @@ fn aim_velocity(aim_from_up: f32, speed: f32) -> Vec2 {
     Vec2::new(aim_from_up.sin() * speed, aim_from_up.cos() * speed)
 }
 
-fn emit_stream(world: &mut World, system: ParticleSystemId, count: u8, speed: f32, aim_from_up: f32) {
+fn emit_stream(
+    world: &mut World,
+    system: ParticleSystemId,
+    count: u8,
+    speed: f32,
+    aim_from_up: f32,
+) {
     let velocity = aim_velocity(aim_from_up, speed);
     for index in 0..count {
         let position = Vec2::new(
@@ -300,13 +306,17 @@ impl SceneHooks for FountainHooks {
         _world: &mut World,
         _system: ParticleSystemId,
         kind: PointerKind,
-        _world_x: f32,
-        _world_y: f32,
+        world_x: f32,
+        world_y: f32,
     ) -> Result<(), SessionError> {
         match kind {
-            PointerKind::Down | PointerKind::Move | PointerKind::Up | PointerKind::Cancel => {
+            PointerKind::Down | PointerKind::Move => {
+                self.aim_from_up = world_x
+                    .atan2(world_y - NOZZLE_POSITION.y)
+                    .clamp(-TAU / 4.0, TAU / 4.0);
                 Ok(())
             }
+            PointerKind::Up | PointerKind::Cancel => Ok(()),
         }
     }
 

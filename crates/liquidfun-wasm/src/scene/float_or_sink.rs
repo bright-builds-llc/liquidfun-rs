@@ -8,8 +8,8 @@ use liquidfun::{
 };
 
 use super::{
-    attach_basin_fixture, BuiltScene, ControlEffect, PointerKind, RigidSegment, SceneError,
-    SceneHooks,
+    BuiltScene, ControlEffect, PointerKind, RigidSegment, SceneError, SceneHooks,
+    attach_basin_fixture,
 };
 use crate::session::SessionError;
 
@@ -168,11 +168,21 @@ fn create_pool_particles(world: &mut World) -> Result<ParticleSystemId, SceneErr
 }
 
 fn drop_body(world: &mut World, hooks: &mut FloatOrSinkHooks) -> Result<(), SessionError> {
+    drop_body_at(world, hooks, DROP_POSITION.x, DROP_POSITION.y)
+}
+
+fn drop_body_at(
+    world: &mut World,
+    hooks: &mut FloatOrSinkHooks,
+    world_x: f32,
+    world_y: f32,
+) -> Result<(), SessionError> {
     if hooks.dropped.len() >= MAX_DROPPED_BODIES {
         return Ok(());
     }
 
-    let body_definition = BodyDef::new(BodyType::Dynamic, DROP_POSITION, 0.0, true)
+    let position = Vec2::new(world_x.clamp(-5.5, 5.5), world_y);
+    let body_definition = BodyDef::new(BodyType::Dynamic, position, 0.0, true)
         .map_err(|_error| SessionError::SceneConstruction)?;
     let body = world
         .create_body(&body_definition)
@@ -238,16 +248,15 @@ impl SceneHooks for FloatOrSinkHooks {
 
     fn apply_pointer(
         &mut self,
-        _world: &mut World,
+        world: &mut World,
         _system: ParticleSystemId,
         kind: PointerKind,
-        _world_x: f32,
+        world_x: f32,
         _world_y: f32,
     ) -> Result<(), SessionError> {
         match kind {
-            PointerKind::Down | PointerKind::Move | PointerKind::Up | PointerKind::Cancel => {
-                Ok(())
-            }
+            PointerKind::Down => drop_body_at(world, self, world_x, 6.0),
+            PointerKind::Move | PointerKind::Up | PointerKind::Cancel => Ok(()),
         }
     }
 
