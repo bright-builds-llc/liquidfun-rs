@@ -14,6 +14,7 @@ import {
   waitForReadyScene,
 } from "../scripts/demo-media/capture";
 import { captureFontFingerprint } from "../scripts/demo-media/font";
+import { RENDER_MODE_STORAGE_KEY } from "../src/render/mode";
 
 test.use({
   viewport: CAPTURE_PROFILE.viewport,
@@ -128,6 +129,29 @@ test("captures 240 numbered frames and accepts the planned pointer action", asyn
       frameFileName(frameIndex),
     ),
   );
+});
+
+test("rejects persisted solid mode for deterministic media capture", async ({
+  page,
+}, testInfo) => {
+  // Arrange
+  const plan = SCENE_CAPTURE_PLANS[0];
+  if (plan === undefined) {
+    throw new Error("Dam Break capture plan is missing");
+  }
+  await page.addInitScript((storageKey) => {
+    window.localStorage.setItem(storageKey, "solid");
+  }, RENDER_MODE_STORAGE_KEY);
+  await installSyntheticAnimationClock(page);
+
+  // Act / Assert
+  await expect(
+    captureSceneFrames({
+      page,
+      plan,
+      framesDirectory: testInfo.outputPath("solid-mode-capture"),
+    }),
+  ).rejects.toThrow("Demo media capture requires wireframe rendering");
 });
 
 test.describe("capture preconditions", () => {

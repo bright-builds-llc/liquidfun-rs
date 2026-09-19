@@ -175,6 +175,7 @@ export async function captureSceneFrames({
   await mkdir(framesDirectory, { recursive: true });
   await page.goto(plan.route);
   await waitForReadyScene(page, plan);
+  await requireWireframeRenderMode(page);
 
   let completedSteps = 0;
   let wroteFrameCount = 0;
@@ -227,6 +228,17 @@ export async function captureSceneFrames({
     );
   }
   expect(outputFrameNames).toEqual(expectedFrameNames);
+}
+
+async function requireWireframeRenderMode(page: Page): Promise<void> {
+  const maybeRenderMode = await page
+    .locator("main")
+    .getAttribute("data-render-mode");
+  if (maybeRenderMode !== "wireframe") {
+    throw new Error(
+      `Demo media capture requires wireframe rendering, got ${String(maybeRenderMode)}`,
+    );
+  }
 }
 
 async function advanceSyntheticClock(
