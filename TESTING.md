@@ -74,11 +74,12 @@ verification is read-only. The ordinary macOS job builds and tests the native cr
 The hosted playground is GitHub Pages delivery, not Linux native qualification
 or strict native certification. Local Chromium `just web-player-smoke` is the
 WEBTEST-01 gate for the production-base player. It does not claim Firefox or
-Safari coverage, and it is not a live Pages revision proof. The playground has
-six native scenes. Visitors can open
-`https://bright-builds-llc.github.io/liquidfun-rs/#/scene/dam-break`; a new
-Pages URL is not required for local proof. Production JavaScript and WASM load
-under `/liquidfun-rs/`.
+Safari coverage. The playground has six native scenes. The recorded live
+origin is `https://bright-builds-llc.github.io/liquidfun-rs/` at source
+`d3d8688dabbacd54a6b0fa5fc6a055082f0bcf9e`, including refreshed
+`#/scene/dam-break` through `#/scene/water-wheel`. Production JavaScript and
+WASM load under `/liquidfun-rs/`. See
+`.planning/phases/19-interaction-polish-and-browser-verification/19-HOST-EVIDENCE.md`.
 
 Local product commands:
 

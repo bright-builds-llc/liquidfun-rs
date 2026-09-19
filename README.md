@@ -90,12 +90,14 @@ The playground has six native scenes: Dam Break, Fountain, Float or Sink,
 Color Mixer, Jelly Drop, and Water Wheel. Visitors can open the hosted
 playground at
 <https://bright-builds-llc.github.io/liquidfun-rs/#/scene/dam-break>.
-Production JavaScript and WASM load under `/liquidfun-rs/`. GitHub Pages
-delivery is website hosting, not Linux native qualification. This playground
-does not publish an npm or Rust package, claim complete LiquidFun parity, or
-treat catalog cards as live simulations. Color mixing is contact-driven
-particle color, not pigment chemistry. A new Pages URL is not required to
-prove the six scenes locally.
+The recorded Phase 19 live revision is source
+`d3d8688dabbacd54a6b0fa5fc6a055082f0bcf9e`. Production JavaScript and WASM
+load under `/liquidfun-rs/`. GitHub Pages delivery is website hosting, not
+Linux native qualification. This playground does not publish an npm or Rust
+package, claim complete LiquidFun parity, or treat catalog cards as live
+simulations. Color mixing is contact-driven particle color, not pigment
+chemistry. Local Chromium `just web-player-smoke` remains the ordinary
+WEBTEST-01 gate and does not claim Firefox or Safari coverage.
 
 The private, unpublished `liquidfun-wasm` wrapper and SolidJS player rebuild
 from a clean checkout with the exact local tools:
