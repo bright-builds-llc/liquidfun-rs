@@ -392,6 +392,7 @@ button:hover:not(:disabled) {
 
 .product-control:focus-visible,
 button:focus-visible,
+select:focus-visible,
 a:focus-visible {
   outline: 2px solid #39D3C7;
   outline-offset: 4px;
@@ -504,6 +505,22 @@ select:hover:not(:disabled) {
 }
 
 @media (max-width: 480px) {
+  html,
+  body,
+  #root,
+  main {
+    min-width: 0;
+  }
+
+  .scene-control,
+  .scene-control-label {
+    width: 100%;
+  }
+
+  figcaption {
+    overflow-wrap: break-word;
+  }
+
   main {
     gap: var(--space-md);
     padding: var(--space-md);

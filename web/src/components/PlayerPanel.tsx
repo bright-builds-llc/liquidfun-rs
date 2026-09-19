@@ -6,6 +6,7 @@ export type PlayerPanelProps = {
   readonly sceneTitle: string;
   readonly status: PlayerStatus;
   readonly maybeDetails?: string | undefined;
+  readonly interactionHint: string;
   readonly assignCanvas: (canvas: HTMLCanvasElement) => void;
   readonly onPlay: () => void;
   readonly onPause: () => void;
@@ -18,8 +19,6 @@ const RUNTIME_LABEL = "Runtime";
 const RUNTIME_VALUE = "Rust engine · WebAssembly";
 const PLAYING_STATUS = "Playing";
 const PAUSED_STATUS = "Paused";
-const CANVAS_CAPTION =
-  "Live frame from this repository's Rust engine, drawn with Canvas 2D.";
 const PLAY_LABEL = "Play scene";
 const PAUSE_LABEL = "Pause scene";
 const RESET_LABEL = "Reset scene";
@@ -91,6 +90,7 @@ export function PlayerPanel(props: PlayerPanelProps) {
             height="540"
             role="img"
             aria-label={`Live ${props.sceneTitle} scene: Rust particles and rigid bodies.`}
+            aria-describedby="scene-interaction-hint"
           >
             {`Canvas is required to display the ${props.sceneTitle} scene.`}
           </canvas>
@@ -101,7 +101,7 @@ export function PlayerPanel(props: PlayerPanelProps) {
             </div>
           </Show>
         </div>
-        <figcaption>{CANVAS_CAPTION}</figcaption>
+        <figcaption id="scene-interaction-hint">{props.interactionHint}</figcaption>
       </figure>
 
       <div class="control-row">

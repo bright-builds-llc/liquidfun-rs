@@ -587,20 +587,19 @@ export function App() {
         when={maybeCurrentSceneId()}
         fallback={<FallbackPanel {...fallbackProps(route())} />}
       >
-        {(sceneId) => {
-          const scene = () => maybeCurrentScene();
-          return (
+        {(sceneId) => (
             <PlayerPanel
               sceneTitle={sceneTitleForId(sceneId())}
               status={playerStatus(view())}
               maybeDetails={maybeFailureDetails()}
+              interactionHint={maybeCurrentScene()?.interactionHint ?? ""}
               assignCanvas={assignCanvas}
               onPlay={playScene}
               onPause={pauseScene}
               onReset={recreateScene}
               onRetry={recreateScene}
             >
-              <Show when={scene()}>
+              <Show when={maybeCurrentScene()}>
                 {(currentScene) => (
                   <>
                     <SceneControls
@@ -618,8 +617,7 @@ export function App() {
                 )}
               </Show>
             </PlayerPanel>
-          );
-        }}
+        )}
       </Show>
 
       <SiteFooter />
