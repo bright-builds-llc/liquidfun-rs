@@ -10,6 +10,13 @@ import { PlayerPanel, type PlayerStatus } from "./components/PlayerPanel";
 import { SceneControls } from "./components/SceneControls";
 import { SceneCredits } from "./components/SceneCredits";
 import { SiteFooter } from "./components/SiteFooter";
+import {
+  attachCanvasPointer,
+  forwardScenePointer,
+  syncCanvasInteractive,
+  type CanvasPointerHandlers,
+} from "./input/canvas-pointer";
+import type { PointerKind } from "./input/pointer";
 import { acceptedStepCount } from "./physics/clock";
 import type { RenderFrame } from "./physics/frame";
 import { loadSceneSession } from "./physics/loader";
@@ -109,6 +116,9 @@ export function App() {
       ? { kind: "loading" }
       : { kind: "fallback" },
   );
+  const [lastPointerKind, setLastPointerKind] =
+    createSignal<PointerKind | undefined>();
+  const [pointerAccepted, setPointerAccepted] = createSignal(0);
 
   let generation = 0;
   let constructionValues: Record<string, string> = {};
@@ -120,6 +130,7 @@ export function App() {
   let maybePreviousFrame: RenderFrame | undefined;
   let maybeCamera: Camera | undefined;
   let maybeResizeObserver: ResizeObserver | undefined;
+  let maybeCanvasPointer: CanvasPointerHandlers | undefined;
 
   function incrementGeneration(): number {
     generation = nextGeneration(generation);
@@ -142,6 +153,7 @@ export function App() {
   }
 
   function disposeOwnedSession(): void {
+    maybeCanvasPointer?.cancel();
     const maybeOwnedSession = maybeSession;
     maybeSession = undefined;
     maybeLastTimestamp = undefined;
@@ -158,6 +170,8 @@ export function App() {
 
   function abandonScene(): void {
     incrementGeneration();
+    maybeCanvasPointer?.detach();
+    maybeCanvasPointer = undefined;
     disconnectResizeObserver();
     cancelPendingFrame();
     disposeOwnedSession();
@@ -351,8 +365,18 @@ export function App() {
     }
   }
 
+  function sendPointer(kind: PointerKind, worldX: number, worldY: number): void {
+    forwardScenePointer(maybeSession, view().kind, kind, worldX, worldY, setLastPointerKind, setPointerAccepted, fail);
+  }
+
   function assignCanvas(canvas: HTMLCanvasElement): void {
+    maybeCanvasPointer?.detach();
     maybeCanvas = canvas;
+    maybeCanvasPointer = attachCanvasPointer({
+      canvas,
+      maybeCamera: () => maybeCamera,
+      send: sendPointer,
+    });
 
     const maybeNextContext = canvas.getContext("2d");
     if (maybeNextContext === null) {
@@ -387,6 +411,7 @@ export function App() {
       return;
     }
 
+    maybeCanvasPointer?.cancel();
     cancelPendingFrame();
     maybeLastTimestamp = undefined;
     setView({ kind: "paused", frame: current.frame });
@@ -423,6 +448,7 @@ export function App() {
     try {
       if (recreates) {
         constructionValues = { ...constructionValues, [name]: value };
+        maybeCanvasPointer?.cancel();
         cancelPendingFrame();
         setView({ kind: "loading" });
       }
@@ -491,10 +517,17 @@ export function App() {
 
   function onVisibilityChange(): void {
     maybeLastTimestamp = undefined;
+    if (document.hidden) {
+      maybeCanvasPointer?.cancel();
+    }
   }
 
   window.addEventListener("hashchange", onHashChange);
   document.addEventListener("visibilitychange", onVisibilityChange);
+
+  createEffect(() => {
+    syncCanvasInteractive(maybeCanvas, playerStatus(view()) === "playing" || playerStatus(view()) === "paused");
+  });
 
   createEffect(() => {
     const currentRoute = route();
@@ -540,6 +573,8 @@ export function App() {
       data-playback={view().kind}
       data-scene={maybeSceneAttr()}
       data-step-index={maybeFrame()?.stepIndex}
+      data-last-pointer-kind={lastPointerKind()}
+      data-pointer-accepted={pointerAccepted()}
     >
       <header class="page-header">
         <h1 id="site-title">{PAGE_HEADING}</h1>

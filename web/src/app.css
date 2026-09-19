@@ -310,6 +310,11 @@ canvas {
   max-width: 100%;
   aspect-ratio: 16 / 9;
   background: #071018;
+  touch-action: none;
+}
+
+canvas.canvas-interactive {
+  cursor: crosshair;
 }
 
 .empty-state {
