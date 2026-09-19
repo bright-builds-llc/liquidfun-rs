@@ -34,6 +34,7 @@ export type SceneRecord = {
   readonly title: string;
   readonly ready: boolean;
   readonly description: string;
+  readonly interactionHint: string;
   readonly previewId: SceneId;
   readonly controls: readonly SceneControl[];
   readonly credits: SceneCredits;
@@ -83,6 +84,8 @@ export const SCENES: readonly SceneRecord[] = [
     title: "Dam Break",
     ready: true,
     description: "Release a block of water into a basin and drop one obstacle.",
+    interactionHint:
+      "Drag the obstacle to a new place in the basin. Labeled controls also work from the keyboard.",
     previewId: "dam-break",
     controls: [
       {
@@ -120,6 +123,8 @@ export const SCENES: readonly SceneRecord[] = [
     title: "Fountain",
     ready: true,
     description: "Aim a bounded stream into a bowl until particle count plateaus.",
+    interactionHint:
+      "Drag on the canvas to aim the stream. Labeled controls also work from the keyboard.",
     previewId: "fountain",
     controls: [
       runtimePreset("emission-rate", "Emission rate", [
@@ -150,6 +155,8 @@ export const SCENES: readonly SceneRecord[] = [
     ready: true,
     description:
       "Drop cork, wood, or stone into a pool and watch native body response.",
+    interactionHint:
+      "Click or tap the canvas to drop the selected body at that horizontal position. Labeled controls also work from the keyboard.",
     previewId: "float-or-sink",
     controls: [
       runtimePreset("body", "Body", [
@@ -170,6 +177,8 @@ export const SCENES: readonly SceneRecord[] = [
     ready: true,
     description:
       "Stir two colored groups and watch contact-driven particle-color mixing.",
+    interactionHint:
+      "Drag on the canvas to stir the colored groups. Labeled controls also work from the keyboard.",
     previewId: "color-mixer",
     controls: [
       {
@@ -199,6 +208,8 @@ export const SCENES: readonly SceneRecord[] = [
     title: "Jelly Drop",
     ready: true,
     description: "Drop an elastic particle shape onto obstacles, then poke it.",
+    interactionHint:
+      "Click or tap the canvas to poke the jelly at that location. Labeled controls also work from the keyboard.",
     previewId: "jelly-drop",
     controls: [
       {
@@ -232,6 +243,8 @@ export const SCENES: readonly SceneRecord[] = [
     ready: true,
     description:
       "Vary a jet that turns a pinned paddle wheel through native coupling.",
+    interactionHint:
+      "Drag on the canvas to aim the jet. Labeled controls also work from the keyboard.",
     previewId: "water-wheel",
     controls: [
       runtimePreset("jet-strength", "Jet strength", [
