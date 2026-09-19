@@ -56,6 +56,7 @@ class FakeGeneratedProofSession implements GeneratedProofSession {
   readonly applyControlCalls: { readonly name: string; readonly value: string }[] =
     [];
   readonly applyActionCalls: string[] = [];
+  readonly pointerActionCalls: Array<[string, number, number]> = [];
   captureCalls = 0;
   freeCalls = 0;
   applyControlResult = true;
@@ -63,6 +64,7 @@ class FakeGeneratedProofSession implements GeneratedProofSession {
   maybeCaptureError: Error | undefined;
   maybeApplyControlError: Error | undefined;
   maybeApplyActionError: Error | undefined;
+  maybePointerActionError: Error | undefined;
 
   constructor(readonly frame: RawProofFrame = new FakeRawProofFrame()) {}
 
@@ -95,6 +97,13 @@ class FakeGeneratedProofSession implements GeneratedProofSession {
     this.applyActionCalls.push(name);
     if (this.maybeApplyActionError !== undefined) {
       throw this.maybeApplyActionError;
+    }
+  }
+
+  pointerAction(kind: string, worldX: number, worldY: number): void {
+    this.pointerActionCalls.push([kind, worldX, worldY]);
+    if (this.maybePointerActionError !== undefined) {
+      throw this.maybePointerActionError;
     }
   }
 
@@ -351,5 +360,65 @@ describe("createSceneSession", () => {
     expect(applyAction).toThrow("Rust/WASM session is disposed");
     expect(generatedSession.freeCalls).toBe(1);
     expect(generatedSession.applyActionCalls).toHaveLength(1);
+  });
+
+  it("forwards one pointerAction call with world coordinates", () => {
+    // Arrange
+    const generatedSession = new FakeGeneratedProofSession();
+    const session = createSceneSession(generatedSession);
+
+    // Act
+    session.pointerAction("down", 1, 2);
+
+    // Assert
+    expect(generatedSession.pointerActionCalls).toEqual([["down", 1, 2]]);
+    expect(generatedSession.advanceCalls).toEqual([]);
+    expect(generatedSession.freeCalls).toBe(0);
+  });
+
+  it("rejects unknown pointer kinds without calling generated or disposing", () => {
+    // Arrange
+    const generatedSession = new FakeGeneratedProofSession();
+    const session = createSceneSession(generatedSession);
+
+    // Act
+    session.pointerAction("click", 1, 2);
+
+    // Assert
+    expect(generatedSession.pointerActionCalls).toEqual([]);
+    expect(generatedSession.freeCalls).toBe(0);
+  });
+
+  it("rejects non-finite world coordinates without calling generated or disposing", () => {
+    // Arrange
+    const generatedSession = new FakeGeneratedProofSession();
+    const session = createSceneSession(generatedSession);
+
+    // Act
+    session.pointerAction("down", Number.NaN, 2);
+
+    // Assert
+    expect(generatedSession.pointerActionCalls).toEqual([]);
+    expect(generatedSession.freeCalls).toBe(0);
+  });
+
+  it("poisons pointerAction failures with the fixed message and frees", () => {
+    // Arrange
+    const generatedSession = new FakeGeneratedProofSession();
+    generatedSession.maybePointerActionError = new Error(
+      "unbounded generated detail",
+    );
+    const session = createSceneSession(generatedSession);
+
+    // Act
+    const pointerAction = () => session.pointerAction("down", 1, 2);
+
+    // Assert
+    expect(pointerAction).toThrow("Rust/WASM session failed");
+    expect(generatedSession.pointerActionCalls).toEqual([["down", 1, 2]]);
+    expect(generatedSession.freeCalls).toBe(1);
+    expect(pointerAction).toThrow("Rust/WASM session is disposed");
+    expect(generatedSession.freeCalls).toBe(1);
+    expect(generatedSession.pointerActionCalls).toHaveLength(1);
   });
 });
