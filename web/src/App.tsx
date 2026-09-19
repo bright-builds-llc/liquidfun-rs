@@ -238,7 +238,7 @@ export function App() {
       }
       try {
         const frame = maybeOwnedSession.nextFrame(stepTime.stepCount);
-        drawRenderFrame(context, frame, camera);
+        drawRenderFrame(context, frame, camera, "wireframe");
         const observation = observeFrame(
           frame,
           maybePreviousFrame,
@@ -265,7 +265,7 @@ export function App() {
     }
 
     const frame = ownedSession.nextFrame();
-    drawRenderFrame(context, frame, camera);
+    drawRenderFrame(context, frame, camera, "wireframe");
     const observation = observeFrame(
       frame,
       resetObservation ? undefined : maybePreviousFrame,
@@ -309,7 +309,7 @@ export function App() {
 
         const maybeFrame = maybePreviousFrame;
         if (maybeFrame !== undefined) {
-          drawRenderFrame(context, maybeFrame, resizedCamera);
+          drawRenderFrame(context, maybeFrame, resizedCamera, "wireframe");
         }
       } catch (error) {
         fail(error);

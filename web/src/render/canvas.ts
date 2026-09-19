@@ -5,11 +5,13 @@ import {
   projectPoint,
   projectRadius,
 } from "./camera";
+import type { RenderMode } from "./mode";
 
 const CANVAS_COLOR = "#071018";
 const BASIN_STROKE_COLOR = "#94A3B8";
 const RIGID_FILL_COLOR = "#334155";
 const RIGID_STROKE_COLOR = "#CBD5E1";
+const PARTICLE_STROKE_WIDTH = 1.5;
 const RIGID_STROKE_WIDTH = 2;
 const MAX_DEVICE_PIXEL_RATIO = 2;
 const INVALID_CANVAS_MESSAGE = "Invalid Canvas dimensions";
@@ -71,6 +73,7 @@ function drawParticles(
   context: CanvasRenderingContext2D,
   frame: RenderFrame,
   camera: Camera,
+  renderMode: RenderMode,
 ): void {
   for (
     let particleIndex = 0;
@@ -92,10 +95,17 @@ function drawParticles(
     const blue = valueAt(frame.particleColors, colorIndex + 2);
     const alpha = valueAt(frame.particleColors, colorIndex + 3) / 255;
 
+    const color = `rgba(${red}, ${green}, ${blue}, ${alpha})`;
     context.beginPath();
     context.arc(center.x, center.y, radius, 0, TAU);
-    context.fillStyle = `rgba(${red}, ${green}, ${blue}, ${alpha})`;
-    context.fill();
+    if (renderMode === "wireframe") {
+      context.strokeStyle = color;
+      context.lineWidth = PARTICLE_STROKE_WIDTH;
+      context.stroke();
+    } else {
+      context.fillStyle = color;
+      context.fill();
+    }
   }
 }
 
@@ -132,6 +142,7 @@ function drawCircles(
   context: CanvasRenderingContext2D,
   frame: RenderFrame,
   camera: Camera,
+  renderMode: RenderMode,
 ): void {
   context.fillStyle = RIGID_FILL_COLOR;
   context.strokeStyle = RIGID_STROKE_COLOR;
@@ -153,7 +164,9 @@ function drawCircles(
 
     context.beginPath();
     context.arc(center.x, center.y, radius, 0, TAU);
-    context.fill();
+    if (renderMode === "solid") {
+      context.fill();
+    }
     context.stroke();
   }
 }
@@ -163,6 +176,7 @@ export function drawRenderFrame(
   context: CanvasRenderingContext2D,
   frame: RenderFrame,
   camera: Camera,
+  renderMode: RenderMode,
 ): void {
   context.fillStyle = CANVAS_COLOR;
   context.fillRect(
@@ -172,7 +186,7 @@ export function drawRenderFrame(
     camera.viewport.height,
   );
 
-  drawParticles(context, frame, camera);
+  drawParticles(context, frame, camera, renderMode);
   drawSegments(context, frame, camera);
-  drawCircles(context, frame, camera);
+  drawCircles(context, frame, camera, renderMode);
 }
