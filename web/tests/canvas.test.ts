@@ -18,6 +18,7 @@ const FRAME: RenderFrame = {
   rigidSegments: new Float32Array([-1, 0, 1, 0]),
   rigidCircles: new Float32Array([0, 2, 0.75]),
 };
+const TAU = Math.PI * 2;
 
 type Point = readonly [number, number];
 
@@ -36,6 +37,9 @@ type Operation =
       readonly x: number;
       readonly y: number;
       readonly radius: number;
+      readonly startAngle: number;
+      readonly endAngle: number;
+      readonly counterclockwise: boolean;
     }
   | { readonly kind: "moveTo"; readonly x: number; readonly y: number }
   | { readonly kind: "lineTo"; readonly x: number; readonly y: number }
@@ -73,8 +77,23 @@ function createRecordingContext(): RecordingContext {
     beginPath: () => {
       operations.push({ kind: "beginPath" });
     },
-    arc: (x: number, y: number, radius: number) => {
-      operations.push({ kind: "arc", x, y, radius });
+    arc: (
+      x: number,
+      y: number,
+      radius: number,
+      startAngle: number,
+      endAngle: number,
+      counterclockwise = false,
+    ) => {
+      operations.push({
+        kind: "arc",
+        x,
+        y,
+        radius,
+        startAngle,
+        endAngle,
+        counterclockwise,
+      });
     },
     fill: () => {
       fillCallCount += 1;
@@ -157,11 +176,17 @@ describe("drawRenderFrame", () => {
         kind: "arc",
         ...projectPoint(camera, { x: 0, y: 1 }),
         radius: projectRadius(camera, Math.fround(0.2)),
+        startAngle: 0,
+        endAngle: TAU,
+        counterclockwise: false,
       },
       {
         kind: "arc",
         ...projectPoint(camera, { x: 0, y: 2 }),
         radius: projectRadius(camera, 0.75),
+        startAngle: 0,
+        endAngle: TAU,
+        counterclockwise: false,
       },
     ];
 
@@ -230,6 +255,9 @@ describe("drawRenderFrame", () => {
         x: particleCenter.x,
         y: particleCenter.y,
         radius: particleRadius,
+        startAngle: 0,
+        endAngle: TAU,
+        counterclockwise: false,
       },
       {
         kind: "fill",
@@ -249,6 +277,9 @@ describe("drawRenderFrame", () => {
         x: circleCenter.x,
         y: circleCenter.y,
         radius: circleRadius,
+        startAngle: 0,
+        endAngle: TAU,
+        counterclockwise: false,
       },
       { kind: "fill", fillStyle: "#334155" },
       {
