@@ -29,6 +29,14 @@ web-player-smoke:
 web-smoke:
     bun scripts/web-build.ts smoke
 
+demo-media:
+    bun scripts/web-build.ts build
+    cd web && bun run demo-media -- generate
+
+demo-media-check:
+    bun scripts/web-build.ts build
+    cd web && bun run demo-media -- check
+
 test:
     cargo test --all-features
 
