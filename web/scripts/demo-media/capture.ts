@@ -177,9 +177,7 @@ export async function captureSceneFrames({
   await page.goto(plan.route);
   await waitForReadyScene(page, plan);
   await requireWireframeRenderMode(page);
-  await setDemoMediaCaptureMode(page, true);
-
-  try {
+  await withDemoMediaCaptureMode(page, async () => {
     let completedSteps = 0;
     let wroteFrameCount = 0;
     let interactionPerformed = false;
@@ -231,12 +229,33 @@ export async function captureSceneFrames({
       );
     }
     expect(outputFrameNames).toEqual(expectedFrameNames);
+  });
+}
+
+export async function withDemoMediaCaptureMode<T>(
+  page: Page,
+  callback: () => Promise<T>,
+): Promise<T> {
+  await setDemoMediaCaptureAttribute(page, true);
+  try {
+    return await callback();
   } finally {
-    await setDemoMediaCaptureMode(page, false);
+    await setDemoMediaCaptureAttribute(page, false);
   }
 }
 
-export async function setDemoMediaCaptureMode(
+async function requireWireframeRenderMode(page: Page): Promise<void> {
+  const maybeRenderMode = await page
+    .locator("main")
+    .getAttribute("data-render-mode");
+  if (maybeRenderMode !== "wireframe") {
+    throw new Error(
+      `Demo media capture requires wireframe rendering, got ${String(maybeRenderMode)}`,
+    );
+  }
+}
+
+async function setDemoMediaCaptureAttribute(
   page: Page,
   enabled: boolean,
 ): Promise<void> {
@@ -253,17 +272,6 @@ export async function setDemoMediaCaptureMode(
       enabledCaptureMode: enabled,
     },
   );
-}
-
-async function requireWireframeRenderMode(page: Page): Promise<void> {
-  const maybeRenderMode = await page
-    .locator("main")
-    .getAttribute("data-render-mode");
-  if (maybeRenderMode !== "wireframe") {
-    throw new Error(
-      `Demo media capture requires wireframe rendering, got ${String(maybeRenderMode)}`,
-    );
-  }
 }
 
 async function advanceSyntheticClock(

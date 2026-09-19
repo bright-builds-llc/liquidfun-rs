@@ -11,7 +11,7 @@ import {
   advanceEngineSteps,
   captureSceneFrames,
   installSyntheticAnimationClock,
-  setDemoMediaCaptureMode,
+  withDemoMediaCaptureMode,
   waitForReadyScene,
 } from "../scripts/demo-media/capture";
 import { captureFontFingerprint } from "../scripts/demo-media/font";
@@ -132,7 +132,9 @@ test("captures 240 numbered frames and accepts the planned pointer action", asyn
   );
 });
 
-test("hides shell chrome during demo-media capture mode", async ({ page }) => {
+test("hides shell chrome only during a successful capture callback", async ({
+  page,
+}) => {
   // Arrange
   const plan = SCENE_CAPTURE_PLANS[0];
   if (plan === undefined) {
@@ -143,12 +145,40 @@ test("hides shell chrome during demo-media capture mode", async ({ page }) => {
   await waitForReadyScene(page, plan);
 
   // Act
-  await setDemoMediaCaptureMode(page, true);
+  await withDemoMediaCaptureMode(page, async () => {
+    expect(await page.locator("html").getAttribute("data-demo-media-capture")).toBe("true");
+    await expect(page.locator(".site-header")).toBeHidden();
+    await expect(page.locator(".demo-sidebar")).toBeHidden();
+    await expect(page.locator(".site-footer")).toBeHidden();
+    await expect(page.locator(".player-panel")).toBeVisible();
+  });
 
   // Assert
-  await expect(page.locator(".site-header")).toBeHidden();
-  await expect(page.locator(".demo-sidebar")).toBeHidden();
-  await expect(page.locator(".site-footer")).toBeHidden();
+  expect(await page.locator("html").getAttribute("data-demo-media-capture")).toBeNull();
+  await expect(page.locator(".site-header")).toBeVisible();
+  await expect(page.locator(".site-footer")).toBeVisible();
+});
+
+test("cleans up capture mode after a thrown callback", async ({ page }) => {
+  // Arrange
+  const plan = SCENE_CAPTURE_PLANS[0];
+  if (plan === undefined) {
+    throw new Error("Dam Break capture plan is missing");
+  }
+  await installSyntheticAnimationClock(page);
+  await page.goto(plan.route);
+  await waitForReadyScene(page, plan);
+
+  // Act / Assert
+  await expect(
+    withDemoMediaCaptureMode(page, async () => {
+      expect(await page.locator("html").getAttribute("data-demo-media-capture")).toBe("true");
+      await expect(page.locator(".site-header")).toBeHidden();
+      throw new Error("injected callback failure");
+    }),
+  ).rejects.toThrow("injected callback failure");
+  expect(await page.locator("html").getAttribute("data-demo-media-capture")).toBeNull();
+  await expect(page.locator(".site-header")).toBeVisible();
   await expect(page.locator(".player-panel")).toBeVisible();
 });
 

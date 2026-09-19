@@ -11,7 +11,7 @@
     "durationSeconds": 8,
     "stepsPerFrame": 2,
     "frameCount": 240,
-    "inputSha256": "5b98cf5acf8c05faaabd8e8d45a63339ce1e832aaffb8752d383419cc8da9521",
+    "inputSha256": "aac81ad0e2ee4ae772220a27624cb353c4b872bb773c60c26f0431fa2f6e9214",
     "platform": "darwin",
     "playwrightPackageVersion": "1.63.0",
     "chromiumRevision": "1243",
@@ -64,8 +64,8 @@
       "files": [
         {
           "path": "dam-break.mp4",
-          "sha256": "3c3fa451c5921be2709bffbcbdeef37aa2cc4ea1046b8eb9a4336eb929855b9f",
-          "bytes": 2049023
+          "sha256": "644a259376b74c4f91980608d01f4d4f22bab701d43677eb711c2dd3510ea7a5",
+          "bytes": 2049042
         },
         {
           "path": "dam-break.webp",
@@ -115,8 +115,8 @@
       "files": [
         {
           "path": "color-mixer.mp4",
-          "sha256": "98ea2cf69344b0a6637ebc4e29f947c024c096a5b460e0d46e624ffc1ea0e1e2",
-          "bytes": 435966
+          "sha256": "79018985fdd10b855366ecda161a06cc9562b8f655c4539b858ea05cf011c575",
+          "bytes": 435973
         },
         {
           "path": "color-mixer.webp",
@@ -132,8 +132,8 @@
       "files": [
         {
           "path": "jelly-drop.mp4",
-          "sha256": "b35fe2c23c43f9dd2a54cf833168126a8db15449b0b828644771519dd9282cb4",
-          "bytes": 369663
+          "sha256": "6c6b837d670603cb25122a3bdd0d2a4f38ba19f6edfa599f9c6777398faf3bed",
+          "bytes": 369674
         },
         {
           "path": "jelly-drop.webp",

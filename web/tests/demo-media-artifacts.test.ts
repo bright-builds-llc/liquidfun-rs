@@ -17,6 +17,7 @@ import {
   captureInputSha256,
   compareOutputDirectories,
   mp4Arguments,
+  padToEvenDimensions,
   parseMediaProbeJson,
   replaceOutputDirectory,
   validateMp4Probe,
@@ -102,7 +103,7 @@ describe("demo media artifacts", () => {
       "-pix_fmt",
       "yuv420p",
       "-vf",
-      "crop=trunc(iw/2)*2:trunc(ih/2)*2",
+      "pad=ceil(iw/2)*2:ceil(ih/2)*2",
       "-movflags",
       "+faststart",
       "-map_metadata",
@@ -116,6 +117,23 @@ describe("demo media artifacts", () => {
       "-y",
       outputPath,
     ]);
+  });
+
+  it("pads odd media dimensions up to the next even size", () => {
+    // Arrange
+    const oddDimensions = {
+      width: 928,
+      height: 1271,
+    };
+
+    // Act
+    const actual = padToEvenDimensions(oddDimensions);
+
+    // Assert
+    expect(actual).toEqual({
+      width: 928,
+      height: 1272,
+    });
   });
 
   it("builds fixed webp ffmpeg arguments", () => {

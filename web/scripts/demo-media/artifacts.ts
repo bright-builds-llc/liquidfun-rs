@@ -54,6 +54,10 @@ export type MediaProbe = {
   readonly maybeFrameCount: number | null;
   readonly durationSeconds: number;
 };
+export type MediaDimensions = {
+  readonly width: number;
+  readonly height: number;
+};
 
 export type RenamePath = (from: string, to: string) => Promise<void>;
 export type RemoveDirectory = (path: string) => Promise<void>;
@@ -102,7 +106,7 @@ export function mp4Arguments(
     "-pix_fmt",
     "yuv420p",
     "-vf",
-    "crop=trunc(iw/2)*2:trunc(ih/2)*2",
+    "pad=ceil(iw/2)*2:ceil(ih/2)*2",
     "-movflags",
     "+faststart",
     "-map_metadata",
@@ -116,6 +120,15 @@ export function mp4Arguments(
     "-y",
     outputPath,
   ];
+}
+
+export function padToEvenDimensions(
+  dimensions: MediaDimensions,
+): MediaDimensions {
+  return {
+    width: padDimensionToEven(dimensions.width),
+    height: padDimensionToEven(dimensions.height),
+  };
 }
 
 export function webpArguments(
@@ -554,6 +567,13 @@ function validateCommonProbe(path: string, probe: MediaProbe): void {
       `Expected ~8 second duration, found ${probe.durationSeconds} for ${path}`,
     );
   }
+}
+
+function padDimensionToEven(value: number): number {
+  if (!Number.isInteger(value) || value <= 0) {
+    throw new Error(`Expected a positive integer media dimension, got ${value}`);
+  }
+  return value % 2 === 0 ? value : value + 1;
 }
 
 function parseAverageFrameRate(value: string, path: string): number {
