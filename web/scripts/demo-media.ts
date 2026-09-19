@@ -14,7 +14,6 @@ import {
   ensureRegularFile,
   mp4Arguments,
   probeMedia,
-  probeWebp,
   replaceOutputDirectory,
   validateMp4Probe,
   validateWebpProbe,
@@ -33,6 +32,7 @@ import {
   type SceneCapturePlan,
   type SceneMediaRecord,
 } from "./demo-media/model";
+import { probeWebp } from "./demo-media/webp";
 import {
   startPreviewProcess,
   stopPreviewProcess,

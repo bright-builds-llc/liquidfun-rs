@@ -18,12 +18,12 @@ import {
   compareOutputDirectories,
   mp4Arguments,
   parseMediaProbeJson,
-  parseWebpMuxInfo,
   replaceOutputDirectory,
   validateMp4Probe,
   validateWebpProbe,
   webpArguments,
 } from "../scripts/demo-media/artifacts";
+import { parseWebpMuxInfo } from "../scripts/demo-media/webp";
 
 describe("demo media artifacts", () => {
   it("hashes sorted capture inputs and ignores readme and media outputs", async () => {
