@@ -4,7 +4,7 @@ use liquidfun::{NoDecisionHook, ParticleSystemId, StepConfiguration, StepLimits,
 
 use crate::frame::FrameData;
 use crate::scene::{
-    build_scene, parse_pointer_kind, BuiltScene, ControlEffect, SceneHooks, SceneId,
+    BuiltScene, ControlEffect, SceneHooks, SceneId, build_scene, parse_pointer_kind,
 };
 
 pub(crate) const MAX_ADVANCE_STEPS: u32 = 4;
@@ -266,8 +266,8 @@ fn store_preset(presets: &mut Vec<(String, String)>, name: &str, value: &str) {
 
 #[cfg(test)]
 mod tests {
-    use crate::scene::{parse_scene_id, SceneId};
     use crate::ProofFrame;
+    use crate::scene::{SceneId, parse_scene_id};
 
     use super::*;
 
@@ -475,14 +475,18 @@ mod tests {
         assert_eq!(frame.particle_positions().len(), 192 * 2);
         assert_eq!(frame.particle_colors().len(), 192 * 4);
         assert_eq!(frame.particle_radii().len(), 192);
-        assert!(frame
-            .particle_positions()
-            .iter()
-            .all(|value| value.is_finite()));
-        assert!(frame
-            .particle_radii()
-            .iter()
-            .all(|radius| radius.is_finite() && *radius > 0.0));
+        assert!(
+            frame
+                .particle_positions()
+                .iter()
+                .all(|value| value.is_finite())
+        );
+        assert!(
+            frame
+                .particle_radii()
+                .iter()
+                .all(|radius| radius.is_finite() && *radius > 0.0)
+        );
         assert!(frame.rigid_segments().iter().all(|value| value.is_finite()));
         assert!(frame.rigid_circles().iter().all(|value| value.is_finite()));
     }

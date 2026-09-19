@@ -9,8 +9,8 @@ use liquidfun::particle::{
 use liquidfun::{BodyDef, ParticleSystemDef, ParticleSystemId, World};
 
 use super::{
-    attach_basin_fixture, BuiltScene, ControlEffect, PointerKind, RigidSegment, SceneError,
-    SceneHooks,
+    BuiltScene, ControlEffect, PointerKind, RigidSegment, SceneError, SceneHooks,
+    attach_basin_fixture,
 };
 use crate::session::SessionError;
 
@@ -287,9 +287,7 @@ impl SceneHooks for ColorMixerHooks {
         _world_y: f32,
     ) -> Result<(), SessionError> {
         match kind {
-            PointerKind::Down | PointerKind::Move | PointerKind::Up | PointerKind::Cancel => {
-                Ok(())
-            }
+            PointerKind::Down | PointerKind::Move | PointerKind::Up | PointerKind::Cancel => Ok(()),
         }
     }
 
@@ -306,9 +304,9 @@ impl SceneHooks for ColorMixerHooks {
 mod tests {
     use liquidfun::particle::ParticleFlags;
 
+    use crate::ProofFrame;
     use crate::scene::SceneId;
     use crate::session::SessionCore;
-    use crate::ProofFrame;
 
     const TEAL: [u8; 4] = [57, 211, 199, 255];
     const RED: [u8; 4] = [248, 113, 113, 255];

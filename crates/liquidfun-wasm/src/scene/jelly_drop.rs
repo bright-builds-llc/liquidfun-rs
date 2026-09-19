@@ -3,13 +3,14 @@
 use liquidfun::collision::{CircleShape, PolygonShape, Shape};
 use liquidfun::math::{Transform, Vec2};
 use liquidfun::particle::{
-    ParticleColor, ParticleFlags, ParticleGroupDestination, ParticleGroupRecipe, ParticleGroupSource,
+    ParticleColor, ParticleFlags, ParticleGroupDestination, ParticleGroupRecipe,
+    ParticleGroupSource,
 };
 use liquidfun::{ParticleGroupId, ParticleSystemDef, ParticleSystemId, World};
 
 use super::{
-    attach_basin_fixture, BuiltScene, ControlEffect, PointerKind, RigidSegment, SceneError,
-    SceneHooks,
+    BuiltScene, ControlEffect, PointerKind, RigidSegment, SceneError, SceneHooks,
+    attach_basin_fixture,
 };
 use crate::session::SessionError;
 
@@ -178,7 +179,8 @@ fn create_jelly_group(
 fn jelly_source(shape: JellyShape) -> Result<ParticleGroupSource, SceneError> {
     let filled = match shape {
         JellyShape::Circle => Shape::from(
-            CircleShape::new(Vec2::ZERO, JELLY_HALF_EXTENT).map_err(|_error| SceneError::Geometry)?,
+            CircleShape::new(Vec2::ZERO, JELLY_HALF_EXTENT)
+                .map_err(|_error| SceneError::Geometry)?,
         ),
         JellyShape::Square => Shape::from(
             PolygonShape::new(&[
@@ -266,9 +268,7 @@ impl SceneHooks for JellyDropHooks {
         _world_y: f32,
     ) -> Result<(), SessionError> {
         match kind {
-            PointerKind::Down | PointerKind::Move | PointerKind::Up | PointerKind::Cancel => {
-                Ok(())
-            }
+            PointerKind::Down | PointerKind::Move | PointerKind::Up | PointerKind::Cancel => Ok(()),
         }
     }
 

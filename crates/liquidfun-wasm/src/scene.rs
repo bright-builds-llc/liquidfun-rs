@@ -162,7 +162,7 @@ pub(crate) fn attach_basin_fixture(
 
 #[cfg(test)]
 mod tests {
-    use super::{parse_pointer_kind, PointerKind};
+    use super::{PointerKind, parse_pointer_kind};
     use crate::session::SessionError;
 
     #[test]

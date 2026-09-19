@@ -8,8 +8,8 @@ use liquidfun::{
 };
 
 use super::{
-    attach_basin_fixture, BuiltScene, ControlEffect, PointerKind, RigidSegment, SceneError,
-    SceneHooks,
+    BuiltScene, ControlEffect, PointerKind, RigidSegment, SceneError, SceneHooks,
+    attach_basin_fixture,
 };
 use crate::session::SessionError;
 
@@ -374,9 +374,7 @@ impl SceneHooks for WaterWheelHooks {
         _world_y: f32,
     ) -> Result<(), SessionError> {
         match kind {
-            PointerKind::Down | PointerKind::Move | PointerKind::Up | PointerKind::Cancel => {
-                Ok(())
-            }
+            PointerKind::Down | PointerKind::Move | PointerKind::Up | PointerKind::Cancel => Ok(()),
         }
     }
 
@@ -411,9 +409,9 @@ mod tests {
     use liquidfun::math::Vec2;
     use liquidfun::{BodyType, JointDef, WorldObservationLimits};
 
+    use crate::ProofFrame;
     use crate::scene::SceneId;
     use crate::session::SessionCore;
-    use crate::ProofFrame;
 
     #[test]
     fn create_water_wheel_builds_hub_circle_and_paddle_segments() {
