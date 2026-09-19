@@ -78,6 +78,14 @@ export function projectPoint(camera: Camera, point: Point): Point {
   };
 }
 
+/** Inverts projectPoint from CSS pixels back into the shared world bounds. */
+export function unprojectPoint(camera: Camera, point: Point): Point {
+  return {
+    x: WORLD_BOUNDS.minX + (point.x - camera.offsetX) / camera.scale,
+    y: WORLD_BOUNDS.maxY - (point.y - camera.offsetY) / camera.scale,
+  };
+}
+
 /** Projects one world-space radius into CSS pixels. */
 export function projectRadius(camera: Camera, radius: number): number {
   return radius * camera.scale;
