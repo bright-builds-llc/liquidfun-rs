@@ -11,13 +11,50 @@
     "durationSeconds": 8,
     "stepsPerFrame": 2,
     "frameCount": 240,
-    "inputSha256": "ef034f68bc6163de06cf88eac53a754acf7d3dcd73ab9f803ed18936fbd3a498",
+    "inputSha256": "6a27adcc9ecf08396aee05a277dd9ab5e7de2e483126f598c7653836239524ce",
     "platform": "darwin",
     "playwrightPackageVersion": "1.63.0",
     "chromiumRevision": "1243",
     "expectedChromiumVersion": "153.0.8010.12",
     "runtimeChromiumVersion": "153.0.8010.12",
-    "ffmpegVersionLine": "ffmpeg version 8.1.1 Copyright (c) 2000-2026 the FFmpeg developers"
+    "ffmpegVersionLine": "ffmpeg version 8.1.1 Copyright (c) 2000-2026 the FFmpeg developers",
+    "captureFontFingerprint": {
+      "corpusVersion": 1,
+      "corpus": "LiquidFun 0123456789 ABCDEFG abcdefg !?@#$% []{} Ω→≈",
+      "canvas": {
+        "width": 768,
+        "height": 192
+      },
+      "panelComputedStyle": {
+        "fontFamily": "ui-sans-serif, system-ui, sans-serif",
+        "fontStyle": "normal",
+        "fontWeight": "400"
+      },
+      "samples": [
+        {
+          "label": "regular",
+          "fontStyle": "normal",
+          "fontWeight": "400",
+          "fontSizePx": 24,
+          "canvasFont": "24px ui-sans-serif, system-ui, sans-serif"
+        },
+        {
+          "label": "semibold",
+          "fontStyle": "normal",
+          "fontWeight": "600",
+          "fontSizePx": 24,
+          "canvasFont": "600 24px ui-sans-serif, system-ui, sans-serif"
+        },
+        {
+          "label": "bold",
+          "fontStyle": "normal",
+          "fontWeight": "700",
+          "fontSizePx": 24,
+          "canvasFont": "bold 24px ui-sans-serif, system-ui, sans-serif"
+        }
+      ],
+      "rasterSha256": "5e04d2c8c0590a6812cf38989143dbabd6cb878321ea3af807421356346d4c87"
+    }
   },
   "scenes": [
     {

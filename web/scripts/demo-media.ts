@@ -23,7 +23,9 @@ import {
 import {
   captureSceneFrames,
   installSyntheticAnimationClock,
+  waitForReadyScene,
 } from "./demo-media/capture";
+import { captureFontFingerprint } from "./demo-media/font";
 import {
   CAPTURE_PROFILE,
   SCENE_CAPTURE_PLANS,
@@ -88,11 +90,19 @@ type PreflightDemoMediaDependencies = {
     installHint?: string,
   ) => string;
 };
+type ChromiumVersionDependencies = {
+  readonly readRuntimeVersion: () => string;
+};
 
 const WEBPMUX_INSTALL_HINT =
   "Install WebP tools so `webpmux` is available on PATH before running demo-media generation.";
 
-function parseMode(value: string | undefined): DemoMediaMode {
+export function parseModeArguments(argumentsList: readonly string[]): DemoMediaMode {
+  if (argumentsList.length !== 1) {
+    throw new Error("usage: bun scripts/demo-media.ts <generate|check>");
+  }
+
+  const value = argumentsList[0];
   if (value === "generate" || value === "check") {
     return value;
   }
@@ -101,7 +111,7 @@ function parseMode(value: string | undefined): DemoMediaMode {
 }
 
 async function main(): Promise<void> {
-  const mode = parseMode(process.argv[2]);
+  const mode = parseModeArguments(process.argv.slice(2));
   const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
   const webDirectory = resolve(repoRoot, "web");
   const distDirectory = resolve(webDirectory, "dist");
@@ -133,14 +143,28 @@ async function main(): Promise<void> {
     await waitForPreview(previewProcess, PREVIEW_URL, expectedIndexHtml);
     const inputSha256 = await captureInputSha256(repoRoot);
 
-    maybeBrowser = await chromium.launch({ headless: true });
-    maybeContext = await maybeBrowser.newContext({
+    const browser = await chromium.launch({ headless: true });
+    maybeBrowser = browser;
+    const runtimeChromiumVersion = validateRuntimeChromiumVersion(
+      playwrightIdentity.chromiumVersion,
+      {
+        readRuntimeVersion: () => browser.version(),
+      },
+    );
+    maybeContext = await browser.newContext({
       baseURL: PREVIEW_ORIGIN,
       viewport: CAPTURE_PROFILE.viewport,
       deviceScaleFactor: CAPTURE_PROFILE.deviceScaleFactor,
     });
     const page = await maybeContext.newPage();
     await installSyntheticAnimationClock(page);
+    const fingerprintPlan = SCENE_CAPTURE_PLANS[0];
+    if (fingerprintPlan === undefined) {
+      throw new Error("A capture scene is required for font fingerprinting");
+    }
+    await page.goto(fingerprintPlan.route);
+    await waitForReadyScene(page, fingerprintPlan);
+    const captureFontFingerprintRecord = await captureFontFingerprint(page);
 
     const scenes: SceneMediaRecord[] = [];
     for (const plan of SCENE_CAPTURE_PLANS) {
@@ -162,8 +186,9 @@ async function main(): Promise<void> {
         playwrightPackageVersion: playwrightIdentity.packageVersion,
         chromiumRevision: playwrightIdentity.chromiumRevision,
         expectedChromiumVersion: playwrightIdentity.chromiumVersion,
-        runtimeChromiumVersion: maybeBrowser.version(),
+        runtimeChromiumVersion,
         ffmpegVersionLine,
+        captureFontFingerprint: captureFontFingerprintRecord,
       },
       scenes,
     };
@@ -228,6 +253,20 @@ async function main(): Promise<void> {
       }
     },
   });
+}
+
+export function validateRuntimeChromiumVersion(
+  expectedVersion: string,
+  dependencies: ChromiumVersionDependencies,
+): string {
+  const runtimeVersion = dependencies.readRuntimeVersion();
+  if (runtimeVersion === expectedVersion) {
+    return runtimeVersion;
+  }
+
+  throw new Error(
+    `Playwright Chromium version mismatch: expected ${expectedVersion}, launched ${runtimeVersion}. Run \`cd web && bun run browser:install\` with the pinned dependencies, then retry.`,
+  );
 }
 
 export function decideOutputDirectoryAction(

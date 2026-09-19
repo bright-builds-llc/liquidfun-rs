@@ -15,11 +15,61 @@ import {
   finalizeDemoMediaRun,
   formatCleanupFailure,
   maybeRethrowWithCleanupFailures,
+  parseModeArguments,
   preflightDemoMediaDependencies,
   runCleanupActions,
+  validateRuntimeChromiumVersion,
 } from "../scripts/demo-media";
 
 describe("demo media cli helpers", () => {
+  it("accepts exactly one supported mode argument", () => {
+    // Arrange
+    const argumentsList = ["generate"];
+
+    // Act
+    const mode = parseModeArguments(argumentsList);
+
+    // Assert
+    expect(mode).toBe("generate");
+  });
+
+  it("rejects extra positional arguments", () => {
+    // Arrange
+    const argumentsList = ["check", "unexpected"];
+
+    // Act / Assert
+    expect(() => parseModeArguments(argumentsList)).toThrow(
+      "usage: bun scripts/demo-media.ts <generate|check>",
+    );
+  });
+
+  it("records a matching launched Chromium version", () => {
+    // Arrange
+    const expectedVersion = "153.0.8010.12";
+
+    // Act
+    const runtimeVersion = validateRuntimeChromiumVersion(expectedVersion, {
+      readRuntimeVersion: () => "153.0.8010.12",
+    });
+
+    // Assert
+    expect(runtimeVersion).toBe(expectedVersion);
+  });
+
+  it("rejects a mismatched launched Chromium version actionably", () => {
+    // Arrange
+    const expectedVersion = "153.0.8010.12";
+
+    // Act / Assert
+    expect(() =>
+      validateRuntimeChromiumVersion(expectedVersion, {
+        readRuntimeVersion: () => "152.0.0.0",
+      }),
+    ).toThrow(
+      "Playwright Chromium version mismatch: expected 153.0.8010.12, launched 152.0.0.0. Run `cd web && bun run browser:install` with the pinned dependencies, then retry.",
+    );
+  });
+
   it("aggregates cleanup failures with the primary error first", async () => {
     // Arrange
     const cleanupFailures = await runCleanupActions([

@@ -31,6 +31,39 @@ export type CaptureProfile = {
   readonly frameCount: 240;
 };
 
+export type CaptureFontFingerprint = {
+  readonly corpusVersion: 1;
+  readonly corpus: string;
+  readonly canvas: {
+    readonly width: number;
+    readonly height: number;
+  };
+  readonly panelComputedStyle: {
+    readonly fontFamily: string;
+    readonly fontStyle: string;
+    readonly fontWeight: string;
+  };
+  readonly samples: readonly {
+    readonly label: "regular" | "semibold" | "bold";
+    readonly fontStyle: string;
+    readonly fontWeight: string;
+    readonly fontSizePx: number;
+    readonly canvasFont: string;
+  }[];
+  readonly rasterSha256: string;
+};
+
+export type ManifestCaptureProfile = CaptureProfile & {
+  readonly inputSha256: string;
+  readonly platform: string;
+  readonly playwrightPackageVersion: string;
+  readonly chromiumRevision: string;
+  readonly expectedChromiumVersion: string;
+  readonly runtimeChromiumVersion: string;
+  readonly ffmpegVersionLine: string;
+  readonly captureFontFingerprint: CaptureFontFingerprint;
+};
+
 export type MediaFileRecord = {
   readonly path: string;
   readonly sha256: string;
@@ -46,7 +79,7 @@ export type SceneMediaRecord = {
 
 export type DemoMediaManifest = {
   readonly schemaVersion: 1;
-  readonly captureProfile: Readonly<Record<string, unknown>>;
+  readonly captureProfile: ManifestCaptureProfile;
   readonly scenes: readonly SceneMediaRecord[];
 };
 

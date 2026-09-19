@@ -99,6 +99,35 @@ simulations. Color mixing is contact-driven particle color, not pigment
 chemistry. Local Chromium `just web-player-smoke` remains the ordinary
 WEBTEST-01 gate and does not claim Firefox or Safari coverage.
 
+### Demo gallery
+
+Each preview is generated deterministically from the Rust/WASM playground.
+Select a preview for the full MP4 recording, or open the linked live scene.
+
+#### [Dam Break](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/dam-break)
+
+[![Dam Break simulation preview](docs/assets/demos/dam-break.webp)](docs/assets/demos/dam-break.mp4)
+
+#### [Fountain](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/fountain)
+
+[![Fountain simulation preview](docs/assets/demos/fountain.webp)](docs/assets/demos/fountain.mp4)
+
+#### [Float or Sink](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/float-or-sink)
+
+[![Float or Sink simulation preview](docs/assets/demos/float-or-sink.webp)](docs/assets/demos/float-or-sink.mp4)
+
+#### [Color Mixer](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/color-mixer)
+
+[![Color Mixer simulation preview](docs/assets/demos/color-mixer.webp)](docs/assets/demos/color-mixer.mp4)
+
+#### [Jelly Drop](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/jelly-drop)
+
+[![Jelly Drop simulation preview](docs/assets/demos/jelly-drop.webp)](docs/assets/demos/jelly-drop.mp4)
+
+#### [Water Wheel](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/water-wheel)
+
+[![Water Wheel simulation preview](docs/assets/demos/water-wheel.webp)](docs/assets/demos/water-wheel.mp4)
+
 The private, unpublished `liquidfun-wasm` wrapper and SolidJS player rebuild
 from a clean checkout with the exact local tools:
 
@@ -130,35 +159,6 @@ profile recorded in `docs/assets/demos/manifest.json`.
 `target/web-build` are ignored and regenerated. Ordinary native builds and the
 packaged `liquidfun` crate require none of Bun, Chromium, wasm-pack, C++, or
 the upstream checkout.
-
-### Demo gallery
-
-Each preview is generated deterministically from the Rust/WASM playground.
-Select a preview for the full MP4 recording, or open the linked live scene.
-
-#### [Dam Break](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/dam-break)
-
-[![Dam Break simulation preview](docs/assets/demos/dam-break.webp)](docs/assets/demos/dam-break.mp4)
-
-#### [Fountain](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/fountain)
-
-[![Fountain simulation preview](docs/assets/demos/fountain.webp)](docs/assets/demos/fountain.mp4)
-
-#### [Float or Sink](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/float-or-sink)
-
-[![Float or Sink simulation preview](docs/assets/demos/float-or-sink.webp)](docs/assets/demos/float-or-sink.mp4)
-
-#### [Color Mixer](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/color-mixer)
-
-[![Color Mixer simulation preview](docs/assets/demos/color-mixer.webp)](docs/assets/demos/color-mixer.mp4)
-
-#### [Jelly Drop](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/jelly-drop)
-
-[![Jelly Drop simulation preview](docs/assets/demos/jelly-drop.webp)](docs/assets/demos/jelly-drop.mp4)
-
-#### [Water Wheel](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/water-wheel)
-
-[![Water Wheel simulation preview](docs/assets/demos/water-wheel.webp)](docs/assets/demos/water-wheel.mp4)
 
 ## Platform support
 

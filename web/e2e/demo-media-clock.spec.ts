@@ -13,6 +13,7 @@ import {
   installSyntheticAnimationClock,
   waitForReadyScene,
 } from "../scripts/demo-media/capture";
+import { captureFontFingerprint } from "../scripts/demo-media/font";
 
 test.use({
   viewport: CAPTURE_PROFILE.viewport,
@@ -38,6 +39,61 @@ test("advances an exact number of steps under synthetic time", async ({
   await expect(page.locator("main")).toHaveAttribute(
     "data-step-index",
     String(initialStep + 12),
+  );
+});
+
+test("captures a stable real-page font fingerprint", async ({ page }) => {
+  // Arrange
+  const plan = SCENE_CAPTURE_PLANS[0];
+  if (plan === undefined) {
+    throw new Error("Dam Break capture plan is missing");
+  }
+  await installSyntheticAnimationClock(page);
+  await page.goto(plan.route);
+  await waitForReadyScene(page, plan);
+
+  // Act
+  const firstFingerprint = await captureFontFingerprint(page);
+  const secondFingerprint = await captureFontFingerprint(page);
+
+  // Assert
+  expect(secondFingerprint).toEqual(firstFingerprint);
+  expect(
+    firstFingerprint.panelComputedStyle.fontFamily.length,
+  ).toBeGreaterThan(0);
+  expect(firstFingerprint.samples.map((sample) => sample.fontWeight)).toEqual([
+    "400",
+    "600",
+    "700",
+  ]);
+  expect(firstFingerprint.rasterSha256).toMatch(/^[a-f0-9]{64}$/);
+});
+
+test("changes the font fingerprint when the capture font changes", async ({
+  page,
+}) => {
+  // Arrange
+  const plan = SCENE_CAPTURE_PLANS[0];
+  if (plan === undefined) {
+    throw new Error("Dam Break capture plan is missing");
+  }
+  await installSyntheticAnimationClock(page);
+  await page.goto(plan.route);
+  await waitForReadyScene(page, plan);
+  const originalFingerprint = await captureFontFingerprint(page);
+
+  // Act
+  await page.addStyleTag({
+    content: ".player-panel { font-family: monospace !important; }",
+  });
+  const changedFingerprint = await captureFontFingerprint(page);
+
+  // Assert
+  expect(changedFingerprint.panelComputedStyle.fontFamily).not.toBe(
+    originalFingerprint.panelComputedStyle.fontFamily,
+  );
+  expect(changedFingerprint.rasterSha256).not.toBe(
+    originalFingerprint.rasterSha256,
   );
 });
 
