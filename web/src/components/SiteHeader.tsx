@@ -17,7 +17,12 @@ export function SiteHeader(props: SiteHeaderProps) {
         <p>{PAGE_SUMMARY}</p>
       </div>
       <div class="site-header-actions">
-        <a href={SOURCE_HREF} target="_blank" rel="noopener noreferrer">
+        <a
+          class="site-header-source"
+          href={SOURCE_HREF}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
           GitHub source
         </a>
         {props.mobileNavigationTrigger}

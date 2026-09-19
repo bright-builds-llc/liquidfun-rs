@@ -6,7 +6,6 @@ import {
 } from "../catalog/scenes";
 import type { SceneRoute } from "../routing/hash";
 
-export const PAGE_HEADING = "liquidfun-rs playground";
 export const PAGE_SUMMARY =
   "Play experimental Rust physics scenes in the browser. All six demos run this repository's engine through WebAssembly.";
 export const DEFAULT_TITLE = "liquidfun-rs playground";

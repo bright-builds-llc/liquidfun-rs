@@ -11,7 +11,7 @@
     "durationSeconds": 8,
     "stepsPerFrame": 2,
     "frameCount": 240,
-    "inputSha256": "aac81ad0e2ee4ae772220a27624cb353c4b872bb773c60c26f0431fa2f6e9214",
+    "inputSha256": "13915a98e36930a23a9b489e875367127c008a22383bec66183c8f00975087ca",
     "platform": "darwin",
     "playwrightPackageVersion": "1.63.0",
     "chromiumRevision": "1243",

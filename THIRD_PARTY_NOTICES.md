@@ -139,9 +139,12 @@ non-MIT SPDX identifiers in this closure are Apache-2.0 and 0BSD:
 | `solid-prevent-scroll`              | 0.1.11         | MIT          | <https://github.com/corvudev/corvu>                     |
 | `tslib`                             | 2.8.1          | 0BSD         | <https://github.com/Microsoft/tslib>                    |
 
-Repository check: `cd web && bun run verify:kobalte-licenses` compares this
-inventory to installed `package.json` metadata and verifies the preserved NOTICE
-and MIT files remain byte-identical to the installed `@kobalte/core` artifact.
+Repository check: `cd web && bun run verify:kobalte-licenses` recursively derives
+the runtime dependency closure from package metadata installed by
+`bun install --frozen-lockfile`, requires the tracked inventory to match it
+exactly with no missing or extra entries, validates version, license, and source
+metadata, and verifies the preserved NOTICE and MIT files remain byte-identical
+to the installed `@kobalte/core` artifact.
 
 ## Derived and Altered Material
 

@@ -4,9 +4,10 @@ Use this file to record deliberate deviations from the canonical coding and arch
 
 ## Active overrides
 
-| Standard                                                                 | Local decision                                                                       | Rationale                                                                                                                                          | Owner            | Review date |
-| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------- | ----------- |
-| `standards/languages/typescript-javascript.md` MysticUI+Tailwind default | Semantic HTML and scoped CSS with Kobalte Dialog for the responsive playground shell | The owner replaced the Phase 17 thin-slice no-library decision; Kobalte supplies accessible modal behavior without a broad design-system migration | Repository owner | 2026-12-17  |
+| Standard                                                                 | Local decision                                                                       | Rationale                                                                                                                                                                                | Owner            | Review date |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------- | ----------- |
+| `standards/languages/typescript-javascript.md` MysticUI+Tailwind default | Semantic HTML and scoped CSS with Kobalte Dialog for the responsive playground shell | The owner replaced the Phase 17 thin-slice no-library decision; Kobalte supplies accessible modal behavior without a broad design-system migration                                       | Repository owner | 2026-12-17  |
+| TypeScript dependency declaration checking                               | Keep `skipLibCheck: true` in `web/tsconfig.json`                                     | Kobalte 0.13.12 generated declarations trigger TS2693 under pinned TypeScript 7.0.2; revisit and remove this override when Kobalte's declarations support the pinned TypeScript compiler | Repository owner | 2026-12-17  |
 
 ## Notes
 
