@@ -323,8 +323,10 @@ export async function expectAcceptedPointerGesture(page: Page): Promise<void> {
   expect(maybeKind === "up" || maybeKind === "down").toBe(true);
 }
 
-export async function tabUntilFirstSelectFocused(page: Page): Promise<void> {
-  const firstSelect = page.locator("select").first();
+export async function tabUntilFirstSceneSelectFocused(
+  page: Page,
+): Promise<void> {
+  const firstSelect = page.locator(".scene-control-select").first();
   for (let attempt = 0; attempt < 40; attempt += 1) {
     const isFocused = await firstSelect.evaluate(
       (node) => node === document.activeElement,

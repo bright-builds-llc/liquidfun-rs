@@ -28,7 +28,7 @@ import {
   resetNearZero,
   SCENE_HASH_PATHS,
   SIX_SCENE_TIMEOUT_MS,
-  tabUntilFirstSelectFocused,
+  tabUntilFirstSceneSelectFocused,
   UNKNOWN_SCENE_PATH,
 } from "./player-helpers";
 
@@ -98,8 +98,13 @@ test("switches rendering without stepping and persists across scenes and reload"
   // Arrange
   await openDamBreakPlaying(page);
   const main = page.locator("main");
+  const status = page.getByRole("status");
   await expect(main).toHaveAttribute("data-render-mode", "wireframe");
+  await expect
+    .poll(() => numericAttribute(main, "data-step-index"))
+    .toBeGreaterThan(4);
   await page.getByRole("button", { name: "Pause scene" }).click();
+  await expect(status).toHaveText(PAUSED_STATUS);
   const pausedStep = await numericAttribute(main, "data-step-index");
   const wireframePixels = await canvasPixelSha256(page);
 
@@ -108,6 +113,8 @@ test("switches rendering without stepping and persists across scenes and reload"
 
   // Assert
   await expect(main).toHaveAttribute("data-render-mode", "solid");
+  await expect(status).toHaveText(PAUSED_STATUS);
+  await expect(page.getByLabel("Rendering")).toHaveValue("solid");
   expect(await numericAttribute(main, "data-step-index")).toBe(pausedStep);
   expect(await canvasPixelSha256(page)).not.toBe(wireframePixels);
 
@@ -117,6 +124,7 @@ test("switches rendering without stepping and persists across scenes and reload"
 
   // Assert
   await expect(main).toHaveAttribute("data-render-mode", "solid");
+  await expect(page.getByLabel("Rendering")).toHaveValue("solid");
 
   // Act
   await page.reload();
@@ -124,9 +132,11 @@ test("switches rendering without stepping and persists across scenes and reload"
 
   // Assert
   await expect(main).toHaveAttribute("data-render-mode", "solid");
+  await expect(page.getByLabel("Rendering")).toHaveValue("solid");
 
   // Arrange
   await page.getByRole("button", { name: "Pause scene" }).click();
+  await expect(status).toHaveText(PAUSED_STATUS);
   const solidStep = await numericAttribute(main, "data-step-index");
   const solidPixels = await canvasPixelSha256(page);
 
@@ -135,6 +145,8 @@ test("switches rendering without stepping and persists across scenes and reload"
 
   // Assert
   await expect(main).toHaveAttribute("data-render-mode", "wireframe");
+  await expect(status).toHaveText(PAUSED_STATUS);
+  await expect(page.getByLabel("Rendering")).toHaveValue("wireframe");
   expect(await numericAttribute(main, "data-step-index")).toBe(solidStep);
   expect(await canvasPixelSha256(page)).not.toBe(solidPixels);
 });
@@ -292,7 +304,7 @@ test("tabs to a select and scrolls the catalog at 375px", async ({ page }) => {
   await expectReadySceneChrome(page, "Dam Break");
   await expect(page.locator("figcaption")).toHaveText(DAM_BREAK_HINT);
 
-  await tabUntilFirstSelectFocused(page);
+  await tabUntilFirstSceneSelectFocused(page);
 
   await page.locator(".catalog-nav").evaluate((node) => {
     node.scrollIntoView();

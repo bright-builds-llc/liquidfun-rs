@@ -9,10 +9,10 @@ export type RenderModeStorageProvider = () => RenderModeStorage;
 
 /** Parses one persisted or control-provided rendering token. */
 export function maybeParseRenderMode(
-  value: string | null,
+  maybeValue: string | null,
 ): RenderMode | undefined {
-  if (value === "wireframe" || value === "solid") {
-    return value;
+  if (maybeValue === "wireframe" || maybeValue === "solid") {
+    return maybeValue;
   }
 
   return undefined;

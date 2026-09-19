@@ -64,7 +64,7 @@ describe("render mode", () => {
     expect(readMode).toBe("wireframe");
   });
 
-  it("persists allowlisted modes and contains write failures", () => {
+  it("persists an allowlisted mode under the versioned key", () => {
     // Arrange
     const writes: Array<readonly [string, string]> = [];
     const storage = {
@@ -76,6 +76,13 @@ describe("render mode", () => {
 
     // Act
     persistRenderMode(() => storage, "solid");
+
+    // Assert
+    expect(writes).toEqual([[RENDER_MODE_STORAGE_KEY, "solid"]]);
+  });
+
+  it("contains storage write failures", () => {
+    // Arrange
     const failedWrite = () =>
       persistRenderMode(
         () => ({
@@ -87,8 +94,7 @@ describe("render mode", () => {
         "wireframe",
       );
 
-    // Assert
-    expect(writes).toEqual([[RENDER_MODE_STORAGE_KEY, "solid"]]);
+    // Act / Assert
     expect(failedWrite).not.toThrow();
   });
 });
