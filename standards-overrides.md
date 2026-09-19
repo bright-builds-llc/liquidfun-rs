@@ -4,9 +4,9 @@ Use this file to record deliberate deviations from the canonical coding and arch
 
 ## Active overrides
 
-| Standard                                                                         | Local decision                                                        | Rationale                                                                        | Owner            | Review date |
-| -------------------------------------------------------------------------------- | --------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ---------------- | ----------- |
-| `standards/languages/typescript-javascript.md` SolidJS/MysticUI+Tailwind default | Semantic HTML plus one scoped CSS file for Phase 17 playground chrome | D-09 thin-slice so Pages delivery is not blocked by a new design-system adoption | Repository owner | 2026-12-17  |
+| Standard                                                                 | Local decision                                                                       | Rationale                                                                                                                                          | Owner            | Review date |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------- | ----------- |
+| `standards/languages/typescript-javascript.md` MysticUI+Tailwind default | Semantic HTML and scoped CSS with Kobalte Dialog for the responsive playground shell | The owner replaced the Phase 17 thin-slice no-library decision; Kobalte supplies accessible modal behavior without a broad design-system migration | Repository owner | 2026-12-17  |
 
 ## Notes
 

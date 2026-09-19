@@ -91,6 +91,15 @@ copied into, linked by, or included in the published Cargo package. Package
 isolation checks must fail if `third_party/liquidfun`, GoogleTest, freeglut, or
 their assets enter the consumer archive.
 
+## Web playground runtime dependency
+
+The private unpublished `liquidfun-web` package (`web/`) pins `@kobalte/core`
+0.13.12 as a production dependency for accessible dialog behavior in the
+responsive playground shell. The component is licensed under the MIT License.
+Official source: <https://github.com/kobaltedev/kobalte>. Ordinary Rust crate
+consumers do not receive this dependency; it is resolved only through the
+web playground build and is not part of the published `liquidfun` Cargo package.
+
 ## Derived and Altered Material
 
 Every local source file, translated test, scenario, fixture, reference datum,
