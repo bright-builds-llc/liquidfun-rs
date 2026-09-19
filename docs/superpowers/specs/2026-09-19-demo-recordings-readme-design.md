@@ -21,11 +21,14 @@ entry includes the scene title linked to its hosted route and an animated WebP
 linked to the corresponding MP4. This avoids relying on GitHub to render
 repository-hosted MP4 files inline.
 
-## Capture workflow
+## Deterministic capture workflow
 
-A rerunnable TypeScript script uses the repository's existing Playwright
-installation against the production-base preview. It records the six canonical
-scene routes at a fixed desktop viewport and performs one scene-specific action:
+A rerunnable TypeScript script uses the repository's pinned Playwright and
+Chromium installation against the production-base preview. It installs a
+synthetic `requestAnimationFrame` queue before application code loads, then
+advances that queue with exact timestamps instead of waiting on wall-clock time.
+The script captures the six canonical scene routes at a fixed desktop viewport
+and device-pixel ratio and performs one scene-specific action:
 
 1. Dam Break: drag the obstacle.
 1. Fountain: change or aim the jet.
@@ -34,19 +37,54 @@ scene routes at a fixed desktop viewport and performs one scene-specific action:
 1. Jelly Drop: poke the jelly.
 1. Water Wheel: aim or strengthen the jet.
 
-Each clip is silent and approximately 8–10 seconds. The capture includes the
-playground chrome, canvas, and controls so viewers can connect the simulation
-with its available interaction. The script waits for the scene to report
-`Playing` and for its step index to advance before recording the representative
-action.
+Each silent clip represents exactly eight seconds of simulation at 60 engine
+steps per second and 30 output frames per second. The interaction occurs at a
+fixed engine step using semantic controls or fixed canvas coordinates. Every
+output frame is a numbered PNG captured from the stable `.player-panel` region
+after exactly two engine steps. The player region includes status, canvas,
+interaction hint, playback controls, scene controls, and credits while
+excluding unrelated page chrome and volatile build-provenance text.
 
-Playwright's captured video is converted with `ffmpeg` into:
+The script waits for the scene to report `Playing`, verifies the expected scene
+ID and starting step, and drives the same step and interaction schedule on every
+run. `ffmpeg` converts the numbered PNG sequence into:
 
 - an H.264, browser-compatible MP4
 - a reduced-size animated WebP suitable for README display
 
-The script fails with an actionable message when `ffmpeg`, Chromium, the
-production preview, a scene route, or expected player state is unavailable.
+Encoding uses fixed frame rate, dimensions, codec settings, metadata, timebase,
+and output ordering. Creation-time and host-specific metadata are omitted. The
+script fails with an actionable message when the pinned Chromium, `ffmpeg`,
+`ffprobe`, production preview, scene route, expected player state, or capture
+region is unavailable.
+
+## Determinism and idempotence contract
+
+The workflow is deterministic within one recorded capture profile: a digest of
+the web and WASM sources, capture script, lockfiles, and capture configuration;
+the operating system; pinned Playwright Chromium; `ffmpeg` version; fonts;
+viewport; device-pixel ratio; and encoding settings. Generated media and the
+README are excluded from the input digest so the output cannot invalidate its
+own profile. Cross-platform byte-for-byte identity is not claimed because
+browser rasterization and codec implementations can differ between operating
+systems or tool versions.
+
+The script records the capture-profile identities and SHA-256 hashes in
+`docs/assets/demos/manifest.json`. Generation writes all frames and encoded
+media to a temporary directory, validates the complete set, and swaps the
+complete output directory into place only after every scene succeeds. A failed
+swap restores the previous directory. Existing committed media remains
+untouched after any earlier failure.
+
+Two modes are exposed through thin `just` recipes:
+
+- `just demo-media` regenerates all scenes and replaces only files whose bytes
+  changed.
+- `just demo-media-check` regenerates into a temporary directory and fails when
+  any committed media file or manifest entry is missing or stale.
+
+Running generation twice with the same capture profile must produce identical
+hashes and leave the worktree unchanged on the second run.
 
 ## Repository integration
 
@@ -60,6 +98,7 @@ docs/assets/demos/dam-break.webp
 ...
 docs/assets/demos/water-wheel.mp4
 docs/assets/demos/water-wheel.webp
+docs/assets/demos/manifest.json
 ```
 
 The existing README maturity and compatibility statements remain unchanged.
@@ -69,11 +108,19 @@ The gallery describes the recordings as demonstrations, not parity evidence.
 
 Implementation is complete when:
 
-1. All six MP4 and six animated WebP files exist and are non-empty.
-1. `ffprobe` can read every MP4 and WebP, and durations remain within the
-   intended short-clip range.
+1. All six MP4 files, six animated WebP files, and the manifest exist and are
+   non-empty.
+1. `ffprobe` can read every MP4 and WebP, each clip represents exactly eight
+   seconds, and every output has the configured dimensions and 30 fps frame
+   rate.
+1. Every manifest hash matches its committed media file and records the capture
+   profile used to produce it.
+1. Two consecutive generation runs under the same capture profile produce
+   identical hashes; the second run leaves no git diff.
+1. `just demo-media-check` detects a deliberately changed or missing output.
 1. Every README preview path, video link, and hosted scene link resolves.
-1. The capture script is rerunnable from a clean generated web build.
+1. The capture script is rerunnable from a clean generated web build, and an
+   injected scene failure leaves all previously committed media untouched.
 1. `just web-player-smoke` passes.
 1. `just markdown-check` passes for the README and design documentation.
 1. The managed Bright Builds check is run and any unrelated existing findings
