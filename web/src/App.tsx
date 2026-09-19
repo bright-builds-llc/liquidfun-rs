@@ -17,7 +17,7 @@ import {
   type CanvasPointerHandlers,
 } from "./input/canvas-pointer";
 import type { PointerKind } from "./input/pointer";
-import { acceptedStepCount } from "./physics/clock";
+import { accumulateStepTime } from "./physics/clock";
 import type { RenderFrame } from "./physics/frame";
 import { loadSceneSession } from "./physics/loader";
 import {
@@ -127,6 +127,7 @@ export function App() {
   let maybeSession: SceneSession | undefined;
   let maybeAnimationFrameId: number | undefined;
   let maybeLastTimestamp: number | undefined;
+  let frameRemainderSeconds = 0;
   let maybePreviousFrame: RenderFrame | undefined;
   let maybeCamera: Camera | undefined;
   let maybeResizeObserver: ResizeObserver | undefined;
@@ -219,23 +220,24 @@ export function App() {
         return;
       }
 
-      const maybePreviousTimestamp = maybeLastTimestamp;
-      maybeLastTimestamp = timestamp;
-      if (maybePreviousTimestamp === undefined) {
+      if (maybeLastTimestamp === undefined) {
+        frameRemainderSeconds = 0;
+        maybeLastTimestamp = timestamp;
         scheduleFrame(context);
         return;
       }
 
       const elapsedSeconds =
-        (timestamp - maybePreviousTimestamp) / MILLISECONDS_PER_SECOND;
-      const stepCount = acceptedStepCount(elapsedSeconds);
-      if (stepCount === 0) {
+        (timestamp - maybeLastTimestamp) / MILLISECONDS_PER_SECOND;
+      const stepTime = accumulateStepTime(frameRemainderSeconds, elapsedSeconds);
+      frameRemainderSeconds = stepTime.remainderSeconds;
+      maybeLastTimestamp = timestamp;
+      if (stepTime.stepCount === 0) {
         scheduleFrame(context);
         return;
       }
-
       try {
-        const frame = maybeOwnedSession.nextFrame(stepCount);
+        const frame = maybeOwnedSession.nextFrame(stepTime.stepCount);
         drawRenderFrame(context, frame, camera);
         const observation = observeFrame(
           frame,

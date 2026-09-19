@@ -4,6 +4,7 @@ import { SCENES, SCENE_IDS, type SceneId } from "../src/catalog/scenes";
 import {
   activateLabeledControl,
   assertChromiumOnlyPlaywrightConfig,
+  canvasPixelSha256,
   CATALOG_PATH,
   CONSTRUCTION_RESET_HINT,
   DAM_BREAK_HINT,
@@ -14,6 +15,7 @@ import {
   expectAcceptedPointerGesture,
   expectReadySceneChrome,
   FOUNTAIN_PATH,
+  installControlledRefreshRate,
   numericAttribute,
   openCatalogCard,
   openDamBreakPlaying,
@@ -40,6 +42,24 @@ const POINTER_CONTROL: Readonly<
   "jelly-drop": { gesture: "click", control: "Poke jelly" },
   "water-wheel": { gesture: "drag", control: "Jet strength" },
 };
+
+test("advances steps and canvas pixels at controlled 120 Hz", async ({
+  page,
+}) => {
+  await installControlledRefreshRate(page, 120);
+  await openDamBreakPlaying(page);
+
+  const main = page.locator("main");
+  const initialStep = await numericAttribute(main, "data-step-index");
+  const initialPixelHash = await canvasPixelSha256(page);
+
+  await expect
+    .poll(() => numericAttribute(main, "data-step-index"))
+    .toBeGreaterThan(initialStep);
+  await expect
+    .poll(() => canvasPixelSha256(page))
+    .not.toBe(initialPixelHash);
+});
 
 test("loads Dam Break under the production base and exercises pause, play, and reset", async ({
   page,

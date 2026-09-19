@@ -60,6 +60,43 @@ export function collectWasmUrls(page: Page): string[] {
   return wasmUrls;
 }
 
+export async function installControlledRefreshRate(
+  page: Page,
+  refreshHz: number,
+): Promise<void> {
+  await page.addInitScript((controlledRefreshHz) => {
+    const nativeRequestAnimationFrame =
+      window.requestAnimationFrame.bind(window);
+    let controlledTimestamp = 0;
+
+    window.requestAnimationFrame = (callback) =>
+      nativeRequestAnimationFrame(() => {
+        controlledTimestamp += 1_000 / controlledRefreshHz;
+        callback(controlledTimestamp);
+      });
+  }, refreshHz);
+}
+
+export async function canvasPixelSha256(page: Page): Promise<string> {
+  return page.locator("canvas").evaluate(async (canvas) => {
+    const context = canvas.getContext("2d");
+    if (context === null) {
+      throw new Error("Canvas 2D is unavailable");
+    }
+
+    const pixels = context.getImageData(
+      0,
+      0,
+      canvas.width,
+      canvas.height,
+    ).data;
+    const digest = await crypto.subtle.digest("SHA-256", pixels);
+    return Array.from(new Uint8Array(digest))
+      .map((byte) => byte.toString(16).padStart(2, "0"))
+      .join("");
+  });
+}
+
 export async function gateWasmUntilLoadingObserved(
   page: Page,
 ): Promise<() => void> {

@@ -5,6 +5,7 @@ import {
   MAX_STEPS_PER_FRAME,
   STEP_SECONDS,
   acceptedStepCount,
+  accumulateStepTime,
 } from "../src/physics/clock";
 
 describe("clock constants", () => {
@@ -76,5 +77,24 @@ describe("acceptedStepCount", () => {
 
     // Assert
     expect(acceptedCounts).toEqual([4, 4, 4, 4]);
+  });
+});
+
+describe("accumulateStepTime", () => {
+  it("advances four ticks across eight 120 Hz callbacks", () => {
+    // Arrange
+    const elapsedSeconds = STEP_SECONDS / 2;
+    let remainderSeconds = 0;
+    let totalStepCount = 0;
+
+    // Act
+    for (let callback = 0; callback < 8; callback += 1) {
+      const result = accumulateStepTime(remainderSeconds, elapsedSeconds);
+      remainderSeconds = result.remainderSeconds;
+      totalStepCount += result.stepCount;
+    }
+
+    // Assert
+    expect(totalStepCount).toBe(4);
   });
 });
