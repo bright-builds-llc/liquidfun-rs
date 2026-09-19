@@ -22,6 +22,36 @@ const UI_SPEC_DESCRIPTIONS: Readonly<Record<SceneId, string>> = {
     "Vary a jet that turns a pinned paddle wheel through native coupling.",
 };
 
+const UI_SPEC_HINTS: Readonly<Record<SceneId, string>> = {
+  "dam-break":
+    "Drag the obstacle to a new place in the basin. Labeled controls also work from the keyboard.",
+  fountain:
+    "Drag on the canvas to aim the stream. Labeled controls also work from the keyboard.",
+  "float-or-sink":
+    "Click or tap the canvas to drop the selected body at that horizontal position. Labeled controls also work from the keyboard.",
+  "color-mixer":
+    "Drag on the canvas to stir the colored groups. Labeled controls also work from the keyboard.",
+  "jelly-drop":
+    "Click or tap the canvas to poke the jelly at that location. Labeled controls also work from the keyboard.",
+  "water-wheel":
+    "Drag on the canvas to aim the jet. Labeled controls also work from the keyboard.",
+};
+
+const KEYBOARD_REMINDER = "Labeled controls also work from the keyboard.";
+const FORBIDDEN_HINT_PHRASES = [
+  "Press Space to pause",
+  "Live frame from this repository's Rust engine",
+] as const;
+
+const LOCKED_ACTION_LABELS = [
+  "Drop obstacle",
+  "Aim angle",
+  "Drop body",
+  "Stir speed",
+  "Poke jelly",
+  "Jet strength",
+] as const;
+
 const RECREATING_CONTROL_IDS = [
   "water-amount",
   "gravity",
@@ -135,6 +165,47 @@ describe("SCENES", () => {
 
     // Assert
     expect(descriptions).toEqual(expected);
+  });
+
+  it("uses the locked UI-SPEC interactionHint for each scene", () => {
+    // Arrange
+    const expected = SCENE_IDS.map((id) => UI_SPEC_HINTS[id]);
+
+    // Act
+    const hints = SCENES.map((scene) => scene.interactionHint);
+
+    // Assert
+    expect(hints).toEqual(expected);
+  });
+
+  it("keeps the keyboard reminder and omits Space-to-pause or Canvas 2D leftover copy", () => {
+    // Arrange
+    const hints = SCENES.map((scene) => scene.interactionHint);
+
+    // Act
+    const missingReminder = hints.filter(
+      (hint) => !hint.includes(KEYBOARD_REMINDER),
+    );
+    const forbiddenHits = hints.filter((hint) =>
+      FORBIDDEN_HINT_PHRASES.some((phrase) => hint.includes(phrase)),
+    );
+
+    // Assert
+    expect(missingReminder).toEqual([]);
+    expect(forbiddenHits).toEqual([]);
+  });
+
+  it("keeps the locked labeled control path for pointer scenes", () => {
+    // Arrange
+    const labels = SCENES.flatMap((scene) => controlLabels(scene.controls));
+
+    // Act
+    const missingLabels = LOCKED_ACTION_LABELS.filter(
+      (label) => !labels.includes(label),
+    );
+
+    // Assert
+    expect(missingLabels).toEqual([]);
   });
 
   it("matches UI-SPEC control labels, option labels, and recreates flags", () => {
