@@ -11,7 +11,7 @@
     "durationSeconds": 8,
     "stepsPerFrame": 2,
     "frameCount": 240,
-    "inputSha256": "71fb1d834a90abbfbc8307ba0e131f5f996e54c219337f0c774be7d3bfe0f520",
+    "inputSha256": "5b98cf5acf8c05faaabd8e8d45a63339ce1e832aaffb8752d383419cc8da9521",
     "platform": "darwin",
     "playwrightPackageVersion": "1.63.0",
     "chromiumRevision": "1243",
@@ -64,13 +64,13 @@
       "files": [
         {
           "path": "dam-break.mp4",
-          "sha256": "421100467f68690326ecf54e7eb50600bbe4ba0061f677b455da82acd4ed9551",
-          "bytes": 1966802
+          "sha256": "3c3fa451c5921be2709bffbcbdeef37aa2cc4ea1046b8eb9a4336eb929855b9f",
+          "bytes": 2049023
         },
         {
           "path": "dam-break.webp",
-          "sha256": "0ed5f17f4fcffb616dd701feaf54b4613a5d9e7f33552a0924bf5ad372c106c3",
-          "bytes": 6390634
+          "sha256": "e70e4aad065d05c927ba15d7e79a7050f4de51718caee9ede8e294dac5082513",
+          "bytes": 6204922
         }
       ]
     },
@@ -81,13 +81,13 @@
       "files": [
         {
           "path": "fountain.mp4",
-          "sha256": "58730b0a52de621e6b717ba913bdb133d7e6592d9ee757b816e9fac44a01de05",
-          "bytes": 4262898
+          "sha256": "a7171fe37216be7c0480b3ed710a01d7eb949a3a949d0ac59e61fae2853e6338",
+          "bytes": 4446790
         },
         {
           "path": "fountain.webp",
-          "sha256": "6c5f6a2a95278e773e649577752a8716c3e81b802427225a4a36034afa83da88",
-          "bytes": 6539116
+          "sha256": "e8139ab18cea8f2950019e9d8b06660de79f66c61bf725a561a910fb9187677e",
+          "bytes": 6229418
         }
       ]
     },
@@ -98,13 +98,13 @@
       "files": [
         {
           "path": "float-or-sink.mp4",
-          "sha256": "add143dc91425fb53224f86d0ea3b0c1e9c4f388513e2d68107eb1669611471c",
-          "bytes": 1749129
+          "sha256": "46130c63e7c1c8bee54087df1858b27d4c6dadf5a64a8e1fc95cb542dc14a135",
+          "bytes": 1799940
         },
         {
           "path": "float-or-sink.webp",
-          "sha256": "24c3a1f1764718f2ce7dbd02ca8b2b85589ec0713f6d142a462d51299b3e48c7",
-          "bytes": 5198580
+          "sha256": "9514f29dfe6af8ae60aaedcf168336d8641d71a24667133bb3538d7db9851e84",
+          "bytes": 4971880
         }
       ]
     },
@@ -115,13 +115,13 @@
       "files": [
         {
           "path": "color-mixer.mp4",
-          "sha256": "942a53a26be85904dab55d0fed9df31903aecfc630680621a3d7b6c28fcc8cec",
-          "bytes": 420142
+          "sha256": "98ea2cf69344b0a6637ebc4e29f947c024c096a5b460e0d46e624ffc1ea0e1e2",
+          "bytes": 435966
         },
         {
           "path": "color-mixer.webp",
-          "sha256": "4b84c06ecd98e8559c2e01229ea6b244d41ee256ea15537fc051d3dd168e20d0",
-          "bytes": 3541666
+          "sha256": "d7c5338be5054af6504687d1e8d84a82f7482b9c17397dea1d02f1acc1436b6e",
+          "bytes": 3304270
         }
       ]
     },
@@ -132,13 +132,13 @@
       "files": [
         {
           "path": "jelly-drop.mp4",
-          "sha256": "154eb74ae110e73abb9a6acb386d72c68c88a25036b9230b1cbd4902bc31b128",
-          "bytes": 349135
+          "sha256": "b35fe2c23c43f9dd2a54cf833168126a8db15449b0b828644771519dd9282cb4",
+          "bytes": 369663
         },
         {
           "path": "jelly-drop.webp",
-          "sha256": "fe1a81c6e3ff7d202ccd93e29b9aea26cc897c545ec05c02b4f6f8552189669a",
-          "bytes": 3913866
+          "sha256": "a0752650ad8f0ae41b9e5a340be5cc644fe0f25c6f92d05f83a04da79b810a19",
+          "bytes": 3674400
         }
       ]
     },
@@ -149,13 +149,13 @@
       "files": [
         {
           "path": "water-wheel.mp4",
-          "sha256": "76cb0474d07872960fa7de21c9a71588bfb4716817fda4692bc90902a1bad66d",
-          "bytes": 3916581
+          "sha256": "383fcbc4e58e2082916d930d3d5bdbd3823c8e9cc08c0375e5be55a3a3bc45a4",
+          "bytes": 4140574
         },
         {
           "path": "water-wheel.webp",
-          "sha256": "e3258c00269c022d172a335acb926ed8d824c0e22b377e49af430b81ba88b0c7",
-          "bytes": 6071562
+          "sha256": "9fe333c9551b22ff67ccbec5a886941337ce0570702d7eb6fafe2ab913253ce4",
+          "bytes": 5774612
         }
       ]
     }

@@ -60,6 +60,14 @@ output {
   box-shadow: 0 12px 28px rgb(0 0 0 / 24%);
   backdrop-filter: blur(12px);
 }
+
+html[data-demo-media-capture="true"] .site-header,
+html[data-demo-media-capture="true"] .demo-sidebar,
+html[data-demo-media-capture="true"] .site-footer,
+html[data-demo-media-capture="true"] .demo-drawer-overlay,
+html[data-demo-media-capture="true"] .demo-drawer-positioner {
+  visibility: hidden;
+}
 .site-header-copy {
   display: grid;
   gap: var(--space-sm);
@@ -71,7 +79,6 @@ output {
   font-size: 14px;
   line-height: 1.4;
 }
-
 .site-header-actions {
   display: flex;
   flex-wrap: wrap;
@@ -79,7 +86,6 @@ output {
   justify-content: flex-end;
   gap: var(--space-md);
 }
-
 .site-header-actions a {
   color: #F4F7FA;
 }
@@ -501,7 +507,6 @@ select:hover:not(:disabled) {
 .site-footer-provenance a {
   color: #F4F7FA;
 }
-
 .mobile-demos-trigger {
   display: none;
 }
@@ -512,7 +517,6 @@ select:hover:not(:disabled) {
   z-index: 20;
   background: rgb(0 0 0 / 72%);
 }
-
 .demo-drawer-positioner {
   position: fixed;
   inset: 0;
@@ -521,7 +525,6 @@ select:hover:not(:disabled) {
   align-items: stretch;
   pointer-events: none;
 }
-
 .demo-drawer {
   display: grid;
   align-content: start;
@@ -544,7 +547,6 @@ select:hover:not(:disabled) {
   justify-content: space-between;
   gap: var(--space-md);
 }
-
 @media (max-width: 768px) {
   .app-shell {
     padding: var(--space-md);
@@ -566,7 +568,6 @@ select:hover:not(:disabled) {
     display: inline-flex;
   }
 }
-
 @media (max-width: 480px) {
   html,
   body,

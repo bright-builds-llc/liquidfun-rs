@@ -11,6 +11,7 @@ import {
   advanceEngineSteps,
   captureSceneFrames,
   installSyntheticAnimationClock,
+  setDemoMediaCaptureMode,
   waitForReadyScene,
 } from "../scripts/demo-media/capture";
 import { captureFontFingerprint } from "../scripts/demo-media/font";
@@ -129,6 +130,26 @@ test("captures 240 numbered frames and accepts the planned pointer action", asyn
       frameFileName(frameIndex),
     ),
   );
+});
+
+test("hides shell chrome during demo-media capture mode", async ({ page }) => {
+  // Arrange
+  const plan = SCENE_CAPTURE_PLANS[0];
+  if (plan === undefined) {
+    throw new Error("Dam Break capture plan is missing");
+  }
+  await installSyntheticAnimationClock(page);
+  await page.goto(plan.route);
+  await waitForReadyScene(page, plan);
+
+  // Act
+  await setDemoMediaCaptureMode(page, true);
+
+  // Assert
+  await expect(page.locator(".site-header")).toBeHidden();
+  await expect(page.locator(".demo-sidebar")).toBeHidden();
+  await expect(page.locator(".site-footer")).toBeHidden();
+  await expect(page.locator(".player-panel")).toBeVisible();
 });
 
 test("rejects persisted solid mode for deterministic media capture", async ({

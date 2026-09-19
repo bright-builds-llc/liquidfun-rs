@@ -101,6 +101,8 @@ export function mp4Arguments(
     "20",
     "-pix_fmt",
     "yuv420p",
+    "-vf",
+    "crop=trunc(iw/2)*2:trunc(ih/2)*2",
     "-movflags",
     "+faststart",
     "-map_metadata",

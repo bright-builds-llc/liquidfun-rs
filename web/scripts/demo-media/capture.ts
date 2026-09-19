@@ -17,6 +17,7 @@ export type CaptureSceneFramesArgs = {
 };
 
 const SYNTHETIC_CLOCK_KEY = "__liquidfunSyntheticAnimationClock";
+const DEMO_MEDIA_CAPTURE_ATTRIBUTE = "data-demo-media-capture";
 const anchoredClockStates = new WeakMap<Page, SyntheticClockState>();
 
 type SyntheticAnimationController = {
@@ -176,58 +177,82 @@ export async function captureSceneFrames({
   await page.goto(plan.route);
   await waitForReadyScene(page, plan);
   await requireWireframeRenderMode(page);
+  await setDemoMediaCaptureMode(page, true);
 
-  let completedSteps = 0;
-  let wroteFrameCount = 0;
-  let interactionPerformed = false;
+  try {
+    let completedSteps = 0;
+    let wroteFrameCount = 0;
+    let interactionPerformed = false;
 
-  for (
-    let frameIndex = 0;
-    frameIndex < CAPTURE_PROFILE.frameCount;
-    frameIndex += 1
-  ) {
-    await assertPlayingScene(page, plan.id);
+    for (
+      let frameIndex = 0;
+      frameIndex < CAPTURE_PROFILE.frameCount;
+      frameIndex += 1
+    ) {
+      await assertPlayingScene(page, plan.id);
 
-    if (!interactionPerformed && completedSteps === plan.interactionStep) {
-      await performSceneAction(page, plan);
-      interactionPerformed = true;
+      if (!interactionPerformed && completedSteps === plan.interactionStep) {
+        await performSceneAction(page, plan);
+        interactionPerformed = true;
+      }
+
+      await advanceEngineSteps(page, CAPTURE_PROFILE.stepsPerFrame);
+      completedSteps += CAPTURE_PROFILE.stepsPerFrame;
+
+      const panel = page.locator(".player-panel");
+      await expect(panel).toBeVisible();
+      await panel.screenshot({
+        path: join(framesDirectory, frameFileName(frameIndex)),
+      });
+      wroteFrameCount += 1;
     }
 
-    await advanceEngineSteps(page, CAPTURE_PROFILE.stepsPerFrame);
-    completedSteps += CAPTURE_PROFILE.stepsPerFrame;
+    if (!interactionPerformed) {
+      throw new Error(
+        `Scene action did not run at step ${plan.interactionStep}`,
+      );
+    }
+    if (wroteFrameCount !== CAPTURE_PROFILE.frameCount) {
+      throw new Error(
+        `Expected ${CAPTURE_PROFILE.frameCount} screenshots, wrote ${wroteFrameCount}`,
+      );
+    }
 
-    const panel = page.locator(".player-panel");
-    await expect(panel).toBeVisible();
-    await panel.screenshot({
-      path: join(framesDirectory, frameFileName(frameIndex)),
-    });
-    wroteFrameCount += 1;
-  }
-
-  if (!interactionPerformed) {
-    throw new Error(
-      `Scene action did not run at step ${plan.interactionStep}`,
+    const outputFrameNames = (await readdir(framesDirectory))
+      .filter((entry) => entry.endsWith(".png"))
+      .sort();
+    const expectedFrameNames = Array.from(
+      { length: CAPTURE_PROFILE.frameCount },
+      (_, frameIndex) => frameFileName(frameIndex),
     );
+    if (outputFrameNames.length !== CAPTURE_PROFILE.frameCount) {
+      throw new Error(
+        `Expected ${CAPTURE_PROFILE.frameCount} PNG frames, found ${outputFrameNames.length}`,
+      );
+    }
+    expect(outputFrameNames).toEqual(expectedFrameNames);
+  } finally {
+    await setDemoMediaCaptureMode(page, false);
   }
-  if (wroteFrameCount !== CAPTURE_PROFILE.frameCount) {
-    throw new Error(
-      `Expected ${CAPTURE_PROFILE.frameCount} screenshots, wrote ${wroteFrameCount}`,
-    );
-  }
+}
 
-  const outputFrameNames = (await readdir(framesDirectory))
-    .filter((entry) => entry.endsWith(".png"))
-    .sort();
-  const expectedFrameNames = Array.from(
-    { length: CAPTURE_PROFILE.frameCount },
-    (_, frameIndex) => frameFileName(frameIndex),
+export async function setDemoMediaCaptureMode(
+  page: Page,
+  enabled: boolean,
+): Promise<void> {
+  await page.evaluate(
+    ({ attributeName, enabledCaptureMode }) => {
+      if (enabledCaptureMode) {
+        document.documentElement.setAttribute(attributeName, "true");
+        return;
+      }
+      document.documentElement.removeAttribute(attributeName);
+    },
+    {
+      attributeName: DEMO_MEDIA_CAPTURE_ATTRIBUTE,
+      enabledCaptureMode: enabled,
+    },
   );
-  if (outputFrameNames.length !== CAPTURE_PROFILE.frameCount) {
-    throw new Error(
-      `Expected ${CAPTURE_PROFILE.frameCount} PNG frames, found ${outputFrameNames.length}`,
-    );
-  }
-  expect(outputFrameNames).toEqual(expectedFrameNames);
 }
 
 async function requireWireframeRenderMode(page: Page): Promise<void> {
