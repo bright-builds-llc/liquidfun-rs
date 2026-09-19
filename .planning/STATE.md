@@ -28,7 +28,7 @@ See: `.planning/PROJECT.md` (updated 2026-09-17)
 Phase: 19
 Plan: Not started
 Status: Phase complete — ready for verification
-Last activity: 2026-09-19
+Last activity: 2026-09-19 - Completed quick task 260919-eut: Split oversized WASM scene tests to satisfy Bright Builds CI
 
 Progress: [██████████] 100% of currently planned v1.1 plans complete.
 
@@ -173,6 +173,12 @@ No new milestone todos captured. Phase 17 is ready for discussion and planning.
 - Chromium closure attempt 10 is current for source `80d4d7b`: all 16 source-bound checks pass, strengthened validators and bounded failure records are exercised, and separate AI review approves digest `7b63ca2e7f1580a8a509e8265aca968667bc8443b9055651e285991a0cd3ff38`. Attempt 8 remains historical.
 - Pages setup/access and final URL remain unverified; Phase 17 verifies deployment and project-subpath assets early.
 - Floating, elastic and wheel scene stability require modest visual experiments in Phase 18; no fake physics or silently replaced approved scenes.
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260919-eut | Split oversized WASM scene tests to satisfy Bright Builds CI | 2026-09-19 | 888b5e8 | [260919-eut-split-oversized-wasm-scene-tests-to-sati](./quick/260919-eut-split-oversized-wasm-scene-tests-to-sati/) |
 
 ## Retained Context
 
