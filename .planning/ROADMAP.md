@@ -99,8 +99,17 @@ Prove the less certain floating, elastic and wheel compositions early within thi
   2. The dark-default playful catalog and controls remain readable and usable at desktop and mobile widths, with labeled keyboard-operable controls, visible focus, contrast and concise text interaction instructions.
   3. A focused real-browser smoke suite uses the built Rust WASM artifact to select all six scenes, demonstrate visible stepping, exercise playback/reset and representative pointer/control input, and repeat scene changes while checking cleanup and hidden-tab recovery.
   4. Targeted production-subpath and live Pages checks demonstrate functioning JS/WASM loading and refreshed direct scene links for the complete gallery, recording the tested URL/revision without requiring a broad browser/native matrix.
-**Plans**: TBD
+**Plans:** 7 plans
 **UI hint**: yes
+
+Plans:
+- [ ] 19-01-PLAN.md — CSS→world unproject and captured-gesture reducer
+- [ ] 19-02-PLAN.md — WASM pointer_action plus Dam Break, Fountain, and Float or Sink
+- [ ] 19-03-PLAN.md — Color Mixer stir, Jelly poke, and Water Wheel jet aim
+- [ ] 19-04-PLAN.md — Canvas Pointer Events pipeline and teardown cancel
+- [ ] 19-05-PLAN.md — Per-scene figcaption, select focus, and 480px polish
+- [ ] 19-06-PLAN.md — Chromium player smoke for pointer, 375px, and cleanup
+- [ ] 19-07-PLAN.md — Live Pages six-hash evidence and independent AI review
 
 ## Progress
 
@@ -111,7 +120,7 @@ Execution order: **16 → 17 → 18 → 19**. Each phase includes focused checks
 | 16. Rust WASM Browser Bridge | 4/4 | Complete    | 2026-09-17 |
 | 17. Shared Player and Early Pages Delivery | 8/8 | Complete    | 2026-09-17 |
 | 18. Six Native Physics Demos | 10/10 | Complete    | 2026-09-18 |
-| 19. Interaction Polish and Browser Verification | 0/TBD | Not started | - |
+| 19. Interaction Polish and Browser Verification | 0/7 | Not started | - |
 
 ## Coverage and Planning Basis
 
