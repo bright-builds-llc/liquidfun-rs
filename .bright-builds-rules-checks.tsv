@@ -1,1 +1,0 @@
-file-lengths	web/scripts/demo-media.ts	Task 3 fix-loop exception while the demo-media CLI shell remains a single reviewed entrypoint with focused lifecycle tests; split cleanup can follow after review blockers close.
