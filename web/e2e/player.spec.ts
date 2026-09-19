@@ -1,171 +1,44 @@
-import { expect, test, type Locator, type Page } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
-import { SCENES, type SceneId } from "../src/catalog/scenes";
+import { SCENES, SCENE_IDS, type SceneId } from "../src/catalog/scenes";
+import {
+  activateLabeledControl,
+  assertChromiumOnlyPlaywrightConfig,
+  CATALOG_PATH,
+  CONSTRUCTION_RESET_HINT,
+  DAM_BREAK_HINT,
+  DAM_BREAK_PATH,
+  DESKTOP_VIEWPORT,
+  dragCanvas,
+  expectAcceptedPointerGesture,
+  expectReadySceneChrome,
+  FOUNTAIN_PATH,
+  numericAttribute,
+  openCatalogCard,
+  openDamBreakPlaying,
+  PAUSE_HOLD_MS,
+  PAUSED_STATUS,
+  performSceneGesture,
+  PLAYING_STATUS,
+  proveHiddenTabMaxFour,
+  RESET_STEP_CEILING,
+  resetNearZero,
+  SCENE_HASH_PATHS,
+  SIX_SCENE_TIMEOUT_MS,
+  tabUntilFirstSelectFocused,
+  UNKNOWN_SCENE_PATH,
+} from "./player-helpers";
 
-const DAM_BREAK_PATH = "/liquidfun-rs/#/scene/dam-break";
-const UNKNOWN_SCENE_PATH = "/liquidfun-rs/#/scene/not-a-scene";
-const FOUNTAIN_PATH = "/liquidfun-rs/#/scene/fountain";
-const CATALOG_PATH = "/liquidfun-rs/";
-const LOADING_STATUS = "Loading Dam Break…";
-const PLAYING_STATUS = "Playing";
-const PAUSED_STATUS = "Paused";
-const PAUSE_HOLD_MS = 500;
-const HIDDEN_TAB_MS = 2_000;
-const MAX_STEPS_PER_FRAME = 4;
-const RESET_STEP_CEILING = 8;
-const CONSTRUCTION_RESET_HINT =
-  "Changing this setting recreates the scene from its documented initial state.";
-const SIX_SCENE_TIMEOUT_MS = 120_000;
-
-const SCENE_HASH_PATHS: Readonly<Record<SceneId, string>> = {
-  "dam-break": "/liquidfun-rs/#/scene/dam-break",
-  fountain: "/liquidfun-rs/#/scene/fountain",
-  "float-or-sink": "/liquidfun-rs/#/scene/float-or-sink",
-  "color-mixer": "/liquidfun-rs/#/scene/color-mixer",
-  "jelly-drop": "/liquidfun-rs/#/scene/jelly-drop",
-  "water-wheel": "/liquidfun-rs/#/scene/water-wheel",
+const POINTER_CONTROL: Readonly<
+  Record<SceneId, { gesture: "drag" | "click"; control: string }>
+> = {
+  "dam-break": { gesture: "drag", control: "Drop obstacle" },
+  fountain: { gesture: "drag", control: "Aim angle" },
+  "float-or-sink": { gesture: "click", control: "Drop body" },
+  "color-mixer": { gesture: "drag", control: "Stir speed" },
+  "jelly-drop": { gesture: "click", control: "Poke jelly" },
+  "water-wheel": { gesture: "drag", control: "Jet strength" },
 };
-
-async function numericAttribute(
-  locator: Locator,
-  name: string,
-): Promise<number> {
-  const maybeValue = await locator.getAttribute(name);
-  if (maybeValue === null || !/^(0|[1-9]\d*)$/.test(maybeValue)) {
-    throw new Error(`invalid numeric ${name}: ${String(maybeValue)}`);
-  }
-  return Number(maybeValue);
-}
-
-function collectWasmUrls(page: Page): string[] {
-  const wasmUrls: string[] = [];
-  page.on("request", (request) => {
-    const url = request.url();
-    if (url.includes(".wasm")) {
-      wasmUrls.push(url);
-    }
-  });
-  return wasmUrls;
-}
-
-async function gateWasmUntilLoadingObserved(page: Page): Promise<() => void> {
-  let releaseWasmRequest = (): void => {
-    throw new Error("WASM request was not observed");
-  };
-  const wasmRequestGate = new Promise<void>((resolveRequest) => {
-    releaseWasmRequest = resolveRequest;
-  });
-  await page.route("**/*.wasm", async (route) => {
-    await wasmRequestGate;
-    await route.continue();
-  });
-  return releaseWasmRequest;
-}
-
-async function expectReadySceneChrome(
-  page: Page,
-  title: string,
-): Promise<void> {
-  await expect(page.getByRole("status")).toHaveText(PLAYING_STATUS);
-  await expect(
-    page.getByRole("heading", { name: title, exact: true }),
-  ).toBeVisible();
-  await expect(page.locator("#scene-credits-title")).toHaveText("Scene source");
-  await expect(
-    page.getByRole("link", { name: "View scene source" }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("link", { name: "Third-party notices" }),
-  ).toBeVisible();
-}
-
-async function openCatalogCard(page: Page, title: string, id: SceneId): Promise<void> {
-  const card = page.locator(".catalog-card").filter({
-    has: page.locator(".catalog-card-title", { hasText: title }),
-  });
-  await card.getByRole("link", { name: "Open" }).click();
-  await expect(page).toHaveURL(new RegExp(`#/scene/${id}$`));
-}
-
-async function resetNearZero(page: Page): Promise<void> {
-  const main = page.locator("main");
-  await expect
-    .poll(() => numericAttribute(main, "data-step-index"))
-    .toBeGreaterThan(4);
-
-  const seriesStep = await numericAttribute(main, "data-step-index");
-  await page.getByRole("button", { name: "Reset scene" }).click();
-  await expect(page.getByRole("status")).toHaveText(PLAYING_STATUS);
-  const resetStep = await numericAttribute(main, "data-step-index");
-  expect(resetStep).toBeLessThan(seriesStep);
-  expect(resetStep).toBeLessThan(RESET_STEP_CEILING);
-}
-
-async function openDamBreakPlaying(page: Page): Promise<{
-  readonly wasmUrls: string[];
-}> {
-  const wasmUrls = collectWasmUrls(page);
-  const releaseWasmRequest = await gateWasmUntilLoadingObserved(page);
-
-  await page.goto(DAM_BREAK_PATH, { waitUntil: "domcontentloaded" });
-  const status = page.getByRole("status");
-  await expect(status).toHaveText(LOADING_STATUS);
-  releaseWasmRequest();
-  await expectReadySceneChrome(page, "Dam Break");
-
-  expect(
-    wasmUrls.some((url) => url.includes("/liquidfun-rs/") && url.includes(".wasm")),
-  ).toBe(true);
-
-  return { wasmUrls };
-}
-
-async function setDocumentHidden(page: Page, hidden: boolean): Promise<void> {
-  await page.evaluate((nextHidden) => {
-    Object.defineProperty(document, "hidden", {
-      configurable: true,
-      get: () => nextHidden,
-    });
-    document.dispatchEvent(new Event("visibilitychange"));
-  }, hidden);
-}
-
-async function restoreAndReadNextStep(
-  page: Page,
-  previousStep: number,
-): Promise<number> {
-  return page.evaluate((stepBeforeResume) => {
-    const maybeMain = document.querySelector("main");
-    if (maybeMain === null) {
-      throw new Error("main is missing");
-    }
-
-    const nextStep = new Promise<number>((resolve, reject) => {
-      const observer = new MutationObserver(() => {
-        const maybeNext = Number(maybeMain.getAttribute("data-step-index"));
-        if (Number.isFinite(maybeNext) && maybeNext > stepBeforeResume) {
-          observer.disconnect();
-          resolve(maybeNext);
-        }
-      });
-      observer.observe(maybeMain, {
-        attributes: true,
-        attributeFilter: ["data-step-index"],
-      });
-      window.setTimeout(() => {
-        observer.disconnect();
-        reject(new Error("hidden-tab resume did not observe a later step index"));
-      }, 2_000);
-    });
-
-    Object.defineProperty(document, "hidden", {
-      configurable: true,
-      get: () => false,
-    });
-    document.dispatchEvent(new Event("visibilitychange"));
-    return nextStep;
-  }, previousStep);
-}
 
 test("loads Dam Break under the production base and exercises pause, play, and reset", async ({
   page,
@@ -267,17 +140,111 @@ test("clears hidden-tab catch-up so the next frame advances at most four steps",
   page,
 }) => {
   await openDamBreakPlaying(page);
+  await proveHiddenTabMaxFour(page);
+});
+
+test("plays each scene, accepts one pointer gesture, and activates a labeled control", async ({
+  page,
+}) => {
+  test.setTimeout(SIX_SCENE_TIMEOUT_MS);
+
+  for (const sceneId of SCENE_IDS) {
+    const scene = SCENES.find((entry) => entry.id === sceneId);
+    if (scene === undefined) {
+      throw new Error(`missing catalog scene ${sceneId}`);
+    }
+
+    const mapping = POINTER_CONTROL[sceneId];
+    await page.goto(SCENE_HASH_PATHS[sceneId]);
+    await expectReadySceneChrome(page, scene.title);
+
+    const main = page.locator("main");
+    await expect
+      .poll(() => numericAttribute(main, "data-step-index"))
+      .toBeGreaterThan(0);
+
+    await performSceneGesture(page, mapping.gesture);
+    await expectAcceptedPointerGesture(page);
+    await activateLabeledControl(page, mapping.control);
+    await expect(page.getByRole("status")).toHaveText(PLAYING_STATUS);
+  }
+});
+
+test("sets data-last-pointer-kind to cancel after Dam Break pointercancel", async ({
+  page,
+}) => {
+  await openDamBreakPlaying(page);
+
+  const canvas = page.locator("canvas");
+  const maybeBox = await canvas.boundingBox();
+  if (maybeBox === null) {
+    throw new Error("canvas box missing");
+  }
+  await page.mouse.move(
+    maybeBox.x + maybeBox.width * 0.5,
+    maybeBox.y + maybeBox.height * 0.45,
+  );
+  await page.mouse.down();
+  await canvas.dispatchEvent("pointercancel", { pointerId: 1 });
+  await expect(page.locator("main")).toHaveAttribute(
+    "data-last-pointer-kind",
+    "cancel",
+  );
+});
+
+test("accepts a Dam Break drag after resize without rebuilding the world", async ({
+  page,
+}) => {
+  await page.setViewportSize(DESKTOP_VIEWPORT);
+  await openDamBreakPlaying(page);
 
   const main = page.locator("main");
   await expect
     .poll(() => numericAttribute(main, "data-step-index"))
     .toBeGreaterThan(0);
+  const acceptedBefore = await numericAttribute(main, "data-pointer-accepted");
 
-  await setDocumentHidden(page, true);
-  const hiddenStep = await numericAttribute(main, "data-step-index");
-  await page.waitForTimeout(HIDDEN_TAB_MS);
-  expect(await numericAttribute(main, "data-step-index")).toBe(hiddenStep);
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.waitForTimeout(200);
+  await dragCanvas(page);
+  await expect
+    .poll(() => numericAttribute(main, "data-pointer-accepted"))
+    .toBeGreaterThan(acceptedBefore);
+});
 
-  const firstVisibleStep = await restoreAndReadNextStep(page, hiddenStep);
-  expect(firstVisibleStep - hiddenStep).toBeLessThanOrEqual(MAX_STEPS_PER_FRAME);
+test("caps hidden-tab recovery after one Dam Break pointer gesture", async ({
+  page,
+}) => {
+  await openDamBreakPlaying(page);
+  const main = page.locator("main");
+  await expect
+    .poll(() => numericAttribute(main, "data-step-index"))
+    .toBeGreaterThan(0);
+  await dragCanvas(page);
+  await expectAcceptedPointerGesture(page);
+  await proveHiddenTabMaxFour(page);
+});
+
+test("tabs to a select and scrolls the catalog at 375px", async ({ page }) => {
+  assertChromiumOnlyPlaywrightConfig();
+  expect(test.info().project.name).toBe("chromium");
+
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto(DAM_BREAK_PATH, { waitUntil: "domcontentloaded" });
+  await expectReadySceneChrome(page, "Dam Break");
+  await expect(page.locator("figcaption")).toHaveText(DAM_BREAK_HINT);
+
+  await tabUntilFirstSelectFocused(page);
+
+  await page.locator(".catalog-nav").evaluate((node) => {
+    node.scrollIntoView();
+  });
+  const canScrollPage = await page.evaluate(() => {
+    const maybeScrolling = document.scrollingElement;
+    if (maybeScrolling === null) {
+      throw new Error("scrolling element is missing");
+    }
+    return maybeScrolling.scrollHeight > window.innerHeight;
+  });
+  expect(canScrollPage).toBe(true);
 });
