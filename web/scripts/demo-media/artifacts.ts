@@ -56,6 +56,13 @@ export type MediaProbe = {
 };
 
 export type RenamePath = (from: string, to: string) => Promise<void>;
+export type RemoveDirectory = (path: string) => Promise<void>;
+export type WarningSink = (warning: string) => void;
+export type ReplaceOutputDirectoryDependencies = {
+  readonly renamePath?: RenamePath;
+  readonly removeDirectory?: RemoveDirectory;
+  readonly onWarning?: WarningSink;
+};
 
 export async function captureInputSha256(repoRoot: string): Promise<string> {
   const trackedPaths = trackedCaptureInputPaths(repoRoot);
@@ -187,8 +194,15 @@ export async function compareOutputDirectories(
 export async function replaceOutputDirectory(
   next: string,
   target: string,
-  renamePath: RenamePath = rename,
+  renamePathOrDependencies: RenamePath | ReplaceOutputDirectoryDependencies = {},
 ): Promise<void> {
+  const dependencies =
+    typeof renamePathOrDependencies === "function"
+      ? { renamePath: renamePathOrDependencies }
+      : renamePathOrDependencies;
+  const renamePath = dependencies.renamePath ?? rename;
+  const removeDirectory = dependencies.removeDirectory ?? removeDirectoryTree;
+  const onWarning = dependencies.onWarning ?? defaultWarningSink;
   const targetExists = await pathExists(target);
   if (!targetExists) {
     await renamePath(next, target);
@@ -205,7 +219,13 @@ export async function replaceOutputDirectory(
     throw error;
   }
 
-  await rm(backupPath, { recursive: true, force: true });
+  try {
+    await removeDirectory(backupPath);
+  } catch (error) {
+    onWarning(
+      `Installed ${target} but could not remove backup ${backupPath}: ${errorMessage(error)}`,
+    );
+  }
 }
 
 export function commandVersionLine(command: string): string {
@@ -280,7 +300,14 @@ export async function probeMedia(path: string): Promise<MediaProbe> {
       `ffprobe failed for ${path} (${result.status})${diagnostic.length === 0 ? "" : `: ${diagnostic}`}`,
     );
   }
-  const response = JSON.parse(result.stdout) as FfprobeResponse;
+  return parseMediaProbeJson(path, result.stdout);
+}
+
+export function parseMediaProbeJson(
+  path: string,
+  jsonText: string,
+): MediaProbe {
+  const response = JSON.parse(jsonText) as FfprobeResponse;
   const maybeStream = response.streams?.[0];
   if (maybeStream === undefined) {
     throw new Error(`ffprobe did not report a video stream for ${path}`);
@@ -294,6 +321,7 @@ export async function probeMedia(path: string): Promise<MediaProbe> {
     "avg_frame_rate",
     path,
   );
+  parseAverageFrameRate(averageFrameRate, path);
   const maybeFrameCount = parseMaybeFrameCount(maybeStream.nb_frames, path);
   const durationSeconds = requirePositiveNumber(
     response.format?.duration,
@@ -438,6 +466,18 @@ function isMissingPathError(error: unknown): boolean {
     "code" in error &&
     error.code === "ENOENT"
   );
+}
+
+async function removeDirectoryTree(path: string): Promise<void> {
+  await rm(path, { recursive: true, force: true });
+}
+
+function defaultWarningSink(warning: string): void {
+  process.emitWarning(warning);
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }
 
 function requireString(value: unknown, label: string, path: string): string {

@@ -48,13 +48,38 @@ type PlaywrightIdentity = {
 };
 
 type EncodingContext = {
-  readonly repoRoot: string;
   readonly nextDirectory: string;
   readonly page: Page;
   readonly maybeFailSceneId: SceneCapturePlan["id"] | undefined;
 };
 
 type PreviewProcess = ReturnType<typeof spawn>;
+type CleanupAction = {
+  readonly label: string;
+  readonly run: () => Promise<void>;
+};
+type CleanupFailure = {
+  readonly label: string;
+  readonly error: Error;
+};
+type WaitForPreviewReadinessDependencies = {
+  readonly isReady: () => Promise<boolean>;
+  readonly getExitCode: () => number | null;
+  readonly diagnostics: () => string;
+  readonly delayMilliseconds: number;
+  readonly delay: (milliseconds: number) => Promise<void>;
+  readonly now: () => number;
+  readonly timeoutAt: number;
+};
+type TerminatePreviewProcessDependencies = {
+  readonly getExitCode: () => number | null;
+  readonly kill: (signal: NodeJS.Signals) => void;
+  readonly waitForExit: (timeoutMilliseconds: number) => Promise<boolean>;
+};
+type OutputDirectoryAction =
+  | { readonly kind: "noop" }
+  | { readonly kind: "replace" }
+  | { readonly kind: "fail"; readonly message: string };
 
 function parseMode(value: string | undefined): DemoMediaMode {
   if (value === "generate" || value === "check") {
@@ -89,6 +114,7 @@ async function main(): Promise<void> {
   const previewProcess = startPreviewProcess(webDirectory);
   let maybeBrowser: Browser | undefined;
   let maybeContext: BrowserContext | undefined;
+  let maybePrimaryError: unknown;
 
   try {
     await waitForPreview(previewProcess, PREVIEW_URL);
@@ -107,7 +133,6 @@ async function main(): Promise<void> {
     for (const plan of SCENE_CAPTURE_PLANS) {
       scenes.push(
         await encodeSceneMedia({
-          repoRoot,
           nextDirectory,
           page,
           maybeFailSceneId,
@@ -135,28 +160,63 @@ async function main(): Promise<void> {
     );
 
     const diagnostics = await compareOutputDirectories(targetDirectory, nextDirectory);
-    if (mode === "check") {
-      if (diagnostics.length > 0) {
-        throw new Error(
-          `demo media outputs differ:\n${diagnostics.join("\n")}`,
-        );
-      }
-      return;
+    const action = decideOutputDirectoryAction(mode, diagnostics);
+    if (action.kind === "fail") {
+      throw new Error(action.message);
     }
-
-    if (diagnostics.length === 0) {
-      return;
+    if (action.kind === "replace") {
+      await ensureDirectory(dirname(targetDirectory));
+      await replaceOutputDirectory(nextDirectory, targetDirectory);
     }
-
-    await ensureDirectory(dirname(targetDirectory));
-    await replaceOutputDirectory(nextDirectory, targetDirectory);
-  } finally {
-    await Promise.allSettled([
-      maybeContext?.close(),
-      maybeBrowser?.close(),
-    ]);
-    await stopPreviewProcess(previewProcess);
+  } catch (error) {
+    maybePrimaryError = error;
   }
+
+  const cleanupFailures = await runCleanupActions([
+    ...(maybeContext === undefined
+      ? []
+      : [
+          {
+            label: "close browser context",
+            run: async () => {
+              await maybeContext.close();
+            },
+          } satisfies CleanupAction,
+        ]),
+    ...(maybeBrowser === undefined
+      ? []
+      : [
+          {
+            label: "close browser",
+            run: async () => {
+              await maybeBrowser.close();
+            },
+          } satisfies CleanupAction,
+        ]),
+    {
+      label: "stop preview process",
+      run: async () => {
+        await stopPreviewProcess(previewProcess);
+      },
+    },
+  ]);
+  maybeRethrowWithCleanupFailures(maybePrimaryError, cleanupFailures);
+}
+
+export function decideOutputDirectoryAction(
+  mode: DemoMediaMode,
+  diagnostics: readonly string[],
+): OutputDirectoryAction {
+  if (diagnostics.length === 0) {
+    return { kind: "noop" };
+  }
+  if (mode === "check") {
+    return {
+      kind: "fail",
+      message: `demo media outputs differ:\n${diagnostics.join("\n")}`,
+    };
+  }
+  return { kind: "replace" };
 }
 
 async function encodeSceneMedia(
@@ -262,45 +322,35 @@ async function waitForPreview(
   url: string,
 ): Promise<void> {
   const output = collectProcessOutput(previewProcess);
-  const deadline = Date.now() + READY_TIMEOUT_MILLISECONDS;
-
-  while (Date.now() < deadline) {
-    if (previewProcess.exitCode !== null) {
-      throw new Error(
-        `preview process exited early (${previewProcess.exitCode}): ${output()}`,
-      );
-    }
-
-    try {
-      const response = await fetch(url);
-      if (response.ok) {
-        return;
+  await waitForPreviewReadiness({
+    isReady: async () => {
+      try {
+        const response = await fetch(url);
+        return response.ok;
+      } catch {
+        return false;
       }
-    } catch {
-      // Keep polling until the timeout expires.
-    }
-
-    await delay(250);
-  }
-
-  throw new Error(`preview did not become ready: ${output()}`);
+    },
+    getExitCode: () => previewProcess.exitCode,
+    diagnostics: output,
+    delayMilliseconds: 250,
+    delay,
+    now: Date.now,
+    timeoutAt: Date.now() + READY_TIMEOUT_MILLISECONDS,
+  });
 }
 
 async function stopPreviewProcess(
   previewProcess: PreviewProcess,
 ): Promise<void> {
-  if (previewProcess.exitCode !== null) {
-    return;
-  }
-
-  previewProcess.kill("SIGTERM");
-  const exited = await waitForExit(previewProcess, 5_000);
-  if (exited) {
-    return;
-  }
-
-  previewProcess.kill("SIGKILL");
-  await waitForExit(previewProcess, 5_000);
+  await terminatePreviewProcess({
+    getExitCode: () => previewProcess.exitCode,
+    kill: (signal) => {
+      previewProcess.kill(signal);
+    },
+    waitForExit: async (timeoutMilliseconds) =>
+      await waitForExit(previewProcess, timeoutMilliseconds),
+  });
 }
 
 function collectProcessOutput(
@@ -354,6 +404,103 @@ async function waitForExit(
 
     processToWatch.once("exit", handleExit);
   });
+}
+
+export async function waitForPreviewReadiness(
+  dependencies: WaitForPreviewReadinessDependencies,
+): Promise<void> {
+  while (dependencies.now() < dependencies.timeoutAt) {
+    const exitCodeBeforeCheck = dependencies.getExitCode();
+    if (exitCodeBeforeCheck !== null) {
+      throw new Error(
+        `preview process exited early (${exitCodeBeforeCheck}): ${dependencies.diagnostics()}`,
+      );
+    }
+
+    const isReady = await dependencies.isReady();
+    const exitCodeAfterCheck = dependencies.getExitCode();
+    if (exitCodeAfterCheck !== null) {
+      throw new Error(
+        `preview process exited early (${exitCodeAfterCheck}): ${dependencies.diagnostics()}`,
+      );
+    }
+    if (isReady) {
+      return;
+    }
+
+    await dependencies.delay(dependencies.delayMilliseconds);
+  }
+
+  throw new Error(`preview did not become ready: ${dependencies.diagnostics()}`);
+}
+
+export async function terminatePreviewProcess(
+  dependencies: TerminatePreviewProcessDependencies,
+): Promise<void> {
+  if (dependencies.getExitCode() !== null) {
+    return;
+  }
+
+  dependencies.kill("SIGTERM");
+  const exitedAfterTerminate = await dependencies.waitForExit(5_000);
+  if (exitedAfterTerminate) {
+    return;
+  }
+
+  dependencies.kill("SIGKILL");
+  const exitedAfterKill = await dependencies.waitForExit(5_000);
+  if (!exitedAfterKill) {
+    throw new Error("Preview process did not exit after SIGKILL");
+  }
+}
+
+export async function runCleanupActions(
+  actions: readonly CleanupAction[],
+): Promise<readonly CleanupFailure[]> {
+  const failures: CleanupFailure[] = [];
+
+  for (const action of actions) {
+    try {
+      await action.run();
+    } catch (error) {
+      failures.push({
+        label: action.label,
+        error: asError(error),
+      });
+    }
+  }
+
+  return failures;
+}
+
+export function formatCleanupFailure(failure: CleanupFailure): string {
+  return `${failure.label}: ${failure.error.message}`;
+}
+
+export function maybeRethrowWithCleanupFailures(
+  maybePrimaryError: unknown,
+  cleanupFailures: readonly CleanupFailure[],
+): void {
+  if (cleanupFailures.length === 0) {
+    if (maybePrimaryError !== undefined) {
+      throw maybePrimaryError;
+    }
+    return;
+  }
+
+  const cleanupErrors = cleanupFailures.map((failure) =>
+    new Error(formatCleanupFailure(failure), { cause: failure.error }),
+  );
+  if (maybePrimaryError === undefined) {
+    throw new AggregateError(cleanupErrors, "demo media cleanup failed");
+  }
+
+  const primaryError = asError(maybePrimaryError);
+  throw new AggregateError(
+    [primaryError, ...cleanupErrors],
+    "demo media command failed and cleanup also failed",
+    { cause: primaryError },
+  );
 }
 
 function readInjectedFailureSceneId(): SceneCapturePlan["id"] | undefined {
@@ -412,4 +559,19 @@ function isExistsError(error: unknown): boolean {
   );
 }
 
-await main();
+function asError(error: unknown): Error {
+  return error instanceof Error ? error : new Error(String(error));
+}
+
+function isDirectExecution(): boolean {
+  const maybeEntryPath = process.argv[1];
+  if (maybeEntryPath === undefined) {
+    return false;
+  }
+
+  return resolve(maybeEntryPath) === fileURLToPath(import.meta.url);
+}
+
+if (isDirectExecution()) {
+  await main();
+}

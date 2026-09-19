@@ -17,7 +17,10 @@ import {
   captureInputSha256,
   compareOutputDirectories,
   mp4Arguments,
+  parseMediaProbeJson,
   replaceOutputDirectory,
+  validateMp4Probe,
+  validateWebpProbe,
   webpArguments,
 } from "../scripts/demo-media/artifacts";
 
@@ -224,6 +227,124 @@ describe("demo media artifacts", () => {
     } finally {
       await rm(root, { recursive: true, force: true });
     }
+  });
+
+  it("keeps the new target installed when backup cleanup fails after commit", async () => {
+    // Arrange
+    const root = await mkdtemp(join(tmpdir(), "liquidfun-demo-media-cleanup-"));
+    const targetDirectory = resolve(root, "target");
+    const nextDirectory = resolve(root, "next");
+
+    try {
+      await writeRepositoryFiles(targetDirectory, new Map([
+        ["manifest.json", "original manifest\n"],
+        ["dam-break.mp4", "original video bytes\n"],
+      ]));
+      await writeRepositoryFiles(nextDirectory, new Map([
+        ["manifest.json", "replacement manifest\n"],
+        ["dam-break.mp4", "replacement video bytes\n"],
+      ]));
+      const warnings: string[] = [];
+
+      // Act
+      await expect(
+        replaceOutputDirectory(nextDirectory, targetDirectory, {
+          removeDirectory: async () => {
+            throw new Error("backup cleanup failed");
+          },
+          onWarning: (warning) => {
+            warnings.push(warning);
+          },
+        }),
+      ).resolves.toBeUndefined();
+
+      // Assert
+      expect(await directorySnapshot(targetDirectory)).toEqual({
+        "dam-break.mp4": Buffer.from("replacement video bytes\n", "utf8").toString("hex"),
+        "manifest.json": Buffer.from("replacement manifest\n", "utf8").toString("hex"),
+      });
+      expect(warnings).toEqual([
+        expect.stringContaining("backup cleanup failed"),
+      ]);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  it("parses ffprobe JSON into a media probe", () => {
+    // Arrange
+    const jsonText = JSON.stringify({
+      streams: [
+        {
+          codec_name: "h264",
+          width: 1280,
+          height: 720,
+          avg_frame_rate: "30/1",
+          nb_frames: "240",
+        },
+      ],
+      format: {
+        duration: "8.0",
+      },
+    });
+
+    // Act
+    const actual = parseMediaProbeJson("dam-break.mp4", jsonText);
+
+    // Assert
+    expect(actual).toEqual({
+      codecName: "h264",
+      width: 1280,
+      height: 720,
+      averageFrameRate: "30/1",
+      maybeFrameCount: 240,
+      durationSeconds: 8,
+    });
+  });
+
+  it("rejects invalid ffprobe JSON and validation mismatches", () => {
+    // Arrange
+    const invalidJsonText = JSON.stringify({
+      streams: [
+        {
+          codec_name: "webp",
+          width: 640,
+          height: 360,
+          avg_frame_rate: "not-a-rational",
+          nb_frames: "240",
+        },
+      ],
+      format: {
+        duration: "8.0",
+      },
+    });
+    const wrongCodecProbe = {
+      codecName: "vp9",
+      width: 640,
+      height: 360,
+      averageFrameRate: "30/1",
+      maybeFrameCount: 240,
+      durationSeconds: 8,
+    };
+    const wrongDurationProbe = {
+      codecName: "webp",
+      width: 640,
+      height: 360,
+      averageFrameRate: "30/1",
+      maybeFrameCount: 240,
+      durationSeconds: 8.5,
+    };
+
+    // Act / Assert
+    expect(() => parseMediaProbeJson("bad.webp", invalidJsonText)).toThrow(
+      "ffprobe avg_frame_rate is invalid for bad.webp",
+    );
+    expect(() => validateMp4Probe("bad.mp4", wrongCodecProbe)).toThrow(
+      "Expected H.264 MP4 output, found vp9 for bad.mp4",
+    );
+    expect(() => validateWebpProbe("bad.webp", wrongDurationProbe)).toThrow(
+      "Expected ~8 second duration, found 8.5 for bad.webp",
+    );
   });
 });
 
