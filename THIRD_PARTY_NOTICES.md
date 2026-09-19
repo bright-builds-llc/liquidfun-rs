@@ -95,10 +95,53 @@ their assets enter the consumer archive.
 
 The private unpublished `liquidfun-web` package (`web/`) pins `@kobalte/core`
 0.13.12 as a production dependency for accessible dialog behavior in the
-responsive playground shell. The component is licensed under the MIT License.
-Official source: <https://github.com/kobaltedev/kobalte>. Ordinary Rust crate
-consumers do not receive this dependency; it is resolved only through the
-web playground build and is not part of the published `liquidfun` Cargo package.
+responsive playground shell. Official source:
+<https://github.com/kobaltedev/kobalte>. Ordinary Rust crate consumers do not
+receive these npm packages; they resolve only through the web playground build
+and are not part of the published `liquidfun` Cargo package.
+
+Preserved upstream notice and license text (byte copies of the installed npm
+artifact after `bun install --frozen-lockfile`):
+
+- [`web/licenses/kobalte-core-0.13.12-NOTICE.txt`](web/licenses/kobalte-core-0.13.12-NOTICE.txt)
+- [`web/licenses/kobalte-core-0.13.12-MIT.txt`](web/licenses/kobalte-core-0.13.12-MIT.txt)
+- [`web/licenses/kobalte-core-0.13.12-MIT.provenance.md`](web/licenses/kobalte-core-0.13.12-MIT.provenance.md)
+
+The locked runtime closure reachable from `@kobalte/core@0.13.12` in
+`web/bun.lock` is inventoried in
+[`web/licenses/kobalte-runtime-closure.json`](web/licenses/kobalte-runtime-closure.json).
+`solid-js` remains a separate direct production pin (peer of Kobalte) and is not
+part of that closure list. **Not every transitive package is MIT**; the
+non-MIT SPDX identifiers in this closure are Apache-2.0 and 0BSD:
+
+| Package                             | Locked version | SPDX license | Official source                                         |
+| ----------------------------------- | -------------- | ------------ | ------------------------------------------------------- |
+| `@corvu/utils`                      | 0.4.2          | MIT          | <https://github.com/corvudev/corvu>                     |
+| `@floating-ui/core`                 | 1.8.0          | MIT          | <https://github.com/floating-ui/floating-ui>            |
+| `@floating-ui/dom`                  | 1.8.0          | MIT          | <https://github.com/floating-ui/floating-ui>            |
+| `@floating-ui/utils`                | 0.2.12         | MIT          | <https://github.com/floating-ui/floating-ui>            |
+| `@internationalized/number`         | 3.6.8          | Apache-2.0   | <https://github.com/adobe/react-spectrum>               |
+| `@kobalte/core`                     | 0.13.12        | MIT          | <https://github.com/kobaltedev/kobalte>                 |
+| `@kobalte/utils`                    | 0.9.2          | MIT          | <https://github.com/kobaltedev/kobalte>                 |
+| `@solid-primitives/event-listener`  | 2.4.6          | MIT          | <https://github.com/solidjs-community/solid-primitives> |
+| `@solid-primitives/keyed`           | 1.5.3          | MIT          | <https://github.com/solidjs-community/solid-primitives> |
+| `@solid-primitives/map`             | 0.4.13         | MIT          | <https://github.com/solidjs-community/solid-primitives> |
+| `@solid-primitives/media`           | 2.3.6          | MIT          | <https://github.com/solidjs-community/solid-primitives> |
+| `@solid-primitives/props`           | 3.2.4          | MIT          | <https://github.com/solidjs-community/solid-primitives> |
+| `@solid-primitives/refs`            | 1.1.4          | MIT          | <https://github.com/solidjs-community/solid-primitives> |
+| `@solid-primitives/resize-observer` | 2.2.0          | MIT          | <https://github.com/solidjs-community/solid-primitives> |
+| `@solid-primitives/rootless`        | 1.5.4          | MIT          | <https://github.com/solidjs-community/solid-primitives> |
+| `@solid-primitives/static-store`    | 0.1.4          | MIT          | <https://github.com/solidjs-community/solid-primitives> |
+| `@solid-primitives/trigger`         | 1.2.4          | MIT          | <https://github.com/solidjs-community/solid-primitives> |
+| `@solid-primitives/utils`           | 6.4.1          | MIT          | <https://github.com/solidjs-community/solid-primitives> |
+| `@swc/helpers`                      | 0.5.23         | Apache-2.0   | <https://github.com/swc-project/swc>                    |
+| `solid-presence`                    | 0.1.8          | MIT          | <https://github.com/corvudev/corvu>                     |
+| `solid-prevent-scroll`              | 0.1.11         | MIT          | <https://github.com/corvudev/corvu>                     |
+| `tslib`                             | 2.8.1          | 0BSD         | <https://github.com/Microsoft/tslib>                    |
+
+Repository check: `cd web && bun run verify:kobalte-licenses` compares this
+inventory to installed `package.json` metadata and verifies the preserved NOTICE
+and MIT files remain byte-identical to the installed `@kobalte/core` artifact.
 
 ## Derived and Altered Material
 
