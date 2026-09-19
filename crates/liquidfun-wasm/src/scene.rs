@@ -132,3 +132,46 @@ pub(crate) fn attach_basin_fixture(
         .map_err(|_error| SceneError::Fixture)?;
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{parse_pointer_kind, PointerKind};
+    use crate::session::SessionError;
+
+    #[test]
+    fn parse_pointer_kind_maps_lowercase_tokens() {
+        // Arrange
+        let tokens = [
+            ("down", PointerKind::Down),
+            ("move", PointerKind::Move),
+            ("up", PointerKind::Up),
+            ("cancel", PointerKind::Cancel),
+        ];
+
+        for (raw, expected) in tokens {
+            // Act
+            let parsed = parse_pointer_kind(raw);
+
+            // Assert
+            assert_eq!(parsed, Ok(expected));
+        }
+    }
+
+    #[test]
+    fn parse_pointer_kind_rejects_unknown_tokens() {
+        // Arrange
+        let rejected = ["Down", "click"];
+
+        for raw in rejected {
+            // Act
+            let parsed = parse_pointer_kind(raw);
+
+            // Assert
+            assert_eq!(parsed, Err(SessionError::UnknownControl));
+            assert_eq!(
+                SessionError::UnknownControl.message(),
+                "Rust/WASM control is not allowlisted"
+            );
+        }
+    }
+}

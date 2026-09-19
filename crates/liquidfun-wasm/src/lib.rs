@@ -157,4 +157,49 @@ mod tests {
         );
         assert_eq!(core.particle_count(), 192);
     }
+
+    #[test]
+    fn apply_pointer_rejects_non_finite_coordinates_without_mutating() {
+        // Arrange
+        let mut core = build_core("dam-break").expect("fresh Dam Break should construct");
+
+        // Act
+        let result = core.apply_pointer("move", f32::NAN, 1.0);
+
+        // Assert
+        assert_eq!(result, Err(SessionError::InvalidPointer));
+        assert_eq!(
+            SessionError::InvalidPointer.message(),
+            "Rust/WASM pointer coordinates must be finite"
+        );
+        assert_eq!(core.particle_count(), 192);
+    }
+
+    #[test]
+    fn apply_pointer_rejects_unknown_kind_without_disposing() {
+        // Arrange
+        let mut core = build_core("dam-break").expect("fresh Dam Break should construct");
+
+        // Act
+        let result = core.apply_pointer("nope", 0.0, 0.0);
+
+        // Assert
+        assert_eq!(result, Err(SessionError::UnknownControl));
+        assert_eq!(
+            SessionError::UnknownControl.message(),
+            "Rust/WASM control is not allowlisted"
+        );
+        assert_eq!(core.particle_count(), 192);
+    }
+
+    #[test]
+    fn pointer_action_exists_on_proof_session() {
+        // Arrange / Act
+        // Native tests cannot construct JsError; assert the wasm-bindgen method exists.
+        let _method: fn(&mut ProofSession, String, f32, f32) -> Result<(), JsError> =
+            ProofSession::pointer_action;
+
+        // Assert
+        let _js_name = "pointerAction";
+    }
 }
