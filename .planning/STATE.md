@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Web Playground
 status: executing
-stopped_at: Completed 19-04-PLAN.md
-last_updated: "2026-09-19T02:21:04.555Z"
+stopped_at: Completed 19-05-PLAN.md
+last_updated: "2026-09-19T02:23:50.718Z"
 last_activity: 2026-09-19
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 29
-  completed_plans: 26
-  percent: 90
+  completed_plans: 27
+  percent: 93
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-09-17)
 ## Current Position
 
 Phase: 19 (Interaction Polish and Browser Verification) — EXECUTING
-Plan: 5 of 7
+Plan: 6 of 7
 Status: Ready to execute
 Last activity: 2026-09-19
 
@@ -66,6 +66,7 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 | Phase 19 P02 | 5min | 2 tasks | 9 files |
 | Phase 19 P03 | 4min | 2 tasks | 3 files |
 | Phase 19-interaction-polish-and-browser-verification P04 | 4 min | 2 tasks | 5 files |
+| Phase 19 P05 | 2min | 2 tasks | 5 files |
 
 ### Decisions
 
@@ -151,6 +152,9 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 - [Phase 19]: TypeScript forwards only allowlisted finite pointer samples and poisons only on generated failure. — Rejected kinds and NaN must not dispose a live session; only generated throws poison.
 - [Phase 19]: One canvas Pointer Events adapter captures, unprojects through the live camera, and cancels on every teardown path. — Device pixels never enter physics; leftover capture cannot survive pause, reset, switch, fail, hidden, or cleanup.
 - [Phase 19]: touch-action: none stays on canvas only so page chrome keeps native scroll. — D-06 forbids making the document a touch trap; preventDefault is canvas-only after capture.
+- [Phase 19]: Render locked two-sentence interactionHint as figcaption text, never innerHTML or a third Space-to-pause sentence.
+- [Phase 19]: Add select:focus-visible to the existing 2px / 4px #39D3C7 rule instead of a new focus system.
+- [Phase 19]: Keep App.tsx under the 628-line cap by inlining the ready-scene helper when passing the hint.
 
 ### Pending Todos
 
@@ -173,6 +177,6 @@ No new milestone todos captured. Phase 17 is ready for discussion and planning.
 
 ## Session Continuity
 
-Last session: 2026-09-19T02:20:49.903Z
-Stopped at: Completed 19-04-PLAN.md
+Last session: 2026-09-19T02:23:50.715Z
+Stopped at: Completed 19-05-PLAN.md
 Resume file: None

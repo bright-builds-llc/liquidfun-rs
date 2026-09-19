@@ -23,7 +23,7 @@ The owner approved six varied demos, our own Rust engine via WASM, a playful gal
 - [x] **WEB-04**: Each demo exposes a small set of labeled, bounded controls and clearly indicates when changing a setting resets the scene.
 - [ ] **WEB-05**: A visitor can use mouse or touch for each demo's documented interaction without leaving a stuck pointer or preventing ordinary scrolling outside the player.
 - [x] **WEB-06**: WASM loading and simulation startup show visible progress or loading status, useful failure feedback, and a working retry/reset path instead of a blank canvas.
-- [ ] **WEB-07**: The dark-default playful gallery and controls remain usable at desktop and narrow/mobile widths, with readable contrast, keyboard-operable controls, focus indication and concise text interaction instructions.
+- [x] **WEB-07**: The dark-default playful gallery and controls remain usable at desktop and narrow/mobile widths, with readable contrast, keyboard-operable controls, focus indication and concise text interaction instructions.
 - [x] **WEB-08**: Visitors can find the repository, each scene's implementation, inspiration links and applicable attribution/notices from the site; claims accurately identify the experimental Rust implementation.
 
 ### Six launch scenes
@@ -70,7 +70,7 @@ Each active requirement maps to exactly one new phase, starting at Phase 16. All
 | WEB-04 | Phase 18 | Complete |
 | WEB-05 | Phase 19 | Pending |
 | WEB-06 | Phase 17 | Complete |
-| WEB-07 | Phase 19 | Pending |
+| WEB-07 | Phase 19 | Complete |
 | WEB-08 | Phase 18 | Complete |
 | DEMO-01 | Phase 18 | Complete |
 | DEMO-02 | Phase 18 | Complete |
