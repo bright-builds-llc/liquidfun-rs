@@ -209,11 +209,23 @@ async function requireCanvasBox(page: Page): Promise<{
   readonly width: number;
   readonly height: number;
 }> {
-  const maybeBox = await page.locator("canvas").boundingBox();
-  if (maybeBox === null) {
+  const canvas = page.locator("canvas");
+  await canvas.scrollIntoViewIfNeeded();
+  await expect(canvas).toBeVisible();
+  const maybeBox = await canvas.boundingBox();
+  if (maybeBox === null || maybeBox.width <= 0 || maybeBox.height <= 0) {
     throw new Error("canvas box missing");
   }
   return maybeBox;
+}
+
+export async function pressCanvas(
+  page: Page,
+  ratio = { x: 0.5, y: 0.45 },
+): Promise<void> {
+  const box = await requireCanvasBox(page);
+  await page.mouse.move(box.x + box.width * ratio.x, box.y + box.height * ratio.y);
+  await page.mouse.down();
 }
 
 export async function dragCanvas(
@@ -224,7 +236,11 @@ export async function dragCanvas(
   const box = await requireCanvasBox(page);
   await page.mouse.move(box.x + box.width * startRatio.x, box.y + box.height * startRatio.y);
   await page.mouse.down();
-  await page.mouse.move(box.x + box.width * endRatio.x, box.y + box.height * endRatio.y);
+  await page.mouse.move(
+    box.x + box.width * endRatio.x,
+    box.y + box.height * endRatio.y,
+    { steps: 8 },
+  );
   await page.mouse.up();
 }
 
@@ -263,8 +279,9 @@ export async function activateLabeledControl(
 
 export async function expectAcceptedPointerGesture(page: Page): Promise<void> {
   const main = page.locator("main");
-  const accepted = await numericAttribute(main, "data-pointer-accepted");
-  expect(accepted).toBeGreaterThan(0);
+  await expect
+    .poll(() => numericAttribute(main, "data-pointer-accepted"))
+    .toBeGreaterThan(0);
   const maybeKind = await main.getAttribute("data-last-pointer-kind");
   expect(maybeKind === "up" || maybeKind === "down").toBe(true);
 }

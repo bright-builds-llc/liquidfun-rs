@@ -10,6 +10,7 @@ import {
   DAM_BREAK_PATH,
   DESKTOP_VIEWPORT,
   dragCanvas,
+  pressCanvas,
   expectAcceptedPointerGesture,
   expectReadySceneChrome,
   FOUNTAIN_PATH,
@@ -174,18 +175,8 @@ test("sets data-last-pointer-kind to cancel after Dam Break pointercancel", asyn
   page,
 }) => {
   await openDamBreakPlaying(page);
-
-  const canvas = page.locator("canvas");
-  const maybeBox = await canvas.boundingBox();
-  if (maybeBox === null) {
-    throw new Error("canvas box missing");
-  }
-  await page.mouse.move(
-    maybeBox.x + maybeBox.width * 0.5,
-    maybeBox.y + maybeBox.height * 0.45,
-  );
-  await page.mouse.down();
-  await canvas.dispatchEvent("pointercancel", { pointerId: 1 });
+  await pressCanvas(page);
+  await page.locator("canvas").dispatchEvent("pointercancel", { pointerId: 1 });
   await expect(page.locator("main")).toHaveAttribute(
     "data-last-pointer-kind",
     "cancel",

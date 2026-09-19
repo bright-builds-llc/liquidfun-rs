@@ -110,8 +110,11 @@ just web-player-smoke
 ```
 
 `just web-build` regenerates the current checkout's WASM package and the
-production site. `just web-player-smoke` is the local product proof that each
-of the six native scenes opens, resets, and switches in Chromium. `just web-smoke` remains the opt-in Phase 16 forensic closure; it is not the
+production site. `just web-player-smoke` is the local WEBTEST-01 gate: Chromium
+against the production-base `/liquidfun-rs/` build exercises all six scenes,
+playback and reset, one representative pointer gesture plus a labeled control,
+pointercancel, resize-then-drag, hidden-tab recovery, and a 375px keyboard and
+page-scroll pass. It does not claim Firefox or Safari coverage. `just web-smoke` remains the opt-in Phase 16 forensic closure; it is not the
 playground default.
 
 `web/src/generated/liquidfun-wasm`, `web/dist`, Playwright output, and
