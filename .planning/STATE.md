@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Web Playground
 status: executing
-stopped_at: Completed 19-03-PLAN.md
-last_updated: "2026-09-19T02:15:05.440Z"
+stopped_at: Completed 19-04-PLAN.md
+last_updated: "2026-09-19T02:21:04.555Z"
 last_activity: 2026-09-19
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 29
-  completed_plans: 25
-  percent: 86
+  completed_plans: 26
+  percent: 90
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: `.planning/PROJECT.md` (updated 2026-09-17)
 ## Current Position
 
 Phase: 19 (Interaction Polish and Browser Verification) — EXECUTING
-Plan: 4 of 7
+Plan: 5 of 7
 Status: Ready to execute
 Last activity: 2026-09-19
 
-Progress: [█████████░] 86% of currently planned v1.1 plans complete.
+Progress: [█████████░] 90% of currently planned v1.1 plans complete.
 
 The prior 16 phases and 252 plans remain archived history. New work starts at Phase 16. The owner confirmed six interactive demos using our Rust engine via WASM, playful catalog/player controls and automatic GitHub Pages deployment from main.
 
@@ -65,6 +65,7 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 | Phase 19 P01 | 2min | 2 tasks | 4 files |
 | Phase 19 P02 | 5min | 2 tasks | 9 files |
 | Phase 19 P03 | 4min | 2 tasks | 3 files |
+| Phase 19-interaction-polish-and-browser-verification P04 | 4 min | 2 tasks | 5 files |
 
 ### Decisions
 
@@ -147,6 +148,9 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 - [Phase 19]: Localized stir and poke loop per-particle engine methods; never pass scattered nearby ids to range APIs.
 - [Phase 19]: Color Mixer Up/Cancel clear maybe_pointer so leftover tangent force cannot persist.
 - [Phase 19]: Water Wheel pointer steers jet direction from JET_POSITION; Cancel restores default velocity; motor stays off.
+- [Phase 19]: TypeScript forwards only allowlisted finite pointer samples and poisons only on generated failure. — Rejected kinds and NaN must not dispose a live session; only generated throws poison.
+- [Phase 19]: One canvas Pointer Events adapter captures, unprojects through the live camera, and cancels on every teardown path. — Device pixels never enter physics; leftover capture cannot survive pause, reset, switch, fail, hidden, or cleanup.
+- [Phase 19]: touch-action: none stays on canvas only so page chrome keeps native scroll. — D-06 forbids making the document a touch trap; preventDefault is canvas-only after capture.
 
 ### Pending Todos
 
@@ -169,6 +173,6 @@ No new milestone todos captured. Phase 17 is ready for discussion and planning.
 
 ## Session Continuity
 
-Last session: 2026-09-19T02:15:05.437Z
-Stopped at: Completed 19-03-PLAN.md
+Last session: 2026-09-19T02:20:49.903Z
+Stopped at: Completed 19-04-PLAN.md
 Resume file: None
