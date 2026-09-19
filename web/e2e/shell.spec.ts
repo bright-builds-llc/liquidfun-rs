@@ -89,7 +89,7 @@ test("dismisses the mobile drawer through its overlay and restores focus", async
   await expect(trigger).toBeFocused();
 });
 
-test("traps repeated Tab navigation inside the mobile drawer", async ({
+test("traps repeated forward and reverse Tab navigation inside the mobile drawer", async ({
   page,
 }) => {
   // Arrange
@@ -108,11 +108,25 @@ test("traps repeated Tab navigation inside the mobile drawer", async ({
     ).toBe(true);
   }
 
+  // Arrange
+  const closeButton = dialog.getByRole("button", { name: "Dismiss" });
+  const lastLink = dialog.getByRole("link", { name: /Water Wheel/ });
+  await closeButton.focus();
+  await expect(closeButton).toBeFocused();
+
   // Act / Assert
-  await page.keyboard.press("Shift+Tab");
-  expect(
-    await dialog.evaluate((node) => node.contains(document.activeElement)),
-  ).toBe(true);
+  for (let reverseTabIndex = 0; reverseTabIndex < 8; reverseTabIndex += 1) {
+    await page.keyboard.press("Shift+Tab");
+    expect(
+      await dialog.evaluate((node) => node.contains(document.activeElement)),
+    ).toBe(true);
+
+    if (reverseTabIndex === 0) {
+      await expect(lastLink).toBeFocused();
+    }
+  }
+
+  await expect(lastLink).toBeFocused();
 });
 
 test("locks background scrolling and hides outside content while open", async ({
