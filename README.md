@@ -16,74 +16,6 @@ An experimental, renderer-neutral Rust implementation of Google's LiquidFun
 physics engine for learning and playful simulations, developed with a pinned
 C++ reference available for optional comparisons.
 
-## Hobby development
-
-The goal is an enjoyable, useful experimental physics project. Linux x64
-qualification and a dedicated benchmark machine are optional; they do not block
-ordinary development or completion. Start with the Cargo-only commands below.
-Current Cargo CI runs one macOS smoke job; cross-platform and expensive checks are manual options.
-See [project scope](PROJECT-SCOPE.md) for accepted decisions and the
-[experimental preparation checklist](RELEASE.md#experimental-package-preparation).
-APIs may evolve; incompatible changes will be documented before release.
-Safe handles, checked mutation and native Cargo-only consumption remain core boundaries.
-
-## Maturity and evidence
-
-The publishable crate is still version `0.0.0`; this repository has not declared
-a parity-bearing v1 release candidate. The native scalar engine includes math,
-collision, rigid bodies, contacts, CCD, all eleven joint kinds, standalone rope,
-particles and groups, queries, semantic observations, debug primitives, and
-safe owned particle-buffer transfer.
-
-Capability is not the same as verified parity. The generated
-[compatibility inventory](COMPATIBILITY.md) is authoritative for row-by-row
-implementation, differential, platform, and documented-difference evidence.
-Historical Phase 4 through Phase 8 corpora remain bounded evidence inputs, not
-a generalized claim about the complete project. Performance claims likewise
-apply only to immutable reports for named workloads.
-
-The optional strict qualification profile for a parity-bearing release requires a frozen full candidate commit and a complete
-reviewed manifest accepted by fail-closed `cargo xtask release audit`. This
-checkout is **not release-ready**: it has no completed full-SHA
-`release-candidate` workflow run, retained complete evidence bundle, or tracked
-source/manifest/report records accepted by
-`cargo xtask release attestation validate`. Local green checks do not substitute
-for that run-bound attestation. See [RELEASE.md](RELEASE.md) for the
-non-publication rule and the exact path to a future readiness claim.
-
-## Cargo-only install and use
-
-The crate declares Rust 1.92.0 as its minimum compiler; verify that minimum
-before publication. A durable MSRV guarantee is deferred. Repository
-development is reproducibly pinned to Rust 1.97.0 by `rust-toolchain.toml`.
-Until a public release is published, build the reviewed repository checkout:
-
-```bash
-cargo build -p liquidfun
-cargo test -p liquidfun --all-features
-```
-
-Ordinary use is Cargo-only. It does not initialize the upstream submodule,
-discover CMake, compile C++, start an oracle process, or include the private
-testbed:
-
-```rust
-use liquidfun::math::Vec2;
-use liquidfun::{BodyDef, BodyType, World};
-
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut world = World::new()?;
-    let body = world.create_body(&BodyDef::new(
-        BodyType::Dynamic,
-        Vec2::ZERO,
-        0.0,
-        true,
-    )?)?;
-    assert!(world.contains_body(body));
-    Ok(())
-}
-```
-
 ## Web playground
 
 The playground has six native scenes: Dam Break, Fountain, Float or Sink,
@@ -159,6 +91,74 @@ profile recorded in `docs/assets/demos/manifest.json`.
 `target/web-build` are ignored and regenerated. Ordinary native builds and the
 packaged `liquidfun` crate require none of Bun, Chromium, wasm-pack, C++, or
 the upstream checkout.
+
+## Hobby development
+
+The goal is an enjoyable, useful experimental physics project. Linux x64
+qualification and a dedicated benchmark machine are optional; they do not block
+ordinary development or completion. Start with the Cargo-only commands below.
+Current Cargo CI runs one macOS smoke job; cross-platform and expensive checks are manual options.
+See [project scope](PROJECT-SCOPE.md) for accepted decisions and the
+[experimental preparation checklist](RELEASE.md#experimental-package-preparation).
+APIs may evolve; incompatible changes will be documented before release.
+Safe handles, checked mutation and native Cargo-only consumption remain core boundaries.
+
+## Maturity and evidence
+
+The publishable crate is still version `0.0.0`; this repository has not declared
+a parity-bearing v1 release candidate. The native scalar engine includes math,
+collision, rigid bodies, contacts, CCD, all eleven joint kinds, standalone rope,
+particles and groups, queries, semantic observations, debug primitives, and
+safe owned particle-buffer transfer.
+
+Capability is not the same as verified parity. The generated
+[compatibility inventory](COMPATIBILITY.md) is authoritative for row-by-row
+implementation, differential, platform, and documented-difference evidence.
+Historical Phase 4 through Phase 8 corpora remain bounded evidence inputs, not
+a generalized claim about the complete project. Performance claims likewise
+apply only to immutable reports for named workloads.
+
+The optional strict qualification profile for a parity-bearing release requires a frozen full candidate commit and a complete
+reviewed manifest accepted by fail-closed `cargo xtask release audit`. This
+checkout is **not release-ready**: it has no completed full-SHA
+`release-candidate` workflow run, retained complete evidence bundle, or tracked
+source/manifest/report records accepted by
+`cargo xtask release attestation validate`. Local green checks do not substitute
+for that run-bound attestation. See [RELEASE.md](RELEASE.md) for the
+non-publication rule and the exact path to a future readiness claim.
+
+## Cargo-only install and use
+
+The crate declares Rust 1.92.0 as its minimum compiler; verify that minimum
+before publication. A durable MSRV guarantee is deferred. Repository
+development is reproducibly pinned to Rust 1.97.0 by `rust-toolchain.toml`.
+Until a public release is published, build the reviewed repository checkout:
+
+```bash
+cargo build -p liquidfun
+cargo test -p liquidfun --all-features
+```
+
+Ordinary use is Cargo-only. It does not initialize the upstream submodule,
+discover CMake, compile C++, start an oracle process, or include the private
+testbed:
+
+```rust
+use liquidfun::math::Vec2;
+use liquidfun::{BodyDef, BodyType, World};
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mut world = World::new()?;
+    let body = world.create_body(&BodyDef::new(
+        BodyType::Dynamic,
+        Vec2::ZERO,
+        0.0,
+        true,
+    )?)?;
+    assert!(world.contains_body(body));
+    Ok(())
+}
+```
 
 ## Platform support
 
