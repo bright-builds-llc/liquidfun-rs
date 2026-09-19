@@ -32,10 +32,15 @@ type SceneSnapshot = {
 };
 
 type SyntheticClockState = {
-  readonly idealTimestampMilliseconds: number;
-  readonly actualTimestampMilliseconds: number;
-  readonly remainderSeconds: number;
+  readonly timestampMilliseconds: number;
 };
+
+// A fixed delta derived once from 1_000 / simulationHz so repeated timestamp
+// addition still yields one engine step per callback across the full capture run.
+const FIXED_TIMESTAMP_DELTA_MILLISECONDS = deriveFixedTimestampDeltaMilliseconds(
+  1_000 / CAPTURE_PROFILE.simulationHz,
+  CAPTURE_PROFILE.frameCount * CAPTURE_PROFILE.stepsPerFrame,
+);
 
 export async function installSyntheticAnimationClock(page: Page): Promise<void> {
   anchoredClockStates.delete(page);
@@ -100,9 +105,7 @@ export async function waitForReadyScene(
   }
 
   anchoredClockStates.set(page, {
-    idealTimestampMilliseconds: 0,
-    actualTimestampMilliseconds: 0,
-    remainderSeconds: 0,
+    timestampMilliseconds: 0,
   });
   expect(await numericAttribute(main, "data-step-index")).toBe(initialStep);
   await expect.poll(() => pendingAnimationCallbackCount(page)).toBe(1);
@@ -127,10 +130,14 @@ export async function advanceEngineSteps(
   let currentClockState = maybeClockState;
 
   for (let completedSteps = 0; completedSteps < count; completedSteps += 1) {
-    currentClockState = nextClockState(currentClockState);
+    currentClockState = {
+      timestampMilliseconds:
+        currentClockState.timestampMilliseconds +
+        FIXED_TIMESTAMP_DELTA_MILLISECONDS,
+    };
     const advancedCallbacks = await advanceSyntheticClock(
       page,
-      currentClockState.actualTimestampMilliseconds,
+      currentClockState.timestampMilliseconds,
     );
     if (advancedCallbacks !== 1) {
       throw new Error(
@@ -161,6 +168,8 @@ export async function captureSceneFrames({
   plan,
   framesDirectory,
 }: CaptureSceneFramesArgs): Promise<void> {
+  assertCaptureViewport(page);
+  await assertCaptureDeviceScaleFactor(page);
   await mkdir(framesDirectory, { recursive: true });
   await page.goto(plan.route);
   await waitForReadyScene(page, plan);
@@ -351,40 +360,69 @@ async function resolveCanvasPoint(
   };
 }
 
-function nextClockState(previousState: SyntheticClockState): SyntheticClockState {
-  const idealTimestampMilliseconds =
-    previousState.idealTimestampMilliseconds +
-    1_000 / CAPTURE_PROFILE.simulationHz;
-  const elapsedSecondsTarget =
-    1 / CAPTURE_PROFILE.simulationHz - previousState.remainderSeconds;
-  let actualTimestampMilliseconds =
-    previousState.actualTimestampMilliseconds + elapsedSecondsTarget * 1_000;
-  let stepTime = accumulateStepTime(
-    previousState.remainderSeconds,
-    (actualTimestampMilliseconds - previousState.actualTimestampMilliseconds) /
-      1_000,
+function assertCaptureViewport(page: Page): void {
+  const viewport = page.viewportSize();
+  if (
+    viewport?.width === CAPTURE_PROFILE.viewport.width &&
+    viewport.height === CAPTURE_PROFILE.viewport.height
+  ) {
+    return;
+  }
+
+  throw new Error(
+    `Expected Playwright viewport 1280x960 before capture; configure test.use({ viewport: CAPTURE_PROFILE.viewport })`,
   );
+}
 
-  while (stepTime.stepCount === 0) {
-    actualTimestampMilliseconds = nextUp(actualTimestampMilliseconds);
-    stepTime = accumulateStepTime(
-      previousState.remainderSeconds,
-      (actualTimestampMilliseconds - previousState.actualTimestampMilliseconds) /
-        1_000,
-    );
+async function assertCaptureDeviceScaleFactor(page: Page): Promise<void> {
+  const deviceScaleFactor = await page.evaluate(() => window.devicePixelRatio);
+  if (deviceScaleFactor === CAPTURE_PROFILE.deviceScaleFactor) {
+    return;
   }
 
-  if (stepTime.stepCount !== 1) {
-    throw new Error(
-      `Expected one simulated step from timestamp ${actualTimestampMilliseconds}, got ${stepTime.stepCount}`,
+  throw new Error(
+    `Expected Playwright deviceScaleFactor 1 before capture; configure test.use({ deviceScaleFactor: CAPTURE_PROFILE.deviceScaleFactor })`,
+  );
+}
+
+function deriveFixedTimestampDeltaMilliseconds(
+  baseDeltaMilliseconds: number,
+  requiredStepCount: number,
+): number {
+  let candidateDeltaMilliseconds = baseDeltaMilliseconds;
+  while (
+    !supportsFixedTimestampProgression(
+      candidateDeltaMilliseconds,
+      requiredStepCount,
+    )
+  ) {
+    candidateDeltaMilliseconds = nextUp(candidateDeltaMilliseconds);
+  }
+  return candidateDeltaMilliseconds;
+}
+
+function supportsFixedTimestampProgression(
+  fixedDeltaMilliseconds: number,
+  stepCount: number,
+): boolean {
+  let previousTimestampMilliseconds = 0;
+  let currentTimestampMilliseconds = 0;
+  let remainderSeconds = 0;
+
+  for (let stepIndex = 0; stepIndex < stepCount; stepIndex += 1) {
+    currentTimestampMilliseconds += fixedDeltaMilliseconds;
+    const stepTime = accumulateStepTime(
+      remainderSeconds,
+      (currentTimestampMilliseconds - previousTimestampMilliseconds) / 1_000,
     );
+    if (stepTime.stepCount !== 1) {
+      return false;
+    }
+    remainderSeconds = stepTime.remainderSeconds;
+    previousTimestampMilliseconds = currentTimestampMilliseconds;
   }
 
-  return {
-    idealTimestampMilliseconds,
-    actualTimestampMilliseconds,
-    remainderSeconds: stepTime.remainderSeconds,
-  };
+  return true;
 }
 
 function nextUp(value: number): number {
