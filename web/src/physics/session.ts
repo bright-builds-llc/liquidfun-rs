@@ -1,3 +1,4 @@
+import { parsePointerKind } from "../input/pointer";
 import {
   parseRenderFrame,
   type RawProofFrame,
@@ -15,6 +16,7 @@ export interface GeneratedProofSession {
   captureFrame(): RawProofFrame;
   applyControl(name: string, value: string): boolean;
   applyAction(name: string): void;
+  pointerAction(kind: string, worldX: number, worldY: number): void;
   free(): void;
 }
 
@@ -23,6 +25,7 @@ export interface SceneSession {
   nextFrame(stepCount?: number): RenderFrame;
   applyControl(name: string, value: string): boolean;
   applyAction(name: string): void;
+  pointerAction(kind: string, worldX: number, worldY: number): void;
   dispose(): void;
 }
 
@@ -103,6 +106,27 @@ export function createSceneSession(
     }
   }
 
+  function pointerAction(kind: string, worldX: number, worldY: number): void {
+    if (disposed) {
+      throw new Error(DISPOSED_MESSAGE);
+    }
+
+    if (
+      parsePointerKind(kind) === undefined ||
+      !Number.isFinite(worldX) ||
+      !Number.isFinite(worldY)
+    ) {
+      return;
+    }
+
+    try {
+      generatedSession.pointerAction(kind, worldX, worldY);
+    } catch {
+      disposeAfterFailure();
+      throw new Error(FAILED_MESSAGE);
+    }
+  }
+
   function dispose(): void {
     if (disposed) {
       return;
@@ -112,5 +136,5 @@ export function createSceneSession(
     generatedSession.free();
   }
 
-  return { nextFrame, applyControl, applyAction, dispose };
+  return { nextFrame, applyControl, applyAction, pointerAction, dispose };
 }
