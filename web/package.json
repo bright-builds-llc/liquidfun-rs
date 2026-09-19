@@ -12,7 +12,7 @@
     "preview": "vite preview --host 127.0.0.1 --port 4173",
     "demo-media": "bun scripts/demo-media.ts",
     "test:browser": "playwright test",
-    "test:player": "playwright test e2e/player.spec.ts e2e/demo-media-clock.spec.ts",
+    "test:player": "playwright test e2e/player.spec.ts e2e/demo-media-clock.spec.ts e2e/shell.spec.ts",
     "browser:install": "playwright install chromium"
   },
   "dependencies": {

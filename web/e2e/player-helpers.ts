@@ -8,7 +8,7 @@ import { type SceneId } from "../src/catalog/scenes";
 export const DAM_BREAK_PATH = "/liquidfun-rs/#/scene/dam-break";
 export const UNKNOWN_SCENE_PATH = "/liquidfun-rs/#/scene/not-a-scene";
 export const FOUNTAIN_PATH = "/liquidfun-rs/#/scene/fountain";
-export const CATALOG_PATH = "/liquidfun-rs/";
+export const PLAYGROUND_ROOT_PATH = "/liquidfun-rs/";
 export const LOADING_STATUS = "Loading Dam Break…";
 export const PLAYING_STATUS = "Playing";
 export const PAUSED_STATUS = "Paused";
@@ -130,15 +130,15 @@ export async function expectReadySceneChrome(
   ).toBeVisible();
 }
 
-export async function openCatalogCard(
+export async function openDesktopDemo(
   page: Page,
   title: string,
   id: SceneId,
 ): Promise<void> {
-  const card = page.locator(".catalog-card").filter({
-    has: page.locator(".catalog-card-title", { hasText: title }),
-  });
-  await card.getByRole("link", { name: "Open" }).click();
+  await page
+    .locator(".demo-sidebar")
+    .getByRole("link", { name: new RegExp(title) })
+    .click();
   await expect(page).toHaveURL(new RegExp(`#/scene/${id}$`));
 }
 

@@ -5,7 +5,6 @@ import {
   activateLabeledControl,
   assertChromiumOnlyPlaywrightConfig,
   canvasPixelSha256,
-  CATALOG_PATH,
   CONSTRUCTION_RESET_HINT,
   DAM_BREAK_HINT,
   DAM_BREAK_PATH,
@@ -17,13 +16,14 @@ import {
   FOUNTAIN_PATH,
   installControlledRefreshRate,
   numericAttribute,
-  openCatalogCard,
+  openDesktopDemo,
   openDamBreakPlaying,
   PAUSE_HOLD_MS,
   PAUSED_STATUS,
   performSceneGesture,
   PLAYING_STATUS,
   proveHiddenTabMaxFour,
+  PLAYGROUND_ROOT_PATH,
   RESET_STEP_CEILING,
   resetNearZero,
   SCENE_HASH_PATHS,
@@ -151,15 +151,15 @@ test("switches rendering without stepping and persists across scenes and reload"
   expect(await canvasPixelSha256(page)).not.toBe(solidPixels);
 });
 
-test("opens each native scene from the catalog, shows credits, and resets", async ({
+test("opens each native scene from desktop navigation, shows credits, and resets", async ({
   page,
 }) => {
   test.setTimeout(SIX_SCENE_TIMEOUT_MS);
-  await page.goto(CATALOG_PATH, { waitUntil: "domcontentloaded" });
+  await page.goto(PLAYGROUND_ROOT_PATH, { waitUntil: "domcontentloaded" });
 
   for (const [index, scene] of SCENES.entries()) {
     if (index % 2 === 0) {
-      await openCatalogCard(page, scene.title, scene.id);
+      await openDesktopDemo(page, scene.title, scene.id);
     } else {
       await page.goto(SCENE_HASH_PATHS[scene.id]);
       await expect(page).toHaveURL(new RegExp(`#/scene/${scene.id}$`));
@@ -295,7 +295,9 @@ test("caps hidden-tab recovery after one Dam Break pointer gesture", async ({
   await proveHiddenTabMaxFour(page);
 });
 
-test("tabs to a select and scrolls the catalog at 375px", async ({ page }) => {
+test("tabs to a scene control and scrolls the page at 375px", async ({
+  page,
+}) => {
   assertChromiumOnlyPlaywrightConfig();
   expect(test.info().project.name).toBe("chromium");
 
@@ -306,9 +308,6 @@ test("tabs to a select and scrolls the catalog at 375px", async ({ page }) => {
 
   await tabUntilFirstSceneSelectFocused(page);
 
-  await page.locator(".catalog-nav").evaluate((node) => {
-    node.scrollIntoView();
-  });
   const canScrollPage = await page.evaluate(() => {
     const maybeScrolling = document.scrollingElement;
     if (maybeScrolling === null) {
@@ -317,4 +316,9 @@ test("tabs to a select and scrolls the catalog at 375px", async ({ page }) => {
     return maybeScrolling.scrollHeight > window.innerHeight;
   });
   expect(canScrollPage).toBe(true);
+
+  await page.locator(".site-footer").scrollIntoViewIfNeeded();
+  await expect
+    .poll(() => page.evaluate(() => window.scrollY))
+    .toBeGreaterThan(0);
 });

@@ -1,15 +1,11 @@
 import { createEffect, createSignal, onCleanup, Show } from "solid-js";
 
 import { maybeSceneById, type SceneId } from "./catalog/scenes";
-import { CatalogNav } from "./components/CatalogNav";
-import {
-  FallbackPanel,
-  type FallbackPanelProps,
-} from "./components/FallbackPanel";
+import { FallbackPanel, type FallbackPanelProps } from "./components/FallbackPanel";
+import { PlaygroundShell } from "./components/PlaygroundShell";
 import { PlayerPanel } from "./components/PlayerPanel";
 import { SceneControls } from "./components/SceneControls";
 import { SceneCredits } from "./components/SceneCredits";
-import { SiteFooter } from "./components/SiteFooter";
 import {
   attachCanvasPointer,
   forwardScenePointer,
@@ -20,14 +16,10 @@ import type { PointerKind } from "./input/pointer";
 import { accumulateStepTime } from "./physics/clock";
 import type { RenderFrame } from "./physics/frame";
 import { loadSceneSession } from "./physics/loader";
-import {
-  createSceneSession,
-  type SceneSession,
-} from "./physics/session";
+import { createSceneSession, type SceneSession } from "./physics/session";
 import { isStaleGeneration, nextGeneration } from "./player/generation";
 import { observeFrame } from "./player/observe";
 import {
-  PAGE_HEADING,
   constructionEntriesForScene,
   isReadySceneRoute,
   maybeDevelopmentDetails,
@@ -35,26 +27,13 @@ import {
   sceneTitleForId,
   titleForRoute,
 } from "./player/runtime";
-import {
-  maybeObservedFrame,
-  playerStatus,
-  type PlayerView,
-} from "./player/view";
-import {
-  drawRenderFrame,
-  resizeCanvasBackingStore,
-} from "./render/canvas";
+import { maybeObservedFrame, playerStatus, type PlayerView } from "./player/view";
+import { drawRenderFrame, resizeCanvasBackingStore } from "./render/canvas";
 import type { Camera } from "./render/camera";
-import {
-  loadRenderMode,
-  persistRenderMode,
-  type RenderMode,
-} from "./render/mode";
-import { maybeParseSceneRoute, type SceneRoute } from "./routing/hash";
+import { loadRenderMode, persistRenderMode, type RenderMode } from "./render/mode";
+import { normalizeSceneRoute, type SceneRoute } from "./routing/hash";
 
 const MILLISECONDS_PER_SECOND = 1000;
-const PAGE_SUMMARY =
-  "Play experimental Rust physics scenes in the browser. All six demos run this repository's engine through WebAssembly.";
 
 function fallbackProps(route: SceneRoute): FallbackPanelProps {
   if (route.kind === "empty") {
@@ -82,11 +61,18 @@ function isUsableViewport(width: number, height: number): boolean {
 
 /** One-session playground shell with hash routing and bounded playback. */
 export function App() {
-  const [route, setRoute] = createSignal(
-    maybeParseSceneRoute(window.location.hash),
-  );
+  const initialRoute = normalizeSceneRoute(window.location.hash);
+  if (initialRoute.maybeReplacementHash !== undefined) {
+    window.history.replaceState(
+      window.history.state,
+      "",
+      initialRoute.maybeReplacementHash,
+    );
+  }
+
+  const [route, setRoute] = createSignal(initialRoute.route);
   const [view, setView] = createSignal<PlayerView>(
-    isReadySceneRoute(maybeParseSceneRoute(window.location.hash))
+    isReadySceneRoute(initialRoute.route)
       ? { kind: "loading" }
       : { kind: "fallback" },
   );
@@ -490,7 +476,15 @@ export function App() {
 
   function onHashChange(): void {
     const previousRoute = route();
-    const nextRoute = maybeParseSceneRoute(window.location.hash);
+    const normalized = normalizeSceneRoute(window.location.hash);
+    if (normalized.maybeReplacementHash !== undefined) {
+      window.history.replaceState(
+        window.history.state,
+        "",
+        normalized.maybeReplacementHash,
+      );
+    }
+    const nextRoute = normalized.route;
     setRoute(nextRoute);
 
     const maybeNextId = maybeReadySceneId(nextRoute);
@@ -563,29 +557,37 @@ export function App() {
     const status = playerStatus(view());
     return status === "loading" || status === "failed";
   };
+  const routeIdentity = () => {
+    const currentRoute = route();
+    if (currentRoute.kind === "scene") {
+      return `scene:${currentRoute.id}`;
+    }
+    if (currentRoute.kind === "unknown") {
+      return `unknown:${currentRoute.maybeRaw}`;
+    }
+    return "empty";
+  };
 
   return (
-    <main
-      aria-labelledby="site-title"
-      data-playback={view().kind}
-      data-scene={maybeSceneAttr()}
-      data-step-index={maybeFrame()?.stepIndex}
-      data-last-pointer-kind={lastPointerKind()}
-      data-pointer-accepted={pointerAccepted()}
-      data-render-mode={renderMode()}
+    <PlaygroundShell
+      maybeCurrentSceneId={maybeCurrentSceneId()}
+      routeIdentity={routeIdentity()}
     >
-      <header class="page-header">
-        <h1 id="site-title">{PAGE_HEADING}</h1>
-        <p>{PAGE_SUMMARY}</p>
-      </header>
-
-      <CatalogNav maybeCurrentSceneId={maybeCurrentSceneId()} />
-
-      <Show
-        when={maybeCurrentSceneId()}
-        fallback={<FallbackPanel {...fallbackProps(route())} />}
+      <main
+        class="playground-main"
+        aria-labelledby="site-title"
+        data-playback={view().kind}
+        data-scene={maybeSceneAttr()}
+        data-step-index={maybeFrame()?.stepIndex}
+        data-last-pointer-kind={lastPointerKind()}
+        data-pointer-accepted={pointerAccepted()}
+        data-render-mode={renderMode()}
       >
-        {(sceneId) => (
+        <Show
+          when={maybeCurrentSceneId()}
+          fallback={<FallbackPanel {...fallbackProps(route())} />}
+        >
+          {(sceneId) => (
             <PlayerPanel
               sceneTitle={sceneTitleForId(sceneId())}
               status={playerStatus(view())}
@@ -617,10 +619,9 @@ export function App() {
                 )}
               </Show>
             </PlayerPanel>
-        )}
-      </Show>
-
-      <SiteFooter />
-    </main>
+          )}
+        </Show>
+      </main>
+    </PlaygroundShell>
   );
 }

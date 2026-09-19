@@ -1,11 +1,11 @@
 const EMPTY_HEADING = "Choose a scene";
 const EMPTY_BODY =
-  "Pick a demo card to open it in the shared player. Each scene is a live Rust simulation, not the static card preview.";
+  "Choose a demo from the navigation list to open it in the shared player. Each scene is a live Rust simulation.";
 const UNKNOWN_HEADING = "Scene not found";
 const UNKNOWN_BODY =
-  "This playground link does not match a known scene. Open Dam Break, or pick a demo from the scene cards.";
+  "This playground link does not match a known scene. Open Dam Break, or choose a demo from the navigation list.";
 const NOT_READY_BODY =
-  "This demo is listed for the upcoming catalog and has no physics yet. Open Dam Break to play the first working scene.";
+  "This demo is listed in the navigation and has no physics yet. Open Dam Break to play the first working scene.";
 const OPEN_DAM_BREAK = "Open Dam Break";
 
 export type FallbackKind = "empty" | "unknown" | "not-ready";
