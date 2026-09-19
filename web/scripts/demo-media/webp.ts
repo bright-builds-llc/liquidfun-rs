@@ -13,6 +13,11 @@ export async function probeWebp(path: string): Promise<WebpProbe> {
   const result = spawnSync("webpmux", ["-info", path], {
     encoding: "utf8",
   });
+  if (result.error !== undefined) {
+    throw new Error(
+      `failed to spawn webpmux for ${path}: ${result.error.message}. Install WebP tools so \`webpmux\` is available on PATH before running demo-media generation.`,
+    );
+  }
   if (result.status !== 0) {
     const diagnostic = result.stderr?.trim() ?? "";
     throw new Error(
@@ -66,19 +71,21 @@ export function parseWebpMuxInfo(
     throw new Error(`webpmux frame durations are invalid for ${path}`);
   }
 
-  const observedFrameCount = frameDurationsMilliseconds.length;
+  if (frameDurationsMilliseconds.length !== maybeFrameCount) {
+    throw new Error(
+      `webpmux frame table length ${frameDurationsMilliseconds.length} does not match declared frame count ${maybeFrameCount} for ${path}`,
+    );
+  }
+
   const observedDurationMilliseconds = frameDurationsMilliseconds.reduce(
     (sum, durationMilliseconds) => sum + durationMilliseconds,
     0,
   );
   const averageFrameRate = rationalFrameRate(
-    observedFrameCount * 1_000,
+    maybeFrameCount * 1_000,
     observedDurationMilliseconds,
   );
-  const durationSeconds =
-    (maybeFrameCount * observedDurationMilliseconds) /
-    observedFrameCount /
-    1_000;
+  const durationSeconds = observedDurationMilliseconds / 1_000;
 
   return {
     codecName: "webp",

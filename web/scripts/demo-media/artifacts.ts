@@ -226,10 +226,19 @@ export async function replaceOutputDirectory(
   }
 }
 
-export function commandVersionLine(command: string): string {
+export function commandVersionLine(
+  command: string,
+  installHint?: string,
+): string {
   const result = spawnSync(command, ["-version"], {
     encoding: "utf8",
   });
+  if (result.error !== undefined) {
+    const suffix = installHint === undefined ? "" : ` ${installHint}`;
+    throw new Error(
+      `${command} is unavailable or unusable: ${result.error.message}.${suffix}`.trim(),
+    );
+  }
   if (result.status !== 0) {
     const diagnostic = result.stderr?.trim() ?? "";
     throw new Error(
@@ -292,6 +301,11 @@ export async function probeMedia(path: string): Promise<MediaProbe> {
       encoding: "utf8",
     },
   );
+  if (result.error !== undefined) {
+    throw new Error(
+      `failed to spawn ffprobe for ${path}: ${result.error.message}`,
+    );
+  }
   if (result.status !== 0) {
     const diagnostic = result.stderr?.trim() ?? "";
     throw new Error(

@@ -298,15 +298,12 @@ describe("demo media artifacts", () => {
 
   it("parses webpmux info for an animated webp preview", () => {
     // Arrange
-    const infoText = `Canvas size: 640 x 896
-Features present: animation transparency
-Background color : 0xFFFFFFFF  Loop Count : 0
-Number of frames: 240
-No.: width height alpha x_offset y_offset duration   dispose blend image_size  compression
-  1:   640   896    no        0        0       33       none   yes      19336       lossy
-  2:   640   896    no        0        0       34       none   yes      18064       lossy
-240:   640   896    no        0        0       33       none   yes      17464       lossy
-`;
+    const infoText = buildAnimatedWebpInfoText({
+      declaredFrameCount: 240,
+      actualFrameCount: 240,
+      width: 640,
+      height: 896,
+    });
 
     // Act
     const actual = parseWebpMuxInfo("dam-break.webp", infoText);
@@ -320,6 +317,21 @@ No.: width height alpha x_offset y_offset duration   dispose blend image_size  c
       maybeFrameCount: 240,
       durationSeconds: 8,
     });
+  });
+
+  it("rejects truncated webpmux frame tables", () => {
+    // Arrange
+    const infoText = buildAnimatedWebpInfoText({
+      declaredFrameCount: 240,
+      actualFrameCount: 239,
+      width: 640,
+      height: 896,
+    });
+
+    // Act / Assert
+    expect(() => parseWebpMuxInfo("truncated.webp", infoText)).toThrow(
+      "webpmux frame table length 239 does not match declared frame count 240 for truncated.webp",
+    );
   });
 
   it("rejects invalid ffprobe JSON and validation mismatches", () => {
@@ -464,4 +476,27 @@ async function directorySnapshot(
     snapshot[relative(root, resolve(root, relativePath))] = bytes.toString("hex");
   }
   return snapshot;
+}
+
+function buildAnimatedWebpInfoText(args: {
+  readonly declaredFrameCount: number;
+  readonly actualFrameCount: number;
+  readonly width: number;
+  readonly height: number;
+}): string {
+  const frameLines = Array.from(
+    { length: args.actualFrameCount },
+    (_, frameIndex) => {
+      const durationMilliseconds = frameIndex % 3 === 1 ? 34 : 33;
+      return `${String(frameIndex + 1).padStart(3, " ")}:   ${args.width}   ${args.height}    no        0        0       ${durationMilliseconds}       none   yes      ${19_000 - frameIndex}       lossy`;
+    },
+  );
+
+  return `Canvas size: ${args.width} x ${args.height}
+Features present: animation transparency
+Background color : 0xFFFFFFFF  Loop Count : 0
+Number of frames: ${args.declaredFrameCount}
+No.: width height alpha x_offset y_offset duration   dispose blend image_size  compression
+${frameLines.join("\n")}
+`;
 }

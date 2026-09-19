@@ -119,6 +119,13 @@ pointercancel, resize-then-drag, hidden-tab recovery, and a 375px keyboard and
 page-scroll pass. It does not claim Firefox or Safari coverage. `just web-smoke` remains the opt-in Phase 16 forensic closure; it is not the
 playground default.
 
+`just demo-media` and `just demo-media-check` are separate capture workflows for
+the committed README gallery assets. They are not required for ordinary web
+builds or playground use, but they do require local `ffmpeg`, `ffprobe`, and
+`webpmux` on `PATH`; `webpmux` is supplied by WebP tools. This Task 4 run
+verified `ffmpeg` 8.1.1, `ffprobe` 8.1.1, `webpmux` 1.6.0, and the capture
+profile recorded in `docs/assets/demos/manifest.json`.
+
 `web/src/generated/liquidfun-wasm`, `web/dist`, Playwright output, and
 `target/web-build` are ignored and regenerated. Ordinary native builds and the
 packaged `liquidfun` crate require none of Bun, Chromium, wasm-pack, C++, or

@@ -82,6 +82,15 @@ type StagedOutputDirectories = {
   readonly nextDirectory: string;
   readonly targetDirectory: string;
 };
+type PreflightDemoMediaDependencies = {
+  readonly readVersionLine?: (
+    command: string,
+    installHint?: string,
+  ) => string;
+};
+
+const WEBPMUX_INSTALL_HINT =
+  "Install WebP tools so `webpmux` is available on PATH before running demo-media generation.";
 
 function parseMode(value: string | undefined): DemoMediaMode {
   if (value === "generate" || value === "check") {
@@ -99,8 +108,7 @@ async function main(): Promise<void> {
   const targetDirectory = resolve(repoRoot, "docs/assets/demos");
   const attemptsRoot = resolve(repoRoot, "target/demo-media");
   const maybeFailSceneId = readInjectedFailureSceneId();
-  const ffmpegVersionLine = commandVersionLine("ffmpeg");
-  commandVersionLine("ffprobe");
+  const { ffmpegVersionLine } = preflightDemoMediaDependencies();
   const indexHtmlPath = resolve(distDirectory, "index.html");
   await ensureRegularFile(indexHtmlPath, "web/dist");
   const expectedIndexHtml = await readFile(indexHtmlPath, "utf8");
@@ -236,6 +244,21 @@ export function decideOutputDirectoryAction(
     };
   }
   return { kind: "replace" };
+}
+
+export function preflightDemoMediaDependencies(
+  dependencies: PreflightDemoMediaDependencies = {},
+): {
+  readonly ffmpegVersionLine: string;
+  readonly ffprobeVersionLine: string;
+  readonly webpmuxVersionLine: string;
+} {
+  const readVersionLine = dependencies.readVersionLine ?? commandVersionLine;
+  return {
+    ffmpegVersionLine: readVersionLine("ffmpeg"),
+    ffprobeVersionLine: readVersionLine("ffprobe"),
+    webpmuxVersionLine: readVersionLine("webpmux", WEBPMUX_INSTALL_HINT),
+  };
 }
 
 export async function commitStagedOutputs(
@@ -448,6 +471,11 @@ function runCommand(command: string, argumentsList: readonly string[]): void {
   const result = spawnSync(command, [...argumentsList], {
     encoding: "utf8",
   });
+  if (result.error !== undefined) {
+    throw new Error(
+      `failed to spawn ${command}: ${result.error.message}`,
+    );
+  }
   if (result.status === 0) {
     return;
   }

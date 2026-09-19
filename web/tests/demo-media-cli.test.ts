@@ -15,6 +15,7 @@ import {
   finalizeDemoMediaRun,
   formatCleanupFailure,
   maybeRethrowWithCleanupFailures,
+  preflightDemoMediaDependencies,
   runCleanupActions,
 } from "../scripts/demo-media";
 
@@ -142,6 +143,54 @@ describe("demo media cli helpers", () => {
     } finally {
       await rm(root, { recursive: true, force: true });
     }
+  });
+
+  it("preflights ffmpeg ffprobe and webpmux before generation", () => {
+    // Arrange
+    const calls: Array<{
+      readonly command: string;
+      readonly installHint: string | undefined;
+    }> = [];
+
+    // Act
+    const actual = preflightDemoMediaDependencies({
+      readVersionLine: (command, installHint) => {
+        calls.push({ command, installHint });
+        return `${command} version`;
+      },
+    });
+
+    // Assert
+    expect(actual).toEqual({
+      ffmpegVersionLine: "ffmpeg version",
+      ffprobeVersionLine: "ffprobe version",
+      webpmuxVersionLine: "webpmux version",
+    });
+    expect(calls).toEqual([
+      { command: "ffmpeg", installHint: undefined },
+      { command: "ffprobe", installHint: undefined },
+      {
+        command: "webpmux",
+        installHint:
+          "Install WebP tools so `webpmux` is available on PATH before running demo-media generation.",
+      },
+    ]);
+  });
+
+  it("surfaces actionable webpmux prerequisite failures", () => {
+    // Act / Assert
+    expect(() =>
+      preflightDemoMediaDependencies({
+        readVersionLine: (command, installHint) => {
+          if (command === "webpmux") {
+            throw new Error(`missing ${command}: ${installHint}`);
+          }
+          return `${command} version`;
+        },
+      }),
+    ).toThrow(
+      "missing webpmux: Install WebP tools so `webpmux` is available on PATH before running demo-media generation.",
+    );
   });
 });
 
