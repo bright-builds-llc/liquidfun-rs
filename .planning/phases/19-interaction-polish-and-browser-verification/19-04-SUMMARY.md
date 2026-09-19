@@ -124,7 +124,7 @@ _Note: TDD tasks produced test then feat commits._
 - **Verification:** `wc -l web/src/App.tsx` prints 628
 - **Committed in:** `305d5e6`
 
----
+***
 
 **Total deviations:** 3 auto-fixed (1 missing critical, 2 blocking)
 **Impact on plan:** Required for typecheck, leftover-capture correctness, and the locked file-length cap. No scope creep.
@@ -141,7 +141,7 @@ None - no external service configuration required.
 
 Ready for 19-05 figcaption, select focus, and 480px polish. The canvas pipeline and teardown cancel are in place. WEB-05 remains pending until 19-06 Chromium pointer/resize/cleanup proofs. Do not treat this plan as player-smoke or Pages evidence.
 
----
+***
 
 *Phase: 19-interaction-polish-and-browser-verification*
 *Completed: 2026-09-19*

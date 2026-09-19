@@ -102,7 +102,7 @@ Each task was committed atomically:
 - **Verification:** `just web-player-smoke` exits 0; 11/11 Chromium tests passed
 - **Committed in:** `08a0fba`
 
----
+***
 
 **Total deviations:** 1 auto-fixed (1 bug)
 **Impact on plan:** Required for the smoke gate. No browser-matrix or Pages-CI scope creep.
@@ -119,7 +119,7 @@ None - no external service configuration required.
 
 Ready for 19-07 live Pages evidence. Local Chromium WEBTEST-01 coverage is in source and `just web-player-smoke` passed. Do not treat this plan as the hosted revision proof, and do not mark WEBTEST-01 complete until the deployed site checks land.
 
----
+***
 
 *Phase: 19-interaction-polish-and-browser-verification*
 *Completed: 2026-09-19*

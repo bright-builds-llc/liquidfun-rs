@@ -110,7 +110,7 @@ _Note: TDD tasks produced test then feat commits._
 - **Files modified:** none beyond the planned Water Wheel aim
 - **Commit:** `3bd1cf7`
 
----
+***
 
 **Total deviations:** 2 auto-fixed (1 bug, 1 blocking)
 **Impact on plan:** Both keep the planned physics contract. WEB-05 stays pending until later plans wire canvas capture.
@@ -131,7 +131,7 @@ None - no external service configuration required.
 
 Ready for 19-04 canvas Pointer Events pipeline. All six scene modules now handle the four pointer kinds with native physics. WEB-05 remains pending until canvas capture, instruction copy, and browser evidence land.
 
----
+***
 
 *Phase: 19-interaction-polish-and-browser-verification*
 *Completed: 2026-09-19*
