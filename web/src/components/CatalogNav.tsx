@@ -34,7 +34,7 @@ export function CatalogNav(props: CatalogNavProps) {
 
             return (
               <li class={catalogCardClass(isCurrent)}>
-                <ScenePreview sceneId={scene.previewId} />
+                <ScenePreview sceneId={scene.id} />
                 <p class="catalog-preview-caption">{PREVIEW_CAPTION}</p>
                 <p class="catalog-card-title">{scene.title}</p>
                 <p class="catalog-card-description">{scene.description}</p>
