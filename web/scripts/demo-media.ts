@@ -62,15 +62,6 @@ type CleanupFailure = {
   readonly label: string;
   readonly error: Error;
 };
-type WaitForPreviewReadinessDependencies = {
-  readonly isReady: () => Promise<boolean>;
-  readonly getExitCode: () => number | null;
-  readonly diagnostics: () => string;
-  readonly delayMilliseconds: number;
-  readonly delay: (milliseconds: number) => Promise<void>;
-  readonly now: () => number;
-  readonly timeoutAt: number;
-};
 type TerminatePreviewProcessDependencies = {
   readonly getExitCode: () => number | null;
   readonly kill: (signal: NodeJS.Signals) => void;
@@ -80,6 +71,29 @@ type OutputDirectoryAction =
   | { readonly kind: "noop" }
   | { readonly kind: "replace" }
   | { readonly kind: "fail"; readonly message: string };
+type WaitForOwnedPreviewReadinessDependencies = {
+  readonly readySignal: Promise<void>;
+  readonly exitSignal: Promise<number | null>;
+  readonly getExitCode: () => number | null;
+  readonly diagnostics: () => string;
+  readonly expectedIndexHtml: string;
+  readonly fetchIndexHtml: () => Promise<string>;
+  readonly readyTimeoutMilliseconds: number;
+};
+type FinalizeDemoMediaRunDependencies = {
+  readonly maybePrimaryError?: unknown;
+  readonly cleanupFailures: readonly CleanupFailure[];
+  readonly commitOutputs: () => Promise<void>;
+};
+type CommitStagedOutputsDependencies = {
+  readonly compareDirectories?: typeof compareOutputDirectories;
+  readonly ensureTargetParent?: (path: string) => Promise<void>;
+  readonly replaceDirectory?: typeof replaceOutputDirectory;
+};
+type StagedOutputDirectories = {
+  readonly nextDirectory: string;
+  readonly targetDirectory: string;
+};
 
 function parseMode(value: string | undefined): DemoMediaMode {
   if (value === "generate" || value === "check") {
@@ -99,7 +113,9 @@ async function main(): Promise<void> {
   const maybeFailSceneId = readInjectedFailureSceneId();
   const ffmpegVersionLine = commandVersionLine("ffmpeg");
   commandVersionLine("ffprobe");
-  await ensureRegularFile(resolve(distDirectory, "index.html"), "web/dist");
+  const indexHtmlPath = resolve(distDirectory, "index.html");
+  await ensureRegularFile(indexHtmlPath, "web/dist");
+  const expectedIndexHtml = await readFile(indexHtmlPath, "utf8");
 
   const playwrightIdentity = await readPlaywrightIdentity(webDirectory);
   await ensureRegularFile(
@@ -115,9 +131,10 @@ async function main(): Promise<void> {
   let maybeBrowser: Browser | undefined;
   let maybeContext: BrowserContext | undefined;
   let maybePrimaryError: unknown;
+  let maybeStagedOutput: StagedOutputDirectories | undefined;
 
   try {
-    await waitForPreview(previewProcess, PREVIEW_URL);
+    await waitForPreview(previewProcess, PREVIEW_URL, expectedIndexHtml);
     const inputSha256 = await captureInputSha256(repoRoot);
 
     maybeBrowser = await chromium.launch({ headless: true });
@@ -158,16 +175,10 @@ async function main(): Promise<void> {
       resolve(nextDirectory, "manifest.json"),
       canonicalManifestJson(manifest),
     );
-
-    const diagnostics = await compareOutputDirectories(targetDirectory, nextDirectory);
-    const action = decideOutputDirectoryAction(mode, diagnostics);
-    if (action.kind === "fail") {
-      throw new Error(action.message);
-    }
-    if (action.kind === "replace") {
-      await ensureDirectory(dirname(targetDirectory));
-      await replaceOutputDirectory(nextDirectory, targetDirectory);
-    }
+    maybeStagedOutput = {
+      nextDirectory,
+      targetDirectory,
+    };
   } catch (error) {
     maybePrimaryError = error;
   }
@@ -200,7 +211,27 @@ async function main(): Promise<void> {
       },
     },
   ]);
-  maybeRethrowWithCleanupFailures(maybePrimaryError, cleanupFailures);
+  await finalizeDemoMediaRun({
+    maybePrimaryError,
+    cleanupFailures,
+    commitOutputs: async () => {
+      if (maybeStagedOutput === undefined) {
+        throw new Error("Staged demo-media output is unavailable");
+      }
+      const warnings = await commitStagedOutputs(
+        mode,
+        maybeStagedOutput.nextDirectory,
+        maybeStagedOutput.targetDirectory,
+      );
+      for (const warning of warnings) {
+        try {
+          process.emitWarning(warning);
+        } catch {
+          // Post-commit warning reporting must never turn a successful install into failure.
+        }
+      }
+    },
+  });
 }
 
 export function decideOutputDirectoryAction(
@@ -217,6 +248,29 @@ export function decideOutputDirectoryAction(
     };
   }
   return { kind: "replace" };
+}
+
+export async function commitStagedOutputs(
+  mode: DemoMediaMode,
+  nextDirectory: string,
+  targetDirectory: string,
+  dependencies: CommitStagedOutputsDependencies = {},
+): Promise<readonly string[]> {
+  const compareDirectories =
+    dependencies.compareDirectories ?? compareOutputDirectories;
+  const ensureTargetParent = dependencies.ensureTargetParent ?? ensureDirectory;
+  const replaceDirectory = dependencies.replaceDirectory ?? replaceOutputDirectory;
+  const diagnostics = await compareDirectories(targetDirectory, nextDirectory);
+  const action = decideOutputDirectoryAction(mode, diagnostics);
+  if (action.kind === "fail") {
+    throw new Error(action.message);
+  }
+  if (action.kind === "noop") {
+    return [];
+  }
+
+  await ensureTargetParent(dirname(targetDirectory));
+  return await replaceDirectory(nextDirectory, targetDirectory);
 }
 
 async function encodeSceneMedia(
@@ -320,23 +374,23 @@ function startPreviewProcess(webDirectory: string): PreviewProcess {
 async function waitForPreview(
   previewProcess: PreviewProcess,
   url: string,
+  expectedIndexHtml: string,
 ): Promise<void> {
-  const output = collectProcessOutput(previewProcess);
-  await waitForPreviewReadiness({
-    isReady: async () => {
-      try {
-        const response = await fetch(url);
-        return response.ok;
-      } catch {
-        return false;
-      }
-    },
+  const monitor = createPreviewProcessMonitor(previewProcess);
+  await waitForOwnedPreviewReadiness({
+    readySignal: monitor.readySignal,
+    exitSignal: monitor.exitSignal,
     getExitCode: () => previewProcess.exitCode,
-    diagnostics: output,
-    delayMilliseconds: 250,
-    delay,
-    now: Date.now,
-    timeoutAt: Date.now() + READY_TIMEOUT_MILLISECONDS,
+    diagnostics: monitor.diagnostics,
+    expectedIndexHtml,
+    fetchIndexHtml: async () => {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`preview responded with HTTP ${response.status}`);
+      }
+      return await response.text();
+    },
+    readyTimeoutMilliseconds: READY_TIMEOUT_MILLISECONDS,
   });
 }
 
@@ -353,27 +407,64 @@ async function stopPreviewProcess(
   });
 }
 
-function collectProcessOutput(
+function createPreviewProcessMonitor(
   processToWatch: PreviewProcess,
-): () => string {
+): {
+  readonly readySignal: Promise<void>;
+  readonly exitSignal: Promise<number | null>;
+  readonly diagnostics: () => string;
+} {
   let stdout = "";
   let stderr = "";
+  let resolveReadySignal!: () => void;
+  let readyResolved = false;
+  const readySignal = new Promise<void>((resolvePromise) => {
+    resolveReadySignal = resolvePromise;
+  });
+  const exitSignal = new Promise<number | null>((resolvePromise) => {
+    if (processToWatch.exitCode !== null) {
+      resolvePromise(processToWatch.exitCode);
+      return;
+    }
+
+    processToWatch.once("exit", (exitCode) => {
+      resolvePromise(exitCode);
+    });
+  });
 
   const { stdout: stdoutStream, stderr: stderrStream } = processToWatch;
   if (stdoutStream === null || stderrStream === null) {
     throw new Error("Preview process streams are unavailable");
   }
 
+  const maybeResolveReady = (): void => {
+    if (readyResolved) {
+      return;
+    }
+    const output = `${stdout}\n${stderr}`;
+    if (!hasOwnedPreviewReadySignal(output)) {
+      return;
+    }
+
+    readyResolved = true;
+    resolveReadySignal();
+  };
   stdoutStream.on("data", (chunk: string) => {
     stdout += chunk;
+    maybeResolveReady();
   });
   stderrStream.on("data", (chunk: string) => {
     stderr += chunk;
+    maybeResolveReady();
   });
 
-  return () => {
-    const combined = `${stdout}\n${stderr}`.trim();
-    return combined.length === 0 ? "no preview output" : combined;
+  return {
+    readySignal,
+    exitSignal,
+    diagnostics: () => {
+      const combined = `${stdout}\n${stderr}`.trim();
+      return combined.length === 0 ? "no preview output" : combined;
+    },
   };
 }
 
@@ -406,32 +497,43 @@ async function waitForExit(
   });
 }
 
-export async function waitForPreviewReadiness(
-  dependencies: WaitForPreviewReadinessDependencies,
+export function hasOwnedPreviewReadySignal(output: string): boolean {
+  return /Local:\s+http:\/\/127\.0\.0\.1:4173(?:\/|\/liquidfun-rs\/)/.test(output);
+}
+
+export async function waitForOwnedPreviewReadiness(
+  dependencies: WaitForOwnedPreviewReadinessDependencies,
 ): Promise<void> {
-  while (dependencies.now() < dependencies.timeoutAt) {
-    const exitCodeBeforeCheck = dependencies.getExitCode();
-    if (exitCodeBeforeCheck !== null) {
+  await Promise.race([
+    dependencies.readySignal,
+    dependencies.exitSignal.then((exitCode) => {
       throw new Error(
-        `preview process exited early (${exitCodeBeforeCheck}): ${dependencies.diagnostics()}`,
+        `preview process exited early (${exitCode ?? "unknown"}): ${dependencies.diagnostics()}`,
       );
-    }
+    }),
+    delay(dependencies.readyTimeoutMilliseconds).then(() => {
+      throw new Error(`preview did not become ready: ${dependencies.diagnostics()}`);
+    }),
+  ]);
 
-    const isReady = await dependencies.isReady();
-    const exitCodeAfterCheck = dependencies.getExitCode();
-    if (exitCodeAfterCheck !== null) {
-      throw new Error(
-        `preview process exited early (${exitCodeAfterCheck}): ${dependencies.diagnostics()}`,
-      );
-    }
-    if (isReady) {
-      return;
-    }
-
-    await dependencies.delay(dependencies.delayMilliseconds);
+  const exitCodeBeforeFetch = dependencies.getExitCode();
+  if (exitCodeBeforeFetch !== null) {
+    throw new Error(
+      `preview process exited early (${exitCodeBeforeFetch}): ${dependencies.diagnostics()}`,
+    );
   }
 
-  throw new Error(`preview did not become ready: ${dependencies.diagnostics()}`);
+  const servedIndexHtml = await dependencies.fetchIndexHtml();
+  if (servedIndexHtml !== dependencies.expectedIndexHtml) {
+    throw new Error("preview index html does not match current web/dist/index.html");
+  }
+
+  const exitCodeAfterFetch = dependencies.getExitCode();
+  if (exitCodeAfterFetch !== null) {
+    throw new Error(
+      `preview process exited early (${exitCodeAfterFetch}): ${dependencies.diagnostics()}`,
+    );
+  }
 }
 
 export async function terminatePreviewProcess(
@@ -501,6 +603,22 @@ export function maybeRethrowWithCleanupFailures(
     "demo media command failed and cleanup also failed",
     { cause: primaryError },
   );
+}
+
+export async function finalizeDemoMediaRun(
+  dependencies: FinalizeDemoMediaRunDependencies,
+): Promise<void> {
+  if (
+    dependencies.maybePrimaryError !== undefined ||
+    dependencies.cleanupFailures.length > 0
+  ) {
+    maybeRethrowWithCleanupFailures(
+      dependencies.maybePrimaryError,
+      dependencies.cleanupFailures,
+    );
+  }
+
+  await dependencies.commitOutputs();
 }
 
 function readInjectedFailureSceneId(): SceneCapturePlan["id"] | undefined {

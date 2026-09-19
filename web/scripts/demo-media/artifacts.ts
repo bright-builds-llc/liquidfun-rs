@@ -57,11 +57,9 @@ export type MediaProbe = {
 
 export type RenamePath = (from: string, to: string) => Promise<void>;
 export type RemoveDirectory = (path: string) => Promise<void>;
-export type WarningSink = (warning: string) => void;
 export type ReplaceOutputDirectoryDependencies = {
   readonly renamePath?: RenamePath;
   readonly removeDirectory?: RemoveDirectory;
-  readonly onWarning?: WarningSink;
 };
 
 export async function captureInputSha256(repoRoot: string): Promise<string> {
@@ -195,18 +193,17 @@ export async function replaceOutputDirectory(
   next: string,
   target: string,
   renamePathOrDependencies: RenamePath | ReplaceOutputDirectoryDependencies = {},
-): Promise<void> {
+): Promise<readonly string[]> {
   const dependencies =
     typeof renamePathOrDependencies === "function"
       ? { renamePath: renamePathOrDependencies }
       : renamePathOrDependencies;
   const renamePath = dependencies.renamePath ?? rename;
   const removeDirectory = dependencies.removeDirectory ?? removeDirectoryTree;
-  const onWarning = dependencies.onWarning ?? defaultWarningSink;
   const targetExists = await pathExists(target);
   if (!targetExists) {
     await renamePath(next, target);
-    return;
+    return [];
   }
 
   const backupPath = `${target}.backup-${process.pid}`;
@@ -221,10 +218,11 @@ export async function replaceOutputDirectory(
 
   try {
     await removeDirectory(backupPath);
+    return [];
   } catch (error) {
-    onWarning(
+    return [
       `Installed ${target} but could not remove backup ${backupPath}: ${errorMessage(error)}`,
-    );
+    ];
   }
 }
 
@@ -470,10 +468,6 @@ function isMissingPathError(error: unknown): boolean {
 
 async function removeDirectoryTree(path: string): Promise<void> {
   await rm(path, { recursive: true, force: true });
-}
-
-function defaultWarningSink(warning: string): void {
-  process.emitWarning(warning);
 }
 
 function errorMessage(error: unknown): string {

@@ -244,19 +244,12 @@ describe("demo media artifacts", () => {
         ["manifest.json", "replacement manifest\n"],
         ["dam-break.mp4", "replacement video bytes\n"],
       ]));
-      const warnings: string[] = [];
-
       // Act
-      await expect(
-        replaceOutputDirectory(nextDirectory, targetDirectory, {
+      const warnings = await replaceOutputDirectory(nextDirectory, targetDirectory, {
           removeDirectory: async () => {
             throw new Error("backup cleanup failed");
           },
-          onWarning: (warning) => {
-            warnings.push(warning);
-          },
-        }),
-      ).resolves.toBeUndefined();
+        });
 
       // Assert
       expect(await directorySnapshot(targetDirectory)).toEqual({
@@ -318,6 +311,20 @@ describe("demo media artifacts", () => {
         duration: "8.0",
       },
     });
+    const invalidDimensionsJsonText = JSON.stringify({
+      streams: [
+        {
+          codec_name: "h264",
+          width: 0,
+          height: 360,
+          avg_frame_rate: "30/1",
+          nb_frames: "240",
+        },
+      ],
+      format: {
+        duration: "8.0",
+      },
+    });
     const wrongCodecProbe = {
       codecName: "vp9",
       width: 640,
@@ -334,16 +341,52 @@ describe("demo media artifacts", () => {
       maybeFrameCount: 240,
       durationSeconds: 8.5,
     };
+    const wrongFpsProbe = {
+      codecName: "h264",
+      width: 640,
+      height: 360,
+      averageFrameRate: "24/1",
+      maybeFrameCount: 240,
+      durationSeconds: 8,
+    };
+    const wrongFrameCountProbe = {
+      codecName: "h264",
+      width: 640,
+      height: 360,
+      averageFrameRate: "30/1",
+      maybeFrameCount: 239,
+      durationSeconds: 8,
+    };
+    const wrongWebpWidthProbe = {
+      codecName: "webp",
+      width: 800,
+      height: 360,
+      averageFrameRate: "30/1",
+      maybeFrameCount: 240,
+      durationSeconds: 8,
+    };
 
     // Act / Assert
     expect(() => parseMediaProbeJson("bad.webp", invalidJsonText)).toThrow(
       "ffprobe avg_frame_rate is invalid for bad.webp",
     );
+    expect(() => parseMediaProbeJson("flat.mp4", invalidDimensionsJsonText)).toThrow(
+      "ffprobe width is invalid for flat.mp4",
+    );
     expect(() => validateMp4Probe("bad.mp4", wrongCodecProbe)).toThrow(
       "Expected H.264 MP4 output, found vp9 for bad.mp4",
     );
+    expect(() => validateMp4Probe("slow.mp4", wrongFpsProbe)).toThrow(
+      "Expected 30 fps output, found 24/1 for slow.mp4",
+    );
+    expect(() => validateMp4Probe("short.mp4", wrongFrameCountProbe)).toThrow(
+      "Expected 240 frames when reported, found 239 for short.mp4",
+    );
     expect(() => validateWebpProbe("bad.webp", wrongDurationProbe)).toThrow(
       "Expected ~8 second duration, found 8.5 for bad.webp",
+    );
+    expect(() => validateWebpProbe("wide.webp", wrongWebpWidthProbe)).toThrow(
+      "Expected 640px WebP width, found 800 for wide.webp",
     );
   });
 });
