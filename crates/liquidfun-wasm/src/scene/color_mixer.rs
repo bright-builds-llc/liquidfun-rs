@@ -429,6 +429,142 @@ mod tests {
     }
 
     #[test]
+    fn pointer_down_stirs_nearby_particles_without_rewriting_colors() {
+        // Arrange
+        let mut control = SessionCore::create(SceneId::ColorMixer)
+            .expect("Color Mixer should construct two mixing groups");
+        let mut stirred = SessionCore::create(SceneId::ColorMixer)
+            .expect("Color Mixer should construct two mixing groups");
+
+        // Act
+        stirred
+            .apply_pointer("down", 0.0, 2.2)
+            .expect("down should store the stir origin");
+        control.advance(1).expect("control step should succeed");
+        stirred.advance(1).expect("stirred step should succeed");
+        let control_frame = capture(&control);
+        let stirred_frame = capture(&stirred);
+
+        // Assert
+        assert_ne!(
+            stirred_frame.particle_positions().as_ref(),
+            control_frame.particle_positions().as_ref(),
+            "pointer stir should change at least one particle position versus a no-pointer world"
+        );
+        assert!(
+            colors_contain(stirred_frame.particle_colors().as_ref(), TEAL),
+            "colors must still come from engine lanes"
+        );
+        assert!(
+            colors_contain(stirred_frame.particle_colors().as_ref(), RED),
+            "colors must still come from engine lanes"
+        );
+    }
+
+    #[test]
+    fn pointer_cancel_clears_leftover_local_stir() {
+        // Arrange
+        let mut canceled = SessionCore::create(SceneId::ColorMixer)
+            .expect("Color Mixer should construct two mixing groups");
+        let mut fresh = SessionCore::create(SceneId::ColorMixer)
+            .expect("Color Mixer should construct two mixing groups");
+        canceled
+            .apply_control("stir-speed", "off")
+            .expect("stir-speed=off should apply live");
+        fresh
+            .apply_control("stir-speed", "off")
+            .expect("stir-speed=off should apply live");
+        canceled
+            .apply_pointer("down", 0.0, 2.2)
+            .expect("down should store the stir origin");
+        canceled
+            .apply_pointer("move", 0.2, 2.3)
+            .expect("move should update the stored point");
+
+        // Act
+        canceled
+            .apply_pointer("cancel", 0.0, 0.0)
+            .expect("cancel should clear leftover stir");
+        advance_steps(&mut canceled, 4);
+        advance_steps(&mut fresh, 4);
+        let canceled_positions = capture(&canceled).particle_positions();
+        let fresh_positions = capture(&fresh).particle_positions();
+
+        // Assert
+        for (canceled_value, fresh_value) in canceled_positions.iter().zip(fresh_positions.iter()) {
+            assert!(
+                (canceled_value - fresh_value).abs() <= 0.05,
+                "cancel must drop leftover local force; {canceled_value} vs {fresh_value}"
+            );
+        }
+    }
+
+    #[test]
+    fn labeled_slow_stir_still_applies_global_force() {
+        // Arrange
+        let mut off = SessionCore::create(SceneId::ColorMixer)
+            .expect("Color Mixer should construct two mixing groups");
+        let mut slow = SessionCore::create(SceneId::ColorMixer)
+            .expect("Color Mixer should construct two mixing groups");
+        off.apply_control("stir-speed", "off")
+            .expect("stir-speed=off should apply live");
+        slow.apply_control("stir-speed", "slow")
+            .expect("stir-speed=slow should apply live");
+
+        // Act
+        off.advance(1).expect("off step should succeed");
+        slow.advance(1).expect("slow step should succeed");
+
+        // Assert
+        assert_ne!(
+            capture(&slow).particle_positions().as_ref(),
+            capture(&off).particle_positions().as_ref(),
+            "labeled slow stir must still apply the global (8, 0) force"
+        );
+    }
+
+    #[test]
+    fn pointer_stir_uses_per_particle_force_not_scattered_range() {
+        // Arrange
+        let source = include_str!("color_mixer.rs");
+        let impl_source = source
+            .split("#[cfg(test)]")
+            .next()
+            .expect("implementation precedes tests");
+
+        // Assert
+        assert!(
+            impl_source.contains("apply_particle_force("),
+            "localized stir must call apply_particle_force per nearby id"
+        );
+        assert!(
+            impl_source.contains("maybe_pointer"),
+            "Color Mixer must store maybe_pointer for the captured stir point"
+        );
+        assert!(
+            impl_source.contains("POINTER_STIR_RADIUS"),
+            "localized stir radius must be named"
+        );
+        assert!(
+            impl_source.contains("1.25"),
+            "POINTER_STIR_RADIUS must be 1.25"
+        );
+        let range_uses = impl_source
+            .lines()
+            .filter(|line| line.contains("apply_particle_force_range"))
+            .collect::<Vec<_>>();
+        assert_eq!(
+            range_uses.len(),
+            1,
+            "range API must stay on the full labeled-stir id list only, got {range_uses:?}"
+        );
+        assert!(
+            range_uses[0].contains("&particles"),
+            "labeled stir may use range on the full id vec"
+        );
+    }
+
+    #[test]
     fn unknown_mix_and_stir_tokens_fail_closed() {
         // Arrange
         let mut session = SessionCore::create(SceneId::ColorMixer)
