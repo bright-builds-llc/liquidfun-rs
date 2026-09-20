@@ -8,6 +8,14 @@ to investigate a concrete performance question. Identify the workload, hardware,
 compiler and limitations when sharing comparisons; exploratory timing is not a
 strict reviewed performance claim.
 
+## Exploratory local diagnosis
+
+The playground Dam Break headless pair is optional local diagnosis, not a Phase
+12 reviewed report. Reproduce it with `just playground-dam-break-bench` and see
+[docs/playground-dam-break-timing.md](docs/playground-dam-break-timing.md). That
+table is an unreviewed local sample. It is not compatibility evidence and must
+not be copied into `reference/performance/manifest.toml`.
+
 ## Optional strict performance profile
 
 LiquidFun performance evidence is a paired, same-host comparison between native Rust and the pinned C++ oracle. It is scoped to the exact workload, resolved scenario bytes, build identities, hardware session, and statistical interval in an immutable report. Benchmark data is not compatibility, correctness, coverage, or parity evidence.

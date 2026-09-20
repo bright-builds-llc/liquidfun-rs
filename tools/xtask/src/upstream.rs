@@ -16,7 +16,7 @@ const USAGE: &str = r"Usage: cargo xtask upstream <command> [arguments]
 Commands:
   verify
   configure --preset <oracle-debug|oracle-release|oracle-asan-ubsan|upstream-tests>
-  build --preset <oracle-debug|oracle-release|oracle-asan-ubsan|upstream-tests> [--target <liquidfun-reference|phase9-lifecycle-contact-witness|phase10-group-topology-witness>]";
+  build --preset <oracle-debug|oracle-release|oracle-asan-ubsan|upstream-tests> [--target <liquidfun-reference|phase9-lifecycle-contact-witness|phase10-group-topology-witness|playground-dam-break-bench>]";
 
 const ALLOWED_PRESETS: [&str; 4] = [
     "oracle-debug",
@@ -24,10 +24,11 @@ const ALLOWED_PRESETS: [&str; 4] = [
     "oracle-asan-ubsan",
     "upstream-tests",
 ];
-const ALLOWED_BUILD_TARGETS: [&str; 3] = [
+const ALLOWED_BUILD_TARGETS: [&str; 4] = [
     "liquidfun-reference",
     "phase9-lifecycle-contact-witness",
     "phase10-group-topology-witness",
+    "playground-dam-break-bench",
 ];
 const CMAKE_CANONICAL: Version = Version::new(4, 3, 3);
 const CMAKE_FLOOR: Version = Version::new(3, 25, 0);

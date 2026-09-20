@@ -143,6 +143,9 @@ phase12-performance-calibrate:
 phase12-performance-validate:
     bash scripts/phase12-performance.sh validate
 
+playground-dam-break-bench:
+    cargo xtask playground dam-break-bench
+
 phase13-acceptance:
     cargo xtask phase13 acceptance
 

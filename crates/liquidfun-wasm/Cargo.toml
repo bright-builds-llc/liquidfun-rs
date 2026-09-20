@@ -11,6 +11,12 @@ repository.workspace = true
 [lib]
 crate-type = ["cdylib", "rlib"]
 
+[[bin]]
+name = "dam-break-bench"
+path = "src/bin/dam_break_bench.rs"
+test = false
+bench = false
+
 [lints]
 workspace = true
 

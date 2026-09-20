@@ -657,6 +657,27 @@ target_link_libraries(
   PRIVATE liquidfun-reference-protocol
 )
 
+add_executable(
+  playground-dam-break-bench
+  src/playground_dam_break_bench.cpp
+)
+target_compile_features(playground-dam-break-bench PRIVATE cxx_std_17)
+target_compile_definitions(
+  playground-dam-break-bench
+  PRIVATE
+    DAM_BREAK_BENCH_COMPILER_ID="${CMAKE_CXX_COMPILER_ID}"
+    DAM_BREAK_BENCH_COMPILER_VERSION="${CMAKE_CXX_COMPILER_VERSION}"
+)
+target_include_directories(
+  playground-dam-break-bench
+  SYSTEM PRIVATE
+    "${CMAKE_CURRENT_LIST_DIR}/../../third_party/liquidfun/liquidfun/Box2D"
+)
+target_link_libraries(
+  playground-dam-break-bench
+  PRIVATE Box2D
+)
+
 target_compile_options(
   liquidfun-reference-protocol-bits
   PRIVATE ${REFERENCE_WARNING_OPTIONS} ${REFERENCE_SUPPORTED_FP_OPTIONS}
@@ -679,6 +700,10 @@ target_compile_options(
 )
 target_compile_options(
   phase10-group-topology-witness
+  PRIVATE ${REFERENCE_WARNING_OPTIONS} ${REFERENCE_SUPPORTED_FP_OPTIONS}
+)
+target_compile_options(
+  playground-dam-break-bench
   PRIVATE ${REFERENCE_WARNING_OPTIONS} ${REFERENCE_SUPPORTED_FP_OPTIONS}
 )
 

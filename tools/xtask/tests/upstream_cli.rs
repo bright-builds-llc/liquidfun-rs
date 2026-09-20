@@ -438,6 +438,39 @@ fn build_accepts_the_registered_phase10_group_topology_witness() -> TestResult {
 }
 
 #[test]
+fn build_accepts_the_registered_playground_dam_break_bench() -> TestResult {
+    // Arrange
+    let fixture = RepositoryFixture::new()?;
+    let mut command = fixture.command()?;
+    command.args([
+        "upstream",
+        "build",
+        "--preset",
+        "oracle-release",
+        "--target",
+        "playground-dam-break-bench",
+    ]);
+
+    // Act
+    let output = command.output()?;
+
+    // Assert
+    assert!(output.status.success(), "{}", stderr(&output));
+    assert_eq!(
+        fixture.cmake_arguments()?,
+        [
+            "--build",
+            "--preset",
+            "oracle-release",
+            "--target",
+            "playground-dam-break-bench",
+        ]
+    );
+    fixture.cleanup()?;
+    Ok(())
+}
+
+#[test]
 fn build_rejects_unregistered_target_before_cmake() -> TestResult {
     // Arrange
     let fixture = RepositoryFixture::new()?;

@@ -12,6 +12,7 @@ mod phase13_evidence;
 #[path = "phase13_evidence/promotion.rs"]
 mod phase13_promotion;
 mod phase9_evidence;
+mod playground;
 mod provenance;
 mod release;
 mod safety_evidence;
@@ -39,6 +40,7 @@ Commands:
   safety-evidence Validate typed regression, safety, and coverage evidence
   package     Validate the publishable package
   performance Run sealed paired performance and analysis workflows
+  playground  Run exploratory playground Dam Break timing
   phase13     Produce or validate immutable Phase 13 staged evidence
   release     Audit and attest one complete commit-bound release evidence set
   check       Run the aggregate repository checks";
@@ -52,6 +54,7 @@ enum XtaskError {
     Inventory(inventory::InventoryError),
     Package(package::PackageError),
     Performance(performance::PerformanceCommandError),
+    Playground(playground::PlaygroundError),
     Phase13Acceptance(phase13_acceptance::AcceptanceError),
     Phase13Evidence(phase13_evidence::Phase13EvidenceError),
     Phase13Promotion(phase13_promotion::PromotionError),
@@ -95,6 +98,7 @@ impl Display for XtaskError {
             Self::Inventory(error) => Display::fmt(error, formatter),
             Self::Package(error) => Display::fmt(error, formatter),
             Self::Performance(error) => Display::fmt(error, formatter),
+            Self::Playground(error) => Display::fmt(error, formatter),
             Self::Phase13Acceptance(error) => Display::fmt(error, formatter),
             Self::Phase13Evidence(error) => Display::fmt(error, formatter),
             Self::Phase13Promotion(error) => Display::fmt(error, formatter),
@@ -129,6 +133,7 @@ fn dispatch(args: &[String]) -> Result<(), XtaskError> {
         "provenance" => provenance::run(command_args).map_err(XtaskError::Provenance),
         "package" => package::run(command_args).map_err(XtaskError::Package),
         "performance" => performance::run(command_args).map_err(XtaskError::Performance),
+        "playground" => playground::run(command_args).map_err(XtaskError::Playground),
         "phase13" if matches!(command_args, [command, ..] if command == "acceptance") => {
             phase13_acceptance::run(command_args).map_err(XtaskError::Phase13Acceptance)
         }

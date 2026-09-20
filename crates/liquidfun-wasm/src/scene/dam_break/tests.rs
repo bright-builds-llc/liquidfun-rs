@@ -2,6 +2,50 @@ use crate::ProofFrame;
 use crate::scene::SceneId;
 use crate::session::SessionCore;
 
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn native_bench_recipe_matches_live_medium_normal_scene() {
+    // Arrange
+    use crate::dam_break_bench as recipe;
+
+    // Act / Assert
+    assert_eq!(
+        recipe::RECIPE_PARTICLE_RADIUS.to_bits(),
+        super::PARTICLE_RADIUS.to_bits()
+    );
+    assert_eq!(
+        recipe::RECIPE_PARTICLE_SPACING.to_bits(),
+        super::PARTICLE_SPACING.to_bits()
+    );
+    assert_eq!(recipe::RECIPE_PARTICLE_COLUMNS, super::PARTICLE_COLUMNS);
+    assert_eq!(recipe::RECIPE_PARTICLE_ROWS, super::PARTICLE_ROWS);
+    assert_eq!(recipe::EXPECTED_PARTICLE_COUNT, super::PARTICLE_COUNT);
+    assert_eq!(
+        recipe::RECIPE_ORIGIN_X.to_bits(),
+        super::PARTICLE_ORIGIN.x.to_bits()
+    );
+    assert_eq!(
+        recipe::RECIPE_ORIGIN_Y.to_bits(),
+        super::PARTICLE_ORIGIN.y.to_bits()
+    );
+    assert_eq!(
+        recipe::RECIPE_CIRCLE_RADIUS.to_bits(),
+        super::DYNAMIC_CIRCLE_RADIUS.to_bits()
+    );
+    assert_eq!(
+        recipe::RECIPE_CIRCLE_X.to_bits(),
+        super::DYNAMIC_CIRCLE_POSITION.x.to_bits()
+    );
+    assert_eq!(
+        recipe::RECIPE_CIRCLE_Y.to_bits(),
+        super::DYNAMIC_CIRCLE_POSITION.y.to_bits()
+    );
+    assert_eq!(
+        recipe::RECIPE_GRAVITY_Y.to_bits(),
+        super::NORMAL_GRAVITY.y.to_bits()
+    );
+}
+
 #[test]
 fn default_create_is_still_medium_normal_basin() {
     // Arrange / Act
