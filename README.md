@@ -77,8 +77,13 @@ production site. `just web-player-smoke` is the local WEBTEST-01 gate: Chromium
 against the production-base `/liquidfun-rs/` build exercises all six scenes,
 playback and reset, one representative pointer gesture plus a labeled control,
 pointercancel, resize-then-drag, hidden-tab recovery, and a 375px keyboard and
-page-scroll pass. It does not claim Firefox or Safari coverage. `just web-smoke` remains the opt-in Phase 16 forensic closure; it is not the
-playground default.
+page-scroll pass. It does not claim Firefox or Safari coverage. `just web-smoke`
+is historical Phase 16 forensic chrome. It allocates
+`target/phase16/closure-attempt-N`, sets `PHASE16_CLOSURE_ATTEMPT_DIR`, and
+still looks for Dispose-session and PNG-hash selectors. It is
+not the v1.1 product gate and is
+not expected to pass against current Play/Pause/Reset chrome.
+Ordinary playground proof is `just web-player-smoke`.
 
 `just demo-media` and `just demo-media-check` are separate capture workflows for
 the committed README gallery assets. They are not required for ordinary web

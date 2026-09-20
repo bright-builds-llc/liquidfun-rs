@@ -92,8 +92,13 @@ just web-player-smoke
 representative pointer and labeled-control input, pointercancel,
 resize-then-drag, hidden-tab recovery, a 375px keyboard and page-scroll pass,
 and hash fixture `#/scene/not-a-scene` against `/liquidfun-rs/`. The GitHub
-Actions workflow name is `Pages` and does not run Playwright. `just web-smoke` remains the opt-in Phase 16 forensic closure, not the product
-default.
+Actions workflow name is `Pages` and does not run Playwright. `just web-smoke`
+is historical Phase 16 forensic chrome. It allocates
+`target/phase16/closure-attempt-N`, sets `PHASE16_CLOSURE_ATTEMPT_DIR`, and
+still looks for Dispose-session and PNG-hash selectors. It is
+not the v1.1 product gate and is
+not expected to pass against current Play/Pause/Reset chrome.
+Ordinary playground proof is `just web-player-smoke`.
 
 ## Phase 16 browser proof
 
@@ -101,7 +106,10 @@ The Phase 16 proof is an opt-in forensic browser-development surface. It
 compiles the native Rust engine through the unpublished `liquidfun-wasm`
 wrapper, consumes owned typed-array frames, and draws them with Canvas 2D. It
 does not add a browser dependency to the packaged `liquidfun` crate. The
-ordinary playground proof is `just web-player-smoke` above.
+ordinary playground proof is `just web-player-smoke` above. `just web-smoke`
+is historical Phase 16 forensic chrome. It is not the v1.1 product gate and
+is not expected to pass against current Play/Pause/Reset chrome because it
+still looks for Dispose-session and PNG-hash selectors.
 
 Prepare a clean checkout with the exact tool and package inputs:
 
@@ -120,7 +128,8 @@ that build, installs the Chromium revision pinned by `@playwright/test` 1.63.0,
 and runs exactly one Chromium project with no deterministic retry.
 
 Every smoke allocates a fresh
-`target/phase16/closure-attempt-N` directory. Successful attempts retain
+`target/phase16/closure-attempt-N` directory and sets
+`PHASE16_CLOSURE_ATTEMPT_DIR` to that path. Successful attempts retain
 initial, moving, and disposed Canvas PNGs, validated `browser-proof.json`
 metadata, the Playwright result and attachments, package/browser provenance,
 and command status. Failed attempts remain in place; never overwrite, merge, or
