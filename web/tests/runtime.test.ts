@@ -5,6 +5,7 @@ import {
   constructionEntriesForScene,
   isReadySceneRoute,
   maybeReadySceneId,
+  sceneControlsIdentity,
   sceneTitleForId,
   titleForRoute,
 } from "../src/player/runtime";
@@ -107,5 +108,55 @@ describe("constructionEntriesForScene", () => {
 
     // Assert
     expect(entries).toEqual([]);
+  });
+});
+
+describe("sceneControlsIdentity", () => {
+  it("joins Fountain scene id with generation 1", () => {
+    // Arrange
+    const sceneId = "fountain" as const;
+    const generation = 1;
+
+    // Act
+    const identity = sceneControlsIdentity(sceneId, generation);
+
+    // Assert
+    expect(identity).toBe("fountain:1");
+  });
+
+  it("keeps Dam Break generation 0 as a non-empty sceneId:generation string", () => {
+    // Arrange
+    const sceneId = "dam-break" as const;
+    const generation = 0;
+
+    // Act
+    const identity = sceneControlsIdentity(sceneId, generation);
+
+    // Assert
+    expect(identity).toBe("dam-break:0");
+  });
+
+  it("stays truthy for Water Wheel generation 0 so Solid Show can remount", () => {
+    // Arrange
+    const sceneId = "water-wheel" as const;
+    const generation = 0;
+
+    // Act
+    const identity = sceneControlsIdentity(sceneId, generation);
+
+    // Assert
+    expect(identity === "").toBe(false);
+  });
+
+  it("joins Color Mixer scene id with generation 2", () => {
+    // Arrange
+    const sceneId = "color-mixer" as const;
+    const generation = 2;
+
+    // Act
+    const identity = sceneControlsIdentity(sceneId, generation);
+
+    // Assert
+    expect(identity).toBe("color-mixer:2");
   });
 });
