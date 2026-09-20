@@ -176,6 +176,22 @@ fn validate_sample(
     Ok(())
 }
 
+#[allow(dead_code)]
+fn rust_over_cpp_ratio(_rust_wall_ms: f64, _cpp_wall_ms: f64) -> Result<f64, PlaygroundError> {
+    Ok(0.0)
+}
+
+#[allow(dead_code)]
+fn pair_report_json(
+    _stamp: &str,
+    _identity: &HostIdentity,
+    _rust: &BenchSample,
+    _cpp: &BenchSample,
+    _ratio: f64,
+) -> serde_json::Value {
+    serde_json::json!({ "samply": true })
+}
+
 fn render_markdown(
     identity: &HostIdentity,
     rust_sample: &BenchSample,
@@ -223,7 +239,10 @@ fn markdown_row(sample: &BenchSample, label: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::super::identity::HostIdentity;
-    use super::{BenchSample, extract_json_object, parse_bench_json, render_markdown};
+    use super::{
+        BenchSample, extract_json_object, pair_report_json, parse_bench_json, render_markdown,
+        rust_over_cpp_ratio,
+    };
 
     fn sample(engine: &str, compiler: &str, wall_ms: f64) -> BenchSample {
         let ms_per_step = wall_ms / 600.0;
@@ -290,5 +309,163 @@ mod tests {
         assert!(markdown.contains("pinned C++"));
         assert!(markdown.contains("`rustc 1.97.0`"));
         assert!(markdown.contains("`AppleClang 17.0.0`"));
+    }
+
+    #[test]
+    fn render_markdown_includes_rust_over_cpp_ratio() {
+        // Arrange
+        let identity = HostIdentity {
+            git_head: String::from("abc123"),
+            os: String::from("macos"),
+            arch: String::from("aarch64"),
+            cpu_brand: String::from("Apple M-series"),
+            logical_cores: 8,
+        };
+        let rust_sample = sample("native_rust", "rustc 1.97.0", 31_200.0);
+        let cpp_sample = sample("pinned_cpp", "AppleClang 17.0.0", 6_000.0);
+
+        // Act
+        let markdown = render_markdown(&identity, &rust_sample, &cpp_sample);
+
+        // Assert
+        assert!(markdown.contains("Rust/C++"));
+        assert!(
+            markdown.contains("5.20") || markdown.contains("5.2"),
+            "markdown should include the 31200/6000 ratio, got:\n{markdown}"
+        );
+    }
+
+    #[test]
+    fn rust_over_cpp_ratio_divides_rust_wall_by_cpp_wall() {
+        // Arrange / Act
+        let ratio = rust_over_cpp_ratio(31_200.0, 6_000.0).expect("finite C++ wall should divide");
+
+        // Assert
+        assert_eq!(ratio, 31_200.0 / 6_000.0);
+    }
+
+    #[test]
+    fn rust_over_cpp_ratio_rejects_zero_cpp_wall() {
+        // Arrange / Act
+        let result = rust_over_cpp_ratio(31_200.0, 0.0);
+
+        // Assert
+        let Err(error) = result else {
+            panic!("zero C++ wall_ms must be a bench error, not Inf");
+        };
+        let display = error.to_string();
+        assert!(
+            display.contains("bench"),
+            "error `{display}` should mention bench"
+        );
+    }
+
+    #[test]
+    fn rust_over_cpp_ratio_rejects_negative_cpp_wall() {
+        // Arrange / Act
+        let result = rust_over_cpp_ratio(31_200.0, -1.0);
+
+        // Assert
+        let Err(error) = result else {
+            panic!("negative C++ wall_ms must be a bench error");
+        };
+        assert!(
+            error.to_string().contains("bench"),
+            "error `{error}` should mention bench"
+        );
+    }
+
+    #[test]
+    fn rust_over_cpp_ratio_rejects_non_finite_cpp_wall() {
+        // Arrange / Act
+        let nan_result = rust_over_cpp_ratio(31_200.0, f64::NAN);
+        let inf_result = rust_over_cpp_ratio(31_200.0, f64::INFINITY);
+
+        // Assert
+        let Err(nan_error) = nan_result else {
+            panic!("NaN C++ wall_ms must be a bench error");
+        };
+        let Err(inf_error) = inf_result else {
+            panic!("infinite C++ wall_ms must be a bench error");
+        };
+        assert!(nan_error.to_string().contains("bench"));
+        assert!(inf_error.to_string().contains("bench"));
+    }
+
+    fn report_fixture() -> serde_json::Value {
+        let identity = HostIdentity {
+            git_head: String::from("abc123"),
+            os: String::from("macos"),
+            arch: String::from("aarch64"),
+            cpu_brand: String::from("Apple M-series"),
+            logical_cores: 8,
+        };
+        let rust_sample = sample("native_rust", "rustc 1.97.0", 31_200.0);
+        let cpp_sample = sample("pinned_cpp", "AppleClang 17.0.0", 6_000.0);
+        pair_report_json(
+            "2001-09-09T01-46-40Z",
+            &identity,
+            &rust_sample,
+            &cpp_sample,
+            31_200.0 / 6_000.0,
+        )
+    }
+
+    #[test]
+    fn pair_report_json_is_unprofiled_wall_clock_pair() {
+        // Arrange / Act
+        let report = report_fixture();
+
+        // Assert
+        assert_eq!(report["kind"], "unprofiled_pair");
+        assert_eq!(report["timing_authority"], "unprofiled_wall_clock");
+        assert_eq!(
+            report["rust_over_cpp_ratio"].as_f64(),
+            Some(31_200.0 / 6_000.0)
+        );
+        assert_eq!(report["git_head"], "abc123");
+        assert_eq!(report["os"], "macos");
+        assert_eq!(report["arch"], "aarch64");
+        assert_eq!(report["particles"], 1920);
+        assert_eq!(report["rust"]["wall_ms"].as_f64(), Some(31_200.0));
+        assert_eq!(report["cpp"]["wall_ms"].as_f64(), Some(6_000.0));
+        assert_eq!(
+            report["rust"]["ms_per_step"].as_f64(),
+            Some(31_200.0 / 600.0)
+        );
+        assert_eq!(report["cpp"]["ms_per_step"].as_f64(), Some(10.0));
+        assert_eq!(report["rust"]["compiler"], "rustc 1.97.0");
+        assert_eq!(report["cpp"]["compiler"], "AppleClang 17.0.0");
+    }
+
+    #[test]
+    fn pair_report_json_omits_profile_keys() {
+        // Arrange / Act
+        let report = report_fixture();
+
+        // Assert
+        for forbidden in [
+            "samply",
+            "not_timing_authority",
+            "cargo_profile",
+            "rust.json.gz",
+        ] {
+            assert!(
+                !json_contains_key(&report, forbidden),
+                "pair.json must not contain `{forbidden}`"
+            );
+        }
+    }
+
+    fn json_contains_key(value: &serde_json::Value, key: &str) -> bool {
+        match value {
+            serde_json::Value::Object(map) => {
+                map.contains_key(key) || map.values().any(|nested| json_contains_key(nested, key))
+            }
+            serde_json::Value::Array(items) => {
+                items.iter().any(|nested| json_contains_key(nested, key))
+            }
+            _ => false,
+        }
     }
 }
