@@ -4,6 +4,7 @@ import {
   DAM_BREAK_PATH,
   expectReadySceneChrome,
   FOUNTAIN_PATH,
+  PAUSED_STATUS,
   PLAYGROUND_ROOT_PATH,
 } from "./player-helpers";
 
@@ -95,9 +96,12 @@ test("traps repeated forward and reverse Tab navigation inside the mobile drawer
   // Arrange
   await page.setViewportSize({ width: 390, height: 812 });
   await page.goto(DAM_BREAK_PATH);
+  await expectReadySceneChrome(page, "Dam Break");
+  await page.getByRole("button", { name: "Pause scene" }).click();
+  await expect(page.getByRole("status")).toHaveText(PAUSED_STATUS);
   const trigger = page.getByRole("button", { name: "Demos" });
   await trigger.click();
-  const dialog = page.getByRole("dialog", { name: "Demos" });
+  const dialog = page.getByRole("dialog");
   await expect(dialog).toBeVisible();
 
   // Act / Assert
@@ -196,4 +200,29 @@ test("shows six static previews in the desktop sidebar", async ({ page }) => {
   await expect(
     page.locator(".demo-sidebar").locator("svg[aria-hidden='true']"),
   ).toHaveCount(6);
+});
+
+test("shows a static preview inside the mobile demos dialog", async ({
+  page,
+}) => {
+  // Arrange
+  await page.setViewportSize({ width: 390, height: 812 });
+  await page.goto(DAM_BREAK_PATH);
+
+  // Act
+  await page.getByRole("button", { name: "Demos" }).click();
+  const dialog = page.getByRole("dialog", { name: "Demos" });
+
+  // Assert
+  await expect(dialog).toBeVisible();
+  await expect(
+    dialog.getByText("Static preview", { exact: true }).first(),
+  ).toBeVisible();
+  await expect(dialog.locator("svg[aria-hidden='true']").first()).toBeVisible();
+  await expect(page.locator(".catalog-card")).toHaveCount(0);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
 });

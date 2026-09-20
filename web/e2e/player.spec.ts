@@ -305,6 +305,8 @@ test("tabs to a scene control and scrolls the page at 375px", async ({
   await page.goto(DAM_BREAK_PATH, { waitUntil: "domcontentloaded" });
   await expectReadySceneChrome(page, "Dam Break");
   await expect(page.locator("figcaption")).toHaveText(DAM_BREAK_HINT);
+  await page.getByRole("button", { name: "Pause scene" }).click();
+  await expect(page.getByRole("status")).toHaveText(PAUSED_STATUS);
 
   await tabUntilFirstSceneSelectFocused(page);
 
