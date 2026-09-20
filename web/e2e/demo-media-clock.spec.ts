@@ -102,6 +102,8 @@ test("changes the font fingerprint when the capture font changes", async ({
 test("captures 240 numbered frames and accepts the planned pointer action", async ({
   page,
 }, testInfo) => {
+  test.setTimeout(120_000);
+
   // Arrange
   const plan = SCENE_CAPTURE_PLANS[0];
   if (plan === undefined) {

@@ -24,4 +24,5 @@ this plan's files).
     read saw 4-step catch-up frames. `resetNearZero` now observes the
     first restarted `data-step-index`.
   - `demo-media-clock.spec.ts` 240-frame capture exceeded the 30s
-    Playwright timeout. Pre-existing media-clock flake under 3 workers.
+    Playwright timeout. Plan 20-05 raised that test to 120s so
+    `just web-player-smoke` can finish the numbered-frame capture.
