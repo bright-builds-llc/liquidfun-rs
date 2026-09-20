@@ -26,7 +26,9 @@ Phase 18 is complete: all six native scenes (Dam Break, Fountain, Float or Sink,
 
 Phase 19 is complete: all six hosted demos have one CSS-bound Pointer Events gesture each, labeled keyboard controls, per-scene interaction instructions, and focused Chromium plus live Pages evidence at `https://bright-builds-llc.github.io/liquidfun-rs/` source `d3d8688dabbacd54a6b0fa5fc6a055082f0bcf9e`. Independent AI review approved digest `a297f33179b980d55d4ba64378f93edaf842ed5990b43a6eda6bbbba5f9c6fef`. This is not crate publication.
 
-Phase 20 is complete: the in-app catalog shows six hash-linked demos with names, descriptions, and compact static SVG previews inside the Kobalte sidebar/drawer (no `.catalog-card` grid). Reset remounts live and construction selects to documented initials. Local Chromium `just web-player-smoke` passed 37 tests. Independent AI review approved digest `7e94fe28c89308f16cb00a0e30543bf447b9cc7ac468e1f6b32c50aa4096535f`. This is not crate publication. Phase 21 leftover cleanup remains.
+Phase 20 is complete: the in-app catalog shows six hash-linked demos with names, descriptions, and compact static SVG previews inside the Kobalte sidebar/drawer (no `.catalog-card` grid). Reset remounts live and construction selects to documented initials. Local Chromium `just web-player-smoke` passed 37 tests. Independent AI review approved digest `7e94fe28c89308f16cb00a0e30543bf447b9cc7ac468e1f6b32c50aa4096535f`. This is not crate publication.
+
+Phase 21 is complete: unused `loadProofSession` is gone, `FallbackPanel` is unknown-only, named WASM scene files stay under the Bright Builds 628-line gate, and `upstream_cli` tests split so `file-lengths`/`all` exit 0. Local Chromium `just web-player-smoke` passed 37 tests. Independent AI review approved digest `3f4e16206f8be62bbc4c4bd93482edf17658a8f76657053a6c862f78564a4f07`. This is not crate publication.
 
 ## Current Milestone: v1.1 Web Playground
 
@@ -47,11 +49,12 @@ Phase 20 is complete: the in-app catalog shows six hash-linked demos with names,
 
 ### Active — v1.1 Web Playground
 
-None. Milestone v1.1 Web Playground phases 16–20 are complete. Phase 21 leftover cleanup remains. Package publication remains separately authorized.
+None. Milestone v1.1 Web Playground phases 16–21 are complete. Package publication remains separately authorized.
 
 
 ### Validated
 
+- [x] Phase 21 leftover cleanup: deleted unused `loadProofSession`; kept `rust-wasm-proof.spec.ts` as opt-in historical `just web-smoke`; collapsed `FallbackPanel` to unknown-only Scene not found plus Open Dam Break; confirmed `color_mixer.rs` / `dam_break.rs` / `water_wheel.rs` under 628 lines; split `tools/xtask/tests/upstream_cli.rs` so Bright Builds `all` exits 0. Chromium `just web-player-smoke` passed 37 tests. Independent AI review approved digest `3f4e16206f8be62bbc4c4bd93482edf17658a8f76657053a6c862f78564a4f07`. This is not crate publication.
 - [x] Phase 20 completed WEB-01 and WEB-03 gap closure: six in-app DemoNavigation entries show names, short descriptions, and compact static SVG `Static preview` illustrations without restoring the card grid; Reset remounts preset selects to `DEFAULT_PRESET_VALUES`; Chromium `just web-player-smoke` passed 37 tests including sidebar/drawer previews and Reset honesty. Independent AI review approved digest `7e94fe28c89308f16cb00a0e30543bf447b9cc7ac468e1f6b32c50aa4096535f`. This is not crate publication.
 - [x] Phase 19 completed WEB-05, WEB-07, and WEBTEST-01: each of the six scenes has one documented canvas Pointer Events gesture through a shared CSS-bound camera unproject and WASM `pointer_action`, labeled keyboard controls remain, per-scene figcaption instructions and `select:focus-visible` are in place, Chromium `just web-player-smoke` covers pointer/cancel/resize/375px/hidden-tab, and live Pages at `https://bright-builds-llc.github.io/liquidfun-rs/` source `d3d8688dabbacd54a6b0fa5fc6a055082f0bcf9e` serves WASM as `application/wasm`. Independent AI review approved digest `a297f33179b980d55d4ba64378f93edaf842ed5990b43a6eda6bbbba5f9c6fef`. This is not crate publication.
 - [x] Phase 18 completed WEB-01, WEB-04, WEB-08, and DEMO-01 through DEMO-06: six ready native scenes run in the shared player with static catalog cards, labeled bounded controls, explicit reset-on-change, and per-scene implementation/inspiration/notice links. Local Chromium `just web-player-smoke` proves open/reset/switch. Independent AI review approved digest `1f6349eb4a080179aad2dbf9af670e4cf3e95eecf3a0c725449eb3da21acaa94`. This is not WEB-05/WEB-07/WEBTEST-01 coverage or package publication.
