@@ -17,7 +17,7 @@ The 22 approved requirements originally formed four delivery boundaries. A 2026-
 - [x] **Phase 18: Six Native Physics Demos** — Explore the complete approved catalog with real physics, bounded controls and source credits. (completed 2026-09-18)
 - [x] **Phase 19: Interaction Polish and Browser Verification** — Use all six demos comfortably across pointer, keyboard and narrow-screen paths, verified in the built and hosted site. (completed 2026-09-19)
 - [x] **Phase 20: Playground catalog previews and Reset honesty** — Restore in-app demo previews and honest live-control labels after Reset. (completed 2026-09-20)
-- [ ] **Phase 21: Playground leftover cleanup** — Remove dead player/proof leftovers and split oversized WASM scene files.
+- [x] **Phase 21: Playground leftover cleanup** — Remove dead player/proof leftovers and split oversized WASM scene files. (completed 2026-09-20)
 
 ## Phase Details
 
@@ -146,13 +146,13 @@ Keep README gallery WebPs as a documentation gallery, not a substitute for in-ap
   2. Dead `FallbackPanel` empty/not-ready branches are removed or made reachable from a real unknown/empty hash path.
   3. `color_mixer.rs`, `dam_break.rs` and `water_wheel.rs` satisfy Bright Builds `file-lengths` without changing public scene behavior, controls, or particle recipes.
   4. Playground Dam Break headless speed versus pinned C++ remains out of this phase and out of v1.1 definition of done.
-**Plans:** 3/4 plans executed
+**Plans:** 4/4 plans complete
 
 Plans:
 - [x] 21-01-PLAN.md — Delete unused loadProofSession; document historical just web-smoke
 - [x] 21-02-PLAN.md — Collapse FallbackPanel to unknown-only chrome
 - [x] 21-03-PLAN.md — Confirm scene file-lengths; split upstream_cli.rs
-- [ ] 21-04-PLAN.md — Player-smoke gate and independent AI review
+- [x] 21-04-PLAN.md — Player-smoke gate and independent AI review
 
 ## Progress
 
@@ -165,7 +165,7 @@ Execution order: **16 → 17 → 18 → 19 → 20 → 21**. Phases 16–19 remai
 | 18. Six Native Physics Demos | 10/10 | Complete    | 2026-09-18 |
 | 19. Interaction Polish and Browser Verification | 7/7 | Complete    | 2026-09-19 |
 | 20. Playground catalog previews and Reset honesty | 6/6 | Complete    | 2026-09-20 |
-| 21. Playground leftover cleanup | 3/4 | In Progress|  |
+| 21. Playground leftover cleanup | 4/4 | Complete   | 2026-09-20 |
 
 ## Coverage and Planning Basis
 

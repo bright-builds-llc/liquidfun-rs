@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Web Playground
-status: executing
-stopped_at: Completed 21-03-PLAN.md
-last_updated: "2026-09-20T20:27:54.703Z"
+status: verifying
+stopped_at: Completed 21-04-PLAN.md
+last_updated: "2026-09-20T20:41:29.180Z"
 last_activity: 2026-09-20
 progress:
   total_phases: 6
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 39
-  completed_plans: 38
-  percent: 97
+  completed_plans: 39
+  percent: 100
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: `.planning/PROJECT.md` (updated 2026-09-17)
 
 ## Current Position
 
-Phase: 21 (playground-leftover-cleanup) — EXECUTING
+Phase: 21 (playground-leftover-cleanup) — VERIFYING
 Plan: 4 of 4
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-20
 
-Progress: [█████████░] 92%
+Progress: [██████████] 100%
 
 The prior 16 phases and 252 plans remain archived history. New work starts at Phase 16. The owner confirmed six interactive demos using our Rust engine via WASM, playful catalog/player controls and automatic GitHub Pages deployment from main.
 
@@ -78,6 +78,7 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 | Phase 21 P01 | 3 min | 2 tasks | 3 files |
 | Phase 21 P02 | 2 min | 2 tasks | 3 files |
 | Phase 21 P03 | 4min | 2 tasks | 5 files |
+| Phase 21 P04 | 11min | 2 tasks | 1 files |
 
 ### Decisions
 
@@ -199,6 +200,9 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 - [Phase 21]: Confirm color_mixer.rs, dam_break.rs, and water_wheel.rs at 346/360/426 and leave them unedited. — D-07 and D-08: named parents already satisfy the 628-line gate after the eut tests.rs extraction. Further splits would risk recipe drift.
 - [Phase 21]: Split upstream_cli with path child modules like inventory_cli rather than a TSV exception. — D-09 and rust.md: integration-test crate roots cannot imply tests/upstream_cli/*.rs without path attributes. A TSV exception would hide the oversized file instead of splitting it.
 - [Phase 21]: Keep build_accepts_the_registered_playground_dam_break_bench as a fake-cmake registration test; do not run C++ timing. — D-09 and D-10: the registration test proves the xtask target allowlist. just playground-dam-break-bench remains out of v1.1 definition of done.
+- [Phase 21]: Digest is SHA-256 of concatenated listed file bytes in 21-04-PLAN.md order; passing just web-player-smoke is not the acknowledgment. — Record the exact cat | shasum -a 256 command so a later reviewer can recompute the same 64-hex digest.
+- [Phase 21]: Independent AI review acknowledges digest 3f4e16206f8be62bbc4c4bd93482edf17658a8f76657053a6c862f78564a4f07; the implementing executor does not approve its own work. — D-11 and the 2026-09-16 owner policy require a separate identified AI reviewer bound to an exact digest. Passing just web-player-smoke is not the acknowledgment.
+- [Phase 21]: No crate/npm publish, no release tag, and no new GitHub Pages URL. — D-11 local Chromium smoke is sufficient; publication remains separately unauthorized.
 
 ### Roadmap Evolution
 
@@ -234,6 +238,6 @@ No new milestone todos captured. Plan Phase 20 next.
 
 ## Session Continuity
 
-Last session: 2026-09-20T20:27:41.068Z
-Stopped at: Completed 21-03-PLAN.md
+Last session: 2026-09-20T20:41:14.783Z
+Stopped at: Completed 21-04-PLAN.md
 Resume file: None
