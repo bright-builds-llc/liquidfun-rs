@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Web Playground
 status: executing
-stopped_at: Phase 20 UI-SPEC approved
-last_updated: "2026-09-20T18:08:33.435Z"
-last_activity: 2026-09-20 -- Phase 20 execution started
+stopped_at: Completed 20-01-PLAN.md
+last_updated: "2026-09-20T18:12:14.129Z"
+last_activity: 2026-09-20
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 35
-  completed_plans: 29
-  percent: 83
+  completed_plans: 30
+  percent: 86
 ---
 
 # Project State
@@ -26,9 +26,9 @@ See: `.planning/PROJECT.md` (updated 2026-09-17)
 ## Current Position
 
 Phase: 20 (playground-catalog-previews-and-reset-honesty) — EXECUTING
-Plan: 1 of 6
-Status: Executing Phase 20
-Last activity: 2026-09-20 -- Phase 20 execution started
+Plan: 2 of 6
+Status: Ready to execute
+Last activity: 2026-09-20
 
 Progress: [██████░░░░] 67% of v1.1 phases complete (4/6). Existing plans 29/29 remain complete.
 
@@ -69,6 +69,7 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 | Phase 19 P05 | 2min | 2 tasks | 5 files |
 | Phase 19-interaction-polish-and-browser-verification P06 | 4min | 2 tasks | 4 files |
 | Phase 19-interaction-polish-and-browser-verification P07 | 10min | 2 tasks | 6 files |
+| Phase 20 P01 | 2 min | 2 tasks | 3 files |
 
 ### Decisions
 
@@ -163,6 +164,9 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 - [Phase 19]: Ordinary non-force push of d3d8688 triggered Pages run 35415816988; live origin is https://bright-builds-llc.github.io/liquidfun-rs/.
 - [Phase 19]: Independent AI review acknowledges digest a297f33179b980d55d4ba64378f93edaf842ed5990b43a6eda6bbbba5f9c6fef; the implementing executor does not approve its own work.
 - [Phase 19]: No crate/npm publish and no release tag.
+- [Phase 20]: sceneControlsIdentity interpolates sceneId:generation so Solid Show stays truthy at generation 0. — A raw generation number is falsy at 0 and would unmount SceneControls.
+- [Phase 20]: An empty construction bag yields no constructionEntriesForScene rows so Reset can rebuild WASM build([]) defaults. — D-08 requires construction selects to return to documented initials after Reset.
+- [Phase 20]: initialPresetValue tests load real catalog presets from maybeSceneById instead of duplicating option tables. — Catalog option ids stay the single source of truth for Reset-honest labels.
 
 ### Roadmap Evolution
 
@@ -198,6 +202,6 @@ No new milestone todos captured. Plan Phase 20 next.
 
 ## Session Continuity
 
-Last session: 2026-09-20T17:52:17.855Z
-Stopped at: Phase 20 UI-SPEC approved
-Resume file: .planning/phases/20-playground-catalog-previews-and-reset-honesty/20-UI-SPEC.md
+Last session: 2026-09-20T18:12:08.221Z
+Stopped at: Completed 20-01-PLAN.md
+Resume file: None

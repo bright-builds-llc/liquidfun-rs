@@ -123,11 +123,11 @@ Plans:
   2. The owner-approved responsive Kobalte / semantic-HTML shell remains; restoring previews must not revive the old card layout that broke narrow widths.
   3. Play, pause and Reset still rebuild the native world to the documented initial state, and live preset selects show that initial value after Reset instead of a stale pendingValue.
   4. Focused Chromium smoke covers visible catalog previews and Reset label honesty for representative live presets.
-**Plans:** 6 plans
+**Plans:** 1/6 plans executed
 **UI hint**: yes
 
 Plans:
-- [ ] 20-01-PLAN.md — Reset identity helper, empty construction bag, documented initials
+- [x] 20-01-PLAN.md — Reset identity helper, empty construction bag, documented initials
 - [ ] 20-02-PLAN.md — Compact static SVG previews inside DemoNavigation
 - [ ] 20-03-PLAN.md — Keyed SceneControls remount and Reset bag clear
 - [ ] 20-04-PLAN.md — Chromium sidebar and drawer preview smoke
@@ -161,7 +161,7 @@ Execution order: **16 → 17 → 18 → 19 → 20 → 21**. Phases 16–19 remai
 | 17. Shared Player and Early Pages Delivery | 8/8 | Complete    | 2026-09-17 |
 | 18. Six Native Physics Demos | 10/10 | Complete    | 2026-09-18 |
 | 19. Interaction Polish and Browser Verification | 7/7 | Complete    | 2026-09-19 |
-| 20. Playground catalog previews and Reset honesty | 0/6 | Not started | |
+| 20. Playground catalog previews and Reset honesty | 1/6 | In Progress|  |
 | 21. Playground leftover cleanup | 0/0 | Not started | |
 
 ## Coverage and Planning Basis
