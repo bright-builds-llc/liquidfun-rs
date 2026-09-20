@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Web Playground
 status: planning
-stopped_at: Phase 20 context gathered
-last_updated: "2026-09-20T17:39:01.803Z"
+stopped_at: Phase 20 UI-SPEC approved
+last_updated: "2026-09-20T17:52:17.859Z"
 last_activity: 2026-09-20 - Added Phases 20 and 21 from the v1.1 milestone audit (catalog previews, Reset control honesty, leftover cleanup)
 progress:
   total_phases: 6
@@ -198,6 +198,6 @@ No new milestone todos captured. Plan Phase 20 next.
 
 ## Session Continuity
 
-Last session: 2026-09-20T17:39:01.800Z
-Stopped at: Phase 20 context gathered
-Resume file: .planning/phases/20-playground-catalog-previews-and-reset-honesty/20-CONTEXT.md
+Last session: 2026-09-20T17:52:17.855Z
+Stopped at: Phase 20 UI-SPEC approved
+Resume file: .planning/phases/20-playground-catalog-previews-and-reset-honesty/20-UI-SPEC.md
