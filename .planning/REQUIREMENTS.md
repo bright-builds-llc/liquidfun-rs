@@ -70,25 +70,25 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 | --- | --- | --- |
-| PERF-AUDIT | — | Pending |
-| PERF-PAIR | — | Pending |
-| PERF-PROFILE | — | Pending |
-| PERF-TIMERS | — | Pending |
-| PERF-HEAP | — | Pending |
-| PERF-ADMIT | — | Pending |
-| PERF-SHARED | — | Pending |
-| PERF-GATE | — | Pending |
-| PERF-BASELINE | — | Pending |
-| PERF-SPOT | — | Pending |
-| PERF-CANARY2 | — | Pending |
-| PERF-NOTES | — | Pending |
-| PERF-WASM | — | Pending |
+| PERF-PAIR | Phase 22 | Pending |
+| PERF-PROFILE | Phase 22 | Pending |
+| PERF-TIMERS | Phase 22 | Pending |
+| PERF-AUDIT | Phase 23 | Pending |
+| PERF-HEAP | Phase 23 | Pending |
+| PERF-ADMIT | Phase 24 | Pending |
+| PERF-SHARED | Phase 24 | Pending |
+| PERF-GATE | Phase 24 | Pending |
+| PERF-BASELINE | Phase 24 | Pending |
+| PERF-SPOT | Phase 24 | Pending |
+| PERF-CANARY2 | Phase 24 | Pending |
+| PERF-NOTES | Phase 25 | Pending |
+| PERF-WASM | Phase 25 | Pending |
 
 **Coverage:**
 - v1 requirements: 13 total
-- Mapped to phases: 0
-- Unmapped: 13
+- Mapped to phases: 13
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-09-20*
-*Last updated: 2026-09-20 after initial definition*
+*Last updated: 2026-09-20 after roadmap mapping to phases 22–25*
