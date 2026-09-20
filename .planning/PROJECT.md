@@ -4,7 +4,7 @@
 
 `liquidfun-rs` is a fun, experimental, open-source Rust implementation of Google's LiquidFun physics engine for learning, games, simulations, and visualization. It develops useful native Rust behavior incrementally against a pinned upstream reference; complete parity and production certification are optional ambitions.
 
-The repository will retain upstream C++ LiquidFun as a read-only development oracle for research, differential testing, reference data, and benchmark comparison. Ordinary users of the published Rust library must not need the upstream source, a C++ compiler, Bazel, or any cross-language runtime component.
+Visitors can also explore six native scenes in a SolidJS GitHub Pages playground compiled from this engine to WebAssembly. The repository retains upstream C++ LiquidFun as a read-only development oracle for research, differential testing, reference data, and benchmark comparison. Ordinary users of the published Rust library must not need the upstream source, a C++ compiler, Bazel, or any cross-language runtime component.
 
 ## Core Value
 
@@ -16,43 +16,40 @@ The owner prioritizes a fun hobby project over production-quality certification.
 
 ## Current State
 
-The v1.0 Experimental Foundation planning milestone is archived (2026-09-17): 16 phases and 252 active plans completed under the revised hobby scope. This is not a crate release or strict parity certification. See `.planning/MILESTONES.md` and `.planning/milestones/v1.0-REQUIREMENTS.md` for outcomes and deferred requirements. Native checks, isolated packaging and macOS CI were verified at the implementation identified in Phase 15's completion record.
+The v1.1 Web Playground planning milestone is archived (2026-09-20): 6 phases and 39 plans completed. Visitors can run Dam Break, Fountain, Float or Sink, Color Mixer, Jelly Drop, and Water Wheel at `https://bright-builds-llc.github.io/liquidfun-rs/` with in-app SVG previews, play/pause/reset, honest Reset labels, pointer interaction, and automatic Pages delivery. This is not a crate or npm release. See `.planning/MILESTONES.md` and `.planning/milestones/v1.1-REQUIREMENTS.md`.
 
-Phase 16 is complete: a private native-testable WASM wrapper now runs one persistent particle/rigid scene in package-pinned Chromium, exports five bounded copied frame arrays, renders visibly through the minimal SolidJS/Canvas proof, and disposes explicitly. Source-bound closure attempt 10 passed 16 checks, independent AI review approved its exact digest, and the security audit closed all 20 declared threats.
+The v1.0 Experimental Foundation planning milestone remains archived (2026-09-17): 16 phases and 252 active plans under hobby scope. Native checks, isolated packaging and macOS CI were verified at `75ead0edcbde68d01b804e2c466f2f4b2a4d30da`.
 
-Phase 17 is complete: the shared SolidJS player hosts Dam Break on GitHub Pages at `https://bright-builds-llc.github.io/liquidfun-rs/#/scene/dam-break`, with play/pause/reset, honest not-ready catalog labels, bounded hidden-tab stepping, and same-checkout OIDC Pages delivery. Recorded deploy SHA `50a15562b356ed941266eedddc636df3f76e7e7e`; independent AI review approved digest `a962555da21e1da79b860c37b003d29fa7f3d6683ef16db1b2beac2a151bf893`.
+<details>
+<summary>v1.1 phase-by-phase completion notes</summary>
 
-Phase 18 is complete: all six native scenes (Dam Break, Fountain, Float or Sink, Color Mixer, Jelly Drop, Water Wheel) are ready in the shared player with static catalog cards, labeled bounded controls, host-locked credits, and local Chromium open/reset/switch proofs. Independent AI review approved digest `1f6349eb4a080179aad2dbf9af670e4cf3e95eecf3a0c725449eb3da21acaa94`.
+Phase 16: private WASM wrapper, five copied frame lanes, Chromium proof, independent review, 20/20 closed threats.
 
-Phase 19 is complete: all six hosted demos have one CSS-bound Pointer Events gesture each, labeled keyboard controls, per-scene interaction instructions, and focused Chromium plus live Pages evidence at `https://bright-builds-llc.github.io/liquidfun-rs/` source `d3d8688dabbacd54a6b0fa5fc6a055082f0bcf9e`. Independent AI review approved digest `a297f33179b980d55d4ba64378f93edaf842ed5990b43a6eda6bbbba5f9c6fef`. This is not crate publication.
+Phase 17: shared SolidJS player, Dam Break on Pages, OIDC delivery. Recorded deploy SHA `50a15562b356ed941266eedddc636df3f76e7e7e`.
 
-Phase 20 is complete: the in-app catalog shows six hash-linked demos with names, descriptions, and compact static SVG previews inside the Kobalte sidebar/drawer (no `.catalog-card` grid). Reset remounts live and construction selects to documented initials. Local Chromium `just web-player-smoke` passed 37 tests. Independent AI review approved digest `7e94fe28c89308f16cb00a0e30543bf447b9cc7ac468e1f6b32c50aa4096535f`. This is not crate publication.
+Phase 18: six native scenes with labeled controls and host-locked credits.
 
-Phase 21 is complete: unused `loadProofSession` is gone, `FallbackPanel` is unknown-only, named WASM scene files stay under the Bright Builds 628-line gate, and `upstream_cli` tests split so `file-lengths`/`all` exit 0. Local Chromium `just web-player-smoke` passed 37 tests. Independent AI review approved digest `3f4e16206f8be62bbc4c4bd93482edf17658a8f76657053a6c862f78564a4f07`. This is not crate publication.
+Phase 19: Pointer Events gestures, keyboard/narrow-width polish, Chromium plus live Pages at source `d3d8688dabbacd54a6b0fa5fc6a055082f0bcf9e`.
 
-## Current Milestone: v1.1 Web Playground
+Phase 20: Kobalte catalog SVG previews and Reset remount to `DEFAULT_PRESET_VALUES`. Chromium `just web-player-smoke` 37 tests.
 
-**Goal:** Build a playful SolidJS website with six interactive physics demos powered by this Rust engine compiled to WebAssembly, automatically deployed to GitHub Pages on every push to main.
+Phase 21: removed unused `loadProofSession`, unknown-only `FallbackPanel`, named scenes under 628 lines, `upstream_cli` split. Independent review digest `3f4e16206f8be62bbc4c4bd93482edf17658a8f76657053a6c862f78564a4f07`.
 
-**Target features:**
-- A small local JavaScript/TypeScript package boundary around our Rust LiquidFun engine compiled to WASM; no external physics engine or C++ runtime.
-- A colorful, approachable catalog and player with short explanations, source/inspiration links, play/pause, reset and scene-specific controls.
-- Six confirmed launch demos: Dam Break, Fountain, Float or Sink, Color Mixer, Jelly Drop, and Water Wheel, using existing engine capabilities and credited inspiration.
-- Static GitHub Pages hosting with production JS/WASM asset paths verified and an automatic main-push build/deploy workflow.
+</details>
 
-**Confirmed preferences:** The owner selected six varied demos, our own Rust engine via WASM, a playful playground, the proposed exact six-scene feature scope, and the four-phase sequence (browser proof, early hosted player, six demos, polish/verification). GitHub sites means GitHub Pages. Milestone v1.1 is a planning label, not a crate/npm release.
+## Next Milestone Goals
 
-**Boundaries:** Keep hobby scope and native Cargo-only consumers. No backend, account system, visual scene editor, npm/crates.io publication, WASM threads, exhaustive parity campaign or browser/platform matrix. Small browser-specific smoke checks and the website build/deploy workflow are new required delivery checks, not a restart of mandatory Linux native qualification. Preserve archived phases and earlier research; begin new phases at 16.
-
+None chosen. Use `/gsd-new-milestone` to define fresh requirements and continue phase numbering after 21. Package publication remains separately authorized.
 
 ## Requirements
 
-### Active — v1.1 Web Playground
+### Active
 
-None. Milestone v1.1 Web Playground phases 16–21 are complete. Package publication remains separately authorized.
-
+None. Define the next milestone with `/gsd-new-milestone`. Package publication remains separately authorized.
 
 ### Validated
+
+- ✓ v1.1 Web Playground — 22/22 requirements, 6 phases, 39 plans, audit passed 2026-09-20. Hosted playground at `https://bright-builds-llc.github.io/liquidfun-rs/`. Not a crate release.
 
 - [x] Phase 21 leftover cleanup: deleted unused `loadProofSession`; kept `rust-wasm-proof.spec.ts` as opt-in historical `just web-smoke`; collapsed `FallbackPanel` to unknown-only Scene not found plus Open Dam Break; confirmed `color_mixer.rs` / `dam_break.rs` / `water_wheel.rs` under 628 lines; split `tools/xtask/tests/upstream_cli.rs` so Bright Builds `all` exits 0. Chromium `just web-player-smoke` passed 37 tests. Independent AI review approved digest `3f4e16206f8be62bbc4c4bd93482edf17658a8f76657053a6c862f78564a4f07`. This is not crate publication.
 - [x] Phase 20 completed WEB-01 and WEB-03 gap closure: six in-app DemoNavigation entries show names, short descriptions, and compact static SVG `Static preview` illustrations without restoring the card grid; Reset remounts preset selects to `DEFAULT_PRESET_VALUES`; Chromium `just web-player-smoke` passed 37 tests including sidebar/drawer previews and Reset honesty. Independent AI review approved digest `7e94fe28c89308f16cb00a0e30543bf447b9cc7ac468e1f6b32c50aa4096535f`. This is not crate publication.
@@ -215,6 +212,11 @@ The snapshots below describe their original phases, not current work or next ste
 | Keep rendering optional and simulation headless | Core portability, testing, server use, and framework independence depend on this boundary | Accepted and verified in Phase 11: the catalog/controller/checkpoint model is renderer-neutral, `liquidfun-testbed` is private and non-default, and package isolation rejects renderer dependencies from `liquidfun` |
 | Prioritize correctness and parity before optimization | Premature layout, SIMD, or parallel decisions could hide incompatibilities and destabilize the API | Accepted in Phase 4 through source-ordered scalar kernels and fail-closed rejection of nonbaseline CPU, SIMD/FMA, contraction, and unsafe floating options |
 | Require explicit compatibility sign-off per subsystem | Incremental, reviewable evidence prevents premature global parity claims | Accepted for math/settings in Phase 4, collision in Phase 5, and the minimal rigid-world slice in Phase 6; later subsystems must repeat scoped inventory, unit, differential, documentation, review, and security evidence |
+| Keep a bounded WASM playground independent of native Cargo consumers | Visitors can explore scenes in a browser without making C++ or wasm-pack a published-crate requirement | Accepted in v1.1: private `liquidfun-wasm`, SolidJS Pages site, `liquidfun` remains the sole default member |
+| Ship six native playground scenes instead of a scene editor or JS physics clone | Owner-approved catalog using existing engine capabilities | Accepted in v1.1: Dam Break, Fountain, Float or Sink, Color Mixer, Jelly Drop, Water Wheel |
+| Use semantic HTML plus Kobalte Dialog for the responsive playground shell | Accessible modal behavior without a broad design-system migration | Accepted in v1.1; recorded in `standards-overrides.md` |
+| Deploy the playground from main with OIDC Pages, not a PAT | Automatic website delivery without reviving Linux native qualification | Accepted in v1.1 HOST-01..03 |
+| Treat v1.1 as a planning label, not a package or git release tag | Archive completion is not publication | Accepted 2026-09-20; same policy as v1.0 |
 
 ## Open Questions
 
@@ -223,7 +225,7 @@ The snapshots below describe their original phases, not current work or next ste
 - How should deterministic iteration and contact ordering be preserved without exposing internal storage?
 - Which existing permissively licensed Rust components, if any, are compatible enough to reuse after audit?
 - Which lightweight rendering stack best supports an optional upstream-equivalent testbed without coupling the core library?
-- Which subsets can realistically support WASM, mobile, or `no_std` without distorting the full engine?
+- Which subsets can realistically support full-engine WASM, mobile, or `no_std` without distorting the native library? A bounded playground WASM wrapper exists; complete-engine WASM support is still unclaimed.
 
 ## Evolution
 
@@ -246,4 +248,4 @@ This document evolves at phase transitions and milestone boundaries.
 
 ______________________________________________________________________
 
-*Last updated: 2026-09-20 after completing Phase 20. Strict native certification remains optional and outstanding. Package publication remains separately authorized.*
+*Last updated: 2026-09-20 after v1.1 milestone. Strict native certification remains optional. Package publication and release tags remain separately authorized.*
