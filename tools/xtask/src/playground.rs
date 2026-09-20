@@ -4,6 +4,7 @@ mod counts;
 mod error;
 mod identity;
 mod pair;
+mod stamp;
 
 pub(crate) use error::PlaygroundError;
 
