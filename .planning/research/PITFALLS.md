@@ -1,351 +1,347 @@
 # Pitfalls Research
 
-**Domain:** Native Rust port of Google LiquidFun with a pinned C++ differential oracle
-**Researched:** 2026-07-09
-**Confidence:** HIGH for upstream semantics; MEDIUM for recovery cost and future Rust architecture choices
+**Domain:** Adding scripted profiling and C++-matching optimizations to an existing native LiquidFun/Box2D-style Rust port that already has a semantic oracle, a Dam Break pair timer, and a correctness-before-speed policy
+**Researched:** 2026-09-20
+**Confidence:** HIGH for integration and policy pitfalls verified in this repository; MEDIUM for which single hot path currently dominates the ~300× Dam Break gap until a release-mode CPU profile exists
+
+## Executive Warning
+
+The ~300× Dam Break Medium gap (`docs/playground-dam-break-timing.md`) is a **canary**, not a public performance claim and not evidence that the engine “needs SIMD.” A same-order close (Rust wall time ≤ 3× pinned C++ on that pair) is the v1.2 gate. Phase 12 already defined a sealed 32-case method, but `reference/performance/manifest.toml` is empty (`reviewed_reports = []`), so the project currently publishes **no** accepted performance number. Hobby scope forbids required perf CI, Linux qualification, and crate publish.
+
+Suggested phase order for planners: **measurement/audit first**, **then native hot-path optimization**, **then WASM playground sanity**. Do not invert that order.
 
 ## Critical Pitfalls
 
-### Pitfall 1: Porting the Wrong Upstream
+### Pitfall 1: Treating ~300× as a SIMD or Parallelism Problem
 
-**What goes wrong:** The project implements behavior from modern Box2D, a binding fork, or a moving LiquidFun branch instead of the selected LiquidFun/Box2D 2.3.0 lineage.
+**What goes wrong:**
+The first optimization work reaches for `std::simd`, `target-cpu=native`, Rayon, or default multi-thread stepping. The Dam Break pair stays hundreds of times slower, or a modest SIMD win is claimed while the real cost (extra clones, allocations, always-on checks, worse algorithms) remains. Determinism and differential tests break because contact/particle order changed.
 
-**Why it happens:** The official repository is archived, its layout is historical, and current Box2D documentation is easier to find.
+**Why it happens:**
+A 300× ratio looks like “languages” or “vectorization.” Training data and other physics ports talk about SIMD contact solvers. This repo’s own policy already forbids unproven acceleration as the baseline. A closer analog is the 2026 `box2d-rust` post-mortem: a 2.73× spinner outlier was `B2_VALIDATE` walking islands in **release**, not the collide path; gating validators to debug (matching C) collapsed the gap before SIMD was even interesting.
 
-**How to avoid:** Pin an immutable commit, record release ancestry and patches, inventory its exact API/source/test surface, and make every oracle trace carry that provenance.
+**How to avoid:**
+Audit first. Compare Rust `World::step` to `b2World::Step` for **extra work**: per-step full-world clones, per-kernel `to_vec()` / `ParticleStorage` clones, `check_invariants()` on release paths, `catch_unwind` around the particle graph, scratch allocated every pass instead of reused, O(n) or O(n²) identity scans. Keep the scalar deterministic compatibility baseline. SIMD/parallel remain **explicit opt-in** after the scalar Dam Break pair is in the same order of magnitude and differential hashes still pass.
 
-**Warning signs:** Documentation cites current Box2D APIs; the submodule follows a branch; compatibility rows have no upstream file/commit; examples disagree before Rust code exists.
+**Warning signs:**
+Plans named “add SIMD particle solver” before a dated CPU profile; `rayon` appearing in `crates/liquidfun/Cargo.toml`; `-C target-cpu=native` or `-ffast-math` on canonical `oracle-release` / Rust `--release` pair builds; “Rust is just slower than C++” in commit messages with no function names.
 
-**Recovery:** Freeze work, reconstruct provenance, diff the assumed and actual upstream surfaces, invalidate affected requirements/tests, and re-baseline deliberately.
+**Phase to address:**
+Measurement/audit (name the extra work). Native optimization may later add **opt-in** SIMD only with profile share evidence and unchanged solver-visible order.
 
-**Phase to address:** Foundation and upstream provenance, before public API or physics implementation.
+---
 
-### Pitfall 2: Losing License and Translation Provenance
+### Pitfall 2: Blessing Exploratory Numbers as Phase 12 or a Public “Rust Is X% Slower” Claim
 
-**What goes wrong:** Translated algorithms, tests, fixtures, or reference data ship without required zlib notices, alteration statements, or traceable origins.
+**What goes wrong:**
+The first Dam Break sample (Rust ~70.6 s vs C++ ~0.23 s for 600 steps, ~304×) is copied into `reference/performance/manifest.toml`, README, playground copy, or a Phase 12 sealed report. Later faster runs cannot un-claim it. Reviewers treat an empty manifest as if it held a reviewed interval.
 
-**Why it happens:** A permissive license is mistaken for no obligations, and incremental translation obscures which source informed which Rust module.
+**Why it happens:**
+The pair recipe is convenient and already documented. Phase 12 machinery (`just phase12-performance-paired`, `policy.json`, 32 sealed cases) looks like the official place to put a number. Hobby urgency wants a headline.
 
-**How to avoid:** Complete the license review before translation; preserve notices; record source commit/path for derived code, tests, and data; audit packaged crate contents.
+**How to avoid:**
+Keep `reviewed_reports = []` unless a **separate**, owner-authorized Phase 12 promotion happens (it is **not** this milestone). Do not copy playground table cells into the manifest. Do not write “Rust is 300× slower” or “Rust is X% slower” as a product claim. A committed audit/notes doc may **cite** the canary with host, SHA, compilers, and “unreviewed local sample” in the same sentence. Public claim rules in `BENCHMARKING.md` still require one immutable manifest-listed report, workload-only wording, and interval math this milestone is not running.
 
-**Warning signs:** Source ports lack provenance notes; generated reference data has no manifest; the project license is chosen before review; `cargo package --list` contains unexplained upstream assets.
+**Warning signs:**
+Diffs that fill `reviewed_reports`; README performance badges; copying `70594.221` into `protocol/benchmarks/` or `reference/performance/`; using the 32-case matrix hashes as if Dam Break Medium were one of those sealed cases (it is not).
 
-**Recovery:** Stop release work, inventory derived material, restore notices and alteration records, replace unverifiable assets, and obtain legal review for ambiguity.
+**Phase to address:**
+Measurement/audit (script + notes labeling). Re-check documentation during native optimization and WASM sanity so later deltas are not marketed as certified.
 
-**Phase to address:** Foundation, then every subsystem sign-off and release audit.
+---
 
-### Pitfall 3: Designing the API Around C++ Pointers
+### Pitfall 3: Timing the Wrong Construction
 
-**What goes wrong:** Raw pointers, long-lived borrows, unscoped indices, or globally reusable IDs recreate dangling references and make safe mutation impractical.
+**What goes wrong:**
+New scripts time scene construction, particle insertion, warm-up, `capture_frame`, SVG/WASM copies, rAF catch-up, or `hooks.on_advance` work that C++ does not include. Or they time a different recipe (192 vs 1920 particles, different radius/spacing, `oracle-debug`, `cargo test` debug binary). The ≤ 3× gate becomes meaningless.
 
-**Why it happens:** Mirroring upstream object graphs appears to maximize compatibility and postpones hard ownership decisions.
+**Why it happens:**
+The honest pair already exists and is easy to “improve” by shrinking the timed region or the scene. The Rust timer lives in the `liquidfun-wasm` crate (`dam-break-bench`) wrapping `SessionCore::advance`, while C++ calls `b2World::Step` only. Playground JS also calls `advance` then `captureFrame` under a 4-step catch-up cap.
 
-**How to avoid:** Prove a world-scoped generational handle model with stale/cross-world rejection, destruction reports, borrow-scoped views, and cascade tests before broad implementation.
+**How to avoid:**
+Reuse the locked Medium/Normal recipe: 1920 particles, radius `0.06324555`, spacing `0.101193`, gravity `(0, -10)`, `dt = 1/60`, velocity 8 / position 3 / particle 2, 60 untimed warm-up + 600 timed steps. Construction, insertion, warm-up, capture, and rendering stay **outside** the timer (already true in `crates/liquidfun-wasm/src/dam_break_bench.rs` and `tools/reference/src/playground_dam_break_bench.cpp`). If the Rust wrapper’s `on_advance` or `SessionCore` bookkeeping is suspected, **split** a `World::step`-only timer rather than silently dropping C++ work. Record git HEAD, OS/arch, CPU, logical cores, `rustc --release` vs `oracle-release` (no `-ffast-math`, no `-march=native`).
 
-**Warning signs:** Handles lack a world identity; generation wrap is unspecified; callbacks retain references; destroying a body can silently leave valid-looking fixture/joint handles.
+**Warning signs:**
+Timed `SessionCore::create`; `--warmup 0` used as the reported gate; particle count ≠ 1920; C++ binary from `oracle-debug`; measuring `just web-player-smoke` or Pages FPS against C++; moving `rustc --version` **inside** the timed loop.
 
-**Recovery:** Introduce typed IDs and an arena boundary behind the public API, migrate callers with compatibility adapters, and add property tests for invalidation before resuming porting.
+**Phase to address:**
+Measurement/audit (script contract). Re-verify the same construction after each optimization batch.
 
-**Phase to address:** Object-model spike before math/collision work hardens public types.
+---
 
-### Pitfall 4: Permitting Reentrant World Mutation
+### Pitfall 4: Using Profiled Timings as the ≤ 3× Authority
 
-**What goes wrong:** Listeners receive unrestricted `&mut World`, mutate structures while the world is locked, invalidate solver state, or create timing that cannot match upstream.
+**What goes wrong:**
+The gate is declared passing because a `samply` / Instruments / `cargo flamegraph` / `World::step_profiled` run looks “only 2.8×.” Unprofiled `--release` wall-clock is still 10×–300×. Or the inverse: a profiled run looks worse, so SIMD is added to please the profiler.
 
-**Why it happens:** Rust callbacks are made ergonomic without first modeling upstream lock and callback semantics.
+**Why it happens:**
+Phase 12 already warns that diagnostic profiles may guide work but **profiled timings are never public timing authority**. `reference/performance/policy.json` sets `timing_authority: unprofiled_wall_clock`. Sampling, debuginfo, and `Instant::now` around every phase add overhead. `World::step` uses `DiagnosticStepProfiler::disabled()` (no `Instant::now`); `step_profiled` enables it. Sampling profilers typically add low-single-digit to ~7% overhead, but debuginfo and a `profiling` Cargo profile are **not** the gate binary.
 
-**How to avoid:** Expose restricted synchronous hook contexts, owned event snapshots, narrowly supported pre-solve edits, and deferred commands applied at documented phase boundaries.
+**How to avoid:**
+Scripts must produce **two** artifacts: (1) unprofiled pair table for the numeric gate, (2) CPU profiles (and optionally allocation traces) stored under a **gitignored** dated evidence directory. Never compare a profiled Rust binary to unprofiled C++, or profiled C++ to unprofiled Rust. Do not call `step_profiled` inside `dam-break-bench`. After a hot-path change, re-run **unprofiled** `just playground-dam-break-bench` (or the successor recipe) as the authority.
 
-**Warning signs:** Listener APIs expose general world mutation; callback order is undocumented; panics can unwind through FFI; tests mutate bodies during contact callbacks.
+**Warning signs:**
+One command that both records a flamegraph and prints the gate ratio; `CARGO_PROFILE_RELEASE_DEBUG=true` times quoted as the 3× result; `DiagnosticStepProfiler::enabled` on the bench path; Instruments Time Profiler milliseconds pasted into `docs/playground-dam-break-timing.md` as the C++ pair.
 
-**Recovery:** Deprecate unrestricted hooks, add a command buffer and event journal, specify timing, and differentially revalidate every callback scenario.
+**Phase to address:**
+Measurement/audit (script split). Native optimization must remeasure unprofiled after every candidate.
 
-**Phase to address:** Object model and minimal world vertical slice; expand during contacts/joints.
+---
 
-### Pitfall 5: Treating Events as Unique Stable Facts
+### Pitfall 5: Mixing Debug and Release (Rust or C++)
 
-**What goes wrong:** Clients assume contact callbacks are deduplicated, persistent, or safe for immediate mutation even though upstream events may be transient or repeated and mutation is deferred.
+**What goes wrong:**
+Developers profile `cargo run -p liquidfun-wasm --bin dam-break-bench` without `--release`, or compare Rust `--release` to `oracle-debug`, or leave always-on invariant walks that C++ compiles out of `NDEBUG`. The box2d-rust validator-in-release story is the warning: **this repo already has release-path checks** that C++ does not run every step.
 
-**Why it happens:** Event streams are interpreted as a normalized domain log rather than observations of solver transitions.
+**Why it happens:**
+`debug_assert_eq!(self.check_invariants(), Ok(()))` is correctly debug-only in some storage methods, but `replace_solver_candidate` clones all of `ParticleStorage` and calls `check_invariants()` as a **release** `?` error. `check_identity_map` scans `dense_to_id[..dense].contains(&id)` (quadratic in particle count) whenever invariants run. `World::step` always clones bodies, fixtures, joints, particle systems, broad phase, and contact manager for limit rollback (`backup_step_limit_state`) **before** the step, including successful Dam Break steps. `run_particle_solver` clones body/system/group arenas **again**, then clones them a second time as candidates.
 
-**How to avoid:** Document multiplicity and lifetime, compare event multisets/sequences according to upstream guarantees, and keep persistent game state separate from raw callback events.
+**How to avoid:**
+Gate scripts to `--release` + `oracle-release` and fail closed if `cfg!(debug_assertions)` is true in the timed binary. Audit `check_invariants`, `ParticleStorage::clone`, arena `clone`, and `to_vec()` on the **release** Dam Break step. Match C++: expensive structure validators belong in debug or in tests, not in the scalar release hot path, **without** dropping fail-closed API errors that are part of the public contract. Do not “fix” debug slowness and call the milestone done.
 
-**Warning signs:** Tests assert one callback without a stated guarantee; callback payloads contain borrowed internal storage; event consumers delete objects immediately.
+**Warning signs:**
+`opt-level = 0` times; `oracle-debug` C++ ms/step near Rust; flamegraphs dominated by `check_invariants` / `clone` / `Vec::to_vec` that disappear from the write-up because “we’ll SIMD the pressure kernel”; CI job running the pair under `cargo test`.
 
-**Recovery:** Version the event contract, add normalization only as an opt-in layer, and re-record affected traces with explicit semantics.
+**Phase to address:**
+Measurement/audit (prove debug vs release and name clone/invariant cost). Native optimization (remove extra release work; keep debug asserts).
 
-**Phase to address:** Contact/listener design and differential protocol design.
+---
 
-### Pitfall 6: Comparing Unspecified Order as Behavior
+### Pitfall 6: Comparing WASM Playground Frames to C++ (or Using WASM as the Native Gate)
 
-**What goes wrong:** Differential tests fail on query, ray-cast, contact, or collection order that upstream does not guarantee—or accidentally make incidental order part of the Rust API.
+**What goes wrong:**
+Pages FPS, `acceptedStepCount` catch-up stutter, or `wasm-bindgen` `advance`+`captureFrame` is compared to `playground-dam-break-bench` C++. Native hits ≤ 3× while the playground still stutters (or the reverse). Someone times `wasm32-unknown-unknown` with `Instant::now` and treats traps or `performance.now` as the Dam Break pair.
 
-**Why it happens:** Bytewise snapshots and vector equality are simpler than classifying observable ordering contracts.
+**Why it happens:**
+The crate that owns the native bench is named `liquidfun-wasm`. The playground’s realtime factor in the exploratory doc is a **reading aid** for stutter, not a C++ comparison. v1.1 already documented that the native profiler uses `Instant::now()` and must not be imported into the WASM bridge. JS caps catch-up at 4 steps/frame and copies typed arrays every frame.
 
-**How to avoid:** Maintain an ordering audit. Compare guaranteed sequences in order, unordered results as canonicalized sets/multisets, and internal iteration only where it affects subsequent physics.
+**How to avoid:**
+Native vs C++ is **only** the same-host scalar `--release` / `oracle-release` Dam Break pair. WASM/playground is a **post-gate sanity check**: record whether the hosted scene feels improved, with host/browser notes, and **never** a ratio versus C++. Do not add `Instant` profiling inside the `cdylib`. Do not lift the 4-step cap to “make WASM look faster.”
 
-**Warning signs:** Tests sort everything indiscriminately; query results differ but semantic membership matches; hash maps appear in solver paths; ties have no stable policy.
+**Warning signs:**
+Tables with a `wasm` row next to `pinned_cpp`; using Chromium `just web-player-smoke` duration as evidence of 3×; `cargo build --target wasm32-unknown-unknown --bin dam-break-bench`; README “playground is N× C++.”
 
-**Recovery:** Classify each observable, version comparator rules, minimize scenarios to identify physically consequential order, and avoid masking solver-order divergence with broad sorting.
+**Phase to address:**
+WASM playground sanity check. Measurement scripts must refuse a WASM target for the C++ pair.
 
-**Phase to address:** Differential protocol foundation, then every subsystem sign-off.
+---
 
-### Pitfall 7: Flattening the Upstream Step and Solver Order
+### Pitfall 7: Speeding Up by Breaking the Semantic Oracle
 
-**What goes wrong:** Refactoring for elegance changes particle-before-rigid ordering, solver pass order, warm-start timing, contact update timing, or TOI sequencing and causes cumulative drift.
+**What goes wrong:**
+A hot-path rewrite changes contact generation order, particle compaction, island solve order, or skip conditions. Dam Break **looks** fine (water still falls). Differential scenarios, determinism hashes, or Phase 9/10 particle probes fail—or worse, only fail on another scene (Fountain, Jelly Drop, Color Mixer).
 
-**Why it happens:** Individual passes appear mathematically commutative when their floating-point and stateful interactions are not.
+**Why it happens:**
+Correctness-before-speed is the standing policy, but a 300× fire invites “temporary” algorithmic shortcuts: spatial hash with `HashMap` iteration, sorting contacts differently, skipping empty material flags incorrectly, dropping transactional rollback and then mutating in place with different failure semantics.
 
-**How to avoid:** Encode the world step as an explicit orchestrator, inventory the pinned pass order, trace phase boundaries, and validate vertical slices before abstraction or fusion.
+**How to avoid:**
+Every optimization candidate that touches `crates/liquidfun` must re-run the relevant differential/determinism suite (particle + rigid probes that Dam Break actually exercises, plus a spot-check of other catalog scenes). Treat a physics mismatch as a **correctness failure**, never a timing sample (Phase 12 already encodes this). Keep fail-closed construction errors; do not swap them for `unwrap` in the solver. Prefer matching upstream pass order (`PassId` graph) with cheaper storage, not a new pass order.
 
-**Warning signs:** A single generic loop replaces named passes; optimizations fuse passes before parity; divergence grows immediately after one phase; source-order mappings are absent.
+**Warning signs:**
+“Tests still pass” meaning only `dam_break_bench` unit tests; ignored `liquidfun-differential` failures; comments that HashMap order “shouldn’t matter for water”; skipped `particle_iterations` loops.
 
-**Recovery:** Restore explicit phases, add per-pass trace probes, bisect at the first divergent phase, and make ordering a documented compatibility decision.
+**Phase to address:**
+Native optimization (gate each candidate). Measurement/audit should record a baseline differential green SHA before changing kernels.
 
-**Phase to address:** Minimal world slice, rigid solver, and every particle-behavior cluster.
+---
 
-### Pitfall 8: Giving Ephemeral Particle Indices Stable Meaning
+### Pitfall 8: HashMap Iteration or Default Rayon in Solver-Visible Order
 
-**What goes wrong:** Public callers persist dense indices that change after zombie compaction, sorting, group rotation, or buffer growth.
+**What goes wrong:**
+A “faster neighborhood” uses `HashMap`/`HashSet` as the iteration order for contacts, proxies, or islands. Default Rayon `par_iter` on particle contacts. Results differ by run, by stdlib, or by thread count. The oracle cannot match. The ≤ 3× number is not reproducible.
 
-**Why it happens:** Upstream APIs expose indices heavily, while Rust callers expect handles to remain valid or fail explicitly.
+**Why it happens:**
+Rust collections are the path of least resistance. Stack research and Phase 8 already banned `HashMap`/`HashSet` in solver-visible order. Rayon is not in the production crate today; adding it as a default feature would violate “single-threaded baseline; explicit experimental mode only after parity.”
 
-**How to avoid:** Separate stable `ParticleId` from dense storage index, update the ID-to-index map on every move, scope index views to borrows, and test random create/destroy/compact sequences.
+**How to avoid:**
+Neighborhoods, contacts, pairs, triads, islands, and proxy lists stay order-preserving (`Vec`, indices, explicit sorts defined by compatibility policy). `AssociationMap`’s `HashMap` is for user data, not solver iteration—do not start iterating it during `World::step`. If parallelism is ever prototyped, it is a **named opt-in** with the scalar path still the Dam Break gate. Reject `-C target-cpu=native` on the pair.
 
-**Warning signs:** IDs equal vector positions; deletion shifts public identity; snapshots compare index membership; handles silently refer to another particle after compaction.
+**Warning signs:**
+`use rayon::` under `crates/liquidfun`; `HashMap` in `particle/solver` or `contact_manager` hot loops; tests that pass only with `RUST_TEST_THREADS=1` because of races; Dam Break ratio that jitters tens of percent between runs on a quiet machine.
 
-**Recovery:** Add a stable identity lane and remap layer, migrate serialized/reference scenarios to semantic IDs, and invalidate all index-based fixtures and traces.
+**Phase to address:**
+Native optimization (forbid in plans). Measurement/audit can `rg` the hot path for `HashMap`/`par_iter` before trusting a profile.
 
-**Phase to address:** Early particle-storage spike, before particle contacts or behaviors.
+---
 
-### Pitfall 9: Breaking Particle Group Contiguity and Buffer Semantics
+### Pitfall 9: Reviving Phase 12’s Sealed 32-Case Matrix, Linux Host, or Perf CI as the Hobby Gate
 
-**What goes wrong:** Group ranges stop being contiguous, pair/triad membership becomes stale, external buffer capacity is misinterpreted, or optional lanes drift during rotation/compaction.
+**What goes wrong:**
+v1.2 is blocked on `scripts/phase12-performance.sh paired`, five calibrated runs × 32 cases, `PERFORMANCE_CONTROLLED_HOST_IDENTITY`, or `.github/workflows/performance.yml`. Or the empty manifest is treated as a failed release audit. Hobby completion never happens.
 
-**Why it happens:** A straightforward vector/arena design ignores upstream's structure-of-arrays synchronization and `RotateBuffer`/capacity rules.
+**Why it happens:**
+Phase 12 method is complete, discoverable (`just phase12-performance-*`), and looks more “serious” than a one-scene pair. Older plans required a dedicated Linux x64 runner. `PROJECT-SCOPE.md` (2026-09-16) removed that as a completion blocker.
 
-**How to avoid:** Define one authoritative permutation primitive for every particle lane and index map; model group ranges and external-buffer ownership/capacity as invariants; property-test permutations.
+**How to avoid:**
+Dam Break Medium native pair **is** the numeric gate. Phase 12 remains available as an **optional** strict profile. Do not schedule automatic expensive performance workflows. Do not require Linux. Local macOS + existing macOS Cargo CI is enough. Do not implement `cargo xtask performance optimization-check` admission as if it updated public claims (it does not; even Phase 12 says passing that command does not fill the manifest).
 
-**Warning signs:** Each lane moves itself; group bounds need repair passes; external buffers reallocate unexpectedly; optional buffers have different lengths; pair/triad IDs survive moves incorrectly.
+**Warning signs:**
+Milestone acceptance text citing 32/32 sealed cases; new required GitHub Actions performance job; secrets for controlled-host identity in ordinary PRs; “cannot optimize until Phase 12 calibrate is green.”
 
-**Recovery:** Centralize permutations, rebuild derived contacts/pairs/triads, add invariant checks in debug/test builds, and revalidate group lifecycle scenarios.
+**Phase to address:**
+Measurement/audit (define the local pair + gitignored evidence, explicitly out of scope the sealed matrix). Reaffirm in later phases.
 
-**Phase to address:** Particle storage/groups before solver behavior implementation.
+---
 
-### Pitfall 10: Using Weak Differential Evidence
+### Pitfall 10: Leaving Always-On Transactional Full-World Clones While “Optimizing” Kernels
 
-**What goes wrong:** The harness compares raw memory, uses unversioned JSON, regenerates golden data silently, or cannot distinguish implementation bugs from oracle/protocol/platform failures.
+**What goes wrong:**
+Pressure/damping kernels get micro-optimized, but every `World::step` still clones the entire rigid + particle world for rollback, and every particle solve clones arenas twice more, plus per-pass velocity `to_vec()` and `replace_solver_candidate` (clone all lanes + `check_invariants`). C++ LiquidFun mutates in place with member scratch. The ratio stays two orders of magnitude off. Profiles that only sample the pressure kernel mislead.
 
-**Why it happens:** A quick one-off FFI test grows into the compatibility system without a protocol design.
+**Why it happens:**
+Clone-on-write was a correctness shortcut for limit-exceeded rollback and particle coupling errors (`execution.rs`, `particle_coupling.rs`). It is the right **recovery** model, the wrong **happy-path** implementation. Material kernels copy lanes because `&mut storage` cannot coexist with contact slices—an aliasing design issue, not a physics issue.
 
-**How to avoid:** Use process-isolated runners, a versioned validated scenario schema, semantic IDs, provenance manifests, explicit tolerances/order policies, timeouts, crash reports, and reproducible seeds.
+**How to avoid:**
+Audit must rank **bytes copied per step** and **invariant calls per step** alongside CPU samples. Optimization should: take the limit-rollback snapshot **lazily** (only on the failing path, or copy-on-write only dirty subsystems); reuse scratch buffers; mutate velocity/position lanes in place or via split borrows; keep `check_invariants` on debug or on transactional **commit of mutations**, not on every successful Dam Break integrate. C++-matching means matching **work**, not matching C++ class layout.
 
-**Warning signs:** C++ pointers appear in traces; golden files lack commit/compiler/flags; test runs rewrite snapshots; a crash looks like a mismatch; failures cannot run by scenario and seed.
+**Warning signs:**
+Flamegraphs with `clone` / `memcpy` / `check_invariants` / `backup_step_limit_state` near the top that the plan ignores; “we inlined `pressure`” with no change in wall ms; allocations scaling with 1920 × 2 particle iterations × number of material passes.
 
-**Recovery:** Freeze affected compatibility claims, version the protocol, regenerate from the pinned oracle into a reviewed change, and retain minimized regressions.
+**Phase to address:**
+Measurement/audit (quantify clone/alloc). Native optimization (remove extra happy-path work). WASM sanity will inherit native step cost; do not “fix” WASM copies first.
 
-**Phase to address:** Foundation before significant physics implementation; recurring gate thereafter.
-
-### Pitfall 11: Hiding Numerical Drift Behind Broad Tolerances
-
-**What goes wrong:** Large global epsilons make tests green while phase, ordering, sign, NaN, or stability bugs remain.
-
-**Why it happens:** Floating-point differences are expected, so unexplained divergence is prematurely classified as acceptable noise.
-
-**How to avoid:** Define per-observable absolute/relative/ULP or domain tolerances, divergence horizons, NaN/signed-zero policy, compiler flags, and platform tiers; measure baseline oracle variability.
-
-**Warning signs:** One epsilon covers every field; tolerance grows whenever tests fail; first-step divergence is ignored; platform/compiler provenance is missing.
-
-**Recovery:** Minimize the scenario, compare phase checkpoints, classify root cause, narrow tolerances from evidence, and document any intentional difference.
-
-**Phase to address:** Math/protocol foundation and every differential sign-off.
-
-### Pitfall 12: Premature Optimization, SIMD, or Parallelism
-
-**What goes wrong:** Layout fusion, unsafe access, SIMD/FMA, or parallel scheduling changes deterministic order and obscures correctness before parity is established.
-
-**Why it happens:** Physics engines invite performance work and benchmark wins are visible earlier than compatibility evidence.
-
-**How to avoid:** Benchmark validated workloads, profile first, preserve a scalar deterministic baseline, gate accelerations behind explicit features, and rerun differential/stability suites for every optimization.
-
-**Warning signs:** Optimization commits precede end-to-end traces; unsafe code has no measured benefit; thread count changes results; synthetic benchmarks dominate roadmap decisions.
-
-**Recovery:** Revert to the validated baseline, isolate one optimization at a time, prove equivalence or document an opt-in behavioral mode, and retain regression benchmarks.
-
-**Phase to address:** Performance/hardening only after subsystem parity, with recurring checks.
-
-### Pitfall 13: Over-Fragmenting the Cargo Workspace
-
-**What goes wrong:** Tiny crates expose internal contracts, create feature/version/MSRV friction, and make cross-cutting solver changes expensive without real isolation benefits.
-
-**Why it happens:** The upstream directory tree is mistaken for publishable crate boundaries.
-
-**How to avoid:** Start with one deep published engine crate plus private tooling crates; extract only proven independent release, platform, compile-time, or `no_std` boundaries.
-
-**Warning signs:** Cyclic conceptual ownership despite acyclic Cargo dependencies; many `pub` internals; duplicated types/features; changes touch most crate manifests.
-
-**Recovery:** Merge shallow crates behind modules, narrow public surfaces, and preserve compatibility through re-exports only when users already depend on them.
-
-**Phase to address:** Foundation architecture and revisit after collision/rigid evidence.
-
-### Pitfall 14: Letting the Legacy C++ Oracle Control the Product Build
-
-**What goes wrong:** CMake 2.8-era assumptions, compiler drift, or Bazel complexity leak into ordinary Cargo builds and make the Rust library hard to consume.
-
-**Why it happens:** A unified build appears simpler than maintaining a deliberate development-only boundary.
-
-**How to avoid:** Keep oracle build/run commands in `xtask`/`just`, use CMake/Ninja with explicit compatibility flags and pinned CI compilers, and exclude C++ from published crates and default Cargo paths.
-
-**Warning signs:** `cargo build` needs a submodule or C++ compiler; CMake downloads dependencies; golden data changes across compiler jobs; Bazel duplicates Cargo ownership without measured need.
-
-**Recovery:** Split the oracle into a private subprocess tool, restore Cargo-only defaults, manifest compiler/flags, and adopt broader orchestration only through an ADR with evidence.
-
-**Phase to address:** Foundation build spike and cross-platform CI.
-
-### Pitfall 15: Coupling Scenarios to the Renderer
-
-**What goes wrong:** Example logic lives inside window/input callbacks, so headless tests, C++ comparison, minimization, and deterministic replay implement different scenarios.
-
-**Why it happens:** Porting the visual testbed feels like the fastest way to demonstrate progress.
-
-**How to avoid:** Define declarative/versioned scenarios and a renderer-neutral runner first; make the testbed a consumer of public commands, debug views, and step reports.
-
-**Warning signs:** Physics setup imports graphics crates; headless mode has separate scenario code; screenshots substitute for semantic traces; rendering owns timestep state.
-
-**Recovery:** Extract scenario definitions and controls, route both headless and visual runners through them, and re-baseline examples against the oracle.
-
-**Phase to address:** Protocol foundation and headless examples before interactive testbed work.
-
-### Pitfall 16: Declaring Parity From Demos or Partial Tests
-
-**What goes wrong:** Visible examples work, but inventory gaps, rare particle flags, callbacks, dumping, platform behavior, or upstream tests remain unaccounted for.
-
-**Why it happens:** A visually convincing engine creates pressure to market maturity before evidence is complete.
-
-**How to avoid:** Make compatibility states explicit; require every upstream row, test, example, and behavior to be implemented, replaced, irrelevant with rationale, or intentionally unsupported; gate claims on traceability coverage.
-
-**Warning signs:** README says “full parity” without coverage counts; “implemented” means compiled; missing cases are not listed; performance claims lack methodology.
-
-**Recovery:** Correct public claims immediately, publish the gap list, add roadmap phases for unmapped rows, and run a release-blocking parity audit.
-
-**Phase to address:** Every phase transition and final parity release.
+---
 
 ## Technical Debt Patterns
 
+Shortcuts that seem reasonable but create long-term problems.
+
 | Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
-| --- | --- | --- | --- |
-| Raw integer handles | Minimal implementation | Silent cross-world/stale aliasing | Only inside a private throwaway spike |
-| One global numeric epsilon | Fast test authoring | Hides phase and stability defects | Never for parity sign-off |
-| Golden snapshots without provenance | Small files | Cannot reproduce or trust evidence | Never |
-| Direct translation of upstream lists/pointers | Familiar mapping | Unsafe, shallow public model | Only inside isolated oracle code |
-| Many small public crates | Apparent modularity | API/MSRV/release coupling | Only after an independent contract is proven |
-| Renderer-owned scenarios | Fast visual demo | Duplicated and untestable behavior | Never beyond a disposable prototype |
-| Unpinned tools/actions | Easy updates | Non-reproducible CI and traces | Local experiments only |
-| Adding Bazel immediately | One orchestration story | Duplicate build ownership and maintenance | Only after measured Cargo/CMake pain and an ADR |
+|----------|-------------------|----------------|-----------------|
+| Clone entire `World` / `ParticleStorage` before every step for rollback | Easy exact restore on `StepError::LimitExceeded` | Copies dominate Dam Break; 300×-class self-inflicted cost | Never on the successful-step path; snapshot only if a limit failure must restore |
+| `to_vec()` then `replace_solver_velocities` (with O(n) change scan) to dodge aliasing | Safe kernels without `unsafe` or refactor | Extra alloc + walk per material/pressure pass × particle iterations | Temporary during audit; not after native optimization for Dam Break hot kernels |
+| Always-on `check_invariants()` in release on candidate commit | Catches lane bugs early | Quadratic identity scan on 1920 particles, every commit | Debug/tests; not every Dam Break step |
+| `catch_unwind` around find-pairs and particle solve | Poison the world instead of UB across hooks | Unwind tables + extra frames every step | Keep for hook panic isolation; do not add more layers while chasing 3× |
+| Using `SessionCore::advance` as the only timed API | One recipe shared with the playground | Wrapper/hook/bookkeeping can be blamed on “physics” | Allowed if documented and C++ still times only `Step`; split if profiles show wrapper cost |
+| Filling Phase 12 manifest from one Dam Break laptop run | Looks like official evidence | False public claim; empty-manifest contract broken | Never |
+| Default Rayon / SIMD to “catch C++” | Fast to type | Order + FP changes; policy violation | Explicit opt-in **after** scalar ≤ 3× and oracle still green |
+| Required Linux perf CI | Matches historical Phase 12 | Blocks hobby milestone | Optional strict profile only |
+| Timing WASM rAF as the gate | Visible to users | Wrong comparison; Instant/WASM traps | Post-gate qualitative check only |
 
 ## Integration Gotchas
 
+Common mistakes when connecting new profiling/optimization work to **this** repo’s existing timers, oracle, and playground.
+
 | Integration | Common Mistake | Correct Approach |
-| --- | --- | --- |
-| LiquidFun submodule | Follow `master` or patch in place | Pin a commit; store documented compatibility patches separately |
-| Legacy CMake | Assume modern CMake accepts policy 2.8 | Supply documented policy compatibility externally and test every host |
-| C++ runner | Link it into the published crate | Run a private process with versioned semantic protocol |
-| Reference data | Regenerate automatically on failure | Require an explicit reviewed command and provenance manifest |
-| Cargo/MSRV | Let dev tools raise library MSRV | Test publishable crates at MSRV; run tools on the pinned development toolchain |
-| GitHub Actions | Pin only mutable major tags | Pin immutable SHAs and update in reviewed commits |
-| Testbed renderer | Expose engine storage for drawing | Consume public debug snapshots and scenario controls |
+|-------------|----------------|------------------|
+| `just playground-dam-break-bench` | Treat the printed table as Phase 12 / public claim | Keep it unreviewed diagnosis; successor scripts write gitignored reports + a labeled notes doc |
+| `just phase12-performance-paired` | Use it as the v1.2 definition of done | Leave optional; Dam Break pair is the hobby gate |
+| `World::step` vs `World::step_profiled` | Time `step_profiled` for the 3× ratio | Gate uses unprofiled `step`; profiles are separate |
+| Rust `SessionCore` vs C++ `b2World` | Time capture/rendering on one side | Both sides: construction + warm-up out; only step in |
+| `liquidfun-wasm` crate name | Build `wasm32-unknown-unknown` for the pair | Native `--release --bin dam-break-bench` vs `oracle-release` extra target |
+| `cargo xtask playground dam-break-bench` order | All Rust samples, then all C++ (thermal/order bias) | For a 300× gap, order is secondary; when closing toward 3×, interleave or alternate first-engine like Phase 12 `interleaved_rust_cpp` |
+| Semantic oracle | Skip differential after a “perf-only” edit | Mismatch is not a timing sample; re-run particle/rigid probes |
+| Playground JS clock | Compare `acceptedStepCount` stutter to C++ ms/step | Native pair first; WASM sanity records playground behavior without a C++ ratio |
+| Instruments / samply / flamegraph | Quote sampled time as wall authority | Save traces beside an unprofiled pair from the same SHA/host |
+| `reference/performance/manifest.toml` | Paste exploratory ms | Leave `reviewed_reports = []` |
+| macOS debuginfo profiles | Compare `profile.profiling` (release+debug) to C++ `-O2` without debug | Record profile flavor; gate binary stays ordinary `--release` |
+| Evidence directory | Commit `.trace` / `samply.json` / flamegraph SVG | Gitignore dated evidence (`target/` already covers `/target/`; do not put traces under `docs/` or `reference/performance/`) |
 
 ## Performance Traps
 
-| Trap | Symptoms | Prevention | When It Breaks |
-| --- | --- | --- | --- |
-| Rebuilding all particle-derived structures after every small change | Step time grows sharply with particle count | Preserve dirty flags and upstream-equivalent update scope after parity | Large dynamic particle systems |
-| Stable IDs implemented with per-particle heap objects | Allocation/cache cost dominates | Dense SoA plus ID/index maps | Creation/destruction-heavy workloads |
-| Canonicalizing all differential output in hot loops | Harness is slower than simulation | Emit compact traces and canonicalize at comparison boundaries | Large randomized corpora |
-| Spawning one C++ process per step | Differential suite becomes unusable | Long-lived runner with batched scenarios and timeouts | Multi-step/property testing |
-| Parallelizing ordered solver passes | Run-to-run and thread-count drift | Retain scalar deterministic baseline; explicit opt-in only | Any coupled contacts/particles |
-| Benchmarking unmatched compiler flags/workloads | Misleading speed claims | Manifest versions, flags, hardware, warmup, and scenario input | First public performance claim |
+Patterns that work at small scale but fail as usage grows. Thresholds are **this** project’s Dam Break Medium (1920 particles, 2 particle iterations) unless noted.
 
-## Security and Safety Mistakes
+| Trap | Symptoms | Prevention | When It Breaks |
+|------|----------|------------|----------------|
+| Full-world `clone` every `step` | `backup_step_limit_state` / arena clone at top of profiles; ratio ≫ 3× | Lazy rollback; copy only on failure | Already broken at 1920 particles (~300× canary) |
+| Per-kernel velocity/position `to_vec` | Alloc churn; `replace_solver_velocities` change-scan | In-place lanes or reused scratch | Each extra copy × 2 iterations; worse at 8k particles |
+| Release `check_invariants` with O(n²) identity `contains` | Time grows faster than particle count | Debug-only or linear maps | Noticeable well below 1920 if called every pass |
+| `HashMap` neighborhoods | Run-to-run Dam Break jitter; oracle mismatch | Ordered vectors / explicit sort | First nondeterministic seed or stdlib change |
+| Default `par_iter` | Different results vs C++; CI flakes | Scalar default | Immediately vs oracle; also thermal noise |
+| Profiled vs unprofiled mixed | 3× “pass” that fails on `just playground-dam-break-bench` | Split scripts; unprofiled authority | As soon as the gap is small enough that overhead matters (~3× target) |
+| Debug Rust vs release C++ | Fake 1000×+ | Fail closed on debug timed binary | Every local `cargo run` without `--release` |
+| WASM capture every frame | Playground stutter after native 3× | Post-gate check; copied frames already bounded | Browser path; not the C++ pair |
+| Criterion / Phase 12 32-case as Dam Break substitute | Wrong workload (128/1024/8192 sealed hashes ≠ playground recipe) | Keep Dam Break pair as canary | Always, if used as the 3× gate |
+| Sequential 70 s Rust then 0.2 s C++ as the only method near 3× | Order/thermal bias of a few percent | Interleave when the ratio is O(1) | When claiming ≤ 3×, not when diagnosing 300× |
+| Optimizing only Dam Break water | Fountain/Jelly/Color Mixer regress | Spot-check other scenes after shared hot-path edits | After the first shared solver change |
+
+## Security Mistakes
+
+Domain-specific issues for this performance milestone (not generic web OWASP).
 
 | Mistake | Risk | Prevention |
-| --- | --- | --- |
-| Unbounded scenario/reference input | Memory or CPU exhaustion in tools/CI | Validate schema, sizes, step counts, and timeouts before allocation/execution |
-| C++ panic/exception/UB crossing FFI | Process corruption or undefined behavior | Prefer subprocess isolation; catch/report failures at the runner boundary |
-| Unsound zero-copy buffer exposure | Aliasing and use-after-reallocation | Borrow-scoped views, capacity invariants, and audited narrow unsafe blocks |
-| Unverified third-party source/data | License, provenance, or supply-chain exposure | Checksums, immutable pins, allowlists, `cargo-deny`, and artifact manifests |
-| Unsafe optimization without an invariant test | Silent memory corruption | `SAFETY:` rationale, focused tests, Miri/sanitizers where applicable |
+|---------|------|------------|
+| Committing Instruments/samply traces with absolute home paths | Leaks username/machine layout | Gitignored evidence dir; redact paths in the committed notes doc |
+| Wiring hobby PRs to `.github/workflows/performance.yml` + `PERFORMANCE_CONTROLLED_HOST_IDENTITY` | Secret required; accidental public hardware fingerprint | Do not enable as required CI; keep workflow_dispatch optional |
+| Copying host CPU strings into README as a “certified” result | Over-claim; stale identity | Notes doc: unreviewed, SHA-bound; no manifest promotion |
+| Logging full scenario JSON with user playground gestures into committed reports | Unnecessary PII-ish pointer paths | Pair timer has no pointer path; keep it that way |
 
-## Developer Experience Pitfalls
+## UX Pitfalls
+
+Honesty pitfalls for visitors and future contributors (not a product UI redesign).
 
 | Pitfall | User Impact | Better Approach |
-| --- | --- | --- |
-| C++-shaped Rust API | Borrowing and destruction are surprising | Recognizable concepts with typed IDs, explicit invalidation, and safe views |
-| Hidden maturity gaps | Users trust unsupported behavior | Public compatibility matrix and precise crate/README status |
-| Expensive default commands | Contributors avoid verification | Fast Cargo defaults; opt-in/scheduled oracle and extended suites |
-| Opaque `just` recipes | Failures are hard to reproduce | Thin recipes that print and document underlying commands |
-| Rendering required for examples | CI/server/WASM users are excluded | Headless scenarios first, optional renderer second |
+|---------|-------------|-----------------|
+| README / Pages copy “Rust is 300× slower than C++” | Sounds like a product benchmark; ages instantly | Point to unreviewed canary doc; update after the gate with the same caveats |
+| Declaring the playground “realtime” because native ≤ 3× C++ | WASM still catch-up-stutters | WASM sanity records playground honestly |
+| Sealed Phase 12 language in hobby release notes | Contributors chase Linux runners | “Local Dam Break pair; manifest still empty” |
+| Silent scene-size change (192 vs 1920) in the table | False “win” | Lock Medium/Normal literals on both sides (already tested in `dam_break_bench.rs`) |
 
 ## "Looks Done But Isn't" Checklist
 
-- [ ] **Upstream pin:** The commit exists, but ancestry, license, patches, compiler, and source inventory are also recorded.
-- [ ] **Rust API:** Happy paths compile, but stale/cross-world handles, cascaded destruction, callback mutation, and panic behavior are tested.
-- [ ] **Rigid world:** Demos run, but sleeping, CCD/TOI, ordering, filters, listeners, queries, ray casts, dumping, and every joint are traced.
-- [ ] **Particle core:** Positions render, but all 18 flags, unflagged passes, groups, pair/triads, lifetimes, external buffers, compaction, and callbacks are covered.
-- [ ] **Differential suite:** Tests pass, but traces are semantic, provenance-bound, reproducible, minimized, tolerance-specific, and platform-classified.
-- [ ] **Performance:** Benchmarks exist, but workloads, flags, hardware, versions, and parity state are comparable.
-- [ ] **Cross-platform:** Code compiles, but required behavior is exercised in CI and platform differences are documented.
-- [ ] **Release:** Crates package, but compatibility rows, docs, notices, upstream tests/examples, and public maturity claims have passed audit.
+Things that appear complete but are missing critical pieces.
+
+- [ ] **Pair scripts:** Recipe exists — verify they still exclude construction/warm-up/capture, use `--release` + `oracle-release`, lock 1920 particles, and write **unprofiled** wall times
+- [ ] **CPU profiles:** Flamegraph committed or shown in chat — verify a matching **unprofiled** pair from the same git SHA and host; profiles are gitignored, not the gate
+- [ ] **Audit notes:** Hot functions named — verify they are not SIMD speculation; extra clones/allocs/checks/algorithm differences are listed with evidence
+- [ ] **3× gate:** A profiled or debug run looks close — verify ordinary `just playground-dam-break-bench` (or successor) unprofiled ratio
+- [ ] **Manifest:** Someone “recorded performance” — verify `reference/performance/manifest.toml` still has `reviewed_reports = []` and no copied 70594.221
+- [ ] **Oracle:** Physics “still looks like Dam Break” — verify differential/determinism on the changed SHA
+- [ ] **Order/parallel:** Faster water — verify no `HashMap` solver iteration and no default Rayon
+- [ ] **WASM:** Playground “checked” — verify it is **not** vs C++; native gate already passed; Instant profiler not in the cdylib
+- [ ] **Phase 12 revival:** 32-case script green — verify it is **not** required for hobby v1.2
+- [ ] **Other scenes:** Dam Break improved — spot-check Fountain / Jelly Drop / Color Mixer / Water Wheel / Float or Sink, not a second sealed matrix
+- [ ] **Debug vs release:** Invariants “fixed” — verify `debug_assert` vs release `check_invariants` / clone paths separately
+- [ ] **Crate name:** `liquidfun-wasm` bench ran — verify native target, not `wasm32-unknown-unknown`
 
 ## Recovery Strategies
 
+When pitfalls occur despite prevention, how to recover.
+
 | Pitfall | Recovery Cost | Recovery Steps |
-| --- | --- | --- |
-| Wrong upstream or missing provenance | HIGH | Freeze work; re-inventory; invalidate affected artifacts; re-pin and re-baseline |
-| Handle/callback model failure | HIGH | Prototype corrected model; migrate behind adapters; property-test invalidation and reentrancy |
-| Particle identity/group corruption | HIGH | Centralize permutations; rebuild ID/group maps; invalidate index-based traces; add randomized invariants |
-| Solver/order drift | MEDIUM/HIGH | Add phase probes; minimize at first divergence; restore explicit order; sign off again |
-| Weak oracle protocol | MEDIUM | Version schema; add provenance/errors/timeouts; explicitly regenerate reviewed snapshots |
-| Over-broad tolerance | MEDIUM | Measure oracle variability; classify fields/platforms; narrow policy and re-run corpus |
-| Build-oracle leakage | MEDIUM | Isolate C++ process/tooling; restore Cargo-only defaults; document/pin host tools |
-| Premature parity claim | HIGH reputational | Correct claims; publish gaps; map missing rows; require independent release audit |
+|---------|---------------|----------------|
+| SIMD/Rayon/HashMap landed first | HIGH | Revert to scalar ordered baseline; restore differential green; restart from audit |
+| Exploratory numbers copied into manifest or README | MEDIUM | Revert manifest to empty `reviewed_reports`; rewrite docs as unreviewed canary; do not “amend” a fake reviewed report |
+| Gate measured debug, WASM, or profiled binary | LOW | Re-run the locked unprofiled pair; discard the bad table from any claiming doc |
+| Differential broken by a perf patch | HIGH | Stop timing; restore failing seed/request; do not keep the speedup; separate attempt directory if an evidence run failed |
+| Always-on clones left in place | MEDIUM | Profile `clone`/`check_invariants`; move snapshot to failure path; remeasure unprofiled Dam Break |
+| Phase 12/Linux CI revived as blocker | LOW | Re-read `PROJECT-SCOPE.md`; drop required jobs; keep Dam Break pair |
+| WASM compared to C++ | LOW | Delete the ratio; record playground-only notes after native gate |
+| Thermal/order bias near 3× | LOW | Interleave engines; repeat a few paired samples; do not change physics |
 
 ## Pitfall-to-Phase Mapping
 
+How roadmap phases should address these pitfalls. Phase numbering continues after 21; names below are the v1.2 sequence the planner should keep.
+
 | Pitfall | Prevention Phase | Verification |
-| --- | --- | --- |
-| Wrong upstream | Foundation/provenance | Immutable pin, ancestry ADR, complete initial inventory |
-| License/provenance loss | Foundation + release gate | License report, source mappings, package-content audit |
-| Pointer-shaped API | Object-model spike | Stale/cross-world/cascade property and compile-fail tests |
-| Reentrant mutation/events | Object model + contacts | Restricted contexts, deferred-command timing, oracle event traces |
-| Unspecified ordering | Protocol + every subsystem | Ordering classification and comparator tests per observable |
-| Step/solver reordering | World/solver + particle behavior | Named phase traces and first-divergence localization |
-| Ephemeral particle indices | Particle-storage spike | Random compaction with stable semantic IDs |
-| Group/buffer corruption | Particle core/groups | Lane permutation, contiguity, capacity, and external-buffer invariants |
-| Weak differential evidence | Protocol foundation | Version/provenance/crash/seed/minimization acceptance suite |
-| Numerical tolerance masking | Math + recurring sign-off | Measured per-field/platform policy and divergence-horizon tests |
-| Premature optimization | Performance/hardening | Baseline equivalence plus profile and regression benchmarks |
-| Workspace over-fragmentation | Foundation architecture | Public-boundary review and dependency-direction audit |
-| C++ build leakage | Foundation/CI | Default Cargo build from clean source without C++ prerequisites |
-| Renderer coupling | Headless examples before testbed | One scenario runs identically headless, visual, and through oracle |
-| False parity | Every transition + release | 100% compatibility/test/example traceability with no unexplained gaps |
-| Long-horizon scope failure | Roadmap and milestone gates | Small dependency-driven phases with explicit evidence and gap roll-forward |
+|---------|------------------|--------------|
+| 1. SIMD/parallel first | Measurement/audit (ban as first work); Native optimization (opt-in only later) | No SIMD/Rayon in default `liquidfun` features; audit names extra work |
+| 2. Blessing numbers / “Rust is X% slower” | Measurement/audit | `manifest.toml` unchanged empty reports; notes labeled unreviewed |
+| 3. Wrong timing construction | Measurement/audit | Same literals as C++ bench; warm-up/capture outside timer |
+| 4. Profiled vs unprofiled | Measurement/audit | Two artifacts; gate command does not enable `step_profiled` or samply |
+| 5. Debug vs release | Measurement/audit + Native optimization | Scripts fail closed without `--release`/`oracle-release`; invariant cost named |
+| 6. WASM vs C++ | WASM sanity (after native gate); scripts refuse wasm pair | No `pinned_cpp` row beside WASM; Instant not in cdylib profiler |
+| 7. Breaking differential tests | Native optimization | Differential/determinism green on the optimized SHA |
+| 8. HashMap / default Rayon | Native optimization | Source scan of solver-visible order; Dam Break ratio stable |
+| 9. Phase 12 matrix / Linux perf CI as gate | Measurement/audit (scope) | Acceptance text cites Dam Break pair + hobby CI only |
+| 10. Happy-path full-world clones | Measurement/audit (quantify); Native optimization (remove) | Profile/alloc evidence; unprofiled ratio moves toward ≤ 3× |
+| Spot-check other scenes | Native optimization | Shared hot-path PR lists other scene timings, not a sealed 32-case claim |
+| Playground stutter honesty | WASM sanity | Notes: native pair result + qualitative/WASM-only timing, no C++ ratio |
 
 ## Sources
 
-Primary upstream evidence was inspected at candidate commit `7f20402173fd143a3988c921bc384459c6a858f2`. This is research evidence, not the final pin decision.
+- Repository policy: [BENCHMARKING.md](../../BENCHMARKING.md) (exploratory pair must not enter `reference/performance/manifest.toml`; unprofiled wall-clock authority; empty reviewed-report manifest)
+- Canary sample: [docs/playground-dam-break-timing.md](../../docs/playground-dam-break-timing.md) (2026 local macOS aarch64 pair; unreviewed)
+- Hobby scope: [PROJECT-SCOPE.md](../../PROJECT-SCOPE.md) (no required Linux host or perf CI)
+- Milestone decisions: [`.planning/PROJECT.md`](../PROJECT.md) (v1.2 Dam Break ≤ 3×; scalar baseline; WASM post-gate)
+- Phase 12 authorities: `reference/performance/manifest.toml` (`reviewed_reports = []`), `reference/performance/policy.json` (`timing_authority: unprofiled_wall_clock`, `allowed_optimization_mode: release_scalar`)
+- Timing construction: `crates/liquidfun-wasm/src/dam_break_bench.rs`, `tools/reference/src/playground_dam_break_bench.cpp`, `tools/xtask/src/playground.rs` (`cargo run --release -p liquidfun-wasm --bin dam-break-bench`)
+- Extra happy-path work (audit targets): `crates/liquidfun/src/world/step/execution.rs` (`backup_step_limit_state` every step), `crates/liquidfun/src/world/particle_coupling.rs` (arena clones), `crates/liquidfun/src/particle/storage/runtime.rs` (`replace_solver_candidate` clone + `check_invariants`; `replace_solver_velocities` O(n) scan), `crates/liquidfun/src/particle/storage/lifecycle.rs` (`check_identity_map` quadratic `contains`), `crates/liquidfun/src/particle/solver/material.rs` and `pressure.rs` (`to_vec()` per kernel), `crates/liquidfun/src/world/observation/profile.rs` (`step` disabled vs `step_profiled`)
+- Solver-order policy: repository stack notes forbidding `HashMap`/`HashSet` iteration and default parallel stepping; no `rayon` in production `Cargo.toml` as of this research
+- Analogous port post-mortem: [box2d-rust 1.3.0 performance notes](https://docs.rs/crate/box2d-rust/latest) (2026-07-19): release-mode C validators, not SIMD, caused a 2.73× outlier; SIMD came after (HIGH confidence for the *pattern*, not for this repo’s 300× cause)
+- Profiler overhead: [samply README](https://github.com/mstange/samply) (profile release + debuginfo, not as timing authority); [flamegraph-rs/flamegraph](https://github.com/flamegraph-rs/flamegraph); [xctrace(1)](https://keith.github.io/xcode-man-pages/xctrace.1.html)
+- v1.1 WASM Instant pitfall: `.planning/research/v1.1/PITFALLS.md`
 
-- [LiquidFun 1.1.0 release notes and Box2D 2.3.0/revision 280 ancestry](https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/ReleaseNotes.md)
-- [Upstream zlib license and altered-source notice requirements](https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/License.txt)
-- [`b2World::Step` locking and particle/rigid/TOI phase order](https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Box2D/Dynamics/b2World.cpp#L976-L1043)
-- [World callbacks, mutation warnings, and query/ray interfaces](https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Box2D/Dynamics/b2WorldCallbacks.h)
-- [Contact guide: callback timing and mutation restrictions](https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Box2D/Documentation/Programmers-Guide/Chapter09_Contacts.md#L250-L263)
-- [World guide: unspecified query and ray-cast ordering](https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Box2D/Documentation/Programmers-Guide/Chapter10_World.md)
-- [Particle guide: self-compacting indices and property buffers](https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Box2D/Documentation/Programmers-Guide/Chapter11_Particles.md)
-- [Particle handles: ephemeral indices](https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Box2D/Particle/b2Particle.h#L324-L350)
-- [Particle-system implementation: SoA lanes, sorting, solver order, compaction, and rotation](https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Box2D/Particle/b2ParticleSystem.cpp)
-- [Particle-system API: external buffers and lifecycle controls](https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Box2D/Particle/b2ParticleSystem.h)
-- [Legacy upstream CMake configuration](https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/CMakeLists.txt)
-
-*Pitfalls research for: `liquidfun-rs`*
-*Researched: 2026-07-09*
+---
+*Pitfalls research for: native LiquidFun performance closing (audit, scripted profiling, Dam Break ≤ 3× C++)*
+*Researched: 2026-09-20*

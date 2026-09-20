@@ -1,188 +1,227 @@
 # Project Research Summary
 
-**Project:** `liquidfun-rs`
-**Domain:** Native Rust port of Google LiquidFun with a pinned C++ behavioral oracle
-**Researched:** 2026-07-09
-**Confidence:** MEDIUM-HIGH
+**Project:** liquidfun-rs
+**Domain:** Native LiquidFun performance closing — Dam Break pair timing, scripted CPU profiling, committed audit notes, and profile-guided scalar hot-path work
+**Milestone:** v1.2 Native Performance Closing
+**Researched:** 2026-09-20
+**Confidence:** HIGH for tooling, gate authority, anti-features, and crate isolation; MEDIUM for which shared kernel currently dominates the ~300× Dam Break gap
 
 ## Executive Summary
 
-`liquidfun-rs` should be built as a native, Cargo-first Rust physics engine that matches one deliberately selected historical LiquidFun revision. The C++ source is a development-only oracle for inventory, differential tests, reference data, and comparable benchmarks; it must never enter the published crate's runtime or normal build. The first release allowed to claim v1 parity must include the complete rigid-body and particle surface, not a rigid-body-only or common-effects subset. Earlier 0.x releases may expose useful increments only when their compatibility gaps are explicit.
+v1.2 is a developer-facing performance-closing loop, not a new physics product, playground catalog, or public benchmark claim. Experts close a C++ vs Rust physics gap the way box2d-rust did: lock one same-host scalar pair, sample a release-class binary with symbols, name extra work (allocations, always-on validators, clones, shape mismatches), then change shared kernels — not SIMD, not default threads, not a sealed 32-case matrix. The first recorded Dam Break Medium sample (~70.6 s native vs ~0.23 s pinned C++ for 600 timed steps, ~300×) is diagnosis. Launch means that same locked pair is ≤ 3× on one macOS aarch64 host, the hunt is evidenced, and leftover delta is described honestly.
 
-Use one deep published `liquidfun` crate with private tooling crates around it. Keep math, collision, dynamics, particles, and world orchestration as cohesive internal modules until an independent public boundary is proven. Use Cargo for all consumer workflows, `xtask` and thin `just` recipes for contributor orchestration, and a modern CMake/Ninja wrapper for the legacy C++ reference build. Start differential testing across a versioned semantic JSON Lines subprocess protocol; add in-process FFI only if measured throughput requires it.
+Reuse the existing unprofiled Dam Break pair as the **only numeric authority**. Add a thin local profiling shell around it: workspace `[profile.profiling]` (inherits `release`, `debug = true`) plus scripted **samply 0.13.1** into a dated gitignored directory. Keep `just playground-dam-break-bench` as the 3× command (native `liquidfun-wasm` `--release` `dam-break-bench` vs `oracle-release` `playground-dam-break-bench`, 1920 particles, 60 warm-up + 600 timed `World::step` / `b2World::Step`). Profiled wall times, `World::step_profiled`, Instruments, and dhat are diagnostic only. Do not invent a second matrix, fill `reference/performance/manifest.toml`, add required perf CI, or compare WASM to C++.
 
-The largest risks are selecting the wrong oracle, losing translation/license provenance, committing to the wrong ownership and particle-storage model, and accepting numerical or ordering drift as harmless. Retire these risks before broad porting through an immutable upstream decision, a traceability matrix, an object-model spike, explicit step/order and tolerance policies, and an end-to-end empty-world then minimal-world differential slice. Correctness and scalar deterministic parity precede rendering, unsafe optimization, SIMD, or parallelism.
+The ~300× gap is extra-work-shaped. Typical PGO/SIMD/bounds-check wins are tens of percent, not two orders of magnitude. First suspects already visible in-tree (happy-path full-world clones, release `check_invariants`, per-pass `Vec` rebuilds, neighborhood allocate/sort) must be ranked by sampling before any kernel PR. Mitigate by measuring first, admitting only evidenced scalar shared-path fixes, re-running the unprofiled pair after every wave, keeping the scalar deterministic baseline, and treating a physics mismatch as a failed candidate rather than a faster sample.
 
-## Prescriptive Decisions
+## Reconciled decisions
+
+Researchers disagreed on two small points. These are the locked answers for roadmap and planning. Do not invent a third path.
+
+| Topic | Decision | Why |
+| --- | --- | --- |
+| Evidence directory | **`target/dam-break-perf/<utc-stamp>/`** | Dated, already gitignored via `/target/`, named after the canary. Reject `target/v12-native-perf/<UTC>/`: the `v12` prefix collides with Phase 12’s `target/phase12-performance/` and invites sealed-matrix revival. Keep Architecture’s rules on this STACK path: refuse to clobber an existing stamp, write `pair.json` / samply `.json.gz` / host identity sidecar, bind notes to git HEAD + directory name. |
+| Gate authority | Unprofiled native **`--release`** vs **`oracle-release`** Dam Break Medium pair | Same-host, scalar, locked 1920-particle recipe. samply / `[profile.profiling]` / `step_profiled` / xctrace / dhat timings are **never** the 3× number. |
+| Profiler stack | **samply 0.13.1** (`mstange/samply`) + workspace **`[profile.profiling]`** with `debug = true` | Documented release+debug-info requirement. `xcrun xctrace` and private `dhat` 0.3.3 on `dam-break-bench` are optional follow-ups. Do not default to cargo-flamegraph, cargo-instruments, or feldera/samply 0.13.2. |
+| Phase 12 / CI / baseline | Do **not** revive the sealed public matrix; do **not** add required perf CI; scalar deterministic baseline stays | `reviewed_reports = []` remains empty. Hobby scope: local macOS + existing Cargo CI. SIMD/Rayon/`-ffast-math`/`-march=native` stay off the pair. |
+
+The profile recipe may snapshot an unprofiled pair into the dated directory for SHA identity, then record samply on a **separate** `[profile.profiling]` binary. That does not change the gate command: `just playground-dam-break-bench` remains the 3× authority.
+
+## Key Findings
 
 ### Recommended Stack
 
-The detailed rationale is in [STACK.md](STACK.md).
+Details: [STACK.md](STACK.md). Keep the v1.0 Cargo/CMake foundation. Do not re-pin Rust, the oracle commit, or the published crate graph.
 
-| Area | Recommendation | Status |
-| --- | --- | --- |
-| Rust | Pin Rust 1.97.0 for repository development; use Edition 2024 and resolver 3 | Adopt for foundation |
-| MSRV | Declare Rust 1.92.0 initially and test the complete publishable surface against it | Provisional until release-policy review |
-| Published shape | One `liquidfun` crate with deep internal modules and a small curated public API | Adopt unless an independent boundary is demonstrated |
-| Production dependencies | Begin with only `bitflags` 2.13 and `thiserror` 2.0 | Expand only from implementation evidence |
-| Private Rust tooling | `serde`, `serde_json`, `proptest`, exact-pinned `rand_chacha`, Criterion, `anyhow`, and `xshell` where their workflows begin | Keep outside the production graph |
-| C++ oracle | Repository-owned CMake wrapper, CMake 4.3.3 CI pin, Ninja 1.13.2 CI pin, and a canonical Linux Clang/LLVM toolchain | Verify in a cross-platform foundation spike |
-| Orchestration | Cargo owns Rust; `cargo xtask` owns cross-language workflows; `just` exposes thin aliases | Adopt |
-| Differential boundary | Versioned semantic JSON Lines over an isolated subprocess | Adopt; design for batching/process reuse |
-| CI | Fast Cargo-only PR lanes plus oracle smoke; expensive differential, fuzz, sanitizer, Miri, coverage, and benchmarks in scheduled/manual lanes | Adopt incrementally |
-| Testbed | Headless scenarios and debug-draw abstraction first; prototype Macroquad later | Defer renderer selection to the testbed phase |
+Add a local observability shell only. Do not add production dependencies to `liquidfun` (`bitflags` only). Do not put samply, dhat, CMake, or serde on the published crate. Do not turn `debug` on default `release` (that would silently change the gate binary and CI artifacts).
 
-Do not adopt Bazel in the foundation. The upstream tree already has CMake, while Bazel would create a second Rust and C++ build graph without a measured need. Reconsider it only through an ADR backed by CI scale, hermeticity, or remote-execution evidence.
+**Core technologies:**
 
-### V1 Full-Parity Table Stakes
+- **Existing `just playground-dam-break-bench` / xtask pair:** unprofiled Instant vs `oracle-release` extra target — the only 3× number.
+- **Workspace `[profile.profiling]`:** inherits `release`, `debug = true`, `strip = false` — symbolicated stacks without mutating `--release`.
+- **samply 0.13.1:** scripted CPU sampling on macOS aarch64; `--save-only --unstable-presymbolicate -o target/dam-break-perf/<utc-stamp>/rust.json.gz` wrapping the profiling-profile `dam-break-bench`.
+- **Gitignored `target/dam-break-perf/<utc-stamp>/`:** dated pair JSON, samply `.json.gz`, optional `.trace`, host/git/compiler sidecar. Never copy into `reference/performance/manifest.toml`.
+- **Committed notes:** extend `docs/playground-dam-break-timing.md`; add `docs/native-performance-audit.md` (named functions, suspected causes, current delta; unreviewed).
+- **Existing `World::step_profiled`:** optional separate `--emit-phase-profile` dump. Never inside the gate process.
+- **Optional:** `xcrun xctrace` (`--instrument 'CPU Profiler'`), private `dhat-heap` on `dam-break-bench` only after samply shows allocator/`Vec` time, `cargo-show-asm` 0.2.62 for a named kernel, Criterion 0.8.2 for a named micro **after** samply — never as the Dam Break gate.
 
-The exhaustive inventory is in [FEATURES.md](FEATURES.md). Every row below is required before a full-parity v1 claim.
+**Do not add:** required performance CI, LLVM PGO/BOLT as the first lever, default SIMD/Rayon, glam/nalgebra, in-process C ABI, `hyperfine` as pair authority, wasm-pack/browser profilers as the native gate.
 
-| Capability | V1 acceptance boundary |
-| --- | --- |
-| Native distribution | Published crates build, test, package, and run through Cargo without C++, CMake, Bazel, the upstream submodule, or reference data |
-| Rigid bodies | Historical shapes, collision, broad/narrow phase, bodies, fixtures, contacts, islands, sleeping, CCD/TOI, all 11 joints, standalone rope, queries, ray casts, and world operations |
-| Particles | All 18 flags, every baseline and conditional solver pass, storage, handles, lifecycle, lifetimes, groups, pairs/triads, contacts, body contacts, forces, queries, callbacks, and controls |
-| Safe Rust model | Typed world-scoped handles, explicit invalidation and destruction cascades, restricted hooks, deferred mutation, borrow-safe bulk views, and safe external-buffer equivalents |
-| Observability | Profiles/counts, renderer-independent debug draw, and upstream-equivalent diagnostic dump clearly documented as diagnostic rather than serialization |
-| Examples | Every upstream test and example ported, replaced, or accounted for; shared renderer-neutral scenarios run headlessly and optionally in a testbed |
-| Compatibility evidence | Immutable oracle provenance, exhaustive matrix, semantic differential traces, minimized regressions, and reviewed per-observable order/tolerance policy |
-| Production evidence | Comparable benchmarks, safety audit, license/provenance audit, supported-platform CI, complete user/developer documentation, and a release gate with no unexplained gaps |
+### Expected Features
 
-Typed handles, safe particle access, deferred mutation, a reproducible headless CLI, and evidence-linked compatibility reporting are not optional polish: they are how v1 provides upstream behavior without reproducing C++ hazards.
+Details: [FEATURES.md](FEATURES.md). Frame capabilities as what a developer or playground visitor can do. Existing engine, oracle, Dam Break pair, six-scene playground, and Phase 12 *method* (unprofiled authority, scalar `--release`) are dependencies, not new features. Do not fill the reviewed-report manifest.
 
-### Post-Parity Extensions
+**Must have (table stakes):**
 
-Keep these outside the v1 parity gate unless they become necessary to prove a table-stakes behavior:
+- **PERF-AUDIT** — Committed notes name hot functions, extra per-particle work, per-step allocations, `--release` checks, algorithm/shape differences, and the current Dam Break Medium ratio.
+- **PERF-PAIR** — Re-run the locked same-host pair on demand; persist dated unprofiled wall ms, ms/step, and Rust/C++ ratio (not stdout-only).
+- **PERF-PROFILE** — Repeatable `just` / xtask CPU profiles of the timed Dam Break binary into `target/dam-break-perf/<utc-stamp>/` with host, HEAD, compiler, command identity.
+- **PERF-ADMIT** — Land a change only from named profile share or typed bottleneck + unprofiled pair improvement + existing correctness gates green; no scene-size cheat.
+- **PERF-SHARED** — Fixes land in shared `liquidfun` particle/rigid hot paths, not Dam Break-only WASM scene hacks.
+- **PERF-GATE** — Native Dam Break Medium wall time ≤ 3× pinned C++ on that unprofiled pair.
+- **PERF-SPOT** — Spot-check Fountain, Float or Sink, Color Mixer, Jelly Drop, Water Wheel after shared-path fixes (native `--release`; no C++ pair per scene).
+- **PERF-BASELINE** — Scalar deterministic default; SIMD/parallel explicit opt-in, off.
+- **PERF-NOTES** — Remaining delta documented honestly; no README “Rust is N× slower” trophy.
+- **PERF-WASM** — After the native gate, playground/WASM sanity (`just web-player-smoke`); never vs `oracle-release`.
 
-- **v1.x:** versioned semantic scene snapshot/replay, ergonomic builders and optional serde adapters, game-engine adapters, and sustained WASM/mobile validation.
-- **v2+:** a coherent `no_std` math/collision subset, opt-in SIMD or parallel stepping, and alternative precision modes.
-- **Explicitly not v1:** general save/load disguised as upstream `Dump`, framework-coupled core simulation, default parallel stepping, and complete embedded/mobile/web promises without target evidence.
+**Should have (competitive, still this milestone’s shape):**
 
-## Architecture and Data Flow
+- Canary-first same-order close instead of 32 sealed public cases.
+- Named-function audit in git; raw profiles stay gitignored.
+- Lightweight admission (Phase 12’s 10% profile-share *idea*, not the 32-case JSON record).
+- Engine-wide hunt, scene-local numeric bar.
 
-The detailed design is in [ARCHITECTURE.md](ARCHITECTURE.md).
+**Defer (later / not v1.2):**
 
-### Major Components
+- SIMD / parallel opt-in features after scalar ≤ 3× and an explicit determinism decision.
+- Phase 12 sealed matrix production, calibration, reviewed-report promotion.
+- WASM vs native performance engineering beyond sanity.
+- Crate publication, new playground scenes, scene editor.
+- Relaxing `unsafe_code = "forbid"` for intrinsics.
+- Criterion catalog or a second native canary as a substitute gate (optional supporting evidence only after Dam Break is close).
 
-1. **`liquidfun`** — the only initially published crate; owns math, collision, rigid dynamics, particle SoA storage and solvers, typed identity, and the `World` facade.
-1. **Private test protocol** — owns validated engine-neutral scenarios, semantic traces, canonicalization rules, provenance, and tolerance profiles.
-1. **Private differential runner** — adapts one scenario to Rust and C++, compares traces, diagnoses the first divergence, and drives minimization.
-1. **C++ reference executable** — maps semantic IDs to pinned upstream pointers/indices in a separate process and emits semantic results only.
-1. **Headless scenario runner and optional testbed** — share scenario definitions; rendering consumes public debug views and never owns simulation logic.
+### Architecture Approach
 
-The production dependency direction is `world -> dynamics/particle -> collision -> math/settings`. Protocol, serialization, subprocess, renderer, and C++ code depend inward through public adapters but never enter the engine graph.
+Details: [ARCHITECTURE.md](ARCHITECTURE.md). Do not redesign `crates/liquidfun`, the SolidJS playground, or the Phase 12 sealed matrix. Add an observability loop around the existing Dam Break pair, then change only shared native hot paths that sampling names.
 
-### Identity, Mutation, and Particle Storage
+**Pattern:** just prints → xtask orchestrates → Cargo builds Rust → CMake `oracle-release` builds the C++ extra target → host samply wraps binaries. Dependency arrows still point toward `liquidfun`. Profiling, CMake, samply, scenes, and dated reports never become production dependencies.
 
-- Use distinct world-scoped generational IDs for bodies, fixtures, joints, particle systems, and groups. Centralize destruction and return owned destruction events.
-- Treat contacts as transient views/snapshots rather than durable handles.
-- Separate stable public `ParticleId` from ephemeral dense `ParticleIndex`; update both ID maps atomically with every SoA permutation, compaction, group rotation, and optional lane.
-- Preserve particle group contiguity initially and make one authoritative permutation operation maintain every lane and derived identity.
-- Expose borrow-scoped particle views and validated owned buffers. Do not promise unsafe raw-pointer equivalence merely because C++ accepted external arrays.
-- Give hooks read-only views and narrow directives. Apply game mutations through a command buffer outside the locked step.
+**Major components:**
 
-### Core Simulation Flow
+1. **`crates/liquidfun`** — shared particle/rigid kernels; optional diagnostic `step_profiled` schema; no profiler/serde/C++/WASM.
+2. **`liquidfun-wasm` `dam-break-bench`** — native-only locked recipe timer around `SessionCore::advance` → `World::step` (not `step_profiled`).
+3. **C++ `playground-dam-break-bench`** — matching extra target under `oracle-release`; times `b2World::Step` only.
+4. **`cargo xtask playground`** — pair command stays the gate; **add** `dam-break-profile` (dated mkdir, samply wrap, host sidecar); dump pair JSON into the evidence dir.
+5. **Thin `just playground-dam-break-profile`** — alias only; no CMake or samply flags in just.
+6. **`target/dam-break-perf/<utc-stamp>/`** — gitignored evidence (reconciled path; Architecture’s dated/no-clobber rules).
+7. **`docs/native-performance-audit.md`** — committed human artifact. Profiles expire; names and causes belong in git.
 
-1. Parse public definitions and commands into validated domain values and typed handles.
-1. Apply a world mutation transaction and enter the locked step.
-1. Execute named upstream-derived phases in the selected oracle's exact order: contact update, particle substeps/passes, rigid islands and constraints, then continuous-collision/TOI work.
-1. Finalize forces, dirty state, stable ordering, and owned events; unlock and return `StepReport`/debug views.
-1. For differential checks, run the same validated scenario through Rust and the C++ subprocess, verify provenance/schema, canonicalize only observables whose order is unspecified, then compare with field-specific policies.
+Measure `advance` so the canary stays on the playground path. Dam Break `on_advance` is a no-op today; Fountain / Water Wheel hooks are real and get native-only spot-checks, not C++ pairs. Optional C++ `-g` is a profile-command cache flag, never a pair-command or new CMake preset.
 
-No raw memory, pointers, padding, private layout, or dense particle index is compatibility evidence. IDs/flags/counts/membership are exact; numeric state uses reviewed absolute/relative/ULP rules; unspecified collections use set or multiset comparison; solver-significant and callback/destruction sequences remain ordered.
+### Critical Pitfalls
 
-## Reconciled Research Boundaries
+Details: [PITFALLS.md](PITFALLS.md). Top risks for this milestone:
 
-- **Candidate commit is not the final pin:** commit `7f20402173fd143a3988c921bc384459c6a858f2` was a useful 1.1.0-era inventory target. The project must separately decide between it, the v1.1.0 tag commit, or another defensible immutable revision after ancestry, build, patch, and license review.
-- **Protocol package naming is not architecture:** `liquidfun-diff` in stack research and separate protocol/differential crates in architecture research express the same private boundary. Start with separate protocol and runner packages if both Rust and C++ adapters share the schema; package names remain an implementation detail.
-- **Process lifetime is an optimization, not a semantic choice:** implement the subprocess protocol correctly for one scenario first, but make it streaming/batch-capable and keep the C++ process alive once startup cost matters. Isolation remains mandatory either way.
-- **External-buffer parity means observable capability, not pointer-shaped API parity:** v1 needs safe bulk access and equivalent capacity/ownership behavior. A raw-pointer adapter is neither required nor allowed by default.
-- **Diagnostic dump and snapshots are different products:** reproduce upstream diagnostic dump in v1; add a versioned particle-aware persistence format only after the public model stabilizes.
-- **Tool and renderer versions are pins or candidates, not permanent product contracts:** validate CMake 4 legacy-policy handling, the initial MSRV, the canonical compiler, and Macroquad at their designated spikes.
+1. **Treating ~300× as SIMD/parallelism** — Audit extra clones, allocations, release validators, and shape mismatches first. SIMD/Rayon stay explicit opt-in after the scalar pair is in the same order of magnitude.
+2. **Blessing exploratory numbers as Phase 12 or “Rust is X% slower”** — Keep `reviewed_reports = []`. Cite the canary as an unreviewed local sample. Do not copy playground cells into the manifest or README badges.
+3. **Using profiled timings as the ≤ 3× authority** — Two artifacts: unprofiled pair for the number, samply (and optional xctrace/dhat) for *why*. Never `step_profiled` inside `dam-break-bench`.
+4. **Timing the wrong construction or mixing debug/release** — Lock 1920 particles, construction/warm-up/capture/rendering outside the timer, `--release` vs `oracle-release`. Fail closed if the timed binary has `debug_assertions`. Do not pair WASM frames to C++.
+5. **Leaving happy-path full-world clones while micro-optimizing kernels** — Rank bytes copied and invariant calls per step alongside CPU samples. Snapshot rollback lazily; reuse scratch; keep fail-closed API errors. A physics mismatch is not a timing sample. No `HashMap` solver-visible order, no default Rayon.
+6. **Reviving the sealed 32-case matrix, Linux host, or required perf CI** — Dam Break Medium local pair is the hobby gate. Phase 12 scripts stay unused for v1.2 done.
 
-## Critical Pitfalls
+## Implications for Roadmap
 
-The full risk catalog and recovery guidance are in [PITFALLS.md](PITFALLS.md).
+Phase numbering continues after 21. Suggested structure is **measure → name → shared scalar fix → re-measure → WASM last**. Do not start kernel edits in the observability phase. Do not use the playground as a native profiler.
 
-1. **Wrong upstream or missing provenance** — freeze the oracle decision before broad API/physics work; bind every trace, translated artifact, test, and datum to immutable source and license records.
-1. **C++-pointer-shaped API** — prove stale/cross-world rejection, cascade invalidation, hook restrictions, and particle remapping before implementation hardens public types.
-1. **Reentrant mutation and misleading events** — separate synchronous restricted directives from owned event reports and deferred commands; document event multiplicity and timing.
-1. **Unspecified order mistaken for behavior** — classify each observable; canonicalize query-like results but preserve order wherever it affects solver state or promised event sequences.
-1. **Flattened solver phases** — keep explicit upstream-derived phases and first-divergence probes; do not fuse or reorder passes for elegance or speed before parity.
-1. **Particle identity/group corruption** — never expose dense indices as stable IDs; centralize lane permutations and property-test compaction, rotation, contiguity, capacity, and derived references.
-1. **Weak or over-tolerant differential evidence** — version schemas and provenance, distinguish harness failures from physics mismatches, and never widen a global epsilon to make tests pass.
-1. **Build leakage or premature optimization** — keep C++ out of Cargo consumer paths and preserve a safe scalar deterministic baseline until profiling and compatibility evidence justify change.
-1. **False parity claims** — track planned, implemented, unit-tested, differentially validated, platform-validated, and intentionally unsupported states separately; demos never substitute for the matrix.
+### Phase 22: Observability shell
 
-## Roadmap Implications
+**Rationale:** Profiles and dated dumps must exist before anyone changes physics. This phase is tooling only and can be tested with fake cmake/samply.
+**Delivers:** `[profile.profiling]`; `just playground-dam-break-profile` → `cargo xtask playground dam-break-profile`; dated `target/dam-break-perf/<utc-stamp>/` (fail if stamp exists); pair command can write evidence copies; audit-doc skeleton; install/error text for missing samply; `cargo xtask package verify` still green.
+**Addresses:** PERF-PROFILE (tooling), PERF-PAIR (dated dump path).
+**Avoids:** Pitfalls 4, 9, 3 (script contract); hiding CMake/samply in just; adding profiler crates to `liquidfun`; mutating default `--release`.
 
-Use small dependency-driven phases with compatibility evidence as part of each phase's definition of done.
+### Phase 23: Baseline pair, profiles, and named audit
 
-| Order | Phase | Delivers and retires |
-| --- | --- | --- |
-| 1 | Oracle, provenance, and repository foundation | Final immutable oracle decision; ancestry/license/notice record; inventory and matrix skeleton; Cargo workspace; pinned tools; Cargo-only package proof; CMake/Ninja build spike |
-| 2 | Semantic protocol and oracle round trip | Validated schema, provenance handshake, bounded inputs, error taxonomy, empty-world Rust/C++ traces, reference-data rules, and initial comparator |
-| 3 | Rust object-model and storage spike | World-scoped handles, stale/cross-world rejection, cascades, restricted hooks, event ownership, dense particle remap, group permutations, and property/compile-fail evidence |
-| 4 | Math, settings, and numerical policy | Purpose-built `f32` primitives, transforms/sweeps/matrices, pure oracle probes, deterministic build flags, and initial tolerance/platform policy |
-| 5 | Shapes and collision foundation | Four shapes, AABBs, distance/manifolds, dynamic tree, broad phase, and TOI with unit/property/differential coverage |
-| 6 | Minimal rigid world vertical slice | Bodies, fixtures, contacts, creation/destruction, one non-colliding and one colliding step through the complete differential pipeline |
-| 7 | Rigid solver, world operations, and CCD | Islands, constraints, warm starting, sleeping, queries/ray casts, sub-stepping, origin shift, profiling, and expanding rigid sign-off |
-| 8 | Joints, rope, filters, listeners, and dump | All 11 joints, standalone rope, callback/filter/destruction timing, diagnostic dump, and broad rigid-body parity gate |
-| 9 | Particle storage, lifecycle, and coupling | Systems, SoA lanes, proxies, stable IDs, creation/destruction/lifetimes, groups, contacts/body contacts, queries, forces, and buffer contracts |
-| 10 | Particle solver behavior clusters | Baseline passes, all 18 flags, pairs/triads, solid/rigid behavior, joining/splitting, and flag-by-flag differential sign-off in pinned pass order |
-| 11 | Examples, headless tooling, and testbed | Complete upstream test/example accounting, shared scenario catalog, deterministic captures, debug draw, headless CLI, then optional renderer adapter |
-| 12 | Performance, portability, and release hardening | Comparable benchmarks, profile-led optimization, fuzz/Miri/sanitizers, desktop/server platform matrix, docs, safety/license/package audits, and final no-gap parity review |
+**Rationale:** Admission needs named functions and a SHA-bound unprofiled ratio. Guessing SIMD before this phase is the box2d-rust anti-pattern inverted.
+**Delivers:** Unprofiled pair at a recorded HEAD into a dated directory; samply of the profiling-profile Rust bin (required) and optional C++ wrap; optional separate `step_profiled` parent dump; filled `docs/native-performance-audit.md` (hot functions, classified extra work, what was *not* found); refresh `docs/playground-dam-break-timing.md` as unreviewed.
+**Addresses:** PERF-AUDIT, PERF-PAIR, PERF-PROFILE.
+**Avoids:** Pitfalls 1, 2, 4, 5; quoting samply duration as the gate; committing `.json.gz` / `.trace`.
 
-### Ordering Rationale
+### Phase 24: Shared hot-path waves through the 3× gate
 
-- Freeze the source of truth and comparison vocabulary before accumulating translated behavior.
-- Resolve handles, callback phases, and particle remapping before those choices infect every public API and test.
-- Build collision and the rigid world before full particles because particle/body contacts reuse those foundations.
-- Add differential evidence continuously: each subsystem should move through inventory, API design, minimal implementation, unit/property tests, oracle comparison, documentation, and sign-off.
-- Port renderer-neutral scenarios before a visual testbed, and optimize only after the scalar behavior is validated.
+**Rationale:** Fixes belong in `liquidfun` after names exist. One concern per wave; unprofiled re-pair into a **new** dated directory; preserve failed records. Spot-checks ride along so Dam Break-only theater cannot hide Fountain regressions. The numeric gate is this phase’s exit, not a later marketing step.
+**Delivers:** Evidence-gated scalar shared-path changes (neighborhood/proxy, contacts, coupling, pressure/damping/integrate, happy-path clone/invariant cuts as profiles rank them); focused `liquidfun` tests + relevant differential/determinism; Dam Break Medium unprofiled ≤ 3×; native spot-checks of the other five scenes; remaining-delta draft in the audit doc.
+**Uses:** Unprofiled pair as authority; samply only to retarget the next wave; Criterion only if a named kernel remains after the pair is already near 3×.
+**Implements:** Measure → note → shared fix → re-measure; package isolation unchanged.
+**Addresses:** PERF-ADMIT, PERF-SHARED, PERF-BASELINE, PERF-GATE, PERF-SPOT, PERF-NOTES (draft).
+**Avoids:** Pitfalls 1, 7, 8, 10; scene LOD / skipped passes / lowered particle count; HashMap/Rayon defaults; `unsafe` as the opening move; copying the ratio into `manifest.toml`.
 
-### Research Flags for Phase Planning
+### Phase 25: WASM sanity and honest close
 
-Focused research or an ADR is still required for:
+**Rationale:** Visitors use Pages, but WASM vs C++ is not a fair pair. Native 3× must already hold so the browser loop is not used to “debug” 300×.
+**Delivers:** `just web-wasm` / `just web-player-smoke`; honest playground note (improved / still sub-realtime vs previous WASM or native Rust — never vs `oracle-release`); finalized remaining-delta notes; empty `reviewed_reports` reconfirmed; `BENCHMARKING.md` one-paragraph boundary (playground pair ≠ Phase 12 claim).
+**Addresses:** PERF-WASM, PERF-NOTES.
+**Avoids:** Pitfall 6; Instant profiler in the cdylib; lifting the 4-step catch-up cap to fake realtime; README engine-wide speed claims.
 
-- **Phase 1:** final oracle commit/tag, Box2D ancestry, build patches, license obligations, alteration notices, and canonical compiler/platform.
-- **Phase 2:** exact schema/versioning, float-bit encoding, batching/timeouts/crashes, canonical forms, reference-data review, and minimization strategy.
-- **Phase 3:** handle bit layout and wrap policy, `Send`/`Sync`, user data, callback panic policy, destruction timing, stable particle-ID cost, and safe external-buffer semantics.
-- **Phase 4:** oracle variability, fused operations, signed zero/NaN, divergence horizons, and per-platform tolerance tiers.
-- **Phases 5-10:** pinned-source ordering audits and subsystem-specific observables before each compatibility sign-off.
-- **Phase 11:** renderer selection only after a headless/testbed capability spike; Macroquad is the first candidate, not a commitment.
-- **Phase 12:** performance budgets, supported-platform evidence thresholds, release/MSRV policy, and any unsafe optimization ADR.
+### Phase Ordering Rationale
 
-Repository scaffolding, standard Cargo quality lanes, documentation checks, package isolation, and the renderer-neutral adapter boundary use established patterns once the decisions above are made; they do not need open-ended research phases.
+- Tooling before physics so the first kernel PR has names, not folklore.
+- Unprofiled pair and samply share a git SHA; profiled duration is discarded for the gate.
+- Shared-path waves before the 3× declaration so the gate is a re-measure, not a hope.
+- Other scenes are spot-checks of shared fixes, not a second sealed matrix.
+- WASM last inherits native step cost; it is a sanity check, not the closing method.
+- Scalar baseline constrains every optimization phase; Phase 12 public claims conflict with this milestone’s honesty rules.
+
+### Research Flags
+
+Phases likely needing `/gsd-research-phase` during planning:
+
+- **Phase 24:** The 300× cause is unconfirmed until Phase 23 artifacts exist. Planning should wait for named shares (clone/rollback vs `check_invariants` vs neighborhood vs contact/pressure) rather than pre-selecting SIMD, PGO, or `unsafe` indexing. After the audit lands, research that wave’s storage/aliasing options (lazy snapshot, scratch reuse, split borrows) against the oracle pass graph.
+
+Phases with standard patterns (skip research-phase):
+
+- **Phase 22:** Established just/xtask layering, Cargo custom profile, samply `--save-only` wrap, package-isolation check.
+- **Phase 23:** Existing pair recipe + STACK’s samply command; the work is running it and writing notes.
+- **Phase 25:** Existing `web-player-smoke` / Pages path; honesty rules are already locked.
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 | --- | --- | --- |
-| Stack | HIGH for Cargo/CMake/process isolation; MEDIUM for MSRV/compiler/renderer pins | Primary tool and upstream sources support the baseline; several pins require project-specific validation |
-| Feature scope | HIGH | The candidate source inventory is detailed, but must be re-bound to the final oracle decision |
-| Architecture | MEDIUM-HIGH | Dependency direction and safety boundaries are strong; handle, particle storage, callback, and numerical details need spikes/ADRs |
-| Pitfalls | HIGH for upstream semantics; MEDIUM for recovery cost | Risks are consistent across official source behavior and the proposed Rust model |
-| Roadmap | MEDIUM-HIGH | Dependency order is clear; phase sizes will refine after the final inventory and early spikes |
+| Stack | HIGH for samply 0.13.1, `[profile.profiling]`, what not to add; MEDIUM for dhat long-term fitness and xctrace/Xcode-26 instrument names | Official samply/crates.io/Homebrew pins; dhat is experimental and lightly maintained |
+| Features | HIGH for table stakes, anti-features, and Dam Break recipe lock; MEDIUM for which hot path dominates until a profiled audit | Repo policy + neighboring-engine post-mortems agree on extra-work-first |
+| Architecture | HIGH for crate/xtask/oracle/package isolation; MEDIUM for host `samply setup` permissions | Verified in this checkout; macOS sampler install is host-specific |
+| Pitfalls | HIGH for policy/integration pitfalls; MEDIUM for ranking clone vs neighborhood vs invariants as *the* 300× cause | In-tree extra work is real; sampling must rank it |
 
-**Overall confidence:** MEDIUM-HIGH. The project has a coherent implementation strategy, but correctness depends on resolving the oracle, ownership, ordering, and numerical decisions before broad translation.
+**Overall confidence:** HIGH for how to measure, what not to build, and phase order. MEDIUM for the first physics edit. That gap is why Phase 23 precedes Phase 24.
+
+### Gaps to Address
+
+- **Dominant kernel unknown until Phase 23:** Treat in-tree suspects (full-world clone, release invariants, per-pass `to_vec`, `ParticleNeighborhood::from_view`) as a hunt list, not a committed cause. Planning of Phase 24 should consume the audit doc.
+- **samply setup on this Mac:** Architecture flags `samply setup` / signing as MEDIUM. Phase 22 must fail closed with install text, not skip silently.
+- **C++ symbol quality:** Optional extra-target `-g` / frame pointers on the **profile** command only. Do not change `oracle-release` pair flags.
+- **Thermal/order bias near 3×:** Sequential Rust-then-C++ is enough at 300×. When the ratio is O(1), interleave or alternate first-engine; do not upgrade the canary into the 32-case sealed protocol.
+- **dhat vs Instruments Allocations:** Prefer samply first. Enable private `dhat-heap` or xctrace Allocations only if CPU samples show allocator/`Vec` dominance. dhat’s global allocator must stay off the gate binary.
 
 ## Sources
 
-### Project Research
+### Project research (this milestone)
 
-- [STACK.md](STACK.md) — toolchain, workspace, C++ oracle, dependencies, CI, testing, and packaging.
-- [FEATURES.md](FEATURES.md) — complete parity inventory, table stakes, enablers, extensions, and release truthfulness.
-- [ARCHITECTURE.md](ARCHITECTURE.md) — component boundaries, identity/storage model, data flow, and dependency-driven build order.
-- [PITFALLS.md](PITFALLS.md) — critical failure modes, warning signs, recovery, and phase mapping.
+- [STACK.md](STACK.md) — samply 0.13.1, `[profile.profiling]`, evidence path, what not to add.
+- [FEATURES.md](FEATURES.md) — PERF-* table stakes, anti-features, admission, WASM-after-native.
+- [ARCHITECTURE.md](ARCHITECTURE.md) — just/xtask/oracle layering, measure-then-fix loop, package isolation (evidence dir reconciled away from `v12-native-perf`).
+- [PITFALLS.md](PITFALLS.md) — SIMD-first, profiled-as-gate, clone-happy-path, Phase 12 revival, WASM-vs-C++.
+- [PROJECT.md](../PROJECT.md) — v1.2 goal, Dam Break ≤ 3×, scalar baseline, hobby scope.
 
-### Primary Upstream Evidence
+### Primary (HIGH confidence)
 
-- [Official Google LiquidFun repository](https://github.com/google/liquidfun) — archived source, releases, build files, tests, and examples.
-- [Candidate 1.1.0-era research commit](https://github.com/google/liquidfun/tree/7f20402173fd143a3988c921bc384459c6a858f2) — inventory evidence only, not the final pin.
-- [Official LiquidFun Programmer's Guide](https://google.github.io/liquidfun/Programmers-Guide.html) — modules, world semantics, contacts, queries, and particles.
-- [LiquidFun release notes](https://google.github.io/liquidfun/ReleaseNotes.html) — 1.1.0 context and Box2D 2.3.0/revision 280 ancestry claim.
+- Repo: `docs/playground-dam-break-timing.md`, `BENCHMARKING.md`, `PROJECT-SCOPE.md`, `reference/performance/manifest.toml` (`reviewed_reports = []`), `reference/performance/policy.json` (`timing_authority: unprofiled_wall_clock`).
+- Repo: `tools/xtask/src/playground.rs`, `crates/liquidfun-wasm/src/dam_break_bench.rs`, `tools/reference/src/playground_dam_break_bench.cpp`, `crates/liquidfun` step vs `step_profiled`.
+- [mstange/samply 0.13.1](https://github.com/mstange/samply/blob/samply-v0.13.1/README.md) — macOS, release+debug info, `--save-only`, `--unstable-presymbolicate`.
+- [crates.io samply 0.13.1](https://crates.io/crates/samply) / [Homebrew samply](https://formulae.brew.sh/formula/samply) — official pin, Apple Silicon bottles.
+- [box2d-rust 1.3.0 performance notes](https://docs.rs/crate/box2d-rust/latest) — paired C vs Rust, release-validator win before SIMD (2026-07-19).
+- [Rapier common mistakes](https://rapier.rs/docs/user_guides/rust/common_mistakes/) — ~100× without `--release`.
+- [The Rust Performance Book — Profiling](https://nnethercote.github.io/perf-book/profiling.html) — samply / Instruments / debuginfo.
+- [xctrace(1)](https://keith.github.io/xcode-man-pages/xctrace.1.html) — headless `--launch --no-prompt`.
 
-*Research completed: 2026-07-09*
-*Ready for requirements and roadmap creation: yes*
+### Secondary (MEDIUM confidence)
+
+- [Avian 0.4 write-up](https://joonaa.dev/blog/09/avian-0-4) — profile-guided parallel solver; **do not default this on**.
+- [Erin Catto, SIMD for Collision (2026-07)](https://box2d.org/posts/2026/07/simd-for-collision/) — SIMD helps some hulls, not all scenes.
+- [crates.io dhat 0.3.3](https://crates.io/crates/dhat) — optional heap rank; maintenance warning.
+- [samply#763](https://github.com/mstange/samply/issues/763) — `debug = "limited"` can suffice; v1.2 still starts at `debug = true` per STACK.
+- [Shnatsel, bounds checks](https://shnatsel.medium.com/how-to-avoid-bounds-checks-in-rust-without-unsafe-f65e618b4c1e) — typical 1–15%; not a 300× explanation.
+- cargo-flamegraph 0.6.14 / cargo-instruments 0.4.17 — optional SVG/GUI; not the scripted default.
+
+### Tertiary (LOW confidence)
+
+- Third-party “Rust vs C++ game physics” roundups — methodology not LiquidFun-shaped; do not drive gates.
+
+### Negative pins (do not use)
+
+- [feldera/samply v0.13.2](https://github.com/feldera/samply/releases/tag/v0.13.2) — different repo, not crates.io `samply`.
+- Valgrind / iai-callgrind — not a supported macOS aarch64 hobby tool.
+
+---
+*Research completed: 2026-09-20*
+*Ready for roadmap: yes*

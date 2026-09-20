@@ -1,334 +1,403 @@
 # Architecture Research
 
-**Domain:** Native Rust 2D rigid-body and particle physics engine with a C++ differential oracle
-**Researched:** 2026-07-09
-**Confidence:** MEDIUM-HIGH — upstream structural claims are verified against the official source, but the canonical revision, numerical policy, and public object model still require explicit decisions
+**Domain:** Native LiquidFun performance closing — scripted Dam Break pair, CPU sampling, committed audit notes, and profile-guided hot-path fixes
+**Researched:** 2026-09-20
+**Confidence:** HIGH for existing crate, xtask, oracle, and package-isolation seams (verified in this checkout); MEDIUM for host profiler install/permission details (`samply setup` on macOS)
+
+This document is **v1.2 Native Performance Closing** architecture. It does **not** redesign `crates/liquidfun`, the SolidJS playground, or the Phase 12 sealed matrix. The engine remains one publishable crate with a private oracle shell. v1.2 adds an observability loop around the existing Dam Break pair, then changes only shared native hot paths that sampling names.
 
 ## Standard Architecture
 
 ### System Overview
 
 ```text
-┌──────────────────────────────────────────────────────────────────────┐
-│ Imperative shells                                                    │
-│ testbed app      differential CLI      reference-data generator      │
-└──────────────┬───────────────┬─────────────────────┬─────────────────┘
-               │               │                     │ subprocess
-┌──────────────▼───────────────▼──────────────┐  ┌───▼────────────────┐
-│ Versioned test protocol                    │  │ C++ oracle runner   │
-│ validated scenarios, semantic traces,      │  │ pinned upstream +  │
-│ canonicalization, tolerance profiles       │  │ narrow local shim   │
-└──────────────┬──────────────────────────────┘  └────────────────────┘
-               │ drives / observes
-┌──────────────▼───────────────────────────────────────────────────────┐
-│ Published Rust engine: one cohesive `liquidfun` crate                │
-│                                                                      │
-│ `World` facade and step coordinator                                  │
-│      ├── rigid dynamics ──► collision ──► math/settings              │
-│      └── particle system ─► rigid access + collision + math          │
-│                                                                      │
-│ typed handles + arenas      particle SoA      ordered scratch state  │
-└──────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────┐
+│ Discoverable shell (thin)                                                │
+│   just playground-dam-break-bench                                        │
+│   just playground-dam-break-profile                                      │
+│   just web-player-smoke   (post-gate WASM sanity only)                   │
+└──────────────┬───────────────────────────────────┬───────────────────────┘
+               │ prints the command                │ no CMake / no profiler
+               ▼                                   ▼
+┌──────────────────────────────────────────────────────────────────────────┐
+│ Imperative shell: private `cargo xtask`                                  │
+│   playground dam-break-bench   unprofiled Instant pair (≤3× authority)   │
+│   playground dam-break-profile dated CPU samples + pair snapshot         │
+│   upstream configure/build     oracle-release extra target               │
+│   package verify               isolation gate (unchanged)                │
+└───────┬──────────────────────────────┬───────────────────┬───────────────┘
+        │ spawn                        │ spawn             │ spawn
+        ▼                              ▼                   ▼
+┌─────────────────────┐    ┌───────────────────────┐   ┌───────────────────┐
+│ Native Rust timer   │    │ Pinned C++ timer      │   │ Host sampler       │
+│ liquidfun-wasm      │    │ playground-dam-break- │   │ samply / optional  │
+│ --bin dam-break-    │    │ bench                 │   │ Instruments wrap   │
+│ bench (--release or │    │ target/reference/     │   │ of the same bins   │
+│ --profile profiling)│    │ oracle-release/       │   │                    │
+└──────────┬──────────┘    └──────────┬────────────┘   └─────────┬─────────┘
+           │ World::step              │ b2World::Step            │
+           │ (not step_profiled)      │ out of process           │
+           ▼                          ▼                          ▼
+┌─────────────────────────────────────────────┐   ┌─────────────────────────┐
+│ Published engine: crates/liquidfun          │   │ Gitignored evidence     │
+│ particle/rigid source-ordered kernels       │   │ target/v12-native-perf/ │
+│ DiagnosticProfileSchema::Phase12V1          │   │ <UTC>/                  │
+│ (diagnostic Instant only; never the gate)   │   │ pair.json, *.json.gz    │
+└─────────────────────────────────────────────┘   └────────────┬────────────┘
+                                                               │ human summary
+                                                               ▼
+                                                  docs/native-performance-audit.md
+                                                  (committed; not Phase 12 claim)
 ```
 
-Dependency arrows point toward lower-level knowledge. The published engine never depends on protocol, differential, renderer, C++, serialization, or process-management code. The inspected official source describes Common, Collision, and Dynamics as its major modules, makes Collision independently usable, and has `b2World` own the simulation objects. The Rust layout should preserve those useful knowledge directions without copying the C++ ownership interface.
+Dependency arrows still point toward `liquidfun`. Profiling, CMake, samply, playground scenes, and dated reports never become production dependencies.
 
 ### Component Responsibilities
 
-| Module | Owns | Must not own |
-| --- | --- | --- |
-| `liquidfun::math` | `Vec2`, rotations, transforms, sweeps, matrices, constants, numerical predicates | World state, allocation policy, callbacks |
-| `liquidfun::collision` | Shapes, AABBs, distance, manifolds, dynamic tree, broad phase, ray/shape casts, TOI kernels | Bodies, particles, renderer, oracle types |
-| `liquidfun::dynamics` | Body/fixture/joint/contact state, islands, rigid solver, sleeping, CCD | Particle storage, C++ adapter, public event loop |
-| `liquidfun::particle` | Dense particle properties, groups, proxies, contacts, pairs/triads, lifetimes, ordered solver pipeline | Public world ownership, rendering, serialization |
-| `liquidfun::world` | Deep public interface, typed object identity, creation/destruction cascades, queries, step ordering, hooks/events | Upstream pointers, protocol identifiers, graphics |
-| `liquidfun-test-protocol` | Versioned scenario/result domain types, validation, semantic IDs, canonical forms, tolerance profiles | Engine internals or upstream build logic |
-| `liquidfun-differential` | Rust scenario adapter, C++ process adapter, trace comparison, diagnostics, minimization entrypoints | Production engine behavior |
-| `tools/reference-cpp` | Map protocol IDs to upstream pointers/indices; run the pinned C++ world; emit semantic results | Rust public types, generalized application behavior |
-| `apps/testbed` | Window/input/render loop and interactive controls over the public engine/scenario interfaces | Physics implementation or differential truth |
-
-The engine crate should be a deep module: a small safe `World` interface hides arenas, ordered adjacency, scratch buffers, solver phases, and compaction. Do not split math, collision, dynamics, or particles into published crates merely because upstream has directories. Extract a production crate only after it has an independent consumer, feature/platform contract, or release cadence.
+| Component | Responsibility | Typical implementation |
+|-----------|----------------|------------------------|
+| `crates/liquidfun` | Native physics; shared particle/rigid hot paths; optional `World::step_profiled` diagnostic schema | Existing deep modules. v1.2 **modifies** solver/storage after evidence; adds no profiler, serde, C++, or WASM |
+| `crates/liquidfun-wasm` `dam-break-bench` | Native-only playground Dam Break Medium/Normal timer around `SessionCore::advance` → `World::step` | Keep the bin here (`#[cfg(not(target_arch = "wasm32"))]`). Do not move scenes into the published crate |
+| `tools/reference` `playground-dam-break-bench` | Matching C++ extra target: construct recipe, time `b2World::Step` only | Existing CMake extra target under `oracle-release`; still not the JSONL oracle |
+| `tools/xtask` `playground` | Rebuild oracle extra target, spawn both timers, validate JSON, print Markdown | **Modify** to dump dated pair files; **add** a profile subcommand that wraps the same binaries |
+| `just` recipes | One-line aliases that print the underlying `cargo xtask …` | **Add** thin profile alias; never embed CMake, Ninja, or samply flags |
+| Host CPU sampler | Attribute samples to functions in optimized binaries | Out-of-process `samply record` (default). Optional macOS Instruments. Not a workspace crate |
+| `target/v12-native-perf/<UTC>/` | Gitignored dated pair + CPU-profile artifacts | New directory under already-ignored `/target/` |
+| `docs/native-performance-audit.md` | Committed named hot functions, suspected causes, current Dam Break delta | New doc. Unreviewed; not `reference/performance/manifest.toml` |
+| `docs/playground-dam-break-timing.md` | Reproduce recipe + latest unreviewed sample table | **Modify** after re-measures; keep the unreviewed banner |
+| Phase 12 `cargo xtask performance` | Sealed 32-case matrix, empty reviewed-report manifest | Leave unused as v1.2 gate. Parent/child schema stays diagnostic-only |
+| Playground `web/` + `just web-player-smoke` | Post-native-gate WASM sanity | Unchanged architecture; run after ≤3×, never vs C++ |
+| `crates/liquidfun-benchmarks` | Private Criterion catalog benches | Do not hijack for Dam Break closing |
 
 ## Recommended Project Structure
 
 ```text
 .
+├── Cargo.toml                          # ADD [profile.profiling] inherits=release
+├── justfile                            # ADD thin playground-dam-break-profile
+├── .gitignore                          # /target/ already covers evidence
+├── BENCHMARKING.md                     # MODIFY: v1.2 pair ≠ Phase 12 claim
+├── docs/
+│   ├── playground-dam-break-timing.md  # MODIFY: refresh unreviewed sample
+│   └── native-performance-audit.md     # NEW: committed notes (not a sealed claim)
 ├── crates/
-│   ├── liquidfun/                    # only published production crate initially
+│   ├── liquidfun/                      # MODIFY hot paths only after profiles
 │   │   └── src/
-│   │       ├── lib.rs                # curated public re-exports
-│   │       ├── handle.rs             # typed world-scoped generational IDs
-│   │       ├── arena.rs              # private storage/invalidation machinery
-│   │       ├── math.rs
-│   │       ├── math/
-│   │       ├── collision.rs
-│   │       ├── collision/
-│   │       ├── dynamics.rs
-│   │       ├── dynamics/
-│   │       ├── particle.rs
-│   │       ├── particle/
-│   │       ├── world.rs
-│   │       └── world/
-│   ├── liquidfun-test-protocol/      # private, engine-neutral schema and policies
-│   └── liquidfun-differential/       # private adapters/comparator/diagnostics
+│   │       ├── particle/solver/        # likely first shared-fix surface
+│   │       ├── particle/contact.rs
+│   │       ├── particle/body_contact.rs
+│   │       ├── particle/proxy.rs
+│   │       ├── world/step/execution.rs # keep step vs step_profiled split
+│   │       └── world/observation/profile.rs  # Phase12V1 diagnostic only
+│   └── liquidfun-wasm/                 # KEEP timer + scenes here
+│       ├── src/dam_break_bench.rs      # unprofiled Instant authority
+│       ├── src/bin/dam_break_bench.rs
+│       └── src/scene/*.rs              # spot-check other scenes natively
 ├── tools/
-│   ├── reference-cpp/                # separate C++ executable and build files
-│   └── xtask/                        # cross-platform development orchestration
-├── apps/testbed/                     # optional renderer-dependent binary, later
-├── protocol/                         # generated JSON Schemas and compatibility notes
-├── scenarios/                        # small declarative cases and minimized regressions
-├── reference-data/                   # manifests plus reviewed Cargo-only snapshots
-├── third_party/liquidfun/            # pinned, read-only oracle source
-└── docs/adr/                          # object model, oracle, ordering/numerical decisions
+│   ├── xtask/src/
+│   │   ├── playground.rs               # SPLIT as it grows; keep pair command
+│   │   └── playground/
+│   │       ├── pair.rs                 # existing pair + dated dump
+│   │       └── profile.rs              # NEW: wrap bins with samply
+│   └── reference/
+│       ├── CMakeLists.txt              # KEEP extra target; optional -g flag
+│       ├── CMakePresets.json           # KEEP oracle-release; no FFI preset
+│       └── src/playground_dam_break_bench.cpp
+└── target/                             # gitignored
+    ├── reference/oracle-release/       # C++ extra-target binary
+    ├── release/ / profiling/           # Rust bins
+    └── v12-native-perf/<UTC>/          # NEW dated evidence
 ```
 
 ### Structure Rationale
 
-- **One production crate:** permits private refactoring across tightly coupled physics subsystems and prevents dependency/version ceremony from becoming part of the public interface.
-- **Separate protocol crate:** serialization and comparison vocabulary are real seams shared by multiple runners, but are not runtime physics concerns.
-- **Separate differential crate:** keeps `serde`, subprocesses, minimizers, and diagnostics out of ordinary Cargo consumers.
-- **Process-level C++ adapter:** prevents foreign pointers, allocators, exceptions, undefined behavior, and sanitizers from crossing into the Rust process. Cargo builds of `liquidfun` remain C++-free.
-- **Renderer as an app:** the testbed consumes renderer-neutral snapshots/views and cannot dictate world storage or dependencies.
+- **`crates/liquidfun`:** The only place shared physics may change. Package isolation forbids C++, renderers, protocol, and “benchmark” paths inside the published archive (`tools/xtask/src/package.rs` forbidden prefixes/terms).
+- **`crates/liquidfun-wasm`:** Owns the playground recipe and the native timer so the canary matches the product scene. The crate is `publish = false` and outside `default-members`.
+- **`tools/xtask`:** Owns rebuild, process spawn, JSON validation, evidence paths, and profiler invocation. Matches the existing “just prints; xtask orchestrates; CMake builds C++” layering.
+- **`tools/reference`:** Stays the only C++ build graph. Dam Break C++ remains an extra executable linked to `Box2D`, not in-process FFI.
+- **`target/v12-native-perf/`:** Dated, never overwritten, never committed. Same pattern as `target/phase12-performance/` raw files: local, unreviewed, non-claiming.
+- **`docs/native-performance-audit.md`:** The durable human artifact. Profiles expire; named functions and hypothesized causes belong in git.
 
 ## Architectural Patterns
 
-### Deep Stateful Core with Pure Kernels
+### Pattern 1: Out-of-process pair as wall-clock authority
 
-Math, geometry, manifold generation, key construction, result canonicalization, and tolerance evaluation should be data-in/data-out functions with exhaustive unit tests. `World` and its solvers are necessarily mutable in-memory state machines, but remain effect-free: no files, clocks, randomness, logging policy, rendering, or subprocesses. Those effects belong to shells.
+**What:** Same-host scalar `--release` Rust timer vs `oracle-release` C++ extra target. Construction, particle insert, warm-up, capture, and rendering stay outside `Instant` / `steady_clock`.
+**When to use:** Every v1.2 numeric decision, including the Dam Break ≤ 3× gate and post-fix re-measures.
+**Trade-offs:** Sequential Rust-then-C++ (today) is enough for a ~300× gap; it is not Phase 12’s five-run interleaved protocol. Do not “upgrade” the canary into the empty sealed matrix.
 
-Do not create traits around every internal call. There is one rigid implementation and one particle implementation; direct private types give better locality. Introduce a seam only where two adapters exist, such as Rust and C++ scenario runners or interactive and headless presentation.
-
-### World-Scoped Generational Identity
-
-Bodies, fixtures, joints, particle systems, and particle groups should use distinct typed IDs containing a world key, arena slot, and generation. This prevents stale-slot reuse and accidental cross-world lookup. Fixtures retain a `BodyId`; joints retain their endpoint IDs. Arena entries may use index-based `maybe_prev`/`maybe_next` links internally to reproduce required traversal order without exposing intrusive pointers.
-
-Destruction is centralized in `World`: validate once, perform the upstream-equivalent cascade in a defined order, invalidate generations, update adjacency/broad-phase state, and return owned destruction events. Contacts are transient implementation records; expose contact views/snapshots, not durable contact handles.
-
-Particle identity is deliberately two-level:
-
-- Internal `ParticleIndex` is a dense, ephemeral solver index.
-- Public `ParticleId` is stable across dense-buffer rotation and compaction until destruction.
-- `ParticleStorage` maintains `dense_to_id` and `id_to_dense` maps and updates them in the same transaction as every SoA lane, proxy, contact, pair, triad, lifetime index, and group range.
-
-This is safer than treating an index as identity. Official LiquidFun documents indices as self-compacting and offers a separate handle for cross-frame identity. Benchmark the always-on stable map early; if its cost is material, an opt-in handle table may be considered only through an ADR and equivalent safety tests.
-
-### Restricted Hooks and Explicit Mutation Phases
-
-The public interface should make illegal callback mutation unrepresentable. A step hook receives read-only snapshots/handles; pre-solve returns a narrow `ContactDirective` rather than `&mut World` or an unrestricted contact pointer. Stateful hooks may observe synchronous begin/end/pre/post events, but can store only owned values. All events are also available as an owned `StepReport` for polling workflows.
+**Example:**
 
 ```rust
-pub trait StepHooks {
-    fn should_collide(&mut self, pair: CollisionPairView<'_>) -> bool;
-    fn pre_solve(&mut self, contact: ContactView<'_>) -> ContactDirective;
-    fn observe(&mut self, event: StepEventView<'_>);
-}
+// tools/xtask playground dam-break-bench (existing)
+upstream::run(&["configure", "--preset", "oracle-release"])?;
+upstream::run(&[
+    "build", "--preset", "oracle-release",
+    "--target", "playground-dam-break-bench",
+])?;
+let rust = cargo_run_wasm_dam_break_bench("--release")?;
+let cpp = run_target_reference_binary()?;
+validate_sample(&rust, "native_rust")?;
+validate_sample(&cpp, "pinned_cpp")?;
 ```
 
-World mutation requested by game logic goes into a `CommandBuffer` and is applied explicitly before or after `step`, never while solver state is borrowed. A no-hooks path should remain simple. This matches the upstream prohibition on creating/destroying entities in contact callbacks while allowing the supported pre-solve decisions.
+### Pattern 2: Dedicated profiling Cargo profile, not a changed `--release`
 
-Queries happen outside the locked step and return owned typed IDs or use a `ControlFlow` visitor. Their interface must not imply callback order: the official guide explicitly says query and ray-cast callback order is unspecified.
+**What:** Workspace `[profile.profiling]` inherits `release`, sets `debug = "limited"` (or `"line-tables-only"` if stacks are sufficient) and `strip = false`. Record with `samply` / Instruments. Optional `RUSTFLAGS='-C force-frame-pointers=yes'` only on this profile.
+**When to use:** CPU attribution after an unprofiled pair exists for that same git SHA.
+**Trade-offs:** Profiling binaries can be slightly slower than stripped `--release`. That is why profiled wall times are **never** the ≤3× authority (same rule as Phase 12: profiled timings are diagnostic-only).
 
-### Particle SoA Behind Borrow Guards
-
-Retain the upstream's structure-of-arrays model because solver passes and rendering consume properties lane-wise. Keep required lanes (`id`, flags, position, velocity, force, weight, group) dense and feature-specific lanes lazy where evidence supports it. Keep reusable scratch buffers owned by the particle system so stepping does not allocate per pass. Preserve group-contiguous ranges until differential evidence justifies another representation.
-
-Expose read-only slices through `ParticleBuffers<'_>`. Controlled mutation should use a guard whose methods expose only supported lanes and mark proxies/contacts or aggregate flags dirty when the guard ends. Never expose the backing `Vec`s, capacity, or dense-to-ID map.
-
-User-supplied buffers should transfer ownership in a validated `ParticleBuffersOwned` object rather than borrow arbitrary external memory for the world's lifetime. The world may return them on teardown. A raw-pointer compatibility interface, if ever necessary, belongs in an explicitly unsafe low-level module and is not an initial requirement.
-
-### Versioned Semantic Differential Protocol
-
-The scenario protocol is an engine-neutral domain language, not a serialization of either object model.
-
-```text
-Scenario
-  schema version + scenario ID + seed
-  world/solver configuration
-  named entity definitions and deterministic creation order
-  commands at explicit phases (before-step / after-step)
-  declarative filter and pre-solve rules
-  checkpoint and observable requests
-
-EngineTrace
-  schema/provenance/platform/float metadata
-  checkpoint index and simulation time
-  semantic body/joint/particle-system/group/particle states
-  canonical contact/query/ray results
-  ordered callback and destruction events
-  runner warnings/errors
+```toml
+# root Cargo.toml — does not ship inside cargo package -p liquidfun
+[profile.profiling]
+inherits = "release"
+debug = "limited"
+strip = false
 ```
 
-Scenario IDs map to typed Rust handles in the Rust adapter and to pointers plus `b2ParticleHandle`s in the C++ adapter. Neither representation crosses the protocol. Group-created particles receive deterministic semantic IDs at creation, allowing traces to remain aligned after compaction.
+### Pattern 3: Sampler wraps binaries; engine is not instrumented for the gate
 
-Comparison happens by policy, not raw bytes:
+**What:** xtask locates `samply` (or `xctrace`) on `PATH`, rebuilds the profiling binary and the C++ extra target, then `samply record --save-only -o <evidence>/rust.json.gz -- <bin> --warmup 60 --steps 600`. C++ is the same wrap of `target/reference/oracle-release/playground-dam-break-bench`.
+**When to use:** First audit and after each optimization wave that needs new names.
+**Trade-offs:** macOS needs `samply setup` once. Missing sampler is a hard xtask error with install text, not a silent skip. Do not add `samply` to `[workspace.dependencies]`. Do not compile a profiler into `liquidfun`.
 
-| Observable | Comparison policy |
-| --- | --- |
-| IDs, flags, counts, membership, event kind | Exact |
-| Positions, velocities, impulses, normals, weights | Field-specific absolute/relative/ULP policy |
-| Query/ray/contact collections whose upstream order is unspecified | Canonical key, then set/multiset comparison |
-| Callback/destruction sequence and any solver-significant order | Ordered comparison |
-| NaN, infinity, signed zero, missing entity | Explicit diagnostic; never silently tolerated |
+Do **not** switch Dam Break timing to `World::step_profiled`. That API already exists (`crates/liquidfun/src/world/step/execution.rs`) and records parent/child `Instant` spans under `phase12-profile-v1`. It is useful as an **optional second dump** in evidence JSON. It is not sampling, not public timing authority, and must not run inside the unprofiled pair process.
 
-Tolerance profiles are versioned data keyed by subsystem and platform policy. They cannot be widened automatically by a failing test.
+### Pattern 4: Measure → note → shared fix → re-measure
+
+**What:** No physics PR without a named profile share or typed allocation/algorithm note in the audit doc. Fixes land in shared `liquidfun` kernels, not in wasm scene files, not as SIMD/parallel defaults.
+**When to use:** After the baseline pair+profile exists.
+**Trade-offs:** Slower calendar time than guessing; avoids optimizing the wrong extra check or a playground-only hook.
+
+Dam Break `on_advance` is currently a no-op (`crates/liquidfun-wasm/src/scene/dam_break.rs`). `SessionCore::advance` still calls it before `World::step`. Keep measuring `advance` so the canary stays on the playground path. Fountain / Water Wheel hooks do real work; their spot-checks are native-only and are **not** C++ pairs.
 
 ## Data Flow
 
-### Simulation Flow
+### Request Flow (one local closing loop)
 
 ```text
-public definitions / command buffer
-              │ parse + validate handles and invariants
-              ▼
-      World mutation transaction
-              │
-              ▼
- step config ─► lock phase
-              ├─ update rigid contacts
-              ├─ particle substeps and body coupling
-              ├─ rigid islands / velocity and position solve
-              ├─ continuous-collision / TOI phase
-              ├─ finalize forces, order, dirty state, owned events
-              ▼
-          unlock phase ──► StepReport / DebugView / next commands
+just playground-dam-break-profile
+        ↓
+cargo xtask playground dam-break-profile
+        ↓
+1. mkdir target/v12-native-perf/<UTC>/   (fail if the stamp exists)
+2. cargo xtask upstream configure/build --preset oracle-release
+     --target playground-dam-break-bench
+3. cargo run -p liquidfun-wasm --release --bin dam-break-bench
+   + C++ extra target                         ← UNPROFILED PAIR (authority)
+        ↓
+   pair.json + pair.md in the dated directory
+        ↓
+4. cargo build -p liquidfun-wasm --bin dam-break-bench --profile profiling
+   (+ optional C++ -g / -fno-omit-frame-pointer on the extra target only)
+        ↓
+5. samply record --save-only  rust.json.gz  -- <profiling bin> --warmup 60 --steps 600
+   samply record --save-only  cpp.json.gz   -- <oracle-release extra target>
+        ↓
+6. optional: separate process dump of DiagnosticStepProfile parent shares
+   (never mixed into pair.json wall_ms)
+        ↓
+7. human updates docs/native-performance-audit.md (hot functions, causes, delta)
+        ↓
+8. shared hot-path edits in crates/liquidfun
+        ↓
+9. cargo test -p liquidfun  (+ focused particle/world tests)
+   cargo xtask playground dam-break-bench     ← RE-MEASURE unprofiled
+        ↓
+10. native spot-check other SceneId sessions (no new C++ targets)
+        ↓
+11. when pair ≤ 3×: just web-wasm / web-player-smoke
+    record playground sanity honestly (WASM is not compared to C++)
 ```
 
-The exact phase order is an oracle-version fact, not a generic Box2D assumption. In the inspected official commit, `b2World::Step` updates contacts, solves each particle system, solves rigid islands, then handles TOI; `b2ParticleSystem::Solve` itself has an explicit ordered sequence of conditional solver passes. Encode these as named internal phases and lock the selected revision's order with tests.
-
-### Differential Verification Flow
+### State Management
 
 ```text
-scenario source
-      │ parse once into ValidatedScenario
-      ├──────────────► Rust adapter ─────► Rust EngineTrace
-      │
-      └─ JSON request ► C++ subprocess ──► C++ EngineTrace
-                                               │
-traces ─► schema/provenance checks ─► canonicalize ─► compare policies
-                                                        │
-                           pass / DifferentialReport / minimized scenario
+Committed (durable, non-numeric-authority)
+  docs/native-performance-audit.md
+  docs/playground-dam-break-timing.md  (unreviewed sample + reproduce)
+  BENCHMARKING.md                      (method boundaries)
+
+Gitignored (dated, never overwritten)
+  target/v12-native-perf/<UTC>/pair.json
+  target/v12-native-perf/<UTC>/rust.json.gz
+  target/v12-native-perf/<UTC>/cpp.json.gz
+  target/v12-native-perf/<UTC>/host.json   (HEAD, rustc, clang, OS, cores)
+
+Not used as v1.2 gate
+  reference/performance/manifest.toml      (empty; Phase 12)
+  target/phase12-performance/              (sealed workflow)
 ```
 
-The C++ runner reads machine input from stdin or a file, writes only protocol output to stdout, and sends logs to stderr. One process may execute a scenario or bounded batch; process reuse is a later optimization. A crash, timeout, sanitizer failure, schema mismatch, or wrong upstream revision is a harness failure, never a physics mismatch.
+### Key Data Flows
 
-### Reference Data Flow
+1. **Rebuild:** xtask `upstream configure --preset oracle-release` then `upstream build --preset oracle-release --target playground-dam-break-bench`. Same allowlisted target as today’s pair (`tools/xtask/src/upstream.rs`).
+2. **Unprofiled pair:** Spawn `liquidfun-wasm` `dam-break-bench` with `--release` and the C++ extra binary; parse one JSON object each; require `engine`, 1920 particles, matching warmup/steps. Print Markdown; **also** write `pair.json` / `pair.md` into the dated evidence directory when the new profile command (or an explicit `--write-evidence` flag on the pair command) runs.
+3. **Profiled run:** Rebuild with `[profile.profiling]`; wrap **the same argv** (`--warmup` / `--steps`) with the host sampler; save Firefox-Profiler JSON (or `.trace`) beside the pair. Reject using those files’ wall times as the gate.
+4. **Notes:** Copy function names and approximate shares into `docs/native-performance-audit.md` with git HEAD and evidence directory name. Do not paste flamegraphs into git.
+5. **Optimize:** Change `liquidfun` particle/rigid code that the profile named. Preserve source-ordered kernels, scalar IEEE, safe Rust default, `maybe_` naming, tau-based angles. SIMD/Rayon stay explicit opt-in and out of this milestone’s default path.
+6. **Re-measure:** New dated directory; compare unprofiled `wall_ms` ratio to C++. Preserve the previous dated directory (failed or slower records stay).
+7. **WASM sanity:** Existing `bun scripts/web-build.ts` path. No C++ oracle, no samply of `wasm32`, no new engine API.
 
-Small reviewed scenarios and minimized regressions are source-controlled. Cargo-only snapshots include a manifest with protocol version, scenario content hash, exact upstream revision, adapter revision, build mode, target, and tolerance profile. Generation writes to a temporary directory, validates by rerunning, then atomically replaces artifacts. Stale provenance is an error. Large randomized traces and benchmark output should remain CI artifacts rather than repository fixtures.
+## New vs Modified
 
-## Determinism and Ordering Ownership
+| Surface | New or modified | Why |
+|---------|-----------------|-----|
+| `Cargo.toml` `[profile.profiling]` | **New** | Release codegen + symbols without mutating default `--release` |
+| `tools/xtask/src/playground/profile.rs` | **New** | Sampler wrap, evidence mkdir, host identity |
+| `just playground-dam-break-profile` | **New** | Thin alias only |
+| `docs/native-performance-audit.md` | **New** | Committed notes the roadmap asked for |
+| `target/v12-native-perf/` | **New** (gitignored) | Dated pair + profiles |
+| Optional CMake cache `REFERENCE_PROFILE_DEBUG_INFO` on extra target | **New, optional** | `-g` / frame pointers without a new preset or `-ffast-math` |
+| `cargo xtask playground dam-break-bench` | **Modified** | Keep behavior; add dated dump / reuse from profile command |
+| `tools/xtask/src/playground.rs` | **Modified** | Route `dam-break-profile`; split files before it grows past review size |
+| `justfile` | **Modified** | One extra recipe; no CMake body |
+| `crates/liquidfun` particle/rigid modules | **Modified after evidence** | Shared hot-path fixes |
+| `docs/playground-dam-break-timing.md` | **Modified** | Refresh sample after waves; keep unreviewed banner |
+| `BENCHMARKING.md` | **Modified** | One paragraph: playground pair is exploratory, not Phase 12 |
+| `crates/liquidfun-wasm` timer | **Unchanged unless argv needed** | Already times the locked recipe via `World::step` |
+| C++ `playground_dam_break_bench.cpp` | **Unchanged** | Recipe lock + `b2World::Step` timer |
+| `crates/liquidfun` `World::step` vs `step_profiled` | **Unchanged contract** | Optional extra dump only |
+| `cargo xtask performance` / `scripts/phase12-performance.sh` | **Unchanged / unused as gate** | Empty reviewed-report manifest |
+| `web/` playground | **Unchanged until post-gate sanity** | No renderer coupling to core |
+| `crates/liquidfun/Cargo.toml` | **Must stay unchanged** | No samply, serde, wasm-bindgen, CMake, or `build.rs` |
 
-The engine owns an explicit iteration-order policy. Solver-critical paths use arenas/vectors and stable total keys, never hash-map iteration. Creation ordinals are retained where needed. Every sort used by proxies, contacts, pairs, triads, islands, lifetimes, or semantic output must document whether equal keys are meaningful and supply a deterministic tie-breaker.
+## What Must Stay Out of Published `liquidfun`
 
-Do not promise cross-platform bit identity initially. Define and verify two levels:
+Verified isolation today: sole `default-members = ["crates/liquidfun"]`; runtime deps are `bitflags` only; `include` is crate sources + license/readme; `cargo xtask package verify` unpacks and tests outside the repo; archive inspection rejects `tools/`, `third_party/`, `reference/`, and path terms including `benchmark`, `oracle`, `renderer`.
 
-1. Same target, toolchain, features, inputs, and seed: reproducible trace, subject to a published contract.
-1. Different supported platforms: semantic compatibility under reviewed numerical tolerances.
+Keep out of `liquidfun`:
 
-The inspected upstream source uses head insertion for world lists, sorted spatial proxies, group-driven buffer rotation, and zombie compaction. These details can change solver order and therefore belong in the upstream inventory and differential tests, even when the public Rust iteration interface chooses a clearer order.
+- samply, Instruments, flamegraph, Criterion, serde/JSON report writers
+- CMake, Ninja, submodule, FFI, in-process C ABI
+- wasm-bindgen, scene catalogs, Canvas/SolidJS
+- dated evidence files and host CPU dumps
+- playground Dam Break recipe constants as a public API (they stay in `liquidfun-wasm` + C++ extra target)
+- default SIMD, Rayon, `-ffast-math`, or `HashMap` iteration in solver-visible order
+
+Allowed inside `liquidfun`: allocation/algorithm/shape reductions that preserve semantics; existing diagnostic profile **schema** (already public, non-authoritative); `unsafe` only if a measured need plus `SAFETY:` and tests — not as the first move.
+
+## Suggested Build Order (dependency-aware)
+
+Phases below are roadmap suggestions, not an approved plan. They encode **measure before optimize** and **package isolation**.
+
+1. **Observability shell (no physics).** Workspace `profiling` profile; xtask `dam-break-profile` + dated `target/v12-native-perf/<UTC>/`; thin just alias; audit-doc skeleton; unit tests with fake cmake/samply. Run `cargo xtask package verify` (or `just check`) so isolation still holds. **Avoids:** changing kernels before names exist; stuffing CMake into just; adding profiler crates to `liquidfun`.
+
+2. **Baseline unprofiled pair.** `just playground-dam-break-bench` at a recorded HEAD; write pair artifacts; refresh `docs/playground-dam-break-timing.md` as an unreviewed sample. **Depends on:** step 1 dump path (or existing stdout). **Avoids:** treating this number as Phase 12.
+
+3. **Baseline CPU profiles.** Profiled rebuild + samply of Rust (required) and C++ extra target (strongly recommended for “extra Rust work vs C++”). Fill audit notes with hot functions and suspected extra per-particle work / allocations / checks / shape differences. Optional `step_profiled` parent-share dump in a **separate** process. **Depends on:** step 2 SHA identity. **Avoids:** in-process FFI; debug-build profiles; using profiled `wall_ms` as the gate.
+
+4. **Shared hot-path waves in `liquidfun`.** One concern per wave (for example contacts, then pressure, then allocations). After each wave: focused `liquidfun` tests, unprofiled pair into a **new** dated directory, append audit notes. **Depends on:** step 3 names. **Avoids:** scene-local hacks in `liquidfun-wasm`; SIMD/parallel defaults; rewriting the playground.
+
+5. **Native spot-checks.** Short `SessionCore::advance` timings (or existing scene tests) for Fountain, Float or Sink, Color Mixer, Jelly Drop, Water Wheel. Record “improved / unchanged / worse” honestly. No new C++ extra targets. **Depends on:** at least one successful shared-path wave. **Avoids:** a second sealed matrix.
+
+6. **Dam Break ≤ 3× gate.** Unprofiled `--release` vs `oracle-release` on the same host. Document remaining delta in the audit doc. **Depends on:** steps 4–5. **Avoids:** copying the ratio into `reference/performance/manifest.toml`.
+
+7. **WASM / playground sanity (last).** `just web-wasm` and/or `just web-player-smoke`. WASM is not compared to C++. **Depends on:** native gate so the browser loop is not used as a profiler. **Avoids:** coupling core simulation to Canvas; profiling `wasm32` as the closing method.
+
+Do not run step 7 as a substitute for step 2. Do not start step 4 during step 1. Do not revive Linux-host qualification as a blocker (hobby scope).
 
 ## Scaling Considerations
 
-| Scale | Architecture response |
-| --- | --- |
-| Small worlds / correctness work | Simple arenas, full invariant checks in tests, checkpoint every step |
-| Tens of thousands of particles | Reused SoA/scratch capacity, compact contact records, sampled checkpoints, profile allocation and cache behavior |
-| Very large particle workloads | Profile first; consider specialized sorting/SIMD behind identical scalar tests; keep deterministic scalar mode authoritative |
+This milestone is one scene on one developer host, not user scale.
 
-The likely first bottlenecks are particle proxy sorting/contact generation and repeated trace serialization, not crate boundaries. Optimize solver storage independently from the public handle interface. Parallel or nondeterministic modes must be opt-in and cannot become the compatibility baseline.
+| Scale | Architecture adjustments |
+|-------|--------------------------|
+| First audit (~300× gap) | Sequential pair + one samply capture each side is enough |
+| Closing toward ≤ 3× | Re-pair after every wave; keep old evidence directories |
+| Later optional Phase 12 | Only if explicitly authorized; separate sealed matrix, not this loop |
+
+### Scaling Priorities
+
+1. **First bottleneck:** Unknown until profiles exist; hypothesized extra per-particle work, allocations, and checks in particle solve/contacts. Detect with samply of `--profile profiling` Dam Break, not with Criterion catalog benches.
+2. **Second bottleneck:** Attribution quality (inlined frames, missing C++ `-g`). Fix the profiling profile / extra-target debug info; do not loosen the unprofiled `--release` gate.
 
 ## Anti-Patterns
 
-### Crate per Upstream Directory
+### Anti-Pattern 1: In-process C ABI as the first profiling path
 
-It freezes implementation dependencies into public package seams and makes coordinated solver changes expensive. Keep one production crate with cohesive internal modules until extraction has evidence.
+**What people do:** Add `extern "C"` into the oracle so Rust can time C++ in-process, or `cc`/`bindgen` from `liquidfun`.
+**Why it's wrong:** Violates reference isolation, package isolation, and crash isolation. The ~300× gap is not an IPC problem; both timers are already local processes around `Step` only.
+**Do this instead:** Keep spawning `playground-dam-break-bench` and `dam-break-bench`. FFI stays deferred unless a later profile proves process startup is the measured region (it is not: startup is outside `Instant`).
 
-### C++ Hidden Behind the Rust Runtime
+### Anti-Pattern 2: Treating `World::step_profiled` or sampler wall time as the ≤3× gate
 
-Linking the oracle in `build.rs` or a public feature risks making C++ a production dependency and lets foreign failures corrupt the test process. Keep it in a separate development executable.
+**What people do:** Enable diagnostic Instant spans (or compare samply duration) and declare victory.
+**Why it's wrong:** Phase 12 policy and `BENCHMARKING.md` already say profiled timings are never public timing authority. Instrumentation and debuginfo change the number.
+**Do this instead:** Unprofiled `--release` pair remains canonical. Profiles only name functions.
 
-### Pointer-Shaped Rust Interfaces
+### Anti-Pattern 3: Hiding CMake or samply in just recipes
 
-Long-lived references, raw pointers, or unscoped indices recreate upstream invalidation hazards. Use typed world-scoped IDs, borrow-scoped views, and owned event snapshots.
+**What people do:** A 80-line `just` recipe that detects OS, writes CMake flags, and shells out to Instruments.
+**Why it's wrong:** Repository convention: just prints; xtask owns orchestration; CMake owns C++.
+**Do this instead:** `just playground-dam-break-profile` → `cargo xtask playground dam-break-profile`.
 
-### Arbitrary `&mut World` in Callbacks
+### Anti-Pattern 4: Coupling core simulation to the playground renderer
 
-It makes reentrancy and solver invalidation possible. Use restricted directives and deferred commands.
+**What people do:** Time Canvas frames, or add debug-draw collection inside the native timer.
+**Why it's wrong:** The documented pair excludes capture and rendering. Core must stay headless.
+**Do this instead:** Keep `dam-break-bench` on `SessionCore::advance` / `World::step`. WASM sanity is a later, separate smoke.
 
-### Bytewise or Indexwise Differential Comparison
+### Anti-Pattern 5: Mutating default `--release` or `oracle-release` scalar flags for nicer stacks
 
-Layouts and particle indices are implementation details. Compare semantic IDs and fields with explicit order and tolerance policies.
+**What people do:** Set `[profile.release] debug = true` globally, or switch the C++ preset to `RelWithDebInfo` / `-ffast-math` / `-march=native`.
+**Why it's wrong:** Changes the authority build. RelWithDebInfo is not guaranteed identical to Release. Fast-math is already forbidden for canonical parity builds.
+**Do this instead:** Dedicated Cargo `profiling` profile; optional extra-target `-g` cache flag that the **profile** command turns on, never the pair command.
 
-### Renderer-Owned Scenarios
+### Anti-Pattern 6: Copying exploratory numbers into the Phase 12 manifest
 
-If examples live inside graphics callbacks, headless, C++, and minimizer execution drift apart. Scenarios must be declarative and renderer-neutral.
+**What people do:** Paste Dam Break ms/step into `reference/performance/manifest.toml`.
+**Why it's wrong:** That manifest is the only public-claim list and is empty by policy. The playground pair is not the 32-case sealed matrix.
+**Do this instead:** Keep numbers in gitignored evidence + unreviewed docs with the existing banner.
+
+### Anti-Pattern 7: Overwriting failed evidence or optimizing from a mixed SHA
+
+**What people do:** Reuse `target/v12-native-perf/latest/` and replace files; profile commit A, patch commit B, report A’s ratio.
+**Why it's wrong:** Standing authorization requires preserving failed records and separate attempt directories.
+**Do this instead:** UTC (or git-HEAD+UTC) directories; refuse to clobber; bind audit notes to HEAD + directory name.
+
+### Anti-Pattern 8: Scene-local or SIMD-first “fixes”
+
+**What people do:** Special-case Dam Break in `liquidfun-wasm`, or flip on default parallel particle solves.
+**Why it's wrong:** Other scenes would not benefit; determinism/source order is compatibility policy.
+**Do this instead:** Shared kernel changes named by the profile; SIMD/parallel only as explicit opt-in after the scalar close.
 
 ## Integration Points
 
-### Internal Seams
+### External Services
 
-| Seam | Communication | Ownership rule |
-| --- | --- | --- |
-| `world` → `dynamics` | Direct private calls over typed state | World owns phase order; dynamics owns rigid invariants |
-| `world` → `particle` | Direct private calls with a narrow rigid-access context | Particle may query fixtures/apply body reaction; it cannot own the world |
-| engine ↔ hooks | Read-only views, directives, owned events | No callback receives `&mut World` |
-| scenario → adapter | `ValidatedScenario` | Adapter maps semantic IDs; scenario never sees engine handles |
-| comparator → traces | Canonical semantic records | Comparator never inspects engine memory |
-| testbed → engine | Public commands, `StepReport`, `DebugView` | No storage or solver access |
+| Service | Integration pattern | Notes |
+|---------|---------------------|-------|
+| Host `samply` | xtask `Command` spawn, `--save-only` into evidence | Install with `cargo install --locked samply`; macOS `samply setup`. Not a Cargo workspace dep |
+| Optional Instruments / `xctrace` | Same wrap, extra artifact | macOS-only extra; do not make CI require Xcode |
+| CMake 4.x + Ninja | Existing `cargo xtask upstream` | `oracle-release` only for this pair; never asan/ubsan for timing |
+| Pinned upstream submodule | Read-only `Box2D` link for the extra target | Pair command already configures it; published crate still must not need it |
+| Firefox Profiler UI | Human opens `*.json.gz` locally | Do not commit profiles |
 
-### External Services and Tools
+### Internal Boundaries
 
-| Integration | Pattern | Notes |
-| --- | --- | --- |
-| Pinned LiquidFun | Read-only submodule used by C++ runner | Exact revision and patches recorded; absent from published crates |
-| C++ toolchain | Subprocess build/run through documented `xtask`/`just` commands | Native upstream build first; add broader orchestration only if evidence requires it |
-| Reference snapshots | Manifested generated artifacts | Never accept mismatched provenance or silently regenerate in tests |
-| Renderer/windowing | Optional testbed dependencies | Selected after headless runner works; cannot enter engine dependency graph |
-
-## Dependency-Driven Build Order
-
-| Order | Deliverable and acceptance evidence | Risk retired |
-| --- | --- | --- |
-| 1 | Select/pin oracle, record ancestry/license/build, freeze an initial subsystem inventory | Moving target and false structural assumptions |
-| 2 | Versioned protocol plus empty-world C++ and Rust runner round trip on all practical host OSes | Cross-language build and schema risk before physics work |
-| 3 | Object-model spike: world-scoped arenas, stale/cross-world handles, destruction cascades, restricted hooks, dense particle ID remap; property and compile-fail tests | Most expensive ownership/API mistakes and particle compaction cost |
-| 4 | Math/settings and scalar primitives with unit/property tests and pure-operation oracle probes | Numerical conventions, units, basic comparator policy |
-| 5 | Shapes, AABBs, dynamic tree, broad phase, distance/manifolds, and TOI in dependency order | Collision foundation and deterministic candidate ordering |
-| 6 | World/body/fixture/contact storage and a minimal non-colliding then colliding step vertical slice through the differential pipeline | World orchestration, identity, event, and harness integration |
-| 7 | Islands, rigid solver, sleeping, queries/ray casts, and CCD with expanding rigid scenarios | Highest rigid numerical/order risks |
-| 8 | Joints and full filters/listeners/destruction behavior; broad rigid sign-off | Callback timing and graph topology |
-| 9 | Particle storage/lifecycle/groups/lifetimes/proxies, then particle and body contacts | SoA, stable identity, compaction, group contiguity, coupling |
-| 10 | Particle behavior passes in the selected upstream order, pairs/triads, splitting/joining; sign off each flag before the next cluster | Central LiquidFun algorithm and cumulative divergence risk |
-| 11 | Headless example catalog, then optional testbed over the same scenarios | Prevents renderer-driven architecture and scenario duplication |
-| 12 | Benchmarks/profile-guided layout work, portability, fuzz/Miri/sanitizers, parity audit | Optimizes only validated behavior and hardens release claims |
-
-The early particle-storage spike is intentionally separated from the later full particle implementation: it retires the public identity and memory-layout risks before they become entrenched, while the full particle solver waits for collision and rigid-body dependencies.
-
-## Decisions Requiring Research Before Implementation
-
-1. **Canonical oracle:** exact repository, commit/tag, Box2D ancestry, supported build path, license/notice consequences, and whether patches are unavoidable.
-1. **Handle representation:** world-key generation, generation width/wrap policy, ID size, `Send`/`Sync` expectations, destruction reports, and arena iteration parity.
-1. **Particle identity/storage:** cost of always-stable `ParticleId`, group-contiguous layout, lazy lanes, buffer ownership, safe bulk mutation, and upstream handle-observation effects.
-1. **Callback contract:** exact synchronous event order, legal pre-solve edits, destruction events outside steps, panic containment, and command-buffer timing.
-1. **Ordering audit:** head-insert lists, island traversal, dynamic-tree pair emission, equal proxy tags, contact sorting, lifetime sorting, group rotation, and platform-specific `std::sort` behavior in the chosen oracle.
-1. **Numerical policy:** `f32` semantics, compiler flags, fused operations/SIMD, warm starting, NaN/signed-zero handling, per-observable tolerances, divergence horizons, and platform tiers.
-1. **Protocol/oracle technology:** JSON library and schema generation, streaming/batching, timeout/crash protocol, sanitizer builds, snapshot size, and scenario minimization strategy.
-1. **User data:** external typed side tables keyed by IDs versus engine-owned tags/generics; avoid `Any`/raw-pointer compatibility by default.
-1. **Build orchestration:** prove whether native CMake/scripts plus Cargo/`xtask` are sufficient before adopting Bazel or any second workspace model.
-1. **Crate extraction/platform subsets:** only after evidence shows collision/math need an independent `no_std` or release contract.
+| Boundary | Communication | Notes |
+|----------|---------------|-------|
+| just ↔ xtask | Thin argv | No CMake/samply flags in just |
+| xtask ↔ `dam-break-bench` | Process + JSON stdout | Existing parser; stderr is diagnostics |
+| xtask ↔ C++ extra target | Process + JSON stdout | Binary under `target/reference/oracle-release/` |
+| xtask ↔ samply | Process wrapping the same argv | Profiled wall time discarded for the gate |
+| `liquidfun-wasm` ↔ `liquidfun` | Public `World::step` | Timer crate may depend on engine; engine must not depend on wasm |
+| Diagnostic profile ↔ StepReport | Separate return value | `step_profiled` must not enter pair JSON |
+| v1.2 evidence ↔ Phase 12 manifest | None | Different directories and claim rules |
+| Native gate ↔ WASM smoke | Sequence only | WASM after ≤3×; no C++ comparison |
+| Package verify ↔ profiling profile | Workspace Cargo.toml only | `cargo package -p liquidfun` must still exclude tools/C++/profiles artifacts |
 
 ## Sources
 
-Structural evidence was inspected in the official `google/liquidfun` repository at commit `7f20402173fd143a3988c921bc384459c6a858f2`. This is evidence for architecture research, not the final pin decision.
+- This checkout: `crates/liquidfun-wasm/src/dam_break_bench.rs`, `src/bin/dam_break_bench.rs`, `src/session.rs` (`advance` → `World::step`), `src/scene/dam_break.rs` (empty `on_advance`)
+- This checkout: `tools/xtask/src/playground.rs`, `tools/xtask/src/upstream.rs` (allowlisted `playground-dam-break-bench`), `tools/reference/CMakeLists.txt`, `tools/reference/src/playground_dam_break_bench.cpp`, `tools/reference/CMakePresets.json` (`oracle-release` = Release)
+- This checkout: `crates/liquidfun/src/world/step/execution.rs` (`step` vs `step_profiled`), `crates/liquidfun/src/world/observation/profile.rs` (`phase12-profile-v1`)
+- This checkout: `BENCHMARKING.md` (unprofiled authority; diagnostic profiles; empty reviewed-report manifest), `docs/playground-dam-break-timing.md`, `ARCHITECTURE.md` (crate dependency direction), `tools/xtask/src/package.rs` (isolation deny lists)
+- [Profiling — The Rust Performance Book](https://nnethercote.github.io/perf-book/profiling.html) — samply / Instruments / flamegraph; debuginfo; frame pointers (HIGH)
+- [samply README](https://github.com/mstange/samply) — record optimized binaries with debug info; macOS `setup` (HIGH)
+- [samply#763](https://github.com/mstange/samply/issues/763) — `debug = "limited"` is enough for inlining/line tables (MEDIUM)
 
-- [Official LiquidFun Programmer's Guide — modules, world ownership, units](https://google.github.io/liquidfun/Programmers-Guide.html)
-- [Official `b2World::Step` source — lock and particle/rigid/TOI phase order](https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Box2D/Dynamics/b2World.cpp#L976-L1043)
-- [Official world callbacks — mutation warning and contact/query/ray interfaces](https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Box2D/Dynamics/b2WorldCallbacks.h)
-- [Official contacts guide — buffer events and mutate only after the step](https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Box2D/Documentation/Programmers-Guide/Chapter09_Contacts.md#L250-L263)
-- [Official world guide — query and ray-cast order is unspecified](https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Box2D/Documentation/Programmers-Guide/Chapter10_World.md)
-- [Official particle guide — self-compacting indices and contiguous property buffers](https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Box2D/Documentation/Programmers-Guide/Chapter11_Particles.md)
-- [Official particle handle definition — indices are ephemeral](https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Box2D/Particle/b2Particle.h#L324-L350)
-- [Official particle system source — SoA allocation, proxy sorting, solve sequence, compaction, and buffer rotation](https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Box2D/Particle/b2ParticleSystem.cpp)
-- [Official LiquidFun 1.1.0 release notes — Box2D 2.3.0/revision 280 ancestry claim](https://google.github.io/liquidfun/ReleaseNotes.html)
-
-*Architecture research for: `liquidfun-rs`*
-*Researched: 2026-07-09*
+---
+*Architecture research for: v1.2 Native Performance Closing (Dam Break ≤ 3× C++, scripted pair + CPU profiles, shared hot paths)*
+*Researched: 2026-09-20*

@@ -1,314 +1,270 @@
 # Feature Research
 
-**Domain:** Native Rust port of Google LiquidFun 1.1.0-era 2D rigid-body and particle physics
-**Researched:** 2026-07-09
-**Confidence:** HIGH for the upstream API inventory; MEDIUM for sequencing and market differentiation until the exact oracle revision and acceptance budgets are approved
+**Domain:** Native LiquidFun performance closing (audit, scripted profiling, Dam Break Medium ≤ 3× C++)
+**Milestone:** v1.2 Native Performance Closing
+**Researched:** 2026-09-20
+**Confidence:** HIGH for table stakes, anti-features, and existing bench/oracle dependencies; MEDIUM for which shared hot paths actually dominate the ~300× Dam Break gap until a profiled audit lands
 
-## Scope Interpretation
+## Scope
 
-For this project, “v1” means the first release allowed to claim complete parity with the selected upstream revision. It is not a reduced rigid-body-only MVP. Partial subsystem releases may be useful during 0.x development, but they must identify their gaps precisely and must not be marketed as LiquidFun parity.
+This milestone is a **developer-facing performance-closing loop**, not a new physics product, playground catalog, or public benchmark claim.
 
-The inventory below was verified against Google LiquidFun commit [7f20402173fd143a3988c921bc384459c6a858f2](https://github.com/google/liquidfun/tree/7f20402173fd143a3988c921bc384459c6a858f2), which identifies itself as LiquidFun 1.1.0-era source. The upstream release notes state that 1.1.0 is based on Box2D revision 280 / Box2D 2.3.0. The project must still make and record a separate decision about whether this post-tag master commit or the v1.1.0 tag is the final oracle.
+“v1.2 launch” means: native Dam Break Medium is in the same order of magnitude as pinned C++ on one same-host scalar pair, the hunt is evidenced, and remaining delta is described honestly. It does **not** mean Phase 12 sealed public numbers, Rust ≈ C++ everywhere, or WASM ≈ C++.
 
-Complexity is whole-capability complexity, including behavioral validation:
+Frame every new capability as something a developer or playground visitor can do. Existing v1.0/v1.1 work is a dependency, not a new feature.
 
-- **LOW:** bounded surface with little algorithmic or ownership risk
-- **MEDIUM:** several interactions or portability concerns, but established algorithms
-- **HIGH:** solver, ownership, ordering, callback, or cross-platform behavior with substantial differential evidence required
-- **VERY HIGH:** cross-cutting work that can invalidate architecture or parity claims
+### Already built (do not re-scope as new)
 
-“Library capability” means a feature an ordinary Rust consumer can use. “Internal enabler” means development and release evidence required to credibly provide those capabilities, but not part of the normal runtime API.
+| Capability | Where it lives | How v1.2 uses it |
+| --- | --- | --- |
+| Native Rust engine (math, collision, rigid, joints, particles) with safe handles | `crates/liquidfun` | Shared particle/rigid hot paths are the optimization surface |
+| C++ oracle + semantic differential harness | `cargo xtask upstream`, `liquidfun-differential` | Correctness gate after each admitted change; C++ is the pair partner, not the runtime |
+| Exploratory Dam Break pair timer | `just playground-dam-break-bench`, `docs/playground-dam-break-timing.md` | Numeric canary (extend with dated reports + profiles; do not treat the first sample as a claim) |
+| Six-scene WASM playground | GitHub Pages + `just web-player-smoke` | Post-gate sanity only; no new scenes |
+| Phase 12 sealed benchmark *method* | `BENCHMARKING.md`, empty `reference/performance/manifest.toml` | Reuse admission *ideas* (profiled timings are not authority; scalar `--release` vs `oracle-release`). Do not fill the reviewed-report manifest |
 
-## Verified Upstream Baseline
-
-### Rigid-Body Inventory
-
-The selected oracle must preserve the historical LiquidFun/Box2D behavior, not merely expose similarly named modern physics features.
-
-| Capability | Verified upstream inventory | Complexity | Depends on |
-| --- | --- | --- | --- |
-| Geometry and collision | Circle, edge, polygon, and chain shapes; point tests, distance, AABB, ray cast, mass data, manifolds, overlap/distance, time of impact | HIGH | Math primitives, transforms, allocators |
-| Broad and narrow phase | Dynamic AABB tree, broad-phase proxy management, shape-pair contact generation, contact persistence and filtering | HIGH | Geometry and collision |
-| Rigid bodies and fixtures | Static, kinematic, and dynamic bodies; fixtures, sensors, density/mass/inertia, friction, restitution, filters, damping, gravity scale, forces/impulses, sleep, active state, fixed rotation, bullet/CCD behavior | VERY HIGH | Collision pipeline, stable identity |
-| Constraint solving | Islands, warm starting, velocity and position constraints, sleeping, continuous collision detection, sub-stepping, force clearing | VERY HIGH | Contacts, bodies, deterministic ordering |
-| Joints | Revolute, prismatic, distance, pulley, mouse, gear, wheel, weld, friction, rope, and motor joints | VERY HIGH | Bodies, solver, stable identity |
-| Standalone rope | The public `b2Rope` model in addition to the rope joint | MEDIUM | Math and constraint foundations |
-| World operations | Stepping with independent particle iterations, recommended particle-iteration calculation, object creation/destruction, origin shift, gravity, profiles, counts/tree metrics, debug draw, queries, ray casts, diagnostic dump | HIGH | All rigid and particle foundations |
-
-Primary evidence: [shape type enum](https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Box2D/Collision/Shapes/b2Shape.h), [joint type enum](https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Box2D/Dynamics/Joints/b2Joint.h), [world API](https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Box2D/Dynamics/b2World.h), and [LiquidFun release notes](https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/ReleaseNotes.md).
-
-### Particle Flag and Behavior Inventory
-
-All 18 upstream particle flags are v1 parity scope. Some are solver behaviors; some gate lifecycle or callbacks. The zero-valued water flag still implies the baseline particle pipeline.
-
-| Upstream flag | Required observable behavior | Complexity | Depends on |
-| --- | --- | --- | --- |
-| `b2_waterParticle` | Baseline fluid behavior with gravity, collision, pressure, and damping | VERY HIGH | Particle contacts, body contacts, baseline solver |
-| `b2_zombieParticle` | Deferred removal and buffer/index compaction after stepping | HIGH | Lifecycle, handles, destruction ordering |
-| `b2_wallParticle` | Immobile/zero-velocity particles that still participate in constraints | HIGH | Contact and pair generation |
-| `b2_springParticle` | Pair creation and restoration toward initial pair distance | HIGH | Sorted pairs, groups |
-| `b2_elasticParticle` | Triad creation and deformation-restoring response | VERY HIGH | Voronoi/triads, groups |
-| `b2_viscousParticle` | Relative-velocity damping against particles and bodies | HIGH | Particle and body contacts |
-| `b2_powderParticle` | Suppressed isotropic pressure plus powder repulsion behavior | HIGH | Weight/pressure/contact solver |
-| `b2_tensileParticle` | Surface-tension pressure and normal forces | VERY HIGH | Neighborhood weights/normals |
-| `b2_colorMixingParticle` | Contact-based color mixing at configured strength | MEDIUM | Color buffer, contacts |
-| `b2_destructionListenerParticle` | Per-particle destruction callback before removal | HIGH | Lifecycle, callback safety |
-| `b2_barrierParticle` | Pair-based barrier constraints that prevent particle leakage/tunneling | VERY HIGH | Pairs, collision solver, ordering |
-| `b2_staticPressureParticle` | Iterative static-pressure solve and relaxation | VERY HIGH | Pressure buffers, stable iterations |
-| `b2_reactiveParticle` | Regeneration of pairs/triads after flag or topology changes | HIGH | Pair/triad topology |
-| `b2_repulsiveParticle` | Strong configurable particle repulsion | HIGH | Contacts and pressure |
-| `b2_fixtureContactListenerParticle` | Begin/end fixture-particle contact notifications | HIGH | Body contacts, listener staging |
-| `b2_particleContactListenerParticle` | Begin/end particle-particle contact notifications | HIGH | Contact identity and ordering |
-| `b2_fixtureContactFilterParticle` | Per fixture-particle collision filtering | HIGH | Contact filter API |
-| `b2_particleContactFilterParticle` | Per particle-particle collision filtering | HIGH | Contact filter API |
-
-Primary evidence: the upstream [particle flag enum](https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Box2D/Particle/b2Particle.h) and [particle solver implementation](https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Box2D/Particle/b2ParticleSystem.cpp).
-
-These unflagged or group-driven behaviors are also v1 scope:
-
-| Capability | Required observable behavior | Complexity | Depends on |
-| --- | --- | --- | --- |
-| Baseline solver passes | Particle collision, gravity, pressure, damping, rigid damping, extra damping, force application, velocity limiting, and lifetime solving | VERY HIGH | Particle storage, contacts, world step |
-| Solid particle groups | Prevent overlap/leaking, maintain depth data, and apply solid-group ejection behavior | VERY HIGH | Group topology and depth computation |
-| Rigid particle groups | Preserve group shape and expose mass, inertia, center, transform, linear/angular velocity | VERY HIGH | Pairs/triads, rigid solver |
-| Group lifecycle flags | Can-be-empty behavior plus internal will-be-destroyed and needs-depth-update transitions | HIGH | Deferred lifecycle, compaction |
-| Particle creation modes | Individual creation; group fill/stroke from one or more shapes; explicit positions; creation into an existing group | HIGH | Shapes, storage, group lifecycle |
-| Group topology | Create, destroy, join, and split disconnected groups with correct group membership and callbacks | VERY HIGH | Contacts, connectivity, stable identity |
-| Lifetimes and capacity | Finite/infinite lifetimes, expiration ordering, destroy-by-age, oldest-particle destruction, maximum counts | HIGH | Quantized time, compaction, handles |
-| Buffers and handles | Positions, velocities, colors, weights, flags, group membership, user data, contacts, body contacts, pairs, triads, expiration order, and stable particle handles | VERY HIGH | Rust aliasing model, storage layout |
-| External buffers | User-supplied flags, position, velocity, color, and user-data storage with upstream capacity semantics | VERY HIGH | Ownership/lifetime design, safe buffer API |
-| Forces and diagnostics | Per-particle and range force/impulse, collision energy, strict contact checking, stuck-particle candidates, pause, density/gravity/damping/radius/static-pressure controls | HIGH | Solver and public API |
-
-Primary evidence: [particle-system public API and definition](https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Box2D/Particle/b2ParticleSystem.h) and [particle-group flags/API](https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Box2D/Particle/b2ParticleGroup.h).
+First recorded Dam Break Medium sample (unreviewed, one host): native Rust ~70.6 s vs pinned C++ ~0.23 s for 600 timed steps (~300×). That table is diagnosis, not a public claim.
 
 ## Feature Landscape
 
-### Table Stakes: Library Capabilities
+### Table Stakes (Users Expect These)
 
-Missing any P1 row prevents a credible v1 parity claim.
+Features developers assume exist when closing a huge C++ vs Rust physics gap. Missing these = the milestone feels incomplete or untrustworthy.
 
-| ID | Feature | Why expected | Complexity | Depends on |
-| --- | --- | --- | --- | --- |
-| TS-01 | Native Cargo-usable engine | Users asked for an independent Rust implementation, not runtime FFI or a C++ toolchain | VERY HIGH | Entire port; EN-01, EN-11 |
-| TS-02 | Historical rigid-body parity | LiquidFun is a Box2D-compatible rigid-body engine as well as a particle engine | VERY HIGH | Verified rigid inventory; EN-03 |
-| TS-03 | Every shape, contact path, joint, and rope API | Existing LiquidFun scenes must not lose constraints or collision cases | VERY HIGH | TS-02, stable handles |
-| TS-04 | Every particle flag and solver behavior | Particle simulation is LiquidFun’s defining capability | VERY HIGH | TS-02, particle storage and contacts |
-| TS-05 | Complete particle lifecycle and groups | Real scenes depend on creation/destruction, lifetimes, multiple systems, joining/splitting, solid/rigid groups, and stable handles | VERY HIGH | TS-04, callback model |
-| TS-06 | Particle inspection and external-buffer equivalents | Renderers and applications depend on direct bulk access, user data, contacts, pairs, and triads | VERY HIGH | TS-05, safe ownership model |
-| TS-07 | Fixture, particle, and mixed contacts | Filtering, listener events, destruction events, sensors, strict checks, and particle/body response must all compose | VERY HIGH | TS-02, TS-04, TS-09 |
-| TS-08 | AABB/shape queries and ray casts | Game logic needs fixture and particle results, early termination/clipping, and whole-particle-system culling | HIGH | Broad phase, particle proxies, callbacks |
-| TS-09 | Idiomatic safe object and callback API | Rust users need explicit invalidation, no raw public pointers, and clear mutation/reentrancy rules | VERY HIGH | Early architecture decision, EN-08 |
-| TS-10 | World controls and observability | Fixed stepping, particle sub-iterations, sleeping, warm starting, CCD, sub-stepping, force clearing, origin shift, counts, tree quality, and profiles are upstream-visible | HIGH | Rigid and particle world integration |
-| TS-11 | Debug-draw abstraction | Upstream exposes renderer-independent shapes, joints, particles, AABBs, transforms, and centers for inspection | MEDIUM | Stable read-only world view |
-| TS-12 | Upstream-equivalent diagnostic dump | `World::Dump` and supported body/fixture/joint dumps are public troubleshooting surfaces | HIGH | Identity/order mapping, all supported dump types |
-| TS-13 | Upstream examples and testbed scenarios | Examples are executable behavioral documentation and expose integration gaps tests miss | HIGH | Most engine capabilities, EN-05 |
-| TS-14 | Headless operation | Physics must work in servers, tests, CI, and custom renderers without a windowing dependency | MEDIUM | Renderer boundary |
-| TS-15 | Mainstream desktop/server platforms | Linux x86_64 and ARM64, macOS ARM64 and practical x86_64 coverage, and Windows x86_64 are the stated initial portability floor | VERY HIGH | EN-06, EN-09 |
-| TS-16 | Public API and migration documentation | Users need rustdoc, C++-to-Rust concept mapping, callback/invalidation rules, examples, and known differences | HIGH | Stable API, EN-02 |
-| TS-17 | Measured performance suitability | A production physics engine needs published representative budgets and no unexplained catastrophic regression versus optimized upstream | VERY HIGH | Correctness first, EN-07 |
-| TS-18 | Truthful compatibility and maturity reporting | Consumers must be able to tell exactly what is implemented, validated, platform-tested, and known to differ | MEDIUM | EN-02, EN-10 |
-
-### Internal Enablers Required for Credibility
-
-These are not ordinary runtime features. They are release prerequisites because parity cannot be established by code inspection alone.
-
-| ID | Enabler | Why required | Complexity | Depends on |
-| --- | --- | --- | --- | --- |
-| EN-01 | Pinned oracle, ancestry, provenance, and license record | Defines what “compatible” means and prevents moving-target or attribution errors | HIGH | Upstream/release research |
-| EN-02 | Exhaustive compatibility matrix | Maps every subsystem, public API, test, example, and compile-time option to implementation and evidence status | HIGH | EN-01, inventory automation |
-| EN-03 | Semantic C++/Rust differential harness | Compares bodies, contacts, joints, particles, groups, callbacks, queries, ray casts, and destruction events using named seeded scenarios | VERY HIGH | EN-01, stable observation schema |
-| EN-04 | Tolerance and ordering policy | Separates bugs from floating-point, iteration-order, compiler, and platform differences | VERY HIGH | EN-03, cross-platform samples |
-| EN-05 | Upstream test/example accounting | Every upstream test and scenario is ported, replaced, or explicitly justified; the candidate source currently contains a broad rigid/particle testbed and dedicated particle unit suites | HIGH | EN-01, licensing review |
-| EN-06 | Layered verification | Unit, integration, upstream-compatibility, differential, property, fuzz, regression, Miri, and sanitizer coverage according to subsystem risk | VERY HIGH | Testable module boundaries |
-| EN-07 | Comparable benchmark harness | Equivalent inputs, compiler modes, hardware, warm-up, and measurements for rigid, particle, mixed, query, and lifecycle workloads | HIGH | Correct implementation, pinned C++ build |
-| EN-08 | Safety model and audit | Documents handle generations, invalidation, callback staging, external buffers, user data, and every narrow `unsafe` invariant | VERY HIGH | TS-09, TS-06 |
-| EN-09 | Platform CI matrix | Proves supported targets rather than inferring portability from Rust compilation | HIGH | Reproducible toolchains and tests |
-| EN-10 | Release evidence gate | Blocks “full parity” or “production-ready” wording until the matrix has no unexplained gaps and required suites pass | MEDIUM | EN-02 through EN-09 |
-| EN-11 | Published-crate isolation check | Proves normal Cargo consumers do not fetch/build/link C++, Bazel, upstream source, or reference data | MEDIUM | Packaging and CI |
-| EN-12 | Reproducible failure/minimization tooling | Turns a differential seed into a small regression fixture with machine-readable and human-readable diagnostics | VERY HIGH | EN-03, scenario model |
-
-### Differentiators: Production-Quality Rust Experience
-
-Parity earns credibility; these features make the Rust port preferable to using the archived C++ source or a thin binding.
-
-| ID | Feature | Value proposition | Scope | Complexity | Depends on |
-| --- | --- | --- | --- | --- | --- |
-| DF-01 | Generational, typed handles and explicit invalidation | Prevents stale-pointer use while retaining recognizable body/fixture/joint/group identity | v1 | VERY HIGH | TS-09, EN-08 |
-| DF-02 | Borrow-safe bulk particle views | Enables efficient rendering/data processing without exposing aliased raw buffers | v1 | VERY HIGH | TS-06, storage architecture |
-| DF-03 | Deferred mutation/event command model | Makes callback restrictions explicit and safe instead of relying on “do not mutate during step” pointer discipline | v1 | HIGH | TS-07, TS-09 |
-| DF-04 | Evidence-linked compatibility dashboard | Lets users trace each claim to tests, differential cases, platforms, benchmarks, docs, and known deviations | v1 | HIGH | EN-02, CI outputs |
-| DF-05 | Reproducible headless scenario CLI | Runs a scenario by name/seed, captures semantic state, and compares Rust with C++ without starting a renderer | v1 | HIGH | EN-03, TS-13 |
-| DF-06 | Renderer-independent interactive comparison testbed | Supports pause, single step, reset, settings, overlays, deterministic capture, and side-by-side/diff inspection | v1 | HIGH | DF-05, TS-11 |
-| DF-07 | Fine-grained profiling counters | Makes broad phase, contact, solver, and particle-pass costs visible without private-layout access | v1 | MEDIUM | TS-10, EN-07 |
-| DF-08 | Versioned semantic scene snapshots | Provides a documented Rust persistence/replay format including particles; intentionally distinct from upstream diagnostic dump | v1.x | VERY HIGH | Stable public model, migration policy |
-| DF-09 | Ergonomic builders, iterators, and optional serde adapters | Reduces boilerplate while retaining a recognizable low-level compatibility layer | v1.x | MEDIUM | Stable v1 API |
-| DF-10 | Native WASM and mobile validation | Expands deployment without importing the historical C++ build stack | v1.x | VERY HIGH | v1 parity, platform-specific CI |
-| DF-11 | Optional engine/ecosystem adapters | Bevy and other integrations improve adoption while the core remains framework-neutral | v1.x | HIGH | Stable headless core |
-| DF-12 | Realistic `no_std` math/collision subset | Supports constrained environments without promising an implausible complete-engine port | v2+ | HIGH | Clear crate boundaries, allocation audit |
-| DF-13 | Opt-in SIMD or parallel modes | Can exceed scalar performance where profiling proves value | v2+ | VERY HIGH | EN-04, EN-07, scalar parity baseline |
-
-## Anti-Features
-
-| Anti-feature | Why requested | Why problematic | Deliberate alternative |
+| Feature | Why Expected | Complexity | Notes |
 | --- | --- | --- | --- |
-| Runtime C++ delegation or thin bindings | Fastest apparent route to a Rust API | Violates native-port value, safety, portability, and Cargo independence | Keep FFI development-only for reference and benchmarks |
-| Modern Box2D/Rapier behavior substituted without validation | Reuse reduces implementation work | Similar concepts do not imply LiquidFun 2.3.0-era solver/contact/order parity | Reuse only after license, ancestry, and differential review |
-| Rigid-body-only “LiquidFun v1” | Delivers visible progress sooner | Omits the defining particle system and weakens the explicit parity target | Ship clearly labeled 0.x subsystem previews; reserve v1 for full scope |
-| A curated subset of particle flags | Common fluid effects cover many demos | Flags interact; missing barrier, reactive, filtering, lifecycle, or group behaviors breaks real scenes | Inventory and validate every upstream behavior |
-| C++ pointer-shaped public API | Makes source translation mechanical | Exposes invalidation, aliasing, and callback hazards Rust should prevent | Typed handles, borrowed views, explicit step/mutation phases |
-| Arbitrary reentrant mutation during callbacks | Seems ergonomic | Upstream forbids entity creation/destruction while locked; mutation can invalidate solver state | Read-only event context plus deferred commands |
-| Exact bitwise parity claim on every platform | Sounds stronger than tolerance-based parity | Floating point, compiler, SIMD, and ordering differences make it misleading and brittle | Per-observable exact/order/tolerance policies with evidence |
-| Default parallel or SIMD stepping | Promises headline speed | Can change ordering/determinism and obscure correctness defects | Scalar deterministic baseline; later explicit opt-in modes |
-| Raw-memory comparison as compatibility oracle | Easy to snapshot | C++/Rust layouts, pointers, padding, allocator state, and harmless ordering differ | Compare documented semantic state |
-| Blanket serialization of internal structs | Derive macros make it easy | Freezes private layout, hidden solver caches, handles, and unstable invariants | Versioned semantic snapshot DTO after v1 |
-| Calling upstream Dump “save/load” | It looks like scene serialization | Upstream Dump logs rigid-body reconstruction code, omits particle state, and some joint dumps are unsupported | Match diagnostic dump in v1; add truthful snapshot format later |
-| Unsafe zero-copy external buffers by default | Mirrors C++ and may benchmark well | Alias/lifetime violations can become memory unsafety | Safe owned/borrowed buffer contracts; isolate any unsafe adapter |
-| Core dependency on a renderer or game engine | Produces attractive demos quickly | Breaks headless use and forces downstream architecture | Renderer-independent debug primitives and optional testbed/adapters |
-| Complete `no_std`, embedded, WASM, iOS, and Android promise in v1 | Maximizes addressable platforms | Multiplies risk before core parity and may distort APIs | Desktop/server v1; research-backed target additions afterward |
-| C++/Bazel requirement for ordinary users | Simplifies repository orchestration | Negates conventional Rust consumption | Cargo-only published crates; reference tooling stays contributor-only |
-| Stable internal storage order/layout as public contract | Helps direct indexing and serialization | Prevents optimization and makes compaction changes breaking | Document semantic ordering only where upstream behavior requires it |
-| Performance claims without comparable workloads | Marketing is easy | Compiler flags, timestep, particle count, hardware, and observables can invalidate comparisons | Publish reproducible methodology and raw results |
-| “Production-ready” before evidence completion | Encourages adoption | Transfers unknown compatibility and safety risk to users | Automated release gate and conspicuous known-gap reporting |
+| **Developer can audit shared particle/rigid stepping against the C++ oracle** and get a committed notes doc that names hot functions, extra per-particle work, per-step allocations, `--release` checks, and algorithm/shape differences, plus the current Dam Break Medium wall-time ratio | A ~300× gap is almost never “Rust bounds checks.” Mature ports land near 1.2–2× after removing extra work. Without named functions, later “optimizations” are guesses | HIGH | Compare Rust `World::step` / particle neighborhood, contacts, solvers, and rigid coupling to pinned LiquidFun. Hunt quadratic validators, `Vec` rebuilds, clones, HashMap-ordered work, and identity maps that C++ does not pay every step. First suspects already visible in-tree: `ParticleNeighborhood::from_view` allocates+sorts proxies every call; some solver kernels `Vec::new()` per pass. Do not wait for SIMD. **REQ seed:** `PERF-AUDIT` |
+| **Developer can re-run the Dam Break Medium pair on demand** (same host, scalar Rust `--release` vs C++ `oracle-release`, locked 1920-particle playground recipe, 60 warm-up + 600 timed `World::step` / `b2World::Step`) and see wall ms, ms/step, and Rust/C++ ratio | Same-workload, same-host, same-opt-level pairing is the industry floor (box2d-rust uses the C benchmark app vs a line-for-line Rust port, serial vs serial, interleaved). Unpaired or debug-vs-release numbers are meaningless | LOW–MEDIUM | Extend existing `just playground-dam-break-bench` / xtask. Keep construction, insertion, warm-up, capture, and rendering outside the timer. Persist dated reports; do not only print Markdown to stdout. **REQ seed:** `PERF-PAIR` |
+| **Developer can capture CPU profiles of the timed Dam Break `--release` binary through a repeatable `just` / xtask script** and land them in a gitignored evidence directory with host, git HEAD, compiler, and command identity | Flamegraphs/call trees are how Rapier, Avian, and box2d-rust actually find wins. “We think contacts are slow” is not an audit | MEDIUM | On this macOS hobby host, script `samply` (Firefox Profiler) or `cargo flamegraph` / Instruments Time Profiler. Build with debug info on a release-class profile (`inherits = "release"`, `debug = true`); profiled timings are **never** wall-clock authority (`BENCHMARKING.md`). Gitignore the dumps (`target/…` is already ignored). **REQ seed:** `PERF-PROFILE` |
+| **Developer can admit an optimization only from evidence** (named hot function or typed allocation/cache/scaling bottleneck + unprofiled Dam Break pair improvement + existing correctness gates still green) | Ports that skip admission ship SIMD/unsafe/parallel “fixes” that hide the real extra work, break determinism, or regress other scenes | MEDIUM | Lightweight analog of Phase 12 `optimization-check`, **not** the 32-case sealed matrix. Minimum bar: candidate is scalar `release`; Dam Break Medium unprofiled wall ratio improves; relevant profile share or typed bottleneck; differential/unit/determinism/safety regressions used by this engine still pass; no playground-scene cheat (do not lower particle count). **REQ seed:** `PERF-ADMIT` |
+| **Developer can land profile-guided fixes on *shared* particle/rigid hot paths** so Dam Break and other particle/rigid scenes benefit from the same change | A Dam Break-only special case is a demo hack, not an engine close | HIGH | Neighborhood/proxy rebuild, contact generation, particle–body coupling, pressure/damping/integrate, and rigid contact solve are the shared surface. Scene controllers and WASM frame copies are out of scope until native stepping is honest. **REQ seed:** `PERF-SHARED` |
+| **Developer can demonstrate native Dam Break Medium wall time ≤ 3× pinned C++** on the same host under scalar `--release` vs `oracle-release` | Owner-locked numeric gate. “Same order of magnitude” means 300× → ≤3×, not 1.00× parity and not a README trophy | HIGH | Re-run the pair after admitted fixes. Record host, git HEAD, compilers, warmup/steps, both wall times, and ratio. Leave `reference/performance/manifest.toml` empty. **REQ seed:** `PERF-GATE` |
+| **Developer can spot-check the other five playground scenes** (Fountain, Float or Sink, Color Mixer, Jelly Drop, Water Wheel) after shared-path fixes | Users will feel a Dam Break-only win as a lie if Fountain still crawls. A second sealed 32-case matrix is the wrong response | LOW–MEDIUM | Profile or time native `--release` headless stepping; look for improvement or non-catastrophic regression. No C++ pair required per scene; no Phase 12 case hashes. **REQ seed:** `PERF-SPOT` |
+| **Developer can keep the scalar deterministic compatibility baseline** while closing the gap; SIMD and parallelism stay explicit opt-in (off by default) | Rapier documents that SIMD lane width is its own determinism domain and cannot mix with enhanced-determinism. Avian’s 3× came from default-on parallel graph coloring — the opposite of this project’s lock | LOW (policy) / HIGH (if violated) | Workspace already `unsafe_code = "forbid"`. Do not lift that to chase the canary. Safe layout/allocation/algorithm fixes first. **REQ seed:** `PERF-BASELINE` |
+| **Developer can document the remaining Dam Break delta honestly** after the gate (ratio, suspected leftover causes, what was not attempted) | Incomplete closes that are marketed as “fast as C++” destroy trust. box2d-rust still publishes 1.25× with named leftovers | LOW | Committed notes, not a sealed report. Do not write “Rust is X% slower” into README as a universal claim. **REQ seed:** `PERF-NOTES` |
+| **Visitor can still run the six playground scenes after the native gate**, with a lightweight WASM/playground sanity check recorded honestly (not versus C++) | Native stepping wins should not break Pages; WASM is a different runtime (no C++ oracle, extra copy lanes, browser budget) | LOW–MEDIUM | After `PERF-GATE`, rebuild WASM and run `just web-player-smoke` plus an optional Dam Break step-time / realtime-factor note in the gitignored evidence dir. Compare WASM to *previous WASM* or to native Rust, never to `oracle-release`. **REQ seed:** `PERF-WASM` |
+
+### Differentiators (Competitive Advantage)
+
+Not required for a generic “make it faster” PR. Valuable here because the project already has an oracle, a locked Dam Break recipe, and a sealed method it is *choosing not* to revive as a public claim.
+
+| Feature | Value Proposition | Complexity | Notes |
+| --- | --- | --- | --- |
+| **Canary-first same-order close** instead of filling the Phase 12 32-case public matrix | Developers get a useful engine on the actual playground recipe without pretending 32 sealed workloads are reviewed. Empty `reviewed_reports = []` stays truthful | MEDIUM | This *is* the milestone shape. Phase 12 remains optional strict tooling |
+| **Named-function audit committed in-repo** | Most ports only ship “~faster.” A dated notes doc that names functions and the Dam Break delta is the artifact reviewers and future phases can trust | MEDIUM | Profiles themselves stay gitignored; the *names and suspected causes* are committed |
+| **Paired C++ extra target on the exact playground recipe** | Unique vs Rapier/Avian (no LiquidFun C++ oracle) and stronger than ad hoc Criterion micros | LOW | Already exists; v1.2 makes it the gate and persists reports |
+| **Lightweight admission without a public claim** | Captures Phase 12’s good rule (profiles ≠ authority; correctness hashes stay accepted) without 150-sample calibration or manifest promotion | MEDIUM | A short checklist in notes + scripts is enough; do not require `cargo xtask performance optimization-check` over the 32-case record |
+| **Engine-wide hunt, scene-local gate** | Fixes land in `liquidfun`; Dam Break is the numeric bar; other scenes are spot-checks | HIGH | Prevents “optimize the bench” theater |
+| **Post-gate WASM honesty** | Playground visitors are the only current public users; recording whether Dam Break is less stuttery without claiming WASM≈C++ matches hobby scope | LOW | Optional extra: native-wasm `dam-break-bench` vs previous native, still not vs C++ |
+
+### Anti-Features (Commonly Requested, Often Problematic)
+
+| Feature | Why Requested | Why Problematic | Alternative |
+| --- | --- | --- | --- |
+| **Revive Phase 12 sealed 32-case public performance claims** / copy Dam Break numbers into `reference/performance/manifest.toml` | “Real” benchmarks look more scientific | Manifest is empty by design; exploratory pair is not the sealed matrix (different workloads, sample policy, identity hashes). Filling it with playground timings would be a false claim | Keep Phase 12 method on the shelf; persist unreviewed Dam Break reports under gitignore; commit notes only |
+| **Required performance CI** or a dedicated Linux x64 / `PERFORMANCE_CONTROLLED_HOST_IDENTITY` completion gate | CI would “keep us honest” | Conflicts with `PROJECT-SCOPE.md`: local checks + one macOS Cargo job; expensive suites are optional manual. Pair timing is minutes-to-hours and host-specific | On-demand `just` / xtask on the developer machine; optional manual re-run |
+| **Default parallelism or SIMD** in the compatibility baseline | Avian 0.4 and Box3D show large SIMD/thread wins | Changes contact/constraint/particle order and determinism; Rapier’s `simd8` cannot mix with enhanced-determinism; this repo forbids `unsafe` and holds scalar baseline | Explicit opt-in features later, after the scalar canary is closed and a separate decision exists |
+| **WASM ≈ C++** (or browser Dam Break vs `oracle-release`) | Visitors care about the playground | Different ISA, allocator, and frame-copy shell; not a fair pair. Would revive a comparison the owner locked out | Native is the C++ pair; WASM sanity vs previous WASM / native Rust only |
+| **“Rust is N× slower/faster” README or crates.io blurb** | Marketing a close | `BENCHMARKING.md` forbids universal summaries; one host, one scene, unreviewed | Bounded notes: workload, host, compilers, ratio, “not a public claim” |
+| **Scene editor, new playground scenes, or particle-count cosmetics** | More demos / “looks realtime” | Out of milestone; lowering Medium from 1920 particles fakes the gate | Keep the locked recipe; optimize shared stepping |
+| **Crate publication / git release tag / npm package** | “Ship the speedup” | Publication remains separately authorized; v1.1 already established archive ≠ release | Native/WASM sanity only |
+| **Criterion catalog micros as the numeric gate** | Already have `liquidfun-benchmarks` | Wrong granularity vs the playground canary; easy to optimize a micro that Dam Break never hits | Optional supporting evidence only; Dam Break pair remains the gate |
+| **`codegen-units = 1`, fat LTO, PGO, or `-march=native` / `-ffast-math` as the close** | Easy compiler knobs | Can move IEEE/ordering vs the oracle; native-tuned flags are explicitly non-canonical in stack policy; they also do not explain 300× | Keep ordinary `--release` vs `oracle-release`; if a profile later proves codegen-units, document as optional local, not the gate definition |
+| **`unsafe` indexing / `get_unchecked` / C++ FFI in production `liquidfun`** | Bounds checks are a popular suspect | Typical bounds-check wins are 1–15%, not 300× (Shnatsel; box2d-rust leftover is ~1.25× and SIMD-shaped). Workspace `unsafe_code = "forbid"` | Safe slice splits, reuse buffers, remove extra work first |
+| **Dam Break-only LOD, skipped solver passes, or reduced iterations** | Hits 3× quickly | Breaks LiquidFun behavior and differential evidence | Shared-path algorithmic/allocation fixes with tests |
+| **Treating profiled runs as timing authority** | One script is simpler | Instrumentation distorts wall time; Phase 12 already forbids this | Unprofiled pair for the ratio; profiles for *why* |
+| **Overwriting failed/old evidence** or committing `.trace` / samply binaries | Clean git tree | Loses diagnosis; large binaries do not belong in git | Dated gitignored directories; committed notes cite them by date/path |
+| **Comparing debug Rust to release C++** (or mixing opt-levels) | Accidental `cargo run` | Rapier documents ~100× without `--release`. That is not this gap if the existing pair already used `--release` vs `oracle-release` | Scripts must pass `--release` / `oracle-release` and record compilers |
+| **Substituting Rapier/Avian/modern Box2D** for LiquidFun particles | Those engines are faster in marketing charts | Wrong behavior oracle; project forbids treating unrelated Box2D as LiquidFun | Optimize this engine against the pinned C++ oracle |
+| **Broad `no_std`, mobile, or complete-engine WASM certification** | Portability story | Unrelated to the native canary | Bounded playground WASM already exists; leave it as post-gate sanity |
+
+## Expected Behavior (audit, profiling, admission, close)
+
+### Audit
+
+**Developer can** produce a committed notes document that a second person can follow without re-deriving the hunt.
+
+Expected contents:
+
+1. Locked recipe identity (1920 particles, radius/spacing, dt, solver iterations) matching `docs/playground-dam-break-timing.md`.
+1. Current unprofiled pair: Rust wall, C++ wall, ratio, host, git HEAD, `rustc`, AppleClang/oracle identity.
+1. Named Rust functions (and C++ counterparts when the extra work is a shape mismatch) that dominate `--release` samples.
+1. Classified suspected causes: extra per-particle work, per-step allocation, checks that survive `--release`, algorithm/shape differences — not “Rust is slow.”
+1. What was *not* found (so the next phase does not re-litigate SIMD as the first move).
+
+Industry analog: box2d-rust’s largest win was **release-mode `B2_VALIDATE` / `b2ValidateIsland` walking islands quadratically**, not the contact SIMD they added later. Audit must specifically ask “does `--release` still run debug-shaped invariant walks?” Some `check_invariants()` calls in this tree are `debug_assert`; others are live `?` on mutation/permutation/depth paths — those are audit items, not presumed guilt.
+
+### Scripted profiling
+
+**Developer can** run one discoverable recipe that:
+
+1. Rebuilds native `--release` and `oracle-release` playground Dam Break extras (existing xtask already does this for the pair).
+1. Captures a CPU profile of the **Rust timed loop** (and optionally C++ for contrast) with symbols.
+1. Writes a dated directory under a gitignored root (recommend `target/native-perf-closing/<date-or-git>/` so `/target/` already ignores it).
+1. Leaves stdout/stderr logs, the unprofiled pair table, and a pointer the committed notes can cite.
+
+Profiles may use a `profiling` Cargo profile (`inherits = "release"`, `debug = true`). That build is for diagnosis only. Gate numbers always come from unprofiled `--release`.
+
+### Optimization admission
+
+**Developer can** land a hot-path change only when all of these hold:
+
+1. Evidence names a function or typed bottleneck (allocation, cache, scaling) with non-trivial profile share — Phase 12 used 10% as the floor; reuse that *idea* for this canary, not the 32-case JSON record.
+1. Unprofiled Dam Break Medium pair improves (ratio down) on the same host and recipe.
+1. Existing native tests and relevant differential/determinism checks the change can affect still pass. A physics mismatch is a failed candidate, never a faster sample.
+1. Scalar deterministic baseline unchanged: no default rayon, no silent SIMD, no `--fast-math`, no skipped LiquidFun passes.
+1. Other playground scenes are at least spot-checked before calling the hunt done (not before every tiny commit).
+
+Failing admission means: keep the experiment, do not merge, do not update the committed “current delta” as if it passed.
+
+### Same-order performance close
+
+**Developer can** show:
+
+> On this host, scalar Rust `--release` Dam Break Medium timed wall time ≤ 3 × pinned C++ `oracle-release` for the locked 60+600-step pair.
+
+That is **same order of magnitude**, not parity. 3× still leaves C++ faster; it is the honest first bar from ~300×. Success does **not** authorize:
+
+- a Phase 12 reviewed report
+- README engine-wide claims
+- WASM vs C++
+- skipping remaining-delta notes
+
+**Visitor can** open Dam Break on Pages after the gate and complete play/pause/reset without a new scene catalog. If WASM stepping is still far from realtime, say so; do not imply the native 3× gate transferred to the browser.
 
 ## Feature Dependencies
 
-```text
-[Pinned oracle and inventory]
-    └──requires──> [Compatibility matrix]
-                         ├──drives──> [Rust API/identity model]
-                         └──drives──> [Differential observation schema]
-
-[Math + shapes + collision]
-    └──requires──> [Broad phase + contacts]
-                         └──requires──> [Bodies + rigid solver + CCD]
-                                              ├──requires──> [Joints]
-                                              └──requires──> [Particle/body contacts]
-
-[Particle storage + proxies]
-    └──requires──> [Particle contacts + baseline solver]
-                         ├──requires──> [Pairs/triads + groups]
-                         ├──requires──> [Every flagged solver]
-                         └──requires──> [Lifecycle + callbacks + queries]
-
-[Semantic C++/Rust harness]
-    └──requires──> [Pinned oracle + observation schema + tolerance policy]
-                         └──enables──> [Parity sign-off + truthful v1]
-
-[Renderer-independent scenarios]
-    ├──enables──> [Headless regression runner]
-    └──enables──> [Optional interactive testbed]
-
-[Default parallel stepping] ──conflicts──> [Upstream ordering and deterministic baseline]
+```
+Existing engine + oracle + Dam Break pair
+    └──requires──> PERF-AUDIT (named hot functions + current delta)
+                       └──requires──> PERF-PROFILE (scripted CPU profiles, gitignored)
+                       └──requires──> PERF-PAIR (dated unprofiled pair reports)
+                                          └──requires──> PERF-ADMIT + PERF-SHARED
+                                                             └──requires──> PERF-GATE (≤ 3×)
+                                                             └──enhances──> PERF-SPOT (other five scenes)
+                                                                                └──requires──> PERF-GATE
+                                                                                     └──requires──> PERF-WASM
+                                                                                     └──requires──> PERF-NOTES
+PERF-BASELINE ──constrains──> PERF-SHARED / PERF-ADMIT
+Phase 12 sealed matrix ──conflicts──> PERF-GATE as a public claim
+Default SIMD/parallel ──conflicts──> PERF-BASELINE
+WASM vs C++ ──conflicts──> PERF-WASM
 ```
 
 ### Dependency Notes
 
-- **Ownership design precedes broad implementation:** body, fixture, joint, particle, and group identity affects every callback, query, destruction path, buffer, and test observable.
-- **Rigid-body collision precedes full particles:** particles reuse world shapes, fixture contacts, broad-phase concepts, callbacks, and stepping.
-- **Particle storage precedes behavior flags:** flags are not isolated effects; most share contact, weight, pressure, pair, triad, force, and compaction buffers.
-- **Differential schema should arrive early:** adding observability after implementation risks hiding ordering and state differences or designing an API that cannot be compared semantically.
-- **Examples depend on core but feed verification:** scenario simulation should be separated from rendering so the same setup runs interactively, headlessly, and against the oracle.
-- **Optimization follows scalar parity:** layout, SIMD, and parallel work require a stable reference, tolerance policy, profiles, and regression suite.
+- **Audit requires the existing pair and both source trees:** without `just playground-dam-break-bench` and the pinned oracle, “hot” is anecdotal.
+- **Profiles require a release-class binary with symbols:** otherwise the committed notes cannot name functions.
+- **Shared-path fixes require admission:** landing layout changes before a profile invites Dam Break-only folklore.
+- **The 3× gate requires unprofiled pair reports, not flamegraphs:** instrumentation is not timing authority.
+- **Spot-checks enhance the gate; they do not replace it:** one numeric bar (Dam Break Medium).
+- **WASM sanity requires the native gate first:** otherwise browser noise is used to “debug” native 300×.
+- **PERF-BASELINE conflicts with default SIMD/parallel:** those remain explicit later opt-in, not this milestone’s close.
+- **Phase 12 manifest promotion conflicts with this milestone’s honesty rules:** method may be cited; reviewed_reports stay empty.
 
-## V1 Definition
+## MVP Definition
 
-### Launch With: v1 Parity Release
+### Launch With (v1.2)
 
-- [ ] Native Cargo-only runtime and complete historical rigid-body behavior, all four shapes, all 11 joints, standalone rope, world operations, CCD, contacts, queries, and ray casts.
-- [ ] Every particle flag, baseline solver pass, system control, buffer, lifecycle rule, solid/rigid group behavior, pair/triad path, contact path, force, query, and callback.
-- [ ] Safe typed handles, documented invalidation, explicit callback/mutation rules, and safe equivalents for upstream bulk/external buffers.
-- [ ] Upstream-equivalent diagnostic dumping, with documentation that it is not general serialization.
-- [ ] Every upstream public API, compile-time option, test, and example accounted for in a compatibility matrix; implementation-specific optimizations such as 16-bit indices/NEON may be classified as non-semantic only with evidence.
-- [ ] Seeded differential validation with semantic state, minimized regressions, documented tolerances/order rules, and machine-readable results.
-- [ ] Renderer-independent scenario layer, headless runner, and optional interactive testbed covering upstream scenarios and controls.
-- [ ] Published comparable benchmark results, safety audit, desktop/server platform matrix, complete user/developer docs, license/provenance records, and truthful release gate.
+Minimum to call Native Performance Closing done.
 
-### Add After v1: v1.x Extensions
+- [ ] **PERF-AUDIT** — Committed notes name hot functions, suspected extra work, and the Dam Break Medium delta
+- [ ] **PERF-PAIR** + **PERF-PROFILE** — Repeatable local scripts write dated pair tables and CPU profiles under gitignore
+- [ ] **PERF-ADMIT** + **PERF-SHARED** — Profile-guided shared particle/rigid fixes; no scene cheats
+- [ ] **PERF-GATE** — Same-host scalar pair, Rust wall ≤ 3× C++
+- [ ] **PERF-SPOT** — Other five playground scenes profiled or timed as spot-checks
+- [ ] **PERF-WASM** — Post-gate playground/WASM sanity, not vs C++
+- [ ] **PERF-BASELINE** + **PERF-NOTES** — Scalar determinism retained; remaining delta documented; no Phase 12 public claim
 
-- [ ] Versioned semantic scene snapshot/replay format, including particle state, once the public model and migration policy are stable.
-- [ ] Ergonomic builders, iterators, optional serde adapters, and compatibility aliases that do not obscure the core model.
-- [ ] Native WASM, iOS, and Android validation when target-specific CI and differential evidence are sustainable.
-- [ ] Optional game-engine integrations that depend on, but do not enter, the renderer-neutral core.
+### Add After Validation (later in v1.2 or a follow-on)
 
-### Future Consideration: v2+
+- [ ] Optional second native canary (e.g. a rigid-heavy catalog row) **if** Dam Break ≤ 3× and profiles show a *different* dominant cluster — still not a sealed 32-case matrix
+- [ ] Optional in-engine diagnostic parent timers (`DiagnosticProfileParent`: `particle_prepare` / `particle_solve` / `rigid_solve`) wired into the Dam Break script for cheaper iteration — still not public authority
+- [ ] Safe buffer reuse / stack-like scratch if profiles prove per-step `Vec` growth — only after the first extra-work cuts
 
-- [ ] `no_std` math/collision subsets after allocation and platform audits demonstrate a coherent boundary.
-- [ ] Opt-in SIMD and parallel stepping after scalar parity, reproducibility, and performance thresholds are established.
-- [ ] Alternative precision modes only after defining whether they are extensions rather than LiquidFun parity surfaces.
+### Future Consideration (not this milestone)
+
+- [ ] SIMD / parallel opt-in features (Rapier/Avian/Box3D-shaped) after scalar close + explicit determinism policy
+- [ ] Phase 12 sealed matrix production, calibration, and reviewed-report promotion
+- [ ] WASM vs native performance engineering (beyond sanity)
+- [ ] Crate publication, new playground scenes, scene editor
+- [ ] Relaxing `unsafe_code = "forbid"` for intrinsics (box2d-rust’s leftover 1.25× → 1.0× step)
 
 ## Feature Prioritization Matrix
 
-| Capability group | User value | Implementation cost | Priority |
+| Feature | User Value | Implementation Cost | Priority |
 | --- | --- | --- | --- |
-| Oracle pin, inventory, compatibility contract | HIGH | HIGH | P1 |
-| Rust identity/callback/buffer model | HIGH | VERY HIGH | P1 |
-| Rigid-body shapes, collision, bodies, solver, CCD | HIGH | VERY HIGH | P1 |
-| All joints and standalone rope | HIGH | VERY HIGH | P1 |
-| Particle storage, lifecycle, contacts, groups | HIGH | VERY HIGH | P1 |
-| Every particle behavior and solver pass | HIGH | VERY HIGH | P1 |
-| Queries, ray casts, callbacks, filters, destruction | HIGH | HIGH | P1 |
-| Differential harness and tolerance/order policy | HIGH | VERY HIGH | P1 |
-| Upstream tests/examples and headless testbed | HIGH | HIGH | P1 |
-| Safety, docs, platforms, benchmarks, release evidence | HIGH | VERY HIGH | P1 |
-| Semantic snapshot/replay | MEDIUM | VERY HIGH | P2 |
-| Ergonomic adapters and ecosystem integrations | MEDIUM | HIGH | P2 |
-| Additional web/mobile targets | MEDIUM | VERY HIGH | P2 |
-| `no_std`, alternative precision, parallel/SIMD extensions | LOW/MEDIUM | VERY HIGH | P3 |
+| PERF-AUDIT committed named-function notes | HIGH | MEDIUM | P1 |
+| PERF-PAIR dated unprofiled Dam Break reports | HIGH | LOW | P1 |
+| PERF-PROFILE scripted CPU profiles (gitignored) | HIGH | MEDIUM | P1 |
+| PERF-ADMIT evidence-gated landings | HIGH | MEDIUM | P1 |
+| PERF-SHARED shared hot-path fixes | HIGH | HIGH | P1 |
+| PERF-GATE Dam Break Medium ≤ 3× C++ | HIGH | HIGH | P1 |
+| PERF-BASELINE scalar deterministic default | HIGH | LOW | P1 |
+| PERF-SPOT other five scenes | MEDIUM | LOW | P1 |
+| PERF-NOTES remaining delta | HIGH | LOW | P1 |
+| PERF-WASM post-gate playground sanity | MEDIUM | LOW | P1 |
+| Diagnostic parent timers in the pair script | MEDIUM | MEDIUM | P2 |
+| Criterion micros as supporting evidence | LOW | LOW | P2 |
+| Second native canary scene | MEDIUM | MEDIUM | P2 |
+| SIMD/parallel opt-in | MEDIUM | HIGH | P3 |
+| Phase 12 sealed public reports | LOW (hobby now) | VERY HIGH | P3 |
+| New playground scenes / editor / publish | LOW | HIGH | P3 — anti-feature for v1.2 |
 
 **Priority key:**
 
-- **P1:** Required before a full-parity v1 claim
-- **P2:** Valuable post-parity production/ergonomic extension
-- **P3:** Research-backed future option; must not delay or destabilize parity
+- **P1:** Must have for v1.2 launch
+- **P2:** Should have if the canary is closed and cheap
+- **P3:** Explicitly later / out of milestone
 
-## Competitor and Reference Analysis
+## Competitor Feature Analysis
 
-| Capability | Google LiquidFun C++ | Rapier 2D Rust | liquidfun-rs approach |
-| --- | --- | --- | --- |
-| Rigid-body physics | Historical Box2D 2.3.0-derived behavior and API | Modern native-Rust rigid bodies, joints, CCD, queries, events, snapshotting, and optional determinism | Match pinned LiquidFun behavior rather than substituting a modern solver |
-| LiquidFun particle behaviors | Canonical implementation and behavioral oracle | Not the LiquidFun behavioral/API oracle | Implement every pinned flag, group behavior, buffer, contact, query, and solver path natively |
-| Rust safety/ergonomics | Pointer ownership and callback lock rules | Native typed Rust collections and Cargo workflow | Typed handles, explicit invalidation, borrow-safe views, deferred mutation |
-| Compatibility evidence | Upstream tests/testbed, but no Rust differential proof | Its own behavior and test corpus | Public traceability matrix plus semantic C++/Rust differential evidence |
-| Persistence | Diagnostic C++ reconstruction dump for rigid bodies/joints; not general particle serialization | Snapshotting is advertised by the official Rapier docs | Upstream-equivalent dump in v1; versioned semantic particle-aware snapshot later |
-| Distribution | Historical C++ plus platform-specific build/binding stacks | Cargo-native | Cargo-native runtime; C++ oracle isolated to contributor workflows |
+How “close the C++ vs Rust physics gap” actually ships in neighboring engines. Use as capability expectations, not as engines to swap in.
 
-Rapier establishes a high ergonomic and operational bar for a production Rust physics library, but it is not evidence of LiquidFun compatibility. Its official documentation advertises native Rust 2D/3D rigid-body physics, joints, contact events, sensors, queries, snapshotting, optional determinism, SIMD, parallelism, serde, and WASM support; these are useful benchmarks for Rust user expectations, not a substitute implementation.
+| Capability | box2d-rust 1.3 (C Box2D v3 port) | Rapier 2D/3D | Avian 0.4 | liquidfun-rs v1.2 approach |
+| --- | --- | --- | --- | --- |
+| Pair vs C/C++ oracle | Yes: C `benchmark` app vs Rust example, **serial vs serial** (`-w=1`), same scenes/dt/substeps, warm-up excluded, interleaved to defeat thermal bias. Geo-mean ~**1.25×** (range 1.13–1.47×) as of 2026-07-19 | No LiquidFun/Box2D C++ oracle; compares to itself / PhysX anecdotes | No C++ LiquidFun oracle; compares to Rapier and its own previous version | **Keep playground Dam Break pair** as the one numeric gate; do not add a 10-scene public matrix this milestone |
+| First huge win | **Release validators**, not SIMD: `B2_VALIDATE` / `b2ValidateIsland` in release made island-churn **quadratic**; gating to debug took spinner **2.73× → 1.21×**. First measurement 1.9× → 1.45× after that | Official docs: Rapier can be **~100× slower** without `--release` | Profile-driven parallel solver | Audit extra `--release` work and allocations first; the ~300× canary is extra-work-shaped, not 1.25× codegen |
+| Profiling | Re-measure interleaved after every change; WASM perf noted separately and **not** mixed into the C ratio | `profiling` crate, Tracy/Puffin in testbed; `cargo flamegraph` used in issue hunts | Flamegraphs in the 0.4 write-up (narrow phase, graph-color solver) | Scripted samply/flamegraph/Instruments into gitignored evidence; committed function names |
+| SIMD / threads | Safe `[f32; 4]` contact solver later (1.45× → 1.25×); remaining gap attributed to C SSE2 vs rustc; **serial by design** (no C task system) | SIMD/parallel are **features**; `simd8` conflicts with enhanced-determinism; parallelism can *slow* small scenes | Default-ish parallel graph coloring: solver **>3×**, total **~2×** vs prior Avian | **Anti-feature as default.** Scalar close first; opt-in only later |
+| Admission / honesty | README publishes methodology, pin, host, and leftover causes; WASM “may run below realtime” disclosed | Common-mistakes page instead of a sealed matrix | Blog + PR with profiles | Committed notes + empty Phase 12 manifest; no “Rust is faster” |
+| WASM | Live demos; WASM profiled **per scene**, not vs C | First-class WASM packages | Bevy-centric | Post-gate sanity only; never WASM vs C++ |
+| Bounds-check theater | Not listed as the 1.9× cause | — | — | Do not start with `unsafe` indexing; typical wins 1–15% |
 
-## Release Truthfulness Rules
-
-- “Native Rust” means no production runtime delegation to C++.
-- “Implemented” is not “validated”; compatibility states must distinguish planned, implemented, unit tested, differentially validated, platform validated, and intentionally unsupported.
-- “Full parity” requires no unexplained compatibility-matrix gaps and every relevant upstream test/example accounted for.
-- Numerical differences must name the observable, tolerance, platform/compiler scope, and cause when known.
-- Performance statements must link methodology, workload definitions, versions, flags, hardware, and raw results.
-- Supported-platform claims require CI or documented equivalent evidence; “compiles” alone is insufficient.
-- 0.x releases may be useful and high quality while incomplete, but README, crate metadata, and docs must make missing particle/rigid behaviors conspicuous.
-- Upstream diagnostic Dump must not be described as save/load or complete serialization.
+**Implication:** A 300× LiquidFun gap that already used `--release` vs `oracle-release` should be treated as **wrong extra work / extra allocation / extra algorithm**, the same class as box2d-rust’s release validators — not as a reason to turn on Avian-style parallelism or to publish a sealed 32-case claim.
 
 ## Sources
 
-### Primary Upstream Sources
+### This repository (HIGH)
 
-- [Google LiquidFun repository at candidate oracle commit 7f204021](https://github.com/google/liquidfun/tree/7f20402173fd143a3988c921bc384459c6a858f2)
-- [LiquidFun README: purpose, version, particle extension, and historical platforms](https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Readme.md)
-- [LiquidFun release notes: Box2D 2.3.0/revision 280 ancestry and 1.0/1.1 particle features](https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/ReleaseNotes.md)
-- [Particle flags and particle data definitions](https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Box2D/Particle/b2Particle.h)
-- [Particle-system definitions, buffers, lifecycle, groups, contacts, queries, and controls](https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Box2D/Particle/b2ParticleSystem.h)
-- [Particle-system solver passes and internal behavior implementation](https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Box2D/Particle/b2ParticleSystem.cpp)
-- [Particle-group flags, definitions, and public API](https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Box2D/Particle/b2ParticleGroup.h)
-- [World API, stepping, queries, ray casts, origin shift, profiles, and Dump](https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Box2D/Dynamics/b2World.h)
-- [World Dump implementation, showing rigid-body/joint reconstruction output](https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Box2D/Dynamics/b2World.cpp)
-- [Filters, rigid/particle contact listeners, destruction listeners, query callbacks, and ray-cast callbacks](https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Box2D/Dynamics/b2WorldCallbacks.h)
-- [Upstream Testbed scenario inventory](https://github.com/google/liquidfun/tree/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Testbed/Tests)
-- [Upstream dedicated unit-test tree](https://github.com/google/liquidfun/tree/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Unittests)
+- `.planning/PROJECT.md` — v1.2 goal, Dam Break ≤ 3× gate, shared-path hunt, WASM-after-native, scalar baseline
+- `PROJECT-SCOPE.md` — hobby local checks; no dedicated perf host; optional expensive suites
+- `BENCHMARKING.md` — Phase 12 method; empty reviewed-report manifest; profiles ≠ timing authority; admission ideas
+- `docs/playground-dam-break-timing.md` — locked Medium recipe; first ~300× sample; `just playground-dam-break-bench`
+- `reference/performance/manifest.toml` — `reviewed_reports = []`
+- `reference/performance/policy.json` — unprofiled wall clock; `release_scalar`; 10% profile floor for Phase 12 admission
+- `Justfile` — `playground-dam-break-bench`, `phase12-performance-*`, `web-player-smoke`
+- `tools/xtask/src/playground.rs` — pair driver builds `oracle-release` extra + `liquidfun-wasm` `dam-break-bench`
+- `crates/liquidfun-wasm/src/dam_break_bench.rs` — 1920 particles, 60+600 steps
+- Workspace `Cargo.toml` — `unsafe_code = "forbid"`
+- `crates/liquidfun/src/particle/proxy.rs` — per-call neighborhood allocate/sort (audit target, not a proven 300× cause)
 
-### Rust Ecosystem Comparison
+### Neighboring engines and profiling practice (HIGH / MEDIUM)
 
-- [Rapier official overview](https://rapier.rs/docs/)
-- [Rapier official Rust getting-started guide and feature tradeoffs](https://rapier.rs/docs/user_guides/templates/getting_started/)
-- [Rapier 2D query pipeline API](https://docs.rs/rapier2d/latest/rapier2d/pipeline/struct.QueryPipeline.html)
+- [box2d-rust 1.3.0 README — paired C vs Rust methodology and validator-in-release win](https://docs.rs/crate/box2d-rust/latest) — HIGH, updated 2026-07-19
+- [box2d-rust performance roadmap / misattribution notes](https://docs.rs/crate/box2d-rust/latest/source/todo.md) — HIGH
+- [Rapier common mistakes — ~100× without `--release`; codegen-units](https://rapier.rs/docs/user_guides/rust/common_mistakes/) — HIGH
+- [Rapier getting started — SIMD vs enhanced-determinism; parallelism can slow small scenes](https://rapier.rs/docs/user_guides/javascript/getting_started) — MEDIUM (JS guide; same feature tradeoff)
+- [Avian Physics 0.4 — profile-guided parallel solver, ~3× solver / ~2× total](https://joonaa.dev/blog/09/avian-0-4) — HIGH as a *what not to default on* analog
+- [Erin Catto, SIMD for Collision (Box3D, 2026-07) — SIMD helps some hulls, not all scenes](https://box2d.org/posts/2026/07/simd-for-collision/) — HIGH
+- [samply — macOS/Linux/Windows sampling profiler, release + debug info](https://github.com/mstange/samply) — HIGH
+- [cargo-flamegraph 0.6.13 (2026-06-03) — macOS via xctrace](https://github.com/flamegraph-rs/flamegraph) — HIGH
+- [Shnatsel, bounds checks typically 1–3%, max ~15%; alloc often dominates](https://shnatsel.medium.com/how-to-avoid-bounds-checks-in-rust-without-unsafe-f65e618b4c1e) — MEDIUM
 
-______________________________________________________________________
+### Lower confidence (do not drive requirements)
 
-*Feature research for liquidfun-rs requirements definition*
-*Researched: 2026-07-09*
+- Third-party “Rust 1.85 vs C++23 game physics” blog roundups — LOW (methodology not LiquidFun-shaped; possible SEO). Independent engines at matched algorithms are usually within tens of percent, which **supports** treating 300× as extra work, but the article is not a source for gates.
+
+---
+*Feature research for: liquidfun-rs v1.2 Native Performance Closing*
+*Researched: 2026-09-20*
