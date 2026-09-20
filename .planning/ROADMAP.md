@@ -146,10 +146,13 @@ Keep README gallery WebPs as a documentation gallery, not a substitute for in-ap
   2. Dead `FallbackPanel` empty/not-ready branches are removed or made reachable from a real unknown/empty hash path.
   3. `color_mixer.rs`, `dam_break.rs` and `water_wheel.rs` satisfy Bright Builds `file-lengths` without changing public scene behavior, controls, or particle recipes.
   4. Playground Dam Break headless speed versus pinned C++ remains out of this phase and out of v1.1 definition of done.
-**Plans:** 0 plans
+**Plans:** 4 plans
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 21 to break down)
+- [ ] 21-01-PLAN.md — Delete unused loadProofSession; document historical just web-smoke
+- [ ] 21-02-PLAN.md — Collapse FallbackPanel to unknown-only chrome
+- [ ] 21-03-PLAN.md — Confirm scene file-lengths; split upstream_cli.rs
+- [ ] 21-04-PLAN.md — Player-smoke gate and independent AI review
 
 ## Progress
 
@@ -162,7 +165,7 @@ Execution order: **16 → 17 → 18 → 19 → 20 → 21**. Phases 16–19 remai
 | 18. Six Native Physics Demos | 10/10 | Complete    | 2026-09-18 |
 | 19. Interaction Polish and Browser Verification | 7/7 | Complete    | 2026-09-19 |
 | 20. Playground catalog previews and Reset honesty | 6/6 | Complete    | 2026-09-20 |
-| 21. Playground leftover cleanup | 0/0 | Not started | |
+| 21. Playground leftover cleanup | 0/4 | Not started | |
 
 ## Coverage and Planning Basis
 
