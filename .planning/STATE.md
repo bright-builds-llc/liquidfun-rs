@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.1
-milestone_name: Web Playground
-status: completed
-stopped_at: "v1.1 Web Playground archived; no active phase"
-last_updated: "2026-09-20T21:11:24.131Z"
+milestone: v1.2
+milestone_name: Native Performance Closing
+status: defining_requirements
+stopped_at: "Milestone v1.2 started; defining requirements"
+last_updated: "2026-09-20T21:22:57.498Z"
 last_activity: "2026-09-20"
 progress:
-  total_phases: 6
-  completed_phases: 6
-  total_plans: 39
-  completed_plans: 39
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -21,18 +21,18 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-09-20)
 
 **Core value:** Deliver a useful, independent Rust physics library for enjoyable experimentation, with honest limitations and a lightweight native development loop.
-**Current focus:** Planning next milestone
+**Current focus:** Defining v1.2 Native Performance Closing requirements
 
 ## Current Position
 
-Phase: none
-Plan: none
-Status: v1.1 milestone complete
-Last activity: 2026-09-20
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-09-20 — Milestone v1.2 started
 
-Progress: [██████████] 100%
+Progress: [░░░░░░░░░░] 0%
 
-v1.1 Web Playground is archived. Phase directories remain in place. Use `/gsd-new-milestone` for the next scope. No package publication or release tag.
+v1.2 Native Performance Closing started. v1.1 phase directories remain in place for historical references. Phase numbering continues after 21. No package publication or release tag.
 
 ## Performance Metrics
 
@@ -82,6 +82,11 @@ v1.1 Web Playground is archived. Phase directories remain in place. Use `/gsd-ne
 
 ### Decisions
 
+- [v1.2]: Dam Break Medium native pair is the numeric gate — Rust wall time ≤ 3× pinned C++ on the same host, scalar `--release` vs `oracle-release`.
+- [v1.2]: Hunt shared particle/rigid hot paths; other scenes are profiled and spot-checked. Do not revive the Phase 12 sealed 32-case public matrix.
+- [v1.2]: Hold the scalar deterministic compatibility baseline. SIMD/parallel stay explicit opt-in.
+- [v1.2]: Native is the C++ comparison. After the native gate, record a lightweight WASM/playground sanity check; WASM is not compared to C++.
+- [v1.2]: Scripted local pair + CPU profiles write dated gitignored evidence; committed notes name hot functions and the Dam Break delta without becoming a sealed public claim.
 - Prove a real Rust WASM browser step first, then deploy a shared SolidJS player early before expanding the six scenes.
 - Approved scenes: Dam Break, Fountain, Float or Sink, Color Mixer, Jelly Drop and Water Wheel; all physics comes from this Rust engine.
 - Prefer a private typed package, owned bulk frames, one active session and bounded simulation time/resources. Native Cargo consumers remain isolated.
@@ -211,7 +216,7 @@ v1.1 Web Playground is archived. Phase directories remain in place. Use `/gsd-ne
 
 ### Pending Todos
 
-No new milestone todos captured. Plan Phase 20 next.
+Define v1.2 requirements, then create the roadmap continuing after phase 21.
 
 ### Blockers/Concerns
 
@@ -238,6 +243,6 @@ No new milestone todos captured. Plan Phase 20 next.
 
 ## Session Continuity
 
-Last session: 2026-09-20T20:41:14.783Z
-Stopped at: Completed 21-04-PLAN.md
+Last session: 2026-09-20T21:20:00.000Z
+Stopped at: Milestone v1.2 started; defining requirements
 Resume file: None
