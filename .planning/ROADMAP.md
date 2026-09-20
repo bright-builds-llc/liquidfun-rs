@@ -165,7 +165,7 @@ Execution order: **16 → 17 → 18 → 19 → 20 → 21**. Phases 16–19 remai
 | 18. Six Native Physics Demos | 10/10 | Complete    | 2026-09-18 |
 | 19. Interaction Polish and Browser Verification | 7/7 | Complete    | 2026-09-19 |
 | 20. Playground catalog previews and Reset honesty | 6/6 | Complete    | 2026-09-20 |
-| 21. Playground leftover cleanup | 4/4 | Complete   | 2026-09-20 |
+| 21. Playground leftover cleanup | 4/4 | Complete    | 2026-09-20 |
 
 ## Coverage and Planning Basis
 
