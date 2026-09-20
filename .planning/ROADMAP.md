@@ -16,7 +16,7 @@ The 22 approved requirements originally formed four delivery boundaries. A 2026-
 - [x] **Phase 17: Shared Player and Early Pages Delivery** — Play one working scene on GitHub Pages with reliable navigation, lifecycle and automatic delivery. (completed 2026-09-17)
 - [x] **Phase 18: Six Native Physics Demos** — Explore the complete approved catalog with real physics, bounded controls and source credits. (completed 2026-09-18)
 - [x] **Phase 19: Interaction Polish and Browser Verification** — Use all six demos comfortably across pointer, keyboard and narrow-screen paths, verified in the built and hosted site. (completed 2026-09-19)
-- [ ] **Phase 20: Playground catalog previews and Reset honesty** — Restore in-app demo previews and honest live-control labels after Reset.
+- [x] **Phase 20: Playground catalog previews and Reset honesty** — Restore in-app demo previews and honest live-control labels after Reset. (completed 2026-09-20)
 - [ ] **Phase 21: Playground leftover cleanup** — Remove dead player/proof leftovers and split oversized WASM scene files.
 
 ## Phase Details
@@ -123,7 +123,7 @@ Plans:
   2. The owner-approved responsive Kobalte / semantic-HTML shell remains; restoring previews must not revive the old card layout that broke narrow widths.
   3. Play, pause and Reset still rebuild the native world to the documented initial state, and live preset selects show that initial value after Reset instead of a stale pendingValue.
   4. Focused Chromium smoke covers visible catalog previews and Reset label honesty for representative live presets.
-**Plans:** 5/6 plans executed
+**Plans:** 6/6 plans complete
 **UI hint**: yes
 
 Plans:
@@ -132,7 +132,7 @@ Plans:
 - [x] 20-03-PLAN.md — Keyed SceneControls remount and Reset bag clear
 - [x] 20-04-PLAN.md — Chromium sidebar and drawer preview smoke
 - [x] 20-05-PLAN.md — Chromium Reset label honesty and test:player allowlist
-- [ ] 20-06-PLAN.md — Player-smoke gate and independent AI review
+- [x] 20-06-PLAN.md — Player-smoke gate and independent AI review
 
 Keep README gallery WebPs as a documentation gallery, not a substitute for in-app previews. Do not treat Dam Break headless speed versus C++ as this phase's work.
 
@@ -161,7 +161,7 @@ Execution order: **16 → 17 → 18 → 19 → 20 → 21**. Phases 16–19 remai
 | 17. Shared Player and Early Pages Delivery | 8/8 | Complete    | 2026-09-17 |
 | 18. Six Native Physics Demos | 10/10 | Complete    | 2026-09-18 |
 | 19. Interaction Polish and Browser Verification | 7/7 | Complete    | 2026-09-19 |
-| 20. Playground catalog previews and Reset honesty | 5/6 | In Progress|  |
+| 20. Playground catalog previews and Reset honesty | 6/6 | Complete   | 2026-09-20 |
 | 21. Playground leftover cleanup | 0/0 | Not started | |
 
 ## Coverage and Planning Basis

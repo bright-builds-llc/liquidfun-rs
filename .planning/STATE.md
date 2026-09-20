@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Web Playground
-status: executing
-stopped_at: Completed 20-05-PLAN.md
-last_updated: "2026-09-20T19:09:47.239Z"
+status: verifying
+stopped_at: Completed 20-06-PLAN.md
+last_updated: "2026-09-20T19:29:36.700Z"
 last_activity: 2026-09-20
 progress:
   total_phases: 6
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 35
-  completed_plans: 34
-  percent: 97
+  completed_plans: 35
+  percent: 100
 ---
 
 # Project State
@@ -27,7 +27,7 @@ See: `.planning/PROJECT.md` (updated 2026-09-17)
 
 Phase: 20 (playground-catalog-previews-and-reset-honesty) — EXECUTING
 Plan: 6 of 6
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-20
 
 Progress: [██████░░░░] 67% of v1.1 phases complete (4/6). Existing plans 29/29 remain complete.
@@ -74,6 +74,7 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 | Phase 20 P03 | 4min | 2 tasks | 3 files |
 | Phase 20 P04 | 20min | 2 tasks | 2 files |
 | Phase 20 P05 | 22min | 2 tasks | 6 files |
+| Phase 20 P06 | 16min | 2 tasks | 1 files |
 
 ### Decisions
 
@@ -183,6 +184,9 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 - [Phase 20]: resetNearZero watches the first restarted data-step-index instead of sampling after catch-up frames. — After 20-03 keyed remount, Playwright sampled step 29 after an actually-reset world. Observe the first restarted index so 4-step catch-up cannot hide Reset.
 - [Phase 20]: Construction Reset tests use SIX_SCENE_TIMEOUT_MS because Apply large then Reset rebuilds two WASM worlds. — Dam Break Large then documented-initial rebuilds exceeded the 30s Playwright default while chrome already showed Medium.
 - [Phase 20]: The 240-frame demo-media clock test uses a 120s timeout so just web-player-smoke can finish. — The numbered-frame capture is on the test:player allowlist and cannot complete in 30s even serially.
+- [Phase 20]: Independent AI review acknowledges digest 7e94fe28c89308f16cb00a0e30543bf447b9cc7ac468e1f6b32c50aa4096535f; the implementing executor does not approve its own work. — D-11 and the 2026-09-16 owner policy require a separate identified AI reviewer bound to an exact digest. Passing just web-player-smoke is not the acknowledgment.
+- [Phase 20]: Digest is SHA-256 of concatenated listed file bytes in 20-06-PLAN.md order; passing just web-player-smoke is not the acknowledgment. — Record the exact cat | shasum -a 256 command so a later reviewer can recompute the same 64-hex digest.
+- [Phase 20]: No crate/npm publish, no release tag, and no new GitHub Pages URL. — D-11 local Chromium smoke is sufficient; publication remains separately unauthorized.
 
 ### Roadmap Evolution
 
@@ -218,6 +222,6 @@ No new milestone todos captured. Plan Phase 20 next.
 
 ## Session Continuity
 
-Last session: 2026-09-20T19:09:38.967Z
-Stopped at: Completed 20-05-PLAN.md
+Last session: 2026-09-20T19:29:16.407Z
+Stopped at: Completed 20-06-PLAN.md
 Resume file: None
