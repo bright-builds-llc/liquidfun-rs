@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Web Playground
 status: executing
-stopped_at: Completed 21-01-PLAN.md
-last_updated: "2026-09-20T20:16:30.008Z"
+stopped_at: Completed 21-02-PLAN.md
+last_updated: "2026-09-20T20:21:36.449Z"
 last_activity: 2026-09-20
 progress:
   total_phases: 6
   completed_phases: 5
   total_plans: 39
-  completed_plans: 36
-  percent: 92
+  completed_plans: 37
+  percent: 95
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-09-17)
 ## Current Position
 
 Phase: 21 (playground-leftover-cleanup) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 Status: Ready to execute
 Last activity: 2026-09-20
 
@@ -76,6 +76,7 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 | Phase 20 P05 | 22min | 2 tasks | 6 files |
 | Phase 20 P06 | 16min | 2 tasks | 1 files |
 | Phase 21 P01 | 3 min | 2 tasks | 3 files |
+| Phase 21 P02 | 2 min | 2 tasks | 3 files |
 
 ### Decisions
 
@@ -191,6 +192,9 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 - [Phase 21]: Delete unused loadProofSession with no compatibility alias; keep generated ProofSession. — D-01. App already constructs worlds through loadSceneSession; generated ProofSession is not renamed.
 - [Phase 21]: Leave rust-wasm-proof.spec.ts out of test:player; do not fold Dispose-session or PNG-hash into just web-player-smoke. — D-02. Product Chromium gate stays the four-file test:player allowlist.
 - [Phase 21]: Document just web-smoke as historical Phase 16 forensic chrome, not the v1.1 product gate. — D-03. Forensic smoke is not expected to pass against current Play/Pause/Reset chrome.
+- [Phase 21]: Collapse FallbackPanel to a no-prop unknown-only component; delete empty and not-ready kinds, copy, and fallbackProps. — D-04 and D-05. Empty hashes already normalize to Dam Break; all six catalog ids are ready.
+- [Phase 21]: Keep empty-hash Dam Break normalizeSceneRoute replaceState; parser kind empty remains for tests and never renders FallbackPanel chrome. — D-06 forbids undoing empty-hash replacement.
+- [Phase 21]: Strengthen the existing unknown-hash Playwright test with locked body copy and absent Choose a scene; do not add a browser matrix. — D-05 and D-10. Product proof remains Chromium player smoke in Plan 21-04.
 
 ### Roadmap Evolution
 
@@ -226,6 +230,6 @@ No new milestone todos captured. Plan Phase 20 next.
 
 ## Session Continuity
 
-Last session: 2026-09-20T20:16:12.682Z
-Stopped at: Completed 21-01-PLAN.md
+Last session: 2026-09-20T20:20:33.448Z
+Stopped at: Completed 21-02-PLAN.md
 Resume file: None
