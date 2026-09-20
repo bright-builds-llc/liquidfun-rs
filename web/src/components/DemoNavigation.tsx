@@ -1,5 +1,6 @@
 import { For } from "solid-js";
 
+import { ScenePreview } from "../catalog/previews";
 import type { SceneId } from "../catalog/scenes";
 import { sceneNavigationItems } from "../player/navigation";
 
@@ -23,6 +24,10 @@ export function DemoNavigation(props: DemoNavigationProps) {
                 aria-current={item.isCurrent ? "page" : undefined}
                 onClick={() => props.onNavigate?.()}
               >
+                <span class="demo-nav-preview">
+                  <ScenePreview sceneId={item.id} />
+                </span>
+                <span class="demo-nav-preview-caption">Static preview</span>
                 <span class="demo-nav-title">{item.title}</span>
                 <span class="demo-nav-description">{item.description}</span>
               </a>
