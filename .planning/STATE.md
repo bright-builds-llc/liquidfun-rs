@@ -4,8 +4,8 @@ milestone: v1.1
 milestone_name: Web Playground
 status: verifying
 stopped_at: Phase 19 complete
-last_updated: "2026-09-19T19:12:53Z"
-last_activity: 2026-09-19
+last_updated: "2026-09-20T05:16:00Z"
+last_activity: 2026-09-20
 progress:
   total_phases: 4
   completed_phases: 4
@@ -28,7 +28,7 @@ See: `.planning/PROJECT.md` (updated 2026-09-17)
 Phase: 19
 Plan: Not started
 Status: Phase complete — ready for verification
-Last activity: 2026-09-19 - Completed quick task 260919-jco: Final responsive shell review fixes
+Last activity: 2026-09-20 - Completed quick task 260919-wbn: Raise webapp particle frame cap 20x to 10240 and increase scene particle counts about 10x, packing finer so world volumes stay similar
 
 Progress: [██████████] 100% of currently planned v1.1 plans complete.
 
@@ -180,6 +180,7 @@ No new milestone todos captured. Phase 17 is ready for discussion and planning.
 |---|-------------|------|--------|-----------|
 | 260919-eut | Split oversized WASM scene tests to satisfy Bright Builds CI | 2026-09-19 | 888b5e8 | [260919-eut-split-oversized-wasm-scene-tests-to-sati](./quick/260919-eut-split-oversized-wasm-scene-tests-to-sati/) |
 | 260919-jco | Final responsive shell review fixes | 2026-09-19 | 680b191 | [260919-jco-final-whole-change-responsive-playground](./quick/260919-jco-final-whole-change-responsive-playground/) |
+| 260919-wbn | Raise webapp particle frame cap 20x to 10240 and increase scene particle counts about 10x, packing finer so world volumes stay similar | 2026-09-20 | 3a047bf | [260919-wbn-raise-webapp-particle-frame-cap-20x-to-1](./quick/260919-wbn-raise-webapp-particle-frame-cap-20x-to-1/) |
 
 ## Retained Context
 
