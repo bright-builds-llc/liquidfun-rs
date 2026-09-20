@@ -1,10 +1,31 @@
+//! Exclusive UTC evidence stamps for playground Dam Break artifacts.
+//!
+//! Pair persistence in 22-02 is the first production caller; this plan only
+//! lands the minting core.
+
+#![allow(dead_code)]
+
+use std::fs;
+use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
 
 use super::PlaygroundError;
 
+const EVIDENCE_RELATIVE_DIR: &str = "target/dam-break-perf";
+const MAX_STAMP_ATTEMPTS: u8 = 8;
+const SECONDS_PER_DAY: u64 = 86_400;
+const SECONDS_PER_HOUR: u64 = 3_600;
+const SECONDS_PER_MINUTE: u64 = 60;
+
 /// Formats Unix seconds as a filename-safe UTC stamp `YYYY-MM-DDTHH-MM-SSZ`.
-pub(crate) fn format_utc_stamp(_unix_seconds: u64) -> String {
-    String::new()
+pub(crate) fn format_utc_stamp(unix_seconds: u64) -> String {
+    let unix_days = unix_seconds / SECONDS_PER_DAY;
+    let seconds_of_day = unix_seconds % SECONDS_PER_DAY;
+    let hour = seconds_of_day / SECONDS_PER_HOUR;
+    let minute = (seconds_of_day % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE;
+    let second = seconds_of_day % SECONDS_PER_MINUTE;
+    let (year, month, day) = civil_date_from_unix_days(unix_days);
+    format!("{year:04}-{month:02}-{day:02}T{hour:02}-{minute:02}-{second:02}Z")
 }
 
 /// Creates an exclusive `target/dam-break-perf/<utc-stamp>/` directory.
@@ -14,10 +35,86 @@ pub(crate) fn format_utc_stamp(_unix_seconds: u64) -> String {
 /// Returns a closed error when the evidence parent cannot be created or every
 /// stamp candidate in the retry window already exists.
 pub(crate) fn mint_exclusive_stamp(
-    _repository_root: &Path,
-    _unix_seconds: u64,
+    repository_root: &Path,
+    unix_seconds: u64,
 ) -> Result<PathBuf, PlaygroundError> {
-    Err(PlaygroundError::new("unimplemented", "stamp mint stub"))
+    let evidence_root = repository_root.join(EVIDENCE_RELATIVE_DIR);
+    fs::create_dir_all(&evidence_root).map_err(|error| {
+        PlaygroundError::new(
+            "stamp",
+            format!(
+                "failed to create evidence directory {}: {error}",
+                evidence_root.display()
+            ),
+        )
+    })?;
+
+    let mut candidate_seconds = unix_seconds;
+    let mut remaining_attempts = MAX_STAMP_ATTEMPTS;
+    while remaining_attempts > 0 {
+        remaining_attempts -= 1;
+        let stamp = format_utc_stamp(candidate_seconds);
+        let stamp_path = evidence_root.join(&stamp);
+        match fs::create_dir(&stamp_path) {
+            Ok(()) => return Ok(stamp_path),
+            Err(error) if error.kind() == ErrorKind::AlreadyExists => {
+                let Some(next_seconds) = candidate_seconds.checked_add(1) else {
+                    break;
+                };
+                candidate_seconds = next_seconds;
+            }
+            Err(error) => {
+                return Err(PlaygroundError::new(
+                    "stamp",
+                    format!("failed to create {}: {error}", stamp_path.display()),
+                ));
+            }
+        }
+    }
+
+    Err(PlaygroundError::new(
+        "stamp",
+        format!(
+            "stamp already exists for {MAX_STAMP_ATTEMPTS} consecutive seconds starting at {}",
+            format_utc_stamp(unix_seconds)
+        ),
+    ))
+}
+
+/// Converts days since 1970-01-01 into a Gregorian civil date.
+///
+/// Algorithm from Howard Hinnant's public-domain `civil_from_days`.
+fn civil_date_from_unix_days(unix_days: u64) -> (i32, u32, u32) {
+    let Ok(unix_days_i64) = i64::try_from(unix_days) else {
+        return (1970, 1, 1);
+    };
+    let shifted_days = unix_days_i64.saturating_add(719_468);
+    let era = if shifted_days >= 0 {
+        shifted_days
+    } else {
+        shifted_days.saturating_sub(146_096)
+    } / 146_097;
+    let Ok(day_of_era) = u32::try_from(shifted_days - era * 146_097) else {
+        return (1970, 1, 1);
+    };
+    let year_of_era =
+        (day_of_era - day_of_era / 1_460 + day_of_era / 36_524 - day_of_era / 146_096) / 365;
+    let day_of_year = day_of_era - (365 * year_of_era + year_of_era / 4 - year_of_era / 100);
+    let month_prime = (5 * day_of_year + 2) / 153;
+    let day = day_of_year - (153 * month_prime + 2) / 5 + 1;
+    let month = if month_prime < 10 {
+        month_prime + 3
+    } else {
+        month_prime - 9
+    };
+    let mut year = i64::from(year_of_era) + era * 400;
+    if month <= 2 {
+        year += 1;
+    }
+    let Ok(year) = i32::try_from(year) else {
+        return (1970, 1, 1);
+    };
+    (year, month, day)
 }
 
 #[cfg(test)]
