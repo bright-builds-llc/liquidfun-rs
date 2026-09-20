@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Web Playground
-status: planning
+status: executing
 stopped_at: Phase 20 UI-SPEC approved
-last_updated: "2026-09-20T17:52:17.859Z"
-last_activity: 2026-09-20 - Added Phases 20 and 21 from the v1.1 milestone audit (catalog previews, Reset control honesty, leftover cleanup)
+last_updated: "2026-09-20T18:08:12.377Z"
+last_activity: 2026-09-20 -- Phase 20 planning complete
 progress:
   total_phases: 6
   completed_phases: 4
-  total_plans: 29
+  total_plans: 35
   completed_plans: 29
-  percent: 100
+  percent: 83
 ---
 
 # Project State
@@ -27,8 +27,8 @@ See: `.planning/PROJECT.md` (updated 2026-09-17)
 
 Phase: 20
 Plan: Not started
-Status: Gap closure phases added — ready to plan
-Last activity: 2026-09-20 - Added Phases 20 and 21 from the v1.1 milestone audit (catalog previews, Reset control honesty, leftover cleanup)
+Status: Ready to execute
+Last activity: 2026-09-20 -- Phase 20 planning complete
 
 Progress: [██████░░░░] 67% of v1.1 phases complete (4/6). Existing plans 29/29 remain complete.
 
