@@ -169,6 +169,14 @@ test("returns from an unknown hash through Open Dam Break", async ({ page }) => 
   await expect(
     page.getByRole("heading", { name: "Scene not found" }),
   ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Choose a scene" })).toHaveCount(
+    0,
+  );
+  await expect(
+    page.getByText(
+      "This playground link does not match a known scene. Open Dam Break, or choose a demo from the navigation list.",
+    ),
+  ).toBeVisible();
 
   await page.getByRole("link", { name: "Open Dam Break" }).click();
   await expect(page).toHaveURL(/#\/scene\/dam-break$/);
