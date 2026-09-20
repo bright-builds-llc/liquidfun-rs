@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Web Playground
 status: executing
-stopped_at: Completed 20-04-PLAN.md
-last_updated: "2026-09-20T18:44:53.743Z"
+stopped_at: Completed 20-05-PLAN.md
+last_updated: "2026-09-20T19:09:47.239Z"
 last_activity: 2026-09-20
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 35
-  completed_plans: 33
-  percent: 94
+  completed_plans: 34
+  percent: 97
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-09-17)
 ## Current Position
 
 Phase: 20 (playground-catalog-previews-and-reset-honesty) — EXECUTING
-Plan: 5 of 6
+Plan: 6 of 6
 Status: Ready to execute
 Last activity: 2026-09-20
 
@@ -73,6 +73,7 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 | Phase 20 P02 | 2min | 2 tasks | 3 files |
 | Phase 20 P03 | 4min | 2 tasks | 3 files |
 | Phase 20 P04 | 20min | 2 tasks | 2 files |
+| Phase 20 P05 | 22min | 2 tasks | 6 files |
 
 ### Decisions
 
@@ -179,6 +180,9 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 - [Phase 20]: Scope desktop Static preview counts to .demo-sidebar so dual DemoNavigation cannot count 12.
 - [Phase 20]: Keep mobile preview asserts on getByRole dialog named Demos, not .demo-sidebar.
 - [Phase 20]: Pause playing scenes before Tab-heavy drawer and 375px checks so compact previews cannot starve keyboard smoke.
+- [Phase 20]: resetNearZero watches the first restarted data-step-index instead of sampling after catch-up frames. — After 20-03 keyed remount, Playwright sampled step 29 after an actually-reset world. Observe the first restarted index so 4-step catch-up cannot hide Reset.
+- [Phase 20]: Construction Reset tests use SIX_SCENE_TIMEOUT_MS because Apply large then Reset rebuilds two WASM worlds. — Dam Break Large then documented-initial rebuilds exceeded the 30s Playwright default while chrome already showed Medium.
+- [Phase 20]: The 240-frame demo-media clock test uses a 120s timeout so just web-player-smoke can finish. — The numbered-frame capture is on the test:player allowlist and cannot complete in 30s even serially.
 
 ### Roadmap Evolution
 
@@ -214,6 +218,6 @@ No new milestone todos captured. Plan Phase 20 next.
 
 ## Session Continuity
 
-Last session: 2026-09-20T18:44:53.739Z
-Stopped at: Completed 20-04-PLAN.md
+Last session: 2026-09-20T19:09:38.967Z
+Stopped at: Completed 20-05-PLAN.md
 Resume file: None
