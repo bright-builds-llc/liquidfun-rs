@@ -44,7 +44,14 @@ export function sceneTitleForId(id: SceneId): string {
   return maybeSceneById(id)?.title ?? id;
 }
 
-/** Last applied construction presets that must survive Reset. */
+export function sceneControlsIdentity(
+  sceneId: SceneId,
+  generation: number,
+): string {
+  return `${sceneId}:${generation}`;
+}
+
+/** Last applied construction presets until Reset or scene switch clears the bag. */
 export function constructionEntriesForScene(
   scene: SceneRecord,
   values: Readonly<Record<string, string>>,
