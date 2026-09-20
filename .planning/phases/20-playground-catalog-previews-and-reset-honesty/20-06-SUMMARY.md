@@ -95,8 +95,6 @@ Each task was committed atomically:
 - **Verification:** `reviewer_identity: d82e8f2b-d7a5-4ad9-af0c-3a60f618cc6a`; not `34df4636-2d9d-4686-9139-f3cf3c05a52b`; `implementing_or_fixing_executor: no`
 - **Committed in:** `65aeb65`
 
----
-
 **Total deviations:** 1 auto-fixed (1 missing critical)
 **Impact on plan:** Required for D-11 / T-20-06-01. Digest, smoke, and WEB-01/WEB-03 inspection were unchanged.
 

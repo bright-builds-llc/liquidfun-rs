@@ -120,8 +120,6 @@ Each task was committed atomically:
 - **Verification:** Isolated re-run passed; `just web-player-smoke` exited 0, 37 passed.
 - **Committed in:** `9006371`
 
----
-
 **Total deviations:** 2 auto-fixed (1 bug, 1 blocking)
 **Impact on plan:** Required for WEB-03 native-rebuild proof and smoke exit 0. No `App.tsx` change. No Firefox/WebKit. No screenshot hashes.
 

@@ -98,8 +98,6 @@ Each task was committed atomically:
 - **Verification:** Isolated `traps repeated forward and reverse Tab navigation` and `tabs to a scene control` passed; both new preview tests passed in `just web-player-smoke`.
 - **Committed in:** `c508667` (Task 2)
 
----
-
 **Total deviations:** 1 auto-fixed (Rule 3)
 **Impact on plan:** Needed for existing keyboard smoke after 20-02 previews. No new browser matrix.
 
