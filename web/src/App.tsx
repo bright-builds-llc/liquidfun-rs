@@ -74,7 +74,7 @@ export function App() {
   const [lastPointerKind, setLastPointerKind] =
     createSignal<PointerKind | undefined>();
   const [pointerAccepted, setPointerAccepted] = createSignal(0);
-  const [resetGeneration] = createSignal(1);
+  const [resetGeneration, setResetGeneration] = createSignal(1);
 
   let generation = 0;
   let constructionValues: Record<string, string> = {};
@@ -399,6 +399,8 @@ export function App() {
       return;
     }
 
+    constructionValues = {};
+    setResetGeneration((current) => current + 1);
     void startScene(maybeReadyId);
   }
 
