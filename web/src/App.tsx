@@ -1,7 +1,7 @@
 import { createEffect, createSignal, onCleanup, Show } from "solid-js";
 
 import { maybeSceneById, type SceneId } from "./catalog/scenes";
-import { FallbackPanel, type FallbackPanelProps } from "./components/FallbackPanel";
+import { FallbackPanel } from "./components/FallbackPanel";
 import { PlaygroundShell } from "./components/PlaygroundShell";
 import { PlayerPanel } from "./components/PlayerPanel";
 import { PlayerSceneChrome } from "./components/PlayerSceneChrome";
@@ -31,25 +31,9 @@ import { maybeObservedFrame, playerStatus, type PlayerView } from "./player/view
 import { drawRenderFrame, resizeCanvasBackingStore } from "./render/canvas";
 import type { Camera } from "./render/camera";
 import { loadRenderMode, persistRenderMode, type RenderMode } from "./render/mode";
-import { normalizeSceneRoute, type SceneRoute } from "./routing/hash";
+import { normalizeSceneRoute } from "./routing/hash";
 
 const MILLISECONDS_PER_SECOND = 1000;
-
-function fallbackProps(route: SceneRoute): FallbackPanelProps {
-  if (route.kind === "empty") {
-    return { kind: "empty" };
-  }
-
-  if (route.kind === "unknown") {
-    return { kind: "unknown" };
-  }
-
-  const maybeScene = maybeSceneById(route.id);
-  return {
-    kind: "not-ready",
-    sceneTitle: maybeScene?.title ?? route.id,
-  };
-}
 
 /** One-session playground shell with hash routing and bounded playback. */
 export function App() {
@@ -580,7 +564,7 @@ export function App() {
       >
         <Show
           when={maybeCurrentSceneId()}
-          fallback={<FallbackPanel {...fallbackProps(route())} />}
+          fallback={<FallbackPanel />}
         >
           {(sceneId) => (
             <PlayerPanel
