@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Web Playground
 status: executing
-stopped_at: Completed 21-02-PLAN.md
-last_updated: "2026-09-20T20:21:36.449Z"
+stopped_at: Completed 21-03-PLAN.md
+last_updated: "2026-09-20T20:27:54.703Z"
 last_activity: 2026-09-20
 progress:
   total_phases: 6
   completed_phases: 5
   total_plans: 39
-  completed_plans: 37
-  percent: 95
+  completed_plans: 38
+  percent: 97
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-09-17)
 ## Current Position
 
 Phase: 21 (playground-leftover-cleanup) — EXECUTING
-Plan: 3 of 4
+Plan: 4 of 4
 Status: Ready to execute
 Last activity: 2026-09-20
 
@@ -77,6 +77,7 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 | Phase 20 P06 | 16min | 2 tasks | 1 files |
 | Phase 21 P01 | 3 min | 2 tasks | 3 files |
 | Phase 21 P02 | 2 min | 2 tasks | 3 files |
+| Phase 21 P03 | 4min | 2 tasks | 5 files |
 
 ### Decisions
 
@@ -195,6 +196,9 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 - [Phase 21]: Collapse FallbackPanel to a no-prop unknown-only component; delete empty and not-ready kinds, copy, and fallbackProps. — D-04 and D-05. Empty hashes already normalize to Dam Break; all six catalog ids are ready.
 - [Phase 21]: Keep empty-hash Dam Break normalizeSceneRoute replaceState; parser kind empty remains for tests and never renders FallbackPanel chrome. — D-06 forbids undoing empty-hash replacement.
 - [Phase 21]: Strengthen the existing unknown-hash Playwright test with locked body copy and absent Choose a scene; do not add a browser matrix. — D-05 and D-10. Product proof remains Chromium player smoke in Plan 21-04.
+- [Phase 21]: Confirm color_mixer.rs, dam_break.rs, and water_wheel.rs at 346/360/426 and leave them unedited. — D-07 and D-08: named parents already satisfy the 628-line gate after the eut tests.rs extraction. Further splits would risk recipe drift.
+- [Phase 21]: Split upstream_cli with path child modules like inventory_cli rather than a TSV exception. — D-09 and rust.md: integration-test crate roots cannot imply tests/upstream_cli/*.rs without path attributes. A TSV exception would hide the oversized file instead of splitting it.
+- [Phase 21]: Keep build_accepts_the_registered_playground_dam_break_bench as a fake-cmake registration test; do not run C++ timing. — D-09 and D-10: the registration test proves the xtask target allowlist. just playground-dam-break-bench remains out of v1.1 definition of done.
 
 ### Roadmap Evolution
 
@@ -230,6 +234,6 @@ No new milestone todos captured. Plan Phase 20 next.
 
 ## Session Continuity
 
-Last session: 2026-09-20T20:20:33.448Z
-Stopped at: Completed 21-02-PLAN.md
+Last session: 2026-09-20T20:27:41.068Z
+Stopped at: Completed 21-03-PLAN.md
 Resume file: None
