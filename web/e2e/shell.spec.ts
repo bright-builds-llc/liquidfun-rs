@@ -182,3 +182,18 @@ test("closes the drawer for an authoritative external hash route", async ({
     ),
   ).toBe(true);
 });
+
+test("shows six static previews in the desktop sidebar", async ({ page }) => {
+  // Arrange
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto(DAM_BREAK_PATH);
+
+  // Assert
+  await expect(page.locator(".catalog-card")).toHaveCount(0);
+  await expect(
+    page.locator(".demo-sidebar").getByText("Static preview", { exact: true }),
+  ).toHaveCount(6);
+  await expect(
+    page.locator(".demo-sidebar").locator("svg[aria-hidden='true']"),
+  ).toHaveCount(6);
+});
