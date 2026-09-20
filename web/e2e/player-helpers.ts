@@ -142,6 +142,81 @@ export async function openDesktopDemo(
   await expect(page).toHaveURL(new RegExp(`#/scene/${id}$`));
 }
 
+const RESET_RESTART_SLOT = "__liquidfunResetRestart";
+
+async function watchResetRestart(
+  page: Page,
+  seriesStep: number,
+): Promise<void> {
+  await page.evaluate(
+    ({ stepBeforeReset, resetStepCeiling, slotName }) => {
+      const maybeMain = document.querySelector("main");
+      if (maybeMain === null) {
+        throw new Error("main is missing");
+      }
+
+      Object.defineProperty(window, slotName, {
+        configurable: true,
+        value: Number.NaN,
+      });
+      const observer = new MutationObserver(() => {
+        const maybeRaw = maybeMain.getAttribute("data-step-index");
+        if (maybeRaw === null || !/^(0|[1-9]\d*)$/.test(maybeRaw)) {
+          return;
+        }
+
+        const maybeNext = Number(maybeRaw);
+        if (maybeNext < stepBeforeReset && maybeNext < resetStepCeiling) {
+          observer.disconnect();
+          Object.defineProperty(window, slotName, {
+            configurable: true,
+            value: maybeNext,
+          });
+        }
+      });
+      observer.observe(maybeMain, {
+        attributes: true,
+        attributeFilter: ["data-step-index"],
+      });
+      window.setTimeout(() => {
+        observer.disconnect();
+      }, 5_000);
+    },
+    {
+      stepBeforeReset: seriesStep,
+      resetStepCeiling: RESET_STEP_CEILING,
+      slotName: RESET_RESTART_SLOT,
+    },
+  );
+}
+
+async function readWatchedResetRestart(page: Page): Promise<number> {
+  const handle = await page.waitForFunction(
+    (slotName) => {
+      const maybeStep = Reflect.get(window, slotName);
+      return typeof maybeStep === "number" && Number.isFinite(maybeStep)
+        ? { step: maybeStep }
+        : undefined;
+    },
+    RESET_RESTART_SLOT,
+    { timeout: 5_000 },
+  );
+  const maybeResult = await handle.jsonValue();
+  await page.evaluate((slotName) => {
+    Reflect.deleteProperty(window, slotName);
+  }, RESET_RESTART_SLOT);
+  if (
+    typeof maybeResult !== "object" ||
+    maybeResult === null ||
+    !("step" in maybeResult) ||
+    typeof maybeResult.step !== "number"
+  ) {
+    throw new Error("Reset restart observer is missing");
+  }
+
+  return maybeResult.step;
+}
+
 export async function resetNearZero(page: Page): Promise<void> {
   const main = page.locator("main");
   await expect
@@ -149,9 +224,10 @@ export async function resetNearZero(page: Page): Promise<void> {
     .toBeGreaterThan(4);
 
   const seriesStep = await numericAttribute(main, "data-step-index");
+  await watchResetRestart(page, seriesStep);
   await page.getByRole("button", { name: "Reset scene" }).click();
+  const resetStep = await readWatchedResetRestart(page);
   await expect(page.getByRole("status")).toHaveText(PLAYING_STATUS);
-  const resetStep = await numericAttribute(main, "data-step-index");
   expect(resetStep).toBeLessThan(seriesStep);
   expect(resetStep).toBeLessThan(RESET_STEP_CEILING);
 }

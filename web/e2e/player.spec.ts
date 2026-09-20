@@ -84,12 +84,7 @@ test("loads Dam Break under the production base and exercises pause, play, and r
     .poll(() => numericAttribute(main, "data-step-index"))
     .toBeGreaterThan(pausedStep);
 
-  const seriesStep = await numericAttribute(main, "data-step-index");
-  await page.getByRole("button", { name: "Reset scene" }).click();
-  await expect(status).toHaveText(PLAYING_STATUS);
-  const resetStep = await numericAttribute(main, "data-step-index");
-  expect(resetStep).toBeLessThan(seriesStep);
-  expect(resetStep).toBeLessThan(RESET_STEP_CEILING);
+  await resetNearZero(page);
 });
 
 test("switches rendering without stepping and persists across scenes and reload", async ({

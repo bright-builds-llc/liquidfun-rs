@@ -19,7 +19,9 @@ this plan's files).
   Both new preview tests passed. Out of scope for 20-04 (`shell.spec.ts`
   preview locators only):
   - `player.spec.ts` Reset `RESET_STEP_CEILING` 8 received 29 after 20-03
-    keyed SceneControls remount. Diagnose in 20-05; do not treat as a
-    catalog-preview regression.
+    keyed SceneControls remount. Plan 20-05 diagnosed an actually-reset
+    world: `resetStep < seriesStep` passed while a later single-sample
+    read saw 4-step catch-up frames. `resetNearZero` now observes the
+    first restarted `data-step-index`.
   - `demo-media-clock.spec.ts` 240-frame capture exceeded the 30s
     Playwright timeout. Pre-existing media-clock flake under 3 workers.
