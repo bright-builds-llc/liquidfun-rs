@@ -78,4 +78,34 @@ describe("constructionEntriesForScene", () => {
       { name: "gravity", value: "low" },
     ]);
   });
+
+  it("emits no applyControl rows for an empty Dam Break bag", () => {
+    // Arrange
+    const maybeScene = maybeSceneById("dam-break");
+    expect(maybeScene).toBeDefined();
+    if (maybeScene === undefined) {
+      return;
+    }
+
+    // Act
+    const entries = constructionEntriesForScene(maybeScene, {});
+
+    // Assert
+    expect(entries).toEqual([]);
+  });
+
+  it("emits no applyControl rows for an empty Color Mixer bag", () => {
+    // Arrange
+    const maybeScene = maybeSceneById("color-mixer");
+    expect(maybeScene).toBeDefined();
+    if (maybeScene === undefined) {
+      return;
+    }
+
+    // Act
+    const entries = constructionEntriesForScene(maybeScene, {});
+
+    // Assert
+    expect(entries).toEqual([]);
+  });
 });
