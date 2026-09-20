@@ -8,7 +8,7 @@ use crate::scene::{
 };
 
 pub(crate) const MAX_ADVANCE_STEPS: u32 = 4;
-const MAX_FRAME_PARTICLES: usize = 512;
+const MAX_FRAME_PARTICLES: usize = 10240;
 const PARTICLE_POSITION_STRIDE: usize = 2;
 const PARTICLE_COLOR_STRIDE: usize = 4;
 const RIGID_SEGMENT_STRIDE: usize = 4;
@@ -315,6 +315,12 @@ mod tests {
     }
 
     #[test]
+    fn capture_uses_the_same_particle_cap_as_copied_frames() {
+        // Arrange / Act / Assert
+        assert_eq!(MAX_FRAME_PARTICLES, 10240);
+    }
+
+    #[test]
     fn create_dam_break_matches_documented_medium_normal_world() {
         // Arrange
         let session =
@@ -329,12 +335,12 @@ mod tests {
         assert_eq!(session.world.gravity().y.to_bits(), (-10.0_f32).to_bits());
         assert_eq!(diagnostics.body_count(), 2);
         assert_eq!(diagnostics.fixture_count(), 4);
-        assert_eq!(session.particle_count(), 192);
+        assert_eq!(session.particle_count(), 1920);
         assert_eq!(session.rigid_shape_count(), 4);
-        assert_eq!(frame.particle_count(), 192);
+        assert_eq!(frame.particle_count(), 1920);
         assert_eq!(
             frame.particle_colors(),
-            [57, 211, 199, 255].repeat(192).into_boxed_slice()
+            [57, 211, 199, 255].repeat(1920).into_boxed_slice()
         );
     }
 
@@ -345,7 +351,7 @@ mod tests {
             .expect("allowlisted Color Mixer should construct");
 
         // Assert
-        assert!((40..=220).contains(&session.particle_count()));
+        assert!((400..=2200).contains(&session.particle_count()));
     }
 
     #[test]
@@ -365,7 +371,7 @@ mod tests {
             SessionError::UnknownControl.message(),
             "Rust/WASM control is not allowlisted"
         );
-        assert_eq!(session.particle_count(), 192);
+        assert_eq!(session.particle_count(), 1920);
         assert_eq!(session.scene_id, SceneId::DamBreak);
         assert!(session.presets.is_empty());
     }
@@ -416,17 +422,20 @@ mod tests {
             .world
             .particle_system_snapshot(session.particle_system)
             .expect("proof particle system should remain live");
-        assert_eq!(system.definition().maximum_count(), Some(512));
-        assert_eq!(system.particle_count(), 192);
+        assert_eq!(system.definition().maximum_count(), Some(10240));
+        assert_eq!(system.particle_count(), 1920);
         assert_eq!(frame.step_index(), 0);
-        assert_eq!(frame.particle_count(), 192);
+        assert_eq!(frame.particle_count(), 1920);
         assert_eq!(frame.rigid_shape_count(), 4);
         assert_eq!(frame.rigid_segments().len(), 12);
         assert_eq!(frame.rigid_circles().len(), 3);
-        assert_eq!(frame.particle_radii(), vec![0.2; 192].into_boxed_slice());
+        assert_eq!(
+            frame.particle_radii(),
+            vec![0.06324555; 1920].into_boxed_slice()
+        );
         assert_eq!(
             frame.particle_colors(),
-            [57, 211, 199, 255].repeat(192).into_boxed_slice()
+            [57, 211, 199, 255].repeat(1920).into_boxed_slice()
         );
     }
 
@@ -472,9 +481,9 @@ mod tests {
         let frame = capture(&session);
 
         // Assert
-        assert_eq!(frame.particle_positions().len(), 192 * 2);
-        assert_eq!(frame.particle_colors().len(), 192 * 4);
-        assert_eq!(frame.particle_radii().len(), 192);
+        assert_eq!(frame.particle_positions().len(), 1920 * 2);
+        assert_eq!(frame.particle_colors().len(), 1920 * 4);
+        assert_eq!(frame.particle_radii().len(), 1920);
         assert!(
             frame
                 .particle_positions()

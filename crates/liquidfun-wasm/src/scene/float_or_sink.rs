@@ -13,13 +13,13 @@ use super::{
 };
 use crate::session::SessionError;
 
-const PARTICLE_RADIUS: f32 = 0.2;
-const PARTICLE_COLUMNS: u8 = 15;
-const PARTICLE_ROWS: u8 = 12;
-const PARTICLE_SPACING: f32 = 0.32;
+const PARTICLE_RADIUS: f32 = 0.06324555;
+const PARTICLE_COLUMNS: u8 = 45;
+const PARTICLE_ROWS: u8 = 40;
+const PARTICLE_SPACING: f32 = 0.101193;
 const PARTICLE_ORIGIN: Vec2 = Vec2::new(-2.24, 0.35);
 const PARTICLE_COLOR: ParticleColor = ParticleColor::new(57, 211, 199, 255);
-const MAXIMUM_PARTICLE_COUNT: usize = 384;
+const MAXIMUM_PARTICLE_COUNT: usize = 3840;
 const DROP_POSITION: Vec2 = Vec2::new(0.0, 6.0);
 const DROP_RADIUS: f32 = 0.5;
 const MAX_DROPPED_BODIES: usize = 4;
@@ -293,8 +293,8 @@ mod tests {
         let frame = capture(&session);
 
         // Assert
-        assert!((120..=220).contains(&session.particle_count()));
-        assert!(session.particle_count() <= 384);
+        assert_eq!(session.particle_count(), 1800);
+        assert!(session.particle_count() <= 3840);
         assert!(frame.particle_count() >= 1);
         assert!(frame.rigid_segments().len() >= 4);
         assert!(frame.rigid_circles().is_empty());
@@ -311,8 +311,8 @@ mod tests {
         let frame = capture(&session);
 
         // Assert
-        assert!(session.particle_count() <= 384);
-        assert!(frame.particle_count() <= 384);
+        assert!(session.particle_count() <= 3840);
+        assert!(frame.particle_count() <= 3840);
     }
 
     #[test]

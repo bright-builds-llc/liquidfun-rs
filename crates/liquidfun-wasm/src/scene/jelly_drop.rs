@@ -14,8 +14,8 @@ use super::{
 };
 use crate::session::SessionError;
 
-const PARTICLE_RADIUS: f32 = 0.16;
-const MAXIMUM_PARTICLE_COUNT: usize = 220;
+const PARTICLE_RADIUS: f32 = 0.050596;
+const MAXIMUM_PARTICLE_COUNT: usize = 2200;
 const JELLY_COLOR: ParticleColor = ParticleColor::new(244, 114, 182, 255);
 const JELLY_HALF_EXTENT: f32 = 1.2;
 const JELLY_CENTER: Vec2 = Vec2::new(0.0, 3.6);
@@ -336,8 +336,8 @@ mod tests {
         let frame = capture(&session);
 
         // Assert
-        assert!((8..=220).contains(&session.particle_count()));
-        assert!(session.particle_count() <= 512);
+        assert!((80..=2200).contains(&session.particle_count()));
+        assert!(session.particle_count() <= 10240);
         assert!(
             frame.rigid_segments().len() >= 8,
             "two rigid bars report at least eight segment floats"
@@ -380,7 +380,7 @@ mod tests {
 
         // Assert
         assert_eq!(after, before, "Jelly Drop must not emit extra particles");
-        assert!((8..=220).contains(&after));
+        assert!((80..=2200).contains(&after));
     }
 
     #[test]

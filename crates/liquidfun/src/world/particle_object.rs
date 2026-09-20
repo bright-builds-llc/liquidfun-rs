@@ -35,10 +35,13 @@ pub use group_mutation::ParticleGroupMutationError;
 const MAX_PARTICLE_COUNT: usize = i32::MAX as usize;
 const GROUP_SAMPLING_WORK_LIMIT: usize = 2_000_000;
 const GROUP_SAMPLE_LIMIT: usize = 65_536;
-const GROUP_TOPOLOGY_CELL_LIMIT: usize = 4_096;
-const GROUP_TOPOLOGY_QUEUE_LIMIT: usize = 16_384;
-const GROUP_TOPOLOGY_WORK_LIMIT: usize = 2_000_000;
-const GROUP_TOPOLOGY_NODE_LIMIT: usize = 8_192;
+/// Group-creation Voronoi budgets. Fine playground elastic groups (~10× denser
+/// than the original jelly blob) need more cells, queue slots, and work than
+/// the historical 4_096 / 16_384 / 2_000_000 / 8_192 quartet.
+const GROUP_TOPOLOGY_CELL_LIMIT: usize = 8_192;
+const GROUP_TOPOLOGY_QUEUE_LIMIT: usize = 32_768;
+const GROUP_TOPOLOGY_WORK_LIMIT: usize = 32_000_000;
+const GROUP_TOPOLOGY_NODE_LIMIT: usize = 16_384;
 
 /// Owned configuration and membership state for one live particle system.
 #[derive(Debug, Clone, Copy, PartialEq)]

@@ -141,7 +141,7 @@ mod tests {
             .expect("allowlisted Dam Break should construct");
 
         // Assert
-        assert_eq!(session.particle_count(), 192);
+        assert_eq!(session.particle_count(), 1920);
     }
 
     #[test]
@@ -173,7 +173,7 @@ mod tests {
             SessionError::UnknownControl.message(),
             "Rust/WASM control is not allowlisted"
         );
-        assert_eq!(core.particle_count(), 192);
+        assert_eq!(core.particle_count(), 1920);
     }
 
     #[test]
@@ -190,7 +190,7 @@ mod tests {
             SessionError::InvalidPointer.message(),
             "Rust/WASM pointer coordinates must be finite"
         );
-        assert_eq!(core.particle_count(), 192);
+        assert_eq!(core.particle_count(), 1920);
     }
 
     #[test]
@@ -207,7 +207,7 @@ mod tests {
             SessionError::UnknownControl.message(),
             "Rust/WASM control is not allowlisted"
         );
-        assert_eq!(core.particle_count(), 192);
+        assert_eq!(core.particle_count(), 1920);
     }
 
     #[test]

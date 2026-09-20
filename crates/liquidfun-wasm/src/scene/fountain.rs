@@ -13,11 +13,12 @@ use super::{
 };
 use crate::session::SessionError;
 
-const PARTICLE_RADIUS: f32 = 0.18;
-const MAXIMUM_PARTICLE_COUNT: usize = 320;
+const PARTICLE_RADIUS: f32 = 0.05692;
+const MAXIMUM_PARTICLE_COUNT: usize = 3200;
 const PARTICLE_LIFETIME: f32 = 3.0;
 const PARTICLE_COLOR: ParticleColor = ParticleColor::new(57, 211, 199, 255);
 const NOZZLE_POSITION: Vec2 = Vec2::new(0.0, 0.5);
+const EMIT_SPACING: f32 = 0.025298;
 const SLOW_LAUNCH_SPEED: f32 = 4.0;
 const MEDIUM_LAUNCH_SPEED: f32 = 8.0;
 const FAST_LAUNCH_SPEED: f32 = 12.0;
@@ -47,9 +48,9 @@ impl EmissionRate {
     fn particles_per_step(self) -> u8 {
         match self {
             Self::Off => 0,
-            Self::Low => 1,
-            Self::Medium => 2,
-            Self::High => 3,
+            Self::Low => 10,
+            Self::Medium => 20,
+            Self::High => 30,
         }
     }
 }
@@ -226,7 +227,7 @@ fn emit_stream(
     let velocity = aim_velocity(aim_from_up, speed);
     for index in 0..count {
         let position = Vec2::new(
-            NOZZLE_POSITION.x + f32::from(index) * 0.08,
+            NOZZLE_POSITION.x + f32::from(index) * EMIT_SPACING,
             NOZZLE_POSITION.y,
         );
         let Ok(definition) = ParticleDef::default()
@@ -348,7 +349,7 @@ mod tests {
     }
 
     #[test]
-    fn default_medium_stream_plateaus_at_or_below_three_hundred_twenty() {
+    fn default_medium_stream_plateaus_at_or_below_three_thousand_two_hundred() {
         // Arrange
         let mut session = SessionCore::create(SceneId::Fountain)
             .expect("Fountain should construct a bounded native stream");
@@ -360,10 +361,10 @@ mod tests {
         let end_count = capture(&session).particle_count();
 
         // Assert
-        assert!(end_count <= 320);
+        assert!(end_count <= 3200);
         assert!(
-            end_count <= mid_count + 2,
-            "count should plateau instead of climbing toward 512: {mid_count} -> {end_count}"
+            end_count <= mid_count + 20,
+            "count should plateau instead of climbing toward 10240: {mid_count} -> {end_count}"
         );
     }
 

@@ -151,15 +151,35 @@ describe("parseRenderFrame", () => {
     expect(parse).toThrow();
   });
 
-  it("rejects particle counts above 512", () => {
+  it("rejects particle counts above 10240", () => {
     // Arrange
-    const rawFrame = new FakeRawProofFrame({ particleCount: 513 });
+    const rawFrame = new FakeRawProofFrame({ particleCount: 10241 });
 
     // Act
     const parse = () => parseRenderFrame(rawFrame);
 
     // Assert
     expect(parse).toThrow();
+  });
+
+  it("accepts a well-formed 10240-particle fake frame", () => {
+    // Arrange
+    const particleCount = 10240;
+    const rawFrame = new FakeRawProofFrame({
+      particleCount,
+      particlePositions: new Float32Array(particleCount * 2).fill(1),
+      particleColors: new Uint8Array(particleCount * 4).fill(255),
+      particleRadii: new Float32Array(particleCount).fill(0.2),
+    });
+
+    // Act
+    const frame = parseRenderFrame(rawFrame);
+
+    // Assert
+    expect(frame.particleCount).toBe(10240);
+    expect(frame.particlePositions.length).toBe(10240 * 2);
+    expect(frame.particleColors.length).toBe(10240 * 4);
+    expect(frame.particleRadii.length).toBe(10240);
   });
 
   it("rejects segment counts above 16", () => {

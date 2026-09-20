@@ -207,7 +207,7 @@ test("runs Rust WASM, visibly moves, and freezes after disposal", async ({
   await expect(status).toHaveText(RUNNING_STATUS);
   const main = page.locator("main");
   await expect(main).toHaveAttribute("data-wasm-initialized", "true");
-  await expect(page.getByText("Particles: 192", { exact: true })).toBeVisible();
+  await expect(page.getByText("Particles: 1920", { exact: true })).toBeVisible();
   await expect(page.getByText("Rigid shapes: 4", { exact: true })).toBeVisible();
   await expect(page.getByText(RUNTIME_IDENTITY, { exact: true })).toBeVisible();
 
@@ -351,7 +351,7 @@ test("runs Rust WASM, visibly moves, and freezes after disposal", async ({
       disposed: disposedObservation,
     },
     counts: {
-      particles: 192,
+      particles: 1920,
       rigidShapes: 4,
     },
     assertions: {

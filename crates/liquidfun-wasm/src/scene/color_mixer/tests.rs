@@ -16,7 +16,7 @@ fn create_succeeds_with_two_distinct_mixing_colors() {
     let colors = frame.particle_colors();
 
     // Assert
-    assert!((40..=220).contains(&session.particle_count()));
+    assert!((400..=2200).contains(&session.particle_count()));
     assert!(
         colors_contain(colors.as_ref(), TEAL),
         "captured colors should include teal (57, 211, 199, 255)"

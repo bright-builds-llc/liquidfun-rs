@@ -7,13 +7,25 @@ fn default_create_is_still_medium_normal_basin() {
     // Arrange / Act
     let session = SessionCore::create(SceneId::DamBreak)
         .expect("Dam Break should construct the documented basin");
-    let super::BuiltScene { world, .. } =
-        super::build(&[]).expect("default presets should build Medium/Normal");
+    let super::BuiltScene {
+        world,
+        particle_system,
+        ..
+    } = super::build(&[]).expect("default presets should build Medium/Normal");
+    let frame = capture(&session);
+    let system = world
+        .particle_system_snapshot(particle_system)
+        .expect("Dam Break particle system should remain live");
 
     // Assert
-    assert_eq!(session.particle_count(), 192);
+    assert_eq!(session.particle_count(), 1920);
     assert_eq!(world.gravity().x.to_bits(), 0.0_f32.to_bits());
     assert_eq!(world.gravity().y.to_bits(), (-10.0_f32).to_bits());
+    assert_eq!(system.definition().maximum_count(), Some(10240));
+    assert_eq!(
+        frame.particle_radii(),
+        vec![0.06324555; 1920].into_boxed_slice()
+    );
 }
 
 #[test]
@@ -39,9 +51,9 @@ fn water_amount_presets_recreate_with_locked_counts() {
     assert!(small, "water-amount must return Recreated");
     assert!(large, "water-amount must return Recreated");
     assert!(medium, "water-amount must return Recreated");
-    assert_eq!(small_count, 64);
-    assert_eq!(large_count, 280);
-    assert_eq!(session.particle_count(), 192);
+    assert_eq!(small_count, 650);
+    assert_eq!(large_count, 2772);
+    assert_eq!(session.particle_count(), 1920);
 }
 
 #[test]

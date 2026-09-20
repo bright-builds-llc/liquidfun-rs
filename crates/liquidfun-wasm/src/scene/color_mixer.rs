@@ -14,8 +14,8 @@ use super::{
 };
 use crate::session::SessionError;
 
-const PARTICLE_RADIUS: f32 = 0.18;
-const MAXIMUM_PARTICLE_COUNT: usize = 220;
+const PARTICLE_RADIUS: f32 = 0.05692;
+const MAXIMUM_PARTICLE_COUNT: usize = 2200;
 const TEAL_COLOR: ParticleColor = ParticleColor::new(57, 211, 199, 255);
 const RED_COLOR: ParticleColor = ParticleColor::new(248, 113, 113, 255);
 const GROUP_RADIUS: f32 = 1.15;

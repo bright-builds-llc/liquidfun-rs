@@ -13,23 +13,23 @@ use super::{
 };
 use crate::session::SessionError;
 
-const PARTICLE_RADIUS: f32 = 0.2;
-const PARTICLE_COLUMNS: u8 = 16;
-const PARTICLE_ROWS: u8 = 12;
-/// Medium water amount remains the documented 16 * 12 basin.
-const PARTICLE_COUNT: usize = 16 * 12;
-const SMALL_PARTICLE_COLUMNS: u8 = 8;
-const SMALL_PARTICLE_ROWS: u8 = 8;
-const LARGE_PARTICLE_COLUMNS: u8 = 20;
-const LARGE_PARTICLE_ROWS: u8 = 14;
-const PARTICLE_SPACING: f32 = 0.32;
+const PARTICLE_RADIUS: f32 = 0.06324555;
+const PARTICLE_COLUMNS: u8 = 48;
+const PARTICLE_ROWS: u8 = 40;
+/// Medium water amount remains the documented 48 * 40 basin.
+const PARTICLE_COUNT: usize = 48 * 40;
+const SMALL_PARTICLE_COLUMNS: u8 = 25;
+const SMALL_PARTICLE_ROWS: u8 = 26;
+const LARGE_PARTICLE_COLUMNS: u8 = 63;
+const LARGE_PARTICLE_ROWS: u8 = 44;
+const PARTICLE_SPACING: f32 = 0.101193;
 const PARTICLE_ORIGIN: Vec2 = Vec2::new(-4.7, 0.4);
 const PARTICLE_COLOR: ParticleColor = ParticleColor::new(57, 211, 199, 255);
 const DYNAMIC_CIRCLE_RADIUS: f32 = 0.75;
 const DYNAMIC_CIRCLE_POSITION: Vec2 = Vec2::new(2.5, 5.5);
 const DROP_CIRCLE_POSITION: Vec2 = Vec2::new(2.5, 7.2);
 const DROP_WAKE_IMPULSE: Vec2 = Vec2::new(0.0, -0.1);
-const MAXIMUM_PARTICLE_COUNT: usize = 512;
+const MAXIMUM_PARTICLE_COUNT: usize = 10240;
 const LOW_GRAVITY: Vec2 = Vec2::new(0.0, -6.0);
 const NORMAL_GRAVITY: Vec2 = Vec2::new(0.0, -10.0);
 const HIGH_GRAVITY: Vec2 = Vec2::new(0.0, -16.0);
