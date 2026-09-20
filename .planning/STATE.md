@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Native Performance Closing
 status: executing
-stopped_at: Phase 22 context gathered
-last_updated: "2026-09-20T23:09:01.292Z"
-last_activity: 2026-09-20 -- Phase 22 planning complete
+stopped_at: Completed 22-01-PLAN.md
+last_updated: "2026-09-20T23:49:13.478Z"
+last_activity: 2026-09-20
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 6
-  completed_plans: 0
-  percent: 0
+  completed_plans: 1
+  percent: 17
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-09-20)
 
 **Core value:** Deliver a useful, independent Rust physics library for enjoyable experimentation, with honest limitations and a lightweight native development loop.
-**Current focus:** Phase 22 Observability shell — persist Dam Break pair + samply, no physics edits
+**Current focus:** Phase 22 — Observability shell
 
 ## Current Position
 
-Phase: 22 of 25 (Observability shell) — first of 4 v1.2 phases
-Plan: —
+Phase: 22 (Observability shell) — EXECUTING
+Plan: 2 of 6
 Status: Ready to execute
-Last activity: 2026-09-20 -- Phase 22 planning complete
+Last activity: 2026-09-20
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [██░░░░░░░░] 17%
 
 v1.2 Native Performance Closing. Gate is unprofiled `just playground-dam-break-bench` (Rust `--release` vs `oracle-release` Dam Break Medium ≤ 3×). Evidence dir `target/dam-break-perf/<utc-stamp>/`. v1.1 phase directories remain on disk. No package publication or release tag.
 
@@ -38,6 +38,7 @@ v1.2 Native Performance Closing. Gate is unprofiled `just playground-dam-break-b
 
 | Plan | Duration | Tasks | Files |
 | --- | --- | --- | --- |
+| Phase 22 P01 | 31 min | 2 tasks | 6 files |
 
 v1.1 plan durations remain in `.planning/milestones/v1.1-STATE.md`.
 
@@ -55,9 +56,14 @@ v1.1 plan durations remain in `.planning/milestones/v1.1-STATE.md`.
 
 v1.1 playground decisions remain in `.planning/milestones/v1.1-STATE.md` and PROJECT.md Key Decisions.
 
+- [Phase 22]: Keep dam-break-bench as the only playground subcommand; pair stays stdout-only until 22-02. — D-05: do not add profile or timer commands in 22-01.
+- [Phase 22]: Mint stamps with exclusive create_dir under target/dam-break-perf and bump one Unix second on AlreadyExists, capped at 8 attempts. — D-01 fail-closed mint; never remove_dir_all or merge into a pre-existing stamp.
+- [Phase 22]: Honor LIQUIDFUN_XTASK_GIT as a Command program path for git rev-parse HEAD. — Matches upstream tool_program pattern; unset env still runs git.
+- [Phase 22]: Do not mark PERF-PAIR complete in this plan; pair.json and pair.md persistence is 22-02. — 22-01 delivered the split and stamp core only.
+
 ### Pending Todos
 
-Plan Phase 22 (`/gsd-plan-phase 22` or discuss first). Phase 24 planning should wait for Phase 23 named shares.
+Execute 22-02 (`/gsd-execute-phase 22`). Phase 24 planning should wait for Phase 23 named shares.
 
 ### Blockers/Concerns
 
@@ -82,6 +88,6 @@ Plan Phase 22 (`/gsd-plan-phase 22` or discuss first). Phase 24 planning should 
 
 ## Session Continuity
 
-Last session: 2026-09-20T22:37:17.607Z
-Stopped at: Phase 22 context gathered
-Resume file: .planning/phases/22-observability-shell/22-CONTEXT.md
+Last session: 2026-09-20T23:48:12.473Z
+Stopped at: Completed 22-01-PLAN.md
+Resume file: None
