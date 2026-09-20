@@ -4,8 +4,7 @@ import { maybeSceneById, type SceneId } from "./catalog/scenes";
 import { FallbackPanel, type FallbackPanelProps } from "./components/FallbackPanel";
 import { PlaygroundShell } from "./components/PlaygroundShell";
 import { PlayerPanel } from "./components/PlayerPanel";
-import { SceneControls } from "./components/SceneControls";
-import { SceneCredits } from "./components/SceneCredits";
+import { PlayerSceneChrome } from "./components/PlayerSceneChrome";
 import {
   attachCanvasPointer,
   forwardScenePointer,
@@ -27,6 +26,7 @@ import {
   sceneTitleForId,
   titleForRoute,
 } from "./player/runtime";
+import { prefersReducedMotion, isUsableViewport } from "./player/viewport";
 import { maybeObservedFrame, playerStatus, type PlayerView } from "./player/view";
 import { drawRenderFrame, resizeCanvasBackingStore } from "./render/canvas";
 import type { Camera } from "./render/camera";
@@ -49,14 +49,6 @@ function fallbackProps(route: SceneRoute): FallbackPanelProps {
     kind: "not-ready",
     sceneTitle: maybeScene?.title ?? route.id,
   };
-}
-
-function prefersReducedMotion(): boolean {
-  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-}
-
-function isUsableViewport(width: number, height: number): boolean {
-  return Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0;
 }
 
 /** One-session playground shell with hash routing and bounded playback. */
@@ -82,6 +74,7 @@ export function App() {
   const [lastPointerKind, setLastPointerKind] =
     createSignal<PointerKind | undefined>();
   const [pointerAccepted, setPointerAccepted] = createSignal(0);
+  const [resetGeneration] = createSignal(1);
 
   let generation = 0;
   let constructionValues: Record<string, string> = {};
@@ -603,19 +596,14 @@ export function App() {
             >
               <Show when={maybeCurrentScene()}>
                 {(currentScene) => (
-                  <>
-                    <SceneControls
-                      controls={currentScene().controls}
-                      disabled={sceneControlsDisabled()}
-                      maybeValues={constructionValues}
-                      onApplyControl={applySceneControl}
-                      onApplyAction={applySceneAction}
-                    />
-                    <SceneCredits
-                      implementationPath={currentScene().credits.implementationPath}
-                      inspiration={currentScene().credits.inspiration}
-                    />
-                  </>
+                  <PlayerSceneChrome
+                    scene={currentScene()}
+                    resetGeneration={resetGeneration()}
+                    disabled={sceneControlsDisabled()}
+                    maybeValues={constructionValues}
+                    onApplyControl={applySceneControl}
+                    onApplyAction={applySceneAction}
+                  />
                 )}
               </Show>
             </PlayerPanel>
