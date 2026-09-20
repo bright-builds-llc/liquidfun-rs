@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Native Performance Closing
-status: roadmap_ready
-stopped_at: "v1.2 roadmap written; Phase 22 ready to plan"
-last_updated: "2026-09-20T22:28:00.000Z"
-last_activity: "2026-09-20"
+status: planning
+stopped_at: Phase 22 context gathered
+last_updated: "2026-09-20T22:37:17.610Z"
+last_activity: 2026-09-20 — Roadmap mapped 13 PERF-* requirements to phases 22–25
 progress:
   total_phases: 4
   completed_phases: 0
@@ -82,6 +82,6 @@ Plan Phase 22 (`/gsd-plan-phase 22` or discuss first). Phase 24 planning should 
 
 ## Session Continuity
 
-Last session: 2026-09-20T22:28:00.000Z
-Stopped at: v1.2 roadmap written; Phase 22 ready to plan
-Resume file: None
+Last session: 2026-09-20T22:37:17.607Z
+Stopped at: Phase 22 context gathered
+Resume file: .planning/phases/22-observability-shell/22-CONTEXT.md
