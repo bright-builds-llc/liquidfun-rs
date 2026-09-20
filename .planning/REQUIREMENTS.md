@@ -17,9 +17,9 @@ The owner approved six varied demos, our own Rust engine via WASM, a playful gal
 
 ### Playful catalog and player
 
-- [x] **WEB-01**: A visitor can browse six demo cards with names, short descriptions and previews, then open a selected demo in a shared player.
+- [ ] **WEB-01**: A visitor can browse six demo cards with names, short descriptions and previews, then open a selected demo in a shared player.
 - [x] **WEB-02**: A visitor can share and reload a stable demo URL under the repository's GitHub Pages path; an unknown scene identifier returns a useful catalog/fallback view.
-- [x] **WEB-03**: A visitor can play, pause and reset the selected demo to its documented initial state.
+- [ ] **WEB-03**: A visitor can play, pause and reset the selected demo to its documented initial state.
 - [x] **WEB-04**: Each demo exposes a small set of labeled, bounded controls and clearly indicates when changing a setting resets the scene.
 - [x] **WEB-05**: A visitor can use mouse or touch for each demo's documented interaction without leaving a stuck pointer or preventing ordinary scrolling outside the player.
 - [x] **WEB-06**: WASM loading and simulation startup show visible progress or loading status, useful failure feedback, and a working retry/reset path instead of a blank canvas.
@@ -56,7 +56,7 @@ Splash pinball, jelly obstacle courses, fluid-powered factories, wave/surf toys 
 
 ## Traceability
 
-Each active requirement maps to exactly one new phase, starting at Phase 16. All requirements are pending until implemented and verified.
+Each active requirement maps to exactly one phase. WEB-01 and WEB-03 were reopened for Phase 20 after the 2026-09-20 milestone audit.
 
 | Requirement | Phase | Status |
 | --- | --- | --- |
@@ -64,9 +64,9 @@ Each active requirement maps to exactly one new phase, starting at Phase 16. All
 | WASM-02 | Phase 16 | Complete |
 | WASM-03 | Phase 16 | Complete |
 | WASM-04 | Phase 17 | Complete |
-| WEB-01 | Phase 18 | Complete |
+| WEB-01 | Phase 20 | Pending |
 | WEB-02 | Phase 17 | Complete |
-| WEB-03 | Phase 17 | Complete |
+| WEB-03 | Phase 20 | Pending |
 | WEB-04 | Phase 18 | Complete |
 | WEB-05 | Phase 19 | Complete |
 | WEB-06 | Phase 17 | Complete |
@@ -83,4 +83,4 @@ Each active requirement maps to exactly one new phase, starting at Phase 16. All
 | HOST-03 | Phase 17 | Complete |
 | WEBTEST-01 | Phase 19 | Complete |
 
-**Coverage:** 22 requirements; 22 mapped exactly once; 0 unmapped.
+**Coverage:** 22 requirements; 20 complete, 2 pending; 22 mapped exactly once; 0 unmapped.

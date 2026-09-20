@@ -8,7 +8,7 @@
 
 **Goal:** Let visitors explore six playful SolidJS demos powered by this repository's Rust engine through WebAssembly, with GitHub Pages delivery on every push to main.
 
-The 22 approved requirements form four complete delivery boundaries. Although configuration selects fine granularity, further splitting would separate the shared player from its first hosted experience or fragment the six-scene catalog. Earlier phase directories and the v1.0 archive remain unchanged. No package publication, external physics substitution or strict native qualification is required.
+The 22 approved requirements originally formed four delivery boundaries. A 2026-09-20 milestone audit found two post-gate UI fidelity gaps plus leftover cleanup; Phases 20 and 21 close that debt before v1.1 completion. Earlier phase directories and the v1.0 archive remain unchanged. No package publication, external physics substitution or strict native qualification is required.
 
 ## Phases
 
@@ -16,6 +16,8 @@ The 22 approved requirements form four complete delivery boundaries. Although co
 - [x] **Phase 17: Shared Player and Early Pages Delivery** — Play one working scene on GitHub Pages with reliable navigation, lifecycle and automatic delivery. (completed 2026-09-17)
 - [x] **Phase 18: Six Native Physics Demos** — Explore the complete approved catalog with real physics, bounded controls and source credits. (completed 2026-09-18)
 - [x] **Phase 19: Interaction Polish and Browser Verification** — Use all six demos comfortably across pointer, keyboard and narrow-screen paths, verified in the built and hosted site. (completed 2026-09-19)
+- [ ] **Phase 20: Playground catalog previews and Reset honesty** — Restore in-app demo previews and honest live-control labels after Reset.
+- [ ] **Phase 21: Playground leftover cleanup** — Remove dead player/proof leftovers and split oversized WASM scene files.
 
 ## Phase Details
 
@@ -41,7 +43,7 @@ Planning should prove target/runtime compatibility with ordinary unprofiled step
 ### Phase 17: Shared Player and Early Pages Delivery
 **Goal**: Visitors can open, control and reload a working first scene on the actual GitHub Pages site, and new main pushes deliver a matching site/WASM artifact reliably.
 **Depends on**: Phase 16
-**Requirements**: WASM-04, WEB-02, WEB-03, WEB-06, HOST-01, HOST-02, HOST-03
+**Requirements**: WASM-04, WEB-02, WEB-06, HOST-01, HOST-02, HOST-03
 **Success Criteria** (what must be TRUE):
   1. A visitor opens and reloads a stable scene URL under the real Pages project path with functioning JS/WASM assets; an unknown scene identifier provides a useful fallback. The deployed URL and source revision are recorded.
   2. The shared SolidJS player runs a useful first scene, supports play/pause/reset to its documented initial state, and presents visible loading, actionable failures and a working retry/reset path.
@@ -66,7 +68,7 @@ Deploy the thin working slice early. Label incomplete catalog entries honestly u
 ### Phase 18: Six Native Physics Demos
 **Goal**: Visitors can choose six distinct, persistent physics scenes and experiment with each scene's real Rust behavior through a small, understandable control surface.
 **Depends on**: Phase 17
-**Requirements**: WEB-01, WEB-04, WEB-08, DEMO-01, DEMO-02, DEMO-03, DEMO-04, DEMO-05, DEMO-06
+**Requirements**: WEB-04, WEB-08, DEMO-01, DEMO-02, DEMO-03, DEMO-04, DEMO-05, DEMO-06
 **Success Criteria** (what must be TRUE):
   1. The catalog presents Dam Break, Fountain, Float or Sink, Color Mixer, Jelly Drop and Water Wheel with names, descriptions and previews; each opens its working scene in the shared player with labeled, bounded controls and explicit reset-on-change behavior.
   2. Dam Break releases water into a basin with an interactive obstacle and repeatable reset; Fountain allows stream aiming or adjustment while lifetime/capacity limits make particle population plateau.
@@ -111,9 +113,42 @@ Plans:
 - [x] 19-06-PLAN.md — Chromium player smoke for pointer, 375px, and cleanup
 - [x] 19-07-PLAN.md — Live Pages six-hash evidence and independent AI review
 
+### Phase 20: Playground catalog previews and Reset honesty
+**Goal:** Visitors can browse six in-app demo entries with names, descriptions and visual previews, then Reset a playing scene to its documented initial physics and matching live-control labels.
+**Depends on:** Phase 19
+**Requirements**: WEB-01, WEB-03
+**Gap Closure:** Closes the v1.1 milestone-audit post-gate catalog-preview and Reset→SceneControls label gaps.
+**Success Criteria** (what must be TRUE):
+  1. The in-app catalog presents Dam Break, Fountain, Float or Sink, Color Mixer, Jelly Drop and Water Wheel with names, short descriptions and visual previews; each still opens the shared player through the existing hash route.
+  2. The owner-approved responsive Kobalte / semantic-HTML shell remains; restoring previews must not revive the old card layout that broke narrow widths.
+  3. Play, pause and Reset still rebuild the native world to the documented initial state, and live preset selects show that initial value after Reset instead of a stale pendingValue.
+  4. Focused Chromium smoke covers visible catalog previews and Reset label honesty for representative live presets.
+**Plans:** 0 plans
+**UI hint**: yes
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 20 to break down)
+
+Keep README gallery WebPs as a documentation gallery, not a substitute for in-app previews. Do not treat Dam Break headless speed versus C++ as this phase's work.
+
+### Phase 21: Playground leftover cleanup
+**Goal:** Remove dead playground chrome and proof leftovers, and bring the three oversized WASM scene files under the Bright Builds file-length gate without changing scene behavior.
+**Depends on:** Phase 20
+**Requirements**: none — leftover cleanup with no milestone requirement reassignment
+**Gap Closure:** Closes the v1.1 milestone-audit unused-proof, dead-FallbackPanel, and scene file-length leftovers.
+**Success Criteria** (what must be TRUE):
+  1. `loadProofSession` is removed or used; the opt-in `rust-wasm-proof.spec.ts` is either folded into ordinary documented smoke or kept as an explicit opt-in with no unused helper.
+  2. Dead `FallbackPanel` empty/not-ready branches are removed or made reachable from a real unknown/empty hash path.
+  3. `color_mixer.rs`, `dam_break.rs` and `water_wheel.rs` satisfy Bright Builds `file-lengths` without changing public scene behavior, controls, or particle recipes.
+  4. Playground Dam Break headless speed versus pinned C++ remains out of this phase and out of v1.1 definition of done.
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 21 to break down)
+
 ## Progress
 
-Execution order: **16 → 17 → 18 → 19**. Each phase includes focused checks of its own visible outcome; Phase 19 verifies the completed experience rather than postponing all browser testing until the end.
+Execution order: **16 → 17 → 18 → 19 → 20 → 21**. Phases 16–19 remain complete. Gap-closure phases restore post-audit UI fidelity and leftover cleanup before re-audit.
 
 | Phase | Plans Complete | Status | Completed |
 | --- | --- | --- | --- |
@@ -121,9 +156,11 @@ Execution order: **16 → 17 → 18 → 19**. Each phase includes focused checks
 | 17. Shared Player and Early Pages Delivery | 8/8 | Complete    | 2026-09-17 |
 | 18. Six Native Physics Demos | 10/10 | Complete    | 2026-09-18 |
 | 19. Interaction Polish and Browser Verification | 7/7 | Complete    | 2026-09-19 |
+| 20. Playground catalog previews and Reset honesty | 0/0 | Not started | |
+| 21. Playground leftover cleanup | 0/0 | Not started | |
 
 ## Coverage and Planning Basis
 
-All **22/22 requirements** map to exactly one phase: Phase 16 has 3, Phase 17 has 7, Phase 18 has 9 and Phase 19 has 3. No orphaned or duplicate assignments. See [REQUIREMENTS.md](REQUIREMENTS.md) for pending traceability and [research/v1.1/SUMMARY.md](research/v1.1/SUMMARY.md) for the evidence and unverified integration risks.
+All **22/22 requirements** map to exactly one phase: Phase 16 has 3, Phase 17 has 6, Phase 18 has 8, Phase 19 has 3 and Phase 20 has 2. Phase 21 is leftover cleanup with no requirement IDs. WEB-01 and WEB-03 are pending gap closure. No orphaned or duplicate assignments. See [REQUIREMENTS.md](REQUIREMENTS.md) for pending traceability, [v1.1-MILESTONE-AUDIT.md](v1.1-MILESTONE-AUDIT.md) for the audit, and [research/v1.1/SUMMARY.md](research/v1.1/SUMMARY.md) for earlier research.
 
-Local hobby scope in AGENTS.md and standards-overrides.md takes precedence over historical certification gates. AGENTS.bright-builds.md, the managed architecture and frontend standards, and the TypeScript/JavaScript guidance inform the thin browser boundary, dark-default SolidJS experience and source/provenance disclosure. Later UI planning will produce the design contract; this roadmap does not claim implementation, deployment or browser compatibility is already verified.
+Local hobby scope in AGENTS.md and standards-overrides.md takes precedence over historical certification gates. AGENTS.bright-builds.md, the managed architecture and frontend standards, and the TypeScript/JavaScript guidance inform the thin browser boundary, dark-default SolidJS experience and source/provenance disclosure. Phase 20 UI planning must keep the Kobalte Dialog / semantic HTML shell recorded in standards-overrides.md.

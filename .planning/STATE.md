@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Web Playground
-status: verifying
-stopped_at: Phase 19 complete
-last_updated: "2026-09-20T05:16:00Z"
+status: planning
+stopped_at: Gap closure phases 20-21 added
+last_updated: "2026-09-20T17:35:00Z"
 last_activity: 2026-09-20
 progress:
-  total_phases: 4
+  total_phases: 6
   completed_phases: 4
   total_plans: 29
   completed_plans: 29
-  percent: 100
+  percent: 67
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-09-17)
 
 **Core value:** Deliver a useful, independent Rust physics library for enjoyable experimentation, with honest limitations and a lightweight native development loop.
-**Current focus:** Phase 19 — Interaction Polish and Browser Verification
+**Current focus:** Phase 20 — Playground catalog previews and Reset honesty
 
 ## Current Position
 
-Phase: 19
+Phase: 20
 Plan: Not started
-Status: Phase complete — ready for verification
-Last activity: 2026-09-20 - Completed quick task 260919-wbn: Raise webapp particle frame cap 20x to 10240 and increase scene particle counts about 10x, packing finer so world volumes stay similar
+Status: Gap closure phases added — ready to plan
+Last activity: 2026-09-20 - Added Phases 20 and 21 from the v1.1 milestone audit (catalog previews, Reset control honesty, leftover cleanup)
 
-Progress: [██████████] 100% of currently planned v1.1 plans complete.
+Progress: [██████░░░░] 67% of v1.1 phases complete (4/6). Existing plans 29/29 remain complete.
 
 The prior 16 phases and 252 plans remain archived history. New work starts at Phase 16. The owner confirmed six interactive demos using our Rust engine via WASM, playful catalog/player controls and automatic GitHub Pages deployment from main.
 
@@ -164,9 +164,14 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 - [Phase 19]: Independent AI review acknowledges digest a297f33179b980d55d4ba64378f93edaf842ed5990b43a6eda6bbbba5f9c6fef; the implementing executor does not approve its own work.
 - [Phase 19]: No crate/npm publish and no release tag.
 
+### Roadmap Evolution
+
+- Phase 20 added: Playground catalog previews and Reset honesty (v1.1 audit gap closure for WEB-01 and WEB-03)
+- Phase 21 added: Playground leftover cleanup (unused proof helper, dead FallbackPanel branches, scene file-lengths)
+
 ### Pending Todos
 
-No new milestone todos captured. Phase 17 is ready for discussion and planning.
+No new milestone todos captured. Plan Phase 20 next.
 
 ### Blockers/Concerns
 
@@ -193,6 +198,6 @@ No new milestone todos captured. Phase 17 is ready for discussion and planning.
 
 ## Session Continuity
 
-Last session: 2026-09-19T02:45:55.763Z
-Stopped at: Phase 19 complete
-Resume file: .planning/phases/19-interaction-polish-and-browser-verification/19-VERIFICATION.md
+Last session: 2026-09-20T17:35:00Z
+Stopped at: Gap closure phases 20-21 added
+Resume file: .planning/ROADMAP.md
