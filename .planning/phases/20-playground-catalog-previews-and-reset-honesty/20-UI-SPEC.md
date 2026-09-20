@@ -1,10 +1,11 @@
 ---
 phase: 20
 slug: playground-catalog-previews-and-reset-honesty
-status: draft
+status: approved
 shadcn_initialized: false
 preset: none
 created: 2026-09-20
+reviewed_at: 2026-09-20T17:50:00Z
 ---
 
 # Phase 20 — UI Design Contract
@@ -77,7 +78,7 @@ Use exactly four public sizes and two weights:
 
 Do not introduce a display face, web font, all-caps paragraph text, or weights other than 400 and 600. Do **not** add a 12px preview caption (research sketch only). The `Static preview` caption uses the 14px caption role.
 
-Pre-existing shell exception, not a new Phase 20 size: `.demo-nav-description` remains **13px / 400 / 1.4** as shipped on 2026-09-19. This phase must not change that rule and must not add any other extra size.
+Pre-existing shell exception, not a new Phase 20 size: `.demo-nav-description` remains **13px / 400 / 1.4** as shipped on 2026-09-19. Keep that frozen shell rule; do not restyle it to 14px, and do not use 13px on new Phase 20 copy (the `Static preview` caption stays 14px). This phase must not add any other extra size.
 
 The site heading is the only `h1` (`liquidfun-rs`). The player, fallback, or drawer title is the only heading at `h2`/Dialog.Title rank on a given view. Demo titles stay styled spans (`.demo-nav-title`), not headings. Sidebar `aria-label` is `Demos`; drawer title is `Demos`. Do not restore a `Scenes` catalog `h2`. Allow wrapping; never truncate, marquee, or shrink below this scale.
 
@@ -278,6 +279,8 @@ Source: `docs/superpowers/plans/2026-09-19-responsive-playground-shell.md`, live
 ---
 
 ## Catalog Previews (WEB-01)
+
+The 16:9 player canvas is the playing-screen focal point. Compact 72px `Static preview` frames stay subordinate still illustrations in the sidebar and drawer.
 
 Every approved id stays a list entry in catalog order: Dam Break, Fountain, Float or Sink, Color Mixer, Jelly Drop, Water Wheel. Entries never own a WASM session.
 
