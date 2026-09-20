@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Web Playground
 status: executing
-stopped_at: Completed 20-02-PLAN.md
-last_updated: "2026-09-20T18:17:26.234Z"
+stopped_at: Completed 20-03-PLAN.md
+last_updated: "2026-09-20T18:23:26.041Z"
 last_activity: 2026-09-20
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 35
-  completed_plans: 31
-  percent: 89
+  completed_plans: 32
+  percent: 91
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-09-17)
 ## Current Position
 
 Phase: 20 (playground-catalog-previews-and-reset-honesty) — EXECUTING
-Plan: 3 of 6
+Plan: 4 of 6
 Status: Ready to execute
 Last activity: 2026-09-20
 
@@ -71,6 +71,7 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 | Phase 19-interaction-polish-and-browser-verification P07 | 10min | 2 tasks | 6 files |
 | Phase 20 P01 | 2 min | 2 tasks | 3 files |
 | Phase 20 P02 | 2min | 2 tasks | 3 files |
+| Phase 20 P03 | 4min | 2 tasks | 3 files |
 
 ### Decisions
 
@@ -171,6 +172,9 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 - [Phase 20]: Restore f054135 ScenePreview geometries with a classless SVG so .demo-nav-preview owns the compact frame. — Compact demo-nav CSS must style the SVG; catalog-preview was the deleted card class.
 - [Phase 20]: Keep Static preview caption in DemoNavigation, not inside ScenePreview, so the helper stays illustration-only. — D-03 caption is list-item copy; dual mounts must not introduce SVG ids.
 - [Phase 20]: Add only .demo-nav-preview* rules; do not restore .catalog-card or the three-column card grid. — D-04 keeps the Kobalte shell; card grid broke narrow widths.
+- [Phase 20]: Start resetGeneration at 1 and pass sceneControlsIdentity into Show keyed; never pass a raw generation number. — A raw generation number is falsy at 0 and would unmount SceneControls.
+- [Phase 20]: recreateScene assigns constructionValues = {} then bumps resetGeneration then startScene. — D-08 requires construction selects to return to documented initials after Reset.
+- [Phase 20]: Keep SceneCredits outside the keyed Show so credits do not remount with selects. — Only PresetControl pendingValue needs a remount; credits have no snapshot state.
 
 ### Roadmap Evolution
 
@@ -206,6 +210,6 @@ No new milestone todos captured. Plan Phase 20 next.
 
 ## Session Continuity
 
-Last session: 2026-09-20T18:17:26.231Z
-Stopped at: Completed 20-02-PLAN.md
+Last session: 2026-09-20T18:23:26.038Z
+Stopped at: Completed 20-03-PLAN.md
 Resume file: None
