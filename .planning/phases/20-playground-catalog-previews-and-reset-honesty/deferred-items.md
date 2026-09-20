@@ -14,3 +14,12 @@ this plan's files).
   cap on `web/src/App.tsx` (617 lines). The same pre-existing
   `tools/xtask/tests/upstream_cli.rs` finding remains; do not split that
   test in this Reset-honesty plan.
+
+- Plan 20-04 `just web-player-smoke` exited 1 with 27 passed / 3 failed.
+  Both new preview tests passed. Out of scope for 20-04 (`shell.spec.ts`
+  preview locators only):
+  - `player.spec.ts` Reset `RESET_STEP_CEILING` 8 received 29 after 20-03
+    keyed SceneControls remount. Diagnose in 20-05; do not treat as a
+    catalog-preview regression.
+  - `demo-media-clock.spec.ts` 240-frame capture exceeded the 30s
+    Playwright timeout. Pre-existing media-clock flake under 3 workers.

@@ -17,7 +17,7 @@ The owner approved six varied demos, our own Rust engine via WASM, a playful gal
 
 ### Playful catalog and player
 
-- [ ] **WEB-01**: A visitor can browse six demo cards with names, short descriptions and previews, then open a selected demo in a shared player.
+- [x] **WEB-01**: A visitor can browse six demo cards with names, short descriptions and previews, then open a selected demo in a shared player.
 - [x] **WEB-02**: A visitor can share and reload a stable demo URL under the repository's GitHub Pages path; an unknown scene identifier returns a useful catalog/fallback view.
 - [x] **WEB-03**: A visitor can play, pause and reset the selected demo to its documented initial state.
 - [x] **WEB-04**: Each demo exposes a small set of labeled, bounded controls and clearly indicates when changing a setting resets the scene.
@@ -64,7 +64,7 @@ Each active requirement maps to exactly one phase. WEB-01 and WEB-03 were reopen
 | WASM-02 | Phase 16 | Complete |
 | WASM-03 | Phase 16 | Complete |
 | WASM-04 | Phase 17 | Complete |
-| WEB-01 | Phase 20 | Pending |
+| WEB-01 | Phase 20 | Complete |
 | WEB-02 | Phase 17 | Complete |
 | WEB-03 | Phase 20 | Complete |
 | WEB-04 | Phase 18 | Complete |

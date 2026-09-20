@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Web Playground
 status: executing
-stopped_at: Completed 20-03-PLAN.md
-last_updated: "2026-09-20T18:23:26.041Z"
+stopped_at: Completed 20-04-PLAN.md
+last_updated: "2026-09-20T18:44:53.743Z"
 last_activity: 2026-09-20
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 35
-  completed_plans: 32
-  percent: 91
+  completed_plans: 33
+  percent: 94
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-09-17)
 ## Current Position
 
 Phase: 20 (playground-catalog-previews-and-reset-honesty) — EXECUTING
-Plan: 4 of 6
+Plan: 5 of 6
 Status: Ready to execute
 Last activity: 2026-09-20
 
@@ -72,6 +72,7 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 | Phase 20 P01 | 2 min | 2 tasks | 3 files |
 | Phase 20 P02 | 2min | 2 tasks | 3 files |
 | Phase 20 P03 | 4min | 2 tasks | 3 files |
+| Phase 20 P04 | 20min | 2 tasks | 2 files |
 
 ### Decisions
 
@@ -175,6 +176,9 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 - [Phase 20]: Start resetGeneration at 1 and pass sceneControlsIdentity into Show keyed; never pass a raw generation number. — A raw generation number is falsy at 0 and would unmount SceneControls.
 - [Phase 20]: recreateScene assigns constructionValues = {} then bumps resetGeneration then startScene. — D-08 requires construction selects to return to documented initials after Reset.
 - [Phase 20]: Keep SceneCredits outside the keyed Show so credits do not remount with selects. — Only PresetControl pendingValue needs a remount; credits have no snapshot state.
+- [Phase 20]: Scope desktop Static preview counts to .demo-sidebar so dual DemoNavigation cannot count 12.
+- [Phase 20]: Keep mobile preview asserts on getByRole dialog named Demos, not .demo-sidebar.
+- [Phase 20]: Pause playing scenes before Tab-heavy drawer and 375px checks so compact previews cannot starve keyboard smoke.
 
 ### Roadmap Evolution
 
@@ -210,6 +214,6 @@ No new milestone todos captured. Plan Phase 20 next.
 
 ## Session Continuity
 
-Last session: 2026-09-20T18:23:26.038Z
-Stopped at: Completed 20-03-PLAN.md
+Last session: 2026-09-20T18:44:53.739Z
+Stopped at: Completed 20-04-PLAN.md
 Resume file: None
