@@ -8,8 +8,3 @@ export async function loadSceneSession(sceneId: string): Promise<ProofSession> {
   await init({ module_or_path: wasmUrl });
   return new ProofSession(sceneId);
 }
-
-/** Dam Break wrapper so the Phase 17 player keeps compiling. */
-export async function loadProofSession(): Promise<ProofSession> {
-  return loadSceneSession("dam-break");
-}
