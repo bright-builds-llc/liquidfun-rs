@@ -33,8 +33,12 @@ pub(super) fn run(args: &[String]) -> Result<(), PlaygroundError> {
     let cpp_sample = run_cpp_bench(&repository_root, &counts)?;
     validate_sample(&rust_sample, RUST_ENGINE, &counts)?;
     validate_sample(&cpp_sample, CPP_ENGINE, &counts)?;
+    let ratio = rust_over_cpp_ratio(rust_sample.wall_ms, cpp_sample.wall_ms)?;
     let identity = host_identity(&repository_root);
-    print!("{}", render_markdown(&identity, &rust_sample, &cpp_sample));
+    print!(
+        "{}",
+        render_markdown(&identity, &rust_sample, &cpp_sample, ratio)
+    );
     Ok(())
 }
 
@@ -176,50 +180,94 @@ fn validate_sample(
     Ok(())
 }
 
-#[allow(dead_code)]
-fn rust_over_cpp_ratio(_rust_wall_ms: f64, _cpp_wall_ms: f64) -> Result<f64, PlaygroundError> {
-    Ok(0.0)
+const UNREVIEWED_DISCLAIMER: &str = "Unreviewed local playground Dam Break sample. Not a public performance claim and not Phase 12 evidence.";
+
+fn rust_over_cpp_ratio(rust_wall_ms: f64, cpp_wall_ms: f64) -> Result<f64, PlaygroundError> {
+    if !cpp_wall_ms.is_finite() || cpp_wall_ms <= 0.0 {
+        return Err(PlaygroundError::new(
+            "bench",
+            format!("C++ wall_ms must be finite and greater than 0, got {cpp_wall_ms}"),
+        ));
+    }
+    if !rust_wall_ms.is_finite() {
+        return Err(PlaygroundError::new(
+            "bench",
+            format!("Rust wall_ms must be finite, got {rust_wall_ms}"),
+        ));
+    }
+    Ok(rust_wall_ms / cpp_wall_ms)
 }
 
 #[allow(dead_code)]
 fn pair_report_json(
-    _stamp: &str,
-    _identity: &HostIdentity,
-    _rust: &BenchSample,
-    _cpp: &BenchSample,
-    _ratio: f64,
+    stamp: &str,
+    identity: &HostIdentity,
+    rust: &BenchSample,
+    cpp: &BenchSample,
+    ratio: f64,
 ) -> serde_json::Value {
-    serde_json::json!({ "samply": true })
+    serde_json::json!({
+        "kind": "unprofiled_pair",
+        "timing_authority": "unprofiled_wall_clock",
+        "disclaimer": UNREVIEWED_DISCLAIMER,
+        "stamp": stamp,
+        "git_head": identity.git_head,
+        "os": identity.os,
+        "arch": identity.arch,
+        "cpu_brand": identity.cpu_brand,
+        "logical_cores": identity.logical_cores,
+        "particles": rust.particles,
+        "warmup_steps": rust.warmup_steps,
+        "measured_steps": rust.measured_steps,
+        "rust": engine_report(rust),
+        "cpp": engine_report(cpp),
+        "rust_over_cpp_ratio": ratio,
+    })
+}
+
+fn engine_report(sample: &BenchSample) -> serde_json::Value {
+    serde_json::json!({
+        "engine": sample.engine,
+        "wall_ms": sample.wall_ms,
+        "ms_per_step": sample.ms_per_step,
+        "steps_per_s": sample.steps_per_s,
+        "realtime_factor": sample.realtime_factor,
+        "compiler": sample.compiler,
+    })
 }
 
 fn render_markdown(
     identity: &HostIdentity,
     rust_sample: &BenchSample,
     cpp_sample: &BenchSample,
+    ratio: f64,
 ) -> String {
     format!(
         concat!(
-            "Unreviewed local playground Dam Break sample. Not a public performance claim and not Phase 12 evidence.\n\n",
-            "- git HEAD: `{}`\n",
-            "- OS/arch: `{}` / `{}`\n",
-            "- CPU: `{}`\n",
-            "- logical cores: `{}`\n",
-            "- warmup steps: `{}`\n",
-            "- measured steps: `{}`\n\n",
+            "{disclaimer}\n\n",
+            "- git HEAD: `{git_head}`\n",
+            "- OS/arch: `{os}` / `{arch}`\n",
+            "- CPU: `{cpu}`\n",
+            "- logical cores: `{cores}`\n",
+            "- warmup steps: `{warmup}`\n",
+            "- measured steps: `{measured}`\n\n",
             "| Engine | Particles | Wall ms | ms/step | steps/s | Realtime factor | Compiler |\n",
             "| ------ | --------- | ------- | ------- | ------- | --------------- | -------- |\n",
-            "{}\n",
-            "{}\n"
+            "{rust_row}\n",
+            "{cpp_row}\n",
+            "\nRust/C++ wall-ms ratio: `{ratio:.2}`\n"
         ),
-        identity.git_head,
-        identity.os,
-        identity.arch,
-        identity.cpu_brand,
-        identity.logical_cores,
-        rust_sample.warmup_steps,
-        rust_sample.measured_steps,
-        markdown_row(rust_sample, "native Rust"),
-        markdown_row(cpp_sample, "pinned C++")
+        disclaimer = UNREVIEWED_DISCLAIMER,
+        git_head = identity.git_head,
+        os = identity.os,
+        arch = identity.arch,
+        cpu = identity.cpu_brand,
+        cores = identity.logical_cores,
+        warmup = rust_sample.warmup_steps,
+        measured = rust_sample.measured_steps,
+        rust_row = markdown_row(rust_sample, "native Rust"),
+        cpp_row = markdown_row(cpp_sample, "pinned C++"),
+        ratio = ratio,
     )
 }
 
@@ -299,7 +347,7 @@ mod tests {
         let cpp_sample = sample("pinned_cpp", "AppleClang 17.0.0", 6_000.0);
 
         // Act
-        let markdown = render_markdown(&identity, &rust_sample, &cpp_sample);
+        let markdown = render_markdown(&identity, &rust_sample, &cpp_sample, 31_200.0 / 6_000.0);
 
         // Assert
         assert!(markdown.contains("Unreviewed local playground Dam Break sample"));
@@ -325,7 +373,7 @@ mod tests {
         let cpp_sample = sample("pinned_cpp", "AppleClang 17.0.0", 6_000.0);
 
         // Act
-        let markdown = render_markdown(&identity, &rust_sample, &cpp_sample);
+        let markdown = render_markdown(&identity, &rust_sample, &cpp_sample, 31_200.0 / 6_000.0);
 
         // Assert
         assert!(markdown.contains("Rust/C++"));
@@ -341,7 +389,11 @@ mod tests {
         let ratio = rust_over_cpp_ratio(31_200.0, 6_000.0).expect("finite C++ wall should divide");
 
         // Assert
-        assert_eq!(ratio, 31_200.0 / 6_000.0);
+        let expected = 31_200.0 / 6_000.0;
+        assert!(
+            (ratio - expected).abs() <= f64::EPSILON,
+            "ratio {ratio} should equal rust.wall_ms / cpp.wall_ms ({expected})"
+        );
     }
 
     #[test]
