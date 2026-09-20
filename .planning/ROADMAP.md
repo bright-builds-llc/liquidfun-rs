@@ -161,11 +161,11 @@ Execution order: **16 → 17 → 18 → 19 → 20 → 21**. Phases 16–19 remai
 | 17. Shared Player and Early Pages Delivery | 8/8 | Complete    | 2026-09-17 |
 | 18. Six Native Physics Demos | 10/10 | Complete    | 2026-09-18 |
 | 19. Interaction Polish and Browser Verification | 7/7 | Complete    | 2026-09-19 |
-| 20. Playground catalog previews and Reset honesty | 6/6 | Complete   | 2026-09-20 |
+| 20. Playground catalog previews and Reset honesty | 6/6 | Complete    | 2026-09-20 |
 | 21. Playground leftover cleanup | 0/0 | Not started | |
 
 ## Coverage and Planning Basis
 
-All **22/22 requirements** map to exactly one phase: Phase 16 has 3, Phase 17 has 6, Phase 18 has 8, Phase 19 has 3 and Phase 20 has 2. Phase 21 is leftover cleanup with no requirement IDs. WEB-01 and WEB-03 are pending gap closure. No orphaned or duplicate assignments. See [REQUIREMENTS.md](REQUIREMENTS.md) for pending traceability, [v1.1-MILESTONE-AUDIT.md](v1.1-MILESTONE-AUDIT.md) for the audit, and [research/v1.1/SUMMARY.md](research/v1.1/SUMMARY.md) for earlier research.
+All **22/22 requirements** map to exactly one phase: Phase 16 has 3, Phase 17 has 6, Phase 18 has 8, Phase 19 has 3 and Phase 20 has 2. Phase 21 is leftover cleanup with no requirement IDs. WEB-01 and WEB-03 are complete after Phase 20 gap closure. No orphaned or duplicate assignments. See [REQUIREMENTS.md](REQUIREMENTS.md) for pending traceability, [v1.1-MILESTONE-AUDIT.md](v1.1-MILESTONE-AUDIT.md) for the audit, and [research/v1.1/SUMMARY.md](research/v1.1/SUMMARY.md) for earlier research.
 
 Local hobby scope in AGENTS.md and standards-overrides.md takes precedence over historical certification gates. AGENTS.bright-builds.md, the managed architecture and frontend standards, and the TypeScript/JavaScript guidance inform the thin browser boundary, dark-default SolidJS experience and source/provenance disclosure. Phase 20 UI planning must keep the Kobalte Dialog / semantic HTML shell recorded in standards-overrides.md.

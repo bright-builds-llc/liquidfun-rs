@@ -56,7 +56,7 @@ Splash pinball, jelly obstacle courses, fluid-powered factories, wave/surf toys 
 
 ## Traceability
 
-Each active requirement maps to exactly one phase. WEB-01 and WEB-03 were reopened for Phase 20 after the 2026-09-20 milestone audit.
+Each active requirement maps to exactly one phase. WEB-01 and WEB-03 were closed by Phase 20 after the 2026-09-20 milestone audit.
 
 | Requirement | Phase | Status |
 | --- | --- | --- |
@@ -83,4 +83,4 @@ Each active requirement maps to exactly one phase. WEB-01 and WEB-03 were reopen
 | HOST-03 | Phase 17 | Complete |
 | WEBTEST-01 | Phase 19 | Complete |
 
-**Coverage:** 22 requirements; 20 complete, 2 pending; 22 mapped exactly once; 0 unmapped.
+**Coverage:** 22 requirements; 22 complete, 0 pending; 22 mapped exactly once; 0 unmapped.
