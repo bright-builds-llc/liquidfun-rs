@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Web Playground
 status: executing
-stopped_at: Phase 21 context gathered
-last_updated: "2026-09-20T20:11:02.429Z"
-last_activity: 2026-09-20 -- Phase 21 planning complete
+stopped_at: Completed 21-01-PLAN.md
+last_updated: "2026-09-20T20:16:30.008Z"
+last_activity: 2026-09-20
 progress:
   total_phases: 6
   completed_phases: 5
   total_plans: 39
-  completed_plans: 35
-  percent: 90
+  completed_plans: 36
+  percent: 92
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-09-17)
 
 **Core value:** Deliver a useful, independent Rust physics library for enjoyable experimentation, with honest limitations and a lightweight native development loop.
-**Current focus:** Phase 20 — playground-catalog-previews-and-reset-honesty
+**Current focus:** Phase 21 — playground-leftover-cleanup
 
 ## Current Position
 
-Phase: 21
-Plan: Not started
+Phase: 21 (playground-leftover-cleanup) — EXECUTING
+Plan: 2 of 4
 Status: Ready to execute
-Last activity: 2026-09-20 -- Phase 21 planning complete
+Last activity: 2026-09-20
 
-Progress: [██████░░░░] 67% of v1.1 phases complete (4/6). Existing plans 29/29 remain complete.
+Progress: [█████████░] 92%
 
 The prior 16 phases and 252 plans remain archived history. New work starts at Phase 16. The owner confirmed six interactive demos using our Rust engine via WASM, playful catalog/player controls and automatic GitHub Pages deployment from main.
 
@@ -75,6 +75,7 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 | Phase 20 P04 | 20min | 2 tasks | 2 files |
 | Phase 20 P05 | 22min | 2 tasks | 6 files |
 | Phase 20 P06 | 16min | 2 tasks | 1 files |
+| Phase 21 P01 | 3 min | 2 tasks | 3 files |
 
 ### Decisions
 
@@ -187,6 +188,9 @@ The prior 16 phases and 252 plans remain archived history. New work starts at Ph
 - [Phase 20]: Independent AI review acknowledges digest 7e94fe28c89308f16cb00a0e30543bf447b9cc7ac468e1f6b32c50aa4096535f; the implementing executor does not approve its own work. — D-11 and the 2026-09-16 owner policy require a separate identified AI reviewer bound to an exact digest. Passing just web-player-smoke is not the acknowledgment.
 - [Phase 20]: Digest is SHA-256 of concatenated listed file bytes in 20-06-PLAN.md order; passing just web-player-smoke is not the acknowledgment. — Record the exact cat | shasum -a 256 command so a later reviewer can recompute the same 64-hex digest.
 - [Phase 20]: No crate/npm publish, no release tag, and no new GitHub Pages URL. — D-11 local Chromium smoke is sufficient; publication remains separately unauthorized.
+- [Phase 21]: Delete unused loadProofSession with no compatibility alias; keep generated ProofSession. — D-01. App already constructs worlds through loadSceneSession; generated ProofSession is not renamed.
+- [Phase 21]: Leave rust-wasm-proof.spec.ts out of test:player; do not fold Dispose-session or PNG-hash into just web-player-smoke. — D-02. Product Chromium gate stays the four-file test:player allowlist.
+- [Phase 21]: Document just web-smoke as historical Phase 16 forensic chrome, not the v1.1 product gate. — D-03. Forensic smoke is not expected to pass against current Play/Pause/Reset chrome.
 
 ### Roadmap Evolution
 
@@ -222,6 +226,6 @@ No new milestone todos captured. Plan Phase 20 next.
 
 ## Session Continuity
 
-Last session: 2026-09-20T19:48:11.599Z
-Stopped at: Phase 21 context gathered
-Resume file: .planning/phases/21-playground-leftover-cleanup/21-CONTEXT.md
+Last session: 2026-09-20T20:16:12.682Z
+Stopped at: Completed 21-01-PLAN.md
+Resume file: None
