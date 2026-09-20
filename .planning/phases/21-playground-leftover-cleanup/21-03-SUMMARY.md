@@ -104,7 +104,7 @@ Each task was committed atomically:
 - **Verification:** `rg -n "^mod verify;|^mod configure;|^mod build;|^mod failures;"` matches all four; 19 `upstream_cli` tests pass.
 - **Committed in:** `7820067` (Task 1)
 
----
+***
 
 **Total deviations:** 1 auto-fixed (1 blocking)
 **Impact on plan:** Required for the split to compile. No CLI behavior, argv, env-var, or scene-recipe change.
