@@ -37,7 +37,7 @@ const GROUP_SAMPLING_WORK_LIMIT: usize = 2_000_000;
 const GROUP_SAMPLE_LIMIT: usize = 65_536;
 /// Group-creation Voronoi budgets. Fine playground elastic groups (~10× denser
 /// than the original jelly blob) need more cells, queue slots, and work than
-/// the historical 4_096 / 16_384 / 2_000_000 / 8_192 quartet.
+/// the historical `4_096` / `16_384` / `2_000_000` / `8_192` quartet.
 const GROUP_TOPOLOGY_CELL_LIMIT: usize = 8_192;
 const GROUP_TOPOLOGY_QUEUE_LIMIT: usize = 32_768;
 const GROUP_TOPOLOGY_WORK_LIMIT: usize = 32_000_000;

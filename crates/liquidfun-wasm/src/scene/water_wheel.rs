@@ -19,7 +19,7 @@ const PADDLE_INNER: f32 = 0.35;
 const PADDLE_OUTER: f32 = 1.7;
 const PADDLE_HALF_WIDTH: f32 = 0.14;
 const WHEEL_DENSITY: f32 = 0.45;
-const PARTICLE_RADIUS: f32 = 0.050596;
+const PARTICLE_RADIUS: f32 = 0.050_596;
 const MAXIMUM_PARTICLE_COUNT: usize = 3200;
 const PARTICLE_LIFETIME: f32 = 3.0;
 const PARTICLE_COLOR: ParticleColor = ParticleColor::new(57, 211, 199, 255);
@@ -29,7 +29,7 @@ const WEAK_JET_SPEED: f32 = 4.0;
 const MEDIUM_JET_SPEED: f32 = 8.0;
 const STRONG_JET_SPEED: f32 = 12.0;
 const EMIT_PER_STEP: u8 = 20;
-const EMIT_SPACING: f32 = 0.044272;
+const EMIT_SPACING: f32 = 0.044_272;
 const PADDLE_LOCAL_SEGMENTS: [[Vec2; 2]; 4] = [
     [Vec2::new(PADDLE_INNER, 0.0), Vec2::new(PADDLE_OUTER, 0.0)],
     [Vec2::new(0.0, PADDLE_INNER), Vec2::new(0.0, PADDLE_OUTER)],

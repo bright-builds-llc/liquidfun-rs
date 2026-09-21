@@ -13,7 +13,7 @@ use super::{
 };
 use crate::session::SessionError;
 
-const PARTICLE_RADIUS: f32 = 0.06324555;
+const PARTICLE_RADIUS: f32 = 0.063_245_55;
 const PARTICLE_COLUMNS: u8 = 48;
 const PARTICLE_ROWS: u8 = 40;
 /// Medium water amount remains the documented 48 * 40 basin.
@@ -22,7 +22,7 @@ const SMALL_PARTICLE_COLUMNS: u8 = 25;
 const SMALL_PARTICLE_ROWS: u8 = 26;
 const LARGE_PARTICLE_COLUMNS: u8 = 63;
 const LARGE_PARTICLE_ROWS: u8 = 44;
-const PARTICLE_SPACING: f32 = 0.101193;
+const PARTICLE_SPACING: f32 = 0.101_193;
 const PARTICLE_ORIGIN: Vec2 = Vec2::new(-4.7, 0.4);
 const PARTICLE_COLOR: ParticleColor = ParticleColor::new(57, 211, 199, 255);
 const DYNAMIC_CIRCLE_RADIUS: f32 = 0.75;

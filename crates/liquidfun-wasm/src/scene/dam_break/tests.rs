@@ -68,7 +68,7 @@ fn default_create_is_still_medium_normal_basin() {
     assert_eq!(system.definition().maximum_count(), Some(10240));
     assert_eq!(
         frame.particle_radii(),
-        vec![0.06324555; 1920].into_boxed_slice()
+        vec![0.063_245_55; 1920].into_boxed_slice()
     );
 }
 

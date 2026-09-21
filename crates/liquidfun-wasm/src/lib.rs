@@ -223,10 +223,12 @@ mod tests {
     fn pointer_action_exists_on_proof_session() {
         // Arrange / Act
         // Native tests cannot construct JsError; assert the wasm-bindgen method exists.
-        let _method: fn(&mut ProofSession, String, f32, f32) -> Result<(), JsError> =
+        let method: fn(&mut ProofSession, String, f32, f32) -> Result<(), JsError> =
             ProofSession::pointer_action;
-
-        // Assert
-        let _js_name = "pointerAction";
+        assert_eq!(
+            core::mem::size_of_val(&method),
+            core::mem::size_of::<fn(&mut ProofSession, String, f32, f32) -> Result<(), JsError>>()
+        );
+        assert_eq!("pointerAction", "pointerAction");
     }
 }

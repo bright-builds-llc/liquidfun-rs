@@ -455,7 +455,7 @@ mod tests {
         assert_eq!(frame.rigid_circles().len(), 3);
         assert_eq!(
             frame.particle_radii(),
-            vec![0.06324555; 1920].into_boxed_slice()
+            vec![0.063_245_55; 1920].into_boxed_slice()
         );
         assert_eq!(
             frame.particle_colors(),

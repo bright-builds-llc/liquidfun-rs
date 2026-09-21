@@ -13,10 +13,10 @@ use super::{
 };
 use crate::session::SessionError;
 
-const PARTICLE_RADIUS: f32 = 0.06324555;
+const PARTICLE_RADIUS: f32 = 0.063_245_55;
 const PARTICLE_COLUMNS: u8 = 45;
 const PARTICLE_ROWS: u8 = 40;
-const PARTICLE_SPACING: f32 = 0.101193;
+const PARTICLE_SPACING: f32 = 0.101_193;
 const PARTICLE_ORIGIN: Vec2 = Vec2::new(-2.24, 0.35);
 const PARTICLE_COLOR: ParticleColor = ParticleColor::new(57, 211, 199, 255);
 const MAXIMUM_PARTICLE_COUNT: usize = 3840;

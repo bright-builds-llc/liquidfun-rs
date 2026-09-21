@@ -14,7 +14,7 @@ use super::{
 };
 use crate::session::SessionError;
 
-const PARTICLE_RADIUS: f32 = 0.050596;
+const PARTICLE_RADIUS: f32 = 0.050_596;
 const MAXIMUM_PARTICLE_COUNT: usize = 2200;
 const JELLY_COLOR: ParticleColor = ParticleColor::new(244, 114, 182, 255);
 const JELLY_HALF_EXTENT: f32 = 1.2;
