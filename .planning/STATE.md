@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Native Performance Closing
 status: executing
-stopped_at: Completed 22-04-PLAN.md
-last_updated: "2026-09-21T00:26:33.041Z"
+stopped_at: Completed 22-05-PLAN.md
+last_updated: "2026-09-21T00:43:30.307Z"
 last_activity: 2026-09-21
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 6
-  completed_plans: 4
-  percent: 67
+  completed_plans: 5
+  percent: 83
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: `.planning/PROJECT.md` (updated 2026-09-20)
 ## Current Position
 
 Phase: 22 (Observability shell) — EXECUTING
-Plan: 5 of 6
+Plan: 6 of 6
 Status: Ready to execute
 Last activity: 2026-09-21
 
-Progress: [███████░░░] 67%
+Progress: [████████░░] 83%
 
 v1.2 Native Performance Closing. Gate is unprofiled `just playground-dam-break-bench` (Rust `--release` vs `oracle-release` Dam Break Medium ≤ 3×). Evidence dir `target/dam-break-perf/<utc-stamp>/`. v1.1 phase directories remain on disk. No package publication or release tag.
 
@@ -42,6 +42,7 @@ v1.2 Native Performance Closing. Gate is unprofiled `just playground-dam-break-b
 | Phase 22 P02 | 9 min | 2 tasks | 4 files |
 | Phase 22 P03 | 8 min | 2 tasks | 3 files |
 | Phase 22 P04 | 9 min | 2 tasks | 6 files |
+| Phase 22 P05 | 13 min | 2 tasks | 11 files |
 
 v1.1 plan durations remain in `.planning/milestones/v1.1-STATE.md`.
 
@@ -75,10 +76,14 @@ v1.1 playground decisions remain in `.planning/milestones/v1.1-STATE.md` and PRO
 - [Phase 22]: Profile cargo uses --profile profiling and never cargo run --release; samply argv never starts with cargo. — D-08/D-10/Pitfall 3: named profiling profile keeps the unprofiled --release gate binary unchanged.
 - [Phase 22]: Missing samply (LIQUIDFUN_XTASK_SAMPLY at a nonexistent path) fails closed with 0.13.1 install text and writes no rust.json.gz. — D-09/T-22-04-06: success tests inject fake samply; fail-closed tests use a missing production lookup path.
 - [Phase 22]: profile-identity.json is kind samply_cpu with not_timing_authority true; the stamp has no pair.json. — D-03: profiled wall times must never become the 3x number or enter pair.json.
+- [Phase 22]: dam-break-timers is a separate native binary; dam-break-bench still calls only ordinary advance/World::step. — D-10/D-11: step_profiled must not contaminate the unprofiled 3x gate process.
+- [Phase 22]: just playground-dam-break-timers is a one-line cargo xtask alias with no cmake or samply flags. — D-06/D-07: just remains a one-line printer; xtask owns cargo and stamp persist.
+- [Phase 22]: A fake timers run writes timers.json into a new stamp with not_timing_authority true and no pair.json. — D-04/D-10: timer walls are diagnostic only and must never become the 3x number.
+- [Phase 22]: MAX_ADVANCE_STEPS remains 4; measured steps loop advance_profiled(1). — Pitfall 6: do not pass 600 as a single advance count.
 
 ### Pending Todos
 
-Execute 22-05 (`/gsd-execute-phase 22`). Phase 24 planning should wait for Phase 23 named shares.
+Execute 22-06 (`/gsd-execute-phase 22`). Phase 24 planning should wait for Phase 23 named shares.
 
 ### Blockers/Concerns
 
@@ -103,6 +108,6 @@ Execute 22-05 (`/gsd-execute-phase 22`). Phase 24 planning should wait for Phase
 
 ## Session Continuity
 
-Last session: 2026-09-21T00:26:20.169Z
-Stopped at: Completed 22-04-PLAN.md
+Last session: 2026-09-21T00:43:03.399Z
+Stopped at: Completed 22-05-PLAN.md
 Resume file: None
