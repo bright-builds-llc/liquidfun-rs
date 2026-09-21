@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Native Performance Closing
 status: executing
-stopped_at: Completed 23-04-PLAN.md
-last_updated: "2026-09-21T03:42:55.467Z"
+stopped_at: Completed 23-02-PLAN.md
+last_updated: "2026-09-21T03:59:39.866Z"
 last_activity: 2026-09-21
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 15
-  completed_plans: 8
-  percent: 53
+  completed_plans: 9
+  percent: 60
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-09-20)
 ## Current Position
 
 Phase: 23 (Baseline pair and named audit) — EXECUTING
-Plan: 2 of 9
+Plan: 3 of 9
 Status: Ready to execute
 Last activity: 2026-09-21
 
@@ -48,6 +48,7 @@ v1.2 Native Performance Closing. Gate is unprofiled `just playground-dam-break-b
 v1.1 plan durations remain in `.planning/milestones/v1.1-STATE.md`.
 | Phase 23 P01 | 8 min | 2 tasks | 7 files |
 | Phase 23 P04 | 5 min | 2 tasks | 3 files |
+| Phase 23 P02 | 14 min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -93,6 +94,10 @@ v1.1 playground decisions remain in `.planning/milestones/v1.1-STATE.md` and PRO
 - [Phase 23]: Honor LIQUIDFUN_DHAT_HEAP_FILE as an OsString path; unset env may use Profiler::new_heap(). — Pitfall 7: production xtask in 23-05 must set the env to a stamp path so dhat-heap.json does not land in the repo root.
 - [Phase 23]: Do not mark PERF-HEAP complete in 23-04; xtask heap spawn and run-or-skip remain 23-05 and 23-08. — This plan only makes the optional feature compile. Checking PERF-HEAP off before the dump command and audit skip path exist would be false.
 - [Phase 23]: pair.rs cargo argv stays --release without --features so the gate binary stays uninstrumented. — Pitfall 3/D-15: enabling dhat-heap on --release would replace target/release/dam-break-bench. Heap spawn uses --profile profiling in 23-05.
+- [Phase 23]: Copy pair.json, pair.md, rust.json.gz, and *syms* sidecars with fs::copy into a new exclusive stamp; never move or overwrite sources. — D-04: Phase 22 writes pair and profile into sibling stamps. Phase 23 must copy, never merge or overwrite.
+- [Phase 23]: Split bundle helpers into bundle/ops.rs so every playground file stays ≤628 physical lines. — Combined GREEN file hit 763 lines; foo.rs plus foo/ keeps the Bright Builds cap without a TSV exception.
+- [Phase 23]: Do not mark PERF-AUDIT complete in this plan; the named-function audit remains 23-07. — This plan only ships the copy-only bundle command. Checking PERF-AUDIT off before named notes exist would be false.
+- [Phase 23]: Run playground unit tests as cargo test -p xtask playground::bundle because xtask has no lib target. — Same as Phase 22: cargo test --lib fails with no library targets found in package xtask.
 
 ### Pending Todos
 
@@ -121,6 +126,6 @@ Verify Phase 22 (`/gsd-verify-work 22`); independent AI review. Phase 24 plannin
 
 ## Session Continuity
 
-Last session: 2026-09-21T03:42:42.792Z
-Stopped at: Completed 23-04-PLAN.md
+Last session: 2026-09-21T03:59:39.863Z
+Stopped at: Completed 23-02-PLAN.md
 Resume file: None
