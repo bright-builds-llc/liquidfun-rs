@@ -77,6 +77,10 @@ impl<T, H: HandleIdentity> Arena<T, H> {
         }
     }
 
+    pub(crate) fn replace_with_empty(&mut self) -> Self {
+        std::mem::replace(self, Self::new(self.world, self.max_slots))
+    }
+
     pub(crate) fn insert(&mut self, value: T) -> Result<H, ArenaInsertError> {
         self.insert_with_scope(value, None)
     }

@@ -1,6 +1,6 @@
 //! Boundary-tail execution kept as one staged candidate.
 
-use crate::math::settings;
+use crate::math::{Vec2, settings};
 use crate::particle::solver::boundary::{
     BoundaryCandidate, barrier_candidate, collision_candidate, integrate_candidate,
     mark_rigid_projection, wall_candidate,
@@ -65,6 +65,7 @@ impl<H: CollisionDecisionHook> SystemPassExecutor<'_, '_, H> {
             time_step,
             iteration,
             self.hook_run,
+            Vec2::new(diameter, diameter),
         )?;
         let candidate = collision_candidate(
             source,

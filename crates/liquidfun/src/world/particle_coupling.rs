@@ -33,8 +33,8 @@ impl World {
         let backup_groups = self.particle_groups.clone();
         let result = (|| {
             self.run_particle_lifecycle_step(configuration.time_step(), hook_run)?;
-            let mut candidate_bodies = self.bodies.clone();
-            let mut candidate_systems = self.particle_systems.clone();
+            let mut candidate_bodies = self.bodies.replace_with_empty();
+            let mut candidate_systems = self.particle_systems.replace_with_empty();
             let system_order = self.particle_system_order.clone();
             for system in system_order {
                 let mut executor = SystemPassExecutor::new(
@@ -97,8 +97,8 @@ impl World {
         time_step: f32,
         particle_iteration: u32,
         hook_run: &mut ContactHookRun<'_, H>,
+        expansion: Vec2,
     ) -> Result<Vec<FilteredCollisionHit>, StepError> {
-        let expansion = particle_diameter_expansion(self, candidate.owner);
         let fixtures = ccd_fixture_records(self, bodies, expansion)?;
         let mut hits = Vec::new();
         for (particle, (position, velocity)) in candidate
@@ -254,16 +254,6 @@ struct CcdFixtureRecord {
     is_circle: bool,
     shape: Shape,
     children: Vec<(ChildIndex, Option<Aabb>)>,
-}
-
-fn particle_diameter_expansion(world: &World, system: ParticleSystemId) -> Vec2 {
-    let radius = world
-        .particle_systems
-        .get(system)
-        .expect("boundary candidate retains a live particle system")
-        .definition
-        .radius();
-    Vec2::new(2.0 * radius, 2.0 * radius)
 }
 
 fn ccd_fixture_records(
