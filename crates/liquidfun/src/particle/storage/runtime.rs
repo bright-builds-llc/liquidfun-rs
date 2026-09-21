@@ -239,18 +239,19 @@ impl ParticleStorage {
         &mut self,
         contacts: &[SemanticParticleContact],
     ) -> Result<(), ParticleStorageError> {
-        let particle_contacts = contacts
-            .iter()
-            .map(|contact| {
-                let [first, second] = contact.particles();
-                Ok(ParticleContact {
-                    indices: [self.resolve_live(first)?, self.resolve_live(second)?],
-                    flags: contact.flags(),
-                    weight: contact.weight(),
-                    normal: contact.normal(),
-                })
-            })
-            .collect::<Result<Vec<_>, ParticleStorageError>>()?;
+        let mut particle_contacts = Vec::new();
+        particle_contacts
+            .try_reserve_exact(contacts.len())
+            .map_err(|_error| ParticleStorageError::InvalidLaneBundle)?;
+        for contact in contacts {
+            let [first, second] = contact.particles();
+            particle_contacts.push(ParticleContact {
+                indices: [self.resolve_live(first)?, self.resolve_live(second)?],
+                flags: contact.flags(),
+                weight: contact.weight(),
+                normal: contact.normal(),
+            });
+        }
         self.particle_contacts = particle_contacts;
         self.recompute_weights();
         debug_assert_eq!(self.check_invariants(), Ok(()));

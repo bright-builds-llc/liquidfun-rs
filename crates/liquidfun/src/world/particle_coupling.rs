@@ -199,10 +199,13 @@ impl World {
         let view = ParticleSystemView::new(&record.storage);
         let neighborhood =
             ParticleNeighborhood::from_view(&view, diameter).map_err(StepError::ParticleProxy)?;
-        let previous = record.storage.semantic_particle_contacts();
-        let update = ParticleContactUpdate::generate(&view, &neighborhood, &previous, |contact| {
-            hook_run.should_collide_particle_pair(contact)
-        })
+        let previous = view.stored_particle_contacts();
+        let update = ParticleContactUpdate::generate_from_stored(
+            &view,
+            &neighborhood,
+            previous,
+            |contact| hook_run.should_collide_particle_pair(contact),
+        )
         .map_err(StepError::ParticleContact)?;
         hook_run.ensure_lifecycle_capacity(update.effects().len())?;
         for effect in update.effects().iter().copied() {

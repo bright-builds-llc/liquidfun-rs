@@ -220,8 +220,11 @@ fn refresh_candidate_contacts(system: &mut ParticleSystem) -> Result<(), CreateO
     let view = ParticleSystemView::new(&system.storage);
     let neighborhood = ParticleNeighborhood::from_view(&view, diameter)
         .map_err(|_error| CreateObjectError::InvalidParticleGroupTopology)?;
-    let previous = system.storage.semantic_particle_contacts();
-    let update = ParticleContactUpdate::generate(&view, &neighborhood, &previous, |_contact| true)
+    let previous = view.stored_particle_contacts();
+    let update =
+        ParticleContactUpdate::generate_from_stored(&view, &neighborhood, previous, |_contact| {
+            true
+        })
         .map_err(|_error| CreateObjectError::InvalidParticleGroupTopology)?;
     system
         .storage

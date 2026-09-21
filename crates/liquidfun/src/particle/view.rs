@@ -56,6 +56,10 @@ impl<'a> ParticleSystemView<'a> {
         self.storage.resolve_live(particle).ok()
     }
 
+    pub(crate) fn stored_particle_contacts(&self) -> &[ParticleContact] {
+        self.storage.particle_contacts()
+    }
+
     /// Returns positions in meters, aligned with [`Self::particle_ids`].
     #[must_use]
     pub fn positions(&self) -> &[Vec2] {

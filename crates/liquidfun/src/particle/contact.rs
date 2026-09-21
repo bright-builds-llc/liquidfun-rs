@@ -3,6 +3,7 @@
 use crate::math::{Vec2, inverse_sqrt};
 use crate::{ParticleFlags, ParticleId};
 
+use super::storage::lanes::ParticleContact as StoredParticleContact;
 use super::{ParticleNeighborhood, ParticleSystemView};
 
 /// A failure while generating contacts from a particle-system snapshot.
@@ -103,47 +104,28 @@ impl ParticleContactUpdate {
         }
 
         validate_pairs(view, neighborhood, previous)?;
-        let diameter = neighborhood.diameter();
-        let squared_diameter = diameter * diameter;
-        let inverse_diameter = 1.0 / diameter;
-        let mut contacts = Vec::new();
-        for (candidate, pair_rows) in neighborhood.pairs().iter().zip(neighborhood.pair_rows()) {
-            let [a, b] = *pair_rows;
-            let Some(position_a) = view.positions().get(a.0) else {
-                return Err(ParticleContactError::MissingParticle);
-            };
-            let Some(position_b) = view.positions().get(b.0) else {
-                return Err(ParticleContactError::MissingParticle);
-            };
-            let difference = *position_b - *position_a;
-            let distance_squared = difference.dot(difference);
-            if distance_squared >= squared_diameter {
-                continue;
-            }
-            let Some(flags_a) = view.flags().get(a.0) else {
-                return Err(ParticleContactError::MissingParticle);
-            };
-            let Some(flags_b) = view.flags().get(b.0) else {
-                return Err(ParticleContactError::MissingParticle);
-            };
-            let inverse_distance = inverse_sqrt(distance_squared);
-            let contact = ParticleContact {
-                particles: candidate.particles(),
-                flags: *flags_a | *flags_b,
-                weight: 1.0 - distance_squared * inverse_distance * inverse_diameter,
-                normal: inverse_distance * difference,
-            };
-            if contact
-                .flags
-                .contains(ParticleFlags::PARTICLE_CONTACT_FILTER)
-                && !filter(&contact)
-            {
-                continue;
-            }
-            contacts.push(contact);
+        let contacts = collect_new_contacts(view, neighborhood, &mut filter)?;
+        let effects = listener_effects(view, previous, &contacts)?;
+        Ok(Self { contacts, effects })
+    }
+
+    /// Generates contacts using already-indexed previous storage contacts.
+    ///
+    /// The stepping path keeps C++-shaped dense rows instead of allocating a
+    /// semantic `ParticleContact` snapshot of last step's contacts.
+    pub(crate) fn generate_from_stored(
+        view: &ParticleSystemView<'_>,
+        neighborhood: &ParticleNeighborhood,
+        previous: &[StoredParticleContact],
+        mut filter: impl FnMut(&ParticleContact) -> bool,
+    ) -> Result<Self, ParticleContactError> {
+        if neighborhood.system() != view.system() {
+            return Err(ParticleContactError::WrongParticleSystem);
         }
 
-        let effects = listener_effects(view, previous, &contacts)?;
+        validate_neighborhood(view, neighborhood)?;
+        let contacts = collect_new_contacts(view, neighborhood, &mut filter)?;
+        let effects = listener_effects_from_stored(view, previous, &contacts)?;
         Ok(Self { contacts, effects })
     }
 
@@ -165,15 +147,7 @@ fn validate_pairs(
     neighborhood: &ParticleNeighborhood,
     previous: &[ParticleContact],
 ) -> Result<(), ParticleContactError> {
-    if neighborhood.pairs().len() != neighborhood.pair_rows().len() {
-        return Err(ParticleContactError::MissingParticle);
-    }
-    for pair_rows in neighborhood.pair_rows() {
-        let [a, b] = *pair_rows;
-        if view.positions().get(a.0).is_none() || view.positions().get(b.0).is_none() {
-            return Err(ParticleContactError::MissingParticle);
-        }
-    }
+    validate_neighborhood(view, neighborhood)?;
     for contact in previous {
         view.maybe_live_row(contact.particles[0])
             .ok_or(ParticleContactError::MissingParticle)?;
@@ -183,12 +157,75 @@ fn validate_pairs(
     Ok(())
 }
 
+fn validate_neighborhood(
+    view: &ParticleSystemView<'_>,
+    neighborhood: &ParticleNeighborhood,
+) -> Result<(), ParticleContactError> {
+    if neighborhood.pairs().len() != neighborhood.pair_rows().len() {
+        return Err(ParticleContactError::MissingParticle);
+    }
+    for pair_rows in neighborhood.pair_rows() {
+        let [a, b] = *pair_rows;
+        if view.positions().get(a.0).is_none() || view.positions().get(b.0).is_none() {
+            return Err(ParticleContactError::MissingParticle);
+        }
+    }
+    Ok(())
+}
+
+fn collect_new_contacts(
+    view: &ParticleSystemView<'_>,
+    neighborhood: &ParticleNeighborhood,
+    filter: &mut impl FnMut(&ParticleContact) -> bool,
+) -> Result<Vec<ParticleContact>, ParticleContactError> {
+    let diameter = neighborhood.diameter();
+    let squared_diameter = diameter * diameter;
+    let inverse_diameter = 1.0 / diameter;
+    let mut contacts = Vec::with_capacity(neighborhood.pairs().len());
+    for (candidate, pair_rows) in neighborhood.pairs().iter().zip(neighborhood.pair_rows()) {
+        let [a, b] = *pair_rows;
+        let Some(position_a) = view.positions().get(a.0) else {
+            return Err(ParticleContactError::MissingParticle);
+        };
+        let Some(position_b) = view.positions().get(b.0) else {
+            return Err(ParticleContactError::MissingParticle);
+        };
+        let difference = *position_b - *position_a;
+        let distance_squared = difference.dot(difference);
+        if distance_squared >= squared_diameter {
+            continue;
+        }
+        let Some(flags_a) = view.flags().get(a.0) else {
+            return Err(ParticleContactError::MissingParticle);
+        };
+        let Some(flags_b) = view.flags().get(b.0) else {
+            return Err(ParticleContactError::MissingParticle);
+        };
+        let inverse_distance = inverse_sqrt(distance_squared);
+        let contact = ParticleContact {
+            particles: candidate.particles(),
+            flags: *flags_a | *flags_b,
+            weight: 1.0 - distance_squared * inverse_distance * inverse_diameter,
+            normal: inverse_distance * difference,
+        };
+        if contact
+            .flags
+            .contains(ParticleFlags::PARTICLE_CONTACT_FILTER)
+            && !filter(&contact)
+        {
+            continue;
+        }
+        contacts.push(contact);
+    }
+    Ok(contacts)
+}
+
 fn listener_effects(
     view: &ParticleSystemView<'_>,
     previous: &[ParticleContact],
     contacts: &[ParticleContact],
 ) -> Result<Vec<ParticleContactEffect>, ParticleContactError> {
-    let mut old = previous
+    let old = previous
         .iter()
         .map(|contact| {
             let Some(row_a) = view.maybe_live_row(contact.particles[0]) else {
@@ -216,8 +253,44 @@ fn listener_effects(
             Err(error) => Some(Err(error)),
         })
         .collect::<Result<Vec<_>, _>>()?;
-    old.sort_by_key(|(rows, _, _)| *rows);
+    Ok(diff_listener_effects(old, contacts))
+}
 
+fn listener_effects_from_stored(
+    view: &ParticleSystemView<'_>,
+    previous: &[StoredParticleContact],
+    contacts: &[ParticleContact],
+) -> Result<Vec<ParticleContactEffect>, ParticleContactError> {
+    let ids = view.particle_ids();
+    let flags = view.flags();
+    let mut old = Vec::with_capacity(previous.len());
+    for contact in previous {
+        let [row_a, row_b] = contact.indices;
+        let Some(flags_a) = flags.get(row_a.0) else {
+            return Err(ParticleContactError::MissingParticle);
+        };
+        let Some(flags_b) = flags.get(row_b.0) else {
+            return Err(ParticleContactError::MissingParticle);
+        };
+        if !(*flags_a | *flags_b).contains(ParticleFlags::PARTICLE_CONTACT_LISTENER) {
+            continue;
+        }
+        let Some(&id_a) = ids.get(row_a.0) else {
+            return Err(ParticleContactError::MissingParticle);
+        };
+        let Some(&id_b) = ids.get(row_b.0) else {
+            return Err(ParticleContactError::MissingParticle);
+        };
+        old.push(([row_a.0, row_b.0], [id_a, id_b], true));
+    }
+    Ok(diff_listener_effects(old, contacts))
+}
+
+fn diff_listener_effects(
+    mut old: Vec<([usize; 2], [ParticleId; 2], bool)>,
+    contacts: &[ParticleContact],
+) -> Vec<ParticleContactEffect> {
+    old.sort_by_key(|(rows, _, _)| *rows);
     let mut effects = Vec::new();
     for contact in contacts {
         if !contact
@@ -240,7 +313,7 @@ fn listener_effects(
             .filter(|(_, _, valid)| *valid)
             .map(|(_, particles, _)| ParticleContactEffect::End(particles)),
     );
-    Ok(effects)
+    effects
 }
 
 fn unordered_pair_matches(left: [ParticleId; 2], right: [ParticleId; 2]) -> bool {
