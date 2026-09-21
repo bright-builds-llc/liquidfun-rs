@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Native Performance Closing
-status: verifying
-stopped_at: Completed 23-09-PLAN.md
-last_updated: "2026-09-21T05:01:04.642Z"
+status: ready
+stopped_at: Phase 23 complete
+last_updated: "2026-09-21T05:31:23.000Z"
 last_activity: 2026-09-21
 progress:
   total_phases: 4
@@ -18,19 +18,19 @@ progress:
 
 ## Project Reference
 
-See: `.planning/PROJECT.md` (updated 2026-09-20)
+See: `.planning/PROJECT.md` (updated 2026-09-21)
 
 **Core value:** Deliver a useful, independent Rust physics library for enjoyable experimentation, with honest limitations and a lightweight native development loop.
-**Current focus:** Phase 23 — Baseline pair and named audit
+**Current focus:** Phase 24 — Shared hot-path waves through 3×
 
 ## Current Position
 
-Phase: 23 (Baseline pair and named audit) — VERIFYING
-Plan: 9 of 9
-Status: Phase complete — ready for verification
+Phase: 24
+Plan: Not started
+Status: Ready to plan
 Last activity: 2026-09-21
 
-Progress: [██████████] 100%
+Progress: [██████████] 50%
 
 v1.2 Native Performance Closing. Gate is unprofiled `just playground-dam-break-bench` (Rust `--release` vs `oracle-release` Dam Break Medium ≤ 3×). Evidence dir `target/dam-break-perf/<utc-stamp>/`. v1.1 phase directories remain on disk. No package publication or release tag.
 
@@ -128,7 +128,7 @@ v1.1 playground decisions remain in `.planning/milestones/v1.1-STATE.md` and PRO
 
 ### Pending Todos
 
-Verify Phase 23 (`/gsd-verify-work 23`); independent AI review by a separate agent. The implementing agent must not self-approve.
+Plan Phase 24 (`/gsd-plan-phase 24`) from named shares in `docs/native-performance-audit.md`. Start with `particle_rows`; do not pre-select SIMD, PGO, or `unsafe` indexing.
 
 ### Blockers/Concerns
 
@@ -153,6 +153,6 @@ Verify Phase 23 (`/gsd-verify-work 23`); independent AI review by a separate age
 
 ## Session Continuity
 
-Last session: 2026-09-21T04:59:47.598Z
-Stopped at: Completed 23-09-PLAN.md
+Last session: 2026-09-21T05:31:23.000Z
+Stopped at: Phase 23 complete; ready to plan Phase 24
 Resume file: None

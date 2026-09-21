@@ -1,6 +1,10 @@
 ---
 phase: 23-baseline-pair-and-named-audit
 plan: "05"
+generated_by: gsd-execute-plan
+lifecycle_mode: yolo
+phase_lifecycle_id: 23-2026-09-21T02-44-37
+generated_at: 2026-09-21T04:16:03Z
 subsystem: observability-tooling
 tags: [xtask, playground-cli, dhat-heap, samply-symbols]
 
@@ -44,10 +48,6 @@ patterns-established:
   - "clone alone is not a needle; core::clone:: is."
 
 requirements-completed: []
-generated_by: gsd-execute-plan
-lifecycle_mode: yolo
-phase_lifecycle_id: 23-2026-09-21T02-44-37
-generated_at: 2026-09-21T04:16:03Z
 
 duration: 10min
 completed: 2026-09-21
@@ -134,7 +134,7 @@ Counted with Python `sum(1 for _ in path.open())` including blanks and comments:
 - **Verification:** RED 6 failed; GREEN 6 symbol + 48 playground passed
 - **Committed in:** n/a
 
----
+***
 
 **Total deviations:** 1 auto-fixed (1 blocking)
 **Impact on plan:** Required for the xtask binary-only test layout. No live Dam Break, no fake-cargo dump writer, and no samply/dhat flags in just.
@@ -160,7 +160,7 @@ None - no external service configuration required.
 
 ## Self-Check: PASSED
 
----
+***
 *Phase: 23-baseline-pair-and-named-audit*
 *Completed: 2026-09-21*
 

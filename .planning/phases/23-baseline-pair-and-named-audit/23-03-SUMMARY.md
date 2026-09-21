@@ -1,6 +1,10 @@
 ---
 phase: 23-baseline-pair-and-named-audit
 plan: "03"
+generated_by: gsd-execute-plan
+lifecycle_mode: yolo
+phase_lifecycle_id: 23-2026-09-21T02-44-37
+generated_at: 2026-09-21T04:03:59Z
 subsystem: observability-tooling
 tags: [xtask, playground-cli, audit-bundle, fake-tools]
 
@@ -36,10 +40,6 @@ patterns-established:
   - "Traversal tests use --pair-stamp ../etc and 2001-09-09T01:46:40Z and assert no evidence-root etc directory."
 
 requirements-completed: []
-generated_by: gsd-execute-plan
-lifecycle_mode: yolo
-phase_lifecycle_id: 23-2026-09-21T02-44-37
-generated_at: 2026-09-21T04:03:59Z
 
 duration: 4min
 completed: 2026-09-21
@@ -112,7 +112,7 @@ Counted with Python `sum(1 for _ in path.open())` including blanks and comments:
 
 None - plan executed exactly as written. RED was conditional on a 23-02 sidecar/fail-closed gap; none was found.
 
----
+***
 
 **Total deviations:** 0 auto-fixed
 **Impact on plan:** None.
@@ -137,6 +137,6 @@ None - no external service configuration required.
 
 ## Self-Check: PASSED
 
----
+***
 *Phase: 23-baseline-pair-and-named-audit*
 *Completed: 2026-09-21*

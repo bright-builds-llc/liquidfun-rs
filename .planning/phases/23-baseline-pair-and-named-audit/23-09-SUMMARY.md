@@ -1,6 +1,10 @@
 ---
 phase: 23-baseline-pair-and-named-audit
 plan: "09"
+generated_by: gsd-execute-plan
+lifecycle_mode: yolo
+phase_lifecycle_id: 23-2026-09-21T02-44-37
+generated_at: 2026-09-21T04:58:40Z
 subsystem: isolation-honesty
 tags: [package-verify, cargo-tree, bright-builds, dhat-isolation, independent-review]
 
@@ -40,10 +44,6 @@ patterns-established:
   - "The implementing agent must not approve Phase 23; D-16 is a later separate-AI step."
 
 requirements-completed: [PERF-AUDIT, PERF-HEAP]
-generated_by: gsd-execute-plan
-lifecycle_mode: yolo
-phase_lifecycle_id: 23-2026-09-21T02-44-37
-generated_at: 2026-09-21T04:58:40Z
 
 duration: 6min
 completed: 2026-09-21
@@ -131,7 +131,7 @@ Assertions:
 - **Verification:** 48 unit tests passed; 20 `playground_cli` tests passed
 - **Committed in:** n/a (verification-only)
 
----
+***
 
 **Total deviations:** 1 auto-fixed (1 blocking)
 **Impact on plan:** Command spelling only. Isolation, honesty, and Bright Builds gates still passed as specified.

@@ -16,7 +16,7 @@ The owner prioritizes a fun hobby project over production-quality certification.
 
 ## Current State
 
-v1.2 Native Performance Closing is the active milestone. Phase 22 Observability shell is complete (2026-09-21): dated Dam Break pair stamps, `[profile.profiling]` samply capture, and a separate `step_profiled` timer path. Phase 23 (named audit) is next. The exploratory Dam Break Medium pair remains ~300× slower in native Rust than pinned C++ (`docs/playground-dam-break-timing.md`); that gap is the canary, not a public performance claim.
+v1.2 Native Performance Closing is the active milestone. Phase 23 Baseline pair and named audit is complete (2026-09-21): committed `docs/native-performance-audit.md` names `particle_rows` (~93.6% self) from a SHA-bound unprofiled Dam Break pair (ratio `327.53395024734476` at HEAD `6d98531ac799987c209d3fd1e572e482fcab5da6`), copy-only audit-bundle stamps, and a private dhat dump after allocator/`Vec` needles matched. Independent AI review digest `c23661d75e80e8702f7b175ba3e5578479f4999586ae9be5e194f8de2346f01d`. Phase 24 (shared hot-path waves through 3×) is next. The unprofiled Dam Break Medium pair remains ~328× slower in native Rust than pinned C++ (`docs/playground-dam-break-timing.md`); that gap is the canary, not a public performance claim.
 
 The v1.1 Web Playground planning milestone is archived (2026-09-20): 6 phases and 39 plans completed. Visitors can run Dam Break, Fountain, Float or Sink, Color Mixer, Jelly Drop, and Water Wheel at `https://bright-builds-llc.github.io/liquidfun-rs/` with in-app SVG previews, play/pause/reset, honest Reset labels, pointer interaction, and automatic Pages delivery. This is not a crate or npm release. See `.planning/MILESTONES.md` and `.planning/milestones/v1.1-REQUIREMENTS.md`.
 
@@ -58,7 +58,6 @@ Phase numbering continues after 21. Package publication remains separately autho
 ### Active
 
 - [ ] Native Dam Break Medium, same-host scalar `--release` vs `oracle-release`, Rust wall time ≤ 3× pinned C++
-- [ ] Committed audit/notes doc naming hot functions (not a Phase 12 public claim); pair + profile scripts landed in Phase 22
 - [ ] Shared particle/rigid hot-path fixes from profile evidence, with spot-checks on other scenes
 - [ ] Lightweight WASM / playground sanity check after the native gate
 - [ ] Scalar deterministic baseline retained; remaining Dam Break delta documented
@@ -66,6 +65,8 @@ Phase numbering continues after 21. Package publication remains separately autho
 Package publication remains separately authorized.
 
 ### Validated
+
+- [x] Phase 23 completed PERF-AUDIT and PERF-HEAP: committed `docs/native-performance-audit.md` names `particle_rows` (~93.6% self) from live pair+samply at MEASURED_HEAD `6d98531ac799987c209d3fd1e572e482fcab5da6`, unprofiled ratio `327.53395024734476`; copy-only audit-bundle; private dhat when allocator/`Vec` needles matched; timing doc refreshed as an unreviewed sample. Independent AI review digest `c23661d75e80e8702f7b175ba3e5578479f4999586ae9be5e194f8de2346f01d`. This is not the 3× gate or crate publication.
 
 - [x] Phase 22 completed PERF-PAIR, PERF-PROFILE, and PERF-TIMERS: `just playground-dam-break-bench` persists exclusive `target/dam-break-perf/<utc-stamp>/` `pair.json`/`pair.md`; `just playground-dam-break-profile` wraps samply 0.13.1 onto `[profile.profiling]` and writes `rust.json.gz` plus identity with `not_timing_authority`; `just playground-dam-break-timers` emits parent-phase timers on a sibling process. Missing samply fails closed. `liquidfun` stays bitflags-only. Independent AI review digest `52f2619f480dd0daf1dfb7ec4db6b7624396e987b73979189b70678407a38f06`. This is not the 3× gate, a named-function audit, or crate publication.
 

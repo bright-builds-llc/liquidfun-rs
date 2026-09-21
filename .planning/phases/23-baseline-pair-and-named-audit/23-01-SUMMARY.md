@@ -1,6 +1,10 @@
 ---
 phase: 23-baseline-pair-and-named-audit
 plan: "01"
+generated_by: gsd-execute-plan
+lifecycle_mode: yolo
+phase_lifecycle_id: 23-2026-09-21T02-44-37
+generated_at: 2026-09-21T03:34:17Z
 subsystem: observability-tooling
 tags: [xtask, playground-cli, file-length, fake-tools]
 
@@ -42,10 +46,6 @@ patterns-established:
   - "23-03 owns only bundle.rs and 23-06 owns only heap.rs until those plans add tests."
 
 requirements-completed: []
-generated_by: gsd-execute-plan
-lifecycle_mode: yolo
-phase_lifecycle_id: 23-2026-09-21T02-44-37
-generated_at: 2026-09-21T03:34:17Z
 
 duration: 8min
 completed: 2026-09-21
@@ -134,7 +134,7 @@ No `.bright-builds-rules-checks.tsv` row was added. `playground_cli/mod.rs` does
 - **Verification:** same 8-test run
 - **Committed in:** `eded773`
 
----
+***
 
 **Total deviations:** 2 auto-fixed (2 blocking)
 **Impact on plan:** Required for the split to compile under Cargo's integration-test crate-root rules. No new playground subcommands and no file-length TSV exception.
@@ -166,6 +166,6 @@ None - no external service configuration required.
 
 ## Self-Check: PASSED
 
----
+***
 *Phase: 23-baseline-pair-and-named-audit*
 *Completed: 2026-09-21*

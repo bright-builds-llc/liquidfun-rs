@@ -1,6 +1,10 @@
 ---
 phase: 23-baseline-pair-and-named-audit
 plan: "04"
+generated_by: gsd-execute-plan
+lifecycle_mode: yolo
+phase_lifecycle_id: 23-2026-09-21T02-44-37
+generated_at: 2026-09-21T03:41:20Z
 subsystem: observability-tooling
 tags: [dhat, dhat-heap, dam-break-bench, isolation]
 
@@ -39,10 +43,6 @@ patterns-established:
   - "dhat unsafe stays inside the dhat crate; workspace unsafe_code = forbid is unchanged."
 
 requirements-completed: []
-generated_by: gsd-execute-plan
-lifecycle_mode: yolo
-phase_lifecycle_id: 23-2026-09-21T02-44-37
-generated_at: 2026-09-21T03:41:20Z
 
 duration: 5min
 completed: 2026-09-21
@@ -128,7 +128,7 @@ None - plan executed exactly as written.
 
 The plan's `<interfaces>` snippet showed `#[global_allocator]` next to the Profiler inside `fn run`. Rust requires the allocator attribute at item scope, which matches RESEARCH Pattern 2. That is the specified wiring, not a scope change.
 
----
+***
 
 **Total deviations:** 0 auto-fixed
 **Impact on plan:** None.
@@ -154,6 +154,6 @@ None - no external service configuration required.
 
 ## Self-Check: PASSED
 
----
+***
 *Phase: 23-baseline-pair-and-named-audit*
 *Completed: 2026-09-21*

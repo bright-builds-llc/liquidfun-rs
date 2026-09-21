@@ -1,6 +1,10 @@
 ---
 phase: 23-baseline-pair-and-named-audit
 plan: "06"
+generated_by: gsd-execute-plan
+lifecycle_mode: yolo
+phase_lifecycle_id: 23-2026-09-21T02-44-37
+generated_at: 2026-09-21T04:24:57Z
 subsystem: observability-tooling
 tags: [xtask, playground-cli, dhat-heap, fake-cargo]
 
@@ -38,10 +42,6 @@ patterns-established:
   - "Heap CLI tests use RepositoryFixture plus a local THIRD stamp unix for the sibling dump."
 
 requirements-completed: []
-generated_by: gsd-execute-plan
-lifecycle_mode: yolo
-phase_lifecycle_id: 23-2026-09-21T02-44-37
-generated_at: 2026-09-21T04:24:57Z
 
 duration: 6min
 completed: 2026-09-21
@@ -112,7 +112,7 @@ Counted with Python `sum(1 for _ in path.open())` including blanks and comments:
 
 None - plan executed exactly as written.
 
----
+***
 
 **Total deviations:** 0 auto-fixed
 **Impact on plan:** Task 2 tests passed on first run because skip-before-mint already shipped in 23-05. That is planned TDD against existing wiring, not a production change.
@@ -139,6 +139,6 @@ None - no external service configuration required.
 
 ## Self-Check: PASSED
 
----
+***
 *Phase: 23-baseline-pair-and-named-audit*
 *Completed: 2026-09-21*

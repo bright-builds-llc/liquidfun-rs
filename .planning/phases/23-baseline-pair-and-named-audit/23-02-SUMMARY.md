@@ -1,6 +1,10 @@
 ---
 phase: 23-baseline-pair-and-named-audit
 plan: "02"
+generated_by: gsd-execute-plan
+lifecycle_mode: yolo
+phase_lifecycle_id: 23-2026-09-21T02-44-37
+generated_at: 2026-09-21T03:58:24Z
 subsystem: observability-tooling
 tags: [xtask, playground-cli, audit-bundle, exclusive-stamp]
 
@@ -45,10 +49,6 @@ patterns-established:
   - "Stamp CLI flags join only as evidence_dir.join(parse_stamp_name(raw))."
 
 requirements-completed: []
-generated_by: gsd-execute-plan
-lifecycle_mode: yolo
-phase_lifecycle_id: 23-2026-09-21T02-44-37
-generated_at: 2026-09-21T03:58:24Z
 
 duration: 14min
 completed: 2026-09-21
@@ -152,7 +152,7 @@ Counted with Python `sum(1 for _ in path.open())` including blanks and comments:
 - **Verification:** both files ≤628; clippy `-D warnings` on xtask exits 0; unit tests pass
 - **Committed in:** `2fa7e28`
 
----
+***
 
 **Total deviations:** 2 auto-fixed (2 blocking)
 **Impact on plan:** Required for the plan's own 628-line cap and the xtask binary-only test layout. No live Dam Break, no `dam-break-heap`, and no samply flags in just.
@@ -178,6 +178,6 @@ None - no external service configuration required.
 
 ## Self-Check: PASSED
 
----
+***
 *Phase: 23-baseline-pair-and-named-audit*
 *Completed: 2026-09-21*

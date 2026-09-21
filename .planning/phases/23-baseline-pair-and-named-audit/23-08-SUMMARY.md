@@ -1,6 +1,10 @@
 ---
 phase: 23-baseline-pair-and-named-audit
 plan: "08"
+generated_by: gsd-execute-plan
+lifecycle_mode: yolo
+phase_lifecycle_id: 23-2026-09-21T02-44-37
+generated_at: 2026-09-21T04:49:44Z
 subsystem: observability-evidence
 tags: [dam-break, named-audit, samply, dhat, unreviewed-sample]
 
@@ -45,10 +49,6 @@ patterns-established:
   - "Never git add *.json.gz, *.syms.json, *.trace, dhat-heap.json, or target/."
 
 requirements-completed: [PERF-AUDIT, PERF-HEAP]
-generated_by: gsd-execute-plan
-lifecycle_mode: yolo
-phase_lifecycle_id: 23-2026-09-21T02-44-37
-generated_at: 2026-09-21T04:49:44Z
 
 duration: 9min
 completed: 2026-09-21
@@ -138,7 +138,7 @@ Needles matched (`alloc::`, `__rdl_alloc`, `alloc::vec::Vec`, `RawVec`, `to_vec`
 - **Verification:** nonempty `dhat-heap.json`; `heap-identity.json` `matched_needles` populated; no repo-root dump
 - **Committed in:** `0c78589`
 
----
+***
 
 **Total deviations:** 1 auto-fixed (1 blocking)
 **Impact on plan:** Required to run dhat against the live 23-07 profile after the Task 1 docs SHA moved. No physics edits, no recipe shrink, no `git add` of blobs.
@@ -174,6 +174,6 @@ None - no external service configuration required.
 - FOUND: `8d9c6f2` Task 1, `0c78589` Task 2
 - FOUND: `git ls-files '*.json.gz'` empty
 
----
+***
 *Phase: 23-baseline-pair-and-named-audit*
 *Completed: 2026-09-21*

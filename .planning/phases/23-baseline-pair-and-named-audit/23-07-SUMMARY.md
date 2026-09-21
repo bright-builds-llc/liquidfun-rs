@@ -1,6 +1,10 @@
 ---
 phase: 23-baseline-pair-and-named-audit
 plan: "07"
+generated_by: gsd-execute-plan
+lifecycle_mode: yolo
+phase_lifecycle_id: 23-2026-09-21T02-44-37
+generated_at: 2026-09-21T04:36:28Z
 subsystem: observability-evidence
 tags: [dam-break, unprofiled-pair, samply, audit-bundle]
 
@@ -42,10 +46,6 @@ patterns-established:
   - "Never git add *.json.gz, *.syms.json, *.trace, dhat-heap.json, or target/."
 
 requirements-completed: []
-generated_by: gsd-execute-plan
-lifecycle_mode: yolo
-phase_lifecycle_id: 23-2026-09-21T02-44-37
-generated_at: 2026-09-21T04:36:28Z
 
 duration: 8min
 completed: 2026-09-21
@@ -189,7 +189,7 @@ Durable bundle contains nonempty `pair.json`, `pair.md`, `rust.json.gz`, `rust.j
 - **Verification:** new `pair.json` `git_head` equals MEASURED_HEAD; finite ratio; no `rust.json.gz` on the pair stamp
 - **Committed in:** n/a (evidence not committed); SUMMARY update in `8498ac6`
 
----
+***
 
 **Total deviations:** 1 auto-fixed (1 blocking)
 **Impact on plan:** Required for D-01 same-SHA pair+profile+bundle. No physics edits, no recipe shrink, no dhat, no `git add` of blobs.
@@ -225,6 +225,6 @@ None - no external service configuration required.
 - FOUND: pair `2026-09-21T04-32-19Z`, profile `2026-09-21T04-32-56Z`, bundle `2026-09-21T04-34-32Z`
 - FOUND: `git ls-files '*.json.gz'` empty
 
----
+***
 *Phase: 23-baseline-pair-and-named-audit*
 *Completed: 2026-09-21*
