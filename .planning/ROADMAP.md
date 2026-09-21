@@ -74,7 +74,7 @@ No physics kernel edits in this phase. Tooling can be proven with fake cmake/sam
   2. Developer can point at a dated `target/dam-break-perf/<utc-stamp>/` from that HEAD containing the unprofiled pair report and samply `rust.json.gz` used to write those names; profiled duration is discarded for the gate.
   3. If samply shows allocator or `Vec` time, developer can run private dhat on the `dam-break-bench` binary only and find the dump under the same gitignored evidence root; if not, committed notes record that and skip the heap run.
   4. `docs/playground-dam-break-timing.md` is refreshed as an unreviewed local sample, not a Phase 12 public claim; raw `.json.gz` / `.trace` files stay gitignored.
-**Plans:** 8/9 plans executed
+**Plans:** 9/9 plans complete
 
 Plans:
 - [x] 23-01-PLAN.md — Split playground CLI tests under the 628-line cap
@@ -85,7 +85,7 @@ Plans:
 - [x] 23-06-PLAN.md — Fake-cargo heap CLI match and skip tests
 - [x] 23-07-PLAN.md — Live pair, live samply, audit-bundle stamps, durable primary-tree copy
 - [x] 23-08-PLAN.md — Named audit, heap run-or-skip, timing-doc refresh
-- [ ] 23-09-PLAN.md — Isolation, Bright Builds, and no self-approval
+- [x] 23-09-PLAN.md — Isolation, Bright Builds, and no self-approval
 
 Do not quote samply duration as the 3× number. Do not commit profile blobs. In-tree suspects (full-world clone, release invariants, per-pass `to_vec`, `ParticleNeighborhood::from_view`) are a hunt list until this audit ranks them.
 
@@ -126,7 +126,7 @@ Do not put an Instant profiler in the cdylib, lift the 4-step catch-up cap to fa
 | 20. Playground catalog previews and Reset honesty | v1.1 | 6/6 | Complete | 2026-09-20 |
 | 21. Playground leftover cleanup | v1.1 | 4/4 | Complete | 2026-09-20 |
 | 22. Observability shell | v1.2 | 6/6 | Complete    | 2026-09-21 |
-| 23. Baseline pair and named audit | v1.2 | 8/9 | In Progress|  |
+| 23. Baseline pair and named audit | v1.2 | 9/9 | Complete   | 2026-09-21 |
 | 24. Shared hot-path waves through 3× | v1.2 | 0/TBD | Not started | - |
 | 25. WASM sanity and honest close | v1.2 | 0/TBD | Not started | - |
 

@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Native Performance Closing
-status: executing
-stopped_at: Completed 23-08-PLAN.md
-last_updated: "2026-09-21T04:51:03.944Z"
+status: verifying
+stopped_at: Completed 23-09-PLAN.md
+last_updated: "2026-09-21T05:01:04.642Z"
 last_activity: 2026-09-21
 progress:
   total_phases: 4
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 15
-  completed_plans: 14
-  percent: 93
+  completed_plans: 15
+  percent: 100
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: `.planning/PROJECT.md` (updated 2026-09-20)
 
 ## Current Position
 
-Phase: 23 (Baseline pair and named audit) — EXECUTING
+Phase: 23 (Baseline pair and named audit) — VERIFYING
 Plan: 9 of 9
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-21
 
-Progress: [█████████░] 93%
+Progress: [██████████] 100%
 
 v1.2 Native Performance Closing. Gate is unprofiled `just playground-dam-break-bench` (Rust `--release` vs `oracle-release` Dam Break Medium ≤ 3×). Evidence dir `target/dam-break-perf/<utc-stamp>/`. v1.1 phase directories remain on disk. No package publication or release tag.
 
@@ -54,6 +54,7 @@ v1.1 plan durations remain in `.planning/milestones/v1.1-STATE.md`.
 | Phase 23-baseline-pair-and-named-audit P06 | 6 min | 2 tasks | 2 files |
 | Phase 23 P07 | 8 min | 3 tasks | 1 files |
 | Phase 23 P08 | 9 min | 2 tasks | 2 files |
+| Phase 23 P09 | 6 min | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -121,14 +122,17 @@ v1.1 playground decisions remain in `.planning/milestones/v1.1-STATE.md` and PRO
 - [Phase 23]: Copy rust_over_cpp_ratio 327.53395024734476 only from bundle pair.json at MEASURED_HEAD 6d98531ac799987c209d3fd1e572e482fcab5da6. — Unprofiled pair.json remains timing authority; samply, profiling, step_profiled, and dhat clocks are not_timing_authority.
 - [Phase 23]: Run private dhat after allocator/Vec needles; cite heap stamp 2026-09-21T04-47-09Z; never git add dhat-heap.json. — Needles matched on the live sidecar so dhat ran once at 60+600; dump stays gitignored under target/dam-break-perf.
 - [Phase 23]: Independent AI review remains 23-09; this plan does not self-approve. — Owner policy 2026-09-16: the implementing agent must not approve its own work.
+- [Phase 23]: D-16 independent AI review is not performed by this implementing agent; /gsd-verify-work 23 and a separate AI reviewer remain required. — Owner policy 2026-09-16: the implementing agent must not approve its own work. This plan records automated isolation evidence only.
+- [Phase 23]: BENCHMARKING.md points at docs/native-performance-audit.md as unreviewed SHA-bound notes; raw json.gz, dhat-heap.json, and trace stay gitignored and out of the empty manifest. — D-09/D-15: keep committed docs as unreviewed samples. Do not paste wall-ms or copy playground numbers into reference/performance/manifest.toml.
+- [Phase 23]: xtask playground units run as cargo test -p xtask playground because the package has no lib target. — cargo test -p xtask --lib playground fails with no library targets found; same as Phase 22 and 23-02/23-05.
 
 ### Pending Todos
 
-Verify Phase 22 (`/gsd-verify-work 22`); independent AI review. Phase 24 planning should wait for Phase 23 named shares.
+Verify Phase 23 (`/gsd-verify-work 23`); independent AI review by a separate agent. The implementing agent must not self-approve.
 
 ### Blockers/Concerns
 
-- Dominant kernel unknown until Phase 23 audit; do not pre-select SIMD, PGO, or `unsafe` indexing.
+- Named extra work is `particle_rows` (~94% self); Phase 24 should not pre-select SIMD, PGO, or `unsafe` indexing.
 - samply setup / signing on this Mac is host-specific; Phase 22 must fail closed with install text.
 - Exploratory Dam Break Medium pair remains ~300× (`docs/playground-dam-break-timing.md`); that gap is the canary, not a public claim.
 
@@ -149,6 +153,6 @@ Verify Phase 22 (`/gsd-verify-work 22`); independent AI review. Phase 24 plannin
 
 ## Session Continuity
 
-Last session: 2026-09-21T04:50:50.561Z
-Stopped at: Completed 23-08-PLAN.md
+Last session: 2026-09-21T04:59:47.598Z
+Stopped at: Completed 23-09-PLAN.md
 Resume file: None
