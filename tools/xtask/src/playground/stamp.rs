@@ -76,6 +76,21 @@ pub(crate) fn mint_exclusive_stamp(
     ))
 }
 
+/// Returns `repository_root/target/dam-break-perf`.
+pub(super) fn evidence_dir(repository_root: &Path) -> PathBuf {
+    repository_root.join(EVIDENCE_RELATIVE_DIR)
+}
+
+/// Parses a filename-safe UTC stamp `YYYY-MM-DDTHH-MM-SSZ`.
+///
+/// # Errors
+///
+/// Returns a closed error when the name is empty, contains path separators, or
+/// does not match the allowlisted stamp charset.
+pub(super) fn parse_stamp_name(_raw: &str) -> Result<String, PlaygroundError> {
+    todo!("parse_stamp_name")
+}
+
 /// Converts days since 1970-01-01 into a Gregorian civil date.
 ///
 /// Algorithm from Howard Hinnant's public-domain `civil_from_days`.
@@ -118,7 +133,7 @@ mod tests {
     use std::path::PathBuf;
     use std::sync::atomic::{AtomicU64, Ordering};
 
-    use super::{format_utc_stamp, mint_exclusive_stamp};
+    use super::{format_utc_stamp, mint_exclusive_stamp, parse_stamp_name};
 
     static FIXTURE_ID: AtomicU64 = AtomicU64::new(0);
 
@@ -267,5 +282,52 @@ mod tests {
             let marker_bytes = fs::read(&marker).expect("occupied markers must stay unchanged");
             assert_eq!(marker_bytes, b"x");
         }
+    }
+
+    #[test]
+    fn parse_stamp_name_accepts_filename_safe_utc() {
+        // Arrange
+        let raw = "2001-09-09T01-46-40Z";
+
+        // Act
+        let parsed = parse_stamp_name(raw).expect("filename-safe stamp should parse");
+
+        // Assert
+        assert_eq!(parsed, raw);
+    }
+
+    #[test]
+    fn parse_stamp_name_rejects_parent_directory() {
+        assert_parse_stamp_name_rejected("../etc");
+    }
+
+    #[test]
+    fn parse_stamp_name_rejects_colon_time() {
+        assert_parse_stamp_name_rejected("2001-09-09T01:46:40Z");
+    }
+
+    #[test]
+    fn parse_stamp_name_rejects_nested_path() {
+        assert_parse_stamp_name_rejected("2001-09-09T01-46-40Z/foo");
+    }
+
+    #[test]
+    fn parse_stamp_name_rejects_empty() {
+        assert_parse_stamp_name_rejected("");
+    }
+
+    fn assert_parse_stamp_name_rejected(raw: &str) {
+        // Arrange / Act
+        let result = parse_stamp_name(raw);
+
+        // Assert
+        let Err(error) = result else {
+            panic!("stamp `{raw}` must be rejected");
+        };
+        let display = error.to_string();
+        assert!(
+            display.contains("bundle") || display.contains("stamp"),
+            "error `{display}` should mention bundle or stamp"
+        );
     }
 }

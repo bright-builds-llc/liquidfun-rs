@@ -1,5 +1,6 @@
 //! Exploratory playground Dam Break native-versus-oracle step timing.
 
+mod bundle;
 mod counts;
 mod error;
 mod identity;
