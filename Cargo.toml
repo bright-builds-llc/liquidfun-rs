@@ -40,3 +40,8 @@ unused_must_use = "deny"
 [workspace.lints.clippy]
 all = { level = "warn", priority = -1 }
 pedantic = { level = "warn", priority = -1 }
+
+[profile.profiling]
+inherits = "release"
+debug = true
+strip = false

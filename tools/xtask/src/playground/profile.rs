@@ -6,29 +6,70 @@
 #![allow(dead_code)]
 
 use std::ffi::OsString;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use super::PlaygroundError;
 
-fn parse_samply_version(_stdout: &str) -> Option<String> {
-    None
+const PINNED_SAMPLY_VERSION: &str = "0.13.1";
+const MISSING_SAMPLY_MESSAGE: &str = "samply 0.13.1 is required. Install with `cargo install --locked samply --version 0.13.1` or `brew install samply`. On macOS, run `samply setup` after install.";
+
+fn parse_samply_version(stdout: &str) -> Option<String> {
+    let maybe_line = stdout.lines().map(str::trim).find(|line| !line.is_empty());
+    let line = maybe_line?;
+    let tokens: Vec<&str> = line.split_whitespace().collect();
+    if !tokens.contains(&"samply") {
+        return None;
+    }
+    let maybe_version = tokens
+        .into_iter()
+        .find(|token| *token == PINNED_SAMPLY_VERSION);
+    maybe_version.map(str::to_owned)
 }
 
 fn missing_samply_error() -> PlaygroundError {
-    PlaygroundError::new("samply", "skip")
+    PlaygroundError::new("samply", MISSING_SAMPLY_MESSAGE)
 }
 
-fn require_samply_version(_stdout: &str) -> Result<(), PlaygroundError> {
+fn require_samply_version(stdout: &str) -> Result<(), PlaygroundError> {
+    let maybe_version = parse_samply_version(stdout);
+    let Some(_version) = maybe_version else {
+        return Err(missing_samply_error());
+    };
     Ok(())
 }
 
+fn require_samply_0_13_1(stdout: &str) -> Result<(), PlaygroundError> {
+    require_samply_version(stdout)
+}
+
 fn samply_record_argv(
-    _output_gz: &Path,
-    _binary: &Path,
-    _warmup_steps: u32,
-    _measured_steps: u32,
+    output_gz: &Path,
+    binary: &Path,
+    warmup_steps: u32,
+    measured_steps: u32,
 ) -> Vec<OsString> {
-    vec![OsString::from("cargo")]
+    vec![
+        OsString::from("record"),
+        OsString::from("--save-only"),
+        OsString::from("--unstable-presymbolicate"),
+        OsString::from("-o"),
+        output_gz.as_os_str().to_os_string(),
+        OsString::from("--"),
+        binary.as_os_str().to_os_string(),
+        OsString::from("--warmup"),
+        OsString::from(warmup_steps.to_string()),
+        OsString::from("--steps"),
+        OsString::from(measured_steps.to_string()),
+    ]
+}
+
+fn profiling_dam_break_bench_bin(repository_root: &Path) -> PathBuf {
+    let file_name = if cfg!(windows) {
+        "dam-break-bench.exe"
+    } else {
+        "dam-break-bench"
+    };
+    repository_root.join("target/profiling").join(file_name)
 }
 
 #[cfg(test)]
