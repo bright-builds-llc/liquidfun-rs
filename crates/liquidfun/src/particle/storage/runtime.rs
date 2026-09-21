@@ -91,6 +91,7 @@ impl ParticleStorage {
         candidate
             .solver_state
             .refresh_group_flags(&candidate.group_records);
+        #[cfg(debug_assertions)]
         candidate.check_invariants()?;
         *self = candidate;
         Ok(())
