@@ -53,10 +53,10 @@ are `not_timing_authority` and are not the 3× gate.
 - CPU: `Apple M4 Max`
 - logical cores: `16`
 
-| Engine      | Particles | Wall ms     | ms/step    | Compiler                              |
-| ----------- | --------- | ----------- | ---------- | ------------------------------------- |
+| Engine      | Particles | Wall ms      | ms/step    | Compiler                              |
+| ----------- | --------- | ------------ | ---------- | ------------------------------------- |
 | native Rust | 1920      | 71001.949958 | 118.336583 | `rustc 1.97.0 (2d8144b78 2026-07-07)` |
-| pinned C++  | 1920      | 216.777375  | 0.361296   | `AppleClang 21.0.0.21000334`          |
+| pinned C++  | 1920      | 216.777375   | 0.361296   | `AppleClang 21.0.0.21000334`          |
 
 `rust_over_cpp_ratio`: `327.53395024734476` (unreviewed sample figure bound to
 the HEAD and stamp above).
@@ -72,18 +72,18 @@ only for shape mismatches, by comparison to pinned LiquidFun
 `UpdateProxies` / `SortProxies`, in-place `b2World::Step`, `NDEBUG`). No C++
 samply wrap was run.
 
-| Symbol | Approximate share | Cause class | C++ counterpart (shape mismatch only) |
-| ------ | ----------------- | ----------- | ------------------------------------- |
-| `liquidfun::particle::contact::particle_rows` (leaf; inlined `ParticleSystemView::particle_ids` `.position` scan) | ~93.6% self | algorithm/shape differences | `b2ParticleSystem::FindContacts_Reference` calls `AddContact(a->index, b->index)` from `Proxy.index`; contacts keep integer indices, they do not re-scan identity slices |
-| `<liquidfun::identity::ParticleGroupId as SliceContains>::slice_contains` (parent `ParticleStorage::check_invariants`) | ~2.2% self | checks that survive `--release` | `b2Assert` compiled out under `NDEBUG` in `oracle-release` |
-| `ParticleStorage::replace_solver_candidate` | ~1.6% inclusive (~0.01% self) | checks that survive `--release` | C++ solver mutates member buffers in place; this path clones `ParticleStorage` then `check_invariants()?` on the release candidate |
-| `ParticleNeighborhood::from_view` | ~0.4% self / ~0.6% inclusive | algorithm/shape differences | `UpdateContacts` → `UpdateProxies(m_proxyBuffer)` + `SortProxies(m_proxyBuffer)` rewrite the in-place proxy buffer |
-| `alloc::raw_vec::RawVecInner::finish_grow` | ~0.5% self | per-step allocation | (none listed; C++ `m_contactBuffer` / member scratch reuse is the nearby shape, but this leaf is the allocator grow) |
-| `Vec<ParticleContact>` `SpecFromIterNested` collect | ~0.2% self | per-step allocation | `FindContacts` writes into reused `m_contactBuffer` (`SetCount(0)` then append) |
-| `ParticleStorage::recompute_weights` | ~0.3% self | extra per-particle work | (none; not a listed C++ shape split) |
-| `ParticleContactUpdate::generate` | ~0.3% self / ~94.3% inclusive | algorithm/shape differences | `UpdateContacts` / `FindContacts` parent of the index-preserving contact pass |
-| `particle::contact::listener_effects` / body-contact `listener_effects` | ~1.0% + ~0.4% self | extra per-particle work | listener notify uses stored indices; Rust re-resolves rows with `particle_rows` / `particle_row` |
-| `pressure::damping` | ~0.2% self | extra per-particle work | (none; kernel time, not a first-move SIMD target) |
+| Symbol                                                                                                                 | Approximate share             | Cause class                     | C++ counterpart (shape mismatch only)                                                                                                                                    |
+| ---------------------------------------------------------------------------------------------------------------------- | ----------------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `liquidfun::particle::contact::particle_rows` (leaf; inlined `ParticleSystemView::particle_ids` `.position` scan)      | ~93.6% self                   | algorithm/shape differences     | `b2ParticleSystem::FindContacts_Reference` calls `AddContact(a->index, b->index)` from `Proxy.index`; contacts keep integer indices, they do not re-scan identity slices |
+| `<liquidfun::identity::ParticleGroupId as SliceContains>::slice_contains` (parent `ParticleStorage::check_invariants`) | ~2.2% self                    | checks that survive `--release` | `b2Assert` compiled out under `NDEBUG` in `oracle-release`                                                                                                               |
+| `ParticleStorage::replace_solver_candidate`                                                                            | ~1.6% inclusive (~0.01% self) | checks that survive `--release` | C++ solver mutates member buffers in place; this path clones `ParticleStorage` then `check_invariants()?` on the release candidate                                       |
+| `ParticleNeighborhood::from_view`                                                                                      | ~0.4% self / ~0.6% inclusive  | algorithm/shape differences     | `UpdateContacts` → `UpdateProxies(m_proxyBuffer)` + `SortProxies(m_proxyBuffer)` rewrite the in-place proxy buffer                                                       |
+| `alloc::raw_vec::RawVecInner::finish_grow`                                                                             | ~0.5% self                    | per-step allocation             | (none listed; C++ `m_contactBuffer` / member scratch reuse is the nearby shape, but this leaf is the allocator grow)                                                     |
+| `Vec<ParticleContact>` `SpecFromIterNested` collect                                                                    | ~0.2% self                    | per-step allocation             | `FindContacts` writes into reused `m_contactBuffer` (`SetCount(0)` then append)                                                                                          |
+| `ParticleStorage::recompute_weights`                                                                                   | ~0.3% self                    | extra per-particle work         | (none; not a listed C++ shape split)                                                                                                                                     |
+| `ParticleContactUpdate::generate`                                                                                      | ~0.3% self / ~94.3% inclusive | algorithm/shape differences     | `UpdateContacts` / `FindContacts` parent of the index-preserving contact pass                                                                                            |
+| `particle::contact::listener_effects` / body-contact `listener_effects`                                                | ~1.0% + ~0.4% self            | extra per-particle work         | listener notify uses stored indices; Rust re-resolves rows with `particle_rows` / `particle_row`                                                                         |
+| `pressure::damping`                                                                                                    | ~0.2% self                    | extra per-particle work         | (none; kernel time, not a first-move SIMD target)                                                                                                                        |
 
 `particle_rows` is the bulk of named sampled time. It maps each
 `ParticleId` pair to dense rows with
@@ -94,11 +94,24 @@ the `FindContacts` path.
 
 ## Heap
 
-Heap run-or-skip is recorded after this named ranking, using the live
-`classify_profile_symbols` / samply allocator-`Vec` heuristic on the same
-bundle stamp. See the Heap subsection at the end of this file after the 23-08
-heap task updates it. Until that update, this heading exists so the cause
-taxonomy and Not found section can land first.
+Sidecar-first `classify_profile_symbols` on bundle
+`target/dam-break-perf/2026-09-21T04-34-32Z/` matched allocator/`Vec` needles, so
+private dhat ran once at the locked 60 warmup + 600 measured steps (no recipe
+shrink). The dump is gitignored and `not_timing_authority`. It is not the 3×
+number and must not be copied into the unprofiled ratio table.
+
+- Heap stamp: `target/dam-break-perf/2026-09-21T04-47-09Z/`
+- Dump: `target/dam-break-perf/2026-09-21T04-47-09Z/dhat-heap.json`
+- Identity: `heap-identity.json` (`kind: dhat_heap`, `cargo_profile: profiling`,
+  `features: ["dhat-heap"]`, `source_stamp: 2026-09-21T04-34-32Z`)
+- `matched_needles`: `alloc::`, `__rdl_alloc`, `alloc::vec::Vec`, `RawVec`,
+  `to_vec`, `GlobalAlloc`, `core::alloc::`, `core::clone::`
+- Heap identity `git_head`: `8d9c6f2647317d3d99516e19c263eb4ac578b4b7` (docs
+  commit after the named ranking; physics bytes unchanged from MEASURED_HEAD)
+
+Command used: `cargo xtask playground dam-break-heap --stamp 2026-09-21T04-34-32Z`
+because default latest-stamp selection requires current `git rev-parse HEAD` to
+equal the 23-07 stamp `git_head`. Do not `git add` `dhat-heap.json`.
 
 ## Not found
 

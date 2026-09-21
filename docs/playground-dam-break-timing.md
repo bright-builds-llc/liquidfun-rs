@@ -21,21 +21,27 @@ The workload is the live playground Dam Break Medium / Normal recipe: 1920
 particles, radius `0.06324555`, spacing `0.101193`, gravity `(0, -10)`,
 `dt = 1/60`, velocity 8 / position 3 / particle 2.
 
-## First recorded sample
+## Current recorded sample
 
-Recorded on this machine after the first successful pair.
+SHA-bound unprofiled pair from `target/dam-break-perf/2026-09-21T04-32-19Z/`
+(`pair.json`; also copied into audit bundle
+`target/dam-break-perf/2026-09-21T04-34-32Z/`). This is not a Phase 12 public
+claim. A first exploratory sample at
+`1e5cbcc124becd363049c4d62c60b715bc0d7897` remains historical only.
 
-- git HEAD: `1e5cbcc124becd363049c4d62c60b715bc0d7897`
+- git HEAD: `6d98531ac799987c209d3fd1e572e482fcab5da6`
 - OS/arch: `macos` / `aarch64`
 - CPU: `Apple M4 Max`
 - logical cores: `16`
 - warmup steps: `60`
 - measured steps: `600`
 
-| Engine      | Particles | Wall ms   | ms/step | steps/s  | Realtime factor | Compiler                              |
-| ----------- | --------- | --------- | ------- | -------- | --------------- | ------------------------------------- |
-| native Rust | 1920      | 70594.221 | 117.657 | 8.499    | 0.142           | `rustc 1.97.0 (2d8144b78 2026-07-07)` |
-| pinned C++  | 1920      | 232.439   | 0.387   | 2581.320 | 43.022          | `AppleClang 21.0.0.21000334`          |
+| Engine      | Particles | Wall ms      | ms/step    | steps/s     | Realtime factor | Compiler                              |
+| ----------- | --------- | ------------ | ---------- | ----------- | --------------- | ------------------------------------- |
+| native Rust | 1920      | 71001.949958 | 118.336583 | 8.450472    | 0.140841        | `rustc 1.97.0 (2d8144b78 2026-07-07)` |
+| pinned C++  | 1920      | 216.777375   | 0.361296   | 2767.816521 | 46.130275       | `AppleClang 21.0.0.21000334`          |
+
+`rust_over_cpp_ratio`: `327.53395024734476` (from `pair.json` only).
 
 Rust used `--release`. C++ used the scalar `oracle-release` wrapper (no
 `-ffast-math`, no `-march=native`).
