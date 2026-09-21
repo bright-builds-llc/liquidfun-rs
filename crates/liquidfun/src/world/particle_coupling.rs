@@ -196,8 +196,8 @@ impl World {
             .get_mut(system)
             .expect("system remains live during particle contact commit")
             .storage
-            .replace_indexed_particle_contacts(contacts)
-            .map_err(|_error| StepError::ParticleLifecycleInvariant)
+            .replace_indexed_particle_contacts(contacts);
+        Ok(())
     }
 
     fn update_body_contacts<H: CollisionDecisionHook>(

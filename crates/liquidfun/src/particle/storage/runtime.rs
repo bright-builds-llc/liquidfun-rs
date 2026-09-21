@@ -32,10 +32,7 @@ impl ParticleStorage {
         Ok(())
     }
 
-    pub(in crate::particle) fn limit_solver_speeds(
-        &mut self,
-        critical_velocity_squared: f32,
-    ) -> Result<(), ParticleStorageError> {
+    pub(in crate::particle) fn limit_solver_speeds(&mut self, critical_velocity_squared: f32) {
         for velocity in &mut self.velocities {
             let speed_squared = velocity.dot(*velocity);
             if speed_squared > critical_velocity_squared {
@@ -45,7 +42,6 @@ impl ParticleStorage {
         for record in &mut self.group_records {
             record.invalidate_statistics();
         }
-        Ok(())
     }
 
     pub(crate) fn flags(&self) -> &[ParticleFlags] {
@@ -266,10 +262,7 @@ impl ParticleStorage {
         Ok(())
     }
 
-    pub(crate) fn replace_indexed_particle_contacts(
-        &mut self,
-        contacts: Vec<ParticleContact>,
-    ) -> Result<(), ParticleStorageError> {
+    pub(crate) fn replace_indexed_particle_contacts(&mut self, contacts: Vec<ParticleContact>) {
         debug_assert!(
             contacts
                 .iter()
@@ -277,7 +270,6 @@ impl ParticleStorage {
         );
         self.particle_contacts = contacts;
         debug_assert_eq!(self.check_invariants(), Ok(()));
-        Ok(())
     }
 
     pub(in crate::particle) fn body_contacts(&self) -> &[ParticleBodyContact] {

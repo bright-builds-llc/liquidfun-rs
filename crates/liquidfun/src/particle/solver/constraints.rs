@@ -81,7 +81,7 @@ pub(crate) fn limit_velocity(
     }
     #[cfg(debug_assertions)]
     let stable_ids = stable_particle_ids(storage)?;
-    storage.limit_solver_speeds(critical_velocity_squared)?;
+    storage.limit_solver_speeds(critical_velocity_squared);
     #[cfg(debug_assertions)]
     validate_stable_ids(storage, &stable_ids)?;
     Ok(())
