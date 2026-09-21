@@ -67,6 +67,12 @@ fn run_cargo(args: &[String]) -> ExitCode {
     {
         return ExitCode::FAILURE;
     }
+    if args.iter().any(|argument| argument == "run")
+        && args.iter().any(|argument| argument == "dam-break-bench")
+        && args.iter().any(|argument| argument.contains("dhat-heap"))
+    {
+        return run_dhat_heap_bench(args);
+    }
     if args.iter().any(|argument| argument == "--profile")
         && args.iter().any(|argument| argument == "profiling")
     {
@@ -83,6 +89,19 @@ fn run_cargo(args: &[String]) -> ExitCode {
         return print_bench_sample("native_rust", 300.0, "rustc 1.97.0", args);
     }
     ExitCode::SUCCESS
+}
+
+fn run_dhat_heap_bench(args: &[String]) -> ExitCode {
+    let Some(path) = env::var_os("LIQUIDFUN_DHAT_HEAP_FILE") else {
+        eprintln!("LIQUIDFUN_DHAT_HEAP_FILE is unset");
+        return ExitCode::FAILURE;
+    };
+    const DUMP_BYTES: &[u8] = b"fake-dhat-heap-json-dump";
+    if std::fs::write(&path, DUMP_BYTES).is_err() {
+        eprintln!("failed to write {}", PathBuf::from(&path).display());
+        return ExitCode::FAILURE;
+    }
+    print_bench_sample("native_rust", 300.0, "rustc 1.97.0", args)
 }
 
 fn install_profiling_bench() -> ExitCode {
