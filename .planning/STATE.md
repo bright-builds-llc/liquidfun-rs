@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Native Performance Closing
-status: planning
-stopped_at: Phase 24 context gathered
-last_updated: "2026-09-21T15:05:00.460Z"
+status: executing
+stopped_at: Completed 24-01-PLAN.md
+last_updated: "2026-09-21T15:47:10.738Z"
 last_activity: 2026-09-21
 progress:
   total_phases: 4
   completed_phases: 2
-  total_plans: 15
-  completed_plans: 15
-  percent: 100
+  total_plans: 21
+  completed_plans: 16
+  percent: 76
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: `.planning/PROJECT.md` (updated 2026-09-21)
 
 ## Current Position
 
-Phase: 24
-Plan: Not started
-Status: Ready to plan
+Phase: 24 (Shared hot-path waves through 3×) — EXECUTING
+Plan: 2 of 6
+Status: Ready to execute
 Last activity: 2026-09-21
 
-Progress: [██████████] 50%
+Progress: [████████░░] 76%
 
 v1.2 Native Performance Closing. Gate is unprofiled `just playground-dam-break-bench` (Rust `--release` vs `oracle-release` Dam Break Medium ≤ 3×). Evidence dir `target/dam-break-perf/<utc-stamp>/`. v1.1 phase directories remain on disk. No package publication or release tag.
 
@@ -55,6 +55,7 @@ v1.1 plan durations remain in `.planning/milestones/v1.1-STATE.md`.
 | Phase 23 P07 | 8 min | 3 tasks | 1 files |
 | Phase 23 P08 | 9 min | 2 tasks | 2 files |
 | Phase 23 P09 | 6 min | 2 tasks | 1 files |
+| Phase 24-shared-hot-path-waves-through-3 P01 | 15 min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -125,14 +126,17 @@ v1.1 playground decisions remain in `.planning/milestones/v1.1-STATE.md` and PRO
 - [Phase 23]: D-16 independent AI review is not performed by this implementing agent; /gsd-verify-work 23 and a separate AI reviewer remain required. — Owner policy 2026-09-16: the implementing agent must not approve its own work. This plan records automated isolation evidence only.
 - [Phase 23]: BENCHMARKING.md points at docs/native-performance-audit.md as unreviewed SHA-bound notes; raw json.gz, dhat-heap.json, and trace stay gitignored and out of the empty manifest. — D-09/D-15: keep committed docs as unreviewed samples. Do not paste wall-ms or copy playground numbers into reference/performance/manifest.toml.
 - [Phase 23]: xtask playground units run as cargo test -p xtask playground because the package has no lib target. — cargo test -p xtask --lib playground fails with no library targets found; same as Phase 22 and 23-02/23-05.
+- [Phase 24-shared-hot-path-waves-through-3]: Carry dense ParticleIndex on neighborhood Proxy and a private pair_rows lane aligned with public ParticleNeighborPair ParticleId pairs. — D-01/D-03: restore FindContacts Proxy.index without changing the public ParticleId API.
+- [Phase 24-shared-hot-path-waves-through-3]: Previous public ParticleContact IDs go through maybe_live_row to resolve_live; do not store last-step rows on public contacts or add a HashMap cache. — D-01/D-02: compaction remaps rows; the generational identity map is not a hot-path HashMap cache.
+- [Phase 24-shared-hot-path-waves-through-3]: liquidfun stays scalar and safe: no rayon, std::simd, unsafe indexing, or workspace unsafe_code change. — PERF-BASELINE / D-15: wave 1 is index-preserving shape, not SIMD or unsafe.
 
 ### Pending Todos
 
-Plan Phase 24 (`/gsd-plan-phase 24`) from named shares in `docs/native-performance-audit.md`. Start with `particle_rows`; do not pre-select SIMD, PGO, or `unsafe` indexing.
+Execute 24-02 unprofiled Dam Break re-pair into a new exclusive stamp. Do not claim PERF-GATE unless that pair.json ratio is already ≤ 3. Do not pre-select SIMD, PGO, or `unsafe` indexing.
 
 ### Blockers/Concerns
 
-- Named extra work is `particle_rows` (~94% self); Phase 24 should not pre-select SIMD, PGO, or `unsafe` indexing.
+- Wave 1 landed `particle_rows` shape; leftover named frames need samply retarget after 24-02. Do not pre-select SIMD, PGO, or `unsafe` indexing.
 - samply setup / signing on this Mac is host-specific; Phase 22 must fail closed with install text.
 - Exploratory Dam Break Medium pair remains ~300× (`docs/playground-dam-break-timing.md`); that gap is the canary, not a public claim.
 
@@ -153,6 +157,6 @@ Plan Phase 24 (`/gsd-plan-phase 24`) from named shares in `docs/native-performan
 
 ## Session Continuity
 
-Last session: 2026-09-21T15:05:00.457Z
-Stopped at: Phase 24 context gathered
-Resume file: .planning/phases/24-shared-hot-path-waves-through-3/24-CONTEXT.md
+Last session: 2026-09-21T15:47:01.866Z
+Stopped at: Completed 24-01-PLAN.md
+Resume file: None
