@@ -257,6 +257,20 @@ impl ParticleStorage {
         Ok(())
     }
 
+    pub(crate) fn replace_indexed_particle_contacts(
+        &mut self,
+        contacts: Vec<ParticleContact>,
+    ) -> Result<(), ParticleStorageError> {
+        debug_assert!(
+            contacts
+                .iter()
+                .all(|contact| { contact.indices.iter().all(|index| index.0 < self.len()) })
+        );
+        self.particle_contacts = contacts;
+        debug_assert_eq!(self.check_invariants(), Ok(()));
+        Ok(())
+    }
+
     pub(in crate::particle) fn body_contacts(&self) -> &[ParticleBodyContact] {
         &self.body_contacts
     }

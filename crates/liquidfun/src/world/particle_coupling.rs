@@ -200,25 +200,21 @@ impl World {
         let neighborhood =
             ParticleNeighborhood::from_view(&view, diameter).map_err(StepError::ParticleProxy)?;
         let previous = view.stored_particle_contacts();
-        let update = ParticleContactUpdate::generate_from_stored(
-            &view,
-            &neighborhood,
-            previous,
-            |contact| hook_run.should_collide_particle_pair(contact),
-        )
-        .map_err(StepError::ParticleContact)?;
-        hook_run.ensure_lifecycle_capacity(update.effects().len())?;
-        for effect in update.effects().iter().copied() {
+        let (contacts, effects) =
+            ParticleContactUpdate::generate_indexed(&view, &neighborhood, previous, |contact| {
+                hook_run.should_collide_particle_pair(contact)
+            })
+            .map_err(StepError::ParticleContact)?;
+        hook_run.ensure_lifecycle_capacity(effects.len())?;
+        for effect in effects {
             hook_run.record_particle_contact(effect)?;
         }
-        preparation::particle_contacts(
-            &mut systems
-                .get_mut(system)
-                .expect("system remains live during particle contact commit")
-                .storage,
-            update.contacts(),
-        )
-        .map_err(|_error| StepError::ParticleLifecycleInvariant)
+        systems
+            .get_mut(system)
+            .expect("system remains live during particle contact commit")
+            .storage
+            .replace_indexed_particle_contacts(contacts)
+            .map_err(|_error| StepError::ParticleLifecycleInvariant)
     }
 
     fn update_body_contacts<H: CollisionDecisionHook>(

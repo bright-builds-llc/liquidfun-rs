@@ -134,6 +134,32 @@ impl ParticleContactUpdate {
         Ok(Self { contacts, effects })
     }
 
+    /// Generates dense-row contacts for the stepping path without a semantic snapshot.
+    pub(crate) fn generate_indexed(
+        view: &ParticleSystemView<'_>,
+        neighborhood: &ParticleNeighborhood,
+        previous: &[StoredParticleContact],
+        mut filter: impl FnMut(&ParticleContact) -> bool,
+    ) -> Result<(Vec<StoredParticleContact>, Vec<ParticleContactEffect>), ParticleContactError>
+    {
+        if neighborhood.system() != view.system() {
+            return Err(ParticleContactError::WrongParticleSystem);
+        }
+        if neighborhood.pairs().len() != neighborhood.pair_rows().len() {
+            return Err(ParticleContactError::MissingParticle);
+        }
+        if cfg!(debug_assertions) {
+            validate_neighborhood(view, neighborhood)?;
+        }
+        let contacts = collect_stored_contacts(view, neighborhood, &mut filter)?;
+        if !particle_contact_listeners_active(view) {
+            return Ok((contacts, Vec::new()));
+        }
+        let semantic = semantic_from_stored(view, &contacts)?;
+        let effects = listener_effects_from_stored(view, previous, &semantic)?;
+        Ok((contacts, effects))
+    }
+
     /// Returns retained contacts in source generation order.
     #[must_use]
     pub fn contacts(&self) -> &[ParticleContact] {
@@ -183,6 +209,14 @@ fn collect_new_contacts(
     neighborhood: &ParticleNeighborhood,
     filter: &mut impl FnMut(&ParticleContact) -> bool,
 ) -> Result<Vec<ParticleContact>, ParticleContactError> {
+    semantic_from_stored(view, &collect_stored_contacts(view, neighborhood, filter)?)
+}
+
+fn collect_stored_contacts(
+    view: &ParticleSystemView<'_>,
+    neighborhood: &ParticleNeighborhood,
+    filter: &mut impl FnMut(&ParticleContact) -> bool,
+) -> Result<Vec<StoredParticleContact>, ParticleContactError> {
     let diameter = neighborhood.diameter();
     let squared_diameter = diameter * diameter;
     let inverse_diameter = 1.0 / diameter;
@@ -207,22 +241,58 @@ fn collect_new_contacts(
             return Err(ParticleContactError::MissingParticle);
         };
         let inverse_distance = inverse_sqrt(distance_squared);
-        let contact = ParticleContact {
-            particles: candidate.particles(),
-            flags: *flags_a | *flags_b,
-            weight: 1.0 - distance_squared * inverse_distance * inverse_diameter,
-            normal: inverse_distance * difference,
-        };
-        if contact
-            .flags
-            .contains(ParticleFlags::PARTICLE_CONTACT_FILTER)
-            && !filter(&contact)
-        {
-            continue;
+        let flags = *flags_a | *flags_b;
+        let weight = 1.0 - distance_squared * inverse_distance * inverse_diameter;
+        let normal = inverse_distance * difference;
+        if flags.contains(ParticleFlags::PARTICLE_CONTACT_FILTER) {
+            let contact = ParticleContact {
+                particles: candidate.particles(),
+                flags,
+                weight,
+                normal,
+            };
+            if !filter(&contact) {
+                continue;
+            }
         }
-        contacts.push(contact);
+        contacts.push(StoredParticleContact {
+            indices: *pair_rows,
+            flags,
+            weight,
+            normal,
+        });
     }
     Ok(contacts)
+}
+
+fn particle_contact_listeners_active(view: &ParticleSystemView<'_>) -> bool {
+    view.flags()
+        .iter()
+        .any(|flags| flags.contains(ParticleFlags::PARTICLE_CONTACT_LISTENER))
+}
+
+fn semantic_from_stored(
+    view: &ParticleSystemView<'_>,
+    contacts: &[StoredParticleContact],
+) -> Result<Vec<ParticleContact>, ParticleContactError> {
+    let ids = view.particle_ids();
+    let mut semantic = Vec::with_capacity(contacts.len());
+    for contact in contacts {
+        let [row_a, row_b] = contact.indices;
+        let Some(&id_a) = ids.get(row_a.0) else {
+            return Err(ParticleContactError::MissingParticle);
+        };
+        let Some(&id_b) = ids.get(row_b.0) else {
+            return Err(ParticleContactError::MissingParticle);
+        };
+        semantic.push(ParticleContact {
+            particles: [id_a, id_b],
+            flags: contact.flags,
+            weight: contact.weight,
+            normal: contact.normal,
+        });
+    }
+    Ok(semantic)
 }
 
 fn listener_effects(
