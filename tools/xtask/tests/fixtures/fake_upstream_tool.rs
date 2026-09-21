@@ -1,5 +1,5 @@
 use std::env;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 fn main() -> ExitCode {
@@ -13,6 +13,9 @@ fn main() -> ExitCode {
 
     if tool.contains("git") {
         return run_git(&args);
+    }
+    if tool.contains("samply") {
+        return run_samply(&args);
     }
     if tool.contains("cargo") {
         return run_cargo(&args);
@@ -64,8 +67,75 @@ fn run_cargo(args: &[String]) -> ExitCode {
     {
         return ExitCode::FAILURE;
     }
-    if args.iter().any(|argument| argument == "dam-break-bench") {
+    if args.iter().any(|argument| argument == "--profile")
+        && args.iter().any(|argument| argument == "profiling")
+    {
+        return install_profiling_bench();
+    }
+    if args.iter().any(|argument| argument == "run")
+        && args.iter().any(|argument| argument == "dam-break-bench")
+    {
         return print_bench_sample("native_rust", 300.0, "rustc 1.97.0", args);
+    }
+    ExitCode::SUCCESS
+}
+
+fn install_profiling_bench() -> ExitCode {
+    let file_name = if cfg!(windows) {
+        "dam-break-bench.exe"
+    } else {
+        "dam-break-bench"
+    };
+    let target_dir = env::var_os("CARGO_TARGET_DIR").map_or_else(
+        || env::current_dir().unwrap_or_default().join("target"),
+        PathBuf::from,
+    );
+    let dir = target_dir.join("profiling");
+    if std::fs::create_dir_all(&dir).is_err() {
+        eprintln!("failed to create {}", dir.display());
+        return ExitCode::FAILURE;
+    }
+    let destination = dir.join(file_name);
+    let Ok(current) = env::current_exe() else {
+        eprintln!("failed to locate fake cargo executable");
+        return ExitCode::FAILURE;
+    };
+    if std::fs::copy(current, &destination).is_err() {
+        eprintln!("failed to install {}", destination.display());
+        return ExitCode::FAILURE;
+    }
+    ExitCode::SUCCESS
+}
+
+fn run_samply(args: &[String]) -> ExitCode {
+    if args.iter().any(|argument| argument == "--version") {
+        println!("samply 0.13.1");
+        return ExitCode::SUCCESS;
+    }
+    if args.first().map(String::as_str) != Some("record") {
+        eprintln!("unsupported fake samply arguments: {args:?}");
+        return ExitCode::FAILURE;
+    }
+    if let Some(marker) = env::var_os("LIQUIDFUN_TEST_SAMPLY_MARKER")
+        && std::fs::write(marker, args.join(" ")).is_err()
+    {
+        return ExitCode::FAILURE;
+    }
+    if !args.iter().any(|argument| argument == "--save-only") {
+        eprintln!("fake samply record requires --save-only");
+        return ExitCode::FAILURE;
+    }
+    let Some(output_index) = args.iter().position(|argument| argument == "-o") else {
+        return ExitCode::FAILURE;
+    };
+    let Some(output) = args.get(output_index + 1) else {
+        eprintln!("missing value for -o");
+        return ExitCode::FAILURE;
+    };
+    const PROFILE_BYTES: &[u8] = b"fake-samply-json-gz";
+    if std::fs::write(output, PROFILE_BYTES).is_err() {
+        eprintln!("failed to write {output}");
+        return ExitCode::FAILURE;
     }
     ExitCode::SUCCESS
 }
