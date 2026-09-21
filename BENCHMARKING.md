@@ -22,7 +22,11 @@ pair also writes gitignored `target/dam-break-perf/<utc-stamp>/pair.json` and
 unprofiled wall-clock). Do not commit `.json.gz` or `.trace` files, and do not
 copy pair numbers into `reference/performance/manifest.toml`. See
 [docs/native-performance-audit.md](docs/native-performance-audit.md) for
-unreviewed SHA-bound named-function notes. Raw `.json.gz`, `dhat-heap.json`,
+unreviewed SHA-bound named-function notes. See
+[docs/playground-scene-spot-check.md](docs/playground-scene-spot-check.md)
+for unreviewed native scene spot-checks; that local sample is not the Dam
+Break 3× gate and must not be copied into
+`reference/performance/manifest.toml`. Raw `.json.gz`, `dhat-heap.json`,
 and `.trace` files stay gitignored and must not be committed or copied into
 `reference/performance/manifest.toml`.
 
