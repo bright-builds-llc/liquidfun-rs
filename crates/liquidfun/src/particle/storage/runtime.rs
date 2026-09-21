@@ -80,31 +80,29 @@ impl ParticleStorage {
         pending_system_force: bool,
     ) -> Result<(), ParticleStorageError> {
         let count = self.len();
+        if positions.len() != count || velocities.len() != count || forces.len() != count {
+            return Err(ParticleStorageError::InvalidLaneBundle);
+        }
+        #[cfg(debug_assertions)]
         if particle_ids != self.particle_ids()
-            || positions.len() != count
-            || velocities.len() != count
-            || forces.len() != count
             || positions.iter().any(|position| !position.is_valid())
             || velocities.iter().any(|velocity| !velocity.is_valid())
             || forces.iter().any(|force| !force.is_valid())
         {
             return Err(ParticleStorageError::InvalidLaneBundle);
         }
+        #[cfg(not(debug_assertions))]
+        let _ = particle_ids;
         validate_groups(self.system, &self.groups, &group_records)?;
-        let mut candidate = self.clone();
-        candidate.positions = positions;
-        candidate.velocities = velocities;
-        candidate.forces = forces;
-        candidate.group_records = group_records;
-        candidate
-            .solver_state
+        self.positions = positions;
+        self.velocities = velocities;
+        self.forces = forces;
+        self.group_records = group_records;
+        self.solver_state
             .set_pending_system_force(pending_system_force);
-        candidate
-            .solver_state
-            .refresh_group_flags(&candidate.group_records);
+        self.solver_state.refresh_group_flags(&self.group_records);
         #[cfg(debug_assertions)]
-        candidate.check_invariants()?;
-        *self = candidate;
+        self.check_invariants()?;
         Ok(())
     }
 
