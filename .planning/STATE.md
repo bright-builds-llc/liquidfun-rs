@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Native Performance Closing
 status: executing
-stopped_at: Completed 23-07-PLAN.md
-last_updated: "2026-09-21T04:38:47.918Z"
+stopped_at: Completed 23-08-PLAN.md
+last_updated: "2026-09-21T04:51:03.944Z"
 last_activity: 2026-09-21
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 15
-  completed_plans: 13
-  percent: 87
+  completed_plans: 14
+  percent: 93
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: `.planning/PROJECT.md` (updated 2026-09-20)
 ## Current Position
 
 Phase: 23 (Baseline pair and named audit) — EXECUTING
-Plan: 8 of 9
+Plan: 9 of 9
 Status: Ready to execute
 Last activity: 2026-09-21
 
-Progress: [█████████░] 87%
+Progress: [█████████░] 93%
 
 v1.2 Native Performance Closing. Gate is unprofiled `just playground-dam-break-bench` (Rust `--release` vs `oracle-release` Dam Break Medium ≤ 3×). Evidence dir `target/dam-break-perf/<utc-stamp>/`. v1.1 phase directories remain on disk. No package publication or release tag.
 
@@ -53,6 +53,7 @@ v1.1 plan durations remain in `.planning/milestones/v1.1-STATE.md`.
 | Phase 23 P05 | 10 min | 2 tasks | 5 files |
 | Phase 23-baseline-pair-and-named-audit P06 | 6 min | 2 tasks | 2 files |
 | Phase 23 P07 | 8 min | 3 tasks | 1 files |
+| Phase 23 P08 | 9 min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -115,6 +116,11 @@ v1.1 playground decisions remain in `.planning/milestones/v1.1-STATE.md` and PRO
 - [Phase 23]: Do not mark PERF-HEAP complete in 23-06; live dump or skip notes remain 23-08. — This plan is fake-tool CLI coverage. Checking PERF-HEAP off before the live run-or-skip notes exist would be false.
 - [Phase 23]: Canonical live Dam Break stamps cite MEASURED_HEAD 6d98531 with pair 2026-09-21T04-32-19Z, profile 2026-09-21T04-32-56Z, bundle 2026-09-21T04-34-32Z, durable_copy same-tree. — Task 1 docs commit moved HEAD; pair was re-run so same-HEAD bundle succeeds. pair.json walls are the only 3x number. Live sidecar is rust.json.syms.json.
 - [Phase 23]: Do not mark PERF-AUDIT complete in 23-07; named-function notes remain 23-08. — This plan is live capture only. Checking PERF-AUDIT off before docs/native-performance-audit.md would be false.
+- [Phase 23]: Rank dominating frames from live rust.json.syms.json plus gecko sample weights; do not paste the hunt list as causes. — Sidecar-first ranking is the PERF-AUDIT source; hunt-list symbols stay Not found until they have a live share.
+- [Phase 23]: particle_rows is about 93.6 percent self (ParticleId.position scans); classify as algorithm/shape versus FindContacts indexA/indexB. — C++ FindContacts keeps Proxy.index; Rust re-scans particle_ids per contact candidate. SIMD is not the first move.
+- [Phase 23]: Copy rust_over_cpp_ratio 327.53395024734476 only from bundle pair.json at MEASURED_HEAD 6d98531ac799987c209d3fd1e572e482fcab5da6. — Unprofiled pair.json remains timing authority; samply, profiling, step_profiled, and dhat clocks are not_timing_authority.
+- [Phase 23]: Run private dhat after allocator/Vec needles; cite heap stamp 2026-09-21T04-47-09Z; never git add dhat-heap.json. — Needles matched on the live sidecar so dhat ran once at 60+600; dump stays gitignored under target/dam-break-perf.
+- [Phase 23]: Independent AI review remains 23-09; this plan does not self-approve. — Owner policy 2026-09-16: the implementing agent must not approve its own work.
 
 ### Pending Todos
 
@@ -143,6 +149,6 @@ Verify Phase 22 (`/gsd-verify-work 22`); independent AI review. Phase 24 plannin
 
 ## Session Continuity
 
-Last session: 2026-09-21T04:38:24.303Z
-Stopped at: Completed 23-07-PLAN.md
+Last session: 2026-09-21T04:50:50.561Z
+Stopped at: Completed 23-08-PLAN.md
 Resume file: None
