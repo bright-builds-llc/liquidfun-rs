@@ -16,7 +16,7 @@ The owner prioritizes a fun hobby project over production-quality certification.
 
 ## Current State
 
-v1.2 Native Performance Closing is the active milestone. Phase 23 Baseline pair and named audit is complete (2026-09-21): committed `docs/native-performance-audit.md` names `particle_rows` (~93.6% self) from a SHA-bound unprofiled Dam Break pair (ratio `327.53395024734476` at HEAD `6d98531ac799987c209d3fd1e572e482fcab5da6`), copy-only audit-bundle stamps, and a private dhat dump after allocator/`Vec` needles matched. Independent AI review digest `c23661d75e80e8702f7b175ba3e5578479f4999586ae9be5e194f8de2346f01d`. Phase 24 (shared hot-path waves through 3×) is next. The unprofiled Dam Break Medium pair remains ~328× slower in native Rust than pinned C++ (`docs/playground-dam-break-timing.md`); that gap is the canary, not a public performance claim.
+v1.2 Native Performance Closing is the active milestone. Phase 24 Shared hot-path waves through 3× is complete (2026-09-21): evidenced scalar kernels in shared `liquidfun` particle/rigid stepping closed Dam Break Medium to unprofiled `rust_over_cpp_ratio` `2.956857456935513` (gate stamp `target/dam-break-perf/2026-09-21T20-38-50Z/`; kernel-HEAD sample `2.8769953439599707` at `2026-09-21T20-36-30Z`). Five playground scenes were spot-checked headless (`just playground-scene-spot`, same-cluster PERF-CANARY2). `liquidfun` stays bitflags-only; `reviewed_reports` stays empty; this is not a public “Rust is N×” claim. Independent AI review digest `c9185f396610c250b2861480b0c1aa9cbfd16a2eef73c881fccc9d10ac99e31d` (`issues_found`: WR-01 failed-step particle/body restore). Phase 25 (WASM sanity and honest close) is next.
 
 The v1.1 Web Playground planning milestone is archived (2026-09-20): 6 phases and 39 plans completed. Visitors can run Dam Break, Fountain, Float or Sink, Color Mixer, Jelly Drop, and Water Wheel at `https://bright-builds-llc.github.io/liquidfun-rs/` with in-app SVG previews, play/pause/reset, honest Reset labels, pointer interaction, and automatic Pages delivery. This is not a crate or npm release. See `.planning/MILESTONES.md` and `.planning/milestones/v1.1-REQUIREMENTS.md`.
 
@@ -57,14 +57,14 @@ Phase numbering continues after 21. Package publication remains separately autho
 
 ### Active
 
-- [ ] Native Dam Break Medium, same-host scalar `--release` vs `oracle-release`, Rust wall time ≤ 3× pinned C++
-- [ ] Shared particle/rigid hot-path fixes from profile evidence, with spot-checks on other scenes
 - [ ] Lightweight WASM / playground sanity check after the native gate
-- [ ] Scalar deterministic baseline retained; remaining Dam Break delta documented
+- [ ] Remaining Dam Break delta documented without a public “Rust is N×” claim
 
 Package publication remains separately authorized.
 
 ### Validated
+
+- [x] Phase 24 completed PERF-ADMIT, PERF-SHARED, PERF-GATE, PERF-BASELINE, PERF-SPOT, and PERF-CANARY2: shared scalar `particle_rows` / leftover kernels until unprofiled Dam Break Medium `pair.json` `rust_over_cpp_ratio` `2.956857456935513` (stamp `2026-09-21T20-38-50Z`); five-scene `just playground-scene-spot`; empty `reviewed_reports`; `unsafe_code = "forbid"`. Independent AI review digest `c9185f396610c250b2861480b0c1aa9cbfd16a2eef73c881fccc9d10ac99e31d` (`issues_found`, WR-01). Not crate publication or a Phase 12 public claim.
 
 - [x] Phase 23 completed PERF-AUDIT and PERF-HEAP: committed `docs/native-performance-audit.md` names `particle_rows` (~93.6% self) from live pair+samply at MEASURED_HEAD `6d98531ac799987c209d3fd1e572e482fcab5da6`, unprofiled ratio `327.53395024734476`; copy-only audit-bundle; private dhat when allocator/`Vec` needles matched; timing doc refreshed as an unreviewed sample. Independent AI review digest `c23661d75e80e8702f7b175ba3e5578479f4999586ae9be5e194f8de2346f01d`. This is not the 3× gate or crate publication.
 
@@ -273,4 +273,4 @@ This document evolves at phase transitions and milestone boundaries.
 
 ______________________________________________________________________
 
-*Last updated: 2026-09-21 after Phase 22 Observability shell. Strict native certification remains optional. Package publication and release tags remain separately authorized.*
+*Last updated: 2026-09-21 after Phase 24 Shared hot-path waves through 3×. Strict native certification remains optional. Package publication and release tags remain separately authorized.*
