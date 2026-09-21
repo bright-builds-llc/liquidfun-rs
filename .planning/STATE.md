@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Native Performance Closing
 status: verifying
-stopped_at: Completed 24-06-PLAN.md
-last_updated: "2026-09-21T21:52:58.493Z"
+stopped_at: Phase 25 context gathered
+last_updated: "2026-09-21T22:13:29.654Z"
 last_activity: 2026-09-21
 progress:
   total_phases: 4
@@ -179,6 +179,6 @@ Execute 24-04 leftover waves from samply stamp `2026-09-21T16-07-39Z` until unpr
 
 ## Session Continuity
 
-Last session: 2026-09-21T21:40:05.859Z
-Stopped at: Completed 24-06-PLAN.md
-Resume file: None
+Last session: 2026-09-21T22:13:29.647Z
+Stopped at: Phase 25 context gathered
+Resume file: .planning/phases/25-wasm-sanity-and-honest-close/25-CONTEXT.md
