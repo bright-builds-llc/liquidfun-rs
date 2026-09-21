@@ -248,6 +248,22 @@ fn compaction_drops_removed_references_and_remaps_survivors() {
 }
 
 #[test]
+fn compaction_without_pending_leaves_storage_unchanged() {
+    // Arrange
+    let (mut storage, _ids) = populated_storage();
+    let before = storage.clone();
+
+    // Act
+    let destroyed = storage
+        .compact_pending()
+        .expect("identity compact is valid");
+
+    // Assert
+    assert!(destroyed.is_empty());
+    assert!(storage == before);
+}
+
+#[test]
 fn incomplete_mapping_cannot_remove_a_live_row() {
     // Arrange
     let (mut storage, _ids) = populated_storage();

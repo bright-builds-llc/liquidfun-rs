@@ -10,6 +10,7 @@ pub(in crate::particle::storage) fn prepare_group_reassignment_permutation(
     group_records: &[GroupRecord],
     topology_policy: TopologyRemapPolicy,
 ) -> Result<PreparedPermutation, ParticleStorageError> {
+    #[cfg(debug_assertions)]
     storage.check_invariants()?;
     if groups_by_old_row.len() != storage.len() {
         return Err(ParticleStorageError::InvalidPermutation);

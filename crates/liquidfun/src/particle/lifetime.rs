@@ -469,6 +469,12 @@ impl ParticleLifetimeState {
 pub(crate) fn compact_pending_with_occurrences(
     storage: &mut ParticleStorage,
 ) -> Result<ParticleCompactionOutcome, ParticleStorageError> {
+    if storage.pending_count() == 0 {
+        return Ok(ParticleCompactionOutcome {
+            destroyed: Vec::new(),
+            requested_listener_occurrences: Vec::new(),
+        });
+    }
     let particle_ids = storage.particle_ids().to_vec();
     let mut next = 0_usize;
     let mut requested_listener_occurrences = Vec::new();

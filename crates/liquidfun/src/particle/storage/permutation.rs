@@ -97,6 +97,7 @@ pub(super) fn prepare_permutation(
     old_to_new: &[Option<usize>],
     topology_policy: TopologyRemapPolicy,
 ) -> Result<PreparedPermutation, ParticleStorageError> {
+    #[cfg(debug_assertions)]
     storage.check_invariants()?;
     let new_count = validate_basic_permutation(old_to_new, storage.dense_to_id.len())?;
     prepare_candidate(
