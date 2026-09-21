@@ -135,6 +135,7 @@ impl Fixture {
         self.storage
             .replace_particle_contacts(&contacts)
             .expect("test contacts use live particles");
+        self.storage.refresh_solver_weights();
     }
 
     fn set_body_contacts(&mut self, contacts: &[(usize, BodyId, FixtureId, f32, Vec2, f32)]) {
@@ -154,6 +155,7 @@ impl Fixture {
         self.storage
             .replace_body_contacts(&contacts)
             .expect("test body contacts use live particles");
+        self.storage.refresh_solver_weights();
     }
 }
 

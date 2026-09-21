@@ -90,6 +90,7 @@ impl Fixture {
         self.storage
             .replace_particle_contacts(&[contact])
             .expect("test contact is valid");
+        self.storage.refresh_solver_weights();
     }
 
     fn contacts(&mut self, contacts: &[(usize, usize, ParticleFlags, f32, Vec2)]) {
@@ -108,6 +109,7 @@ impl Fixture {
         self.storage
             .replace_particle_contacts(&contacts)
             .expect("test contacts are valid");
+        self.storage.refresh_solver_weights();
     }
 
     fn body_contact(&mut self, particle: usize, body: BodyId, weight: f32, mass: f32) {
@@ -122,6 +124,7 @@ impl Fixture {
         self.storage
             .replace_body_contacts(&[contact])
             .expect("test body contact is valid");
+        self.storage.refresh_solver_weights();
     }
 }
 

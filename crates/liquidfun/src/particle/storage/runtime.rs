@@ -253,7 +253,6 @@ impl ParticleStorage {
             });
         }
         self.particle_contacts = particle_contacts;
-        self.recompute_weights();
         debug_assert_eq!(self.check_invariants(), Ok(()));
         Ok(())
     }
@@ -296,7 +295,6 @@ impl ParticleStorage {
             })
             .collect::<Result<Vec<_>, ParticleStorageError>>()?;
         self.body_contacts = body_contacts;
-        self.recompute_weights();
         debug_assert_eq!(self.check_invariants(), Ok(()));
         Ok(())
     }
