@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Native Performance Closing
 status: executing
-stopped_at: Completed 24-04-PLAN.md
-last_updated: "2026-09-21T20:38:32.958Z"
+stopped_at: Completed 24-05-PLAN.md
+last_updated: "2026-09-21T21:19:36.191Z"
 last_activity: 2026-09-21
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 21
-  completed_plans: 19
-  percent: 90
+  completed_plans: 20
+  percent: 95
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-09-21)
 ## Current Position
 
 Phase: 24 (Shared hot-path waves through 3×) — EXECUTING
-Plan: 5 of 6
+Plan: 6 of 6
 Status: Ready to execute
 Last activity: 2026-09-21
 
@@ -59,6 +59,7 @@ v1.1 plan durations remain in `.planning/milestones/v1.1-STATE.md`.
 | Phase 24-shared-hot-path-waves-through-3 P02 | 5 min | 2 tasks | 2 files |
 | Phase 24-shared-hot-path-waves-through-3 P03 | 11 min | 2 tasks | 3 files |
 | Phase 24 P04 | 265 | 2 tasks | 24 files |
+| Phase 24-shared-hot-path-waves-through-3 P05 | 36min | 2 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -142,6 +143,10 @@ v1.1 playground decisions remain in `.planning/milestones/v1.1-STATE.md` and PRO
 - [Phase 24]: PERF-GATE uses newest same-HEAD unprofiled pair.json rust_over_cpp_ratio, not samply duration.
 - [Phase 24]: Stop leftover kernels at <= 3 (D-06); do not gold-plate remaining ~2% frames.
 - [Phase 24]: Failed leftovers keep their stamps and revert the kernel; never call a non-improving sample a win.
+- [Phase 24]: PERF-CANARY2 is same-cluster; Fountain and Water Wheel extra wall is emission 1 to 3200 particle-contact work, not a rigid-solve hang. No second native profile stamp. — D-12 / PERF-CANARY2 default: all five scenes finished without timeout or a different failure mode.
+- [Phase 24]: Spot JSON is exclusive kind native_scene_spot with not_timing_authority true; no rust_over_cpp_ratio and no pair.json. Gate stamps 2026-09-21T20-36-30Z and 2026-09-21T20-38-50Z were not overwritten. — D-11/D-15: spot walls must never become the Dam Break 3x number.
+- [Phase 24]: live_particle_count snapshots the live particle system; construction particle_count is stale after Fountain emit. — Fountain and Water Wheel grew 1 to 3200 in stamp 2026-09-21T21-10-50Z, proving on_advance hooks ran.
+- [Phase 24]: just playground-scene-spot is a one-line cargo xtask printer; warmup 60 / measured 120 / advance(1); dam-break-bench is not the spot timer. — D-05/D-06: just stays a one-line printer; spot defaults are not the Dam Break 600-step pair.
 
 ### Pending Todos
 
@@ -170,6 +175,6 @@ Execute 24-04 leftover waves from samply stamp `2026-09-21T16-07-39Z` until unpr
 
 ## Session Continuity
 
-Last session: 2026-09-21T20:38:32.955Z
-Stopped at: Completed 24-04-PLAN.md
+Last session: 2026-09-21T21:18:31.107Z
+Stopped at: Completed 24-05-PLAN.md
 Resume file: None
