@@ -1,270 +1,288 @@
 # Feature Research
 
-**Domain:** Native LiquidFun performance closing (audit, scripted profiling, Dam Break Medium ≤ 3× C++)
-**Milestone:** v1.2 Native Performance Closing
-**Researched:** 2026-09-20
-**Confidence:** HIGH for table stakes, anti-features, and existing bench/oracle dependencies; MEDIUM for which shared hot paths actually dominate the ~300× Dam Break gap until a profiled audit lands
+**Domain:** LiquidFun JavaScript testbed scene ports for the existing SolidJS playground
+**Milestone:** v1.3 Reference Testbed Scenes
+**Researched:** 2026-09-21
+**Confidence:** HIGH for scene setup and recognizable behavior (pinned JS + C++ sources); MEDIUM for engine-gap severity until each scene is built against the live `liquidfun` public API
 
-## Scope
+**Already shipped (do not re-scope as new work):** Dam Break, Fountain, Float or Sink, Color Mixer, Jelly Drop, Water Wheel; shared SolidJS player (play/pause/reset), catalog previews, hash routes, pointer interaction, GitHub Pages. Catalog source: `web/src/catalog/scenes.ts`.
 
-This milestone is a **developer-facing performance-closing loop**, not a new physics product, playground catalog, or public benchmark claim.
-
-“v1.2 launch” means: native Dam Break Medium is in the same order of magnitude as pinned C++ on one same-host scalar pair, the hunt is evidenced, and remaining delta is described honestly. It does **not** mean Phase 12 sealed public numbers, Rust ≈ C++ everywhere, or WASM ≈ C++.
-
-Frame every new capability as something a developer or playground visitor can do. Existing v1.0/v1.1 work is a dependency, not a new feature.
-
-### Already built (do not re-scope as new)
-
-| Capability | Where it lives | How v1.2 uses it |
-| --- | --- | --- |
-| Native Rust engine (math, collision, rigid, joints, particles) with safe handles | `crates/liquidfun` | Shared particle/rigid hot paths are the optimization surface |
-| C++ oracle + semantic differential harness | `cargo xtask upstream`, `liquidfun-differential` | Correctness gate after each admitted change; C++ is the pair partner, not the runtime |
-| Exploratory Dam Break pair timer | `just playground-dam-break-bench`, `docs/playground-dam-break-timing.md` | Numeric canary (extend with dated reports + profiles; do not treat the first sample as a claim) |
-| Six-scene WASM playground | GitHub Pages + `just web-player-smoke` | Post-gate sanity only; no new scenes |
-| Phase 12 sealed benchmark *method* | `BENCHMARKING.md`, empty `reference/performance/manifest.toml` | Reuse admission *ideas* (profiled timings are not authority; scalar `--release` vs `oracle-release`). Do not fill the reviewed-report manifest |
-
-First recorded Dam Break Medium sample (unreviewed, one host): native Rust ~70.6 s vs pinned C++ ~0.23 s for 600 timed steps (~300×). That table is diagnosis, not a public claim.
+**Authority for missing scenes:** Official JS menu in `third_party/liquidfun/liquidfun/Box2D/lfjs/index.html` (same thirteen entries as [google.github.io/liquidfun](https://google.github.io/liquidfun/) `lfjs/index.html`). Behavior described from `lfjs/testbed/tests/test*.js` with C++ Testbed headers as cross-checks.
 
 ## Feature Landscape
 
 ### Table Stakes (Users Expect These)
 
-Features developers assume exist when closing a huge C++ vs Rust physics gap. Missing these = the milestone feels incomplete or untrustworthy.
+Features visitors assume exist once the milestone claims “every JS testbed scene we do not already have.” Missing these = incomplete ports or broken catalog UX.
 
 | Feature | Why Expected | Complexity | Notes |
-| --- | --- | --- | --- |
-| **Developer can audit shared particle/rigid stepping against the C++ oracle** and get a committed notes doc that names hot functions, extra per-particle work, per-step allocations, `--release` checks, and algorithm/shape differences, plus the current Dam Break Medium wall-time ratio | A ~300× gap is almost never “Rust bounds checks.” Mature ports land near 1.2–2× after removing extra work. Without named functions, later “optimizations” are guesses | HIGH | Compare Rust `World::step` / particle neighborhood, contacts, solvers, and rigid coupling to pinned LiquidFun. Hunt quadratic validators, `Vec` rebuilds, clones, HashMap-ordered work, and identity maps that C++ does not pay every step. First suspects already visible in-tree: `ParticleNeighborhood::from_view` allocates+sorts proxies every call; some solver kernels `Vec::new()` per pass. Do not wait for SIMD. **REQ seed:** `PERF-AUDIT` |
-| **Developer can re-run the Dam Break Medium pair on demand** (same host, scalar Rust `--release` vs C++ `oracle-release`, locked 1920-particle playground recipe, 60 warm-up + 600 timed `World::step` / `b2World::Step`) and see wall ms, ms/step, and Rust/C++ ratio | Same-workload, same-host, same-opt-level pairing is the industry floor (box2d-rust uses the C benchmark app vs a line-for-line Rust port, serial vs serial, interleaved). Unpaired or debug-vs-release numbers are meaningless | LOW–MEDIUM | Extend existing `just playground-dam-break-bench` / xtask. Keep construction, insertion, warm-up, capture, and rendering outside the timer. Persist dated reports; do not only print Markdown to stdout. **REQ seed:** `PERF-PAIR` |
-| **Developer can capture CPU profiles of the timed Dam Break `--release` binary through a repeatable `just` / xtask script** and land them in a gitignored evidence directory with host, git HEAD, compiler, and command identity | Flamegraphs/call trees are how Rapier, Avian, and box2d-rust actually find wins. “We think contacts are slow” is not an audit | MEDIUM | On this macOS hobby host, script `samply` (Firefox Profiler) or `cargo flamegraph` / Instruments Time Profiler. Build with debug info on a release-class profile (`inherits = "release"`, `debug = true`); profiled timings are **never** wall-clock authority (`BENCHMARKING.md`). Gitignore the dumps (`target/…` is already ignored). **REQ seed:** `PERF-PROFILE` |
-| **Developer can admit an optimization only from evidence** (named hot function or typed allocation/cache/scaling bottleneck + unprofiled Dam Break pair improvement + existing correctness gates still green) | Ports that skip admission ship SIMD/unsafe/parallel “fixes” that hide the real extra work, break determinism, or regress other scenes | MEDIUM | Lightweight analog of Phase 12 `optimization-check`, **not** the 32-case sealed matrix. Minimum bar: candidate is scalar `release`; Dam Break Medium unprofiled wall ratio improves; relevant profile share or typed bottleneck; differential/unit/determinism/safety regressions used by this engine still pass; no playground-scene cheat (do not lower particle count). **REQ seed:** `PERF-ADMIT` |
-| **Developer can land profile-guided fixes on *shared* particle/rigid hot paths** so Dam Break and other particle/rigid scenes benefit from the same change | A Dam Break-only special case is a demo hack, not an engine close | HIGH | Neighborhood/proxy rebuild, contact generation, particle–body coupling, pressure/damping/integrate, and rigid contact solve are the shared surface. Scene controllers and WASM frame copies are out of scope until native stepping is honest. **REQ seed:** `PERF-SHARED` |
-| **Developer can demonstrate native Dam Break Medium wall time ≤ 3× pinned C++** on the same host under scalar `--release` vs `oracle-release` | Owner-locked numeric gate. “Same order of magnitude” means 300× → ≤3×, not 1.00× parity and not a README trophy | HIGH | Re-run the pair after admitted fixes. Record host, git HEAD, compilers, warmup/steps, both wall times, and ratio. Leave `reference/performance/manifest.toml` empty. **REQ seed:** `PERF-GATE` |
-| **Developer can spot-check the other five playground scenes** (Fountain, Float or Sink, Color Mixer, Jelly Drop, Water Wheel) after shared-path fixes | Users will feel a Dam Break-only win as a lie if Fountain still crawls. A second sealed 32-case matrix is the wrong response | LOW–MEDIUM | Profile or time native `--release` headless stepping; look for improvement or non-catastrophic regression. No C++ pair required per scene; no Phase 12 case hashes. **REQ seed:** `PERF-SPOT` |
-| **Developer can keep the scalar deterministic compatibility baseline** while closing the gap; SIMD and parallelism stay explicit opt-in (off by default) | Rapier documents that SIMD lane width is its own determinism domain and cannot mix with enhanced-determinism. Avian’s 3× came from default-on parallel graph coloring — the opposite of this project’s lock | LOW (policy) / HIGH (if violated) | Workspace already `unsafe_code = "forbid"`. Do not lift that to chase the canary. Safe layout/allocation/algorithm fixes first. **REQ seed:** `PERF-BASELINE` |
-| **Developer can document the remaining Dam Break delta honestly** after the gate (ratio, suspected leftover causes, what was not attempted) | Incomplete closes that are marketed as “fast as C++” destroy trust. box2d-rust still publishes 1.25× with named leftovers | LOW | Committed notes, not a sealed report. Do not write “Rust is X% slower” into README as a universal claim. **REQ seed:** `PERF-NOTES` |
-| **Visitor can still run the six playground scenes after the native gate**, with a lightweight WASM/playground sanity check recorded honestly (not versus C++) | Native stepping wins should not break Pages; WASM is a different runtime (no C++ oracle, extra copy lanes, browser budget) | LOW–MEDIUM | After `PERF-GATE`, rebuild WASM and run `just web-player-smoke` plus an optional Dam Break step-time / realtime-factor note in the gitignored evidence dir. Compare WASM to *previous WASM* or to native Rust, never to `oracle-release`. **REQ seed:** `PERF-WASM` |
+|---------|--------------|------------|-------|
+| **Drawing Particles** scene | In the official JS menu; interactive particle painting is the flag showcase | HIGH | Empty U-shaped box; drag draws radius-0.2 circle groups; destroy-under-cursor then create. Mode keys (E/P/R/S/T/V/W/B/H/N/M/F/C/Z/X) select flags/groups. Sources: `testDrawingParticles.js`, `DrawingParticles.h`. Recognizable: paint with at least water + a few material modes (elastic/rigid/wall/color); joining consecutive strokes. Full keyboard palette is chrome. |
+| **Elastic Particles** scene | Menu entry; shows spring vs elastic solids | MEDIUM | Basin + walls; red spring circle, green elastic circle, blue elastic box (angled, spinning); falling dynamic circle. Sources: `testElasticParticles.js`, `ElasticParticles.h`. Recognizable: three colored soft blobs that bounce/recover differently when hit. JS file notes upstream buginess — recognizable motion beats bit-exact soft response. |
+| **Impulse** scene | Menu entry; teaches group force/impulse | LOW–MEDIUM | Loop chain box; one particle box group; click inside applies force (default) or linear impulse toward click from box center. Keys `l`/`f` toggle. Sources: `testImpulse.js`, `Impulse.h`. Recognizable: click sloshes the blob as a unit. Impulse vs force toggle is table-stakes control; C++ particle-parameter UI is chrome. |
+| **Liquid Timer** scene | Menu entry; memorable “hourglass” flow | MEDIUM | Loop walls; tensile+viscous slab at top; edge baffles forming a vertical gap and zig-zag shelves into four bottom columns. Sources: `testLiquidTimer.js`, `LiquidTimer.h`. Recognizable: liquid drains through the gap and zig-zags into columns. Particle-parameter switching (C++ only) is chrome. |
+| **Particles** scene | Menu entry; baseline “blob falls, ball falls” | LOW | Floor + slanted side walls; large red water circle (r=2); dynamic circle above. Sources: `testParticles.js`, `Particles.h`. Recognizable: water splatters in the basin while a rigid ball drops into it. Damping 0.2 and C++ particle-type picker are optional. |
+| **Rigid Particles** scene | Menu entry; rigid-group counterpart to Elastic | MEDIUM | Same basin layout as Elastic; three RGB rigid+solid groups (circles + spinning box); falling ball. Sources: `testRigidParticles.js`, `RigidParticles.h`. Recognizable: colored clumps move as rigid bodies and collide with the ball. Same “JS buggy” caveat as Elastic. |
+| **Soup** scene | Menu entry; liquid with floating “ingredients” | MEDIUM | Basin; water box group; carve holes then place circle + two squares + three edge “noodles” with mass data. Sources: `testSoup.js`, `Soup.h`. Recognizable: broth with bobbing solids. `DestroyParticlesInShape` at spawn is part of the look. |
+| **Soup Stirrer** scene | Menu entry; animated stir of Soup | MEDIUM–HIGH | Builds on Soup; damping 1.0; dynamic circle stirrer; prismatic joint (x-axis); rotating force each step; click/`t` toggles joint. Sources: `testSoupStirrer.js`, `SoupStirrer.h`. Recognizable: auto-stirring paddle; joint unlock lets it roam. Requires Soup + prismatic + per-step force. |
+| **Sparky** scene | Menu entry; collision sparks | HIGH | Tall chamber; six large dynamic circles stacked; on body contact spawn powder particle VFX that expand then fade/destroy. Sources: `testSparky.js`, `Sparky.h`. Recognizable: colliding balls throw short-lived colorful particle bursts. Contact listener + group destroy + color fade are table stakes; exact VFX pool size (50) is chrome. |
+| **Surface Tension** scene | Menu entry; tensile + color mixing | MEDIUM | Basin; three tensile+colorMixing groups (red/green circles, blue box); falling ball; color buffer updates. Sources: `testSurfaceTension.js`, `ParticlesSurfaceTension.h`. Recognizable: blobs bead and mix color on contact (same family as Color Mixer, different flags/layout). |
+| **Theo Jansen** scene | Menu entry; walking machine + particles | HIGH | Ground + end walls; 40 balls; chassis/wheel + six legs (distance + revolute); motorized revolute; particle slab on top. Keys a/s/d/m(/l). Sources: `testTheoJansen.js`, `TheoJansen.h`. Recognizable: walker walks (or tries) while particle rain sits atop. Direction/motor controls are table stakes; limit toggle is chrome. |
+| **Wave Machine** scene | Menu entry; default JS selection; iconic slosh | MEDIUM | Motorized revolute box (four thin walls); particle fill; `Step` sets `motorSpeed = 0.05 * cos(t) * π`. Sources: `testWaveMachine.js`, `WaveMachine.h`. Recognizable: rocking tank that keeps making waves. No pointer required. C++ particle-parameter UI is chrome. |
+| Catalog entry per new scene | Matches existing six-scene UX | LOW | Title, description, SVG preview, hash route, `ready`, credits — extend `web/src/catalog/scenes.ts` pattern. |
+| Shared player reuse | Visitors already know play/pause/reset | LOW | Do not fork a second player; remount on reset like current scenes. |
+| Per-scene credits | Honest inspiration/implementation links | LOW | Point at pinned `lfjs/testbed/tests/test*.js` and matching `Testbed/Tests/*.h` under commit `7f204021…`. |
+| One meaningful interaction (where JS has one) | Existing playground promise | LOW–MEDIUM | Drawing: drag-paint. Impulse: click-push. Soup Stirrer: click-toggle joint. Theo Jansen: direction/motor. Sparky: watch collisions (optional poke). Passive/Liquid Timer/Particles/Rigid/Soup/Surface Tension/Wave Machine: watch-first is enough; optional pointer is differentiator. |
+| Bounded lifecycle | Prevent WASM hang after long runs | MEDIUM | Cap particle counts; Sparky must destroy expired VFX groups; Drawing must not unbounded-grow without destroy. |
 
 ### Differentiators (Competitive Advantage)
 
-Not required for a generic “make it faster” PR. Valuable here because the project already has an oracle, a locked Dam Break recipe, and a sealed method it is *choosing not* to revive as a public claim.
+Not required for “recognizable port,” but valuable for this hobby playground vs a raw testbed dump.
 
 | Feature | Value Proposition | Complexity | Notes |
-| --- | --- | --- | --- |
-| **Canary-first same-order close** instead of filling the Phase 12 32-case public matrix | Developers get a useful engine on the actual playground recipe without pretending 32 sealed workloads are reviewed. Empty `reviewed_reports = []` stays truthful | MEDIUM | This *is* the milestone shape. Phase 12 remains optional strict tooling |
-| **Named-function audit committed in-repo** | Most ports only ship “~faster.” A dated notes doc that names functions and the Dam Break delta is the artifact reviewers and future phases can trust | MEDIUM | Profiles themselves stay gitignored; the *names and suspected causes* are committed |
-| **Paired C++ extra target on the exact playground recipe** | Unique vs Rapier/Avian (no LiquidFun C++ oracle) and stronger than ad hoc Criterion micros | LOW | Already exists; v1.2 makes it the gate and persists reports |
-| **Lightweight admission without a public claim** | Captures Phase 12’s good rule (profiles ≠ authority; correctness hashes stay accepted) without 150-sample calibration or manifest promotion | MEDIUM | A short checklist in notes + scripts is enough; do not require `cargo xtask performance optimization-check` over the 32-case record |
-| **Engine-wide hunt, scene-local gate** | Fixes land in `liquidfun`; Dam Break is the numeric bar; other scenes are spot-checks | HIGH | Prevents “optimize the bench” theater |
-| **Post-gate WASM honesty** | Playground visitors are the only current public users; recording whether Dam Break is less stuttery without claiming WASM≈C++ matches hobby scope | LOW | Optional extra: native-wasm `dam-break-bench` vs previous native, still not vs C++ |
+|---------|-------------------|------------|-------|
+| Preset controls mapped from JS keys | Discoverable without memorizing E/P/R keys | LOW–MEDIUM | Drawing Modes as labeled presets; Impulse force vs impulse; Theo Jansen direction; Soup Stirrer joint on/off. Prefer playground control patterns over freeglut key legends. |
+| Honest “inspired by JS testbed” copy | Sets expectation vs sealed parity | LOW | Aligns with PROJECT.md: recognizable ports, not certification. |
+| Keep original six scenes alongside | Catalog stays distinctive | LOW | Fountain / Float or Sink / Color Mixer / Jelly Drop / Water Wheel are not in the JS menu; Dam Break is shared. |
+| Cross-links between related scenes | Teaching path | LOW | Elastic ↔ Jelly Drop; Surface Tension ↔ Color Mixer; Soup ↔ Soup Stirrer; Particles as baseline. |
+| Sparky color fade in WASM color lane | Matches showcase spectacle | MEDIUM | Existing frame already carries particle colors (Color Mixer). |
+| Optional pointer nudge on watch-first scenes | Consistency with v1.1 pointer work | LOW | Nice; not required for recognizability. |
 
 ### Anti-Features (Commonly Requested, Often Problematic)
 
 | Feature | Why Requested | Why Problematic | Alternative |
-| --- | --- | --- | --- |
-| **Revive Phase 12 sealed 32-case public performance claims** / copy Dam Break numbers into `reference/performance/manifest.toml` | “Real” benchmarks look more scientific | Manifest is empty by design; exploratory pair is not the sealed matrix (different workloads, sample policy, identity hashes). Filling it with playground timings would be a false claim | Keep Phase 12 method on the shelf; persist unreviewed Dam Break reports under gitignore; commit notes only |
-| **Required performance CI** or a dedicated Linux x64 / `PERFORMANCE_CONTROLLED_HOST_IDENTITY` completion gate | CI would “keep us honest” | Conflicts with `PROJECT-SCOPE.md`: local checks + one macOS Cargo job; expensive suites are optional manual. Pair timing is minutes-to-hours and host-specific | On-demand `just` / xtask on the developer machine; optional manual re-run |
-| **Default parallelism or SIMD** in the compatibility baseline | Avian 0.4 and Box3D show large SIMD/thread wins | Changes contact/constraint/particle order and determinism; Rapier’s `simd8` cannot mix with enhanced-determinism; this repo forbids `unsafe` and holds scalar baseline | Explicit opt-in features later, after the scalar canary is closed and a separate decision exists |
-| **WASM ≈ C++** (or browser Dam Break vs `oracle-release`) | Visitors care about the playground | Different ISA, allocator, and frame-copy shell; not a fair pair. Would revive a comparison the owner locked out | Native is the C++ pair; WASM sanity vs previous WASM / native Rust only |
-| **“Rust is N× slower/faster” README or crates.io blurb** | Marketing a close | `BENCHMARKING.md` forbids universal summaries; one host, one scene, unreviewed | Bounded notes: workload, host, compilers, ratio, “not a public claim” |
-| **Scene editor, new playground scenes, or particle-count cosmetics** | More demos / “looks realtime” | Out of milestone; lowering Medium from 1920 particles fakes the gate | Keep the locked recipe; optimize shared stepping |
-| **Crate publication / git release tag / npm package** | “Ship the speedup” | Publication remains separately authorized; v1.1 already established archive ≠ release | Native/WASM sanity only |
-| **Criterion catalog micros as the numeric gate** | Already have `liquidfun-benchmarks` | Wrong granularity vs the playground canary; easy to optimize a micro that Dam Break never hits | Optional supporting evidence only; Dam Break pair remains the gate |
-| **`codegen-units = 1`, fat LTO, PGO, or `-march=native` / `-ffast-math` as the close** | Easy compiler knobs | Can move IEEE/ordering vs the oracle; native-tuned flags are explicitly non-canonical in stack policy; they also do not explain 300× | Keep ordinary `--release` vs `oracle-release`; if a profile later proves codegen-units, document as optional local, not the gate definition |
-| **`unsafe` indexing / `get_unchecked` / C++ FFI in production `liquidfun`** | Bounds checks are a popular suspect | Typical bounds-check wins are 1–15%, not 300× (Shnatsel; box2d-rust leftover is ~1.25× and SIMD-shaped). Workspace `unsafe_code = "forbid"` | Safe slice splits, reuse buffers, remove extra work first |
-| **Dam Break-only LOD, skipped solver passes, or reduced iterations** | Hits 3× quickly | Breaks LiquidFun behavior and differential evidence | Shared-path algorithmic/allocation fixes with tests |
-| **Treating profiled runs as timing authority** | One script is simpler | Instrumentation distorts wall time; Phase 12 already forbids this | Unprofiled pair for the ratio; profiles for *why* |
-| **Overwriting failed/old evidence** or committing `.trace` / samply binaries | Clean git tree | Loses diagnosis; large binaries do not belong in git | Dated gitignored directories; committed notes cite them by date/path |
-| **Comparing debug Rust to release C++** (or mixing opt-levels) | Accidental `cargo run` | Rapier documents ~100× without `--release`. That is not this gap if the existing pair already used `--release` vs `oracle-release` | Scripts must pass `--release` / `oracle-release` and record compilers |
-| **Substituting Rapier/Avian/modern Box2D** for LiquidFun particles | Those engines are faster in marketing charts | Wrong behavior oracle; project forbids treating unrelated Box2D as LiquidFun | Optimize this engine against the pinned C++ oracle |
-| **Broad `no_std`, mobile, or complete-engine WASM certification** | Portability story | Unrelated to the native canary | Bounded playground WASM already exists; leave it as post-gate sanity |
+|---------|---------------|-----------------|-------------|
+| Sealed C++ / bit-exact parity for every scene | “Real port” prestige | Out of milestone scope; JS itself is already imperfect (Elastic/Rigid marked buggy); blocks shipping | Recognizable layout + flag behavior; document known gaps |
+| Copying the old lfjs UI chrome (Three.js dropdown, freeglut particle-parameter bar, debug HUD) | Pixel familiarity | Conflicts with SolidJS player; accessibility and Pages stack already chosen | Same scenes, existing shell |
+| Replacing or removing the six original scenes | Cleaner “only official menu” catalog | Deletes unique work (Fountain, Float or Sink, Color Mixer, Jelly Drop, Water Wheel) and Dam Break continuity | Append the twelve; keep all eighteen |
+| Porting every commented-out Box2D-only lfjs test | Completeness | Explicitly “not related to LiquidFun” in `lfjs/index.html` | Out of scope |
+| Full Drawing Particles keyboard matrix on day one | Match C++ demo | Many flags (barrier/reactive/repulsive/zombie) may need extra engine surface and UX | Ship paint + core materials first; expand modes if needed |
+| In-process JS LiquidFun / Emscripten oracle in the browser | Instant official behavior | Violates native-Rust playground value; duplicates github.io | Link official showcase for comparison |
+| Scene editor / freeform particle paint product | LiquidFun Paint nostalgia | Product scope explosion | Drawing Particles as a bounded demo only |
+| Claiming “complete JS testbed” without engine gaps filled | Marketing | Some scenes need joints, contact hooks, destroy-in-shape, group impulse | Gate `ready` until the scene actually runs |
 
-## Expected Behavior (audit, profiling, admission, close)
+## Scene recognition cards (setup → see)
 
-### Audit
+Concrete “must see” for each port. **Table-stakes behavior** vs **optional chrome**.
 
-**Developer can** produce a committed notes document that a second person can follow without re-deriving the hunt.
+### Drawing Particles — `testDrawingParticles.js` / `DrawingParticles.h`
+- **Setup:** Static ground forming an open box (floor, left/right walls, ceiling strip). Particle system radius 0.05. Starts empty.
+- **Interaction:** Mouse down+move destroys particles in a circle then creates a group (radius 0.2) with current flags/groupFlags; consecutive strokes join the same group; mouse up clears `lastGroup`. Keyboard selects material (elastic, powder, rigid, spring, tensile, viscous, wall, barriers, repulsive, colorMixing, zombie) or move mode (`X`).
+- **Must see:** Empty vessel; painting leaves colored particle strokes that persist and interact; at least one soft/rigid mode visibly differs from water.
+- **Chrome:** Full parameter enum / C++ particle-parameter restart wiring; every exotic flag combo.
 
-Expected contents:
+### Elastic Particles — `testElasticParticles.js` / `ElasticParticles.h`
+- **Setup:** Basin; spring+solid red circle; elastic+solid green circle; elastic+solid blue box with angle/angularVelocity; dynamic circle at y=8.
+- **Must see:** Three distinct soft clumps + falling ball that deforms them.
+- **Chrome:** Exact recovery stiffness; fixing upstream JS bugs.
 
-1. Locked recipe identity (1920 particles, radius/spacing, dt, solver iterations) matching `docs/playground-dam-break-timing.md`.
-1. Current unprofiled pair: Rust wall, C++ wall, ratio, host, git HEAD, `rustc`, AppleClang/oracle identity.
-1. Named Rust functions (and C++ counterparts when the extra work is a shape mismatch) that dominate `--release` samples.
-1. Classified suspected causes: extra per-particle work, per-step allocation, checks that survive `--release`, algorithm/shape differences — not “Rust is slow.”
-1. What was *not* found (so the next phase does not re-litigate SIMD as the first move).
+### Impulse — `testImpulse.js` / `Impulse.h`
+- **Setup:** Chain loop box; particle box group; damping 0.2.
+- **Interaction:** MouseUp inside box → normalize(click − center) → `ApplyForce` (default) or `ApplyLinearImpulse` (`l`/`f`).
+- **Must see:** Click shoves the whole blob.
+- **Chrome:** Runtime particle-type parameter (C++).
 
-Industry analog: box2d-rust’s largest win was **release-mode `B2_VALIDATE` / `b2ValidateIsland` walking islands quadratically**, not the contact SIMD they added later. Audit must specifically ask “does `--release` still run debug-shaped invariant walks?” Some `check_invariants()` calls in this tree are `debug_assert`; others are live `?` on mutation/permutation/depth paths — those are audit items, not presumed guilt.
+### Liquid Timer — `testLiquidTimer.js` / `LiquidTimer.h`
+- **Setup:** Loop container; tensile|viscous top slab; edge fixtures: top shelf with ~0.1 gap, vertical throat, two diagonal shelves, four bottom columns.
+- **Must see:** Liquid slowly routes through the timer geometry into columns.
+- **Chrome:** Alternate particle parameter sets.
 
-### Scripted profiling
+### Particles — `testParticles.js` / `Particles.h`
+- **Setup:** Floor + two angled side walls; water group circle r=2 at (0,3); dynamic circle r=0.5 at (0,8).
+- **Must see:** Classic splash + ball drop.
+- **Chrome:** Particle-type picker; damping tweak.
 
-**Developer can** run one discoverable recipe that:
+### Rigid Particles — `testRigidParticles.js` / `RigidParticles.h`
+- **Setup:** Same basin as Elastic; three rigid|solid colored groups; falling ball.
+- **Must see:** Clumps that do not stretch like jelly; collide as solids.
+- **Chrome:** Bit-perfect rigid solver vs C++.
 
-1. Rebuilds native `--release` and `oracle-release` playground Dam Break extras (existing xtask already does this for the pair).
-1. Captures a CPU profile of the **Rust timed loop** (and optionally C++ for contrast) with symbols.
-1. Writes a dated directory under a gitignored root (recommend `target/native-perf-closing/<date-or-git>/` so `/target/` already ignores it).
-1. Leaves stdout/stderr logs, the unprofiled pair table, and a pointer the committed notes can cite.
+### Soup — `testSoup.js` / `Soup.h`
+- **Setup:** Basin; water box; destroy-in-shape carve-outs; circle, two boxes, three edge noodles with custom mass.
+- **Must see:** Broth with floating bits.
+- **Chrome:** Exact noodle mass data fidelity.
 
-Profiles may use a `profiling` Cargo profile (`inherits = "release"`, `debug = true`). That build is for diagnosis only. Gate numbers always come from unprofiled `--release`.
+### Soup Stirrer — `testSoupStirrer.js` / `SoupStirrer.h`
+- **Setup:** Soup + circle stirrer (particles cleared under it) + prismatic joint + oscillating `ApplyForceToCenter` in `Step`.
+- **Must see:** Continuous stirring; click/`t` frees or re-rails the paddle.
+- **Chrome:** Exact oscillation constants.
 
-### Optimization admission
+### Sparky — `testSparky.js` / `Sparky.h`
+- **Setup:** Tall walls; six sparkable dynamic circles; particle system radius 0.25; contact → `ParticleVFX` (powder group, outward velocities, color fade, destroy).
+- **Must see:** Collisions erupt into fading particle sparks.
+- **Chrome:** maxVFX=50 ring buffer exactness; Three.js `updateColorParticles` flag.
 
-**Developer can** land a hot-path change only when all of these hold:
+### Surface Tension — `testSurfaceTension.js` / `ParticlesSurfaceTension.h`
+- **Setup:** Basin; three tensile|colorMixing groups (RGB); falling ball; dampingStrength 0.2.
+- **Must see:** Surface-tension beading + color bleed; ball impact.
+- **Chrome:** Extra particle types.
 
-1. Evidence names a function or typed bottleneck (allocation, cache, scaling) with non-trivial profile share — Phase 12 used 10% as the floor; reuse that *idea* for this canary, not the 32-case JSON record.
-1. Unprofiled Dam Break Medium pair improves (ratio down) on the same host and recipe.
-1. Existing native tests and relevant differential/determinism checks the change can affect still pass. A physics mismatch is a failed candidate, never a faster sample.
-1. Scalar deterministic baseline unchanged: no default rayon, no silent SIMD, no `--fast-math`, no skipped LiquidFun passes.
-1. Other playground scenes are at least spot-checked before calling the hunt done (not before every tiny commit).
+### Theo Jansen — `testTheoJansen.js` / `TheoJansen.h`
+- **Setup:** Ground; 40 balls; chassis + wheel + six CreateLeg assemblies (polygons, distance joints soft, revolutes); motor joint; particle box on top (radius 0.2).
+- **Must see:** Legged machine + particle load; motor direction controls.
+- **Chrome:** Limit enable (`l`); perfect gait vs C++.
 
-Failing admission means: keep the experiment, do not merge, do not update the committed “current delta” as if it passed.
-
-### Same-order performance close
-
-**Developer can** show:
-
-> On this host, scalar Rust `--release` Dam Break Medium timed wall time ≤ 3 × pinned C++ `oracle-release` for the locked 60+600-step pair.
-
-That is **same order of magnitude**, not parity. 3× still leaves C++ faster; it is the honest first bar from ~300×. Success does **not** authorize:
-
-- a Phase 12 reviewed report
-- README engine-wide claims
-- WASM vs C++
-- skipping remaining-delta notes
-
-**Visitor can** open Dam Break on Pages after the gate and complete play/pause/reset without a new scene catalog. If WASM stepping is still far from realtime, say so; do not imply the native 3× gate transferred to the browser.
+### Wave Machine — `testWaveMachine.js` / `WaveMachine.h`
+- **Setup:** Dynamic hollow box on revolute motor; particle fill; motor speed follows `0.05 * cos(time) * π`.
+- **Must see:** Continuous rocking waves without user input.
+- **Chrome:** Particle-parameter overlay.
 
 ## Feature Dependencies
 
 ```
-Existing engine + oracle + Dam Break pair
-    └──requires──> PERF-AUDIT (named hot functions + current delta)
-                       └──requires──> PERF-PROFILE (scripted CPU profiles, gitignored)
-                       └──requires──> PERF-PAIR (dated unprofiled pair reports)
-                                          └──requires──> PERF-ADMIT + PERF-SHARED
-                                                             └──requires──> PERF-GATE (≤ 3×)
-                                                             └──enhances──> PERF-SPOT (other five scenes)
-                                                                                └──requires──> PERF-GATE
-                                                                                     └──requires──> PERF-WASM
-                                                                                     └──requires──> PERF-NOTES
-PERF-BASELINE ──constrains──> PERF-SHARED / PERF-ADMIT
-Phase 12 sealed matrix ──conflicts──> PERF-GATE as a public claim
-Default SIMD/parallel ──conflicts──> PERF-BASELINE
-WASM vs C++ ──conflicts──> PERF-WASM
+Shared player + catalog credits
+    └──requires──> Existing SolidJS/WASM session (v1.1)
+
+Particles
+    └──requires──> Water groups + static polygons + dynamic circle  (already in Dam Break / Float or Sink)
+
+Elastic Particles
+    └──requires──> SPRING + ELASTIC + SOLID groups  (Jelly Drop proves elastic)
+    └──enhances──> Jelly Drop cross-link
+
+Rigid Particles
+    └──requires──> RIGID | SOLID group flags + rigid group solver
+
+Surface Tension
+    └──requires──> TENSILE + COLOR_MIXING  (Color Mixer proves color mixing)
+
+Impulse
+    └──requires──> Particle group ApplyForce / ApplyLinearImpulse APIs
+    └──requires──> Chain/loop or equivalent sealed box
+
+Liquid Timer
+    └──requires──> TENSILE | VISCOUS + many static EdgeShape fixtures
+
+Soup
+    └──requires──> DestroyParticlesInShape (or equivalent carve) + mixed dynamic fixtures
+
+Soup Stirrer
+    └──requires──> Soup
+                       └──requires──> PrismaticJoint + per-step body force
+
+Wave Machine
+    └──requires──> RevoluteJoint motor + dynamic compound box  (Water Wheel proves revolute + particles)
+
+Drawing Particles
+    └──requires──> DestroyParticlesInShape + CreateParticleGroup under pointer
+    └──requires──> Subset of flags: WALL, SPRING, ELASTIC, POWDER, TENSILE, VISCOUS,
+                   BARRIER, REACTIVE, REPULSIVE, COLOR_MIXING, ZOMBIE + RIGID/SOLID groups
+
+Sparky
+    └──requires──> Body contact begin callback + powder groups + destroy group + color buffer writes
+    └──conflicts──> Unbounded particle growth without VFX lifetime
+
+Theo Jansen
+    └──requires──> RevoluteJoint (motor) + DistanceJoint (soft) + collision filter groupIndex
+    └──requires──> Many dynamic bodies + particle group overhead
+    └──enhances──> Joint-stress coverage beyond Water Wheel
 ```
 
 ### Dependency Notes
 
-- **Audit requires the existing pair and both source trees:** without `just playground-dam-break-bench` and the pinned oracle, “hot” is anecdotal.
-- **Profiles require a release-class binary with symbols:** otherwise the committed notes cannot name functions.
-- **Shared-path fixes require admission:** landing layout changes before a profile invites Dam Break-only folklore.
-- **The 3× gate requires unprofiled pair reports, not flamegraphs:** instrumentation is not timing authority.
-- **Spot-checks enhance the gate; they do not replace it:** one numeric bar (Dam Break Medium).
-- **WASM sanity requires the native gate first:** otherwise browser noise is used to “debug” native 300×.
-- **PERF-BASELINE conflicts with default SIMD/parallel:** those remain explicit later opt-in, not this milestone’s close.
-- **Phase 12 manifest promotion conflicts with this milestone’s honesty rules:** method may be cited; reviewed_reports stay empty.
+- **Soup Stirrer requires Soup:** JS constructs `new TestSoup()` then adds stirrer (`testSoupStirrer.js`); share one soup builder module.
+- **Drawing Particles requires destroy-in-shape:** Stroke flow is destroy-then-create (`MouseMove`); without it, paint stacks forever.
+- **Impulse requires group impulse/force:** Scene is meaningless if only body forces exist.
+- **Sparky requires contact hooks:** Sparks are contact-driven, not timed emitters.
+- **Theo Jansen requires distance + revolute:** Highest joint complexity; schedule after Wave Machine / Water Wheel patterns.
+- **Elastic / Rigid / Surface Tension / Particles share basin geometry:** Factor a shared “LF basin” helper to avoid drift.
+- **Do not conflict with original six:** New IDs must not replace `dam-break` … `water-wheel` in `SCENE_IDS`.
 
 ## MVP Definition
 
-### Launch With (v1.2)
+### Launch With (v1.3)
 
-Minimum to call Native Performance Closing done.
+Minimum to claim the milestone goal: visitors can open every listed JS menu scene not already present.
 
-- [ ] **PERF-AUDIT** — Committed notes name hot functions, suspected extra work, and the Dam Break Medium delta
-- [ ] **PERF-PAIR** + **PERF-PROFILE** — Repeatable local scripts write dated pair tables and CPU profiles under gitignore
-- [ ] **PERF-ADMIT** + **PERF-SHARED** — Profile-guided shared particle/rigid fixes; no scene cheats
-- [ ] **PERF-GATE** — Same-host scalar pair, Rust wall ≤ 3× C++
-- [ ] **PERF-SPOT** — Other five playground scenes profiled or timed as spot-checks
-- [ ] **PERF-WASM** — Post-gate playground/WASM sanity, not vs C++
-- [ ] **PERF-BASELINE** + **PERF-NOTES** — Scalar determinism retained; remaining delta documented; no Phase 12 public claim
+- [ ] **Particles** — lowest-risk baseline splash; proves catalog expansion path
+- [ ] **Wave Machine** — iconic default JS demo; motorized tank
+- [ ] **Impulse** — click interaction + group force/impulse
+- [ ] **Elastic Particles** and **Rigid Particles** — soft vs rigid group contrast (reuse Jelly Drop knowledge)
+- [ ] **Surface Tension** — tensile + color mixing showcase
+- [ ] **Liquid Timer** — memorable static geometry showcase
+- [ ] **Soup** then **Soup Stirrer** — inheritance pair
+- [ ] **Drawing Particles** (core paint + essential modes) — interactive flag lab
+- [ ] **Sparky** — contact VFX
+- [ ] **Theo Jansen** — joint-heavy walker (hardest; may land last but still in-scope)
+- [ ] **Catalog + credits + reset** for each — shared visitor capabilities
 
-### Add After Validation (later in v1.2 or a follow-on)
+### Add After Validation (v1.3.x)
 
-- [ ] Optional second native canary (e.g. a rigid-heavy catalog row) **if** Dam Break ≤ 3× and profiles show a *different* dominant cluster — still not a sealed 32-case matrix
-- [ ] Optional in-engine diagnostic parent timers (`DiagnosticProfileParent`: `particle_prepare` / `particle_solve` / `rigid_solve`) wired into the Dam Break script for cheaper iteration — still not public authority
-- [ ] Safe buffer reuse / stack-like scratch if profiles prove per-step `Vec` growth — only after the first extra-work cuts
+- [ ] Drawing Particles full keyboard/material matrix — after core paint works
+- [ ] Impulse / Liquid Timer particle-type presets — if public API already supports flags cheaply
+- [ ] Pointer polish on watch-first scenes — consistency pass
 
-### Future Consideration (not this milestone)
+### Future Consideration (later milestones)
 
-- [ ] SIMD / parallel opt-in features (Rapier/Avian/Box3D-shaped) after scalar close + explicit determinism policy
-- [ ] Phase 12 sealed matrix production, calibration, and reviewed-report promotion
-- [ ] WASM vs native performance engineering (beyond sanity)
-- [ ] Crate publication, new playground scenes, scene editor
-- [ ] Relaxing `unsafe_code = "forbid"` for intrinsics (box2d-rust’s leftover 1.25× → 1.0× step)
+- [ ] Sealed differential evidence per scene — optional qualification, not playground
+- [ ] Remaining Box2D-only lfjs tests — explicitly out of LiquidFun JS menu
+- [ ] LiquidFun Paint–class editor — product, not demo
 
 ## Feature Prioritization Matrix
 
 | Feature | User Value | Implementation Cost | Priority |
-| --- | --- | --- | --- |
-| PERF-AUDIT committed named-function notes | HIGH | MEDIUM | P1 |
-| PERF-PAIR dated unprofiled Dam Break reports | HIGH | LOW | P1 |
-| PERF-PROFILE scripted CPU profiles (gitignored) | HIGH | MEDIUM | P1 |
-| PERF-ADMIT evidence-gated landings | HIGH | MEDIUM | P1 |
-| PERF-SHARED shared hot-path fixes | HIGH | HIGH | P1 |
-| PERF-GATE Dam Break Medium ≤ 3× C++ | HIGH | HIGH | P1 |
-| PERF-BASELINE scalar deterministic default | HIGH | LOW | P1 |
-| PERF-SPOT other five scenes | MEDIUM | LOW | P1 |
-| PERF-NOTES remaining delta | HIGH | LOW | P1 |
-| PERF-WASM post-gate playground sanity | MEDIUM | LOW | P1 |
-| Diagnostic parent timers in the pair script | MEDIUM | MEDIUM | P2 |
-| Criterion micros as supporting evidence | LOW | LOW | P2 |
-| Second native canary scene | MEDIUM | MEDIUM | P2 |
-| SIMD/parallel opt-in | MEDIUM | HIGH | P3 |
-| Phase 12 sealed public reports | LOW (hobby now) | VERY HIGH | P3 |
-| New playground scenes / editor / publish | LOW | HIGH | P3 — anti-feature for v1.2 |
+|---------|------------|---------------------|----------|
+| Catalog entries + credits for 12 scenes | HIGH | LOW | P1 |
+| Particles | HIGH | LOW | P1 |
+| Wave Machine | HIGH | MEDIUM | P1 |
+| Impulse | HIGH | LOW–MEDIUM | P1 |
+| Elastic Particles | HIGH | MEDIUM | P1 |
+| Rigid Particles | HIGH | MEDIUM | P1 |
+| Surface Tension | HIGH | MEDIUM | P1 |
+| Liquid Timer | HIGH | MEDIUM | P1 |
+| Soup | MEDIUM–HIGH | MEDIUM | P1 |
+| Soup Stirrer | MEDIUM–HIGH | MEDIUM–HIGH | P1 |
+| Drawing Particles (core) | HIGH | HIGH | P1 |
+| Sparky | HIGH | HIGH | P1 |
+| Theo Jansen | HIGH | HIGH | P1 |
+| Drawing full flag matrix | MEDIUM | HIGH | P2 |
+| Extra pointer nudges | LOW–MEDIUM | LOW | P2 |
+| Sealed C++ parity | LOW (this milestone) | VERY HIGH | P3 / anti |
+| lfjs UI chrome clone | LOW | HIGH | P3 / anti |
 
 **Priority key:**
-
-- **P1:** Must have for v1.2 launch
-- **P2:** Should have if the canary is closed and cheap
-- **P3:** Explicitly later / out of milestone
+- P1: Must have for v1.3 launch
+- P2: Should have once P1 scenes run
+- P3: Nice to have / future or anti-feature
 
 ## Competitor Feature Analysis
 
-How “close the C++ vs Rust physics gap” actually ships in neighboring engines. Use as capability expectations, not as engines to swap in.
+| Feature | Official lfjs testbed | Official C++ Testbed | Our Approach |
+|---------|----------------------|----------------------|--------------|
+| Scene set | 13 LiquidFun-focused tests in dropdown | Larger Box2D+LiquidFun suite | Port the 12 missing JS menu scenes; keep Dam Break + 5 originals |
+| Shell | Three.js + `<select>` | freeglut + particle parameter bar | Existing SolidJS player |
+| Interaction | Mouse + letter keys | Mouse + keys + parameter UI | Labeled presets/actions + pointer where needed |
+| Authority | Emscripten/JS bindings | Native C++ | Native Rust/WASM; credits cite JS+C++ sources |
+| Claims | Live demo | Reference implementation | Recognizable ports; no sealed parity |
 
-| Capability | box2d-rust 1.3 (C Box2D v3 port) | Rapier 2D/3D | Avian 0.4 | liquidfun-rs v1.2 approach |
-| --- | --- | --- | --- | --- |
-| Pair vs C/C++ oracle | Yes: C `benchmark` app vs Rust example, **serial vs serial** (`-w=1`), same scenes/dt/substeps, warm-up excluded, interleaved to defeat thermal bias. Geo-mean ~**1.25×** (range 1.13–1.47×) as of 2026-07-19 | No LiquidFun/Box2D C++ oracle; compares to itself / PhysX anecdotes | No C++ LiquidFun oracle; compares to Rapier and its own previous version | **Keep playground Dam Break pair** as the one numeric gate; do not add a 10-scene public matrix this milestone |
-| First huge win | **Release validators**, not SIMD: `B2_VALIDATE` / `b2ValidateIsland` in release made island-churn **quadratic**; gating to debug took spinner **2.73× → 1.21×**. First measurement 1.9× → 1.45× after that | Official docs: Rapier can be **~100× slower** without `--release` | Profile-driven parallel solver | Audit extra `--release` work and allocations first; the ~300× canary is extra-work-shaped, not 1.25× codegen |
-| Profiling | Re-measure interleaved after every change; WASM perf noted separately and **not** mixed into the C ratio | `profiling` crate, Tracy/Puffin in testbed; `cargo flamegraph` used in issue hunts | Flamegraphs in the 0.4 write-up (narrow phase, graph-color solver) | Scripted samply/flamegraph/Instruments into gitignored evidence; committed function names |
-| SIMD / threads | Safe `[f32; 4]` contact solver later (1.45× → 1.25×); remaining gap attributed to C SSE2 vs rustc; **serial by design** (no C task system) | SIMD/parallel are **features**; `simd8` conflicts with enhanced-determinism; parallelism can *slow* small scenes | Default-ish parallel graph coloring: solver **>3×**, total **~2×** vs prior Avian | **Anti-feature as default.** Scalar close first; opt-in only later |
-| Admission / honesty | README publishes methodology, pin, host, and leftover causes; WASM “may run below realtime” disclosed | Common-mistakes page instead of a sealed matrix | Blog + PR with profiles | Committed notes + empty Phase 12 manifest; no “Rust is faster” |
-| WASM | Live demos; WASM profiled **per scene**, not vs C | First-class WASM packages | Bevy-centric | Post-gate sanity only; never WASM vs C++ |
-| Bounds-check theater | Not listed as the 1.9× cause | — | — | Do not start with `unsafe` indexing; typical wins 1–15% |
+## Engine dependency risks (implementation flags)
 
-**Implication:** A 300× LiquidFun gap that already used `--release` vs `oracle-release` should be treated as **wrong extra work / extra allocation / extra algorithm**, the same class as box2d-rust’s release validators — not as a reason to turn on Avian-style parallelism or to publish a sealed 32-case claim.
+| Capability | Scenes needing it | Evidence of prior use in playground |
+|------------|-------------------|-------------------------------------|
+| Water particle groups + basin | Particles, Soup, … | Dam Break |
+| ELASTIC / SPRING + SOLID | Elastic, Drawing | Jelly Drop |
+| COLOR_MIXING | Surface Tension, Drawing | Color Mixer |
+| TENSILE / VISCOUS | Liquid Timer, Surface Tension | Flags exist in `particle/definition.rs`; scene-level proof thinner |
+| RIGID \| SOLID groups | Rigid, Drawing | Group flags exist; no dedicated playground scene yet |
+| Revolute motor | Wave Machine, Theo Jansen | Water Wheel |
+| Prismatic joint | Soup Stirrer | Joint module present; unused in WASM scenes |
+| Distance joint (soft) | Theo Jansen | Joint module present; unused in WASM scenes |
+| DestroyParticlesInShape | Soup, Soup Stirrer, Drawing | Must confirm/expose for WASM scenes |
+| Group ApplyForce / ApplyLinearImpulse | Impulse | Jelly Drop applies poke impulse locally — verify group API |
+| Body contact begin | Sparky | May need WASM-facing contact hook |
+| Barrier / reactive / repulsive / zombie | Drawing (full matrix) | Flags defined; treat as P2 unless paint requires them |
 
 ## Sources
 
-### This repository (HIGH)
-
-- `.planning/PROJECT.md` — v1.2 goal, Dam Break ≤ 3× gate, shared-path hunt, WASM-after-native, scalar baseline
-- `PROJECT-SCOPE.md` — hobby local checks; no dedicated perf host; optional expensive suites
-- `BENCHMARKING.md` — Phase 12 method; empty reviewed-report manifest; profiles ≠ timing authority; admission ideas
-- `docs/playground-dam-break-timing.md` — locked Medium recipe; first ~300× sample; `just playground-dam-break-bench`
-- `reference/performance/manifest.toml` — `reviewed_reports = []`
-- `reference/performance/policy.json` — unprofiled wall clock; `release_scalar`; 10% profile floor for Phase 12 admission
-- `Justfile` — `playground-dam-break-bench`, `phase12-performance-*`, `web-player-smoke`
-- `tools/xtask/src/playground.rs` — pair driver builds `oracle-release` extra + `liquidfun-wasm` `dam-break-bench`
-- `crates/liquidfun-wasm/src/dam_break_bench.rs` — 1920 particles, 60+600 steps
-- Workspace `Cargo.toml` — `unsafe_code = "forbid"`
-- `crates/liquidfun/src/particle/proxy.rs` — per-call neighborhood allocate/sort (audit target, not a proven 300× cause)
-
-### Neighboring engines and profiling practice (HIGH / MEDIUM)
-
-- [box2d-rust 1.3.0 README — paired C vs Rust methodology and validator-in-release win](https://docs.rs/crate/box2d-rust/latest) — HIGH, updated 2026-07-19
-- [box2d-rust performance roadmap / misattribution notes](https://docs.rs/crate/box2d-rust/latest/source/todo.md) — HIGH
-- [Rapier common mistakes — ~100× without `--release`; codegen-units](https://rapier.rs/docs/user_guides/rust/common_mistakes/) — HIGH
-- [Rapier getting started — SIMD vs enhanced-determinism; parallelism can slow small scenes](https://rapier.rs/docs/user_guides/javascript/getting_started) — MEDIUM (JS guide; same feature tradeoff)
-- [Avian Physics 0.4 — profile-guided parallel solver, ~3× solver / ~2× total](https://joonaa.dev/blog/09/avian-0-4) — HIGH as a *what not to default on* analog
-- [Erin Catto, SIMD for Collision (Box3D, 2026-07) — SIMD helps some hulls, not all scenes](https://box2d.org/posts/2026/07/simd-for-collision/) — HIGH
-- [samply — macOS/Linux/Windows sampling profiler, release + debug info](https://github.com/mstange/samply) — HIGH
-- [cargo-flamegraph 0.6.13 (2026-06-03) — macOS via xctrace](https://github.com/flamegraph-rs/flamegraph) — HIGH
-- [Shnatsel, bounds checks typically 1–3%, max ~15%; alloc often dominates](https://shnatsel.medium.com/how-to-avoid-bounds-checks-in-rust-without-unsafe-f65e618b4c1e) — MEDIUM
-
-### Lower confidence (do not drive requirements)
-
-- Third-party “Rust 1.85 vs C++23 game physics” blog roundups — LOW (methodology not LiquidFun-shaped; possible SEO). Independent engines at matched algorithms are usually within tens of percent, which **supports** treating 300× as extra work, but the article is not a source for gates.
+- Pinned submodule `third_party/liquidfun` @ `7f20402173fd143a3988c921bc384459c6a858f2`
+- JS menu: `liquidfun/Box2D/lfjs/index.html`
+- JS scenes: `liquidfun/Box2D/lfjs/testbed/tests/testDrawingParticles.js`, `testElasticParticles.js`, `testImpulse.js`, `testLiquidTimer.js`, `testParticles.js`, `testRigidParticles.js`, `testSoup.js`, `testSoupStirrer.js`, `testSparky.js`, `testSurfaceTension.js`, `testTheoJansen.js`, `testWaveMachine.js`
+- C++ cross-checks: `liquidfun/Box2D/Testbed/Tests/DrawingParticles.h`, `ElasticParticles.h`, `Impulse.h`, `LiquidTimer.h`, `Particles.h`, `RigidParticles.h`, `Soup.h`, `SoupStirrer.h`, `Sparky.h`, `ParticlesSurfaceTension.h`, `TheoJansen.h`, `WaveMachine.h`
+- Existing playground catalog: `web/src/catalog/scenes.ts`
+- Project scope: `.planning/PROJECT.md` (v1.3 goal)
+- Prior feature research pattern: `.planning/research/v1.1/FEATURES.md`
 
 ---
-*Feature research for: liquidfun-rs v1.2 Native Performance Closing*
-*Researched: 2026-09-20*
+*Feature research for: v1.3 Reference Testbed Scenes (JS LiquidFun menu ports)*
+*Researched: 2026-09-21*
+*Research version: v1.3*
