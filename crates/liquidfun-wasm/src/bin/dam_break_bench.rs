@@ -9,6 +9,10 @@ use liquidfun_wasm::{
     run_dam_break_bench,
 };
 
+#[cfg(all(feature = "dhat-heap", not(target_arch = "wasm32")))]
+#[global_allocator]
+static ALLOC: dhat::Alloc = dhat::Alloc;
+
 fn main() -> ExitCode {
     match run() {
         Ok(()) => ExitCode::SUCCESS,
@@ -20,6 +24,11 @@ fn main() -> ExitCode {
 }
 
 fn run() -> Result<(), Box<dyn Error>> {
+    #[cfg(all(feature = "dhat-heap", not(target_arch = "wasm32")))]
+    let _profiler = match env::var_os("LIQUIDFUN_DHAT_HEAP_FILE") {
+        Some(path) => dhat::Profiler::builder().file_name(path).build(),
+        None => dhat::Profiler::new_heap(),
+    };
     let args: Vec<String> = env::args().skip(1).collect();
     let (warmup_steps, measured_steps) = parse_counts(&args)?;
     let report = run_dam_break_bench(warmup_steps, measured_steps)?;

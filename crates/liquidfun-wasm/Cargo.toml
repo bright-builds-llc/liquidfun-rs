@@ -26,6 +26,11 @@ bench = false
 [lints]
 workspace = true
 
+[features]
+default = []
+dhat-heap = ["dep:dhat"]
+
 [dependencies]
 liquidfun = { path = "../liquidfun" }
 wasm-bindgen = "=0.2.128"
+dhat = { version = "0.3.3", optional = true }
