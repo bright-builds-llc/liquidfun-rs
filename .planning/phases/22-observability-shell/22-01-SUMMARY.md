@@ -126,7 +126,7 @@ _Note: TDD tasks may have multiple commits (test → feat → refactor)_
 - **Verification:** clippy `-D warnings` on xtask passes
 - **Committed in:** `b251594`
 
----
+***
 
 **Total deviations:** 3 auto-fixed (2 blocking, 1 missing critical)
 **Impact on plan:** Verification command adapted to the binary crate; stamp minting still matches D-01. No scope creep.

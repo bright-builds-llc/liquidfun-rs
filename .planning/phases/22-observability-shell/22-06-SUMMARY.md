@@ -165,7 +165,7 @@ Static honesty checks: `justfile` has three one-line `cargo xtask playground dam
 - **Verification:** clippy exits 0
 - **Committed in:** `33a7ab6`
 
----
+***
 
 **Total deviations:** 3 auto-fixed (3 blocking, lint-only)
 **Impact on plan:** Required isolation clippy command now passes. No profiler/serde leak into `liquidfun`. No public timing-doc refresh.

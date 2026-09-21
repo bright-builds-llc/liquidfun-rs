@@ -115,7 +115,7 @@ _Note: TDD tasks may have multiple commits (test → feat → refactor)_
 - **Verification:** `cargo clippy -p xtask --all-targets --no-deps -- -D warnings` exits 0
 - **Committed in:** `7a74330`
 
----
+***
 
 **Total deviations:** 2 auto-fixed (1 blocking, 1 bug)
 **Impact on plan:** Verification command adapted to the binary crate; ratio and persist behavior still match D-01/D-02/D-05. No scope creep.

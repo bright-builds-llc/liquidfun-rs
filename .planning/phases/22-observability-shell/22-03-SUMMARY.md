@@ -139,7 +139,7 @@ GREEN: 7 passed; `cargo clippy -p xtask --all-targets --no-deps -- -D warnings` 
 - **Verification:** clippy `-D warnings` on xtask passes
 - **Committed in:** `1bfd86f`
 
----
+***
 
 **Total deviations:** 3 auto-fixed (2 blocking, 1 missing critical)
 **Impact on plan:** Verification command adapted to the binary crate; Cargo profile and fail-closed samply helpers still match D-08/D-09. No scope creep.

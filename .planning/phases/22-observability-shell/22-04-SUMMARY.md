@@ -122,7 +122,7 @@ _Note: TDD tasks may have multiple commits (test → feat → refactor)_
 - **Verification:** Fake samply writes 19 bytes; CLI success test asserts `gzip.len() >= 16`
 - **Committed in:** `c13eac0`
 
----
+***
 
 **Total deviations:** 2 auto-fixed (1 bug, 1 missing critical)
 **Impact on plan:** Both fixes keep fail-closed identity/gzip semantics. No scope creep.
