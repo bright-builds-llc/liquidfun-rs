@@ -15,6 +15,7 @@ just playground-dam-break-profile
 just playground-dam-break-audit-bundle
 samply load target/dam-break-perf/2026-09-21T04-34-32Z/rust.json.gz
 samply load target/dam-break-perf/2026-09-21T15-52-27Z/rust.json.gz
+samply load target/dam-break-perf/2026-09-21T16-07-39Z/rust.json.gz
 ```
 
 The pair recipe is unprofiled native `--release` versus scalar `oracle-release`.
@@ -22,8 +23,9 @@ The profile recipe rebuilds `[profile.profiling]` and is
 `not_timing_authority`. The bundle command copies the same-HEAD pair report and
 `rust.json.gz` (plus `rust.json.syms.json`) into a new exclusive stamp; it does
 not retime the engines. The first `samply load` is the Phase 23 ranking dump.
-The second is the Wave 1 leftover-retarget sibling; its duration is not the
-3× number.
+The second is the Wave 1 leftover-ranking sibling used to admit the first
+leftover. The third is the post-leftover sibling for 24-04; none of those
+durations is the 3× number.
 
 ## Evidence identity
 
@@ -63,8 +65,8 @@ are `not_timing_authority` and are not the 3× gate.
 
 `rust_over_cpp_ratio`: `327.53395024734476` (unreviewed sample figure bound to
 the HEAD and stamp above). That Phase 23 pair remains the ranking identity for
-the named-function table below. The current 3× number is the Wave 1 admission
-`pair.json` in the next section.
+the named-function table below. The current 3× number is the first leftover
+admission `pair.json` in the leftover section.
 
 Rust used `--release`. C++ used the scalar `oracle-release` wrapper (no
 `-ffast-math`, no `-march=native`).
@@ -99,6 +101,53 @@ quote samply or `[profile.profiling]` duration as this number.
 **PERF-GATE is not claimed.** The pair ratio is still greater than 3, so leftover
 scalar waves (D-07/D-09) remain required. `ParticleStorage::check_invariants`
 was not gated behind `debug_assertions` in wave 1 (D-08).
+
+## First leftover admission
+
+Ranked from Wave 1 sibling sidecar
+`target/dam-break-perf/2026-09-21T15-52-27Z/rust.json.syms.json` plus gecko
+`stackTable` leaf weights on the `dam-break-bench` thread (Phase 23 method:
+outer symbol, 4630 samples). This is not the Phase 23 named table and is not
+the 3× number.
+
+| Symbol (D-07 order)                                                      | Approximate leaf share          | Named?              |
+| ------------------------------------------------------------------------ | ------------------------------- | ------------------- |
+| `ParticleStorage::check_invariants` / `ParticleGroupId` `slice_contains` | ~32.85% self                    | yes; first leftover |
+| `ParticleStorage::replace_solver_candidate`                              | ~0.15% self / ~23.95% inclusive | still named         |
+| `ParticleNeighborhood::from_view`                                        | ~7.60% self                     | still named         |
+| `RawVecInner::finish_grow` / `Vec<ParticleContact>` collect              | ~6.61% / ~3.80% self            | still named         |
+| `contact::listener_effects` / `body_contact::listener_effects`           | ~14.28% self                    | still named         |
+
+`slice_contains` leaves sat under `check_invariants`. About 22.68% of thread
+samples were that path via `replace_solver_candidate`; about 10.60% were via
+`prepare_permutation` (not this leftover). Plan 24-03 gated only
+`candidate.check_invariants()` on `replace_solver_candidate` behind
+`#[cfg(debug_assertions)]`. User-facing create/mutate checks stay fail-closed.
+
+Admission pair (new exclusive stamp; old stamps preserved):
+
+- Pair stamp: `target/dam-break-perf/2026-09-21T16-07-02Z/` (`pair.json`,
+  `kind: unprofiled_pair`, `timing_authority: unprofiled_wall_clock`)
+- Pair `git_head`: `907bdf360c423184df1dc9210cce60a65a073c8f`
+- OS/arch: `macos` / `aarch64`
+- CPU: `Apple M4 Max`
+- logical cores: `16`
+- Sibling samply stamp (next leftover-ranking input only):
+  `target/dam-break-perf/2026-09-21T16-07-39Z/` (`profile-identity.json`
+  `kind: samply_cpu`, `not_timing_authority: true`; no `pair.json` in that
+  stamp)
+- Profile `git_head`: `907bdf360c423184df1dc9210cce60a65a073c8f`
+
+| Engine      | Particles | Wall ms     | ms/step  | Compiler                              |
+| ----------- | --------- | ----------- | -------- | ------------------------------------- |
+| native Rust | 1920      | 3247.300834 | 5.412168 | `rustc 1.97.0 (2d8144b78 2026-07-07)` |
+| pinned C++  | 1920      | 215.20175   | 0.35867  | `AppleClang 21.0.0.21000334`          |
+
+`rust_over_cpp_ratio`: `15.08956518243927` (copied from that `pair.json` only).
+Strictly below Wave 1 `21.00845179052245`.
+
+**PERF-GATE is not claimed.** The pair ratio is still greater than 3. Rank the
+next leftover from stamp `2026-09-21T16-07-39Z`, not by pasting this table.
 
 ## Named functions
 
