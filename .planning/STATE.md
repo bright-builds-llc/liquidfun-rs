@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Native Performance Closing
 status: executing
-stopped_at: Completed 24-02-PLAN.md
-last_updated: "2026-09-21T15:55:49.654Z"
+stopped_at: Completed 24-03-PLAN.md
+last_updated: "2026-09-21T16:11:36.956Z"
 last_activity: 2026-09-21
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 21
-  completed_plans: 17
-  percent: 81
+  completed_plans: 18
+  percent: 86
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: `.planning/PROJECT.md` (updated 2026-09-21)
 ## Current Position
 
 Phase: 24 (Shared hot-path waves through 3×) — EXECUTING
-Plan: 3 of 6
+Plan: 4 of 6
 Status: Ready to execute
 Last activity: 2026-09-21
 
-Progress: [████████░░] 81%
+Progress: [█████████░] 86%
 
 v1.2 Native Performance Closing. Gate is unprofiled `just playground-dam-break-bench` (Rust `--release` vs `oracle-release` Dam Break Medium ≤ 3×). Evidence dir `target/dam-break-perf/<utc-stamp>/`. v1.1 phase directories remain on disk. No package publication or release tag.
 
@@ -57,6 +57,7 @@ v1.1 plan durations remain in `.planning/milestones/v1.1-STATE.md`.
 | Phase 23 P09 | 6 min | 2 tasks | 1 files |
 | Phase 24-shared-hot-path-waves-through-3 P01 | 15 min | 2 tasks | 5 files |
 | Phase 24-shared-hot-path-waves-through-3 P02 | 5 min | 2 tasks | 2 files |
+| Phase 24-shared-hot-path-waves-through-3 P03 | 11 min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -133,16 +134,20 @@ v1.1 playground decisions remain in `.planning/milestones/v1.1-STATE.md` and PRO
 - [Phase 24-shared-hot-path-waves-through-3]: Admit wave 1 from exclusive unprofiled pair 2026-09-21T15-50-46Z with rust_over_cpp_ratio 21.00845179052245, strictly below Phase 23 327.53395024734476. — D-04/D-05: locked 1920/60+600 just playground-dam-break-bench into a new exclusive stamp. pair.json is the only 3x number.
 - [Phase 24-shared-hot-path-waves-through-3]: Do not claim PERF-GATE: 21.01 remains greater than 3; leftover D-07/D-09 waves stay required and check_invariants was not gated in wave 1. — D-06/D-08: wave 1 is necessary and insufficient. samply duration is not_timing_authority.
 - [Phase 24-shared-hot-path-waves-through-3]: Sibling samply stamp 2026-09-21T15-52-27Z is leftover-ranking input only (kind samply_cpu, not_timing_authority true, no pair.json). — D-05/D-14: retarget 24-03 from the sibling profile stamp; never copy samply ms into the Dam Break ratio.
+- [Phase 24-shared-hot-path-waves-through-3]: Admit leftover check_invariants / slice_contains from 24-02 sidecar 2026-09-21T15-52-27Z (~32.85% self, first D-07 named share). — Wave 1 pair 21.008 remained greater than 3. Live leftover ranking named slice_contains under check_invariants first in D-07 order.
+- [Phase 24-shared-hot-path-waves-through-3]: Gate candidate.check_invariants only on replace_solver_candidate behind debug_assertions; creation.rs and mutation.rs stay fail-closed. — D-08 / T-24-03-01: C++ NDEBUG analog on the solver commit path only. User-facing checked mutation remains typed and fail-closed.
+- [Phase 24-shared-hot-path-waves-through-3]: Admit from exclusive unprofiled pair 2026-09-21T16-07-02Z with rust_over_cpp_ratio 15.08956518243927, strictly below Wave 1 21.00845179052245. Do not claim PERF-GATE. — D-04/D-05/D-14: new exclusive 1920/60+600 pair.json is the only 3x number. 15.09 remains greater than 3.
+- [Phase 24-shared-hot-path-waves-through-3]: Sibling samply stamp 2026-09-21T16-07-39Z is leftover-ranking input only for 24-04. — D-05: samply retargets the next leftover; profiled duration is not_timing_authority.
 
 ### Pending Todos
 
-Execute 24-03 leftover admit-or-skip from samply stamp `2026-09-21T15-52-27Z`. Do not claim PERF-GATE unless that pair.json ratio is already ≤ 3. Do not pre-select SIMD, PGO, or `unsafe` indexing.
+Execute 24-04 leftover waves from samply stamp `2026-09-21T16-07-39Z` until unprofiled pair.json ≤ 3. Do not pre-select SIMD, PGO, or `unsafe` indexing.
 
 ### Blockers/Concerns
 
-- Wave 1 admitted at unprofiled `21.00845179052245×` (`2026-09-21T15-50-46Z`); leftover D-07/D-09 ranking uses sibling samply `2026-09-21T15-52-27Z`. Do not pre-select SIMD, PGO, or `unsafe` indexing.
 - samply setup / signing on this Mac is host-specific; Phase 22 must fail closed with install text.
 - Unprofiled Dam Break Medium pair is still above 3× (`docs/playground-dam-break-timing.md`); that gap is the canary, not a public claim.
+- First leftover admitted at unprofiled 15.08956518243927x (2026-09-21T16-07-02Z); leftover D-07/D-09 ranking uses sibling samply 2026-09-21T16-07-39Z. Do not pre-select SIMD, PGO, or unsafe indexing.
 
 ### Quick Tasks Completed
 
@@ -161,6 +166,6 @@ Execute 24-03 leftover admit-or-skip from samply stamp `2026-09-21T15-52-27Z`. D
 
 ## Session Continuity
 
-Last session: 2026-09-21T15:55:35.570Z
-Stopped at: Completed 24-02-PLAN.md
+Last session: 2026-09-21T16:11:13.044Z
+Stopped at: Completed 24-03-PLAN.md
 Resume file: None
