@@ -11,6 +11,7 @@ const THIRD_STAMP: &str = "2001-09-09T01-46-42Z";
 const THIRD_STAMP_UNIX: &str = "1000000002";
 const SYMS_NAME: &str = "rust.json.syms.json";
 const SYMS_JSON: &str = r#"{"string_table":["alloc::vec::Vec"]}"#;
+const MISMATCHED_HEAD: &str = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
 
 struct PairProfileFixture {
     fixture: RepositoryFixture,
@@ -69,17 +70,56 @@ fn dest_stamp(fixture: &RepositoryFixture, stamp: &str) -> PathBuf {
     fixture.root.join("target/dam-break-perf").join(stamp)
 }
 
+fn pair_profile_flags() -> [&'static str; 4] {
+    ["--pair-stamp", FIRST_STAMP, "--profile-stamp", SECOND_STAMP]
+}
+
+fn audit_identity_dirs(fixture: &RepositoryFixture) -> std::io::Result<Vec<PathBuf>> {
+    let evidence = fixture.root.join("target/dam-break-perf");
+    if !evidence.exists() {
+        return Ok(Vec::new());
+    }
+    let mut dirs = Vec::new();
+    for entry in fs::read_dir(evidence)? {
+        let path = entry?.path();
+        if path.is_dir() && path.join("audit-bundle-identity.json").is_file() {
+            dirs.push(path);
+        }
+    }
+    Ok(dirs)
+}
+
+fn assert_fail_closed(output: &Output, fixture: &RepositoryFixture) -> TestResult {
+    assert!(
+        !output.status.success(),
+        "must fail closed, stdout: {}",
+        stdout(output)
+    );
+    let display = stderr(output);
+    assert!(
+        !display.to_ascii_lowercase().contains("skip"),
+        "stderr `{display}` must not mention skipping"
+    );
+    assert!(
+        display.contains("stamp") || display.contains("bundle"),
+        "stderr `{display}` should mention stamp or bundle"
+    );
+    let identities = audit_identity_dirs(fixture)?;
+    assert!(
+        identities.is_empty(),
+        "must not write audit-bundle-identity.json: {identities:?}"
+    );
+    assert!(!dest_stamp(fixture, THIRD_STAMP).join("pair.json").is_file());
+    Ok(())
+}
+
 #[test]
 fn dam_break_audit_bundle_copies_pair_gzip_and_syms_into_a_new_stamp() -> TestResult {
     // Arrange
     let prepared = prepare_pair_and_profile()?;
 
     // Act
-    let output = run_bundle(
-        &prepared.fixture,
-        THIRD_STAMP_UNIX,
-        &["--pair-stamp", FIRST_STAMP, "--profile-stamp", SECOND_STAMP],
-    )?;
+    let output = run_bundle(&prepared.fixture, THIRD_STAMP_UNIX, &pair_profile_flags())?;
 
     // Assert
     assert!(
@@ -175,4 +215,83 @@ fn justfile_keeps_the_one_line_dam_break_audit_bundle_alias() {
         recipe,
         "playground-dam-break-audit-bundle:\n    cargo xtask playground dam-break-audit-bundle"
     );
+}
+
+#[test]
+fn dam_break_audit_bundle_rejects_git_head_mismatch() -> TestResult {
+    // Arrange
+    let prepared = prepare_pair_and_profile()?;
+    let mut identity: serde_json::Value =
+        serde_json::from_slice(&fs::read(prepared.fixture.profile_identity(SECOND_STAMP))?)?;
+    identity["git_head"] = serde_json::Value::String(String::from(MISMATCHED_HEAD));
+    fs::write(
+        prepared.fixture.profile_identity(SECOND_STAMP),
+        serde_json::to_vec(&identity)?,
+    )?;
+
+    // Act
+    let output = run_bundle(&prepared.fixture, THIRD_STAMP_UNIX, &pair_profile_flags())?;
+
+    // Assert
+    assert_fail_closed(&output, &prepared.fixture)?;
+    prepared.fixture.cleanup()?;
+    Ok(())
+}
+
+#[test]
+fn dam_break_audit_bundle_rejects_missing_rust_json_gz() -> TestResult {
+    // Arrange
+    let prepared = prepare_pair_and_profile()?;
+    fs::remove_file(prepared.fixture.profile_gz(SECOND_STAMP))?;
+
+    // Act
+    let output = run_bundle(&prepared.fixture, THIRD_STAMP_UNIX, &pair_profile_flags())?;
+
+    // Assert
+    assert_fail_closed(&output, &prepared.fixture)?;
+    prepared.fixture.cleanup()?;
+    Ok(())
+}
+
+#[test]
+fn dam_break_audit_bundle_rejects_pair_stamp_path_traversal() -> TestResult {
+    // Arrange
+    let fixture = RepositoryFixture::new()?;
+
+    // Act
+    let parent = run_bundle(&fixture, THIRD_STAMP_UNIX, &["--pair-stamp", "../etc"])?;
+    let colon = run_bundle(
+        &fixture,
+        THIRD_STAMP_UNIX,
+        &["--pair-stamp", "2001-09-09T01:46:40Z"],
+    )?;
+
+    // Assert
+    assert_fail_closed(&parent, &fixture)?;
+    assert_fail_closed(&colon, &fixture)?;
+    assert!(!fixture.root.join("target/dam-break-perf/etc").exists());
+    assert!(!fixture.root.join("etc").exists());
+    fixture.cleanup()?;
+    Ok(())
+}
+
+#[test]
+fn dam_break_audit_bundle_rejects_samply_in_pair_json() -> TestResult {
+    // Arrange
+    let prepared = prepare_pair_and_profile()?;
+    let mut pair: serde_json::Value = serde_json::from_slice(&prepared.pair_json)?;
+    pair["samply"] = serde_json::Value::Bool(true);
+    fs::write(
+        prepared.fixture.pair_json(FIRST_STAMP),
+        serde_json::to_vec(&pair)?,
+    )?;
+
+    // Act
+    let output = run_bundle(&prepared.fixture, THIRD_STAMP_UNIX, &pair_profile_flags())?;
+
+    // Assert
+    assert_fail_closed(&output, &prepared.fixture)?;
+    assert!(!dest_stamp(&prepared.fixture, THIRD_STAMP).is_dir());
+    prepared.fixture.cleanup()?;
+    Ok(())
 }
