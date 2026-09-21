@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Native Performance Closing
 status: executing
-stopped_at: Completed 23-02-PLAN.md
-last_updated: "2026-09-21T03:59:39.866Z"
+stopped_at: Completed 23-03-PLAN.md
+last_updated: "2026-09-21T04:05:20.544Z"
 last_activity: 2026-09-21
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 15
-  completed_plans: 9
-  percent: 60
+  completed_plans: 10
+  percent: 67
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-09-20)
 ## Current Position
 
 Phase: 23 (Baseline pair and named audit) — EXECUTING
-Plan: 3 of 9
+Plan: 4 of 9
 Status: Ready to execute
 Last activity: 2026-09-21
 
@@ -49,6 +49,7 @@ v1.1 plan durations remain in `.planning/milestones/v1.1-STATE.md`.
 | Phase 23 P01 | 8 min | 2 tasks | 7 files |
 | Phase 23 P04 | 5 min | 2 tasks | 3 files |
 | Phase 23 P02 | 14 min | 2 tasks | 6 files |
+| Phase 23 P03 | 4min | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -98,6 +99,9 @@ v1.1 playground decisions remain in `.planning/milestones/v1.1-STATE.md` and PRO
 - [Phase 23]: Split bundle helpers into bundle/ops.rs so every playground file stays ≤628 physical lines. — Combined GREEN file hit 763 lines; foo.rs plus foo/ keeps the Bright Builds cap without a TSV exception.
 - [Phase 23]: Do not mark PERF-AUDIT complete in this plan; the named-function audit remains 23-07. — This plan only ships the copy-only bundle command. Checking PERF-AUDIT off before named notes exist would be false.
 - [Phase 23]: Run playground unit tests as cargo test -p xtask playground::bundle because xtask has no lib target. — Same as Phase 22: cargo test --lib fails with no library targets found in package xtask.
+- [Phase 23]: Keep THIRD_STAMP local in playground_cli/bundle.rs so 23-01 support.rs stays untouched. — Plan allowed a local constant; editing support.rs would dirty 23-01 ownership for a test-only stamp name.
+- [Phase 23]: Do not patch playground/bundle.rs; 23-02 already copies rust.json.syms.json and fails closed. — Task 1 and Task 2 CLI tests passed on first run. Patching production would have been scope creep.
+- [Phase 23]: Do not mark PERF-AUDIT complete in this plan; fake cmake/samply still cannot name dominating functions. — D-01: fake fixtures cover copy plumbing only. Named-function notes remain 23-07.
 
 ### Pending Todos
 
@@ -126,6 +130,6 @@ Verify Phase 22 (`/gsd-verify-work 22`); independent AI review. Phase 24 plannin
 
 ## Session Continuity
 
-Last session: 2026-09-21T03:59:39.863Z
-Stopped at: Completed 23-02-PLAN.md
+Last session: 2026-09-21T04:05:12.903Z
+Stopped at: Completed 23-03-PLAN.md
 Resume file: None
