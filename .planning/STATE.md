@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Native Performance Closing
 status: executing
-stopped_at: Completed 22-01-PLAN.md
-last_updated: "2026-09-20T23:49:13.478Z"
-last_activity: 2026-09-20
+stopped_at: Completed 22-02-PLAN.md
+last_updated: "2026-09-21T00:02:33.414Z"
+last_activity: 2026-09-21
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 6
-  completed_plans: 1
-  percent: 17
+  completed_plans: 2
+  percent: 33
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: `.planning/PROJECT.md` (updated 2026-09-20)
 ## Current Position
 
 Phase: 22 (Observability shell) — EXECUTING
-Plan: 2 of 6
+Plan: 3 of 6
 Status: Ready to execute
-Last activity: 2026-09-20
+Last activity: 2026-09-21
 
-Progress: [██░░░░░░░░] 17%
+Progress: [███░░░░░░░] 33%
 
 v1.2 Native Performance Closing. Gate is unprofiled `just playground-dam-break-bench` (Rust `--release` vs `oracle-release` Dam Break Medium ≤ 3×). Evidence dir `target/dam-break-perf/<utc-stamp>/`. v1.1 phase directories remain on disk. No package publication or release tag.
 
@@ -39,6 +39,7 @@ v1.2 Native Performance Closing. Gate is unprofiled `just playground-dam-break-b
 | Plan | Duration | Tasks | Files |
 | --- | --- | --- | --- |
 | Phase 22 P01 | 31 min | 2 tasks | 6 files |
+| Phase 22 P02 | 9 min | 2 tasks | 4 files |
 
 v1.1 plan durations remain in `.planning/milestones/v1.1-STATE.md`.
 
@@ -60,10 +61,14 @@ v1.1 playground decisions remain in `.planning/milestones/v1.1-STATE.md` and PRO
 - [Phase 22]: Mint stamps with exclusive create_dir under target/dam-break-perf and bump one Unix second on AlreadyExists, capped at 8 attempts. — D-01 fail-closed mint; never remove_dir_all or merge into a pre-existing stamp.
 - [Phase 22]: Honor LIQUIDFUN_XTASK_GIT as a Command program path for git rev-parse HEAD. — Matches upstream tool_program pattern; unset env still runs git.
 - [Phase 22]: Do not mark PERF-PAIR complete in this plan; pair.json and pair.md persistence is 22-02. — 22-01 delivered the split and stamp core only.
+- [Phase 22]: Persist pair.json and pair.md only after exclusive stamp mint and a finite C++ wall_ms; zero C++ wall is a bench error with no files written. — D-01/D-02: never Inf, never overwrite an existing stamp.
+- [Phase 22]: Keep just playground-dam-break-bench as the one-line cargo xtask alias; do not hide cmake or samply in just. — D-05: unprofiled 3x-authority recipe name stays locked.
+- [Phase 22]: Honor LIQUIDFUN_XTASK_CARGO else CARGO else cargo, and LIQUIDFUN_XTASK_STAMP_UNIX as test-only unix seconds. — Command path injection plus integer-only stamp clock for fake-tool CLI collision coverage.
+- [Phase 22]: pair.json kind is unprofiled_pair with timing_authority unprofiled_wall_clock; omit samply/profile keys. — D-03/PERF-PAIR: unprofiled wall-clock remains the 3x number.
 
 ### Pending Todos
 
-Execute 22-02 (`/gsd-execute-phase 22`). Phase 24 planning should wait for Phase 23 named shares.
+Execute 22-03 (`/gsd-execute-phase 22`). Phase 24 planning should wait for Phase 23 named shares.
 
 ### Blockers/Concerns
 
@@ -88,6 +93,6 @@ Execute 22-02 (`/gsd-execute-phase 22`). Phase 24 planning should wait for Phase
 
 ## Session Continuity
 
-Last session: 2026-09-20T23:48:12.473Z
-Stopped at: Completed 22-01-PLAN.md
+Last session: 2026-09-21T00:02:13.798Z
+Stopped at: Completed 22-02-PLAN.md
 Resume file: None

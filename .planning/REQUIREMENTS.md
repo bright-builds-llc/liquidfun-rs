@@ -10,7 +10,7 @@ Requirements for this milestone. Each maps to roadmap phases. "Developer" means 
 ### Observability
 
 - [ ] **PERF-AUDIT**: Developer can read a committed audit notes doc that names dominating Rust functions (and C++ counterparts when the extra work is a shape mismatch), classifies suspected causes (extra per-particle work, per-step allocation, checks that survive `--release`, algorithm/shape differences), records the current unprofiled Dam Break Medium wall-time ratio, and states what was not found (so SIMD is not the first move).
-- [ ] **PERF-PAIR**: Developer can re-run the locked Dam Break Medium pair on demand (`just playground-dam-break-bench`: same host, scalar Rust `--release` vs C++ `oracle-release`, 1920 particles, 60 warm-up + 600 timed steps) and persist a dated unprofiled report under `target/dam-break-perf/<utc-stamp>/` (wall ms, ms/step, Rust/C++ ratio, host, git HEAD, compilers) — not stdout-only.
+- [x] **PERF-PAIR**: Developer can re-run the locked Dam Break Medium pair on demand (`just playground-dam-break-bench`: same host, scalar Rust `--release` vs C++ `oracle-release`, 1920 particles, 60 warm-up + 600 timed steps) and persist a dated unprofiled report under `target/dam-break-perf/<utc-stamp>/` (wall ms, ms/step, Rust/C++ ratio, host, git HEAD, compilers) — not stdout-only.
 - [ ] **PERF-PROFILE**: Developer can run a thin `just` / xtask recipe that rebuilds a `[profile.profiling]` Dam Break binary (inherits `release`, `debug = true`), captures a samply 0.13.1 CPU profile of the timed Rust loop, and writes `rust.json.gz` plus host/HEAD/compiler/command identity into `target/dam-break-perf/<utc-stamp>/` without clobbering an existing stamp. Profiled wall times are never the 3× number.
 - [ ] **PERF-TIMERS**: Developer can emit coarse parent-phase timers (`particle_prepare` / `particle_solve` / `rigid_solve` or equivalent existing `step_profiled` parents) on a separate Dam Break diagnostic path for cheaper iteration, without putting those timers inside the unprofiled gate process.
 - [ ] **PERF-HEAP**: Developer can run a private heap profile (`dhat` on the `dam-break-bench` binary only) after samply shows allocator or `Vec` time, writing the dump under the same gitignored evidence root. If samply does not show allocator time, committed notes record that and skip the heap run.
@@ -70,7 +70,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 | --- | --- | --- |
-| PERF-PAIR | Phase 22 | Pending |
+| PERF-PAIR | Phase 22 | Complete |
 | PERF-PROFILE | Phase 22 | Pending |
 | PERF-TIMERS | Phase 22 | Pending |
 | PERF-AUDIT | Phase 23 | Pending |
