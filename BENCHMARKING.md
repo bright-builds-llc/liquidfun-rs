@@ -28,7 +28,9 @@ for unreviewed native scene spot-checks; that local sample is not the Dam
 Break 3× gate and must not be copied into
 `reference/performance/manifest.toml`. Raw `.json.gz`, `dhat-heap.json`,
 and `.trace` files stay gitignored and must not be committed or copied into
-`reference/performance/manifest.toml`.
+`reference/performance/manifest.toml`. The playground Dam Break pair is an
+unreviewed local canary, not a Phase 12 sealed public claim;
+`reference/performance/manifest.toml` `reviewed_reports` remains empty.
 
 ## Optional strict performance profile
 
