@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Native Performance Closing
 status: executing
-stopped_at: Completed 23-03-PLAN.md
-last_updated: "2026-09-21T04:05:20.544Z"
+stopped_at: Completed 23-05-PLAN.md
+last_updated: "2026-09-21T04:17:58.817Z"
 last_activity: 2026-09-21
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 15
-  completed_plans: 10
-  percent: 67
+  completed_plans: 11
+  percent: 73
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: `.planning/PROJECT.md` (updated 2026-09-20)
 ## Current Position
 
 Phase: 23 (Baseline pair and named audit) — EXECUTING
-Plan: 4 of 9
+Plan: 6 of 9
 Status: Ready to execute
 Last activity: 2026-09-21
 
-Progress: [██████████] 100%
+Progress: [███████░░░] 73%
 
 v1.2 Native Performance Closing. Gate is unprofiled `just playground-dam-break-bench` (Rust `--release` vs `oracle-release` Dam Break Medium ≤ 3×). Evidence dir `target/dam-break-perf/<utc-stamp>/`. v1.1 phase directories remain on disk. No package publication or release tag.
 
@@ -50,6 +50,7 @@ v1.1 plan durations remain in `.planning/milestones/v1.1-STATE.md`.
 | Phase 23 P04 | 5 min | 2 tasks | 3 files |
 | Phase 23 P02 | 14 min | 2 tasks | 6 files |
 | Phase 23 P03 | 4min | 2 tasks | 1 files |
+| Phase 23 P05 | 10 min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -102,6 +103,12 @@ v1.1 playground decisions remain in `.planning/milestones/v1.1-STATE.md` and PRO
 - [Phase 23]: Keep THIRD_STAMP local in playground_cli/bundle.rs so 23-01 support.rs stays untouched. — Plan allowed a local constant; editing support.rs would dirty 23-01 ownership for a test-only stamp name.
 - [Phase 23]: Do not patch playground/bundle.rs; 23-02 already copies rust.json.syms.json and fails closed. — Task 1 and Task 2 CLI tests passed on first run. Patching production would have been scope creep.
 - [Phase 23]: Do not mark PERF-AUDIT complete in this plan; fake cmake/samply still cannot name dominating functions. — D-01: fake fixtures cover copy plumbing only. Named-function notes remain 23-07.
+- [Phase 23]: Scan rust.json.syms.json first (Path::with_extension on rust.json.gz), then other *syms* files, then decompressed gzip JSON strings. — D-12 / Pitfall 4: samply --unstable-presymbolicate writes a sidecar; gzip-only scans miss names.
+- [Phase 23]: Hex-only 0x addresses and non-JSON gzip are SkipNoSymbols, not no-allocator. — D-13: inconclusive parse must not be recorded as no allocator/Vec time.
+- [Phase 23]: Heap cargo is --profile profiling --features dhat-heap and never --release so target/release/dam-break-bench stays the gate binary. — D-11 / Pitfall 3: enabling dhat-heap on --release would replace the unprofiled gate artifact.
+- [Phase 23]: SkipNoAllocator and SkipNoSymbols return Err before mint_exclusive_stamp or cargo spawn. — D-13: do not run dhat just in case; write no dump on skip.
+- [Phase 23]: Do not mark PERF-HEAP complete in this plan; live dump or skip notes remain 23-08. — This plan ships the gate and command. Checking PERF-HEAP off before the live run-or-skip notes exist would be false.
+- [Phase 23]: Run playground unit tests as cargo test -p xtask playground because xtask has no lib target. — Same as Phase 22/23-02: cargo test --lib fails with no library targets found in package xtask.
 
 ### Pending Todos
 
@@ -130,6 +137,6 @@ Verify Phase 22 (`/gsd-verify-work 22`); independent AI review. Phase 24 plannin
 
 ## Session Continuity
 
-Last session: 2026-09-21T04:05:12.903Z
-Stopped at: Completed 23-03-PLAN.md
+Last session: 2026-09-21T04:17:42.929Z
+Stopped at: Completed 23-05-PLAN.md
 Resume file: None
