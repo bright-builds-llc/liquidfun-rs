@@ -83,7 +83,7 @@ Plans:
 - [ ] 23-04-PLAN.md — Optional dhat-heap on dam-break-bench only
 - [ ] 23-05-PLAN.md — Allocator/Vec heuristic and dam-break-heap command
 - [ ] 23-06-PLAN.md — Fake-cargo heap CLI match and skip tests
-- [ ] 23-07-PLAN.md — Live pair, live samply, and audit-bundle stamps
+- [ ] 23-07-PLAN.md — Live pair, live samply, audit-bundle stamps, durable primary-tree copy
 - [ ] 23-08-PLAN.md — Named audit, heap run-or-skip, timing-doc refresh
 - [ ] 23-09-PLAN.md — Isolation, Bright Builds, and no self-approval
 
