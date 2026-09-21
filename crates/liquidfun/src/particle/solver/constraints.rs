@@ -66,14 +66,24 @@ pub(crate) fn limit_velocity(
     definition: ParticleSystemDef,
     inverse_time_step: f32,
 ) -> Result<(), ConstraintSolverError> {
+    let particle_diameter = 2.0 * definition.radius();
+    if !particle_diameter.is_finite()
+        || particle_diameter <= 0.0
+        || !inverse_time_step.is_finite()
+        || inverse_time_step < 0.0
+    {
+        return Err(invalid_lane());
+    }
+    let critical_velocity = particle_diameter * inverse_time_step;
+    let critical_velocity_squared = critical_velocity * critical_velocity;
+    if !critical_velocity_squared.is_finite() {
+        return Err(invalid_lane());
+    }
+    #[cfg(debug_assertions)]
     let stable_ids = stable_particle_ids(storage)?;
-    let velocities = limit_velocity_candidate(
-        storage.velocities(),
-        2.0 * definition.radius(),
-        inverse_time_step,
-    )?;
+    storage.limit_solver_speeds(critical_velocity_squared)?;
+    #[cfg(debug_assertions)]
     validate_stable_ids(storage, &stable_ids)?;
-    storage.replace_solver_velocities(velocities)?;
     Ok(())
 }
 
