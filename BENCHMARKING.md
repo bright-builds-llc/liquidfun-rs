@@ -20,7 +20,11 @@ pair also writes gitignored `target/dam-break-perf/<utc-stamp>/pair.json` and
 `just playground-dam-break-timers` write sibling stamps whose samply and
 `step_profiled` outputs are not the 3× number (`timing_authority` remains
 unprofiled wall-clock). Do not commit `.json.gz` or `.trace` files, and do not
-copy pair numbers into `reference/performance/manifest.toml`.
+copy pair numbers into `reference/performance/manifest.toml`. See
+[docs/native-performance-audit.md](docs/native-performance-audit.md) for
+unreviewed SHA-bound named-function notes. Raw `.json.gz`, `dhat-heap.json`,
+and `.trace` files stay gitignored and must not be committed or copied into
+`reference/performance/manifest.toml`.
 
 ## Optional strict performance profile
 
