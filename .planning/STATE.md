@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Native Performance Closing
-status: executing
-stopped_at: Completed 24-05-PLAN.md
-last_updated: "2026-09-21T21:19:36.191Z"
+status: verifying
+stopped_at: Completed 24-06-PLAN.md
+last_updated: "2026-09-21T21:40:34.246Z"
 last_activity: 2026-09-21
 progress:
   total_phases: 4
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 21
-  completed_plans: 20
-  percent: 95
+  completed_plans: 21
+  percent: 100
 ---
 
 # Project State
@@ -27,7 +27,7 @@ See: `.planning/PROJECT.md` (updated 2026-09-21)
 
 Phase: 24 (Shared hot-path waves through 3×) — EXECUTING
 Plan: 6 of 6
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-21
 
 Progress: [█████████░] 86%
@@ -60,6 +60,7 @@ v1.1 plan durations remain in `.planning/milestones/v1.1-STATE.md`.
 | Phase 24-shared-hot-path-waves-through-3 P03 | 11 min | 2 tasks | 3 files |
 | Phase 24 P04 | 265 | 2 tasks | 24 files |
 | Phase 24-shared-hot-path-waves-through-3 P05 | 36min | 2 tasks | 13 files |
+| Phase 24-shared-hot-path-waves-through-3 P06 | 17min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -147,6 +148,9 @@ v1.1 playground decisions remain in `.planning/milestones/v1.1-STATE.md` and PRO
 - [Phase 24]: Spot JSON is exclusive kind native_scene_spot with not_timing_authority true; no rust_over_cpp_ratio and no pair.json. Gate stamps 2026-09-21T20-36-30Z and 2026-09-21T20-38-50Z were not overwritten. — D-11/D-15: spot walls must never become the Dam Break 3x number.
 - [Phase 24]: live_particle_count snapshots the live particle system; construction particle_count is stale after Fountain emit. — Fountain and Water Wheel grew 1 to 3200 in stamp 2026-09-21T21-10-50Z, proving on_advance hooks ran.
 - [Phase 24]: just playground-scene-spot is a one-line cargo xtask printer; warmup 60 / measured 120 / advance(1); dam-break-bench is not the spot timer. — D-05/D-06: just stays a one-line printer; spot defaults are not the Dam Break 600-step pair.
+- [Phase 24-shared-hot-path-waves-through-3]: Independent AI review is not performed by this implementing agent; /gsd-verify-work 24 and a separate AI reviewer remain required. — Owner policy 2026-09-16: the implementing agent must not approve its own work. This plan records automated isolation evidence only.
+- [Phase 24-shared-hot-path-waves-through-3]: BENCHMARKING.md points at docs/playground-scene-spot-check.md as unreviewed native scene spot-checks; that sample is not the Dam Break 3x gate and must not enter the empty manifest. — D-14/D-15: keep committed docs as unreviewed samples. Do not paste wall-ms or copy playground numbers into reference/performance/manifest.toml.
+- [Phase 24-shared-hot-path-waves-through-3]: Clippy unnecessary_wraps on always-Ok particle storage Results was dropped rather than allowed so cargo clippy -p liquidfun -D warnings could pass. — Task 2 required clippy -D warnings to exit 0; always-Ok Result wrappers were leftover and not a physics-behavior change.
 
 ### Pending Todos
 
@@ -175,6 +179,6 @@ Execute 24-04 leftover waves from samply stamp `2026-09-21T16-07-39Z` until unpr
 
 ## Session Continuity
 
-Last session: 2026-09-21T21:18:31.107Z
-Stopped at: Completed 24-05-PLAN.md
+Last session: 2026-09-21T21:40:05.859Z
+Stopped at: Completed 24-06-PLAN.md
 Resume file: None
