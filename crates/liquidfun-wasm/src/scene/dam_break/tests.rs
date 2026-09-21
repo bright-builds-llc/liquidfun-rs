@@ -318,6 +318,85 @@ fn unknown_water_gravity_and_obstacle_tokens_fail_closed() {
     );
 }
 
+/// Headless regression for dam-break wall embedding / velocity blow-ups.
+///
+/// Before the force-buffer zeroing fix, particles tunneled the left wall by ~step 135.
+#[test]
+fn dam_break_stays_finite_and_outside_walls_after_settling() {
+    use liquidfun::{NoDecisionHook, StepConfiguration, StepLimits};
+
+    // Arrange
+    let super::BuiltScene {
+        mut world,
+        particle_system,
+        particle_radius,
+        ..
+    } = super::build(&[]).expect("default Dam Break should construct");
+    let step = StepConfiguration::new(1.0 / 60.0, 8, 3)
+        .expect("valid step")
+        .with_particle_iterations(2)
+        .expect("two particle iterations");
+    let limits = StepLimits::default();
+    let mut hook = NoDecisionHook;
+    let critical = 2.0 * particle_radius * 60.0; // diameter / dt
+    let extreme_speed = critical * 8.0;
+    let floor_top = 0.0_f32;
+    let left_inner = -5.5_f32;
+    let right_inner = 5.5_f32;
+
+    // Act / Assert — tunneling previously appeared by ~step 135 with the stacked-force bug.
+    // Default 600 steps (~10 s). Override with LIQUIDFUN_DAM_BREAK_STEPS for longer checks.
+    let step_limit = std::env::var("LIQUIDFUN_DAM_BREAK_STEPS")
+        .ok()
+        .and_then(|value| value.parse::<u32>().ok())
+        .unwrap_or(600);
+    for step_index in 0..step_limit {
+        world
+            .step(step, &mut hook, limits)
+            .unwrap_or_else(|error| panic!("World::step failed at {step_index}: {error:?}"));
+        let view = world
+            .particle_system_view(particle_system)
+            .expect("particle system remains live");
+        let mut max_speed = 0.0_f32;
+        for (index, (position, velocity)) in view
+            .positions()
+            .iter()
+            .copied()
+            .zip(view.velocities().iter().copied())
+            .enumerate()
+        {
+            assert!(
+                position.x.is_finite()
+                    && position.y.is_finite()
+                    && velocity.x.is_finite()
+                    && velocity.y.is_finite(),
+                "non-finite state at step {step_index} particle {index}: p={position:?} v={velocity:?}"
+            );
+            let speed = velocity.length();
+            if speed > max_speed {
+                max_speed = speed;
+            }
+            assert!(
+                speed <= extreme_speed,
+                "extreme velocity at step {step_index} particle {index}: speed={speed} (critical≈{critical}) p={position:?} v={velocity:?}"
+            );
+            let deeply_in_floor =
+                position.y < floor_top - particle_radius && position.x > left_inner && position.x < right_inner;
+            let deeply_in_left =
+                position.x < left_inner - particle_radius && position.y > 0.0 && position.y < 8.0;
+            let deeply_in_right =
+                position.x > right_inner + particle_radius && position.y > 0.0 && position.y < 8.0;
+            assert!(
+                !(deeply_in_floor || deeply_in_left || deeply_in_right),
+                "particle center embedded in wall at step {step_index} particle {index}: p={position:?} v={velocity:?}"
+            );
+        }
+        if step_index % 600 == 599 {
+            eprintln!("dam_break progress step={} max_speed={max_speed:.3}", step_index + 1);
+        }
+    }
+}
+
 fn circle_pose(session: &SessionCore) -> (f32, f32) {
     let circles = capture(session).rigid_circles();
     assert!(

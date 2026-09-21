@@ -192,7 +192,14 @@ impl ParticleStorage {
         self.solver_state.has_pending_system_force()
     }
 
+    /// Consumes the pending-force marker after `SolveForce`.
+    ///
+    /// Upstream `PrepareForceBuffer` zeroes the force buffer when `m_hasForce`
+    /// transitions from false to true. Zeroing here at consume time is
+    /// equivalent and prevents the next collision/barrier `+=` from stacking
+    /// onto already-applied force samples.
     pub(in crate::particle) fn clear_pending_system_force(&mut self) {
+        self.forces.fill(Vec2::ZERO);
         self.solver_state.clear_pending_system_force();
     }
 

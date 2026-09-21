@@ -423,10 +423,34 @@ mod tests {
         // Assert
         assert!(fixture.storage == after_first);
         assert!(!fixture.storage.has_pending_system_force());
+        assert_eq!(fixture.storage.forces(), &[Vec2::ZERO; 2]);
         assert_ne!(
             vec_bits(fixture.storage.velocities()),
             vec_bits(&[Vec2::ZERO; 2])
         );
+    }
+
+    #[test]
+    fn force_consume_zeros_buffer_so_next_accumulation_does_not_stack() {
+        // Arrange
+        let mut fixture = Fixture::new(&[water(0.0)]);
+        let definition = ParticleSystemDef::default();
+        fixture
+            .storage
+            .replace_force_range(0..1, &[Vec2::new(4.0, 0.0)]);
+
+        // Act
+        force(&mut fixture.storage, definition, 0.5).expect("first consume applies force");
+        fixture
+            .storage
+            .replace_force_range(0..1, &[Vec2::new(1.0, 0.0)]);
+        let before_second = fixture.storage.velocities()[0];
+        force(&mut fixture.storage, definition, 0.5).expect("second consume starts from zeroed buffer");
+
+        // Assert
+        let expected = before_second + 0.5 * particle_inverse_mass(definition) * Vec2::new(1.0, 0.0);
+        assert_eq!(fixture.storage.velocities()[0], expected);
+        assert_eq!(fixture.storage.forces(), &[Vec2::ZERO]);
     }
 
     #[test]
@@ -462,6 +486,7 @@ mod tests {
         // Assert
         assert_eq!(vec_bits(fixture.storage.velocities()), before_velocity);
         assert!(!fixture.storage.has_pending_system_force());
+        assert_eq!(fixture.storage.forces(), &[Vec2::ZERO]);
     }
 
     #[test]
