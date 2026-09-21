@@ -14,7 +14,13 @@ The playground Dam Break headless pair is optional local diagnosis, not a Phase
 12 reviewed report. Reproduce it with `just playground-dam-break-bench` and see
 [docs/playground-dam-break-timing.md](docs/playground-dam-break-timing.md). That
 table is an unreviewed local sample. It is not compatibility evidence and must
-not be copied into `reference/performance/manifest.toml`.
+not be copied into `reference/performance/manifest.toml`. A successful unprofiled
+pair also writes gitignored `target/dam-break-perf/<utc-stamp>/pair.json` and
+`pair.md`; `just playground-dam-break-profile` and
+`just playground-dam-break-timers` write sibling stamps whose samply and
+`step_profiled` outputs are not the 3× number (`timing_authority` remains
+unprofiled wall-clock). Do not commit `.json.gz` or `.trace` files, and do not
+copy pair numbers into `reference/performance/manifest.toml`.
 
 ## Optional strict performance profile
 
