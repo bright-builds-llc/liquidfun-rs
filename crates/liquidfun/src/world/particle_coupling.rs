@@ -29,13 +29,12 @@ impl World {
         hook_run: &mut ContactHookRun<'_, H>,
     ) -> Result<(), StepError> {
         let backup_bodies = self.bodies.clone();
-        let backup_systems = self.particle_systems.clone();
         let backup_groups = self.particle_groups.clone();
+        self.run_particle_lifecycle_step(configuration.time_step(), hook_run)?;
+        let mut candidate_bodies = self.bodies.replace_with_empty();
+        let mut candidate_systems = self.particle_systems.replace_with_empty();
+        let system_order = self.particle_system_order.clone();
         let result = (|| {
-            self.run_particle_lifecycle_step(configuration.time_step(), hook_run)?;
-            let mut candidate_bodies = self.bodies.replace_with_empty();
-            let mut candidate_systems = self.particle_systems.replace_with_empty();
-            let system_order = self.particle_system_order.clone();
             for system in system_order {
                 let mut executor = SystemPassExecutor::new(
                     self,
@@ -47,13 +46,12 @@ impl World {
                 );
                 crate::particle::solver::run_particle_solver(configuration, &mut executor)?;
             }
-            self.bodies = candidate_bodies;
-            self.particle_systems = candidate_systems;
             Ok(())
         })();
+        self.bodies = candidate_bodies;
+        self.particle_systems = candidate_systems;
         if result.is_err() {
             self.bodies = backup_bodies;
-            self.particle_systems = backup_systems;
             self.particle_groups = backup_groups;
         }
         result
