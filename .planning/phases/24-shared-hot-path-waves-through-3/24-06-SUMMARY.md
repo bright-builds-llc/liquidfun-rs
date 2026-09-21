@@ -139,8 +139,6 @@ Assertions:
 - **Verification:** clippy exit 0; `cargo test -p liquidfun` exit 0; `cargo xtask package verify` exit 0; `cargo tree -p liquidfun --edges normal` still bitflags-only
 - **Committed in:** `5715c2b`
 
----
-
 **Total deviations:** 1 auto-fixed (1 blocking)
 **Impact on plan:** Required for the written clippy gate. No SIMD, Rayon, `unsafe`, playground tooling leak, or review self-approval.
 
@@ -170,7 +168,6 @@ Phase 24 plans are complete on disk after this SUMMARY. Ready for `/gsd-verify-w
 
 PERF-NOTES and PERF-WASM remain Phase 25. Do not copy playground numbers into `reference/performance/manifest.toml`. Do not `git add` `*.json.gz`, `*.trace`, or `dhat-heap.json`. Do not write README or crates.io “Rust is N×” claims.
 
----
 *Phase: 24-shared-hot-path-waves-through-3*
 *Completed: 2026-09-21*
 

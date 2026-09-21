@@ -143,8 +143,6 @@ No REFACTOR commit: GREEN code already met file-length, `foo.rs` plus `foo/`, an
 - **Verification:** Clippy clean on the new files; fake-cargo CLI tests passed.
 - **Committed in:** `cfdbaab`
 
----
-
 **Total deviations:** 2 auto-fixed (1 blocking, 1 bug)
 **Impact on plan:** Required for compile/clippy. No scope creep. No second canary. `dam-break-bench` was not reused.
 
@@ -165,7 +163,6 @@ None. Five live scenes wrote finite `wall_ms` with `timed_out` false.
 
 Ready for 24-06 isolation, empty manifest, and no self-approval. Independent review remains a later policy step; this executor did not self-approve.
 
----
 *Phase: 24-shared-hot-path-waves-through-3*
 *Completed: 2026-09-21*
 

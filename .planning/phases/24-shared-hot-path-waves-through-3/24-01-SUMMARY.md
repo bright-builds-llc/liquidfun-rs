@@ -106,8 +106,6 @@ _Note: TDD tasks used RED then GREEN commits._
 - **Verification:** `cargo test -p liquidfun --lib particle::proxy::` passed
 - **Committed in:** `b704314` (Task 2 commit)
 
----
-
 **Total deviations:** 1 auto-fixed (1 blocking)
 **Impact on plan:** Needed for the crate-internal RED test to compile under warning-deny; no production behavior change.
 
@@ -123,7 +121,6 @@ None - no external service configuration required.
 
 Ready for 24-02 unprofiled Dam Break re-pair into a new exclusive stamp. This plan does not claim PERF-GATE; leftover named frames remain possible after samply retarget. Independent AI review remains a later phase step — this implementing agent does not self-approve.
 
----
 *Phase: 24-shared-hot-path-waves-through-3*
 *Completed: 2026-09-21*
 
