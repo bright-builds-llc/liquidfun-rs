@@ -1,8 +1,27 @@
 //! Fail-closed allocator/`Vec` heuristic over samply sidecars and gzip JSON.
 
+use std::fs;
+use std::io::Read;
 use std::path::Path;
 
+use flate2::read::GzDecoder;
+use serde_json::Value;
+
 use super::PlaygroundError;
+
+const PROFILE_BLOB: &str = "rust.json.gz";
+const NEEDLES: [&str; 10] = [
+    "alloc::",
+    "__rust_alloc",
+    "__rdl_alloc",
+    "__rg_alloc",
+    "alloc::vec::Vec",
+    "RawVec",
+    "to_vec",
+    "GlobalAlloc",
+    "core::alloc::",
+    "core::clone::",
+];
 
 /// Outcome of the sidecar-first allocator/`Vec` needle scan.
 #[allow(dead_code)]
@@ -21,8 +40,151 @@ pub(super) enum HeapGate {
 ///
 /// Returns a closed error when a readable sidecar or gzip file cannot be opened.
 #[allow(dead_code)]
-pub(super) fn classify_profile_symbols(_profile_dir: &Path) -> Result<HeapGate, PlaygroundError> {
-    todo!("classify_profile_symbols")
+pub(super) fn classify_profile_symbols(profile_dir: &Path) -> Result<HeapGate, PlaygroundError> {
+    let mut scanned = Vec::new();
+    let gzip_path = profile_dir.join(PROFILE_BLOB);
+    let primary_sidecar = gzip_path.with_extension("syms.json");
+    if primary_sidecar.is_file() {
+        collect_symbol_file(&primary_sidecar, &mut scanned)?;
+    }
+    collect_other_syms_files(profile_dir, &primary_sidecar, &mut scanned)?;
+    if gzip_path.is_file() {
+        collect_gzip_json_strings(&gzip_path, &mut scanned)?;
+    }
+
+    let matched_needles = matched_needles(&scanned);
+    if !matched_needles.is_empty() {
+        return Ok(HeapGate::Run { matched_needles });
+    }
+    if scanned.iter().any(|text| is_readable_symbol(text)) {
+        return Ok(HeapGate::SkipNoAllocator);
+    }
+    Ok(HeapGate::SkipNoSymbols)
+}
+
+fn collect_other_syms_files(
+    profile_dir: &Path,
+    primary_sidecar: &Path,
+    scanned: &mut Vec<String>,
+) -> Result<(), PlaygroundError> {
+    let entries = fs::read_dir(profile_dir)
+        .map_err(|error| heap_err(format!("failed to read {}: {error}", profile_dir.display())))?;
+    let mut extra = Vec::new();
+    for entry in entries {
+        let entry = entry.map_err(|error| {
+            heap_err(format!("failed to read {}: {error}", profile_dir.display()))
+        })?;
+        let path = entry.path();
+        if !path.is_file() {
+            continue;
+        }
+        let Some(name) = path.file_name().and_then(|name| name.to_str()) else {
+            continue;
+        };
+        if !name.contains("syms") || path == primary_sidecar {
+            continue;
+        }
+        extra.push(path);
+    }
+    extra.sort();
+    for path in extra {
+        collect_symbol_file(&path, scanned)?;
+    }
+    Ok(())
+}
+
+fn collect_symbol_file(path: &Path, scanned: &mut Vec<String>) -> Result<(), PlaygroundError> {
+    let bytes = fs::read(path)
+        .map_err(|error| heap_err(format!("failed to read {}: {error}", path.display())))?;
+    if let Ok(value) = serde_json::from_slice::<Value>(&bytes) {
+        collect_json_strings(&value, scanned);
+        return Ok(());
+    }
+    let Ok(text) = std::str::from_utf8(&bytes) else {
+        return Ok(());
+    };
+    scanned.push(text.to_owned());
+    Ok(())
+}
+
+fn collect_gzip_json_strings(
+    path: &Path,
+    scanned: &mut Vec<String>,
+) -> Result<(), PlaygroundError> {
+    let file = fs::File::open(path)
+        .map_err(|error| heap_err(format!("failed to read {}: {error}", path.display())))?;
+    let mut decoder = GzDecoder::new(file);
+    let mut body = Vec::new();
+    if decoder.read_to_end(&mut body).is_err() {
+        return Ok(());
+    }
+    let Ok(value) = serde_json::from_slice::<Value>(&body) else {
+        return Ok(());
+    };
+    if collect_thread_string_array(&value, scanned) {
+        return Ok(());
+    }
+    collect_json_strings(&value, scanned);
+    Ok(())
+}
+
+fn collect_thread_string_array(value: &Value, scanned: &mut Vec<String>) -> bool {
+    let Some(threads) = value.get("threads").and_then(Value::as_array) else {
+        return false;
+    };
+    let mut used = false;
+    for thread in threads {
+        let Some(array) = thread.get("stringArray").and_then(Value::as_array) else {
+            continue;
+        };
+        used = true;
+        for item in array {
+            if let Some(text) = item.as_str() {
+                scanned.push(text.to_owned());
+            }
+        }
+    }
+    used
+}
+
+fn collect_json_strings(value: &Value, scanned: &mut Vec<String>) {
+    match value {
+        Value::String(text) => scanned.push(text.clone()),
+        Value::Array(items) => {
+            for item in items {
+                collect_json_strings(item, scanned);
+            }
+        }
+        Value::Object(map) => {
+            for nested in map.values() {
+                collect_json_strings(nested, scanned);
+            }
+        }
+        _ => {}
+    }
+}
+
+fn matched_needles(scanned: &[String]) -> Vec<String> {
+    NEEDLES
+        .iter()
+        .filter(|needle| scanned.iter().any(|text| text.contains(*needle)))
+        .map(|needle| (*needle).to_owned())
+        .collect()
+}
+
+fn is_readable_symbol(text: &str) -> bool {
+    !text.is_empty() && !is_hex_address(text)
+}
+
+fn is_hex_address(text: &str) -> bool {
+    let Some(hex) = text.strip_prefix("0x") else {
+        return false;
+    };
+    !hex.is_empty() && hex.chars().all(|ch| ch.is_ascii_hexdigit())
+}
+
+fn heap_err(message: impl Into<String>) -> PlaygroundError {
+    PlaygroundError::new("heap", message)
 }
 
 #[cfg(test)]
