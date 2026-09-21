@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Native Performance Closing
-status: executing
-stopped_at: Completed 25-01-PLAN.md
-last_updated: "2026-09-21T22:25:15.424Z"
+status: verifying
+stopped_at: Completed 25-02-PLAN.md
+last_updated: "2026-09-21T22:28:27.153Z"
 last_activity: 2026-09-21
 progress:
   total_phases: 4
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 23
-  completed_plans: 22
-  percent: 96
+  completed_plans: 23
+  percent: 100
 ---
 
 # Project State
@@ -27,7 +27,7 @@ See: `.planning/PROJECT.md` (updated 2026-09-21)
 
 Phase: 25 (wasm-sanity-and-honest-close) — EXECUTING
 Plan: 2 of 2
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-21
 
 Progress: [█████████░] 86%
@@ -62,6 +62,7 @@ v1.1 plan durations remain in `.planning/milestones/v1.1-STATE.md`.
 | Phase 24-shared-hot-path-waves-through-3 P05 | 36min | 2 tasks | 13 files |
 | Phase 24-shared-hot-path-waves-through-3 P06 | 17min | 2 tasks | 4 files |
 | Phase 25 P01 | 1 min | 2 tasks | 3 files |
+| Phase 25 P02 | 2min | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -155,6 +156,8 @@ v1.1 playground decisions remain in `.planning/milestones/v1.1-STATE.md` and PRO
 - [Phase 25]: Lead honesty docs with gate stamp 2026-09-21T20-38-50Z / ratio 2.956857456935513; demote 20-36-30Z to sibling-only — D-07: gate pair.json is the sole close number; kernel-HEAD sample is sibling-only labeling.
 - [Phase 25]: Document remaining ~2% frames as not gold-plated; list not-attempted including PERF-WASM-ENG — D-06: remaining-delta and not-attempted closers live in committed notes without minting a new pair.
 - [Phase 25]: BENCHMARKING honesty: unreviewed local canary / not Phase 12 sealed; reviewed_reports stays empty — D-08/D-09: public claim boundary; empty manifest verified.
+- [Phase 25]: Optional WASM note cites gate stamp 2026-09-21T20-38-50Z native ms_per_step 1.053103 and exact phrase no prior WASM step-time sample; never versus oracle-release — D-03/D-04: native-fallback when no prior WASM sample; forbid C++ comparison
+- [Phase 25]: MAX_ADVANCE_STEPS remains 4; no Instant, step_profiled, or samply added to the cdylib — D-05: catch-up cap and no Instant profiler in WASM
 
 ### Pending Todos
 
@@ -183,6 +186,6 @@ Execute 24-04 leftover waves from samply stamp `2026-09-21T16-07-39Z` until unpr
 
 ## Session Continuity
 
-Last session: 2026-09-21T22:25:10.096Z
-Stopped at: Completed 25-01-PLAN.md
+Last session: 2026-09-21T22:28:27.149Z
+Stopped at: Completed 25-02-PLAN.md
 Resume file: None
