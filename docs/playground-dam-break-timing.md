@@ -23,7 +23,7 @@ particles, radius `0.06324555`, spacing `0.101193`, gravity `(0, -10)`,
 
 ## Current recorded sample
 
-SHA-bound unprofiled pair from `target/dam-break-perf/2026-09-21T16-07-02Z/`
+SHA-bound unprofiled pair from `target/dam-break-perf/2026-09-21T20-28-24Z/`
 (`pair.json`, `kind: unprofiled_pair`,
 `timing_authority: unprofiled_wall_clock`). This is not a Phase 12 public
 claim. Historical pointers that stay on disk and must not be overwritten:
@@ -35,10 +35,13 @@ claim. Historical pointers that stay on disk and must not be overwritten:
 - Wave 1 admission pair `2026-09-21T15-50-46Z`,
   `rust_over_cpp_ratio` `21.00845179052245`.
 
+- First leftover admission pair `2026-09-21T16-07-02Z`,
+  `rust_over_cpp_ratio` `15.08956518243927`.
+
 - A first exploratory sample at
   `1e5cbcc124becd363049c4d62c60b715bc0d7897` remains historical only.
 
-- git HEAD: `907bdf360c423184df1dc9210cce60a65a073c8f`
+- git HEAD: `97c15984d660bb18f4f4512211bc32a466539081`
 
 - OS/arch: `macos` / `aarch64`
 
@@ -50,16 +53,15 @@ claim. Historical pointers that stay on disk and must not be overwritten:
 
 - measured steps: `600`
 
-| Engine      | Particles | Wall ms     | ms/step  | steps/s     | Realtime factor | Compiler                              |
-| ----------- | --------- | ----------- | -------- | ----------- | --------------- | ------------------------------------- |
-| native Rust | 1920      | 3247.300834 | 5.412168 | 184.768837  | 3.079481        | `rustc 1.97.0 (2d8144b78 2026-07-07)` |
-| pinned C++  | 1920      | 215.20175   | 0.35867  | 2788.081417 | 46.468024       | `AppleClang 21.0.0.21000334`          |
+| Engine      | Particles | Wall ms    | ms/step  | steps/s     | Realtime factor | Compiler                              |
+| ----------- | --------- | ---------- | -------- | ----------- | --------------- | ------------------------------------- |
+| native Rust | 1920      | 636.031584 | 1.060053 | 943.349379  | 15.72249        | `rustc 1.97.0 (2d8144b78 2026-07-07)` |
+| pinned C++  | 1920      | 215.149292 | 0.358582 | 2788.761211 | 46.479354       | `AppleClang 21.0.0.21000334`          |
 
-`rust_over_cpp_ratio`: `15.08956518243927` (from `pair.json` only). This
-unreviewed sample improved on Wave 1 `21.00845179052245` after admitting
-release `check_invariants` / `slice_contains` on the solver-candidate path
-only. It is not PERF-GATE; that gate still requires `pair.json`
-`rust_over_cpp_ratio` ≤ 3.
+`rust_over_cpp_ratio`: `2.956233683539149` (from `pair.json` only). This
+unreviewed sample is PERF-GATE on this host for the locked 1920-particle,
+60 warmup + 600 measured-step recipe (`≤ 3`). Do not copy it into
+`reference/performance/manifest.toml`.
 
 Rust used `--release`. C++ used the scalar `oracle-release` wrapper (no
 `-ffast-math`, no `-march=native`).

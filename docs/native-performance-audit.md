@@ -16,6 +16,7 @@ just playground-dam-break-audit-bundle
 samply load target/dam-break-perf/2026-09-21T04-34-32Z/rust.json.gz
 samply load target/dam-break-perf/2026-09-21T15-52-27Z/rust.json.gz
 samply load target/dam-break-perf/2026-09-21T16-07-39Z/rust.json.gz
+samply load target/dam-break-perf/2026-09-21T20-18-21Z/rust.json.gz
 ```
 
 The pair recipe is unprofiled native `--release` versus scalar `oracle-release`.
@@ -24,8 +25,8 @@ The profile recipe rebuilds `[profile.profiling]` and is
 `rust.json.gz` (plus `rust.json.syms.json`) into a new exclusive stamp; it does
 not retime the engines. The first `samply load` is the Phase 23 ranking dump.
 The second is the Wave 1 leftover-ranking sibling used to admit the first
-leftover. The third is the post-leftover sibling for 24-04; none of those
-durations is the 3× number.
+leftover. Later `samply load` lines are leftover-ranking siblings; none of
+those durations is the 3× number.
 
 ## Evidence identity
 
@@ -146,8 +147,64 @@ Admission pair (new exclusive stamp; old stamps preserved):
 `rust_over_cpp_ratio`: `15.08956518243927` (copied from that `pair.json` only).
 Strictly below Wave 1 `21.00845179052245`.
 
-**PERF-GATE is not claimed.** The pair ratio is still greater than 3. Rank the
-next leftover from stamp `2026-09-21T16-07-39Z`, not by pasting this table.
+Plan 24-04 then looped leftover scalar kernels from that sibling profile (and
+later retargets) until the unprofiled pair crossed ≤ 3. Rank leftovers from
+live sidecars, not by pasting this table. samply / `[profile.profiling]` /
+`step_profiled` / dhat clocks stay `not_timing_authority`.
+
+## PERF-GATE leftover close
+
+Unprofiled Dam Break Medium pair after leftover waves (locked 1920 particles,
+60 warmup + 600 measured steps). This is the 3× number. Do **not** quote
+samply duration as this figure. D-06: further ranked ~2% leftover frames were
+not gold-plated after the gate.
+
+- Pair stamp: `target/dam-break-perf/2026-09-21T20-28-24Z/` (`pair.json`,
+  `kind: unprofiled_pair`, `timing_authority: unprofiled_wall_clock`)
+- Pair `git_head`: `97c15984d660bb18f4f4512211bc32a466539081`
+- OS/arch: `macos` / `aarch64`
+- CPU: `Apple M4 Max`
+- logical cores: `16`
+- Last leftover-ranking sibling before the gate-closing kernel:
+  `target/dam-break-perf/2026-09-21T20-18-21Z/` (`profile-identity.json`
+  `kind: samply_cpu`, `not_timing_authority: true`; no `pair.json` in that
+  stamp)
+
+| Engine      | Particles | Wall ms    | ms/step  | Compiler                              |
+| ----------- | --------- | ---------- | -------- | ------------------------------------- |
+| native Rust | 1920      | 636.031584 | 1.060053 | `rustc 1.97.0 (2d8144b78 2026-07-07)` |
+| pinned C++  | 1920      | 215.149292 | 0.358582 | `AppleClang 21.0.0.21000334`          |
+
+`rust_over_cpp_ratio`: `2.956233683539149` (copied from that `pair.json`
+only). PERF-GATE on this host for the locked recipe. Not a reviewed report;
+`reference/performance/manifest.toml` `reviewed_reports` remains empty.
+
+Landed leftover kernels (names from live `rust.json.syms.json` plus gecko
+`stackTable` ranking, not hunt-list paste), in commit order after 24-03
+`check_invariants`:
+
+1. skip no-pending identity compact
+1. preallocate neighborhood proxy pairs (`ParticleNeighborhood::from_view`)
+1. skip hot-path semantic contact collect
+1. skip idle body-contact listener diffs
+1. defer weight recompute to the solver Weight pass
+1. AABB-prefilter fixture-particle contacts
+1. skip release neighborhood pair revalidation
+1. commit indexed particle contacts without ID resolve
+1. AABB-prefilter fixture-particle CCD
+1. skip materializing neighborhood `ParticleNeighborPair`
+1. skip solver velocity diff scans
+1. skip LimitVelocity identity snapshots
+1. skip `ParticleStorage` clone in `replace_solver_candidate`
+1. skip particle solver candidate Arena clones
+1. skip `BoundaryCandidate` pass clones
+1. skip release boundary lane validation (`validate_source_lanes` /
+   `validate_candidate`)
+1. skip `ParticleStorage` clone in `run_particle_solver` happy-path backup
+
+Shared `liquidfun` particle/rigid stepping only. Public `ParticleId`
+unchanged. SIMD / Rayon / `-ffast-math` / `-march=native` / PGO / lifting
+`unsafe_code = "forbid"` were not used as closers.
 
 ## Named functions
 
