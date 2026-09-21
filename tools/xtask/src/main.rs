@@ -40,7 +40,7 @@ Commands:
   safety-evidence Validate typed regression, safety, and coverage evidence
   package     Validate the publishable package
   performance Run sealed paired performance and analysis workflows
-  playground  Run exploratory playground Dam Break pair, CPU profile, parent timers, audit bundle, or private heap
+  playground  Run exploratory playground Dam Break pair, CPU profile, parent timers, audit bundle, private heap, or native scene-spot
   phase13     Produce or validate immutable Phase 13 staged evidence
   release     Audit and attest one complete commit-bound release evidence set
   check       Run the aggregate repository checks";

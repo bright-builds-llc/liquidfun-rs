@@ -158,6 +158,9 @@ playground-dam-break-audit-bundle:
 playground-dam-break-heap:
     cargo xtask playground dam-break-heap
 
+playground-scene-spot:
+    cargo xtask playground scene-spot
+
 phase13-acceptance:
     cargo xtask phase13 acceptance
 

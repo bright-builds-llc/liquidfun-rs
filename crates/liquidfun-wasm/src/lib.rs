@@ -18,6 +18,10 @@ pub use dam_break_bench::{DamBreakBenchError, DamBreakBenchReport, run_dam_break
 pub mod dam_break_timers;
 #[cfg(not(target_arch = "wasm32"))]
 pub use dam_break_timers::{DamBreakTimersError, DamBreakTimersReport, run_dam_break_timers};
+#[cfg(not(target_arch = "wasm32"))]
+pub mod scene_spot;
+#[cfg(not(target_arch = "wasm32"))]
+pub use scene_spot::{SceneSpotError, SceneSpotSample, run_scene_spot};
 
 use scene::parse_scene_id;
 use session::{SessionCore, SessionError};

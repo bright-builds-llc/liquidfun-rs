@@ -23,6 +23,12 @@ path = "src/bin/dam_break_timers.rs"
 test = false
 bench = false
 
+[[bin]]
+name = "playground-scene-spot"
+path = "src/bin/playground_scene_spot.rs"
+test = false
+bench = false
+
 [lints]
 workspace = true
 

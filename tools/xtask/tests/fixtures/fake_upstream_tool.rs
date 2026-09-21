@@ -84,6 +84,11 @@ fn run_cargo(args: &[String]) -> ExitCode {
         return print_timer_sample(args);
     }
     if args.iter().any(|argument| argument == "run")
+        && args.iter().any(|argument| argument == "playground-scene-spot")
+    {
+        return print_scene_spot_sample(args);
+    }
+    if args.iter().any(|argument| argument == "run")
         && args.iter().any(|argument| argument == "dam-break-bench")
     {
         return print_bench_sample("native_rust", 300.0, "rustc 1.97.0", args);
@@ -249,6 +254,32 @@ fn print_bench_sample(engine: &str, wall_ms: f64, compiler: &str, args: &[String
     println!(
         "{{\"engine\":\"{engine}\",\"particles\":1920,\"warmup_steps\":{warmup_steps},\"measured_steps\":{measured_steps},\"wall_ms\":{wall_ms},\"ms_per_step\":{ms_per_step},\"steps_per_s\":{steps_per_s},\"realtime_factor\":{realtime_factor},\"compiler\":\"{compiler}\"}}"
     );
+    ExitCode::SUCCESS
+}
+
+fn print_scene_spot_sample(args: &[String]) -> ExitCode {
+    let warmup_steps = match parse_u32_flag(args, "--warmup", 60) {
+        Ok(value) => value,
+        Err(code) => return code,
+    };
+    let measured_steps = match parse_u32_flag(args, "--steps", 120) {
+        Ok(value) => value,
+        Err(code) => return code,
+    };
+    let scenes = [
+        "fountain",
+        "float-or-sink",
+        "color-mixer",
+        "jelly-drop",
+        "water-wheel",
+    ];
+    for (index, scene) in scenes.iter().enumerate() {
+        let start_particles = 100 + index * 10;
+        let end_particles = start_particles + 5;
+        println!(
+            "{{\"scene\":\"{scene}\",\"warmup_steps\":{warmup_steps},\"measured_steps\":{measured_steps},\"start_particles\":{start_particles},\"end_particles\":{end_particles},\"wall_ms\":1.0,\"ms_per_step\":1.0,\"timed_out\":false}}"
+        );
+    }
     ExitCode::SUCCESS
 }
 

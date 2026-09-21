@@ -1,6 +1,8 @@
 //! Native-testable ownership and stepping for one allowlisted scene.
 
-use liquidfun::{NoDecisionHook, ParticleSystemId, StepConfiguration, StepLimits, World};
+use liquidfun::{
+    NoDecisionHook, ParticleSystemId, ParticleSystemSnapshot, StepConfiguration, StepLimits, World,
+};
 
 #[cfg(not(target_arch = "wasm32"))]
 use liquidfun::DiagnosticStepProfile;
@@ -266,6 +268,13 @@ impl SessionCore {
         self.particle_count
     }
 
+    pub(crate) fn live_particle_count(&self) -> Result<usize, SessionError> {
+        self.world
+            .particle_system_snapshot(self.particle_system)
+            .map_err(|_error| SessionError::SceneConstruction)
+            .map(ParticleSystemSnapshot::particle_count)
+    }
+
     pub(crate) fn rigid_shape_count(&self) -> usize {
         let segment_count = self
             .hooks
@@ -366,6 +375,28 @@ mod tests {
             frame.particle_colors(),
             [57, 211, 199, 255].repeat(1920).into_boxed_slice()
         );
+    }
+
+    #[test]
+    fn fountain_live_particle_count_grows_after_advance() {
+        // Arrange
+        let mut session =
+            SessionCore::create(SceneId::Fountain).expect("allowlisted Fountain should construct");
+        let start = session
+            .live_particle_count()
+            .expect("Fountain snapshot should succeed");
+
+        // Act
+        session
+            .advance(1)
+            .expect("Fountain emission advance should succeed");
+        let end = session
+            .live_particle_count()
+            .expect("Fountain snapshot after emit should succeed");
+
+        // Assert
+        assert!(end > start);
+        assert_eq!(session.particle_count(), start);
     }
 
     #[test]

@@ -7,13 +7,14 @@ mod heap;
 mod identity;
 mod pair;
 mod profile;
+mod spot;
 mod stamp;
 mod symbols;
 mod timers;
 
 pub(crate) use error::PlaygroundError;
 
-const USAGE: &str = "Usage: cargo xtask playground <dam-break-bench|dam-break-profile|dam-break-timers|dam-break-audit-bundle|dam-break-heap> [--warmup <n>] [--steps <n>] [--pair-stamp <utc>] [--profile-stamp <utc>] [--stamp <utc>]";
+const USAGE: &str = "Usage: cargo xtask playground <dam-break-bench|dam-break-profile|dam-break-timers|dam-break-audit-bundle|dam-break-heap|scene-spot> [--warmup <n>] [--steps <n>] [--pair-stamp <utc>] [--profile-stamp <utc>] [--stamp <utc>]";
 
 /// Runs exploratory playground Dam Break pair, CPU-profile, or timer commands.
 ///
@@ -24,7 +25,7 @@ const USAGE: &str = "Usage: cargo xtask playground <dam-break-bench|dam-break-pr
 pub(crate) fn run(args: &[String]) -> Result<(), PlaygroundError> {
     let (command, command_args) = args.split_first().ok_or_else(|| {
         PlaygroundError::usage(
-            "expected `dam-break-bench`, `dam-break-profile`, `dam-break-timers`, `dam-break-audit-bundle`, or `dam-break-heap`",
+            "expected `dam-break-bench`, `dam-break-profile`, `dam-break-timers`, `dam-break-audit-bundle`, `dam-break-heap`, or `scene-spot`",
         )
     })?;
     match command.as_str() {
@@ -33,6 +34,7 @@ pub(crate) fn run(args: &[String]) -> Result<(), PlaygroundError> {
         "dam-break-timers" => timers::run(command_args),
         "dam-break-audit-bundle" => bundle::run(command_args),
         "dam-break-heap" => heap::run(command_args),
+        "scene-spot" => spot::run(command_args),
         _ => Err(PlaygroundError::usage(format!(
             "unknown playground command `{command}`"
         ))),
@@ -52,7 +54,7 @@ mod tests {
         assert_eq!(
             result,
             Err(PlaygroundError::usage(
-                "expected `dam-break-bench`, `dam-break-profile`, `dam-break-timers`, `dam-break-audit-bundle`, or `dam-break-heap`"
+                "expected `dam-break-bench`, `dam-break-profile`, `dam-break-timers`, `dam-break-audit-bundle`, `dam-break-heap`, or `scene-spot`"
             ))
         );
     }
