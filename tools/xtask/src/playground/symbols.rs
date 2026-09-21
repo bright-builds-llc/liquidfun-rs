@@ -24,7 +24,6 @@ const NEEDLES: [&str; 10] = [
 ];
 
 /// Outcome of the sidecar-first allocator/`Vec` needle scan.
-#[allow(dead_code)]
 pub(super) enum HeapGate {
     /// At least one D-12 needle was present in scanned symbol strings.
     Run { matched_needles: Vec<String> },
@@ -39,7 +38,6 @@ pub(super) enum HeapGate {
 /// # Errors
 ///
 /// Returns a closed error when a readable sidecar or gzip file cannot be opened.
-#[allow(dead_code)]
 pub(super) fn classify_profile_symbols(profile_dir: &Path) -> Result<HeapGate, PlaygroundError> {
     let mut scanned = Vec::new();
     let gzip_path = profile_dir.join(PROFILE_BLOB);
