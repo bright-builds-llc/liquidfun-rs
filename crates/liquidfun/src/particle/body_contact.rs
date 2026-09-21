@@ -2,7 +2,7 @@
 
 use std::cmp::Ordering;
 
-use crate::collision::{ChildIndex, Shape};
+use crate::collision::{Aabb, ChildIndex, Shape};
 use crate::math::{Transform, Vec2, settings};
 use crate::{BodyId, FixtureId, ParticleFlags, ParticleId};
 
@@ -141,8 +141,14 @@ pub(crate) fn generate(
         for child in 0..source.shape.child_count() {
             let child = ChildIndex::new(child, source.shape.child_count())
                 .expect("enumerated shape child remains valid");
+            let maybe_aabb = expanded_fixture_aabb(source, child, diameter);
             for (row, particle) in view.particle_ids().iter().copied().enumerate() {
                 let position = view.positions()[row];
+                if let Some(aabb) = maybe_aabb
+                    && !aabb_contains_point(aabb, position)
+                {
+                    continue;
+                }
                 let distance = source
                     .shape
                     .distance_to_point(source.transform, position, child)
@@ -304,4 +310,24 @@ fn particle_row(view: &ParticleSystemView<'_>, particle: ParticleId) -> usize {
     view.maybe_live_row(particle)
         .expect("generated body contacts retain a current particle")
         .0
+}
+
+fn expanded_fixture_aabb(
+    source: &FixtureContactSource,
+    child: ChildIndex,
+    diameter: f32,
+) -> Option<Aabb> {
+    let aabb = source.shape.compute_aabb(source.transform, child).ok()?;
+    let expansion = Vec2::new(diameter, diameter);
+    Aabb::new(
+        aabb.lower_bound() - expansion,
+        aabb.upper_bound() + expansion,
+    )
+    .ok()
+}
+
+fn aabb_contains_point(aabb: Aabb, position: Vec2) -> bool {
+    let lower = aabb.lower_bound();
+    let upper = aabb.upper_bound();
+    position.x > lower.x && position.x < upper.x && position.y > lower.y && position.y < upper.y
 }
