@@ -72,7 +72,7 @@ Each task was committed atomically:
 1. **Task 1: Reconcile audit and timing docs to gate stamp plus remaining-delta** - `63218cb` (docs)
 2. **Task 2: BENCHMARKING honesty sentence plus claim-free / empty-manifest verify** - `0ac325f` (docs)
 
-**Plan metadata:** (pending final docs commit)
+**Plan metadata:** `8e4f510` (docs: complete plan)
 
 ## Files Created/Modified
 
