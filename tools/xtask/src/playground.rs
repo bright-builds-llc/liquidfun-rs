@@ -9,24 +9,25 @@ mod stamp;
 
 pub(crate) use error::PlaygroundError;
 
-const USAGE: &str = "Usage: cargo xtask playground dam-break-bench [--warmup <n>] [--steps <n>]";
+const USAGE: &str = "Usage: cargo xtask playground <dam-break-bench|dam-break-profile> [--warmup <n>] [--steps <n>]";
 
-/// Runs the exploratory playground Dam Break native-versus-oracle pair.
+/// Runs exploratory playground Dam Break pair or CPU-profile commands.
 ///
 /// # Errors
 ///
-/// Returns a closed error when arguments, the oracle build, either bench, or
-/// host identity collection fails.
+/// Returns a closed error when arguments, the oracle build, either bench,
+/// samply, or host identity collection fails.
 pub(crate) fn run(args: &[String]) -> Result<(), PlaygroundError> {
-    let (command, command_args) = args
-        .split_first()
-        .ok_or_else(|| PlaygroundError::usage("expected `dam-break-bench`"))?;
-    if command != "dam-break-bench" {
-        return Err(PlaygroundError::usage(format!(
+    let (command, command_args) = args.split_first().ok_or_else(|| {
+        PlaygroundError::usage("expected `dam-break-bench` or `dam-break-profile`")
+    })?;
+    match command.as_str() {
+        "dam-break-bench" => pair::run(command_args),
+        "dam-break-profile" => profile::run(command_args),
+        _ => Err(PlaygroundError::usage(format!(
             "unknown playground command `{command}`"
-        )));
+        ))),
     }
-    pair::run(command_args)
 }
 
 #[cfg(test)]
@@ -41,7 +42,9 @@ mod tests {
         // Assert
         assert_eq!(
             result,
-            Err(PlaygroundError::usage("expected `dam-break-bench`"))
+            Err(PlaygroundError::usage(
+                "expected `dam-break-bench` or `dam-break-profile`"
+            ))
         );
     }
 

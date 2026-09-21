@@ -146,6 +146,9 @@ phase12-performance-validate:
 playground-dam-break-bench:
     cargo xtask playground dam-break-bench
 
+playground-dam-break-profile:
+    cargo xtask playground dam-break-profile
+
 phase13-acceptance:
     cargo xtask phase13 acceptance
 
