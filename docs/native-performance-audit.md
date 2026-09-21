@@ -66,8 +66,10 @@ are `not_timing_authority` and are not the 3× gate.
 
 `rust_over_cpp_ratio`: `327.53395024734476` (unreviewed sample figure bound to
 the HEAD and stamp above). That Phase 23 pair remains the ranking identity for
-the named-function table below. The current 3× number is the first leftover
-admission `pair.json` in the leftover section.
+the named-function table below. The close/gate number is gate stamp
+`2026-09-21T20-38-50Z` with `rust_over_cpp_ratio` `2.956857456935513` (see
+PERF-GATE leftover close); the first leftover admission remains historical
+only.
 
 Rust used `--release`. C++ used the scalar `oracle-release` wrapper (no
 `-ffast-math`, no `-march=native`).
@@ -155,16 +157,20 @@ live sidecars, not by pasting this table. samply / `[profile.profiling]` /
 ## PERF-GATE leftover close
 
 Unprofiled Dam Break Medium pair after leftover waves (locked 1920 particles,
-60 warmup + 600 measured steps). This is the 3× number. Do **not** quote
-samply duration as this figure. D-06: further ranked ~2% leftover frames were
-not gold-plated after the gate.
+60 warmup + 600 measured steps). This is the 3× / close number. Do **not**
+quote samply duration as this figure. D-06: further ranked ~2% leftover frames
+were not gold-plated after the gate.
 
-- Pair stamp: `target/dam-break-perf/2026-09-21T20-36-30Z/` (`pair.json`,
+- Pair stamp: `target/dam-break-perf/2026-09-21T20-38-50Z/` (`pair.json`,
   `kind: unprofiled_pair`, `timing_authority: unprofiled_wall_clock`)
-- Pair `git_head`: `d843ba30d0909cc3215108c4814c8b8e97db9c83`
+- Pair `git_head`: `89d3456406c3c79ed500192bca9491c707033647`
 - OS/arch: `macos` / `aarch64`
 - CPU: `Apple M4 Max`
 - logical cores: `16`
+- Kernel-HEAD sibling only (not the sole 3× number): stamp
+  `2026-09-21T20-36-30Z`, `rust_over_cpp_ratio` `2.8769953439599707`,
+  `git_head` `d843ba30d0909cc3215108c4814c8b8e97db9c83` (walls
+  `607.814417` / `211.267084`)
 - Last leftover-ranking sibling before the gate-closing kernel:
   `target/dam-break-perf/2026-09-21T20-18-21Z/` (`profile-identity.json`
   `kind: samply_cpu`, `not_timing_authority: true`; no `pair.json` in that
@@ -172,12 +178,18 @@ not gold-plated after the gate.
 
 | Engine      | Particles | Wall ms    | ms/step  | Compiler                              |
 | ----------- | --------- | ---------- | -------- | ------------------------------------- |
-| native Rust | 1920      | 607.814417 | 1.013024 | `rustc 1.97.0 (2d8144b78 2026-07-07)` |
-| pinned C++  | 1920      | 211.267084 | 0.352112 | `AppleClang 21.0.0.21000334`          |
+| native Rust | 1920      | 631.861834 | 1.053103 | `rustc 1.97.0 (2d8144b78 2026-07-07)` |
+| pinned C++  | 1920      | 213.693708 | 0.356156 | `AppleClang 21.0.0.21000334`          |
 
-`rust_over_cpp_ratio`: `2.8769953439599707` (copied from that `pair.json`
-only). PERF-GATE on this host for the locked recipe. Not a reviewed report;
-`reference/performance/manifest.toml` `reviewed_reports` remains empty.
+`rust_over_cpp_ratio`: `2.956857456935513` (copied from that `pair.json`
+only). PERF-GATE / close number on this host for the locked recipe. Not a
+reviewed report; `reference/performance/manifest.toml` `reviewed_reports`
+remains empty.
+
+**Remaining delta.** Close ratio `2.956857456935513` leaves residual ~2%
+ranked frames that were not gold-plated after D-06. Suspected leftovers remain
+those already named in the Not found / ranking text below. This sample is
+unreviewed and not a Phase 12 sealed public claim.
 
 Landed leftover kernels (names from live `rust.json.syms.json` plus gecko
 `stackTable` ranking, not hunt-list paste), in commit order after 24-03
@@ -276,6 +288,17 @@ above.
 - `velocities().to_vec` as a named leaf: **Not found** (no `to_vec` leaf share;
   nearby collect/`RawVec` frames are ranked under per-step allocation instead)
 - C++ `cpp.json.gz` / C++ samply wrap: not run
+
+### Not attempted in this close
+
+- SIMD
+- Default Rayon
+- PGO
+- Lifting `unsafe_code = "forbid"`
+- WASM-versus-C++
+- WASM engineering beyond this sanity check (`PERF-WASM-ENG`)
+- Phase 12 sealed matrix
+- Gold-plating leftover ~2% frames
 
 `ParticleNeighborhood::from_view` and `replace_solver_candidate` **did** appear
 and are ranked above; they are not hunt-list paste.
