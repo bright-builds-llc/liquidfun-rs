@@ -89,11 +89,13 @@ fn pair(indices: [usize; 2], flags: ParticleFlags) -> ParticlePair {
 }
 
 fn pass_barrier(candidate: &BoundaryCandidate) -> BoundaryCandidate {
-    barrier_candidate(candidate, &[], 1.0, 1.0, 1.0, 0).expect("empty barrier pass is valid")
+    barrier_candidate(candidate.clone(), &[], 1.0, 1.0, 1.0, 0)
+        .expect("empty barrier pass is valid")
 }
 
 fn pass_collision(candidate: &BoundaryCandidate) -> BoundaryCandidate {
-    collision_candidate(candidate, &[], 0, 1.0, 1.0, 1.0, 0).expect("empty collision pass is valid")
+    collision_candidate(candidate.clone(), &[], 0, 1.0, 1.0, 1.0, 0)
+        .expect("empty collision pass is valid")
 }
 
 fn bits(values: &[Vec2]) -> Vec<[u32; 2]> {
@@ -145,7 +147,7 @@ fn barrier_activation_stops_crossing_particle_and_preserves_follow_up_force() {
 
     // Act
     let result = barrier_candidate(
-        &source,
+        source.clone(),
         &[pair([0, 1], ParticleFlags::BARRIER)],
         1.0,
         1.0,
@@ -181,7 +183,7 @@ fn barrier_wall_endpoints_are_zeroed_before_crossing_scan() {
 
     // Act
     let result = barrier_candidate(
-        &source,
+        source.clone(),
         &[pair([0, 1], ParticleFlags::BARRIER)],
         1.0,
         1.0,
@@ -219,7 +221,7 @@ fn collapsed_barrier_pair_preserves_probe_backed_finite_noop() {
 
     // Act
     let result = barrier_candidate(
-        &source,
+        source.clone(),
         &[pair([0, 1], ParticleFlags::BARRIER)],
         1.0,
         1.0 / 60.0,
@@ -323,7 +325,7 @@ fn collision_applies_filtered_hit_in_stable_order_and_records_force() {
     };
 
     // Act
-    let result = collision_candidate(&source, &[hit], 0, 1.0, 1.0, 1.0, 1)
+    let result = collision_candidate(source.clone(), &[hit], 0, 1.0, 1.0, 1.0, 1)
         .expect("filtered hit produces a candidate");
 
     // Assert
@@ -353,7 +355,7 @@ fn stationary_collision_control_with_no_filtered_hits_is_exact() {
     ));
 
     // Act
-    let result = collision_candidate(&source, &[], 0, 1.0, 1.0, 1.0, 0)
+    let result = collision_candidate(source.clone(), &[], 0, 1.0, 1.0, 1.0, 0)
         .expect("empty filtered query is valid");
 
     // Assert
@@ -376,10 +378,10 @@ fn wall_targets_only_wall_particles_after_rigid_projection() {
         0,
     );
     let collided = pass_collision(&pass_barrier(&source));
-    let rigid = mark_rigid_projection(&collided).expect("rigid pass marker is ordered");
+    let rigid = mark_rigid_projection(collided).expect("rigid pass marker is ordered");
 
     // Act
-    let result = wall_candidate(&rigid).expect("wall pass is ordered");
+    let result = wall_candidate(rigid).expect("wall pass is ordered");
 
     // Assert
     assert_eq!(result.velocities[0], Vec2::ZERO);
@@ -400,13 +402,13 @@ fn integration_occurs_exactly_once_and_only_after_wall() {
     );
     let barrier = pass_barrier(&source);
     let collision = pass_collision(&barrier);
-    let rigid = mark_rigid_projection(&collision).expect("rigid marker follows collision");
-    let wall = wall_candidate(&rigid).expect("wall follows rigid");
+    let rigid = mark_rigid_projection(collision).expect("rigid marker follows collision");
+    let wall = wall_candidate(rigid).expect("wall follows rigid");
 
     // Act
-    let integrated = integrate_candidate(&wall, 0.5).expect("integration follows wall");
-    let repeated = integrate_candidate(&integrated, 0.5);
-    let early = integrate_candidate(&source, 0.5);
+    let integrated = integrate_candidate(wall, 0.5).expect("integration follows wall");
+    let repeated = integrate_candidate(integrated.clone(), 0.5);
+    let early = integrate_candidate(source.clone(), 0.5);
 
     // Assert
     assert_eq!(integrated.positions, [Vec2::new(2.5, 0.0)]);
@@ -470,7 +472,7 @@ fn mixed_rigid_barrier_interaction_preserves_ids_memberships_and_order() {
 
     // Act
     let barrier = barrier_candidate(
-        &source,
+        source.clone(),
         &[pair([0, 1], ParticleFlags::BARRIER)],
         1.0,
         1.0,
@@ -479,8 +481,8 @@ fn mixed_rigid_barrier_interaction_preserves_ids_memberships_and_order() {
     )
     .expect("rigid crossing is handled");
     let collision = pass_collision(&barrier);
-    let rigid = mark_rigid_projection(&collision).expect("rigid marker is ordered");
-    let wall = wall_candidate(&rigid).expect("wall remains last before integration");
+    let rigid = mark_rigid_projection(collision).expect("rigid marker is ordered");
+    let wall = wall_candidate(rigid).expect("wall remains last before integration");
 
     // Assert
     assert_eq!(wall.particle_ids, source.particle_ids);
@@ -518,7 +520,7 @@ fn resource_limits_are_typed_and_leave_source_candidate_unchanged() {
 
     // Act
     let scan_overflow = barrier_candidate(
-        &source,
+        source.clone(),
         &[pair([0, 1], ParticleFlags::BARRIER)],
         1.0,
         1.0,
@@ -526,7 +528,7 @@ fn resource_limits_are_typed_and_leave_source_candidate_unchanged() {
         2,
     );
     let journal_overflow = barrier_candidate(
-        &source,
+        source.clone(),
         &[pair([0, 1], ParticleFlags::BARRIER)],
         1.0,
         1.0,
@@ -577,7 +579,7 @@ fn filtered_hit_limit_rejects_before_any_candidate_effect() {
     let snapshot = source.clone();
 
     // Act
-    let result = collision_candidate(&source, &[hit], 0, 1.0, 1.0, 1.0, 0);
+    let result = collision_candidate(source.clone(), &[hit], 0, 1.0, 1.0, 1.0, 0);
 
     // Assert
     assert_eq!(
@@ -605,9 +607,9 @@ fn deterministic_repeats_match_exact_candidate_bits() {
     let run = || {
         let barrier = pass_barrier(&source);
         let collision = pass_collision(&barrier);
-        let rigid = mark_rigid_projection(&collision).expect("rigid marker is ordered");
-        let wall = wall_candidate(&rigid).expect("wall is ordered");
-        integrate_candidate(&wall, 0.125).expect("integration is ordered")
+        let rigid = mark_rigid_projection(collision).expect("rigid marker is ordered");
+        let wall = wall_candidate(rigid).expect("wall is ordered");
+        integrate_candidate(wall, 0.125).expect("integration is ordered")
     };
     let expected = run();
 

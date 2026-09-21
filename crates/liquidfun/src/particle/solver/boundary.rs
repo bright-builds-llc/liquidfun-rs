@@ -136,14 +136,14 @@ impl BoundaryCandidate {
         })
     }
 
-    fn begin_pass(&self, expected: BoundaryStage) -> Result<Self, BoundarySolverError> {
+    fn begin_pass(&mut self, expected: BoundaryStage) -> Result<(), BoundarySolverError> {
         if self.stage != expected {
             return Err(BoundarySolverError::ReorderedPass {
                 expected,
                 actual: self.stage,
             });
         }
-        Ok(self.clone())
+        Ok(())
     }
 
     fn record_effect(

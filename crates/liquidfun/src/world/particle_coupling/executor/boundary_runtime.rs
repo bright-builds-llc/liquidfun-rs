@@ -31,7 +31,7 @@ impl<H: CollisionDecisionHook> SystemPassExecutor<'_, '_, H> {
         )
         .map_err(boundary_error)?;
         let candidate = barrier_candidate(
-            &source,
+            source,
             record.storage.pairs(),
             particle_mass,
             time_step,
@@ -67,6 +67,10 @@ impl<H: CollisionDecisionHook> SystemPassExecutor<'_, '_, H> {
             self.hook_run,
             Vec2::new(diameter, diameter),
         )?;
+        let source = self
+            .maybe_boundary
+            .take()
+            .ok_or(StepError::ParticleLifecycleInvariant)?;
         let candidate = collision_candidate(
             source,
             &hits,
@@ -83,9 +87,9 @@ impl<H: CollisionDecisionHook> SystemPassExecutor<'_, '_, H> {
 
     pub(super) fn run_rigid_projection(&mut self) -> Result<(), StepError> {
         let (time_step, inverse_time_step) = self.substep();
-        let source = self
+        let mut source = self
             .maybe_boundary
-            .as_ref()
+            .take()
             .ok_or(StepError::ParticleLifecycleInvariant)?;
         let projected = rigid_projection_candidate(
             self.system,
@@ -98,10 +102,9 @@ impl<H: CollisionDecisionHook> SystemPassExecutor<'_, '_, H> {
             inverse_time_step,
         )
         .map_err(rigid_error)?;
-        let mut boundary = source.clone();
-        boundary.velocities = projected.velocities;
-        boundary.groups = projected.groups;
-        self.maybe_boundary = Some(mark_rigid_projection(&boundary).map_err(boundary_error)?);
+        source.velocities = projected.velocities;
+        source.groups = projected.groups;
+        self.maybe_boundary = Some(mark_rigid_projection(source).map_err(boundary_error)?);
         Ok(())
     }
 
@@ -109,7 +112,7 @@ impl<H: CollisionDecisionHook> SystemPassExecutor<'_, '_, H> {
         self.ensure_rigid_boundary_stage()?;
         let source = self
             .maybe_boundary
-            .as_ref()
+            .take()
             .ok_or(StepError::ParticleLifecycleInvariant)?;
         self.maybe_boundary = Some(wall_candidate(source).map_err(boundary_error)?);
         Ok(())
@@ -124,12 +127,12 @@ impl<H: CollisionDecisionHook> SystemPassExecutor<'_, '_, H> {
             .ok_or(StepError::ParticleLifecycleInvariant)?;
         let source = match source.stage {
             crate::particle::solver::boundary::BoundaryStage::AfterRigidProjection => {
-                wall_candidate(&source).map_err(boundary_error)?
+                wall_candidate(source).map_err(boundary_error)?
             }
             crate::particle::solver::boundary::BoundaryStage::AfterWall => source,
             _ => return Err(StepError::ParticleLifecycleInvariant),
         };
-        let candidate = integrate_candidate(&source, time_step).map_err(boundary_error)?;
+        let candidate = integrate_candidate(source, time_step).map_err(boundary_error)?;
         self.commit_boundary(candidate)
     }
 
@@ -139,6 +142,10 @@ impl<H: CollisionDecisionHook> SystemPassExecutor<'_, '_, H> {
             .as_ref()
             .ok_or(StepError::ParticleLifecycleInvariant)?;
         if source.stage == crate::particle::solver::boundary::BoundaryStage::AfterCollision {
+            let source = self
+                .maybe_boundary
+                .take()
+                .ok_or(StepError::ParticleLifecycleInvariant)?;
             self.maybe_boundary = Some(mark_rigid_projection(source).map_err(boundary_error)?);
         }
         Ok(())

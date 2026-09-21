@@ -39,7 +39,7 @@ pub(crate) fn collision_start_from_previous_transform(
     reason = "the filtered collision candidate keeps source timing and bounds explicit"
 )]
 pub(crate) fn collision_candidate(
-    source: &BoundaryCandidate,
+    mut candidate: BoundaryCandidate,
     hits: &[FilteredCollisionHit],
     particle_iteration: u32,
     particle_mass: f32,
@@ -59,7 +59,7 @@ pub(crate) fn collision_candidate(
     {
         return Err(BoundarySolverError::InvalidInput);
     }
-    let mut candidate = source.begin_pass(BoundaryStage::AfterBarrier)?;
+    candidate.begin_pass(BoundaryStage::AfterBarrier)?;
     for hit in hits {
         validate_hit(*hit, candidate.positions.len())?;
         let particle = hit.particle;
@@ -90,18 +90,18 @@ pub(crate) fn collision_candidate(
 }
 
 pub(crate) fn mark_rigid_projection(
-    source: &BoundaryCandidate,
+    mut candidate: BoundaryCandidate,
 ) -> Result<BoundaryCandidate, BoundarySolverError> {
-    let mut candidate = source.begin_pass(BoundaryStage::AfterCollision)?;
+    candidate.begin_pass(BoundaryStage::AfterCollision)?;
     candidate.stage = BoundaryStage::AfterRigidProjection;
     candidate.pass_trace.push(BoundaryPass::Rigid);
     Ok(candidate)
 }
 
 pub(crate) fn wall_candidate(
-    source: &BoundaryCandidate,
+    mut candidate: BoundaryCandidate,
 ) -> Result<BoundaryCandidate, BoundarySolverError> {
-    let mut candidate = source.begin_pass(BoundaryStage::AfterRigidProjection)?;
+    candidate.begin_pass(BoundaryStage::AfterRigidProjection)?;
     for (flags, velocity) in candidate
         .flags
         .iter()
@@ -119,13 +119,13 @@ pub(crate) fn wall_candidate(
 }
 
 pub(crate) fn integrate_candidate(
-    source: &BoundaryCandidate,
+    mut candidate: BoundaryCandidate,
     time_step: f32,
 ) -> Result<BoundaryCandidate, BoundarySolverError> {
     if !time_step.is_finite() || time_step < 0.0 {
         return Err(BoundarySolverError::InvalidInput);
     }
-    let mut candidate = source.begin_pass(BoundaryStage::AfterWall)?;
+    candidate.begin_pass(BoundaryStage::AfterWall)?;
     for (position, velocity) in candidate
         .positions
         .iter_mut()

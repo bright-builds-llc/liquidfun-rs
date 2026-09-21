@@ -11,7 +11,7 @@ use super::{BoundaryCandidate, BoundaryPass, BoundarySolverError, BoundaryStage}
 const BARRIER_COLLISION_TIME: f32 = 2.5;
 
 pub(crate) fn barrier_candidate(
-    source: &BoundaryCandidate,
+    mut candidate: BoundaryCandidate,
     pairs: &[ParticlePair],
     particle_mass: f32,
     time_step: f32,
@@ -32,17 +32,17 @@ pub(crate) fn barrier_candidate(
         .filter(|pair| pair.flags.intersects(ParticleFlags::BARRIER))
         .count();
     let required_scans = barrier_pairs
-        .checked_mul(source.positions.len())
+        .checked_mul(candidate.positions.len())
         .ok_or_else(|| resource("barrier particle scans", scan_limit))?;
     if required_scans > scan_limit {
         return Err(resource("barrier particle scans", scan_limit));
     }
     for pair in pairs {
-        pair.validate(source.positions.len())
+        pair.validate(candidate.positions.len())
             .map_err(|_error| BoundarySolverError::InvalidInput)?;
     }
 
-    let mut candidate = source.begin_pass(BoundaryStage::AfterRigidDamping)?;
+    candidate.begin_pass(BoundaryStage::AfterRigidDamping)?;
     for (flags, velocity) in candidate
         .flags
         .iter()
