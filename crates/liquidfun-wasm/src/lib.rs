@@ -14,6 +14,10 @@ pub use frame::ProofFrame;
 pub mod dam_break_bench;
 #[cfg(not(target_arch = "wasm32"))]
 pub use dam_break_bench::{DamBreakBenchError, DamBreakBenchReport, run_dam_break_bench};
+#[cfg(not(target_arch = "wasm32"))]
+pub mod dam_break_timers;
+#[cfg(not(target_arch = "wasm32"))]
+pub use dam_break_timers::{DamBreakTimersError, DamBreakTimersReport, run_dam_break_timers};
 
 use scene::parse_scene_id;
 use session::{SessionCore, SessionError};
