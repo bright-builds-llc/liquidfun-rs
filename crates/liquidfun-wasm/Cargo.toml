@@ -17,6 +17,12 @@ path = "src/bin/dam_break_bench.rs"
 test = false
 bench = false
 
+[[bin]]
+name = "dam-break-timers"
+path = "src/bin/dam_break_timers.rs"
+test = false
+bench = false
+
 [lints]
 workspace = true
 

@@ -4,7 +4,13 @@ use std::collections::BTreeMap;
 use std::error::Error;
 use std::fmt::{self, Display, Formatter};
 
+use liquidfun::{DiagnosticProfileParent, DiagnosticProfileSchema, DiagnosticStepProfile};
+
 use crate::dam_break_bench::EXPECTED_PARTICLE_COUNT;
+use crate::scene::SceneId;
+use crate::session::SessionCore;
+
+const KIND: &str = "step_profiled_parents";
 
 /// One Phase 12 parent wall-clock total, in milliseconds.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -75,7 +81,21 @@ impl DamBreakTimersReport {
     /// Renders one JSON object for the xtask driver.
     #[must_use]
     pub fn to_json(&self) -> String {
-        String::from("{}")
+        let not_timing_authority = if self.not_timing_authority {
+            "true"
+        } else {
+            "false"
+        };
+        format!(
+            "{{\"kind\":\"{}\",\"schema\":\"{}\",\"not_timing_authority\":{},\"particles\":{},\"warmup_steps\":{},\"measured_steps\":{},\"parents\":{}}}",
+            self.kind,
+            self.schema,
+            not_timing_authority,
+            self.particles,
+            self.warmup_steps,
+            self.measured_steps,
+            parents_json(&self.parents),
+        )
     }
 }
 
@@ -86,18 +106,79 @@ impl DamBreakTimersReport {
 /// Returns a closed error when construction, the locked particle count, or a
 /// step fails.
 pub fn run_dam_break_timers(
-    _warmup_steps: u32,
-    _measured_steps: u32,
+    warmup_steps: u32,
+    measured_steps: u32,
 ) -> Result<DamBreakTimersReport, DamBreakTimersError> {
+    if measured_steps == 0 {
+        return Err(DamBreakTimersError::StepFailed { phase: "measured" });
+    }
+
+    let mut session = SessionCore::create(SceneId::DamBreak)
+        .map_err(|_error| DamBreakTimersError::SceneConstruction)?;
+    let particles = session.particle_count();
+    if particles != EXPECTED_PARTICLE_COUNT {
+        return Err(DamBreakTimersError::ParticleCount { actual: particles });
+    }
+
+    for _ in 0..warmup_steps {
+        session
+            .advance(1)
+            .map_err(|_error| DamBreakTimersError::StepFailed { phase: "warmup" })?;
+    }
+
+    let mut parent_totals = empty_parent_totals();
+    for _ in 0..measured_steps {
+        let profile = session
+            .advance_profiled()
+            .map_err(|_error| DamBreakTimersError::StepFailed { phase: "measured" })?;
+        accumulate_parents(&mut parent_totals, &profile);
+    }
+
     Ok(DamBreakTimersReport {
-        kind: "unprofiled_pair",
-        schema: "missing",
-        not_timing_authority: false,
-        particles: 0,
-        warmup_steps: 0,
-        measured_steps: 0,
-        parents: BTreeMap::new(),
+        kind: KIND,
+        schema: DiagnosticProfileSchema::Phase12V1.as_str(),
+        not_timing_authority: true,
+        particles,
+        warmup_steps,
+        measured_steps,
+        parents: parent_totals,
     })
+}
+
+fn empty_parent_totals() -> BTreeMap<&'static str, ParentWallMs> {
+    let mut totals = BTreeMap::new();
+    for parent in DiagnosticProfileParent::ALL {
+        totals.insert(parent.as_str(), ParentWallMs { wall_ms: 0.0 });
+    }
+    totals
+}
+
+fn accumulate_parents(
+    totals: &mut BTreeMap<&'static str, ParentWallMs>,
+    profile: &DiagnosticStepProfile,
+) {
+    for timing in profile.phases() {
+        let Some(parent) = timing.phase().maybe_common_parent() else {
+            continue;
+        };
+        let token = parent.as_str();
+        let Some(entry) = totals.get_mut(token) else {
+            continue;
+        };
+        entry.wall_ms += timing.duration().as_secs_f64() * 1000.0;
+    }
+}
+
+fn parents_json(parents: &BTreeMap<&'static str, ParentWallMs>) -> String {
+    let entries: Vec<String> = DiagnosticProfileParent::ALL
+        .iter()
+        .map(|parent| {
+            let token = parent.as_str();
+            let wall_ms = parents.get(token).map_or(0.0, |entry| entry.wall_ms);
+            format!("\"{token}\":{{\"wall_ms\":{wall_ms:.6}}}")
+        })
+        .collect();
+    format!("{{{}}}", entries.join(","))
 }
 
 #[cfg(test)]

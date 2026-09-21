@@ -2,6 +2,9 @@
 
 use liquidfun::{NoDecisionHook, ParticleSystemId, StepConfiguration, StepLimits, World};
 
+#[cfg(not(target_arch = "wasm32"))]
+use liquidfun::DiagnosticStepProfile;
+
 use crate::frame::FrameData;
 use crate::scene::{
     BuiltScene, ControlEffect, SceneHooks, SceneId, build_scene, parse_pointer_kind,
@@ -117,6 +120,27 @@ impl SessionCore {
 
         self.step_index = next_step_index;
         Ok(())
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    pub(crate) fn advance_profiled(&mut self) -> Result<DiagnosticStepProfile, SessionError> {
+        let next_step_index = self
+            .step_index
+            .checked_add(1)
+            .ok_or(SessionError::StepIndexExhausted)?;
+        self.hooks
+            .on_advance(&mut self.world, self.particle_system)?;
+        let profile = self
+            .world
+            .step_profiled(
+                self.step_configuration,
+                &mut NoDecisionHook,
+                self.step_limits,
+            )
+            .map(|(_report, profile)| profile)
+            .map_err(|_error| SessionError::StepFailed)?;
+        self.step_index = next_step_index;
+        Ok(profile)
     }
 
     pub(crate) fn apply_control(&mut self, name: &str, value: &str) -> Result<bool, SessionError> {
