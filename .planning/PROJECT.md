@@ -16,7 +16,7 @@ The owner prioritizes a fun hobby project over production-quality certification.
 
 ## Current State
 
-No milestone is in progress. v1.2 Native Performance Closing is archived (2026-09-21): 4 phases, 23 plans, and 47 tasks. Unprofiled Dam Break Medium on one macOS host recorded `rust_over_cpp_ratio` `2.956857456935513` at stamp `2026-09-21T20-38-50Z` (git `89d3456406c3c79ed500192bca9491c707033647`). `reviewed_reports` stays empty. README and crates.io have no universal “Rust is N×” claim. `just web-player-smoke` recorded 37 Chromium tests, compared with native Rust only. This is not crate publication and not a git release tag. Commit `77fbd84` (zero the force buffer after SolveForce) is after that stamp, so the ratio is not a measurement of later HEAD. See `.planning/MILESTONES.md` and `.planning/milestones/v1.2-REQUIREMENTS.md`.
+v1.3 Reference Testbed Scenes is in progress. v1.2 Native Performance Closing is archived (2026-09-21): 4 phases, 23 plans, and 47 tasks. Unprofiled Dam Break Medium on one macOS host recorded `rust_over_cpp_ratio` `2.956857456935513` at stamp `2026-09-21T20-38-50Z` (git `89d3456406c3c79ed500192bca9491c707033647`). `reviewed_reports` stays empty. README and crates.io have no universal “Rust is N×” claim. `just web-player-smoke` recorded 37 Chromium tests, compared with native Rust only. This is not crate publication and not a git release tag. Commit `77fbd84` (zero the force buffer after SolveForce) is after that stamp, so the ratio is not a measurement of later HEAD. See `.planning/MILESTONES.md` and `.planning/milestones/v1.2-REQUIREMENTS.md`.
 
 The v1.1 Web Playground planning milestone is archived (2026-09-20): 6 phases and 39 plans completed. Visitors can run Dam Break, Fountain, Float or Sink, Color Mixer, Jelly Drop, and Water Wheel at `https://bright-builds-llc.github.io/liquidfun-rs/` with in-app SVG previews, play/pause/reset, honest Reset labels, pointer interaction, and automatic Pages delivery. This is not a crate or npm release. See `.planning/MILESTONES.md` and `.planning/milestones/v1.1-REQUIREMENTS.md`.
 
@@ -52,17 +52,33 @@ Phase 21: removed unused `loadProofSession`, unknown-only `FallbackPanel`, named
 
 </details>
 
-## Next Milestone Goals
+## Current Milestone: v1.3 Reference Testbed Scenes
 
-No next milestone is chosen. Start one with `/gsd-new-milestone`, which defines fresh requirements and continues phase numbering after 25. Package publication and a git release tag remain separately authorized.
+**Goal:** A visitor can open every JavaScript LiquidFun testbed scene we do not already have, running on this engine in the existing playground.
 
-Ideas that were explicitly left out of v1.2, and are not active requirements until a new milestone adopts them: an explicit SIMD or parallel opt-in, relaxing `unsafe_code = "forbid"` for a measured intrinsic, Phase 12 sealed-matrix calibration, and WASM stepping work beyond a sanity check.
+**Target features:**
+- Drawing Particles
+- Elastic Particles
+- Impulse
+- Liquid Timer
+- Particles
+- Rigid Particles
+- Soup
+- Soup Stirrer
+- Sparky
+- Surface Tension
+- Theo Jansen
+- Wave Machine
+
+The six current playground scenes stay, including Dam Break. Fountain, Float or Sink, Color Mixer, Jelly Drop, and Water Wheel remain original scenes. Each new scene is a recognizable port in the existing SolidJS player. Missing engine behavior is in scope only where a listed scene cannot run without it. This is not a sealed C++ parity claim, a public benchmark, or a crate release. Phase numbering continues after 25. Package publication and a git release tag remain separately authorized.
+
+Ideas still left out until a later milestone adopts them: an explicit SIMD or parallel opt-in, relaxing `unsafe_code = "forbid"` for a measured intrinsic, Phase 12 sealed-matrix calibration, and WASM stepping work beyond what these scenes need.
 
 ## Requirements
 
 ### Active
 
-No active milestone requirements. Package publication remains separately authorized.
+- [ ] Visitors can run the twelve JavaScript testbed scenes listed above in the existing playground. Requirement IDs are defined in the upcoming `.planning/REQUIREMENTS.md`.
 
 ### Validated
 
@@ -278,4 +294,4 @@ This document evolves at phase transitions and milestone boundaries.
 
 ______________________________________________________________________
 
-*Last updated: 2026-09-21 after v1.2 milestone archive. No milestone is in progress. Strict native certification remains optional. Package publication and release tags remain separately authorized.*
+*Last updated: 2026-09-21 after starting v1.3 Reference Testbed Scenes. Strict native certification remains optional. Package publication and release tags remain separately authorized.*

@@ -1,10 +1,10 @@
 ---
 gsd_state_version: 1.0
-milestone: none
-milestone_name: none
-status: archived
-stopped_at: v1.2 milestone archived
-last_updated: "2026-09-21T23:42:00.000Z"
+milestone: v1.3
+milestone_name: Reference Testbed Scenes
+status: defining-requirements
+stopped_at: Milestone v1.3 started
+last_updated: "2026-09-21T23:46:00.000Z"
 last_activity: 2026-09-21
 progress:
   total_phases: 0
@@ -21,18 +21,18 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-09-21)
 
 **Core value:** Deliver a useful, independent Rust physics library for enjoyable experimentation, with honest limitations and a lightweight native development loop.
-**Current focus:** Planning next milestone
+**Current focus:** Defining v1.3 requirements
 
 ## Current Position
 
-Phase: none
-Plan: none
-Status: v1.2 archived — ready for `/gsd-new-milestone`
-Last activity: 2026-09-21
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-09-21 — Milestone v1.3 started
 
-Progress: no active milestone
+Progress: requirements not written yet
 
-v1.2 Native Performance Closing is archived. Phase numbering continues after 25. No package publication or release tag.
+v1.3 Reference Testbed Scenes. Add the twelve JavaScript testbed scenes the playground does not already have. Phase numbering continues after 25. No package publication or release tag.
 
 ## Accumulated Context
 
@@ -42,6 +42,7 @@ v1.2 decisions are in `.planning/milestones/v1.2-STATE.md` and PROJECT.md Key De
 
 - [v1.2]: Unprofiled Dam Break Medium closed at stamp `2026-09-21T20-38-50Z`, ratio `2.956857456935513`, git `89d34564`. Later solver fixes are not that measurement.
 - [v1.2]: `reviewed_reports` stays empty. Planning archive is not a git release tag.
+- [v1.3]: Port the twelve JavaScript testbed scenes besides Dam Break. Keep the six existing playground scenes. Recognizable behavior in the current player, not a sealed parity claim.
 
 ### Pending Todos
 
