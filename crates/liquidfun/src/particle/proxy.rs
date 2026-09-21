@@ -4,6 +4,7 @@ use crate::collision::Aabb;
 use crate::{ParticleId, ParticleSystemId};
 
 use super::ParticleSystemView;
+use super::storage::ParticleIndex;
 
 const X_TRUNC_BITS: u32 = 12;
 const Y_TRUNC_BITS: u32 = 12;
@@ -60,6 +61,7 @@ impl ParticleNeighborPair {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct Proxy {
     particle: ParticleId,
+    row: ParticleIndex,
     tag: u32,
 }
 
@@ -80,6 +82,7 @@ pub struct ParticleNeighborhood {
     diameter: f32,
     proxies: Vec<Proxy>,
     pairs: Vec<ParticleNeighborPair>,
+    pair_rows: Vec<[ParticleIndex; 2]>,
 }
 
 impl ParticleNeighborhood {
@@ -117,20 +120,27 @@ impl ParticleNeighborhood {
             .particle_ids()
             .iter()
             .copied()
+            .enumerate()
             .zip(view.positions().iter().copied())
-            .map(|(particle, position)| {
-                checked_tag(inverse_diameter * position.x, inverse_diameter * position.y)
-                    .map(|tag| Proxy { particle, tag })
+            .map(|((row, particle), position)| {
+                checked_tag(inverse_diameter * position.x, inverse_diameter * position.y).map(
+                    |tag| Proxy {
+                        particle,
+                        row: ParticleIndex(row),
+                        tag,
+                    },
+                )
             })
             .collect::<Result<Vec<_>, _>>()?;
         proxies.sort_by_key(|proxy| proxy.tag);
-        let pairs = enumerate_pairs(&proxies);
+        let (pairs, pair_rows) = enumerate_pairs(&proxies);
 
         Ok(Self {
             system: view.system(),
             diameter,
             proxies,
             pairs,
+            pair_rows,
         })
     }
 
@@ -144,6 +154,10 @@ impl ParticleNeighborhood {
     #[must_use]
     pub fn pairs(&self) -> &[ParticleNeighborPair] {
         &self.pairs
+    }
+
+    pub(in crate::particle) fn pair_rows(&self) -> &[[ParticleIndex; 2]] {
+        &self.pair_rows
     }
 
     pub(crate) const fn diameter(&self) -> f32 {
@@ -208,8 +222,9 @@ fn checked_tag(x: f32, y: f32) -> Result<u32, ParticleProxyError> {
     Ok(((offset_y as u32) << Y_SHIFT) + scaled_x as u32)
 }
 
-fn enumerate_pairs(proxies: &[Proxy]) -> Vec<ParticleNeighborPair> {
+fn enumerate_pairs(proxies: &[Proxy]) -> (Vec<ParticleNeighborPair>, Vec<[ParticleIndex; 2]>) {
     let mut pairs = Vec::new();
+    let mut pair_rows = Vec::new();
     let mut below_start = 0;
     for (a_index, a) in proxies.iter().enumerate() {
         let right_tag = a.tag.wrapping_add(RELATIVE_RIGHT);
@@ -218,6 +233,7 @@ fn enumerate_pairs(proxies: &[Proxy]) -> Vec<ParticleNeighborPair> {
                 break;
             }
             pairs.push(ParticleNeighborPair::new(a.particle, b.particle));
+            pair_rows.push([a.row, b.row]);
         }
 
         let bottom_left_tag = a.tag.wrapping_add(RELATIVE_BOTTOM_LEFT);
@@ -230,9 +246,10 @@ fn enumerate_pairs(proxies: &[Proxy]) -> Vec<ParticleNeighborPair> {
                 break;
             }
             pairs.push(ParticleNeighborPair::new(a.particle, b.particle));
+            pair_rows.push([a.row, b.row]);
         }
     }
-    pairs
+    (pairs, pair_rows)
 }
 
 #[cfg(test)]
@@ -252,9 +269,10 @@ mod row_carry {
             let definition = ParticleDef::default()
                 .with_position(position)
                 .expect("test position should be finite");
-            world
+            let _ = world
                 .create_particle_with_def(system, None, &definition)
-                .expect("particle should fit");
+                .expect("particle should fit")
+                .created_particle();
         };
         create_at(&mut world, Vec2::new(0.0, 0.0));
         create_at(&mut world, Vec2::new(0.5, 0.0));

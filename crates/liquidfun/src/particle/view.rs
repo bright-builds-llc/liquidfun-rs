@@ -49,6 +49,13 @@ impl<'a> ParticleSystemView<'a> {
         self.storage.particle_ids()
     }
 
+    pub(in crate::particle) fn maybe_live_row(
+        &self,
+        particle: ParticleId,
+    ) -> Option<ParticleIndex> {
+        self.storage.resolve_live(particle).ok()
+    }
+
     /// Returns positions in meters, aligned with [`Self::particle_ids`].
     #[must_use]
     pub fn positions(&self) -> &[Vec2] {

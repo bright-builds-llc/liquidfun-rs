@@ -405,7 +405,7 @@ impl ParticleStorage {
         Ok(())
     }
 
-    pub(super) fn resolve_live(
+    pub(in crate::particle) fn resolve_live(
         &self,
         id: ParticleId,
     ) -> Result<ParticleIndex, ParticleStorageError> {
