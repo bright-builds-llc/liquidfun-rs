@@ -1,12 +1,16 @@
 use std::env;
+use std::ffi::OsString;
+use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::Deserialize;
 
 use super::PlaygroundError;
 use super::counts::{BenchCounts, parse_counts};
 use super::identity::{HostIdentity, host_identity, repository_root};
+use super::stamp;
 use crate::upstream;
 
 const RUST_ENGINE: &str = "native_rust";
@@ -35,10 +39,14 @@ pub(super) fn run(args: &[String]) -> Result<(), PlaygroundError> {
     validate_sample(&cpp_sample, CPP_ENGINE, &counts)?;
     let ratio = rust_over_cpp_ratio(rust_sample.wall_ms, cpp_sample.wall_ms)?;
     let identity = host_identity(&repository_root);
-    print!(
-        "{}",
-        render_markdown(&identity, &rust_sample, &cpp_sample, ratio)
-    );
+    let markdown = persist_pair_report(
+        &repository_root,
+        &identity,
+        &rust_sample,
+        &cpp_sample,
+        ratio,
+    )?;
+    print!("{markdown}");
     Ok(())
 }
 
@@ -58,8 +66,14 @@ fn configure_and_build_cpp() -> Result<(), PlaygroundError> {
     Ok(())
 }
 
+fn cargo_program() -> OsString {
+    env::var_os("LIQUIDFUN_XTASK_CARGO")
+        .or_else(|| env::var_os("CARGO"))
+        .unwrap_or_else(|| OsString::from("cargo"))
+}
+
 fn run_rust_bench(root: &Path, counts: &BenchCounts) -> Result<BenchSample, PlaygroundError> {
-    let cargo = env::var("CARGO").unwrap_or_else(|_| String::from("cargo"));
+    let cargo = cargo_program();
     let output = Command::new(cargo)
         .current_dir(root)
         .args([
@@ -180,6 +194,86 @@ fn validate_sample(
     Ok(())
 }
 
+fn persist_pair_report(
+    repository_root: &Path,
+    identity: &HostIdentity,
+    rust: &BenchSample,
+    cpp: &BenchSample,
+    ratio: f64,
+) -> Result<String, PlaygroundError> {
+    let unix_seconds = stamp_unix_seconds()?;
+    let stamp_dir = stamp::mint_exclusive_stamp(repository_root, unix_seconds)?;
+    let Some(stamp_name) = stamp_dir.file_name().and_then(|name| name.to_str()) else {
+        return Err(PlaygroundError::new(
+            "stamp",
+            format!(
+                "minted stamp path is not a UTF-8 directory name: {}",
+                stamp_dir.display()
+            ),
+        ));
+    };
+    let markdown = render_markdown(identity, rust, cpp, ratio);
+    let report = pair_report_json(stamp_name, identity, rust, cpp, ratio);
+    let json = serde_json::to_string_pretty(&report).map_err(|error| {
+        PlaygroundError::new("pair", format!("failed to serialize pair.json: {error}"))
+    })?;
+    write_stamp_file(&stamp_dir, "pair.json", json.as_bytes())?;
+    write_stamp_file(&stamp_dir, "pair.md", markdown.as_bytes())?;
+    eprintln!("wrote {}", stamp_dir.display());
+    Ok(markdown)
+}
+
+fn write_stamp_file(
+    stamp_dir: &Path,
+    file_name: &str,
+    bytes: &[u8],
+) -> Result<(), PlaygroundError> {
+    let path = stamp_dir.join(file_name);
+    fs::write(&path, bytes).map_err(|error| {
+        PlaygroundError::new(
+            "pair",
+            format!("failed to write {}: {error}", path.display()),
+        )
+    })
+}
+
+/// Reads the current Unix seconds, or test-injected `LIQUIDFUN_XTASK_STAMP_UNIX`.
+///
+/// The env override is an integer only. It is never a stamp name or filesystem path.
+fn stamp_unix_seconds() -> Result<u64, PlaygroundError> {
+    match env::var("LIQUIDFUN_XTASK_STAMP_UNIX") {
+        Ok(raw) => parse_stamp_unix(&raw),
+        Err(env::VarError::NotPresent) => SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|duration| duration.as_secs())
+            .map_err(|error| {
+                PlaygroundError::new(
+                    "stamp",
+                    format!("system clock is before Unix epoch: {error}"),
+                )
+            }),
+        Err(env::VarError::NotUnicode(_)) => Err(PlaygroundError::new(
+            "stamp",
+            "LIQUIDFUN_XTASK_STAMP_UNIX must be a u64 unix-seconds integer",
+        )),
+    }
+}
+
+fn parse_stamp_unix(raw: &str) -> Result<u64, PlaygroundError> {
+    if raw.contains('/') || raw.contains('\\') || raw.contains("..") {
+        return Err(PlaygroundError::new(
+            "stamp",
+            "LIQUIDFUN_XTASK_STAMP_UNIX must be a u64 unix-seconds integer, not a path",
+        ));
+    }
+    raw.parse::<u64>().map_err(|_| {
+        PlaygroundError::new(
+            "stamp",
+            "LIQUIDFUN_XTASK_STAMP_UNIX must be a u64 unix-seconds integer",
+        )
+    })
+}
+
 const UNREVIEWED_DISCLAIMER: &str = "Unreviewed local playground Dam Break sample. Not a public performance claim and not Phase 12 evidence.";
 
 fn rust_over_cpp_ratio(rust_wall_ms: f64, cpp_wall_ms: f64) -> Result<f64, PlaygroundError> {
@@ -198,7 +292,6 @@ fn rust_over_cpp_ratio(rust_wall_ms: f64, cpp_wall_ms: f64) -> Result<f64, Playg
     Ok(rust_wall_ms / cpp_wall_ms)
 }
 
-#[allow(dead_code)]
 fn pair_report_json(
     stamp: &str,
     identity: &HostIdentity,

@@ -15,34 +15,7 @@ fn main() -> ExitCode {
         return run_git(&args);
     }
     if tool.contains("cargo") {
-        if env::var_os("LIQUIDFUN_TEST_ASSERT_PACKAGE_ISOLATION").is_some() {
-            let current = env::current_dir().unwrap_or_default();
-            let has_forbidden_directory = [
-                "third_party",
-                "reference",
-                "tools",
-                "testbed",
-                "crates/liquidfun-testbed",
-            ]
-            .iter()
-            .any(|relative| current.join(relative).exists());
-            let has_display = env::var_os("DISPLAY").is_some()
-                || env::var_os("WAYLAND_DISPLAY").is_some()
-                || env::var_os("MIR_SOCKET").is_some()
-                || env::var_os("XDG_RUNTIME_DIR").is_some()
-                || env::var_os("LIQUIDFUN_XTASK_ROOT").is_some()
-                || env::var_os("LIQUIDFUN_XTASK_TEST_PACKAGE_ARCHIVE").is_some();
-            if has_forbidden_directory || has_display {
-                eprintln!("package build/test environment was not isolated");
-                return ExitCode::FAILURE;
-            }
-        }
-        if let Some(marker) = env::var_os("LIQUIDFUN_TEST_CARGO_MARKER") {
-            if std::fs::write(marker, args.join(" ")).is_err() {
-                return ExitCode::FAILURE;
-            }
-        }
-        return ExitCode::SUCCESS;
+        return run_cargo(&args);
     }
     if tool.contains("cmake") {
         return run_cmake(&args);
@@ -55,9 +28,46 @@ fn main() -> ExitCode {
         println!("clang version 22.1.8");
         return ExitCode::SUCCESS;
     }
+    if tool.contains("playground-dam-break-bench") {
+        return print_bench_sample("pinned_cpp", 1.0, "AppleClang 17.0.0", &args);
+    }
 
     eprintln!("unknown fake tool `{tool}`");
     ExitCode::FAILURE
+}
+
+fn run_cargo(args: &[String]) -> ExitCode {
+    if env::var_os("LIQUIDFUN_TEST_ASSERT_PACKAGE_ISOLATION").is_some() {
+        let current = env::current_dir().unwrap_or_default();
+        let has_forbidden_directory = [
+            "third_party",
+            "reference",
+            "tools",
+            "testbed",
+            "crates/liquidfun-testbed",
+        ]
+        .iter()
+        .any(|relative| current.join(relative).exists());
+        let has_display = env::var_os("DISPLAY").is_some()
+            || env::var_os("WAYLAND_DISPLAY").is_some()
+            || env::var_os("MIR_SOCKET").is_some()
+            || env::var_os("XDG_RUNTIME_DIR").is_some()
+            || env::var_os("LIQUIDFUN_XTASK_ROOT").is_some()
+            || env::var_os("LIQUIDFUN_XTASK_TEST_PACKAGE_ARCHIVE").is_some();
+        if has_forbidden_directory || has_display {
+            eprintln!("package build/test environment was not isolated");
+            return ExitCode::FAILURE;
+        }
+    }
+    if let Some(marker) = env::var_os("LIQUIDFUN_TEST_CARGO_MARKER")
+        && std::fs::write(marker, args.join(" ")).is_err()
+    {
+        return ExitCode::FAILURE;
+    }
+    if args.iter().any(|argument| argument == "dam-break-bench") {
+        return print_bench_sample("native_rust", 300.0, "rustc 1.97.0", args);
+    }
+    ExitCode::SUCCESS
 }
 
 fn run_git(args: &[String]) -> ExitCode {
@@ -116,4 +126,48 @@ fn run_cmake(args: &[String]) -> ExitCode {
 
     println!("simulated cmake invocation: {args:?}");
     ExitCode::SUCCESS
+}
+
+fn print_bench_sample(engine: &str, wall_ms: f64, compiler: &str, args: &[String]) -> ExitCode {
+    let warmup_steps = match parse_u32_flag(args, "--warmup", 60) {
+        Ok(value) => value,
+        Err(code) => return code,
+    };
+    let measured_steps = match parse_u32_flag(args, "--steps", 600) {
+        Ok(value) => value,
+        Err(code) => return code,
+    };
+    let ms_per_step = if measured_steps == 0 {
+        0.0
+    } else {
+        wall_ms / f64::from(measured_steps)
+    };
+    let steps_per_s = if ms_per_step <= 0.0 {
+        0.0
+    } else {
+        1000.0 / ms_per_step
+    };
+    let realtime_factor = if wall_ms <= 0.0 {
+        0.0
+    } else {
+        (f64::from(measured_steps) / 60.0) / (wall_ms / 1000.0)
+    };
+    println!(
+        "{{\"engine\":\"{engine}\",\"particles\":1920,\"warmup_steps\":{warmup_steps},\"measured_steps\":{measured_steps},\"wall_ms\":{wall_ms},\"ms_per_step\":{ms_per_step},\"steps_per_s\":{steps_per_s},\"realtime_factor\":{realtime_factor},\"compiler\":\"{compiler}\"}}"
+    );
+    ExitCode::SUCCESS
+}
+
+fn parse_u32_flag(args: &[String], flag: &str, default: u32) -> Result<u32, ExitCode> {
+    let Some(index) = args.iter().position(|argument| argument == flag) else {
+        return Ok(default);
+    };
+    let Some(value) = args.get(index + 1) else {
+        eprintln!("missing value for {flag}");
+        return Err(ExitCode::FAILURE);
+    };
+    value.parse().map_err(|_| {
+        eprintln!("invalid {flag} value `{value}`");
+        ExitCode::FAILURE
+    })
 }

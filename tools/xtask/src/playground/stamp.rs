@@ -1,9 +1,4 @@
 //! Exclusive UTC evidence stamps for playground Dam Break artifacts.
-//!
-//! Pair persistence in 22-02 is the first production caller; this plan only
-//! lands the minting core.
-
-#![allow(dead_code)]
 
 use std::fs;
 use std::io::ErrorKind;
