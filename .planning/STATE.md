@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Native Performance Closing
-status: verifying
-stopped_at: Phase 25 context gathered
-last_updated: "2026-09-21T22:13:29.654Z"
+status: executing
+stopped_at: Completed 25-01-PLAN.md
+last_updated: "2026-09-21T22:25:15.424Z"
 last_activity: 2026-09-21
 progress:
   total_phases: 4
   completed_phases: 3
-  total_plans: 21
-  completed_plans: 21
-  percent: 100
+  total_plans: 23
+  completed_plans: 22
+  percent: 96
 ---
 
 # Project State
@@ -21,13 +21,13 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-09-21)
 
 **Core value:** Deliver a useful, independent Rust physics library for enjoyable experimentation, with honest limitations and a lightweight native development loop.
-**Current focus:** Phase 24 — Shared hot-path waves through 3×
+**Current focus:** Phase 25 — wasm-sanity-and-honest-close
 
 ## Current Position
 
-Phase: 25
-Plan: Not started
-Status: Phase complete — ready for verification
+Phase: 25 (wasm-sanity-and-honest-close) — EXECUTING
+Plan: 2 of 2
+Status: Ready to execute
 Last activity: 2026-09-21
 
 Progress: [█████████░] 86%
@@ -61,6 +61,7 @@ v1.1 plan durations remain in `.planning/milestones/v1.1-STATE.md`.
 | Phase 24 P04 | 265 | 2 tasks | 24 files |
 | Phase 24-shared-hot-path-waves-through-3 P05 | 36min | 2 tasks | 13 files |
 | Phase 24-shared-hot-path-waves-through-3 P06 | 17min | 2 tasks | 4 files |
+| Phase 25 P01 | 1 min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -151,6 +152,9 @@ v1.1 playground decisions remain in `.planning/milestones/v1.1-STATE.md` and PRO
 - [Phase 24-shared-hot-path-waves-through-3]: Independent AI review is not performed by this implementing agent; /gsd-verify-work 24 and a separate AI reviewer remain required. — Owner policy 2026-09-16: the implementing agent must not approve its own work. This plan records automated isolation evidence only.
 - [Phase 24-shared-hot-path-waves-through-3]: BENCHMARKING.md points at docs/playground-scene-spot-check.md as unreviewed native scene spot-checks; that sample is not the Dam Break 3x gate and must not enter the empty manifest. — D-14/D-15: keep committed docs as unreviewed samples. Do not paste wall-ms or copy playground numbers into reference/performance/manifest.toml.
 - [Phase 24-shared-hot-path-waves-through-3]: Clippy unnecessary_wraps on always-Ok particle storage Results was dropped rather than allowed so cargo clippy -p liquidfun -D warnings could pass. — Task 2 required clippy -D warnings to exit 0; always-Ok Result wrappers were leftover and not a physics-behavior change.
+- [Phase 25]: Lead honesty docs with gate stamp 2026-09-21T20-38-50Z / ratio 2.956857456935513; demote 20-36-30Z to sibling-only — D-07: gate pair.json is the sole close number; kernel-HEAD sample is sibling-only labeling.
+- [Phase 25]: Document remaining ~2% frames as not gold-plated; list not-attempted including PERF-WASM-ENG — D-06: remaining-delta and not-attempted closers live in committed notes without minting a new pair.
+- [Phase 25]: BENCHMARKING honesty: unreviewed local canary / not Phase 12 sealed; reviewed_reports stays empty — D-08/D-09: public claim boundary; empty manifest verified.
 
 ### Pending Todos
 
@@ -179,6 +183,6 @@ Execute 24-04 leftover waves from samply stamp `2026-09-21T16-07-39Z` until unpr
 
 ## Session Continuity
 
-Last session: 2026-09-21T22:13:29.647Z
-Stopped at: Phase 25 context gathered
-Resume file: .planning/phases/25-wasm-sanity-and-honest-close/25-CONTEXT.md
+Last session: 2026-09-21T22:25:10.096Z
+Stopped at: Completed 25-01-PLAN.md
+Resume file: None

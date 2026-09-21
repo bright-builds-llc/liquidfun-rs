@@ -26,7 +26,7 @@ Requirements for this milestone. Each maps to roadmap phases. "Developer" means 
 
 - [x] **PERF-SPOT**: Developer can spot-check Fountain, Float or Sink, Color Mixer, Jelly Drop, and Water Wheel with native `--release` headless stepping after shared-path fixes, recording improvement or non-catastrophic regression. No per-scene C++ pair and no Phase 12 case hashes are required.
 - [x] **PERF-CANARY2**: After PERF-GATE, developer can record either (a) a second native headless canary for a playground scene whose profile cluster differs from Dam Break, or (b) an explicit notes statement that Dam Break and the spot-checks share the same dominant cluster. This is not a sealed 32-case matrix.
-- [ ] **PERF-NOTES**: Developer can document the remaining Dam Break delta after the gate (ratio, suspected leftover causes, what was not attempted) in committed notes. README and crates.io do not gain a universal “Rust is N× slower/faster” claim.
+- [x] **PERF-NOTES**: Developer can document the remaining Dam Break delta after the gate (ratio, suspected leftover causes, what was not attempted) in committed notes. README and crates.io do not gain a universal “Rust is N× slower/faster” claim.
 - [ ] **PERF-WASM**: After PERF-GATE, a visitor can still run the six playground scenes. Developer records a lightweight WASM/playground sanity check (`just web-player-smoke` plus an optional Dam Break step-time note versus previous WASM or native Rust, never versus `oracle-release`).
 
 ## Future Requirements
@@ -81,7 +81,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PERF-BASELINE | Phase 24 | Complete |
 | PERF-SPOT | Phase 24 | Complete |
 | PERF-CANARY2 | Phase 24 | Complete |
-| PERF-NOTES | Phase 25 | Pending |
+| PERF-NOTES | Phase 25 | Complete |
 | PERF-WASM | Phase 25 | Pending |
 
 **Coverage:**

@@ -119,10 +119,10 @@ One concern per wave; re-pair unprofiled into a **new** dated directory; preserv
   1. After PERF-GATE, a visitor can still run Dam Break, Fountain, Float or Sink, Color Mixer, Jelly Drop, and Water Wheel; developer records `just web-player-smoke` plus an optional Dam Break step-time note versus previous WASM or native Rust, never versus `oracle-release`.
   2. Developer can document the remaining Dam Break delta after the gate (ratio, suspected leftover causes, what was not attempted) in committed notes; README and crates.io do not gain a universal “Rust is N× slower/faster” claim.
   3. `reviewed_reports` remains empty and committed benchmarking/audit notes state that the playground pair is not a Phase 12 sealed public claim.
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 
 Plans:
-- [ ] 25-01-PLAN.md — Reconcile gate-stamp honesty docs and remaining-delta notes (PERF-NOTES)
+- [x] 25-01-PLAN.md — Reconcile gate-stamp honesty docs and remaining-delta notes (PERF-NOTES)
 - [ ] 25-02-PLAN.md — Run web-player-smoke and add optional native-fallback WASM step-time note (PERF-WASM)
 
 Do not put an Instant profiler in the cdylib, lift the 4-step catch-up cap to fake realtime, or compare browser Dam Break to C++.
@@ -140,6 +140,6 @@ Do not put an Instant profiler in the cdylib, lift the 4-step catch-up cap to fa
 | 22. Observability shell | v1.2 | 6/6 | Complete    | 2026-09-21 |
 | 23. Baseline pair and named audit | v1.2 | 9/9 | Complete    | 2026-09-21 |
 | 24. Shared hot-path waves through 3× | v1.2 | 6/6 | Complete    | 2026-09-21 |
-| 25. WASM sanity and honest close | v1.2 | 0/2 | Not started | - |
+| 25. WASM sanity and honest close | v1.2 | 1/2 | In Progress|  |
 
 v1.0 phases 1–15 remain in the [v1.0 roadmap archive](milestones/v1.0-ROADMAP.md).
