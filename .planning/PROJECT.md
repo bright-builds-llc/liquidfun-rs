@@ -16,11 +16,24 @@ The owner prioritizes a fun hobby project over production-quality certification.
 
 ## Current State
 
-v1.2 Native Performance Closing is complete (2026-09-21). Phase 25 WASM sanity and honest close recorded the remaining Dam Break delta from gate stamp `target/dam-break-perf/2026-09-21T20-38-50Z` (`rust_over_cpp_ratio` `2.956857456935513`; kernel-HEAD sibling `2.8769953439599707` at `2026-09-21T20-36-30Z`) in committed unreviewed notes, kept `reviewed_reports` empty, and left README and crates.io free of a universal “Rust is N×” claim. `just web-player-smoke` exited 0 with 37 Chromium tests. The optional Dam Break step-time note cites native gate `ms_per_step` `1.053103` because no prior WASM sample exists, and it is not compared to `oracle-release`. Automated verification passed 7/7; code review status is clean. This is not crate publication. Phase 24’s independent AI review digest remains `c9185f396610c250b2861480b0c1aa9cbfd16a2eef73c881fccc9d10ac99e31d`.
+No milestone is in progress. v1.2 Native Performance Closing is archived (2026-09-21): 4 phases, 23 plans, and 47 tasks. Unprofiled Dam Break Medium on one macOS host recorded `rust_over_cpp_ratio` `2.956857456935513` at stamp `2026-09-21T20-38-50Z` (git `89d3456406c3c79ed500192bca9491c707033647`). `reviewed_reports` stays empty. README and crates.io have no universal “Rust is N×” claim. `just web-player-smoke` recorded 37 Chromium tests, compared with native Rust only. This is not crate publication and not a git release tag. Commit `77fbd84` (zero the force buffer after SolveForce) is after that stamp, so the ratio is not a measurement of later HEAD. See `.planning/MILESTONES.md` and `.planning/milestones/v1.2-REQUIREMENTS.md`.
 
 The v1.1 Web Playground planning milestone is archived (2026-09-20): 6 phases and 39 plans completed. Visitors can run Dam Break, Fountain, Float or Sink, Color Mixer, Jelly Drop, and Water Wheel at `https://bright-builds-llc.github.io/liquidfun-rs/` with in-app SVG previews, play/pause/reset, honest Reset labels, pointer interaction, and automatic Pages delivery. This is not a crate or npm release. See `.planning/MILESTONES.md` and `.planning/milestones/v1.1-REQUIREMENTS.md`.
 
 The v1.0 Experimental Foundation planning milestone remains archived (2026-09-17): 16 phases and 252 active plans under hobby scope. Native checks, isolated packaging and macOS CI were verified at `75ead0edcbde68d01b804e2c466f2f4b2a4d30da`.
+
+<details>
+<summary>v1.2 phase-by-phase completion notes</summary>
+
+Phase 22: exclusive unprofiled Dam Break stamps, fail-closed samply 0.13.1 profiles, and separate parent-phase timers. Independent review digest `52f2619f480dd0daf1dfb7ec4db6b7624396e987b73979189b70678407a38f06`.
+
+Phase 23: `docs/native-performance-audit.md` names `particle_rows` from live pair and samply at `6d98531ac799987c209d3fd1e572e482fcab5da6` (unprofiled ratio `327.53395024734476`) and records a private dhat dump. Independent review digest `c23661d75e80e8702f7b175ba3e5578479f4999586ae9be5e194f8de2346f01d`.
+
+Phase 24: shared scalar kernels until gate stamp `2026-09-21T20-38-50Z` / ratio `2.956857456935513`; five-scene spot-check; same-cluster note; empty `reviewed_reports`. Independent review digest `c9185f396610c250b2861480b0c1aa9cbfd16a2eef73c881fccc9d10ac99e31d`.
+
+Phase 25: remaining-delta notes and `just web-player-smoke` (37 tests). Optional step-time note cites native `ms_per_step` `1.053103` and is never versus `oracle-release`.
+
+</details>
 
 <details>
 <summary>v1.1 phase-by-phase completion notes</summary>
@@ -39,25 +52,17 @@ Phase 21: removed unused `loadProofSession`, unknown-only `FallbackPanel`, named
 
 </details>
 
-## Current Milestone: v1.2 Native Performance Closing
+## Next Milestone Goals
 
-**Goal:** Get native Rust stepping into the same order of magnitude as pinned C++ on Dam Break (≤ 3× wall time) by auditing and profiling shared particle/rigid hot paths, then optimizing from that evidence under the existing scalar, deterministic baseline.
+No next milestone is chosen. Start one with `/gsd-new-milestone`, which defines fresh requirements and continues phase numbering after 25. Package publication and a git release tag remain separately authorized.
 
-**Target features:**
-- Deep audit of Rust stepping versus the C++ oracle: extra per-particle work, allocations, checks, and algorithm/shape differences
-- Repeatable local scripts (`just` / xtask) that rebuild the Dam Break pair, capture CPU profiles, and write dated reports under a gitignored evidence directory
-- A committed audit/notes doc that names hot functions, suspected causes, and the current Dam Break delta — not a sealed Phase 12 public claim
-- Profile-guided fixes to shared particle/rigid hot paths; other scenes are spot-checked for improvement, not a second sealed matrix
-- After the native gate, a lightweight WASM / playground sanity check, recorded honestly (WASM is not compared to C++)
-- Keep the scalar deterministic compatibility baseline; SIMD / parallel only as explicit opt-in
-
-Phase numbering continues after 21. Package publication remains separately authorized.
+Ideas that were explicitly left out of v1.2, and are not active requirements until a new milestone adopts them: an explicit SIMD or parallel opt-in, relaxing `unsafe_code = "forbid"` for a measured intrinsic, Phase 12 sealed-matrix calibration, and WASM stepping work beyond a sanity check.
 
 ## Requirements
 
 ### Active
 
-Package publication remains separately authorized. v1.2 performance requirements are validated.
+No active milestone requirements. Package publication remains separately authorized.
 
 ### Validated
 
@@ -237,10 +242,11 @@ The snapshots below describe their original phases, not current work or next ste
 | Use semantic HTML plus Kobalte Dialog for the responsive playground shell | Accessible modal behavior without a broad design-system migration | Accepted in v1.1; recorded in `standards-overrides.md` |
 | Deploy the playground from main with OIDC Pages, not a PAT | Automatic website delivery without reviving Linux native qualification | Accepted in v1.1 HOST-01..03 |
 | Treat v1.1 as a planning label, not a package or git release tag | Archive completion is not publication | Accepted 2026-09-20; same policy as v1.0 |
-| Use Dam Break Medium native pair as the v1.2 numeric gate (Rust ≤ 3× C++) | The existing exploratory pair already shows ~300×; a same-order close is the honest first bar | Accepted 2026-09-20 at milestone start |
-| Profile and fix shared particle/rigid hot paths; do not revive the Phase 12 sealed 32-case public matrix | Phase 12 defined method, but the reviewed-report manifest is empty; this milestone is observability plus closing the canary | Accepted 2026-09-20 at milestone start |
-| Hold the scalar deterministic compatibility baseline while chasing the ~300× gap | Correctness and determinism still beat unproven SIMD/parallel defaults; SIMD/parallel stay explicit opt-in | Accepted 2026-09-20 at milestone start |
-| Native is the C++ comparison; WASM/playground is a post-gate sanity check only | WASM vs C++ is not a fair pair; still record whether the playground improved | Accepted 2026-09-20 at milestone start |
+| Use Dam Break Medium native pair as the v1.2 numeric gate (Rust ≤ 3× C++) | The existing exploratory pair already shows ~300×; a same-order close is the honest first bar | ✓ Achieved at stamp `2026-09-21T20-38-50Z`, ratio `2.956857456935513`; not a public claim |
+| Profile and fix shared particle/rigid hot paths; do not revive the Phase 12 sealed 32-case public matrix | Phase 12 defined method, but the reviewed-report manifest is empty; this milestone is observability plus closing the canary | ✓ Shared scalar kernels plus a same-cluster spot-check; `reviewed_reports` stays empty |
+| Hold the scalar deterministic compatibility baseline while chasing the ~300× gap | Correctness and determinism still beat unproven SIMD/parallel defaults; SIMD/parallel stay explicit opt-in | ✓ Held: no default SIMD or Rayon, `unsafe_code = "forbid"` |
+| Native is the C++ comparison; WASM/playground is a post-gate sanity check only | WASM vs C++ is not a fair pair; still record whether the playground improved | ✓ `just web-player-smoke` recorded; the note never compares WASM to `oracle-release` |
+| Treat v1.2 as a planning label, not a package or git release tag | Archive completion is not publication | Accepted 2026-09-21; same policy as v1.0 and v1.1 |
 
 ## Open Questions
 
@@ -272,4 +278,4 @@ This document evolves at phase transitions and milestone boundaries.
 
 ______________________________________________________________________
 
-*Last updated: 2026-09-21 after Phase 25 WASM sanity and honest close. v1.2 Native Performance Closing is complete. Strict native certification remains optional. Package publication and release tags remain separately authorized.*
+*Last updated: 2026-09-21 after v1.2 milestone archive. No milestone is in progress. Strict native certification remains optional. Package publication and release tags remain separately authorized.*

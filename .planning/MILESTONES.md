@@ -1,5 +1,43 @@
 # Project Milestones: liquidfun-rs
 
+## v1.2 Native Performance Closing (Archived: 2026-09-21)
+
+**Delivered:** A developer-facing Dam Break Medium performance close: unprofiled scalar Rust `--release` recorded at 2.96× pinned C++ `oracle-release` on one macOS host, with shared hot-path fixes, spot-checks, and honest notes. The v1.2 label identifies planning history; the crate was not published or tagged as a release.
+
+**Completed:** 4 phases, 23 plans, 47 tasks.
+
+### Accomplishments
+
+- Persisted the locked unprofiled Dam Break pair, a fail-closed samply 0.13.1 profile, and separate parent-phase timers into exclusive `target/dam-break-perf/<utc-stamp>/` directories, and kept profiled times out of the 3× number.
+- Named dominating extra work from a SHA-bound pair and CPU profile (`particle_rows` shape versus C++ contact indices) and ran a private dhat dump only after allocator/`Vec` time showed up.
+- Landed shared scalar particle/rigid kernel fixes until the authoritative unprofiled pair at stamp `2026-09-21T20-38-50Z` recorded `rust_over_cpp_ratio` `2.956857456935513`, with `unsafe_code = "forbid"` and no default SIMD or Rayon.
+- Spot-checked Fountain, Float or Sink, Color Mixer, Jelly Drop, and Water Wheel, and recorded that they share Dam Break’s dominant cluster.
+- Kept the six-scene playground smoke green and documented the remaining delta without filling `reviewed_reports` or adding a public “Rust is N×” claim.
+
+### Scope and known gaps
+
+- All 13 v1.2 requirements (PERF-PAIR through PERF-WASM) are Complete. Audit status `passed` on 2026-09-21 (13/13 requirements, 4/4 phases, 21/21 integration checks, 4/4 flows).
+- The recorded ≤ 3× ratio is bound to git `89d3456406c3c79ed500192bca9491c707033647`. Commit `77fbd84` (zero the force buffer after SolveForce) landed after that stamp, so the ratio is not a measurement of later HEAD.
+- Deferred by design: PERF-SIMD, PERF-UNSAFE, PERF-PHASE12, and PERF-WASM-ENG.
+- Strict native qualification, crate publication, and release tags remain separately authorized.
+
+### Statistics and provenance
+
+- Timeline: 2026-09-20 to 2026-09-21 in Git author dates; archive date 2026-09-21 UTC.
+- Git range: `b4f7d4a` (start milestone v1.2) through `21e3b0c` (debug readout and blue accent, after the gate stamp); 133 commits, 163 paths, +23120/−2429.
+- Gate pair: `target/dam-break-perf/2026-09-21T20-38-50Z`, `timing_authority` `unprofiled_wall_clock`, 1920 particles, 60 warm-up + 600 timed steps.
+
+### Archives
+
+- [Roadmap](milestones/v1.2-ROADMAP.md)
+- [Requirements and outcomes](milestones/v1.2-REQUIREMENTS.md)
+- [Milestone audit](milestones/v1.2-MILESTONE-AUDIT.md)
+- [Completion state](milestones/v1.2-STATE.md)
+
+**Next:** No new milestone scope chosen. Use `/gsd-new-milestone` when ready; define fresh requirements and continue phase numbering after 25. Phase directories remain in place for stable historical references. No Git version tag was created: archive completion is not release-tag authorization.
+
+---
+
 ## v1.1 Web Playground (Archived: 2026-09-20)
 
 **Delivered:** A playful SolidJS GitHub Pages playground with six native Rust/WASM physics demos, shareable scene hashes, honest Reset labels, and automatic same-checkout Pages delivery. The v1.1 label identifies planning history; the crate was not published or tagged as a release.
