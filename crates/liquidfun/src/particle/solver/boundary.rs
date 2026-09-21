@@ -109,6 +109,7 @@ impl BoundaryCandidate {
         has_pending_force: bool,
         effect_limit: usize,
     ) -> Result<Self, BoundarySolverError> {
+        #[cfg(debug_assertions)]
         support::validate_source_lanes(
             owner,
             particle_ids,

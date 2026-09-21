@@ -72,6 +72,12 @@ pub(super) fn copy_slice<T: Copy>(
 }
 
 pub(super) fn validate_candidate(candidate: &BoundaryCandidate) -> Result<(), BoundarySolverError> {
+    #[cfg(not(debug_assertions))]
+    {
+        let _ = candidate;
+        return Ok(());
+    }
+    #[cfg(debug_assertions)]
     if candidate
         .positions
         .iter()
