@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Native Performance Closing
 status: executing
-stopped_at: Completed 23-01-PLAN.md
-last_updated: "2026-09-21T03:35:48.215Z"
+stopped_at: Completed 23-04-PLAN.md
+last_updated: "2026-09-21T03:42:55.467Z"
 last_activity: 2026-09-21
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 15
-  completed_plans: 7
-  percent: 47
+  completed_plans: 8
+  percent: 53
 ---
 
 # Project State
@@ -47,6 +47,7 @@ v1.2 Native Performance Closing. Gate is unprofiled `just playground-dam-break-b
 
 v1.1 plan durations remain in `.planning/milestones/v1.1-STATE.md`.
 | Phase 23 P01 | 8 min | 2 tasks | 7 files |
+| Phase 23 P04 | 5 min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -88,6 +89,10 @@ v1.1 playground decisions remain in `.planning/milestones/v1.1-STATE.md` and PRO
 - [Phase 23]: Integration-test crate roots need path attributes into playground_cli children because Cargo treats tests/foo.rs as a crate root. — mod bundle in tests/playground_cli.rs looks for tests/bundle.rs, not tests/playground_cli/bundle.rs. Path attributes match upstream_cli and keep foo.rs plus foo/ without mod.rs or main.rs.
 - [Phase 23]: Do not mark PERF-AUDIT or PERF-HEAP complete in 23-01; this split only makes room for later exclusive tests. — Named audit notes and optional dhat remain 23-07 and 23-08. Checking the requirements off after a test-file split would be false.
 - [Phase 23]: No Bright Builds TSV exception for playground_cli; every split test file is well under 628 physical lines. — Dispatcher 14, support 304, pair 96, profile 186, timers 48, bundle 1, heap 1. Later plans can add cases in their stub files.
+- [Phase 23]: Keep dhat 0.3.3 crate-local on liquidfun-wasm; never add it to workspace.dependencies or liquidfun. — D-11/D-15: published liquidfun stays bitflags-only; optional dhat-heap is private to the dam-break-bench binary.
+- [Phase 23]: Honor LIQUIDFUN_DHAT_HEAP_FILE as an OsString path; unset env may use Profiler::new_heap(). — Pitfall 7: production xtask in 23-05 must set the env to a stamp path so dhat-heap.json does not land in the repo root.
+- [Phase 23]: Do not mark PERF-HEAP complete in 23-04; xtask heap spawn and run-or-skip remain 23-05 and 23-08. — This plan only makes the optional feature compile. Checking PERF-HEAP off before the dump command and audit skip path exist would be false.
+- [Phase 23]: pair.rs cargo argv stays --release without --features so the gate binary stays uninstrumented. — Pitfall 3/D-15: enabling dhat-heap on --release would replace target/release/dam-break-bench. Heap spawn uses --profile profiling in 23-05.
 
 ### Pending Todos
 
@@ -116,6 +121,6 @@ Verify Phase 22 (`/gsd-verify-work 22`); independent AI review. Phase 24 plannin
 
 ## Session Continuity
 
-Last session: 2026-09-21T03:35:34.249Z
-Stopped at: Completed 23-01-PLAN.md
+Last session: 2026-09-21T03:42:42.792Z
+Stopped at: Completed 23-04-PLAN.md
 Resume file: None
