@@ -15,39 +15,42 @@ impl World {
         time_step: f32,
         hook_run: &mut ContactHookRun<'_, H>,
     ) -> Result<(), StepError> {
-        let mut candidate = self.particle_systems.clone();
+        let mut systems = self.particle_systems.replace_with_empty();
         let mut requested_records = Vec::new();
         let mut empty_group_records = Vec::new();
 
-        for system_id in self.particle_system_order.iter().copied() {
-            let system = candidate
-                .get_mut(system_id)
-                .expect("world particle-system order contains only live systems");
-            system
-                .storage
-                .synchronize_zombie_flags()
-                .map_err(|_error| StepError::ParticleLifecycleInvariant)?;
-            let expired = system
-                .lifetime
-                .solve_lifetimes(&mut system.storage, time_step)
-                .map_err(particle_step_error)?;
-            let outcome =
-                crate::particle::lifetime::compact_pending_with_occurrences(&mut system.storage)
+        let lifecycle = (|| {
+            for system_id in self.particle_system_order.iter().copied() {
+                let system = systems
+                    .get_mut(system_id)
+                    .expect("world particle-system order contains only live systems");
+                system
+                    .storage
+                    .synchronize_zombie_flags()
                     .map_err(|_error| StepError::ParticleLifecycleInvariant)?;
-
-            append_requested_records(&mut requested_records, outcome, &expired);
-            let records = self
-                .prepare_empty_particle_group_destructions(system_id, system)
+                let expired = system
+                    .lifetime
+                    .solve_lifetimes(&mut system.storage, time_step)
+                    .map_err(particle_step_error)?;
+                let outcome = crate::particle::lifetime::compact_pending_with_occurrences(
+                    &mut system.storage,
+                )
                 .map_err(|_error| StepError::ParticleLifecycleInvariant)?;
-            empty_group_records.extend(records);
 
-            if system.definition.is_paused() {
-                continue;
+                append_requested_records(&mut requested_records, outcome, &expired);
+                let records = self
+                    .prepare_empty_particle_group_destructions(system_id, system)
+                    .map_err(|_error| StepError::ParticleLifecycleInvariant)?;
+                empty_group_records.extend(records);
+
+                if system.definition.is_paused() {
+                    continue;
+                }
             }
-
-            // Contact generation and rigid coupling are integrated by the
-            // subsequent Phase 9 plans at this source-timed active-system seam.
-        }
+            Ok(())
+        })();
+        self.particle_systems = systems;
+        lifecycle?;
 
         hook_run.ensure_lifecycle_capacity(
             requested_records
@@ -61,7 +64,6 @@ impl World {
         for record in &empty_group_records {
             hook_run.record_destruction(record.clone())?;
         }
-        self.particle_systems = candidate;
         for record in &empty_group_records {
             self.remove_particle_group_shell_after_compaction(record);
         }
