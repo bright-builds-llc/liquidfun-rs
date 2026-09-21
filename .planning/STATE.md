@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Native Performance Closing
-status: verifying
-stopped_at: Phase 23 context gathered
-last_updated: "2026-09-21T02:47:19.472Z"
+status: executing
+stopped_at: Completed 23-01-PLAN.md
+last_updated: "2026-09-21T03:35:48.215Z"
 last_activity: 2026-09-21
 progress:
   total_phases: 4
   completed_phases: 1
-  total_plans: 6
-  completed_plans: 6
-  percent: 100
+  total_plans: 15
+  completed_plans: 7
+  percent: 47
 ---
 
 # Project State
@@ -21,13 +21,13 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-09-20)
 
 **Core value:** Deliver a useful, independent Rust physics library for enjoyable experimentation, with honest limitations and a lightweight native development loop.
-**Current focus:** Phase 22 — Observability shell
+**Current focus:** Phase 23 — Baseline pair and named audit
 
 ## Current Position
 
-Phase: 23
-Plan: Not started
-Status: Phase complete — ready for verification
+Phase: 23 (Baseline pair and named audit) — EXECUTING
+Plan: 2 of 9
+Status: Ready to execute
 Last activity: 2026-09-21
 
 Progress: [██████████] 100%
@@ -46,6 +46,7 @@ v1.2 Native Performance Closing. Gate is unprofiled `just playground-dam-break-b
 | Phase 22 P06 | 8 min | 2 tasks | 10 files |
 
 v1.1 plan durations remain in `.planning/milestones/v1.1-STATE.md`.
+| Phase 23 P01 | 8 min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -84,6 +85,9 @@ v1.1 playground decisions remain in `.planning/milestones/v1.1-STATE.md` and PRO
 - [Phase 22]: BENCHMARKING.md names gitignored target/dam-break-perf stamps and denies profiled/timer sibling stamps as the 3x number; it does not paste wall-ms. — D-14: one-sentence stamp note is allowed; public Dam Break numbers and the empty manifest stay unmodified.
 - [Phase 22]: liquidfun production deps stay bitflags-only; cargo tree --edges normal is liquidfun -> bitflags only. — D-12 isolation: package verify plus cargo tree; do not add profiler, samply, dhat, CMake, or serde to liquidfun.
 - [Phase 22]: Independent AI review remains a later policy step; this plan records automated evidence and does not self-approve the phase. — Owner policy 2026-09-16: the implementing agent must not approve its own work. T-22-06-05 accept.
+- [Phase 23]: Integration-test crate roots need path attributes into playground_cli children because Cargo treats tests/foo.rs as a crate root. — mod bundle in tests/playground_cli.rs looks for tests/bundle.rs, not tests/playground_cli/bundle.rs. Path attributes match upstream_cli and keep foo.rs plus foo/ without mod.rs or main.rs.
+- [Phase 23]: Do not mark PERF-AUDIT or PERF-HEAP complete in 23-01; this split only makes room for later exclusive tests. — Named audit notes and optional dhat remain 23-07 and 23-08. Checking the requirements off after a test-file split would be false.
+- [Phase 23]: No Bright Builds TSV exception for playground_cli; every split test file is well under 628 physical lines. — Dispatcher 14, support 304, pair 96, profile 186, timers 48, bundle 1, heap 1. Later plans can add cases in their stub files.
 
 ### Pending Todos
 
@@ -112,6 +116,6 @@ Verify Phase 22 (`/gsd-verify-work 22`); independent AI review. Phase 24 plannin
 
 ## Session Continuity
 
-Last session: 2026-09-21T02:47:19.469Z
-Stopped at: Phase 23 context gathered
-Resume file: .planning/phases/23-baseline-pair-and-named-audit/23-CONTEXT.md
+Last session: 2026-09-21T03:35:34.249Z
+Stopped at: Completed 23-01-PLAN.md
+Resume file: None
