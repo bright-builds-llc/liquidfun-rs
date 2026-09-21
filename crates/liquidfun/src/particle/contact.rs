@@ -123,9 +123,6 @@ impl ParticleContactUpdate {
             return Err(ParticleContactError::WrongParticleSystem);
         }
 
-        if neighborhood.pairs().len() != neighborhood.pair_rows().len() {
-            return Err(ParticleContactError::MissingParticle);
-        }
         if cfg!(debug_assertions) {
             validate_neighborhood(view, neighborhood)?;
         }
@@ -144,9 +141,6 @@ impl ParticleContactUpdate {
     {
         if neighborhood.system() != view.system() {
             return Err(ParticleContactError::WrongParticleSystem);
-        }
-        if neighborhood.pairs().len() != neighborhood.pair_rows().len() {
-            return Err(ParticleContactError::MissingParticle);
         }
         if cfg!(debug_assertions) {
             validate_neighborhood(view, neighborhood)?;
@@ -192,9 +186,6 @@ fn validate_neighborhood(
     view: &ParticleSystemView<'_>,
     neighborhood: &ParticleNeighborhood,
 ) -> Result<(), ParticleContactError> {
-    if neighborhood.pairs().len() != neighborhood.pair_rows().len() {
-        return Err(ParticleContactError::MissingParticle);
-    }
     for pair_rows in neighborhood.pair_rows() {
         let [a, b] = *pair_rows;
         if view.positions().get(a.0).is_none() || view.positions().get(b.0).is_none() {
@@ -220,8 +211,9 @@ fn collect_stored_contacts(
     let diameter = neighborhood.diameter();
     let squared_diameter = diameter * diameter;
     let inverse_diameter = 1.0 / diameter;
-    let mut contacts = Vec::with_capacity(neighborhood.pairs().len());
-    for (candidate, pair_rows) in neighborhood.pairs().iter().zip(neighborhood.pair_rows()) {
+    let mut contacts = Vec::with_capacity(neighborhood.pair_rows().len());
+    let ids = view.particle_ids();
+    for pair_rows in neighborhood.pair_rows() {
         let [a, b] = *pair_rows;
         let Some(position_a) = view.positions().get(a.0) else {
             return Err(ParticleContactError::MissingParticle);
@@ -245,8 +237,14 @@ fn collect_stored_contacts(
         let weight = 1.0 - distance_squared * inverse_distance * inverse_diameter;
         let normal = inverse_distance * difference;
         if flags.contains(ParticleFlags::PARTICLE_CONTACT_FILTER) {
+            let Some(&id_a) = ids.get(a.0) else {
+                return Err(ParticleContactError::MissingParticle);
+            };
+            let Some(&id_b) = ids.get(b.0) else {
+                return Err(ParticleContactError::MissingParticle);
+            };
             let contact = ParticleContact {
-                particles: candidate.particles(),
+                particles: [id_a, id_b],
                 flags,
                 weight,
                 normal,

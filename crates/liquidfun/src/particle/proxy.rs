@@ -60,7 +60,6 @@ impl ParticleNeighborPair {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct Proxy {
-    particle: ParticleId,
     row: ParticleIndex,
     tag: u32,
 }
@@ -80,8 +79,8 @@ struct Proxy {
 pub struct ParticleNeighborhood {
     system: ParticleSystemId,
     diameter: f32,
+    particles: Vec<ParticleId>,
     proxies: Vec<Proxy>,
-    pairs: Vec<ParticleNeighborPair>,
     pair_rows: Vec<[ParticleIndex; 2]>,
 }
 
@@ -116,29 +115,23 @@ impl ParticleNeighborhood {
         {
             return Err(ParticleProxyError::DiameterOutOfRange);
         }
-        let mut proxies = Vec::with_capacity(view.particle_ids().len());
-        for (row, (particle, position)) in view
-            .particle_ids()
-            .iter()
-            .copied()
-            .zip(view.positions().iter().copied())
-            .enumerate()
-        {
+        let particles = view.particle_ids().to_vec();
+        let mut proxies = Vec::with_capacity(particles.len());
+        for (row, position) in view.positions().iter().copied().enumerate() {
             let tag = checked_tag(inverse_diameter * position.x, inverse_diameter * position.y)?;
             proxies.push(Proxy {
-                particle,
                 row: ParticleIndex(row),
                 tag,
             });
         }
         proxies.sort_by_key(|proxy| proxy.tag);
-        let (pairs, pair_rows) = enumerate_pairs(&proxies);
+        let pair_rows = enumerate_pair_rows(&proxies);
 
         Ok(Self {
             system: view.system(),
             diameter,
+            particles,
             proxies,
-            pairs,
             pair_rows,
         })
     }
@@ -151,8 +144,12 @@ impl ParticleNeighborhood {
 
     /// Returns broad candidate pairs in source enumeration order.
     #[must_use]
-    pub fn pairs(&self) -> &[ParticleNeighborPair] {
-        &self.pairs
+    pub fn pairs(&self) -> Vec<ParticleNeighborPair> {
+        self.pair_rows
+            .iter()
+            .copied()
+            .map(|[a, b]| ParticleNeighborPair::new(self.particles[a.0], self.particles[b.0]))
+            .collect()
     }
 
     pub(in crate::particle) fn pair_rows(&self) -> &[[ParticleIndex; 2]] {
@@ -198,7 +195,7 @@ impl ParticleNeighborhood {
                 let x_tag = proxy.tag & X_MASK;
                 x_tag >= x_lower && x_tag <= x_upper
             })
-            .map(|proxy| proxy.particle)
+            .map(|proxy| self.particles[proxy.row.0])
             .collect())
     }
 }
@@ -246,16 +243,12 @@ fn visit_pairs(proxies: &[Proxy], mut visit: impl FnMut(&Proxy, &Proxy)) {
     }
 }
 
-fn enumerate_pairs(proxies: &[Proxy]) -> (Vec<ParticleNeighborPair>, Vec<[ParticleIndex; 2]>) {
-    let mut count = 0_usize;
-    visit_pairs(proxies, |_, _| count += 1);
-    let mut pairs = Vec::with_capacity(count);
-    let mut pair_rows = Vec::with_capacity(count);
+fn enumerate_pair_rows(proxies: &[Proxy]) -> Vec<[ParticleIndex; 2]> {
+    let mut pair_rows = Vec::with_capacity(proxies.len().saturating_mul(4));
     visit_pairs(proxies, |a, b| {
-        pairs.push(ParticleNeighborPair::new(a.particle, b.particle));
         pair_rows.push([a.row, b.row]);
     });
-    (pairs, pair_rows)
+    pair_rows
 }
 
 #[cfg(test)]
