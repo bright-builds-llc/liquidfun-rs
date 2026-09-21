@@ -99,13 +99,13 @@ Do not quote samply duration as the 3× number. Do not commit profile blobs. In-
   3. Developer can demonstrate native Dam Break Medium unprofiled wall time ≤ 3× pinned C++ on the same host under scalar `--release` vs `oracle-release` for the locked 60+600-step pair, recording host, git HEAD, compilers, both wall times, and ratio into a new dated evidence directory; `reference/performance/manifest.toml` stays empty.
   4. The scalar deterministic compatibility baseline still holds: no default Rayon or SIMD, no `-ffast-math` / `-march=native` on the pair, no lifting `unsafe_code = "forbid"` to chase the canary; SIMD/parallel remain explicit later opt-in.
   5. Developer can spot-check Fountain, Float or Sink, Color Mixer, Jelly Drop, and Water Wheel with native `--release` headless stepping after shared-path fixes, recording improvement or non-catastrophic regression, and after the gate can record either a second native headless canary whose profile cluster differs from Dam Break or an explicit notes statement that Dam Break and the spot-checks share the same dominant cluster — not a sealed 32-case matrix.
-**Plans:** 3/6 plans executed
+**Plans:** 4/6 plans executed
 
 Plans:
 - [x] 24-01-PLAN.md — Carry dense ParticleIndex through neighborhood/contact generation (particle_rows shape)
 - [x] 24-02-PLAN.md — Admit wave 1 with a new exclusive unprofiled pair and samply retarget
 - [x] 24-03-PLAN.md — First leftover admit-or-skip from the post-wave-1 samply (D-07 order)
-- [ ] 24-04-PLAN.md — Continue scalar leftover waves until unprofiled pair.json ≤ 3×
+- [x] 24-04-PLAN.md — Continue scalar leftover waves until unprofiled pair.json ≤ 3×
 - [ ] 24-05-PLAN.md — Five-scene native headless spot-check plus same-cluster canary note
 - [ ] 24-06-PLAN.md — Isolation, empty manifest, and no self-approval
 
@@ -135,7 +135,7 @@ Do not put an Instant profiler in the cdylib, lift the 4-step catch-up cap to fa
 | 21. Playground leftover cleanup | v1.1 | 4/4 | Complete | 2026-09-20 |
 | 22. Observability shell | v1.2 | 6/6 | Complete    | 2026-09-21 |
 | 23. Baseline pair and named audit | v1.2 | 9/9 | Complete    | 2026-09-21 |
-| 24. Shared hot-path waves through 3× | v1.2 | 3/6 | In Progress|  |
+| 24. Shared hot-path waves through 3× | v1.2 | 4/6 | In Progress|  |
 | 25. WASM sanity and honest close | v1.2 | 0/TBD | Not started | - |
 
 v1.0 phases 1–15 remain in the [v1.0 roadmap archive](milestones/v1.0-ROADMAP.md).

@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Native Performance Closing
 status: executing
-stopped_at: Completed 24-03-PLAN.md
-last_updated: "2026-09-21T16:11:36.956Z"
+stopped_at: Completed 24-04-PLAN.md
+last_updated: "2026-09-21T20:38:32.958Z"
 last_activity: 2026-09-21
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 21
-  completed_plans: 18
-  percent: 86
+  completed_plans: 19
+  percent: 90
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-09-21)
 ## Current Position
 
 Phase: 24 (Shared hot-path waves through 3×) — EXECUTING
-Plan: 4 of 6
+Plan: 5 of 6
 Status: Ready to execute
 Last activity: 2026-09-21
 
@@ -58,6 +58,7 @@ v1.1 plan durations remain in `.planning/milestones/v1.1-STATE.md`.
 | Phase 24-shared-hot-path-waves-through-3 P01 | 15 min | 2 tasks | 5 files |
 | Phase 24-shared-hot-path-waves-through-3 P02 | 5 min | 2 tasks | 2 files |
 | Phase 24-shared-hot-path-waves-through-3 P03 | 11 min | 2 tasks | 3 files |
+| Phase 24 P04 | 265 | 2 tasks | 24 files |
 
 ## Accumulated Context
 
@@ -138,6 +139,9 @@ v1.1 playground decisions remain in `.planning/milestones/v1.1-STATE.md` and PRO
 - [Phase 24-shared-hot-path-waves-through-3]: Gate candidate.check_invariants only on replace_solver_candidate behind debug_assertions; creation.rs and mutation.rs stay fail-closed. — D-08 / T-24-03-01: C++ NDEBUG analog on the solver commit path only. User-facing checked mutation remains typed and fail-closed.
 - [Phase 24-shared-hot-path-waves-through-3]: Admit from exclusive unprofiled pair 2026-09-21T16-07-02Z with rust_over_cpp_ratio 15.08956518243927, strictly below Wave 1 21.00845179052245. Do not claim PERF-GATE. — D-04/D-05/D-14: new exclusive 1920/60+600 pair.json is the only 3x number. 15.09 remains greater than 3.
 - [Phase 24-shared-hot-path-waves-through-3]: Sibling samply stamp 2026-09-21T16-07-39Z is leftover-ranking input only for 24-04. — D-05: samply retargets the next leftover; profiled duration is not_timing_authority.
+- [Phase 24]: PERF-GATE uses newest same-HEAD unprofiled pair.json rust_over_cpp_ratio, not samply duration.
+- [Phase 24]: Stop leftover kernels at <= 3 (D-06); do not gold-plate remaining ~2% frames.
+- [Phase 24]: Failed leftovers keep their stamps and revert the kernel; never call a non-improving sample a win.
 
 ### Pending Todos
 
@@ -166,6 +170,6 @@ Execute 24-04 leftover waves from samply stamp `2026-09-21T16-07-39Z` until unpr
 
 ## Session Continuity
 
-Last session: 2026-09-21T16:11:13.044Z
-Stopped at: Completed 24-03-PLAN.md
+Last session: 2026-09-21T20:38:32.955Z
+Stopped at: Completed 24-04-PLAN.md
 Resume file: None
