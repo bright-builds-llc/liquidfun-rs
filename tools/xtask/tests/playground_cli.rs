@@ -8,6 +8,8 @@ mod heap;
 mod pair;
 #[path = "playground_cli/profile.rs"]
 mod profile;
+#[path = "playground_cli/spot.rs"]
+mod spot;
 #[path = "playground_cli/support.rs"]
 mod support;
 #[path = "playground_cli/timers.rs"]

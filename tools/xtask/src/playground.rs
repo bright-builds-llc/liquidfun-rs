@@ -41,7 +41,7 @@ pub(crate) fn run(args: &[String]) -> Result<(), PlaygroundError> {
 
 #[cfg(test)]
 mod tests {
-    use super::{PlaygroundError, run};
+    use super::{PlaygroundError, USAGE, run};
 
     #[test]
     fn missing_subcommand_is_a_usage_error() {
@@ -67,5 +67,11 @@ mod tests {
             result,
             Err(PlaygroundError::usage("unknown playground command `nope`"))
         );
+    }
+
+    #[test]
+    fn usage_lists_scene_spot() {
+        // Arrange / Act / Assert
+        assert!(USAGE.contains("scene-spot"));
     }
 }
