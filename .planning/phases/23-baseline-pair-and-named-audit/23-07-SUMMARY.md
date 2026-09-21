@@ -104,3 +104,21 @@ Invoked `just playground-dam-break-audit-bundle` with no extra flags (latest sam
 - **source stamps still present:** copy, not move; SHA-256 of pair.json/pair.md/rust.json.gz/rust.json.syms.json matched after copy
 - **git ls-files 'target/dam-break-perf/**':** empty
 - **dhat:** not run in this plan (D-13 waits on 23-08)
+
+## Task 3: Durable primary-tree evidence
+
+Resolved paths:
+
+- **COMMON:** `/Users/peterryszkiewicz/Repos/liquidfun-rs/.git`
+- **WORKTREE_ROOT:** `/Users/peterryszkiewicz/Repos/liquidfun-rs`
+- **WORKTREE_EVIDENCE:** `/Users/peterryszkiewicz/Repos/liquidfun-rs/target/dam-break-perf`
+- **DURABLE_EVIDENCE:** `/Users/peterryszkiewicz/Repos/liquidfun-rs/target/dam-break-perf`
+- **durable_copy:** same-tree (capture already ran on the primary tree; no `cp -R`, stamps not deleted)
+
+The three exclusive stamps from Tasks 1–2 are already under DURABLE_EVIDENCE:
+
+1. PAIR_STAMP `2026-09-21T04-32-19Z`
+1. PROFILE_STAMP `2026-09-21T04-32-56Z`
+1. BUNDLE_STAMP `2026-09-21T04-34-32Z`
+
+Durable bundle contains nonempty `pair.json`, `pair.md`, `rust.json.gz`, `rust.json.syms.json`, and `audit-bundle-identity.json` with matching `git_head` `6d98531ac799987c209d3fd1e572e482fcab5da6`. Capture-checkout sources still exist. `git ls-files '*.json.gz' '*.trace' 'dhat-heap.json' 'target/dam-break-perf/**'` is empty. No profile blobs were written into `.planning/` or `docs/`.
