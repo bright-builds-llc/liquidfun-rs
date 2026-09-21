@@ -18,21 +18,16 @@ impl ParticleStorage {
         &mut self,
         candidate: Vec<Vec2>,
     ) -> Result<(), ParticleStorageError> {
-        if candidate.len() != self.len() || candidate.iter().any(|velocity| !velocity.is_valid()) {
+        if candidate.len() != self.len() {
             return Err(ParticleStorageError::InvalidLaneBundle);
         }
-        let changed = self
-            .velocities
-            .iter()
-            .zip(&candidate)
-            .enumerate()
-            .filter_map(|(index, (current, next))| {
-                (current != next).then_some(ParticleIndex(index))
-            })
-            .collect::<Vec<_>>();
+        #[cfg(debug_assertions)]
+        if candidate.iter().any(|velocity| !velocity.is_valid()) {
+            return Err(ParticleStorageError::InvalidLaneBundle);
+        }
         self.velocities = candidate;
-        for dense in changed {
-            self.invalidate_group_statistics_at(dense);
+        for record in &mut self.group_records {
+            record.invalidate_statistics();
         }
         Ok(())
     }
