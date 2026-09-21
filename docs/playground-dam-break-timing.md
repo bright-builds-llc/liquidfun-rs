@@ -79,3 +79,11 @@ will request extra steps and stutter.
 
 This table times one scene on one host. It does not prove parity with upstream
 LiquidFun and it does not extend the sealed Phase 12 matrix.
+
+## WASM Dam Break step-time note (optional, unreviewed)
+
+There is no prior WASM step-time sample in committed docs. Native Rust
+`ms_per_step` from gate stamp `2026-09-21T20-38-50Z` is `1.053103`
+(copied from that `pair.json` only). This is versus native Rust only —
+never versus `oracle-release` or any other C++ wall. Not a Phase 12 sealed
+public claim.
