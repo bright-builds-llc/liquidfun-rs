@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Native Performance Closing
 status: executing
-stopped_at: Completed 23-06-PLAN.md
-last_updated: "2026-09-21T04:26:15.752Z"
+stopped_at: Completed 23-07-PLAN.md
+last_updated: "2026-09-21T04:38:47.918Z"
 last_activity: 2026-09-21
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 15
-  completed_plans: 12
-  percent: 80
+  completed_plans: 13
+  percent: 87
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: `.planning/PROJECT.md` (updated 2026-09-20)
 ## Current Position
 
 Phase: 23 (Baseline pair and named audit) — EXECUTING
-Plan: 7 of 9
+Plan: 8 of 9
 Status: Ready to execute
 Last activity: 2026-09-21
 
-Progress: [████████░░] 80%
+Progress: [█████████░] 87%
 
 v1.2 Native Performance Closing. Gate is unprofiled `just playground-dam-break-bench` (Rust `--release` vs `oracle-release` Dam Break Medium ≤ 3×). Evidence dir `target/dam-break-perf/<utc-stamp>/`. v1.1 phase directories remain on disk. No package publication or release tag.
 
@@ -52,6 +52,7 @@ v1.1 plan durations remain in `.planning/milestones/v1.1-STATE.md`.
 | Phase 23 P03 | 4min | 2 tasks | 1 files |
 | Phase 23 P05 | 10 min | 2 tasks | 5 files |
 | Phase 23-baseline-pair-and-named-audit P06 | 6 min | 2 tasks | 2 files |
+| Phase 23 P07 | 8 min | 3 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -112,6 +113,8 @@ v1.1 playground decisions remain in `.planning/milestones/v1.1-STATE.md` and PRO
 - [Phase 23]: Run playground unit tests as cargo test -p xtask playground because xtask has no lib target. — Same as Phase 22/23-02: cargo test --lib fails with no library targets found in package xtask.
 - [Phase 23]: Fake cargo handles run + dam-break-bench + dhat-heap before --profile profiling so LIQUIDFUN_DHAT_HEAP_FILE is written instead of only installing the profiling binary. — Heap CLI uses cargo run --profile profiling --features dhat-heap. Matching --profile first skipped the dump writer and broke needle-match tests.
 - [Phase 23]: Do not mark PERF-HEAP complete in 23-06; live dump or skip notes remain 23-08. — This plan is fake-tool CLI coverage. Checking PERF-HEAP off before the live run-or-skip notes exist would be false.
+- [Phase 23]: Canonical live Dam Break stamps cite MEASURED_HEAD 6d98531 with pair 2026-09-21T04-32-19Z, profile 2026-09-21T04-32-56Z, bundle 2026-09-21T04-34-32Z, durable_copy same-tree. — Task 1 docs commit moved HEAD; pair was re-run so same-HEAD bundle succeeds. pair.json walls are the only 3x number. Live sidecar is rust.json.syms.json.
+- [Phase 23]: Do not mark PERF-AUDIT complete in 23-07; named-function notes remain 23-08. — This plan is live capture only. Checking PERF-AUDIT off before docs/native-performance-audit.md would be false.
 
 ### Pending Todos
 
@@ -140,6 +143,6 @@ Verify Phase 22 (`/gsd-verify-work 22`); independent AI review. Phase 24 plannin
 
 ## Session Continuity
 
-Last session: 2026-09-21T04:26:05.785Z
-Stopped at: Completed 23-06-PLAN.md
+Last session: 2026-09-21T04:38:24.303Z
+Stopped at: Completed 23-07-PLAN.md
 Resume file: None
