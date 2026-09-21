@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Native Performance Closing
 status: executing
-stopped_at: Completed 24-01-PLAN.md
-last_updated: "2026-09-21T15:47:10.738Z"
+stopped_at: Completed 24-02-PLAN.md
+last_updated: "2026-09-21T15:55:49.654Z"
 last_activity: 2026-09-21
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 21
-  completed_plans: 16
-  percent: 76
+  completed_plans: 17
+  percent: 81
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: `.planning/PROJECT.md` (updated 2026-09-21)
 ## Current Position
 
 Phase: 24 (Shared hot-path waves through 3×) — EXECUTING
-Plan: 2 of 6
+Plan: 3 of 6
 Status: Ready to execute
 Last activity: 2026-09-21
 
-Progress: [████████░░] 76%
+Progress: [████████░░] 81%
 
 v1.2 Native Performance Closing. Gate is unprofiled `just playground-dam-break-bench` (Rust `--release` vs `oracle-release` Dam Break Medium ≤ 3×). Evidence dir `target/dam-break-perf/<utc-stamp>/`. v1.1 phase directories remain on disk. No package publication or release tag.
 
@@ -56,6 +56,7 @@ v1.1 plan durations remain in `.planning/milestones/v1.1-STATE.md`.
 | Phase 23 P08 | 9 min | 2 tasks | 2 files |
 | Phase 23 P09 | 6 min | 2 tasks | 1 files |
 | Phase 24-shared-hot-path-waves-through-3 P01 | 15 min | 2 tasks | 5 files |
+| Phase 24-shared-hot-path-waves-through-3 P02 | 5 min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -129,16 +130,19 @@ v1.1 playground decisions remain in `.planning/milestones/v1.1-STATE.md` and PRO
 - [Phase 24-shared-hot-path-waves-through-3]: Carry dense ParticleIndex on neighborhood Proxy and a private pair_rows lane aligned with public ParticleNeighborPair ParticleId pairs. — D-01/D-03: restore FindContacts Proxy.index without changing the public ParticleId API.
 - [Phase 24-shared-hot-path-waves-through-3]: Previous public ParticleContact IDs go through maybe_live_row to resolve_live; do not store last-step rows on public contacts or add a HashMap cache. — D-01/D-02: compaction remaps rows; the generational identity map is not a hot-path HashMap cache.
 - [Phase 24-shared-hot-path-waves-through-3]: liquidfun stays scalar and safe: no rayon, std::simd, unsafe indexing, or workspace unsafe_code change. — PERF-BASELINE / D-15: wave 1 is index-preserving shape, not SIMD or unsafe.
+- [Phase 24-shared-hot-path-waves-through-3]: Admit wave 1 from exclusive unprofiled pair 2026-09-21T15-50-46Z with rust_over_cpp_ratio 21.00845179052245, strictly below Phase 23 327.53395024734476. — D-04/D-05: locked 1920/60+600 just playground-dam-break-bench into a new exclusive stamp. pair.json is the only 3x number.
+- [Phase 24-shared-hot-path-waves-through-3]: Do not claim PERF-GATE: 21.01 remains greater than 3; leftover D-07/D-09 waves stay required and check_invariants was not gated in wave 1. — D-06/D-08: wave 1 is necessary and insufficient. samply duration is not_timing_authority.
+- [Phase 24-shared-hot-path-waves-through-3]: Sibling samply stamp 2026-09-21T15-52-27Z is leftover-ranking input only (kind samply_cpu, not_timing_authority true, no pair.json). — D-05/D-14: retarget 24-03 from the sibling profile stamp; never copy samply ms into the Dam Break ratio.
 
 ### Pending Todos
 
-Execute 24-02 unprofiled Dam Break re-pair into a new exclusive stamp. Do not claim PERF-GATE unless that pair.json ratio is already ≤ 3. Do not pre-select SIMD, PGO, or `unsafe` indexing.
+Execute 24-03 leftover admit-or-skip from samply stamp `2026-09-21T15-52-27Z`. Do not claim PERF-GATE unless that pair.json ratio is already ≤ 3. Do not pre-select SIMD, PGO, or `unsafe` indexing.
 
 ### Blockers/Concerns
 
-- Wave 1 landed `particle_rows` shape; leftover named frames need samply retarget after 24-02. Do not pre-select SIMD, PGO, or `unsafe` indexing.
+- Wave 1 admitted at unprofiled `21.00845179052245×` (`2026-09-21T15-50-46Z`); leftover D-07/D-09 ranking uses sibling samply `2026-09-21T15-52-27Z`. Do not pre-select SIMD, PGO, or `unsafe` indexing.
 - samply setup / signing on this Mac is host-specific; Phase 22 must fail closed with install text.
-- Exploratory Dam Break Medium pair remains ~300× (`docs/playground-dam-break-timing.md`); that gap is the canary, not a public claim.
+- Unprofiled Dam Break Medium pair is still above 3× (`docs/playground-dam-break-timing.md`); that gap is the canary, not a public claim.
 
 ### Quick Tasks Completed
 
@@ -157,6 +161,6 @@ Execute 24-02 unprofiled Dam Break re-pair into a new exclusive stamp. Do not cl
 
 ## Session Continuity
 
-Last session: 2026-09-21T15:47:01.866Z
-Stopped at: Completed 24-01-PLAN.md
+Last session: 2026-09-21T15:55:35.570Z
+Stopped at: Completed 24-02-PLAN.md
 Resume file: None

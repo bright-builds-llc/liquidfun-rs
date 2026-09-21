@@ -17,7 +17,7 @@ Requirements for this milestone. Each maps to roadmap phases. "Developer" means 
 
 ### Optimization
 
-- [ ] **PERF-ADMIT**: Developer can land a hot-path change only when evidence names a function or typed bottleneck with non-trivial profile share, the unprofiled Dam Break Medium ratio improves on the same host and recipe, existing native tests and relevant differential/determinism checks still pass, and the scene particle count is not lowered to fake the gate. A physics mismatch is a failed candidate, never a faster sample.
+- [x] **PERF-ADMIT**: Developer can land a hot-path change only when evidence names a function or typed bottleneck with non-trivial profile share, the unprofiled Dam Break Medium ratio improves on the same host and recipe, existing native tests and relevant differential/determinism checks still pass, and the scene particle count is not lowered to fake the gate. A physics mismatch is a failed candidate, never a faster sample.
 - [x] **PERF-SHARED**: Developer can apply admitted fixes in shared `liquidfun` particle/rigid stepping (neighborhood/proxy, contacts, particle–body coupling, pressure/damping/integrate, rigid contact solve) so other particle/rigid scenes benefit. Dam Break-only scene, WASM-copy, or skipped-solver cheats do not satisfy this.
 - [ ] **PERF-GATE**: Developer can demonstrate native Dam Break Medium unprofiled wall time ≤ 3× pinned C++ on the same host under scalar `--release` vs `oracle-release` for the locked 60+600-step pair, recording host, git HEAD, compilers, both wall times, and ratio. `reference/performance/manifest.toml` stays empty.
 - [x] **PERF-BASELINE**: Developer can keep the scalar deterministic compatibility baseline while closing the gap: no default Rayon or SIMD, no `-ffast-math` / `-march=native` on the pair, no lifting `unsafe_code = "forbid"` to chase the canary. SIMD/parallel remain explicit later opt-in.
@@ -75,7 +75,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PERF-TIMERS | Phase 22 | Complete |
 | PERF-AUDIT | Phase 23 | Complete |
 | PERF-HEAP | Phase 23 | Complete |
-| PERF-ADMIT | Phase 24 | Pending |
+| PERF-ADMIT | Phase 24 | Complete |
 | PERF-SHARED | Phase 24 | Complete |
 | PERF-GATE | Phase 24 | Pending |
 | PERF-BASELINE | Phase 24 | Complete |
