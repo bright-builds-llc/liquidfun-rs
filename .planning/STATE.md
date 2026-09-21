@@ -4,7 +4,7 @@ milestone: v1.2
 milestone_name: Native Performance Closing
 status: verifying
 stopped_at: Completed 25-02-PLAN.md
-last_updated: "2026-09-21T22:28:27.153Z"
+last_updated: "2026-09-21T22:35:11.896Z"
 last_activity: 2026-09-21
 progress:
   total_phases: 4
@@ -25,8 +25,8 @@ See: `.planning/PROJECT.md` (updated 2026-09-21)
 
 ## Current Position
 
-Phase: 25 (wasm-sanity-and-honest-close) — EXECUTING
-Plan: 2 of 2
+Phase: 25
+Plan: Not started
 Status: Phase complete — ready for verification
 Last activity: 2026-09-21
 

@@ -26,7 +26,7 @@ v1.2 Native Performance Closing is a developer-facing hunt, not a public benchma
 - [x] **Phase 22: Observability shell** — Persist the Dam Break pair and capture samply profiles (plus optional parent timers) without changing physics.
 - [x] **Phase 23: Baseline pair and named audit** — Name dominating extra work from a SHA-bound unprofiled pair and CPU profile; heap-profile only if samply shows allocator time.
 - [x] **Phase 24: Shared hot-path waves through 3×** — Close Dam Break Medium to ≤ 3× C++ via evidenced shared scalar kernels, with other-scene spot-checks and a second-canary-or-same-cluster note.
-- [ ] **Phase 25: WASM sanity and honest close** — Confirm the six playground scenes still run and document remaining Dam Break delta without public speed claims.
+- [x] **Phase 25: WASM sanity and honest close** — Confirm the six playground scenes still run and document remaining Dam Break delta without public speed claims.
 
 <details>
 <summary>✅ v1.1 Web Playground (Phases 16-21) — SHIPPED 2026-09-20</summary>
@@ -140,6 +140,6 @@ Do not put an Instant profiler in the cdylib, lift the 4-step catch-up cap to fa
 | 22. Observability shell | v1.2 | 6/6 | Complete    | 2026-09-21 |
 | 23. Baseline pair and named audit | v1.2 | 9/9 | Complete    | 2026-09-21 |
 | 24. Shared hot-path waves through 3× | v1.2 | 6/6 | Complete    | 2026-09-21 |
-| 25. WASM sanity and honest close | v1.2 | 2/2 | Complete   | 2026-09-21 |
+| 25. WASM sanity and honest close | v1.2 | 2/2 | Complete    | 2026-09-21 |
 
 v1.0 phases 1–15 remain in the [v1.0 roadmap archive](milestones/v1.0-ROADMAP.md).

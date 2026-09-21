@@ -99,8 +99,6 @@ Each task was committed atomically:
 - **Verification:** python assert and `rg` both pass
 - **Committed in:** `27fb752` (Task 1)
 
----
-
 **Total deviations:** 1 auto-fixed (1 blocking)
 **Impact on plan:** Wording-only; no scope creep. Smoke reported 37 Chromium tests (plan text said 36; prior phase summaries also cite 37) — recorded as observed.
 

@@ -16,7 +16,7 @@ The owner prioritizes a fun hobby project over production-quality certification.
 
 ## Current State
 
-v1.2 Native Performance Closing is the active milestone. Phase 24 Shared hot-path waves through 3× is complete (2026-09-21): evidenced scalar kernels in shared `liquidfun` particle/rigid stepping closed Dam Break Medium to unprofiled `rust_over_cpp_ratio` `2.956857456935513` (gate stamp `target/dam-break-perf/2026-09-21T20-38-50Z/`; kernel-HEAD sample `2.8769953439599707` at `2026-09-21T20-36-30Z`). Five playground scenes were spot-checked headless (`just playground-scene-spot`, same-cluster PERF-CANARY2). `liquidfun` stays bitflags-only; `reviewed_reports` stays empty; this is not a public “Rust is N×” claim. Independent AI review digest `c9185f396610c250b2861480b0c1aa9cbfd16a2eef73c881fccc9d10ac99e31d` (`issues_found`: WR-01 failed-step particle/body restore). Phase 25 (WASM sanity and honest close) is next.
+v1.2 Native Performance Closing is complete (2026-09-21). Phase 25 WASM sanity and honest close recorded the remaining Dam Break delta from gate stamp `target/dam-break-perf/2026-09-21T20-38-50Z` (`rust_over_cpp_ratio` `2.956857456935513`; kernel-HEAD sibling `2.8769953439599707` at `2026-09-21T20-36-30Z`) in committed unreviewed notes, kept `reviewed_reports` empty, and left README and crates.io free of a universal “Rust is N×” claim. `just web-player-smoke` exited 0 with 37 Chromium tests. The optional Dam Break step-time note cites native gate `ms_per_step` `1.053103` because no prior WASM sample exists, and it is not compared to `oracle-release`. Automated verification passed 7/7; code review status is clean. This is not crate publication. Phase 24’s independent AI review digest remains `c9185f396610c250b2861480b0c1aa9cbfd16a2eef73c881fccc9d10ac99e31d`.
 
 The v1.1 Web Playground planning milestone is archived (2026-09-20): 6 phases and 39 plans completed. Visitors can run Dam Break, Fountain, Float or Sink, Color Mixer, Jelly Drop, and Water Wheel at `https://bright-builds-llc.github.io/liquidfun-rs/` with in-app SVG previews, play/pause/reset, honest Reset labels, pointer interaction, and automatic Pages delivery. This is not a crate or npm release. See `.planning/MILESTONES.md` and `.planning/milestones/v1.1-REQUIREMENTS.md`.
 
@@ -57,12 +57,11 @@ Phase numbering continues after 21. Package publication remains separately autho
 
 ### Active
 
-- [ ] Lightweight WASM / playground sanity check after the native gate
-- [ ] Remaining Dam Break delta documented without a public “Rust is N×” claim
-
-Package publication remains separately authorized.
+Package publication remains separately authorized. v1.2 performance requirements are validated.
 
 ### Validated
+
+- [x] Phase 25 completed PERF-NOTES and PERF-WASM: honesty docs lead with gate stamp `2026-09-21T20-38-50Z` / `rust_over_cpp_ratio` `2.956857456935513` and label kernel-HEAD `2026-09-21T20-36-30Z` as a sibling; `just web-player-smoke` passed 37 Chromium tests; optional step-time note cites native `ms_per_step` `1.053103` with no prior WASM sample and never versus `oracle-release`. `reviewed_reports` stays empty. Not a public “Rust is N×” claim or crate publication. Validated in Phase 25: WASM sanity and honest close.
 
 - [x] Phase 24 completed PERF-ADMIT, PERF-SHARED, PERF-GATE, PERF-BASELINE, PERF-SPOT, and PERF-CANARY2: shared scalar `particle_rows` / leftover kernels until unprofiled Dam Break Medium `pair.json` `rust_over_cpp_ratio` `2.956857456935513` (stamp `2026-09-21T20-38-50Z`); five-scene `just playground-scene-spot`; empty `reviewed_reports`; `unsafe_code = "forbid"`. Independent AI review digest `c9185f396610c250b2861480b0c1aa9cbfd16a2eef73c881fccc9d10ac99e31d` (`issues_found`, WR-01). Not crate publication or a Phase 12 public claim.
 
@@ -273,4 +272,4 @@ This document evolves at phase transitions and milestone boundaries.
 
 ______________________________________________________________________
 
-*Last updated: 2026-09-21 after Phase 24 Shared hot-path waves through 3×. Strict native certification remains optional. Package publication and release tags remain separately authorized.*
+*Last updated: 2026-09-21 after Phase 25 WASM sanity and honest close. v1.2 Native Performance Closing is complete. Strict native certification remains optional. Package publication and release tags remain separately authorized.*
