@@ -1,5 +1,6 @@
 //! Native-testable ownership and stepping for one allowlisted scene.
 
+use liquidfun::math::Vec2;
 use liquidfun::{
     NoDecisionHook, ParticleSystemId, ParticleSystemSnapshot, StepConfiguration, StepLimits, World,
 };
@@ -7,7 +8,7 @@ use liquidfun::{
 #[cfg(not(target_arch = "wasm32"))]
 use liquidfun::DiagnosticStepProfile;
 
-use crate::frame::FrameData;
+use crate::frame::{FrameData, FrameDiagnostics};
 use crate::scene::{
     BuiltScene, ControlEffect, SceneHooks, SceneId, build_scene, parse_pointer_kind,
 };
@@ -62,6 +63,26 @@ pub(crate) struct SessionCore {
     step_configuration: StepConfiguration,
     step_limits: StepLimits,
     step_index: u32,
+}
+
+fn max_particle_speed(velocities: &[Vec2]) -> Result<f32, SessionError> {
+    let mut max_squared = 0.0_f32;
+    for velocity in velocities {
+        if !velocity.is_valid() {
+            return Err(SessionError::FrameCaptureFailed);
+        }
+        let squared = velocity.length_squared();
+        if squared > max_squared {
+            max_squared = squared;
+        }
+    }
+
+    let speed = max_squared.sqrt();
+    if !speed.is_finite() {
+        return Err(SessionError::FrameCaptureFailed);
+    }
+
+    Ok(speed)
 }
 
 impl SessionCore {
@@ -184,7 +205,7 @@ impl SessionCore {
     }
 
     pub(crate) fn capture_frame(&self) -> Result<FrameData, SessionError> {
-        let (particle_positions, particle_colors, particle_radii) = {
+        let (particle_positions, particle_colors, particle_radii, max_speed) = {
             let view = self
                 .world
                 .particle_system_view(self.particle_system)
@@ -218,8 +239,27 @@ impl SessionCore {
             for color in colors {
                 particle_colors.extend_from_slice(&color.components());
             }
+            let velocities = view.velocities();
+            if velocities.len() != particle_ids.len() {
+                return Err(SessionError::FrameCaptureFailed);
+            }
+            let max_speed = max_particle_speed(velocities)?;
             let particle_radii = vec![self.particle_radius; particle_ids.len()];
-            (particle_positions, particle_colors, particle_radii)
+            (
+                particle_positions,
+                particle_colors,
+                particle_radii,
+                max_speed,
+            )
+        };
+        let statistics = self
+            .world
+            .particle_system_statistics(self.particle_system)
+            .map_err(|_error| SessionError::FrameCaptureFailed)?;
+        let diagnostics = FrameDiagnostics {
+            max_speed,
+            stuck_candidate_count: statistics.stuck_candidates().len(),
+            body_contact_count: statistics.body_contact_count(),
         };
 
         let segments = self.hooks.collect_segments(&self.world)?;
@@ -256,6 +296,7 @@ impl SessionCore {
             particle_radii,
             rigid_segments,
             rigid_circles,
+            diagnostics,
         )
         .map_err(|_error| SessionError::FrameCaptureFailed)
     }
@@ -373,8 +414,26 @@ mod tests {
         assert_eq!(frame.particle_count(), 1920);
         assert_eq!(
             frame.particle_colors(),
-            [57, 211, 199, 255].repeat(1920).into_boxed_slice()
+            [77, 163, 255, 255].repeat(1920).into_boxed_slice()
         );
+        assert_eq!(frame.max_speed().to_bits(), 0.0_f32.to_bits());
+        assert_eq!(frame.stuck_candidate_count(), 0);
+    }
+
+    #[test]
+    fn capture_reports_a_finite_speed_after_one_step() {
+        // Arrange
+        let mut session =
+            SessionCore::create(SceneId::DamBreak).expect("allowlisted Dam Break should construct");
+
+        // Act
+        session.advance(1).expect("one step should succeed");
+        let frame = capture(&session);
+
+        // Assert
+        assert!(frame.max_speed() > 0.0);
+        assert!(frame.max_speed().is_finite());
+        assert!(frame.stuck_candidate_count() <= frame.particle_count());
     }
 
     #[test]
@@ -490,7 +549,7 @@ mod tests {
         );
         assert_eq!(
             frame.particle_colors(),
-            [57, 211, 199, 255].repeat(1920).into_boxed_slice()
+            [77, 163, 255, 255].repeat(1920).into_boxed_slice()
         );
     }
 

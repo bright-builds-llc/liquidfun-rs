@@ -1,10 +1,12 @@
 import { Show, type JSX } from "solid-js";
 
 import type { PlayerStatus } from "../player/view";
+import type { RenderFrame } from "../physics/frame";
 import {
   maybeParseRenderMode,
   type RenderMode,
 } from "../render/mode";
+import { DebugReadout } from "./DebugReadout";
 
 export type PlayerPanelProps = {
   readonly sceneTitle: string;
@@ -18,6 +20,10 @@ export type PlayerPanelProps = {
   readonly onRetry: () => void;
   readonly renderMode: RenderMode;
   readonly onRenderModeChange: (mode: RenderMode) => void;
+  readonly debugEnabled: boolean;
+  readonly onDebugEnabledChange: (enabled: boolean) => void;
+  readonly maybeDebugFrame: RenderFrame | undefined;
+  readonly stepsThisFrame: number;
   readonly children?: JSX.Element;
 };
 
@@ -106,6 +112,11 @@ export function PlayerPanel(props: PlayerPanelProps) {
               <span>{LOADING_OVERLAY_BODY}</span>
             </div>
           </Show>
+          <DebugReadout
+            enabled={props.debugEnabled}
+            maybeFrame={props.maybeDebugFrame}
+            stepsThisFrame={props.stepsThisFrame}
+          />
         </div>
         <figcaption id="scene-interaction-hint">{props.interactionHint}</figcaption>
       </figure>
@@ -160,6 +171,16 @@ export function PlayerPanel(props: PlayerPanelProps) {
             <option value="wireframe">Wireframe</option>
             <option value="solid">Solid</option>
           </select>
+        </label>
+        <label class="debug-toggle">
+          <input
+            type="checkbox"
+            checked={props.debugEnabled}
+            onChange={(event) => {
+              props.onDebugEnabledChange(event.currentTarget.checked);
+            }}
+          />
+          Debug info
         </label>
       </div>
 

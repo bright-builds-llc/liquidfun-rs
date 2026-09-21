@@ -26,6 +26,18 @@ class FakeRawProofFrame implements RawProofFrame {
     return 2;
   }
 
+  maxSpeed(): number {
+    return 0;
+  }
+
+  stuckCandidateCount(): number {
+    return 0;
+  }
+
+  bodyContactCount(): number {
+    return 0;
+  }
+
   particlePositions(): Float32Array {
     return this.positions;
   }

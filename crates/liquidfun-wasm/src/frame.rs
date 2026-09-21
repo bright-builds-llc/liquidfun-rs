@@ -19,7 +19,27 @@ pub(crate) enum FrameError {
     LaneLengthMismatch,
     NonFiniteValue,
     NonPositiveRadius,
+    InvalidDiagnostic,
     ArithmeticOverflow,
+}
+
+/// Scalar simulation readouts copied with one frame.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub(crate) struct FrameDiagnostics {
+    pub(crate) max_speed: f32,
+    pub(crate) stuck_candidate_count: usize,
+    pub(crate) body_contact_count: usize,
+}
+
+impl FrameDiagnostics {
+    #[cfg_attr(not(test), allow(dead_code))]
+    pub(crate) const fn at_rest() -> Self {
+        Self {
+            max_speed: 0.0,
+            stuck_candidate_count: 0,
+            body_contact_count: 0,
+        }
+    }
 }
 
 pub(crate) struct FrameData {
@@ -29,6 +49,7 @@ pub(crate) struct FrameData {
     particle_radii: Vec<f32>,
     rigid_segments: Vec<f32>,
     rigid_circles: Vec<f32>,
+    diagnostics: FrameDiagnostics,
 }
 
 impl FrameData {
@@ -40,6 +61,7 @@ impl FrameData {
         particle_radii: Vec<f32>,
         rigid_segments: Vec<f32>,
         rigid_circles: Vec<f32>,
+        diagnostics: FrameDiagnostics,
     ) -> Result<Self, FrameError> {
         let particle_count =
             checked_lane_count(particle_positions.len(), PARTICLE_POSITION_STRIDE)?;
@@ -64,6 +86,9 @@ impl FrameData {
         require_finite(&rigid_segments)?;
         require_finite(&rigid_circles)?;
         require_positive_circle_radii(&rigid_circles)?;
+        if !diagnostics.max_speed.is_finite() || diagnostics.max_speed < 0.0 {
+            return Err(FrameError::InvalidDiagnostic);
+        }
 
         Ok(Self {
             step_index,
@@ -72,7 +97,20 @@ impl FrameData {
             particle_radii,
             rigid_segments,
             rigid_circles,
+            diagnostics,
         })
+    }
+
+    pub(crate) const fn max_speed(&self) -> f32 {
+        self.diagnostics.max_speed
+    }
+
+    pub(crate) const fn stuck_candidate_count(&self) -> usize {
+        self.diagnostics.stuck_candidate_count
+    }
+
+    pub(crate) const fn body_contact_count(&self) -> usize {
+        self.diagnostics.body_contact_count
     }
 }
 
@@ -195,6 +233,27 @@ impl ProofFrame {
     pub fn rigid_circles(&self) -> Box<[f32]> {
         self.data.rigid_circles.clone().into_boxed_slice()
     }
+
+    /// Returns the fastest particle speed in meters per second.
+    #[must_use]
+    #[wasm_bindgen(js_name = maxSpeed)]
+    pub fn max_speed(&self) -> f32 {
+        self.data.max_speed()
+    }
+
+    /// Returns the number of particles currently marked as stuck candidates.
+    #[must_use]
+    #[wasm_bindgen(js_name = stuckCandidateCount)]
+    pub fn stuck_candidate_count(&self) -> usize {
+        self.data.stuck_candidate_count()
+    }
+
+    /// Returns the number of particle–body contacts.
+    #[must_use]
+    #[wasm_bindgen(js_name = bodyContactCount)]
+    pub fn body_contact_count(&self) -> usize {
+        self.data.body_contact_count()
+    }
 }
 
 #[cfg(test)]
@@ -211,6 +270,7 @@ mod tests {
             vec![0.2; PARTICLE_COUNT * PARTICLE_RADIUS_STRIDE],
             vec![0.0; 3 * RIGID_SEGMENT_STRIDE],
             vec![0.0, 1.0, 0.75],
+            FrameDiagnostics::at_rest(),
         )
     }
 
@@ -237,6 +297,9 @@ mod tests {
         assert_eq!(frame.particle_radii().len(), PARTICLE_COUNT);
         assert_eq!(frame.rigid_segments().len(), 3 * RIGID_SEGMENT_STRIDE);
         assert_eq!(frame.rigid_circles().len(), RIGID_CIRCLE_STRIDE);
+        assert_eq!(frame.max_speed().to_bits(), 0.0_f32.to_bits());
+        assert_eq!(frame.stuck_candidate_count(), 0);
+        assert_eq!(frame.body_contact_count(), 0);
     }
 
     #[test]
@@ -252,6 +315,7 @@ mod tests {
             vec![0.2; MAX_PARTICLE_COUNT + 1],
             Vec::new(),
             Vec::new(),
+            FrameDiagnostics::at_rest(),
         );
 
         // Assert
@@ -264,7 +328,15 @@ mod tests {
         let segments = vec![0.0; (MAX_RIGID_SEGMENTS + 1) * RIGID_SEGMENT_STRIDE];
 
         // Act
-        let result = FrameData::new(0, Vec::new(), Vec::new(), Vec::new(), segments, Vec::new());
+        let result = FrameData::new(
+            0,
+            Vec::new(),
+            Vec::new(),
+            Vec::new(),
+            segments,
+            Vec::new(),
+            FrameDiagnostics::at_rest(),
+        );
 
         // Assert
         assert!(matches!(result, Err(FrameError::RigidSegmentCountExceeded)));
@@ -276,7 +348,15 @@ mod tests {
         let circles = vec![1.0; (MAX_RIGID_CIRCLES + 1) * RIGID_CIRCLE_STRIDE];
 
         // Act
-        let result = FrameData::new(0, Vec::new(), Vec::new(), Vec::new(), Vec::new(), circles);
+        let result = FrameData::new(
+            0,
+            Vec::new(),
+            Vec::new(),
+            Vec::new(),
+            Vec::new(),
+            circles,
+            FrameDiagnostics::at_rest(),
+        );
 
         // Assert
         assert!(matches!(result, Err(FrameError::RigidCircleCountExceeded)));
@@ -295,6 +375,7 @@ mod tests {
             vec![0.2],
             Vec::new(),
             Vec::new(),
+            FrameDiagnostics::at_rest(),
         );
 
         // Assert
@@ -314,6 +395,7 @@ mod tests {
             vec![0.2],
             Vec::new(),
             Vec::new(),
+            FrameDiagnostics::at_rest(),
         );
 
         // Assert
@@ -333,6 +415,7 @@ mod tests {
             vec![radius],
             Vec::new(),
             Vec::new(),
+            FrameDiagnostics::at_rest(),
         );
 
         // Assert
@@ -345,9 +428,41 @@ mod tests {
         let circles = vec![0.0, 0.0, -0.5];
 
         // Act
-        let result = FrameData::new(0, Vec::new(), Vec::new(), Vec::new(), Vec::new(), circles);
+        let result = FrameData::new(
+            0,
+            Vec::new(),
+            Vec::new(),
+            Vec::new(),
+            Vec::new(),
+            circles,
+            FrameDiagnostics::at_rest(),
+        );
 
         // Assert
         assert!(matches!(result, Err(FrameError::NonPositiveRadius)));
+    }
+
+    #[test]
+    fn rejects_a_negative_max_speed() {
+        // Arrange
+        let diagnostics = FrameDiagnostics {
+            max_speed: -1.0,
+            stuck_candidate_count: 0,
+            body_contact_count: 0,
+        };
+
+        // Act
+        let result = FrameData::new(
+            0,
+            Vec::new(),
+            Vec::new(),
+            Vec::new(),
+            Vec::new(),
+            Vec::new(),
+            diagnostics,
+        );
+
+        // Assert
+        assert!(matches!(result, Err(FrameError::InvalidDiagnostic)));
     }
 }

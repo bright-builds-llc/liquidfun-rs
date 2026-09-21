@@ -9,6 +9,9 @@ type FrameValues = {
   stepIndex: number;
   particleCount: number;
   rigidShapeCount: number;
+  maxSpeed: number;
+  stuckCandidateCount: number;
+  bodyContactCount: number;
   particlePositions: Float32Array;
   particleColors: Uint8Array;
   particleRadii: Float32Array;
@@ -21,6 +24,9 @@ function validFrameValues(): FrameValues {
     stepIndex: 7,
     particleCount: 1,
     rigidShapeCount: 2,
+    maxSpeed: 1.25,
+    stuckCandidateCount: 0,
+    bodyContactCount: 3,
     particlePositions: new Float32Array([1, 2]),
     particleColors: new Uint8Array([32, 96, 192, 255]),
     particleRadii: new Float32Array([0.25]),
@@ -54,6 +60,18 @@ class FakeRawProofFrame implements RawProofFrame {
 
   rigidShapeCount(): number {
     return this.values.rigidShapeCount;
+  }
+
+  maxSpeed(): number {
+    return this.values.maxSpeed;
+  }
+
+  stuckCandidateCount(): number {
+    return this.values.stuckCandidateCount;
+  }
+
+  bodyContactCount(): number {
+    return this.values.bodyContactCount;
   }
 
   particlePositions(): Float32Array {
@@ -106,6 +124,9 @@ describe("parseRenderFrame", () => {
     expect(frame.stepIndex).toBe(7);
     expect(frame.particleCount).toBe(1);
     expect(frame.rigidShapeCount).toBe(2);
+    expect(frame.maxSpeed).toBe(1.25);
+    expect(frame.stuckCandidateCount).toBe(0);
+    expect(frame.bodyContactCount).toBe(3);
     expect(rawFrame.getterCalls).toEqual({
       particlePositions: 1,
       particleColors: 1,
@@ -399,6 +420,28 @@ describe("parseRenderFrame", () => {
   it("rejects an inconsistent rigid shape count", () => {
     // Arrange
     const rawFrame = new FakeRawProofFrame({ rigidShapeCount: 1 });
+
+    // Act
+    const parse = () => parseRenderFrame(rawFrame);
+
+    // Assert
+    expect(parse).toThrow();
+  });
+
+  it("rejects a negative max speed", () => {
+    // Arrange
+    const rawFrame = new FakeRawProofFrame({ maxSpeed: -0.1 });
+
+    // Act
+    const parse = () => parseRenderFrame(rawFrame);
+
+    // Assert
+    expect(parse).toThrow();
+  });
+
+  it("rejects a fractional stuck-candidate count", () => {
+    // Arrange
+    const rawFrame = new FakeRawProofFrame({ stuckCandidateCount: 1.5 });
 
     // Act
     const parse = () => parseRenderFrame(rawFrame);

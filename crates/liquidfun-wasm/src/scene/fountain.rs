@@ -16,7 +16,7 @@ use crate::session::SessionError;
 const PARTICLE_RADIUS: f32 = 0.05692;
 const MAXIMUM_PARTICLE_COUNT: usize = 3200;
 const PARTICLE_LIFETIME: f32 = 3.0;
-const PARTICLE_COLOR: ParticleColor = ParticleColor::new(57, 211, 199, 255);
+const PARTICLE_COLOR: ParticleColor = ParticleColor::new(77, 163, 255, 255);
 const NOZZLE_POSITION: Vec2 = Vec2::new(0.0, 0.5);
 const EMIT_SPACING: f32 = 0.025_298;
 const SLOW_LAUNCH_SPEED: f32 = 4.0;

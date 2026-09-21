@@ -2,7 +2,7 @@
 //!
 //! Dam Break Medium water / Normal gravity remains the documented default:
 //! gravity `(0, -10)`, 48×40 = 1920 particles, radius `0.06324555`, spacing `0.101193`,
-//! origin `(-4.7, 0.4)`, color `(57, 211, 199, 255)`, basin floor `y=0` from
+//! origin `(-4.7, 0.4)`, color `(77, 163, 255, 255)`, basin floor `y=0` from
 //! `x=-5.5..5.5` with walls to `y=8`, dynamic circle `(2.5, 5.5)` radius
 //! `0.75`, particle cap 10240, timestep `1/60`.
 

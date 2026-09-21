@@ -16,10 +16,10 @@ use crate::session::SessionError;
 
 const PARTICLE_RADIUS: f32 = 0.05692;
 const MAXIMUM_PARTICLE_COUNT: usize = 2200;
-const TEAL_COLOR: ParticleColor = ParticleColor::new(57, 211, 199, 255);
+const BLUE_COLOR: ParticleColor = ParticleColor::new(77, 163, 255, 255);
 const RED_COLOR: ParticleColor = ParticleColor::new(248, 113, 113, 255);
 const GROUP_RADIUS: f32 = 1.15;
-const TEAL_CENTER: Vec2 = Vec2::new(-1.0, 2.2);
+const BLUE_CENTER: Vec2 = Vec2::new(-1.0, 2.2);
 const RED_CENTER: Vec2 = Vec2::new(1.0, 2.2);
 const MIXING_FLAGS: ParticleFlags = ParticleFlags::from_bits_truncate(
     ParticleFlags::WATER.bits() | ParticleFlags::COLOR_MIXING.bits(),
@@ -189,7 +189,7 @@ fn create_mixing_groups(
         .create_particle_system_with_def(&system_definition)
         .map_err(|_error| SceneError::ParticleSystem)?;
 
-    create_colored_group(world, system, TEAL_CENTER, TEAL_COLOR)?;
+    create_colored_group(world, system, BLUE_CENTER, BLUE_COLOR)?;
     create_colored_group(world, system, RED_CENTER, RED_COLOR)?;
     Ok(system)
 }

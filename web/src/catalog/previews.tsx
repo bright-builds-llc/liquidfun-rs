@@ -2,7 +2,7 @@ import type { JSX } from "solid-js";
 
 import type { SceneId } from "./scenes";
 
-const WATER = "#39D3C7";
+const WATER = "#4DA3FF";
 const MIX_RED = "#F87171";
 const RIGID = "#CBD5E1";
 const JELLY = "#F4F7FA";

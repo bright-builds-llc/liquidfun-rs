@@ -55,6 +55,11 @@ export function App() {
   const [renderMode, setRenderMode] = createSignal<RenderMode>(
     loadRenderMode(() => window.localStorage),
   );
+  const [debugEnabled, setDebugEnabled] = createSignal(true);
+  const [maybeDebugFrame, setMaybeDebugFrame] = createSignal<
+    RenderFrame | undefined
+  >();
+  const [stepsThisFrame, setStepsThisFrame] = createSignal(0);
   const [lastPointerKind, setLastPointerKind] =
     createSignal<PointerKind | undefined>();
   const [pointerAccepted, setPointerAccepted] = createSignal(0);
@@ -120,6 +125,8 @@ export function App() {
     maybeContext = undefined;
     maybeCamera = undefined;
     maybePreviousFrame = undefined;
+    setMaybeDebugFrame(undefined);
+    setStepsThisFrame(0);
     constructionValues = {};
     setView({ kind: "fallback" });
   }
@@ -203,6 +210,8 @@ export function App() {
           maybeObservedFrame(view())?.movedFrameCount ?? 0,
         );
         maybePreviousFrame = frame;
+        setMaybeDebugFrame(frame);
+        setStepsThisFrame(stepTime.stepCount);
         setView({ kind: "playing", frame: observation });
         scheduleFrame(context);
       } catch (error) {
@@ -230,6 +239,8 @@ export function App() {
       resetObservation ? 0 : maybeObservedFrame(view())?.movedFrameCount ?? 0,
     );
     maybePreviousFrame = frame;
+    setMaybeDebugFrame(frame);
+    setStepsThisFrame(1);
 
     if (prefersReducedMotion()) {
       setView({ kind: "paused", frame: observation });
@@ -281,6 +292,8 @@ export function App() {
     cancelPendingFrame();
     disposeOwnedSession();
     maybePreviousFrame = undefined;
+    setMaybeDebugFrame(undefined);
+    setStepsThisFrame(0);
     maybeLastTimestamp = undefined;
     setView({ kind: "loading" });
 
@@ -374,6 +387,7 @@ export function App() {
     maybeCanvasPointer?.cancel();
     cancelPendingFrame();
     maybeLastTimestamp = undefined;
+    setStepsThisFrame(0);
     setView({ kind: "paused", frame: current.frame });
   }
 
@@ -421,6 +435,8 @@ export function App() {
       }
 
       maybePreviousFrame = undefined;
+      setMaybeDebugFrame(undefined);
+      setStepsThisFrame(0);
       maybeLastTimestamp = undefined;
       presentOwnedFrame(maybeOwnedSession, context, true);
     } catch (error) {
@@ -579,6 +595,10 @@ export function App() {
               onRetry={recreateScene}
               renderMode={renderMode()}
               onRenderModeChange={changeRenderMode}
+              debugEnabled={debugEnabled()}
+              onDebugEnabledChange={setDebugEnabled}
+              maybeDebugFrame={maybeDebugFrame()}
+              stepsThisFrame={stepsThisFrame()}
             >
               <Show when={maybeCurrentScene()}>
                 {(currentScene) => (

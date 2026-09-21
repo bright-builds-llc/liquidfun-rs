@@ -4,7 +4,7 @@ use crate::ProofFrame;
 use crate::scene::SceneId;
 use crate::session::SessionCore;
 
-const TEAL: [u8; 4] = [57, 211, 199, 255];
+const BLUE: [u8; 4] = [77, 163, 255, 255];
 const RED: [u8; 4] = [248, 113, 113, 255];
 
 #[test]
@@ -18,8 +18,8 @@ fn create_succeeds_with_two_distinct_mixing_colors() {
     // Assert
     assert!((400..=2200).contains(&session.particle_count()));
     assert!(
-        colors_contain(colors.as_ref(), TEAL),
-        "captured colors should include teal (57, 211, 199, 255)"
+        colors_contain(colors.as_ref(), BLUE),
+        "captured colors should include blue (77, 163, 255, 255)"
     );
     assert!(
         colors_contain(colors.as_ref(), RED),
@@ -148,7 +148,7 @@ fn pointer_down_stirs_nearby_particles_without_rewriting_colors() {
         "pointer stir should change at least one particle position versus a no-pointer world"
     );
     assert!(
-        colors_contain(stirred_frame.particle_colors().as_ref(), TEAL),
+        colors_contain(stirred_frame.particle_colors().as_ref(), BLUE),
         "colors must still come from engine lanes"
     );
     assert!(

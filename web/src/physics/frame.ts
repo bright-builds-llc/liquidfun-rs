@@ -13,6 +13,9 @@ export interface RawProofFrame {
   stepIndex(): number;
   particleCount(): number;
   rigidShapeCount(): number;
+  maxSpeed(): number;
+  stuckCandidateCount(): number;
+  bodyContactCount(): number;
   particlePositions(): Float32Array;
   particleColors(): Uint8Array;
   particleRadii(): Float32Array;
@@ -26,6 +29,9 @@ export interface RenderFrame {
   readonly stepIndex: number;
   readonly particleCount: number;
   readonly rigidShapeCount: number;
+  readonly maxSpeed: number;
+  readonly stuckCandidateCount: number;
+  readonly bodyContactCount: number;
   readonly particlePositions: Float32Array;
   readonly particleColors: Uint8Array;
   readonly particleRadii: Float32Array;
@@ -39,6 +45,14 @@ function invalidFrame(): never {
 
 function parseNonNegativeInteger(value: number): number {
   if (!Number.isSafeInteger(value) || value < 0) {
+    return invalidFrame();
+  }
+
+  return value;
+}
+
+function parseNonNegativeFinite(value: number): number {
+  if (!Number.isFinite(value) || value < 0) {
     return invalidFrame();
   }
 
@@ -128,6 +142,13 @@ export function parseRenderFrame(rawFrame: RawProofFrame): RenderFrame {
     rawFrame.rigidShapeCount(),
     MAX_RIGID_SEGMENT_COUNT + MAX_RIGID_CIRCLE_COUNT,
   );
+  const maxSpeed = parseNonNegativeFinite(rawFrame.maxSpeed());
+  const stuckCandidateCount = parseNonNegativeInteger(
+    rawFrame.stuckCandidateCount(),
+  );
+  const bodyContactCount = parseNonNegativeInteger(
+    rawFrame.bodyContactCount(),
+  );
 
   const particlePositions = rawFrame.particlePositions();
   const particleColors = rawFrame.particleColors();
@@ -177,6 +198,9 @@ export function parseRenderFrame(rawFrame: RawProofFrame): RenderFrame {
     stepIndex,
     particleCount,
     rigidShapeCount,
+    maxSpeed,
+    stuckCandidateCount,
+    bodyContactCount,
     particlePositions,
     particleColors,
     particleRadii,
