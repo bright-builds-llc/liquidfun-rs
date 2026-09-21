@@ -53,7 +53,7 @@ v1.1 phase directories remain in `.planning/phases/` for stable historical refer
   2. Developer can run a thin `just` / xtask profile recipe that rebuilds a `[profile.profiling]` Dam Break binary (`inherits = "release"`, `debug = true`), captures samply 0.13.1 of the timed Rust loop, and writes `rust.json.gz` plus host/HEAD/compiler/command identity into a new stamp; profiled wall times are never treated as the 3× number.
   3. Missing samply fails closed with install/error text rather than silently skipping; `cargo xtask package verify` still passes; default `--release` is unchanged and `liquidfun` gains no profiler, samply, dhat, CMake, or serde dependency.
   4. Developer can emit coarse parent-phase timers (`particle_prepare` / `particle_solve` / `rigid_solve` or equivalent existing `step_profiled` parents) on a separate Dam Break diagnostic path, and those timers are absent from the unprofiled gate process.
-**Plans:** 5/6 plans executed
+**Plans:** 6/6 plans complete
 
 Plans:
 - [x] 22-01-PLAN.md — Split playground xtask module and mint exclusive evidence stamps
@@ -61,7 +61,7 @@ Plans:
 - [x] 22-03-PLAN.md — Add [profile.profiling] and fail-closed samply argv core
 - [x] 22-04-PLAN.md — Wire dam-break-profile just/xtask capture with fake samply
 - [x] 22-05-PLAN.md — Separate dam-break-timers path with step_profiled parents
-- [ ] 22-06-PLAN.md — Prove package isolation and gitignored evidence honesty
+- [x] 22-06-PLAN.md — Prove package isolation and gitignored evidence honesty
 
 No physics kernel edits in this phase. Tooling can be proven with fake cmake/samply. Do not hide CMake or samply flags in `just`. Optional C++ `-g` is a profile-command cache flag only — never a pair-command or new CMake preset.
 
@@ -114,7 +114,7 @@ Do not put an Instant profiler in the cdylib, lift the 4-step catch-up cap to fa
 | 19. Interaction Polish and Browser Verification | v1.1 | 7/7 | Complete | 2026-09-19 |
 | 20. Playground catalog previews and Reset honesty | v1.1 | 6/6 | Complete | 2026-09-20 |
 | 21. Playground leftover cleanup | v1.1 | 4/4 | Complete | 2026-09-20 |
-| 22. Observability shell | v1.2 | 5/6 | In Progress|  |
+| 22. Observability shell | v1.2 | 6/6 | Complete   | 2026-09-21 |
 | 23. Baseline pair and named audit | v1.2 | 0/TBD | Not started | - |
 | 24. Shared hot-path waves through 3× | v1.2 | 0/TBD | Not started | - |
 | 25. WASM sanity and honest close | v1.2 | 0/TBD | Not started | - |

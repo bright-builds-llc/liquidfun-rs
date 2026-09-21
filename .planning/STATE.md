@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Native Performance Closing
-status: executing
-stopped_at: Completed 22-05-PLAN.md
-last_updated: "2026-09-21T00:43:30.307Z"
+status: verifying
+stopped_at: Completed 22-06-PLAN.md
+last_updated: "2026-09-21T00:55:16.559Z"
 last_activity: 2026-09-21
 progress:
   total_phases: 4
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 6
-  completed_plans: 5
-  percent: 83
+  completed_plans: 6
+  percent: 100
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: `.planning/PROJECT.md` (updated 2026-09-20)
 
 ## Current Position
 
-Phase: 22 (Observability shell) — EXECUTING
+Phase: 22 (Observability shell) — VERIFYING
 Plan: 6 of 6
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-21
 
-Progress: [████████░░] 83%
+Progress: [██████████] 100%
 
 v1.2 Native Performance Closing. Gate is unprofiled `just playground-dam-break-bench` (Rust `--release` vs `oracle-release` Dam Break Medium ≤ 3×). Evidence dir `target/dam-break-perf/<utc-stamp>/`. v1.1 phase directories remain on disk. No package publication or release tag.
 
@@ -43,6 +43,7 @@ v1.2 Native Performance Closing. Gate is unprofiled `just playground-dam-break-b
 | Phase 22 P03 | 8 min | 2 tasks | 3 files |
 | Phase 22 P04 | 9 min | 2 tasks | 6 files |
 | Phase 22 P05 | 13 min | 2 tasks | 11 files |
+| Phase 22 P06 | 8 min | 2 tasks | 10 files |
 
 v1.1 plan durations remain in `.planning/milestones/v1.1-STATE.md`.
 
@@ -80,10 +81,13 @@ v1.1 playground decisions remain in `.planning/milestones/v1.1-STATE.md` and PRO
 - [Phase 22]: just playground-dam-break-timers is a one-line cargo xtask alias with no cmake or samply flags. — D-06/D-07: just remains a one-line printer; xtask owns cargo and stamp persist.
 - [Phase 22]: A fake timers run writes timers.json into a new stamp with not_timing_authority true and no pair.json. — D-04/D-10: timer walls are diagnostic only and must never become the 3x number.
 - [Phase 22]: MAX_ADVANCE_STEPS remains 4; measured steps loop advance_profiled(1). — Pitfall 6: do not pass 600 as a single advance count.
+- [Phase 22]: BENCHMARKING.md names gitignored target/dam-break-perf stamps and denies profiled/timer sibling stamps as the 3x number; it does not paste wall-ms. — D-14: one-sentence stamp note is allowed; public Dam Break numbers and the empty manifest stay unmodified.
+- [Phase 22]: liquidfun production deps stay bitflags-only; cargo tree --edges normal is liquidfun -> bitflags only. — D-12 isolation: package verify plus cargo tree; do not add profiler, samply, dhat, CMake, or serde to liquidfun.
+- [Phase 22]: Independent AI review remains a later policy step; this plan records automated evidence and does not self-approve the phase. — Owner policy 2026-09-16: the implementing agent must not approve its own work. T-22-06-05 accept.
 
 ### Pending Todos
 
-Execute 22-06 (`/gsd-execute-phase 22`). Phase 24 planning should wait for Phase 23 named shares.
+Verify Phase 22 (`/gsd-verify-work 22`); independent AI review. Phase 24 planning should wait for Phase 23 named shares.
 
 ### Blockers/Concerns
 
@@ -108,6 +112,6 @@ Execute 22-06 (`/gsd-execute-phase 22`). Phase 24 planning should wait for Phase
 
 ## Session Continuity
 
-Last session: 2026-09-21T00:43:03.399Z
-Stopped at: Completed 22-05-PLAN.md
+Last session: 2026-09-21T00:55:06.459Z
+Stopped at: Completed 22-06-PLAN.md
 Resume file: None
