@@ -14,13 +14,16 @@ just playground-dam-break-bench
 just playground-dam-break-profile
 just playground-dam-break-audit-bundle
 samply load target/dam-break-perf/2026-09-21T04-34-32Z/rust.json.gz
+samply load target/dam-break-perf/2026-09-21T15-52-27Z/rust.json.gz
 ```
 
 The pair recipe is unprofiled native `--release` versus scalar `oracle-release`.
 The profile recipe rebuilds `[profile.profiling]` and is
 `not_timing_authority`. The bundle command copies the same-HEAD pair report and
 `rust.json.gz` (plus `rust.json.syms.json`) into a new exclusive stamp; it does
-not retime the engines.
+not retime the engines. The first `samply load` is the Phase 23 ranking dump.
+The second is the Wave 1 leftover-retarget sibling; its duration is not the
+3× number.
 
 ## Evidence identity
 
@@ -59,10 +62,43 @@ are `not_timing_authority` and are not the 3× gate.
 | pinned C++  | 1920      | 216.777375   | 0.361296   | `AppleClang 21.0.0.21000334`          |
 
 `rust_over_cpp_ratio`: `327.53395024734476` (unreviewed sample figure bound to
-the HEAD and stamp above).
+the HEAD and stamp above). That Phase 23 pair remains the ranking identity for
+the named-function table below. The current 3× number is the Wave 1 admission
+`pair.json` in the next section.
 
 Rust used `--release`. C++ used the scalar `oracle-release` wrapper (no
 `-ffast-math`, no `-march=native`).
+
+## Wave 1 admission
+
+`particle_rows` is the landed concern (plan 24-01: neighborhood `Proxy` carries
+dense `ParticleIndex`; private `pair_rows` aligned with public
+`ParticleNeighborPair` IDs). Admission uses a **new exclusive** unprofiled pair
+on the locked 1920-particle, 60 warmup + 600 measured-step recipe. Do **not**
+quote samply or `[profile.profiling]` duration as this number.
+
+- Pair stamp: `target/dam-break-perf/2026-09-21T15-50-46Z/` (`pair.json`,
+  `kind: unprofiled_pair`, `timing_authority: unprofiled_wall_clock`)
+- Pair `git_head`: `27dc3191da7cc4e8a79571c608673e5a563d3c3c`
+- OS/arch: `macos` / `aarch64`
+- CPU: `Apple M4 Max`
+- logical cores: `16`
+- Sibling samply stamp (leftover-wave retarget input only):
+  `target/dam-break-perf/2026-09-21T15-52-27Z/` (`profile-identity.json`
+  `kind: samply_cpu`, `not_timing_authority: true`; no `pair.json` in that
+  stamp)
+- Profile `git_head`: `d55a36308fdb79fdfffa7157295be0bbf585f95d`
+
+| Engine      | Particles | Wall ms     | ms/step  | Compiler                              |
+| ----------- | --------- | ----------- | -------- | ------------------------------------- |
+| native Rust | 1920      | 4610.920125 | 7.684867 | `rustc 1.97.0 (2d8144b78 2026-07-07)` |
+| pinned C++  | 1920      | 219.479292  | 0.365799 | `AppleClang 21.0.0.21000334`          |
+
+`rust_over_cpp_ratio`: `21.00845179052245` (copied from that `pair.json` only).
+
+**PERF-GATE is not claimed.** The pair ratio is still greater than 3, so leftover
+scalar waves (D-07/D-09) remain required. `ParticleStorage::check_invariants`
+was not gated behind `debug_assertions` in wave 1 (D-08).
 
 ## Named functions
 
