@@ -231,10 +231,15 @@ impl World {
         let record = systems
             .get(system)
             .expect("system remains live during body contact update");
-        let previous = record.storage.semantic_body_contacts();
+        let view = ParticleSystemView::new(&record.storage);
+        let previous = if body_contact::fixture_contact_listeners_active(&view) {
+            record.storage.semantic_body_contacts()
+        } else {
+            Vec::new()
+        };
         let diameter = 2.0 * record.definition.radius();
         let update = body_contact::generate(
-            &ParticleSystemView::new(&record.storage),
+            &view,
             sources,
             &previous,
             diameter,

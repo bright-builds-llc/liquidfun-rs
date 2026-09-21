@@ -198,8 +198,18 @@ pub(crate) fn generate(
         prune_strict_contacts(view, sources, diameter, &mut contacts);
     }
 
-    let effects = listener_effects(view, previous, &contacts);
+    let effects = if fixture_contact_listeners_active(view) {
+        listener_effects(view, previous, &contacts)
+    } else {
+        Vec::new()
+    };
     ParticleBodyContactUpdate { contacts, effects }
+}
+
+pub(crate) fn fixture_contact_listeners_active(view: &ParticleSystemView<'_>) -> bool {
+    view.flags()
+        .iter()
+        .any(|flags| flags.contains(ParticleFlags::FIXTURE_CONTACT_LISTENER))
 }
 
 fn prune_strict_contacts(
@@ -291,8 +301,7 @@ fn listener_enabled(view: &ParticleSystemView<'_>, particle: ParticleId) -> bool
 }
 
 fn particle_row(view: &ParticleSystemView<'_>, particle: ParticleId) -> usize {
-    view.particle_ids()
-        .iter()
-        .position(|candidate| *candidate == particle)
+    view.maybe_live_row(particle)
         .expect("generated body contacts retain a current particle")
+        .0
 }
