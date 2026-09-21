@@ -123,7 +123,12 @@ impl ParticleContactUpdate {
             return Err(ParticleContactError::WrongParticleSystem);
         }
 
-        validate_neighborhood(view, neighborhood)?;
+        if neighborhood.pairs().len() != neighborhood.pair_rows().len() {
+            return Err(ParticleContactError::MissingParticle);
+        }
+        if cfg!(debug_assertions) {
+            validate_neighborhood(view, neighborhood)?;
+        }
         let contacts = collect_new_contacts(view, neighborhood, &mut filter)?;
         let effects = listener_effects_from_stored(view, previous, &contacts)?;
         Ok(Self { contacts, effects })
