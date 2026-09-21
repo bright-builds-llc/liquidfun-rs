@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Native Performance Closing
 status: executing
-stopped_at: Completed 22-02-PLAN.md
-last_updated: "2026-09-21T00:02:33.414Z"
+stopped_at: Completed 22-03-PLAN.md
+last_updated: "2026-09-21T00:14:06.643Z"
 last_activity: 2026-09-21
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 6
-  completed_plans: 2
-  percent: 33
+  completed_plans: 3
+  percent: 50
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: `.planning/PROJECT.md` (updated 2026-09-20)
 ## Current Position
 
 Phase: 22 (Observability shell) — EXECUTING
-Plan: 3 of 6
+Plan: 4 of 6
 Status: Ready to execute
 Last activity: 2026-09-21
 
-Progress: [███░░░░░░░] 33%
+Progress: [█████░░░░░] 50%
 
 v1.2 Native Performance Closing. Gate is unprofiled `just playground-dam-break-bench` (Rust `--release` vs `oracle-release` Dam Break Medium ≤ 3×). Evidence dir `target/dam-break-perf/<utc-stamp>/`. v1.1 phase directories remain on disk. No package publication or release tag.
 
@@ -40,6 +40,7 @@ v1.2 Native Performance Closing. Gate is unprofiled `just playground-dam-break-b
 | --- | --- | --- | --- |
 | Phase 22 P01 | 31 min | 2 tasks | 6 files |
 | Phase 22 P02 | 9 min | 2 tasks | 4 files |
+| Phase 22 P03 | 8 min | 2 tasks | 3 files |
 
 v1.1 plan durations remain in `.planning/milestones/v1.1-STATE.md`.
 
@@ -65,10 +66,14 @@ v1.1 playground decisions remain in `.planning/milestones/v1.1-STATE.md` and PRO
 - [Phase 22]: Keep just playground-dam-break-bench as the one-line cargo xtask alias; do not hide cmake or samply in just. — D-05: unprofiled 3x-authority recipe name stays locked.
 - [Phase 22]: Honor LIQUIDFUN_XTASK_CARGO else CARGO else cargo, and LIQUIDFUN_XTASK_STAMP_UNIX as test-only unix seconds. — Command path injection plus integer-only stamp clock for fake-tool CLI collision coverage.
 - [Phase 22]: pair.json kind is unprofiled_pair with timing_authority unprofiled_wall_clock; omit samply/profile keys. — D-03/PERF-PAIR: unprofiled wall-clock remains the 3x number.
+- [Phase 22]: Declare workspace [profile.profiling] with inherits = release, debug = true, strip = false; do not create [profile.release] or set CARGO_PROFILE_RELEASE_DEBUG. — D-08/D-10: named profile keeps the unprofiled --release gate binary unchanged.
+- [Phase 22]: samply_record_argv is flags only: record --save-only --unstable-presymbolicate -o gz -- profiling binary --warmup N --steps M; never cargo. — Program path stays on Command::new so 22-04 can spawn without shell joining; Pitfall 3 forbids samply record cargo.
+- [Phase 22]: Missing or non-0.13.1 samply is PlaygroundError kind samply with cargo install --locked, brew install samply, and samply setup; no skip wording. — D-09 fail-closed: no Ok skip path and no placeholder rust.json.gz.
+- [Phase 22]: Do not mark PERF-PROFILE complete in this plan; dam-break-profile spawn and just alias are 22-04. — This plan delivered the Cargo profile and pure argv/version core only; PERF-PROFILE still needs the CLI wrap.
 
 ### Pending Todos
 
-Execute 22-03 (`/gsd-execute-phase 22`). Phase 24 planning should wait for Phase 23 named shares.
+Execute 22-04 (`/gsd-execute-phase 22`). Phase 24 planning should wait for Phase 23 named shares.
 
 ### Blockers/Concerns
 
@@ -93,6 +98,6 @@ Execute 22-03 (`/gsd-execute-phase 22`). Phase 24 planning should wait for Phase
 
 ## Session Continuity
 
-Last session: 2026-09-21T00:02:13.798Z
-Stopped at: Completed 22-02-PLAN.md
+Last session: 2026-09-21T00:13:58.712Z
+Stopped at: Completed 22-03-PLAN.md
 Resume file: None
