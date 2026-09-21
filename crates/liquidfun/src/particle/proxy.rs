@@ -67,6 +67,13 @@ struct Proxy {
 ///
 /// Dense rows and packed tags remain private. All returned particles retain
 /// their stable world- and system-scoped identities.
+///
+/// ```compile_fail
+/// use liquidfun::{ParticleNeighborhood, World};
+/// fn must_not_expose_rows(neighborhood: &ParticleNeighborhood) {
+///     let _ = neighborhood.pair_rows();
+/// }
+/// ```
 #[derive(Debug, Clone, PartialEq)]
 pub struct ParticleNeighborhood {
     system: ParticleSystemId,
@@ -226,4 +233,46 @@ fn enumerate_pairs(proxies: &[Proxy]) -> Vec<ParticleNeighborPair> {
         }
     }
     pairs
+}
+
+#[cfg(test)]
+mod row_carry {
+    use super::*;
+    use crate::math::Vec2;
+    use crate::{ParticleDef, World};
+
+    #[test]
+    fn neighborhood_pair_rows_align_with_public_particle_ids() {
+        // Arrange
+        let mut world = World::new().expect("test world key remains available");
+        let system = world
+            .create_particle_system()
+            .expect("particle system should fit");
+        let create_at = |world: &mut World, position: Vec2| {
+            let definition = ParticleDef::default()
+                .with_position(position)
+                .expect("test position should be finite");
+            world
+                .create_particle_with_def(system, None, &definition)
+                .expect("particle should fit");
+        };
+        create_at(&mut world, Vec2::new(0.0, 0.0));
+        create_at(&mut world, Vec2::new(0.5, 0.0));
+        create_at(&mut world, Vec2::new(2.0, 0.0));
+        let view = world
+            .particle_system_view(system)
+            .expect("particle system should remain live");
+
+        // Act
+        let neighborhood = ParticleNeighborhood::from_view(&view, 1.0)
+            .expect("finite in-range positions should build proxies");
+
+        // Assert
+        assert_eq!(neighborhood.pair_rows().len(), neighborhood.pairs().len());
+        for (i, pair) in neighborhood.pairs().iter().enumerate() {
+            let rows = neighborhood.pair_rows()[i];
+            assert_eq!(view.particle_ids()[rows[0].0], pair.particles()[0]);
+            assert_eq!(view.particle_ids()[rows[1].0], pair.particles()[1]);
+        }
+    }
 }

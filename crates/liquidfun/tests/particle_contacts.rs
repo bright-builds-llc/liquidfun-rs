@@ -3,8 +3,8 @@
 use liquidfun::collision::Aabb;
 use liquidfun::math::{Vec2, inverse_sqrt};
 use liquidfun::{
-    ParticleContactEffect, ParticleContactUpdate, ParticleDef, ParticleFlags, ParticleNeighborPair,
-    ParticleNeighborhood, ParticleProxyError, ParticleSystemId, World,
+    ParticleContactEffect, ParticleContactError, ParticleContactUpdate, ParticleDef, ParticleFlags,
+    ParticleNeighborPair, ParticleNeighborhood, ParticleProxyError, ParticleSystemId, World,
 };
 use proptest::prelude::*;
 
@@ -317,4 +317,39 @@ fn contact_listener_diff_emits_begins_then_sorted_remaining_ends_with_multiplici
             ParticleContactEffect::End([first, old_second]),
         ]
     );
+}
+
+#[test]
+fn contact_generate_returns_missing_particle_when_previous_id_was_destroyed() {
+    // Arrange
+    let mut world = World::new().expect("test world key remains available");
+    let system = world
+        .create_particle_system()
+        .expect("particle system should fit");
+    let _first = create_particle(&mut world, system, Vec2::ZERO);
+    let second = create_particle(&mut world, system, Vec2::new(0.5, 0.0));
+    let old_contact = {
+        let view = world
+            .particle_system_view(system)
+            .expect("particle system should remain live");
+        let neighborhood =
+            ParticleNeighborhood::from_view(&view, 1.0).expect("positions should build proxies");
+        let update = ParticleContactUpdate::generate(&view, &neighborhood, &[], |_| true)
+            .expect("initial contacts should generate");
+        update.contacts()[0]
+    };
+    world
+        .destroy_particle(second)
+        .expect("second particle should destroy");
+    let view = world
+        .particle_system_view(system)
+        .expect("particle system should remain live");
+    let neighborhood = ParticleNeighborhood::from_view(&view, 1.0)
+        .expect("remaining particle should build proxies");
+
+    // Act
+    let result = ParticleContactUpdate::generate(&view, &neighborhood, &[old_contact], |_| true);
+
+    // Assert
+    assert_eq!(result, Err(ParticleContactError::MissingParticle));
 }
