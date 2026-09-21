@@ -87,8 +87,37 @@ pub(super) fn evidence_dir(repository_root: &Path) -> PathBuf {
 ///
 /// Returns a closed error when the name is empty, contains path separators, or
 /// does not match the allowlisted stamp charset.
-pub(super) fn parse_stamp_name(_raw: &str) -> Result<String, PlaygroundError> {
-    todo!("parse_stamp_name")
+pub(super) fn parse_stamp_name(raw: &str) -> Result<String, PlaygroundError> {
+    if raw.is_empty()
+        || raw.contains('\0')
+        || raw.contains('/')
+        || raw.contains('\\')
+        || raw.contains("..")
+        || !is_filename_safe_utc_stamp(raw)
+    {
+        return Err(PlaygroundError::new(
+            "stamp",
+            format!("stamp name `{raw}` must match YYYY-MM-DDTHH-MM-SSZ"),
+        ));
+    }
+    Ok(raw.to_owned())
+}
+
+fn is_filename_safe_utc_stamp(raw: &str) -> bool {
+    let bytes = raw.as_bytes();
+    bytes.len() == 20
+        && bytes[4] == b'-'
+        && bytes[7] == b'-'
+        && bytes[10] == b'T'
+        && bytes[13] == b'-'
+        && bytes[16] == b'-'
+        && bytes[19] == b'Z'
+        && bytes[..4].iter().all(u8::is_ascii_digit)
+        && bytes[5..7].iter().all(u8::is_ascii_digit)
+        && bytes[8..10].iter().all(u8::is_ascii_digit)
+        && bytes[11..13].iter().all(u8::is_ascii_digit)
+        && bytes[14..16].iter().all(u8::is_ascii_digit)
+        && bytes[17..19].iter().all(u8::is_ascii_digit)
 }
 
 /// Converts days since 1970-01-01 into a Gregorian civil date.

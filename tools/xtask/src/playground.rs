@@ -29,6 +29,7 @@ pub(crate) fn run(args: &[String]) -> Result<(), PlaygroundError> {
         "dam-break-bench" => pair::run(command_args),
         "dam-break-profile" => profile::run(command_args),
         "dam-break-timers" => timers::run(command_args),
+        "dam-break-audit-bundle" => bundle::run(command_args),
         _ => Err(PlaygroundError::usage(format!(
             "unknown playground command `{command}`"
         ))),

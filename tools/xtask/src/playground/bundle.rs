@@ -1,24 +1,28 @@
 //! Copy-only same-HEAD Dam Break audit bundle.
 
-use std::path::{Path, PathBuf};
+mod ops;
+
+use std::fs;
+use std::path::Path;
 
 use super::PlaygroundError;
 
-/// Copies same-HEAD pair and profile artifacts into a new exclusive stamp.
-///
-/// # Errors
-///
-/// Returns a closed error when stamp names, source files, kinds, or git HEADs
-/// do not match the copy-only audit-bundle contract.
-pub(super) fn copy_audit_bundle(
-    _repository_root: &Path,
-    _expected_git_head: &str,
-    _maybe_pair_stamp: Option<&str>,
-    _maybe_profile_stamp: Option<&str>,
-    _unix_seconds: u64,
-    _maybe_worktree_dirty: Option<bool>,
-) -> Result<PathBuf, PlaygroundError> {
-    todo!("copy_audit_bundle")
+#[cfg(test)]
+pub(super) use ops::copy_audit_bundle;
+pub(super) use ops::run;
+
+fn copy_file(from: &Path, to: &Path) -> Result<(), PlaygroundError> {
+    fs::copy(from, to).map_err(|error| {
+        PlaygroundError::new(
+            "bundle",
+            format!(
+                "failed to copy {} to {}: {error}",
+                from.display(),
+                to.display()
+            ),
+        )
+    })?;
+    Ok(())
 }
 
 #[cfg(test)]
