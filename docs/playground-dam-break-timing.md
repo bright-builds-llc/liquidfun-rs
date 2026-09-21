@@ -23,7 +23,7 @@ particles, radius `0.06324555`, spacing `0.101193`, gravity `(0, -10)`,
 
 ## Current recorded sample
 
-SHA-bound unprofiled pair from `target/dam-break-perf/2026-09-21T20-28-24Z/`
+SHA-bound unprofiled pair from `target/dam-break-perf/2026-09-21T20-36-30Z/`
 (`pair.json`, `kind: unprofiled_pair`,
 `timing_authority: unprofiled_wall_clock`). This is not a Phase 12 public
 claim. Historical pointers that stay on disk and must not be overwritten:
@@ -41,7 +41,7 @@ claim. Historical pointers that stay on disk and must not be overwritten:
 - A first exploratory sample at
   `1e5cbcc124becd363049c4d62c60b715bc0d7897` remains historical only.
 
-- git HEAD: `97c15984d660bb18f4f4512211bc32a466539081`
+- git HEAD: `d843ba30d0909cc3215108c4814c8b8e97db9c83`
 
 - OS/arch: `macos` / `aarch64`
 
@@ -55,10 +55,10 @@ claim. Historical pointers that stay on disk and must not be overwritten:
 
 | Engine      | Particles | Wall ms    | ms/step  | steps/s     | Realtime factor | Compiler                              |
 | ----------- | --------- | ---------- | -------- | ----------- | --------------- | ------------------------------------- |
-| native Rust | 1920      | 636.031584 | 1.060053 | 943.349379  | 15.72249        | `rustc 1.97.0 (2d8144b78 2026-07-07)` |
-| pinned C++  | 1920      | 215.149292 | 0.358582 | 2788.761211 | 46.479354       | `AppleClang 21.0.0.21000334`          |
+| native Rust | 1920      | 607.814417 | 1.013024 | 987.143416  | 16.45239        | `rustc 1.97.0 (2d8144b78 2026-07-07)` |
+| pinned C++  | 1920      | 211.267084 | 0.352112 | 2840.007012 | 47.33345        | `AppleClang 21.0.0.21000334`          |
 
-`rust_over_cpp_ratio`: `2.956233683539149` (from `pair.json` only). This
+`rust_over_cpp_ratio`: `2.8769953439599707` (from `pair.json` only). This
 unreviewed sample is PERF-GATE on this host for the locked 1920-particle,
 60 warmup + 600 measured-step recipe (`≤ 3`). Do not copy it into
 `reference/performance/manifest.toml`.
