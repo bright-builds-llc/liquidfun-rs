@@ -116,22 +116,21 @@ impl ParticleNeighborhood {
         {
             return Err(ParticleProxyError::DiameterOutOfRange);
         }
-        let mut proxies = view
+        let mut proxies = Vec::with_capacity(view.particle_ids().len());
+        for (row, (particle, position)) in view
             .particle_ids()
             .iter()
             .copied()
-            .enumerate()
             .zip(view.positions().iter().copied())
-            .map(|((row, particle), position)| {
-                checked_tag(inverse_diameter * position.x, inverse_diameter * position.y).map(
-                    |tag| Proxy {
-                        particle,
-                        row: ParticleIndex(row),
-                        tag,
-                    },
-                )
-            })
-            .collect::<Result<Vec<_>, _>>()?;
+            .enumerate()
+        {
+            let tag = checked_tag(inverse_diameter * position.x, inverse_diameter * position.y)?;
+            proxies.push(Proxy {
+                particle,
+                row: ParticleIndex(row),
+                tag,
+            });
+        }
         proxies.sort_by_key(|proxy| proxy.tag);
         let (pairs, pair_rows) = enumerate_pairs(&proxies);
 
@@ -222,9 +221,7 @@ fn checked_tag(x: f32, y: f32) -> Result<u32, ParticleProxyError> {
     Ok(((offset_y as u32) << Y_SHIFT) + scaled_x as u32)
 }
 
-fn enumerate_pairs(proxies: &[Proxy]) -> (Vec<ParticleNeighborPair>, Vec<[ParticleIndex; 2]>) {
-    let mut pairs = Vec::new();
-    let mut pair_rows = Vec::new();
+fn visit_pairs(proxies: &[Proxy], mut visit: impl FnMut(&Proxy, &Proxy)) {
     let mut below_start = 0;
     for (a_index, a) in proxies.iter().enumerate() {
         let right_tag = a.tag.wrapping_add(RELATIVE_RIGHT);
@@ -232,8 +229,7 @@ fn enumerate_pairs(proxies: &[Proxy]) -> (Vec<ParticleNeighborPair>, Vec<[Partic
             if right_tag < b.tag {
                 break;
             }
-            pairs.push(ParticleNeighborPair::new(a.particle, b.particle));
-            pair_rows.push([a.row, b.row]);
+            visit(a, b);
         }
 
         let bottom_left_tag = a.tag.wrapping_add(RELATIVE_BOTTOM_LEFT);
@@ -245,10 +241,20 @@ fn enumerate_pairs(proxies: &[Proxy]) -> (Vec<ParticleNeighborPair>, Vec<[Partic
             if bottom_right_tag < b.tag {
                 break;
             }
-            pairs.push(ParticleNeighborPair::new(a.particle, b.particle));
-            pair_rows.push([a.row, b.row]);
+            visit(a, b);
         }
     }
+}
+
+fn enumerate_pairs(proxies: &[Proxy]) -> (Vec<ParticleNeighborPair>, Vec<[ParticleIndex; 2]>) {
+    let mut count = 0_usize;
+    visit_pairs(proxies, |_, _| count += 1);
+    let mut pairs = Vec::with_capacity(count);
+    let mut pair_rows = Vec::with_capacity(count);
+    visit_pairs(proxies, |a, b| {
+        pairs.push(ParticleNeighborPair::new(a.particle, b.particle));
+        pair_rows.push([a.row, b.row]);
+    });
     (pairs, pair_rows)
 }
 
