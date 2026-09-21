@@ -11,6 +11,7 @@ const THIRD_STAMP: &str = "2001-09-09T01-46-42Z";
 const THIRD_STAMP_UNIX: &str = "1000000002";
 const SYMS_NAME: &str = "rust.json.syms.json";
 const VEC_SYMS_JSON: &str = r#"{"string_table":["alloc::vec::Vec"]}"#;
+const NO_ALLOCATOR_SYMS_JSON: &str = r#"{"string_table":["liquidfun::particle::proxy"]}"#;
 
 fn prepare_pair_and_profile(maybe_sidecar: Option<&str>) -> std::io::Result<RepositoryFixture> {
     let fixture = RepositoryFixture::new()?;
@@ -203,6 +204,70 @@ fn dam_break_heap_leaves_source_profile_stamp_without_dump() -> TestResult {
     assert_eq!(
         dumps[0].parent().and_then(|path| path.file_name()),
         Some(std::ffi::OsStr::new(THIRD_STAMP))
+    );
+    fixture.cleanup()?;
+    Ok(())
+}
+
+#[test]
+fn dam_break_heap_skips_no_allocator_without_dump() -> TestResult {
+    // Arrange
+    let fixture = prepare_pair_and_profile(Some(NO_ALLOCATOR_SYMS_JSON))?;
+
+    // Act
+    let output = run_heap(&fixture, THIRD_STAMP_UNIX)?;
+
+    // Assert
+    assert!(
+        !output.status.success(),
+        "no-allocator skip must fail closed, stdout: {}",
+        stdout(&output)
+    );
+    let display = stderr(&output);
+    assert!(
+        display.contains("no allocator") || display.contains("no allocator/Vec"),
+        "stderr `{display}` should mention no allocator"
+    );
+    assert!(
+        !display.contains("could not read symbols"),
+        "stderr `{display}` must not use could not read symbols as the skip reason"
+    );
+    let dumps = heap_dump_paths(&fixture)?;
+    assert!(
+        dumps.is_empty(),
+        "no-allocator skip must not write dhat-heap.json: {dumps:?}"
+    );
+    fixture.cleanup()?;
+    Ok(())
+}
+
+#[test]
+fn dam_break_heap_skips_inconclusive_symbols_without_dump() -> TestResult {
+    // Arrange
+    let fixture = prepare_pair_and_profile(None)?;
+
+    // Act
+    let output = run_heap(&fixture, THIRD_STAMP_UNIX)?;
+
+    // Assert
+    assert!(
+        !output.status.success(),
+        "inconclusive symbols skip must fail closed, stdout: {}",
+        stdout(&output)
+    );
+    let display = stderr(&output);
+    assert!(
+        display.contains("could not read symbols"),
+        "stderr `{display}` should mention could not read symbols"
+    );
+    assert!(
+        !display.contains("no allocator"),
+        "stderr `{display}` must not claim no allocator as the skip reason"
+    );
+    let dumps = heap_dump_paths(&fixture)?;
+    assert!(
+        dumps.is_empty(),
+        "no-symbols skip must not write dhat-heap.json: {dumps:?}"
     );
     fixture.cleanup()?;
     Ok(())
