@@ -69,7 +69,7 @@ Each task was committed atomically:
 1. **Task 1: Add optional WASM Dam Break step-time note versus native Rust** - `27fb752` (docs)
 2. **Task 2: Run just web-player-smoke and cite exit 0 without committing artifacts** - no code commit (smoke-only; evidence below)
 
-**Plan metadata:** _(pending final docs commit)_
+**Plan metadata:** `d77501b` (docs: complete plan)
 
 ## Smoke evidence
 
