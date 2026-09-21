@@ -415,6 +415,17 @@ fn justfile_adds_one_line_dam_break_profile_alias() {
         recipe,
         "playground-dam-break-profile:\n    cargo xtask playground dam-break-profile"
     );
+    let timers_start = justfile
+        .find("playground-dam-break-timers:")
+        .expect("justfile should contain the playground Dam Break timers recipe");
+    let timers = justfile[timers_start..]
+        .split("\n\n")
+        .next()
+        .expect("recipe should end at a blank line");
+    assert_eq!(
+        timers,
+        "playground-dam-break-timers:\n    cargo xtask playground dam-break-timers"
+    );
 }
 
 #[test]
@@ -561,6 +572,51 @@ fn second_profile_in_the_same_unix_second_mints_a_new_stamp() -> TestResult {
     assert!(fixture.profile_identity(SECOND_STAMP).is_file());
     assert!(!fixture.pair_json(FIRST_STAMP).is_file());
     assert!(!fixture.pair_json(SECOND_STAMP).is_file());
+    fixture.cleanup()?;
+    Ok(())
+}
+
+#[test]
+fn dam_break_timers_persists_timers_json_without_pair() -> TestResult {
+    // Arrange
+    let fixture = RepositoryFixture::new()?;
+    let mut command = fixture.command()?;
+    command.args([
+        "playground",
+        "dam-break-timers",
+        "--warmup",
+        "0",
+        "--steps",
+        "1",
+    ]);
+
+    // Act
+    let output = command.output()?;
+
+    // Assert
+    assert!(
+        output.status.success(),
+        "stderr: {}\nstdout: {}",
+        stderr(&output),
+        stdout(&output)
+    );
+    let path = fixture
+        .root
+        .join("target/dam-break-perf")
+        .join(FIRST_STAMP)
+        .join("timers.json");
+    let report: serde_json::Value = serde_json::from_slice(&fs::read(path)?)?;
+    assert_eq!(report["kind"], "step_profiled_parents");
+    assert_eq!(report["not_timing_authority"].as_bool(), Some(true));
+    for token in ["particle_prepare", "particle_solve", "rigid_solve"] {
+        assert!(
+            report["parents"][token]["wall_ms"].as_f64().is_some(),
+            "parents must contain `{token}`"
+        );
+    }
+    assert!(!fixture.pair_json(FIRST_STAMP).is_file());
+    assert!(!fixture.profile_gz(FIRST_STAMP).is_file());
+    assert!(!stdout(&output).contains("Rust/C++"));
     fixture.cleanup()?;
     Ok(())
 }

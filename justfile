@@ -149,6 +149,9 @@ playground-dam-break-bench:
 playground-dam-break-profile:
     cargo xtask playground dam-break-profile
 
+playground-dam-break-timers:
+    cargo xtask playground dam-break-timers
+
 phase13-acceptance:
     cargo xtask phase13 acceptance
 

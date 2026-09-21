@@ -73,6 +73,11 @@ fn run_cargo(args: &[String]) -> ExitCode {
         return install_profiling_bench();
     }
     if args.iter().any(|argument| argument == "run")
+        && args.iter().any(|argument| argument == "dam-break-timers")
+    {
+        return print_timer_sample(args);
+    }
+    if args.iter().any(|argument| argument == "run")
         && args.iter().any(|argument| argument == "dam-break-bench")
     {
         return print_bench_sample("native_rust", 300.0, "rustc 1.97.0", args);
@@ -224,6 +229,21 @@ fn print_bench_sample(engine: &str, wall_ms: f64, compiler: &str, args: &[String
     };
     println!(
         "{{\"engine\":\"{engine}\",\"particles\":1920,\"warmup_steps\":{warmup_steps},\"measured_steps\":{measured_steps},\"wall_ms\":{wall_ms},\"ms_per_step\":{ms_per_step},\"steps_per_s\":{steps_per_s},\"realtime_factor\":{realtime_factor},\"compiler\":\"{compiler}\"}}"
+    );
+    ExitCode::SUCCESS
+}
+
+fn print_timer_sample(args: &[String]) -> ExitCode {
+    let warmup_steps = match parse_u32_flag(args, "--warmup", 60) {
+        Ok(value) => value,
+        Err(code) => return code,
+    };
+    let measured_steps = match parse_u32_flag(args, "--steps", 600) {
+        Ok(value) => value,
+        Err(code) => return code,
+    };
+    println!(
+        "{{\"kind\":\"step_profiled_parents\",\"schema\":\"phase12-profile-v1\",\"not_timing_authority\":true,\"particles\":1920,\"warmup_steps\":{warmup_steps},\"measured_steps\":{measured_steps},\"parents\":{{\"contact_update\":{{\"wall_ms\":0.0}},\"rigid_solve\":{{\"wall_ms\":1.0}},\"continuous_solve\":{{\"wall_ms\":0.0}},\"particle_prepare\":{{\"wall_ms\":1.0}},\"particle_solve\":{{\"wall_ms\":1.0}},\"finalize\":{{\"wall_ms\":0.0}}}}}}"
     );
     ExitCode::SUCCESS
 }
