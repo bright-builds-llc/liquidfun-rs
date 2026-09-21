@@ -72,11 +72,51 @@ Local checks plus one convenient CI job; expensive tools available manually; sma
 
 Session counts, model mix and token/currency totals are unavailable; no estimates are asserted. Future milestones should be much smaller and centered on concrete use.
 
+## Milestone: v1.2 — Native Performance Closing
+
+**Shipped:** 2026-09-21
+**Phases:** 4 | **Plans:** 23
+
+### What Was Built
+
+A local Dam Break Medium hunt that persisted an unprofiled Rust-versus-C++ pair, named the hot path from samply, and closed that pair to 2.96× with shared scalar kernels, then recorded playground spot-checks and a WASM smoke note without a public speed claim.
+
+### What Worked
+
+- Exclusive dated stamps, with profiled and timer reports marked `not_timing_authority`, kept the 3× number honest while waves iterated.
+- Admitting one named kernel at a time, and keeping failed stamps, made the drop from ~327× to ~21× to ~15× to ≤ 3× reviewable.
+- The same-cluster note covered the second canary without inventing a sealed matrix.
+
+### What Was Inefficient
+
+- Early pair ratios near 300× meant several exclusive full 60+600 pairs before the gate, each on one Mac.
+- Summary one-liners include an intermediate ≤ 3 stamp (`2026-09-21T20-37-12Z`, ratio `2.953…`) that the honesty docs later replaced with `2026-09-21T20-38-50Z` / `2.956857456935513`. The later stamp is the close number.
+- A force-buffer stacking bug showed up in the playground after the gate stamp, so the recorded ratio is not current HEAD.
+
+### Patterns Established
+
+- Unprofiled `just playground-dam-break-bench` is the only 3× authority.
+- Shared `liquidfun` kernel edits are the admission path; scene-only or WASM-only shortcuts do not count.
+- Planning archive is not a git release tag, and `reviewed_reports` stays empty until a separate public-benchmark decision.
+
+### Key Lessons
+
+1. Rank live profile symbols before editing kernels; the hunt list was not the ranking.
+1. Re-pair into a new stamp after each wave, and do not quote samply duration as the gate.
+1. A recorded ≤ 3× pair goes stale when a later correctness fix changes the solver. Say which HEAD it measures.
+
+### Cost Observations
+
+- Model mix: unavailable; no estimates asserted.
+- Sessions: discuss, plan, execute, and audit across phases 22–25, plus a post-gate dam-break debug.
+- Notable: 23 plans in two calendar days, much smaller than v1.0 and smaller than v1.1.
+
 ## Cross-Milestone Trends
 
 | Milestone | Phases | Plans | Archive date | Package/tag |
 | --- | --- | --- | --- | --- |
 | v1.0 Experimental Foundation | 16 | 252 | 2026-09-17 | No |
 | v1.1 Web Playground | 6 | 39 | 2026-09-20 | No |
+| v1.2 Native Performance Closing | 4 | 23 | 2026-09-21 | No |
 
-Hobby scope and independent AI review continued. v1.1 was a concrete use (browser playground) rather than another certification campaign. Both archives explicitly withhold release tags.
+Hobby scope and independent AI review continued. v1.1 was a concrete browser playground. v1.2 was a local Dam Break close with no public benchmark claim. All three archives withhold release tags.
