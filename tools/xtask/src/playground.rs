@@ -7,6 +7,7 @@ mod identity;
 mod pair;
 mod profile;
 mod stamp;
+mod symbols;
 mod timers;
 
 pub(crate) use error::PlaygroundError;
