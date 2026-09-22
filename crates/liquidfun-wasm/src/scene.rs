@@ -11,6 +11,7 @@ mod dam_break;
 mod float_or_sink;
 mod fountain;
 mod jelly_drop;
+mod liquid_timer;
 mod particles;
 mod water_wheel;
 
@@ -29,6 +30,7 @@ pub(crate) enum SceneId {
     JellyDrop,
     WaterWheel,
     Particles,
+    LiquidTimer,
 }
 
 pub(crate) fn parse_scene_id(raw: &str) -> Result<SceneId, SessionError> {
@@ -40,6 +42,7 @@ pub(crate) fn parse_scene_id(raw: &str) -> Result<SceneId, SessionError> {
         "jelly-drop" => Ok(SceneId::JellyDrop),
         "water-wheel" => Ok(SceneId::WaterWheel),
         "particles" => Ok(SceneId::Particles),
+        "liquid-timer" => Ok(SceneId::LiquidTimer),
         _ => Err(SessionError::UnknownScene),
     }
 }
@@ -129,6 +132,7 @@ pub(crate) fn build_scene(
         SceneId::JellyDrop => jelly_drop::build(presets),
         SceneId::WaterWheel => water_wheel::build(presets),
         SceneId::Particles => particles::build(presets),
+        SceneId::LiquidTimer => liquid_timer::build(presets),
     }
 }
 
