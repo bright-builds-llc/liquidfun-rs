@@ -79,7 +79,7 @@ Each task was committed atomically:
 2. **Task 2: Update shell e2e and run Chromium web-player-smoke** - `4863ea2` (test)
 3. **Task 2 follow-up: smoke failure fixes** - `56d7c03` (fix)
 
-**Plan metadata:** (pending docs commit)
+**Plan metadata:** `7c748e0` (docs: complete plan)
 
 ## Files Created/Modified
 
