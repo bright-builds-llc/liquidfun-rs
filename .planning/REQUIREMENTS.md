@@ -16,7 +16,7 @@ A visitor can open every JavaScript LiquidFun testbed scene the playground does 
 ### Basin
 
 - [x] **BASIN-01**: Visitor can watch Particles: water falls in an open basin and a ball drops into it.
-- [ ] **BASIN-02**: Visitor can watch Liquid Timer: tensile, viscous liquid drains through shelves into bottom columns.
+- [x] **BASIN-02**: Visitor can watch Liquid Timer: tensile, viscous liquid drains through shelves into bottom columns.
 
 ### Materials
 
@@ -69,7 +69,7 @@ A visitor can open every JavaScript LiquidFun testbed scene the playground does 
 | PLAY-02 | Phase 26 | Pending |
 | PLAY-03 | Phase 26 | Pending |
 | BASIN-01 | Phase 26 | Complete |
-| BASIN-02 | Phase 26 | Pending |
+| BASIN-02 | Phase 26 | Complete |
 | MAT-01 | Phase 27 | Pending |
 | MAT-02 | Phase 27 | Pending |
 | MAT-03 | Phase 27 | Pending |
