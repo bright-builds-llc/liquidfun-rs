@@ -76,7 +76,7 @@ Each task was committed atomically:
 1. **Task 1: Extend helpers and keep watch-first player e2e** - `4a022ac` (feat)
 2. **Task 2: Eleven-preview shell asserts and run web-player-smoke** - `308e167` (feat)
 
-**Plan metadata:** pending docs commit
+**Plan metadata:** `71afa40` (docs: complete plan)
 
 ## Files Created/Modified
 
