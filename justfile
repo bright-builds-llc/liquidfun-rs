@@ -33,6 +33,7 @@ web-player-smoke:
 web-smoke:
     bun scripts/web-build.ts smoke
 
+# Optional local MP4/WebP capture. The README gallery is produced by readme-svg.
 demo-media:
     bun scripts/web-build.ts build
     cd web && bun run demo-media -- generate
@@ -41,10 +42,10 @@ demo-media-check:
     bun scripts/web-build.ts build
     cd web && bun run demo-media -- check
 
-# Regenerate the committed 10 second Dam Break SVG and README section.
-dam-break-svg:
+# Regenerates committed 10 second scene SVGs and upserts the README gallery.
+readme-svg:
     bun scripts/web-build.ts wasm
-    cd web && bun run dam-break-svg
+    cd web && bun run readme-svg
 
 test:
     cargo test --all-features

@@ -24,13 +24,17 @@ export type SampleRecordingRequest = {
   readonly panX: number;
   readonly panY: number;
   readonly maxRenderedParticles: number;
+  /** Runs at the start of a sample, before that sample's engine advance. */
+  readonly beforeSample?: (sampleIndex: number) => void;
 };
 
 /**
  * Samples a fresh scene from its initial frame through the requested duration.
  *
  * The first sample is the constructed scene. Later samples are evenly spaced
- * at 20 Hz, which is every third 60 Hz engine step.
+ * at 20 Hz, which is every third 60 Hz engine step. `beforeSample` runs
+ * before that sample's advance, so a cue at sample 0 is visible immediately
+ * and a later cue is integrated for one sample interval before capture.
  */
 export function recordProjectedSamples(
   driver: ExportDriver,
@@ -45,6 +49,7 @@ export function recordProjectedSamples(
   const total = sampleCountForDuration(request.durationSeconds);
   const samples: ProjectedSample[] = [];
   for (let index = 0; index < total; index += 1) {
+    request.beforeSample?.(index);
     if (index > 0) {
       driver.advance(STEPS_PER_SVG_SAMPLE);
     }
