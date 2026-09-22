@@ -306,22 +306,19 @@ Gravity: (0, -10)  [match Particles / existing scenes]
 
 No other `[ASSUMED]` claims; flag/API/solver presence was verified in-repo.
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Shared basin helper vs three copies**
    - What we know: Elastic and Rigid basins are identical; Surface Tension walls match that family (circles sit lower at y=2).
-   - What's unclear: Whether the planner prefers one private helper module now or copies then extracts.
-   - Recommendation: Private `basin_family` helper in wave 1 to prevent wall drift (Claude's Discretion).
+   - RESOLVED: Private `basin_family` helper in Plan 01, reused by Elastic and Rigid. Not three independent copies, not a new public engine API.
 
 2. **Strength tuning before claiming contrast failure**
    - What we know: API exposes damping and material strengths; defaults may suffice.
-   - What's unclear: Whether first visual pass needs strength knobs.
-   - Recommendation: Wire exact flags first; only then consider strength setters; only then consider engine work.
+   - RESOLVED: Flags-first on the current public API. Tune strengths only if the recognizable contrast fails after correct flags. Do not add an engine API in the initial plans.
 
 3. **UI-SPEC for Phase 27**
    - What we know: `workflow.ui_phase` is true; Phase 26 produced `26-UI-SPEC.md`; Phase 27 CONTEXT is mostly append-same-chrome.
-   - What's unclear: Whether `/gsd-ui-phase` will regenerate a thin 27-UI-SPEC or reuse 26 tokens.
-   - Recommendation: Planner should expect a thin UI contract (eleven-scene copy, three previews, last drawer link = Rigid Particles) rather than a redesign.
+   - RESOLVED: `.planning/phases/27-material-flag-groups/27-UI-SPEC.md` exists and is approved. Reuse Phase 26 playground tokens.
 
 ## Environment Availability
 
