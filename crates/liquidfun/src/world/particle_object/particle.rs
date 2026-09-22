@@ -1,3 +1,7 @@
+use crate::collision::Shape;
+use crate::math::Transform;
+use crate::particle::ParticleQueryError;
+
 use super::{
     CreateObjectError, DestroyedId, DestructionCause, DestructionRecord, HandleError,
     HandleIdentity, ObjectSnapshot, ParticleCreationReceipt, ParticleDef, ParticleGroupId,
@@ -153,6 +157,26 @@ impl World {
             .map_err(storage_handle_error)
     }
 
+    /// Destroys particles of `system` whose positions pass `shape.test_point`.
+    ///
+    /// Queries the shape AABB, keeps only particles owned by `system` that pass
+    /// the point test, marks them pending-delete, then compacts so the pocket is
+    /// empty before the caller presents a frame.
+    ///
+    /// # Errors
+    ///
+    /// Returns a typed particle-query error when the system handle is invalid,
+    /// AABB derivation fails, or compaction cannot proceed.
+    pub fn destroy_particles_in_shape(
+        &mut self,
+        _system: ParticleSystemId,
+        _shape: &Shape,
+        _transform: Transform,
+    ) -> Result<usize, ParticleQueryError> {
+        // Task 1 RED stub: real carve lands in Task 2.
+        Ok(0)
+    }
+
     pub(in crate::world) fn destroy_particle_now(
         &mut self,
         particle: ParticleId,
@@ -215,6 +239,79 @@ impl World {
             self.particle_system_order
                 .iter()
                 .all(|system| self.particle_systems.get(*system).is_ok())
+        );
+    }
+}
+
+#[cfg(test)]
+mod destroy_in_shape_tests {
+    use crate::collision::{CircleShape, Shape};
+    use crate::math::{Transform, Vec2};
+    use crate::particle::{ParticleDef, ParticleSystemDef};
+    use crate::world::object::World;
+
+    fn count_particles_inside(world: &World, shape: &Shape, transform: Transform) -> usize {
+        let Ok(view) = world.particle_system_view(
+            world
+                .particle_system_ids()
+                .into_iter()
+                .next()
+                .expect("test world has one system"),
+        ) else {
+            return 0;
+        };
+        view.positions()
+            .iter()
+            .filter(|position| {
+                shape
+                    .test_point(transform, **position)
+                    .expect("finite test point")
+            })
+            .count()
+    }
+
+    #[test]
+    fn destroy_particles_in_shape_clears_pocket_under_circle() {
+        // Arrange
+        let mut world = World::new().expect("world key remains available");
+        let system = world
+            .create_particle_system_with_def(
+                &ParticleSystemDef::default()
+                    .with_radius(0.05)
+                    .expect("radius is valid"),
+            )
+            .expect("particle system fits");
+        for x in [-0.3, -0.15, 0.0, 0.15, 0.3] {
+            for y in [-0.3, -0.15, 0.0, 0.15, 0.3] {
+                let definition = ParticleDef::default()
+                    .with_position(Vec2::new(x, y))
+                    .expect("finite position");
+                let _ = world
+                    .create_particle_with_def(system, None, &definition)
+                    .expect("particle fits");
+            }
+        }
+        let shape = Shape::from(
+            CircleShape::new(Vec2::ZERO, 0.2).expect("circle geometry is valid"),
+        );
+        let transform = Transform::IDENTITY;
+        let inside_before = count_particles_inside(&world, &shape, transform);
+        assert!(
+            inside_before > 0,
+            "fixture must overlap at least one particle before carve"
+        );
+
+        // Act
+        let destroyed = world
+            .destroy_particles_in_shape(system, &shape, transform)
+            .expect("carve should succeed");
+
+        // Assert
+        assert!(destroyed > 0, "carve must remove at least one particle");
+        assert_eq!(
+            count_particles_inside(&world, &shape, transform),
+            0,
+            "pocket under the circle must be empty after destroy_particles_in_shape"
         );
     }
 }
