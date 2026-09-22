@@ -1,7 +1,7 @@
 ---
 phase: 26
 slug: catalog-shell-and-basin-scenes
-status: draft
+status: approved
 shadcn_initialized: false
 preset: none
 created: 2026-09-21
@@ -258,6 +258,8 @@ Kobalte is an existing npm dependency (`@kobalte/core` 0.13.12) for the mobile d
 
 Use the shipped `PlaygroundShell`. Do not restore CatalogNav, a separate catalog page, or a three-column card grid.
 
+Primary focal point on a ready scene is the live canvas viewport. Chrome (header, demo list, playback) is secondary. When the drawer or sidebar is the active surface, catalog-list focus stays supporting.
+
 Semantic order on every view:
 
 1. Sticky `SiteHeader` with `h1#site-title`, page summary, `GitHub source`, and mobile `Demos` trigger (hidden ≥769px).
@@ -493,11 +495,11 @@ These are locked later-phase or out-of-scope boundaries from `26-CONTEXT.md`, no
 
 ## Checker Sign-Off
 
-- [ ] Dimension 1 Copywriting: PASS
-- [ ] Dimension 2 Visuals: PASS
-- [ ] Dimension 3 Color: PASS
-- [ ] Dimension 4 Typography: PASS
-- [ ] Dimension 5 Spacing: PASS
-- [ ] Dimension 6 Registry Safety: PASS
+- [x] Dimension 1 Copywriting: PASS
+- [x] Dimension 2 Visuals: FLAG — primary focal point declared as the live canvas
+- [x] Dimension 3 Color: PASS
+- [x] Dimension 4 Typography: PASS
+- [x] Dimension 5 Spacing: PASS
+- [x] Dimension 6 Registry Safety: PASS
 
-**Approval:** pending
+**Approval:** approved 2026-09-22 (independent UI checker; one non-blocking FLAG addressed)
