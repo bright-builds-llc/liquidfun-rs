@@ -1,18 +1,281 @@
 //! Pinned `LiquidFun` Impulse scene: chain-loop box with whole-group shove.
 
+use liquidfun::collision::{ChainShape, FilterData, PolygonShape, Shape};
+use liquidfun::math::{Transform, Vec2};
+use liquidfun::particle::{
+    ParticleColor, ParticleGroupDestination, ParticleGroupRecipe, ParticleGroupSource,
+};
+use liquidfun::{
+    BodyDef, BodyId, FixtureDef, ParticleGroupId, ParticleSystemDef, ParticleSystemId, World,
+};
+
+use super::{
+    BuiltScene, ControlEffect, PointerKind, RigidSegment, SceneError, SceneHooks,
+};
 use crate::session::SessionError;
 
-use super::BuiltScene;
+const PARTICLE_RADIUS: f32 = 0.025;
+const PARTICLE_DAMPING: f32 = 0.2;
+const MAXIMUM_PARTICLE_COUNT: usize = 10240;
+const GROUP_COLOR: ParticleColor = ParticleColor::new(77, 163, 255, 255);
+const GRAVITY: Vec2 = Vec2::new(0.0, -10.0);
 
-/// Task 1 RED stub — Task 2 fills in the chain-loop box and group shove.
-pub(crate) fn build(_presets: &[(String, String)]) -> Result<BuiltScene, SessionError> {
-    Err(SessionError::SceneConstruction)
+const BOX_LEFT: f32 = -2.0;
+const BOX_RIGHT: f32 = 2.0;
+const BOX_BOTTOM: f32 = 0.0;
+const BOX_TOP: f32 = 4.0;
+const BOX_CENTER: Vec2 = Vec2::new(0.0, 2.0);
+const BOX_VERTICES: [Vec2; 4] = [
+    Vec2::new(BOX_LEFT, BOX_BOTTOM),
+    Vec2::new(BOX_RIGHT, BOX_BOTTOM),
+    Vec2::new(BOX_RIGHT, BOX_TOP),
+    Vec2::new(BOX_LEFT, BOX_TOP),
+];
+
+const GROUP_HALF_WIDTH: f32 = 0.8;
+const GROUP_HALF_HEIGHT: f32 = 1.0;
+const GROUP_CENTER: Vec2 = Vec2::new(0.0, 1.01);
+
+const FORCE_MAGNITUDE: f32 = 1.0;
+const IMPULSE_MAGNITUDE: f32 = 0.005;
+const PUSH_MODE_CONTROL: &str = "push-mode";
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum PushMode {
+    Force,
+    Impulse,
+}
+
+impl PushMode {
+    fn parse(value: &str) -> Option<Self> {
+        match value {
+            "force" => Some(Self::Force),
+            "impulse" => Some(Self::Impulse),
+            _ => None,
+        }
+    }
+}
+
+struct ImpulseHooks {
+    box_segments: [RigidSegment; 4],
+    group: ParticleGroupId,
+    push_mode: PushMode,
+}
+
+pub(crate) fn build(presets: &[(String, String)]) -> Result<BuiltScene, SessionError> {
+    if !presets.is_empty() {
+        return Err(SessionError::UnknownControl);
+    }
+    build_impulse().map_err(|_error| SessionError::SceneConstruction)
+}
+
+fn build_impulse() -> Result<BuiltScene, SceneError> {
+    let mut world = World::new().map_err(|_error| SceneError::World)?;
+    world
+        .set_gravity(GRAVITY)
+        .map_err(|_error| SceneError::Gravity)?;
+
+    let ground = world
+        .create_body(&BodyDef::default())
+        .map_err(|_error| SceneError::Body)?;
+    attach_chain_loop_box(&mut world, ground)?;
+
+    let (particle_system, group) = create_particle_group(&mut world)?;
+
+    Ok(BuiltScene {
+        world,
+        particle_system,
+        particle_radius: PARTICLE_RADIUS,
+        hooks: Box::new(ImpulseHooks {
+            box_segments: box_segments(),
+            group,
+            push_mode: PushMode::Force,
+        }),
+    })
+}
+
+fn box_segments() -> [RigidSegment; 4] {
+    [
+        RigidSegment {
+            start: Vec2::new(BOX_LEFT, BOX_BOTTOM),
+            end: Vec2::new(BOX_RIGHT, BOX_BOTTOM),
+        },
+        RigidSegment {
+            start: Vec2::new(BOX_RIGHT, BOX_BOTTOM),
+            end: Vec2::new(BOX_RIGHT, BOX_TOP),
+        },
+        RigidSegment {
+            start: Vec2::new(BOX_RIGHT, BOX_TOP),
+            end: Vec2::new(BOX_LEFT, BOX_TOP),
+        },
+        RigidSegment {
+            start: Vec2::new(BOX_LEFT, BOX_TOP),
+            end: Vec2::new(BOX_LEFT, BOX_BOTTOM),
+        },
+    ]
+}
+
+fn attach_chain_loop_box(world: &mut World, body: BodyId) -> Result<(), SceneError> {
+    let chain = ChainShape::closed(&BOX_VERTICES).map_err(|_error| SceneError::Geometry)?;
+    let definition = FixtureDef::new(
+        Shape::from(chain),
+        0.0,
+        0.2,
+        0.0,
+        false,
+        FilterData::default(),
+    )
+    .map_err(|_error| SceneError::Fixture)?;
+    world
+        .create_fixture(body, &definition)
+        .map_err(|_error| SceneError::Fixture)?;
+    Ok(())
+}
+
+fn create_particle_group(
+    world: &mut World,
+) -> Result<(ParticleSystemId, ParticleGroupId), SceneError> {
+    let system_definition = ParticleSystemDef::default()
+        .with_radius(PARTICLE_RADIUS)
+        .map_err(|_error| SceneError::ParticleSystem)?
+        .with_damping(PARTICLE_DAMPING)
+        .map_err(|_error| SceneError::ParticleSystem)?
+        .with_maximum_count(MAXIMUM_PARTICLE_COUNT)
+        .map_err(|_error| SceneError::ParticleSystem)?;
+    let system = world
+        .create_particle_system_with_def(&system_definition)
+        .map_err(|_error| SceneError::ParticleSystem)?;
+
+    let filled = Shape::from(
+        PolygonShape::oriented_box(GROUP_HALF_WIDTH, GROUP_HALF_HEIGHT, GROUP_CENTER, 0.0)
+            .map_err(|_error| SceneError::Geometry)?,
+    );
+    let source =
+        ParticleGroupSource::filled_shapes(vec![filled]).map_err(|_error| SceneError::Particle)?;
+    let recipe = ParticleGroupRecipe::new(source, ParticleGroupDestination::New)
+        .with_color(GROUP_COLOR)
+        .with_transform(Transform::IDENTITY)
+        .map_err(|_error| SceneError::Particle)?;
+    let group = world
+        .create_particle_group(system, &recipe)
+        .map_err(|_error| SceneError::Particle)?;
+    Ok((system, group))
+}
+
+fn pointer_inside_box(world_x: f32, world_y: f32) -> bool {
+    BOX_LEFT <= world_x
+        && world_x <= BOX_RIGHT
+        && BOX_BOTTOM <= world_y
+        && world_y <= BOX_TOP
+}
+
+fn shove_group(
+    world: &mut World,
+    system: ParticleSystemId,
+    group: ParticleGroupId,
+    push_mode: PushMode,
+    pointer: Vec2,
+) -> Result<(), SessionError> {
+    let mut direction = pointer - BOX_CENTER;
+    let length = direction.normalize();
+    if length == 0.0 {
+        return Ok(());
+    }
+
+    let members = {
+        let view = world
+            .particle_group_view(group)
+            .map_err(|_error| SessionError::SceneConstruction)?;
+        view.member_ids().to_vec()
+    };
+    let member_count = members.len() as f32;
+    match push_mode {
+        PushMode::Force => {
+            let force = direction * (FORCE_MAGNITUDE * member_count);
+            world
+                .apply_particle_force_range(system, &members, force)
+                .map_err(|_error| SessionError::SceneConstruction)?;
+        }
+        PushMode::Impulse => {
+            let impulse = direction * (IMPULSE_MAGNITUDE * member_count);
+            world
+                .apply_particle_linear_impulse_range(system, &members, impulse)
+                .map_err(|_error| SessionError::SceneConstruction)?;
+        }
+    }
+    Ok(())
+}
+
+impl SceneHooks for ImpulseHooks {
+    fn on_advance(
+        &mut self,
+        _world: &mut World,
+        _system: ParticleSystemId,
+    ) -> Result<(), SessionError> {
+        Ok(())
+    }
+
+    fn apply_control(
+        &mut self,
+        _world: &mut World,
+        _system: ParticleSystemId,
+        name: &str,
+        value: &str,
+    ) -> Result<ControlEffect, SessionError> {
+        if name != PUSH_MODE_CONTROL {
+            return Err(SessionError::UnknownControl);
+        }
+        let Some(mode) = PushMode::parse(value) else {
+            return Err(SessionError::UnknownControl);
+        };
+        self.push_mode = mode;
+        Ok(ControlEffect::Live)
+    }
+
+    fn apply_action(
+        &mut self,
+        _world: &mut World,
+        _system: ParticleSystemId,
+        _name: &str,
+    ) -> Result<(), SessionError> {
+        Err(SessionError::UnknownControl)
+    }
+
+    fn apply_pointer(
+        &mut self,
+        world: &mut World,
+        system: ParticleSystemId,
+        kind: PointerKind,
+        world_x: f32,
+        world_y: f32,
+    ) -> Result<(), SessionError> {
+        if kind != PointerKind::Up {
+            return Ok(());
+        }
+        if !pointer_inside_box(world_x, world_y) {
+            return Ok(());
+        }
+        shove_group(
+            world,
+            system,
+            self.group,
+            self.push_mode,
+            Vec2::new(world_x, world_y),
+        )
+    }
+
+    fn collect_segments(&self, _world: &World) -> Result<Vec<RigidSegment>, SessionError> {
+        Ok(self.box_segments.to_vec())
+    }
+
+    fn collect_circles(&self, _world: &World) -> Result<Vec<(Vec2, f32)>, SessionError> {
+        Ok(Vec::new())
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use liquidfun::NoDecisionHook;
-    use liquidfun::math::Vec2;
     use liquidfun::{ParticleGroupId, ParticleSystemId, StepConfiguration, StepLimits, World};
 
     use super::super::{ControlEffect, PointerKind, SceneId};
@@ -41,8 +304,6 @@ mod tests {
         settle(&mut shoved.world);
         let baseline_group = first_group(&baseline.world, baseline.particle_system);
         let shoved_group = first_group(&shoved.world, shoved.particle_system);
-        let before_outside = group_speed(&baseline.world, baseline_group);
-        let before_inside = group_speed(&shoved.world, shoved_group);
 
         // Act — outside box is a success no-op
         baseline
@@ -72,19 +333,11 @@ mod tests {
         settle(&mut shoved.world);
         let after_inside = group_speed(&shoved.world, shoved_group);
 
-        // Assert
+        // Assert — same settle after outside vs after inside shove; inside must diverge
         assert!(
-            (after_outside - before_outside).abs() < 1e-3
-                || after_outside >= 0.0 && before_outside >= 0.0,
-            "outside-box pointer must not add shove momentum beyond shared settle"
-        );
-        // Twin: same settle after outside vs after inside shove — inside must diverge
-        let settle_only = after_outside;
-        assert!(
-            (after_inside - settle_only).abs() > 0.05
-                || after_inside > before_inside + 0.05,
+            (after_inside - after_outside).abs() > 0.05,
             "inside-box shove must change group momentum versus the outside twin \
-             (after_inside={after_inside}, settle_only={settle_only}, before={before_inside})"
+             (after_inside={after_inside}, after_outside={after_outside})"
         );
     }
 
@@ -207,11 +460,6 @@ mod tests {
         let limits = StepLimits::default();
         world
             .step(configuration, &mut NoDecisionHook, limits)
-            .expect("Impulse settle step must succeed");
-    }
-
-    #[allow(dead_code)] // kept for readable Vec2 asserts in future shove diagnostics
-    fn _box_center() -> Vec2 {
-        Vec2::new(0.0, 2.0)
+            .expect("impulse settle step must succeed");
     }
 }
