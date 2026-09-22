@@ -1,10 +1,7 @@
-import { createEffect, createSignal, onCleanup, Show } from "solid-js";
+import { createEffect, createSignal, onCleanup } from "solid-js";
 
 import { maybeSceneById, type SceneId } from "./catalog/scenes";
-import { FallbackPanel } from "./components/FallbackPanel";
-import { PlaygroundShell } from "./components/PlaygroundShell";
-import { PlayerPanel } from "./components/PlayerPanel";
-import { PlayerSceneChrome } from "./components/PlayerSceneChrome";
+import { PlaygroundStage } from "./components/PlaygroundStage";
 import {
   attachCanvasPointer,
   forwardScenePointer,
@@ -12,33 +9,35 @@ import {
   type CanvasPointerHandlers,
 } from "./input/canvas-pointer";
 import {
-  listenForTiltGravity,
-  requestMotionPermission,
-  type TiltDebug,
-} from "./input/tilt-gravity";
+  changeTiltGravity,
+  createTiltBinding,
+} from "./input/tilt-binding";
+import type { TiltDebug } from "./input/tilt-gravity";
 import type { PointerKind } from "./input/pointer";
-import {
-  FRAME_STEP_BUDGET_MS,
-  accumulateStepTime,
-  restoreUnrunSteps,
-} from "./physics/clock";
 import type { RenderFrame } from "./physics/frame";
 import { loadSceneSession } from "./physics/loader";
 import { createSceneSession, type SceneSession } from "./physics/session";
+import {
+  cancelPendingFrame,
+  connectResizeObserver,
+  createFrameClock,
+  disconnectResizeObserver,
+  presentOwnedFrame,
+  scheduleFrame,
+  type FrameLoopDeps,
+} from "./player/frame-loop";
 import { isStaleGeneration, nextGeneration } from "./player/generation";
-import { observeFrame } from "./player/observe";
 import {
   constructionEntriesForScene,
   isReadySceneRoute,
   maybeDevelopmentDetails,
   maybeReadySceneId,
-  sceneTitleForId,
   titleForRoute,
 } from "./player/runtime";
-import { prefersReducedMotion, isUsableViewport } from "./player/viewport";
+import { isUsableViewport } from "./player/viewport";
 import { maybeObservedFrame, playerStatus, type PlayerView } from "./player/view";
-import { appendFpsTick, type FpsTick } from "./components/fps-meter";
-import { drawRenderFrame, resizeCanvasBackingStore } from "./render/canvas";
+import type { FpsTick } from "./components/fps-meter";
+import { drawRenderFrame } from "./render/canvas";
 import {
   IDENTITY_CAMERA_VIEW,
   createCamera,
@@ -56,8 +55,6 @@ import {
   persistWireframeStrokeWidth,
 } from "./render/stroke-width";
 import { normalizeSceneRoute } from "./routing/hash";
-
-const MILLISECONDS_PER_SECOND = 1000;
 
 /** One-session playground shell with hash routing and bounded playback. */
 export function App() {
@@ -107,17 +104,24 @@ export function App() {
   let maybeCanvas: HTMLCanvasElement | undefined;
   let maybeContext: CanvasRenderingContext2D | undefined;
   let maybeSession: SceneSession | undefined;
-  let maybeAnimationFrameId: number | undefined;
-  let maybeLastTimestamp: number | undefined;
-  let frameRemainderSeconds = 0;
-  let maybePreviousFrame: RenderFrame | undefined;
-  let maybeCamera: Camera | undefined;
-  let cameraView: CameraView = IDENTITY_CAMERA_VIEW;
-  let stopTiltGravity: (() => void) | undefined;
-  let tiltRequest = 0;
-  let viewportWidth = 0;
-  let viewportHeight = 0;
-  let maybeResizeObserver: ResizeObserver | undefined;
+  const clock = createFrameClock();
+  const tiltBinding = createTiltBinding();
+
+  function frameDeps(): FrameLoopDeps {
+    return {
+      view,
+      fail,
+      maybeSession: () => maybeSession,
+      route,
+      startScene,
+      drawSceneFrame,
+      setMaybeDebugFrame,
+      setStepsThisFrame,
+      setFpsTicks,
+      setView,
+    };
+  }
+
   let maybeCanvasPointer: CanvasPointerHandlers | undefined;
 
   function incrementGeneration(): number {
@@ -125,26 +129,11 @@ export function App() {
     return generation;
   }
 
-  function cancelPendingFrame(): void {
-    if (maybeAnimationFrameId === undefined) {
-      return;
-    }
-
-    cancelAnimationFrame(maybeAnimationFrameId);
-    maybeAnimationFrameId = undefined;
-  }
-
-  function disconnectResizeObserver(): void {
-    const maybeObserver = maybeResizeObserver;
-    maybeResizeObserver = undefined;
-    maybeObserver?.disconnect();
-  }
-
   function disposeOwnedSession(): void {
     maybeCanvasPointer?.cancel();
     const maybeOwnedSession = maybeSession;
     maybeSession = undefined;
-    maybeLastTimestamp = undefined;
+    clock.maybeLastTimestamp = undefined;
     if (maybeOwnedSession === undefined) {
       return;
     }
@@ -160,13 +149,13 @@ export function App() {
     incrementGeneration();
     maybeCanvasPointer?.detach();
     maybeCanvasPointer = undefined;
-    disconnectResizeObserver();
-    cancelPendingFrame();
+    disconnectResizeObserver(clock);
+    cancelPendingFrame(clock);
     disposeOwnedSession();
     maybeCanvas = undefined;
     maybeContext = undefined;
-    maybeCamera = undefined;
-    maybePreviousFrame = undefined;
+    clock.maybeCamera = undefined;
+    clock.maybePreviousFrame = undefined;
     setMaybeDebugFrame(undefined);
     setStepsThisFrame(0);
     constructionValues = {};
@@ -175,7 +164,7 @@ export function App() {
 
   function fail(error: unknown): void {
     const maybeFrame = maybeObservedFrame(view());
-    cancelPendingFrame();
+    cancelPendingFrame(clock);
     disposeOwnedSession();
     setView({
       kind: "failure",
@@ -185,9 +174,9 @@ export function App() {
   }
 
   function paintHeldFrame(): void {
-    const maybeFrame = maybePreviousFrame;
+    const maybeFrame = clock.maybePreviousFrame;
     const context = maybeContext;
-    const camera = maybeCamera;
+    const camera = clock.maybeCamera;
     if (
       maybeFrame === undefined ||
       context === undefined ||
@@ -215,11 +204,11 @@ export function App() {
   }
 
   function refreshCamera(): void {
-    if (!isUsableViewport(viewportWidth, viewportHeight)) {
+    if (!isUsableViewport(clock.viewportWidth, clock.viewportHeight)) {
       return;
     }
 
-    maybeCamera = createCamera(viewportWidth, viewportHeight, cameraView);
+    clock.maybeCamera = createCamera(clock.viewportWidth, clock.viewportHeight, clock.cameraView);
   }
 
   function changeRenderMode(nextMode: RenderMode): void {
@@ -246,13 +235,13 @@ export function App() {
   }
 
   function applyCameraView(nextView: CameraView): void {
-    cameraView = nextView;
+    clock.cameraView = nextView;
     refreshCamera();
     paintHeldFrame();
   }
 
   function zoomBy(direction: "in" | "out"): void {
-    applyCameraView(zoomCameraView(cameraView, direction));
+    applyCameraView(zoomCameraView(clock.cameraView, direction));
   }
 
   function resetCameraView(): void {
@@ -269,181 +258,22 @@ export function App() {
 
   function panBy(deltaX: number, deltaY: number): void {
     applyCameraView({
-      zoom: cameraView.zoom,
-      panX: cameraView.panX + deltaX,
-      panY: cameraView.panY + deltaY,
+      zoom: clock.cameraView.zoom,
+      panX: clock.cameraView.panX + deltaX,
+      panY: clock.cameraView.panY + deltaY,
     });
-  }
-
-  function scheduleFrame(context: CanvasRenderingContext2D): void {
-    maybeAnimationFrameId = requestAnimationFrame((timestamp) => {
-      maybeAnimationFrameId = undefined;
-      if (view().kind !== "playing") {
-        return;
-      }
-
-      if (document.hidden) {
-        maybeLastTimestamp = undefined;
-        scheduleFrame(context);
-        return;
-      }
-
-      const maybeOwnedSession = maybeSession;
-      if (maybeOwnedSession === undefined) {
-        fail(new Error("Scene session owner is unavailable"));
-        return;
-      }
-
-      const camera = maybeCamera;
-      if (camera === undefined) {
-        fail(new Error("Canvas camera is unavailable"));
-        return;
-      }
-
-      if (maybeLastTimestamp === undefined) {
-        frameRemainderSeconds = 0;
-        maybeLastTimestamp = timestamp;
-        scheduleFrame(context);
-        return;
-      }
-
-      const elapsedSeconds =
-        (timestamp - maybeLastTimestamp) / MILLISECONDS_PER_SECOND;
-      const stepTime = accumulateStepTime(frameRemainderSeconds, elapsedSeconds);
-      frameRemainderSeconds = stepTime.remainderSeconds;
-      maybeLastTimestamp = timestamp;
-      if (stepTime.stepCount === 0) {
-        scheduleFrame(context);
-        return;
-      }
-      try {
-        const stepStarted = performance.now();
-        let ran = 1;
-        let frame = maybeOwnedSession.nextFrame(1);
-        while (
-          ran < stepTime.stepCount &&
-          performance.now() - stepStarted < FRAME_STEP_BUDGET_MS
-        ) {
-          frame = maybeOwnedSession.nextFrame(1);
-          ran += 1;
-        }
-        frameRemainderSeconds = restoreUnrunSteps(
-          frameRemainderSeconds,
-          stepTime.stepCount,
-          ran,
-        );
-        drawSceneFrame(context, frame, camera);
-        const observation = observeFrame(
-          frame,
-          maybePreviousFrame,
-          maybeObservedFrame(view())?.movedFrameCount ?? 0,
-        );
-        maybePreviousFrame = frame;
-        setMaybeDebugFrame(frame);
-        setStepsThisFrame(ran);
-        setFpsTicks((ticks) =>
-          appendFpsTick(ticks, {
-            timeMs: timestamp,
-            simSteps: ran,
-          }),
-        );
-        setView({ kind: "playing", frame: observation });
-        scheduleFrame(context);
-      } catch (error) {
-        fail(error);
-      }
-    });
-  }
-
-  function presentOwnedFrame(
-    ownedSession: SceneSession,
-    context: CanvasRenderingContext2D,
-    resetObservation: boolean,
-  ): void {
-    const camera = maybeCamera;
-    if (camera === undefined) {
-      fail(new Error("Canvas camera is unavailable"));
-      return;
-    }
-
-    const frame = ownedSession.nextFrame();
-    drawSceneFrame(context, frame, camera);
-    const observation = observeFrame(
-      frame,
-      resetObservation ? undefined : maybePreviousFrame,
-      resetObservation ? 0 : maybeObservedFrame(view())?.movedFrameCount ?? 0,
-    );
-    maybePreviousFrame = frame;
-    setMaybeDebugFrame(frame);
-    setStepsThisFrame(1);
-    setFpsTicks((ticks) =>
-      appendFpsTick(ticks, {
-        timeMs: performance.now(),
-        simSteps: 1,
-      }),
-    );
-
-    if (prefersReducedMotion()) {
-      setView({ kind: "paused", frame: observation });
-      return;
-    }
-
-    setView({ kind: "playing", frame: observation });
-    scheduleFrame(context);
-  }
-
-  function connectResizeObserver(
-    canvas: HTMLCanvasElement,
-    context: CanvasRenderingContext2D,
-  ): void {
-    disconnectResizeObserver();
-    maybeResizeObserver = new ResizeObserver(() => {
-      const resizedBounds = canvas.getBoundingClientRect();
-      if (!isUsableViewport(resizedBounds.width, resizedBounds.height)) {
-        return;
-      }
-
-      try {
-        viewportWidth = resizedBounds.width;
-        viewportHeight = resizedBounds.height;
-        const resizedCamera = resizeCanvasBackingStore(
-          canvas,
-          viewportWidth,
-          viewportHeight,
-          window.devicePixelRatio,
-          cameraView,
-        );
-        maybeCamera = resizedCamera;
-        if (resizedCamera === undefined) {
-          return;
-        }
-        const maybeReadyId = maybeReadySceneId(route());
-        if (maybeSession === undefined && maybeReadyId !== undefined) {
-          void startScene(maybeReadyId);
-          return;
-        }
-
-        const maybeFrame = maybePreviousFrame;
-        if (maybeFrame !== undefined) {
-          drawSceneFrame(context, maybeFrame, resizedCamera);
-        }
-      } catch (error) {
-        fail(error);
-      }
-    });
-    maybeResizeObserver.observe(canvas);
   }
 
   async function startScene(id: SceneId): Promise<void> {
     const started = incrementGeneration();
-    cancelPendingFrame();
+    cancelPendingFrame(clock);
     disposeOwnedSession();
-    maybePreviousFrame = undefined;
+    clock.maybePreviousFrame = undefined;
     setMaybeDebugFrame(undefined);
     setStepsThisFrame(0);
     setFpsTicks([]);
-    maybeLastTimestamp = undefined;
-    cameraView = IDENTITY_CAMERA_VIEW;
+    clock.maybeLastTimestamp = undefined;
+    clock.cameraView = IDENTITY_CAMERA_VIEW;
     refreshCamera();
     setView({ kind: "loading" });
 
@@ -478,7 +308,7 @@ export function App() {
       }
 
       maybeSession = ownedSession;
-      presentOwnedFrame(ownedSession, context, true);
+      presentOwnedFrame(clock, ownedSession, context, true, frameDeps());
     } catch (error) {
       if (isStaleGeneration(started, generation)) {
         return;
@@ -497,7 +327,7 @@ export function App() {
     maybeCanvas = canvas;
     maybeCanvasPointer = attachCanvasPointer({
       canvas,
-      maybeCamera: () => maybeCamera,
+      maybeCamera: () => clock.maybeCamera,
       send: sendPointer,
       panEnabled: () => panEnabled(),
       onPanBy: panBy,
@@ -510,7 +340,7 @@ export function App() {
     }
 
     maybeContext = maybeNextContext;
-    connectResizeObserver(canvas, maybeNextContext);
+    connectResizeObserver(clock, canvas, maybeNextContext, frameDeps());
   }
 
   function playScene(): void {
@@ -525,9 +355,9 @@ export function App() {
       return;
     }
 
-    maybeLastTimestamp = undefined;
+    clock.maybeLastTimestamp = undefined;
     setView({ kind: "playing", frame: current.frame });
-    scheduleFrame(context);
+    scheduleFrame(clock, context, frameDeps());
   }
 
   function pauseScene(): void {
@@ -537,8 +367,8 @@ export function App() {
     }
 
     maybeCanvasPointer?.cancel();
-    cancelPendingFrame();
-    maybeLastTimestamp = undefined;
+    cancelPendingFrame(clock);
+    clock.maybeLastTimestamp = undefined;
     setStepsThisFrame(0);
     setView({ kind: "paused", frame: current.frame });
   }
@@ -577,7 +407,7 @@ export function App() {
       if (recreates) {
         constructionValues = { ...constructionValues, [name]: value };
         maybeCanvasPointer?.cancel();
-        cancelPendingFrame();
+        cancelPendingFrame(clock);
         setView({ kind: "loading" });
       }
 
@@ -586,12 +416,12 @@ export function App() {
         return;
       }
 
-      maybePreviousFrame = undefined;
+      clock.maybePreviousFrame = undefined;
       setMaybeDebugFrame(undefined);
       setStepsThisFrame(0);
       setFpsTicks([]);
-      maybeLastTimestamp = undefined;
-      presentOwnedFrame(maybeOwnedSession, context, true);
+      clock.maybeLastTimestamp = undefined;
+      presentOwnedFrame(clock, maybeOwnedSession, context, true, frameDeps());
     } catch (error) {
       fail(error);
     }
@@ -611,10 +441,10 @@ export function App() {
         return;
       }
 
-      presentOwnedFrame(maybeOwnedSession, context, false);
+      presentOwnedFrame(clock, maybeOwnedSession, context, false, frameDeps());
       const maybeFrame = maybeObservedFrame(view());
       if (maybeFrame !== undefined && view().kind === "playing") {
-        cancelPendingFrame();
+        cancelPendingFrame(clock);
         setView({ kind: "paused", frame: maybeFrame });
       }
     } catch (error) {
@@ -655,7 +485,7 @@ export function App() {
   }
 
   function onVisibilityChange(): void {
-    maybeLastTimestamp = undefined;
+    clock.maybeLastTimestamp = undefined;
     if (document.hidden) {
       maybeCanvasPointer?.cancel();
     }
@@ -681,154 +511,54 @@ export function App() {
     abandonScene();
   });
 
-  async function changeTiltGravity(enabled: boolean): Promise<void> {
-    const request = tiltRequest + 1;
-    tiltRequest = request;
-    stopTiltGravity?.();
-    stopTiltGravity = undefined;
-    if (!enabled) {
-      setTiltGravityEnabled(false);
-      setTiltDebug({ kind: "idle" });
-      maybeSession?.restoreAuthoredGravity();
-      return;
-    }
-
-    setTiltGravityEnabled(true);
-    setTiltDebug({ kind: "waiting" });
-    const permission = await requestMotionPermission();
-    if (request !== tiltRequest) {
-      return;
-    }
-    if (!permission.ok) {
-      setTiltGravityEnabled(false);
-      setTiltDebug({ kind: "problem", detail: permission.detail });
-      return;
-    }
-
-    setTiltDebug({ kind: "waiting" });
-    stopTiltGravity = listenForTiltGravity((report) => {
-      if (report.kind === "live") {
-        maybeSession?.setGravity(report.gravity.x, report.gravity.y);
-        setTiltDebug({
-          kind: "live",
-          sample: report.sample,
-          gravity: report.gravity,
-        });
-        return;
-      }
-      setTiltDebug({
-        kind: "problem",
-        detail: report.detail,
-        maybeSample: report.sample,
-      });
-    });
-  }
-
   onCleanup(() => {
     window.removeEventListener("hashchange", onHashChange);
     document.removeEventListener("visibilitychange", onVisibilityChange);
-    stopTiltGravity?.();
+    tiltBinding.stop?.();
     abandonScene();
   });
 
-  const maybeFrame = () => maybeObservedFrame(view());
-  const maybeCurrentSceneId = () => maybeReadySceneId(route());
-  const maybeFailureDetails = () => {
-    const current = view();
-    return current.kind === "failure" ? current.maybeDetails : undefined;
-  };
-  const maybeSceneAttr = () => {
-    const currentRoute = route();
-    return currentRoute.kind === "scene" ? currentRoute.id : undefined;
-  };
-  const maybeCurrentScene = () => {
-    const maybeId = maybeCurrentSceneId();
-    return maybeId === undefined ? undefined : maybeSceneById(maybeId);
-  };
-  const sceneControlsDisabled = () => {
-    const status = playerStatus(view());
-    return status === "loading" || status === "failed";
-  };
-  const routeIdentity = () => {
-    const currentRoute = route();
-    if (currentRoute.kind === "scene") {
-      return `scene:${currentRoute.id}`;
-    }
-    if (currentRoute.kind === "unknown") {
-      return `unknown:${currentRoute.maybeRaw}`;
-    }
-    return "empty";
-  };
-
   return (
-    <PlaygroundShell
-      maybeCurrentSceneId={maybeCurrentSceneId()}
-      routeIdentity={routeIdentity()}
-    >
-      <main
-        class="playground-main"
-        aria-labelledby="site-title"
-        data-playback={view().kind}
-        data-scene={maybeSceneAttr()}
-        data-step-index={maybeFrame()?.stepIndex}
-        data-last-pointer-kind={lastPointerKind()}
-        data-pointer-accepted={pointerAccepted()}
-        data-render-mode={renderMode()}
-        data-wireframe-stroke-width={wireframeStrokeWidth()}
-      >
-        <Show
-          when={maybeCurrentSceneId()}
-          fallback={<FallbackPanel />}
-        >
-          {(sceneId) => (
-            <PlayerPanel
-              sceneTitle={sceneTitleForId(sceneId())}
-              status={playerStatus(view())}
-              maybeDetails={maybeFailureDetails()}
-              interactionHint={maybeCurrentScene()?.interactionHint ?? ""}
-              assignCanvas={assignCanvas}
-              onPlay={playScene}
-              onPause={pauseScene}
-              onReset={recreateScene}
-              onRetry={recreateScene}
-              renderMode={renderMode()}
-              onRenderModeChange={changeRenderMode}
-              wireframeStrokeWidth={wireframeStrokeWidth()}
-              onWireframeStrokeWidthChange={changeWireframeStrokeWidth}
-              debugEnabled={debugEnabled()}
-              onDebugEnabledChange={setDebugEnabled}
-              maybeDebugFrame={maybeDebugFrame()}
-              stepsThisFrame={stepsThisFrame()}
-              fpsTicks={fpsTicks()}
-              renderedParticleDraft={renderedParticleDraft()}
-              onRenderedParticleDraft={changeRenderedParticleDraft}
-              panEnabled={panEnabled()}
-              onZoomIn={() => zoomBy("in")}
-              onZoomOut={() => zoomBy("out")}
-              onResetZoom={resetCameraView}
-              onPanEnabledChange={changePanEnabled}
-              tiltGravityEnabled={tiltGravityEnabled()}
-              tiltDebug={tiltDebug()}
-              onTiltGravityEnabledChange={(enabled) => {
-                void changeTiltGravity(enabled);
-              }}
-            >
-              <Show when={maybeCurrentScene()}>
-                {(currentScene) => (
-                  <PlayerSceneChrome
-                    scene={currentScene()}
-                    resetGeneration={resetGeneration()}
-                    disabled={sceneControlsDisabled()}
-                    maybeValues={constructionValues}
-                    onApplyControl={applySceneControl}
-                    onApplyAction={applySceneAction}
-                  />
-                )}
-              </Show>
-            </PlayerPanel>
-          )}
-        </Show>
-      </main>
-    </PlaygroundShell>
+    <PlaygroundStage
+      route={route}
+      view={view}
+      lastPointerKind={lastPointerKind}
+      pointerAccepted={pointerAccepted}
+      renderMode={renderMode}
+      wireframeStrokeWidth={wireframeStrokeWidth}
+      renderedParticleDraft={renderedParticleDraft}
+      panEnabled={panEnabled}
+      tiltGravityEnabled={tiltGravityEnabled}
+      tiltDebug={tiltDebug}
+      debugEnabled={debugEnabled}
+      maybeDebugFrame={maybeDebugFrame}
+      stepsThisFrame={stepsThisFrame}
+      fpsTicks={fpsTicks}
+      resetGeneration={resetGeneration}
+      constructionValues={constructionValues}
+      assignCanvas={assignCanvas}
+      onPlay={playScene}
+      onPause={pauseScene}
+      onReset={recreateScene}
+      onRenderModeChange={changeRenderMode}
+      onWireframeStrokeWidthChange={changeWireframeStrokeWidth}
+      onDebugEnabledChange={setDebugEnabled}
+      onRenderedParticleDraft={changeRenderedParticleDraft}
+      onZoomIn={() => zoomBy("in")}
+      onZoomOut={() => zoomBy("out")}
+      onResetZoom={resetCameraView}
+      onPanEnabledChange={changePanEnabled}
+      onTiltGravityEnabledChange={(enabled) => {
+        void changeTiltGravity(
+          tiltBinding,
+          enabled,
+          () => maybeSession,
+          setTiltGravityEnabled,
+          setTiltDebug,
+        );
+      }}
+      onApplyControl={applySceneControl}
+      onApplyAction={applySceneAction}
+    />
   );
 }

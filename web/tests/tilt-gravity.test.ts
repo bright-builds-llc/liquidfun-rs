@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   TILT_GRAVITY_LIMIT,
+  accelerationConventionFromEnvironment,
   describeUnknownError,
   formatTiltDebug,
   interpretAcceleration,
@@ -42,6 +43,54 @@ describe("maybeWorldGravityFromAcceleration", () => {
   it("ignores a non-finite sample", () => {
     // Arrange / Act / Assert
     expect(maybeWorldGravityFromAcceleration(Number.NaN, 1)).toBeUndefined();
+  });
+
+  it("keeps an upright iPhone sample pointing down the screen", () => {
+    // Arrange / Act
+    const gravity = maybeWorldGravityFromAcceleration(0, -9.8, "gravity-direction");
+
+    // Assert
+    expect(gravity?.y).toBeCloseTo(-9.8);
+  });
+
+  it("sends an upside-down iPhone sample toward the top of the screen", () => {
+    // Arrange / Act
+    const gravity = maybeWorldGravityFromAcceleration(0, 9.8, "gravity-direction");
+
+    // Assert
+    expect(gravity?.y).toBeCloseTo(9.8);
+  });
+});
+
+describe("accelerationConventionFromEnvironment", () => {
+  it("uses the fall direction when the browser asks for motion permission", () => {
+    // Arrange / Act / Assert
+    expect(
+      accelerationConventionFromEnvironment({
+        hasRequestPermission: true,
+        userAgent: "Mozilla/5.0",
+      }),
+    ).toBe("gravity-direction");
+  });
+
+  it("uses the fall direction for an iPhone user agent", () => {
+    // Arrange / Act / Assert
+    expect(
+      accelerationConventionFromEnvironment({
+        hasRequestPermission: false,
+        userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)",
+      }),
+    ).toBe("gravity-direction");
+  });
+
+  it("uses the upward support force on other browsers", () => {
+    // Arrange / Act / Assert
+    expect(
+      accelerationConventionFromEnvironment({
+        hasRequestPermission: false,
+        userAgent: "Mozilla/5.0 (Linux; Android 14)",
+      }),
+    ).toBe("support-force");
   });
 });
 

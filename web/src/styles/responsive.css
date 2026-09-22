@@ -1,0 +1,80 @@
+@media (max-width: 768px) {
+  .app-shell {
+    padding: var(--space-md);
+  }
+
+  .site-header {
+    top: var(--space-sm);
+  }
+
+  .app-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .demo-sidebar {
+    display: none;
+  }
+
+  .mobile-demos-trigger {
+    display: inline-flex;
+  }
+}
+
+@media (max-width: 480px) {
+  .site-header {
+    gap: var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
+  }
+
+  .site-header h1 {
+    font-size: 22px;
+  }
+
+  .site-header-actions button {
+    width: auto;
+  }
+
+  .scene-control,
+  .scene-control-label {
+    width: 100%;
+  }
+
+  figcaption {
+    overflow-wrap: break-word;
+  }
+
+  .playground-main {
+    gap: var(--space-md);
+  }
+
+  .player-panel,
+  .fallback-panel,
+  .site-footer {
+    gap: var(--space-md);
+    padding: var(--space-md);
+  }
+
+  .status-row,
+  .scene-controls,
+  .scene-credits-list,
+  .site-footer-identity,
+  .site-footer-provenance {
+    flex-direction: column;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .product-control,
+  button,
+  select {
+    justify-self: stretch;
+    width: 100%;
+  }
+
+  .viewport-tools button {
+    width: 44px;
+  }
+
+  .demo-drawer-header button {
+    width: auto;
+  }
+}

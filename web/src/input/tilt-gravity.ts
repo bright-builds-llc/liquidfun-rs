@@ -43,22 +43,31 @@ export type MotionPermissionResult =
   | { readonly ok: false; readonly detail: string };
 
 /**
+ * How a browser reports `accelerationIncludingGravity` while the phone is still.
+ *
+ * `support-force` is the upward push (Chrome and most non-iOS browsers).
+ * `gravity-direction` is the direction things fall (iOS).
+ */
+export type AccelerationConvention = "support-force" | "gravity-direction";
+
+/**
  * Maps device acceleration, including gravity, into world gravity.
  *
  * Device +x points to the right of the phone and +y points toward the top.
- * At rest the sensor reports the upward direction, so world gravity is the
- * opposite vector. World +y is up.
+ * World +y is up, so water falls toward negative world y when the phone is upright.
  */
 export function maybeWorldGravityFromAcceleration(
   accelerationX: number,
   accelerationY: number,
+  convention: AccelerationConvention = "support-force",
 ): TiltGravity | undefined {
   if (!Number.isFinite(accelerationX) || !Number.isFinite(accelerationY)) {
     return undefined;
   }
 
-  let x = -accelerationX;
-  let y = -accelerationY;
+  const sign = convention === "gravity-direction" ? 1 : -1;
+  let x = sign * accelerationX;
+  let y = sign * accelerationY;
   const magnitude = Math.hypot(x, y);
   if (magnitude > TILT_GRAVITY_LIMIT) {
     const scale = TILT_GRAVITY_LIMIT / magnitude;
@@ -119,9 +128,33 @@ export async function requestMotionPermission(): Promise<MotionPermissionResult>
 
 const EMPTY_SAMPLE: AccelerationSample = { x: null, y: null, z: null };
 
+/** iOS reports the fall direction. Other browsers report the upward support force. */
+export function accelerationConventionFromEnvironment(environment: {
+  readonly hasRequestPermission: boolean;
+  readonly userAgent: string;
+}): AccelerationConvention {
+  if (
+    environment.hasRequestPermission ||
+    /iPhone|iPad|iPod/.test(environment.userAgent)
+  ) {
+    return "gravity-direction";
+  }
+  return "support-force";
+}
+
+/** Reads the current browser's accelerometer sign convention. */
+export function accelerationConvention(): AccelerationConvention {
+  const motion = DeviceMotionEvent as unknown as MotionPermissionTarget;
+  return accelerationConventionFromEnvironment({
+    hasRequestPermission: typeof motion.requestPermission === "function",
+    userAgent: navigator.userAgent,
+  });
+}
+
 /** Classifies one accelerometer sample for gravity and the debug readout. */
 export function interpretAcceleration(
   maybeAcceleration: AccelerationSample | null,
+  convention: AccelerationConvention = "support-force",
 ): TiltSampleResult {
   if (maybeAcceleration === null) {
     return {
@@ -152,7 +185,11 @@ export function interpretAcceleration(
     };
   }
 
-  const maybeGravity = maybeWorldGravityFromAcceleration(sample.x, sample.y);
+  const maybeGravity = maybeWorldGravityFromAcceleration(
+    sample.x,
+    sample.y,
+    convention,
+  );
   if (maybeGravity === undefined) {
     return {
       kind: "problem",
@@ -198,18 +235,22 @@ export function formatTiltDebug(debug: TiltDebug): string {
 export function listenForTiltGravity(
   onReport: (report: TiltSampleResult) => void,
 ): () => void {
+  const convention = accelerationConvention();
   const onMotion = (event: DeviceMotionEvent) => {
     const acceleration = event.accelerationIncludingGravity;
     if (acceleration === null) {
-      onReport(interpretAcceleration(null));
+      onReport(interpretAcceleration(null, convention));
       return;
     }
     onReport(
-      interpretAcceleration({
-        x: acceleration.x,
-        y: acceleration.y,
-        z: acceleration.z,
-      }),
+      interpretAcceleration(
+        {
+          x: acceleration.x,
+          y: acceleration.y,
+          z: acceleration.z,
+        },
+        convention,
+      ),
     );
   };
 
