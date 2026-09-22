@@ -152,6 +152,20 @@ export const SCENE_CAPTURE_PLANS: readonly SceneCapturePlan[] = [
       end: { x: 0.7, y: 0.4 },
     },
   },
+  {
+    id: "particles",
+    title: "Particles",
+    route: "/liquidfun-rs/#/scene/particles",
+    interactionStep: 180,
+    action: { kind: "click", point: { x: 0.5, y: 0.5 } },
+  },
+  {
+    id: "liquid-timer",
+    title: "Liquid Timer",
+    route: "/liquidfun-rs/#/scene/liquid-timer",
+    interactionStep: 180,
+    action: { kind: "click", point: { x: 0.5, y: 0.5 } },
+  },
 ];
 
 function assertSceneCapturePlanCoverage(): void {
