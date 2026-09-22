@@ -97,6 +97,20 @@ profile recorded in `docs/assets/demos/manifest.json`.
 packaged `liquidfun` crate require none of Bun, Chromium, wasm-pack, C++, or
 the upstream checkout.
 
+<!-- dam-break-animated-svg:begin -->
+
+### Dam Break animated SVG
+
+A 10 second loop of the default Dam Break scene from the playground's animated
+SVG export. The clip uses medium water, normal gravity, the identity camera,
+wireframe rendering, and the demo gallery's 1280 by 960 frame. A post-merge
+workflow regenerates the file and does not commit when the export matches
+this copy.
+
+[![Dam Break 10 second animated SVG](docs/assets/demos/dam-break-10s.svg)](docs/assets/demos/dam-break-10s.svg)
+
+<!-- dam-break-animated-svg:end -->
+
 ## Hobby development
 
 The goal is an enjoyable, useful experimental physics project. Linux x64
