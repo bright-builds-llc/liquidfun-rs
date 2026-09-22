@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Reference Testbed Scenes
-status: executing
-stopped_at: Completed 27-05-PLAN.md
-last_updated: "2026-09-22T05:59:12.389Z"
+status: verifying
+stopped_at: Completed 27-06-PLAN.md
+last_updated: "2026-09-22T06:10:10.313Z"
 last_activity: 2026-09-22
 progress:
   total_phases: 8
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 11
-  completed_plans: 10
-  percent: 91
+  completed_plans: 11
+  percent: 100
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: `.planning/PROJECT.md` (updated 2026-09-21)
 
 ## Current Position
 
-Phase: 27 (material-flag-groups) — EXECUTING
+Phase: 27 (material-flag-groups) — COMPLETE / ready for verification
 Plan: 6 of 6
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-22
 
-Progress: [███████░░░] 73%
+Progress: [██████████] 100%
 
 v1.3 Reference Testbed Scenes. Add the twelve JavaScript testbed scenes the playground does not already have. Phase numbering continues after 25. No package publication or release tag.
 
@@ -69,6 +69,9 @@ v1.2 decisions are in `.planning/milestones/v1.2-STATE.md` and PROJECT.md Key De
 - [Phase 27]: Rigid preview uses stroke outlines; Elastic uses soft ellipses with tilted blue box to contrast solidity — UI-SPEC preview art direction for MAT-02 vs MAT-03 contrast
 - [Phase 27]: Task 1 eleven-scene Vitest contract was already locked in 27-04 for typecheck; 27-05 verified and did not rewrite it — Plan 27-04 extended Record tables so typecheck passed after SceneId grew; 27-05 acceptance criteria were already green
 - [Phase 27]: Watch-first material capture stubs reuse center click no-op SceneAction like Particles and Liquid Timer — Capture script still needs a SceneAction; WASM pointer is a no-op for watch-first scenes
+- [Phase 27]: Raised ALL_SCENE_TIMEOUT_MS to 220_000 for eleven-scene open/reset loops
+- [Phase 27]: Forced CI=true for player-smoke so production preview is the gate, not a reused Vite dev server
+- [Phase 27]: Scoped session status to .session-status after tilt/wireframe also expose status roles
 
 ### Pending Todos
 
@@ -93,6 +96,6 @@ None for roadmap. A fresh unprofiled pair is required before claiming the ≤ 3�
 
 ## Session Continuity
 
-Last session: 2026-09-22T05:59:05.647Z
-Stopped at: Completed 27-05-PLAN.md
+Last session: 2026-09-22T06:10:10.310Z
+Stopped at: Completed 27-06-PLAN.md
 Resume file: None
