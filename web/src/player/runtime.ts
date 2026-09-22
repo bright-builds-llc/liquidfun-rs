@@ -7,7 +7,7 @@ import {
 import type { SceneRoute } from "../routing/hash";
 
 export const PAGE_SUMMARY =
-  "Play experimental Rust physics scenes in the browser. All eight demos run this repository's engine through WebAssembly.";
+  "Play experimental Rust physics scenes in the browser. All eleven demos run this repository's engine through WebAssembly.";
 export const DEFAULT_TITLE = "liquidfun-rs playground";
 const MAX_FAILURE_DETAIL_LENGTH = 8_000;
 

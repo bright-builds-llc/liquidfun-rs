@@ -7,6 +7,9 @@ export const SCENE_IDS = [
   "water-wheel",
   "particles",
   "liquid-timer",
+  "surface-tension",
+  "elastic-particles",
+  "rigid-particles",
 ] as const;
 
 export type SceneId = (typeof SCENE_IDS)[number];
@@ -74,6 +77,36 @@ const PINNED_LIQUID_TIMER_JS = {
 const PINNED_LIQUID_TIMER_H = {
   label: "Pinned LiquidTimer.h",
   href: "https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Testbed/Tests/LiquidTimer.h",
+} as const;
+
+const PINNED_SURFACE_TENSION_JS = {
+  label: "Pinned SurfaceTension.js",
+  href: "https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/lfjs/testbed/tests/testSurfaceTension.js",
+} as const;
+
+const PINNED_SURFACE_TENSION_H = {
+  label: "Pinned ParticlesSurfaceTension.h",
+  href: "https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Testbed/Tests/ParticlesSurfaceTension.h",
+} as const;
+
+const PINNED_ELASTIC_PARTICLES_JS = {
+  label: "Pinned ElasticParticles.js",
+  href: "https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/lfjs/testbed/tests/testElasticParticles.js",
+} as const;
+
+const PINNED_ELASTIC_PARTICLES_H = {
+  label: "Pinned ElasticParticles.h",
+  href: "https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Testbed/Tests/ElasticParticles.h",
+} as const;
+
+const PINNED_RIGID_PARTICLES_JS = {
+  label: "Pinned RigidParticles.js",
+  href: "https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/lfjs/testbed/tests/testRigidParticles.js",
+} as const;
+
+const PINNED_RIGID_PARTICLES_H = {
+  label: "Pinned RigidParticles.h",
+  href: "https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Testbed/Tests/RigidParticles.h",
 } as const;
 
 const WATCH_FIRST_HINT =
@@ -304,6 +337,57 @@ export const SCENES: readonly SceneRecord[] = [
     credits: {
       implementationPath: sceneSource("liquid_timer.rs"),
       inspiration: [PINNED_LIQUID_TIMER_JS, PINNED_LIQUID_TIMER_H, SHOWCASE],
+    },
+  },
+  {
+    id: "surface-tension",
+    title: "Surface Tension",
+    ready: true,
+    description:
+      "Watch three colored tensile groups bead and bleed color when a ball hits them.",
+    interactionHint: WATCH_FIRST_HINT,
+    controls: [],
+    credits: {
+      implementationPath: sceneSource("surface_tension.rs"),
+      inspiration: [
+        PINNED_SURFACE_TENSION_JS,
+        PINNED_SURFACE_TENSION_H,
+        SHOWCASE,
+      ],
+    },
+  },
+  {
+    id: "elastic-particles",
+    title: "Elastic Particles",
+    ready: true,
+    description:
+      "Watch three soft particle clumps deform when a ball falls on them.",
+    interactionHint: WATCH_FIRST_HINT,
+    controls: [],
+    credits: {
+      implementationPath: sceneSource("elastic_particles.rs"),
+      inspiration: [
+        PINNED_ELASTIC_PARTICLES_JS,
+        PINNED_ELASTIC_PARTICLES_H,
+        SHOWCASE,
+      ],
+    },
+  },
+  {
+    id: "rigid-particles",
+    title: "Rigid Particles",
+    ready: true,
+    description:
+      "Watch three colored rigid clumps stay solid when a ball hits them.",
+    interactionHint: WATCH_FIRST_HINT,
+    controls: [],
+    credits: {
+      implementationPath: sceneSource("rigid_particles.rs"),
+      inspiration: [
+        PINNED_RIGID_PARTICLES_JS,
+        PINNED_RIGID_PARTICLES_H,
+        SHOWCASE,
+      ],
     },
   },
 ];
