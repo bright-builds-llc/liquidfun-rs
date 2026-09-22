@@ -53,6 +53,7 @@ export async function changeTiltGravity(
         kind: "live",
         sample: report.sample,
         gravity: report.gravity,
+        screenAngleDegrees: report.screenAngleDegrees,
       });
       return;
     }
