@@ -177,10 +177,10 @@ function formatSample(sample: AccelerationSample): string {
   return `ax ${formatAxis(sample.x)}  ay ${formatAxis(sample.y)}  az ${formatAxis(sample.z)}`;
 }
 
-/** Renders the tilt readout. An idle switch produces an empty string. */
+/** Renders the tilt readout, including the idle explanation. */
 export function formatTiltDebug(debug: TiltDebug): string {
   if (debug.kind === "idle") {
-    return "";
+    return "Off. The scene keeps its own gravity.";
   }
   if (debug.kind === "waiting") {
     return "Waiting for a devicemotion event";

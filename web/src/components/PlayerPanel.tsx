@@ -247,6 +247,10 @@ export function PlayerPanel(props: PlayerPanelProps) {
           />
           Debug info
         </label>
+      </div>
+
+      <section class="tilt-pane" aria-labelledby="tilt-pane-title">
+        <h3 id="tilt-pane-title">Phone tilt gravity</h3>
         <label class="player-check">
           <input
             type="checkbox"
@@ -255,22 +259,18 @@ export function PlayerPanel(props: PlayerPanelProps) {
               props.onTiltGravityEnabledChange(event.currentTarget.checked);
             }}
           />
-          Phone tilt gravity
+          Use phone accelerometer
         </label>
-        <Show when={formatTiltDebug(props.tiltDebug)}>
-          {(text) => (
-            <p
-              class="tilt-debug"
-              classList={{
-                "tilt-debug-problem": props.tiltDebug.kind === "problem",
-              }}
-              role="status"
-            >
-              {text()}
-            </p>
-          )}
-        </Show>
-      </div>
+        <p
+          class="tilt-debug"
+          classList={{
+            "tilt-debug-problem": props.tiltDebug.kind === "problem",
+          }}
+          role="status"
+        >
+          {formatTiltDebug(props.tiltDebug)}
+        </p>
+      </section>
 
       {props.children}
     </section>

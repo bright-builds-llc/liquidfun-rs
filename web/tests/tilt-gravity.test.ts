@@ -78,6 +78,13 @@ describe("interpretAcceleration", () => {
 });
 
 describe("formatTiltDebug", () => {
+  it("explains that scene gravity stays put while the switch is off", () => {
+    // Arrange / Act / Assert
+    expect(formatTiltDebug({ kind: "idle" })).toBe(
+      "Off. The scene keeps its own gravity.",
+    );
+  });
+
   it("prints raw axes and gravity for a live sample", () => {
     // Arrange / Act
     const text = formatTiltDebug({
