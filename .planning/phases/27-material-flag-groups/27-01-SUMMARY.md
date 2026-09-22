@@ -76,7 +76,7 @@ Each task was committed atomically:
 1. **Task 1: Add failing Surface Tension allowlist and flag tests** - `a596bdd` (test)
 2. **Task 2: Implement basin helper, Surface Tension scene, and factory wiring** - `8ce29c9` (feat)
 
-**Plan metadata:** _(pending final docs commit)_
+**Plan metadata:** `c172160` (docs: complete plan)
 
 _Note: TDD tasks used RED stub then GREEN implementation_
 
