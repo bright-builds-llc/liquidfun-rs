@@ -87,7 +87,7 @@ Plans:
 - [x] 27-01-PLAN.md — Surface Tension WASM scene (TENSILE|COLOR_MIXING + basin family)
 - [x] 27-02-PLAN.md — Elastic Particles WASM scene (SPRING/ELASTIC + SOLID)
 - [x] 27-03-PLAN.md — Rigid Particles WASM scene (RIGID|SOLID)
-- [ ] 27-04-PLAN.md — Catalog append, credits, previews, eleven-demo PAGE_SUMMARY
+- [x] 27-04-PLAN.md — Catalog append, credits, previews, eleven-demo PAGE_SUMMARY
 - [ ] 27-05-PLAN.md — Eleven-scene Vitest contract + capture-plan sync
 - [ ] 27-06-PLAN.md — Chromium smoke: watch-first material play/pause/reset + eleven previews
 **UI hint**: yes
@@ -122,7 +122,7 @@ Plans:
 **Goal:** [To be planned]
 **Requirements**: TBD
 **Depends on:** Phase 29
-**Plans:** 3/6 plans executed
+**Plans:** 4/6 plans executed
 
 Plans:
 - [ ] TBD (run /gsd-plan-phase 30 to break down)
@@ -172,7 +172,7 @@ Plans:
 | 24. Shared hot-path waves through 3× | v1.2 | 6/6 | Complete | 2026-09-21 |
 | 25. WASM sanity and honest close | v1.2 | 2/2 | Complete | 2026-09-21 |
 | 26. Catalog shell and basin scenes | v1.3 | 5/5 | Complete    | 2026-09-22 |
-| 27. Material flag groups | v1.3 | 3/6 | In Progress|  |
+| 27. Material flag groups | v1.3 | 4/6 | In Progress|  |
 | 28. Interaction seams | v1.3 | 0/TBD | Not started | - |
 | 29. Sparky, Drawing, and full catalog | v1.3 | 0/TBD | Not started | - |
 | 30. Periodic hydraulic fountain | v1.3 | 0/TBD | Not started | - |
