@@ -70,6 +70,12 @@ None for roadmap. A fresh unprofiled pair is required before claiming the â‰¤ 3Ã
 - PLAT-01, PLAT-05 and DOCS-09 remain deferred in archived requirements.
 - Historical decisions: `.planning/milestones/v1.2-STATE.md`, `.planning/milestones/v1.1-STATE.md`, `.planning/milestones/v1.0-STATE.md`, `.planning/MILESTONES.md`.
 
+### Quick Tasks Completed
+
+| ID | Description | Date | Status | Directory |
+| --- | --- | --- | --- | --- |
+| 260921-tbx | Global wireframe stroke width slider from 0.25 to 1.5, default 1.0 | 2026-09-22 | complete | [260921-tbx](./quick/260921-tbx-global-wireframe-stroke-width-slider-fro/) |
+
 ## Session Continuity
 
 Last session: 2026-09-22T01:56:43.248Z
