@@ -44,6 +44,30 @@ test("renders the desktop shell and navigates from the sidebar", async ({
   ).toHaveAttribute("aria-current", "page");
 });
 
+test("shows the build timestamp beside the other provenance", async ({
+  page,
+}) => {
+  // Arrange
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto(DAM_BREAK_PATH);
+
+  // Act
+  const builtAt = page
+    .locator(".site-footer-provenance div")
+    .filter({ hasText: "Built at" });
+  const timestamp = builtAt.locator("time");
+
+  // Assert
+  await expect(builtAt.getByText("Built at", { exact: true })).toBeVisible();
+  await expect(timestamp).toHaveAttribute(
+    "datetime",
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/,
+  );
+  await expect(timestamp).toHaveText(
+    /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} UTC$/,
+  );
+});
+
 test("keeps the source link at least 44 pixels tall", async ({ page }) => {
   // Arrange
   await page.setViewportSize({ width: 1280, height: 800 });

@@ -4,6 +4,8 @@ export type BuildInfo = {
   readonly maybeCommitUrl: string | undefined;
   readonly buildLabel: string;
   readonly maybeBuildUrl: string | undefined;
+  readonly builtAtLabel: string;
+  readonly maybeBuiltAtIso: string | undefined;
 };
 
 export type BuildInfoEnv = {
@@ -11,6 +13,7 @@ export type BuildInfoEnv = {
   readonly VITE_GIT_SHA?: string;
   readonly VITE_BUILD_ID?: string;
   readonly VITE_BUILD_URL?: string;
+  readonly VITE_BUILT_AT?: string;
 };
 
 const UNAVAILABLE = "Unavailable";
@@ -19,6 +22,12 @@ const FULL_SHA_PATTERN = /^[0-9a-f]{40}$/;
 const BUILD_URL_PATTERN =
   /^https:\/\/github\.com\/bright-builds-llc\/liquidfun-rs\/actions\/runs\/\d+$/;
 const COMMIT_LABEL_LENGTH = 12;
+const BUILT_AT_PATTERN =
+  /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d{1,3})?Z$/;
+const UNAVAILABLE_BUILT_AT = {
+  builtAtLabel: UNAVAILABLE,
+  maybeBuiltAtIso: undefined,
+} as const;
 
 function maybeTrimmed(maybeValue: string | undefined): string | undefined {
   if (maybeValue === undefined) {
@@ -44,6 +53,55 @@ function commitFromSha(maybeSha: string | undefined): {
   };
 }
 
+function readBuiltAt(maybeValue: string | undefined): {
+  readonly builtAtLabel: string;
+  readonly maybeBuiltAtIso: string | undefined;
+} {
+  const maybeCandidate = maybeTrimmed(maybeValue);
+  const match =
+    maybeCandidate === undefined ? null : BUILT_AT_PATTERN.exec(maybeCandidate);
+  const yearText = match?.[1];
+  const monthText = match?.[2];
+  const dayText = match?.[3];
+  const hourText = match?.[4];
+  const minuteText = match?.[5];
+  const secondText = match?.[6];
+  if (
+    maybeCandidate === undefined ||
+    yearText === undefined ||
+    monthText === undefined ||
+    dayText === undefined ||
+    hourText === undefined ||
+    minuteText === undefined ||
+    secondText === undefined
+  ) {
+    return UNAVAILABLE_BUILT_AT;
+  }
+
+  const year = Number(yearText);
+  const month = Number(monthText);
+  const day = Number(dayText);
+  const hour = Number(hourText);
+  const minute = Number(minuteText);
+  const second = Number(secondText);
+  const parsed = new Date(Date.UTC(year, month - 1, day, hour, minute, second));
+  if (
+    parsed.getUTCFullYear() !== year ||
+    parsed.getUTCMonth() !== month - 1 ||
+    parsed.getUTCDate() !== day ||
+    parsed.getUTCHours() !== hour ||
+    parsed.getUTCMinutes() !== minute ||
+    parsed.getUTCSeconds() !== second
+  ) {
+    return UNAVAILABLE_BUILT_AT;
+  }
+
+  return {
+    builtAtLabel: `${yearText}-${monthText}-${dayText} ${hourText}:${minuteText}:${secondText} UTC`,
+    maybeBuiltAtIso: maybeCandidate,
+  };
+}
+
 function maybeAcceptedBuildUrl(
   maybeUrl: string | undefined,
 ): string | undefined {
@@ -59,11 +117,14 @@ function maybeAcceptedBuildUrl(
 export function readBuildInfo(maybeEnv?: BuildInfoEnv): BuildInfo {
   const source = maybeEnv ?? import.meta.env;
   const commit = commitFromSha(maybeTrimmed(source.VITE_GIT_SHA));
+  const builtAt = readBuiltAt(source.VITE_BUILT_AT);
   return {
     version: maybeTrimmed(source.VITE_APP_VERSION) ?? UNAVAILABLE,
     commitLabel: commit.commitLabel,
     maybeCommitUrl: commit.maybeCommitUrl,
     buildLabel: maybeTrimmed(source.VITE_BUILD_ID) ?? UNAVAILABLE,
     maybeBuildUrl: maybeAcceptedBuildUrl(source.VITE_BUILD_URL),
+    builtAtLabel: builtAt.builtAtLabel,
+    maybeBuiltAtIso: builtAt.maybeBuiltAtIso,
   };
 }
