@@ -70,7 +70,7 @@ Each task was committed atomically:
 1. **Task 1: Expand scenes.test.ts to sixteen scenes and controls** - `9404c48` (test)
 2. **Task 2: Sync SCENE_CAPTURE_PLANS for five interaction scenes** - `60b8ee7` (feat)
 
-**Plan metadata:** (pending docs commit)
+**Plan metadata:** `6e391ee` (docs: complete plan)
 
 ## Files Created/Modified
 
