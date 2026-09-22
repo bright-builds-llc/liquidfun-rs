@@ -75,7 +75,7 @@ Each task was committed atomically:
 1. **Task 1: Failing Theo Jansen allowlist and reverse tests** - `29cfc0b` (test)
 2. **Task 2: Implement Theo Jansen scene and factory wiring** - `ba13bd4` (feat)
 
-**Plan metadata:** pending (docs: complete plan)
+**Plan metadata:** `fbd08b6` (docs: complete plan)
 
 ## Files Created/Modified
 

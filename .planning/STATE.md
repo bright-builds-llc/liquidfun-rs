@@ -4,7 +4,7 @@ milestone: v1.3
 milestone_name: Reference Testbed Scenes
 status: executing
 stopped_at: Completed 28-05-PLAN.md
-last_updated: "2026-09-22T14:26:23.820Z"
+last_updated: "2026-09-22T14:26:32.550Z"
 last_activity: 2026-09-22
 progress:
   total_phases: 8
@@ -82,6 +82,9 @@ v1.2 decisions are in `.planning/milestones/v1.2-STATE.md` and PROJECT.md Key De
 - [Phase 28]: Reject non-empty presets on Impulse build because push-mode is Live-only
 - [Phase 28]: Minimal SceneId::WaveMachine wiring in Task 1 RED so construction tests compile under hooks
 - [Phase 28]: Motor formula uses PI to match pinned testWaveMachine.js — not Water Wheel motor-off
+- [Phase 28]: Minimal SceneId::TheoJansen wiring in Task 1 RED so construction tests compile under hooks — Same sequential-TDD pattern as Plans 01-04
+- [Phase 28]: Direction-only motor-direction forward/reverse; no speed-magnitude or limit-toggle — Plan 05 discretion lock and D-07
+- [Phase 28]: Split tests under theo_jansen/ to stay under Bright Builds file-length limit — Implementation plus inline tests exceeded 628 physical lines
 
 ### Pending Todos
 
