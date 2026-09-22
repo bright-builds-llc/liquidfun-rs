@@ -113,8 +113,8 @@ fn create_dynamic_ball(world: &mut World) -> Result<BodyId, SceneError> {
     let body = world
         .create_body(&body_definition)
         .map_err(|_error| SceneError::Body)?;
-    let circle = CircleShape::new(Vec2::ZERO, DYNAMIC_BALL_RADIUS)
-        .map_err(|_error| SceneError::Geometry)?;
+    let circle =
+        CircleShape::new(Vec2::ZERO, DYNAMIC_BALL_RADIUS).map_err(|_error| SceneError::Geometry)?;
     let fixture_definition = FixtureDef::new(
         Shape::from(circle),
         DYNAMIC_BALL_DENSITY,

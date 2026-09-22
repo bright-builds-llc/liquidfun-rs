@@ -51,6 +51,32 @@ impl World {
         Ok(self.commit_preflighted_particle(system, input, definition.lifetime(), diagnostic_id))
     }
 
+    /// Drops the oldest particles so `additional` creations fit, in one compaction.
+    ///
+    /// Emit loops should call this before creating that batch.
+    ///
+    /// # Errors
+    ///
+    /// Returns a scoped owner error, or a capacity error when the system cannot
+    /// evict by age.
+    pub fn reserve_particle_creations(
+        &mut self,
+        system: ParticleSystemId,
+        additional: usize,
+    ) -> Result<(), CreateObjectError> {
+        self.ensure_not_poisoned_for_handle()?;
+        self.particle_systems.get(system)?;
+        if additional == 0 {
+            return Ok(());
+        }
+        let record = self.system_mut_after_validation(system);
+        record
+            .lifetime
+            .evict_oldest_for_creations(&mut record.storage, additional)
+            .map_err(particle_lifecycle_creation_error)?;
+        Ok(())
+    }
+
     pub(super) fn commit_preflighted_particle(
         &mut self,
         system: ParticleSystemId,

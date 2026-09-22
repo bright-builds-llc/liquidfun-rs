@@ -445,10 +445,12 @@ mod tests {
             .storage
             .replace_force_range(0..1, &[Vec2::new(1.0, 0.0)]);
         let before_second = fixture.storage.velocities()[0];
-        force(&mut fixture.storage, definition, 0.5).expect("second consume starts from zeroed buffer");
+        force(&mut fixture.storage, definition, 0.5)
+            .expect("second consume starts from zeroed buffer");
 
         // Assert
-        let expected = before_second + 0.5 * particle_inverse_mass(definition) * Vec2::new(1.0, 0.0);
+        let expected =
+            before_second + 0.5 * particle_inverse_mass(definition) * Vec2::new(1.0, 0.0);
         assert_eq!(fixture.storage.velocities()[0], expected);
         assert_eq!(fixture.storage.forces(), &[Vec2::ZERO]);
     }

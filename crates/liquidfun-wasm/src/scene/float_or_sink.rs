@@ -326,9 +326,7 @@ mod tests {
         session
             .apply_control("body", "cork")
             .expect("cork preset should apply");
-        session
-            .apply_action("drop-body")
-            .expect("cork should drop");
+        session.apply_action("drop-body").expect("cork should drop");
         session
             .apply_control("body", "stone")
             .expect("stone preset should apply");

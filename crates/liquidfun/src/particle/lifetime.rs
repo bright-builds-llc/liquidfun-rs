@@ -505,6 +505,34 @@ impl ParticleLifetimeState {
         Ok(Some(outcome))
     }
 
+    /// Frees enough oldest particles for `additional` creations in one compaction.
+    pub(crate) fn evict_oldest_for_creations(
+        &mut self,
+        storage: &mut ParticleStorage,
+        additional: usize,
+    ) -> Result<Option<ParticleCompactionOutcome>, ParticleLifecycleError> {
+        let Some(maximum) = self.maybe_maximum_count else {
+            return Ok(None);
+        };
+        let needed = storage
+            .len()
+            .saturating_add(additional)
+            .saturating_sub(maximum);
+        if needed == 0 {
+            return Ok(None);
+        }
+        if !self.destroy_by_age {
+            return Err(ParticleLifecycleError::CapacityExceeded { limit: maximum });
+        }
+        let evict = needed.min(storage.len());
+        for rank in 0..evict {
+            self.destroy_oldest_particle(storage, rank, false)?;
+        }
+        let outcome = compact_pending_with_occurrences(storage)?;
+        self.note_destroyed(&outcome.destroyed);
+        Ok(Some(outcome))
+    }
+
     fn sort_if_dirty(
         &mut self,
         storage: &mut ParticleStorage,

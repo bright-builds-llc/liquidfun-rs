@@ -197,9 +197,9 @@ impl SceneHooks for LiquidTimerHooks {
 mod tests {
     use liquidfun::ParticleFlags;
 
+    use crate::ProofFrame;
     use crate::scene::SceneId;
     use crate::session::{SessionCore, SessionError};
-    use crate::ProofFrame;
 
     #[test]
     fn create_builds_bowl_slab_and_drain_geometry() {

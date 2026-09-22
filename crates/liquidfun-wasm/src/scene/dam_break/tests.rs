@@ -380,8 +380,9 @@ fn dam_break_stays_finite_and_outside_walls_after_settling() {
                 speed <= extreme_speed,
                 "extreme velocity at step {step_index} particle {index}: speed={speed} (critical≈{critical}) p={position:?} v={velocity:?}"
             );
-            let deeply_in_floor =
-                position.y < floor_top - particle_radius && position.x > left_inner && position.x < right_inner;
+            let deeply_in_floor = position.y < floor_top - particle_radius
+                && position.x > left_inner
+                && position.x < right_inner;
             let deeply_in_left =
                 position.x < left_inner - particle_radius && position.y > 0.0 && position.y < 8.0;
             let deeply_in_right =
@@ -392,7 +393,10 @@ fn dam_break_stays_finite_and_outside_walls_after_settling() {
             );
         }
         if step_index % 600 == 599 {
-            eprintln!("dam_break progress step={} max_speed={max_speed:.3}", step_index + 1);
+            eprintln!(
+                "dam_break progress step={} max_speed={max_speed:.3}",
+                step_index + 1
+            );
         }
     }
 }

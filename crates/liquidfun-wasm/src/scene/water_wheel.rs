@@ -302,6 +302,12 @@ fn create_seed_system(world: &mut World) -> Result<ParticleSystemId, SceneError>
 }
 
 fn emit_jet(world: &mut World, system: ParticleSystemId, velocity: Vec2) {
+    if world
+        .reserve_particle_creations(system, usize::from(EMIT_PER_STEP))
+        .is_err()
+    {
+        return;
+    }
     for index in 0..EMIT_PER_STEP {
         let position = Vec2::new(
             JET_POSITION.x,

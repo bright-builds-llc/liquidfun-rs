@@ -225,6 +225,12 @@ fn emit_stream(
     aim_from_up: f32,
 ) {
     let velocity = aim_velocity(aim_from_up, speed);
+    if world
+        .reserve_particle_creations(system, usize::from(count))
+        .is_err()
+    {
+        return;
+    }
     for index in 0..count {
         let position = Vec2::new(
             NOZZLE_POSITION.x + f32::from(index) * EMIT_SPACING,

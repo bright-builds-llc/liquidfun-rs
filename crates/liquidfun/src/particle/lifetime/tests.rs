@@ -149,6 +149,41 @@ fn full_capacity_evicts_canonical_tie_without_listener_request() {
 }
 
 #[test]
+fn creation_batch_evicts_the_oldest_particles_together() {
+    // Arrange
+    let definition = system_definition(3);
+    let mut storage = storage(3);
+    let short = storage.create(input()).expect("short-lived particle fits");
+    let long = storage.create(input()).expect("long-lived particle fits");
+    let middle = storage.create(input()).expect("middle-lived particle fits");
+    let mut state = ParticleLifetimeState::new(definition, &mut storage);
+    state
+        .initialize_created_particle(&mut storage, short, 1.0)
+        .expect("short lifetime is valid");
+    state
+        .initialize_created_particle(&mut storage, long, 9.0)
+        .expect("long lifetime is valid");
+    state
+        .initialize_created_particle(&mut storage, middle, 4.0)
+        .expect("middle lifetime is valid");
+
+    // Act
+    let outcome = state
+        .evict_oldest_for_creations(&mut storage, 2)
+        .expect("destroy-by-age frees a batch")
+        .expect("two creations past the cap evict two particles");
+
+    // Assert
+    let destroyed = outcome
+        .destroyed
+        .iter()
+        .map(|snapshot| snapshot.id)
+        .collect::<Vec<_>>();
+    assert_eq!(destroyed, vec![short, middle]);
+    assert_eq!(storage.particle_ids(), &[long]);
+}
+
+#[test]
 fn compaction_emits_requested_occurrences_before_ascending_invalidation() {
     // Arrange
     let mut storage = storage(4);
