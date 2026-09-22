@@ -239,6 +239,51 @@ describe("recordProjectedSamples", () => {
     expect(log.filter((entry) => entry === "advance:3")).toHaveLength(20);
     expect(log.filter((entry) => entry === "capture")).toHaveLength(21);
   });
+
+  it("runs beforeSample before that sample's engine advance", () => {
+    // Arrange
+    const log: string[] = [];
+    const driver: ExportDriver = {
+      applyControl() {
+        log.push("control");
+      },
+      advance(stepCount) {
+        log.push(`advance:${stepCount}`);
+      },
+      captureFrame() {
+        log.push("capture");
+        return emptyFrame();
+      },
+    };
+
+    // Act
+    recordProjectedSamples(
+      driver,
+      {
+        durationSeconds: 1,
+        controls: [],
+        viewportWidth: 320,
+        viewportHeight: 180,
+        zoom: 1,
+        panX: 0,
+        panY: 0,
+        maxRenderedParticles: 1,
+        beforeSample(sampleIndex) {
+          log.push(`before:${sampleIndex}`);
+        },
+      },
+      () => undefined,
+    );
+
+    // Assert
+    expect(log.slice(0, 5)).toEqual([
+      "before:0",
+      "capture",
+      "before:1",
+      "advance:3",
+      "capture",
+    ]);
+  });
 });
 
 describe("buildAnimatedSvg", () => {

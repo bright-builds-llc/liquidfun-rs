@@ -18,9 +18,8 @@ C++ reference available for optional comparisons.
 
 ## Web playground
 
-The playground has six native scenes: Dam Break, Fountain, Float or Sink,
-Color Mixer, Jelly Drop, and Water Wheel. Visitors can open the hosted
-playground at
+The playground's native scenes are listed in the demo gallery. Visitors can
+open the hosted playground at
 <https://bright-builds-llc.github.io/liquidfun-rs/#/scene/dam-break>.
 The recorded Phase 19 live revision is source
 `d3d8688dabbacd54a6b0fa5fc6a055082f0bcf9e`. Production JavaScript and WASM
@@ -33,32 +32,79 @@ WEBTEST-01 gate and does not claim Firefox or Safari coverage.
 
 ### Demo gallery
 
-Each preview is generated deterministically from the Rust/WASM playground.
-Select a preview for the full MP4 recording, or open the linked live scene.
+<!-- readme-svg-gallery:begin -->
+
+Each preview is a 10 second looping animated SVG. The frame is 1280 by 960,
+wireframe, with the identity camera. Scenes that stay still until you act
+include one cue. Select a title or preview to open the live scene. A
+post-merge workflow regenerates these files and commits them when the
+bytes change.
 
 #### [Dam Break](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/dam-break)
 
-[![Dam Break simulation preview](docs/assets/demos/dam-break.webp)](docs/assets/demos/dam-break.mp4)
+[![Dam Break simulation preview](docs/assets/readme/dam-break-10s.svg)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/dam-break)
 
 #### [Fountain](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/fountain)
 
-[![Fountain simulation preview](docs/assets/demos/fountain.webp)](docs/assets/demos/fountain.mp4)
+[![Fountain simulation preview](docs/assets/readme/fountain-10s.svg)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/fountain)
 
 #### [Float or Sink](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/float-or-sink)
 
-[![Float or Sink simulation preview](docs/assets/demos/float-or-sink.webp)](docs/assets/demos/float-or-sink.mp4)
+[![Float or Sink simulation preview](docs/assets/readme/float-or-sink-10s.svg)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/float-or-sink)
 
 #### [Color Mixer](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/color-mixer)
 
-[![Color Mixer simulation preview](docs/assets/demos/color-mixer.webp)](docs/assets/demos/color-mixer.mp4)
+[![Color Mixer simulation preview](docs/assets/readme/color-mixer-10s.svg)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/color-mixer)
 
 #### [Jelly Drop](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/jelly-drop)
 
-[![Jelly Drop simulation preview](docs/assets/demos/jelly-drop.webp)](docs/assets/demos/jelly-drop.mp4)
+[![Jelly Drop simulation preview](docs/assets/readme/jelly-drop-10s.svg)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/jelly-drop)
 
 #### [Water Wheel](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/water-wheel)
 
-[![Water Wheel simulation preview](docs/assets/demos/water-wheel.webp)](docs/assets/demos/water-wheel.mp4)
+[![Water Wheel simulation preview](docs/assets/readme/water-wheel-10s.svg)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/water-wheel)
+
+#### [Particles](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/particles)
+
+[![Particles simulation preview](docs/assets/readme/particles-10s.svg)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/particles)
+
+#### [Liquid Timer](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/liquid-timer)
+
+[![Liquid Timer simulation preview](docs/assets/readme/liquid-timer-10s.svg)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/liquid-timer)
+
+#### [Surface Tension](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/surface-tension)
+
+[![Surface Tension simulation preview](docs/assets/readme/surface-tension-10s.svg)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/surface-tension)
+
+#### [Elastic Particles](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/elastic-particles)
+
+[![Elastic Particles simulation preview](docs/assets/readme/elastic-particles-10s.svg)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/elastic-particles)
+
+#### [Rigid Particles](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/rigid-particles)
+
+[![Rigid Particles simulation preview](docs/assets/readme/rigid-particles-10s.svg)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/rigid-particles)
+
+#### [Soup](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/soup)
+
+[![Soup simulation preview](docs/assets/readme/soup-10s.svg)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/soup)
+
+#### [Soup Stirrer](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/soup-stirrer)
+
+[![Soup Stirrer simulation preview](docs/assets/readme/soup-stirrer-10s.svg)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/soup-stirrer)
+
+#### [Impulse](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/impulse)
+
+[![Impulse simulation preview](docs/assets/readme/impulse-10s.svg)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/impulse)
+
+#### [Wave Machine](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/wave-machine)
+
+[![Wave Machine simulation preview](docs/assets/readme/wave-machine-10s.svg)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/wave-machine)
+
+#### [Theo Jansen](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/theo-jansen)
+
+[![Theo Jansen simulation preview](docs/assets/readme/theo-jansen-10s.svg)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/theo-jansen)
+
+<!-- readme-svg-gallery:end -->
 
 The private, unpublished `liquidfun-wasm` wrapper and SolidJS player rebuild
 from a clean checkout with the exact local tools:
@@ -74,7 +120,7 @@ just web-player-smoke
 
 `just web-build` regenerates the current checkout's WASM package and the
 production site. `just web-player-smoke` is the local WEBTEST-01 gate: Chromium
-against the production-base `/liquidfun-rs/` build exercises all six scenes,
+against the production-base `/liquidfun-rs/` build exercises every catalog scene,
 playback and reset, one representative pointer gesture plus a labeled control,
 pointercancel, resize-then-drag, hidden-tab recovery, and a 375px keyboard and
 page-scroll pass. It does not claim Firefox or Safari coverage. `just web-smoke`
@@ -85,31 +131,21 @@ not the v1.1 product gate and is
 not expected to pass against current Play/Pause/Reset chrome.
 Ordinary playground proof is `just web-player-smoke`.
 
-`just demo-media` and `just demo-media-check` are separate capture workflows for
-the committed README gallery assets. They are not required for ordinary web
-builds or playground use, but they do require local `ffmpeg`, `ffprobe`, and
-`webpmux` on `PATH`; `webpmux` is supplied by WebP tools. This Task 4 run
-verified `ffmpeg` 8.1.1, `ffprobe` 8.1.1, `webpmux` 1.6.0, and the capture
-profile recorded in `docs/assets/demos/manifest.json`.
+`just readme-svg` rebuilds the WASM package, writes one 10 second animated SVG
+per catalog scene under `docs/assets/readme/`, and upserts the demo gallery.
+The post-merge Readme SVG workflow runs the same command and commits when the
+export changes. A new scene also needs a plan in
+`web/scripts/readme-svg/plans.ts`, including a cue when the default scene does
+not move on its own.
+
+`just demo-media` and `just demo-media-check` remain optional local MP4 and
+WebP captures into `docs/assets/demos`. They are not the README gallery. They
+require `ffmpeg`, `ffprobe`, and `webpmux` on `PATH`.
 
 `web/src/generated/liquidfun-wasm`, `web/dist`, Playwright output, and
 `target/web-build` are ignored and regenerated. Ordinary native builds and the
 packaged `liquidfun` crate require none of Bun, Chromium, wasm-pack, C++, or
 the upstream checkout.
-
-<!-- dam-break-animated-svg:begin -->
-
-### Dam Break animated SVG
-
-A 10 second loop of the default Dam Break scene from the playground's animated
-SVG export. The clip uses medium water, normal gravity, the identity camera,
-wireframe rendering, and the demo gallery's 1280 by 960 frame. A post-merge
-workflow regenerates the file and does not commit when the export matches
-this copy.
-
-[![Dam Break 10 second animated SVG](docs/assets/demos/dam-break-10s.svg)](docs/assets/demos/dam-break-10s.svg)
-
-<!-- dam-break-animated-svg:end -->
 
 ## Hobby development
 

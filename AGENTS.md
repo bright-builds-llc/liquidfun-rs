@@ -66,6 +66,16 @@ On 2026-09-16, the repository owner authorized independent AI review and removed
 - The reviewer must inspect the complete relevant diff and evidence and record an acknowledgment bound to the exact review digest, actual reviewer identity, and actual review time. Identify AI review honestly; never represent it as human approval. Passing automated checks alone is not a review acknowledgment.
 - Preserve source, provenance, closure, digest, and transaction checks. This changes reviewer eligibility only; it does not waive other acceptance criteria or authorize package releases.
 
+### README scene gallery
+
+When a scenario is added to the playground catalog (`web/src/catalog/scenes.ts`),
+also extend the README SVG plans in `web/scripts/readme-svg/plans.ts` with that
+scene id and any cue the preview needs. `just readme-svg` writes
+`docs/assets/readme/<id>-10s.svg` and the README upserter refreshes the demo
+gallery from those plans. The post-merge Readme SVG workflow runs the same
+command. A catalog scene missing from the plans fails
+`assertReadmeSvgPlanCoverage`.
+
 <!-- GSD:project-start source:PROJECT.md -->
 
 ## Project
