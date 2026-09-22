@@ -110,7 +110,7 @@ Plans:
 - [x] 28-04-PLAN.md — Wave Machine sim-time revolute motor
 - [x] 28-05-PLAN.md — Theo Jansen soft legs + live motor reverse
 - [x] 28-06-PLAN.md — Catalog append, controls, credits, sixteen-demo PAGE_SUMMARY
-- [ ] 28-07-PLAN.md — Sixteen-scene Vitest contract + capture-plan sync
+- [x] 28-07-PLAN.md — Sixteen-scene Vitest contract + capture-plan sync
 - [ ] 28-08-PLAN.md — Chromium smoke: five new scenes + gestures + eleven regression
 **UI hint**: yes
 
@@ -131,7 +131,7 @@ Plans:
 **Goal:** [To be planned]
 **Requirements**: TBD
 **Depends on:** Phase 29
-**Plans:** 6/8 plans executed
+**Plans:** 7/8 plans executed
 
 Plans:
 - [ ] TBD (run /gsd-plan-phase 30 to break down)
@@ -182,7 +182,7 @@ Plans:
 | 25. WASM sanity and honest close | v1.2 | 2/2 | Complete | 2026-09-21 |
 | 26. Catalog shell and basin scenes | v1.3 | 5/5 | Complete    | 2026-09-22 |
 | 27. Material flag groups | v1.3 | 6/6 | Complete    | 2026-09-22 |
-| 28. Interaction seams | v1.3 | 6/8 | In Progress|  |
+| 28. Interaction seams | v1.3 | 7/8 | In Progress|  |
 | 29. Sparky, Drawing, and full catalog | v1.3 | 0/TBD | Not started | - |
 | 30. Periodic hydraulic fountain | v1.3 | 0/TBD | Not started | - |
 | 31. Sinusoidal wave tank | v1.3 | 0/TBD | Not started | - |

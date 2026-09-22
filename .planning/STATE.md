@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Reference Testbed Scenes
 status: executing
-stopped_at: Completed 28-06-PLAN.md
-last_updated: "2026-09-22T14:30:36.201Z"
+stopped_at: Completed 28-07-PLAN.md
+last_updated: "2026-09-22T14:35:06.519Z"
 last_activity: 2026-09-22
 progress:
   total_phases: 8
   completed_phases: 2
   total_plans: 19
-  completed_plans: 17
-  percent: 89
+  completed_plans: 18
+  percent: 95
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-09-21)
 ## Current Position
 
 Phase: 28 (Interaction seams) — EXECUTING
-Plan: 7 of 8
+Plan: 8 of 8
 Status: Ready to execute
 Last activity: 2026-09-22
 
@@ -87,6 +87,8 @@ v1.2 decisions are in `.planning/milestones/v1.2-STATE.md` and PROJECT.md Key De
 - [Phase 28]: Split tests under theo_jansen/ to stay under Bright Builds file-length limit — Implementation plus inline tests exceeded 628 physical lines
 - [Phase 28]: Left PlaygroundShell and THIRD_PARTY_NOTICES unchanged — no eleven-demo hardcoding and no new adapted notices
 - [Phase 28]: Extended scenes.test.ts Record tables in Task 2 so typecheck passes after SceneId grew
+- [Phase 28]: navigation.test.ts needed no edits — it already maps SCENE_IDS dynamically
+- [Phase 28]: Used bun run test:unit because package.json has no test script
 
 ### Pending Todos
 
@@ -111,6 +113,6 @@ None for roadmap. A fresh unprofiled pair is required before claiming the ≤ 3�
 
 ## Session Continuity
 
-Last session: 2026-09-22T14:30:36.198Z
-Stopped at: Completed 28-06-PLAN.md
+Last session: 2026-09-22T14:35:06.515Z
+Stopped at: Completed 28-07-PLAN.md
 Resume file: None
