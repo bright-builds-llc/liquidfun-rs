@@ -38,12 +38,19 @@ export const SCENE_HASH_PATHS: Readonly<Record<SceneId, string>> = {
   "surface-tension": "/liquidfun-rs/#/scene/surface-tension",
   "elastic-particles": "/liquidfun-rs/#/scene/elastic-particles",
   "rigid-particles": "/liquidfun-rs/#/scene/rigid-particles",
+  soup: "/liquidfun-rs/#/scene/soup",
+  "soup-stirrer": "/liquidfun-rs/#/scene/soup-stirrer",
+  impulse: "/liquidfun-rs/#/scene/impulse",
+  "wave-machine": "/liquidfun-rs/#/scene/wave-machine",
+  "theo-jansen": "/liquidfun-rs/#/scene/theo-jansen",
 };
 
 const SELECT_NEXT_VALUE: Readonly<Record<string, string>> = {
   "Aim angle": "left",
   "Stir speed": "fast",
   "Jet strength": "strong",
+  Push: "impulse",
+  "Motor direction": "reverse",
 };
 
 export async function numericAttribute(

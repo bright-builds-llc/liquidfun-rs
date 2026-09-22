@@ -42,6 +42,9 @@ const POINTER_CONTROL: Readonly<
   "color-mixer": { gesture: "drag", control: "Stir speed" },
   "jelly-drop": { gesture: "click", control: "Poke jelly" },
   "water-wheel": { gesture: "drag", control: "Jet strength" },
+  "soup-stirrer": { gesture: "click", control: "Toggle paddle rail" },
+  impulse: { gesture: "click", control: "Push" },
+  "theo-jansen": { gesture: "click", control: "Motor direction" },
 };
 
 const INTERACTIVE_SCENE_IDS = SCENE_IDS.filter((sceneId) => {
