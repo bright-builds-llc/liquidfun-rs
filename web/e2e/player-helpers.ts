@@ -18,7 +18,10 @@ export const MAX_STEPS_PER_FRAME = 4;
 export const RESET_STEP_CEILING = 8;
 export const CONSTRUCTION_RESET_HINT =
   "Changing this setting recreates the scene from its documented initial state.";
-export const SIX_SCENE_TIMEOUT_MS = 120_000;
+/** Budget for loops that open every catalog scene (open/reset or play/pause/reset). */
+export const ALL_SCENE_TIMEOUT_MS = 160_000;
+/** @deprecated Prefer `ALL_SCENE_TIMEOUT_MS` — kept for call-site compatibility. */
+export const SIX_SCENE_TIMEOUT_MS = ALL_SCENE_TIMEOUT_MS;
 export const DAM_BREAK_HINT =
   "Drag the obstacle to a new place in the basin. Labeled controls also work from the keyboard.";
 export const DESKTOP_VIEWPORT = { width: 1280, height: 720 } as const;
@@ -30,6 +33,8 @@ export const SCENE_HASH_PATHS: Readonly<Record<SceneId, string>> = {
   "color-mixer": "/liquidfun-rs/#/scene/color-mixer",
   "jelly-drop": "/liquidfun-rs/#/scene/jelly-drop",
   "water-wheel": "/liquidfun-rs/#/scene/water-wheel",
+  particles: "/liquidfun-rs/#/scene/particles",
+  "liquid-timer": "/liquidfun-rs/#/scene/liquid-timer",
 };
 
 const SELECT_NEXT_VALUE: Readonly<Record<string, string>> = {

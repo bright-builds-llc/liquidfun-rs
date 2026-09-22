@@ -27,13 +27,13 @@ import {
   RESET_STEP_CEILING,
   resetNearZero,
   SCENE_HASH_PATHS,
-  SIX_SCENE_TIMEOUT_MS,
+  ALL_SCENE_TIMEOUT_MS,
   tabUntilFirstSceneSelectFocused,
   UNKNOWN_SCENE_PATH,
 } from "./player-helpers";
 
 const POINTER_CONTROL: Readonly<
-  Record<SceneId, { gesture: "drag" | "click"; control: string }>
+  Partial<Record<SceneId, { gesture: "drag" | "click"; control: string }>>
 > = {
   "dam-break": { gesture: "drag", control: "Drop obstacle" },
   fountain: { gesture: "drag", control: "Aim angle" },
@@ -42,6 +42,16 @@ const POINTER_CONTROL: Readonly<
   "jelly-drop": { gesture: "click", control: "Poke jelly" },
   "water-wheel": { gesture: "drag", control: "Jet strength" },
 };
+
+const INTERACTIVE_SCENE_IDS = SCENE_IDS.filter((sceneId) => {
+  const scene = SCENES.find((entry) => entry.id === sceneId);
+  return scene !== undefined && scene.controls.length > 0;
+});
+
+const WATCH_FIRST_SCENE_IDS = SCENE_IDS.filter((sceneId) => {
+  const scene = SCENES.find((entry) => entry.id === sceneId);
+  return scene !== undefined && scene.controls.length === 0;
+});
 
 test("advances steps and canvas pixels at controlled 120 Hz", async ({
   page,
@@ -149,7 +159,7 @@ test("switches rendering without stepping and persists across scenes and reload"
 test("opens each native scene from desktop navigation, shows credits, and resets", async ({
   page,
 }) => {
-  test.setTimeout(SIX_SCENE_TIMEOUT_MS);
+  test.setTimeout(ALL_SCENE_TIMEOUT_MS);
   await page.goto(PLAYGROUND_ROOT_PATH, { waitUntil: "domcontentloaded" });
 
   for (const [index, scene] of SCENES.entries()) {
@@ -226,18 +236,22 @@ test("clears hidden-tab catch-up so the next frame advances at most four steps",
   await proveHiddenTabMaxFour(page);
 });
 
-test("plays each scene, accepts one pointer gesture, and activates a labeled control", async ({
+test("plays each interactive scene, accepts one pointer gesture, and activates a labeled control", async ({
   page,
 }) => {
-  test.setTimeout(SIX_SCENE_TIMEOUT_MS);
+  test.setTimeout(ALL_SCENE_TIMEOUT_MS);
 
-  for (const sceneId of SCENE_IDS) {
+  for (const sceneId of INTERACTIVE_SCENE_IDS) {
     const scene = SCENES.find((entry) => entry.id === sceneId);
     if (scene === undefined) {
       throw new Error(`missing catalog scene ${sceneId}`);
     }
 
-    const mapping = POINTER_CONTROL[sceneId];
+    const maybeMapping = POINTER_CONTROL[sceneId];
+    if (maybeMapping === undefined) {
+      throw new Error(`missing pointer/control mapping for ${sceneId}`);
+    }
+
     await page.goto(SCENE_HASH_PATHS[sceneId]);
     await expectReadySceneChrome(page, scene.title);
 
@@ -246,10 +260,52 @@ test("plays each scene, accepts one pointer gesture, and activates a labeled con
       .poll(() => numericAttribute(main, "data-step-index"))
       .toBeGreaterThan(0);
 
-    await performSceneGesture(page, mapping.gesture);
+    await performSceneGesture(page, maybeMapping.gesture);
     await expectAcceptedPointerGesture(page);
-    await activateLabeledControl(page, mapping.control);
+    await activateLabeledControl(page, maybeMapping.control);
     await expect(page.getByRole("status")).toHaveText(PLAYING_STATUS);
+  }
+});
+
+test("plays each watch-first scene through pause, play, and reset without pointer controls", async ({
+  page,
+}) => {
+  test.setTimeout(ALL_SCENE_TIMEOUT_MS);
+
+  for (const sceneId of WATCH_FIRST_SCENE_IDS) {
+    const scene = SCENES.find((entry) => entry.id === sceneId);
+    if (scene === undefined) {
+      throw new Error(`missing catalog scene ${sceneId}`);
+    }
+    expect(scene.controls.length).toBe(0);
+    expect(POINTER_CONTROL[sceneId]).toBeUndefined();
+
+    await page.goto(SCENE_HASH_PATHS[sceneId]);
+    await expectReadySceneChrome(page, scene.title);
+
+    const main = page.locator("main");
+    const status = page.getByRole("status");
+    await expect
+      .poll(() => numericAttribute(main, "data-step-index"))
+      .toBeGreaterThan(0);
+
+    await page.getByRole("button", { name: "Pause scene" }).click();
+    await expect(status).toHaveText(PAUSED_STATUS);
+    const pausedStep = await numericAttribute(main, "data-step-index");
+    await page.waitForTimeout(PAUSE_HOLD_MS);
+    expect(await numericAttribute(main, "data-step-index")).toBe(pausedStep);
+
+    await page.getByRole("button", { name: "Play scene" }).click();
+    await expect(status).toHaveText(PLAYING_STATUS);
+    await expect
+      .poll(() => numericAttribute(main, "data-step-index"))
+      .toBeGreaterThan(pausedStep);
+
+    await resetNearZero(page);
+    await expect(page.locator("#scene-credits-title")).toHaveText("Scene source");
+    await expect(
+      page.getByRole("link", { name: "View scene source" }),
+    ).toBeVisible();
   }
 });
 

@@ -6,7 +6,7 @@ import {
   PAUSED_STATUS,
   PLAYING_STATUS,
   SCENE_HASH_PATHS,
-  SIX_SCENE_TIMEOUT_MS,
+  ALL_SCENE_TIMEOUT_MS,
 } from "./player-helpers";
 
 async function resetPlayingScene(page: Page, title: string): Promise<void> {
@@ -74,7 +74,7 @@ test("resets Water Wheel Jet strength from strong to medium", async ({
 });
 
 test("resets Dam Break Water amount from large to medium", async ({ page }) => {
-  test.setTimeout(SIX_SCENE_TIMEOUT_MS);
+  test.setTimeout(ALL_SCENE_TIMEOUT_MS);
 
   // Arrange
   await page.goto(SCENE_HASH_PATHS["dam-break"]);
@@ -98,7 +98,7 @@ test("resets Dam Break Water amount from large to medium", async ({ page }) => {
 test("resets Color Mixer Mix strength from gentle to strong", async ({
   page,
 }) => {
-  test.setTimeout(SIX_SCENE_TIMEOUT_MS);
+  test.setTimeout(ALL_SCENE_TIMEOUT_MS);
 
   // Arrange
   await page.goto(SCENE_HASH_PATHS["color-mixer"]);
