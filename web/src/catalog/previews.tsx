@@ -208,6 +208,143 @@ function RigidParticlesPreview() {
   );
 }
 
+function SoupBasin() {
+  return (
+    <>
+      <line x1="28" y1="34" x2="28" y2="74" stroke={RIGID} stroke-width="3" />
+      <line x1="28" y1="74" x2="132" y2="74" stroke={RIGID} stroke-width="3" />
+      <line x1="132" y1="74" x2="132" y2="34" stroke={RIGID} stroke-width="3" />
+      <rect x="32" y="48" width="96" height="24" fill={WATER} />
+      <circle cx="56" cy="56" r="6" fill={MIX_RED} />
+      <rect x="78" y="52" width="10" height="10" fill={RIGID} />
+      <rect x="100" y="54" width="10" height="10" fill={MIX_GREEN} />
+      <line
+        x1="40"
+        y1="44"
+        x2="52"
+        y2="44"
+        stroke={MIX_GREEN}
+        stroke-width="2"
+      />
+      <line
+        x1="110"
+        y1="46"
+        x2="122"
+        y2="46"
+        stroke={ACCENT_WATER}
+        stroke-width="2"
+      />
+    </>
+  );
+}
+
+function SoupPreview() {
+  return (
+    <PreviewFrame>
+      <SoupBasin />
+    </PreviewFrame>
+  );
+}
+
+function SoupStirrerPreview() {
+  return (
+    <PreviewFrame>
+      <SoupBasin />
+      <line
+        x1="52"
+        y1="30"
+        x2="108"
+        y2="30"
+        stroke={RIGID}
+        stroke-width="3"
+      />
+      <circle
+        cx="80"
+        cy="42"
+        r="12"
+        fill="none"
+        stroke={RIGID}
+        stroke-width="3"
+      />
+    </PreviewFrame>
+  );
+}
+
+function ImpulsePreview() {
+  return (
+    <PreviewFrame>
+      <rect
+        x="36"
+        y="18"
+        width="88"
+        height="54"
+        fill="none"
+        stroke={RIGID}
+        stroke-width="3"
+      />
+      <circle cx="80" cy="45" r="16" fill={WATER} />
+      <line
+        x1="96"
+        y1="38"
+        x2="112"
+        y2="28"
+        stroke={JELLY}
+        stroke-width="2"
+      />
+    </PreviewFrame>
+  );
+}
+
+function WaveMachinePreview() {
+  return (
+    <PreviewFrame>
+      <g transform="rotate(-12 80 50)">
+        <rect
+          x="40"
+          y="24"
+          width="80"
+          height="48"
+          fill="none"
+          stroke={RIGID}
+          stroke-width="3"
+        />
+        <rect x="46" y="42" width="68" height="24" fill={WATER} />
+      </g>
+    </PreviewFrame>
+  );
+}
+
+function TheoJansenPreview() {
+  return (
+    <PreviewFrame>
+      <line x1="20" y1="74" x2="140" y2="74" stroke={RIGID} stroke-width="3" />
+      <line x1="24" y1="40" x2="24" y2="74" stroke={RIGID} stroke-width="3" />
+      <line x1="136" y1="40" x2="136" y2="74" stroke={RIGID} stroke-width="3" />
+      <rect
+        x="58"
+        y="40"
+        width="36"
+        height="12"
+        fill="none"
+        stroke={RIGID}
+        stroke-width="3"
+      />
+      <circle
+        cx="76"
+        cy="60"
+        r="8"
+        fill="none"
+        stroke={RIGID}
+        stroke-width="3"
+      />
+      <line x1="68" y1="52" x2="56" y2="70" stroke={RIGID} stroke-width="2" />
+      <line x1="84" y1="52" x2="92" y2="70" stroke={RIGID} stroke-width="2" />
+      <line x1="76" y1="52" x2="76" y2="68" stroke={RIGID} stroke-width="2" />
+      <rect x="62" y="28" width="28" height="10" fill={WATER} />
+    </PreviewFrame>
+  );
+}
+
 /** Static token-only SVG preview. Never starts a WASM session. */
 export function ScenePreview(props: ScenePreviewProps) {
   switch (props.sceneId) {
@@ -233,5 +370,15 @@ export function ScenePreview(props: ScenePreviewProps) {
       return <ElasticParticlesPreview />;
     case "rigid-particles":
       return <RigidParticlesPreview />;
+    case "soup":
+      return <SoupPreview />;
+    case "soup-stirrer":
+      return <SoupStirrerPreview />;
+    case "impulse":
+      return <ImpulsePreview />;
+    case "wave-machine":
+      return <WaveMachinePreview />;
+    case "theo-jansen":
+      return <TheoJansenPreview />;
   }
 }

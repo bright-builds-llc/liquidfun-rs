@@ -32,6 +32,12 @@ const UI_SPEC_DESCRIPTIONS: Readonly<Record<SceneId, string>> = {
     "Watch three soft particle clumps deform when a ball falls on them.",
   "rigid-particles":
     "Watch three colored rigid clumps stay solid when a ball hits them.",
+  soup: "Watch a basin of liquid hold floating solid bits.",
+  "soup-stirrer": "Watch a paddle stir soup, and free or restore its rail.",
+  impulse: "Click or tap inside the box to shove the whole particle blob.",
+  "wave-machine": "Watch a motorized tank rock and slosh the water inside.",
+  "theo-jansen":
+    "Watch a walker move under a particle load and reverse its motor.",
 };
 
 const UI_SPEC_HINTS: Readonly<Record<SceneId, string>> = {
@@ -52,6 +58,14 @@ const UI_SPEC_HINTS: Readonly<Record<SceneId, string>> = {
   "surface-tension": WATCH_FIRST_HINT,
   "elastic-particles": WATCH_FIRST_HINT,
   "rigid-particles": WATCH_FIRST_HINT,
+  soup: WATCH_FIRST_HINT,
+  "soup-stirrer":
+    "Click or tap the canvas, or use Toggle paddle rail, to free the paddle from its rail or put it back. Labeled controls also work from the keyboard.",
+  impulse:
+    "Click or tap inside the box to shove the particle blob. Use Push to choose force or impulse. Clicks outside the box do nothing. Labeled controls also work from the keyboard.",
+  "wave-machine": WATCH_FIRST_HINT,
+  "theo-jansen":
+    "Use Motor direction to walk forward or reverse under the particle load. Labeled controls also work from the keyboard.",
 };
 
 const KEYBOARD_REMINDER = "Labeled controls also work from the keyboard.";
@@ -403,6 +417,11 @@ describe("SCENES", () => {
       "elastic-particles":
         "crates/liquidfun-wasm/src/scene/elastic_particles.rs",
       "rigid-particles": "crates/liquidfun-wasm/src/scene/rigid_particles.rs",
+      soup: "crates/liquidfun-wasm/src/scene/soup.rs",
+      "soup-stirrer": "crates/liquidfun-wasm/src/scene/soup_stirrer.rs",
+      impulse: "crates/liquidfun-wasm/src/scene/impulse.rs",
+      "wave-machine": "crates/liquidfun-wasm/src/scene/wave_machine.rs",
+      "theo-jansen": "crates/liquidfun-wasm/src/scene/theo_jansen.rs",
     };
     const pinnedBasinInspiration = {
       particles: [
