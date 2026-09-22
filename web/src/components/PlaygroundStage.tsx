@@ -9,6 +9,8 @@ import type { TiltDebug } from "../input/tilt-gravity";
 import type { PointerKind } from "../input/pointer";
 import type { RenderMode } from "../render/mode";
 import type { SceneRoute } from "../routing/hash";
+import type { SvgExportRequest } from "../export/messages";
+import { AnimatedSvgPane } from "./AnimatedSvgPane";
 import { FallbackPanel } from "./FallbackPanel";
 import { PlayerPanel } from "./PlayerPanel";
 import { PlayerSceneChrome } from "./PlayerSceneChrome";
@@ -46,6 +48,7 @@ export type PlaygroundStageProps = {
   readonly onTiltGravityEnabledChange: (enabled: boolean) => void;
   readonly onApplyControl: (name: string, value: string) => void;
   readonly onApplyAction: (name: string) => void;
+  readonly onCreateSvgExportRequest: (durationSeconds: number) => SvgExportRequest | undefined;
 };
 
 /** Routed playground surface for the live scene player. */
@@ -127,6 +130,11 @@ export function PlaygroundStage(props: PlaygroundStageProps) {
               tiltDebug={props.tiltDebug()}
               onTiltGravityEnabledChange={props.onTiltGravityEnabledChange}
             >
+              <AnimatedSvgPane
+                disabled={sceneControlsDisabled()}
+                sceneId={sceneId()}
+                onCreateRequest={props.onCreateSvgExportRequest}
+              />
               <Show when={maybeCurrentScene()}>
                 {(currentScene) => (
                   <PlayerSceneChrome

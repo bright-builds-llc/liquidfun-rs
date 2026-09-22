@@ -263,7 +263,8 @@ figcaption {
   accent-color: #4DA3FF;
 }
 
-.tilt-pane {
+.tilt-pane,
+.svg-export-pane {
   display: grid;
   gap: var(--space-sm);
   min-width: 0;
@@ -273,7 +274,8 @@ figcaption {
   border-radius: 12px;
 }
 
-.tilt-pane h3 {
+.tilt-pane h3,
+.svg-export-pane h3 {
   margin: 0;
   font-size: 16px;
   font-weight: 600;
@@ -293,6 +295,57 @@ figcaption {
 
 .tilt-debug-problem {
   color: #F07178;
+}
+
+.svg-export-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--space-sm);
+}
+
+.svg-export-seconds {
+  display: grid;
+  gap: var(--space-sm);
+  color: #F4F7FA;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.svg-export-seconds input {
+  width: 5.5rem;
+  min-block-size: 44px;
+  padding: 0 var(--space-sm);
+  color: #F4F7FA;
+  font: inherit;
+  font-weight: 400;
+  background: #0B0F14;
+  border: 1px solid #2A3441;
+  border-radius: 8px;
+}
+
+.svg-export-progress {
+  width: 100%;
+  height: 0.75rem;
+  accent-color: #4DA3FF;
+}
+
+.svg-export-hint,
+.svg-export-status {
+  margin: 0;
+  color: #C5D0DA;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+.svg-export-problem {
+  margin: 0;
+  color: #F07178;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.4;
 }
 
 .gravity-arrow {
