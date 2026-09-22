@@ -75,6 +75,8 @@ const WATCH_FIRST_SCENE_IDS = [
   "surface-tension",
   "elastic-particles",
   "rigid-particles",
+  "soup",
+  "wave-machine",
 ] as const;
 const FORBIDDEN_HINT_PHRASES = [
   "Press Space to pause",
@@ -123,6 +125,27 @@ const RIGID_PARTICLES_JS_HREF =
   "https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/lfjs/testbed/tests/testRigidParticles.js";
 const RIGID_PARTICLES_H_HREF =
   "https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Testbed/Tests/RigidParticles.h";
+const SOUP_JS_HREF =
+  "https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/lfjs/testbed/tests/testSoup.js";
+const SOUP_H_HREF =
+  "https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Testbed/Tests/Soup.h";
+const SOUP_STIRRER_JS_HREF =
+  "https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/lfjs/testbed/tests/testSoupStirrer.js";
+const SOUP_STIRRER_H_HREF =
+  "https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Testbed/Tests/SoupStirrer.h";
+const IMPULSE_JS_HREF =
+  "https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/lfjs/testbed/tests/testImpulse.js";
+const IMPULSE_H_HREF =
+  "https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Testbed/Tests/Impulse.h";
+const WAVE_MACHINE_JS_HREF =
+  "https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/lfjs/testbed/tests/testWaveMachine.js";
+const WAVE_MACHINE_H_HREF =
+  "https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Testbed/Tests/WaveMachine.h";
+const THEO_JANSEN_JS_HREF =
+  "https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/lfjs/testbed/tests/testTheoJansen.js";
+const THEO_JANSEN_H_HREF =
+  "https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Testbed/Tests/TheoJansen.h";
+const PINNED_COMMIT = "7f20402173fd143a3988c921bc384459c6a858f2";
 
 function controlLabels(controls: readonly SceneControl[]): string[] {
   return controls.map((control) => control.label);
@@ -136,6 +159,14 @@ function optionLabels(control: SceneControl): string[] {
   return control.values.map((value) => value.label);
 }
 
+function presetValueIds(control: SceneControl): string[] {
+  if (control.kind !== "preset") {
+    return [];
+  }
+
+  return control.values.map((value) => value.id);
+}
+
 function recreatingControlIds(scenes: readonly SceneRecord[]): string[] {
   return scenes.flatMap((scene) =>
     scene.controls
@@ -145,7 +176,7 @@ function recreatingControlIds(scenes: readonly SceneRecord[]): string[] {
 }
 
 describe("SCENES", () => {
-  it("lists eleven locked scenes in the approved order", () => {
+  it("lists sixteen locked scenes in the approved order", () => {
     // Arrange
     const expectedIds = [
       "dam-break",
@@ -159,13 +190,18 @@ describe("SCENES", () => {
       "surface-tension",
       "elastic-particles",
       "rigid-particles",
+      "soup",
+      "soup-stirrer",
+      "impulse",
+      "wave-machine",
+      "theo-jansen",
     ] as const;
 
     // Act
     const ids = SCENES.map((scene) => scene.id);
 
     // Assert
-    expect(SCENES).toHaveLength(11);
+    expect(SCENES).toHaveLength(16);
     expect(ids).toEqual([...SCENE_IDS]);
     expect(ids).toEqual([...expectedIds]);
   });
@@ -184,6 +220,11 @@ describe("SCENES", () => {
       "Surface Tension",
       "Elastic Particles",
       "Rigid Particles",
+      "Soup",
+      "Soup Stirrer",
+      "Impulse",
+      "Wave Machine",
+      "Theo Jansen",
     ];
 
     // Act
@@ -216,7 +257,7 @@ describe("SCENES", () => {
     const descriptions = SCENES.map((scene) => scene.description);
 
     // Assert
-    expect(readyCount).toBe(11);
+    expect(readyCount).toBe(16);
     expect(descriptions).toEqual(
       SCENE_IDS.map((id) => UI_SPEC_DESCRIPTIONS[id]),
     );
@@ -286,6 +327,9 @@ describe("SCENES", () => {
     const colorMixer = maybeSceneById("color-mixer");
     const jellyDrop = maybeSceneById("jelly-drop");
     const waterWheel = maybeSceneById("water-wheel");
+    const soupStirrer = maybeSceneById("soup-stirrer");
+    const impulse = maybeSceneById("impulse");
+    const theoJansen = maybeSceneById("theo-jansen");
 
     // Act
     const recreatingIds = recreatingControlIds(SCENES);
@@ -399,6 +443,45 @@ describe("SCENES", () => {
     expect(maybeSceneById("surface-tension")?.controls).toEqual([]);
     expect(maybeSceneById("elastic-particles")?.controls).toEqual([]);
     expect(maybeSceneById("rigid-particles")?.controls).toEqual([]);
+    expect(maybeSceneById("soup")?.controls).toEqual([]);
+    expect(maybeSceneById("wave-machine")?.controls).toEqual([]);
+    expect(soupStirrer?.controls).toHaveLength(1);
+    expect(soupStirrer?.controls[0]).toMatchObject({
+      id: "toggle-paddle-rail",
+      kind: "action",
+      label: "Toggle paddle rail",
+      recreates: false,
+    });
+    expect(controlLabels(impulse?.controls ?? [])).toEqual(["Push"]);
+    expect(impulse?.controls[0]).toMatchObject({
+      id: "push-mode",
+      kind: "preset",
+      recreates: false,
+    });
+    expect(optionLabels(impulse?.controls[0] as SceneControl)).toEqual([
+      "Force",
+      "Impulse",
+    ]);
+    expect(presetValueIds(impulse?.controls[0] as SceneControl)).toEqual([
+      "force",
+      "impulse",
+    ]);
+    expect(controlLabels(theoJansen?.controls ?? [])).toEqual([
+      "Motor direction",
+    ]);
+    expect(theoJansen?.controls[0]).toMatchObject({
+      id: "motor-direction",
+      kind: "preset",
+      recreates: false,
+    });
+    expect(optionLabels(theoJansen?.controls[0] as SceneControl)).toEqual([
+      "Forward",
+      "Reverse",
+    ]);
+    expect(presetValueIds(theoJansen?.controls[0] as SceneControl)).toEqual([
+      "forward",
+      "reverse",
+    ]);
     expect(recreatingIds).toEqual([...RECREATING_CONTROL_IDS]);
   });
 
@@ -452,6 +535,31 @@ describe("SCENES", () => {
         { label: "Pinned RigidParticles.h", href: RIGID_PARTICLES_H_HREF },
         { label: "LiquidFun showcase", href: SHOWCASE_HREF },
       ],
+      soup: [
+        { label: "Pinned Soup.js", href: SOUP_JS_HREF },
+        { label: "Pinned Soup.h", href: SOUP_H_HREF },
+        { label: "LiquidFun showcase", href: SHOWCASE_HREF },
+      ],
+      "soup-stirrer": [
+        { label: "Pinned SoupStirrer.js", href: SOUP_STIRRER_JS_HREF },
+        { label: "Pinned SoupStirrer.h", href: SOUP_STIRRER_H_HREF },
+        { label: "LiquidFun showcase", href: SHOWCASE_HREF },
+      ],
+      impulse: [
+        { label: "Pinned Impulse.js", href: IMPULSE_JS_HREF },
+        { label: "Pinned Impulse.h", href: IMPULSE_H_HREF },
+        { label: "LiquidFun showcase", href: SHOWCASE_HREF },
+      ],
+      "wave-machine": [
+        { label: "Pinned WaveMachine.js", href: WAVE_MACHINE_JS_HREF },
+        { label: "Pinned WaveMachine.h", href: WAVE_MACHINE_H_HREF },
+        { label: "LiquidFun showcase", href: SHOWCASE_HREF },
+      ],
+      "theo-jansen": [
+        { label: "Pinned TheoJansen.js", href: THEO_JANSEN_JS_HREF },
+        { label: "Pinned TheoJansen.h", href: THEO_JANSEN_H_HREF },
+        { label: "LiquidFun showcase", href: SHOWCASE_HREF },
+      ],
     } as const;
 
     // Act
@@ -464,6 +572,9 @@ describe("SCENES", () => {
         scene.credits.inspiration.map((item) => item.href),
       ]),
     );
+    const pinnedInspirationHrefs = SCENES.flatMap((scene) =>
+      scene.credits.inspiration.map((item) => item.href),
+    ).filter((href) => href.includes("github.com/google/liquidfun/blob/"));
     const particlesInspiration = maybeSceneById("particles")?.credits.inspiration;
     const liquidTimerInspiration =
       maybeSceneById("liquid-timer")?.credits.inspiration;
@@ -473,6 +584,14 @@ describe("SCENES", () => {
       maybeSceneById("elastic-particles")?.credits.inspiration;
     const rigidParticlesInspiration =
       maybeSceneById("rigid-particles")?.credits.inspiration;
+    const soupInspiration = maybeSceneById("soup")?.credits.inspiration;
+    const soupStirrerInspiration =
+      maybeSceneById("soup-stirrer")?.credits.inspiration;
+    const impulseInspiration = maybeSceneById("impulse")?.credits.inspiration;
+    const waveMachineInspiration =
+      maybeSceneById("wave-machine")?.credits.inspiration;
+    const theoJansenInspiration =
+      maybeSceneById("theo-jansen")?.credits.inspiration;
 
     // Assert
     expect(implementationPaths).toEqual(
@@ -509,11 +628,27 @@ describe("SCENES", () => {
     expect(rigidParticlesInspiration).toEqual([
       ...pinnedBasinInspiration["rigid-particles"],
     ]);
+    expect(soupInspiration).toEqual([...pinnedBasinInspiration.soup]);
+    expect(soupStirrerInspiration).toEqual([
+      ...pinnedBasinInspiration["soup-stirrer"],
+    ]);
+    expect(impulseInspiration).toEqual([...pinnedBasinInspiration.impulse]);
+    expect(waveMachineInspiration).toEqual([
+      ...pinnedBasinInspiration["wave-machine"],
+    ]);
+    expect(theoJansenInspiration).toEqual([
+      ...pinnedBasinInspiration["theo-jansen"],
+    ]);
+    expect(
+      pinnedInspirationHrefs.every((href) => href.includes(PINNED_COMMIT)),
+    ).toBe(true);
     expect(maybeSceneById("particles")?.controls).toHaveLength(0);
     expect(maybeSceneById("liquid-timer")?.controls).toHaveLength(0);
     expect(maybeSceneById("surface-tension")?.controls).toHaveLength(0);
     expect(maybeSceneById("elastic-particles")?.controls).toHaveLength(0);
     expect(maybeSceneById("rigid-particles")?.controls).toHaveLength(0);
+    expect(maybeSceneById("soup")?.controls).toHaveLength(0);
+    expect(maybeSceneById("wave-machine")?.controls).toHaveLength(0);
   });
 });
 
@@ -551,7 +686,7 @@ describe("maybeSceneById", () => {
 });
 
 describe("isReadySceneId", () => {
-  it("is true for all eleven approved ids", () => {
+  it("is true for all sixteen approved ids", () => {
     // Arrange
     const ids = SCENE_IDS;
 
@@ -559,18 +694,6 @@ describe("isReadySceneId", () => {
     const readyFlags = ids.map((id) => isReadySceneId(id));
 
     // Assert
-    expect(readyFlags).toEqual([
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-    ]);
+    expect(readyFlags).toEqual(Array.from({ length: 16 }, () => true));
   });
 });
