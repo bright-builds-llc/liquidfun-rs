@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Reference Testbed Scenes
 status: Not started
-stopped_at: Phase 28 context gathered
-last_updated: "2026-09-22T12:59:27.186Z"
+stopped_at: Phase 28 UI-SPEC approved
+last_updated: "2026-09-22T13:08:27.013Z"
 last_activity: 2026-09-22
 progress:
   total_phases: 8
@@ -96,6 +96,6 @@ None for roadmap. A fresh unprofiled pair is required before claiming the â‰¤ 3Ã
 
 ## Session Continuity
 
-Last session: 2026-09-22T12:59:27.182Z
-Stopped at: Phase 28 context gathered
-Resume file: .planning/phases/28-interaction-seams/28-CONTEXT.md
+Last session: 2026-09-22T13:08:27.010Z
+Stopped at: Phase 28 UI-SPEC approved
+Resume file: .planning/phases/28-interaction-seams/28-UI-SPEC.md
