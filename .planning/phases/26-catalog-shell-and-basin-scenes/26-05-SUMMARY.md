@@ -74,7 +74,7 @@ Each task was committed atomically:
 1. **Task 1: Extend helpers and split watch-first player e2e** - `aa073fb` (feat)
 2. **Task 2: Eight-preview shell asserts and run web-player-smoke** - `9757800` (feat)
 
-**Plan metadata:** (pending docs commit)
+**Plan metadata:** `f1b5fa7` (docs: complete plan)
 
 ## Files Created/Modified
 
@@ -113,7 +113,8 @@ First smoke run failed 37 passed / 1 failed on the mobile drawer reverse-tab ass
 ## Verification Evidence
 
 - `cd web && bun run typecheck` — exit 0
-- `just web-player-smoke` — exit 0; Playwright **38 passed**, 0 failed
+- `just web-player-smoke` — exit 0; Playwright **38 passed**, 0 failed (initial Task 2 run)
+- Re-verified 2026-09-22T01:51Z: `just web-player-smoke` — exit 0; Playwright **38 passed**, 0 failed (Vitest 186 passed)
 - `MAX_ADVANCE_STEPS: u32 = 4` unchanged in `crates/liquidfun-wasm/src/session.rs`
 
 ## User Setup Required
@@ -132,3 +133,4 @@ None - no external service configuration required.
 - FOUND: `web/e2e/shell.spec.ts` eight Static preview asserts
 - FOUND: `aa073fb` (Task 1)
 - FOUND: `9757800` (Task 2)
+- FOUND: `f1b5fa7` (docs metadata)

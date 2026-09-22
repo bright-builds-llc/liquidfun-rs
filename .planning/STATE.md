@@ -25,12 +25,12 @@ See: `.planning/PROJECT.md` (updated 2026-09-21)
 
 ## Current Position
 
-Phase: 26 (catalog-shell-and-basin-scenes) — EXECUTING
+Phase: 26 (catalog-shell-and-basin-scenes) — VERIFYING
 Plan: 5 of 5
 Status: Phase complete — ready for verification
 Last activity: 2026-09-22
 
-Progress: [████████░░] 80%
+Progress: [██████████] 100%
 
 v1.3 Reference Testbed Scenes. Add the twelve JavaScript testbed scenes the playground does not already have. Phase numbering continues after 25. No package publication or release tag.
 
