@@ -359,6 +359,7 @@ mod tests {
             ("color-mixer", SceneId::ColorMixer),
             ("jelly-drop", SceneId::JellyDrop),
             ("water-wheel", SceneId::WaterWheel),
+            ("particles", SceneId::Particles),
         ];
 
         for (raw, expected) in tokens {
