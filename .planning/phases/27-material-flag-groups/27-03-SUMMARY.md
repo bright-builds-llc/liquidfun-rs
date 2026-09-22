@@ -73,7 +73,7 @@ Each task was committed atomically:
 1. **Task 1: Add failing Rigid Particles allowlist and group-flag tests** - `cbca181` (test)
 2. **Task 2: Implement Rigid Particles scene and factory wiring** - `1a2f3f5` (feat)
 
-**Plan metadata:** pending docs commit
+**Plan metadata:** `32ada49` (docs: complete plan)
 
 _Note: TDD tasks used RED stub then GREEN implementation_
 
