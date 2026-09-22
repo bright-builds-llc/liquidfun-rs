@@ -14,6 +14,19 @@ type ProvenanceLinkProps = {
   readonly maybeUrl: string | undefined;
 };
 
+type BuiltAtValueProps = {
+  readonly label: string;
+  readonly maybeIso: string | undefined;
+};
+
+function BuiltAtValue(props: BuiltAtValueProps) {
+  return (
+    <Show when={props.maybeIso} fallback={props.label}>
+      {(iso) => <time datetime={iso()}>{props.label}</time>}
+    </Show>
+  );
+}
+
 function ProvenanceValue(props: ProvenanceLinkProps) {
   return (
     <Show
@@ -65,6 +78,15 @@ export function SiteFooter() {
             <ProvenanceValue
               label={info.buildLabel}
               maybeUrl={info.maybeBuildUrl}
+            />
+          </dd>
+        </div>
+        <div>
+          <dt>Built at</dt>
+          <dd>
+            <BuiltAtValue
+              label={info.builtAtLabel}
+              maybeIso={info.maybeBuiltAtIso}
             />
           </dd>
         </div>

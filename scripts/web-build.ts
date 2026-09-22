@@ -191,7 +191,8 @@ async function collectViteProvenanceEnv(): Promise<Record<string, string>> {
 
   const gitSha =
     maybeProcessEnv("GITHUB_SHA") ?? captureCommand(["git", "rev-parse", "HEAD"]);
-  const buildId = maybeProcessEnv("GITHUB_RUN_ID") ?? new Date().toISOString();
+  const builtAt = new Date().toISOString();
+  const buildId = maybeProcessEnv("GITHUB_RUN_ID") ?? builtAt;
   const maybeServerUrl = maybeProcessEnv("GITHUB_SERVER_URL");
   const maybeRepository = maybeProcessEnv("GITHUB_REPOSITORY");
   const maybeRunId = maybeProcessEnv("GITHUB_RUN_ID");
@@ -206,6 +207,7 @@ async function collectViteProvenanceEnv(): Promise<Record<string, string>> {
     VITE_APP_VERSION: packageJson.version,
     VITE_GIT_SHA: gitSha,
     VITE_BUILD_ID: buildId,
+    VITE_BUILT_AT: builtAt,
     ...(maybeBuildUrl === undefined ? {} : { VITE_BUILD_URL: maybeBuildUrl }),
   };
 }
@@ -247,7 +249,7 @@ async function runFrontendBuild(): Promise<void> {
   await runCommand(["bun", "run", "test:unit"], webDirectory);
   const provenanceEnv = await collectViteProvenanceEnv();
   await breadcrumb(
-    `inject VITE_APP_VERSION=${provenanceEnv.VITE_APP_VERSION} VITE_GIT_SHA=${provenanceEnv.VITE_GIT_SHA} VITE_BUILD_ID=${provenanceEnv.VITE_BUILD_ID}`,
+    `inject VITE_APP_VERSION=${provenanceEnv.VITE_APP_VERSION} VITE_GIT_SHA=${provenanceEnv.VITE_GIT_SHA} VITE_BUILD_ID=${provenanceEnv.VITE_BUILD_ID} VITE_BUILT_AT=${provenanceEnv.VITE_BUILT_AT}`,
   );
   await runCommand(["bun", "run", "build:app"], webDirectory, {
     ...process.env,

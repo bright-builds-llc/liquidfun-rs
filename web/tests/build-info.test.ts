@@ -14,8 +14,10 @@ describe("readBuildInfo", () => {
     expect(info.version).toBe("Unavailable");
     expect(info.commitLabel).toBe("Unavailable");
     expect(info.buildLabel).toBe("Unavailable");
+    expect(info.builtAtLabel).toBe("Unavailable");
     expect(info.maybeCommitUrl).toBeUndefined();
     expect(info.maybeBuildUrl).toBeUndefined();
+    expect(info.maybeBuiltAtIso).toBeUndefined();
   });
 
   it("uses VITE_APP_VERSION when present", () => {
@@ -60,6 +62,45 @@ describe("readBuildInfo", () => {
     for (const info of results) {
       expect(info.commitLabel).toBe("Unavailable");
       expect(info.maybeCommitUrl).toBeUndefined();
+    }
+  });
+
+  it("formats a UTC ISO build timestamp", () => {
+    // Arrange
+    const withMillis = "2026-09-22T15:27:03.123Z";
+    const withoutMillis = "2024-02-29T00:00:00Z";
+
+    // Act
+    const withMillisInfo = readBuildInfo({ VITE_BUILT_AT: `  ${withMillis}  ` });
+    const withoutMillisInfo = readBuildInfo({ VITE_BUILT_AT: withoutMillis });
+
+    // Assert
+    expect(withMillisInfo.builtAtLabel).toBe("2026-09-22 15:27:03 UTC");
+    expect(withMillisInfo.maybeBuiltAtIso).toBe(withMillis);
+    expect(withoutMillisInfo.builtAtLabel).toBe("2024-02-29 00:00:00 UTC");
+    expect(withoutMillisInfo.maybeBuiltAtIso).toBe(withoutMillis);
+  });
+
+  it("rejects timestamps that are not real UTC instants", () => {
+    // Arrange
+    const rejected = [
+      "not-a-timestamp",
+      "2026-09-22 15:27:03 UTC",
+      "2026-09-22T15:27:03+00:00",
+      "2025-02-29T00:00:00.000Z",
+      "2026-13-01T00:00:00.000Z",
+      "2026-09-22T24:00:00.000Z",
+    ];
+
+    // Act
+    const results = rejected.map((builtAt) =>
+      readBuildInfo({ VITE_BUILT_AT: builtAt }),
+    );
+
+    // Assert
+    for (const info of results) {
+      expect(info.builtAtLabel).toBe("Unavailable");
+      expect(info.maybeBuiltAtIso).toBeUndefined();
     }
   });
 
