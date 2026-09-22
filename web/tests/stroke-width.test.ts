@@ -9,20 +9,28 @@ import {
 } from "../src/render/stroke-width";
 
 describe("wireframe stroke width", () => {
-  it("parses only quarter steps from 0.25 through 1.5", () => {
+  it("parses only tenth steps from 0.1 through 1.5", () => {
     // Arrange
-    const values = ["0.25", "0.5", "0.75", "1", "1.25", "1.50", "0", "2", "0.3", "nope", null];
+    const values = [
+      "0.1",
+      "0.3",
+      "1",
+      "1.50",
+      "0.25",
+      "0",
+      "2",
+      "nope",
+      null,
+    ];
 
     // Act
     const parsed = values.map(maybeParseWireframeStrokeWidth);
 
     // Assert
     expect(parsed).toEqual([
-      0.25,
-      0.5,
-      0.75,
+      0.1,
+      0.3,
       1,
-      1.25,
       1.5,
       undefined,
       undefined,
@@ -32,7 +40,7 @@ describe("wireframe stroke width", () => {
     ]);
   });
 
-  it("defaults missing and invalid storage to 1", () => {
+  it("defaults missing and invalid storage to 0.3", () => {
     // Arrange
     const storedValues = [null, "2"];
 
@@ -49,7 +57,7 @@ describe("wireframe stroke width", () => {
       DEFAULT_WIREFRAME_STROKE_WIDTH,
       DEFAULT_WIREFRAME_STROKE_WIDTH,
     ]);
-    expect(DEFAULT_WIREFRAME_STROKE_WIDTH).toBe(1);
+    expect(DEFAULT_WIREFRAME_STROKE_WIDTH).toBe(0.3);
   });
 
   it("persists an allowlisted width and ignores values off the scale", () => {
@@ -63,11 +71,11 @@ describe("wireframe stroke width", () => {
     };
 
     // Act
-    persistWireframeStrokeWidth(() => storage, 0.75);
+    persistWireframeStrokeWidth(() => storage, 0.3);
     persistWireframeStrokeWidth(() => storage, 3);
 
     // Assert
-    expect(stored.get(WIREFRAME_STROKE_WIDTH_STORAGE_KEY)).toBe("0.75");
-    expect(loadWireframeStrokeWidth(() => storage)).toBe(0.75);
+    expect(stored.get(WIREFRAME_STROKE_WIDTH_STORAGE_KEY)).toBe("0.3");
+    expect(loadWireframeStrokeWidth(() => storage)).toBe(0.3);
   });
 });

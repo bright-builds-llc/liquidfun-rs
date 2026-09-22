@@ -74,7 +74,7 @@ None for roadmap. A fresh unprofiled pair is required before claiming the â‰¤ 3Ã
 
 | ID | Description | Date | Status | Directory |
 | --- | --- | --- | --- | --- |
-| 260921-tbx | Global wireframe stroke width slider from 0.25 to 1.5, default 1.0 | 2026-09-22 | complete | [260921-tbx](./quick/260921-tbx-global-wireframe-stroke-width-slider-fro/) |
+| 260921-tbx | Global wireframe stroke width slider from 0.1 to 1.5, default 0.3 | 2026-09-22 | complete | [260921-tbx](./quick/260921-tbx-global-wireframe-stroke-width-slider-fro/) |
 
 ## Session Continuity
 

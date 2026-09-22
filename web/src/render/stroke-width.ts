@@ -1,9 +1,9 @@
-export const WIREFRAME_STROKE_WIDTH_MIN = 0.25;
+export const WIREFRAME_STROKE_WIDTH_MIN = 0.1;
 export const WIREFRAME_STROKE_WIDTH_MAX = 1.5;
-export const WIREFRAME_STROKE_WIDTH_STEP = 0.25;
-export const DEFAULT_WIREFRAME_STROKE_WIDTH = 1;
+export const WIREFRAME_STROKE_WIDTH_STEP = 0.1;
+export const DEFAULT_WIREFRAME_STROKE_WIDTH = 0.3;
 export const WIREFRAME_STROKE_WIDTH_STORAGE_KEY =
-  "liquidfun.wireframe-stroke-width.v1";
+  "liquidfun.wireframe-stroke-width.v2";
 
 type StrokeWidthStorage = Pick<Storage, "getItem" | "setItem">;
 export type StrokeWidthStorageProvider = () => StrokeWidthStorage;
