@@ -1,7 +1,8 @@
 ---
 phase: 27
 slug: material-flag-groups
-status: draft
+status: approved
+reviewed_at: 2026-09-22T05:23:00Z
 shadcn_initialized: false
 preset: none
 created: 2026-09-22
