@@ -22,7 +22,7 @@ A visitor can open every JavaScript LiquidFun testbed scene the playground does 
 
 - [x] **MAT-01**: Visitor can watch Surface Tension: three colored tensile groups bead and bleed color when a ball hits them.
 - [x] **MAT-02**: Visitor can watch Elastic Particles: three soft clumps deform when a ball falls on them.
-- [ ] **MAT-03**: Visitor can watch Rigid Particles: three colored clumps stay solid and do not stretch like jelly when a ball hits them.
+- [x] **MAT-03**: Visitor can watch Rigid Particles: three colored clumps stay solid and do not stretch like jelly when a ball hits them.
 
 ### Interaction
 
@@ -72,7 +72,7 @@ A visitor can open every JavaScript LiquidFun testbed scene the playground does 
 | BASIN-02 | Phase 26 | Complete |
 | MAT-01 | Phase 27 | Complete |
 | MAT-02 | Phase 27 | Complete |
-| MAT-03 | Phase 27 | Pending |
+| MAT-03 | Phase 27 | Complete |
 | ACT-01 | Phase 28 | Pending |
 | ACT-02 | Phase 28 | Pending |
 | ACT-03 | Phase 28 | Pending |

@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Reference Testbed Scenes
 status: executing
-stopped_at: Completed 27-02-PLAN.md
-last_updated: "2026-09-22T05:46:55.594Z"
+stopped_at: Completed 27-03-PLAN.md
+last_updated: "2026-09-22T05:51:33.762Z"
 last_activity: 2026-09-22
 progress:
   total_phases: 8
   completed_phases: 1
   total_plans: 11
-  completed_plans: 7
-  percent: 64
+  completed_plans: 8
+  percent: 73
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: `.planning/PROJECT.md` (updated 2026-09-21)
 ## Current Position
 
 Phase: 27 (material-flag-groups) — EXECUTING
-Plan: 3 of 6
+Plan: 4 of 6
 Status: Ready to execute
 Last activity: 2026-09-22
 
-Progress: [██████░░░░] 64%
+Progress: [███████░░░] 73%
 
 v1.3 Reference Testbed Scenes. Add the twelve JavaScript testbed scenes the playground does not already have. Phase numbering continues after 25. No package publication or release tag.
 
@@ -64,6 +64,7 @@ v1.2 decisions are in `.planning/milestones/v1.2-STATE.md` and PROJECT.md Key De
 - [Phase 27]: Minimal SceneId wiring in Task 1 RED so failing construction tests compile under hooks — Sequential TDD commits need a compiling stub rather than compile-fail-only RED
 - [Phase 27]: Private basin_family helper with vertical walls ending at y=2 for Surface Tension reuse by Elastic/Rigid — Claude Discretion and D-07 pinned geometry; prevents basin drift across material scenes
 - [Phase 27]: Reuse basin_family for Elastic Particles; keep SPRING and ELASTIC on separate SOLID groups — Preserves spring vs elastic contrast and shared vertical-wall basin for Rigid next
+- [Phase 27]: Reuse basin_family and Elastic poses; RIGID|SOLID group flags only, no elastic particle flags — Preserves solid-clump contrast for MAT-03 without spoofing elastic softness
 
 ### Pending Todos
 
@@ -88,6 +89,6 @@ None for roadmap. A fresh unprofiled pair is required before claiming the ≤ 3�
 
 ## Session Continuity
 
-Last session: 2026-09-22T05:46:49.916Z
-Stopped at: Completed 27-02-PLAN.md
+Last session: 2026-09-22T05:51:27.221Z
+Stopped at: Completed 27-03-PLAN.md
 Resume file: None
