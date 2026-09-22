@@ -66,7 +66,7 @@ Each task was committed atomically:
 1. **Task 1: Expand scenes.test.ts to eleven scenes and credits** - `8df513c` (feat, completed during 27-04 typecheck; verified green in 27-05 with no further diff)
 2. **Task 2: Sync SCENE_CAPTURE_PLANS with eleven SCENE_IDS** - `85526d7` (feat)
 
-**Plan metadata:** pending final docs commit
+**Plan metadata:** `dde70c3` (docs: complete plan)
 
 ## Files Created/Modified
 
