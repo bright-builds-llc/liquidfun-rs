@@ -74,7 +74,7 @@ Each task was committed atomically:
 1. **Task 1: Failing Soup Stirrer allowlist and toggle tests** - `5098b9a` (test)
 2. **Task 2: Implement Soup Stirrer scene and factory wiring** - `b0fa80d` (feat)
 
-**Plan metadata:** (pending docs commit)
+**Plan metadata:** `316f988` (docs: complete plan)
 
 ## Files Created/Modified
 
