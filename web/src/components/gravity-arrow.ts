@@ -52,13 +52,16 @@ export function gravityArrowGeometry(
   };
 }
 
-/** Returns an arrow only while debug info, tilt, and a live sample are all on. */
+/**
+ * Returns an arrow while accelerometer gravity is on and a live sample exists.
+ *
+ * The canvas arrow is independent of the debug-info readout.
+ */
 export function maybeGravityArrow(
-  debugEnabled: boolean,
   tiltGravityEnabled: boolean,
   tiltDebug: TiltDebug,
 ): GravityArrowGeometry | undefined {
-  if (!debugEnabled || !tiltGravityEnabled || tiltDebug.kind !== "live") {
+  if (!tiltGravityEnabled || tiltDebug.kind !== "live") {
     return undefined;
   }
   return gravityArrowGeometry(tiltDebug.gravity);

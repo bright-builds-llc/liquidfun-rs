@@ -148,7 +148,6 @@ export function PlayerPanel(props: PlayerPanelProps) {
             fpsTicks={props.fpsTicks}
           />
           <GravityArrow
-            debugEnabled={props.debugEnabled}
             tiltGravityEnabled={props.tiltGravityEnabled}
             tiltDebug={props.tiltDebug}
           />
