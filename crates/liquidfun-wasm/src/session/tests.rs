@@ -26,6 +26,7 @@ fn parse_scene_id_maps_allowlisted_tokens() {
         ("elastic-particles", SceneId::ElasticParticles),
         ("rigid-particles", SceneId::RigidParticles),
         ("soup", SceneId::Soup),
+        ("soup-stirrer", SceneId::SoupStirrer),
     ];
 
     for (raw, expected) in tokens {

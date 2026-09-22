@@ -18,6 +18,7 @@ mod particles;
 mod rigid_particles;
 mod soup;
 mod soup_family;
+mod soup_stirrer;
 mod surface_tension;
 mod water_wheel;
 
@@ -41,6 +42,7 @@ pub(crate) enum SceneId {
     ElasticParticles,
     RigidParticles,
     Soup,
+    SoupStirrer,
 }
 
 pub(crate) fn parse_scene_id(raw: &str) -> Result<SceneId, SessionError> {
@@ -57,6 +59,7 @@ pub(crate) fn parse_scene_id(raw: &str) -> Result<SceneId, SessionError> {
         "elastic-particles" => Ok(SceneId::ElasticParticles),
         "rigid-particles" => Ok(SceneId::RigidParticles),
         "soup" => Ok(SceneId::Soup),
+        "soup-stirrer" => Ok(SceneId::SoupStirrer),
         _ => Err(SessionError::UnknownScene),
     }
 }
@@ -155,6 +158,7 @@ pub(crate) fn build_scene(
         SceneId::ElasticParticles => elastic_particles::build(presets),
         SceneId::RigidParticles => rigid_particles::build(presets),
         SceneId::Soup => soup::build(presets),
+        SceneId::SoupStirrer => soup_stirrer::build(presets),
     }
 }
 
