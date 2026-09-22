@@ -15,6 +15,7 @@ mod fountain;
 mod jelly_drop;
 mod liquid_timer;
 mod particles;
+mod rigid_particles;
 mod surface_tension;
 mod water_wheel;
 
@@ -36,6 +37,7 @@ pub(crate) enum SceneId {
     LiquidTimer,
     SurfaceTension,
     ElasticParticles,
+    RigidParticles,
 }
 
 pub(crate) fn parse_scene_id(raw: &str) -> Result<SceneId, SessionError> {
@@ -50,6 +52,7 @@ pub(crate) fn parse_scene_id(raw: &str) -> Result<SceneId, SessionError> {
         "liquid-timer" => Ok(SceneId::LiquidTimer),
         "surface-tension" => Ok(SceneId::SurfaceTension),
         "elastic-particles" => Ok(SceneId::ElasticParticles),
+        "rigid-particles" => Ok(SceneId::RigidParticles),
         _ => Err(SessionError::UnknownScene),
     }
 }
@@ -146,6 +149,7 @@ pub(crate) fn build_scene(
         SceneId::LiquidTimer => liquid_timer::build(presets),
         SceneId::SurfaceTension => surface_tension::build(presets),
         SceneId::ElasticParticles => elastic_particles::build(presets),
+        SceneId::RigidParticles => rigid_particles::build(presets),
     }
 }
 

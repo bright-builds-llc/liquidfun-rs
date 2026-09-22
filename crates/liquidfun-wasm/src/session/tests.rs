@@ -24,6 +24,7 @@ fn parse_scene_id_maps_allowlisted_tokens() {
         ("liquid-timer", SceneId::LiquidTimer),
         ("surface-tension", SceneId::SurfaceTension),
         ("elastic-particles", SceneId::ElasticParticles),
+        ("rigid-particles", SceneId::RigidParticles),
     ];
 
     for (raw, expected) in tokens {
