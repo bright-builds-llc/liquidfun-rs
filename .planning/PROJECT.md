@@ -4,7 +4,7 @@
 
 `liquidfun-rs` is a fun, experimental, open-source Rust implementation of Google's LiquidFun physics engine for learning, games, simulations, and visualization. It develops useful native Rust behavior incrementally against a pinned upstream reference; complete parity and production certification are optional ambitions.
 
-Visitors can also explore six native scenes in a SolidJS GitHub Pages playground compiled from this engine to WebAssembly. The repository retains upstream C++ LiquidFun as a read-only development oracle for research, differential testing, reference data, and benchmark comparison. Ordinary users of the published Rust library must not need the upstream source, a C++ compiler, Bazel, or any cross-language runtime component.
+Visitors can also explore eleven native scenes in a SolidJS GitHub Pages playground compiled from this engine to WebAssembly. The repository retains upstream C++ LiquidFun as a read-only development oracle for research, differential testing, reference data, and benchmark comparison. Ordinary users of the published Rust library must not need the upstream source, a C++ compiler, Bazel, or any cross-language runtime component.
 
 ## Core Value
 
@@ -16,7 +16,7 @@ The owner prioritizes a fun hobby project over production-quality certification.
 
 ## Current State
 
-v1.3 Reference Testbed Scenes is in progress. Phase 26 is complete: Particles and Liquid Timer are watch-first scenes in the shared player, and the original six scenes remain. `just web-player-smoke` recorded 38 Chromium tests. v1.2 Native Performance Closing is archived (2026-09-21): 4 phases, 23 plans, and 47 tasks. Unprofiled Dam Break Medium on one macOS host recorded `rust_over_cpp_ratio` `2.956857456935513` at stamp `2026-09-21T20-38-50Z` (git `89d3456406c3c79ed500192bca9491c707033647`). `reviewed_reports` stays empty. README and crates.io have no universal “Rust is N×” claim. `just web-player-smoke` recorded 37 Chromium tests, compared with native Rust only. This is not crate publication and not a git release tag. Commit `77fbd84` (zero the force buffer after SolveForce) is after that stamp, so the ratio is not a measurement of later HEAD. See `.planning/MILESTONES.md` and `.planning/milestones/v1.2-REQUIREMENTS.md`.
+v1.3 Reference Testbed Scenes is in progress. Phase 27 is complete: Surface Tension, Elastic Particles, and Rigid Particles are watch-first scenes in the shared player, and the prior eight scenes remain. `just web-player-smoke` recorded 38 Chromium tests. Phase 26 is complete: Particles and Liquid Timer are watch-first scenes in the shared player, and the original six scenes remain. v1.2 Native Performance Closing is archived (2026-09-21): 4 phases, 23 plans, and 47 tasks. Unprofiled Dam Break Medium on one macOS host recorded `rust_over_cpp_ratio` `2.956857456935513` at stamp `2026-09-21T20-38-50Z` (git `89d3456406c3c79ed500192bca9491c707033647`). `reviewed_reports` stays empty. README and crates.io have no universal “Rust is N×” claim. `just web-player-smoke` recorded 37 Chromium tests, compared with native Rust only. This is not crate publication and not a git release tag. Commit `77fbd84` (zero the force buffer after SolveForce) is after that stamp, so the ratio is not a measurement of later HEAD. See `.planning/MILESTONES.md` and `.planning/milestones/v1.2-REQUIREMENTS.md`.
 
 The v1.1 Web Playground planning milestone is archived (2026-09-20): 6 phases and 39 plans completed. Visitors can run Dam Break, Fountain, Float or Sink, Color Mixer, Jelly Drop, and Water Wheel at `https://bright-builds-llc.github.io/liquidfun-rs/` with in-app SVG previews, play/pause/reset, honest Reset labels, pointer interaction, and automatic Pages delivery. This is not a crate or npm release. See `.planning/MILESTONES.md` and `.planning/milestones/v1.1-REQUIREMENTS.md`.
 
@@ -296,4 +296,4 @@ This document evolves at phase transitions and milestone boundaries.
 
 ______________________________________________________________________
 
-*Last updated: 2026-09-22 after Phase 26 catalog shell and basin scenes. Strict native certification remains optional. Package publication and release tags remain separately authorized.*
+*Last updated: 2026-09-22 after Phase 27 material flag groups. Strict native certification remains optional. Package publication and release tags remain separately authorized.*
