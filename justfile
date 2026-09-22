@@ -8,6 +8,10 @@ check:
 markdown-check:
     bash scripts/markdown-check.sh
 
+# Run the managed Bright Builds starter checks, including file length.
+bright-builds-check:
+    bun scripts/bright-builds-check.ts all
+
 fmt:
     cargo fmt --all --check
 
