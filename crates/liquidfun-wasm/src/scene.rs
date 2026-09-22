@@ -13,6 +13,7 @@ mod fountain;
 mod jelly_drop;
 mod liquid_timer;
 mod particles;
+mod surface_tension;
 mod water_wheel;
 
 use liquidfun::collision::{FilterData, PolygonShape, Shape};
@@ -31,6 +32,7 @@ pub(crate) enum SceneId {
     WaterWheel,
     Particles,
     LiquidTimer,
+    SurfaceTension,
 }
 
 pub(crate) fn parse_scene_id(raw: &str) -> Result<SceneId, SessionError> {
@@ -43,6 +45,7 @@ pub(crate) fn parse_scene_id(raw: &str) -> Result<SceneId, SessionError> {
         "water-wheel" => Ok(SceneId::WaterWheel),
         "particles" => Ok(SceneId::Particles),
         "liquid-timer" => Ok(SceneId::LiquidTimer),
+        "surface-tension" => Ok(SceneId::SurfaceTension),
         _ => Err(SessionError::UnknownScene),
     }
 }
@@ -137,6 +140,7 @@ pub(crate) fn build_scene(
         SceneId::WaterWheel => water_wheel::build(presets),
         SceneId::Particles => particles::build(presets),
         SceneId::LiquidTimer => liquid_timer::build(presets),
+        SceneId::SurfaceTension => surface_tension::build(presets),
     }
 }
 

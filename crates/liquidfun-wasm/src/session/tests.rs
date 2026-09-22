@@ -22,6 +22,7 @@ fn parse_scene_id_maps_allowlisted_tokens() {
         ("water-wheel", SceneId::WaterWheel),
         ("particles", SceneId::Particles),
         ("liquid-timer", SceneId::LiquidTimer),
+        ("surface-tension", SceneId::SurfaceTension),
     ];
 
     for (raw, expected) in tokens {
