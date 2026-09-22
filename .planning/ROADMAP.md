@@ -65,7 +65,7 @@ Plans:
 - [x] 26-01-PLAN.md — Particles WASM scene (open basin + water + ball)
 - [x] 26-02-PLAN.md — Liquid Timer WASM scene (tensile/viscous drain)
 - [x] 26-03-PLAN.md — Catalog append, credits, previews, hide empty controls
-- [ ] 26-04-PLAN.md — Eight-scene Vitest contract + capture-plan sync
+- [x] 26-04-PLAN.md — Eight-scene Vitest contract + capture-plan sync
 - [ ] 26-05-PLAN.md — Chromium smoke: watch-first play/pause/reset + eight previews
 **UI hint**: yes
 
@@ -120,7 +120,7 @@ Plans:
 | 23. Baseline pair and named audit | v1.2 | 9/9 | Complete | 2026-09-21 |
 | 24. Shared hot-path waves through 3× | v1.2 | 6/6 | Complete | 2026-09-21 |
 | 25. WASM sanity and honest close | v1.2 | 2/2 | Complete | 2026-09-21 |
-| 26. Catalog shell and basin scenes | v1.3 | 3/5 | In Progress|  |
+| 26. Catalog shell and basin scenes | v1.3 | 4/5 | In Progress|  |
 | 27. Material flag groups | v1.3 | 0/TBD | Not started | - |
 | 28. Interaction seams | v1.3 | 0/TBD | Not started | - |
 | 29. Sparky, Drawing, and full catalog | v1.3 | 0/TBD | Not started | - |

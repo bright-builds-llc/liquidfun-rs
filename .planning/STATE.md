@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Reference Testbed Scenes
 status: executing
-stopped_at: Completed 26-03-PLAN.md
-last_updated: "2026-09-22T00:43:04.640Z"
+stopped_at: Completed 26-04-PLAN.md
+last_updated: "2026-09-22T00:45:53.561Z"
 last_activity: 2026-09-22
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 5
-  completed_plans: 3
-  percent: 60
+  completed_plans: 4
+  percent: 80
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-09-21)
 ## Current Position
 
 Phase: 26 (catalog-shell-and-basin-scenes) — EXECUTING
-Plan: 4 of 5
+Plan: 5 of 5
 Status: Ready to execute
 Last activity: 2026-09-22
 
@@ -49,6 +49,8 @@ v1.2 decisions are in `.planning/milestones/v1.2-STATE.md` and PROJECT.md Key De
 - [Phase 26]: Catalog appends particles then liquid-timer after water-wheel with ready:true and empty controls
 - [Phase 26]: Inspiration cites pinned Particles/LiquidTimer JS and C++ tests at 7f204021; implementation stays host-locked
 - [Phase 26]: SceneControls returns null when controls.length === 0 rather than empty chrome
+- [Phase 26]: Kept Plan 03 eight-scene Vitest tables; Task 1 only strengthened credit label asserts
+- [Phase 26]: Watch-first capture stubs use center click SceneAction so capture scripts keep a required action
 
 ### Pending Todos
 
@@ -67,6 +69,6 @@ None for roadmap. A fresh unprofiled pair is required before claiming the ≤ 3�
 
 ## Session Continuity
 
-Last session: 2026-09-22T00:43:04.638Z
-Stopped at: Completed 26-03-PLAN.md
+Last session: 2026-09-22T00:45:53.559Z
+Stopped at: Completed 26-04-PLAN.md
 Resume file: None
