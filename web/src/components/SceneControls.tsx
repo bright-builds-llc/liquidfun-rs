@@ -1,16 +1,9 @@
 import { For, Show, createSignal } from "solid-js";
 
 import type { SceneControl } from "../catalog/scenes";
-import {
-  constructionHintVisible,
-  initialPresetValue,
-} from "./scene-controls";
+import { initialPresetValue } from "./scene-controls";
 
-export {
-  APPLY_SETTING_LABEL,
-  CONSTRUCTION_RESET_HINT,
-  constructionHintVisible,
-} from "./scene-controls";
+export { CONSTRUCTION_RESET_HINT, constructionHintVisible } from "./scene-controls";
 
 export type SceneControlsProps = {
   readonly controls: readonly SceneControl[];
@@ -29,14 +22,9 @@ function PresetControl(props: {
   const [pendingValue, setPendingValue] = createSignal(
     initialPresetValue(props.control, props.maybeValues),
   );
-  const showsHint = () => constructionHintVisible(props.control);
 
   function onSelectChange(value: string): void {
     setPendingValue(value);
-    if (showsHint()) {
-      return;
-    }
-
     props.onApply(props.control.id, value);
   }
 
@@ -55,16 +43,8 @@ function PresetControl(props: {
           </For>
         </select>
       </label>
-      <Show when={showsHint()}>
+      <Show when={props.control.recreates}>
         <p class="construction-reset-hint">Changing this setting recreates the scene from its documented initial state.</p>
-        <button
-          class="product-control"
-          type="button"
-          disabled={props.disabled}
-          onClick={() => props.onApply(props.control.id, pendingValue())}
-        >
-          Apply setting
-        </button>
       </Show>
     </div>
   );
@@ -89,7 +69,7 @@ function ActionControl(props: {
   );
 }
 
-/** Labeled scene presets and actions. Construction presets require Apply setting. */
+/** Labeled scene presets and actions. Every change applies immediately. */
 export function SceneControls(props: SceneControlsProps) {
   if (props.controls.length === 0) {
     return null;

@@ -15,6 +15,7 @@ const FRAME: RenderFrame = {
   particleRadii: new Float32Array(),
   rigidSegments: new Float32Array(),
   rigidCircles: new Float32Array(),
+  circleLabels: [],
 };
 
 describe("debugRows", () => {

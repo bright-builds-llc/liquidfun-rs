@@ -9,6 +9,10 @@ use crate::ParticleId;
 use super::ParticleSystemDef;
 use super::storage::{ParticleSnapshot, ParticleStorage, ParticleStorageError, permutation};
 
+mod eviction;
+
+use eviction::EvictionIndex;
+
 const FIXED_POINT_SCALE: f32 = 4_294_967_296.0;
 
 /// A checked failure while advancing or quantizing particle lifetime state.
@@ -313,6 +317,7 @@ pub(crate) struct ParticleLifetimeState {
     expiration_order_dirty: bool,
     destroy_by_age: bool,
     maybe_maximum_count: Option<usize>,
+    index: EvictionIndex,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -330,12 +335,46 @@ impl ParticleLifetimeState {
         if definition.destroys_by_age() && definition.maximum_count().is_some() {
             storage.enable_lifetime_tracking();
         }
+        let index = if storage.lifetime_tracking_enabled() {
+            EvictionIndex::from_ordered_entries(&storage.expiration_entries())
+        } else {
+            EvictionIndex::new()
+        };
         Self {
             clock: ParticleLifetimeClock::from_system_definition(definition),
             expiration_order_dirty: false,
             destroy_by_age: definition.destroys_by_age(),
             maybe_maximum_count: definition.maximum_count(),
+            index,
         }
+    }
+
+    /// Reports whether the next creation must evict one particle before it fits.
+    pub(crate) fn creation_frees_a_slot(&self, occupied: usize) -> bool {
+        self.maybe_maximum_count
+            .is_some_and(|maximum| occupied >= maximum && self.destroy_by_age)
+    }
+
+    /// Rejects creation that would pass the maximum without age eviction.
+    pub(crate) fn reject_blocked_capacity(
+        &self,
+        occupied: usize,
+    ) -> Result<(), ParticleLifecycleError> {
+        let Some(maximum) = self.maybe_maximum_count else {
+            return Ok(());
+        };
+        if occupied >= maximum && !self.destroy_by_age {
+            return Err(ParticleLifecycleError::CapacityExceeded { limit: maximum });
+        }
+        Ok(())
+    }
+
+    pub(crate) fn note_destroyed(&mut self, destroyed: &[ParticleSnapshot]) {
+        let mut removed = false;
+        for snapshot in destroyed {
+            removed |= self.index.remove(snapshot.id);
+        }
+        self.expiration_order_dirty |= removed;
     }
 
     pub(crate) fn initialize_created_particle(
@@ -381,7 +420,13 @@ impl ParticleLifetimeState {
         particle: ParticleId,
         expiration: i32,
     ) -> Result<(), ParticleLifecycleError> {
-        self.expiration_order_dirty |= storage.set_expiration_time(particle, expiration)?;
+        let was_tracking = storage.lifetime_tracking_enabled();
+        let changed = storage.set_expiration_time(particle, expiration)?;
+        if !was_tracking {
+            self.index = EvictionIndex::from_ordered_entries(&storage.expiration_entries());
+        }
+        self.index.upsert(particle, expiration);
+        self.expiration_order_dirty |= changed || !was_tracking;
         Ok(())
     }
 
@@ -411,20 +456,34 @@ impl ParticleLifetimeState {
         rank: usize,
         request_listener: bool,
     ) -> Result<ParticleSnapshot, ParticleLifecycleError> {
+        if self.index.len() != storage.len() {
+            self.index = EvictionIndex::from_ordered_entries(&storage.expiration_entries());
+        }
         self.sort_if_dirty(storage)?;
-        let mut ordering = self.clock.ordering();
-        for (particle, expiration) in storage.expiration_entries() {
-            ordering.set_expiration(particle, expiration)?;
+        let mut remaining = self.index.len().saturating_add(1);
+        loop {
+            let particle = self
+                .index
+                .oldest(rank)
+                .ok_or(ParticleLifecycleError::OldestRankOutOfRange)?;
+            match storage.is_pending(particle) {
+                Ok(true) => return storage.pending_snapshot(particle).map_err(Into::into),
+                Ok(false) => {
+                    return storage
+                        .mark_delete_for_lifecycle(particle, request_listener)
+                        .map_err(Into::into);
+                }
+                Err(ParticleStorageError::StaleOrDestroyed) => {
+                    self.index.remove(particle);
+                    self.expiration_order_dirty = true;
+                    remaining = remaining.saturating_sub(1);
+                    if remaining == 0 {
+                        return Err(ParticleLifecycleError::OldestRankOutOfRange);
+                    }
+                }
+                Err(error) => return Err(error.into()),
+            }
         }
-        let particle = ordering
-            .oldest_particle(rank)
-            .ok_or(ParticleLifecycleError::OldestRankOutOfRange)?;
-        if storage.is_pending(particle)? {
-            return storage.pending_snapshot(particle).map_err(Into::into);
-        }
-        storage
-            .mark_delete_for_lifecycle(particle, request_listener)
-            .map_err(Into::into)
     }
 
     pub(crate) fn prepare_capacity_for_creation(
@@ -441,9 +500,9 @@ impl ParticleLifetimeState {
             return Err(ParticleLifecycleError::CapacityExceeded { limit: maximum });
         }
         self.destroy_oldest_particle(storage, 0, false)?;
-        compact_pending_with_occurrences(storage)
-            .map(Some)
-            .map_err(Into::into)
+        let outcome = compact_pending_with_occurrences(storage)?;
+        self.note_destroyed(&outcome.destroyed);
+        Ok(Some(outcome))
     }
 
     fn sort_if_dirty(
@@ -453,14 +512,18 @@ impl ParticleLifetimeState {
         if !self.expiration_order_dirty {
             return Ok(());
         }
-        let mut entries = storage.expiration_entries();
-        entries.sort_by(|left, right| compare_source_order(left.1, right.1));
-        storage.replace_expiration_order(
-            &entries
-                .into_iter()
-                .map(|(particle, _expiration)| particle)
-                .collect::<Vec<_>>(),
-        )?;
+        if !storage.lifetime_tracking_enabled() {
+            self.expiration_order_dirty = false;
+            return Ok(());
+        }
+        if self.index.len() != storage.len() {
+            let mut entries = storage.expiration_entries();
+            entries.sort_by(|left, right| compare_source_order(left.1, right.1));
+            self.index = EvictionIndex::from_ordered_entries(&entries);
+        }
+        let ordered = self.index.storage_order();
+        storage.replace_expiration_order(&ordered)?;
+        self.index.resequence_to_storage_order();
         self.expiration_order_dirty = false;
         Ok(())
     }

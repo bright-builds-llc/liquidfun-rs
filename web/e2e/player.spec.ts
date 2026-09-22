@@ -225,7 +225,6 @@ test("applies a Dam Break Gravity construction setting and returns to Playing", 
   });
   await gravity.getByLabel("Gravity").selectOption("high");
   await expect(gravity.getByText(CONSTRUCTION_RESET_HINT)).toBeVisible();
-  await gravity.getByRole("button", { name: "Apply setting" }).click();
   await expectReadySceneChrome(page, "Dam Break");
 });
 

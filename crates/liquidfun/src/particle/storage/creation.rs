@@ -307,12 +307,22 @@ impl ParticleStorage {
         input: ParticleInput,
         diagnostic_id: u64,
     ) -> Result<ParticleId, ParticleStorageError> {
-        let candidate = self.prepare_create(input, diagnostic_id)?;
+        let candidate = self.prepare_create(input, diagnostic_id, 0)?;
         Ok(self.commit_create(candidate))
     }
 
     pub(crate) fn validate_create(&self, input: ParticleInput) -> Result<(), ParticleStorageError> {
-        self.prepare_create(input, 0).map(|_candidate| ())
+        self.validate_create_reserving(input, 0)
+    }
+
+    /// Checks creation while assuming `free_slots` live rows will be removed first.
+    pub(crate) fn validate_create_reserving(
+        &self,
+        input: ParticleInput,
+        free_slots: usize,
+    ) -> Result<(), ParticleStorageError> {
+        self.prepare_create(input, 0, free_slots)
+            .map(|_candidate| ())
     }
 
     pub(crate) fn create(
@@ -326,14 +336,16 @@ impl ParticleStorage {
         &self,
         input: ParticleInput,
         diagnostic_id: u64,
+        free_slots: usize,
     ) -> Result<CreateCandidate, ParticleStorageError> {
-        if self.dense_to_id.len() >= self.declared_capacity {
+        let occupied = self.dense_to_id.len().saturating_sub(free_slots);
+        if occupied >= self.declared_capacity {
             return Err(ParticleStorageError::CapacityExceeded {
                 limit: self.declared_capacity,
             });
         }
         self.validate_appended_group(input.maybe_group)?;
-        let (local_slot, generation, append_identity) = self.identity_slot_candidate()?;
+        let (local_slot, generation, append_identity) = self.identity_slot_candidate(free_slots)?;
         let particle_slot = self
             .identity_slot_base
             .checked_add(local_slot)
@@ -354,6 +366,7 @@ impl ParticleStorage {
             input.flags,
             &group_records,
             self.declared_capacity,
+            free_slots,
         )?;
         Ok(CreateCandidate {
             input,

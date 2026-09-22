@@ -49,6 +49,7 @@ pub(crate) struct FrameData {
     particle_radii: Vec<f32>,
     rigid_segments: Vec<f32>,
     rigid_circles: Vec<f32>,
+    circle_labels: Vec<String>,
     diagnostics: FrameDiagnostics,
 }
 
@@ -97,8 +98,18 @@ impl FrameData {
             particle_radii,
             rigid_segments,
             rigid_circles,
+            circle_labels: vec![String::new(); rigid_circle_count],
             diagnostics,
         })
+    }
+
+    pub(crate) fn set_circle_labels(&mut self, labels: Vec<String>) -> Result<(), FrameError> {
+        let count = self.rigid_circles.len() / RIGID_CIRCLE_STRIDE;
+        if labels.len() != count {
+            return Err(FrameError::LaneLengthMismatch);
+        }
+        self.circle_labels = labels;
+        Ok(())
     }
 
     pub(crate) const fn max_speed(&self) -> f32 {
@@ -253,6 +264,13 @@ impl ProofFrame {
     #[wasm_bindgen(js_name = bodyContactCount)]
     pub fn body_contact_count(&self) -> usize {
         self.data.body_contact_count()
+    }
+
+    /// Returns one label per rigid circle, empty when the circle is unlabeled.
+    #[must_use]
+    #[wasm_bindgen(js_name = circleLabels)]
+    pub fn circle_labels(&self) -> Vec<String> {
+        self.data.circle_labels.clone()
     }
 }
 

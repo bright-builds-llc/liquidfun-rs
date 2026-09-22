@@ -11,6 +11,8 @@ import {
   projectPoint,
   projectRadius,
   unprojectPoint,
+  zoomCameraView,
+  IDENTITY_CAMERA_VIEW,
 } from "../src/render/camera";
 
 describe("createCamera", () => {
@@ -202,5 +204,33 @@ describe("unprojectPoint", () => {
     // Assert
     expect(mentionsBackingStore).toBe(false);
     expect(cameraSource).toContain("export function unprojectPoint");
+  });
+
+  it("zooms around the fitted center and pans in CSS pixels", () => {
+    // Arrange
+    const fitted = createCamera(960, 540);
+    const zoomed = createCamera(
+      960,
+      540,
+      zoomCameraView(IDENTITY_CAMERA_VIEW, "in"),
+    );
+    const panned = createCamera(960, 540, {
+      zoom: 1,
+      panX: 40,
+      panY: -25,
+    });
+    const world = { x: 0, y: 3.5 };
+
+    // Act
+    const fittedPoint = projectPoint(fitted, world);
+    const zoomedPoint = projectPoint(zoomed, world);
+    const pannedPoint = projectPoint(panned, world);
+
+    // Assert
+    expect(zoomed.scale).toBeCloseTo(fitted.scale * 1.25);
+    expect(zoomedPoint.x).toBeCloseTo(fittedPoint.x);
+    expect(zoomedPoint.y).toBeCloseTo(fittedPoint.y);
+    expect(pannedPoint.x).toBeCloseTo(fittedPoint.x + 40);
+    expect(pannedPoint.y).toBeCloseTo(fittedPoint.y - 25);
   });
 });

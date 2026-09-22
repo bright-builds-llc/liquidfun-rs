@@ -1,6 +1,5 @@
 import type { SceneControl } from "../catalog/scenes";
 
-export const APPLY_SETTING_LABEL = "Apply setting";
 export const CONSTRUCTION_RESET_HINT =
   "Changing this setting recreates the scene from its documented initial state.";
 

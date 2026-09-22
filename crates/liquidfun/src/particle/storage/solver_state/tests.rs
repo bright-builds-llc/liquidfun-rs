@@ -25,7 +25,7 @@ fn scratch_append_preserves_values_and_zeroes_only_new_row() {
     let original = [3.0_f32, 7.0];
 
     // Act
-    let candidate = clone_and_append(Some(original.as_slice()), 0.0, 4096)
+    let candidate = clone_and_append(Some(original.as_slice()), 0.0, 4096, 0)
         .expect("bounded append fits")
         .expect("present lane remains present");
 

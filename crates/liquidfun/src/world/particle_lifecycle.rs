@@ -36,6 +36,7 @@ impl World {
                     &mut system.storage,
                 )
                 .map_err(|_error| StepError::ParticleLifecycleInvariant)?;
+                system.lifetime.note_destroyed(&outcome.destroyed);
 
                 append_requested_records(&mut requested_records, outcome, &expired);
                 let records = self

@@ -49,10 +49,11 @@ impl SolverState {
         appended_flags: ParticleFlags,
         group_records: &[GroupRecord],
         declared_capacity: usize,
+        free_slots: usize,
     ) -> Result<Self, ParticleStorageError> {
         self.validate_scratch_lanes(existing_particle_flags.len())?;
-        let new_count = existing_particle_flags
-            .len()
+        let retained = existing_particle_flags.len().saturating_sub(free_slots);
+        let new_count = retained
             .checked_add(1)
             .ok_or(ParticleStorageError::InvalidLaneBundle)?;
         preflight_count(new_count, declared_capacity)?;
@@ -60,13 +61,20 @@ impl SolverState {
             self.maybe_static_pressures.as_deref(),
             0.0,
             declared_capacity,
+            free_slots,
         )?;
         let maybe_tensile_accumulations = clone_and_append(
             self.maybe_tensile_accumulations.as_deref(),
             Vec2::ZERO,
             declared_capacity,
+            free_slots,
         )?;
-        let maybe_depths = clone_and_append(self.maybe_depths.as_deref(), 0.0, declared_capacity)?;
+        let maybe_depths = clone_and_append(
+            self.maybe_depths.as_deref(),
+            0.0,
+            declared_capacity,
+            free_slots,
+        )?;
         let aggregate_particle_flags = existing_particle_flags
             .iter()
             .copied()
@@ -329,16 +337,20 @@ fn clone_and_append<T: Copy>(
     maybe_lane: Option<&[T]>,
     zero: T,
     declared_capacity: usize,
+    free_slots: usize,
 ) -> Result<Option<Vec<T>>, ParticleStorageError> {
     let Some(lane) = maybe_lane else {
         return Ok(None);
     };
-    let new_count = lane
-        .len()
+    let retained = lane.len().saturating_sub(free_slots);
+    let new_count = retained
         .checked_add(1)
         .ok_or(ParticleStorageError::InvalidLaneBundle)?;
     let mut candidate = zeroed_lane(new_count, declared_capacity, zero)?;
-    candidate[..lane.len()].copy_from_slice(lane);
+    if retained > 0 {
+        let start = lane.len() - retained;
+        candidate[..retained].copy_from_slice(&lane[start..]);
+    }
     Ok(Some(candidate))
 }
 

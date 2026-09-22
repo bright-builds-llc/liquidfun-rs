@@ -118,6 +118,10 @@ pub(crate) trait SceneHooks {
     fn collect_segments(&self, world: &World) -> Result<Vec<RigidSegment>, SessionError>;
 
     fn collect_circles(&self, world: &World) -> Result<Vec<(Vec2, f32)>, SessionError>;
+
+    fn collect_circle_labels(&self, _world: &World) -> Result<Vec<String>, SessionError> {
+        Ok(Vec::new())
+    }
 }
 
 pub(crate) fn build_scene(

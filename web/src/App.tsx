@@ -28,8 +28,19 @@ import {
 } from "./player/runtime";
 import { prefersReducedMotion, isUsableViewport } from "./player/viewport";
 import { maybeObservedFrame, playerStatus, type PlayerView } from "./player/view";
+import { appendFpsTick, type FpsTick } from "./components/fps-meter";
 import { drawRenderFrame, resizeCanvasBackingStore } from "./render/canvas";
-import type { Camera } from "./render/camera";
+import {
+  IDENTITY_CAMERA_VIEW,
+  createCamera,
+  zoomCameraView,
+  type Camera,
+  type CameraView,
+} from "./render/camera";
+import {
+  DEFAULT_RENDERED_PARTICLE_LIMIT,
+  maybeParseRenderedParticleLimit,
+} from "./render/particle-limit";
 import { loadRenderMode, persistRenderMode, type RenderMode } from "./render/mode";
 import {
   loadWireframeStrokeWidth,
@@ -67,10 +78,18 @@ export function App() {
     RenderFrame | undefined
   >();
   const [stepsThisFrame, setStepsThisFrame] = createSignal(0);
+  const [fpsTicks, setFpsTicks] = createSignal<readonly FpsTick[]>([]);
   const [lastPointerKind, setLastPointerKind] =
     createSignal<PointerKind | undefined>();
   const [pointerAccepted, setPointerAccepted] = createSignal(0);
   const [resetGeneration, setResetGeneration] = createSignal(1);
+  const [renderedParticleDraft, setRenderedParticleDraft] = createSignal(
+    String(DEFAULT_RENDERED_PARTICLE_LIMIT),
+  );
+  const [maxRenderedParticles, setMaxRenderedParticles] = createSignal(
+    DEFAULT_RENDERED_PARTICLE_LIMIT,
+  );
+  const [panEnabled, setPanEnabled] = createSignal(false);
 
   let generation = 0;
   let constructionValues: Record<string, string> = {};
@@ -82,6 +101,9 @@ export function App() {
   let frameRemainderSeconds = 0;
   let maybePreviousFrame: RenderFrame | undefined;
   let maybeCamera: Camera | undefined;
+  let cameraView: CameraView = IDENTITY_CAMERA_VIEW;
+  let viewportWidth = 0;
+  let viewportHeight = 0;
   let maybeResizeObserver: ResizeObserver | undefined;
   let maybeCanvasPointer: CanvasPointerHandlers | undefined;
 
@@ -149,7 +171,7 @@ export function App() {
     });
   }
 
-  function paintHeldFrame(mode: RenderMode, strokeWidth: number): void {
+  function paintHeldFrame(): void {
     const maybeFrame = maybePreviousFrame;
     const context = maybeContext;
     const camera = maybeCamera;
@@ -161,19 +183,83 @@ export function App() {
       return;
     }
 
-    drawRenderFrame(context, maybeFrame, camera, mode, strokeWidth);
+    drawSceneFrame(context, maybeFrame, camera);
+  }
+
+  function drawSceneFrame(
+    context: CanvasRenderingContext2D,
+    frame: RenderFrame,
+    camera: Camera,
+  ): void {
+    drawRenderFrame(
+      context,
+      frame,
+      camera,
+      renderMode(),
+      wireframeStrokeWidth(),
+      maxRenderedParticles(),
+    );
+  }
+
+  function refreshCamera(): void {
+    if (!isUsableViewport(viewportWidth, viewportHeight)) {
+      return;
+    }
+
+    maybeCamera = createCamera(viewportWidth, viewportHeight, cameraView);
   }
 
   function changeRenderMode(nextMode: RenderMode): void {
     setRenderMode(nextMode);
     persistRenderMode(() => window.localStorage, nextMode);
-    paintHeldFrame(nextMode, wireframeStrokeWidth());
+    paintHeldFrame();
   }
 
   function changeWireframeStrokeWidth(nextWidth: number): void {
     setWireframeStrokeWidth(nextWidth);
     persistWireframeStrokeWidth(() => window.localStorage, nextWidth);
-    paintHeldFrame(renderMode(), nextWidth);
+    paintHeldFrame();
+  }
+
+  function changeRenderedParticleDraft(raw: string): void {
+    setRenderedParticleDraft(raw);
+    const maybeLimit = maybeParseRenderedParticleLimit(raw);
+    if (maybeLimit === undefined) {
+      return;
+    }
+
+    setMaxRenderedParticles(maybeLimit);
+    paintHeldFrame();
+  }
+
+  function applyCameraView(nextView: CameraView): void {
+    cameraView = nextView;
+    refreshCamera();
+    paintHeldFrame();
+  }
+
+  function zoomBy(direction: "in" | "out"): void {
+    applyCameraView(zoomCameraView(cameraView, direction));
+  }
+
+  function resetCameraView(): void {
+    applyCameraView(IDENTITY_CAMERA_VIEW);
+  }
+
+  function changePanEnabled(enabled: boolean): void {
+    setPanEnabled(enabled);
+    maybeCanvas?.classList.toggle("canvas-panning", enabled);
+    if (!enabled) {
+      maybeCanvasPointer?.cancel();
+    }
+  }
+
+  function panBy(deltaX: number, deltaY: number): void {
+    applyCameraView({
+      zoom: cameraView.zoom,
+      panX: cameraView.panX + deltaX,
+      panY: cameraView.panY + deltaY,
+    });
   }
 
   function scheduleFrame(context: CanvasRenderingContext2D): void {
@@ -219,13 +305,7 @@ export function App() {
       }
       try {
         const frame = maybeOwnedSession.nextFrame(stepTime.stepCount);
-        drawRenderFrame(
-          context,
-          frame,
-          camera,
-          renderMode(),
-          wireframeStrokeWidth(),
-        );
+        drawSceneFrame(context, frame, camera);
         const observation = observeFrame(
           frame,
           maybePreviousFrame,
@@ -234,6 +314,12 @@ export function App() {
         maybePreviousFrame = frame;
         setMaybeDebugFrame(frame);
         setStepsThisFrame(stepTime.stepCount);
+        setFpsTicks((ticks) =>
+          appendFpsTick(ticks, {
+            timeMs: timestamp,
+            simSteps: stepTime.stepCount,
+          }),
+        );
         setView({ kind: "playing", frame: observation });
         scheduleFrame(context);
       } catch (error) {
@@ -254,13 +340,7 @@ export function App() {
     }
 
     const frame = ownedSession.nextFrame();
-    drawRenderFrame(
-      context,
-      frame,
-      camera,
-      renderMode(),
-      wireframeStrokeWidth(),
-    );
+    drawSceneFrame(context, frame, camera);
     const observation = observeFrame(
       frame,
       resetObservation ? undefined : maybePreviousFrame,
@@ -269,6 +349,12 @@ export function App() {
     maybePreviousFrame = frame;
     setMaybeDebugFrame(frame);
     setStepsThisFrame(1);
+    setFpsTicks((ticks) =>
+      appendFpsTick(ticks, {
+        timeMs: performance.now(),
+        simSteps: 1,
+      }),
+    );
 
     if (prefersReducedMotion()) {
       setView({ kind: "paused", frame: observation });
@@ -291,13 +377,19 @@ export function App() {
       }
 
       try {
+        viewportWidth = resizedBounds.width;
+        viewportHeight = resizedBounds.height;
         const resizedCamera = resizeCanvasBackingStore(
           canvas,
-          resizedBounds.width,
-          resizedBounds.height,
+          viewportWidth,
+          viewportHeight,
           window.devicePixelRatio,
+          cameraView,
         );
         maybeCamera = resizedCamera;
+        if (resizedCamera === undefined) {
+          return;
+        }
         const maybeReadyId = maybeReadySceneId(route());
         if (maybeSession === undefined && maybeReadyId !== undefined) {
           void startScene(maybeReadyId);
@@ -306,13 +398,7 @@ export function App() {
 
         const maybeFrame = maybePreviousFrame;
         if (maybeFrame !== undefined) {
-          drawRenderFrame(
-            context,
-            maybeFrame,
-            resizedCamera,
-            renderMode(),
-            wireframeStrokeWidth(),
-          );
+          drawSceneFrame(context, maybeFrame, resizedCamera);
         }
       } catch (error) {
         fail(error);
@@ -328,7 +414,10 @@ export function App() {
     maybePreviousFrame = undefined;
     setMaybeDebugFrame(undefined);
     setStepsThisFrame(0);
+    setFpsTicks([]);
     maybeLastTimestamp = undefined;
+    cameraView = IDENTITY_CAMERA_VIEW;
+    refreshCamera();
     setView({ kind: "loading" });
 
     const canvas = maybeCanvas;
@@ -383,6 +472,8 @@ export function App() {
       canvas,
       maybeCamera: () => maybeCamera,
       send: sendPointer,
+      panEnabled: () => panEnabled(),
+      onPanBy: panBy,
     });
 
     const maybeNextContext = canvas.getContext("2d");
@@ -471,6 +562,7 @@ export function App() {
       maybePreviousFrame = undefined;
       setMaybeDebugFrame(undefined);
       setStepsThisFrame(0);
+      setFpsTicks([]);
       maybeLastTimestamp = undefined;
       presentOwnedFrame(maybeOwnedSession, context, true);
     } catch (error) {
@@ -636,6 +728,14 @@ export function App() {
               onDebugEnabledChange={setDebugEnabled}
               maybeDebugFrame={maybeDebugFrame()}
               stepsThisFrame={stepsThisFrame()}
+              fpsTicks={fpsTicks()}
+              renderedParticleDraft={renderedParticleDraft()}
+              onRenderedParticleDraft={changeRenderedParticleDraft}
+              panEnabled={panEnabled()}
+              onZoomIn={() => zoomBy("in")}
+              onZoomOut={() => zoomBy("out")}
+              onResetZoom={resetCameraView}
+              onPanEnabledChange={changePanEnabled}
             >
               <Show when={maybeCurrentScene()}>
                 {(currentScene) => (

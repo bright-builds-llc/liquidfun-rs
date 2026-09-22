@@ -4,7 +4,7 @@ use super::*;
 
 impl ParticleStorage {
     pub(crate) fn next_particle_for_test(&self) -> ParticleId {
-        let (slot, generation, _) = self.identity_slot_candidate().expect("next identity fits");
+        let (slot, generation, _) = self.identity_slot_candidate(0).expect("next identity fits");
         ParticleId::from_identity(Identity::new_particle(
             self.world,
             self.identity_slot_base + slot,

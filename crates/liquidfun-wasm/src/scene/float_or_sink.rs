@@ -52,12 +52,20 @@ impl BodyPreset {
             Self::Stone => STONE_DENSITY,
         }
     }
+
+    fn label(self) -> &'static str {
+        match self {
+            Self::Cork => "Cork",
+            Self::Wood => "Wood",
+            Self::Stone => "Stone",
+        }
+    }
 }
 
 struct FloatOrSinkHooks {
     basin_segments: [RigidSegment; 3],
     body_preset: BodyPreset,
-    dropped: Vec<(BodyId, f32)>,
+    dropped: Vec<(BodyId, f32, BodyPreset)>,
 }
 
 pub(crate) fn build(presets: &[(String, String)]) -> Result<BuiltScene, SessionError> {
@@ -204,7 +212,7 @@ fn drop_body_at(
     world
         .apply_body_linear_impulse_to_center(body, WAKE_IMPULSE, WakePolicy::Wake)
         .map_err(|_error| SessionError::SceneConstruction)?;
-    hooks.dropped.push((body, DROP_RADIUS));
+    hooks.dropped.push((body, DROP_RADIUS, hooks.body_preset));
     Ok(())
 }
 
@@ -266,7 +274,7 @@ impl SceneHooks for FloatOrSinkHooks {
 
     fn collect_circles(&self, world: &World) -> Result<Vec<(Vec2, f32)>, SessionError> {
         let mut circles = Vec::with_capacity(self.dropped.len());
-        for (body, radius) in &self.dropped {
+        for (body, radius, _preset) in &self.dropped {
             let position = world
                 .body_snapshot(*body)
                 .map_err(|_error| SessionError::FrameCaptureFailed)?
@@ -274,6 +282,14 @@ impl SceneHooks for FloatOrSinkHooks {
             circles.push((position, *radius));
         }
         Ok(circles)
+    }
+
+    fn collect_circle_labels(&self, _world: &World) -> Result<Vec<String>, SessionError> {
+        Ok(self
+            .dropped
+            .iter()
+            .map(|(_body, _radius, preset)| (*preset).label().to_owned())
+            .collect())
     }
 }
 
@@ -298,6 +314,31 @@ mod tests {
         assert!(frame.particle_count() >= 1);
         assert!(frame.rigid_segments().len() >= 4);
         assert!(frame.rigid_circles().is_empty());
+    }
+
+    #[test]
+    fn dropped_circles_are_labeled_with_their_material() {
+        // Arrange
+        let mut session = SessionCore::create(SceneId::FloatOrSink)
+            .expect("Float or Sink should construct a native pool");
+
+        // Act
+        session
+            .apply_control("body", "cork")
+            .expect("cork preset should apply");
+        session
+            .apply_action("drop-body")
+            .expect("cork should drop");
+        session
+            .apply_control("body", "stone")
+            .expect("stone preset should apply");
+        session
+            .apply_action("drop-body")
+            .expect("stone should drop");
+        let labels = capture(&session).circle_labels();
+
+        // Assert
+        assert_eq!(labels, vec!["Cork".to_owned(), "Stone".to_owned()]);
     }
 
     #[test]

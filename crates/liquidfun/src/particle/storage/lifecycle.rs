@@ -143,6 +143,7 @@ impl ParticleStorage {
 
     pub(super) fn identity_slot_candidate(
         &self,
+        reserved_frees: usize,
     ) -> Result<(usize, u64, bool), ParticleStorageError> {
         if let Some(local_slot) = self.free_identity_slots.last().copied() {
             let entry = self
@@ -151,6 +152,11 @@ impl ParticleStorage {
                 .expect("free identity slots always refer to existing entries");
             debug_assert_eq!(entry.state, IdentityState::Vacant);
             return Ok((local_slot, entry.generation, false));
+        }
+        if reserved_frees > 0 && self.dense_to_id.len() >= reserved_frees {
+            // Compaction frees a live identity before the reserved create commits.
+            // Callers that reserve a slot discard this candidate.
+            return Ok((0, 0, false));
         }
         if self.identities.len() >= self.identity_capacity {
             if self.retired_identity_slots > 0 {

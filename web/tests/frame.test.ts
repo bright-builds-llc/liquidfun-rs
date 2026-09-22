@@ -17,6 +17,7 @@ type FrameValues = {
   particleRadii: Float32Array;
   rigidSegments: Float32Array;
   rigidCircles: Float32Array;
+  circleLabels?: readonly string[];
 };
 
 function validFrameValues(): FrameValues {
@@ -97,6 +98,19 @@ class FakeRawProofFrame implements RawProofFrame {
   rigidCircles(): Float32Array {
     this.getterCalls.rigidCircles += 1;
     return this.values.rigidCircles;
+  }
+
+  circleLabels(): readonly string[] {
+    if (this.values.circleLabels !== undefined) {
+      return this.values.circleLabels;
+    }
+
+    const count = this.values.rigidCircles.length / 3;
+    if (!Number.isInteger(count)) {
+      return [];
+    }
+
+    return Array.from({ length: count }, () => "");
   }
 
   free(): void {

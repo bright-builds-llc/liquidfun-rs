@@ -69,7 +69,7 @@ impl Softness {
 }
 
 struct JellyDropHooks {
-    bar_segments: [RigidSegment; 2],
+    bar_segments: [RigidSegment; 4],
     group: ParticleGroupId,
 }
 
@@ -120,6 +120,26 @@ fn build_jelly(shape: JellyShape, softness: Softness) -> Result<BuiltScene, Scen
             Vec2::new(-0.6, 1.15),
         ],
     )?;
+    attach_basin_fixture(
+        &mut world,
+        ground,
+        &[
+            Vec2::new(-3.55, 0.85),
+            Vec2::new(-3.2, 0.85),
+            Vec2::new(-3.2, 7.2),
+            Vec2::new(-3.55, 7.2),
+        ],
+    )?;
+    attach_basin_fixture(
+        &mut world,
+        ground,
+        &[
+            Vec2::new(3.2, 0.85),
+            Vec2::new(3.55, 0.85),
+            Vec2::new(3.55, 7.2),
+            Vec2::new(3.2, 7.2),
+        ],
+    )?;
 
     let (particle_system, group) = create_jelly_group(&mut world, shape, softness)?;
 
@@ -136,6 +156,14 @@ fn build_jelly(shape: JellyShape, softness: Softness) -> Result<BuiltScene, Scen
                 RigidSegment {
                     start: Vec2::new(-0.6, 1.0),
                     end: Vec2::new(3.2, 1.0),
+                },
+                RigidSegment {
+                    start: Vec2::new(-3.2, 1.15),
+                    end: Vec2::new(-3.2, 7.2),
+                },
+                RigidSegment {
+                    start: Vec2::new(3.2, 1.15),
+                    end: Vec2::new(3.2, 7.2),
                 },
             ],
             group,

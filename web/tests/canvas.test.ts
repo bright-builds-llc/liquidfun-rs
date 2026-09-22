@@ -20,6 +20,7 @@ const FRAME: RenderFrame = {
   particleRadii: new Float32Array([0.2]),
   rigidSegments: new Float32Array([-1, 0, 1, 0]),
   rigidCircles: new Float32Array([0, 2, 0.75]),
+  circleLabels: [""],
 };
 const TAU = Math.PI * 2;
 

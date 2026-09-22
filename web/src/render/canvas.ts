@@ -1,6 +1,8 @@
 import type { RenderFrame } from "../physics/frame";
 import {
   type Camera,
+  type CameraView,
+  IDENTITY_CAMERA_VIEW,
   createCamera,
   projectPoint,
   projectRadius,
@@ -51,8 +53,9 @@ export function resizeCanvasBackingStore(
   cssWidth: number,
   cssHeight: number,
   devicePixelRatio: number,
+  view: CameraView = IDENTITY_CAMERA_VIEW,
 ): Camera {
-  const camera = createCamera(cssWidth, cssHeight);
+  const camera = createCamera(cssWidth, cssHeight, view);
   const pixelRatio = Math.min(
     requirePositiveFinite(devicePixelRatio),
     MAX_DEVICE_PIXEL_RATIO,
@@ -96,12 +99,10 @@ function drawParticles(
   camera: Camera,
   renderMode: RenderMode,
   wireframeStrokeWidth: number,
+  maxRenderedParticles: number,
 ): void {
-  for (
-    let particleIndex = 0;
-    particleIndex < frame.particleCount;
-    particleIndex += 1
-  ) {
+  const drawnCount = Math.min(frame.particleCount, maxRenderedParticles);
+  for (let particleIndex = 0; particleIndex < drawnCount; particleIndex += 1) {
     const positionIndex = particleIndex * 2;
     const colorIndex = particleIndex * 4;
     const center = projectPoint(camera, {
@@ -193,7 +194,32 @@ function drawCircles(
       context.fill();
     }
     context.stroke();
+    drawCircleLabel(context, frame.circleLabels[circleIndex / 3], center, radius);
   }
+}
+
+function drawCircleLabel(
+  context: CanvasRenderingContext2D,
+  label: string | undefined,
+  center: { readonly x: number; readonly y: number },
+  radius: number,
+): void {
+  if (label === undefined || label.length === 0) {
+    return;
+  }
+
+  const fontSize = Math.min(radius * 0.55, 28);
+  if (fontSize < 8) {
+    return;
+  }
+
+  context.save();
+  context.fillStyle = "#F8FAFC";
+  context.font = `600 ${fontSize}px sans-serif`;
+  context.textAlign = "center";
+  context.textBaseline = "middle";
+  context.fillText(label, center.x, center.y);
+  context.restore();
 }
 
 /** Draws one validated bulk Rust frame in the approved presentation order. */
@@ -203,6 +229,7 @@ export function drawRenderFrame(
   camera: Camera,
   renderMode: RenderMode,
   wireframeStrokeWidth = DEFAULT_WIREFRAME_STROKE_WIDTH,
+  maxRenderedParticles = Number.POSITIVE_INFINITY,
 ): void {
   context.fillStyle = CANVAS_COLOR;
   context.fillRect(
@@ -212,7 +239,14 @@ export function drawRenderFrame(
     camera.viewport.height,
   );
 
-  drawParticles(context, frame, camera, renderMode, wireframeStrokeWidth);
+  drawParticles(
+    context,
+    frame,
+    camera,
+    renderMode,
+    wireframeStrokeWidth,
+    maxRenderedParticles,
+  );
   drawSegments(context, frame, camera, renderMode, wireframeStrokeWidth);
   drawCircles(context, frame, camera, renderMode, wireframeStrokeWidth);
 }

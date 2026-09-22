@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  APPLY_SETTING_LABEL,
   CONSTRUCTION_RESET_HINT,
   constructionHintVisible,
   initialPresetValue,
@@ -60,19 +59,11 @@ describe("constructionHintVisible", () => {
 });
 
 describe("SceneControls copy", () => {
-  it("locks the construction apply CTA and reset sentence", () => {
-    // Arrange
-    const applyLabel = APPLY_SETTING_LABEL;
+  it("locks the construction reset sentence", () => {
+    // Arrange / Act
     const resetHint = CONSTRUCTION_RESET_HINT;
 
-    // Act
-    const lockedCopy = [applyLabel, resetHint];
-
     // Assert
-    expect(lockedCopy).toEqual([
-      "Apply setting",
-      "Changing this setting recreates the scene from its documented initial state.",
-    ]);
     expect(resetHint).toBe(
       "Changing this setting recreates the scene from its documented initial state.",
     );

@@ -86,7 +86,6 @@ test("resets Dam Break Water amount from large to medium", async ({ page }) => {
   // Act
   await waterAmount.getByLabel("Water amount").selectOption("large");
   await expect(waterAmount.getByText(CONSTRUCTION_RESET_HINT)).toBeVisible();
-  await waterAmount.getByRole("button", { name: "Apply setting" }).click();
   await expectReadySceneChrome(page, "Dam Break");
   await expect(page.getByLabel("Water amount")).toHaveValue("large");
   await resetPlayingScene(page, "Dam Break");
@@ -110,7 +109,6 @@ test("resets Color Mixer Mix strength from gentle to strong", async ({
   // Act
   await mixStrength.getByLabel("Mix strength").selectOption("gentle");
   await expect(mixStrength.getByText(CONSTRUCTION_RESET_HINT)).toBeVisible();
-  await mixStrength.getByRole("button", { name: "Apply setting" }).click();
   await expectReadySceneChrome(page, "Color Mixer");
   await expect(page.getByLabel("Mix strength")).toHaveValue("gentle");
   await resetPlayingScene(page, "Color Mixer");

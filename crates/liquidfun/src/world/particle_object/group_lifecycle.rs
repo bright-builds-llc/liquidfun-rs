@@ -73,10 +73,11 @@ impl World {
         let group_records = self
             .prepare_empty_particle_group_records(system, &empty_groups)
             .expect("validated empty group destruction records preflight successfully");
-        let outcome = crate::particle::lifetime::compact_pending_with_occurrences(
-            &mut self.system_mut_after_validation(system).storage,
-        )
-        .expect("validated authoritative storage compacts transactionally");
+        let system_record = self.system_mut_after_validation(system);
+        let outcome =
+            crate::particle::lifetime::compact_pending_with_occurrences(&mut system_record.storage)
+                .expect("validated authoritative storage compacts transactionally");
+        system_record.lifetime.note_destroyed(&outcome.destroyed);
         let mut records = outcome
             .destroyed
             .into_iter()

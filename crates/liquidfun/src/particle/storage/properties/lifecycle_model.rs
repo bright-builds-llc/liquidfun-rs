@@ -291,6 +291,7 @@ fn apply_lifecycle_operation(
             let expected = model.compact();
             let actual = compact_pending_with_occurrences(storage)
                 .map_err(|error| TestCaseError::fail(format!("compact failed: {error:?}")))?;
+            state.note_destroyed(&actual.destroyed);
             prop_assert_eq!(
                 actual
                     .destroyed

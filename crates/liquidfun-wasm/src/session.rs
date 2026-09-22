@@ -279,9 +279,9 @@ impl SessionCore {
         }
 
         let circles = self.hooks.collect_circles(&self.world)?;
+        let circle_count = circles.len();
         let mut rigid_circles = Vec::with_capacity(
-            circles
-                .len()
+            circle_count
                 .checked_mul(RIGID_CIRCLE_STRIDE)
                 .ok_or(SessionError::FrameCaptureFailed)?,
         );
@@ -289,7 +289,7 @@ impl SessionCore {
             rigid_circles.extend_from_slice(&[position.x, position.y, radius]);
         }
 
-        FrameData::new(
+        let mut frame = FrameData::new(
             self.step_index,
             particle_positions,
             particle_colors,
@@ -298,7 +298,15 @@ impl SessionCore {
             rigid_circles,
             diagnostics,
         )
-        .map_err(|_error| SessionError::FrameCaptureFailed)
+        .map_err(|_error| SessionError::FrameCaptureFailed)?;
+        let mut labels = self.hooks.collect_circle_labels(&self.world)?;
+        if labels.is_empty() {
+            labels.resize(circle_count, String::new());
+        }
+        frame
+            .set_circle_labels(labels)
+            .map_err(|_error| SessionError::FrameCaptureFailed)?;
+        Ok(frame)
     }
 
     pub(crate) const fn step_index(&self) -> u32 {

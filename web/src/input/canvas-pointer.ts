@@ -95,10 +95,13 @@ export function attachCanvasPointer(options: {
   readonly canvas: HTMLCanvasElement;
   readonly maybeCamera: () => Camera | undefined;
   readonly send: (kind: PointerKind, worldX: number, worldY: number) => void;
+  readonly panEnabled?: () => boolean;
+  readonly onPanBy?: (deltaX: number, deltaY: number) => void;
 }): CanvasPointerHandlers {
-  const { canvas, maybeCamera, send } = options;
+  const { canvas, maybeCamera, send, panEnabled, onPanBy } = options;
   let gesture: GestureState = emptyGestureState();
   let maybeLastWorld: Point | undefined;
+  let maybeLastPanCss: Point | undefined;
 
   function onPointerEvent(event: PointerEvent): void {
     if (!isPointerEventName(event.type)) {
@@ -119,6 +122,24 @@ export function attachCanvasPointer(options: {
 
     if (decision.shouldRelease) {
       releaseCapturedPointer(canvas, event.pointerId);
+      maybeLastPanCss = undefined;
+    }
+
+    if (panEnabled?.() === true) {
+      const rect = canvas.getBoundingClientRect();
+      const maybeCss = cssPointFromClient(event.clientX, event.clientY, rect);
+      if (decision.shouldCapture) {
+        maybeLastPanCss = maybeCss;
+      }
+      if (
+        decision.maybeKind === "move" &&
+        maybeCss !== undefined &&
+        maybeLastPanCss !== undefined
+      ) {
+        onPanBy?.(maybeCss.x - maybeLastPanCss.x, maybeCss.y - maybeLastPanCss.y);
+        maybeLastPanCss = maybeCss;
+      }
+      return;
     }
 
     if (decision.maybeKind === undefined || maybeWorld === undefined) {
@@ -137,9 +158,15 @@ export function attachCanvasPointer(options: {
 
     const worldX = maybeLastWorld?.x ?? 0;
     const worldY = maybeLastWorld?.y ?? 0;
+    const panning = panEnabled?.() === true || maybeLastPanCss !== undefined;
     releaseCapturedPointer(canvas, maybePointerId);
     gesture = emptyGestureState();
     maybeLastWorld = undefined;
+    maybeLastPanCss = undefined;
+    if (panning) {
+      return;
+    }
+
     send("cancel", worldX, worldY);
   }
 

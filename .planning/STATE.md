@@ -36,6 +36,11 @@ v1.3 Reference Testbed Scenes. Add the twelve JavaScript testbed scenes the play
 
 ## Accumulated Context
 
+### Roadmap Evolution
+
+- Phase 30 added: Periodic hydraulic fountain
+- Phase 31 added: Sinusoidal wave tank
+
 ### Decisions
 
 v1.2 decisions are in `.planning/milestones/v1.2-STATE.md` and PROJECT.md Key Decisions.

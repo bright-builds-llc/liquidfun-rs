@@ -345,6 +345,59 @@ canvas {
 canvas.canvas-interactive {
   cursor: crosshair;
 }
+canvas.canvas-panning {
+  cursor: grab;
+}
+canvas.canvas-panning:active {
+  cursor: grabbing;
+}
+.viewport-tools {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  z-index: 2;
+  display: flex;
+  gap: 4px;
+}
+.viewport-tools button {
+  width: 44px;
+  min-width: 44px;
+  padding: 0;
+}
+.viewport-tools button[aria-pressed="true"] {
+  color: #0B0F14;
+  background: #4DA3FF;
+  border-color: #4DA3FF;
+}
+.viewport-tools svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.rendered-particle-control {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-block-size: 44px;
+  color: #F4F7FA;
+  font-size: 16px;
+  font-weight: 600;
+}
+.rendered-particle-control input {
+  width: 6.5rem;
+  min-block-size: 44px;
+  padding: 0 var(--space-sm);
+  color: #F4F7FA;
+  font: inherit;
+  font-weight: 400;
+  background: #0B0F14;
+  border: 1px solid #2A3441;
+  border-radius: 8px;
+}
 .empty-state {
   position: absolute;
   inset: 0;
@@ -383,6 +436,7 @@ figcaption {
 
 .render-mode-control,
 .stroke-width-control,
+.rendered-particle-control,
 .debug-toggle {
   display: inline-flex;
   align-items: center;
@@ -416,9 +470,10 @@ figcaption {
   top: var(--space-sm);
   left: var(--space-sm);
   z-index: 1;
-  display: grid;
-  grid-template-columns: auto auto;
-  gap: 2px var(--space-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(220px, calc(100% - 2 * var(--space-sm)));
   margin: 0;
   padding: var(--space-sm);
   color: #F4F7FA;
@@ -431,6 +486,13 @@ figcaption {
   border-radius: 8px;
 }
 
+.debug-readout dl {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 2px var(--space-sm);
+  margin: 0;
+}
+
 .debug-readout dt {
   color: #A9B4C0;
 }
@@ -438,6 +500,49 @@ figcaption {
 .debug-readout dd {
   margin: 0;
   text-align: right;
+}
+
+.fps-meter {
+  display: grid;
+  gap: 2px;
+}
+
+.fps-meter-label {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  color: #A9B4C0;
+}
+
+.fps-meter-value--good {
+  color: #3DDC97;
+}
+
+.fps-meter-value--fair {
+  color: #E6C35C;
+}
+
+.fps-meter-value--poor {
+  color: #F07178;
+}
+
+.fps-graph-frame {
+  position: relative;
+  height: 36px;
+}
+
+.fps-graph {
+  display: block;
+  width: calc(100% - 18px);
+  height: 100%;
+}
+
+.fps-baseline {
+  position: absolute;
+  right: 0;
+  color: #8AA0B4;
+  font-size: 10px;
+  line-height: 1;
 }
 /* Product controls: Play scene, Pause scene, Reset scene, Retry scene, Open Dam Break */
 .product-control,
@@ -692,6 +797,10 @@ select:hover:not(:disabled) {
   select {
     justify-self: stretch;
     width: 100%;
+  }
+
+  .viewport-tools button {
+    width: 44px;
   }
 
   .demo-drawer-header button {

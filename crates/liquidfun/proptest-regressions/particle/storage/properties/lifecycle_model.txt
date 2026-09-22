@@ -1,0 +1,7 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 34861df2563e791afc902a01d6801f0c8a09879e671abdce03acdb6087b0ef20 # shrinks to operations = [Create { lifetime: 91, optional: false, listener: false }, Create { lifetime: -6, optional: false, listener: false }, Tick(1), Compact, DestroyOldest]

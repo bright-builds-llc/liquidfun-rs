@@ -33,18 +33,20 @@ impl World {
             }
         }
         let input = particle_input(definition, maybe_group);
-        let mut preflight = self.particle_systems.get(system)?.clone();
-        preflight
+        let record = self.particle_systems.get(system)?;
+        let occupied = record.storage.len();
+        record
             .lifetime
-            .prepare_capacity_for_creation(&mut preflight.storage)
+            .reject_blocked_capacity(occupied)
             .map_err(particle_lifecycle_creation_error)?;
-        preflight
+        let free_slots = usize::from(record.lifetime.creation_frees_a_slot(occupied));
+        record
             .storage
-            .validate_create(input)
+            .validate_create_reserving(input, free_slots)
             .map_err(storage_object_creation_error)?;
-        preflight
+        record
             .lifetime
-            .validate_created_lifetime(&preflight.storage, definition.lifetime())?;
+            .validate_created_lifetime(&record.storage, definition.lifetime())?;
         let diagnostic_id = self.allocate_diagnostic_id()?;
         Ok(self.commit_preflighted_particle(system, input, definition.lifetime(), diagnostic_id))
     }

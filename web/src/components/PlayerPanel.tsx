@@ -14,6 +14,8 @@ import {
   WIREFRAME_STROKE_WIDTH_STEP,
 } from "../render/stroke-width";
 import { DebugReadout } from "./DebugReadout";
+import type { FpsTick } from "./fps-meter";
+import { ViewportTools } from "./ViewportTools";
 
 export type PlayerPanelProps = {
   readonly sceneTitle: string;
@@ -33,6 +35,14 @@ export type PlayerPanelProps = {
   readonly onDebugEnabledChange: (enabled: boolean) => void;
   readonly maybeDebugFrame: RenderFrame | undefined;
   readonly stepsThisFrame: number;
+  readonly fpsTicks: readonly FpsTick[];
+  readonly renderedParticleDraft: string;
+  readonly onRenderedParticleDraft: (raw: string) => void;
+  readonly panEnabled: boolean;
+  readonly onZoomIn: () => void;
+  readonly onZoomOut: () => void;
+  readonly onResetZoom: () => void;
+  readonly onPanEnabledChange: (enabled: boolean) => void;
   readonly children?: JSX.Element;
 };
 
@@ -125,6 +135,14 @@ export function PlayerPanel(props: PlayerPanelProps) {
             enabled={props.debugEnabled}
             maybeFrame={props.maybeDebugFrame}
             stepsThisFrame={props.stepsThisFrame}
+            fpsTicks={props.fpsTicks}
+          />
+          <ViewportTools
+            panEnabled={props.panEnabled}
+            onZoomIn={props.onZoomIn}
+            onZoomOut={props.onZoomOut}
+            onResetZoom={props.onResetZoom}
+            onPanEnabledChange={props.onPanEnabledChange}
           />
         </div>
         <figcaption id="scene-interaction-hint">{props.interactionHint}</figcaption>
@@ -202,6 +220,18 @@ export function PlayerPanel(props: PlayerPanelProps) {
           <output for="wireframe-stroke">
             {formatWireframeStrokeWidth(props.wireframeStrokeWidth)}
           </output>
+        </label>
+        <label class="rendered-particle-control">
+          Rendered particles
+          <input
+            type="text"
+            inputMode="numeric"
+            spellcheck={false}
+            value={props.renderedParticleDraft}
+            onInput={(event) => {
+              props.onRenderedParticleDraft(event.currentTarget.value);
+            }}
+          />
         </label>
         <label class="debug-toggle">
           <input

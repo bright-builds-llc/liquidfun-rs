@@ -58,6 +58,10 @@ class FakeRawProofFrame implements RawProofFrame {
     return new Float32Array([0, 1, 0.5]);
   }
 
+  circleLabels(): readonly string[] {
+    return [""];
+  }
+
   free(): void {
     this.freeCalls += 1;
   }

@@ -21,6 +21,7 @@ export interface RawProofFrame {
   particleRadii(): Float32Array;
   rigidSegments(): Float32Array;
   rigidCircles(): Float32Array;
+  circleLabels(): readonly string[];
   free(): void;
 }
 
@@ -37,6 +38,7 @@ export interface RenderFrame {
   readonly particleRadii: Float32Array;
   readonly rigidSegments: Float32Array;
   readonly rigidCircles: Float32Array;
+  readonly circleLabels: readonly string[];
 }
 
 function invalidFrame(): never {
@@ -155,6 +157,7 @@ export function parseRenderFrame(rawFrame: RawProofFrame): RenderFrame {
   const particleRadii = rawFrame.particleRadii();
   const rigidSegments = rawFrame.rigidSegments();
   const rigidCircles = rawFrame.rigidCircles();
+  const circleLabels = rawFrame.circleLabels();
 
   if (
     !(particlePositions instanceof Float32Array) ||
@@ -193,6 +196,13 @@ export function parseRenderFrame(rawFrame: RawProofFrame): RenderFrame {
   requireFinite(rigidSegments);
   requireFinite(rigidCircles);
   requirePositiveCircleRadii(rigidCircles);
+  if (
+    !Array.isArray(circleLabels) ||
+    circleLabels.length !== rigidCircleCount ||
+    circleLabels.some((label) => typeof label !== "string")
+  ) {
+    return invalidFrame();
+  }
 
   return {
     stepIndex,
@@ -206,5 +216,6 @@ export function parseRenderFrame(rawFrame: RawProofFrame): RenderFrame {
     particleRadii,
     rigidSegments,
     rigidCircles,
+    circleLabels,
   };
 }
