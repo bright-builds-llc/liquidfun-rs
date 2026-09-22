@@ -28,11 +28,12 @@ body {
 }
 .app-shell {
   display: grid;
+  flex: 1 1 auto;
   gap: var(--space-lg);
-  width: 100%;
-  max-width: 1440px;
+  width: auto;
+  max-width: none;
   min-width: 0;
-  margin: 0 auto;
+  margin: 0;
   padding: var(--space-lg);
 }
 
@@ -60,9 +61,10 @@ output {
 }
 html[data-demo-media-capture="true"] .site-header,
 html[data-demo-media-capture="true"] .demo-sidebar,
+html[data-demo-media-capture="true"] [data-slot="sidebar-gap"],
+html[data-demo-media-capture="true"] [data-slot="sidebar-trigger"],
 html[data-demo-media-capture="true"] .site-footer,
-html[data-demo-media-capture="true"] .demo-drawer-overlay,
-html[data-demo-media-capture="true"] .demo-drawer-positioner {
+html[data-demo-media-capture="true"] [data-slot="drawer-overlay"] {
   visibility: hidden;
 }
 .site-header h1 {
@@ -106,23 +108,29 @@ html[data-demo-media-capture="true"] .demo-drawer-positioner {
 }
 
 .app-body {
-  display: grid;
-  grid-template-columns: 280px minmax(0, 1fr);
-  align-items: start;
-  gap: var(--space-lg);
+  display: block;
   min-width: 0;
 }
 
-.demo-sidebar {
-  position: sticky;
-  top: 96px;
-  max-height: calc(100vh - 156px);
-  min-width: 0;
+.demo-sidebar-content {
   padding: var(--space-md);
-  overflow-y: auto;
-  background: #151D28;
-  border: 1px solid #2A3441;
-  border-radius: 12px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+[data-corvu-drawer-content],
+[data-slot="drawer-overlay"] {
+  transition: none;
 }
 .demo-nav-list {
   display: grid;

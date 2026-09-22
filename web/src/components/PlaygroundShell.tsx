@@ -1,10 +1,17 @@
-import { Dialog } from "@kobalte/core/dialog";
-import { createEffect, createSignal, type JSX } from "solid-js";
+import { createEffect, Show, type JSX } from "solid-js";
 
 import type { SceneId } from "../catalog/scenes";
 import { DemoNavigation } from "./DemoNavigation";
 import { SiteFooter } from "./SiteFooter";
 import { SiteHeader } from "./SiteHeader";
+import { DrawerDescription, DrawerLabel } from "./ui/drawer";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarProvider,
+  SidebarTrigger,
+  useSidebar,
+} from "./ui/sidebar";
 
 export type PlaygroundShellProps = {
   readonly maybeCurrentSceneId: SceneId | undefined;
@@ -12,55 +19,70 @@ export type PlaygroundShellProps = {
   readonly children: JSX.Element;
 };
 
-/** Responsive playground chrome with desktop navigation and a modal drawer. */
+/** Playground chrome whose catalog sidebar slides away on desktop and becomes a drawer on small screens. */
 export function PlaygroundShell(props: PlaygroundShellProps) {
-  const [drawerOpen, setDrawerOpen] = createSignal(false);
+  return (
+    <SidebarProvider>
+      <PlaygroundFrame
+        maybeCurrentSceneId={props.maybeCurrentSceneId}
+        routeIdentity={props.routeIdentity}
+      >
+        {props.children}
+      </PlaygroundFrame>
+    </SidebarProvider>
+  );
+}
+
+function PlaygroundFrame(props: PlaygroundShellProps) {
+  const sidebar = useSidebar();
+  let mobileDrawerWasOpen = false;
 
   createEffect(() => {
     props.routeIdentity;
-    setDrawerOpen(false);
+    sidebar.setOpenMobile(false);
+  });
+
+  createEffect(() => {
+    const isOpen = sidebar.openMobile();
+    if (mobileDrawerWasOpen && !isOpen) {
+      queueMicrotask(() => {
+        document
+          .querySelector<HTMLButtonElement>("[data-slot='sidebar-trigger']")
+          ?.focus();
+      });
+    }
+    mobileDrawerWasOpen = isOpen;
   });
 
   return (
-    <Dialog open={drawerOpen()} onOpenChange={setDrawerOpen} modal>
-      <div class="app-shell">
+    <>
+      <Sidebar class="demo-sidebar" collapsible="offcanvas">
+        <Show when={sidebar.isMobile()}>
+          <DrawerLabel class="visually-hidden">Demos</DrawerLabel>
+          <DrawerDescription class="visually-hidden">
+            Choose a LiquidFun simulation.
+          </DrawerDescription>
+        </Show>
+        <SidebarContent class="demo-sidebar-content">
+          <DemoNavigation
+            label="Demos"
+            maybeCurrentSceneId={props.maybeCurrentSceneId}
+            onNavigate={() => sidebar.setOpenMobile(false)}
+          />
+        </SidebarContent>
+      </Sidebar>
+      <div
+        class="app-shell"
+        aria-hidden={sidebar.openMobile() ? "true" : undefined}
+      >
         <SiteHeader
           mobileNavigationTrigger={
-            <Dialog.Trigger class="mobile-demos-trigger">
-              Demos
-            </Dialog.Trigger>
+            <SidebarTrigger class="mobile-demos-trigger" aria-label="Demos" />
           }
         />
-        <div class="app-body">
-          <aside class="demo-sidebar">
-            <DemoNavigation
-              label="Demos"
-              maybeCurrentSceneId={props.maybeCurrentSceneId}
-            />
-          </aside>
-          {props.children}
-        </div>
+        <div class="app-body">{props.children}</div>
         <SiteFooter />
       </div>
-      <Dialog.Portal>
-        <Dialog.Overlay class="demo-drawer-overlay" />
-        <div class="demo-drawer-positioner">
-          <Dialog.Content class="demo-drawer">
-            <div class="demo-drawer-header">
-              <Dialog.Title>Demos</Dialog.Title>
-              <Dialog.CloseButton>Close</Dialog.CloseButton>
-            </div>
-            <Dialog.Description>
-              Choose a LiquidFun simulation.
-            </Dialog.Description>
-            <DemoNavigation
-              label="Mobile demos"
-              maybeCurrentSceneId={props.maybeCurrentSceneId}
-              onNavigate={() => setDrawerOpen(false)}
-            />
-          </Dialog.Content>
-        </div>
-      </Dialog.Portal>
-    </Dialog>
+    </>
   );
 }

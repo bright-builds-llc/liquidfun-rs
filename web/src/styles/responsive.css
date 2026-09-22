@@ -8,15 +8,7 @@
   }
 
   .app-body {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .demo-sidebar {
-    display: none;
-  }
-
-  .mobile-demos-trigger {
-    display: inline-flex;
+    display: block;
   }
 }
 
@@ -74,7 +66,7 @@
     width: 44px;
   }
 
-  .demo-drawer-header button {
-    width: auto;
+  .mobile-demos-trigger {
+    width: 44px;
   }
 }

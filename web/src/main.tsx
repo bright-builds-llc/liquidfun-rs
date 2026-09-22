@@ -1,6 +1,7 @@
 import { render } from "solid-js/web";
 
 import { App } from "./App";
+import "./styles/tailwind.css";
 import "./app.css";
 import "./styles/player.css";
 import "./styles/responsive.css";

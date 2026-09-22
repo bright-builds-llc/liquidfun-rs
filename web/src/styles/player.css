@@ -543,44 +543,11 @@ select:hover:not(:disabled) {
 }
 
 .mobile-demos-trigger {
-  display: none;
-}
-
-.demo-drawer-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 20;
-  background: rgb(0 0 0 / 72%);
-}
-
-.demo-drawer-positioner {
-  position: fixed;
-  inset: 0;
-  z-index: 30;
-  display: flex;
-  align-items: stretch;
-  pointer-events: none;
-}
-
-.demo-drawer {
-  display: grid;
-  align-content: start;
-  gap: var(--space-md);
-  width: min(320px, 88vw);
-  max-height: 100%;
-  padding: var(--space-lg);
-  overflow-y: auto;
-  color: #F4F7FA;
-  background: #151D28;
-  border-right: 1px solid #2A3441;
-  box-shadow: 16px 0 40px rgb(0 0 0 / 40%);
-  pointer-events: auto;
-  overscroll-behavior: contain;
-}
-
-.demo-drawer-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-md);
+  display: inline-flex;
+  flex: 0 0 auto;
+  inline-size: 44px;
+  block-size: 44px;
+  min-inline-size: 44px;
+  min-block-size: 44px;
+  padding: 0;
 }

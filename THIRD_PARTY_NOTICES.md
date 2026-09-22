@@ -146,6 +146,20 @@ exactly with no missing or extra entries, validates version, license, and source
 metadata, and verifies the preserved NOTICE and MIT files remain byte-identical
 to the installed `@kobalte/core` artifact.
 
+The playground shell also vendors UI adapted from
+[shadcn-solid](https://github.com/hngngn/shadcn-solid) (MIT) and depends on these
+direct packages. They stay inside the private `web/` build and are not part of
+the published `liquidfun` Cargo package.
+
+| Package             | Locked version | SPDX license | Official source                                 |
+| ------------------- | -------------- | ------------ | ----------------------------------------------- |
+| `@corvu/drawer`     | 0.2.4          | MIT          | <https://github.com/corvudev/corvu>             |
+| `@tailwindcss/vite` | 4.3.3          | MIT          | <https://github.com/tailwindlabs/tailwindcss>   |
+| `cva`               | 1.0.0-beta.4   | Apache-2.0   | <https://github.com/joe-bell/cva>               |
+| `tailwind-merge`    | 3.7.0          | MIT          | <https://github.com/dcastil/tailwind-merge>     |
+| `tailwindcss`       | 4.3.3          | MIT          | <https://github.com/tailwindlabs/tailwindcss>   |
+| `tw-animate-css`    | 1.4.0          | MIT          | <https://github.com/Wombosvideo/tw-animate-css> |
+
 ## Derived and Altered Material
 
 Every local source file, translated test, scenario, fixture, reference datum,
