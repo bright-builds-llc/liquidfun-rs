@@ -2,10 +2,11 @@
 
 ## Overview
 
-No milestone is in progress. v1.2 Native Performance Closing is archived. Phase numbering continues after 25. The next milestone starts with `/gsd-new-milestone` and a fresh requirements file. Package publication and release tags remain separately authorized.
+v1.3 Reference Testbed Scenes is active. Visitors get the twelve missing JavaScript LiquidFun testbed scenes in the existing SolidJS playground as recognizable native Rust/WASM ports. The six current scenes stay. Phase numbering continues after 25 (Phases 26–29). This is not sealed C++ parity, a public benchmark, crate publication, or a git release tag.
 
 ## Milestones
 
+- [ ] **v1.3 Reference Testbed Scenes** — Phases 26–29 (in progress). Twelve missing JS testbed scenes in the existing playground; recognizable ports only.
 - [x] **v1.2 Native Performance Closing** — Phases 22–25 (archived 2026-09-21). Local Dam Break Medium recorded at ≤ 3× C++; no Phase 12 sealed matrix; no crate or tag. ([full roadmap](milestones/v1.2-ROADMAP.md))
 - [x] **v1.1 Web Playground** — 6 phases / 39 plans complete; archived 2026-09-20 ([full roadmap](milestones/v1.1-ROADMAP.md)). Planning label only; no package or tag released.
 - [x] **v1.0 Experimental Foundation** — 16 phases / 252 active plans complete; archived 2026-09-17 under hobby scope ([full roadmap](milestones/v1.0-ROADMAP.md)). Strict qualification remains deferred; no package or tag released.
@@ -38,6 +39,67 @@ v1.1 phase directories remain in `.planning/phases/` for stable historical refer
 
 </details>
 
+### 🚧 v1.3 Reference Testbed Scenes (In Progress)
+
+**Milestone Goal:** A visitor can open every JavaScript LiquidFun testbed scene the playground does not already have, running on native `liquidfun` in the existing SolidJS player. Recognizable ports with honest credits; not sealed C++ parity.
+
+- [ ] **Phase 26: Catalog shell and basin scenes** - Shared player growth plus Particles and Liquid Timer
+- [ ] **Phase 27: Material flag groups** - Surface Tension, Elastic Particles, and Rigid Particles
+- [ ] **Phase 28: Interaction seams** - Soup, Soup Stirrer, Impulse, Wave Machine, and Theo Jansen
+- [ ] **Phase 29: Sparky, Drawing, and full catalog** - Contact sparks, paint presets, and all twelve scenes openable
+
+## Phase Details
+
+### Phase 26: Catalog shell and basin scenes
+**Goal**: Visitors can use the shared catalog and player with the first watch-first testbed ports—Particles and Liquid Timer—without losing the six existing scenes.
+**Depends on**: Phase 25 (v1.2 complete)
+**Requirements**: PLAY-02, PLAY-03, BASIN-01, BASIN-02
+**Success Criteria** (what must be TRUE):
+  1. Visitor can play, pause, and reset Particles and Liquid Timer, and reset restores each scene's initial layout.
+  2. Particles and Liquid Timer each credit the pinned LiquidFun test they port.
+  3. Visitor can watch Particles: water falls in an open basin and a ball drops into it.
+  4. Visitor can watch Liquid Timer: tensile, viscous liquid drains through shelves into bottom columns.
+  5. Dam Break, Fountain, Float or Sink, Color Mixer, Jelly Drop, and Water Wheel remain available and runnable in the same player.
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 27: Material flag groups
+**Goal**: Visitors can watch the three material showcase scenes—Surface Tension, Elastic Particles, and Rigid Particles—as recognizable flag-group ports beside the existing demos.
+**Depends on**: Phase 26
+**Requirements**: MAT-01, MAT-02, MAT-03
+**Success Criteria** (what must be TRUE):
+  1. Visitor can open, play, pause, and reset Surface Tension, Elastic Particles, and Rigid Particles from the catalog, with credits to the pinned LiquidFun tests.
+  2. Visitor can watch Surface Tension: three colored tensile groups bead and bleed color when a ball hits them.
+  3. Visitor can watch Elastic Particles: three soft clumps deform when a ball falls on them.
+  4. Visitor can watch Rigid Particles: three colored clumps stay solid and do not stretch like jelly when a ball hits them.
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 28: Interaction seams
+**Goal**: Visitors can run the interaction-heavy ports—Soup, Soup Stirrer, Impulse, Wave Machine, and Theo Jansen—using native destroy-in-shape, group impulse, and live revolute motors (no JS physics fakes).
+**Depends on**: Phase 27
+**Requirements**: ACT-01, ACT-02, ACT-03, ACT-04, ACT-05
+**Success Criteria** (what must be TRUE):
+  1. Visitor can watch Soup: a basin of liquid holds floating solid bits.
+  2. Visitor can watch Soup Stirrer: a paddle keeps stirring that soup, and the visitor can free the paddle from its rail or put it back.
+  3. Visitor can click or tap Impulse and shove the whole particle blob.
+  4. Visitor can watch Wave Machine rock on its own and slosh the water inside.
+  5. Visitor can watch Theo Jansen walk under a particle load and can reverse its motor.
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 29: Sparky, Drawing, and full catalog
+**Goal**: Visitors can watch Sparky sparks and paint Drawing Particles, and can open all twelve missing testbed scenes from the catalog while the original six remain.
+**Depends on**: Phase 28
+**Requirements**: PLAY-01, FX-01, FX-02
+**Success Criteria** (what must be TRUE):
+  1. Visitor can open Drawing Particles, Elastic Particles, Impulse, Liquid Timer, Particles, Rigid Particles, Soup, Soup Stirrer, Sparky, Surface Tension, Theo Jansen, and Wave Machine from the catalog, and the existing six scenes remain available.
+  2. Visitor can watch Sparky: colliding circles throw fading particle sparks (post-step contact observation; no mid-step world mutation; no FFI expansion).
+  3. Visitor can paint Drawing Particles into an empty vessel, and at least one non-water material looks different from plain water.
+  4. Developer can confirm scene docs and catalog wording describe recognizable ports, not sealed C++ parity, and do not cut particle counts or raise the 4-step catch-up cap to fake smoothness.
+**Plans**: TBD
+**UI hint**: yes
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -52,5 +114,9 @@ v1.1 phase directories remain in `.planning/phases/` for stable historical refer
 | 23. Baseline pair and named audit | v1.2 | 9/9 | Complete | 2026-09-21 |
 | 24. Shared hot-path waves through 3× | v1.2 | 6/6 | Complete | 2026-09-21 |
 | 25. WASM sanity and honest close | v1.2 | 2/2 | Complete | 2026-09-21 |
+| 26. Catalog shell and basin scenes | v1.3 | 0/TBD | Not started | - |
+| 27. Material flag groups | v1.3 | 0/TBD | Not started | - |
+| 28. Interaction seams | v1.3 | 0/TBD | Not started | - |
+| 29. Sparky, Drawing, and full catalog | v1.3 | 0/TBD | Not started | - |
 
 v1.0 phases 1–15 remain in the [v1.0 roadmap archive](milestones/v1.0-ROADMAP.md).

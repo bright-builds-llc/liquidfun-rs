@@ -65,28 +65,29 @@ A visitor can open every JavaScript LiquidFun testbed scene the playground does 
 
 | Requirement | Phase | Status |
 | --- | --- | --- |
-| PLAY-01 | — | Pending |
-| PLAY-02 | — | Pending |
-| PLAY-03 | — | Pending |
-| BASIN-01 | — | Pending |
-| BASIN-02 | — | Pending |
-| MAT-01 | — | Pending |
-| MAT-02 | — | Pending |
-| MAT-03 | — | Pending |
-| ACT-01 | — | Pending |
-| ACT-02 | — | Pending |
-| ACT-03 | — | Pending |
-| ACT-04 | — | Pending |
-| ACT-05 | — | Pending |
-| FX-01 | — | Pending |
-| FX-02 | — | Pending |
+| PLAY-01 | Phase 29 | Pending |
+| PLAY-02 | Phase 26 | Pending |
+| PLAY-03 | Phase 26 | Pending |
+| BASIN-01 | Phase 26 | Pending |
+| BASIN-02 | Phase 26 | Pending |
+| MAT-01 | Phase 27 | Pending |
+| MAT-02 | Phase 27 | Pending |
+| MAT-03 | Phase 27 | Pending |
+| ACT-01 | Phase 28 | Pending |
+| ACT-02 | Phase 28 | Pending |
+| ACT-03 | Phase 28 | Pending |
+| ACT-04 | Phase 28 | Pending |
+| ACT-05 | Phase 28 | Pending |
+| FX-01 | Phase 29 | Pending |
+| FX-02 | Phase 29 | Pending |
 
 **Coverage:**
 - v1 requirements: 15 total
-- Mapped to phases: 0
-- Unmapped: 15
+- Mapped to phases: 15
+- Unmapped: 0
+- Future requirements (unmapped by design): DRAW-02, PRESET-01, PARITY-01, BOX2D-01
 
 ---
 
 *Requirements defined: 2026-09-21*
-*Last updated: 2026-09-21 after scope confirmation of all five groups*
+*Last updated: 2026-09-21 after v1.3 roadmap (Phases 26–29)*

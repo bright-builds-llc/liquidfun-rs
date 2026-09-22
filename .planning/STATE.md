@@ -2,12 +2,12 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Reference Testbed Scenes
-status: defining-requirements
-stopped_at: Milestone v1.3 started
-last_updated: "2026-09-21T23:46:00.000Z"
+status: roadmap-created
+stopped_at: Roadmap created for Phases 26-29
+last_updated: "2026-09-21T23:58:00.000Z"
 last_activity: 2026-09-21
 progress:
-  total_phases: 0
+  total_phases: 4
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -21,16 +21,16 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-09-21)
 
 **Core value:** Deliver a useful, independent Rust physics library for enjoyable experimentation, with honest limitations and a lightweight native development loop.
-**Current focus:** Defining v1.3 requirements
+**Current focus:** Phase 26 — Catalog shell and basin scenes
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 26 of 29 (Catalog shell and basin scenes)
 Plan: —
-Status: Defining requirements
-Last activity: 2026-09-21 — Milestone v1.3 started
+Status: Roadmap created — ready to plan Phase 26
+Last activity: 2026-09-21 — v1.3 roadmap written (Phases 26–29)
 
-Progress: requirements not written yet
+Progress: [░░░░░░░░░░] 0%
 
 v1.3 Reference Testbed Scenes. Add the twelve JavaScript testbed scenes the playground does not already have. Phase numbering continues after 25. No package publication or release tag.
 
@@ -43,6 +43,7 @@ v1.2 decisions are in `.planning/milestones/v1.2-STATE.md` and PROJECT.md Key De
 - [v1.2]: Unprofiled Dam Break Medium closed at stamp `2026-09-21T20-38-50Z`, ratio `2.956857456935513`, git `89d34564`. Later solver fixes are not that measurement.
 - [v1.2]: `reviewed_reports` stays empty. Planning archive is not a git release tag.
 - [v1.3]: Port the twelve JavaScript testbed scenes besides Dam Break. Keep the six existing playground scenes. Recognizable behavior in the current player, not a sealed parity claim.
+- [v1.3]: Roadmap clusters Phases 26–29 as basin/catalog → material flags → interaction seams → Sparky/Drawing/full catalog. Future DRAW-02, PRESET-01, PARITY-01, BOX2D-01 stay unmapped.
 
 ### Pending Todos
 
@@ -50,7 +51,7 @@ None.
 
 ### Blockers/Concerns
 
-None for milestone close. A fresh unprofiled pair is required before claiming the ≤ 3× ratio for any HEAD after `89d34564`.
+None for roadmap. A fresh unprofiled pair is required before claiming the ≤ 3× ratio for any HEAD after `89d34564`.
 
 ## Retained Context
 
@@ -62,5 +63,5 @@ None for milestone close. A fresh unprofiled pair is required before claiming th
 ## Session Continuity
 
 Last session: 2026-09-21
-Stopped at: v1.2 milestone archived
+Stopped at: v1.3 roadmap created (Phases 26–29)
 Resume file: None
