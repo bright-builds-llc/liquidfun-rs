@@ -19,7 +19,7 @@ export const RESET_STEP_CEILING = 8;
 export const CONSTRUCTION_RESET_HINT =
   "Changing this setting recreates the scene from its documented initial state.";
 /** Budget for loops that open every catalog scene (open/reset or play/pause/reset). */
-export const ALL_SCENE_TIMEOUT_MS = 160_000;
+export const ALL_SCENE_TIMEOUT_MS = 220_000;
 /** @deprecated Prefer `ALL_SCENE_TIMEOUT_MS` — kept for call-site compatibility. */
 export const SIX_SCENE_TIMEOUT_MS = ALL_SCENE_TIMEOUT_MS;
 export const DAM_BREAK_HINT =
@@ -35,6 +35,9 @@ export const SCENE_HASH_PATHS: Readonly<Record<SceneId, string>> = {
   "water-wheel": "/liquidfun-rs/#/scene/water-wheel",
   particles: "/liquidfun-rs/#/scene/particles",
   "liquid-timer": "/liquidfun-rs/#/scene/liquid-timer",
+  "surface-tension": "/liquidfun-rs/#/scene/surface-tension",
+  "elastic-particles": "/liquidfun-rs/#/scene/elastic-particles",
+  "rigid-particles": "/liquidfun-rs/#/scene/rigid-particles",
 };
 
 const SELECT_NEXT_VALUE: Readonly<Record<string, string>> = {
