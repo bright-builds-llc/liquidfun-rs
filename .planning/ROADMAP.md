@@ -45,7 +45,7 @@ v1.1 phase directories remain in `.planning/phases/` for stable historical refer
 
 - [x] **Phase 26: Catalog shell and basin scenes** - Shared player growth plus Particles and Liquid Timer (completed 2026-09-22)
 - [x] **Phase 27: Material flag groups** - Surface Tension, Elastic Particles, and Rigid Particles (completed 2026-09-22)
-- [ ] **Phase 28: Interaction seams** - Soup, Soup Stirrer, Impulse, Wave Machine, and Theo Jansen
+- [x] **Phase 28: Interaction seams** - Soup, Soup Stirrer, Impulse, Wave Machine, and Theo Jansen (completed 2026-09-22)
 - [ ] **Phase 29: Sparky, Drawing, and full catalog** - Contact sparks, paint presets, and all twelve scenes openable
 - [ ] **Phase 30: Periodic hydraulic fountain** - A timed piston squeezes liquid so it travels elsewhere
 - [ ] **Phase 31: Sinusoidal wave tank** - A still pool whose end platform rises and falls and sends waves
@@ -111,7 +111,7 @@ Plans:
 - [x] 28-05-PLAN.md — Theo Jansen soft legs + live motor reverse
 - [x] 28-06-PLAN.md — Catalog append, controls, credits, sixteen-demo PAGE_SUMMARY
 - [x] 28-07-PLAN.md — Sixteen-scene Vitest contract + capture-plan sync
-- [ ] 28-08-PLAN.md — Chromium smoke: five new scenes + gestures + eleven regression
+- [x] 28-08-PLAN.md — Chromium smoke: five new scenes + gestures + eleven regression
 **UI hint**: yes
 
 ### Phase 29: Sparky, Drawing, and full catalog
@@ -131,7 +131,7 @@ Plans:
 **Goal:** [To be planned]
 **Requirements**: TBD
 **Depends on:** Phase 29
-**Plans:** 7/8 plans executed
+**Plans:** 8/8 plans complete
 
 Plans:
 - [ ] TBD (run /gsd-plan-phase 30 to break down)
@@ -182,7 +182,7 @@ Plans:
 | 25. WASM sanity and honest close | v1.2 | 2/2 | Complete | 2026-09-21 |
 | 26. Catalog shell and basin scenes | v1.3 | 5/5 | Complete    | 2026-09-22 |
 | 27. Material flag groups | v1.3 | 6/6 | Complete    | 2026-09-22 |
-| 28. Interaction seams | v1.3 | 7/8 | In Progress|  |
+| 28. Interaction seams | v1.3 | 8/8 | Complete   | 2026-09-22 |
 | 29. Sparky, Drawing, and full catalog | v1.3 | 0/TBD | Not started | - |
 | 30. Periodic hydraulic fountain | v1.3 | 0/TBD | Not started | - |
 | 31. Sinusoidal wave tank | v1.3 | 0/TBD | Not started | - |

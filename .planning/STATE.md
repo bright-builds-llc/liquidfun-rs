@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Reference Testbed Scenes
-status: executing
-stopped_at: Completed 28-07-PLAN.md
-last_updated: "2026-09-22T14:35:06.519Z"
+status: verifying
+stopped_at: Completed 28-08-PLAN.md
+last_updated: "2026-09-22T14:46:44.993Z"
 last_activity: 2026-09-22
 progress:
   total_phases: 8
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 19
-  completed_plans: 18
-  percent: 95
+  completed_plans: 19
+  percent: 100
 ---
 
 # Project State
@@ -27,7 +27,7 @@ See: `.planning/PROJECT.md` (updated 2026-09-21)
 
 Phase: 28 (Interaction seams) — EXECUTING
 Plan: 8 of 8
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-22
 
 Progress: [██░░░░░░░░] 25%
@@ -89,6 +89,9 @@ v1.2 decisions are in `.planning/milestones/v1.2-STATE.md` and PROJECT.md Key De
 - [Phase 28]: Extended scenes.test.ts Record tables in Task 2 so typecheck passes after SceneId grew
 - [Phase 28]: navigation.test.ts needed no edits — it already maps SCENE_IDS dynamically
 - [Phase 28]: Used bun run test:unit because package.json has no test script
+- [Phase 28]: Raised MAX_RIGID_SEGMENTS 16→64 and MAX_RIGID_CIRCLES 8→48 so Theo Jansen frame capture fits walker+balls
+- [Phase 28]: Routed Soup Stirrer toggle-paddle-rail through apply_action to match catalog action kind
+- [Phase 28]: Independent AI review remains eligible under D-26; implementing agent did not self-approve
 
 ### Pending Todos
 
@@ -113,6 +116,6 @@ None for roadmap. A fresh unprofiled pair is required before claiming the ≤ 3�
 
 ## Session Continuity
 
-Last session: 2026-09-22T14:35:06.515Z
-Stopped at: Completed 28-07-PLAN.md
+Last session: 2026-09-22T14:46:44.990Z
+Stopped at: Completed 28-08-PLAN.md
 Resume file: None
