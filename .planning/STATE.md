@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Reference Testbed Scenes
 status: executing
-stopped_at: Completed 28-05-PLAN.md
-last_updated: "2026-09-22T14:26:32.550Z"
+stopped_at: Completed 28-06-PLAN.md
+last_updated: "2026-09-22T14:30:36.201Z"
 last_activity: 2026-09-22
 progress:
   total_phases: 8
   completed_phases: 2
   total_plans: 19
-  completed_plans: 16
-  percent: 84
+  completed_plans: 17
+  percent: 89
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-09-21)
 ## Current Position
 
 Phase: 28 (Interaction seams) — EXECUTING
-Plan: 6 of 8
+Plan: 7 of 8
 Status: Ready to execute
 Last activity: 2026-09-22
 
@@ -85,6 +85,8 @@ v1.2 decisions are in `.planning/milestones/v1.2-STATE.md` and PROJECT.md Key De
 - [Phase 28]: Minimal SceneId::TheoJansen wiring in Task 1 RED so construction tests compile under hooks — Same sequential-TDD pattern as Plans 01-04
 - [Phase 28]: Direction-only motor-direction forward/reverse; no speed-magnitude or limit-toggle — Plan 05 discretion lock and D-07
 - [Phase 28]: Split tests under theo_jansen/ to stay under Bright Builds file-length limit — Implementation plus inline tests exceeded 628 physical lines
+- [Phase 28]: Left PlaygroundShell and THIRD_PARTY_NOTICES unchanged — no eleven-demo hardcoding and no new adapted notices
+- [Phase 28]: Extended scenes.test.ts Record tables in Task 2 so typecheck passes after SceneId grew
 
 ### Pending Todos
 
@@ -109,6 +111,6 @@ None for roadmap. A fresh unprofiled pair is required before claiming the ≤ 3�
 
 ## Session Continuity
 
-Last session: 2026-09-22T14:26:23.817Z
-Stopped at: Completed 28-05-PLAN.md
+Last session: 2026-09-22T14:30:36.198Z
+Stopped at: Completed 28-06-PLAN.md
 Resume file: None
