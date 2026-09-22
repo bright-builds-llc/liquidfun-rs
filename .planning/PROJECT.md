@@ -296,4 +296,4 @@ This document evolves at phase transitions and milestone boundaries.
 
 ______________________________________________________________________
 
-*Last updated: 2026-09-22 after Phase 27 material flag groups. Strict native certification remains optional. Package publication and release tags remain separately authorized.*
+*Last updated: 2026-09-22 after Phase 28 interaction seams. Strict native certification remains optional. Package publication and release tags remain separately authorized.*
