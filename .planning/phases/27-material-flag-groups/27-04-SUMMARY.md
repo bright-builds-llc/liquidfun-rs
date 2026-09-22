@@ -73,7 +73,7 @@ Each task was committed atomically:
 1. **Task 1: Append scene records and pinned credits** - `56829f9` (feat)
 2. **Task 2: Static SVG previews for three material scenes** - `8df513c` (feat)
 
-**Plan metadata:** pending docs commit
+**Plan metadata:** `02bcce1` (docs: complete plan)
 
 ## Files Created/Modified
 
