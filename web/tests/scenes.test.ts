@@ -26,6 +26,12 @@ const UI_SPEC_DESCRIPTIONS: Readonly<Record<SceneId, string>> = {
   particles: "Watch water fall in an open basin while a ball drops into it.",
   "liquid-timer":
     "Watch tensile, viscous liquid drain through shelves into bottom columns.",
+  "surface-tension":
+    "Watch three colored tensile groups bead and bleed color when a ball hits them.",
+  "elastic-particles":
+    "Watch three soft particle clumps deform when a ball falls on them.",
+  "rigid-particles":
+    "Watch three colored rigid clumps stay solid when a ball hits them.",
 };
 
 const UI_SPEC_HINTS: Readonly<Record<SceneId, string>> = {
@@ -43,10 +49,19 @@ const UI_SPEC_HINTS: Readonly<Record<SceneId, string>> = {
     "Drag on the canvas to aim the jet. Labeled controls also work from the keyboard.",
   particles: WATCH_FIRST_HINT,
   "liquid-timer": WATCH_FIRST_HINT,
+  "surface-tension": WATCH_FIRST_HINT,
+  "elastic-particles": WATCH_FIRST_HINT,
+  "rigid-particles": WATCH_FIRST_HINT,
 };
 
 const KEYBOARD_REMINDER = "Labeled controls also work from the keyboard.";
-const WATCH_FIRST_SCENE_IDS = ["particles", "liquid-timer"] as const;
+const WATCH_FIRST_SCENE_IDS = [
+  "particles",
+  "liquid-timer",
+  "surface-tension",
+  "elastic-particles",
+  "rigid-particles",
+] as const;
 const FORBIDDEN_HINT_PHRASES = [
   "Press Space to pause",
   "Live frame from this repository's Rust engine",
@@ -82,6 +97,18 @@ const LIQUID_TIMER_JS_HREF =
   "https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/lfjs/testbed/tests/testLiquidTimer.js";
 const LIQUID_TIMER_H_HREF =
   "https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Testbed/Tests/LiquidTimer.h";
+const SURFACE_TENSION_JS_HREF =
+  "https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/lfjs/testbed/tests/testSurfaceTension.js";
+const SURFACE_TENSION_H_HREF =
+  "https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Testbed/Tests/ParticlesSurfaceTension.h";
+const ELASTIC_PARTICLES_JS_HREF =
+  "https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/lfjs/testbed/tests/testElasticParticles.js";
+const ELASTIC_PARTICLES_H_HREF =
+  "https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Testbed/Tests/ElasticParticles.h";
+const RIGID_PARTICLES_JS_HREF =
+  "https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/lfjs/testbed/tests/testRigidParticles.js";
+const RIGID_PARTICLES_H_HREF =
+  "https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Testbed/Tests/RigidParticles.h";
 
 function controlLabels(controls: readonly SceneControl[]): string[] {
   return controls.map((control) => control.label);
@@ -104,7 +131,7 @@ function recreatingControlIds(scenes: readonly SceneRecord[]): string[] {
 }
 
 describe("SCENES", () => {
-  it("lists eight locked scenes in the approved order", () => {
+  it("lists eleven locked scenes in the approved order", () => {
     // Arrange
     const expectedIds = [
       "dam-break",
@@ -115,13 +142,16 @@ describe("SCENES", () => {
       "water-wheel",
       "particles",
       "liquid-timer",
+      "surface-tension",
+      "elastic-particles",
+      "rigid-particles",
     ] as const;
 
     // Act
     const ids = SCENES.map((scene) => scene.id);
 
     // Assert
-    expect(SCENES).toHaveLength(8);
+    expect(SCENES).toHaveLength(11);
     expect(ids).toEqual([...SCENE_IDS]);
     expect(ids).toEqual([...expectedIds]);
   });
@@ -137,6 +167,9 @@ describe("SCENES", () => {
       "Water Wheel",
       "Particles",
       "Liquid Timer",
+      "Surface Tension",
+      "Elastic Particles",
+      "Rigid Particles",
     ];
 
     // Act
@@ -169,7 +202,7 @@ describe("SCENES", () => {
     const descriptions = SCENES.map((scene) => scene.description);
 
     // Assert
-    expect(readyCount).toBe(8);
+    expect(readyCount).toBe(11);
     expect(descriptions).toEqual(
       SCENE_IDS.map((id) => UI_SPEC_DESCRIPTIONS[id]),
     );
@@ -349,6 +382,9 @@ describe("SCENES", () => {
     ]);
     expect(maybeSceneById("particles")?.controls).toEqual([]);
     expect(maybeSceneById("liquid-timer")?.controls).toEqual([]);
+    expect(maybeSceneById("surface-tension")?.controls).toEqual([]);
+    expect(maybeSceneById("elastic-particles")?.controls).toEqual([]);
+    expect(maybeSceneById("rigid-particles")?.controls).toEqual([]);
     expect(recreatingIds).toEqual([...RECREATING_CONTROL_IDS]);
   });
 
@@ -363,6 +399,10 @@ describe("SCENES", () => {
       "water-wheel": "crates/liquidfun-wasm/src/scene/water_wheel.rs",
       particles: "crates/liquidfun-wasm/src/scene/particles.rs",
       "liquid-timer": "crates/liquidfun-wasm/src/scene/liquid_timer.rs",
+      "surface-tension": "crates/liquidfun-wasm/src/scene/surface_tension.rs",
+      "elastic-particles":
+        "crates/liquidfun-wasm/src/scene/elastic_particles.rs",
+      "rigid-particles": "crates/liquidfun-wasm/src/scene/rigid_particles.rs",
     };
     const pinnedBasinInspiration = {
       particles: [
@@ -373,6 +413,24 @@ describe("SCENES", () => {
       "liquid-timer": [
         { label: "Pinned LiquidTimer.js", href: LIQUID_TIMER_JS_HREF },
         { label: "Pinned LiquidTimer.h", href: LIQUID_TIMER_H_HREF },
+        { label: "LiquidFun showcase", href: SHOWCASE_HREF },
+      ],
+      "surface-tension": [
+        { label: "Pinned SurfaceTension.js", href: SURFACE_TENSION_JS_HREF },
+        {
+          label: "Pinned ParticlesSurfaceTension.h",
+          href: SURFACE_TENSION_H_HREF,
+        },
+        { label: "LiquidFun showcase", href: SHOWCASE_HREF },
+      ],
+      "elastic-particles": [
+        { label: "Pinned ElasticParticles.js", href: ELASTIC_PARTICLES_JS_HREF },
+        { label: "Pinned ElasticParticles.h", href: ELASTIC_PARTICLES_H_HREF },
+        { label: "LiquidFun showcase", href: SHOWCASE_HREF },
+      ],
+      "rigid-particles": [
+        { label: "Pinned RigidParticles.js", href: RIGID_PARTICLES_JS_HREF },
+        { label: "Pinned RigidParticles.h", href: RIGID_PARTICLES_H_HREF },
         { label: "LiquidFun showcase", href: SHOWCASE_HREF },
       ],
     } as const;
@@ -390,6 +448,12 @@ describe("SCENES", () => {
     const particlesInspiration = maybeSceneById("particles")?.credits.inspiration;
     const liquidTimerInspiration =
       maybeSceneById("liquid-timer")?.credits.inspiration;
+    const surfaceTensionInspiration =
+      maybeSceneById("surface-tension")?.credits.inspiration;
+    const elasticParticlesInspiration =
+      maybeSceneById("elastic-particles")?.credits.inspiration;
+    const rigidParticlesInspiration =
+      maybeSceneById("rigid-particles")?.credits.inspiration;
 
     // Assert
     expect(implementationPaths).toEqual(
@@ -417,8 +481,20 @@ describe("SCENES", () => {
     expect(liquidTimerInspiration).toEqual([
       ...pinnedBasinInspiration["liquid-timer"],
     ]);
+    expect(surfaceTensionInspiration).toEqual([
+      ...pinnedBasinInspiration["surface-tension"],
+    ]);
+    expect(elasticParticlesInspiration).toEqual([
+      ...pinnedBasinInspiration["elastic-particles"],
+    ]);
+    expect(rigidParticlesInspiration).toEqual([
+      ...pinnedBasinInspiration["rigid-particles"],
+    ]);
     expect(maybeSceneById("particles")?.controls).toHaveLength(0);
     expect(maybeSceneById("liquid-timer")?.controls).toHaveLength(0);
+    expect(maybeSceneById("surface-tension")?.controls).toHaveLength(0);
+    expect(maybeSceneById("elastic-particles")?.controls).toHaveLength(0);
+    expect(maybeSceneById("rigid-particles")?.controls).toHaveLength(0);
   });
 });
 
@@ -456,7 +532,7 @@ describe("maybeSceneById", () => {
 });
 
 describe("isReadySceneId", () => {
-  it("is true for all eight approved ids", () => {
+  it("is true for all eleven approved ids", () => {
     // Arrange
     const ids = SCENE_IDS;
 
@@ -465,6 +541,9 @@ describe("isReadySceneId", () => {
 
     // Assert
     expect(readyFlags).toEqual([
+      true,
+      true,
+      true,
       true,
       true,
       true,

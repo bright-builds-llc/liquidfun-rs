@@ -5,6 +5,7 @@ import type { SceneId } from "./scenes";
 const WATER = "#4DA3FF";
 const ACCENT_WATER = "#39D3C7";
 const MIX_RED = "#F87171";
+const MIX_GREEN = "#3DDC97";
 const RIGID = "#CBD5E1";
 const JELLY = "#F4F7FA";
 const CANVAS = "#071018";
@@ -135,6 +136,78 @@ function LiquidTimerPreview() {
   );
 }
 
+function VerticalWallBasin() {
+  return (
+    <>
+      <line x1="28" y1="34" x2="28" y2="74" stroke={RIGID} stroke-width="3" />
+      <line x1="28" y1="74" x2="132" y2="74" stroke={RIGID} stroke-width="3" />
+      <line x1="132" y1="74" x2="132" y2="34" stroke={RIGID} stroke-width="3" />
+    </>
+  );
+}
+
+function SurfaceTensionPreview() {
+  return (
+    <PreviewFrame>
+      <VerticalWallBasin />
+      <circle cx="52" cy="58" r="12" fill={MIX_RED} />
+      <circle cx="80" cy="58" r="12" fill={MIX_GREEN} />
+      <rect x="100" y="48" width="22" height="22" fill={WATER} />
+      <circle cx="80" cy="26" r="8" fill="none" stroke={RIGID} stroke-width="3" />
+    </PreviewFrame>
+  );
+}
+
+function ElasticParticlesPreview() {
+  return (
+    <PreviewFrame>
+      <VerticalWallBasin />
+      <ellipse cx="50" cy="58" rx="14" ry="11" fill={MIX_RED} />
+      <ellipse cx="78" cy="58" rx="14" ry="11" fill={MIX_GREEN} />
+      <g transform="rotate(-18 112 58)">
+        <rect x="100" y="46" width="24" height="24" rx="4" fill={WATER} />
+      </g>
+      <circle cx="80" cy="26" r="8" fill="none" stroke={RIGID} stroke-width="3" />
+    </PreviewFrame>
+  );
+}
+
+function RigidParticlesPreview() {
+  return (
+    <PreviewFrame>
+      <VerticalWallBasin />
+      <circle
+        cx="50"
+        cy="58"
+        r="12"
+        fill="none"
+        stroke={MIX_RED}
+        stroke-width="3"
+      />
+      <circle
+        cx="78"
+        cy="58"
+        r="12"
+        fill="none"
+        stroke={MIX_GREEN}
+        stroke-width="3"
+      />
+      <g transform="rotate(-18 112 58)">
+        <rect
+          x="100"
+          y="46"
+          width="24"
+          height="24"
+          fill="none"
+          stroke={WATER}
+          stroke-width="3"
+        />
+      </g>
+      <circle cx="80" cy="26" r="8" fill="none" stroke={RIGID} stroke-width="3" />
+    </PreviewFrame>
+  );
+}
+
 /** Static token-only SVG preview. Never starts a WASM session. */
 export function ScenePreview(props: ScenePreviewProps) {
   switch (props.sceneId) {
@@ -154,5 +227,11 @@ export function ScenePreview(props: ScenePreviewProps) {
       return <ParticlesPreview />;
     case "liquid-timer":
       return <LiquidTimerPreview />;
+    case "surface-tension":
+      return <SurfaceTensionPreview />;
+    case "elastic-particles":
+      return <ElasticParticlesPreview />;
+    case "rigid-particles":
+      return <RigidParticlesPreview />;
   }
 }
