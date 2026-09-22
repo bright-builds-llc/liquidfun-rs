@@ -4,8 +4,8 @@ milestone: v1.3
 milestone_name: Reference Testbed Scenes
 status: executing
 stopped_at: Phase 28 UI-SPEC approved
-last_updated: "2026-09-22T13:22:29.208Z"
-last_activity: 2026-09-22 -- Phase 28 planning complete
+last_updated: "2026-09-22T13:23:32.688Z"
+last_activity: 2026-09-22 -- Phase 28 execution started
 progress:
   total_phases: 8
   completed_phases: 2
@@ -21,14 +21,14 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-09-21)
 
 **Core value:** Deliver a useful, independent Rust physics library for enjoyable experimentation, with honest limitations and a lightweight native development loop.
-**Current focus:** Phase 28 — interaction seams
+**Current focus:** Phase 28 — Interaction seams
 
 ## Current Position
 
-Phase: 28
-Plan: Not started
-Status: Ready to execute
-Last activity: 2026-09-22 -- Phase 28 planning complete
+Phase: 28 (Interaction seams) — EXECUTING
+Plan: 1 of 8
+Status: Executing Phase 28
+Last activity: 2026-09-22 -- Phase 28 execution started
 
 Progress: [██░░░░░░░░] 25%
 
