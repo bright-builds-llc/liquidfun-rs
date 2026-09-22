@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Reference Testbed Scenes
 status: completed
-stopped_at: Phase 27 context gathered
-last_updated: "2026-09-22T05:16:47.218Z"
+stopped_at: Phase 27 UI-SPEC approved
+last_updated: "2026-09-22T05:24:06.953Z"
 last_activity: 2026-09-22
 progress:
   total_phases: 8
@@ -85,6 +85,6 @@ None for roadmap. A fresh unprofiled pair is required before claiming the â‰¤ 3Ã
 
 ## Session Continuity
 
-Last session: 2026-09-22T05:16:47.214Z
-Stopped at: Phase 27 context gathered
-Resume file: .planning/phases/27-material-flag-groups/27-CONTEXT.md
+Last session: 2026-09-22T05:24:06.938Z
+Stopped at: Phase 27 UI-SPEC approved
+Resume file: .planning/phases/27-material-flag-groups/27-UI-SPEC.md
