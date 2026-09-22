@@ -220,25 +220,24 @@ impl SceneHooks for SoupStirrerHooks {
 
     fn apply_control(
         &mut self,
-        world: &mut World,
+        _world: &mut World,
         _system: ParticleSystemId,
-        name: &str,
+        _name: &str,
         _value: &str,
     ) -> Result<ControlEffect, SessionError> {
-        if name != TOGGLE_PADDLE_RAIL {
-            return Err(SessionError::UnknownControl);
-        }
-        self.toggle_paddle_rail(world)?;
-        Ok(ControlEffect::Live)
+        Err(SessionError::UnknownControl)
     }
 
     fn apply_action(
         &mut self,
-        _world: &mut World,
+        world: &mut World,
         _system: ParticleSystemId,
-        _name: &str,
+        name: &str,
     ) -> Result<(), SessionError> {
-        Err(SessionError::UnknownControl)
+        if name != TOGGLE_PADDLE_RAIL {
+            return Err(SessionError::UnknownControl);
+        }
+        self.toggle_paddle_rail(world)
     }
 
     fn apply_pointer(
@@ -313,7 +312,7 @@ impl SceneHooks for SoupStirrerHooks {
 #[cfg(test)]
 mod tests {
     use crate::ProofFrame;
-    use crate::scene::{ControlEffect, PointerKind, SceneId};
+    use crate::scene::{PointerKind, SceneId};
     use crate::session::{SessionCore, SessionError};
 
     #[test]
@@ -350,18 +349,16 @@ mod tests {
         );
 
         // Act
-        let first = hooks
-            .apply_control(&mut world, particle_system, "toggle-paddle-rail", "")
+        hooks
+            .apply_action(&mut world, particle_system, "toggle-paddle-rail")
             .expect("first toggle must detach the rail");
         let joints_after_detach = world.joint_count();
-        let second = hooks
-            .apply_control(&mut world, particle_system, "toggle-paddle-rail", "")
+        hooks
+            .apply_action(&mut world, particle_system, "toggle-paddle-rail")
             .expect("second toggle must restore the rail");
         let joints_after_reattach = world.joint_count();
 
         // Assert
-        assert!(matches!(first, ControlEffect::Live));
-        assert!(matches!(second, ControlEffect::Live));
         assert_eq!(joints_after_detach, 0);
         assert_eq!(joints_after_reattach, 1);
     }
@@ -422,18 +419,22 @@ mod tests {
         let mut session = SessionCore::create(SceneId::SoupStirrer)
             .expect("Soup Stirrer should construct over soup_family");
         session
-            .apply_control("toggle-paddle-rail", "")
+            .apply_action("toggle-paddle-rail")
             .expect("detach before remount");
 
         // Act
         session = SessionCore::create(SceneId::SoupStirrer)
             .expect("remount must reconstruct Soup Stirrer");
-        let first = session
-            .apply_control("toggle-paddle-rail", "")
+        session
+            .apply_action("toggle-paddle-rail")
             .expect("first toggle after remount must detach");
 
-        // Assert — remount starts attached so the first toggle is a live detach
-        assert!(!first, "toggle is a live control, not a recreate");
+        // Assert — remount started attached; first action was a live detach
+        let frame_after_detach = capture(&session);
+        assert!(
+            !frame_after_detach.rigid_circles().is_empty(),
+            "paddle circle remains after rail detach"
+        );
     }
 
     #[test]

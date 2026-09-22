@@ -9,11 +9,24 @@ fn create_builds_theo_jansen_with_particles() {
     // Arrange / Act
     let session = SessionCore::create(SceneId::TheoJansen)
         .expect("Theo Jansen should construct the pinned walker under particle load");
+    let frame = crate::ProofFrame::from(
+        session
+            .capture_frame()
+            .expect("Theo Jansen frame capture must fit raised rigid segment/circle caps"),
+    );
 
     // Assert
     assert!(
         session.particle_count() > 0,
         "particle slab must create at least one particle"
+    );
+    assert!(
+        !frame.rigid_segments().is_empty(),
+        "walker ground/chassis/legs must export segments"
+    );
+    assert!(
+        !frame.rigid_circles().is_empty(),
+        "wheel and ground balls must export circles"
     );
 }
 

@@ -3,8 +3,8 @@
 use wasm_bindgen::prelude::*;
 
 const MAX_PARTICLE_COUNT: usize = 10240;
-const MAX_RIGID_SEGMENTS: usize = 16;
-const MAX_RIGID_CIRCLES: usize = 8;
+const MAX_RIGID_SEGMENTS: usize = 64;
+const MAX_RIGID_CIRCLES: usize = 48;
 const PARTICLE_POSITION_STRIDE: usize = 2;
 const PARTICLE_COLOR_STRIDE: usize = 4;
 const PARTICLE_RADIUS_STRIDE: usize = 1;

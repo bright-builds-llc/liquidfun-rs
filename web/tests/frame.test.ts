@@ -217,11 +217,11 @@ describe("parseRenderFrame", () => {
     expect(frame.particleRadii.length).toBe(10240);
   });
 
-  it("rejects segment counts above 16", () => {
+  it("rejects segment counts above 64", () => {
     // Arrange
     const rawFrame = new FakeRawProofFrame({
-      rigidShapeCount: 17,
-      rigidSegments: new Float32Array(17 * 4),
+      rigidShapeCount: 65,
+      rigidSegments: new Float32Array(65 * 4),
       rigidCircles: new Float32Array(),
     });
 
@@ -232,12 +232,12 @@ describe("parseRenderFrame", () => {
     expect(parse).toThrow();
   });
 
-  it("rejects circle counts above 8", () => {
+  it("rejects circle counts above 48", () => {
     // Arrange
-    const circles = new Float32Array(9 * 3);
+    const circles = new Float32Array(49 * 3);
     circles.fill(1);
     const rawFrame = new FakeRawProofFrame({
-      rigidShapeCount: 9,
+      rigidShapeCount: 49,
       rigidSegments: new Float32Array(),
       rigidCircles: circles,
     });
