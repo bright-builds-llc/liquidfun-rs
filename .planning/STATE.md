@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Reference Testbed Scenes
-status: executing
-stopped_at: Completed 26-04-PLAN.md
-last_updated: "2026-09-22T00:45:53.561Z"
+status: verifying
+stopped_at: Completed 26-05-PLAN.md
+last_updated: "2026-09-22T00:50:33.111Z"
 last_activity: 2026-09-22
 progress:
   total_phases: 4
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 5
-  completed_plans: 4
-  percent: 80
+  completed_plans: 5
+  percent: 100
 ---
 
 # Project State
@@ -27,7 +27,7 @@ See: `.planning/PROJECT.md` (updated 2026-09-21)
 
 Phase: 26 (catalog-shell-and-basin-scenes) — EXECUTING
 Plan: 5 of 5
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-22
 
 Progress: [████████░░] 80%
@@ -51,6 +51,9 @@ v1.2 decisions are in `.planning/milestones/v1.2-STATE.md` and PROJECT.md Key De
 - [Phase 26]: SceneControls returns null when controls.length === 0 rather than empty chrome
 - [Phase 26]: Kept Plan 03 eight-scene Vitest tables; Task 1 only strengthened credit label asserts
 - [Phase 26]: Watch-first capture stubs use center click SceneAction so capture scripts keep a required action
+- [Phase 26]: Watch-first scenes selected by controls.length === 0 so Phase 27 can reuse the rule
+- [Phase 26]: POINTER_CONTROL is Partial so Particles and Liquid Timer never require gestures
+- [Phase 26]: Drawer reverse-tab last link is Liquid Timer; wrap count raised to 10 for nine focusables
 
 ### Pending Todos
 
@@ -69,6 +72,6 @@ None for roadmap. A fresh unprofiled pair is required before claiming the ≤ 3�
 
 ## Session Continuity
 
-Last session: 2026-09-22T00:45:53.559Z
-Stopped at: Completed 26-04-PLAN.md
+Last session: 2026-09-22T00:50:33.108Z
+Stopped at: Completed 26-05-PLAN.md
 Resume file: None
