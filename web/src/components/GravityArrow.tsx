@@ -4,7 +4,6 @@ import type { TiltDebug } from "../input/tilt-gravity";
 import { formatArrowPoints, maybeGravityArrow } from "./gravity-arrow";
 
 export type GravityArrowProps = {
-  readonly debugEnabled: boolean;
   readonly tiltGravityEnabled: boolean;
   readonly tiltDebug: TiltDebug;
 };
@@ -12,11 +11,7 @@ export type GravityArrowProps = {
 /** Canvas-corner arrow for the live phone-tilt gravity vector. */
 export function GravityArrow(props: GravityArrowProps) {
   const maybeArrow = () =>
-    maybeGravityArrow(
-      props.debugEnabled,
-      props.tiltGravityEnabled,
-      props.tiltDebug,
-    );
+    maybeGravityArrow(props.tiltGravityEnabled, props.tiltDebug);
 
   return (
     <Show when={maybeArrow()}>

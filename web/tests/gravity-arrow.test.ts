@@ -37,17 +37,21 @@ describe("gravityArrowGeometry", () => {
 });
 
 describe("maybeGravityArrow", () => {
-  it("draws only when debug info, tilt, and a live sample are on", () => {
+  it("draws when accelerometer gravity has a live sample", () => {
     // Arrange / Act
-    const shown = maybeGravityArrow(true, true, liveDown);
-    const debugOff = maybeGravityArrow(false, true, liveDown);
-    const tiltOff = maybeGravityArrow(true, false, liveDown);
-    const waiting = maybeGravityArrow(true, true, { kind: "waiting" });
+    const shown = maybeGravityArrow(true, liveDown);
 
     // Assert
     expect(shown?.y2 ?? 0).toBeGreaterThan(shown?.y1 ?? 0);
-    expect(debugOff).toBeUndefined();
-    expect(tiltOff).toBeUndefined();
-    expect(waiting).toBeUndefined();
+  });
+
+  it("omits the arrow when accelerometer gravity is off", () => {
+    // Arrange / Act / Assert
+    expect(maybeGravityArrow(false, liveDown)).toBeUndefined();
+  });
+
+  it("omits the arrow while waiting for a sample", () => {
+    // Arrange / Act / Assert
+    expect(maybeGravityArrow(true, { kind: "waiting" })).toBeUndefined();
   });
 });
