@@ -16,10 +16,25 @@ describe("demo media capture model", () => {
 
     // Act
     const actualIds = SCENE_CAPTURE_PLANS.map((plan) => plan.id);
+    const interactionIds = [
+      "soup",
+      "soup-stirrer",
+      "impulse",
+      "wave-machine",
+      "theo-jansen",
+    ] as const;
 
     // Assert
+    expect(actualIds).toHaveLength(16);
     expect(actualIds).toEqual(expectedIds);
     expect(new Set(actualIds).size).toBe(expectedIds.length);
+    expect(actualIds.slice(-5)).toEqual([...interactionIds]);
+    for (const id of interactionIds) {
+      const plan = SCENE_CAPTURE_PLANS.find((entry) => entry.id === id);
+      expect(plan?.interactionStep).toBe(180);
+      expect(plan?.route).toBe(`/liquidfun-rs/#/scene/${id}`);
+      expect(plan?.action.kind).toBe("click");
+    }
   });
 
   it("defines an exact eight-second capture profile", () => {

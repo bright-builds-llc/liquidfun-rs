@@ -187,6 +187,41 @@ export const SCENE_CAPTURE_PLANS: readonly SceneCapturePlan[] = [
     interactionStep: 180,
     action: { kind: "click", point: { x: 0.5, y: 0.5 } },
   },
+  {
+    id: "soup",
+    title: "Soup",
+    route: "/liquidfun-rs/#/scene/soup",
+    interactionStep: 180,
+    action: { kind: "click", point: { x: 0.5, y: 0.5 } },
+  },
+  {
+    id: "soup-stirrer",
+    title: "Soup Stirrer",
+    route: "/liquidfun-rs/#/scene/soup-stirrer",
+    interactionStep: 180,
+    action: { kind: "click", point: { x: 0.55, y: 0.45 } },
+  },
+  {
+    id: "impulse",
+    title: "Impulse",
+    route: "/liquidfun-rs/#/scene/impulse",
+    interactionStep: 180,
+    action: { kind: "click", point: { x: 0.5, y: 0.45 } },
+  },
+  {
+    id: "wave-machine",
+    title: "Wave Machine",
+    route: "/liquidfun-rs/#/scene/wave-machine",
+    interactionStep: 180,
+    action: { kind: "click", point: { x: 0.5, y: 0.5 } },
+  },
+  {
+    id: "theo-jansen",
+    title: "Theo Jansen",
+    route: "/liquidfun-rs/#/scene/theo-jansen",
+    interactionStep: 180,
+    action: { kind: "click", point: { x: 0.5, y: 0.5 } },
+  },
 ];
 
 function assertSceneCapturePlanCoverage(): void {
