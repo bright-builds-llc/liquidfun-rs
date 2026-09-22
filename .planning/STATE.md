@@ -4,8 +4,8 @@ milestone: v1.3
 milestone_name: Reference Testbed Scenes
 status: executing
 stopped_at: Phase 26 UI-SPEC approved
-last_updated: "2026-09-22T00:22:37.146Z"
-last_activity: 2026-09-22 -- Phase 26 planning complete
+last_updated: "2026-09-22T00:23:05.307Z"
+last_activity: 2026-09-22 -- Phase 26 execution started
 progress:
   total_phases: 4
   completed_phases: 0
@@ -21,14 +21,14 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-09-21)
 
 **Core value:** Deliver a useful, independent Rust physics library for enjoyable experimentation, with honest limitations and a lightweight native development loop.
-**Current focus:** Phase 26 — Catalog shell and basin scenes
+**Current focus:** Phase 26 — catalog-shell-and-basin-scenes
 
 ## Current Position
 
-Phase: 26 of 29 (Catalog shell and basin scenes)
-Plan: —
-Status: Ready to execute
-Last activity: 2026-09-22 -- Phase 26 planning complete
+Phase: 26 (catalog-shell-and-basin-scenes) — EXECUTING
+Plan: 1 of 5
+Status: Executing Phase 26
+Last activity: 2026-09-22 -- Phase 26 execution started
 
 Progress: [░░░░░░░░░░] 0%
 
