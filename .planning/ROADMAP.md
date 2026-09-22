@@ -106,7 +106,7 @@ Plans:
 Plans:
 - [x] 28-01-PLAN.md — Destroy-in-shape + shared soup_family + Soup WASM scene
 - [x] 28-02-PLAN.md — Soup Stirrer prismatic rail toggle + stir guards
-- [ ] 28-03-PLAN.md — Impulse whole-blob shove + live push-mode
+- [x] 28-03-PLAN.md — Impulse whole-blob shove + live push-mode
 - [ ] 28-04-PLAN.md — Wave Machine sim-time revolute motor
 - [ ] 28-05-PLAN.md — Theo Jansen soft legs + live motor reverse
 - [ ] 28-06-PLAN.md — Catalog append, controls, credits, sixteen-demo PAGE_SUMMARY
@@ -131,7 +131,7 @@ Plans:
 **Goal:** [To be planned]
 **Requirements**: TBD
 **Depends on:** Phase 29
-**Plans:** 2/8 plans executed
+**Plans:** 3/8 plans executed
 
 Plans:
 - [ ] TBD (run /gsd-plan-phase 30 to break down)
@@ -182,7 +182,7 @@ Plans:
 | 25. WASM sanity and honest close | v1.2 | 2/2 | Complete | 2026-09-21 |
 | 26. Catalog shell and basin scenes | v1.3 | 5/5 | Complete    | 2026-09-22 |
 | 27. Material flag groups | v1.3 | 6/6 | Complete    | 2026-09-22 |
-| 28. Interaction seams | v1.3 | 2/8 | In Progress|  |
+| 28. Interaction seams | v1.3 | 3/8 | In Progress|  |
 | 29. Sparky, Drawing, and full catalog | v1.3 | 0/TBD | Not started | - |
 | 30. Periodic hydraulic fountain | v1.3 | 0/TBD | Not started | - |
 | 31. Sinusoidal wave tank | v1.3 | 0/TBD | Not started | - |

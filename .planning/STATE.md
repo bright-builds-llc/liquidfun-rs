@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Reference Testbed Scenes
 status: executing
-stopped_at: Completed 28-02-PLAN.md
-last_updated: "2026-09-22T14:05:25.553Z"
+stopped_at: Completed 28-03-PLAN.md
+last_updated: "2026-09-22T14:11:39.202Z"
 last_activity: 2026-09-22
 progress:
   total_phases: 8
   completed_phases: 2
   total_plans: 19
-  completed_plans: 13
-  percent: 68
+  completed_plans: 14
+  percent: 74
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-09-21)
 ## Current Position
 
 Phase: 28 (Interaction seams) — EXECUTING
-Plan: 3 of 8
+Plan: 4 of 8
 Status: Ready to execute
 Last activity: 2026-09-22
 
@@ -78,6 +78,8 @@ v1.2 decisions are in `.planning/milestones/v1.2-STATE.md` and PROJECT.md Key De
 - [Phase 28]: Minimal SceneId::SoupStirrer wiring in Task 1 RED so construction tests compile under hooks
 - [Phase 28]: Reuse ParticleSystemDef default damping 1.0 as pinned SetDamping(1.0); document PARTICLE_DAMPING explicitly
 - [Phase 28]: Map destroy_joint failures to SceneConstruction rather than UnknownControl
+- [Phase 28]: Minimal SceneId::Impulse wiring in Task 1 RED so construction tests compile under hooks
+- [Phase 28]: Reject non-empty presets on Impulse build because push-mode is Live-only
 
 ### Pending Todos
 
@@ -102,6 +104,6 @@ None for roadmap. A fresh unprofiled pair is required before claiming the ≤ 3�
 
 ## Session Continuity
 
-Last session: 2026-09-22T14:05:25.550Z
-Stopped at: Completed 28-02-PLAN.md
+Last session: 2026-09-22T14:11:39.199Z
+Stopped at: Completed 28-03-PLAN.md
 Resume file: None

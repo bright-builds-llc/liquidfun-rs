@@ -28,7 +28,7 @@ A visitor can open every JavaScript LiquidFun testbed scene the playground does 
 
 - [x] **ACT-01**: Visitor can watch Soup: a basin of liquid holds floating solid bits.
 - [x] **ACT-02**: Visitor can watch Soup Stirrer: a paddle keeps stirring that soup, and the visitor can free the paddle from its rail or put it back.
-- [ ] **ACT-03**: Visitor can click or tap Impulse and shove the whole particle blob.
+- [x] **ACT-03**: Visitor can click or tap Impulse and shove the whole particle blob.
 - [ ] **ACT-04**: Visitor can watch Wave Machine rock on its own and slosh the water inside.
 - [ ] **ACT-05**: Visitor can watch Theo Jansen walk under a particle load and can reverse its motor.
 
@@ -75,7 +75,7 @@ A visitor can open every JavaScript LiquidFun testbed scene the playground does 
 | MAT-03 | Phase 27 | Complete |
 | ACT-01 | Phase 28 | Complete |
 | ACT-02 | Phase 28 | Complete |
-| ACT-03 | Phase 28 | Pending |
+| ACT-03 | Phase 28 | Complete |
 | ACT-04 | Phase 28 | Pending |
 | ACT-05 | Phase 28 | Pending |
 | FX-01 | Phase 29 | Pending |
