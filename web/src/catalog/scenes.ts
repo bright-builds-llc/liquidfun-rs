@@ -5,6 +5,8 @@ export const SCENE_IDS = [
   "color-mixer",
   "jelly-drop",
   "water-wheel",
+  "particles",
+  "liquid-timer",
 ] as const;
 
 export type SceneId = (typeof SCENE_IDS)[number];
@@ -53,6 +55,29 @@ const PINNED_FAUCET = {
   label: "Pinned Faucet",
   href: "https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Testbed/Tests/Faucet.h",
 } as const;
+
+const PINNED_PARTICLES_JS = {
+  label: "Pinned Particles.js",
+  href: "https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/lfjs/testbed/tests/testParticles.js",
+} as const;
+
+const PINNED_PARTICLES_H = {
+  label: "Pinned Particles.h",
+  href: "https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Testbed/Tests/Particles.h",
+} as const;
+
+const PINNED_LIQUID_TIMER_JS = {
+  label: "Pinned LiquidTimer.js",
+  href: "https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/lfjs/testbed/tests/testLiquidTimer.js",
+} as const;
+
+const PINNED_LIQUID_TIMER_H = {
+  label: "Pinned LiquidTimer.h",
+  href: "https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Testbed/Tests/LiquidTimer.h",
+} as const;
+
+const WATCH_FIRST_HINT =
+  "This scene is watch-first. Use Play scene, Pause scene, and Reset scene.";
 
 function option(
   id: string,
@@ -253,6 +278,32 @@ export const SCENES: readonly SceneRecord[] = [
     credits: {
       implementationPath: sceneSource("water_wheel.rs"),
       inspiration: [SHOWCASE],
+    },
+  },
+  {
+    id: "particles",
+    title: "Particles",
+    ready: true,
+    description:
+      "Watch water fall in an open basin while a ball drops into it.",
+    interactionHint: WATCH_FIRST_HINT,
+    controls: [],
+    credits: {
+      implementationPath: sceneSource("particles.rs"),
+      inspiration: [PINNED_PARTICLES_JS, PINNED_PARTICLES_H, SHOWCASE],
+    },
+  },
+  {
+    id: "liquid-timer",
+    title: "Liquid Timer",
+    ready: true,
+    description:
+      "Watch tensile, viscous liquid drain through shelves into bottom columns.",
+    interactionHint: WATCH_FIRST_HINT,
+    controls: [],
+    credits: {
+      implementationPath: sceneSource("liquid_timer.rs"),
+      inspiration: [PINNED_LIQUID_TIMER_JS, PINNED_LIQUID_TIMER_H, SHOWCASE],
     },
   },
 ];
