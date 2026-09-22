@@ -7,11 +7,12 @@ import {
   PLAYING_STATUS,
   SCENE_HASH_PATHS,
   ALL_SCENE_TIMEOUT_MS,
+  sessionStatus,
 } from "./player-helpers";
 
 async function resetPlayingScene(page: Page, title: string): Promise<void> {
   await page.getByRole("button", { name: "Reset scene" }).click();
-  await expect(page.getByRole("status")).toHaveText(PLAYING_STATUS);
+  await expect(sessionStatus(page)).toHaveText(PLAYING_STATUS);
   await expectReadySceneChrome(page, title);
 }
 
@@ -128,11 +129,11 @@ test("keeps Fountain Emission rate high across pause and play", async ({
 
   // Act
   await page.getByRole("button", { name: "Pause scene" }).click();
-  await expect(page.getByRole("status")).toHaveText(PAUSED_STATUS);
+  await expect(sessionStatus(page)).toHaveText(PAUSED_STATUS);
   await expect(page.getByLabel("Emission rate")).toHaveValue("high");
   await page.getByRole("button", { name: "Play scene" }).click();
 
   // Assert
-  await expect(page.getByRole("status")).toHaveText(PLAYING_STATUS);
+  await expect(sessionStatus(page)).toHaveText(PLAYING_STATUS);
   await expect(page.getByLabel("Emission rate")).toHaveValue("high");
 });

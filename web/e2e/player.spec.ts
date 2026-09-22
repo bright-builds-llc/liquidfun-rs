@@ -28,6 +28,7 @@ import {
   resetNearZero,
   SCENE_HASH_PATHS,
   ALL_SCENE_TIMEOUT_MS,
+  sessionStatus,
   tabUntilFirstSceneSelectFocused,
   UNKNOWN_SCENE_PATH,
 } from "./player-helpers";
@@ -77,7 +78,7 @@ test("loads Dam Break under the production base and exercises pause, play, and r
   await openDamBreakPlaying(page);
 
   const main = page.locator("main");
-  const status = page.getByRole("status");
+  const status = sessionStatus(page);
   await expect
     .poll(() => numericAttribute(main, "data-step-index"))
     .toBeGreaterThan(0);
@@ -103,7 +104,7 @@ test("switches rendering without stepping and persists across scenes and reload"
   // Arrange
   await openDamBreakPlaying(page);
   const main = page.locator("main");
-  const status = page.getByRole("status");
+  const status = sessionStatus(page);
   await expect(main).toHaveAttribute("data-render-mode", "wireframe");
   await expect
     .poll(() => numericAttribute(main, "data-step-index"))
@@ -190,7 +191,7 @@ test("returns from an unknown hash through Open Dam Break", async ({ page }) => 
 
   await page.getByRole("link", { name: "Open Dam Break" }).click();
   await expect(page).toHaveURL(/#\/scene\/dam-break$/);
-  await expect(page.getByRole("status")).toHaveText(PLAYING_STATUS);
+  await expect(sessionStatus(page)).toHaveText(PLAYING_STATUS);
   await expect(page.getByRole("heading", { name: "Dam Break" })).toBeVisible();
 });
 
@@ -262,7 +263,7 @@ test("plays each interactive scene, accepts one pointer gesture, and activates a
     await performSceneGesture(page, maybeMapping.gesture);
     await expectAcceptedPointerGesture(page);
     await activateLabeledControl(page, maybeMapping.control);
-    await expect(page.getByRole("status")).toHaveText(PLAYING_STATUS);
+    await expect(sessionStatus(page)).toHaveText(PLAYING_STATUS);
   }
 });
 
@@ -283,7 +284,7 @@ test("plays each watch-first scene through pause, play, and reset without pointe
     await expectReadySceneChrome(page, scene.title);
 
     const main = page.locator("main");
-    const status = page.getByRole("status");
+    const status = sessionStatus(page);
     await expect
       .poll(() => numericAttribute(main, "data-step-index"))
       .toBeGreaterThan(0);
@@ -364,7 +365,7 @@ test("tabs to a scene control and scrolls the page at 375px", async ({
   await expectReadySceneChrome(page, "Dam Break");
   await expect(page.locator("figcaption")).toHaveText(DAM_BREAK_HINT);
   await page.getByRole("button", { name: "Pause scene" }).click();
-  await expect(page.getByRole("status")).toHaveText(PAUSED_STATUS);
+  await expect(sessionStatus(page)).toHaveText(PAUSED_STATUS);
 
   await tabUntilFirstSceneSelectFocused(page);
 

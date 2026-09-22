@@ -57,6 +57,11 @@ export async function numericAttribute(
   return Number(maybeValue);
 }
 
+/** Session playback status; scoped so wireframe/tilt outputs are not matched. */
+export function sessionStatus(page: Page): Locator {
+  return page.locator(".session-status");
+}
+
 export function collectWasmUrls(page: Page): string[] {
   const wasmUrls: string[] = [];
   page.on("request", (request) => {
@@ -114,7 +119,7 @@ export async function gateWasmUntilLoadingObserved(
   const wasmRequestGate = new Promise<void>((resolveRequest) => {
     releaseWasmRequest = resolveRequest;
   });
-  await page.route("**/*.wasm", async (route) => {
+  await page.route("**/*.wasm*", async (route) => {
     await wasmRequestGate;
     await route.continue();
   });
@@ -125,7 +130,7 @@ export async function expectReadySceneChrome(
   page: Page,
   title: string,
 ): Promise<void> {
-  await expect(page.getByRole("status")).toHaveText(PLAYING_STATUS);
+  await expect(sessionStatus(page)).toHaveText(PLAYING_STATUS);
   await expect(
     page.getByRole("heading", { name: title, exact: true }),
   ).toBeVisible();
@@ -140,12 +145,12 @@ export async function expectReadySceneChrome(
 
 export async function openDesktopDemo(
   page: Page,
-  title: string,
+  _title: string,
   id: SceneId,
 ): Promise<void> {
   await page
     .locator(".demo-sidebar")
-    .getByRole("link", { name: new RegExp(title) })
+    .locator(`a.demo-nav-link[href="#/scene/${id}"]`)
     .click();
   await expect(page).toHaveURL(new RegExp(`#/scene/${id}$`));
 }
@@ -235,7 +240,7 @@ export async function resetNearZero(page: Page): Promise<void> {
   await watchResetRestart(page, seriesStep);
   await page.getByRole("button", { name: "Reset scene" }).click();
   const resetStep = await readWatchedResetRestart(page);
-  await expect(page.getByRole("status")).toHaveText(PLAYING_STATUS);
+  await expect(sessionStatus(page)).toHaveText(PLAYING_STATUS);
   expect(resetStep).toBeLessThan(seriesStep);
   expect(resetStep).toBeLessThan(RESET_STEP_CEILING);
 }
@@ -247,7 +252,7 @@ export async function openDamBreakPlaying(page: Page): Promise<{
   const releaseWasmRequest = await gateWasmUntilLoadingObserved(page);
 
   await page.goto(DAM_BREAK_PATH, { waitUntil: "domcontentloaded" });
-  const status = page.getByRole("status");
+  const status = sessionStatus(page);
   await expect(status).toHaveText(LOADING_STATUS);
   releaseWasmRequest();
   await expectReadySceneChrome(page, "Dam Break");

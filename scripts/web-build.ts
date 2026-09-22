@@ -519,7 +519,10 @@ async function main(): Promise<void> {
       }
       if (mode === "player-smoke") {
         await runCommand(["bun", "run", "browser:install"], webDirectory);
-        await runCommand(["bun", "run", "test:player"], webDirectory);
+        await runCommand(["bun", "run", "test:player"], webDirectory, {
+          ...process.env,
+          CI: "true",
+        });
       }
     }
     await writeSummary(

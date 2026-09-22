@@ -6,6 +6,7 @@ import {
   FOUNTAIN_PATH,
   PAUSED_STATUS,
   PLAYGROUND_ROOT_PATH,
+  sessionStatus,
 } from "./player-helpers";
 
 test("renders the desktop shell and navigates from the sidebar", async ({
@@ -18,10 +19,10 @@ test("renders the desktop shell and navigates from the sidebar", async ({
   // Assert
   await expect(page.locator(".site-header")).toBeVisible();
   await expect(page.locator(".site-header")).not.toContainText(
-    "All eight demos",
+    "All eleven demos",
   );
   await expect(page.locator(".site-footer-summary")).toContainText(
-    "All eight demos",
+    "All eleven demos",
   );
   await expect(page.locator(".demo-sidebar")).toBeVisible();
   await expect(page.locator(".player-panel")).toBeVisible();
@@ -104,33 +105,37 @@ test("traps repeated forward and reverse Tab navigation inside the mobile drawer
   await page.goto(DAM_BREAK_PATH);
   await expectReadySceneChrome(page, "Dam Break");
   await page.getByRole("button", { name: "Pause scene" }).click();
-  await expect(page.getByRole("status")).toHaveText(PAUSED_STATUS);
+  await expect(sessionStatus(page)).toHaveText(PAUSED_STATUS);
   const trigger = page.getByRole("button", { name: "Demos" });
   await trigger.click();
   const dialog = page.getByRole("dialog");
   await expect(dialog).toBeVisible();
 
   // Act / Assert
-  for (let tabIndex = 0; tabIndex < 10; tabIndex += 1) {
+  for (let tabIndex = 0; tabIndex < 13; tabIndex += 1) {
     await page.keyboard.press("Tab");
-    expect(
-      await dialog.evaluate((node) => node.contains(document.activeElement)),
-    ).toBe(true);
+    await expect
+      .poll(() =>
+        dialog.evaluate((node) => node.contains(document.activeElement)),
+      )
+      .toBe(true);
   }
 
   // Arrange
   const closeButton = dialog.getByRole("button", { name: "Dismiss" });
-  const lastLink = dialog.getByRole("link", { name: /Liquid Timer/ });
+  const lastLink = dialog.getByRole("link", { name: /Rigid Particles/ });
   await closeButton.focus();
   await expect(closeButton).toBeFocused();
 
   // Act / Assert
-  // Dismiss + eight scene links = 9 focusables; 10 reverse tabs ≡ 1 (mod 9) lands on last.
-  for (let reverseTabIndex = 0; reverseTabIndex < 10; reverseTabIndex += 1) {
+  // Dismiss + eleven scene links = 12 focusables; 13 reverse tabs ≡ 1 (mod 12) lands on last.
+  for (let reverseTabIndex = 0; reverseTabIndex < 13; reverseTabIndex += 1) {
     await page.keyboard.press("Shift+Tab");
-    expect(
-      await dialog.evaluate((node) => node.contains(document.activeElement)),
-    ).toBe(true);
+    await expect
+      .poll(() =>
+        dialog.evaluate((node) => node.contains(document.activeElement)),
+      )
+      .toBe(true);
 
     if (reverseTabIndex === 0) {
       await expect(lastLink).toBeFocused();
@@ -194,7 +199,7 @@ test("closes the drawer for an authoritative external hash route", async ({
   ).toBe(true);
 });
 
-test("shows eight static previews in the desktop sidebar", async ({ page }) => {
+test("shows eleven static previews in the desktop sidebar", async ({ page }) => {
   // Arrange
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto(DAM_BREAK_PATH);
@@ -203,10 +208,10 @@ test("shows eight static previews in the desktop sidebar", async ({ page }) => {
   await expect(page.locator(".catalog-card")).toHaveCount(0);
   await expect(
     page.locator(".demo-sidebar").getByText("Static preview", { exact: true }),
-  ).toHaveCount(8);
+  ).toHaveCount(11);
   await expect(
     page.locator(".demo-sidebar").locator("svg[aria-hidden='true']"),
-  ).toHaveCount(8);
+  ).toHaveCount(11);
 });
 
 test("shows a static preview inside the mobile demos dialog", async ({
