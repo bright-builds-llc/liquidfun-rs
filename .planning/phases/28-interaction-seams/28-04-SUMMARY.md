@@ -73,7 +73,7 @@ Each task was committed atomically:
 1. **Task 1: Failing Wave Machine allowlist and motor-time tests** - `377bd8e` (test)
 2. **Task 2: Implement Wave Machine scene and factory wiring** - `ac66830` (feat)
 
-**Plan metadata:** _(pending final docs commit)_
+**Plan metadata:** `2a612dd` (docs: complete plan)
 
 ## Files Created/Modified
 
