@@ -398,22 +398,25 @@ Approximate particle loads at 2×radius spacing: Impulse ~1280, Wave ~1296, Soup
 
 **If empty rows needed confirmation:** A1–A3 are low risk; locked decisions already allow discretion on helper placement.
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Public vs scene-local destroy-in-shape**
    - What we know: Composable APIs exist; D-15 allows either; Drawing (29) will need erase.
    - What's unclear: Whether Phase 28 should invest in `World` API now.
    - Recommendation: Prefer a small public helper with one unit test if implementation is &lt; ~40 lines; else scene-private in `soup_family` and revisit in Phase 29.
+   - **RESOLVED (Plan 01):** Ship a public `World::destroy_particles_in_shape` thin helper with a focused unit test.
 
 2. **Theo speed magnitude control**
    - What we know: Discretion allows optional magnitude beside direction.
    - What's unclear: Whether it helps mobile visitors.
    - Recommendation: Ship direction-only first; add magnitude only if walking feels stuck after recognition port.
+   - **RESOLVED (Plan 05):** Theo Jansen is direction-only (`motor-direction` forward/reverse); no extra speed magnitude control.
 
 3. **Smoke timeout for 16 scenes**
    - What we know: Phase 27 raised `ALL_SCENE_TIMEOUT_MS` to 220_000 for eleven scenes.
    - What's unclear: Whether 16 scenes need another bump.
    - Recommendation: Measure in implementation; bump only if Chromium smoke times out—do not change physics caps.
+   - **RESOLVED (Plan 08):** Bump `ALL_SCENE_TIMEOUT_MS` only if measured during Plan 08 smoke; do not change physics caps.
 
 ## Environment Availability
 
