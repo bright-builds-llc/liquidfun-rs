@@ -67,6 +67,9 @@ function PlaygroundFrame(props: PlaygroundShellProps) {
           <DemoNavigation
             label="Demos"
             maybeCurrentSceneId={props.maybeCurrentSceneId}
+            revealCurrent={
+              sidebar.isMobile() ? sidebar.openMobile() : sidebar.open()
+            }
             onNavigate={() => sidebar.setOpenMobile(false)}
           />
         </SidebarContent>
