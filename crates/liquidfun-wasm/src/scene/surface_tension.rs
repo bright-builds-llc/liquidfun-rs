@@ -1,12 +1,185 @@
-//! Pinned LiquidFun Surface Tension test: tensile color-mixing groups + falling ball.
+//! Pinned `LiquidFun` Surface Tension test: tensile color-mixing groups + falling ball.
 
+use liquidfun::collision::{CircleShape, PolygonShape, Shape};
+use liquidfun::math::{Transform, Vec2};
+use liquidfun::particle::{
+    ParticleColor, ParticleFlags, ParticleGroupDestination, ParticleGroupRecipe,
+    ParticleGroupSource,
+};
+use liquidfun::{BodyDef, BodyId, ParticleSystemDef, ParticleSystemId, World};
+
+use super::basin_family::{attach_vertical_wall_basin, create_falling_ball};
+use super::{BuiltScene, ControlEffect, PointerKind, RigidSegment, SceneError, SceneHooks};
 use crate::session::SessionError;
 
-use super::BuiltScene;
+const PARTICLE_RADIUS: f32 = 0.035;
+const PARTICLE_DAMPING: f32 = 0.2;
+const MAXIMUM_PARTICLE_COUNT: usize = 10240;
+const GROUP_RADIUS: f32 = 0.5;
+const GROUP_FLAGS: ParticleFlags = ParticleFlags::from_bits_truncate(
+    ParticleFlags::TENSILE.bits() | ParticleFlags::COLOR_MIXING.bits(),
+);
+const RED_COLOR: ParticleColor = ParticleColor::new(255, 0, 0, 255);
+const GREEN_COLOR: ParticleColor = ParticleColor::new(0, 255, 0, 255);
+const BLUE_COLOR: ParticleColor = ParticleColor::new(0, 0, 255, 255);
+const RED_CENTER: Vec2 = Vec2::new(0.0, 2.0);
+const GREEN_CENTER: Vec2 = Vec2::new(-1.0, 2.0);
+const BLUE_BOX_VERTICES: [Vec2; 4] = [
+    Vec2::new(0.0, 3.0),
+    Vec2::new(2.0, 3.0),
+    Vec2::new(2.0, 3.5),
+    Vec2::new(0.0, 3.5),
+];
+const GRAVITY: Vec2 = Vec2::new(0.0, -10.0);
 
-pub(crate) fn build(_presets: &[(String, String)]) -> Result<BuiltScene, SessionError> {
-    // RED stub: Task 2 replaces this with the pinned basin + groups + ball.
-    Err(SessionError::SceneConstruction)
+struct SurfaceTensionHooks {
+    basin_segments: [RigidSegment; 3],
+    ball_body: BodyId,
+    ball_radius: f32,
+}
+
+pub(crate) fn build(presets: &[(String, String)]) -> Result<BuiltScene, SessionError> {
+    if !presets.is_empty() {
+        return Err(SessionError::UnknownControl);
+    }
+    build_surface_tension().map_err(|_error| SessionError::SceneConstruction)
+}
+
+fn build_surface_tension() -> Result<BuiltScene, SceneError> {
+    let mut world = World::new().map_err(|_error| SceneError::World)?;
+    world
+        .set_gravity(GRAVITY)
+        .map_err(|_error| SceneError::Gravity)?;
+
+    let basin_body = world
+        .create_body(&BodyDef::default())
+        .map_err(|_error| SceneError::Body)?;
+    let basin_segments = attach_vertical_wall_basin(&mut world, basin_body)?;
+    let (ball_body, ball_radius) = create_falling_ball(&mut world)?;
+    let particle_system = create_tensile_color_groups(&mut world)?;
+
+    Ok(BuiltScene {
+        world,
+        particle_system,
+        particle_radius: PARTICLE_RADIUS,
+        hooks: Box::new(SurfaceTensionHooks {
+            basin_segments,
+            ball_body,
+            ball_radius,
+        }),
+    })
+}
+
+fn create_tensile_color_groups(world: &mut World) -> Result<ParticleSystemId, SceneError> {
+    let system_definition = ParticleSystemDef::default()
+        .with_radius(PARTICLE_RADIUS)
+        .map_err(|_error| SceneError::ParticleSystem)?
+        .with_damping(PARTICLE_DAMPING)
+        .map_err(|_error| SceneError::ParticleSystem)?
+        .with_maximum_count(MAXIMUM_PARTICLE_COUNT)
+        .map_err(|_error| SceneError::ParticleSystem)?;
+    let system = world
+        .create_particle_system_with_def(&system_definition)
+        .map_err(|_error| SceneError::ParticleSystem)?;
+
+    create_circle_group(world, system, RED_CENTER, RED_COLOR)?;
+    create_circle_group(world, system, GREEN_CENTER, GREEN_COLOR)?;
+    create_box_group(world, system, BLUE_COLOR)?;
+    Ok(system)
+}
+
+fn create_circle_group(
+    world: &mut World,
+    system: ParticleSystemId,
+    center: Vec2,
+    color: ParticleColor,
+) -> Result<(), SceneError> {
+    let filled = Shape::from(
+        CircleShape::new(Vec2::ZERO, GROUP_RADIUS).map_err(|_error| SceneError::Geometry)?,
+    );
+    let source =
+        ParticleGroupSource::filled_shapes(vec![filled]).map_err(|_error| SceneError::Particle)?;
+    let recipe = ParticleGroupRecipe::new(source, ParticleGroupDestination::New)
+        .with_particle_flags(GROUP_FLAGS)
+        .with_color(color)
+        .with_transform(Transform::from_position_angle(center, 0.0))
+        .map_err(|_error| SceneError::Particle)?;
+    world
+        .create_particle_group(system, &recipe)
+        .map_err(|_error| SceneError::Particle)?;
+    Ok(())
+}
+
+fn create_box_group(
+    world: &mut World,
+    system: ParticleSystemId,
+    color: ParticleColor,
+) -> Result<(), SceneError> {
+    let filled =
+        Shape::from(PolygonShape::new(&BLUE_BOX_VERTICES).map_err(|_error| SceneError::Geometry)?);
+    let source =
+        ParticleGroupSource::filled_shapes(vec![filled]).map_err(|_error| SceneError::Particle)?;
+    let recipe = ParticleGroupRecipe::new(source, ParticleGroupDestination::New)
+        .with_particle_flags(GROUP_FLAGS)
+        .with_color(color)
+        .with_transform(Transform::IDENTITY)
+        .map_err(|_error| SceneError::Particle)?;
+    world
+        .create_particle_group(system, &recipe)
+        .map_err(|_error| SceneError::Particle)?;
+    Ok(())
+}
+
+impl SceneHooks for SurfaceTensionHooks {
+    fn on_advance(
+        &mut self,
+        _world: &mut World,
+        _system: ParticleSystemId,
+    ) -> Result<(), SessionError> {
+        Ok(())
+    }
+
+    fn apply_control(
+        &mut self,
+        _world: &mut World,
+        _system: ParticleSystemId,
+        _name: &str,
+        _value: &str,
+    ) -> Result<ControlEffect, SessionError> {
+        Err(SessionError::UnknownControl)
+    }
+
+    fn apply_action(
+        &mut self,
+        _world: &mut World,
+        _system: ParticleSystemId,
+        _name: &str,
+    ) -> Result<(), SessionError> {
+        Err(SessionError::UnknownControl)
+    }
+
+    fn apply_pointer(
+        &mut self,
+        _world: &mut World,
+        _system: ParticleSystemId,
+        _kind: PointerKind,
+        _world_x: f32,
+        _world_y: f32,
+    ) -> Result<(), SessionError> {
+        Ok(())
+    }
+
+    fn collect_segments(&self, _world: &World) -> Result<Vec<RigidSegment>, SessionError> {
+        Ok(self.basin_segments.to_vec())
+    }
+
+    fn collect_circles(&self, world: &World) -> Result<Vec<(Vec2, f32)>, SessionError> {
+        let position = world
+            .body_snapshot(self.ball_body)
+            .map_err(|_error| SessionError::FrameCaptureFailed)?
+            .position();
+        Ok(vec![(position, self.ball_radius)])
+    }
 }
 
 #[cfg(test)]

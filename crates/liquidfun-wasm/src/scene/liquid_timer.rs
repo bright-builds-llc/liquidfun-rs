@@ -1,4 +1,4 @@
-//! Pinned LiquidFun Liquid Timer test: tensile/viscous drain through shelves.
+//! Pinned `LiquidFun` Liquid Timer test: tensile/viscous drain through shelves.
 
 use liquidfun::collision::{ChainShape, EdgeShape, FilterData, PolygonShape, Shape};
 use liquidfun::math::{Transform, Vec2};

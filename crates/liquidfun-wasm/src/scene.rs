@@ -6,6 +6,7 @@
 //! `x=-5.5..5.5` with walls to `y=8`, dynamic circle `(2.5, 5.5)` radius
 //! `0.75`, particle cap 10240, timestep `1/60`.
 
+mod basin_family;
 mod color_mixer;
 mod dam_break;
 mod float_or_sink;

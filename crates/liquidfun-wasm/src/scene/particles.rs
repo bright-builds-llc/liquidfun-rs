@@ -1,4 +1,4 @@
-//! Pinned LiquidFun Particles test: open basin, water circle, dynamic ball.
+//! Pinned `LiquidFun` Particles test: open basin, water circle, dynamic ball.
 
 use liquidfun::collision::{CircleShape, FilterData, Shape};
 use liquidfun::math::{Transform, Vec2};
