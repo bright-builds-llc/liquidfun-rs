@@ -364,6 +364,18 @@ describe("SCENES", () => {
       particles: "crates/liquidfun-wasm/src/scene/particles.rs",
       "liquid-timer": "crates/liquidfun-wasm/src/scene/liquid_timer.rs",
     };
+    const pinnedBasinInspiration = {
+      particles: [
+        { label: "Pinned Particles.js", href: PARTICLES_JS_HREF },
+        { label: "Pinned Particles.h", href: PARTICLES_H_HREF },
+        { label: "LiquidFun showcase", href: SHOWCASE_HREF },
+      ],
+      "liquid-timer": [
+        { label: "Pinned LiquidTimer.js", href: LIQUID_TIMER_JS_HREF },
+        { label: "Pinned LiquidTimer.h", href: LIQUID_TIMER_H_HREF },
+        { label: "LiquidFun showcase", href: SHOWCASE_HREF },
+      ],
+    } as const;
 
     // Act
     const implementationPaths = SCENES.map(
@@ -375,6 +387,9 @@ describe("SCENES", () => {
         scene.credits.inspiration.map((item) => item.href),
       ]),
     );
+    const particlesInspiration = maybeSceneById("particles")?.credits.inspiration;
+    const liquidTimerInspiration =
+      maybeSceneById("liquid-timer")?.credits.inspiration;
 
     // Assert
     expect(implementationPaths).toEqual(
@@ -398,16 +413,12 @@ describe("SCENES", () => {
       SHOWCASE_HREF,
     ]);
     expect(inspirationById["water-wheel"]).toEqual([SHOWCASE_HREF]);
-    expect(inspirationById.particles).toEqual([
-      PARTICLES_JS_HREF,
-      PARTICLES_H_HREF,
-      SHOWCASE_HREF,
+    expect(particlesInspiration).toEqual([...pinnedBasinInspiration.particles]);
+    expect(liquidTimerInspiration).toEqual([
+      ...pinnedBasinInspiration["liquid-timer"],
     ]);
-    expect(inspirationById["liquid-timer"]).toEqual([
-      LIQUID_TIMER_JS_HREF,
-      LIQUID_TIMER_H_HREF,
-      SHOWCASE_HREF,
-    ]);
+    expect(maybeSceneById("particles")?.controls).toHaveLength(0);
+    expect(maybeSceneById("liquid-timer")?.controls).toHaveLength(0);
   });
 });
 
