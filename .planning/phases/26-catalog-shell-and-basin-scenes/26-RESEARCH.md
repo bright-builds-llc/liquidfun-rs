@@ -367,17 +367,19 @@ href: "https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459
 
 **If wrong:** Stay within Claude’s Discretion (coordinates/strengths); do not invent per-scene camera systems in this phase unless discuss-phase revisits.
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Should inspirations list both `.js` and `.h` as separate links, or one combined credit row?**
    - What we know: D-08 requires citing both files; Fountain today cites one pinned `.h` plus showcase.
    - What's unclear: Exact UI density preference.
    - Recommendation: Two inspiration entries per scene (JS test + C++ header) at the pinned commit, plus optional showcase link if copy stays consistent with existing demos.
+   - RESOLVED: Two inspiration entries per scene (pinned JS test and C++ header). Plans 03 and 26-UI-SPEC implement this.
 
 2. **Exact Playwright structure for watch-first scenes**
    - What we know: Current all-scene pointer test cannot apply as-is.
    - What's unclear: Whether to filter by `controls.length === 0` or maintain an explicit watch-first id list.
    - Recommendation: Prefer `controls.length === 0` (or missing POINTER_CONTROL entry) so Phase 27 watch-first material scenes reuse the same rule.
+   - RESOLVED: Filter watch-first scenes by `controls.length === 0`. Plan 05 implements this.
 
 ## Environment Availability
 
