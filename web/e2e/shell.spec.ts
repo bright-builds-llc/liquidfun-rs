@@ -17,6 +17,12 @@ test("renders the desktop shell and navigates from the sidebar", async ({
 
   // Assert
   await expect(page.locator(".site-header")).toBeVisible();
+  await expect(page.locator(".site-header")).not.toContainText(
+    "All eight demos",
+  );
+  await expect(page.locator(".site-footer-summary")).toContainText(
+    "All eight demos",
+  );
   await expect(page.locator(".demo-sidebar")).toBeVisible();
   await expect(page.locator(".player-panel")).toBeVisible();
   await expect(page.locator(".catalog-card")).toHaveCount(0);

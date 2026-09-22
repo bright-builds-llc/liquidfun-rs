@@ -65,21 +65,13 @@ html[data-demo-media-capture="true"] .demo-drawer-overlay,
 html[data-demo-media-capture="true"] .demo-drawer-positioner {
   visibility: hidden;
 }
-.site-header-copy {
-  display: grid;
-  gap: var(--space-sm);
+.site-header h1 {
   min-width: 0;
-}
-
-.site-header-copy p {
-  color: #A9B4C0;
-  font-size: 14px;
-  line-height: 1.4;
 }
 
 .site-header-actions {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   justify-content: flex-end;
   gap: var(--space-md);
@@ -88,8 +80,29 @@ html[data-demo-media-capture="true"] .demo-drawer-positioner {
 .site-header-source {
   display: inline-flex;
   align-items: center;
-  min-block-size: 44px;
+  justify-content: center;
+  inline-size: 44px;
+  block-size: 44px;
   color: #F4F7FA;
+  text-decoration: none;
+  background: #151D28;
+  border: 1px solid #2A3441;
+  border-radius: 12px;
+}
+
+.site-header-source:hover {
+  background: #1C2734;
+}
+
+.site-header-source:focus-visible {
+  outline: 2px solid #4DA3FF;
+  outline-offset: 2px;
+}
+
+.site-header-source svg {
+  display: block;
+  width: 22px;
+  height: 22px;
 }
 
 .app-body {
@@ -102,7 +115,7 @@ html[data-demo-media-capture="true"] .demo-drawer-positioner {
 
 .demo-sidebar {
   position: sticky;
-  top: 132px;
+  top: 96px;
   max-height: calc(100vh - 156px);
   min-width: 0;
   padding: var(--space-md);
@@ -538,6 +551,13 @@ select:hover:not(:disabled) {
   color: #F4F7FA;
 }
 
+.site-footer-summary {
+  color: #A9B4C0;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
 .site-footer-identity {
   display: flex;
   flex-wrap: wrap;
@@ -626,13 +646,16 @@ select:hover:not(:disabled) {
 
 @media (max-width: 480px) {
   .site-header {
-    grid-template-columns: minmax(0, 1fr);
-    gap: var(--space-md);
-    padding: var(--space-md);
+    gap: var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
   }
 
-  .site-header-actions {
-    justify-content: flex-start;
+  .site-header h1 {
+    font-size: 22px;
+  }
+
+  .site-header-actions button {
+    width: auto;
   }
 
   .scene-control,

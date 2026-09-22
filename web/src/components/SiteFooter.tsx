@@ -1,6 +1,7 @@
 import { Show } from "solid-js";
 
 import { readBuildInfo } from "../build-info";
+import { PAGE_SUMMARY } from "../player/runtime";
 
 const SOURCE_HREF = "https://github.com/bright-builds-llc/liquidfun-rs";
 const MAINTAINER_HREF = "https://openlinks.us/";
@@ -34,6 +35,7 @@ export function SiteFooter() {
 
   return (
     <footer class="site-footer">
+      <p class="site-footer-summary">{PAGE_SUMMARY}</p>
       <div class="site-footer-identity">
         <a href={SOURCE_HREF} target="_blank" rel="noopener noreferrer">
           {SOURCE_LABEL}
