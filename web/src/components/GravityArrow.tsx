@@ -23,6 +23,7 @@ export function GravityArrow(props: GravityArrowProps) {
               y1={arrow().y1}
               x2={arrow().x2}
               y2={arrow().y2}
+              stroke-width={arrow().strokeWidth}
             />
             <polygon points={formatArrowPoints(arrow().head)} />
           </svg>

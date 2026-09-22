@@ -1,9 +1,14 @@
 import type { TiltDebug, TiltGravity } from "../input/tilt-gravity";
 
+/** Standard gravity, in m/s². The arrow reaches its full length at this magnitude. */
+export const FULL_GRAVITY = 9.80665;
+
 const BOX = 48;
 const CENTER = BOX / 2;
 const SHAFT = 14;
 const HEAD = 7;
+const STROKE = 2.5;
+const MIN_DRAWABLE_MAGNITUDE = 1e-3;
 
 export type ArrowPoint = readonly [number, number];
 
@@ -12,6 +17,7 @@ export type GravityArrowGeometry = {
   readonly y1: number;
   readonly x2: number;
   readonly y2: number;
+  readonly strokeWidth: number;
   readonly head: readonly [ArrowPoint, ArrowPoint, ArrowPoint];
 };
 
@@ -19,31 +25,37 @@ export type GravityArrowGeometry = {
  * Screen-space arrow for a world gravity vector.
  *
  * World +y is up and SVG +y is down, so the arrow flips the world y axis.
+ * Length scales with the in-plane magnitude and stops growing at one g, so a
+ * phone lying flat draws only the leftover accelerometer noise.
  */
 export function gravityArrowGeometry(
   gravity: TiltGravity,
 ): GravityArrowGeometry | undefined {
   const screenX = gravity.x;
   const screenY = -gravity.y;
-  const length = Math.hypot(screenX, screenY);
-  if (!Number.isFinite(length) || length < 1e-3) {
+  const magnitude = Math.hypot(screenX, screenY);
+  if (!Number.isFinite(magnitude) || magnitude < MIN_DRAWABLE_MAGNITUDE) {
     return undefined;
   }
 
-  const x = screenX / length;
-  const y = screenY / length;
-  const x2 = CENTER + x * SHAFT;
-  const y2 = CENTER + y * SHAFT;
-  const baseX = CENTER + x * (SHAFT - HEAD);
-  const baseY = CENTER + y * (SHAFT - HEAD);
-  const side = HEAD * 0.65;
+  const strength = Math.min(magnitude / FULL_GRAVITY, 1);
+  const x = screenX / magnitude;
+  const y = screenY / magnitude;
+  const shaft = SHAFT * strength;
+  const head = HEAD * strength;
+  const x2 = CENTER + x * shaft;
+  const y2 = CENTER + y * shaft;
+  const baseX = CENTER + x * (shaft - head);
+  const baseY = CENTER + y * (shaft - head);
+  const side = head * 0.65;
   const perpendicularX = -y;
   const perpendicularY = x;
   return {
-    x1: CENTER - x * (SHAFT - HEAD),
-    y1: CENTER - y * (SHAFT - HEAD),
+    x1: CENTER - x * (shaft - head),
+    y1: CENTER - y * (shaft - head),
     x2,
     y2,
+    strokeWidth: STROKE * strength,
     head: [
       [x2, y2],
       [baseX + perpendicularX * side, baseY + perpendicularY * side],

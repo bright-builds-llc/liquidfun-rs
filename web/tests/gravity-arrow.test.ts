@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { gravityArrowGeometry, maybeGravityArrow } from "../src/components/gravity-arrow";
+import {
+  FULL_GRAVITY,
+  gravityArrowGeometry,
+  maybeGravityArrow,
+  type GravityArrowGeometry,
+} from "../src/components/gravity-arrow";
 import type { TiltDebug } from "../src/input/tilt-gravity";
 
 const liveDown: TiltDebug = {
@@ -34,6 +39,63 @@ describe("gravityArrowGeometry", () => {
     // Arrange / Act / Assert
     expect(gravityArrowGeometry({ x: 0, y: 0 })).toBeUndefined();
   });
+
+  it("reaches full length at one g", () => {
+    // Arrange / Act
+    const arrow = gravityArrowGeometry({ x: 0, y: -FULL_GRAVITY });
+
+    // Assert
+    expect(tipDistance(arrow)).toBeCloseTo(14);
+  });
+
+  it("clips arrows stronger than one g to the full-gravity length", () => {
+    // Arrange
+    const full = gravityArrowGeometry({ x: 0, y: -FULL_GRAVITY });
+
+    // Act
+    const stronger = gravityArrowGeometry({ x: 0, y: -(FULL_GRAVITY * 2) });
+
+    // Assert
+    expect(tipDistance(stronger)).toBeCloseTo(tipDistance(full));
+  });
+
+  it("draws half of one g at half the full length", () => {
+    // Arrange
+    const full = gravityArrowGeometry({ x: FULL_GRAVITY, y: 0 });
+
+    // Act
+    const half = gravityArrowGeometry({ x: FULL_GRAVITY / 2, y: 0 });
+
+    // Assert
+    expect(tipDistance(half)).toBeCloseTo(tipDistance(full) / 2);
+  });
+
+  it("scales the stroke with length and clips it at one g", () => {
+    // Arrange
+    const full = gravityArrowGeometry({ x: 0, y: -FULL_GRAVITY });
+    const half = gravityArrowGeometry({ x: 0, y: -FULL_GRAVITY / 2 });
+
+    // Act
+    const stronger = gravityArrowGeometry({ x: 0, y: -(FULL_GRAVITY * 2) });
+
+    // Assert
+    expect(full?.strokeWidth).toBeCloseTo(2.5);
+    expect(half?.strokeWidth).toBeCloseTo(1.25);
+    expect(stronger?.strokeWidth).toBeCloseTo(full?.strokeWidth ?? 0);
+  });
+
+  it("shrinks flat-phone noise to a small fraction of full gravity", () => {
+    // Arrange
+    const full = gravityArrowGeometry({ x: 0, y: -FULL_GRAVITY });
+    const flatNoise = 0.2;
+
+    // Act
+    const noise = gravityArrowGeometry({ x: 0, y: -flatNoise });
+
+    // Assert
+    expect(tipDistance(noise)).toBeLessThan(tipDistance(full) * 0.05);
+    expect(tipDistance(noise)).toBeGreaterThan(0);
+  });
 });
 
 describe("maybeGravityArrow", () => {
@@ -55,3 +117,10 @@ describe("maybeGravityArrow", () => {
     expect(maybeGravityArrow(true, { kind: "waiting" })).toBeUndefined();
   });
 });
+
+function tipDistance(maybeArrow: GravityArrowGeometry | undefined): number {
+  if (maybeArrow === undefined) {
+    return 0;
+  }
+  return Math.hypot(maybeArrow.x2 - 24, maybeArrow.y2 - 24);
+}
