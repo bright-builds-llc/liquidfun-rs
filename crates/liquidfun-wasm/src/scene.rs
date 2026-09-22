@@ -9,6 +9,7 @@
 mod basin_family;
 mod color_mixer;
 mod dam_break;
+mod elastic_particles;
 mod float_or_sink;
 mod fountain;
 mod jelly_drop;
@@ -34,6 +35,7 @@ pub(crate) enum SceneId {
     Particles,
     LiquidTimer,
     SurfaceTension,
+    ElasticParticles,
 }
 
 pub(crate) fn parse_scene_id(raw: &str) -> Result<SceneId, SessionError> {
@@ -47,6 +49,7 @@ pub(crate) fn parse_scene_id(raw: &str) -> Result<SceneId, SessionError> {
         "particles" => Ok(SceneId::Particles),
         "liquid-timer" => Ok(SceneId::LiquidTimer),
         "surface-tension" => Ok(SceneId::SurfaceTension),
+        "elastic-particles" => Ok(SceneId::ElasticParticles),
         _ => Err(SessionError::UnknownScene),
     }
 }
@@ -142,6 +145,7 @@ pub(crate) fn build_scene(
         SceneId::Particles => particles::build(presets),
         SceneId::LiquidTimer => liquid_timer::build(presets),
         SceneId::SurfaceTension => surface_tension::build(presets),
+        SceneId::ElasticParticles => elastic_particles::build(presets),
     }
 }
 
