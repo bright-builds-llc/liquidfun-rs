@@ -10,8 +10,8 @@ A visitor can open every JavaScript LiquidFun testbed scene the playground does 
 ### Shared player
 
 - [ ] **PLAY-01**: Visitor can open Drawing Particles, Elastic Particles, Impulse, Liquid Timer, Particles, Rigid Particles, Soup, Soup Stirrer, Sparky, Surface Tension, Theo Jansen, and Wave Machine from the catalog, and the existing six scenes remain available.
-- [ ] **PLAY-02**: Visitor can play, pause, and reset each new scene, and reset restores that scene's initial layout.
-- [ ] **PLAY-03**: Each new scene credits the pinned LiquidFun test it ports.
+- [x] **PLAY-02**: Visitor can play, pause, and reset each new scene, and reset restores that scene's initial layout.
+- [x] **PLAY-03**: Each new scene credits the pinned LiquidFun test it ports.
 
 ### Basin
 
@@ -66,8 +66,8 @@ A visitor can open every JavaScript LiquidFun testbed scene the playground does 
 | Requirement | Phase | Status |
 | --- | --- | --- |
 | PLAY-01 | Phase 29 | Pending |
-| PLAY-02 | Phase 26 | Pending |
-| PLAY-03 | Phase 26 | Pending |
+| PLAY-02 | Phase 26 | Complete |
+| PLAY-03 | Phase 26 | Complete |
 | BASIN-01 | Phase 26 | Complete |
 | BASIN-02 | Phase 26 | Complete |
 | MAT-01 | Phase 27 | Pending |
