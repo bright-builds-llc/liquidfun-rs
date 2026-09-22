@@ -22,6 +22,7 @@ mod soup_stirrer;
 mod impulse;
 mod surface_tension;
 mod water_wheel;
+mod wave_machine;
 
 use liquidfun::collision::{FilterData, PolygonShape, Shape};
 use liquidfun::math::Vec2;
@@ -45,6 +46,7 @@ pub(crate) enum SceneId {
     Soup,
     SoupStirrer,
     Impulse,
+    WaveMachine,
 }
 
 pub(crate) fn parse_scene_id(raw: &str) -> Result<SceneId, SessionError> {
@@ -63,6 +65,7 @@ pub(crate) fn parse_scene_id(raw: &str) -> Result<SceneId, SessionError> {
         "soup" => Ok(SceneId::Soup),
         "soup-stirrer" => Ok(SceneId::SoupStirrer),
         "impulse" => Ok(SceneId::Impulse),
+        "wave-machine" => Ok(SceneId::WaveMachine),
         _ => Err(SessionError::UnknownScene),
     }
 }
@@ -163,6 +166,7 @@ pub(crate) fn build_scene(
         SceneId::Soup => soup::build(presets),
         SceneId::SoupStirrer => soup_stirrer::build(presets),
         SceneId::Impulse => impulse::build(presets),
+        SceneId::WaveMachine => wave_machine::build(presets),
     }
 }
 

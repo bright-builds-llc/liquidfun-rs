@@ -28,6 +28,7 @@ fn parse_scene_id_maps_allowlisted_tokens() {
         ("soup", SceneId::Soup),
         ("soup-stirrer", SceneId::SoupStirrer),
         ("impulse", SceneId::Impulse),
+        ("wave-machine", SceneId::WaveMachine),
     ];
 
     for (raw, expected) in tokens {
