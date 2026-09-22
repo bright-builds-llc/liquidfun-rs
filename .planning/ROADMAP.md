@@ -2,11 +2,11 @@
 
 ## Overview
 
-v1.3 Reference Testbed Scenes is active. Visitors get the twelve missing JavaScript LiquidFun testbed scenes in the existing SolidJS playground as recognizable native Rust/WASM ports, then two original hydraulics scenes. The six current scenes stay. Phase numbering continues after 25 (Phases 26–31). This is not sealed C++ parity, a public benchmark, crate publication, or a git release tag.
+v1.3 Reference Testbed Scenes is active. Visitors get the twelve missing JavaScript LiquidFun testbed scenes in the existing SolidJS playground as recognizable native Rust/WASM ports, then two original hydraulics scenes and two liquid fidget toys. The six current scenes stay. Phase numbering continues after 25 (Phases 26–33). This is not sealed C++ parity, a public benchmark, crate publication, or a git release tag.
 
 ## Milestones
 
-- [ ] **v1.3 Reference Testbed Scenes** — Phases 26–31 (in progress). Twelve missing JS testbed scenes, then a periodic hydraulic fountain and a sinusoidal wave tank.
+- [ ] **v1.3 Reference Testbed Scenes** — Phases 26–33 (in progress). Twelve missing JS testbed scenes, then a periodic hydraulic fountain, a sinusoidal wave tank, and two liquid fidget toys.
 - [x] **v1.2 Native Performance Closing** — Phases 22–25 (archived 2026-09-21). Local Dam Break Medium recorded at ≤ 3× C++; no Phase 12 sealed matrix; no crate or tag. ([full roadmap](milestones/v1.2-ROADMAP.md))
 - [x] **v1.1 Web Playground** — 6 phases / 39 plans complete; archived 2026-09-20 ([full roadmap](milestones/v1.1-ROADMAP.md)). Planning label only; no package or tag released.
 - [x] **v1.0 Experimental Foundation** — 16 phases / 252 active plans complete; archived 2026-09-17 under hobby scope ([full roadmap](milestones/v1.0-ROADMAP.md)). Strict qualification remains deferred; no package or tag released.
@@ -49,6 +49,8 @@ v1.1 phase directories remain in `.planning/phases/` for stable historical refer
 - [ ] **Phase 29: Sparky, Drawing, and full catalog** - Contact sparks, paint presets, and all twelve scenes openable
 - [ ] **Phase 30: Periodic hydraulic fountain** - A timed piston squeezes liquid so it travels elsewhere
 - [ ] **Phase 31: Sinusoidal wave tank** - A still pool whose end platform rises and falls and sends waves
+- [ ] **Phase 32: Liquid motion bubbler** - Colored liquid drips through a narrow waist and turns a small wheel
+- [ ] **Phase 33: Stacked drip fidget** - Liquid drains through a stack of moving parts, and each part reacts when the drip reaches it
 
 ## Phase Details
 
@@ -128,6 +130,26 @@ Plans:
 Plans:
 - [ ] TBD (run /gsd-plan-phase 31 to break down)
 
+### Phase 32: Liquid motion bubbler
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 31
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 32 to break down)
+
+### Phase 33: Stacked drip fidget
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 32
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 33 to break down)
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -148,5 +170,7 @@ Plans:
 | 29. Sparky, Drawing, and full catalog | v1.3 | 0/TBD | Not started | - |
 | 30. Periodic hydraulic fountain | v1.3 | 0/TBD | Not started | - |
 | 31. Sinusoidal wave tank | v1.3 | 0/TBD | Not started | - |
+| 32. Liquid motion bubbler | v1.3 | 0/TBD | Not started | - |
+| 33. Stacked drip fidget | v1.3 | 0/TBD | Not started | - |
 
 v1.0 phases 1–15 remain in the [v1.0 roadmap archive](milestones/v1.0-ROADMAP.md).

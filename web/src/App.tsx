@@ -12,7 +12,11 @@ import {
   type CanvasPointerHandlers,
 } from "./input/canvas-pointer";
 import type { PointerKind } from "./input/pointer";
-import { accumulateStepTime } from "./physics/clock";
+import {
+  FRAME_STEP_BUDGET_MS,
+  accumulateStepTime,
+  restoreUnrunSteps,
+} from "./physics/clock";
 import type { RenderFrame } from "./physics/frame";
 import { loadSceneSession } from "./physics/loader";
 import { createSceneSession, type SceneSession } from "./physics/session";
@@ -304,7 +308,21 @@ export function App() {
         return;
       }
       try {
-        const frame = maybeOwnedSession.nextFrame(stepTime.stepCount);
+        const stepStarted = performance.now();
+        let ran = 1;
+        let frame = maybeOwnedSession.nextFrame(1);
+        while (
+          ran < stepTime.stepCount &&
+          performance.now() - stepStarted < FRAME_STEP_BUDGET_MS
+        ) {
+          frame = maybeOwnedSession.nextFrame(1);
+          ran += 1;
+        }
+        frameRemainderSeconds = restoreUnrunSteps(
+          frameRemainderSeconds,
+          stepTime.stepCount,
+          ran,
+        );
         drawSceneFrame(context, frame, camera);
         const observation = observeFrame(
           frame,
@@ -313,11 +331,11 @@ export function App() {
         );
         maybePreviousFrame = frame;
         setMaybeDebugFrame(frame);
-        setStepsThisFrame(stepTime.stepCount);
+        setStepsThisFrame(ran);
         setFpsTicks((ticks) =>
           appendFpsTick(ticks, {
             timeMs: timestamp,
-            simSteps: stepTime.stepCount,
+            simSteps: ran,
           }),
         );
         setView({ kind: "playing", frame: observation });

@@ -6,6 +6,7 @@ import {
   STEP_SECONDS,
   acceptedStepCount,
   accumulateStepTime,
+  restoreUnrunSteps,
 } from "../src/physics/clock";
 
 describe("clock constants", () => {
@@ -96,5 +97,18 @@ describe("accumulateStepTime", () => {
 
     // Assert
     expect(totalStepCount).toBe(4);
+  });
+});
+
+describe("restoreUnrunSteps", () => {
+  it("returns steps the paint budget did not run", () => {
+    // Arrange
+    const remainderSeconds = STEP_SECONDS / 4;
+
+    // Act
+    const restored = restoreUnrunSteps(remainderSeconds, 4, 1);
+
+    // Assert
+    expect(restored).toBeCloseTo(remainderSeconds + 3 * STEP_SECONDS);
   });
 });

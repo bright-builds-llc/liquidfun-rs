@@ -69,10 +69,13 @@ export function DebugReadout(props: DebugReadoutProps) {
 function FpsMeter(props: {
   readonly label: string;
   readonly fps: number;
-  readonly samples: readonly number[];
+  readonly samples: readonly { readonly fps: number; readonly opacity: number }[];
 }) {
   const tone = () => fpsTone(props.fps);
-  const scaleMax = () => graphScaleMax(props.samples);
+  const scaleMax = () =>
+    graphScaleMax(
+      props.samples.filter((sample) => sample.opacity > 0).map((sample) => sample.fps),
+    );
   const baselineStyle = () => {
     const percent = (1 - FPS_BASELINE / scaleMax()) * 100;
     let transform = "translateY(-50%)";
@@ -111,14 +114,18 @@ function FpsMeter(props: {
           />
           <For each={props.samples}>
             {(sample, index) => {
-              const barHeight = (Math.max(sample, 0) / scaleMax()) * GRAPH_HEIGHT;
+              const barHeight =
+                sample.opacity === 0
+                  ? 0
+                  : (Math.max(sample.fps, 0) / scaleMax()) * GRAPH_HEIGHT;
               return (
                 <rect
                   x={index()}
                   y={GRAPH_HEIGHT - barHeight}
                   width="0.82"
                   height={barHeight}
-                  fill={toneColor(fpsTone(sample))}
+                  fill={toneColor(fpsTone(sample.fps))}
+                  opacity={sample.opacity}
                 />
               );
             }}

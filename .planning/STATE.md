@@ -40,6 +40,8 @@ v1.3 Reference Testbed Scenes. Add the twelve JavaScript testbed scenes the play
 
 - Phase 30 added: Periodic hydraulic fountain
 - Phase 31 added: Sinusoidal wave tank
+- Phase 32 added: Liquid motion bubbler
+- Phase 33 added: Stacked drip fidget
 
 ### Decisions
 

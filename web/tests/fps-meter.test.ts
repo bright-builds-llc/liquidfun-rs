@@ -4,6 +4,8 @@ import {
   FPS_BASELINE,
   FPS_COUNTER_WINDOW_MS,
   FPS_GRAPH_BUCKETS,
+  FPS_GRAPH_FADE_BARS,
+  FPS_GRAPH_GAP_BARS,
   FPS_HISTORY_MS,
   appendFpsTick,
   formatFps,
@@ -77,7 +79,7 @@ describe("appendFpsTick", () => {
 });
 
 describe("fpsHistory", () => {
-  it("fills the 10-second graph from a steady one-second rate", () => {
+  it("fills the 5-second graph from a steady one-second rate", () => {
     // Arrange
     let ticks: readonly FpsTick[] = [];
     const nowMs = 12_000;
@@ -91,9 +93,60 @@ describe("fpsHistory", () => {
     // Assert
     expect(history.render).toHaveLength(FPS_GRAPH_BUCKETS);
     expect(history.sim).toHaveLength(FPS_GRAPH_BUCKETS);
-    expect(history.render[FPS_GRAPH_BUCKETS - 1]).toBeCloseTo(60, 0);
-    expect(history.sim[FPS_GRAPH_BUCKETS - 1]).toBeCloseTo(120, 0);
-    expect(history.render[0]).toBeGreaterThan(50);
+    expect(history.render[history.cursor]?.fps).toBeCloseTo(60, 0);
+    expect(history.sim[history.cursor]?.fps).toBeCloseTo(120, 0);
+  });
+
+  it("keeps older bars still while the current slot updates", () => {
+    // Arrange
+    let ticks: readonly FpsTick[] = [];
+    const nowMs = 12_000;
+    for (let timeMs = 500; timeMs <= nowMs; timeMs += 1_000 / 60) {
+      ticks = appendFpsTick(ticks, { timeMs, simSteps: 1 });
+    }
+
+    // Act
+    const first = fpsHistory(ticks, nowMs);
+    const later = fpsHistory(ticks, nowMs + 80);
+
+    // Assert
+    expect(later.cursor).toBe(first.cursor);
+    for (let index = 0; index < FPS_GRAPH_BUCKETS; index += 1) {
+      if (index === first.cursor) {
+        continue;
+      }
+      expect(later.render[index]?.fps).toBe(first.render[index]?.fps);
+      expect(later.sim[index]?.fps).toBe(first.sim[index]?.fps);
+    }
+  });
+
+  it("clears a gap and then fades the bars about to be replaced", () => {
+    // Arrange
+    const bucketMs = FPS_HISTORY_MS / FPS_GRAPH_BUCKETS;
+    const nowMs = (FPS_GRAPH_BUCKETS - 1) * bucketMs;
+
+    // Act
+    const history = fpsHistory([], nowMs);
+    const wrapped = fpsHistory([], nowMs + bucketMs);
+    const fadeStart = FPS_GRAPH_GAP_BARS;
+    const fadeEnd = FPS_GRAPH_GAP_BARS + FPS_GRAPH_FADE_BARS - 1;
+
+    // Assert
+    expect(history.cursor).toBe(FPS_GRAPH_BUCKETS - 1);
+    for (let offset = 0; offset < FPS_GRAPH_GAP_BARS; offset += 1) {
+      expect(history.render[offset]?.opacity).toBe(0);
+    }
+    expect(history.render[fadeStart]?.opacity).toBeGreaterThan(0);
+    expect(history.render[fadeStart]?.opacity).toBeLessThan(
+      history.render[fadeStart + 1]?.opacity ?? 1,
+    );
+    expect(history.render[fadeEnd]?.opacity).toBeLessThan(1);
+    expect(history.render[fadeEnd + 1]?.opacity).toBe(1);
+    expect(wrapped.cursor).toBe(0);
+    expect(wrapped.render[0]?.opacity).toBe(1);
+    for (let offset = 1; offset <= FPS_GRAPH_GAP_BARS; offset += 1) {
+      expect(wrapped.render[offset]?.opacity).toBe(0);
+    }
   });
 });
 
