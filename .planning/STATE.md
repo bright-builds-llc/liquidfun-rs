@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Reference Testbed Scenes
-status: verifying
-stopped_at: Completed 27-06-PLAN.md
-last_updated: "2026-09-22T06:10:10.313Z"
+status: ready_to_plan
+stopped_at: Phase 27 complete
+last_updated: "2026-09-22T06:24:25.780Z"
 last_activity: 2026-09-22
 progress:
   total_phases: 8
   completed_phases: 2
   total_plans: 11
   completed_plans: 11
-  percent: 100
+  percent: 25
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-09-21)
 
 **Core value:** Deliver a useful, independent Rust physics library for enjoyable experimentation, with honest limitations and a lightweight native development loop.
-**Current focus:** Phase 27 — material-flag-groups
+**Current focus:** Phase 28 — interaction seams
 
 ## Current Position
 
-Phase: 27 (material-flag-groups) — COMPLETE / ready for verification
-Plan: 6 of 6
-Status: Phase complete — ready for verification
+Phase: 28
+Plan: Not started
+Status: Not started
 Last activity: 2026-09-22
 
-Progress: [██████████] 100%
+Progress: [██░░░░░░░░] 25%
 
 v1.3 Reference Testbed Scenes. Add the twelve JavaScript testbed scenes the playground does not already have. Phase numbering continues after 25. No package publication or release tag.
 
@@ -97,5 +97,5 @@ None for roadmap. A fresh unprofiled pair is required before claiming the ≤ 3�
 ## Session Continuity
 
 Last session: 2026-09-22T06:10:10.310Z
-Stopped at: Completed 27-06-PLAN.md
+Stopped at: Phase 27 complete
 Resume file: None

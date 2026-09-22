@@ -172,7 +172,7 @@ Plans:
 | 24. Shared hot-path waves through 3× | v1.2 | 6/6 | Complete | 2026-09-21 |
 | 25. WASM sanity and honest close | v1.2 | 2/2 | Complete | 2026-09-21 |
 | 26. Catalog shell and basin scenes | v1.3 | 5/5 | Complete    | 2026-09-22 |
-| 27. Material flag groups | v1.3 | 6/6 | Complete   | 2026-09-22 |
+| 27. Material flag groups | v1.3 | 6/6 | Complete    | 2026-09-22 |
 | 28. Interaction seams | v1.3 | 0/TBD | Not started | - |
 | 29. Sparky, Drawing, and full catalog | v1.3 | 0/TBD | Not started | - |
 | 30. Periodic hydraulic fountain | v1.3 | 0/TBD | Not started | - |
