@@ -91,6 +91,10 @@ function ActionControl(props: {
 
 /** Labeled scene presets and actions. Construction presets require Apply setting. */
 export function SceneControls(props: SceneControlsProps) {
+  if (props.controls.length === 0) {
+    return null;
+  }
+
   return (
     <div class="scene-controls">
       <For each={props.controls}>

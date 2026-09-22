@@ -10,6 +10,9 @@ import {
   type SceneRecord,
 } from "../src/catalog/scenes";
 
+const WATCH_FIRST_HINT =
+  "This scene is watch-first. Use Play scene, Pause scene, and Reset scene.";
+
 const UI_SPEC_DESCRIPTIONS: Readonly<Record<SceneId, string>> = {
   "dam-break": "Release a block of water into a basin and drop one obstacle.",
   fountain: "Aim a bounded stream into a bowl until particle count plateaus.",
@@ -20,6 +23,9 @@ const UI_SPEC_DESCRIPTIONS: Readonly<Record<SceneId, string>> = {
   "jelly-drop": "Drop an elastic particle shape onto obstacles, then poke it.",
   "water-wheel":
     "Vary a jet that turns a pinned paddle wheel through native coupling.",
+  particles: "Watch water fall in an open basin while a ball drops into it.",
+  "liquid-timer":
+    "Watch tensile, viscous liquid drain through shelves into bottom columns.",
 };
 
 const UI_SPEC_HINTS: Readonly<Record<SceneId, string>> = {
@@ -35,9 +41,12 @@ const UI_SPEC_HINTS: Readonly<Record<SceneId, string>> = {
     "Click or tap the canvas to poke the jelly at that location. Labeled controls also work from the keyboard.",
   "water-wheel":
     "Drag on the canvas to aim the jet. Labeled controls also work from the keyboard.",
+  particles: WATCH_FIRST_HINT,
+  "liquid-timer": WATCH_FIRST_HINT,
 };
 
 const KEYBOARD_REMINDER = "Labeled controls also work from the keyboard.";
+const WATCH_FIRST_SCENE_IDS = ["particles", "liquid-timer"] as const;
 const FORBIDDEN_HINT_PHRASES = [
   "Press Space to pause",
   "Live frame from this repository's Rust engine",
@@ -65,6 +74,14 @@ const PARTICLE_GUIDE_HREF =
   "https://google.github.io/liquidfun/Programmers-Guide/html/md__chapter11__particles.html";
 const FAUCET_HREF =
   "https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Testbed/Tests/Faucet.h";
+const PARTICLES_JS_HREF =
+  "https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/lfjs/testbed/tests/testParticles.js";
+const PARTICLES_H_HREF =
+  "https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Testbed/Tests/Particles.h";
+const LIQUID_TIMER_JS_HREF =
+  "https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/lfjs/testbed/tests/testLiquidTimer.js";
+const LIQUID_TIMER_H_HREF =
+  "https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Testbed/Tests/LiquidTimer.h";
 
 function controlLabels(controls: readonly SceneControl[]): string[] {
   return controls.map((control) => control.label);
@@ -87,7 +104,7 @@ function recreatingControlIds(scenes: readonly SceneRecord[]): string[] {
 }
 
 describe("SCENES", () => {
-  it("lists six locked scenes in the approved order", () => {
+  it("lists eight locked scenes in the approved order", () => {
     // Arrange
     const expectedIds = [
       "dam-break",
@@ -96,13 +113,15 @@ describe("SCENES", () => {
       "color-mixer",
       "jelly-drop",
       "water-wheel",
+      "particles",
+      "liquid-timer",
     ] as const;
 
     // Act
     const ids = SCENES.map((scene) => scene.id);
 
     // Assert
-    expect(SCENES).toHaveLength(6);
+    expect(SCENES).toHaveLength(8);
     expect(ids).toEqual([...SCENE_IDS]);
     expect(ids).toEqual([...expectedIds]);
   });
@@ -116,6 +135,8 @@ describe("SCENES", () => {
       "Color Mixer",
       "Jelly Drop",
       "Water Wheel",
+      "Particles",
+      "Liquid Timer",
     ];
 
     // Act
@@ -148,7 +169,7 @@ describe("SCENES", () => {
     const descriptions = SCENES.map((scene) => scene.description);
 
     // Assert
-    expect(readyCount).toBe(6);
+    expect(readyCount).toBe(8);
     expect(descriptions).toEqual(
       SCENE_IDS.map((id) => UI_SPEC_DESCRIPTIONS[id]),
     );
@@ -176,15 +197,19 @@ describe("SCENES", () => {
     expect(hints).toEqual(expected);
   });
 
-  it("keeps the keyboard reminder and omits Space-to-pause or Canvas 2D leftover copy", () => {
+  it("keeps the keyboard reminder on interactive scenes and omits leftover copy", () => {
     // Arrange
-    const hints = SCENES.map((scene) => scene.interactionHint);
+    const interactiveHints = SCENES.filter(
+      (scene) =>
+        !(WATCH_FIRST_SCENE_IDS as readonly string[]).includes(scene.id),
+    ).map((scene) => scene.interactionHint);
+    const allHints = SCENES.map((scene) => scene.interactionHint);
 
     // Act
-    const missingReminder = hints.filter(
+    const missingReminder = interactiveHints.filter(
       (hint) => !hint.includes(KEYBOARD_REMINDER),
     );
-    const forbiddenHits = hints.filter((hint) =>
+    const forbiddenHits = allHints.filter((hint) =>
       FORBIDDEN_HINT_PHRASES.some((phrase) => hint.includes(phrase)),
     );
 
@@ -322,6 +347,8 @@ describe("SCENES", () => {
       "On",
       "Off",
     ]);
+    expect(maybeSceneById("particles")?.controls).toEqual([]);
+    expect(maybeSceneById("liquid-timer")?.controls).toEqual([]);
     expect(recreatingIds).toEqual([...RECREATING_CONTROL_IDS]);
   });
 
@@ -334,6 +361,8 @@ describe("SCENES", () => {
       "color-mixer": "crates/liquidfun-wasm/src/scene/color_mixer.rs",
       "jelly-drop": "crates/liquidfun-wasm/src/scene/jelly_drop.rs",
       "water-wheel": "crates/liquidfun-wasm/src/scene/water_wheel.rs",
+      particles: "crates/liquidfun-wasm/src/scene/particles.rs",
+      "liquid-timer": "crates/liquidfun-wasm/src/scene/liquid_timer.rs",
     };
 
     // Act
@@ -369,6 +398,16 @@ describe("SCENES", () => {
       SHOWCASE_HREF,
     ]);
     expect(inspirationById["water-wheel"]).toEqual([SHOWCASE_HREF]);
+    expect(inspirationById.particles).toEqual([
+      PARTICLES_JS_HREF,
+      PARTICLES_H_HREF,
+      SHOWCASE_HREF,
+    ]);
+    expect(inspirationById["liquid-timer"]).toEqual([
+      LIQUID_TIMER_JS_HREF,
+      LIQUID_TIMER_H_HREF,
+      SHOWCASE_HREF,
+    ]);
   });
 });
 
@@ -406,7 +445,7 @@ describe("maybeSceneById", () => {
 });
 
 describe("isReadySceneId", () => {
-  it("is true for all six approved ids", () => {
+  it("is true for all eight approved ids", () => {
     // Arrange
     const ids = SCENE_IDS;
 
@@ -414,6 +453,15 @@ describe("isReadySceneId", () => {
     const readyFlags = ids.map((id) => isReadySceneId(id));
 
     // Assert
-    expect(readyFlags).toEqual([true, true, true, true, true, true]);
+    expect(readyFlags).toEqual([
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+    ]);
   });
 });

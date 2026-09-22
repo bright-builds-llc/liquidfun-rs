@@ -3,6 +3,7 @@ import type { JSX } from "solid-js";
 import type { SceneId } from "./scenes";
 
 const WATER = "#4DA3FF";
+const ACCENT_WATER = "#39D3C7";
 const MIX_RED = "#F87171";
 const RIGID = "#CBD5E1";
 const JELLY = "#F4F7FA";
@@ -101,6 +102,39 @@ function WaterWheelPreview() {
   );
 }
 
+function ParticlesPreview() {
+  return (
+    <PreviewFrame>
+      <line x1="28" y1="34" x2="28" y2="74" stroke={RIGID} stroke-width="3" />
+      <line x1="28" y1="74" x2="132" y2="74" stroke={RIGID} stroke-width="3" />
+      <line x1="132" y1="74" x2="132" y2="34" stroke={RIGID} stroke-width="3" />
+      <circle cx="80" cy="58" r="14" fill={ACCENT_WATER} />
+      <circle cx="80" cy="28" r="8" fill="none" stroke={RIGID} stroke-width="3" />
+    </PreviewFrame>
+  );
+}
+
+function LiquidTimerPreview() {
+  return (
+    <PreviewFrame>
+      <path
+        d="M40 18 L40 72 Q40 78 80 78 Q120 78 120 72 L120 18"
+        fill="none"
+        stroke={RIGID}
+        stroke-width="3"
+      />
+      <line x1="48" y1="34" x2="96" y2="40" stroke={RIGID} stroke-width="2" />
+      <line x1="64" y1="46" x2="112" y2="52" stroke={RIGID} stroke-width="2" />
+      <line x1="48" y1="58" x2="96" y2="64" stroke={RIGID} stroke-width="2" />
+      <rect x="56" y="20" width="48" height="10" fill={ACCENT_WATER} />
+      <rect x="48" y="70" width="10" height="6" fill={ACCENT_WATER} />
+      <rect x="66" y="70" width="10" height="6" fill={ACCENT_WATER} />
+      <rect x="84" y="70" width="10" height="6" fill={ACCENT_WATER} />
+      <rect x="102" y="70" width="10" height="6" fill={ACCENT_WATER} />
+    </PreviewFrame>
+  );
+}
+
 /** Static token-only SVG preview. Never starts a WASM session. */
 export function ScenePreview(props: ScenePreviewProps) {
   switch (props.sceneId) {
@@ -116,5 +150,9 @@ export function ScenePreview(props: ScenePreviewProps) {
       return <JellyDropPreview />;
     case "water-wheel":
       return <WaterWheelPreview />;
+    case "particles":
+      return <ParticlesPreview />;
+    case "liquid-timer":
+      return <LiquidTimerPreview />;
   }
 }
