@@ -1,6 +1,7 @@
 use crate::collision::Shape;
 use crate::math::Transform;
 use crate::particle::ParticleQueryError;
+use crate::world::query::{QueryDirective, WorldQueryOccurrence};
 
 use super::{
     CreateObjectError, DestroyedId, DestructionCause, DestructionRecord, HandleError,
@@ -169,12 +170,48 @@ impl World {
     /// AABB derivation fails, or compaction cannot proceed.
     pub fn destroy_particles_in_shape(
         &mut self,
-        _system: ParticleSystemId,
-        _shape: &Shape,
-        _transform: Transform,
+        system: ParticleSystemId,
+        shape: &Shape,
+        transform: Transform,
     ) -> Result<usize, ParticleQueryError> {
-        // Task 1 RED stub: real carve lands in Task 2.
-        Ok(0)
+        self.ensure_not_poisoned_for_handle()?;
+        self.particle_systems.get(system)?;
+
+        let mut candidates = Vec::new();
+        for child_slot in 0..shape.child_count() {
+            let child = shape
+                .child_index(child_slot)
+                .map_err(|_error| ParticleQueryError::NonFiniteDerivedGeometry)?;
+            let aabb = shape
+                .compute_aabb(transform, child)
+                .map_err(|_error| ParticleQueryError::NonFiniteDerivedGeometry)?;
+            self.query_aabb_with_particles(aabb, |occurrence| {
+                if let WorldQueryOccurrence::Particle(hit) = occurrence {
+                    if hit.system() == system {
+                        candidates.push(hit.particle());
+                    }
+                }
+                QueryDirective::Continue
+            })?;
+        }
+
+        let mut marked = 0usize;
+        for particle in candidates {
+            let Ok(snapshot) = self.particle_snapshot(particle) else {
+                continue;
+            };
+            let Ok(true) = shape.test_point(transform, snapshot.position()) else {
+                continue;
+            };
+            if self.mark_particle_for_destruction(particle).is_ok() {
+                marked += 1;
+            }
+        }
+
+        if marked > 0 {
+            self.compact_pending_particles(system)?;
+        }
+        Ok(marked)
     }
 
     pub(in crate::world) fn destroy_particle_now(

@@ -17,6 +17,7 @@ mod liquid_timer;
 mod particles;
 mod rigid_particles;
 mod soup;
+mod soup_family;
 mod surface_tension;
 mod water_wheel;
 
