@@ -39,16 +39,6 @@ export function DebugReadout(props: DebugReadoutProps) {
         const history = () => fpsHistory(props.fpsTicks, nowMs());
         return (
           <div class="debug-readout">
-            <dl>
-              <For each={debugRows(frame(), props.stepsThisFrame)}>
-                {(row) => (
-                  <>
-                    <dt>{row.label}</dt>
-                    <dd>{row.value}</dd>
-                  </>
-                )}
-              </For>
-            </dl>
             <FpsMeter
               label="Simulation"
               fps={rates().simFps}
@@ -59,6 +49,16 @@ export function DebugReadout(props: DebugReadoutProps) {
               fps={rates().renderFps}
               samples={history().render}
             />
+            <dl>
+              <For each={debugRows(frame(), props.stepsThisFrame)}>
+                {(row) => (
+                  <>
+                    <dt>{row.label}</dt>
+                    <dd>{row.value}</dd>
+                  </>
+                )}
+              </For>
+            </dl>
           </div>
         );
       }}
