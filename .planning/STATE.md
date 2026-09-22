@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Reference Testbed Scenes
 status: executing
-stopped_at: Phase 27 UI-SPEC approved
-last_updated: "2026-09-22T05:34:24.300Z"
-last_activity: 2026-09-22 -- Phase 27 planning complete
+stopped_at: Completed 27-01-PLAN.md
+last_updated: "2026-09-22T05:41:21.836Z"
+last_activity: 2026-09-22
 progress:
   total_phases: 8
   completed_phases: 1
   total_plans: 11
-  completed_plans: 5
-  percent: 45
+  completed_plans: 6
+  percent: 55
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-09-21)
 
 **Core value:** Deliver a useful, independent Rust physics library for enjoyable experimentation, with honest limitations and a lightweight native development loop.
-**Current focus:** Phase 27 — Material flag groups
+**Current focus:** Phase 27 — material-flag-groups
 
 ## Current Position
 
-Phase: 27
-Plan: Not started
+Phase: 27 (material-flag-groups) — EXECUTING
+Plan: 2 of 6
 Status: Ready to execute
-Last activity: 2026-09-22 -- Phase 27 planning complete
+Last activity: 2026-09-22
 
 Progress: [██████████] 100%
 
@@ -61,6 +61,8 @@ v1.2 decisions are in `.planning/milestones/v1.2-STATE.md` and PROJECT.md Key De
 - [Phase 26]: Watch-first scenes selected by controls.length === 0 so Phase 27 can reuse the rule
 - [Phase 26]: POINTER_CONTROL is Partial so Particles and Liquid Timer never require gestures
 - [Phase 26]: Drawer reverse-tab last link is Liquid Timer; wrap count raised to 10 for nine focusables
+- [Phase 27]: Minimal SceneId wiring in Task 1 RED so failing construction tests compile under hooks — Sequential TDD commits need a compiling stub rather than compile-fail-only RED
+- [Phase 27]: Private basin_family helper with vertical walls ending at y=2 for Surface Tension reuse by Elastic/Rigid — Claude Discretion and D-07 pinned geometry; prevents basin drift across material scenes
 
 ### Pending Todos
 
@@ -85,6 +87,6 @@ None for roadmap. A fresh unprofiled pair is required before claiming the ≤ 3�
 
 ## Session Continuity
 
-Last session: 2026-09-22T05:24:06.938Z
-Stopped at: Phase 27 UI-SPEC approved
-Resume file: .planning/phases/27-material-flag-groups/27-UI-SPEC.md
+Last session: 2026-09-22T05:41:10.672Z
+Stopped at: Completed 27-01-PLAN.md
+Resume file: None
