@@ -98,7 +98,7 @@ Each task was committed atomically:
 - **Verification:** `cargo test -p liquidfun-wasm wave_machine` failed RED; allowlist parse passed
 - **Committed in:** `377bd8e`
 
----
+***
 
 **Total deviations:** 1 auto-fixed (1× Rule 2)
 **Impact on plan:** Necessary for correct TDD under hooks; no scope creep.
@@ -132,6 +132,6 @@ None - no external service configuration required.
 - Do not raise `MAX_ADVANCE_STEPS` or silently change Wave Machine radius from `0.025`
 - Do not copy Water Wheel motor-off into Theo Jansen
 
----
+***
 *Phase: 28-interaction-seams*
 *Completed: 2026-09-22*

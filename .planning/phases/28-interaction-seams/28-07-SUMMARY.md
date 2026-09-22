@@ -96,7 +96,7 @@ Each task was committed atomically:
 - **Verification:** Unit suites exit 0
 - **Committed in:** n/a (docs note only)
 
----
+***
 
 **Total deviations:** 1 auto-fixed (1× Rule 3)
 **Impact on plan:** Command alias only; acceptance criteria otherwise met.
@@ -132,6 +132,6 @@ None - no external service configuration required.
 - Plan 08 must update `SCENE_HASH_PATHS`, shell sixteen-demo asserts, and player-smoke timeouts as needed
 - Keep `MAX_ADVANCE_STEPS` at 4
 
----
+***
 *Phase: 28-interaction-seams*
 *Completed: 2026-09-22*

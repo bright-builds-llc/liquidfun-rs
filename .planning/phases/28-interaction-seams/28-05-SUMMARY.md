@@ -110,7 +110,7 @@ Each task was committed atomically:
 - **Verification:** `cargo test -p liquidfun-wasm theo_jansen` exits 0; main file 512 lines
 - **Committed in:** `ba13bd4`
 
----
+***
 
 **Total deviations:** 2 auto-fixed (1× Rule 2, 1× Rule 3)
 **Impact on plan:** Necessary for correct TDD under hooks and managed file-length policy; no scope creep.
@@ -145,6 +145,6 @@ None - no external service configuration required.
 - Do not raise `MAX_ADVANCE_STEPS` or weld Theo legs into rigid polygons
 - Do not copy Water Wheel motor-off into Theo Jansen or Wave Machine
 
----
+***
 *Phase: 28-interaction-seams*
 *Completed: 2026-09-22*

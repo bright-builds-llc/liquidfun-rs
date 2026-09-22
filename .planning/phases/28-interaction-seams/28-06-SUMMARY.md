@@ -100,7 +100,7 @@ Each task was committed atomically:
 - **Verification:** `cd web && bun run typecheck` exits 0
 - **Committed in:** `294215e`
 
----
+***
 
 **Total deviations:** 1 auto-fixed (1× Rule 3)
 **Impact on plan:** Necessary for Task 2 verification; Plan 07 still owns fuller catalog asserts and capture plans.
@@ -136,6 +136,6 @@ None - no external service configuration required.
 - Do not restore card grid; keep `MAX_ADVANCE_STEPS` at 4
 - Plan 08 must update `SCENE_HASH_PATHS` and shell sixteen-demo asserts
 
----
+***
 *Phase: 28-interaction-seams*
 *Completed: 2026-09-22*

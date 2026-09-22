@@ -118,7 +118,7 @@ Each task was committed atomically:
 - **Verification:** Focused debug then full smoke green; Theo create+capture unit test passes
 - **Committed in:** `56d7c03`
 
----
+***
 
 **Total deviations:** 2 auto-fixed (2× Rule 1)
 **Impact on plan:** Required for ACT-02/ACT-05 browser proof; no scope creep beyond smoke green.
@@ -166,6 +166,6 @@ None - no external service configuration required.
 - Independent AI review (D-26) may proceed; implementing agent did not self-approve
 - Ready for phase verification / milestone handoff without Pages redeploy
 
----
+***
 *Phase: 28-interaction-seams*
 *Completed: 2026-09-22*

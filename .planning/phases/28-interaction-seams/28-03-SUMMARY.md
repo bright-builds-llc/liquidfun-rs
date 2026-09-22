@@ -98,7 +98,7 @@ Each task was committed atomically:
 - **Verification:** `cargo test -p liquidfun-wasm impulse` failed RED; allowlist parse passed
 - **Committed in:** `cf74c65`
 
----
+***
 
 **Total deviations:** 1 auto-fixed (1× Rule 2)
 **Impact on plan:** Necessary for correct TDD under hooks; no scope creep.
@@ -131,6 +131,6 @@ None - no external service configuration required.
 - ACT-03 Impulse native seam is ready for catalog chrome (28-06) and Wave Machine / Theo Jansen plans
 - Do not raise `MAX_ADVANCE_STEPS` or silently change Impulse radius
 
----
+***
 *Phase: 28-interaction-seams*
 *Completed: 2026-09-22*
