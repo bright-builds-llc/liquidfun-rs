@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Reference Testbed Scenes
-status: verifying
-stopped_at: Completed 26-05-PLAN.md
-last_updated: "2026-09-22T00:50:33.111Z"
+status: phase-complete
+stopped_at: Phase 26 verified and complete
+last_updated: "2026-09-22T01:56:43.248Z"
 last_activity: 2026-09-22
 progress:
   total_phases: 4
@@ -21,13 +21,13 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-09-21)
 
 **Core value:** Deliver a useful, independent Rust physics library for enjoyable experimentation, with honest limitations and a lightweight native development loop.
-**Current focus:** Phase 26 — catalog-shell-and-basin-scenes
+**Current focus:** Phase 27 — Material flag groups
 
 ## Current Position
 
-Phase: 26 (catalog-shell-and-basin-scenes) — VERIFYING
-Plan: 5 of 5
-Status: Phase complete — ready for verification
+Phase: 27
+Plan: Not started
+Status: Phase 26 complete — ready for Phase 27
 Last activity: 2026-09-22
 
 Progress: [██████████] 100%
@@ -72,6 +72,6 @@ None for roadmap. A fresh unprofiled pair is required before claiming the ≤ 3�
 
 ## Session Continuity
 
-Last session: 2026-09-22T00:50:33.108Z
-Stopped at: Completed 26-05-PLAN.md
-Resume file: None
+Last session: 2026-09-22T01:56:43.248Z
+Stopped at: Phase 26 verified and complete
+Resume file: .planning/phases/26-catalog-shell-and-basin-scenes/26-VERIFICATION.md
