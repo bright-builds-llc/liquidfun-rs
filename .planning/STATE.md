@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Reference Testbed Scenes
 status: executing
-stopped_at: Phase 26 UI-SPEC approved
-last_updated: "2026-09-22T00:23:05.307Z"
-last_activity: 2026-09-22 -- Phase 26 execution started
+stopped_at: Completed 26-01-PLAN.md
+last_updated: "2026-09-22T00:34:47.339Z"
+last_activity: 2026-09-22
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 5
-  completed_plans: 0
-  percent: 0
+  completed_plans: 1
+  percent: 20
 ---
 
 # Project State
@@ -26,9 +26,9 @@ See: `.planning/PROJECT.md` (updated 2026-09-21)
 ## Current Position
 
 Phase: 26 (catalog-shell-and-basin-scenes) — EXECUTING
-Plan: 1 of 5
-Status: Executing Phase 26
-Last activity: 2026-09-22 -- Phase 26 execution started
+Plan: 2 of 5
+Status: Ready to execute
+Last activity: 2026-09-22
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -44,6 +44,7 @@ v1.2 decisions are in `.planning/milestones/v1.2-STATE.md` and PROJECT.md Key De
 - [v1.2]: `reviewed_reports` stays empty. Planning archive is not a git release tag.
 - [v1.3]: Port the twelve JavaScript testbed scenes besides Dam Break. Keep the six existing playground scenes. Recognizable behavior in the current player, not a sealed parity claim.
 - [v1.3]: Roadmap clusters Phases 26–29 as basin/catalog → material flags → interaction seams → Sparky/Drawing/full catalog. Future DRAW-02, PRESET-01, PARITY-01, BOX2D-01 stay unmapped.
+- [Phase 26]: Particles matches testParticles.js geometry; watch-first hooks; MAX_ADVANCE_STEPS stays 4
 
 ### Pending Todos
 
@@ -62,6 +63,6 @@ None for roadmap. A fresh unprofiled pair is required before claiming the ≤ 3�
 
 ## Session Continuity
 
-Last session: 2026-09-22T00:13:54.154Z
-Stopped at: Phase 26 UI-SPEC approved
-Resume file: .planning/phases/26-catalog-shell-and-basin-scenes/26-UI-SPEC.md
+Last session: 2026-09-22T00:34:47.336Z
+Stopped at: Completed 26-01-PLAN.md
+Resume file: None
