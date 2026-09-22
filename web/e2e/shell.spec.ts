@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Locator } from "@playwright/test";
 
 import {
   DAM_BREAK_PATH,
@@ -6,8 +6,29 @@ import {
   FOUNTAIN_PATH,
   PAUSED_STATUS,
   PLAYGROUND_ROOT_PATH,
+  SCENE_HASH_PATHS,
   sessionStatus,
 } from "./player-helpers";
+
+async function expectCurrentDemoFullyVisible(scope: Locator): Promise<void> {
+  await expect
+    .poll(() =>
+      scope.locator("[data-slot='sidebar-content']").evaluate((node) => {
+        const current = node.querySelector("[aria-current='page']");
+        if (!(current instanceof HTMLElement)) {
+          return false;
+        }
+        const contentRect = node.getBoundingClientRect();
+        const itemRect = current.getBoundingClientRect();
+        return (
+          itemRect.top >= contentRect.top - 1 &&
+          itemRect.bottom <= contentRect.bottom + 1 &&
+          node.scrollTop > 0
+        );
+      }),
+    )
+    .toBe(true);
+}
 
 test("renders the desktop shell and navigates from the sidebar", async ({
   page,
@@ -262,4 +283,63 @@ test("shows a static preview inside the mobile demos dialog", async ({
       () => document.documentElement.scrollWidth <= window.innerWidth,
     ),
   ).toBe(true);
+});
+
+test("shows the current demo when the desktop sidebar is open", async ({
+  page,
+}) => {
+  // Arrange
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto(SCENE_HASH_PATHS["theo-jansen"]);
+  const sidebar = page.locator(".demo-sidebar");
+
+  // Assert
+  await expect(
+    sidebar.getByRole("link", { name: /Theo Jansen/ }),
+  ).toHaveAttribute("aria-current", "page");
+  await expectCurrentDemoFullyVisible(sidebar);
+});
+
+test("scrolls back to the current demo when the desktop sidebar reopens", async ({
+  page,
+}) => {
+  // Arrange
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto(SCENE_HASH_PATHS["theo-jansen"]);
+  const sidebar = page.locator(".demo-sidebar");
+  const content = sidebar.locator("[data-slot='sidebar-content']");
+  await expectCurrentDemoFullyVisible(sidebar);
+  await content.evaluate((node) => {
+    node.scrollTop = 0;
+  });
+  const sidebarState = page.locator("[data-slot='sidebar']");
+
+  // Act
+  await page.getByRole("button", { name: "Demos" }).click();
+  await expect(sidebarState).toHaveAttribute("data-state", "collapsed");
+  await page.getByRole("button", { name: "Demos" }).click();
+
+  // Assert
+  await expect(sidebarState).toHaveAttribute("data-state", "expanded");
+  await expectCurrentDemoFullyVisible(sidebar);
+});
+
+test("shows the current demo when the mobile demos drawer opens", async ({
+  page,
+}) => {
+  // Arrange
+  await page.setViewportSize({ width: 390, height: 812 });
+  await page.goto(SCENE_HASH_PATHS["theo-jansen"]);
+  await expectReadySceneChrome(page, "Theo Jansen");
+
+  // Act
+  await page.getByRole("button", { name: "Demos" }).click();
+  const dialog = page.getByRole("dialog", { name: "Demos" });
+
+  // Assert
+  await expect(dialog).toBeVisible();
+  await expect(
+    dialog.getByRole("link", { name: /Theo Jansen/ }),
+  ).toHaveAttribute("aria-current", "page");
+  await expectCurrentDemoFullyVisible(dialog);
 });

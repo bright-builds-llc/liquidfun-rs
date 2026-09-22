@@ -1,19 +1,43 @@
-import { For } from "solid-js";
+import { createEffect, For, on, onCleanup } from "solid-js";
 
 import { ScenePreview } from "../catalog/previews";
 import type { SceneId } from "../catalog/scenes";
 import { sceneNavigationItems } from "../player/navigation";
+import { scheduleSidebarReveal } from "./sidebar-scroll";
 
 export type DemoNavigationProps = {
   readonly label: string;
   readonly maybeCurrentSceneId: SceneId | undefined;
+  readonly revealCurrent: boolean;
   readonly onNavigate?: (() => void) | undefined;
 };
 
 /** Semantic direct-link navigation for every playground demo. */
 export function DemoNavigation(props: DemoNavigationProps) {
+  let maybeNavigation: HTMLElement | undefined;
+
+  createEffect(
+    on(
+      () => [props.revealCurrent, props.maybeCurrentSceneId] as const,
+      ([revealCurrent]) => {
+        if (!revealCurrent) {
+          return;
+        }
+        const navigation = maybeNavigation;
+        if (!navigation) {
+          return;
+        }
+        onCleanup(scheduleSidebarReveal(navigation));
+      },
+    ),
+  );
+
   return (
-    <nav class="demo-navigation" aria-label={props.label}>
+    <nav
+      ref={maybeNavigation}
+      class="demo-navigation"
+      aria-label={props.label}
+    >
       <ul class="demo-nav-list">
         <For each={sceneNavigationItems(props.maybeCurrentSceneId)}>
           {(item) => (
