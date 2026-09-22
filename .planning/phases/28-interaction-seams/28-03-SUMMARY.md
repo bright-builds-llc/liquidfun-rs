@@ -73,7 +73,7 @@ Each task was committed atomically:
 1. **Task 1: Failing Impulse allowlist and shove tests** - `cf74c65` (test)
 2. **Task 2: Implement Impulse scene and factory wiring** - `b110b2b` (feat)
 
-**Plan metadata:** (pending docs commit)
+**Plan metadata:** `2dcfc36` (docs: complete plan)
 
 ## Files Created/Modified
 
