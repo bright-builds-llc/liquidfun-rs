@@ -360,6 +360,7 @@ mod tests {
             ("jelly-drop", SceneId::JellyDrop),
             ("water-wheel", SceneId::WaterWheel),
             ("particles", SceneId::Particles),
+            ("liquid-timer", SceneId::LiquidTimer),
         ];
 
         for (raw, expected) in tokens {
