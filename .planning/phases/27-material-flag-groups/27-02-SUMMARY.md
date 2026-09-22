@@ -73,7 +73,7 @@ Each task was committed atomically:
 1. **Task 1: Add failing Elastic Particles allowlist and recipe tests** - `e5d13b2` (test)
 2. **Task 2: Implement Elastic Particles scene and factory wiring** - `7cdd460` (feat)
 
-**Plan metadata:** pending (docs: complete plan)
+**Plan metadata:** `bb1bacf` (docs: complete plan)
 
 _Note: TDD tasks used RED stub then GREEN implementation_
 
