@@ -114,12 +114,13 @@ test("traps repeated forward and reverse Tab navigation inside the mobile drawer
 
   // Arrange
   const closeButton = dialog.getByRole("button", { name: "Dismiss" });
-  const lastLink = dialog.getByRole("link", { name: /Water Wheel/ });
+  const lastLink = dialog.getByRole("link", { name: /Liquid Timer/ });
   await closeButton.focus();
   await expect(closeButton).toBeFocused();
 
   // Act / Assert
-  for (let reverseTabIndex = 0; reverseTabIndex < 8; reverseTabIndex += 1) {
+  // Dismiss + eight scene links = 9 focusables; 10 reverse tabs ≡ 1 (mod 9) lands on last.
+  for (let reverseTabIndex = 0; reverseTabIndex < 10; reverseTabIndex += 1) {
     await page.keyboard.press("Shift+Tab");
     expect(
       await dialog.evaluate((node) => node.contains(document.activeElement)),
@@ -187,7 +188,7 @@ test("closes the drawer for an authoritative external hash route", async ({
   ).toBe(true);
 });
 
-test("shows six static previews in the desktop sidebar", async ({ page }) => {
+test("shows eight static previews in the desktop sidebar", async ({ page }) => {
   // Arrange
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto(DAM_BREAK_PATH);
@@ -196,10 +197,10 @@ test("shows six static previews in the desktop sidebar", async ({ page }) => {
   await expect(page.locator(".catalog-card")).toHaveCount(0);
   await expect(
     page.locator(".demo-sidebar").getByText("Static preview", { exact: true }),
-  ).toHaveCount(6);
+  ).toHaveCount(8);
   await expect(
     page.locator(".demo-sidebar").locator("svg[aria-hidden='true']"),
-  ).toHaveCount(6);
+  ).toHaveCount(8);
 });
 
 test("shows a static preview inside the mobile demos dialog", async ({
