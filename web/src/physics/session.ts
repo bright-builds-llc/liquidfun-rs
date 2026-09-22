@@ -7,6 +7,10 @@ import {
 
 const DISPOSED_MESSAGE = "Rust/WASM session is disposed";
 const FAILED_MESSAGE = "Rust/WASM session failed";
+
+function sessionFailed(cause: unknown): Error {
+  return new Error(FAILED_MESSAGE, { cause });
+}
 const MIN_STEPS_PER_FRAME = 1;
 const MAX_STEPS_PER_FRAME = 4;
 
@@ -78,9 +82,9 @@ export function createSceneSession(
       } finally {
         rawFrame.free();
       }
-    } catch {
+    } catch (cause) {
       disposeAfterFailure();
-      throw new Error(FAILED_MESSAGE);
+      throw sessionFailed(cause);
     }
   }
 
@@ -91,9 +95,9 @@ export function createSceneSession(
 
     try {
       return generatedSession.applyControl(name, value);
-    } catch {
+    } catch (cause) {
       disposeAfterFailure();
-      throw new Error(FAILED_MESSAGE);
+      throw sessionFailed(cause);
     }
   }
 
@@ -104,9 +108,9 @@ export function createSceneSession(
 
     try {
       generatedSession.applyAction(name);
-    } catch {
+    } catch (cause) {
       disposeAfterFailure();
-      throw new Error(FAILED_MESSAGE);
+      throw sessionFailed(cause);
     }
   }
 
@@ -125,9 +129,9 @@ export function createSceneSession(
 
     try {
       generatedSession.pointerAction(kind, worldX, worldY);
-    } catch {
+    } catch (cause) {
       disposeAfterFailure();
-      throw new Error(FAILED_MESSAGE);
+      throw sessionFailed(cause);
     }
   }
 
@@ -150,9 +154,9 @@ export function createSceneSession(
 
     try {
       generatedSession.restoreAuthoredGravity();
-    } catch {
+    } catch (cause) {
       disposeAfterFailure();
-      throw new Error(FAILED_MESSAGE);
+      throw sessionFailed(cause);
     }
   }
 

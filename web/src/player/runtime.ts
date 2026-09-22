@@ -9,7 +9,7 @@ import type { SceneRoute } from "../routing/hash";
 export const PAGE_SUMMARY =
   "Play experimental Rust physics scenes in the browser. All eight demos run this repository's engine through WebAssembly.";
 export const DEFAULT_TITLE = "liquidfun-rs playground";
-export const MAX_ERROR_DETAIL_LENGTH = 240;
+const MAX_FAILURE_DETAIL_LENGTH = 8_000;
 
 /** True when the hash names an allowlisted ready scene. */
 export function isReadySceneRoute(route: SceneRoute): boolean {
@@ -70,12 +70,24 @@ export function constructionEntriesForScene(
   });
 }
 
-export function maybeDevelopmentDetails(error: unknown): string | undefined {
-  if (!import.meta.env.DEV) {
-    return undefined;
+/** Formats an error, its cause chain, and stack traces for the on-page debug panel. */
+export function formatFailureDetails(error: unknown): string {
+  const lines: string[] = [];
+  const seen = new Set<unknown>();
+  let current: unknown = error;
+  while (current instanceof Error && !seen.has(current)) {
+    seen.add(current);
+    lines.push(current.message);
+    if (typeof current.stack === "string" && current.stack.length > 0) {
+      lines.push(current.stack);
+    }
+    current = current.cause;
   }
-
-  const message =
-    error instanceof Error ? error.message : "Unknown scene failure";
-  return `Details: ${message.slice(0, MAX_ERROR_DETAIL_LENGTH)}`;
+  if (lines.length === 0) {
+    lines.push(typeof error === "string" ? error : "Unknown scene failure");
+  }
+  if (typeof navigator !== "undefined") {
+    lines.push(`User agent: ${navigator.userAgent}`);
+  }
+  return lines.join("\n").slice(0, MAX_FAILURE_DETAIL_LENGTH);
 }

@@ -15,6 +15,7 @@ import {
 } from "../render/stroke-width";
 import { formatTiltDebug, type TiltDebug } from "../input/tilt-gravity";
 import { DebugReadout } from "./DebugReadout";
+import { GravityArrow } from "./GravityArrow";
 import type { FpsTick } from "./fps-meter";
 import { ViewportTools } from "./ViewportTools";
 
@@ -112,7 +113,12 @@ export function PlayerPanel(props: PlayerPanelProps) {
             {`${props.sceneTitle} could not start or continue. Use Retry scene to recreate it, or Reset scene to return to the documented initial state.`}
           </p>
           <Show when={props.maybeDetails}>
-            {(details) => <p class="error-details">{details()}</p>}
+            {(details) => (
+              <details class="failure-debug" open>
+                <summary>Debug details</summary>
+                <pre>{details()}</pre>
+              </details>
+            )}
           </Show>
         </div>
       </Show>
@@ -140,6 +146,11 @@ export function PlayerPanel(props: PlayerPanelProps) {
             maybeFrame={props.maybeDebugFrame}
             stepsThisFrame={props.stepsThisFrame}
             fpsTicks={props.fpsTicks}
+          />
+          <GravityArrow
+            debugEnabled={props.debugEnabled}
+            tiltGravityEnabled={props.tiltGravityEnabled}
+            tiltDebug={props.tiltDebug}
           />
           <ViewportTools
             panEnabled={props.panEnabled}

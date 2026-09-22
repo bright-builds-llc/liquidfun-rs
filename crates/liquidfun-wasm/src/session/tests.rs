@@ -1,3 +1,6 @@
+use liquidfun::NoDecisionHook;
+use liquidfun::math::Vec2;
+
 use crate::ProofFrame;
 use crate::scene::{SceneId, parse_scene_id};
 
@@ -330,4 +333,86 @@ fn set_gravity_overrides_until_authored_gravity_is_restored() {
     assert_eq!(restored.x.to_bits(), built.x.to_bits());
     assert_eq!(restored.y.to_bits(), built.y.to_bits());
     assert!(session.set_gravity(f32::NAN, 0.0).is_err());
+}
+
+#[test]
+fn a_particle_below_the_spatial_hash_makes_the_engine_step_fail() {
+    // Arrange
+    let mut session = new_session();
+    let particle = session
+        .world
+        .particle_system_view(session.particle_system)
+        .expect("dam break particles")
+        .particle_ids()[0];
+    session
+        .world
+        .set_particle_position(particle, Vec2::new(0.0, -400.0))
+        .expect("a finite position is accepted");
+
+    // Act
+    let error = session
+        .world
+        .step(
+            session.step_configuration,
+            &mut NoDecisionHook,
+            session.step_limits,
+        )
+        .expect_err("a particle hundreds of meters down leaves the spatial hash");
+
+    // Assert
+    let rendered = format!("{error:?}");
+    assert!(rendered.contains("PositionOutOfTagRange"), "{rendered}");
+}
+
+#[test]
+fn advance_removes_particles_that_fell_below_the_playfield() {
+    // Arrange
+    let mut session = new_session();
+    let particle = session
+        .world
+        .particle_system_view(session.particle_system)
+        .expect("dam break particles")
+        .particle_ids()[0];
+    session
+        .world
+        .set_particle_position(particle, Vec2::new(8.0, -20.0))
+        .expect("a finite position is accepted");
+    let before = session.live_particle_count().expect("live count");
+
+    // Act
+    session
+        .advance(1)
+        .expect("escaped particles are removed before the step");
+    let after = session.live_particle_count().expect("live count");
+
+    // Assert
+    assert!(after < before);
+    assert!(session.failure_detail().is_empty());
+}
+
+#[test]
+fn escape_follows_gravity_and_falls_back_to_downward() {
+    // Arrange
+    let upright = Vec2::new(0.0, -10.0);
+    let sideways = Vec2::new(10.0, 0.0);
+
+    // Act / Assert
+    assert!(escape::particle_has_escaped(Vec2::new(0.0, -12.1), upright));
+    assert!(!escape::particle_has_escaped(
+        Vec2::new(0.0, -11.0),
+        upright
+    ));
+    assert!(escape::particle_has_escaped(Vec2::new(12.1, 0.0), sideways));
+    assert!(!escape::particle_has_escaped(
+        Vec2::new(0.0, -20.0),
+        sideways
+    ));
+    assert!(escape::particle_has_escaped(
+        Vec2::new(0.0, -12.1),
+        Vec2::new(0.0, 0.0)
+    ));
+    assert!(escape::particle_has_escaped(
+        Vec2::new(f32::NAN, 0.0),
+        upright
+    ));
 }

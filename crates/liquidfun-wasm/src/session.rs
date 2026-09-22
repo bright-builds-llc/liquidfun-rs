@@ -8,6 +8,7 @@ use liquidfun::{
 #[cfg(not(target_arch = "wasm32"))]
 use liquidfun::DiagnosticStepProfile;
 
+use self::escape::evict_escaped_particles;
 use crate::frame::{FrameData, FrameDiagnostics};
 use crate::scene::{
     BuiltScene, ControlEffect, SceneHooks, SceneId, build_scene, parse_pointer_kind,
@@ -66,6 +67,7 @@ pub(crate) struct SessionCore {
     step_limits: StepLimits,
     step_index: u32,
     authored_gravity: Vec2,
+    last_failure_detail: String,
 }
 
 fn max_particle_speed(velocities: &[Vec2]) -> Result<f32, SessionError> {
@@ -122,6 +124,7 @@ impl SessionCore {
             step_limits: StepLimits::default(),
             step_index: 0,
             authored_gravity,
+            last_failure_detail: String::new(),
         })
     }
 
@@ -148,13 +151,19 @@ impl SessionCore {
         for _ in 0..step_count {
             self.hooks
                 .on_advance(&mut self.world, self.particle_system)?;
-            self.world
-                .step(
-                    self.step_configuration,
-                    &mut NoDecisionHook,
-                    self.step_limits,
-                )
-                .map_err(|_error| SessionError::StepFailed)?;
+            if let Err(detail) = evict_escaped_particles(&mut self.world, self.particle_system) {
+                self.last_failure_detail = detail;
+                return Err(SessionError::StepFailed);
+            }
+            let stepped = self.world.step(
+                self.step_configuration,
+                &mut NoDecisionHook,
+                self.step_limits,
+            );
+            if let Err(error) = stepped {
+                self.last_failure_detail = error.to_string();
+                return Err(SessionError::StepFailed);
+            }
         }
 
         self.step_index = next_step_index;
@@ -169,6 +178,10 @@ impl SessionCore {
             .ok_or(SessionError::StepIndexExhausted)?;
         self.hooks
             .on_advance(&mut self.world, self.particle_system)?;
+        evict_escaped_particles(&mut self.world, self.particle_system).map_err(|detail| {
+            self.last_failure_detail = detail;
+            SessionError::StepFailed
+        })?;
         let profile = self
             .world
             .step_profiled(
@@ -329,6 +342,10 @@ impl SessionCore {
         self.step_index
     }
 
+    pub(crate) fn failure_detail(&self) -> &str {
+        &self.last_failure_detail
+    }
+
     pub(crate) const fn particle_count(&self) -> usize {
         self.particle_count
     }
@@ -361,6 +378,8 @@ fn store_preset(presets: &mut Vec<(String, String)>, name: &str, value: &str) {
     }
     presets.push((name.to_owned(), value.to_owned()));
 }
+
+mod escape;
 
 #[cfg(test)]
 mod tests;

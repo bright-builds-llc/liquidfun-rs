@@ -30,7 +30,7 @@ import { isStaleGeneration, nextGeneration } from "./player/generation";
 import {
   constructionEntriesForScene,
   isReadySceneRoute,
-  maybeDevelopmentDetails,
+  formatFailureDetails,
   maybeReadySceneId,
   titleForRoute,
 } from "./player/runtime";
@@ -169,7 +169,7 @@ export function App() {
     setView({
       kind: "failure",
       maybeFrame,
-      maybeDetails: maybeDevelopmentDetails(error),
+      maybeDetails: formatFailureDetails(error),
     });
   }
 

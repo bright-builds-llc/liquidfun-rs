@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { maybeSceneById } from "../src/catalog/scenes";
 import {
   constructionEntriesForScene,
+  formatFailureDetails,
   isReadySceneRoute,
   maybeReadySceneId,
   sceneControlsIdentity,
@@ -158,5 +159,21 @@ describe("sceneControlsIdentity", () => {
 
     // Assert
     expect(identity).toBe("color-mixer:2");
+  });
+});
+
+describe("formatFailureDetails", () => {
+  it("keeps the wrapper message, the cause, and both stacks", () => {
+    // Arrange
+    const cause = new Error("particle proxy preparation failed: PositionOutOfTagRange");
+    const error = new Error("Rust/WASM session failed", { cause });
+
+    // Act
+    const details = formatFailureDetails(error);
+
+    // Assert
+    expect(details).toContain("Rust/WASM session failed");
+    expect(details).toContain("PositionOutOfTagRange");
+    expect(details).toContain("User agent:");
   });
 });

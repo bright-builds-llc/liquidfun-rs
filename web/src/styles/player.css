@@ -75,11 +75,24 @@
   font-size: 16px;
   line-height: 1.5;
 }
-.error-details {
-  overflow-wrap: anywhere;
+.failure-debug {
   color: #A9B4C0;
   font-size: 14px;
   line-height: 1.4;
+}
+.failure-debug summary {
+  min-height: 44px;
+  cursor: pointer;
+  color: #E7ECF1;
+}
+.failure-debug pre {
+  margin: 0;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.45;
 }
 
 figure {
@@ -280,6 +293,33 @@ figcaption {
 
 .tilt-debug-problem {
   color: #F07178;
+}
+
+.gravity-arrow {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 1;
+  width: 48px;
+  height: 48px;
+  pointer-events: none;
+  color: #F4F7FA;
+  background: rgb(7 16 24 / 88%);
+  border: 1px solid #2A3441;
+  border-radius: 8px;
+}
+.gravity-arrow svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.gravity-arrow line {
+  stroke: currentColor;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+}
+.gravity-arrow polygon {
+  fill: currentColor;
 }
 
 .debug-readout {

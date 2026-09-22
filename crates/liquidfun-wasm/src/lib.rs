@@ -115,7 +115,13 @@ impl ProofSession {
     /// Returns a bounded JavaScript error for an invalid count, exhausted step
     /// index, or failed engine step.
     pub fn advance(&mut self, step_count: u32) -> Result<(), JsError> {
-        self.core.advance(step_count).map_err(js_error)
+        self.core.advance(step_count).map_err(|error| {
+            let detail = self.core.failure_detail();
+            if error == SessionError::StepFailed && !detail.is_empty() {
+                return JsError::new(&format!("{}: {detail}", error.message()));
+            }
+            js_error(error)
+        })
     }
 
     /// Captures one coherent frame as validated owned data.
