@@ -2,12 +2,12 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Reference Testbed Scenes
-status: phase-complete
-stopped_at: Phase 26 verified and complete
-last_updated: "2026-09-22T01:56:43.248Z"
+status: completed
+stopped_at: Phase 27 context gathered
+last_updated: "2026-09-22T05:16:47.218Z"
 last_activity: 2026-09-22
 progress:
-  total_phases: 4
+  total_phases: 8
   completed_phases: 1
   total_plans: 5
   completed_plans: 5
@@ -85,6 +85,6 @@ None for roadmap. A fresh unprofiled pair is required before claiming the â‰¤ 3Ã
 
 ## Session Continuity
 
-Last session: 2026-09-22T01:56:43.248Z
-Stopped at: Phase 26 verified and complete
-Resume file: .planning/phases/26-catalog-shell-and-basin-scenes/26-VERIFICATION.md
+Last session: 2026-09-22T05:16:47.214Z
+Stopped at: Phase 27 context gathered
+Resume file: .planning/phases/27-material-flag-groups/27-CONTEXT.md
