@@ -123,6 +123,10 @@ class FakeGeneratedProofSession implements GeneratedProofSession {
     }
   }
 
+  setGravity(_x: number, _y: number): void {}
+
+  restoreAuthoredGravity(): void {}
+
   free(): void {
     this.freeCalls += 1;
   }

@@ -88,6 +88,26 @@ impl ProofSession {
             .map_err(js_error)
     }
 
+    /// Replaces live world gravity without recreating the scene.
+    ///
+    /// # Errors
+    ///
+    /// Returns a bounded JavaScript error when a coordinate is non-finite.
+    #[wasm_bindgen(js_name = setGravity)]
+    pub fn set_gravity(&mut self, x: f32, y: f32) -> Result<(), JsError> {
+        self.core.set_gravity(x, y).map_err(js_error)
+    }
+
+    /// Restores the gravity the current scene was built with.
+    ///
+    /// # Errors
+    ///
+    /// Returns a bounded JavaScript error when the stored gravity cannot be applied.
+    #[wasm_bindgen(js_name = restoreAuthoredGravity)]
+    pub fn restore_authored_gravity(&mut self) -> Result<(), JsError> {
+        self.core.restore_authored_gravity().map_err(js_error)
+    }
+
     /// Advances the scene by one through four fixed steps.
     ///
     /// # Errors

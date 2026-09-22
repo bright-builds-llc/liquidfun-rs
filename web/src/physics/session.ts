@@ -17,6 +17,8 @@ export interface GeneratedProofSession {
   applyControl(name: string, value: string): boolean;
   applyAction(name: string): void;
   pointerAction(kind: string, worldX: number, worldY: number): void;
+  setGravity(x: number, y: number): void;
+  restoreAuthoredGravity(): void;
   free(): void;
 }
 
@@ -26,6 +28,8 @@ export interface SceneSession {
   applyControl(name: string, value: string): boolean;
   applyAction(name: string): void;
   pointerAction(kind: string, worldX: number, worldY: number): void;
+  setGravity(x: number, y: number): void;
+  restoreAuthoredGravity(): void;
   dispose(): void;
 }
 
@@ -127,6 +131,31 @@ export function createSceneSession(
     }
   }
 
+  function setGravity(x: number, y: number): void {
+    if (disposed || !Number.isFinite(x) || !Number.isFinite(y)) {
+      return;
+    }
+
+    try {
+      generatedSession.setGravity(x, y);
+    } catch {
+      // A rejected gravity sample leaves the scene running for the next one.
+    }
+  }
+
+  function restoreAuthoredGravity(): void {
+    if (disposed) {
+      return;
+    }
+
+    try {
+      generatedSession.restoreAuthoredGravity();
+    } catch {
+      disposeAfterFailure();
+      throw new Error(FAILED_MESSAGE);
+    }
+  }
+
   function dispose(): void {
     if (disposed) {
       return;
@@ -136,5 +165,13 @@ export function createSceneSession(
     generatedSession.free();
   }
 
-  return { nextFrame, applyControl, applyAction, pointerAction, dispose };
+  return {
+    nextFrame,
+    applyControl,
+    applyAction,
+    pointerAction,
+    setGravity,
+    restoreAuthoredGravity,
+    dispose,
+  };
 }

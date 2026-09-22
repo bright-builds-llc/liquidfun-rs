@@ -437,7 +437,8 @@ figcaption {
 .render-mode-control,
 .stroke-width-control,
 .rendered-particle-control,
-.debug-toggle {
+.debug-toggle,
+.player-check {
   display: inline-flex;
   align-items: center;
   gap: var(--space-sm);
@@ -459,10 +460,27 @@ figcaption {
   font-variant-numeric: tabular-nums;
 }
 
-.debug-toggle input {
+.debug-toggle input,
+.player-check input {
   width: 1.1rem;
   height: 1.1rem;
   accent-color: #4DA3FF;
+}
+
+.tilt-debug {
+  flex-basis: 100%;
+  margin: 0;
+  color: #C5D0DA;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.tilt-debug-problem {
+  color: #F07178;
 }
 
 .debug-readout {

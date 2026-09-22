@@ -13,6 +13,7 @@ import {
   WIREFRAME_STROKE_WIDTH_MIN,
   WIREFRAME_STROKE_WIDTH_STEP,
 } from "../render/stroke-width";
+import { formatTiltDebug, type TiltDebug } from "../input/tilt-gravity";
 import { DebugReadout } from "./DebugReadout";
 import type { FpsTick } from "./fps-meter";
 import { ViewportTools } from "./ViewportTools";
@@ -39,6 +40,9 @@ export type PlayerPanelProps = {
   readonly renderedParticleDraft: string;
   readonly onRenderedParticleDraft: (raw: string) => void;
   readonly panEnabled: boolean;
+  readonly tiltGravityEnabled: boolean;
+  readonly tiltDebug: TiltDebug;
+  readonly onTiltGravityEnabledChange: (enabled: boolean) => void;
   readonly onZoomIn: () => void;
   readonly onZoomOut: () => void;
   readonly onResetZoom: () => void;
@@ -243,6 +247,29 @@ export function PlayerPanel(props: PlayerPanelProps) {
           />
           Debug info
         </label>
+        <label class="player-check">
+          <input
+            type="checkbox"
+            checked={props.tiltGravityEnabled}
+            onChange={(event) => {
+              props.onTiltGravityEnabledChange(event.currentTarget.checked);
+            }}
+          />
+          Phone tilt gravity
+        </label>
+        <Show when={formatTiltDebug(props.tiltDebug)}>
+          {(text) => (
+            <p
+              class="tilt-debug"
+              classList={{
+                "tilt-debug-problem": props.tiltDebug.kind === "problem",
+              }}
+              role="status"
+            >
+              {text()}
+            </p>
+          )}
+        </Show>
       </div>
 
       {props.children}

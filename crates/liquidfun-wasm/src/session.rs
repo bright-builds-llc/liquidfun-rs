@@ -32,6 +32,7 @@ pub(crate) enum SessionError {
     StepIndexExhausted,
     StepFailed,
     FrameCaptureFailed,
+    InvalidGravity,
 }
 
 impl SessionError {
@@ -46,6 +47,7 @@ impl SessionError {
             Self::StepIndexExhausted => "Rust/WASM step index exhausted",
             Self::StepFailed => "Rust/WASM simulation step failed",
             Self::FrameCaptureFailed => "Rust/WASM frame capture failed",
+            Self::InvalidGravity => "Rust/WASM gravity coordinates must be finite",
         }
     }
 }
@@ -63,6 +65,7 @@ pub(crate) struct SessionCore {
     step_configuration: StepConfiguration,
     step_limits: StepLimits,
     step_index: u32,
+    authored_gravity: Vec2,
 }
 
 fn max_particle_speed(velocities: &[Vec2]) -> Result<f32, SessionError> {
@@ -105,6 +108,7 @@ impl SessionCore {
             .map_err(|_error| SessionError::SceneConstruction)?
             .with_particle_iterations(2)
             .map_err(|_error| SessionError::SceneConstruction)?;
+        let authored_gravity = world.gravity();
 
         Ok(Self {
             world,
@@ -117,7 +121,19 @@ impl SessionCore {
             step_configuration,
             step_limits: StepLimits::default(),
             step_index: 0,
+            authored_gravity,
         })
+    }
+
+    pub(crate) fn set_gravity(&mut self, x: f32, y: f32) -> Result<(), SessionError> {
+        self.world
+            .set_gravity(Vec2::new(x, y))
+            .map_err(|_error| SessionError::InvalidGravity)
+    }
+
+    pub(crate) fn restore_authored_gravity(&mut self) -> Result<(), SessionError> {
+        let gravity = self.authored_gravity;
+        self.set_gravity(gravity.x, gravity.y)
     }
 
     pub(crate) fn advance(&mut self, step_count: u32) -> Result<(), SessionError> {
@@ -656,5 +672,29 @@ mod tests {
         // Assert
         assert_eq!(result, Err(SessionError::StepIndexExhausted));
         assert_eq!(capture(&session).particle_positions(), before);
+    }
+
+    #[test]
+    fn set_gravity_overrides_until_authored_gravity_is_restored() {
+        // Arrange
+        let mut session = new_session();
+        let built = session.world.gravity();
+
+        // Act
+        session
+            .set_gravity(2.5, -1.5)
+            .expect("finite gravity applies");
+        let overridden = session.world.gravity();
+        session
+            .restore_authored_gravity()
+            .expect("authored gravity restores");
+        let restored = session.world.gravity();
+
+        // Assert
+        assert_eq!(overridden.x.to_bits(), 2.5_f32.to_bits());
+        assert_eq!(overridden.y.to_bits(), (-1.5_f32).to_bits());
+        assert_eq!(restored.x.to_bits(), built.x.to_bits());
+        assert_eq!(restored.y.to_bits(), built.y.to_bits());
+        assert!(session.set_gravity(f32::NAN, 0.0).is_err());
     }
 }

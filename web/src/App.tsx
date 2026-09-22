@@ -11,6 +11,11 @@ import {
   syncCanvasInteractive,
   type CanvasPointerHandlers,
 } from "./input/canvas-pointer";
+import {
+  listenForTiltGravity,
+  requestMotionPermission,
+  type TiltDebug,
+} from "./input/tilt-gravity";
 import type { PointerKind } from "./input/pointer";
 import {
   FRAME_STEP_BUDGET_MS,
@@ -94,6 +99,8 @@ export function App() {
     DEFAULT_RENDERED_PARTICLE_LIMIT,
   );
   const [panEnabled, setPanEnabled] = createSignal(false);
+  const [tiltGravityEnabled, setTiltGravityEnabled] = createSignal(false);
+  const [tiltDebug, setTiltDebug] = createSignal<TiltDebug>({ kind: "idle" });
 
   let generation = 0;
   let constructionValues: Record<string, string> = {};
@@ -106,6 +113,8 @@ export function App() {
   let maybePreviousFrame: RenderFrame | undefined;
   let maybeCamera: Camera | undefined;
   let cameraView: CameraView = IDENTITY_CAMERA_VIEW;
+  let stopTiltGravity: (() => void) | undefined;
+  let tiltRequest = 0;
   let viewportWidth = 0;
   let viewportHeight = 0;
   let maybeResizeObserver: ResizeObserver | undefined;
@@ -672,9 +681,53 @@ export function App() {
     abandonScene();
   });
 
+  async function changeTiltGravity(enabled: boolean): Promise<void> {
+    const request = tiltRequest + 1;
+    tiltRequest = request;
+    stopTiltGravity?.();
+    stopTiltGravity = undefined;
+    if (!enabled) {
+      setTiltGravityEnabled(false);
+      setTiltDebug({ kind: "idle" });
+      maybeSession?.restoreAuthoredGravity();
+      return;
+    }
+
+    setTiltGravityEnabled(true);
+    setTiltDebug({ kind: "waiting" });
+    const permission = await requestMotionPermission();
+    if (request !== tiltRequest) {
+      return;
+    }
+    if (!permission.ok) {
+      setTiltGravityEnabled(false);
+      setTiltDebug({ kind: "problem", detail: permission.detail });
+      return;
+    }
+
+    setTiltDebug({ kind: "waiting" });
+    stopTiltGravity = listenForTiltGravity((report) => {
+      if (report.kind === "live") {
+        maybeSession?.setGravity(report.gravity.x, report.gravity.y);
+        setTiltDebug({
+          kind: "live",
+          sample: report.sample,
+          gravity: report.gravity,
+        });
+        return;
+      }
+      setTiltDebug({
+        kind: "problem",
+        detail: report.detail,
+        maybeSample: report.sample,
+      });
+    });
+  }
+
   onCleanup(() => {
     window.removeEventListener("hashchange", onHashChange);
     document.removeEventListener("visibilitychange", onVisibilityChange);
+    stopTiltGravity?.();
     abandonScene();
   });
 
@@ -754,6 +807,11 @@ export function App() {
               onZoomOut={() => zoomBy("out")}
               onResetZoom={resetCameraView}
               onPanEnabledChange={changePanEnabled}
+              tiltGravityEnabled={tiltGravityEnabled()}
+              tiltDebug={tiltDebug()}
+              onTiltGravityEnabledChange={(enabled) => {
+                void changeTiltGravity(enabled);
+              }}
             >
               <Show when={maybeCurrentScene()}>
                 {(currentScene) => (
