@@ -73,7 +73,7 @@ Each task was committed atomically:
 1. **Task 1: Append scene records, controls, credits, PAGE_SUMMARY** - `9f3f72c` (feat)
 2. **Task 2: Static SVG previews for five interaction scenes** - `294215e` (feat)
 
-**Plan metadata:** (pending docs commit)
+**Plan metadata:** `d4bb727` (docs: complete plan)
 
 ## Files Created/Modified
 
