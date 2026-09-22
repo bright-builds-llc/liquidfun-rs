@@ -5,7 +5,7 @@ export const FPS_HISTORY_MS = 5_000;
 export const FPS_COUNTER_WINDOW_MS = 1_000;
 export const FPS_GRAPH_BUCKETS = 40;
 /** Empty slots between the newest bar and the bars fading out. */
-export const FPS_GRAPH_GAP_BARS = 4;
+export const FPS_GRAPH_GAP_BARS = 2;
 /** Bars beyond the gap that fade out before they are replaced. */
 export const FPS_GRAPH_FADE_BARS = 14;
 
