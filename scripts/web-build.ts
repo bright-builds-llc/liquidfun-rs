@@ -5,6 +5,7 @@ import {
   realpath,
   rename,
   rm,
+  stat,
   writeFile,
 } from "node:fs/promises";
 import { basename, relative, resolve } from "node:path";
@@ -16,6 +17,12 @@ const RUST_VERSION = "1.97.0";
 const WASM_PACK_VERSION = "0.15.0";
 const PLAYWRIGHT_VERSION = "1.63.0";
 const GENERATED_RELATIVE_PATH = "web/src/generated/liquidfun-wasm";
+const GENERATED_PACKAGE_FILES = [
+  "liquidfun_wasm.js",
+  "liquidfun_wasm.d.ts",
+  "liquidfun_wasm_bg.wasm",
+  "package.json",
+] as const;
 const CLOSURE_RELATIVE_PATH = "target/phase16";
 
 type BuildMode = "wasm" | "build" | "smoke" | "player-smoke";
@@ -150,7 +157,44 @@ function validateGeneratedDirectory(): void {
   }
 }
 
+function wasmReuseRequested(): boolean {
+  return process.env.LIQUIDFUN_REUSE_WASM_PACKAGE === "true";
+}
+
+async function fileIsNonEmpty(path: string): Promise<boolean> {
+  try {
+    const info = await stat(path);
+    return info.isFile() && info.size > 0;
+  } catch (error) {
+    if (error instanceof Error && "code" in error && error.code === "ENOENT") {
+      return false;
+    }
+    throw error;
+  }
+}
+
+async function generatedPackageReady(): Promise<boolean> {
+  for (const fileName of GENERATED_PACKAGE_FILES) {
+    if (!(await fileIsNonEmpty(resolve(generatedDirectory, fileName)))) {
+      return false;
+    }
+  }
+  return true;
+}
+
 async function regenerateWasm(): Promise<void> {
+  if (wasmReuseRequested() && (await generatedPackageReady())) {
+    await breadcrumb(`reuse ${GENERATED_RELATIVE_PATH}`);
+    return;
+  }
+
+  if (wasmReuseRequested()) {
+    await breadcrumb(
+      `reuse requested but ${GENERATED_RELATIVE_PATH} is incomplete; rebuilding`,
+    );
+  }
+
+  verifyTools();
   validateGeneratedDirectory();
   await breadcrumb(`remove ${GENERATED_RELATIVE_PATH}`);
   await rm(generatedDirectory, { recursive: true, force: true });
@@ -259,7 +303,6 @@ async function runFrontendBuild(): Promise<void> {
 }
 
 async function runCompleteBuild(): Promise<void> {
-  verifyTools();
   await regenerateWasm();
   await runFrontendBuild();
 }
@@ -514,7 +557,6 @@ async function main(): Promise<void> {
       );
       await runSmoke(maybeAttemptDirectory);
     } else {
-      verifyTools();
       await regenerateWasm();
       if (mode === "build" || mode === "player-smoke") {
         await runFrontendBuild();
