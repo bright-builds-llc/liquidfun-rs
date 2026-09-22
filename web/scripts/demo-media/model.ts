@@ -166,6 +166,27 @@ export const SCENE_CAPTURE_PLANS: readonly SceneCapturePlan[] = [
     interactionStep: 180,
     action: { kind: "click", point: { x: 0.5, y: 0.5 } },
   },
+  {
+    id: "surface-tension",
+    title: "Surface Tension",
+    route: "/liquidfun-rs/#/scene/surface-tension",
+    interactionStep: 180,
+    action: { kind: "click", point: { x: 0.5, y: 0.5 } },
+  },
+  {
+    id: "elastic-particles",
+    title: "Elastic Particles",
+    route: "/liquidfun-rs/#/scene/elastic-particles",
+    interactionStep: 180,
+    action: { kind: "click", point: { x: 0.5, y: 0.5 } },
+  },
+  {
+    id: "rigid-particles",
+    title: "Rigid Particles",
+    route: "/liquidfun-rs/#/scene/rigid-particles",
+    interactionStep: 180,
+    action: { kind: "click", point: { x: 0.5, y: 0.5 } },
+  },
 ];
 
 function assertSceneCapturePlanCoverage(): void {
