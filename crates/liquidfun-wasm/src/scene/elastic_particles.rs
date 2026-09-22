@@ -1,14 +1,200 @@
 //! Pinned `LiquidFun` Elastic Particles test: spring/elastic SOLID clumps + spinning box.
 
-use super::BuiltScene;
+use liquidfun::collision::{CircleShape, PolygonShape, Shape};
+use liquidfun::math::{Transform, Vec2};
+use liquidfun::particle::{
+    ParticleColor, ParticleFlags, ParticleGroupDestination, ParticleGroupFlags,
+    ParticleGroupRecipe, ParticleGroupSource,
+};
+use liquidfun::{BodyDef, BodyId, ParticleSystemDef, ParticleSystemId, World};
+
+use super::basin_family::{attach_vertical_wall_basin, create_falling_ball};
+use super::{BuiltScene, ControlEffect, PointerKind, RigidSegment, SceneError, SceneHooks};
 use crate::session::SessionError;
+
+const PARTICLE_RADIUS: f32 = 0.035;
+const MAXIMUM_PARTICLE_COUNT: usize = 10240;
+const GROUP_RADIUS: f32 = 0.5;
+const RED_COLOR: ParticleColor = ParticleColor::new(255, 0, 0, 255);
+const GREEN_COLOR: ParticleColor = ParticleColor::new(0, 255, 0, 255);
+const BLUE_COLOR: ParticleColor = ParticleColor::new(0, 0, 255, 255);
+const RED_CENTER: Vec2 = Vec2::new(0.0, 3.0);
+const GREEN_CENTER: Vec2 = Vec2::new(-1.0, 3.0);
+const BLUE_BOX_CENTER: Vec2 = Vec2::new(1.0, 4.0);
+const BLUE_BOX_HALF_WIDTH: f32 = 1.0;
+const BLUE_BOX_HALF_HEIGHT: f32 = 0.5;
+const BLUE_BOX_ANGLE: f32 = -0.5;
+const GRAVITY: Vec2 = Vec2::new(0.0, -10.0);
+
+struct ElasticParticlesHooks {
+    basin_segments: [RigidSegment; 3],
+    ball_body: BodyId,
+    ball_radius: f32,
+}
 
 pub(crate) fn build(presets: &[(String, String)]) -> Result<BuiltScene, SessionError> {
     if !presets.is_empty() {
         return Err(SessionError::UnknownControl);
     }
-    // RED stub: Task 2 implements the pinned basin + three soft SOLID groups + ball.
-    Err(SessionError::SceneConstruction)
+    build_elastic_particles().map_err(|_error| SessionError::SceneConstruction)
+}
+
+fn build_elastic_particles() -> Result<BuiltScene, SceneError> {
+    let mut world = World::new().map_err(|_error| SceneError::World)?;
+    world
+        .set_gravity(GRAVITY)
+        .map_err(|_error| SceneError::Gravity)?;
+
+    let basin_body = world
+        .create_body(&BodyDef::default())
+        .map_err(|_error| SceneError::Body)?;
+    let basin_segments = attach_vertical_wall_basin(&mut world, basin_body)?;
+    let (ball_body, ball_radius) = create_falling_ball(&mut world)?;
+    let particle_system = create_soft_groups(&mut world)?;
+
+    Ok(BuiltScene {
+        world,
+        particle_system,
+        particle_radius: PARTICLE_RADIUS,
+        hooks: Box::new(ElasticParticlesHooks {
+            basin_segments,
+            ball_body,
+            ball_radius,
+        }),
+    })
+}
+
+fn create_soft_groups(world: &mut World) -> Result<ParticleSystemId, SceneError> {
+    let system_definition = ParticleSystemDef::default()
+        .with_radius(PARTICLE_RADIUS)
+        .map_err(|_error| SceneError::ParticleSystem)?
+        .with_maximum_count(MAXIMUM_PARTICLE_COUNT)
+        .map_err(|_error| SceneError::ParticleSystem)?;
+    let system = world
+        .create_particle_system_with_def(&system_definition)
+        .map_err(|_error| SceneError::ParticleSystem)?;
+
+    create_circle_group(
+        world,
+        system,
+        RED_CENTER,
+        ParticleFlags::SPRING,
+        RED_COLOR,
+    )?;
+    create_circle_group(
+        world,
+        system,
+        GREEN_CENTER,
+        ParticleFlags::ELASTIC,
+        GREEN_COLOR,
+    )?;
+    create_spinning_box_group(world, system)?;
+    Ok(system)
+}
+
+fn create_circle_group(
+    world: &mut World,
+    system: ParticleSystemId,
+    center: Vec2,
+    particle_flags: ParticleFlags,
+    color: ParticleColor,
+) -> Result<(), SceneError> {
+    let filled = Shape::from(
+        CircleShape::new(Vec2::ZERO, GROUP_RADIUS).map_err(|_error| SceneError::Geometry)?,
+    );
+    let source =
+        ParticleGroupSource::filled_shapes(vec![filled]).map_err(|_error| SceneError::Particle)?;
+    let recipe = ParticleGroupRecipe::new(source, ParticleGroupDestination::New)
+        .with_particle_flags(particle_flags)
+        .with_group_flags(ParticleGroupFlags::SOLID)
+        .with_color(color)
+        .with_transform(Transform::from_position_angle(center, 0.0))
+        .map_err(|_error| SceneError::Particle)?;
+    world
+        .create_particle_group(system, &recipe)
+        .map_err(|_error| SceneError::Particle)?;
+    Ok(())
+}
+
+fn create_spinning_box_group(
+    world: &mut World,
+    system: ParticleSystemId,
+) -> Result<(), SceneError> {
+    let filled = Shape::from(
+        PolygonShape::oriented_box(
+            BLUE_BOX_HALF_WIDTH,
+            BLUE_BOX_HALF_HEIGHT,
+            Vec2::ZERO,
+            0.0,
+        )
+        .map_err(|_error| SceneError::Geometry)?,
+    );
+    let source =
+        ParticleGroupSource::filled_shapes(vec![filled]).map_err(|_error| SceneError::Particle)?;
+    let recipe = ParticleGroupRecipe::new(source, ParticleGroupDestination::New)
+        .with_particle_flags(ParticleFlags::ELASTIC)
+        .with_group_flags(ParticleGroupFlags::SOLID)
+        .with_color(BLUE_COLOR)
+        .with_transform(Transform::from_position_angle(BLUE_BOX_CENTER, BLUE_BOX_ANGLE))
+        .map_err(|_error| SceneError::Particle)?
+        .with_angular_velocity(2.0)
+        .map_err(|_error| SceneError::Particle)?;
+    world
+        .create_particle_group(system, &recipe)
+        .map_err(|_error| SceneError::Particle)?;
+    Ok(())
+}
+
+impl SceneHooks for ElasticParticlesHooks {
+    fn on_advance(
+        &mut self,
+        _world: &mut World,
+        _system: ParticleSystemId,
+    ) -> Result<(), SessionError> {
+        Ok(())
+    }
+
+    fn apply_control(
+        &mut self,
+        _world: &mut World,
+        _system: ParticleSystemId,
+        _name: &str,
+        _value: &str,
+    ) -> Result<ControlEffect, SessionError> {
+        Err(SessionError::UnknownControl)
+    }
+
+    fn apply_action(
+        &mut self,
+        _world: &mut World,
+        _system: ParticleSystemId,
+        _name: &str,
+    ) -> Result<(), SessionError> {
+        Err(SessionError::UnknownControl)
+    }
+
+    fn apply_pointer(
+        &mut self,
+        _world: &mut World,
+        _system: ParticleSystemId,
+        _kind: PointerKind,
+        _world_x: f32,
+        _world_y: f32,
+    ) -> Result<(), SessionError> {
+        Ok(())
+    }
+
+    fn collect_segments(&self, _world: &World) -> Result<Vec<RigidSegment>, SessionError> {
+        Ok(self.basin_segments.to_vec())
+    }
+
+    fn collect_circles(&self, world: &World) -> Result<Vec<(Vec2, f32)>, SessionError> {
+        let position = world
+            .body_snapshot(self.ball_body)
+            .map_err(|_error| SessionError::FrameCaptureFailed)?
+            .position();
+        Ok(vec![(position, self.ball_radius)])
+    }
 }
 
 #[cfg(test)]
