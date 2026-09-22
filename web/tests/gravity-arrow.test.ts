@@ -7,6 +7,7 @@ const liveDown: TiltDebug = {
   kind: "live",
   sample: { x: 0, y: 9.8, z: 0 },
   gravity: { x: 0, y: -9.8 },
+  screenAngleDegrees: 0,
 };
 
 describe("gravityArrowGeometry", () => {

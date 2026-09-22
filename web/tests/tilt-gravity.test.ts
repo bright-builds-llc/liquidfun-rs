@@ -7,6 +7,7 @@ import {
   formatTiltDebug,
   interpretAcceleration,
   maybeWorldGravityFromAcceleration,
+  screenAngleDegreesFromEnvironment,
 } from "../src/input/tilt-gravity";
 
 describe("maybeWorldGravityFromAcceleration", () => {
@@ -60,6 +61,176 @@ describe("maybeWorldGravityFromAcceleration", () => {
     // Assert
     expect(gravity?.y).toBeCloseTo(9.8);
   });
+
+  it("keeps gravity toward the ground after a counter-clockwise quarter turn", () => {
+    // Arrange
+    const landscapeRightEdgeUp = 90;
+
+    // Act
+    const gravity = maybeWorldGravityFromAcceleration(
+      9.8,
+      0,
+      "support-force",
+      landscapeRightEdgeUp,
+    );
+
+    // Assert
+    expect(gravity?.x).toBeCloseTo(0);
+    expect(gravity?.y).toBeCloseTo(-9.8);
+  });
+
+  it("keeps gravity toward the ground when the phone is upside down", () => {
+    // Arrange / Act
+    const gravity = maybeWorldGravityFromAcceleration(0, -9.8, "support-force", 180);
+
+    // Assert
+    expect(gravity?.x).toBeCloseTo(0);
+    expect(gravity?.y).toBeCloseTo(-9.8);
+  });
+
+  it("keeps gravity toward the ground after a clockwise quarter turn", () => {
+    // Arrange / Act
+    const gravity = maybeWorldGravityFromAcceleration(-9.8, 0, "support-force", 270);
+
+    // Assert
+    expect(gravity?.x).toBeCloseTo(0);
+    expect(gravity?.y).toBeCloseTo(-9.8);
+  });
+
+  it("treats a legacy window.orientation of -90 as a clockwise quarter turn", () => {
+    // Arrange / Act
+    const gravity = maybeWorldGravityFromAcceleration(-9.8, 0, "support-force", -90);
+
+    // Assert
+    expect(gravity?.y).toBeCloseTo(-9.8);
+  });
+
+  it("points gravity toward the right of a landscape screen", () => {
+    // Arrange / Act
+    const gravity = maybeWorldGravityFromAcceleration(0, 9.8, "support-force", 90);
+
+    // Assert
+    expect(gravity?.x).toBeCloseTo(9.8);
+    expect(gravity?.y).toBeCloseTo(0);
+  });
+
+  it("keeps an iPhone landscape sample pointing down the screen", () => {
+    // Arrange / Act
+    const gravity = maybeWorldGravityFromAcceleration(
+      -9.8,
+      0,
+      "gravity-direction",
+      90,
+    );
+
+    // Assert
+    expect(gravity?.x).toBeCloseTo(0);
+    expect(gravity?.y).toBeCloseTo(-9.8);
+  });
+
+  it("ignores a non-finite screen angle", () => {
+    // Arrange / Act
+    const gravity = maybeWorldGravityFromAcceleration(0, 9.8, "support-force", Number.NaN);
+
+    // Assert
+    expect(gravity?.y).toBeCloseTo(-9.8);
+  });
+});
+
+describe("screenAngleDegreesFromEnvironment", () => {
+  it("prefers window.orientation when an iPhone reports the opposite screen angle", () => {
+    // Arrange / Act
+    const angle = screenAngleDegreesFromEnvironment({
+      hasRequestPermission: false,
+      userAgent:
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1",
+      maybeScreenOrientationAngle: 270,
+      maybeWindowOrientation: 90,
+    });
+
+    // Assert
+    expect(angle).toBe(90);
+  });
+
+  it("prefers window.orientation for iPadOS desktop mode", () => {
+    // Arrange / Act
+    const angle = screenAngleDegreesFromEnvironment({
+      hasRequestPermission: true,
+      userAgent:
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15",
+      maybeScreenOrientationAngle: 270,
+      maybeWindowOrientation: 90,
+    });
+
+    // Assert
+    expect(angle).toBe(90);
+  });
+
+  it("prefers screen.orientation.angle on Samsung Internet", () => {
+    // Arrange / Act
+    const angle = screenAngleDegreesFromEnvironment({
+      hasRequestPermission: false,
+      userAgent:
+        "Mozilla/5.0 (Linux; Android 14; SAMSUNG SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/24.0 Chrome/120.0.0.0 Mobile Safari/537.36",
+      maybeScreenOrientationAngle: 90,
+      maybeWindowOrientation: 270,
+    });
+
+    // Assert
+    expect(angle).toBe(90);
+  });
+
+  it("uses the screen angle when Firefox has no window.orientation", () => {
+    // Arrange / Act
+    const angle = screenAngleDegreesFromEnvironment({
+      hasRequestPermission: false,
+      userAgent: "Mozilla/5.0 (Android 14; Mobile; rv:128.0) Gecko/128.0 Firefox/128.0",
+      maybeScreenOrientationAngle: 180,
+      maybeWindowOrientation: null,
+    });
+
+    // Assert
+    expect(angle).toBe(180);
+  });
+
+  it("falls back to window.orientation when the screen angle is missing", () => {
+    // Arrange / Act
+    const angle = screenAngleDegreesFromEnvironment({
+      hasRequestPermission: false,
+      userAgent: "Mozilla/5.0 (Linux; Android 14)",
+      maybeScreenOrientationAngle: null,
+      maybeWindowOrientation: -90,
+    });
+
+    // Assert
+    expect(angle).toBe(-90);
+  });
+
+  it("skips a non-finite preferred angle", () => {
+    // Arrange / Act
+    const angle = screenAngleDegreesFromEnvironment({
+      hasRequestPermission: false,
+      userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)",
+      maybeScreenOrientationAngle: 180,
+      maybeWindowOrientation: Number.NaN,
+    });
+
+    // Assert
+    expect(angle).toBe(180);
+  });
+
+  it("uses zero when neither orientation source is available", () => {
+    // Arrange / Act
+    const angle = screenAngleDegreesFromEnvironment({
+      hasRequestPermission: false,
+      userAgent: "Mozilla/5.0",
+      maybeScreenOrientationAngle: null,
+      maybeWindowOrientation: null,
+    });
+
+    // Assert
+    expect(angle).toBe(0);
+  });
 });
 
 describe("accelerationConventionFromEnvironment", () => {
@@ -106,6 +277,20 @@ describe("interpretAcceleration", () => {
     }
     expect(report.sample).toEqual({ x: 0, y: 9.8, z: 0.2 });
     expect(report.gravity.y).toBeCloseTo(-9.8);
+    expect(report.screenAngleDegrees).toBe(0);
+  });
+
+  it("remaps a landscape sample and records the screen angle", () => {
+    // Arrange / Act
+    const report = interpretAcceleration({ x: 9.8, y: 0, z: 0.2 }, "support-force", 90);
+
+    // Assert
+    expect(report.kind).toBe("live");
+    if (report.kind !== "live") {
+      return;
+    }
+    expect(report.gravity.y).toBeCloseTo(-9.8);
+    expect(report.screenAngleDegrees).toBe(90);
   });
 
   it("reports a null acceleration field with the raw sample", () => {
@@ -140,10 +325,13 @@ describe("formatTiltDebug", () => {
       kind: "live",
       sample: { x: 1, y: -2, z: null },
       gravity: { x: -1, y: 2 },
+      screenAngleDegrees: 90,
     });
 
     // Assert
-    expect(text).toBe("ax 1.000  ay -2.000  az null\ngravity -1.000, 2.000");
+    expect(text).toBe(
+      "ax 1.000  ay -2.000  az null\ngravity -1.000, 2.000\nscreen 90°",
+    );
   });
 
   it("prints the raw sample and the error together", () => {
