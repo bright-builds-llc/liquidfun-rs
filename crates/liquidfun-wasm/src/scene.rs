@@ -11,6 +11,7 @@ mod dam_break;
 mod float_or_sink;
 mod fountain;
 mod jelly_drop;
+mod particles;
 mod water_wheel;
 
 use liquidfun::collision::{FilterData, PolygonShape, Shape};
@@ -27,6 +28,7 @@ pub(crate) enum SceneId {
     ColorMixer,
     JellyDrop,
     WaterWheel,
+    Particles,
 }
 
 pub(crate) fn parse_scene_id(raw: &str) -> Result<SceneId, SessionError> {
@@ -37,6 +39,7 @@ pub(crate) fn parse_scene_id(raw: &str) -> Result<SceneId, SessionError> {
         "color-mixer" => Ok(SceneId::ColorMixer),
         "jelly-drop" => Ok(SceneId::JellyDrop),
         "water-wheel" => Ok(SceneId::WaterWheel),
+        "particles" => Ok(SceneId::Particles),
         _ => Err(SessionError::UnknownScene),
     }
 }
@@ -125,6 +128,7 @@ pub(crate) fn build_scene(
         SceneId::ColorMixer => color_mixer::build(presets),
         SceneId::JellyDrop => jelly_drop::build(presets),
         SceneId::WaterWheel => water_wheel::build(presets),
+        SceneId::Particles => particles::build(presets),
     }
 }
 
