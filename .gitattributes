@@ -1,3 +1,4 @@
 * text=auto eol=lf
 *.mp4 -text
 *.webp -text
+docs/assets/demos/dam-break-10s.svg linguist-generated -diff

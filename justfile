@@ -41,6 +41,11 @@ demo-media-check:
     bun scripts/web-build.ts build
     cd web && bun run demo-media -- check
 
+# Regenerate the committed 10 second Dam Break SVG and README section.
+dam-break-svg:
+    bun scripts/web-build.ts wasm
+    cd web && bun run dam-break-svg
+
 test:
     cargo test --all-features
 
