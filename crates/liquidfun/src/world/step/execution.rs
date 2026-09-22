@@ -73,9 +73,11 @@ impl World {
     /// [`StepCompletion::ContinuousPending`], while budget exhaustion returns
     /// [`StepError::ContinuousWorkLimitExceeded`] with [`crate::ContinuousProgress`].
     /// Ordinary event and command limit failures restore the exact pre-call
-    /// rigid-world state so the caller may retry with larger limits.
-    /// Accumulated forces clear only after a successful call when automatic
-    /// clearing is enabled.
+    /// rigid-world state so the caller may retry with larger limits. A
+    /// zero-rest particle-group topology rejection restores that same
+    /// pre-call state, including particle weights written before reactive
+    /// topology rejects the step. Accumulated forces clear only after a
+    /// successful call when automatic clearing is enabled.
     ///
     /// # Errors
     ///
@@ -250,7 +252,7 @@ impl World {
         })();
         let completion = match locked_result {
             Ok(completion) => completion,
-            Err(error @ StepError::LimitExceeded { .. }) => {
+            Err(error) if restores_pre_call_step_state(&error) => {
                 self.restore_step_limit_state(step_limit_backup);
                 return Err(error);
             }
@@ -435,6 +437,13 @@ impl World {
     pub fn is_poisoned(&self) -> bool {
         self.step_state.is_poisoned()
     }
+}
+
+fn restores_pre_call_step_state(error: &StepError) -> bool {
+    matches!(
+        error,
+        StepError::LimitExceeded { .. } | StepError::InvalidParticleGroupTopology
+    )
 }
 
 pub(in crate::world) fn solver_step_error(

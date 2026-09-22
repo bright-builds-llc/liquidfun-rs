@@ -459,6 +459,27 @@ fn reactive_groups(second_selector: usize) -> Model {
 }
 
 #[test]
+fn minimized_zero_rest_step_rejection_leaves_weights_unchanged() {
+    // Arrange
+    const SEED: u64 = 13_322_699_776_326_974_519;
+    const CONTROLS: [u8; 22] = [
+        8, 0, 0, 118, 0, 0, 2, 134, 0, 0, 152, 0, 0, 0, 18, 96, 0, 18, 0, 0, 126, 119,
+    ];
+
+    // Act
+    let trace = run(SEED, &CONTROLS);
+
+    // Assert
+    assert!(
+        trace
+            .iter()
+            .any(|entry| entry.outcome == Outcome::Rejected(Rejection::StepTopology)),
+        "the minimized sequence must reject a zero-rest particle step"
+    );
+    assert_eq!(trace, run(SEED, &CONTROLS));
+}
+
+#[test]
 fn coincident_reactive_springs_reject_step_without_effects() {
     // Arrange
     let mut model = reactive_groups(1);
