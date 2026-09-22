@@ -369,6 +369,7 @@ figcaption {
 }
 
 .render-mode-control,
+.stroke-width-control,
 .debug-toggle {
   display: inline-flex;
   align-items: center;
@@ -378,6 +379,17 @@ figcaption {
   font-size: 16px;
   font-weight: 600;
   line-height: 1.5;
+}
+
+.stroke-width-control input[type="range"] {
+  width: 8rem;
+  accent-color: #39D3C7;
+}
+
+.stroke-width-control output {
+  min-width: 3.5ch;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
 }
 
 .debug-toggle input {

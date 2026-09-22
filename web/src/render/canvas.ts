@@ -6,12 +6,15 @@ import {
   projectRadius,
 } from "./camera";
 import type { RenderMode } from "./mode";
+import {
+  DEFAULT_WIREFRAME_STROKE_WIDTH,
+  maybeParseWireframeStrokeWidth,
+} from "./stroke-width";
 
 const CANVAS_COLOR = "#071018";
 const BASIN_STROKE_COLOR = "#94A3B8";
 const RIGID_FILL_COLOR = "#334155";
 const RIGID_STROKE_COLOR = "#CBD5E1";
-const PARTICLE_STROKE_WIDTH = 1.5;
 const RIGID_STROKE_WIDTH = 2;
 const MAX_DEVICE_PIXEL_RATIO = 2;
 const INVALID_CANVAS_MESSAGE = "Invalid Canvas dimensions";
@@ -69,11 +72,30 @@ export function resizeCanvasBackingStore(
   return camera;
 }
 
+function resolvedWireframeStrokeWidth(width: number): number {
+  return (
+    maybeParseWireframeStrokeWidth(String(width)) ??
+    DEFAULT_WIREFRAME_STROKE_WIDTH
+  );
+}
+
+function outlineWidth(
+  renderMode: RenderMode,
+  wireframeStrokeWidth: number,
+): number {
+  if (renderMode === "wireframe") {
+    return resolvedWireframeStrokeWidth(wireframeStrokeWidth);
+  }
+
+  return RIGID_STROKE_WIDTH;
+}
+
 function drawParticles(
   context: CanvasRenderingContext2D,
   frame: RenderFrame,
   camera: Camera,
   renderMode: RenderMode,
+  wireframeStrokeWidth: number,
 ): void {
   for (
     let particleIndex = 0;
@@ -100,7 +122,7 @@ function drawParticles(
     context.arc(center.x, center.y, radius, 0, TAU);
     if (renderMode === "wireframe") {
       context.strokeStyle = color;
-      context.lineWidth = PARTICLE_STROKE_WIDTH;
+      context.lineWidth = resolvedWireframeStrokeWidth(wireframeStrokeWidth);
       context.stroke();
     } else {
       context.fillStyle = color;
@@ -113,9 +135,11 @@ function drawSegments(
   context: CanvasRenderingContext2D,
   frame: RenderFrame,
   camera: Camera,
+  renderMode: RenderMode,
+  wireframeStrokeWidth: number,
 ): void {
   context.strokeStyle = BASIN_STROKE_COLOR;
-  context.lineWidth = RIGID_STROKE_WIDTH;
+  context.lineWidth = outlineWidth(renderMode, wireframeStrokeWidth);
 
   for (
     let segmentIndex = 0;
@@ -143,10 +167,11 @@ function drawCircles(
   frame: RenderFrame,
   camera: Camera,
   renderMode: RenderMode,
+  wireframeStrokeWidth: number,
 ): void {
   context.fillStyle = RIGID_FILL_COLOR;
   context.strokeStyle = RIGID_STROKE_COLOR;
-  context.lineWidth = RIGID_STROKE_WIDTH;
+  context.lineWidth = outlineWidth(renderMode, wireframeStrokeWidth);
 
   for (
     let circleIndex = 0;
@@ -177,6 +202,7 @@ export function drawRenderFrame(
   frame: RenderFrame,
   camera: Camera,
   renderMode: RenderMode,
+  wireframeStrokeWidth = DEFAULT_WIREFRAME_STROKE_WIDTH,
 ): void {
   context.fillStyle = CANVAS_COLOR;
   context.fillRect(
@@ -186,7 +212,7 @@ export function drawRenderFrame(
     camera.viewport.height,
   );
 
-  drawParticles(context, frame, camera, renderMode);
-  drawSegments(context, frame, camera);
-  drawCircles(context, frame, camera, renderMode);
+  drawParticles(context, frame, camera, renderMode, wireframeStrokeWidth);
+  drawSegments(context, frame, camera, renderMode, wireframeStrokeWidth);
+  drawCircles(context, frame, camera, renderMode, wireframeStrokeWidth);
 }

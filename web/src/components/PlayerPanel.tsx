@@ -6,6 +6,13 @@ import {
   maybeParseRenderMode,
   type RenderMode,
 } from "../render/mode";
+import {
+  formatWireframeStrokeWidth,
+  maybeParseWireframeStrokeWidth,
+  WIREFRAME_STROKE_WIDTH_MAX,
+  WIREFRAME_STROKE_WIDTH_MIN,
+  WIREFRAME_STROKE_WIDTH_STEP,
+} from "../render/stroke-width";
 import { DebugReadout } from "./DebugReadout";
 
 export type PlayerPanelProps = {
@@ -20,6 +27,8 @@ export type PlayerPanelProps = {
   readonly onRetry: () => void;
   readonly renderMode: RenderMode;
   readonly onRenderModeChange: (mode: RenderMode) => void;
+  readonly wireframeStrokeWidth: number;
+  readonly onWireframeStrokeWidthChange: (width: number) => void;
   readonly debugEnabled: boolean;
   readonly onDebugEnabledChange: (enabled: boolean) => void;
   readonly maybeDebugFrame: RenderFrame | undefined;
@@ -171,6 +180,28 @@ export function PlayerPanel(props: PlayerPanelProps) {
             <option value="wireframe">Wireframe</option>
             <option value="solid">Solid</option>
           </select>
+        </label>
+        <label class="stroke-width-control">
+          Wireframe stroke
+          <input
+            id="wireframe-stroke"
+            type="range"
+            min={WIREFRAME_STROKE_WIDTH_MIN}
+            max={WIREFRAME_STROKE_WIDTH_MAX}
+            step={WIREFRAME_STROKE_WIDTH_STEP}
+            value={props.wireframeStrokeWidth}
+            onInput={(event) => {
+              const maybeWidth = maybeParseWireframeStrokeWidth(
+                event.currentTarget.value,
+              );
+              if (maybeWidth !== undefined) {
+                props.onWireframeStrokeWidthChange(maybeWidth);
+              }
+            }}
+          />
+          <output for="wireframe-stroke">
+            {formatWireframeStrokeWidth(props.wireframeStrokeWidth)}
+          </output>
         </label>
         <label class="debug-toggle">
           <input

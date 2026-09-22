@@ -211,17 +211,17 @@ describe("drawRenderFrame", () => {
       {
         kind: "stroke",
         strokeStyle: "rgba(57, 211, 199, 0.5019607843137255)",
-        lineWidth: 1.5,
+        lineWidth: 1,
       },
       {
         kind: "stroke",
         strokeStyle: "#94A3B8",
-        lineWidth: 2,
+        lineWidth: 1,
       },
       {
         kind: "stroke",
         strokeStyle: "#CBD5E1",
-        lineWidth: 2,
+        lineWidth: 1,
       },
     ]);
   });
@@ -291,6 +291,22 @@ describe("drawRenderFrame", () => {
         lineWidth: 2,
       },
     ]);
+  });
+
+  it("applies one wireframe stroke width to particles, walls, and rigid circles", () => {
+    // Arrange
+    const canvas = createRecordingContext();
+    const camera = createCamera(960, 540);
+
+    // Act
+    drawRenderFrame(canvas.context, FRAME, camera, "wireframe", 0.25);
+
+    // Assert
+    expect(
+      canvas.operations
+        .filter((operation) => operation.kind === "stroke")
+        .map((operation) => operation.lineWidth),
+    ).toEqual([0.25, 0.25, 0.25]);
   });
 
   it("renders identical rigid segment paths in both modes", () => {

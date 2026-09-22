@@ -31,6 +31,10 @@ import { maybeObservedFrame, playerStatus, type PlayerView } from "./player/view
 import { drawRenderFrame, resizeCanvasBackingStore } from "./render/canvas";
 import type { Camera } from "./render/camera";
 import { loadRenderMode, persistRenderMode, type RenderMode } from "./render/mode";
+import {
+  loadWireframeStrokeWidth,
+  persistWireframeStrokeWidth,
+} from "./render/stroke-width";
 import { normalizeSceneRoute } from "./routing/hash";
 
 const MILLISECONDS_PER_SECOND = 1000;
@@ -54,6 +58,9 @@ export function App() {
   );
   const [renderMode, setRenderMode] = createSignal<RenderMode>(
     loadRenderMode(() => window.localStorage),
+  );
+  const [wireframeStrokeWidth, setWireframeStrokeWidth] = createSignal(
+    loadWireframeStrokeWidth(() => window.localStorage),
   );
   const [debugEnabled, setDebugEnabled] = createSignal(true);
   const [maybeDebugFrame, setMaybeDebugFrame] = createSignal<
@@ -142,10 +149,7 @@ export function App() {
     });
   }
 
-  function changeRenderMode(nextMode: RenderMode): void {
-    setRenderMode(nextMode);
-    persistRenderMode(() => window.localStorage, nextMode);
-
+  function paintHeldFrame(mode: RenderMode, strokeWidth: number): void {
     const maybeFrame = maybePreviousFrame;
     const context = maybeContext;
     const camera = maybeCamera;
@@ -157,7 +161,19 @@ export function App() {
       return;
     }
 
-    drawRenderFrame(context, maybeFrame, camera, nextMode);
+    drawRenderFrame(context, maybeFrame, camera, mode, strokeWidth);
+  }
+
+  function changeRenderMode(nextMode: RenderMode): void {
+    setRenderMode(nextMode);
+    persistRenderMode(() => window.localStorage, nextMode);
+    paintHeldFrame(nextMode, wireframeStrokeWidth());
+  }
+
+  function changeWireframeStrokeWidth(nextWidth: number): void {
+    setWireframeStrokeWidth(nextWidth);
+    persistWireframeStrokeWidth(() => window.localStorage, nextWidth);
+    paintHeldFrame(renderMode(), nextWidth);
   }
 
   function scheduleFrame(context: CanvasRenderingContext2D): void {
@@ -203,7 +219,13 @@ export function App() {
       }
       try {
         const frame = maybeOwnedSession.nextFrame(stepTime.stepCount);
-        drawRenderFrame(context, frame, camera, renderMode());
+        drawRenderFrame(
+          context,
+          frame,
+          camera,
+          renderMode(),
+          wireframeStrokeWidth(),
+        );
         const observation = observeFrame(
           frame,
           maybePreviousFrame,
@@ -232,7 +254,13 @@ export function App() {
     }
 
     const frame = ownedSession.nextFrame();
-    drawRenderFrame(context, frame, camera, renderMode());
+    drawRenderFrame(
+      context,
+      frame,
+      camera,
+      renderMode(),
+      wireframeStrokeWidth(),
+    );
     const observation = observeFrame(
       frame,
       resetObservation ? undefined : maybePreviousFrame,
@@ -278,7 +306,13 @@ export function App() {
 
         const maybeFrame = maybePreviousFrame;
         if (maybeFrame !== undefined) {
-          drawRenderFrame(context, maybeFrame, resizedCamera, renderMode());
+          drawRenderFrame(
+            context,
+            maybeFrame,
+            resizedCamera,
+            renderMode(),
+            wireframeStrokeWidth(),
+          );
         }
       } catch (error) {
         fail(error);
@@ -577,6 +611,7 @@ export function App() {
         data-last-pointer-kind={lastPointerKind()}
         data-pointer-accepted={pointerAccepted()}
         data-render-mode={renderMode()}
+        data-wireframe-stroke-width={wireframeStrokeWidth()}
       >
         <Show
           when={maybeCurrentSceneId()}
@@ -595,6 +630,8 @@ export function App() {
               onRetry={recreateScene}
               renderMode={renderMode()}
               onRenderModeChange={changeRenderMode}
+              wireframeStrokeWidth={wireframeStrokeWidth()}
+              onWireframeStrokeWidthChange={changeWireframeStrokeWidth}
               debugEnabled={debugEnabled()}
               onDebugEnabledChange={setDebugEnabled}
               maybeDebugFrame={maybeDebugFrame()}
