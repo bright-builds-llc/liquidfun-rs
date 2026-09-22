@@ -10,6 +10,11 @@ export const SCENE_IDS = [
   "surface-tension",
   "elastic-particles",
   "rigid-particles",
+  "soup",
+  "soup-stirrer",
+  "impulse",
+  "wave-machine",
+  "theo-jansen",
 ] as const;
 
 export type SceneId = (typeof SCENE_IDS)[number];
@@ -107,6 +112,56 @@ const PINNED_RIGID_PARTICLES_JS = {
 const PINNED_RIGID_PARTICLES_H = {
   label: "Pinned RigidParticles.h",
   href: "https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Testbed/Tests/RigidParticles.h",
+} as const;
+
+const PINNED_SOUP_JS = {
+  label: "Pinned Soup.js",
+  href: "https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/lfjs/testbed/tests/testSoup.js",
+} as const;
+
+const PINNED_SOUP_H = {
+  label: "Pinned Soup.h",
+  href: "https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Testbed/Tests/Soup.h",
+} as const;
+
+const PINNED_SOUP_STIRRER_JS = {
+  label: "Pinned SoupStirrer.js",
+  href: "https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/lfjs/testbed/tests/testSoupStirrer.js",
+} as const;
+
+const PINNED_SOUP_STIRRER_H = {
+  label: "Pinned SoupStirrer.h",
+  href: "https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Testbed/Tests/SoupStirrer.h",
+} as const;
+
+const PINNED_IMPULSE_JS = {
+  label: "Pinned Impulse.js",
+  href: "https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/lfjs/testbed/tests/testImpulse.js",
+} as const;
+
+const PINNED_IMPULSE_H = {
+  label: "Pinned Impulse.h",
+  href: "https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Testbed/Tests/Impulse.h",
+} as const;
+
+const PINNED_WAVE_MACHINE_JS = {
+  label: "Pinned WaveMachine.js",
+  href: "https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/lfjs/testbed/tests/testWaveMachine.js",
+} as const;
+
+const PINNED_WAVE_MACHINE_H = {
+  label: "Pinned WaveMachine.h",
+  href: "https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Testbed/Tests/WaveMachine.h",
+} as const;
+
+const PINNED_THEO_JANSEN_JS = {
+  label: "Pinned TheoJansen.js",
+  href: "https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/lfjs/testbed/tests/testTheoJansen.js",
+} as const;
+
+const PINNED_THEO_JANSEN_H = {
+  label: "Pinned TheoJansen.h",
+  href: "https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Testbed/Tests/TheoJansen.h",
 } as const;
 
 const WATCH_FIRST_HINT =
@@ -388,6 +443,81 @@ export const SCENES: readonly SceneRecord[] = [
         PINNED_RIGID_PARTICLES_H,
         SHOWCASE,
       ],
+    },
+  },
+  {
+    id: "soup",
+    title: "Soup",
+    ready: true,
+    description: "Watch a basin of liquid hold floating solid bits.",
+    interactionHint: WATCH_FIRST_HINT,
+    controls: [],
+    credits: {
+      implementationPath: sceneSource("soup.rs"),
+      inspiration: [PINNED_SOUP_JS, PINNED_SOUP_H, SHOWCASE],
+    },
+  },
+  {
+    id: "soup-stirrer",
+    title: "Soup Stirrer",
+    ready: true,
+    description: "Watch a paddle stir soup, and free or restore its rail.",
+    interactionHint:
+      "Click or tap the canvas, or use Toggle paddle rail, to free the paddle from its rail or put it back. Labeled controls also work from the keyboard.",
+    controls: [action("toggle-paddle-rail", "Toggle paddle rail")],
+    credits: {
+      implementationPath: sceneSource("soup_stirrer.rs"),
+      inspiration: [PINNED_SOUP_STIRRER_JS, PINNED_SOUP_STIRRER_H, SHOWCASE],
+    },
+  },
+  {
+    id: "impulse",
+    title: "Impulse",
+    ready: true,
+    description:
+      "Click or tap inside the box to shove the whole particle blob.",
+    interactionHint:
+      "Click or tap inside the box to shove the particle blob. Use Push to choose force or impulse. Clicks outside the box do nothing. Labeled controls also work from the keyboard.",
+    controls: [
+      runtimePreset("push-mode", "Push", [
+        option("force", "Force"),
+        option("impulse", "Impulse"),
+      ]),
+    ],
+    credits: {
+      implementationPath: sceneSource("impulse.rs"),
+      inspiration: [PINNED_IMPULSE_JS, PINNED_IMPULSE_H, SHOWCASE],
+    },
+  },
+  {
+    id: "wave-machine",
+    title: "Wave Machine",
+    ready: true,
+    description: "Watch a motorized tank rock and slosh the water inside.",
+    interactionHint: WATCH_FIRST_HINT,
+    controls: [],
+    credits: {
+      implementationPath: sceneSource("wave_machine.rs"),
+      inspiration: [PINNED_WAVE_MACHINE_JS, PINNED_WAVE_MACHINE_H, SHOWCASE],
+    },
+  },
+  {
+    id: "theo-jansen",
+    title: "Theo Jansen",
+    ready: true,
+    description:
+      "Watch a walker move under a particle load and reverse its motor.",
+    interactionHint:
+      "Use Motor direction to walk forward or reverse under the particle load. Labeled controls also work from the keyboard.",
+    controls: [
+      runtimePreset("motor-direction", "Motor direction", [
+        option("forward", "Forward"),
+        option("reverse", "Reverse"),
+      ]),
+    ],
+    credits: {
+      implementationPath: sceneSource("theo_jansen.rs"),
+      inspiration: [PINNED_THEO_JANSEN_JS, PINNED_THEO_JANSEN_H, SHOWCASE],
     },
   },
 ];
