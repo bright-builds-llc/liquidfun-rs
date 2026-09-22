@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Reference Testbed Scenes
 status: planning
-stopped_at: Phase 26 context gathered
-last_updated: "2026-09-22T00:04:51.867Z"
+stopped_at: Phase 26 UI-SPEC approved
+last_updated: "2026-09-22T00:13:54.157Z"
 last_activity: 2026-09-21 — v1.3 roadmap written (Phases 26–29)
 progress:
   total_phases: 4
@@ -62,6 +62,6 @@ None for roadmap. A fresh unprofiled pair is required before claiming the ≤ 3�
 
 ## Session Continuity
 
-Last session: 2026-09-22T00:04:51.864Z
-Stopped at: Phase 26 context gathered
-Resume file: .planning/phases/26-catalog-shell-and-basin-scenes/26-CONTEXT.md
+Last session: 2026-09-22T00:13:54.154Z
+Stopped at: Phase 26 UI-SPEC approved
+Resume file: .planning/phases/26-catalog-shell-and-basin-scenes/26-UI-SPEC.md
