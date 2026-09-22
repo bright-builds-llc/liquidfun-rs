@@ -1,4 +1,8 @@
 ---
+generated_by: gsd-executor
+lifecycle_mode: yolo
+phase_lifecycle_id: 27-2026-09-22T05-14-55
+generated_at: 2026-09-22T05:45:00Z
 phase: 27-material-flag-groups
 plan: "01"
 subsystem: wasm-scenes
@@ -114,7 +118,7 @@ _Note: TDD tasks used RED stub then GREEN implementation_
 - **Verification:** `cargo clippy -p liquidfun-wasm --all-targets -- -D warnings` exits 0
 - **Committed in:** `8ce29c9`
 
----
+***
 
 **Total deviations:** 2 auto-fixed (2 blocking)
 **Impact on plan:** Necessary for TDD under hooks and clippy gate; no scope creep into catalog or engine APIs
@@ -140,6 +144,6 @@ None - no external service configuration required.
 - FOUND: commit `a596bdd`
 - FOUND: commit `8ce29c9`
 
----
+***
 *Phase: 27-material-flag-groups*
 *Completed: 2026-09-22*

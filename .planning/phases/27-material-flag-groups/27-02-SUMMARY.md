@@ -1,4 +1,8 @@
 ---
+generated_by: gsd-executor
+lifecycle_mode: yolo
+phase_lifecycle_id: 27-2026-09-22T05-14-55
+generated_at: 2026-09-22T05:55:00Z
 phase: 27-material-flag-groups
 plan: "02"
 subsystem: wasm-scenes
@@ -100,7 +104,7 @@ _Note: TDD tasks used RED stub then GREEN implementation_
 - **Verification:** Six `elastic_particles` tests failed on construction; allowlist test passed
 - **Committed in:** `e5d13b2`
 
----
+***
 
 **Total deviations:** 1 auto-fixed (1 blocking)
 **Impact on plan:** Necessary for TDD under hooks; no scope creep into catalog, Rigid Particles, or engine APIs
@@ -125,6 +129,6 @@ None - no external service configuration required.
 - FOUND: commit `e5d13b2`
 - FOUND: commit `7cdd460`
 
----
+***
 *Phase: 27-material-flag-groups*
 *Completed: 2026-09-22*

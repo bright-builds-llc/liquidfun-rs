@@ -1,4 +1,8 @@
 ---
+generated_by: gsd-executor
+lifecycle_mode: yolo
+phase_lifecycle_id: 27-2026-09-22T05-14-55
+generated_at: 2026-09-22T06:05:00Z
 phase: 27-material-flag-groups
 plan: "04"
 subsystem: ui
@@ -99,7 +103,7 @@ Each task was committed atomically:
 - **Verification:** `cd web && bun run typecheck` exit 0; `bunx vitest run tests/scenes.test.ts` 13/13 pass
 - **Committed in:** `8df513c` (Task 2 commit)
 
----
+***
 
 **Total deviations:** 1 auto-fixed (1 blocking)
 **Impact on plan:** Required for plan verification success criteria; no scope creep beyond catalog honesty.
@@ -122,6 +126,6 @@ None - no external service configuration required.
 - FOUND: `.planning/phases/27-material-flag-groups/27-04-SUMMARY.md`
 - FOUND: commits `56829f9`, `8df513c` in `git log --oneline --grep=27-04`
 
----
+***
 *Phase: 27-material-flag-groups*
 *Completed: 2026-09-22*

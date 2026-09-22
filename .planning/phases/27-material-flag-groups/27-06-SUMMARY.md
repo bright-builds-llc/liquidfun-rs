@@ -1,4 +1,8 @@
 ---
+generated_by: gsd-executor
+lifecycle_mode: yolo
+phase_lifecycle_id: 27-2026-09-22T05-14-55
+generated_at: 2026-09-22T06:15:00Z
 phase: 27-material-flag-groups
 plan: "06"
 subsystem: testing
@@ -128,7 +132,7 @@ Each task was committed atomically:
 - **Verification:** Drawer trap test passed in full smoke
 - **Committed in:** `308e167`
 
----
+***
 
 **Total deviations:** 4 auto-fixed (1 bug, 3 blocking)
 **Impact on plan:** Required for a green Chromium gate; no scope expansion beyond MAT-01/02/03 proof
@@ -153,6 +157,6 @@ None - no external service configuration required.
 - FOUND: commit `308e167`
 - Smoke: `just web-player-smoke` → 38 passed, 0 failed
 
----
+***
 *Phase: 27-material-flag-groups*
 *Completed: 2026-09-22*

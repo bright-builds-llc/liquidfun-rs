@@ -1,4 +1,8 @@
 ---
+generated_by: gsd-executor
+lifecycle_mode: yolo
+phase_lifecycle_id: 27-2026-09-22T05-14-55
+generated_at: 2026-09-22T06:08:00Z
 phase: 27-material-flag-groups
 plan: "05"
 subsystem: testing
@@ -96,7 +100,7 @@ None - plan executed as written.
 - **Verification:** `bun run test:unit -- tests/scenes.test.ts tests/navigation.test.ts` exits 0; acceptance `rg` checks pass
 - **Committed in:** `8df513c` (27-04)
 
----
+***
 
 **Total deviations:** 0 auto-fixed; 1 pre-satisfied carry-in from 27-04
 **Impact on plan:** No scope creep; Task 2 was the remaining unfinished work for this plan.
@@ -121,6 +125,6 @@ None - no external service configuration required.
 - Commit `85526d7` FOUND
 - Commit `8df513c` FOUND (Task 1 prior)
 
----
+***
 *Phase: 27-material-flag-groups*
 *Completed: 2026-09-22*
