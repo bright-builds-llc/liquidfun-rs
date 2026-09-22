@@ -1,6 +1,8 @@
 import { createEffect, createSignal, onCleanup } from "solid-js";
 
 import { maybeSceneById, type SceneId } from "./catalog/scenes";
+import { changedPresetEntries } from "./export/presets";
+import type { SvgExportRequest } from "./export/messages";
 import { PlaygroundStage } from "./components/PlaygroundStage";
 import {
   attachCanvasPointer,
@@ -405,13 +407,15 @@ export function App() {
 
     try {
       if (recreates) {
-        constructionValues = { ...constructionValues, [name]: value };
         maybeCanvasPointer?.cancel();
         cancelPendingFrame(clock);
         setView({ kind: "loading" });
       }
 
       const recreated = maybeOwnedSession.applyControl(name, value);
+      if (maybeControl?.kind === "preset") {
+        constructionValues = { ...constructionValues, [name]: value };
+      }
       if (!recreated) {
         return;
       }
@@ -450,6 +454,34 @@ export function App() {
     } catch (error) {
       fail(error);
     }
+  }
+
+  function createSvgExportRequest(durationSeconds: number): SvgExportRequest | undefined {
+    const maybeId = maybeReadySceneId(route());
+    const maybeScene = maybeId === undefined ? undefined : maybeSceneById(maybeId);
+    if (
+      maybeScene === undefined ||
+      !isUsableViewport(clock.viewportWidth, clock.viewportHeight) ||
+      clock.viewportWidth <= 32 ||
+      clock.viewportHeight <= 32
+    ) {
+      return undefined;
+    }
+
+    return {
+      sceneId: maybeScene.id,
+      title: maybeScene.title,
+      durationSeconds,
+      controls: changedPresetEntries(maybeScene, constructionValues),
+      viewportWidth: clock.viewportWidth,
+      viewportHeight: clock.viewportHeight,
+      zoom: clock.cameraView.zoom,
+      panX: clock.cameraView.panX,
+      panY: clock.cameraView.panY,
+      renderMode: renderMode(),
+      wireframeStrokeWidth: wireframeStrokeWidth(),
+      maxRenderedParticles: maxRenderedParticles(),
+    };
   }
 
   function onHashChange(): void {
@@ -559,6 +591,7 @@ export function App() {
       }}
       onApplyControl={applySceneControl}
       onApplyAction={applySceneAction}
+      onCreateSvgExportRequest={createSvgExportRequest}
     />
   );
 }
