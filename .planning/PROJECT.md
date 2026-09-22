@@ -16,7 +16,7 @@ The owner prioritizes a fun hobby project over production-quality certification.
 
 ## Current State
 
-v1.3 Reference Testbed Scenes is in progress. v1.2 Native Performance Closing is archived (2026-09-21): 4 phases, 23 plans, and 47 tasks. Unprofiled Dam Break Medium on one macOS host recorded `rust_over_cpp_ratio` `2.956857456935513` at stamp `2026-09-21T20-38-50Z` (git `89d3456406c3c79ed500192bca9491c707033647`). `reviewed_reports` stays empty. README and crates.io have no universal “Rust is N×” claim. `just web-player-smoke` recorded 37 Chromium tests, compared with native Rust only. This is not crate publication and not a git release tag. Commit `77fbd84` (zero the force buffer after SolveForce) is after that stamp, so the ratio is not a measurement of later HEAD. See `.planning/MILESTONES.md` and `.planning/milestones/v1.2-REQUIREMENTS.md`.
+v1.3 Reference Testbed Scenes is in progress. Phase 26 is complete: Particles and Liquid Timer are watch-first scenes in the shared player, and the original six scenes remain. `just web-player-smoke` recorded 38 Chromium tests. v1.2 Native Performance Closing is archived (2026-09-21): 4 phases, 23 plans, and 47 tasks. Unprofiled Dam Break Medium on one macOS host recorded `rust_over_cpp_ratio` `2.956857456935513` at stamp `2026-09-21T20-38-50Z` (git `89d3456406c3c79ed500192bca9491c707033647`). `reviewed_reports` stays empty. README and crates.io have no universal “Rust is N×” claim. `just web-player-smoke` recorded 37 Chromium tests, compared with native Rust only. This is not crate publication and not a git release tag. Commit `77fbd84` (zero the force buffer after SolveForce) is after that stamp, so the ratio is not a measurement of later HEAD. See `.planning/MILESTONES.md` and `.planning/milestones/v1.2-REQUIREMENTS.md`.
 
 The v1.1 Web Playground planning milestone is archived (2026-09-20): 6 phases and 39 plans completed. Visitors can run Dam Break, Fountain, Float or Sink, Color Mixer, Jelly Drop, and Water Wheel at `https://bright-builds-llc.github.io/liquidfun-rs/` with in-app SVG previews, play/pause/reset, honest Reset labels, pointer interaction, and automatic Pages delivery. This is not a crate or npm release. See `.planning/MILESTONES.md` and `.planning/milestones/v1.1-REQUIREMENTS.md`.
 
@@ -81,6 +81,8 @@ Ideas still left out until a later milestone adopts them: an explicit SIMD or pa
 - [ ] Visitors can run the twelve JavaScript testbed scenes listed above in the existing playground. Requirement IDs are defined in the upcoming `.planning/REQUIREMENTS.md`.
 
 ### Validated
+
+- [x] Phase 26 completed PLAY-02, PLAY-03, BASIN-01, and BASIN-02: Particles and Liquid Timer play, pause, and reset in the existing catalog; credits cite the pinned LiquidFun tests; water falls in an open basin with a dropped ball; tensile, viscous liquid drains through shelves into bottom columns; the original six scenes stay. `just web-player-smoke` passed 38 Chromium tests. Recognizable ports, not sealed C++ parity. Validated in Phase 26: Catalog shell and basin scenes.
 
 - [x] Phase 25 completed PERF-NOTES and PERF-WASM: honesty docs lead with gate stamp `2026-09-21T20-38-50Z` / `rust_over_cpp_ratio` `2.956857456935513` and label kernel-HEAD `2026-09-21T20-36-30Z` as a sibling; `just web-player-smoke` passed 37 Chromium tests; optional step-time note cites native `ms_per_step` `1.053103` with no prior WASM sample and never versus `oracle-release`. `reviewed_reports` stays empty. Not a public “Rust is N×” claim or crate publication. Validated in Phase 25: WASM sanity and honest close.
 
@@ -294,4 +296,4 @@ This document evolves at phase transitions and milestone boundaries.
 
 ______________________________________________________________________
 
-*Last updated: 2026-09-21 after starting v1.3 Reference Testbed Scenes. Strict native certification remains optional. Package publication and release tags remain separately authorized.*
+*Last updated: 2026-09-22 after Phase 26 catalog shell and basin scenes. Strict native certification remains optional. Package publication and release tags remain separately authorized.*
