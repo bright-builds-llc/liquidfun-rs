@@ -1,5 +1,6 @@
 import { maybeSceneById } from "../../src/catalog/scenes";
-import { readmeSvgRepoPath, type ReadmeSvgPlan } from "./plans";
+import { readmeSvgRepoPath, readmeWebpRepoPath, type ReadmeSvgPlan } from "./plans";
+import { README_WEBP_FPS } from "./webp";
 
 export const README_SVG_BEGIN = "<!-- readme-svg-gallery:begin -->";
 export const README_SVG_END = "<!-- readme-svg-gallery:end -->";
@@ -14,17 +15,19 @@ const LIVE_SCENE_ORIGIN = "https://bright-builds-llc.github.io/liquidfun-rs/#/sc
  * Marked demo-gallery body for every README scene plan.
  *
  * The heading stays outside the markers. Image links open the live scene.
+ * The visible preview is the WebP; the SVG link is the vector source.
  */
 export function readmeSvgGalleryBody(plans: readonly ReadmeSvgPlan[]): string {
   const entries = plans.map((plan) => sceneEntry(plan));
   return [
     README_SVG_BEGIN,
     "",
-    "Each preview is a 10 second looping animated SVG. The frame is 1280 by 960,",
-    "wireframe, with the identity camera. Scenes that stay still until you act",
-    "include one cue. Select a title or preview to open the live scene. A",
-    "post-merge workflow regenerates these files and commits them when the",
-    "bytes change.",
+    `Each preview is a ${README_WEBP_FPS} fps animated WebP rasterized from the committed 10 second`,
+    "SVG. The frame is 1280 by 960, wireframe, with the identity camera. Scenes",
+    "that stay still until you act include one cue. Select a title or preview to",
+    "open the live scene. The SVG link under each preview is the vector source. A",
+    "post-merge workflow regenerates these files and commits them when the bytes",
+    "change.",
     "",
     entries.join("\n\n"),
     "",
@@ -33,7 +36,7 @@ export function readmeSvgGalleryBody(plans: readonly ReadmeSvgPlan[]): string {
 }
 
 /**
- * Replaces the demo gallery with the scene SVGs.
+ * Replaces the demo gallery with the scene WebP previews.
  *
  * A retired Dam Break-only block is removed so the gallery is the one README
  * embed. An existing marked gallery is replaced in place. Otherwise the
@@ -65,10 +68,12 @@ function sceneEntry(plan: ReadmeSvgPlan): string {
   }
 
   const liveUrl = `${LIVE_SCENE_ORIGIN}${plan.id}`;
+  const webpPath = readmeWebpRepoPath(plan.id);
   const svgPath = readmeSvgRepoPath(plan.id);
   const heading = `#### [${maybeScene.title}](${liveUrl})`;
-  const image = `[![${maybeScene.title} simulation preview](${svgPath})](${liveUrl})`;
-  return `${heading}\n\n${image}`;
+  const image = `[![${maybeScene.title} simulation preview](${webpPath})](${liveUrl})`;
+  const source = `[Animated SVG](${svgPath})`;
+  return `${heading}\n\n${image}\n\n${source}`;
 }
 
 function replaceMarkedSection(readme: string, body: string): string {

@@ -12,10 +12,18 @@ import {
   README_SVG_PLANS,
   readmeSvgRepoPath,
   readmeSvgRequest,
+  readmeWebpRepoPath,
   type ReadmeSvgCue,
   type ReadmeSvgPlan,
 } from "./readme-svg/plans";
+import { README_RASTER_FONT_FILE, rasterizeAnimatedSvg } from "./readme-svg/raster";
 import { upsertReadmeSvgGallery } from "./readme-svg/section";
+import {
+  assertReadmeWebpByteLimit,
+  README_WEBP_FPS,
+  README_WEBP_PRESET,
+  README_WEBP_QUALITY,
+} from "./readme-svg/webp";
 
 type GeneratedWasm = {
   default: (input?: { module_or_path?: BufferSource }) => Promise<unknown>;
@@ -34,13 +42,18 @@ async function main(): Promise<void> {
   await writeFile(logPath, "");
   assertReadmeSvgPlanCoverage();
   const generated = await loadWasm();
-  let changedCount = 0;
+  let svgCount = 0;
+  let webpCount = 0;
 
   for (const plan of README_SVG_PLANS) {
     const request = readmeSvgRequest(plan);
-    const changed = await writeSceneSvg(generated, plan, request);
-    if (changed) {
-      changedCount += 1;
+    const svgChanged = await writeSceneSvg(generated, plan, request);
+    if (svgChanged) {
+      svgCount += 1;
+    }
+    const webpChanged = await writeSceneWebp(plan, svgChanged);
+    if (webpChanged) {
+      webpCount += 1;
     }
   }
 
@@ -49,12 +62,24 @@ async function main(): Promise<void> {
     readmePath,
     upsertReadmeSvgGallery(await readFile(readmePath, "utf8"), README_SVG_PLANS),
   );
-  const summary =
-    changedCount === 0 && !readmeChanged
-      ? "README scene SVGs and gallery already match"
-      : `updated ${changedCount} SVG file${changedCount === 1 ? "" : "s"}${readmeChanged ? " and the README gallery" : ""}`;
+  const summary = previewSummary(svgCount, webpCount, readmeChanged);
   note(summary);
   await appendLog(summary);
+}
+
+function previewSummary(svgCount: number, webpCount: number, readmeChanged: boolean): string {
+  if (svgCount === 0 && webpCount === 0 && !readmeChanged) {
+    return "README scene SVGs, WebPs, and gallery already match";
+  }
+
+  const parts = [
+    `${svgCount} SVG file${svgCount === 1 ? "" : "s"}`,
+    `${webpCount} WebP file${webpCount === 1 ? "" : "s"}`,
+  ];
+  if (readmeChanged) {
+    parts.push("the README gallery");
+  }
+  return `updated ${parts.join(" and ")}`;
 }
 
 async function writeSceneSvg(
@@ -177,6 +202,64 @@ function driverFor(session: GeneratedProofSession): ExportDriver {
       }
     },
   };
+}
+
+async function writeSceneWebp(plan: ReadmeSvgPlan, svgChanged: boolean): Promise<boolean> {
+  const svgPath = resolve(repoRoot, readmeSvgRepoPath(plan.id));
+  const webpPath = resolve(repoRoot, readmeWebpRepoPath(plan.id));
+  if (!svgChanged && (await exists(webpPath))) {
+    note(`${plan.id} WebP already matches the SVG`);
+    return false;
+  }
+
+  note(
+    `rasterizing ${plan.id} at ${README_WEBP_FPS} fps, quality ${README_WEBP_QUALITY}, preset ${README_WEBP_PRESET}`,
+  );
+  const webp = await rasterizeAnimatedSvg(await readFile(svgPath, "utf8"), {
+    framesPerSecond: README_WEBP_FPS,
+    quality: README_WEBP_QUALITY,
+    preset: README_WEBP_PRESET,
+    fontFile: README_RASTER_FONT_FILE,
+    onFrame(completed, total) {
+      note(`${plan.id} rasterized ${completed} of ${total}`);
+    },
+  });
+  assertReadmeWebpByteLimit(plan.id, webp.length);
+  return writeBytesIfChanged(webpPath, webp);
+}
+
+async function exists(path: string): Promise<boolean> {
+  try {
+    await access(path);
+    return true;
+  } catch (error) {
+    if (isMissingFile(error)) {
+      return false;
+    }
+    throw error;
+  }
+}
+
+async function writeBytesIfChanged(path: string, next: Uint8Array): Promise<boolean> {
+  const maybeCurrent = await readOptionalBytes(path);
+  if (maybeCurrent !== undefined && maybeCurrent.equals(Buffer.from(next))) {
+    return false;
+  }
+
+  await writeFile(path, next);
+  note(`wrote ${path} (${next.length} bytes)`);
+  return true;
+}
+
+async function readOptionalBytes(path: string): Promise<Buffer | undefined> {
+  try {
+    return await readFile(path);
+  } catch (error) {
+    if (isMissingFile(error)) {
+      return undefined;
+    }
+    throw error;
+  }
 }
 
 async function writeIfChanged(path: string, next: string): Promise<boolean> {
