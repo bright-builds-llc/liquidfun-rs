@@ -34,75 +34,108 @@ WEBTEST-01 gate and does not claim Firefox or Safari coverage.
 
 <!-- readme-svg-gallery:begin -->
 
-Each preview is a 10 second looping animated SVG. The frame is 1280 by 960,
-wireframe, with the identity camera. Scenes that stay still until you act
-include one cue. Select a title or preview to open the live scene. A
-post-merge workflow regenerates these files and commits them when the
-bytes change.
+Each preview is a 60 fps animated WebP rasterized from the committed 10 second
+SVG. The frame is 1280 by 960, wireframe, with the identity camera. Scenes
+that stay still until you act include one cue. Select a title or preview to
+open the live scene. The SVG link under each preview is the vector source. A
+post-merge workflow regenerates these files and commits them when the bytes
+change.
 
 #### [Dam Break](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/dam-break)
 
-[![Dam Break simulation preview](docs/assets/readme/dam-break-10s.svg)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/dam-break)
+[![Dam Break simulation preview](docs/assets/readme/dam-break-10s.webp)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/dam-break)
+
+[Animated SVG](docs/assets/readme/dam-break-10s.svg)
 
 #### [Fountain](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/fountain)
 
-[![Fountain simulation preview](docs/assets/readme/fountain-10s.svg)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/fountain)
+[![Fountain simulation preview](docs/assets/readme/fountain-10s.webp)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/fountain)
+
+[Animated SVG](docs/assets/readme/fountain-10s.svg)
 
 #### [Float or Sink](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/float-or-sink)
 
-[![Float or Sink simulation preview](docs/assets/readme/float-or-sink-10s.svg)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/float-or-sink)
+[![Float or Sink simulation preview](docs/assets/readme/float-or-sink-10s.webp)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/float-or-sink)
+
+[Animated SVG](docs/assets/readme/float-or-sink-10s.svg)
 
 #### [Color Mixer](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/color-mixer)
 
-[![Color Mixer simulation preview](docs/assets/readme/color-mixer-10s.svg)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/color-mixer)
+[![Color Mixer simulation preview](docs/assets/readme/color-mixer-10s.webp)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/color-mixer)
+
+[Animated SVG](docs/assets/readme/color-mixer-10s.svg)
 
 #### [Jelly Drop](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/jelly-drop)
 
-[![Jelly Drop simulation preview](docs/assets/readme/jelly-drop-10s.svg)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/jelly-drop)
+[![Jelly Drop simulation preview](docs/assets/readme/jelly-drop-10s.webp)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/jelly-drop)
+
+[Animated SVG](docs/assets/readme/jelly-drop-10s.svg)
 
 #### [Water Wheel](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/water-wheel)
 
-[![Water Wheel simulation preview](docs/assets/readme/water-wheel-10s.svg)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/water-wheel)
+[![Water Wheel simulation preview](docs/assets/readme/water-wheel-10s.webp)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/water-wheel)
+
+[Animated SVG](docs/assets/readme/water-wheel-10s.svg)
 
 #### [Particles](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/particles)
 
-[![Particles simulation preview](docs/assets/readme/particles-10s.svg)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/particles)
+[![Particles simulation preview](docs/assets/readme/particles-10s.webp)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/particles)
+
+[Animated SVG](docs/assets/readme/particles-10s.svg)
 
 #### [Liquid Timer](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/liquid-timer)
 
-[![Liquid Timer simulation preview](docs/assets/readme/liquid-timer-10s.svg)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/liquid-timer)
+[![Liquid Timer simulation preview](docs/assets/readme/liquid-timer-10s.webp)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/liquid-timer)
+
+[Animated SVG](docs/assets/readme/liquid-timer-10s.svg)
 
 #### [Surface Tension](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/surface-tension)
 
-[![Surface Tension simulation preview](docs/assets/readme/surface-tension-10s.svg)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/surface-tension)
+[![Surface Tension simulation preview](docs/assets/readme/surface-tension-10s.webp)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/surface-tension)
+
+[Animated SVG](docs/assets/readme/surface-tension-10s.svg)
 
 #### [Elastic Particles](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/elastic-particles)
 
-[![Elastic Particles simulation preview](docs/assets/readme/elastic-particles-10s.svg)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/elastic-particles)
+[![Elastic Particles simulation preview](docs/assets/readme/elastic-particles-10s.webp)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/elastic-particles)
+
+[Animated SVG](docs/assets/readme/elastic-particles-10s.svg)
 
 #### [Rigid Particles](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/rigid-particles)
 
-[![Rigid Particles simulation preview](docs/assets/readme/rigid-particles-10s.svg)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/rigid-particles)
+[![Rigid Particles simulation preview](docs/assets/readme/rigid-particles-10s.webp)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/rigid-particles)
+
+[Animated SVG](docs/assets/readme/rigid-particles-10s.svg)
 
 #### [Soup](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/soup)
 
-[![Soup simulation preview](docs/assets/readme/soup-10s.svg)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/soup)
+[![Soup simulation preview](docs/assets/readme/soup-10s.webp)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/soup)
+
+[Animated SVG](docs/assets/readme/soup-10s.svg)
 
 #### [Soup Stirrer](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/soup-stirrer)
 
-[![Soup Stirrer simulation preview](docs/assets/readme/soup-stirrer-10s.svg)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/soup-stirrer)
+[![Soup Stirrer simulation preview](docs/assets/readme/soup-stirrer-10s.webp)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/soup-stirrer)
+
+[Animated SVG](docs/assets/readme/soup-stirrer-10s.svg)
 
 #### [Impulse](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/impulse)
 
-[![Impulse simulation preview](docs/assets/readme/impulse-10s.svg)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/impulse)
+[![Impulse simulation preview](docs/assets/readme/impulse-10s.webp)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/impulse)
+
+[Animated SVG](docs/assets/readme/impulse-10s.svg)
 
 #### [Wave Machine](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/wave-machine)
 
-[![Wave Machine simulation preview](docs/assets/readme/wave-machine-10s.svg)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/wave-machine)
+[![Wave Machine simulation preview](docs/assets/readme/wave-machine-10s.webp)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/wave-machine)
+
+[Animated SVG](docs/assets/readme/wave-machine-10s.svg)
 
 #### [Theo Jansen](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/theo-jansen)
 
-[![Theo Jansen simulation preview](docs/assets/readme/theo-jansen-10s.svg)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/theo-jansen)
+[![Theo Jansen simulation preview](docs/assets/readme/theo-jansen-10s.webp)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/theo-jansen)
+
+[Animated SVG](docs/assets/readme/theo-jansen-10s.svg)
 
 <!-- readme-svg-gallery:end -->
 
@@ -132,11 +165,11 @@ not expected to pass against current Play/Pause/Reset chrome.
 Ordinary playground proof is `just web-player-smoke`.
 
 `just readme-svg` rebuilds the WASM package, writes one 10 second animated SVG
-per catalog scene under `docs/assets/readme/`, and upserts the demo gallery.
-The post-merge Readme SVG workflow runs the same command and commits when the
-export changes. A new scene also needs a plan in
-`web/scripts/readme-svg/plans.ts`, including a cue when the default scene does
-not move on its own.
+per catalog scene under `docs/assets/readme/`, rasterizes each SVG to a 60 fps
+animated WebP, and upserts the demo gallery. The post-merge Readme scene
+preview workflow runs the same command and commits when the export changes. A
+new scene also needs a plan in `web/scripts/readme-svg/plans.ts`, including a
+cue when the default scene does not move on its own.
 
 `just demo-media` and `just demo-media-check` remain optional local MP4 and
 WebP captures into `docs/assets/demos`. They are not the README gallery. They
