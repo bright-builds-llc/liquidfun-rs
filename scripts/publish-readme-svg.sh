@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Commit README scene SVGs only when the generated files changed.
+# Commit README scene SVGs and WebP previews only when the generated files changed.
 set -euo pipefail
 
 readme_path="README.md"
@@ -11,13 +11,13 @@ repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repo_root"
 
 if [[ "${GITHUB_ACTIONS:-}" != "true" ]]; then
-	printf '%s\n' "Refusing to publish README scene SVGs outside GitHub Actions."
+	printf '%s\n' "Refusing to publish README scene previews outside GitHub Actions."
 	exit 1
 fi
 
 git add -A -- "$readme_path" "$svg_dir"
 if git diff --cached --quiet -- "$readme_path" "$svg_dir"; then
-	printf '%s\n' "README scene SVGs and gallery are unchanged; not committing."
+	printf '%s\n' "README scene previews and gallery are unchanged; not committing."
 	exit 0
 fi
 
@@ -29,9 +29,9 @@ fi
 
 git -c "user.name=${github_actions_name}" -c "user.email=${github_actions_email}" \
 	commit -m "$(cat <<'EOF'
-chore: update README scene SVGs
+chore: update README scene previews
 
-Regenerate the 10 second scene SVGs and the README demo gallery.
+Regenerate the 10 second scene SVGs, their 60 fps WebP rasters, and the README demo gallery.
 EOF
 )" -- "$readme_path" "$svg_dir"
 
@@ -45,7 +45,7 @@ if [[ "$push_status" -eq 0 ]]; then
 fi
 
 if printf '%s\n' "$push_output" | grep -Eiq 'non-fast-forward|fetch first|tip of your current branch is behind'; then
-	printf '%s\n' "Push rejected because main moved; a newer run will publish the SVGs."
+	printf '%s\n' "Push rejected because main moved; a newer run will publish the previews."
 	exit 0
 fi
 

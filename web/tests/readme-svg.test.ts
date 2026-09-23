@@ -9,6 +9,7 @@ import {
   README_SVG_SECONDS,
   readmeSvgRepoPath,
   readmeSvgRequest,
+  readmeWebpRepoPath,
 } from "../scripts/readme-svg/plans";
 import {
   README_SVG_BEGIN,
@@ -82,6 +83,8 @@ describe("readmeSvgRequest", () => {
     expect(README_SVG_SECONDS).toBe(10);
     expect(readmeSvgRepoPath("dam-break")).toBe("docs/assets/readme/dam-break-10s.svg");
     expect(readmeSvgRepoPath("theo-jansen")).toBe("docs/assets/readme/theo-jansen-10s.svg");
+    expect(readmeWebpRepoPath("dam-break")).toBe("docs/assets/readme/dam-break-10s.webp");
+    expect(readmeWebpRepoPath("theo-jansen")).toBe("docs/assets/readme/theo-jansen-10s.webp");
   });
 
   it("nudges scenes that stay still until an action or pointer", () => {
@@ -116,13 +119,15 @@ describe("upsertReadmeSvgGallery", () => {
 
     // Assert
     expect(updated).toContain(readmeSvgGalleryBody(README_SVG_PLANS));
+    expect(updated).toContain("60 fps animated WebP");
     expect(updated).toContain(
-      "[![Dam Break simulation preview](docs/assets/readme/dam-break-10s.svg)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/dam-break)",
+      "[![Dam Break simulation preview](docs/assets/readme/dam-break-10s.webp)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/dam-break)",
     );
+    expect(updated).toContain("[Animated SVG](docs/assets/readme/dam-break-10s.svg)");
     expect(updated).toContain(
-      "[![Theo Jansen simulation preview](docs/assets/readme/theo-jansen-10s.svg)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/theo-jansen)",
+      "[![Theo Jansen simulation preview](docs/assets/readme/theo-jansen-10s.webp)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/theo-jansen)",
     );
-    expect(updated).not.toContain(".webp");
+    expect(updated).not.toContain("](docs/assets/readme/dam-break-10s.svg)]");
     expect(updated).not.toContain(".mp4");
     expect(updated).not.toContain(RETIRED_BEGIN);
     expect(updated).not.toContain("### Dam Break animated SVG");

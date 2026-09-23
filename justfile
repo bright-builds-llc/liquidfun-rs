@@ -42,10 +42,10 @@ demo-media-check:
     bun scripts/web-build.ts build
     cd web && bun run demo-media -- check
 
-# Regenerates committed 10 second scene SVGs and upserts the README gallery.
+# Regenerates committed 10 second scene SVGs, 60 fps WebP previews, and the README gallery.
 readme-svg:
     bun scripts/web-build.ts wasm
-    cd web && bun run readme-svg
+    cd web && bun install --frozen-lockfile && bun run readme-svg
 
 test:
     cargo test --all-features

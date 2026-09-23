@@ -70,9 +70,14 @@ export const README_SVG_PLANS: readonly ReadmeSvgPlan[] = [
   { id: "theo-jansen", cues: [] },
 ];
 
-/** Repo path of one committed README loop. */
+/** Repo path of one committed README SVG loop. */
 export function readmeSvgRepoPath(sceneId: SceneId): string {
   return `docs/assets/readme/${svgExportFileName(sceneId, README_SVG_SECONDS)}`;
+}
+
+/** Repo path of the 60 fps WebP rasterized from that SVG. */
+export function readmeWebpRepoPath(sceneId: SceneId): string {
+  return readmeSvgRepoPath(sceneId).replace(/\.svg$/, ".webp");
 }
 
 /**
