@@ -18,8 +18,12 @@ import { DebugReadout } from "./DebugReadout";
 import { GravityArrow } from "./GravityArrow";
 import type { FpsTick } from "./fps-meter";
 import { ViewportTools } from "./ViewportTools";
+import { CanvasHud, PlaybackButtons, SceneControlsSheet } from "./CanvasStage";
+import { SiteFooter } from "./SiteFooter";
+import { Drawer } from "./ui/drawer";
 
 export type PlayerPanelProps = {
+  readonly canvasStage: boolean;
   readonly sceneTitle: string;
   readonly status: PlayerStatus;
   readonly maybeDetails?: string | undefined;
@@ -55,12 +59,10 @@ const RUNTIME_LABEL = "Runtime";
 const RUNTIME_VALUE = "Rust engine · WebAssembly";
 const PLAYING_STATUS = "Playing";
 const PAUSED_STATUS = "Paused";
-const PLAY_LABEL = "Play scene";
-const PAUSE_LABEL = "Pause scene";
-const RESET_LABEL = "Reset scene";
-const RETRY_LABEL = "Retry scene";
 const LOADING_OVERLAY_BODY =
   "Starting the Rust WebAssembly session. The scene appears when the first frame is ready.";
+const SHEET_DESCRIPTION =
+  "Rendering, playback options, scene parameters, and project details.";
 
 function statusText(status: PlayerStatus, sceneTitle: string): string {
   switch (status) {
@@ -75,52 +77,55 @@ function statusText(status: PlayerStatus, sceneTitle: string): string {
   }
 }
 
-function playDisabled(status: PlayerStatus): boolean {
-  return status !== "paused";
-}
-
-function pauseDisabled(status: PlayerStatus): boolean {
-  return status !== "playing";
-}
-
-function resetDisabled(status: PlayerStatus): boolean {
-  return status === "loading";
+function failureCopy(sceneTitle: string): string {
+  return `${sceneTitle} could not start or continue. Use Retry scene to recreate it, or Reset scene to return to the documented initial state.`;
 }
 
 /** Presentational player chrome for any ready scene. */
 export function PlayerPanel(props: PlayerPanelProps) {
   return (
-    <section class="player-panel" aria-labelledby="player-title">
-      <div class="status-row">
-        <h2 id="player-title">{props.sceneTitle}</h2>
-        <output
-          class={`session-status session-status--${props.status}`}
-          aria-live="polite"
-          aria-atomic="true"
-        >
-          <span class="status-dot" aria-hidden="true" />
-          {statusText(props.status, props.sceneTitle)}
-        </output>
-        <dl class="player-identity">
-          <dt>{RUNTIME_LABEL}</dt>
-          <dd>{RUNTIME_VALUE}</dd>
-        </dl>
-      </div>
+    <Show
+      when={props.canvasStage}
+      fallback={<PlayerPanelLayout canvasStage={false} panel={props} />}
+    >
+      <Drawer side="bottom">
+        <PlayerPanelLayout canvasStage panel={props} />
+      </Drawer>
+    </Show>
+  );
+}
 
-      <Show when={props.status === "failed"}>
-        <div class="error-message" role="alert">
-          <p>
-            {`${props.sceneTitle} could not start or continue. Use Retry scene to recreate it, or Reset scene to return to the documented initial state.`}
-          </p>
-          <Show when={props.maybeDetails}>
-            {(details) => (
-              <details class="failure-debug" open>
-                <summary>Debug details</summary>
-                <pre>{details()}</pre>
-              </details>
-            )}
-          </Show>
+function PlayerPanelLayout(layoutProps: {
+  readonly canvasStage: boolean;
+  readonly panel: PlayerPanelProps;
+}) {
+  const props = layoutProps.panel;
+  return (
+    <section
+      class="player-panel"
+      classList={{ "player-panel--canvas-stage": layoutProps.canvasStage }}
+      aria-labelledby="player-title"
+    >
+      <Show when={!layoutProps.canvasStage}>
+        <div class="status-row">
+          <h2 id="player-title">{props.sceneTitle}</h2>
+          <output
+            class={`session-status session-status--${props.status}`}
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            <span class="status-dot" aria-hidden="true" />
+            {statusText(props.status, props.sceneTitle)}
+          </output>
+          <RuntimeIdentity />
         </div>
+      </Show>
+
+      <Show when={!layoutProps.canvasStage && props.status === "failed"}>
+        <FailureMessage
+          sceneTitle={props.sceneTitle}
+          maybeDetails={props.maybeDetails}
+        />
       </Show>
 
       <figure>
@@ -141,6 +146,12 @@ export function PlayerPanel(props: PlayerPanelProps) {
               <span>{LOADING_OVERLAY_BODY}</span>
             </div>
           </Show>
+          <Show when={layoutProps.canvasStage && props.status === "failed"}>
+            <div class="empty-state">
+              <strong>{statusText(props.status, props.sceneTitle)}</strong>
+              <span>{failureCopy(props.sceneTitle)}</span>
+            </div>
+          </Show>
           <DebugReadout
             enabled={props.debugEnabled}
             maybeFrame={props.maybeDebugFrame}
@@ -151,138 +162,208 @@ export function PlayerPanel(props: PlayerPanelProps) {
             tiltGravityEnabled={props.tiltGravityEnabled}
             tiltDebug={props.tiltDebug}
           />
-          <ViewportTools
-            panEnabled={props.panEnabled}
-            onZoomIn={props.onZoomIn}
-            onZoomOut={props.onZoomOut}
-            onResetZoom={props.onResetZoom}
-            onPanEnabledChange={props.onPanEnabledChange}
-          />
+          <Show when={layoutProps.canvasStage}>
+            <figcaption id="scene-interaction-hint" class="visually-hidden">
+              {props.interactionHint}
+            </figcaption>
+          </Show>
+          <Show
+            when={layoutProps.canvasStage}
+            fallback={
+              <ViewportTools
+                showFullscreen
+                panEnabled={props.panEnabled}
+                onZoomIn={props.onZoomIn}
+                onZoomOut={props.onZoomOut}
+                onResetZoom={props.onResetZoom}
+                onPanEnabledChange={props.onPanEnabledChange}
+              />
+            }
+          >
+            <CanvasHud
+              compact
+              sceneTitle={props.sceneTitle}
+              status={props.status}
+              statusLabel={statusText(props.status, props.sceneTitle)}
+              onPlay={props.onPlay}
+              onPause={props.onPause}
+              onReset={props.onReset}
+              onRetry={props.onRetry}
+              panEnabled={props.panEnabled}
+              onZoomIn={props.onZoomIn}
+              onZoomOut={props.onZoomOut}
+              onResetZoom={props.onResetZoom}
+              onPanEnabledChange={props.onPanEnabledChange}
+            />
+          </Show>
         </div>
-        <figcaption id="scene-interaction-hint">{props.interactionHint}</figcaption>
+        <Show when={!layoutProps.canvasStage}>
+          <figcaption id="scene-interaction-hint">
+            {props.interactionHint}
+          </figcaption>
+        </Show>
       </figure>
 
-      <div class="control-row">
-        <Show when={props.status === "failed"}>
-          <button
-            class="product-control product-control--accent"
-            type="button"
-            onClick={() => props.onRetry()}
-          >
-            {RETRY_LABEL}
-          </button>
-        </Show>
-        <button
-          class="product-control product-control--accent"
-          type="button"
-          disabled={playDisabled(props.status)}
-          onClick={() => props.onPlay()}
-        >
-          {PLAY_LABEL}
-        </button>
-        <button
-          class="product-control"
-          type="button"
-          disabled={pauseDisabled(props.status)}
-          onClick={() => props.onPause()}
-        >
-          {PAUSE_LABEL}
-        </button>
-        <button
-          class="product-control"
-          type="button"
-          disabled={resetDisabled(props.status)}
-          onClick={() => props.onReset()}
-        >
-          {RESET_LABEL}
-        </button>
-        <label class="render-mode-control">
-          Rendering
-          <select
-            value={props.renderMode}
-            onChange={(event) => {
-              const maybeMode = maybeParseRenderMode(
-                event.currentTarget.value,
-              );
-              if (maybeMode !== undefined) {
-                props.onRenderModeChange(maybeMode);
-              }
-            }}
-          >
-            <option value="wireframe">Wireframe</option>
-            <option value="solid">Solid</option>
-          </select>
-        </label>
-        <label class="stroke-width-control">
-          Wireframe stroke
-          <input
-            id="wireframe-stroke"
-            type="range"
-            min={WIREFRAME_STROKE_WIDTH_MIN}
-            max={WIREFRAME_STROKE_WIDTH_MAX}
-            step={WIREFRAME_STROKE_WIDTH_STEP}
-            value={props.wireframeStrokeWidth}
-            onInput={(event) => {
-              const maybeWidth = maybeParseWireframeStrokeWidth(
-                event.currentTarget.value,
-              );
-              if (maybeWidth !== undefined) {
-                props.onWireframeStrokeWidthChange(maybeWidth);
-              }
-            }}
-          />
-          <output for="wireframe-stroke">
-            {formatWireframeStrokeWidth(props.wireframeStrokeWidth)}
-          </output>
-        </label>
-        <label class="rendered-particle-control">
-          Rendered particles
-          <input
-            type="text"
-            inputMode="numeric"
-            spellcheck={false}
-            value={props.renderedParticleDraft}
-            onInput={(event) => {
-              props.onRenderedParticleDraft(event.currentTarget.value);
-            }}
-          />
-        </label>
-        <label class="debug-toggle">
-          <input
-            type="checkbox"
-            checked={props.debugEnabled}
-            onChange={(event) => {
-              props.onDebugEnabledChange(event.currentTarget.checked);
-            }}
-          />
-          Debug info
-        </label>
-      </div>
+      <Show
+        when={layoutProps.canvasStage}
+        fallback={
+          <>
+            <div class="control-row">
+              <PlaybackButtons
+                compact={false}
+                status={props.status}
+                onPlay={props.onPlay}
+                onPause={props.onPause}
+                onReset={props.onReset}
+                onRetry={props.onRetry}
+              />
+              <PlayerOptions panel={props} />
+            </div>
+            <TiltPane panel={props} />
+            {props.children}
+          </>
+        }
+      >
+        <SceneControlsSheet description={SHEET_DESCRIPTION}>
+          <Show when={props.status === "failed"}>
+            <FailureMessage
+              sceneTitle={props.sceneTitle}
+              maybeDetails={props.maybeDetails}
+            />
+          </Show>
+          <p class="scene-interaction-hint">{props.interactionHint}</p>
+          <RuntimeIdentity />
+          <div class="control-row">
+            <PlayerOptions panel={props} />
+          </div>
+          <TiltPane panel={props} />
+          {props.children}
+          <SiteFooter />
+        </SceneControlsSheet>
+      </Show>
+    </section>
+  );
+}
 
-      <section class="tilt-pane" aria-labelledby="tilt-pane-title">
-        <h3 id="tilt-pane-title">Phone tilt gravity</h3>
-        <label class="player-check">
-          <input
-            type="checkbox"
-            checked={props.tiltGravityEnabled}
-            onChange={(event) => {
-              props.onTiltGravityEnabledChange(event.currentTarget.checked);
-            }}
-          />
-          Use phone accelerometer
-        </label>
-        <p
-          class="tilt-debug"
-          classList={{
-            "tilt-debug-problem": props.tiltDebug.kind === "problem",
+function RuntimeIdentity() {
+  return (
+    <dl class="player-identity">
+      <dt>{RUNTIME_LABEL}</dt>
+      <dd>{RUNTIME_VALUE}</dd>
+    </dl>
+  );
+}
+
+function FailureMessage(props: {
+  readonly sceneTitle: string;
+  readonly maybeDetails: string | undefined;
+}) {
+  return (
+    <div class="error-message" role="alert">
+      <p>{failureCopy(props.sceneTitle)}</p>
+      <Show when={props.maybeDetails}>
+        {(details) => (
+          <details class="failure-debug" open>
+            <summary>Debug details</summary>
+            <pre>{details()}</pre>
+          </details>
+        )}
+      </Show>
+    </div>
+  );
+}
+
+function PlayerOptions(props: { readonly panel: PlayerPanelProps }) {
+  const panel = props.panel;
+  return (
+    <>
+      <label class="render-mode-control">
+        Rendering
+        <select
+          value={panel.renderMode}
+          onChange={(event) => {
+            const maybeMode = maybeParseRenderMode(event.currentTarget.value);
+            if (maybeMode !== undefined) {
+              panel.onRenderModeChange(maybeMode);
+            }
           }}
-          role="status"
         >
-          {formatTiltDebug(props.tiltDebug)}
-        </p>
-      </section>
+          <option value="wireframe">Wireframe</option>
+          <option value="solid">Solid</option>
+        </select>
+      </label>
+      <label class="stroke-width-control">
+        Wireframe stroke
+        <input
+          id="wireframe-stroke"
+          type="range"
+          min={WIREFRAME_STROKE_WIDTH_MIN}
+          max={WIREFRAME_STROKE_WIDTH_MAX}
+          step={WIREFRAME_STROKE_WIDTH_STEP}
+          value={panel.wireframeStrokeWidth}
+          onInput={(event) => {
+            const maybeWidth = maybeParseWireframeStrokeWidth(
+              event.currentTarget.value,
+            );
+            if (maybeWidth !== undefined) {
+              panel.onWireframeStrokeWidthChange(maybeWidth);
+            }
+          }}
+        />
+        <output for="wireframe-stroke">
+          {formatWireframeStrokeWidth(panel.wireframeStrokeWidth)}
+        </output>
+      </label>
+      <label class="rendered-particle-control">
+        Rendered particles
+        <input
+          type="text"
+          inputMode="numeric"
+          spellcheck={false}
+          value={panel.renderedParticleDraft}
+          onInput={(event) => {
+            panel.onRenderedParticleDraft(event.currentTarget.value);
+          }}
+        />
+      </label>
+      <label class="debug-toggle">
+        <input
+          type="checkbox"
+          checked={panel.debugEnabled}
+          onChange={(event) => {
+            panel.onDebugEnabledChange(event.currentTarget.checked);
+          }}
+        />
+        Debug info
+      </label>
+    </>
+  );
+}
 
-      {props.children}
+function TiltPane(props: { readonly panel: PlayerPanelProps }) {
+  const panel = props.panel;
+  return (
+    <section class="tilt-pane" aria-labelledby="tilt-pane-title">
+      <h3 id="tilt-pane-title">Phone tilt gravity</h3>
+      <label class="player-check">
+        <input
+          type="checkbox"
+          checked={panel.tiltGravityEnabled}
+          onChange={(event) => {
+            panel.onTiltGravityEnabledChange(event.currentTarget.checked);
+          }}
+        />
+        Use phone accelerometer
+      </label>
+      <p
+        class="tilt-debug"
+        classList={{
+          "tilt-debug-problem": panel.tiltDebug.kind === "problem",
+        }}
+        role="status"
+      >
+        {formatTiltDebug(panel.tiltDebug)}
+      </p>
     </section>
   );
 }

@@ -14,6 +14,7 @@ import {
 } from "./ui/sidebar";
 
 export type PlaygroundShellProps = {
+  readonly canvasStage: boolean;
   readonly maybeCurrentSceneId: SceneId | undefined;
   readonly routeIdentity: string;
   readonly children: JSX.Element;
@@ -24,6 +25,7 @@ export function PlaygroundShell(props: PlaygroundShellProps) {
   return (
     <SidebarProvider>
       <PlaygroundFrame
+        canvasStage={props.canvasStage}
         maybeCurrentSceneId={props.maybeCurrentSceneId}
         routeIdentity={props.routeIdentity}
       >
@@ -79,12 +81,15 @@ function PlaygroundFrame(props: PlaygroundShellProps) {
         aria-hidden={sidebar.openMobile() ? "true" : undefined}
       >
         <SiteHeader
+          canvasStage={props.canvasStage}
           mobileNavigationTrigger={
             <SidebarTrigger class="mobile-demos-trigger" aria-label="Demos" />
           }
         />
         <div class="app-body">{props.children}</div>
-        <SiteFooter />
+        <Show when={!props.canvasStage}>
+          <SiteFooter />
+        </Show>
       </div>
     </>
   );
