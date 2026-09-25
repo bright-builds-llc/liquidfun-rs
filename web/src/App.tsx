@@ -56,7 +56,7 @@ import {
   loadWireframeStrokeWidth,
   persistWireframeStrokeWidth,
 } from "./render/stroke-width";
-import { canvasStageActive } from "./player/fullscreen-capability";
+import { readCanvasStage } from "./player/fullscreen-capability";
 import { bindVisualViewport } from "./player/visual-viewport";
 import { normalizeSceneRoute } from "./routing/hash";
 
@@ -83,7 +83,7 @@ export function App() {
   const [wireframeStrokeWidth, setWireframeStrokeWidth] = createSignal(
     loadWireframeStrokeWidth(() => window.localStorage),
   );
-  const canvasStage = canvasStageActive(document.fullscreenEnabled);
+  const canvasStage = readCanvasStage(document.fullscreenEnabled, navigator);
   const [debugEnabled, setDebugEnabled] = createSignal(!canvasStage);
   const [maybeDebugFrame, setMaybeDebugFrame] = createSignal<
     RenderFrame | undefined
