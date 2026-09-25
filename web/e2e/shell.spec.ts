@@ -65,6 +65,56 @@ test("renders the desktop shell and navigates from the sidebar", async ({
   ).toHaveAttribute("aria-current", "page");
 });
 
+test("keeps scrolled mobile player controls painted", async ({ page }) => {
+  // Arrange
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(DAM_BREAK_PATH);
+  await expectReadySceneChrome(page, "Dam Break");
+
+  // Act
+  await page.locator(".svg-export-pane").scrollIntoViewIfNeeded();
+
+  // Assert
+  await expect(page.locator(".site-header")).toHaveCSS("backdrop-filter", "none");
+  await expect(page.locator(".site-header")).toHaveCSS(
+    "background-color",
+    "rgb(21, 29, 40)",
+  );
+  const sheet = await page.evaluate(() => {
+    const tilt = document.querySelector(".tilt-pane");
+    const pane = document.querySelector(".svg-export-pane");
+    const title = document.querySelector("#svg-export-title");
+    const button = document.querySelector(".svg-export-pane button");
+    if (
+      !(tilt instanceof HTMLElement) ||
+      !(pane instanceof HTMLElement) ||
+      !(title instanceof HTMLElement) ||
+      !(button instanceof HTMLElement)
+    ) {
+      throw new Error("player sheet controls are missing");
+    }
+    const tiltBox = tilt.getBoundingClientRect();
+    const paneBox = pane.getBoundingClientRect();
+    const titleBox = title.getBoundingClientRect();
+    const buttonBox = button.getBoundingClientRect();
+    return {
+      gap: paneBox.top - tiltBox.bottom,
+      titleHeight: titleBox.height,
+      buttonHeight: buttonBox.height,
+      titleInsidePane: titleBox.top >= paneBox.top - 1 && titleBox.bottom <= paneBox.bottom + 1,
+      buttonInsidePane:
+        buttonBox.top >= paneBox.top - 1 && buttonBox.bottom <= paneBox.bottom + 1,
+    };
+  });
+  expect(sheet.gap).toBeLessThan(32);
+  expect(sheet.titleHeight).toBeGreaterThan(0);
+  expect(sheet.buttonHeight).toBeGreaterThan(0);
+  expect(sheet.titleInsidePane).toBe(true);
+  expect(sheet.buttonInsidePane).toBe(true);
+  await expect(page.getByRole("heading", { name: "Animated SVG" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Generate animated SVG" })).toBeVisible();
+});
+
 test("shows the build timestamp beside the other provenance", async ({
   page,
 }) => {

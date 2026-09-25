@@ -53,11 +53,12 @@ output {
   gap: var(--space-lg);
   min-width: 0;
   padding: var(--space-md) var(--space-lg);
-  background: rgb(21 29 40 / 96%);
+  /* Opaque on purpose. backdrop-filter on this sticky header makes iOS Safari
+     drop a band of the player sheet while it scrolls. */
+  background: #151D28;
   border: 1px solid #2A3441;
   border-radius: 12px;
   box-shadow: 0 12px 28px rgb(0 0 0 / 24%);
-  backdrop-filter: blur(12px);
 }
 html[data-demo-media-capture="true"] .site-header,
 html[data-demo-media-capture="true"] .demo-sidebar,

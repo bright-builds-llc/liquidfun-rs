@@ -109,6 +109,9 @@ figure {
   position: relative;
   min-width: 0;
   overflow: hidden;
+  /* Hold the canvas on its own layer so iOS Safari clips it to the rounded
+     frame instead of leaving an unpainted band in the sheet below. */
+  isolation: isolate;
   background: #071018;
   border: 1px solid #2A3441;
   border-radius: 12px;
