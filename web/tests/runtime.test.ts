@@ -70,15 +70,33 @@ describe("constructionEntriesForScene", () => {
     // Act
     const entries = constructionEntriesForScene(maybeScene, {
       "water-amount": "large",
-      gravity: "low",
+      gravity: "6",
       "drop-obstacle": "ignored",
     });
 
     // Assert
     expect(entries).toEqual([
       { name: "water-amount", value: "large" },
-      { name: "gravity", value: "low" },
+      { name: "gravity", value: "6" },
     ]);
+  });
+
+  it("drops Dam Break gravity outside the slider", () => {
+    // Arrange
+    const maybeScene = maybeSceneById("dam-break");
+    expect(maybeScene).toBeDefined();
+    if (maybeScene === undefined) {
+      return;
+    }
+
+    // Act
+    const entries = constructionEntriesForScene(maybeScene, {
+      gravity: "high",
+      "water-amount": "huge",
+    });
+
+    // Assert
+    expect(entries).toEqual([]);
   });
 
   it("emits no applyControl rows for an empty Dam Break bag", () => {

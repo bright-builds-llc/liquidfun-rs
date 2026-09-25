@@ -1,0 +1,66 @@
+.scene-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+}
+
+.scene-control {
+  display: grid;
+  gap: var(--space-sm);
+  justify-items: start;
+}
+
+.scene-control-label {
+  display: grid;
+  gap: var(--space-sm);
+  color: #F4F7FA;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.scene-control-readout,
+.scene-control-scale {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  width: 16rem;
+  max-width: 100%;
+}
+
+.scene-control-readout output {
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+
+.scene-control-range {
+  width: 16rem;
+  max-width: 100%;
+  min-block-size: 44px;
+  margin: 0;
+  accent-color: #4DA3FF;
+}
+
+.scene-control-range:focus-visible {
+  outline: 2px solid #4DA3FF;
+  outline-offset: 4px;
+}
+
+.scene-control-range:disabled {
+  opacity: 0.55;
+}
+
+.scene-control-scale {
+  color: #A9B4C0;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
+}
+
+.construction-reset-hint {
+  color: #A9B4C0;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.4;
+}

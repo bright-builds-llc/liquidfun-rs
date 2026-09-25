@@ -30,9 +30,14 @@ const DYNAMIC_CIRCLE_POSITION: Vec2 = Vec2::new(2.5, 5.5);
 const DROP_CIRCLE_POSITION: Vec2 = Vec2::new(2.5, 7.2);
 const DROP_WAKE_IMPULSE: Vec2 = Vec2::new(0.0, -0.1);
 const MAXIMUM_PARTICLE_COUNT: usize = 10240;
-const LOW_GRAVITY: Vec2 = Vec2::new(0.0, -6.0);
-const NORMAL_GRAVITY: Vec2 = Vec2::new(0.0, -10.0);
-const HIGH_GRAVITY: Vec2 = Vec2::new(0.0, -16.0);
+/// Former Low preset. Keep in sync with `DAM_BREAK_GRAVITY_MIN` in `web/src/catalog/scenes.ts`.
+const FORMER_LOW_GRAVITY_MAGNITUDE: u16 = 6;
+/// Former High preset. The slider maximum is five times this magnitude.
+const FORMER_HIGH_GRAVITY_MAGNITUDE: u16 = 16;
+const MIN_GRAVITY_MAGNITUDE: u16 = FORMER_LOW_GRAVITY_MAGNITUDE;
+const MAX_GRAVITY_MAGNITUDE: u16 = FORMER_HIGH_GRAVITY_MAGNITUDE * 5;
+/// Documented normal gravity. Keep in sync with `DAM_BREAK_GRAVITY_DEFAULT`.
+const DEFAULT_GRAVITY_MAGNITUDE: f32 = 10.0;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum WaterAmount {
@@ -60,30 +65,25 @@ impl WaterAmount {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
-enum GravityPreset {
-    Low,
-    Normal,
-    High,
+/// Parses a slider magnitude in whole m/s², from the former Low preset through five times High.
+fn parse_gravity_magnitude(value: &str) -> Option<f32> {
+    if value.is_empty() || !value.bytes().all(|byte| byte.is_ascii_digit()) {
+        return None;
+    }
+    if value.len() > 1 && value.starts_with('0') {
+        return None;
+    }
+
+    let magnitude = value.parse::<u16>().ok()?;
+    if !(MIN_GRAVITY_MAGNITUDE..=MAX_GRAVITY_MAGNITUDE).contains(&magnitude) {
+        return None;
+    }
+
+    Some(f32::from(magnitude))
 }
 
-impl GravityPreset {
-    fn parse(value: &str) -> Option<Self> {
-        match value {
-            "low" => Some(Self::Low),
-            "normal" => Some(Self::Normal),
-            "high" => Some(Self::High),
-            _ => None,
-        }
-    }
-
-    fn vector(self) -> Vec2 {
-        match self {
-            Self::Low => LOW_GRAVITY,
-            Self::Normal => NORMAL_GRAVITY,
-            Self::High => HIGH_GRAVITY,
-        }
-    }
+fn gravity_vector(magnitude: f32) -> Vec2 {
+    Vec2::new(0.0, -magnitude)
 }
 
 struct DamBreakHooks {
@@ -99,16 +99,16 @@ pub(crate) fn build(presets: &[(String, String)]) -> Result<BuiltScene, SessionE
         .map_or(Ok(WaterAmount::Medium), |maybe_water| {
             maybe_water.ok_or(SessionError::UnknownControl)
         })?;
-    let gravity = preset_value(presets, "gravity")
-        .map(GravityPreset::parse)
-        .map_or(Ok(GravityPreset::Normal), |maybe_gravity| {
+    let gravity_magnitude = preset_value(presets, "gravity")
+        .map(parse_gravity_magnitude)
+        .map_or(Ok(DEFAULT_GRAVITY_MAGNITUDE), |maybe_gravity| {
             maybe_gravity.ok_or(SessionError::UnknownControl)
         })?;
     debug_assert_eq!(
         PARTICLE_COUNT,
         usize::from(PARTICLE_COLUMNS) * usize::from(PARTICLE_ROWS)
     );
-    build_basin(water, gravity).map_err(|_error| SessionError::SceneConstruction)
+    build_basin(water, gravity_magnitude).map_err(|_error| SessionError::SceneConstruction)
 }
 
 fn preset_value<'a>(presets: &'a [(String, String)], name: &str) -> Option<&'a str> {
@@ -119,10 +119,10 @@ fn preset_value<'a>(presets: &'a [(String, String)], name: &str) -> Option<&'a s
         .map(|(_key, value)| value.as_str())
 }
 
-fn build_basin(water: WaterAmount, gravity: GravityPreset) -> Result<BuiltScene, SceneError> {
+fn build_basin(water: WaterAmount, gravity_magnitude: f32) -> Result<BuiltScene, SceneError> {
     let mut world = World::new().map_err(|_error| SceneError::World)?;
     world
-        .set_gravity(gravity.vector())
+        .set_gravity(gravity_vector(gravity_magnitude))
         .map_err(|_error| SceneError::Gravity)?;
 
     let basin_body = world
@@ -286,7 +286,7 @@ impl SceneHooks for DamBreakHooks {
                 Ok(ControlEffect::Recreated)
             }
             "gravity" => {
-                let Some(_gravity) = GravityPreset::parse(value) else {
+                let Some(_magnitude) = parse_gravity_magnitude(value) else {
                     return Err(SessionError::UnknownControl);
                 };
                 Ok(ControlEffect::Recreated)

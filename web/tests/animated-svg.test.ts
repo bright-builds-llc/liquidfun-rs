@@ -158,7 +158,7 @@ describe("changedPresetEntries", () => {
 
     // Act
     const damBreak = changedPresetEntries(maybeDamBreak, {
-      gravity: "high",
+      gravity: "80",
       "water-amount": "small",
       "drop-obstacle": "ignored",
     });
@@ -170,12 +170,27 @@ describe("changedPresetEntries", () => {
     // Assert
     expect(damBreak).toEqual([
       { name: "water-amount", value: "small" },
-      { name: "gravity", value: "high" },
+      { name: "gravity", value: "80" },
     ]);
     expect(fountain).toEqual([
       { name: "emission-rate", value: "high" },
       { name: "aim-angle", value: "left" },
     ]);
+  });
+
+  it("drops a Dam Break gravity value outside the slider", () => {
+    // Arrange
+    const maybeDamBreak = maybeSceneById("dam-break");
+    expect(maybeDamBreak).toBeDefined();
+    if (maybeDamBreak === undefined) {
+      return;
+    }
+
+    // Act
+    const entries = changedPresetEntries(maybeDamBreak, { gravity: "high" });
+
+    // Assert
+    expect(entries).toEqual([]);
   });
 });
 

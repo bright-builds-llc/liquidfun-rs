@@ -42,7 +42,7 @@ fn native_bench_recipe_matches_live_medium_normal_scene() {
     );
     assert_eq!(
         recipe::RECIPE_GRAVITY_Y.to_bits(),
-        super::NORMAL_GRAVITY.y.to_bits()
+        (-super::DEFAULT_GRAVITY_MAGNITUDE).to_bits()
     );
 }
 
@@ -101,37 +101,61 @@ fn water_amount_presets_recreate_with_locked_counts() {
 }
 
 #[test]
-fn gravity_presets_recreate_with_matching_bits() {
+fn gravity_slider_maps_magnitude_to_downward_gravity() {
+    // Arrange
+    let cases = [("6", -6.0_f32), ("10", -10.0), ("16", -16.0), ("80", -80.0)];
+
+    // Act / Assert
+    assert_eq!(
+        super::MAX_GRAVITY_MAGNITUDE,
+        super::FORMER_HIGH_GRAVITY_MAGNITUDE * 5
+    );
+    for (token, expected_y) in cases {
+        let scene = super::build(&[("gravity".to_owned(), token.to_owned())])
+            .unwrap_or_else(|_| panic!("gravity={token} should construct"));
+        assert_eq!(scene.world.gravity().x.to_bits(), 0.0_f32.to_bits());
+        assert_eq!(
+            scene.world.gravity().y.to_bits(),
+            expected_y.to_bits(),
+            "gravity={token}"
+        );
+    }
+}
+
+#[test]
+fn gravity_slider_recreates_at_five_times_former_high() {
     // Arrange
     let mut session = SessionCore::create(SceneId::DamBreak)
         .expect("Dam Break should construct the documented basin");
 
     // Act
-    let low = session
-        .apply_control("gravity", "low")
-        .expect("gravity=low should recreate");
-    let high = session
-        .apply_control("gravity", "high")
-        .expect("gravity=high should recreate");
-    let normal = session
-        .apply_control("gravity", "normal")
-        .expect("gravity=normal should recreate");
-    let low_scene = super::build(&[("gravity".to_owned(), "low".to_owned())])
-        .expect("low gravity preset should construct");
-    let high_scene = super::build(&[("gravity".to_owned(), "high".to_owned())])
-        .expect("high gravity preset should construct");
+    let recreated = session
+        .apply_control("gravity", "80")
+        .expect("gravity=80 should recreate");
+    let scene = super::build(&[("gravity".to_owned(), "80".to_owned())])
+        .expect("five-times-high gravity should construct");
 
     // Assert
-    assert!(low, "gravity must return Recreated");
-    assert!(high, "gravity must return Recreated");
-    assert!(normal, "gravity must return Recreated");
-    assert_eq!(low_scene.world.gravity().x.to_bits(), 0.0_f32.to_bits());
-    assert_eq!(low_scene.world.gravity().y.to_bits(), (-6.0_f32).to_bits());
-    assert_eq!(high_scene.world.gravity().x.to_bits(), 0.0_f32.to_bits());
-    assert_eq!(
-        high_scene.world.gravity().y.to_bits(),
-        (-16.0_f32).to_bits()
-    );
+    assert!(recreated, "gravity must return Recreated");
+    assert_eq!(scene.world.gravity().x.to_bits(), 0.0_f32.to_bits());
+    assert_eq!(scene.world.gravity().y.to_bits(), (-80.0_f32).to_bits());
+}
+
+#[test]
+fn gravity_slider_rejects_named_presets_and_out_of_range_magnitudes() {
+    // Arrange
+    let mut session = SessionCore::create(SceneId::DamBreak)
+        .expect("Dam Break should construct the documented basin");
+    let rejected = ["low", "normal", "high", "5", "81", "08", "10.0", ""];
+
+    // Act / Assert
+    for token in rejected {
+        assert_eq!(
+            session.apply_control("gravity", token),
+            Err(crate::session::SessionError::UnknownControl),
+            "gravity={token}"
+        );
+    }
 }
 
 #[test]
@@ -396,6 +420,50 @@ fn dam_break_stays_finite_and_outside_walls_after_settling() {
             eprintln!(
                 "dam_break progress step={} max_speed={max_speed:.3}",
                 step_index + 1
+            );
+        }
+    }
+}
+
+#[test]
+fn extreme_gravity_stays_finite_for_one_second() {
+    use liquidfun::{NoDecisionHook, StepConfiguration, StepLimits};
+
+    // Arrange
+    let super::BuiltScene {
+        mut world,
+        particle_system,
+        ..
+    } = super::build(&[("gravity".to_owned(), "80".to_owned())])
+        .expect("five-times-high gravity should construct");
+    let step = StepConfiguration::new(1.0 / 60.0, 8, 3)
+        .expect("valid step")
+        .with_particle_iterations(2)
+        .expect("two particle iterations");
+    let limits = StepLimits::default();
+    let mut hook = NoDecisionHook;
+
+    // Act / Assert
+    for step_index in 0..60 {
+        world.step(step, &mut hook, limits).unwrap_or_else(|error| {
+            panic!("World::step failed at {step_index} under 80 m/s²: {error:?}")
+        });
+        let view = world
+            .particle_system_view(particle_system)
+            .expect("particle system remains live");
+        for (index, (position, velocity)) in view
+            .positions()
+            .iter()
+            .copied()
+            .zip(view.velocities().iter().copied())
+            .enumerate()
+        {
+            assert!(
+                position.x.is_finite()
+                    && position.y.is_finite()
+                    && velocity.x.is_finite()
+                    && velocity.y.is_finite(),
+                "non-finite state at step {step_index} particle {index}: p={position:?} v={velocity:?}"
             );
         }
     }

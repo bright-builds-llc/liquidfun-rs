@@ -57,7 +57,10 @@
 
   .product-control,
   button,
-  select {
+  select,
+  .scene-control-range,
+  .scene-control-readout,
+  .scene-control-scale {
     justify-self: stretch;
     width: 100%;
   }

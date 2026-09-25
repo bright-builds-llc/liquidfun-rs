@@ -30,9 +30,30 @@ export type SceneControl =
   | {
       readonly id: string;
       readonly label: string;
+      readonly kind: "range";
+      readonly recreates: boolean;
+      readonly min: number;
+      readonly max: number;
+      readonly step: number;
+      readonly defaultValue: number;
+      readonly unit: string;
+    }
+  | {
+      readonly id: string;
+      readonly label: string;
       readonly kind: "action";
       readonly recreates: false;
     };
+
+/** Former Dam Break Low gravity, in m/s² downward. */
+export const DAM_BREAK_GRAVITY_MIN = 6;
+/** Former Dam Break High gravity, in m/s² downward. */
+export const DAM_BREAK_GRAVITY_FORMER_HIGH = 16;
+/** Five times the former High gravity. Keep in sync with the wasm slider cap. */
+export const DAM_BREAK_GRAVITY_MAX = DAM_BREAK_GRAVITY_FORMER_HIGH * 5;
+export const DAM_BREAK_GRAVITY_STEP = 1;
+/** Documented Dam Break normal gravity, in m/s² downward. */
+export const DAM_BREAK_GRAVITY_DEFAULT = 10;
 
 export type SceneCredits = {
   readonly implementationPath: string;
@@ -213,13 +234,13 @@ export const SCENES: readonly SceneRecord[] = [
       {
         id: "gravity",
         label: "Gravity",
-        kind: "preset",
+        kind: "range",
         recreates: true,
-        values: [
-          option("low", "Low"),
-          option("normal", "Normal"),
-          option("high", "High"),
-        ],
+        min: DAM_BREAK_GRAVITY_MIN,
+        max: DAM_BREAK_GRAVITY_MAX,
+        step: DAM_BREAK_GRAVITY_STEP,
+        defaultValue: DAM_BREAK_GRAVITY_DEFAULT,
+        unit: "m/s²",
       },
       action("drop-obstacle", "Drop obstacle"),
       action("reset-obstacle", "Reset obstacle"),
