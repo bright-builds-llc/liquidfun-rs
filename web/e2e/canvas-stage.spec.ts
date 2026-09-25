@@ -10,6 +10,17 @@ import {
 const PORTRAIT = { width: 390, height: 812 } as const;
 const LANDSCAPE = { width: 932, height: 430 } as const;
 
+async function installAndroidPhone(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, "userAgentData", {
+      configurable: true,
+      get() {
+        return { mobile: true, platform: "Android" };
+      },
+    });
+  });
+}
+
 async function installUnavailableFullscreen(page: Page): Promise<void> {
   await page.addInitScript(() => {
     Object.defineProperty(Document.prototype, "fullscreenEnabled", {
@@ -47,6 +58,25 @@ test("keeps element fullscreen on a browser that supports it", async ({
   );
   await expect(page.getByRole("button", { name: "Full screen" })).toBeVisible();
   await expect(page.locator(".site-footer")).toBeVisible();
+});
+
+test("uses the canvas stage on an Android phone that can enter fullscreen", async ({
+  page,
+}) => {
+  // Arrange
+  await installAndroidPhone(page);
+  await page.setViewportSize(LANDSCAPE);
+  await page.goto(DAM_BREAK_PATH);
+
+  // Act
+  const fullscreenEnabled = await page.evaluate(() => document.fullscreenEnabled);
+
+  // Assert
+  expect(fullscreenEnabled).toBe(true);
+  await expect(page.locator("html")).toHaveAttribute("data-canvas-stage", "true");
+  await expect(page.getByRole("button", { name: "Full screen" })).toHaveCount(0);
+  await expectCanvasFillsViewport(page);
+  await expect(page.locator("[data-slot='sidebar-container']")).toHaveCount(0);
 });
 
 test("fills the portrait viewport when element fullscreen is unavailable", async ({
