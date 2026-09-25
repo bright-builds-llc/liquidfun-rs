@@ -83,7 +83,8 @@ export function App() {
   const [wireframeStrokeWidth, setWireframeStrokeWidth] = createSignal(
     loadWireframeStrokeWidth(() => window.localStorage),
   );
-  const [debugEnabled, setDebugEnabled] = createSignal(true);
+  const canvasStage = canvasStageActive(document.fullscreenEnabled);
+  const [debugEnabled, setDebugEnabled] = createSignal(!canvasStage);
   const [maybeDebugFrame, setMaybeDebugFrame] = createSignal<
     RenderFrame | undefined
   >();
@@ -110,7 +111,6 @@ export function App() {
   let maybeSession: SceneSession | undefined;
   const clock = createFrameClock();
   const tiltBinding = createTiltBinding();
-  const canvasStage = canvasStageActive(document.fullscreenEnabled);
   const releaseVisualViewport = canvasStage
     ? bindVisualViewport(document.documentElement)
     : undefined;

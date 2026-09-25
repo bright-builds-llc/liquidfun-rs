@@ -62,6 +62,7 @@ test("fills the portrait viewport when element fullscreen is unavailable", async
   await expect(page.locator("html")).toHaveCSS("overflow", "hidden");
   await expectCanvasFillsViewport(page);
   await expect(page.getByRole("button", { name: "Full screen" })).toHaveCount(0);
+  await expect(page.locator(".debug-readout")).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "Dam Break" })).toBeVisible();
   await expect(sessionStatus(page)).toHaveText(PLAYING_STATUS);
 
@@ -94,6 +95,8 @@ test("opens scene details without leaving the portrait canvas", async ({
   // Assert
   await expect(sheet).toBeVisible();
   await expect(sheet.getByLabel("Rendering")).toBeVisible();
+  await sheet.getByRole("checkbox", { name: "Debug info" }).check();
+  await expect(page.locator(".debug-readout")).toBeVisible();
   await expect(sheet.locator("#scene-credits-title")).toHaveText("Scene source");
   await expect(sheet.getByRole("link", { name: "View source on GitHub" })).toBeVisible();
   const sourceLink = sheet.getByRole("link", { name: "GitHub source" });
