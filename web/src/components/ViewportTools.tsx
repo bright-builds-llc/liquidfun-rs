@@ -1,6 +1,7 @@
-import { createSignal, onCleanup, onMount } from "solid-js";
+import { createSignal, onCleanup, onMount, Show } from "solid-js";
 
 export type ViewportToolsProps = {
+  readonly showFullscreen: boolean;
   readonly panEnabled: boolean;
   readonly onZoomIn: () => void;
   readonly onZoomOut: () => void;
@@ -87,14 +88,16 @@ export function ViewportTools(props: ViewportToolsProps) {
       >
         <PanIcon />
       </button>
-      <button
-        type="button"
-        aria-label={fullscreen() ? "Exit full screen" : "Full screen"}
-        aria-pressed={fullscreen()}
-        onClick={toggleFullscreen}
-      >
-        {fullscreen() ? <ExitFullscreenIcon /> : <FullscreenIcon />}
-      </button>
+      <Show when={props.showFullscreen}>
+        <button
+          type="button"
+          aria-label={fullscreen() ? "Exit full screen" : "Full screen"}
+          aria-pressed={fullscreen()}
+          onClick={toggleFullscreen}
+        >
+          {fullscreen() ? <ExitFullscreenIcon /> : <FullscreenIcon />}
+        </button>
+      </Show>
     </div>
   );
 }

@@ -17,6 +17,7 @@ import { PlayerSceneChrome } from "./PlayerSceneChrome";
 import { PlaygroundShell } from "./PlaygroundShell";
 
 export type PlaygroundStageProps = {
+  readonly canvasStage: boolean;
   readonly route: () => SceneRoute;
   readonly view: () => PlayerView;
   readonly lastPointerKind: () => PointerKind | undefined;
@@ -84,6 +85,7 @@ export function PlaygroundStage(props: PlaygroundStageProps) {
 
   return (
     <PlaygroundShell
+      canvasStage={props.canvasStage}
       maybeCurrentSceneId={maybeCurrentSceneId()}
       routeIdentity={routeIdentity()}
     >
@@ -98,9 +100,13 @@ export function PlaygroundStage(props: PlaygroundStageProps) {
         data-render-mode={props.renderMode()}
         data-wireframe-stroke-width={props.wireframeStrokeWidth()}
       >
-        <Show when={maybeCurrentSceneId()} fallback={<FallbackPanel />}>
+        <Show
+          when={maybeCurrentSceneId()}
+          fallback={<FallbackPanel canvasStage={props.canvasStage} />}
+        >
           {(sceneId) => (
             <PlayerPanel
+              canvasStage={props.canvasStage}
               sceneTitle={sceneTitleForId(sceneId())}
               status={playerStatus(props.view())}
               maybeDetails={maybeFailureDetails()}

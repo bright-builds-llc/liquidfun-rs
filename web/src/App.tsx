@@ -56,6 +56,8 @@ import {
   loadWireframeStrokeWidth,
   persistWireframeStrokeWidth,
 } from "./render/stroke-width";
+import { canvasStageActive } from "./player/fullscreen-capability";
+import { bindVisualViewport } from "./player/visual-viewport";
 import { normalizeSceneRoute } from "./routing/hash";
 
 /** One-session playground shell with hash routing and bounded playback. */
@@ -108,6 +110,13 @@ export function App() {
   let maybeSession: SceneSession | undefined;
   const clock = createFrameClock();
   const tiltBinding = createTiltBinding();
+  const canvasStage = canvasStageActive(document.fullscreenEnabled);
+  const releaseVisualViewport = canvasStage
+    ? bindVisualViewport(document.documentElement)
+    : undefined;
+  if (canvasStage) {
+    document.documentElement.dataset.canvasStage = "true";
+  }
 
   function frameDeps(): FrameLoopDeps {
     return {
@@ -544,6 +553,8 @@ export function App() {
   });
 
   onCleanup(() => {
+    releaseVisualViewport?.();
+    delete document.documentElement.dataset.canvasStage;
     window.removeEventListener("hashchange", onHashChange);
     document.removeEventListener("visibilitychange", onVisibilityChange);
     tiltBinding.stop?.();
@@ -552,6 +563,7 @@ export function App() {
 
   return (
     <PlaygroundStage
+      canvasStage={canvasStage}
       route={route}
       view={view}
       lastPointerKind={lastPointerKind}

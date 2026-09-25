@@ -217,7 +217,8 @@ canvas.canvas-panning:active {
   line-height: 1.5;
 }
 
-figcaption {
+figcaption,
+.scene-interaction-hint {
   color: #A9B4C0;
   font-size: 14px;
   font-weight: 400;

@@ -1,0 +1,195 @@
+html[data-canvas-stage="true"],
+html[data-canvas-stage="true"] body,
+html[data-canvas-stage="true"] #root {
+  height: var(--visual-viewport-height, 100dvh);
+  max-height: var(--visual-viewport-height, 100dvh);
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+html[data-canvas-stage="true"] body {
+  min-height: 0;
+}
+
+html[data-canvas-stage="true"] [data-slot="sidebar-wrapper"],
+html[data-canvas-stage="true"] .app-shell,
+html[data-canvas-stage="true"] .app-body,
+html[data-canvas-stage="true"] .playground-main {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+html[data-canvas-stage="true"] .app-shell,
+html[data-canvas-stage="true"] .playground-main,
+html[data-canvas-stage="true"] .player-panel--canvas-stage {
+  gap: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+
+html[data-canvas-stage="true"] .site-header--canvas-stage {
+  position: fixed;
+  z-index: 30;
+  top: max(8px, env(safe-area-inset-top, 0px));
+  left: max(8px, env(safe-area-inset-left, 0px));
+  width: auto;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  pointer-events: none;
+}
+
+html[data-canvas-stage="true"] .site-header--canvas-stage .site-header-actions,
+html[data-canvas-stage="true"] .site-header--canvas-stage .mobile-demos-trigger {
+  pointer-events: auto;
+}
+
+html[data-canvas-stage="true"] .viewport-frame {
+  position: fixed;
+  top: var(--visual-viewport-offset-top, 0px);
+  left: 0;
+  display: block;
+  width: 100%;
+  height: var(--visual-viewport-height, 100dvh);
+  border: 0;
+  border-radius: 0;
+}
+
+html[data-canvas-stage="true"] .viewport-frame canvas {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  aspect-ratio: auto;
+}
+
+html[data-canvas-stage="true"] .debug-readout {
+  top: calc(max(8px, env(safe-area-inset-top, 0px)) + 52px);
+  left: max(8px, env(safe-area-inset-left, 0px));
+}
+
+html[data-canvas-stage="true"] .gravity-arrow {
+  top: calc(max(8px, env(safe-area-inset-top, 0px)) + 52px);
+  right: max(8px, env(safe-area-inset-right, 0px));
+}
+
+.canvas-hud-title {
+  position: absolute;
+  z-index: 2;
+  top: max(8px, env(safe-area-inset-top, 0px));
+  right: calc(max(8px, env(safe-area-inset-right, 0px)) + 52px);
+  left: calc(max(8px, env(safe-area-inset-left, 0px)) + 52px);
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  color: #F4F7FA;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 80%);
+  pointer-events: none;
+}
+
+.canvas-hud-title h2 {
+  overflow: hidden;
+  font-size: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.canvas-hud-title .session-status {
+  flex: 0 0 auto;
+  font-size: 14px;
+}
+
+.canvas-hud-bottom {
+  position: absolute;
+  z-index: 2;
+  right: max(8px, env(safe-area-inset-right, 0px));
+  bottom: max(8px, env(safe-area-inset-bottom, 0px));
+  left: max(8px, env(safe-area-inset-left, 0px));
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 4px;
+  pointer-events: none;
+}
+
+.canvas-transport,
+.canvas-hud-bottom .viewport-tools {
+  position: static;
+  pointer-events: auto;
+}
+
+.canvas-controls-trigger {
+  position: absolute;
+  z-index: 3;
+  top: max(8px, env(safe-area-inset-top, 0px));
+  right: max(8px, env(safe-area-inset-right, 0px));
+}
+
+.hud-button,
+.canvas-controls-trigger,
+.canvas-hud-bottom .viewport-tools button {
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  padding: 0;
+}
+
+.hud-button svg,
+.canvas-controls-trigger svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.canvas-controls-sheet {
+  max-height: min(80dvh, calc(var(--visual-viewport-height, 80dvh) - 16px));
+  overflow: auto;
+  color: #F4F7FA;
+  background: #151D28;
+  border-color: #2A3441;
+  padding: var(--space-md);
+  padding-bottom: max(var(--space-md), env(safe-area-inset-bottom, 0px));
+}
+
+.canvas-controls-body {
+  display: grid;
+  gap: var(--space-md);
+  min-width: 0;
+  padding-top: var(--space-md);
+}
+
+.canvas-controls-sheet .site-footer {
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+
+.fallback-panel--canvas-stage {
+  position: fixed;
+  top: var(--visual-viewport-offset-top, 0px);
+  left: 0;
+  align-content: center;
+  justify-items: center;
+  width: 100%;
+  height: var(--visual-viewport-height, 100dvh);
+  border: 0;
+  border-radius: 0;
+  padding:
+    calc(max(8px, env(safe-area-inset-top, 0px)) + 60px)
+    max(16px, env(safe-area-inset-right, 0px))
+    max(16px, env(safe-area-inset-bottom, 0px))
+    max(16px, env(safe-area-inset-left, 0px));
+}

@@ -3,6 +3,8 @@
 import { createSignal, onCleanup } from "solid-js";
 import { isServer } from "solid-js/web";
 
+import { canvasStageActive } from "../player/fullscreen-capability";
+
 const MOBILE_QUERY = "(max-width: 767px)";
 
 /** True when the viewport matches the sidebar's phone drawer breakpoint. */
@@ -18,5 +20,5 @@ export const useIsMobile = () => {
   onCleanup(() => {
     mql.removeEventListener("change", update);
   });
-  return state;
+  return () => state() || canvasStageActive(document.fullscreenEnabled);
 };
