@@ -102,6 +102,72 @@ function readBuiltAt(maybeValue: string | undefined): {
   };
 }
 
+function maybeBuiltAtPart(
+  parts: readonly Intl.DateTimeFormatPart[],
+  type: Intl.DateTimeFormatPartTypes,
+): string | undefined {
+  return parts.find((part) => part.type === type)?.value;
+}
+
+/**
+ * Format a validated build instant for display.
+ * Omit `maybeTimeZone` to use the runtime local zone.
+ */
+export function formatLocalBuiltAtLabel(
+  iso: string,
+  maybeTimeZone?: string,
+): string {
+  const parsed = new Date(iso);
+  if (Number.isNaN(parsed.getTime())) {
+    return UNAVAILABLE;
+  }
+
+  const options: Intl.DateTimeFormatOptions = {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+    timeZoneName: "short",
+  };
+  if (maybeTimeZone !== undefined) {
+    options.timeZone = maybeTimeZone;
+  }
+
+  let parts: Intl.DateTimeFormatPart[];
+  try {
+    parts = new Intl.DateTimeFormat("en-US", options).formatToParts(parsed);
+  } catch (error) {
+    if (error instanceof RangeError) {
+      return UNAVAILABLE;
+    }
+    throw error;
+  }
+
+  const year = maybeBuiltAtPart(parts, "year");
+  const month = maybeBuiltAtPart(parts, "month");
+  const day = maybeBuiltAtPart(parts, "day");
+  const hour = maybeBuiltAtPart(parts, "hour");
+  const minute = maybeBuiltAtPart(parts, "minute");
+  const second = maybeBuiltAtPart(parts, "second");
+  const zone = maybeBuiltAtPart(parts, "timeZoneName");
+  if (
+    year === undefined ||
+    month === undefined ||
+    day === undefined ||
+    hour === undefined ||
+    minute === undefined ||
+    second === undefined ||
+    zone === undefined
+  ) {
+    return UNAVAILABLE;
+  }
+
+  return `${year}-${month}-${day} ${hour}:${minute}:${second} ${zone}`;
+}
+
 function maybeAcceptedBuildUrl(
   maybeUrl: string | undefined,
 ): string | undefined {

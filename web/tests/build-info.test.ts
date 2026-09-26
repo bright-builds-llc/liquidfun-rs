@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { readBuildInfo } from "../src/build-info";
+import { formatLocalBuiltAtLabel, readBuildInfo } from "../src/build-info";
 
 describe("readBuildInfo", () => {
   it("shows Unavailable and no URLs when env is empty", () => {
@@ -102,6 +102,58 @@ describe("readBuildInfo", () => {
       expect(info.builtAtLabel).toBe("Unavailable");
       expect(info.maybeBuiltAtIso).toBeUndefined();
     }
+  });
+
+  it("formats a build instant in the requested time zone", () => {
+    // Arrange
+    const iso = "2026-09-22T15:27:03.123Z";
+
+    // Act
+    const newYork = formatLocalBuiltAtLabel(iso, "America/New_York");
+    const kolkata = formatLocalBuiltAtLabel(iso, "Asia/Kolkata");
+    const utc = formatLocalBuiltAtLabel(iso, "UTC");
+
+    // Assert
+    expect(newYork).toBe("2026-09-22 11:27:03 EDT");
+    expect(kolkata).toBe("2026-09-22 20:57:03 GMT+5:30");
+    expect(utc).toBe("2026-09-22 15:27:03 UTC");
+  });
+
+  it("shifts the calendar day when local time is on the previous date", () => {
+    // Arrange
+    const iso = "2024-02-29T00:00:00Z";
+
+    // Act
+    const label = formatLocalBuiltAtLabel(iso, "America/Los_Angeles");
+
+    // Assert
+    expect(label).toBe("2024-02-28 16:00:00 PST");
+  });
+
+  it("defaults to the runtime local time zone", () => {
+    // Arrange
+    const iso = "2026-09-22T15:27:03.123Z";
+    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+    // Act
+    const localLabel = formatLocalBuiltAtLabel(iso);
+    const explicitLabel = formatLocalBuiltAtLabel(iso, timeZone);
+
+    // Assert
+    expect(localLabel).toBe(explicitLabel);
+  });
+
+  it("returns Unavailable when the instant or time zone cannot be formatted", () => {
+    // Arrange
+    const iso = "2026-09-22T15:27:03.123Z";
+
+    // Act
+    const invalidInstant = formatLocalBuiltAtLabel("not-a-timestamp", "UTC");
+    const invalidZone = formatLocalBuiltAtLabel(iso, "Not/AZone");
+
+    // Assert
+    expect(invalidInstant).toBe("Unavailable");
+    expect(invalidZone).toBe("Unavailable");
   });
 
   it("accepts only this repo Actions run URLs", () => {

@@ -1,6 +1,6 @@
 import { Show } from "solid-js";
 
-import { readBuildInfo } from "../build-info";
+import { formatLocalBuiltAtLabel, readBuildInfo } from "../build-info";
 import { PAGE_SUMMARY } from "../player/runtime";
 
 const SOURCE_HREF = "https://github.com/bright-builds-llc/liquidfun-rs";
@@ -22,7 +22,9 @@ type BuiltAtValueProps = {
 function BuiltAtValue(props: BuiltAtValueProps) {
   return (
     <Show when={props.maybeIso} fallback={props.label}>
-      {(iso) => <time datetime={iso()}>{props.label}</time>}
+      {(iso) => (
+        <time datetime={iso()}>{formatLocalBuiltAtLabel(iso())}</time>
+      )}
     </Show>
   );
 }
