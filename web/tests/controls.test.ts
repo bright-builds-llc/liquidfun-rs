@@ -1,11 +1,28 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  DAM_BREAK_GRAVITY_DEFAULT,
+  DAM_BREAK_GRAVITY_MAX,
+  DAM_BREAK_GRAVITY_MIN,
+  maybeSceneById,
+  type SceneControl,
+} from "../src/catalog/scenes";
+import {
+  formatRangeReadout,
+  formatRangeValueText,
+  initialRangeValue,
+  maybeMagnitudeForSliderPosition,
+  maybeParseRangeControlValue,
+  rangeTickMarks,
+  sliderPositionForMagnitude,
+  LOG_SLIDER_POSITION_MAX,
+  type RangeControl,
+} from "../src/components/range-control";
+import {
   CONSTRUCTION_RESET_HINT,
   constructionHintVisible,
   initialPresetValue,
 } from "../src/components/scene-controls";
-import { maybeSceneById, type SceneControl } from "../src/catalog/scenes";
 
 function maybePresetControl(
   sceneId: string,
@@ -45,16 +62,31 @@ describe("constructionHintVisible", () => {
       kind: "action",
       recreates: false,
     };
+    const recreatingRange: SceneControl = {
+      id: "gravity",
+      label: "Gravity",
+      kind: "range",
+      recreates: true,
+      min: DAM_BREAK_GRAVITY_MIN,
+      max: DAM_BREAK_GRAVITY_MAX,
+      step: 1,
+      defaultValue: DAM_BREAK_GRAVITY_DEFAULT,
+      unit: "m/s²",
+      scale: "logarithmic",
+      ticks: [DAM_BREAK_GRAVITY_MIN, DAM_BREAK_GRAVITY_MAX],
+    };
 
     // Act
     const recreatingVisible = constructionHintVisible(recreatingPreset);
     const runtimeVisible = constructionHintVisible(runtimePreset);
     const actionVisible = constructionHintVisible(action);
+    const rangeVisible = constructionHintVisible(recreatingRange);
 
     // Assert
     expect(recreatingVisible).toBe(true);
     expect(runtimeVisible).toBe(false);
     expect(actionVisible).toBe(false);
+    expect(rangeVisible).toBe(true);
   });
 });
 
@@ -174,5 +206,158 @@ describe("initialPresetValue", () => {
 
     // Assert
     expect(value).toBe("large");
+  });
+});
+
+function maybeGravityControl(): RangeControl | undefined {
+  const maybeControl = maybeSceneById("dam-break")?.controls.find(
+    (control) => control.id === "gravity",
+  );
+  if (maybeControl === undefined || maybeControl.kind !== "range") {
+    return undefined;
+  }
+
+  return maybeControl;
+}
+
+describe("Dam Break gravity slider", () => {
+  it("starts at normal gravity when the bag is empty", () => {
+    // Arrange
+    const maybeControl = maybeGravityControl();
+    expect(maybeControl).toBeDefined();
+    if (maybeControl === undefined) {
+      return;
+    }
+
+    // Act
+    const value = initialRangeValue(maybeControl, {});
+
+    // Assert
+    expect(value).toBe(String(DAM_BREAK_GRAVITY_DEFAULT));
+  });
+
+  it("keeps an applied magnitude inside the slider", () => {
+    // Arrange
+    const maybeControl = maybeGravityControl();
+    expect(maybeControl).toBeDefined();
+    if (maybeControl === undefined) {
+      return;
+    }
+
+    // Act
+    const value = initialRangeValue(maybeControl, { gravity: "80" });
+
+    // Assert
+    expect(value).toBe("80");
+    expect(value).toBe(String(DAM_BREAK_GRAVITY_MAX));
+  });
+
+  it("falls back to normal gravity for a retired preset name", () => {
+    // Arrange
+    const maybeControl = maybeGravityControl();
+    expect(maybeControl).toBeDefined();
+    if (maybeControl === undefined) {
+      return;
+    }
+
+    // Act
+    const value = initialRangeValue(maybeControl, { gravity: "high" });
+
+    // Assert
+    expect(value).toBe("10");
+  });
+
+  it("accepts the former low and five-times-high ends", () => {
+    // Arrange
+    const maybeControl = maybeGravityControl();
+    expect(maybeControl).toBeDefined();
+    if (maybeControl === undefined) {
+      return;
+    }
+
+    // Act
+    const low = maybeParseRangeControlValue(
+      maybeControl,
+      String(DAM_BREAK_GRAVITY_MIN),
+    );
+    const cap = maybeParseRangeControlValue(maybeControl, "80");
+    const pastCap = maybeParseRangeControlValue(maybeControl, "81");
+    const named = maybeParseRangeControlValue(maybeControl, "high");
+
+    // Assert
+    expect(low).toBe("6");
+    expect(cap).toBe("80");
+    expect(pastCap).toBeUndefined();
+    expect(named).toBeUndefined();
+  });
+
+  it("maps the thumb logarithmically between the ends", () => {
+    // Arrange
+    const maybeControl = maybeGravityControl();
+    expect(maybeControl).toBeDefined();
+    if (maybeControl === undefined) {
+      return;
+    }
+    const linearNormal =
+      ((DAM_BREAK_GRAVITY_DEFAULT - DAM_BREAK_GRAVITY_MIN) /
+        (DAM_BREAK_GRAVITY_MAX - DAM_BREAK_GRAVITY_MIN)) *
+      LOG_SLIDER_POSITION_MAX;
+
+    // Act
+    const normalPosition = sliderPositionForMagnitude(
+      maybeControl,
+      DAM_BREAK_GRAVITY_DEFAULT,
+    );
+    const low = maybeMagnitudeForSliderPosition(maybeControl, "0");
+    const cap = maybeMagnitudeForSliderPosition(
+      maybeControl,
+      String(LOG_SLIDER_POSITION_MAX),
+    );
+    const roundTrip = maybeMagnitudeForSliderPosition(
+      maybeControl,
+      String(normalPosition),
+    );
+
+    // Assert
+    expect(low).toBe("6");
+    expect(cap).toBe("80");
+    expect(roundTrip).toBe("10");
+    expect(normalPosition).toBeGreaterThan(linearNormal);
+    expect(normalPosition).toBeLessThan(LOG_SLIDER_POSITION_MAX / 2);
+  });
+
+  it("places tick marks by magnitude ratio", () => {
+    // Arrange
+    const maybeControl = maybeGravityControl();
+    expect(maybeControl).toBeDefined();
+    if (maybeControl === undefined) {
+      return;
+    }
+
+    // Act
+    const ticks = rangeTickMarks(maybeControl);
+    const normal = ticks.find((tick) => tick.label === "10");
+    const formerHigh = ticks.find((tick) => tick.label === "16");
+    const cap = ticks.find((tick) => tick.label === "80");
+
+    // Assert
+    expect(ticks.map((tick) => tick.label)).toEqual(["6", "10", "16", "80"]);
+    expect(normal?.ratio).toBeGreaterThan(0);
+    expect(formerHigh?.ratio).toBeGreaterThan(normal?.ratio ?? 1);
+    expect(cap?.ratio).toBe(1);
+    expect(formerHigh?.ratio).toBeLessThan(0.5);
+  });
+
+  it("reads the magnitude in meters per second squared", () => {
+    // Arrange
+    const magnitude = "16";
+
+    // Act
+    const readout = formatRangeReadout(magnitude, "m/s²");
+    const spoken = formatRangeValueText(magnitude, "m/s²");
+
+    // Assert
+    expect(readout).toBe("16 m/s²");
+    expect(spoken).toBe("16 meters per second squared");
   });
 });

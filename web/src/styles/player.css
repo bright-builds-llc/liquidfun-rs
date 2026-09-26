@@ -503,26 +503,6 @@ button:disabled {
   border-color: #2A3441;
   cursor: default;
 }
-.scene-controls {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-md);
-}
-
-.scene-control {
-  display: grid;
-  gap: var(--space-sm);
-  justify-items: start;
-}
-
-.scene-control-label {
-  display: grid;
-  gap: var(--space-sm);
-  color: #F4F7FA;
-  font-size: 16px;
-  font-weight: 600;
-  line-height: 1.5;
-}
 select {
   min-block-size: 44px;
   padding: var(--space-sm) var(--space-md);
@@ -537,13 +517,6 @@ select {
 select:hover:not(:disabled) {
   background: #1C2734;
 }
-.construction-reset-hint {
-  color: #A9B4C0;
-  font-size: 14px;
-  font-weight: 400;
-  line-height: 1.4;
-}
-
 .scene-credits {
   display: grid;
   gap: var(--space-sm);

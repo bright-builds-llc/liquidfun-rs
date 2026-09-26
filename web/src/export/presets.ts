@@ -1,4 +1,5 @@
 import type { SceneRecord } from "../catalog/scenes";
+import { maybeAcceptedControlValue } from "../components/scene-controls";
 
 export type PresetEntry = {
   readonly name: string;
@@ -20,15 +21,8 @@ export function changedPresetEntries(
   const live: PresetEntry[] = [];
 
   for (const control of scene.controls) {
-    if (control.kind !== "preset") {
-      continue;
-    }
-
-    const maybeValue = values[control.id];
-    if (
-      maybeValue === undefined ||
-      !control.values.some((option) => option.id === maybeValue)
-    ) {
+    const maybeValue = maybeAcceptedControlValue(control, values[control.id]);
+    if (maybeValue === undefined) {
       continue;
     }
 

@@ -4,6 +4,7 @@ import { maybeSceneById, type SceneId } from "./catalog/scenes";
 import { changedPresetEntries } from "./export/presets";
 import type { SvgExportRequest } from "./export/messages";
 import { PlaygroundStage } from "./components/PlaygroundStage";
+import { controlStoresAppliedValue } from "./components/scene-controls";
 import {
   attachCanvasPointer,
   forwardScenePointer,
@@ -411,8 +412,7 @@ export function App() {
     const maybeControl = maybeSceneById(maybeReadyId)?.controls.find(
       (control) => control.id === name,
     );
-    const recreates =
-      maybeControl?.kind === "preset" && maybeControl.recreates;
+    const recreates = maybeControl?.recreates === true;
 
     try {
       if (recreates) {
@@ -422,7 +422,7 @@ export function App() {
       }
 
       const recreated = maybeOwnedSession.applyControl(name, value);
-      if (maybeControl?.kind === "preset") {
+      if (controlStoresAppliedValue(maybeControl)) {
         constructionValues = { ...constructionValues, [name]: value };
       }
       if (!recreated) {

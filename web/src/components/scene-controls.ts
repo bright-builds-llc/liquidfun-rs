@@ -1,11 +1,11 @@
 import type { SceneControl } from "../catalog/scenes";
+import { maybeParseRangeControlValue } from "./range-control";
 
 export const CONSTRUCTION_RESET_HINT =
   "Changing this setting recreates the scene from its documented initial state.";
 
 export const DEFAULT_PRESET_VALUES: Readonly<Record<string, string>> = {
   "water-amount": "medium",
-  gravity: "normal",
   "emission-rate": "medium",
   "launch-speed": "medium",
   "aim-angle": "up",
@@ -18,9 +18,36 @@ export const DEFAULT_PRESET_VALUES: Readonly<Record<string, string>> = {
   emission: "on",
 };
 
-/** True only for construction presets that recreate the world. */
+/** True when changing the control rebuilds the scene from its initial state. */
 export function constructionHintVisible(control: SceneControl): boolean {
-  return control.kind === "preset" && control.recreates;
+  return control.recreates;
+}
+
+/** True for controls whose applied text is stored and replayed. */
+export function controlStoresAppliedValue(
+  maybeControl: SceneControl | undefined,
+): boolean {
+  return maybeControl?.kind === "preset" || maybeControl?.kind === "range";
+}
+
+/** Allowlisted preset id or canonical range token. */
+export function maybeAcceptedControlValue(
+  control: SceneControl,
+  maybeValue: string | undefined,
+): string | undefined {
+  if (maybeValue === undefined) {
+    return undefined;
+  }
+  if (control.kind === "preset") {
+    return control.values.some((option) => option.id === maybeValue)
+      ? maybeValue
+      : undefined;
+  }
+  if (control.kind === "range") {
+    return maybeParseRangeControlValue(control, maybeValue);
+  }
+
+  return undefined;
 }
 
 export function initialPresetValue(

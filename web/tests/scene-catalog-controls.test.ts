@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  DAM_BREAK_GRAVITY_DEFAULT,
+  DAM_BREAK_GRAVITY_FORMER_HIGH,
+  DAM_BREAK_GRAVITY_MAX,
+  DAM_BREAK_GRAVITY_MIN,
+  DAM_BREAK_GRAVITY_STEP,
+  DAM_BREAK_GRAVITY_TICKS,
   SCENES,
   maybeSceneById,
   type SceneControl,
@@ -77,11 +83,20 @@ describe("scene catalog controls", () => {
       "Medium",
       "Large",
     ]);
-    expect(optionLabels(damBreak?.controls[1] as SceneControl)).toEqual([
-      "Low",
-      "Normal",
-      "High",
-    ]);
+    expect(damBreak?.controls[1]).toMatchObject({
+      id: "gravity",
+      kind: "range",
+      label: "Gravity",
+      recreates: true,
+      min: DAM_BREAK_GRAVITY_MIN,
+      max: DAM_BREAK_GRAVITY_MAX,
+      step: DAM_BREAK_GRAVITY_STEP,
+      defaultValue: DAM_BREAK_GRAVITY_DEFAULT,
+      unit: "m/s²",
+      scale: "logarithmic",
+      ticks: DAM_BREAK_GRAVITY_TICKS,
+    });
+    expect(DAM_BREAK_GRAVITY_MAX).toBe(DAM_BREAK_GRAVITY_FORMER_HIGH * 5);
     expect(damBreak?.controls[2]).toMatchObject({
       id: "drop-obstacle",
       kind: "action",

@@ -4,6 +4,7 @@ import {
   type SceneId,
   type SceneRecord,
 } from "../catalog/scenes";
+import { maybeAcceptedControlValue } from "../components/scene-controls";
 import type { SceneRoute } from "../routing/hash";
 
 export const PAGE_SUMMARY =
@@ -57,11 +58,11 @@ export function constructionEntriesForScene(
   values: Readonly<Record<string, string>>,
 ): readonly { readonly name: string; readonly value: string }[] {
   return scene.controls.flatMap((control) => {
-    if (control.kind !== "preset" || !control.recreates) {
+    if (!control.recreates) {
       return [];
     }
 
-    const maybeValue = values[control.id];
+    const maybeValue = maybeAcceptedControlValue(control, values[control.id]);
     if (maybeValue === undefined) {
       return [];
     }
