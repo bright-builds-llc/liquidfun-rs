@@ -15,7 +15,7 @@ use crate::scene::{
 };
 
 pub(crate) const MAX_ADVANCE_STEPS: u32 = 4;
-const MAX_FRAME_PARTICLES: usize = 10240;
+const MAX_FRAME_PARTICLES: usize = 16_384;
 const PARTICLE_POSITION_STRIDE: usize = 2;
 const PARTICLE_COLOR_STRIDE: usize = 4;
 const RIGID_SEGMENT_STRIDE: usize = 4;
@@ -151,7 +151,9 @@ impl SessionCore {
         for _ in 0..step_count {
             self.hooks
                 .on_advance(&mut self.world, self.particle_system)?;
-            if let Err(detail) = evict_escaped_particles(&mut self.world, self.particle_system) {
+            if let Err(detail) =
+                evict_escaped_particles(&mut self.world, self.particle_system, self.particle_radius)
+            {
                 self.last_failure_detail = detail;
                 return Err(SessionError::StepFailed);
             }
@@ -178,10 +180,11 @@ impl SessionCore {
             .ok_or(SessionError::StepIndexExhausted)?;
         self.hooks
             .on_advance(&mut self.world, self.particle_system)?;
-        evict_escaped_particles(&mut self.world, self.particle_system).map_err(|detail| {
-            self.last_failure_detail = detail;
-            SessionError::StepFailed
-        })?;
+        evict_escaped_particles(&mut self.world, self.particle_system, self.particle_radius)
+            .map_err(|detail| {
+                self.last_failure_detail = detail;
+                SessionError::StepFailed
+            })?;
         let profile = self
             .world
             .step_profiled(

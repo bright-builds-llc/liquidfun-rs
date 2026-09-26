@@ -1,5 +1,6 @@
 import type { RenderFrame } from "../physics/frame";
 import { projectPoint, projectRadius, type Camera } from "../render/camera";
+import { particleDrawStride } from "../render/particle-limit";
 
 const INVALID_EXPORT_FRAME_MESSAGE = "Invalid export frame";
 
@@ -48,9 +49,13 @@ export function projectRenderSample(
   camera: Camera,
   maxRenderedParticles: number,
 ): ProjectedSample {
-  const drawnCount = Math.min(frame.particleCount, maxRenderedParticles);
+  const stride = particleDrawStride(frame.particleCount, maxRenderedParticles);
   const particles: ProjectedParticle[] = [];
-  for (let particleIndex = 0; particleIndex < drawnCount; particleIndex += 1) {
+  for (
+    let particleIndex = 0;
+    particleIndex < frame.particleCount && maxRenderedParticles > 0;
+    particleIndex += stride
+  ) {
     const positionIndex = particleIndex * 2;
     const colorIndex = particleIndex * 4;
     const center = projectPoint(camera, {
