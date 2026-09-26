@@ -1,4 +1,5 @@
 import { WORLD_BOUNDS, type WorldBounds } from "../render/camera";
+import { GRAVITY_CONTROL, withGravitySlider } from "./gravity-slider";
 import {
   WAVE_MACHINE_SPEED_CONTROL,
   WAVE_MACHINE_TILT_CONTROL,
@@ -55,23 +56,6 @@ export type SceneControl =
       readonly kind: "action";
       readonly recreates: false;
     };
-
-/** Former Dam Break Low gravity, in m/s² downward. */
-export const DAM_BREAK_GRAVITY_MIN = 6;
-/** Former Dam Break High gravity, in m/s² downward. */
-export const DAM_BREAK_GRAVITY_FORMER_HIGH = 16;
-/** Five times the former High gravity. Keep in sync with the wasm slider cap. */
-export const DAM_BREAK_GRAVITY_MAX = DAM_BREAK_GRAVITY_FORMER_HIGH * 5;
-export const DAM_BREAK_GRAVITY_STEP = 1;
-/** Documented Dam Break normal gravity, in m/s² downward. */
-export const DAM_BREAK_GRAVITY_DEFAULT = 10;
-/** Labeled marks on the logarithmic Dam Break gravity slider. */
-export const DAM_BREAK_GRAVITY_TICKS = [
-  DAM_BREAK_GRAVITY_MIN,
-  DAM_BREAK_GRAVITY_DEFAULT,
-  DAM_BREAK_GRAVITY_FORMER_HIGH,
-  DAM_BREAK_GRAVITY_MAX,
-] as const;
 
 export type SceneCredits = {
   readonly implementationPath: string;
@@ -270,7 +254,10 @@ export const SCENES: readonly SceneRecord[] = [
     description: "Watch a motorized tank rock and slosh the water inside.",
     interactionHint:
       "Use Wave speed and Wave tilt to rock the tank. Speed starts at the original rate, and tilt starts at 9°, the original angle. Labeled controls also work from the keyboard.",
-    controls: [WAVE_MACHINE_SPEED_CONTROL, WAVE_MACHINE_TILT_CONTROL],
+    controls: withGravitySlider([
+      WAVE_MACHINE_SPEED_CONTROL,
+      WAVE_MACHINE_TILT_CONTROL,
+    ]),
     viewBounds: WAVE_MACHINE_VIEW_BOUNDS,
     credits: {
       implementationPath: sceneSource("wave_machine.rs"),
@@ -296,19 +283,7 @@ export const SCENES: readonly SceneRecord[] = [
           option("large", "Large"),
         ],
       },
-      {
-        id: "gravity",
-        label: "Gravity",
-        kind: "range",
-        recreates: true,
-        min: DAM_BREAK_GRAVITY_MIN,
-        max: DAM_BREAK_GRAVITY_MAX,
-        step: DAM_BREAK_GRAVITY_STEP,
-        defaultValue: DAM_BREAK_GRAVITY_DEFAULT,
-        unit: "m/s²",
-        scale: "logarithmic",
-        ticks: DAM_BREAK_GRAVITY_TICKS,
-      },
+      GRAVITY_CONTROL,
       action("drop-obstacle", "Drop obstacle"),
       action("reset-obstacle", "Reset obstacle"),
     ],
@@ -324,7 +299,7 @@ export const SCENES: readonly SceneRecord[] = [
     description: "Aim a bounded stream into a bowl until particle count plateaus.",
     interactionHint:
       "Drag on the canvas to aim the stream. Labeled controls also work from the keyboard.",
-    controls: [
+    controls: withGravitySlider([
       runtimePreset("emission-rate", "Emission rate", [
         option("off", "Off"),
         option("low", "Low"),
@@ -341,7 +316,7 @@ export const SCENES: readonly SceneRecord[] = [
         option("up", "Up"),
         option("right", "Right"),
       ]),
-    ],
+    ]),
     credits: {
       implementationPath: sceneSource("fountain.rs"),
       inspiration: [PINNED_FAUCET, SHOWCASE],
@@ -355,14 +330,14 @@ export const SCENES: readonly SceneRecord[] = [
       "Drop cork, wood, or stone into a pool and watch native body response.",
     interactionHint:
       "Click or tap the canvas to drop the selected body at that horizontal position. Labeled controls also work from the keyboard.",
-    controls: [
+    controls: withGravitySlider([
       runtimePreset("body", "Body", [
         option("cork", "Cork"),
         option("wood", "Wood"),
         option("stone", "Stone"),
       ]),
       action("drop-body", "Drop body"),
-    ],
+    ]),
     credits: {
       implementationPath: sceneSource("float_or_sink.rs"),
       inspiration: [PARTICLE_GUIDE, SHOWCASE],
@@ -376,7 +351,7 @@ export const SCENES: readonly SceneRecord[] = [
       "Stir two colored groups and watch contact-driven particle-color mixing.",
     interactionHint:
       "Drag on the canvas to stir the colored groups. Labeled controls also work from the keyboard.",
-    controls: [
+    controls: withGravitySlider([
       {
         id: "mix-strength",
         label: "Mix strength",
@@ -393,7 +368,7 @@ export const SCENES: readonly SceneRecord[] = [
         option("slow", "Slow"),
         option("fast", "Fast"),
       ]),
-    ],
+    ]),
     credits: {
       implementationPath: sceneSource("color_mixer.rs"),
       inspiration: [PARTICLE_GUIDE, SHOWCASE],
@@ -406,7 +381,7 @@ export const SCENES: readonly SceneRecord[] = [
     description: "Drop an elastic particle shape onto obstacles, then poke it.",
     interactionHint:
       "Click or tap the canvas to poke the jelly at that location. Labeled controls also work from the keyboard.",
-    controls: [
+    controls: withGravitySlider([
       {
         id: "shape",
         label: "Shape",
@@ -426,7 +401,7 @@ export const SCENES: readonly SceneRecord[] = [
         ],
       },
       action("poke-jelly", "Poke jelly"),
-    ],
+    ]),
     credits: {
       implementationPath: sceneSource("jelly_drop.rs"),
       inspiration: [PARTICLE_GUIDE, SHOWCASE],
@@ -440,7 +415,7 @@ export const SCENES: readonly SceneRecord[] = [
       "Vary a jet that turns a pinned paddle wheel through native coupling.",
     interactionHint:
       "Drag on the canvas to aim the jet. Labeled controls also work from the keyboard.",
-    controls: [
+    controls: withGravitySlider([
       runtimePreset("jet-strength", "Jet strength", [
         option("weak", "Weak"),
         option("medium", "Medium"),
@@ -450,7 +425,7 @@ export const SCENES: readonly SceneRecord[] = [
         option("on", "On"),
         option("off", "Off"),
       ]),
-    ],
+    ]),
     credits: {
       implementationPath: sceneSource("water_wheel.rs"),
       inspiration: [SHOWCASE],
@@ -463,7 +438,7 @@ export const SCENES: readonly SceneRecord[] = [
     description:
       "Watch water fall in an open basin while a ball drops into it.",
     interactionHint: WATCH_FIRST_HINT,
-    controls: [],
+    controls: withGravitySlider([]),
     credits: {
       implementationPath: sceneSource("particles.rs"),
       inspiration: [PINNED_PARTICLES_JS, PINNED_PARTICLES_H, SHOWCASE],
@@ -476,7 +451,7 @@ export const SCENES: readonly SceneRecord[] = [
     description:
       "Watch tensile, viscous liquid drain through shelves into bottom columns.",
     interactionHint: WATCH_FIRST_HINT,
-    controls: [],
+    controls: withGravitySlider([]),
     credits: {
       implementationPath: sceneSource("liquid_timer.rs"),
       inspiration: [PINNED_LIQUID_TIMER_JS, PINNED_LIQUID_TIMER_H, SHOWCASE],
@@ -489,7 +464,7 @@ export const SCENES: readonly SceneRecord[] = [
     description:
       "Watch three colored tensile groups bead and bleed color when a ball hits them.",
     interactionHint: WATCH_FIRST_HINT,
-    controls: [],
+    controls: withGravitySlider([]),
     credits: {
       implementationPath: sceneSource("surface_tension.rs"),
       inspiration: [
@@ -506,7 +481,7 @@ export const SCENES: readonly SceneRecord[] = [
     description:
       "Watch three soft particle clumps deform when a ball falls on them.",
     interactionHint: WATCH_FIRST_HINT,
-    controls: [],
+    controls: withGravitySlider([]),
     credits: {
       implementationPath: sceneSource("elastic_particles.rs"),
       inspiration: [
@@ -523,7 +498,7 @@ export const SCENES: readonly SceneRecord[] = [
     description:
       "Watch three colored rigid clumps stay solid when a ball hits them.",
     interactionHint: WATCH_FIRST_HINT,
-    controls: [],
+    controls: withGravitySlider([]),
     credits: {
       implementationPath: sceneSource("rigid_particles.rs"),
       inspiration: [
@@ -539,7 +514,7 @@ export const SCENES: readonly SceneRecord[] = [
     ready: true,
     description: "Watch a basin of liquid hold floating solid bits.",
     interactionHint: WATCH_FIRST_HINT,
-    controls: [],
+    controls: withGravitySlider([]),
     credits: {
       implementationPath: sceneSource("soup.rs"),
       inspiration: [PINNED_SOUP_JS, PINNED_SOUP_H, SHOWCASE],
@@ -552,7 +527,9 @@ export const SCENES: readonly SceneRecord[] = [
     description: "Watch a paddle stir soup, and free or restore its rail.",
     interactionHint:
       "Click or tap the canvas, or use Toggle paddle rail, to free the paddle from its rail or put it back. Labeled controls also work from the keyboard.",
-    controls: [action("toggle-paddle-rail", "Toggle paddle rail")],
+    controls: withGravitySlider([
+      action("toggle-paddle-rail", "Toggle paddle rail"),
+    ]),
     credits: {
       implementationPath: sceneSource("soup_stirrer.rs"),
       inspiration: [PINNED_SOUP_STIRRER_JS, PINNED_SOUP_STIRRER_H, SHOWCASE],
@@ -566,12 +543,12 @@ export const SCENES: readonly SceneRecord[] = [
       "Click or tap inside the box to shove the whole particle blob.",
     interactionHint:
       "Click or tap inside the box to shove the particle blob. Use Push to choose force or impulse. Clicks outside the box do nothing. Labeled controls also work from the keyboard.",
-    controls: [
+    controls: withGravitySlider([
       runtimePreset("push-mode", "Push", [
         option("force", "Force"),
         option("impulse", "Impulse"),
       ]),
-    ],
+    ]),
     credits: {
       implementationPath: sceneSource("impulse.rs"),
       inspiration: [PINNED_IMPULSE_JS, PINNED_IMPULSE_H, SHOWCASE],
@@ -585,12 +562,12 @@ export const SCENES: readonly SceneRecord[] = [
       "Watch a walker move under a particle load and reverse its motor.",
     interactionHint:
       "Use Motor direction to walk forward or reverse under the particle load. Labeled controls also work from the keyboard.",
-    controls: [
+    controls: withGravitySlider([
       runtimePreset("motor-direction", "Motor direction", [
         option("forward", "Forward"),
         option("reverse", "Reverse"),
       ]),
-    ],
+    ]),
     credits: {
       implementationPath: sceneSource("theo_jansen.rs"),
       inspiration: [PINNED_THEO_JANSEN_JS, PINNED_THEO_JANSEN_H, SHOWCASE],
@@ -603,7 +580,7 @@ export const SCENES: readonly SceneRecord[] = [
     description:
       "A drinking glass at real size: 74 mm wide, 1.05 mm diameter particles, and Earth gravity. Phone tilt drives this water on a glass clock.",
     interactionHint: WATCH_FIRST_HINT,
-    controls: [],
+    controls: withGravitySlider([]),
     viewBounds: LIQUID_TUMBLER_VIEW_BOUNDS,
     credits: {
       implementationPath: sceneSource("liquid_tumbler.rs"),

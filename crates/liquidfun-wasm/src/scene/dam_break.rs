@@ -7,6 +7,7 @@ use liquidfun::{
     ParticleSystemDef, ParticleSystemId, WakePolicy, World,
 };
 
+use super::gravity_slider::{DEFAULT_GRAVITY_MAGNITUDE, gravity_vector, parse_gravity_magnitude};
 use super::{
     BuiltScene, ControlEffect, PointerKind, RigidSegment, SceneError, SceneHooks,
     attach_basin_fixture,
@@ -30,14 +31,6 @@ const DYNAMIC_CIRCLE_POSITION: Vec2 = Vec2::new(2.5, 5.5);
 const DROP_CIRCLE_POSITION: Vec2 = Vec2::new(2.5, 7.2);
 const DROP_WAKE_IMPULSE: Vec2 = Vec2::new(0.0, -0.1);
 const MAXIMUM_PARTICLE_COUNT: usize = 10240;
-/// Former Low preset. Keep in sync with `DAM_BREAK_GRAVITY_MIN` in `web/src/catalog/scenes.ts`.
-const FORMER_LOW_GRAVITY_MAGNITUDE: u16 = 6;
-/// Former High preset. The slider maximum is five times this magnitude.
-const FORMER_HIGH_GRAVITY_MAGNITUDE: u16 = 16;
-const MIN_GRAVITY_MAGNITUDE: u16 = FORMER_LOW_GRAVITY_MAGNITUDE;
-const MAX_GRAVITY_MAGNITUDE: u16 = FORMER_HIGH_GRAVITY_MAGNITUDE * 5;
-/// Documented normal gravity. Keep in sync with `DAM_BREAK_GRAVITY_DEFAULT`.
-const DEFAULT_GRAVITY_MAGNITUDE: f32 = 10.0;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum WaterAmount {
@@ -63,27 +56,6 @@ impl WaterAmount {
             Self::Large => (LARGE_PARTICLE_COLUMNS, LARGE_PARTICLE_ROWS),
         }
     }
-}
-
-/// Parses a slider magnitude in whole m/s², from the former Low preset through five times High.
-fn parse_gravity_magnitude(value: &str) -> Option<f32> {
-    if value.is_empty() || !value.bytes().all(|byte| byte.is_ascii_digit()) {
-        return None;
-    }
-    if value.len() > 1 && value.starts_with('0') {
-        return None;
-    }
-
-    let magnitude = value.parse::<u16>().ok()?;
-    if !(MIN_GRAVITY_MAGNITUDE..=MAX_GRAVITY_MAGNITUDE).contains(&magnitude) {
-        return None;
-    }
-
-    Some(f32::from(magnitude))
-}
-
-fn gravity_vector(magnitude: f32) -> Vec2 {
-    Vec2::new(0.0, -magnitude)
 }
 
 struct DamBreakHooks {
