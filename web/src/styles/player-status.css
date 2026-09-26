@@ -1,0 +1,96 @@
+.status-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-md);
+}
+
+.session-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-width: 0;
+  color: #F4F7FA;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.status-dot {
+  flex: 0 0 auto;
+  width: var(--space-sm);
+  height: var(--space-sm);
+  background: #A9B4C0;
+  border-radius: 50%;
+}
+
+.session-status--playing .status-dot {
+  background: #4DA3FF;
+}
+
+.session-status--paused,
+.session-status--loading {
+  color: #A9B4C0;
+}
+.session-status--failed {
+  color: #F87171;
+}
+.session-status--failed .status-dot {
+  background: #F87171;
+}
+
+.player-identity {
+  display: grid;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+.site-footer-provenance > div {
+  min-width: 0;
+}
+
+.player-identity dt,
+.site-footer-provenance dt {
+  margin-bottom: var(--space-xs);
+  color: #A9B4C0;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.player-identity dd,
+.site-footer-provenance dd {
+  overflow-wrap: anywhere;
+  color: #F4F7FA;
+  font-size: 14px;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.4;
+}
+
+.error-message {
+  display: grid;
+  gap: var(--space-sm);
+  color: #F87171;
+  font-size: 16px;
+  line-height: 1.5;
+}
+.failure-debug {
+  color: #A9B4C0;
+  font-size: 14px;
+  line-height: 1.4;
+}
+.failure-debug summary {
+  min-height: 44px;
+  cursor: pointer;
+  color: #E7ECF1;
+}
+.failure-debug pre {
+  margin: 0;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.45;
+}

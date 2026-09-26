@@ -1,0 +1,124 @@
+/* Product controls: Play scene, Pause scene, Reset scene, Retry scene, Open Dam Break */
+.product-control,
+button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: start;
+  min-block-size: 44px;
+  padding: var(--space-sm) var(--space-md);
+  color: #F4F7FA;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.5;
+  text-decoration: none;
+  background: #151D28;
+  border: 1px solid #2A3441;
+  border-radius: 12px;
+  cursor: pointer;
+  touch-action: manipulation; /* Fast second tap stays a click; pinch-zoom still works. */
+}
+.product-control:hover:not(:disabled),
+button:hover:not(:disabled) {
+  background: #1C2734;
+}
+.product-control--accent {
+  color: #0B0F14;
+  background: #4DA3FF;
+  border-color: #4DA3FF;
+}
+
+.product-control--accent:hover:not(:disabled) {
+  background: #2F8CFF;
+  border-color: #2F8CFF;
+}
+
+.product-control:focus-visible,
+button:focus-visible,
+select:focus-visible,
+a:focus-visible {
+  outline: 2px solid #4DA3FF;
+  outline-offset: 4px;
+}
+
+.product-control:disabled,
+button:disabled {
+  color: #A9B4C0;
+  background: #151D28;
+  border-color: #2A3441;
+  cursor: default;
+}
+select {
+  min-block-size: 44px;
+  padding: var(--space-sm) var(--space-md);
+  color: #F4F7FA;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.5;
+  background: #151D28;
+  border: 1px solid #2A3441;
+  border-radius: 12px;
+}
+select:hover:not(:disabled) {
+  background: #1C2734;
+}
+.scene-credits {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.scene-credits-heading {
+  margin: 0;
+  color: #F4F7FA;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.scene-credits-list {
+  display: grid;
+  gap: var(--space-md);
+}
+
+.scene-credits-list a {
+  color: #F4F7FA;
+}
+
+.site-footer-summary {
+  color: #A9B4C0;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+.site-footer-identity {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  color: #A9B4C0;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.4;
+}
+.site-footer-identity a {
+  color: #F4F7FA;
+}
+.site-footer-provenance {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-sm);
+}
+
+.site-footer-provenance a {
+  color: #F4F7FA;
+}
+
+.mobile-demos-trigger {
+  display: inline-flex;
+  flex: 0 0 auto;
+  inline-size: 44px;
+  block-size: 44px;
+  min-inline-size: 44px;
+  min-block-size: 44px;
+  padding: 0;
+}
