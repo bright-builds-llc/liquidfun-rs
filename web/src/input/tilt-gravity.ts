@@ -1,5 +1,8 @@
-/** Largest gravity magnitude accepted from the phone accelerometer, in m/s². */
+/** Largest measured gravity magnitude accepted from the phone accelerometer, in m/s². */
 export const TILT_GRAVITY_LIMIT = 20;
+
+/** Standard gravity, one g, in m/s². */
+export const STANDARD_GRAVITY = 9.80665;
 
 export type TiltGravity = {
   readonly x: number;
@@ -25,6 +28,8 @@ export type TiltDebug =
       readonly sample: AccelerationSample;
       readonly gravity: TiltGravity;
       readonly screenAngleDegrees: number;
+      /** Applied magnitude at which the tilt arrow reaches its full length. */
+      readonly fullLengthMagnitude?: number;
     };
 
 export type TiltSampleResult =
@@ -96,13 +101,13 @@ export function rotateDeviceAccelerationToScreen(
 }
 
 /**
- * Maps device acceleration, including gravity, into world gravity.
+ * Maps device acceleration, including gravity, into measured world gravity.
  *
  * Device +x points right and +y points toward the top in the phone's natural
  * orientation. Chrome, Firefox, and WebKit keep that frame when the page
  * rotates, so `screenAngleDegrees` maps it onto the current screen. World +y
  * is up, so water falls toward negative world y when the bottom of the screen
- * points at the ground.
+ * points at the ground. The gravity slider scales this vector afterward.
  */
 export function maybeWorldGravityFromAcceleration(
   accelerationX: number,
@@ -129,6 +134,63 @@ export function maybeWorldGravityFromAcceleration(
     y *= scale;
   }
   return { x, y };
+}
+
+export type ScaledTiltGravity = {
+  readonly gravity: TiltGravity;
+  readonly fullLengthMagnitude: number;
+};
+
+/**
+ * Scales measured gravity so the slider magnitude replaces one standard g.
+ *
+ * A still phone reads about `STANDARD_GRAVITY` along the down axis. Multiplying
+ * by `sliderMagnitude / STANDARD_GRAVITY` keeps the tilt direction and sets the
+ * strength in proportion to the gravity slider.
+ */
+export function scaleGravityBySlider(
+  gravity: TiltGravity,
+  sliderMagnitude: number,
+): TiltGravity | undefined {
+  if (
+    !Number.isFinite(gravity.x) ||
+    !Number.isFinite(gravity.y) ||
+    !Number.isFinite(sliderMagnitude) ||
+    sliderMagnitude < 0
+  ) {
+    return undefined;
+  }
+
+  const scale = sliderMagnitude / STANDARD_GRAVITY;
+  return {
+    x: gravity.x * scale,
+    y: gravity.y * scale,
+  };
+}
+
+/**
+ * Applies the gravity slider when the scene has one.
+ *
+ * Scenes without a gravity slider keep the measured accelerometer vector.
+ * The arrow reaches full length at the slider magnitude, which is the applied
+ * strength of one standard g.
+ */
+export function worldGravityFromTilt(
+  measured: TiltGravity,
+  maybeSliderMagnitude: number | undefined,
+): ScaledTiltGravity {
+  if (maybeSliderMagnitude === undefined) {
+    return { gravity: measured, fullLengthMagnitude: STANDARD_GRAVITY };
+  }
+
+  const maybeScaled = scaleGravityBySlider(measured, maybeSliderMagnitude);
+  if (maybeScaled === undefined) {
+    return { gravity: measured, fullLengthMagnitude: STANDARD_GRAVITY };
+  }
+
+  const fullLengthMagnitude =
+    maybeSliderMagnitude > 0 ? maybeSliderMagnitude : STANDARD_GRAVITY;
+  return { gravity: maybeScaled, fullLengthMagnitude };
 }
 
 /** Turns an unknown thrown value into a name and message for the readout. */

@@ -1,7 +1,11 @@
-import type { TiltDebug, TiltGravity } from "../input/tilt-gravity";
+import {
+  STANDARD_GRAVITY,
+  type TiltDebug,
+  type TiltGravity,
+} from "../input/tilt-gravity";
 
-/** Standard gravity, in m/s². The arrow reaches its full length at this magnitude. */
-export const FULL_GRAVITY = 9.80665;
+/** Applied magnitude, in m/s², at which the arrow reaches its full length by default. */
+export const FULL_GRAVITY = STANDARD_GRAVITY;
 
 const BOX = 48;
 const CENTER = BOX / 2;
@@ -25,20 +29,24 @@ export type GravityArrowGeometry = {
  * Screen-space arrow for a world gravity vector.
  *
  * World +y is up and SVG +y is down, so the arrow flips the world y axis.
- * Length scales with the in-plane magnitude and stops growing at one g, so a
- * phone lying flat draws only the leftover accelerometer noise.
+ * Length scales with the applied magnitude and reaches its full size at
+ * `maybeFullLengthMagnitude`. That reference is one standard g, or the gravity
+ * slider magnitude when accelerometer gravity is scaled to the slider. A phone
+ * lying flat draws only the leftover accelerometer noise.
  */
 export function gravityArrowGeometry(
   gravity: TiltGravity,
+  maybeFullLengthMagnitude?: number,
 ): GravityArrowGeometry | undefined {
   const screenX = gravity.x;
   const screenY = -gravity.y;
   const magnitude = Math.hypot(screenX, screenY);
+  const fullLength = arrowFullLength(maybeFullLengthMagnitude);
   if (!Number.isFinite(magnitude) || magnitude < MIN_DRAWABLE_MAGNITUDE) {
     return undefined;
   }
 
-  const strength = Math.min(magnitude / FULL_GRAVITY, 1);
+  const strength = Math.min(magnitude / fullLength, 1);
   const x = screenX / magnitude;
   const y = screenY / magnitude;
   const shaft = SHAFT * strength;
@@ -76,7 +84,18 @@ export function maybeGravityArrow(
   if (!tiltGravityEnabled || tiltDebug.kind !== "live") {
     return undefined;
   }
-  return gravityArrowGeometry(tiltDebug.gravity);
+  return gravityArrowGeometry(tiltDebug.gravity, tiltDebug.fullLengthMagnitude);
+}
+
+function arrowFullLength(maybeFullLengthMagnitude: number | undefined): number {
+  if (
+    maybeFullLengthMagnitude === undefined ||
+    !Number.isFinite(maybeFullLengthMagnitude) ||
+    maybeFullLengthMagnitude <= 0
+  ) {
+    return FULL_GRAVITY;
+  }
+  return maybeFullLengthMagnitude;
 }
 
 export function formatArrowPoints(

@@ -11,9 +11,11 @@ import {
   syncCanvasInteractive,
   type CanvasPointerHandlers,
 } from "./input/canvas-pointer";
+import { maybeRouteGravitySliderMagnitude } from "./input/gravity-slider";
 import {
   changeTiltGravity,
   createTiltBinding,
+  reapplyStoredTiltGravity,
 } from "./input/tilt-binding";
 import type { TiltDebug } from "./input/tilt-gravity";
 import type { PointerKind } from "./input/pointer";
@@ -112,6 +114,9 @@ export function App() {
   let maybeSession: SceneSession | undefined;
   const clock = createFrameClock();
   const tiltBinding = createTiltBinding();
+  const gravitySliderMagnitude = (): number | undefined =>
+    maybeRouteGravitySliderMagnitude(route(), constructionValues);
+
   const releaseVisualViewport = canvasStage
     ? bindVisualViewport(document.documentElement)
     : undefined;
@@ -320,6 +325,12 @@ export function App() {
       }
 
       maybeSession = ownedSession;
+      reapplyStoredTiltGravity(
+        tiltBinding,
+        () => maybeSession,
+        gravitySliderMagnitude,
+        setTiltDebug,
+      );
       presentOwnedFrame(clock, ownedSession, context, true, frameDeps());
     } catch (error) {
       if (isStaleGeneration(started, generation)) {
@@ -425,6 +436,12 @@ export function App() {
       if (controlStoresAppliedValue(maybeControl)) {
         constructionValues = { ...constructionValues, [name]: value };
       }
+      reapplyStoredTiltGravity(
+        tiltBinding,
+        () => maybeSession,
+        gravitySliderMagnitude,
+        setTiltDebug,
+      );
       if (!recreated) {
         return;
       }
@@ -597,6 +614,7 @@ export function App() {
           tiltBinding,
           enabled,
           () => maybeSession,
+          gravitySliderMagnitude,
           setTiltGravityEnabled,
           setTiltDebug,
         );
