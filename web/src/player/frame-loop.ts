@@ -1,5 +1,6 @@
 import { appendFpsTick, type FpsTick } from "../components/fps-meter";
 import type { SceneId } from "../catalog/scenes";
+import { worldBoundsForViewport } from "../catalog/portrait-bounds";
 import {
   FRAME_STEP_BUDGET_MS,
   accumulateStepTime,
@@ -226,6 +227,14 @@ export function connectResizeObserver(
     try {
       clock.viewportWidth = resizedBounds.width;
       clock.viewportHeight = resizedBounds.height;
+      const maybeReadyId = maybeReadySceneId(deps.route());
+      if (maybeReadyId !== undefined) {
+        clock.worldBounds = worldBoundsForViewport(
+          maybeReadyId,
+          clock.viewportWidth,
+          clock.viewportHeight,
+        );
+      }
       const resizedCamera = resizeCanvasBackingStore(
         canvas,
         clock.viewportWidth,
@@ -238,7 +247,6 @@ export function connectResizeObserver(
       if (resizedCamera === undefined) {
         return;
       }
-      const maybeReadyId = maybeReadySceneId(deps.route());
       if (deps.maybeSession() === undefined && maybeReadyId !== undefined) {
         deps.startScene(maybeReadyId);
         return;

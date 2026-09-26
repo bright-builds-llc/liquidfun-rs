@@ -1,6 +1,7 @@
 import { createEffect, createSignal, onCleanup } from "solid-js";
 
-import { maybeSceneById, worldBoundsForScene, type SceneId } from "./catalog/scenes";
+import { maybeSceneById, type SceneId } from "./catalog/scenes";
+import { worldBoundsForViewport } from "./catalog/portrait-bounds";
 import { changedPresetEntries } from "./export/presets";
 import type { SvgExportRequest } from "./export/messages";
 import { PlaygroundStage } from "./components/PlaygroundStage";
@@ -263,7 +264,7 @@ export function App() {
     clock.maybeLastTimestamp = undefined;
     const particleLimit = initialRenderedParticleLimit(id);
     setRenderedParticleDraft(String(particleLimit)); setMaxRenderedParticles(particleLimit);
-    clock.worldBounds = worldBoundsForScene(id);
+    clock.worldBounds = worldBoundsForViewport(id, clock.viewportWidth, clock.viewportHeight);
     clock.cameraView = IDENTITY_CAMERA_VIEW;
     refreshCamera();
     setView({ kind: "loading" });

@@ -1,6 +1,6 @@
 import init, { ProofSession } from "../generated/liquidfun-wasm/liquidfun_wasm.js";
 import wasmUrl from "../generated/liquidfun-wasm/liquidfun_wasm_bg.wasm?url";
-import { worldBoundsForScene } from "../catalog/scenes";
+import { worldBoundsForViewport } from "../catalog/portrait-bounds";
 import { parseRenderFrame } from "../physics/frame";
 import { buildAnimatedSvg } from "./animated-svg";
 import {
@@ -40,7 +40,11 @@ async function runExport(data: unknown): Promise<void> {
       driverFor(session),
       {
         ...maybeRequest,
-        worldBounds: worldBoundsForScene(maybeRequest.sceneId),
+        worldBounds: worldBoundsForViewport(
+          maybeRequest.sceneId,
+          maybeRequest.viewportWidth,
+          maybeRequest.viewportHeight,
+        ),
       },
       (completed, total) => {
         post({ type: "sampling", completed, total });
