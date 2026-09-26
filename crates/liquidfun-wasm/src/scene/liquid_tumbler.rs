@@ -1,9 +1,11 @@
 //! Drinking-glass tumbler at real meters, with two walls and a floor.
 //!
-//! The glass is 74 mm wide and 120 mm tall, with about 55 mm of water.
-//! Particles are 0.8 mm across. Earth gravity is 9.8 m/s², matching a resting
-//! phone accelerometer. [`PARTICLE_ITERATIONS`] raises the pressure cap enough
-//! for that column to hold; the shared 2 substeps cannot.
+//! The glass is 74 mm wide and 120 mm tall. Particles are 1.05 mm across.
+//! The lattice is placed through 55 mm and packs down to a few centimeters,
+//! because 4,500 particles sit wider than the resting spacing. Earth gravity
+//! is 9.8 m/s², matching a resting phone accelerometer.
+//! [`PARTICLE_ITERATIONS`] raises the pressure cap enough for that column to
+//! hold; the shared 2 substeps cannot.
 //!
 //! Camera frame, kept in sync with `LIQUID_TUMBLER_VIEW_BOUNDS`:
 //! x = -0.055..0.055, y = -0.02..0.15.
@@ -23,21 +25,24 @@ use crate::session::SessionError;
 const INNER_WIDTH: f32 = 0.074;
 /// Inner height from the floor to the rim, in meters.
 const INNER_HEIGHT: f32 = 0.120;
-/// Water depth above the floor, in meters.
+/// Initial lattice depth above the floor, in meters. The fill packs shorter.
 const WATER_DEPTH: f32 = 0.055;
-const PARTICLE_RADIUS: f32 = 0.0008;
-/// Lattice that fills the glass with exactly 5,200 particles.
-const PARTICLE_COLUMNS: usize = 80;
-const PARTICLE_ROWS: usize = 65;
+/// Particle diameter, in meters (1.05 mm across).
+const PARTICLE_DIAMETER: f32 = 0.001_05;
+const PARTICLE_RADIUS: f32 = PARTICLE_DIAMETER * 0.5;
+/// Lattice that fills the glass with exactly 4,500 particles.
+/// 75 by 60 is the factorization closest to the glass width-to-depth ratio.
+const PARTICLE_COLUMNS: usize = 75;
+const PARTICLE_ROWS: usize = 60;
 const PARTICLE_DAMPING: f32 = 0.25;
 const MAXIMUM_PARTICLE_COUNT: usize = PARTICLE_COLUMNS * PARTICLE_ROWS;
 const WATER_COLOR: ParticleColor = ParticleColor::new(77, 163, 255, 255);
 const GRAVITY: Vec2 = Vec2::new(0.0, -9.8);
-/// Substeps that keep radius times substep count at the resting 2 mm glass.
+/// Substeps chosen so diameter times substep count stays near 64 mm.
 /// The pressure cap grows with that product. Fewer substeps let the column
 /// sink into the floor and get thrown back up.
-pub(crate) const PARTICLE_ITERATIONS: u32 = 40;
-const _: () = assert!(MAXIMUM_PARTICLE_COUNT == 5_200);
+pub(crate) const PARTICLE_ITERATIONS: u32 = 61;
+const _: () = assert!(MAXIMUM_PARTICLE_COUNT == 4_500);
 
 struct LiquidTumblerHooks {
     basin_segments: [RigidSegment; 3],
@@ -152,7 +157,7 @@ fn create_water(
 
 /// Even lattice inside the water, one diameter clear of the glass.
 fn water_lattice(half_contact: f32, contact_floor: f32) -> Result<Vec<Vec2>, SceneError> {
-    let inset = PARTICLE_RADIUS * 2.0;
+    let inset = PARTICLE_DIAMETER;
     let left = -half_contact + inset;
     let bottom = contact_floor + inset;
     let x_span = (half_contact - inset) - left;
@@ -253,8 +258,8 @@ mod tests {
         // Assert
         assert_eq!(
             session.particle_count(),
-            5_200,
-            "the 0.8 mm fill should be 5200 particles"
+            4_500,
+            "the 1.05 mm fill should be 4500 particles"
         );
         assert_eq!(session.rigid_shape_count(), 3, "floor and two walls");
         assert!(
@@ -286,9 +291,9 @@ mod tests {
             speed < 1.0,
             "glass water should not be launched by the contact slop, got {speed}"
         );
-        // The 5,200-particle lattice starts denser than the resting spacing,
-        // so the surface can lift during these steps. A few particles may
-        // spill later; the longer test checks that the column settles.
+        // The 4,500-particle lattice is wider than the 0.75-diameter resting
+        // spacing, so the surface can drop as the water packs. A few particles
+        // may spill later; the longer test checks that the column settles.
         let surface = highest_particle(&positions);
         assert!(
             (0.03..INNER_HEIGHT).contains(&surface),
@@ -306,7 +311,7 @@ mod tests {
         let before = session.particle_count();
 
         // Act
-        // 45 advances of 4 steps is 3 seconds. The dense fill splashes first.
+        // 45 advances of 4 steps is 3 seconds. The wide lattice packs down first.
         for _ in 0..45 {
             session
                 .advance(4)
@@ -329,8 +334,8 @@ mod tests {
         );
         let surface = highest_particle(&positions);
         assert!(
-            (0.06..0.11).contains(&surface),
-            "the water column should stay a few centimeters deep, got {surface}"
+            (0.02..0.05).contains(&surface),
+            "the smaller fill should settle a few centimeters deep, got {surface}"
         );
         assert_positions_inside_glass(&positions);
     }

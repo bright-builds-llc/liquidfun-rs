@@ -47,7 +47,7 @@ const UI_SPEC_DESCRIPTIONS: Readonly<Record<SceneId, string>> = {
   "theo-jansen":
     "Watch a walker move under a particle load and reverse its motor.",
   "liquid-tumbler":
-    "A drinking glass at real size: 74 mm wide, 0.8 mm particles, and Earth gravity. Phone tilt drives this water on a glass clock.",
+    "A drinking glass at real size: 74 mm wide, 1.05 mm diameter particles, and Earth gravity. Phone tilt drives this water on a glass clock.",
 };
 
 const UI_SPEC_HINTS: Readonly<Record<SceneId, string>> = {
