@@ -520,9 +520,7 @@ button {
   border: 1px solid #2A3441;
   border-radius: 12px;
   cursor: pointer;
-  /* Safari zooms the page on a fast second tap. manipulation keeps
-     panning and pinch-zoom, and drops that double-tap zoom. */
-  touch-action: manipulation;
+  touch-action: manipulation; /* Fast second tap stays a click; pinch-zoom still works. */
 }
 .product-control:hover:not(:disabled),
 button:hover:not(:disabled) {
