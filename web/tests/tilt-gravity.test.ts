@@ -1,13 +1,16 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  STANDARD_GRAVITY,
   TILT_GRAVITY_LIMIT,
   accelerationConventionFromEnvironment,
   describeUnknownError,
   formatTiltDebug,
   interpretAcceleration,
   maybeWorldGravityFromAcceleration,
+  scaleGravityBySlider,
   screenAngleDegreesFromEnvironment,
+  worldGravityFromTilt,
 } from "../src/input/tilt-gravity";
 
 describe("maybeWorldGravityFromAcceleration", () => {
@@ -345,6 +348,82 @@ describe("formatTiltDebug", () => {
     // Assert
     expect(text).toContain("NotAllowedError: The user denied permission");
     expect(text).toContain("ax null");
+  });
+});
+
+describe("scaleGravityBySlider", () => {
+  it("turns one standard g into the slider magnitude", () => {
+    // Arrange
+    const measured = { x: 0, y: -STANDARD_GRAVITY };
+
+    // Act
+    const scaled = scaleGravityBySlider(measured, 10);
+
+    // Assert
+    expect(scaled?.x).toBeCloseTo(0);
+    expect(scaled?.y).toBeCloseTo(-10);
+  });
+
+  it("keeps a partial tilt proportional to the slider", () => {
+    // Arrange
+    const measured = {
+      x: STANDARD_GRAVITY / 2,
+      y: -STANDARD_GRAVITY / 2,
+    };
+
+    // Act
+    const scaled = scaleGravityBySlider(measured, 16);
+
+    // Assert
+    expect(scaled?.x).toBeCloseTo(8);
+    expect(scaled?.y).toBeCloseTo(-8);
+  });
+
+  it("scales a capped shake by the same proportion", () => {
+    // Arrange
+    const measured = maybeWorldGravityFromAcceleration(0, 40);
+    if (measured === undefined) {
+      throw new Error("expected a capped gravity sample");
+    }
+
+    // Act
+    const scaled = scaleGravityBySlider(measured, 80);
+
+    // Assert
+    expect(Math.hypot(scaled?.x ?? 0, scaled?.y ?? 0)).toBeCloseTo(
+      (TILT_GRAVITY_LIMIT * 80) / STANDARD_GRAVITY,
+    );
+  });
+
+  it("rejects a negative slider magnitude", () => {
+    // Arrange / Act / Assert
+    expect(scaleGravityBySlider({ x: 0, y: -STANDARD_GRAVITY }, -1)).toBeUndefined();
+  });
+});
+
+describe("worldGravityFromTilt", () => {
+  it("keeps the measured vector when the scene has no gravity slider", () => {
+    // Arrange
+    const measured = { x: 1.5, y: -STANDARD_GRAVITY };
+
+    // Act
+    const applied = worldGravityFromTilt(measured, undefined);
+
+    // Assert
+    expect(applied.gravity).toEqual(measured);
+    expect(applied.fullLengthMagnitude).toBe(STANDARD_GRAVITY);
+  });
+
+  it("uses the slider as the full-length reference", () => {
+    // Arrange
+    const measured = { x: 0, y: -STANDARD_GRAVITY };
+
+    // Act
+    const applied = worldGravityFromTilt(measured, 80);
+
+    // Assert
+    expect(applied.gravity.y).toBeCloseTo(-80);
+    expect(applied.fullLengthMagnitude).toBe(80);
   });
 });
 

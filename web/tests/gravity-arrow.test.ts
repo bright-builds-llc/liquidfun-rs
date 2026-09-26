@@ -84,6 +84,31 @@ describe("gravityArrowGeometry", () => {
     expect(stronger?.strokeWidth).toBeCloseTo(full?.strokeWidth ?? 0);
   });
 
+  it("reaches full length at the gravity slider magnitude", () => {
+    // Arrange
+    const standard = gravityArrowGeometry({ x: 0, y: -FULL_GRAVITY });
+
+    // Act
+    const scaled = gravityArrowGeometry({ x: 0, y: -80 }, 80);
+
+    // Assert
+    expect(tipDistance(scaled)).toBeCloseTo(tipDistance(standard));
+  });
+
+  it("keeps flat-phone noise small relative to a stronger slider", () => {
+    // Arrange
+    const sliderMagnitude = 80;
+    const scaledNoise = 0.2 * (sliderMagnitude / FULL_GRAVITY);
+    const full = gravityArrowGeometry({ x: 0, y: -sliderMagnitude }, sliderMagnitude);
+
+    // Act
+    const noise = gravityArrowGeometry({ x: 0, y: -scaledNoise }, sliderMagnitude);
+
+    // Assert
+    expect(tipDistance(noise)).toBeLessThan(tipDistance(full) * 0.05);
+    expect(tipDistance(noise)).toBeGreaterThan(0);
+  });
+
   it("shrinks flat-phone noise to a small fraction of full gravity", () => {
     // Arrange
     const full = gravityArrowGeometry({ x: 0, y: -FULL_GRAVITY });
