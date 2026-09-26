@@ -51,7 +51,7 @@ import {
   type CameraView,
 } from "./render/camera";
 import {
-  DEFAULT_RENDERED_PARTICLE_LIMIT,
+  DEFAULT_RENDERED_PARTICLE_LIMIT, initialRenderedParticleLimit,
   maybeParseRenderedParticleLimit,
 } from "./render/particle-limit";
 import { loadRenderMode, persistRenderMode, type RenderMode } from "./render/mode";
@@ -285,11 +285,11 @@ export function App() {
     const started = incrementGeneration();
     cancelPendingFrame(clock);
     disposeOwnedSession();
-    clock.maybePreviousFrame = undefined;
-    setMaybeDebugFrame(undefined);
-    setStepsThisFrame(0);
-    setFpsTicks([]);
+    clock.maybePreviousFrame = undefined; setMaybeDebugFrame(undefined);
+    setStepsThisFrame(0); setFpsTicks([]);
     clock.maybeLastTimestamp = undefined;
+    const particleLimit = initialRenderedParticleLimit(id);
+    setRenderedParticleDraft(String(particleLimit)); setMaxRenderedParticles(particleLimit);
     clock.worldBounds = worldBoundsForScene(id);
     clock.cameraView = IDENTITY_CAMERA_VIEW;
     refreshCamera();

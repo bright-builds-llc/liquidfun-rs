@@ -549,6 +549,9 @@ impl ParticleStorage {
     }
 
     fn check_identity_map(&self) -> Result<(), ParticleStorageError> {
+        // Each id owns one identity slot, so a duplicated dense row cannot
+        // match that slot's single dense index. Scanning earlier rows as well
+        // would repeat this check in quadratic time on every create.
         for (dense, id) in self.dense_to_id.iter().copied().enumerate() {
             let local_slot = self.local_slot(id)?;
             let entry = self
@@ -565,9 +568,6 @@ impl ParticleStorage {
                         } if index == dense
                 )
             {
-                return Err(ParticleStorageError::StaleOrDestroyed);
-            }
-            if self.dense_to_id[..dense].contains(&id) {
                 return Err(ParticleStorageError::StaleOrDestroyed);
             }
         }

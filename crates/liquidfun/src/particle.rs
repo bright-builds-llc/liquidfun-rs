@@ -55,7 +55,10 @@ pub use lifetime::{
     ParticleDestructionOccurrence, ParticleLifetimeClock, ParticleLifetimeError,
     ParticleLifetimeOrder,
 };
-pub use proxy::{ParticleNeighborPair, ParticleNeighborhood, ParticleProxyError};
+pub use proxy::{
+    PROXY_TAG_HALF_EXTENT_DIAMETERS, ParticleNeighborPair, ParticleNeighborhood,
+    ParticleProxyError, position_fits_proxy_domain,
+};
 pub use query::{
     ParticleQueryError, ParticleQueryOccurrence, ParticleRayCastError, ParticleRayHit,
 };

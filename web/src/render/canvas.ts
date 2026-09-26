@@ -10,6 +10,7 @@ import {
   projectRadius,
 } from "./camera";
 import type { RenderMode } from "./mode";
+import { particleDrawStride } from "./particle-limit";
 import {
   DEFAULT_WIREFRAME_STROKE_WIDTH,
   maybeParseWireframeStrokeWidth,
@@ -104,8 +105,12 @@ function drawParticles(
   wireframeStrokeWidth: number,
   maxRenderedParticles: number,
 ): void {
-  const drawnCount = Math.min(frame.particleCount, maxRenderedParticles);
-  for (let particleIndex = 0; particleIndex < drawnCount; particleIndex += 1) {
+  const stride = particleDrawStride(frame.particleCount, maxRenderedParticles);
+  for (
+    let particleIndex = 0;
+    particleIndex < frame.particleCount && maxRenderedParticles > 0;
+    particleIndex += stride
+  ) {
     const positionIndex = particleIndex * 2;
     const colorIndex = particleIndex * 4;
     const center = projectPoint(camera, {

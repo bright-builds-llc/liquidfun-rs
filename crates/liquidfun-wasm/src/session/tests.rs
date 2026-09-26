@@ -63,7 +63,7 @@ fn parse_scene_id_rejects_unknown_tokens() {
 #[test]
 fn capture_uses_the_same_particle_cap_as_copied_frames() {
     // Arrange / Act / Assert
-    assert_eq!(MAX_FRAME_PARTICLES, 10240);
+    assert_eq!(MAX_FRAME_PARTICLES, 16_384);
 }
 
 #[test]
@@ -400,28 +400,78 @@ fn advance_removes_particles_that_fell_below_the_playfield() {
 }
 
 #[test]
+fn advance_drops_a_spilled_tumbler_particle_before_the_tag_wall() {
+    // Arrange
+    let mut session = SessionCore::create(SceneId::LiquidTumbler)
+        .expect("Liquid Tumbler should construct");
+    let particle = session
+        .world
+        .particle_system_view(session.particle_system)
+        .expect("tumbler particles")
+        .particle_ids()[0];
+    session
+        .world
+        .set_particle_position(particle, Vec2::new(0.0, -10.0))
+        .expect("a finite position is accepted");
+    let before = session.live_particle_count().expect("live count");
+
+    // Act
+    session
+        .advance(1)
+        .expect("a spilled particle must be removed before the spatial hash rejects it");
+    let after = session.live_particle_count().expect("live count");
+
+    // Assert
+    assert!(after < before);
+    assert!(session.failure_detail().is_empty());
+}
+
+#[test]
 fn escape_follows_gravity_and_falls_back_to_downward() {
     // Arrange
     let upright = Vec2::new(0.0, -10.0);
     let sideways = Vec2::new(10.0, 0.0);
 
     // Act / Assert
-    assert!(escape::particle_has_escaped(Vec2::new(0.0, -12.1), upright));
+    let wide = 1.0;
+    assert!(escape::particle_has_escaped(
+        Vec2::new(0.0, -12.1),
+        upright,
+        wide
+    ));
     assert!(!escape::particle_has_escaped(
         Vec2::new(0.0, -11.0),
-        upright
+        upright,
+        wide
     ));
-    assert!(escape::particle_has_escaped(Vec2::new(12.1, 0.0), sideways));
+    assert!(escape::particle_has_escaped(
+        Vec2::new(12.1, 0.0),
+        sideways,
+        wide
+    ));
     assert!(!escape::particle_has_escaped(
         Vec2::new(0.0, -20.0),
-        sideways
+        sideways,
+        wide
     ));
     assert!(escape::particle_has_escaped(
         Vec2::new(0.0, -12.1),
-        Vec2::new(0.0, 0.0)
+        Vec2::new(0.0, 0.0),
+        wide
     ));
     assert!(escape::particle_has_escaped(
         Vec2::new(f32::NAN, 0.0),
-        upright
+        upright,
+        wide
+    ));
+    let glass = 0.004;
+    assert!(
+        escape::particle_has_escaped(Vec2::new(0.0, -10.0), upright, glass),
+        "a 4 mm particle at -10 m is already outside the tag domain"
+    );
+    assert!(!escape::particle_has_escaped(
+        Vec2::new(0.0, -2.0),
+        upright,
+        glass
     ));
 }
