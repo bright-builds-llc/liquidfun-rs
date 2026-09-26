@@ -206,6 +206,10 @@ html[data-canvas-stage="true"] .debug-readout {
   stroke-linejoin: round;
 }
 
+.canvas-accelerometer-toggle svg {
+  stroke-width: 1;
+}
+
 .canvas-controls-sheet {
   max-height: min(80dvh, calc(var(--visual-viewport-height, 80dvh) - 16px));
   /* The drawer positions this element with a transform. Scrolling that same
