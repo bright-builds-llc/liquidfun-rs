@@ -137,6 +137,12 @@ change.
 
 [Animated SVG](docs/assets/readme/theo-jansen-10s.svg)
 
+#### [Liquid Tumbler](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/liquid-tumbler)
+
+[![Liquid Tumbler simulation preview](docs/assets/readme/liquid-tumbler-10s.webp)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/liquid-tumbler)
+
+[Animated SVG](docs/assets/readme/liquid-tumbler-10s.svg)
+
 <!-- readme-svg-gallery:end -->
 
 The private, unpublished `liquidfun-wasm` wrapper and SolidJS player rebuild
