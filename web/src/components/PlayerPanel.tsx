@@ -159,10 +159,12 @@ function PlayerPanelLayout(layoutProps: {
             fpsTicks={props.fpsTicks}
             onClose={() => props.onDebugEnabledChange(false)}
           />
-          <GravityArrow
-            tiltGravityEnabled={props.tiltGravityEnabled}
-            tiltDebug={props.tiltDebug}
-          />
+          <Show when={!layoutProps.canvasStage}>
+            <GravityArrow
+              tiltGravityEnabled={props.tiltGravityEnabled}
+              tiltDebug={props.tiltDebug}
+            />
+          </Show>
           <Show when={layoutProps.canvasStage}>
             <figcaption id="scene-interaction-hint" class="visually-hidden">
               {props.interactionHint}
@@ -196,6 +198,9 @@ function PlayerPanelLayout(layoutProps: {
               onZoomOut={props.onZoomOut}
               onResetZoom={props.onResetZoom}
               onPanEnabledChange={props.onPanEnabledChange}
+              tiltGravityEnabled={props.tiltGravityEnabled}
+              tiltDebug={props.tiltDebug}
+              onTiltGravityEnabledChange={props.onTiltGravityEnabledChange}
             />
           </Show>
         </div>

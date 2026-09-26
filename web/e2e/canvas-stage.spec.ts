@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 
 import {
   DAM_BREAK_PATH,
@@ -57,6 +57,9 @@ test("keeps element fullscreen on a browser that supports it", async ({
     "true",
   );
   await expect(page.getByRole("button", { name: "Full screen" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Phone accelerometer" })).toHaveCount(
+    0,
+  );
   await expect(page.locator(".site-footer")).toBeVisible();
 });
 
@@ -192,6 +195,79 @@ test("scrolls scene controls inside the sheet instead of the transformed drawer"
   });
   expect(buttonInScroller).toBe(true);
 });
+
+test("toggles phone accelerometer from the upper-right canvas HUD", async ({
+  page,
+}) => {
+  // Arrange
+  await installUnavailableFullscreen(page);
+  await page.setViewportSize(PORTRAIT);
+  await page.goto(DAM_BREAK_PATH);
+  await expect(sessionStatus(page)).toHaveText(PLAYING_STATUS);
+  const controls = page.getByRole("button", { name: "Scene controls" });
+  const accelerometer = page.getByRole("button", { name: "Phone accelerometer" });
+
+  // Assert
+  await expect(accelerometer).toBeVisible();
+  await expect(accelerometer).toHaveAttribute("aria-pressed", "false");
+  const stacked = await stackedRightEdges(controls, accelerometer);
+  expect(stacked.lowerIsBelow).toBe(true);
+  expect(stacked.rightEdgesAligned).toBe(true);
+
+  // Act
+  await accelerometer.click();
+
+  // Assert
+  await expect(accelerometer).toHaveAttribute("aria-pressed", "true");
+  await expect(async () => {
+    await page.evaluate(() => {
+      window.dispatchEvent(
+        new DeviceMotionEvent("devicemotion", {
+          accelerationIncludingGravity: { x: 0, y: 9.81, z: 0 },
+        }),
+      );
+    });
+    await expect(page.getByRole("img", { name: /Gravity direction/ })).toBeVisible();
+  }).toPass();
+  const arrow = page.getByRole("img", { name: /Gravity direction/ });
+  const aboveArrow = await stackedRightEdges(accelerometer, arrow);
+  expect(aboveArrow.lowerIsBelow).toBe(true);
+  expect(aboveArrow.rightEdgesAligned).toBe(true);
+
+  // Act
+  await controls.click();
+  const sheet = page.getByRole("dialog", { name: "Scene controls" });
+  const checkbox = sheet.getByRole("checkbox", { name: "Use phone accelerometer" });
+
+  // Assert
+  await expect(checkbox).toBeChecked();
+
+  // Act
+  await checkbox.uncheck();
+
+  // Assert
+  await expect(accelerometer).toHaveAttribute("aria-pressed", "false");
+  await expect(arrow).toHaveCount(0);
+});
+
+async function stackedRightEdges(
+  upper: Locator,
+  lower: Locator,
+): Promise<{
+  readonly lowerIsBelow: boolean;
+  readonly rightEdgesAligned: boolean;
+}> {
+  const upperBox = await upper.boundingBox();
+  const lowerBox = await lower.boundingBox();
+  if (upperBox === null || lowerBox === null) {
+    throw new Error("HUD control bounds are unavailable");
+  }
+  return {
+    lowerIsBelow: lowerBox.y >= upperBox.y + upperBox.height - 1,
+    rightEdgesAligned:
+      Math.abs(upperBox.x + upperBox.width - (lowerBox.x + lowerBox.width)) < 2,
+  };
+}
 
 test("uses a demos drawer in landscape when element fullscreen is unavailable", async ({
   page,

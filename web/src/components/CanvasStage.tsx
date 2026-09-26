@@ -1,6 +1,8 @@
 import { Show, createSignal, onCleanup, onMount, type JSX } from "solid-js";
 
+import type { TiltDebug } from "../input/tilt-gravity";
 import type { PlayerStatus } from "../player/view";
+import { GravityArrow } from "./GravityArrow";
 import { GitHubSourceLink } from "./SiteHeader";
 import { ViewportTools } from "./ViewportTools";
 import {
@@ -22,6 +24,7 @@ const PAUSE_LABEL = "Pause scene";
 const RESET_LABEL = "Reset scene";
 const RETRY_LABEL = "Retry scene";
 const CONTROLS_LABEL = "Scene controls";
+const ACCELEROMETER_LABEL = "Phone accelerometer";
 
 export type PlaybackButtonsProps = {
   readonly compact: boolean;
@@ -41,6 +44,9 @@ export type CanvasHudProps = PlaybackButtonsProps & {
   readonly onZoomOut: () => void;
   readonly onResetZoom: () => void;
   readonly onPanEnabledChange: (enabled: boolean) => void;
+  readonly tiltGravityEnabled: boolean;
+  readonly tiltDebug: TiltDebug;
+  readonly onTiltGravityEnabledChange: (enabled: boolean) => void;
 };
 
 function playDisabled(status: PlayerStatus): boolean {
@@ -114,7 +120,7 @@ export function PlaybackButtons(props: PlaybackButtonsProps) {
   );
 }
 
-/** Title, status, transport, and zoom controls over the canvas. */
+/** Title, status, transport, zoom, and accelerometer controls over the canvas. */
 export function CanvasHud(props: CanvasHudProps) {
   return (
     <>
@@ -150,8 +156,35 @@ export function CanvasHud(props: CanvasHudProps) {
           onPanEnabledChange={props.onPanEnabledChange}
         />
       </div>
-      <SceneControlsTrigger />
+      <div class="canvas-hud-corner">
+        <SceneControlsTrigger />
+        <AccelerometerToggle
+          enabled={props.tiltGravityEnabled}
+          onEnabledChange={props.onTiltGravityEnabledChange}
+        />
+        <GravityArrow
+          tiltGravityEnabled={props.tiltGravityEnabled}
+          tiltDebug={props.tiltDebug}
+        />
+      </div>
     </>
+  );
+}
+
+function AccelerometerToggle(props: {
+  readonly enabled: boolean;
+  readonly onEnabledChange: (enabled: boolean) => void;
+}) {
+  return (
+    <button
+      class="hud-button canvas-accelerometer-toggle"
+      type="button"
+      aria-label={ACCELEROMETER_LABEL}
+      aria-pressed={props.enabled}
+      onClick={() => props.onEnabledChange(!props.enabled)}
+    >
+      <AccelerometerIcon />
+    </button>
   );
 }
 
@@ -240,6 +273,17 @@ function ControlsIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <path d="M4 8h16M4 16h16M8 6v4M16 14v4" />
+    </svg>
+  );
+}
+
+function AccelerometerIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="8" y="3" width="8" height="18" rx="2" />
+      <path d="M11 19h2" />
+      <path d="M12 8v5" />
+      <path d="m9.5 11 2.5 2.5L14.5 11" />
     </svg>
   );
 }

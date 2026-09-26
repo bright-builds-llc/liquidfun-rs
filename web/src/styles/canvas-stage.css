@@ -74,9 +74,38 @@ html[data-canvas-stage="true"] .debug-readout {
   left: max(8px, env(safe-area-inset-left, 0px));
 }
 
-html[data-canvas-stage="true"] .gravity-arrow {
-  top: calc(max(8px, env(safe-area-inset-top, 0px)) + 52px);
+.canvas-hud-corner {
+  position: absolute;
+  z-index: 3;
+  top: max(8px, env(safe-area-inset-top, 0px));
   right: max(8px, env(safe-area-inset-right, 0px));
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.canvas-hud-corner .canvas-controls-trigger,
+.canvas-hud-corner .canvas-accelerometer-toggle {
+  position: static;
+  pointer-events: auto;
+}
+
+.canvas-hud-corner .gravity-arrow {
+  position: static;
+}
+
+.canvas-accelerometer-toggle[aria-pressed="true"] {
+  color: #0B0F14;
+  background: #4DA3FF;
+  border-color: #4DA3FF;
+}
+
+.canvas-accelerometer-toggle[aria-pressed="true"]:hover:not(:disabled) {
+  color: #0B0F14;
+  background: #2F8CFF;
+  border-color: #2F8CFF;
 }
 
 .canvas-hud-title {
@@ -155,13 +184,6 @@ html[data-canvas-stage="true"] .gravity-arrow {
 .canvas-hud-bottom .viewport-tools {
   position: static;
   pointer-events: auto;
-}
-
-.canvas-controls-trigger {
-  position: absolute;
-  z-index: 3;
-  top: max(8px, env(safe-area-inset-top, 0px));
-  right: max(8px, env(safe-area-inset-right, 0px));
 }
 
 .hud-button,
