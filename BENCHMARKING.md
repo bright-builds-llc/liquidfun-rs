@@ -24,9 +24,10 @@ copy pair numbers into `reference/performance/manifest.toml`. See
 [docs/native-performance-audit.md](docs/native-performance-audit.md) for
 unreviewed SHA-bound named-function notes. See
 [docs/simulation-performance.md](docs/simulation-performance.md) for an
-unreviewed local sample of the in-place particle-contact scan and fixture
-proxy filter; that sample is not a reviewed performance claim and must not be
-copied into `reference/performance/manifest.toml`. See
+unreviewed local sample of the in-place particle-contact scan, fixture proxy
+filter, and a later body-contact and velocity-lane sample; that sample is not
+a reviewed performance claim and must not be copied into
+`reference/performance/manifest.toml`. See
 [docs/playground-scene-spot-check.md](docs/playground-scene-spot-check.md)
 for unreviewed native scene spot-checks; that local sample is not the Dam
 Break 3× gate and must not be copied into
