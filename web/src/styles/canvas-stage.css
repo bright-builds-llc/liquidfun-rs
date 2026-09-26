@@ -194,20 +194,49 @@ html[data-canvas-stage="true"] .debug-readout {
 }
 
 .canvas-hud-bottom .canvas-hud-slider {
-  padding: 6px 10px 2px;
+  padding: 2px 8px 1px;
   border-radius: 8px;
   background: rgb(21 29 40 / 86%);
 }
 
 .canvas-hud-slider .scene-controls {
   flex-direction: column;
-  gap: 8px;
+  gap: 0;
 }
 
 .canvas-hud-slider .scene-control,
 .canvas-hud-slider .scene-control-readout,
 .canvas-hud-slider .scene-control-slider {
   width: 100%;
+}
+
+.canvas-hud-slider .scene-control,
+.canvas-hud-slider .scene-control-label {
+  gap: 0;
+}
+
+.canvas-hud-slider .scene-control-label {
+  font-size: 13px;
+  line-height: 1.15;
+}
+
+.canvas-hud-slider .scene-control-range {
+  min-block-size: 24px;
+}
+
+.canvas-hud-slider .scene-control-ticks {
+  height: 0.85rem;
+  margin-top: -0.15rem;
+}
+
+.canvas-hud-slider .scene-control-tick {
+  gap: 0;
+  font-size: 10px;
+  line-height: 1;
+}
+
+.canvas-hud-slider .scene-control-tick-mark {
+  height: 3px;
 }
 
 .canvas-transport,
