@@ -194,7 +194,7 @@ describe("scene catalog controls", () => {
         min: 0,
         max: 10,
         step: 0.1,
-        defaultValue: 0,
+        defaultValue: 1,
         unit: "×",
         scale: "linear",
         ticks: [0, 5, 10],

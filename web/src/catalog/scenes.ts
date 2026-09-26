@@ -105,6 +105,20 @@ export const LIQUID_TUMBLER_VIEW_BOUNDS = {
   maxY: 0.15,
 } as const;
 
+/**
+ * Camera frame for Wave Machine, in meters.
+ *
+ * The tank is about 4 m wide around y = 1. The shared 12 m by 9 m frame leaves
+ * it small on a phone, so this rectangle is about twice as tight and still
+ * leaves room for the original tilt and splash.
+ */
+export const WAVE_MACHINE_VIEW_BOUNDS = {
+  minX: -3,
+  minY: -0.6,
+  maxX: 3,
+  maxY: 3.6,
+} as const;
+
 const SHOWCASE = {
   label: "LiquidFun showcase",
   href: "https://google.github.io/liquidfun/",
@@ -253,8 +267,9 @@ export const SCENES: readonly SceneRecord[] = [
     ready: true,
     description: "Watch a motorized tank rock and slosh the water inside.",
     interactionHint:
-      "Use Wave speed to rock the tank. It starts stopped, and 1× matches the original motor. Labeled controls also work from the keyboard.",
+      "Use Wave speed to rock the tank. It starts at the original speed and tilt, and higher speeds keep that tilt. Labeled controls also work from the keyboard.",
     controls: [WAVE_MACHINE_SPEED_CONTROL],
+    viewBounds: WAVE_MACHINE_VIEW_BOUNDS,
     credits: {
       implementationPath: sceneSource("wave_machine.rs"),
       inspiration: [PINNED_WAVE_MACHINE_JS, PINNED_WAVE_MACHINE_H, SHOWCASE],

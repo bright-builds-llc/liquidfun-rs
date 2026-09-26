@@ -1,15 +1,15 @@
 import type { SceneControl } from "./scenes";
 
-/** Stopped. The tank does not rock until the slider moves. */
+/** Stopped. The tank holds still. */
 export const WAVE_MACHINE_SPEED_MIN = 0;
 /**
- * Ten times the pinned Wave Machine amplitude.
+ * Ten times the pinned Wave Machine rocking frequency.
  *
- * `1` matches `0.05 * cos(t) * π` from testWaveMachine.js.
+ * `1` matches `0.05 * cos(t) * π` from testWaveMachine.js and keeps that tilt.
  */
 export const WAVE_MACHINE_SPEED_MAX = 10;
 export const WAVE_MACHINE_SPEED_STEP = 0.1;
-export const WAVE_MACHINE_SPEED_DEFAULT = 0;
+export const WAVE_MACHINE_SPEED_DEFAULT = 1;
 /** Canonical token for the original pinned motor amplitude. */
 export const WAVE_MACHINE_SPEED_ORIGINAL = "1.0";
 export const WAVE_MACHINE_SPEED_TICKS = [
