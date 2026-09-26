@@ -225,6 +225,7 @@ function PlayerPanelLayout(layoutProps: {
               onTiltGravityEnabledChange={props.onTiltGravityEnabledChange}
               debugEnabled={props.debugEnabled}
               onDebugEnabledChange={props.onDebugEnabledChange}
+              hasHudSlider={props.hudControls.controls.length > 0}
               debugReadout={
                 <DebugReadout
                   enabled={props.debugEnabled}

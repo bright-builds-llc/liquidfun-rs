@@ -345,6 +345,12 @@ test("toggles debug info from under the canvas fps counter", async ({ page }) =>
   const underToggle = await stackedLeftEdges(debug, readout);
   expect(underToggle.lowerIsBelow).toBe(true);
   expect(underToggle.leftEdgesAligned).toBe(true);
+  const playBox = await page.getByRole("button", { name: "Play scene" }).boundingBox();
+  const readoutBox = await readout.boundingBox();
+  if (playBox === null || readoutBox === null) {
+    throw new Error("HUD control bounds are unavailable");
+  }
+  expect(readoutBox.y + readoutBox.height).toBeLessThanOrEqual(playBox.y + 1);
 
   // Act
   await page.getByRole("button", { name: "Scene controls" }).click();

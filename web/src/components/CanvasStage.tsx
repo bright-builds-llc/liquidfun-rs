@@ -50,6 +50,7 @@ export type CanvasHudProps = PlaybackButtonsProps & {
   readonly onTiltGravityEnabledChange: (enabled: boolean) => void;
   readonly debugEnabled: boolean;
   readonly onDebugEnabledChange: (enabled: boolean) => void;
+  readonly hasHudSlider: boolean;
   readonly debugReadout: JSX.Element;
   readonly children?: JSX.Element;
 };
@@ -129,7 +130,10 @@ export function PlaybackButtons(props: PlaybackButtonsProps) {
 export function CanvasHud(props: CanvasHudProps) {
   return (
     <>
-      <div class="canvas-hud-stats">
+      <div
+        class="canvas-hud-stats"
+        classList={{ "canvas-hud-stats--with-slider": props.hasHudSlider }}
+      >
         <RenderedFps fpsTicks={props.fpsTicks} />
         <DebugToggle
           enabled={props.debugEnabled}

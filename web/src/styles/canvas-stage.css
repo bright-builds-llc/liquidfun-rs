@@ -75,19 +75,31 @@ html[data-canvas-stage="true"] .canvas-hud-stats .debug-readout {
   left: auto;
   z-index: auto;
   width: min(220px, calc(100vw - max(16px, env(safe-area-inset-left, 0px) + env(safe-area-inset-right, 0px))));
-  /* Stay above the bottom transport: demos offset, fps, toggle, and lower HUD. */
+  /* Demos offset, fps, toggle, and the bottom transport. */
   min-height: 0;
   max-height: calc(
     var(--visual-viewport-height, 100dvh)
     - max(8px, env(safe-area-inset-top, 0px))
     - 52px
     - 88px
-    - 168px
+    - 60px
     - max(8px, env(safe-area-inset-bottom, 0px))
   );
   overflow: auto;
   overscroll-behavior: contain;
   pointer-events: auto;
+}
+
+html[data-canvas-stage="true"] .canvas-hud-stats--with-slider .debug-readout {
+  /* Leave room for the scene sliders stacked above the transport. */
+  max-height: calc(
+    var(--visual-viewport-height, 100dvh)
+    - max(8px, env(safe-area-inset-top, 0px))
+    - 52px
+    - 88px
+    - 180px
+    - max(8px, env(safe-area-inset-bottom, 0px))
+  );
 }
 
 .canvas-hud-corner {
