@@ -1,10 +1,16 @@
 import type { RenderFrame } from "../physics/frame";
 import { cappedDevicePixelRatio } from "./canvas";
 import type { Camera } from "./camera";
+import { PARTICLE_KERNEL_REACH } from "./contour";
+import {
+  DENSITY_SHADE_END,
+  DENSITY_SHADE_FLOOR,
+  DENSITY_SHADE_START,
+} from "./density-shade";
 import { eachProjectedParticle } from "./projected-particle";
 
 /** Sprite diameter scale that places the shaded iso-surface near the particle radius. */
-const INFLUENCE_DIAMETER = 1.85 * 2;
+const INFLUENCE_DIAMETER = PARTICLE_KERNEL_REACH * 2;
 
 const CANVAS_BACKGROUND: readonly [number, number, number] = [
   7 / 255,
@@ -59,12 +65,18 @@ const COMPOSITE_FRAGMENT = `#version 300 es
 precision mediump float;
 uniform sampler2D uField;
 uniform vec3 uBackground;
+uniform float uShadeStart;
+uniform float uShadeEnd;
+uniform float uShadeFloor;
 in vec2 vUv;
 out vec4 fragColor;
 void main() {
   vec4 sum = texture(uField, vUv);
   float edge = smoothstep(0.42, 0.62, sum.a);
   vec3 color = sum.rgb / max(sum.a, 0.0001);
+  // Same curve as densityShade(): packed overlap darkens the recovered color.
+  float packed = smoothstep(uShadeStart, uShadeEnd, sum.a);
+  color *= mix(1.0, uShadeFloor, packed);
   fragColor = vec4(mix(uBackground, color, edge), 1.0);
 }
 `;
@@ -402,6 +414,9 @@ function createWebglSurface(): WebglSurface {
       gl.bindTexture(gl.TEXTURE_2D, resources.fieldTexture);
       const field = gl.getUniformLocation(resources.compositeProgram, "uField");
       const background = gl.getUniformLocation(resources.compositeProgram, "uBackground");
+      const shadeStart = gl.getUniformLocation(resources.compositeProgram, "uShadeStart");
+      const shadeEnd = gl.getUniformLocation(resources.compositeProgram, "uShadeEnd");
+      const shadeFloor = gl.getUniformLocation(resources.compositeProgram, "uShadeFloor");
       gl.uniform1i(field, 0);
       gl.uniform3f(
         background,
@@ -409,6 +424,9 @@ function createWebglSurface(): WebglSurface {
         CANVAS_BACKGROUND[1],
         CANVAS_BACKGROUND[2],
       );
+      gl.uniform1f(shadeStart, DENSITY_SHADE_START);
+      gl.uniform1f(shadeEnd, DENSITY_SHADE_END);
+      gl.uniform1f(shadeFloor, DENSITY_SHADE_FLOOR);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
       gl.bindVertexArray(null);
       return true;
@@ -421,8 +439,9 @@ let maybeSurface: WebglSurface | undefined;
 /**
  * Draws the shaded blob into the particle canvas.
  *
- * Returns false when WebGL2 or a float framebuffer is unavailable so the
- * caller can fall back to the canvas metaball.
+ * Packed overlap darkens the recovered particle color. Returns false when
+ * WebGL2 or a float framebuffer is unavailable so the caller can fall back
+ * to the canvas metaball.
  */
 export function drawShadedBlob(
   canvas: HTMLCanvasElement | undefined,

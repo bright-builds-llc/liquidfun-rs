@@ -1,6 +1,8 @@
 import type { RenderFrame } from "../physics/frame";
 import { MASK_ALPHA_THRESHOLD, thresholdAlpha } from "./alpha-threshold";
 import type { Camera } from "./camera";
+import { collectFieldSamples, maybeFieldDensity } from "./contour";
+import { shadeContext } from "./density-shade";
 import { eachProjectedParticle } from "./projected-particle";
 import { compositeMasked, scratchContext } from "./scratch-canvas";
 
@@ -61,7 +63,7 @@ function drawDiscs(
  * Draws particles as one soft surface.
  *
  * White discs are blurred and thresholded into a mask. Particle colors are
- * clipped to that mask so overlapping colors stay mixed inside the blob.
+ * darkened where kernels overlap, then clipped to that mask.
  */
 export function paintMetaball(
   target: CanvasRenderingContext2D,
@@ -77,12 +79,17 @@ export function paintMetaball(
   }
 
   const blur = Math.max(MIN_BLUR_PX, maxRadius * BLUR_RADIUS_FACTOR);
+  const samples = collectFieldSamples(frame, camera, maxRenderedParticles);
   const color = scratchContext("metaball-color", width, height);
   const sharp = scratchContext("metaball-sharp", width, height);
   const blurred = scratchContext("metaball-blur", width, height);
   color.clearRect(0, 0, color.canvas.width, color.canvas.height);
   sharp.clearRect(0, 0, sharp.canvas.width, sharp.canvas.height);
   drawDiscs(color, frame, camera, maxRenderedParticles, blur * COLOR_BLEED, true);
+  shadeContext(
+    color,
+    maybeFieldDensity(samples, color.canvas.width, color.canvas.height),
+  );
   drawDiscs(sharp, frame, camera, maxRenderedParticles, 0, false);
 
   blurred.clearRect(0, 0, blurred.canvas.width, blurred.canvas.height);
