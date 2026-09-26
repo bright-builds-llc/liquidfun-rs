@@ -214,13 +214,13 @@ describe("scene catalog credits", () => {
     expect(
       pinnedInspirationHrefs.every((href) => href.includes(PINNED_COMMIT)),
     ).toBe(true);
-    expect(maybeSceneById("particles")?.controls).toHaveLength(0);
-    expect(maybeSceneById("liquid-timer")?.controls).toHaveLength(0);
-    expect(maybeSceneById("surface-tension")?.controls).toHaveLength(0);
-    expect(maybeSceneById("elastic-particles")?.controls).toHaveLength(0);
-    expect(maybeSceneById("rigid-particles")?.controls).toHaveLength(0);
-    expect(maybeSceneById("soup")?.controls).toHaveLength(0);
-    expect(maybeSceneById("wave-machine")?.controls).toHaveLength(2);
-    expect(maybeSceneById("liquid-tumbler")?.controls).toHaveLength(0);
+    expect(maybeSceneById("particles")?.controls).toHaveLength(1);
+    expect(maybeSceneById("liquid-timer")?.controls).toHaveLength(1);
+    expect(maybeSceneById("surface-tension")?.controls).toHaveLength(1);
+    expect(maybeSceneById("elastic-particles")?.controls).toHaveLength(1);
+    expect(maybeSceneById("rigid-particles")?.controls).toHaveLength(1);
+    expect(maybeSceneById("soup")?.controls).toHaveLength(1);
+    expect(maybeSceneById("wave-machine")?.controls).toHaveLength(3);
+    expect(maybeSceneById("liquid-tumbler")?.controls).toHaveLength(1);
   });
 });

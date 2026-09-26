@@ -12,6 +12,8 @@ mod dam_break;
 mod elastic_particles;
 mod float_or_sink;
 mod fountain;
+pub(crate) mod gravity_slider;
+mod impulse;
 mod jelly_drop;
 mod liquid_timer;
 mod liquid_tumbler;
@@ -20,11 +22,10 @@ mod rigid_particles;
 mod soup;
 mod soup_family;
 mod soup_stirrer;
-mod impulse;
 mod surface_tension;
+mod theo_jansen;
 mod water_wheel;
 mod wave_machine;
-mod theo_jansen;
 
 use liquidfun::collision::{FilterData, PolygonShape, Shape};
 use liquidfun::math::Vec2;
@@ -167,25 +168,31 @@ pub(crate) fn build_scene(
     id: SceneId,
     presets: &[(String, String)],
 ) -> Result<BuiltScene, SessionError> {
-    match id {
-        SceneId::DamBreak => dam_break::build(presets),
-        SceneId::Fountain => fountain::build(presets),
-        SceneId::FloatOrSink => float_or_sink::build(presets),
-        SceneId::ColorMixer => color_mixer::build(presets),
-        SceneId::JellyDrop => jelly_drop::build(presets),
-        SceneId::WaterWheel => water_wheel::build(presets),
-        SceneId::Particles => particles::build(presets),
-        SceneId::LiquidTimer => liquid_timer::build(presets),
-        SceneId::SurfaceTension => surface_tension::build(presets),
-        SceneId::ElasticParticles => elastic_particles::build(presets),
-        SceneId::RigidParticles => rigid_particles::build(presets),
-        SceneId::Soup => soup::build(presets),
-        SceneId::SoupStirrer => soup_stirrer::build(presets),
-        SceneId::Impulse => impulse::build(presets),
-        SceneId::WaveMachine => wave_machine::build(presets),
-        SceneId::TheoJansen => theo_jansen::build(presets),
-        SceneId::LiquidTumbler => liquid_tumbler::build(presets),
-    }
+    let gravity_slider::SplitGravityPreset {
+        maybe_magnitude,
+        scene_presets,
+    } = gravity_slider::split_gravity_preset(presets)?;
+    let mut built = match id {
+        SceneId::DamBreak => dam_break::build(&scene_presets),
+        SceneId::Fountain => fountain::build(&scene_presets),
+        SceneId::FloatOrSink => float_or_sink::build(&scene_presets),
+        SceneId::ColorMixer => color_mixer::build(&scene_presets),
+        SceneId::JellyDrop => jelly_drop::build(&scene_presets),
+        SceneId::WaterWheel => water_wheel::build(&scene_presets),
+        SceneId::Particles => particles::build(&scene_presets),
+        SceneId::LiquidTimer => liquid_timer::build(&scene_presets),
+        SceneId::SurfaceTension => surface_tension::build(&scene_presets),
+        SceneId::ElasticParticles => elastic_particles::build(&scene_presets),
+        SceneId::RigidParticles => rigid_particles::build(&scene_presets),
+        SceneId::Soup => soup::build(&scene_presets),
+        SceneId::SoupStirrer => soup_stirrer::build(&scene_presets),
+        SceneId::Impulse => impulse::build(&scene_presets),
+        SceneId::WaveMachine => wave_machine::build(&scene_presets),
+        SceneId::TheoJansen => theo_jansen::build(&scene_presets),
+        SceneId::LiquidTumbler => liquid_tumbler::build(&scene_presets),
+    }?;
+    gravity_slider::apply_gravity_preset(&mut built.world, maybe_magnitude)?;
+    Ok(built)
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

@@ -230,7 +230,7 @@ test("applies a Dam Break Gravity construction setting and returns to Playing", 
   });
   const slider = gravity.getByRole("slider");
   await expect(gravity.getByText("10 m/s²")).toBeVisible();
-  await expect(gravity.getByText("6", { exact: true })).toBeVisible();
+  await expect(gravity.getByText("2", { exact: true })).toBeVisible();
   await expect(gravity.getByText("16", { exact: true })).toBeVisible();
   await expect(gravity.getByText("80", { exact: true })).toBeVisible();
   const maxPosition = await slider.getAttribute("max");

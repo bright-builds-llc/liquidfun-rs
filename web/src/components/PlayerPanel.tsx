@@ -420,8 +420,8 @@ function TiltPane(props: { readonly panel: PlayerPanelProps }) {
         Use phone accelerometer
       </label>
       <p class="tilt-debug">
-        Tilt sets the direction. On a scene with a gravity slider, that slider is
-        the strength of one standard g.
+        Tilt sets the direction. The Gravity slider is the strength of one
+        standard g.
       </p>
       <p
         class="tilt-debug"
