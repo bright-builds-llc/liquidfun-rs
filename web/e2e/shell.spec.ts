@@ -1,5 +1,19 @@
 import { expect, test, type Locator } from "@playwright/test";
 
+import { formatBuiltAtDisplay } from "../src/build-info";
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function expectedBuiltAtPattern(iso: string): RegExp {
+  const nowMs = Date.now();
+  const labels = [0, 30_000].map((offsetMs) =>
+    formatBuiltAtDisplay(iso, "America/New_York", new Date(nowMs - offsetMs)),
+  );
+  return new RegExp(`^(?:${labels.map(escapeRegExp).join("|")})$`);
+}
+
 import {
   DAM_BREAK_PATH,
   expectReadySceneChrome,
@@ -115,28 +129,33 @@ test("keeps scrolled mobile player controls painted", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Generate animated SVG" })).toBeVisible();
 });
 
-test("shows the build timestamp beside the other provenance", async ({
-  page,
-}) => {
-  // Arrange
-  await page.setViewportSize({ width: 1280, height: 800 });
-  await page.goto(DAM_BREAK_PATH);
+test.describe("build timestamp", () => {
+  test.use({ timezoneId: "America/New_York" });
 
-  // Act
-  const builtAt = page
-    .locator(".site-footer-provenance div")
-    .filter({ hasText: "Built at" });
-  const timestamp = builtAt.locator("time");
+  test("shows the build timestamp in local time with an approximate age", async ({
+    page,
+  }) => {
+    // Arrange
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto(DAM_BREAK_PATH);
 
-  // Assert
-  await expect(builtAt.getByText("Built at", { exact: true })).toBeVisible();
-  await expect(timestamp).toHaveAttribute(
-    "datetime",
-    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/,
-  );
-  await expect(timestamp).toHaveText(
-    /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} UTC$/,
-  );
+    const builtAt = page
+      .locator(".site-footer-provenance div")
+      .filter({ hasText: "Built at" });
+    const timestamp = builtAt.locator("time");
+
+    // Act
+    await expect(builtAt.getByText("Built at", { exact: true })).toBeVisible();
+    const iso = await timestamp.getAttribute("datetime");
+
+    // Assert
+    await expect(timestamp).toHaveAttribute(
+      "datetime",
+      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/,
+    );
+    expect(iso).toEqual(expect.any(String));
+    await expect(timestamp).toHaveText(expectedBuiltAtPattern(iso ?? ""));
+  });
 });
 
 test("keeps the source link at least 44 pixels tall", async ({ page }) => {

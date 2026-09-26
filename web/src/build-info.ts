@@ -102,6 +102,129 @@ function readBuiltAt(maybeValue: string | undefined): {
   };
 }
 
+function maybeBuiltAtPart(
+  parts: readonly Intl.DateTimeFormatPart[],
+  type: Intl.DateTimeFormatPartTypes,
+): string | undefined {
+  return parts.find((part) => part.type === type)?.value;
+}
+
+/**
+ * Format a validated build instant for display.
+ * Omit `maybeTimeZone` to use the runtime local zone.
+ */
+export function formatLocalBuiltAtLabel(
+  iso: string,
+  maybeTimeZone?: string,
+): string {
+  const parsed = new Date(iso);
+  if (Number.isNaN(parsed.getTime())) {
+    return UNAVAILABLE;
+  }
+
+  const options: Intl.DateTimeFormatOptions = {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+    timeZoneName: "short",
+  };
+  if (maybeTimeZone !== undefined) {
+    options.timeZone = maybeTimeZone;
+  }
+
+  let parts: Intl.DateTimeFormatPart[];
+  try {
+    parts = new Intl.DateTimeFormat("en-US", options).formatToParts(parsed);
+  } catch (error) {
+    if (error instanceof RangeError) {
+      return UNAVAILABLE;
+    }
+    throw error;
+  }
+
+  const year = maybeBuiltAtPart(parts, "year");
+  const month = maybeBuiltAtPart(parts, "month");
+  const day = maybeBuiltAtPart(parts, "day");
+  const hour = maybeBuiltAtPart(parts, "hour");
+  const minute = maybeBuiltAtPart(parts, "minute");
+  const second = maybeBuiltAtPart(parts, "second");
+  const zone = maybeBuiltAtPart(parts, "timeZoneName");
+  if (
+    year === undefined ||
+    month === undefined ||
+    day === undefined ||
+    hour === undefined ||
+    minute === undefined ||
+    second === undefined ||
+    zone === undefined
+  ) {
+    return UNAVAILABLE;
+  }
+
+  return `${year}-${month}-${day} ${hour}:${minute}:${second} ${zone}`;
+}
+
+const MINUTE_MS = 60_000;
+const HOUR_MS = 60 * MINUTE_MS;
+const DAY_MS = 24 * HOUR_MS;
+const APPROXIMATE_AGO_UNITS = [
+  { durationMs: 365 * DAY_MS, singular: "year" },
+  { durationMs: 30 * DAY_MS, singular: "month" },
+  { durationMs: 7 * DAY_MS, singular: "week" },
+  { durationMs: DAY_MS, singular: "day" },
+  { durationMs: HOUR_MS, singular: "hour" },
+  { durationMs: MINUTE_MS, singular: "minute" },
+] as const;
+
+function approximateAgoCount(elapsedMs: number): string {
+  const maybeUnit = APPROXIMATE_AGO_UNITS.find(
+    (unit) => elapsedMs >= unit.durationMs,
+  );
+  if (maybeUnit === undefined) {
+    return "less than a minute ago";
+  }
+
+  const count = Math.floor(elapsedMs / maybeUnit.durationMs);
+  const unitLabel = count === 1 ? maybeUnit.singular : `${maybeUnit.singular}s`;
+  return `${count} ${unitLabel} ago`;
+}
+
+/**
+ * Approximate how long ago an instant was, dropping leftover smaller units.
+ * Six minutes and 20 seconds is "6 minutes ago".
+ */
+export function formatApproximateTimeAgo(
+  iso: string,
+  maybeNow?: Date,
+): string {
+  const parsedMs = new Date(iso).getTime();
+  if (Number.isNaN(parsedMs)) {
+    return UNAVAILABLE;
+  }
+
+  const nowMs = (maybeNow ?? new Date()).getTime();
+  return approximateAgoCount(nowMs - parsedMs);
+}
+
+/** Local build timestamp plus an approximate age, such as "(6 minutes ago)". */
+export function formatBuiltAtDisplay(
+  iso: string,
+  maybeTimeZone?: string,
+  maybeNow?: Date,
+): string {
+  const localLabel = formatLocalBuiltAtLabel(iso, maybeTimeZone);
+  const agoLabel = formatApproximateTimeAgo(iso, maybeNow);
+  if (localLabel === UNAVAILABLE || agoLabel === UNAVAILABLE) {
+    return localLabel;
+  }
+
+  return `${localLabel} (${agoLabel})`;
+}
+
 function maybeAcceptedBuildUrl(
   maybeUrl: string | undefined,
 ): string | undefined {

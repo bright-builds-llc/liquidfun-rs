@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { readBuildInfo } from "../src/build-info";
+import {
+  formatApproximateTimeAgo,
+  formatBuiltAtDisplay,
+  formatLocalBuiltAtLabel,
+  readBuildInfo,
+} from "../src/build-info";
 
 describe("readBuildInfo", () => {
   it("shows Unavailable and no URLs when env is empty", () => {
@@ -102,6 +107,148 @@ describe("readBuildInfo", () => {
       expect(info.builtAtLabel).toBe("Unavailable");
       expect(info.maybeBuiltAtIso).toBeUndefined();
     }
+  });
+
+  it("formats a build instant in the requested time zone", () => {
+    // Arrange
+    const iso = "2026-09-22T15:27:03.123Z";
+
+    // Act
+    const newYork = formatLocalBuiltAtLabel(iso, "America/New_York");
+    const kolkata = formatLocalBuiltAtLabel(iso, "Asia/Kolkata");
+    const utc = formatLocalBuiltAtLabel(iso, "UTC");
+
+    // Assert
+    expect(newYork).toBe("2026-09-22 11:27:03 EDT");
+    expect(kolkata).toBe("2026-09-22 20:57:03 GMT+5:30");
+    expect(utc).toBe("2026-09-22 15:27:03 UTC");
+  });
+
+  it("shifts the calendar day when local time is on the previous date", () => {
+    // Arrange
+    const iso = "2024-02-29T00:00:00Z";
+
+    // Act
+    const label = formatLocalBuiltAtLabel(iso, "America/Los_Angeles");
+
+    // Assert
+    expect(label).toBe("2024-02-28 16:00:00 PST");
+  });
+
+  it("defaults to the runtime local time zone", () => {
+    // Arrange
+    const iso = "2026-09-22T15:27:03.123Z";
+    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+    // Act
+    const localLabel = formatLocalBuiltAtLabel(iso);
+    const explicitLabel = formatLocalBuiltAtLabel(iso, timeZone);
+
+    // Assert
+    expect(localLabel).toBe(explicitLabel);
+  });
+
+  it("returns Unavailable when the instant or time zone cannot be formatted", () => {
+    // Arrange
+    const iso = "2026-09-22T15:27:03.123Z";
+
+    // Act
+    const invalidInstant = formatLocalBuiltAtLabel("not-a-timestamp", "UTC");
+    const invalidZone = formatLocalBuiltAtLabel(iso, "Not/AZone");
+
+    // Assert
+    expect(invalidInstant).toBe("Unavailable");
+    expect(invalidZone).toBe("Unavailable");
+  });
+
+  it("says less than a minute ago under one minute", () => {
+    // Arrange
+    const builtAt = "2026-09-22T15:27:03.000Z";
+    const builtMs = Date.parse(builtAt);
+
+    // Act
+    const justNow = formatApproximateTimeAgo(builtAt, new Date(builtMs));
+    const fiftyNineSeconds = formatApproximateTimeAgo(
+      builtAt,
+      new Date(builtMs + 59_000),
+    );
+
+    // Assert
+    expect(justNow).toBe("less than a minute ago");
+    expect(fiftyNineSeconds).toBe("less than a minute ago");
+  });
+
+  it("floors leftover seconds into whole minutes", () => {
+    // Arrange
+    const builtAt = "2026-09-22T15:27:03.000Z";
+    const builtMs = Date.parse(builtAt);
+
+    // Act
+    const sixMinutes = formatApproximateTimeAgo(
+      builtAt,
+      new Date(builtMs + 6 * 60_000 + 20_000),
+    );
+    const oneMinute = formatApproximateTimeAgo(
+      builtAt,
+      new Date(builtMs + 60_000),
+    );
+
+    // Assert
+    expect(sixMinutes).toBe("6 minutes ago");
+    expect(oneMinute).toBe("1 minute ago");
+  });
+
+  it("uses the largest whole unit for longer durations", () => {
+    // Arrange
+    const builtAt = "2026-09-22T15:27:03.000Z";
+    const builtMs = Date.parse(builtAt);
+    const minuteMs = 60_000;
+    const hourMs = 60 * minuteMs;
+    const dayMs = 24 * hourMs;
+    const cases = [
+      { elapsedMs: hourMs + 40 * minuteMs, label: "1 hour ago" },
+      { elapsedMs: 5 * hourMs + 10 * minuteMs, label: "5 hours ago" },
+      { elapsedMs: dayMs + 3 * hourMs, label: "1 day ago" },
+      { elapsedMs: 6 * dayMs, label: "6 days ago" },
+      { elapsedMs: 8 * dayMs, label: "1 week ago" },
+      { elapsedMs: 20 * dayMs, label: "2 weeks ago" },
+      { elapsedMs: 40 * dayMs, label: "1 month ago" },
+      { elapsedMs: 400 * dayMs, label: "1 year ago" },
+      { elapsedMs: 800 * dayMs, label: "2 years ago" },
+    ];
+
+    // Act
+    const labels = cases.map((entry) =>
+      formatApproximateTimeAgo(builtAt, new Date(builtMs + entry.elapsedMs)),
+    );
+
+    // Assert
+    expect(labels).toEqual(cases.map((entry) => entry.label));
+  });
+
+  it("appends the approximate age after the local timestamp", () => {
+    // Arrange
+    const builtAt = "2026-09-22T15:27:03.123Z";
+    const now = new Date(Date.parse(builtAt) + 6 * 60_000 + 20_000);
+
+    // Act
+    const label = formatBuiltAtDisplay(builtAt, "America/New_York", now);
+
+    // Assert
+    expect(label).toBe("2026-09-22 11:27:03 EDT (6 minutes ago)");
+  });
+
+  it("returns Unavailable when the age instant cannot be parsed", () => {
+    // Arrange
+    const iso = "not-a-timestamp";
+
+    // Act
+    const ago = formatApproximateTimeAgo(iso, new Date("2026-09-22T15:27:03.000Z"));
+    const display = formatBuiltAtDisplay(iso, "UTC");
+
+    // Assert
+    expect(ago).toBe("Unavailable");
+    expect(display).toBe("Unavailable");
   });
 
   it("accepts only this repo Actions run URLs", () => {
