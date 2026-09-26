@@ -185,6 +185,7 @@ describe("scene catalog controls", () => {
     expect(maybeSceneById("rigid-particles")?.controls).toEqual([]);
     expect(maybeSceneById("soup")?.controls).toEqual([]);
     expect(maybeSceneById("wave-machine")?.controls).toEqual([]);
+    expect(maybeSceneById("liquid-tumbler")?.controls).toEqual([]);
     expect(soupStirrer?.controls).toHaveLength(1);
     expect(soupStirrer?.controls[0]).toMatchObject({
       id: "toggle-paddle-rail",

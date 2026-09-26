@@ -1,5 +1,10 @@
 import type { RenderFrame } from "../physics/frame";
-import { createCamera, type CameraView } from "../render/camera";
+import {
+  createCamera,
+  WORLD_BOUNDS,
+  type CameraView,
+  type WorldBounds,
+} from "../render/camera";
 import { STEPS_PER_SVG_SAMPLE, sampleCountForDuration } from "./duration";
 import { projectRenderSample, type ProjectedSample } from "./project";
 
@@ -24,6 +29,8 @@ export type SampleRecordingRequest = {
   readonly panX: number;
   readonly panY: number;
   readonly maxRenderedParticles: number;
+  /** World rectangle fitted to the export viewport. Defaults to the shared basin. */
+  readonly worldBounds?: WorldBounds;
   /** Runs at the start of a sample, before that sample's engine advance. */
   readonly beforeSample?: (sampleIndex: number) => void;
 };
@@ -45,7 +52,12 @@ export function recordProjectedSamples(
     driver.applyControl(control.name, control.value);
   }
 
-  const camera = createCamera(request.viewportWidth, request.viewportHeight, cameraView(request));
+  const camera = createCamera(
+    request.viewportWidth,
+    request.viewportHeight,
+    cameraView(request),
+    request.worldBounds ?? WORLD_BOUNDS,
+  );
   const total = sampleCountForDuration(request.durationSeconds);
   const samples: ProjectedSample[] = [];
   for (let index = 0; index < total; index += 1) {

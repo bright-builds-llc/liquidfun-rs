@@ -75,6 +75,7 @@ describe("scene catalog credits", () => {
       impulse: "crates/liquidfun-wasm/src/scene/impulse.rs",
       "wave-machine": "crates/liquidfun-wasm/src/scene/wave_machine.rs",
       "theo-jansen": "crates/liquidfun-wasm/src/scene/theo_jansen.rs",
+      "liquid-tumbler": "crates/liquidfun-wasm/src/scene/liquid_tumbler.rs",
     };
     const pinnedBasinInspiration = {
       particles: [
@@ -185,6 +186,7 @@ describe("scene catalog credits", () => {
       SHOWCASE_HREF,
     ]);
     expect(inspirationById["water-wheel"]).toEqual([SHOWCASE_HREF]);
+    expect(inspirationById["liquid-tumbler"]).toEqual([SHOWCASE_HREF]);
     expect(particlesInspiration).toEqual([...pinnedBasinInspiration.particles]);
     expect(liquidTimerInspiration).toEqual([
       ...pinnedBasinInspiration["liquid-timer"],
@@ -219,5 +221,6 @@ describe("scene catalog credits", () => {
     expect(maybeSceneById("rigid-particles")?.controls).toHaveLength(0);
     expect(maybeSceneById("soup")?.controls).toHaveLength(0);
     expect(maybeSceneById("wave-machine")?.controls).toHaveLength(0);
+    expect(maybeSceneById("liquid-tumbler")?.controls).toHaveLength(0);
   });
 });

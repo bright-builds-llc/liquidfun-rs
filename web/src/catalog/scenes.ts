@@ -1,3 +1,5 @@
+import { WORLD_BOUNDS, type WorldBounds } from "../render/camera";
+
 export const SCENE_IDS = [
   "dam-break",
   "fountain",
@@ -15,6 +17,7 @@ export const SCENE_IDS = [
   "impulse",
   "wave-machine",
   "theo-jansen",
+  "liquid-tumbler",
 ] as const;
 
 export type SceneId = (typeof SCENE_IDS)[number];
@@ -77,7 +80,27 @@ export type SceneRecord = {
   readonly interactionHint: string;
   readonly controls: readonly SceneControl[];
   readonly credits: SceneCredits;
+  /**
+   * World rectangle fitted to the canvas.
+   *
+   * Omitted scenes use the shared 12 m by 9 m frame.
+   */
+  readonly viewBounds?: WorldBounds;
 };
+
+/**
+ * Camera frame for Liquid Tumbler, in meters.
+ *
+ * Keep in sync with the glass comments in
+ * `crates/liquidfun-wasm/src/scene/liquid_tumbler.rs`. The cup is
+ * x = ±0.037 and y = 0..0.12; this rectangle leaves a small margin.
+ */
+export const LIQUID_TUMBLER_VIEW_BOUNDS = {
+  minX: -0.055,
+  minY: -0.02,
+  maxX: 0.055,
+  maxY: 0.15,
+} as const;
 
 const SHOWCASE = {
   label: "LiquidFun showcase",
@@ -552,10 +575,29 @@ export const SCENES: readonly SceneRecord[] = [
       inspiration: [PINNED_THEO_JANSEN_JS, PINNED_THEO_JANSEN_H, SHOWCASE],
     },
   },
+  {
+    id: "liquid-tumbler",
+    title: "Liquid Tumbler",
+    ready: true,
+    description:
+      "A drinking glass at real size: 74 mm wide, 2 mm particles, and Earth gravity. Phone tilt drives this water on a glass clock.",
+    interactionHint: WATCH_FIRST_HINT,
+    controls: [],
+    viewBounds: LIQUID_TUMBLER_VIEW_BOUNDS,
+    credits: {
+      implementationPath: sceneSource("liquid_tumbler.rs"),
+      inspiration: [SHOWCASE],
+    },
+  },
 ];
 
 export function maybeSceneById(id: string): SceneRecord | undefined {
   return SCENES.find((scene) => scene.id === id);
+}
+
+/** World rectangle the canvas fits for one catalog scene. */
+export function worldBoundsForScene(id: SceneId): WorldBounds {
+  return maybeSceneById(id)?.viewBounds ?? WORLD_BOUNDS;
 }
 
 export function isReadySceneId(id: SceneId): boolean {

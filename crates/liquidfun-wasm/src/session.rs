@@ -108,7 +108,7 @@ impl SessionCore {
             .particle_count();
         let step_configuration = StepConfiguration::new(1.0 / 60.0, 8, 3)
             .map_err(|_error| SessionError::SceneConstruction)?
-            .with_particle_iterations(2)
+            .with_particle_iterations(crate::scene::particle_iterations(id))
             .map_err(|_error| SessionError::SceneConstruction)?;
         let authored_gravity = world.gravity();
 

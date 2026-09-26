@@ -1,10 +1,23 @@
-/** Fixed proof-scene bounds supplied by the Rust session. */
-export const WORLD_BOUNDS = {
+/** Axis-aligned world rectangle fitted to the canvas. */
+export type WorldBounds = {
+  readonly minX: number;
+  readonly minY: number;
+  readonly maxX: number;
+  readonly maxY: number;
+};
+
+/**
+ * Default proof-scene bounds.
+ *
+ * Scenes that model a smaller world, such as Liquid Tumbler, pass their own
+ * rectangle. Every other scene keeps this 12 m by 9 m frame.
+ */
+export const WORLD_BOUNDS: WorldBounds = {
   minX: -6,
   minY: -1,
   maxX: 6,
   maxY: 8,
-} as const;
+};
 
 /** Internal Canvas padding reserved around projected world geometry. */
 export const VIEWPORT_INSET = 16;
@@ -23,9 +36,10 @@ export interface Point {
   readonly y: number;
 }
 
-/** Aspect-preserving transform from the fixed world into CSS pixels. */
+/** Aspect-preserving transform from one world rectangle into CSS pixels. */
 export interface Camera {
   readonly viewport: ViewportSize;
+  readonly bounds: WorldBounds;
   readonly scale: number;
   readonly offsetX: number;
   readonly offsetY: number;
@@ -86,15 +100,16 @@ function parseViewportSize(width: number, height: number): ViewportSize {
   return { width, height };
 }
 
-/** Creates the fixed-world projection for a positive finite CSS viewport. */
+/** Creates the world projection for a positive finite CSS viewport. */
 export function createCamera(
   width: number,
   height: number,
   view: CameraView = IDENTITY_CAMERA_VIEW,
+  bounds: WorldBounds = WORLD_BOUNDS,
 ): Camera {
   const viewport = parseViewportSize(width, height);
-  const worldWidth = WORLD_BOUNDS.maxX - WORLD_BOUNDS.minX;
-  const worldHeight = WORLD_BOUNDS.maxY - WORLD_BOUNDS.minY;
+  const worldWidth = bounds.maxX - bounds.minX;
+  const worldHeight = bounds.maxY - bounds.minY;
   const availableWidth = viewport.width - VIEWPORT_INSET * 2;
   const availableHeight = viewport.height - VIEWPORT_INSET * 2;
   const fittedScale = Math.min(
@@ -105,6 +120,7 @@ export function createCamera(
 
   return {
     viewport,
+    bounds,
     scale,
     offsetX: (viewport.width - worldWidth * scale) / 2 + view.panX,
     offsetY: (viewport.height - worldHeight * scale) / 2 + view.panY,
@@ -114,16 +130,16 @@ export function createCamera(
 /** Projects one world-space point, inverting only the world y-axis. */
 export function projectPoint(camera: Camera, point: Point): Point {
   return {
-    x: camera.offsetX + (point.x - WORLD_BOUNDS.minX) * camera.scale,
-    y: camera.offsetY + (WORLD_BOUNDS.maxY - point.y) * camera.scale,
+    x: camera.offsetX + (point.x - camera.bounds.minX) * camera.scale,
+    y: camera.offsetY + (camera.bounds.maxY - point.y) * camera.scale,
   };
 }
 
-/** Inverts projectPoint from CSS pixels back into the shared world bounds. */
+/** Inverts projectPoint from CSS pixels back into the camera's world bounds. */
 export function unprojectPoint(camera: Camera, point: Point): Point {
   return {
-    x: WORLD_BOUNDS.minX + (point.x - camera.offsetX) / camera.scale,
-    y: WORLD_BOUNDS.maxY - (point.y - camera.offsetY) / camera.scale,
+    x: camera.bounds.minX + (point.x - camera.offsetX) / camera.scale,
+    y: camera.bounds.maxY - (point.y - camera.offsetY) / camera.scale,
   };
 }
 
