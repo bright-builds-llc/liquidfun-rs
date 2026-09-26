@@ -174,14 +174,13 @@ function PlayerPanelLayout(layoutProps: {
               <span>{failureCopy(props.sceneTitle)}</span>
             </div>
           </Show>
-          <DebugReadout
-            enabled={props.debugEnabled}
-            maybeFrame={props.maybeDebugFrame}
-            stepsThisFrame={props.stepsThisFrame}
-            fpsTicks={props.fpsTicks}
-            onClose={() => props.onDebugEnabledChange(false)}
-          />
           <Show when={!layoutProps.canvasStage}>
+            <DebugReadout
+              enabled={props.debugEnabled}
+              maybeFrame={props.maybeDebugFrame}
+              stepsThisFrame={props.stepsThisFrame}
+              fpsTicks={props.fpsTicks}
+            />
             <GravityArrow
               tiltGravityEnabled={props.tiltGravityEnabled}
               tiltDebug={props.tiltDebug}
@@ -223,6 +222,17 @@ function PlayerPanelLayout(layoutProps: {
               tiltGravityEnabled={props.tiltGravityEnabled}
               tiltDebug={props.tiltDebug}
               onTiltGravityEnabledChange={props.onTiltGravityEnabledChange}
+              debugEnabled={props.debugEnabled}
+              onDebugEnabledChange={props.onDebugEnabledChange}
+              hasHudSlider={props.hudControls.controls.length > 0}
+              debugReadout={
+                <DebugReadout
+                  enabled={props.debugEnabled}
+                  maybeFrame={props.maybeDebugFrame}
+                  stepsThisFrame={props.stepsThisFrame}
+                  fpsTicks={props.fpsTicks}
+                />
+              }
             >
               <HudControlSlider {...props.hudControls} />
             </CanvasHud>
