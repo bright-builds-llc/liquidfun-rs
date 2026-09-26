@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   LIQUID_TUMBLER_VIEW_BOUNDS,
+  WAVE_MACHINE_VIEW_BOUNDS,
   SCENE_IDS,
   SCENES,
   isReadySceneId,
@@ -67,7 +68,7 @@ const UI_SPEC_HINTS: Readonly<Record<SceneId, string>> = {
   impulse:
     "Click or tap inside the box to shove the particle blob. Use Push to choose force or impulse. Clicks outside the box do nothing. Labeled controls also work from the keyboard.",
   "wave-machine":
-    "Use Wave speed to rock the tank. It starts stopped, and 1× matches the original motor. Labeled controls also work from the keyboard.",
+    "Use Wave speed and Wave tilt to rock the tank. Speed starts at the original rate, and tilt starts at 9°, the original angle. Labeled controls also work from the keyboard.",
   "theo-jansen":
     "Use Motor direction to walk forward or reverse under the particle load. Labeled controls also work from the keyboard.",
   "liquid-tumbler": WATCH_FIRST_HINT,
@@ -267,18 +268,22 @@ describe("maybeSceneById", () => {
     );
   });
 
-  it("frames Liquid Tumbler on the glass and leaves other scenes on the shared bounds", () => {
+  it("frames close scenes tightly and leaves other scenes on the shared bounds", () => {
     // Arrange
     const tumbler = maybeSceneById("liquid-tumbler");
+    const waveMachine = maybeSceneById("wave-machine");
     const damBreak = maybeSceneById("dam-break");
 
     // Act
     const tumblerBounds = worldBoundsForScene("liquid-tumbler");
+    const waveMachineBounds = worldBoundsForScene("wave-machine");
     const damBreakBounds = worldBoundsForScene("dam-break");
 
     // Assert
     expect(tumbler?.viewBounds).toEqual(LIQUID_TUMBLER_VIEW_BOUNDS);
     expect(tumblerBounds).toEqual(LIQUID_TUMBLER_VIEW_BOUNDS);
+    expect(waveMachine?.viewBounds).toEqual(WAVE_MACHINE_VIEW_BOUNDS);
+    expect(waveMachineBounds).toEqual(WAVE_MACHINE_VIEW_BOUNDS);
     expect(damBreak?.viewBounds).toBeUndefined();
     expect(damBreakBounds).toEqual(WORLD_BOUNDS);
   });

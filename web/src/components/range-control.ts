@@ -80,6 +80,9 @@ export function formatRangeValueText(value: string, unit: string): string {
   if (unit === "×") {
     return `${value} times the original wave speed`;
   }
+  if (unit === "°") {
+    return `${value} degrees`;
+  }
 
   return formatRangeReadout(value, unit);
 }

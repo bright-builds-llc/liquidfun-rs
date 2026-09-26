@@ -374,6 +374,19 @@ describe("Dam Break gravity slider", () => {
     expect(readout).toBe("1.0 ×");
     expect(spoken).toBe("1.0 times the original wave speed");
   });
+
+  it("reads a wave-tilt magnitude as degrees", () => {
+    // Arrange
+    const magnitude = "9";
+
+    // Act
+    const readout = formatRangeReadout(magnitude, "°");
+    const spoken = formatRangeValueText(magnitude, "°");
+
+    // Assert
+    expect(readout).toBe("9 °");
+    expect(spoken).toBe("9 degrees");
+  });
 });
 
 describe("sceneControlsForSurface", () => {
@@ -390,7 +403,10 @@ describe("sceneControlsForSurface", () => {
     const panel = sceneControlsForSurface(maybeScene.controls, "panel");
 
     // Assert
-    expect(hud.map((control) => control.id)).toEqual(["wave-speed"]);
+    expect(hud.map((control) => control.id)).toEqual([
+      "wave-speed",
+      "wave-tilt",
+    ]);
     expect(panel).toEqual([]);
   });
 });
