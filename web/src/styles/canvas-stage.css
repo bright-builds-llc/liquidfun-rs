@@ -69,9 +69,37 @@ html[data-canvas-stage="true"] .viewport-frame canvas {
   aspect-ratio: auto;
 }
 
-html[data-canvas-stage="true"] .debug-readout {
-  top: calc(max(8px, env(safe-area-inset-top, 0px)) + 96px);
-  left: max(8px, env(safe-area-inset-left, 0px));
+html[data-canvas-stage="true"] .canvas-hud-stats .debug-readout {
+  position: static;
+  top: auto;
+  left: auto;
+  z-index: auto;
+  width: min(220px, calc(100vw - max(16px, env(safe-area-inset-left, 0px) + env(safe-area-inset-right, 0px))));
+  /* Demos offset, fps, toggle, and the bottom transport. */
+  min-height: 0;
+  max-height: calc(
+    var(--visual-viewport-height, 100dvh)
+    - max(8px, env(safe-area-inset-top, 0px))
+    - 52px
+    - 88px
+    - 60px
+    - max(8px, env(safe-area-inset-bottom, 0px))
+  );
+  overflow: auto;
+  overscroll-behavior: contain;
+  pointer-events: auto;
+}
+
+html[data-canvas-stage="true"] .canvas-hud-stats--with-slider .debug-readout {
+  /* Leave room for the scene sliders stacked above the transport. */
+  max-height: calc(
+    var(--visual-viewport-height, 100dvh)
+    - max(8px, env(safe-area-inset-top, 0px))
+    - 52px
+    - 88px
+    - 180px
+    - max(8px, env(safe-area-inset-bottom, 0px))
+  );
 }
 
 .canvas-hud-corner {
@@ -96,13 +124,15 @@ html[data-canvas-stage="true"] .debug-readout {
   position: static;
 }
 
-.canvas-accelerometer-toggle[aria-pressed="true"] {
+.canvas-accelerometer-toggle[aria-pressed="true"],
+.canvas-debug-toggle[aria-pressed="true"] {
   color: #0B0F14;
   background: #4DA3FF;
   border-color: #4DA3FF;
 }
 
-.canvas-accelerometer-toggle[aria-pressed="true"]:hover:not(:disabled) {
+.canvas-accelerometer-toggle[aria-pressed="true"]:hover:not(:disabled),
+.canvas-debug-toggle[aria-pressed="true"]:hover:not(:disabled) {
   color: #0B0F14;
   background: #2F8CFF;
   border-color: #2F8CFF;
@@ -135,11 +165,25 @@ html[data-canvas-stage="true"] .debug-readout {
   font-size: 14px;
 }
 
-.canvas-fps {
+.canvas-hud-stats {
   position: absolute;
-  z-index: 2;
+  z-index: 3;
   top: calc(max(8px, env(safe-area-inset-top, 0px)) + 52px);
   left: max(8px, env(safe-area-inset-left, 0px));
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.canvas-hud-stats .canvas-debug-toggle {
+  pointer-events: auto;
+}
+
+.canvas-fps {
+  position: static;
+  z-index: auto;
   display: inline-flex;
   align-items: center;
   min-height: 28px;
@@ -269,6 +313,10 @@ html[data-canvas-stage="true"] .debug-readout {
 
 .canvas-accelerometer-toggle svg {
   stroke-width: 1;
+}
+
+.canvas-debug-toggle svg {
+  stroke-width: 1.5;
 }
 
 .canvas-controls-sheet {

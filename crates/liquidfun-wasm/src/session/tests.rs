@@ -345,6 +345,31 @@ fn set_gravity_overrides_until_authored_gravity_is_restored() {
 }
 
 #[test]
+fn particles_gravity_slider_recreates_downward_gravity() {
+    // Arrange
+    let mut session = SessionCore::create(SceneId::Particles).expect("Particles should construct");
+    let before = session.particle_count();
+
+    // Act
+    let recreated = session
+        .apply_control("gravity", "2")
+        .expect("gravity 2 should recreate");
+    let rejected = session.apply_control("gravity", "1");
+
+    // Assert
+    assert!(recreated, "gravity must return Recreated");
+    assert_eq!(session.particle_count(), before);
+    assert_eq!(session.world.gravity().x.to_bits(), 0.0_f32.to_bits());
+    assert_eq!(session.world.gravity().y.to_bits(), (-2.0_f32).to_bits());
+    assert_eq!(rejected, Err(SessionError::UnknownControl));
+    assert_eq!(session.world.gravity().y.to_bits(), (-2.0_f32).to_bits());
+    assert_eq!(
+        session.presets,
+        vec![("gravity".to_owned(), "2".to_owned())]
+    );
+}
+
+#[test]
 fn a_particle_below_the_spatial_hash_makes_the_engine_step_fail() {
     // Arrange
     let mut session = new_session();
@@ -402,8 +427,8 @@ fn advance_removes_particles_that_fell_below_the_playfield() {
 #[test]
 fn advance_drops_a_spilled_tumbler_particle_before_the_tag_wall() {
     // Arrange
-    let mut session = SessionCore::create(SceneId::LiquidTumbler)
-        .expect("Liquid Tumbler should construct");
+    let mut session =
+        SessionCore::create(SceneId::LiquidTumbler).expect("Liquid Tumbler should construct");
     let particle = session
         .world
         .particle_system_view(session.particle_system)

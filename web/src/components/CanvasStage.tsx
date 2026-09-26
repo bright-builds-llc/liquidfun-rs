@@ -25,6 +25,7 @@ const RESET_LABEL = "Reset scene";
 const RETRY_LABEL = "Retry scene";
 const CONTROLS_LABEL = "Scene controls";
 const ACCELEROMETER_LABEL = "Phone accelerometer";
+const DEBUG_LABEL = "Debug info";
 
 export type PlaybackButtonsProps = {
   readonly compact: boolean;
@@ -47,6 +48,10 @@ export type CanvasHudProps = PlaybackButtonsProps & {
   readonly tiltGravityEnabled: boolean;
   readonly tiltDebug: TiltDebug;
   readonly onTiltGravityEnabledChange: (enabled: boolean) => void;
+  readonly debugEnabled: boolean;
+  readonly onDebugEnabledChange: (enabled: boolean) => void;
+  readonly hasHudSlider: boolean;
+  readonly debugReadout: JSX.Element;
   readonly children?: JSX.Element;
 };
 
@@ -121,11 +126,21 @@ export function PlaybackButtons(props: PlaybackButtonsProps) {
   );
 }
 
-/** Title, status, transport, zoom, and accelerometer controls over the canvas. */
+/** Title, status, transport, zoom, debug, and accelerometer controls over the canvas. */
 export function CanvasHud(props: CanvasHudProps) {
   return (
     <>
-      <RenderedFps fpsTicks={props.fpsTicks} />
+      <div
+        class="canvas-hud-stats"
+        classList={{ "canvas-hud-stats--with-slider": props.hasHudSlider }}
+      >
+        <RenderedFps fpsTicks={props.fpsTicks} />
+        <DebugToggle
+          enabled={props.debugEnabled}
+          onEnabledChange={props.onDebugEnabledChange}
+        />
+        {props.debugReadout}
+      </div>
       <div class="canvas-hud-title">
         <h2 id="player-title">{props.sceneTitle}</h2>
         <output
@@ -172,6 +187,23 @@ export function CanvasHud(props: CanvasHudProps) {
         />
       </div>
     </>
+  );
+}
+
+function DebugToggle(props: {
+  readonly enabled: boolean;
+  readonly onEnabledChange: (enabled: boolean) => void;
+}) {
+  return (
+    <button
+      class="hud-button canvas-debug-toggle"
+      type="button"
+      aria-label={DEBUG_LABEL}
+      aria-pressed={props.enabled}
+      onClick={() => props.onEnabledChange(!props.enabled)}
+    >
+      <DebugIcon />
+    </button>
   );
 }
 
@@ -269,6 +301,24 @@ function RetryIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v4h-4" />
+    </svg>
+  );
+}
+
+function DebugIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="m8 2 1.88 1.88" />
+      <path d="M14.12 3.88 16 2" />
+      <path d="M9 7.13v-1a3.003 3.003 0 1 1 6 0v1" />
+      <path d="M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6" />
+      <path d="M12 20v-9" />
+      <path d="M6.53 9C4.6 8.8 3 7.1 3 5" />
+      <path d="M6 13H2" />
+      <path d="M3 21c0-2.1 1.7-3.9 3.8-4" />
+      <path d="M20.97 5c0 2.1-1.6 3.8-3.5 4" />
+      <path d="M22 13h-4" />
+      <path d="M17.2 17c2.1.1 3.8 1.9 3.8 4" />
     </svg>
   );
 }

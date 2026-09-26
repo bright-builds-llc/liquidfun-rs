@@ -103,12 +103,18 @@ fn water_amount_presets_recreate_with_locked_counts() {
 #[test]
 fn gravity_slider_maps_magnitude_to_downward_gravity() {
     // Arrange
-    let cases = [("6", -6.0_f32), ("10", -10.0), ("16", -16.0), ("80", -80.0)];
+    let cases = [
+        ("2", -2.0_f32),
+        ("6", -6.0),
+        ("10", -10.0),
+        ("16", -16.0),
+        ("80", -80.0),
+    ];
 
     // Act / Assert
     assert_eq!(
-        super::MAX_GRAVITY_MAGNITUDE,
-        super::FORMER_HIGH_GRAVITY_MAGNITUDE * 5
+        crate::scene::gravity_slider::MAX_GRAVITY_MAGNITUDE,
+        crate::scene::gravity_slider::FORMER_HIGH_GRAVITY_MAGNITUDE * 5
     );
     for (token, expected_y) in cases {
         let scene = super::build(&[("gravity".to_owned(), token.to_owned())])
@@ -146,7 +152,7 @@ fn gravity_slider_rejects_named_presets_and_out_of_range_magnitudes() {
     // Arrange
     let mut session = SessionCore::create(SceneId::DamBreak)
         .expect("Dam Break should construct the documented basin");
-    let rejected = ["low", "normal", "high", "5", "81", "08", "10.0", ""];
+    let rejected = ["low", "normal", "high", "1", "81", "08", "10.0", ""];
 
     // Act / Assert
     for token in rejected {

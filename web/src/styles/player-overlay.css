@@ -61,17 +61,6 @@
   text-align: right;
 }
 
-.debug-readout-close {
-  align-self: flex-end;
-  width: 44px;
-  min-width: 44px;
-  min-block-size: 44px;
-  padding: 0;
-  font-size: 22px;
-  line-height: 1;
-  pointer-events: auto;
-}
-
 .fps-meter {
   display: grid;
   gap: 2px;

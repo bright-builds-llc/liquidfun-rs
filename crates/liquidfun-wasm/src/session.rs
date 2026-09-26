@@ -10,6 +10,7 @@ use liquidfun::DiagnosticStepProfile;
 
 use self::escape::evict_escaped_particles;
 use crate::frame::{FrameData, FrameDiagnostics};
+use crate::scene::gravity_slider::{GRAVITY_CONTROL_NAME, parse_gravity_magnitude};
 use crate::scene::{
     BuiltScene, ControlEffect, SceneHooks, SceneId, build_scene, parse_pointer_kind,
 };
@@ -199,6 +200,15 @@ impl SessionCore {
     }
 
     pub(crate) fn apply_control(&mut self, name: &str, value: &str) -> Result<bool, SessionError> {
+        if name == GRAVITY_CONTROL_NAME {
+            if parse_gravity_magnitude(value).is_none() {
+                return Err(SessionError::UnknownControl);
+            }
+            store_preset(&mut self.presets, name, value);
+            *self = Self::from_built(self.scene_id, self.presets.clone())?;
+            return Ok(true);
+        }
+
         let effect =
             self.hooks
                 .apply_control(&mut self.world, self.particle_system, name, value)?;

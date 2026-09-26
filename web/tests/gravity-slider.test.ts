@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { DAM_BREAK_GRAVITY_DEFAULT, maybeSceneById } from "../src/catalog/scenes";
+import { GRAVITY_SLIDER_DEFAULT } from "../src/catalog/gravity-slider";
+import { maybeSceneById, type SceneRecord } from "../src/catalog/scenes";
 import {
   maybeGravitySliderMagnitude,
   maybeRouteGravitySliderMagnitude,
@@ -15,7 +16,7 @@ describe("maybeGravitySliderMagnitude", () => {
     const magnitude = maybeGravitySliderMagnitude(scene, {});
 
     // Assert
-    expect(magnitude).toBe(DAM_BREAK_GRAVITY_DEFAULT);
+    expect(magnitude).toBe(GRAVITY_SLIDER_DEFAULT);
   });
 
   it("reads an applied Dam Break slider magnitude", () => {
@@ -37,7 +38,7 @@ describe("maybeGravitySliderMagnitude", () => {
     const magnitude = maybeGravitySliderMagnitude(scene, { gravity: "high" });
 
     // Assert
-    expect(magnitude).toBe(DAM_BREAK_GRAVITY_DEFAULT);
+    expect(magnitude).toBe(GRAVITY_SLIDER_DEFAULT);
   });
 
   it("reads the slider from a ready scene route", () => {
@@ -58,9 +59,25 @@ describe("maybeGravitySliderMagnitude", () => {
     ).toBeUndefined();
   });
 
-  it("returns undefined for a scene without a gravity slider", () => {
+  it("reads Fountain gravity the same way as Dam Break", () => {
     // Arrange
     const scene = maybeSceneById("fountain");
+
+    // Act
+    const magnitude = maybeGravitySliderMagnitude(scene, { gravity: "2" });
+
+    // Assert
+    expect(magnitude).toBe(2);
+  });
+
+  it("returns undefined when the scene record has no gravity slider", () => {
+    // Arrange
+    const maybeFountain = maybeSceneById("fountain");
+    expect(maybeFountain).toBeDefined();
+    if (maybeFountain === undefined) {
+      return;
+    }
+    const scene: SceneRecord = { ...maybeFountain, controls: [] };
 
     // Act
     const magnitude = maybeGravitySliderMagnitude(scene, { gravity: "80" });

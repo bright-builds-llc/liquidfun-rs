@@ -1,12 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  DAM_BREAK_GRAVITY_DEFAULT,
-  DAM_BREAK_GRAVITY_FORMER_HIGH,
-  DAM_BREAK_GRAVITY_MAX,
-  DAM_BREAK_GRAVITY_MIN,
-  DAM_BREAK_GRAVITY_STEP,
-  DAM_BREAK_GRAVITY_TICKS,
+  GRAVITY_CONTROL,
+  GRAVITY_SLIDER_FORMER_HIGH,
+  GRAVITY_SLIDER_MAX,
+} from "../src/catalog/gravity-slider";
+import {
   SCENES,
   maybeSceneById,
   type SceneControl,
@@ -14,11 +13,27 @@ import {
 } from "../src/catalog/scenes";
 
 const RECREATING_CONTROL_IDS = [
+  "gravity",
   "water-amount",
   "gravity",
+  "gravity",
+  "gravity",
   "mix-strength",
+  "gravity",
   "shape",
   "softness",
+  "gravity",
+  "gravity",
+  "gravity",
+  "gravity",
+  "gravity",
+  "gravity",
+  "gravity",
+  "gravity",
+  "gravity",
+  "gravity",
+  "gravity",
+  "gravity",
 ] as const;
 
 function controlLabels(controls: readonly SceneControl[]): string[] {
@@ -83,20 +98,12 @@ describe("scene catalog controls", () => {
       "Medium",
       "Large",
     ]);
-    expect(damBreak?.controls[1]).toMatchObject({
-      id: "gravity",
-      kind: "range",
-      label: "Gravity",
-      recreates: true,
-      min: DAM_BREAK_GRAVITY_MIN,
-      max: DAM_BREAK_GRAVITY_MAX,
-      step: DAM_BREAK_GRAVITY_STEP,
-      defaultValue: DAM_BREAK_GRAVITY_DEFAULT,
-      unit: "m/s²",
-      scale: "logarithmic",
-      ticks: DAM_BREAK_GRAVITY_TICKS,
-    });
-    expect(DAM_BREAK_GRAVITY_MAX).toBe(DAM_BREAK_GRAVITY_FORMER_HIGH * 5);
+    expect(damBreak?.controls[1]).toEqual(GRAVITY_CONTROL);
+    expect(GRAVITY_SLIDER_MAX).toBe(GRAVITY_SLIDER_FORMER_HIGH * 5);
+    const gravityControls = SCENES.map((scene) =>
+      scene.controls.filter((control) => control.id === "gravity"),
+    );
+    expect(gravityControls).toEqual(SCENES.map(() => [GRAVITY_CONTROL]));
     expect(damBreak?.controls[2]).toMatchObject({
       id: "drop-obstacle",
       kind: "action",
@@ -111,6 +118,7 @@ describe("scene catalog controls", () => {
       "Emission rate",
       "Launch speed",
       "Aim angle",
+      "Gravity",
     ]);
     expect(optionLabels(fountain?.controls[0] as SceneControl)).toEqual([
       "Off",
@@ -131,6 +139,7 @@ describe("scene catalog controls", () => {
     expect(controlLabels(floatOrSink?.controls ?? [])).toEqual([
       "Body",
       "Drop body",
+      "Gravity",
     ]);
     expect(optionLabels(floatOrSink?.controls[0] as SceneControl)).toEqual([
       "Cork",
@@ -140,6 +149,7 @@ describe("scene catalog controls", () => {
     expect(controlLabels(colorMixer?.controls ?? [])).toEqual([
       "Mix strength",
       "Stir speed",
+      "Gravity",
     ]);
     expect(optionLabels(colorMixer?.controls[0] as SceneControl)).toEqual([
       "Off",
@@ -155,6 +165,7 @@ describe("scene catalog controls", () => {
       "Shape",
       "Softness",
       "Poke jelly",
+      "Gravity",
     ]);
     expect(optionLabels(jellyDrop?.controls[0] as SceneControl)).toEqual([
       "Circle",
@@ -168,6 +179,7 @@ describe("scene catalog controls", () => {
     expect(controlLabels(waterWheel?.controls ?? [])).toEqual([
       "Jet strength",
       "Emission",
+      "Gravity",
     ]);
     expect(optionLabels(waterWheel?.controls[0] as SceneControl)).toEqual([
       "Weak",
@@ -178,12 +190,14 @@ describe("scene catalog controls", () => {
       "On",
       "Off",
     ]);
-    expect(maybeSceneById("particles")?.controls).toEqual([]);
-    expect(maybeSceneById("liquid-timer")?.controls).toEqual([]);
-    expect(maybeSceneById("surface-tension")?.controls).toEqual([]);
-    expect(maybeSceneById("elastic-particles")?.controls).toEqual([]);
-    expect(maybeSceneById("rigid-particles")?.controls).toEqual([]);
-    expect(maybeSceneById("soup")?.controls).toEqual([]);
+    expect(maybeSceneById("particles")?.controls).toEqual([GRAVITY_CONTROL]);
+    expect(maybeSceneById("liquid-timer")?.controls).toEqual([GRAVITY_CONTROL]);
+    expect(maybeSceneById("surface-tension")?.controls).toEqual([GRAVITY_CONTROL]);
+    expect(maybeSceneById("elastic-particles")?.controls).toEqual([
+      GRAVITY_CONTROL,
+    ]);
+    expect(maybeSceneById("rigid-particles")?.controls).toEqual([GRAVITY_CONTROL]);
+    expect(maybeSceneById("soup")?.controls).toEqual([GRAVITY_CONTROL]);
     expect(maybeSceneById("wave-machine")?.controls).toEqual([
       {
         id: "wave-speed",
@@ -213,16 +227,17 @@ describe("scene catalog controls", () => {
         scale: "linear",
         ticks: [0, 9, 30],
       },
+      GRAVITY_CONTROL,
     ]);
-    expect(maybeSceneById("liquid-tumbler")?.controls).toEqual([]);
-    expect(soupStirrer?.controls).toHaveLength(1);
+    expect(maybeSceneById("liquid-tumbler")?.controls).toEqual([GRAVITY_CONTROL]);
+    expect(soupStirrer?.controls).toHaveLength(2);
     expect(soupStirrer?.controls[0]).toMatchObject({
       id: "toggle-paddle-rail",
       kind: "action",
       label: "Toggle paddle rail",
       recreates: false,
     });
-    expect(controlLabels(impulse?.controls ?? [])).toEqual(["Push"]);
+    expect(controlLabels(impulse?.controls ?? [])).toEqual(["Push", "Gravity"]);
     expect(impulse?.controls[0]).toMatchObject({
       id: "push-mode",
       kind: "preset",
@@ -238,6 +253,7 @@ describe("scene catalog controls", () => {
     ]);
     expect(controlLabels(theoJansen?.controls ?? [])).toEqual([
       "Motor direction",
+      "Gravity",
     ]);
     expect(theoJansen?.controls[0]).toMatchObject({
       id: "motor-direction",

@@ -1,12 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  DAM_BREAK_GRAVITY_DEFAULT,
-  DAM_BREAK_GRAVITY_MAX,
-  DAM_BREAK_GRAVITY_MIN,
-  maybeSceneById,
-  type SceneControl,
-} from "../src/catalog/scenes";
+  GRAVITY_SLIDER_DEFAULT,
+  GRAVITY_SLIDER_MAX,
+  GRAVITY_SLIDER_MIN,
+} from "../src/catalog/gravity-slider";
+import { maybeSceneById, type SceneControl } from "../src/catalog/scenes";
 import {
   formatRangeReadout,
   formatRangeValueText,
@@ -68,13 +67,13 @@ describe("constructionHintVisible", () => {
       label: "Gravity",
       kind: "range",
       recreates: true,
-      min: DAM_BREAK_GRAVITY_MIN,
-      max: DAM_BREAK_GRAVITY_MAX,
+      min: GRAVITY_SLIDER_MIN,
+      max: GRAVITY_SLIDER_MAX,
       step: 1,
-      defaultValue: DAM_BREAK_GRAVITY_DEFAULT,
+      defaultValue: GRAVITY_SLIDER_DEFAULT,
       unit: "m/s²",
       scale: "logarithmic",
-      ticks: [DAM_BREAK_GRAVITY_MIN, DAM_BREAK_GRAVITY_MAX],
+      ticks: [GRAVITY_SLIDER_MIN, GRAVITY_SLIDER_MAX],
     };
 
     // Act
@@ -234,7 +233,7 @@ describe("Dam Break gravity slider", () => {
     const value = initialRangeValue(maybeControl, {});
 
     // Assert
-    expect(value).toBe(String(DAM_BREAK_GRAVITY_DEFAULT));
+    expect(value).toBe(String(GRAVITY_SLIDER_DEFAULT));
   });
 
   it("keeps an applied magnitude inside the slider", () => {
@@ -250,7 +249,7 @@ describe("Dam Break gravity slider", () => {
 
     // Assert
     expect(value).toBe("80");
-    expect(value).toBe(String(DAM_BREAK_GRAVITY_MAX));
+    expect(value).toBe(String(GRAVITY_SLIDER_MAX));
   });
 
   it("falls back to normal gravity for a retired preset name", () => {
@@ -268,7 +267,7 @@ describe("Dam Break gravity slider", () => {
     expect(value).toBe("10");
   });
 
-  it("accepts the former low and five-times-high ends", () => {
+  it("accepts the slider minimum and five-times-high ends", () => {
     // Arrange
     const maybeControl = maybeGravityControl();
     expect(maybeControl).toBeDefined();
@@ -279,17 +278,18 @@ describe("Dam Break gravity slider", () => {
     // Act
     const low = maybeParseRangeControlValue(
       maybeControl,
-      String(DAM_BREAK_GRAVITY_MIN),
+      String(GRAVITY_SLIDER_MIN),
     );
     const cap = maybeParseRangeControlValue(maybeControl, "80");
     const pastCap = maybeParseRangeControlValue(maybeControl, "81");
     const named = maybeParseRangeControlValue(maybeControl, "high");
 
     // Assert
-    expect(low).toBe("6");
+    expect(low).toBe("2");
     expect(cap).toBe("80");
     expect(pastCap).toBeUndefined();
     expect(named).toBeUndefined();
+    expect(maybeParseRangeControlValue(maybeControl, "1")).toBeUndefined();
   });
 
   it("maps the thumb logarithmically between the ends", () => {
@@ -300,14 +300,14 @@ describe("Dam Break gravity slider", () => {
       return;
     }
     const linearNormal =
-      ((DAM_BREAK_GRAVITY_DEFAULT - DAM_BREAK_GRAVITY_MIN) /
-        (DAM_BREAK_GRAVITY_MAX - DAM_BREAK_GRAVITY_MIN)) *
+      ((GRAVITY_SLIDER_DEFAULT - GRAVITY_SLIDER_MIN) /
+        (GRAVITY_SLIDER_MAX - GRAVITY_SLIDER_MIN)) *
       LOG_SLIDER_POSITION_MAX;
 
     // Act
     const normalPosition = sliderPositionForMagnitude(
       maybeControl,
-      DAM_BREAK_GRAVITY_DEFAULT,
+      GRAVITY_SLIDER_DEFAULT,
     );
     const low = maybeMagnitudeForSliderPosition(maybeControl, "0");
     const cap = maybeMagnitudeForSliderPosition(
@@ -320,7 +320,7 @@ describe("Dam Break gravity slider", () => {
     );
 
     // Assert
-    expect(low).toBe("6");
+    expect(low).toBe("2");
     expect(cap).toBe("80");
     expect(roundTrip).toBe("10");
     expect(normalPosition).toBeGreaterThan(linearNormal);
@@ -342,11 +342,12 @@ describe("Dam Break gravity slider", () => {
     const cap = ticks.find((tick) => tick.label === "80");
 
     // Assert
-    expect(ticks.map((tick) => tick.label)).toEqual(["6", "10", "16", "80"]);
+    expect(ticks.map((tick) => tick.label)).toEqual(["2", "10", "16", "80"]);
     expect(normal?.ratio).toBeGreaterThan(0);
     expect(formerHigh?.ratio).toBeGreaterThan(normal?.ratio ?? 1);
+    expect(formerHigh?.ratio).toBeGreaterThan(0.5);
+    expect(formerHigh?.ratio).toBeLessThan(1);
     expect(cap?.ratio).toBe(1);
-    expect(formerHigh?.ratio).toBeLessThan(0.5);
   });
 
   it("reads the magnitude in meters per second squared", () => {
@@ -407,6 +408,6 @@ describe("sceneControlsForSurface", () => {
       "wave-speed",
       "wave-tilt",
     ]);
-    expect(panel).toEqual([]);
+    expect(panel.map((control) => control.id)).toEqual(["gravity"]);
   });
 });

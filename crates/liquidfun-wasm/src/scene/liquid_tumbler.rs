@@ -347,7 +347,7 @@ mod tests {
             SessionCore::create(SceneId::LiquidTumbler).expect("Liquid Tumbler should construct");
 
         // Act
-        let control = session.apply_control("gravity", "10");
+        let control = session.apply_control("viscosity", "high");
         let action = session.apply_action("drop-obstacle");
 
         // Assert
