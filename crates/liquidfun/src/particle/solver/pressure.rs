@@ -4,7 +4,7 @@ use crate::identity::BodyId;
 use crate::math::{Vec2, max, min, settings};
 use crate::particle::ParticleFlags;
 use crate::particle::definition::ParticleSystemDef;
-use crate::particle::storage::{ParticleStorage, ParticleStorageError};
+use crate::particle::storage::{ParticleStorage, ParticleStorageError, SolverVelocityLanes};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum PressureSolverError {
@@ -117,26 +117,34 @@ pub(crate) fn pressure<B: BodyCoupling>(
     let diameter = particle_diameter(definition);
     let velocity_per_pressure = time_step / (definition.density() * diameter);
     let inverse_mass = particle_inverse_mass(definition);
-    let positions = storage.positions();
-    let body_contacts = storage.body_contacts();
-    let particle_contacts = storage.particle_contacts();
-    let mut velocities = storage.velocities().to_vec();
-    for contact in body_contacts {
-        let particle = contact.index.0;
-        let pressure = accumulation[particle] + pressure_per_weight * contact.weight;
-        let impulse =
-            velocity_per_pressure * contact.weight * contact.mass * pressure * contact.normal;
-        velocities[particle] -= inverse_mass * impulse;
-        bodies.apply_linear_impulse(contact.body, impulse, positions[particle]);
-    }
-    for contact in particle_contacts {
-        let [a, b] = contact.indices;
-        let pressure = accumulation[a.0] + accumulation[b.0];
-        let impulse = velocity_per_pressure * contact.weight * pressure * contact.normal;
-        velocities[a.0] -= impulse;
-        velocities[b.0] += impulse;
-    }
-    storage.replace_solver_velocities(velocities)?;
+    storage.update_solver_velocities(
+        |SolverVelocityLanes {
+             positions,
+             velocities,
+             flags: _,
+             particle_contacts,
+             body_contacts,
+         }| {
+            for contact in body_contacts {
+                let particle = contact.index.0;
+                let pressure = accumulation[particle] + pressure_per_weight * contact.weight;
+                let impulse = velocity_per_pressure
+                    * contact.weight
+                    * contact.mass
+                    * pressure
+                    * contact.normal;
+                velocities[particle] -= inverse_mass * impulse;
+                bodies.apply_linear_impulse(contact.body, impulse, positions[particle]);
+            }
+            for contact in particle_contacts {
+                let [a, b] = contact.indices;
+                let pressure = accumulation[a.0] + accumulation[b.0];
+                let impulse = velocity_per_pressure * contact.weight * pressure * contact.normal;
+                velocities[a.0] -= impulse;
+                velocities[b.0] += impulse;
+            }
+        },
+    )?;
     Ok(())
 }
 
@@ -150,41 +158,46 @@ pub(crate) fn damping<B: BodyCoupling>(
     let linear_damping = definition.damping();
     let quadratic_damping = 1.0 / critical_velocity(definition, inverse_time_step);
     let inverse_mass = particle_inverse_mass(definition);
-    let positions = storage.positions();
-    let body_contacts = storage.body_contacts();
-    let particle_contacts = storage.particle_contacts();
-    let mut velocities = storage.velocities().to_vec();
-
-    for contact in body_contacts {
-        let particle = contact.index.0;
-        let position = positions[particle];
-        let relative_velocity = bodies.velocity_at(contact.body, position) - velocities[particle];
-        let normal_velocity = relative_velocity.dot(contact.normal);
-        if normal_velocity < 0.0 {
-            let damping = max(
-                linear_damping * contact.weight,
-                min(-quadratic_damping * normal_velocity, 0.5),
-            );
-            let impulse = damping * contact.mass * normal_velocity * contact.normal;
-            velocities[particle] += inverse_mass * impulse;
-            bodies.apply_linear_impulse(contact.body, -impulse, position);
-        }
-    }
-    for contact in particle_contacts {
-        let [a, b] = contact.indices;
-        let relative_velocity = velocities[b.0] - velocities[a.0];
-        let normal_velocity = relative_velocity.dot(contact.normal);
-        if normal_velocity < 0.0 {
-            let damping = max(
-                linear_damping * contact.weight,
-                min(-quadratic_damping * normal_velocity, 0.5),
-            );
-            let impulse = damping * normal_velocity * contact.normal;
-            velocities[a.0] += impulse;
-            velocities[b.0] -= impulse;
-        }
-    }
-    storage.replace_solver_velocities(velocities)?;
+    storage.update_solver_velocities(
+        |SolverVelocityLanes {
+             positions,
+             velocities,
+             flags: _,
+             particle_contacts,
+             body_contacts,
+         }| {
+            for contact in body_contacts {
+                let particle = contact.index.0;
+                let position = positions[particle];
+                let relative_velocity =
+                    bodies.velocity_at(contact.body, position) - velocities[particle];
+                let normal_velocity = relative_velocity.dot(contact.normal);
+                if normal_velocity < 0.0 {
+                    let damping = max(
+                        linear_damping * contact.weight,
+                        min(-quadratic_damping * normal_velocity, 0.5),
+                    );
+                    let impulse = damping * contact.mass * normal_velocity * contact.normal;
+                    velocities[particle] += inverse_mass * impulse;
+                    bodies.apply_linear_impulse(contact.body, -impulse, position);
+                }
+            }
+            for contact in particle_contacts {
+                let [a, b] = contact.indices;
+                let relative_velocity = velocities[b.0] - velocities[a.0];
+                let normal_velocity = relative_velocity.dot(contact.normal);
+                if normal_velocity < 0.0 {
+                    let damping = max(
+                        linear_damping * contact.weight,
+                        min(-quadratic_damping * normal_velocity, 0.5),
+                    );
+                    let impulse = damping * normal_velocity * contact.normal;
+                    velocities[a.0] += impulse;
+                    velocities[b.0] -= impulse;
+                }
+            }
+        },
+    )?;
     Ok(())
 }
 
@@ -195,26 +208,30 @@ pub(crate) fn extra_damping<B: BodyCoupling>(
 ) -> Result<(), PressureSolverError> {
     validate_contact_bodies(storage, bodies)?;
     let inverse_mass = particle_inverse_mass(definition);
-    let flags = storage.flags();
-    let positions = storage.positions();
-    let contacts = storage.body_contacts();
-    let mut velocities = storage.velocities().to_vec();
-
-    for contact in contacts {
-        let particle = contact.index.0;
-        if flags[particle].contains(ParticleFlags::STATIC_PRESSURE) {
-            let position = positions[particle];
-            let relative_velocity =
-                bodies.velocity_at(contact.body, position) - velocities[particle];
-            let normal_velocity = relative_velocity.dot(contact.normal);
-            if normal_velocity < 0.0 {
-                let impulse = 0.5 * contact.mass * normal_velocity * contact.normal;
-                velocities[particle] += inverse_mass * impulse;
-                bodies.apply_linear_impulse(contact.body, -impulse, position);
+    storage.update_solver_velocities(
+        |SolverVelocityLanes {
+             positions,
+             velocities,
+             flags,
+             particle_contacts: _,
+             body_contacts,
+         }| {
+            for contact in body_contacts {
+                let particle = contact.index.0;
+                if flags[particle].contains(ParticleFlags::STATIC_PRESSURE) {
+                    let position = positions[particle];
+                    let relative_velocity =
+                        bodies.velocity_at(contact.body, position) - velocities[particle];
+                    let normal_velocity = relative_velocity.dot(contact.normal);
+                    if normal_velocity < 0.0 {
+                        let impulse = 0.5 * contact.mass * normal_velocity * contact.normal;
+                        velocities[particle] += inverse_mass * impulse;
+                        bodies.apply_linear_impulse(contact.body, -impulse, position);
+                    }
+                }
             }
-        }
-    }
-    storage.replace_solver_velocities(velocities)?;
+        },
+    )?;
     Ok(())
 }
 

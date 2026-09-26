@@ -7,7 +7,8 @@ compatibility evidence, and not Phase 12 evidence. Do not copy them into
 
 The scalar deterministic step is unchanged. This crate still forbids `unsafe`,
 and the default step does not use Rayon, explicit SIMD intrinsics,
-`-C target-cpu=native`, or fast-math.
+`-C target-cpu=native`, or fast-math. A later sample, measured against the
+tree that produced the tables below, is at the end of this page.
 
 ## Workload and host
 
@@ -154,3 +155,77 @@ Per-pass velocity clones were left in place. Gravity's traced cost is about
 - `-ffast-math`, FMA contraction, or `-C target-cpu=native`. Those change
   IEEE results and would make this sample incomparable with the scalar
   oracle.
+
+## Follow-up: proxy body contacts and in-place velocities
+
+**Unreviewed local sample.** Same host, compiler, and Dam Break Medium recipe
+as above. The parent binary is `9d4acadb`. The follow-up binary is
+`18f5887e`. Release builds, back to back, no sampler attached. Do not copy
+these numbers into `reference/performance/manifest.toml`.
+
+### Unprofiled wall clock
+
+Short recipe: 20 warmup steps, 80 measured steps, three runs each, in the
+order they were taken.
+
+| Build | Run | Wall ms | ms/step | steps/s |
+| --- | --- | --- | --- | --- |
+| parent `9d4acadb` | 1 | 56.940889 | 0.711761 | 1404.965771 |
+| parent `9d4acadb` | 2 | 56.725460 | 0.709068 | 1410.301477 |
+| parent `9d4acadb` | 3 | 56.653878 | 0.708173 | 1412.083388 |
+| follow-up `18f5887e` | 1 | 56.082844 | 0.701036 | 1426.461183 |
+| follow-up `18f5887e` | 2 | 55.808327 | 0.697604 | 1433.477839 |
+| follow-up `18f5887e` | 3 | 55.819169 | 0.697740 | 1433.199409 |
+
+Median ms/step moved from `0.709068` to `0.697740` (about 1.016 times as
+many steps per second). Every follow-up run was faster than every parent
+run. A later extra follow-up run, taken after the long samples, was
+`0.699519` ms/step and stayed in that cluster.
+
+Long recipe: 60 warmup steps, 600 measured steps, two runs each.
+
+| Build | Wall ms | ms/step | steps/s | realtime factor |
+| --- | --- | --- | --- | --- |
+| parent `9d4acadb` | 484.279834 | 0.807133 | 1238.953097 | 20.649218 |
+| parent `9d4acadb` | 479.032110 | 0.798387 | 1252.525640 | 20.875427 |
+| follow-up `18f5887e` | 474.330277 | 0.790550 | 1264.941390 | 21.082357 |
+| follow-up `18f5887e` | 475.437131 | 0.792395 | 1261.996510 | 21.033275 |
+
+The faster follow-up run is about 1.010 times the faster parent run
+(`0.798387 / 0.790550`). The two ranges do not overlap. The gain is small:
+the traced body-contact pass was a few milliseconds across a 100-step
+window, the floor still distance-tests a wide band, and the velocity copy
+was already a small part of that window.
+
+### Same Dam Break state
+
+The same golden-ratio fold as the first sample (storage order, position bits
+then velocity bits, wrapping multiply by `0x9E3779B97F4A7C15`) was run with
+warmup 0. Both binaries produced:
+
+| Steps | Checksum |
+| --- | --- |
+| 40 | `21b595b9abb320ff` |
+| 120 | `d6301dc928cca29b` |
+| 600 | `80e38b2ad07795f6` |
+
+Those are the hashes already recorded against `fe5e95cc`. The probe was
+removed before this note was added. `cargo test -p liquidfun --lib` passed
+(434 tests). The new tests compare proxy-filtered body contacts with a full
+scan by particle identity and by weight, normal, and mass bits, including
+the strict contact path.
+
+### What changed
+
+Body contacts query the sorted contact proxies with the same tag window used
+for fixture rays. Candidate rows are sorted back into particle order, then
+the existing expanded-AABB point test and `distance_to_point` test still
+run. A proxy-length mismatch or a failed tag query scans every particle.
+
+Proxy rebuild uses `sort_unstable_by` on tag then row. That comparison is a
+total order, so the sequence matches the previous stable sort.
+
+Gravity, force, pressure, damping, and extra damping add into the live
+velocity lane with the same `+=` and `-=` operand order. Debug builds still
+reject a non-finite velocity before committing it. The release bench does
+not take that debug copy.

@@ -39,6 +39,7 @@ mod transaction_test_support;
 mod validation;
 
 pub(crate) use mutation::{GroupPlan, GroupPlanError, GroupPlanInput, SplitPlanError};
+pub(in crate::particle) use runtime::SolverVelocityLanes;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) struct ParticleInput {
