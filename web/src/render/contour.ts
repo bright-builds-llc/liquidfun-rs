@@ -1,13 +1,19 @@
 import type { RenderFrame } from "../physics/frame";
 import type { Camera } from "./camera";
+import { shadeContext } from "./density-shade";
 import { eachProjectedParticle } from "./projected-particle";
 import { compositeMasked, scratchContext } from "./scratch-canvas";
 
 /** Iso-value where an isolated particle's contour sits near its radius. */
 const ISO_THRESHOLD = 0.5;
 
-/** Kernel reach, in particle radii, that bridges the usual neighbor spacing. */
-const REACH_FACTOR = 1.85;
+/**
+ * Kernel reach, in particle radii, that bridges the usual neighbor spacing.
+ *
+ * The shaded-blob point sprite uses the same reach so density shade means the
+ * same overlap on every surface mode.
+ */
+export const PARTICLE_KERNEL_REACH = 1.85;
 
 /** Keeps the screen-space grid from growing without a bound at high zoom. */
 const MAX_AXIS_CELLS = 220;
@@ -37,7 +43,7 @@ type FieldGrid = {
 };
 
 function kernel(dx: number, dy: number, radius: number): number {
-  const reach = radius * REACH_FACTOR;
+  const reach = radius * PARTICLE_KERNEL_REACH;
   const reach2 = reach * reach;
   if (reach2 <= 0) {
     return 0;
@@ -62,7 +68,7 @@ function splat(
   grid: FieldGrid,
   sample: FieldSample,
 ): void {
-  const reach = sample.radius * REACH_FACTOR;
+  const reach = sample.radius * PARTICLE_KERNEL_REACH;
   const minX = Math.max(0, Math.floor((sample.x - reach) / grid.cell));
   const maxX = Math.min(grid.nx, Math.ceil((sample.x + reach) / grid.cell));
   const minY = Math.max(0, Math.floor((sample.y - reach) / grid.cell));
@@ -109,6 +115,96 @@ function buildGrid(
     splat(grid, sample);
   }
   return grid;
+}
+
+function clampIndex(index: number, max: number): number {
+  if (index < 0) {
+    return 0;
+  }
+  if (index > max) {
+    return max;
+  }
+  return index;
+}
+
+function clamp01(value: number): number {
+  if (value < 0) {
+    return 0;
+  }
+  if (value > 1) {
+    return 1;
+  }
+  return value;
+}
+
+function gridValue(grid: FieldGrid, ix: number, iy: number): number {
+  return grid.values[ix + iy * grid.stride] ?? 0;
+}
+
+function sampledDensity(grid: FieldGrid, x: number, y: number): number {
+  if (grid.cell <= 0) {
+    return 0;
+  }
+
+  const gx = x / grid.cell;
+  const gy = y / grid.cell;
+  const x0 = clampIndex(Math.floor(gx), grid.nx);
+  const y0 = clampIndex(Math.floor(gy), grid.ny);
+  const x1 = Math.min(x0 + 1, grid.nx);
+  const y1 = Math.min(y0 + 1, grid.ny);
+  const tx = clamp01(gx - x0);
+  const ty = clamp01(gy - y0);
+  const north = gridValue(grid, x0, y0);
+  const east = gridValue(grid, x1, y0);
+  const south = gridValue(grid, x0, y1);
+  const southEast = gridValue(grid, x1, y1);
+  const top = north + (east - north) * tx;
+  const bottom = south + (southEast - south) * tx;
+  return top + (bottom - top) * ty;
+}
+
+/** Sums particle kernels at one screen-space point. */
+export function fieldDensity(
+  samples: readonly FieldSample[],
+  x: number,
+  y: number,
+): number {
+  let sum = 0;
+  for (const sample of samples) {
+    sum += kernel(x - sample.x, y - sample.y, sample.radius);
+  }
+  return sum;
+}
+
+/**
+ * Returns a bilinear sampler for the same grid the contour uses.
+ *
+ * Missing or empty coverage returns undefined so callers can skip shading.
+ */
+export function maybeFieldDensity(
+  samples: readonly FieldSample[],
+  width: number,
+  height: number,
+): ((x: number, y: number) => number) | undefined {
+  const maybeGrid = buildGrid(samples, width, height);
+  if (maybeGrid === undefined) {
+    return undefined;
+  }
+
+  return (x, y) => sampledDensity(maybeGrid, x, y);
+}
+
+/** Collects screen-space discs for contour and density shading. */
+export function collectFieldSamples(
+  frame: RenderFrame,
+  camera: Camera,
+  maxRenderedParticles: number,
+): FieldSample[] {
+  const samples: FieldSample[] = [];
+  eachProjectedParticle(frame, camera, maxRenderedParticles, (x, y, radius) => {
+    samples.push({ x, y, radius });
+  });
+  return samples;
 }
 
 function onBit(mask: number, bit: number): boolean {
@@ -357,15 +453,7 @@ export function paintContour(
   camera: Camera,
   maxRenderedParticles: number,
 ): void {
-  const samples: FieldSample[] = [];
-  eachProjectedParticle(
-    frame,
-    camera,
-    maxRenderedParticles,
-    (x, y, radius) => {
-      samples.push({ x, y, radius });
-    },
-  );
+  const samples = collectFieldSamples(frame, camera, maxRenderedParticles);
   const width = camera.viewport.width;
   const height = camera.viewport.height;
   const loops = contourLoops(samples, width, height);
@@ -384,9 +472,13 @@ export function paintContour(
     (x, y, radius, red, green, blue, alpha) => {
       color.fillStyle = `rgba(${red}, ${green}, ${blue}, ${alpha})`;
       color.beginPath();
-      color.arc(x, y, radius * REACH_FACTOR, 0, Math.PI * 2);
+      color.arc(x, y, radius * PARTICLE_KERNEL_REACH, 0, Math.PI * 2);
       color.fill();
     },
+  );
+  shadeContext(
+    color,
+    maybeFieldDensity(samples, color.canvas.width, color.canvas.height),
   );
   mask.fillStyle = "#FFFFFF";
   fillLoops(mask, loops);

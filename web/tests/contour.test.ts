@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { contourLoops, type ContourPoint } from "../src/render/contour";
+import {
+  contourLoops,
+  maybeFieldDensity,
+  type ContourPoint,
+  type FieldSample,
+} from "../src/render/contour";
+
+const TAU = Math.PI * 2;
 
 function radii(loop: readonly ContourPoint[], x: number, y: number): number[] {
   return loop.map((point) => Math.hypot(point.x - x, point.y - y));
@@ -60,5 +67,54 @@ describe("contourLoops", () => {
 
     // Assert
     expect(loops).toHaveLength(2);
+  });
+});
+
+describe("maybeFieldDensity", () => {
+  it("returns no field for an empty sample list", () => {
+    // Arrange
+    const samples: readonly FieldSample[] = [];
+
+    // Act
+    const maybeDensity = maybeFieldDensity(samples, 80, 80);
+
+    // Assert
+    expect(maybeDensity).toBeUndefined();
+  });
+
+  it("returns no field when the viewport has no area", () => {
+    // Arrange
+    const samples: readonly FieldSample[] = [{ x: 40, y: 40, radius: 8 }];
+
+    // Act
+    const maybeDensity = maybeFieldDensity(samples, 0, 80);
+
+    // Assert
+    expect(maybeDensity).toBeUndefined();
+  });
+
+  it("samples a tighter cluster as denser than one particle", () => {
+    // Arrange
+    const isolated: readonly FieldSample[] = [{ x: 100, y: 100, radius: 12 }];
+    const packed: FieldSample[] = [...isolated];
+    for (let index = 0; index < 6; index += 1) {
+      const angle = (index / 6) * TAU;
+      packed.push({
+        x: 100 + Math.cos(angle) * 12,
+        y: 100 + Math.sin(angle) * 12,
+        radius: 12,
+      });
+    }
+
+    // Act
+    const maybeIsolated = maybeFieldDensity(isolated, 200, 200);
+    const maybePacked = maybeFieldDensity(packed, 200, 200);
+
+    // Assert
+    expect(maybeIsolated).toBeDefined();
+    expect(maybePacked).toBeDefined();
+    expect(maybePacked?.(100, 100) ?? 0).toBeGreaterThan(
+      (maybeIsolated?.(100, 100) ?? 0) + 0.5,
+    );
   });
 });
