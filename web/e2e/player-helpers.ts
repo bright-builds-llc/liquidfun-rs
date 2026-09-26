@@ -99,7 +99,7 @@ export async function installControlledRefreshRate(
 }
 
 export async function canvasPixelSha256(page: Page): Promise<string> {
-  return page.locator("canvas").evaluate(async (canvas) => {
+  return page.locator("canvas.scene-canvas").evaluate(async (canvas) => {
     const context = canvas.getContext("2d");
     if (context === null) {
       throw new Error("Canvas 2D is unavailable");
@@ -343,7 +343,7 @@ async function requireCanvasBox(page: Page): Promise<{
   readonly width: number;
   readonly height: number;
 }> {
-  const canvas = page.locator("canvas");
+  const canvas = page.locator("canvas.scene-canvas");
   await canvas.scrollIntoViewIfNeeded();
   await expect(canvas).toBeVisible();
   const maybeBox = await canvas.boundingBox();

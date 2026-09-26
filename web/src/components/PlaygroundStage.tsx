@@ -41,6 +41,7 @@ export type PlaygroundStageProps = {
   readonly resetGeneration: () => number;
   readonly constructionValues: Readonly<Record<string, string>>;
   readonly assignCanvas: (canvas: HTMLCanvasElement) => void;
+  readonly assignParticleSurface: (canvas: HTMLCanvasElement) => void;
   readonly onPlay: () => void;
   readonly onPause: () => void;
   readonly onReset: () => void;
@@ -135,6 +136,7 @@ export function PlaygroundStage(props: PlaygroundStageProps) {
               maybeDetails={maybeFailureDetails()}
               interactionHint={maybeCurrentScene()?.interactionHint ?? ""}
               assignCanvas={props.assignCanvas}
+              assignParticleSurface={props.assignParticleSurface}
               onPlay={props.onPlay}
               onPause={props.onPause}
               onReset={props.onReset}

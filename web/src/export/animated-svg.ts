@@ -1,4 +1,4 @@
-import type { RenderMode } from "../render/mode";
+import type { CircleRenderMode } from "../render/mode";
 import type {
   ProjectedBody,
   ProjectedParticle,
@@ -21,7 +21,7 @@ export type AnimatedSvgInput = {
   readonly durationSeconds: number;
   readonly viewportWidth: number;
   readonly viewportHeight: number;
-  readonly renderMode: RenderMode;
+  readonly renderMode: CircleRenderMode;
   readonly wireframeStrokeWidth: number;
 };
 
@@ -137,7 +137,7 @@ function particleElement(
   samples: readonly ProjectedSample[],
   index: number,
   duration: string,
-  renderMode: RenderMode,
+  renderMode: CircleRenderMode,
   strokeWidth: string,
 ): string | undefined {
   const present = samples.map((sample) => sample.particles[index] !== undefined);
@@ -207,7 +207,7 @@ function bodyElements(
   samples: readonly ProjectedSample[],
   index: number,
   duration: string,
-  renderMode: RenderMode,
+  renderMode: CircleRenderMode,
   strokeWidth: string,
 ): readonly string[] {
   const present = samples.map((sample) => sample.bodies[index] !== undefined);

@@ -42,7 +42,7 @@ import {
 import { isUsableViewport } from "./player/viewport";
 import { maybeObservedFrame, playerStatus, type PlayerView } from "./player/view";
 import type { FpsTick } from "./components/fps-meter";
-import { drawRenderFrame } from "./render/canvas";
+import { presentSceneFrame } from "./render/present-frame";
 import {
   IDENTITY_CAMERA_VIEW,
   createCamera,
@@ -54,7 +54,12 @@ import {
   DEFAULT_RENDERED_PARTICLE_LIMIT, initialRenderedParticleLimit,
   maybeParseRenderedParticleLimit,
 } from "./render/particle-limit";
-import { loadRenderMode, persistRenderMode, type RenderMode } from "./render/mode";
+import {
+  circleExportMode,
+  loadRenderMode,
+  persistRenderMode,
+  type RenderMode,
+} from "./render/mode";
 import {
   loadWireframeStrokeWidth,
   persistWireframeStrokeWidth,
@@ -110,6 +115,7 @@ export function App() {
   let generation = 0;
   let constructionValues: Record<string, string> = {};
   let maybeCanvas: HTMLCanvasElement | undefined;
+  let maybeParticleCanvas: HTMLCanvasElement | undefined;
   let maybeContext: CanvasRenderingContext2D | undefined;
   let maybeSession: SceneSession | undefined;
   const clock = createFrameClock();
@@ -170,6 +176,7 @@ export function App() {
     cancelPendingFrame(clock);
     disposeOwnedSession();
     maybeCanvas = undefined;
+    maybeParticleCanvas = undefined;
     maybeContext = undefined;
     clock.maybeCamera = undefined;
     clock.maybePreviousFrame = undefined;
@@ -205,19 +212,8 @@ export function App() {
     drawSceneFrame(context, maybeFrame, camera);
   }
 
-  function drawSceneFrame(
-    context: CanvasRenderingContext2D,
-    frame: RenderFrame,
-    camera: Camera,
-  ): void {
-    drawRenderFrame(
-      context,
-      frame,
-      camera,
-      renderMode(),
-      wireframeStrokeWidth(),
-      maxRenderedParticles(),
-    );
+  function drawSceneFrame(context: CanvasRenderingContext2D, frame: RenderFrame, camera: Camera): void {
+    presentSceneFrame(context, frame, camera, renderMode(), wireframeStrokeWidth(), maxRenderedParticles(), maybeParticleCanvas, window.devicePixelRatio);
   }
 
   function refreshCamera(): void {
@@ -345,6 +341,8 @@ export function App() {
   function sendPointer(kind: PointerKind, worldX: number, worldY: number): void {
     forwardScenePointer(maybeSession, view().kind, kind, worldX, worldY, setLastPointerKind, setPointerAccepted, fail);
   }
+
+  function assignParticleSurface(canvas: HTMLCanvasElement): void { maybeParticleCanvas = canvas; }
 
   function assignCanvas(canvas: HTMLCanvasElement): void {
     maybeCanvasPointer?.detach();
@@ -505,7 +503,7 @@ export function App() {
       zoom: clock.cameraView.zoom,
       panX: clock.cameraView.panX,
       panY: clock.cameraView.panY,
-      renderMode: renderMode(),
+      renderMode: circleExportMode(renderMode()),
       wireframeStrokeWidth: wireframeStrokeWidth(),
       maxRenderedParticles: maxRenderedParticles(),
     };
@@ -599,6 +597,7 @@ export function App() {
       resetGeneration={resetGeneration}
       constructionValues={constructionValues}
       assignCanvas={assignCanvas}
+      assignParticleSurface={assignParticleSurface}
       onPlay={playScene}
       onPause={pauseScene}
       onReset={recreateScene}

@@ -388,7 +388,7 @@ async function resolveCanvasPoint(
   page: Page,
   point: PointRatio,
 ): Promise<{ readonly x: number; readonly y: number }> {
-  const canvas = page.locator("canvas");
+  const canvas = page.locator("canvas.scene-canvas");
   await canvas.scrollIntoViewIfNeeded();
   await expect(canvas).toBeVisible();
 

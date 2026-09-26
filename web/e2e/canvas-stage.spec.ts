@@ -38,7 +38,7 @@ async function expectCanvasFillsViewport(page: Page): Promise<void> {
     throw new Error("viewport is unavailable");
   }
 
-  const box = await page.locator("canvas").boundingBox();
+  const box = await page.locator("canvas.scene-canvas").boundingBox();
   expect(box).not.toBeNull();
   expect(box?.width).toBeGreaterThanOrEqual(viewport.width - 1);
   expect(box?.height).toBeGreaterThanOrEqual(viewport.height - 1);
@@ -127,7 +127,7 @@ test("opens scene details without leaving the portrait canvas", async ({
 
   // Assert
   await expect(sheet).toBeVisible();
-  await expect(sheet.getByLabel("Rendering")).toBeVisible();
+  await expect(sheet.getByLabel("Particles", { exact: true })).toBeVisible();
   await sheet.getByRole("checkbox", { name: "Debug info" }).check();
   await expect(page.locator(".debug-readout")).toBeVisible();
   await expect(sheet.locator("#scene-credits-title")).toHaveText("Scene source");

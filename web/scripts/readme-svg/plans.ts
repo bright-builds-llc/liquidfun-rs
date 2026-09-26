@@ -7,7 +7,7 @@ import {
 } from "../../src/export/duration";
 import type { SvgExportRequest } from "../../src/export/messages";
 import { IDENTITY_CAMERA_VIEW } from "../../src/render/camera";
-import { DEFAULT_RENDER_MODE } from "../../src/render/mode";
+import { circleExportMode, DEFAULT_RENDER_MODE } from "../../src/render/mode";
 import { DEFAULT_RENDERED_PARTICLE_LIMIT } from "../../src/render/particle-limit";
 import { DEFAULT_WIREFRAME_STROKE_WIDTH } from "../../src/render/stroke-width";
 import { CAPTURE_PROFILE } from "../demo-media/model";
@@ -112,7 +112,7 @@ export function readmeSvgRequest(plan: ReadmeSvgPlan): SvgExportRequest {
     zoom: IDENTITY_CAMERA_VIEW.zoom,
     panX: IDENTITY_CAMERA_VIEW.panX,
     panY: IDENTITY_CAMERA_VIEW.panY,
-    renderMode: DEFAULT_RENDER_MODE,
+    renderMode: circleExportMode(DEFAULT_RENDER_MODE),
     wireframeStrokeWidth: DEFAULT_WIREFRAME_STROKE_WIDTH,
     maxRenderedParticles: DEFAULT_RENDERED_PARTICLE_LIMIT,
   };
