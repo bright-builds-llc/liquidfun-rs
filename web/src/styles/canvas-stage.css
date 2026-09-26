@@ -312,6 +312,8 @@ html[data-canvas-stage="true"] .canvas-hud-stats--with-slider .debug-readout {
 }
 
 .canvas-accelerometer-toggle svg {
+  /* Match the 22px HUD icon scale on the wider 31×24 accelerometer viewBox. */
+  width: calc(22px * 31 / 24);
   stroke-width: 1;
 }
 
