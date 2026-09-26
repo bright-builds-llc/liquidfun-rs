@@ -168,6 +168,10 @@ fn simulated_tank_keeps_the_pinned_tilt_when_sped_up() {
 }
 
 fn peak_simulated_tilt(speed: &str, steps: u32) -> f32 {
+    peak_simulated_tilt_at(speed, None, steps)
+}
+
+fn peak_simulated_tilt_at(speed: &str, maybe_tilt: Option<&str>, steps: u32) -> f32 {
     use liquidfun::{NoDecisionHook, StepConfiguration, StepLimits};
 
     let super::super::BuiltScene {
@@ -179,6 +183,11 @@ fn peak_simulated_tilt(speed: &str, steps: u32) -> f32 {
     hooks
         .apply_control(&mut world, particle_system, "wave-speed", speed)
         .expect("wave speed token should be accepted");
+    if let Some(tilt) = maybe_tilt {
+        hooks
+            .apply_control(&mut world, particle_system, "wave-tilt", tilt)
+            .expect("wave tilt token should be accepted");
+    }
     let step = StepConfiguration::new(1.0 / 60.0, 8, 3)
         .expect("valid step")
         .with_particle_iterations(2)
@@ -196,6 +205,50 @@ fn peak_simulated_tilt(speed: &str, steps: u32) -> f32 {
         peak = peak.max(tank_angle(&world).abs());
     }
     peak
+}
+
+#[test]
+fn tilt_slider_scales_the_peak_angle() {
+    // Arrange
+    let original = 0.05 * PI;
+    let steps = 400_u32;
+
+    // Act
+    let at_nine = peak_commanded_angle(1.0, steps);
+    let at_eighteen = peak_commanded_angle_with_tilt(1.0, 18.0, steps);
+    let stopped = peak_commanded_angle_with_tilt(1.0, 0.0, steps);
+
+    // Assert
+    assert!(
+        (at_nine - original).abs() < 0.01,
+        "9° must stay the pinned tilt (got {at_nine})"
+    );
+    assert!(
+        (at_eighteen - 2.0 * original).abs() < 0.02,
+        "18° must double that tilt (got {at_eighteen})"
+    );
+    assert!(
+        stopped < 1.0e-6,
+        "0° must hold the tank level (got {stopped})"
+    );
+}
+
+#[test]
+fn simulated_tank_follows_the_tilt_slider() {
+    // Arrange — 10× reaches the crest within these steps.
+    let doubled = 18.0_f32 * PI / 180.0;
+    let at_eighteen = peak_simulated_tilt_at("10.0", Some("18"), 24);
+    let level = peak_simulated_tilt_at("10.0", Some("0"), 24);
+
+    // Assert
+    assert!(
+        (at_eighteen - doubled).abs() < 0.08,
+        "18° must swing about twice the pinned tilt (peak {at_eighteen})"
+    );
+    assert!(
+        level < 0.02,
+        "0° must keep the tank nearly level (peak {level})"
+    );
 }
 
 #[test]
@@ -268,6 +321,52 @@ fn wave_speed_rejects_off_scale_tokens() {
 }
 
 #[test]
+fn wave_tilt_rejects_off_scale_tokens() {
+    // Arrange
+    let mut session = SessionCore::create(SceneId::WaveMachine)
+        .expect("Wave Machine should construct the pinned motorized tank");
+
+    // Act
+    let rejected = ["09", "31", "9.0", "-1", "30.0", "steep"]
+        .map(|value| session.apply_control("wave-tilt", value));
+
+    // Assert
+    assert!(
+        rejected
+            .iter()
+            .all(|result| *result == Err(SessionError::UnknownControl))
+    );
+}
+
+#[test]
+fn wave_tilt_doubles_the_motor_speed_at_eighteen_degrees() {
+    // Arrange
+    let super::super::BuiltScene {
+        mut world,
+        particle_system,
+        mut hooks,
+        ..
+    } = build(&[]).expect("Wave Machine should construct");
+    let pinned = revolute_motor_speed(&world);
+
+    // Act
+    hooks
+        .apply_control(&mut world, particle_system, "wave-tilt", "18")
+        .expect("18 degrees is twice the pinned tilt");
+    let doubled = revolute_motor_speed(&world);
+
+    // Assert
+    assert!(
+        (pinned - 0.05 * PI).abs() < 1.0e-5,
+        "the tank must start at the pinned 9° speed (got {pinned})"
+    );
+    assert!(
+        (doubled - 2.0 * pinned).abs() < 1.0e-4,
+        "18° must double that motor speed (got {doubled})"
+    );
+}
+
+#[test]
 fn unknown_control_is_rejected_and_pointer_is_noop() {
     // Arrange
     let mut session = SessionCore::create(SceneId::WaveMachine)
@@ -310,17 +409,21 @@ fn motor_on_pattern_is_not_water_wheel_motor_off() {
     );
 }
 
-fn peak_commanded_angle(multiplier: f32, steps: u32) -> f32 {
+fn peak_commanded_angle_with_tilt(multiplier: f32, tilt_degrees: f32, steps: u32) -> f32 {
     let mut time = 0.0_f32;
     let mut angle = 0.0_f32;
     let mut peak = 0.0_f32;
     let dt = 1.0 / 60.0;
     for _ in 0..steps {
         time += dt;
-        angle += super::scaled_motor_speed(time, multiplier) * dt;
+        angle += super::scaled_motor_speed(time, multiplier, tilt_degrees) * dt;
         peak = peak.max(angle.abs());
     }
     peak
+}
+
+fn peak_commanded_angle(multiplier: f32, steps: u32) -> f32 {
+    peak_commanded_angle_with_tilt(multiplier, 9.0, steps)
 }
 
 fn tank_angle(world: &World) -> f32 {

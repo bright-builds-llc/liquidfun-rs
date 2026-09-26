@@ -1,5 +1,8 @@
 import { WORLD_BOUNDS, type WorldBounds } from "../render/camera";
-import { WAVE_MACHINE_SPEED_CONTROL } from "./wave-machine-speed";
+import {
+  WAVE_MACHINE_SPEED_CONTROL,
+  WAVE_MACHINE_TILT_CONTROL,
+} from "./wave-machine-speed";
 
 export const SCENE_IDS = [
   "wave-machine",
@@ -108,13 +111,11 @@ export const LIQUID_TUMBLER_VIEW_BOUNDS = {
 /**
  * Camera frame for Wave Machine, in meters.
  *
- * The tank is about 4 m wide around y = 1. The shared 12 m by 9 m frame leaves
- * it small on a phone, so this rectangle is about twice as tight and still
- * leaves room for the original tilt and splash.
+ * About twice as tight as the shared 12 m by 9 m frame, with room for a 30° tilt.
  */
 export const WAVE_MACHINE_VIEW_BOUNDS = {
   minX: -3,
-  minY: -0.6,
+  minY: -1.2,
   maxX: 3,
   maxY: 3.6,
 } as const;
@@ -267,8 +268,8 @@ export const SCENES: readonly SceneRecord[] = [
     ready: true,
     description: "Watch a motorized tank rock and slosh the water inside.",
     interactionHint:
-      "Use Wave speed to rock the tank. It starts at the original speed and tilt, and higher speeds keep that tilt. Labeled controls also work from the keyboard.",
-    controls: [WAVE_MACHINE_SPEED_CONTROL],
+      "Use Wave speed and Wave tilt to rock the tank. Speed starts at the original rate, and tilt starts at 9°, the original angle. Labeled controls also work from the keyboard.",
+    controls: [WAVE_MACHINE_SPEED_CONTROL, WAVE_MACHINE_TILT_CONTROL],
     viewBounds: WAVE_MACHINE_VIEW_BOUNDS,
     credits: {
       implementationPath: sceneSource("wave_machine.rs"),

@@ -68,7 +68,7 @@ const UI_SPEC_HINTS: Readonly<Record<SceneId, string>> = {
   impulse:
     "Click or tap inside the box to shove the particle blob. Use Push to choose force or impulse. Clicks outside the box do nothing. Labeled controls also work from the keyboard.",
   "wave-machine":
-    "Use Wave speed to rock the tank. It starts at the original speed and tilt, and higher speeds keep that tilt. Labeled controls also work from the keyboard.",
+    "Use Wave speed and Wave tilt to rock the tank. Speed starts at the original rate, and tilt starts at 9°, the original angle. Labeled controls also work from the keyboard.",
   "theo-jansen":
     "Use Motor direction to walk forward or reverse under the particle load. Labeled controls also work from the keyboard.",
   "liquid-tumbler": WATCH_FIRST_HINT,

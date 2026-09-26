@@ -1,9 +1,9 @@
 //! Pinned `LiquidFun` Wave Machine: motorized four-wall tank rocking from sim time.
 //!
 //! ANTI-PATTERN: Do not copy Water Wheel's motor-off revolute / empty motor writes.
-//! At 1×, motor speed is `0.05 * cos(t) * π`, matching testWaveMachine.js.
-//! The `wave-speed` control starts at 1. Higher multipliers raise the rocking
-//! frequency and the speed setpoint together, so the tank keeps that tilt.
+//! At 1× and 9°, motor speed is `0.05 * cos(t) * π`, matching testWaveMachine.js.
+//! `wave-speed` starts at 1 and raises rocking frequency with the speed setpoint.
+//! `wave-tilt` starts at 9° and sets that peak angle.
 
 use std::f32::consts::PI;
 
@@ -30,10 +30,15 @@ const TANK_POSITION: Vec2 = Vec2::new(0.0, 1.0);
 const WALL_DENSITY: f32 = 5.0;
 const MOTOR_SPEED_SCALE: f32 = 0.05;
 const WAVE_SPEED_CONTROL: &str = "wave-speed";
+const WAVE_TILT_CONTROL: &str = "wave-tilt";
 /// Slider default. `1` is the pinned Wave Machine motor.
 const DEFAULT_WAVE_SPEED: f32 = 1.0;
 /// Slider tenths. 100 is ten times the original rocking frequency.
 const MAX_WAVE_SPEED_TENTHS: u16 = 100;
+/// Pinned peak tilt. `0.05 * π` radians is 9 degrees.
+const DEFAULT_TILT_DEGREES: f32 = 9.0;
+/// Slider maximum, in degrees.
+const MAX_TILT_DEGREES: u16 = 30;
 const MAX_MOTOR_TORQUE: f32 = 1.0e7;
 const SIM_DT: f32 = 1.0 / 60.0;
 const FILL_HALF: f32 = 0.9;
@@ -52,6 +57,7 @@ struct WaveMachineHooks {
     wall_local_corners: [[Vec2; 4]; 4],
     time: f32,
     speed_multiplier: f32,
+    tilt_degrees: f32,
 }
 
 pub(crate) fn build(presets: &[(String, String)]) -> Result<BuiltScene, SessionError> {
@@ -88,7 +94,7 @@ fn build_wave_machine() -> Result<BuiltScene, SceneError> {
         &mut world,
         ground,
         tank,
-        scaled_motor_speed(0.0, DEFAULT_WAVE_SPEED),
+        scaled_motor_speed(0.0, DEFAULT_WAVE_SPEED, DEFAULT_TILT_DEGREES),
     )?;
     let particle_system = create_particle_fill(&mut world)?;
 
@@ -102,6 +108,7 @@ fn build_wave_machine() -> Result<BuiltScene, SceneError> {
             wall_local_corners,
             time: 0.0,
             speed_multiplier: DEFAULT_WAVE_SPEED,
+            tilt_degrees: DEFAULT_TILT_DEGREES,
         }),
     })
 }
@@ -180,14 +187,31 @@ fn parse_wave_speed(value: &str) -> Option<f32> {
     Some(f32::from(tenths) / 10.0)
 }
 
-/// Motor speed whose integral keeps the pinned tilt.
+/// Accepts whole-degree tokens from `0` through `30`, matching the HUD slider.
+fn parse_tilt_degrees(value: &str) -> Option<f32> {
+    if value.is_empty() || !value.bytes().all(|byte| byte.is_ascii_digit()) {
+        return None;
+    }
+    if value.len() > 1 && value.starts_with('0') {
+        return None;
+    }
+
+    let degrees = value.parse::<u16>().ok()?;
+    if degrees > MAX_TILT_DEGREES {
+        return None;
+    }
+
+    Some(f32::from(degrees))
+}
+
+/// Motor speed for a chosen peak tilt and rocking frequency.
 ///
-/// `testWaveMachine.js` commands `0.05 * cos(t) * π`. A strong motor tracks
-/// that, so the tank angle is about `0.05 * π * sin(t)`. Multiplying only the
-/// speed would multiply that tilt. Scaling time and speed together keeps the
-/// peak: `θ ≈ 0.05 * π * sin(multiplier * t)`.
-fn scaled_motor_speed(time: f32, speed_multiplier: f32) -> f32 {
-    MOTOR_SPEED_SCALE * speed_multiplier * (speed_multiplier * time).cos() * PI
+/// `testWaveMachine.js` commands `0.05 * cos(t) * π`, whose tracked angle is
+/// about `0.05 * π * sin(t)` (9°). Frequency and speed scale together, and the
+/// tilt slider scales that peak: `θ ≈ tilt_scale * 0.05 * π * sin(frequency * t)`.
+fn scaled_motor_speed(time: f32, speed_multiplier: f32, tilt_degrees: f32) -> f32 {
+    let tilt_scale = tilt_degrees / DEFAULT_TILT_DEGREES;
+    MOTOR_SPEED_SCALE * PI * tilt_scale * speed_multiplier * (speed_multiplier * time).cos()
 }
 
 fn write_motor_speed(
@@ -195,9 +219,13 @@ fn write_motor_speed(
     joint: JointId,
     time: f32,
     speed_multiplier: f32,
+    tilt_degrees: f32,
 ) -> Result<(), SessionError> {
     world
-        .set_revolute_motor_speed(joint, scaled_motor_speed(time, speed_multiplier))
+        .set_revolute_motor_speed(
+            joint,
+            scaled_motor_speed(time, speed_multiplier, tilt_degrees),
+        )
         .map_err(|_error| SessionError::StepFailed)
 }
 
@@ -236,9 +264,15 @@ impl SceneHooks for WaveMachineHooks {
         _system: ParticleSystemId,
     ) -> Result<(), SessionError> {
         // Match testWaveMachine.js Step: t += 1/60, then set the motor.
-        // At 1× that speed is `0.05 * cos(t) * π`.
+        // At 1× and 9° that speed is `0.05 * cos(t) * π`.
         self.time += SIM_DT;
-        write_motor_speed(world, self.joint, self.time, self.speed_multiplier)
+        write_motor_speed(
+            world,
+            self.joint,
+            self.time,
+            self.speed_multiplier,
+            self.tilt_degrees,
+        )
     }
 
     fn apply_control(
@@ -248,15 +282,29 @@ impl SceneHooks for WaveMachineHooks {
         name: &str,
         value: &str,
     ) -> Result<ControlEffect, SessionError> {
-        if name != WAVE_SPEED_CONTROL {
-            return Err(SessionError::UnknownControl);
+        match name {
+            WAVE_SPEED_CONTROL => {
+                let Some(speed_multiplier) = parse_wave_speed(value) else {
+                    return Err(SessionError::UnknownControl);
+                };
+                self.speed_multiplier = speed_multiplier;
+            }
+            WAVE_TILT_CONTROL => {
+                let Some(tilt_degrees) = parse_tilt_degrees(value) else {
+                    return Err(SessionError::UnknownControl);
+                };
+                self.tilt_degrees = tilt_degrees;
+            }
+            _ => return Err(SessionError::UnknownControl),
         }
-        let Some(speed_multiplier) = parse_wave_speed(value) else {
-            return Err(SessionError::UnknownControl);
-        };
 
-        self.speed_multiplier = speed_multiplier;
-        write_motor_speed(world, self.joint, self.time, speed_multiplier)?;
+        write_motor_speed(
+            world,
+            self.joint,
+            self.time,
+            self.speed_multiplier,
+            self.tilt_degrees,
+        )?;
         Ok(ControlEffect::Live)
     }
 

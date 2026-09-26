@@ -199,6 +199,20 @@ describe("scene catalog controls", () => {
         scale: "linear",
         ticks: [0, 5, 10],
       },
+      {
+        id: "wave-tilt",
+        label: "Wave tilt",
+        kind: "range",
+        recreates: false,
+        surface: "hud",
+        min: 0,
+        max: 30,
+        step: 1,
+        defaultValue: 9,
+        unit: "°",
+        scale: "linear",
+        ticks: [0, 9, 30],
+      },
     ]);
     expect(maybeSceneById("liquid-tumbler")?.controls).toEqual([]);
     expect(soupStirrer?.controls).toHaveLength(1);

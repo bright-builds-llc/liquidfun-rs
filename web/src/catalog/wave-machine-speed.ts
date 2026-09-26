@@ -33,3 +33,35 @@ export const WAVE_MACHINE_SPEED_CONTROL: SceneControl = {
   scale: "linear",
   ticks: WAVE_MACHINE_SPEED_TICKS,
 };
+
+/** Level. The tank does not rock. */
+export const WAVE_MACHINE_TILT_MIN = 0;
+/**
+ * Widest HUD tilt that still fits the Wave Machine frame.
+ *
+ * `9` is the pinned peak, `0.05 * π` radians.
+ */
+export const WAVE_MACHINE_TILT_MAX = 30;
+export const WAVE_MACHINE_TILT_STEP = 1;
+export const WAVE_MACHINE_TILT_DEFAULT = 9;
+export const WAVE_MACHINE_TILT_TICKS = [
+  WAVE_MACHINE_TILT_MIN,
+  WAVE_MACHINE_TILT_DEFAULT,
+  WAVE_MACHINE_TILT_MAX,
+] as const;
+
+/** Live HUD slider for the peak rocking angle. Changing it does not rebuild the tank. */
+export const WAVE_MACHINE_TILT_CONTROL: SceneControl = {
+  id: "wave-tilt",
+  label: "Wave tilt",
+  kind: "range",
+  recreates: false,
+  surface: "hud",
+  min: WAVE_MACHINE_TILT_MIN,
+  max: WAVE_MACHINE_TILT_MAX,
+  step: WAVE_MACHINE_TILT_STEP,
+  defaultValue: WAVE_MACHINE_TILT_DEFAULT,
+  unit: "°",
+  scale: "linear",
+  ticks: WAVE_MACHINE_TILT_TICKS,
+};
