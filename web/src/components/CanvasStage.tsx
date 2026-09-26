@@ -280,10 +280,10 @@ function ControlsIcon() {
 function AccelerometerIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
-      <rect x="3" y="3" width="8" height="18" rx="2" />
-      <path d="M5.5 18h3" />
-      <path d="M14.5 9.25a3.6 3.6 0 0 0 0 5.5" />
-      <path d="M17.25 6.75a6.2 6.2 0 0 0 0 10.5" />
+      <path d="M3.5 4.5C1.5 6.4 1.5 10.1 3.5 12 5.5 13.9 5.5 17.6 3.5 19.5" />
+      <rect x="8.5" y="3" width="7" height="18" rx="2" />
+      <path d="M10.5 18h3" />
+      <path d="M20.5 4.5C22.5 6.4 22.5 10.1 20.5 12 18.5 13.9 18.5 17.6 20.5 19.5" />
     </svg>
   );
 }
