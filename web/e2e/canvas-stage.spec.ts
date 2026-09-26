@@ -171,14 +171,8 @@ test("scrolls scene controls inside the sheet instead of the transformed drawer"
   await button.scrollIntoViewIfNeeded();
 
   // Assert
-  await expect(sheet.locator("[data-slot='drawer-content']")).toHaveCSS(
-    "transform",
-    "none",
-  );
-  await expect(sheet.locator("[data-slot='drawer-content']")).toHaveCSS(
-    "overflow-y",
-    "visible",
-  );
+  await expect(sheet).toHaveCSS("transform", "none");
+  await expect(sheet).toHaveCSS("overflow-y", "visible");
   await expect(scroller).toHaveCSS("overflow-y", "auto");
   expect(layout.gap).toBeLessThan(32);
   expect(layout.canScroll).toBe(true);
@@ -201,6 +195,32 @@ test("toggles phone accelerometer from the upper-right canvas HUD", async ({
 }) => {
   // Arrange
   await installUnavailableFullscreen(page);
+  // Headless Chromium exposes requestPermission and emits empty motion events.
+  // Grant permission and ignore samples with no acceleration so a live arrow can appear.
+  await page.addInitScript(() => {
+    const motion = DeviceMotionEvent as unknown as {
+      requestPermission?: () => Promise<PermissionState>;
+    };
+    motion.requestPermission = () => Promise.resolve("granted");
+    const nativeAdd = window.addEventListener.bind(window);
+    window.addEventListener = (type, listener, options) => {
+      if (type !== "devicemotion" || typeof listener !== "function") {
+        nativeAdd(type, listener, options);
+        return;
+      }
+      const wrapped: EventListener = (event) => {
+        if (!(event instanceof DeviceMotionEvent)) {
+          return;
+        }
+        const sample = event.accelerationIncludingGravity;
+        if (sample?.x == null || sample.y == null) {
+          return;
+        }
+        listener.call(window, event);
+      };
+      nativeAdd(type, wrapped, options);
+    };
+  });
   await page.setViewportSize(PORTRAIT);
   await page.goto(DAM_BREAK_PATH);
   await expect(sessionStatus(page)).toHaveText(PLAYING_STATUS);
@@ -220,15 +240,11 @@ test("toggles phone accelerometer from the upper-right canvas HUD", async ({
   // Assert
   await expect(accelerometer).toHaveAttribute("aria-pressed", "true");
   await expect(async () => {
-    await page.evaluate(() => {
-      window.dispatchEvent(
-        new DeviceMotionEvent("devicemotion", {
-          accelerationIncludingGravity: { x: 0, y: 9.81, z: 0 },
-        }),
-      );
+    await dispatchTiltSample(page, { x: 0, y: 9.81, z: 0 });
+    await expect(page.getByRole("img", { name: /Gravity direction/ })).toBeVisible({
+      timeout: 500,
     });
-    await expect(page.getByRole("img", { name: /Gravity direction/ })).toBeVisible();
-  }).toPass();
+  }).toPass({ timeout: 5_000 });
   const arrow = page.getByRole("img", { name: /Gravity direction/ });
   const aboveArrow = await stackedRightEdges(accelerometer, arrow);
   expect(aboveArrow.lowerIsBelow).toBe(true);
@@ -249,6 +265,20 @@ test("toggles phone accelerometer from the upper-right canvas HUD", async ({
   await expect(accelerometer).toHaveAttribute("aria-pressed", "false");
   await expect(arrow).toHaveCount(0);
 });
+
+async function dispatchTiltSample(
+  page: Page,
+  acceleration: { readonly x: number; readonly y: number; readonly z: number },
+): Promise<void> {
+  await page.evaluate((sample) => {
+    const event = new DeviceMotionEvent("devicemotion");
+    Object.defineProperty(event, "accelerationIncludingGravity", {
+      configurable: true,
+      value: sample,
+    });
+    window.dispatchEvent(event);
+  }, acceleration);
+}
 
 async function stackedRightEdges(
   upper: Locator,
