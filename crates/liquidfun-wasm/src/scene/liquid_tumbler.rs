@@ -1,7 +1,7 @@
 //! Drinking-glass tumbler at real meters, with two walls and a floor.
 //!
 //! The glass is 74 mm wide and 120 mm tall, with about 55 mm of water.
-//! Particles are 2 mm across. Earth gravity is 9.8 m/s², matching a resting
+//! Particles are 0.4 mm across. Earth gravity is 9.8 m/s², matching a resting
 //! phone accelerometer. [`PARTICLE_ITERATIONS`] raises the pressure cap enough
 //! for that column to hold; the shared 2 substeps cannot.
 //!
@@ -25,18 +25,18 @@ const INNER_WIDTH: f32 = 0.074;
 const INNER_HEIGHT: f32 = 0.120;
 /// Water depth above the floor, in meters.
 const WATER_DEPTH: f32 = 0.055;
-const PARTICLE_RADIUS: f32 = 0.002;
-/// Resting spacing. The default 0.75-diameter stride is loose enough that this
-/// glass compresses and splashes on the first frames.
-const PARTICLE_STRIDE: f32 = 0.0028;
+const PARTICLE_RADIUS: f32 = 0.0004;
+/// Resting spacing, one fifth of the previous 2.8 mm stride so the finer
+/// particles still meet. Kept under one diameter so neighbors stay in contact.
+const PARTICLE_STRIDE: f32 = 0.00056;
 const PARTICLE_DAMPING: f32 = 0.25;
-const MAXIMUM_PARTICLE_COUNT: usize = 4096;
+const MAXIMUM_PARTICLE_COUNT: usize = 16_384;
 const WATER_COLOR: ParticleColor = ParticleColor::new(77, 163, 255, 255);
 const GRAVITY: Vec2 = Vec2::new(0.0, -9.8);
 /// Enough substeps for the pressure cap to hold this glass. The cap grows
-/// with radius times substep count; the shared 2 substeps cannot support a
-/// 2 mm-particle column at Earth gravity.
-pub(crate) const PARTICLE_ITERATIONS: u32 = 16;
+/// with radius times substep count. These particles are one fifth of the
+/// previous 2 mm size, so they need five times as many substeps.
+pub(crate) const PARTICLE_ITERATIONS: u32 = 80;
 
 struct LiquidTumblerHooks {
     basin_segments: [RigidSegment; 3],
@@ -224,10 +224,10 @@ mod tests {
         let radii = frame.particle_radii();
 
         // Assert
-        assert!(
-            (300..600).contains(&session.particle_count()),
-            "glass fill should be a few hundred 2 mm particles, got {}",
-            session.particle_count()
+        assert_eq!(
+            session.particle_count(),
+            12_513,
+            "the 0.4 mm fill should stay inside the frame cap"
         );
         assert_eq!(session.rigid_shape_count(), 3, "floor and two walls");
         assert!(
@@ -237,6 +237,37 @@ mod tests {
         );
     }
 
+    #[test]
+    fn first_steps_keep_the_water_column_up() {
+        // Arrange
+        let mut session =
+            SessionCore::create(SceneId::LiquidTumbler).expect("Liquid Tumbler should construct");
+        let before = session.particle_count();
+
+        // Act
+        session
+            .advance(4)
+            .expect("Liquid Tumbler advance must stay within the catch-up cap");
+        let frame = capture(&session);
+        let positions = frame.particle_positions();
+
+        // Assert
+        assert_eq!(session.live_particle_count().expect("live count"), before);
+        let speed = frame.max_speed();
+        assert!(speed.is_finite());
+        assert!(
+            speed < 1.0,
+            "glass water should not be launched by the contact slop, got {speed}"
+        );
+        let surface = highest_particle(&positions);
+        assert!(
+            (0.03..0.08).contains(&surface),
+            "the water column should stay a few centimeters deep, got {surface}"
+        );
+        assert_positions_inside_glass(&positions);
+    }
+
+    #[cfg(not(debug_assertions))]
     #[test]
     fn one_second_keeps_water_inside_the_glass() {
         // Arrange

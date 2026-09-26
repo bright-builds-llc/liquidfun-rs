@@ -22,6 +22,25 @@ const RELATIVE_BOTTOM_RIGHT: u32 = (1_u32 << Y_SHIFT) + (1_u32 << X_SHIFT);
 const X_TAG_LIMIT: f32 = 1_048_576.0;
 const Y_TAG_LIMIT: f32 = 4_096.0;
 
+/// Half-width of the pinned particle tag domain, in particle diameters.
+///
+/// `checked_tag` accepts each axis in `[-HALF, HALF)`.
+pub const PROXY_TAG_HALF_EXTENT_DIAMETERS: f32 = Y_OFFSET;
+
+/// Returns whether `position` can be tagged at `diameter`.
+///
+/// Callers that keep simulating should stay inside a smaller region. A later
+/// step can move a particle by many diameters before the next tag rebuild.
+#[must_use]
+pub fn position_fits_proxy_domain(position: crate::math::Vec2, diameter: f32) -> bool {
+    if !position.is_valid() || !diameter.is_finite() || diameter <= 0.0 {
+        return false;
+    }
+    let x = position.x / diameter;
+    let y = position.y / diameter;
+    x.abs() < PROXY_TAG_HALF_EXTENT_DIAMETERS && y.abs() < PROXY_TAG_HALF_EXTENT_DIAMETERS
+}
+
 /// A failure while constructing checked particle spatial tags.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
