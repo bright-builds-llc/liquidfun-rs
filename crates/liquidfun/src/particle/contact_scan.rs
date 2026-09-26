@@ -126,7 +126,9 @@ fn rebuild_proxies(
             .map_err(ContactFillError::Proxy)?;
         proxies.push(ContactProxy { tag, row });
     }
-    proxies.sort_by(|left, right| left.tag.cmp(&right.tag).then(left.row.cmp(&right.row)));
+    // Tag then row is a total order, so an unstable sort matches the previous
+    // stable sort and keeps later contact windows in the same sequence.
+    proxies.sort_unstable_by(|left, right| left.tag.cmp(&right.tag).then(left.row.cmp(&right.row)));
     Ok(())
 }
 

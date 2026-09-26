@@ -5,6 +5,17 @@ use super::{
     SemanticParticleContact, StuckLanes, Vec2, group, validate_groups,
 };
 
+/// Split borrows for one in-place velocity update.
+///
+/// Callers drop this before [`ParticleStorage::finish_solver_velocities`].
+pub(in crate::particle) struct SolverVelocityLanes<'a> {
+    pub(in crate::particle) positions: &'a [Vec2],
+    pub(in crate::particle) velocities: &'a mut [Vec2],
+    pub(in crate::particle) flags: &'a [ParticleFlags],
+    pub(in crate::particle) particle_contacts: &'a [ParticleContact],
+    pub(in crate::particle) body_contacts: &'a [ParticleBodyContact],
+}
+
 impl ParticleStorage {
     pub(crate) fn positions(&self) -> &[Vec2] {
         &self.positions
@@ -26,6 +37,68 @@ impl ParticleStorage {
             return Err(ParticleStorageError::InvalidLaneBundle);
         }
         self.velocities = candidate;
+        for record in &mut self.group_records {
+            record.invalidate_statistics();
+        }
+        Ok(())
+    }
+
+    pub(in crate::particle) fn solver_velocity_lanes(&mut self) -> SolverVelocityLanes<'_> {
+        SolverVelocityLanes {
+            positions: &self.positions,
+            velocities: &mut self.velocities,
+            flags: &self.flags,
+            particle_contacts: &self.particle_contacts,
+            body_contacts: &self.body_contacts,
+        }
+    }
+
+    /// Adds `scale * force` in the same operand order as the cloned force pass.
+    pub(in crate::particle) fn add_scaled_forces(&mut self, scale: f32) {
+        for (velocity, force) in self.velocities.iter_mut().zip(self.forces.iter()) {
+            *velocity += scale * *force;
+        }
+    }
+
+    /// Adds `delta` in the same operand order as the cloned gravity pass.
+    pub(in crate::particle) fn add_velocity_offset(&mut self, delta: Vec2) {
+        for velocity in &mut self.velocities {
+            *velocity += delta;
+        }
+    }
+
+    /// Applies `update`, then checks the velocity lane and drops cached group statistics.
+    ///
+    /// Debug builds restore the previous velocities when the updated lane is
+    /// non-finite, matching [`Self::replace_solver_velocities`].
+    pub(in crate::particle) fn update_solver_velocities(
+        &mut self,
+        update: impl FnOnce(SolverVelocityLanes<'_>),
+    ) -> Result<(), ParticleStorageError> {
+        #[cfg(debug_assertions)]
+        let backup = self.velocities.clone();
+        update(self.solver_velocity_lanes());
+        let committed = self.finish_solver_velocities();
+        if committed.is_err() {
+            #[cfg(debug_assertions)]
+            {
+                self.velocities = backup;
+            }
+        }
+        committed
+    }
+
+    /// Checks the velocity lane and drops cached group statistics.
+    ///
+    /// Debug builds reject a non-finite velocity the way
+    /// [`Self::replace_solver_velocities`] did before the assignment.
+    pub(in crate::particle) fn finish_solver_velocities(
+        &mut self,
+    ) -> Result<(), ParticleStorageError> {
+        #[cfg(debug_assertions)]
+        if self.velocities.iter().any(|velocity| !velocity.is_valid()) {
+            return Err(ParticleStorageError::InvalidLaneBundle);
+        }
         for record in &mut self.group_records {
             record.invalidate_statistics();
         }

@@ -236,8 +236,10 @@ impl World {
             Vec::new()
         };
         let diameter = 2.0 * record.definition.radius();
+        let proxies = record.storage.contact_proxies();
         let update = body_contact::generate(
             &view,
+            proxies,
             sources,
             &previous,
             diameter,

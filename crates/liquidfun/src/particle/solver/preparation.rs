@@ -67,21 +67,19 @@ pub(crate) fn force(
     if !velocity_per_force.is_finite() {
         return Err(ParticleStorageError::InvalidLaneBundle);
     }
-    let mut velocities = Vec::new();
-    velocities
-        .try_reserve_exact(storage.len())
-        .map_err(|_error| ParticleStorageError::InvalidLaneBundle)?;
-    velocities.extend(
-        storage
-            .velocities()
-            .iter()
-            .copied()
-            .zip(storage.forces())
-            .map(|(velocity, accumulated_force)| {
-                velocity + velocity_per_force * *accumulated_force
-            }),
-    );
-    storage.replace_solver_velocities(velocities)?;
+    #[cfg(debug_assertions)]
+    if storage
+        .velocities()
+        .iter()
+        .zip(storage.forces())
+        .any(|(velocity, accumulated_force)| {
+            !(*velocity + velocity_per_force * *accumulated_force).is_valid()
+        })
+    {
+        return Err(ParticleStorageError::InvalidLaneBundle);
+    }
+    storage.add_scaled_forces(velocity_per_force);
+    storage.finish_solver_velocities()?;
     storage.clear_pending_system_force();
     Ok(())
 }
@@ -104,18 +102,16 @@ pub(crate) fn gravity(
     if !gravity_delta.is_valid() {
         return Err(ParticleStorageError::InvalidLaneBundle);
     }
-    let mut velocities = Vec::new();
-    velocities
-        .try_reserve_exact(storage.len())
-        .map_err(|_error| ParticleStorageError::InvalidLaneBundle)?;
-    velocities.extend(
-        storage
-            .velocities()
-            .iter()
-            .copied()
-            .map(|velocity| velocity + gravity_delta),
-    );
-    storage.replace_solver_velocities(velocities)
+    #[cfg(debug_assertions)]
+    if storage
+        .velocities()
+        .iter()
+        .any(|velocity| !(*velocity + gravity_delta).is_valid())
+    {
+        return Err(ParticleStorageError::InvalidLaneBundle);
+    }
+    storage.add_velocity_offset(gravity_delta);
+    storage.finish_solver_velocities()
 }
 
 fn particle_inverse_mass(definition: ParticleSystemDef) -> f32 {
