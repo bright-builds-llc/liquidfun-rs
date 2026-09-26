@@ -168,6 +168,63 @@ export function formatLocalBuiltAtLabel(
   return `${year}-${month}-${day} ${hour}:${minute}:${second} ${zone}`;
 }
 
+const MINUTE_MS = 60_000;
+const HOUR_MS = 60 * MINUTE_MS;
+const DAY_MS = 24 * HOUR_MS;
+const APPROXIMATE_AGO_UNITS = [
+  { durationMs: 365 * DAY_MS, singular: "year" },
+  { durationMs: 30 * DAY_MS, singular: "month" },
+  { durationMs: 7 * DAY_MS, singular: "week" },
+  { durationMs: DAY_MS, singular: "day" },
+  { durationMs: HOUR_MS, singular: "hour" },
+  { durationMs: MINUTE_MS, singular: "minute" },
+] as const;
+
+function approximateAgoCount(elapsedMs: number): string {
+  const maybeUnit = APPROXIMATE_AGO_UNITS.find(
+    (unit) => elapsedMs >= unit.durationMs,
+  );
+  if (maybeUnit === undefined) {
+    return "less than a minute ago";
+  }
+
+  const count = Math.floor(elapsedMs / maybeUnit.durationMs);
+  const unitLabel = count === 1 ? maybeUnit.singular : `${maybeUnit.singular}s`;
+  return `${count} ${unitLabel} ago`;
+}
+
+/**
+ * Approximate how long ago an instant was, dropping leftover smaller units.
+ * Six minutes and 20 seconds is "6 minutes ago".
+ */
+export function formatApproximateTimeAgo(
+  iso: string,
+  maybeNow?: Date,
+): string {
+  const parsedMs = new Date(iso).getTime();
+  if (Number.isNaN(parsedMs)) {
+    return UNAVAILABLE;
+  }
+
+  const nowMs = (maybeNow ?? new Date()).getTime();
+  return approximateAgoCount(nowMs - parsedMs);
+}
+
+/** Local build timestamp plus an approximate age, such as "(6 minutes ago)". */
+export function formatBuiltAtDisplay(
+  iso: string,
+  maybeTimeZone?: string,
+  maybeNow?: Date,
+): string {
+  const localLabel = formatLocalBuiltAtLabel(iso, maybeTimeZone);
+  const agoLabel = formatApproximateTimeAgo(iso, maybeNow);
+  if (localLabel === UNAVAILABLE || agoLabel === UNAVAILABLE) {
+    return localLabel;
+  }
+
+  return `${localLabel} (${agoLabel})`;
+}
+
 function maybeAcceptedBuildUrl(
   maybeUrl: string | undefined,
 ): string | undefined {

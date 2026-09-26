@@ -1,6 +1,18 @@
 import { expect, test, type Locator } from "@playwright/test";
 
-import { formatLocalBuiltAtLabel } from "../src/build-info";
+import { formatBuiltAtDisplay } from "../src/build-info";
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function expectedBuiltAtPattern(iso: string): RegExp {
+  const nowMs = Date.now();
+  const labels = [0, 30_000].map((offsetMs) =>
+    formatBuiltAtDisplay(iso, "America/New_York", new Date(nowMs - offsetMs)),
+  );
+  return new RegExp(`^(?:${labels.map(escapeRegExp).join("|")})$`);
+}
 
 import {
   DAM_BREAK_PATH,
@@ -120,7 +132,7 @@ test("keeps scrolled mobile player controls painted", async ({ page }) => {
 test.describe("build timestamp", () => {
   test.use({ timezoneId: "America/New_York" });
 
-  test("shows the build timestamp in the viewer local time", async ({
+  test("shows the build timestamp in local time with an approximate age", async ({
     page,
   }) => {
     // Arrange
@@ -142,9 +154,7 @@ test.describe("build timestamp", () => {
       /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/,
     );
     expect(iso).toEqual(expect.any(String));
-    await expect(timestamp).toHaveText(
-      formatLocalBuiltAtLabel(iso ?? "", "America/New_York"),
-    );
+    await expect(timestamp).toHaveText(expectedBuiltAtPattern(iso ?? ""));
   });
 });
 
