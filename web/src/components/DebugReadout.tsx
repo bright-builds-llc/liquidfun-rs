@@ -19,6 +19,7 @@ export type DebugReadoutProps = {
   readonly maybeFrame: RenderFrame | undefined;
   readonly stepsThisFrame: number;
   readonly fpsTicks: readonly FpsTick[];
+  readonly onClose: () => void;
 };
 
 const GRAPH_HEIGHT = 32;
@@ -39,6 +40,14 @@ export function DebugReadout(props: DebugReadoutProps) {
         const history = () => fpsHistory(props.fpsTicks, nowMs());
         return (
           <div class="debug-readout">
+            <button
+              type="button"
+              class="debug-readout-close"
+              aria-label="Close debug info"
+              onClick={() => props.onClose()}
+            >
+              ×
+            </button>
             <FpsMeter
               label="Simulation"
               fps={rates().simFps}
