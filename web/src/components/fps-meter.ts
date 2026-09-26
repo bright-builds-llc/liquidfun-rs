@@ -144,3 +144,9 @@ export function formatFps(fps: number): string {
   }
   return String(Math.round(fps));
 }
+
+/** Rounded rendered frame rate over the trailing one-second window. */
+export function renderedFpsLabel(ticks: readonly FpsTick[], nowMs: number): string {
+  const rates = fpsOverWindow(ticks, nowMs, FPS_COUNTER_WINDOW_MS);
+  return `${formatFps(rates.renderFps)} fps`;
+}

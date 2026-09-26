@@ -186,6 +186,7 @@ function PlayerPanelLayout(layoutProps: {
               sceneTitle={props.sceneTitle}
               status={props.status}
               statusLabel={statusText(props.status, props.sceneTitle)}
+              fpsTicks={props.fpsTicks}
               onPlay={props.onPlay}
               onPause={props.onPause}
               onReset={props.onReset}

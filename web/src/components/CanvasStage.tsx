@@ -1,8 +1,15 @@
-import { Show, type JSX } from "solid-js";
+import { Show, createSignal, onCleanup, onMount, type JSX } from "solid-js";
 
 import type { PlayerStatus } from "../player/view";
 import { GitHubSourceLink } from "./SiteHeader";
 import { ViewportTools } from "./ViewportTools";
+import {
+  FPS_COUNTER_WINDOW_MS,
+  fpsOverWindow,
+  fpsTone,
+  renderedFpsLabel,
+  type FpsTick,
+} from "./fps-meter";
 import {
   DrawerContent,
   DrawerDescription,
@@ -28,6 +35,7 @@ export type PlaybackButtonsProps = {
 export type CanvasHudProps = PlaybackButtonsProps & {
   readonly sceneTitle: string;
   readonly statusLabel: string;
+  readonly fpsTicks: readonly FpsTick[];
   readonly panEnabled: boolean;
   readonly onZoomIn: () => void;
   readonly onZoomOut: () => void;
@@ -111,6 +119,7 @@ export function CanvasHud(props: CanvasHudProps) {
   return (
     <>
       <div class="canvas-hud-title">
+        <RenderedFps fpsTicks={props.fpsTicks} />
         <h2 id="player-title">{props.sceneTitle}</h2>
         <output
           class={`session-status session-status--${props.status}`}
@@ -174,6 +183,24 @@ export function SceneControlsSheet(props: {
         </div>
       </div>
     </DrawerContent>
+  );
+}
+
+function RenderedFps(props: { readonly fpsTicks: readonly FpsTick[] }) {
+  const [nowMs, setNowMs] = createSignal(performance.now());
+
+  onMount(() => {
+    const id = window.setInterval(() => setNowMs(performance.now()), 100);
+    onCleanup(() => window.clearInterval(id));
+  });
+
+  const fps = () =>
+    fpsOverWindow(props.fpsTicks, nowMs(), FPS_COUNTER_WINDOW_MS).renderFps;
+
+  return (
+    <output class="canvas-fps" data-fps-tone={fpsTone(fps())}>
+      {renderedFpsLabel(props.fpsTicks, nowMs())}
+    </output>
   );
 }
 
