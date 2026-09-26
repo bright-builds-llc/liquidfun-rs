@@ -118,8 +118,8 @@ export function PlaybackButtons(props: PlaybackButtonsProps) {
 export function CanvasHud(props: CanvasHudProps) {
   return (
     <>
+      <RenderedFps fpsTicks={props.fpsTicks} />
       <div class="canvas-hud-title">
-        <RenderedFps fpsTicks={props.fpsTicks} />
         <h2 id="player-title">{props.sceneTitle}</h2>
         <output
           class={`session-status session-status--${props.status}`}

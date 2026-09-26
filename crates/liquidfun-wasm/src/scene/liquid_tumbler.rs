@@ -26,9 +26,9 @@ const INNER_HEIGHT: f32 = 0.120;
 /// Water depth above the floor, in meters.
 const WATER_DEPTH: f32 = 0.055;
 const PARTICLE_RADIUS: f32 = 0.0008;
-/// Lattice that fills the glass with exactly 6,000 particles.
+/// Lattice that fills the glass with exactly 5,200 particles.
 const PARTICLE_COLUMNS: usize = 80;
-const PARTICLE_ROWS: usize = 75;
+const PARTICLE_ROWS: usize = 65;
 const PARTICLE_DAMPING: f32 = 0.25;
 const MAXIMUM_PARTICLE_COUNT: usize = PARTICLE_COLUMNS * PARTICLE_ROWS;
 const WATER_COLOR: ParticleColor = ParticleColor::new(77, 163, 255, 255);
@@ -37,7 +37,7 @@ const GRAVITY: Vec2 = Vec2::new(0.0, -9.8);
 /// The pressure cap grows with that product. Fewer substeps let the column
 /// sink into the floor and get thrown back up.
 pub(crate) const PARTICLE_ITERATIONS: u32 = 40;
-const _: () = assert!(MAXIMUM_PARTICLE_COUNT == 6_000);
+const _: () = assert!(MAXIMUM_PARTICLE_COUNT == 5_200);
 
 struct LiquidTumblerHooks {
     basin_segments: [RigidSegment; 3],
@@ -253,8 +253,8 @@ mod tests {
         // Assert
         assert_eq!(
             session.particle_count(),
-            6_000,
-            "the 0.8 mm fill should be 6000 particles"
+            5_200,
+            "the 0.8 mm fill should be 5200 particles"
         );
         assert_eq!(session.rigid_shape_count(), 3, "floor and two walls");
         assert!(
@@ -286,7 +286,7 @@ mod tests {
             speed < 1.0,
             "glass water should not be launched by the contact slop, got {speed}"
         );
-        // The 6,000-particle lattice starts denser than the resting spacing,
+        // The 5,200-particle lattice starts denser than the resting spacing,
         // so the surface can lift during these steps. A few particles may
         // spill later; the longer test checks that the column settles.
         let surface = highest_particle(&positions);
