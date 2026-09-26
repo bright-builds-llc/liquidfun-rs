@@ -280,6 +280,24 @@ async function dispatchTiltSample(
   }, acceleration);
 }
 
+async function stackedLeftEdges(
+  upper: Locator,
+  lower: Locator,
+): Promise<{
+  readonly lowerIsBelow: boolean;
+  readonly leftEdgesAligned: boolean;
+}> {
+  const upperBox = await upper.boundingBox();
+  const lowerBox = await lower.boundingBox();
+  if (upperBox === null || lowerBox === null) {
+    throw new Error("HUD control bounds are unavailable");
+  }
+  return {
+    lowerIsBelow: lowerBox.y >= upperBox.y + upperBox.height - 1,
+    leftEdgesAligned: Math.abs(upperBox.x - lowerBox.x) < 2,
+  };
+}
+
 async function stackedRightEdges(
   upper: Locator,
   lower: Locator,
@@ -298,6 +316,51 @@ async function stackedRightEdges(
       Math.abs(upperBox.x + upperBox.width - (lowerBox.x + lowerBox.width)) < 2,
   };
 }
+
+test("toggles debug info from under the canvas fps counter", async ({ page }) => {
+  // Arrange
+  await installUnavailableFullscreen(page);
+  await page.setViewportSize(PORTRAIT);
+  await page.goto(DAM_BREAK_PATH);
+  await expect(sessionStatus(page)).toHaveText(PLAYING_STATUS);
+  const fps = page.locator(".canvas-fps");
+  const debug = page.getByRole("button", { name: "Debug info", exact: true });
+
+  // Assert
+  await expect(fps).toBeVisible();
+  await expect(debug).toBeVisible();
+  await expect(debug).toHaveAttribute("aria-pressed", "false");
+  await expect(page.locator(".debug-readout")).toHaveCount(0);
+  const underFps = await stackedLeftEdges(fps, debug);
+  expect(underFps.lowerIsBelow).toBe(true);
+  expect(underFps.leftEdgesAligned).toBe(true);
+
+  // Act
+  await debug.click();
+
+  // Assert
+  await expect(debug).toHaveAttribute("aria-pressed", "true");
+  const readout = page.locator(".debug-readout");
+  await expect(readout).toBeVisible();
+  const underToggle = await stackedLeftEdges(debug, readout);
+  expect(underToggle.lowerIsBelow).toBe(true);
+  expect(underToggle.leftEdgesAligned).toBe(true);
+
+  // Act
+  await page.getByRole("button", { name: "Scene controls" }).click();
+  const sheet = page.getByRole("dialog", { name: "Scene controls" });
+  const checkbox = sheet.getByRole("checkbox", { name: "Debug info" });
+
+  // Assert
+  await expect(checkbox).toBeChecked();
+
+  // Act
+  await checkbox.uncheck();
+
+  // Assert
+  await expect(debug).toHaveAttribute("aria-pressed", "false");
+  await expect(readout).toHaveCount(0);
+});
 
 test("uses a demos drawer in landscape when element fullscreen is unavailable", async ({
   page,
