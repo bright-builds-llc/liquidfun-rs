@@ -180,7 +180,6 @@ function PlayerPanelLayout(layoutProps: {
               maybeFrame={props.maybeDebugFrame}
               stepsThisFrame={props.stepsThisFrame}
               fpsTicks={props.fpsTicks}
-              onClose={() => props.onDebugEnabledChange(false)}
             />
             <GravityArrow
               tiltGravityEnabled={props.tiltGravityEnabled}
@@ -232,7 +231,6 @@ function PlayerPanelLayout(layoutProps: {
                   maybeFrame={props.maybeDebugFrame}
                   stepsThisFrame={props.stepsThisFrame}
                   fpsTicks={props.fpsTicks}
-                  onClose={() => props.onDebugEnabledChange(false)}
                 />
               }
             >
