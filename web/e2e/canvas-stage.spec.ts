@@ -137,6 +137,62 @@ test("opens scene details without leaving the portrait canvas", async ({
   await expectCanvasFillsViewport(page);
 });
 
+test("scrolls scene controls inside the sheet instead of the transformed drawer", async ({
+  page,
+}) => {
+  // Arrange
+  await installUnavailableFullscreen(page);
+  await page.setViewportSize(PORTRAIT);
+  await page.goto(DAM_BREAK_PATH);
+  await expect(sessionStatus(page)).toHaveText(PLAYING_STATUS);
+  await page.getByRole("button", { name: "Scene controls" }).click();
+  const sheet = page.getByRole("dialog", { name: "Scene controls" });
+  await expect(sheet).toBeVisible();
+  const scroller = sheet.locator(".canvas-controls-scroll");
+
+  // Act
+  const layout = await scroller.evaluate((node) => {
+    const tilt = node.querySelector(".tilt-pane");
+    const pane = node.querySelector(".svg-export-pane");
+    if (!(tilt instanceof HTMLElement) || !(pane instanceof HTMLElement)) {
+      throw new Error("sheet sections are missing");
+    }
+    const tiltBox = tilt.getBoundingClientRect();
+    const paneBox = pane.getBoundingClientRect();
+    return {
+      gap: paneBox.top - tiltBox.bottom,
+      canScroll: node.scrollHeight > node.clientHeight + 1,
+    };
+  });
+  const button = sheet.getByRole("button", { name: "Generate animated SVG" });
+  await button.scrollIntoViewIfNeeded();
+
+  // Assert
+  await expect(sheet.locator("[data-slot='drawer-content']")).toHaveCSS(
+    "transform",
+    "none",
+  );
+  await expect(sheet.locator("[data-slot='drawer-content']")).toHaveCSS(
+    "overflow-y",
+    "visible",
+  );
+  await expect(scroller).toHaveCSS("overflow-y", "auto");
+  expect(layout.gap).toBeLessThan(32);
+  expect(layout.canScroll).toBe(true);
+  const buttonInScroller = await button.evaluate((node) => {
+    const scrollport = node.closest(".canvas-controls-scroll");
+    if (!(scrollport instanceof HTMLElement)) {
+      return false;
+    }
+    const buttonBox = node.getBoundingClientRect();
+    const scrollerBox = scrollport.getBoundingClientRect();
+    return (
+      buttonBox.bottom > scrollerBox.top && buttonBox.top < scrollerBox.bottom
+    );
+  });
+  expect(buttonInScroller).toBe(true);
+});
+
 test("uses a demos drawer in landscape when element fullscreen is unavailable", async ({
   page,
 }) => {
