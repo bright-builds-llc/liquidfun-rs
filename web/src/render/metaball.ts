@@ -70,6 +70,7 @@ export function paintMetaball(
   frame: RenderFrame,
   camera: Camera,
   maxRenderedParticles: number,
+  densityShading = true,
 ): void {
   const width = camera.viewport.width;
   const height = camera.viewport.height;
@@ -79,17 +80,22 @@ export function paintMetaball(
   }
 
   const blur = Math.max(MIN_BLUR_PX, maxRadius * BLUR_RADIUS_FACTOR);
-  const samples = collectFieldSamples(frame, camera, maxRenderedParticles);
   const color = scratchContext("metaball-color", width, height);
   const sharp = scratchContext("metaball-sharp", width, height);
   const blurred = scratchContext("metaball-blur", width, height);
   color.clearRect(0, 0, color.canvas.width, color.canvas.height);
   sharp.clearRect(0, 0, sharp.canvas.width, sharp.canvas.height);
   drawDiscs(color, frame, camera, maxRenderedParticles, blur * COLOR_BLEED, true);
-  shadeContext(
-    color,
-    maybeFieldDensity(samples, color.canvas.width, color.canvas.height),
-  );
+  if (densityShading) {
+    shadeContext(
+      color,
+      maybeFieldDensity(
+        collectFieldSamples(frame, camera, maxRenderedParticles),
+        color.canvas.width,
+        color.canvas.height,
+      ),
+    );
+  }
   drawDiscs(sharp, frame, camera, maxRenderedParticles, 0, false);
 
   blurred.clearRect(0, 0, blurred.canvas.width, blurred.canvas.height);

@@ -5,7 +5,12 @@ import {
   DENSITY_SHADE_END,
   DENSITY_SHADE_FLOOR,
   DENSITY_SHADE_START,
+  DENSITY_SHADING_STORAGE_KEY,
+  DEFAULT_DENSITY_SHADING,
   densityShade,
+  loadDensityShading,
+  maybeParseDensityShading,
+  persistDensityShading,
   shadePackedColor,
 } from "../src/render/density-shade";
 
@@ -95,6 +100,83 @@ describe("densityShade", () => {
 
     // Assert
     expect(shade).toBe(1);
+  });
+});
+
+describe("density shading preference", () => {
+  it("parses only the on and off tokens", () => {
+    // Arrange
+    const stored = ["on", "off", "true", null];
+
+    // Act
+    const parsed = stored.map(maybeParseDensityShading);
+
+    // Assert
+    expect(parsed).toEqual([true, false, undefined, undefined]);
+  });
+
+  it("defaults missing and invalid storage to enabled", () => {
+    // Arrange
+    const storedValues = [null, "maybe"];
+
+    // Act
+    const enabled = storedValues.map((storedValue) =>
+      loadDensityShading(() => ({
+        getItem: () => storedValue,
+        setItem: () => undefined,
+      })),
+    );
+
+    // Assert
+    expect(enabled).toEqual([DEFAULT_DENSITY_SHADING, DEFAULT_DENSITY_SHADING]);
+    expect(DEFAULT_DENSITY_SHADING).toBe(true);
+  });
+
+  it("persists the choice under the versioned key", () => {
+    // Arrange
+    const writes: Array<readonly [string, string]> = [];
+    const storage = {
+      getItem: () => null,
+      setItem: (key: string, value: string) => {
+        writes.push([key, value]);
+      },
+    };
+
+    // Act
+    persistDensityShading(() => storage, false);
+
+    // Assert
+    expect(writes).toEqual([[DENSITY_SHADING_STORAGE_KEY, "off"]]);
+  });
+
+  it("contains storage read failures", () => {
+    // Arrange
+    const denied = () => {
+      throw new Error("storage denied");
+    };
+
+    // Act
+    const loaded = loadDensityShading(denied);
+
+    // Assert
+    expect(loaded).toBe(true);
+  });
+
+  it("contains storage write failures", () => {
+    // Arrange
+    const failedWrite = () =>
+      persistDensityShading(
+        () => ({
+          getItem: () => null,
+          setItem: () => {
+            throw new Error("write denied");
+          },
+        }),
+        true,
+      );
+
+    // Act / Assert
+    expect(failedWrite).not.toThrow();
   });
 });
 

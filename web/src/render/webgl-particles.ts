@@ -105,6 +105,7 @@ type WebglSurface = {
     frame: RenderFrame,
     camera: Camera,
     devicePixelRatio: number,
+    densityShading: boolean,
   ) => boolean;
 };
 
@@ -349,7 +350,7 @@ function createWebglSurface(): WebglSurface {
   }
 
   return {
-    draw(canvas, frame, camera, devicePixelRatio) {
+    draw(canvas, frame, camera, devicePixelRatio, densityShading) {
       const resources = resourcesFor(canvas);
       if (resources === undefined) {
         return false;
@@ -426,7 +427,7 @@ function createWebglSurface(): WebglSurface {
       );
       gl.uniform1f(shadeStart, DENSITY_SHADE_START);
       gl.uniform1f(shadeEnd, DENSITY_SHADE_END);
-      gl.uniform1f(shadeFloor, DENSITY_SHADE_FLOOR);
+      gl.uniform1f(shadeFloor, densityShading ? DENSITY_SHADE_FLOOR : 1);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
       gl.bindVertexArray(null);
       return true;
@@ -448,11 +449,18 @@ export function drawShadedBlob(
   frame: RenderFrame,
   camera: Camera,
   devicePixelRatio: number,
+  densityShading = true,
 ): boolean {
   if (canvas === undefined) {
     return false;
   }
 
   maybeSurface ??= createWebglSurface();
-  return maybeSurface.draw(canvas, frame, camera, devicePixelRatio);
+  return maybeSurface.draw(
+    canvas,
+    frame,
+    camera,
+    devicePixelRatio,
+    densityShading,
+  );
 }

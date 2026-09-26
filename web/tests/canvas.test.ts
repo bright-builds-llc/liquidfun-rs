@@ -360,7 +360,7 @@ describe("drawRenderFrame", () => {
     };
 
     // Act
-    drawRenderFrame(canvas.context, FRAME, camera, "soft-blob", 0.3, 1, false, painters);
+    drawRenderFrame(canvas.context, FRAME, camera, "soft-blob", 0.3, 1, false, true, painters);
 
     // Assert
     expect(metaballLimit).toBe(Number.POSITIVE_INFINITY);
@@ -384,7 +384,7 @@ describe("drawRenderFrame", () => {
     };
 
     // Act
-    drawRenderFrame(canvas.context, FRAME, camera, "contour", 0.3, 1, false, painters);
+    drawRenderFrame(canvas.context, FRAME, camera, "contour", 0.3, 1, false, true, painters);
 
     // Assert
     expect(painted).toBe(true);
@@ -405,7 +405,7 @@ describe("drawRenderFrame", () => {
     };
 
     // Act
-    drawRenderFrame(canvas.context, FRAME, camera, "shaded-blob", 0.3, 1, true, painters);
+    drawRenderFrame(canvas.context, FRAME, camera, "shaded-blob", 0.3, 1, true, true, painters);
 
     // Assert
     expect(painted).toBe(false);
@@ -425,10 +425,45 @@ describe("drawRenderFrame", () => {
     };
 
     // Act
-    drawRenderFrame(canvas.context, FRAME, camera, "shaded-blob", 0.3, 1, false, painters);
+    drawRenderFrame(canvas.context, FRAME, camera, "shaded-blob", 0.3, 1, false, true, painters);
 
     // Assert
     expect(painted).toBe(true);
     expect(canvas.operations[0]).toMatchObject({ fillStyle: "#071018" });
+  });
+
+  it("forwards a disabled density shade to the surface painter", () => {
+    // Arrange
+    const canvas = createRecordingContext();
+    const camera = createCamera(960, 540);
+    let maybeShading: boolean | undefined;
+    const painters = {
+      paintMetaball: (
+        _context: CanvasRenderingContext2D,
+        _frame: RenderFrame,
+        _camera: ReturnType<typeof createCamera>,
+        _limit: number,
+        densityShading?: boolean,
+      ) => {
+        maybeShading = densityShading;
+      },
+      paintContour: () => undefined,
+    };
+
+    // Act
+    drawRenderFrame(
+      canvas.context,
+      FRAME,
+      camera,
+      "soft-blob",
+      0.3,
+      1,
+      false,
+      false,
+      painters,
+    );
+
+    // Assert
+    expect(maybeShading).toBe(false);
   });
 });

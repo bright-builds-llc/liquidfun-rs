@@ -14,10 +14,17 @@ export function presentSceneFrame(
   maxRenderedParticles: number,
   maybeParticleCanvas: HTMLCanvasElement | undefined,
   devicePixelRatio: number,
+  densityShading = true,
 ): void {
   const webglCovered =
     needsWebglSurface(mode) &&
-    drawShadedBlob(maybeParticleCanvas, frame, camera, devicePixelRatio);
+    drawShadedBlob(
+      maybeParticleCanvas,
+      frame,
+      camera,
+      devicePixelRatio,
+      densityShading,
+    );
   drawRenderFrame(
     context,
     frame,
@@ -26,5 +33,6 @@ export function presentSceneFrame(
     wireframeStrokeWidth,
     maxRenderedParticles,
     webglCovered,
+    densityShading,
   );
 }
