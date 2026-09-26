@@ -10,7 +10,13 @@ import {
   worldBoundsForScene,
   type SceneId,
 } from "../src/catalog/scenes";
-import { WORLD_BOUNDS } from "../src/render/camera";
+import {
+  IDENTITY_CAMERA_VIEW,
+  WORLD_BOUNDS,
+    createCamera,
+    projectPoint,
+    type Camera,
+  } from "../src/render/camera";
 
 const WATCH_FIRST_HINT =
   "This scene is watch-first. Use Play scene, Pause scene, and Reset scene.";
@@ -288,6 +294,64 @@ describe("maybeSceneById", () => {
     expect(damBreakBounds).toEqual(WORLD_BOUNDS);
   });
 
+  it("frames the wave machine tank across a phone-sized screen", () => {
+    // Arrange
+    const portrait = createCamera(
+      390,
+      844,
+      IDENTITY_CAMERA_VIEW,
+      WAVE_MACHINE_VIEW_BOUNDS,
+    );
+    const landscape = createCamera(
+      844,
+      390,
+      IDENTITY_CAMERA_VIEW,
+      WAVE_MACHINE_VIEW_BOUNDS,
+    );
+
+    // Act
+    const portraitSize = projectedTankSize(portrait);
+    const landscapeSize = projectedTankSize(landscape);
+
+    // Assert
+    expect(portraitSize.width / portrait.viewport.width).toBeGreaterThan(0.75);
+    expect(landscapeSize.height / landscape.viewport.height).toBeGreaterThan(0.6);
+  });
+
+  it("fills most of a wide wave machine canvas with the tank", () => {
+    // Arrange
+    const camera = createCamera(
+      1280,
+      720,
+      IDENTITY_CAMERA_VIEW,
+      WAVE_MACHINE_VIEW_BOUNDS,
+    );
+
+    // Act
+    const size = projectedTankSize(camera);
+
+    // Assert
+    expect(size.height / camera.viewport.height).toBeGreaterThan(0.6);
+    expect(size.width / camera.viewport.width).toBeGreaterThan(0.6);
+  });
+
+  it("keeps the default wave machine rock inside the camera frame", () => {
+    // Arrange
+    const corners = rockedTankCorners(9);
+
+    // Act
+    const outside = corners.filter(
+      (corner) =>
+        corner.x <= WAVE_MACHINE_VIEW_BOUNDS.minX ||
+        corner.x >= WAVE_MACHINE_VIEW_BOUNDS.maxX ||
+        corner.y <= WAVE_MACHINE_VIEW_BOUNDS.minY ||
+        corner.y >= WAVE_MACHINE_VIEW_BOUNDS.maxY,
+    );
+
+    // Assert
+    expect(outside).toEqual([]);
+  });
+
   it("returns undefined for an unknown id", () => {
     // Arrange
     const id = "not-a-scene";
@@ -312,3 +376,40 @@ describe("isReadySceneId", () => {
     expect(readyFlags).toEqual(Array.from({ length: 17 }, () => true));
   });
 });
+
+/** Outer wall corners of the resting tank, matching wave_machine.rs. */
+const TANK_OUTER_CORNERS = [
+  { x: -2.05, y: 0 },
+  { x: 2.05, y: 0 },
+  { x: -2.05, y: 2 },
+  { x: 2.05, y: 2 },
+  { x: -2, y: -0.05 },
+  { x: 2, y: -0.05 },
+  { x: -2, y: 2.05 },
+  { x: 2, y: 2.05 },
+] as const;
+
+const TANK_PIVOT_Y = 1;
+const TAU = Math.PI * 2;
+
+function rockedTankCorners(degrees: number): { x: number; y: number }[] {
+  const angle = (degrees / 360) * TAU;
+  const cosine = Math.cos(angle);
+  const sine = Math.sin(angle);
+  return TANK_OUTER_CORNERS.map((corner) => {
+    const offsetY = corner.y - TANK_PIVOT_Y;
+    return {
+      x: corner.x * cosine - offsetY * sine,
+      y: corner.x * sine + offsetY * cosine + TANK_PIVOT_Y,
+    };
+  });
+}
+
+function projectedTankSize(camera: Camera): { width: number; height: number } {
+  const topLeft = projectPoint(camera, { x: -2.05, y: 2.05 });
+  const bottomRight = projectPoint(camera, { x: 2.05, y: -0.05 });
+  return {
+    width: bottomRight.x - topLeft.x,
+    height: bottomRight.y - topLeft.y,
+  };
+}
