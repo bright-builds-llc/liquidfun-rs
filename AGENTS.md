@@ -76,6 +76,21 @@ it, and the README upserter refreshes the demo gallery from those plans. The
 post-merge Readme scene preview workflow runs the same command. A catalog scene
 missing from the plans fails `assertReadmeSvgPlanCoverage`.
 
+### Playground canvas framing
+
+When a scenario is added to the playground catalog (`web/src/catalog/scenes.ts`),
+also add its portrait frame in `web/src/catalog/portrait-bounds.ts`. A tall phone
+canvas contain-fits whatever world rectangle it is given, so the shared 12 m by
+9 m frame becomes a short band with a large empty margin. Size the portrait
+rectangle to that scene's action so the subject fills an iPhone canvas (about
+390 by 844 CSS pixels) with a small margin, and keep the subject clear of the
+title and the transport controls. Leave enough of the subject visible that the
+scene stays recognizable; a wide scene may still have some vertical margin.
+Landscape viewports and wide README exports keep `worldBoundsForScene` through
+`worldBoundsForViewport`. `PORTRAIT_VIEW_BOUNDS` is keyed by every `SceneId`,
+and `web/tests/portrait-bounds.test.ts` checks that each portrait frame fills
+the phone.
+
 <!-- GSD:project-start source:PROJECT.md -->
 
 ## Project
