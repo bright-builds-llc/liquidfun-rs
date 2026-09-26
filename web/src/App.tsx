@@ -42,6 +42,7 @@ import {
 import { isUsableViewport } from "./player/viewport";
 import { maybeObservedFrame, playerStatus, type PlayerView } from "./player/view";
 import type { FpsTick } from "./components/fps-meter";
+import { createAppearancePreferences } from "./player/appearance";
 import { presentSceneFrame } from "./render/present-frame";
 import {
   IDENTITY_CAMERA_VIEW,
@@ -54,16 +55,7 @@ import {
   DEFAULT_RENDERED_PARTICLE_LIMIT, initialRenderedParticleLimit,
   maybeParseRenderedParticleLimit,
 } from "./render/particle-limit";
-import {
-  circleExportMode,
-  loadRenderMode,
-  persistRenderMode,
-  type RenderMode,
-} from "./render/mode";
-import {
-  loadWireframeStrokeWidth,
-  persistWireframeStrokeWidth,
-} from "./render/stroke-width";
+import { circleExportMode } from "./render/mode";
 import { readCanvasStage } from "./player/fullscreen-capability";
 import { bindVisualViewport } from "./player/visual-viewport";
 import { normalizeSceneRoute } from "./routing/hash";
@@ -85,12 +77,9 @@ export function App() {
       ? { kind: "loading" }
       : { kind: "fallback" },
   );
-  const [renderMode, setRenderMode] = createSignal<RenderMode>(
-    loadRenderMode(() => window.localStorage),
-  );
-  const [wireframeStrokeWidth, setWireframeStrokeWidth] = createSignal(
-    loadWireframeStrokeWidth(() => window.localStorage),
-  );
+  const appearance = createAppearancePreferences(() => window.localStorage, () => {
+    paintHeldFrame();
+  });
   const canvasStage = readCanvasStage(document.fullscreenEnabled, navigator);
   const [debugEnabled, setDebugEnabled] = createSignal(!canvasStage);
   const [maybeDebugFrame, setMaybeDebugFrame] = createSignal<
@@ -213,7 +202,7 @@ export function App() {
   }
 
   function drawSceneFrame(context: CanvasRenderingContext2D, frame: RenderFrame, camera: Camera): void {
-    presentSceneFrame(context, frame, camera, renderMode(), wireframeStrokeWidth(), maxRenderedParticles(), maybeParticleCanvas, window.devicePixelRatio);
+    presentSceneFrame(context, frame, camera, appearance.renderMode(), appearance.wireframeStrokeWidth(), maxRenderedParticles(), maybeParticleCanvas, window.devicePixelRatio, appearance.densityShading());
   }
 
   function refreshCamera(): void {
@@ -222,18 +211,6 @@ export function App() {
     }
 
     clock.maybeCamera = createCamera(clock.viewportWidth, clock.viewportHeight, clock.cameraView, clock.worldBounds);
-  }
-
-  function changeRenderMode(nextMode: RenderMode): void {
-    setRenderMode(nextMode);
-    persistRenderMode(() => window.localStorage, nextMode);
-    paintHeldFrame();
-  }
-
-  function changeWireframeStrokeWidth(nextWidth: number): void {
-    setWireframeStrokeWidth(nextWidth);
-    persistWireframeStrokeWidth(() => window.localStorage, nextWidth);
-    paintHeldFrame();
   }
 
   function changeRenderedParticleDraft(raw: string): void {
@@ -503,8 +480,8 @@ export function App() {
       zoom: clock.cameraView.zoom,
       panX: clock.cameraView.panX,
       panY: clock.cameraView.panY,
-      renderMode: circleExportMode(renderMode()),
-      wireframeStrokeWidth: wireframeStrokeWidth(),
+      renderMode: circleExportMode(appearance.renderMode()),
+      wireframeStrokeWidth: appearance.wireframeStrokeWidth(),
       maxRenderedParticles: maxRenderedParticles(),
     };
   }
@@ -584,8 +561,9 @@ export function App() {
       view={view}
       lastPointerKind={lastPointerKind}
       pointerAccepted={pointerAccepted}
-      renderMode={renderMode}
-      wireframeStrokeWidth={wireframeStrokeWidth}
+      renderMode={appearance.renderMode}
+      wireframeStrokeWidth={appearance.wireframeStrokeWidth}
+      densityShading={appearance.densityShading}
       renderedParticleDraft={renderedParticleDraft}
       panEnabled={panEnabled}
       tiltGravityEnabled={tiltGravityEnabled}
@@ -601,8 +579,9 @@ export function App() {
       onPlay={playScene}
       onPause={pauseScene}
       onReset={recreateScene}
-      onRenderModeChange={changeRenderMode}
-      onWireframeStrokeWidthChange={changeWireframeStrokeWidth}
+      onRenderModeChange={appearance.changeRenderMode}
+      onWireframeStrokeWidthChange={appearance.changeWireframeStrokeWidth}
+      onDensityShadingChange={appearance.changeDensityShading}
       onDebugEnabledChange={setDebugEnabled}
       onRenderedParticleDraft={changeRenderedParticleDraft}
       onZoomIn={() => zoomBy("in")}

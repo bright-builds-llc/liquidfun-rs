@@ -15,6 +15,58 @@ export const DENSITY_SHADE_END = 2.8;
 /** Brightness kept where particles are packed well past a single kernel. */
 export const DENSITY_SHADE_FLOOR = 0.46;
 
+/** Surface modes darken packed particles until the player turns this off. */
+export const DEFAULT_DENSITY_SHADING = true;
+
+export const DENSITY_SHADING_STORAGE_KEY = "liquidfun.density-shading.v1";
+
+type DensityShadingStorage = Pick<Storage, "getItem" | "setItem">;
+export type DensityShadingStorageProvider = () => DensityShadingStorage;
+
+/** Parses the persisted on/off token for density shading. */
+export function maybeParseDensityShading(
+  maybeValue: string | null,
+): boolean | undefined {
+  if (maybeValue === "on") {
+    return true;
+  }
+  if (maybeValue === "off") {
+    return false;
+  }
+
+  return undefined;
+}
+
+/** Loads the shading preference while containing unavailable browser storage. */
+export function loadDensityShading(
+  storageProvider: DensityShadingStorageProvider,
+): boolean {
+  try {
+    return (
+      maybeParseDensityShading(
+        storageProvider().getItem(DENSITY_SHADING_STORAGE_KEY),
+      ) ?? DEFAULT_DENSITY_SHADING
+    );
+  } catch {
+    return DEFAULT_DENSITY_SHADING;
+  }
+}
+
+/** Persists the shading preference without turning storage failure into app failure. */
+export function persistDensityShading(
+  storageProvider: DensityShadingStorageProvider,
+  enabled: boolean,
+): void {
+  try {
+    storageProvider().setItem(
+      DENSITY_SHADING_STORAGE_KEY,
+      enabled ? "on" : "off",
+    );
+  } catch {
+    // The in-memory preference remains valid when storage is unavailable.
+  }
+}
+
 function clamp01(value: number): number {
   if (value < 0) {
     return 0;

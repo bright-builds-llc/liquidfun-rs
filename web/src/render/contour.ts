@@ -452,6 +452,7 @@ export function paintContour(
   frame: RenderFrame,
   camera: Camera,
   maxRenderedParticles: number,
+  densityShading = true,
 ): void {
   const samples = collectFieldSamples(frame, camera, maxRenderedParticles);
   const width = camera.viewport.width;
@@ -476,10 +477,12 @@ export function paintContour(
       color.fill();
     },
   );
-  shadeContext(
-    color,
-    maybeFieldDensity(samples, color.canvas.width, color.canvas.height),
-  );
+  if (densityShading) {
+    shadeContext(
+      color,
+      maybeFieldDensity(samples, color.canvas.width, color.canvas.height),
+    );
+  }
   mask.fillStyle = "#FFFFFF";
   fillLoops(mask, loops);
   compositeMasked(target, color.canvas, mask.canvas, width, height);

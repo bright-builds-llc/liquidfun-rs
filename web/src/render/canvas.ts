@@ -259,6 +259,7 @@ function drawParticleSurface(
   wireframeStrokeWidth: number,
   maxRenderedParticles: number,
   webglCovered: boolean,
+  densityShading: boolean,
   painters: SurfacePainters,
 ): void {
   const particleLimit = usesParticleStride(renderMode)
@@ -276,14 +277,14 @@ function drawParticleSurface(
     return;
   }
   if (renderMode === "contour") {
-    painters.paintContour(context, frame, camera, particleLimit);
+    painters.paintContour(context, frame, camera, particleLimit, densityShading);
     return;
   }
   if (renderMode === "shaded-blob" && webglCovered) {
     return;
   }
 
-  painters.paintMetaball(context, frame, camera, particleLimit);
+  painters.paintMetaball(context, frame, camera, particleLimit, densityShading);
 }
 
 /** Draws one validated bulk Rust frame in the approved presentation order. */
@@ -295,6 +296,7 @@ export function drawRenderFrame(
   wireframeStrokeWidth = DEFAULT_WIREFRAME_STROKE_WIDTH,
   maxRenderedParticles = Number.POSITIVE_INFINITY,
   webglCovered = false,
+  densityShading = true,
   painters: SurfacePainters = DEFAULT_SURFACE_PAINTERS,
 ): void {
   clearFrame(context, camera, webglCovered);
@@ -306,6 +308,7 @@ export function drawRenderFrame(
     wireframeStrokeWidth,
     maxRenderedParticles,
     webglCovered,
+    densityShading,
     painters,
   );
   const rigidMode = rigidRenderMode(renderMode);

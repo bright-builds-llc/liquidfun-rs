@@ -46,6 +46,8 @@ export type PlayerPanelProps = {
   readonly onRenderModeChange: (mode: RenderMode) => void;
   readonly wireframeStrokeWidth: number;
   readonly onWireframeStrokeWidthChange: (width: number) => void;
+  readonly densityShading: boolean;
+  readonly onDensityShadingChange: (enabled: boolean) => void;
   readonly debugEnabled: boolean;
   readonly onDebugEnabledChange: (enabled: boolean) => void;
   readonly maybeDebugFrame: RenderFrame | undefined;
@@ -367,6 +369,16 @@ function PlayerOptions(props: { readonly panel: PlayerPanelProps }) {
       </label>
       <Show when={!usesParticleStride(panel.renderMode)}>
         <p class="particle-cap-note">Surface modes draw every particle.</p>
+        <label class="player-check">
+          <input
+            type="checkbox"
+            checked={panel.densityShading}
+            onChange={(event) => {
+              panel.onDensityShadingChange(event.currentTarget.checked);
+            }}
+          />
+          Density shading
+        </label>
       </Show>
       <label class="debug-toggle">
         <input
