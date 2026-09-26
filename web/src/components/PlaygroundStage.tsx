@@ -30,6 +30,7 @@ export type PlaygroundStageProps = {
   readonly pointerAccepted: () => number;
   readonly renderMode: () => RenderMode;
   readonly wireframeStrokeWidth: () => number;
+  readonly densityShading: () => boolean;
   readonly renderedParticleDraft: () => string;
   readonly panEnabled: () => boolean;
   readonly tiltGravityEnabled: () => boolean;
@@ -47,6 +48,7 @@ export type PlaygroundStageProps = {
   readonly onReset: () => void;
   readonly onRenderModeChange: (mode: RenderMode) => void;
   readonly onWireframeStrokeWidthChange: (width: number) => void;
+  readonly onDensityShadingChange: (enabled: boolean) => void;
   readonly onDebugEnabledChange: (enabled: boolean) => void;
   readonly onRenderedParticleDraft: (raw: string) => void;
   readonly onZoomIn: () => void;
@@ -123,6 +125,7 @@ export function PlaygroundStage(props: PlaygroundStageProps) {
         data-pointer-accepted={props.pointerAccepted()}
         data-render-mode={props.renderMode()}
         data-wireframe-stroke-width={props.wireframeStrokeWidth()}
+        data-density-shading={props.densityShading() ? "on" : "off"}
       >
         <Show
           when={maybeCurrentSceneId()}
@@ -145,6 +148,8 @@ export function PlaygroundStage(props: PlaygroundStageProps) {
               onRenderModeChange={props.onRenderModeChange}
               wireframeStrokeWidth={props.wireframeStrokeWidth()}
               onWireframeStrokeWidthChange={props.onWireframeStrokeWidthChange}
+              densityShading={props.densityShading()}
+              onDensityShadingChange={props.onDensityShadingChange}
               debugEnabled={props.debugEnabled()}
               onDebugEnabledChange={props.onDebugEnabledChange}
               maybeDebugFrame={props.maybeDebugFrame()}
