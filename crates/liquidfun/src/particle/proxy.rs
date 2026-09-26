@@ -16,9 +16,9 @@ const X_SCALE: f32 = 256.0;
 const X_OFFSET: f32 = 524_288.0;
 const Y_MASK: u32 = ((1_u32 << Y_TRUNC_BITS) - 1) << Y_SHIFT;
 const X_MASK: u32 = !Y_MASK;
-const RELATIVE_RIGHT: u32 = 1_u32 << X_SHIFT;
-const RELATIVE_BOTTOM_LEFT: u32 = (1_u32 << Y_SHIFT).wrapping_sub(1_u32 << X_SHIFT);
-const RELATIVE_BOTTOM_RIGHT: u32 = (1_u32 << Y_SHIFT) + (1_u32 << X_SHIFT);
+pub(crate) const RELATIVE_RIGHT: u32 = 1_u32 << X_SHIFT;
+pub(crate) const RELATIVE_BOTTOM_LEFT: u32 = (1_u32 << Y_SHIFT).wrapping_sub(1_u32 << X_SHIFT);
+pub(crate) const RELATIVE_BOTTOM_RIGHT: u32 = (1_u32 << Y_SHIFT) + (1_u32 << X_SHIFT);
 const X_TAG_LIMIT: f32 = 1_048_576.0;
 const Y_TAG_LIMIT: f32 = 4_096.0;
 
@@ -224,7 +224,7 @@ impl ParticleNeighborhood {
     clippy::cast_sign_loss,
     reason = "checked nonnegative finite ranges make these casts the pinned truncation toward zero"
 )]
-fn checked_tag(x: f32, y: f32) -> Result<u32, ParticleProxyError> {
+pub(crate) fn checked_tag(x: f32, y: f32) -> Result<u32, ParticleProxyError> {
     let scaled_x = X_SCALE * x + X_OFFSET;
     let offset_y = y + Y_OFFSET;
     if !x.is_finite()
@@ -260,6 +260,59 @@ fn visit_pairs(proxies: &[Proxy], mut visit: impl FnMut(&Proxy, &Proxy)) {
             visit(a, b);
         }
     }
+}
+
+/// Visits indices whose packed tags may overlap `bounds`.
+///
+/// `tag_at` must be sorted ascending. The window matches neighborhood AABB
+/// queries and is a superset: callers still apply their exact geometry test.
+pub(crate) fn visit_sorted_tag_indices_in_aabb(
+    len: usize,
+    tag_at: impl Fn(usize) -> u32,
+    diameter: f32,
+    bounds: Aabb,
+    mut visit: impl FnMut(usize),
+) -> Result<(), ParticleProxyError> {
+    if !diameter.is_finite() || diameter <= 0.0 {
+        return Err(ParticleProxyError::NonPositiveDiameter);
+    }
+    let inverse_diameter = 1.0 / diameter;
+    let lower = bounds.lower_bound();
+    let upper = bounds.upper_bound();
+    let lower_tag = checked_tag(
+        inverse_diameter * lower.x - 1.0,
+        inverse_diameter * lower.y - 1.0,
+    )?;
+    let upper_tag = checked_tag(
+        inverse_diameter * upper.x + 1.0,
+        inverse_diameter * upper.y + 1.0,
+    )?;
+    let first = binary_partition_point(len, |index| tag_at(index) < lower_tag);
+    let last = binary_partition_point(len, |index| tag_at(index) <= upper_tag);
+    let x_lower = lower_tag & X_MASK;
+    let x_upper = upper_tag & X_MASK;
+    for index in first..last {
+        let x_tag = tag_at(index) & X_MASK;
+        if x_tag >= x_lower && x_tag <= x_upper {
+            visit(index);
+        }
+    }
+    Ok(())
+}
+
+/// First index where `predicate` becomes false. Matches `slice::partition_point`.
+fn binary_partition_point(len: usize, mut predicate: impl FnMut(usize) -> bool) -> usize {
+    let mut start = 0;
+    let mut end = len;
+    while start < end {
+        let middle = start + (end - start) / 2;
+        if predicate(middle) {
+            start = middle + 1;
+        } else {
+            end = middle;
+        }
+    }
+    start
 }
 
 fn enumerate_pair_rows(proxies: &[Proxy]) -> Vec<[ParticleIndex; 2]> {

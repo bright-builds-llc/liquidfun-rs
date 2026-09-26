@@ -123,6 +123,8 @@ pub(crate) struct ParticleStorage {
     triads: Vec<ParticleTriad>,
     group_records: Vec<GroupRecord>,
     solver_state: SolverState,
+    /// Reused spatial proxies for one solver iteration. Cleared before a step returns.
+    contact_proxies: Vec<crate::particle::contact_scan::ContactProxy>,
 }
 
 struct CreateCandidate {

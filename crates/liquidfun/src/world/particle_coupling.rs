@@ -7,13 +7,15 @@ use crate::arena::Arena;
 use crate::collision::{Aabb, ChildIndex, RayCastInput, Shape};
 use crate::math::{Transform, Vec2, max, min};
 use crate::particle::body_contact::{self, FixtureContactSource};
+use crate::particle::contact::{
+    listener_effects_from_stored, particle_contact_listeners_active, semantic_from_stored,
+};
+use crate::particle::contact_scan::{self, ContactFillError, ContactProxy};
 use crate::particle::solver::boundary::{
     BoundaryCandidate, FilteredCollisionHit, collision_start_from_previous_transform,
 };
 use crate::particle::solver::preparation;
-use crate::particle::{
-    ParticleContactUpdate, ParticleFlags, ParticleNeighborhood, ParticleSystemView,
-};
+use crate::particle::{ParticleFlags, ParticleSystemView};
 use crate::{
     BodyId, CollisionDecisionHook, FixtureId, ParticleSystemId, StepConfiguration, StepError, World,
 };
@@ -88,6 +90,10 @@ impl World {
         sources
     }
 
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the collision query keeps the candidate, fixture expansion, and sorted proxies explicit"
+    )]
     fn filtered_collision_hits<H: CollisionDecisionHook>(
         &self,
         candidate: &BoundaryCandidate,
@@ -96,77 +102,57 @@ impl World {
         particle_iteration: u32,
         hook_run: &mut ContactHookRun<'_, H>,
         expansion: Vec2,
+        proxies: &[ContactProxy],
+        diameter: f32,
     ) -> Result<Vec<FilteredCollisionHit>, StepError> {
         let fixtures = ccd_fixture_records(self, bodies, expansion)?;
         let mut hits = Vec::new();
-        for (particle, (position, velocity)) in candidate
-            .positions
-            .iter()
-            .copied()
-            .zip(candidate.velocities.iter().copied())
-            .enumerate()
-        {
-            for fixture in &fixtures {
-                let start = collision_start_from_previous_transform(
-                    position,
-                    fixture.previous_transform,
-                    fixture.current_transform,
-                    fixture.body_local_center,
-                    fixture.is_circle,
-                    particle_iteration,
-                )
-                .map_err(boundary_error)?;
-                let end = position + time_step * velocity;
-                if start == end {
-                    continue;
-                }
-                let maybe_travel = particle_travel_aabb(start, end);
-                let input = RayCastInput::new(start, end, 1.0)
-                    .map_err(|_error| StepError::ParticleLifecycleInvariant)?;
-                for (child, maybe_aabb) in &fixture.children {
-                    if let (Some(travel), Some(aabb)) = (maybe_travel, *maybe_aabb)
-                        && !travel.overlaps(aabb)
-                    {
-                        continue;
-                    }
-                    let Some(hit) = fixture
-                        .shape
-                        .ray_cast(input, fixture.current_transform, *child)
-                        .map_err(|_error| StepError::ParticleLifecycleInvariant)?
-                    else {
-                        continue;
-                    };
-                    let filter_contact = crate::ParticleBodyContact::new_internal(
-                        candidate.particle_ids[particle],
-                        fixture.body,
-                        fixture.fixture,
-                        0.0,
-                        hit.normal(),
-                        0.0,
-                    );
-                    if candidate.flags[particle].contains(ParticleFlags::FIXTURE_CONTACT_FILTER)
-                        && !hook_run.should_collide_fixture_particle(&filter_contact)
-                    {
-                        continue;
-                    }
-                    hits.try_reserve(1)
-                        .map_err(|_error| StepError::LimitExceeded {
-                            resource: "filtered collision hits",
-                            limit: hits.len(),
+        let motion = max_particle_motion(&candidate.velocities, time_step);
+        let proxies_match = proxies.len() == candidate.positions.len();
+        for fixture in &fixtures {
+            let static_fixture = fixture.previous_transform == fixture.current_transform;
+            for (child, maybe_aabb) in &fixture.children {
+                // Later iterations raycast from the current position, so the
+                // fixture AABB plus the max travel pad is a superset for
+                // moving fixtures too. Iteration 0 remaps the ray start
+                // through the previous body transform.
+                let spatially_filtered =
+                    proxies_match && (static_fixture || particle_iteration != 0);
+                if spatially_filtered && let Some(aabb) = *maybe_aabb {
+                    let queried =
+                        query_particles_for_fixture(proxies, diameter, aabb, motion, |row| {
+                            push_fixture_particle_hit(
+                                candidate,
+                                fixture,
+                                *child,
+                                maybe_aabb.as_ref(),
+                                row,
+                                time_step,
+                                particle_iteration,
+                                hook_run,
+                                &mut hits,
+                            )
                         })?;
-                    hits.push(FilteredCollisionHit {
+                    if queried {
+                        continue;
+                    }
+                }
+                for particle in 0..candidate.positions.len() {
+                    push_fixture_particle_hit(
+                        candidate,
+                        fixture,
+                        *child,
+                        maybe_aabb.as_ref(),
                         particle,
-                        body: fixture.body,
-                        previous_transform: fixture.previous_transform,
-                        current_transform: fixture.current_transform,
-                        body_local_center: fixture.body_local_center,
-                        is_circle: fixture.is_circle,
-                        fraction: hit.fraction(),
-                        normal: hit.normal(),
-                    });
+                        time_step,
+                        particle_iteration,
+                        hook_run,
+                        &mut hits,
+                    )?;
                 }
             }
         }
+        hits.sort_by_key(|hit| hit.particle);
         Ok(hits)
     }
 
@@ -175,28 +161,61 @@ impl World {
         systems: &mut Arena<ParticleSystem, ParticleSystemId>,
         hook_run: &mut ContactHookRun<'_, H>,
     ) -> Result<(), StepError> {
+        let (diameter, listeners, previous) = {
+            let record = systems
+                .get(system)
+                .expect("system remains live during particle contact update");
+            let view = ParticleSystemView::new(&record.storage);
+            let listeners = particle_contact_listeners_active(&view);
+            let previous = if listeners {
+                view.stored_particle_contacts().to_vec()
+            } else {
+                Vec::new()
+            };
+            (2.0 * record.definition.radius(), listeners, previous)
+        };
+        let (contacts, proxies, filled) = {
+            let record = systems
+                .get_mut(system)
+                .expect("system remains live during particle contact update");
+            let mut contacts = record.storage.take_particle_contacts();
+            let mut proxies = record.storage.take_contact_proxies();
+            let filled = contact_scan::fill_stored_contacts(
+                record.storage.positions(),
+                record.storage.flags(),
+                record.storage.particle_ids(),
+                diameter,
+                &mut proxies,
+                &mut contacts,
+                &mut |contact| hook_run.should_collide_particle_pair(contact),
+            );
+            (contacts, proxies, filled)
+        };
         let record = systems
-            .get(system)
-            .expect("system remains live during particle contact update");
-        let diameter = 2.0 * record.definition.radius();
-        let view = ParticleSystemView::new(&record.storage);
-        let neighborhood =
-            ParticleNeighborhood::from_view(&view, diameter).map_err(StepError::ParticleProxy)?;
-        let previous = view.stored_particle_contacts();
-        let (contacts, effects) =
-            ParticleContactUpdate::generate_indexed(&view, &neighborhood, previous, |contact| {
-                hook_run.should_collide_particle_pair(contact)
-            })
-            .map_err(StepError::ParticleContact)?;
+            .get_mut(system)
+            .expect("system remains live during particle contact commit");
+        record.storage.install_contact_proxies(proxies);
+        record.storage.install_particle_contacts(contacts);
+        filled.map_err(|error| match error {
+            ContactFillError::Proxy(error) => StepError::ParticleProxy(error),
+            ContactFillError::Contact(error) => StepError::ParticleContact(error),
+        })?;
+        let effects = if listeners {
+            let record = systems
+                .get(system)
+                .expect("system remains live during particle contact listeners");
+            let view = ParticleSystemView::new(&record.storage);
+            let semantic = semantic_from_stored(&view, view.stored_particle_contacts())
+                .map_err(StepError::ParticleContact)?;
+            listener_effects_from_stored(&view, &previous, &semantic)
+                .map_err(StepError::ParticleContact)?
+        } else {
+            Vec::new()
+        };
         hook_run.ensure_lifecycle_capacity(effects.len())?;
         for effect in effects {
             hook_run.record_particle_contact(effect)?;
         }
-        systems
-            .get_mut(system)
-            .expect("system remains live during particle contact commit")
-            .storage
-            .replace_indexed_particle_contacts(contacts);
         Ok(())
     }
 
@@ -252,6 +271,133 @@ struct CcdFixtureRecord {
     is_circle: bool,
     shape: Shape,
     children: Vec<(ChildIndex, Option<Aabb>)>,
+}
+
+fn max_particle_motion(velocities: &[Vec2], time_step: f32) -> f32 {
+    let mut max_squared = 0.0_f32;
+    for velocity in velocities {
+        let speed_squared = velocity.length_squared();
+        if speed_squared > max_squared {
+            max_squared = speed_squared;
+        }
+    }
+    // Extra slop covers the static-transform round trip inside collision start.
+    time_step * max_squared.sqrt() + 1.0e-3
+}
+
+fn query_particles_for_fixture(
+    proxies: &[ContactProxy],
+    diameter: f32,
+    fixture_aabb: Aabb,
+    motion: f32,
+    mut visit_row: impl FnMut(usize) -> Result<(), StepError>,
+) -> Result<bool, StepError> {
+    let pad = Vec2::new(motion, motion);
+    let Some(query) = Aabb::new(
+        fixture_aabb.lower_bound() - pad,
+        fixture_aabb.upper_bound() + pad,
+    )
+    .ok() else {
+        return Ok(false);
+    };
+    let mut failure = None;
+    let queried = crate::particle::proxy::visit_sorted_tag_indices_in_aabb(
+        proxies.len(),
+        |index| proxies[index].tag,
+        diameter,
+        query,
+        |index| {
+            if failure.is_some() {
+                return;
+            }
+            if let Err(error) = visit_row(proxies[index].row) {
+                failure = Some(error);
+            }
+        },
+    );
+    if let Some(error) = failure {
+        return Err(error);
+    }
+    match queried {
+        Ok(()) => Ok(true),
+        Err(_) => Ok(false),
+    }
+}
+
+#[allow(
+    clippy::too_many_arguments,
+    reason = "one fixture-particle ray keeps the candidate, fixture, and step clock explicit"
+)]
+fn push_fixture_particle_hit<H: CollisionDecisionHook>(
+    candidate: &BoundaryCandidate,
+    fixture: &CcdFixtureRecord,
+    child: ChildIndex,
+    maybe_aabb: Option<&Aabb>,
+    particle: usize,
+    time_step: f32,
+    particle_iteration: u32,
+    hook_run: &mut ContactHookRun<'_, H>,
+    hits: &mut Vec<FilteredCollisionHit>,
+) -> Result<(), StepError> {
+    let position = candidate.positions[particle];
+    let velocity = candidate.velocities[particle];
+    let end = position + time_step * velocity;
+    let start = collision_start_from_previous_transform(
+        position,
+        fixture.previous_transform,
+        fixture.current_transform,
+        fixture.body_local_center,
+        fixture.is_circle,
+        particle_iteration,
+    )
+    .map_err(boundary_error)?;
+    if start == end {
+        return Ok(());
+    }
+    let maybe_travel = particle_travel_aabb(start, end);
+    if let (Some(travel), Some(aabb)) = (maybe_travel, maybe_aabb.copied())
+        && !travel.overlaps(aabb)
+    {
+        return Ok(());
+    }
+    let input = RayCastInput::new(start, end, 1.0)
+        .map_err(|_error| StepError::ParticleLifecycleInvariant)?;
+    let Some(hit) = fixture
+        .shape
+        .ray_cast(input, fixture.current_transform, child)
+        .map_err(|_error| StepError::ParticleLifecycleInvariant)?
+    else {
+        return Ok(());
+    };
+    let filter_contact = crate::ParticleBodyContact::new_internal(
+        candidate.particle_ids[particle],
+        fixture.body,
+        fixture.fixture,
+        0.0,
+        hit.normal(),
+        0.0,
+    );
+    if candidate.flags[particle].contains(ParticleFlags::FIXTURE_CONTACT_FILTER)
+        && !hook_run.should_collide_fixture_particle(&filter_contact)
+    {
+        return Ok(());
+    }
+    hits.try_reserve(1)
+        .map_err(|_error| StepError::LimitExceeded {
+            resource: "filtered collision hits",
+            limit: hits.len(),
+        })?;
+    hits.push(FilteredCollisionHit {
+        particle,
+        body: fixture.body,
+        previous_transform: fixture.previous_transform,
+        current_transform: fixture.current_transform,
+        body_local_center: fixture.body_local_center,
+        is_circle: fixture.is_circle,
+        fraction: hit.fraction(),
+        normal: hit.normal(),
+    });
+    Ok(())
 }
 
 fn ccd_fixture_records(

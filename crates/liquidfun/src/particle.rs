@@ -6,13 +6,14 @@
 
 pub(crate) mod body_contact;
 mod buffer;
-mod contact;
+pub(crate) mod contact;
+pub(crate) mod contact_scan;
 mod definition;
 mod editor;
 pub(crate) mod force;
 mod group;
 pub(crate) mod lifetime;
-mod proxy;
+pub(crate) mod proxy;
 pub(crate) mod query;
 #[allow(
     dead_code,
