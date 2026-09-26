@@ -580,7 +580,7 @@ export const SCENES: readonly SceneRecord[] = [
     title: "Liquid Tumbler",
     ready: true,
     description:
-      "A drinking glass at real size: 74 mm wide, 0.4 mm particles, and Earth gravity. Phone tilt drives this water on a glass clock.",
+      "A drinking glass at real size: 74 mm wide, 0.6 mm particles, and Earth gravity. Phone tilt drives this water on a glass clock.",
     interactionHint: WATCH_FIRST_HINT,
     controls: [],
     viewBounds: LIQUID_TUMBLER_VIEW_BOUNDS,

@@ -1,14 +1,14 @@
 //! Drinking-glass tumbler at real meters, with two walls and a floor.
 //!
 //! The glass is 74 mm wide and 120 mm tall, with about 55 mm of water.
-//! Particles are 0.4 mm across. Earth gravity is 9.8 m/s², matching a resting
+//! Particles are 0.6 mm across. Earth gravity is 9.8 m/s², matching a resting
 //! phone accelerometer. [`PARTICLE_ITERATIONS`] raises the pressure cap enough
 //! for that column to hold; the shared 2 substeps cannot.
 //!
 //! Camera frame, kept in sync with `LIQUID_TUMBLER_VIEW_BOUNDS`:
 //! x = -0.055..0.055, y = -0.02..0.15.
 
-use liquidfun::collision::{ChainShape, FilterData, PolygonShape, Shape};
+use liquidfun::collision::{ChainShape, FilterData, Shape};
 use liquidfun::math::{Transform, Vec2};
 use liquidfun::particle::{
     ParticleColor, ParticleFlags, ParticleGroupDestination, ParticleGroupRecipe,
@@ -25,18 +25,19 @@ const INNER_WIDTH: f32 = 0.074;
 const INNER_HEIGHT: f32 = 0.120;
 /// Water depth above the floor, in meters.
 const WATER_DEPTH: f32 = 0.055;
-const PARTICLE_RADIUS: f32 = 0.0004;
-/// Resting spacing, one fifth of the previous 2.8 mm stride so the finer
-/// particles still meet. Kept under one diameter so neighbors stay in contact.
-const PARTICLE_STRIDE: f32 = 0.00056;
+const PARTICLE_RADIUS: f32 = 0.0006;
+/// Lattice that fills the glass with exactly 9,000 particles.
+const PARTICLE_COLUMNS: usize = 100;
+const PARTICLE_ROWS: usize = 90;
 const PARTICLE_DAMPING: f32 = 0.25;
-const MAXIMUM_PARTICLE_COUNT: usize = 16_384;
+const MAXIMUM_PARTICLE_COUNT: usize = PARTICLE_COLUMNS * PARTICLE_ROWS;
 const WATER_COLOR: ParticleColor = ParticleColor::new(77, 163, 255, 255);
 const GRAVITY: Vec2 = Vec2::new(0.0, -9.8);
-/// Enough substeps for the pressure cap to hold this glass. The cap grows
-/// with radius times substep count. These particles are one fifth of the
-/// previous 2 mm size, so they need five times as many substeps.
-pub(crate) const PARTICLE_ITERATIONS: u32 = 80;
+/// Substeps that keep radius times substep count at the resting 2 mm glass.
+/// The pressure cap grows with that product. Fewer substeps let the column
+/// sink into the floor and get thrown back up.
+pub(crate) const PARTICLE_ITERATIONS: u32 = 54;
+const _: () = assert!(MAXIMUM_PARTICLE_COUNT == 9_000);
 
 struct LiquidTumblerHooks {
     basin_segments: [RigidSegment; 3],
@@ -135,28 +136,54 @@ fn create_water(
         .create_particle_system_with_def(&system_definition)
         .map_err(|_error| SceneError::ParticleSystem)?;
 
-    let inset = PARTICLE_RADIUS * 2.0;
-    let bottom = contact_floor + inset;
-    let top = contact_floor + WATER_DEPTH;
-    let half_height = (top - bottom) * 0.5;
-    let center = Vec2::new(0.0, bottom + half_height);
-    let filled = Shape::from(
-        PolygonShape::oriented_box(half_contact - inset, half_height, center, 0.0)
-            .map_err(|_error| SceneError::Geometry)?,
-    );
-    let source =
-        ParticleGroupSource::filled_shapes(vec![filled]).map_err(|_error| SceneError::Particle)?;
+    let source = ParticleGroupSource::positions(water_lattice(half_contact, contact_floor)?)
+        .map_err(|_error| SceneError::Particle)?;
     let recipe = ParticleGroupRecipe::new(source, ParticleGroupDestination::New)
         .with_particle_flags(ParticleFlags::WATER)
         .with_color(WATER_COLOR)
-        .with_stride(PARTICLE_STRIDE)
-        .map_err(|_error| SceneError::Particle)?
+        .with_default_stride()
         .with_transform(Transform::IDENTITY)
         .map_err(|_error| SceneError::Particle)?;
     world
         .create_particle_group(system, &recipe)
         .map_err(|_error| SceneError::Particle)?;
     Ok(system)
+}
+
+/// Even lattice inside the water, one diameter clear of the glass.
+fn water_lattice(half_contact: f32, contact_floor: f32) -> Result<Vec<Vec2>, SceneError> {
+    let inset = PARTICLE_RADIUS * 2.0;
+    let left = -half_contact + inset;
+    let bottom = contact_floor + inset;
+    let x_span = (half_contact - inset) - left;
+    let y_span = (contact_floor + WATER_DEPTH) - bottom;
+    let x_stride = span_stride(x_span, PARTICLE_COLUMNS)?;
+    let y_stride = span_stride(y_span, PARTICLE_ROWS)?;
+    let mut positions = Vec::new();
+    positions
+        .try_reserve_exact(MAXIMUM_PARTICLE_COUNT)
+        .map_err(|_error| SceneError::Particle)?;
+    let mut y = bottom;
+    for _row in 0..PARTICLE_ROWS {
+        let mut x = left;
+        for _column in 0..PARTICLE_COLUMNS {
+            positions.push(Vec2::new(x, y));
+            x += x_stride;
+        }
+        y += y_stride;
+    }
+    Ok(positions)
+}
+
+fn span_stride(span: f32, samples: usize) -> Result<f32, SceneError> {
+    let gaps = samples.checked_sub(1).ok_or(SceneError::Particle)?;
+    let gaps = u16::try_from(gaps).map_err(|_error| SceneError::Particle)?;
+    let stride = span / f32::from(gaps);
+    if stride.is_finite() && stride > 0.0 {
+        Ok(stride)
+    } else {
+        Err(SceneError::Particle)
+    }
 }
 
 impl SceneHooks for LiquidTumblerHooks {
@@ -226,8 +253,8 @@ mod tests {
         // Assert
         assert_eq!(
             session.particle_count(),
-            12_513,
-            "the 0.4 mm fill should stay inside the frame cap"
+            9_000,
+            "the 0.6 mm fill should be 9000 particles"
         );
         assert_eq!(session.rigid_shape_count(), 3, "floor and two walls");
         assert!(
@@ -259,10 +286,13 @@ mod tests {
             speed < 1.0,
             "glass water should not be launched by the contact slop, got {speed}"
         );
+        // The 9,000-particle lattice starts denser than the resting spacing,
+        // so the surface can lift during these steps. The one-second test
+        // checks that the column comes back down.
         let surface = highest_particle(&positions);
         assert!(
-            (0.03..0.08).contains(&surface),
-            "the water column should stay a few centimeters deep, got {surface}"
+            (0.03..INNER_HEIGHT).contains(&surface),
+            "the first steps should keep the water inside the glass, got {surface}"
         );
         assert_positions_inside_glass(&positions);
     }
