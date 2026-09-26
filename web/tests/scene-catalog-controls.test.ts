@@ -6,6 +6,7 @@ import {
   DAM_BREAK_GRAVITY_MAX,
   DAM_BREAK_GRAVITY_MIN,
   DAM_BREAK_GRAVITY_STEP,
+  DAM_BREAK_GRAVITY_TICKS,
   SCENES,
   maybeSceneById,
   type SceneControl,
@@ -92,6 +93,8 @@ describe("scene catalog controls", () => {
       step: DAM_BREAK_GRAVITY_STEP,
       defaultValue: DAM_BREAK_GRAVITY_DEFAULT,
       unit: "m/s²",
+      scale: "logarithmic",
+      ticks: DAM_BREAK_GRAVITY_TICKS,
     });
     expect(DAM_BREAK_GRAVITY_MAX).toBe(DAM_BREAK_GRAVITY_FORMER_HIGH * 5);
     expect(damBreak?.controls[2]).toMatchObject({

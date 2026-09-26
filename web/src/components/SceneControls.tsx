@@ -5,7 +5,11 @@ import {
   formatRangeReadout,
   formatRangeValueText,
   initialRangeValue,
+  maybeMagnitudeForSliderPosition,
   maybeParseRangeControlValue,
+  rangeTickMarks,
+  sliderBounds,
+  sliderPositionForMagnitude,
 } from "./range-control";
 import { CONSTRUCTION_RESET_HINT, initialPresetValue } from "./scene-controls";
 
@@ -63,27 +67,87 @@ function RangeControl(props: {
   readonly onApply: (name: string, value: string) => void;
 }) {
   const inputId = `scene-control-${props.control.id}`;
+  const bounds = sliderBounds(props.control);
+  const ticks = rangeTickMarks(props.control);
   const initialValue = initialRangeValue(props.control, props.maybeValues);
   const [pendingValue, setPendingValue] = createSignal(initialValue);
+  const [sliderPosition, setSliderPosition] = createSignal(
+    sliderPositionForMagnitude(props.control, Number(initialValue)),
+  );
   let committedValue = initialValue;
 
-  function onRangeInput(value: string): void {
-    setPendingValue(value);
+  function showMagnitude(magnitude: string): void {
+    setPendingValue(magnitude);
+    setSliderPosition(
+      sliderPositionForMagnitude(props.control, Number(magnitude)),
+    );
   }
 
-  function onRangeCommit(value: string): void {
-    const maybeAccepted = maybeParseRangeControlValue(props.control, value);
-    if (maybeAccepted === undefined) {
-      setPendingValue(committedValue);
-      return;
-    }
-    setPendingValue(maybeAccepted);
-    if (maybeAccepted === committedValue) {
+  function commitMagnitude(magnitude: string): void {
+    showMagnitude(magnitude);
+    if (magnitude === committedValue) {
       return;
     }
 
-    committedValue = maybeAccepted;
-    props.onApply(props.control.id, maybeAccepted);
+    committedValue = magnitude;
+    props.onApply(props.control.id, magnitude);
+  }
+
+  function onRangeInput(position: string): void {
+    const maybeMagnitude = maybeMagnitudeForSliderPosition(
+      props.control,
+      position,
+    );
+    if (maybeMagnitude === undefined) {
+      return;
+    }
+
+    setSliderPosition(Number(position));
+    setPendingValue(maybeMagnitude);
+  }
+
+  function onRangeCommit(position: string): void {
+    const maybeMagnitude = maybeMagnitudeForSliderPosition(
+      props.control,
+      position,
+    );
+    if (maybeMagnitude === undefined) {
+      showMagnitude(committedValue);
+      return;
+    }
+
+    commitMagnitude(maybeMagnitude);
+  }
+
+  function onRangeKeyDown(event: KeyboardEvent): void {
+    if (props.control.scale !== "logarithmic") {
+      return;
+    }
+
+    const direction = logarithmicKeyDirection(event.key);
+    if (direction === undefined) {
+      return;
+    }
+
+    event.preventDefault();
+    const current = Number(pendingValue());
+    if (!Number.isFinite(current)) {
+      return;
+    }
+
+    const next = Math.min(
+      props.control.max,
+      Math.max(props.control.min, current + direction * props.control.step),
+    );
+    const maybeMagnitude = maybeParseRangeControlValue(
+      props.control,
+      String(next),
+    );
+    if (maybeMagnitude === undefined) {
+      return;
+    }
+
+    commitMagnitude(maybeMagnitude);
   }
 
   return (
@@ -95,32 +159,60 @@ function RangeControl(props: {
             {formatRangeReadout(pendingValue(), props.control.unit)}
           </output>
         </span>
-        <input
-          id={inputId}
-          class="scene-control-range"
-          type="range"
-          min={props.control.min}
-          max={props.control.max}
-          step={props.control.step}
-          disabled={props.disabled}
-          value={pendingValue()}
-          aria-valuetext={formatRangeValueText(
-            pendingValue(),
-            props.control.unit,
-          )}
-          onInput={(event) => onRangeInput(event.currentTarget.value)}
-          onChange={(event) => onRangeCommit(event.currentTarget.value)}
-        />
-      </div>
-      <div class="scene-control-scale" aria-hidden="true">
-        <span>{props.control.min}</span>
-        <span>{props.control.max}</span>
+        <div class="scene-control-slider">
+          <input
+            id={inputId}
+            class="scene-control-range"
+            type="range"
+            min={bounds.min}
+            max={bounds.max}
+            step={bounds.step}
+            disabled={props.disabled}
+            value={sliderPosition()}
+            aria-valuemin={props.control.min}
+            aria-valuemax={props.control.max}
+            aria-valuenow={Number(pendingValue())}
+            aria-valuetext={formatRangeValueText(
+              pendingValue(),
+              props.control.unit,
+            )}
+            onInput={(event) => onRangeInput(event.currentTarget.value)}
+            onChange={(event) => onRangeCommit(event.currentTarget.value)}
+            onKeyDown={onRangeKeyDown}
+          />
+          <div class="scene-control-ticks" aria-hidden="true">
+            <For each={ticks}>
+              {(tick) => (
+                <span
+                  class="scene-control-tick"
+                  style={{
+                    left: `calc(${tick.ratio} * (100% - var(--range-thumb)) + (var(--range-thumb) / 2))`,
+                  }}
+                >
+                  <span class="scene-control-tick-mark" />
+                  <span>{tick.label}</span>
+                </span>
+              )}
+            </For>
+          </div>
+        </div>
       </div>
       <Show when={props.control.recreates}>
         <p class="construction-reset-hint">{CONSTRUCTION_RESET_HINT}</p>
       </Show>
     </div>
   );
+}
+
+function logarithmicKeyDirection(key: string): number | undefined {
+  if (key === "ArrowRight" || key === "ArrowUp") {
+    return 1;
+  }
+  if (key === "ArrowLeft" || key === "ArrowDown") {
+    return -1;
+  }
+
+  return undefined;
 }
 
 function ActionControl(props: {

@@ -60,7 +60,7 @@
   select,
   .scene-control-range,
   .scene-control-readout,
-  .scene-control-scale {
+  .scene-control-slider {
     justify-self: stretch;
     width: 100%;
   }

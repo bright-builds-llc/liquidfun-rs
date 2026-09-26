@@ -37,6 +37,8 @@ export type SceneControl =
       readonly step: number;
       readonly defaultValue: number;
       readonly unit: string;
+      readonly scale: "linear" | "logarithmic";
+      readonly ticks: readonly number[];
     }
   | {
       readonly id: string;
@@ -54,6 +56,13 @@ export const DAM_BREAK_GRAVITY_MAX = DAM_BREAK_GRAVITY_FORMER_HIGH * 5;
 export const DAM_BREAK_GRAVITY_STEP = 1;
 /** Documented Dam Break normal gravity, in m/s² downward. */
 export const DAM_BREAK_GRAVITY_DEFAULT = 10;
+/** Labeled marks on the logarithmic Dam Break gravity slider. */
+export const DAM_BREAK_GRAVITY_TICKS = [
+  DAM_BREAK_GRAVITY_MIN,
+  DAM_BREAK_GRAVITY_DEFAULT,
+  DAM_BREAK_GRAVITY_FORMER_HIGH,
+  DAM_BREAK_GRAVITY_MAX,
+] as const;
 
 export type SceneCredits = {
   readonly implementationPath: string;
@@ -241,6 +250,8 @@ export const SCENES: readonly SceneRecord[] = [
         step: DAM_BREAK_GRAVITY_STEP,
         defaultValue: DAM_BREAK_GRAVITY_DEFAULT,
         unit: "m/s²",
+        scale: "logarithmic",
+        ticks: DAM_BREAK_GRAVITY_TICKS,
       },
       action("drop-obstacle", "Drop obstacle"),
       action("reset-obstacle", "Reset obstacle"),

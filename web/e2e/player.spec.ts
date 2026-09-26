@@ -228,9 +228,13 @@ test("applies a Dam Break Gravity construction setting and returns to Playing", 
     has: page.getByRole("slider", { name: /Gravity/ }),
   });
   const slider = gravity.getByRole("slider");
-  await expect(slider).toHaveValue("10");
-  await slider.fill("80");
-  await expect(slider).toHaveValue("80");
+  await expect(gravity.getByText("10 m/s²")).toBeVisible();
+  await expect(gravity.getByText("6", { exact: true })).toBeVisible();
+  await expect(gravity.getByText("16", { exact: true })).toBeVisible();
+  await expect(gravity.getByText("80", { exact: true })).toBeVisible();
+  const maxPosition = await slider.getAttribute("max");
+  expect(maxPosition).toBe("1000");
+  await slider.fill("1000");
   await expect(gravity.getByText("80 m/s²")).toBeVisible();
   await expect(gravity.getByText(CONSTRUCTION_RESET_HINT)).toBeVisible();
   await expectReadySceneChrome(page, "Dam Break");

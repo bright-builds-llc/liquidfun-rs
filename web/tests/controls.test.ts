@@ -11,7 +11,11 @@ import {
   formatRangeReadout,
   formatRangeValueText,
   initialRangeValue,
+  maybeMagnitudeForSliderPosition,
   maybeParseRangeControlValue,
+  rangeTickMarks,
+  sliderPositionForMagnitude,
+  LOG_SLIDER_POSITION_MAX,
   type RangeControl,
 } from "../src/components/range-control";
 import {
@@ -68,6 +72,8 @@ describe("constructionHintVisible", () => {
       step: 1,
       defaultValue: DAM_BREAK_GRAVITY_DEFAULT,
       unit: "m/s²",
+      scale: "logarithmic",
+      ticks: [DAM_BREAK_GRAVITY_MIN, DAM_BREAK_GRAVITY_MAX],
     };
 
     // Act
@@ -283,6 +289,63 @@ describe("Dam Break gravity slider", () => {
     expect(cap).toBe("80");
     expect(pastCap).toBeUndefined();
     expect(named).toBeUndefined();
+  });
+
+  it("maps the thumb logarithmically between the ends", () => {
+    // Arrange
+    const maybeControl = maybeGravityControl();
+    expect(maybeControl).toBeDefined();
+    if (maybeControl === undefined) {
+      return;
+    }
+    const linearNormal =
+      ((DAM_BREAK_GRAVITY_DEFAULT - DAM_BREAK_GRAVITY_MIN) /
+        (DAM_BREAK_GRAVITY_MAX - DAM_BREAK_GRAVITY_MIN)) *
+      LOG_SLIDER_POSITION_MAX;
+
+    // Act
+    const normalPosition = sliderPositionForMagnitude(
+      maybeControl,
+      DAM_BREAK_GRAVITY_DEFAULT,
+    );
+    const low = maybeMagnitudeForSliderPosition(maybeControl, "0");
+    const cap = maybeMagnitudeForSliderPosition(
+      maybeControl,
+      String(LOG_SLIDER_POSITION_MAX),
+    );
+    const roundTrip = maybeMagnitudeForSliderPosition(
+      maybeControl,
+      String(normalPosition),
+    );
+
+    // Assert
+    expect(low).toBe("6");
+    expect(cap).toBe("80");
+    expect(roundTrip).toBe("10");
+    expect(normalPosition).toBeGreaterThan(linearNormal);
+    expect(normalPosition).toBeLessThan(LOG_SLIDER_POSITION_MAX / 2);
+  });
+
+  it("places tick marks by magnitude ratio", () => {
+    // Arrange
+    const maybeControl = maybeGravityControl();
+    expect(maybeControl).toBeDefined();
+    if (maybeControl === undefined) {
+      return;
+    }
+
+    // Act
+    const ticks = rangeTickMarks(maybeControl);
+    const normal = ticks.find((tick) => tick.label === "10");
+    const formerHigh = ticks.find((tick) => tick.label === "16");
+    const cap = ticks.find((tick) => tick.label === "80");
+
+    // Assert
+    expect(ticks.map((tick) => tick.label)).toEqual(["6", "10", "16", "80"]);
+    expect(normal?.ratio).toBeGreaterThan(0);
+    expect(formerHigh?.ratio).toBeGreaterThan(normal?.ratio ?? 1);
+    expect(cap?.ratio).toBe(1);
+    expect(formerHigh?.ratio).toBeLessThan(0.5);
   });
 
   it("reads the magnitude in meters per second squared", () => {
