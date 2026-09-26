@@ -167,9 +167,11 @@ export function SceneControlsSheet(props: {
       <DrawerDescription class="visually-hidden">
         {props.description}
       </DrawerDescription>
-      <div class="canvas-controls-body">
-        <GitHubSourceLink />
-        {props.children}
+      <div class="canvas-controls-scroll">
+        <div class="canvas-controls-body">
+          <GitHubSourceLink />
+          {props.children}
+        </div>
       </div>
     </DrawerContent>
   );

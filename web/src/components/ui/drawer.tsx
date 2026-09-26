@@ -1,5 +1,5 @@
 // Adapted from https://github.com/hngngn/shadcn-solid (MIT).
-import type { ComponentProps, ValidComponent } from "solid-js"
+import type { ComponentProps, JSX, ValidComponent } from "solid-js"
 import { Show, mergeProps, splitProps } from "solid-js"
 import type { DynamicProps } from "@corvu/drawer"
 import DrawerPrimitive from "@corvu/drawer"
@@ -48,7 +48,22 @@ export const DrawerContent = <T extends ValidComponent = "div">(
     },
     props as DrawerContentProps,
   )
-  const [, rest] = splitProps(merge, ["class", "children", "withHandle"])
+  const [, rest] = splitProps(merge, ["class", "children", "withHandle", "style"])
+  // A resting translate3d(0, 0, 0) still promotes a layer. iOS Safari then
+  // leaves a blank band while the sheet's contents scroll. Keep Corvu's
+  // transform while dragging, animating, or resting away from the origin.
+  const contentStyle = (): JSX.CSSProperties => {
+    const callerStyle =
+      merge.style != null && typeof merge.style === "object" ? merge.style : {}
+    if (
+      context.isDragging() ||
+      context.isTransitioning() ||
+      context.translate() !== 0
+    ) {
+      return callerStyle
+    }
+    return { ...callerStyle, transform: "none" }
+  }
 
   return (
     <>
@@ -82,6 +97,7 @@ export const DrawerContent = <T extends ValidComponent = "div">(
           props.class,
         )}
         {...rest}
+        style={contentStyle()}
       >
         <Show when={props.withHandle}>
           <div

@@ -155,12 +155,22 @@ html[data-canvas-stage="true"] .gravity-arrow {
 
 .canvas-controls-sheet {
   max-height: min(80dvh, calc(var(--visual-viewport-height, 80dvh) - 16px));
-  overflow: auto;
+  /* The drawer positions this element with a transform. Scrolling that same
+     element leaves an unpainted gap on iOS Safari. */
+  overflow: visible;
   color: #F4F7FA;
   background: #151D28;
   border-color: #2A3441;
   padding: var(--space-md);
   padding-bottom: max(var(--space-md), env(safe-area-inset-bottom, 0px));
+}
+
+.canvas-controls-scroll {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .canvas-controls-body {
