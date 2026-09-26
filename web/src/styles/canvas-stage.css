@@ -106,6 +106,26 @@ html[data-canvas-stage="true"] .gravity-arrow {
   font-size: 14px;
 }
 
+.canvas-fps {
+  margin-left: auto;
+  flex: 0 0 auto;
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.canvas-fps[data-fps-tone="good"] {
+  color: #3DDC97;
+}
+
+.canvas-fps[data-fps-tone="fair"] {
+  color: #E6C35C;
+}
+
+.canvas-fps[data-fps-tone="poor"] {
+  color: #F07178;
+}
+
 .canvas-hud-bottom {
   position: absolute;
   z-index: 2;

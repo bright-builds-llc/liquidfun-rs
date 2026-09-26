@@ -9,6 +9,7 @@ import {
   FPS_HISTORY_MS,
   appendFpsTick,
   formatFps,
+  renderedFpsLabel,
   fpsHistory,
   fpsOverWindow,
   fpsTone,
@@ -165,6 +166,19 @@ describe("graphScaleMax", () => {
     // Arrange / Act / Assert
     expect(graphScaleMax([10, 20, 30])).toBe(FPS_BASELINE);
     expect(graphScaleMax([10, 240])).toBe(240);
+  });
+});
+
+describe("renderedFpsLabel", () => {
+  it("labels rendered frames and ignores simulation steps", () => {
+    // Arrange
+    const ticks = ticksAt(30, 1_000, 4);
+
+    // Act
+    const label = renderedFpsLabel(ticks, 1_000);
+
+    // Assert
+    expect(label).toBe("30 fps");
   });
 });
 
