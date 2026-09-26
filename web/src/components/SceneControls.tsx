@@ -1,4 +1,4 @@
-import { For, Show, createSignal } from "solid-js";
+import { For, Show, createSignal, type JSX } from "solid-js";
 
 import type { SceneControl } from "../catalog/scenes";
 import {
@@ -104,6 +104,9 @@ function RangeControl(props: {
 
     setSliderPosition(Number(position));
     setPendingValue(maybeMagnitude);
+    if (!props.control.recreates) {
+      commitMagnitude(maybeMagnitude);
+    }
   }
 
   function onRangeCommit(position: string): void {
@@ -231,6 +234,33 @@ function ActionControl(props: {
         {props.control.label}
       </button>
     </div>
+  );
+}
+
+export type HudControlSliderProps = {
+  readonly controls: readonly SceneControl[];
+  readonly disabled: boolean;
+  readonly identity: string;
+  readonly maybeValues: Readonly<Record<string, string>>;
+  readonly onApplyControl: (name: string, value: string) => void;
+};
+
+/** Scene slider drawn above the play buttons. Remounts when the scene resets. */
+export function HudControlSlider(props: HudControlSliderProps): JSX.Element {
+  return (
+    <Show when={props.controls.length > 0 ? props.identity : undefined} keyed>
+      {(_identity) => (
+        <div class="canvas-hud-slider">
+          <SceneControls
+            controls={props.controls}
+            disabled={props.disabled}
+            maybeValues={props.maybeValues}
+            onApplyControl={props.onApplyControl}
+            onApplyAction={() => undefined}
+          />
+        </div>
+      )}
+    </Show>
   );
 }
 

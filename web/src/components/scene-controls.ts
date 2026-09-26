@@ -23,6 +23,24 @@ export function constructionHintVisible(control: SceneControl): boolean {
   return control.recreates;
 }
 
+export type ControlSurface = "hud" | "panel";
+
+/** Splits catalog controls between the canvas HUD and the scene panel. */
+export function sceneControlsForSurface(
+  controls: readonly SceneControl[],
+  surface: ControlSurface,
+): readonly SceneControl[] {
+  return controls.filter((control) => controlSurface(control) === surface);
+}
+
+function controlSurface(control: SceneControl): ControlSurface {
+  if (control.kind === "range" && control.surface === "hud") {
+    return "hud";
+  }
+
+  return "panel";
+}
+
 /** True for controls whose applied text is stored and replayed. */
 export function controlStoresAppliedValue(
   maybeControl: SceneControl | undefined,

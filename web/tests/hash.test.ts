@@ -92,7 +92,7 @@ describe("maybeParseSceneRoute", () => {
 });
 
 describe("normalizeSceneRoute", () => {
-  it("normalizes every empty hash to Dam Break with replacement", () => {
+  it("normalizes every empty hash to Wave Machine with replacement", () => {
     // Arrange
     const emptyHashes = ["", "#", "#/", "#/scene", "#/scene/"];
 
@@ -102,8 +102,8 @@ describe("normalizeSceneRoute", () => {
     // Assert
     expect(normalized).toEqual(
       emptyHashes.map(() => ({
-        route: { kind: "scene", id: "dam-break" },
-        maybeReplacementHash: "#/scene/dam-break",
+        route: { kind: "scene", id: "wave-machine" },
+        maybeReplacementHash: "#/scene/wave-machine",
       })),
     );
   });

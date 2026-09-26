@@ -45,6 +45,7 @@ const POINTER_CONTROL: Readonly<
   "soup-stirrer": { gesture: "click", control: "Toggle paddle rail" },
   impulse: { gesture: "click", control: "Push" },
   "theo-jansen": { gesture: "click", control: "Motor direction" },
+  "wave-machine": { gesture: "click", control: "Wave speed" },
 };
 
 const INTERACTIVE_SCENE_IDS = SCENE_IDS.filter((sceneId) => {
@@ -178,7 +179,7 @@ test("opens each native scene from desktop navigation, shows credits, and resets
   }
 });
 
-test("returns from an unknown hash through Open Dam Break", async ({ page }) => {
+test("returns from an unknown hash through Open Wave Machine", async ({ page }) => {
   await page.goto(UNKNOWN_SCENE_PATH, { waitUntil: "domcontentloaded" });
   await expect(
     page.getByRole("heading", { name: "Scene not found" }),
@@ -188,14 +189,14 @@ test("returns from an unknown hash through Open Dam Break", async ({ page }) => 
   );
   await expect(
     page.getByText(
-      "This playground link does not match a known scene. Open Dam Break, or choose a demo from the navigation list.",
+      "This playground link does not match a known scene. Open Wave Machine, or choose a demo from the navigation list.",
     ),
   ).toBeVisible();
 
-  await page.getByRole("link", { name: "Open Dam Break" }).click();
-  await expect(page).toHaveURL(/#\/scene\/dam-break$/);
+  await page.getByRole("link", { name: "Open Wave Machine" }).click();
+  await expect(page).toHaveURL(/#\/scene\/wave-machine$/);
   await expect(sessionStatus(page)).toHaveText(PLAYING_STATUS);
-  await expect(page.getByRole("heading", { name: "Dam Break" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Wave Machine" })).toBeVisible();
 });
 
 test("leaves Dam Break for Fountain and restarts the step series", async ({

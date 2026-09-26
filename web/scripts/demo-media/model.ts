@@ -95,6 +95,13 @@ export const CAPTURE_PROFILE: CaptureProfile = {
 
 export const SCENE_CAPTURE_PLANS: readonly SceneCapturePlan[] = [
   {
+    id: "wave-machine",
+    title: "Wave Machine",
+    route: "/liquidfun-rs/#/scene/wave-machine",
+    interactionStep: 180,
+    action: { kind: "click", point: { x: 0.5, y: 0.5 } },
+  },
+  {
     id: "dam-break",
     title: "Dam Break",
     route: "/liquidfun-rs/#/scene/dam-break",
@@ -207,13 +214,6 @@ export const SCENE_CAPTURE_PLANS: readonly SceneCapturePlan[] = [
     route: "/liquidfun-rs/#/scene/impulse",
     interactionStep: 180,
     action: { kind: "click", point: { x: 0.5, y: 0.45 } },
-  },
-  {
-    id: "wave-machine",
-    title: "Wave Machine",
-    route: "/liquidfun-rs/#/scene/wave-machine",
-    interactionStep: 180,
-    action: { kind: "click", point: { x: 0.5, y: 0.5 } },
   },
   {
     id: "theo-jansen",

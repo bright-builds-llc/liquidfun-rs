@@ -1,4 +1,5 @@
 import { maybeSceneById, SCENE_IDS, type SceneId } from "../../src/catalog/scenes";
+import { WAVE_MACHINE_SPEED_ORIGINAL } from "../../src/catalog/wave-machine-speed";
 import {
   DEFAULT_SVG_EXPORT_SECONDS,
   sampleCountForDuration,
@@ -46,6 +47,7 @@ export type ReadmeSvgPlan = {
  * not move on its own.
  */
 export const README_SVG_PLANS: readonly ReadmeSvgPlan[] = [
+  { id: "wave-machine", cues: [] },
   { id: "dam-break", cues: [] },
   { id: "fountain", cues: [] },
   {
@@ -66,7 +68,6 @@ export const README_SVG_PLANS: readonly ReadmeSvgPlan[] = [
     id: "impulse",
     cues: [{ atSample: 20, kind: "pointer-up", worldX: 1, worldY: 2 }],
   },
-  { id: "wave-machine", cues: [] },
   { id: "theo-jansen", cues: [] },
   { id: "liquid-tumbler", cues: [] },
 ];
@@ -84,9 +85,10 @@ export function readmeWebpRepoPath(sceneId: SceneId): string {
 /**
  * Canonical export settings for one README scene.
  *
- * Controls stay empty so the clip uses the scene defaults. The frame matches
- * the demo gallery capture viewport, and the camera, wireframe, and particle
- * cap match a fresh playground session.
+ * Controls stay empty so the clip uses the scene defaults, except Wave Machine,
+ * which samples at 1× so the gallery still shows the pinned rocking motion.
+ * The frame matches the demo gallery capture viewport, and the camera,
+ * wireframe, and particle cap match a fresh playground session.
  */
 export function readmeSvgRequest(plan: ReadmeSvgPlan): SvgExportRequest {
   if (README_SVG_SECONDS !== DEFAULT_SVG_EXPORT_SECONDS) {
@@ -104,7 +106,7 @@ export function readmeSvgRequest(plan: ReadmeSvgPlan): SvgExportRequest {
     sceneId: maybeScene.id,
     title: maybeScene.title,
     durationSeconds: README_SVG_SECONDS,
-    controls: [],
+    controls: readmeControls(plan),
     viewportWidth: CAPTURE_PROFILE.viewport.width,
     viewportHeight: CAPTURE_PROFILE.viewport.height,
     zoom: IDENTITY_CAMERA_VIEW.zoom,
@@ -114,6 +116,14 @@ export function readmeSvgRequest(plan: ReadmeSvgPlan): SvgExportRequest {
     wireframeStrokeWidth: DEFAULT_WIREFRAME_STROKE_WIDTH,
     maxRenderedParticles: DEFAULT_RENDERED_PARTICLE_LIMIT,
   };
+}
+
+function readmeControls(plan: ReadmeSvgPlan): SvgExportRequest["controls"] {
+  if (plan.id !== "wave-machine") {
+    return [];
+  }
+
+  return [{ name: "wave-speed", value: WAVE_MACHINE_SPEED_ORIGINAL }];
 }
 
 /** Rejects a plan list that has drifted from the scene catalog. */
